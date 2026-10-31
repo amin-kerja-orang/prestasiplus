@@ -126,4 +126,41 @@ describe('intake tag subject: Bijak codes resolve to the curriculum subject (R1E
     )
     expect(row?.code).toBe('MATH')
   })
+
+  it('REQ-B-015: an MAT batch and a MATH batch of the same official paper share ONE source_papers row, with the MATH subject_id', async () => {
+    const runBatch = async (subject: string, mark: string): Promise<string> => {
+      t.ai.paper = () => paper([draft(t.codes, '1', { tag: tagOf(subject, 'T4', t.codes.unit, [t.codes.sp]) })])
+      const batch = await createBatch(teacher, { subject, paperType: 'exam', year: 2019, kertas: 2 })
+      await uploadOk(teacher, batch.id, [{ bytes: Buffer.concat([textPdf(1), Buffer.from(`\n% ${mark}\n`)]), filename: `${mark}.pdf` }])
+      await t.drain()
+      await extractAndRun(t, teacher, batch.id)
+      return batch.id
+    }
+    const a = await runBatch('MAT', 'kertas dua mat')
+    const b = await runBatch('MATH', 'kertas dua math')
+    const rows = await t.db.query<{ id: string; natural_key: string; subject_code: string }>(
+      `select sp.id::text id, sp.natural_key, s.code subject_code from source_papers sp join subjects s on s.id = sp.subject_id where sp.year = 2019 and sp.kertas = 'K2' and sp.exam_type = 'sebenar'`,
+    )
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({ natural_key: 'math|2019||k2|sebenar', subject_code: 'MATH' })
+    const linked = await t.db.query<{ source_paper_id: string }>(`select source_paper_id::text from intake_batches where id = any($1::bigint[])`, [[a, b]])
+    expect(linked.map((r) => r.source_paper_id)).toEqual([rows[0]!.id, rows[0]!.id])
+  })
+
+  it('REQ-B-015: a source paper written with the old Bijak key ("sn|...") is reused by an SCI batch, not duplicated', async () => {
+    const subject = (await t.db.query<{ id: string }>(`select id::text id from subjects where code = 'SCI'`))[0]!.id
+    const old = (
+      await t.db.query<{ id: string }>(
+        `insert into source_papers (natural_key, subject_id, kertas, year, exam_type, rights_status) values ('sn|2018||k1|sebenar', $1, 'K1', 2018, 'sebenar', 'own') returning id::text id`,
+        [subject],
+      )
+    )[0]!.id
+    t.ai.paper = () => paper([draft(t.codes, '1', { tag: tagOf('SCI', 'T4') })])
+    const batch = await createBatch(teacher, { subject: 'SCI', paperType: 'exam', year: 2018, kertas: 1 })
+    await uploadOk(teacher, batch.id, [{ bytes: Buffer.concat([textPdf(1), Buffer.from('\n% sains lama\n')]), filename: 'sains.pdf' }])
+    await t.drain()
+    await extractAndRun(t, teacher, batch.id)
+    expect((await t.db.query(`select 1 from source_papers where year = 2018 and kertas = 'K1' and exam_type = 'sebenar'`))).toHaveLength(1)
+    expect((await t.db.query<{ source_paper_id: string }>(`select source_paper_id::text from intake_batches where id = $1`, [batch.id]))[0]!.source_paper_id).toBe(old)
+  })
 })

@@ -3,6 +3,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import { Prisma } from '../../db/generated/client'
 import { idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
+import { kertasOfPaperCode } from './projection'
 import type { StimulusKind } from './types'
 
 /** The five columns a stimulus write may set. `null` clears. */
@@ -34,16 +35,41 @@ export interface GroupRow {
 
 const PKSK_TAG = 'pksk_domain'
 
+/**
+ * A question is SHOWN TO PUPILS when (A) it is active and its live version is approved, or (B) a placement of a published paper pins one of
+ * its versions (approved or archived): the paper serves that version whether the question is active or not, as the attempt bridge and the
+ * `question_image` read rule do (`files/question-image-access.ts`). Alias `q` is `questions`. This is the "served lock" predicate.
+ */
+const QUESTION_SERVED = Prisma.sql`(
+  (q.is_active AND EXISTS (SELECT 1 FROM question_versions sv WHERE sv.question_id = q.id AND sv.version_no = q.live_version_no AND sv.status = 'approved'))
+  OR EXISTS (SELECT 1 FROM paper_placements spl
+               JOIN paper_sections sps ON sps.id = spl.paper_section_id
+               JOIN papers spp ON spp.id = sps.paper_id AND spp.status = 'published'
+               JOIN question_versions spv ON spv.question_id = q.id AND spv.version_no = spl.pinned_version_no AND spv.status IN ('approved', 'archived')
+              WHERE spl.question_id = q.id)
+)`
+
+/** The same rule for one version `v` of question `q`: it is the live approved version of an active question, or a published paper pins it. */
+const VERSION_SERVED = Prisma.sql`(
+  (q.live_version_no = v.version_no AND q.is_active AND v.status = 'approved')
+  OR (v.status IN ('approved', 'archived') AND EXISTS (SELECT 1 FROM paper_placements spl
+               JOIN paper_sections sps ON sps.id = spl.paper_section_id
+               JOIN papers spp ON spp.id = sps.paper_id AND spp.status = 'published'
+              WHERE spl.question_id = q.id AND spl.pinned_version_no = v.version_no))
+)`
+
 /** What the member rules need to know about a question. */
 export interface QuestionFacts {
   groupId: string | null
   pksk: boolean
   active: boolean
   archived: boolean
-  /** Shown to pupils now: active, live version approved. */
+  /** Shown to pupils now (see QUESTION_SERVED). */
   served: boolean
   subjectId: string | null
   levelId: string | null
+  /** '1' | '2' | '3' from the paper code of the latest version, or null (compatible with any kertas). */
+  kertas: '1' | '2' | '3' | null
 }
 const bi = (text: string): bigint | null => (/^[1-9]\d{0,18}$/.test(text) ? BigInt(text) : null)
 
@@ -201,18 +227,18 @@ export class StimuliRepository {
         group_id: bigint | null
         is_active: boolean
         latest_status: string
-        live_status: string | null
+        served: boolean
+        paper_code: string | null
         subject_id: bigint | null
         level_id: bigint | null
         pksk: boolean
       }[]
     >`
-      SELECT q.id, q.group_id, q.is_active, lv.status AS latest_status, lvv.status AS live_status,
+      SELECT q.id, q.group_id, q.is_active, lv.status AS latest_status, ${QUESTION_SERVED} AS served, lv.paper_code,
              lv.subject_id, lv.education_level_id AS level_id,
              EXISTS (SELECT 1 FROM question_tags t WHERE t.question_id = q.id AND t.kind = ${PKSK_TAG}) AS pksk
         FROM questions q
         JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
-        LEFT JOIN question_versions lvv ON lvv.question_id = q.id AND lvv.version_no = q.live_version_no
        WHERE q.id IN (${Prisma.join(keys)})`
     for (const r of rows) {
       out.set(idToString(r.id), {
@@ -220,7 +246,8 @@ export class StimuliRepository {
         pksk: r.pksk,
         active: r.is_active,
         archived: r.latest_status === 'archived',
-        served: r.is_active && r.live_status === 'approved',
+        served: r.served,
+        kertas: kertasOfPaperCode(r.paper_code),
         subjectId: r.subject_id === null ? null : idToString(r.subject_id),
         levelId: r.level_id === null ? null : idToString(r.level_id),
       })
@@ -248,16 +275,13 @@ export class StimuliRepository {
   async servingMemberIds(groupId: string): Promise<string[]> {
     const key = bi(groupId)
     if (key === null) return []
-    const rows = await this.db.$queryRaw<{ id: bigint }[]>`
-      SELECT q.id FROM questions q
-        JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-       WHERE q.group_id = ${key} AND q.is_active AND v.status = 'approved'`
+    const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id FROM questions q WHERE q.group_id = ${key} AND ${QUESTION_SERVED}`
     return rows.map((r) => idToString(r.id))
   }
 
   /**
-   * Is the stimulus shown to pupils now: by a group with a serving member, or linked to the live approved version of an active
-   * question (version link or part link).
+   * Is the stimulus shown to pupils now: by a group with a member shown to pupils, or linked (version link or part link) to a version
+   * that is shown to pupils (the live approved version of an active question, or a version pinned by a published paper).
    */
   async stimulusServed(stimulusId: string): Promise<boolean> {
     const key = bi(stimulusId)
@@ -265,31 +289,31 @@ export class StimuliRepository {
     const rows = await this.db.$queryRaw<{ one: number }[]>`
       SELECT 1 AS one FROM stimulus_group_stimuli gs
         JOIN questions q ON q.group_id = gs.group_id
-        JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-       WHERE gs.stimulus_id = ${key} AND q.is_active AND v.status = 'approved'
+       WHERE gs.stimulus_id = ${key} AND ${QUESTION_SERVED}
       UNION ALL
       SELECT 1 FROM question_version_stimuli vs
         JOIN question_versions v ON v.id = vs.question_version_id
-        JOIN questions q ON q.id = v.question_id AND q.live_version_no = v.version_no
-       WHERE vs.stimulus_id = ${key} AND q.is_active AND v.status = 'approved'
+        JOIN questions q ON q.id = v.question_id
+       WHERE vs.stimulus_id = ${key} AND ${VERSION_SERVED}
       UNION ALL
       SELECT 1 FROM question_parts p
         JOIN question_versions v ON v.id = p.question_version_id
-        JOIN questions q ON q.id = v.question_id AND q.live_version_no = v.version_no
-       WHERE p.stimulus_id = ${key} AND q.is_active AND v.status = 'approved'
+        JOIN questions q ON q.id = v.question_id
+       WHERE p.stimulus_id = ${key} AND ${VERSION_SERVED}
       LIMIT 1`
     return rows.length > 0
   }
 
-  /** Subject and level of the latest versions of the members: one entry per distinct pair. */
-  async memberSubjectLevels(groupId: string): Promise<{ subjectId: string | null; levelId: string | null }[]> {
+  /** Subject and kertas of the latest versions of the members (one entry per distinct pair), leaving out `except`. */
+  async memberTraits(groupId: string, except: string | null = null): Promise<{ subjectId: string | null; kertas: '1' | '2' | '3' | null }[]> {
     const key = bi(groupId)
     if (key === null) return []
-    const rows = await this.db.$queryRaw<{ subject_id: bigint | null; level_id: bigint | null }[]>`
-      SELECT DISTINCT lv.subject_id, lv.education_level_id AS level_id
+    const skip = except === null ? null : bi(except)
+    const rows = await this.db.$queryRaw<{ subject_id: bigint | null; paper_code: string | null }[]>`
+      SELECT DISTINCT lv.subject_id, lv.paper_code
         FROM questions q JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
-       WHERE q.group_id = ${key}`
-    return rows.map((r) => ({ subjectId: r.subject_id === null ? null : idToString(r.subject_id), levelId: r.level_id === null ? null : idToString(r.level_id) }))
+       WHERE q.group_id = ${key} AND (${skip}::bigint IS NULL OR q.id <> ${skip}::bigint)`
+    return rows.map((r) => ({ subjectId: r.subject_id === null ? null : idToString(r.subject_id), kertas: kertasOfPaperCode(r.paper_code) }))
   }
 
   /** Puts the questions in the group at positions `from`, `from + 1`, ... in the order given. */

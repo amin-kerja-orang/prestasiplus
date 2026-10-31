@@ -203,6 +203,25 @@ describe('filters, pinned versions and the contributor', () => {
     for (const q of res.body.data.questions as { id: string }[]) expect(ids).toContain(q.id)
   })
 
+  it('spmServable (REQ-B-010): a targeted "Buka Soalan Sama" needs the draw rule, not only an offered level code', async () => {
+    const ok = await mcq({ text: 'Soalan sasaran SPM' })
+    const outside = await mcq({ level: c.nonSpmLevel, text: 'Soalan sasaran bukan SPM' })
+    expect([...(await c.source.spmServable([ok, outside, '987654321', 'bukan-id']))]).toEqual([ok])
+    // the subject no longer has that level (subject_levels): the draw stops serving it, and so does the targeted start (the level code alone would still pass)
+    await c.t.db.query(`delete from subject_levels where subject_id = $1 and education_level_id = $2`, [c.w.tag.subjectId, c.w.tag.levelId])
+    try {
+      expect((await c.source.spmServable([ok])).size).toBe(0)
+      expect(await c.source.sample({ subjectId: c.w.tag.subjectId, spmPool: true }, 1000, prngStream('sl'))).not.toContain(ok)
+      const res = await start({ mode: 'latih_tubi', subjectCode: c.w.subjectCode, count: 1, targetQuestionId: ok })
+      expect(res.status).toBe(422)
+      expect(res.body.error.fields.targetQuestionId).toBeDefined()
+    } finally {
+      await c.t.db.query(`insert into subject_levels (subject_id, education_level_id) values ($1, $2)`, [c.w.tag.subjectId, c.w.tag.levelId])
+    }
+    const served = await start({ mode: 'latih_tubi', subjectCode: c.w.subjectCode, count: 1, targetQuestionId: ok })
+    expect(served.status, JSON.stringify(served.body)).toBe(201)
+  })
+
   it('difficulty selects the TP (5 also takes TP 6)', async () => {
     const tp2 = await mcq({ level: c.dLevel, tp: 2, text: 'Soalan TP2' })
     const sub = { subjectId: c.w.tag.subjectId, educationLevelIds: [c.dLevel] }

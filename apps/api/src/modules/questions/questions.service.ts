@@ -18,6 +18,7 @@ import { gradeQuestion } from './grading'
 import {
   difficultyOf,
   flatFromVersion,
+  kertasOfPaperCode,
   keyIndexOf,
   languageToStore,
   partsFromFlat,
@@ -654,7 +655,7 @@ export class QuestionsService {
         createdById: creator,
         groupId: groupId === null ? null : BigInt(groupId),
         // D90 / R1-T32: the same member rules as the stimulus routes; locks the group so concurrent creates get distinct positions.
-        groupPosition: groupId === null ? null : await this.groupMembers.joinNew(groupId, draft.subjectId === null ? null : idToString(draft.subjectId)),
+        groupPosition: groupId === null ? null : await this.groupMembers.joinNew(groupId, draft.subjectId === null ? null : idToString(draft.subjectId), kertasOfPaperCode(draft.paperCode ?? null)),
         now: this.clock.now(),
         version: draft,
         ...(provenance
@@ -731,12 +732,13 @@ export class QuestionsService {
       const key = parse(n.chapterId)
       const chapter = key === null ? null : await this.curriculum.chapter(key)
       if (!chapter) fields.curriculumChapterId = QUESTION_MESSAGES.guruChapter
-      else if (subject && level && (chapter.subjectId !== subject.id || chapter.educationLevelId !== level.id)) fields.curriculumChapterId = QUESTION_MESSAGES.chapterMismatch
+      // REQ-B-010: each of subject and level that is known is checked on its own (a chapter of another subject is refused even with no level).
+      else if ((subject && chapter.subjectId !== subject.id) || (level && chapter.educationLevelId !== level.id)) fields.curriculumChapterId = QUESTION_MESSAGES.chapterMismatch
       else chapterKey = chapter.id
-    } else if (n.chapterId === undefined && previous?.version.chapterId && subject && level) {
-      // The chapter is kept, but only while it still belongs to the subject and level being saved.
+    } else if (n.chapterId === undefined && previous?.version.chapterId && (subject || level)) {
+      // The chapter is kept while it still belongs to the subject and the level being saved (the one that is known, when the other is empty).
       const kept = await this.curriculum.chapter(BigInt(previous.version.chapterId))
-      if (kept && kept.subjectId === subject.id && kept.educationLevelId === level.id) chapterKey = kept.id
+      if (kept && (!subject || kept.subjectId === subject.id) && (!level || kept.educationLevelId === level.id)) chapterKey = kept.id
     }
     if (n.topicId) {
       const key = parse(n.topicId)
@@ -944,6 +946,12 @@ export class QuestionsService {
         await this.repo.addVersion(record.id, fresh.latestVersionNo + 1, next, now)
       } else {
         await this.repo.rewriteVersion(record.id, fresh.version.versionNo, next, now)
+      }
+      // R1-T49: a grouped question that changes subject or kertas must still fit the other members (the only member may change freely).
+      if (fresh.groupId !== null && input.stimulusGroupId === undefined) {
+        const after = { subject: draft.subjectId === null ? null : idToString(draft.subjectId), kertas: kertasOfPaperCode(draft.paperCode ?? null) }
+        const before = { subject: fresh.version.subjectId, kertas: kertasOfPaperCode(fresh.version.paperCode) }
+        if (after.subject !== before.subject || after.kertas !== before.kertas) await this.groupMembers.assertTraitChange(fresh.groupId, record.id, after.subject, after.kertas)
       }
       if (input.stimulusGroupId !== undefined) {
         // D90 / R1-T32: leaving or joining a group goes through the same rules as the stimulus routes (served lock, caps, PKSK, ...).

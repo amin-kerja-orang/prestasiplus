@@ -41,6 +41,10 @@ export const STIMULUS_MESSAGES = {
   builderBlocker: 'Kumpulan perlu sekurang-kurangnya 2 soalan.',
   membersTooMany: 'Satu kumpulan boleh mempunyai paling banyak 40 soalan.',
   memberMixed: 'Soalan dalam satu kumpulan mesti sama subjek.',
+  /** Members of one group share the kertas when it is set (a question with no kertas is compatible with any). */
+  memberKertas: 'Soalan dalam satu kumpulan mesti sama kertas.',
+  /** `stimulusGroupId` names a group that does not exist (422 on the field). */
+  groupInvalid: 'Kumpulan stimulus tidak sah.',
   memberInactive: 'Soalan yang diarkibkan atau dinyahaktifkan tidak boleh dimasukkan ke dalam kumpulan.',
   memberServed: 'Soalan ini sedang dipaparkan kepada murid. Sunting sebagai draf atau arkibkannya dahulu sebelum memasukkannya ke dalam kumpulan.',
   groupServed: 'Kumpulan ini mempunyai soalan yang sedang dipaparkan kepada murid. Soalan itu tidak boleh dikeluarkan atau disusun semula, dan kumpulan tidak boleh diubah rangsangannya atau dibubarkan. Sunting soalan sebagai draf atau arkibkannya dahulu.',
