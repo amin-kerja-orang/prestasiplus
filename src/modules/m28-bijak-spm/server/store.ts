@@ -6,7 +6,7 @@
  * Reveal rules (US-15): an answer key or mark scheme leaves this class only inside a graded
  * result, i.e. after submit (exam) or after "Semak" on that one question (latihan).
  */
-import type { StudioDskp } from '@pp/contract'
+import type { BijakKuizCheckRequest, BijakKuizStartRequest, StudioDskp } from '@pp/contract'
 
 import { blankQuestion } from '../admin/intake/domain/blank'
 import { batchToSeeds } from '../admin/intake/domain/convert'
@@ -68,6 +68,7 @@ import type {
 } from '../domain/types'
 
 import { BijakError } from './errors'
+import { MockKuiz } from './kuiz-mock'
 import { MemoryStorage, type KeyValueStore } from './storage'
 import type { BijakApi, SaveResult, SubmitResult } from './types'
 
@@ -112,6 +113,8 @@ export interface ServerOptions {
 
 /** [PROPOSED] H-A13: the API's BM refusal of a new sitting of a paper that places an archived question. */
 export const PAPER_UNAVAILABLE = 'Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini.'
+/** [PROPOSED] H-A13: the API's 409 line when "Cuba Lagi" targets a paper that is being updated. */
+export const RETRY_UNAVAILABLE = 'Kertas ini sudah tidak tersedia untuk dicuba semula.'
 
 export class BijakServer implements BijakApi {
   private readonly storage: KeyValueStore
@@ -121,6 +124,7 @@ export class BijakServer implements BijakApi {
   private state: State
   private offline = false
   private readonly ops: AdminOps
+  private readonly kuiz = new MockKuiz(() => this.tick())
 
   constructor(opts: ServerOptions = {}) {
     this.storage = opts.storage ?? new MemoryStorage()
@@ -803,7 +807,13 @@ export class BijakServer implements BijakApi {
       throw new BijakError('bad_request', 'Hantar percubaan ini dahulu sebelum mencuba semula.')
     }
     // A new sitting; other open sittings of the paper are left as they are (as the API does).
-    return this.startAttempt(userId, a.paperId, a.mode, { fresh: true })
+    try {
+      return await this.startAttempt(userId, a.paperId, a.mode, { fresh: true })
+    } catch (e) {
+      // H-A13: a paper being updated cannot be retried: the API answers 409 with this line (a conflict, not a 403).
+      if (e instanceof BijakError && e.code === 'forbidden') throw new BijakError('bad_request', RETRY_UNAVAILABLE)
+      throw e
+    }
   }
 
   async pastSittings(userId: number, paperId: string): Promise<PastSittings> {
@@ -1259,6 +1269,23 @@ export class BijakServer implements BijakApi {
   }
   deletePaper(id: string) {
     return this.ops.deletePaper(id)
+  }
+
+  /* Simulasi Kuiz (R1-B16): see kuiz-mock.ts. */
+  startKuiz(input: BijakKuizStartRequest) {
+    return this.kuiz.start(input)
+  }
+  checkKuiz(sessionId: string, input: BijakKuizCheckRequest) {
+    return this.kuiz.check(sessionId, input)
+  }
+  finishKuiz(sessionId: string) {
+    return this.kuiz.finish(sessionId)
+  }
+  getKuizPaperPage(paperId: string, page: number) {
+    return this.kuiz.paperPage(paperId, page)
+  }
+  checkKuizPaper(paperId: string, input: BijakKuizCheckRequest) {
+    return this.kuiz.checkPaper(paperId, input)
   }
 
   /** Test helper: the saved answers of an attempt, as the server holds them. */
