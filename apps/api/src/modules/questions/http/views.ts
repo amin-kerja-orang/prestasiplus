@@ -96,7 +96,11 @@ function flatBase(q: QuestionView) {
   }
 }
 
-export function stimulusGroupView(g: StimulusGroupRecord): z.output<typeof QuestionStimulusGroupSchema> {
+/**
+ * `tokens` maps an internal file id to its public token (the wire names a file by the token `POST /files` returned, the same
+ * form the stimulus routes answer with). An id with no token stays as stored.
+ */
+export function stimulusGroupView(g: StimulusGroupRecord, tokens: Record<string, string> = {}): z.output<typeof QuestionStimulusGroupSchema> {
   return QuestionStimulusGroupSchema.parse({
     id: g.id,
     stimuli: g.stimuli.map((s) => ({
@@ -104,7 +108,7 @@ export function stimulusGroupView(g: StimulusGroupRecord): z.output<typeof Quest
       kind: s.kind,
       label: s.label,
       body: s.bodyMs === null && s.bodyEn === null ? null : { ms: s.bodyMs ?? s.bodyEn ?? '', ...(s.bodyEn === null || s.bodyMs === null ? {} : { en: s.bodyEn }) },
-      imageId: s.assetFileId,
+      imageId: s.assetFileId === null ? null : (tokens[s.assetFileId] ?? s.assetFileId),
       alt: s.alt,
       ...(s.caption ? { caption: s.caption } : {}),
       ...(s.sourceCitation ? { sourceCitation: s.sourceCitation } : {}),
@@ -148,7 +152,7 @@ export function detailView(d: QuestionDetailView): QuestionDetailWire {
   return QuestionDetailSchema.parse({
     ...base,
     parts: d.version.parts,
-    ...(d.stimulusGroup === null ? { stimulusGroup: null } : { stimulusGroup: stimulusGroupView(d.stimulusGroup) }),
+    ...(d.stimulusGroup === null ? { stimulusGroup: null } : { stimulusGroup: stimulusGroupView(d.stimulusGroup, d.imageTokens) }),
     subject: d.subject,
     level: d.level,
     dskp: d.dskp,
