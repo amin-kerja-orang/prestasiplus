@@ -120,6 +120,6 @@ describe('essay_choice topic labels (REQ-B-021a)', () => {
     for (const bad of ['', ' ', '   ', '\t\n']) expect(QuestionPartSchema.safeParse(leaf(['Tajuk satu', bad])).success, JSON.stringify(bad)).toBe(false)
     const ok = QuestionPartSchema.safeParse(leaf(['  Tajuk satu  ', 'Tajuk dua']))
     expect(ok.success).toBe(true)
-    if (ok.success && ok.data.mode === 'essay_choice') expect(ok.data.topics[0]?.label).toBe('Tajuk satu')
+    if (ok.success && 'mode' in ok.data && ok.data.mode === 'essay_choice') expect(ok.data.topics[0]?.label).toBe('Tajuk satu')
   })
 })

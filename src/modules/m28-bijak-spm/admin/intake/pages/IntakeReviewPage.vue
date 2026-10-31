@@ -1061,6 +1061,7 @@ async function submit(): Promise<void> {
                       </select>
                     </label>
                     <QuestionEditor
+                      show-cognitive
                       :model-value="q"
                       @update:model-value="updateQuestion(q.id, $event)"
                     />
