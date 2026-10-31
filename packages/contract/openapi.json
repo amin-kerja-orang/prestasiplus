@@ -38346,6 +38346,9 @@
           "dskpTagged": {
             "type": "boolean"
           },
+          "dskpComplete": {
+            "type": "boolean"
+          },
           "sourceType": {
             "$ref": "#/components/schemas/QuestionSourceType"
           },
@@ -39236,6 +39239,9 @@
               "sp"
             ]
           },
+          "dskpStatus": {
+            "$ref": "#/components/schemas/QuestionDskpStatus"
+          },
           "createdBy": {
             "type": "object",
             "properties": {
@@ -39298,6 +39304,46 @@
           "level",
           "dskp",
           "createdBy"
+        ]
+      },
+      "QuestionDskpStatus": {
+        "type": "object",
+        "properties": {
+          "complete": {
+            "type": "boolean"
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "step": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 4
+                }
+              },
+              "required": [
+                "path",
+                "code",
+                "message",
+                "step"
+              ]
+            }
+          }
+        },
+        "required": [
+          "complete",
+          "issues"
         ]
       },
       "QuestionCreateRequest": {
@@ -66855,6 +66901,18 @@
           "wordRange": {
             "$ref": "#/components/schemas/IntakeWordRange"
           },
+          "cognitiveLevel": {
+            "type": "string",
+            "enum": [
+              "mengingat",
+              "memahami",
+              "mengaplikasi",
+              "menganalisis",
+              "menilai",
+              "mencipta"
+            ],
+            "description": "R1-B05: cognitive level of this part, set by the reviewer; carried to the bank leaf on accept. Mandatory for an SPM-bound approval."
+          },
           "lead": {
             "type": "array",
             "items": {
@@ -66967,6 +67025,18 @@
           },
           "wordRange": {
             "$ref": "#/components/schemas/IntakeWordRange"
+          },
+          "cognitiveLevel": {
+            "type": "string",
+            "enum": [
+              "mengingat",
+              "memahami",
+              "mengaplikasi",
+              "menganalisis",
+              "menilai",
+              "mencipta"
+            ],
+            "description": "R1-B05: cognitive level of a question without parts (an MCQ or a single-leaf question); a structured question carries it per part."
           },
           "parts": {
             "type": "array",
@@ -68029,6 +68099,18 @@
           "wordRange": {
             "$ref": "#/components/schemas/IntakeWordRange"
           },
+          "cognitiveLevel": {
+            "type": "string",
+            "enum": [
+              "mengingat",
+              "memahami",
+              "mengaplikasi",
+              "menganalisis",
+              "menilai",
+              "mencipta"
+            ],
+            "description": "R1-B05: cognitive level of a question without parts (an MCQ or a single-leaf question); a structured question carries it per part."
+          },
           "parts": {
             "type": "array",
             "items": {
@@ -68988,6 +69070,9 @@
                 ]
               }
             ]
+          },
+          "cognitiveLevel": {
+            "$ref": "#/components/schemas/QuestionCognitiveLevel"
           },
           "parts": {
             "type": "array",

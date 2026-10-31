@@ -6,7 +6,7 @@ import { ErrorBodySchema } from '../common/error'
 import { IdSchema } from '../common/ids'
 import { ServabilityReportSchema } from '../servability/schema'
 import { QuestionCognitiveLevelSchema } from './parts'
-import { QuestionSchema } from './schema'
+import { QuestionDskpStatusSchema, QuestionSchema } from './schema'
 
 /**
  * R1-B05 (ADR-0031, pipeline arch 3.1): the approve gate as a read (`gate-check`) and the lifecycle status route. The gate itself is
@@ -58,6 +58,7 @@ export const QuestionStatusResultSchema = z
 /** Components contributed by R1-B05 (appended to COMPONENT_SCHEMAS in openapi.ts). */
 export const QUESTION_GATE_COMPONENT_SCHEMAS = {
   QuestionCognitiveLevel: QuestionCognitiveLevelSchema,
+  QuestionDskpStatus: QuestionDskpStatusSchema,
   QuestionGateName: QuestionGateNameSchema,
   QuestionGateIssue: QuestionGateIssueSchema,
   QuestionGateCheck: QuestionGateCheckSchema,

@@ -97,6 +97,8 @@ export const QuestionRowSchema = z
     complianceStatus: QuestionComplianceStatusSchema,
     aiVerified: z.boolean(),
     dskpTagged: z.boolean(),
+    /** R1-B05: DSKP complete (unit, SP, a TP and a cognitive level on every leaf). `false` is the badge "Belum ditanda DSKP". */
+    dskpComplete: z.boolean().optional(),
     sourceType: QuestionSourceTypeSchema.nullable(),
     sourceFile: z.string().nullable(),
   })
@@ -200,6 +202,14 @@ export const QuestionSchema = z
   .meta({ id: 'Question' })
 
 const DskpRef = z.object({ id: IdSchema, code: z.string(), description: z.string() })
+
+/** R1-B05: what is still missing for "DSKP complete", in the shape of the gate issues (`path` is the `fields` key, `step` the wizard step). */
+export const QuestionDskpStatusSchema = z
+  .object({
+    complete: z.boolean(),
+    issues: z.array(z.object({ path: z.string(), code: z.string(), message: z.string(), step: z.number().int().min(1).max(4) })),
+  })
+  .meta({ id: 'QuestionDskpStatus' })
 export const QuestionDetailSchema = QuestionSchema.omit({ createdBy: true })
   .extend({
     subject: Ref,
@@ -211,6 +221,8 @@ export const QuestionDetailSchema = QuestionSchema.omit({ createdBy: true })
         sp: DskpRef,
       })
       .nullable(),
+    /** R1-B05: DSKP completeness with the missing items (not the DSKP chain above, which is `dskp`). */
+    dskpStatus: QuestionDskpStatusSchema.optional(),
     createdBy: z.object({ id: IdSchema, name: z.string().nullable() }),
   })
   .meta({ id: 'QuestionDetail' })

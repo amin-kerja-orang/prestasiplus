@@ -23,9 +23,9 @@ export const DSKP_MESSAGES = {
   sp: 'Sila pilih sekurang-kurangnya satu SP DSKP.',
 } as const
 
-/** "Bahagian (b)" for a labelled leaf, "Soalan" for the single unlabelled leaf of a flat question. */
+/** "Bahagian (b)" for a labelled leaf (a printed label that already has its brackets, as intake keeps them, is not wrapped twice), "Soalan" for an unlabelled one. */
 function labelOf(label: string): string {
-  return label === '' ? 'Soalan' : `Bahagian (${label})`
+  return label === '' ? 'Soalan' : label.startsWith('(') ? `Bahagian ${label}` : `Bahagian (${label})`
 }
 
 export interface DskpGateInput {
@@ -44,6 +44,8 @@ export interface DskpIssue {
   path: string
   code: 'LEAF_COGNITIVE_LEVEL_MISSING' | 'LEAF_TP_MISSING' | 'KERTAS_MISSING' | 'UNIT_MISSING' | 'SP_MISSING'
   message: string
+  /** Wizard step: 3 Sub-bahagian (a leaf), 4 Tag & pengelasan, 1 Kertas. */
+  step: 1 | 3 | 4
 }
 
 /** The new-approval rules (the tag gate rules stay in `checkTagGate`). Empty when the question is not SPM-bound. */
@@ -54,13 +56,13 @@ export function dskpApprovalIssues(input: DskpGateInput): DskpIssue[] {
     if (!isLeaf(leaf)) continue
     const label = leaf.label
     if (leaf.cognitiveLevel == null) {
-      issues.push({ path: `parts.${path}.cognitiveLevel`, code: 'LEAF_COGNITIVE_LEVEL_MISSING', message: DSKP_MESSAGES.cognitive(label) })
+      issues.push({ path: `parts.${path}.cognitiveLevel`, code: 'LEAF_COGNITIVE_LEVEL_MISSING', message: DSKP_MESSAGES.cognitive(label), step: 3 })
     }
     if ((leaf.difficultyTp ?? input.tp) === null) {
-      issues.push({ path: `parts.${path}.difficultyTp`, code: 'LEAF_TP_MISSING', message: DSKP_MESSAGES.tp(label) })
+      issues.push({ path: `parts.${path}.difficultyTp`, code: 'LEAF_TP_MISSING', message: DSKP_MESSAGES.tp(label), step: 3 })
     }
   }
-  if (kertasOfPaperCode(input.paperCode) === null) issues.push({ path: 'kertas', code: 'KERTAS_MISSING', message: DSKP_MESSAGES.kertas })
+  if (kertasOfPaperCode(input.paperCode) === null) issues.push({ path: 'kertas', code: 'KERTAS_MISSING', message: DSKP_MESSAGES.kertas, step: 1 })
   return issues
 }
 
@@ -75,12 +77,12 @@ export function checkDskpGate(input: DskpGateInput): Record<string, string> {
  */
 export function dskpCompleteness(input: Pick<DskpGateInput, 'parts' | 'tp' | 'unitId' | 'spIds'>): { complete: boolean; issues: DskpIssue[] } {
   const issues: DskpIssue[] = []
-  if (input.unitId === null) issues.push({ path: 'unitId', code: 'UNIT_MISSING', message: DSKP_MESSAGES.unit })
-  if (input.spIds.length < 1) issues.push({ path: 'spIds', code: 'SP_MISSING', message: DSKP_MESSAGES.sp })
+  if (input.unitId === null) issues.push({ path: 'unitId', code: 'UNIT_MISSING', message: DSKP_MESSAGES.unit, step: 4 })
+  if (input.spIds.length < 1) issues.push({ path: 'spIds', code: 'SP_MISSING', message: DSKP_MESSAGES.sp, step: 4 })
   for (const { path, leaf } of leavesOf(input.parts)) {
     if (!isLeaf(leaf)) continue
-    if (leaf.cognitiveLevel == null) issues.push({ path: `parts.${path}.cognitiveLevel`, code: 'LEAF_COGNITIVE_LEVEL_MISSING', message: DSKP_MESSAGES.cognitive(leaf.label) })
-    if ((leaf.difficultyTp ?? input.tp) === null) issues.push({ path: `parts.${path}.difficultyTp`, code: 'LEAF_TP_MISSING', message: DSKP_MESSAGES.tp(leaf.label) })
+    if (leaf.cognitiveLevel == null) issues.push({ path: `parts.${path}.cognitiveLevel`, code: 'LEAF_COGNITIVE_LEVEL_MISSING', message: DSKP_MESSAGES.cognitive(leaf.label), step: 3 })
+    if ((leaf.difficultyTp ?? input.tp) === null) issues.push({ path: `parts.${path}.difficultyTp`, code: 'LEAF_TP_MISSING', message: DSKP_MESSAGES.tp(leaf.label), step: 3 })
   }
   return { complete: issues.length === 0, issues }
 }

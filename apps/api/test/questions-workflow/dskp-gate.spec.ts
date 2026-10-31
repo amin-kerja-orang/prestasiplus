@@ -151,6 +151,38 @@ describe('DSKP-complete approve gate, gate-check and status route (real bank)', 
     })
   })
 
+  describe('read side: "Belum ditanda DSKP"', () => {
+    it('the detail carries dskpStatus { complete, issues } and the list row carries dskpComplete', async () => {
+      const legacy = await draft() // a plain MCQ: unit, SP and TP, but no cognitive level
+      const detail = await c.admin.get(`/api/questions/${legacy}`)
+      expect(detail.status).toBe(200)
+      expect(detail.body.data.dskpStatus).toEqual({
+        complete: false,
+        issues: [{ path: 'parts.1.cognitiveLevel', code: 'LEAF_COGNITIVE_LEVEL_MISSING', message: 'Bahagian (1) belum ada aras pemikiran.', step: 3 }],
+      })
+      expect(detail.body.data.dskp).toBeDefined() // the DSKP chain keeps its own key
+
+      const tagged = await draft({ cognitiveLevel: 'menilai' })
+      const done = await c.admin.get(`/api/questions/${tagged}`)
+      expect(done.body.data.dskpStatus).toEqual({ complete: true, issues: [] })
+
+      const list = await c.admin.get('/api/questions?pageSize=100')
+      expect(list.status).toBe(200)
+      const row = (id: string) => (list.body.data as { id: string; dskpComplete?: boolean }[]).find((r) => r.id === id)
+      expect(row(legacy)?.dskpComplete).toBe(false)
+      expect(row(tagged)?.dskpComplete).toBe(true)
+    })
+
+    it('an untagged question (no unit, no SP) lists unit and SP first, in the Tag step', async () => {
+      const res = await c.admin.post('/api/questions', body({ tag: undefined }))
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      const detail = await c.admin.get(`/api/questions/${res.body.data.id as string}`)
+      const issues = detail.body.data.dskpStatus.issues as { path: string; step: number }[]
+      expect(issues.filter((i) => i.step === 4).map((i) => i.path)).toEqual(['unitId', 'spIds'])
+      expect(detail.body.data.dskpStatus.complete).toBe(false)
+    })
+  })
+
   describe('routes', () => {
     it('gate=submit is the draft-to-review gate; a bad gate name is 422', async () => {
       const id = await draft()
