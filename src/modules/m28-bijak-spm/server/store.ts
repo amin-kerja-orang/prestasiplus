@@ -112,6 +112,8 @@ export interface ServerOptions {
 
 /** [PROPOSED] H-A13: the API's BM refusal of a new sitting of a paper that places an archived question. */
 export const PAPER_UNAVAILABLE = 'Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini.'
+/** [PROPOSED] H-A13: the API's 409 line when "Cuba Lagi" targets a paper that is being updated. */
+export const RETRY_UNAVAILABLE = 'Kertas ini sudah tidak tersedia untuk dicuba semula.'
 
 export class BijakServer implements BijakApi {
   private readonly storage: KeyValueStore
@@ -803,7 +805,13 @@ export class BijakServer implements BijakApi {
       throw new BijakError('bad_request', 'Hantar percubaan ini dahulu sebelum mencuba semula.')
     }
     // A new sitting; other open sittings of the paper are left as they are (as the API does).
-    return this.startAttempt(userId, a.paperId, a.mode, { fresh: true })
+    try {
+      return await this.startAttempt(userId, a.paperId, a.mode, { fresh: true })
+    } catch (e) {
+      // H-A13: a paper being updated cannot be retried: the API answers 409 with this line (a conflict, not a 403).
+      if (e instanceof BijakError && e.code === 'forbidden') throw new BijakError('bad_request', RETRY_UNAVAILABLE)
+      throw e
+    }
   }
 
   async pastSittings(userId: number, paperId: string): Promise<PastSittings> {
