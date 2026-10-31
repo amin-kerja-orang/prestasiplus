@@ -51,6 +51,7 @@ import type { BijakQuestionBundle } from '../attempts/ports'
 import type { BijakQuestionInfo } from '../papers/ports'
 import type { QuestionRecord, StimulusGroupRecord, StimulusRecord } from '../../questions/types'
 import { STIMULUS_KINDS, type StimulusKind } from '@pp/exam-core/types'
+import { stimulusTableOf } from '../../questions/stimulus-table'
 import { BRIDGE_REFUSAL_REASONS_MS, type BridgeRefusalCode } from './refusals'
 
 type Leaf = Extract<QuestionPart, { mode: string }>
@@ -329,7 +330,7 @@ function stimulusDefOf(qid: string, s: WideStimulus, media: BridgeMedia): Stimul
       )
     image = { url: fileUrlOf(token) }
   }
-  const table = s.kind === 'table' ? tableOf(s.tableData, s.bodyMs) : undefined
+  const table = s.kind === 'table' ? stimulusTableOf(s.tableData, s.bodyMs) : undefined
   // A table parsed from the body replaces the body text; any other body stays the text.
   const text = table && !s.tableData ? undefined : s.bodyMs
   if (!text && !table && !image)
@@ -350,46 +351,6 @@ function stimulusDefOf(qid: string, s: WideStimulus, media: BridgeMedia): Stimul
     ...(table ? { table } : {}),
     ...(image ? { image } : {}),
   }
-}
-
-/**
- * A table stimulus grid: the stored `tableData` (`{ head, rows }`, `{ headers, rows }`, `{ columns, rows }` or an
- * array of rows whose first row is the head), else a pipe table written in the body (`a | b` per line, an optional
- * `---` rule). Anything else is not a table (the body stays plain text, or the stimulus is a picture).
- */
-function tableOf(data: unknown, body: string | null): StimulusDef['table'] {
-  const cell = (c: unknown): string =>
-    typeof c === 'string' ? c : typeof c === 'number' ? String(c) : ''
-  const rowsOf = (x: unknown): string[][] | undefined =>
-    Array.isArray(x) && x.every((r) => Array.isArray(r))
-      ? (x as unknown[][]).map((r) => r.map(cell))
-      : undefined
-  if (Array.isArray(data)) {
-    const [head, ...rows] = rowsOf(data) ?? []
-    if (head && head.length > 0) return { head, rows }
-  } else if (data && typeof data === 'object') {
-    const d = data as Record<string, unknown>
-    const head = rowsOf([d.head ?? d.headers ?? d.columns])?.[0]
-    const rows = rowsOf(d.rows)
-    if (head && head.length > 0 && rows) return { head, rows }
-  }
-  if (body && body.includes('|')) {
-    const lines = body
-      .split('\n')
-      .map((l) => l.trim())
-      .filter((l) => l !== '' && !/^\|?[\s:|-]+\|?$/.test(l))
-    const cells = lines.map((l) =>
-      l
-        .replace(/^\|/, '')
-        .replace(/\|$/, '')
-        .split('|')
-        .map((c) => c.trim()),
-    )
-    const [head, ...rows] = cells
-    if (head && head.length >= 2 && rows.length >= 1 && rows.every((r) => r.length === head.length))
-      return { head, rows }
-  }
-  return undefined
 }
 
 /**
@@ -534,9 +495,8 @@ function leafScheme(ctx: Ctx, leaf: Leaf, path: string): LeafMapping {
   const refuse = (reason: string, code: BridgeRefusalCode = 'points_unsupported'): never => {
     throw new UnsupportedQuestionError(ctx.questionId, path, reason, code)
   }
-  // essay_choice is not (yet) a mode of the bank part contract; it is read defensively so it is served the day
-  // the bank stores it (the V2 production mode, 31 approved parts). Marked exactly like an essay.
-  if ((leaf.mode as string) === 'essay_choice') return essayChoiceOf(ctx, leaf, path, refuse)
+  // essay_choice (V2 production mode, 31 approved parts) is a bank part mode since R1-T07. Marked exactly like an essay.
+  if (leaf.mode === 'essay_choice') return essayChoiceOf(ctx, leaf, path, refuse)
   switch (leaf.mode) {
     case 'mcq':
       return refuse(

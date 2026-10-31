@@ -139,6 +139,17 @@ export function linkedStimulusIds(record: QuestionRecord): string[] {
   return [...out]
 }
 
+/** The kuiz wire knows passage, table and diagram; the four pictorial kinds of the store read as `diagram` (as before R1-T07). */
+const KUIZ_KIND: Record<StimulusGroupRecord['stimuli'][number]['kind'], KuizStimulus['kind']> = {
+  passage: 'passage',
+  table: 'table',
+  diagram: 'diagram',
+  image: 'diagram',
+  map: 'diagram',
+  infographic: 'diagram',
+  graph: 'diagram',
+}
+
 export interface ResolvedStimuli {
   /** Each stimulus with the internal file id of its picture (null when it has none); tokens are filled by `stimuliWithTokens`. */
   entries: Array<{ stimulus: KuizStimulus; file: string | null }>
@@ -160,7 +171,7 @@ export function resolveStimuli(
   const files = new Set<string>()
   for (const s of group?.stimuli ?? []) {
     inGroup.add(s.id)
-    entries.push({ stimulus: { kind: s.kind, label: s.label, body: s.bodyMs, imageToken: null, alt: s.alt }, file: s.assetFileId })
+    entries.push({ stimulus: { kind: KUIZ_KIND[s.kind], label: s.label, body: s.bodyMs, imageToken: null, alt: s.alt }, file: s.assetFileId })
     if (s.assetFileId) files.add(s.assetFileId)
   }
   let complete = true
