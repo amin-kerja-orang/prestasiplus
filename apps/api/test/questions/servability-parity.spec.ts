@@ -33,6 +33,7 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
   let reports: ReadonlyMap<string, ServabilityReport>
   let allIds: string[]
   const made: Record<string, string> = {}
+  let refs: { t4: string; other: string; linked: string; inactiveSubject: string; unlinked: string }
 
   const q = (sql: string, params: unknown[] = []) => t.db.query<{ id: string; code: string; public_id: string }>(sql, params)
   let fileSeq = 0
@@ -139,6 +140,51 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
       await q(`insert into paper_placements (paper_section_id, question_id, pinned_version_no, position) values ($1, $2, 1, 1)`, [section!.id, id])
     }
 
+    // --- level / subject / link fixtures (T29 B2 fix: facts are read for the LIVE version, `live ?? latest`) -----------------
+    const level = async (code: string, active: boolean): Promise<string> =>
+      (await q(`insert into education_levels (code, name, name_en, stage, curriculum, sort_order, is_active) values ($1, $1, $1, 'upper_secondary', 'KSSM', 90, $2) returning id::text id`, [code, active]))[0]!.id
+    const subject = async (code: string, active: boolean, linkedLevelId: string | null): Promise<string> => {
+      const id = (await q(`insert into subjects (code, name, name_en, color, is_active) values ($1, $1, $1, '#112233', $2) returning id::text id`, [code, active]))[0]!.id
+      if (linkedLevelId !== null) await q(`insert into subject_levels (subject_id, education_level_id) values ($1, $2)`, [id, linkedLevelId])
+      // On both SPM lists, so the only objection left to a question here is the level or subject rule under test.
+      await q(`insert into spm_subject_configs (subject_id, grp, display_order, databank_order) values ($1, 'elektif', 50, 50)`, [id])
+      return id
+    }
+    const setVersion = (key: string, versionNo: number, levelId: string | null, subjectId: string | null) =>
+      q(`update question_versions set education_level_id = $3, subject_id = $4 where question_id = $1 and version_no = $2`, [made[key], versionNo, levelId, subjectId])
+    const [t4] = await q(`select id::text id from education_levels where code = 'T4'`)
+    const tz = await level('TZ', true)
+    const linked = await subject('PARLINK', true, t4!.id)
+    const inactiveSubject = await subject('PARINACT', false, t4!.id)
+    const unlinked = await subject('PARNOLINK', true, null)
+    refs = { t4: t4!.id, other: tz, linked, inactiveSubject, unlinked }
+
+    // Control: a plain question on an active subject linked to T4 is served by the SPM activities.
+    await publish('linkedSubject', 'Soalan pada subjek aktif dan berpaut untuk kesamaan kebolehhidangan.')
+    await setVersion('linkedSubject', 1, refs.t4, linked)
+    await publish('inactiveSubject', 'Soalan pada subjek tidak aktif untuk kesamaan kebolehhidangan.')
+    await setVersion('inactiveSubject', 1, refs.t4, inactiveSubject)
+    await publish('unlinkedSubject', 'Soalan pada subjek tanpa pautan tahap untuk kesamaan kebolehhidangan.')
+    await setVersion('unlinkedSubject', 1, refs.t4, unlinked)
+    await publish('noLevel', 'Soalan tanpa tahap untuk kesamaan kebolehhidangan.')
+    await setVersion('noLevel', 1, null, linked)
+    await publish('noSubject', 'Soalan tanpa subjek untuk kesamaan kebolehhidangan.')
+    await setVersion('noSubject', 1, refs.t4, null)
+
+    // Live is not latest: the live v1 (T4, linked subject) is served while the draft v2 moves to another level and subject. The
+    // draws read the live version, so the report must too.
+    await publish('liveServedDraftMoves', 'Soalan hidup tahap empat dengan draf baharu yang berubah untuk kesamaan kebolehhidangan.')
+    await setVersion('liveServedDraftMoves', 1, refs.t4, linked)
+    await svc.update(made.liveServedDraftMoves!, mcqInput(tag, { questionText: 'Draf kedua yang mengubah tahap dan subjek untuk kesamaan kebolehhidangan.' }), admin)
+    await setVersion('liveServedDraftMoves', 2, refs.other, inactiveSubject)
+    // And the reverse: the live v1 is on a level the SPM does not offer while the draft v2 is T4 on a linked subject.
+    await publish('liveOutDraftIn', 'Soalan hidup tahap lain dengan draf tahap empat untuk kesamaan kebolehhidangan.')
+    await setVersion('liveOutDraftIn', 1, refs.other, unlinked)
+    await svc.update(made.liveOutDraftIn!, mcqInput(tag, { questionText: 'Draf kedua tahap empat subjek berpaut untuk kesamaan kebolehhidangan.' }), admin)
+    await setVersion('liveOutDraftIn', 2, refs.t4, linked)
+    const latestNos = await q(`select latest_version_no::text id from questions where id = any($1::bigint[]) order by id`, [[made.liveServedDraftMoves, made.liveOutDraftIn]])
+    expect(latestNos.map((r) => r.id)).toEqual(['2', '2'])
+
     allIds = (await q(`select id::text id from questions order by id`)).map((r) => r.id)
     reports = await servability.reports(allIds)
   })
@@ -149,6 +195,8 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
   const servedBy = (activity: ServabilityActivity): Set<string> =>
     new Set([...reports].filter(([, r]) => r.activities.find((a) => a.activity === activity)?.served).map(([id]) => id))
   const reasonsOf = (key: string, activity: ServabilityActivity) => reports.get(made[key]!)!.activities.find((a) => a.activity === activity)!.reasons.map((r) => r.code)
+  const setVersionOf = (id: string, versionNo: number, levelId: string | null, subjectId: string | null) =>
+    q(`update question_versions set education_level_id = $3, subject_id = $4 where question_id = $1 and version_no = $2`, [id, versionNo, levelId, subjectId])
   const sorted = (s: Iterable<string>) => [...s].sort((a, b) => Number(BigInt(a) - BigInt(b)))
 
   it('reports every known question once, with all six activities in contract order', () => {
@@ -197,6 +245,60 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     // mapper is served (the filter is the reader's own `QuestionFilter`).
     const inScope = new Set(await repo.eligibleAmong(allIds, filterOf('latih_tubi_spm')))
     for (const id of servedBy('latih_tubi_spm')) expect(inScope.has(id), id).toBe(true)
+  })
+
+  it('level and subject facts follow the LIVE version: a draft v2 that moves level or subject changes nothing (T29 B2)', async () => {
+    // Real draws: every subject of every version, the practice source with the SPM pool and the kuiz SQL draw.
+    const subjects = await q(`select distinct subject_id::text id from question_versions where subject_id is not null`)
+    const drawn = new Set<string>()
+    for (const s of subjects) for (const id of await practice.sample({ subjectId: s.id, spmPool: true }, 20_000, mulberry32(7))) drawn.add(id)
+    const kuizDrawn = new Set(await repo.sampleIds(filterOf('simulasi_kuiz'), 20_000, 11))
+
+    // Each question is reported ALONE: in a batch another question's level or subject could mask a fact loaded for the wrong
+    // version (the bug was invisible while the batch also held a T4 question on the same subject).
+    const reasonsAlone = async (key: string, activity: ServabilityActivity): Promise<string[]> =>
+      (await servability.report(made[key]!))!.activities.find((a) => a.activity === activity)!.reasons.map((r) => r.code)
+
+    // Live v1 is T4 on a linked subject: drawn and served, whatever the draft v2 says.
+    expect(drawn.has(made.liveServedDraftMoves!)).toBe(true)
+    expect(kuizDrawn.has(made.liveServedDraftMoves!)).toBe(true)
+    for (const activity of ['latih_tubi_spm', 'databank'] as const) {
+      expect(await reasonsAlone('liveServedDraftMoves', activity), `alone ${activity}`).toEqual([])
+      expect(reasonsOf('liveServedDraftMoves', activity), `batch ${activity}`).toEqual([])
+    }
+    expect(servedBy('latih_tubi_spm').has(made.liveServedDraftMoves!)).toBe(true)
+    // The report evaluates the live version, and says which one.
+    expect(reports.get(made.liveServedDraftMoves!)!.versionNo).toBe(1)
+
+    // Live v1 is on a level SPM does not offer and an unlinked subject: neither drawn nor served, whatever v2 says.
+    expect(drawn.has(made.liveOutDraftIn!)).toBe(false)
+    expect(await reasonsAlone('liveOutDraftIn', 'latih_tubi_spm')).toEqual(['level_not_offered', 'subject_unavailable'])
+    expect(reasonsOf('liveOutDraftIn', 'latih_tubi_spm')).toEqual(['level_not_offered', 'subject_unavailable'])
+    expect(servedBy('latih_tubi_spm').has(made.liveOutDraftIn!)).toBe(false)
+  })
+
+  it('an inactive subject, a subject not linked to the level and a missing level or subject are refused as the SPM filter refuses them', async () => {
+    const subjects = await q(`select distinct subject_id::text id from question_versions where subject_id is not null`)
+    const drawn = new Set<string>()
+    for (const s of subjects) for (const id of await practice.sample({ subjectId: s.id, spmPool: true }, 20_000, mulberry32(7))) drawn.add(id)
+    const inScope = new Set(await repo.eligibleAmong(allIds, filterOf('latih_tubi_spm')))
+
+    // Control on an active, linked subject: drawn, in scope, served by Latih Tubi and Databank.
+    expect(drawn.has(made.linkedSubject!)).toBe(true)
+    expect(inScope.has(made.linkedSubject!)).toBe(true)
+    expect(reasonsOf('linkedSubject', 'latih_tubi_spm')).toEqual([])
+    expect(reasonsOf('linkedSubject', 'databank')).toEqual([])
+
+    for (const key of ['inactiveSubject', 'unlinkedSubject', 'noSubject', 'noLevel'] as const) {
+      expect(drawn.has(made[key]!), `${key} drawn`).toBe(false)
+      expect(inScope.has(made[key]!), `${key} in scope`).toBe(false)
+      expect(servedBy('latih_tubi_spm').has(made[key]!), `${key} served`).toBe(false)
+      expect(servedBy('databank').has(made[key]!), `${key} served (databank)`).toBe(false)
+    }
+    expect(reasonsOf('inactiveSubject', 'latih_tubi_spm')).toEqual(['subject_unavailable'])
+    expect(reasonsOf('unlinkedSubject', 'latih_tubi_spm')).toEqual(['subject_unavailable'])
+    expect(reasonsOf('noSubject', 'latih_tubi_spm')).toEqual(['subject_unavailable'])
+    expect(reasonsOf('noLevel', 'latih_tubi_spm')).toEqual(['level_not_offered', 'subject_unavailable'])
   })
 
   it('bab: the chapter reader returns exactly the served questions of a chapter', async () => {
@@ -277,5 +379,29 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     expect(one).toEqual(reports.get(made.groupA!))
     expect(await servability.report('999999999')).toBeNull()
     expect((await servability.reports([])).size).toBe(0)
+  })
+
+  it('an inactive level that SPM offers (T5) is neither drawn nor served, and is served again when it is reactivated', async () => {
+    const [t5] = await q(`select id::text id from education_levels where code = 'T5'`)
+    const key = 'onT5'
+    await publish(key, 'Soalan tahap lima untuk kesamaan kebolehhidangan.')
+    await q(`insert into subject_levels (subject_id, education_level_id) values ($1, $2) on conflict do nothing`, [refs.linked, t5!.id])
+    await setVersionOf(made[key]!, 1, t5!.id, refs.linked)
+    const drawnWith = async (): Promise<boolean> => (await practice.sample({ subjectId: refs.linked, spmPool: true }, 20_000, mulberry32(3))).includes(made[key]!)
+    const reasonCodes = async (): Promise<string[]> => (await servability.report(made[key]!))!.activities.find((a) => a.activity === 'latih_tubi_spm')!.reasons.map((r) => r.code)
+
+    expect(await drawnWith()).toBe(true)
+    expect(await reasonCodes()).toEqual([])
+    await q(`update education_levels set is_active = false where id = $1`, [t5!.id])
+    try {
+      expect(await drawnWith()).toBe(false)
+      expect(await reasonCodes()).toEqual(['level_inactive'])
+      expect((await repo.sampleIds(filterOf('simulasi_kuiz'), 20_000, 5)).includes(made[key]!)).toBe(false)
+      expect((await servability.report(made[key]!))!.activities.find((a) => a.activity === 'simulasi_kuiz')!.served).toBe(false)
+    } finally {
+      await q(`update education_levels set is_active = true where id = $1`, [t5!.id])
+    }
+    expect(await drawnWith()).toBe(true)
+    expect(await reasonCodes()).toEqual([])
   })
 })

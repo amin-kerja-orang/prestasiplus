@@ -38825,6 +38825,12 @@
                 ]
               }
             ]
+          },
+          "numberLabel": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -39201,6 +39207,12 @@
               }
             ]
           },
+          "numberLabel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "subject": {
             "allOf": [
               {
@@ -39554,6 +39566,13 @@
           "tag": {
             "$ref": "#/components/schemas/QuestionCurriculumTag"
           },
+          "numberLabel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 32
+          },
           "cognitiveLevel": {
             "$ref": "#/components/schemas/QuestionCognitiveLevel"
           },
@@ -39731,6 +39750,13 @@
           },
           "tag": {
             "$ref": "#/components/schemas/QuestionCurriculumTag"
+          },
+          "numberLabel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 32
           },
           "cognitiveLevel": {
             "$ref": "#/components/schemas/QuestionCognitiveLevel"

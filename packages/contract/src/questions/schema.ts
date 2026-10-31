@@ -203,6 +203,7 @@ export const QuestionSchema = z
     tagReview: z.boolean().optional(),
     catalogueVersion: z.string().nullable().optional(),
     stimulusGroup: QuestionStimulusGroupSchema.nullable().optional(),
+    numberLabel: z.string().nullable().optional(),
   })
   .meta({ id: 'Question' })
 
@@ -301,6 +302,8 @@ const baseInput = z.object({
   kertas: QuestionKertasSchema.nullable().optional(),
   parts: z.array(QuestionPartSchema).min(1).optional(),
   tag: QuestionCurriculumTagSchema.optional(),
+  /** V2 `Nombor soalan` (Studio Langkah 1); null clears it, omitted keeps it. */
+  numberLabel: z.string().trim().max(32).nullable().optional(),
   /** R1-B05: cognitive level of the single leaf of a flat question (a `parts` body carries it per leaf). */
   cognitiveLevel: QuestionCognitiveLevelSchema.nullable().optional(),
   stimulusGroupId: IdSchema.nullable().optional(),
