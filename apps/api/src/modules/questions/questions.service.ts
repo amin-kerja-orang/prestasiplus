@@ -18,6 +18,7 @@ import { gradeQuestion } from './grading'
 import {
   difficultyOf,
   flatFromVersion,
+  kertasOfPaperCode,
   keyIndexOf,
   languageToStore,
   partsFromFlat,
@@ -590,7 +591,7 @@ export class QuestionsService {
         createdById: creator,
         groupId: groupId === null ? null : BigInt(groupId),
         // D90 / R1-T32: the same member rules as the stimulus routes; locks the group so concurrent creates get distinct positions.
-        groupPosition: groupId === null ? null : await this.groupMembers.joinNew(groupId, draft.subjectId === null ? null : idToString(draft.subjectId)),
+        groupPosition: groupId === null ? null : await this.groupMembers.joinNew(groupId, draft.subjectId === null ? null : idToString(draft.subjectId), kertasOfPaperCode(draft.paperCode ?? null)),
         now: this.clock.now(),
         version: draft,
         ...(provenance
@@ -877,6 +878,12 @@ export class QuestionsService {
         await this.repo.addVersion(record.id, fresh.latestVersionNo + 1, next, now)
       } else {
         await this.repo.rewriteVersion(record.id, fresh.version.versionNo, next, now)
+      }
+      // R1-T49: a grouped question that changes subject or kertas must still fit the other members (the only member may change freely).
+      if (fresh.groupId !== null && input.stimulusGroupId === undefined) {
+        const after = { subject: draft.subjectId === null ? null : idToString(draft.subjectId), kertas: kertasOfPaperCode(draft.paperCode ?? null) }
+        const before = { subject: fresh.version.subjectId, kertas: kertasOfPaperCode(fresh.version.paperCode) }
+        if (after.subject !== before.subject || after.kertas !== before.kertas) await this.groupMembers.assertTraitChange(fresh.groupId, record.id, after.subject, after.kertas)
       }
       if (input.stimulusGroupId !== undefined) {
         // D90 / R1-T32: leaving or joining a group goes through the same rules as the stimulus routes (served lock, caps, PKSK, ...).
