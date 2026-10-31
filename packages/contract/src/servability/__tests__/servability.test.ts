@@ -7,6 +7,7 @@ import {
   SERVABILITY_ACTIVITY_LABELS,
   SERVABILITY_REASON_CODES,
   SERVABILITY_REASON_MS,
+  SERVABILITY_REASON_SOURCE,
   ServabilityReportSchema,
   notServedLine,
   servabilityReasonMs,
@@ -16,7 +17,9 @@ describe('servability contract (R1-T29)', () => {
   it('has a BM sentence for every reason and a label for every activity, in one table each', () => {
     expect(Object.keys(SERVABILITY_REASON_MS).sort()).toEqual([...SERVABILITY_REASON_CODES].sort())
     expect(Object.keys(SERVABILITY_ACTIVITY_LABELS).sort()).toEqual([...SERVABILITY_ACTIVITIES].sort())
-    for (const sentence of Object.values(SERVABILITY_REASON_MS)) expect(sentence.endsWith('.')).toBe(true)
+    // Every sentence ends with a full stop except V2's paper-lane line, printed without one.
+    for (const [code, sentence] of Object.entries(SERVABILITY_REASON_MS)) expect(sentence.endsWith('.') || code === 'paper_empty', code).toBe(true)
+    expect(Object.keys(SERVABILITY_REASON_SOURCE).sort()).toEqual([...SERVABILITY_REASON_CODES].sort())
   })
 
   it('quotes the design table 9.3 wording', () => {
@@ -79,8 +82,8 @@ describe('servability reads contract (R1-T30)', () => {
 
   it('overview has one entry per activity', () => {
     const activities = SERVABILITY_ACTIVITIES.map((activity) => ({ activity, label: SERVABILITY_ACTIVITY_LABELS[activity], served: 1, total: 2, attention: 1, basis: 'sql' as const }))
-    expect(ServabilityOverviewSchema.safeParse({ bank: 2, activities }).success).toBe(true)
-    expect(ServabilityOverviewSchema.safeParse({ bank: 2, activities: activities.slice(1) }).success).toBe(false)
+    expect(ServabilityOverviewSchema.safeParse({ bank: 2, activities, cards: [] }).success).toBe(true)
+    expect(ServabilityOverviewSchema.safeParse({ bank: 2, activities: activities.slice(1), cards: [] }).success).toBe(false)
   })
 
   it('registers the five routes under /admin/servability', () => {

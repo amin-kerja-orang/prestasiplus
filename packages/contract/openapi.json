@@ -14956,7 +14956,8 @@
           "has_option_image",
           "bridge_refused",
           "no_marks",
-          "tag_review"
+          "tag_review",
+          "paper_empty"
         ]
       },
       "ServabilityReason": {
@@ -15144,13 +15145,66 @@
             "items": {
               "$ref": "#/components/schemas/ServabilityOverviewActivity"
             }
+          },
+          "cards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ServabilityHubCard"
+            },
+            "description": "The hub cards in V2 order (R1: Databank Soalan, then Bijak SPM)."
           }
         },
         "required": [
           "bank",
-          "activities"
+          "activities",
+          "cards"
         ],
         "additionalProperties": false
+      },
+      "ServabilityHubCard": {
+        "type": "object",
+        "properties": {
+          "lane": {
+            "$ref": "#/components/schemas/ServabilityHubLane"
+          },
+          "title": {
+            "type": "string",
+            "example": "Databank Soalan"
+          },
+          "description": {
+            "type": "string"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Rows of the lane (Databank: MCQs of Databank subjects, any status; Bijak SPM: pilihan papers, any status)."
+          },
+          "attention": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Lane rows that carry at least one reason (`attention.length > 0`)."
+          },
+          "attentionLabel": {
+            "type": "string",
+            "description": "V2 label printed after the count: \"{attention} {attentionLabel}\", or \"Semua elok\" when 0."
+          }
+        },
+        "required": [
+          "lane",
+          "title",
+          "description",
+          "total",
+          "attention",
+          "attentionLabel"
+        ],
+        "additionalProperties": false
+      },
+      "ServabilityHubLane": {
+        "type": "string",
+        "enum": [
+          "databank",
+          "bijak-spm"
+        ]
       },
       "ServabilityLaneQuery": {
         "type": "object",
