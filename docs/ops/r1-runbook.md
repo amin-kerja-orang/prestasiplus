@@ -13,6 +13,7 @@ One page for the operator (DevOps / lead) who applies the R1 release to UAT or p
 | Migration 0101 `essay_choice` (T25) | yes, BASE-15 | `apps/api/prisma/migrations/0101_essay_choice` (T25 `r1/t25-essay-choice-store` @ e14f4f91) |
 | Migration 0102 `leaf_cognitive_level` (T33) | no | `r1/t33-leaf-tags` @ 95cea5be (migration commit `76f53e6c`) |
 | Migration 0103 `question_report_context` (T42 part 1, A2) | no | `r1/t42-reports-intake-acs` @ d1210e96 (commit `bc5c36e7`) |
+| Migration 0104 `paper_section_admin_created` (T48, A3) | no | `r1/t48-builder-parity` @ 1b76778f |
 | `THROTTLE_SERVABILITY_READ_PER_MINUTE` (T30) | no | `r1/t30-servability-reads` (commit `30a798d0`) |
 | `E2E_SEED` and `docs/ops/e2e-seed.md` (T26) | no | `r1/t26-e2e-seed` (commit `dfa88cf0`) |
 | `docs/ops/r1-k1-blueprint-evidence.md` (T39) | no | `r1/t39-k1-evidence` |
@@ -21,7 +22,7 @@ One page for the operator (DevOps / lead) who applies the R1 release to UAT or p
 ## 0. Before you start
 
 1. Take a full dump and test the restore ([db-backup.md](db-backup.md)). Migration 0100 cannot be undone in place (section 2.2).
-2. Maintenance window. 0100 (and 0101, 0102, 0103 when included) go out together with the new API/FE build (section 2); a few seconds of mixed state is possible.
+2. Maintenance window. 0100 (and 0101, 0102, 0103, 0104 when included) go out together with the new API/FE build (section 2); a few seconds of mixed state is possible.
 3. Record the before-state with the SELECTs in section 3.1.
 4. Environment (section 6) is set on the API service before it starts. `E2E_SEED` and `ALLOW_DEMO_SEED` are not set to true (section 6).
 5. **No seed on UAT (D95).** Do not run `be:db:seed` with demo data on UAT. Blueprints are created and verified by an Admin Pusat in the app (section 5).
@@ -31,7 +32,7 @@ One page for the operator (DevOps / lead) who applies the R1 release to UAT or p
 | Step | What | Section |
 |---|---|---|
 | 1 | Backup, window, before-state SELECTs | 0, 3.1 |
-| 2 | `prisma migrate deploy`: 0092, 0093, 0100, then 0101, 0102 and 0103 if their builds are in the release, in that order, together with the new API/FE build | 2.1 |
+| 2 | `prisma migrate deploy`: 0092, 0093, 0100, then 0101, 0102, 0103 and 0104 if their builds are in the release, in that order, together with the new API/FE build | 2.1 |
 | 3 | `VACUUM ANALYZE question_versions` right after 0100 | 2.2 |
 | 4 | After-state SELECTs for every migration applied | 3.2 to 3.6 |
 | 5 | DSKP load: dry run, then real run, then verify | 4 |
@@ -52,10 +53,11 @@ One page for the operator (DevOps / lead) who applies the R1 release to UAT or p
 | `0101_essay_choice` (T25) | yes, BASE-15 | Adds `essay_choice` to the `question_parts.mode` CHECK, a nullable `question_parts.topics` jsonb and `ck_question_parts_topics` (2 to 6 topics, only on an `essay_choice` leaf). Additive; reads no status value. | Yes, after deleting `essay_choice` parts (reverse SQL in the file header). |
 | `0102_leaf_cognitive_level` (T33) | **no, lands with T33** (`r1/t33-leaf-tags` @ 95cea5be) | Adds nullable `question_parts.cognitive_level` with `ck_question_parts_cognitive_level` (mengingat, memahami, mengaplikasi, menganalisis, menilai, mencipta) and `ck_question_parts_cognitive_level_leaf_only` (a part without a mode has none). Additive; no backfill (NULL = not set). | Yes (reverse SQL in the file header: drop the two CHECKs, then the column). |
 | `0103_question_report_context` (T42 part 1) | **no, lands with T42** (`r1/t42-reports-intake-acs` @ d1210e96) | Adds nullable `question_reports.paper_id` (bigint) and `paper_label` (text, CHECK at most 200 characters), FK `fk_question_reports_paper_id` to `papers` (ON DELETE SET NULL), FK `fk_question_reports_attempt_id` to `exam_attempts` (**NOT VALID**: rows written before the migration are not checked, new and updated rows are) and index `ix_question_reports_paper_id`. Existing rows keep NULL. | Yes (reverse SQL in the file header: drop the index, the two FKs, the CHECK, then the two columns). |
+| `0104_paper_section_admin_created` (T48) | **no, lands with T48** (`r1/t48-builder-parity` @ 1b76778f) | Adds `paper_sections.admin_created boolean NOT NULL DEFAULT false`. The flag tells a Bahagian that comes from the Kontrak (false, every existing row) from one an admin added in Semak Kertas (true); only an admin-added Bahagian takes "Tambah soalan". Additive; a constant default, no rewrite concern at this table's size. | Yes (reverse SQL in the file header: `ALTER TABLE "paper_sections" DROP COLUMN "admin_created"`). |
 
 Notes:
 
-- 0101 and 0102 touch different columns of `question_parts` and do not depend on each other or on a status value; 0103 touches `question_reports` only. They still apply in number order. If only one of T25, T33 and T42 is in the release, apply only that one.
+- 0101 and 0102 touch different columns of `question_parts` and do not depend on each other or on a status value; 0103 touches `question_reports` only and 0104 `paper_sections` only. They still apply in number order. If only some of T25, T33, T42 and T48 are in the release, apply only those.
 - **0103: do NOT run `VALIDATE CONSTRAINT fk_question_reports_attempt_id` in the release.** The constraint is created NOT VALID on purpose. `attempt_id` has existed since migration 0017 with no foreign key and nothing ever wrote it, so old rows may hold values that point nowhere; validating would scan and could fail the release. New and updated rows are checked without it. A later number must never be applied before an earlier pending one is accounted for.
 - The planned table in `docs/architecture/v2-admin-student-pipeline.md` section 2 names 0101 and 0102 differently (`dskp_leaf_tags_and_facts`, `stimulus_kinds_wide`). The migration folders on the T25 and T33 branches are the authority; read the `migration.sql` header of any folder before you apply it.
 - Deploy order for 0100: the migration and the API/FE build of the same release together. An old API against the new CHECK fails to write `published`; a new API against old data serves nothing.
@@ -124,6 +126,11 @@ SELECT column_name FROM information_schema.columns
 SELECT mode, count(*) FROM question_parts GROUP BY mode ORDER BY mode;                          -- record
 SELECT conname, pg_get_constraintdef(oid) FROM pg_constraint
  WHERE conrelid = 'question_parts'::regclass AND conname = 'ck_question_parts_mode';           -- record
+
+-- 0104: paper_sections before (no admin_created column yet)
+SELECT column_name FROM information_schema.columns
+ WHERE table_name = 'paper_sections' AND column_name = 'admin_created';                               -- expect 0 rows
+SELECT count(*) AS sections FROM paper_sections;                                                        -- record
 
 -- 0103: the report table before (nothing wrote attempt_id, so with_attempt is normally 0)
 SELECT count(*) AS reports, count(attempt_id) AS with_attempt FROM question_reports;                  -- record
@@ -224,12 +231,26 @@ SELECT count(*) AS reports, count(paper_id) AS with_paper FROM question_reports;
 SELECT id FROM question_reports WHERE attempt_id IS NOT NULL AND paper_id IS NULL LIMIT 20;
 ```
 
+### 3.5c After 0104 (T48 admin-added Bahagian; only when applied)
+
+```sql
+SELECT column_name, data_type, is_nullable, column_default FROM information_schema.columns
+ WHERE table_name = 'paper_sections' AND column_name = 'admin_created';                                -- boolean, NO, false
+
+-- every existing section comes from a Kontrak: one row, false, count = the 3.1 record
+SELECT admin_created, count(*) FROM paper_sections GROUP BY admin_created ORDER BY admin_created;
+
+-- nothing is admin-added right after the migration (expect 0)
+SELECT count(*) AS admin_added FROM paper_sections WHERE admin_created;
+```
+
 The migration history, after all of them:
 
 ```sql
 SELECT migration_name, finished_at FROM _prisma_migrations
  WHERE migration_name IN ('0092_bijak_standards', '0093_part_options_image_file_index', '0100_question_lifecycle_approved',
-                          '0101_essay_choice', '0102_leaf_cognitive_level', '0103_question_report_context')
+                          '0101_essay_choice', '0102_leaf_cognitive_level', '0103_question_report_context',
+                          '0104_paper_section_admin_created')
  ORDER BY started_at;
 ```
 
@@ -437,12 +458,13 @@ E2E_SEED=1 npm run be:db:seed -- --profile=e2e
 
 ## 9. Verification status of this page
 
-**Latest run (H-A25, 2026-10-31): ran on local migrated DB (BASE-21 `a6ff0c0d` + 0102 @ `95cea5be` (T33) + 0103 @ `d1210e96` (T42), demo seed), 58/58 ok.** Every statement in the SQL blocks of this page (57 SELECTs and the one `VACUUM ANALYZE`) was run one by one with `psql` against a throwaway local Postgres 16 container (no server, no shared database; the container was removed afterwards). No statement errored and none was changed by the run. 0105 (A2, H-A18) was not on origin yet and is not part of this run.
+**Latest run (H-A25, 2026-10-31): ran on local migrated DB (BASE-21 `a6ff0c0d` + 0102 @ `95cea5be` (T33) + 0103 @ `d1210e96` (T42) + 0104 @ `1b76778f` (T48), demo seed), 63/63 ok.** Every statement in the SQL blocks of this page (62 SELECTs and the one `VACUUM ANALYZE`) was run one by one with `psql` against a throwaway local Postgres 16 container (no server, no shared database; the container was removed afterwards). No statement errored and none was changed by the run. 0105 (A2, H-A18, `r1/ha18-gate-facts`) was not on origin yet and is not part of this run.
 
-- **Staged database (before-state):** migrated to 0091, the three 0092 pre-flight SELECTs of 3.1 (3/3); then to 0093, the remaining 11 "before" SELECTs of 3.1, including the two new 0103 ones (11/11). They return zero rows or zero counts (empty tables): this proves syntax and column names, not counts.
-- **Full database:** the 46 migrations of the base plus 0102 and 0103 from the two branches (copied into a scratch migrations folder, not committed), then the demo seed with `ALLOW_DEMO_SEED=1` (profile `poc`, 27 modules, exit 0). The other 44 statements (2.2, 3.2 to 3.6, 3.5b, 4, 5.4) ran there, 44/44.
-- **Notable results:** `approved` 1268, `archived` 1, `draft` 1 and no `published`; servable 1268, login count 493; `question_parts.topics` (jsonb) and `.cognitive_level` (text) exist with their CHECKs and every `cognitive_level` is NULL (1277 parts); 0103 added `question_reports.paper_id` (bigint) and `paper_label` (text); `fk_question_reports_attempt_id` has `convalidated = f` as designed, the paper FK and the label CHECK are validated; `ix_question_reports_paper_id` exists; `question_reports` is empty so `with_paper` is 0.
-- **Reverse SQL of 0102 and 0103** (the file headers) was also run once inside a transaction that was rolled back: all five objects dropped cleanly and came back after the rollback. This proves the SQL, not a rollback procedure.
+- **Staged databases (before-state):** one migrated to 0091 for the three 0092 pre-flight SELECTs of 3.1 (3/3); one migrated to 0093 for the remaining 13 "before" SELECTs of 3.1, including the new 0103 and 0104 ones (13/13). They return zero rows or zero counts (empty tables): this proves syntax and column names, not counts.
+- **Full database:** the 47 migrations (the base's 0001 to 0101 plus 0102, 0103, 0104 copied from their branches into a scratch migrations folder, not committed), then the demo seed with `ALLOW_DEMO_SEED=1` (profile `poc`, 27 modules, exit 0). The other 47 statements (2.2, 3.2 to 3.6, 3.5b, 3.5c, 4, 5.4) ran there, 47/47.
+- **Notable results:** `approved` 1268, `archived` 1, `draft` 1, no `published`; servable 1268, login count 493; `question_parts.topics` (jsonb) and `.cognitive_level` (text) exist and every `cognitive_level` is NULL (1277 parts); 0103 added `question_reports.paper_id` (bigint) and `paper_label` (text), `fk_question_reports_attempt_id` has `convalidated = f` as designed, `question_reports` is empty; **0104: `paper_sections.admin_created` is boolean, NOT NULL, default false, and all 9 seeded sections are false, 0 admin-added.**
+- **0104 over existing rows:** inside a transaction that was rolled back, the column was dropped and the 0104 statement re-applied to the 9 seeded sections: one result row, `false`, count 9. The reverse SQL from the file header then dropped it cleanly, and it was back after the rollback.
+- **Reverse SQL of 0102 and 0103** (file headers), run once in a rolled-back transaction in the previous pass: clean. This proves the SQL, not a rollback procedure.
 - Not run: `prisma migrate resolve`, `npm run dskp:load`, the API, and the 5.4 after-Sahkan state (no blueprint is verified on the seeded database; see the earlier run below).
 
 **Earlier run (T37, BASE-6 + 0101 + 0102, 51/51 ok)** and its method are kept below for the record.
@@ -457,7 +479,7 @@ E2E_SEED=1 npm run be:db:seed -- --profile=e2e
 
 **Still not verified**
 
-- 0102 and 0103 are read from the T33 and T42 branches, not from base; their final content may change in review. `\d question_parts` and `\d question_reports` after a deploy are the check. 0105 (A2, H-A18) is not covered; add it when it lands.
+- 0102, 0103 and 0104 are read from the T33, T42 and T48 branches, not from base; their final content may change in review. `\d question_parts`, `\d question_reports` and `\d paper_sections` after a deploy are the check. 0105 (A2, H-A18) is not covered; add it when it lands.
 - `VACUUM ANALYZE question_versions`: run time on the production-size table was not measured.
 - `THROTTLE_SERVABILITY_READ_PER_MINUTE` and `E2E_SEED` are read from branches `r1/t30-servability-reads` and `r1/t26-e2e-seed`, not from BASE-6.
 - Whether UAT already holds PoC blueprints, DSKP nodes or demo data is unknown; sections 3.1 and 5.4 record it.
