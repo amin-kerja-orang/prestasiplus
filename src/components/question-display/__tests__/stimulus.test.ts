@@ -55,16 +55,26 @@ describe('StimulusFigure kinds', () => {
     ['diagram', 'Rajah'],
     ['map', 'Rajah'],
     ['graph', 'Graf'],
-  ] as const)('%s: inline svg with fallback caption %s', (kind, fallback) => {
+  ] as const)('%s: a stored picture with fallback caption %s', (kind, fallback) => {
     const w = mount(StimulusFigure, {
-      props: { stimulus: { ...base, kind, svg: '<svg viewBox="0 0 10 10"></svg>', alt: 'Alt teks' } },
+      props: { stimulus: { ...base, kind, src: '/api/files/tok', alt: 'Alt teks' } },
     })
-    expect(w.find('svg').exists()).toBe(true)
-    expect(w.find('[data-testid=stimulus-svg]').attributes('aria-label')).toBe('Alt teks')
+    expect(w.find('img').attributes('src')).toBe('/api/files/tok')
     expect(w.find('figcaption').text()).toBe(fallback)
   })
 
-  it('map without svg uses the picture; alt falls back to the caption fallback', () => {
+  it('REQ-A-010: markup in an `svg` field is never rendered (no v-html, only pictures)', () => {
+    const evil = '<svg onload="alert(1)"><script>alert(1)</script></svg>'
+    const w = mount(StimulusFigure, {
+      props: { stimulus: { ...base, kind: 'diagram', svg: evil, src: '/api/files/tok' } as never },
+    })
+    expect(w.html()).not.toContain('onload')
+    expect(w.html()).not.toContain('<script')
+    expect(w.find('[data-testid=stimulus-svg]').exists()).toBe(false)
+    expect(w.find('img').attributes('src')).toBe('/api/files/tok')
+  })
+
+  it('map uses the picture; alt falls back to the caption fallback', () => {
     const w = mount(StimulusFigure, { props: { stimulus: { ...base, kind: 'map', src: '/m.png' } } })
     expect(w.find('img').attributes('alt')).toBe('Rajah')
   })

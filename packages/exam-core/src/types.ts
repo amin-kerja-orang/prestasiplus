@@ -48,8 +48,6 @@ export interface StimulusDef {
   caption?: string
   /** Accessible description of the diagram. */
   alt: string
-  /** Inline SVG markup (bundled, trusted, uses currentColor / theme variables only). */
-  svg?: string
   text?: string
   /** Source line of a passage. */
   source?: string

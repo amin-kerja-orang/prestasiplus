@@ -23,7 +23,7 @@ const table: StimulusDef = {
   kind: 'table',
   table: { head: ['Huruf', 'Tahun'], rows: [['A', '1946']] },
 }
-const figure: StimulusDef = { ...base, kind: 'diagram', svg: '<svg viewBox="0 0 10 10"></svg>' }
+const figure: StimulusDef = { ...base, kind: 'diagram', image: { url: '/api/files/tok', width: 10, height: 10 } }
 
 describe('StimulusView thumb (strip below lg)', () => {
   it('shows an icon tile, not the passage text, for a passage', () => {
@@ -36,10 +36,19 @@ describe('StimulusView thumb (strip below lg)', () => {
     expect(w.find('[data-testid=stimulus-thumb-icon]').attributes('data-kind')).toBe('table')
     expect(w.find('[data-stub="table"]').exists()).toBe(false)
   })
-  it('keeps the shrunk figure for a diagram', () => {
+  it('keeps the shrunk picture for a diagram (a file URL, never inline markup)', () => {
     const w = mount(StimulusView, { props: { stimulus: figure, thumb: true }, global: { stubs } })
-    expect(w.find('svg').exists()).toBe(true)
+    expect(w.find('[data-testid=stimulus-thumb-img]').attributes('src')).toBe('/api/files/tok')
+    expect(w.find('svg').exists()).toBe(false)
     expect(w.find('[data-testid=stimulus-thumb-icon]').exists()).toBe(false)
+  })
+  it('REQ-A-010: an `svg` field is ignored, never injected', () => {
+    const w = mount(StimulusView, {
+      props: { stimulus: { ...figure, image: undefined, svg: '<svg><script>x</script></svg>' } as never },
+      global: { stubs },
+    })
+    expect(w.html()).not.toContain('<script')
+    expect(w.find('svg').exists()).toBe(false)
   })
   it('renders the full passage in the sheet (no thumb)', () => {
     const w = mount(StimulusView, { props: { stimulus: passage }, global: { stubs } })

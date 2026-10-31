@@ -5,7 +5,7 @@
 import type { ReviewSeed } from '../domain/admin-types'
 import type { PointDef } from '../domain/types'
 import { Bank, curr, leaf, mcqQuestion } from './builders'
-import { triangleSvg } from './diagrams'
+import { triangleSvg, svgImage } from './diagrams'
 
 type Meta = Omit<ReviewSeed, 'questions' | 'schemes' | 'group'>
 
@@ -104,7 +104,7 @@ function triangleGroupSeed(): ReviewSeed {
       label: 'Rajah 1',
       caption: 'Segi tiga PQR bersudut tegak di Q.',
       alt,
-      svg: triangleSvg(9, 12, alt),
+      image: svgImage(triangleSvg(9, 12, alt)),
     },
   )
   return fromBank(

@@ -720,7 +720,7 @@ async function submit(): Promise<void> {
                       @click="dropStimulus(s.id)"
                     />
                   </div>
-                  <StimulusView v-if="s.svg || s.text" :stimulus="s" />
+                  <StimulusView v-if="s.image || s.text" :stimulus="s" />
                   <img
                     v-else-if="previewImage(s)"
                     :src="previewImage(s)!.dataUrl"
@@ -825,7 +825,7 @@ async function submit(): Promise<void> {
                       · {{ groupLabel(groupFor(q)!) }} berkongsi rajah ini
                     </span>
                   </p>
-                  <StimulusView v-if="stimulusOf(q)!.svg || stimulusOf(q)!.text" :stimulus="stimulusOf(q)!" />
+                  <StimulusView v-if="stimulusOf(q)!.image || stimulusOf(q)!.text" :stimulus="stimulusOf(q)!" />
                   <p v-else class="text-sm text-muted">{{ stimulusOf(q)!.alt || 'Tiada pratonton' }}</p>
                 </div>
                 <article

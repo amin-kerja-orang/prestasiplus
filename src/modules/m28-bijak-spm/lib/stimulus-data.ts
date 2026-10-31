@@ -17,7 +17,6 @@ export function toStimulusData(s: StimulusDef): StimulusData {
     ...(s.caption ? { caption: s.caption } : {}),
     alt: s.alt,
     ...(s.image ? { src: s.image.url, width: s.image.width, height: s.image.height } : {}),
-    ...(s.svg ? { svg: s.svg } : {}),
     ...(s.table ? { table: { head: s.table.head, rows: s.table.rows } } : {}),
   }
 }

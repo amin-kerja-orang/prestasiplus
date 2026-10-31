@@ -3,6 +3,10 @@
  * diagram follows the theme (light / dark); no remote or generated media (D22).
  */
 
+import type { StimulusDef } from '../domain/types'
+
+type ImageRef = NonNullable<StimulusDef['image']>
+
 const HEAD = (w: number, h: number, alt: string): string =>
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" role="img" aria-label="${alt}" ` +
   `fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ` +
@@ -134,4 +138,17 @@ export function circuitSvg(alt: string): string {
     label(160, 188, 'Rajah litar ringkas') +
     `</svg>`
   )
+}
+
+/**
+ * A seed diagram as a stored-picture reference (a `data:` URL of the SVG, shown in an `<img>`, which
+ * cannot run script). Mock data only: the real API serves diagrams as file URLs and no inline SVG
+ * reaches the page (REQ-A-010). `currentColor` becomes a fixed slate because an image has no theme.
+ */
+export function svgImage(svg: string): ImageRef {
+  const box = /viewBox="0 0 (\d+) (\d+)"/.exec(svg)
+  return {
+    url: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg.replaceAll('currentColor', '#334155'))}`,
+    ...(box ? { width: Number(box[1]), height: Number(box[2]) } : {}),
+  }
 }
