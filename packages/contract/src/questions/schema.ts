@@ -55,7 +55,7 @@ export const QUESTION_MESSAGES = {
   guruAnswerLong: 'Jawapan betul tidak boleh melebihi 500 aksara.',
   status: QUESTION_STATUS_MESSAGE,
   guruChapter: 'Bab tidak sah.',
-  /** The chapter exists but is not of the question's subject and level ([PROPOSED] copy). */
+  /** The chapter exists but is not of the question's subject and level (copy approved, Q1). */
   chapterMismatch: 'Bab tidak sepadan dengan subjek dan tahap.',
   guruTopic: 'Topik tidak sah.',
   guruScript: 'Jenis tulisan tidak sah.',
