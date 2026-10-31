@@ -91,6 +91,19 @@ describe('semakan helpers', () => {
   })
 })
 
+describe('R1-06.2: the band midpoint rounds down (V2 midpointFor)', () => {
+  it.each([
+    [0, 1, 0],
+    [1, 2, 1],
+    [6, 8, 7],
+    [5, 8, 6],
+    [4, 4, 4],
+    [9, 10, 9],
+  ])('band %i-%i presets the stepper to %i', (from, to, mid) => {
+    expect(bandMidpoint({ name: 'b', from, to, descriptor: '' })).toBe(mid)
+  })
+})
+
 describe('SelfMarkControl: stepper', () => {
   function mountControl(p: ReviewPart, save = vi.fn().mockResolvedValue(undefined)) {
     wrapper = mount(SelfMarkControl, { props: { part: p, save }, attachTo: document.body })
