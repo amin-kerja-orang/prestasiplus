@@ -7,6 +7,7 @@ import { idFromString, idToString, isIdString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { JOIN_CODE_ALPHABET, JOIN_CODE_ATTEMPTS, JOIN_CODE_LENGTH } from './classes.constants'
 import { slugOfGrade } from './level-slug'
+import { VISIBLE_USER_SQL } from '../command-center/shared/visibility'
 
 export type ClassroomKind = 'classroom' | 'school_class'
 export type EnrolmentStatus = 'active' | 'removed'
@@ -173,9 +174,9 @@ export class ClassesRepository {
     return row ? toClass(row) : null
   }
 
-  /** Every class (any kind), newest first. Read accessor for reports (BE-19). */
+  /** Every class (any kind) of a secondary level, newest first (Darjah classes are hidden, D72). Read accessor for reports (BE-19). */
   async all(): Promise<ClassRecord[]> {
-    const rows = await this.db.classroom.findMany({ orderBy: NEWEST_FIRST })
+    const rows = await this.db.classroom.findMany({ where: { educationLevelId: { notIn: await this.primaryLevelIds() } }, orderBy: NEWEST_FIRST })
     return rows.map(toClass)
   }
 
@@ -276,7 +277,7 @@ export class ClassesRepository {
   /**
    * Number of active, real (not Mod Pelajar) enrolments per class id, for pupils whose account is active (SW7-06: a
    * deactivated pupil keeps the enrolment row, so reactivating brings them back, but is not counted); a class without
-   * members is 0.
+   * members is 0. Secondary-only (D72): a hidden Darjah pupil (`VISIBLE_USER_SQL`) is not counted.
    */
   async memberCounts(classIds: readonly string[]): Promise<Map<string, number>> {
     const keys = idsOf(classIds)
@@ -286,6 +287,7 @@ export class ClassesRepository {
         SELECT e.classroom_id, count(*)::int AS n
           FROM enrolments e JOIN users u ON u.id = e.student_id
          WHERE e.classroom_id = ANY(${keys.slice(i, i + READ_CHUNK)}::bigint[]) AND e.status = 'active' AND e.is_test = false AND u.is_active
+           AND ${VISIBLE_USER_SQL}
          GROUP BY e.classroom_id`
       for (const g of groups) out.set(idToString(g.classroom_id), g.n)
     }
@@ -315,6 +317,7 @@ export class ClassesRepository {
         SELECT e.classroom_id, e.student_id
           FROM enrolments e JOIN users u ON u.id = e.student_id
          WHERE e.classroom_id = ANY(${keys.slice(i, i + READ_CHUNK)}::bigint[]) AND e.status = 'active' AND e.is_test = false AND u.is_active
+           AND ${VISIBLE_USER_SQL}
          ORDER BY e.classroom_id, e.student_id`
       for (const r of rows) out.get(idToString(r.classroom_id))?.push(idToString(r.student_id))
     }
@@ -372,7 +375,7 @@ export class ClassesRepository {
     const rows = await this.db.$queryRaw<{ student_id: bigint }[]>`
       SELECT e.student_id
         FROM enrolments e JOIN users u ON u.id = e.student_id
-       WHERE e.classroom_id = ${key} AND e.status = 'active' AND e.is_test = false AND u.is_active
+       WHERE e.classroom_id = ${key} AND e.status = 'active' AND e.is_test = false AND u.is_active AND ${VISIBLE_USER_SQL}
        ORDER BY e.student_id`
     return rows.map((r) => idToString(r.student_id))
   }
