@@ -23,6 +23,7 @@ let levelId = ''
 let paperId = ''
 let reportId = ''
 let attemptId = ''
+let marksBefore = 0
 let adminPatch: (url: string, body: unknown) => Promise<{ status: number; body: { data?: { status?: string; papers?: { id: string; title: string }[]; warning?: string }; error?: unknown } }>
 
 beforeAll(async () => {
@@ -87,7 +88,10 @@ describe('Laporan Soalan: archive from the report row (R1-B17)', () => {
     attemptId = (started.body as { data: { attemptId: string } }).data.attemptId
     // another pupil, with no sitting, sees the paper in Kertas Pilihan
     const other = await loginAs(t, OTHER_PUPIL)
-    expect(((await other.get('/api/bijak/papers')).body as { data: { id: string }[] }).data.map((p) => p.id)).toContain(paperId)
+    const card = ((await other.get('/api/bijak/papers')).body as { data: { id: string; marks: number }[] }).data.find((p) => p.id === paperId)
+    expect(card).toBeDefined()
+    marksBefore = card!.marks
+    expect(marksBefore).toBeGreaterThan(0)
   })
 
   it('2. a student files a report against the bank question id: pending, on the live version', async () => {
@@ -166,6 +170,39 @@ describe('Laporan Soalan: archive from the report row (R1-B17)', () => {
     const student = await loginAs(t, STUDENT)
     const mine = ((await student.get('/api/bijak/papers')).body as { data: { id: string; status: string }[] }).data.find((p) => p.id === paperId)
     expect(mine).toMatchObject({ id: paperId, status: 'sedang' })
+  })
+})
+
+describe('Laporan Soalan: after Arkib the paper keeps its marks and a pupil with a sitting keeps the card (H-A13)', () => {
+  it('10. the marks on the cover, its sections and the card come from the pinned version, not from the live info (they do not drop to 0)', async () => {
+    const student = await loginAs(t, STUDENT)
+    const cover = (await student.get(`/api/bijak/papers/${paperId}`)).body as { data: { marks: number; sections: { marks: number }[] } }
+    expect(cover.data.marks).toBe(marksBefore)
+    expect(cover.data.sections.map((x) => x.marks)).toEqual([marksBefore])
+    const card = ((await student.get('/api/bijak/papers')).body as { data: { id: string; marks: number }[] }).data.find((p) => p.id === paperId)
+    expect(card?.marks).toBe(marksBefore)
+  })
+
+  it('11. a pupil whose sitting is SUBMITTED keeps the card (selesai) to open the result and Semakan; a pupil with no sitting still does not see it', async () => {
+    const student = await loginAs(t, STUDENT)
+    const done = await student.post(`/api/bijak/attempts/${attemptId}/submit`, { idempotencyKey: 'h-a13-submit', changes: [] })
+    expect(done.status, JSON.stringify(done.body)).toBe(200)
+    const card = ((await student.get('/api/bijak/papers')).body as { data: { id: string; status: string }[] }).data.find((p) => p.id === paperId)
+    expect(card).toMatchObject({ id: paperId, status: 'selesai' })
+    expect((await student.get(`/api/bijak/attempts/${attemptId}/result`)).status).toBe(200)
+    const other = await loginAs(t, OTHER_PUPIL)
+    expect(((await other.get('/api/bijak/papers')).body as { data: { id: string }[] }).data.map((p) => p.id)).not.toContain(paperId)
+  })
+
+  it('12. Cuba Lagi on that paper is the documented 409 with the retryPaperGone text (not a 403 paperUnavailable)', async () => {
+    const student = await loginAs(t, STUDENT)
+    const res = await student.post(`/api/bijak/attempts/${attemptId}/retry`, {})
+    expect(res.status, JSON.stringify(res.body)).toBe(409)
+    expect((res.body as { error: { code: string; message: string } }).error).toMatchObject({
+      code: 'CONFLICT',
+      message: BIJAK_ATTEMPTS_MESSAGES.retryPaperGone,
+    })
+    expect(BIJAK_ATTEMPTS_MESSAGES.retryPaperGone).toBe('Kertas ini sudah tidak tersedia untuk dicuba semula.')
   })
 })
 

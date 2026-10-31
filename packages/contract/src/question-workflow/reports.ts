@@ -27,7 +27,7 @@ export const QUESTION_REPORT_MESSAGES = {
   adminNotes: 'Nota admin tidak boleh melebihi 1000 aksara.',
   created: 'Laporan berjaya dihantar.',
   updated: 'Laporan berjaya dikemaskini.',
-  /** [PROPOSED] H-A13: shown to the admin after "Arkib" when published papers place the archived question. */
+  /** H-A13 (D94 approved copy): shown to the admin after "Arkib" when published papers place the archived question. */
   archivedOnPapers: 'Soalan ini ada dalam kertas yang telah diterbitkan. Murid tidak boleh memulakan percubaan baharu pada kertas itu sehingga soalan diganti.',
   /** Shown by the screen when the request itself fails (FR-M04-69). */
   failure: 'Ralat. Sila cuba lagi.',

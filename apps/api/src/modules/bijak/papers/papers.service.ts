@@ -89,9 +89,10 @@ export class PapersService {
     ])
     // H-A13: a published paper that places a question the bank no longer serves (archived) cannot start a new sitting
     // (the attempt source answers 403 with a BM line), so it is not offered, like a paper without a code or a section.
-    // A pupil who has a sitting open on it keeps the card (the sitting continues from its pinned version).
-    const listed = papers.filter((p) => progress.get(idToString(p.id))?.attemptId !== undefined || p.sections.every((s) => s.placements.every((pl) => info.has(idToString(pl.questionId)))))
-    return listed.map((p) => this.summary(p, subjects, info, progress))
+    // Lead decision: a pupil who has ANY sitting on it, open or submitted, keeps the card, so the result and Semakan stay reachable.
+    const listed = papers.filter((p) => progress.has(idToString(p.id)) || p.sections.every((s) => s.placements.every((pl) => info.has(idToString(pl.questionId)))))
+    const marked = await this.withPinned(info, listed)
+    return listed.map((p) => this.summary(p, subjects, marked, progress))
   }
 
   async getCover(userId: string, paperId: string): Promise<BijakPaperCover> {
@@ -101,15 +102,16 @@ export class PapersService {
       this.infoFor([paper]),
       this.ports.progressSource.progressFor(userId, [idToString(paper.id)]),
     ])
+    const marked = await this.withPinned(info, [paper])
     return {
-      ...this.summary(paper, subjects, info, progress),
+      ...this.summary(paper, subjects, marked, progress),
       instructions: paper.instructions,
       reference: referencePanels(paper.referenceSheets),
       sections: paper.sections.map((s) => {
         const rule = ruleOf(s.ruleType, s.ruleN)
         return {
           label: s.label,
-          marks: this.sectionMarks(s, info),
+          marks: this.sectionMarks(s, marked),
           instruction: sectionInstruction(s.instruction, rule, s.placements.length),
           questionCount: s.placements.length,
           compulsory: s.compulsory,
@@ -277,6 +279,19 @@ export class PapersService {
     const ids = new Set<string>()
     for (const p of papers) for (const s of p.sections) for (const pl of s.placements) ids.add(idToString(pl.questionId))
     return ids.size === 0 ? new Map() : this.ports.questionSource.getMany([...ids])
+  }
+
+  /**
+   * `info` (the live, servable questions) plus the pinned info of every placed question the bank no longer serves, so the marks of a
+   * paper do not drop to 0 after "Arkib" (H-A13). Eligibility is still decided on `info` alone.
+   */
+  private async withPinned(info: Info, papers: readonly PaperWithTree[]): Promise<Info> {
+    const missing = new Set<string>()
+    for (const p of papers) for (const s of p.sections) for (const pl of s.placements) if (!info.has(idToString(pl.questionId))) missing.add(idToString(pl.questionId))
+    const getPinned = this.ports.questionSource.getPinned
+    if (missing.size === 0 || !getPinned) return info
+    const pinned = await getPinned.call(this.ports.questionSource, [...missing])
+    return new Map([...pinned, ...info])
   }
 
   private sectionMarks(section: PaperWithTree['sections'][number], info: Info): number {

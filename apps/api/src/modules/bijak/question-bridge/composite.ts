@@ -75,7 +75,7 @@ export class CompositeBijakQuestionSource implements AttemptQuestionSource {
 export class CompositePaperQuestionSource implements PaperQuestionSource {
   constructor(
     private readonly poc: PaperQuestionSource | null,
-    private readonly bank: Pick<PaperQuestionSource, 'getMany'>,
+    private readonly bank: Pick<PaperQuestionSource, 'getMany'> & Partial<Pick<PaperQuestionSource, 'getPinned'>>,
   ) {}
 
   getMany(questionIds: readonly string[]): Promise<ReadonlyMap<string, BijakQuestionInfo>> {
@@ -85,6 +85,13 @@ export class CompositePaperQuestionSource implements PaperQuestionSource {
       { ids: pocSource ? poc : [], load: (ids) => pocSource!.getMany(ids) },
       { ids: bank, load: (ids) => this.bank.getMany(ids) },
     ])
+  }
+
+  /** Pinned info for the ids the bank can read it for (H-A13); a source without it gives an empty map. */
+  getPinned(questionIds: readonly string[]): Promise<ReadonlyMap<string, BijakQuestionInfo>> {
+    const { bank } = split(questionIds)
+    const pinned = this.bank.getPinned
+    return bank.length === 0 || !pinned ? Promise.resolve(new Map()) : pinned.call(this.bank, bank)
   }
 
   pool(pool: string, scope: BijakPoolScope): Promise<BijakPool> {

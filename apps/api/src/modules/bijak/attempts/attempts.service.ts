@@ -389,7 +389,8 @@ export class BijakAttemptsService {
       const out = await this.start(auth, { paperId: row.paperId, mode: row.mode }, who, { fresh: true })
       return { attemptId: out.attemptId }
     } catch (err) {
-      if (err instanceof ApiError && err.code === 'NOT_FOUND') throw gone()
+      // H-A13: a paper that places an archived question is refused for a new sitting (403 paperUnavailable); on Cuba Lagi that is the documented 409.
+      if (err instanceof ApiError && (err.code === 'NOT_FOUND' || (err.code === 'FORBIDDEN' && err.message === MSG.paperUnavailable))) throw gone()
       throw err
     }
   }

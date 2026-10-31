@@ -67,6 +67,15 @@ export class Be09BijakQuestionSource implements AttemptQuestionSource {
   }
 
   /**
+   * BE-15 `getPinned` (H-A13): the same structure as `getMany`, but for the version the sittings are served from, so a withdrawn
+   * (archived) question that a published paper still places keeps its marks. Never used for eligibility.
+   */
+  async getPinned(questionIds: readonly string[]): Promise<ReadonlyMap<string, BijakQuestionInfo>> {
+    const mapped = await this.load(questionIds, false)
+    return new Map([...mapped].map(([id, m]) => [id, infoOf(m.bundle, m.groupId)]))
+  }
+
+  /**
    * The questions of `questionIds` that the bridge refuses, with a code and a BM reason (R1-B08, ADR-0030
    * section 4). For the admin "Dilihat murid di" panel: a question that is not listed here and not absent
    * (no live version) is served.
