@@ -5,7 +5,7 @@
  * Stimulus groups: a figure or passage is stored once and several questions attach to it; the
  * group stays contiguous. "Hantar untuk semakan" is blocked until the quality gates pass.
  */
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { usePageMeta } from '@/composables/usePageMeta'
 import { DsEmptyState, DsPage, DsPanel, DsStack, DsStateView, DsStatusBadge, DsText } from '@/ds'
@@ -183,10 +183,14 @@ async function save(): Promise<void> {
 }
 
 /** http mode: rows and rajah added in the editor got server ids; adopt them (local id to server id). */
+const adopted = new Map<string, string>()
+const resolveId = (id: string): string => adopted.get(id) ?? id
 function applyIdMap(m: NonNullable<IntakeBatch['idMap']>): void {
   const b = batch.value
   if (!b) return
   const qi = m.items
+  for (const [local, server] of Object.entries(qi)) adopted.set(local, server)
+  if (current.value && current.value in qi) current.value = qi[current.value]!
   const si = m.stimuli
   if (b.questions.every((q) => !(q.id in qi) && !(q.stimulusId && q.stimulusId in si)) && b.stimuli.every((s) => !(s.id in si))) return
   b.questions = b.questions.map((q) => ({
@@ -333,6 +337,21 @@ function afterDecision(next: IntakeBatch): void {
   current.value = next.questions[0]?.id ?? null
 }
 
+/** Saves pending edits first; a decision is taken only on saved content (never on a failed save). */
+async function settle(): Promise<boolean> {
+  clearTimeout(timer)
+  await save()
+  await nextTick() // adopting server ids (http mode) re-marks the page as edited: save that once more
+  if (saveState.value === 'belum') {
+    clearTimeout(timer)
+    await save()
+  }
+  if (saveState.value === 'tersimpan') return true
+  decisionErrors.value = ['Simpanan gagal, jadi soalan belum diputuskan. Cuba lagi.']
+  return false
+}
+const failMessage = (e: unknown): string => (e instanceof Error && e.message ? e.message : 'Tindakan gagal. Cuba lagi.')
+
 async function accept(id: string): Promise<void> {
   const b = batch.value
   if (!b || deciding.value) return
@@ -340,13 +359,14 @@ async function accept(id: string): Promise<void> {
   decisionErrors.value = []
   decisionNote.value = ''
   try {
-    clearTimeout(timer)
-    await save()
-    const r = await server.decideIntakeItem(b.id, id, { action: 'terbit' })
+    if (!(await settle())) return
+    const r = await server.decideIntakeItem(b.id, resolveId(id), { action: 'terbit' })
     if (r.ok) {
-      decisionNote.value = 'Soalan diterima sebagai draf.'
+      decisionNote.value = `Soalan #${resolveId(id)} dicipta sebagai draf.`
       afterDecision(r.batch)
     } else decisionErrors.value = r.errors
+  } catch (e) {
+    decisionErrors.value = [failMessage(e)]
   } finally {
     deciding.value = false
   }
@@ -368,15 +388,16 @@ async function confirmReject(): Promise<void> {
   deciding.value = true
   decisionNote.value = ''
   try {
-    clearTimeout(timer)
-    await save()
-    const r = await server.decideIntakeItem(b.id, id, { action: 'tolak', reason: rejectReason.value.trim() })
+    if (!(await settle())) return
+    const r = await server.decideIntakeItem(b.id, resolveId(id), { action: 'tolak', reason: rejectReason.value.trim() })
     if (r.ok) {
       decisionErrors.value = []
       decisionNote.value = 'Soalan ditolak.'
       rejectingId.value = null
       afterDecision(r.batch)
     } else decisionErrors.value = r.errors
+  } catch (e) {
+    decisionErrors.value = [failMessage(e)]
   } finally {
     deciding.value = false
   }
@@ -389,14 +410,15 @@ async function acceptAll(): Promise<void> {
   decisionErrors.value = []
   decisionNote.value = ''
   try {
-    clearTimeout(timer)
-    await save()
+    if (!(await settle())) return
     const r = await server.acceptUnreviewed(b.id)
     decisionNote.value =
       r.skipped.length > 0
         ? `${r.done} soalan diterima sebagai draf. ${r.skipped.length} dilangkau: keyakinan rendah atau semakan kualiti belum lulus.`
         : `${r.done} soalan diterima sebagai draf.`
     afterDecision(r.batch)
+  } catch (e) {
+    decisionErrors.value = [failMessage(e)]
   } finally {
     deciding.value = false
   }
@@ -984,7 +1006,10 @@ async function submit(): Promise<void> {
                       <p class="text-caption text-muted" data-testid="item-counter">
                         Item {{ batch.questions.findIndex((x) => x.id === q.id) + 1 }} / {{ batch.questions.length }}
                       </p>
-                      <div class="flex flex-wrap gap-2">
+                      <div
+                        class="flex flex-wrap gap-2 max-sm:sticky max-sm:bottom-0 max-sm:z-10 max-sm:border-t max-sm:border-default max-sm:bg-default max-sm:py-2"
+                        data-testid="item-buttons"
+                      >
                         <UButton
                           color="success"
                           icon="i-ph-check"
@@ -993,7 +1018,7 @@ async function submit(): Promise<void> {
                           data-testid="item-accept"
                           @click="accept(q.id)"
                         >
-                          Terima (A)
+                          Terima<span class="pointer-coarse:hidden"> (A)</span>
                         </UButton>
                         <UButton
                           color="error"
@@ -1004,7 +1029,7 @@ async function submit(): Promise<void> {
                           data-testid="item-reject"
                           @click="askReject(q.id)"
                         >
-                          Tolak (R)
+                          Tolak<span class="pointer-coarse:hidden"> (R)</span>
                         </UButton>
                         <UButton
                           color="neutral"
@@ -1015,7 +1040,7 @@ async function submit(): Promise<void> {
                           data-testid="item-save"
                           @click="save"
                         >
-                          Simpan Sunting (E)
+                          Simpan Sunting<span class="pointer-coarse:hidden"> (E)</span>
                         </UButton>
                       </div>
                       <div v-if="rejectingId === q.id" class="flex flex-col gap-2" data-testid="reject-box">

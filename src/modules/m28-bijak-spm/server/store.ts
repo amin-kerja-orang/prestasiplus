@@ -1121,11 +1121,13 @@ export class BijakServer implements BijakApi {
       stimuli: b.stimuli.filter((x) => x.id === q.stimulusId).map(jsonClone),
     }
     if (d.action === 'terbit') {
-      // Only the question's own gate: the batch-level rules belong to "Hantar untuk semakan".
-      const issues = validateBatch(one).filter((i) => i.questionId)
+      // The question's own rules plus its figure's alt text (the batch-level rules belong to "Hantar").
+      const issues = validateBatch(one).filter((i) => i.questionId || i.message.startsWith('Teks alternatif'))
       if (issues.length > 0) return { ok: false, errors: issues.map((i) => `${i.where}: ${i.message}`), batch: jsonClone(b) }
     }
-    const [seed] = batchToSeeds(one)
+    // A figure shared by several questions is one bank group (D90): the group id is keyed by the batch and
+    // the stimulus, not by this question, so the next member joins it.
+    const [seed] = batchToSeeds(one, { groupBase: b.id })
     if (!seed) return { ok: false, errors: ['Soalan tidak boleh diproses'], batch: jsonClone(b) }
     this.ops.enqueueSeeds([seed])
     const res = await this.ops.reviewDecision(seed.key, { action: d.action, ...(d.reason ? { reason: d.reason } : {}) })

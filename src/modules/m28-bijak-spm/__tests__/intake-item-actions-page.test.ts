@@ -76,7 +76,7 @@ describe('IntakeReviewPage V2 item actions (I6, I7)', () => {
     await w.get('[data-testid=item-accept]').trigger('click')
     await flushPromises()
     expect(server.decideIntakeItem).toHaveBeenCalledWith('ek-1', expect.any(String), { action: 'terbit' })
-    expect(w.get('[data-testid=decision-note]').text()).toContain('Soalan diterima sebagai draf.')
+    expect(w.get('[data-testid=decision-note]').text()).toMatch(/Soalan #\S+ dicipta sebagai draf\./)
   })
 
   it('the key A accepts, R asks for a reason first, and typing in a field is left alone', async () => {
@@ -104,5 +104,38 @@ describe('IntakeReviewPage V2 item actions (I6, I7)', () => {
     await w.get('[data-testid=accept-all]').trigger('click')
     await flushPromises()
     expect(w.get('[data-testid=decision-note]').text()).toContain('1 soalan diterima sebagai draf. 1 dilangkau')
+  })
+
+  it('does not decide when the save before it failed', async () => {
+    server.saveExtracted.mockRejectedValue(new Error('x'))
+    const w = await mountPage()
+    await w.get('[data-testid=item-accept]').trigger('click')
+    await flushPromises()
+    expect(server.decideIntakeItem).not.toHaveBeenCalled()
+    expect(w.get('[data-testid=decision-errors]').text()).toContain('Simpanan gagal')
+    await w.get('[data-testid=accept-all]').trigger('click')
+    await flushPromises()
+    expect(server.acceptUnreviewed).not.toHaveBeenCalled()
+  })
+
+  it('decides on the server id when the save mapped a local id (http mode)', async () => {
+    const b = batchOf(2)
+    const local = b.questions[0]!.id
+    server.getIntakeBatch.mockResolvedValue(b)
+    server.saveExtracted.mockResolvedValue({ idMap: { items: { [local]: 'srv-9' }, stimuli: {} } })
+    server.decideIntakeItem.mockResolvedValue({ ok: true, errors: [], batch: batchOf(1) })
+    const w = await mountPage()
+    await w.get('[data-testid=item-accept]').trigger('click')
+    await flushPromises()
+    expect(server.decideIntakeItem).toHaveBeenCalledWith('ek-1', 'srv-9', { action: 'terbit' })
+    expect(w.get('[data-testid=decision-note]').text()).toContain('Soalan #srv-9 dicipta sebagai draf.')
+  })
+
+  it('shows an unexpected server error instead of failing silently', async () => {
+    server.decideIntakeItem.mockRejectedValue(new Error('Pelayan tidak dapat dihubungi'))
+    const w = await mountPage()
+    await w.get('[data-testid=item-accept]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-testid=decision-errors]').text()).toContain('Pelayan tidak dapat dihubungi')
   })
 })

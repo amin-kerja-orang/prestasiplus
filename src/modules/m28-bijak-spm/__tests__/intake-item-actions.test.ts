@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { parsePaper } from '../admin/intake/ai'
 import { SAMPLE_PAGES } from '../admin/intake/lib/sample-paper'
 import type { IntakeBatch } from '../admin/intake/types'
+import { BANK } from '../data/registry'
 import { BijakServer, MemoryStorage } from '../server/store'
 
 /**
@@ -68,6 +69,34 @@ describe('intake item actions (I6)', () => {
     expect(r.ok).toBe(false)
     expect(r.errors.length).toBeGreaterThan(0)
     expect((await s.getIntakeBatch(b.id)).questions.map((x) => x.id)).toContain(first.id)
+  })
+})
+
+describe('a shared figure is one bank group (D90)', () => {
+  it('accepting two members one by one puts both in the same group', async () => {
+    const { s, b } = await readyBatch()
+    const [a, c] = b.questions
+    const stim = { id: 'stim-x', label: 'Rajah X', alt: 'Rajah segi tiga', page: 1 } as unknown as IntakeBatch['stimuli'][number]
+    const qs = [{ ...a!, stimulusId: 'stim-x' }, { ...c!, stimulusId: 'stim-x' }, ...b.questions.slice(2).map((x) => ({ ...x, stimulusId: undefined }))] as IntakeBatch['questions']
+    await s.saveExtracted(b.id, { questions: qs, stimuli: [stim] })
+    const groups0 = new Set(BANK.groups.keys())
+    const r1 = await s.decideIntakeItem(b.id, a!.id, { action: 'terbit' })
+    expect(r1.errors).toEqual([])
+    const r2 = await s.decideIntakeItem(b.id, c!.id, { action: 'terbit' })
+    expect(r2.errors).toEqual([])
+    const fresh = [...BANK.groups.entries()].filter(([k]) => !groups0.has(k))
+    expect(fresh).toHaveLength(1)
+    expect(fresh[0]![1].questionIds).toHaveLength(2)
+  })
+
+  it('a figure without alt text blocks Terima', async () => {
+    const { s, b } = await readyBatch()
+    const a = b.questions[0]!
+    const stim = { id: 'stim-y', label: 'Rajah Y', alt: '', page: 1 } as unknown as IntakeBatch['stimuli'][number]
+    await s.saveExtracted(b.id, { questions: [{ ...a, stimulusId: 'stim-y' }, ...b.questions.slice(1)], stimuli: [stim] })
+    const r = await s.decideIntakeItem(b.id, a.id, { action: 'terbit' })
+    expect(r.ok).toBe(false)
+    expect(r.errors.join(' ')).toContain('Teks alternatif')
   })
 })
 
