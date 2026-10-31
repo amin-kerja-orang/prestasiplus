@@ -54,6 +54,7 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 
 | ID | Branch @ head | Lane | Depends on | B state |
 |---|---|---|---|---|
+| REQ-B-033 paper lane names a placed question the bank does not return | `r1/req-b-033` @ 572490e9 | A4 | servability lanes (T30, in base) | READY |
 | T26b e2e seed follow-up | `r1/t26b-e2e-seed` @ 5cfd6ea5 | A1 | T26 (base); X1 seed decision | B3 Pass; X1 lead decision |
 | H-A21 overview cache | `r1/ha21-overview-cache` @ a255028e | A4 | T30 | same chain |
 | T45 part 1 (AC-04.3/04.5/05.3) | `r1/t45-servability-acs` @ 8eba44c0 | A4 | T29 | CHANGES-REQUESTED (A4) |
@@ -62,13 +63,13 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 | B-request fixes (REQ-B-013/014) | `r1/b-requests-a4` @ 42396048 | A4 | base | B3 Pass; B2 pending |
 | T36 remove PoC | `r1/t36-remove-poc` @ 5bc34543 | A2 | REQ-A-001 (b1-e2e-off-poc, team B) merged first | CHANGES-REQUESTED (REQ-B-029: PoC seeds published) (A2 + lead) |
 | T42b figure crop | `r1/t42b-intake-acs` @ 5318a971 | A2 | base | Approve w/ Minors; head moved after the verdict (delta unreviewed) |
-| T45b question detail papers | `r1/t45b-question-detail-acs` @ 8342f9a0 | A2 | T42 | CHANGES-REQUESTED (A2) |
+| T45b question detail papers | `r1/t45b-question-detail-acs` @ cfe98740 | A2 | T42 | CHANGES-REQUESTED (A2) |
 | H-A16 table reader | `r1/ha16-table-reader` @ b283a746 | A2 | T32, T07 | CHANGES-REQUESTED (A2) |
 | H-A8 stale specs | `r1/ha8-stale-specs` @ 56b1b6cc | A2 | base | READY (test-only) |
 | T04 minors (R1E2E-09) | `r1/t04-minors` @ ec179b12 | A2 | T04 | CHANGES-REQUESTED (docs) (A2) |
 | T38 self-mark reward (D94) | `r1/t38-selfmark-reward` @ ff1e8a1b | A1 | T28 | CHANGES-REQUESTED (A1) |
 | T40 attempts ACs | `r1/t40-attempts-acs` @ 1ef1341b | A1 | T38 | follows T38 |
-| T50 partial ACs | `r1/t50-partial-acs` @ 7254a8a2 | A1 | none | READY (not in the B queue table) |
+| T50 partial ACs | `r1/t50-partial-acs` @ 50dd05ab | A1 | none | READY (not in the B queue table) |
 | H-A13 archived paper | `r1/ha13-archived-paper` @ 61b8851d | A1 | T35 (base) | B2 Approve w/ Minors; needs base merge + contract:emit (A1) |
 | T34 builder review (+ structured blockers) | `r1/t34-builder-review` @ 7bc3419e | A3 | T29; B2 order T29 -> T33 -> T34 | CHANGES-REQUESTED by B2 (A3 fixing: override vs structural blockers, T33 cognitiveLevel fixtures) |
 | T31 builder wire | `r1/t31-builder-wire` @ b3501db9 | A3 | T34; waits for C1 REQ-A-008 | CHANGES-REQUESTED (needs fixed T34 + REQ-A-008) |
@@ -76,7 +77,7 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 | T44 Kontrak fields (contains H-A15) | `r1/t44-blueprint-fields` @ 77984abc | A3 dev-2 | none | CHANGES-REQUESTED (A3; T33 fixtures, REQ-B-028 pool) |
 | H-A15 blueprint evidence | `r1/ha15-blueprint-evidence` @ 7e5d637e | A3 dev-2 | none (hazard X1) | B3 Pass; X1 seed decision |
 | T48 builder parity (0104) | `r1/t48-builder-parity` @ 2cbe7d28 | A3 | T34; re-verify running | CHANGES-REQUESTED; A3 pushed the B2-findings fix (2cbe7d28), awaiting re-review (migration 0104) |
-| H-A9 pipeline chain (older) | `r1/ha9-pipeline-chain` @ 1024616c | A3 | superseded by T43 | superseded by T43 |
+| H-A9 pipeline chain (older) | `r1/ha9-pipeline-chain` @ 1e80b005 | A3 | superseded by T43 | superseded by T43 |
 | T43b publish ACs | `r1/t43b-publish-acs` @ 92866aa8 | A3 dev-2 | T43 | pushed; not yet in the B queue |
 | T51 partial ACs (builder, Terbit, Kontrak, Jana) | `r1/t51-partial-acs-a3` @ 359fe16e | A3 dev-1 | T43 | pushed; not yet in the B queue |
 | T52 examinerGrid (AC-20.3) | `r1/t52-examiner-grid` @ c8490879 | A1 | none | Approve w/ Minors; eslint error to fix (A1) |
@@ -91,14 +92,14 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 
 | Unit | Branch @ head | Output |
 |---|---|---|
-| T37 runbook | `r1/t37-r1-runbook` @ dbf25cf2 | `docs/ops/r1-runbook.md` (migrations 0092 to 0104, SELECTs run 63/63) |
+| T37 runbook | `r1/t37-r1-runbook` @ 80101199 | `docs/ops/r1-runbook.md` (migrations 0092 to 0105, SELECTs run 74/74 on BASE-62) |
 | T39 K1 evidence | `r1/t39-k1-evidence` @ 1a26f7a6 | `docs/ops/r1-k1-blueprint-evidence.md` |
-| T46 / H-A17 AC coverage | `r1/ha17-ac-coverage` @ b74f8e5f | `docs/qa/r1-backend-ac-coverage.md`, `r1-verify-first-notes.md` (kept current by H-A27) |
+| T46 / H-A17 AC coverage | `r1/ha17-ac-coverage` @ 8b307ce8 | `docs/qa/r1-backend-ac-coverage.md`, `r1-verify-first-notes.md` (kept current by H-A27) |
 | H-A19 admin parity | `r1/ha19-admin-parity` @ c7315b0e | `docs/qa/r1-admin-parity-check.md` |
 | H-A20 student parity | `r1/ha20-student-parity` @ 557e17c6 | `docs/qa/r1-student-parity-check.md` |
 | H-A22 parity docs | `r1/ha22-parity-docs` @ 4fb2a41b | both parity docs refreshed, deviation rows H22-D1/D2 in `v2-bijak-spm.md`, `student.md` rows marked |
 | H-A23 E2E readiness | `r1/ha23-e2e-readiness` @ ef24addc | `docs/qa/r1-e2e-readiness.md` (merge order, minimal set) |
-| H-A24 release input | `r1/ha24-release-input` @ bc2a0fc5 | `docs/ops/r1-release-input-team-a.md` (+ scope AC-R1-18.2 and 18.4 text) |
+| H-A24 release input | `r1/ha24-release-input` @ 42069112 | `docs/ops/r1-release-input-team-a.md` (+ scope AC-R1-18.2 and 18.4 text) |
 | H-A26 this sheet | `r1/ha26-team-a-state` @ this branch (head = tip of the branch) | `docs/handoff/team-a-r1-state.md` |
 
 ## 2. Decisions and answers
