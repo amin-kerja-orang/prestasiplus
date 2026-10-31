@@ -27,16 +27,18 @@ describe('BE-12 assignment source (missions, remedial) and the BE-17 missions pr
     eligible = []
     for (let i = 0; i < 12; i++) eligible.push(await publishedMcq(t, w, { text: `Soalan misi ${String(i)}` }))
     draft = await draftMcq(t, w)
-    // Six of them are in the SPM pool, three in one chapter.
-    for (const id of eligible.slice(0, 6)) await t.db.query(`insert into question_tags (question_id, kind, code) values ($1, 'pool', 'spm')`, [id])
-    // The SPM pool of the subject: every eligible tagged question (a seeded one may be tagged already).
-    const tagged = new Set((await t.db.query<{ id: string }>(`select question_id::text id from question_tags where kind = 'pool'`)).map((r) => r.id))
+    // The SPM pool of the subject (R1-B06): every live approved active MCQ (approved = servable, D80/D85) at an offered level (T4/T5, active, linked to the
+    // active subject), not PKSK. No `pool` tag is needed: the admin-made questions above are in it.
     const ofSubject = await t.db.query<{ id: string }>(
       `select q.id::text id from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no
-        where q.is_active and v.status = 'approved' and v.type = 'mcq' and v.subject_id = $1`,
+        where q.is_active and v.status = 'approved' and v.type = 'mcq' and v.subject_id = $1
+          and exists (select 1 from education_levels ol where ol.id = v.education_level_id and ol.code in ('T4','T5') and ol.is_active)
+          and exists (select 1 from subjects sj where sj.id = v.subject_id and sj.is_active)
+          and exists (select 1 from subject_levels sl where sl.subject_id = v.subject_id and sl.education_level_id = v.education_level_id)
+          and not exists (select 1 from question_tags g where g.question_id = q.id and g.kind = 'pksk_domain')`,
       [w.tag.subjectId],
     )
-    pool = ofSubject.map((r) => r.id).filter((id) => tagged.has(id))
+    pool = ofSubject.map((r) => r.id)
   }, 180_000)
   afterAll(async () => {
     await t.close()
@@ -80,7 +82,9 @@ describe('BE-12 assignment source (missions, remedial) and the BE-17 missions pr
       const a = await insertMission(t, w, { teacherId: w.teacherA, recipients: [w.student1], chapterId: withQ, questionCount: 10 })
       const ra = await resolve('mission', w.student1, a)
       expect(ra.status === 'ok' && [...ra.questionIds].sort()).toEqual([...inChapter].sort())
-      const b = await insertMission(t, w, { teacherId: w.teacherA, recipients: [w.student1], chapterId: empty, questionCount: 10 })
+      // The BM drawable pool is 50: a 50-question mission can hold the whole pool, so the equality below is a full draw.
+      expect(pool.length, 'SPM pool of the subject').toBeLessThanOrEqual(50)
+      const b = await insertMission(t, w, { teacherId: w.teacherA, recipients: [w.student1], chapterId: empty, questionCount: 50 })
       const rb = await resolve('mission', w.student1, b)
       expect(rb.status === 'ok' && [...rb.questionIds].sort()).toEqual([...pool].sort())
     })

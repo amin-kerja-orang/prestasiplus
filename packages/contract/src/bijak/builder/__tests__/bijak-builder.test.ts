@@ -95,7 +95,7 @@ const bq = (over: Record<string, unknown> = {}) => ({
   marks: 3,
   kind: 'berstruktur',
   topic: 'Fungsi dan Persamaan Kuadratik',
-  status: 'published',
+  status: 'approved',
   kertas: 2,
   subject: 'MAT',
   ...over,
