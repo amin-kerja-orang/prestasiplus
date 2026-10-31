@@ -58,6 +58,9 @@ export interface SittablePaper {
   }[]
 }
 
+/** Most times a refused question is dropped and the paper composed again before the request answers 503 GENERATE_LIMIT. */
+const MAX_BRIDGE_ROUNDS = 8
+
 /**
  * Bijak SPM papers (M28, BE-15): Kertas Pilihan list and cover, the Kontrak list, the subject hub
  * and "Jana Kertas". Marks are derived from the placements on every read (Q-S6). No answer key,
@@ -192,16 +195,28 @@ export class PapersService {
     const poolSource = this.ports.poolSource
     const scope = { subjectId: subject.id.toString(), subjectCode: subject.code, kertas: body.kertas }
     const userId = idFromString(actor.userId)
-    const [candidates, seen, previous] = await Promise.all([
+    const [pool, seen, previous] = await Promise.all([
       poolSource.candidates(scope),
       poolSource.seen(actor.userId),
       this.repo.countJanaPapers(userId),
     ])
     const now = this.clock.now()
-    const outcome = composeStandardPaper(std, candidates, {
-      seed: generationSeed(now, actor.userId, row.code, previous),
-      seen,
-    })
+    const seed = generationSeed(now, actor.userId, row.code, previous)
+    // The pool facts say what the exam standard needs; the BE-09 bridge says what a pupil can actually be served (it refuses an
+    // option image, a group without exactly one stimulus, an unreadable reveal, a missing file). A paper the pupil cannot start
+    // is never numbered, so every composed question is checked through the bridge BEFORE the write; a refused one leaves the
+    // candidates (a group missing a member becomes incomplete and is not used) and the paper is composed again: exact or refuse.
+    let candidates = pool
+    let outcome = composeStandardPaper(std, candidates, { seed, seen })
+    for (let round = 0; outcome.ok && round < MAX_BRIDGE_ROUNDS; round++) {
+      const composedIds = outcome.sections.flatMap((c) => c.questionIds)
+      const servable = await this.ports.questionSource.getMany(composedIds)
+      const refused = new Set(composedIds.filter((id) => !servable.has(id)))
+      if (refused.size === 0) break
+      candidates = candidates.filter((f) => !refused.has(f.id))
+      outcome = composeStandardPaper(std, candidates, { seed, seen })
+      if (round === MAX_BRIDGE_ROUNDS - 1 && outcome.ok) throw generateLimit()
+    }
     if (!outcome.ok) {
       if (outcome.reason === 'shortage') throw shortage(outcome.shortages.map(shortageToWire))
       if (outcome.reason === 'limit') throw generateLimit()

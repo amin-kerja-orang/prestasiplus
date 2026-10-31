@@ -297,6 +297,7 @@ describe('Jana Kertas through the pool source (standard facts, D75)', () => {
   ]
   // A candidate list the test swaps per case; only MAT Kertas 1 has facts, any other pair is a shortage.
   let candidates: QuestionFacts[] = bank
+  const refused = new Set<string>()
   const source: BijakPoolSource = {
     candidates: async (scope) => (scope.subjectCode === 'MATH' ? candidates : []),
     seen: async () => new Set(),
@@ -308,7 +309,8 @@ describe('Jana Kertas through the pool source (standard facts, D75)', () => {
       new Map(
         ids.flatMap((id) => {
           const f = bank.find((x) => x.id === id)
-          return f ? [[id, { id, marks: 1, groupId: f.groupId, versionNo: f.versionNo } satisfies BijakQuestionInfo] as const] : []
+          // `refused` stands for the BE-09 bridge refusing a candidate (option image, group without one stimulus, missing file ...).
+          return f && !refused.has(id) ? [[id, { id, marks: 1, groupId: f.groupId, versionNo: f.versionNo } satisfies BijakQuestionInfo] as const] : []
         }),
       ),
     pool: async () => ({ entries: [], groups: new Map() }),
@@ -371,6 +373,35 @@ describe('Jana Kertas through the pool source (standard facts, D75)', () => {
     expect(error.details).toMatchObject({ shortages: [{ section: 'Objektif', need: 10 }] })
     expect(await count()).toBe(before)
     candidates = bank
+  })
+
+  it('a candidate the bridge refuses is never placed: the paper is composed from the others', async () => {
+    candidates = bank
+    refused.clear()
+    for (const id of ['7001', '7002']) refused.add(id)
+    try {
+      for (let i = 0; i < 8; i++) {
+        t.clock.advance(1000)
+        const ids = (await placed(t, paperIdOf(await generate()))).map((r) => r.question_id)
+        expect(ids).toHaveLength(10)
+        expect(ids.filter((id) => refused.has(id))).toEqual([])
+      }
+    } finally {
+      refused.clear()
+    }
+  })
+
+  it('a pool left short by the bridge refuses (SHORTAGE) and writes no paper row: a refused group member drops its group', async () => {
+    candidates = bank
+    const before = Number((await t.db.query<{ n: string }>(`select count(*) n from papers`))[0]?.n)
+    // 12 singles - 3 refused = 9, and the group (7101 refused) is incomplete, so 10 questions cannot be made.
+    for (const id of ['7001', '7002', '7003', '7101']) refused.add(id)
+    try {
+      expectError(await generate(), 'SHORTAGE', 422)
+      expect(Number((await t.db.query<{ n: string }>(`select count(*) n from papers`))[0]?.n)).toBe(before)
+    } finally {
+      refused.clear()
+    }
   })
 
   it('a section whose marks no selection can reach refuses instead of making a paper with other marks', async () => {
