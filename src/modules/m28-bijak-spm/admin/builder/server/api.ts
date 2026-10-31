@@ -101,9 +101,10 @@ export interface PublishOptions {
   reason?: string
 }
 
-/** Review answer in either blocker shape (see `domain/blockers.ts`); `canOverride` comes with the A3 shape. */
-export type RawReview = Omit<BijakBuilderReview, 'blockers'> & {
-  blockers: (string | RawBlocker)[]
+/** Review answer: `blockers` stays `string[]`; `blockerDetails` and `canOverride` come with A3 (see `domain/blockers.ts`). */
+export type RawReview = BijakBuilderReview & {
+  /** A3 REQ-C-002; absent on older servers. */
+  blockerDetails?: RawBlocker[]
   canOverride?: boolean
 }
 

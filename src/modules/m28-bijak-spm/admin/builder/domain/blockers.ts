@@ -1,7 +1,7 @@
 /**
- * Blockers of the review in both server shapes: the old `string[]` (Terbit would refuse these BM
- * lines) and the A3 shape `{ code, message, overridable, section?, questionId? }[]` with
- * `canOverride`. The override offer reads the flags when present and falls back to the text heuristic
+ * Blockers of the review in both server shapes: `blockers` as `string[]` (the BM lines Terbit refuses)
+ * and, from A3 (REQ-C-002), `blockerDetails: { code, message, overridable, section?, questionId? }[]`
+ * with `canOverride`. The override offer reads the flags when present and falls back to the text heuristic
  * ("Soalan {id} tidak layak: ..." lines, the structural blueprint lines) only for plain strings.
  */
 export interface RawBlocker {
@@ -26,6 +26,14 @@ export function normalizeBlockers(raw: readonly (string | RawBlocker)[]): Blocke
       ? { message: b, overridable: undefined }
       : { message: b.message, overridable: b.overridable },
   )
+}
+
+/**
+ * The blockers of a review answer: `blockerDetails` (A3, REQ-C-002: code, message, overridable) when
+ * present, else the plain `blockers` lines (no flags, so the text heuristic applies).
+ */
+export function blockersOf(r: { blockers: readonly string[]; blockerDetails?: readonly RawBlocker[] }): BlockerInfo[] {
+  return r.blockerDetails ? normalizeBlockers(r.blockerDetails) : normalizeBlockers(r.blockers)
 }
 
 /** Whether the "Terbitkan walaupun tidak memenuhi kontrak" tick is offered. */
