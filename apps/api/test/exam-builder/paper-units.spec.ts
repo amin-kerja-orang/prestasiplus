@@ -2,6 +2,7 @@ import { BIJAK_BUILDER_CHECK_LINES as LINES } from '@pp/contract'
 import { describe, expect, it } from 'vitest'
 
 import type { Violation } from '../../src/modules/exam/builder/exam-core.adapter'
+import { GROUP_MIN_MEMBERS_MESSAGE, MISSING_FROM_POOL_TEXT } from '../../src/modules/exam/builder/builder.constants'
 import { checkPaper, normalizeUnits, reorderUnits } from '../../src/modules/exam/builder/paper-check'
 import { violationLines } from '../../src/modules/exam/builder/standard'
 
@@ -74,5 +75,37 @@ describe('violationLines (D78 O-2)', () => {
       LINES.sectionLine('Bahagian 1', LINES.groupNotConsecutive('G')),
     ])
     expect(r.notes).toHaveLength(1)
+  })
+
+  it('a question missing from the pool is a fixed blocker with its id; the other blockers are kept', () => {
+    const r = violationLines(
+      [
+        v({ code: 'UNKNOWN_QUESTION', tier: 'structural', questionId: '9' }),
+        v({ code: 'INELIGIBLE', tier: 'structural', questionId: '7', detail: 'no_key' }),
+      ],
+      label,
+    )
+    expect(r.fixed).toEqual([LINES.sectionLine('Bahagian 1', LINES.ineligible('9', MISSING_FROM_POOL_TEXT))])
+    expect(r.blockers).toEqual([LINES.sectionLine('Bahagian 1', LINES.ineligible('7', 'tiada kunci jawapan'))])
+  })
+})
+
+describe('D93: a stimulus group with fewer than two members', () => {
+  const base = {
+    specs: [{ label: 'A', markBudget: 2, questionCount: 2, rule: { type: 'all' as const } }],
+    marksOf: () => 1,
+    isLive: () => true,
+  }
+  it('is a paper-level error with the exact BM line (not section-prefixed, hard)', () => {
+    const alone = checkPaper({ ...base, groupOf: (id) => (id === 'g1' ? 'G' : undefined), membersOf: () => ['g1'], sections: [{ questionIds: ['g1', 'a'] }] })
+    expect(alone.errors).toEqual(['Kumpulan perlu sekurang-kurangnya 2 soalan.'])
+    expect(GROUP_MIN_MEMBERS_MESSAGE).toBe('Kumpulan perlu sekurang-kurangnya 2 soalan.')
+    expect(alone.ok).toBe(false)
+  })
+  it('does not apply to a group of two or more, nor to a group the bank does not know as a stimulus group', () => {
+    const two = checkPaper({ ...base, groupOf, membersOf, sections: [{ questionIds: ['g1', 'g2'] }] })
+    expect(two.errors).toEqual([])
+    const unknown = checkPaper({ ...base, groupOf: () => 'X', membersOf: () => ['a'], isStimulusGroup: () => false, sections: [{ questionIds: ['a', 'b'] }] })
+    expect(unknown.errors).toEqual([])
   })
 })

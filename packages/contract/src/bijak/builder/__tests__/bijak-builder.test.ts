@@ -1027,7 +1027,7 @@ describe('openapi document', () => {
   })
 
   it('takes no body on withdraw, copy and retire, an OPTIONAL body on publish (R1-T34 override), and a body on the other mutations', () => {
-    expect(doc.paths['/admin/papers/{id}/publish']?.post?.requestBody?.required).toBe(false)
+    expect((doc.paths['/admin/papers/{id}/publish']?.post?.requestBody as { required?: boolean } | undefined)?.required).toBe(false)
     const noBody = [
       '/admin/papers/{id}/publish',
       '/admin/papers/{id}/withdraw',

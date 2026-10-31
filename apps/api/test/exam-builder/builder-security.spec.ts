@@ -31,7 +31,8 @@ describe('paper builder security (AC6)', () => {
 
   beforeAll(async () => {
     bank = matBank()
-    t = await bootBuilderApp({ builderSource: bank, papersSource: bank })
+    t = await bootBuilderApp({ builderSource: bank, papersSource: bank, pool: 'builder-source' })
+    await serveSeededBlueprints(t.db)
     admin = await loginAs(t, ACCOUNTS.admin)
     const res = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
     paperId = envelopeOf(BijakBuilderPaperCreateResultSchema).parse(res.body).data.id
@@ -137,7 +138,8 @@ describe('rate limit', () => {
   let admin: Client
 
   beforeAll(async () => {
-    t = await bootBuilderApp({ builderSource: matBank(), papersSource: matBank(), env: { THROTTLE_BIJAK_BUILDER_WRITE_PER_MINUTE: '2' } })
+    t = await bootBuilderApp({ builderSource: matBank(), papersSource: matBank(), pool: 'builder-source', env: { THROTTLE_BIJAK_BUILDER_WRITE_PER_MINUTE: '2' } })
+    await serveSeededBlueprints(t.db)
     admin = await loginAs(t, ACCOUNTS.admin)
   })
   afterAll(async () => {

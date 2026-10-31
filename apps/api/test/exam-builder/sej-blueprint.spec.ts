@@ -10,6 +10,7 @@ import { runSeeds } from '../../prisma/seed'
 import { DEMO_BLUEPRINTS, examDemoBlueprintsSeed } from '../../prisma/seed/exam-demo-blueprints'
 import { POC_BANK, pocQuestionId } from '../../src/modules/bijak/papers/poc'
 import { ACCOUNTS, bootBuilderApp, loginAs, type BuilderTestApp, type Client } from './helpers'
+import { serveSeededBlueprints } from '../support/serve-blueprints'
 
 const Editor = envelopeOf(BijakBuilderEditorSchema)
 const Created = envelopeOf(BijakBuilderPaperCreateResultSchema)
@@ -88,7 +89,14 @@ describe('BIJAK_POC_QUESTIONS=true (staging / demo): Sejarah Kertas 2 blueprint'
       sections: e.paper.sections.map((s, i) => ({ id: s.id, questionIds: SEJ2.sections[i]!.questionIds.map(wire) })),
     })
     expect(res.status, JSON.stringify(res.body)).toBe(200)
-    expect(await h.publish(id)).toEqual({ ok: true, errors: [] })
+    // D93 (lead decision): the PoC Sejarah fixture has ONE question per stimulus group ("bahan"), and the PoC pool source holds no Sejarah facts.
+    // Both are Terbit blockers now (the paper is built, the publish says why); this is a limitation of the fixture, not of the Kontrak.
+    await serveSeededBlueprints(ctx.t.db)
+    const out = await h.publish(id)
+    expect(out.ok).toBe(false)
+    expect(out.errors).toContain('Kumpulan perlu sekurang-kurangnya 2 soalan.')
+    expect(out.errors.some((e) => e.includes('tiada dalam kolam soalan kertas ini'))).toBe(true)
+    expect((await h.q('select status from papers where id = $1', [id]))[0]!.status).toBe('draft')
   })
 })
 
