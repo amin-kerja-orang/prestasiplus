@@ -27,6 +27,8 @@ export interface ValidUpdate {
   adminNotes: string | null | undefined
   reactivate: boolean
   forceDeactivate: boolean
+  /** R1-B17: archive the question through the lifecycle. */
+  archive: boolean
 }
 
 const asRecord = (raw: unknown): Record<string, unknown> =>
@@ -95,5 +97,5 @@ export function validateUpdate(raw: unknown): ValidUpdate {
     else adminNotes = b.adminNotes.trim() === '' ? null : b.adminNotes
   } else if (b.adminNotes === null) adminNotes = null
   if (Object.keys(fields).length > 0) throw ApiError.of('VALIDATION_ERROR', { fields })
-  return { status: status as ValidUpdate['status'], adminNotes, reactivate: flag(b.reactivate), forceDeactivate: flag(b.forceDeactivate) }
+  return { status: status as ValidUpdate['status'], adminNotes, reactivate: flag(b.reactivate), forceDeactivate: flag(b.forceDeactivate), archive: flag(b.archive) }
 }
