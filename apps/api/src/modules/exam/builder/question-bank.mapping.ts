@@ -19,6 +19,7 @@ import {
 } from '@pp/contract'
 
 import type { QuestionPart } from '../../questions'
+import { stimulusTableOf } from '../../questions/stimulus-table'
 
 type SchemeLine = { tag?: string; text: string; marks?: number }
 type ReviewScheme = BijakBuilderReviewQuestion['scheme']
@@ -109,20 +110,13 @@ export interface StimulusSource {
   tableData: unknown
 }
 
-const asTable = (data: unknown): { head: string[]; rows: string[][] } | undefined => {
-  if (typeof data !== 'object' || data === null) return undefined
-  const { head, rows } = data as { head?: unknown; rows?: unknown }
-  const strings = (v: unknown): v is string[] => Array.isArray(v) && v.every((s) => typeof s === 'string')
-  return strings(head) && Array.isArray(rows) && rows.every(strings) ? { head, rows: rows as string[][] } : undefined
-}
-
 /** At most three stimuli per group (OD-28, `QuestionStimulusGroupSchema`). */
 export const MAX_GROUP_STIMULI = 3
 
 /**
- * The kinds the builder wire (`BijakAttemptStimulus.kind`) accepts today: passage, table, diagram. The store has seven
- * (passage, image, diagram, table, map, infographic, graph); the four pictorial ones read as `diagram` here until the wire
- * accepts all seven (R1-B08 widens `BijakAttemptStimulus`). Change this ONE table then.
+ * Store kind -> builder wire kind. The wire (`BijakAttemptStimulus.kind`) already accepts all seven kinds (R1-B08), but this
+ * table still reads the four pictorial ones (image, map, infographic, graph) as `diagram`; R1-T31 (lane A3) replaces it with a
+ * pass-through of the seven. Audio and any other kind is not displayable. Change this ONE table then.
  */
 const WIRE_KIND: Record<string, BijakAttemptStimulus['kind']> = {
   passage: 'passage',
@@ -139,7 +133,7 @@ export function stimulusOf(s: StimulusSource): BijakAttemptStimulus | undefined 
   const kind = WIRE_KIND[s.kind]
   if (kind === undefined) return undefined
   const label = s.label ?? ''
-  const table = kind === 'table' ? asTable(s.tableData) : undefined
+  const table = kind === 'table' ? stimulusTableOf(s.tableData) : undefined
   return {
     id: s.id.toString(),
     kind,
@@ -150,6 +144,17 @@ export function stimulusOf(s: StimulusSource): BijakAttemptStimulus | undefined 
     ...(table ? { table } : {}),
   }
 }
+
+/**
+ * D90: a group with no displayable stimulus (audio only, or empty) is STILL a group: its members move as one unit and are never
+ * placed alone. The builder wire requires a stimulus on a group, so such a group carries this empty one (no text, no picture).
+ */
+export const emptyGroupStimulus = (groupId: string | bigint): BijakAttemptStimulus => ({
+  id: `group-${groupId.toString()}`,
+  kind: 'passage',
+  label: '',
+  alt: '',
+})
 
 /**
  * D90: every displayable stimulus of a group in link order (1 to 3). The stimulus belongs to the GROUP: it is shown once above

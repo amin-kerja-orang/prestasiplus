@@ -86,6 +86,8 @@ export interface BijakRewardInput {
   /** The display values of the result (`score * 2` coins, `score * 10` points). */
   coins: number
   points: number
+  /** When the attempt closed (the streak day); absent for a caller that has no time. */
+  submittedAt?: Date | null
   score: number
   max: number
   provisional: boolean

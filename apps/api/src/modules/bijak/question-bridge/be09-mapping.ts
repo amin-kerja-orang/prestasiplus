@@ -31,10 +31,11 @@
  * infographic | graph`; one that has a stored file becomes `image: { url: '/api/files/<token>' }` (the pupil read
  * rule of `files/question-image-access.ts` decides who may load it). A stimulus is shown ONCE per group above all
  * member questions: the bundle of EVERY member carries the same group (same stimulus ids), so a member served alone
- * (a quiz) still carries it. A stimulus is never a question and has no marks. An image stimulus linked to the
- * version but not to the group is the question's own `stemImage`. MCQ option images become `option.image`.
+ * (a quiz) still carries it. A stimulus is never a question and has no marks. Stimuli linked to the version but not to the
+ * group are the question's OWN `stimuli` (R1E2E-05b, any of the seven kinds, link order, shown above the stem); `stemImage`
+ * is also set when the only own stimulus is one picture. A stimulus linked to several questions without being a group is refused. MCQ option images become `option.image`.
  * Also refused: `reveal: 'never'` (BE-16 always reveals the scheme after submit), a stimulus the bridge cannot
- * show (outside the group and not a stem image, unknown kind, empty, file not found), a group with more than
+ * show (unknown or audio outside the group, shared by several questions but not a group, unknown kind, empty, file not found), a group with more than
  * three stimuli, two sibling labels that strip to the same id. Every refusal carries a code and a BM reason
  * (`./refusals.ts`).
  */
@@ -51,6 +52,7 @@ import type { BijakQuestionBundle } from '../attempts/ports'
 import type { BijakQuestionInfo } from '../papers/ports'
 import type { QuestionRecord, StimulusGroupRecord, StimulusRecord } from '../../questions/types'
 import { STIMULUS_KINDS, type StimulusKind } from '@pp/exam-core/types'
+import { stimulusTableOf } from '../../questions/stimulus-table'
 import { BRIDGE_REFUSAL_REASONS_MS, type BridgeRefusalCode } from './refusals'
 
 type Leaf = Extract<QuestionPart, { mode: string }>
@@ -89,13 +91,29 @@ export class UnsupportedQuestionError extends Error {
 }
 
 /**
+ * A stimulus linked straight to a version (outside its group), as the caller read it from the BE-09 repository
+ * (`versionStimuli`). `sharedBy` is the number of distinct questions that link it (1 = this question's own).
+ */
+export interface OutsideStimulus {
+  kind: string
+  assetFileId: string | null
+  label?: string
+  bodyMs?: string | null
+  alt?: string | null
+  caption?: string | null
+  tableData?: unknown
+  sourceCitation?: string | null
+  sharedBy?: number
+}
+
+/**
  * Files the mapper needs and cannot read itself (it is pure): file id (decimal) -> public token, and the
- * stimuli linked to the version that are NOT in its group (id -> kind and file), read by the caller from the
- * BE-09 repository.
+ * stimuli linked to the version that are NOT in its group (id -> the stimulus), read by the caller from the
+ * BE-09 repository. An id that is absent here is unknown or not displayable (audio).
  */
 export interface BridgeMedia {
   tokens: ReadonlyMap<string, string>
-  outside: ReadonlyMap<string, { kind: string; assetFileId: string | null }>
+  outside: ReadonlyMap<string, OutsideStimulus>
 }
 
 export const NO_MEDIA: BridgeMedia = { tokens: new Map(), outside: new Map() }
@@ -170,8 +188,9 @@ export function mapBe09Question(
   const stimuli = group ? stimuliOf(qid, group, media) : []
   const stimulus = stimuli[0]
   const stimulusIds = new Set(group?.stimuli.map((s) => s.id) ?? [])
-  const stemImage = stemImageOf(qid, v.stimulusIds, stimulusIds, media)
-  if (stemImage) stimulusIds.add(stemImage.rawId)
+  const own = ownStimuliOf(qid, v.stimulusIds, stimulusIds, media)
+  for (const o of own) stimulusIds.add(o.rawId)
+  const stemImage = stemImageOf(own)
 
   const ctx: Ctx = {
     questionId: qid,
@@ -193,7 +212,10 @@ export function mapBe09Question(
   }
   const stemText = v.stemMs ?? ''
   const groupFields = record.groupId ? { groupId: groupWireId(record.groupId) } : {}
-  const stemFields = stemImage ? { stemImage: stemImage.def } : {}
+  const stemFields = {
+    ...(stemImage ? { stemImage } : {}),
+    ...(own.length > 0 ? { stimuli: own.map((o) => o.def) } : {}),
+  }
   const groupBundle =
     group && stimulus
       ? {
@@ -329,7 +351,7 @@ function stimulusDefOf(qid: string, s: WideStimulus, media: BridgeMedia): Stimul
       )
     image = { url: fileUrlOf(token) }
   }
-  const table = s.kind === 'table' ? tableOf(s.tableData, s.bodyMs) : undefined
+  const table = s.kind === 'table' ? stimulusTableOf(s.tableData, s.bodyMs) : undefined
   // A table parsed from the body replaces the body text; any other body stays the text.
   const text = table && !s.tableData ? undefined : s.bodyMs
   if (!text && !table && !image)
@@ -352,94 +374,67 @@ function stimulusDefOf(qid: string, s: WideStimulus, media: BridgeMedia): Stimul
   }
 }
 
-/**
- * A table stimulus grid: the stored `tableData` (`{ head, rows }`, `{ headers, rows }`, `{ columns, rows }` or an
- * array of rows whose first row is the head), else a pipe table written in the body (`a | b` per line, an optional
- * `---` rule). Anything else is not a table (the body stays plain text, or the stimulus is a picture).
- */
-function tableOf(data: unknown, body: string | null): StimulusDef['table'] {
-  const cell = (c: unknown): string =>
-    typeof c === 'string' ? c : typeof c === 'number' ? String(c) : ''
-  const rowsOf = (x: unknown): string[][] | undefined =>
-    Array.isArray(x) && x.every((r) => Array.isArray(r))
-      ? (x as unknown[][]).map((r) => r.map(cell))
-      : undefined
-  if (Array.isArray(data)) {
-    const [head, ...rows] = rowsOf(data) ?? []
-    if (head && head.length > 0) return { head, rows }
-  } else if (data && typeof data === 'object') {
-    const d = data as Record<string, unknown>
-    const head = rowsOf([d.head ?? d.headers ?? d.columns])?.[0]
-    const rows = rowsOf(d.rows)
-    if (head && head.length > 0 && rows) return { head, rows }
-  }
-  if (body && body.includes('|')) {
-    const lines = body
-      .split('\n')
-      .map((l) => l.trim())
-      .filter((l) => l !== '' && !/^\|?[\s:|-]+\|?$/.test(l))
-    const cells = lines.map((l) =>
-      l
-        .replace(/^\|/, '')
-        .replace(/\|$/, '')
-        .split('|')
-        .map((c) => c.trim()),
-    )
-    const [head, ...rows] = cells
-    if (head && head.length >= 2 && rows.length >= 1 && rows.every((r) => r.length === head.length))
-      return { head, rows }
-  }
-  return undefined
-}
+/** Stimulus kinds that are a stored picture. */
+const PICTURE_KINDS: ReadonlySet<string> = new Set(['image', 'diagram', 'map', 'infographic', 'graph'])
 
 /**
- * The question's own picture: the image stimulus linked to the version that is not in its group. Another kind
- * outside the group is not shown (the mapper only has its id), and a second image would be dropped: both refuse.
+ * The question's OWN stimuli (R1E2E-05b; V2 `cloud-student-mechanism` 1.5: "each question carries its own stimulus(es) inline"):
+ * every stimulus linked to the version that is not in its group, in link order, of any of the seven kinds, each with its
+ * caption, source, table grid, text or picture (token URL). D90 still holds: a stimulus linked to SEVERAL questions must be a
+ * group, so one that is shared and not grouped is refused (`stimulus_shared_ungrouped`); an unknown or audio one is refused
+ * too (`stimulus_outside_group`), never dropped.
  */
-function stemImageOf(
+function ownStimuliOf(
   qid: string,
   versionStimulusIds: readonly string[],
   groupStimulusIds: ReadonlySet<string>,
   media: BridgeMedia,
-): { def: StimulusDef; rawId: string } | undefined {
-  let out: { def: StimulusDef; rawId: string } | undefined
+): { def: StimulusDef; rawId: string }[] {
+  const out: { def: StimulusDef; rawId: string }[] = []
   for (const id of versionStimulusIds) {
     if (groupStimulusIds.has(id)) continue
     const info = media.outside.get(id)
-    if (!info || info.kind !== 'image' || info.assetFileId === null)
+    if (!info)
       throw new UnsupportedQuestionError(
         qid,
         '',
-        'a stimulus outside the question group (other than a stem picture) cannot be shown',
+        'a stimulus outside the question group cannot be shown (unknown or not displayable)',
         'stimulus_outside_group',
       )
-    if (out)
+    if ((info.sharedBy ?? 1) > 1)
       throw new UnsupportedQuestionError(
         qid,
         '',
-        'more than one stem picture is linked to the version',
-        'stem_images_many',
+        `stimulus ${id} is linked to ${String(info.sharedBy)} questions but is not a stimulus group (D90)`,
+        'stimulus_shared_ungrouped',
       )
-    const token = media.tokens.get(info.assetFileId)
-    if (token === undefined)
-      throw new UnsupportedQuestionError(
-        qid,
-        '',
-        `the file ${info.assetFileId} of stem picture ${id} was not found`,
-        'file_missing',
-      )
-    out = {
+    out.push({
       rawId: id,
-      def: {
-        id: stimulusWireId(id),
-        kind: 'image',
-        label: '',
-        alt: 'Gambar untuk soalan ini',
-        image: { url: fileUrlOf(token) },
-      },
-    }
+      def: stimulusDefOf(
+        qid,
+        {
+          id,
+          kind: info.kind,
+          label: info.label ?? '',
+          bodyMs: info.bodyMs ?? null,
+          bodyEn: null,
+          assetFileId: info.assetFileId,
+          alt: info.alt ?? (info.label || !PICTURE_KINDS.has(info.kind) ? null : 'Gambar untuk soalan ini'),
+          caption: info.caption ?? null,
+          tableData: info.tableData ?? null,
+          sourceCitation: info.sourceCitation ?? null,
+        },
+        media,
+      ),
+    })
   }
   return out
+}
+
+/** The old single-picture slot: the question's only own stimulus when it is a picture (kept for clients that read `stemImage`). */
+function stemImageOf(own: readonly { def: StimulusDef }[]): StimulusDef | undefined {
+  const only = own.length === 1 ? own[0]?.def : undefined
+  return only && PICTURE_KINDS.has(only.kind) && only.image ? only : undefined
 }
 
 function indexLeaves(

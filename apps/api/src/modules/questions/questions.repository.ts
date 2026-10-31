@@ -275,8 +275,8 @@ export class QuestionsRepository {
    * served version even after a later edit, BE-12 AC 11 / OD-28). Unknown ids or version numbers are
    * absent. Returned in ascending id, then version order.
    *
-   * Pinned grading only: never use it on a serving path (a draw, a list, a learner-facing read). It skips the
-   * active, published and PKSK scope that `sample` / `eligibleIds` / `getMany('live')` apply.
+   * Pinned reads (grading, and serving a pinned placement such as a kuiz paper page): never use it for a draw or a list. It skips
+   * the active, published and PKSK scope that `sample` / `eligibleIds` / `getMany('live')` apply; a Darjah question is still not found (R1-B21).
    */
   async getVersions(refs: readonly { questionId: string; versionNo: number }[]): Promise<QuestionRecord[]> {
     const wanted = new Map<string, { id: bigint; versionNo: number }>()
@@ -355,6 +355,24 @@ export class QuestionsRepository {
   }
 
   /** `listIds` without the totals and status counts: one page (newest first) of the admin filter, by keyset (`idBelow`). */
+  /**
+   * Targets of a filter-based bulk action over the LATEST version: the rows of the filter (`matched`, the total the list shows), the
+   * ones whose status can move to the target (`eligible`) and the first `cap` of those, id ascending (stable between runs).
+   * `fromStatuses` are the statuses that may move to the target.
+   */
+  async filterTargets(filter: Omit<AdminListFilter, 'page' | 'pageSize'>, fromStatuses: readonly QuestionStatus[], cap: number): Promise<{ matched: number; eligible: number; ids: string[] }> {
+    const conds = this.adminConds({ ...filter, page: 1, pageSize: 1 })
+    const from = Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
+    const all = Prisma.join(conds, ' AND ')
+    const elig = Prisma.join([...conds, Prisma.sql`v.status IN (${Prisma.join(fromStatuses.map((x) => Prisma.sql`${x}`))})`], ' AND ')
+    const [counts, rows] = await Promise.all([
+      this.db.$queryRaw<{ matched: number; eligible: number }[]>`
+        SELECT count(*)::int AS matched, (count(*) FILTER (WHERE v.status IN (${Prisma.join(fromStatuses.map((x) => Prisma.sql`${x}`))})))::int AS eligible ${from} WHERE ${all}`,
+      this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${elig} ORDER BY q.id ASC LIMIT ${Math.max(0, cap)}`,
+    ])
+    return { matched: counts[0]?.matched ?? 0, eligible: counts[0]?.eligible ?? 0, ids: rows.map((r) => idToString(r.id)) }
+  }
+
   async listIdsKeyset(filter: Omit<AdminListFilter, 'page' | 'pageSize'>, idBelow: string | undefined, limit: number): Promise<string[]> {
     const conds = this.adminConds({ ...filter, page: 1, pageSize: limit })
     const below = idBelow === undefined ? undefined : bi(idBelow)
@@ -491,25 +509,37 @@ export class QuestionsRepository {
     if (key === null) return null
     const q = await this.db.question.findUnique({ where: { id: key }, select: { groupId: true } })
     if (!q?.groupId) return null
-    const group = await this.db.stimulusGroup.findUnique({
-      where: { id: q.groupId },
+    return (await this.groupsByIds([idToString(q.groupId)]))[0] ?? null
+  }
+
+  /** Stimulus groups by id, in one statement per relation whatever the number of ids (unknown ids are absent). */
+  async groupsByIds(groupIds: readonly string[]): Promise<StimulusGroupRecord[]> {
+    const keys = [...new Set(groupIds)].flatMap((id) => {
+      const k = bi(id)
+      return k === null ? [] : [k]
+    })
+    if (keys.length === 0) return []
+    const groups = await this.db.stimulusGroup.findMany({
+      where: { id: { in: keys } },
+      orderBy: { id: 'asc' },
       include: {
         stimuli: { orderBy: { position: 'asc' }, include: { stimulus: true } },
         options: { orderBy: { position: 'asc' } },
         questions: { orderBy: { groupPosition: 'asc' }, select: { id: true } },
       },
     })
-    if (!group) return null
-    const stimuli: StimulusRecord[] = group.stimuli.flatMap((s) => {
-      const record = stimulusRecordOf(s.stimulus)
-      return record ? [record] : []
+    return groups.map((group) => {
+      const stimuli: StimulusRecord[] = group.stimuli.flatMap((s) => {
+        const record = stimulusRecordOf(s.stimulus)
+        return record ? [record] : []
+      })
+      return {
+        id: idToString(group.id),
+        stimuli,
+        optionBank: group.options.map((o) => ({ label: o.label, bodyMs: o.bodyMs, bodyEn: o.bodyEn })),
+        questionIds: group.questions.map((m) => idToString(m.id)),
+      }
     })
-    return {
-      id: idToString(group.id),
-      stimuli,
-      optionBank: group.options.map((o) => ({ label: o.label, bodyMs: o.bodyMs, bodyEn: o.bodyEn })),
-      questionIds: group.questions.map((m) => idToString(m.id)),
-    }
   }
 
   async listOwn(filter: GuruListFilter): Promise<Page<QuestionRecord>> {
@@ -589,6 +619,12 @@ export class QuestionsRepository {
       // The v2 store has no textbook / dskp / trial / marking_scheme source: only ai_generated exists on the wire.
       conds.push(f.sourceFilter === 'ai_generated' ? Prisma.sql`q.source_type = 'ai_variant'` : Prisma.sql`FALSE`)
     }
+    // V2 Studio filters (D79). Tahun, Negeri and Jenis read the source paper of the version; Kertas is the trailing digit of the
+    // version's paper code (how the paper builder reads it). A question without the value never matches.
+    if (f.tahun !== undefined) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND sp.year = ${Number(f.tahun)})`)
+    if (f.negeri !== undefined) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND lower(sp.exam_board) = lower(${f.negeri}))`)
+    if (f.jenis !== undefined) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND sp.exam_type = ${f.jenis})`)
+    if (f.kertas !== undefined) conds.push(Prisma.sql`substring(v.paper_code from '([0-9])\s*$') = ${f.kertas}`)
     if (f.search !== undefined && f.search.trim() !== '') {
       const like = likePattern(f.search.trim())
       conds.push(Prisma.sql`(v.stem_ms ILIKE ${like} ESCAPE '\\' OR v.stem_en ILIKE ${like} ESCAPE '\\')`)
@@ -727,6 +763,45 @@ export class QuestionsRepository {
       )
     }
     return out
+  }
+
+  /**
+   * How many distinct active questions link each stimulus straight to a version (`question_version_stimuli`; the versions of one
+   * question count once). 1 = the stimulus is that question's own; more than 1 = shared (D90: that must be a stimulus group).
+   * Unknown ids are absent.
+   */
+  async stimulusUseCounts(ids: readonly string[]): Promise<Map<string, number>> {
+    const keys = [...new Set(ids.map(bi).filter((k): k is bigint => k !== null))]
+    const out = new Map<string, number>()
+    if (keys.length === 0) return out
+    const rows = await this.db.$queryRaw<{ id: bigint; n: number }[]>`
+      SELECT l.stimulus_id AS id, count(DISTINCT v.question_id)::int AS n
+        FROM question_version_stimuli l
+        JOIN question_versions v ON v.id = l.question_version_id
+        JOIN questions q ON q.id = v.question_id AND q.is_active
+       WHERE l.stimulus_id = ANY(${keys}::bigint[])
+       GROUP BY l.stimulus_id`
+    for (const r of rows) out.set(idToString(r.id), r.n)
+    return out
+  }
+
+  /** R1-B05: the subject is in the SPM catalogue (`spm_subject_configs`) and the level is Tingkatan 4 or 5. */
+  /** `rights_status` of one version: null when no declaration was made (or the version is unknown). */
+  async rightsStatusOf(questionId: string, versionNo: number): Promise<string | null> {
+    const key = bi(questionId)
+    if (key === null) return null
+    const row = await this.db.questionVersion.findUnique({ where: { questionId_versionNo: { questionId: key, versionNo } }, select: { rightsStatus: true } })
+    return row?.rightsStatus ?? null
+  }
+
+  async isSpmBound(subjectId: string | null, levelId: string | null): Promise<boolean> {
+    const subject = subjectId === null ? null : bi(subjectId)
+    const level = levelId === null ? null : bi(levelId)
+    if (subject === null || level === null) return false
+    const rows = await this.db.$queryRaw<{ one: number }[]>`
+      SELECT 1 AS one FROM spm_subject_configs c JOIN education_levels l ON l.id = ${level} AND l.code IN ('T4', 'T5')
+       WHERE c.subject_id = ${subject} LIMIT 1`
+    return rows.length > 0
   }
 
   async groupExists(id: string): Promise<boolean> {
@@ -1051,12 +1126,14 @@ export class QuestionsRepository {
           blankCount: d.blankCount,
           wordMin: d.wordMin,
           wordMax: d.wordMax,
+          topics: d.topics ?? Prisma.DbNull,
           stimulusId: d.stimulusId,
           reveal: d.reveal,
           unitNodeId: d.unitNodeId,
           formOrigin: d.formOrigin,
           difficultyTp: d.difficultyTp,
           kbat: d.kbat,
+          cognitiveLevel: d.cognitiveLevel,
         },
       })
       if (d.options.length > 0) {
@@ -1081,6 +1158,14 @@ export class QuestionsRepository {
    * (Darjah) questions are always excluded. `learnerVisible` (every eligibility/draw read) also drops questions of any other
    * INACTIVE education level.
    */
+  /**
+   * The SQL a reader applies for `filter` (aliases `q`, `v`), for an admin count that must embed a reader's exact scope inside a
+   * larger statement (the servability hub counts). Same fragments as `count`, `sampleIds` and `eligibleAmong`.
+   */
+  scopeSql(filter: QuestionFilter, learnerVisible = false): { from: Prisma.Sql; where: Prisma.Sql } {
+    return this.scope(filter, learnerVisible)
+  }
+
   private scope(filter: QuestionFilter, learnerVisible = false): { from: Prisma.Sql; where: Prisma.Sql } {
     const live = filter.status === 'approved'
     const from = live
@@ -1182,7 +1267,9 @@ export class QuestionsRepository {
       const q = byId.get(w.id)
       return q && w.versionNo <= q.latestVersionNo ? [{ q, versionNo: w.versionNo }] : []
     })
-    const out = await this.hydratePicks(picks)
+    // Secondary-only (R1-B21): a pinned read of a Darjah question is not found either (kuiz paper pages serve pinned versions).
+    const hidden = await this.primaryLevelIds()
+    const out = (await this.hydratePicks(picks)).filter((r) => r.version.educationLevelId === null || !hidden.has(r.version.educationLevelId))
     return out.sort((a, b) => (a.id === b.id ? a.version.versionNo - b.version.versionNo : BigInt(a.id) < BigInt(b.id) ? -1 : 1))
   }
 

@@ -1,10 +1,13 @@
-import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Post, Put, UseGuards } from '@nestjs/common'
+import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Post, Put, Query, UseGuards, UseInterceptors } from '@nestjs/common'
 import {
   QuestionCreateRequestSchema,
   STIMULUS_MESSAGES,
   StimulusCreateRequestSchema,
   StimulusGroupCreateRequestSchema,
+  StimulusGroupListQuerySchema,
+  StimulusListQuerySchema,
   StimulusGroupMemberRequestSchema,
+  StimulusGroupMembersSetRequestSchema,
   StimulusGroupReorderRequestSchema,
   StimulusGroupUpdateRequestSchema,
   StimulusUpdateRequestSchema,
@@ -12,12 +15,13 @@ import {
 
 import { AUDIT_ACTIONS, AuditService } from '../../../common/audit'
 import { Roles } from '../../../common/guards'
-import { ok } from '../../../common/http/respond'
+import { NoStoreInterceptor } from '../../../common/http'
+import { listMeta, ok } from '../../../common/http/respond'
 import { RateLimit, RateLimitGuard } from '../../../common/throttle'
 import { StimuliService } from '../stimuli.service'
 import { Actor, type HttpActor } from './actor'
 import { QUESTIONS_WRITE_LIMIT } from './admin.controller'
-import { flash, parseBody } from './parse'
+import { flash, parseBody, parseQuery } from './parse'
 import { questionView } from './views'
 
 /**
@@ -49,6 +53,22 @@ export class StimuliController {
   }
 
   // --- stimuli ------------------------------------------------------------------------------------
+
+  @Get('stimuli')
+  @UseInterceptors(NoStoreInterceptor)
+  async listStimuli(@Query() query: unknown) {
+    const q = parseQuery(StimulusListQuerySchema, query)
+    const res = await this.stimuli.listStimuli(q)
+    return { data: res.rows, meta: listMeta(q.page, q.pageSize, res.total) }
+  }
+
+  @Get('stimulus-groups')
+  @UseInterceptors(NoStoreInterceptor)
+  async listGroups(@Query() query: unknown) {
+    const q = parseQuery(StimulusGroupListQuerySchema, query)
+    const res = await this.stimuli.listGroups(q)
+    return { data: res.rows, meta: listMeta(q.page, q.pageSize, res.total) }
+  }
 
   @Post('stimuli')
   @RateLimit(QUESTIONS_WRITE_LIMIT)
@@ -129,6 +149,16 @@ export class StimuliController {
     const res = await this.stimuli.removeMember(id, questionId)
     await this.write(actor, AUDIT_ACTIONS.STIMULUS_GROUP_MEMBERS_CHANGED, 'stimulus_group', id, { ...res.audit, questionId })
     return flash(res.result, STIMULUS_MESSAGES.memberRemoved)
+  }
+
+  @Put('stimulus-groups/:id/members')
+  @RateLimit(QUESTIONS_WRITE_LIMIT)
+  async setMembers(@Actor() actor: HttpActor, @Param('id') id: string, @Body() body: unknown) {
+    await this.stimuli.getGroup(id)
+    const input = parseBody(StimulusGroupMembersSetRequestSchema, body)
+    const res = await this.stimuli.setMembers(id, input.questionIds)
+    await this.write(actor, AUDIT_ACTIONS.STIMULUS_GROUP_MEMBERS_CHANGED, 'stimulus_group', id, { ...res.audit, set: true })
+    return flash(res.result, STIMULUS_MESSAGES.membersReordered)
   }
 
   @Put('stimulus-groups/:id/members/order')

@@ -5,6 +5,8 @@ import {
   STIMULUS_MESSAGES,
   StimulusCreateRequestSchema,
   StimulusGroupCreateRequestSchema,
+  StimulusGroupListQuerySchema,
+  StimulusListQuerySchema,
   StimulusGroupReorderRequestSchema,
   StimulusGroupUpdateRequestSchema,
   StimulusUpdateRequestSchema,
@@ -53,13 +55,18 @@ describe('R1-T32 stimulus request schemas (D90)', () => {
     expect(StimulusCreateRequestSchema.safeParse({ kind: 'table', tableData: { head: ['h'], rows: Array.from({ length: STIMULUS_LIMITS.rows + 1 }, () => ['1']) } }).success).toBe(false)
   })
 
-  it('a group has 1 to 3 stimuli and at least 2 member questions, and no marks key', () => {
+  it('a group has 1 to 3 stimuli and 0 to 40 member questions (D93), and no marks key', () => {
     const base = { stimulusIds: ['1'], questionIds: ['10', '11'] }
     expect(StimulusGroupCreateRequestSchema.safeParse(base).success).toBe(true)
     expect(StimulusGroupCreateRequestSchema.safeParse({ ...base, stimulusIds: ['1', '2', '3'] }).success).toBe(true)
     expect(fieldsOf(StimulusGroupCreateRequestSchema.safeParse({ ...base, stimulusIds: [] })).stimulusIds).toBe(STIMULUS_MESSAGES.stimuliCount)
     expect(fieldsOf(StimulusGroupCreateRequestSchema.safeParse({ ...base, stimulusIds: ['1', '2', '3', '4'] })).stimulusIds).toBe(STIMULUS_MESSAGES.stimuliCount)
-    expect(fieldsOf(StimulusGroupCreateRequestSchema.safeParse({ ...base, questionIds: ['10'] })).questionIds).toBe(STIMULUS_MESSAGES.membersMin)
+    // D93: a draft group may have 0 or 1 members; only the 40-member cap is a 422.
+    expect(StimulusGroupCreateRequestSchema.safeParse({ ...base, questionIds: ['10'] }).success).toBe(true)
+    expect(StimulusGroupCreateRequestSchema.safeParse({ stimulusIds: ['1'], questionIds: [] }).success).toBe(true)
+    expect(StimulusGroupCreateRequestSchema.safeParse({ stimulusIds: ['1'] }).data?.questionIds).toEqual([])
+    expect(StimulusGroupCreateRequestSchema.safeParse({ ...base, questionIds: Array.from({ length: 40 }, (_, i) => String(i + 1)) }).success).toBe(true)
+    expect(fieldsOf(StimulusGroupCreateRequestSchema.safeParse({ ...base, questionIds: Array.from({ length: 41 }, (_, i) => String(i + 1)) })).questionIds).toBe(STIMULUS_MESSAGES.membersTooMany)
     expect(StimulusGroupCreateRequestSchema.safeParse({ ...base, marks: 4 }).success).toBe(false)
     expect(StimulusGroupUpdateRequestSchema.safeParse({}).success).toBe(false)
     expect(StimulusGroupReorderRequestSchema.safeParse({ questionIds: [] }).success).toBe(false)
@@ -68,5 +75,24 @@ describe('R1-T32 stimulus request schemas (D90)', () => {
   it('the removal warning is BM and counts the remaining members', () => {
     expect(STIMULUS_MESSAGES.smallGroup(1)).toBe('Kumpulan ini kini hanya mempunyai 1 soalan. Rangsangan bersama lazimnya untuk sekurang-kurangnya 2 soalan.')
     expect(STIMULUS_MESSAGES.smallGroup(0)).toContain('kosong')
+  })
+})
+
+describe('R1-T49 list queries', () => {
+  it('defaults to page 1 of 20 and bounds the page, the page size and the search text', () => {
+    expect(StimulusGroupListQuerySchema.parse({})).toMatchObject({ page: 1, pageSize: 20 })
+    expect(StimulusListQuerySchema.parse({ pageSize: '100', page: '3', q: 'x' })).toMatchObject({ page: 3, pageSize: 100, q: 'x' })
+    expect(fieldsOf(StimulusListQuerySchema.safeParse({ pageSize: '101' })).pageSize).toBe(STIMULUS_MESSAGES.pageSize)
+    expect(fieldsOf(StimulusListQuerySchema.safeParse({ pageSize: '0' })).pageSize).toBe(STIMULUS_MESSAGES.pageSize)
+    expect(fieldsOf(StimulusListQuerySchema.safeParse({ page: '100001' })).page).toBe(STIMULUS_MESSAGES.page)
+    expect(fieldsOf(StimulusListQuerySchema.safeParse({ q: 'x'.repeat(101) })).q).toBe(STIMULUS_MESSAGES.search)
+    expect(fieldsOf(StimulusGroupListQuerySchema.safeParse({ status: 'baru' })).status).toBe(STIMULUS_MESSAGES.filter)
+  })
+
+  it('is strict: an unknown key is refused, and only the stimulus list takes a kind', () => {
+    expect(StimulusGroupListQuerySchema.safeParse({ evil: '1' }).success).toBe(false)
+    expect(StimulusGroupListQuerySchema.safeParse({ kind: 'table' }).success).toBe(false)
+    expect(StimulusListQuerySchema.safeParse({ kind: 'table' }).success).toBe(true)
+    expect(StimulusListQuerySchema.safeParse({ kind: 'audio' }).success).toBe(false)
   })
 })

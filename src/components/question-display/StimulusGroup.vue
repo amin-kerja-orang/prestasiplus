@@ -21,7 +21,7 @@ const open = defineModel<boolean>('open', { default: false })
 const wide = useMedia('(min-width: 1024px)')
 const label = computed(() => props.stimulus.label ?? qdCopy.passageFallback)
 const thumbIcon = computed(() => (props.stimulus.kind === 'table' ? 'table' : 'file-text'))
-const thumbSrc = computed(() => (!props.stimulus.svg ? props.stimulus.src : undefined))
+const thumbSrc = computed(() => props.stimulus.src)
 const iconOnly = computed(() => props.stimulus.kind === 'passage' || props.stimulus.kind === 'table')
 </script>
 
@@ -65,8 +65,6 @@ const iconOnly = computed(() => props.stimulus.kind === 'passage' || props.stimu
             class="size-12 object-cover"
             data-testid="stimulus-thumb-img"
           />
-          <!-- eslint-disable-next-line vue/no-v-html -- bundled seed SVG, not user input -->
-          <span v-else-if="stimulus.svg && !iconOnly" class="block w-full" aria-hidden="true" data-testid="stimulus-thumb-svg" v-html="stimulus.svg" />
           <DsIconChip v-else :icon="thumbIcon" tone="neutral" size="lg" data-testid="stimulus-thumb-icon" />
         </span>
         <span class="text-label">{{ chipLabel(label) }}</span>

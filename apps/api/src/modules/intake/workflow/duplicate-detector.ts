@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common'
 import type { IntakeDuplicateKind, QuestionPart } from '@pp/contract'
 
 import { idToString } from '../../../db/ids'
+import { curriculumCodeOf } from '../../bijak/papers/subject-codes'
 import { CurriculumRepository } from '../../curriculum'
 import { QuestionsRepository } from '../../questions'
 import { compare, signatureOf, type Signature } from './duplicates'
@@ -57,7 +58,7 @@ export class DuplicateDetector {
 
   /** The comparable questions of a subject (empty when the subject is unknown to the curriculum). */
   async bank(subjectCode: string): Promise<BankEntry[]> {
-    const subject = await this.curriculum.subjectByCode(subjectCode)
+    const subject = await this.curriculum.subjectByCode(curriculumCodeOf(subjectCode.toUpperCase()))
     if (!subject) return []
     const out: BankEntry[] = []
     const limit = this.config.duplicateScanLimit

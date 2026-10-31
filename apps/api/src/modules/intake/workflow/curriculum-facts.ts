@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import type { AiTaxonomyUnit, IntakeQuestion } from '@pp/contract'
 
 import { idToString } from '../../../db/ids'
+import { curriculumCodeOf } from '../../bijak/papers/subject-codes'
 import { CurriculumRepository } from '../../curriculum'
 import type { CurriculumFacts } from './gate'
 import type { TagIds } from './to-question'
@@ -35,7 +36,8 @@ export class TagResolver {
   constructor(private readonly curriculum: CurriculumRepository) {}
 
   private subject(code: string): Promise<{ id: bigint } | null> {
-    const key = code.toUpperCase()
+    // The contract speaks the Bijak code (MAT, SN); the curriculum `subjects` row is MATH / SCI (R1E2E-01).
+    const key = curriculumCodeOf(code.toUpperCase())
     let p = this.subjects.get(key)
     if (!p) {
       p = this.curriculum.subjectByCode(key)
@@ -119,7 +121,7 @@ export class CurriculumFactsService {
 
   /** Units of a subject for the extraction request (AC-05.2: the model may only pick known units). Capped at 500. */
   async taxonomy(subjectCode: string): Promise<AiTaxonomyUnit[]> {
-    const subject = await this.curriculum.subjectByCode(subjectCode)
+    const subject = await this.curriculum.subjectByCode(curriculumCodeOf(subjectCode.toUpperCase()))
     if (!subject) return []
     const out: AiTaxonomyUnit[] = []
     for (const code of ['T4', 'T5'] as const) {

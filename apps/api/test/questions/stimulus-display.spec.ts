@@ -4,8 +4,7 @@ import { PrismaService } from '../../src/db/prisma.service'
 import { BuilderRepository } from '../../src/modules/exam/builder/builder.repository'
 import { QuestionBankBuilderSource } from '../../src/modules/exam/builder/question-bank.source'
 import { QuestionsRepository, QuestionsService } from '../../src/modules/questions'
-import { ESSAY_CHOICE_NOT_STORED } from '../../src/modules/questions/questions.service'
-import { adminActor, apiError, mcqInput, tagOf, type Tag } from './fixtures'
+import { adminActor, mcqInput, tagOf, type Tag } from './fixtures'
 import { bootQuestionsApp, type QuestionsTestApp } from './helpers'
 
 type Kind = 'passage' | 'image' | 'diagram' | 'table' | 'map' | 'infographic' | 'graph' | 'audio'
@@ -140,22 +139,17 @@ describe('stimulus display read model (R1-T07)', () => {
     expect(review.stimuli[g.groupId]).toEqual(review.groupStimuli?.[g.groupId]?.[0])
   })
 
-  it('a group whose only stimulus is audio is absent from the builder groups', async () => {
+  it('a group whose only stimulus is audio is STILL a group (D90): emitted with no stimuli and its members as one unit', async () => {
     const g = await groupOfQuestions([await stimulus('audio', 'Hanya audio')])
-    expect((await source.groups([g.groupId])).size).toBe(0)
-  })
-
-  it('an essay_choice leaf is valid in the contract but refused with 422 on the write path until it can be stored', async () => {
-    const part = {
-      label: '',
-      prompt: { ms: 'Pilih satu tajuk dan tulis karangan.' },
-      mode: 'essay_choice',
-      marks: 30,
-      key: { kind: 'rubric', marks: 30, criteria: [{ id: 'c1', name: 'Isi' }], bands: [{ name: 'Cemerlang', range: [25, 30] }] },
-      topics: [{ id: 'a', label: 'Tajuk satu' }, { id: 'b', label: 'Tajuk dua' }],
-    }
-    const err = await apiError(() => svc.create(mcqInput(tag, { questionType: 'essay', options: undefined, correctAnswer: undefined, parts: [part] as never }), admin))
-    expect(err.getStatus()).toBe(422)
-    expect(err.fields).toEqual({ parts: ESSAY_CHOICE_NOT_STORED })
+    const groups = await source.groups([g.groupId])
+    expect([...groups.keys()]).toEqual([g.groupId])
+    const info = groups.get(g.groupId)
+    expect(info?.questionIds).toEqual(g.members)
+    expect(info?.stimuli).toEqual([])
+    // The wire still needs a stimulus object: an empty one (no text, no picture).
+    expect(info?.stimulus).toMatchObject({ kind: 'passage', label: '', alt: '' })
+    expect(info?.stimulus?.text).toBeUndefined()
+    const described = await source.describe(g.members.map((id) => ({ id })))
+    for (const id of g.members) expect(described.get(id)?.groupId).toBe(g.groupId)
   })
 })

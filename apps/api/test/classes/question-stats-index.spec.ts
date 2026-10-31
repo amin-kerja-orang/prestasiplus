@@ -65,7 +65,7 @@ describe('practice_answers question index and the used query (migration 0091_pra
     expect(text).not.toMatch(/Seq Scan on structured_attempts/)
   })
 
-  it('still no hashed SubPlan when structured_attempts has rows but no statistics yet', async () => {
+  it('still no hashed SubPlan over the answer tables when structured_attempts has rows but no statistics yet', async () => {
     const student = (await db.query<{ id: string }>(`select id::text from users where email = 'pelajar@demo.test'`))[0]!.id
     await db.query(
       `insert into structured_attempts (user_id, question_id, question_version_no, total_awarded, total_max, submitted_at)
@@ -73,7 +73,10 @@ describe('practice_answers question index and the used query (migration 0091_pra
       [student],
     )
     const text = await plan()
-    expect(text).not.toMatch(/hashed SubPlan/)
+    // The only SubPlan allowed is the D72 level filter over the tiny `education_levels` table; the answer probes never hash.
+    const lines = text.split('\n')
+    const subPlans = lines.flatMap((l, i) => (/^\s*SubPlan \d+/.test(l) ? [lines.slice(i + 1, i + 3).join('\n')] : []))
+    for (const body of subPlans) expect(body).toMatch(/education_levels/)
     expect(text).not.toMatch(/Seq Scan on (practice_answers|structured_attempts)/)
   })
 

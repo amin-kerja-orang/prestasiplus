@@ -1,6 +1,8 @@
 import { Inject, Injectable, Logger } from '@nestjs/common'
 
+import { CLOCK, type Clock } from '../../../db/clock'
 import type { TxClient } from '../../../db/client'
+import { PrismaService } from '../../../db/prisma.service'
 import { GamificationService } from '../../gamification'
 import { practiceRewardSource, type PracticeRewardPort, type PracticeRewardResult, type PracticeSessionCompleted } from '../../practice/ports'
 import { StreakService, WalletService } from '../../wallet'
@@ -21,29 +23,55 @@ export const PRACTICE_REWARD_DESCRIPTION = 'Latihan: jawapan betul'
 export const wholeCount = (v: number): number => (Number.isFinite(v) && v > 0 ? Math.floor(v) : 0)
 
 /**
- * BE-16 `BijakRewardPort` -> BE-11 `WalletService.credit`. BE-16 calls it once per closed EXAM attempt
- * (never a latihan, F3) after the commit; `sourceId = attemptId` makes a repeated call a replay that
- * writes nothing (BE-11 idempotency).
+ * BE-16 `BijakRewardPort` -> BE-11. BE-16 calls it once per closed EXAM attempt (never a latihan, F3; never an
+ * abandoned attempt) after the commit. Everything it writes is one transaction, in the BE-11 lock order (streak, then
+ * wallet):
+ * - the streak ("kombo") is touched on the day the attempt closed (idempotent per day), like a practice session;
+ * - the syiling are credited with `sourceId = attemptId`, so a repeated call is a replay that writes nothing (BE-11 idempotency);
+ * - the XP (`points`, 10 per mark, 2 syiling and 10 XP per mark as V2 `PracticeRecorder`, `docs/discovery/BIJAK-SPM-cloud.md` 4.5) is added to the wallet only when that credit was NEW (`addXp` has no ledger key of its own),
+ *   so a replay never pays the XP twice.
  *
- * AC-20.3 (`docs/requirements/v2-bijak-spm.md`): "Given Mod Pelajar, then no rewards are credited". An
- * `isTest` attempt therefore writes NO ledger row and moves no balance (#45 M2). The coins are floored
- * (half marks give a fraction) and a result of 0 or less credits nothing (the wallet refuses it).
+ * Evidence against AC-R1-10.1 (`docs/requirements/v3-bijak-spm-scope.md`): the V2 notes (`docs/discovery/BIJAK-SPM-cloud.md` 4.5) document the
+ * aggregate `practice_sessions` row and the rates (2 syiling and 10 XP per mark), but do NOT document the kombo (streak) step of V2
+ * `PracticeRecorder` line by line. The streak touch here is therefore parity with the V3 practice reward port (`WalletPracticeReward`: a
+ * completed session touches the streak) and with the M14 rule that kombo is the daily streak; confirm against the V2 code when it is available.
+ * AC-R1-10.2 (lead decision): Cuba Lagi is a new attempt and earns again, as V2 does (one award per ATTEMPT, key = attemptId).
+ *
+ * AC-20.3 (`docs/requirements/v2-bijak-spm.md`): "Given Mod Pelajar, then no rewards are credited". An `isTest` attempt
+ * therefore writes NO ledger row, moves no balance, no XP and no streak (#45 M2). The coins are floored (half marks give a
+ * fraction) and a result of 0 or less credits nothing (the wallet refuses it), but the streak still counts a closed exam.
  */
 @Injectable()
 export class WalletBijakReward implements BijakRewardPort {
-  constructor(@Inject(WalletService) private readonly wallet: WalletService) {}
+  constructor(
+    @Inject(WalletService) private readonly wallet: WalletService,
+    @Inject(StreakService) private readonly streaks: StreakService,
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
   async award(input: BijakRewardInput): Promise<void> {
     if (input.isTest) return // AC-20.3: Mod Pelajar earns no rewards
     const amount = wholeCount(input.coins)
-    if (!(amount >= 1)) return // a zero score earns nothing; the wallet refuses a non-positive credit
-    await this.wallet.credit({
-      userId: input.userId,
-      amount,
-      isTest: input.isTest,
-      source: BIJAK_REWARD_SOURCE,
-      sourceId: input.attemptId,
-      description: input.description,
+    const xp = wholeCount(input.points)
+    await this.prisma.transaction(async (tx) => {
+      // The day the attempt closed. Never later than the server clock (a swept attempt carries the time it was closed, but a skewed
+      // or corrupt value must not make the streak refuse with "at is in the future"): then the day of now counts.
+      const closed = input.submittedAt instanceof Date && !Number.isNaN(input.submittedAt.getTime()) && input.submittedAt.getTime() <= this.clock.now().getTime() ? input.submittedAt : undefined
+      await this.streaks.touch(input.userId, { ...(closed ? { at: closed } : {}), tx })
+      if (!(amount >= 1)) return // a zero score earns nothing; the wallet refuses a non-positive credit
+      const credited = await this.wallet.credit(
+        {
+          userId: input.userId,
+          amount,
+          isTest: input.isTest,
+          source: BIJAK_REWARD_SOURCE,
+          sourceId: input.attemptId,
+          description: input.description,
+        },
+        { tx },
+      )
+      if (!credited.replayed && xp > 0) await this.wallet.addXp({ userId: input.userId, amount: xp, isTest: input.isTest }, { tx })
     })
   }
 }

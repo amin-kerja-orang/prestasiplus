@@ -108,6 +108,9 @@ describe('teacher remedial progress and Command Center scan (S3, BR-M10-11, BR-M
       qy = [await publishedMcq(t, w, { spId: spB }), await publishedMcq(t, w, { spId: spB })]
       qz = [await publishedMcq(t, w, { spId: spC }), await publishedMcq(t, w, { spId: spC })]
       chapter = (await t.db.query<{ id: string; name: string }>(`select id::text, name from chapters where subject_id = $1 and in_tree and name is not null order by id limit 1`, [w.tag.subjectId]))[0] as { id: string; name: string }
+      // the seeded DEMO002 pupil is a Darjah 4 pupil of a primary school (SK): hidden by D72, so the other teacher's pupil is made secondary here
+      await t.db.query(`update schools set type = 'SMK' where code = 'DEMO002'`)
+      await t.db.query(`update users set grade = 10 where id = $1`, [w.studentOther])
       await makeClass(t, w, w.teacherA, [w.student1, w.student2])
       await makeClass(t, w, w.teacherC, [w.studentOther], 'Kelas Lain')
       // student 1: SP A 1/4 = 25 (weak), SP B 0/2 = 0 (weak), SP C 1/2 = 50 (not weak), chapter topic 0/2 (weak)
@@ -174,6 +177,22 @@ describe('teacher remedial progress and Command Center scan (S3, BR-M10-11, BR-M
       await classes.unenrol((roster as { id: string }).id, w.student2, new Date())
       const body = RemedialScanSchema.parse((await teacherA.get('/guru/command-center/remedial/scan')).body)
       expect(body.weakStudents.map((s) => s.studentId)).toEqual([w.student1])
+    })
+
+    it('a Darjah pupil (D72) is not scanned and cannot be given a test: the scan, the class card and the dashboard agree', async () => {
+      const classes = t.get(ClassesRepository)
+      const roster = (await classes.forTeacher(w.teacherA))[0] as { id: string }
+      await classes.enrol({ classroomId: roster.id, studentId: w.student2, source: 'teacher', now: new Date() })
+      const visible = RemedialScanSchema.parse((await teacherA.get('/guru/command-center/remedial/scan')).body)
+      expect(visible.weakStudents.map((s) => s.studentId)).toEqual([w.student1, w.student2])
+
+      await t.db.query(`update users set grade = 4 where id = $1`, [w.student2])
+      const body = RemedialScanSchema.parse((await teacherA.get('/guru/command-center/remedial/scan')).body)
+      expect(body.weakStudents.map((s) => s.studentId)).toEqual([w.student1])
+      errorIs(await teacherA.post('/guru/command-center/remedial/generate', { studentId: w.student2, subject: w.subjectName }), 403, 'FORBIDDEN', 'Pelajar ini bukan murid anda.')
+      const dash = (await teacherA.get('/guru/dashboard')).body.data as { stats: { students: number }; classes: { studentCount: number }[] }
+      expect(dash.stats.students).toBe(1)
+      expect(dash.classes.reduce((n, c) => n + c.studentCount, 0)).toBe(dash.stats.students)
     })
   })
 })

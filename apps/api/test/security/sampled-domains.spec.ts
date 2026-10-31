@@ -64,18 +64,41 @@ describe('BE-33 AC1 b to e: sampled routes of every domain', () => {
   // --- b. cross-user / cross-school ids are 404 ------------------------------------------------
 
   describe('b. a cross-user or cross-school id is 404 (never 403, never 200)', () => {
+    // H-A11. Since the secondary-only rule (2026-10-29) the people of primary-type schools (SK) are hidden from EVERY admin, so the
+    // seeded DEMO002 (type SK, Darjah pupils) answered 404 to the all-schools admin too, and these cases proved nothing about the
+    // school scope: a 404 caused by the primary filter looks the same as a 404 caused by the school scope. The fixture makes DEMO002 a
+    // secondary school (SMK, Tingkatan pupils) so that only the school scope can explain the 404 for the school admin, and the
+    // sanity read by the all-schools admin must be 200.
+    beforeAll(async () => {
+      await t.db.query(`update schools set type = 'SMK' where id = $1::bigint`, [school2])
+      await t.db.query(`update users set grade = 8 where school_id = $1::bigint and grade is not null`, [school2])
+    })
+
+    it('the fixture is a visible secondary school (control: the all-schools admin lists its pupils)', async () => {
+      const pupil = (await t.db.query<{ id: string }>(`select id::text from users where school_id = $1::bigint and grade = 8 limit 1`, [school2]))[0]!.id
+      expect((await call(admin, 'get', `/admin/users/${pupil}`)).status).toBe(200)
+    })
+
     it('users: a school admin reads a user of another school', async () => {
-      const other = (await t.db.query<{ id: string }>(`select id::text from users where school_id = $1::bigint limit 1`, [school2]))[0]!.id
+      const other = (await t.db.query<{ id: string }>(`select id::text from users where school_id = $1::bigint and grade = 8 limit 1`, [school2]))[0]!.id
       expectError(await call(schoolAdmin, 'get', `/admin/users/${other}`), 404, 'NOT_FOUND')
       expectError(await call(schoolAdmin, 'put', `/admin/users/${other}`, { roles: ['student'], name: 'Nama Baharu', grade: 4 }), 404, 'NOT_FOUND')
       expectError(await call(schoolAdmin, 'post', `/admin/users/${other}/toggle-active`), 404, 'NOT_FOUND')
       expectError(await call(schoolAdmin, 'delete', `/admin/users/${other}`), 404, 'NOT_FOUND')
-      // Sanity: the same id is reachable by the admin of all schools.
+      // Sanity: the same id is reachable by the admin of all schools, and nothing was written by the refused calls.
       expect((await call(admin, 'get', `/admin/users/${other}`)).status).toBe(200)
+      const row = (await t.db.query<{ name: string; is_active: boolean }>(`select name, is_active from users where id = $1::bigint`, [other]))[0]! // still there (not deleted)
+      expect(row.name).not.toBe('Nama Baharu')
+      expect(row.is_active).toBe(true)
+    })
+
+    it('control: the school admin does reach a user of the OWN school (the 404 above is the school scope, not a blanket refusal)', async () => {
+      const own = (await t.db.query<{ id: string }>(`select id::text from users where school_id = $1::bigint and grade is not null limit 1`, [school1]))[0]!.id
+      expect((await call(schoolAdmin, 'get', `/admin/users/${own}`)).status).toBe(200)
     })
 
     it('school admin people: a school admin reads and resets a pupil of another school', async () => {
-      const pupil = (await t.db.query<{ id: string }>(`select id::text from users where school_id = $1::bigint limit 1`, [school2]))[0]!.id
+      const pupil = (await t.db.query<{ id: string }>(`select id::text from users where school_id = $1::bigint and grade = 8 limit 1`, [school2]))[0]!.id
       expectError(await call(schoolAdmin, 'get', `/admin-sekolah/pelajar/${pupil}`), 404, 'NOT_FOUND')
       expectError(await call(schoolAdmin, 'post', `/admin-sekolah/pelajar/${pupil}/reset-password`, {}), 404, 'NOT_FOUND')
     })

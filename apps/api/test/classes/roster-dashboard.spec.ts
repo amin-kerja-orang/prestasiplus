@@ -186,9 +186,19 @@ describe('teacher roster, dashboard and inline curriculum (AC 2, 3, 4, 7)', () =
       expect(ids).not.toContain(sInactive)
       expect(ids).not.toContain(sOther)
       expect(res.meta).toEqual({ count: res.data.length, schoolSet: true })
-      const other = StudentsBody.parse((await c.get('/guru/students?tab=school')).body)
-      expect(other.data.map((s) => s.id)).toContain(sOther)
-      expect(other.data.map((s) => s.id)).not.toContain(s1)
+      // DEMO002 is a primary school (SK) and its seeded pupil is Darjah 4: hidden (secondary-only, D72) until both are made secondary
+      const hidden = StudentsBody.parse((await c.get('/guru/students?tab=school')).body)
+      expect(hidden.data.map((s) => s.id)).not.toContain(sOther)
+      await t.db.query(`update schools set type = 'SMK' where code = 'DEMO002'`)
+      await t.db.query(`update users set grade = 10 where id = $1`, [sOther])
+      try {
+        const other = StudentsBody.parse((await c.get('/guru/students?tab=school')).body)
+        expect(other.data.map((s) => s.id)).toContain(sOther)
+        expect(other.data.map((s) => s.id)).not.toContain(s1)
+      } finally {
+        await t.db.query(`update schools set type = 'SK' where code = 'DEMO002'`)
+        await t.db.query(`update users set grade = 4 where id = $1`, [sOther])
+      }
     })
 
     it('tab=school is capped at 200 rows while meta.count counts every match', async () => {

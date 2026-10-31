@@ -7,7 +7,7 @@ import { PrismaService } from '../../src/db/prisma.service'
 import { BIJAK_REWARD_DESCRIPTION } from '../../src/modules/bijak/attempts/ports'
 import { PRACTICE_REWARD_DESCRIPTION, WalletBijakReward, WalletPracticeReward } from '../../src/modules/bijak/integration'
 import { practiceRewardSource, type PracticeSessionCompleted } from '../../src/modules/practice/ports'
-import { ADMIN, bootIntegrationApp, type IntegrationApp, loginAs, STUDENT } from './helpers'
+import { ADMIN, bootIntegrationApp, type IntegrationApp, loginAs, START, STUDENT } from './helpers'
 
 let t: IntegrationApp
 let studentId: string
@@ -174,6 +174,73 @@ describe('WalletBijakReward.award', () => {
     await award(randomUUID(), -2)
     expect(await ledger(tiny)).toHaveLength(0)
     expect(await balance(studentId)).toBe(before + 3)
+  })
+
+  const xpOf = async (userId: string) => Number((await t.db.query('select xp from wallets where user_id = $1', [userId]))[0]?.xp ?? 0)
+
+  it('adds the XP (10 per mark) once with the syiling: a replay pays neither the ledger row nor the XP again', async () => {
+    const attemptId = randomUUID()
+    const xpBefore = await xpOf(studentId)
+    await award(attemptId, 4) // score 2 marks: 4 syiling, 20 XP
+    expect(await xpOf(studentId)).toBe(xpBefore + 20)
+    await award(attemptId, 4)
+    await award(attemptId, 4)
+    expect(await xpOf(studentId)).toBe(xpBefore + 20)
+    expect(await t.db.query('select 1 from coin_ledger where source = $1 and source_id = $2', ['quiz_spm', attemptId])).toHaveLength(1)
+    // a refused second amount rolls everything back: no XP either
+    await expect(award(attemptId, 6)).rejects.toThrow()
+    expect(await xpOf(studentId)).toBe(xpBefore + 20)
+  })
+
+  it('touches the streak (kombo) on the day the attempt closed: last day, total days and current move once per day, even for a zero score', async () => {
+    const pupil = (await loginAs(t, 'pelajar2@demo.test')).userId
+    const state = async () =>
+      (
+        await t.db.query<{ current: number; last: string | null; total_days: number }>(
+          `select current, to_char(last_activity_date, 'YYYY-MM-DD') last, total_days from streaks where user_id = $1`,
+          [pupil],
+        )
+      )[0] ?? { current: 0, last: null, total_days: 0 }
+    const sit = (coins: number, closed: string) =>
+      bijak.award({ attemptId: randomUUID(), userId: pupil, isTest: false, coins, points: coins * 5, submittedAt: new Date(closed), score: coins / 2, max: 10, provisional: false, description: BIJAK_REWARD_DESCRIPTION })
+    // all dates are relative to the injected clock, not to today's date
+    const DAY = 24 * 3600_000
+    const start = t.clock.now()
+    const myt = (d: Date): string => new Date(d.getTime() + 8 * 3600_000).toISOString().slice(0, 10)
+    const at = (offsetMs: number): string => new Date(start.getTime() + offsetMs).toISOString()
+    // the login of the clock's day already touched the streak: day 1
+    const day1 = await state()
+    expect(day1).toMatchObject({ last: myt(start), total_days: 1 })
+    expect(day1.current).toBeGreaterThanOrEqual(1)
+    // the same day, a zero score then a scoring sitting: nothing moves (once per day)
+    await sit(0, at(-20 * 60_000))
+    await sit(2, at(-10 * 60_000))
+    expect(await state()).toEqual(day1)
+    // the next day: one more day, the streak continues (a zero score counts too)
+    t.clock.set(at(DAY))
+    try {
+      await sit(0, at(DAY - 20 * 60_000))
+      const day2 = await state()
+      expect(day2).toEqual({ current: day1.current + 1, last: myt(new Date(start.getTime() + DAY)), total_days: 2 })
+      await sit(2, at(DAY - 10 * 60_000))
+      expect(await state()).toEqual(day2)
+      // a late event on an earlier day never moves the streak backwards
+      await sit(2, at(-DAY))
+      expect(await state()).toEqual(day2)
+      // a close time AFTER the server clock (skew, corrupt value) is clamped to now: no RangeError, nothing moves on the same day
+      await expect(sit(2, at(DAY + 2 * DAY))).resolves.toBeUndefined()
+      expect(await state()).toEqual(day2)
+    } finally {
+      t.clock.set(START)
+    }
+  })
+
+  it('AC-20.3: a Mod Pelajar attempt moves no XP and no streak either', async () => {
+    const streakBefore = await streak(adminId)
+    const xpBefore = await xpOf(adminId)
+    await award(randomUUID(), 8, { userId: adminId, isTest: true })
+    expect(await xpOf(adminId)).toBe(xpBefore)
+    expect(await streak(adminId)).toEqual(streakBefore)
   })
 
   it('AC-20.3: a Mod Pelajar (is_test) attempt writes no ledger row and moves no balance', async () => {

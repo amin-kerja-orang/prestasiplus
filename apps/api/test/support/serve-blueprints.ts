@@ -20,3 +20,19 @@ export async function serveSeededBlueprints(db: Db): Promise<void> {
 export const NOT_SERVING = `source = 'spec', serves_students = false, verification_id = null`
 export const SERVING = `source = 'verified', serves_students = true,
   verification_id = (select max(v.id) from blueprint_verifications v where v.blueprint_id = blueprints.id)`
+
+/**
+ * The PoC export gives its blueprint sections no mark budget (null = the question count). The standard generator is
+ * exact on marks (D75), so the PoC blueprints get the budgets of their seeded papers (mat-k2 9/6/6, sn-k2 9/4), which
+ * the PoC pools can hit. Kertas 1 Matematik (10 questions of 1 mark) already fits.
+ */
+export async function setPocMarkBudgets(db: { query: (sql: string) => Promise<unknown> }): Promise<void> {
+  const set = (code: string, label: string, budget: number): Promise<unknown> =>
+    db.query(`update blueprint_sections set mark_budget = ${String(budget)}
+        where label = '${label}' and blueprint_id = (select id from blueprints where code = '${code}' and status = 'active')`)
+  await set('1449/2', 'Bahagian A', 9)
+  await set('1449/2', 'Bahagian B', 6)
+  await set('1449/2', 'Bahagian C', 6)
+  await set('4541/2', 'Bahagian A', 9)
+  await set('4541/2', 'Bahagian B', 4)
+}
