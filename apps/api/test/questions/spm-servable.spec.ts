@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { prngStream } from '../../src/db/prng'
-import { QUESTION_COUNT_SQL } from '../../src/modules/account/account-data.repository'
+import { AccountDataRepository, QUESTION_COUNT_SQL } from '../../src/modules/account/account-data.repository'
 import { Be09PracticeQuestionSource } from '../../src/modules/practice/question-bridge'
 import { BankFacts } from '../../src/modules/practice/reads/overview/bank-facts'
 import { OverviewRepository } from '../../src/modules/practice/reads/overview/overview.repository'
@@ -94,6 +94,15 @@ describe('the shared SPM-servable definition', () => {
     const login = (await t.db.query<{ c: string }>(QUESTION_COUNT_SQL))[0]?.c
     expect(Number(login)).toBe(withGroups)
     expect(cards).toBe(drawable)
+  })
+
+  it('REQ-B-006: the login count is a tagged query ($queryRaw + Prisma.sql) and its value is unchanged', async () => {
+    const withGroups = await repo.count({ type: 'mcq', spmPool: true, status: 'approved', active: true })
+    const viaText = Number((await t.db.query<{ c: string }>(QUESTION_COUNT_SQL))[0]?.c) // the plain-text form, run directly
+    const counts = await t.get(AccountDataRepository).platformCounts()
+    expect(counts.questionCount).toBe(viaText)
+    expect(counts.questionCount).toBe(withGroups)
+    expect(counts.questionCount).toBeGreaterThan(0)
   })
 })
 

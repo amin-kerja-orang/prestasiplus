@@ -128,8 +128,9 @@ export const practiceScenarios: Scenario[] = [
       ctx.check((data.questions ?? []).every((q) => q.options.length >= 3), 'a served MCQ has fewer than 3 options')
       const leaked = leakedKeys(res.body)
       ctx.check(leaked.length === 0, `the start response leaks ${leaked.join(', ')}`)
-      // Random sessions draw Darjah 1 to 4 questions only; the base seed has none, so the draw is short.
-      const empty = await student.request('POST', '/practice/sessions', { body: { mode: 'random', subjectCode: 'MATH', count: 5 } })
+      // A subject with no question in the bank cannot fill a draw (Darjah is hidden, D72, and the SPM levels of MATH are stocked by the
+      // battle fixture, so the empty case is a subject nobody seeded).
+      const empty = await student.request('POST', '/practice/sessions', { body: { mode: 'random', subjectCode: 'SEJ', count: 5 } })
       expectError(ctx, empty, 422, 'NOT_ENOUGH_QUESTIONS')
     },
   },
