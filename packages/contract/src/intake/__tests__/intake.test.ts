@@ -388,10 +388,10 @@ describe('item review states (D54a: a separate set from the question statuses)',
     for (const v of ['draf', 'semakan', 'pending_review', 'approved', 'published', 'Dijana', '']) expect(ok(IntakeItemStateSchema, v)).toBe(false)
   })
 
-  it('a linked question carries only the five D54a codes', () => {
-    for (const status of ['draft', 'review', 'approved', 'published', 'archived'])
+  it('a linked question carries only the four D54a codes (ADR-0027)', () => {
+    for (const status of ['draft', 'review', 'approved', 'archived'])
       expect(ok(IntakeAcceptedQuestionSchema, { id: '1', version: 1, status })).toBe(true)
-    for (const status of ['pending_review', 'rejected', 'Draf', 'semakan', 'terbit', 'ditolak'])
+    for (const status of ['published', 'pending_review', 'rejected', 'Draf', 'semakan', 'terbit', 'ditolak'])
       expect(ok(IntakeAcceptedQuestionSchema, { id: '1', version: 1, status })).toBe(false)
     expect(ok(IntakeAcceptedQuestionSchema, { id: '1', version: 0, status: 'draft' })).toBe(false)
   })
