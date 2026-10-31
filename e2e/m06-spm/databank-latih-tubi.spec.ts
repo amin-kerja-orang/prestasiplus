@@ -170,7 +170,7 @@ test.describe('M06 S3 latih tubi', { tag: [moduleTag(6)] }, () => {
     await expect(tid(page, 'spm-back')).toHaveText('Kembali ke Mod SPM')
     await expect(tid(page, 'spm-heading')).toHaveText('Latih Tubi SPM')
     await expect(tid(page, 'spm-sub')).toHaveText(
-      'Pilih subjek untuk mula berlatih (Tingkatan 4 & 5)',
+      'Pilih subjek untuk mula berlatih',
     )
     await expect(page.getByTestId('section-heading')).toHaveText([
       'Subjek Teras (7)',
@@ -268,7 +268,7 @@ test.describe('M06 S3 latih tubi', { tag: [moduleTag(6)] }, () => {
     await expect(tid(page, 'config-sub')).toContainText('0 soalan tersedia')
     await expect(tid(page, 'level-10').getByTestId('level-count')).toHaveText('0 soalan')
     await expect(tid(page, 'level-11').getByTestId('level-count')).toHaveText('0 soalan')
-    await expect(page.getByTestId('difficulty-count')).toHaveText(Array(4).fill('0 soalan'))
+    await expect(page.getByTestId('difficulty-count')).toHaveText(Array(5).fill('0 soalan'))
   })
 })
 
@@ -286,7 +286,7 @@ test.describe('M06 S4 settings and Q2', { tag: [moduleTag(6)] }, () => {
       await expectTabTitle(page, 'Latih Tubi SPM — Matematik')
       await expect(tid(page, 'shell-user-title')).toHaveText('Latih Tubi SPM — Matematik')
       await expect(tid(page, 'shell-user-subtitle')).toHaveCount(0)
-      await expect(tid(page, 'spm-back')).toHaveText('Kembali')
+      await expect(tid(page, 'spm-back')).toHaveText('Kembali ke Senarai Subjek')
       await expect(tid(page, 'spm-back')).toHaveAttribute('href', '/spm/latih-tubi')
       await expect(tid(page, 'config-title')).toHaveText('Matematik')
       await expect(tid(page, 'config-sub')).toHaveText(
@@ -296,18 +296,18 @@ test.describe('M06 S4 settings and Q2', { tag: [moduleTag(6)] }, () => {
 
       expect(await tabCount(page, 'level-10')).toBe('976 soalan')
       expect(await tabCount(page, 'level-11')).toBe('705 soalan')
-      expect(await diff(page)).toEqual(['514 soalan', '577 soalan', '85 soalan', '0 soalan'])
+      expect(await diff(page)).toEqual(['505 soalan', '514 soalan', '577 soalan', '85 soalan', '0 soalan'])
       await expect(page.getByText('Biarkan kosong untuk campuran semua tahap')).toBeVisible()
 
       await tid(page, 'level-10').click()
       await expect(tid(page, 'level-10')).toHaveClass(/border-blue-500/)
       await expect(tid(page, 'level-10')).toHaveClass(/bg-blue-50/)
-      expect(await diff(page)).toEqual(['309 soalan', '410 soalan', '58 soalan', '0 soalan'])
+      expect(await diff(page)).toEqual(['199 soalan', '309 soalan', '410 soalan', '58 soalan', '0 soalan'])
       await tid(page, 'level-11').click()
-      expect(await diff(page)).toEqual(['205 soalan', '167 soalan', '27 soalan', '0 soalan'])
+      expect(await diff(page)).toEqual(['306 soalan', '205 soalan', '167 soalan', '27 soalan', '0 soalan'])
       await tid(page, 'level-11').click()
       await expect(tid(page, 'level-11')).not.toHaveClass(/border-blue-500/)
-      expect(await diff(page)).toEqual(['514 soalan', '577 soalan', '85 soalan', '0 soalan'])
+      expect(await diff(page)).toEqual(['505 soalan', '514 soalan', '577 soalan', '85 soalan', '0 soalan'])
 
       await tid(page, 'difficulty-2').click()
       await expect(tid(page, 'difficulty-2')).toHaveClass(/border-green-500/)
@@ -393,14 +393,15 @@ test.describe('M06 S4 settings and Q2', { tag: [moduleTag(6)] }, () => {
     )
   })
 
-  test('E2E-M06-40 S4 difficulty is 2 per row at 375 and 4 per row from 640; "Pertengahan" stays inside', async ({
+  test('E2E-M06-40 S4 difficulty is 2 per row at 375, 3 from 640 and 5 from 1024; "Pertengahan" stays inside', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
     await loginAs(PELAJAR)
     await gotoApp('/spm/latih-tubi/MATH')
-    expect(await columnsOf(page, 'config-difficulties')).toBe(isMobileWidth(page) ? 2 : 4)
+    const width = viewportWidth(page)
+    expect(await columnsOf(page, 'config-difficulties')).toBe(width >= 1024 ? 5 : width >= 640 ? 3 : 2)
     const inside = await tid(page, 'difficulty-3').evaluate(
       (el) => el.scrollWidth <= el.clientWidth,
     )
@@ -505,7 +506,7 @@ test.describe('M06 Q2 no matching question', { tag: [moduleTag(6)] }, () => {
 
       await gotoApp('/spm/latih-tubi/MATH/quiz?count=40&level=11&difficulty=5')
       await expect(tid(page, 'spm-no-questions')).toContainText(
-        'Tiada soalan untuk tetapan ini. Sila ubah tetapan kuiz.',
+        'Tiada soalan untuk pilihan ini.',
       )
       await expectNoHorizontalScroll(page)
       await tid(page, 'spm-no-questions-back').click()

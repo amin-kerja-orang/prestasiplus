@@ -2,7 +2,7 @@
  * Matematik Kertas 1 (objective) seed: 16 parametrised question families x 4 variants (64 single
  * MCQ) plus three stimulus groups of 4 questions that share one diagram. Fictitious practice items.
  */
-import { barChartSvg, gridSvg, triangleSvg } from './diagrams'
+import { barChartSvg, gridSvg, triangleSvg, svgImage } from './diagrams'
 import { Bank, distinct, mcqQuestion } from './builders'
 
 const POOL = 'MAT1-A'
@@ -504,7 +504,7 @@ function addGroups(bank: Bank): void {
       label: 'Rajah 1',
       caption: 'Segi tiga ABC dengan sudut tegak di B.',
       alt: 'Segi tiga ABC bersudut tegak di B, AB 8 cm dan BC 6 cm.',
-      svg: triangleSvg(8, 6, 'Segi tiga ABC bersudut tegak di B, AB 8 cm dan BC 6 cm.'),
+      image: svgImage(triangleSvg(8, 6, 'Segi tiga ABC bersudut tegak di B, AB 8 cm dan BC 6 cm.')),
     },
   )
 
@@ -554,12 +554,12 @@ function addGroups(bank: Bank): void {
       label: 'Rajah 2',
       caption: 'Markah seorang murid dalam lima mata pelajaran.',
       alt: 'Carta palang markah: BM 60, BI 75, Mat 80, Sej 45, Sains 90.',
-      svg: barChartSvg(
+      image: svgImage(barChartSvg(
         'Markah murid',
         ['BM', 'BI', 'Mat', 'Sej', 'Sn'],
         [60, 75, 80, 45, 90],
         'Carta palang markah: BM 60, BI 75, Mat 80, Sej 45, Sains 90.',
-      ),
+      )),
     },
   )
 
@@ -609,13 +609,13 @@ function addGroups(bank: Bank): void {
       label: 'Rajah 3',
       caption: 'Titik P(1, 2) dan Q(5, 5) pada satah Cartes.',
       alt: 'Satah Cartes dengan titik P(1, 2) dan Q(5, 5) disambung dengan garis lurus.',
-      svg: gridSvg(
+      image: svgImage(gridSvg(
         [
           { name: 'P', x: 1, y: 2 },
           { name: 'Q', x: 5, y: 5 },
         ],
         'Satah Cartes dengan titik P(1, 2) dan Q(5, 5).',
-      ),
+      )),
     },
   )
 }

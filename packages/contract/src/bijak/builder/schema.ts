@@ -62,6 +62,8 @@ export const BIJAK_BUILDER_MESSAGES = {
   paperLocked: 'Kertas Terbit tidak boleh disunting. Tarik balik dahulu.',
   deleteTerbit: 'Tarik balik kertas Terbit sebelum memadam',
   titleRequired: 'Tajuk kertas diperlukan',
+  /** [PROPOSED] REQ-C-008: the paper title is at most 200 characters (create, update). */
+  titleTooLong: 'Tajuk kertas tidak boleh melebihi 200 aksara.',
   invalidQuestion: 'Soalan tidak sah untuk kertas ini',
   invalidSection: 'Bahagian tidak sah',
   noBlueprint: 'Tiada blueprint untuk subjek dan kertas ini',
@@ -441,9 +443,9 @@ export const BijakBuilderPaperCreateSchema = z
   .strictObject({
     subject: z.string().trim().min(1).max(32).meta({ example: 'MAT' }),
     kertas: Kertas,
-    title: z.string().max(200).optional().meta({
+    title: z.string().trim().max(200, BIJAK_BUILDER_MESSAGES.titleTooLong).optional().meta({
       description:
-        'Trimmed; omitted or blank = the default "Percubaan SPM {subjectName} Kertas {kertas} (draf)" (the mock ignores a blank title on create).',
+        'Trimmed, at most 200 characters (422 `fields.title` "Tajuk kertas tidak boleh melebihi 200 aksara."); omitted or blank = the default "Percubaan SPM {subjectName} Kertas {kertas} (draf)" (the mock ignores a blank title on create).',
     }),
   })
   .meta({ id: 'BijakBuilderPaperCreate' })
@@ -475,7 +477,7 @@ export const BijakBuilderPaperPatchSchema = z
       .string()
       .trim()
       .min(1, BIJAK_BUILDER_MESSAGES.titleRequired)
-      .max(200)
+      .max(200, BIJAK_BUILDER_MESSAGES.titleTooLong)
       .optional()
       .meta({ example: 'Percubaan SPM Matematik Kertas 2 Set B' }),
     year: z.number().int().min(1900).max(2100).optional(),
@@ -668,6 +670,13 @@ export const BijakBuilderPaperListQuerySchema = z
     page: z.coerce.number().int().min(1).optional(),
     pageSize: z.coerce.number().int().min(1).max(100).optional(),
     status: BijakBuilderPaperStatusSchema.optional(),
+    subject: z.string().trim().max(32).optional().meta({
+      description: 'R12 "Subjek": Bijak subject code (MAT, SN, SEJ ...). Blank = all subjects; a code that matches no subject gives an empty list.',
+      example: 'MAT',
+    }),
+    search: z.string().trim().max(100).optional().meta({
+      description: 'R12 "Cari": case-insensitive substring of the paper title or code (kod kertas). Blank = no filter.',
+    }),
   })
   .meta({ id: 'BijakBuilderPaperListQuery' })
 export type BijakBuilderPaperListQuery = z.infer<typeof BijakBuilderPaperListQuerySchema>

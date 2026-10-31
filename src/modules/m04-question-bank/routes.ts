@@ -9,6 +9,7 @@ import questionsForm from './routes/questions-form'
 import questionsList from './routes/questions-list'
 import reports from './routes/reports'
 import structured from './routes/structured'
+import studio from './routes/studio'
 import submissions from './routes/submissions'
 
 /**
@@ -26,6 +27,7 @@ const routes: RouteRecordRaw[] = [
   ...submissions,
   ...diagrams,
   ...masterNotes,
+  ...studio,
 ]
 
 export default routes

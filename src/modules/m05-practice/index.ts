@@ -22,7 +22,7 @@ export type * from './api/types'
 // M05-T4 (XL-10): the reusable quiz component and its public contract. Hosts: M05 Q1/Q2/S7/Q4–Q6, M06.
 /** Loaded on first use, so the module entry (read at boot) stays light. */
 export const QuizRunner = defineAsyncComponent(() => import('./components/quiz/QuizRunner.vue'))
-export { PRACTICE_LABELS, REVISION_LABELS } from './components/quiz/quiz-labels'
+export { LATIH_TUBI_LABELS, PRACTICE_LABELS, REVISION_LABELS } from './components/quiz/quiz-labels'
 export type {
   QuizAnswerRecord,
   QuizApi,
