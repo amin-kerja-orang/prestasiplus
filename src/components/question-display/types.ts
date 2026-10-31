@@ -33,8 +33,6 @@ export interface StimulusData {
   /** Natural size, used to reserve the box (no layout shift, NFR-03). */
   width?: number
   height?: number
-  /** Bundled inline SVG (diagram, map, graph); not user input. */
-  svg?: string
   table?: StimulusTable
 }
 
