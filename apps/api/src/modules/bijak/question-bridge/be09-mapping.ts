@@ -534,9 +534,8 @@ function leafScheme(ctx: Ctx, leaf: Leaf, path: string): LeafMapping {
   const refuse = (reason: string, code: BridgeRefusalCode = 'points_unsupported'): never => {
     throw new UnsupportedQuestionError(ctx.questionId, path, reason, code)
   }
-  // essay_choice is not (yet) a mode of the bank part contract; it is read defensively so it is served the day
-  // the bank stores it (the V2 production mode, 31 approved parts). Marked exactly like an essay.
-  if ((leaf.mode as string) === 'essay_choice') return essayChoiceOf(ctx, leaf, path, refuse)
+  // essay_choice (V2 production mode, 31 approved parts) is a bank part mode since R1-T07. Marked exactly like an essay.
+  if (leaf.mode === 'essay_choice') return essayChoiceOf(ctx, leaf, path, refuse)
   switch (leaf.mode) {
     case 'mcq':
       return refuse(

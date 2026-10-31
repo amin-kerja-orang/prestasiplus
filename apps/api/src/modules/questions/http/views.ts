@@ -12,6 +12,7 @@ import {
   QuestionRowSchema,
   QuestionSchema,
   QuestionStimulusGroupSchema,
+  QuestionStimulusTableSchema,
   QuestionStructuredDetailSchema,
   QuestionStructuredRowSchema,
   type QuestionPart,
@@ -104,6 +105,9 @@ export function stimulusGroupView(g: StimulusGroupRecord): z.output<typeof Quest
       body: s.bodyMs === null && s.bodyEn === null ? null : { ms: s.bodyMs ?? s.bodyEn ?? '', ...(s.bodyEn === null || s.bodyMs === null ? {} : { en: s.bodyEn }) },
       imageId: s.assetFileId,
       alt: s.alt,
+      ...(s.caption ? { caption: s.caption } : {}),
+      ...(s.sourceCitation ? { sourceCitation: s.sourceCitation } : {}),
+      ...(QuestionStimulusTableSchema.safeParse(s.tableData).success ? { tableData: QuestionStimulusTableSchema.parse(s.tableData) } : {}),
     })),
     ...(g.optionBank.length === 0
       ? {}
