@@ -82,6 +82,8 @@ interface RunState {
   writtenPaper?: { id: string; title: string; published: boolean; hasAdminQuestion: boolean }
   /** S4b: the submitted sitting of the written paper (B-05 falls back to it when B-02 cannot start). */
   writtenAttempt?: string
+  /** S3e: approved intake questions (one D90 group with a shared passage) placed in the written paper. */
+  intakeInPaper?: number
 }
 
 const statePath = (info: TestInfo) => join(STATE_DIR, `${RUN}-${info.project.name}.json`)
@@ -214,6 +216,26 @@ async function fillIntakeMeta(page: Page): Promise<void> {
   await page.getByTestId('intake-copyright').selectOption('sendiri')
 }
 
+/** The first SP code of a Matematik unit picked in the intake editor (option value `T4:1.0`), read from the DSKP API. */
+async function firstSpCode(page: Page, unitKey: string): Promise<string> {
+  const [form, code] = unitKey.split(':')
+  const list = async <T>(path: string): Promise<T[]> =>
+    ((await (await page.request.get(path)).json()) as { data?: T[] }).data ?? []
+  const subject = (
+    await list<{ id: string | number; name: string }>('/api/subjects?pageSize=100')
+  ).find((x) => x.name === 'Matematik')
+  const level = (await list<{ id: string | number; name: string }>('/api/education-levels')).find(
+    (x) => x.name === (form === 'T5' ? 'Tingkatan 5' : 'Tingkatan 4'),
+  )
+  const r = await page.request.get(
+    `/api/questions/studio/dskp?subjectId=${String(subject?.id)}&educationLevelId=${String(level?.id)}`,
+  )
+  const dskp = (
+    (await r.json()) as { data?: { units: { code: string; sps: { code: string }[] }[] } }
+  ).data
+  return dskp?.units.find((u) => u.code === code)?.sps[0]?.code ?? '1.1.1'
+}
+
 /**
  * Completes every question card of an intake batch so "Hantar untuk semakan" can pass the gate
  * (validation.ts): MCQ with 4 options and key A, stem, DSKP unit (first offered), SP 1.1, TP 3, and
@@ -252,7 +274,9 @@ async function completeIntakeQuestions(page: Page, tag: string): Promise<void> {
     }
     const sp = ed.getByTestId('q-sp')
     if (!(await sp.inputValue()).trim()) {
-      await sp.fill('1.1')
+      // The SP field is free text: type a REAL SP code of the chosen unit (BASE-47 reads real units). A made-up code such
+      // as "1.1" passes the intake gate but is dropped on conversion (R1E2E-17).
+      await sp.fill(await firstSpCode(page, await unit.inputValue()))
       await sp.press('Tab')
     }
     const tp = ed.getByRole('spinbutton', { name: /TP/ })
@@ -286,7 +310,15 @@ async function submitBatch(page: Page, info: TestInfo): Promise<void> {
       })
     : {}
   const text = (body.data?.issues ?? []).map((i) => `${i.where}: ${i.message}`).join('; ')
-  if (text) observe(info, `server gate refused: ${text}`)
+  if (text) {
+    observe(info, `server gate refused: ${text}`)
+    // R1E2E-03 (REQ-B-016): the page must show the refusal and drop the "ready" banner.
+    const banner = await page
+      .getByTestId('issues-toggle')
+      .innerText()
+      .catch(() => '(no issues-toggle)')
+    observe(info, `review page banner after the refusal: "${banner.replace(/\s+/g, ' ').trim()}"`)
+  }
   await expect(
     page.getByTestId('submitted-note'),
     `batch sent for review; server gate: ${text || 'no issues'}`,
@@ -332,11 +364,43 @@ const listRows = (page: Page, text: string) =>
     .filter({ hasText: text })
 
 /** The run's questions as the admin API lists them (id + status), for ids and evidence. */
-async function runQuestions(page: Page, tag: string): Promise<{ id: string; status: string }[]> {
+async function runQuestions(
+  page: Page,
+  tag: string,
+): Promise<{ id: string; status: string; text: string }[]> {
   const res = await page.request.get(`/api/questions?search=${encodeURIComponent(tag)}&pageSize=50`)
   expect(res.status(), 'GET /api/questions (admin list)').toBe(200)
-  const body = (await res.json()) as { data?: { id: string | number; status: string }[] }
-  return (body.data ?? []).map((q) => ({ id: String(q.id), status: q.status }))
+  const body = (await res.json()) as {
+    data?: { id: string | number; status: string; questionText?: string }[]
+  }
+  return (body.data ?? []).map((q) => ({
+    id: String(q.id),
+    status: q.status,
+    text: q.questionText ?? '',
+  }))
+}
+
+/** The entry path of a run question, from the marker in its stem. */
+const pathOf = (text: string): string =>
+  /studio-/.test(text)
+    ? 'Studio'
+    : /borang|kawalan/.test(text)
+      ? 'Bank Soalan form'
+      : /csv-/.test(text)
+        ? 'CSV'
+        : / pdf/.test(text)
+          ? 'PDF intake'
+          : 'other'
+
+/** "Studio 3/3, PDF intake 0/2, ..." approved per entry path. */
+function approvedByPath(qs: { status: string; text: string }[]): string {
+  const by = new Map<string, [number, number]>()
+  for (const q of qs) {
+    const k = pathOf(q.text)
+    const [a, t] = by.get(k) ?? [0, 0]
+    by.set(k, [a + (q.status === 'approved' ? 1 : 0), t + 1])
+  }
+  return [...by].map(([k, [a, t]]) => `${k} ${a}/${t}`).join(', ')
 }
 
 /**
@@ -953,6 +1017,128 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     return out
   }
 
+  test('S2b admin accepts the intake questions in Baris Gilir Semakan (Terima)', async ({
+    page,
+  }, info) => {
+    const st = readState(info)
+    test.skip(!st.pdfBatch?.submitted, 'Blocked: S1c sent no batch for review')
+    await login(page, ADMIN)
+    await adminMenu(page, 'Baris Gilir Semakan')
+    await expect(page.getByTestId('review-queue-page')).toBeVisible()
+    await expectNoHScroll(page)
+    const runRows = () =>
+      page
+        .getByTestId('queue-table')
+        .locator('tbody tr, [data-ds=data-table-cards] > li')
+        .filter({ hasText: st.tag })
+    await expect(runRows().first(), "the run's intake items are queued").toBeVisible()
+    observe(info, `queue rows of this run: ${await runRows().count()}`)
+    // http mode: the review decision is "Terima (Draf)" (WIRE): the item becomes a draft question in the bank, whose
+    // approval is the Bank Soalan lifecycle (S2a, which runs after this step).
+    let accepted = 0
+    for (let guard = 0; guard < 10; guard++) {
+      // The queue reloads after each decision: count the rows only once the list has settled.
+      await page.waitForLoadState('networkidle').catch(() => undefined)
+      await runRows()
+        .first()
+        .waitFor({ state: 'visible', timeout: 5_000 })
+        .catch(() => undefined)
+      if ((await runRows().count()) === 0) break
+      const row = runRows().first()
+      observe(info, `item: ${(await row.innerText()).replace(/\s+/g, ' ').slice(0, 140)}`)
+      // Table rows carry a "Semak" link; the card list below the table breakpoint opens on a tap (row-click).
+      const link = row.locator('[data-testid^=queue-open-]')
+      if ((await link.count()) > 0) await link.first().click()
+      else await row.click()
+      await expect(page.getByTestId('review-item-page')).toBeVisible()
+      await expectNoHScroll(page)
+      const gate = page.getByTestId('review-gate')
+      if (await gate.isVisible().catch(() => false))
+        observe(info, `item gate: ${(await gate.innerText()).replace(/\s+/g, ' ').slice(0, 240)}`)
+      const accept = page.getByTestId('action-publish')
+      await expect(accept, '"Terima (Draf)" on the review item').toBeVisible()
+      observe(
+        info,
+        `decision button: "${(await accept.innerText()).trim()}", enabled ${await accept.isEnabled()}`,
+      )
+      await expect(accept, 'the item passes its gate').toBeEnabled()
+      const res = page
+        .waitForResponse(
+          (r) => r.request().method() !== 'GET' && /\/api\/.*(review|semakan|intake)/.test(r.url()),
+          {
+            timeout: 20_000,
+          },
+        )
+        .catch(() => null)
+      await accept.click()
+      const r = await res
+      observe(
+        info,
+        `accept -> ${r ? `${r.request().method()} ${new URL(r.url()).pathname} HTTP ${r.status()} ${r.ok() ? '' : (await r.text().catch(() => '')).slice(0, 200)}` : 'no request seen'}`,
+      )
+      await expect(
+        page.getByTestId('review-queue-page'),
+        'back on the queue after the decision',
+      ).toBeVisible({
+        timeout: 20_000,
+      })
+      accepted++
+    }
+    saveState(info, { approvedIntake: accepted })
+    const qs = await runQuestions(page, `${st.tag} pdf`)
+    observe(
+      info,
+      `accepted ${accepted} item(s); bank questions from the PDF now: ${qs.map((q) => `#${q.id} ${q.status}`).join(', ') || 'none'}`,
+    )
+    expect(qs.length, 'the PDF questions are in the bank').toBeGreaterThanOrEqual(2)
+  })
+
+  test('S2g R1E2E-12 workaround in the UI: set Aras pemikiran on the intake questions in Studio "Sunting"', async ({
+    page,
+  }, info) => {
+    const st = readState(info)
+    test.skip(!st.approvedIntake, 'Blocked: S2b accepted no intake item')
+    // Neither the intake editor nor the Bank Soalan form has an Aras pemikiran field (R1E2E-12), and the approve gate
+    // needs one per leaf (T33). The Studio editor has it: this is an admin UI path, recorded as a workaround.
+    await login(page, ADMIN)
+    const qs = await runQuestions(page, `${st.tag} pdf`)
+    let saved = 0
+    for (const q of qs) {
+      await page.goto(`/admin/studio/questions/${q.id}/sunting`)
+      await expect(
+        page.getByTestId('studio-form').or(page.getByTestId('studio-load-error')).first(),
+      ).toBeVisible()
+      const unsupported = page.getByTestId('studio-unsupported')
+      if (await unsupported.isVisible().catch(() => false)) {
+        observe(
+          info,
+          `#${q.id}: Studio cannot edit it: ${(await unsupported.innerText()).replace(/\s+/g, ' ').slice(0, 200)}`,
+        )
+        continue
+      }
+      await expectNoHScroll(page)
+      const leaf = 'studio-leaf-0'
+      await page.getByTestId(`${leaf}-cognitive`).selectOption('memahami')
+      if (!(await page.getByTestId(`${leaf}-tp`).inputValue()))
+        await page.getByTestId(`${leaf}-tp`).selectOption('3')
+      const put = page.waitForResponse((r) => isApi(r, 'PUT', /\/api\/questions\/\d+$/), {
+        timeout: 20_000,
+      })
+      await page.getByTestId('studio-save-bar').getByRole('button', { name: 'Simpan draf' }).click()
+      const r = await put
+      observe(
+        info,
+        `#${q.id}: Studio save -> PUT HTTP ${r.status()}${r.ok() ? '' : ` ${(await r.text()).slice(0, 200)}`}`,
+      )
+      if (r.ok()) saved++
+    }
+    observe(
+      info,
+      `Aras pemikiran set on ${saved} of ${qs.length} intake question(s); statuses: ${(await runQuestions(page, `${st.tag} pdf`)).map((q) => `#${q.id} ${q.status}`).join(', ')}`,
+    )
+    expect(saved, 'every intake question saved with Aras pemikiran').toBe(qs.length)
+  })
+
   test('S2a admin approves the Bank Soalan questions (Hantar untuk Semakan, bulk Terbitkan)', async ({
     page,
   }, info) => {
@@ -962,14 +1148,9 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
       'Blocked: S1a/S1b/S1d/S1f created no question',
     )
     await login(page, ADMIN)
-    const n =
-      (st.formQuestion ? 1 : 0) +
-      (st.controlQuestion ? 1 : 0) +
-      (st.csvQuestions?.length ?? 0) +
-      (st.studioGroup?.questionIds.length ?? 0) +
-      (st.studioSingle ? 1 : 0)
     // V3 lifecycle: Draf -> "Hantar untuk Semakan" (question detail) -> "Luluskan" (bulk bar).
     const ids = (await runQuestions(page, st.tag)).map((q) => q.id)
+    const n = ids.length
     observe(info, `${ids.length} run question(s) found`)
     let sent = 0
     for (const id of ids) {
@@ -1008,10 +1189,17 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
       approvedM04: res.affected,
       ...(res.affected ? { servableAt: Date.now() } : {}),
     })
+    observe(
+      info,
+      `approved through the UI, per entry path: ${approvedByPath(await runQuestions(page, st.tag))}`,
+    )
     await expectNoHScroll(page)
     expect(sent, '"Hantar untuk Semakan" succeeded on every question').toBe(ids.length)
-    expect(res.failed, 'no question refused by bulk Terbitkan (approve)').toEqual([])
-    expect(res.affected, 'every run question approved (Diluluskan)').toBe(n)
+    // The untagged CSV rows are refused by design (no DSKP unit/SP, AC-R1-14.4); every other run question must approve.
+    expect(
+      res.affected,
+      'every DSKP-tagged run question approved through the UI (CSV rows excluded)',
+    ).toBe(n - (st.csvQuestions?.length ?? 0))
   })
 
   test('S2c API-assisted lifecycle (UI path blocked): review -> approved, so the pupil side can be observed', async ({
@@ -1057,11 +1245,8 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     // Since T04 (BASE-4) the approve gate refuses a question without a DSKP unit + SP (AC-R1-14.4 /
     // PIPE AC-03.2), so the untagged CSV rows stay in review; the DSKP-tagged form MCQs and the
     // Studio group members (unit, SP, TP and Aras pemikiran per leaf, T33) are expected to approve.
-    const tagged =
-      (st.formQuestion ? 1 : 0) +
-      (st.controlQuestion ? 1 : 0) +
-      (st.studioGroup?.questionIds.length ?? 0) +
-      (st.studioSingle ? 1 : 0)
+    observe(info, `approved per entry path: ${approvedByPath(await runQuestions(page, st.tag))}`)
+    const tagged = ids.length - (st.csvQuestions?.length ?? 0)
     expect(approved, 'every DSKP-tagged run question approved through the API').toBe(tagged)
   })
 
@@ -1100,50 +1285,6 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
       res.failed.filter((m) => /Diterbitkan'?\s*(kepada|->)\s*'?Diterbitkan/.test(m)),
       'no self-contradicting "Diterbitkan kepada Diterbitkan" refusal',
     ).toEqual([])
-  })
-
-  test('S2b admin approves the intake questions in Baris Gilir Semakan', async ({ page }, info) => {
-    const st = readState(info)
-    test.skip(
-      !st.pdfBatch?.submitted && !st.manualBatch?.submitted,
-      'Blocked: S1c/S1d sent no batch for review',
-    )
-    await login(page, ADMIN)
-    await adminMenu(page, 'Baris Gilir Semakan')
-    await expect(page.getByTestId('review-queue-page')).toBeVisible()
-    await expectNoHScroll(page)
-    const rows = page
-      .getByTestId('queue-table')
-      .locator('tbody tr, [data-ds=data-table-cards] > li')
-    const before = await rows.count()
-    observe(info, `queue rows: ${before}`)
-    expect(before, 'the submitted batches are queued').toBeGreaterThanOrEqual(1)
-    let approved = 0
-    for (let guard = 0; guard < 10; guard++) {
-      const row = page
-        .getByTestId('queue-table')
-        .locator('tbody tr, [data-ds=data-table-cards] > li', { hasText: 'E2E' })
-        .first()
-      if ((await row.count()) === 0) break
-      await row.getByRole('link').first().click()
-      const approve = page.getByRole('button', { name: /Lulus/ }).first()
-      await expect(approve, 'Luluskan on the review item').toBeVisible()
-      await approve.click()
-      await page
-        .getByRole('button', { name: /^(Ya|Luluskan|Sahkan)/ })
-        .last()
-        .click()
-        .catch(() => undefined)
-      approved++
-      await page.goto('/admin/spm/semakan')
-    }
-    saveState(info, { approvedIntake: approved })
-    observe(info, `approved ${approved} queue item(s)`)
-    await page.goto(`/admin/spm/soalan`)
-    await expect(
-      page.getByTestId('bank-table'),
-      'approved intake questions in Bank Soalan SPM',
-    ).toContainText('E2E')
   })
 
   test("S5a Databank Soalan SPM receives the admin's approved MCQs (count rises)", async ({
@@ -1617,14 +1758,27 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
       .paper.sections
     const made: string[] = []
     const plan: { section: string; ids: string[] }[] = []
-    for (const s of sections) {
-      const answered = s.rule.type === 'choose' ? (s.rule.n ?? 1) : s.questionCount
-      const base = Math.floor(s.markBudget / answered)
+    // The approved PDF intake questions (S1c > S2b > S2g > S2a): one D90 group with a shared passage. It goes at the
+    // end of Bahagian A (placing one member places the group), so the pupil sitting shows a real shared passage.
+    const intake = (await runQuestions(page, `${st.tag} pdf`)).filter(
+      (x) => x.status === 'approved',
+    )
+    let intakeMarks = 0
+    for (const x of intake)
+      intakeMarks +=
+        (await getData<{ pointsValue?: number }>(`/api/questions/${x.id}`)).pointsValue ?? 1
+    observe(info, `intake questions placed in Bahagian A: ${intake.length} (${intakeMarks} markah)`)
+    for (const [si, s] of sections.entries()) {
+      const withIntake = si === 0 && intake.length > 0 && intake.length < s.questionCount
+      const count = s.questionCount - (withIntake ? intake.length : 0)
+      const budget = s.markBudget - (withIntake ? intakeMarks : 0)
+      const answered = s.rule.type === 'choose' ? (s.rule.n ?? 1) : count
+      const base = Math.floor(budget / answered)
       const ids: string[] = []
-      for (let i = 0; i < s.questionCount; i++) {
-        // choose-N: every question carries the full per-answer mark; "all": the budget split, remainder on the first.
+      for (let i = 0; i < count; i++) {
+        // choose-N: every question carries the full per-answer mark; "all": the budget split, one extra mark on the first ones.
         const marks =
-          s.rule.type === 'choose' ? base : base + (i === 0 ? s.markBudget - base * answered : 0)
+          s.rule.type === 'choose' ? base : base + (i < budget - base * answered ? 1 : 0)
         const res = await post('/api/questions', {
           subjectId: q.subjectId,
           educationLevelId: q.educationLevelId,
@@ -1662,6 +1816,7 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
         ids.push(id)
         made.push(id)
       }
+      if (withIntake) ids.push(intake[0]!.id)
       plan.push({ section: s.id, ids })
     }
     for (const action of ['review', 'approved']) {
@@ -1692,6 +1847,7 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     const ok = pub.status() === 200 && /"ok":true/.test(pubBody)
     saveState(info, {
       writtenPaper: { id: paperId, title, published: ok, hasAdminQuestion: true },
+      intakeInPaper: intake.length,
     })
     expect(ok, 'the structured Kertas 2 paper is Terbit').toBe(true)
     await page.goto(`/admin/spm/kertas/${paperId}`)
@@ -1734,8 +1890,44 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
       await own.first().evaluate(ABOVE, 'k2 Bahagian A 1:'),
       'the own picture is above the stem',
     ).toBe(true)
+    // D90 shared passage of the intake group (S1c), if S3e placed it: shown once on each member's screen.
+    const PASSAGE = 'Harga sebatang pensel RM1'
+    const passageSeen: string[] = []
     let written = 0
     for (let guard = 0; guard < 40; guard++) {
+      const shown = page.locator('[data-stimulus]:visible').filter({ hasText: PASSAGE })
+      const member = await page
+        .getByText(/pensel\?|paling murah\?/)
+        .first()
+        .isVisible()
+        .catch(() => false)
+      if (member || (await shown.count()) > 0) {
+        let seen = `${member ? 'member' : 'other'} screen: passage ${await shown.count()}x`
+        // Below lg the shared Rajah sits behind the sticky chip ("stimulus-chip") and opens in a drawer.
+        const chip = page.getByTestId('stimulus-chip')
+        if ((await shown.count()) === 0 && (await chip.isVisible().catch(() => false))) {
+          await chip.click()
+          const inDrawer = page
+            .locator('[role=dialog] [data-stimulus]:visible')
+            .filter({ hasText: PASSAGE })
+          await inDrawer
+            .first()
+            .waitFor({ state: 'visible', timeout: 5_000 })
+            .catch(() => undefined)
+          seen = `${member ? 'member' : 'other'} screen: chip -> drawer, passage ${await inDrawer.count()}x`
+          await page.keyboard.press('Escape')
+          await page
+            .locator('[role=dialog]')
+            .first()
+            .waitFor({ state: 'hidden', timeout: 5_000 })
+            .catch(() => undefined)
+        }
+        passageSeen.push(seen)
+      }
+      const mcq = page.locator(
+        '[data-testid^=option-]:visible, [data-testid^=mcq-option-]:not([data-testid=mcq-option-image]):visible',
+      )
+      if ((await mcq.count()) > 0) await mcq.first().click()
       // A "working" part: "Jalan kerja" steps and "Jawapan akhir" (MathField inputs).
       const steps = page.locator('[data-testid=math-input]:visible')
       if ((await steps.count()) > 0) {
@@ -1747,6 +1939,18 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
       await page.getByTestId('next').click()
     }
     observe(info, `written answers entered: ${written}`)
+    if (st.intakeInPaper) {
+      observe(
+        info,
+        `shared passage (intake D90 group) in the sitting: ${passageSeen.join('; ') || 'never shown'}`,
+      )
+      const members = passageSeen.filter((x) => x.startsWith('member'))
+      expect(members.length, 'both group members were sat').toBe(2)
+      expect(
+        members.every((x) => x.endsWith(' 1x')),
+        'the shared passage shows once on each member screen',
+      ).toBe(true)
+    }
     await page.getByTestId('submit').click()
     await page.getByTestId('confirm-submit').click()
     await expect(page.getByTestId('win-screen')).toBeVisible()
@@ -1768,6 +1972,39 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
       info,
       `result: own-stimuli blocks ${await rOwn.count()}, pictures inside ${await rOwn.locator('img').count()}`,
     )
+    if (st.intakeInPaper) {
+      const rPassage = page
+        .locator('[data-stimulus]:visible')
+        .filter({ hasText: 'Harga sebatang pensel RM1' })
+      let rCount = await rPassage.count()
+      let how = 'inline (split pane)'
+      // Stacked layout (below the wide breakpoint): the group's chip opens the passage in a drawer.
+      const rChip = page.getByTestId('result-group').getByTestId('stimulus-chip')
+      if (
+        rCount === 0 &&
+        (await rChip
+          .first()
+          .isVisible()
+          .catch(() => false))
+      ) {
+        await rChip.first().click()
+        const inDrawer = page
+          .locator('[role=dialog] [data-stimulus]:visible')
+          .filter({ hasText: 'Harga sebatang pensel RM1' })
+        await inDrawer
+          .first()
+          .waitFor({ state: 'visible', timeout: 5_000 })
+          .catch(() => undefined)
+        rCount = await inDrawer.count()
+        how = 'chip -> drawer'
+        await page.keyboard.press('Escape')
+      }
+      observe(
+        info,
+        `result: shared passage ${how} ${rCount}x; members under the group: ${await page.getByTestId('result-group-members').locator('[data-testid^=result-q-]').count()}`,
+      )
+      expect(rCount, 'the shared passage once on the result').toBe(1)
+    }
     expect(await rOwn.count(), 'own stimulus block once on the result').toBe(1)
     expect(await rOwn.locator('img').count(), 'the own picture once on the result').toBe(1)
     expect(
