@@ -64148,7 +64148,7 @@
           "title": {
             "type": "string",
             "maxLength": 200,
-            "description": "Trimmed; omitted or blank = the default \"Percubaan SPM {subjectName} Kertas {kertas} (draf)\" (the mock ignores a blank title on create)."
+            "description": "Trimmed, at most 200 characters (422 `fields.title` \"Tajuk kertas tidak boleh melebihi 200 aksara.\"); omitted or blank = the default \"Percubaan SPM {subjectName} Kertas {kertas} (draf)\" (the mock ignores a blank title on create)."
           }
         },
         "required": [
@@ -64441,6 +64441,17 @@
           },
           "status": {
             "$ref": "#/components/schemas/BijakBuilderPaperStatus"
+          },
+          "subject": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "R12 \"Subjek\": Bijak subject code (MAT, SN, SEJ ...). Blank = all subjects; a code that matches no subject gives an empty list.",
+            "example": "MAT"
+          },
+          "search": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "R12 \"Cari\": case-insensitive substring of the paper title or code (kod kertas). Blank = no filter."
           }
         }
       },
@@ -111075,7 +111086,7 @@
           "bijak-builder"
         ],
         "summary": "Paper builder: list papers (draf and terbit)",
-        "description": "Newest update first. Optional filter: status. Each row (AdminPaperSummary) carries subjectName, code, budget and ok. The mock listAdminPapers returns a plain array; this route is paged (deviations log). Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "Newest update first. Optional filters: status, subject (Bijak code) and search (title or code, substring, case-insensitive). Each row (AdminPaperSummary) carries subjectName, code, budget and ok. The mock listAdminPapers returns a plain array; this route is paged (deviations log). Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -111103,6 +111114,29 @@
             "required": false,
             "description": "draf = being assembled (editable, can be deleted); terbit = published, visible in Kertas Pilihan and locked. Unpublish (tarik balik) sets the status back to draf; there is no ready or withdrawn state. Mapping to BE-15 `papers.status` (draft, ready, published, withdrawn) is internal: draf = draft or withdrawn, terbit = published; ready is not exposed.",
             "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 32,
+              "description": "R12 \"Subjek\": Bijak subject code (MAT, SN, SEJ ...). Blank = all subjects; a code that matches no subject gives an empty list.",
+              "example": "MAT"
+            },
+            "required": false,
+            "description": "R12 \"Subjek\": Bijak subject code (MAT, SN, SEJ ...). Blank = all subjects; a code that matches no subject gives an empty list.",
+            "name": "subject",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "description": "R12 \"Cari\": case-insensitive substring of the paper title or code (kod kertas). Blank = no filter."
+            },
+            "required": false,
+            "description": "R12 \"Cari\": case-insensitive substring of the paper title or code (kod kertas). Blank = no filter.",
+            "name": "search",
             "in": "query"
           }
         ],
@@ -111153,7 +111187,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields (page, pageSize, status).",
+            "description": "VALIDATION_ERROR with fields (page, pageSize, status, subject, search).",
             "content": {
               "application/json": {
                 "schema": {
