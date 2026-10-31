@@ -28,7 +28,7 @@
 | REQ-B-018 | Accepted: Arkib from report carries the reported version, 409 BM if newer | A1 (b) | r1/b-requests-a1b | ACCEPTED |
 | REQ-B-019 | Accepted with REQ-A-009: A2 updates the demo redeploy check, render.yaml:27, stale seed text, and states the demo-host plan for T36 (repo config only, no server action) | A2 | r1/c-requests-a2 | ACCEPTED |
 | REQ-B-020 | Accepted: Jana refilter through getMany on the first refusal (no 503 while a servable paper exists); is_active half done in REQ-B-013 | A1 (b) | r1/b-requests-a1b | ACCEPTED |
-| REQ-B-021 | Accepted (a)–(d) | A4 dev1 | r1/b-req-021 | ACCEPTED |
+| REQ-B-021 | DELIVERED (a)(b)(c) on r1/b-req-021 @ 07566831; (d) closed by A3's T31 (b3501db9: stimulus optional, no placeholder, `stimuli: []`) — merge T31 | A4 + A3 | r1/b-req-021, r1/t31-builder-wire | DELIVERED |
 | REQ-C-009 | Accepted: batch list itemCount + reviewedCount | A2 | r1/c-requests-a2 | ACCEPTED |
 | REQ-C-010 | Accepted: question rows carry kertas + numberLabel | A2 | r1/c-requests-a2 | ACCEPTED |
 | REQ-C-011 | DELIVERED in T47: filters tahun / negeri / kertas / jenis on GET /api/questions (Tahun = source_papers.year, Negeri = exam_board, Jenis = exam_type, Kertas = paper_code trailing digit; bad value 422 "Nilai penapis tidak sah.") | A2 · T47 | r1/t47-bank-parity @ 20cc7ba3 | DELIVERED |
