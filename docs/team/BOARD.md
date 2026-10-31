@@ -308,3 +308,10 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
   - Evidence: tsc 0; eslint 0; seed/e2e + e2e-profile-builder 14/14; seed guards + exam-builder + papers seed 355/355; registry-boot 3/3. Playwright not run (full stack needed; covered by the API integration spec).
   - Security: none (seed and tests only). Needs B2.
   - **B1 merge order: T26b → T26c → T36.** Expect a `test/bijak-integration/helpers.ts` conflict between T26b and T36 (both edit it; T26c does not). Re-run e2e-profile-builder after T36.
+- **fix-attempt-image-url READY** r1/fix-attempt-image-url @ 8a48a7ac (A1b; off BASE-62, BASE-63 merge pending). The fix is test-only.
+  - Root cause: since REQ-A-010 (Team C, 892eeae82 → BASE-50), the m28 mock registry gives diagrams `data:` URL pictures. `test/bijak-attempts/helpers.ts` serves that mock raw, so the contract's 300-char file-token cap (correct; production only emits `/api/files/<token>`) rejected it.
+  - Fix: `servedStimulus()` drops `data:` pictures from the fixture and keeps the svg. No src or contract change.
+  - Evidence: bijak-attempts 180/180 (was 56 fail); contract bijak 151/151; contract:check ok; tsc 0; eslint 0. Needs B2.
+  - T38, T40 and T50 will go green once this merges.
+  - **Process note for B2/C:** a change to the m28 mock registry must also run `apps/api/test/bijak-attempts`.
+- REQ-B-026 moved from A1a to A1b, to run in parallel.
