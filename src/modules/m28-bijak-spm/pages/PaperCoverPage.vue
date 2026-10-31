@@ -105,6 +105,9 @@ async function begin(restart: boolean): Promise<void> {
       />
       <PastSittingsLink :paper-id="paperId" class="self-start" />
 
+      <!-- Right under the hero and above the resume choice: the refusal of "Mula" / "Mula Semula" stays in view on a phone. -->
+      <UAlert v-if="failure" color="error" variant="soft" :title="failure" role="alert" data-testid="start-failure" />
+
       <UAlert
         v-if="needsChoice && open"
         color="info"
@@ -179,9 +182,6 @@ async function begin(restart: boolean): Promise<void> {
           data-testid="mode-choice"
         />
       </section>
-
-      <!-- Outside both branches: a refusal of "Mula" or "Mula Semula" (403, paper being updated) is always visible. -->
-      <UAlert v-if="failure" color="error" variant="soft" :title="failure" role="alert" data-testid="start-failure" />
     </template>
 
     <UModal
