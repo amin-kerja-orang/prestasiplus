@@ -18,6 +18,7 @@ import type { BijakGenerateShortage } from '@pp/contract'
 import GenerateShortageAlert from '../components/GenerateShortageAlert.vue'
 import KeywordSuggestion from '../components/KeywordSuggestion.vue'
 import PartResultCard from '../components/PartResultCard.vue'
+import ReportQuestionButton from '../components/ReportQuestionButton.vue'
 import PastSittingsLink from '../components/PastSittingsLink.vue'
 import ResultGroup from '../components/ResultGroup.vue'
 import RichText from '../components/RichText.vue'
@@ -413,6 +414,7 @@ const home = computed(() => landingPath.value || '/dashboard')
               <span class="tabular" data-testid="q-score">{{ q.awarded }} / {{ q.marks }}</span>
             </summary>
             <div class="mt-3 flex flex-col gap-3">
+              <div><ReportQuestionButton :question-id="q.questionId" :attempt-id="attemptId" /></div>
               <StimulusStack
                 v-if="ownStimuliOf(q.questionId).length"
                 :stimuli="ownStimuliOf(q.questionId)"

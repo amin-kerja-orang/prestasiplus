@@ -71,7 +71,7 @@ test.describe('Bijak SPM edge cases @bijak', () => {
     await pickOption(page, 0)
     await page.getByTestId('next').click()
     await pickOption(page, 1)
-    await expect(page.getByTestId('save-status')).toHaveText('Disimpan')
+    await expect(page.getByTestId('save-status')).toHaveText('disimpan')
 
     // Leave to the hub (full load: local copy + mock server are the only memory).
     await gotoApp('/spm/bijak')
@@ -115,7 +115,7 @@ test.describe('Bijak SPM edge cases @bijak', () => {
       .replace(/\s+Mod\s.*$/, '')
       .trim()
     await pickOption(page, 0)
-    await expect(page.getByTestId('save-status')).toHaveText('Disimpan')
+    await expect(page.getByTestId('save-status')).toHaveText('disimpan')
     const a = await submitAndRead(page)
 
     // Attempt B (same paper, "Cuba lagi"): no answers.

@@ -35,6 +35,8 @@ const props = withDefaults(
     questionId: number
     variant?: ReportVariant
     quizSessionId?: string | null
+    /** R1-T42: a Bijak attempt (uuid): the report then stores the paper. */
+    attemptId?: string | null
     source?: ReportSource
     failureText?: string
     tints?: Readonly<Record<string, ReportTint>>
@@ -44,6 +46,7 @@ const props = withDefaults(
   {
     variant: 'mcq',
     quizSessionId: null,
+    attemptId: null,
     source: undefined,
     failureText: REPORT_FAILURE_TEXT,
     tints: undefined,
@@ -109,6 +112,7 @@ async function submit(): Promise<void> {
       reasons: [...selected.value],
       comment: comment.value,
       ...(props.quizSessionId ? { quizSessionId: props.quizSessionId } : {}),
+      ...(props.attemptId ? { attemptId: props.attemptId } : {}),
       source: sourceValue.value,
     })
     if (mine !== requestSeq) return

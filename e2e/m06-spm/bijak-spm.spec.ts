@@ -88,7 +88,7 @@ test.describe('Bijak SPM @bijak', () => {
     await page.locator('[data-testid^=option-]').nth(1).click()
 
     // Autosave status settles.
-    await expect(page.getByTestId('save-status')).toHaveText('Disimpan')
+    await expect(page.getByTestId('save-status')).toHaveText('disimpan')
 
     while (await page.getByTestId('next').isVisible()) await page.getByTestId('next').click()
     await page.getByTestId('submit').click()

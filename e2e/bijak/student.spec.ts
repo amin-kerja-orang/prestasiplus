@@ -38,7 +38,7 @@ test.describe('Bijak SPM Murid @bijak', () => {
 
     await pickOption(page, 1)
     // Autosave indicator settles on "Disimpan".
-    await expect(page.getByTestId('save-status')).toHaveText('Disimpan')
+    await expect(page.getByTestId('save-status')).toHaveText('disimpan')
     expect(await pressedOptions(page)).toContain('true')
     const before = await pressedOptions(page)
 
@@ -82,7 +82,7 @@ test.describe('Bijak SPM Murid @bijak', () => {
       await gotoApp('/spm/bijak')
       await startPaper(page)
       await pickOption(page, 0)
-      await expect(page.getByTestId('save-status')).toHaveText('Disimpan')
+      await expect(page.getByTestId('save-status')).toHaveText('disimpan')
       expect(requests).toEqual([])
       const keys = await page.evaluate(() =>
         Object.keys(localStorage).filter((k) => k.startsWith('pp.bijak.local.')),

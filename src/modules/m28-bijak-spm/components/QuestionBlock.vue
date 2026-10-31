@@ -14,6 +14,7 @@ import type { PartAnswer, QuestionResult, QuestionView } from '../domain/types'
 import { toOptionData } from '../lib/stimulus-data'
 import PartNode from './PartNode.vue'
 import PartResultCard from './PartResultCard.vue'
+import ReportQuestionButton from './ReportQuestionButton.vue'
 import RichText from './RichText.vue'
 import StimulusStack from './StimulusStack.vue'
 
@@ -97,6 +98,7 @@ function pick(id: string): void {
         @click="emit('toggle-flag')"
         >{{ flagged ? 'Ditanda' : 'Tanda soalan' }}</UButton
       >
+      <ReportQuestionButton :question-id="question.id" :attempt-id="attemptId" />
     </header>
 
     <DsStack v-if="choose" gap="2xs">

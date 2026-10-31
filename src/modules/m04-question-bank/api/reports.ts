@@ -94,6 +94,8 @@ export interface ReportInput {
   comment?: string | null
   quizSessionId?: string | null
   source?: ReportSource
+  /** R1-T42: the Bijak attempt (uuid) the pupil reported from; the server takes the paper from it. */
+  attemptId?: string | null
 }
 
 export interface ReportCreated {
