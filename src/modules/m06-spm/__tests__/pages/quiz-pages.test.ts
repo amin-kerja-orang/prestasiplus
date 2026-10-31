@@ -21,6 +21,7 @@ vi.mock('@/modules/m05-practice', async () => {
         start: { type: Object as PropType<StartSessionRequest>, default: null },
         api: { type: Object as PropType<QuizApi>, default: undefined },
         backUrl: { type: String, default: '' },
+        resultUrl: { type: String, default: undefined },
         report: { type: Object, default: null },
         retry: { type: String, default: '' },
         labels: { type: Object, default: undefined },
@@ -91,8 +92,9 @@ describe('Q2 LatihTubiQuizPage', () => {
       levelId: 11,
       difficulty: 4,
     })
-    // the result link "Senarai Subjek" goes to the subject list (V2); a refused start returns to the setup
-    expect(propOf(w, 'backUrl')).toBe('/spm/latih-tubi')
+    // the result link "Senarai Subjek" goes to the subject list (V2); leaving and a refused start return to the setup
+    expect(propOf(w, 'resultUrl')).toBe('/spm/latih-tubi')
+    expect(propOf(w, 'backUrl')).toBe('/spm/latih-tubi/MATH')
     expect(propOf(w, 'labels')).toMatchObject({ back: 'Senarai Subjek' })
   })
 

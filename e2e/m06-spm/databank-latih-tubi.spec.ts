@@ -296,18 +296,18 @@ test.describe('M06 S4 settings and Q2', { tag: [moduleTag(6)] }, () => {
 
       expect(await tabCount(page, 'level-10')).toBe('976 soalan')
       expect(await tabCount(page, 'level-11')).toBe('705 soalan')
-      expect(await diff(page)).toEqual(['0 soalan', '514 soalan', '577 soalan', '85 soalan', '0 soalan'])
+      expect(await diff(page)).toEqual(['505 soalan', '514 soalan', '577 soalan', '85 soalan', '0 soalan'])
       await expect(page.getByText('Biarkan kosong untuk campuran semua tahap')).toBeVisible()
 
       await tid(page, 'level-10').click()
       await expect(tid(page, 'level-10')).toHaveClass(/border-blue-500/)
       await expect(tid(page, 'level-10')).toHaveClass(/bg-blue-50/)
-      expect(await diff(page)).toEqual(['0 soalan', '309 soalan', '410 soalan', '58 soalan', '0 soalan'])
+      expect(await diff(page)).toEqual(['199 soalan', '309 soalan', '410 soalan', '58 soalan', '0 soalan'])
       await tid(page, 'level-11').click()
-      expect(await diff(page)).toEqual(['0 soalan', '205 soalan', '167 soalan', '27 soalan', '0 soalan'])
+      expect(await diff(page)).toEqual(['306 soalan', '205 soalan', '167 soalan', '27 soalan', '0 soalan'])
       await tid(page, 'level-11').click()
       await expect(tid(page, 'level-11')).not.toHaveClass(/border-blue-500/)
-      expect(await diff(page)).toEqual(['0 soalan', '514 soalan', '577 soalan', '85 soalan', '0 soalan'])
+      expect(await diff(page)).toEqual(['505 soalan', '514 soalan', '577 soalan', '85 soalan', '0 soalan'])
 
       await tid(page, 'difficulty-2').click()
       await expect(tid(page, 'difficulty-2')).toHaveClass(/border-green-500/)
