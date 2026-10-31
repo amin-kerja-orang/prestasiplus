@@ -22,6 +22,9 @@ import { validateBlueprint, verifyComposition, type QuestionFacts, type UnitRef,
 /** How many published papers of a subject and kertas are checked against the head (architecture 6.3a). */
 const REVIEW_PAPER_LIMIT = 20
 
+/** Candidate facts of a subject and kertas, loaded once per request. */
+type FactsLoader = (subject: SubjectRef, kertas: number) => Promise<Map<string, QuestionFacts>>
+
 type ReviewGap = BijakBlueprintView['reviewPapers'][number]['gaps'][number]
 
 /** Standard-tier violation to the gap the badge lists. Structural violations are not a "needs review" matter. */
@@ -89,13 +92,11 @@ export class BlueprintViewsService {
    * (no profile, quota, KBAT or share) is "unconstrained" and never a gap (PIPE AC-06.5). A paper whose questions are not all live
    * candidates cannot be measured and is skipped, as the publish check does.
    */
-  private async reviewOf(row: BlueprintWithSections, subject: SubjectRef): Promise<BijakBlueprintView['reviewPapers']> {
+  private async reviewOf(row: BlueprintWithSections, subject: SubjectRef, factsOf: FactsLoader): Promise<BijakBlueprintView['reviewPapers']> {
     const papers = await this.repo.publishedPilihan(row.subjectId, row.kertas, REVIEW_PAPER_LIMIT)
     if (papers.length === 0) return []
     const code = bijakCodeOf(subject.code)
-    const facts = new Map<string, QuestionFacts>(
-      (await this.papersPorts.poolSource.candidates({ subjectId: subject.id.toString(), subjectCode: subject.code, kertas: row.kertas })).map((f) => [f.id, f]),
-    )
+    const facts = await factsOf(subject, row.kertas)
     const out: BijakBlueprintView['reviewPapers'] = []
     for (const paper of papers) {
       const std = standardForPaper(paper, row, code)
@@ -144,11 +145,26 @@ export class BlueprintViewsService {
       return { row, subject, ctx }
     })
     // Only the head version is flagged, and only when published papers depend on the pair (no query otherwise).
-    for (const { row, subject, ctx } of built) {
-      if (row.status !== 'active' || ctx.dependentPaperCount === 0) continue
-      ctx.reviewPapers = await this.reviewOf(row, subject)
-      ctx.needsReview = ctx.reviewPapers.length > 0
+    // One candidate load per subject and kertas for the whole request (the pool facts are the costly part), and the pairs run side by side.
+    const loads = new Map<string, Promise<Map<string, QuestionFacts>>>()
+    const factsOf: FactsLoader = (subject, kertas) => {
+      const key = `${subject.id.toString()}:${String(kertas)}`
+      let load = loads.get(key)
+      if (!load) {
+        load = this.papersPorts.poolSource
+          .candidates({ subjectId: subject.id.toString(), subjectCode: subject.code, kertas })
+          .then((list) => new Map(list.map((f) => [f.id, f] as const)))
+        loads.set(key, load)
+      }
+      return load
     }
+    await Promise.all(
+      built.map(async ({ row, subject, ctx }) => {
+        if (row.status !== 'active' || ctx.dependentPaperCount === 0) return
+        ctx.reviewPapers = await this.reviewOf(row, subject, factsOf)
+        ctx.needsReview = ctx.reviewPapers.length > 0
+      }),
+    )
     return built.map(({ row, subject, ctx }) => blueprintView(row, subject, ctx))
   }
 

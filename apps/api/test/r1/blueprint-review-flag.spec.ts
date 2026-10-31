@@ -117,6 +117,7 @@ beforeAll(async () => {
       options: ['3', '4', '5', '6'],
       correctAnswer: 1,
       explanation: 'Penjelasan ujian.',
+      cognitiveLevel: 'mengaplikasi', // T33 gate: a new approval of an SPM-bound question needs a level per leaf
       kertas: '2',
       tag: { unitId: fx.units[0], spIds: [fx.sp], tp: 3 },
       ...extra,
@@ -134,6 +135,7 @@ beforeAll(async () => {
   for (const action of ['review', 'approved']) {
     const r = await admin.post('/api/questions/bulk-action', { action, ids: all })
     expect(r.status, JSON.stringify(r.body)).toBe(200)
+    expect(r.body.data, `${action}: ${JSON.stringify(r.body)}`).toMatchObject({ affected: all.length, failed: [] })
   }
 }, 600_000)
 
@@ -211,7 +213,7 @@ describe('PIPE AC-06.6: a curated paper that misses quota/KBAT is never blocked;
   it('stating a quota and KBAT marks the published paper does not meet flags the blueprint, listing the paper and its gaps', async () => {
     const publishedBefore = await one(`select count(*)::text id from papers where kind = 'pilihan' and status = 'published'`)
     const quota = { basis: 'questions', lines: [{ unit: { kind: 'unit', nodeId: fx.units[0] }, value: 1 }, { unit: { kind: 'unit', nodeId: fx.units[1] }, value: 2 }] }
-    const saved = await saveVersion('MAT/2-R', { quota, kbatMarks: 3, autoMarkable: true })
+    const saved = await saveVersion('MAT/2-R', { quota, kbatMarks: 1, autoMarkable: true })
     expect(saved).toMatchObject({ version: 2, autoMarkable: true })
     const head = await blueprint()
     expect(head.needsReview).toBe(true)
