@@ -67,7 +67,7 @@ async function seedSets(db: PrismaClient, now: Date): Promise<void> {
     for (let after: string | undefined; ; ) {
       const page = await questions.eligibleIdsPage({ subjectId: String(c.subjectId), type: 'mcq', spmPool: true }, after, 200)
       if (page.length === 0) break
-      for (const r of await questions.getMany(page, 'live')) if (r.spmPool && mcqItemOf(r.version.stemMs, r.version.parts) !== null) rows.push({ id: BigInt(r.id) })
+      for (const r of await questions.getMany(page, 'live')) if (mcqItemOf(r.version.stemMs, r.version.parts) !== null) rows.push({ id: BigInt(r.id) })
       after = page[page.length - 1]
       if (page.length < 200) break
     }
