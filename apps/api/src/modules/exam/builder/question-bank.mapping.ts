@@ -85,9 +85,9 @@ export function statusOf(input: {
   latestStatus: string | null
 }): BijakBuilderQuestionStatus {
   const raw = input.liveStatus ?? input.latestStatus ?? 'draft'
-  const status: BijakBuilderQuestionStatus = (['draft', 'review', 'approved', 'published', 'archived'] as const).find((s) => s === raw) ?? 'draft'
+  const status: BijakBuilderQuestionStatus = (['draft', 'review', 'approved', 'archived'] as const).find((s) => s === raw) ?? 'draft'
   // A withdrawn (inactive) question is not eligible (BE-09 Q-2), so the builder treats it as archived.
-  return status === 'published' && !input.isActive ? 'archived' : status
+  return status === 'approved' && !input.isActive ? 'archived' : status
 }
 
 export function levelOf(levelCode: string | null, formOrigin: string): 'T4' | 'T5' {

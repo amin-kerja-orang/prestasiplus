@@ -91,7 +91,7 @@ export class SpmHubService {
 
   /** Student-visible structured questions of a subject (published, active). */
   private visibleSets(subjectId: string): Promise<number> {
-    return this.questions.count({ subjectId, status: 'published', active: true, type: 'structured' })
+    return this.questions.count({ subjectId, status: 'approved', active: true, type: 'structured' })
   }
 
   /** Pool sizes of the configured subjects: one grouped count each, at most POOL_LOAD_CONCURRENCY at a time. */

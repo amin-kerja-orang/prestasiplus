@@ -137,18 +137,18 @@ export const questionsScenarios: Scenario[] = [
       const tag = nextTag('q')
 
       const untagged = await admin.request('POST', '/questions', {
-        body: mcq(tag, { subjectId: base.subjectId, educationLevelId: base.educationLevelId, status: 'published' }),
+        body: mcq(tag, { subjectId: base.subjectId, educationLevelId: base.educationLevelId, status: 'approved' }),
       })
       expectError(ctx, untagged, 422, 'VALIDATION_ERROR')
       const fields = errorOf(untagged).fields as Json | undefined
       ctx.check(fields !== undefined && Object.keys(fields).length > 0, 'the publish gate 422 has no fields')
 
       const published = await admin.request('POST', '/questions', {
-        body: mcq(`${tag}b`, { subjectId: base.subjectId, educationLevelId: base.educationLevelId, tag: base.tag, status: 'published' }),
+        body: mcq(`${tag}b`, { subjectId: base.subjectId, educationLevelId: base.educationLevelId, tag: base.tag, status: 'approved' }),
       })
       ctx.expectStatus(published, 201)
       const id = String(dataOf(published).id)
-      ctx.check(dataOf(published).status === 'published', 'a tagged question created as published is not published')
+      ctx.check(dataOf(published).status === 'approved', 'a tagged question created as published is not published')
 
       // Q-5: PUT on a published question makes version n+1 as a draft; the list shows the latest version.
       const edited = await admin.request('PUT', `/questions/${id}`, {
@@ -163,7 +163,7 @@ export const questionsScenarios: Scenario[] = [
       ctx.check(dataOf(edited).status === 'draft', `PUT on a published question answered status ${String(dataOf(edited).status)}, expected draft`)
 
       // Taking it down: draft cannot be published directly, so the bulk publish touches nothing.
-      const direct = await admin.request('POST', '/questions/bulk-action', { body: { action: 'published', ids: [id] } })
+      const direct = await admin.request('POST', '/questions/bulk-action', { body: { action: 'approved', ids: [id] } })
       ctx.expectStatus(direct, 200)
       ctx.check((dataOf(direct).affected as number) === 0, 'draft -> published was applied')
       ctx.expectStatus(await admin.request('DELETE', `/questions/${id}`), 200)
@@ -191,7 +191,7 @@ export const questionsScenarios: Scenario[] = [
       }
       // The list never carries a mock status.
       const all = await admin.request('GET', '/questions?pageSize=100')
-      const allowed = new Set(['draft', 'review', 'approved', 'published', 'archived'])
+      const allowed = new Set(['draft', 'review', 'approved', 'archived'])
       ctx.check(listOf(all).every((q) => allowed.has(String(q.status))), 'a list row carries a status outside the v2 codes')
     },
   },

@@ -38,7 +38,7 @@ export interface BuilderQuestionInfo {
   id: string
   /** The version described (the pinned one when asked, else the current one). */
   versionNo: number
-  /** Current lifecycle status (D54a); `published` = Terbit. */
+  /** Current lifecycle status (D54a, ADR-0027); `approved` = Terbit (the only servable status). */
   status: BijakBuilderQuestionStatus
   /** Bijak subject code (MAT, SN, SEJ ...), as `curriculum.subject` of the question. */
   subject: string

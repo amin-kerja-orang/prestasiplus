@@ -67,48 +67,48 @@ describe('setStatus publish gate (service, real database)', () => {
     await t.close()
   })
 
-  async function approved(over: Parameters<typeof mcqInput>[1] = {}): Promise<string> {
+  /** A question waiting for Terbitkan (review to approved is the one gate step, ADR-0027). */
+  async function inReview(over: Parameters<typeof mcqInput>[1] = {}): Promise<string> {
     const q = await svc.create(mcqInput(tag, over), admin)
     await svc.setStatus(q.id, 'review', admin.userId)
-    await svc.setStatus(q.id, 'approved', admin.userId)
     return q.id
   }
 
   it('publishing without unit and SP is 422 with the offending fields, and nothing changes', async () => {
-    const id = await approved()
-    const err = await apiError(() => svc.setStatus(id, 'published', admin.userId))
+    const id = await inReview()
+    const err = await apiError(() => svc.setStatus(id, 'approved', admin.userId))
     expect(err.getStatus()).toBe(422)
     expect(err.code).toBe('VALIDATION_ERROR')
     expect(Object.keys(err.fields ?? {}).sort()).toEqual(['spIds', 'unitId'])
-    expect(await svc.getStatus(id)).toMatchObject({ status: 'approved', liveVersionNo: null })
+    expect(await svc.getStatus(id)).toMatchObject({ status: 'review', liveVersionNo: null })
   })
 
   it('publishing a fully tagged question sets live_version_no and published_at', async () => {
-    const id = await approved({ tag: tagBody(tag, 4) })
-    const view = await svc.setStatus(id, 'published', admin.userId)
-    expect(view.version.status).toBe('published')
+    const id = await inReview({ tag: tagBody(tag, 4) })
+    const view = await svc.setStatus(id, 'approved', admin.userId)
+    expect(view.version.status).toBe('approved')
     expect(view.liveVersionNo).toBe(1)
     expect(view.version.publishedAt).toBeInstanceOf(Date)
-    expect(await svc.getStatus(id)).toMatchObject({ status: 'published', latestVersionNo: 1, liveVersionNo: 1, isActive: true })
+    expect(await svc.getStatus(id)).toMatchObject({ status: 'approved', latestVersionNo: 1, liveVersionNo: 1, isActive: true })
   })
 
   it('create with status published runs the same gate (422) and passes when tagged', async () => {
     const before = (await t.db.query<{ n: string }>(`select count(*) n from questions`))[0]?.n
-    const err = await apiError(() => svc.create(mcqInput(tag, { status: 'published' }), admin))
+    const err = await apiError(() => svc.create(mcqInput(tag, { status: 'approved' }), admin))
     expect(err.getStatus()).toBe(422)
     expect(Object.keys(err.fields ?? {}).sort()).toEqual(['spIds', 'unitId'])
     expect((await t.db.query<{ n: string }>(`select count(*) n from questions`))[0]?.n).toBe(before)
-    const ok = await svc.create(mcqInput(tag, { status: 'published', tag: tagBody(tag, 2) }), admin)
-    expect(ok.version.status).toBe('published')
+    const ok = await svc.create(mcqInput(tag, { status: 'approved', tag: tagBody(tag, 2) }), admin)
+    expect(ok.version.status).toBe('approved')
     expect(ok.liveVersionNo).toBe(1)
   })
 
   it('a pair outside the contract table is 409 CONFLICT with the BM message', async () => {
     const q = await svc.create(mcqInput(tag), admin)
-    const err = await apiError(() => svc.setStatus(q.id, 'published', admin.userId))
+    const err = await apiError(() => svc.setStatus(q.id, 'approved', admin.userId))
     expect(err.getStatus()).toBe(409)
     expect(err.code).toBe('CONFLICT')
-    expect(err.message).toBe(TRANSITION_CONFLICT_MESSAGE('draft', 'published'))
+    expect(err.message).toBe(TRANSITION_CONFLICT_MESSAGE('draft', 'approved'))
     const same = await apiError(() => svc.setStatus(q.id, 'draft', admin.userId))
     expect(same.getStatus()).toBe(409)
   })
@@ -120,28 +120,27 @@ describe('setStatus publish gate (service, real database)', () => {
   })
 
   it('republishing an edited version archives the superseded one in the same step', async () => {
-    const id = await approved({ tag: tagBody(tag, 3) })
-    await svc.setStatus(id, 'published', admin.userId)
+    const id = await inReview({ tag: tagBody(tag, 3) })
+    await svc.setStatus(id, 'approved', admin.userId)
     // Q-5: editing a published question makes version 2 as a draft; version 1 keeps serving.
     await svc.update(id, { subjectId: tag.subjectId, educationLevelId: tag.levelId, difficultyLevel: 3, questionText: 'Soalan yang telah disunting untuk versi dua.' }, admin)
     expect(await svc.getStatus(id)).toMatchObject({ status: 'draft', latestVersionNo: 2, liveVersionNo: 1 })
     await svc.setStatus(id, 'review', admin.userId)
     await svc.setStatus(id, 'approved', admin.userId)
-    await svc.setStatus(id, 'published', admin.userId)
     const rows = await t.db.query<{ version_no: number; status: string; archive_reason: string | null }>(
       `select version_no, status, archive_reason from question_versions where question_id = $1 order by version_no`,
       [id],
     )
     expect(rows).toEqual([
       { version_no: 1, status: 'archived', archive_reason: 'superseded' },
-      { version_no: 2, status: 'published', archive_reason: null },
+      { version_no: 2, status: 'approved', archive_reason: null },
     ])
-    expect(await svc.getStatus(id)).toMatchObject({ status: 'published', liveVersionNo: 2 })
+    expect(await svc.getStatus(id)).toMatchObject({ status: 'approved', liveVersionNo: 2 })
   })
 
   it('taking a published question down ends its serving at once', async () => {
-    const id = await approved({ tag: tagBody(tag, 3) })
-    await svc.setStatus(id, 'published', admin.userId)
+    const id = await inReview({ tag: tagBody(tag, 3) })
+    await svc.setStatus(id, 'approved', admin.userId)
     await svc.setStatus(id, 'archived', admin.userId)
     expect(await svc.getStatus(id)).toMatchObject({ status: 'archived', liveVersionNo: null })
     expect((await apiError(() => svc.getPublicForLearner(id))).getStatus()).toBe(404)

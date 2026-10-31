@@ -26,7 +26,7 @@ describe('PocBuilderQuestionSource', () => {
     expect(info.size).toBe(ids.length)
     for (const id of ids) {
       const q = info.get(id)!
-      expect(q.status).toBe('published')
+      expect(q.status).toBe('approved')
       expect(q.subject).toBe(scope.subject)
       expect(q.kertas).toBe(scope.kertas)
       expect(q.versionNo).toBe(1)

@@ -7,7 +7,7 @@
  * PINNED version (the repository serves only the live and the latest version), the pool tags and paper
  * code used for the kertas, and stimulus groups with their stimuli. Nothing here writes.
  *
- * - candidates: one bounded SQL query (limit = editor cap + slack): live version published AND active (BE-09 Q-2),
+ * - candidates: one bounded SQL query (limit = editor cap + slack): live version approved AND active (BE-09 Q-2),
  *   subject = the paper subject, kertas by the `kertasOf` rule, in bank order (question id ascending).
  * - review: shows the live version, else the latest (the port takes ids only, no version).
  * - describe: the pinned version when the ref has one, else the live version, else the latest (a question
@@ -70,13 +70,13 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
     const subject = await this.builder.subjectByCode(curriculumCodeOf(scope.subject))
     if (!subject) return []
     const pool = poolPattern(scope.subject)
-    // One bounded query. Same eligibility as `QuestionsRepository.eligibleIds` (live version published AND
+    // One bounded query. Same eligibility as `QuestionsRepository.eligibleIds` (live version approved AND
     // active) and the same kertas rule as `kertasOf` (lowest pool digit, else the paper code digit).
     const rows = await this.db.$queryRaw<{ id: bigint }[]>`
       SELECT q.id
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-       WHERE q.is_active AND v.status = 'published' AND v.subject_id = ${subject.id}
+       WHERE q.is_active AND v.status = 'approved' AND v.subject_id = ${subject.id}
          AND COALESCE(
                (SELECT min((substring(t.code from ${pool}))::int) FROM question_tags t
                  WHERE t.question_id = q.id AND t.kind = 'pool' AND t.code ~ ${pool}),

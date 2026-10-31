@@ -160,7 +160,7 @@ describe('dry-run, apply, reconciliation and the data written', () => {
     const [ok, held, t4, none] = rows as [Record<string, unknown>, Record<string, unknown>, Record<string, unknown>, Record<string, unknown>]
     const map = async (entity: string, legacy: string) => (await h.q<{ new_id: string }>(`select new_id from etl_id_map where legacy_source = 'cloud' and entity = $1 and legacy_id = $2`, [entity, legacy]))[0]?.new_id
     expect(ok).toMatchObject({
-      is_active: true, live_version_no: 1, latest_version_no: 1, created_by_id: null, source_type: null, group_id: null, status: 'published', published: true,
+      is_active: true, live_version_no: 1, latest_version_no: 1, created_by_id: null, source_type: null, group_id: null, status: 'approved', published: true,
       type: 'mcq', stem_ms: 'Apakah warna langit?', prompt_ms: 'Apakah warna langit?', explanation_ms: 'Kerana contoh.', language: 'ms', form_origin: 't1_t3',
       difficulty_tp: 4, cognitive_level: null, unit_node_id: null, sp_nodes: 0, rights_status: 'unclear', import_issues: null,
       part_label: '1', marks: 1, mode: 'mcq', depth: 1, key: 'option:A', tags: null,
@@ -171,7 +171,7 @@ describe('dry-run, apply, reconciliation and the data written', () => {
     expect(ok.topic_id).toBe(await map('topics', '4'))
     expect(ok.options).toEqual([{ l: 'A', b: 'Satu', p: 1, i: null }, { l: 'B', b: 'Dua', p: 2, i: null }, { l: 'C', b: 'Tiga', p: 3, i: null }, { l: 'D', b: 'Empat', p: 4, i: null }])
     // Held for a missing image: published and live, but not active; the paths are only kept as a list.
-    expect(held).toMatchObject({ is_active: false, status: 'published', live_version_no: 1 })
+    expect(held).toMatchObject({ is_active: false, status: 'approved', live_version_no: 1 })
     expect(held.import_issues).toEqual([
       { code: 'legacy_image_unresolved', target: 'question', path: 'questions/gambar.png' },
       { code: 'legacy_image_unresolved', target: 'option', label: 'C', path: 'options/c.png' },
