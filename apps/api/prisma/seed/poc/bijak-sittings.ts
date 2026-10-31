@@ -515,7 +515,7 @@ export const bijakSittingsSeed: SeedModule = {
     // BE-19 / BE-20 item analysis has rows.
     const bank = await ensureBankPaper(ctx, subjectRow.id)
     const bankComposition: SectionSnapshot[] = [{ id: bank.sectionId.toString(), label: 'Objektif', rule: { type: 'all' }, questionIds: bank.questions.map((q) => q.id.toString()) }]
-    const bankSource = new Be09BijakQuestionSource(new QuestionsRepository(service), new CurriculumRepository(service))
+    const bankSource = new Be09BijakQuestionSource(new QuestionsRepository(service), new CurriculumRepository(service), { publicIdsOf: () => Promise.resolve(new Map<string, string>()) })
     const bankBundles = await bankSource.loadQuestions(bankComposition.flatMap((s) => s.questionIds))
     if (bankBundles.size !== bank.questions.length) throw new Error('Bijak sittings seed: the BE-09 bridge did not serve the bank questions.')
     await writeSittings(ctx, pupils, aggregates, { key: 'bank-mat-demo', paper: bank, subjectName: subjectRow.name, subject, composition: bankComposition, bundles: bankBundles, plans: BIJAK_BANK_SITTINGS, blank: 0, hardness: BANK_HARDNESS })

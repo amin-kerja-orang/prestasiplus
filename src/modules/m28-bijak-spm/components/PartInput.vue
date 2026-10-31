@@ -3,7 +3,8 @@
  * The answer controls of one leaf part (US-08, US-09):
  *  - working: "Jalan kerja" step lines + "Jawapan akhir" (+ unit) + optional photo of the working;
  *  - numeric: "Jawapan akhir" (+ unit);
- *  - short_text: a text area.
+ *  - short_text: a text area;
+ *  - essay / essay_choice: a text area (essay_choice: pick one topic first, via the shared `EssayAnswer`).
  * `table_fill`, and any kind outside the contract's `BijakAttemptLeafKind` (e.g. the BE-42 PKSK leaf
  * `pksk_choice`, which the server never serves to Bijak, #78 78-09), shows the "not yet available" notice
  * instead of falling into the working/numeric inputs.
@@ -11,6 +12,7 @@
  */
 import { computed, ref } from 'vue'
 
+import { EssayAnswer } from '../../../components/question-display'
 import { DsStack, DsText } from '@/ds'
 
 import { isReadableNumber, latexToPlain } from '../domain/math-expr'
@@ -151,6 +153,18 @@ async function dropPhoto(key: string): Promise<void> {
         Lukis jawapan anda pada kertas, kemudian ambil gambarnya. Guru menyemak senarai semak (garis
         lurus, titik betul, bentuk lengkung).
       </p>
+    </template>
+
+    <template v-else-if="leaf.kind === 'essay_choice'">
+      <EssayAnswer
+        mode="essay_choice"
+        :choice="{ topic: answer.choice, text: answer.text ?? '' }"
+        :topics="leaf.topics ?? []"
+        :range="leaf.wordRange"
+        :disabled="disabled"
+        :name="`topic-${leaf.id}`"
+        @update:choice="update({ choice: $event.topic, text: $event.text })"
+      />
     </template>
 
     <template v-else-if="leaf.kind !== 'working' && leaf.kind !== 'numeric'">
