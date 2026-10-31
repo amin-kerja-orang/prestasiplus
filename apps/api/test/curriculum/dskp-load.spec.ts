@@ -174,7 +174,7 @@ describe('DSKP loader script (R1-B04)', () => {
       const parsed = parseDskpExtract(fixture())
       expect(parsed.ignored).toEqual([{ level: 'D3', code: '1.0', title: 'Darjah row' }])
       expect(parsed.skipped.missingTp).toBe(1)
-      expect(parsed.rejected).toEqual([{ level: 'T1', at: 'T1 unit 1.0', reason: 'TP row not stored: no tp number' }])
+      expect(parsed.rejected).toEqual([{ level: 'T1', at: 'T1 unit 1.0', reason: 'Baris TP tidak disimpan: tiada nombor TP.' }])
 
       const before = await nodesNow()
       const sources = readDskpSources(t)
@@ -197,7 +197,7 @@ describe('DSKP loader script (R1-B04)', () => {
       expect(await nodesNow()).toBe(before + 5)
       const text = formatDskpReport(r)
       expect(text).toContain('Ignored (not Tingkatan 1-5): 1')
-      expect(text).toContain('TP row not stored: no tp number')
+      expect(text).toContain('Baris TP tidak disimpan: tiada nombor TP.')
     })
   })
 
