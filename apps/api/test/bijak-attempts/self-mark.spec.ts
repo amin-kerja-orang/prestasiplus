@@ -419,3 +419,30 @@ describe('R1-B15 Lihat semakan lepas', () => {
     expect((await t.http().get(`/api/bijak/papers/${PAPER.sainsK2}/attempts`)).status).toBe(401)
   })
 })
+
+describe('REQ-B-007 self-marks and the performance aggregate (V2: trusted, included, regrade_count is the marker)', () => {
+  it('a blank part self-marked full is a correct part and its marks reach the aggregate as a regraded write', async () => {
+    const id = await sit(me, PAPER.sainsK2, [])
+    const before = await result(me, id)
+    expect(partOf(before.result, SEL_B)).toMatchObject({ awarded: 0, status: 'kosong' })
+    t.aggregate.calls.length = 0
+    const res = BijakAttemptSelfMarkResultSchema.parse((await selfMark(me, id, { partId: SEL_B, mark: 2 })).body.data)
+    expect(res).toMatchObject({ awarded: 2, status: 'betul' })
+    expect(t.aggregate.calls).toHaveLength(1)
+    expect(t.aggregate.calls[0]).toMatchObject({ attemptId: id, regraded: true, score: res.attemptScore })
+    expect(res.attemptScore).toBe(before.result.score + 2)
+    // the mark is clamped to the part: no more than the part marks can be claimed
+    const over = BijakAttemptSelfMarkResultSchema.parse((await selfMark(me, id, { partId: SEL_B, mark: 50 })).body.data)
+    expect(over.awarded).toBe(2)
+    expect(t.aggregate.calls).toHaveLength(1) // 50 clamps to 2: unchanged, nothing new is written
+  })
+
+  it('lowering the mark lowers the aggregate again: it always carries the current score', async () => {
+    const id = await sit(me, PAPER.sainsK2, [])
+    await selfMark(me, id, { partId: SEL_B, mark: 2 })
+    t.aggregate.calls.length = 0
+    const low = BijakAttemptSelfMarkResultSchema.parse((await selfMark(me, id, { partId: SEL_B, mark: 0 })).body.data)
+    expect(t.aggregate.calls).toHaveLength(1)
+    expect(t.aggregate.calls[0]).toMatchObject({ regraded: true, score: low.attemptScore })
+  })
+})
