@@ -179,7 +179,7 @@ export function withPrototypeIds(next: UserMe, current: UserMe): UserMe {
   }
 }
 
-/** Unsaved form drafts kept in the browser (`pp:draft:*`, for example the Studio) belong to the user: sign-out removes them. */
+/** Unsaved form drafts kept in the browser (`pp:draft:*`, for example the Studio) belong to the user: sign-out and a switch to another user remove them; an expired session (401) keeps them so recovery can offer them again. */
 export const LOCAL_DRAFT_PREFIX = 'pp:draft:'
 function dropLocalDrafts(): void {
   const store = storage()
@@ -257,6 +257,9 @@ export const useSessionStore = defineStore('session', () => {
 
   /** Stores a new session (login, register, token reset, M02 "Login As"). */
   function setSession(session: ClientSession): void {
+    // A different user signing in on this browser never sees the previous user's unsaved drafts (a 401 of the same user keeps them).
+    const previous = auth.value
+    if (previous && String(previous.user.id) !== String(session.user.id)) dropLocalDrafts()
     commit({ ...session })
   }
 
@@ -325,7 +328,6 @@ export const useSessionStore = defineStore('session', () => {
   /** Clears the session (store and `pp.auth`). */
   function clear(): void {
     commit(null)
-    dropLocalDrafts()
   }
 
   /** 401 policy (FR-M01-14): clear the session, then run the registered redirect. */
@@ -362,6 +364,7 @@ export const useSessionStore = defineStore('session', () => {
       }
     }
     clear()
+    dropLocalDrafts()
   }
 
   // Wiring: the API client reads the token from this store and reports 401s to it.

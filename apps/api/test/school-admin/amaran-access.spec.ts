@@ -132,7 +132,11 @@ describe('BE-21 Amaran access: /amaran/*', () => {
     const klass = await insertClass(t.db, { name: '4 Sebelah', schoolId: s2, teacherId })
     const other = await insertUser(t.db, { name: 'Murid Kelas Sebelah', email: 'sebelah@ujian.test', roles: ['student'], schoolId: s2, grade: 10 })
     await enrolIn(t.db, klass, other)
+    // DEMO002 is a primary school (SK): its pupils are hidden (secondary-only, D72) until the school is made secondary
+    expect(AmaranSchoolRiskSchema.parse((await teacher.get(`/amaran/schools/${s2}`)).body.data).pupils).toEqual([])
+    await t.db.query(`update schools set type = 'SMK' where id = $1::bigint`, [s2])
     const risk = AmaranSchoolRiskSchema.parse((await teacher.get(`/amaran/schools/${s2}`)).body.data)
+    await t.db.query(`update schools set type = 'SK' where id = $1::bigint`, [s2])
     expect(risk.pupils.map((p) => p.name)).toEqual(['Murid Kelas Sebelah'])
     await t.db.query(`delete from enrolments where classroom_id = $1::bigint`, [klass])
     await t.db.query(`delete from classrooms where id = $1::bigint`, [klass])

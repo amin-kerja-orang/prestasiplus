@@ -11,7 +11,6 @@ const group: GroupView = {
     { id: '501', numberLabel: '1', stem: 'S1 Rajah 1' },
     { id: '502', numberLabel: '2', stem: 'S2 Rajah 1' },
   ],
-  locked: false,
   warning: null,
 }
 

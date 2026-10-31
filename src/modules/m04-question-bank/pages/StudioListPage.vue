@@ -253,7 +253,6 @@ async function preview(row: StudioRow): Promise<void> {
         id: g.id,
         stimuli: g.stimuli,
         members: [{ id: row.id, numberLabel: h.draft.numberLabel, stem: h.draft.stem }],
-        locked: false,
         warning: g.warning ?? null,
       }
     }

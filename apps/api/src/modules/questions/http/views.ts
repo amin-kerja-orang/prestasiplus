@@ -24,6 +24,7 @@ import { toMytTimestamp } from '../../../common/time/myt'
 import { isLeaf, type QuestionLeaf } from '../grading'
 import { constantFields, difficultyLabelOf, flatFromVersion, kertasOfPaperCode, wireSourceType } from '../projection'
 import { dskpCompleteness } from '../dskp-gate'
+import { stimulusTableOf } from '../stimulus-table'
 import type { QuestionDetailView, QuestionView, StimulusGroupRecord } from '../types'
 
 export type QuestionRow = z.output<typeof QuestionRowSchema>
@@ -126,7 +127,7 @@ export function stimulusGroupView(g: StimulusGroupRecord, tokens: Record<string,
       alt: s.alt,
       ...(s.caption ? { caption: s.caption } : {}),
       ...(s.sourceCitation ? { sourceCitation: s.sourceCitation } : {}),
-      ...(QuestionStimulusTableSchema.safeParse(s.tableData).success ? { tableData: QuestionStimulusTableSchema.parse(s.tableData) } : {}),
+      ...(s.kind === 'table' && stimulusTableOf(s.tableData) ? { tableData: QuestionStimulusTableSchema.parse(stimulusTableOf(s.tableData)) } : {}),
     })),
     ...(g.optionBank.length === 0
       ? {}

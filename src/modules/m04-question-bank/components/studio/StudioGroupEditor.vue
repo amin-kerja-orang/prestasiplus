@@ -37,6 +37,7 @@ import {
   stimulusIssue,
   toCreateBody,
   toUpdateBody,
+  type PendingGroup,
   type StimulusForm,
 } from '../../lib/studio/stimulus'
 import { errorLines, LOAD_ERROR } from '../../lib/ui-errors'
@@ -48,9 +49,11 @@ const props = withDefaults(defineProps<{ disabled?: boolean; currentQuestionId?:
   testid: 'studio-group',
 })
 const groupId = defineModel<string | null>('groupId', { required: true })
+/** Create page only (no question id yet): the stimulus waits here and the page creates it with the question (D93, UX-13). */
+const pending = defineModel<PendingGroup | null>('pending', { default: null })
+const deferred = ref(false)
 const emit = defineEmits<{ changed: [view: GroupView | null] }>()
 
-const SERVING = ['approved', 'published']
 const view = ref<GroupView | null>(null)
 const members = ref<GroupMember[]>([])
 const saved = ref<Record<string, StimulusForm>>({})
@@ -69,7 +72,8 @@ const found = ref<QuestionPick[]>([])
 const searching = ref(false)
 const picks = ref<GroupMember[]>([])
 
-const locked = computed(() => props.disabled || view.value?.locked === true)
+/** No client-side lock: the server decides (409 with `STIMULUS_MESSAGES.groupServed` etc.) and its text is shown under the buttons. */
+const locked = computed(() => props.disabled)
 const savedMembers = computed(() => view.value?.members ?? [])
 const dirty = computed(() => planMembers(savedMembers.value, members.value) !== null)
 const issues = computed(() => memberIssues(members.value))
@@ -88,15 +92,13 @@ function adopt(next: GroupView | null): void {
 async function read(id: string): Promise<GroupView> {
   const g = await fetchGroup(id)
   const list: GroupMember[] = []
-  let served = false
   for (let i = 0; i < g.questionIds.length; i += 6) {
     const chunk = await Promise.all(g.questionIds.slice(i, i + 6).map((q) => fetchStudioQuestion(q)))
     for (const q of chunk) {
       list.push({ id: q.id, numberLabel: q.numberLabel ?? '', stem: q.questionText.slice(0, 120) })
-      if (SERVING.includes(q.status)) served = true
     }
   }
-  return { id: g.id, stimuli: g.stimuli, members: list, locked: served, warning: g.warning ?? null }
+  return { id: g.id, stimuli: g.stimuli, members: list, warning: g.warning ?? null }
 }
 
 let seq = 0
@@ -119,6 +121,16 @@ async function load(id: string | null): Promise<void> {
   }
 }
 watch(groupId, (id) => void load(id), { immediate: true })
+watch(
+  [fresh, picks, deferred],
+  () => {
+    pending.value = deferred.value ? { form: fresh.value, memberIds: picks.value.map((p) => p.id) } : null
+  },
+  { deep: true },
+)
+watch(groupId, (id) => {
+  if (id !== null) deferred.value = false
+})
 
 /** Runs one step; shows the server text on success and its problems on failure. */
 async function run<T>(call: () => Promise<{ data: T; status: string }>): Promise<T | null> {
@@ -151,6 +163,11 @@ async function create(): Promise<void> {
   const issue = stimulusIssue(fresh.value)
   if (issue !== null) {
     problems.value = [issue]
+    return
+  }
+  if (me === null) {
+    problems.value = []
+    deferred.value = true
     return
   }
   const g = await run(async () => {
@@ -324,9 +341,15 @@ const preview = (m: GroupMember): string => (m.stem.length > 90 ? `${m.stem.slic
             </DsCluster>
           </DsSurface>
         </DsStack>
+        <DsCallout v-if="deferred" tone="info" :data-testid="`${testid}-deferred`">
+          Rangsangan kongsi ini akan dicipta apabila soalan disimpan.
+        </DsCallout>
         <DsCluster gap="sm" align="end">
-          <UButton type="button" color="primary" :loading="busy" :disabled="disabled" :data-testid="`${testid}-create`" @click="create">
-            Cipta rangsangan kongsi
+          <UButton v-if="!deferred" type="button" color="primary" :loading="busy" :disabled="disabled" :data-testid="`${testid}-create`" @click="create">
+            {{ currentQuestionId === null ? 'Sediakan rangsangan kongsi' : 'Cipta rangsangan kongsi' }}
+          </UButton>
+          <UButton v-else type="button" color="neutral" variant="soft" :data-testid="`${testid}-undefer`" @click="deferred = false">
+            Batalkan rangsangan kongsi
           </UButton>
           <DsFormField v-slot="{ id }" native label="Atau sertai kumpulan sedia ada (ID)" :for="`${testid}-attach-id`">
             <UInput :id="id" v-model="attachId" inputmode="numeric" :disabled="disabled" :data-testid="`${testid}-attach-id`" @keydown.enter.prevent="attach" />
@@ -339,10 +362,6 @@ const preview = (m: GroupMember): string => (m.stem.length > 90 ? `${m.stem.slic
 
     <!-- The group -->
     <template v-else>
-      <DsCallout v-if="view.locked" tone="warning" :data-testid="`${testid}-locked`">
-        Kumpulan ini mempunyai soalan yang sedang diterbitkan. Arkibkan soalan itu dahulu sebelum mengubah kumpulan.
-      </DsCallout>
-
       <DsText variant="body" tone="muted" :data-testid="`${testid}-id`">Kumpulan #{{ view.id }}</DsText>
       <DsText v-if="view.warning" variant="caption" tone="warning" :data-testid="`${testid}-warning`">{{ view.warning }}</DsText>
 

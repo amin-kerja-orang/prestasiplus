@@ -17,7 +17,9 @@ import { DsCallout, DsCluster, DsFormBar, DsFormField, DsFormSection, DsGrid, Ds
 
 import { fetchEducationLevels, fetchSubjects } from '../api/lookups'
 import {
+  createGroup,
   createQuestionInGroup,
+  createStimulus,
   createStudioQuestion,
   fetchStudioQuestion,
   STUDIO_UNAVAILABLE,
@@ -33,6 +35,7 @@ import StudioLeafEditor from '../components/studio/StudioLeafEditor.vue'
 import StudioPreview from '../components/studio/StudioPreview.vue'
 import StudioStatusBar from '../components/studio/StudioStatusBar.vue'
 import type { GroupView } from '../lib/studio/group-members'
+import { stimulusIssue, toCreateBody, type PendingGroup } from '../lib/studio/stimulus'
 import {
   blankDraft,
   blankLeaf,
@@ -74,6 +77,8 @@ const problems = ref<string[]>([])
 const fieldProblems = ref<Record<string, string>>({})
 
 const groupView = ref<GroupView | null>(null)
+/** D93: a shared stimulus prepared on the create page; it is created with the question in `save` (no orphan group). */
+const pendingGroup = ref<PendingGroup | null>(null)
 const previewOpen = ref(false)
 
 /* ---- draft recovery (V2 flow 1 step 2): unsaved work is kept in the browser and offered again ---- */
@@ -181,7 +186,21 @@ async function save(): Promise<void> {
       await load()
     } else {
       // D93: a group made (or joined) on this page before the question exists takes the question when it is saved.
-      const into = draft.value.groupId
+      let into = draft.value.groupId
+      const pend = pendingGroup.value
+      if (into === null && pend !== null) {
+        const issue = stimulusIssue(pend.form)
+        if (issue !== null) {
+          problems.value = [issue]
+          return
+        }
+        const stim = await createStimulus(toCreateBody(pend.form))
+        const label = pend.form.label.trim() === '' ? null : pend.form.label.trim()
+        const g = await createGroup({ label, stimulusIds: [stim.data.id], questionIds: pend.memberIds })
+        // If the question then fails to save, a retry joins this group instead of making another one.
+        into = g.data.id
+        draft.value.groupId = g.data.id
+      }
       const body = toRequestBody(draft.value)
       const res = into === null ? await createStudioQuestion(body) : await createQuestionInGroup(into, body)
       flash.success('Soalan draf disimpan. Terbitkan melalui semakan apabila sedia.')
@@ -276,7 +295,7 @@ async function save(): Promise<void> {
       <!-- Langkah 2 -->
       <DsStack id="studio-section-rangsangan" as="section">
         <DsFormSection title="Langkah 2 Rangsangan (stimulus)" description="Satu rangsangan dikongsi oleh semua soalan yang merujuknya. Ia dipaparkan sekali." icon="book-open-text">
-          <StudioGroupEditor v-model:group-id="draft.groupId" :current-question-id="props.id ?? null" :disabled="readOnly" @changed="groupView = $event" />
+          <StudioGroupEditor v-model:group-id="draft.groupId" v-model:pending="pendingGroup" :current-question-id="props.id ?? null" :disabled="readOnly" @changed="groupView = $event" />
         </DsFormSection>
       </DsStack>
 

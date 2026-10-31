@@ -113,3 +113,10 @@ export function toUpdateBody(now: StimulusForm, saved: StimulusForm): StimulusUp
   if (now.imageToken !== saved.imageToken) out.imageFileId = now.imageToken
   return Object.keys(out).length === 0 ? null : out
 }
+
+/** D93 on the create page: the shared stimulus is made when the question is saved, not before (no orphan group if the page is left). */
+export interface PendingGroup {
+  form: StimulusForm
+  /** Other questions chosen to share the stimulus (the new question joins them when it is saved). */
+  memberIds: string[]
+}
