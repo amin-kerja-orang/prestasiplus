@@ -6,10 +6,7 @@
  */
 import { computed } from 'vue'
 
-// The pupil display library is what D90 renders groups with. It has no `@/ds` re-export yet, and the admin import rule bans
-// `@/components/*`, so it is reached by path until the DS owner re-exports it (reported to the lead).
-import { StimulusFigure, StimulusGroup } from '../../../../components/question-display'
-import { DsDialog, DsStack, DsText } from '@/ds'
+import { DsDialog, DsStack, DsText, StimulusFigure, StimulusGroup } from '@/ds'
 
 import type { StudioDraft } from '../../lib/studio/draft'
 import type { GroupView } from '../../lib/studio/group-members'
