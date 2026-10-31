@@ -23,7 +23,7 @@ Apply with `prisma migrate deploy`, in number order, together with the API/FE bu
 
 Notes:
 
-- No other team A branch carries a migration folder (checked at the time of writing; `r1/ha18-gate-facts` with 0105 was not on origin). T44 (Kontrak "Boleh tanda auto") uses `blueprints.auto_markable`, which already exists. The numbers 0105 to 0109 stay reserved (0105 for H-A18, 0107 for the R2 pool-tag drop); 0120 to 0129 is team A's overflow range.
+- No other team A branch carries a migration folder (checked at the time of writing; `r1/ha18-gate-facts` with 0105 was not on origin). T44 (Kontrak "Boleh tanda auto") uses `blueprints.auto_markable`, which already exists. Migration numbers: 0105 = A2 H-A18 (`r1/ha18-gate-facts`, not yet pushed); 0106 to 0109 free (the R2 pool-tag drop was planned as 0107 but is deferred); 0120 to 0129 is team A's overflow range.
 - The runbook's section 2.1 names 0101 and 0102 for T25 and T33; keep the same order. 0103 is now in it too (branch `r1/t37-r1-runbook` @ bd2c21e9: list row, before/after SELECTs in 3.1 and 3.5b, history SELECT, and the note not to run `VALIDATE CONSTRAINT` in the release).
 - Statistics: only 0100 needs `VACUUM ANALYZE question_versions;` (runtime on the production-size table not measured).
 - The NOT VALID foreign key on `attempt_id` stays NOT VALID. Do not run `VALIDATE CONSTRAINT` as part of the release; old rows have `attempt_id` values that nothing ever checked.
