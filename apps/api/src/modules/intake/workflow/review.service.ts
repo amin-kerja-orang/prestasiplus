@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 import {
   INTAKE_BLANK_ITEM_DEFAULTS,
+  INTAKE_GATE_MESSAGES,
   INTAKE_MESSAGES,
   IntakeBatchReviewSchema,
   intakeOpenState,
@@ -30,6 +31,7 @@ import type { TxClient } from '../../../db/client'
 import { Prisma } from '../../../db/generated/client'
 import { idFromString, idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
+import { FilesService } from '../../files'
 import { QuestionsRepository, QuestionsService } from '../../questions'
 import { isAdmin, parseId, visibleBatches } from '../files/intake-access'
 import { CurriculumFactsService } from './curriculum-facts'
@@ -85,6 +87,7 @@ export class IntakeReviewService {
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(QuestionsService) private readonly questions: QuestionsService,
     @Inject(QuestionsRepository) private readonly questionsRepo: QuestionsRepository,
+    @Inject(FilesService) private readonly files: FilesService,
     @Inject(CurriculumFactsService) private readonly curriculum: CurriculumFactsService,
     @Inject(ItemViews) private readonly views: ItemViews,
     @Inject(IntakeWorkflowConfig) private readonly config: IntakeWorkflowConfig,
@@ -498,7 +501,7 @@ export class IntakeReviewService {
 
     const ownerId = row.batch.ownerUserId === null ? auth.userId : idToString(row.batch.ownerUserId)
     const actor = { userId: ownerId, role: auth.active.role === 'admin' ? ('admin' as const) : ('teacher' as const) }
-    const groupId = row.stimulus ? await this.bankGroupFor(row, ownerId) : null
+    const groupId = row.stimulus ? await this.bankGroupFor(row, ownerId, auth.mode !== null) : null
 
     let created
     try {
@@ -554,10 +557,11 @@ export class IntakeReviewService {
   /**
    * The bank stimulus group of an item's stimulus: the group of an already accepted item of the same stimulus, else a new
    * bank stimulus and group made from a SNAPSHOT of the intake stimulus (text, caption, alt, the stored crop; D6). Both are
-   * created through `QuestionsService`.
+   * created through `QuestionsService`. The crop is an `intake_figure` file (reviewers only); the bank stimulus gets its OWN
+   * `question_image` copy, so the figure follows the question-image read rule (admin and teacher, and a pupil only while the
+   * question is served) and survives the intake batch (R1-14.3).
    */
-  private async bankGroupFor(row: ItemRow, ownerId: string): Promise<string> {
-    void ownerId
+  private async bankGroupFor(row: ItemRow, ownerId: string, isTest: boolean): Promise<string> {
     const sibling = await this.prisma.client.intakeItem.findFirst({
       where: { stimulusId: row.stimulusId, reviewState: 'accepted', questionId: { not: null } },
       orderBy: { id: 'asc' },
@@ -572,6 +576,12 @@ export class IntakeReviewService {
       s.figureId === null
         ? null
         : await this.prisma.client.intakeFigure.findUnique({ where: { id: s.figureId }, select: { cropFileId: true } })
+    let assetFileId: bigint | null = null
+    if (crop?.cropFileId) {
+      const cropped = await this.files.readStored(idToString(crop.cropFileId))
+      if (!cropped) throw invalid('stimulus', INTAKE_GATE_MESSAGES.figureNotResolved)
+      assetFileId = idFromString((await this.files.storeManaged({ ownerUserId: ownerId, purpose: 'question_image', bytes: cropped.bytes, isTest })).id)
+    }
     const table = s.tableData as { head?: string[]; rows?: string[][] } | null
     const body =
       s.body ?? (table && Array.isArray(table.head) ? [table.head.join(' | '), ...(table.rows ?? []).map((r) => r.join(' | '))].join('\n') : null)
@@ -581,7 +591,7 @@ export class IntakeReviewService {
       bodyMs: body,
       bodyEn: null,
       altText: s.altText || null,
-      assetFileId: crop?.cropFileId ?? null,
+      assetFileId,
     })
     return this.questions.createStimulusGroup({ label: s.label || null, scope: 'section', stimulusIds: [stimulusId], optionBank: [] })
   }
