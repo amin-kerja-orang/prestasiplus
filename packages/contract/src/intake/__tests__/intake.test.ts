@@ -571,12 +571,13 @@ describe('accept, reject, duplicate, extract', () => {
   })
 
   it('which gate rules block a single accept', () => {
-    expect([...INTAKE_ACCEPT_BLOCKING_RULES]).toEqual(['question', 'unitNotInTaxonomy', 'stimulusMissing', 'stimulusAltMissing', 'figureNotResolved'])
+    expect([...INTAKE_ACCEPT_BLOCKING_RULES]).toEqual(['question', 'unitNotInTaxonomy', 'spNotInTaxonomy', 'stimulusMissing', 'stimulusAltMissing', 'figureNotResolved'])
     expect([...INTAKE_ACCEPT_NON_BLOCKING_RULES]).toEqual(['noQuestions', 'sourceRequired', 'copyrightRequired', 'groupNotContiguous'])
     for (const r of [...INTAKE_ACCEPT_BLOCKING_RULES].filter((x) => x !== 'question')) expect(INTAKE_GATE_MESSAGES).toHaveProperty(r)
     for (const r of INTAKE_ACCEPT_NON_BLOCKING_RULES) expect(INTAKE_GATE_MESSAGES).toHaveProperty(r)
     expect(INTAKE_GATE_MESSAGES.unitNotInTaxonomy).toBe('Unit DSKP tiada dalam senarai kurikulum.')
     expect(INTAKE_GATE_MESSAGES.figureNotResolved).toBe('Rajah belum mempunyai imej tersimpan.')
+    expect(INTAKE_GATE_MESSAGES.spNotInTaxonomy('1.1')).toBe('SP "1.1" tiada dalam senarai kurikulum. Pilih SP daripada senarai DSKP.')
   })
 
   it('a blank item starts from the prototype defaults and the body cap is 1 MiB', () => {

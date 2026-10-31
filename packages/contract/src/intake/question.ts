@@ -429,6 +429,8 @@ export const INTAKE_GATE_MESSAGES = {
   stimulusAltMissing: 'Teks alternatif (alt) bagi rajah diperlukan.',
   /** [PROPOSED] new copy (AC4: tags valid against the taxonomy). */
   unitNotInTaxonomy: 'Unit DSKP tiada dalam senarai kurikulum.',
+  /** [PROPOSED] REQ-B-034: an SP code typed in the editor that is not an SP of the subject and level (`SP "1.1" tiada dalam senarai kurikulum. ...`). */
+  spNotInTaxonomy: (code: string) => `SP "${code}" tiada dalam senarai kurikulum. Pilih SP daripada senarai DSKP.`,
   /** [PROPOSED] new copy (AC4: figure references resolve to a stored crop). */
   figureNotResolved: 'Rajah belum mempunyai imej tersimpan.',
   /** `Jumlah markah skema (n) tidak sama dengan markah bahagian (m).` */
@@ -450,6 +452,8 @@ export const INTAKE_GATE_MESSAGES = {
  *    totals, tag, TP 1..6, `needsManual`, unconfirmed low fields);
  *  - `unitNotInTaxonomy` (AC4): `tag.unit` is not a unit of the curriculum list (BE-08) for the subject,
  *    unless `formOrigin` is `T1-T3` with a null unit;
+ *  - `spNotInTaxonomy` (REQ-B-034): an SP code of `tag.sp` that is not an SP of the curriculum list for the subject and level (the
+ *    message names the code; one issue per unknown code). It used to pass and be dropped silently at accept;
  *  - for the item's stimulus: `stimulusMissing` (unknown `stimulusId`), `stimulusAltMissing`, and
  *    `figureNotResolved` (a `diagram` stimulus with neither a stored crop `figureId` nor an `svg`);
  *    the issue carries the item id of the item being accepted and the stimulus label in `where`.
@@ -471,6 +475,7 @@ export const INTAKE_GATE_MESSAGES = {
 export const INTAKE_ACCEPT_BLOCKING_RULES = [
   'question',
   'unitNotInTaxonomy',
+  'spNotInTaxonomy',
   'stimulusMissing',
   'stimulusAltMissing',
   'figureNotResolved',

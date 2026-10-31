@@ -89,14 +89,17 @@ export class TagResolver {
         }
       }
     }
-    const facts: CurriculumFacts = { subjectKnown: subject !== null, levelKnown: levelId !== null, unitKnown }
-    if (!subject || levelId === null) return { facts, ids: null }
+    if (!subject || levelId === null) return { facts: { subjectKnown: subject !== null, levelKnown: levelId !== null, unitKnown, unknownSp: [] }, ids: null }
     const spIds: string[] = []
+    // Every typed code is looked up: an unknown one is a field error (REQ-B-034), never silently dropped. At most MAX_SP are kept.
+    const unknownSp: string[] = []
     for (const code of tag.sp) {
-      if (spIds.length >= MAX_SP) break
       const sp = await this.node(code, subject.id, levelId, 'sp')
-      if (sp) spIds.push(idToString(sp.id))
+      if (sp) {
+        if (spIds.length < MAX_SP) spIds.push(idToString(sp.id))
+      } else if (!unknownSp.includes(code)) unknownSp.push(code)
     }
+    const facts: CurriculumFacts = { subjectKnown: true, levelKnown: true, unitKnown, unknownSp }
     return {
       facts,
       ids: {
