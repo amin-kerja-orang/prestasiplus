@@ -121,7 +121,8 @@ export const STUDENT_ITEMS: readonly MatrixItem[] = [
   item(8, 'Kelas Saya', p('/kelas-saya')),
   item(9, 'Soalan by Chapter', p('/practice/chapter')),
   item(12, 'Remedial', p('/remedial')),
-  item(13, 'SPM', p('/spm')),
+  // /simulasi: Simulasi - Kuiz (V2 path), linked from Bijak SPM under /spm.
+  item(13, 'SPM', p('/spm'), p('/simulasi')),
   item(14, 'Heatmap Topik Lemah', p('/buku-nota/heatmap')),
   item(15, 'Mohon Keluarga Angkat', p('/mohon-keluarga-angkat')),
   item(16, 'Latih Tubi', p('/practice')),

@@ -69,6 +69,27 @@ const routes: RouteRecordRaw[] = [
       header: { title: 'Semakan Bijak SPM' },
     },
   },
+  // Simulasi - Kuiz (R1-F12). Outside /spm/bijak because V2 serves it at /simulasi.
+  {
+    path: '/simulasi/kuiz',
+    name: 'm28.kuiz',
+    component: () => import('./pages/KuizPage.vue'),
+    meta: {
+      ...base,
+      title: 'Simulasi — Kuiz - PRESTASIPLUS',
+      header: { title: 'Simulasi — Kuiz' },
+    },
+  },
+  {
+    path: '/simulasi/:paperId/kuiz',
+    name: 'm28.kuiz.paper',
+    component: () => import('./pages/PaperQuizPage.vue'),
+    meta: {
+      ...base,
+      title: 'Kuiz Kertas - PRESTASIPLUS',
+      header: { title: 'Simulasi — Kuiz' },
+    },
+  },
   ...adminIntake,
 ]
 

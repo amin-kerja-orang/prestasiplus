@@ -1,0 +1,241 @@
+<script setup lang="ts">
+/**
+ * Simulasi paper quiz (`/simulasi/:paperId/kuiz`, R1-F12): a published paper read one Bahagian at a
+ * time (V2 `exam-sim/quiz-paper.blade.php`). Objective parts have "✓ Semak" (marked on the server,
+ * nothing stored, U8); every other part is an unsaved textarea with a one-line note (D83 D-9).
+ * "Skor: n / total" is counted here from the verdicts of the whole paper (total = markableTotal).
+ */
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+
+import { DsEmptyState, DsLoadError, DsPage, DsProgress, DsStickyActions } from '@/ds'
+import { StimulusGroup } from '../lib/question-display'
+import type { StimulusData } from '../lib/question-display'
+import type { BijakKuizCheckResult, BijakKuizItem, BijakKuizPaperPage } from '@pp/contract'
+
+import KuizItem from '../components/KuizItem.vue'
+import { clock, kuizCopy, stimulusKey, toStimulus } from '../lib/kuiz'
+import { useLearnerTheme } from '../lib/use-bijak'
+import { BijakError } from '../server/errors'
+import { bijakServer } from '../server/client'
+
+useLearnerTheme()
+const route = useRoute()
+const server = bijakServer()
+const paperId = computed(() => String(route.params.paperId))
+
+type Phase = 'loading' | 'error' | 'missing' | 'ready'
+const phase = ref<Phase>('loading')
+const page = ref(1)
+const data = ref<BijakKuizPaperPage | null>(null)
+const picked = ref<Record<string, string>>({})
+const written = ref<Record<string, string>>({})
+const verdicts = ref<Record<string, BijakKuizCheckResult>>({})
+const busyId = ref('')
+const errors = ref<Record<string, string>>({})
+const seconds = ref(0)
+const markableTotal = ref(0)
+const sheetOpen = ref(false)
+const timer = setInterval(() => (seconds.value += 1), 1000)
+onBeforeUnmount(() => clearInterval(timer))
+
+const score = computed(() => Object.values(verdicts.value).filter((v) => v.correct).length)
+const pageCount = computed(() => data.value?.pageCount ?? 0)
+const time = computed(() => clock(seconds.value))
+const progress = computed(() =>
+  pageCount.value ? Math.round((page.value / pageCount.value) * 100) : 0,
+)
+const empty = computed(
+  () => !!data.value && (data.value.pageCount === 0 || !data.value.items.length),
+)
+
+interface Block {
+  key: string
+  stimulus?: StimulusData
+  items: { item: BijakKuizItem; number: number }[]
+}
+
+/**
+ * A stimulus shared by two or more neighbouring items is pinned once above them (StimulusGroup);
+ * every other item shows its own. Numbers run on across the paper's pages only within a page.
+ */
+const blocks = computed<Block[]>(() => {
+  const items = data.value?.items ?? []
+  const out: Block[] = []
+  items.forEach((item, i) => {
+    const one = item.stimuli.length === 1 ? item.stimuli[0]! : null
+    const key = one ? stimulusKey(one) : ''
+    const last = out[out.length - 1]
+    const entry = { item, number: i + 1 }
+    if (key && last && last.key === key) last.items.push(entry)
+    else out.push({ key, ...(one ? { stimulus: toStimulus(one, `g${i}`) } : {}), items: [entry] })
+  })
+  return out
+})
+const grouped = (b: Block): boolean => !!b.key && b.items.length > 1 && !!b.stimulus
+
+async function load(): Promise<void> {
+  phase.value = 'loading'
+  try {
+    const res = await server.getKuizPaperPage(paperId.value, page.value)
+    data.value = res
+    markableTotal.value = res.markableTotal
+    phase.value = 'ready'
+    window.scrollTo?.({ top: 0 })
+  } catch (e) {
+    phase.value = e instanceof BijakError && e.code === 'not_found' ? 'missing' : 'error'
+  }
+}
+
+async function check(item: BijakKuizItem): Promise<void> {
+  const optionId = picked.value[item.id]
+  if (!optionId || busyId.value || verdicts.value[item.id]) return
+  busyId.value = item.id
+  errors.value = { ...errors.value, [item.id]: '' }
+  try {
+    const v = await server.checkKuizPaper(paperId.value, { itemId: item.id, optionId })
+    verdicts.value = { ...verdicts.value, [item.id]: v }
+  } catch (e) {
+    const msg =
+      e instanceof BijakError && e.code === 'offline'
+        ? 'Luar talian. Cuba lagi.'
+        : e instanceof BijakError && (e.code === 'bad_request' || e.code === 'not_found')
+          ? e.message
+          : 'Jawapan tidak dapat disemak. Cuba lagi.'
+    errors.value = { ...errors.value, [item.id]: msg }
+  } finally {
+    busyId.value = ''
+  }
+}
+
+function go(delta: number): void {
+  const n = page.value + delta
+  if (n < 1 || n > pageCount.value) return
+  page.value = n
+}
+
+watch(page, load)
+watch(paperId, () => {
+  page.value = 1
+  verdicts.value = {}
+  void load()
+})
+void load()
+</script>
+
+<template>
+  <DsPage
+    :title="data?.paper.title ?? kuizCopy.title"
+    back-to="/spm/bijak"
+    back-label="Bijak SPM"
+    width="prose"
+    data-testid="paper-quiz-page"
+  >
+    <div v-if="phase === 'loading' && !data" class="flex flex-col gap-3" aria-busy="true">
+      <USkeleton class="h-16 w-full" />
+      <USkeleton class="h-64 w-full" />
+    </div>
+
+    <DsEmptyState
+      v-else-if="phase === 'missing'"
+      title="Kertas tidak ditemui"
+      description="Kertas ini tidak tersedia."
+      icon="file-x"
+      data-testid="paper-quiz-missing"
+    />
+    <DsLoadError
+      v-else-if="phase === 'error'"
+      message="Kertas tidak dapat dimuatkan."
+      retry-testid="paper-quiz-retry-load"
+      @retry="load"
+    />
+
+    <div v-else-if="empty" class="flex flex-col items-center gap-4" data-testid="paper-quiz-empty">
+      <DsEmptyState :title="kuizCopy.paperEmpty" icon="file-x" />
+      <UButton to="/spm/bijak" color="neutral" class="min-h-11">{{ kuizCopy.paperBack }}</UButton>
+    </div>
+
+    <template v-else-if="data">
+      <div
+        class="flex flex-col gap-3"
+        :aria-busy="phase === 'loading'"
+        data-testid="paper-quiz-header"
+      >
+        <div class="flex items-start justify-between gap-3">
+          <p class="text-caption text-muted" data-testid="paper-quiz-meta">
+            {{ data.paper.subjectName }} · {{ data.paper.code }}
+            <template v-if="data.section"> · {{ data.section.label }}</template>
+            ({{ data.page }}/{{ data.pageCount }})
+          </p>
+          <p class="text-right">
+            <span class="block text-heading text-primary">{{ time }}</span>
+            <span class="text-caption text-muted">{{ kuizCopy.time }}</span>
+          </p>
+        </div>
+        <DsProgress :value="progress" :show-value="false" aria-label="Kemajuan kertas" />
+      </div>
+
+      <p
+        v-if="data.section?.instruction"
+        class="text-center text-body text-toned"
+        data-testid="paper-quiz-instruction"
+      >
+        {{ data.section.instruction }}
+      </p>
+
+      <template v-for="(b, bi) in blocks" :key="bi">
+        <StimulusGroup v-if="grouped(b)" v-model:open="sheetOpen" :stimulus="b.stimulus!">
+          <KuizItem
+            v-for="e in b.items"
+            :key="e.item.id"
+            v-model:picked="picked[e.item.id]"
+            v-model:written="written[e.item.id]"
+            :item="e.item"
+            :chip="`Soalan ${e.number}`"
+            :verdict="verdicts[e.item.id] ?? null"
+            :busy="busyId === e.item.id"
+            :error="errors[e.item.id]"
+            hide-stimuli
+            @check="check(e.item)"
+          />
+        </StimulusGroup>
+        <template v-else>
+          <KuizItem
+            v-for="e in b.items"
+            :key="e.item.id"
+            v-model:picked="picked[e.item.id]"
+            v-model:written="written[e.item.id]"
+            :item="e.item"
+            :chip="`Soalan ${e.number}`"
+            :verdict="verdicts[e.item.id] ?? null"
+            :busy="busyId === e.item.id"
+            :error="errors[e.item.id]"
+            @check="check(e.item)"
+          />
+        </template>
+      </template>
+
+      <DsStickyActions class="justify-between" data-testid="paper-quiz-pager">
+        <UButton
+          color="neutral"
+          variant="outline"
+          class="min-h-11"
+          :disabled="page <= 1"
+          data-testid="paper-quiz-prev"
+          @click="go(-1)"
+          >{{ kuizCopy.back }}</UButton
+        >
+        <p class="text-caption text-muted" data-testid="paper-quiz-score">
+          Skor: <b class="text-primary">{{ score }}</b> / {{ markableTotal }}
+        </p>
+        <UButton
+          class="min-h-11"
+          :disabled="page >= pageCount"
+          data-testid="paper-quiz-next"
+          @click="go(1)"
+          >{{ kuizCopy.forward }}</UButton
+        >
+      </DsStickyActions>
+    </template>
+  </DsPage>
+</template>

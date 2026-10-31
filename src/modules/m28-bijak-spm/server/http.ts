@@ -22,6 +22,12 @@ import type {
   BijakBlueprintContract,
   BijakGenerateResult,
   BijakGenerateShortage,
+  BijakKuizCheckRequest,
+  BijakKuizCheckResult,
+  BijakKuizPaperPage,
+  BijakKuizResult,
+  BijakKuizSession,
+  BijakKuizStartRequest,
   BijakPaperCover,
   BijakPaperSummary,
   BijakAttemptQuestionResult,
@@ -382,6 +388,51 @@ export class HttpBijakServer implements BijakApi {
   async history(): Promise<HistoryRow[]> {
     const rows = await this.send<BijakAttemptHistoryRow[]>('GET', '/api/bijak/history')
     return rows.map((r) => ({ ...r, startedAt: toMs(r.startedAt) }))
+  }
+
+  /* ---------------------------------------------------------------------- Simulasi Kuiz */
+
+  async startKuiz(input: BijakKuizStartRequest): Promise<BijakKuizSession> {
+    try {
+      return await this.exec<BijakKuizSession>('POST', '/api/bijak/kuiz/sessions', { ...input })
+    } catch (e) {
+      // 422 NO_QUESTIONS "Belum ada soalan objektif": the empty state, not a failure.
+      if (e instanceof ApiError && e.status === 422 && e.code === 'NO_QUESTIONS') {
+        throw new BijakError('no_questions', bodyMessage(e, 'Belum ada soalan objektif'))
+      }
+      throw toBijakError(e)
+    }
+  }
+
+  checkKuiz(sessionId: string, input: BijakKuizCheckRequest): Promise<BijakKuizCheckResult> {
+    return this.send<BijakKuizCheckResult>(
+      'POST',
+      `/api/bijak/kuiz/sessions/${encodeURIComponent(sessionId)}/check`,
+      { ...input },
+    )
+  }
+
+  finishKuiz(sessionId: string, timeSpent?: number): Promise<BijakKuizResult> {
+    return this.send<BijakKuizResult>(
+      'POST',
+      `/api/bijak/kuiz/sessions/${encodeURIComponent(sessionId)}/finish`,
+      timeSpent === undefined ? {} : { timeSpent },
+    )
+  }
+
+  getKuizPaperPage(paperId: string, page: number): Promise<BijakKuizPaperPage> {
+    return this.send<BijakKuizPaperPage>(
+      'GET',
+      `/api/bijak/kuiz/papers/${encodeURIComponent(paperId)}?page=${page}`,
+    )
+  }
+
+  checkKuizPaper(paperId: string, input: BijakKuizCheckRequest): Promise<BijakKuizCheckResult> {
+    return this.send<BijakKuizCheckResult>(
+      'POST',
+      `/api/bijak/kuiz/papers/${encodeURIComponent(paperId)}/check`,
+      { ...input },
+    )
   }
 }
 

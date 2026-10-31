@@ -6,6 +6,8 @@
  * Reveal rules (US-15): an answer key or mark scheme leaves this class only inside a graded
  * result, i.e. after submit (exam) or after "Semak" on that one question (latihan).
  */
+import type { BijakKuizCheckRequest, BijakKuizStartRequest } from '@pp/contract'
+
 import { blankQuestion } from '../admin/intake/domain/blank'
 import { batchToSeeds } from '../admin/intake/domain/convert'
 import { groupsOf } from '../admin/intake/domain/grouping'
@@ -61,6 +63,7 @@ import type {
 } from '../domain/types'
 
 import { BijakError } from './errors'
+import { MockKuiz } from './kuiz-mock'
 import { MemoryStorage, type KeyValueStore } from './storage'
 import type { BijakApi, SaveResult, SubmitResult } from './types'
 
@@ -111,6 +114,7 @@ export class BijakServer implements BijakApi {
   private state: State
   private offline = false
   private readonly ops: AdminOps
+  private readonly kuiz = new MockKuiz(() => this.tick())
 
   constructor(opts: ServerOptions = {}) {
     this.storage = opts.storage ?? new MemoryStorage()
@@ -1042,6 +1046,23 @@ export class BijakServer implements BijakApi {
   }
   deletePaper(id: string) {
     return this.ops.deletePaper(id)
+  }
+
+  /* Simulasi Kuiz (R1-B16): see kuiz-mock.ts. */
+  startKuiz(input: BijakKuizStartRequest) {
+    return this.kuiz.start(input)
+  }
+  checkKuiz(sessionId: string, input: BijakKuizCheckRequest) {
+    return this.kuiz.check(sessionId, input)
+  }
+  finishKuiz(sessionId: string) {
+    return this.kuiz.finish(sessionId)
+  }
+  getKuizPaperPage(paperId: string, page: number) {
+    return this.kuiz.paperPage(paperId, page)
+  }
+  checkKuizPaper(paperId: string, input: BijakKuizCheckRequest) {
+    return this.kuiz.checkPaper(paperId, input)
   }
 
   /** Test helper: the saved answers of an attempt, as the server holds them. */

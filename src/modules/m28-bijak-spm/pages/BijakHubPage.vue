@@ -148,6 +148,13 @@ async function generate(): Promise<void> {
   >
     <template #actions>
       <UButton
+        to="/simulasi/kuiz?count=20"
+        icon="i-ph-lightning"
+        color="neutral"
+        data-testid="kuiz-link"
+        >Simulasi — Kuiz</UButton
+      >
+      <UButton
         to="/spm/bijak/sejarah"
         icon="i-ph-clock-counter-clockwise"
         color="neutral"
