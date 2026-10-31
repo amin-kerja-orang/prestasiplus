@@ -553,7 +553,7 @@ export const questionsRepo = defineRepository({
           pkskDomainId: null,
           isActive: true,
           educationLevelId: levelScope(),
-        } as Where<Question>)
+        })
         // A question with no subject / level has no admin row to count against.
         return new Map([...groups].flatMap(([k, n]) => (k === null ? [] : [[k, n] as const])))
       },

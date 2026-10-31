@@ -5,7 +5,7 @@
  */
 import { ref } from 'vue'
 
-import { DsCallout, DsPage } from '@/ds'
+import { DsCallout, DsPage, DsPanel } from '@/ds'
 
 import { STUDIO_UNAVAILABLE, studioAvailable } from '../api/studio'
 import StudioGroupEditor from '../components/studio/StudioGroupEditor.vue'
@@ -17,6 +17,9 @@ const groupId = ref<string | null>(props.id)
 <template>
   <DsPage layout="form" back-to="/admin/questions" data-testid="studio-group-page">
     <DsCallout v-if="!studioAvailable()" tone="info" data-testid="studio-unavailable">{{ STUDIO_UNAVAILABLE }}</DsCallout>
-    <StudioGroupEditor v-else v-model:group-id="groupId" />
+    <!-- A raised card, so the filled fields (page-coloured when empty) stand out from the page (REQ-B-030). -->
+    <DsPanel v-else data-testid="studio-group-panel">
+      <StudioGroupEditor v-model:group-id="groupId" />
+    </DsPanel>
   </DsPage>
 </template>

@@ -26,6 +26,7 @@ import { CLASSES_COMPONENT_SCHEMAS, registerClassesPaths } from './classes/paths
 import { SCHOOL_ADMIN_COMPONENT_SCHEMAS, registerSchoolAdminPaths } from './school-admin/paths'
 import { SCHOOL_ADMIN_PENDING_COMPONENT_SCHEMAS, registerSchoolAdminPendingTeacherPaths } from './school-admin/pending-teachers'
 import { QUESTIONS_COMPONENT_SCHEMAS, registerQuestionsPaths } from './questions/paths'
+import { QUESTION_GATE_COMPONENT_SCHEMAS, registerQuestionGatePaths } from './questions/gate'
 import { STIMULI_COMPONENT_SCHEMAS, registerStimuliPaths } from './questions/stimuli'
 import { STUDIO_COMPONENT_SCHEMAS, registerStudioPaths } from './questions/studio'
 import { PERFORMANCE_COMPONENT_SCHEMAS, registerPerformancePaths } from './reports/performance/paths'
@@ -36,6 +37,7 @@ import { BIJAK_KUIZ_COMPONENT_SCHEMAS, registerBijakKuizPaths } from './bijak/ku
 import { BIJAK_ATTEMPTS_COMPONENT_SCHEMAS, registerBijakAttemptsPaths } from './bijak/attempts/paths'
 import { SPM_COMPONENT_SCHEMAS, registerSpmPaths } from './spm/paths'
 import { HEATMAP_COMPONENT_SCHEMAS, registerHeatmapPaths } from './heatmap/paths'
+import { SERVABILITY_COMPONENT_SCHEMAS, registerServabilityPaths } from './servability/paths'
 import { COMMAND_CENTER_COMPONENT_SCHEMAS, registerCommandCenterPaths } from './admin/command-center/paths'
 import { CURRICULUM_COMPONENT_SCHEMAS, registerCurriculumPaths } from './curriculum/paths'
 import { BATTLE_COMPONENT_SCHEMAS, registerBattlePaths } from './battle/paths'
@@ -92,6 +94,7 @@ export const COMPONENT_SCHEMAS = {
   ...BIJAK_KUIZ_COMPONENT_SCHEMAS, // R1-B16
   ...SPM_COMPONENT_SCHEMAS, // BE-41
   ...HEATMAP_COMPONENT_SCHEMAS, // BE-48 (M25)
+  ...SERVABILITY_COMPONENT_SCHEMAS, // R1-T29
   ...COMMAND_CENTER_COMPONENT_SCHEMAS, // BE-22
   ...CLASSES_COMPONENT_SCHEMAS, // BE-17
   ...BATTLE_COMPONENT_SCHEMAS, // BE-44 (M16)
@@ -107,6 +110,7 @@ export const COMPONENT_SCHEMAS = {
   ...QUESTIONS_COMPONENT_SCHEMAS, // BE-09
   ...STIMULI_COMPONENT_SCHEMAS, // R1-T32
   ...STUDIO_COMPONENT_SCHEMAS, // R1-T13 (REQ-C-006)
+  ...QUESTION_GATE_COMPONENT_SCHEMAS, // R1-B05
   ...MISSIONS_COMPONENT_SCHEMAS, // BE-18 (M10 missions, remedial)
   ...QUESTION_SETS_COMPONENT_SCHEMAS, // BE-18 (M10 question sets, DSKP)
   ...PERFORMANCE_COMPONENT_SCHEMAS, // BE-19
@@ -157,6 +161,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerBijakKuizPaths(registry) // R1-B16
   registerSpmPaths(registry) // BE-41
   registerHeatmapPaths(registry) // BE-48 (M25)
+  registerServabilityPaths(registry) // R1-T30
   registerCommandCenterPaths(registry) // BE-22
   registerCurriculumPaths(registry) // BE-08
   registerPracticePaths(registry) // BE-12
@@ -175,6 +180,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerQuestionsPaths(registry) // BE-09
   registerStimuliPaths(registry) // R1-T32
   registerStudioPaths(registry) // R1-T13 (REQ-C-006)
+  registerQuestionGatePaths(registry) // R1-B05
   registerMissionsPaths(registry) // BE-18 (M10 missions, remedial)
   registerQuestionSetsPaths(registry) // BE-18 (M10 question sets, DSKP)
   registerPerformancePaths(registry) // BE-19
