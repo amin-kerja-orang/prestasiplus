@@ -118,7 +118,8 @@ function pick(id: string): void {
       </DsText>
     </DsStack>
 
-    <StimulusStack v-if="ownStimuli.length" :stimuli="ownStimuli" data-testid="stem-image" />
+    <!-- The question's OWN stimuli (R1E2E-05b), above the stem as in V2 section 1.5. -->
+    <StimulusStack v-if="ownStimuli.length" :stimuli="ownStimuli" data-testid="own-stimuli" />
 
     <p v-if="question.stem" class="text-body text-default" data-testid="question-stem">
       <RichText :text="question.stem" />

@@ -122,10 +122,13 @@ const questionMap = computed(
   () => new Map<string, QuestionView>((data.value?.paper.questions ?? []).map((q) => [q.id, q])),
 )
 /** Own stimuli above the stem; `stemImage` only when `stimuli` is absent (a picture never shows twice). */
-const ownStimuliOf = (id: string): StimulusDef[] => {
-  const q = questionMap.value.get(id)
-  return q?.stimuli ?? (q?.stemImage ? [q.stemImage] : [])
-}
+const ownStimuli = computed(
+  () =>
+    new Map<string, StimulusDef[]>(
+      [...questionMap.value].map(([id, q]) => [id, q.stimuli ?? (q.stemImage ? [q.stemImage] : [])]),
+    ),
+)
+const ownStimuliOf = (id: string): StimulusDef[] => ownStimuli.value.get(id) ?? []
 const shown = computed<QuestionResult[]>(() =>
   (result.value?.questions ?? []).filter((q) => {
     return filter.value === 'semua' || needsAttention(q)
@@ -413,6 +416,7 @@ const home = computed(() => landingPath.value || '/dashboard')
               <StimulusStack
                 v-if="ownStimuliOf(q.questionId).length"
                 :stimuli="ownStimuliOf(q.questionId)"
+                data-testid="own-stimuli"
               />
               <p v-if="questionMap.get(q.questionId)?.stem" class="text-body text-default">
                 <RichText :text="questionMap.get(q.questionId)!.stem" />
