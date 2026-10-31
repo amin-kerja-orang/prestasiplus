@@ -106,10 +106,10 @@ Surfaces: **B** = `/admin` Blade, **P** = `admin.` React panel, **F** = `/admin-
 | PM-03 | Monitoring | school engagement drill-down; CSV/PDF export (`:791`, `:798`) | F | — | S | B `:731`; F Monitoring |
 | PM-04 | Analitik | **merges** B "Analitik Kandungan" (`pusat:`) and P `/analitik` (school-scoped) into one page; content analytics tab Pusat-only | F national | — | S own school (usage tabs only) | B `:727`; P `:187`; F Analitik; `panel-layout.tsx` SCHOOL_SCOPED_HREFS |
 | PM-05 | Kirkpatrick › Ringkasan | overview; PDF export (`:797`) | F | — | S | B `:741`; F Kirkpatrick |
-| PM-06 | Kirkpatrick › T1: Reaksi | | F | — | S | B `:742` |
-| PM-07 | Kirkpatrick › T2: Pembelajaran | | F | — | S | B `:743` |
-| PM-08 | Kirkpatrick › T3: Tingkah Laku | | F | — | S | B `:744` |
-| PM-09 | Kirkpatrick › T4: Hasil | | F | — | S | B `:745` |
+| PM-06 | Kirkpatrick › Tahap 1: Reaksi | | F | — | S | B `:742` |
+| PM-07 | Kirkpatrick › Tahap 2: Pembelajaran | | F | — | S | B `:743` |
+| PM-08 | Kirkpatrick › Tahap 3: Tingkah Laku | | F | — | S | B `:744` |
+| PM-09 | Kirkpatrick › Tahap 4: Hasil | | F | — | S | B `:745` |
 | PM-10 | Kirkpatrick › Rantaian Impak | | F | — | S | B `:746` |
 | PM-11 | Kirkpatrick › Intervensi | | F | — | S | B `:747` |
 | PM-12 | Laporan Aktiviti | activity report (label in [P] Lagi; = M27 L53) | F | — | S* | B `:726`; [P] `admin-nav.ts` lagi label; M27 |

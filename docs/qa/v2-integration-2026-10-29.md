@@ -208,3 +208,48 @@ Earlier mock bugs B-01..B-04 were not re-tested (mock mode).
 Not ready for G5: 3 High bugs open (B-HTTP-01, B-HTTP-02, B-HTTP-03), 2 Medium, 1 Low. The visible UI is free of Darjah / SK / SJK text for all four roles, and Bank Soalan rows and totals now agree (20 rows on page 1, totalItems 500).
 
 Data written: none. Only GET requests, page navigation and logins (which update last-login timestamps) were performed.
+
+
+## HTTP-mode re-test 2 (after backend fix2)
+
+Preview 5192 rebuilt with backend fix2 plus layout/DS work. Same read-only rules (GET, navigation, login only; no writes). Accounts (names only): pelajarmaju, guru, adminsekolah, admin. Lane 1 Playwright MCP at 375 and 1280; API checks by scripted GET. Screenshots in `C:/Users/hp/AppData/Local/Temp/claude/d--Dev-Projects-prestasiplus/5d72503c-2cda-43fd-962f-f28a05e253d2/scratchpad/qa-5192/` (peta-t5-fix2-375.png, peta-t4-click-375.png, admin-cc-fix2-1280.png).
+
+| Item | Result | Evidence |
+|---|---|---|
+| B-HTTP-01 topics / learning-map | Pass | GET /api/topics: 29 topics, gradeLevel only TINGKATAN_4 and TINGKATAN_5, no "DARJAH" anywhere. GET /api/learning-map: `gradeOptions` ["TINGKATAN_4","TINGKATAN_5"], default grade TINGKATAN_4. |
+| B-HTTP-02 Peta Belajar tabs | Pass with new bug B-HTTP-07 | After clicking a tab: T4 Matematik shows 3 topics (Fungsi dan Persamaan Kuadratik, Sistem Persamaan, Indeks Surd dan Logaritma); T5 Matematik shows empty state "Tiada Topik Dijumpai"; T5 Sains shows 9 topics, T4 Sains 12. API for T5 Matematik/Sejarah returns 0 topics, no DARJAH. |
+| B-HTTP-03 totals | Partial: Fail on card vs detail | Login footer "500+ Soalan" and /api/public/stats questionCount 500 equal the sum of practice cards (500) and the published bank (T4 251 + T5 249). But 3 cards differ from their detail totals: BM card 57 vs detail 53 (T4 25 + T5 28), MATH 56 vs 54, SCI 51 vs 50; the other subjects agree. Sum of details is 493, cards 500 (B-HTTP-08). The Darjah inflation (1,268) is gone. |
+| B-HTTP-05 Command Center | Pass | /admin/command-center: Pelajar Berdaftar 15, 2 aktif menjawab, 30 soalan dijawab. Users list has 16 students of whom 1 is inactive (tidakaktif), so 15 visible active pupils; answers 30 equal monitoring. Engagement buckets sum 0+0+0+0+15 = 15 = total pupils. "Sekolah Berdaftar 0 / langganan aktif" left as per owner decision. |
+| AC-02.1 | Pass (except known B-HTTP-04) | /practice/BM level picker: Semua Tahap, Tingkatan 4, Tingkatan 5; API levels T4, T5. |
+| AC-02.2 | Pass | /topics tabs Semua / T4 / T5; API has no DARJAH; /peta-belajar tabs T4 and T5 only. |
+| AC-05.2 | Pass | Bank Soalan: data.length 20, totalItems 500 on `status=published`. Level, subject, school and user lists T1-T5 and SMK only. Totals consistent except B-HTTP-08. |
+| AC-05.3 | Pass | /api/education-levels and /api/admin/education-levels return T1 to T5 only; topics and learning-map fixed. |
+| AC-10.1 | Pass for reads | 148 GET calls (37 endpoints x 4 roles): no Darjah, Sekolah Rendah, D1-D6, SJK or SK hits. Write rejection still not testable read-only. |
+| 4-role menu sweep | Pass | Murid 42 routes, Guru 23, Admin Sekolah 25, Admin Pusat 33, each at 375 and 1280: no Darjah / Sekolah Rendah / SK / SJK text and no horizontal scroll. Caveat: the Admin Pusat pass hit HTTP 429 on its last ~10 route loads (my request rate exceeded the limit), so those pages were checked less reliably; they were clean in the earlier run. |
+
+### New bugs
+
+| ID | Sev | Layer | Detail |
+|---|---|---|---|
+| B-HTTP-07 | Medium | Frontend | First load of /peta-belajar (no `grade` in URL, as Murid) shows "Tiada Topik Dijumpai / Pilih subjek dan tingkatan yang lain..." with neither Tingkatan tab selected, although T4 Matematik has 3 topics. The page probes /api/learning-map?grade=TINGKATAN_4 and then ?grade=TINGKATAN_5 and renders the empty state; topics appear only after clicking the T4 tab (URL becomes ?subject=MATEMATIK&grade=TINGKATAN_4). Expected: default to Tingkatan 4 selected with its topics (the unfiltered API already defaults to TINGKATAN_4). |
+| B-HTTP-08 | Medium | Backend | Practice subject card count differs from the subject detail total for 3 subjects: BM 57 vs 53, MATH 56 vs 54, SCI 51 vs 50 (7 questions; card sums to 500, detail to 493). The student sees "57 soalan" then "53 soalan tersedia". Likely the card counts all published questions while the detail counts only those with a T4/T5 level or practicable type. File: practice/reads/overview/overview.service.ts (bank.count vs detail query). |
+
+Verdict: B-HTTP-01, 02 and 05 closed; B-HTTP-03 largely closed (Darjah inflation removed) but card/detail mismatch remains as B-HTTP-08. No Critical or High bugs are open in this re-test; 2 Medium open (B-HTTP-07, B-HTTP-08) plus the known B-HTTP-04. Data written: none (GET, navigation and logins only).
+
+
+## HTTP re-test 3 (after fix4)
+
+Preview 5192 rebuilt with backend fix4 (B-HTTP-08 card count). Read-only (GET, navigation, login), pelajarmaju at 375 plus scripted GETs. About 12 page loads.
+
+| Check | Result | Evidence |
+|---|---|---|
+| B-HTTP-08 card vs detail | Pass | All 8 practice subjects with questions: card equals detail total and `bankCount` (BM 53 = 53 = T4 25 + T5 28, MATH 54 = 54 = 27 + 27, SCI 50 = 50 = 25 + 25). UI detail pages "53 / 54 / 50 soalan tersedia" equal the cards. No mismatch in any subject. |
+| B-HTTP-03 totals | Pass | Card sum 493 (API and UI, 31 cards), detail sum 493, login page "493+ Soalan", `GET /api/public/stats` questionCount 493. |
+| /practice | Pass | Cards render, no horizontal scroll at 375 (375 / 375). |
+| /topics | Pass | Tabs Semua / T4 / T5; API 29 topics, only TINGKATAN_4 and TINGKATAN_5, no DARJAH; learning-map `gradeOptions` T4/T5. |
+| /peta-belajar | Pass (T4/T5 only); B-HTTP-07 still open | Tabs T4 and T5 only; first load still shows "Tiada Topik Dijumpai" until a tab is clicked; T5 Matematik API returns 0 topics (empty state, not D4). |
+| /practice/chapter | Known open | Page renders "Mode Sistematik ... Latih Tubi Rawak" but the chapter list is empty (`/api/practice/chapter-subjects` returns 0 rows). |
+
+Note (Info): Bank Soalan still shows 500 published (T4 251 + T5 249) versus 493 practicable questions in practice; the 7 difference is by design of the practice filter and not a regression.
+
+Known open: B-HTTP-04 (dashboard T1-T3 pills, not re-tested), B-HTTP-07, empty chapter page. No new bugs. Data written: none.

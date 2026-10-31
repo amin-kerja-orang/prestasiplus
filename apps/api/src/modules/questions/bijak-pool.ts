@@ -2,7 +2,8 @@
  * BJS-07 (v2-bijak-spm-standards 4.2, 14, 15.5): candidate facts of the Bijak standard pool, read from the
  * question bank (M04 owns the tables; Bijak reads them only through this class).
  *
- * One candidate = one active question whose LIVE version is `published` and tagged with the subject.
+ * One candidate = one active question whose LIVE version is `approved` and tagged with the subject, not PKSK, and not of a
+ * Darjah or inactive level (R1-B21, secondary-only D72/D86: the shared `LEARNER_LEVEL_SQL`).
  * `tag_review` questions are returned too: they are counted as excluded by exam-core (`eligibilityOf`), never silently dropped,
  * so `publishedTotal = eligibleTotal + excluded.total`. The effective per-leaf values come from
  * `effective-leaf.ts` (BJS-06), the only place the coalesce rule lives; this class adds what exam-core
@@ -17,6 +18,7 @@ import type { FormOrigin, LeafFact, QuestionFacts, UnitFact } from '@pp/exam-cor
 import { idFromString, idToString, isIdString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { loadEffectiveLeaves, type EffectiveLeaf } from './effective-leaf'
+import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL } from './learner-visibility'
 
 const CHUNK = 5000
 
@@ -66,7 +68,8 @@ export class QuestionsBijakPoolSource {
              (SELECT array_agg(t.code ORDER BY t.code) FROM question_tags t WHERE t.question_id = q.id AND t.kind = 'pool') AS pools
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-       WHERE q.is_active AND v.status = 'published' AND v.subject_id = ${idFromString(subjectId)}
+       WHERE q.is_active AND v.status = 'approved' AND v.subject_id = ${idFromString(subjectId)}
+         AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL}
        ORDER BY q.id`
     if (rows.length === 0) return []
 
@@ -100,7 +103,9 @@ export class QuestionsBijakPoolSource {
       groupIds.length === 0
         ? Promise.resolve<{ group_id: bigint; n: number }[]>([])
         : db.$queryRaw<{ group_id: bigint; n: number }[]>`
-            SELECT group_id, count(*)::int AS n FROM questions WHERE group_id = ANY(${groupIds}::bigint[]) GROUP BY group_id`,
+            SELECT q.group_id, count(*)::int AS n
+              FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
+             WHERE q.group_id = ANY(${groupIds}::bigint[]) AND v.status <> 'archived' GROUP BY q.group_id`,
     ])
 
     // A unit is a DSKP unit of Tingkatan 4 or 5; anything else (a missing node, another level) counts as no unit.

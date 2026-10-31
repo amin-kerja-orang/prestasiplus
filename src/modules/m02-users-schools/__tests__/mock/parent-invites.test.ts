@@ -408,7 +408,7 @@ describe('BR-L45-04: the student must be an active student', () => {
         name: 'Murid Padam Ujian',
         grade: 8,
         icNumber: '090101101299',
-        schoolId: 987,
+        schoolId: 8080, // a secondary school (987 is a hidden SK, D72)
         email: 'murid.padam@demo.test',
         password: 'rahsia123',
         passwordConfirmation: 'rahsia123',

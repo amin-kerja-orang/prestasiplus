@@ -50,7 +50,7 @@ describe('grading', () => {
 
 describe('the general question routes refuse a PKSK leaf (422)', () => {
   it('create with a pksk_choice part and no pksk tag', async () => {
-    const service = new QuestionsService({} as never, {} as never, {} as never, {} as never, {} as never, { now: () => new Date() } as never)
+    const service = new QuestionsService({} as never, {} as never, {} as never, {} as never, {} as never, { now: () => new Date() } as never, {} as never)
     const input = { questionType: 'mcq', questionText: 'Soalan', subjectId: '1', educationLevelId: '1', parts: [pksk(3, ['A'])] } as never
     await expect(service.create(input, { userId: '1', role: 'admin' })).rejects.toMatchObject({ status: 422, code: 'VALIDATION_ERROR' })
     void CLOCK
@@ -82,7 +82,7 @@ function fakeRepo() {
       const parts = (input.version.parts as { options: { label: string; bodyMs: string }[]; key: { content: { correct: string[] } } }[])[0]
       store.set(id, {
         status: input.version.status,
-        live: input.version.status === 'published' ? 1 : null,
+        live: input.version.status === 'approved' ? 1 : null,
         pksk: input.pksk,
         version: {
           stemMs: input.version.stemMs,
@@ -158,7 +158,7 @@ describe('PkskQuestionsService (BE-09 adapter over the one bank)', () => {
     expect(created.options.map((o) => o.isCorrect)).toEqual([false, true, true])
     const sent = calls.find((c) => c.name === 'create')?.args[0] as { pksk: unknown; version: Record<string, unknown> }
     expect(sent.pksk).toEqual({ domainCode: 'PKSK_MATH', level: 'T1' })
-    expect(sent.version).toMatchObject({ status: 'published', type: 'mcq', subjectId: null, educationLevelId: null, unitNodeId: null, difficultyTp: 3, spNodeIds: [] })
+    expect(sent.version).toMatchObject({ status: 'approved', type: 'mcq', subjectId: null, educationLevelId: null, unitNodeId: null, difficultyTp: 3, spNodeIds: [] })
     expect((sent.version.parts as { mode: string; key: { kind: string } }[])[0]).toMatchObject({ mode: 'pksk_choice', key: { kind: 'options' } })
   })
 

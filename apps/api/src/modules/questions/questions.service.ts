@@ -27,6 +27,7 @@ import {
   type FlatType,
 } from './projection'
 import { checkKeysGate, checkTagGate, MAX_SP_NODES } from './publish-gate'
+import { GroupMembers } from './group-members'
 import { QuestionsRepository, type NewGroup, type NewStimulus, type VersionDraft } from './questions.repository'
 import { draftsFromParts, MAX_PART_DEPTH, referencedIds, versionTypeOf } from './tree'
 import { isLeaf, leavesOf } from './grading'
@@ -132,11 +133,9 @@ function treeDepth(parts: unknown, depth = 1): number {
   return max
 }
 
-/** The status an edit leaves behind: it never keeps an approval or a live status (Q-5). */
-function statusAfterEdit(current: QuestionStatus, role: QuestionActor['role']): QuestionStatus {
-  if (current === 'published') return 'draft'
-  if (current === 'approved') return role === 'teacher' ? 'review' : 'draft'
-  return current
+/** The status an edit leaves behind: it never keeps an approval (the live `approved` version keeps serving; the edit is version n+1 as a draft, Q-5, ADR-0027). */
+function statusAfterEdit(current: QuestionStatus): QuestionStatus {
+  return current === 'approved' ? 'draft' : current
 }
 
 /** What create, update and the Guru routes all reduce to before touching the database. */
@@ -185,6 +184,7 @@ export class QuestionsService {
     @Inject(FilesService) private readonly files: FilesService,
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(GroupMembers) private readonly groupMembers: GroupMembers,
   ) {}
 
   // --- admin (Admin Pusat) ----------------------------------------------------------------------
@@ -324,7 +324,7 @@ export class QuestionsService {
           data: { questionId: BigInt(id), versionNo: v.versionNo, fromStatus: v.status, toStatus: status, actorUserId: BigInt(options.event.actorUserId), actorRole: options.event.actorRole, reason: options.reason ?? null, requestId: options.event.requestId },
         })
       }
-      if (status === 'published') {
+      if (status === 'approved') {
         const fields = checkTagGate({ subjectId: v.subjectId, educationLevelId: v.educationLevelId, unitId: v.unitId, spIds: v.spIds, tp: v.difficultyTp })
         Object.assign(fields, checkKeysGate(v.parts))
         if (Object.keys(fields).length > 0) throw fail(fields)
@@ -332,10 +332,10 @@ export class QuestionsService {
         if (record.liveVersionNo !== null && record.liveVersionNo !== v.versionNo) {
           await this.repo.setVersionStatus(id, record.liveVersionNo, 'archived', { archiveReason: 'superseded' })
         }
-        await this.repo.setVersionStatus(id, v.versionNo, 'published', { publishedAt: this.clock.now() })
+        await this.repo.setVersionStatus(id, v.versionNo, 'approved', { publishedAt: this.clock.now() })
         await this.repo.setLiveVersion(id, v.versionNo)
-      } else if (v.status === 'published') {
-        // Taking the live version down (published -> archived) ends its serving at once.
+      } else if (v.status === 'approved') {
+        // Taking the live version down (approved -> archived) ends its serving at once.
         await this.repo.setVersionStatus(id, v.versionNo, status, { archiveReason: 'withdrawn' })
         await this.repo.setLiveVersion(id, null)
       } else {
@@ -488,13 +488,13 @@ export class QuestionsService {
 
   async getPublicForLearner(id: string): Promise<PublicQuestion> {
     const record = await this.repo.get(id, 'live')
-    if (!record || !record.isActive || record.version.status !== 'published') throw questionNotFound()
+    if (!record || !record.isActive || record.version.status !== 'approved') throw questionNotFound()
     return toPublic(record)
   }
 
   async gradeAnswer(id: string, answers: readonly PartAnswer[]): Promise<QuestionGrade> {
     const record = await this.repo.get(id, 'live')
-    if (!record || !record.isActive || record.version.status !== 'published') throw questionNotFound()
+    if (!record || !record.isActive || record.version.status !== 'approved') throw questionNotFound()
     return gradeQuestion(record.id, record.version.parts, answers)
   }
 
@@ -569,7 +569,7 @@ export class QuestionsService {
       draft.numberLabel = provenance.numberLabel
       draft.sourcePage = provenance.sourcePage
     }
-    if (status === 'published') {
+    if (status === 'approved') {
       const fields = checkTagGate({
         subjectId: draft.subjectId === null ? null : idToString(draft.subjectId),
         educationLevelId: draft.educationLevelId === null ? null : idToString(draft.educationLevelId),
@@ -589,7 +589,8 @@ export class QuestionsService {
         sourceType: provenance?.sourceType ?? 'manual',
         createdById: creator,
         groupId: groupId === null ? null : BigInt(groupId),
-        groupPosition: groupId === null ? null : await this.repo.nextGroupPosition(groupId),
+        // D90 / R1-T32: the same member rules as the stimulus routes; locks the group so concurrent creates get distinct positions.
+        groupPosition: groupId === null ? null : await this.groupMembers.joinNew(groupId, draft.subjectId === null ? null : idToString(draft.subjectId)),
         now: this.clock.now(),
         version: draft,
         ...(provenance
@@ -624,7 +625,8 @@ export class QuestionsService {
     const subject = subjectKey === null ? null : await this.curriculum.subject(subjectKey)
     const level = levelKey === null ? null : await this.curriculum.level(levelKey)
     if (!subject) fields.subjectId = QUESTION_MESSAGES.subject
-    if (!level) fields.educationLevelId = QUESTION_MESSAGES.level
+    // Secondary-only (D72): a Darjah (primary-stage) level cannot be written; same refusal as an unknown level.
+    if (!level || level.stage === 'primary') fields.educationLevelId = QUESTION_MESSAGES.level
     if (!Number.isInteger(n.tp) || n.tp < 1 || n.tp > 6) fields.difficultyLevel = QUESTION_MESSAGES.difficulty
 
     // Curriculum tag: unit (kind unit), 1 to 3 SP nodes (kind sp), all of this subject and level.
@@ -792,7 +794,7 @@ export class QuestionsService {
     return 'questionImage'
   }
 
-  /** PUT: merge the body over the stored latest version and write it (new version when published). */
+  /** PUT: merge the body over the stored latest version and write it (new version when approved). */
   private async applyUpdate(record: QuestionRecord, rawInput: QuestionUpdateInput, actor: QuestionActor, opts: { keepSubject?: boolean } = {}): Promise<QuestionRecord> {
     const input = await this.withImageKeys(rawInput)
     const v = record.version
@@ -856,7 +858,7 @@ export class QuestionsService {
     if (stemImage !== undefined) normalized.stemImage = stemImage
     if (input.kertas !== undefined) normalized.kertas = input.kertas
 
-    let { draft, newStemFileId } = await this.draftOf(normalized, statusAfterEdit(v.status, actor.role), record)
+    let { draft, newStemFileId } = await this.draftOf(normalized, statusAfterEdit(v.status), record)
     const now = this.clock.now()
     await this.prisma.transaction(async () => {
       // Two concurrent edits serialise here; the second one sees the first one's version.
@@ -866,19 +868,19 @@ export class QuestionsService {
       // The image set, stimuli and paper code were derived from the record read before the lock. If another edit landed in
       // between, derive them again from the version read under the lock.
       if (fresh.version.versionNo !== v.versionNo || fresh.version.updatedAt.getTime() !== v.updatedAt.getTime()) {
-        ;({ draft, newStemFileId } = await this.draftOf(normalized, statusAfterEdit(fresh.version.status, actor.role), fresh))
+        ;({ draft, newStemFileId } = await this.draftOf(normalized, statusAfterEdit(fresh.version.status), fresh))
       }
       await this.attachStem(draft, newStemFileId)
-      const next = { ...draft, status: statusAfterEdit(fresh.version.status, actor.role) }
-      if (fresh.version.status === 'published') {
+      const next = { ...draft, status: statusAfterEdit(fresh.version.status) }
+      if (fresh.version.status === 'approved') {
         // Q-5: the live version keeps serving; the edit is version n+1 as a draft.
         await this.repo.addVersion(record.id, fresh.latestVersionNo + 1, next, now)
       } else {
         await this.repo.rewriteVersion(record.id, fresh.version.versionNo, next, now)
       }
       if (input.stimulusGroupId !== undefined) {
-        const gid = input.stimulusGroupId
-        await this.repo.setGroup(record.id, gid, gid === null ? null : await this.repo.nextGroupPosition(gid))
+        // D90 / R1-T32: leaving or joining a group goes through the same rules as the stimulus routes (served lock, caps, PKSK, ...).
+        await this.groupMembers.move(record.id, fresh.groupId, input.stimulusGroupId)
       }
     }, TX)
     const after = await this.repo.get(record.id, 'latest')
@@ -927,11 +929,16 @@ export class QuestionsService {
   private async detail(record: QuestionRecord): Promise<QuestionDetailView> {
     const view = await this.viewOf(record)
     const creator = record.createdById ? await this.users.get(record.createdById) : null
+    const stimulusGroup = record.groupId ? await this.repo.groupOf(record.id) : null
+    // The pictures of the group's stimuli are named by public token too (one form for the Studio, R1-T32).
+    const assetIds = (stimulusGroup?.stimuli ?? []).flatMap((s) => (s.assetFileId === null ? [] : [s.assetFileId]))
+    const assetTokens = assetIds.length === 0 ? new Map<string, string>() : await this.files.publicIdsOf(assetIds)
     return {
       ...view,
+      imageTokens: { ...view.imageTokens, ...Object.fromEntries(assetTokens) },
       dskp: await this.dskpOf(record.version.spIds[0]),
       createdByName: creator?.name ?? null,
-      stimulusGroup: record.groupId ? await this.repo.groupOf(record.id) : null,
+      stimulusGroup,
     }
   }
 

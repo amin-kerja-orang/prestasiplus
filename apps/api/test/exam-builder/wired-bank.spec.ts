@@ -44,7 +44,7 @@ describe('paper builder wired to the BE-09 question bank', () => {
       options: ['4', '5', '6', '7'],
       correctAnswer: 1,
       tag,
-      status: 'published',
+      status: 'approved',
       ...over,
     })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
@@ -107,7 +107,7 @@ describe('paper builder wired to the BE-09 question bank', () => {
   it('the candidates are the Terbit, active questions of the paper subject and kertas, in bank order', async () => {
     const e = await editor(await newPaper())
     expect(e.questions.map((x) => x.id)).toEqual([...ids.a, ids.b, ...ids.c])
-    expect(e.questions.every((x) => x.status === 'published' && x.subject === 'MAT' && x.kertas === 2)).toBe(true)
+    expect(e.questions.every((x) => x.status === 'approved' && x.subject === 'MAT' && x.kertas === 2)).toBe(true)
     expect(e.questions.map((x) => x.marks)).toEqual([1, 1, 1, 1, 2, 2])
     expect(e.questions[0]).toMatchObject({ kind: 'objektif', preview: 'Berapakah hasil tambah 2 dan 3?' })
     expect(e.questions[0]!.topic).not.toBe('')
@@ -199,7 +199,7 @@ describe('paper builder wired to the BE-09 question bank', () => {
     const e = await editor(id)
     // The published paper still describes version 1 (2 marks), although version 2 exists and is a draft.
     expect(e.paper.sections[2]!.questionIds).toContain(target)
-    expect(e.questions.find((x) => x.id === target)).toMatchObject({ marks: 2, status: 'published' })
+    expect(e.questions.find((x) => x.id === target)).toMatchObject({ marks: 2, status: 'approved' })
     const cover = await student.get(`/api/bijak/papers/${id}`)
     expect((cover.body.data.sections as { marks: number }[])[2]!.marks).toBe(2)
   })

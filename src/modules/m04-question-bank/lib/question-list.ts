@@ -83,23 +83,29 @@ export const BULK_OPTIONS: readonly { value: BulkAction; label: string; verb: st
   { value: 'delete', label: 'Padam', verb: 'memadamkan' },
 ]
 
-/** Bulk actions that exist only in http mode (no mock equivalent). */
+/**
+ * Bulk actions that exist only in http mode (no mock equivalent). ADR-0027: "Terbitkan" is the approve step there, so
+ * http mode shows Terbitkan instead of Luluskan (`HTTP_HIDDEN_BULK_ACTIONS`); both send the wire action `approved`.
+ */
 const HTTP_ONLY_BULK_ACTIONS: readonly string[] = ['publish']
+const HTTP_HIDDEN_BULK_ACTIONS: readonly string[] = ['approve']
 
-/** The status filter options; http mode hides those with no v2 wire equivalent and adds Diterbitkan. */
+/** The status filter options; http mode hides those with no v2 wire equivalent and shows `approved` as Diterbitkan (ADR-0027). */
 export const statusOptionsFor = (
   http: boolean = isHttpMode(),
 ): readonly { value: string; label: string }[] => {
   if (!http) return STATUS_OPTIONS
-  const kept = STATUS_OPTIONS.filter((o) => !NO_WIRE_STATUS_FILTERS.includes(o.value))
-  const at = kept.findIndex((o) => o.value === 'approved') + 1
-  return [...kept.slice(0, at), { value: 'published', label: 'Diterbitkan' }, ...kept.slice(at)]
+  return STATUS_OPTIONS.filter((o) => !NO_WIRE_STATUS_FILTERS.includes(o.value)).map((o) =>
+    o.value === 'approved' ? { value: o.value, label: 'Diterbitkan' } : o,
+  )
 }
 
-/** The bulk actions; http mode hides those with no v2 wire equivalent and adds Terbitkan. */
+/** The bulk actions; http mode hides those with no v2 wire equivalent (and Luluskan) and adds Terbitkan. */
 export const bulkOptionsFor = (http: boolean = isHttpMode()) =>
   BULK_OPTIONS.filter((o) =>
-    http ? !NO_WIRE_BULK_ACTIONS.includes(o.value) : !HTTP_ONLY_BULK_ACTIONS.includes(o.value),
+    http
+      ? !NO_WIRE_BULK_ACTIONS.includes(o.value) && !HTTP_HIDDEN_BULK_ACTIONS.includes(o.value)
+      : !HTTP_ONLY_BULK_ACTIONS.includes(o.value),
   )
 
 export const bulkConfirmText = (verb: string, n: number): string =>
@@ -136,10 +142,10 @@ export const sourceLabel = (type: string | null): string =>
 
 /**
  * Question status as the screens may receive it: the mock vocabulary (`QuestionStatus`) or the v2 wire
- * lifecycle (`draft | review | approved | published | archived`, BE-09 / D54a), or any unknown string.
+ * lifecycle (`draft | review | approved | archived`, BE-09 / D54a, ADR-0027), or any unknown string.
  * Every lookup below is fail-safe: an unknown value gets a neutral badge, never a crash.
  */
-type AnyStatus = QuestionStatus | 'review' | 'published' | (string & {})
+type AnyStatus = QuestionStatus | 'review' | (string & {})
 
 export type BadgeColor = 'success' | 'warning' | 'error' | 'neutral'
 
@@ -154,7 +160,6 @@ const STATUS_META: Record<string, StatusMeta> = {
   pending_review: { label: 'Menunggu Semakan', ds: 'awaiting-review', color: 'warning' },
   review: { label: 'Menunggu Semakan', ds: 'awaiting-review', color: 'warning' },
   approved: { label: 'Diluluskan', ds: 'approved', color: 'success' },
-  published: { label: 'Diterbitkan', ds: 'approved', color: 'success' },
   rejected: { label: 'Ditolak', ds: 'rejected', color: 'error' },
   archived: { label: 'Diarkibkan', ds: 'inactive', color: 'neutral' },
   pending: { label: 'Menunggu', ds: 'pending-approval', color: 'warning' },
@@ -168,7 +173,11 @@ const metaOf = (status: AnyStatus | null | undefined): StatusMeta =>
 
 /** S1 status pill (BR-M04-02; archived is "Arkib" in the list, "Diarkibkan" on S3, as live). */
 export const statusLabel = (status: AnyStatus, short = false): string =>
-  short && status === 'archived' ? 'Arkib' : metaOf(status).label
+  short && status === 'archived'
+    ? 'Arkib'
+    : status === 'approved' && isHttpMode()
+      ? 'Diterbitkan' // ADR-0027: in the real API `approved` is the published (served) state
+      : metaOf(status).label
 
 /** `DsStatusBadge` status of a question status; the live word is passed as the badge label. */
 export const statusDs = (status: AnyStatus): DsStatus => metaOf(status).ds

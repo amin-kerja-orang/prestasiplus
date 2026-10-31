@@ -25,10 +25,18 @@
  * | working        | leaf `working`, scheme `points`              | see `pointsScheme`                               |
  * | essay          | leaf `essay`, scheme `points` or `rubric`    | see `pointsScheme`                               |
  * | drawing        | leaf `drawing`, scheme `points`              | see `pointsScheme`                               |
- * | table_fill     | -                                            | always (exam-core has no table widget or key)    |
- * Also refused: `reveal: 'never'` (BE-16 always reveals the scheme after submit), a leaf or version
- * stimulus outside the question's group, a group with more than one stimulus or an image stimulus
- * (exam-core pins ONE text stimulus and has no file URL), two sibling labels that strip to the same id.
+ * | essay_choice   | leaf `essay_choice` (topics), marked as essay | no topics (see `leafScheme`)                     |
+ * | table_fill     | -                                            | always (KIV: exam-core has no table widget)      |
+ * Stimuli (R1-B08, ADR-0030, D90): a group carries 1 to 3 stimuli, each `passage | image | diagram | table | map |
+ * infographic | graph`; one that has a stored file becomes `image: { url: '/api/files/<token>' }` (the pupil read
+ * rule of `files/question-image-access.ts` decides who may load it). A stimulus is shown ONCE per group above all
+ * member questions: the bundle of EVERY member carries the same group (same stimulus ids), so a member served alone
+ * (a quiz) still carries it. A stimulus is never a question and has no marks. An image stimulus linked to the
+ * version but not to the group is the question's own `stemImage`. MCQ option images become `option.image`.
+ * Also refused: `reveal: 'never'` (BE-16 always reveals the scheme after submit), a stimulus the bridge cannot
+ * show (outside the group and not a stem image, unknown kind, empty, file not found), a group with more than
+ * three stimuli, two sibling labels that strip to the same id. Every refusal carries a code and a BM reason
+ * (`./refusals.ts`).
  */
 import type { QuestionPart } from '@pp/contract'
 
@@ -41,7 +49,10 @@ import type {
 } from '../attempts/exam-core.adapter'
 import type { BijakQuestionBundle } from '../attempts/ports'
 import type { BijakQuestionInfo } from '../papers/ports'
-import type { QuestionRecord, StimulusGroupRecord } from '../../questions/types'
+import type { QuestionRecord, StimulusGroupRecord, StimulusRecord } from '../../questions/types'
+import { STIMULUS_KINDS, type StimulusKind } from '@pp/exam-core/types'
+import { stimulusTableOf } from '../../questions/stimulus-table'
+import { BRIDGE_REFUSAL_REASONS_MS, type BridgeRefusalCode } from './refusals'
 
 type Leaf = Extract<QuestionPart, { mode: string }>
 type LeafOf<M extends Leaf['mode']> = Extract<Leaf, { mode: M }>
@@ -58,11 +69,47 @@ export class UnsupportedQuestionError extends Error {
     readonly questionId: string,
     /** Label path of the part (`(a).(ii)`), or `''` for the question itself. */
     readonly path: string,
+    /** English detail for the log. */
     readonly reason: string,
+    /** Stable code; its BM reason is in `BRIDGE_REFUSAL_REASONS_MS`. */
+    readonly code: BridgeRefusalCode = 'points_unsupported',
   ) {
     super(`Question ${questionId}${path ? ` part ${path}` : ''}: ${reason}`)
     this.name = 'UnsupportedQuestionError'
   }
+
+  /** `shape_unsupported:<code>` (ADR-0030 section 4). */
+  get reasonCode(): string {
+    return `shape_unsupported:${this.code}`
+  }
+
+  /** BM phrase continuing "Tidak dihidangkan kerana ...". */
+  get reasonMs(): string {
+    return BRIDGE_REFUSAL_REASONS_MS[this.code]
+  }
+}
+
+/**
+ * Files the mapper needs and cannot read itself (it is pure): file id (decimal) -> public token, and the
+ * stimuli linked to the version that are NOT in its group (id -> kind and file), read by the caller from the
+ * BE-09 repository.
+ */
+export interface BridgeMedia {
+  tokens: ReadonlyMap<string, string>
+  outside: ReadonlyMap<string, { kind: string; assetFileId: string | null }>
+}
+
+export const NO_MEDIA: BridgeMedia = { tokens: new Map(), outside: new Map() }
+
+/** `/api/files/<token>`: the URL the pupil's browser loads (read rule R1-B20). */
+export const fileUrlOf = (token: string): string => `/api/files/${token}`
+
+/** A BE-09 stimulus with the columns `groupOf` may carry beyond `StimulusRecord` (read defensively). */
+type WideStimulus = Omit<StimulusRecord, 'kind'> & {
+  kind: string
+  caption?: string | null
+  tableData?: unknown
+  sourceCitation?: string | null
 }
 
 /** Curriculum labels resolved by the caller (BE-08 repository) for one question version. */
@@ -102,6 +149,7 @@ interface Ctx {
   /** Last label -> leaf part ids (an ECF reference may name only the part's own label). */
   leafIdsByLabel: Map<string, string[]>
   stimulusIds: ReadonlySet<string>
+  media: BridgeMedia
   explanation: string
 }
 
@@ -113,27 +161,25 @@ export function mapBe09Question(
   record: QuestionRecord,
   group: StimulusGroupRecord | null,
   labels: CurriculumLabels,
+  media: BridgeMedia = NO_MEDIA,
 ): Be09QuestionBundle {
   const v = record.version
   const qid = record.id
-  if (v.parts.length === 0) throw new UnsupportedQuestionError(qid, '', 'the question has no parts')
+  if (v.parts.length === 0)
+    throw new UnsupportedQuestionError(qid, '', 'the question has no parts', 'no_parts')
 
-  const stimulus = group ? stimulusOf(qid, group) : undefined
+  const stimuli = group ? stimuliOf(qid, group, media) : []
+  const stimulus = stimuli[0]
   const stimulusIds = new Set(group?.stimuli.map((s) => s.id) ?? [])
-  for (const s of v.stimulusIds) {
-    if (!stimulusIds.has(s))
-      throw new UnsupportedQuestionError(
-        qid,
-        '',
-        'a stimulus outside the question group cannot be shown (exam-core pins only the group stimulus)',
-      )
-  }
+  const stemImage = stemImageOf(qid, v.stimulusIds, stimulusIds, media)
+  if (stemImage) stimulusIds.add(stemImage.rawId)
 
   const ctx: Ctx = {
     questionId: qid,
     leafIdByPath: new Map(),
     leafIdsByLabel: new Map(),
     stimulusIds,
+    media,
     explanation: v.explanationMs ?? '',
   }
   const curriculum: QuestionDef['curriculum'] = {
@@ -148,12 +194,14 @@ export function mapBe09Question(
   }
   const stemText = v.stemMs ?? ''
   const groupFields = record.groupId ? { groupId: groupWireId(record.groupId) } : {}
+  const stemFields = stemImage ? { stemImage: stemImage.def } : {}
   const groupBundle =
     group && stimulus
       ? {
           group: {
             id: groupWireId(group.id),
             stimulus,
+            stimuli,
             ...(group.optionBank.length > 0
               ? {
                   optionBank: group.optionBank.map((o): McqOption => ({
@@ -172,18 +220,32 @@ export function mapBe09Question(
     const path = only.label
     checkLeafCommon(ctx, only, path)
     const options = only.options.map((o): McqOption => {
-      if (o.imageId != null)
+      if (o.imageId == null) return { id: o.label, text: o.body.ms }
+      const token = media.tokens.get(o.imageId)
+      if (token === undefined)
         throw new UnsupportedQuestionError(
           qid,
           path,
-          'an MCQ option with an image cannot be shown (exam-core options are text only)',
+          `the image file ${o.imageId} of option ${o.label} was not found`,
+          'file_missing',
         )
-      return { id: o.label, text: o.body.ms }
+      return {
+        id: o.label,
+        text: o.body.ms,
+        image: { url: fileUrlOf(token), alt: o.body.ms || `Pilihan ${o.label}` },
+      }
     })
     const prompt = only.prompt.ms
     const stem =
       stemText && prompt && stemText !== prompt ? `${stemText}\n\n${prompt}` : stemText || prompt
-    const question: QuestionDef = { id: qid, curriculum, ...groupFields, stem, mcq: { options } }
+    const question: QuestionDef = {
+      id: qid,
+      curriculum,
+      ...groupFields,
+      stem,
+      ...stemFields,
+      mcq: { options },
+    }
     return {
       question,
       ...groupBundle,
@@ -202,7 +264,14 @@ export function mapBe09Question(
   indexLeaves(ctx, v.parts, [], [])
   const schemes: Record<string, SchemeDef> = {}
   const parts = v.parts.map((p, i) => mapPart(ctx, p, i, [], [], schemes))
-  const question: QuestionDef = { id: qid, curriculum, ...groupFields, stem: stemText, parts }
+  const question: QuestionDef = {
+    id: qid,
+    curriculum,
+    ...groupFields,
+    stem: stemText,
+    ...stemFields,
+    parts,
+  }
   return { question, ...groupBundle, schemes: Object.freeze(schemes), versionNo: v.versionNo }
 }
 
@@ -215,27 +284,123 @@ export function infoOf(bundle: Be09QuestionBundle, groupId: string | null): Bija
   return { id: q.id, marks, groupId, versionNo: bundle.versionNo }
 }
 
-function stimulusOf(qid: string, group: StimulusGroupRecord): StimulusDef {
-  if (group.stimuli.length !== 1)
+/** At most three stimuli per group (ADR-0030 section 4); a group with none to show is refused. */
+const MAX_GROUP_STIMULI = 3
+
+/** All stimuli of the group in order (D90: one group, shown once, with every member question under it). */
+function stimuliOf(qid: string, group: StimulusGroupRecord, media: BridgeMedia): StimulusDef[] {
+  if (group.stimuli.length === 0)
     throw new UnsupportedQuestionError(
       qid,
       '',
-      `the stimulus group holds ${String(group.stimuli.length)} stimuli; exam-core pins exactly one`,
+      'the stimulus group has no stimulus to show',
+      'group_no_stimulus',
     )
-  const s = group.stimuli[0] as StimulusGroupRecord['stimuli'][number]
-  if (s.assetFileId !== null)
+  if (group.stimuli.length > MAX_GROUP_STIMULI)
     throw new UnsupportedQuestionError(
       qid,
       '',
-      'an image stimulus cannot be shown yet (exam-core stimuli are inline text or SVG, no file URL)',
+      `the stimulus group holds ${String(group.stimuli.length)} stimuli (at most ${String(MAX_GROUP_STIMULI)})`,
+      'group_too_many_stimuli',
+    )
+  return group.stimuli.map((s) => stimulusDefOf(qid, s as WideStimulus, media))
+}
+
+const isStimulusKind = (k: string): k is StimulusKind =>
+  (STIMULUS_KINDS as readonly string[]).includes(k)
+
+/** One stimulus -> exam-core. Refuses a kind outside the seven, a missing file, and one with nothing to show. */
+function stimulusDefOf(qid: string, s: WideStimulus, media: BridgeMedia): StimulusDef {
+  if (!isStimulusKind(s.kind))
+    throw new UnsupportedQuestionError(
+      qid,
+      '',
+      `stimulus kind "${s.kind}" is not one of the supported kinds`,
+      'stimulus_kind_unsupported',
+    )
+  let image: StimulusDef['image']
+  if (s.assetFileId !== null) {
+    const token = media.tokens.get(s.assetFileId)
+    if (token === undefined)
+      throw new UnsupportedQuestionError(
+        qid,
+        '',
+        `the file ${s.assetFileId} of stimulus ${s.id} was not found`,
+        'file_missing',
+      )
+    image = { url: fileUrlOf(token) }
+  }
+  const table = s.kind === 'table' ? stimulusTableOf(s.tableData, s.bodyMs) : undefined
+  // A table parsed from the body replaces the body text; any other body stays the text.
+  const text = table && !s.tableData ? undefined : s.bodyMs
+  if (!text && !table && !image)
+    throw new UnsupportedQuestionError(
+      qid,
+      '',
+      `stimulus ${s.id} has no text, table or picture`,
+      'stimulus_empty',
     )
   return {
     id: stimulusWireId(s.id),
     kind: s.kind,
     label: s.label,
     alt: s.alt ?? s.label,
-    ...(s.bodyMs ? { text: s.bodyMs } : {}),
+    ...(s.caption ? { caption: s.caption } : {}),
+    ...(s.sourceCitation ? { source: s.sourceCitation } : {}),
+    ...(text ? { text } : {}),
+    ...(table ? { table } : {}),
+    ...(image ? { image } : {}),
   }
+}
+
+/**
+ * The question's own picture: the image stimulus linked to the version that is not in its group. Another kind
+ * outside the group is not shown (the mapper only has its id), and a second image would be dropped: both refuse.
+ */
+function stemImageOf(
+  qid: string,
+  versionStimulusIds: readonly string[],
+  groupStimulusIds: ReadonlySet<string>,
+  media: BridgeMedia,
+): { def: StimulusDef; rawId: string } | undefined {
+  let out: { def: StimulusDef; rawId: string } | undefined
+  for (const id of versionStimulusIds) {
+    if (groupStimulusIds.has(id)) continue
+    const info = media.outside.get(id)
+    if (!info || info.kind !== 'image' || info.assetFileId === null)
+      throw new UnsupportedQuestionError(
+        qid,
+        '',
+        'a stimulus outside the question group (other than a stem picture) cannot be shown',
+        'stimulus_outside_group',
+      )
+    if (out)
+      throw new UnsupportedQuestionError(
+        qid,
+        '',
+        'more than one stem picture is linked to the version',
+        'stem_images_many',
+      )
+    const token = media.tokens.get(info.assetFileId)
+    if (token === undefined)
+      throw new UnsupportedQuestionError(
+        qid,
+        '',
+        `the file ${info.assetFileId} of stem picture ${id} was not found`,
+        'file_missing',
+      )
+    out = {
+      rawId: id,
+      def: {
+        id: stimulusWireId(id),
+        kind: 'image',
+        label: '',
+        alt: 'Gambar untuk soalan ini',
+        image: { url: fileUrlOf(token) },
+      },
+    }
+  }
+  return out
 }
 
 function indexLeaves(
@@ -253,6 +418,7 @@ function indexLeaves(
         ctx.questionId,
         path,
         `two sibling parts share the id "${seg}"`,
+        'label_clash',
       )
     seen.add(seg)
     if (isLeaf(p)) {
@@ -271,12 +437,14 @@ function checkLeafCommon(ctx: Ctx, leaf: Leaf, path: string): void {
       ctx.questionId,
       path,
       "reveal 'never' is not supported (BE-16 reveals every scheme after submit)",
+      'reveal_never',
     )
   if (leaf.stimulusId != null && !ctx.stimulusIds.has(leaf.stimulusId)) {
     throw new UnsupportedQuestionError(
       ctx.questionId,
       path,
       'a part stimulus outside the question group cannot be shown',
+      'stimulus_outside_group',
     )
   }
 }
@@ -299,14 +467,19 @@ function mapPart(
     return { id, label: p.label, prompt: p.prompt.ms, marks: 0, children }
   }
   checkLeafCommon(ctx, p, path)
-  const { kind, scheme, unit, wordRange } = leafScheme(ctx, p, path)
+  const { kind, scheme, unit, wordRange, topics } = leafScheme(ctx, p, path)
   schemes[id] = scheme
   return {
     id,
     label: p.label,
     prompt: p.prompt.ms,
     marks: p.marks,
-    answer: { kind, ...(unit !== undefined ? { unit } : {}), ...(wordRange ? { wordRange } : {}) },
+    answer: {
+      kind,
+      ...(unit !== undefined ? { unit } : {}),
+      ...(wordRange ? { wordRange } : {}),
+      ...(topics ? { topics } : {}),
+    },
   }
 }
 
@@ -315,28 +488,36 @@ interface LeafMapping {
   scheme: SchemeDef
   unit?: string
   wordRange?: { min: number; max: number }
+  topics?: { id: string; label: string }[]
 }
 
 function leafScheme(ctx: Ctx, leaf: Leaf, path: string): LeafMapping {
-  const refuse = (reason: string): never => {
-    throw new UnsupportedQuestionError(ctx.questionId, path, reason)
+  const refuse = (reason: string, code: BridgeRefusalCode = 'points_unsupported'): never => {
+    throw new UnsupportedQuestionError(ctx.questionId, path, reason, code)
   }
+  // essay_choice (V2 production mode, 31 approved parts) is a bank part mode since R1-T07. Marked exactly like an essay.
+  if (leaf.mode === 'essay_choice') return essayChoiceOf(ctx, leaf, path, refuse)
   switch (leaf.mode) {
     case 'mcq':
       return refuse(
         'an MCQ part inside a structured question is not supported (exam-core MCQ is question-level only)',
+        'mcq_in_structured',
       )
     case 'pksk_choice':
-      return refuse('a PKSK question is not a Bijak item')
+      return refuse('a PKSK question is not a Bijak item', 'pksk_not_bijak')
     case 'table_fill':
       return refuse(
-        "mode 'table_fill' is not supported (exam-core has no table widget or cell key)",
+        "mode 'table_fill' is not supported (KIV: exam-core has no table widget or cell key)",
+        'table_fill',
       )
     case 'short_text': {
       if (leaf.key.anyOrder === true)
-        refuse("short_text 'anyOrder' is not supported by the exam-core 'accepted' scheme")
+        refuse(
+          "short_text 'anyOrder' is not supported by the exam-core 'accepted' scheme",
+          'short_text_any_order',
+        )
       if (leaf.blankCount !== undefined && leaf.blankCount > 1)
-        refuse('short_text with more than one blank is not supported')
+        refuse('short_text with more than one blank is not supported', 'short_text_multi_blank')
       return {
         kind: 'short_text',
         scheme: {
@@ -353,12 +534,16 @@ function leafScheme(ctx: Ctx, leaf: Leaf, path: string): LeafMapping {
         if (a.sigFigs != null || a.decimals != null)
           refuse(
             'numeric significant figures / decimal places are not supported by the exam-core matcher',
+            'numeric_precision',
           )
         const tol =
           a.tol === undefined ? undefined : a.tolKind === 'rel' ? a.tol * Math.abs(a.v) : a.tol
         const v = String(a.v)
         if (/e/i.test(v))
-          refuse(`numeric value ${v} in exponent form is not supported by the exam-core matcher`)
+          refuse(
+            `numeric value ${v} in exponent form is not supported by the exam-core matcher`,
+            'numeric_exponent',
+          )
         // Alternative units become alternative accepted values (same number, same tolerance).
         const units = a.unit === undefined ? [undefined] : [a.unit, ...(a.unitAlt ?? [])]
         for (const unit of units)
@@ -380,6 +565,7 @@ function leafScheme(ctx: Ctx, leaf: Leaf, path: string): LeafMapping {
       if (entries.length !== 1)
         refuse(
           `match_letter with ${String(entries.length)} items in one part is not supported (exam-core matches one item per part)`,
+          'match_letter_multi',
         )
       const [, letter] = entries[0] as [string, string]
       const partId = ctx.leafIdByPath.get(path) as string
@@ -399,6 +585,40 @@ function leafScheme(ctx: Ctx, leaf: Leaf, path: string): LeafMapping {
           : pointsScheme(ctx, leaf.key, leaf.marks, path)
       return { kind: 'essay', scheme, ...(wordRange ? { wordRange } : {}) }
     }
+  }
+}
+
+/** `essay_choice`: the topics the pupil picks one of, then an essay marked by points or a rubric. */
+function essayChoiceOf(
+  ctx: Ctx,
+  leaf: Leaf,
+  path: string,
+  refuse: (reason: string, code?: BridgeRefusalCode) => never,
+): LeafMapping {
+  const raw = leaf as unknown as {
+    marks: number
+    key: Extract<LeafOf<'essay'>['key'], { kind: string }>
+    wordRange?: { min: number; max: number }
+    topics?: unknown
+  }
+  const topics = (Array.isArray(raw.topics) ? raw.topics : []).flatMap((t, i) => {
+    const o = (typeof t === 'string' ? { label: t } : t) as { id?: unknown; label?: unknown; body?: { ms?: unknown } }
+    const body = o.body?.ms
+    const label = typeof o.label === 'string' ? o.label : typeof body === 'string' ? body : ''
+    return label.trim() === ''
+      ? []
+      : [{ id: typeof o.id === 'string' && o.id !== '' ? o.id : String.fromCharCode(65 + i), label }]
+  })
+  if (topics.length === 0) refuse('essay_choice has no topics to choose from', 'essay_choice_no_topics')
+  const scheme =
+    raw.key.kind === 'rubric'
+      ? rubricScheme(raw.key as Extract<typeof raw.key, { kind: 'rubric' }>, raw.marks)
+      : pointsScheme(ctx, raw.key as PointsKey, raw.marks, path)
+  return {
+    kind: 'essay_choice',
+    scheme,
+    topics,
+    ...(raw.wordRange ? { wordRange: raw.wordRange } : {}),
   }
 }
 

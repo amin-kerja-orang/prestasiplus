@@ -19,6 +19,7 @@ import {
 } from '@pp/contract'
 
 import type { QuestionPart } from '../../questions'
+import { stimulusTableOf } from '../../questions/stimulus-table'
 
 type SchemeLine = { tag?: string; text: string; marks?: number }
 type ReviewScheme = BijakBuilderReviewQuestion['scheme']
@@ -85,9 +86,9 @@ export function statusOf(input: {
   latestStatus: string | null
 }): BijakBuilderQuestionStatus {
   const raw = input.liveStatus ?? input.latestStatus ?? 'draft'
-  const status: BijakBuilderQuestionStatus = (['draft', 'review', 'approved', 'published', 'archived'] as const).find((s) => s === raw) ?? 'draft'
+  const status: BijakBuilderQuestionStatus = (['draft', 'review', 'approved', 'archived'] as const).find((s) => s === raw) ?? 'draft'
   // A withdrawn (inactive) question is not eligible (BE-09 Q-2), so the builder treats it as archived.
-  return status === 'published' && !input.isActive ? 'archived' : status
+  return status === 'approved' && !input.isActive ? 'archived' : status
 }
 
 export function levelOf(levelCode: string | null, formOrigin: string): 'T4' | 'T5' {
@@ -109,19 +110,30 @@ export interface StimulusSource {
   tableData: unknown
 }
 
-const asTable = (data: unknown): { head: string[]; rows: string[][] } | undefined => {
-  if (typeof data !== 'object' || data === null) return undefined
-  const { head, rows } = data as { head?: unknown; rows?: unknown }
-  const strings = (v: unknown): v is string[] => Array.isArray(v) && v.every((s) => typeof s === 'string')
-  return strings(head) && Array.isArray(rows) && rows.every(strings) ? { head, rows: rows as string[][] } : undefined
+/** At most three stimuli per group (OD-28, `QuestionStimulusGroupSchema`). */
+export const MAX_GROUP_STIMULI = 3
+
+/**
+ * Store kind -> builder wire kind. The wire (`BijakAttemptStimulus.kind`) already accepts all seven kinds (R1-B08), but this
+ * table still reads the four pictorial ones (image, map, infographic, graph) as `diagram`; R1-T31 (lane A3) replaces it with a
+ * pass-through of the seven. Audio and any other kind is not displayable. Change this ONE table then.
+ */
+const WIRE_KIND: Record<string, BijakAttemptStimulus['kind']> = {
+  passage: 'passage',
+  table: 'table',
+  diagram: 'diagram',
+  image: 'diagram',
+  map: 'diagram',
+  infographic: 'diagram',
+  graph: 'diagram',
 }
 
-/** The builder shows one stimulus per group: the first non-audio one (the contract has a single `stimulus`). */
+/** One stimulus for the builder; audio (and a kind outside the seven) is not displayable and yields undefined. */
 export function stimulusOf(s: StimulusSource): BijakAttemptStimulus | undefined {
-  if (s.kind === 'audio') return undefined
-  const kind = s.kind === 'passage' ? 'passage' : s.kind === 'table' ? 'table' : 'diagram'
+  const kind = WIRE_KIND[s.kind]
+  if (kind === undefined) return undefined
   const label = s.label ?? ''
-  const table = kind === 'table' ? asTable(s.tableData) : undefined
+  const table = kind === 'table' ? stimulusTableOf(s.tableData) : undefined
   return {
     id: s.id.toString(),
     kind,
@@ -131,6 +143,25 @@ export function stimulusOf(s: StimulusSource): BijakAttemptStimulus | undefined 
     ...(kind === 'passage' && s.bodyMs ? { text: s.bodyMs } : {}),
     ...(table ? { table } : {}),
   }
+}
+
+/**
+ * D90: a group with no displayable stimulus (audio only, or empty) is STILL a group: its members move as one unit and are never
+ * placed alone. The builder wire requires a stimulus on a group, so such a group carries this empty one (no text, no picture).
+ */
+export const emptyGroupStimulus = (groupId: string | bigint): BijakAttemptStimulus => ({
+  id: `group-${groupId.toString()}`,
+  kind: 'passage',
+  label: '',
+  alt: '',
+})
+
+/**
+ * D90: every displayable stimulus of a group in link order (1 to 3). The stimulus belongs to the GROUP: it is shown once above
+ * all member questions, carries no marks and is never a question of its own. Empty when the group has nothing to show.
+ */
+export function stimuliOf(list: readonly StimulusSource[]): BijakAttemptStimulus[] {
+  return list.flatMap((s) => stimulusOf(s) ?? []).slice(0, MAX_GROUP_STIMULI)
 }
 
 /* ---------------------------------------------------------------------------------- scheme */
@@ -145,6 +176,8 @@ const LEAF_KIND: Record<Leaf['mode'], BijakAttemptLeafKind> = {
   essay: 'essay',
   drawing: 'drawing',
   table_fill: 'table_fill',
+  // The attempt wire has no `essay_choice` kind yet (R1-B08 adds it with `topics`): the review reads it as an essay.
+  essay_choice: 'essay',
   // PKSK questions never reach the exam builder (excluded at the source); the entry only keeps the map total.
   pksk_choice: 'short_text',
 }
@@ -166,7 +199,8 @@ function describeKey(leaf: Leaf): SchemeLine[] {
     case 'working':
     case 'drawing':
       return pointLines(leaf.key)
-    case 'essay': {
+    case 'essay':
+    case 'essay_choice': {
       const key = leaf.key
       if (key.kind === 'points') return pointLines(key)
       return [
@@ -209,7 +243,7 @@ function viewOf(part: QuestionPart, path: string[], scheme: ReviewScheme): Bijak
     }
   }
   scheme[id] = { marks: part.marks, lines: describeKey(part) }
-  const range = part.mode === 'essay' ? part.wordRange : undefined
+  const range = part.mode === 'essay' || part.mode === 'essay_choice' ? part.wordRange : undefined
   return {
     id,
     label: part.label,

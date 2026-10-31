@@ -221,7 +221,7 @@ const tableRows = computed<TableRow[]>(() =>
     id: r.id,
     title: limitText(r.title, 40),
     subjectText: noteSubjectText(r.subject),
-    noteType: r.noteType,
+    noteType: noteGradeText(r.noteType),
     gradeText: noteGradeText(r.grade),
     // The same word as the table's status cell (DsStatusBadge), for the card list below md.
     statusText: statusMap[r.isPublished ? 'published' : 'draft'].word,
@@ -231,12 +231,12 @@ const tableRows = computed<TableRow[]>(() =>
 
 const columns: TableColumn<TableRow>[] = [
   { accessorKey: 'title', header: 'Tajuk', ...cellClass('') },
-  { accessorKey: 'subjectText', header: 'Subjek', ...cellClass('w-40') },
-  { accessorKey: 'noteType', header: 'Jenis', ...cellClass('w-28') },
-  { accessorKey: 'gradeText', header: 'Tahap', ...cellClass('w-28') },
-  { id: 'status', header: 'Status', ...cellClass('w-40') },
+  { accessorKey: 'subjectText', header: 'Subjek', ...cellClass('w-36') },
+  { accessorKey: 'noteType', header: 'Jenis', ...cellClass('w-24') },
+  { accessorKey: 'gradeText', header: 'Tahap', ...cellClass('w-24') },
+  { id: 'status', header: 'Status', ...cellClass('w-32') },
   { id: 'stats', header: 'Statistik', ...cellClass('w-36') },
-  { id: 'actions', header: 'Tindakan', ...cellClass('w-36') },
+  { id: 'actions', header: 'Tindakan', ...cellClass('w-24') },
 ]
 const cardFields: CardField[] = [
   { key: 'subjectText', label: 'Subjek' },
@@ -247,8 +247,11 @@ const cardFields: CardField[] = [
 </script>
 
 <template>
-  <DsPage subtitle-testid="admin-notes-count" data-testid="admin-notes-page">
-    <template #subtitle>Jumlah: {{ total }} nota</template>
+  <DsPage
+    :subtitle="`Jumlah: ${total} nota`"
+    subtitle-testid="admin-notes-count"
+    data-testid="admin-notes-page"
+  >
     <template #actions>
       <UButton
         :to="{ name: NOTE_ROUTES.create }"

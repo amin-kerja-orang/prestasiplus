@@ -296,7 +296,7 @@ const COLUMNS: TableColumn<SchoolRow>[] = [
     >
       <template #name-cell="{ row }">
         <span
-          class="block max-w-72 text-body whitespace-normal text-highlighted"
+          class="block max-w-md text-body whitespace-normal text-highlighted"
           data-testid="school-row"
           :data-school-id="row.original.id"
           >{{ row.original.name }}</span

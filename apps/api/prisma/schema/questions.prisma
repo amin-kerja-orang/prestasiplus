@@ -105,7 +105,7 @@ model Question {
   /// variant (check constraint).
   familyRelation   String?  @map("family_relation")
   parentQuestionId BigInt?  @map("parent_question_id")
-  /// LEAD decision Q-2: eligibility = live version published AND is_active.
+  /// LEAD decision Q-2 (ADR-0027): eligibility = live version approved AND is_active.
   isActive         Boolean  @default(true) @map("is_active")
   createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -130,7 +130,7 @@ model QuestionVersion {
   id            BigInt    @id @default(autoincrement())
   questionId    BigInt    @map("question_id")
   versionNo     Int       @map("version_no")
-  /// draft, review, approved, published, archived (check constraint).
+  /// draft, review, approved, archived (check constraint, migration 0100; approved is the only servable status, ADR-0027).
   status        String    @default("draft")
   /// superseded, withdrawn, source_takedown; only when archived (check constraint).
   archiveReason String?   @map("archive_reason")
@@ -247,7 +247,7 @@ model QuestionPart {
   promptMs          String   @map("prompt_ms")
   promptEn          String?  @map("prompt_en")
   marks             Int?     @db.SmallInt
-  /// mcq, match_letter, short_text, numeric, working, essay, drawing, table_fill (check constraint).
+  /// mcq, match_letter, short_text, numeric, working, essay, drawing, table_fill, pksk_choice, essay_choice (check constraint).
   mode              String?
   unit              String?
   decimals          Int?     @db.SmallInt
@@ -255,6 +255,8 @@ model QuestionPart {
   blankCount        Int?     @map("blank_count") @db.SmallInt
   wordMin           Int?     @map("word_min")
   wordMax           Int?     @map("word_max")
+  /// essay_choice only: [{ id, label }] (2..6, check constraint ck_question_parts_topics); NULL on every other part.
+  topics            Json?    @db.JsonB
   /// graph, diagram, sketch (check constraint).
   drawingKind       String?  @map("drawing_kind")
   tableGrid         Json?    @map("table_grid") @db.JsonB

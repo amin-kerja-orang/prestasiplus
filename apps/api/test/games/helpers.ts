@@ -227,7 +227,7 @@ export interface McqInsertOptions {
   /** Unique label prefix (the `number_label`); default `GM`. Use another prefix for a second batch. */
   prefix?: string
   /** `published` (default) is servable; `draft` is not. */
-  status?: 'published' | 'draft'
+  status?: 'approved' | 'draft'
   /** Number of options (2..4, default 4). */
   options?: number
 }
@@ -248,7 +248,7 @@ export interface InsertedMcq {
  */
 export async function insertMcqQuestions(db: TestDatabase, opts: McqInsertOptions): Promise<InsertedMcq[]> {
   const prefix = opts.prefix ?? 'GM'
-  const status = opts.status ?? 'published'
+  const status = opts.status ?? 'approved'
   const optionCount = opts.options ?? 4
   const out: InsertedMcq[] = []
   const now = new Date(START)
@@ -263,7 +263,7 @@ export async function insertMcqQuestions(db: TestDatabase, opts: McqInsertOption
         const label = `${prefix}-${opts.subject}-${opts.level}-${String(i + 1).padStart(3, '0')}`
         const text = `Soalan permainan contoh ${label}`
         const keyIndex = i % optionCount
-        const published = status === 'published'
+        const published = status === 'approved'
         const question = await tx.question.create({
           data: { sourceType: 'manual', createdById: owner.userId, latestVersionNo: 1, liveVersionNo: published ? 1 : null, isActive: true, createdAt: now, updatedAt: now },
         })

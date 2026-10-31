@@ -21,12 +21,14 @@ import type {
   QuestionVersionRecord,
   SampleFilter,
   StimulusGroupRecord,
+  StimulusKind,
   StimulusRecord,
   StoreQuestionType,
   StoreSourceType,
   StructuredListFilter,
   ViewMode,
 } from './types'
+import { STIMULUS_KINDS } from './types'
 
 /** Columns of `question_versions` a writer may set (ids are bigint, the service already parsed them). */
 export interface VersionDraft {
@@ -174,7 +176,7 @@ function shapeArraySql(candidates: Prisma.Sql, shape: QuestionFilter['mcqShape']
     GROUP BY sp.question_version_id HAVING ${Prisma.join(having, ' AND ')})`
 }
 
-const NO_STATUS_COUNTS = (): Record<QuestionStatus, number> => ({ draft: 0, review: 0, approved: 0, published: 0, archived: 0 })
+const NO_STATUS_COUNTS = (): Record<QuestionStatus, number> => ({ draft: 0, review: 0, approved: 0, archived: 0 })
 
 /** `bigint` of a decimal id, or null when the text is not a canonical id (such an id never exists). */
 function bi(text: string): bigint | null {
@@ -190,6 +192,42 @@ function pkskOf(tags: readonly { kind: string; code: string }[]): { domainCode: 
   const domain = tags.find((t) => t.kind === 'pksk_domain')
   const level = tags.find((t) => t.kind === 'pksk_level')
   return domain && (level?.code === 'T1' || level?.code === 'T4') ? { domainCode: domain.code, level: level.code } : null
+}
+
+/** A stored stimulus row as the store keeps it (the columns the display needs). */
+interface StimulusRow {
+  id: bigint
+  kind: string
+  label: string | null
+  bodyMs: string | null
+  bodyEn: string | null
+  caption: string | null
+  altText: string | null
+  sourceCitation: string | null
+  tableData: unknown
+  assetFileId: bigint | null
+}
+
+const isStimulusKind = (kind: string): kind is StimulusKind => (STIMULUS_KINDS as readonly string[]).includes(kind)
+
+/**
+ * A stored stimulus as a record. All seven kinds pass through with caption, source and table grid (R1-T07); `audio` (and any
+ * kind outside the seven) is not a displayable stimulus and yields null.
+ */
+function stimulusRecordOf(row: StimulusRow): StimulusRecord | null {
+  if (!isStimulusKind(row.kind)) return null
+  return {
+    id: idToString(row.id),
+    kind: row.kind,
+    label: row.label ?? '',
+    bodyMs: row.bodyMs,
+    bodyEn: row.bodyEn,
+    assetFileId: row.assetFileId === null ? null : idToString(row.assetFileId),
+    alt: row.altText,
+    caption: row.caption,
+    sourceCitation: row.sourceCitation,
+    tableData: row.tableData ?? null,
+  }
 }
 
 const likePattern = (s: string): string => `%${s.replace(/[\\%_]/g, (c) => `\\${c}`)}%`
@@ -237,8 +275,8 @@ export class QuestionsRepository {
    * served version even after a later edit, BE-12 AC 11 / OD-28). Unknown ids or version numbers are
    * absent. Returned in ascending id, then version order.
    *
-   * Pinned grading only: never use it on a serving path (a draw, a list, a learner-facing read). It skips the
-   * active, published and PKSK scope that `sample` / `eligibleIds` / `getMany('live')` apply.
+   * Pinned reads (grading, and serving a pinned placement such as a kuiz paper page): never use it for a draw or a list. It skips
+   * the active, published and PKSK scope that `sample` / `eligibleIds` / `getMany('live')` apply; a Darjah question is still not found (R1-B21).
    */
   async getVersions(refs: readonly { questionId: string; versionNo: number }[]): Promise<QuestionRecord[]> {
     const wanted = new Map<string, { id: bigint; versionNo: number }>()
@@ -332,7 +370,7 @@ export class QuestionsRepository {
     const rows = await this.db.$queryRaw<{ ok: boolean }[]>`
       SELECT true AS ok FROM questions q
       JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-      WHERE q.id = ${key} AND q.is_active AND v.status = 'published' AND ${NOT_PKSK}`
+      WHERE q.id = ${key} AND q.is_active AND v.status = 'approved' AND ${NOT_PKSK}`
     return rows.length > 0
   }
 
@@ -342,7 +380,7 @@ export class QuestionsRepository {
    * a test fixture). A draw uses `sampleIds` / `sample`, a membership check `eligibleAmong`, a full walk `eligibleIdsPage`.
    */
   async eligibleIds(filter: QuestionFilter = {}): Promise<string[]> {
-    const { from, where } = this.scope({ ...filter, status: 'published', active: true }, true)
+    const { from, where } = this.scope({ ...filter, status: 'approved', active: true }, true)
     const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY q.id ASC LIMIT ${ELIGIBLE_IDS_MAX + 1}`
     if (rows.length > ELIGIBLE_IDS_MAX) {
       throw new Error(`eligibleIds matched more than ${String(ELIGIBLE_IDS_MAX)} questions: use sampleIds, eligibleAmong or eligibleIdsPage`)
@@ -355,7 +393,7 @@ export class QuestionsRepository {
     const size = Math.max(1, Math.min(Math.floor(limit), ELIGIBLE_IDS_MAX))
     const { mcqShape, singleMcqLeaf, ...plain } = filter
     const page = async (cursor: string | undefined, rows: number): Promise<string[]> => {
-      const { from, where } = this.scope({ ...plain, status: 'published', active: true, ...(cursor === undefined ? {} : { idAfter: cursor }) }, true)
+      const { from, where } = this.scope({ ...plain, status: 'approved', active: true, ...(cursor === undefined ? {} : { idAfter: cursor }) }, true)
       const r = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY q.id ASC LIMIT ${rows}`
       return r.map((x) => idToString(x.id))
     }
@@ -385,7 +423,7 @@ export class QuestionsRepository {
     const wanted = [...new Set(ids)]
     const out: string[] = []
     for (let i = 0; i < wanted.length; i += AMONG_CHUNK) {
-      const { from, where } = this.scope({ ...filter, status: 'published', active: true, idIn: wanted.slice(i, i + AMONG_CHUNK) }, true)
+      const { from, where } = this.scope({ ...filter, status: 'approved', active: true, idIn: wanted.slice(i, i + AMONG_CHUNK) }, true)
       const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY q.id ASC`
       out.push(...rows.map((r) => idToString(r.id)))
     }
@@ -404,7 +442,7 @@ export class QuestionsRepository {
     if (!Number.isSafeInteger(n) || n <= 0) return []
     const limit = Math.min(n, SAMPLE_MAX)
     const { mcqShape, singleMcqLeaf, ...plain } = filter
-    const { from, where } = this.scope({ ...plain, status: 'published', active: true }, true)
+    const { from, where } = this.scope({ ...plain, status: 'approved', active: true }, true)
     const key = Math.trunc(seed)
     if (!mcqShape && !singleMcqLeaf) {
       const rows = await this.db.$queryRaw<{ id: bigint }[]>`
@@ -462,17 +500,10 @@ export class QuestionsRepository {
       },
     })
     if (!group) return null
-    const stimuli: StimulusRecord[] = group.stimuli
-      .filter((s) => s.stimulus.kind !== 'audio')
-      .map((s) => ({
-        id: idToString(s.stimulus.id),
-        kind: s.stimulus.kind === 'passage' ? 'passage' : s.stimulus.kind === 'table' ? 'table' : 'diagram',
-        label: s.stimulus.label ?? '',
-        bodyMs: s.stimulus.bodyMs,
-        bodyEn: s.stimulus.bodyEn,
-        assetFileId: s.stimulus.assetFileId === null ? null : idToString(s.stimulus.assetFileId),
-        alt: s.stimulus.altText,
-      }))
+    const stimuli: StimulusRecord[] = group.stimuli.flatMap((s) => {
+      const record = stimulusRecordOf(s.stimulus)
+      return record ? [record] : []
+    })
     return {
       id: idToString(group.id),
       stimuli,
@@ -544,13 +575,13 @@ export class QuestionsRepository {
       const c = f.complianceFilter
       conds.push(
         c === 'verified'
-          ? Prisma.sql`q.live_version_no = v.version_no AND v.status = 'published'`
+          ? Prisma.sql`q.live_version_no = v.version_no AND v.status = 'approved'`
           : c === 'draft'
-            ? Prisma.sql`v.status <> 'published'`
+            ? Prisma.sql`v.status <> 'approved'`
             : c === 'missing_source'
               ? Prisma.sql`v.source_file_id IS NULL`
               : c === 'verified_generated'
-                ? Prisma.sql`q.source_type = 'ai_variant' AND v.status = 'published'`
+                ? Prisma.sql`q.source_type = 'ai_variant' AND v.status = 'approved'`
                 : Prisma.sql`FALSE`,
       )
     }
@@ -665,6 +696,39 @@ export class QuestionsRepository {
     return rows.map((r) => ({ id: idToString(r.id), kind: r.kind, assetFileId: r.assetFileId === null ? null : idToString(r.assetFileId) }))
   }
 
+  /**
+   * Stimulus bodies linked DIRECTLY to a question version (`question_version_stimuli`), in link order, audio left out. Keyed
+   * `<questionId>:<versionNo>` (one entry per requested ref, an empty array when the version has none or does not exist).
+   * For kuiz and the bridges: a stimulus linked to a version may be outside its group (a stem picture, a leaf stimulus).
+   */
+  async versionStimuli(refs: readonly { questionId: string; versionNo: number }[]): Promise<Map<string, StimulusRecord[]>> {
+    const out = new Map<string, StimulusRecord[]>()
+    const wanted = refs.flatMap((r) => {
+      const key = bi(r.questionId)
+      return key === null || !Number.isSafeInteger(r.versionNo) ? [] : [{ questionId: key, versionNo: r.versionNo }]
+    })
+    for (const r of wanted) out.set(`${idToString(r.questionId)}:${r.versionNo}`, [])
+    if (wanted.length === 0) return out
+    const versions = await this.db.questionVersion.findMany({
+      where: { OR: wanted.map((r) => ({ questionId: r.questionId, versionNo: r.versionNo })) },
+      select: {
+        questionId: true,
+        versionNo: true,
+        stimuli: { orderBy: { position: 'asc' }, select: { stimulus: true } },
+      },
+    })
+    for (const v of versions) {
+      out.set(
+        `${idToString(v.questionId)}:${v.versionNo}`,
+        v.stimuli.flatMap((l) => {
+          const record = stimulusRecordOf(l.stimulus)
+          return record ? [record] : []
+        }),
+      )
+    }
+    return out
+  }
+
   async groupExists(id: string): Promise<boolean> {
     const key = bi(id)
     return key !== null && (await this.db.stimulusGroup.count({ where: { id: key } })) > 0
@@ -688,7 +752,7 @@ export class QuestionsRepository {
         groupId: input.groupId,
         groupPosition: input.groupPosition,
         latestVersionNo: 1,
-        liveVersionNo: input.version.status === 'published' ? 1 : null,
+        liveVersionNo: input.version.status === 'approved' ? 1 : null,
         createdAt: input.now,
         updatedAt: input.now,
         ...(input.pksk
@@ -702,7 +766,7 @@ export class QuestionsRepository {
           : {}),
       },
     })
-    await this.insertVersion(q.id, 1, input.version, input.now, input.version.status === 'published' ? input.now : null, input.provenance)
+    await this.insertVersion(q.id, 1, input.version, input.now, input.version.status === 'approved' ? input.now : null, input.provenance)
     return idToString(q.id)
   }
 
@@ -843,7 +907,7 @@ export class QuestionsRepository {
   async pkskStats(): Promise<{ total: number; published: number; archived: number; t1: number; t4: number }> {
     const rows = await this.db.$queryRaw<{ total: number; published: number; archived: number; t1: number; t4: number }[]>`
       SELECT count(*)::int AS total,
-             count(*) FILTER (WHERE v.status = 'published')::int AS published,
+             count(*) FILTER (WHERE v.status = 'approved')::int AS published,
              count(*) FILTER (WHERE v.status = 'archived')::int AS archived,
              count(*) FILTER (WHERE EXISTS (SELECT 1 FROM question_tags l WHERE l.question_id = q.id AND l.kind = 'pksk_level' AND l.code = 'T1'))::int AS t1,
              count(*) FILTER (WHERE EXISTS (SELECT 1 FROM question_tags l WHERE l.question_id = q.id AND l.kind = 'pksk_level' AND l.code = 'T4'))::int AS t4
@@ -857,7 +921,7 @@ export class QuestionsRepository {
     const rows = await this.db.$queryRaw<{ code: string; n: number }[]>`
       SELECT d.code AS code, count(*)::int AS n
       FROM questions q
-      JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no AND v.status = 'published'
+      JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no AND v.status = 'approved'
       JOIN question_tags d ON d.question_id = q.id AND d.kind = 'pksk_domain'
       JOIN question_tags l ON l.question_id = q.id AND l.kind = 'pksk_level' AND l.code = ${level}
       WHERE q.is_active GROUP BY 1`
@@ -870,7 +934,7 @@ export class QuestionsRepository {
     const rows = await this.db.$queryRaw<{ id: bigint }[]>`
       SELECT q.id
       FROM questions q
-      JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no AND v.status = 'published'
+      JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no AND v.status = 'approved'
       JOIN question_tags d ON d.question_id = q.id AND d.kind = 'pksk_domain' AND d.code IN (${Prisma.join(domainCodes)})
       JOIN question_tags l ON l.question_id = q.id AND l.kind = 'pksk_level' AND l.code = ${level}
       WHERE q.is_active ORDER BY q.id ASC`
@@ -987,6 +1051,7 @@ export class QuestionsRepository {
           blankCount: d.blankCount,
           wordMin: d.wordMin,
           wordMax: d.wordMax,
+          topics: d.topics ?? Prisma.DbNull,
           stimulusId: d.stimulusId,
           reveal: d.reveal,
           unitNodeId: d.unitNodeId,
@@ -1013,12 +1078,12 @@ export class QuestionsRepository {
   }
 
   /**
-   * FROM + WHERE fragments for a filter. `status: 'published'` reads the live version; otherwise the latest. Primary-level
+   * FROM + WHERE fragments for a filter. `status: 'approved'` reads the live version; otherwise the latest. Primary-level
    * (Darjah) questions are always excluded. `learnerVisible` (every eligibility/draw read) also drops questions of any other
    * INACTIVE education level.
    */
   private scope(filter: QuestionFilter, learnerVisible = false): { from: Prisma.Sql; where: Prisma.Sql } {
-    const live = filter.status === 'published'
+    const live = filter.status === 'approved'
     const from = live
       ? Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no`
       : Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
@@ -1118,7 +1183,9 @@ export class QuestionsRepository {
       const q = byId.get(w.id)
       return q && w.versionNo <= q.latestVersionNo ? [{ q, versionNo: w.versionNo }] : []
     })
-    const out = await this.hydratePicks(picks)
+    // Secondary-only (R1-B21): a pinned read of a Darjah question is not found either (kuiz paper pages serve pinned versions).
+    const hidden = await this.primaryLevelIds()
+    const out = (await this.hydratePicks(picks)).filter((r) => r.version.educationLevelId === null || !hidden.has(r.version.educationLevelId))
     return out.sort((a, b) => (a.id === b.id ? a.version.versionNo - b.version.versionNo : BigInt(a.id) < BigInt(b.id) ? -1 : 1))
   }
 

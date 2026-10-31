@@ -139,8 +139,9 @@ export function checkUsersDataset(): DatasetIssue[] {
     )
   }
 
-  // Fixture school 900001 holds exactly 9 students (M08 "9 murid", XL2-35); 900002 none.
-  expect('900001 students', n({ role: 'student', schoolId: 900_001 }), 9)
+  // Fixture school 900001 holds exactly 10 students (accounts 2 and 4 + 3001-3008; D72 re-homed account 4 from
+  // 900004); 900002 none.
+  expect('900001 students', n({ role: 'student', schoolId: 900_001 }), 10)
   expect('900002 students', n({ role: 'student', schoolId: 900_002 }), 0)
   expect('987 users', n({ schoolId: 987 }), 2)
 

@@ -44,6 +44,7 @@ import {
   errorLines,
   limitText,
   listDate,
+  noteGradeText,
   queryPage,
   queryText,
 } from '../lib/admin-articles-notes'
@@ -229,7 +230,7 @@ const tableRows = computed<TableRow[]>(() =>
     id: r.id,
     title: limitText(r.title, 50),
     categoryLabel: r.categoryLabel,
-    gradeLevel: r.gradeLevel,
+    gradeLevel: noteGradeText(r.gradeLevel),
     views: r.views,
     date: listDate(r.createdAt),
     // The same word as the table's status cell (DsStatusBadge), for the card list below md.
@@ -242,10 +243,10 @@ const columns: TableColumn<TableRow>[] = [
   { accessorKey: 'title', header: 'Tajuk', ...cellClass('') },
   { accessorKey: 'categoryLabel', header: 'Kategori', ...cellClass('w-36') },
   { accessorKey: 'gradeLevel', header: 'Tahap', ...cellClass('w-28') },
-  { id: 'status', header: 'Status', ...cellClass('w-40') },
+  { id: 'status', header: 'Status', ...cellClass('w-36') },
   { accessorKey: 'views', header: 'Views', ...cellClass('w-20') },
   { accessorKey: 'date', header: 'Tarikh', ...cellClass('w-28') },
-  { id: 'actions', header: 'Tindakan', ...cellClass('w-36') },
+  { id: 'actions', header: 'Tindakan', ...cellClass('w-24') },
 ]
 const cardFields: CardField[] = [
   { key: 'categoryLabel', label: 'Kategori' },
@@ -257,8 +258,11 @@ const cardFields: CardField[] = [
 </script>
 
 <template>
-  <DsPage subtitle-testid="admin-articles-count" data-testid="admin-articles-page">
-    <template #subtitle>Jumlah: {{ total }} artikel</template>
+  <DsPage
+    :subtitle="`Jumlah: ${total} artikel`"
+    subtitle-testid="admin-articles-count"
+    data-testid="admin-articles-page"
+  >
     <template #actions>
       <UButton
         :to="{ name: ARTICLE_ROUTES.create }"
@@ -352,15 +356,15 @@ const cardFields: CardField[] = [
           data-testid="admin-article-row"
           :data-article-id="row.original.id"
         >
-          <p class="line-clamp-2 text-label text-highlighted">
+          <p class="flex items-start gap-1.5 text-label text-highlighted">
             <UIcon
               v-if="row.original.raw.isFeatured"
               name="i-ph-star-fill"
-              class="mr-1 size-4 text-warning"
+              class="mt-0.5 size-4 shrink-0 text-warning"
               title="Featured"
               data-testid="article-featured"
             />
-            <span data-testid="article-title">{{ row.original.title }}</span>
+            <span class="line-clamp-2" data-testid="article-title">{{ row.original.title }}</span>
           </p>
           <p class="text-caption text-muted" data-testid="article-author">
             Oleh: {{ row.original.raw.author.name }}

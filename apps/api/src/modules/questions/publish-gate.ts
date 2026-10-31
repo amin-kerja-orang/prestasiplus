@@ -1,6 +1,6 @@
 /**
- * Pure publish rules. `checkTagGate` is the D9 rule BE-09 enforces in `setStatus(..., 'published')`
- * and on `POST /questions` with `published`. `checkKeysGate` is the key-completeness rule offered to
+ * Pure publish rules. `checkTagGate` is the D9 rule BE-09 enforces in `setStatus(..., 'approved')`
+ * and on `POST /questions` with `approved`. `checkKeysGate` is the key-completeness rule offered to
  * BE-10 for its publish gate; BE-09 does not call it (no quality gates here, Q-6).
  */
 import type { QuestionPart } from '@pp/contract'
@@ -18,6 +18,9 @@ export interface TagGateInput {
 }
 
 export const MAX_SP_NODES = 3
+
+/** Publish gate text for an `essay_choice` leaf without 2 to 6 distinct, non-blank topics. */
+export const ESSAY_CHOICE_TOPICS_MESSAGE = 'Esei pilihan mesti mempunyai 2 hingga 6 tajuk yang berbeza.'
 
 /** The `fields` map of a failed gate; empty means the gate holds. */
 export function checkTagGate(input: TagGateInput): Record<string, string> {
@@ -48,7 +51,13 @@ export function checkKeysGate(parts: readonly QuestionPart[]): Record<string, st
   const fields: Record<string, string> = {}
   for (const { path, leaf } of leavesOf(parts)) {
     if (!isLeaf(leaf)) continue
-    if (leaf.mode === 'working' || leaf.mode === 'drawing' || leaf.mode === 'essay') {
+    if (leaf.mode === 'essay_choice') {
+      const ids = leaf.topics.map((t) => t.id)
+      if (leaf.topics.length < 2 || leaf.topics.length > 6 || new Set(ids).size !== ids.length || leaf.topics.some((t) => t.label.trim() === '')) {
+        fields[`parts.${path}.topics`] = ESSAY_CHOICE_TOPICS_MESSAGE
+      }
+    }
+    if (leaf.mode === 'working' || leaf.mode === 'drawing' || leaf.mode === 'essay' || leaf.mode === 'essay_choice') {
       const key = leaf.key
       if (key.kind === 'points') {
         const total = pointsTotal(key)

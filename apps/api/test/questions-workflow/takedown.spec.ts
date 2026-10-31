@@ -21,15 +21,15 @@ describe('source takedown (BE-10 AC 6)', () => {
   it('marks the paper and archives every non-archived question with one event each', async () => {
     const id = await paper()
     const other = await paper()
-    for (const [qid, status] of [['6001', 'draft'], ['6002', 'review'], ['6003', 'approved'], ['6004', 'published'], ['6005', 'archived']] as const) {
+    for (const [qid, status] of [['6001', 'draft'], ['6002', 'review'], ['6003', 'approved'], ['6004', 'approved'], ['6005', 'archived']] as const) {
       t.fake.seed({ id: qid, status, sourcePaperId: id })
     }
-    t.fake.seed({ id: '6006', status: 'published', sourcePaperId: other })
+    t.fake.seed({ id: '6006', status: 'approved', sourcePaperId: other })
     const res = await svc.takedownSource(id, actorOf(c.admin), 'Hak cipta ditarik balik')
     expect(res).toEqual({ sourcePaperId: id, archived: 4, skipped: 1 })
     for (const qid of ['6001', '6002', '6003', '6004', '6005']) expect((await t.fake.getStatus(qid))?.status).toBe('archived')
     expect((await t.fake.getStatus('6004'))?.liveVersionNo).toBeNull()
-    expect((await t.fake.getStatus('6006'))?.status).toBe('published')
+    expect((await t.fake.getStatus('6006'))?.status).toBe('approved')
     const ev = await t.db.query<{ question_id: string; from_status: string; reason: string }>(
       'select question_id::text, from_status, reason from question_status_events where question_id between 6001 and 6006 order by question_id',
     )
@@ -86,7 +86,7 @@ describe('source takedown (BE-10 AC 6)', () => {
     const ev = await t.db.query<{ version_no: number; from_status: string }>(
       'select version_no, from_status from question_status_events where question_id = 6201 order by id',
     )
-    expect(ev).toEqual([{ version_no: 1, from_status: 'published' }, { version_no: 2, from_status: 'draft' }])
+    expect(ev).toEqual([{ version_no: 1, from_status: 'approved' }, { version_no: 2, from_status: 'draft' }])
   })
 
   it('is idempotent: a second takedown keeps the first takedown_at and takedown_by', async () => {

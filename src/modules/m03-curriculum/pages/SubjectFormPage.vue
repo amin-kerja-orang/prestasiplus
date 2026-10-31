@@ -14,7 +14,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import { DsFormSection, DsPage, DsPageHeader } from '@/ds'
+import { DsBackLink, DsFormSection, DsPage } from '@/ds'
 
 import {
   createSubject,
@@ -149,23 +149,12 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
 }
 </script>
 <template>
-  <DsPage data-testid="subject-form-page">
-    <DsPageHeader
-      :title="editing ? 'Edit Subjek' : 'Tambah Subjek'"
-      :subtitle="editing ? 'Kemaskini maklumat subjek.' : 'Daftarkan subjek baharu.'"
-    >
-      <template #actions>
-        <UButton
-          :to="SUBJECTS_LIST_PATH"
-          color="neutral"
-          variant="soft"
-          icon="i-ph-arrow-left"
-          data-testid="subject-back"
-        >
-          Kembali ke Senarai
-        </UButton>
-      </template>
-    </DsPageHeader>
+  <DsPage
+    :title="editing ? 'Edit Subjek' : 'Tambah Subjek'"
+    :subtitle="editing ? 'Kemaskini maklumat subjek.' : 'Daftarkan subjek baharu.'"
+    data-testid="subject-form-page"
+  >
+    <DsBackLink :to="SUBJECTS_LIST_PATH" label="Kembali ke Senarai" data-testid="subject-back" />
 
     <DsLoadError
       v-if="failed"
@@ -331,7 +320,7 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
             label="Subjek Teras (Core Subject)"
             data-testid="subject-core"
           />
-          <p class="mt-2 text-label text-muted">Tandakan jika subjek ini adalah subjek wajib</p>
+          <p class="mt-1 text-caption text-muted">Tandakan jika subjek ini adalah subjek wajib</p>
         </div>
       </DsFormSection>
 

@@ -13,6 +13,7 @@
 
 import type { questionsDataset } from '../datasets/questions'
 import { bucketOfScore, RUNTIME_ID_FLOOR, scoreQuestion } from './quality-rules'
+import { levelScope } from './visible-levels'
 import type { Question } from './types'
 
 interface WorkflowContext {
@@ -25,7 +26,7 @@ export function workflowMethods({ store, transaction }: WorkflowContext) {
     /** Scored rows with a score ≤ 50 (bucket `le50`), any source, newest id first. */
     scoredWithLowScore: (): Question[] =>
       store.query({
-        where: { pkskDomainId: null, qualityBucket: 'le50' },
+        where: { pkskDomainId: null, qualityBucket: 'le50', educationLevelId: levelScope() },
         sort: { field: 'id', dir: 'desc' },
       }).rows,
     /** BR-M04-22 (INFERRED scope, see the file comment). Returns the number of rows scored. */

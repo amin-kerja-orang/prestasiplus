@@ -34,7 +34,7 @@ function record(
   const base = {
     id: 'v1',
     versionNo: 3,
-    status: 'published',
+    status: 'approved',
     archiveReason: null,
     publishedAt: now,
     type: 'structured',
@@ -377,6 +377,9 @@ describe('mapBe09Question: match_letter in a stimulus group', () => {
         alt: 'A diagram',
         text: '<svg/>',
       },
+      stimuli: [
+        { id: 'qb-s70', kind: 'diagram', label: 'Rajah 1', alt: 'A diagram', text: '<svg/>' },
+      ],
       optionBank: [
         { id: 'A', text: 'Alpha' },
         { id: 'B', text: 'B' },
@@ -385,17 +388,18 @@ describe('mapBe09Question: match_letter in a stimulus group', () => {
     expect(b.schemes['501.a']).toEqual({ kind: 'mapping', marks: 2, map: { '501.a': 'B' } })
   })
 
-  it('defaults the stimulus alt to its label, omits text when the body is empty, omits an empty option bank', () => {
+  it('defaults the stimulus alt to its label and omits an empty option bank', () => {
     const b = map(
       parts,
       { groupId: '9', version: { stimulusIds: ['70'] } },
-      group({ stimuli: [stimulus({ bodyMs: null, alt: null })] }),
+      group({ stimuli: [stimulus({ alt: null })] }),
     )
     expect(b.group?.stimulus).toEqual({
       id: 'qb-s70',
       kind: 'passage',
       label: 'Petikan A',
       alt: 'Petikan A',
+      text: 'Passage body',
     })
     expect(b.group).not.toHaveProperty('optionBank')
   })
@@ -935,14 +939,18 @@ describe('mapBe09Question: refusals', () => {
     ).not.toThrow()
   })
 
-  it('a group with 2 stimuli', () => {
-    const g = group({ stimuli: [stimulus({ id: '70' }), stimulus({ id: '71' })] })
-    expectRefusal(refusal([mcqPart()], { groupId: '9' }, g), '501', '', /2 stimuli/)
+  it('a group with more than 3 stimuli', () => {
+    const g = group({ stimuli: ['70', '71', '72', '73'].map((id) => stimulus({ id })) })
+    const e = refusal([mcqPart()], { groupId: '9' }, g)
+    expectRefusal(e, '501', '', /4 stimuli/)
+    expect(e.code).toBe('group_too_many_stimuli')
   })
 
-  it('an image stimulus (assetFileId)', () => {
+  it('a stimulus file with no token (file not found)', () => {
     const g = group({ stimuli: [stimulus({ assetFileId: '88' })] })
-    expectRefusal(refusal([mcqPart()], { groupId: '9' }, g), '501', '', /image stimulus/)
+    const e = refusal([mcqPart()], { groupId: '9' }, g)
+    expectRefusal(e, '501', '', /file 88/)
+    expect(e.code).toBe('file_missing')
   })
 
   it('a version stimulus outside the group', () => {
