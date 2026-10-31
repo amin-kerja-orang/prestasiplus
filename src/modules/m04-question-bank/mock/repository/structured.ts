@@ -15,6 +15,7 @@ import { OTHER_CREATOR } from '../data/anchors'
 import { directionOf } from '../datasets/question-derive'
 import { structuredDataset, subQuestionsOf } from '../datasets/structured'
 import { compact, structuredQueries } from './queries'
+import { levelScope as questionLevelScope } from './visible-levels'
 import type {
   ComplianceStatus,
   ScriptType,
@@ -22,6 +23,10 @@ import type {
   StructuredStatus,
   StructuredSubQuestion,
 } from './types'
+
+/** The structured store has no level-less rows: the question scope without its `null`. */
+const levelScope = (requested?: number): number[] =>
+  questionLevelScope(requested).filter((id): id is number => id !== null)
 
 /** Sub-question input of an M10 structured form. */
 export interface StructuredSubInput {
@@ -140,10 +145,12 @@ export const structuredRepo = defineRepository({
           page?: number
         } = {},
       ) => {
+        // Secondary-only (D72): the structured questions of a hidden Darjah level are neither listed nor counted.
+        const scope = { educationLevelId: levelScope() } as Where<StructuredQuestion>
         const page = store.query({
           where: compact<Where<StructuredQuestion>>({
             subjectId: filter.subjectId,
-            educationLevelId: filter.educationLevelId,
+            educationLevelId: levelScope(filter.educationLevelId),
             kbatLevel: filter.kbatLevel,
           }),
           sort: NEWEST_FIRST,
@@ -153,9 +160,9 @@ export const structuredRepo = defineRepository({
         return {
           ...page,
           stats: {
-            total: store.count(),
-            published: store.count({ status: 'published' }),
-            bySubject: store.groupCount('subjectId'),
+            total: store.count(scope),
+            published: store.count({ ...scope, status: 'published' }),
+            bySubject: store.groupCount('subjectId', scope),
           },
         }
       },
@@ -174,7 +181,7 @@ export const structuredRepo = defineRepository({
           where: compact<Where<StructuredQuestion>>({
             createdBy: filter.viewer?.id,
             subjectId: filter.subjectId,
-            educationLevelId: filter.educationLevelId,
+            educationLevelId: levelScope(filter.educationLevelId),
             status: filter.status,
           }),
           sort: [

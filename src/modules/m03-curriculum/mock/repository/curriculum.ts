@@ -321,8 +321,14 @@ export const curriculumRepo = defineRepository({
 
     const setLinks = (subjectId: number, levelIds: readonly number[]) => {
       for (const l of levelIds) if (!levels.get(l)) contract(`unknown education level ${String(l)}`)
-      for (const r of subjectLevels.query({ where: { subjectId } }).rows) subjectLevels.remove(r.id)
+      // Secondary-only (D72): the links to hidden primary levels are kept (hide, never delete); the ticked
+      // set replaces the visible ones only.
+      const hidden = (l: number) => levels.get(l)?.stage === 'primary'
+      for (const r of subjectLevels.query({ where: { subjectId } }).rows) {
+        if (!hidden(r.educationLevelId)) subjectLevels.remove(r.id)
+      }
       for (const l of new Set(levelIds)) {
+        if (hidden(l)) continue
         subjectLevels.insert({ id: linkId(subjectId, l), subjectId, educationLevelId: l })
       }
     }
@@ -334,6 +340,24 @@ export const curriculumRepo = defineRepository({
         const where = filter.active === undefined ? {} : { isActive: filter.active }
         return levels.query({ where }).rows.sort(byOrderThenId)
       },
+      /**
+       * Secondary-only (D72, 2026-10-29): the HIDDEN-primary view, like the HTTP backend (stage `primary` =
+       * D1-D6, by stage never by name). The plain reads above stay complete (the rows are hidden, never
+       * deleted, and M05's practice fixtures still key on them); every screen, lookup and picker reads
+       * through these.
+       */
+      visibleLevels(filter: { active?: boolean } = {}): EducationLevelRow[] {
+        const where = filter.active === undefined ? {} : { isActive: filter.active }
+        return levels
+          .query({ where })
+          .rows.filter((l) => l.stage !== 'primary')
+          .sort(byOrderThenId)
+      },
+      /** `true` when level `id` exists and is a hidden primary level (the screens answer "not found"). */
+      isLevelHidden: (id: number): boolean => levels.get(id)?.stage === 'primary',
+      /** `ids` without the hidden primary levels, order kept. */
+      visibleLevelIds: (ids: readonly number[]): number[] =>
+        ids.filter((id) => levels.get(id)?.stage !== 'primary'),
       level: (id: number): EducationLevelRow | undefined => levels.get(id),
       /** Level ids in BR-08 order (keys for `withZeroCounts`). */
       levelIds: (): number[] =>

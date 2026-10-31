@@ -52,6 +52,13 @@ const subjects = computed(() => data.value?.data ?? [])
       data-testid="lower-form-empty"
     />
 
+    <DsEmptyState
+      v-else-if="data && subjects.length === 0"
+      icon="stack"
+      title="Tiada subjek bab tersedia untuk tahap ini."
+      data-testid="chapter-subjects-empty"
+    />
+
     <ul
       v-else-if="data"
       class="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3"
@@ -85,7 +92,11 @@ const subjects = computed(() => data.value?.data ?? [])
                   {{ formatCount(s.questionCount) }} soalan chapter
                 </p>
               </div>
-              <UIcon name="i-ph-caret-right-bold" class="size-5 shrink-0 text-muted" aria-hidden="true" />
+              <UIcon
+                name="i-ph-caret-right-bold"
+                class="size-5 shrink-0 text-muted"
+                aria-hidden="true"
+              />
             </div>
           </UCard>
         </RouterLink>

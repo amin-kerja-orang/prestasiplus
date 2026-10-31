@@ -13,7 +13,14 @@ import { gamification } from '@/modules/m14-gamification/mock'
 
 import { gameResults, rooms } from '../../mock'
 import { m16Hooks } from '../../mock/hooks'
-import { bootM16, MemoryStorage, setUser, type Answer, type Booted } from './helpers'
+import {
+  belowT4Student,
+  bootM16,
+  MemoryStorage,
+  setUser,
+  type Answer,
+  type Booted,
+} from './helpers'
 
 const ADMIN = 1
 const T4_STUDENT = 2 // grade 10
@@ -149,9 +156,9 @@ describe('seed (SRS §6.11.0, §6.11.3, §6.11.5)', () => {
   })
 
   it('autoGrade follows the viewer grade', async () => {
-    const r = await get<Data<Any>>('/api/games/perang-fakta/lobby', D5_STUDENT)
-    expect(r.body.data.autoGrade).toBe('DARJAH_5')
-    expect(r.body.data.autoGradeName).toBe('Darjah 5')
+    const r = await get<Data<Any>>('/api/games/perang-fakta/lobby', belowT4Student())
+    expect(r.body.data.autoGrade).toBe('TINGKATAN_3')
+    expect(r.body.data.autoGradeName).toBe('Tingkatan 3')
     const t4 = await get<Data<Any>>('/api/games/perang-fakta/lobby', T4_STUDENT)
     expect(t4.body.data.autoGrade).toBe('TINGKATAN_4')
   })
@@ -347,7 +354,7 @@ describe('rooms (SRS §7 #24-#28, BR-M16-18/19/20)', () => {
       ...forms['benteng-ilmu'],
       match_mode: 'same_grade',
     })
-    const refused = await post<Any>('/api/games/benteng-ilmu/rooms/join', D5_STUDENT, {
+    const refused = await post<Any>('/api/games/benteng-ilmu/rooms/join', belowT4Student(), {
       room_code: strict.body.data.code,
     })
     expect(refused.status).toBe(404)

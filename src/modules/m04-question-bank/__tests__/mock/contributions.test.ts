@@ -20,10 +20,13 @@ import m04, { questions, type Question } from '../../mock'
 import { PKSK_DOMAINS, SPM_POOL } from '../../mock/data/tables'
 import { M05_ANCHOR_GROUPS } from '../../mock/datasets/questions-spec'
 import { questionQueries } from '../../mock/repository/queries'
+import { showPrimaryLevels } from '../../mock/repository/visible-levels'
 
 const NOW = '2026-09-25T15:40:00+08:00'
 
 function boot(modules: readonly ReturnType<typeof defineMockModule>[]) {
+  // The documented counts include the Darjah questions; the hiding (D72) is in secondary-only.test.ts.
+  showPrimaryLevels()
   return bootMock({
     mode: 'test',
     core: defineMockCore({}),
