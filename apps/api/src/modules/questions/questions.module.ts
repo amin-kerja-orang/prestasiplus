@@ -28,15 +28,9 @@ import { StudioController, StudioDskpService } from './studio'
  */
 @Module({
   imports: [CurriculumModule, UsersModule, FilesModule, AuditModule, ThrottleModule],
-<<<<<<< HEAD
   controllers: [AdminQuestionsController, StructuredQuestionsController, GuruQuestionsController, StimuliController, StudioController, ServabilityController],
   providers: [QuestionsRepository, QuestionsService, StimuliRepository, GroupMembers, StimuliService, PkskQuestionsService, QuestionCountsAdapter, QuestionsBijakPoolSource, StudioDskpService, ServabilityService, ServabilityReadsService, OverviewCache],
   exports: [QuestionsRepository, QuestionsService, PkskQuestionsService, QuestionsBijakPoolSource, ServabilityService, OverviewCache],
-=======
-  controllers: [AdminQuestionsController, StructuredQuestionsController, GuruQuestionsController, StimuliController, StudioController],
-  providers: [QuestionsRepository, QuestionsService, StimuliRepository, GroupMembers, StimuliService, PkskQuestionsService, QuestionCountsAdapter, QuestionsBijakPoolSource, StudioDskpService, ServabilityService],
-  exports: [QuestionsRepository, QuestionsService, PkskQuestionsService, QuestionsBijakPoolSource, ServabilityService],
->>>>>>> origin/feature/v3-bijak-r1
 })
 export class QuestionsModule implements OnModuleInit {
   constructor(
