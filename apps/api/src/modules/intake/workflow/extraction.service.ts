@@ -28,6 +28,7 @@ import { isAdmin, parseId, visibleBatches } from '../files/intake-access'
 import { CurriculumFactsService } from './curriculum-facts'
 import { DuplicateDetector, type Finding } from './duplicate-detector'
 import { signatureOf, textOfQuestion, type Signature } from './duplicates'
+import { linkReferencingItems } from './figure-links'
 import { PayloadSchema, stateDuplicates, type StoredPayload } from './item-model'
 import { INTAKE_AUDIT, MAX_STIMULI_PER_BATCH, WORKFLOW_JOB_ENTITY, WORKFLOW_JOB_TYPE } from './workflow.constants'
 import { IntakeWorkflowConfig } from './workflow.config'
@@ -408,6 +409,12 @@ export class IntakeExtractionService implements OnModuleInit {
     })
     const room = Math.max(0, this.config.maxItemsPerBatch - existing.length)
     const mapped = drafts.slice(0, room).map((d) => this.mapDraft(d, subject, pageMap))
+    // D90: a figure belongs to EVERY question that names it. Add the links the extractor missed (never move one it made).
+    const figureLinks = linkReferencingItems(
+      stimuliIn.map((s) => ({ ref: s.id, label: s.label })),
+      mapped.map((m, index) => ({ index, stimulusRef: m.stimulusRef, text: textOfQuestion(m.payload) })),
+    )
+    for (const [index, ref] of figureLinks.links) (mapped[index] as { stimulusRef: string | null }).stimulusRef = ref
     const sigs = mapped.map((m) => signatureOf(textOfQuestion(m.payload)))
     const findings: Finding[][] = mapped.map((_m, i) => {
       const sig = sigs[i] as Signature

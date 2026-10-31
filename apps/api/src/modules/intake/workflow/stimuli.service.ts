@@ -5,6 +5,7 @@ import {
   type IntakeStimulusCreateRequest,
   type IntakeStimulusRemoved,
   type IntakeStimulusUpdateRequest,
+  type StudioFigureLinks,
 } from '@pp/contract'
 
 import { AuditService } from '../../../common/audit/audit.service'
@@ -16,7 +17,9 @@ import { idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { parseId, visibleBatches } from '../files/intake-access'
 import type { CallerInfo } from './extraction.service'
-import { stimulusOf } from './item-model'
+import { figureKeys, stimulusKey } from './figure-links'
+import { StoredPayloadSchema, stimulusOf } from './item-model'
+import { textOfQuestion } from './duplicates'
 import { INTAKE_AUDIT, MAX_STIMULI_PER_BATCH, WORKFLOW_MESSAGES } from './workflow.constants'
 
 const TX = { timeout: 20_000, maxWait: 10_000 } as const
@@ -105,6 +108,46 @@ export class IntakeStimuliService {
         tx,
       })
       return { id: idToString(found.id), detachedItemIds: items.map((i) => idToString(i.id)) }
+    }, TX)
+  }
+
+  /**
+   * D90: links the figure to EVERY open item of its batch that names it ("Rajah 1" in S1 and in S2). Items that already have
+   * a stimulus, and accepted, rejected or duplicate items, are left alone. Idempotent.
+   */
+  async linkReferencing(auth: AuthContext, idText: string, who: CallerInfo): Promise<StudioFigureLinks> {
+    return this.prisma.transaction(async (tx) => {
+      const found = await this.find(tx, auth, idText)
+      await tx.$queryRaw`SELECT id FROM intake_stimuli WHERE id = ${found.id} FOR UPDATE`
+      const key = stimulusKey(found.label)
+      const linked: bigint[] = []
+      if (key !== null) {
+        const open = await tx.intakeItem.findMany({
+          where: { batchId: found.batchId, stimulusId: null, reviewState: { in: ['generated', 'needs_review'] } },
+          orderBy: { position: 'asc' },
+          select: { id: true, payload: true },
+        })
+        for (const item of open) {
+          const payload = StoredPayloadSchema.safeParse(item.payload)
+          if (payload.success && figureKeys(textOfQuestion(payload.data)).includes(key)) linked.push(item.id)
+        }
+        if (linked.length > 0) await tx.intakeItem.updateMany({ where: { id: { in: linked } }, data: { stimulusId: found.id } })
+      }
+      await this.audit.record({
+        action: INTAKE_AUDIT.figureLinked,
+        actorUserId: auth.userId,
+        actorRole: auth.active.role,
+        scopeLevel: auth.active.scope.level,
+        schoolId: auth.active.scope.schoolId ?? null,
+        targetType: 'intake_stimulus',
+        targetId: idToString(found.id),
+        requestId: who.requestId,
+        ip: who.ip,
+        isTest: auth.mode !== null,
+        details: { batchId: idToString(found.batchId), linked: linked.length },
+        tx,
+      })
+      return { stimulusId: idToString(found.id), linkedItemIds: linked.map(idToString) }
     }, TX)
   }
 
