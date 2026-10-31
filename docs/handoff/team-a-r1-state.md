@@ -61,7 +61,7 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 | servability-archived | `r1/servability-archived` @ 8de1b394 | A4 | T29, H-A13 | B2 Approve w/ Minors, B3 Pass; A4 merges the base into the chain tip and posts one tip |
 | B-request fixes (REQ-B-013/014) | `r1/b-requests-a4` @ 42396048 | A4 | base | B3 Pass; B2 pending |
 | T36 remove PoC | `r1/t36-remove-poc` @ 5bc34543 | A2 | REQ-A-001 (b1-e2e-off-poc, team B) merged first | CHANGES-REQUESTED (REQ-B-029: PoC seeds published) (A2 + lead) |
-| T42b figure crop | `r1/t42b-intake-acs` @ bca92f3d | A2 | base | Approve w/ Minors; conflict in review.service.ts (A2 merges base) |
+| T42b figure crop | `r1/t42b-intake-acs` @ 5318a971 | A2 | base | Approve w/ Minors; head moved after the verdict (delta unreviewed) |
 | T45b question detail papers | `r1/t45b-question-detail-acs` @ 8342f9a0 | A2 | T42 | CHANGES-REQUESTED (A2) |
 | H-A16 table reader | `r1/ha16-table-reader` @ b283a746 | A2 | T32, T07 | CHANGES-REQUESTED (A2) |
 | H-A8 stale specs | `r1/ha8-stale-specs` @ 56b1b6cc | A2 | base | READY (test-only) |
