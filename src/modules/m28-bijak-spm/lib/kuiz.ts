@@ -99,7 +99,3 @@ export function textLayers(item: BijakKuizItem): { text: string; strong?: boolea
   return out
 }
 
-/** The group id a set of items shares: stimuli appearing on two or more items are pinned once. */
-export function stimulusKey(s: BijakKuizItem['stimuli'][number]): string {
-  return `${s.kind}|${s.label}|${s.imageToken ?? ''}|${s.body ?? ''}`
-}

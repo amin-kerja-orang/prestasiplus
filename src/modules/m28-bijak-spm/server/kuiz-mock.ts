@@ -17,9 +17,9 @@ import type {
 import { BANK, PAPERS, subjectName } from '../data/registry'
 import { leavesOf } from '../domain/paper-model'
 import type { QuestionDef } from '../domain/types'
+import { parseCount } from '../lib/kuiz'
 import { BijakError } from './errors'
 
-const COUNTS = [5, 10, 20, 40]
 const LETTERS = 'ABCDEFGH'
 
 interface Session {
@@ -65,6 +65,7 @@ function mcqItem(q: QuestionDef): { item: BijakKuizItem; correctId: string } | n
     correctId,
     item: {
       id: q.id,
+      groupId: q.groupId ?? null,
       kind: 'mcq',
       stem: q.stem,
       lead: [],
@@ -92,7 +93,7 @@ export class MockKuiz {
 
   async start(input: BijakKuizStartRequest): Promise<BijakKuizSession> {
     await this.tick()
-    const count = input.count !== undefined && COUNTS.includes(input.count) ? input.count : 20
+    const count = parseCount(input.count)
     const pool = new Map<string, QuestionDef>()
     for (const p of PAPERS)
       for (const s of p.sections)
@@ -102,7 +103,7 @@ export class MockKuiz {
         }
     const drawn = shuffle([...pool.values()])
       .map(mcqItem)
-      .filter((x) => x !== null)
+      .filter((x): x is NonNullable<typeof x> => x !== null)
       .slice(0, count)
     if (!drawn.length) throw new BijakError('no_questions', 'Belum ada soalan objektif')
     const sessionId = `00000000-0000-4000-8000-${String(++this.seq).padStart(12, '0')}`
@@ -181,6 +182,7 @@ export class MockKuiz {
       for (const leaf of leavesOf(q.parts ?? []))
         out.push({
           id: `${q.id}:${leaf.id}`,
+          groupId: q.groupId ?? null,
           kind: 'open',
           stem: q.stem,
           lead: [],
@@ -205,12 +207,25 @@ export class MockKuiz {
       0,
     )
     const s = sections[page - 1] ?? null
+    // D90: a stimulus group is sent once in `groups`; its members follow each other and carry no stimulus.
+    const raw = s ? this.itemsOf(s.questionIds) : []
+    const groups: BijakKuizPaperPage['groups'] = []
+    const items: BijakKuizItem[] = []
+    for (const it of raw) {
+      if (it.groupId === null) {
+        items.push(it)
+      } else if (!groups.some((g) => g.id === it.groupId)) {
+        groups.push({ id: it.groupId, stimuli: it.stimuli })
+        for (const m of raw.filter((x) => x.groupId === it.groupId)) items.push({ ...m, stimuli: [] })
+      }
+    }
     return {
       paper: { id: p.id, title: p.title, subjectName: subjectName(p.subject), code: p.code },
       page,
       pageCount: sections.length,
       section: s ? { id: s.id, label: s.label, instruction: s.instruction ?? null } : null,
-      items: s ? this.itemsOf(s.questionIds) : [],
+      items,
+      groups,
       markableTotal,
     }
   }

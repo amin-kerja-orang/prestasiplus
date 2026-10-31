@@ -43,6 +43,7 @@ afterEach(() => {
 function mcq(id: string, extra: Partial<BijakKuizItem> = {}): BijakKuizItem {
   return {
     id,
+    groupId: null,
     kind: 'mcq',
     stem: `Soalan ${id}?`,
     lead: [],
@@ -256,6 +257,7 @@ describe('PaperQuizPage', () => {
     pageCount: 2,
     section: { id: 's1', label: 'Bahagian A', instruction: 'Jawab semua soalan.' },
     items: [mcq('q1'), mcq('q2')],
+    groups: [],
     markableTotal: 3,
   }
   const page2 = {
@@ -323,12 +325,28 @@ describe('PaperQuizPage', () => {
     expect(server.checkKuizPaper).not.toHaveBeenCalled()
   })
 
+  it('D90: renders a group stimulus once above its members (groups[]), never per member', async () => {
+    const stim = { kind: 'passage', label: 'Petikan kumpulan', body: 'Teks kongsi unik.', imageToken: null, alt: null }
+    server.getKuizPaperPage.mockResolvedValue({
+      ...page1,
+      items: [mcq('g1', { groupId: 'G' }), mcq('g2', { groupId: 'G' }), mcq('q9')],
+      groups: [{ id: 'G', stimuli: [stim] }],
+    })
+    await mountPage(PaperQuizPage, '/simulasi/p1/kuiz')
+    // narrow viewport: one chip opens the shared stimulus; it is not repeated per member
+    expect(document.querySelectorAll('[data-testid="stimulus-chip"]').length).toBe(1)
+    expect(document.body.textContent.split('Teks kongsi unik.').length - 1).toBeLessThanOrEqual(1)
+    expect(document.querySelectorAll('[data-testid="stimulus-group"]').length).toBe(1)
+    for (const id of ['g1', 'g2', 'q9']) expect(q(`[data-testid="kuiz-item-${id}"]`)).not.toBeNull()
+  })
+
   it('shows "Kertas ini tiada soalan" for an empty paper', async () => {
     server.getKuizPaperPage.mockResolvedValue({
       ...page1,
       pageCount: 0,
       section: null,
       items: [],
+      groups: [],
       markableTotal: 0,
     })
     await mountPage(PaperQuizPage, '/simulasi/p1/kuiz')

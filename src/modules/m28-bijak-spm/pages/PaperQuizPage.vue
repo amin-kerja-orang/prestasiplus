@@ -9,12 +9,12 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { DsEmptyState, DsLoadError, DsPage, DsProgress, DsStickyActions } from '@/ds'
-import { StimulusGroup } from '../lib/question-display'
+import { StimulusFigure, StimulusGroup } from '../lib/question-display'
 import type { StimulusData } from '../lib/question-display'
 import type { BijakKuizCheckResult, BijakKuizItem, BijakKuizPaperPage } from '@pp/contract'
 
 import KuizItem from '../components/KuizItem.vue'
-import { clock, kuizCopy, stimulusKey, toStimulus } from '../lib/kuiz'
+import { clock, kuizCopy, toStimulus } from '../lib/kuiz'
 import { useLearnerTheme } from '../lib/use-bijak'
 import { BijakError } from '../server/errors'
 import { bijakServer } from '../server/client'
@@ -35,7 +35,7 @@ const busyId = ref('')
 const errors = ref<Record<string, string>>({})
 const seconds = ref(0)
 const markableTotal = ref(0)
-const sheetOpen = ref(false)
+const sheetOpen = ref('')
 const timer = setInterval(() => (seconds.value += 1), 1000)
 onBeforeUnmount(() => clearInterval(timer))
 
@@ -51,28 +51,33 @@ const empty = computed(
 
 interface Block {
   key: string
-  stimulus?: StimulusData
+  stimuli: StimulusData[]
   items: { item: BijakKuizItem; number: number }[]
 }
 
 /**
- * A stimulus shared by two or more neighbouring items is pinned once above them (StimulusGroup);
- * every other item shows its own. Numbers run on across the paper's pages only within a page.
+ * D90: each stimulus group of the page (`groups[]`) is shown ONCE above its members (items whose
+ * `groupId` matches; the server keeps them contiguous). Items outside a group stand alone.
  */
 const blocks = computed<Block[]>(() => {
   const items = data.value?.items ?? []
+  const groups = new Map((data.value?.groups ?? []).map((g) => [g.id, g.stimuli]))
   const out: Block[] = []
   items.forEach((item, i) => {
-    const one = item.stimuli.length === 1 ? item.stimuli[0]! : null
-    const key = one ? stimulusKey(one) : ''
-    const last = out[out.length - 1]
     const entry = { item, number: i + 1 }
-    if (key && last && last.key === key) last.items.push(entry)
-    else out.push({ key, ...(one ? { stimulus: toStimulus(one, `g${i}`) } : {}), items: [entry] })
+    const last = out[out.length - 1]
+    if (item.groupId !== null && groups.has(item.groupId)) {
+      if (last && last.key === item.groupId) last.items.push(entry)
+      else
+        out.push({
+          key: item.groupId,
+          stimuli: groups.get(item.groupId)!.map((s, k) => toStimulus(s, `g${item.groupId}-${k}`)),
+          items: [entry],
+        })
+    } else out.push({ key: '', stimuli: [], items: [entry] })
   })
   return out
 })
-const grouped = (b: Block): boolean => !!b.key && b.items.length > 1 && !!b.stimulus
 
 async function load(): Promise<void> {
   phase.value = 'loading'
@@ -184,22 +189,12 @@ void load()
       </p>
 
       <template v-for="(b, bi) in blocks" :key="bi">
-        <StimulusGroup v-if="grouped(b)" v-model:open="sheetOpen" :stimulus="b.stimulus!">
-          <KuizItem
-            v-for="e in b.items"
-            :key="e.item.id"
-            v-model:picked="picked[e.item.id]"
-            v-model:written="written[e.item.id]"
-            :item="e.item"
-            :chip="`Soalan ${e.number}`"
-            :verdict="verdicts[e.item.id] ?? null"
-            :busy="busyId === e.item.id"
-            :error="errors[e.item.id]"
-            hide-stimuli
-            @check="check(e.item)"
-          />
-        </StimulusGroup>
-        <template v-else>
+        <StimulusGroup
+          v-if="b.stimuli.length === 1"
+          :open="sheetOpen === b.key"
+          :stimulus="b.stimuli[0]!"
+          @update:open="sheetOpen = $event ? b.key : ''"
+        >
           <KuizItem
             v-for="e in b.items"
             :key="e.item.id"
@@ -212,7 +207,24 @@ void load()
             :error="errors[e.item.id]"
             @check="check(e.item)"
           />
-        </template>
+        </StimulusGroup>
+        <div v-else class="flex flex-col gap-4" :data-testid="b.key ? 'kuiz-group' : undefined">
+          <template v-if="b.stimuli.length">
+            <StimulusFigure v-for="s in b.stimuli" :key="s.id" :stimulus="s" />
+          </template>
+          <KuizItem
+            v-for="e in b.items"
+            :key="e.item.id"
+            v-model:picked="picked[e.item.id]"
+            v-model:written="written[e.item.id]"
+            :item="e.item"
+            :chip="`Soalan ${e.number}`"
+            :verdict="verdicts[e.item.id] ?? null"
+            :busy="busyId === e.item.id"
+            :error="errors[e.item.id]"
+            @check="check(e.item)"
+          />
+        </div>
       </template>
 
       <DsStickyActions class="justify-between" data-testid="paper-quiz-pager">
