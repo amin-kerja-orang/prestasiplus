@@ -25,6 +25,7 @@ import {
   type BijakQuestionSource,
   type BijakRewardInput,
   type BijakRewardPort,
+  type BijakSelfMarkRewardInput,
   type PaperResolution,
 } from '../../src/modules/bijak/attempts/ports'
 import { leavesOf, type PartAnswer } from '../../src/modules/bijak/attempts/exam-core.adapter'
@@ -92,9 +93,15 @@ export class FakeQuestionSource implements BijakQuestionSource {
 
 export class SpyReward implements BijakRewardPort {
   calls: BijakRewardInput[] = []
+  /** D94: the self-mark gains handed to the port. */
+  selfMarkCalls: BijakSelfMarkRewardInput[] = []
   fail = false
   async award(input: BijakRewardInput): Promise<void> {
     this.calls.push(input)
+    if (this.fail) throw new Error('wallet down')
+  }
+  async awardSelfMark(input: BijakSelfMarkRewardInput): Promise<void> {
+    this.selfMarkCalls.push(input)
     if (this.fail) throw new Error('wallet down')
   }
 }

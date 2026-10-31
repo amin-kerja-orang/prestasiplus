@@ -6,7 +6,7 @@ import { PrismaService } from '../../../db/prisma.service'
 import { GamificationService } from '../../gamification'
 import { practiceRewardSource, type PracticeRewardPort, type PracticeRewardResult, type PracticeSessionCompleted } from '../../practice/ports'
 import { StreakService, WalletService } from '../../wallet'
-import type { BijakRewardInput, BijakRewardPort } from '../attempts/ports'
+import type { BijakRewardInput, BijakRewardPort, BijakSelfMarkRewardInput } from '../attempts/ports'
 import { ACHIEVEMENT_PRACTICE_MODES } from './practice-facts'
 
 /**
@@ -18,6 +18,10 @@ export const BIJAK_REWARD_SOURCE = 'quiz_spm'
 
 /** Static BM ledger text of a practice session credit (BE-12 `ports.ts`; PDPA: no name, no identifier). */
 export const PRACTICE_REWARD_DESCRIPTION = 'Latihan: jawapan betul'
+
+/** V2 `PracticeRecorder` (`docs/discovery/BIJAK-SPM-cloud.md` 4.5): 2 syiling and 10 XP per mark. */
+export const SYILING_PER_MARK = 2
+export const XP_PER_MARK = 10
 
 /** A non-negative whole number of coins or points; anything not finite counts as 0 (never NaN into the wallet). */
 export const wholeCount = (v: number): number => (Number.isFinite(v) && v > 0 ? Math.floor(v) : 0)
@@ -72,6 +76,39 @@ export class WalletBijakReward implements BijakRewardPort {
         { tx },
       )
       if (!credited.replayed && xp > 0) await this.wallet.addXp({ userId: input.userId, amount: xp, isTest: input.isTest }, { tx })
+    })
+  }
+
+  /**
+   * D94: the gain of a self-mark. `level` is the part's mark now, clamped to its full marks; `reached` is the highest mark of this
+   * part already paid for: the mark of the automatic grading (`base`, paid at submit) or the highest level of an earlier self-mark
+   * credit, read from the ledger (`quiz_spm`, `sourceId = <attemptId>:<partId>:<level>`). Only `level - reached` marks are paid, at
+   * 2 syiling and 10 XP per mark; a lower or equal mark pays nothing and takes nothing back. The key per level makes a replay or a
+   * repeated self-mark a no-op, and the advisory lock serialises two self-marks of one part. Mod Pelajar: nothing (AC-20.3).
+   */
+  async awardSelfMark(input: BijakSelfMarkRewardInput): Promise<void> {
+    if (input.isTest) return
+    const level = Math.min(input.mark, input.marks)
+    if (!(level > 0)) return
+    const prefix = `${input.attemptId}:${input.partId}:`
+    await this.prisma.transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`bijak-selfmark:${input.attemptId}:${input.partId}`}, 0))`
+      const rows = await tx.coinLedger.findMany({
+        where: { userId: BigInt(input.userId), source: BIJAK_REWARD_SOURCE, sourceId: { startsWith: prefix } },
+        select: { sourceId: true },
+      })
+      const paid = rows.map((r) => Number((r.sourceId ?? '').slice(prefix.length))).filter((n) => Number.isFinite(n))
+      const reached = Math.max(input.base, ...paid)
+      const gain = Math.min(level, input.marks) - reached
+      if (!(gain > 0)) return
+      const coins = wholeCount(gain * SYILING_PER_MARK)
+      if (!(coins >= 1)) return // a gain too small to pay a whole syiling is paid when a later level reaches it
+      const credited = await this.wallet.credit(
+        { userId: input.userId, amount: coins, isTest: false, source: BIJAK_REWARD_SOURCE, sourceId: `${prefix}${String(level)}`, description: input.description },
+        { tx },
+      )
+      const xp = wholeCount(gain * XP_PER_MARK)
+      if (!credited.replayed && xp > 0) await this.wallet.addXp({ userId: input.userId, amount: xp, isTest: false }, { tx })
     })
   }
 }

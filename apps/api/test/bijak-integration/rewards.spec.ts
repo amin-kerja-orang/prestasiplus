@@ -251,3 +251,89 @@ describe('WalletBijakReward.award', () => {
     expect(await balance(adminId)).toBe(before)
   })
 })
+
+describe('WalletBijakReward.awardSelfMark (D94: V2 rates on the gain of a self-mark)', () => {
+  const part = (attemptId: string, mark: number, over: { marks?: number; base?: number; userId?: string; isTest?: boolean; partId?: string } = {}) =>
+    bijak.awardSelfMark({
+      attemptId,
+      userId: over.userId ?? studentId,
+      isTest: over.isTest ?? false,
+      partId: over.partId ?? 'part-a',
+      marks: over.marks ?? 4,
+      base: over.base ?? 1,
+      mark,
+      description: BIJAK_REWARD_DESCRIPTION,
+    })
+  const xpOf = async (userId: string) => Number((await t.db.query('select xp from wallets where user_id = $1', [userId]))[0]?.xp ?? 0)
+  const rows = (attemptId: string) => t.db.query<{ source_id: string; amount: number }>('select source_id, amount from coin_ledger where source = $1 and source_id like $2 order by id', ['quiz_spm', `${attemptId}:%`])
+
+  it('a raise pays 2 syiling and 10 XP per mark gained over the automatic mark, once per level reached', async () => {
+    const att = randomUUID()
+    const bal = await balance(studentId)
+    const xp = await xpOf(studentId)
+    await part(att, 3) // base 1 -> 3: 2 marks
+    expect(await rows(att)).toEqual([{ source_id: `${att}:part-a:3`, amount: 4 }])
+    expect(await balance(studentId)).toBe(bal + 4)
+    expect(await xpOf(studentId)).toBe(xp + 20)
+  })
+
+  it('raise again pays only the new marks; a lower mark takes nothing back and a return to a paid level pays nothing', async () => {
+    const att = randomUUID()
+    const bal = await balance(studentId)
+    const xp = await xpOf(studentId)
+    await part(att, 2) // +1 mark: 2 syiling, 10 XP
+    await part(att, 4) // +2 marks: 4 syiling, 20 XP
+    expect((await rows(att)).map((r) => [r.source_id.split(':')[2], r.amount])).toEqual([['2', 2], ['4', 4]])
+    await part(att, 1) // lower: nothing, nothing back
+    await part(att, 3) // back up to a level already paid for (4 was reached): nothing
+    expect(await rows(att)).toHaveLength(2)
+    expect(await balance(studentId)).toBe(bal + 6)
+    expect(await xpOf(studentId)).toBe(xp + 30)
+  })
+
+  it('a replay or a repeated self-mark never double-credits', async () => {
+    const att = randomUUID()
+    const bal = await balance(studentId)
+    const xp = await xpOf(studentId)
+    await part(att, 3)
+    await part(att, 3)
+    await Promise.all([part(att, 3), part(att, 3)])
+    expect(await rows(att)).toHaveLength(1)
+    expect(await balance(studentId)).toBe(bal + 4)
+    expect(await xpOf(studentId)).toBe(xp + 20)
+  })
+
+  it('the mark is clamped to the part full marks: nothing above it is ever paid', async () => {
+    const att = randomUUID()
+    const bal = await balance(studentId)
+    await part(att, 99) // clamped to 4: 3 marks over the base
+    expect((await rows(att)).map((r) => [r.source_id.split(':')[2], r.amount])).toEqual([['4', 6]])
+    await part(att, 500)
+    expect(await rows(att)).toHaveLength(1)
+    expect(await balance(studentId)).toBe(bal + 6)
+  })
+
+  it('a mark at or below the automatic mark pays nothing; parts are paid separately; a half mark pays one syiling and 5 XP', async () => {
+    const att = randomUUID()
+    const bal = await balance(studentId)
+    const xp = await xpOf(studentId)
+    await part(att, 1)
+    await part(att, 0)
+    expect(await rows(att)).toHaveLength(0)
+    await part(att, 1.5) // +0.5 mark
+    await part(att, 3, { partId: 'part-b' }) // another part of the same attempt: +2 marks
+    expect((await rows(att)).map((r) => [r.source_id, r.amount])).toEqual([[`${att}:part-a:1.5`, 1], [`${att}:part-b:3`, 4]])
+    expect(await balance(studentId)).toBe(bal + 5)
+    expect(await xpOf(studentId)).toBe(xp + 5 + 20)
+  })
+
+  it('AC-20.3: a Mod Pelajar self-mark pays nothing', async () => {
+    const att = randomUUID()
+    const bal = await balance(adminId)
+    const xp = await xpOf(adminId)
+    await part(att, 4, { userId: adminId, isTest: true })
+    expect(await rows(att)).toHaveLength(0)
+    expect(await balance(adminId)).toBe(bal)
+    expect(await xpOf(adminId)).toBe(xp)
+  })
+})
