@@ -40,6 +40,11 @@ afterAll(async () => {
   await t.close()
 })
 
+/** R1-B06: the SPM pool is by level, not by the `pool` tag: an offered level (T4, T5) of a linked active subject, not PKSK (independent SQL). */
+const SPM_SERVABLE = `exists (select 1 from education_levels ol where ol.id = v.education_level_id and ol.code in ('T4','T5') and ol.is_active)
+  and exists (select 1 from subject_levels sl where sl.subject_id = v.subject_id and sl.education_level_id = v.education_level_id)
+  and not exists (select 1 from question_tags g where g.question_id = q.id and g.kind = 'pksk_domain')`
+
 const sqlCount = async (extra: string): Promise<number> =>
   (
     await t.db.query<{ n: number }>(
@@ -55,7 +60,7 @@ describe('shaped counts stay linear at a 12k pool', () => {
     deps.invalidateCache()
     const { value, ms } = await timed('battle spmPoolCount', () => deps.spmPoolCount(w.tag.subjectId))
     expect(ms).toBeLessThan(BOUND_MS)
-    expect(value).toBe(await sqlCount(`and exists (select 1 from question_tags g where g.question_id = q.id and g.kind = 'pool') and q.group_id is null`))
+    expect(value).toBe(await sqlCount(`and ${SPM_SERVABLE} and q.group_id is null`))
     expect(value).toBeGreaterThanOrEqual(POOL)
   })
 
@@ -83,7 +88,7 @@ describe('shaped counts stay linear at a 12k pool', () => {
     const { value, ms } = await timed('spm pool count', () => new SpmPoolService(t.get(QuestionsRepository), { get: () => '0' } as never, { now: () => new Date() } as never).count(w.tag.subjectId))
     void pool
     expect(ms).toBeLessThan(BOUND_MS)
-    expect(value).toBe(await sqlCount(`and exists (select 1 from question_tags g where g.question_id = q.id and g.kind = 'pool') and q.group_id is null`))
+    expect(value).toBe(await sqlCount(`and ${SPM_SERVABLE} and q.group_id is null`))
   })
 
   it('Jutawan gate eligibleCount', async () => {

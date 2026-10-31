@@ -12,7 +12,7 @@ describe('lobby (M16-15)', () => {
   beforeAll(async () => {
     t = await bootBattleApp()
     s = await subjectsOf(t)
-    await addMcqs(t, s.bm, s.t4, 10, { spm: true })
+    await addMcqs(t, s.bm, s.t4, 10)
   }, 180_000)
   afterAll(async () => t.close())
 
@@ -29,8 +29,10 @@ describe('lobby (M16-15)', () => {
       `select sub.id::text, sub.name from subjects sub
         join question_versions v on v.subject_id = sub.id
         join questions q on q.id = v.question_id and q.live_version_no = v.version_no and q.is_active and v.status = 'approved' and v.type = 'mcq'
-        join question_tags g on g.question_id = q.id and g.kind = 'pool' and g.code = 'spm'
-       where sub.is_active group by sub.id, sub.name order by sub.id`,
+        join education_levels ol on ol.id = v.education_level_id and ol.code in ('T4','T5') and ol.is_active
+        join subject_levels sl on sl.subject_id = v.subject_id and sl.education_level_id = v.education_level_id
+       where sub.is_active
+         and not exists (select 1 from question_tags g where g.question_id = q.id and g.kind = 'pksk_domain') group by sub.id, sub.name order by sub.id`,
     )
     expect(withPool.length).toBeGreaterThan(0)
     expect(lobby.spmSubjects).toEqual(withPool.map((r) => ({ id: r.id, name: r.name })))
