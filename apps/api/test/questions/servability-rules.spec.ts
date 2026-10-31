@@ -27,7 +27,7 @@ function record(over: Record<string, unknown> = {}, version: Record<string, unkn
     pksk: null,
     version: {
       versionNo: 1,
-      status: 'published',
+      status: 'approved',
       type: 'mcq',
       stemMs: 'Soalan?',
       educationLevelId: '4',
@@ -71,12 +71,12 @@ describe('servability rules (pure)', () => {
     for (const a of ['databank', 'latih_tubi_spm', 'bab', 'simulasi_kuiz'] as const) expect(evaluate(f, a).served, a).toBe(true)
   })
 
-  it('accepts both approved and published until T04 removes published (TODO T04)', () => {
-    expect(SERVABLE_STATUSES).toEqual(['approved', 'published'])
-    const approved = record({}, { status: 'approved' })
-    expect(evaluate(facts({ live: approved, latest: approved }), 'bab').served).toBe(true)
+  it('only approved is servable (T04: published is gone)', () => {
+    expect(SERVABLE_STATUSES).toEqual(['approved'])
     const review = record({}, { status: 'review' })
     expect(codes(facts({ live: review, latest: review }), 'bab')).toEqual(['not_approved'])
+    const legacy = record({}, { status: 'published' })
+    expect(codes(facts({ live: legacy, latest: legacy }), 'bab')).toEqual(['not_approved'])
   })
 
   it('says why when nothing is live: not approved, or archived', () => {

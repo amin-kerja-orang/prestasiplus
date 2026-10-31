@@ -31,15 +31,12 @@ import { BRIDGE_REFUSAL_REASONS_MS } from '../../bijak/question-bridge/refusals'
 import { mapBe09Question, UnsupportedQuestionError, type BridgeMedia } from '../../bijak/question-bridge/be09-mapping'
 import { servableMcq } from '../../practice/question-bridge/be09-practice-mapping'
 import { OFFERED_LEVEL_CODES } from '../../practice/rules'
+import { SERVABLE_STATUS } from '../learner-visibility'
 import type { QuestionRecord } from '../types'
 import type { ServabilityFacts } from './types'
 
-/**
- * Statuses a pupil can be served from.
- * TODO(T04 / R1-B01): `approved` is the only servable status once the lifecycle migration 0100 lands and `published` is gone; until
- * then the live version of a question is `published`, so both are accepted. Remove `published` here when T04 merges.
- */
-export const SERVABLE_STATUSES: readonly string[] = ['approved', 'published']
+/** Statuses a pupil can be served from: `approved` only (ADR-0027, R1-B01); the one constant of `learner-visibility`. */
+export const SERVABLE_STATUSES: readonly string[] = [SERVABLE_STATUS]
 
 const reason = (code: ServabilityReasonCode, activity: ServabilityActivity, detail?: string, phraseMs?: string): ServabilityReason => ({
   code,

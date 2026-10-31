@@ -49,7 +49,7 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
   /** A question published (live version 1) with the given tweaks. */
   async function publish(key: string, text: string, over: Record<string, unknown> = {}): Promise<string> {
     const created = await svc.create(mcqInput(tag, { questionText: text, ...over }), admin)
-    await q(`update question_versions set status = 'published', published_at = now(), paper_code = '1449/2' where question_id = $1`, [created.id])
+    await q(`update question_versions set status = 'approved', published_at = now(), paper_code = '1449/2' where question_id = $1`, [created.id])
     await q(`update questions set live_version_no = 1 where id = $1`, [created.id])
     made[key] = created.id
     return created.id
@@ -111,7 +111,7 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
       }),
       admin,
     )
-    await q(`update question_versions set status = 'published', published_at = now(), paper_code = '1449/2' where question_id = $1`, [struct.id])
+    await q(`update question_versions set status = 'approved', published_at = now(), paper_code = '1449/2' where question_id = $1`, [struct.id])
     await q(`update questions set live_version_no = 1 where id = $1`, [struct.id])
     made.structured = struct.id
 
