@@ -288,6 +288,7 @@ export function buildServedPaper(composition: readonly SectionSnapshot[], bundle
         ...(q.groupId ? { groupId: q.groupId } : {}),
         stem: q.stem,
         ...(q.stemImage ? { stemImage: stimulusView(q.stemImage) } : {}),
+        ...(q.stimuli && q.stimuli.length > 0 ? { stimuli: q.stimuli.map(stimulusView) } : {}),
         marks: questionMarks(b),
         ...(q.mcq ? { mcq: { options: q.mcq.options.map(optionView) } } : {}),
         ...(q.parts ? { parts: q.parts.map(partView) } : {}),

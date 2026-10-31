@@ -87,13 +87,7 @@ function practiceShapeReasons(record: QuestionRecord, activity: ServabilityActiv
 export function bridgeRefusal(f: ServabilityFacts, record: QuestionRecord | null = f.live): UnsupportedQuestionError | null {
   const live = record
   if (live === null) return null
-  const inGroup = new Set(f.group?.stimuli.map((s) => s.id) ?? [])
-  const outside = new Map<string, { kind: string; assetFileId: string | null }>()
-  for (const id of live.version.stimulusIds) {
-    const asset = f.linkedAssets.get(id)
-    if (!inGroup.has(id) && asset) outside.set(id, asset)
-  }
-  const media: BridgeMedia = { tokens: f.fileTokens, outside }
+  const media: BridgeMedia = { tokens: f.fileTokens, outside: f.outside }
   try {
     mapBe09Question(live, f.group, { subjectCode: '', unitLabel: '', unitCode: null }, media)
     return null
@@ -119,17 +113,18 @@ const JANA_REASON: Readonly<Record<IneligibleReason, ServabilityReasonCode>> = {
 }
 
 /**
- * Simulasi (kertas). The PAPER is the authority, not the live flag: the Bijak bridge serves the LIVE version of a placed question
- * whatever its `is_active`, and keeps serving the version that was live when the question was archived after publication
- * (`Be09BijakQuestionSource.load`). So none of the draw rules (active, level) apply here; a question that is neither live nor
- * archived-after-publication is not served, and a served question must sit on a published paper.
+ * Simulasi (kertas). The PAPER is the authority, not the live flag of the question: the Bijak bridge serves the LIVE version of a
+ * placed question whatever its `is_active`, so none of the draw rules (active, level) apply, and a served question must sit on a
+ * published paper. But a NEW sitting needs a live approved version: `BijakPapersAttemptSource.resolveForAttempt` reads
+ * `getMany(published = true)` and keeps only that. A question without a live version (archived, or back to draft) therefore stops
+ * the paper from being started, and is reported as `archived` or `not_approved` (H-A13). A sitting that is already running keeps
+ * reading the archived version through the bridge; that is readability, not servability, and is not reported here.
  */
 function simulasiPaperReasons(f: ServabilityFacts): ServabilityReason[] {
   const activity = 'simulasi_paper' as const
-  const archivedPublished = f.latest.version.status === 'archived' && f.latest.version.publishedAt !== null ? f.latest : null
-  const record = f.live ?? archivedPublished
-  if (record === null) return [reason(f.latest.version.status === 'archived' ? 'archived' : 'not_approved', activity)]
-  return [...bridgeReasons(f, activity, record), ...(f.onPublishedPaper ? [] : [reason('not_on_published_paper', activity)])]
+  if (f.live === null) return [reason(f.latest.version.status === 'archived' ? 'archived' : 'not_approved', activity)]
+  if (!SERVABLE_STATUSES.includes(f.live.version.status)) return [reason('not_approved', activity)]
+  return [...bridgeReasons(f, activity, f.live), ...(f.onPublishedPaper ? [] : [reason('not_on_published_paper', activity)])]
 }
 
 function activityReasons(f: ServabilityFacts, activity: ServabilityActivity): ServabilityReason[] {
