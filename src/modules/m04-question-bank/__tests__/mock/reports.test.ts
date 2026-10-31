@@ -272,6 +272,15 @@ describe('#16 update (BR-M04-13, FR-M04-79…81)', () => {
     expect(reports.get(10)).toMatchObject({ status: 'reviewed' })
   })
 
+  it('"Arkib" (archive: true) archives an MCQ and sets the report reviewed (R1-B17)', async () => {
+    dirty = true
+    expect(questions.get(136_891)?.status).not.toBe('archived')
+    const r = await patch(6, { status: 'reviewed', adminNotes: 'Diarkibkan oleh admin', archive: true })
+    expect(r.status).toBe(200)
+    expect(questions.get(136_891)?.status).toBe('archived')
+    expect(reports.get(6)).toMatchObject({ status: 'reviewed' })
+  })
+
   it('an omitted adminNotes keeps the note; an empty one clears it', async () => {
     dirty = true
     await patch(3, { status: 'fixed' })

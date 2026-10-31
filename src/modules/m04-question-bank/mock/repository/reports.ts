@@ -52,6 +52,7 @@ export interface ReportUpdate {
   adminNotes?: string | null
   reactivate?: boolean
   forceDeactivate?: boolean
+  archive?: boolean
 }
 
 function contract(message: string): never {
@@ -147,6 +148,12 @@ export const reportsRepo = defineRepository({
             setQuestionActive(current.questionType, current.questionId, true, now)
           if (patch.forceDeactivate === true) {
             setQuestionActive(current.questionType, current.questionId, false, now)
+          }
+          // "Arkib" (R1-B17), applied last: an MCQ goes to status archived; a structured question has no
+          // lifecycle status in the mock, so it is taken out of practice instead.
+          if (patch.archive === true) {
+            if (current.questionType === 'mcq') questionsRepo.bulkAction('archive', [current.questionId], now)
+            else setQuestionActive('structured', current.questionId, false, now)
           }
           return row
         })

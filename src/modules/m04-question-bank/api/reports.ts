@@ -107,6 +107,8 @@ export interface ReportUpdateInput {
   adminNotes?: string | null
   reactivate?: boolean
   forceDeactivate?: boolean
+  /** R1-B17 "Arkib": archive the question through the lifecycle (status archived), applied last. */
+  archive?: boolean
 }
 
 export interface ReportUpdated {

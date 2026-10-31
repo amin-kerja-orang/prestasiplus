@@ -243,6 +243,20 @@ describe('QuestionReportsPage (M04 S7)', () => {
     })
   })
 
+  it('"Arkib" sends archive: true (R1-B17; V2 Studio label "Arkib", cloud-student-mechanism section 3)', async () => {
+    api.updateQuestionReport.mockResolvedValue({ data: {}, status: 'ok' })
+    const w = await renderAdmin()
+    const btn = w.get('[data-testid=report-card-10] [data-testid=report-archive]')
+    expect(btn.text()).toBe('Arkib')
+    await btn.trigger('click')
+    await flushPromises()
+    expect(api.updateQuestionReport).toHaveBeenLastCalledWith(10, {
+      status: 'reviewed',
+      adminNotes: 'Diarkibkan oleh admin',
+      archive: true,
+    })
+  })
+
   it('a failed action flashes the error and keeps the list', async () => {
     api.updateQuestionReport.mockRejectedValue(
       new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Tidak dijumpai.' }),

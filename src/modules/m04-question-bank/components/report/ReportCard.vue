@@ -18,6 +18,7 @@ import {
   type ReportView,
 } from '../../api/reports'
 import {
+  ARCHIVE_NOTE,
   DEACTIVATE_NOTE,
   DISMISS_NOTE,
   DISPLAY_STATUS_DS,
@@ -89,6 +90,7 @@ const markFixed = () => act({ status: 'fixed', adminNotes: notes.value })
 const dismiss = () => act({ status: 'dismissed', adminNotes: DISMISS_NOTE, reactivate: true })
 const deactivate = () =>
   act({ status: 'reviewed', adminNotes: DEACTIVATE_NOTE, forceDeactivate: true })
+const archive = () => act({ status: 'reviewed', adminNotes: ARCHIVE_NOTE, archive: true })
 </script>
 
 <template>
@@ -289,6 +291,20 @@ const deactivate = () =>
           @click="deactivate"
         >
           Nyahaktif Segera
+        </UButton>
+        <UButton
+          v-if="q.exists"
+          type="button"
+          color="neutral"
+          variant="soft"
+          icon="i-ph-archive"
+          block
+          :disabled="busy"
+          class="min-h-11"
+          data-testid="report-archive"
+          @click="archive"
+        >
+          Arkib
         </UButton>
       </div>
     </article>

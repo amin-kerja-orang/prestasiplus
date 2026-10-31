@@ -250,6 +250,7 @@ function update(req: MockRequest, ctx: MockContext): MockResponse {
       ...(adminNotes !== undefined ? { adminNotes } : {}),
       reactivate: booleanFlag(b.reactivate),
       forceDeactivate: booleanFlag(b.forceDeactivate),
+      archive: booleanFlag(b.archive),
     },
     ctx.clock.now(),
   )
