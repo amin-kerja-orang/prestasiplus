@@ -39723,6 +39723,206 @@
           "ids"
         ]
       },
+      "QuestionFilter": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "educationLevelId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "difficultyLevel": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/QuestionStatus"
+          },
+          "dskpFilter": {
+            "type": "string",
+            "description": "tagged | untagged"
+          },
+          "complianceFilter": {
+            "type": "string",
+            "description": "missing_source | verified_generated | a compliance status"
+          },
+          "sourceFilter": {
+            "type": "string",
+            "description": "textbook | dskp | trial | marking_scheme"
+          },
+          "search": {
+            "type": "string"
+          },
+          "tagReview": {
+            "type": "string",
+            "enum": [
+              "true"
+            ]
+          },
+          "missing": {
+            "type": "string",
+            "enum": [
+              "unit",
+              "tp",
+              "marks",
+              "key"
+            ]
+          },
+          "tahun": {
+            "type": "string",
+            "pattern": "^\\d{4}$"
+          },
+          "negeri": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "kertas": {
+            "type": "string",
+            "enum": [
+              "1",
+              "2",
+              "3"
+            ]
+          },
+          "jenis": {
+            "type": "string",
+            "enum": [
+              "sebenar",
+              "percubaan",
+              "modul",
+              "topikal",
+              "latihan"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "QuestionFilterBulkRequest": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "approved",
+              "archived"
+            ]
+          },
+          "filter": {
+            "$ref": "#/components/schemas/QuestionFilter"
+          },
+          "expectedCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "dryRun": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "action",
+          "filter"
+        ],
+        "additionalProperties": false
+      },
+      "QuestionFilterBulkResult": {
+        "type": "object",
+        "properties": {
+          "matched": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Rows of the filter (the total the list shows); compared with `expectedCount`."
+          },
+          "eligible": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Matched rows whose status allows the action (approved: Semakan; archived: Draf, Semakan, Diterbitkan)."
+          },
+          "skipped": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "matched - eligible: rows already in, or not allowed to move to, the target status. Left untouched, not failures."
+          },
+          "cap": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Rows one run applies at most."
+          },
+          "processed": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Rows tried in this run: min(eligible, cap); 0 on a dry run."
+          },
+          "affected": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionBulkFailure"
+            },
+            "description": "Rows tried and refused (the full approve gate: VALIDATION_ERROR with the gate `fields`), same shape as bulk-action."
+          },
+          "remaining": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "eligible - processed: rows a further run would still try."
+          },
+          "capped": {
+            "type": "boolean",
+            "description": "true when `remaining` > 0 because of the cap."
+          },
+          "dryRun": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "matched",
+          "eligible",
+          "skipped",
+          "cap",
+          "processed",
+          "affected",
+          "failed",
+          "remaining",
+          "capped",
+          "dryRun"
+        ]
+      },
+      "QuestionBulkFailure": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "NOT_FOUND",
+              "CONFLICT",
+              "VALIDATION_ERROR"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "description": "The BM text for this id. NOT_FOUND: \"Soalan tidak dijumpai.\" [PROPOSED]; CONFLICT: the transition text; VALIDATION_ERROR: the distinct `fields` values in field order, joined by one space (render `fields` for a per-field view)."
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "The exact gate field messages (VALIDATION_ERROR); `{}` otherwise."
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "message",
+          "fields"
+        ]
+      },
       "QuestionStructuredRow": {
         "type": "object",
         "properties": {
@@ -71482,39 +71682,6 @@
           "affected"
         ]
       },
-      "QuestionBulkFailure": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "$ref": "#/components/schemas/Id"
-          },
-          "code": {
-            "type": "string",
-            "enum": [
-              "NOT_FOUND",
-              "CONFLICT",
-              "VALIDATION_ERROR"
-            ]
-          },
-          "message": {
-            "type": "string",
-            "description": "The BM text for this id. NOT_FOUND: \"Soalan tidak dijumpai.\" [PROPOSED]; CONFLICT: the transition text; VALIDATION_ERROR: the distinct `fields` values in field order, joined by one space (render `fields` for a per-field view)."
-          },
-          "fields": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            },
-            "description": "The exact gate field messages (VALIDATION_ERROR); `{}` otherwise."
-          }
-        },
-        "required": [
-          "id",
-          "code",
-          "message",
-          "fields"
-        ]
-      },
       "QuestionDeleteResult": {
         "type": "object",
         "properties": {
@@ -100908,6 +101075,53 @@
             "required": false,
             "name": "missing",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}$"
+            },
+            "required": false,
+            "name": "tahun",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": false,
+            "name": "negeri",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1",
+                "2",
+                "3"
+              ]
+            },
+            "required": false,
+            "name": "kertas",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sebenar",
+                "percubaan",
+                "modul",
+                "topikal",
+                "latihan"
+              ]
+            },
+            "required": false,
+            "name": "jenis",
+            "in": "query"
           }
         ],
         "responses": {
@@ -101166,6 +101380,102 @@
           },
           "403": {
             "description": "FORBIDDEN, or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages), `message` = first message plus the count of the others.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/questions/bulk-action/filter": {
+      "post": {
+        "tags": [
+          "questions"
+        ],
+        "summary": "Approve or archive the questions of the current filter",
+        "description": "V2 \"Luluskan Hasil Tapisan\" (`approved`, needs at least one filter) and \"Arkib Semua\" (`archived`, an empty filter is the whole bank). The filter is the one of GET /questions (strict, no paging). The client sends `expectedCount`, the total it showed: if the count differs now the answer is 409 CONFLICT (details expected/actual) and nothing is applied. `dryRun: true` counts only. Rows whose status cannot move to the target (approved: only Semakan can; archived: Draf, Semakan, Diterbitkan) are `skipped`, not failures. Every row runs the same gate and the same transition rule as `bulk-action`: a refused row is a `failed[]` entry (VALIDATION_ERROR with the gate `fields`). One run applies at most `cap` rows (500); `remaining`/`capped` say whether to run again. Admin Pusat only, CSRF, write rate limit.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuestionFilterBulkRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Counts and per-row refusals, with the flash text.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/QuestionFilterBulkResult"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN, or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the count of the filter is not `expectedCount` any more (details: expected, actual); nothing was applied.",
             "content": {
               "application/json": {
                 "schema": {

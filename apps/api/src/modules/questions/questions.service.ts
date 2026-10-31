@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common'
 import {
+  QUESTION_WORKFLOW_STATUSES,
   isQuestionWorkflowTransitionAllowed,
   QUESTION_MESSAGES,
   QuestionPartSchema,
@@ -63,6 +64,28 @@ import type {
 
 /** A transaction that writes a whole version tree: raised above the Prisma default of 5 s. */
 const TX = { timeout: 20_000, maxWait: 10_000 } as const
+
+/**
+ * Rows one filter-based bulk run applies at most. Each row is its own transaction with the full approve gate (tag, keys, rights, duplicates,
+ * marks, media, DSKP: several reads and writes, tens of ms), so 500 rows stay well inside one HTTP request and one 20 s transaction budget each,
+ * while still covering a normal Studio filter in one or two runs. A larger filter reports `remaining`/`capped` and is run again.
+ */
+export const FILTER_ACTION_CAP = 500
+
+/** Result of `bulkByFilter` (contract `QuestionFilterBulkResult`). */
+export interface FilterBulkOutcome {
+  matched: number
+  eligible: number
+  skipped: number
+  cap: number
+  processed: number
+  affected: number
+  ids: string[]
+  failed: BulkFailure[]
+  remaining: number
+  capped: boolean
+  dryRun: boolean
+}
 
 const parse = (text: string): bigint | null => {
   try {
@@ -316,6 +339,35 @@ export class QuestionsService {
       }
     }
     return { affected, ids: done, failed }
+  }
+
+  /**
+   * AC-03.3 (V2 "Luluskan Hasil Tapisan", "Arkib Semua"): the action on the rows of a FILTER. `expectedCount` is the total the client
+   * showed; a different count now is a 409 and nothing is applied. Rows whose status cannot move to the target are `skipped`; the others,
+   * up to `cap`, go through `bulkAction` (the same transition rule and the same approve gate as an id list). Not atomic across rows, like
+   * `bulkAction`: a row refused by the gate stays as it was and is reported in `failed`.
+   */
+  async bulkByFilter(
+    input: { action: 'approved' | 'archived'; filter: Omit<AdminListFilter, 'page' | 'pageSize'>; expectedCount?: number | undefined; dryRun?: boolean | undefined },
+    actor: QuestionActor,
+    cap: number = FILTER_ACTION_CAP,
+  ): Promise<FilterBulkOutcome> {
+    const dryRun = input.dryRun === true
+    const from = QUESTION_WORKFLOW_STATUSES.filter((s) => isQuestionWorkflowTransitionAllowed(s, input.action, 'admin'))
+    const targets = await this.repo.filterTargets(input.filter, from, dryRun ? 0 : cap)
+    if (!dryRun && input.expectedCount !== targets.matched) {
+      throw ApiError.of('CONFLICT', {
+        message: QUESTION_MESSAGES.filterCountChanged(input.expectedCount ?? 0, targets.matched),
+        details: { expected: input.expectedCount ?? 0, actual: targets.matched },
+      })
+    }
+    const base = { matched: targets.matched, eligible: targets.eligible, skipped: targets.matched - targets.eligible, cap, dryRun }
+    if (dryRun || targets.ids.length === 0) {
+      return { ...base, processed: 0, affected: 0, ids: [], failed: [], remaining: targets.eligible, capped: false }
+    }
+    const done = await this.bulkAction(input.action, targets.ids, actor)
+    const remaining = targets.eligible - targets.ids.length
+    return { ...base, processed: targets.ids.length, affected: done.affected, ids: done.ids, failed: done.failed, remaining, capped: remaining > 0 }
   }
 
   // --- lifecycle (BE-10 calls these) ------------------------------------------------------------

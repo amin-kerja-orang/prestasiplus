@@ -33,6 +33,16 @@ export const QUESTION_MESSAGES = {
   bulkBadAction: 'Tindakan tidak sah.',
   bulkNoIds: 'Sila pilih sekurang-kurangnya satu soalan.',
   bulkBadIds: 'Senarai soalan tidak sah.',
+  /** Filter-based actions (AC-03.3; V2 A11 "Luluskan Hasil Tapisan" / "Arkib Semua"). */
+  filterInvalid: 'Nilai penapis tidak sah.',
+  filterNeeded: 'Sila pilih sekurang-kurangnya satu penapis (subjek/aras/status/carian) sebelum meluluskan secara pukal.',
+  filterCountNeeded: 'Sila hantar bilangan soalan hasil tapisan yang dipaparkan (expectedCount).',
+  filterCountChanged: (expected: number, actual: number): string =>
+    `Bilangan soalan hasil tapisan telah berubah (dijangka ${String(expected)}, kini ${String(actual)}). Muat semula senarai dan semak semula sebelum meneruskan.`,
+  filterApproved: (n: number): string => `Berjaya luluskan ${String(n)} soalan (hasil tapisan) — kini kelihatan kepada pelajar.`,
+  /** V2 text of "Arkib Semua" (no filter = the whole bank). */
+  filterArchivedAll: (n: number): string => `Berjaya arkib ${String(n)} soalan. Bank pelajar kini kosong — luluskan soalan secara manual untuk memaparkannya semula.`,
+  filterArchived: (n: number): string => `Berjaya arkib ${String(n)} soalan (hasil tapisan).`,
   /** A `failed[]` entry of `POST /questions/bulk-action` for an id that does not exist ([PROPOSED] copy). */
   notFound: 'Soalan tidak dijumpai.',
   subject: 'Sila pilih subjek.',
@@ -104,8 +114,18 @@ export const QuestionRowSchema = z
   })
   .meta({ id: 'QuestionRow' })
 
-/** Unknown filter values match nothing (empty page) except `status`, which is validated (D54a, 422). */
-export const QuestionListQuerySchema = PageQuerySchema.extend({
+/** Exam type of the source paper ("Jenis", V2 aria "jenis peperiksaan"): the `source_papers.exam_type` set. */
+export const QUESTION_JENIS = ['sebenar', 'percubaan', 'modul', 'topikal', 'latihan'] as const
+
+/**
+ * The filters of the admin question list, shared by `GET /questions` (query string) and the filter-based bulk action (JSON body),
+ * so a filter means the same in both. Unknown values of the older filters match nothing (empty page) except `status`, which is
+ * validated (D54a, 422). The four V2 Studio filters (R1-21.5, D79) are closed or shaped values and are validated (422
+ * "Nilai penapis tidak sah."): Tahun = year of the source paper, Negeri = state or examining body of the source paper
+ * (V2 "negeri atau badan peperiksaan", case-insensitive exact match), Kertas = 1, 2 or 3 (the trailing digit of the paper code,
+ * as the paper builder reads it), Jenis = exam type of the source paper.
+ */
+export const questionFilterShape = {
   subjectId: IdSchema.optional(),
   educationLevelId: IdSchema.optional(),
   difficultyLevel: z.string().optional(),
@@ -118,7 +138,17 @@ export const QuestionListQuerySchema = PageQuerySchema.extend({
   tagReview: z.enum(['true']).optional(),
   /** BJS-06 (15.7): questions with at least one leaf part lacking this EFFECTIVE value (after inheritance). */
   missing: z.enum(['unit', 'tp', 'marks', 'key']).optional(),
-}).meta({ id: 'QuestionListQuery' })
+  /** V2 "Tahun": exam year of the source paper, four digits. */
+  tahun: z.string({ error: QUESTION_MESSAGES.filterInvalid }).regex(/^\d{4}$/, QUESTION_MESSAGES.filterInvalid).optional(),
+  /** V2 "Negeri" ("negeri atau badan peperiksaan"): `source_papers.exam_board`, matched case-insensitively. */
+  negeri: z.string({ error: QUESTION_MESSAGES.filterInvalid }).min(1, QUESTION_MESSAGES.filterInvalid).max(64, QUESTION_MESSAGES.filterInvalid).optional(),
+  /** V2 "Kertas" (Kertas 1-3). */
+  kertas: z.enum(['1', '2', '3'], QUESTION_MESSAGES.filterInvalid).optional(),
+  /** V2 "Jenis" ("jenis peperiksaan"). */
+  jenis: z.enum(QUESTION_JENIS, QUESTION_MESSAGES.filterInvalid).optional(),
+} as const
+
+export const QuestionListQuerySchema = PageQuerySchema.extend(questionFilterShape).meta({ id: 'QuestionListQuery' })
 
 export const QuestionSummarySchema = z
   .object({
@@ -364,6 +394,44 @@ export const QuestionBulkResultSchema = z
       .meta({ description: 'One entry per unique requested id that was not applied, in request order; `[]` when all were applied.' }),
   })
   .meta({ id: 'QuestionBulkResult' })
+
+/**
+ * `POST /questions/bulk-action/filter` (AC-03.3; V2 "Luluskan Hasil Tapisan" and "Arkib Semua"): the action applies to the rows of the
+ * CURRENT FILTER, not to an id list. Strict: an unknown key, in the body or in `filter`, is 422. `filter` is the same filter as the
+ * list, without paging. `expectedCount` is the total the client showed for that filter; if the count is not the same when the request
+ * runs, nothing is applied and the answer is 409 (a stale filter cannot approve rows the admin never saw). `dryRun: true` only counts
+ * (`expectedCount` is then optional). `approved` needs at least one filter (V2); `archived` with an empty filter is "Arkib Semua".
+ */
+export const QuestionFilterSchema = z.strictObject(questionFilterShape).meta({ id: 'QuestionFilter' })
+export type QuestionFilter = z.infer<typeof QuestionFilterSchema>
+export const QUESTION_FILTER_ACTIONS = ['approved', 'archived'] as const
+export const QuestionFilterBulkRequestSchema = z
+  .strictObject({
+    action: z.enum(QUESTION_FILTER_ACTIONS, { error: QUESTION_MESSAGES.bulkBadAction }),
+    filter: QuestionFilterSchema,
+    expectedCount: z.number({ error: QUESTION_MESSAGES.filterCountNeeded }).int(QUESTION_MESSAGES.filterCountNeeded).min(0, QUESTION_MESSAGES.filterCountNeeded).optional(),
+    dryRun: z.boolean().optional(),
+  })
+  .superRefine((v, ctx) => {
+    if (v.expectedCount === undefined && v.dryRun !== true) ctx.addIssue({ code: 'custom', path: ['expectedCount'], message: QUESTION_MESSAGES.filterCountNeeded })
+    if (v.action === 'approved' && Object.values(v.filter).every((x) => x === undefined)) ctx.addIssue({ code: 'custom', path: ['filter'], message: QUESTION_MESSAGES.filterNeeded })
+  })
+  .meta({ id: 'QuestionFilterBulkRequest' })
+
+export const QuestionFilterBulkResultSchema = z
+  .object({
+    matched: z.number().int().min(0).meta({ description: 'Rows of the filter (the total the list shows); compared with `expectedCount`.' }),
+    eligible: z.number().int().min(0).meta({ description: 'Matched rows whose status allows the action (approved: Semakan; archived: Draf, Semakan, Diterbitkan).' }),
+    skipped: z.number().int().min(0).meta({ description: 'matched - eligible: rows already in, or not allowed to move to, the target status. Left untouched, not failures.' }),
+    cap: z.number().int().min(1).meta({ description: 'Rows one run applies at most.' }),
+    processed: z.number().int().min(0).meta({ description: 'Rows tried in this run: min(eligible, cap); 0 on a dry run.' }),
+    affected: z.number().int().min(0),
+    failed: z.array(QuestionBulkFailureSchema).meta({ description: 'Rows tried and refused (the full approve gate: VALIDATION_ERROR with the gate `fields`), same shape as bulk-action.' }),
+    remaining: z.number().int().min(0).meta({ description: 'eligible - processed: rows a further run would still try.' }),
+    capped: z.boolean().meta({ description: 'true when `remaining` > 0 because of the cap.' }),
+    dryRun: z.boolean(),
+  })
+  .meta({ id: 'QuestionFilterBulkResult' })
 
 /* ------------------------------------------------------------------------- structured (admin reads) */
 

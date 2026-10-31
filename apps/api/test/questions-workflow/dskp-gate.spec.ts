@@ -208,7 +208,7 @@ describe('DSKP-complete approve gate, gate-check and status route (real bank)', 
     it('status: a pair outside the table is 409 with the BM message, an unknown status or a missing reason is 422, a missing id is 404', async () => {
       const id = await draft()
       const conflict = await status(c.admin, id, 'approved') // draft -> approved is not in the table
-      expectError(conflict, 'CONFLICT', 'Perubahan status daripada Draf kepada Diterbitkan tidak dibenarkan.')
+      expectError(conflict, 'CONFLICT', "Peralihan 'Draf' -> 'Diterbitkan' tidak dibenarkan.")
       expect((await status(c.admin, id, 'published')).status).toBe(422)
       expect((await c.admin.post(`/api/questions/${id}/status`, {})).status).toBe(422)
       await status(c.admin, id, 'review')
