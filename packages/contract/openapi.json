@@ -62465,7 +62465,7 @@
           },
           "pinned": {
             "type": "boolean",
-            "description": "R1-T48 (V2 \"Disematkan\"): on a question PLACED on this paper, true when its version and marks are frozen (the paper is Terbit); false while the paper is a draf (the placement follows the question in force). Absent on a candidate that is not placed."
+            "description": "R1-T48 / REQ-C-017 (V2 \"Disematkan\"): on a question PLACED on this paper (editor `questions[]`, the questions of a section pool unit and the review rows), true when its version and marks are frozen (the paper is Terbit); false while the paper is a draf (the placement follows the question in force). Absent on a candidate that is not placed."
           }
         },
         "required": [

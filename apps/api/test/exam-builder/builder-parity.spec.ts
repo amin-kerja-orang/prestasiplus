@@ -355,7 +355,23 @@ describe('R1-T48 builder parity: cover code, rule, sections, added questions, pi
       expect(ids.every((id) => flags[id] === false)).toBe(true)
       expect(Object.hasOwn(flags, spare) ? flags[spare] : 'absent').toBeUndefined()
       expect((await reviewOf(paper)).rows.every((r) => r.pinned === false)).toBe(true)
+      // the section pool answer: a placed member carries the flag, a candidate that is not placed carries none
+      type PoolUnit = { placed: boolean; questions: { id: string; pinned?: boolean }[] }
+      const poolOf = async (): Promise<PoolUnit[]> => {
+        const section = (await sectionsOf(paper))[0]
+        const all: PoolUnit[] = []
+        for (let page = 1; page <= 50; page++) {
+          const res = await admin.get(`/api/admin/papers/${paper}/sections/${section}/pool?pageSize=100&page=${String(page)}`)
+          all.push(...(res.body.data as PoolUnit[]))
+          if (page >= (res.body.meta.totalPages as number)) break
+        }
+        return all
+      }
+      const before = await poolOf()
+      expect(before.flatMap((u) => u.questions).find((x) => x.id === ids[0])?.pinned).toBe(false)
+      expect(before.filter((u) => !u.placed).flatMap((u) => u.questions).every((x) => x.pinned === undefined)).toBe(true)
       expect((await admin.post(`/api/admin/papers/${paper}/publish`)).body.data.ok).toBe(true)
+      expect((await poolOf()).flatMap((u) => u.questions).find((x) => x.id === ids[0])?.pinned).toBe(true)
       flags = await flagOf()
       expect(ids.every((id) => flags[id] === true)).toBe(true)
       expect(flags[spare]).toBeUndefined()

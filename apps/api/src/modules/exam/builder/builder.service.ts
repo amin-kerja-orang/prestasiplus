@@ -1037,7 +1037,8 @@ export class BuilderService {
     const gids = [...new Set(slice.flatMap((u) => (u.groupId ? [u.groupId] : [])))]
     const groups = gids.length ? await this.questions.groups(gids) : new Map<string, BuilderGroupInfo>()
     const data = slice.map((u): BijakBuilderPoolUnit => {
-      const questions = u.ids.flatMap((id) => (info.get(id) ? [this.questionWire(info.get(id)!)] : []))
+      // REQ-C-017 / P5: a member already placed on this paper carries `pinned` (V2 "Disematkan"), as in the editor.
+      const questions = u.ids.flatMap((id) => (info.get(id) ? [this.questionWire(info.get(id)!, onPaper.has(id) ? paper.status === 'published' : undefined)] : []))
       const group = u.groupId ? groups.get(u.groupId) : undefined
       const reasons = eligibilityOfUnit(u)
       // D93: a stimulus group with fewer than two members cannot be placed (only a group the bank knows has a stimulus).

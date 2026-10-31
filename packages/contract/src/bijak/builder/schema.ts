@@ -408,7 +408,7 @@ export const BijakBuilderQuestionSchema = z
     subject: z.string().min(1).meta({ example: 'MAT' }),
     pinned: z.boolean().optional().meta({
       description:
-        'R1-T48 (V2 "Disematkan"): on a question PLACED on this paper, true when its version and marks are frozen (the paper is Terbit); false while the paper is a draf (the placement follows the question in force). Absent on a candidate that is not placed.',
+        'R1-T48 / REQ-C-017 (V2 "Disematkan"): on a question PLACED on this paper (editor `questions[]`, the questions of a section pool unit and the review rows), true when its version and marks are frozen (the paper is Terbit); false while the paper is a draf (the placement follows the question in force). Absent on a candidate that is not placed.',
     }),
   })
   .meta({ id: 'BijakBuilderQuestion' })
