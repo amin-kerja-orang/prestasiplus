@@ -63,14 +63,24 @@ const { data, error, reload } = useApi((signal) => fetchDatabank({ signal }))
             <UButton
               v-for="n in COUNTS"
               :key="n"
-              :to="`/spm/tahun-lepas/${encodeURIComponent(s.code)}/quiz?count=${String(n)}`"
+              :to="s.databankCount > 0 ? `/spm/tahun-lepas/${encodeURIComponent(s.code)}/quiz?count=${String(n)}` : undefined"
+              :disabled="s.databankCount === 0"
               color="neutral"
               variant="soft"
               class="tabular min-h-11 min-w-11 justify-center"
               :data-testid="`databank-set-${s.code}-${String(n)}`"
               >{{ n }}</UButton
             >
-            <span class="ms-auto text-label text-primary-t" data-testid="databank-mula">Mula</span>
+            <UBadge
+              v-if="s.databankCount === 0"
+              color="neutral"
+              variant="soft"
+              icon="i-ph-lock-bold"
+              class="ms-auto"
+              data-testid="databank-empty"
+              >Tiada soalan</UBadge
+            >
+            <span v-else class="ms-auto text-label text-primary-t" data-testid="databank-mula">Mula</span>
           </div>
         </UCard>
       </li>

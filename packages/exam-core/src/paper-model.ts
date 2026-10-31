@@ -28,12 +28,22 @@ export interface Leaf {
   depth: number
 }
 
+/**
+ * A stem row: text only, no answer mode, no children and no marks (T14 B-06). V2 renders an answer
+ * widget for leaf parts only; the attempt contract leaves `answer` absent on a part that takes none.
+ * A legacy leaf without `answer` but with marks still reads as a short answer.
+ */
+export function isStemRow(p: Pick<PartLike, 'marks' | 'answer' | 'children'>): boolean {
+  return !p.answer && !p.children?.length && p.marks === 0
+}
+
 /** Leaf parts (the ones that take an answer) in reading order, with the label chain. */
 export function leavesOf(parts: readonly PartLike[], prefix = '', depth = 0): Leaf[] {
   const out: Leaf[] = []
   for (const p of parts) {
     const label = `${prefix}${p.label}`
     if (p.children?.length) out.push(...leavesOf(p.children, label, depth + 1))
+    else if (isStemRow(p)) continue
     else
       out.push({
         id: p.id,
