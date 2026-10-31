@@ -6,6 +6,7 @@ import {
   QUESTION_STATUS_MESSAGE,
   QuestionCognitiveLevelSchema,
   QuestionCurriculumTagSchema,
+  QuestionEssayTopicSchema,
   QuestionKbatLevelSchema,
   QuestionPartSchema,
   QuestionPublicPartSchema,
@@ -101,6 +102,8 @@ export const QuestionRowSchema = z
     dskpComplete: z.boolean().optional(),
     sourceType: QuestionSourceTypeSchema.nullable(),
     sourceFile: z.string().nullable(),
+    /** R1-H-A7: present only on an `essay_choice` (esei pilihan) question: its 2 to 6 topics. `questionType` stays `essay`. */
+    essayTopics: z.array(QuestionEssayTopicSchema).optional(),
   })
   .meta({ id: 'QuestionRow' })
 
@@ -177,6 +180,8 @@ export const QuestionSchema = z
     sourceFile: z.string().nullable(),
     sourcePage: z.number().int().nullable(),
     sourceSet: z.string().nullable(),
+    /** R1-H-A7: present only on an `essay_choice` (esei pilihan) question: its 2 to 6 topics. `questionType` stays `essay`. */
+    essayTopics: z.array(QuestionEssayTopicSchema).optional(),
     qualityScore: z.number().int().min(0).max(100).nullable(),
     needsDiagram: z.boolean(),
     spmPool: z.boolean(),

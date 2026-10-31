@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { forwardRef, Inject, Injectable } from '@nestjs/common'
 import {
   QUESTION_WORKFLOW_STATUSES,
   type QuestionGateIssue,
@@ -77,7 +77,7 @@ export class LifecycleService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(QuestionWorkflowPorts) private readonly ports: QuestionWorkflowPorts,
-    @Inject(QuestionReportsService) private readonly reports: QuestionReportsService,
+    @Inject(forwardRef(() => QuestionReportsService)) private readonly reports: QuestionReportsService,
   ) {}
 
   private get bank(): QuestionBankPort {
@@ -122,6 +122,27 @@ export class LifecycleService {
     if (!data) throw ApiError.of('NOT_FOUND')
     const issues = gateIssuesOf(GATES[gate](data))
     return { gate, ok: issues.length === 0, issues }
+  }
+
+  /**
+   * "Arkib" on a question report row (R1-B17, Admin Pusat). A question without a newer revision goes through the normal
+   * `transition` (an already archived one is left as it is). When a newer revision exists (live version is not the latest, for example
+   * a revision in Semakan), the table has no review to archived move, so the LIVE version is archived and serving ends, the same
+   * move a source takedown makes first; the revision itself is left as it is, so it can still be approved after the fix.
+   */
+  async archiveReported(questionId: string, actor: WorkflowActor, reason: string): Promise<void> {
+    this.roleKind(actor)
+    await this.prisma.transaction(async () => {
+      const info = await this.bank.getStatus(questionId)
+      if (!info) return
+      if (info.liveVersionNo !== null && info.liveVersionNo !== info.latestVersionNo) {
+        await this.applyOne(info, actor, { from: 'approved', to: 'archived', gate: null, reason, versionNo: info.liveVersionNo, target: 'live' })
+        return
+      }
+      // Nothing is served and the latest is a revision in Semakan (a second Arkib after the live version was archived): nothing to withdraw.
+      if (info.liveVersionNo === null && info.status === 'review') return
+      if (info.status !== 'archived') await this.transition(questionId, 'archived', actor, { reason })
+    })
   }
 
   /** "No bypass": the same gates per question; failures are skipped and reported. */
