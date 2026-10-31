@@ -197,10 +197,29 @@ describe('QuestionBlock: stem picture, option pictures, blocked hint', () => {
     expect(w.find('[data-testid="option-A"]').exists()).toBe(true)
   })
 
-  it('shows the stem picture under the stem and the "Muatkan rajah" hint when the group figure failed', () => {
+  it('shows the stem picture above the stem and the "Muatkan rajah" hint when the group figure failed', () => {
     const w = mountQ(q({ stemImage: picture('image', 'stem') }), { stimulusBlocked: true })
     expect(w.find('[data-testid=stem-image] img').attributes('src')).toBe('/api/files/tok-stem')
     expect(w.find('[data-testid=need-stimulus]').text()).toBe('Muatkan rajah untuk meneruskan.')
+  })
+
+  it('own stimuli: shows them above the stem, in order', () => {
+    const w = mountQ(q({ stem: 'Soalan', stimuli: [picture('image', 'a'), picture('passage', 'b')] }))
+    const html = w.html()
+    expect(html.indexOf('stem-image')).toBeLessThan(html.indexOf('question-stem'))
+    expect(w.find('[data-testid=stem-image]').attributes('data-count')).toBe('2')
+  })
+
+  it('does not show the back-compat stemImage again when stimuli is present', () => {
+    const one = picture('image', 'same')
+    const w = mountQ(q({ stimuli: [one], stemImage: one }))
+    expect(w.findAll('[data-testid=stem-image] img')).toHaveLength(1)
+    expect(w.findAll('[data-testid=stem-image]')).toHaveLength(1)
+  })
+
+  it('falls back to stemImage when stimuli is absent', () => {
+    const w = mountQ(q({ stemImage: picture('image', 'only') }))
+    expect(w.find('[data-testid=stem-image]').attributes('data-count')).toBe('1')
   })
 })
 
