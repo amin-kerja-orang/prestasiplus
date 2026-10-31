@@ -131,14 +131,17 @@ describe('Laporan Soalan: archive from the report row (R1-B17)', () => {
     expect(await inJanaPool()).toBe(false)
   })
 
-  it('5b. archived is not drawn by a Kuiz (R1-18.4): not by the random Kuiz; the per-paper Kuiz of the Terbit paper keeps the frozen snapshot', async () => {
+  it('5b. archived is not drawn by the random Kuiz (R1-18.4)', async () => {
     expect(await kuizDraws()).not.toContain(qid)
-    // The paper was published with the version pinned on its placement; the per-paper Kuiz reads that pin, so the Terbit paper keeps its
-    // snapshot after the archive (PIPE AC-04.4: "a published composite keeps its frozen snapshot"), while a NEW Jana pool and a NEW sitting exclude it (5, 8).
-    const page = await (await loginAs(t, STUDENT)).get(`/api/bijak/kuiz/papers/${paperId}`)
-    expect(page.status, JSON.stringify(page.body)).toBe(200)
-    expect((page.body as { data: { items: { id: string }[] } }).data.items.map((i) => i.id)).toContain(qid)
   })
+
+  // R1-18.4 (lead decision, option b): "Arkib" also hides the question from the per-paper Kuiz of a Terbit paper, like a NEW sitting (8);
+  // a sitting already started keeps its pinned version (7). Today `GET /bijak/kuiz/papers/:id` still reads the pinned version of an archived
+  // question, so the body is kept here as the assertion to enable once C2's live check lands:
+  //   const page = await (await loginAs(t, STUDENT)).get(`/api/bijak/kuiz/papers/${paperId}`)
+  //   expect(page.status).toBe(200)
+  //   expect(page.body.data.items.map((i) => i.id)).not.toContain(qid)   // and POST .../check on it is refused
+  it.todo('5c. archived is not shown by the per-paper Kuiz of the Terbit paper (paperPage and paperCheck) - pending REQ-A-003 (C2 kuiz.service paperPage/paperCheck live check)')
 
   it('6. a second Arkib is a no-op (idempotent), not a 409', async () => {
     const res = await adminPatch(`/api/question-reports/${reportId}`, { status: 'fixed', archive: true })
