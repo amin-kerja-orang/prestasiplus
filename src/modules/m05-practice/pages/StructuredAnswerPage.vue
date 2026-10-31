@@ -71,7 +71,12 @@ watch([id, variant], () => {
 })
 
 /** A part that holds children is listed with 0 marks: stem text, not an answer field (V2: only leaves take answers). */
-const isStem = (s: { marks: number }): boolean => s.marks === 0
+const isStem = (s: { id: number; label: string; marks: number }): boolean => {
+  // The list is depth first: a branch is followed by its children, whose label chain starts with its own.
+  const rows = data.value?.subQuestions ?? []
+  const next = rows[rows.findIndex((r) => r.id === s.id) + 1]
+  return s.marks === 0 && next !== undefined && next.label.startsWith(`${s.label}.`)
+}
 /** The server joins the label chain with dots ("(a).(i)"); V2 and Bijak read "(a)(i)". */
 const labelOf = (label: string): string => label.replace(/\)\.\(/g, ')(')
 

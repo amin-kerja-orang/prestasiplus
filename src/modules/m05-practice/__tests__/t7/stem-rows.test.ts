@@ -28,6 +28,27 @@ const DETAIL = {
 }
 
 describe('B-06 Soalan Berstruktur stem rows', () => {
+  it('a 0-mark leaf (no child row after it) keeps its answer box', async () => {
+    api.fetchStructuredDetail.mockResolvedValue({
+      ...DETAIL,
+      subQuestions: [
+        { id: 1, label: '(a)', text: 'Cabang', marks: 0 },
+        { id: 2, label: '(a).(i)', text: 'Daun', marks: 1 },
+        { id: 3, label: '(b)', text: 'Daun tanpa markah', marks: 0 },
+      ],
+    })
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/latihan-berstruktur/:id/jawab', component: StructuredAnswerPage }],
+    })
+    await router.push('/latihan-berstruktur/7/jawab')
+    const w = mount(StructuredAnswerPage, { global: { plugins: [router], stubs: { teleport: true } } })
+    await flushPromises()
+    expect(w.findAll('[data-testid=sub-answer]')).toHaveLength(2)
+    expect(w.find('[data-testid=sub-3] [data-testid=sub-answer]').exists()).toBe(true)
+    expect(w.find('[data-testid=sub-1] [data-testid=sub-answer]').exists()).toBe(false)
+  })
+
   it('shows text only for 0-mark rows, boxes for scored rows, and (a)(i)(A) labels', async () => {
     api.fetchStructuredDetail.mockResolvedValue(DETAIL)
     const router = createRouter({
