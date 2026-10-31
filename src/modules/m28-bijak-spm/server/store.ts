@@ -8,7 +8,8 @@
  */
 import { blankQuestion } from '../admin/intake/domain/blank'
 import { batchToSeeds } from '../admin/intake/domain/convert'
-import { groupsOf } from '../admin/intake/domain/grouping'
+import { attachToStimulus, groupsOf } from '../admin/intake/domain/grouping'
+import { referencingQuestionIds } from '../admin/intake/domain/figure-links'
 import { paperMarks } from '../admin/intake/domain/marks'
 import { validateBatch } from '../admin/intake/domain/validation'
 import { demoBatch } from '../admin/intake/lib/seed'
@@ -105,6 +106,9 @@ export interface ServerOptions {
   latencyMs?: number
   storageKey?: string
 }
+
+/** [PROPOSED] H-A13: the API's BM refusal of a new sitting of a paper that places an archived question. */
+export const PAPER_UNAVAILABLE = 'Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini.'
 
 export class BijakServer implements BijakApi {
   private readonly storage: KeyValueStore
@@ -393,6 +397,10 @@ export class BijakServer implements BijakApi {
     if (open.length && !opts.restart && !opts.fresh) {
       const keep = open.sort((a, b) => b.startedAt - a.startedAt)[0]!
       return { attemptId: keep.id }
+    }
+    // H-C5 / H-A13: a paper that places a question the bank no longer serves cannot start a new sitting (API: 403 + this BM line).
+    if (def.sections.every((s) => s.questionIds.length === 0) || def.sections.some((s) => s.questionIds.some((id) => !BANK.questions.has(id)))) {
+      throw new BijakError('forbidden', PAPER_UNAVAILABLE)
     }
     if (!opts.fresh) for (const a of open) a.status = 'abandoned'
     this.state.seq += 1
@@ -1067,6 +1075,22 @@ export class BijakServer implements BijakApi {
     store[batch.id] = batch
     this.persist()
     return jsonClone(batch)
+  }
+
+  /** D90: links the figure to every question without a stimulus that names it, and keeps the group contiguous. */
+  async linkStimulusReferences(id: string, stimulusId: string): Promise<{ linkedItemIds: string[] }> {
+    await this.tick()
+    const b = this.intakeBatch(id)
+    if (b.status !== 'draf') throw new BijakError('bad_request', 'Kumpulan sudah dihantar untuk semakan')
+    const stimulus = b.stimuli.find((x) => x.id === stimulusId)
+    if (!stimulus) throw new BijakError('not_found', 'Rajah tidak dijumpai')
+    const linkedItemIds = referencingQuestionIds(b.questions, stimulus)
+    if (linkedItemIds.length > 0) {
+      b.questions = attachToStimulus(b.questions, linkedItemIds, stimulusId).questions
+      b.updatedAt = this.now()
+      this.persist()
+    }
+    return { linkedItemIds }
   }
 
   /** Replace the edited content of a Draf batch. A batch under review is read-only. */

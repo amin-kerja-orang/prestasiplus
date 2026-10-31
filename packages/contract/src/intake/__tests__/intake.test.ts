@@ -210,9 +210,9 @@ const row = {
 describe('question content (prototype types.ts, field for field)', () => {
   it('IntakeQuestion has exactly the prototype keys', () => {
     expect(Object.keys(IntakeQuestionSchema.shape).sort()).toEqual(
-      ['id', 'label', 'type', 'stem', 'options', 'marks', 'mode', 'unit', 'wordRange', 'parts', 'scheme', 'tag', 'stimulusId', 'page', 'lowFields', 'confirmed', 'needsManual'].sort(),
+      ['id', 'label', 'type', 'stem', 'options', 'marks', 'mode', 'unit', 'wordRange', 'parts', 'scheme', 'tag', 'stimulusId', 'page', 'lowFields', 'confirmed', 'needsManual', 'cognitiveLevel'].sort(),
     )
-    expect(Object.keys(IntakePartSchema.shape).sort()).toEqual(['id', 'label', 'prompt', 'marks', 'mode', 'scheme', 'unit', 'wordRange', 'lead'].sort())
+    expect(Object.keys(IntakePartSchema.shape).sort()).toEqual(['id', 'label', 'prompt', 'marks', 'mode', 'scheme', 'unit', 'wordRange', 'lead', 'cognitiveLevel'].sort())
   })
 
   it('parses an MCQ, a structured question with nested parts and an essay', () => {

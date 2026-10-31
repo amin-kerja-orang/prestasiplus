@@ -287,6 +287,14 @@ const isRtlText = (text: string): boolean => /[\u0600-\u06FF]/.test(text)
           </p>
         </DsPanel>
 
+        <DsPanel v-if="question.essayTopics?.length" title="Esei pilihan" icon="i-ph-list-numbers" data-testid="essay-choice">
+          <ul class="flex flex-col gap-1 text-body break-words text-highlighted">
+            <li v-for="(t, i) in question.essayTopics" :key="t.id" data-testid="essay-topic">
+              {{ i + 1 }}. {{ t.label }}
+            </li>
+          </ul>
+        </DsPanel>
+
         <DsPanel
           v-if="question.explanation"
           title="Penjelasan"

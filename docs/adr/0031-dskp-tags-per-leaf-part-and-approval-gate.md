@@ -16,6 +16,6 @@ D53h/D76: questions tag curriculum nodes only; TP and cognitive level are per le
 7. Bulk approve (legacy list) runs the same gate per item; failures are returned with reasons and are not approved (AC-03.3).
 
 ## Consequences
-- Backfill (migration 0101): `dskp_complete` false for all loaded legacy questions; no tp/cognitive data is invented.
+- Backfill (migration 0102): `dskp_complete` false for all loaded legacy questions; no tp/cognitive data is invented.
 - Contract: leaf parts gain `tp`, `cognitiveLevel`; question read gets `dskp: { complete, issues[] }`.
 - Intake accept (`to-question.ts`) must carry the AI/editor leaf TP and cognitive level into the draft.

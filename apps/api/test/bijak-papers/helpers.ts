@@ -17,6 +17,8 @@ import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { AuthModule } from '../../src/modules/auth'
 import { BijakPapersModule, BijakPapersPorts, type BijakProgressSource, type BijakQuestionSource, type BijakServedSource } from '../../src/modules/bijak/papers'
+import { PocPoolSource } from '../../src/modules/bijak/papers/poc-pool-source'
+import type { BijakPoolSource } from '../../src/modules/bijak/papers/pool-source'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
 export const DEMO_PASSWORD = 'Demo1234'
@@ -36,6 +38,8 @@ export interface BootOptions {
   questionSource?: BijakQuestionSource
   progress?: BijakProgressSource
   served?: BijakServedSource
+  /** The candidate facts the standard generator composes from (D75). Default: the PoC fixture; `served` drives its `seen`. */
+  poolSource?: BijakPoolSource
   /** Environment overrides for this app (rate limits). */
   env?: Record<string, string>
 }
@@ -66,6 +70,15 @@ export async function bootPapersApp(opts: BootOptions = {}): Promise<PapersTestA
   if (opts.questionSource) ports.provideQuestionSource(opts.questionSource)
   if (opts.progress) ports.provideProgress(opts.progress)
   if (opts.served) ports.provideServed(opts.served)
+  // The running API wires `seen` of the pool source to the served port (CompositeBijakPoolSource); the harness does the same.
+  if (opts.poolSource || opts.served) {
+    const base = opts.poolSource ?? new PocPoolSource()
+    const served = opts.served
+    ports.providePoolSource({
+      candidates: (scope) => base.candidates(scope),
+      seen: (userId) => (opts.poolSource || !served ? base.seen(userId) : served.servedQuestionIds(userId)),
+    })
+  }
   await app.init()
   return {
     app,
@@ -135,7 +148,7 @@ export function allKeys(value: unknown, out = new Set<string>()): Set<string> {
   return out
 }
 
-export { serveSeededBlueprints } from '../support/serve-blueprints'
+export { serveSeededBlueprints, setPocMarkBudgets } from '../support/serve-blueprints'
 
 export const count = async (db: TestDatabase, sql: string, params: unknown[] = []): Promise<number> =>
   Number((await db.query<{ n: string }>(sql, params))[0]?.n)
