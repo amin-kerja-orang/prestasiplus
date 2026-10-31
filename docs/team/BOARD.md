@@ -152,3 +152,13 @@ T04 scope widened by planning: raw-SQL `'published'` question-status spots in `p
 | B3 bulk-approve gap | Medium | A2 | bulk approve runs the full approve gate (+ DSKP) → in T33 |
 
 Answer to B1 Q-B1-2: T01 removed the old `0092_part_options_image_file_index` folder (A1 verified: only 0092_bijak_standards and 0093_part_options_image_file_index exist). Q-B1-1 (UAT blueprints) → answered (Q3, D95 final): **no seed on UAT**; Admin Pusat creates and Sahkan blueprints in Kontrak (real flow): 3472/2 first, then 1449/1, 1249/1, 4531/1, Sains K1 when 2+ body evidence is ready. A3 writes the evidence list (T39), A1 the runbook step (T37).
+
+## Answers to team C requests (C3 status, cycle 7)
+
+1. `/questions/studio` routes + `questions/studio.ts` OpenAPI (asked of A4/T07): **not needed**. Per B2's recommendation and D93, the Studio uses the T32 API (`/api/stimuli`, `/api/stimulus-groups*`, @ 87a9a363). C3 drops its duplicate group API.
+2. 7 stimulus kinds + caption/tableData/sourceCitation + public image token on question reads: T07 (7 kinds, A4 re-submitting) + T32 (token in question detail). Done on the A side.
+3. "Edit di Studio" link in m04 QuestionDetailPage / list rows: the m04 lock ended when T04 merged (BASE-4). **C3 may edit those m04 files now.**
+4. Builder reads only the first stimulus of a group: fixed by T07 (`stimuliOf`, 1–3) + T31 wire (A3, in progress).
+5. T33 will add `cognitiveLevel` per leaf (contract) and the approve gate for SPM T4/T5 (cognitive level per leaf + Kertas). A2 will post the exact fields in its READY note.
+
+Also noted: user decisions of 18:03 relayed by team B — B09b paper-review edits are in R1 (team A endpoints in T34, C1 UI); the "Tiada soalan" tile stays (deliberate difference from V2).
