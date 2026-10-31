@@ -30,7 +30,8 @@ describe('GET /admin/teachers/:id/classrooms (S7 "Kelas guru")', () => {
     admin = apiOf(await login(t, ADMIN))
     sa = apiOf(await login(t, SCHOOL_ADMIN))
     s1 = await schoolIdOf(t.db, 'DEMO001')
-    s2 = await schoolIdOf(t.db, 'DEMO002')
+    // The seeded DEMO002 is a primary school (SK), hidden by D72 (a user cannot be created there), so the "other school" is a secondary one.
+    s2 = await one(`insert into schools (name, code, type, state, district, is_active) values ('SMK Ujian Dua', 'UJIAN02', 'SMK', 'Selangor', 'Gombak', true) returning id::text`, [])
     teacherId = await userIdOf(t.db, TEACHER)
     emptyTeacher = CreatedUserSchema.parse((await admin.post('/admin/users', teacherBody(s1, { email: 'guru.kosong@ujian.test' }))).body.data).id
     otherSchoolTeacher = CreatedUserSchema.parse((await admin.post('/admin/users', teacherBody(s2, { email: 'guru.sekolah.lain@ujian.test' }))).body.data).id
