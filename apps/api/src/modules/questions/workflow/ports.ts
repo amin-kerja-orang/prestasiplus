@@ -39,7 +39,7 @@ export interface QuestionStatusInfo {
   latestVersionNo: number
   /** The version served to learners; null when none is live. */
   liveVersionNo: number | null
-  /** Eligibility = live version published AND is_active (BE-09 decision Q-2). */
+  /** Eligibility = live version approved AND is_active (BE-09 decision Q-2). */
   isActive: boolean
   /** Owner (Guru ownership); null when the owner account was deleted. */
   createdById: string | null

@@ -99,7 +99,7 @@ describe('B-HTTP-03: every question count shown to users leaves out primary leve
   it('public platform question count follows the practice-draw rule', () => {
     expect(QUESTION_COUNT_SQL).toContain(PRIMARY)
     expect(QUESTION_COUNT_SQL).toContain('q.is_active')
-    expect(QUESTION_COUNT_SQL).toContain(`v.status = 'published'`)
+    expect(QUESTION_COUNT_SQL).toContain(`v.status = 'approved'`)
     expect(QUESTION_COUNT_SQL).toContain('pksk_domain')
     expect(QUESTION_COUNT_SQL).not.toContain('$')
   })

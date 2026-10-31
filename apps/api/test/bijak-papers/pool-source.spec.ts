@@ -87,9 +87,9 @@ describe('pool totals and section counts (BJS-07)', () => {
       no_key: 2,
       tag_review: 2,
     })
-    expect(excludedBankQuery('no_unit', '7')).toEqual({ subjectId: '7', status: 'published', dskpFilter: 'untagged' })
-    expect(excludedBankQuery('no_tp', '7')).toEqual({ subjectId: '7', status: 'published', missing: 'tp' })
-    expect(excludedBankQuery('tag_review', '7')).toEqual({ subjectId: '7', status: 'published', tagReview: 'true' })
+    expect(excludedBankQuery('no_unit', '7')).toEqual({ subjectId: '7', status: 'approved', dskpFilter: 'untagged' })
+    expect(excludedBankQuery('no_tp', '7')).toEqual({ subjectId: '7', status: 'approved', missing: 'tp' })
+    expect(excludedBankQuery('tag_review', '7')).toEqual({ subjectId: '7', status: 'approved', tagReview: 'true' })
     expect(t.excluded.byReason.every((r) => r.bankQuery.subjectId === '7')).toBe(true)
   })
 

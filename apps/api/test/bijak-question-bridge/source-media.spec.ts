@@ -41,7 +41,7 @@ const rec = (id: string, withImages: boolean, extra: Partial<QuestionRecord['ver
     version: {
       id: `v${id}`,
       versionNo: 1,
-      status: 'published',
+      status: 'approved',
       archiveReason: null,
       publishedAt: now,
       type: 'mcq',

@@ -247,7 +247,7 @@ export class BattleDeps {
   /** Size of the SPM pool of a subject (lobby `spmSubjects`, start check): one SQL count, cached `CACHE_TTL_MS`. */
   async spmPoolCount(subjectId: string): Promise<number> {
     return this.cached(`spm-count:${subjectId}`, () =>
-      this.questions.count({ ...BATTLE_POOL, subjectId, spmPool: true, status: 'published', active: true }),
+      this.questions.count({ ...BATTLE_POOL, subjectId, spmPool: true, status: 'approved', active: true }),
     )
   }
 
