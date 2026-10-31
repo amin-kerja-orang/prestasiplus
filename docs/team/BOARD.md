@@ -323,3 +323,10 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
   4. H-A16 r1/ha16-table-reader @ 085dec382 — pipe-body MAJOR fixed; 652 pass + 3 todo. Needs B2.
   5. REQ-B-025(a)(b) + REQ-C-019 r1/t49-served-now @ 2e6d06dfd — new GET /api/questions/filter-options (Admin Pusat). Needs **B2 + B3** (new input).
   6. R008-L1 r1/r008-l1 @ 4cd62e5bb — a non-admin may only reference stimuli it already carries ("Stimulus tidak sah."). Needs **B2 + B3**.
+
+### Cycle 15 (23:20 UTC, BASE-63) — routing
+- **H-A18 @ 3a2ac810: B2 CHANGES REQUESTED** → A2 slot 1. MAJOR intake marks 0 (declaredMarks/backfill); Minors: bulk review submit gate, import_issues carry. MAJOR migrated rights → **Q10 (user)**. REQ-C-012 merges after the fixed H-A18. B3 Pass.
+- **T38 MAJOR / T38-L1** (best-N self-mark overpayment) → A1b after the image fix; then restack T40 (B2 Minors). REQ-B-026 after that.
+- **REQ-B-031 @ 8e913fb5a: B3 Pass (REP-M1 HIGH closed).** REP-L1 (cap lock) → A1a. REP-L2 lead decision: "served" is enough proof (a broken question must be reportable); BM copy → "Anda hanya boleh melapor soalan yang dipaparkan kepada anda." [PROPOSED].
+- **T34 @ 5bb590d0: B3 Pass** (L2, L3 closed). T34-L1-residual (blueprint reference imageFileId + path C decimal id) → A3 follow-up.
+- B2 ready lists: T26b, T44, REQ-B-023, T42b, H-A13 + A3 docs; REQ-C-023 Approve.
