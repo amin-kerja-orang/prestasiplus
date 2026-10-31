@@ -1070,6 +1070,7 @@ export class QuestionsRepository {
           blankCount: d.blankCount,
           wordMin: d.wordMin,
           wordMax: d.wordMax,
+          topics: d.topics ?? Prisma.DbNull,
           stimulusId: d.stimulusId,
           reveal: d.reveal,
           unitNodeId: d.unitNodeId,
