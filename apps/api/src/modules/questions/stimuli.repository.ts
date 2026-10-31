@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
+import { STIMULUS_MEMBER_STEM_MAX } from '@pp/contract'
 
 import { Prisma } from '../../db/generated/client'
 import { idToString } from '../../db/ids'
@@ -71,6 +72,58 @@ export interface QuestionFacts {
   /** '1' | '2' | '3' from the paper code of the latest version, or null (compatible with any kertas). */
   kertas: '1' | '2' | '3' | null
 }
+/** The short form of a group member (R1-T49). */
+export interface MemberBrief {
+  groupId: string
+  id: string
+  numberLabel: string | null
+  stem: string
+  status: 'draft' | 'review' | 'approved' | 'archived'
+  servable: boolean
+}
+
+export interface ListFilter {
+  page: number
+  pageSize: number
+  subjectId?: string | undefined
+  educationLevelId?: string | undefined
+  status?: 'draft' | 'served' | undefined
+  q?: string | undefined
+  kind?: string | undefined
+}
+
+/** `%`, `_` and `\` are literal in a search term (the LIKE pattern is escaped, `ESCAPE '\\'`). */
+export const likePattern = (term: string): string => `%${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%`
+
+/** Plain text of a stored stem or body: markup stripped, whitespace collapsed, cut with an ellipsis. */
+export function plainExcerpt(text: string | null, max: number): string {
+  if (text === null) return ''
+  const plain = text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+  return plain.length <= max ? plain : `${plain.slice(0, max).trimEnd()}\u2026`
+}
+
+
+/**
+ * Shown to pupils NOW, as the served lock has it today: the question is active and its live version is approved. Alias `q` is `questions`.
+ * (REQ-B-012 widens the lock to versions pinned by published papers; the list `status` and the member `servable` flag must follow it:
+ * replace this one constant with that predicate.)
+ */
+const SERVED_NOW = Prisma.sql`(q.is_active AND EXISTS (SELECT 1 FROM question_versions sv WHERE sv.question_id = q.id AND sv.version_no = q.live_version_no AND sv.status = 'approved'))`
+
+/** The same rule for one version `v` of question `q`. */
+const VERSION_SERVED_NOW = Prisma.sql`(q.live_version_no = v.version_no AND q.is_active AND v.status = 'approved')`
+
+/** `EXISTS` over the three ways a stimulus reaches pupils (a group with a shown member, a shown version link, a shown part link). */
+const stimulusServedSql = (stimulusId: Prisma.Sql): Prisma.Sql => Prisma.sql`EXISTS (
+  SELECT 1 FROM stimulus_group_stimuli gs JOIN questions q ON q.group_id = gs.group_id WHERE gs.stimulus_id = ${stimulusId} AND ${SERVED_NOW}
+  UNION ALL
+  SELECT 1 FROM question_version_stimuli vs JOIN question_versions v ON v.id = vs.question_version_id JOIN questions q ON q.id = v.question_id
+   WHERE vs.stimulus_id = ${stimulusId} AND ${VERSION_SERVED_NOW}
+  UNION ALL
+  SELECT 1 FROM question_parts p JOIN question_versions v ON v.id = p.question_version_id JOIN questions q ON q.id = v.question_id
+   WHERE p.stimulus_id = ${stimulusId} AND ${VERSION_SERVED_NOW}
+)`
+
 const bi = (text: string): bigint | null => (/^[1-9]\d{0,18}$/.test(text) ? BigInt(text) : null)
 
 const tableOf = (value: unknown): { head: string[]; rows: string[][] } | null => {
@@ -166,6 +219,151 @@ export class StimuliRepository {
       optionBank: g.options.map((o) => ({ label: o.label, bodyMs: o.bodyMs, bodyEn: o.bodyEn })),
       questionIds: g.questions.map((q) => q.id),
     }
+  }
+
+  // --- lists (R1-T49) -----------------------------------------------------------------------------
+
+  /** One page of stimulus group ids, newest first, with the total over the filter. */
+  async listGroupIds(f: ListFilter): Promise<{ ids: string[]; total: number }> {
+    const subject = f.subjectId === undefined ? null : bi(f.subjectId)
+    const level = f.educationLevelId === undefined ? null : bi(f.educationLevelId)
+    if ((f.subjectId !== undefined && subject === null) || (f.educationLevelId !== undefined && level === null)) return { ids: [], total: 0 }
+    const pattern = f.q === undefined || f.q === '' ? null : likePattern(f.q)
+    const rows = await this.db.$queryRaw<{ id: bigint; total: bigint }[]>`
+      SELECT g.id, count(*) OVER () AS total
+        FROM stimulus_groups g
+       WHERE (${subject}::bigint IS NULL OR EXISTS (SELECT 1 FROM questions q JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
+                                                      WHERE q.group_id = g.id AND lv.subject_id = ${subject}::bigint))
+         AND (${level}::bigint IS NULL OR EXISTS (SELECT 1 FROM questions q JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
+                                                    WHERE q.group_id = g.id AND lv.education_level_id = ${level}::bigint))
+         AND (${f.status ?? null}::text IS NULL OR (EXISTS (SELECT 1 FROM questions q WHERE q.group_id = g.id AND ${SERVED_NOW})) = (${f.status ?? null}::text = 'served'))
+         AND (${pattern}::text IS NULL OR g.label ILIKE ${pattern}::text ESCAPE '\\'
+              OR EXISTS (SELECT 1 FROM stimulus_group_stimuli gs JOIN stimuli s ON s.id = gs.stimulus_id
+                          WHERE gs.group_id = g.id AND (s.label ILIKE ${pattern}::text ESCAPE '\\' OR s.body_ms ILIKE ${pattern}::text ESCAPE '\\' OR s.body_en ILIKE ${pattern}::text ESCAPE '\\')))
+       ORDER BY g.updated_at DESC, g.id DESC
+       LIMIT ${f.pageSize} OFFSET ${(f.page - 1) * f.pageSize}`
+    if (rows.length > 0) return { ids: rows.map((r) => idToString(r.id)), total: Number(rows[0]?.total ?? 0) }
+    // An empty page past the end still reports the real total.
+    const total = f.page === 1 ? 0 : await this.countGroups(f, subject, level, pattern)
+    return { ids: [], total }
+  }
+
+  private async countGroups(f: ListFilter, subject: bigint | null, level: bigint | null, pattern: string | null): Promise<number> {
+    const rows = await this.db.$queryRaw<{ n: bigint }[]>`
+      SELECT count(*) AS n
+        FROM stimulus_groups g
+       WHERE (${subject}::bigint IS NULL OR EXISTS (SELECT 1 FROM questions q JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
+                                                      WHERE q.group_id = g.id AND lv.subject_id = ${subject}::bigint))
+         AND (${level}::bigint IS NULL OR EXISTS (SELECT 1 FROM questions q JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
+                                                    WHERE q.group_id = g.id AND lv.education_level_id = ${level}::bigint))
+         AND (${f.status ?? null}::text IS NULL OR (EXISTS (SELECT 1 FROM questions q WHERE q.group_id = g.id AND ${SERVED_NOW})) = (${f.status ?? null}::text = 'served'))
+         AND (${pattern}::text IS NULL OR g.label ILIKE ${pattern}::text ESCAPE '\\'
+              OR EXISTS (SELECT 1 FROM stimulus_group_stimuli gs JOIN stimuli s ON s.id = gs.stimulus_id
+                          WHERE gs.group_id = g.id AND (s.label ILIKE ${pattern}::text ESCAPE '\\' OR s.body_ms ILIKE ${pattern}::text ESCAPE '\\' OR s.body_en ILIKE ${pattern}::text ESCAPE '\\')))`
+    return Number(rows[0]?.n ?? 0)
+  }
+
+  /** The groups of a page in the order of `ids`, in one query (no N+1). */
+  async groupsByIds(ids: readonly string[]): Promise<GroupRow[]> {
+    const keys = ids.map(bi).filter((k): k is bigint => k !== null)
+    if (keys.length === 0) return []
+    const found = await this.db.stimulusGroup.findMany({
+      where: { id: { in: keys } },
+      include: {
+        stimuli: { orderBy: { position: 'asc' }, include: { stimulus: { include: { _count: { select: { groupLinks: true } } } } } },
+        options: { orderBy: { position: 'asc' } },
+        questions: { orderBy: { groupPosition: 'asc' }, select: { id: true } },
+      },
+    })
+    const byId = new Map(found.map((g) => [idToString(g.id), g]))
+    return ids.flatMap((id) => {
+      const g = byId.get(id)
+      return g === undefined
+        ? []
+        : [
+            {
+              id: g.id,
+              label: g.label,
+              scope: g.scope === 'paper' ? ('paper' as const) : ('section' as const),
+              stimuli: g.stimuli.map((x) => this.rowOf(x.stimulus, x.stimulus._count.groupLinks)),
+              optionBank: g.options.map((o) => ({ label: o.label, bodyMs: o.bodyMs, bodyEn: o.bodyEn })),
+              questionIds: g.questions.map((q) => q.id),
+            },
+          ]
+    })
+  }
+
+  /** The short form of the members of every group in `groupIds`, in group order: ONE query for the whole page. */
+  async memberBriefs(groupIds: readonly string[]): Promise<Map<string, MemberBrief[]>> {
+    const keys = groupIds.map(bi).filter((k): k is bigint => k !== null)
+    const out = new Map<string, MemberBrief[]>(groupIds.map((g) => [g, []]))
+    if (keys.length === 0) return out
+    const rows = await this.db.$queryRaw<{ group_id: bigint; id: bigint; number_label: string | null; stem_ms: string | null; status: string; served: boolean }[]>`
+      SELECT q.group_id, q.id, lv.number_label, lv.stem_ms, lv.status, ${SERVED_NOW} AS served
+        FROM questions q JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
+       WHERE q.group_id IN (${Prisma.join(keys)})
+       ORDER BY q.group_id, q.group_position, q.id`
+    for (const r of rows) {
+      out.get(idToString(r.group_id))?.push({
+        groupId: idToString(r.group_id),
+        id: idToString(r.id),
+        numberLabel: r.number_label,
+        stem: plainExcerpt(r.stem_ms, STIMULUS_MEMBER_STEM_MAX),
+        status: r.status as MemberBrief['status'],
+        servable: r.served,
+      })
+    }
+    return out
+  }
+
+  /** Which of these groups have a member shown to pupils: one query for the page. */
+  async servedGroupIds(groupIds: readonly string[]): Promise<Set<string>> {
+    const keys = groupIds.map(bi).filter((k): k is bigint => k !== null)
+    if (keys.length === 0) return new Set()
+    const rows = await this.db.$queryRaw<{ group_id: bigint }[]>`SELECT DISTINCT q.group_id FROM questions q WHERE q.group_id IN (${Prisma.join(keys)}) AND ${SERVED_NOW}`
+    return new Set(rows.map((r) => idToString(r.group_id)))
+  }
+
+  /** One page of stimulus ids (the seven displayable kinds; `audio` never), newest first, with the total over the filter. */
+  async listStimulusIds(f: ListFilter): Promise<{ ids: string[]; total: number }> {
+    const subject = f.subjectId === undefined ? null : bi(f.subjectId)
+    const level = f.educationLevelId === undefined ? null : bi(f.educationLevelId)
+    if ((f.subjectId !== undefined && subject === null) || (f.educationLevelId !== undefined && level === null)) return { ids: [], total: 0 }
+    const pattern = f.q === undefined || f.q === '' ? null : likePattern(f.q)
+    const users = Prisma.sql`(
+      SELECT lv.subject_id, lv.education_level_id
+        FROM stimulus_group_stimuli gs JOIN questions q ON q.group_id = gs.group_id JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
+       WHERE gs.stimulus_id = s.id
+      UNION ALL
+      SELECT lv.subject_id, lv.education_level_id
+        FROM question_version_stimuli vs JOIN question_versions v ON v.id = vs.question_version_id JOIN questions q ON q.id = v.question_id
+        JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
+       WHERE vs.stimulus_id = s.id
+    )`
+    const where = Prisma.sql`
+      s.kind <> 'audio'
+      AND (${f.kind ?? null}::text IS NULL OR s.kind = ${f.kind ?? null}::text)
+      AND (${subject}::bigint IS NULL OR EXISTS (SELECT 1 FROM ${users} u WHERE u.subject_id = ${subject}::bigint))
+      AND (${level}::bigint IS NULL OR EXISTS (SELECT 1 FROM ${users} u WHERE u.education_level_id = ${level}::bigint))
+      AND (${f.status ?? null}::text IS NULL OR ${stimulusServedSql(Prisma.sql`s.id`)} = (${f.status ?? null}::text = 'served'))
+      AND (${pattern}::text IS NULL OR s.label ILIKE ${pattern}::text ESCAPE '\\' OR s.body_ms ILIKE ${pattern}::text ESCAPE '\\' OR s.body_en ILIKE ${pattern}::text ESCAPE '\\')`
+    const rows = await this.db.$queryRaw<{ id: bigint; total: bigint }[]>`
+      SELECT s.id, count(*) OVER () AS total FROM stimuli s WHERE ${where}
+       ORDER BY s.updated_at DESC, s.id DESC LIMIT ${f.pageSize} OFFSET ${(f.page - 1) * f.pageSize}`
+    if (rows.length > 0) return { ids: rows.map((r) => idToString(r.id)), total: Number(rows[0]?.total ?? 0) }
+    if (f.page === 1) return { ids: [], total: 0 }
+    const count = await this.db.$queryRaw<{ n: bigint }[]>`SELECT count(*) AS n FROM stimuli s WHERE ${where}`
+    return { ids: [], total: Number(count[0]?.n ?? 0) }
+  }
+
+  /** Stimulus rows of a page, in the order of `ids`, plus which are shown to pupils: two queries for the page. */
+  async stimuliPage(ids: readonly string[]): Promise<{ rows: StimulusRow[]; served: Set<string> }> {
+    const keys = ids.map(bi).filter((k): k is bigint => k !== null)
+    if (keys.length === 0) return { rows: [], served: new Set() }
+    const found = await this.db.stimulus.findMany({ where: { id: { in: keys } }, include: { _count: { select: { groupLinks: true } } } })
+    const byId = new Map(found.map((r) => [idToString(r.id), this.rowOf(r, r._count.groupLinks)]))
+    const flags = await this.db.$queryRaw<{ id: bigint; served: boolean }[]>`SELECT s.id, ${stimulusServedSql(Prisma.sql`s.id`)} AS served FROM stimuli s WHERE s.id IN (${Prisma.join(keys)})`
+    return { rows: ids.flatMap((id) => byId.get(id) ?? []), served: new Set(flags.filter((f) => f.served).map((f) => idToString(f.id))) }
   }
 
   async lockGroup(id: string): Promise<boolean> {

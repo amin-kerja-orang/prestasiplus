@@ -1,7 +1,7 @@
 import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi'
 
 import { z } from '../zod'
-import { envelopeOf } from '../common/envelope'
+import { envelopeOf, listEnvelopeOf } from '../common/envelope'
 import { ErrorBodySchema } from '../common/error'
 import { IdSchema } from '../common/ids'
 import { QUESTION_STIMULUS_KINDS, QuestionRichTextSchema, QuestionStimulusGroupSchema, QuestionStimulusKindSchema, QuestionStimulusTableSchema } from './parts'
@@ -45,6 +45,11 @@ export const STIMULUS_MESSAGES = {
   memberKertas: 'Soalan dalam satu kumpulan mesti sama kertas.',
   /** `stimulusGroupId` names a group that does not exist (422 on the field). */
   groupInvalid: 'Kumpulan stimulus tidak sah.',
+  /** List queries (R1-T49). */
+  page: 'Halaman tidak sah.',
+  pageSize: 'Saiz halaman mesti antara 1 dan 100.',
+  filter: 'Nilai penapis tidak sah.',
+  search: 'Carian tidak boleh melebihi 100 aksara.',
   memberInactive: 'Soalan yang diarkibkan atau dinyahaktifkan tidak boleh dimasukkan ke dalam kumpulan.',
   memberServed: 'Soalan ini sedang dipaparkan kepada murid. Sunting sebagai draf atau arkibkannya dahulu sebelum memasukkannya ke dalam kumpulan.',
   groupServed: 'Kumpulan ini mempunyai soalan yang sedang dipaparkan kepada murid. Soalan itu tidak boleh dikeluarkan atau disusun semula, dan kumpulan tidak boleh diubah rangsangannya atau dibubarkan. Sunting soalan sebagai draf atau arkibkannya dahulu.',
@@ -173,6 +178,19 @@ export const StimulusGroupMembersSetRequestSchema = z
   .strictObject({ questionIds: z.array(IdSchema).max(STIMULUS_LIMITS.groupQuestions, STIMULUS_MESSAGES.membersTooMany) })
   .meta({ id: 'StimulusGroupMembersSetRequest' })
 
+/** R1-T49: the short form of a group member, so the Studio does not fetch members one by one. */
+export const STIMULUS_MEMBER_STEM_MAX = 120
+export const StimulusGroupMemberSchema = z
+  .object({
+    id: IdSchema,
+    numberLabel: z.string().nullable().meta({ description: 'Printed number label of the latest version, or null.' }),
+    stem: z.string().meta({ description: `Plain text of the stem (markup stripped, whitespace collapsed), cut to ${String(STIMULUS_MEMBER_STEM_MAX)} characters with an ellipsis.` }),
+    status: z.enum(['draft', 'review', 'approved', 'archived']).meta({ description: 'Status of the latest version.' }),
+    servable: z.boolean().meta({ description: 'Shown to pupils now: active with an approved live version, or pinned by a published paper.' }),
+  })
+  .meta({ id: 'StimulusGroupMember' })
+export type StimulusGroupMember = z.infer<typeof StimulusGroupMemberSchema>
+
 /** The group with the read model of the question side (stimuli in order, member ids in published order) plus label and scope. */
 export const StimulusGroupDetailSchema = z
   .object({
@@ -182,6 +200,7 @@ export const StimulusGroupDetailSchema = z
     stimuli: QuestionStimulusGroupSchema.shape.stimuli,
     optionBank: QuestionStimulusGroupSchema.shape.optionBank,
     questionIds: z.array(IdSchema),
+    members: z.array(StimulusGroupMemberSchema).meta({ description: 'The members in published order (same order as `questionIds`), one short form each.' }),
     warning: z.string().nullable().optional().meta({ description: 'BM warning while the group has fewer than 2 questions (a draft group, D93); null otherwise. The write went through.' }),
   })
   .meta({ id: 'StimulusGroupDetail' })
@@ -196,6 +215,61 @@ export const StimulusGroupRemovedResultSchema = z
 
 export const StimulusGroupDeleteResultSchema = z.object({ deleted: z.literal(1), releasedQuestionIds: z.array(IdSchema) }).meta({ id: 'StimulusGroupDeleteResult' })
 
+
+/* ------------------------------------------------------------------------------------- lists (R1-T49) */
+
+export const STIMULUS_LIST_STATUSES = ['draft', 'served'] as const
+export const STIMULUS_LIST_MAX_PAGE = 100_000
+export const STIMULUS_LIST_SEARCH_MAX = 100
+const listPage = z.coerce.number(STIMULUS_MESSAGES.page).int(STIMULUS_MESSAGES.page).min(1, STIMULUS_MESSAGES.page).max(STIMULUS_LIST_MAX_PAGE, STIMULUS_MESSAGES.page)
+const listPageSize = z.coerce.number(STIMULUS_MESSAGES.pageSize).int(STIMULUS_MESSAGES.pageSize).min(1, STIMULUS_MESSAGES.pageSize).max(100, STIMULUS_MESSAGES.pageSize)
+const listFilters = {
+  page: listPage.default(1),
+  pageSize: listPageSize.default(20),
+  subjectId: IdSchema.optional().meta({ description: 'Subject of the members (the latest version).' }),
+  educationLevelId: IdSchema.optional().meta({ description: 'Any member of this level.' }),
+  status: z.enum(STIMULUS_LIST_STATUSES, STIMULUS_MESSAGES.filter).optional().meta({
+    description: '`served` = a member (group) or a linked question version (stimulus) is shown to pupils now; `draft` = none is. Empty groups are `draft`.',
+  }),
+  q: z.string().max(STIMULUS_LIST_SEARCH_MAX, STIMULUS_MESSAGES.search).optional().meta({ description: 'Case-insensitive text in the label or body (a group: its own label or any of its stimuli). `%` and `_` are literal.' }),
+}
+/** `GET /stimulus-groups`: strict; unknown keys are 422. Empty values count as absent. */
+export const StimulusGroupListQuerySchema = z.strictObject(listFilters).meta({ id: 'StimulusGroupListQuery' })
+/** `GET /stimuli`: the same filters plus the kind. */
+export const StimulusListQuerySchema = z
+  .strictObject({ ...listFilters, kind: QuestionStimulusKindSchema.optional() })
+  .meta({ id: 'StimulusListQuery' })
+export type StimulusListQuery = z.infer<typeof StimulusListQuerySchema>
+export type StimulusGroupListQuery = z.infer<typeof StimulusGroupListQuerySchema>
+
+export const StimulusListRowSchema = z
+  .object({
+    id: IdSchema,
+    kind: QuestionStimulusKindSchema,
+    label: z.string(),
+    caption: z.string().nullable(),
+    excerpt: z.string().nullable().meta({ description: 'Plain text of the body, cut to 120 characters; null for a picture or a table with no text.' }),
+    imageId: z.string().nullable(),
+    groupCount: z.number().int().min(0),
+    status: z.enum(STIMULUS_LIST_STATUSES),
+  })
+  .meta({ id: 'StimulusListRow' })
+export type StimulusListRow = z.infer<typeof StimulusListRowSchema>
+
+export const StimulusGroupListRowSchema = z
+  .object({
+    id: IdSchema,
+    label: z.string().nullable(),
+    scope: z.enum(['section', 'paper']),
+    stimuli: z.array(z.object({ id: IdSchema, kind: QuestionStimulusKindSchema, label: z.string(), imageId: z.string().nullable() })),
+    memberCount: z.number().int().min(0),
+    members: z.array(StimulusGroupMemberSchema),
+    status: z.enum(STIMULUS_LIST_STATUSES),
+    warning: z.string().nullable(),
+  })
+  .meta({ id: 'StimulusGroupListRow' })
+export type StimulusGroupListRow = z.infer<typeof StimulusGroupListRowSchema>
+
 /** Components contributed by R1-T32 (appended to COMPONENT_SCHEMAS in openapi.ts). */
 export const STIMULI_COMPONENT_SCHEMAS = {
   StimulusCreateRequest: StimulusCreateRequestSchema,
@@ -208,6 +282,9 @@ export const STIMULI_COMPONENT_SCHEMAS = {
   StimulusGroupReorderRequest: StimulusGroupReorderRequestSchema,
   StimulusGroupMembersSetRequest: StimulusGroupMembersSetRequestSchema,
   StimulusGroupDetail: StimulusGroupDetailSchema,
+  StimulusGroupMember: StimulusGroupMemberSchema,
+  StimulusListRow: StimulusListRowSchema,
+  StimulusGroupListRow: StimulusGroupListRowSchema,
   StimulusGroupMemberRemoved: StimulusGroupRemovedResultSchema,
   StimulusGroupDeleteResult: StimulusGroupDeleteResultSchema,
 } as const
@@ -236,6 +313,26 @@ export function registerStimuliPaths(registry: OpenAPIRegistry): void {
       'Pictures are ids of files already uploaded with `POST /files?purpose=question_image` (JPG/PNG/WebP up to 2MB); the file must have that purpose (422 `imageFileId` otherwise). Inline SVG / HTML is never written. `passage` needs `body`, `table` needs `tableData` or an image, the picture kinds need `imageFileId`. Flash: "Rangsangan berjaya ditambah."',
     request: { headers: [csrf], body: body(StimulusCreateRequestSchema) },
     responses: { 201: json(mutationEnvelopeOf(StimulusSchema), 'Created.'), 401: unauthorized, 403: forbidden, 422: invalid },
+  })
+  registry.registerPath({
+    method: 'get',
+    path: '/stimuli',
+    tags,
+    summary: 'List stimuli (paged)',
+    description:
+      'Admin Pusat only, no-store. Filters: `subjectId` / `educationLevelId` (of the questions that use the stimulus through a group or a version link), `status` (`served` or `draft`, see the query), `kind`, `q` (label / body, case-insensitive). `pageSize` 1 to 100 (101 is 422). Newest first.',
+    request: { query: StimulusListQuerySchema },
+    responses: { 200: json(listEnvelopeOf(StimulusListRowSchema), 'One page.'), 401: unauthorized, 403: forbidden, 422: invalid },
+  })
+  registry.registerPath({
+    method: 'get',
+    path: '/stimulus-groups',
+    tags,
+    summary: 'List stimulus groups with their members (paged)',
+    description:
+      'Admin Pusat only, no-store. Filters: `subjectId`, `educationLevelId` (any member), `status` (`served` = a member is shown to pupils, else `draft`), `q` (the group label or any of its stimuli). Each row carries the short form of its members, read with one query per page. `pageSize` 1 to 100 (101 is 422).',
+    request: { query: StimulusGroupListQuerySchema },
+    responses: { 200: json(listEnvelopeOf(StimulusGroupListRowSchema), 'One page.'), 401: unauthorized, 403: forbidden, 422: invalid },
   })
   registry.registerPath({
     method: 'get',

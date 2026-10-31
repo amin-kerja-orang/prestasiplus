@@ -59,6 +59,24 @@ export function parseBody<S extends z.ZodType>(schema: S, raw: unknown): z.outpu
   return res.data
 }
 
+/**
+ * Parses a query with a strict contract schema (R1-T49). An empty value counts as absent (a form that sends `q=`), a repeated key (array)
+ * or a nested value is left as it is, so the schema refuses it; the first issue per key is the BM message.
+ */
+export function parseQuery<S extends z.ZodType>(schema: S, raw: unknown): z.output<S> {
+  const source = typeof raw === 'object' && raw !== null && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {}
+  const cleaned: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(source)) {
+    if (typeof value === 'string') {
+      const text = value.trim()
+      if (text !== '') cleaned[key] = text
+    } else if (value !== undefined) cleaned[key] = value
+  }
+  const res = schema.safeParse(cleaned)
+  if (!res.success) throw invalid(fieldsOf(res.error))
+  return res.data
+}
+
 /** Query values as trimmed strings; empty values count as absent (mock), arrays and objects are refused. */
 function cleanQuery(raw: unknown, keys: readonly string[], fields: Record<string, string>): Record<string, string> {
   const source = typeof raw === 'object' && raw !== null && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {}
