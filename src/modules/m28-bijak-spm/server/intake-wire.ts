@@ -213,6 +213,7 @@ const QUESTION_KEYS = [
   'mode',
   'unit',
   'wordRange',
+  'cognitiveLevel',
   'parts',
   'scheme',
   'tag',
@@ -258,7 +259,7 @@ export function itemPatch(prev: IntakeQuestion, next: IntakeQuestion): IntakeIte
   for (const k of ['label', 'type', 'stem', 'options', 'marks', 'mode', 'parts', 'tag', 'page', 'confirmed'] as const) {
     if (!same(prev[k], next[k])) out[k] = next[k]
   }
-  for (const k of ['unit', 'wordRange', 'scheme'] as const) {
+  for (const k of ['unit', 'wordRange', 'cognitiveLevel', 'scheme'] as const) {
     if (!same(prev[k], next[k])) out[k] = next[k] ?? null
   }
   if ((prev.stimulusId ?? null) !== (next.stimulusId || null)) out.stimulusId = next.stimulusId || null
