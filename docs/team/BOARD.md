@@ -1,6 +1,6 @@
 # R1 board: Bijak SPM, admin → student question pipeline
 
-Writer: team A lead. Last refresh: 2026-10-31 (cycle 1, new team A session). Current BASE: **BASE-1** = `feature/v3-bijak-r1` @ 14e4336c.
+Writer: team A lead. Last refresh: 2026-10-31 (cycle 2). Current BASE: **BASE-1** = `feature/v3-bijak-r1` @ 14e4336c.
 Source of every task: `docs/handoff/CLOUD-HANDOFF.md` §7 on `feature/v3-bijak-r1`. Read the protocol in [README.md](README.md).
 
 ## Critical path
@@ -12,9 +12,9 @@ Everything else runs beside it and merges BASE-2 in when it lands.
 
 | ID | Handoff | Task | Lane | Depends on | Branch | Status | Evidence / verdict |
 |---|---|---|---|---|---|---|---|
-| T01 | (a-1)+(a0) | Merge `origin/handoff/shared-tree-2026-10-31`, resolve conflicts, fix the 5 vue-tsc errors; registry-boot, api tsc, vue-tsc, m04/m28/bijak specs | A1 | — | r1/t01-base-merge | IN-PROGRESS (last m11 fix) | ec341940: api tsc 0, vue-tsc 0 (after m12 fix), registry-boot 3/3, m04+m28 928/928, bijak specs 470 pass / 4 fail (golden.spec, pre-existing on BASE-1); m11 3 stale counts being fixed |
-| T03 | (a) | Verify `r1/b08-bridge`: vue-tsc m28, bijak-question-bridge, be09-paper spec, DB test of image read rule; merge BASE-2 into it | A2 | T01 merged | r1/b08-bridge | IN-PROGRESS (verify on BASE-1; re-run after BASE-2) | |
-| T04 | (a) | Finish `r1/b01-lifecycle`: 4 `'published'` spots, drop `published` from isServableStatus, migration 0100 on a seeded DB, tsc/eslint/m04 tests/specs | A2 | T03 merged | r1/b01-lifecycle | QUEUED | |
+| T01 | (a-1)+(a0) | Merge `origin/handoff/shared-tree-2026-10-31`, resolve conflicts, fix the 5 vue-tsc errors; registry-boot, api tsc, vue-tsc, m04/m28/bijak specs | A1 | — | r1/t01-base-merge | **READY-FOR-REVIEW** @ 09d32822 | api tsc 0; vue-tsc 0; registry-boot 3/3; m04+m28 928/928; m11+registry-boot 261 pass / 0 fail (lead re-run); m03/m05/m12/ds pass; bijak specs 470/474 (golden.spec 4 pre-existing → H-A4); eslint 0 errors. No auth/files/input change in fixes. Evidence: status/A1.md |
+| T03 | (a) | Verify `r1/b08-bridge`: vue-tsc m28, bijak-question-bridge, be09-paper spec, DB test of image read rule; merge BASE-2 into it | A2 | T01 merged | r1/b08-bridge | **READY-FOR-REVIEW** @ 7050f2d7 (needs security review: image URLs on served items, FilesModule) | BASE-1 merged; api tsc 0; vue-tsc = base (38 = base; 0 on trial merge with T01); m28 unit 472/472; bridge + be09-paper + question-image-access specs 144/144; eslint 0 errors; trial merge with T01 09d32822: no conflicts, tsc 0, vue-tsc 0, 144/144, 472/472. Pre-existing: golden.spec 4 (H-A4), seed/poc.spec 1 (H-A5). Merge right after T01 |
+| T04 | (a) | Finish `r1/b01-lifecycle`: 4 `'published'` spots, drop `published` from isServableStatus, migration 0100 on a seeded DB, tsc/eslint/m04 tests/specs | A2 | T03 merged | r1/b01-lifecycle | IN-PROGRESS (on t01 + b08 local merge) | |
 | T05 | (b) | Run never-run DB specs (B06 list, be09-paper, challenges-savepoint), fix; before/after counts (login 493; BM 53, MATH 54, SCI 50; one draw); re-run after T04 | A3 | T01 merged (first pass), T04 (final) | r1/t05-db-specs | IN-PROGRESS (first pass on T01 head) | |
 | T06 | (g) | Student Jana Kertas → `composeStandardPaper` (D75); update generate.spec + golden-mock.json | A1 | T01 merged | r1/t06-jana-standard | IN-PROGRESS (off T01 head) | |
 | T07 | (f) | Question-model gaps: `groupOf` 7 stimulus kinds + caption/tableData/sourceCitation; `essay_choice` in parts contract; question-bank.source multi-stimulus groups; stimulus-body read for kuiz/bridges | A4 | T01 merged; **T03 (b08) merged first** | r1/t07-model-gaps | WAITING (T03 merge) | 0b185bec: contract 71/71, openapi --check ok, 2 new DB specs 11/11, exam-builder+questions+kuiz regression 373/373, eslint 0. Red until b08 lands: api tsc 2 errors in b08's be09-mapping.ts (one-line fix after merge), vue-tsc bank-wire.ts:179 essay_choice (clears with b08 exam-core). Touches input (contract) |
@@ -40,6 +40,7 @@ Everything else runs beside it and merges BASE-2 in when it lands.
 | H-A1 | A | Spec coverage for `SPM_SERVABLE_SQL` readers (Databank, Latih Tubi SPM, Mock K1, Battle SPM, Misi): one approved-T4 fixture proves all five serve it |
 | H-A2 | A | `reports/classes` raw SQL Darjah counts (8b open item) — audit and fix under D72 |
 | H-A3 | A | 3 known apps/api `learner.spec` label failures (BR-16 code map, subject labels) |
+| H-A5 | A | `test/seed/poc.spec.ts` 1 failure: docs/plan/seed-profile.md says spm_tracking_set_questions 493 / total 21891, seed produces 483 / 21881. Pre-existing on BASE-1 |
 | H-A4 | A | `test/bijak-attempts/golden.spec.ts` 4 failures (sej-k2-2025-a): mock engine emits `selfMarkable: true` on `belum_dimarkah` parts; spec strips it only on the API side. Pre-existing on BASE-1 |
 | H-B1 | B | Unit sweep m01/02/03/04/05/08/09/16/27 + registry-boot on the latest BASE; file failures to the owning team's status file |
 | H-B2 | B | `lint:admin` ratchet for the 7 m02/m03/m09 findings (report only; the fix goes to C) |
