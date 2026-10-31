@@ -10,6 +10,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { FakeBank } from './fakes'
 import { ACCOUNTS, bootBuilderApp, loginAs, type BuilderTestApp, type Client } from './helpers'
+import { serveSeededBlueprints } from '../support/serve-blueprints'
 
 const Editor = envelopeOf(BijakBuilderEditorSchema)
 const Created = envelopeOf(BijakBuilderPaperCreateResultSchema)
@@ -27,6 +28,7 @@ describe('paper builder with BIJAK_POC_QUESTIONS on and an empty bank', () => {
 
   beforeAll(async () => {
     t = await bootBuilderApp({ builderSource: new FakeBank(), env: { BIJAK_POC_QUESTIONS: 'true' } })
+    await serveSeededBlueprints(t.db)
     admin = await loginAs(t, ACCOUNTS.admin)
   })
   afterAll(async () => {
@@ -53,7 +55,14 @@ describe('paper builder with BIJAK_POC_QUESTIONS on and an empty bank', () => {
       expect((await admin.post(`/api/admin/papers/${row.id}/withdraw`)).status).toBe(200)
       const pub = await admin.post(`/api/admin/papers/${row.id}/publish`)
       expect(pub.status, JSON.stringify(pub.body)).toBe(200)
-      expect(Publish.parse(pub.body).data, row.title).toEqual({ ok: true, errors: [] })
+      const out = Publish.parse(pub.body).data
+      if (row.subject === 'SEJ') {
+        // D93: the PoC Sejarah fixture has one question per stimulus group, so its seeded papers cannot be Terbit again (fixture limitation).
+        expect(out.ok, row.title).toBe(false)
+        expect(out.errors, row.title).toContain('Kumpulan perlu sekurang-kurangnya 2 soalan.')
+      } else {
+        expect(out, row.title).toMatchObject({ ok: true, errors: [] })
+      }
     }
     // create -> add PoC candidates that meet each section's count and budget -> publish. The test blueprints
     // have small budgets, so try every scope of the seed papers and require at least one to be buildable.

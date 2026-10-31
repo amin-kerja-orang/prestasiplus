@@ -1,3 +1,5 @@
+import { STIMULUS_MESSAGES } from '@pp/contract'
+
 import type { RateLimitSpec } from '../../../common/throttle'
 
 /**
@@ -29,3 +31,22 @@ export const BIJAK_BUILDER_PAGE_SIZE = 20
 export const MAX_EDITOR_CANDIDATES = 1000
 /** Extra candidates the source returns, because the editor drops those already on the paper before it caps. */
 export const CANDIDATE_SLACK = 500
+
+/** D90/D93: a stimulus group needs at least this many member questions to be placed in a paper. */
+export const MIN_GROUP_MEMBERS = 2
+
+/** D93 builder blocker (exact BM text): the contract's `STIMULUS_MESSAGES.builderBlocker` (T32). */
+export const GROUP_MIN_MEMBERS_MESSAGE: string = STIMULUS_MESSAGES.builderBlocker
+
+/** R1E2E-06: a placed question the attempt path (`resolveForAttempt` + BE-09 bridge) would refuse blocks Terbit; `reason` is the Servability sentence. */
+export const attemptRefusalLine = (questionId: string, reason: string): string => `Soalan ${questionId} tidak dapat dihidangkan kepada murid: ${reason}`
+
+/** R1E2E-06 / structural check: a placed question is not among the live candidates of the subject and kertas (reason text of `LINES.ineligible`). */
+export const MISSING_FROM_POOL_TEXT = 'tiada dalam kolam soalan kertas ini'
+
+/** R1E2E-07 / AC-R1-16.2: the contract (blueprint) the paper conforms to is not Disahkan. `status` is the wire provenance (Spec, Draf). */
+export const contractNotVerifiedLine = (code: string, version: number, status: string): string =>
+  `Kontrak Simulasi ${code} (versi ${String(version)}) belum Disahkan (status: ${status}); Terbit memerlukan kontrak Disahkan.`
+
+/** Text search of the section pool describes candidates in chunks of this size. */
+export const DESCRIBE_CHUNK = 1000

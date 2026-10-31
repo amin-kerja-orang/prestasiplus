@@ -34,7 +34,6 @@ import {
   previewOfRows,
   reviewQuestion,
   statusOf,
-  emptyGroupStimulus,
   stimuliOf,
   type Curriculum,
   type PartRow,
@@ -183,10 +182,12 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
     const members = await this.servableLatest(groups.flatMap((g) => g.questions.map((m) => m.id)))
     for (const g of groups) {
       // D90: the group is always emitted, with or without a displayable stimulus, so every builder read treats its members as one unit.
-      const shown = stimuliOf(g.stimuli.map((s) => s.stimulus))
-      const [stimulus = emptyGroupStimulus(g.id), ...rest] = shown
+      // A group with nothing to display (audio only, or empty) has no `stimulus` and `stimuli: []`.
+      const tokens = await this.tokensOf(g.stimuli.map((s) => s.stimulus))
+      const shown = stimuliOf(g.stimuli.map((s) => s.stimulus), tokens)
+      const [stimulus, ...rest] = shown
       const questionIds = g.questions.filter((m) => members.has(m.id)).map((m) => m.id.toString())
-      if (questionIds.length > 0) out.set(g.id.toString(), { id: g.id.toString(), stimulus, stimuli: shown.length > 0 ? [stimulus, ...rest] : [], questionIds })
+      if (questionIds.length > 0) out.set(g.id.toString(), { id: g.id.toString(), ...(stimulus ? { stimulus } : {}), stimuli: stimulus ? [stimulus, ...rest] : [], questionIds })
     }
     return out
   }
@@ -262,7 +263,7 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
         include: { stimuli: { orderBy: { position: 'asc' }, include: { stimulus: true } }, options: { orderBy: { position: 'asc' } } },
       })
       for (const g of groups) {
-        const all = stimuliOf(g.stimuli.map((s) => s.stimulus))
+        const all = stimuliOf(g.stimuli.map((s) => s.stimulus), await this.tokensOf(g.stimuli.map((s) => s.stimulus)))
         if (all[0]) {
           stimuli[g.id.toString()] = all[0]
           groupStimuli[g.id.toString()] = all
@@ -271,6 +272,14 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
       }
     }
     return { questions, stimuli, groupStimuli, optionBanks }
+  }
+
+  /** Public file token by internal file id for the pictures of the given stimuli (read-only). */
+  private async tokensOf(stimuli: readonly { assetFileId: bigint | null }[]): Promise<Map<string, string>> {
+    const ids = [...new Set(stimuli.flatMap((s) => (s.assetFileId === null ? [] : [s.assetFileId])))]
+    if (ids.length === 0) return new Map()
+    const rows = await this.db.file.findMany({ where: { id: { in: ids } }, select: { id: true, publicId: true } })
+    return new Map(rows.map((r) => [r.id.toString(), r.publicId]))
   }
 
   /** Curriculum unit title and code by node id (read-only; the curriculum module has no batch read by id). */
