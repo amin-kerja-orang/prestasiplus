@@ -83,6 +83,11 @@ describe('admin servability reads (R1-T30)', () => {
 
     made.publishedPaper = await paper('Kertas terbit ujian bacaan', 'published', [made.plain!, made.tableFill!])
     made.draftPaper = await paper('Kertas draf ujian bacaan', 'draft', [made.plain!, made.second!])
+    // H-A13: a question archived after its paper was published. The paper lists it, but a new sitting cannot start.
+    await approve('toArchive', 'Soalan yang akan diarkibkan untuk bacaan kebolehhidangan.')
+    made.archivedPaper = await paper('Kertas dengan soalan diarkib', 'published', [made.toArchive!])
+    await q(`update question_versions set status = 'archived' where question_id = $1`, [made.toArchive])
+    await q(`update questions set live_version_no = null where id = $1`, [made.toArchive])
   })
   afterAll(async () => {
     await t.close()
@@ -150,7 +155,7 @@ describe('admin servability reads (R1-T30)', () => {
     for (const activity of ['databank', 'latih_tubi_spm', 'bab', 'simulasi_kuiz', 'simulasi_paper'] as const) {
       expect(by.get(activity)?.served, activity).toBe(served(activity))
     }
-    expect(by.get('simulasi_paper')).toMatchObject({ basis: 'evaluated', total: 2 })
+    expect(by.get('simulasi_paper')).toMatchObject({ basis: 'evaluated', total: 3 })
     expect(by.get('databank')?.basis).toBe('sql')
     expect(by.get('jana_kertas')?.basis).toBe('pool')
     for (const a of overview.activities) expect(a.attention).toBe(Math.max(0, a.total - a.served))
@@ -207,6 +212,18 @@ describe('admin servability reads (R1-T30)', () => {
     expect(parseList(await admin.get('/api/admin/servability/lanes/bijak-spm?status=draft'), ServabilityPaperRowSchema).map((r) => r.paperId)).not.toContain(made.publishedPaper)
     expect(parseList(await admin.get('/api/admin/servability/lanes/bijak-spm?status=archived'), ServabilityPaperRowSchema)).toEqual([])
     expect(parseList(await admin.get('/api/admin/servability/lanes/bijak-spm?search=terbit%20ujian'), ServabilityPaperRowSchema).map((r) => r.paperId)).toEqual([made.publishedPaper])
+  })
+
+  it('Bijak SPM lane: a question archived after its paper was published is attention 1 with reason archived, and not served in the overview', async () => {
+    const rows = parseList(await admin.get('/api/admin/servability/lanes/bijak-spm?pageSize=100'), ServabilityPaperRowSchema)
+    const row = rows.find((r) => r.paperId === made.archivedPaper)!
+    expect(row).toMatchObject({ status: 'published', questionCount: 1, attentionCount: 1 })
+    expect(row.attention).toHaveLength(1)
+    expect(row.attention[0]).toMatchObject({ code: 'archived', count: 1, message: 'Diarkibkan — pulihkan ke draf dahulu.' })
+    const report = parseData(await admin.get(`/api/admin/servability/questions/${made.toArchive}`), ServabilityReportSchema)
+    const paperResult = report.activities.find((a) => a.activity === 'simulasi_paper')!
+    expect(paperResult.served).toBe(false)
+    expect(paperResult.reasons.map((r) => r.code)).toEqual(['archived'])
   })
 
   it('sets no-store caching on the reads', async () => {
