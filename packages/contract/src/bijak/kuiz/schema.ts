@@ -27,7 +27,7 @@ export const BIJAK_KUIZ_MESSAGES = {
   noQuestions: 'Belum ada soalan objektif',
   notFound: 'Kuiz tidak ditemui',
   paperNotFound: 'Kertas tidak ditemui',
-  /** [PROPOSED] H-A13: same line as a new sitting of a paper that places an archived question. */
+  /** H-A13 (Q1 approved): the same line as a new sitting of a paper that places an archived question. */
   paperUnavailable: 'Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini.',
   alreadyFinished: 'Kuiz ini sudah selesai.',
 } as const

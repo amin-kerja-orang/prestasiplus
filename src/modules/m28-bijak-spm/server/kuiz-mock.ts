@@ -4,6 +4,7 @@
  * per-paper quiz stores nothing. The key never leaves this class except in a check verdict.
  * Lives apart from `store.ts` so the http build never bundles it.
  */
+import { BIJAK_KUIZ_MESSAGES } from '@pp/contract'
 import type {
   BijakKuizCheckRequest,
   BijakKuizCheckResult,
@@ -170,6 +171,10 @@ export class MockKuiz {
   private paper(paperId: string) {
     const p = PAPERS.find((x) => x.id === paperId)
     if (!p) throw new BijakError('not_found', 'Kertas tidak ditemui')
+    // Like the API (H-A13): a paper that places a question the bank no longer serves, or none at all, is refused.
+    const placed = p.sections.flatMap((s) => s.questionIds)
+    if (placed.length === 0 || placed.some((id) => !BANK.questions.has(id)))
+      throw new BijakError('forbidden', BIJAK_KUIZ_MESSAGES.paperUnavailable)
     return p
   }
 

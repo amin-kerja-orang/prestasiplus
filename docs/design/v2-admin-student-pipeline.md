@@ -1071,6 +1071,7 @@ Rule for WT tasks: FE-P1, FE-P2 and FE-P3 hand over a short "data contract" note
 | UX-10 | Simulasi subheading corrected | FD-3 |
 | UX-11 | "Dilihat murid di" and `Tidak dihidangkan kerana …` on existing surfaces | FD-5 |
 | UX-22 | Simulasi Kuiz skips a question whose required stimulus cannot be shown (unknown, audio, empty, or shared by several questions without being a group); the pager, "Skor: n / total" and the server check count only the shown items, and a Bahagian with nothing shown is not a page. V2 has no such case (it renders what is stored) | D90; AC-R1-18.4 spirit: never show or mark a question without its stimulus |
+| UX-26 | [PROPOSED] The per-paper Kuiz shows the state "Kertas belum tersedia" with the API's H-A13 line "Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini." when the paper places a question the bank no longer serves. V2 has no such state | AC-R1-18.4; the line was approved with Q1 |
 | UX-24 | The random Simulasi Kuiz draws questions that are ONE objective part (single MCQ leaf). V2 draws any MCQ part of a structured question | The kuiz item id and check are per question; part-level draw needs a per-part served list in M05. Structured questions stay reachable in the per-paper quiz |
 
 ---

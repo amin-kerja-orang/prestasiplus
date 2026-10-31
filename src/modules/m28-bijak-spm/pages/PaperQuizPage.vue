@@ -16,6 +16,8 @@ import type { BijakKuizCheckResult, BijakKuizItem, BijakKuizPaperPage } from '@p
 import KuizItem from '../components/KuizItem.vue'
 import { clock, kuizCopy, toStimulus } from '../lib/kuiz'
 import { useLearnerTheme } from '../lib/use-bijak'
+import { BIJAK_KUIZ_MESSAGES } from '@pp/contract'
+
 import { BijakError } from '../server/errors'
 import { bijakServer } from '../server/client'
 
@@ -91,6 +93,11 @@ const blocks = computed<Block[]>(() => {
   return out
 })
 
+/** Only the API's "paper is being updated" 403 is this state; any other 403 ("Akses ditolak") stays an error. */
+function isPaperUnavailable(e: unknown): e is BijakError {
+  return e instanceof BijakError && e.code === 'forbidden' && e.message === BIJAK_KUIZ_MESSAGES.paperUnavailable
+}
+
 let loadSeq = 0
 async function load(): Promise<void> {
   const seq = ++loadSeq
@@ -105,7 +112,7 @@ async function load(): Promise<void> {
     window.scrollTo?.({ top: 0 })
   } catch (e) {
     if (seq !== loadSeq) return
-    if (e instanceof BijakError && e.code === 'forbidden') {
+    if (isPaperUnavailable(e)) {
       unavailableMessage.value = e.message
       phase.value = 'unavailable'
       return
@@ -123,6 +130,12 @@ async function check(item: BijakKuizItem): Promise<void> {
     const v = await server.checkKuizPaper(paperId.value, { itemId: item.id, optionId })
     verdicts.value = { ...verdicts.value, [item.id]: v }
   } catch (e) {
+    // The paper was archived/changed while the pupil was on it: the whole screen switches to the unavailable state.
+    if (isPaperUnavailable(e)) {
+      unavailableMessage.value = e.message
+      phase.value = 'unavailable'
+      return
+    }
     const msg =
       e instanceof BijakError && e.code === 'offline'
         ? 'Luar talian. Cuba lagi.'
@@ -174,6 +187,7 @@ void load()
       icon="file-x"
       data-testid="paper-quiz-missing"
     />
+    <!-- [PROPOSED] UX-26: the title is ours, the description is the API's H-A13 line -->
     <DsEmptyState
       v-else-if="phase === 'unavailable'"
       title="Kertas belum tersedia"
