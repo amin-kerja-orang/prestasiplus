@@ -10,12 +10,40 @@ Placeholders used below (never write the real values into this file, the repo is
 |---|---|
 | `<RELEASE_SHA>` | the 40-character commit the LEAD tags for R1 (section 1.2) |
 | `<RELEASE_TAG>` | the git tag on `<RELEASE_SHA>`; `deploy.sh` tags the images with `git rev-parse --short=12 HEAD` |
+| `<IMAGE_TAG>` | the image tag of the release: `git rev-parse --short=12 HEAD` on the release checkout (what `deploy.sh` uses when no `--tag` is given). It is written to `$PP_STATE_DIR/deploying.tag` before step 5/9 and to `$PP_STATE_DIR/current.tag` at step 9/9. **These images exist only after `deploy.sh` step 3/9** (build or pull) |
 | `<PREV_TAG>` | the image tag running before the deploy (`$PP_STATE_DIR/current.tag`) |
 | `<target>` | the environment being deployed: UAT first, production only after UAT passed |
-| `$PC` | `docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env` (run from the checkout, as `ppdeploy`) |
-| `$PSQL` | a read-only `psql` session on the target database (for example `$PC exec -T db sh -c 'psql -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"'`) |
+| `$PC` | the production compose command with `PP_IMAGE_TAG` set (shell setup below; run from the checkout, as `ppdeploy`) |
+| `$PSQL` | a **read-only** `psql` session on the target database (shell setup below) |
 
-Every SQL statement in this file is an aggregate SELECT (counts only) unless it is explicitly marked as a write.
+`$PP_STATE_DIR` defaults to `/var/lib/pretasiplus-deploy` (`deploy.sh`).
+
+Shell setup (once per operator shell, from the release checkout):
+
+```
+# Image tag of the release. Without it compose falls back to the `prod` tag
+# (deploy/vps/compose.prod.yaml: pretasiplus-api-migrate:${PP_IMAGE_TAG:-prod}), which deploy.sh never builds:
+# compose then fails, or runs a stale image (production-vps.md section 16 "Open self-registration" and
+# section 21 "Admin Pusat bootstrap/reset command").
+export PP_IMAGE_TAG="<IMAGE_TAG>"   # after a finished deploy: $(cat /var/lib/pretasiplus-deploy/current.tag)
+PC="docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env"
+# If PP_PROFILES is set in prod.env (comma-separated), append one --profile per entry, as deploy/vps/lib.sh does:
+#   PC="$PC --profile tls --profile monitoring"
+# Read-only psql in the db container. PGPASSWORD is taken from the container's own environment (single quotes: the
+# host shell never sees the value); never type or paste a password here. default_transaction_read_only makes any
+# write fail, so the checks below cannot change data by mistake.
+PSQL_RO='PGPASSWORD="$POSTGRES_PASSWORD" PGOPTIONS="-c default_transaction_read_only=on" exec psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" "$@"'
+psql_ro() { $PC exec -T db sh -c "$PSQL_RO" sh "$@"; }
+PSQL=psql_ro
+# use:  $PSQL -c "SELECT ..."     or     $PSQL < checks.sql
+```
+
+`$PC exec ... db`, `ps`, `logs` and `stop` work at any time (the `db` image is not release-tagged). `$PC run ... migrate`
+needs the release's migrate image, so it is only possible **after `deploy.sh` step 3/9**. Statements marked as a write
+in this file do not use `$PSQL`; they spell out their own command.
+
+Every SQL statement in this file is a SELECT of counts or schema/migration names only unless it is explicitly marked as a write. Run
+every `sql` block with `$PSQL` (read-only session); a write fails there by design.
 Never paste row contents (names, e-mails, IC numbers) into a ticket, chat or this file.
 
 Status words: **verified** = checked against the repo at `14e4336c` (or `cf2aa784` for B01) while writing this file;
@@ -38,6 +66,20 @@ Related runbooks: [production-vps.md](production-vps.md) (sections 7 deploy, 8 r
 | DSKP loader (script, not a migration) | Must run once per environment after the migrations: `curriculum_nodes` is empty on UAT today. |
 | Blueprint verification | After 0092 nothing serves pupils. Jana Kertas answers 422 `NO_BLUEPRINT` until an Admin Pusat verifies one blueprint per subject and kertas (Kontrak, tab Pengesahan, `Sahkan`). |
 | Config | No new environment variable (B01 notes; verified for 0092/0093/0100). `BIJAK_POC_QUESTIONS` must stay `false`. |
+
+### 0.1 Pending units (not merged when this file was written)
+
+Checked against `origin` on 2026-10-31: none of the branches below is merged into `feature/v3-bijak-r1` (head
+`14e4336c`; `git branch -r --merged origin/feature/v3-bijak-r1` lists no `r1/` branch). Do not tag `<RELEASE_TAG>`
+until each one is merged, reviewed and green, or the LEAD has dropped it from R1 in writing. No counts or timings are
+given for them here: none was measured.
+
+| Unit | Branch at writing (head) | Operator impact | Status |
+|---|---|---|---|
+| T01 base merge | `r1/t01-base-merge` (`09d32822`) | Carries the migration folders `0092_bijak_standards` and `0093_part_options_image_file_index` (same names as already on `feature/v3-bijak-r1`; it does **not** carry the old `0092_part_options_image_file_index`, checked with `git ls-tree`). Re-run the folder check of 1.2 after the merge. | not merged |
+| T06 Jana Kertas standard | `r1/t06-jana-standard` (`502280f5`, on top of T01) | Release note: Jana Kertas now composes "exact or refuse". PoC blueprints whose sections have a NULL `mark_budget` now **refuse** with a marks shortage (422 `SHORTAGE`, code verified in `apps/api/src/modules/bijak/papers/errors.ts` on that branch) instead of producing a paper. Expected behaviour, not a deploy failure; affects only environments that still hold PoC blueprints (UAT has 0 blueprints). Which seeded blueprints have NULL budgets is taken from the T06 note, not re-checked here. | not merged |
+| 0100 `0100_question_lifecycle_approved` (T04) | `r1/b01-lifecycle` (`cf2aa784`, WIP) | Section 2.4; must ship together with the B01 API and FE code (1.1). | not merged |
+| 0101 `0101_essay_choice` (T25) | `r1/t25-essay-choice-store` (`d398a576`) | Section 2.5 row. Additive (one nullable column, one widened CHECK, one new CHECK). | not merged |
 
 ---
 
@@ -63,7 +105,7 @@ git fetch origin --tags
 git checkout <RELEASE_TAG>
 git rev-parse HEAD                                    # expect: <RELEASE_SHA>
 git status --porcelain --untracked-files=no           # expect: no output (deploy.sh refuses a dirty tree)
-ls apps/api/prisma/migrations | sed -n '/^009[0-9]_/p;/^01[0-9][0-9]_/p'
+ls apps/api/prisma/migrations | sed -n '/^009[2-9]_/p;/^01[0-9][0-9]_/p'   # 0092-0099 and 0100-0199 only
 ```
 
 Expected migration folders after 0091 (exactly these, in this order; add rows to the table in section 2.5 for any
@@ -73,6 +115,7 @@ Expected migration folders after 0091 (exactly these, in this order; add rows to
 0092_bijak_standards
 0093_part_options_image_file_index
 0100_question_lifecycle_approved
+0101_essay_choice                      # only if T25 is merged into the release (section 0.1)
 ```
 
 **Stop if `0092_part_options_image_file_index` is also present.** The shared-tree snapshot
@@ -226,18 +269,19 @@ only, UAT is at 0091) sees `0093_...` as new. Two options, both safe:
 - Do nothing: `migrate deploy` applies `0093_...`, which is a no-op because of `IF NOT EXISTS`. The old row stays in
   `_prisma_migrations`; `/api/ready` ignores extra rows (verified in `ready.service.ts`: it checks that every **shipped**
   name is applied and none is unfinished).
-- Tidy the history once, **before** the deploy, with the LEAD's confirmation (this is a write):
+- Tidy the history once, **after** a finished deploy (step 5/9 has then recorded `0093_...` as applied, as a no-op),
+  with the LEAD's confirmation (this is a write, so it does not use the read-only `$PSQL`):
 
 ```
-# write: removes one history row, the index itself stays
-$PC exec -T db sh -c 'psql -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "DELETE FROM _prisma_migrations WHERE migration_name = '\''0092_part_options_image_file_index'\''"'
-# mark the renamed folder as applied (needs the migrate image of the release; run inside apps/api where prisma.config.ts is)
-$PC run --rm --no-deps -w /app/apps/api migrate npx prisma migrate resolve --applied 0093_part_options_image_file_index
+# write: removes one history row, the index itself stays. No `prisma migrate resolve` is needed.
+$PC exec -T db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" exec psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "DELETE FROM _prisma_migrations WHERE migration_name = '\''0092_part_options_image_file_index'\''"'
 ```
 
-Expected: `Migration 0093_part_options_image_file_index marked as applied.` **Unverified:** the exact Prisma 7 wording,
-and that `npx prisma` resolves in the migrate image from `/app/apps/api` (it does for `be:db:migrate`, which runs the
-same binary from that folder).
+  Not **before** the deploy: the image running then ships the old folder name, and `/api/ready` answers 503 as soon as a
+  shipped name has no applied row (`ready.service.ts`, "shipped migration(s) not applied"). The release's migrate image
+  does not exist before step 3/9 either. For the same reason, after the tidy an image rollback to a build that ships
+  the old name answers 503 on `/api/ready` until the row is back; prefer "do nothing" on any database that may be
+  rolled back.
 
 After:
 
@@ -299,7 +343,7 @@ Fill one row per migration added to the release after this file was written. Lea
 
 | Folder | Additive? | Data change | Pre-flight SELECT | Post SELECT | Reversible? | Runbook |
 |---|---|---|---|---|---|---|
-| `0101_...` | | | | | | |
+| `0101_essay_choice` (T25, **not merged**, section 0.1; read from the SQL on `r1/t25-essay-choice-store`) | yes: `question_parts.topics` JSONB nullable; `ck_question_parts_mode` dropped and re-added with `essay_choice`; new `ck_question_parts_topics` | none (every existing row has `topics` NULL and no `essay_choice` mode) | none needed | `SELECT count(*) FROM information_schema.columns WHERE table_name = 'question_parts' AND column_name = 'topics';` (expect 1) | yes, per the SQL header, after deleting `essay_choice` parts | this file |
 | `...` | | | | | | |
 | `0119_...` | | | | | | |
 
@@ -321,7 +365,8 @@ Expected at the end of the real run:
 
 ```
 ---- 5/9 migrate (prisma migrate deploy only, as pp_owner), then the roles again and the role check ----
-... (Prisma lists 0092_bijak_standards, 0093_part_options_image_file_index, 0100_question_lifecycle_approved as applied)
+... (Prisma lists 0092_bijak_standards, 0093_part_options_image_file_index, 0100_question_lifecycle_approved
+     [and 0101_essay_choice if merged] as applied)
 ... DB ROLES CHECK PASSED
 ---- 8/9 health checks through the edge ----
 ...
@@ -329,7 +374,8 @@ deploy complete: <tag>. Roll back the images with: deploy/vps/rollback.sh <PREV_
 ```
 
 The exact Prisma lines are **unverified** (not run). A failure at any step prints `DEPLOY FAILED at: ...`, raises the
-alert and prints the rollback command; nothing rolls back automatically. Go to section 6.
+alert and prints the rollback command; nothing rolls back automatically. Go to section 6; a failure **in step 5/9**
+(a migration failed) goes to section 6.3, not to `rollback.sh`.
 
 Then run the "After" SELECTs of 2.2, 2.3 and 2.4.
 
@@ -357,9 +403,18 @@ The migrate image of the release contains the API source and the packaged extrac
 the `build` stage; working dir `/app`). Its `DATABASE_URL` is the schema owner's (`migrate.env`), which has the needed
 INSERT and SELECT rights.
 
+`$PC` must carry the release tag (shell setup at the top): without `PP_IMAGE_TAG` compose looks for
+`pretasiplus-api-migrate:prod`, which `deploy.sh` never builds, and either fails or runs a stale image that lacks the
+loader or the R1 schema. Check first that the tag is the release that just finished:
+
 ```
+cat /var/lib/pretasiplus-deploy/current.tag      # expect: <IMAGE_TAG> (written at deploy step 9/9)
+echo "$PP_IMAGE_TAG"                             # expect: the same value
+docker image inspect --format '{{.Id}}' "pretasiplus-api-migrate:$PP_IMAGE_TAG" >/dev/null && echo image-present
 $PC run --rm --no-deps migrate npm run dskp:load -w @pp/api -- --dry-run --create-missing-subjects
 ```
+
+(If `PP_IMAGE_PREFIX` is set in `prod.env`, prefix the image name in the `inspect` line with it.)
 
 Expected (from the local dry run on an empty tree, dskp-loader.md "Open points"):
 
@@ -458,7 +513,7 @@ Use dedicated test accounts (the LEAD holds them; never in the repo). One run at
 
 | # | Who | Step | Expected |
 |---|---|---|---|
-| 1 | ops | `GET /api/health`, `GET /api/ready` (deploy step 8 does it) | 200; ready body `"status":"ready","migrations":"applied"` |
+| 1 | ops | `GET /api/health`, `GET /api/ready` (deploy step 8 does it) | 200; ready body `{"data":{"status":"ready","db":"up","migrations":"applied","time":...}}` (fields inside `data`; `ready.controller.ts`) |
 | 2 | ops | `$PC ps api` | exactly one api container, healthy |
 | 3 | ops | SELECTs of 2.2, 2.3, 2.4 (After), 3.3, 4.3 | as stated there |
 | 4 | Admin Pusat | log in, open Pentadbiran -> `/admin/spm/kontrak` | list loads; the verified pair shows Disahkan |
@@ -483,7 +538,7 @@ touches the database (verified). What "rollback" means depends on how far the de
 | Where it stopped | Database | What to do |
 |---|---|---|
 | Before step 5 (migrate) | unchanged | nothing to roll back; the old release still runs |
-| 0092 failed (e.g. the `topic_weights` guard) | unchanged (the failed migration's transaction rolled back; verify with the `failed` SELECT of 1.3) | fix the cause, re-run `deploy.sh`. **Unverified:** if Prisma left a failed row, it needs `prisma migrate resolve --rolled-back <name>` before re-running; ask the backend developer first |
+| A migration failed in step 5/9 (0092, e.g. the `topic_weights` guard; or 0093, 0100, 0101) | **not** clean: Prisma records the failed migration as a row in `_prisma_migrations` with `finished_at` NULL. Earlier migrations of the same run stay applied. Whether the failed migration's own statements were undone is **unverified** (check in 6.3) | Section 6.3. Do **not** simply re-run `deploy.sh`: `prisma migrate deploy` stops with P3009 (failed migrations in the target database) while that row exists. The old API keeps serving (step 6 never ran), but its `/api/ready` now answers 503 (it counts the unfinished row: `ready.service.ts`, `finished_at === null && rolled_back_at === null`), so the uptime probe alerts |
 | Migrations applied, API not switched or switched | **schema is R1** | image rollback alone is **not enough** (below) -> restore |
 | After pupils/admins wrote data | R1 schema + new data | restore loses those writes; prefer fix-forward unless the LEAD decides otherwise |
 
@@ -516,6 +571,57 @@ Partial undo without a restore (only before anyone used the feature):
   how to stop a pair serving without a restore (`Padam Kontrak` retires the head; a new version is saved as Spec, but
   whether that moves `serves_students` off the old Disahkan version is not confirmed). Ask the backend developer.
 
+### 6.3 A migration failed in deploy step 5/9
+
+`deploy.sh` printed `DEPLOY FAILED at: ...` during step 5. Images of the release exist (step 3 finished), the old
+API and frontend still run, and `$PP_STATE_DIR/deploying.tag` names the release (`current.tag` is still `<PREV_TAG>`).
+Every step here needs the LEAD's confirmation; steps 4 and 6 are writes.
+
+1. Set the release tag for `$PC` (the failed release, not the running one):
+   `export PP_IMAGE_TAG="$(cat /var/lib/pretasiplus-deploy/deploying.tag)"`.
+2. Find the failed row (names and timestamps only):
+
+   ```sql
+   SELECT migration_name, started_at, finished_at, rolled_back_at, applied_steps_count
+   FROM _prisma_migrations WHERE finished_at IS NULL AND rolled_back_at IS NULL;
+   -- expect exactly one row: the migration named in the deploy output
+   ```
+
+   Keep the `deploy.sh` output (the Prisma error text is there; the one-shot `migrate` container is removed by `--rm`).
+3. Decide whether the failed migration left partial changes. Run its "After" SELECTs, read as "did anything change":
+   - `0092_bijak_standards`: `SELECT count(*) FROM information_schema.columns WHERE table_name = 'question_versions' AND column_name IN ('kbat', 'tag_review', 'catalogue_version');`
+     and the `topic_weights` column count of 2.2. Clean = `0` and `1`.
+   - `0093_part_options_image_file_index`: the `pg_indexes` count of 2.3. Clean = `0` (or `1` on a database that had
+     the old-name migration, where the index already existed).
+   - `0100_question_lifecycle_approved`: `SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = 'ck_question_versions_status';`
+     still lists `published`, and the status counts equal the 2.1 output. Clean = both true.
+   - `0101_essay_choice` (if merged): the column count of its 2.5 row. Clean = `0`.
+
+   **Partial changes found** (anything not "clean"): do **not** mark it rolled back. Restore the pre-deploy dump
+   (section 6.2 "Full rollback", steps 1-3, then start the old images with `deploy/vps/rollback.sh --checkout <PREV_TAG>`)
+   and report to the backend developer. For 0100 this is the only way back (not reversible).
+4. **Clean:** fix the cause first (for the 0092 guard: the `topic_weights` rows need a backup and a decision by the
+   backend developer and the LEAD; never edit data ad hoc). Then mark the failed migration as rolled back (write; run
+   inside `apps/api`, where `prisma.config.ts` is):
+
+   ```
+   $PC run --rm --no-deps -w /app/apps/api migrate npx prisma migrate resolve --rolled-back 0092_bijak_standards
+   # same pattern for the others:
+   #   ... migrate resolve --rolled-back 0093_part_options_image_file_index
+   #   ... migrate resolve --rolled-back 0100_question_lifecycle_approved
+   #   ... migrate resolve --rolled-back 0101_essay_choice
+   ```
+
+5. Check: the `failed` SELECT of 1.3 returns 0; the old API's `/api/ready` answers 200 again (a row with
+   `rolled_back_at` set is ignored by `ready.service.ts`; every name the old image ships is still applied).
+6. Re-run `deploy/vps/deploy.sh --dry-run`, then `deploy/vps/deploy.sh`. `migrate deploy` applies the migration again
+   from the start.
+
+**Unverified:** whether Prisma 7 undoes the statements of a failed PostgreSQL migration (the 0100 SQL comment says it
+"runs in the migration transaction"; 0092 has no explicit `BEGIN`/`COMMIT`), hence the check in step 3; the exact
+`migrate resolve` output; and that `npx prisma` resolves in the migrate image from `/app/apps/api` (`be:db:migrate`
+runs `node scripts/db.mjs migrate` from that workspace).
+
 ---
 
 ## 7. Migration numbering note
@@ -533,11 +639,14 @@ Unverified (nothing here was run against any server):
 1. Whether UAT is deployed with the `deploy/vps` stack (1.3).
 2. Timing, lock duration and WAL/disk use of 0100 (and the 0092 KBAT backfill) on ~406k versions (2.4).
 3. Whether `prisma migrate deploy` shows the 0100 `NOTICE` lines; the exact Prisma output lines (2.4, 2.6).
-4. Exact `prisma migrate resolve` output and invocation in the migrate image (2.3); recovery from a failed-row state (6.2).
+4. Whether Prisma 7 undoes a failed migration's own statements on PostgreSQL; the exact `prisma migrate resolve
+   --rolled-back` output and its invocation in the migrate image (6.3).
 5. DSKP dry-run numbers on UAT (local numbers quoted) (3.2).
 6. Old API behaviour on the post-0092 schema (`topic_weights`) (6.2).
 7. How to stop a verified pair serving without a restore (6.2).
 8. How the UAT frontend build id is recorded (1.3).
+9. The pending units of section 0.1 (T01, T06, 0100/T04, 0101/T25): not merged; their effects are described from
+   their branches and notes, not from a release build.
 
 Open questions for the team:
 
