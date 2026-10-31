@@ -15144,6 +15144,13 @@
             "items": {
               "$ref": "#/components/schemas/ServabilityOverviewActivity"
             }
+          },
+          "computedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "\\+08:00$",
+            "description": "When these counts were computed (H-A21). Always sent by the server: the overview is cached for 5 minutes and refreshed in the background after a question event or when the cache is older; show this time next to the counts. Optional in the schema only so the compute itself (`ServabilityReadsService.overview`) can return the bare counts.",
+            "example": "2026-10-16T09:30:00+08:00"
           }
         },
         "required": [

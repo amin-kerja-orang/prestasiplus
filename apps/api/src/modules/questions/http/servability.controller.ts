@@ -7,6 +7,8 @@ import { ApiError } from '../../../common/errors/api-error'
 import { listMeta, ok } from '../../../common/http/respond'
 import { RateLimit, RateLimitGuard, type RateLimitSpec } from '../../../common/throttle'
 import { isIdString } from '../../../db/ids'
+import { toMytTimestamp } from '../../../common/time/myt'
+import { OverviewCache } from '../serving/overview-cache'
 import { ServabilityReadsService } from '../serving/servability-reads.service'
 import { ServabilityService } from '../serving/servability.service'
 import { BODY_MESSAGE, fieldsOf, invalid, parseBody } from './parse'
@@ -45,6 +47,7 @@ export class ServabilityController {
   constructor(
     @Inject(ServabilityService) private readonly servability: ServabilityService,
     @Inject(ServabilityReadsService) private readonly reads: ServabilityReadsService,
+    @Inject(OverviewCache) private readonly overviewCache: OverviewCache,
   ) {}
 
   /** `questions/batch` is declared before `questions/:id` so it is never read as an id. */
@@ -67,7 +70,9 @@ export class ServabilityController {
   @Get('overview')
   @RateLimit(SERVABILITY_OVERVIEW_LIMIT)
   async overview() {
-    return ok(await this.reads.overview())
+    // H-A21: cached 5 minutes, stale-while-revalidate (the cold compute is slow on a large bank); `computedAt` says how old it is.
+    const { value, computedAt } = await this.overviewCache.get(() => this.reads.overview())
+    return ok({ ...value, computedAt: toMytTimestamp(computedAt) })
   }
 
   @Get('lanes/databank')

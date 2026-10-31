@@ -1,5 +1,6 @@
 import { z } from '../zod'
 import { IdSchema } from '../common/ids'
+import { TimestampSchema } from '../common/time'
 import {
   SERVABILITY_ACTIVITIES,
   ServabilityActivitySchema,
@@ -55,6 +56,9 @@ export const ServabilityOverviewSchema = z
   .strictObject({
     bank: z.number().int().min(0).meta({ description: 'Approved, active, secondary-level, non-PKSK questions.' }),
     activities: z.array(ServabilityOverviewActivitySchema).length(SERVABILITY_ACTIVITIES.length),
+    computedAt: TimestampSchema.optional().meta({
+      description: 'When these counts were computed (H-A21). Always sent by the server: the overview is cached for 5 minutes and refreshed in the background after a question event or when the cache is older; show this time next to the counts. Optional in the schema only so the compute itself (`ServabilityReadsService.overview`) can return the bare counts.',
+    }),
   })
   .meta({ id: 'ServabilityOverview' })
 export type ServabilityOverview = z.infer<typeof ServabilityOverviewSchema>
