@@ -19,17 +19,17 @@ const Publish = envelopeOf(BijakBuilderPublishResultSchema)
  * Demo fix B4 follow-up (QA #61), through the production wiring (`ExamBuilderModule`, the real
  * `QuestionBankBuilderSource`, no fake):
  * - the `exam-demo-blueprints` seed adds the Sejarah Kertas 2 Kontrak the export lacks, so with
- *   `BIJAK_POC_QUESTIONS` on a Sejarah paper can be built from the PoC questions and published (the open
- *   item of 155cf00; the composite itself is covered by `poc-flag.spec.ts`);
- * - flag off (the production default): PoC ids stay refused, as before the composite.
+ *   test-only PoC double plugged (`plugPocBuilder`) a Sejarah paper can be built from the PoC questions and published;
+ * - production wiring (bank only): PoC ids stay refused, even with the deprecated `BIJAK_POC_QUESTIONS=true` (R1-B07: a no-op).
  */
 const wire = (key: string) => pocQuestionId(key).toString()
 const pocPaper = (subject: string, kertas: number) => POC_BANK.papers.find((p) => p.subject === subject && p.kertas === kertas)!
 const MAT1 = pocPaper('MAT', 1)
 const SEJ2 = pocPaper('SEJ', 2)
 
-async function boot(on: boolean) {
-  const t = await bootBuilderApp({ realBank: true, env: { BIJAK_POC_QUESTIONS: on ? 'true' : 'false' } })
+/** `pocDouble` plugs the test-only PoC fixture (`test/support/poc`). Off, the flag is set true anyway to show that it changes nothing (R1-B07). */
+async function boot(pocDouble: boolean) {
+  const t = await bootBuilderApp({ realBank: true, pocBuilder: pocDouble, env: { BIJAK_POC_QUESTIONS: 'true' } })
   await runSeeds([examDemoBlueprintsSeed], { prisma: t.db.prisma })
   const admin = await loginAs(t, ACCOUNTS.admin)
   return { t, admin }
@@ -60,7 +60,7 @@ function helpers(get: () => { t: BuilderTestApp; admin: Client }) {
   }
 }
 
-describe('BIJAK_POC_QUESTIONS=true (staging / demo): Sejarah Kertas 2 blueprint', () => {
+describe('PoC test double plugged (test only): Sejarah Kertas 2 blueprint', () => {
   let ctx: { t: BuilderTestApp; admin: Client }
   const h = helpers(() => ctx)
   beforeAll(async () => {
@@ -92,7 +92,7 @@ describe('BIJAK_POC_QUESTIONS=true (staging / demo): Sejarah Kertas 2 blueprint'
   })
 })
 
-describe('BIJAK_POC_QUESTIONS=false (production default): PoC ids are refused as before', () => {
+describe('bank only (production wiring; BIJAK_POC_QUESTIONS=true changes nothing): PoC ids are refused', () => {
   let ctx: { t: BuilderTestApp; admin: Client }
   const h = helpers(() => ctx)
   beforeAll(async () => {

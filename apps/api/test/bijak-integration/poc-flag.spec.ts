@@ -1,9 +1,11 @@
 /**
- * PoC questions are STAGING ONLY (LEAD decision 2026-10-20 16:00). `BIJAK_POC_QUESTIONS` off (the production
- * default): a seeded PoC paper is not startable (403, "not eligible") and Jana has no pool (422 SHORTAGE), while
- * a paper of BE-09 questions works. On (staging, the demo seed): both work.
+ * R1-B07: `BIJAK_POC_QUESTIONS` is a DEPRECATED NO-OP. Bijak serves the question bank only (`bank-sources.ts`), whatever the flag says:
+ * a seeded PoC paper (reserved ids, in no table) is not startable (403, "not eligible"), Jana has no PoC pool (422 SHORTAGE), and a
+ * paper of BE-09 questions works. Setting the flag to true only logs one warning at start. The PoC fixture survives as a TEST double
+ * (`test/support/poc`, `bootIntegrationApp({ pocQuestions: true })`), which the last block exercises so the seeded PoC papers stay covered.
  */
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { Logger } from '@nestjs/common'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { BijakPaperSummarySchema } from '@pp/contract'
 
 import { bootIntegrationApp, type Client, type IntegrationApp, loginAs, START, STUDENT } from './helpers'
@@ -54,13 +56,36 @@ async function be09Paper(t: IntegrationApp): Promise<string> {
 
 const start = (c: Client, paperId: string) => c.post('/api/bijak/attempts', { paperId, mode: 'exam' })
 
-for (const on of [false, true]) {
-  describe(`BIJAK_POC_QUESTIONS=${on} (${on ? 'staging' : 'production default'})`, () => {
+const WARNING = /BIJAK_POC_QUESTIONS is deprecated and ignored/
+
+/** Boots the integration app with the flag in the environment; `plug` adds the test-only PoC double. */
+async function boot(flag: string | undefined, plug: boolean): Promise<{ t: IntegrationApp; warnings: string[] }> {
+  const warnings: string[] = []
+  const spy = vi.spyOn(Logger.prototype, 'warn').mockImplementation((message: unknown) => {
+    warnings.push(String(message))
+  })
+  if (flag === undefined) delete process.env.BIJAK_POC_QUESTIONS
+  else process.env.BIJAK_POC_QUESTIONS = flag
+  try {
+    return { t: await bootIntegrationApp({ pocQuestions: plug }), warnings }
+  } finally {
+    spy.mockRestore()
+  }
+}
+
+afterEach(() => {
+  delete process.env.BIJAK_POC_QUESTIONS
+})
+
+for (const flag of ['true', '1', 'false', undefined]) {
+  const on = flag === 'true' || flag === '1'
+  describe(`BIJAK_POC_QUESTIONS=${flag ?? '(unset)'} (deprecated no-op, bank only)`, () => {
     let t: IntegrationApp
     let student: Client
+    let warnings: string[]
 
     beforeAll(async () => {
-      t = await bootIntegrationApp({ pocQuestions: on })
+      ;({ t, warnings } = await boot(flag, false))
       await serveSeededBlueprints(t.db)
       student = await loginAs(t, STUDENT)
     })
@@ -68,14 +93,15 @@ for (const on of [false, true]) {
       await t.close()
     })
 
-    it(on ? 'a seeded PoC paper starts' : 'a seeded PoC paper is not startable: 403 like any refused question', async () => {
+    it(on ? 'logs the deprecation warning once at start' : 'logs nothing about the flag', () => {
+      const hits = warnings.filter((w) => WARNING.test(w))
+      expect(hits).toHaveLength(on ? 1 : 0)
+    })
+
+    it('a seeded PoC paper is not startable: 403 like any refused question', async () => {
       const res = await start(student, await seededPocPaper(student))
-      if (on) {
-        expect(res.status, JSON.stringify(res.body)).toBeLessThan(300)
-      } else {
-        expect(res.status, JSON.stringify(res.body)).toBe(403)
-        expect(res.body.error.code).toBe('FORBIDDEN')
-      }
+      expect(res.status, JSON.stringify(res.body)).toBe(403)
+      expect(res.body.error.code).toBe('FORBIDDEN')
     })
 
     it('a paper of BE-09 questions starts', async () => {
@@ -84,14 +110,39 @@ for (const on of [false, true]) {
       expect((res.body as { data: { attemptId: string } }).data.attemptId).toBeTruthy()
     })
 
-    it(on ? 'Jana Kertas draws from the PoC pool' : 'Jana Kertas has no pool: 422 SHORTAGE', async () => {
+    it('Jana Kertas has no PoC pool: 422 SHORTAGE', async () => {
       const res = await student.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 1 })
-      if (on) {
-        expect(res.status, JSON.stringify(res.body)).toBe(201)
-      } else {
-        expect(res.status, JSON.stringify(res.body)).toBe(422)
-        expect(res.body.error.code).toBe('SHORTAGE')
-      }
+      expect(res.status, JSON.stringify(res.body)).toBe(422)
+      expect(res.body.error.code).toBe('SHORTAGE')
     })
   })
 }
+
+describe('test-only PoC double plugged (test/support/poc): the seeded PoC papers work', () => {
+  let t: IntegrationApp
+  let student: Client
+
+  beforeAll(async () => {
+    ;({ t } = await boot(undefined, true))
+    await serveSeededBlueprints(t.db)
+    student = await loginAs(t, STUDENT)
+  })
+  afterAll(async () => {
+    await t.close()
+  })
+
+  it('a seeded PoC paper starts', async () => {
+    const res = await start(student, await seededPocPaper(student))
+    expect(res.status, JSON.stringify(res.body)).toBeLessThan(300)
+  })
+
+  it('a paper of BE-09 questions starts', async () => {
+    const res = await start(student, await be09Paper(t))
+    expect(res.status, JSON.stringify(res.body)).toBeLessThan(300)
+  })
+
+  it('Jana Kertas draws from the PoC pool', async () => {
+    const res = await student.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 1 })
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+  })
+})
