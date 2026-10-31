@@ -23,3 +23,4 @@
 | BASE-19 | 823d8dfb | T05 minors `r1/t05-minors` @ 99dd5fef (B1-as-reviewer Approve; test-only) | api tsc 0; servable-counts+assignments-adapter 15/15 | 2026-10-31 |
 | BASE-20 | 4004a071 | T14 `r1/t14-student-bugs` @ 1903b713 (B2 Approve) | api tsc 0; contract:check 0; vue-tsc 0; bijak-attempts 173/173; unit m05+m06+m28+exam-core 1255/1255 | 2026-10-31 |
 | BASE-21 | a6ff0c0d | T15 `r1/t15-bm-copy` @ 09eabe2e (B2 Approve; docs/comments) | api tsc 0; contract:check 0; unit m28 474/474 | 2026-10-31 |
+| BASE-22 | e28e4f5c | T13 `r1/t13-studio-groups` @ 114173c9 (B2 Approve w/ Minors, B3 Pass) | api tsc 0; contract:check 0; vue-tsc 0; DB studio/stimulus/intake 318/318; unit registry-boot+m04+m28 admin+stores 581/581 | 2026-10-31 |
