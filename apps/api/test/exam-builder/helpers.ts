@@ -19,7 +19,8 @@ import { AuthModule } from '../../src/modules/auth'
 import { BijakPapersModule, BijakPapersPorts, type BijakQuestionSource } from '../../src/modules/bijak/papers'
 import { ExamBlueprintsModule } from '../../src/modules/exam/blueprints'
 import { BijakBuilderPorts, type BuilderQuestionSource, ExamBuilderModule, QuestionBankBuilderSource } from '../../src/modules/exam/builder'
-import { PocBuilderQuestionSource } from '../../src/modules/exam/builder/poc-builder-source'
+import { PocBuilderQuestionSource } from '../support/poc/builder-source'
+import { plugPocPapers } from '../support/poc/plug'
 import { questionsSeed } from '../../prisma/seed/questions'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
@@ -91,6 +92,8 @@ export async function bootBuilderApp(opts: BootOptions = {}): Promise<BuilderTes
   const papersPorts = app.get(BijakPapersPorts)
   if (opts.papersSource) papersPorts.provideQuestionSource(opts.papersSource)
   await app.init()
+  // R1-B07: the papers ports default to nothing now; the seeded PoC papers (reserved ids) are served by the test double unless a source is given.
+  if (!opts.papersSource) plugPocPapers(app)
   return {
     app,
     db,

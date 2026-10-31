@@ -1,8 +1,7 @@
 /**
  * Question port of the paper builder (BE-39). Questions belong to M04 (BE-09 store, BE-10 workflow);
- * the builder never reads the `questions` tables. Until BE-09/BE-10 provide the question bank, the
- * default is the PoC fixture (`poc-builder-source.ts`), which serves the reserved PoC question ids of
- * the BE-15 seed (all published, version 1).
+ * the builder never reads the `questions` tables. The source is registered by `ExamBuilderModule` (the
+ * question bank, R1-B07: the PoC fixture is gone from `src`); before that the default is an empty source.
  *
  * WIRE-UP (main session, after BE-09 + BE-10): a `QuestionsService` backed implementation registers
  * itself from the question module's `onModuleInit` (the `CurriculumPorts` pattern):
@@ -24,8 +23,6 @@ import type {
   BijakBuilderQuestionStatus,
   BijakBuilderReviewQuestion,
 } from '@pp/contract'
-
-import { PocBuilderQuestionSource } from './poc-builder-source'
 
 export interface BuilderQuestionRef {
   id: string
@@ -87,17 +84,33 @@ export interface BuilderQuestionSource {
   review(ids: readonly string[]): Promise<BuilderPreview>
 }
 
+/** Default until a module registers the bank: nothing to place, nothing to describe. */
+class EmptyBuilderSource implements BuilderQuestionSource {
+  async describe(): Promise<ReadonlyMap<string, BuilderQuestionInfo>> {
+    return new Map()
+  }
+  async candidates(): Promise<string[]> {
+    return []
+  }
+  async groups(): Promise<ReadonlyMap<string, BuilderGroupInfo>> {
+    return new Map()
+  }
+  async review(): Promise<BuilderPreview> {
+    return { questions: [], stimuli: {}, optionBanks: {} }
+  }
+}
+
 /** Holder of the builder's question port, so BE-09/BE-10 plug in without editing this module. */
 @Injectable()
 export class BijakBuilderPorts {
-  private questions: BuilderQuestionSource = new PocBuilderQuestionSource()
+  private questions: BuilderQuestionSource = new EmptyBuilderSource()
   private questionsSet = false
 
   get questionSource(): BuilderQuestionSource {
     return this.questions
   }
 
-  /** BE-09/BE-10: replace the PoC fixture by the question bank. Registering twice is a wiring error. */
+  /** BE-09/BE-10: replace the empty default by the question bank. Registering twice is a wiring error. */
   provideQuestionSource(provider: BuilderQuestionSource): void {
     if (this.questionsSet) throw new Error('BijakBuilderPorts: the question source is already set')
     this.questions = provider

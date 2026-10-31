@@ -5,13 +5,7 @@ export {
   type BridgeRefusal,
   type BridgeRefusalCode,
 } from './refusals'
-export { CompositeBijakPoolSource } from './pool-composite'
-export {
-  CompositeBijakQuestionSource,
-  CompositePaperQuestionSource,
-  isPocReservedId,
-  POC_ID_BLOCK,
-} from './composite'
+export { BankBijakPoolSource, BankPaperQuestionSource } from './bank-sources'
 export {
   mapBe09Question,
   infoOf,

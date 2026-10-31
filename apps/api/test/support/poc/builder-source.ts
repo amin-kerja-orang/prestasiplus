@@ -13,9 +13,9 @@ import {
   type BijakBuilderReviewQuestion,
 } from '@pp/contract'
 
-import { POC_BANK, pocQuestionId, pocQuestionKey, pocQuestionMarks } from '../../bijak/papers/poc'
-import type { PocPart, PocQuestion } from '../../bijak/papers/poc'
-import { leavesOf, type SchemeDef } from './exam-core.adapter'
+import { POC_BANK, pocQuestionId, pocQuestionKey, pocQuestionMarks } from '../../../prisma/seed/poc/export'
+import type { PocPart, PocQuestion } from '../../../prisma/seed/poc/export'
+import { leavesOf, type SchemeDef } from '../../../src/modules/exam/builder/exam-core.adapter'
 import type {
   BuilderCandidateScope,
   BuilderGroupInfo,
@@ -23,7 +23,7 @@ import type {
   BuilderQuestionInfo,
   BuilderQuestionRef,
   BuilderQuestionSource,
-} from './ports'
+} from '../../../src/modules/exam/builder/ports'
 
 type SchemeLine = { tag?: string; text: string; marks?: number }
 type ReviewScheme = BijakBuilderReviewQuestion['scheme']

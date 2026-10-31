@@ -7,7 +7,7 @@ import {
   type BijakQuestionSource,
   type BijakServedSource,
 } from '../../src/modules/bijak/papers'
-import { POC_BANK, pocQuestionId } from '../../src/modules/bijak/papers/poc'
+import { POC_BANK, pocQuestionId } from '../../prisma/seed/poc/export'
 import { NOT_SERVING, SERVING } from '../support/serve-blueprints'
 import { count, expectError, loginAs, bootPapersApp, serveSeededBlueprints, type Client, type PapersTestApp } from './helpers'
 

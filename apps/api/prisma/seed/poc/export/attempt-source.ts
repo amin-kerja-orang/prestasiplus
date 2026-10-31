@@ -1,7 +1,7 @@
-import type { McqOption, QuestionDef, SchemeDef, StimulusDef } from '../attempts/exam-core.adapter'
-import { leavesOf } from '../attempts/exam-core.adapter'
-import type { BijakQuestionBundle, BijakQuestionSource } from '../attempts/ports'
-import { POC_BANK, pocQuestionId } from '../papers/poc'
+import type { McqOption, QuestionDef, SchemeDef, StimulusDef } from '../../../../src/modules/bijak/attempts/exam-core.adapter'
+import { leavesOf } from '../../../../src/modules/bijak/attempts/exam-core.adapter'
+import type { BijakQuestionBundle, BijakQuestionSource } from '../../../../src/modules/bijak/attempts/ports'
+import { POC_BANK, pocQuestionId } from './index'
 
 /**
  * STOPGAP question source for the Bijak attempts module (BE-16) until the question bank (BE-09, Group A)

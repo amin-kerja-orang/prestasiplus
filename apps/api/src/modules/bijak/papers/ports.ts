@@ -4,10 +4,9 @@
  * the module works before those cards merge.
  *
  * - `BijakQuestionSource` (BE-09): marks, group and version of placed questions, and the eligible
- *   pool of a blueprint section. Default: the PoC fixture (`poc-question-source.ts`), which serves
- *   the reserved PoC question ids. WIRE-UP (main session, after BE-09): provide a `QuestionsService`
- *   backed implementation with `ports.provideQuestionSource(...)` from the question module's
- *   `onModuleInit` (the `CurriculumPorts` pattern). Nothing else changes.
+ *   pool of a blueprint section. Default: no questions (R1-B07: the PoC fixture is gone from `src`);
+ *   `BijakIntegrationModule` provides the bank-backed source from `onModuleInit` (the `CurriculumPorts`
+ *   pattern).
  * - `BijakProgressSource` (BE-16): per-user progress on a paper (in-progress attempt, last score).
  *   Default: "never started".
  * - `BijakServedSource` (BE-16): the question ids the user has been served before (the mock's `seen`
@@ -23,8 +22,6 @@
  */
 import { Injectable } from '@nestjs/common'
 
-import { PocPoolSource } from './poc-pool-source'
-import { PocQuestionSource } from './poc-question-source'
 import type { BijakPoolSource } from './pool-source'
 
 export interface BijakQuestionInfo {
@@ -83,6 +80,26 @@ class NoProgress implements BijakProgressSource {
   }
 }
 
+/** Default until the bank is plugged in: no placed question is known, so no paper is eligible. */
+class NoQuestionsKnown implements BijakQuestionSource {
+  async getMany(): Promise<ReadonlyMap<string, BijakQuestionInfo>> {
+    return new Map()
+  }
+  async pool(): Promise<BijakPool> {
+    return { entries: [], groups: new Map() }
+  }
+}
+
+/** Default pool: empty (Jana answers its usual 422 SHORTAGE). */
+class NoPool implements BijakPoolSource {
+  async candidates(): Promise<[]> {
+    return []
+  }
+  async seen(): Promise<ReadonlySet<string>> {
+    return new Set()
+  }
+}
+
 class NothingServed implements BijakServedSource {
   async servedQuestionIds(): Promise<ReadonlySet<string>> {
     return new Set()
@@ -96,10 +113,10 @@ class NothingServed implements BijakServedSource {
  */
 @Injectable()
 export class BijakPapersPorts {
-  private questions: BijakQuestionSource = new PocQuestionSource()
+  private questions: BijakQuestionSource = new NoQuestionsKnown()
   private progress: BijakProgressSource = new NoProgress()
   private served: BijakServedSource = new NothingServed()
-  private pools: BijakPoolSource = new PocPoolSource()
+  private pools: BijakPoolSource = new NoPool()
   private poolsSet = false
   private questionsSet = false
   private progressSet = false
@@ -114,12 +131,12 @@ export class BijakPapersPorts {
   get servedSource(): BijakServedSource {
     return this.served
   }
-  /** BJS-07: candidate facts of the standard pool. Default: the PoC fixture. */
+  /** BJS-07: candidate facts of the standard pool. Default: empty. */
   get poolSource(): BijakPoolSource {
     return this.pools
   }
 
-  /** BJS-07: replace the PoC fixture by the question bank (see `question-bridge/pool-composite.ts`). */
+  /** BJS-07: plug in the question bank pool (see `question-bridge/bank-sources.ts`). */
   providePoolSource(provider: BijakPoolSource): void {
     if (this.poolsSet) throw new Error('BijakPapersPorts: the pool source is already set')
     this.pools = provider

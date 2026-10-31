@@ -25,7 +25,8 @@ import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { featureModules } from '../../src/modules'
 import { QuestionBankBuilderSource } from '../../src/modules/exam/builder'
-import { PocBuilderQuestionSource } from '../../src/modules/exam/builder/poc-builder-source'
+import { plugPocAttempts, plugPocPapers } from '../support/poc/plug'
+import { PocBuilderQuestionSource } from '../support/poc/builder-source'
 import { battleConformanceEnv, seedBattleConformance } from './battle/fixtures'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
@@ -92,7 +93,6 @@ export function conformanceEnv(dbUrl: string, storageDir: string): Record<string
     INTAKE_MAX_FILE_MB: undefined,
     UPLOAD_RATE_PER_MINUTE: '1000', // the schema maximum
     FILE_READS_PER_MINUTE: '10000', // the schema maximum
-    BIJAK_POC_QUESTIONS: 'true', // the conformance seed is the demo seed (staging): PoC questions served
     // BE-37 intake: volume ceilings raised (a whole suite creates many batches as one teacher) and the job worker
     // ticks fast, so a scenario can wait for a batch to be read. OCR stays off (OCR_ENGINE unset).
     INTAKE_MAX_ACTIVE_BATCHES: '100',
@@ -149,6 +149,9 @@ export async function bootConformanceApp(opts: BootOptions = {}): Promise<Confor
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)
   await app.init()
+  // R1-B07: the PoC fixture is a test double now (the API serves the bank only); the shared scenarios use the seeded PoC papers.
+  plugPocAttempts(app)
+  plugPocPapers(app)
 
   return {
     app,

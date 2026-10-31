@@ -4,7 +4,7 @@ import { runSeeds } from '../../prisma/seed'
 import { identitySeed } from '../../prisma/seed/core/identity'
 import { curriculumSeed } from '../../prisma/seed/curriculum'
 import { createExamSeed, examSeed, questionTableExists } from '../../prisma/seed/exam'
-import { POC_BANK, POC_QUESTION_ID_BASE, pocQuestionId, pocQuestionMarks } from '../../src/modules/bijak/papers/poc'
+import { POC_BANK, POC_QUESTION_ID_BASE, pocQuestionId, pocQuestionMarks } from '../../prisma/seed/poc/export'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 import { count } from './helpers'
 

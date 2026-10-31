@@ -1,8 +1,8 @@
-import type { FormOrigin, LeafFact, QuestionFacts, UnitFact } from './exam-core.adapter'
-import { POC_BANK, pocQuestionId, type PocPart, type PocQuestion } from './poc'
-import type { BijakPoolSource } from './pool-source'
-import type { BijakPoolScope } from './ports'
-import { bijakCodeOf } from './subject-codes'
+import type { FormOrigin, LeafFact, QuestionFacts, UnitFact } from '../../../src/modules/bijak/papers/exam-core.adapter'
+import { POC_BANK, pocQuestionId, type PocPart, type PocQuestion } from '../../../prisma/seed/poc/export'
+import type { BijakPoolSource } from '../../../src/modules/bijak/papers/pool-source'
+import type { BijakPoolScope } from '../../../src/modules/bijak/papers/ports'
+import { bijakCodeOf } from '../../../src/modules/bijak/papers/subject-codes'
 
 /**
  * Staging `BijakPoolSource` over the PoC fixture (BJS-07). The fixture has no curriculum node ids, no KBAT tag and no

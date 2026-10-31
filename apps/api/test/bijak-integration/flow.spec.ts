@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { BijakAttemptPaperViewSchema, BijakAttemptResultViewSchema, BijakPaperSummarySchema } from '@pp/contract'
 
 import { PracticeAggregateService } from '../../src/modules/practice/aggregate'
-import { POC_BANK, pocQuestionId } from '../../src/modules/bijak/papers/poc'
+import { POC_BANK, pocQuestionId } from '../../prisma/seed/poc/export'
 import { ADMIN, bootIntegrationApp, type Client, type IntegrationApp, loginAs, START, STUDENT, TEACHER } from './helpers'
 
 const SOURCE = 'quiz_spm'

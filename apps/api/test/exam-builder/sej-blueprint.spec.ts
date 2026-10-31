@@ -8,7 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { runSeeds } from '../../prisma/seed'
 import { DEMO_BLUEPRINTS, examDemoBlueprintsSeed } from '../../prisma/seed/exam-demo-blueprints'
-import { POC_BANK, pocQuestionId } from '../../src/modules/bijak/papers/poc'
+import { POC_BANK, pocQuestionId } from '../../prisma/seed/poc/export'
 import { ACCOUNTS, bootBuilderApp, loginAs, type BuilderTestApp, type Client } from './helpers'
 
 const Editor = envelopeOf(BijakBuilderEditorSchema)

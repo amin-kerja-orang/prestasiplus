@@ -19,6 +19,7 @@ import { CLOCK, FixedClock } from '../../src/db/clock'
 import { AuthModule } from '../../src/modules/auth'
 import { BijakIntegrationModule } from '../../src/modules/bijak/integration'
 import { createTestDatabase, type TestDatabase } from '../support/db'
+import { plugPocFixture } from '../support/poc/plug'
 
 export const DEMO_PASSWORD = 'Demo1234'
 export const START = '2026-10-20T09:00:00+08:00'
@@ -62,8 +63,6 @@ export async function bootIntegrationApp(opts: { pocQuestions?: boolean; extraMo
     BIJAK_SWEEP_INTERVAL_SECONDS: '0',
     UPLOAD_RATE_PER_MINUTE: '1000',
     FILE_STORAGE_DIR: undefined,
-    // The test boot runs the demo seed, as staging does: PoC questions on unless a spec asks for the production default.
-    BIJAK_POC_QUESTIONS: opts.pocQuestions === false ? 'false' : 'true',
   }
   for (const [k, v] of Object.entries(env)) {
     if (v === undefined) delete process.env[k]
@@ -77,6 +76,8 @@ export async function bootIntegrationApp(opts: { pocQuestions?: boolean; extraMo
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)
   await app.init()
+  // R1-B07: the API serves the bank only; a spec that needs the seeded PoC papers (reserved ids) opts in (the default, as staging was).
+  if (opts.pocQuestions !== false) plugPocFixture(app)
   return {
     app,
     db,

@@ -3,7 +3,7 @@
  * prototype (D45: two short papers showing stimulus groups, maths input and equivalence marking,
  * plus a Matematik Kertas 1 and a Sejarah paper), with their sections and placements.
  *
- * Source: the one-time export of the prototype data in `src/modules/bijak/papers/poc/` (invented,
+ * Source: the one-time export of the prototype data in `prisma/seed/poc/export/` (invented,
  * fictitious practice content; never `src/**` of the frontend). Needs the curriculum seed first
  * (it references the subjects MATH, SCI and SEJ by code).
  *
@@ -20,7 +20,7 @@
  * and use `createExamSeed({ questionLoader })` in `seedModules`.
  */
 import type { PrismaClient } from '../../src/db/client'
-import { POC_BANK, type PocBank, type PocBlueprint, type PocPaper, pocQuestionId } from '../../src/modules/bijak/papers/poc'
+import { POC_BANK, type PocBank, type PocBlueprint, type PocPaper, pocQuestionId } from './poc/export'
 import { curriculumCodeOf } from '../../src/modules/bijak/papers/subject-codes'
 import { structureHashOf } from '../../src/modules/exam/blueprints/blueprint-standard'
 import type { SeedContext, SeedModule } from './index'
