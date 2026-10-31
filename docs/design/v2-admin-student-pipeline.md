@@ -285,11 +285,11 @@ Soalan belum boleh diterbitkan — sila betulkan isu di bawah.
   • Bahagian (a) tiada skema jawapan.                                  (.cloud verbatim)
   • Soalan tiada sub-bahagian — tiada apa untuk dijawab.               (.cloud verbatim)
   • Bahagian (b) belum ada aras pemikiran.                             (AC-03.2 verbatim)
-  • Bahagian (b) belum ada TP.                                         [PROPOSED]
-  • Soalan belum dipautkan kepada topik DSKP.                          [PROPOSED]
-  • Soalan SPM belum ada kertas.                                       [PROPOSED]
+  • Bahagian (b) belum ada TP.                                         (approved, Q1)
+  • Soalan belum dipautkan kepada topik DSKP.                          (approved, Q1)
+  • Soalan SPM belum ada kertas.                                       (approved, Q1)
 ```
-Every missing item is named (AC-03.2). The list is plain text like .cloud; each line ends with the step name in muted text ("— Langkah 3") [PROPOSED] so the admin knows where to go.
+Every missing item is named (AC-03.2). The list is plain text like .cloud; each line ends with the step name in muted text ("— Langkah 3") (approved, Q1) so the admin knows where to go.
 
 2. **Approved, but unservable in some activities** (AC-05.3) - the normal success flash plus `DsCallout tone="info"` titled [PROPOSED] "Tidak dihidangkan di {n} aktiviti" listing "{aktiviti} — tidak dihidangkan kerana {sebab}." Same list is behind `Lihat` in the status bar.
 
@@ -761,7 +761,7 @@ Dilihat murid di
 
 At 375 each row is a stacked block (family on top, state + reason below), reason text wraps; the whole list is under a disclosure by default. Counting rule for "{x} daripada 7" = number of rows `Boleh dilihat`. Not-applicable rows (e.g. a structured question for MCQ-only families) are counted as `Tidak boleh dilihat` with the "bukan {bentuk}" reason, so the sentence is always honest.
 
-#### 9.3 Reason sentences [PROPOSED] (plain BM; cause and fix, AC-04.2)
+#### 9.3 Reason sentences (approved, Q1, 2026-10-31; plain BM; cause and fix, AC-04.2)
 
 | Cause | Sentence |
 |---|---|
@@ -1078,7 +1078,7 @@ Rule for WT tasks: FE-P1, FE-P2 and FE-P3 hand over a short "data contract" note
 ## 17. [PROPOSED] items needing user sign-off (summary)
 
 1. All of section 1 (D-1..D-11), in particular **D-1** (use .cloud labels, `Baharu`/`Tapis`), **D-3** (chip not sticky header), **D-4** (Aras pemikiran required), **D-9** (touch alternatives).
-2. New copy lines marked [PROPOSED]: gate lines "Bahagian (b) belum ada TP.", "Soalan belum dipautkan kepada topik DSKP.", "Soalan SPM belum ada kertas."; "Menunggu keputusan penerbitan."; "Tidak dihidangkan kerana {sebab}." and the 12 reason sentences (9.3); Kertas Subjektif messages (S6.3); Pratonton kolam lines; helper lines "Latihan sendiri — jawapan ini tidak disimpan atau dimarkah." and "Pilih satu tajuk dahulu.".
+2. New copy lines marked [PROPOSED] (the gate lines and the 12 reason sentences of 9.3 are approved by Q1, 2026-10-31; the rest still await sign-off): gate lines "Bahagian (b) belum ada TP.", "Soalan belum dipautkan kepada topik DSKP.", "Soalan SPM belum ada kertas."; "Menunggu keputusan penerbitan."; "Tidak dihidangkan kerana {sebab}." and the 12 reason sentences (9.3); Kertas Subjektif messages (S6.3); Pratonton kolam lines; helper lines "Latihan sendiri — jawapan ini tidak disimpan atau dimarkah." and "Pilih satu tajuk dahulu.".
 3. New controls inside existing screens: `Import PDF` + modal; `Kertas` on Jana set; `TP` / `Aras pemikiran` selects; "Dilihat murid di" disclosure and caption; "Pratonton rangsangan" strip; `Naik`/`Turun`; "Gunakan fail contoh" in mock mode; "Simulasi — Kuiz" link.
 4. The `servable()` rule function in M04 and the store ownership of papers/blueprints/Tracking A/Kertas Subjektif in the m28 store (13, owner note).
 5. Items deliberately not built: `Sumber Kertas`, Penguasaan, PKSK answering, Audio KBAT student flow, essay review queue (conditional / unverified in DISC).
