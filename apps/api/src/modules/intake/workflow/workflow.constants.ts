@@ -23,6 +23,7 @@ export const INTAKE_AUDIT = {
   itemDuplicate: 'intake.item_duplicate_decided',
   itemsBulk: 'intake.items_bulk',
   stimulusRemoved: 'intake.stimulus_removed',
+  figureLinked: 'intake.figure_linked',
 } as const
 
 /** Upper bounds that keep one batch (and one request) from growing without limit. */
