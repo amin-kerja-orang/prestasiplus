@@ -272,9 +272,11 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
     it('Sunting petikan: renames the group title; the group must be on the paper', async () => {
       const stim = await admin.post('/api/stimuli', { kind: 'passage', label: 'Petikan lama', body: { ms: 'Petikan ujian untuk kertas.' } })
       expect(stim.status, JSON.stringify(stim.body)).toBe(201)
-      const members = [await approved(), await approved()]
+      // BASE-14: an approved question is not grouped; the members are drafts that are approved once grouped.
+      const members = [await mk(), await mk()]
       const group = await admin.post('/api/stimulus-groups', { label: 'Petikan lama', stimulusIds: [stim.body.data.id], questionIds: members })
       expect(group.status, JSON.stringify(group.body)).toBe(201)
+      await approve(members)
       const groupId = group.body.data.id as string
       const paper = await newPaper()
       const [a] = await sectionsOf(paper)
@@ -415,12 +417,14 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
     it('is kept as a group in the section pool but not placeable; placed, it blocks Terbit and the override cannot lift it', async () => {
       const stim = await admin.post('/api/stimuli', { kind: 'passage', label: 'Petikan satu', body: { ms: 'Petikan ujian dengan satu soalan.' } })
       expect(stim.status, JSON.stringify(stim.body)).toBe(201)
-      const lone = await approved()
-      expect((await setPool(lone, ['MAT2-A'])).status).toBe(200)
-      // The bank refuses a one-member group (T32), so a legacy one is made on purpose: the second member leaves the group by SQL.
-      const other = await approved()
+      // The bank refuses a one-member group (T32) and an approved question in a group (BASE-14), so a legacy one is made on purpose:
+      // the members are grouped as drafts, approved, and the second member leaves the group by SQL.
+      const lone = await mk()
+      const other = await mk()
       const group = await admin.post('/api/stimulus-groups', { label: 'Petikan satu', stimulusIds: [stim.body.data.id], questionIds: [lone, other] })
       expect(group.status, JSON.stringify(group.body)).toBe(201)
+      await approve([lone, other])
+      expect((await setPool(lone, ['MAT2-A'])).status).toBe(200)
       const groupId = group.body.data.id as string
       await q(`update questions set group_id = null, group_position = null where id = $1`, [other])
 

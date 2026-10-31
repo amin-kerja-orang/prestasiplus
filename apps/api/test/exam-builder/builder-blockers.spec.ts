@@ -176,10 +176,12 @@ describe('R1-T34 structured blockers: review and publish agree', () => {
   it('D93: a one-member group is a hard GROUP_MIN_MEMBERS (paper-wide, exact line)', async () => {
     const stim = await admin.post('/api/stimuli', { kind: 'passage', label: 'Petikan satu', body: { ms: 'Petikan ujian dengan satu soalan.' } })
     expect(stim.status, JSON.stringify(stim.body)).toBe(201)
-    const lone = await approved()
-    const other = await approved()
+    // BASE-14: an approved question is not grouped, so the members are grouped as drafts and approved afterwards.
+    const lone = await mk()
+    const other = await mk()
     const group = await admin.post('/api/stimulus-groups', { label: 'Petikan satu', stimulusIds: [stim.body.data.id], questionIds: [lone, other] })
     expect(group.status, JSON.stringify(group.body)).toBe(201)
+    await approve([lone, other])
     await q(`update questions set group_id = null, group_position = null where id = $1`, [other])
     const paper = await newPaper()
     const sections = await sectionsOf(paper)
