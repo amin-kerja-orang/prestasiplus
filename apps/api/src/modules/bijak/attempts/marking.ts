@@ -73,6 +73,8 @@ export interface LeafInfo {
   questionId: string
   /** `mcq` for a multiple-choice question; else the leaf answer mode. */
   kind: string
+  /** `essay_choice`: the topic ids the pupil may pick (REQ-B-014). Undefined for any other part. */
+  topicIds?: readonly string[]
 }
 
 export interface LeafIndex {
@@ -92,7 +94,13 @@ export function buildLeafIndex(composition: readonly SectionSnapshot[], bundles:
       qid,
       leaves.map((l) => l.id),
     )
-    for (const l of leaves) parts.set(l.id, { questionId: qid, kind: b.question.mcq ? 'mcq' : l.kind })
+    for (const l of leaves) {
+      parts.set(l.id, {
+        questionId: qid,
+        kind: b.question.mcq ? 'mcq' : l.kind,
+        ...(!b.question.mcq && l.kind === 'essay_choice' ? { topicIds: (l.topics ?? []).map((t) => t.id) } : {}),
+      })
+    }
   }
   return { parts, byQuestion }
 }
