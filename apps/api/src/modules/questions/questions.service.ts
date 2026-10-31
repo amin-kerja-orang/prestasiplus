@@ -133,7 +133,7 @@ function treeDepth(parts: unknown, depth = 1): number {
 }
 
 /** The status an edit leaves behind: it never keeps an approval (the live `approved` version keeps serving; the edit is version n+1 as a draft, Q-5, ADR-0027). */
-function statusAfterEdit(current: QuestionStatus, _role: QuestionActor['role']): QuestionStatus {
+function statusAfterEdit(current: QuestionStatus): QuestionStatus {
   return current === 'approved' ? 'draft' : current
 }
 
@@ -854,7 +854,7 @@ export class QuestionsService {
     if (stemImage !== undefined) normalized.stemImage = stemImage
     if (input.kertas !== undefined) normalized.kertas = input.kertas
 
-    let { draft, newStemFileId } = await this.draftOf(normalized, statusAfterEdit(v.status, actor.role), record)
+    let { draft, newStemFileId } = await this.draftOf(normalized, statusAfterEdit(v.status), record)
     const now = this.clock.now()
     await this.prisma.transaction(async () => {
       // Two concurrent edits serialise here; the second one sees the first one's version.
@@ -864,10 +864,10 @@ export class QuestionsService {
       // The image set, stimuli and paper code were derived from the record read before the lock. If another edit landed in
       // between, derive them again from the version read under the lock.
       if (fresh.version.versionNo !== v.versionNo || fresh.version.updatedAt.getTime() !== v.updatedAt.getTime()) {
-        ;({ draft, newStemFileId } = await this.draftOf(normalized, statusAfterEdit(fresh.version.status, actor.role), fresh))
+        ;({ draft, newStemFileId } = await this.draftOf(normalized, statusAfterEdit(fresh.version.status), fresh))
       }
       await this.attachStem(draft, newStemFileId)
-      const next = { ...draft, status: statusAfterEdit(fresh.version.status, actor.role) }
+      const next = { ...draft, status: statusAfterEdit(fresh.version.status) }
       if (fresh.version.status === 'approved') {
         // Q-5: the live version keeps serving; the edit is version n+1 as a draft.
         await this.repo.addVersion(record.id, fresh.latestVersionNo + 1, next, now)
