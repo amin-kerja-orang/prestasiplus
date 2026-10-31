@@ -82,6 +82,7 @@ const reference = [
 ]
 const coverMatK2 = {
   ...summaryMatK2,
+  examinerGrid: true,
   instructions: [
     'Kertas ini mengandungi tiga bahagian: Bahagian A, Bahagian B dan Bahagian C.',
     'Jawab semua soalan dalam Bahagian A dan Bahagian B, dan satu soalan dalam Bahagian C.',
@@ -115,6 +116,7 @@ const coverMatK2 = {
 }
 const coverSnK2 = {
   ...summarySnK2,
+  examinerGrid: true,
   instructions: [
     'Kertas ini mengandungi dua bahagian: Bahagian A dan Bahagian B.',
     'Jawab semua soalan dalam Bahagian A dan satu soalan dalam Bahagian B.',
@@ -308,6 +310,13 @@ describe('BijakPaperCover (getCover)', () => {
         sections: [{ ...coverMatK2.sections[2], chooseN: 0 }],
       }).success,
     ).toBe(false)
+  })
+
+  it('AC-20.3: examinerGrid is a required boolean', () => {
+    expect(BijakPaperCoverSchema.parse({ ...coverMatK2, examinerGrid: false }).examinerGrid).toBe(false)
+    const { examinerGrid: _omitted, ...without } = coverMatK2
+    expect(BijakPaperCoverSchema.safeParse(without).success).toBe(false)
+    expect(BijakPaperCoverSchema.safeParse({ ...coverMatK2, examinerGrid: 'yes' }).success).toBe(false)
   })
 
   it('rejects a cover without sections, or with a non-array instructions', () => {

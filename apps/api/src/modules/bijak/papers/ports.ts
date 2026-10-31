@@ -36,6 +36,11 @@ export interface BijakQuestionInfo {
   groupId: string | null
   /** The published version number (printed on the paper, `paper_placements.pinned_version_no`). */
   versionNo: number
+  /**
+   * True when the question has a part that is not marked automatically (a mark-scheme-points or rubric part: a person
+   * marks it). Absent means false. Feeds the cover's examiner grid (AC-20.3).
+   */
+  manual?: boolean
 }
 
 export interface BijakPoolScope {

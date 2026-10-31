@@ -281,7 +281,9 @@ export function infoOf(bundle: Be09QuestionBundle, groupId: string | null): Bija
   const marks = q.mcq
     ? (bundle.schemes[q.id]?.marks ?? 0)
     : Object.values(bundle.schemes).reduce((n, s) => n + s.marks, 0)
-  return { id: q.id, marks, groupId, versionNo: bundle.versionNo }
+  // The same scheme kinds the marking and the self-mark use: option, mapping and accepted are automatic; points and rubric wait for a person.
+  const manual = Object.values(bundle.schemes).some((s) => s.kind === 'points' || s.kind === 'rubric')
+  return { id: q.id, marks, groupId, versionNo: bundle.versionNo, ...(manual ? { manual: true as const } : {}) }
 }
 
 /** At most three stimuli per group (ADR-0030 section 4); a group with none to show is refused. */

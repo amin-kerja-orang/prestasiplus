@@ -1,11 +1,16 @@
 import type { BijakPool, BijakQuestionInfo, BijakQuestionSource } from './ports'
-import { POC_BANK, pocQuestionId, pocQuestionMarks } from './poc'
+import { POC_BANK, pocQuestionId, pocQuestionMarks, type PocPart } from './poc'
 
 /**
  * Default `BijakQuestionSource` until BE-09 provides the question bank: serves the PoC questions
  * (reserved ids, see `poc/index.ts`) from the bundled export. All PoC questions are published. It
  * returns structure only (marks, group, pool membership), never content or keys.
  */
+/** Scheme kinds a person marks (the same two the self-mark accepts). */
+const MANUAL_KINDS: ReadonlySet<string> = new Set(['points', 'rubric'])
+const schemeKinds = new Map(POC_BANK.schemes.map((s) => [s.id, s.scheme.kind]))
+const leafIds = (parts: readonly PocPart[]): string[] => parts.flatMap((p) => (p.children?.length ? leafIds(p.children) : [p.id]))
+
 export class PocQuestionSource implements BijakQuestionSource {
   private readonly info = new Map<string, BijakQuestionInfo>()
   private readonly groupIdByKey = new Map<string, string>()
@@ -15,7 +20,8 @@ export class PocQuestionSource implements BijakQuestionSource {
     for (const g of POC_BANK.groups) this.groupMembers.set(g.id, g.questionIds)
     for (const q of POC_BANK.questions) {
       const id = pocQuestionId(q.id).toString()
-      this.info.set(id, { id, marks: pocQuestionMarks(q), groupId: q.groupId ?? null, versionNo: 1 })
+      const manual = [q.id, ...leafIds(q.parts ?? [])].some((k) => MANUAL_KINDS.has(schemeKinds.get(k) ?? ''))
+      this.info.set(id, { id, marks: pocQuestionMarks(q), groupId: q.groupId ?? null, versionNo: 1, ...(manual ? { manual: true as const } : {}) })
       if (q.groupId) this.groupIdByKey.set(q.id, q.groupId)
     }
   }

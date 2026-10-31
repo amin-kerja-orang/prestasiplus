@@ -10290,6 +10290,10 @@
             },
             "description": "Reference-sheet panels; empty when the paper has none."
           },
+          "examinerGrid": {
+            "type": "boolean",
+            "description": "AC-20.3: true when any placed question has a part that is not marked automatically (mark-scheme points or rubric); the cover then shows the \"Untuk Kegunaan Pemeriksa\" grid. False for an all-objective paper."
+          },
           "sections": {
             "type": "array",
             "items": {
@@ -10313,6 +10317,7 @@
           "status",
           "instructions",
           "reference",
+          "examinerGrid",
           "sections"
         ],
         "additionalProperties": false
