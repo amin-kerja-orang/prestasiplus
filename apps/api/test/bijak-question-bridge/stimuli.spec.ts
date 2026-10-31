@@ -80,8 +80,13 @@ function record(
   } as unknown as QuestionRecord
 }
 
-type Wide = StimulusRecord & { caption?: string | null; tableData?: unknown; sourceCitation?: string | null }
-const stim = (over: Partial<Wide> & { kind?: string } = {}): StimulusRecord =>
+type Wide = Omit<StimulusRecord, 'kind'> & {
+  kind: string
+  caption?: string | null
+  tableData?: unknown
+  sourceCitation?: string | null
+}
+const stim = (over: Partial<Wide> = {}): StimulusRecord =>
   ({
     id: '70',
     kind: 'passage',
