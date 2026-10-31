@@ -41,3 +41,19 @@
 | REQ-C-018 | DELIVERED: `GET /question-reports` rows carry `question.status` (draft\|review\|approved\|archived, latest version) + `question.liveVersionNo` (number\|null); hide Arkib when status === 'archived' | A1 (b) | r1/b-requests-a1b @ f79675fc | DELIVERED |
 
 **Note to team C lead:** this git inbox (`requests/from-C.md` → `requests/answers-A.md`) is the official channel; team A reads it every ~30 min and answers here with the branch@head. Dependencies you asked about: T33 READY @ 95cea5be, T30 READY @ 09d53c56, T34 follow-up READY @ 7bc3419e (merges after T33), R1E2E-05b READY @ 57e7feee, H-A13 READY @ 3979e212 — all waiting for team B's merge, not for team A.
+| REQ-B-031 | DECIDED (Q8 → D98, user): pupil must report from an owned context (attempt/practice session holding the question); no auto-deactivate (admin triage in Laporan Soalan); re-POST never undoes an admin dismiss; per-pupil daily cap 20. Building now | A1 | r1/reqb031-report-guard | IN-PROGRESS |
+| REQ-C-021 | DECIDED (Q9 → D98, user): follow V2, no chapter lock; server lock (curriculum/rules.ts:186, overview.service.ts:324, CHAPTER_LOCKED) removed; FE drops the 70% text. UX-62 / UX-68 accepted (lead) | A1 | r1/reqc021-no-chapter-lock | IN-PROGRESS |
+| REQ-B-026 | Accepted: port the secondary-level fixture fix (from never-merged r1/ha8-stale-specs) onto BASE-60 | A1 | r1/reqb026-spec-fixture | ACCEPTED |
+| REQ-B-028 | Accepted: T26b (questions-pool seed under e2e profile + admin-origin evidence for 3472/2, solves X1) being re-merged onto BASE-60 for B2 | A1 (b) | r1/t26b-e2e-seed | IN-PROGRESS |
+| REQ-B-029 | Accepted: no PoC paper listed/startable (stop seeding them published outside tests or guarded purge) | A2 | — | IN-PROGRESS |
+| REQ-B-023 | Accepted: conformance approved mcq() bodies carry cognitiveLevel + kertas | A2 | — | ACCEPTED |
+| REQ-B-025 | Accepted: (a)(b) A2 (SERVED_NOW on the REQ-B-012 predicate); (c) A4 | A2 + A4 | — | ACCEPTED |
+| REQ-B-034 | Accepted: intake gate refuses unknown SP codes (BM) — API side | A2 | — | ACCEPTED |
+| REQ-B-035 | Accepted (API side): review queue carries a group key/badge so the UI shows one D90 unit | A2 | — | ACCEPTED |
+| REQ-B-037 | Accepted (folds B-017): provenance copied to every new version + spec | A2 | — | ACCEPTED |
+| REQ-C-019 | Accepted: `?joinable=true` + distinct negeri/exam-board read | A2 | — | ACCEPTED |
+| REQ-B-022 | Accepted: overview counts in one Promise.all + cache timing at 400k; Bijak SPM card = lane | A4 | — | ACCEPTED |
+| REQ-B-032 | Accepted: one rule — published paper serves its pinned version; attempt source, image rule and served lock agree + spec | A4 | — | ACCEPTED |
+| REQ-B-033 | Accepted: hub Bijak SPM card counts papers with a reason, equal to the lane | A4 | — | IN-PROGRESS |
+| REQ-C-020 | Accepted: lanes return `subjects: [{id, name}]` | A4 | — | ACCEPTED |
+| REQ-C-022 | A4 reviewing C2's shared own-stimulus helper; answer follows here | A4 | — | IN-PROGRESS |
