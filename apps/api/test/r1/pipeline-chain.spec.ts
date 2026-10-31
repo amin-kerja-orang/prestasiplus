@@ -35,7 +35,6 @@ import { defineAppModule } from '../../src/app.module'
 import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { featureModules } from '../../src/modules'
-import { QuestionsService } from '../../src/modules/questions'
 import { makePng } from '../files/fixtures'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
@@ -200,31 +199,31 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       expect(fx.imageUrl).toContain(fx.imageToken)
     })
 
-    // R1 GAP G1: no HTTP route creates a stimulus or a stimulus group. `QuestionsService.createStimulus/createStimulusGroup` have no
-    // controller ("tests and later cards; no HTTP route in this contract", questions.service.ts:~500). Hand-off task (e) (Studio D90
-    // groups) is not built. The group shells are therefore created through the service; the MEMBER questions use the real route
-    // (`stimulusGroupId` on POST /api/questions).
-    it.todo('G1: POST a stimulus + group through an admin HTTP route (missing; the group shell is made with QuestionsService below)')
-
-    it('creates the image group (1 image stimulus) and the passage group through the service, then 2 member MCQs each over HTTP', async () => {
-      const svc = app.get(QuestionsService)
-      const fileId = await one(`select id::text id from files where public_id = $1`, [fx.imageToken])
-      const image = await svc.createStimulus({ kind: 'image', label: 'Rajah 1', bodyMs: null, bodyEn: null, altText: 'Rajah segi empat tepat 3 cm kali 4 cm', assetFileId: BigInt(fileId) })
-      fx.imageGroup = await svc.createStimulusGroup({ label: 'Rajah 1', scope: 'section', stimulusIds: [image], optionBank: [] })
-      const passage = await svc.createStimulus({
+    // G1 (closed by T32): the Studio authors stimuli and groups over HTTP: POST /api/stimuli, then POST /api/stimulus-groups with the
+    // ids of 1 to 3 stimuli and at least 2 existing member questions (D90: one stimulus shown once, no marks on the group).
+    it('creates the image stimulus and the passage stimulus (POST /api/stimuli), 4 member MCQs, then the two groups (POST /api/stimulus-groups)', async () => {
+      const image = await admin.post('/api/stimuli', { kind: 'image', label: 'Rajah 1', caption: 'Segi empat tepat', alt: 'Rajah segi empat tepat 3 cm kali 4 cm', imageFileId: fx.imageToken })
+      expect(image.status, JSON.stringify(image.body)).toBe(201)
+      expect(image.body.data).toMatchObject({ kind: 'image', label: 'Rajah 1', imageId: fx.imageToken, groupCount: 0 })
+      const passage = await admin.post('/api/stimuli', {
         kind: 'passage',
         label: 'Petikan 1',
-        bodyMs: 'Sebuah kebun berbentuk segi empat tepat mempunyai panjang 4 m dan lebar 3 m.',
-        bodyEn: null,
-        altText: null,
-        assetFileId: null,
+        body: { ms: 'Sebuah kebun berbentuk segi empat tepat mempunyai panjang 4 m dan lebar 3 m.' },
       })
-      fx.passageGroup = await svc.createStimulusGroup({ label: 'Petikan 1', scope: 'section', stimulusIds: [passage], optionBank: [] })
-      for (const [group, into, label] of [[fx.imageGroup, fx.imageMembers, 'Rajah 1'], [fx.passageGroup, fx.passageMembers, 'Petikan 1']] as const) {
-        for (const n of [1, 2]) {
-          into.push(await createQuestion(mcqBody(`Merujuk ${label}, berapakah nilai bagi soalan ${String(n)}?`, { stimulusGroupId: group })))
-        }
+      expect(passage.status, JSON.stringify(passage.body)).toBe(201)
+      for (const [into, label] of [[fx.imageMembers, 'Rajah 1'], [fx.passageMembers, 'Petikan 1']] as const) {
+        for (const n of [1, 2]) into.push(await createQuestion(mcqBody(`Merujuk ${label}, berapakah nilai bagi soalan ${String(n)}?`)))
       }
+      const imageGroup = await admin.post('/api/stimulus-groups', { label: 'Rajah 1', scope: 'section', stimulusIds: [image.body.data.id], questionIds: fx.imageMembers })
+      expect(imageGroup.status, JSON.stringify(imageGroup.body)).toBe(201)
+      expect(imageGroup.body.data).toMatchObject({ label: 'Rajah 1', questionIds: fx.imageMembers })
+      fx.imageGroup = imageGroup.body.data.id as string
+      const passageGroup = await admin.post('/api/stimulus-groups', { label: 'Petikan 1', scope: 'section', stimulusIds: [passage.body.data.id], questionIds: fx.passageMembers })
+      expect(passageGroup.status, JSON.stringify(passageGroup.body)).toBe(201)
+      fx.passageGroup = passageGroup.body.data.id as string
+      // a group needs at least 2 members and a stimulus; a bad body is 422
+      expect((await admin.post('/api/stimulus-groups', { stimulusIds: [image.body.data.id], questionIds: [fx.imageMembers[0]] })).status).toBe(422)
+      expect((await pupil.post('/api/stimulus-groups', { stimulusIds: [image.body.data.id], questionIds: fx.imageMembers })).status).toBe(403)
       const detail = await admin.get(`/api/questions/${fx.imageMembers[0]!}`)
       expect(detail.status, JSON.stringify(detail.body)).toBe(200)
       expect(detail.body.data.stimulusGroup).toMatchObject({ id: fx.imageGroup })
@@ -376,7 +375,7 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       expect(view.body.data.groups).toHaveLength(1)
       expect(view.body.data.groups[0].questionIds).toEqual(fx.imageMembers)
       const stimulus = view.body.data.groups[0].stimulus as { kind: string; label: string; image?: { url: string } }
-      expect(stimulus).toMatchObject({ kind: 'diagram', label: 'Rajah 1', image: { url: fx.imageUrl } })
+      expect(stimulus).toMatchObject({ kind: 'image', label: 'Rajah 1', image: { url: fx.imageUrl } })
       // the pupil reads the image through the URL the attempt view gave
       expect((await pupil.get(stimulus.image!.url)).status).toBe(200)
       expect((await request(app.getHttpServer()).get(stimulus.image!.url)).status).toBe(401)
