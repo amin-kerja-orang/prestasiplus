@@ -73,7 +73,7 @@ describe('essay_choice in the flat admin views (H-A7)', () => {
     const detail = parseData(await admin.get(`/api/questions/${choiceId}`), QuestionDetailSchema)
     expect(detail.questionType).toBe('essay')
     expect(detail.essayTopics).toEqual(topics)
-    expect(detail.parts[0]).toMatchObject({ mode: 'essay_choice', topics })
+    expect(detail.parts?.[0]).toMatchObject({ mode: 'essay_choice', topics })
     const plain = parseData(await admin.get(`/api/questions/${essayId}`), QuestionDetailSchema)
     expect(plain.essayTopics).toBeUndefined()
   })
