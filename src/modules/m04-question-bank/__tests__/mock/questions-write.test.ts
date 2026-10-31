@@ -143,10 +143,10 @@ describe('#3 POST /api/questions', () => {
     }
     const made = await call<QuestionMutation<Question>>('POST', '/api/questions', ADMIN, { ...body, cognitiveLevel: 'menganalisis' })
     expect(made.status).toBe(201)
-    expect((made.body.data as unknown as { cognitiveLevel: string | null }).cognitiveLevel).toBe('menganalisis')
+    expect((made.body.data as unknown as { parts?: { cognitiveLevel?: string }[] }).parts?.[0]?.cognitiveLevel).toBe('menganalisis')
     const id = made.body.data.id
     const cleared = await call<QuestionMutation<Question>>('PUT', `/api/questions/${String(id)}`, ADMIN, { ...body, cognitiveLevel: '' })
-    expect((cleared.body.data as unknown as { cognitiveLevel: string | null }).cognitiveLevel).toBeNull()
+    expect((cleared.body.data as unknown as { parts?: unknown[] }).parts).toBeUndefined()
     const bad = await call<ErrorBody>('POST', '/api/questions', ADMIN, { ...body, cognitiveLevel: 'hebat' })
     expect(bad.status).toBe(422)
     expect(bad.body.error.fields).toHaveProperty('cognitiveLevel')

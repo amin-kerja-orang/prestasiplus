@@ -190,6 +190,9 @@ describe('cognitiveLevel (T33 "Aras pemikiran")', () => {
     expect(bodyOf(h.post)).not.toHaveProperty('cognitiveLevel')
     await updateQuestion(9, { ...base, cognitiveLevel: '' })
     expect(bodyOf(h.put).cognitiveLevel).toBeNull()
+    h.put.mockClear()
+    await updateQuestion(9, { ...base }) // an edit that does not touch the level sends no key at all (never a null)
+    expect(bodyOf(h.put)).not.toHaveProperty('cognitiveLevel')
   })
 })
 

@@ -464,6 +464,7 @@ describe('QuestionEditPage (M04 S4)', () => {
     )
     const w = await render('edit')
     expect(t(w, 'essay-choice-note').text()).toContain('disunting melalui editor Studio')
+    expect(w.find('[data-testid=q-cognitive]').exists()).toBe(false) // the level is per part, edited in the Studio
     expect(w.get('[data-testid=q-model]').attributes('disabled')).toBeDefined()
     expect(w.get('[data-testid=q-points]').attributes('disabled')).toBeDefined()
   })
@@ -514,18 +515,42 @@ describe('QuestionEditPage (M04 S4)', () => {
     expect(useFlashStore().pending?.message).toBe('Soalan berjaya dikemaskini.')
   })
 
-  it('pre-fills the saved Aras pemikiran and "—" posts an empty value to clear it', async () => {
+  it('pre-fills the Aras pemikiran of the single leaf part (parts[0]), and an unchanged save sends NO cognitiveLevel (REQ-B-027)', async () => {
     questions.updateQuestion.mockResolvedValue({ data: {}, status: 'ok' })
-    questions.fetchQuestion.mockResolvedValue(detail({ cognitiveLevel: 'menilai' }))
+    questions.fetchQuestion.mockResolvedValue(detail({ parts: [{ mode: 'mcq', cognitiveLevel: 'menilai' }] }))
     const w = await render('edit')
     expect(value(w, 'q-cognitive')).toBe('menilai')
     await w.get('form').trigger('submit')
     await flushPromises()
-    expect((questions.updateQuestion.mock.calls[0]?.[1] as Record<string, unknown>).cognitiveLevel).toBe('menilai')
+    expect(questions.updateQuestion.mock.calls[0]?.[1]).not.toHaveProperty('cognitiveLevel')
+    await t(w, 'q-cognitive').setValue('mencipta')
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    expect((questions.updateQuestion.mock.calls[1]?.[1] as Record<string, unknown>).cognitiveLevel).toBe('mencipta')
     await t(w, 'q-cognitive').setValue('')
     await w.get('form').trigger('submit')
     await flushPromises()
-    expect((questions.updateQuestion.mock.calls[1]?.[1] as Record<string, unknown>).cognitiveLevel).toBe('')
+    expect((questions.updateQuestion.mock.calls[2]?.[1] as Record<string, unknown>).cognitiveLevel).toBe('')
+  })
+
+  it('a question without a level opens on "—" and an unchanged save sends no cognitiveLevel (never a null that would clear it)', async () => {
+    questions.updateQuestion.mockResolvedValue({ data: {}, status: 'ok' })
+    questions.fetchQuestion.mockResolvedValue(detail({}))
+    const w = await render('edit')
+    expect(value(w, 'q-cognitive')).toBe('')
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    expect(questions.updateQuestion.mock.calls[0]?.[1]).not.toHaveProperty('cognitiveLevel')
+  })
+
+  it('a question with several parts has no Aras pemikiran field and sends none (the Studio edits it)', async () => {
+    questions.updateQuestion.mockResolvedValue({ data: {}, status: 'ok' })
+    questions.fetchQuestion.mockResolvedValue(detail({ parts: [{ mode: 'mcq', cognitiveLevel: 'menilai' }, { mode: 'mcq', cognitiveLevel: null }] }))
+    const w = await render('edit')
+    expect(w.find('[data-testid=q-cognitive]').exists()).toBe(false)
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    expect(questions.updateQuestion.mock.calls[0]?.[1]).not.toHaveProperty('cognitiveLevel')
   })
 
   it('pre-fills the saved Bab, keeps it on save, and "—" posts an empty id to clear it', async () => {

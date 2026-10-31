@@ -155,8 +155,11 @@ export interface Question {
   explanation: string | null
   /** v2 admin response: the paper kertas, or null. */
   kertas?: '1' | '2' | '3' | null
-  /** R1-B05 / T33: "Aras pemikiran" of the single leaf, or null. */
-  cognitiveLevel?: string | null
+  /**
+   * The part tree of a v2 row (`parts`): the "Aras pemikiran" lives on the LEAF (`parts[0].cognitiveLevel`), never at the top
+   * (T33). A branch part has `children` and no `mode`.
+   */
+  parts?: { mode?: string; cognitiveLevel?: string | null; children?: unknown[] }[]
   aiExplanation: AiExplanation | null
   language: QuestionLanguage
   pointsValue: number

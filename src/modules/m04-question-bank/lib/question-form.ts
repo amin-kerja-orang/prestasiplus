@@ -54,6 +54,20 @@ export interface QuestionFormValues {
   curriculumChapterId: string
 }
 
+/**
+ * The level of a question with ONE leaf part (what the form edits): `parts[0].cognitiveLevel`. The API detail has no top-level
+ * level. A question with several parts (or a branch part) has no single level: '' here, and the form hides the field.
+ */
+export function leafCognitive(q: Pick<QuestionDetail, 'parts'>): '' | CognitiveValue {
+  const only = q.parts?.length === 1 ? q.parts[0] : undefined
+  return only && isCognitive(only.cognitiveLevel) ? only.cognitiveLevel : ''
+}
+
+/** True when the form cannot set one level for the question: several parts, or a branch part (the Studio edits those). */
+export function hasManyParts(q: Pick<QuestionDetail, 'parts'> | null | undefined): boolean {
+  return (q?.parts?.length ?? 0) > 1 || (q?.parts?.[0]?.children?.length ?? 0) > 0
+}
+
 export function emptyValues(): QuestionFormValues {
   return {
     subjectId: '',
@@ -102,7 +116,7 @@ export function valuesFromQuestion(q: QuestionDetail): QuestionFormValues {
     language: q.language,
     pointsValue: String(q.pointsValue),
     kertas: q.kertas ?? '',
-    cognitiveLevel: isCognitive(q.cognitiveLevel) ? q.cognitiveLevel : '',
+    cognitiveLevel: leafCognitive(q),
     curriculumChapterId: idText(q.curriculumChapterId),
   }
 }
@@ -116,6 +130,8 @@ export function buildBody(
   v: QuestionFormValues,
   dskpSpId: string,
   mode: 'create' | 'edit',
+  /** Edit: the level the question had when the form opened; the level is sent only when it changed (null = field hidden, never sent). */
+  originalCognitive: '' | CognitiveValue | null = null,
 ): QuestionInputBody {
   const body: QuestionInputBody = {
     subjectId: v.subjectId,
@@ -137,7 +153,7 @@ export function buildBody(
   } else {
     // Edit: always sent; '' clears it (http mode sends null; the mock ignores the key).
     body.kertas = v.kertas
-    body.cognitiveLevel = v.cognitiveLevel
+    if (originalCognitive !== null && v.cognitiveLevel !== originalCognitive) body.cognitiveLevel = v.cognitiveLevel
     if (v.removeQuestionImage) body.removeQuestionImage = true
   }
 

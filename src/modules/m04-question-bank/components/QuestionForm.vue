@@ -25,6 +25,7 @@ import { COGNITIVE_OPTIONS } from '../lib/studio/dskp-tags'
 import {
   buildBody,
   emptyValues,
+  hasManyParts,
   KERTAS_OPTIONS,
   OPTION_LETTERS,
   QUESTION_TYPE_OPTIONS,
@@ -61,6 +62,10 @@ const values = reactive<QuestionFormValues>(
   props.initial ? valuesFromQuestion(props.initial) : emptyValues(),
 )
 const spId = ref(props.initial?.dskp ? String(props.initial.dskp.sp.id) : '')
+/** The level when the form opened (edit): sent back only if changed, so a save never wipes it. */
+const originalCognitive = values.cognitiveLevel
+/** One level per question only for a single-leaf question; essay pilihan and multi-part questions are edited in the Studio. */
+const showCognitive = computed(() => !essayChoice.value && !hasManyParts(props.initial))
 
 const isMcq = computed(() => values.questionType === 'mcq')
 const isShortOrFill = computed(
@@ -89,7 +94,8 @@ function submit(): void {
     void scrollToError()
     return
   }
-  const body = buildBody(values, spId.value, props.mode)
+  const body = buildBody(values, spId.value, props.mode, edit.value && showCognitive.value ? originalCognitive : null)
+  if (!showCognitive.value) delete body.cognitiveLevel
   if (edit.value && props.initial) body.savedOptionImages = props.initial.optionImages
   emit('submit', body)
 }
@@ -567,9 +573,10 @@ const correctItems = (i: number, letter: string) => [
               data-testid="q-explanation"
             />
           </DsFormField>
-          <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             <!-- T33: every part needs an "Aras pemikiran" to be approved; a form question has one part, so one field. -->
             <DsFormField
+              v-if="showCognitive"
               v-slot="{ id, describedby, invalid }"
               native
               for="q-cognitive"
