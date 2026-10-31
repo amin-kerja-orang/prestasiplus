@@ -355,3 +355,73 @@ Method: each head was trial-merged into BASE-14 in a scratch worktree, one at a 
   - **H-C4**: H-A13 archive warning not shown (MAJOR). Merge after T35.
 - **H-C7**: Approve with Minors. Merge after R1E2E-05b.
 - Unchanged since cycle 2: T10 Changes requested; H-C6 Approve with Minors; T13 Approve with Minors (security Pass on the delta).
+
+## Cycle 4 — 2026-10-31 (21:55–22:45 MYT, trial base BASE-17 8e8812ed; latest at write-up BASE-21 a6ff0c0d)
+
+Scope: the five C4 heads posted at 21:55 MYT (e5638c3). The C1, C2 and C3 heads that were READY at cycle start had verdicts already. New C1 heads (T10 @ 524887207, H-C6 @ 503ab17d6) and C3 heads (T13 @ 114173c99, T13b @ d8a6596d1) were posted during this cycle. **They are not reviewed here.**
+
+Method: each head was trial-merged into BASE-17 (`--no-ff`, scratch worktree). Each worktree had its own `npm ci`, because workspace packages must resolve to the worktree, not the base checkout. Code review used 2 code-reviewer subagents (opus, high effort, read-only, one worktree each). No security flag on these units. DB specs ran on a local Postgres 16.
+
+BASE-15..21 landed while this cycle ran. BASE-20 = T14 and BASE-21 = T15 were merged by B1 on the B2 verdict, which agrees with this one. BASE-18 = T35 tip 4ea790b1. The three stacked heads were re-checked with `git merge-tree` against BASE-21; all are clean.
+
+- **T14 r1/t14-student-bugs @ 1903b713 (C4): Approve** (already MERGED as BASE-20)
+  - Trial merge on BASE-17: clean (02e02bdb).
+  - Checks:
+    - api tsc 0; vue-tsc 0; eslint 0 (9 files).
+    - `vitest --project unit src/modules/m06-* src/modules/m05-practice/__tests__ src/modules/m28-bijak-spm/__tests__ packages/exam-core registry-boot`: 76 files, 1258/1258.
+    - api (local PG) `test/bijak-attempts test/exam-core`: 10 files, 174/174.
+  - Minor `StructuredAnswerPage.vue:74-79` isStem: **fixed**. A row is a stem only with 0 marks AND a next label starting with `${label}.`.
+    - This matches `flatten.ts` (child label = parent + "."). "1" does not catch "10.a", and the last row is a leaf.
+    - `stem-rows.test.ts:31-50` fails under the old rule.
+  - Nit T14-D1/D2 "D9 choice": **fixed**.
+  - T14-D4 ("Tiada soalan" tile, user decision) is still recorded (`v2-bijak-spm.md:665`).
+
+- **T15 r1/t15-bm-copy @ 09eabe2e (C4): Approve** (already MERGED as BASE-21)
+  - Trial merge on BASE-17: clean (189e4ce2).
+  - Checks:
+    - api tsc 0; vue-tsc 0; eslint 0 (2 files).
+    - `vitest --project unit semakan QuestionFormPages registry-boot`: 4 files, 60/60.
+  - `git rev-list --no-merges dbf7d81e..09eabe2e ^70971776` is empty, and the BASE-14 merge changed nothing in the T15 diff (docs/comments only).
+
+- **H-C7 r1/hc7-own-stimuli @ 786d3e4d (C4, stacked on R1E2E-05b fcf08660): Approve with Minors** (unchanged)
+  - Trial merge on BASE-17: clean (722c4a1e). Merge-tree on BASE-21: clean. The stack is current with `r1/e2e05b-own-stimuli`.
+  - Checks:
+    - api tsc 0; vue-tsc 0; eslint 0 errors (14 files; 2 `require-default-prop` warnings in a test stub).
+    - `vitest --project unit src/modules/m28-bijak-spm registry-boot`: 33 files, 478/478.
+  - Since 26ec4608 only the BASE-14 merge was added (empty remerge-diff). Earlier Minor (no ResultPage test) and Nits (`ownStimuliOf` twice, `stem-image` testid) are **still open**.
+  - Not ready: R1E2E-05b is not in base, and the head lacks BASE-21.
+
+- **H-C3 r1/hc3-essay-choice-view @ 396961a7 (C4): Changes requested**
+  - Trial merge on BASE-17: clean (9747e57d). H-A7 and T25 are now in base, so the delta is C4-only (6 files). Merge-tree on BASE-21: clean.
+  - Checks:
+    - api tsc 0; vue-tsc 0; eslint 0 (6 files).
+    - `vitest --project unit src/modules/m04-question-bank registry-boot`: 35 files, 480/480.
+  - No C4 code change since cycle 3. Every earlier finding is **still open**:
+    - **MAJOR** `apps/api/src/modules/questions/questions.service.ts:803` `flatShaped` still excludes essay_choice (`:830` keeps `v.parts`), while `QuestionForm.vue:511-524,600-604` shows modelAnswer/pointsValue as editable. H-A7 now loads essay_choice into the form as essay, so the silent loss is easier to hit. Fix: make the fields read-only when `essayTopics?.length` (with a [PROPOSED] note), or have the API return a BM 422.
+    - Minor: "Esei pilihan" copy is untagged.
+    - Minor: the badge is missing in DsDataTable card mode (<md, `DsDataTable.vue:283-299`).
+    - Nits: EssayTopic JSDoc; cast.
+
+- **H-C4 r1/hc4-report-arkib @ b458c8f3 (C4): Changes requested**
+  - Trial merge on BASE-17: clean (d96cc779).
+  - Checks:
+    - api tsc 0; vue-tsc 0; eslint 0 (14 files).
+    - `vitest --project unit src/modules/m04-question-bank registry-boot`: 35 files, 479/479.
+  - New: the head is stacked on the stale T35 2dd3c598, not the merged tip 4ea790b1. It lacks b6552aa0 (`archiveReported`), so on this head Arkib on a question with a revision in Semakan gives a 409.
+    - Merge-tree on BASE-21 (which has T35 tip as BASE-18) is clean with **no apps/api diff**, so merging the latest BASE fixes it.
+    - Fix: merge BASE-21 into the branch and re-post.
+  - Earlier findings, **still open**:
+    - MAJOR: the H-A13 `warning`/`papers` response is ignored (`ReportCard.vue:77-87`, `api/reports.ts:114-122`). H-A13 d51a4abf is still not in BASE-21. If the lead prefers, treat this as a merge-order item (show the warning when H-A13 lands).
+    - Minor: no "Arkibkan soalan ini?" confirm (`v2-admin-student-pipeline.md:397`, `cloud-student-mechanism.md:349`).
+    - Minor: `ARCHIVE_NOTE` untagged.
+    - Minor: mock display ignores `status==='archived'`; structured archive = inactive is not recorded.
+    - Nit: Arkib shows for an already-archived question.
+
+### Merge readiness summary (cycle 4)
+- T14 and T15: Approve. **Already merged** (BASE-20, BASE-21).
+- **No other Team C unit is "Ready for B1 merge"**. No other head contains BASE-21 (a6ff0c0d).
+- H-C7: Approve with Minors. Needs R1E2E-05b merged first, then a BASE-21 merge.
+- H-C3: Changes requested (essay_choice edit loses data). Its dependencies H-A7 and T25 are now in base.
+- H-C4: Changes requested (H-A13 warning; merge BASE-21 to pick up the T35 tip).
+- Unchanged from cycle 3: T11, T12, H-C5, H-C8.
+- Next cycle: T10 @ 524887207, H-C6 @ 503ab17d6, T13 @ 114173c99, T13b @ d8a6596d1.
