@@ -59,6 +59,8 @@ export interface QuestionProvenance {
    * paper builder reads the kertas. Optional; when absent the flat `kertas` of the input (if any) decides.
    */
   paperCode?: string | null
+  /** R1-H-A18: the question total the intake item declared; the approve gate compares it with the sum of the leaf marks. */
+  declaredMarks?: number | null
 }
 
 /** Who performs a write. `role` is the ACTIVE role of the session. */
@@ -339,4 +341,24 @@ export interface QuestionGrade {
 export interface ContributionCounts {
   total: number
   byStatus: Record<QuestionStatus, number>
+}
+
+/**
+ * The gate facts that live outside the version row (R1-H-A18), read by `QuestionsRepository.gateFacts` and handed to `gateDataOf`.
+ * `rightsStatus` null counts as `own` (the documented default for a version with no declaration); an explicit `unclear` is refused.
+ */
+export interface GateFacts {
+  rightsStatus: string
+  /** The question names where it comes from: a source paper, a contributor, a source kind, or how it was made (`source_type`) and by whom. */
+  hasSourceDeclaration: boolean
+  /** Fields of the intake item still flagged low-confidence and not confirmed by a person. */
+  unconfirmedLowConfidenceFields: string[]
+  /** An intake duplicate link of this question that is still `pending` ("Bukan pendua" and the other decisions close it). */
+  hasOpenDuplicateFlag: boolean
+  /** Every stimulus the question shows (group, version link, part link) has its picture, grid or text; no import hold on a missing image. */
+  mediaResolved: boolean
+  /** The last content written on the version was the AI service's and no person has acted on it since. */
+  lastEditedByAi: boolean
+  /** Question total declared at intake accept, or null. */
+  declaredMarks: number | null
 }

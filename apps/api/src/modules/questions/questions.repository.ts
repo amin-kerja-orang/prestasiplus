@@ -17,6 +17,7 @@ import type {
   Page,
   QuestionFilter,
   QuestionRecord,
+  GateFacts,
   QuestionStatus,
   QuestionVersionRecord,
   SampleFilter,
@@ -58,6 +59,10 @@ export interface VersionDraft {
    * `undefined` leaves the stored value untouched on a rewrite and stores null on a new version.
    */
   paperCode?: string | null
+  /** R1-H-A18: who wrote the content last. A person's edit is `person`; the AI service marks its own writes `ai`. */
+  lastEditor?: 'person' | 'ai'
+  /** R1-H-A18: question total declared at intake accept (null = none). A person's edit stores null. */
+  declaredMarks?: number | null
   spNodeIds: bigint[]
   stimulusIds: bigint[]
   parts: PartDraft[]
@@ -143,6 +148,20 @@ type VersionRow = PrismaTypes.QuestionVersionGetPayload<{
 const PKSK_TAG = 'pksk_domain'
 const NOT_PKSK = NOT_PKSK_SQL
 const IS_PKSK = Prisma.sql`EXISTS (SELECT 1 FROM question_tags pt WHERE pt.question_id = q.id AND pt.kind = 'pksk_domain')`
+
+/**
+ * `true` when every stimulus the question shows can be shown: a picture kind has its file, a table has a grid, a file or a pipe table in the
+ * body, a passage has text, and the version carries no `legacy_image_unresolved` import hold. `stimuli` is a statement selecting `sid`.
+ */
+const mediaResolvedSql = (stimuli: Prisma.Sql, importIssues: Prisma.Sql): Prisma.Sql => Prisma.sql`(
+  NOT EXISTS (
+    SELECT 1 FROM (${stimuli}) l JOIN stimuli s ON s.id = l.sid
+     WHERE (s.kind IN ('image', 'diagram', 'map', 'infographic', 'graph') AND s.asset_file_id IS NULL)
+        OR (s.kind = 'table' AND s.table_data IS NULL AND s.asset_file_id IS NULL AND (s.body_ms IS NULL OR s.body_ms NOT LIKE '%|%'))
+        OR (s.kind = 'passage' AND btrim(coalesce(s.body_ms, '')) = '' AND btrim(coalesce(s.body_en, '')) = '')
+  )
+  AND NOT (coalesce(${importIssues}, '[]'::jsonb) @> '[{"code": "legacy_image_unresolved"}]'::jsonb)
+)`
 
 /** Most ids `eligibleIds` returns (it throws beyond it) and the cap of one keyset page. */
 export const ELIGIBLE_IDS_MAX = 5000
@@ -731,11 +750,65 @@ export class QuestionsRepository {
 
   /** R1-B05: the subject is in the SPM catalogue (`spm_subject_configs`) and the level is Tingkatan 4 or 5. */
   /** `rights_status` of one version: null when no declaration was made (or the version is unknown). */
-  async rightsStatusOf(questionId: string, versionNo: number): Promise<string | null> {
+  /**
+   * The facts the gates read that are not on the version row (R1-H-A18): ONE loader for the lifecycle transition, `gate-check`, the bulk
+   * action and the workflow bank adapter. Read inside the caller's transaction when there is one.
+   */
+  async gateFacts(questionId: string, versionNo: number): Promise<GateFacts> {
     const key = bi(questionId)
-    if (key === null) return null
-    const row = await this.db.questionVersion.findUnique({ where: { questionId_versionNo: { questionId: key, versionNo } }, select: { rightsStatus: true } })
-    return row?.rightsStatus ?? null
+    const none: GateFacts = { rightsStatus: 'own', hasSourceDeclaration: false, unconfirmedLowConfidenceFields: [], hasOpenDuplicateFlag: false, mediaResolved: true, lastEditedByAi: false, declaredMarks: null }
+    if (key === null) return none
+    const rows = await this.db.$queryRaw<
+      {
+        rights_status: string | null
+        last_editor: string
+        declared_marks: number | null
+        has_source: boolean
+        duplicate_open: boolean
+        low_fields: string[] | null
+        confirmed_fields: string[] | null
+        media_ok: boolean
+      }[]
+    >`
+      SELECT v.rights_status, v.last_editor, v.declared_marks,
+             (v.source_paper_id IS NOT NULL OR v.contributor_id IS NOT NULL OR v.source_kind IS NOT NULL OR q.source_type IS NOT NULL OR q.created_by_id IS NOT NULL) AS has_source,
+             EXISTS (SELECT 1 FROM intake_items di JOIN duplicate_links dl ON dl.item_id = di.id
+                      WHERE di.question_id = q.id AND dl.decision = 'pending') AS duplicate_open,
+             ii.low_fields, ii.confirmed_fields,
+             ${mediaResolvedSql(Prisma.sql`SELECT vs.stimulus_id AS sid FROM question_version_stimuli vs WHERE vs.question_version_id = v.id
+               UNION SELECT p.stimulus_id FROM question_parts p WHERE p.question_version_id = v.id AND p.stimulus_id IS NOT NULL
+               UNION SELECT gs.stimulus_id FROM stimulus_group_stimuli gs WHERE gs.group_id = q.group_id`, Prisma.sql`v.import_issues`)} AS media_ok
+        FROM question_versions v
+        JOIN questions q ON q.id = v.question_id
+        LEFT JOIN intake_items ii ON ii.id = v.intake_item_id
+       WHERE v.question_id = ${key} AND v.version_no = ${versionNo}`
+    const r = rows[0]
+    if (!r) return none
+    const confirmed = new Set(r.confirmed_fields ?? [])
+    return {
+      rightsStatus: r.rights_status ?? 'own',
+      hasSourceDeclaration: r.has_source,
+      unconfirmedLowConfidenceFields: (r.low_fields ?? []).filter((f) => !confirmed.has(f)),
+      hasOpenDuplicateFlag: r.duplicate_open,
+      mediaResolved: r.media_ok,
+      lastEditedByAi: r.last_editor === 'ai',
+      declaredMarks: r.declared_marks,
+    }
+  }
+
+  /** Media check for a question that is not stored yet (the create-as-approved shortcut): its stimulus links and its group. */
+  async mediaResolvedFor(stimulusIds: readonly bigint[], groupId: bigint | null): Promise<boolean> {
+    const ids = stimulusIds.length === 0 ? Prisma.sql`SELECT NULL::bigint AS sid WHERE false` : Prisma.sql`SELECT x.sid FROM unnest(${[...stimulusIds]}::bigint[]) AS x(sid)`
+    const group = groupId === null ? Prisma.empty : Prisma.sql`UNION SELECT gs.stimulus_id FROM stimulus_group_stimuli gs WHERE gs.group_id = ${groupId}`
+    const rows = await this.db.$queryRaw<{ ok: boolean }[]>`SELECT ${mediaResolvedSql(Prisma.sql`${ids} ${group}`, Prisma.sql`NULL::jsonb`)} AS ok`
+    return rows[0]?.ok === true
+  }
+
+  /** Sets who wrote the version last (a person's action clears the AI flag; the AI service sets it on its own writes). */
+  async setLastEditor(questionId: string, versionNo: number, editor: 'person' | 'ai'): Promise<void> {
+    const key = bi(questionId)
+    if (key === null) return
+    await this.db.questionVersion.updateMany({ where: { questionId: key, versionNo, lastEditor: { not: editor } }, data: { lastEditor: editor } })
   }
 
   async isSpmBound(subjectId: string | null, levelId: string | null): Promise<boolean> {
@@ -1007,6 +1080,8 @@ export class QuestionsRepository {
       sourcePage: c.sourcePage,
       setLabel: c.setLabel,
       ...(c.paperCode === undefined ? {} : { paperCode: c.paperCode }),
+      lastEditor: c.lastEditor ?? 'person',
+      declaredMarks: c.declaredMarks ?? null,
     }
   }
 

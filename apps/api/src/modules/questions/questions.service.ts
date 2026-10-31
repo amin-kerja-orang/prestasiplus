@@ -27,8 +27,8 @@ import {
   type FlatType,
 } from './projection'
 import { MAX_SP_NODES } from './publish-gate'
+import { gateDataOf } from './gate-data'
 import { GATES } from './workflow/lifecycle/gates'
-import type { QuestionGateData } from './workflow/ports'
 import { GroupMembers } from './group-members'
 import { QuestionsRepository, type NewGroup, type NewStimulus, type VersionDraft } from './questions.repository'
 import { draftsFromParts, MAX_PART_DEPTH, referencedIds, versionTypeOf } from './tree'
@@ -50,6 +50,7 @@ import type {
   QuestionGuruUpdateInput,
   QuestionProvenance,
   QuestionRecord,
+  QuestionVersionRecord,
   QuestionStatus,
   QuestionStatusInfo,
   QuestionSummaryView,
@@ -328,20 +329,9 @@ export class QuestionsService {
         })
       }
       if (status === 'approved') {
-        // "No bypass" (ADR-0027, B3): the one merged approve gate, the same function the lifecycle routes run (tag, keys, rights, duplicates,
-        // marks, media, reviewer, DSKP). `lastEditedByAi` is false here: this path is only ever driven by a person.
-        const fields = await this.approveFields({
-          id,
-          parts: v.parts,
-          subjectId: v.subjectId,
-          educationLevelId: v.educationLevelId,
-          chapterId: v.chapterId,
-          unitId: v.unitId,
-          spIds: v.spIds,
-          tp: v.difficultyTp,
-          paperCode: v.paperCode ?? null,
-          rightsStatus: (await this.repo.rightsStatusOf(id, v.versionNo)) ?? 'own',
-        })
+        // "No bypass" (ADR-0027, B3): the one merged approve gate, the same function the lifecycle routes run, on the same facts
+        // (`gateFacts` + `gateDataOf`: tag, keys, rights, open duplicate, marks, media, who edited last, DSKP).
+        const fields = await this.approveFields(record, v)
         if (Object.keys(fields).length > 0) throw fail(fields)
         // The version that served until now is superseded in the same transaction.
         if (record.liveVersionNo !== null && record.liveVersionNo !== v.versionNo) {
@@ -349,12 +339,15 @@ export class QuestionsService {
         }
         await this.repo.setVersionStatus(id, v.versionNo, 'approved', { publishedAt: this.clock.now() })
         await this.repo.setLiveVersion(id, v.versionNo)
+        await this.repo.setLastEditor(id, v.versionNo, 'person') // a person approved it
       } else if (v.status === 'approved') {
         // Taking the live version down (approved -> archived) ends its serving at once.
         await this.repo.setVersionStatus(id, v.versionNo, status, { archiveReason: 'withdrawn' })
         await this.repo.setLiveVersion(id, null)
       } else {
         await this.repo.setVersionStatus(id, v.versionNo, status)
+        // R1-H-A18: a person's status transition on the version (for example draft to review) is the person having seen it.
+        await this.repo.setLastEditor(id, v.versionNo, 'person')
         if (status === 'archived' && record.liveVersionNo !== null && record.liveVersionNo !== v.versionNo) {
           // Withdrawing a question whose latest edit is still a draft also ends the live version.
           await this.repo.setVersionStatus(id, record.liveVersionNo, 'archived', { archiveReason: 'withdrawn' })
@@ -579,43 +572,15 @@ export class QuestionsService {
   }
 
   /**
-   * The approve gate (`GATES.approve`, ADR-0027) over the facts this module holds. The facts BE-09 does not store (open duplicate flag,
-   * unconfirmed low-confidence fields, media check, question-level marks) take the same satisfied defaults as the workflow's bank adapter,
-   * so the lifecycle route, the bulk action and the create path can never disagree. A version with no rights declaration counts as `own`
-   * (the documented default); an explicit `unclear` is refused. R1-B05: the DSKP rules bind only an SPM-bound question, on a NEW approval.
+   * The approve gate (`GATES.approve`, ADR-0027) on the real facts of a stored version: ONE loader (`gateFacts`) and ONE builder
+   * (`gateDataOf`) that the workflow bank adapter uses too, so the lifecycle route, `gate-check`, the bulk action and this path cannot
+   * disagree. A version with no rights declaration counts as `own` (the documented default); an explicit `unclear` is refused.
+   * R1-B05: the DSKP rules bind only an SPM-bound question, on a NEW approval.
    */
-  private async approveFields(input: {
-    id: string
-    parts: QuestionGateData['parts']
-    subjectId: string | null
-    educationLevelId: string | null
-    chapterId: string | null
-    unitId: string | null
-    spIds: string[]
-    tp: number | null
-    paperCode: string | null
-    rightsStatus: string
-  }): Promise<Record<string, string>> {
-    return GATES.approve({
-      id: input.id,
-      parts: input.parts,
-      marks: null,
-      subjectId: input.subjectId,
-      educationLevelId: input.educationLevelId,
-      chapterId: input.chapterId,
-      unitId: input.unitId,
-      spIds: input.spIds,
-      tp: input.tp,
-      rightsStatus: input.rightsStatus,
-      hasSourceDeclaration: true,
-      unconfirmedLowConfidenceFields: [],
-      hasOpenDuplicateFlag: false,
-      mediaResolved: true,
-      missingRequiredFields: [],
-      lastEditedByAi: false,
-      paperCode: input.paperCode,
-      spmBound: await this.repo.isSpmBound(input.subjectId, input.educationLevelId),
-    })
+  private async approveFields(record: QuestionRecord, version: QuestionVersionRecord): Promise<Record<string, string>> {
+    const facts = await this.repo.gateFacts(record.id, version.versionNo)
+    const spmBound = await this.repo.isSpmBound(version.subjectId, version.educationLevelId)
+    return GATES.approve(gateDataOf({ id: record.id, version }, facts, spmBound))
   }
 
   private async createFrom(n: Normalized, status: QuestionStatus, actor: QuestionActor, provenance?: QuestionProvenance): Promise<QuestionView> {
@@ -624,20 +589,41 @@ export class QuestionsService {
       draft.numberLabel = provenance.numberLabel
       draft.sourcePage = provenance.sourcePage
     }
+    // R1-H-A18: who wrote this content and what total the intake declared. An AI variant is the AI's until a person acts on it.
+    draft.lastEditor = provenance?.sourceType === 'ai_variant' ? 'ai' : 'person'
+    draft.declaredMarks = provenance?.declaredMarks ?? null
     if (status === 'approved') {
-      // Created already approved (an Admin Pusat shortcut that skips the Semakan step): the same merged approve gate as the transition.
-      const fields = await this.approveFields({
-        id: '0',
-        parts: n.parts,
-        subjectId: draft.subjectId === null ? null : idToString(draft.subjectId),
-        educationLevelId: draft.educationLevelId === null ? null : idToString(draft.educationLevelId),
-        chapterId: null,
-        unitId: draft.unitNodeId === null ? null : idToString(draft.unitNodeId),
-        spIds: draft.spNodeIds.map(idToString),
-        tp: draft.difficultyTp,
-        paperCode: draft.paperCode ?? null,
-        rightsStatus: 'own',
-      })
+      // Created already approved (an Admin Pusat shortcut that skips the Semakan step): the same merged approve gate as the transition,
+      // on the same builder. The question is not stored yet, so the facts that need a stored row are the new-question ones.
+      const subjectId = draft.subjectId === null ? null : idToString(draft.subjectId)
+      const levelId = draft.educationLevelId === null ? null : idToString(draft.educationLevelId)
+      const data = gateDataOf(
+        {
+          id: '0',
+          version: {
+            stemMs: draft.stemMs,
+            parts: n.parts,
+            subjectId,
+            educationLevelId: levelId,
+            chapterId: null,
+            unitId: draft.unitNodeId === null ? null : idToString(draft.unitNodeId),
+            spIds: draft.spNodeIds.map(idToString),
+            difficultyTp: draft.difficultyTp,
+            paperCode: draft.paperCode ?? null,
+          },
+        },
+        {
+          rightsStatus: 'own',
+          hasSourceDeclaration: true,
+          unconfirmedLowConfidenceFields: [],
+          hasOpenDuplicateFlag: false,
+          mediaResolved: await this.repo.mediaResolvedFor(draft.stimulusIds, n.stimulusGroupId ? BigInt(n.stimulusGroupId) : null),
+          lastEditedByAi: draft.lastEditor === 'ai',
+          declaredMarks: draft.declaredMarks ?? null,
+        },
+        await this.repo.isSpmBound(subjectId, levelId),
+      )
+      const fields = GATES.approve(data)
       if (Object.keys(fields).length > 0) throw fail(fields)
     }
     const creator = parse(actor.userId)
