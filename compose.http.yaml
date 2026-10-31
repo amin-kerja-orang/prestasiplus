@@ -23,19 +23,22 @@ services:
     # 1 migrate, 2 demo seed (poc profile: the demo accounts the @api specs log in with),
     # 3 local/E2E seed (T26: T4 pupil, Admin Pusat, blueprint 3472/2 Disahkan + serves_students). The e2e seed
     # needs NODE_ENV=development (it refuses production even with ALLOW_DEMO_SEED), set for that command only.
-    # Host guard before step 3: the DATABASE_URL host must be the compose-local `db` service (or localhost /
-    # 127.0.0.1), else the job exits 1 and seeds nothing e2e. Authority = text before the first `/` after the
-    # scheme, minus userinfo (last `@`) and port; an unparseable URL refuses. `$$` is compose's literal `$`.
+    # Host guard first, before step 1: migrate, demo seed and e2e seed all run only if the DATABASE_URL host is the
+    # compose-local `db` service (or localhost / 127.0.0.1); otherwise the job exits 1 and touches nothing. Host =
+    # text after the scheme up to the first `/`, `?` or `#`, minus userinfo (last `@`) and port. A `host=` or
+    # `hostaddr=` query parameter refuses (the pg driver would connect there). A URL whose host is not exactly db,
+    # localhost or 127.0.0.1 is refused (IPv6 [::1] included). `$$` is compose's literal `$`.
     command:
       - sh
       - -c
       - |
-        npm run be:db:migrate && npm run be:db:seed || exit 1
-        h="$${DATABASE_URL#*://}"; h="$${h%%/*}"; h="$${h##*@}"; h="$${h%%[:?]*}"
+        h="$${DATABASE_URL#*://}"; h="$${h%%[/?#]*}"; h="$${h##*@}"; h="$${h%%:*}"
+        case "$$DATABASE_URL" in *[?\&]host=*|*[?\&]hostaddr=*) h= ;; esac
         case "$$h" in
           db|localhost|127.0.0.1) ;;
-          *) echo "REFUSED: e2e seed runs only against the compose-local db (DATABASE_URL host '$$h')" >&2; exit 1 ;;
+          *) echo "REFUSED: migrate and seeds run only against the compose-local db (DATABASE_URL host must be db, localhost or 127.0.0.1)" >&2; exit 1 ;;
         esac
+        npm run be:db:migrate && npm run be:db:seed || exit 1
         NODE_ENV=development E2E_SEED=1 npm run be:db:seed -- --profile=e2e
     environment:
       # Demo accounts with a published password: dev and e2e only. The production base job never sets this.
