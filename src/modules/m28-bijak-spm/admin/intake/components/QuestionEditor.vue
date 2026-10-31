@@ -7,6 +7,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { DsText } from '@/ds'
+import { COGNITIVE_OPTIONS } from '@/modules/m04-question-bank'
 
 import type { LeafKind } from '../../../domain/types'
 import RichText from '../../../components/RichText.vue'
@@ -20,6 +21,8 @@ const props = defineProps<{
   modelValue: IntakeQuestion
   /** Bank questions have no printed number: hide the field. */
   hideNumber?: boolean
+  /** Intake review: a per-leaf "Aras pemikiran" the T33 approve gate needs (R1-B05). */
+  showCognitive?: boolean
 }>()
 const emit = defineEmits<{ 'update:modelValue': [IntakeQuestion] }>()
 
@@ -86,6 +89,27 @@ function removeOption(i: number): void {
 const key = computed(() => (q.value.scheme?.kind === 'option' ? q.value.scheme.correct : ''))
 function setKey(id: string): void {
   set({ scheme: { kind: 'option', marks: q.value.marks || 1, correct: id, reason: q.value.scheme?.kind === 'option' ? q.value.scheme.reason : '' } })
+}
+
+/* cognitive level (REQ intake-cognitive): '' clears it */
+type Cognitive = NonNullable<IntakeQuestion['cognitiveLevel']>
+const asCognitive = (v: string): Cognitive | undefined => COGNITIVE_OPTIONS.find((c) => c.value === v)?.value
+function setCognitive(v: string): void {
+  const { cognitiveLevel: _c, ...rest } = q.value
+  void _c
+  const level = asCognitive(v)
+  emit('update:modelValue', level ? { ...rest, cognitiveLevel: level } : rest)
+}
+function setPartCognitive(i: number, v: string): void {
+  const level = asCognitive(v)
+  set({
+    parts: q.value.parts.map((p, k) => {
+      if (k !== i) return p
+      const { cognitiveLevel: _c, ...rest } = p
+      void _c
+      return level ? { ...rest, cognitiveLevel: level } : rest
+    }),
+  })
 }
 
 /* parts */
@@ -207,6 +231,19 @@ function insertMath(field: 'stem'): void {
       <p v-else class="self-end pb-3 text-sm text-muted">Markah soalan: {{ q.marks }} (jumlah bahagian)</p>
     </div>
 
+    <label v-if="showCognitive && q.parts.length === 0" class="flex flex-col gap-1 text-sm">
+      <span class="font-medium">Aras pemikiran</span>
+      <select
+        :value="q.cognitiveLevel ?? ''"
+        class="min-h-11 rounded-lg border border-default bg-default px-2"
+        data-testid="q-cognitive"
+        @change="setCognitive(($event.target as HTMLSelectElement).value)"
+      >
+        <option value="">Pilih aras pemikiran</option>
+        <option v-for="c in COGNITIVE_OPTIONS" :key="c.value" :value="c.value">{{ c.label }}</option>
+      </select>
+    </label>
+
     <!-- stem -->
     <div class="flex flex-col gap-2">
       <div class="flex items-center justify-between gap-2">
@@ -322,6 +359,19 @@ function insertMath(field: 'stem'): void {
             @click="removePart(i)"
           />
         </div>
+        <label v-if="showCognitive" class="mt-3 flex flex-col gap-1 text-sm sm:max-w-xs">
+          <span class="text-muted">Aras pemikiran</span>
+          <select
+            :value="p.cognitiveLevel ?? ''"
+            class="min-h-11 rounded-lg border border-default bg-default px-2"
+            :aria-label="`Aras pemikiran ${p.label}`"
+            data-testid="part-cognitive"
+            @change="setPartCognitive(i, ($event.target as HTMLSelectElement).value)"
+          >
+            <option value="">Pilih aras pemikiran</option>
+            <option v-for="c in COGNITIVE_OPTIONS" :key="c.value" :value="c.value">{{ c.label }}</option>
+          </select>
+        </label>
         <DsText v-if="p.lead?.length" variant="caption" tone="muted" data-testid="part-lead">
           Di bawah: <RichText :text="p.lead.map((l) => `${l.label} ${l.prompt}`).join(' ')" />
         </DsText>
