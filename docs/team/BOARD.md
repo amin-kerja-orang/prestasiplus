@@ -143,7 +143,7 @@ T04 scope widened by planning: raw-SQL `'published'` question-status spots in `p
 
 | ID | Sev | Lane | Action |
 |---|---|---|---|
-| R1E2E-01 | Critical | A2 | **READY-FOR-REVIEW** r1/e2e01-intake-subject @ dbf524de (BASE-6): `curriculumCodeOf` in curriculum-facts (TagResolver.subject + taxonomy), duplicate-detector bank(), extraction ensureSourcePaper (same bug: MAT batch had subject_id NULL); subject-code.spec 13/13 (9 fail without fix); intake-workflow 101/101; api tsc 0; eslint 0. Input → B3 |
+| R1E2E-01 | Critical | A2 | **READY-FOR-REVIEW** r1/e2e01-intake-subject @ dbf524de (BASE-6): `curriculumCodeOf` in curriculum-facts (TagResolver.subject + taxonomy), duplicate-detector bank(), extraction ensureSourcePaper (same bug: MAT batch had subject_id NULL); subject-code.spec 13/13 (9 fail without fix); intake-workflow 101/101; api tsc 0; eslint 0. **Lead re-run: BASE-6 ancestor ✓; test/intake-workflow 15 files 101/101.** Input → B3 |
 | R1E2E-05 | Critical | A4 | stem/option image + own stimulus served after b08: prove on BASE-6 with DB spec, fix bridge if still red → r1/e2e05-stem-image |
 | R1E2E-06 | High | A3 | Terbit must refuse questions the attempt path refuses (publish check = attempt check, not overridable) → in T34 |
 | R1E2E-07 | Medium | A3 | Terbit on a Spec-blueprint paper: enforce AC-R1-16.2 (Disahkan) with BM blocker → in T34 |
