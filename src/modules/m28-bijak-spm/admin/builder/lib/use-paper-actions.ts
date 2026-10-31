@@ -10,7 +10,7 @@ import { useRouter } from 'vue-router'
 import { useFlash } from '@/composables/useFlash'
 
 import { builderCopy as t } from '../domain/copy'
-import { normalizeBlockers, overrideOffered, type BlockerInfo } from '../domain/blockers'
+import { blockersOf, overrideOffered, type BlockerInfo } from '../domain/blockers'
 import { publishGate } from '../domain/publish-gate'
 import { builderMessage, builderPath, type BuilderApi, type PublishOptions } from '../server/api'
 
@@ -51,7 +51,7 @@ export function usePaperActions(o: PaperActionsOptions) {
     const mine = ++seq
     try {
       const r = await o.api.review(o.id.value)
-      const infos = normalizeBlockers(r.blockers)
+      const infos = blockersOf(r)
       if (mine === seq) {
         review.value = { ...r, blockers: infos.map((b) => b.message), blockerInfo: infos }
         reviewError.value = false

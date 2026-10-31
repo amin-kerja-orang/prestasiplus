@@ -214,7 +214,11 @@ export class MockBuilderServer implements BuilderApi {
       paperId: id,
       status: ed.paper.status,
       ok: blockers.length === 0 && overridableLines.length === 0,
-      blockers: [...blockers, ...overridableLines.map((message) => ({ code: 'CONTRACT', message, overridable: true }))],
+      blockers: [...blockers, ...overridableLines],
+      blockerDetails: [
+        ...blockers.map((message) => ({ code: 'COUNT_TOO_FEW', message, overridable: false })),
+        ...overridableLines.map((message) => ({ code: 'BLUEPRINT_NOT_VERIFIED', message, overridable: true })),
+      ],
       canOverride: blockers.length === 0 && overridableLines.length > 0,
       notes,
       blueprintNeedsReview: notes.length > 0,

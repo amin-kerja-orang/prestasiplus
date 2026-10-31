@@ -15,7 +15,7 @@ import { hasStimulus, validTitle } from '../admin/builder/domain/stimulus'
 import { usePaperActions } from '../admin/builder/lib/use-paper-actions'
 import type { BuilderApi, SectionPool } from '../admin/builder/server/api'
 import PublishOverride from '../admin/builder/components/PublishOverride.vue'
-import { normalizeBlockers, overrideOffered } from '../admin/builder/domain/blockers'
+import { blockersOf, normalizeBlockers, overrideOffered } from '../admin/builder/domain/blockers'
 import { MockBuilderServer } from '../admin/builder/server/memory'
 import type { AdminPaper } from '../domain/admin-types'
 
@@ -203,6 +203,30 @@ describe('Empty-group placeholder (T07) and title rules', () => {
   })
 })
 
+describe('blockersOf: blockerDetails first, string list as fallback (REQ-C-002)', () => {
+  it('prefers blockerDetails and keeps the flags', () => {
+    const info = blockersOf({
+      blockers: ['a', 'b'],
+      blockerDetails: [
+        { code: 'COUNT_TOO_FEW', message: 'a', overridable: false },
+        { code: 'BLUEPRINT_NOT_VERIFIED', message: 'b', overridable: true },
+      ],
+    })
+    expect(info).toEqual([
+      { message: 'a', overridable: false },
+      { message: 'b', overridable: true },
+    ])
+    expect(overrideOffered(info, false)).toBe(false)
+    expect(overrideOffered(blockersOf({ blockers: ['x'], blockerDetails: [{ code: 'INELIGIBLE', message: 'x', overridable: true }] }), true)).toBe(true)
+  })
+  it('falls back to the plain lines (no flags) when blockerDetails is absent', () => {
+    const info = blockersOf({ blockers: ['Soalan q1 tidak layak: x'] })
+    expect(info).toEqual([{ message: 'Soalan q1 tidak layak: x', overridable: undefined }])
+    expect(overrideOffered(info)).toBe(true)
+    expect(overrideOffered(blockersOf({ blockers: ['Bahagian A: Kurang 1'] }))).toBe(false)
+  })
+})
+
 describe('Override path in the mock and with unsaved edits', () => {
   const lines = ['Kontrak Simulasi MAT Kertas 1 belum Disahkan']
   async function paperWith(api: MockBuilderServer) {
@@ -213,7 +237,9 @@ describe('Override path in the mock and with unsaved edits', () => {
     const api = new MockBuilderServer(() => lines)
     const id = await paperWith(api)
     const rv = await api.review(id)
-    expect(rv.blockers.some((b) => typeof b !== 'string' && b.overridable)).toBe(true)
+    expect(rv.blockers).toContain(lines[0])
+    expect(rv.blockerDetails?.some((b) => b.overridable && b.code === 'BLUEPRINT_NOT_VERIFIED')).toBe(true)
+    expect(rv.blockerDetails?.every((b) => typeof b.message === 'string')).toBe(true)
     // structural blockers (an empty draft) make it non-overridable
     expect(rv.canOverride).toBe(false)
     expect(await api.publish(id)).toMatchObject({ ok: false, errors: lines })
@@ -230,7 +256,8 @@ describe('usePaperActions: override saves first', () => {
   const review = (canOverride: boolean) => ({
     paperId: 'p', status: 'draf', ok: false, notes: [], blueprintNeedsReview: false, visibleToStudents: false,
     totalMarks: 0, totalBudget: 0, rows: [], canOverride,
-    blockers: [{ message: 'Kontrak Simulasi belum Disahkan', overridable: true }],
+    blockers: ['Kontrak Simulasi belum Disahkan'],
+    blockerDetails: [{ code: 'BLUEPRINT_NOT_VERIFIED', message: 'Kontrak Simulasi belum Disahkan', overridable: true }],
   })
   async function run(saved: boolean, canAfterSave: boolean) {
     const order: string[] = []
