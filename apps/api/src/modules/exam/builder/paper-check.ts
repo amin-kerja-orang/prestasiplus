@@ -162,8 +162,8 @@ export function checkPaper(input: CheckInput): PaperCheck {
 }
 
 /**
- * `checkPaper` plus the same blocking lines as coded issues, in the order of `publishErrors` (paper-wide first, then each section).
- * `issues.map(i => i.message)` equals `publishErrors(check)`.
+ * `checkPaper` plus the blocking lines as coded issues, in the order of `publishErrors` (paper-wide first, then each section), plus the
+ * three AC-07.4 checks of T43b that `check` does not carry (NO_QUESTIONS, ZERO_MARK_SECTION, TOTAL_MARKS_BELOW_ONE).
  */
 export function checkPaperDetailed(input: CheckInput): { check: PaperCheck; issues: CheckIssue[] } {
   const { specs, sections, marksOf, groupOf, membersOf, isLive } = input
@@ -173,8 +173,6 @@ export function checkPaperDetailed(input: CheckInput): { check: PaperCheck; issu
     errors.push(line)
     paperCodes.push(code)
   }
-  // PIPE AC-07.4: the first check of V2 Terbit, a paper without a single question. The section gaps are still listed after it.
-  if (sections.every((s) => s.questionIds.length === 0)) addPaper('NO_QUESTIONS', LINES.noQuestions)
   const seen = new Set<string>()
   const dup = new Set<string>()
   for (const s of sections) for (const id of s.questionIds) (seen.has(id) ? dup : seen).add(id)
@@ -215,8 +213,6 @@ export function checkPaperDetailed(input: CheckInput): { check: PaperCheck; issu
     const marks = effectiveMarks(spec.rule, ids.map(marksOf))
     if (ids.length < spec.questionCount) addSec('COUNT_TOO_FEW', LINES.tooFew(spec.questionCount, ids.length))
     else if (ids.length > spec.questionCount) addSec('COUNT_TOO_MANY', LINES.tooMany(spec.questionCount, ids.length))
-    // PIPE AC-07.4: no zero-mark Bahagian with questions (a hard check; the audited override only lifts the Kontrak lines).
-    if (ids.length > 0 && marks === 0) addSec('ZERO_MARK_SECTION', LINES.zeroMarkSection)
     if (marks !== spec.markBudget) addSec('MARKS_MISMATCH', LINES.marksMismatch(marks, spec.markBudget))
     if (spec.rule.type === 'choose') {
       const marksList = ids.map(marksOf)
@@ -251,8 +247,6 @@ export function checkPaperDetailed(input: CheckInput): { check: PaperCheck; issu
   })
   const totalMarks = out.reduce((n, s) => n + s.marks, 0)
   const totalBudget = specs.reduce((n, s) => n + s.markBudget, 0)
-  // PIPE AC-07.4: total marks at least 1 (an empty paper is already NO_QUESTIONS).
-  if (totalMarks < 1 && sections.some((s) => s.questionIds.length > 0)) addPaper('TOTAL_MARKS_BELOW_ONE', LINES.totalMarksBelowOne)
   const check: PaperCheck = {
     sections: out,
     errors,
@@ -260,9 +254,19 @@ export function checkPaperDetailed(input: CheckInput): { check: PaperCheck; issu
     totalBudget,
     ok: errors.length === 0 && out.every((s) => s.ok),
   }
+  // PIPE AC-07.4 (T43b): three Terbit checks the V2 publish has and the prototype `checkPaper` does not (so `check` and its parity with the
+  // prototype stay as they were): no question at all, no zero-mark Bahagian with questions, total marks at least 1. All three are hard.
+  const anyQuestion = sections.some((s) => s.questionIds.length > 0)
+  const noQuestions: CheckIssue[] = anyQuestion ? [] : [{ code: 'NO_QUESTIONS', message: LINES.noQuestions }]
+  const totalBelowOne: CheckIssue[] = anyQuestion && totalMarks < 1 ? [{ code: 'TOTAL_MARKS_BELOW_ONE', message: LINES.totalMarksBelowOne }] : []
   const issues: CheckIssue[] = [
+    ...noQuestions,
     ...errors.map((message, i): CheckIssue => ({ code: paperCodes[i]!, message })),
-    ...out.flatMap((s, si) => s.errors.map((e, i): CheckIssue => ({ code: sectionCodes[si]![i]!, message: LINES.sectionLine(s.label, e), section: s.label }))),
+    ...totalBelowOne,
+    ...out.flatMap((s, si): CheckIssue[] => [
+      ...(s.count > 0 && s.marks === 0 ? [{ code: 'ZERO_MARK_SECTION' as const, message: LINES.sectionLine(s.label, LINES.zeroMarkSection), section: s.label }] : []),
+      ...s.errors.map((e, i): CheckIssue => ({ code: sectionCodes[si]![i]!, message: LINES.sectionLine(s.label, e), section: s.label })),
+    ]),
   ]
   return { check, issues }
 }
