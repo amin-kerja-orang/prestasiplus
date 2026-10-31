@@ -71,6 +71,27 @@ export interface HeaderPatch {
   instructions?: string[]
 }
 
+/**
+ * "Sunting bahagian" patch (`PUT /admin/papers/:id`, `sections[]`, R1-T34 `BijakBuilderSectionPatch`
+ * @ r1/t34-builder-review 4d771b47). The answering rule and the count come from the blueprint and are
+ * not editable here.
+ */
+export interface SectionPatch {
+  label?: string
+  /** `null` or empty clears it (the rule line is derived again). */
+  instruction?: string | null
+  compulsory?: boolean
+}
+
+/** Terbitkan with the audited override (R1-T34 `BijakBuilderPublishRequest`): reason of at least 5 characters. */
+/** Publish answer; `overridden` is R1-T34 (absent on the base contract until T34 merges). */
+export type PublishResult = BijakBuilderPublishResult & { overridden?: string[] }
+
+export interface PublishOptions {
+  override?: boolean
+  reason?: string
+}
+
 export interface BuilderApi {
   listSets(): Promise<AdminPaperSummary[]>
   /** Subjects and the kertas that have a blueprint (Mula kosong / Jana set choices). */
@@ -90,7 +111,11 @@ export interface BuilderApi {
   pool(id: string, sectionId: string, query?: SectionPoolQuery): Promise<SectionPool>
   review(id: string): Promise<BijakBuilderReview>
   studentView(id: string): Promise<BijakBuilderStudentView>
-  publish(id: string): Promise<BijakBuilderPublishResult>
+  publish(id: string, options?: PublishOptions): Promise<PublishResult>
+  /** Sunting bahagian. */
+  updateSection(id: string, sectionId: string, patch: SectionPatch): Promise<PaperEditorData>
+  /** Sunting petikan: the title of a stimulus group (`PUT /admin/papers/:id/groups/:groupId`). */
+  updateGroupLabel(id: string, groupId: string, label: string): Promise<PaperEditorData>
   /** Tarik balik. */
   withdraw(id: string): Promise<void>
   /** Salin set: a new draft copy. Returns the new paper id. */

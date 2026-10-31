@@ -9,7 +9,6 @@ import type {
   BijakBuilderPaperSummary,
   BijakBuilderPlacementResult,
   BijakBuilderPoolUnit,
-  BijakBuilderPublishResult,
   BijakBuilderReview,
   BijakBuilderStudentView,
   BijakDskpUnit,
@@ -28,6 +27,9 @@ import {
   type BuilderSubject,
   type HeaderPatch,
   type PlacementResult,
+  type PublishOptions,
+  type PublishResult,
+  type SectionPatch,
   type SectionPool,
   type SectionPoolQuery,
 } from './api'
@@ -182,8 +184,25 @@ export class HttpBuilderServer extends HttpBijakServer implements BuilderApi {
     return this.call('GET', `/api/admin/papers/${enc(id)}/student-view`)
   }
 
-  publish(id: string): Promise<BijakBuilderPublishResult> {
-    return this.call('POST', `/api/admin/papers/${enc(id)}/publish`)
+  publish(id: string, options: PublishOptions = {}): Promise<PublishResult> {
+    const body: Record<string, unknown> = {}
+    if (options.override) {
+      body.override = true
+      body.reason = options.reason ?? ''
+    }
+    return this.call('POST', `/api/admin/papers/${enc(id)}/publish`, Object.keys(body).length ? body : undefined)
+  }
+
+  async updateSection(id: string, sectionId: string, patch: SectionPatch): Promise<PaperEditorData> {
+    return editorFromWire(
+      await this.call<BijakBuilderEditor>('PUT', `/api/admin/papers/${enc(id)}`, { sections: [{ id: sectionId, ...patch }] }),
+    )
+  }
+
+  async updateGroupLabel(id: string, groupId: string, label: string): Promise<PaperEditorData> {
+    return editorFromWire(
+      await this.call<BijakBuilderEditor>('PUT', `/api/admin/papers/${enc(id)}/groups/${enc(groupId)}`, { label }),
+    )
   }
 
   async withdraw(id: string): Promise<void> {

@@ -9,10 +9,11 @@ describe('publishGate', () => {
   it('is open when nothing blocks', () => {
     expect(publishGate(base)).toEqual({ blocked: false, count: 0, reason: '' })
   })
-  it('unsaved edits: disabled, reason says save first', () => {
-    const g = publishGate({ ...base, dirty: true })
-    expect(g.blocked).toBe(true)
-    expect(g.reason).toBe(t.publishSaveFirst)
+  it('unsaved edits alone do not block: Terbitkan saves first (2-click parity)', () => {
+    expect(publishGate({ ...base, dirty: true }).blocked).toBe(false)
+  })
+  it('a stale server blocker is ignored while dirty', () => {
+    expect(publishGate({ ...base, dirty: true, blockers: 2 }).blocked).toBe(false)
   })
   it('review call failed: disabled, reason says the check could not run', () => {
     const g = publishGate({ ...base, reviewFailed: true })

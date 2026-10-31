@@ -109,7 +109,6 @@ export const builderCopy = {
   blueprintNeedsReview: 'Blueprint perlu semakan', // contract copy
   reviewOk: 'Tiada masalah menghalang penerbitan.', // [PROPOSED]
   publishPanel: 'Penerbitan', // V2
-  publishSaveFirst: 'Terbitkan dinyahaktifkan: simpan draf dahulu supaya semakan dapat dijalankan.', // [PROPOSED]
   publishCheckFailed: 'Terbitkan dinyahaktifkan: semakan kertas tidak dapat dijalankan. Muat semula dan cuba lagi.', // [PROPOSED]
   publishDisabledWhy: (n: number): string => `Terbitkan dinyahaktifkan: ${n} masalah perlu dibetulkan.`, // [PROPOSED]
   notPublishable: (n: number): string => `Kertas ini belum boleh diterbitkan — ${n} masalah perlu dibetulkan.`, // V2
@@ -131,6 +130,23 @@ export const builderCopy = {
   sectionFull: 'Bahagian ini sudah penuh.', // [PROPOSED]
   reviewStale: 'Simpan draf untuk menyegarkan semakan.', // [PROPOSED]
   reviewError: 'Tidak dapat memuatkan semakan kertas.', // [PROPOSED]
+  titleRequired: 'Tajuk diperlukan (paling banyak 200 aksara).', // [PROPOSED]
+  sectionsEdit: 'Sunting bahagian', // V2
+  sectionLabel: 'Label bahagian', // V2
+  sectionInstruction: 'Arahan bahagian', // V2
+  sectionCompulsory: 'Soalan ini mesti dijawab', // V2
+  sectionRule: 'Peraturan menjawab', // V2 (read-only: set by the blueprint)
+  sectionCount: 'Bilangan soalan dipilih', // V2 (read-only: set by the blueprint)
+  sectionSaved: (l: string): string => `Bahagian '${l}' telah dikemas kini.`, // V2
+  sectionSave: 'Kemas kini bahagian', // [PROPOSED]
+  passagesEdit: 'Sunting petikan', // V2
+  passageTitle: 'Tajuk petikan', // V2
+  passageSaved: (l: string): string => `Petikan '${l}' telah dikemas kini.`, // [PROPOSED]
+  passageSave: 'Kemas kini petikan', // [PROPOSED]
+  passageShared: 'Tajuk ini dikongsi oleh semua kertas yang menggunakan kumpulan rangsangan ini.', // [PROPOSED] D90 deviation
+  overrideTick: 'Terbitkan walaupun tidak memenuhi kontrak blueprint', // V2
+  overrideReason: 'Sebab (sekurang-kurangnya 5 aksara)', // [PROPOSED]
+  overriddenFlash: (n: number): string => `Diterbitkan dengan ${n} pengecualian kontrak (direkodkan).`, // [PROPOSED]
   semak: 'Semak Kertas', // V2
   openBuilder: 'Buka di Set Builder', // [PROPOSED]
   contractNone: 'Tiada kontrak untuk subjek/kertas ini.', // V2

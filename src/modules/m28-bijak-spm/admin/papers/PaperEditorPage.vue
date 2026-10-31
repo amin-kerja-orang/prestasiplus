@@ -16,6 +16,8 @@ import type { BuilderGroup, BuilderQuestion } from '../../domain/admin-types'
 import { addUnit, checkPaper, moveUnit, removeUnit, unitsOf } from '../../domain/paper-builder'
 import { INTAKE_MANUAL_PATH } from '../intake/lib/intake-routes'
 import { bijakAdminServer } from '../../server/client'
+import PaperEditBlocks from '../builder/components/PaperEditBlocks.vue'
+import PublishOverride from '../builder/components/PublishOverride.vue'
 import PaperMetaForm from '../builder/components/PaperMetaForm.vue'
 import ReviewBlock from '../builder/components/ReviewBlock.vue'
 import StudentViewDrawer from '../builder/components/StudentViewDrawer.vue'
@@ -260,6 +262,25 @@ async function saveMeta(patchData: Parameters<ReturnType<typeof builderServer>['
   }
 }
 
+/** Sunting bahagian / petikan: unsaved placements go first (the reload resets them), then one call. */
+async function editThen(run: () => Promise<unknown>, okMessage: string): Promise<void> {
+  if (dirty.value && !(await save())) return
+  busy.value = true
+  try {
+    await run()
+    flash.show({ type: 'success', message: okMessage })
+    await reload()
+  } catch (e) {
+    flash.show({ type: 'error', message: builderMessage(e, bt.errRename) })
+  } finally {
+    busy.value = false
+  }
+}
+const saveSection = (sid: string, p: Parameters<ReturnType<typeof builderServer>['updateSection']>[2]): Promise<void> =>
+  editThen(() => builderServer().updateSection(id.value, sid, p), bt.sectionSaved(p.label ?? ''))
+const savePassage = (gid: string, label: string): Promise<void> =>
+  editThen(() => builderServer().updateGroupLabel(id.value, gid, label), bt.passageSaved(label))
+
 /* -------------------------------------------------------------------------- preview */
 const previewOpen = ref(false)
 const preview = ref<Awaited<ReturnType<typeof server.previewQuestions>> | null>(null)
@@ -497,7 +518,31 @@ const previewBlocks = computed(() => {
       </DsPanel>
 
       <DsPanel data-testid="paper-meta">
-        <PaperMetaForm :paper="data.paper" :readonly="readonly" :busy="busy" @save="saveMeta" />
+        <PaperMetaForm
+          v-model:title="title"
+          :paper="data.paper"
+          :readonly="readonly"
+          :busy="busy"
+          @update:title="dirty = true"
+          @save="saveMeta"
+        />
+      </DsPanel>
+
+      <DsPanel data-testid="paper-edit-blocks">
+        <PaperEditBlocks
+          :editor="data"
+          :readonly="readonly"
+          :busy="busy"
+          @section="saveSection"
+          @passage="savePassage"
+        />
+        <PublishOverride
+          v-if="!readonly"
+          class="mt-4"
+          :blockers="actions.blockers.value"
+          :busy="actions.busy.value"
+          @override="(reason) => actions.publish({ override: true, reason })"
+        />
       </DsPanel>
 
       <DsPanel v-for="(s, si) in sections" :key="s.id" :data-testid="`section-${si}`">

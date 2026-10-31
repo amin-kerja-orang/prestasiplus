@@ -6,7 +6,6 @@
  */
 import type {
   BijakBuilderPoolUnit,
-  BijakBuilderPublishResult,
   BijakBuilderReview,
   BijakBuilderStudentView,
   BijakDskpUnit,
@@ -22,6 +21,9 @@ import {
   type BuilderSubject,
   type HeaderPatch,
   type PlacementResult,
+  type PublishOptions,
+  type PublishResult,
+  type SectionPatch,
   type SectionPool,
   type SectionPoolQuery,
 } from './api'
@@ -263,9 +265,43 @@ export class MockBuilderServer implements BuilderApi {
     }
   }
 
-  async publish(id: string): Promise<BijakBuilderPublishResult> {
+  async publish(id: string, options: PublishOptions = {}): Promise<PublishResult> {
+    if (options.override && (options.reason ?? '').trim().length < 5)
+      throw new BuilderError('invalid', 'Sebab diperlukan untuk menerbitkan walaupun tidak memenuhi kontrak blueprint')
     const r = await (await this.a()).publishPaper(id)
     return { ok: r.ok, errors: r.errors }
+  }
+
+  async updateSection(id: string, sectionId: string, patch: SectionPatch): Promise<PaperEditorData> {
+    const a = await this.a()
+    const ed = await a.getPaperEditor(id)
+    if (ed.paper.status === 'terbit') throw new BuilderError('invalid', LOCKED)
+    const sec = ed.paper.sections.find((s) => s.id === sectionId)
+    if (!sec) throw new BuilderError('invalid', 'Bahagian tidak sah')
+    if (patch.label !== undefined) {
+      if (!patch.label.trim()) throw new BuilderError('invalid', 'Nama bahagian diperlukan')
+      sec.label = patch.label.trim()
+    }
+    if (patch.instruction !== undefined) {
+      const v = (patch.instruction ?? '').trim()
+      if (v) sec.instruction = v
+      else delete sec.instruction
+    }
+    if (patch.compulsory !== undefined) sec.compulsory = patch.compulsory
+    // The mock hands out its live paper: saving persists it.
+    return a.savePaper(id, {})
+  }
+
+  async updateGroupLabel(id: string, groupId: string, label: string): Promise<PaperEditorData> {
+    const a = await this.a()
+    const ed = await a.getPaperEditor(id)
+    if (ed.paper.status === 'terbit') throw new BuilderError('invalid', LOCKED)
+    const g = ed.groups.find((x) => x.id === groupId)
+    if (!g || !ed.paper.sections.some((s) => s.questionIds.some((q) => g.questionIds.includes(q))))
+      throw new BuilderError('invalid', 'Kumpulan rangsangan ini tiada dalam kertas ini')
+    if (!label.trim()) throw new BuilderError('invalid', 'Tajuk petikan diperlukan')
+    g.stimulus.label = label.trim()
+    return a.savePaper(id, {})
   }
 
   async withdraw(id: string): Promise<void> {

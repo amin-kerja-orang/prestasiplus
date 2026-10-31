@@ -19,6 +19,7 @@ import type { PaperEditorData } from '../../../domain/admin-types'
 import type { StimulusDef } from '../../../domain/types'
 import { KONTRAK_ROUTES } from '../../kontrak/server/api'
 import { KIND_LABEL } from '../../papers/ui'
+import PublishOverride from '../components/PublishOverride.vue'
 import ReviewBlock from '../components/ReviewBlock.vue'
 import StudentViewDrawer from '../components/StudentViewDrawer.vue'
 import { builderCopy as t, LEVEL_ITEMS } from '../domain/copy'
@@ -539,12 +540,17 @@ const dskpItems = computed(() => [
             :loading="actions.busy.value"
             :disabled="actions.publishBlocked.value || !review"
             data-testid="builder-publish"
-            @click="actions.publish"
+            @click="actions.publish()"
           />
           <p v-if="actions.publishReason.value" class="text-caption text-error" data-testid="builder-publish-reason">
             {{ actions.publishReason.value }}
           </p>
         </div>
+        <PublishOverride
+          :blockers="actions.blockers.value"
+          :busy="actions.busy.value"
+          @override="(reason) => actions.publish({ override: true, reason })"
+        />
       </div>
     </template>
 

@@ -1,6 +1,7 @@
 /**
- * Whether Terbitkan is off and why. Local issues (the live blueprint check) win, then unsaved edits
- * (the server review is stale), then a failed review call, then the server's own blockers.
+ * Whether Terbitkan is off and why. Local issues (the live blueprint check) win, then a failed review
+ * call, then the server's own blockers. Unsaved edits do NOT block (V2: Jana set + Terbitkan = 2 clicks):
+ * Terbitkan saves first, then reviews and publishes; a stale review is ignored while dirty.
  */
 import { builderCopy as t } from './copy'
 
@@ -18,8 +19,7 @@ export interface PublishGate {
 
 export function publishGate(i: PublishGateInput): PublishGate {
   if (i.localIssues > 0) return { blocked: true, count: i.localIssues, reason: t.publishDisabledWhy(i.localIssues) }
-  if (i.dirty) return { blocked: true, count: 0, reason: t.publishSaveFirst }
   if (i.reviewFailed) return { blocked: true, count: 0, reason: t.publishCheckFailed }
-  if (i.blockers > 0) return { blocked: true, count: i.blockers, reason: t.publishDisabledWhy(i.blockers) }
+  if (!i.dirty && i.blockers > 0) return { blocked: true, count: i.blockers, reason: t.publishDisabledWhy(i.blockers) }
   return { blocked: false, count: 0, reason: '' }
 }

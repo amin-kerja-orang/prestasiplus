@@ -208,9 +208,7 @@ test.describe('Bijak SPM Admin Pusat terbit kertas @bijak', () => {
     // Publish it from the editor, then look at the list again.
     await openBtn(page, row, id).click()
     await fillObjektif(page)
-    // Unsaved edits keep Terbitkan off (the reason says to save first).
-    await expect(page.getByTestId('paper-publish')).toBeDisabled()
-    await page.getByTestId('paper-save').click()
+    // Unsaved edits: Terbitkan saves first (Jana set + Terbitkan = 2 clicks).
     await page.getByTestId('paper-publish').click()
     await expect(page.getByTestId('paper-unpublish')).toBeVisible()
     await openListFromEditor(page)

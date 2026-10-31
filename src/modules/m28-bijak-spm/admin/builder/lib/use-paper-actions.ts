@@ -11,7 +11,7 @@ import { useFlash } from '@/composables/useFlash'
 
 import { builderCopy as t } from '../domain/copy'
 import { publishGate } from '../domain/publish-gate'
-import { builderMessage, builderPath, type BuilderApi } from '../server/api'
+import { builderMessage, builderPath, type BuilderApi, type PublishOptions } from '../server/api'
 
 export interface PaperActionsOptions {
   api: BuilderApi
@@ -57,17 +57,17 @@ export function usePaperActions(o: PaperActionsOptions) {
   const publishBlocked = computed(() => gate.value.blocked)
   const publishReason = computed(() => gate.value.reason)
 
-  async function publish(): Promise<boolean> {
-    if (busy.value || publishBlocked.value) return false
+  async function publish(options?: PublishOptions): Promise<boolean> {
+    if (busy.value || (publishBlocked.value && !options?.override)) return false
     busy.value = true
     try {
-      const r = await o.api.publish(o.id.value)
+      const r = options ? await o.api.publish(o.id.value, options) : await o.api.publish(o.id.value)
       if (!r.ok) {
         flash.show({ type: 'error', message: t.notPublishable(r.errors.length) })
         await loadReview()
         return false
       }
-      flash.show({ type: 'success', message: t.publishedFlash(o.title()) })
+      flash.show({ type: 'success', message: r.overridden?.length ? t.overriddenFlash(r.overridden.length) : t.publishedFlash(o.title()) })
       await o.onChanged()
       await loadReview()
       return true

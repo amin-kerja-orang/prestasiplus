@@ -11,6 +11,8 @@ import { builderCopy as t } from '../domain/copy'
 import type { HeaderPatch } from '../server/api'
 
 const props = defineProps<{ paper: AdminPaper; readonly?: boolean; busy?: boolean }>()
+/** The set title, shared with the page header so both fields stay in sync. */
+const title = defineModel<string>('title', { required: true })
 const emit = defineEmits<{ save: [patch: HeaderPatch] }>()
 
 const year = ref('')
@@ -29,8 +31,10 @@ watch(
 
 const parsedYear = computed(() => Number(year.value))
 const parsedDuration = computed(() => Number(duration.value))
+const titleOk = computed(() => title.value.trim().length > 0 && title.value.trim().length <= 200)
 const valid = computed(
   () =>
+    titleOk.value &&
     Number.isInteger(parsedYear.value) &&
     parsedYear.value >= 1900 &&
     parsedYear.value <= 2100 &&
@@ -42,6 +46,7 @@ const valid = computed(
 function submit(): void {
   if (!valid.value || props.readonly) return
   emit('save', {
+    title: title.value.trim(),
     year: parsedYear.value,
     durationMin: parsedDuration.value,
     instructions: lines.value
@@ -55,6 +60,9 @@ function submit(): void {
 <template>
   <form class="flex flex-col gap-3" data-testid="meta-form" @submit.prevent="submit">
     <h3 class="text-heading text-highlighted">{{ t.meta }}</h3>
+    <UFormField :label="t.fTitle" required :error="titleOk ? undefined : t.titleRequired">
+      <UInput v-model="title" class="w-full" :disabled="readonly" :aria-label="t.fTitle" data-testid="meta-title" />
+    </UFormField>
     <div class="grid gap-3 sm:grid-cols-3">
       <UFormField :label="t.fYear">
         <UInput
