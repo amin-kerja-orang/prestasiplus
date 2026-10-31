@@ -19,8 +19,8 @@ const big = (ids: Iterable<string>): bigint[] => [...new Set(ids)].map((id) => i
  * facts table: it asks the same readers as the draws (bank, practice and kuiz mappers, Bijak bridge, pool facts) and the database
  * for the level, subject, paper and file rows. A question the bank does not return (unknown, PKSK, Darjah) has no report.
  *
- * Cost: a handful of statements per call, independent of the number of ids, plus one Jana pool read per distinct subject (the pool
- * facts are subject-wide today). Measure before deciding on a facts table (D92).
+ * Cost: a handful of statements per call, plus one Jana pool read per distinct subject, narrowed to the requested ids (R1-T30; before
+ * it read the whole subject). No facts table (D92).
  */
 @Injectable()
 export class ServabilityService {
@@ -175,13 +175,13 @@ export class ServabilityService {
     return new Set(rows.map((r) => idToString(r.question_id)))
   }
 
-  /** Jana pool facts of the live versions. The pool reads a whole subject, so it is read once per distinct subject. */
+  /** Jana pool facts of the live versions, read for those question ids only (per subject), never the whole subject. */
   private async janaFactsOf(records: readonly QuestionRecord[]): Promise<Map<string, QuestionFacts>> {
-    const wanted = new Set(records.map((r) => r.id))
-    const subjects = [...new Set(records.flatMap((r) => (r.version.subjectId ? [r.version.subjectId] : [])))]
+    const bySubject = new Map<string, string[]>()
+    for (const r of records) if (r.version.subjectId) bySubject.set(r.version.subjectId, [...(bySubject.get(r.version.subjectId) ?? []), r.id])
     const out = new Map<string, QuestionFacts>()
-    for (const subjectId of subjects) {
-      for (const facts of await this.pool.candidatesOf(subjectId)) if (wanted.has(facts.id)) out.set(facts.id, facts)
+    for (const [subjectId, ids] of bySubject) {
+      for (const facts of await this.pool.candidatesOf(subjectId, ids)) out.set(facts.id, facts)
     }
     return out
   }

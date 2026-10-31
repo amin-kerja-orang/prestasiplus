@@ -95,6 +95,14 @@ describe('servability rules (pure)', () => {
     expect(evaluate(f, 'simulasi_paper').served).toBe(true)
   })
 
+  it('Simulasi (kertas): an archived question on a published paper is not served, because a new sitting needs a live approved version (H-A13)', () => {
+    const archived = record({ liveVersionNo: null }, { status: 'archived' })
+    const f = facts({ live: null, latest: archived, onPublishedPaper: true })
+    expect(codes(f, 'simulasi_paper')).toEqual(['archived'])
+    const draft = record({ liveVersionNo: null }, { status: 'draft' })
+    expect(codes(facts({ live: null, latest: draft, onPublishedPaper: true }), 'simulasi_paper')).toEqual(['not_approved'])
+  })
+
   it('level rules: inactive level, primary level, and a level the SPM activities do not offer (Bab does not mind)', () => {
     expect(codes(facts({ level: { id: '4', code: 'T4', stage: 'upper_secondary', isActive: false } }), 'bab')).toEqual(['level_inactive'])
     expect(codes(facts({ level: { id: '1', code: 'D1', stage: 'primary', isActive: true } }), 'bab')).toEqual(['level_primary'])
