@@ -70,6 +70,11 @@ watch([id, variant], () => {
   errors.value = []
 })
 
+/** A part that holds children is listed with 0 marks: stem text, not an answer field (V2: only leaves take answers). */
+const isStem = (s: { marks: number }): boolean => s.marks === 0
+/** The server joins the label chain with dots ("(a).(i)"); V2 and Bijak read "(a)(i)". */
+const labelOf = (label: string): string => label.replace(/\)\.\(/g, ')(')
+
 const image = computed(() => safeImageSrc(data.value?.stimulusImage))
 const marksOf = (subId: number) => result.value?.marks.find((m) => m.subQuestionId === subId)
 const modelOf = (subId: number) =>
@@ -135,24 +140,25 @@ async function submit(): Promise<void> {
           <div class="flex flex-col gap-3">
             <div class="flex flex-wrap items-baseline justify-between gap-2">
               <p class="text-body break-words text-highlighted">
-                <span class="text-label" data-testid="sub-label">{{ s.label }}</span>
+                <span class="text-label" data-testid="sub-label">{{ labelOf(s.label) }}</span>
                 <span class="ms-1 whitespace-pre-line">{{ s.text }}</span>
               </p>
-              <span class="text-caption text-muted" data-testid="sub-marks">{{
+              <span v-if="!isStem(s)" class="text-caption text-muted" data-testid="sub-marks">{{
                 marksLabel(s.marks)
               }}</span>
             </div>
             <UTextarea
+              v-if="!isStem(s)"
               v-model="answers[s.id]"
               :rows="6"
               :disabled="result !== null"
-              :aria-label="`Jawapan ${s.label}`"
+              :aria-label="`Jawapan ${labelOf(s.label)}`"
               class="w-full"
               data-testid="sub-answer"
             />
 
             <UAlert
-              v-if="result"
+              v-if="result && !isStem(s)"
               color="neutral"
               variant="soft"
               data-testid="sub-result"
