@@ -107,7 +107,7 @@ describe('exam seed (BE-15)', () => {
         const info = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
         await runSeeds([examSeed], { prisma: db.prisma })
         expect(info).toHaveBeenCalledWith(expect.stringContaining('no PocQuestionLoader wired'))
-        expect(info).toHaveBeenCalledWith(expect.stringContaining('serves them at runtime'))
+        expect(info).toHaveBeenCalledWith(expect.stringContaining('unplayable outside tests'))
         info.mockRestore()
       } finally {
         if (!preexisting) await db.query(`drop table questions`)
