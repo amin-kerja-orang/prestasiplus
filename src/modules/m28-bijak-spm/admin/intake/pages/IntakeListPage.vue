@@ -8,7 +8,6 @@ import { DsDataTable, DsEmptyState, DsFilterBar, DsNativeSelect, DsPage, DsStatu
 
 import { bijakAdminServer } from '../../../server/client'
 import { isUnavailable, UNAVAILABLE_TITLE } from '../../../server/errors'
-import { formatDateTime } from '../../../lib/use-bijak'
 import { INTAKE_MANUAL_PATH, INTAKE_UPLOAD_PATH, intakeReviewPath } from '../lib/intake-routes'
 import type { IntakeStatus, IntakeSummary } from '../types'
 

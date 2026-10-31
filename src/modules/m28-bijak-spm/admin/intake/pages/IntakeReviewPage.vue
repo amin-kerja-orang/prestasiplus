@@ -325,9 +325,8 @@ const decisionNote = ref('')
 const rejectingId = ref<string | null>(null)
 const rejectReason = ref('')
 const canDecide = computed(() => !readonly.value && !batch.value?.itemsUnavailable && !!server.decideIntakeItem)
-const currentIndex = computed(() => (batch.value?.questions ?? []).findIndex((q) => q.id === current.value))
 
-async function afterDecision(next: IntakeBatch): Promise<void> {
+function afterDecision(next: IntakeBatch): void {
   loaded = false // this replacement is not an edit: the autosave watcher skips it
   batch.value = next
   open.value = new Set(next.questions[0] ? [next.questions[0].id] : [])
@@ -346,7 +345,7 @@ async function accept(id: string): Promise<void> {
     const r = await server.decideIntakeItem(b.id, id, { action: 'terbit' })
     if (r.ok) {
       decisionNote.value = 'Soalan diterima sebagai draf.'
-      await afterDecision(r.batch)
+      afterDecision(r.batch)
     } else decisionErrors.value = r.errors
   } finally {
     deciding.value = false
@@ -376,7 +375,7 @@ async function confirmReject(): Promise<void> {
       decisionErrors.value = []
       decisionNote.value = 'Soalan ditolak.'
       rejectingId.value = null
-      await afterDecision(r.batch)
+      afterDecision(r.batch)
     } else decisionErrors.value = r.errors
   } finally {
     deciding.value = false
@@ -397,7 +396,7 @@ async function acceptAll(): Promise<void> {
       r.skipped.length > 0
         ? `${r.done} soalan diterima sebagai draf. ${r.skipped.length} dilangkau: keyakinan rendah atau semakan kualiti belum lulus.`
         : `${r.done} soalan diterima sebagai draf.`
-    await afterDecision(r.batch)
+    afterDecision(r.batch)
   } finally {
     deciding.value = false
   }

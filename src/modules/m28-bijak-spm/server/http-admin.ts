@@ -688,7 +688,7 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
     )
     const skipped = res.results
       .filter((r) => r.outcome === 'skipped')
-      .map((r) => ({ id: r.id, reason: (r.reason === 'GATE_FAILED' ? 'GATE_FAILED' : 'BELOW_THRESHOLD') as 'BELOW_THRESHOLD' | 'GATE_FAILED' }))
+      .map((r) => ({ id: r.id, reason: (r.reason === 'GATE_FAILED' ? 'GATE_FAILED' : 'BELOW_THRESHOLD') }))
     return { done: res.done, skipped, batch: await this.getIntakeBatch(id) }
   }
 
