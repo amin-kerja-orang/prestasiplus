@@ -11,7 +11,7 @@ import PaperMetaForm from '../admin/builder/components/PaperMetaForm.vue'
 import PaperReferenceEditor from '../admin/builder/components/PaperReferenceEditor.vue'
 import PaperQuestionOps from '../admin/builder/components/PaperQuestionOps.vue'
 import { builderCopy as t } from '../admin/builder/domain/copy'
-import { hasStimulus, validTitle } from '../admin/builder/domain/stimulus'
+import { groupLabelOf, hasStimulus, validTitle } from '../admin/builder/domain/stimulus'
 import { usePaperActions } from '../admin/builder/lib/use-paper-actions'
 import type { BuilderApi, SectionPool } from '../admin/builder/server/api'
 import PublishOverride from '../admin/builder/components/PublishOverride.vue'
@@ -194,6 +194,22 @@ describe('Empty-group placeholder (T07) and title rules', () => {
     }
     const w = mount(PaperEditBlocks, { props: { editor } })
     expect(w.find('[data-testid="edit-passages"]').exists()).toBe(false)
+  })
+  it('REQ-A-008: a group with stimuli: [] (no stimulus) does not crash the passage block or the mock', async () => {
+    const api = new MockBuilderServer()
+    const s = (await api.builderSubjects())[0]!
+    const id = await api.create({ subject: s.code, kertas: s.kertas[0]!, title: 'T' })
+    const ed = await api.getEditor(id)
+    ed.paper.sections[0]!.questionIds = ['q1']
+    const editor = { ...ed, groups: [{ id: 'g', stimuli: [], questionIds: ['q1'] }] as never }
+    const w = mount(PaperEditBlocks, { props: { editor } })
+    expect(w.find('[data-testid="edit-passages"]').exists()).toBe(false)
+    expect(groupLabelOf({ stimuli: [] })).toBe('')
+    expect(groupLabelOf({ stimuli: [{ label: 'Rajah 1' }, { label: 'B' }] })).toBe('Rajah 1')
+    // a group of three with no `stimulus` still shows its first label for editing
+    const three = { ...ed, groups: [{ id: 'g', stimuli: [{ id: 's', kind: 'diagram', label: 'Rajah 1', alt: '' }], questionIds: ['q1'] }] as never }
+    const w3 = mount(PaperEditBlocks, { props: { editor: three } })
+    expect(w3.find('[data-testid="passage-title-g"]').element).toHaveProperty('value', 'Rajah 1')
   })
   it('title rule: 1..200 after trim', () => {
     expect(validTitle('  ')).toBe(false)

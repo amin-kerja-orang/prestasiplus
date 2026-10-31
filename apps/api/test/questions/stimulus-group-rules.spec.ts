@@ -200,6 +200,101 @@ describe('stimulus group rules (admin, real database)', () => {
     })
   })
 
+  describe('B2 minors of T32 (R1-T49)', () => {
+    /** A published curated paper that pins version 1 of the question (what the attempt bridge serves, active or not). */
+    async function pin(questionId: string): Promise<void> {
+      const p = (await t.db.query<{ id: string }>(`insert into papers (kind, title, subject_id, kertas, printed_duration_min, status) values ('pilihan', 'Kertas terbit', $1, 1, 60, 'published') returning id::text id`, [refs.mathId]))[0]!.id
+      const sec = (await t.db.query<{ id: string }>(`insert into paper_sections (paper_id, position, label, question_count, mark_budget) values ($1, 1, 'Bahagian A', 1, 0) returning id::text id`, [p]))[0]!.id
+      await t.db.query(`insert into paper_placements (paper_section_id, question_id, pinned_version_no, position) values ($1, $2, 1, 1)`, [sec, questionId])
+    }
+
+    it('minor 1: a served member that is deactivated but pinned by a published paper still locks its stimulus and group', async () => {
+      const s = await servedGroup()
+      await pin(s.served)
+      await t.db.query(`update questions set is_active = false where id = $1`, [s.served])
+      const edit = await admin.put(`/api/stimuli/${s.stimulusId}`, { caption: 'Tukar' })
+      expect(edit.status, JSON.stringify(edit.body)).toBe(409)
+      expect(edit.body.error.message).toBe(STIMULUS_MESSAGES.stimulusServed)
+      expect((await admin.delete(`/api/stimulus-groups/${s.id}/members/${s.served}`)).status).toBe(409)
+      expect((await admin.delete(`/api/stimulus-groups/${s.id}`)).status).toBe(409)
+    })
+
+    it('minor 1: an ARCHIVED member that a published paper still pins keeps the stimulus locked (the probe of REQ-B-012)', async () => {
+      const s = await servedGroup()
+      await pin(s.served)
+      const archived = await admin.post('/api/questions/bulk-action', { action: 'archived', ids: [s.served] })
+      expect(archived.status, JSON.stringify(archived.body)).toBe(200)
+      expect((await t.db.query<{ status: string }>(`select status from question_versions where question_id = $1 and version_no = 1`, [s.served]))[0]!.status).toBe('archived')
+      const edit = await admin.put(`/api/stimuli/${s.stimulusId}`, { caption: 'Tukar' })
+      expect(edit.status, JSON.stringify(edit.body)).toBe(409)
+      expect(edit.body.error.message).toBe(STIMULUS_MESSAGES.stimulusServed)
+    })
+
+    it('minor 1: a deactivated member that no published paper pins is shown nowhere, so the stimulus can be edited', async () => {
+      const s = await servedGroup()
+      await t.db.query(`update questions set is_active = false where id = $1`, [s.served])
+      expect((await admin.put(`/api/stimuli/${s.stimulusId}`, { caption: 'Tukar' })).status).toBe(200)
+    })
+
+    it('minor 1: a draft paper does not lock; a stimulus linked to a version pinned by a published paper does', async () => {
+      const g = await group([await question(), await question()])
+      const draftPaper = (await t.db.query<{ id: string }>(`insert into papers (kind, title, subject_id, kertas, printed_duration_min, status) values ('pilihan', 'Draf', $1, 1, 60, 'draft') returning id::text id`, [refs.mathId]))[0]!.id
+      const sec = (await t.db.query<{ id: string }>(`insert into paper_sections (paper_id, position, label, question_count, mark_budget) values ($1, 1, 'A', 1, 0) returning id::text id`, [draftPaper]))[0]!.id
+      await t.db.query(`insert into paper_placements (paper_section_id, question_id, pinned_version_no, position) values ($1, $2, 1, 1)`, [sec, g.questionIds[0]])
+      expect((await admin.put(`/api/stimuli/${g.stimuli[0]!.id}`, { caption: 'Boleh' })).status).toBe(200)
+      // a stimulus linked straight to a version that a published paper pins
+      const q = await question()
+      const sid = await stimulus()
+      const version = (await t.db.query<{ id: string }>(`select id::text id from question_versions where question_id = $1 and version_no = 1`, [q]))[0]!.id
+      await t.db.query(`insert into question_version_stimuli (question_version_id, stimulus_id, position) values ($1, $2, 1)`, [version, sid])
+      await t.db.query(`update question_versions set status = 'approved' where question_id = $1`, [q])
+      await pin(q)
+      await t.db.query(`update questions set is_active = false where id = $1`, [q])
+      expect((await admin.put(`/api/stimuli/${sid}`, { caption: 'Tukar' })).status).toBe(409)
+    })
+
+    it('minor 2: a grouped question cannot change subject while the group has other members; the only member can', async () => {
+      const [a, b] = [await question(), await question()] as [string, string]
+      const g = await group([a, b])
+      const res = await admin.put(`/api/questions/${a}`, mcqBody(refs, { subjectId: refs.sciId }))
+      expect(res.status, JSON.stringify(res.body)).toBe(422)
+      expect(res.body.error.fields.subjectId).toBe(STIMULUS_MESSAGES.memberMixed)
+      expect((await t.db.query<{ s: string }>(`select v.subject_id::text s from question_versions v join questions q on q.id = v.question_id and q.latest_version_no = v.version_no where q.id = $1`, [a]))[0]!.s).toBe(refs.mathId)
+      expect(await members(g.id)).toEqual([a, b])
+      // leave, then the lone member may change subject
+      expect((await admin.delete(`/api/stimulus-groups/${g.id}/members/${b}`)).status).toBe(200)
+      const lone = await admin.put(`/api/questions/${a}`, mcqBody(refs, { subjectId: refs.sciId }))
+      expect(lone.status, JSON.stringify(lone.body)).toBe(200)
+    })
+
+    it('minor 3: members of one group share the kertas when it is set (no kertas fits any)', async () => {
+      const [k1, k2, none] = [await question({ kertas: '1' }), await question({ kertas: '2' }), await question()] as [string, string, string]
+      const bad = await admin.post('/api/stimulus-groups', { stimulusIds: [await stimulus()], questionIds: [k1, k2] })
+      expect(bad.status).toBe(422)
+      expect(bad.body.error.fields.questionIds).toBe(STIMULUS_MESSAGES.memberKertas)
+      const g = await group([k1, none])
+      // a new question of another kertas created inside the group, and an existing one added, are refused
+      const created = await admin.post(`/api/stimulus-groups/${g.id}/questions`, mcqBody(refs, { kertas: '2' }))
+      expect(created.status).toBe(422)
+      expect(created.body.error.fields.stimulusGroupId).toBe(STIMULUS_MESSAGES.memberKertas)
+      const added = await admin.post(`/api/stimulus-groups/${g.id}/members`, { questionId: k2 })
+      expect(added.status).toBe(422)
+      expect(added.body.error.fields.questionId).toBe(STIMULUS_MESSAGES.memberKertas)
+      // a member cannot change to another kertas while another member has one; the same kertas, or a null one, is fine
+      const change = await admin.put(`/api/questions/${none}`, mcqBody(refs, { kertas: '2' }))
+      expect(change.status, JSON.stringify(change.body)).toBe(422)
+      expect(change.body.error.fields.kertas).toBe(STIMULUS_MESSAGES.memberKertas)
+      expect((await admin.put(`/api/questions/${none}`, mcqBody(refs, { kertas: '1' }))).status).toBe(200)
+      expect((await admin.post(`/api/stimulus-groups/${g.id}/questions`, mcqBody(refs, { kertas: '1' }))).status).toBe(201)
+    })
+
+    it('nit: the unknown-group message is the contract copy', async () => {
+      const res = await admin.post('/api/questions', mcqBody(refs, { stimulusGroupId: '987654321' }))
+      expect(res.status).toBe(422)
+      expect(res.body.error.fields.stimulusGroupId).toBe(STIMULUS_MESSAGES.groupInvalid)
+    })
+  })
+
   describe('concurrency and the 40-member cap', () => {
     it('4 parallel POST /stimulus-groups/:id/questions: all 201, positions distinct and contiguous', async () => {
       const g = await group([await question()])

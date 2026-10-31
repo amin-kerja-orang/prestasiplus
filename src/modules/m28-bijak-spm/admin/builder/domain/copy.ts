@@ -39,8 +39,6 @@ export const builderCopy = {
   listEmpty: 'Belum ada set.', // V2 (design S4.1)
   open: 'Buka', // [PROPOSED]
   copy: 'Salin set', // V2
-  statusTerbit: 'Terbit', // V2
-  statusDraf: 'Draf', // V2
   loadError: 'Tidak dapat memuatkan senarai set.', // [PROPOSED]
 
   // Builder (S4.2)
@@ -60,13 +58,10 @@ export const builderCopy = {
   unitAll: 'Semua unit', // [PROPOSED]
   add: 'Tambah', // V2
   remove: 'Buang', // V2
-  published: 'Terbit', // V2 badge
   inSet: 'Dalam set', // V2 (Panel)
   noMatch: 'Tiada soalan sepadan.', // V2
   fill: (n: number, total: number): string => `${n} / ${total} dipilih`, // V2
   sectionEmpty: "Tiada soalan dalam bahagian ini. Gunakan butang 'Tambah' pada senarai bank.", // [PROPOSED] (V2 says "Lepaskan soalan di sini", no drag here)
-  up: 'Naik', // D83 D-9
-  down: 'Turun', // D83 D-9
   upAria: (n: number): string => `Naikkan soalan ${n}`, // [PROPOSED] design D-9
   downAria: (n: number): string => `Turunkan soalan ${n}`, // [PROPOSED] design D-9
   groupBadge: (label: string, n: number): string =>
@@ -110,7 +105,6 @@ export const builderCopy = {
   notes: 'Nota (tidak menghalang penerbitan)', // [PROPOSED]
   blueprintNeedsReview: 'Blueprint perlu semakan', // contract copy
   reviewOk: 'Tiada masalah menghalang penerbitan.', // [PROPOSED]
-  publishPanel: 'Penerbitan', // V2
   publishCheckFailed: 'Terbitkan dinyahaktifkan: semakan kertas tidak dapat dijalankan. Muat semula dan cuba lagi.', // [PROPOSED]
   publishDisabledWhy: (n: number): string => `Terbitkan dinyahaktifkan: ${n} masalah perlu dibetulkan.`, // [PROPOSED]
   notPublishable: (n: number): string => `Kertas ini belum boleh diterbitkan — ${n} masalah perlu dibetulkan.`, // V2
@@ -126,8 +120,6 @@ export const builderCopy = {
   seen: 'Dilihat murid', // task label
   notServed: 'Tidak disajikan', // V2 design S4.2 chip
   loading: 'Memuatkan…', // [PROPOSED]
-  poolEnd: 'Tiada lagi soalan.', // [PROPOSED]
-  unitNoMarks: 'Kumpulan rangsangan: markah ada pada setiap soalan.', // [PROPOSED] D90
   groupMembers: (n: number): string => `${n} soalan dalam kumpulan`, // [PROPOSED] D90
   sectionFull: 'Bahagian ini sudah penuh.', // [PROPOSED]
   reviewStale: 'Simpan draf untuk menyegarkan semakan.', // [PROPOSED]
