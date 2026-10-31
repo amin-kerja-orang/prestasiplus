@@ -90,6 +90,8 @@ export interface QuestionCheapFields {
   createdAtMs: number
   chapterLabel: string | null
   curriculumTopicId: number | null
+  /** R1-B05 / T33: "Aras pemikiran" of the single leaf (the Tambah Soalan form sends it); absent on seeded rows. */
+  cognitiveLevel?: string | null
   usageAttempts: number
 }
 

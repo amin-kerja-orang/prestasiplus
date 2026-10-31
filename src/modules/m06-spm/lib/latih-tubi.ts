@@ -1,6 +1,6 @@
 /**
  * S4 "Tetapan Kuiz" logic (SRS M06 FR-M06-25…31; the live `quizConfig()` script).
- * Difficulty buttons are bound to keys 2–5 of the site-wide 1–5 scale, as live (DV-M06-02 withdrawn).
+ * Difficulty buttons are the site-wide 1–5 scale of the V2 .cloud setup page (REQ-A-005, S-60); the V1 live page had 2–5 only.
  */
 
 import { isHttpMode } from '@/api/mode'
@@ -10,7 +10,7 @@ import { queryId } from './wire-id'
 
 /** A level id: 10 or 11 in the mock, the `education_levels` id string on the real API (BE-41). */
 export type LevelKey = WireId
-export type DifficultyKey = 2 | 3 | 4 | 5
+export type DifficultyKey = 1 | 2 | 3 | 4 | 5
 
 export interface DifficultyOption {
   key: DifficultyKey
@@ -20,8 +20,9 @@ export interface DifficultyOption {
 }
 
 export const DIFFICULTY_OPTIONS: readonly DifficultyOption[] = [
-  { key: 2, label: 'Asas', color: 'success' },
-  { key: 3, label: 'Pertengahan', color: 'info' },
+  { key: 1, label: 'Sangat Mudah', color: 'success' },
+  { key: 2, label: 'Mudah', color: 'success' },
+  { key: 3, label: 'Sederhana', color: 'info' },
   { key: 4, label: 'Sukar', color: 'warning' },
   { key: 5, label: 'Sangat Sukar', color: 'error' },
 ]
@@ -88,7 +89,7 @@ export function diffCount(
   level: LevelKey | null,
   key: DifficultyKey,
 ): number {
-  const k = String(key) as '2' | '3' | '4' | '5'
+  const k = String(key) as '1' | '2' | '3' | '4' | '5'
   if (level === null) return config.difficultyStats[k] || 0
   return config.difficultyByLevel[String(level)]?.[k] || 0
 }
@@ -134,7 +135,7 @@ export function parseLatihTubiQuery(query: Record<string, unknown>): LatihTubiQu
     count: toInt(query.count),
     levelId: parseLevel(query.level),
     difficulty:
-      difficulty !== null && difficulty >= 2 && difficulty <= 5
+      difficulty !== null && difficulty >= 1 && difficulty <= 5
         ? (difficulty as DifficultyKey)
         : null,
     questionId: queryId(query.question_id),

@@ -123,7 +123,12 @@ export const ServabilityActivityResultSchema = z
   .meta({ id: 'ServabilityActivityResult' })
 export type ServabilityActivityResult = z.infer<typeof ServabilityActivityResultSchema>
 
-/** "Dilihat murid di {servedCount} daripada {total}". */
+/**
+ * "Dilihat murid di {servedCount} daripada {total}". `total` is always the number of rows returned (`activities.length`, 6 in R1),
+ * never a literal: design section 9.1/9.2 says "7" because it also counts the Tracking A, Struktur/Subjektif, Permainan and PKSK
+ * families, which R1 does not serve from the bank (D92). The sentence stays honest by counting rows (design 9.2 counting rule);
+ * a client must print `total`, not a constant.
+ */
 export const ServabilityReportSchema = z
   .strictObject({
     questionId: IdSchema,

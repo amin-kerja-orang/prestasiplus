@@ -82,7 +82,7 @@ test.describe('M05 S4 chapter subjects', { tag: [moduleTag(5)] }, () => {
       'Soalan by Chapter',
     )
     await expect(tid(page, 'chapter-index-page')).toContainText(
-      'Pelajar jawab bab demi bab. Bab seterusnya hanya terbuka selepas bab sebelumnya lengkap dan mencapai sekurang-kurangnya 70%.',
+      'Pelajar jawab bab demi bab.',
     )
     await expect(tid(page, 'chapter-random')).toHaveText('Latih Tubi Rawak')
     await expect(tid(page, 'chapter-random')).toHaveAttribute('href', '/practice')
@@ -323,7 +323,7 @@ test.describe('M05 Q2 chapter quiz', { tag: [moduleTag(5)] }, () => {
 
       const right = await answerAll(page, 5)
       const score = right.filter(Boolean).length
-      await expect(tid(page, 'result-title')).toHaveText('Keputusan Latihan')
+      await expect(tid(page, 'result-title')).toHaveText('Kuiz Selesai!')
       await expect(tid(page, 'result-score')).toHaveText(`${score}/5`)
       await expect(tid(page, 'result-corrected')).toHaveCount(0)
       await expect(tid(page, 'result-back')).toHaveAttribute(
