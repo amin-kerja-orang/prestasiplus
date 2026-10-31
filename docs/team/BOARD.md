@@ -220,6 +220,9 @@ Also noted: user decisions of 18:03 relayed by team B — B09b paper-review edit
 | H-A21 | r1/ha21-overview-cache @ 7399b63c | A4 | after T30 → t45-lanes |
 | T45b | r1/t45b-question-detail-acs @ 8342f9a0 | A2 | AC-04.4 placements on admin question detail; AC-16.3 fix (approve releases legacy image hold); BASE-21 |
 | T49 | r1/t49-stimulus-lists @ ed3f585f | A2 | REQ-C-004/005 lists + members summary; B3 |
+| T26 / T35 / H-A13 (minors) | r1/t26-e2e-seed @ d474227d / r1/t35-report-archive @ 4ea790b1 / r1/ha13-archived-paper @ 3979e212 | A1 (b) | B2 minors fixed; BASE-21 |
+| T26b | r1/t26b-e2e-seed @ 7f62ede2 | A1 (b) | REQ-B-003: H-A15-safe e2e evidence; builder Sepadan proven; no honest structured K2 → fixme |
+| b-requests-a4 | r1/b-requests-a4 @ 42396048 | A4 | REQ-B-013, REQ-B-014 b/c (inline SVG dropped) |
 | T38 / T40 | r1/t38-selfmark-reward @ 662e602f / r1/t40-attempts-acs @ 90973d72 | A1 | |
 | T41 | r1/t41-curriculum-acs @ 067ff3cc | A1 | DSKP loader BM reasons (code fix), load changes no served count, Darjah text; dskp-acs 3/3 |
 | b-requests-a1 | r1/b-requests-a1 @ aa9f89dd | A1 | REQ-B-005/006/007/014a; B3 for 005/007 |
