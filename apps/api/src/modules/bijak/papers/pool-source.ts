@@ -48,7 +48,7 @@ export interface PoolTotals {
 
 /** Bank filter of the "Lihat soalan" link per reason (15.7). */
 export function excludedBankQuery(reason: ExcludedReasonCode, subjectId: string): Record<string, string> {
-  const base = { subjectId, status: 'published' }
+  const base = { subjectId, status: 'approved' }
   switch (reason) {
     case 'no_unit':
       return { ...base, dskpFilter: 'untagged' }

@@ -19,12 +19,12 @@ describe('AC 11: wire statuses are the v2 codes only', () => {
   })
 
   it('maps the mock values to the v2 codes (rejected has none)', () => {
-    expect(MOCK_STATUS_TO_V2).toEqual({ draft: 'draft', pending_review: 'review', approved: 'published', archived: 'archived', rejected: undefined })
+    expect(MOCK_STATUS_TO_V2).toEqual({ draft: 'draft', pending_review: 'review', approved: 'approved', archived: 'archived', rejected: undefined })
     expect(mockStatusToV2('pending_review')).toBe('review')
-    expect(mockStatusToV2('approved')).toBe('published')
+    expect(mockStatusToV2('approved')).toBe('approved')
     expect(mockStatusToV2('rejected')).toBeUndefined()
     expect(mockStatusToV2('constructor')).toBeUndefined()
-    expect(QUESTION_STATUSES).toEqual(['draft', 'review', 'approved', 'published', 'archived'])
+    expect(QUESTION_STATUSES).toEqual(['draft', 'review', 'approved', 'archived'])
   })
 
   it.each(['pending_review', 'rejected', 'live', ''])('create with status %j is 422 on fields.status', async (status) => {

@@ -129,7 +129,7 @@ export async function classWith(
 export async function eligibleQuestionIds(t: QsTestApp, n: number): Promise<string[]> {
   const rows = await t.db.query<{ id: string }>(
     `select q.id::text id from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no
-      where q.is_active and v.status = 'published' order by q.id limit $1`,
+      where q.is_active and v.status = 'approved' order by q.id limit $1`,
     [n],
   )
   expect(rows.length).toBe(n)

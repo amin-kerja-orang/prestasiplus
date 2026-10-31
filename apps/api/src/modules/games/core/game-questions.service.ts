@@ -57,7 +57,7 @@ export class GameQuestions {
 
   /** Servable (published, active, plain 2 to 4 option MCQ) questions for a filter (counts, e.g. "at least 15 for Jutawan"). */
   async eligibleCount(filter: GameQuestionFilter): Promise<number> {
-    return this.questions.count({ ...filter, ...GAME_SHAPE, status: 'published', active: true })
+    return this.questions.count({ ...filter, ...GAME_SHAPE, status: 'approved', active: true })
   }
 
   private servedFrom(records: QuestionRecord[], limit: number): ServedQuestion[] {
