@@ -73,9 +73,9 @@ describe('essay_choice storage (migration 0101)', () => {
     expect(row).toEqual({ mode: 'essay_choice', topics, word_min: 150, word_max: 200 })
 
     await svc.setStatus(q.id, 'review', admin.userId)
-    await svc.setStatus(q.id, 'approved', admin.userId)
-    const published = await svc.setStatus(q.id, 'published', admin.userId)
-    expect(published.version.status).toBe('published')
+    // R1-B01 (0100): approved = servable, there is no separate publish step.
+    const published = await svc.setStatus(q.id, 'approved', admin.userId)
+    expect(published.version.status).toBe('approved')
     const stored = (await repo.get(q.id, 'live'))?.version.parts[0]
     expect(stored).toMatchObject({ mode: 'essay_choice', marks: 30, topics, wordRange: { min: 150, max: 200 }, key: { kind: 'rubric' } })
 
