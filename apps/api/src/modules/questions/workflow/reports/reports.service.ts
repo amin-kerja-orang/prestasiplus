@@ -124,7 +124,7 @@ export class QuestionReportsService {
   }
 
   /** PATCH /question-reports/:id (admin). */
-  async update(actor: WorkflowActor, id: string, body: unknown) {
+  async update(actor: WorkflowActor, id: string, body: unknown, archive?: (questionId: string) => Promise<void>) {
     const row = await this.repo.get(id)
     if (!row) throw ApiError.of('NOT_FOUND')
     const v = validateUpdate(body)
@@ -138,6 +138,11 @@ export class QuestionReportsService {
       })
       if (v.reactivate) await this.bank.reactivate(qid)
       if (v.forceDeactivate) await this.bank.deactivate(qid)
+      // R1-B17: "Arkib" on the report row is the real lifecycle archive (status event included), not a deactivation.
+      if (v.archive) {
+        if (!archive) throw new Error('reports: the archive action is not wired')
+        await archive(qid)
+      }
       if (row.reporterId !== null && row.status !== v.status) await this.notify(next, await this.displayOf(next))
       return next
     })
@@ -160,7 +165,7 @@ export class QuestionReportsService {
 
   private async displayOf(r: ReportRow): Promise<Display> {
     const info = await this.bank.getStatus(idToString(r.questionId))
-    return r.status === 'fixed' && info !== null && !info.isActive ? 'removed' : (r.status as Display)
+    return r.status === 'fixed' && info !== null && (!info.isActive || info.status === 'archived') ? 'removed' : (r.status as Display)
   }
 
   private async notify(r: ReportRow, display: Display): Promise<void> {
@@ -188,8 +193,9 @@ export class QuestionReportsService {
   private baseView(r: ReportRow, exists: boolean, facts: QuestionFacts, names: ReadonlyMap<string, string>) {
     const qid = idToString(r.questionId)
     const type = typeOf(r)
-    const active = facts.status.get(qid)?.isActive ?? false
-    const display: Display = r.status === 'fixed' && exists && !active ? 'removed' : (r.status as Display)
+    const info = facts.status.get(qid)
+    const gone = !(info?.isActive ?? false) || info?.status === 'archived'
+    const display: Display = r.status === 'fixed' && exists && gone ? 'removed' : (r.status as Display)
     return {
       id: idToString(r.id),
       questionType: type,
