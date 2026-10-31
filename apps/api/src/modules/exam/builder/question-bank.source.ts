@@ -33,7 +33,8 @@ import {
   previewOfRows,
   reviewQuestion,
   statusOf,
-  stimulusOf,
+  emptyGroupStimulus,
+  stimuliOf,
   type Curriculum,
   type PartRow,
 } from './question-bank.mapping'
@@ -175,8 +176,10 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
       },
     })
     for (const g of groups) {
-      const stimulus = firstStimulus(g.stimuli.map((s) => s.stimulus))
-      if (stimulus) out.set(g.id.toString(), { id: g.id.toString(), stimulus, questionIds: g.questions.map((m) => m.id.toString()) })
+      // D90: the group is always emitted, with or without a displayable stimulus, so every builder read treats its members as one unit.
+      const shown = stimuliOf(g.stimuli.map((s) => s.stimulus))
+      const [stimulus = emptyGroupStimulus(g.id), ...rest] = shown
+      out.set(g.id.toString(), { id: g.id.toString(), stimulus, stimuli: shown.length > 0 ? [stimulus, ...rest] : [], questionIds: g.questions.map((m) => m.id.toString()) })
     }
     return out
   }
@@ -216,6 +219,7 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
     }
 
     const stimuli: Record<string, BijakAttemptStimulus> = {}
+    const groupStimuli: Record<string, BijakAttemptStimulus[]> = {}
     const optionBanks: Record<string, BijakAttemptOption[]> = {}
     const groupKeys = [...new Set(records.flatMap((r) => (r.groupId === null ? [] : [r.groupId])))].flatMap((id) => {
       const k = toBigint(id)
@@ -227,12 +231,15 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
         include: { stimuli: { orderBy: { position: 'asc' }, include: { stimulus: true } }, options: { orderBy: { position: 'asc' } } },
       })
       for (const g of groups) {
-        const st = firstStimulus(g.stimuli.map((s) => s.stimulus))
-        if (st) stimuli[g.id.toString()] = st
+        const all = stimuliOf(g.stimuli.map((s) => s.stimulus))
+        if (all[0]) {
+          stimuli[g.id.toString()] = all[0]
+          groupStimuli[g.id.toString()] = all
+        }
         if (g.options.length) optionBanks[g.id.toString()] = g.options.map((o) => ({ id: o.label, text: o.bodyMs ?? '' }))
       }
     }
-    return { questions, stimuli, optionBanks }
+    return { questions, stimuli, groupStimuli, optionBanks }
   }
 
   /** Curriculum unit title and code by node id (read-only; the curriculum module has no batch read by id). */
@@ -252,12 +259,4 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
     const rows = await this.db.educationLevel.findMany({ where: { id: { in: [...new Set(ids)] } }, select: { id: true, code: true } })
     return new Map(rows.map((r) => [r.id, r.code]))
   }
-}
-
-function firstStimulus(list: readonly Parameters<typeof stimulusOf>[0][]): BijakAttemptStimulus | undefined {
-  for (const s of list) {
-    const mapped = stimulusOf(s)
-    if (mapped) return mapped
-  }
-  return undefined
 }

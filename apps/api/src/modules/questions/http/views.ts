@@ -12,6 +12,7 @@ import {
   QuestionRowSchema,
   QuestionSchema,
   QuestionStimulusGroupSchema,
+  QuestionStimulusTableSchema,
   QuestionStructuredDetailSchema,
   QuestionStructuredRowSchema,
   type QuestionPart,
@@ -22,6 +23,7 @@ import type { z } from 'zod'
 import { toMytTimestamp } from '../../../common/time/myt'
 import { isLeaf, type QuestionLeaf } from '../grading'
 import { constantFields, difficultyLabelOf, flatFromVersion, kertasOfPaperCode, wireSourceType } from '../projection'
+import { stimulusTableOf } from '../stimulus-table'
 import type { QuestionDetailView, QuestionView, StimulusGroupRecord } from '../types'
 
 export type QuestionRow = z.output<typeof QuestionRowSchema>
@@ -104,6 +106,9 @@ export function stimulusGroupView(g: StimulusGroupRecord): z.output<typeof Quest
       body: s.bodyMs === null && s.bodyEn === null ? null : { ms: s.bodyMs ?? s.bodyEn ?? '', ...(s.bodyEn === null || s.bodyMs === null ? {} : { en: s.bodyEn }) },
       imageId: s.assetFileId,
       alt: s.alt,
+      ...(s.caption ? { caption: s.caption } : {}),
+      ...(s.sourceCitation ? { sourceCitation: s.sourceCitation } : {}),
+      ...(s.kind === 'table' && stimulusTableOf(s.tableData) ? { tableData: QuestionStimulusTableSchema.parse(stimulusTableOf(s.tableData)) } : {}),
     })),
     ...(g.optionBank.length === 0
       ? {}
