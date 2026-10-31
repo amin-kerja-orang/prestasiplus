@@ -155,7 +155,7 @@ describe('PoC question pool at Darjah 1 to 4 (database and API)', () => {
   const poolRows = () =>
     t.db.query<{ subject: string; level: string; n: number; live: number; tp: number; untagged: number; spm: number; origin: number }>(
       `select s.code as subject, l.code as level, count(*)::int as n,
-              count(*) filter (where q.live_version_no = 1 and v.status = 'published' and q.is_active and v.type = 'mcq')::int as live,
+              count(*) filter (where q.live_version_no = 1 and v.status = 'approved' and q.is_active and v.type = 'mcq')::int as live,
               count(*) filter (where v.difficulty_tp between 1 and 4 and v.cognitive_level is not null)::int as tp,
               count(*) filter (where v.unit_node_id is null
                 and not exists (select 1 from question_version_sp_nodes sp where sp.question_version_id = v.id))::int as untagged,

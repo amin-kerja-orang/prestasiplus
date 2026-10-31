@@ -39,7 +39,7 @@ beforeAll(async () => {
   await t.db.query('delete from questions')
   await t.db.query('delete from spm_tracking_sets')
   // MATH: 45 pool questions over three chapters (topics), 8 structured; SEJ: only 3 pool questions; the rest: none.
-  for (const ch of [1, 2, 3]) await addPool(t.db, 'MATH', 15, { level: 'D1', chapterNumber: ch })
+  for (const ch of [1, 2, 3]) await addPool(t.db, 'MATH', 15, { level: 'T4', chapterNumber: ch })
   for (let i = 0; i < 8; i++) await addQuestion(t.db, { subject: 'MATH', type: 'structured', pool: false })
   await addQuestion(t.db, { subject: 'MATH', type: 'structured', pool: false, status: 'draft' })
   await addPool(t.db, 'SEJ', 3)
@@ -128,7 +128,7 @@ describe('AC9 Paper 1: 30 pool items', () => {
     const expected = (
       await t.db.query<{ id: string }>(
         `select q.id::text from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no join subjects s on s.id = v.subject_id
-          where s.code = 'MATH' and v.type = 'mcq' and q.is_active and v.status = 'published'
+          where s.code = 'MATH' and v.type = 'mcq' and q.is_active and v.status = 'approved'
             and exists (select 1 from question_tags t where t.question_id = q.id and t.kind = 'pool')
           order by hashtextextended(q.id::text, $1::bigint), q.id limit 30`,
         [seed],
@@ -137,7 +137,7 @@ describe('AC9 Paper 1: 30 pool items', () => {
     expect(expected).toHaveLength(30)
     expect(rows.map((r) => r.question_id)).toEqual(expected)
     expect(
-      (await t.db.query<{ n: number }>(`select count(*)::int as n from questions q join question_versions v on v.question_id = q.id join subjects s on s.id = v.subject_id where s.code = 'MATH' and v.type = 'mcq' and q.is_active and v.status = 'published'`))[0]?.n,
+      (await t.db.query<{ n: number }>(`select count(*)::int as n from questions q join question_versions v on v.question_id = q.id join subjects s on s.id = v.subject_id where s.code = 'MATH' and v.type = 'mcq' and q.is_active and v.status = 'approved'`))[0]?.n,
     ).toBe(45)
     // Creating a mock writes nothing to practice, mastery, the revision queue or the wallet.
     expect(await snapshot()).toEqual(before)
@@ -186,7 +186,7 @@ describe('AC9 Paper 1: 30 pool items', () => {
     expect(r.weakTopics.reduce((n, x) => n + x.wrongCount, 0)).toBe(18)
     const sorted = [...r.weakTopics].sort((a, b) => b.wrongCount - a.wrongCount || a.topic.localeCompare(b.topic, 'ms'))
     expect(r.weakTopics).toEqual(sorted)
-    const chapterNames = (await t.db.query<{ name: string }>(`select c.name from chapters c join subjects s on s.id = c.subject_id join education_levels l on l.id = c.education_level_id where s.code = 'MATH' and l.code = 'D1' and c.chapter_number in (1,2,3)`)).map((x) => x.name)
+    const chapterNames = (await t.db.query<{ name: string }>(`select c.name from chapters c join subjects s on s.id = c.subject_id join education_levels l on l.id = c.education_level_id where s.code = 'MATH' and l.code = 'T4' and c.chapter_number in (1,2,3)`)).map((x) => x.name)
     expect(r.weakTopics.every((x) => chapterNames.includes(x.topic))).toBe(true)
 
     // The result route returns the same body; the list carries the figures.
@@ -245,7 +245,7 @@ describe('AC9 Paper 2: 6 structured items of 10 marks', () => {
     const drawn = await t.db.query<{ question_id: string; model_answer: string; max_marks: number }>('select question_id::text, model_answer, max_marks from spm_mock_exam_items where mock_exam_id = $1 order by item_no', [id])
     expect(new Set(drawn.map((d) => d.question_id)).size).toBe(6)
     // Only published structured MATH questions: the draft and the MCQs never come.
-    const ok = await t.db.query<{ id: string }>(`select q.id::text from questions q join question_versions v on v.question_id = q.id where v.subject_id = (select id from subjects where code = 'MATH') and v.type = 'structured' and v.status = 'published'`)
+    const ok = await t.db.query<{ id: string }>(`select q.id::text from questions q join question_versions v on v.question_id = q.id where v.subject_id = (select id from subjects where code = 'MATH') and v.type = 'structured' and v.status = 'approved'`)
     expect(drawn.every((d) => ok.some((o) => o.id === d.question_id))).toBe(true)
     expect(drawn[0]?.model_answer).toMatch(/^Model jawapan a \d+\nModel jawapan b \d+$/)
     expect((await t.db.query<{ max_score: number }>('select max_score from spm_mock_exams where id = $1', [id]))[0]?.max_score).toBe(60)

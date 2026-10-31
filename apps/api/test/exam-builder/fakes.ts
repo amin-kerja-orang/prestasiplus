@@ -44,7 +44,7 @@ export class FakeBank implements BuilderQuestionSource, BijakQuestionSource {
       subject: init.subject ?? 'MAT',
       kertas: init.kertas ?? 2,
       groupId: init.groupId ?? null,
-      status: init.status ?? 'published',
+      status: init.status ?? 'approved',
       versions: [{ marks: init.marks, preview: `Soalan ${init.id} v1` }],
     })
     return this
@@ -103,7 +103,7 @@ export class FakeBank implements BuilderQuestionSource, BijakQuestionSource {
 
   async candidates(scope: BuilderCandidateScope): Promise<string[]> {
     return [...this.questions.values()]
-      .filter((q) => q.subject === scope.subject && q.kertas === scope.kertas && q.status === 'published')
+      .filter((q) => q.subject === scope.subject && q.kertas === scope.kertas && q.status === 'approved')
       .map((q) => q.id)
   }
 

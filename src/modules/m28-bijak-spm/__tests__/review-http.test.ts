@@ -292,11 +292,12 @@ describe('bank wire mappers', () => {
   })
 
   it('maps statuses both ways', () => {
-    expect(bankStatusFromWire('published')).toBe('terbit')
-    expect(bankStatusFromWire('approved')).toBe('semakan')
+    expect(bankStatusFromWire('approved')).toBe('terbit')
+    expect(bankStatusFromWire('review')).toBe('semakan')
     expect(bankStatusFromWire('archived')).toBe('ditolak')
     expect(bankStatusFromWire('draft')).toBe('draf')
-    expect(wireStatusesOf('semakan')).toEqual(['review', 'approved'])
+    expect(wireStatusesOf('semakan')).toEqual(['review'])
+    expect(wireStatusesOf('terbit')).toEqual(['approved'])
     expect(wireStatusesOf('semua')).toBeNull()
   })
 

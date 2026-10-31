@@ -114,7 +114,7 @@ export const VERIFY_RULES: readonly VerifyRule[] = [
            where p.question_id not in (${POC_IDS_SQL}) and not exists (
                  select 1 from questions q
                    join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no
-                  where q.id = p.question_id and q.is_active and v.status = 'published')
+                  where q.id = p.question_id and q.is_active and v.status = 'approved')
            order by p.id`,
   },
   orphan('orphan_practice_session_questions', 'practice_session_questions.question_id points at an existing question.', 'practice_session_questions', 'question_id', 'questions'),

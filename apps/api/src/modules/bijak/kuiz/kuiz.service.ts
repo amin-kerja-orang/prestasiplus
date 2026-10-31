@@ -96,7 +96,7 @@ export class KuizService {
       mulberry32(randomInt(0, 0x1_0000_0000)),
     )
     const records = await this.questions.getMany(ids, 'live')
-    const prepared = await this.prepare(records.filter((r) => r.isActive && r.version.status === 'published'))
+    const prepared = await this.prepare(records.filter((r) => r.isActive && r.version.status === 'approved'))
     // `getMany` keeps the order of `ids` (the seeded hash order); keep the first `count` that can be answered.
     const chosen = prepared
       .flatMap((p) => {

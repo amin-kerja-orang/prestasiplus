@@ -31,7 +31,6 @@ describe('lifecycle transition (BE-10 AC 1, 2, 12)', () => {
   function expected(role: Role, from: QuestionWorkflowStatus, to: QuestionWorkflowStatus): 'ok' | 403 | 404 | 409 {
     if (role === 'schoolAdmin') return 403
     if (role === 'otherTeacher') return 404
-    if (from === 'review' && to === 'published') return role === 'admin' ? 'ok' : 403
     const rule = QUESTION_WORKFLOW_TRANSITIONS.find((r) => r.from === from && r.to === to)
     if (!rule) return 409
     return rule.actors.includes(role === 'admin' ? 'admin' : 'owner_teacher') ? 'ok' : 403
@@ -50,7 +49,7 @@ describe('lifecycle transition (BE-10 AC 1, 2, 12)', () => {
       expect(res.to).toBe(to)
       expect((await t.fake.getStatus(id))?.status).toBe(to)
       const rows = await events(t, id)
-      expect(rows).toHaveLength(from === 'review' && to === 'published' ? 2 : 1)
+      expect(rows).toHaveLength(1)
       expect(rows.at(-1)).toMatchObject({ to_status: to, actor_role: c[role].role, version_no: 1 })
       expect(rows[0]?.from_status).toBe(from)
     } else {
@@ -74,7 +73,7 @@ describe('lifecycle transition (BE-10 AC 1, 2, 12)', () => {
   })
 
   it('a reason is mandatory for return to Draf, withdraw: blank is 422 and is recorded when given', async () => {
-    t.fake.seed({ id: '2002', status: 'published' })
+    t.fake.seed({ id: '2002', status: 'approved' })
     for (const reason of [undefined, null, '   ']) {
       const e = await failure(svc.transition('2002', 'archived', actorOf(c.admin), { reason }))
       expect(e.getStatus()).toBe(422)
@@ -88,17 +87,21 @@ describe('lifecycle transition (BE-10 AC 1, 2, 12)', () => {
     expect(await count(t.db, 'select count(*) n from question_status_events where question_id = 2002')).toBe(2)
   })
 
-  it('Lulus & Terbit writes two events and runs both gates', async () => {
+  it('review to approved (Terbitkan) is one step: one merged gate, one event, no approved-to-published hop (ADR-0027)', async () => {
     t.fake.seed({ id: '2003', status: 'review', gate: { rightsStatus: 'unclear' } })
-    const e = await failure(svc.transition('2003', 'published', actorOf(c.admin)))
-    expect(e.details).toEqual({ gate: 'publish' })
-    expect(e.fields).toHaveProperty('rightsStatus')
-    // the approve step ran before the failure and was rolled back with it
+    const e = await failure(svc.transition('2003', 'approved', actorOf(c.admin)))
+    expect(e.details).toEqual({ gate: 'approve' })
+    expect(e.fields).toHaveProperty('rightsStatus') // a former publish-gate rule now runs in the approve gate
     expect(await events(t, '2003')).toHaveLength(0)
     t.fake.seed({ id: '2004', status: 'review' })
-    const res = await svc.transition('2004', 'published', actorOf(c.admin))
-    expect(res.events).toEqual([{ from: 'review', to: 'approved' }, { from: 'approved', to: 'published' }])
-    expect((await events(t, '2004')).map((r) => r.to_status)).toEqual(['approved', 'published'])
+    const res = await svc.transition('2004', 'approved', actorOf(c.admin))
+    expect(res.events).toEqual([{ from: 'review', to: 'approved' }])
+    expect((await events(t, '2004')).map((r) => r.to_status)).toEqual(['approved'])
+    // `published` is no longer a status: a request for it is a 422, never a transition
+    t.fake.seed({ id: '2006', status: 'review' })
+    const gone = await failure(svc.transition('2006', 'published', actorOf(c.admin)))
+    expect(gone.getStatus()).toBe(422)
+    expect(gone.fields?.status).toBe('Status tidak sah.')
   })
 
   it('the bank is told who acted and the archive hint', async () => {

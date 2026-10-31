@@ -62,12 +62,12 @@ describe('Bab set by the admin feeds GET /api/practice/chapter-subjects', () => 
     const tag = await tagOf(t.db, refs.mathId, refs.t4Id)
     const list = async () => PracticeReadChapterSubjectListResponseSchema.parse((await student.get('/api/practice/chapter-subjects')).body).data
 
-    const plain = await admin.post('/api/questions', mcqBody(refs, { status: 'published', tag }))
+    const plain = await admin.post('/api/questions', mcqBody(refs, { status: 'approved', tag }))
     expect(plain.status, JSON.stringify(plain.body)).toBe(201)
     expect(await list()).toEqual([])
 
     const chapter = await chapterIdOf(t.db, 'MATH', 'T4', 1)
-    const res = await admin.post('/api/questions', mcqBody(refs, { status: 'published', tag, curriculumChapterId: chapter }))
+    const res = await admin.post('/api/questions', mcqBody(refs, { status: 'approved', tag, curriculumChapterId: chapter }))
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     expect(mutationEnvelopeOf(QuestionSchema).parse(res.body).data.curriculumChapterId).toBe(chapter)
 

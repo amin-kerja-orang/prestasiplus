@@ -83,7 +83,8 @@ describe('BE-33 AC4: bulk-action status events', () => {
 
   it('a refused transition writes no event and keeps the status, while another id in the request still gets its event', async () => {
     const refused = await create() // draft -> approved is not allowed
-    const allowed = await create()
+    const tag = await tagOf(t.db, refs.mathId, refs.t4Id)
+    const allowed = ((await admin.post('/api/questions', mcqBody(refs, { tag }))).body as { data: { id: string } }).data.id
     await bulk({ action: 'review', ids: [allowed] }, 'be33-bulk-prep-1') // draft -> review
     const before = (await eventsOf([refused, allowed])).length
 
@@ -92,7 +93,7 @@ describe('BE-33 AC4: bulk-action status events', () => {
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     expect(res.body.data).toEqual({
       affected: 1,
-      failed: [{ id: refused, code: 'CONFLICT', message: 'Perubahan status daripada Draf kepada Lulus tidak dibenarkan.', fields: {} }],
+      failed: [{ id: refused, code: 'CONFLICT', message: 'Perubahan status daripada Draf kepada Diterbitkan tidak dibenarkan.', fields: {} }],
     })
 
     expect(await statusOf(refused)).toBe('draft')
@@ -107,26 +108,25 @@ describe('BE-33 AC4: bulk-action status events', () => {
   it('a publish that fails the tag gate writes no event (rolled back) and keeps the status', async () => {
     const bare = await create() // no curriculum tag
     await bulk({ action: 'review', ids: [bare] }, 'be33-bulk-prep-2')
-    await bulk({ action: 'approved', ids: [bare] }, 'be33-bulk-prep-3')
     const before = await eventsOf([bare])
-    expect(before.map((e) => e.to_status)).toEqual(['review', 'approved'])
+    expect(before.map((e) => e.to_status)).toEqual(['review'])
 
     const requestId = 'be33-bulk-publish-1'
-    const res = await bulk({ action: 'published', ids: [bare, UNKNOWN_ID] }, requestId)
+    const res = await bulk({ action: 'approved', ids: [bare, UNKNOWN_ID] }, requestId)
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     expect(res.body.data).toEqual({ affected: 0, failed: [expect.objectContaining({ id: bare, code: 'VALIDATION_ERROR' }), { id: UNKNOWN_ID, code: 'NOT_FOUND', message: 'Soalan tidak dijumpai.', fields: {} }] })
 
-    expect(await statusOf(bare)).toBe('approved')
+    expect(await statusOf(bare)).toBe('review')
     const after = await eventsOf([bare])
     expect(after.length).toBe(before.length)
     expect(after.filter((e) => e.request_id === requestId)).toEqual([])
   })
 
-  it('a publish that passes the tag gate writes one approved to published event; a gate-failing sibling in the same request writes none', async () => {
-    // Fixture mirrors publish-endpoint.spec.ts "bulk publish" (line 58): create with status `approved`, with and without the full tag.
+  it('a Terbitkan that passes the gate writes one review to approved event; a gate-failing sibling in the same request writes none', async () => {
+    // Fixture mirrors publish-endpoint.spec.ts "bulk publish" (line 58): create with status `review`, with and without the full tag.
     const tag = await tagOf(t.db, refs.mathId, refs.t4Id)
     const make = async (over: Record<string, unknown>): Promise<string> => {
-      const res = await admin.post('/api/questions', mcqBody(refs, { status: 'approved', ...over }))
+      const res = await admin.post('/api/questions', mcqBody(refs, { status: 'review', ...over }))
       expect(res.status, JSON.stringify(res.body)).toBe(201)
       return (res.body as { data: { id: string } }).data.id
     }
@@ -136,19 +136,19 @@ describe('BE-33 AC4: bulk-action status events', () => {
     const beforeTagged = (await eventsOf([tagged])).length
 
     const requestId = 'be33-bulk-publish-ok-1'
-    const res = await bulk({ action: 'published', ids: [bare, tagged] }, requestId)
+    const res = await bulk({ action: 'approved', ids: [bare, tagged] }, requestId)
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     expect(res.body.data).toEqual({ affected: 1, failed: [expect.objectContaining({ id: bare, code: 'VALIDATION_ERROR' })] })
 
-    expect(await statusOf(tagged)).toBe('published')
-    expect(await statusOf(bare)).toBe('approved')
+    expect(await statusOf(tagged)).toBe('approved')
+    expect(await statusOf(bare)).toBe('review')
     const mine = (await eventsOf([bare, tagged])).filter((e) => e.request_id === requestId)
     expect(mine.length).toBe(1)
     expect(mine[0]).toEqual({
       question_id: tagged,
       version_no: await latestVersionOf(tagged),
-      from_status: 'approved',
-      to_status: 'published',
+      from_status: 'review',
+      to_status: 'approved',
       actor_user_id: admin.userId,
       actor_role: 'admin',
       reason: null,
