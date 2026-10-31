@@ -18,6 +18,7 @@ import { PrismaService } from '../../../db/prisma.service'
 import { parseId, visibleBatches } from '../files/intake-access'
 import type { CallerInfo } from './extraction.service'
 import { figureKeys, stimulusKey } from './figure-links'
+import { attachToStimulus } from './grouping'
 import { StoredPayloadSchema, stimulusOf } from './item-model'
 import { textOfQuestion } from './duplicates'
 import { INTAKE_AUDIT, MAX_STIMULI_PER_BATCH, WORKFLOW_MESSAGES } from './workflow.constants'
@@ -131,7 +132,11 @@ export class IntakeStimuliService {
           const payload = StoredPayloadSchema.safeParse(item.payload)
           if (payload.success && figureKeys(textOfQuestion(payload.data)).includes(key)) linked.push(item.id)
         }
-        if (linked.length > 0) await tx.intakeItem.updateMany({ where: { id: { in: linked } }, data: { stimulusId: found.id } })
+        if (linked.length > 0) {
+          await tx.$queryRaw`SELECT id FROM intake_batches WHERE id = ${found.batchId} FOR UPDATE`
+          await tx.intakeItem.updateMany({ where: { id: { in: linked } }, data: { stimulusId: found.id } })
+          await this.gather(tx, found.batchId, found.id, linked)
+        }
       }
       await this.audit.record({
         action: INTAKE_AUDIT.figureLinked,
@@ -149,6 +154,19 @@ export class IntakeStimuliService {
       })
       return { stimulusId: idToString(found.id), linkedItemIds: linked.map(idToString) }
     }, TX)
+  }
+
+  /** Keeps the group contiguous (the same rule as attaching one item): the members move to the place of the first one. */
+  private async gather(tx: TxClient, batchId: bigint, stimulusId: bigint, itemIds: bigint[]): Promise<void> {
+    const rows = await tx.intakeItem.findMany({ where: { batchId }, orderBy: [{ position: 'asc' }, { id: 'asc' }], select: { id: true, position: true, stimulusId: true } })
+    const ordered = rows.map((r) => ({ id: idToString(r.id), stimulusId: r.stimulusId === null ? null : idToString(r.stimulusId) }))
+    const { items, moved } = attachToStimulus(ordered, itemIds.map(idToString), idToString(stimulusId))
+    if (!moved) return
+    const slots = rows.map((r) => r.position)
+    for (const [i, it] of items.entries()) {
+      const old = rows.find((r) => idToString(r.id) === it.id)
+      if (old && old.position !== slots[i]) await tx.intakeItem.update({ where: { id: old.id }, data: { position: slots[i] as number } })
+    }
   }
 
   private async find(tx: TxClient, auth: AuthContext, idText: string) {

@@ -72,4 +72,16 @@ describe('one figure, every question that refers to it (D90)', () => {
     expect((await post(teacher, `/intake/stimuli/${s.id}/link-references`)).body.data.linkedItemIds).toEqual([])
     expect((await post(teacher, '/intake/stimuli/987654321/link-references')).status).toBe(404)
   })
+
+  it('keeps the group contiguous: the question between two members moves after them', async () => {
+    t.ai.paper = () => paper([draft(t.codes, '1', { stem: named('Rajah 4', 1) }), draft(t.codes, '2', { stem: uniqueStem() }), draft(t.codes, '3', { stem: named('Rajah 4', 3) })])
+    const { batchId } = await readyBatch(t, teacher)
+    await extractAndRun(t, teacher, batchId)
+    const items = await itemsOf(teacher, batchId)
+    const s = (await post(teacher, `/intake/batches/${batchId}/stimuli`, { kind: 'diagram', label: 'Rajah 4', alt: 'Graf' })).body.data
+    const res = await post(teacher, `/intake/stimuli/${s.id}/link-references`)
+    expect(res.body.data.linkedItemIds).toEqual([items[0]!.id, items[2]!.id])
+    expect((await itemsOf(teacher, batchId)).map((i) => i.id)).toEqual([items[0]!.id, items[2]!.id, items[1]!.id])
+    expect((await review(batchId)).groups[0]).toMatchObject({ contiguous: true })
+  })
 })

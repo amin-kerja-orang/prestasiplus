@@ -290,6 +290,34 @@ function toggleMember(stimulusId: string, qid: string, on: boolean): void {
     groupNote.value = ''
   }
 }
+const linking = ref('')
+/** D90: every question that names the figure ("Rajah 1") joins its group; the server does it after the draft is saved. */
+async function linkReferences(s: IntakeStimulus): Promise<void> {
+  const b = batch.value
+  if (!b || readonly.value || linking.value) return
+  const at = b.stimuli.findIndex((x) => x.id === s.id)
+  linking.value = s.id
+  try {
+    clearTimeout(timer)
+    await save()
+    if (saveState.value === 'gagal') return
+    const stimulusId = batch.value?.stimuli[at]?.id ?? s.id
+    const r = await server.linkStimulusReferences(b.id, stimulusId)
+    loaded = false // this replacement is not an edit: the autosave watcher skips it
+    batch.value = await server.getIntakeBatch(props.batchId)
+    groupNote.value =
+      r.linkedItemIds.length === 0
+        ? `Tiada soalan lain yang menyebut ${s.label}.`
+        : `${r.linkedItemIds.length} soalan dipautkan kepada ${s.label}.`
+  } catch {
+    groupNote.value = 'Pautan gagal. Cuba lagi.'
+  } finally {
+    linking.value = ''
+  }
+}
+const sharedBy = (id: string): string =>
+  (batch.value?.questions ?? []).filter((q) => q.stimulusId === id).map((q) => q.label).join(', ')
+
 function quickAttach(qid: string, stimulusId: string): void {
   toggleMember(stimulusId || '', qid, false)
   if (stimulusId) toggleMember(stimulusId, qid, true)
@@ -662,7 +690,12 @@ async function submit(): Promise<void> {
                   data-testid="stimulus-card"
                 >
                   <div class="flex items-center justify-between gap-2">
-                    <p class="font-medium">{{ s.label }}</p>
+                    <div class="flex min-w-0 flex-col">
+                      <p class="font-medium">{{ s.label }}</p>
+                      <p class="text-sm text-muted" data-testid="stimulus-shared">
+                        {{ sharedBy(s.id) ? `Dikongsi oleh soalan ${sharedBy(s.id)}` : 'Belum dikongsi oleh mana-mana soalan' }}
+                      </p>
+                    </div>
                     <UButton
                       icon="i-ph-trash"
                       color="error"
@@ -706,6 +739,17 @@ async function submit(): Promise<void> {
                       @input="patchStimulus(s.id, { text: ($event.target as HTMLTextAreaElement).value })"
                     />
                   </label>
+                  <UButton
+                    type="button"
+                    color="neutral"
+                    variant="soft"
+                    class="min-h-11 self-start"
+                    :loading="linking === s.id"
+                    :data-testid="`link-references-${s.label}`"
+                    @click="linkReferences(s)"
+                  >
+                    Pautkan semua yang merujuk
+                  </UButton>
                   <fieldset class="flex flex-col gap-1">
                     <legend class="mb-1 text-sm font-medium">Soalan dalam kumpulan ini</legend>
                     <UCheckbox

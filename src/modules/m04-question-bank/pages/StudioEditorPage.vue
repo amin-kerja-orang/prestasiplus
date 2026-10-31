@@ -6,7 +6,7 @@
  * Aras pemikiran, the unit and SP come from the DSKP tree, the Bab is a select (D89), and pictures go through the files
  * module. A draft saves with gaps; the gate is at approval. Status buttons (Hantar untuk semakan, Terbitkan, Arkib) are F03a.
  */
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
@@ -20,6 +20,7 @@ import {
   STUDIO_UNAVAILABLE,
   studioAvailable,
   updateStudioQuestion,
+  type StudioGroup,
   type StudioQuestionDetail,
 } from '../api/studio'
 import ChapterSelect from '../components/ChapterSelect.vue'
@@ -27,6 +28,7 @@ import StudioDskpFields from '../components/studio/StudioDskpFields.vue'
 import StudioGroupEditor from '../components/studio/StudioGroupEditor.vue'
 import StudioImageField from '../components/studio/StudioImageField.vue'
 import StudioLeafEditor from '../components/studio/StudioLeafEditor.vue'
+import StudioPreview from '../components/studio/StudioPreview.vue'
 import {
   blankDraft,
   blankLeaf,
@@ -39,6 +41,14 @@ import {
   totalMarks,
   type StudioDraft,
 } from '../lib/studio/draft'
+import {
+  clearSnapshot,
+  loadSnapshot,
+  recoveryKey,
+  RECOVERY_MESSAGE,
+  sameDraft,
+  saveSnapshot,
+} from '../lib/studio/recovery'
 import { errorLines, GENERIC_ERROR, LOAD_ERROR } from '../lib/ui-errors'
 
 const props = defineProps<{ id?: string }>()
@@ -59,6 +69,44 @@ const fieldProblems = ref<Record<string, string>>({})
 const originalGroupId = ref<string | null>(null)
 /** An approved or published question is read-only until "Edit sebagai draf" (V2 S1.3). */
 const unlocked = ref(true)
+
+const groupView = ref<StudioGroup | null>(null)
+const previewOpen = ref(false)
+
+/* ---- draft recovery (V2 flow 1 step 2): unsaved work is kept in the browser and offered again ---- */
+const store: Storage | null = typeof window === 'undefined' ? null : window.localStorage
+const storeKey = computed(() => recoveryKey(props.id))
+const saved = ref<StudioDraft | null>(null)
+const offer = ref<StudioDraft | null>(null)
+let keepTimer: ReturnType<typeof setTimeout> | undefined
+
+function startRecovery(): void {
+  saved.value = JSON.parse(JSON.stringify(draft.value)) as StudioDraft
+  const snap = store === null ? null : loadSnapshot(store, storeKey.value)
+  offer.value = snap !== null && !sameDraft(snap, draft.value) ? snap : null
+  if (snap !== null && offer.value === null && store !== null) clearSnapshot(store, storeKey.value)
+}
+function restore(): void {
+  if (offer.value) draft.value = offer.value
+  offer.value = null
+}
+function discard(): void {
+  if (store !== null) clearSnapshot(store, storeKey.value)
+  offer.value = null
+}
+watch(
+  draft,
+  () => {
+    if (store === null || loading.value || offer.value !== null || saved.value === null || readOnly.value) return
+    clearTimeout(keepTimer)
+    keepTimer = setTimeout(() => {
+      if (sameDraft(draft.value, saved.value as StudioDraft)) clearSnapshot(store, storeKey.value)
+      else saveSnapshot(store, storeKey.value, draft.value)
+    }, 600)
+  },
+  { deep: true },
+)
+onBeforeUnmount(() => clearTimeout(keepTimer))
 
 const SERVING = ['approved', 'published']
 const readOnly = computed(() => !unlocked.value || unsupported.value.length > 0)
@@ -98,6 +146,7 @@ async function load(): Promise<void> {
   } finally {
     loading.value = false
   }
+  if (!loadFailed.value) startRecovery()
 }
 onMounted(() => {
   if (studioAvailable()) void load()
@@ -119,12 +168,15 @@ async function save(): Promise<void> {
     if (edit.value && props.id !== undefined) {
       const res = await updateStudioQuestion(props.id, toRequestBody(draft.value, { groupId: originalGroupId.value }))
       flash.success(res.status)
+      if (store !== null) clearSnapshot(store, storeKey.value)
       originalGroupId.value = res.data ? draft.value.groupId : originalGroupId.value
       await load()
       unlocked.value = !SERVING.includes(status.value)
     } else {
       const res = await createStudioQuestion(toRequestBody(draft.value))
       flash.success('Soalan draf disimpan. Terbitkan melalui semakan apabila sedia.')
+      clearTimeout(keepTimer)
+      if (store !== null) clearSnapshot(store, storeKey.value)
       await router.replace(`/admin/studio/questions/${res.data.id}/sunting`)
     }
   } catch (err) {
@@ -144,6 +196,16 @@ async function save(): Promise<void> {
     <DsText v-else-if="loading" variant="body" tone="muted" data-testid="studio-loading">Memuatkan…</DsText>
 
     <DsStack v-else as="form" gap="lg" data-testid="studio-form" @submit.prevent="save">
+      <DsCallout v-if="offer" tone="warning" data-testid="studio-recovery">
+        {{ RECOVERY_MESSAGE }}
+        <template #actions>
+          <DsCluster gap="sm">
+            <UButton type="button" color="primary" data-testid="studio-recovery-restore" @click="restore">Pulihkan</UButton>
+            <UButton type="button" color="neutral" variant="soft" data-testid="studio-recovery-discard" @click="discard">Buang</UButton>
+          </DsCluster>
+        </template>
+      </DsCallout>
+
       <DsCallout v-if="problems.length > 0" tone="error" :title="`Ada masalah — ${problems.length} ralat.`" data-testid="studio-problems">
         <DsText v-for="p in problems" :key="p" variant="body">{{ p }}</DsText>
       </DsCallout>
@@ -163,6 +225,10 @@ async function save(): Promise<void> {
       <DsCallout v-if="unsupported.length > 0" tone="warning" title="Soalan ini belum boleh disunting di Studio" data-testid="studio-unsupported">
         <DsText v-for="u in unsupported" :key="u" variant="body">{{ u }}</DsText>
       </DsCallout>
+
+      <DsCluster gap="sm">
+        <UButton type="button" color="neutral" variant="soft" data-testid="studio-preview-open" @click="previewOpen = true">Pratonton</UButton>
+      </DsCluster>
 
       <DsPillNav :items="tabs" :active="active" label="Bahagian borang" testid-prefix="studio-tab" @select="go" />
 
@@ -201,7 +267,7 @@ async function save(): Promise<void> {
       <!-- Langkah 2 -->
       <DsStack id="studio-section-rangsangan" as="section">
         <DsFormSection title="Langkah 2 Rangsangan (stimulus)" description="Satu rangsangan dikongsi oleh semua soalan yang merujuknya. Ia dipaparkan sekali." icon="book-open-text">
-          <StudioGroupEditor v-model:group-id="draft.groupId" :current-question-id="props.id ?? null" :disabled="readOnly" />
+          <StudioGroupEditor v-model:group-id="draft.groupId" :current-question-id="props.id ?? null" :disabled="readOnly" @changed="groupView = $event" />
         </DsFormSection>
       </DsStack>
 
@@ -247,5 +313,6 @@ async function save(): Promise<void> {
         </template>
       </DsFormBar>
     </DsStack>
+    <StudioPreview v-model:open="previewOpen" :group="groupView" :draft="draft" :question-id="props.id ?? null" />
   </DsPage>
 </template>

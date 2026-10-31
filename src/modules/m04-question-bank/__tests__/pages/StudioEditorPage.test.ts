@@ -199,4 +199,78 @@ describe('StudioEditorPage (R1-F03b)', () => {
     await t(w, 'studio-edit-as-draft').trigger('click')
     expect(t(w, 'studio-stem').attributes('disabled')).toBeUndefined()
   })
+
+  describe('draft recovery and Pratonton', () => {
+    const KEY = 'pp:studio-draft:baharu'
+    const snapshot = (stem: string) =>
+      JSON.stringify({
+        v: 1,
+        savedAt: '2026-10-31T10:00:00Z',
+        draft: {
+          subjectId: '3', educationLevelId: '7', kertas: '', stem, stemImageToken: null, chapterId: '', difficulty: 3, unitId: null, spIds: [], groupId: null,
+          leaves: [{ label: 'a', mode: 'short_text', prompt: 'Jawab.', marks: 1, tp: null, cognitive: null, options: [], correct: '', accepted: 'abc', numeric: { value: '', tolerance: '', unit: '' } }],
+        },
+      })
+    beforeEach(() => window.localStorage.clear())
+
+    it('offers the unsaved work and restores it (Pulihkan)', async () => {
+      window.localStorage.setItem(KEY, snapshot('Soalan yang belum disimpan tadi.'))
+      const w = await render('/admin/studio/questions/create')
+      expect(t(w, 'studio-recovery').text()).toContain('Terdapat kerja yang belum disimpan daripada sesi sebelum ini.')
+      await t(w, 'studio-recovery-restore').trigger('click')
+      expect((t(w, 'studio-stem').element as HTMLTextAreaElement).value).toBe('Soalan yang belum disimpan tadi.')
+      expect(has(w, 'studio-recovery')).toBe(false)
+    })
+
+    it('drops it (Buang) and forgets it', async () => {
+      window.localStorage.setItem(KEY, snapshot('Soalan lama yang tidak diperlukan.'))
+      const w = await render('/admin/studio/questions/create')
+      await t(w, 'studio-recovery-discard').trigger('click')
+      expect(has(w, 'studio-recovery')).toBe(false)
+      expect(window.localStorage.getItem(KEY)).toBeNull()
+      expect((t(w, 'studio-stem').element as HTMLTextAreaElement).value).toBe('')
+    })
+
+    it('offers nothing for a damaged snapshot, and keeps typed work for next time', async () => {
+      window.localStorage.setItem(KEY, '{rosak')
+      vi.useFakeTimers()
+      try {
+        const w = await render('/admin/studio/questions/create')
+        expect(has(w, 'studio-recovery')).toBe(false)
+        await t(w, 'studio-stem').setValue('Kerja yang baru ditaip dan belum disimpan.')
+        await vi.advanceTimersByTimeAsync(700)
+        expect(window.localStorage.getItem(KEY)).toContain('Kerja yang baru ditaip')
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('a successful save forgets the snapshot', async () => {
+      studio.createStudioQuestion.mockResolvedValue({ data: { id: '77', status: 'draft' }, status: 'ok' })
+      window.localStorage.setItem(KEY, snapshot('Soalan yang akan disimpan sekarang.'))
+      const w = await render('/admin/studio/questions/create')
+      await t(w, 'studio-recovery-restore').trigger('click')
+      await t(w, 'studio-form').trigger('submit')
+      await flushPromises()
+      expect(window.localStorage.getItem(KEY)).toBeNull()
+    })
+
+    it('Pratonton shows the shared stimulus once with the members of the group', async () => {
+      studio.fetchStudioQuestion.mockResolvedValue({
+        id: '501', status: 'draft', subjectId: '3', educationLevelId: '7', difficultyLevel: 3, questionText: 'S1 berdasarkan Rajah 1, apakah ini?',
+        questionImage: null, curriculumChapterId: null, stimulusGroup: { id: '9' }, tag: { unitId: '40', spIds: ['41'], tp: 2 },
+        parts: [{ label: 'a', prompt: { ms: 'Pilih.' }, mode: 'short_text', marks: 1, difficultyTp: 2, kbat: 'bukan', key: { kind: 'accepted', values: ['x'] } }],
+      })
+      const w = await render('/admin/studio/questions/501/sunting', '501')
+      await t(w, 'studio-preview-open').trigger('click')
+      await flushPromises()
+      const body = document.body
+      // the shared stimulus is ONE group around both members, not one per member
+      expect(body.querySelectorAll('[data-testid="stimulus-group"]')).toHaveLength(1)
+      const questions = body.querySelector('[data-testid="stimulus-questions"]')
+      expect(questions?.querySelectorAll('[data-testid^="studio-preview-q-"]')).toHaveLength(2)
+      expect(body.querySelector('[data-testid="studio-preview-q-501"]')?.textContent).toContain('S1 berdasarkan Rajah 1')
+      expect(body.querySelector('[data-testid="studio-preview-q-502"]')?.textContent).toContain('S2 berdasarkan Rajah 1')
+    })
+  })
 })
