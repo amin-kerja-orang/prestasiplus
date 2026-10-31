@@ -62226,6 +62226,20 @@
               "$ref": "#/components/schemas/Id"
             },
             "description": "Placed question ids, in order."
+          },
+          "numberLabels": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "R1-T48 V2 `Nombor soalan`: question id -> the number label of a question added through \"Tambah soalan\"; absent when none of the section has one."
+          },
+          "adminCreated": {
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "description": "R1-T48: present (true) on a Bahagian the admin added (\"Tambah bahagian\"); only such a Bahagian takes \"Tambah soalan\". Its `questionCount` and `markBudget` follow its placements (the Kontrak has no value for it)."
           }
         },
         "required": [
@@ -62448,6 +62462,10 @@
             "type": "string",
             "minLength": 1,
             "example": "MAT"
+          },
+          "pinned": {
+            "type": "boolean",
+            "description": "R1-T48 (V2 \"Disematkan\"): on a question PLACED on this paper, true when its version and marks are frozen (the paper is Terbit); false while the paper is a draf (the placement follows the question in force). Absent on a candidate that is not placed."
           }
         },
         "required": [
@@ -63222,6 +63240,46 @@
           "compulsory": {
             "type": "boolean",
             "description": "R1-T34: \"Soalan ini mesti dijawab\"."
+          },
+          "rule": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "all"
+                    ]
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "choose"
+                    ]
+                  },
+                  "n": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "type",
+                  "n"
+                ],
+                "additionalProperties": false
+              }
+            ],
+            "description": "R1-T48 \"Peraturan menjawab\" / \"Bilangan soalan dipilih\" (V2 let the admin change them per paper): { type: all } or { type: choose, n } with 1 <= n <= the number of questions printed in the Bahagian. The mark budget stays the Kontrak's; a rule that differs from the Kontrak shows as the overridable blocker RULE_NOT_IN_CONTRACT and, when the marks no longer match the budget, as MARKS_MISMATCH."
           }
         },
         "required": [
@@ -63247,6 +63305,13 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 600
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40,
+            "description": "R1-T48 \"Kod kertas (kulit)\": the printed paper code, editable while the paper is a draf.",
+            "example": "1449/2"
           },
           "instructions": {
             "type": "array",
@@ -63296,9 +63361,11 @@
               "NOT_SERVABLE",
               "BLUEPRINT_NOT_VERIFIED",
               "INELIGIBLE",
-              "GROUP_BROKEN"
+              "GROUP_BROKEN",
+              "RULE_NOT_IN_CONTRACT",
+              "SECTION_NOT_IN_CONTRACT"
             ],
-            "description": "Stable code. Hard (overridable false): DUPLICATE_QUESTION, GROUP_MIN_MEMBERS (D93), GROUP_SPLIT, COUNT_TOO_FEW, COUNT_TOO_MANY, MARKS_MISMATCH, GROUP_NOT_CONSECUTIVE, GROUP_INCOMPLETE, GROUP_OUT_OF_ORDER, NOT_PUBLISHED, UNKNOWN_QUESTION (placed question missing from the pool), NOT_SERVABLE (R1E2E-06, pupils cannot be served). Overridable: BLUEPRINT_NOT_VERIFIED (Kontrak not Disahkan), INELIGIBLE (question fails the Kontrak: no unit, TP, marks, key, tag review, mode), GROUP_BROKEN."
+            "description": "Stable code. Hard (overridable false): DUPLICATE_QUESTION, GROUP_MIN_MEMBERS (D93), GROUP_SPLIT, COUNT_TOO_FEW, COUNT_TOO_MANY, MARKS_MISMATCH, GROUP_NOT_CONSECUTIVE, GROUP_INCOMPLETE, GROUP_OUT_OF_ORDER, NOT_PUBLISHED, UNKNOWN_QUESTION (placed question missing from the pool), NOT_SERVABLE (R1E2E-06, pupils cannot be served). Overridable: BLUEPRINT_NOT_VERIFIED (Kontrak not Disahkan), INELIGIBLE (question fails the Kontrak: no unit, TP, marks, key, tag review, mode), GROUP_BROKEN, RULE_NOT_IN_CONTRACT (the rule of a Bahagian differs from the Kontrak), SECTION_NOT_IN_CONTRACT (admin-added Bahagian)."
           },
           "message": {
             "type": "string",
@@ -64416,6 +64483,10 @@
             },
             "description": "R1-T34 (ServabilityService, \"Dilihat murid di\"): every reason the question is not served in Simulasi (kertas), cause and fix in BM. The \"not on a published paper\" reason is left out: this IS the paper."
           },
+          "pinned": {
+            "type": "boolean",
+            "description": "R1-T48 (V2 \"Disematkan\"): the placement is frozen (the paper is Terbit); false while it is a draf."
+          },
           "seenIn": {
             "type": "object",
             "properties": {
@@ -64873,12 +64944,94 @@
             "minLength": 1,
             "maxLength": 100,
             "example": "Petikan 1"
+          },
+          "stimulusId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The stimulus of the group to edit; omitted = the first stimulus of the group. Used with `caption` or `body`.",
+            "example": "1042"
+          },
+          "caption": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 300,
+            "description": "R1-T48 caption of the stimulus (V2 caps it at 240; the shared bank allows 300); null clears it."
+          },
+          "body": {
+            "type": "object",
+            "properties": {
+              "ms": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 20000
+              },
+              "en": {
+                "type": "string",
+                "maxLength": 20000
+              }
+            },
+            "required": [
+              "ms"
+            ],
+            "additionalProperties": false,
+            "description": "R1-T48 the text of the stimulus; replaces the whole text (ms and en), as `PUT /stimuli/{id}` does."
+          }
+        },
+        "additionalProperties": false
+      },
+      "BijakBuilderSectionAdd": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "example": "Bahagian D"
           }
         },
         "required": [
           "label"
         ],
         "additionalProperties": false
+      },
+      "BijakBuilderQuestionCreate": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20,
+            "description": "V2 `Nombor soalan`: the label printed with the question; unique on the paper (case-insensitive).",
+            "example": "21"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/BijakBuilderNewQuestionMode"
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "number",
+          "mode",
+          "marks"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderNewQuestionMode": {
+        "type": "string",
+        "enum": [
+          "mcq",
+          "short_text",
+          "numeric",
+          "working",
+          "essay"
+        ]
       },
       "BijakBuilderPublishRequest": {
         "type": "object",
@@ -109684,7 +109837,7 @@
           "bijak-builder"
         ],
         "summary": "Paper builder: edit a paper (single PUT, PaperPatch)",
-        "description": "Body { title?, year?, durationMin?, sections?: [{ id, questionIds }] }; only the keys sent change. This one route carries every edit (the mock savePaper). Checks run in the mock order: 1. the paper exists (404 NOT_FOUND), 2. the paper is not terbit, 3. the title is not blank, 4. year and durationMin apply, 5. each section id and its questions, in the order sent. A terbit paper is refused: 422 VALIDATION_ERROR \"Kertas Terbit tidak boleh disunting. Tarik balik dahulu.\" (no field). Other refusals: title \"Tajuk kertas diperlukan\"; a section id that is not a section of the paper \"Bahagian tidak sah\"; a question id that does not exist, or whose curriculum subject differs from the paper subject, \"Soalan tidak sah untuk kertas ini\" (an existence and subject check only, not a kertas or status check). R1-B09a / D90: a stimulus group is one unit, so a list that holds a member of a group is stored with the WHOLE group (all members, contiguous, in the group's published order); a question twice on the paper is refused with \"Soalan berulang dalam kertas: {ids}\". Status is not checked here (publish reports \"{N} soalan belum Terbit\"); POST /placements is the servable-checked way to add. Answers the editor data (PaperEditorData), as the mock does. The mock throws error kind bad_request for these refusals (not_found for a missing paper); ErrorCode has no BAD_REQUEST, so the refusal is 422 VALIDATION_ERROR (mapping awaits the LEAD decision, deviations log). Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "Body { title?, year?, durationMin?, sections?: [{ id, questionIds }] }; only the keys sent change. This one route carries every edit (the mock savePaper). Checks run in the mock order: 1. the paper exists (404 NOT_FOUND), 2. the paper is not terbit, 3. the title is not blank, 4. year and durationMin apply, 5. each section id and its questions, in the order sent. A terbit paper is refused: 422 VALIDATION_ERROR \"Kertas Terbit tidak boleh disunting. Tarik balik dahulu.\" (no field). Other refusals: title \"Tajuk kertas diperlukan\"; a section id that is not a section of the paper \"Bahagian tidak sah\"; a question id that does not exist, or whose curriculum subject differs from the paper subject, \"Soalan tidak sah untuk kertas ini\" (an existence and subject check only, not a kertas or status check). R1-B09a / D90: a stimulus group is one unit, so a list that holds a member of a group is stored with the WHOLE group (all members, contiguous, in the group's published order); a question twice on the paper is refused with \"Soalan berulang dalam kertas: {ids}\". Status is not checked here (publish reports \"{N} soalan belum Terbit\"); POST /placements is the servable-checked way to add. R1-T48: `code` (V2 \"Kod kertas (kulit)\", the printed paper code, trimmed, 1 to 40 characters, else 422 \"Kod kertas diperlukan\") and, per section, `rule` ({ type: all } or { type: choose, n }, V2 \"Peraturan menjawab\" / \"Bilangan soalan dipilih\"; n from 1 to the printed question count, else 422 \"Bilangan soalan dipilih mesti antara 1 dan {count}\") are editable on a draf. The Kontrak keeps the final say: a rule that differs shows at Terbit as the overridable blocker RULE_NOT_IN_CONTRACT, and a mark total that no longer matches the budget as MARKS_MISMATCH. Answers the editor data (PaperEditorData), as the mock does. The mock throws error kind bad_request for these refusals (not_found for a missing paper); ErrorCode has no BAD_REQUEST, so the refusal is 422 VALIDATION_ERROR (mapping awaits the LEAD decision, deviations log). Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -111063,8 +111216,8 @@
         "tags": [
           "bijak-builder"
         ],
-        "summary": "Paper builder: Sunting petikan (title of a stimulus group on the paper)",
-        "description": "V2 Panel \"Sunting petikan\". Body { label }. The group must be placed on the paper (otherwise 422 \"Kumpulan rangsangan ini tiada dalam kertas ini\"). The title belongs to the shared stimulus group of the question bank (D90), so the new title shows wherever the group is placed (deviation from V2, where a native paper owned its passage). Terbit paper: 422 paperLocked. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "summary": "Paper builder: Sunting petikan (title, caption and body of a stimulus group on the paper)",
+        "description": "V2 Panel \"Sunting petikan\" (\"Tajuk petikan\" + caption + body editor). Body { label?, stimulusId?, caption?, body? }, at least one of label, caption, body (R1-T48 added the caption and the body of one stimulus of the group; `stimulusId` defaults to the first stimulus, a stimulus that is not in the group: 422 \"Petikan ini bukan sebahagian daripada kumpulan rangsangan ini\", a group without a stimulus: 422 \"Kumpulan rangsangan ini tiada petikan untuk disunting\"). The stimulus is edited through the bank, so its rules apply (a passage needs a body; 409 once the stimulus is served to pupils). The group must be placed on the paper (otherwise 422 \"Kumpulan rangsangan ini tiada dalam kertas ini\"). The title belongs to the shared stimulus group of the question bank (D90), so the new title shows wherever the group is placed (deviation from V2, where a native paper owned its passage). Terbit paper: 422 paperLocked. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -111116,6 +111269,403 @@
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/BijakBuilderEditor"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID \"Sesi tidak sah. Sila muat semula halaman dan cuba lagi.\" (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakBuilderCsrfError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kertas tidak ditemui\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Kertas Terbit tidak boleh disunting. Tarik balik dahulu.\", or a placement refusal (BM reason).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/papers/{id}/sections": {
+      "post": {
+        "tags": [
+          "bijak-builder"
+        ],
+        "summary": "Paper builder: Tambah bahagian (a Bahagian the Kontrak does not have)",
+        "description": "V2 Panel \"Semak Kertas Simulasi\" \"Tambah bahagian\". Body { label }. The new Bahagian goes last with the rule Jawab Semua and `adminCreated: true`; its question count and mark budget follow its placements. A paper has at most 20 Bahagian (422 \"Bilangan bahagian sudah mencapai had (20).\"). Because the Kontrak has no such Bahagian, Terbit reports the overridable blocker SECTION_NOT_IN_CONTRACT. Terbit paper: 422 paperLocked. Answers the editor data (201). Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Paper id.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Paper id.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BijakBuilderSectionAdd"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The editor data with the new Bahagian.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBuilderEditor"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID \"Sesi tidak sah. Sila muat semula halaman dan cuba lagi.\" (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakBuilderCsrfError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kertas tidak ditemui\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Kertas Terbit tidak boleh disunting. Tarik balik dahulu.\", or a placement refusal (BM reason).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/papers/{id}/sections/{sid}/questions": {
+      "post": {
+        "tags": [
+          "bijak-builder"
+        ],
+        "summary": "Paper builder: Tambah soalan (create a blank question inside the paper and place it)",
+        "description": "V2 Panel \"Tambah soalan\" (`Nombor soalan`, `Jenis jawapan`, `Markah`). Body { number, mode, marks }. Only a Bahagian added by the admin takes it: otherwise 422 \"Soalan hanya boleh ditambah ke bahagian yang dicipta oleh admin.\". A number already used on the paper: 422 \"Nombor soalan {x} sudah digunakan dalam kertas ini.\" (also on fields.number). The question is created as a Draf in the one question bank (placeholder text and key, the paper subject and kertas, the highest active secondary level, no DSKP tag: T33 adds the tag gate on create, until then the tag is set when the question is edited) and placed at the end of the Bahagian; the answer lists its id in `added`. The admin edits it in the question editor (\"Tambah & sunting\"); until it is approved Terbit reports \"1 soalan belum Terbit\". Terbit paper: 422 paperLocked. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Section id.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Section id.",
+            "name": "sid",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BijakBuilderQuestionCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The editor data and the added question id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBuilderPlacementResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID \"Sesi tidak sah. Sila muat semula halaman dan cuba lagi.\" (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakBuilderCsrfError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kertas tidak ditemui\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Kertas Terbit tidak boleh disunting. Tarik balik dahulu.\", or a placement refusal (BM reason).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/papers/{id}/questions/{questionId}": {
+      "delete": {
+        "tags": [
+          "bijak-builder"
+        ],
+        "summary": "Paper builder: Padam soalan (remove a question added through Tambah soalan)",
+        "description": "V2 Panel \"Padam soalan\" removes an extra question from the paper for good. Only a question added through \"Tambah soalan\" (a placement with a Nombor soalan) qualifies, otherwise 422 \"Soalan {id} bukan soalan tambahan kertas ini\" (use DELETE /placements/{questionId} to take a bank question off the paper). The placement is removed; when the question is still a Draf and sits on no other paper it is deleted from the bank too, otherwise (approved, edited into use, placed elsewhere) it only leaves the paper and stays in the bank. Answers the editor data and the removed ids (200). Terbit paper: 422 paperLocked. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "questionId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The editor data and the removed question id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBuilderPlacementResult"
                     }
                   },
                   "required": [

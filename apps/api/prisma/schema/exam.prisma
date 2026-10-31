@@ -224,6 +224,8 @@ model PaperSection {
   answerMedium     String? @map("answer_medium")
   /// none, group, per_part (check).
   stimulusPolicy   String? @map("stimulus_policy")
+  /// R1-T48: true for a Bahagian an admin added to the paper (not in the blueprint); only such a Bahagian takes "Tambah soalan".
+  adminCreated     Boolean @default(false) @map("admin_created")
 
   paper      Paper            @relation(fields: [paperId], references: [id], onDelete: Cascade, map: "fk_paper_sections_paper_id")
   placements PaperPlacement[]

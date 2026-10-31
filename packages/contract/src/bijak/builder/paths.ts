@@ -19,6 +19,8 @@ import {
   BijakBuilderEditorSchema,
   BijakBuilderGroupSchema,
   BijakBuilderGroupLabelSchema,
+  BijakBuilderQuestionCreateSchema,
+  BijakBuilderSectionAddSchema,
   BijakBuilderPublishRequestSchema,
   BijakSectionPoolOptionSchema,
   BijakSectionPoolsRequestSchema,
@@ -106,6 +108,8 @@ export const BIJAK_BUILDER_COMPONENT_SCHEMAS: Record<string, z.ZodType> = {
   BijakBuilderPoolUnit: BijakBuilderPoolUnitSchema,
   BijakBuilderPoolPreviewQuery: BijakBuilderPoolPreviewQuerySchema,
   BijakBuilderGroupLabel: BijakBuilderGroupLabelSchema,
+  BijakBuilderSectionAdd: BijakBuilderSectionAddSchema,
+  BijakBuilderQuestionCreate: BijakBuilderQuestionCreateSchema,
   BijakBuilderPublishRequest: BijakBuilderPublishRequestSchema,
   BijakBuilderSectionPoolOption: BijakSectionPoolOptionSchema,
   BijakBuilderSectionPoolsRequest: BijakSectionPoolsRequestSchema,
@@ -252,7 +256,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     path: '/admin/papers/{id}',
     tags: [BIJAK_BUILDER_TAG],
     summary: 'Paper builder: edit a paper (single PUT, PaperPatch)',
-    description: `Body { title?, year?, durationMin?, sections?: [{ id, questionIds }] }; only the keys sent change. This one route carries every edit (the mock savePaper). Checks run in the mock order: 1. the paper exists (404 NOT_FOUND), 2. the paper is not terbit, 3. the title is not blank, 4. year and durationMin apply, 5. each section id and its questions, in the order sent. A terbit paper is refused: 422 VALIDATION_ERROR "${BIJAK_BUILDER_MESSAGES.paperLocked}" (no field). Other refusals: title "${BIJAK_BUILDER_MESSAGES.titleRequired}"; a section id that is not a section of the paper "${BIJAK_BUILDER_MESSAGES.invalidSection}"; a question id that does not exist, or whose curriculum subject differs from the paper subject, "${BIJAK_BUILDER_MESSAGES.invalidQuestion}" (an existence and subject check only, not a kertas or status check). R1-B09a / D90: a stimulus group is one unit, so a list that holds a member of a group is stored with the WHOLE group (all members, contiguous, in the group's published order); a question twice on the paper is refused with "Soalan berulang dalam kertas: {ids}". Status is not checked here (publish reports "{N} soalan belum Terbit"); POST /placements is the servable-checked way to add. Answers the editor data (PaperEditorData), as the mock does. ${ERROR_NOTE} ${COPY_NOTE} ${ROLE_NOTE}`,
+    description: `Body { title?, year?, durationMin?, sections?: [{ id, questionIds }] }; only the keys sent change. This one route carries every edit (the mock savePaper). Checks run in the mock order: 1. the paper exists (404 NOT_FOUND), 2. the paper is not terbit, 3. the title is not blank, 4. year and durationMin apply, 5. each section id and its questions, in the order sent. A terbit paper is refused: 422 VALIDATION_ERROR "${BIJAK_BUILDER_MESSAGES.paperLocked}" (no field). Other refusals: title "${BIJAK_BUILDER_MESSAGES.titleRequired}"; a section id that is not a section of the paper "${BIJAK_BUILDER_MESSAGES.invalidSection}"; a question id that does not exist, or whose curriculum subject differs from the paper subject, "${BIJAK_BUILDER_MESSAGES.invalidQuestion}" (an existence and subject check only, not a kertas or status check). R1-B09a / D90: a stimulus group is one unit, so a list that holds a member of a group is stored with the WHOLE group (all members, contiguous, in the group's published order); a question twice on the paper is refused with "Soalan berulang dalam kertas: {ids}". Status is not checked here (publish reports "{N} soalan belum Terbit"); POST /placements is the servable-checked way to add. R1-T48: \`code\` (V2 "Kod kertas (kulit)", the printed paper code, trimmed, 1 to 40 characters, else 422 "${BIJAK_BUILDER_MESSAGES.codeRequired}") and, per section, \`rule\` ({ type: all } or { type: choose, n }, V2 "Peraturan menjawab" / "Bilangan soalan dipilih"; n from 1 to the printed question count, else 422 "Bilangan soalan dipilih mesti antara 1 dan {count}") are editable on a draf. The Kontrak keeps the final say: a rule that differs shows at Terbit as the overridable blocker RULE_NOT_IN_CONTRACT, and a mark total that no longer matches the budget as MARKS_MISMATCH. Answers the editor data (PaperEditorData), as the mock does. ${ERROR_NOTE} ${COPY_NOTE} ${ROLE_NOTE}`,
     request: { params: PaperIdParams, headers: [csrf], body: body(BijakBuilderPaperPatchSchema) },
     responses: {
       200: json(envelopeOf(BijakBuilderEditorSchema), 'The editor data after the edit.'),
@@ -448,11 +452,61 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     method: 'put',
     path: '/admin/papers/{id}/groups/{groupId}',
     tags: [BIJAK_BUILDER_TAG],
-    summary: 'Paper builder: Sunting petikan (title of a stimulus group on the paper)',
-    description: `V2 Panel "Sunting petikan". Body { label }. The group must be placed on the paper (otherwise 422 "${BIJAK_BUILDER_MESSAGES.groupNotOnPaper}"). The title belongs to the shared stimulus group of the question bank (D90), so the new title shows wherever the group is placed (deviation from V2, where a native paper owned its passage). Terbit paper: 422 paperLocked. ${ROLE_NOTE}`,
+    summary: 'Paper builder: Sunting petikan (title, caption and body of a stimulus group on the paper)',
+    description: `V2 Panel "Sunting petikan" ("Tajuk petikan" + caption + body editor). Body { label?, stimulusId?, caption?, body? }, at least one of label, caption, body (R1-T48 added the caption and the body of one stimulus of the group; \`stimulusId\` defaults to the first stimulus, a stimulus that is not in the group: 422 "${BIJAK_BUILDER_MESSAGES.groupStimulusMismatch}", a group without a stimulus: 422 "${BIJAK_BUILDER_MESSAGES.groupNoStimulus}"). The stimulus is edited through the bank, so its rules apply (a passage needs a body; 409 once the stimulus is served to pupils). The group must be placed on the paper (otherwise 422 "${BIJAK_BUILDER_MESSAGES.groupNotOnPaper}"). The title belongs to the shared stimulus group of the question bank (D90), so the new title shows wherever the group is placed (deviation from V2, where a native paper owned its passage). Terbit paper: 422 paperLocked. ${ROLE_NOTE}`,
     request: { params: z.object({ id: IdSchema, groupId: IdSchema }), headers: [csrf], body: body(BijakBuilderGroupLabelSchema) },
     responses: {
       200: json(envelopeOf(BijakBuilderEditorSchema), 'The editor data.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_WRITE,
+      404: PAPER_NOT_FOUND,
+      422: LOCKED,
+    },
+  })
+
+  /* ------------------------------------------------- R1-T48: builder parity with the V2 Panel */
+
+  registerRoute(registry, {
+    method: 'post',
+    path: '/admin/papers/{id}/sections',
+    tags: [BIJAK_BUILDER_TAG],
+    summary: 'Paper builder: Tambah bahagian (a Bahagian the Kontrak does not have)',
+    description: `V2 Panel "Semak Kertas Simulasi" "Tambah bahagian". Body { label }. The new Bahagian goes last with the rule Jawab Semua and \`adminCreated: true\`; its question count and mark budget follow its placements. A paper has at most 20 Bahagian (422 "${BIJAK_BUILDER_MESSAGES.sectionLimit}"). Because the Kontrak has no such Bahagian, Terbit reports the overridable blocker SECTION_NOT_IN_CONTRACT. Terbit paper: 422 paperLocked. Answers the editor data (201). ${ROLE_NOTE}`,
+    request: { params: PaperIdParams, headers: [csrf], body: body(BijakBuilderSectionAddSchema) },
+    responses: {
+      201: json(envelopeOf(BijakBuilderEditorSchema), 'The editor data with the new Bahagian.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_WRITE,
+      404: PAPER_NOT_FOUND,
+      422: LOCKED,
+    },
+  })
+
+  registerRoute(registry, {
+    method: 'post',
+    path: '/admin/papers/{id}/sections/{sid}/questions',
+    tags: [BIJAK_BUILDER_TAG],
+    summary: 'Paper builder: Tambah soalan (create a blank question inside the paper and place it)',
+    description: `V2 Panel "Tambah soalan" (\`Nombor soalan\`, \`Jenis jawapan\`, \`Markah\`). Body { number, mode, marks }. Only a Bahagian added by the admin takes it: otherwise 422 "${BIJAK_BUILDER_MESSAGES.adminSectionOnly}". A number already used on the paper: 422 "Nombor soalan {x} sudah digunakan dalam kertas ini." (also on fields.number). The question is created as a Draf in the one question bank (placeholder text and key, the paper subject and kertas, the highest active secondary level, no DSKP tag: T33 adds the tag gate on create, until then the tag is set when the question is edited) and placed at the end of the Bahagian; the answer lists its id in \`added\`. The admin edits it in the question editor ("Tambah & sunting"); until it is approved Terbit reports "1 soalan belum Terbit". Terbit paper: 422 paperLocked. ${ROLE_NOTE}`,
+    request: { params: SectionParams, headers: [csrf], body: body(BijakBuilderQuestionCreateSchema) },
+    responses: {
+      201: json(envelopeOf(BijakBuilderPlacementResultSchema), 'The editor data and the added question id.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_WRITE,
+      404: PAPER_NOT_FOUND,
+      422: LOCKED,
+    },
+  })
+
+  registerRoute(registry, {
+    method: 'delete',
+    path: '/admin/papers/{id}/questions/{questionId}',
+    tags: [BIJAK_BUILDER_TAG],
+    summary: 'Paper builder: Padam soalan (remove a question added through Tambah soalan)',
+    description: `V2 Panel "Padam soalan" removes an extra question from the paper for good. Only a question added through "Tambah soalan" (a placement with a Nombor soalan) qualifies, otherwise 422 "Soalan {id} bukan soalan tambahan kertas ini" (use DELETE /placements/{questionId} to take a bank question off the paper). The placement is removed; when the question is still a Draf and sits on no other paper it is deleted from the bank too, otherwise (approved, edited into use, placed elsewhere) it only leaves the paper and stays in the bank. Answers the editor data and the removed ids (200). Terbit paper: 422 paperLocked. ${ROLE_NOTE}`,
+    request: { params: z.object({ id: IdSchema, questionId: IdSchema }), headers: [csrf] },
+    responses: {
+      200: json(envelopeOf(BijakBuilderPlacementResultSchema), 'The editor data and the removed question id.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_WRITE,
       404: PAPER_NOT_FOUND,

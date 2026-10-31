@@ -87,6 +87,39 @@ export const BIJAK_BUILDER_MESSAGES = {
   referenceImageInvalid: 'Imej bahan rujukan tidak sah. Muat naik semula.',
   /** [PROPOSED] R1-T34 */
   sectionLabelRequired: 'Nama bahagian diperlukan',
+  /** [PROPOSED] R1-T48 "Kod kertas (kulit)" */
+  codeRequired: 'Kod kertas diperlukan',
+  /** V2 Panel "Tambah soalan" (cloud-student-mechanism section 3.4): only an admin-added Bahagian takes a new question. */
+  adminSectionOnly: 'Soalan hanya boleh ditambah ke bahagian yang dicipta oleh admin.',
+  /** [PROPOSED] R1-T48 */
+  sectionLimit: 'Bilangan bahagian sudah mencapai had (20).',
+  /** [PROPOSED] R1-T48 */
+  numberRequired: 'Nombor soalan diperlukan',
+  /** [PROPOSED] R1-T48 */
+  modeInvalid: 'Jenis jawapan tidak sah',
+  /** [PROPOSED] R1-T48 */
+  marksInvalid: 'Markah mestilah nombor bulat 1 hingga 100',
+  /** [PROPOSED] R1-T48 */
+  noDefaultLevel: 'Tiada tahap pendidikan menengah atas untuk soalan baharu',
+  /** [PROPOSED] R1-T48 */
+  groupNoStimulus: 'Kumpulan rangsangan ini tiada petikan untuk disunting',
+  /** [PROPOSED] R1-T48 */
+  groupStimulusMismatch: 'Petikan ini bukan sebahagian daripada kumpulan rangsangan ini',
+  /** [PROPOSED] R1-T48 */
+  groupEditEmpty: 'Tiada perubahan untuk disimpan',
+} as const
+
+/**
+ * R1-T48 texts that take a value. `numberUsed` and the section / question wording follow the V2 Panel "Semak Kertas Simulasi"
+ * (cloud-student-mechanism section 3.4); the others are [PROPOSED].
+ */
+export const BIJAK_BUILDER_EDIT_LINES = {
+  /** V2: "Nombor soalan {x} sudah digunakan dalam kertas ini." */
+  numberUsed: (x: string) => `Nombor soalan ${x} sudah digunakan dalam kertas ini.`,
+  /** [PROPOSED] "Padam soalan" on a question the admin did not add through "Tambah soalan". */
+  notAdded: (id: string) => `Soalan ${id} bukan soalan tambahan kertas ini`,
+  /** [PROPOSED] */
+  ruleCount: (max: number) => `Bilangan soalan dipilih mesti antara 1 dan ${String(max)}`,
 } as const
 
 /**
@@ -113,7 +146,14 @@ export const BIJAK_BUILDER_CHECK_LINES = {
   groupOutOfOrder: (group: string) => `Kumpulan rangsangan ${group} tidak mengikut susunan asal`,
   /** Structural tier of exam-core `verifyComposition` (INELIGIBLE): the reason is one of `BIJAK_BUILDER_INELIGIBLE_TEXT`. */
   ineligible: (questionId: string, reason: string) => `Soalan ${questionId} tidak layak: ${reason}`,
+  /** R1-T48: the answering rule of a Bahagian differs from the Kontrak's (blueprint conformance, overridable). `rule` is "Jawab Semua" or "Pilih N". */
+  ruleNotInContract: (paperRule: string, contractRule: string) => `peraturan menjawab ${paperRule} tidak sama dengan Kontrak (${contractRule})`,
+  /** R1-T48: a Bahagian an admin added; the Kontrak has none (blueprint conformance, overridable). */
+  sectionNotInContract: 'bahagian ini tiada dalam Kontrak',
 } as const
+
+/** The V2 label of an answering rule ("Jawab Semua" / "Pilih N"). */
+export const bijakRuleLabel = (rule: { type: 'all' } | { type: 'choose'; n: number }): string => (rule.type === 'all' ? 'Jawab Semua' : `Pilih ${String(rule.n)}`)
 
 /**
  * BM texts of the placement operations (R1-B09a). A question can only be placed while it is servable
@@ -169,6 +209,10 @@ export const BIJAK_BUILDER_BLOCKER_OVERRIDABLE = {
   BLUEPRINT_NOT_VERIFIED: true,
   INELIGIBLE: true,
   GROUP_BROKEN: true,
+  /** R1-T48: a Bahagian's answering rule differs from the Kontrak's. */
+  RULE_NOT_IN_CONTRACT: true,
+  /** R1-T48: an admin-added Bahagian (not in the Kontrak). */
+  SECTION_NOT_IN_CONTRACT: true,
 } as const
 export type BijakBuilderBlockerCode = keyof typeof BIJAK_BUILDER_BLOCKER_OVERRIDABLE
 export const BIJAK_BUILDER_BLOCKER_CODES = Object.keys(BIJAK_BUILDER_BLOCKER_OVERRIDABLE) as [BijakBuilderBlockerCode, ...BijakBuilderBlockerCode[]]
@@ -260,6 +304,13 @@ export const BijakBuilderPaperSectionSchema = z
       .meta({ description: 'Authored instruction; absent means derived from the rule.' }),
     rule: BijakBuilderSectionRuleSchema,
     questionIds: z.array(IdSchema).meta({ description: 'Placed question ids, in order.' }),
+    numberLabels: z.record(IdSchema, z.string()).optional().meta({
+      description: 'R1-T48 V2 `Nombor soalan`: question id -> the number label of a question added through "Tambah soalan"; absent when none of the section has one.',
+    }),
+    adminCreated: z.literal(true).optional().meta({
+      description:
+        'R1-T48: present (true) on a Bahagian the admin added ("Tambah bahagian"); only such a Bahagian takes "Tambah soalan". Its `questionCount` and `markBudget` follow its placements (the Kontrak has no value for it).',
+    }),
   })
   .meta({ id: 'BijakBuilderPaperSection' })
 export type BijakBuilderPaperSection = z.infer<typeof BijakBuilderPaperSectionSchema>
@@ -355,6 +406,10 @@ export const BijakBuilderQuestionSchema = z
     status: BijakBuilderQuestionStatusSchema,
     kertas: Kertas,
     subject: z.string().min(1).meta({ example: 'MAT' }),
+    pinned: z.boolean().optional().meta({
+      description:
+        'R1-T48 (V2 "Disematkan"): on a question PLACED on this paper, true when its version and marks are frozen (the paper is Terbit); false while the paper is a draf (the placement follows the question in force). Absent on a candidate that is not placed.',
+    }),
   })
   .meta({ id: 'BijakBuilderQuestion' })
 export type BijakBuilderQuestion = z.infer<typeof BijakBuilderQuestionSchema>
@@ -505,6 +560,10 @@ export const BijakBuilderSectionPatchSchema = z
     label: z.string().trim().min(1, BIJAK_BUILDER_MESSAGES.sectionLabelRequired).max(60).optional().meta({ description: 'R1-T34 "Sunting bahagian": the printed name of the section.', example: 'Bahagian A' }),
     instruction: z.string().trim().max(500).nullable().optional().meta({ description: 'R1-T34 "Sunting bahagian": authored instruction; null or "" clears it (the rule line is derived again).' }),
     compulsory: z.boolean().optional().meta({ description: 'R1-T34: "Soalan ini mesti dijawab".' }),
+    rule: BijakBuilderSectionRuleSchema.optional().meta({
+      description:
+        'R1-T48 "Peraturan menjawab" / "Bilangan soalan dipilih" (V2 let the admin change them per paper): { type: all } or { type: choose, n } with 1 <= n <= the number of questions printed in the Bahagian. The mark budget stays the Kontrak\'s; a rule that differs from the Kontrak shows as the overridable blocker RULE_NOT_IN_CONTRACT and, when the marks no longer match the budget, as MARKS_MISMATCH.',
+    }),
   })
   .meta({ id: 'BijakBuilderSectionPatch' })
 export type BijakBuilderSectionPatch = z.infer<typeof BijakBuilderSectionPatchSchema>
@@ -512,7 +571,7 @@ export type BijakBuilderSectionPatch = z.infer<typeof BijakBuilderSectionPatchSc
 /**
  * `PUT /admin/papers/{id}` body (`PaperPatch`): every key optional; only the keys sent change.
  * `sections` replaces the question list of each section listed (a section that is not listed is
- * unchanged); the sections themselves cannot be added, removed or reordered.
+ * unchanged); a Kontrak section cannot be removed or reordered, and a Bahagian is added through `POST /admin/papers/{id}/sections` (R1-T48).
  */
 export const BijakBuilderPaperPatchSchema = z
   .strictObject({
@@ -525,6 +584,10 @@ export const BijakBuilderPaperPatchSchema = z
       .meta({ example: 'Percubaan SPM Matematik Kertas 2 Set B' }),
     year: z.number().int().min(1900).max(2100).optional(),
     durationMin: z.number().int().min(1).max(600).optional(),
+    code: z.string().trim().min(1, BIJAK_BUILDER_MESSAGES.codeRequired).max(40).optional().meta({
+      description: 'R1-T48 "Kod kertas (kulit)": the printed paper code, editable while the paper is a draf.',
+      example: '1449/2',
+    }),
     instructions: z
       .array(z.string().trim().min(1).max(500))
       .max(40)
@@ -559,7 +622,7 @@ export const BijakBuilderBlockerSchema = z
   .strictObject({
     code: z.enum(BIJAK_BUILDER_BLOCKER_CODES).meta({
       description:
-        'Stable code. Hard (overridable false): DUPLICATE_QUESTION, GROUP_MIN_MEMBERS (D93), GROUP_SPLIT, COUNT_TOO_FEW, COUNT_TOO_MANY, MARKS_MISMATCH, GROUP_NOT_CONSECUTIVE, GROUP_INCOMPLETE, GROUP_OUT_OF_ORDER, NOT_PUBLISHED, UNKNOWN_QUESTION (placed question missing from the pool), NOT_SERVABLE (R1E2E-06, pupils cannot be served). Overridable: BLUEPRINT_NOT_VERIFIED (Kontrak not Disahkan), INELIGIBLE (question fails the Kontrak: no unit, TP, marks, key, tag review, mode), GROUP_BROKEN.',
+        'Stable code. Hard (overridable false): DUPLICATE_QUESTION, GROUP_MIN_MEMBERS (D93), GROUP_SPLIT, COUNT_TOO_FEW, COUNT_TOO_MANY, MARKS_MISMATCH, GROUP_NOT_CONSECUTIVE, GROUP_INCOMPLETE, GROUP_OUT_OF_ORDER, NOT_PUBLISHED, UNKNOWN_QUESTION (placed question missing from the pool), NOT_SERVABLE (R1E2E-06, pupils cannot be served). Overridable: BLUEPRINT_NOT_VERIFIED (Kontrak not Disahkan), INELIGIBLE (question fails the Kontrak: no unit, TP, marks, key, tag review, mode), GROUP_BROKEN, RULE_NOT_IN_CONTRACT (the rule of a Bahagian differs from the Kontrak), SECTION_NOT_IN_CONTRACT (admin-added Bahagian).',
     }),
     message: z.string().meta({ description: 'The BM line, identical to the string in `blockers` / `errors`.' }),
     overridable: z.boolean().meta({ description: 'true when the audited override can lift this blocker.' }),
@@ -906,6 +969,7 @@ export const BijakBuilderReviewRowSchema = z
       .array(z.strictObject({ code: z.string(), message: z.string(), detail: z.string().optional() }))
       .optional()
       .meta({ description: 'R1-T34 (ServabilityService, "Dilihat murid di"): every reason the question is not served in Simulasi (kertas), cause and fix in BM. The "not on a published paper" reason is left out: this IS the paper.' }),
+    pinned: z.boolean().optional().meta({ description: 'R1-T48 (V2 "Disematkan"): the placement is frozen (the paper is Terbit); false while it is a draf.' }),
     seenIn: z
       .strictObject({ served: z.number().int().min(0), total: z.number().int().min(1) })
       .optional()
@@ -1010,13 +1074,50 @@ export const BijakBuilderPoolPreviewQuerySchema = z
 
 /* ---------------------------------------------------------------- R1-T34: paper-review edits, section pools */
 
-/** `PUT /admin/papers/{id}/groups/{groupId}` body: "Sunting petikan" (the title of the shared stimulus group). */
+/**
+ * `PUT /admin/papers/{id}/groups/{groupId}` body: "Sunting petikan". `label` is the title of the shared stimulus group (R1-T34); R1-T48 adds the
+ * caption and the body of one stimulus of the group (V2 "Tajuk petikan" + caption + body editor). The stimulus belongs to the bank and is shared
+ * (D90), so the edit shows on every paper that places the group, and the bank refuses it with 409 once the stimulus is served to pupils.
+ */
 export const BijakBuilderGroupLabelSchema = z
   .strictObject({
-    label: z.string().trim().min(1, BIJAK_BUILDER_MESSAGES.groupLabelRequired).max(100).meta({ example: 'Petikan 1' }),
+    label: z.string().trim().min(1, BIJAK_BUILDER_MESSAGES.groupLabelRequired).max(100).optional().meta({ example: 'Petikan 1' }),
+    stimulusId: IdSchema.optional().meta({ description: 'The stimulus of the group to edit; omitted = the first stimulus of the group. Used with `caption` or `body`.' }),
+    caption: z.string().trim().max(300).nullable().optional().meta({ description: 'R1-T48 caption of the stimulus (V2 caps it at 240; the shared bank allows 300); null clears it.' }),
+    body: z
+      .strictObject({ ms: z.string().min(1).max(20_000), en: z.string().max(20_000).optional() })
+      .optional()
+      .meta({ description: 'R1-T48 the text of the stimulus; replaces the whole text (ms and en), as `PUT /stimuli/{id}` does.' }),
   })
+  .refine((v) => v.label !== undefined || v.caption !== undefined || v.body !== undefined, { message: BIJAK_BUILDER_MESSAGES.groupEditEmpty, path: ['label'] })
   .meta({ id: 'BijakBuilderGroupLabel' })
 export type BijakBuilderGroupLabel = z.infer<typeof BijakBuilderGroupLabelSchema>
+
+/** `POST /admin/papers/{id}/sections` body: "Tambah bahagian" (an admin-added Bahagian, R1-T48). */
+export const BijakBuilderSectionAddSchema = z
+  .strictObject({
+    label: z.string().trim().min(1, BIJAK_BUILDER_MESSAGES.sectionLabelRequired).max(60).meta({ example: 'Bahagian D' }),
+  })
+  .meta({ id: 'BijakBuilderSectionAdd' })
+export type BijakBuilderSectionAdd = z.infer<typeof BijakBuilderSectionAddSchema>
+
+/** "Jenis jawapan" of a question added inside a paper: the answer modes the question editor starts from. */
+export const BIJAK_BUILDER_NEW_QUESTION_MODES = ['mcq', 'short_text', 'numeric', 'working', 'essay'] as const
+export const BijakBuilderNewQuestionModeSchema = z.enum(BIJAK_BUILDER_NEW_QUESTION_MODES, BIJAK_BUILDER_MESSAGES.modeInvalid).meta({ id: 'BijakBuilderNewQuestionMode' })
+
+/**
+ * `POST /admin/papers/{id}/sections/{sid}/questions` body: "Tambah soalan" (V2: `Nombor soalan`, `Jenis jawapan`, `Markah`). It creates a blank
+ * Draf question in the bank (the one question store, D90) and places it at the end of the Bahagian; the admin then edits it in the question editor
+ * ("Tambah & sunting"). The question blocks Terbit ("1 soalan belum Terbit") until it is approved.
+ */
+export const BijakBuilderQuestionCreateSchema = z
+  .strictObject({
+    number: z.string().trim().min(1, BIJAK_BUILDER_MESSAGES.numberRequired).max(20).meta({ description: 'V2 `Nombor soalan`: the label printed with the question; unique on the paper (case-insensitive).', example: '21' }),
+    mode: BijakBuilderNewQuestionModeSchema,
+    marks: z.number({ error: BIJAK_BUILDER_MESSAGES.marksInvalid }).int(BIJAK_BUILDER_MESSAGES.marksInvalid).min(1, BIJAK_BUILDER_MESSAGES.marksInvalid).max(100, BIJAK_BUILDER_MESSAGES.marksInvalid),
+  })
+  .meta({ id: 'BijakBuilderQuestionCreate' })
+export type BijakBuilderQuestionCreate = z.infer<typeof BijakBuilderQuestionCreateSchema>
 
 /** A section pool of an active blueprint (`blueprint_sections.pool`), as the admin can choose it for a question. */
 export const BijakSectionPoolOptionSchema = z

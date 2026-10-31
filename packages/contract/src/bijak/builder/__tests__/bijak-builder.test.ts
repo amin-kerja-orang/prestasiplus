@@ -35,6 +35,12 @@ import {
   BijakBuilderPreviewSchema,
   BijakBuilderPublishResultSchema,
   BijakBuilderBlockerSchema,
+  BijakBuilderGroupLabelSchema,
+  BijakBuilderQuestionCreateSchema,
+  BijakBuilderSectionAddSchema,
+  BijakBuilderSectionPatchSchema,
+  BIJAK_BUILDER_EDIT_LINES,
+  bijakRuleLabel,
   BIJAK_BUILDER_BLOCKER_CODES,
   BIJAK_BUILDER_BLOCKER_OVERRIDABLE,
   BijakBuilderQuestionSchema,
@@ -439,7 +445,7 @@ describe('createPaper and PaperPatch (single PUT)', () => {
 
   it('rejects the removed header and placement fields, a bad section and an empty title', () => {
     for (const extra of [
-      { code: '1449/2' },
+      { code: '' }, // R1-T48: the cover code is a patch field, but not blank
       { instructions: [''] }, // instructions are a patch field since R1-B09a, but not blank lines
       { reference: [{ title: '', items: [] }] }, // R1-T34: reference panels are a patch field, but not an untitled panel
       { blueprint: null },
@@ -499,8 +505,8 @@ describe('publish, delete and preview results', () => {
     expect(BijakBuilderBlockerSchema.safeParse({ code: 'MADE_UP', message: 'x', overridable: false }).success).toBe(false)
     expect(BijakBuilderBlockerSchema.safeParse({ code: 'NOT_SERVABLE', message: 'x' }).success).toBe(false)
     expect(BijakBuilderBlockerSchema.safeParse({ ...blocker, extra: 1 }).success).toBe(false)
-    expect(BIJAK_BUILDER_BLOCKER_CODES).toHaveLength(15)
-    expect(BIJAK_BUILDER_BLOCKER_CODES.filter((c) => BIJAK_BUILDER_BLOCKER_OVERRIDABLE[c]).sort()).toEqual(['BLUEPRINT_NOT_VERIFIED', 'GROUP_BROKEN', 'INELIGIBLE'])
+    expect(BIJAK_BUILDER_BLOCKER_CODES).toHaveLength(17)
+    expect(BIJAK_BUILDER_BLOCKER_CODES.filter((c) => BIJAK_BUILDER_BLOCKER_OVERRIDABLE[c]).sort()).toEqual(['BLUEPRINT_NOT_VERIFIED', 'GROUP_BROKEN', 'INELIGIBLE', 'RULE_NOT_IN_CONTRACT', 'SECTION_NOT_IN_CONTRACT'])
   })
 
   it('requires the errors key and rejects the old union shapes', () => {
@@ -831,7 +837,7 @@ describe('openapi document', () => {
     (o) => o.op.tags?.includes(BIJAK_BUILDER_TAG) || o.op.tags?.includes(BIJAK_BLUEPRINT_ADMIN_TAG),
   )
 
-  it('has 24 operations, 19 paper and 5 blueprint, under /admin only', () => {
+  it('has 27 operations, 22 paper and 5 blueprint, under /admin only', () => {
     const keys = mine.map((o) => `${o.method} ${o.path}`).sort()
     expect(keys).toEqual(
       [
@@ -852,6 +858,9 @@ describe('openapi document', () => {
         'put /admin/papers/{id}/sections/{sid}/order',
         'post /admin/papers/{id}/copy',
         'put /admin/papers/{id}/groups/{groupId}',
+        'post /admin/papers/{id}/sections',
+        'post /admin/papers/{id}/sections/{sid}/questions',
+        'delete /admin/papers/{id}/questions/{questionId}',
         'get /admin/section-pools/{questionId}',
         'put /admin/section-pools/{questionId}',
         'get /admin/blueprints',
@@ -861,7 +870,7 @@ describe('openapi document', () => {
         'post /admin/blueprints/{subject}/{kertas}/retire',
       ].sort(),
     )
-    expect(mine.filter((o) => o.op.tags?.includes(BIJAK_BUILDER_TAG))).toHaveLength(19)
+    expect(mine.filter((o) => o.op.tags?.includes(BIJAK_BUILDER_TAG))).toHaveLength(22)
     expect(mine.filter((o) => o.op.tags?.includes(BIJAK_BLUEPRINT_ADMIN_TAG))).toHaveLength(5)
     expect(mine.every((o) => o.path.startsWith('/admin/'))).toBe(true)
   })
@@ -910,7 +919,7 @@ describe('openapi document', () => {
       content: Record<string, { schema: { $ref: string } }>
     }
     const writes = mine.filter((o) => o.method !== 'get')
-    expect(writes).toHaveLength(15)
+    expect(writes).toHaveLength(18)
     for (const { path, method, op } of writes) {
       const r = op.responses['429'] as R429 | undefined
       expect(r, `${method} ${path}`).toBeDefined()
@@ -1103,5 +1112,46 @@ describe('openapi document', () => {
       expect(text).not.toContain(word)
     }
     expect(JSON.stringify(doc.paths['/admin/papers/preview'])).toContain('Admin Pusat only')
+  })
+})
+
+describe('R1-T48 builder parity (cover code, rule, sections, added questions, pinned, stimulus edit)', () => {
+  it('PaperPatch carries the cover code (trimmed, 1 to 40) and a section patch carries the answering rule', () => {
+    expect(BijakBuilderPaperPatchSchema.parse({ code: '  1449/9 ' }).code).toBe('1449/9')
+    expect(BijakBuilderPaperPatchSchema.safeParse({ code: '  ' }).success).toBe(false)
+    expect(BijakBuilderPaperPatchSchema.safeParse({ code: 'X'.repeat(41) }).success).toBe(false)
+    expect(BijakBuilderSectionPatchSchema.parse({ id: '1', rule: { type: 'choose', n: 2 } }).rule).toEqual({ type: 'choose', n: 2 })
+    expect(BijakBuilderSectionPatchSchema.safeParse({ id: '1', rule: { type: 'choose', n: 0 } }).success).toBe(false)
+    expect(BijakBuilderSectionPatchSchema.safeParse({ id: '1', rule: { type: 'none' } }).success).toBe(false)
+  })
+
+  it('"Tambah bahagian" and "Tambah soalan" bodies are strict', () => {
+    expect(BijakBuilderSectionAddSchema.parse({ label: ' Bahagian D ' }).label).toBe('Bahagian D')
+    expect(BijakBuilderSectionAddSchema.safeParse({ label: ' ' }).success).toBe(false)
+    expect(BijakBuilderQuestionCreateSchema.parse({ number: ' 21 ', mode: 'mcq', marks: 2 })).toEqual({ number: '21', mode: 'mcq', marks: 2 })
+    for (const bad of [{ number: '', mode: 'mcq', marks: 2 }, { number: '1', mode: 'cloze', marks: 2 }, { number: '1', mode: 'mcq', marks: 0 }, { number: '1', mode: 'mcq', marks: 101 }, { number: '1', mode: 'mcq', marks: 1.5 }, { number: '1', mode: 'mcq', marks: 1, x: 1 }]) {
+      expect(BijakBuilderQuestionCreateSchema.safeParse(bad).success, JSON.stringify(bad)).toBe(false)
+    }
+  })
+
+  it('"Sunting petikan" accepts a title, a caption or a body, and needs at least one', () => {
+    expect(BijakBuilderGroupLabelSchema.safeParse({ label: 'Petikan 1' }).success).toBe(true)
+    expect(BijakBuilderGroupLabelSchema.safeParse({ caption: null }).success).toBe(true)
+    expect(BijakBuilderGroupLabelSchema.safeParse({ stimulusId: '3', body: { ms: 'Teks', en: 'Text' } }).success).toBe(true)
+    expect(BijakBuilderGroupLabelSchema.safeParse({}).success).toBe(false)
+    expect(BijakBuilderGroupLabelSchema.safeParse({ stimulusId: '3' }).success).toBe(false)
+    expect(BijakBuilderGroupLabelSchema.safeParse({ caption: 'K'.repeat(301) }).success).toBe(false)
+  })
+
+  it('V2 texts and the rule labels', () => {
+    expect(BIJAK_BUILDER_EDIT_LINES.numberUsed('21')).toBe('Nombor soalan 21 sudah digunakan dalam kertas ini.')
+    expect(BIJAK_BUILDER_MESSAGES.adminSectionOnly).toBe('Soalan hanya boleh ditambah ke bahagian yang dicipta oleh admin.')
+    expect(bijakRuleLabel({ type: 'all' })).toBe('Jawab Semua')
+    expect(bijakRuleLabel({ type: 'choose', n: 2 })).toBe('Pilih 2')
+  })
+
+  it('the openapi lists the three new routes', () => {
+    const paths = Object.keys(buildOpenApiDocument().paths ?? {})
+    for (const p of ['/admin/papers/{id}/sections', '/admin/papers/{id}/sections/{sid}/questions', '/admin/papers/{id}/questions/{questionId}']) expect(paths).toContain(p)
   })
 })

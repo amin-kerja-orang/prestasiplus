@@ -20,6 +20,8 @@ export interface NewPaperSection {
   questionCount: number
   markBudget: number
   compulsory: boolean
+  /** R1-T48: copied as is when a paper is cloned; false otherwise. */
+  adminCreated?: boolean
 }
 
 export interface NewPaper {
@@ -135,6 +137,7 @@ export class BuilderRepository {
             questionCount: s.questionCount,
             markBudget: s.markBudget,
             compulsory: s.compulsory,
+            adminCreated: s.adminCreated ?? false,
           })),
         },
       },
@@ -147,8 +150,14 @@ export class BuilderRepository {
     await this.prisma.client.paper.update({ where: { id }, data })
   }
 
-  /** Replaces the placements of one section (positions 1..n). */
-  async replacePlacements(sectionId: bigint, placements: readonly { questionId: bigint; pinnedVersionNo: number }[]): Promise<void> {
+  /**
+   * Replaces the placements of one section (positions 1..n). The Nombor soalan of R1-T48 survives a replace: `numberLabel` is the given one,
+   * else the one the question already had in this section.
+   */
+  async replacePlacements(sectionId: bigint, placements: readonly { questionId: bigint; pinnedVersionNo: number; numberLabel?: string | null }[]): Promise<void> {
+    const kept = new Map(
+      (await this.prisma.client.paperPlacement.findMany({ where: { paperSectionId: sectionId }, select: { questionId: true, numberLabel: true } })).map((r) => [r.questionId.toString(), r.numberLabel]),
+    )
     await this.prisma.client.paperPlacement.deleteMany({ where: { paperSectionId: sectionId } })
     if (placements.length === 0) return
     await this.prisma.client.paperPlacement.createMany({
@@ -157,9 +166,35 @@ export class BuilderRepository {
         questionId: p.questionId,
         pinnedVersionNo: p.pinnedVersionNo,
         position: i + 1,
+        numberLabel: p.numberLabel === undefined ? (kept.get(p.questionId.toString()) ?? null) : p.numberLabel,
         marksOverride: null,
       })),
     })
+  }
+
+  /** R1-T48 "Tambah bahagian": appends an admin-added Bahagian (rule Jawab Semua; its counts follow its placements). */
+  async addSection(paperId: bigint, position: number, label: string): Promise<void> {
+    await this.prisma.client.paperSection.create({
+      data: { paperId, position, label, ruleType: 'all', ruleN: null, questionCount: 0, markBudget: 0, compulsory: false, adminCreated: true },
+    })
+  }
+
+  /** Placements of a question on any paper (the "Padam soalan" check before a question is deleted from the bank). */
+  placementCount(questionId: bigint): Promise<number> {
+    return this.prisma.client.paperPlacement.count({ where: { questionId } })
+  }
+
+  /** The level of a question created inside a paper: the highest active upper-secondary level (SPM, Tingkatan 5), else the highest active secondary one. */
+  async defaultQuestionLevelId(): Promise<bigint | null> {
+    const upper = await this.prisma.client.educationLevel.findFirst({ where: { isActive: true, stage: 'upper_secondary' }, orderBy: [{ sortOrder: 'desc' }, { id: 'desc' }], select: { id: true } })
+    if (upper) return upper.id
+    const secondary = await this.prisma.client.educationLevel.findFirst({ where: { isActive: true, stage: { not: 'primary' } }, orderBy: [{ sortOrder: 'desc' }, { id: 'desc' }], select: { id: true } })
+    return secondary?.id ?? null
+  }
+
+  /** Freezes the counts of an admin-added Bahagian at Terbit (the student side reads the stored values). */
+  async setSectionFigures(id: bigint, questionCount: number, markBudget: number): Promise<void> {
+    await this.prisma.client.paperSection.update({ where: { id }, data: { questionCount, markBudget } })
   }
 
   /** R1-T34: edits the label, instruction or compulsory flag of one section. */
