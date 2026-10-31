@@ -8,6 +8,7 @@ Operations guide for the `api` (NestJS) and `db` (PostgreSQL 16) services. It li
 | Backup, restore check, monthly drill | [db-backup.md](db-backup.md) |
 | Staging deploy (Cloudflare Pages + Render + Supabase, or one VPS) | [deploy-staging.md](deploy-staging.md), [deploy-execution.md](deploy-execution.md) |
 | Demo data reseed | [demo-reseed.md](demo-reseed.md) |
+| Local / E2E seed profile (guarded, never on a server) | [e2e-seed.md](e2e-seed.md) |
 | Platform settings checklist (demo and production, edge secret, throttles) | [platform-settings.md](platform-settings.md) |
 | Database password rotation (demo Supabase + Render, production compose) | [db-password-rotation.md](db-password-rotation.md) |
 

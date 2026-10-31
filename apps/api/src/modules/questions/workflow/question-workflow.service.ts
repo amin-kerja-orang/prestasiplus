@@ -6,6 +6,7 @@ import {
   LifecycleService,
   type BulkResult,
   type CreateGateInput,
+  type GateName,
   type TakedownResult,
   type TransitionOptions,
   type TransitionResult,
@@ -34,6 +35,11 @@ export class QuestionWorkflowService {
     return this.lifecycle.transition(questionId, to, actor, options)
   }
 
+  /** The approve / submit gate as a read: the issues of the next transition, no state change. */
+  gateCheck(questionId: string, gate: GateName, actor: WorkflowActor) {
+    return this.lifecycle.gateCheck(questionId, gate, actor)
+  }
+
   /** Same rules per id; failing ids are skipped and reported. */
   bulkTransition(ids: readonly string[], to: string, actor: WorkflowActor, options: TransitionOptions = {}): Promise<BulkResult> {
     return this.lifecycle.bulkTransition(ids, to, actor, options)
@@ -50,8 +56,8 @@ export class QuestionWorkflowService {
   }
 
   /** Admin only: "Arkib" on a question report row; archives the live version even when a newer revision is in review. */
-  archiveReported(questionId: string, actor: WorkflowActor, reason: string): Promise<void> {
-    return this.lifecycle.archiveReported(questionId, actor, reason)
+  archiveReported(questionId: string, actor: WorkflowActor, reason: string, reportedVersionNo: number): Promise<void> {
+    return this.lifecycle.archiveReported(questionId, actor, reason, reportedVersionNo)
   }
 
   /** Admin only: marks the source paper taken down and archives all its questions atomically. */
