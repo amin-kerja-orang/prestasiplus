@@ -267,7 +267,7 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     const t1 = performance.now()
     await servability.report(made.plain!)
     const singleMs = performance.now() - t1
-    console.info(`[servability] ${String(allIds.length)} questions in one batch: ${batchMs.toFixed(0)} ms; one question: ${singleMs.toFixed(0)} ms`)
+    process.stderr.write(`[servability] ${String(allIds.length)} questions in one batch: ${batchMs.toFixed(0)} ms; one question: ${singleMs.toFixed(0)} ms\n`)
     expect(batchMs).toBeLessThan(5000)
     expect(singleMs).toBeLessThan(3000)
   })
