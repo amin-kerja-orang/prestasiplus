@@ -1,0 +1,16 @@
+[mobile] FAIL S2e R1E2E-10 re-test: bulk "Terbitkan" on an already approved question
+    observed: bulk actions offered for an approved row: Pilih Tindakan, Terbitkan, Arkibkan, Padam
+    observed: Terbitkan on 1 row(s) -> HTTP 200, affected 0, refused: Peralihan 'Diterbitkan' -> 'Diterbitkan' tidak dibenarkan.
+    observed: statuses now (API): #1278 approved
+    error: Error: no self-contradicting "Diterbitkan kepada Diterbitkan" refusal | expect(received).toEqual(expected) // deep equality | - Expected  - 1 | + Received  + 3
+[tablet] FAIL S2e R1E2E-10 re-test: bulk "Terbitkan" on an already approved question
+    observed: bulk actions offered for an approved row: Pilih Tindakan, Terbitkan, Arkibkan, Padam
+    observed: Terbitkan on 1 row(s) -> HTTP 200, affected 0, refused: Peralihan 'Diterbitkan' -> 'Diterbitkan' tidak dibenarkan.
+    observed: statuses now (API): #1302 approved
+    error: Error: no self-contradicting "Diterbitkan kepada Diterbitkan" refusal | expect(received).toEqual(expected) // deep equality | - Expected  - 1 | + Received  + 3
+[desktop] FAIL S2e R1E2E-10 re-test: bulk "Terbitkan" on an already approved question
+    observed: bulk actions offered for an approved row: Pilih Tindakan, Terbitkan, Arkibkan, Padam
+    observed: Terbitkan on 1 row(s) -> HTTP 200, affected 0, refused: Peralihan 'Diterbitkan' -> 'Diterbitkan' tidak dibenarkan.
+    observed: statuses now (API): #1326 approved
+    error: Error: no self-contradicting "Diterbitkan kepada Diterbitkan" refusal | expect(received).toEqual(expected) // deep equality | - Expected  - 1 | + Received  + 3
+{"mobile":{"failed":1},"tablet":{"failed":1},"desktop":{"failed":1}}

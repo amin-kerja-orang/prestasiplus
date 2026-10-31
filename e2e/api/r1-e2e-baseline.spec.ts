@@ -454,6 +454,14 @@ async function expectBabServes(
   await expectNoHScroll(page)
 }
 
+/** True when `el` comes before the first leaf element whose text contains `text` (the stem) in document order. */
+const ABOVE = (el: Element, text: string): boolean => {
+  const stem = [...document.querySelectorAll('body *')].find(
+    (e) => e.children.length === 0 && (e.textContent ?? '').includes(text),
+  )
+  return !!stem && !!(el.compareDocumentPosition(stem) & Node.DOCUMENT_POSITION_FOLLOWING)
+}
+
 // ---------------------------------------------------------------- the journey
 
 test.describe('R1 E2E baseline @api @r1e2e', () => {
@@ -1057,6 +1065,43 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     expect(approved, 'every DSKP-tagged run question approved through the API').toBe(tagged)
   })
 
+  test('S2e R1E2E-10 re-test: bulk "Terbitkan" on an already approved question', async ({
+    page,
+  }, info) => {
+    const st = readState(info)
+    test.skip(!st.studioSingle, 'Blocked: S1f created no question')
+    await login(page, ADMIN)
+    const status = (await runQuestions(page, st.studioSingle!.text)).map((q) => q.status)
+    test.skip(!status.includes('approved'), 'Blocked: the S1f question is not approved (S2c)')
+    await page.goto(`/admin/questions?search=${encodeURIComponent(st.studioSingle!.text)}`)
+    await expect(listRows(page, st.studioSingle!.text).first()).toBeVisible()
+    await listRows(page, st.studioSingle!.text)
+      .first()
+      .getByRole('checkbox')
+      .first()
+      .check({ force: true })
+    await expect(page.getByTestId('questions-bulk-bar')).toBeVisible()
+    const offered = await page
+      .getByTestId('questions-bulk-action')
+      .locator('option')
+      .allInnerTexts()
+    observe(
+      info,
+      `bulk actions offered for an approved row: ${offered
+        .map((t) => t.trim())
+        .filter(Boolean)
+        .join(', ')}`,
+    )
+    await expectNoHScroll(page)
+    if (!offered.some((t) => t.trim() === 'Terbitkan')) return
+    const res = await bulkOnRun(page, st.studioSingle!.text, 'Terbitkan', info)
+    expect(
+      // BASE-21 wording "daripada Diterbitkan kepada Diterbitkan"; BASE-37 "Peralihan 'Diterbitkan' -> 'Diterbitkan'".
+      res.failed.filter((m) => /Diterbitkan'?\s*(kepada|->)\s*'?Diterbitkan/.test(m)),
+      'no self-contradicting "Diterbitkan kepada Diterbitkan" refusal',
+    ).toEqual([])
+  })
+
   test('S2b admin approves the intake questions in Baris Gilir Semakan', async ({ page }, info) => {
     const st = readState(info)
     test.skip(
@@ -1359,7 +1404,11 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
       info,
       `Mula -> POST /api/bijak/attempts ${start ? `HTTP ${start.status()} ${start.status() >= 400 ? (await start.text().catch(() => '')).slice(0, 160) : ''}` : 'no request seen'}`,
     )
-    const failure = page.getByText(/tidak dapat dimulakan/i).first()
+    // H-C5: a refused Mula shows the API's BM reason in `start-failure` (the generic line before BASE-37).
+    const failure = page
+      .getByTestId('start-failure')
+      .or(page.getByText(/tidak dapat dimulakan/i))
+      .first()
     await expect(page.getByTestId('attempt-shell').or(failure).first()).toBeVisible()
     if (await failure.isVisible()) {
       await failure.scrollIntoViewIfNeeded()
@@ -1551,6 +1600,7 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
       subjectId: string
       educationLevelId: string
       tag: { unitId: string; spIds: string[]; tp: number }
+      questionImage: string | null
     }>(`/api/questions/${src}`)
     const title = `${st.tag} kertas 2 berstruktur`
     const created = await post('/api/admin/papers', { subject: 'MAT', kertas: 2, title })
@@ -1581,6 +1631,8 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
           difficultyLevel: 3,
           questionType: 'essay',
           questionText: `${st.tag} k2 ${s.label} ${i + 1}: Selesaikan persamaan kuadratik dan tunjukkan langkah kerja.`,
+          // R1E2E-05b / H-C7: the first question carries the S1f stem picture (its own stimulus, no group).
+          ...(made.length === 0 && q.questionImage ? { questionImageFileId: q.questionImage } : {}),
           kertas: '2',
           tag: { unitId: q.tag.unitId, spIds: q.tag.spIds, tp: 3 },
           parts: [
@@ -1669,6 +1721,19 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     await expect(page.getByTestId('attempt-loading')).toHaveCount(0)
     await expect(page.getByTestId('next').or(page.getByTestId('submit')).first()).toBeVisible()
     await expectNoHScroll(page)
+    // H-C7: question 1 carries its own picture: shown once, above the stem, in the sitting.
+    const own = page.locator('[data-testid=own-stimuli]:visible')
+    const ownImgs = await own.locator('img').count()
+    observe(
+      info,
+      `sitting Q1: own-stimuli blocks ${await own.count()}, pictures inside ${ownImgs}, all pictures on screen ${await page.locator('[data-testid=attempt-shell] img:visible').count()}`,
+    )
+    expect(await own.count(), 'own stimulus block shown once in the sitting').toBe(1)
+    expect(ownImgs, 'the own picture shown once').toBe(1)
+    expect(
+      await own.first().evaluate(ABOVE, 'k2 Bahagian A 1:'),
+      'the own picture is above the stem',
+    ).toBe(true)
     let written = 0
     for (let guard = 0; guard < 40; guard++) {
       // A "working" part: "Jalan kerja" steps and "Jawapan akhir" (MathField inputs).
@@ -1697,6 +1762,18 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     await page.reload()
     await expect(page.getByTestId('win-screen')).toBeVisible()
     observe(info, `result after self-mark + reload: ${await headline()}`)
+    // H-C7 on the result: the own picture of question 1 once, above its stem.
+    const rOwn = page.locator('[data-testid=own-stimuli]')
+    observe(
+      info,
+      `result: own-stimuli blocks ${await rOwn.count()}, pictures inside ${await rOwn.locator('img').count()}`,
+    )
+    expect(await rOwn.count(), 'own stimulus block once on the result').toBe(1)
+    expect(await rOwn.locator('img').count(), 'the own picture once on the result').toBe(1)
+    expect(
+      await rOwn.first().evaluate(ABOVE, 'k2 Bahagian A 1:'),
+      'the own picture is above the stem on the result',
+    ).toBe(true)
     await expectNoHScroll(page)
   })
 
@@ -1838,6 +1915,11 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     await login(page, PUPIL_T4)
     await page.goto('/spm/bijak')
     await expect(page.getByTestId('bijak-hub')).toBeVisible()
+    // R1E2E-14: which papers the hub lists (PoC papers with BIJAK_POC_QUESTIONS=false).
+    observe(
+      info,
+      `hub cards: ${(await page.locator('[data-testid^=paper-]').allInnerTexts()).map((t) => t.replace(/\s+/g, ' ').slice(0, 70)).join(' | ')}`,
+    )
     // Sains K2 (structured, short text): the smoke doc's reproduction paper.
     const card = page.locator('[data-testid^=paper-]', { hasText: 'Sains' }).first()
     await expect(card, 'a Sains Kertas 2 paper on the hub').toBeVisible()
@@ -1849,6 +1931,10 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     } else {
       await page.locator('[data-ds=hero-cta]').click()
     }
+    const refused = page.getByTestId('start-failure')
+    await expect(page.getByTestId('attempt-shell').or(refused).first()).toBeVisible()
+    if (await refused.isVisible())
+      observe(info, `Mula refused; cover shows: "${(await refused.innerText()).trim()}"`)
     await expect(page.getByTestId('attempt-shell')).toBeVisible()
     await expect(page.getByTestId('attempt-loading')).toHaveCount(0)
     await expect(page.getByTestId('next').or(page.getByTestId('submit')).first()).toBeVisible()
