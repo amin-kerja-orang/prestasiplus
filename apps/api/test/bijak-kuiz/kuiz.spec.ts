@@ -379,6 +379,24 @@ describe('per-paper quiz (V2 ExamQuizController::paper): paged by Bahagian, mark
     }
     expect((await student.get(`/api/bijak/kuiz/papers/${mine}`)).status).toBe(200)
   })
+
+  it('19b. AC-R1-18.4: a paper placing a question archived after Terbit is refused 403 with the BM line, page and check alike', async () => {
+    const paper = await createPaper('Kertas diarkib', [{ label: 'A', questionIds: [id('SEED-MCQ-MATH-T4'), id('SEED-MCQ-MATH-T5')] }])
+    expect((await student.get(`/api/bijak/kuiz/papers/${paper}`)).status).toBe(200)
+    await t.db.query(`update question_versions set status = 'archived' where question_id = $1::bigint and version_no = (select live_version_no from questions where id = $1::bigint)`, [id('SEED-MCQ-MATH-T4')])
+    const msg = 'Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini.'
+    try {
+      const page = await student.get(`/api/bijak/kuiz/papers/${paper}`)
+      expect(page.status).toBe(403)
+      expect(page.body.error.message).toBe(msg)
+      const chk = await student.post(`/api/bijak/kuiz/papers/${paper}/check`, { itemId: id('SEED-MCQ-MATH-T5'), optionId: 'A' })
+      expect(chk.status).toBe(403)
+      expect(chk.body.error.message).toBe(msg)
+    } finally {
+      await t.db.query(`update question_versions set status = 'approved' where question_id = $1::bigint and version_no = (select live_version_no from questions where id = $1::bigint)`, [id('SEED-MCQ-MATH-T4')])
+    }
+    expect((await student.get(`/api/bijak/kuiz/papers/${paper}`)).status).toBe(200)
+  })
 })
 
 describe('shared stimulus group (D90): one picture, two questions', () => {

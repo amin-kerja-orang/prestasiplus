@@ -32,6 +32,7 @@ import {
   invalidAnswer,
   invalidValue,
   kuizPaperNotFound,
+  kuizPaperUnavailable,
   KUIZ_OVER_FETCH,
   noQuestions,
   quizNotFound,
@@ -346,6 +347,10 @@ export class KuizService {
     const paper = await this.papers.findPaper(idFromString(paperId))
     if (!paper || paper.status !== 'published') throw kuizPaperNotFound()
     if (paper.kind === 'jana' && paper.generatedForUserId?.toString() !== userId) throw kuizPaperNotFound()
+    // H-A13 / AC-R1-18.4: a paper that places a question the bank no longer serves (archived after Terbit) is refused,
+    // the same rule that refuses a new sitting. Nothing is shown or marked from it.
+    const placed = [...new Set(paper.sections.flatMap((s) => s.placements.map((p) => idToString(p.questionId))))]
+    if (placed.length === 0 || (await this.questions.getMany(placed, 'live')).filter((r) => r.isActive && r.version.status === 'approved').length < placed.length) throw kuizPaperUnavailable()
     return paper
   }
 
