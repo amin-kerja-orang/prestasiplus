@@ -1,6 +1,6 @@
 # R1 board: Bijak SPM, admin → student question pipeline
 
-Writer: team A lead. Last refresh: 2026-10-31 (cycle 6). Current BASE: **BASE-1** = `feature/v3-bijak-r1` @ 14e4336c.
+Writer: team A lead. Last refresh: 2026-10-31 (cycle 6). Current BASE: **BASE-6** = `feature/v3-bijak-r1` @ 21ae62dd (T01, T03, T04, T05, T24 merged). Every open team A branch merges BASE-6 before re-marking READY.
 Source of every task: `docs/handoff/CLOUD-HANDOFF.md` §7 on `feature/v3-bijak-r1`. Read the protocol in [README.md](README.md).
 
 ## Critical path
@@ -109,3 +109,19 @@ Until the named task is MERGED, nobody else edits these files:
 Merge order (team A): T01 → T03 (b08) → T07 → T08; T07 also adds optional `groupStimuli` to `packages/contract/src/bijak/builder/schema.ts` (C1 builder UI: consume after T07 merges) and a `KUIZ_KIND` table in `bijak/kuiz/kuiz.mapper.ts` (C2: widen kuiz wire to 7 kinds after T07).
 
 T04 scope widened by planning: raw-SQL `'published'` question-status spots in `practice/reads/{overview,writes/listing,analytics}`, `account/account-data.repository.ts`, `bijak/kuiz/kuiz.service.ts:99`, `exam/builder/*` (paper `published`/Terbit stays).
+
+## Team A routing of B2/B3 verdicts (lead, cycle 7)
+
+| Unit | B verdict | Routed to | Fix in progress |
+|---|---|---|---|
+| T06 | CHANGES-REQUESTED (bridge filter before compose; candidatesOf D72) | A1 | merge BASE-6 + T08; bridge-filter candidates + spec |
+| H-A2 | CHANGES-REQUESTED (D72 half-applied: teacherStudentIds, classesByStudent, studentLines, schoolStudentLines, remedial) | A1 | full D72 + dashboard = cards spec |
+| T26 / T35 / T28 | Approve with Minors | A1 | e2e pool for 3472/2 (201), production refusal; BM 409 on archive; streak asserts. AC-R1-10.2: Cuba Lagi re-earns per attempt (= V2), lead confirms |
+| T32 | CHANGES-REQUESTED (stimulusGroupId bypass on /api/questions; served lock; concurrency; 40 cap) | A2 (priority, unblocks C3) | + **D93**: Studio creates a draft group (0–1 members) first, warning until 2, builder blocker "Kumpulan perlu sekurang-kurangnya 2 soalan." |
+| T04 Minors | Approve (merged BASE-4) | A2 | r1/t04-minors: chapterQuestionCounts `group_id IS NULL`; m28 kontrak `'published'`; ops doc VACUUM + resolve |
+| T07 | CHANGES-REQUESTED (openapi; D90 stimulus-less groups dropped; table helper) | A4 (priority) | then T08 → T25 → H-A7 forward with BASE-6 |
+| T29 | CHANGES-REQUESTED (live ?? latest) | A4 | + parity fixtures |
+| T30 | CHANGES-REQUESTED (overview scale; attention = lane rows) | A4 | |
+| T34 / H-A9 | not yet reviewed | A3 | merge BASE-6; + full-review builder findings (`builder.service` early return MAJOR, minors) |
+| T05 Minors | Approve (merged BASE-5) | A3 | r1/t05-minors |
+| H-A14 integration preview | — | A1 | **stopped** (B is merging; preview branch left untouched) |
