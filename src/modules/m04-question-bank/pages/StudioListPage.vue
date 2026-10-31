@@ -31,6 +31,8 @@ import {
   type RowAction,
 } from '@/ds'
 
+import { useMedia } from '@/ds/useMedia'
+
 import { fetchSubjects } from '../api/lookups'
 import {
   editAsDraft,
@@ -56,6 +58,7 @@ import {
   draftCreatedFlash,
   FLASH,
   REASON,
+  SERVED_TITLE,
   servedCaption,
   STATUS_ORDER,
   statusBadge,
@@ -76,6 +79,9 @@ const route = useRoute()
 const router = useRouter()
 const flash = useFlash()
 const confirm = useConfirm()
+
+/** The columns fit the width from `lg`; below it the table drops Kertas and Sumber (the stem cell shows Kertas) and below `md` rows are cards. */
+const lg = useMedia('(min-width: 1024px)')
 
 const available = studioAvailable()
 
@@ -282,6 +288,8 @@ interface TableRow extends Record<string, unknown> {
   kertas: string
   sumber: string
   statusText: string
+  /** "4/6" for the mobile card; the table shows the full caption under the badge. */
+  served: string
   raw: StudioRow
 }
 const tableRows = computed<TableRow[]>(() =>
@@ -291,6 +299,7 @@ const tableRows = computed<TableRow[]>(() =>
     kertas: [r.subject?.name, r.level?.name].filter(Boolean).join(' · ') || '-',
     sumber: sourceLabel(r.sourceType),
     statusText: statusBadge(r.status),
+    served: reports.value[r.id] ? `${String(reports.value[r.id]!.servedCount)}/${String(reports.value[r.id]!.total)}` : '-',
     raw: r,
   })),
 )
@@ -299,16 +308,17 @@ const META_CLASS = 'class'
 const cellClass = (th: string, td = th): { meta: Record<string, unknown> } => ({ meta: { [META_CLASS]: { th, td } } })
 const columns: TableColumn<TableRow>[] = [
   { accessorKey: 'id', header: 'No.', ...cellClass('w-16') },
-  { accessorKey: 'stem', header: 'Soalan', ...cellClass('min-w-64') },
-  { accessorKey: 'kertas', header: 'Kertas', ...cellClass('hidden lg:table-cell w-48') },
-  { accessorKey: 'sumber', header: 'Sumber', ...cellClass('hidden lg:table-cell w-32') },
-  { id: 'status', header: 'Status', ...cellClass('w-40') },
-  { id: 'actions', header: ' ', ...cellClass('w-40 text-end', 'w-40') },
+  { accessorKey: 'stem', header: 'Soalan', ...cellClass('min-w-48') },
+  { accessorKey: 'kertas', header: 'Kertas', ...cellClass('hidden lg:table-cell w-40') },
+  { accessorKey: 'sumber', header: 'Sumber', ...cellClass('hidden lg:table-cell w-24') },
+  { id: 'status', header: 'Status', ...cellClass('w-36') },
+  { id: 'actions', header: ' ', ...cellClass('w-36 text-end', 'w-36') },
 ]
 const cardFields: CardField[] = [
   { key: 'kertas', label: 'Kertas' },
   { key: 'sumber', label: 'Sumber' },
   { key: 'statusText', label: 'Status' },
+  { key: 'served', label: SERVED_TITLE },
 ]
 </script>
 
@@ -377,7 +387,8 @@ const cardFields: CardField[] = [
       <DsDataTable
         v-else
         variant="flush"
-                row-key="id"
+        :layout="lg ? 'fixed' : 'auto'"
+        row-key="id"
         :data="tableRows"
         :columns="columns"
         caption="Senarai soalan Studio"

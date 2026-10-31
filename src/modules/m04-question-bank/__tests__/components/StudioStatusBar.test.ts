@@ -31,6 +31,7 @@ const REPORT = {
 }
 
 let wrapper: VueWrapper | null = null
+let confirmSpy: ReturnType<typeof vi.spyOn>
 const mountBar = async (props: { status: string; dirty?: boolean; unsupported?: boolean }) => {
   wrapper = mount(StudioStatusBar, { props: { questionId: '9', dirty: false, unsupported: false, ...props }, attachTo: document.body })
   await flushPromises()
@@ -43,7 +44,7 @@ beforeEach(() => {
   setActivePinia(createPinia())
   for (const f of [studio.moveQuestionStatus, studio.fetchGateCheck, studio.fetchServability, studio.editAsDraft]) f.mockReset()
   studio.fetchServability.mockResolvedValue(REPORT)
-  vi.spyOn(window, 'confirm').mockReturnValue(true)
+  confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
 })
 afterEach(() => {
   wrapper?.unmount()
@@ -75,7 +76,7 @@ describe('StudioStatusBar', () => {
     const w = await mountBar({ status: 'review' })
     await t(w, 'studio-action-approved').trigger('click')
     await flushPromises()
-    expect(window.confirm).not.toHaveBeenCalled()
+    expect(confirmSpy).not.toHaveBeenCalled()
     expect(flashNow()?.message).toBe('Soalan diterbitkan — kini boleh dijawab oleh pelajar.')
     expect(t(w, 'studio-not-served').text()).toContain('Tidak dihidangkan di 1 aktiviti')
   })
@@ -102,7 +103,6 @@ describe('StudioStatusBar', () => {
 
   it('"Arkib" asks "Arkibkan soalan ini?" first and sends a reason', async () => {
     studio.moveQuestionStatus.mockResolvedValue({ question: { id: '9', status: 'archived' }, servability: null })
-    const confirmSpy = vi.mocked(window.confirm)
     const w = await mountBar({ status: 'approved' })
     await t(w, 'studio-action-archived').trigger('click')
     await flushPromises()
@@ -112,7 +112,7 @@ describe('StudioStatusBar', () => {
   })
 
   it('does nothing when the archive dialog is cancelled', async () => {
-    vi.mocked(window.confirm).mockReturnValue(false)
+    confirmSpy.mockReturnValue(false)
     const w = await mountBar({ status: 'draft' })
     await t(w, 'studio-action-archived').trigger('click')
     await flushPromises()
@@ -144,7 +144,7 @@ describe('StudioStatusBar', () => {
     expect(t(w, 'studio-served-error').text()).toContain('tidak dapat dimuat')
     await t(w, 'studio-served-toggle').trigger('click')
     await flushPromises()
-    expect(t(w, 'studio-served-summary').exists()).toBe(true)
+    expect(w.find('[data-testid="studio-served-summary"]').exists()).toBe(true)
   })
 
   it('waits for "Simpan draf" while the form has unsaved changes', async () => {
