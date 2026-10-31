@@ -37,7 +37,6 @@ export const STIMULUS_MESSAGES = {
   inUse: 'Rangsangan ini sedang digunakan oleh kumpulan atau soalan. Keluarkan daripada penggunaan dahulu.',
   stimuliCount: 'Satu kumpulan mesti mempunyai 1 hingga 3 rangsangan.',
   stimuliInvalid: 'Rangsangan tidak sah atau berulang.',
-  membersMin: 'Satu kumpulan mesti mempunyai sekurang-kurangnya 2 soalan.',
   /** The paper builder blocker for a group with fewer than 2 questions (D93). */
   builderBlocker: 'Kumpulan perlu sekurang-kurangnya 2 soalan.',
   membersTooMany: 'Satu kumpulan boleh mempunyai paling banyak 40 soalan.',
@@ -103,7 +102,7 @@ export const StimulusUpdateRequestSchema = z
   .strictObject({
     label: Label.nullable().optional(),
     caption: Caption.nullable().optional(),
-    body: Body.nullable().optional(),
+    body: Body.nullable().optional().meta({ description: 'Replaces the whole text (ms and en): send both languages to keep both; null clears (only allowed when the kind does not need it).' }),
     alt: Alt.nullable().optional(),
     sourceCitation: Source.nullable().optional(),
     tableData: Table.nullable().optional(),

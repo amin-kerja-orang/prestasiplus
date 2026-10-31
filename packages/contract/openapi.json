@@ -40707,7 +40707,8 @@
             },
             "required": [
               "ms"
-            ]
+            ],
+            "description": "Replaces the whole text (ms and en): send both languages to keep both; null clears (only allowed when the kind does not need it)."
           },
           "alt": {
             "type": [

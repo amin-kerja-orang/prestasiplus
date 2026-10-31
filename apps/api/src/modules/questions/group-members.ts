@@ -112,6 +112,8 @@ export class GroupMembers {
    */
   async move(questionId: string, from: string | null, to: string | null): Promise<void> {
     if (to === from) return
+    // A question shown to pupils cannot leave its group, whether it goes nowhere or to another group (409, not 422).
+    if (from !== null && (await this.repo.servingMemberIds(from)).includes(questionId)) throw conflict(M.groupServed)
     if (from !== null && to !== null) throw fail({ stimulusGroupId: M.memberTaken })
     if (to === null && from !== null) {
       const current = await this.repo.memberIds(from)

@@ -242,7 +242,8 @@ export class StimuliService {
   private async imageOf(token: string | null | undefined, fields: Record<string, string>): Promise<bigint | null> {
     if (token === null || token === undefined) return null
     const internal = await this.files.internalIdOf(token)
-    const meta = /^[1-9]\d{0,18}$/.test(internal) ? await this.files.metaOf(internal) : null
+    // Only the public token that `POST /files` returns names a picture; a guessable decimal id never does (T32-L1).
+    const meta = internal !== token && /^[1-9]\d{0,18}$/.test(internal) ? await this.files.metaOf(internal) : null
     if (meta === null || meta.purpose !== IMAGE_PURPOSE) {
       fields.imageFileId = STIMULUS_MESSAGES.image
       return null

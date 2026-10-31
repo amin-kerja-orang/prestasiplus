@@ -81,7 +81,8 @@ export class StimuliRepository {
   }
 
   async updateStimulus(id: string, data: StimulusData): Promise<void> {
-    await this.db.stimulus.update({ where: { id: BigInt(id) }, data: this.columns(data) })
+    // A migrated `content_hash` describes the old text: an edit makes it stale, so it is cleared (the API never writes one) (T32-L2).
+    await this.db.stimulus.update({ where: { id: BigInt(id) }, data: { ...this.columns(data), contentHash: null } })
   }
 
   /** Locks the stimulus row so a delete and a link cannot cross. Returns false when it does not exist. */
