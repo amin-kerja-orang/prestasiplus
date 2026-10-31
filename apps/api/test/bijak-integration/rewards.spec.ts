@@ -176,6 +176,43 @@ describe('WalletBijakReward.award', () => {
     expect(await balance(studentId)).toBe(before + 3)
   })
 
+  const xpOf = async (userId: string) => Number((await t.db.query('select xp from wallets where user_id = $1', [userId]))[0]?.xp ?? 0)
+
+  it('adds the XP (10 per mark) once with the syiling: a replay pays neither the ledger row nor the XP again', async () => {
+    const attemptId = randomUUID()
+    const xpBefore = await xpOf(studentId)
+    await award(attemptId, 4) // score 2 marks: 4 syiling, 20 XP
+    expect(await xpOf(studentId)).toBe(xpBefore + 20)
+    await award(attemptId, 4)
+    await award(attemptId, 4)
+    expect(await xpOf(studentId)).toBe(xpBefore + 20)
+    expect(await t.db.query('select 1 from coin_ledger where source = $1 and source_id = $2', ['quiz_spm', attemptId])).toHaveLength(1)
+    // a refused second amount rolls everything back: no XP either
+    await expect(award(attemptId, 6)).rejects.toThrow()
+    expect(await xpOf(studentId)).toBe(xpBefore + 20)
+  })
+
+  it('touches the streak (kombo) of the day the attempt closed, once per day, even when the score earns nothing', async () => {
+    const pupil = (await loginAs(t, 'pelajar2@demo.test')).userId
+    const closed = new Date('2026-10-20T01:00:00Z')
+    const before = await streak(pupil)
+    await bijak.award({ attemptId: randomUUID(), userId: pupil, isTest: false, coins: 0, points: 0, submittedAt: closed, score: 0, max: 10, provisional: false, description: BIJAK_REWARD_DESCRIPTION })
+    const first = await streak(pupil)
+    expect(first).toBeDefined()
+    expect(first!.current).toBeGreaterThanOrEqual(1)
+    await bijak.award({ attemptId: randomUUID(), userId: pupil, isTest: false, coins: 2, points: 10, submittedAt: closed, score: 1, max: 10, provisional: false, description: BIJAK_REWARD_DESCRIPTION })
+    expect((await streak(pupil))!.current).toBe(first!.current) // the same day does not count twice
+    void before
+  })
+
+  it('AC-20.3: a Mod Pelajar attempt moves no XP and no streak either', async () => {
+    const streakBefore = await streak(adminId)
+    const xpBefore = await xpOf(adminId)
+    await award(randomUUID(), 8, { userId: adminId, isTest: true })
+    expect(await xpOf(adminId)).toBe(xpBefore)
+    expect(await streak(adminId)).toEqual(streakBefore)
+  })
+
   it('AC-20.3: a Mod Pelajar (is_test) attempt writes no ledger row and moves no balance', async () => {
     const attemptId = randomUUID()
     const before = await balance(adminId)
