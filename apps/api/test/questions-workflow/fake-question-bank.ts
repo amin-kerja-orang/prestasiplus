@@ -93,7 +93,7 @@ export class FakeQuestionBank implements QuestionBankPort {
       id: input.id,
       status,
       latestVersionNo: input.latestVersionNo ?? 1,
-      liveVersionNo: input.liveVersionNo !== undefined ? input.liveVersionNo : status === 'published' ? (input.latestVersionNo ?? 1) : null,
+      liveVersionNo: input.liveVersionNo !== undefined ? input.liveVersionNo : status === 'approved' ? (input.latestVersionNo ?? 1) : null,
       isActive: input.isActive ?? true,
       createdById: input.createdById ?? null,
       gate,
@@ -182,9 +182,9 @@ export class FakeQuestionBank implements QuestionBankPort {
       q.liveVersionNo = null
       return this.info(q)
     }
-    if (to === 'published') {
+    if (to === 'approved') {
       q.liveVersionNo = q.latestVersionNo
-    } else if (q.status === 'published') {
+    } else if (q.status === 'approved') {
       q.liveVersionNo = null
     }
     q.status = to

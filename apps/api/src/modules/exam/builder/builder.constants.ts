@@ -13,11 +13,10 @@ export const BIJAK_BUILDER_LIMITS = {
 } as const satisfies Record<string, RateLimitSpec>
 
 /**
- * Question statuses a paper may place and serve (D54a). ONE constant and ONE helper: the question
- * lifecycle is moving from `published` to `approved` (R1-B01); both are accepted until that lands,
- * then drop `published` here.
+ * Question statuses a paper may place and serve (D54a). ONE constant and ONE helper. Since R1-B01 (ADR-0027)
+ * `approved` is the only servable status of a question; `published` survives only on papers.
  */
-export const SERVABLE_QUESTION_STATUSES: readonly string[] = ['published', 'approved']
+export const SERVABLE_QUESTION_STATUSES: readonly string[] = ['approved']
 export const isServableStatus = (status: string): boolean => SERVABLE_QUESTION_STATUSES.includes(status)
 
 /** Candidates per page of the section pool. */

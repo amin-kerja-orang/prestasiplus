@@ -24,7 +24,7 @@ import { plainText } from './review-wire'
 
 const LETTERS = 'ABCDEFGH'
 
-export type WireQuestionStatus = 'draft' | 'review' | 'approved' | 'published' | 'archived'
+export type WireQuestionStatus = 'draft' | 'review' | 'approved' | 'archived'
 type Ref = { id: string; name: string } | null
 
 /** Subset of `QuestionRowSchema`. */
@@ -52,10 +52,10 @@ export interface WireBankDetail extends WireBankRow {
   parts?: QuestionPart[]
 }
 
-/** Wire lifecycle code to the bank status (Draf, Semakan, Lulus = Semakan, Diterbitkan, Diarkib = Ditolak). */
+/** Wire lifecycle code to the bank status (Draf, Semakan, Diterbitkan = `approved` since ADR-0027, Diarkib = Ditolak). */
 export function bankStatusFromWire(s: WireQuestionStatus): QuestionStatus {
-  if (s === 'published') return 'terbit'
-  if (s === 'review' || s === 'approved') return 'semakan'
+  if (s === 'approved') return 'terbit'
+  if (s === 'review') return 'semakan'
   if (s === 'archived') return 'ditolak'
   return 'draf'
 }
@@ -64,9 +64,9 @@ export function bankStatusFromWire(s: WireQuestionStatus): QuestionStatus {
 export function wireStatusesOf(s: QuestionStatus | 'semua'): WireQuestionStatus[] | null {
   switch (s) {
     case 'terbit':
-      return ['published']
+      return ['approved']
     case 'semakan':
-      return ['review', 'approved']
+      return ['review']
     case 'draf':
       return ['draft']
     case 'ditolak':

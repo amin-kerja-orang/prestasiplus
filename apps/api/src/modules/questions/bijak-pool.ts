@@ -2,7 +2,7 @@
  * BJS-07 (v2-bijak-spm-standards 4.2, 14, 15.5): candidate facts of the Bijak standard pool, read from the
  * question bank (M04 owns the tables; Bijak reads them only through this class).
  *
- * One candidate = one active question whose LIVE version is `published` and tagged with the subject.
+ * One candidate = one active question whose LIVE version is `approved` and tagged with the subject.
  * `tag_review` questions are returned too: they are counted as excluded by exam-core (`eligibilityOf`), never silently dropped,
  * so `publishedTotal = eligibleTotal + excluded.total`. The effective per-leaf values come from
  * `effective-leaf.ts` (BJS-06), the only place the coalesce rule lives; this class adds what exam-core
@@ -66,7 +66,7 @@ export class QuestionsBijakPoolSource {
              (SELECT array_agg(t.code ORDER BY t.code) FROM question_tags t WHERE t.question_id = q.id AND t.kind = 'pool') AS pools
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-       WHERE q.is_active AND v.status = 'published' AND v.subject_id = ${idFromString(subjectId)}
+       WHERE q.is_active AND v.status = 'approved' AND v.subject_id = ${idFromString(subjectId)}
        ORDER BY q.id`
     if (rows.length === 0) return []
 

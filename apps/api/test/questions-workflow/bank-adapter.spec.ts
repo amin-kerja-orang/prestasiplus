@@ -57,14 +57,14 @@ describe('question bank adapter (real BE-09 bank)', () => {
     expect(t.app.get(QuestionWorkflowPorts).questionBank).toBe(t.app.get(QuestionBankAdapter))
   })
 
-  it('a draft walks draft, review, approved, published with one event per step and becomes eligible', async () => {
+  it('a draft walks draft, review, approved with one event per step and becomes eligible', async () => {
     const id = await draft()
     const admin = actorOf(c.admin)
-    for (const [from, to] of [['draft', 'review'], ['review', 'approved'], ['approved', 'published']] as const) {
+    for (const [from, to] of [['draft', 'review'], ['review', 'approved']] as const) {
       const r = await svc.transition(id, to, admin)
       expect(r).toMatchObject({ id, from, to, versionNo: 1 })
     }
-    expect(await t.bank.getStatus(id)).toMatchObject({ status: 'published', latestVersionNo: 1, liveVersionNo: 1, isActive: true })
+    expect(await t.bank.getStatus(id)).toMatchObject({ status: 'approved', latestVersionNo: 1, liveVersionNo: 1, isActive: true })
     expect(await eligible(id)).toBe(true)
     const ev = await t.db.query<{ from_status: string | null; to_status: string; actor_role: string }>(
       'select from_status, to_status, actor_role from question_status_events where question_id = $1::bigint order by id',
@@ -73,13 +73,12 @@ describe('question bank adapter (real BE-09 bank)', () => {
     expect(ev).toEqual([
       { from_status: 'draft', to_status: 'review', actor_role: 'admin' },
       { from_status: 'review', to_status: 'approved', actor_role: 'admin' },
-      { from_status: 'approved', to_status: 'published', actor_role: 'admin' },
     ])
   })
 
   it('a pair outside the table is 409 and the gates read real data (an untagged draft cannot be submitted)', async () => {
     const id = await draft()
-    expect((await failure(svc.transition(id, 'published', actorOf(c.admin)))).code).toBe('CONFLICT')
+    expect((await failure(svc.transition(id, 'approved', actorOf(c.admin)))).code).toBe('CONFLICT')
     const [untagged] = await t.db.query<{ question_id: string }>("select question_id::text from question_versions where number_label = 'SEED-DRAFT-BM-T4'")
     const err = await failure(svc.transition(untagged!.question_id, 'review', actorOf(c.admin)))
     expect(err.code).toBe('VALIDATION_ERROR')
@@ -97,7 +96,7 @@ describe('question bank adapter (real BE-09 bank)', () => {
 
   it('a takedown with live v1 and a draft v2 leaves nothing live and archives both versions', async () => {
     const id = await draft()
-    for (const to of ['review', 'approved', 'published'] as const) await svc.transition(id, to, actorOf(c.admin))
+    for (const to of ['review', 'approved'] as const) await svc.transition(id, to, actorOf(c.admin))
     // Editing a published question adds version 2 as a draft; version 1 keeps serving.
     await questions.update(
       id,
@@ -134,7 +133,7 @@ describe('question bank adapter (real BE-09 bank)', () => {
 
   it('withdrawing a published question ends serving (published to archived with a reason)', async () => {
     const id = await draft()
-    for (const to of ['review', 'approved', 'published'] as const) await svc.transition(id, to, actorOf(c.admin))
+    for (const to of ['review', 'approved'] as const) await svc.transition(id, to, actorOf(c.admin))
     await svc.transition(id, 'archived', actorOf(c.admin), { reason: 'Salah' })
     expect(await eligible(id)).toBe(false)
     expect(await t.bank.getStatus(id)).toMatchObject({ status: 'archived', liveVersionNo: null })
@@ -142,11 +141,11 @@ describe('question bank adapter (real BE-09 bank)', () => {
 
   it('a student report on a published MCQ deactivates it in the real bank at once', async () => {
     const id = await draft()
-    for (const to of ['review', 'approved', 'published'] as const) await svc.transition(id, to, actorOf(c.admin))
+    for (const to of ['review', 'approved'] as const) await svc.transition(id, to, actorOf(c.admin))
     expect(await eligible(id)).toBe(true)
     const res = await c.student.post('/api/question-reports', { questionId: id, reasons: ['wrong_answer'] })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
-    expect(await t.bank.getStatus(id)).toMatchObject({ isActive: false, status: 'published' })
+    expect(await t.bank.getStatus(id)).toMatchObject({ isActive: false, status: 'approved' })
     expect(await eligible(id)).toBe(false)
   })
 
@@ -155,7 +154,7 @@ describe('question bank adapter (real BE-09 bank)', () => {
     const [str] = await t.db.query<{ question_id: string }>("select question_id::text from question_versions where number_label = 'SEED-STR-TREE'")
     const m = await t.bank.describe([seed!.question_id, str!.question_id, '999999999'])
     expect(m.size).toBe(2)
-    expect(m.get(seed!.question_id)).toMatchObject({ type: 'mcq', status: 'published', subjectName: expect.any(String), levelName: expect.any(String) })
+    expect(m.get(seed!.question_id)).toMatchObject({ type: 'mcq', status: 'approved', subjectName: expect.any(String), levelName: expect.any(String) })
     expect(m.get(str!.question_id)?.type).toBe('structured')
   })
 

@@ -111,7 +111,7 @@ export async function addQuestion(db: TestDatabase, opts: { active?: boolean; pu
   const id = q[0]?.id as string
   await db.query(
     `insert into question_versions (question_id, version_no, status, type, stem_ms) values ($1, 1, $2, 'mcq', 'Soalan ujian')`,
-    [id, (opts.published ?? true) ? 'published' : 'draft'],
+    [id, (opts.published ?? true) ? 'approved' : 'draft'],
   )
   return id
 }

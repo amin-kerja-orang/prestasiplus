@@ -53,9 +53,9 @@ describe('paper builder candidates of API-created questions carry the kertas', (
   }
 
   it('a published question created with kertas 2 is a kertas 2 candidate, without SQL', async () => {
-    const withKertas = await make({ status: 'published', kertas: '2' })
-    const without = await make({ status: 'published' })
-    const other = await make({ status: 'published', kertas: '1' })
+    const withKertas = await make({ status: 'approved', kertas: '2' })
+    const without = await make({ status: 'approved' })
+    const other = await make({ status: 'approved', kertas: '1' })
     const list = await candidates()
     expect(list).toContain(withKertas)
     expect(list).not.toContain(without)
@@ -64,7 +64,7 @@ describe('paper builder candidates of API-created questions carry the kertas', (
 
   it('a draft with kertas is not a candidate; clearing the kertas of a new version removes it once that version is live', async () => {
     const draft = await make({ status: 'draft', kertas: '2' })
-    const id = await make({ status: 'published', kertas: '2' })
+    const id = await make({ status: 'approved', kertas: '2' })
     const list = await candidates()
     expect(list).toContain(id)
     expect(list).not.toContain(draft)
@@ -73,7 +73,7 @@ describe('paper builder candidates of API-created questions carry the kertas', (
     expect(put.status, JSON.stringify(put.body)).toBe(200)
     expect(await candidates()).toContain(id)
     const svc = t.app.get(QuestionsService)
-    for (const status of ['review', 'approved', 'published'] as const) await svc.setStatus(id, status, '1')
+    for (const status of ['review', 'approved'] as const) await svc.setStatus(id, status, '1')
     expect(await candidates()).not.toContain(id)
   })
 })

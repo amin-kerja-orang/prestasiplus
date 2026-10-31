@@ -227,7 +227,7 @@ describe('AC1 GET /api/practice/structured', () => {
     // Withdrawn (archived live version) leaves the list too.
     await t.db.query(`update question_versions set status = 'archived', archive_reason = 'withdrawn' where question_id = $1`, [anyn])
     expect((await list(student)).data.map((c) => c.id)).not.toContain(anyn)
-    await t.db.query(`update question_versions set status = 'published', archive_reason = null where question_id = $1`, [anyn])
+    await t.db.query(`update question_versions set status = 'approved', archive_reason = null where question_id = $1`, [anyn])
     expect((await list(student)).data.map((c) => c.id)).toContain(anyn)
   })
 

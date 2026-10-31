@@ -20,7 +20,7 @@ describe('bulk transition (BE-10 AC 1 no bypass)', () => {
   it('moves the passing questions and reports the rest with code and fields', async () => {
     t.fake.seed({ id: '5001', status: 'draft' })
     t.fake.seed({ id: '5002', status: 'draft', gate: { chapterId: null } })
-    t.fake.seed({ id: '5003', status: 'published' }) // published -> review is not in the table
+    t.fake.seed({ id: '5003', status: 'approved' }) // published -> review is not in the table
     const res = await svc.bulkTransition(['5001', '5002', '5003', '5999'], 'review', actorOf(c.admin))
     expect(res.affected).toBe(1)
     expect(res.skipped).toEqual([

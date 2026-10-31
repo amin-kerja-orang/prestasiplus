@@ -6,7 +6,7 @@ export { QUESTION_STATUSES }
 export const MOCK_STATUS_TO_V2: Readonly<Record<string, QuestionStatus | undefined>> = {
   draft: 'draft',
   pending_review: 'review',
-  approved: 'published',
+  approved: 'approved',
   archived: 'archived',
   rejected: undefined,
 }
