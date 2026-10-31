@@ -34,8 +34,10 @@ interface Ctx {
   s1: Client
   svc: QuestionsService
   source: Be09PracticeQuestionSource
-  /** The primary level (D1..D4) offered to random sessions of the world's subject. */
+  /** A secondary level (Tingkatan 5, not the world's T4) offered to random sessions of the world's subject (the Darjah levels are hidden, secondary-only D72). */
   dLevel: string
+  /** A secondary level that is NOT SPM-servable (not T4/T5): a question there is outside every SPM activity. */
+  nonSpmLevel: string
   chapterId: string
 }
 
@@ -78,11 +80,22 @@ beforeAll(async () => {
   const dLevel = (
     await t.db.query<{ id: string }>(
       `select l.id::text id from education_levels l join subject_levels sl on sl.education_level_id = l.id
-        where sl.subject_id = $1 and l.code in ('D1','D2','D3','D4') order by l.sort_order, l.id limit 1`,
+        where sl.subject_id = $1 and l.code in ('T4','T5') and l.id <> $2::bigint and l.is_active
+          and exists (select 1 from chapters c where c.subject_id = sl.subject_id and c.education_level_id = l.id and c.is_active) order by l.sort_order, l.id limit 1`,
+      [w.tag.subjectId, w.tag.levelId],
+    )
+  )[0]?.id
+  if (!dLevel) throw new Error('the world subject has no second SPM-servable secondary level')
+  const nonSpmLevel = (
+    await t.db.query<{ id: string }>(
+      `select l.id::text id from education_levels l join subject_levels sl on sl.education_level_id = l.id
+        where sl.subject_id = $1 and l.stage <> 'primary' and l.is_active and l.code not in ('T4','T5') order by l.sort_order, l.id limit 1`,
       [w.tag.subjectId],
     )
   )[0]?.id
-  if (!dLevel) throw new Error('the world subject has no primary level')
+  if (!nonSpmLevel) throw new Error('the world subject has no secondary level outside T4/T5')
+  // The seed already fills that level: switch those rows off so the questions made here are the only eligible ones.
+  await t.db.query(`update questions set is_active = false where id in (select question_id from question_versions where subject_id = $1 and education_level_id = $2)`, [w.tag.subjectId, dLevel])
   const chapterId = (
     await t.db.query<{ id: string }>(`select id::text id from chapters where subject_id = $1 and education_level_id = $2 and is_active order by id limit 1`, [w.tag.subjectId, dLevel])
   )[0]?.id
@@ -94,6 +107,7 @@ beforeAll(async () => {
     svc: t.get(QuestionsService),
     source: t.get(Be09PracticeQuestionSource),
     dLevel,
+    nonSpmLevel,
     chapterId,
   }
 }, 180_000)
@@ -173,14 +187,14 @@ describe('random sessions start with published questions only', () => {
 })
 
 describe('filters, pinned versions and the contributor', () => {
-  it('spmPool: past_year draws only pool questions, and the start is 201', async () => {
+  it('spmPool: past_year draws only SPM-servable questions, and the start is 201', async () => {
     const pooled: string[] = []
     for (let i = 0; i < 5; i++) {
       const id = await mcq({ text: `Soalan SPM ${String(i)}` })
-      await pool(id)
       pooled.push(id)
     }
-    const plain = await mcq({ text: 'Soalan bukan SPM' })
+    // Not SPM-servable: the level is outside the offered T4/T5 (the SPM pool is defined by level, not by a tag; R1-B06).
+    const plain = await mcq({ level: c.nonSpmLevel, text: 'Soalan bukan SPM' })
     const ids = await c.source.sample({ subjectId: c.w.tag.subjectId, spmPool: true }, 1000, prngStream('p'))
     expect(ids).not.toContain(plain)
     for (const id of pooled) expect(ids).toContain(id)

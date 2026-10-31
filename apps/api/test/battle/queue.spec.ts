@@ -29,7 +29,7 @@ describe('battle queue (M16-02 to M16-06, M16-12, M16-13)', () => {
     s = await subjectsOf(t)
     await addMcqs(t, s.math, s.t4, 12)
     await addMcqs(t, s.sci, s.t4, 3)
-    await addMcqs(t, s.bm, s.t4, 10, { spm: true })
+    await addMcqs(t, s.bm, s.t4, 10)
     ;[a, b, c] = [await client(t, STUDENT_G10), await client(t, STUDENT_G10_B), await client(t, STUDENT_G11)]
   }, 180_000)
   afterAll(async () => t.close())
@@ -71,13 +71,14 @@ describe('battle queue (M16-02 to M16-06, M16-12, M16-13)', () => {
       expect(parse(BattleEmptyBodySchema, res)).toEqual({})
     })
 
-    it('SPM: 403 {} below Tingkatan 4; 422 {} without an SPM pool; 200 for grade 10 with a pool', async () => {
+    it('SPM: 403 {} below Tingkatan 4; 422 {} with too small an SPM pool; 200 for grade 10 with a pool', async () => {
       const lowGrade = (await rows<{ email: string }>(`select email from users where grade = 9 and email is not null order by id limit 1`))[0]?.email as string
       const low = await client(t, lowGrade)
       const denied = await low.post('/battle/quick-match', { question_type: 'spm', subject_id: s.bm })
       expect(denied.status).toBe(403)
       expect(parse(BattleEmptyBodySchema, denied)).toEqual({})
-      const noPool = await a.post('/battle/school-battle', { question_type: 'spm', subject_id: s.math })
+      // R1-B06: the SPM pool is by level, so math (12 T4 questions) has one; science (3) is too small to start a battle.
+      const noPool = await a.post('/battle/school-battle', { question_type: 'spm', subject_id: s.sci })
       expect(noPool.status).toBe(422)
       expect(noPool.body).toEqual({})
       const ok = await a.post('/battle/quick-match', { question_type: 'spm', subject_id: s.bm })
