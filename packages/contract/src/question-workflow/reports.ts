@@ -2,6 +2,7 @@ import { z } from '../zod'
 import { IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
 import { questionWorkflowListMetaOf, questionWorkflowMutationOf } from './common'
+import { QuestionWorkflowStatusSchema } from './lifecycle'
 
 /**
  * Student question reports (mock `m04-question-bank/mock/handlers/reports.ts`, SRS BR-M04-11 to 16,
@@ -24,9 +25,12 @@ export const QUESTION_REPORT_MESSAGES = {
   reference: 'Rujukan sesi atau bilik tidak sah.',
   comment: 'Komen tidak boleh melebihi 500 aksara.',
   status: 'Status tidak sah.',
+  expectedVersionNo: 'Versi soalan tidak sah.',
   adminNotes: 'Nota admin tidak boleh melebihi 1000 aksara.',
   created: 'Laporan berjaya dihantar.',
   updated: 'Laporan berjaya dikemaskini.',
+  /** 409 on "Arkib" from a report row: the question has moved past the reported version (REQ-B-018). */
+  archiveStaleVersion: 'Soalan ini sudah mempunyai versi yang lebih baharu daripada yang dilaporkan. Arkib dibatalkan; semak versi terkini dahulu.',
   /** Shown by the screen when the request itself fails (FR-M04-69). */
   failure: 'Ralat. Sila cuba lagi.',
 } as const
@@ -155,6 +159,10 @@ export const QuestionReportQuestionViewSchema = QuestionReportQuestionRefSchema.
   levelName: z.string().nullable().optional(),
   complianceStatus: z.string().optional(),
   isActive: z.boolean().optional(),
+  /** REQ-C-018: lifecycle status of the question (its LATEST version: draft | review | approved | archived), so the row can hide "Arkib" on an archived question. */
+  status: QuestionWorkflowStatusSchema.optional(),
+  /** REQ-C-018: the version served to pupils; `null` when none is live (for example after "Arkib" with a newer revision in Semakan). */
+  liveVersionNo: z.number().int().min(1).nullable().optional(),
   /** "Buka Soalan Sama"; `null` when the subject has no code. */
   practiceUrl: z.string().nullable().optional(),
 }).meta({ id: 'QuestionReportQuestionView' })
@@ -244,6 +252,12 @@ export const QuestionReportUpdateRequestSchema = z
     reactivate: FlagSchema.optional(),
     forceDeactivate: FlagSchema.optional(),
     archive: FlagSchema.optional(),
+    expectedVersionNo: z
+      .number(QUESTION_REPORT_MESSAGES.expectedVersionNo)
+      .int()
+      .min(1)
+      .optional()
+      .meta({ description: 'The reported question version the admin is looking at. With `archive`: it must be the version the report was filed against (else 409), and the archive is refused with 409 when the question has moved on to a newer version than the reported one (REQ-B-018).' }),
   })
   .meta({ id: 'QuestionReportUpdateRequest' })
 export type QuestionReportUpdateRequest = z.infer<typeof QuestionReportUpdateRequestSchema>

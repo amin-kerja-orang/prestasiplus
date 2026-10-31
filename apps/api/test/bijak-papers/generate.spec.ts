@@ -295,6 +295,8 @@ describe('Jana Kertas through the pool source (standard facts, D75)', () => {
     fact('7101', { groupId: 'g1', groupPosition: 1, groupSize: 2 }),
     fact('7102', { groupId: 'g1', groupPosition: 2, groupSize: 2 }),
   ]
+  // REQ-B-020: 10 servable singles (7301 to 7310) hidden among 200 the bridge refuses (7311 to 7510).
+  const crowded: QuestionFacts[] = Array.from({ length: 210 }, (_, i) => fact(String(7301 + i)))
   // A candidate list the test swaps per case; only MAT Kertas 1 has facts, any other pair is a shortage.
   let candidates: QuestionFacts[] = bank
   const refused = new Set<string>()
@@ -308,7 +310,7 @@ describe('Jana Kertas through the pool source (standard facts, D75)', () => {
     getMany: async (ids) =>
       new Map(
         ids.flatMap((id) => {
-          const f = bank.find((x) => x.id === id)
+          const f = bank.find((x) => x.id === id) ?? crowded.find((x) => x.id === id)
           // `refused` stands for the BE-09 bridge refusing a candidate (option image, group without one stimulus, missing file ...).
           return f && !refused.has(id) ? [[id, { id, marks: 1, groupId: f.groupId, versionNo: f.versionNo } satisfies BijakQuestionInfo] as const] : []
         }),
@@ -388,6 +390,27 @@ describe('Jana Kertas through the pool source (standard facts, D75)', () => {
       }
     } finally {
       refused.clear()
+    }
+  })
+
+  it('REQ-B-020: a pool crowded with refused questions is filtered once, so a servable paper is made (no 503 generateLimit)', async () => {
+    candidates = crowded
+    const before = Number((await t.db.query<{ n: string }>(`select count(*) n from papers`))[0]?.n)
+    for (let i = 7311; i <= 7510; i++) refused.add(String(i))
+    try {
+      const res = await generate()
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      const ids = (await placed(t, paperIdOf(res))).map((r) => r.question_id).sort()
+      expect(ids).toEqual(Array.from({ length: 10 }, (_, i) => String(7301 + i)))
+      // one servable question fewer than the 10 slots is a SHORTAGE (422), never a 503, and writes no paper row
+      const made = Number((await t.db.query<{ n: string }>(`select count(*) n from papers`))[0]?.n)
+      expect(made).toBe(before + 1)
+      refused.add('7310')
+      expectError(await generate(), 'SHORTAGE', 422)
+      expect(Number((await t.db.query<{ n: string }>(`select count(*) n from papers`))[0]?.n)).toBe(made)
+    } finally {
+      refused.clear()
+      candidates = bank
     }
   })
 

@@ -60,6 +60,8 @@ export interface SittablePaper {
 
 /** Most times a refused question is dropped and the paper composed again before the request answers 503 GENERATE_LIMIT. */
 const MAX_BRIDGE_ROUNDS = 8
+/** Ids per read when the whole Jana pool is checked against the question port (REQ-B-020). */
+const SERVABLE_CHUNK = 500
 
 /**
  * Bijak SPM papers (M28, BE-15): Kertas Pilihan list and cover, the Kontrak list, the subject hub
@@ -213,7 +215,12 @@ export class PapersService {
       const servable = await this.ports.questionSource.getMany(composedIds)
       const refused = new Set(composedIds.filter((id) => !servable.has(id)))
       if (refused.size === 0) break
-      candidates = candidates.filter((f) => !refused.has(f.id))
+      if (round === 0) {
+        // REQ-B-020: the first refusal shows the pool holds questions the bridge refuses. Filtering only the composed ones would need one
+        // round per refusal (a pool full of them ends in 503 while a servable paper exists), so the whole pool is filtered ONCE here.
+        const ok = await this.servableIds(candidates.map((f) => f.id))
+        candidates = candidates.filter((f) => ok.has(f.id))
+      } else candidates = candidates.filter((f) => !refused.has(f.id))
       outcome = composeStandardPaper(std, candidates, { seed, seen })
       if (round === MAX_BRIDGE_ROUNDS - 1 && outcome.ok) throw generateLimit()
     }
@@ -277,6 +284,15 @@ export class PapersService {
     if (!paper || paper.status !== 'published') throw paperNotFound()
     if (paper.kind === 'jana' && paper.generatedForUserId?.toString() !== userId) throw paperNotFound()
     return paper
+  }
+
+  /** Ids the question port can serve, asked in chunks (one read per chunk). */
+  private async servableIds(ids: readonly string[]): Promise<ReadonlySet<string>> {
+    const ok = new Set<string>()
+    for (let i = 0; i < ids.length; i += SERVABLE_CHUNK) {
+      for (const id of (await this.ports.questionSource.getMany(ids.slice(i, i + SERVABLE_CHUNK))).keys()) ok.add(id)
+    }
+    return ok
   }
 
   private async infoFor(papers: readonly PaperWithTree[]): Promise<Info> {
