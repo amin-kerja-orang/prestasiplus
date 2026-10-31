@@ -163,6 +163,8 @@ export function resolveStimuli(
   const files = new Set<string>()
   for (const s of group?.stimuli ?? []) {
     inGroup.add(s.id)
+    // TODO(T07): `groupOf` stimulus kinds are passed through as stored; once team A lane A4 (r1/t07-model-gaps) lands the 7
+    // stimulus kinds and the stimulus-body read, confirm the kuiz stimulus `kind` set here matches and widen if needed.
     entries.push({ stimulus: { kind: s.kind, label: s.label, body: s.bodyMs, imageToken: null, alt: s.alt }, file: s.assetFileId })
     if (s.assetFileId) files.add(s.assetFileId)
   }
