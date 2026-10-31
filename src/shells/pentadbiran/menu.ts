@@ -108,8 +108,7 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
     label: 'Kertas & SPM',
     icon: 'scroll',
     items: items([
-      // V2 hub `Kandungan SPM` (admin.md A21, scope R1-21 P1): menu label `SPM`, route `/admin/spm` (page built by C2).
-      ['KS-01', 'SPM', '/admin/spm'],
+      ['KS-01', 'Gambaran SPM'], // V2 hub `Kandungan SPM` (admin.md A21, label `SPM`, `/admin/spm`): wired when C2's hub lands
       ['KS-13', 'Muat Naik Kertas', '/admin/spm/soalan/muat-naik'],
       ['KS-16', 'Tulis Soalan Manual', '/admin/spm/soalan/manual'],
       ['KS-14', 'Senarai Ekstrak', '/admin/spm/soalan/ekstrak'],

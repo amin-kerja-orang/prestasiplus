@@ -1071,6 +1071,15 @@ Rule for WT tasks: FE-P1, FE-P2 and FE-P3 hand over a short "data contract" note
 | UX-10 | Simulasi subheading corrected | FD-3 |
 | UX-11 | "Dilihat murid di" and `Tidak dihidangkan kerana …` on existing surfaces | FD-5 |
 | UX-12 | `Terbitkan` is disabled with the reason shown as text ("{n} masalah perlu dibetulkan") while the live review lists a blocker; V2 enables it and refuses after the click. Semak Kertas also adds `Paparan murid (disimpan)` (server student view) beside the unsaved-edit preview | D9: a refusal after a click is not discoverable by keyboard or touch; R1-F09 |
+| UX-40 | Set Builder bank pages 50 at a time up to 150 rows, then "Menunjukkan 150 teratas — tapis lagi untuk menyempitkan." (V2 loads 150 in one list) | A18/P4 parity; paging kept for the server pool |
+| UX-41 | `Disematkan` chip renders only when the builder answer carries `pinned` per placed question (not in the contract yet) | P5; request to team A |
+| UX-42 | Paper list columns Tajuk / Status / Perhatian / Tindakan with Pratonton (baca sahaja) / Salin / Sunting; Perhatian is derived from the summary (blueprint match, empty set) until the t30 lane list is in base; Subjek, Soalan and Markah move under the title | R12/H5; D79 |
+| UX-43 | Semak Kertas "Sunting bahagian" does not edit the answering rule or count (the blueprint owns them) and "Sunting petikan" edits the shared group title only | V3 design (D90); R2/R3 |
+| UX-44 | Bahan rujukan editor saves the whole list through `PUT /admin/papers/:id {reference}`; panel images use the existing `question_image` upload | R4; new input, security review |
+| UX-45 | "Sembunyikan" replaces "Tarik balik" on the live paper; "Salin untuk sunting" is offered on the live banner next to "Salin set" | R6/R7; V2 Panel wording |
+| UX-46 | Publish confirm "Terbitkan kertas ini? ..." on native papers (Semak Kertas); composite sets in the Set Builder keep no confirm; the override also needs a reason of 5+ characters (audited) | R8/R10; D78 |
+| UX-47 | Menu: "Kontrak Blueprint" renamed "Kontrak Simulasi" (KS-08) and a new "Bank Soalan (Studio)" item BS-08 `/admin/studio` | K1, S1; D79 |
+| UX-48 | Kontrak: labels Kod Kertas / Jumlah Markah / Sumber / Peraturan Pilihan / Arahan (opsyenal) / Mod Jawapan Dijangka, flashes "Kontrak dicipta." / "Kontrak dikemas kini.", delete body and empty state, banner "Kontrak dikongsi." and button "Baharu" follow V2; V3 keeps the delete block when Terbit papers depend (AC-25.5), the extra Bahagian fields (M, markah selepas pilih N) and the duplicate wording of D92(3) | K1-K10 |
 
 ---
 
