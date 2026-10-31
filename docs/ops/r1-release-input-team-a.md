@@ -6,10 +6,10 @@ How to read the state column:
 
 - **BASE-n** = merged into `feature/v3-bijak-r1` (MERGE-LOG on `origin/team/r1-board`).
 - **READY** = a team A branch at the head shown, not in base. Several heads moved after their last review verdict; the board verdicts are in `docs/qa/r1-e2e-readiness.md`. The merge order is the lead's and B1's call; "depends on" below is only what the code needs.
-- Command SQL for 0092 to 0102 is already in `docs/ops/r1-runbook.md` (branch `r1/t37-r1-runbook`, 971dfca0, READY; sections 2 and 3). This page adds 0103 and the units that came after the runbook was written.
+- Command SQL for 0092 to 0104 is in `docs/ops/r1-runbook.md` (branch `r1/t37-r1-runbook` @ ca2e0f93, READY; sections 2 and 3). This page adds the per-unit view and the units that came after the runbook was first written.
 - Names only, no secret values.
 
-## 1. Migrations 0100 to 0103
+## 1. Migrations 0100 to 0104
 
 Apply with `prisma migrate deploy`, in number order, together with the API/FE build that carries the same units. The folders are independent of each other except for the order of numbers; if a unit is not in the release, skip only that folder (a later number must never be applied before an earlier pending one is accounted for).
 
@@ -19,22 +19,24 @@ Apply with `prisma migrate deploy`, in number order, together with the API/FE bu
 | 0101 | `0101_essay_choice` | T25 `r1/t25-essay-choice-store` @ e14f4f91 | **BASE-15** | Adds `essay_choice` to the `question_parts.mode` CHECK, nullable `question_parts.topics` jsonb, `ck_question_parts_topics` (2 to 6 topics, only on an `essay_choice` leaf). Additive. | Yes, after deleting `essay_choice` parts | Reverse SQL in the file header, then `migrate resolve --rolled-back` | T08 merged (BASE-10); no data link |
 | 0102 | `0102_leaf_cognitive_level` | T33 `r1/t33-leaf-tags` @ 95cea5be (also inside T47 as 276a6622) | **READY** | Adds nullable `question_parts.cognitive_level` with `ck_question_parts_cognitive_level` (mengingat, memahami, mengaplikasi, menganalisis, menilai, mencipta) and `ck_question_parts_cognitive_level_leaf_only` (a part without a mode has none). No backfill. | Yes | Header SQL: drop the two constraints, then the column; then `migrate resolve --rolled-back 0102_leaf_cognitive_level` | T29 and T32 (T32 is in base) |
 | 0103 | `0103_question_report_context` | T42 part 1 `r1/t42-reports-intake-acs` @ d1210e96 (A2) | **READY** | Adds nullable `question_reports.paper_id` (bigint) and `paper_label` (text, CHECK at most 200 chars), FK `fk_question_reports_paper_id` to `papers` (ON DELETE SET NULL), FK `fk_question_reports_attempt_id` to `exam_attempts` (**NOT VALID**: old rows are not checked, new and updated rows are), index `ix_question_reports_paper_id`. Existing rows keep NULL. | Yes | Header SQL: drop the index, the two FKs, the CHECK, then the two columns; then `migrate resolve --rolled-back 0103_question_report_context` | T35 (in base) for the Arkib flow; no data dependency |
+| 0104 | `0104_paper_section_admin_created` | T48 `r1/t48-builder-parity` @ 1b76778f (A3; contains T34 e363fe51 and its follow-up) | **READY** | Adds `paper_sections.admin_created boolean NOT NULL DEFAULT false`: false for every Bahagian that comes from the Kontrak (all existing rows), true for one an admin adds in Semak Kertas ("Tambah bahagian"); only such a Bahagian takes "Tambah soalan". Constant default, additive. | Yes | Header SQL: `ALTER TABLE "paper_sections" DROP COLUMN "admin_created"`; then `migrate resolve --rolled-back 0104_paper_section_admin_created` | T34 (builder routes); T48 does not contain T33 or T42, so 0102 and 0103 are independent of it |
 
 Notes:
 
-- No other team A branch carries a migration folder. T44 (Kontrak "Boleh tanda auto") uses `blueprints.auto_markable`, which already exists. The numbers 0104 to 0109 stay reserved (0105 for H-A18 if A2 files it, 0107 for the R2 pool-tag drop); 0120 to 0129 is team A's overflow range.
+- No other team A branch carries a migration folder (checked at the time of writing; `r1/ha18-gate-facts` with 0105 was not on origin). T44 (Kontrak "Boleh tanda auto") uses `blueprints.auto_markable`, which already exists. The numbers 0105 to 0109 stay reserved (0105 for H-A18, 0107 for the R2 pool-tag drop); 0120 to 0129 is team A's overflow range.
 - The runbook's section 2.1 names 0101 and 0102 for T25 and T33; keep the same order. 0103 is now in it too (branch `r1/t37-r1-runbook` @ bd2c21e9: list row, before/after SELECTs in 3.1 and 3.5b, history SELECT, and the note not to run `VALIDATE CONSTRAINT` in the release).
 - Statistics: only 0100 needs `VACUUM ANALYZE question_versions;` (runtime on the production-size table not measured).
 - The NOT VALID foreign key on `attempt_id` stays NOT VALID. Do not run `VALIDATE CONSTRAINT` as part of the release; old rows have `attempt_id` values that nothing ever checked.
 
 ### 1.1 Verification SELECTs
 
-**Ran on local migrated DB (BASE-21 `a6ff0c0d` + 0102 @ `95cea5be` (T33) + 0103 @ `d1210e96` (T42), demo seed), 7/7 ok for the statements below, and 58/58 ok for the whole runbook** (`r1-runbook.md` section 9, branch `r1/t37-r1-runbook` @ bd2c21e9: 14 "before" statements on a staged database at 0091 and 0093, 44 "after" statements on the full database). Throwaway Postgres 16 container, removed afterwards. 0105 (A2, H-A18) is not on origin yet and is not in this run. Notable results:
+**Ran on local migrated DB (BASE-21 `a6ff0c0d` + 0102 @ `95cea5be` (T33) + 0103 @ `d1210e96` (T42) + 0104 @ `1b76778f` (T48), demo seed), 12/12 ok for the statements below (the "before" ones were run on the migrated database, so they prove syntax only; the runbook ran them on staged databases), and 63/63 ok for the whole runbook** (`r1-runbook.md` section 9, branch `r1/t37-r1-runbook` @ ca2e0f93: 16 "before" statements on staged databases at 0091 and 0093, 47 "after" statements on the full database). Throwaway Postgres 16 containers, removed afterwards. 0105 (A2, H-A18) was not on origin when this was run and is not covered. Notable results:
 
 - `question_reports`: 0 rows before and after; `paper_id` bigint and `paper_label` text exist; `ck_question_reports_paper_label` and `fk_question_reports_paper_id` are validated, `fk_question_reports_attempt_id` has `convalidated = f` (NOT VALID, as designed); `ix_question_reports_paper_id` exists.
+- 0104: `paper_sections.admin_created` is boolean, NOT NULL, default false; all 9 seeded sections are false and none is admin-added. Re-applying the 0104 statement over those 9 existing rows in a rolled-back transaction gave one row, `false`, count 9; the header reverse SQL then dropped the column cleanly.
 - `cognitive_level` exists (text) with its two CHECKs; all 1277 parts are NULL right after the migration.
 - Demo data: `approved` 1268, no `published`, servable 1268, login count 493.
-- The reverse SQL in the 0102 and 0103 file headers was run in a rolled-back transaction: it drops all five objects cleanly.
+- The reverse SQL in the 0102, 0103 and 0104 file headers was run in a rolled-back transaction: it drops all five objects cleanly.
 - Not covered by a run: the "later, after pupils report" SELECT returns 0 rows only because no report exists; it proves syntax, not the API write.
 
 ```sql
@@ -53,9 +55,19 @@ SELECT count(*) AS reports, count(paper_id) AS with_paper FROM question_reports;
 -- later, after pupils report from a sitting: the paper comes from the attempt
 SELECT r.id, r.attempt_id, r.paper_id, r.paper_label FROM question_reports r WHERE r.attempt_id IS NOT NULL AND r.paper_id IS NULL LIMIT 20;   -- 0 rows once the API writes both
 
--- history, all four
+-- before 0104: no admin_created column yet
+SELECT column_name FROM information_schema.columns WHERE table_name = 'paper_sections' AND column_name = 'admin_created';   -- 0 rows
+SELECT count(*) AS sections FROM paper_sections;                                                                          -- record
+
+-- after 0104: boolean, NOT NULL, default false; every existing section is false, none admin-added
+SELECT column_name, data_type, is_nullable, column_default FROM information_schema.columns
+ WHERE table_name = 'paper_sections' AND column_name = 'admin_created';                                                   -- boolean, NO, false
+SELECT admin_created, count(*) FROM paper_sections GROUP BY admin_created ORDER BY admin_created;                          -- one row, false, = sections
+SELECT count(*) AS admin_added FROM paper_sections WHERE admin_created;                                                    -- 0
+
+-- history, all five
 SELECT migration_name, finished_at FROM _prisma_migrations
- WHERE migration_name IN ('0100_question_lifecycle_approved', '0101_essay_choice', '0102_leaf_cognitive_level', '0103_question_report_context')
+ WHERE migration_name IN ('0100_question_lifecycle_approved', '0101_essay_choice', '0102_leaf_cognitive_level', '0103_question_report_context', '0104_paper_section_admin_created')
  ORDER BY started_at;
 ```
 
@@ -132,6 +144,7 @@ Columns: **Visible** = what an admin or pupil sees change; **Check** = a read-on
 | T34 builder review | `r1/t34-builder-review` @ 7bc3419e | T29 (and T33 per B2's order) | `PUT /api/admin/papers/:id/groups/:groupId` (title only), `GET/PUT /api/admin/section-pools/:questionId`, `POST/DELETE /api/admin/papers/:id/placements` (extra question; blocker "Lebih 1 soalan"), `PUT {reference}` with image check, publish body `{ override?, reason? }`, `blockerDetails` + `canOverride` | **Terbit gates:** R1E2E-06 Terbit refuses what the attempt path refuses (not overridable); R1E2E-07 / AC-R1-16.2 Terbit needs a Disahkan blueprint, overridable only with a reason of 5 or more characters and an audit row; D93: "Kumpulan perlu sekurang-kurangnya 2 soalan." blocks Terbit (not overridable); structured blockers with an overridable flag; a Terbit paper is read-only ("Kertas Terbit tidak boleh disunting. Tarik balik dahulu.") | `SELECT created_at, target_id FROM audit_events WHERE action = 'bijak.paper.published_override' ORDER BY created_at DESC LIMIT 20;` |
 | T31 builder wire | `r1/t31-builder-wire` @ b3501db9 (contains T34) | T34; blocked on C1 type change (REQ-A-008) | `stimuli[]` (7 kinds, picture URL `/api/files/<token>`) on builder views | Admin builder shows every stimulus of a group | none |
 | H-A15 + T44 | `r1/ha15-blueprint-evidence` @ 7e5d637e; `r1/t44-blueprint-fields` @ 2d9c100d (contains it) | none | Kontrak write schema gains "Boleh tanda auto" (`autoMarkable`); review flag "Blueprint perlu semakan" | **Sahkan:** study-origin evidence no longer counts, only `origin = 'admin'` rows (AC-39.2); a non-blank note is required ("Isi nota pengesahan dahulu.", 422 `fields.note`); skema Markah compares offered marks on choose-N sections (AC-39.7). Blueprints verified before this may fail a new Sahkan until evidence is added | `SELECT origin, count(*) FROM blueprint_evidence GROUP BY 1;` `SELECT code, version, auto_markable FROM blueprints WHERE status = 'active' ORDER BY code;` |
+| T48 builder parity | `r1/t48-builder-parity` @ 1b76778f (contains T34) | T34 | 0104; `POST /api/admin/papers/:id/sections`, `POST /api/admin/papers/:id/sections/:sid/questions`, `DELETE /api/admin/papers/:id/questions/:questionId`; editable cover code, per-paper rule and select count, `pinned` per placement, stimulus edit (commit 089aa24b) | Semak Kertas: "Tambah bahagian", "Tambah soalan" (a new question inside the paper, through the approve gate), "Padam soalan", editable "Kod kertas (kulit)"; the Disematkan chip data. Terbit papers stay read-only | `SELECT admin_created, count(*) FROM paper_sections GROUP BY 1;` (section 1.1) |
 | T48a paper list | `r1/t48a-paper-list` @ e5041595 | none | paper list filters Subjek and Cari; paper title at most 200 characters on create and update | Admin filters the Pembina Kertas list; a longer title is 422 "Tajuk kertas tidak boleh melebihi 200 aksara." | pre-check: `SELECT id, length(title) FROM papers WHERE length(title) > 200 LIMIT 20;` (expect 0 rows) |
 | H-A13 archived paper | `r1/ha13-archived-paper` @ 4c5596d3 | T35 | contract text; `npm run contract:emit` needed | Archived question on a Terbit paper: a new sitting is refused ("Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini."), the card is hidden except for pupils with an open sitting, Cuba Lagi answers 409 `retryPaperGone`; the Arkib response warns the admin that Terbit papers hold the question | probe on a test paper |
 | R1E2E-05 / 05b | `r1/e2e05b-own-stimuli` @ 57e7feee (contains 00cec26f) | T07 | optional `stimuli[]` on the attempt question | A paper with an image question can start (it gave Mula 403); a question's own stimuli of any kind show inline; a shared stimulus without a group stays refused (D90) | probe: start a paper holding an image MCQ |
