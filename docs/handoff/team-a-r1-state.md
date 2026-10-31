@@ -1,6 +1,6 @@
 # Team A R1 state: resume sheet
 
-Date: 2026-10-31. Written off `feature/v3-bijak-r1` @ 1b028710b (BASE-63). Docs only. Sources: `docs/team/BOARD.md`, `MERGE-LOG.md`, `QUESTIONS.md` and `requests/` on `origin/team/r1-board`, `git ls-remote`, and `docs/TRACKER.md` on `r1/d91-decisions` (PR #404). Heads change often: re-run `git ls-remote origin 'refs/heads/r1/*'` before relying on one.
+Date: 2026-10-31. Written off `feature/v3-bijak-r1` @ 7bd993be1 (BASE-64 (not yet in MERGE-LOG)). Docs only. Sources: `docs/team/BOARD.md`, `MERGE-LOG.md`, `QUESTIONS.md` and `requests/` on `origin/team/r1-board`, `git ls-remote`, and `docs/TRACKER.md` on `r1/d91-decisions` (PR #404). Heads change often: re-run `git ls-remote origin 'refs/heads/r1/*'` before relying on one.
 
 Task source: `docs/handoff/CLOUD-HANDOFF.md` section 7. R1 = Bijak SPM release.
 
@@ -44,6 +44,7 @@ Task source: `docs/handoff/CLOUD-HANDOFF.md` section 7. R1 = Bijak SPM release.
 | T53 | `r1/t53-partial-acs-a4` @ 0fcae409 | BASE-42 | A4 |
 | H-A17 | `r1/ha17-ac-coverage` @ 9738f8f5 | BASE-43 | A3 docs |
 | H-A26 | `r1/ha26-team-a-state` @ aee473af | BASE-44 | A3 docs |
+| BASE regression fix: attempts fixture drops data-URL stimulus pictures | `r1/fix-attempt-image-url` @ 68f70635 | BASE-64 (not yet in MERGE-LOG) | A1 |
 | T30 servability reads | `r1/t30-servability-reads` @ 409df4bf | BASE-28 (T30 tip, contains 05b and own-stimuli) | A4 |
 | R1E2E-05 / 05b own stimuli | `r1/e2e05b-own-stimuli` @ 9895d004 | BASE-28 (T30 tip, contains 05b and own-stimuli) | A4 |
 | servability-own-stimuli | `r1/servability-own-stimuli` @ eea90859 | BASE-28 (T30 tip, contains 05b and own-stimuli) | A4 |
@@ -54,6 +55,9 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 
 | ID | Branch @ head | Lane | Depends on | B state |
 |---|---|---|---|---|
+| REQ-C-009 batch list counts, REQ-C-010 list kertas and numberLabel, REQ-C-013 Arkib needs no reason (review -> archived) | `r1/c-requests-a2` @ 60e301d6 | A2 | none (REQ-C-013) | READY |
+| R008-L1 a Guru cannot link an arbitrary stimulus to their own question | `r1/r008-l1` @ 4cd62e5b | A2 | none (security finding R008-L1) | READY |
+| REQ-B-026 battle spec fixtures follow D72 | `r1/reqb026-spec-fixture` @ 03e4485d | A1 | none (REQ-B-026) | READY |
 | REQ-B-031 report guard, no auto-deactivation, capped (D98) | `r1/reqb031-report-guard` @ 8e913fb5 | A1 | none (D98); unblocks the Lapor FE | READY |
 | T26c e2e seed: structured K2 pool + Terbit paper (REQ-B-003) | `r1/t26c-e2e-k2` @ df8a52a5 | A1 | T26b; merge order T26b -> T26c -> T36 | READY |
 | REQ-C-019 joinable filter on group list and filter-options | `r1/t49-served-now` @ 2e6d06df | A2 | T49 (base) | READY |
@@ -75,7 +79,7 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 | T50 partial ACs | `r1/t50-partial-acs` @ 50dd05ab | A1 | none | READY (not in the B queue table) |
 | H-A13 archived paper | `r1/ha13-archived-paper` @ 61b8851d | A1 | T35 (base) | B2 Approve w/ Minors, B3 Pass; needs base merge (A1) |
 | T34 builder review (+ structured blockers) | `r1/t34-builder-review` @ 5bb590d0 | A3 | T29; B2 order T29 -> T33 -> T34 | fix pushed (a46a375e: unreadable question is a hard NOT_SERVABLE, fixtures) and BASE-63 merged; awaiting B2 re-review (A3) |
-| T31 builder wire | `r1/t31-builder-wire` @ 49419468 | A3 | T34; waits for C1 REQ-A-008 | CHANGES-REQUESTED (needs fixed T34 + REQ-A-008) |
+| T31 builder wire | `r1/t31-builder-wire` @ e64bed5a | A3 | T34; waits for C1 REQ-A-008 | CHANGES-REQUESTED (needs fixed T34 + REQ-A-008) |
 | T43 chain + publish ACs | `r1/t43-chain-publish` @ 89d30dab | A3 dev-1 | T31 (contains T34) | CHANGES-REQUESTED (follows T34) |
 | T44 Kontrak fields (contains H-A15) | `r1/t44-blueprint-fields` @ 072d8f4b | A3 dev-2 | none | CHANGES-REQUESTED earlier (T33 fixtures, REQ-B-028 pool); head is a BASE-63 merge, no new verdict seen (A3) |
 | H-A15 blueprint evidence | `r1/ha15-blueprint-evidence` @ 7e5d637e | A3 dev-2 | none (hazard X1) | B3 Pass; X1 seed decision |
@@ -89,20 +93,20 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 
 | ID | Branch | Lane | Depends on |
 |---|---|---|---|
-| H-A18 gate facts (0105) | `r1/ha18-gate-facts` @ 3a2ac810 (pushed: move to 1.2 after review) | A2 | T33 |
+| H-A18 gate facts (0105) | `r1/ha18-gate-facts` @ d3842c48 (pushed: move to 1.2 after review) | A2 | T33 |
 
 ### 1.4 Docs units (A3 docs agent), all READY
 
 | Unit | Branch @ head | Output |
 |---|---|---|
-| T37 runbook | `r1/t37-r1-runbook` @ 80101199 | `docs/ops/r1-runbook.md` (migrations 0092 to 0105, SELECTs run 74/74 on BASE-62) |
+| T37 runbook | `r1/t37-r1-runbook` @ 1dabdc0e | `docs/ops/r1-runbook.md` (migrations 0092 to 0105, SELECTs run 74/74 on BASE-62) |
 | T39 K1 evidence | `r1/t39-k1-evidence` @ 1a26f7a6 | `docs/ops/r1-k1-blueprint-evidence.md` |
-| T46 / H-A17 AC coverage | `r1/ha17-ac-coverage` @ c6313b1a | `docs/qa/r1-backend-ac-coverage.md`, `r1-verify-first-notes.md` (kept current by H-A27) |
+| T46 / H-A17 AC coverage | `r1/ha17-ac-coverage` @ 9c3ec793 | `docs/qa/r1-backend-ac-coverage.md`, `r1-verify-first-notes.md` (kept current by H-A27) |
 | H-A19 admin parity | `r1/ha19-admin-parity` @ c7315b0e | `docs/qa/r1-admin-parity-check.md` |
 | H-A20 student parity | `r1/ha20-student-parity` @ 557e17c6 | `docs/qa/r1-student-parity-check.md` |
 | H-A22 parity docs | `r1/ha22-parity-docs` @ 4fb2a41b | both parity docs refreshed, deviation rows H22-D1/D2 in `v2-bijak-spm.md`, `student.md` rows marked |
 | H-A23 E2E readiness | `r1/ha23-e2e-readiness` @ ef24addc | `docs/qa/r1-e2e-readiness.md` (merge order, minimal set) |
-| H-A24 release input | `r1/ha24-release-input` @ 312480cb | `docs/ops/r1-release-input-team-a.md` (+ scope AC-R1-18.2 and 18.4 text) |
+| H-A24 release input | `r1/ha24-release-input` @ c840a371 | `docs/ops/r1-release-input-team-a.md` (+ scope AC-R1-18.2 and 18.4 text) |
 | H-A26 this sheet | `r1/ha26-team-a-state` @ this branch (head = tip of the branch) | `docs/handoff/team-a-r1-state.md` |
 
 ## 2. Decisions and answers
@@ -138,7 +142,7 @@ Earlier decisions still in force for R1: D72 (secondary only), D75/D76 (standard
 | 0102 | `0102_leaf_cognitive_level` | T33 (`r1/t33-leaf-tags` @ 95cea5be) | merged BASE-27 |
 | 0103 | `0103_question_report_context` | T42 (`r1/t42-reports-intake-acs` @ d1210e96) | merged BASE-41; attempt FK stays NOT VALID |
 | 0104 | `0104_paper_section_admin_created` | T48 (`r1/t48-builder-parity` @ 54f5e0bc) | B2-findings fix (2cbe7d28) and BASE-63 merge; awaiting B2 re-review (migration 0104) |
-| 0105 | gate facts (BE-09 duplicate, media, AI-editor facts) | H-A18 (A2) `r1/ha18-gate-facts` @ 3a2ac810 | pushed, READY after review |
+| 0105 | gate facts (BE-09 duplicate, media, AI-editor facts) | H-A18 (A2) `r1/ha18-gate-facts` @ d3842c48 | pushed, READY after review |
 
 Ranges: team A 0100 to 0109 (overflow 0120 to 0129), team C 0110 to 0119, team B none. 0106 to 0109 free. SQL for 0092 to 0104 is in `docs/ops/r1-runbook.md`.
 
