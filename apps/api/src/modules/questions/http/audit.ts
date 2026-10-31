@@ -37,6 +37,10 @@ export class QuestionAudit {
     return this.write(AUDIT_ACTIONS.QUESTION_UPDATED, actor, id)
   }
 
+  editedAsDraft(actor: HttpActor, id: string, versionNo: number): Promise<void> {
+    return this.write(AUDIT_ACTIONS.QUESTION_UPDATED, actor, id, { mode: 'edit_as_draft', versionNo })
+  }
+
   deleted(actor: HttpActor, id: string): Promise<void> {
     return this.write(AUDIT_ACTIONS.QUESTION_DELETED, actor, id)
   }
