@@ -31,7 +31,7 @@ function record(over: { parts?: QuestionPart[]; type?: string; groupId?: string 
     version: {
       id: '7',
       versionNo: 3,
-      status: 'published',
+      status: 'approved',
       archiveReason: null,
       publishedAt: now,
       type: (over.type ?? 'mcq') as never,

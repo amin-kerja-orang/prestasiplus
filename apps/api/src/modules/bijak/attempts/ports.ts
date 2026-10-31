@@ -56,7 +56,7 @@ export interface BijakPaperSource {
 export interface BijakQuestionBundle {
   question: QuestionDef
   /** The stimulus group of the question (`question.groupId`), when it has one. */
-  group?: { id: string; stimulus: StimulusDef; optionBank?: McqOption[] }
+  group?: { id: string; stimulus: StimulusDef; stimuli?: StimulusDef[]; optionBank?: McqOption[] }
   /**
    * Mark scheme per LEAF id. For an MCQ question the leaf id is the question id; for a structured
    * question it is the id of each leaf part. SERVER ONLY: a scheme leaves the API only inside a

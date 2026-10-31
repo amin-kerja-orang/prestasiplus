@@ -48,7 +48,7 @@ describe('structured question reads (admin)', () => {
   it('the detail flattens the part tree depth first, branches included, with parent links', async () => {
     const id = await questionIdOf(t.db, 'SEED-STR-TREE')
     const detail = parseData(await admin.get(`/api/structured-questions/${id}`), QuestionStructuredDetailSchema)
-    expect(detail.status).toBe('published')
+    expect(detail.status).toBe('approved')
     expect(detail.visibility).toBe('public')
     expect(detail.subQuestions.length).toBeGreaterThan(3)
     const ids = new Set(detail.subQuestions.map((s) => s.id))

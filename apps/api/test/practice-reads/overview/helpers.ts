@@ -118,7 +118,7 @@ export async function addSession(db: TestDatabase, s: SessionSeed): Promise<stri
 
 export interface QuestionSeed {
   active?: boolean
-  status?: 'published' | 'draft'
+  status?: 'approved' | 'draft'
   type?: string
   subject?: string | null
   level?: string | null
@@ -133,8 +133,8 @@ export async function addQuestion(db: TestDatabase, q: QuestionSeed = {}): Promi
   const id = rows[0]?.id as string
   await db.query(
     `insert into question_versions (question_id, version_no, status, type, stem_ms, subject_id, education_level_id, chapter_id, difficulty_tp, published_at)
-     values ($1, 1, $2, $3, $4, $5, $6, $7, $8, case when $2 = 'published' then now() else null end)`,
-    [id, q.status ?? 'published', q.type ?? 'mcq', q.stem ?? 'Soalan ujian', q.subject ?? null, q.level ?? null, q.chapter ?? null, q.tp === undefined ? 1 : q.tp],
+     values ($1, 1, $2, $3, $4, $5, $6, $7, $8, case when $2 = 'approved' then now() else null end)`,
+    [id, q.status ?? 'approved', q.type ?? 'mcq', q.stem ?? 'Soalan ujian', q.subject ?? null, q.level ?? null, q.chapter ?? null, q.tp === undefined ? 1 : q.tp],
   )
   return id
 }

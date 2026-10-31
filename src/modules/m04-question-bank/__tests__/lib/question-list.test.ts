@@ -20,12 +20,12 @@ import {
 
 describe("status lookups accept the v2 wire lifecycle and never throw", () => {
   it("maps wire values", () => {
-    expect(statusLabel("published")).toBe("Diterbitkan")
+    expect(statusLabel("approved")).toBe("Diluluskan") // mock mode keeps the live label
     expect(statusLabel("review")).toBe("Menunggu Semakan")
     expect(statusLabel("archived", true)).toBe("Arkib")
-    expect(statusDs("published")).toBe("approved")
+    expect(statusDs("approved")).toBe("approved")
     expect(statusDs("review")).toBe("awaiting-review")
-    expect(statusColor("published")).toBe("success")
+    expect(statusColor("approved")).toBe("success")
   })
   it("falls back to a neutral badge for unknown, empty and prototype-key values", () => {
     for (const v of ["mystery", "", "constructor", undefined as unknown as string]) {
@@ -121,41 +121,32 @@ describe('http mode wire values (BE-09 status, bulk actions)', () => {
       draft: 'draft',
       pending_review: 'review',
       approved: 'approved',
-      published: 'published',
       archived: 'archived',
     })
     expect(BULK_ACTION_TO_WIRE).toEqual({
       pending_review: 'review',
       approve: 'approved',
-      publish: 'published',
+      publish: 'approved',
       archive: 'archived',
       delete: 'delete',
     })
   })
-  it('adds the Diterbitkan filter option in http mode only', () => {
-    expect(statusOptionsFor(true).map((o) => o.value)).toEqual([
-      'draft',
-      'pending_review',
-      'approved',
-      'published',
-      'archived',
-    ])
-    expect(statusOptionsFor(true).find((o) => o.value === 'published')?.label).toBe('Diterbitkan')
-    expect(statusOptionsFor(false).map((o) => o.value)).not.toContain('published')
+  it('shows approved as Diterbitkan in http mode only (ADR-0027: no separate published option)', () => {
+    expect(statusOptionsFor(true).map((o) => o.value)).toEqual(['draft', 'pending_review', 'approved', 'archived'])
+    expect(statusOptionsFor(true).find((o) => o.value === 'approved')?.label).toBe('Diterbitkan')
+    expect(statusOptionsFor(false).find((o) => o.value === 'approved')?.label).toBe('Diluluskan')
+    expect(statusOptionsFor(true).map((o) => o.value)).not.toContain('published')
   })
   it('hides options with no wire equivalent in http mode only', () => {
     expect(statusOptionsFor(true).map((o) => o.value)).not.toContain('rejected')
     expect(statusOptionsFor(false).map((o) => o.value)).toContain('rejected')
     expect(bulkOptionsFor(true).map((o) => o.value)).not.toContain('reject')
     expect(bulkOptionsFor(false).map((o) => o.value)).toContain('reject')
-    expect(bulkOptionsFor(true).map((o) => o.value)).toEqual([
-      'approve',
-      'publish',
-      'archive',
-      'delete',
-    ])
+    expect(bulkOptionsFor(true).map((o) => o.value)).toEqual(['publish', 'archive', 'delete'])
     expect(bulkOptionsFor(true).find((o) => o.value === 'publish')?.label).toBe('Terbitkan')
     expect(bulkOptionsFor(false).map((o) => o.value)).not.toContain('publish')
+    expect(bulkOptionsFor(true).map((o) => o.value)).not.toContain('approve') // Terbitkan replaces Luluskan
+    expect(bulkOptionsFor(false).map((o) => o.value)).toContain('approve')
   })
 })
 

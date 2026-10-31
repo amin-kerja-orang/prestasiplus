@@ -24,6 +24,7 @@ import {
   leavesOf,
   numericValue,
   type Leaf,
+  type McqOption,
   type PartAnswer,
   type PartDef,
   type QuestionResult,
@@ -230,6 +231,7 @@ function partView(p: PartDef): BijakAttemptPartView {
             kind: p.answer.kind,
             ...(p.answer.unit !== undefined ? { unit: p.answer.unit } : {}),
             ...(p.answer.wordRange ? { wordRange: { min: p.answer.wordRange.min, max: p.answer.wordRange.max } } : {}),
+            ...(p.answer.topics ? { topics: p.answer.topics.map((t) => ({ id: t.id, label: t.label })) } : {}),
           },
         }
       : {}),
@@ -237,17 +239,25 @@ function partView(p: PartDef): BijakAttemptPartView {
   }
 }
 
-function stimulusView(s: StimulusDef): BijakAttemptStimulus {
+export function stimulusView(s: StimulusDef): BijakAttemptStimulus {
   return {
     id: s.id,
     kind: s.kind,
     label: s.label,
+    ...(s.title !== undefined ? { title: s.title } : {}),
     ...(s.caption !== undefined ? { caption: s.caption } : {}),
     alt: s.alt,
     ...(s.svg !== undefined ? { svg: s.svg } : {}),
     ...(s.text !== undefined ? { text: s.text } : {}),
+    ...(s.source !== undefined ? { source: s.source } : {}),
     ...(s.table ? { table: { head: [...s.table.head], rows: s.table.rows.map((r) => [...r]) } } : {}),
+    ...(s.image ? { image: { ...s.image } } : {}),
   }
+}
+
+/** An option as served: text, plus its picture when it has one (the URL is a file token URL, never a key). */
+function optionView(o: McqOption): { id: string; text: string; image?: { url: string; width?: number; height?: number; alt?: string } } {
+  return { id: o.id, text: o.text, ...(o.image ? { image: { ...o.image } } : {}) }
 }
 
 export interface ServedPaper {
@@ -273,12 +283,13 @@ export function buildServedPaper(composition: readonly SectionSnapshot[], bundle
         topic: q.curriculum.unitLabel,
         formOrigin: q.curriculum.formOrigin,
         ...(q.groupId && b.group?.optionBank
-          ? { optionBank: b.group.optionBank.map((o) => ({ id: o.id, text: o.text })) }
+          ? { optionBank: b.group.optionBank.map(optionView) }
           : {}),
         ...(q.groupId ? { groupId: q.groupId } : {}),
         stem: q.stem,
+        ...(q.stemImage ? { stemImage: stimulusView(q.stemImage) } : {}),
         marks: questionMarks(b),
-        ...(q.mcq ? { mcq: { options: q.mcq.options.map((o) => ({ id: o.id, text: o.text })) } } : {}),
+        ...(q.mcq ? { mcq: { options: q.mcq.options.map(optionView) } } : {}),
         ...(q.parts ? { parts: q.parts.map(partView) } : {}),
       })
     }
@@ -305,6 +316,7 @@ export function buildServedPaper(composition: readonly SectionSnapshot[], bundle
     groups.push({
       id: b.group.id,
       stimulus: stimulusView(b.group.stimulus),
+      stimuli: (b.group.stimuli ?? [b.group.stimulus]).map(stimulusView),
       from: Math.min(...nums),
       to: Math.max(...nums),
       questionIds: ids,

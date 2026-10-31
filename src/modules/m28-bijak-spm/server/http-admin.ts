@@ -148,10 +148,9 @@ const toMs = (iso: string): number => Date.parse(iso)
 /** Wire question lifecycle code to the status the admin UI shows. */
 export function questionStatusFromWire(s: BijakBuilderQuestionStatus): QuestionStatus {
   switch (s) {
-    case 'published':
-      return 'terbit'
-    case 'review':
     case 'approved':
+      return 'terbit' // ADR-0027: approved is the servable (Terbit) state
+    case 'review':
       return 'semakan'
     case 'archived':
       return 'ditolak'
@@ -836,14 +835,12 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
     const count = async (id: string, status: string): Promise<number> =>
       (await this.questionList({ subjectId: id, status, pageSize: '1' })).meta?.totalItems ?? 0
     const by = await mapLimit(subjects, 2, async (s) => {
-      const [review, approved, draft, archived] = await Promise.all(
-        ['review', 'approved', 'draft', 'archived'].map((st) => count(s.id, st)),
-      )
+      const [review, draft, archived] = await Promise.all(['review', 'draft', 'archived'].map((st) => count(s.id, st)))
       return {
         code: s.code,
         name: s.name,
         terbit: s.published,
-        semakan: (review ?? 0) + (approved ?? 0),
+        semakan: review ?? 0, // ADR-0027: `approved` is Terbit (`s.published`), not Semakan
         draf: draft ?? 0,
         ditolak: archived ?? 0,
       }
