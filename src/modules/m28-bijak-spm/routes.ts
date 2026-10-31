@@ -1,6 +1,7 @@
 import type { RouteRecordRaw } from 'vue-router'
 
 import adminIntake from './routes/admin-intake'
+import adminKandungan from './routes/admin-kandungan'
 import adminKontrak from './routes/admin-kontrak'
 import adminPapers from './routes/admin-papers'
 
@@ -22,6 +23,7 @@ const base = {
 const routes: RouteRecordRaw[] = [
   ...adminPapers,
   ...adminKontrak,
+  ...adminKandungan,
   {
     path: '/spm/bijak',
     name: 'm28.bijak',
