@@ -4,14 +4,15 @@ One page for the operator (DevOps / lead) who applies the R1 release to UAT or p
 
 > **No AI session runs any of this on a server.** Agents write and test the code and these notes; a human with the deploy rights runs every command below, after the lead's explicit confirmation (see [api-runbook.md](api-runbook.md)). Every SQL block in this page is a read-only `SELECT` (plus one `VACUUM ANALYZE`, section 2.2) and is safe to run on a live database. The only things that change data are the migrations (applied by `prisma migrate deploy`), the DSKP loader script, and the admin's own actions in the app (Kontrak, Sahkan), all named below. This page contains environment variable **names** only, never values.
 
-**What is in the base and what is not.** The page was written against `feature/v3-bijak-r1` at BASE-6 (`21ae62dd`). Items marked "lands with" are not in BASE-6; they are on the named branch and must be merged, reviewed and released before the step applies. Verify the status in `docs/TRACKER.md` before you start.
+**What is in the base and what is not.** The page was written against `feature/v3-bijak-r1` at BASE-6 (`21ae62dd`) and refreshed (H-A25) against BASE-21 (`a6ff0c0d`): 0101 is in base since BASE-15; 0102 and 0103 are still on branches. Items marked "lands with" are not in base; they are on the named branch and must be merged, reviewed and released before the step applies. Verify the status in `docs/TRACKER.md` before you start.
 
 | Item | In BASE-6? | Where it is |
 |---|---|---|
 | Migrations 0092, 0093, 0100 | yes | `apps/api/prisma/migrations/` |
 | Rollback path and `VACUUM ANALYZE` for 0100 | no | `r1/t04-minors`, `docs/ops/r1-b01-question-lifecycle.md` (also summarised in section 2.2 here) |
-| Migration 0101 `essay_choice` (T25) | no | `r1/t25-essay-choice-store` (commit `d398a576`), also on `r1/a-integration-preview` |
-| Migration 0102 `leaf_cognitive_level` (T33) | no | `r1/t33-leaf-tags` (commit `76f53e6c`) |
+| Migration 0101 `essay_choice` (T25) | yes, BASE-15 | `apps/api/prisma/migrations/0101_essay_choice` (T25 `r1/t25-essay-choice-store` @ e14f4f91) |
+| Migration 0102 `leaf_cognitive_level` (T33) | no | `r1/t33-leaf-tags` @ 95cea5be (migration commit `76f53e6c`) |
+| Migration 0103 `question_report_context` (T42 part 1, A2) | no | `r1/t42-reports-intake-acs` @ d1210e96 (commit `bc5c36e7`) |
 | `THROTTLE_SERVABILITY_READ_PER_MINUTE` (T30) | no | `r1/t30-servability-reads` (commit `30a798d0`) |
 | `E2E_SEED` and `docs/ops/e2e-seed.md` (T26) | no | `r1/t26-e2e-seed` (commit `dfa88cf0`) |
 | `docs/ops/r1-k1-blueprint-evidence.md` (T39) | no | `r1/t39-k1-evidence` |
@@ -20,7 +21,7 @@ One page for the operator (DevOps / lead) who applies the R1 release to UAT or p
 ## 0. Before you start
 
 1. Take a full dump and test the restore ([db-backup.md](db-backup.md)). Migration 0100 cannot be undone in place (section 2.2).
-2. Maintenance window. 0100 (and 0101, 0102 when included) go out together with the new API/FE build (section 2); a few seconds of mixed state is possible.
+2. Maintenance window. 0100 (and 0101, 0102, 0103 when included) go out together with the new API/FE build (section 2); a few seconds of mixed state is possible.
 3. Record the before-state with the SELECTs in section 3.1.
 4. Environment (section 6) is set on the API service before it starts. `E2E_SEED` and `ALLOW_DEMO_SEED` are not set to true (section 6).
 5. **No seed on UAT (D95).** Do not run `be:db:seed` with demo data on UAT. Blueprints are created and verified by an Admin Pusat in the app (section 5).
@@ -30,7 +31,7 @@ One page for the operator (DevOps / lead) who applies the R1 release to UAT or p
 | Step | What | Section |
 |---|---|---|
 | 1 | Backup, window, before-state SELECTs | 0, 3.1 |
-| 2 | `prisma migrate deploy`: 0092, 0093, 0100, then 0101 and 0102 if their builds are in the release, in that order, together with the new API/FE build | 2.1 |
+| 2 | `prisma migrate deploy`: 0092, 0093, 0100, then 0101, 0102 and 0103 if their builds are in the release, in that order, together with the new API/FE build | 2.1 |
 | 3 | `VACUUM ANALYZE question_versions` right after 0100 | 2.2 |
 | 4 | After-state SELECTs for every migration applied | 3.2 to 3.6 |
 | 5 | DSKP load: dry run, then real run, then verify | 4 |
@@ -48,12 +49,14 @@ One page for the operator (DevOps / lead) who applies the R1 release to UAT or p
 | `0092_bijak_standards` | yes | Blueprint standard model: profile, quota, KBAT, evidence, verification tables, `blueprints.serves_students`, per-part TP / KBAT / unit / form columns, `papers.standard_report`. **Downgrades every blueprint with `source = 'verified'` to `'spec'`.** Drops `blueprint_sections.topic_weights`; a guard aborts the migration if any row holds a value. | Manually; the reverse SQL is in the file header. The verified-to-spec downgrade is not undone. |
 | `0093_part_options_image_file_index` | yes | One partial index `ix_part_options_image_file_id` for the pupil image read rule. Idempotent (`IF NOT EXISTS`). | `DROP INDEX "ix_part_options_image_file_id"` |
 | `0100_question_lifecycle_approved` | yes | "Approved = servable". Old `approved` becomes `review`; old `published` becomes `approved`; the status CHECK allows `draft, review, approved, archived`; the partial indexes on `status = 'published'` are rebuilt on `'approved'`. One transaction. | **No.** Restore the dump (section 2.2). |
-| `0101_essay_choice` (T25) | **no, lands with T25** (`r1/t25-essay-choice-store`) | Adds `essay_choice` to the `question_parts.mode` CHECK, a nullable `question_parts.topics` jsonb and `ck_question_parts_topics` (2 to 6 topics, only on an `essay_choice` leaf). Additive; reads no status value. | Yes, after deleting `essay_choice` parts (reverse SQL in the file header). |
-| `0102_leaf_cognitive_level` (T33) | **no, lands with T33** (`r1/t33-leaf-tags`) | Adds nullable `question_parts.cognitive_level` with `ck_question_parts_cognitive_level` (mengingat, memahami, mengaplikasi, menganalisis, menilai, mencipta) and `ck_question_parts_cognitive_level_leaf_only` (a part without a mode has none). Additive; no backfill (NULL = not set). | Yes (reverse SQL in the file header: drop the two CHECKs, then the column). |
+| `0101_essay_choice` (T25) | yes, BASE-15 | Adds `essay_choice` to the `question_parts.mode` CHECK, a nullable `question_parts.topics` jsonb and `ck_question_parts_topics` (2 to 6 topics, only on an `essay_choice` leaf). Additive; reads no status value. | Yes, after deleting `essay_choice` parts (reverse SQL in the file header). |
+| `0102_leaf_cognitive_level` (T33) | **no, lands with T33** (`r1/t33-leaf-tags` @ 95cea5be) | Adds nullable `question_parts.cognitive_level` with `ck_question_parts_cognitive_level` (mengingat, memahami, mengaplikasi, menganalisis, menilai, mencipta) and `ck_question_parts_cognitive_level_leaf_only` (a part without a mode has none). Additive; no backfill (NULL = not set). | Yes (reverse SQL in the file header: drop the two CHECKs, then the column). |
+| `0103_question_report_context` (T42 part 1) | **no, lands with T42** (`r1/t42-reports-intake-acs` @ d1210e96) | Adds nullable `question_reports.paper_id` (bigint) and `paper_label` (text, CHECK at most 200 characters), FK `fk_question_reports_paper_id` to `papers` (ON DELETE SET NULL), FK `fk_question_reports_attempt_id` to `exam_attempts` (**NOT VALID**: rows written before the migration are not checked, new and updated rows are) and index `ix_question_reports_paper_id`. Existing rows keep NULL. | Yes (reverse SQL in the file header: drop the index, the two FKs, the CHECK, then the two columns). |
 
 Notes:
 
-- 0101 and 0102 touch different columns of `question_parts` and do not depend on each other or on a status value; they still apply in number order. If only one of T25 and T33 is in the release, apply only that one. A later number must never be applied before an earlier pending one is accounted for.
+- 0101 and 0102 touch different columns of `question_parts` and do not depend on each other or on a status value; 0103 touches `question_reports` only. They still apply in number order. If only one of T25, T33 and T42 is in the release, apply only that one.
+- **0103: do NOT run `VALIDATE CONSTRAINT fk_question_reports_attempt_id` in the release.** The constraint is created NOT VALID on purpose. `attempt_id` has existed since migration 0017 with no foreign key and nothing ever wrote it, so old rows may hold values that point nowhere; validating would scan and could fail the release. New and updated rows are checked without it. A later number must never be applied before an earlier pending one is accounted for.
 - The planned table in `docs/architecture/v2-admin-student-pipeline.md` section 2 names 0101 and 0102 differently (`dskp_leaf_tags_and_facts`, `stimulus_kinds_wide`). The migration folders on the T25 and T33 branches are the authority; read the `migration.sql` header of any folder before you apply it.
 - Deploy order for 0100: the migration and the API/FE build of the same release together. An old API against the new CHECK fails to write `published`; a new API against old data serves nothing.
 - Code that still names `'published'` for a **question** status breaks (nothing served, or a CHECK failure). Paper `published` (Terbit) is unchanged. Details: [r1-b01-question-lifecycle.md](r1-b01-question-lifecycle.md).
@@ -121,6 +124,11 @@ SELECT column_name FROM information_schema.columns
 SELECT mode, count(*) FROM question_parts GROUP BY mode ORDER BY mode;                          -- record
 SELECT conname, pg_get_constraintdef(oid) FROM pg_constraint
  WHERE conrelid = 'question_parts'::regclass AND conname = 'ck_question_parts_mode';           -- record
+
+-- 0103: the report table before (nothing wrote attempt_id, so with_attempt is normally 0)
+SELECT count(*) AS reports, count(attempt_id) AS with_attempt FROM question_reports;                  -- record
+SELECT column_name FROM information_schema.columns
+ WHERE table_name = 'question_reports' AND column_name IN ('paper_id', 'paper_label');                -- expect 0 rows
 ```
 
 ### 3.2 After 0092 and 0093
@@ -196,12 +204,32 @@ SELECT cognitive_level, count(*) FROM question_parts GROUP BY cognitive_level OR
 SELECT id FROM question_parts WHERE mode IS NULL AND cognitive_level IS NOT NULL LIMIT 20;
 ```
 
+### 3.5b After 0103 (T42 report context; only when applied)
+
+```sql
+SELECT column_name, data_type FROM information_schema.columns
+ WHERE table_name = 'question_reports' AND column_name IN ('paper_id', 'paper_label');                 -- 2 rows
+
+-- 3 constraints; the attempt FK must stay NOT VALID (convalidated = false). Do not validate it in the release.
+SELECT conname, convalidated FROM pg_constraint
+ WHERE conrelid = 'question_reports'::regclass
+   AND conname IN ('ck_question_reports_paper_label', 'fk_question_reports_paper_id', 'fk_question_reports_attempt_id');
+
+SELECT indexname FROM pg_indexes WHERE indexname = 'ix_question_reports_paper_id';                       -- 1 row
+
+-- nothing changed in the data: same total as 3.1, no paper yet
+SELECT count(*) AS reports, count(paper_id) AS with_paper FROM question_reports;                         -- with_paper 0
+
+-- later, once pupils report from a sitting: every report that names an attempt also names its paper (expect 0 rows)
+SELECT id FROM question_reports WHERE attempt_id IS NOT NULL AND paper_id IS NULL LIMIT 20;
+```
+
 The migration history, after all of them:
 
 ```sql
 SELECT migration_name, finished_at FROM _prisma_migrations
  WHERE migration_name IN ('0092_bijak_standards', '0093_part_options_image_file_index', '0100_question_lifecycle_approved',
-                          '0101_essay_choice', '0102_leaf_cognitive_level')
+                          '0101_essay_choice', '0102_leaf_cognitive_level', '0103_question_report_context')
  ORDER BY started_at;
 ```
 
@@ -409,6 +437,16 @@ E2E_SEED=1 npm run be:db:seed -- --profile=e2e
 
 ## 9. Verification status of this page
 
+**Latest run (H-A25, 2026-10-31): ran on local migrated DB (BASE-21 `a6ff0c0d` + 0102 @ `95cea5be` (T33) + 0103 @ `d1210e96` (T42), demo seed), 58/58 ok.** Every statement in the SQL blocks of this page (57 SELECTs and the one `VACUUM ANALYZE`) was run one by one with `psql` against a throwaway local Postgres 16 container (no server, no shared database; the container was removed afterwards). No statement errored and none was changed by the run. 0105 (A2, H-A18) was not on origin yet and is not part of this run.
+
+- **Staged database (before-state):** migrated to 0091, the three 0092 pre-flight SELECTs of 3.1 (3/3); then to 0093, the remaining 11 "before" SELECTs of 3.1, including the two new 0103 ones (11/11). They return zero rows or zero counts (empty tables): this proves syntax and column names, not counts.
+- **Full database:** the 46 migrations of the base plus 0102 and 0103 from the two branches (copied into a scratch migrations folder, not committed), then the demo seed with `ALLOW_DEMO_SEED=1` (profile `poc`, 27 modules, exit 0). The other 44 statements (2.2, 3.2 to 3.6, 3.5b, 4, 5.4) ran there, 44/44.
+- **Notable results:** `approved` 1268, `archived` 1, `draft` 1 and no `published`; servable 1268, login count 493; `question_parts.topics` (jsonb) and `.cognitive_level` (text) exist with their CHECKs and every `cognitive_level` is NULL (1277 parts); 0103 added `question_reports.paper_id` (bigint) and `paper_label` (text); `fk_question_reports_attempt_id` has `convalidated = f` as designed, the paper FK and the label CHECK are validated; `ix_question_reports_paper_id` exists; `question_reports` is empty so `with_paper` is 0.
+- **Reverse SQL of 0102 and 0103** (the file headers) was also run once inside a transaction that was rolled back: all five objects dropped cleanly and came back after the rollback. This proves the SQL, not a rollback procedure.
+- Not run: `prisma migrate resolve`, `npm run dskp:load`, the API, and the 5.4 after-Sahkan state (no blueprint is verified on the seeded database; see the earlier run below).
+
+**Earlier run (T37, BASE-6 + 0101 + 0102, 51/51 ok)** and its method are kept below for the record.
+
 **SQL: ran on a local migrated database, 51/51 statements ok.** Every statement in the SQL blocks of this page (50 SELECTs and the one `VACUUM ANALYZE`) was executed one by one with `psql` against a throwaway local Postgres 16 container (no server, no shared database). Statements that errored: none; no statement was changed by the run.
 
 - **Database A (staged), empty tables:** migrated with `prisma migrate deploy` to 0091 and the 0092 pre-flight SELECTs of 3.1 were run (3 statements); then migrated to 0093 and the remaining "before" SELECTs of 3.1 were run (9 statements). They returned zero rows or zero counts because the tables were empty; this proves the syntax and the column names, not the counts. The "before" SELECTs cannot run on a fully migrated database (for example `blueprint_sections.topic_weights` is gone after 0092).
@@ -419,7 +457,7 @@ E2E_SEED=1 npm run be:db:seed -- --profile=e2e
 
 **Still not verified**
 
-- 0101 and 0102 are read from the T25 and T33 branches, not from BASE-6; their final content may change in review (the T33 branch head is a work-in-progress commit). `\d question_parts` after a deploy is the check.
+- 0102 and 0103 are read from the T33 and T42 branches, not from base; their final content may change in review. `\d question_parts` and `\d question_reports` after a deploy are the check. 0105 (A2, H-A18) is not covered; add it when it lands.
 - `VACUUM ANALYZE question_versions`: run time on the production-size table was not measured.
 - `THROTTLE_SERVABILITY_READ_PER_MINUTE` and `E2E_SEED` are read from branches `r1/t30-servability-reads` and `r1/t26-e2e-seed`, not from BASE-6.
 - Whether UAT already holds PoC blueprints, DSKP nodes or demo data is unknown; sections 3.1 and 5.4 record it.
