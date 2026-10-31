@@ -235,11 +235,17 @@ export function toRequestBody(d: StudioDraft): Json {
 
 interface WirePart {
   label: string
-  prompt: { ms: string }
+  prompt: { ms: string; en?: string }
   marks?: number
   mode?: string
-  options?: Array<{ label: string; body: { ms: string }; imageId?: string | null }>
-  key?: { kind: string; correct?: string; values?: Array<string | { v: number; tol?: number; unit?: string }> }
+  options?: Array<{ label: string; body: { ms: string; en?: string }; imageId?: string | null }>
+  key?: {
+    kind: string
+    correct?: string
+    values?: Array<string | { v: number; tol?: number; tolKind?: string; unit?: string; unitAlt?: string[]; sigFigs?: number | null; decimals?: number | null }>
+    caseSensitive?: boolean
+    anyOrder?: boolean
+  }
   difficultyTp?: number | null
   kbat?: string | null
   cognitiveLevel?: string | null
@@ -266,6 +272,61 @@ export interface Hydrated {
   unsupported: string[]
 }
 
+const LEAF_KEYS = new Set(['label', 'prompt', 'marks', 'mode', 'options', 'key', 'difficultyTp', 'cognitiveLevel', 'kbat'])
+const isSet = (v: unknown): boolean => v !== undefined && v !== null
+
+/** Everything on a stored leaf that `leafToPart` would not write back (so a save would drop it). Empty = lossless. */
+function lossOf(p: WirePart): string[] {
+  const lost: string[] = []
+  for (const k of Object.keys(p)) if (!LEAF_KEYS.has(k) && isSet((p as unknown as Record<string, unknown>)[k])) lost.push(k)
+  if (isSet(p.prompt?.en)) lost.push('prompt.en')
+  for (const o of p.options ?? []) if (isSet(o.body?.en) || Object.keys(o).some((k) => !['label', 'body', 'imageId'].includes(k))) lost.push('options')
+  const key = p.key
+  if (key) {
+    for (const k of Object.keys(key)) if (!['kind', 'correct', 'values', 'caseSensitive', 'anyOrder'].includes(k)) lost.push(`key.${k}`)
+    if (key.caseSensitive === true) lost.push('key.caseSensitive')
+    if (key.anyOrder === true) lost.push('key.anyOrder')
+    if (p.mode === 'short_text') {
+      const values = key.values ?? []
+      if (values.some((v) => typeof v !== 'string' || v !== v.trim() || v.includes('\n'))) lost.push('key.values')
+    }
+    if (p.mode === 'numeric') {
+      const values = key.values ?? []
+      if (values.length > 1) lost.push('key.values')
+      for (const v of values) {
+        if (typeof v !== 'object') continue
+        if (isSet(v.tolKind) && v.tolKind !== 'abs') lost.push('key.tolKind')
+        if ((v.unitAlt ?? []).length > 0) lost.push('key.unitAlt')
+        if (isSet(v.sigFigs)) lost.push('key.sigFigs')
+        if (isSet(v.decimals)) lost.push('key.decimals')
+      }
+    }
+  }
+  // The save writes `kbat` from the cognitive level; a stored `kbat` that contradicts it is lost. (`kbat: 'bukan'` alone is read as
+  // "level unset, author chooses" by design.)
+  if (isSet(p.kbat) && isCognitive(p.cognitiveLevel)) {
+    const written = isKbat(p.cognitiveLevel) ? p.cognitiveLevel : 'bukan'
+    if (p.kbat !== written) lost.push('kbat')
+  }
+  return [...new Set(lost)]
+}
+
+/**
+ * Body of "Edit sebagai draf": `PUT /api/questions/:id` is a patch (only the four required fields are mandatory), so the stored
+ * question is sent back as it was read: its own `parts` verbatim (never rebuilt from the editor model) and nothing else. Every
+ * other field (tag, TP, chapter, kertas, number, language, explanation, pictures, group) is omitted and so kept by the server,
+ * which writes version n+1 as a draft equal to the live one.
+ */
+export function editAsDraftBody(q: WireQuestion): Json {
+  return {
+    subjectId: q.subjectId ?? '',
+    educationLevelId: q.educationLevelId ?? '',
+    difficultyLevel: q.difficultyLevel,
+    questionText: q.questionText,
+    ...(q.parts === undefined ? {} : { parts: q.parts }),
+  }
+}
+
 /** Builds the form state from the admin read. A question the editor cannot hold faithfully is read-only (`unsupported`). */
 export function hydrate(q: WireQuestion): Hydrated {
   const unsupported: string[] = []
@@ -274,6 +335,11 @@ export function hydrate(q: WireQuestion): Hydrated {
     const p = raw as WirePart
     if (Array.isArray(p.children)) {
       unsupported.push(`Bahagian (${p.label}) mempunyai sub-bahagian bersarang.`)
+      continue
+    }
+    const lost = lossOf(p)
+    if (lost.length > 0) {
+      unsupported.push(`Bahagian (${p.label}) mempunyai tetapan yang belum boleh disunting di Studio (${lost.join(', ')}).`)
       continue
     }
     const leaf = blankLeaf(p.label)
@@ -300,6 +366,10 @@ export function hydrate(q: WireQuestion): Hydrated {
       continue
     }
     leaves.push(leaf)
+  }
+  // A save writes the question TP as the highest leaf TP; a stored TP the leaves do not give would be reset.
+  if (unsupported.length === 0 && isSet(q.tag?.tp) && q.tag?.tp !== questionTp(leaves)) {
+    unsupported.push('TP soalan tidak sepadan dengan TP bahagian, jadi tidak boleh disimpan semula di Studio.')
   }
   const draft: StudioDraft = {
     subjectId: q.subjectId ?? '',

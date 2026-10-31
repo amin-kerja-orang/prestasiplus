@@ -9,7 +9,7 @@
  */
 import type { TableColumn } from '@nuxt/ui'
 import type { ServabilityReport } from '@pp/contract'
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
@@ -128,20 +128,33 @@ const counts = computed(() => list.data.value?.meta.counts)
 
 /** "Dilihat murid di x/n" per row of this page (one batch read, at most 100 ids). */
 const reports = ref<Record<string, ServabilityReport>>({})
+let batchSeq = 0
+let batchAbort: AbortController | null = null
 watch(
   rows,
   async (now) => {
+    // A newer page (or filter) supersedes the read in flight: abort it and ignore a late answer.
+    batchAbort?.abort()
+    batchAbort = null
+    const mine = (batchSeq += 1)
     reports.value = {}
     if (now.length === 0) return
+    const ctl = new AbortController()
+    batchAbort = ctl
     try {
-      const res = await fetchServabilityBatch(now.map((r) => r.id))
+      const res = await fetchServabilityBatch(now.map((r) => r.id), ctl.signal)
+      if (mine !== batchSeq) return
       reports.value = Object.fromEntries(res.reports.map((r) => [r.questionId, r]))
     } catch {
-      reports.value = {}
+      if (mine === batchSeq) reports.value = {}
     }
   },
   { immediate: true },
 )
+onBeforeUnmount(() => {
+  batchSeq += 1
+  batchAbort?.abort()
+})
 
 const pagerQuery = computed(() => {
   const out: Record<string, string> = {}
@@ -237,6 +250,7 @@ const previewOpen = ref(false)
 const previewDraft = ref<StudioDraft>(blankDraft())
 const previewGroup = ref<GroupView | null>(null)
 const previewId = ref<string | null>(null)
+const previewUnsupported = ref<string[]>([])
 
 async function preview(row: StudioRow): Promise<void> {
   if (busy.value !== null) return
@@ -245,6 +259,7 @@ async function preview(row: StudioRow): Promise<void> {
     const q = await fetchStudioQuestion(row.id)
     const h = hydrate(q)
     previewDraft.value = h.draft
+    previewUnsupported.value = h.unsupported
     previewId.value = row.id
     previewGroup.value = null
     if (h.draft.groupId !== null) {
@@ -431,6 +446,6 @@ const cardFields: CardField[] = [
       </DsDataTable>
     </template>
 
-    <StudioPreview v-model:open="previewOpen" :group="previewGroup" :draft="previewDraft" :question-id="previewId" />
+    <StudioPreview v-model:open="previewOpen" :group="previewGroup" :draft="previewDraft" :question-id="previewId" :unsupported="previewUnsupported" />
   </DsPage>
 </template>

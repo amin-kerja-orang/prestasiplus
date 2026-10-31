@@ -15,7 +15,7 @@ import type {
 
 import { api, isHttpMode, uploadQuestionImage, type ListResult } from '@/api'
 
-import { hydrate, toRequestBody, type WireQuestion } from '../lib/studio/draft'
+import { editAsDraftBody, hydrate, type WireQuestion } from '../lib/studio/draft'
 import type { WireStimulus } from '../lib/studio/stimulus'
 
 export type { StudioDskp }
@@ -181,12 +181,12 @@ export class EditAsDraftRefused extends Error {
 /**
  * "Edit sebagai draf" (V2 A03): creates the draft at once. V3 has no `edit-as-draft` route; `PUT /api/questions/:id` on an
  * approved question writes version n+1 as a draft while the live version keeps serving (Q-5, ADR-0027), so the stored content is
- * read, mapped through the editor model and written back unchanged (UX-17). Resolves to the question id.
+ * read and written back as it is (`editAsDraftBody`: its own parts, no editor-model rebuild; UX-17). Resolves to the question id.
  */
 export async function editAsDraft(id: string): Promise<string> {
   const q = await fetchStudioQuestion(id)
   const h = hydrate(q)
   if (h.unsupported.length > 0) throw new EditAsDraftRefused(h.unsupported)
-  const res = await updateStudioQuestion(id, toRequestBody(h.draft))
+  const res = await updateStudioQuestion(id, editAsDraftBody(q))
   return res.data.id
 }

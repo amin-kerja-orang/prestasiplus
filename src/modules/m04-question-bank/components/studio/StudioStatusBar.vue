@@ -38,6 +38,7 @@ import {
   statusButtons,
   statusTone,
   STATUS_TEXT,
+  DRAFT_OF_LIVE_TEXT,
   isStudioStatus,
   UNSAVED_HINT,
   type StatusAction,
@@ -67,7 +68,12 @@ const refusalEl = ref<{ focus: () => void } | null>(null)
 const buttons = computed(() => statusButtons(props.status))
 const rows = computed(() => (report.value ? servedRows(report.value) : []))
 const unservedCount = computed(() => rows.value.filter((r) => !r.served).length)
-const stateText = computed(() => (isStudioStatus(props.status) ? STATUS_TEXT[props.status] : ''))
+const stateText = computed(() => {
+  if (!isStudioStatus(props.status)) return ''
+  // A draft whose earlier version still serves pupils (version n+1): V2 says the original stays published.
+  if (props.status === 'draft' && (report.value?.servedCount ?? 0) > 0) return DRAFT_OF_LIVE_TEXT
+  return STATUS_TEXT[props.status]
+})
 const waitForSave = computed(() => props.dirty)
 
 async function loadReport(): Promise<void> {
