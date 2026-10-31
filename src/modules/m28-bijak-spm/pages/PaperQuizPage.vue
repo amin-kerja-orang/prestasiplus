@@ -24,7 +24,7 @@ const route = useRoute()
 const server = bijakServer()
 const paperId = computed(() => String(route.params.paperId))
 
-type Phase = 'loading' | 'error' | 'missing' | 'ready'
+type Phase = 'loading' | 'error' | 'missing' | 'unavailable' | 'ready'
 const phase = ref<Phase>('loading')
 const page = ref(1)
 const data = ref<BijakKuizPaperPage | null>(null)
@@ -35,6 +35,8 @@ const busyId = ref('')
 const errors = ref<Record<string, string>>({})
 const seconds = ref(0)
 const markableTotal = ref(0)
+/** The API's BM refusal (403: the paper places an archived question, AC-R1-18.4). */
+const unavailableMessage = ref('')
 const sheetOpen = ref('')
 const timer = setInterval(() => (seconds.value += 1), 1000)
 onBeforeUnmount(() => clearInterval(timer))
@@ -92,6 +94,11 @@ async function load(): Promise<void> {
     window.scrollTo?.({ top: 0 })
   } catch (e) {
     if (seq !== loadSeq) return
+    if (e instanceof BijakError && e.code === 'forbidden') {
+      unavailableMessage.value = e.message
+      phase.value = 'unavailable'
+      return
+    }
     phase.value = e instanceof BijakError && e.code === 'not_found' ? 'missing' : 'error'
   }
 }
@@ -108,7 +115,7 @@ async function check(item: BijakKuizItem): Promise<void> {
     const msg =
       e instanceof BijakError && e.code === 'offline'
         ? 'Luar talian. Cuba lagi.'
-        : e instanceof BijakError && (e.code === 'bad_request' || e.code === 'not_found')
+        : e instanceof BijakError && (e.code === 'bad_request' || e.code === 'not_found' || e.code === 'forbidden')
           ? e.message
           : 'Jawapan tidak dapat disemak. Cuba lagi.'
     errors.value = { ...errors.value, [item.id]: msg }
@@ -151,6 +158,13 @@ void load()
       description="Kertas ini tidak tersedia."
       icon="file-x"
       data-testid="paper-quiz-missing"
+    />
+    <DsEmptyState
+      v-else-if="phase === 'unavailable'"
+      title="Kertas belum tersedia"
+      :description="unavailableMessage"
+      icon="file-x"
+      data-testid="paper-quiz-unavailable"
     />
     <DsLoadError
       v-else-if="phase === 'error'"

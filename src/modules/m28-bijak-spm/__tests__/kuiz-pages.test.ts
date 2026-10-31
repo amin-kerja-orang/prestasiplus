@@ -388,6 +388,14 @@ describe('PaperQuizPage', () => {
     expect(document.body.textContent).toContain('Kertas tidak dapat dimuatkan.')
   })
 
+  it('shows the API BM refusal (403) when the paper places an archived question', async () => {
+    const msg = 'Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini.'
+    server.getKuizPaperPage.mockRejectedValue(new BijakError('forbidden', msg))
+    await mountPage(PaperQuizPage, '/simulasi/p1/kuiz')
+    expect(text('[data-testid=paper-quiz-unavailable]')).toContain(msg)
+    expect(q('[data-testid=paper-quiz-retry-load]')).toBeNull()
+  })
+
   it('shows the verdict error of a failed check without losing the pick', async () => {
     server.getKuizPaperPage.mockResolvedValue(page1)
     server.checkKuizPaper.mockRejectedValue(new BijakError('bad_request', 'Jawapan tidak sah.'))
