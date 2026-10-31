@@ -40,6 +40,19 @@ const flatOf = (q: QuestionView) => flatFromVersion(q.version)
 const imageOf = (q: QuestionView, id: string | null | undefined): string | null => (id ? (q.imageTokens?.[id] ?? id) : null)
 const imagesOf = (q: QuestionView, f: ReturnType<typeof flatOf>): (string | null)[] => (f.options === null ? [] : f.optionImageIds.map((id) => imageOf(q, id)))
 
+/** The part tree with each option picture named by its public token (what `POST /files` returned), like the flat `optionImages`. */
+function partsOf(q: QuestionView): QuestionPart[] {
+  const tokens = q.imageTokens
+  if (!tokens || Object.keys(tokens).length === 0) return q.version.parts
+  const swap = (list: readonly QuestionPart[]): QuestionPart[] =>
+    list.map((part) => {
+      if (!isLeaf(part)) return { ...part, children: swap(part.children as QuestionPart[]) } as QuestionPart
+      if (part.mode !== 'mcq' && part.mode !== 'pksk_choice') return part
+      return { ...part, options: part.options.map((o) => (o.imageId ? { ...o, imageId: tokens[o.imageId] ?? o.imageId } : o)) } as QuestionPart
+    })
+  return swap(q.version.parts)
+}
+
 /** The flat objective shape both the admin and the Guru views build on. */
 function flatBase(q: QuestionView) {
   const v = q.version
@@ -86,7 +99,7 @@ function flatBase(q: QuestionView) {
     createdAt: toMytTimestamp(q.createdAt),
     updatedAt: toMytTimestamp(q.updatedAt),
     usage: c.usage,
-    parts: v.parts,
+    parts: partsOf(q),
     tag: { unitId: v.unitId, spIds: v.spIds, tp: v.difficultyTp },
     kbat: v.kbat,
     tagReview: v.tagReview,
@@ -142,7 +155,7 @@ export function detailView(d: QuestionDetailView): QuestionDetailWire {
   void _parts
   return QuestionDetailSchema.parse({
     ...base,
-    parts: d.version.parts,
+    parts: partsOf(d),
     ...(d.stimulusGroup === null ? { stimulusGroup: null } : { stimulusGroup: stimulusGroupView(d.stimulusGroup) }),
     subject: d.subject,
     level: d.level,

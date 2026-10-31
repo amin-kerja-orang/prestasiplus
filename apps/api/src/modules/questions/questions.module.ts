@@ -11,6 +11,7 @@ import { AdminQuestionsController, GuruQuestionsController, StructuredQuestionsC
 import { PkskQuestionsService } from './pksk.service'
 import { QuestionsRepository } from './questions.repository'
 import { QuestionsService } from './questions.service'
+import { StudioController, StudioDskpService, StudioGroupsService } from './studio'
 
 /**
  * Question bank (M04, BE-09). Exports `QuestionsRepository` and `QuestionsService` for the other cards
@@ -21,9 +22,9 @@ import { QuestionsService } from './questions.service'
  */
 @Module({
   imports: [CurriculumModule, UsersModule, FilesModule, AuditModule, ThrottleModule],
-  controllers: [AdminQuestionsController, StructuredQuestionsController, GuruQuestionsController],
-  providers: [QuestionsRepository, QuestionsService, PkskQuestionsService, QuestionCountsAdapter, QuestionsBijakPoolSource],
-  exports: [QuestionsRepository, QuestionsService, PkskQuestionsService, QuestionsBijakPoolSource],
+  controllers: [AdminQuestionsController, StructuredQuestionsController, GuruQuestionsController, StudioController],
+  providers: [QuestionsRepository, QuestionsService, PkskQuestionsService, QuestionCountsAdapter, QuestionsBijakPoolSource, StudioGroupsService, StudioDskpService],
+  exports: [QuestionsRepository, QuestionsService, PkskQuestionsService, QuestionsBijakPoolSource, StudioGroupsService],
 })
 export class QuestionsModule implements OnModuleInit {
   constructor(

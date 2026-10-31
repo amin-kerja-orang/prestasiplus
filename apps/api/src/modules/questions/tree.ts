@@ -188,6 +188,24 @@ export function referencedIds(parts: readonly QuestionPart[]): { imageIds: strin
   return { imageIds, stimulusIds, unitIds }
 }
 
+/**
+ * A copy of the tree with every MCQ option picture id passed through `map` (a public token to the internal id on the way in,
+ * the other way on the way out). Everything else is kept as it is.
+ */
+export async function mapOptionImageIds(parts: readonly QuestionPart[], map: (id: string) => string | Promise<string>): Promise<QuestionPart[]> {
+  const out: QuestionPart[] = []
+  for (const part of parts) {
+    if (!isLeaf(part)) {
+      out.push({ ...part, children: await mapOptionImageIds(part.children as QuestionPart[], map) } as QuestionPart)
+    } else if (part.mode === 'mcq' || part.mode === 'pksk_choice') {
+      const options = []
+      for (const o of part.options) options.push(o.imageId == null ? o : { ...o, imageId: await map(o.imageId) })
+      out.push({ ...part, options } as QuestionPart)
+    } else out.push(part)
+  }
+  return out
+}
+
 /** Total marks of the leaves (flat `pointsValue`, structured `totalMarks`). */
 export function totalMarks(parts: readonly QuestionPart[]): number {
   return parts.reduce((s, p) => s + (isLeaf(p) ? p.marks : totalMarks(p.children as QuestionPart[])), 0)
