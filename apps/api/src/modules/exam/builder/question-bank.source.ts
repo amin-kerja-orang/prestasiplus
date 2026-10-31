@@ -180,10 +180,11 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
     })
     // Secondary-only (R1-B21): Darjah (and PKSK) members leave the group; a group left with no member is absent.
     const members = await this.servableLatest(groups.flatMap((g) => g.questions.map((m) => m.id)))
+    // One file lookup for the pictures of every group of the call (not one per group).
+    const tokens = await this.tokensOf(groups.flatMap((g) => g.stimuli.map((s) => s.stimulus)))
     for (const g of groups) {
       // D90: the group is always emitted, with or without a displayable stimulus, so every builder read treats its members as one unit.
       // A group with nothing to display (audio only, or empty) has no `stimulus` and `stimuli: []`.
-      const tokens = await this.tokensOf(g.stimuli.map((s) => s.stimulus))
       const shown = stimuliOf(g.stimuli.map((s) => s.stimulus), tokens)
       const [stimulus, ...rest] = shown
       const questionIds = g.questions.filter((m) => members.has(m.id)).map((m) => m.id.toString())
@@ -262,8 +263,10 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
         where: { id: { in: groupKeys } },
         include: { stimuli: { orderBy: { position: 'asc' }, include: { stimulus: true } }, options: { orderBy: { position: 'asc' } } },
       })
+      // One file lookup for the pictures of every group of the call (not one per group).
+      const tokens = await this.tokensOf(groups.flatMap((g) => g.stimuli.map((s) => s.stimulus)))
       for (const g of groups) {
-        const all = stimuliOf(g.stimuli.map((s) => s.stimulus), await this.tokensOf(g.stimuli.map((s) => s.stimulus)))
+        const all = stimuliOf(g.stimuli.map((s) => s.stimulus), tokens)
         if (all[0]) {
           stimuli[g.id.toString()] = all[0]
           groupStimuli[g.id.toString()] = all
