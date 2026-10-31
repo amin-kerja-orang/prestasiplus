@@ -24,6 +24,7 @@ import {
 import ContractCheckPanel from '../components/ContractCheckPanel.vue'
 import GeneralTab from '../components/GeneralTab.vue'
 import SectionEditor from '../components/SectionEditor.vue'
+import SharedBanner from '../components/SharedBanner.vue'
 import SourceBadge from '../components/SourceBadge.vue'
 import VerifyPanel from '../components/VerifyPanel.vue'
 import {
@@ -197,7 +198,8 @@ async function commit(): Promise<void> {
     } else {
       saved = await api.saveVersion(subject.value, kertas.value, body)
     }
-    flash.show({ type: 'success', message: 'Kontrak berjaya disimpan.' })
+    // K7 (V2): "Kontrak dicipta." on create, "Kontrak dikemas kini." on update.
+    flash.show({ type: 'success', message: isNew.value ? 'Kontrak dicipta.' : 'Kontrak dikemas kini.' })
     view.value = saved
     versions.value = await api.versions(subject.value, kertas.value)
     form.value = formFromView(saved)
@@ -333,6 +335,8 @@ const poolReason = 'Simpan dahulu'
     <template v-if="status === 'ready'" #tabs>
       <DsPillNav :items="tabs" :active="activeTab" label="Bahagian kontrak" testid-prefix="tab" />
     </template>
+
+    <SharedBanner v-if="status === 'ready'" scope="editor" />
 
     <div v-if="status === 'loading'" role="status" aria-busy="true" class="flex flex-col gap-4">
       <USkeleton class="h-24 w-full" />

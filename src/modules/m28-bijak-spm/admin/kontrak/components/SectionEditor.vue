@@ -45,8 +45,8 @@ const MODES = [
   { value: 'table_fill', label: 'Isi jadual' },
 ]
 const RULES = [
-  { value: 'all', label: 'Jawab semua' },
-  { value: 'choose', label: 'Jawab N daripada M' },
+  { value: 'all', label: 'Jawab Semua' },
+  { value: 'choose', label: 'Pilih N' },
 ]
 
 const errAt = (name: string): string | undefined =>
@@ -113,7 +113,7 @@ function setPerSlot(on: boolean): void {
         <DsFormField
           native
           :for="fieldId(index, 'instruction')"
-          label="Arahan bahagian"
+          label="Arahan (opsyenal)"
           hint="Jika kosong, murid melihat arahan sistem: Jawab semua soalan. atau Jawab N daripada M soalan."
         >
           <template #default="f">
@@ -123,7 +123,7 @@ function setPerSlot(on: boolean): void {
       </div>
 
       <fieldset class="min-w-0 sm:col-span-2">
-        <legend class="mb-2 text-label text-default">Peraturan</legend>
+        <legend class="mb-2 text-label text-default">Peraturan Pilihan</legend>
         <URadioGroup
           :model-value="s.ruleType"
           orientation="horizontal"
@@ -179,7 +179,7 @@ function setPerSlot(on: boolean): void {
       </div>
 
       <fieldset class="min-w-0 sm:col-span-2">
-        <legend class="mb-2 text-label text-default">Mod jawapan dibenarkan</legend>
+        <legend class="mb-2 text-label text-default">Mod Jawapan Dijangka</legend>
         <UCheckboxGroup
           v-model="s.allowedModes"
           :items="MODES"

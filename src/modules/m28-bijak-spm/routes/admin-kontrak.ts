@@ -21,8 +21,8 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../admin/kontrak/pages/KontrakListPage.vue'),
     meta: {
       ...base,
-      title: 'Kontrak Blueprint - Admin PRESTASIPLUS',
-      header: { title: 'Kontrak Blueprint', subtitle: 'Piawaian kertas SPM bagi Jana Kertas' },
+      title: 'Kontrak Simulasi - Admin PRESTASIPLUS',
+      header: { title: 'Kontrak Simulasi', subtitle: 'Piawaian kertas SPM bagi Jana Kertas' },
     },
   },
   {

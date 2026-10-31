@@ -75,7 +75,7 @@ async function retire(): Promise<void> {
   if (props.dependentPapers > 0) return
   const ok = await confirm({
     title: 'Padam kontrak ini?',
-    message: `Ini akan memberi kesan kepada kertas draf dan Jana Kertas bagi ${props.subjectName} Kertas ${props.kertas}.`,
+    message: `Padam kontrak Kertas ${props.kertas} bagi ${props.subjectName}? Semua Bahagian kontrak turut dipadam. Ini menjejaskan pintu terbitan untuk SEMUA kertas subjek/kertas ini. Tindakan ini tidak boleh dibatalkan.`,
     tone: 'error',
     confirmLabel: 'Padam',
   })
@@ -94,7 +94,7 @@ async function retire(): Promise<void> {
         <p class="text-label text-default">Kertas</p>
         <p class="mt-2 text-body">Kertas {{ kertas }}</p>
       </div>
-      <DsFormField native :for="fieldId(null, 'code')" label="Kod kertas" required :error="errAt('code')">
+      <DsFormField native :for="fieldId(null, 'code')" label="Kod Kertas" required :error="errAt('code')">
         <template #default="f">
           <UInput :id="f.id" v-model="form.code" :aria-invalid="f.invalid" class="w-full" :ui="{ base: 'min-h-11' }" placeholder="1449/2" />
         </template>
@@ -104,16 +104,16 @@ async function retire(): Promise<void> {
           <NumField :id="f.id" v-model="form.durationMin" :min="1" :invalid="f.invalid" :describedby="f.describedby" />
         </template>
       </DsFormField>
-      <DsFormField native :for="fieldId(null, 'jumlah')" label="Jumlah markah" required :error="errAt('jumlah')">
+      <DsFormField native :for="fieldId(null, 'jumlah')" label="Jumlah Markah" required :error="errAt('jumlah')">
         <template #default="f">
           <NumField :id="f.id" v-model="form.totalMarks" :min="1" :invalid="f.invalid" :describedby="f.describedby" />
         </template>
       </DsFormField>
       <div v-if="form.source === 'Disahkan'">
-        <p class="text-label text-default">Status</p>
+        <p class="text-label text-default">Sumber</p>
         <div class="mt-2"><SourceBadge source="Disahkan" /></div>
       </div>
-      <DsFormField v-else native :for="fieldId(null, 'status')" label="Status">
+      <DsFormField v-else native :for="fieldId(null, 'status')" label="Sumber">
         <template #default="f">
           <DsNativeSelect :id="f.id" v-model="form.source" :items="statusItems" />
         </template>

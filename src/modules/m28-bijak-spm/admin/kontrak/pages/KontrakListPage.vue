@@ -26,6 +26,7 @@ import {
 
 import { formatDateTime } from '../../../lib/use-bijak'
 import SourceBadge from '../components/SourceBadge.vue'
+import SharedBanner from '../components/SharedBanner.vue'
 import { KONTRAK_ROUTES } from '../server/api'
 import { kontrakServer } from '../server/client'
 import { bodyName } from '../domain/verify'
@@ -39,6 +40,8 @@ type Row = BijakBlueprintView & {
 
 const api = kontrakServer()
 const router = useRouter()
+/** V2 empty state (K10, cloud-student-mechanism 3.4); the create button is "Baharu" as there. */
+const EMPTY_FIRST = 'Tiada kontrak lagi. Cipta kontrak pertama menggunakan butang "Baharu" di atas.'
 const flash = useFlash()
 const { data, error, loading, reload } = useApi(() => api.list())
 
@@ -153,7 +156,7 @@ function actionsOf(r: Row): RowAction[] {
       icon: 'i-ph-trash',
       confirm: {
         title: 'Padam kontrak ini?',
-        body: `Ini akan memberi kesan kepada kertas draf dan Jana Kertas bagi ${r.subjectName} Kertas ${r.kertas}.`,
+        body: `Padam kontrak Kertas ${r.kertas} bagi ${r.subjectName}? Semua Bahagian kontrak turut dipadam. Ini menjejaskan pintu terbitan untuk SEMUA kertas subjek/kertas ini. Tindakan ini tidak boleh dibatalkan.`,
         confirmLabel: 'Padam',
       },
       onSelect: () => (r.dependentPaperCount > 0 ? blocked(r) : void retire(r)),
@@ -195,11 +198,13 @@ function proceed(): void {
     data-testid="kontrak-list"
   >
     <template #actions>
-      <UButton icon="i-ph-plus" label="Tambah Kontrak" class="min-h-11" data-testid="kontrak-add" @click="addOpen = true" />
+      <UButton icon="i-ph-plus" label="Baharu" class="min-h-11" data-testid="kontrak-add" @click="addOpen = true" />
     </template>
 
     <DsLoadError v-if="error" message="Tidak dapat memuatkan senarai kontrak. Sila cuba semula." @retry="reload()" />
     <template v-else>
+      <SharedBanner scope="list" />
+      <h2 class="text-heading text-highlighted" data-testid="kontrak-list-heading">Senarai Kontrak</h2>
       <DsStatRow :items="stats" density="roomy" :loading="loading && !data" aria-label="Ringkasan kontrak" />
 
       <DsFilterBar
@@ -247,7 +252,7 @@ function proceed(): void {
         density="cozy"
         :loading="loading && !data"
         :filtered="chips.length > 0"
-        :empty-title="chips.length ? 'Tiada kontrak dijumpai.' : 'Belum ada kontrak.'"
+        :empty-title="chips.length ? 'Tiada kontrak dijumpai.' : EMPTY_FIRST"
         card-title="title"
         :card-fields="[
           { key: 'code', label: 'Kod' },
@@ -322,7 +327,7 @@ function proceed(): void {
       </DsDataTable>
     </template>
 
-    <DsDialog v-model:open="addOpen" title="Tambah Kontrak" size="sm">
+    <DsDialog v-model:open="addOpen" title="Kontrak Baharu" size="sm">
       <form id="kontrak-add-form" class="flex flex-col gap-4" novalidate @submit.prevent="proceed">
         <DsFormField native for="add-subject" label="Subjek" required :error="addTried && !add.subject ? 'Pilih subjek.' : undefined">
           <template #default="f">
