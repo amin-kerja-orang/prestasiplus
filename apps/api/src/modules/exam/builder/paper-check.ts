@@ -6,6 +6,7 @@
  */
 import { BIJAK_BUILDER_CHECK_LINES as LINES } from '@pp/contract'
 
+import { GROUP_MIN_MEMBERS_MESSAGE, MIN_GROUP_MEMBERS } from './builder.constants'
 import { effectiveMarks } from './exam-core.adapter'
 
 export interface BuilderSectionSpec {
@@ -141,6 +142,11 @@ export interface CheckInput {
   /** Question ids that are not Terbit. */
   isLive: (questionId: string) => boolean
   nameOf?: (questionId: string) => string
+  /**
+   * D93: true when the group is a real stimulus group of the bank (the port knows it). Only such a group needs
+   * `MIN_GROUP_MEMBERS` members; absent = every group counts.
+   */
+  isStimulusGroup?: (groupId: string) => boolean
 }
 
 export function checkPaper(input: CheckInput): PaperCheck {
@@ -150,6 +156,15 @@ export function checkPaper(input: CheckInput): PaperCheck {
   const dup = new Set<string>()
   for (const s of sections) for (const id of s.questionIds) (seen.has(id) ? dup : seen).add(id)
   if (dup.size) errors.push(LINES.duplicateQuestion([...dup]))
+
+  // D93 (a D90 group-integrity rule, never overridable): a stimulus group with fewer than two members cannot be placed.
+  const tooSmall = new Set<string>()
+  for (const s of sections)
+    for (const id of s.questionIds) {
+      const g = groupOf(id)
+      if (g && (input.isStimulusGroup?.(g) ?? true) && membersOf(g).length < MIN_GROUP_MEMBERS) tooSmall.add(g)
+    }
+  if (tooSmall.size) errors.push(GROUP_MIN_MEMBERS_MESSAGE)
 
   // A group must live in one section, contiguous and complete.
   const sectionOfGroup = new Map<string, number>()

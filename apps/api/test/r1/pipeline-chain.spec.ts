@@ -334,7 +334,9 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     it('the review (structural tier) has no blocker, shows every row ok and the paper is not visible yet', async () => {
       const res = await admin.get(`/api/admin/papers/${fx.paper}/review`)
       expect(res.status, JSON.stringify(res.body)).toBe(200)
-      expect(res.body.data).toMatchObject({ ok: true, blockers: [], status: 'draf', visibleToStudents: false })
+      // The only blocker is the Spec contract (AC-R1-16.2); the paper itself is complete.
+      expect(res.body.data).toMatchObject({ ok: false, status: 'draf', visibleToStudents: false })
+      expect(res.body.data.blockers).toEqual([expect.stringMatching(/^Kontrak Simulasi 1449\/2 .* belum Disahkan/)])
       expect((res.body.data.rows as { ok: boolean }[]).every((r) => r.ok)).toBe(true)
       expect((res.body.data.rows as unknown[]).length).toBe(6)
       const list = await pupil.get('/api/bijak/papers')
@@ -351,9 +353,15 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     })
 
     it('Terbit: the publish answers ok and the paper is Terbit', async () => {
-      const res = await admin.post(`/api/admin/papers/${fx.paper}/publish`)
+      // AC-R1-16.2: the PoC contract 1449/2 is Spec. A plain Terbit is refused with a line naming the contract; the audited override (PIPE AC-07.5,
+      // reason >= 5 characters) publishes. (T43 upgrades this step to a Kontrak made Disahkan over the API.)
+      const plain = await admin.post(`/api/admin/papers/${fx.paper}/publish`)
+      expect(plain.body.data.ok).toBe(false)
+      expect((plain.body.data.errors as string[]).some((e) => e.startsWith('Kontrak Simulasi 1449/2'))).toBe(true)
+      const res = await admin.post(`/api/admin/papers/${fx.paper}/publish`, { override: true, reason: 'Kontrak 1449/2 belum disahkan' })
       expect(res.status, JSON.stringify(res.body)).toBe(200)
       expect(res.body.data).toMatchObject({ ok: true, errors: [] })
+      expect((res.body.data.overridden as string[]).some((e) => e.startsWith('Kontrak Simulasi 1449/2'))).toBe(true)
       // Structural tier. With the section pools tagged (previous step) there is no "bukan dalam kolam bahagian ini" note any more.
       expect((res.body.data.notes ?? []).some((n: string) => n.includes('bukan dalam kolam bahagian ini'))).toBe(false)
       expect((await db.query<{ status: string }>(`select status from papers where id = $1`, [fx.paper]))[0]?.status).toBe('published')
@@ -377,7 +385,7 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       expect(g.status, JSON.stringify(g.body)).toBe(201)
       expect(g.body.data.added).toEqual(fx.imageMembers)
       for (const [sec, q] of [[0, fx.soloA], [1, fx.soloB], [2, fx.soloC], [2, fx.essay]] as const) expect((await place(sections[sec]!, q)).status).toBe(201)
-      const pub = await admin.post(`/api/admin/papers/${imagePaper}/publish`)
+      const pub = await admin.post(`/api/admin/papers/${imagePaper}/publish`, { override: true, reason: 'Kontrak 1449/2 belum disahkan' })
       expect(pub.status, JSON.stringify(pub.body)).toBe(200)
       expect(pub.body.data.ok).toBe(true)
     })

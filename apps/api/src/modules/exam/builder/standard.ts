@@ -9,6 +9,7 @@ import {
 } from '@pp/contract'
 
 import { ruleOf } from '../../bijak/papers/rules'
+import { MISSING_FROM_POOL_TEXT } from './builder.constants'
 import { toStandard } from '../blueprints/blueprint-standard'
 import type { BlueprintWithSections, PaperTree } from './builder.repository'
 import type { StandardBlueprint, StandardShortage, Violation } from './exam-core.adapter'
@@ -53,12 +54,16 @@ const text = (reason: string | undefined): string => (INELIGIBLE_TEXT as Record<
  * Notes (never block a curated paper, D78 O-2): the standard tier (quota, profile, KBAT, level share),
  * a question outside the section pool and unequal marks in a choose-N section.
  */
-export function violationLines(violations: readonly Violation[], labelOf: (position: number) => string): { blockers: string[]; notes: string[] } {
+export function violationLines(violations: readonly Violation[], labelOf: (position: number) => string): { blockers: string[]; fixed: string[]; notes: string[] } {
   const blockers: string[] = []
+  /** Blockers that the audited override can never lift (the question itself cannot be checked at all). */
+  const fixed: string[] = []
   const notes: string[] = []
   const at = (v: Violation, line: string): string => (v.sectionPosition === undefined ? line : LINES.sectionLine(labelOf(v.sectionPosition), line))
   for (const v of violations) {
-    if (v.code === 'INELIGIBLE' && v.tier === 'structural' && BLOCKING_REASONS.has(v.detail ?? '')) {
+    if (v.code === 'UNKNOWN_QUESTION') {
+      fixed.push(at(v, LINES.ineligible(v.questionId ?? '', MISSING_FROM_POOL_TEXT)))
+    } else if (v.code === 'INELIGIBLE' && v.tier === 'structural' && BLOCKING_REASONS.has(v.detail ?? '')) {
       blockers.push(at(v, LINES.ineligible(v.questionId ?? '', text(v.detail))))
     } else if (v.code === 'GROUP_BROKEN') {
       blockers.push(at(v, LINES.groupNotConsecutive(v.detail ?? '')))
@@ -66,7 +71,7 @@ export function violationLines(violations: readonly Violation[], labelOf: (posit
       notes.push(at(v, noteOf(v)))
     }
   }
-  return { blockers: [...new Set(blockers)], notes: [...new Set(notes)] }
+  return { blockers: [...new Set(blockers)], fixed: [...new Set(fixed)], notes: [...new Set(notes)] }
 }
 
 function noteOf(v: Violation): string {

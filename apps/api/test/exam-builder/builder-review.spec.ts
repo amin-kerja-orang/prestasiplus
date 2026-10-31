@@ -2,6 +2,7 @@ import { BIJAK_BUILDER_MESSAGES as MSG } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { makePng } from '../files/fixtures'
+import { NOT_SERVING, serveSeededBlueprints } from '../support/serve-blueprints'
 import { bootFullApp, loginFull, type FullApp, type FullClient } from '../r1/full-app'
 import { ACCOUNTS, auditRows, expectError } from './helpers'
 
@@ -59,8 +60,8 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
   const sectionsOf = async (id: string): Promise<string[]> => ((await admin.get(`/api/admin/papers/${id}`)).body.data.paper.sections as { id: string }[]).map((s) => s.id)
   const place = (paper: string, sectionId: string, questionId: string) => admin.post(`/api/admin/papers/${paper}/placements`, { sectionId, questionId })
   /** A full MAT kertas 2 paper: A 3 questions, B 1, C 2 (as the PoC blueprint); every question is tagged with its section pool. */
-  async function fullPaper(opts: { tagged?: boolean } = {}): Promise<{ paper: string; ids: string[]; sections: string[] }> {
-    const ids = [await approved(), await approved(), await approved(), await approved(), await approved({ pointsValue: 2 }), await approved({ pointsValue: 2 })]
+  async function fullPaper(opts: { tagged?: boolean; last?: string } = {}): Promise<{ paper: string; ids: string[]; sections: string[] }> {
+    const ids = [await approved(), await approved(), await approved(), await approved(), await approved({ pointsValue: 2 }), opts.last ?? (await approved({ pointsValue: 2 }))]
     if (opts.tagged !== false) {
       for (const [i, id] of ids.entries()) expect((await setPool(id, [i < 3 ? 'MAT2-A' : i === 3 ? 'MAT2-B' : 'MAT2-C'])).status).toBe(200)
     }
@@ -73,6 +74,7 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
 
   beforeAll(async () => {
     t = await bootFullApp()
+    await serveSeededBlueprints(t.db)
     admin = await loginFull(t, ACCOUNTS.admin)
     student = await loginFull(t, ACCOUNTS.student)
     subject = await one(`select id::text id from subjects where code = 'MATH'`)
@@ -325,6 +327,118 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
       expect((await admin.put(`/api/admin/papers/${copy.body.data.id as string}`, { title: 'Salinan disunting' })).status).toBe(200)
       expect((await admin.post(`/api/admin/papers/${paper}/withdraw`)).status).toBe(200)
       expect((await admin.put(`/api/admin/papers/${paper}`, { title: 'Disunting semula' })).status).toBe(200)
+    })
+  })
+
+  describe('B2 review findings: a missing question does not switch the other blockers off', () => {
+    it('one blocker per missing question (with its id); the structural blockers of the others still fire', async () => {
+      const { paper, ids } = await fullPaper()
+      // ids[0] loses its DSKP unit (a structural blocker); ids[1] is archived after placement (gone from the candidate pool).
+      await q(`update question_versions set unit_node_id = null where question_id = $1`, [ids[0]])
+      expect((await admin.post('/api/questions/bulk-action', { action: 'archived', ids: [ids[1]] })).status).toBe(200)
+      const review = (await admin.get(`/api/admin/papers/${paper}/review`)).body.data
+      expect(review.ok).toBe(false)
+      const blockers = review.blockers as string[]
+      expect(blockers.filter((b) => b.includes(`Soalan ${ids[1]} tidak layak: tiada dalam kolam soalan kertas ini`))).toHaveLength(1)
+      expect(blockers.some((b) => b.includes(`Soalan ${ids[0]} tidak layak`))).toBe(true)
+      // the publish refuses with the same lines and an override cannot lift the missing question
+      const pub = await admin.post(`/api/admin/papers/${paper}/publish`, { override: true, reason: 'sebab yang sah' })
+      expect(pub.body.data.ok).toBe(false)
+      expect((pub.body.data.errors as string[]).some((b) => b.includes(`Soalan ${ids[1]} tidak layak`))).toBe(true)
+      expect((pub.body.data.errors as string[]).some((b) => b.includes(`Soalan ${ids[0]} tidak layak`))).toBe(true)
+      expect(pub.body.data.overridden).toBeUndefined()
+      expect((await q(`select status from papers where id = $1`, [paper]))[0]?.status).toBe('draft')
+    })
+  })
+
+  describe('R1E2E-06: Terbit refuses a question the pupil cannot be served', () => {
+    /** An essay (working part) approved with `reveal: 'never'`, which the Bijak bridge refuses. */
+    async function neverRevealed(): Promise<string> {
+      const res = await admin.post('/api/questions', {
+        subjectId: subject,
+        educationLevelId: level,
+        difficultyLevel: 3,
+        questionType: 'essay',
+        questionText: 'Terangkan cara mengira luas segi empat tepat.',
+        kertas: '2',
+        tag,
+        parts: [{ label: 'a', mode: 'working', prompt: { ms: 'Kira luas segi empat tepat itu.' }, marks: 2, reveal: 'never', key: { kind: 'points', marks: 2, points: [{ id: 'p1', code: 'M', label: 'Darabkan', marks: 2, text: { ms: 'panjang darab lebar' } }] } }],
+      })
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      await approve([res.body.data.id as string])
+      return res.body.data.id as string
+    }
+
+    it('names the question and the bridge reason; the audited override cannot lift it; a paper of valid questions publishes', async () => {
+      const bad = await neverRevealed()
+      expect((await setPool(bad, ['MAT2-C'])).status).toBe(200)
+      const { paper } = await fullPaper({ last: bad })
+      const review = (await admin.get(`/api/admin/papers/${paper}/review`)).body.data
+      expect(review.ok).toBe(false)
+      const line = (review.blockers as string[]).find((b) => b.includes(`Soalan ${bad} tidak dapat dihidangkan kepada murid`))
+      expect(line, JSON.stringify(review.blockers)).toBeDefined()
+      expect(line).toContain('reveal: never')
+      const refused = await admin.post(`/api/admin/papers/${paper}/publish`)
+      expect(refused.body.data.ok).toBe(false)
+      expect(refused.body.data.errors).toContain(line)
+      const overridden = await admin.post(`/api/admin/papers/${paper}/publish`, { override: true, reason: 'sebab yang sah' })
+      expect(overridden.body.data.ok).toBe(false)
+      expect(overridden.body.data.overridden).toBeUndefined()
+      expect((await q(`select status from papers where id = $1`, [paper]))[0]?.status).toBe('draft')
+      expect((await auditRows(t.db, 'bijak.paper.published_override')).filter((r) => r.target_id === paper)).toHaveLength(0)
+
+      const valid = await fullPaper()
+      const ok = await admin.post(`/api/admin/papers/${valid.paper}/publish`)
+      expect(ok.body.data).toMatchObject({ ok: true, errors: [] })
+    })
+  })
+
+  describe('R1E2E-07 / AC-R1-16.2: Terbit needs a Disahkan contract', () => {
+    it('a paper on a Spec contract is refused with a line naming the contract; the audited override publishes it', async () => {
+      await q(`update blueprints set ${NOT_SERVING} where status = 'active' and kertas = 2 and subject_id = $1`, [subject])
+      const { paper } = await fullPaper()
+      const refused = await admin.post(`/api/admin/papers/${paper}/publish`)
+      expect(refused.status).toBe(200)
+      expect(refused.body.data.ok).toBe(false)
+      const line = (refused.body.data.errors as string[]).find((e) => e.startsWith('Kontrak Simulasi 1449/2'))
+      expect(line, JSON.stringify(refused.body.data.errors)).toMatch(/belum Disahkan \(status: Spec\); Terbit memerlukan kontrak Disahkan\.$/)
+      expect((await admin.get(`/api/admin/papers/${paper}/review`)).body.data.blockers).toContain(line)
+      expect((await q(`select status from papers where id = $1`, [paper]))[0]?.status).toBe('draft')
+
+      const ok = await admin.post(`/api/admin/papers/${paper}/publish`, { override: true, reason: 'Kontrak sedang menunggu pengesahan' })
+      expect(ok.body.data).toMatchObject({ ok: true, errors: [], overridden: [line] })
+      expect((await auditRows(t.db, 'bijak.paper.published_override')).filter((r) => r.target_id === paper)).toHaveLength(1)
+    })
+  })
+
+  describe('D93: a stimulus group with fewer than two members', () => {
+    it('is kept as a group in the section pool but not placeable; placed, it blocks Terbit and the override cannot lift it', async () => {
+      const stim = await admin.post('/api/stimuli', { kind: 'passage', label: 'Petikan satu', body: { ms: 'Petikan ujian dengan satu soalan.' } })
+      expect(stim.status, JSON.stringify(stim.body)).toBe(201)
+      const lone = await approved()
+      expect((await setPool(lone, ['MAT2-A'])).status).toBe(200)
+      // The bank refuses a one-member group (T32), so a legacy one is made on purpose: the second member leaves the group by SQL.
+      const other = await approved()
+      const group = await admin.post('/api/stimulus-groups', { label: 'Petikan satu', stimulusIds: [stim.body.data.id], questionIds: [lone, other] })
+      expect(group.status, JSON.stringify(group.body)).toBe(201)
+      const groupId = group.body.data.id as string
+      await q(`update questions set group_id = null, group_position = null where id = $1`, [other])
+
+      const paper = await newPaper()
+      const sections = await sectionsOf(paper)
+      const pool = (await admin.get(`/api/admin/papers/${paper}/sections/${sections[0]}/pool?q=${encodeURIComponent('hasil tambah')}&pageSize=100`)).body.data as { groupId?: string; stimulus?: unknown; questionIds: string[]; eligible: boolean; reasons: string[] }[]
+      const unit = pool.find((u) => u.questionIds.includes(lone))!
+      expect(unit).toMatchObject({ groupId, questionIds: [lone], eligible: false })
+      expect(unit.stimulus).toBeDefined()
+      expect(unit.reasons).toContain('Kumpulan perlu sekurang-kurangnya 2 soalan.')
+
+      expect((await place(paper, sections[0]!, lone)).status).toBe(201)
+      const review = (await admin.get(`/api/admin/papers/${paper}/review`)).body.data
+      expect(review.blockers).toContain('Kumpulan perlu sekurang-kurangnya 2 soalan.')
+      const pub = await admin.post(`/api/admin/papers/${paper}/publish`, { override: true, reason: 'sebab yang sah' })
+      expect(pub.body.data.ok).toBe(false)
+      expect(pub.body.data.errors).toContain('Kumpulan perlu sekurang-kurangnya 2 soalan.')
+      expect(pub.body.data.overridden).toBeUndefined()
     })
   })
 })

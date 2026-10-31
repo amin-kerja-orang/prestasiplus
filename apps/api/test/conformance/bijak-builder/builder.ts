@@ -196,7 +196,11 @@ export const bijakBuilderScenarios: Scenario[] = [
 
       const put = await admin.request('PUT', `/admin/papers/${id}`, { body: { sections: [{ id: String(sectionsOf(editor)[0]?.id), questionIds: chosen }] } })
       ctx.expectStatus(put, 200)
-      const publish = await admin.request('POST', `/admin/papers/${id}/publish`)
+      // AC-R1-16.2: the seeded Kontrak is Spec, so a plain Terbit is refused with a line naming the contract; the audited override publishes.
+      const plain = await admin.request('POST', `/admin/papers/${id}/publish`)
+      ctx.expectStatus(plain, 200)
+      ctx.check(dataOf(plain).ok === false && arr(dataOf(plain).errors).some((e) => String(e).startsWith('Kontrak Simulasi')), `a Spec contract must block Terbit: ${JSON.stringify(dataOf(plain))}`)
+      const publish = await admin.request('POST', `/admin/papers/${id}/publish`, { body: { override: true, reason: 'Kontrak sedang menunggu pengesahan' } })
       ctx.expectStatus(publish, 200)
       ctx.check(dataOf(publish).ok === true, `publish refused: ${JSON.stringify(dataOf(publish).errors)}`)
       ctx.check(arr(dataOf(publish).errors).length === 0, 'a successful publish carries no errors')
