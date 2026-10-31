@@ -2,7 +2,7 @@ import { BIJAK_BUILDER_MESSAGES as MSG, BijakBuilderEditorSchema, BijakBuilderPa
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { FakeBank, matBank } from './fakes'
-import { serveSeededBlueprints } from '../support/serve-blueprints'
+import { serveSeededBlueprints, setPocMarkBudgets } from '../support/serve-blueprints'
 import { ACCOUNTS, anonymous, bootBuilderApp, count, expectError, loginAs, type BuilderTestApp, type Client } from './helpers'
 
 type Method = 'get' | 'post' | 'put' | 'delete'
@@ -99,6 +99,7 @@ describe('generated papers are invisible to the builder', () => {
   beforeAll(async () => {
     // default PoC sources on both sides, so Jana Kertas can compose from the PoC bank
     t = await bootBuilderApp()
+    await setPocMarkBudgets(t.db)
     await serveSeededBlueprints(t.db)
     admin = await loginAs(t, ACCOUNTS.admin)
     const student = await loginAs(t, ACCOUNTS.student)

@@ -48,3 +48,6 @@ export const STRUCTURED_DEACTIVATE_AT = 3
 
 /** Notification `type` of a report status change (AC 11). */
 export const REPORT_NOTIFICATION_TYPE = 'question_report'
+
+/** Reason stored on the status event when an admin archives a question from its report row (R1-B17). */
+export const REPORT_ARCHIVE_REASON = 'Diarkibkan daripada laporan soalan'
