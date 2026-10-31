@@ -25,6 +25,10 @@ Three Claude accounts work in parallel. Each runs one **lead session** that keep
 
 Before every push: `git pull --rebase origin team/r1-board`, then push. Retry once on rejection. Because every file has one writer, a rebase never conflicts.
 
+## Cross-team requests
+
+Ask another team for work through `requests/` (git inbox), not chat: append a `REQ-<team>-<nnn>` row to your own `requests/from-<team>.md`; the addressed team answers in `requests/answers-<team>.md`. Every lead reads all request files each cycle. See [requests/README.md](requests/README.md).
+
 ## Task lifecycle (status values)
 
 `QUEUED → IN-PROGRESS → READY-FOR-REVIEW → CHANGES-REQUESTED ↔ READY-FOR-REVIEW → APPROVED → MERGED → VERIFIED-E2E`
