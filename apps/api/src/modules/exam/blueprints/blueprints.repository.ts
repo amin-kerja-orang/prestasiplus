@@ -1,10 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common'
 
 import { Prisma } from '../../../db/generated/client'
-import type { BlueprintEvidence, BlueprintVerification } from '../../../db/generated/client'
+import type { BlueprintEvidence, BlueprintVerification, Paper, PaperPlacement, PaperSection } from '../../../db/generated/client'
 import { PrismaService } from '../../../db/prisma.service'
 import type { UnitInfo } from './blueprint-standard'
 import type { BlueprintWithSections } from './blueprint-view'
+
+/** A published Kertas Pilihan with its sections and placements (read side of the O-2 "needs review" signal). */
+export type PublishedPilihan = Paper & { sections: (PaperSection & { placements: PaperPlacement[] })[] }
 
 export interface SubjectRef {
   id: bigint
@@ -42,6 +45,7 @@ export interface NewBlueprint {
   totalMarks: number
   notes: string | null
   subPartRamp: boolean
+  autoMarkable?: boolean | null
   kbatMarks: number | null
   levelShare: Prisma.InputJsonValue | null
   structureHash: string
@@ -266,6 +270,7 @@ export class BlueprintsRepository {
         referenceSheets: input.referenceSheets,
         notes: input.notes,
         subPartRamp: input.subPartRamp,
+        autoMarkable: input.autoMarkable ?? null,
         kbatMarks: input.kbatMarks,
         levelShare: jsonOrNull(input.levelShare),
         structureHash: input.structureHash,
@@ -360,6 +365,16 @@ export class BlueprintsRepository {
     const out = new Map<string, number>()
     for (const b of bps) out.set(pairKey(b), (out.get(pairKey(b)) ?? 0) + (byBlueprint.get(b.id) ?? 0))
     return out
+  }
+
+  /** Newest published Kertas Pilihan of a subject and kertas, with sections and placements (architecture 6.3a: newest 20). */
+  publishedPilihan(subjectId: bigint, kertas: number, take: number): Promise<PublishedPilihan[]> {
+    return this.db.paper.findMany({
+      where: { kind: 'pilihan', status: 'published', subjectId, kertas },
+      include: { sections: { orderBy: { position: 'asc' }, include: { placements: { orderBy: { position: 'asc' } } } } },
+      orderBy: [{ publishedAt: 'desc' }, { id: 'desc' }],
+      take,
+    })
   }
 
   /* ---------------------------------------------------------------------- evidence (BJS-09) */

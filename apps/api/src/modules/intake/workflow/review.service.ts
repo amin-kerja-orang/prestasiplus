@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 import {
   INTAKE_BLANK_ITEM_DEFAULTS,
+  INTAKE_GATE_MESSAGES,
   INTAKE_MESSAGES,
   IntakeBatchReviewSchema,
   intakeOpenState,
@@ -30,6 +31,7 @@ import type { TxClient } from '../../../db/client'
 import { Prisma } from '../../../db/generated/client'
 import { idFromString, idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
+import { FilesService } from '../../files'
 import { QuestionsRepository, QuestionsService } from '../../questions'
 import { isAdmin, parseId, visibleBatches } from '../files/intake-access'
 import { CurriculumFactsService } from './curriculum-facts'
@@ -53,6 +55,13 @@ const conflict = (message: string): ApiError => ApiError.of('CONFLICT', { messag
 const invalid = (field: string, message: string): ApiError => ApiError.of('VALIDATION_ERROR', { fields: { [field]: message } })
 const gateError = (issues: IntakeIssue[]): ApiError =>
   ApiError.of('VALIDATION_ERROR', { message: INTAKE_MESSAGES.gateFailed, details: { issues } })
+
+/** What one `bankGroupFor` call created, so a refused accept can remove it again. */
+interface MadeBankGroup {
+  fileToken?: string
+  stimulusId?: string
+  groupId?: string
+}
 
 const same = (a: unknown, b: unknown): boolean => JSON.stringify(a ?? null) === JSON.stringify(b ?? null)
 
@@ -86,6 +95,7 @@ export class IntakeReviewService {
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(QuestionsService) private readonly questions: QuestionsService,
     @Inject(QuestionsRepository) private readonly questionsRepo: QuestionsRepository,
+    @Inject(FilesService) private readonly files: FilesService,
     @Inject(CurriculumFactsService) private readonly curriculum: CurriculumFactsService,
     @Inject(ItemViews) private readonly views: ItemViews,
     @Inject(IntakeWorkflowConfig) private readonly config: IntakeWorkflowConfig,
@@ -500,10 +510,11 @@ export class IntakeReviewService {
 
     const ownerId = row.batch.ownerUserId === null ? auth.userId : idToString(row.batch.ownerUserId)
     const actor = { userId: ownerId, role: auth.active.role === 'admin' ? ('admin' as const) : ('teacher' as const) }
-    const groupId = row.stimulus ? await this.bankGroupFor(row, ownerId) : null
-
+    const made: MadeBankGroup = {}
+    let groupId: string | null = null
     let created
     try {
+      groupId = row.stimulus ? await this.bankGroupFor(row, ownerId, auth.mode !== null, made) : null
       // The kertas comes from the source paper (the paper builder reads it from the trailing digit of the paper code).
       const paper = row.batch.sourcePaperId === null ? null : await tx.sourcePaper.findUnique({ where: { id: row.batch.sourcePaperId }, select: { paperCode: true, kertas: true } })
       const kertas = kertasOfSourcePaper(paper)
@@ -522,6 +533,9 @@ export class IntakeReviewService {
         paperCode: paper?.paperCode && /\/[0-9]\s*$/.test(paper.paperCode) ? paper.paperCode : null,
       })
     } catch (err) {
+      // The bank stimulus, group and figure copy are written outside this transaction: a refused accept must not leave them behind
+      // (one orphan object per retry otherwise).
+      await this.discardMade(made)
       if (err instanceof ConvertError) throw gateError([{ itemId: idToString(row.id), where: err.where, message: err.message }])
       if (err instanceof ApiError && err.code === 'VALIDATION_ERROR' && err.fields) {
         throw gateError(Object.values(err.fields).map((message) => ({ itemId: idToString(row.id), where: `Soalan ${q.label}`, message })))
@@ -556,10 +570,11 @@ export class IntakeReviewService {
   /**
    * The bank stimulus group of an item's stimulus: the group of an already accepted item of the same stimulus, else a new
    * bank stimulus and group made from a SNAPSHOT of the intake stimulus (text, caption, alt, the stored crop; D6). Both are
-   * created through `QuestionsService`.
+   * created through `QuestionsService`. The crop is an `intake_figure` file (reviewers only); the bank stimulus gets its OWN
+   * `question_image` copy, so the figure follows the question-image read rule (admin and teacher, and a pupil only while the
+   * question is served) and survives the intake batch (R1-14.3).
    */
-  private async bankGroupFor(row: ItemRow, ownerId: string): Promise<string> {
-    void ownerId
+  private async bankGroupFor(row: ItemRow, ownerId: string, isTest: boolean, made: MadeBankGroup): Promise<string> {
     const sibling = await this.prisma.client.intakeItem.findFirst({
       where: { stimulusId: row.stimulusId, reviewState: 'accepted', questionId: { not: null } },
       orderBy: { id: 'asc' },
@@ -574,6 +589,14 @@ export class IntakeReviewService {
       s.figureId === null
         ? null
         : await this.prisma.client.intakeFigure.findUnique({ where: { id: s.figureId }, select: { cropFileId: true } })
+    let assetFileId: bigint | null = null
+    if (crop?.cropFileId) {
+      const cropped = await this.files.readStored(idToString(crop.cropFileId))
+      if (!cropped) throw invalid('stimulus', INTAKE_GATE_MESSAGES.figureNotResolved)
+      const stored = await this.files.storeManaged({ ownerUserId: ownerId, purpose: 'question_image', bytes: cropped.bytes, isTest })
+      made.fileToken = stored.publicId
+      assetFileId = idFromString(stored.id)
+    }
     const table = stimulusTableOf(s.tableData)
     const body = s.body ?? (table ? [table.head.join(' | '), ...table.rows.map((r) => r.join(' | '))].join('\n') : null)
     const stimulusId = await this.questions.createStimulus({
@@ -582,9 +605,24 @@ export class IntakeReviewService {
       bodyMs: body,
       bodyEn: null,
       altText: s.altText || null,
-      assetFileId: crop?.cropFileId ?? null,
+      assetFileId,
     })
-    return this.questions.createStimulusGroup({ label: s.label || null, scope: 'section', stimulusIds: [stimulusId], optionBank: [] })
+    made.stimulusId = stimulusId
+    const groupId = await this.questions.createStimulusGroup({ label: s.label || null, scope: 'section', stimulusIds: [stimulusId], optionBank: [] })
+    made.groupId = groupId
+    return groupId
+  }
+
+  /** Removes what `bankGroupFor` made in this call (group, stimulus, figure copy), newest first. Never throws: the original error is the answer. */
+  private async discardMade(made: MadeBankGroup): Promise<void> {
+    try {
+      if (made.groupId !== undefined) await this.prisma.client.stimulusGroup.delete({ where: { id: idFromString(made.groupId) } })
+      if (made.stimulusId !== undefined) await this.prisma.client.stimulus.delete({ where: { id: idFromString(made.stimulusId) } })
+    } catch {
+      // a row that is already gone, or one that is in use, stays; the file below is only removed when its stimulus is gone
+      return
+    }
+    if (made.fileToken !== undefined) await this.files.discard(made.fileToken, 'question_image')
   }
 
   // ---- bulk ----------------------------------------------------------------------------------------

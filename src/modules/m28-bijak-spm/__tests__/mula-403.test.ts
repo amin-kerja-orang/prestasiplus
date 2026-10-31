@@ -6,7 +6,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import { BANK, PAPERS } from '../data/registry'
 import PaperCoverPage from '../pages/PaperCoverPage.vue'
 import { BijakError } from '../server/errors'
-import { BijakServer, MemoryStorage, PAPER_UNAVAILABLE } from '../server/store'
+import { BijakServer, MemoryStorage, PAPER_UNAVAILABLE, RETRY_UNAVAILABLE } from '../server/store'
 
 const MSG = 'Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini.'
 
@@ -119,5 +119,35 @@ describe('mock server mirrors the API refusal', () => {
     } finally {
       sections.forEach((s, i) => (s.questionIds = ids[i]!))
     }
+  })
+})
+
+describe('H-C5 follow-ups', () => {
+  it('mock "Cuba Lagi" on a paper that became unavailable answers the 409 line, not a 403', async () => {
+    const paper = PAPERS[0]!
+    const s = new BijakServer({ storage: new MemoryStorage(), now: () => 1_800_000_000_000 })
+    const { attemptId } = await s.startAttempt(7, paper.id, 'latihan')
+    await s.submit(7, attemptId, { idempotencyKey: 'k1', changes: [] })
+    const qid = paper.sections[0]!.questionIds[0]!
+    const saved = BANK.questions.get(qid)!
+    BANK.questions.delete(qid)
+    try {
+      await expect(s.retryAttempt(7, attemptId)).rejects.toMatchObject({ code: 'bad_request', message: RETRY_UNAVAILABLE })
+    } finally {
+      BANK.questions.set(qid, saved)
+    }
+  })
+
+  it('the refusal sits right under the hero, above the resume choice (visible on a phone)', async () => {
+    server.findInProgress.mockResolvedValue({ attemptId: 'a1', mode: 'exam', title: 'Set 1', elapsedSeconds: 60, fresh: false })
+    server.startAttempt.mockRejectedValue(new BijakError('forbidden', MSG))
+    await mountCover()
+    ;(document.body.querySelector('[data-testid=restart]') as HTMLElement).click()
+    await flushPromises()
+    ;(document.body.querySelector('[data-testid=confirm-restart]') as HTMLElement).click()
+    await flushPromises()
+    const alert = document.body.querySelector('[data-testid=start-failure]')!
+    const choice = document.body.querySelector('[data-testid=resume-choice]')!
+    expect(alert.compareDocumentPosition(choice) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 })

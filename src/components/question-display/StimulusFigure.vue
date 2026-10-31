@@ -43,7 +43,7 @@ const isTable = computed(() => s.value.kind === 'table')
 /** A table with rows is a real table; an image-only table is a picture with the caption "Jadual". */
 const realTable = computed(() => isTable.value && !!s.value.table && s.value.table.rows.length > 0)
 const hasPicture = computed(
-  () => !isPassage.value && !realTable.value && !s.value.svg && !!s.value.src,
+  () => !isPassage.value && !realTable.value && !!s.value.src,
 )
 const caption = computed(() =>
   realTable.value ? s.value.caption : (s.value.caption ?? (s.value.title ? undefined : kindFallbackCaption[s.value.kind])),
@@ -119,19 +119,6 @@ function retry(): void {
           </tr>
         </tbody>
       </table>
-    </div>
-
-    <!-- inline SVG (bundled, follows the theme) -->
-    <div
-      v-else-if="stimulus.svg"
-      class="mx-auto w-full overflow-hidden rounded-xl bg-muted p-2 text-highlighted"
-      :class="maxHeight ? 'max-h-[60vh]' : ''"
-      role="img"
-      :aria-label="alt"
-      data-testid="stimulus-svg"
-    >
-      <!-- eslint-disable-next-line vue/no-v-html -- bundled seed SVG, not user input -->
-      <div aria-hidden="true" v-html="stimulus.svg" />
     </div>
 
     <!-- picture: reserved box, lazy, failure state -->
