@@ -4,6 +4,7 @@ import { IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
 import {
   QUESTION_STATUS_MESSAGE,
+  QuestionCognitiveLevelSchema,
   QuestionCurriculumTagSchema,
   QuestionEssayTopicSchema,
   QuestionKbatLevelSchema,
@@ -97,6 +98,8 @@ export const QuestionRowSchema = z
     complianceStatus: QuestionComplianceStatusSchema,
     aiVerified: z.boolean(),
     dskpTagged: z.boolean(),
+    /** R1-B05: DSKP complete (unit, SP, a TP and a cognitive level on every leaf). `false` is the badge "Belum ditanda DSKP". */
+    dskpComplete: z.boolean().optional(),
     sourceType: QuestionSourceTypeSchema.nullable(),
     sourceFile: z.string().nullable(),
     /** R1-H-A7: present only on an `essay_choice` (esei pilihan) question: its 2 to 6 topics. `questionType` stays `essay`. */
@@ -205,6 +208,14 @@ export const QuestionSchema = z
   .meta({ id: 'Question' })
 
 const DskpRef = z.object({ id: IdSchema, code: z.string(), description: z.string() })
+
+/** R1-B05: what is still missing for "DSKP complete", in the shape of the gate issues (`path` is the `fields` key, `step` the wizard step). */
+export const QuestionDskpStatusSchema = z
+  .object({
+    complete: z.boolean(),
+    issues: z.array(z.object({ path: z.string(), code: z.string(), message: z.string(), step: z.number().int().min(1).max(4) })),
+  })
+  .meta({ id: 'QuestionDskpStatus' })
 export const QuestionDetailSchema = QuestionSchema.omit({ createdBy: true })
   .extend({
     subject: Ref,
@@ -216,6 +227,8 @@ export const QuestionDetailSchema = QuestionSchema.omit({ createdBy: true })
         sp: DskpRef,
       })
       .nullable(),
+    /** R1-B05: DSKP completeness with the missing items (not the DSKP chain above, which is `dskp`). */
+    dskpStatus: QuestionDskpStatusSchema.optional(),
     createdBy: z.object({ id: IdSchema, name: z.string().nullable() }),
   })
   .meta({ id: 'QuestionDetail' })
@@ -291,6 +304,8 @@ const baseInput = z.object({
   tag: QuestionCurriculumTagSchema.optional(),
   /** V2 `Nombor soalan` (Studio Langkah 1); null clears it, omitted keeps it. */
   numberLabel: z.string().trim().max(32).nullable().optional(),
+  /** R1-B05: cognitive level of the single leaf of a flat question (a `parts` body carries it per leaf). */
+  cognitiveLevel: QuestionCognitiveLevelSchema.nullable().optional(),
   stimulusGroupId: IdSchema.nullable().optional(),
 })
 

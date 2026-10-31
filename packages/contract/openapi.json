@@ -31243,6 +31243,9 @@
                   "never"
                 ]
               },
+              "cognitiveLevel": {
+                "$ref": "#/components/schemas/QuestionCognitiveLevel"
+              },
               "kbat": {
                 "type": [
                   "string",
@@ -31356,6 +31359,9 @@
                   "after_submit",
                   "never"
                 ]
+              },
+              "cognitiveLevel": {
+                "$ref": "#/components/schemas/QuestionCognitiveLevel"
               },
               "kbat": {
                 "type": [
@@ -31474,6 +31480,9 @@
                   "never"
                 ]
               },
+              "cognitiveLevel": {
+                "$ref": "#/components/schemas/QuestionCognitiveLevel"
+              },
               "kbat": {
                 "type": [
                   "string",
@@ -31584,6 +31593,9 @@
                   "after_submit",
                   "never"
                 ]
+              },
+              "cognitiveLevel": {
+                "$ref": "#/components/schemas/QuestionCognitiveLevel"
               },
               "kbat": {
                 "type": [
@@ -31703,6 +31715,9 @@
                   "after_submit",
                   "never"
                 ]
+              },
+              "cognitiveLevel": {
+                "$ref": "#/components/schemas/QuestionCognitiveLevel"
               },
               "kbat": {
                 "type": [
@@ -31853,6 +31868,9 @@
                   "after_submit",
                   "never"
                 ]
+              },
+              "cognitiveLevel": {
+                "$ref": "#/components/schemas/QuestionCognitiveLevel"
               },
               "kbat": {
                 "type": [
@@ -32081,6 +32099,9 @@
                   "after_submit",
                   "never"
                 ]
+              },
+              "cognitiveLevel": {
+                "$ref": "#/components/schemas/QuestionCognitiveLevel"
               },
               "kbat": {
                 "type": [
@@ -32435,6 +32456,9 @@
                   "never"
                 ]
               },
+              "cognitiveLevel": {
+                "$ref": "#/components/schemas/QuestionCognitiveLevel"
+              },
               "kbat": {
                 "type": [
                   "string",
@@ -32663,6 +32687,9 @@
                   "never"
                 ]
               },
+              "cognitiveLevel": {
+                "$ref": "#/components/schemas/QuestionCognitiveLevel"
+              },
               "kbat": {
                 "type": [
                   "string",
@@ -32773,6 +32800,9 @@
                   "after_submit",
                   "never"
                 ]
+              },
+              "cognitiveLevel": {
+                "$ref": "#/components/schemas/QuestionCognitiveLevel"
               },
               "kbat": {
                 "type": [
@@ -33114,6 +33144,21 @@
           }
         ]
       },
+      "QuestionCognitiveLevel": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "enum": [
+          "mengingat",
+          "memahami",
+          "mengaplikasi",
+          "menganalisis",
+          "menilai",
+          "mencipta",
+          null
+        ]
+      },
       "QuestionOption": {
         "type": "object",
         "properties": {
@@ -33186,6 +33231,9 @@
                   "after_submit",
                   "never"
                 ]
+              },
+              "cognitiveLevel": {
+                "$ref": "#/components/schemas/QuestionCognitiveLevel"
               },
               "kbat": {
                 "type": [
@@ -33300,6 +33348,9 @@
                   "after_submit",
                   "never"
                 ]
+              },
+              "cognitiveLevel": {
+                "$ref": "#/components/schemas/QuestionCognitiveLevel"
               },
               "kbat": {
                 "type": [
@@ -33418,6 +33469,9 @@
                   "never"
                 ]
               },
+              "cognitiveLevel": {
+                "$ref": "#/components/schemas/QuestionCognitiveLevel"
+              },
               "kbat": {
                 "type": [
                   "string",
@@ -33528,6 +33582,9 @@
                   "after_submit",
                   "never"
                 ]
+              },
+              "cognitiveLevel": {
+                "$ref": "#/components/schemas/QuestionCognitiveLevel"
               },
               "kbat": {
                 "type": [
@@ -33647,6 +33704,9 @@
                   "after_submit",
                   "never"
                 ]
+              },
+              "cognitiveLevel": {
+                "$ref": "#/components/schemas/QuestionCognitiveLevel"
               },
               "kbat": {
                 "type": [
@@ -33797,6 +33857,9 @@
                   "after_submit",
                   "never"
                 ]
+              },
+              "cognitiveLevel": {
+                "$ref": "#/components/schemas/QuestionCognitiveLevel"
               },
               "kbat": {
                 "type": [
@@ -34025,6 +34088,9 @@
                   "after_submit",
                   "never"
                 ]
+              },
+              "cognitiveLevel": {
+                "$ref": "#/components/schemas/QuestionCognitiveLevel"
               },
               "kbat": {
                 "type": [
@@ -34379,6 +34445,9 @@
                   "never"
                 ]
               },
+              "cognitiveLevel": {
+                "$ref": "#/components/schemas/QuestionCognitiveLevel"
+              },
               "kbat": {
                 "type": [
                   "string",
@@ -34607,6 +34676,9 @@
                   "never"
                 ]
               },
+              "cognitiveLevel": {
+                "$ref": "#/components/schemas/QuestionCognitiveLevel"
+              },
               "kbat": {
                 "type": [
                   "string",
@@ -34717,6 +34789,9 @@
                   "after_submit",
                   "never"
                 ]
+              },
+              "cognitiveLevel": {
+                "$ref": "#/components/schemas/QuestionCognitiveLevel"
               },
               "kbat": {
                 "type": [
@@ -35094,6 +35169,9 @@
                             "never"
                           ]
                         },
+                        "cognitiveLevel": {
+                          "$ref": "#/components/schemas/QuestionCognitiveLevel"
+                        },
                         "kbat": {
                           "type": [
                             "string",
@@ -35207,6 +35285,9 @@
                             "after_submit",
                             "never"
                           ]
+                        },
+                        "cognitiveLevel": {
+                          "$ref": "#/components/schemas/QuestionCognitiveLevel"
                         },
                         "kbat": {
                           "type": [
@@ -35325,6 +35406,9 @@
                             "never"
                           ]
                         },
+                        "cognitiveLevel": {
+                          "$ref": "#/components/schemas/QuestionCognitiveLevel"
+                        },
                         "kbat": {
                           "type": [
                             "string",
@@ -35435,6 +35519,9 @@
                             "after_submit",
                             "never"
                           ]
+                        },
+                        "cognitiveLevel": {
+                          "$ref": "#/components/schemas/QuestionCognitiveLevel"
                         },
                         "kbat": {
                           "type": [
@@ -35554,6 +35641,9 @@
                             "after_submit",
                             "never"
                           ]
+                        },
+                        "cognitiveLevel": {
+                          "$ref": "#/components/schemas/QuestionCognitiveLevel"
                         },
                         "kbat": {
                           "type": [
@@ -35704,6 +35794,9 @@
                             "after_submit",
                             "never"
                           ]
+                        },
+                        "cognitiveLevel": {
+                          "$ref": "#/components/schemas/QuestionCognitiveLevel"
                         },
                         "kbat": {
                           "type": [
@@ -35932,6 +36025,9 @@
                             "after_submit",
                             "never"
                           ]
+                        },
+                        "cognitiveLevel": {
+                          "$ref": "#/components/schemas/QuestionCognitiveLevel"
                         },
                         "kbat": {
                           "type": [
@@ -36286,6 +36382,9 @@
                             "never"
                           ]
                         },
+                        "cognitiveLevel": {
+                          "$ref": "#/components/schemas/QuestionCognitiveLevel"
+                        },
                         "kbat": {
                           "type": [
                             "string",
@@ -36514,6 +36613,9 @@
                             "never"
                           ]
                         },
+                        "cognitiveLevel": {
+                          "$ref": "#/components/schemas/QuestionCognitiveLevel"
+                        },
                         "kbat": {
                           "type": [
                             "string",
@@ -36624,6 +36726,9 @@
                             "after_submit",
                             "never"
                           ]
+                        },
+                        "cognitiveLevel": {
+                          "$ref": "#/components/schemas/QuestionCognitiveLevel"
                         },
                         "kbat": {
                           "type": [
@@ -38625,6 +38730,9 @@
           "dskpTagged": {
             "type": "boolean"
           },
+          "dskpComplete": {
+            "type": "boolean"
+          },
           "sourceType": {
             "$ref": "#/components/schemas/QuestionSourceType"
           },
@@ -39545,6 +39653,9 @@
               "sp"
             ]
           },
+          "dskpStatus": {
+            "$ref": "#/components/schemas/QuestionDskpStatus"
+          },
           "createdBy": {
             "type": "object",
             "properties": {
@@ -39607,6 +39718,46 @@
           "level",
           "dskp",
           "createdBy"
+        ]
+      },
+      "QuestionDskpStatus": {
+        "type": "object",
+        "properties": {
+          "complete": {
+            "type": "boolean"
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "step": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 4
+                }
+              },
+              "required": [
+                "path",
+                "code",
+                "message",
+                "step"
+              ]
+            }
+          }
+        },
+        "required": [
+          "complete",
+          "issues"
         ]
       },
       "QuestionCreateRequest": {
@@ -39762,6 +39913,9 @@
               "null"
             ],
             "maxLength": 32
+          },
+          "cognitiveLevel": {
+            "$ref": "#/components/schemas/QuestionCognitiveLevel"
           },
           "stimulusGroupId": {
             "allOf": [
@@ -39944,6 +40098,9 @@
               "null"
             ],
             "maxLength": 32
+          },
+          "cognitiveLevel": {
+            "$ref": "#/components/schemas/QuestionCognitiveLevel"
           },
           "stimulusGroupId": {
             "allOf": [
@@ -41645,6 +41802,143 @@
         "required": [
           "deleted",
           "releasedQuestionIds"
+        ]
+      },
+      "QuestionGateName": {
+        "type": "string",
+        "enum": [
+          "submit",
+          "approve"
+        ]
+      },
+      "QuestionGateIssue": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "The `fields` key: `unitId`, `kertas`, `parts.b.cognitiveLevel`, ..."
+          },
+          "code": {
+            "type": "string",
+            "description": "Stable machine code, for example LEAF_COGNITIVE_LEVEL_MISSING, KERTAS_MISSING, UNIT_MISSING."
+          },
+          "message": {
+            "type": "string",
+            "description": "BM text, for example \"Bahagian (b) belum ada aras pemikiran.\""
+          },
+          "step": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4
+          }
+        },
+        "required": [
+          "path",
+          "code",
+          "message",
+          "step"
+        ]
+      },
+      "QuestionGateCheck": {
+        "type": "object",
+        "properties": {
+          "gate": {
+            "$ref": "#/components/schemas/QuestionGateName"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionGateIssue"
+            }
+          }
+        },
+        "required": [
+          "gate",
+          "ok",
+          "issues"
+        ],
+        "description": "No state change. `issues` is empty when `ok`; its length drives the \"· n belum lengkap\" counter."
+      },
+      "QuestionStatusRequest": {
+        "type": "object",
+        "properties": {
+          "to": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "review",
+              "approved",
+              "archived"
+            ]
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "to"
+        ],
+        "additionalProperties": false
+      },
+      "QuestionStatusResult": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "$ref": "#/components/schemas/Question"
+          },
+          "servability": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "questionId": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "versionNo": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "description": "The live version evaluated; null while no version is live."
+              },
+              "activities": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ServabilityActivityResult"
+                }
+              },
+              "servedCount": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "total": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "questionId",
+              "versionNo",
+              "activities",
+              "servedCount",
+              "total"
+            ],
+            "additionalProperties": false,
+            "description": "Where the question is visible to pupils; present when `to` is `approved`, else null."
+          }
+        },
+        "required": [
+          "question",
+          "servability"
         ]
       },
       "MissionType": {
@@ -67059,6 +67353,18 @@
           "wordRange": {
             "$ref": "#/components/schemas/IntakeWordRange"
           },
+          "cognitiveLevel": {
+            "type": "string",
+            "enum": [
+              "mengingat",
+              "memahami",
+              "mengaplikasi",
+              "menganalisis",
+              "menilai",
+              "mencipta"
+            ],
+            "description": "R1-B05: cognitive level of this part, set by the reviewer; carried to the bank leaf on accept. Mandatory for an SPM-bound approval."
+          },
           "lead": {
             "type": "array",
             "items": {
@@ -67171,6 +67477,18 @@
           },
           "wordRange": {
             "$ref": "#/components/schemas/IntakeWordRange"
+          },
+          "cognitiveLevel": {
+            "type": "string",
+            "enum": [
+              "mengingat",
+              "memahami",
+              "mengaplikasi",
+              "menganalisis",
+              "menilai",
+              "mencipta"
+            ],
+            "description": "R1-B05: cognitive level of a question without parts (an MCQ or a single-leaf question); a structured question carries it per part."
           },
           "parts": {
             "type": "array",
@@ -68233,6 +68551,18 @@
           "wordRange": {
             "$ref": "#/components/schemas/IntakeWordRange"
           },
+          "cognitiveLevel": {
+            "type": "string",
+            "enum": [
+              "mengingat",
+              "memahami",
+              "mengaplikasi",
+              "menganalisis",
+              "menilai",
+              "mencipta"
+            ],
+            "description": "R1-B05: cognitive level of a question without parts (an MCQ or a single-leaf question); a structured question carries it per part."
+          },
           "parts": {
             "type": "array",
             "items": {
@@ -69192,6 +69522,9 @@
                 ]
               }
             ]
+          },
+          "cognitiveLevel": {
+            "$ref": "#/components/schemas/QuestionCognitiveLevel"
           },
           "parts": {
             "type": "array",
@@ -101642,7 +101975,7 @@
           "questions"
         ],
         "summary": "Apply one lifecycle action to many questions",
-        "description": "Unknown ids are skipped silently; duplicates count once. Flash: \"<n> soalan berjaya dikemaskini.\" Transition rules and \"only Admin Pusat publishes\" belong to BE-10; forbidden transitions and their error are BE-10 to define.",
+        "description": "Unknown ids are skipped silently; duplicates count once. Flash: \"<n> soalan berjaya dikemaskini.\" Transition rules and \"only Admin Pusat publishes\" belong to BE-10; forbidden transitions and their error are BE-10 to define. `approved` runs the merged approve gate (ADR-0027: tag, keys, rights not \"belum jelas\", duplicates, DSKP-complete for an SPM-bound question) per id, the same as `POST /questions/{id}/status`: a refused id is a `failed[]` entry (VALIDATION_ERROR with the gate `fields`), the others are applied. `POST /questions` with `status: approved` runs the same gate (422, nothing stored).",
         "parameters": [
           {
             "schema": {
@@ -103905,6 +104238,195 @@
           },
           "422": {
             "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/questions/{id}/gate-check": {
+      "get": {
+        "tags": [
+          "questions"
+        ],
+        "summary": "Check a gate without changing the question",
+        "description": "`gate=approve` (default) is the merged approve gate (\"Terbitkan\"): marks, one key per MCQ, a key for every other mode, images resolved, unit, SP and TP chosen, copyright, no open duplicate; and for an SPM-bound question (a subject of the SPM catalogue at Tingkatan 4 or 5) a cognitive level on every leaf (\"Bahagian (b) belum ada aras pemikiran.\") and the kertas. `gate=submit` is the draft-to-review gate. Legacy questions already approved are never re-checked (D80 DEC-2): the gate runs only on a new approval.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/QuestionGateName"
+            },
+            "required": false,
+            "name": "gate",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The issues, in reading order.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/QuestionGateCheck"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Admin Pusat, or the owning Guru for their own question), or CSRF_INVALID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id, or another Guru's question.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/questions/{id}/status": {
+      "post": {
+        "tags": [
+          "questions"
+        ],
+        "summary": "Move a question along the lifecycle",
+        "description": "Draft to review (the owning Guru or Admin), review to approved (\"Terbitkan\", Admin Pusat; runs the merged approve gate), approved to archived, review to draft and archived to draft (Admin; a reason is required where the table says so). `approved` is the only servable status, so the answer carries the ServabilityReport of an approval. Refusals: 409 for a pair outside the table, 422 with `fields` keyed by path (the gate issues) and `details.gate`, 403 for a role that may not move it.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuestionStatusRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The question after the change.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/QuestionStatusResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Admin Pusat, or the owning Guru for their own question), or CSRF_INVALID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id, or another Guru's question.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the pair is outside the lifecycle table.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: the gate failed (`fields` keyed by path, `details.gate`), or a reason / status is missing or unknown.",
             "content": {
               "application/json": {
                 "schema": {

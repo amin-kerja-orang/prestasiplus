@@ -1,6 +1,7 @@
 import { forwardRef, Inject, Injectable } from '@nestjs/common'
 import {
   QUESTION_WORKFLOW_STATUSES,
+  type QuestionGateIssue,
   questionWorkflowTransitionRule,
   type QuestionWorkflowActor,
   type QuestionWorkflowStatus,
@@ -11,6 +12,8 @@ import { PrismaService } from '../../../../db/prisma.service'
 import { assertCanActOn, isAdminPusat, isGuru, transitionActorOf, type WorkflowActor } from '../actor'
 import { QuestionReportsService } from '../reports'
 import { QuestionWorkflowPorts, type QuestionBankPort, type QuestionGateData, type QuestionStatusInfo } from '../ports'
+import { transitionConflict } from '../../errors'
+import { gateIssuesOf } from './gate-issues'
 import { GATE_SUMMARY, GATES, type GateFields, type GateName } from './gates'
 
 /** The takedown touches every question of a paper: sized like BE-09's bulk work. */
@@ -97,13 +100,28 @@ export class LifecycleService {
       const reason = options.reason?.trim() ? options.reason.trim() : null
 
       const rule = questionWorkflowTransitionRule(from, to)
-      if (!rule) throw ApiError.of('CONFLICT')
+      if (!rule) throw transitionConflict(from, to)
       if (!rule.actors.includes(kind)) throw ApiError.of('FORBIDDEN')
       if (rule.reasonRequired && reason === null) {
         throw ApiError.of('VALIDATION_ERROR', { message: REASON_REQUIRED_MESSAGE, fields: { reason: REASON_REQUIRED_MESSAGE } })
       }
       return this.apply(info, actor, [{ from, to, gate: rule.gate, reason }])
     })
+  }
+
+  /**
+   * The gate as a read (R1-B05): the issues the next transition through `gate` would answer 422 with, and no state change. A Guru may
+   * check only a question they own (404 otherwise, like every Guru route).
+   */
+  async gateCheck(questionId: string, gate: GateName, actor: WorkflowActor): Promise<{ gate: GateName; ok: boolean; issues: QuestionGateIssue[] }> {
+    this.roleKind(actor)
+    const info = await this.bank.getStatus(questionId)
+    if (!info) throw ApiError.of('NOT_FOUND')
+    assertCanActOn(actor, info.createdById)
+    const data = await this.bank.getForGates(questionId)
+    if (!data) throw ApiError.of('NOT_FOUND')
+    const issues = gateIssuesOf(GATES[gate](data))
+    return { gate, ok: issues.length === 0, issues }
   }
 
   /**
