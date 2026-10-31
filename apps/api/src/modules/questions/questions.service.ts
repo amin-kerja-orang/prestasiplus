@@ -925,11 +925,16 @@ export class QuestionsService {
   private async detail(record: QuestionRecord): Promise<QuestionDetailView> {
     const view = await this.viewOf(record)
     const creator = record.createdById ? await this.users.get(record.createdById) : null
+    const stimulusGroup = record.groupId ? await this.repo.groupOf(record.id) : null
+    // The pictures of the group's stimuli are named by public token too (one form for the Studio, R1-T32).
+    const assetIds = (stimulusGroup?.stimuli ?? []).flatMap((s) => (s.assetFileId === null ? [] : [s.assetFileId]))
+    const assetTokens = assetIds.length === 0 ? new Map<string, string>() : await this.files.publicIdsOf(assetIds)
     return {
       ...view,
+      imageTokens: { ...view.imageTokens, ...Object.fromEntries(assetTokens) },
       dskp: await this.dskpOf(record.version.spIds[0]),
       createdByName: creator?.name ?? null,
-      stimulusGroup: record.groupId ? await this.repo.groupOf(record.id) : null,
+      stimulusGroup,
     }
   }
 

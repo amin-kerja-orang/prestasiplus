@@ -235,6 +235,22 @@ describe('stimulus and stimulus group API (admin, real database)', () => {
       }
     })
 
+    it('the Studio sees one image-id form: the group read, the stimulus read and the question detail all name the picture by its public token', async () => {
+      const png = await upload()
+      const pic = await stimulus({ kind: 'diagram', imageFileId: png, body: undefined, alt: 'Rajah' })
+      expect(pic.imageId).toBe(png)
+      const [q1, q2] = [await question(), await question()] as [string, string]
+      const g = await group([pic.id], [q1, q2])
+      expect(g.stimuli[0]!.imageId).toBe(png)
+      expect((await admin.get(`/api/stimuli/${pic.id}`)).body.data.imageId).toBe(png)
+      for (const q of [q1, q2]) {
+        const detail = await admin.get(`/api/questions/${q}`)
+        expect(detail.body.data.stimulusGroup.stimuli[0].imageId).toBe(png)
+      }
+      // and the token downloads for the admin
+      expect((await admin.get(`/api/files/${png}`)).status).toBe(200)
+    })
+
     it('refuses bad stimulus and member lists with a BM message on the right field', async () => {
       const [s1, s2, s3, s4] = [await stimulus(), await stimulus(), await stimulus(), await stimulus()] as [{ id: string }, { id: string }, { id: string }, { id: string }]
       const [q1, q2, q3] = [await question(), await question(), await question()] as [string, string, string]
