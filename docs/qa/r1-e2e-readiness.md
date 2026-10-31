@@ -1,59 +1,67 @@
 # R1 E2E readiness map (H-A23)
 
-Date: 2026-10-31. Branch `r1/ha23-e2e-readiness`, off `feature/v3-bijak-r1` at 823d8dfb (BASE-19). Docs only; nothing was run.
+Date: 2026-10-31, refreshed 2026-11-01 against BASE-60 (`a3e92b06`). Branch `r1/ha23-e2e-readiness`. First written off BASE-19 (823d8dfb). Docs only; nothing was run.
 
 Question: what must be merged so that B4 (T23) can run the whole R1 acceptance flow on the real stack, and in which order?
 
-Sources: `docs/team/status/B4.md`, `MERGE-LOG.md`, `BOARD.md`, `requests/*.md` and the lane status files on `origin/team/r1-board`; the T23 baseline report `docs/qa/r1-e2e-baseline-2026-10-31.md` on `origin/r1/t23-e2e`; my admin and student parity checks (H-A19, H-A20, H-A22); `docs/qa/r1-backend-ac-coverage.md` (H-A17). Branch heads are the heads on origin when this was written.
+**Merge order authority.** The order of merges is decided by B1 and recorded in MERGE-LOG, and by the stacked order agreed in C-POLICY-2 (BOARD.md on `origin/team/r1-board`, accepted by the user). This page no longer proposes an order of its own: section 4 only restates that order and lists what is still unmerged. The step tables in section 3 were written on BASE-19; each has a "Refresh at BASE-60" line that replaces its provider/state cells where they changed.
 
-Method for conflicts: `git merge-tree --write-tree` between BASE-19 and each branch, and in a chain (objects only, no checkout, no working-tree change). A conflict listed here is a textual conflict on today's heads. It says nothing about test results; B1 re-runs the gates on the real merge.
+Sources: `docs/team/status/B1.md`, `B2.md`, `B2-C.md`, `B4.md`, `MERGE-LOG.md`, `BOARD.md` and `requests/*.md` on `origin/team/r1-board`; the T23 reports on `origin/r1/t23-e2e` (latest `docs/qa/r1-e2e-2026-11-01-base58.md`, cycle 15); my admin and student parity checks (H-A19, H-A20, H-A22); `docs/qa/r1-backend-ac-coverage.md` (H-A17).
+
+Method for conflicts: `git merge-tree --write-tree` of each unmerged head against BASE-60 (objects only, no checkout). A conflict listed here is a textual conflict on today's heads. It says nothing about test results; B1 re-runs the gates on the real merge.
 
 ## 1. Result in short
 
-- T23 last ran on BASE-1 (51 pass, 27 fail, 6 skip). BASE-19 already holds the fix or the cause-fix for several baseline bugs: R1E2E-01 (subject codes), R1E2E-08 (T04 lifecycle, approved is served), the T03 bridge, T25/T07/T32 (stimuli, groups, essay_choice), T28 (rewards), T35 (Arkib). Re-running now would change the picture, but would still stop at steps 2 to 4.
-- Steps 5 (pupil), 6 (Databank, Latih Tubi SPM, Bab) and most of 7 work on BASE-19 code. The Mula 403 on an image question (R1E2E-05) is fixed on a branch, not in base.
-- Steps 1 to 4 (admin side) need these unmerged units: T29 and T33 (DSKP approve gate), T34 (Terbit gates and override), T10 (Set Builder UI), T13 and t13b (Studio, status buttons), plus T26 (seed).
-- **Smallest set** (section 5): T26 via `r1/b1-e2e-off-poc`, `r1/e2e05b-own-stimuli`, T29, T33, T34, T10, T13, t13b, T30 and hc4. That is 10 merges. It also needs 3 owner actions (BASE merges) because T33, T34 and t13b conflict today.
-- **No branch at all** (section 6): R1E2E-02 DSKP picker, R1E2E-04 legacy "Hantar untuk Semakan", the pupil Lapor control, the T34 follow-up (structured blockers, `canOverride`), H-C1 Bab empty state, a playable structured paper for e2e after T36, and T43/T44/T47/T48/T49.
+- BASE-60 holds most of what the first version of this page listed as missing: T26 and `b1-e2e-off-poc` (BASE-24/25), T29 (BASE-26), T33 with the DSKP approve gate (BASE-27), T30 with R1E2E-05b and servability-own-stimuli (BASE-28), T13 / T13b / T13c Studio (BASE-22, 53, 55, 59), the Kandungan SPM hub (BASE-45), the intake DSKP picker (REQ-B-001, BASE-47) and the detail-page submit (REQ-B-002, BASE-48), T11/T12 Kuiz (BASE-49, 58), T42 part 1 with migration 0103 (BASE-41).
+- T23 cycle 15 on BASE-58 still failed S1h (R1E2E-17), S2e (R1E2E-10), S3a (T10 not in base), S3c/S3d (R1E2E-13), B-02 (R1E2E-14); S4a/S4a2 were skipped or blocked (`docs/team/status/B4.md`). Those results are B4's, not re-derived here.
+- **Still unmerged on the admin path:** T34 (builder review and override, B2 CHANGES-REQUESTED, A3 fixing) and everything stacked on it: T31, REQ-A-008, T48 (migration 0104), T43/T43b, T10 `f08-builder-ui` and `hc-builder-parity`. Per C-POLICY-2 and B1 cycle 29, T10 and hc-builder-parity wait for T34.
+- Also unmerged: T36 (B2 CHANGES-REQUESTED, REQ-B-029), H-A13 then H-C4, H-C8 (A4 ack on REQ-C-022), T38 then T40, T44 with H-A15 and Kontrak parity (T44 CHANGES-REQUESTED), T42b, T26b (X1 lead decision), the pupil Lapor control (held, REQ-B-031).
+- Section 6 lists what had no branch on BASE-19 and what happened to each.
 
-## 2. Unit table
+## 2. Unit table (refreshed at BASE-60)
 
-"Contains BASE-19" says whether the head already includes 823d8dfb. "Alone vs BASE-19" is the virtual merge of the head with base. Verdicts are the last ones recorded by B1/B2/B3 on the board; a moved head means the delta is not reviewed yet.
+"In base" shows the MERGE-LOG number. "Alone vs BASE-60" is the virtual merge of the current head with base. "State on the board" is the last verdict recorded by B1/B2/B3 in `status/*.md`; a head that moved after the verdict means the delta is not reviewed yet.
 
-| Unit | Branch | Head | In base | Contains BASE-19 | Alone vs BASE-19 | Last verdict on board |
-|---|---|---|---|---|---|---|
-| T26 e2e seed | `r1/t26-e2e-seed` | 510f085b | no | no | clean | B2 Approve, B3 Pass; X1 MAJOR with H-A15 (see 4.3) |
-| REQ-A-001 CI off PoC | `r1/b1-e2e-off-poc` | b209b4ff | no | no (has BASE-10) | clean | Approve with Minors, Minors closed; contains T26; "merge after or with T26" |
-| T36 remove PoC | `r1/t36-remove-poc` | 40d4851d | no | no | conflict: `test/bijak-papers/generate.spec.ts` (and `bijak-integration/poc-flag.spec.ts` after T29..) | B3 Pass; B2 review open |
-| R1E2E-05 + 05b | `r1/e2e05b-own-stimuli` (contains `r1/e2e05-stem-image` 00cec26f) | 57e7feee | no | yes | clean (00cec26f alone conflicts in `be09-mapping.ts`) | 05: Approve with Minors; 05b: not listed on the board |
-| T29 servability | `r1/t29-servability` | c53e655d | no | yes | clean | Approve @10da0f3f; moved |
-| T30 servability reads | `r1/t30-servability-reads` | 09d53c56 | no | yes | clean | Changes requested @f2eeec7d (2 MAJOR); moved, re-review |
-| T33 leaf tags, approve gate, status route | `r1/t33-leaf-tags` | 276a6622 | no | no | conflict: `questions/http/views.ts`, `workflow/lifecycle/lifecycle.service.ts` (+ `questions.module.ts`, `questions.repository.ts` after T29) | B2 Approve (after T29), B3 Pass; migration 0102 |
-| T34 builder review, override | `r1/t34-builder-review` | e363fe51 | no | no | conflict: `questions/questions.module.ts` | Changes requested (override lifts structural tier); B2 findings fixed in e363fe51, re-review open |
-| T31 builder wire | `r1/t31-builder-wire` | 5ab47b09 | no | BASE-17 | clean alone (contains T34 e363fe51); conflict `questions.module.ts` after T29/T30 | Changes requested at an older head |
-| T10 Set Builder, Semak Kertas (+F09) | `r1/f08-builder-ui` | 9aa080d5 | no | no | clean | Approve with Minors @e1546909; "after T34"; head moved (F09 V2 parity commits) |
-| T13 Studio create/edit, groups | `r1/t13-studio-groups` | 114173c9 | no | BASE-14 | clean alone; conflict `questions.module.ts` after T29/T30 | B3 Pass; B2 re-review of rebuilt T13 open |
-| t13b Studio list, status buttons | `r1/t13b-studio-list` | d8a6596d | no | BASE-14 | conflict: `lifecycle.service.ts` (T35) | not reviewed; in progress |
-| hc-intake-parity | `r1/hc-intake-parity` | eaef3360 | no | no | clean; docs conflict (design doc) after others | READY, not reviewed |
-| hc-kontrak-parity | `r1/hc-kontrak-parity` | 08474528 | no | no | clean | wip (tsc, eslint pending) |
-| hc-kandungan-hub | `r1/hc-kandungan-hub` | b2424eb0 | no | BASE-14 | clean | wip (one lane test pending) |
-| H-A13 archived paper | `r1/ha13-archived-paper` | d51a4abf | no | no | clean | Approve with Minors; needs `npm run contract:emit` |
-| T11 Kuiz API follow-up | `r1/b16-kuiz` | 97e6c3df | no | yes | clean | Approve with Minors @dafc435f; moved |
-| T12 Kuiz FE | `r1/f12-kuiz` | b38d2a0b | no | yes | clean | Approve with Minors @9e7cb8fb; moved |
-| H-C8 Kuiz stimuli | `r1/hc8-kuiz-stimuli` | 7ac922a7 | no | no | clean | READY |
-| H-C7 own stimuli above the stem | `r1/hc7-own-stimuli` | 786d3e4d | no | BASE-14 | clean | READY, merge after R1E2E-05b |
-| H-C5 Mula refusal text | `r1/hc5-mula-403` | fc54afc8 | no | no | clean | READY |
-| H-C4 Arkib button | `r1/hc4-report-arkib` | b458c8f3 | no | BASE-14 | clean | READY, merge after T35 (now in base) |
-| H-C3 Esei pilihan | `r1/hc3-essay-choice-view` | 396961a7 | no | BASE-14 | clean | READY, after H-A7 (now in base) |
-| T14 student bugs | `r1/t14-student-bugs` | 1903b713 | no | BASE-14 | clean | Approve @4b033de3; head moved |
-| T15 BM copy | `r1/t15-bm-copy` | 09eabe2e | no | BASE-14 | clean | Approve @dbf7d81e; head moved |
-| T38 self-mark reward | `r1/t38-selfmark-reward` | 662e602f | no | BASE-17 | clean | READY |
-| T42 report paper (migration 0103) | `r1/t42-reports-intake-acs` | d1210e96 | no | yes | clean | part 1 READY |
-| T42b intake figure crop | `r1/t42b-intake-acs` | a9c6467d | no | no | conflict: `intake/workflow/review.service.ts` after the others | in progress |
-| H-A15 evidence origin filter | `r1/ha15-blueprint-evidence` | 779c23f9 | no | no | clean | Approve; X1 MAJOR with T26 |
-| T23 E2E | `r1/t23-e2e` | 4232dc19 | no | BASE-1 | n/a | baseline only |
+| Unit | Branch | Head | In base | Alone vs BASE-60 | State on the board |
+|---|---|---|---|---|---|
+| T26 e2e seed | `r1/t26-e2e-seed` | d474227d | **BASE-24** | merged | merged |
+| REQ-A-001 CI off PoC | `r1/b1-e2e-off-poc` | b209b4ff | **BASE-25** | merged | merged |
+| T29 servability | `r1/t29-servability` | c53e655d | **BASE-26** | merged | merged |
+| T30 servability reads (with 05b and servability-own-stimuli) | `r1/t30-servability-reads` | 409df4bf | **BASE-28** | merged | merged |
+| T33 leaf tags, approve gate, status route | `r1/t33-leaf-tags` | 95cea5be | **BASE-27** | merged | merged |
+| T13 Studio create/edit, groups | `r1/t13-studio-groups` | cc339b4b | **BASE-53** | merged | merged |
+| T13b Studio list, status buttons | `r1/t13b-studio-list` | 40b0fa93 | **BASE-55** | merged | merged |
+| hc-intake-parity | `r1/hc-intake-parity` | c4f4a7c1 | **BASE-54** | merged | merged |
+| hc-kandungan-hub (R1-21) | `r1/hc-kandungan-hub` | cdcb2171 | **BASE-45** | merged | merged |
+| T11 Kuiz API | `r1/b16-kuiz` | f9c2843f | **BASE-49** | merged | merged |
+| T12 Kuiz FE | `r1/f12-kuiz` | 9b33e061 | **BASE-58** | merged | merged |
+| H-C7 own stimuli above the stem | `r1/hc7-own-stimuli` | 476a7999 | **BASE-30** | merged | merged |
+| H-C5 Mula refusal text | `r1/hc5-mula-403` | c2d2cc9f | **BASE-37** | merged | merged |
+| H-C3 Esei pilihan | `r1/hc3-essay-choice-view` | b5e93fd1 | **BASE-29** | merged | merged |
+| T14 student bugs | `r1/t14-student-bugs` | 1903b713 | **BASE-20** | merged | merged |
+| T15 BM copy | `r1/t15-bm-copy` | 09eabe2e | **BASE-21** | merged | merged |
+| T42 report paper (migration 0103) | `r1/t42-reports-intake-acs` | d1210e96 | **BASE-41** | merged | merged |
+| T34 builder review, override | `r1/t34-builder-review` | 7bc3419e | no | conflict: `apps/api/src/modules/questions/questions.module.ts`, `docs/architecture/v2-backend-deviations.md` | B2 CHANGES-REQUESTED (override lifts structural blockers; T33 cognitiveLevel fixtures); A3 fixing |
+| T31 builder wire | `r1/t31-builder-wire` | b3501db9 | no | conflict: `apps/api/src/modules/questions/questions.module.ts`, `docs/architecture/v2-backend-deviations.md` | B2 CHANGES-REQUESTED (inherits T34); also needs REQ-A-008 |
+| T10 Set Builder, Semak Kertas (+F09) | `r1/f08-builder-ui` | 930bcbf5 | no | conflict: `docs/design/v2-admin-student-pipeline.md` | B2 CHANGES-REQUESTED (order: after T34; type fixes); C1 |
+| hc-builder-parity | `r1/hc-builder-parity` | 0d42619e | no | conflict: `docs/design/v2-admin-student-pipeline.md` | wait for T34 (T10 first); C1 |
+| hc-kontrak-parity | `r1/hc-kontrak-parity` | 3ef624c8 | no | clean | B2 CHANGES-REQUESTED (inherited T44 MAJOR only; own delta Approve); C4 |
+| T48 builder parity (migration 0104) | `r1/t48-builder-parity` | bdc70de4 | no | conflict: `apps/api/src/modules/questions/questions.module.ts`, `docs/architecture/v2-backend-deviations.md` | B2 CHANGES-REQUESTED; A3 (migration 0104) |
+| T43 chain + publish specs | `r1/t43-chain-publish` | 89d30dab | no | conflict: `apps/api/src/modules/questions/questions.module.ts`, `docs/architecture/v2-backend-deviations.md` | B2 CHANGES-REQUESTED (follows T34); A3 |
+| T44 Boleh tanda auto (contains H-A15) | `r1/t44-blueprint-fields` | 2d9c100d | no | conflict: `docs/architecture/v2-backend-deviations.md` | B2 CHANGES-REQUESTED (T33 fixtures; REQ-B-028 pool); A3 |
+| H-A15 evidence origin filter | `r1/ha15-blueprint-evidence` | 7e5d637e | no | conflict: `docs/architecture/v2-backend-deviations.md` | B3 Pass; X1 lead decision with T26 seed |
+| T26b e2e seed follow-up | `r1/t26b-e2e-seed` | 5cfd6ea5 | no | clean | B3 Pass; X1 lead decision |
+| T36 remove PoC | `r1/t36-remove-poc` | 5bc34543 | no | clean | B2 CHANGES-REQUESTED (REQ-B-029: PoC seeds still published); A2 + lead |
+| H-A13 archived paper | `r1/ha13-archived-paper` | 3979e212 | no | conflict: `apps/api/test/bijak-integration/report-archive.spec.ts`, `packages/contract/src/bijak/attempts/schema.ts`, `packages/contract/src/question-workflow/reports.ts` | B2 Approve w/ Minors, B3 Pass; needs base merge + `contract:emit` (A1) |
+| H-C4 Arkib button | `r1/hc4-report-arkib` | 44a5f592 | no | clean | READY; after H-A13 (C-POLICY-2); C4 |
+| H-C8 Kuiz stimuli | `r1/hc8-kuiz-stimuli` | 0cb54933 | no | clean | B2 Approve w/ Minors; waits for A4 ack on REQ-C-022 and B3 re-check |
+| T38 self-mark reward | `r1/t38-selfmark-reward` | 662e602f | no | clean | B2 CHANGES-REQUESTED (choose-N overpay); A1 |
+| T42b intake figure crop | `r1/t42b-intake-acs` | bca92f3d | no | conflict: `apps/api/src/modules/intake/workflow/review.service.ts` | B2 Approve w/ Minors; conflict in `review.service.ts` (A2 merges the base) |
+| T23 E2E | `r1/t23-e2e` | 1f90a27f | no | clean | B4 branch (reports and e2e specs only); not merged into code |
 
 ## 3. The acceptance flow, step by step
+
+> Refresh at BASE-60: the provider and state cells in this section are as of BASE-19. Use sections 2 and 4 for the current state. Items that moved: T26, `b1-e2e-off-poc`, T29, T30, T33, T13/T13b, hub, intake parity, T11/T12, H-C3/H-C5/H-C7, T42 are in base; T34, T31, T10, T48, T43, T44, T36, H-A13, H-C4, H-C8, T38 are not.
 
 Provider codes: **BASE** = in 823d8dfb. A branch name with head means not merged. "Needs" lists what the step touches. Baseline results (S-ids) are from the T23 report on BASE-1.
 
@@ -148,83 +156,68 @@ Blockers: none that needs a merge; only the re-run, and step 2 (approved questio
 
 Blockers: hc4 (merge), pupil Lapor control (no branch).
 
-## 4. Merge order proposal for team B
+## 4. Merge order
 
-### 4.1 Rules used
+The order is not set by this page. It is B1's decision in MERGE-LOG and the stacked order agreed in C-POLICY-2 (BOARD.md, accepted):
 
-- API before the FE that calls it: T29 → T33 → T34 → (T31) for the admin routes; T33 and T30 before t13b; T34 before T10.
-- Branches that already contain BASE-19 go first (no owner action). Branches that conflict today wait for the owner to merge the new BASE and re-post.
-- Every merge changes `questions/questions.module.ts` for the later ones: the conflict is a union of providers and routes, as B2 noted for T29/T33.
-- CI off PoC (REQ-A-001) before T36 (PoC removal): `r1/b1-e2e-off-poc` carries the workflow changes and contains T26.
+- T34 -> T13b -> T10 -> hub -> hc-builder-parity (T13b and the hub are merged; T34 is the open prerequisite, then T10, then hc-builder-parity; the hub is in base so KS-01 resolves);
+- H-A13 -> H-C4;
+- T38 -> T40;
+- T11 -> T12 -> H-C8 (T11 and T12 merged; H-C8 waits for the A4 ack on REQ-C-022);
+- H-C7 after R1E2E-05b (both merged, BASE-28 and BASE-30);
+- API before the FE that calls it; CI off PoC (merged, BASE-25) before T36.
 
-### 4.2 Order
+What is unmerged at BASE-60 and the owner action each one waits for:
 
-| # | Merge | Why now | Owner action before merge |
-|---|---|---|---|
-| 1 | `r1/b1-e2e-off-poc` b209b4ff (contains T26 510f085b) | Seed for B4 and REQ-A-001 (compose.http.yaml, e2e-http.yml, frontend.yml: `BIJAK_POC_QUESTIONS` false, e2e seed, bank demo paper lookup). Must precede T36. Clean | none |
-| 2 | `r1/e2e05b-own-stimuli` 57e7feee | R1E2E-05 Critical: a paper with an image question can start. Clean | B2 verdict for 05b (not on the board) |
-| 3 | `r1/t29-servability` c53e655d | Base of T33/T34/T30. Clean | B2 delta review (head moved) |
-| 4 | `r1/t30-servability-reads` 09d53c56 | "Dilihat murid di" reads, needed by t13b and Kandungan hub. Clean | B2 re-review (2 MAJORs open at f2eeec7d) |
-| 5 | `r1/t33-leaf-tags` 276a6622 | DSKP approve gate, status route, gate-check (migration 0102). Conflicts: `views.ts`, `lifecycle.service.ts`, `questions.module.ts`, `questions.repository.ts` | A2 merges the new BASE; keep T07's `stimulusRecordOf` and T35's archive path |
-| 6 | `r1/t34-builder-review` e363fe51, or `r1/t31-builder-wire` 5ab47b09 (contains it) | Terbit gates, override, review edits (R1E2E-06/07). Conflict: `questions.module.ts` | A3 merges the new BASE + T33, and B2 re-reviews (changes requested at last look). If T31 goes, it takes T34 with it; B2's note is T34 first, T31 on the final T34 |
-| 7 | `r1/f08-builder-ui` 9aa080d5 (T10 + F09) | Set Builder UI (S3a), Semak Kertas, menu. Clean | B2 delta review (moved); needs 6 |
-| 8 | `r1/t13-studio-groups` 114173c9 | Studio create/edit, D90 groups, intake link-references, `serverIssues` shown. Conflict: `questions.module.ts` after 3 to 5 | C3 merges the new BASE; B2 re-review of the rebuilt T13 |
-| 9 | `r1/t13b-studio-list` d8a6596d | Studio list, tiles, status buttons, refusal list, "Dilihat murid di". Conflicts: `lifecycle.service.ts` (T35), module and repository | C3 merges the new BASE after 4, 5, 8 |
-| 10 | `r1/hc4-report-arkib` b458c8f3 | "Arkib" on the report row (T35 is in base). Clean | none |
-| — | **B4 can run the full flow after this point** (section 5) | | |
-| 11 | `r1/ha13-archived-paper` d51a4abf, then `r1/hc5-mula-403`, `r1/hc7-own-stimuli` | Archived-paper refusal and its FE text; own stimuli above the stem | A1 runs `contract:emit` for H-A13 |
-| 12 | `r1/b16-kuiz` 97e6c3df → `r1/f12-kuiz` b38d2a0b → `r1/hc8-kuiz-stimuli` 7ac922a7 | B-04 `/simulasi/kuiz`; hc8 after 05b | B2 delta review (both heads moved) |
-| 13 | `r1/t14-student-bugs`, `r1/t15-bm-copy`, `r1/hc3-essay-choice-view` | Student bugs, approved copy, Esei pilihan | B2 delta review (T14/T15 moved) |
-| 14 | `r1/hc-intake-parity`, `r1/hc-kontrak-parity`, `r1/hc-kandungan-hub` | V2 admin parity (REQ-A-004); two are marked wip by their own commits | docs conflict on `v2-admin-student-pipeline.md` (take both rows) |
-| 15 | `r1/t38-selfmark-reward` → `r1/t40-attempts-acs`; `r1/t42-reports-intake-acs`; `r1/t42b-intake-acs` | D94 delta, AC specs, report paper (migration 0103), figure crop | t42b conflicts in `review.service.ts` |
-| 16 | `r1/t36-remove-poc` 40d4851d | PoC removal; after step 1 (CI) and after REQ-B-003 is answered. Conflicts: `bijak-papers/generate.spec.ts`, `bijak-integration/poc-flag.spec.ts` | A2 merges the new BASE |
-| last | `r1/ha15-blueprint-evidence` 779c23f9 | Only after the seed decision in 4.3 | A1 + A3 |
-
-### 4.3 Two cross-branch hazards
-
-- **X1 (T26 with H-A15).** After H-A15, `NO_EVIDENCE_BODIES` makes real Sahkan refuse 3472/2 while the e2e seed sets it Disahkan. B1 asked for a lead decision. Merge T26 before H-A15 and let the seed carry labelled admin-origin evidence, or document the bypass. Until then T23 is safe only with H-A15 left out.
-- **T36 with e2e.** After T36 the PoC papers (ids 2 to 4) return 403. `e2e/api/bijak-part-input.spec.ts` needs a playable structured Kertas 2 bank paper (REQ-B-003, OPEN, no branch); until then those specs would be `test.fixme`.
-
-## 5. Smallest set after which B4 can run the full flow
-
-The flow is steps 1 to 7 above, with Terbit through the Disahkan gate and an override, and the DSKP gate at approve.
-
-| Merge | Gives |
+| Unit | Waits for |
 |---|---|
-| 1. `r1/b1-e2e-off-poc` (with T26) | seed accounts, Disahkan blueprint, CI independent of PoC |
-| 2. `r1/e2e05b-own-stimuli` | image question playable (S4a) |
-| 3. `r1/t29-servability` | servability service |
-| 4. `r1/t30-servability-reads` | "Dilihat murid di" API for t13b |
-| 5. `r1/t33-leaf-tags` | DSKP approve gate, status route (S2) |
-| 6. `r1/t34-builder-review` | Terbit gates, override, builder routes (S3c, S3 UI) |
-| 7. `r1/f08-builder-ui` | Set Builder (S3a), Semak Kertas, Terbit UI |
-| 8. `r1/t13-studio-groups` | Studio create/edit, D90 group, intake issues visible |
-| 9. `r1/t13b-studio-list` | UI approval path (replaces R1E2E-04), status buttons |
-| 10. `r1/hc4-report-arkib` | Arkib on the report row (step 7) |
+| T34 `7bc3419e` -> T31 `b3501db9` -> REQ-A-008 `7e2e4392` | A3 fixes the B2 findings (override vs structural blockers, T33 cognitiveLevel fixtures), merges the base (`questions.module.ts` and the deviations doc conflict as union); B2 re-review |
+| T10 `930bcbf5` -> hc-builder-parity `0d42619e` | T34 in base; C1 fixes the two TS18048 sites; design doc union |
+| T48 `bdc70de4`, T43 `89d30dab`, T43b `92866aa8` | T34 follow-up; B2 CHANGES-REQUESTED on T48 and T43 |
+| T44 `2d9c100d` (contains H-A15 `7e5d637e`) -> Kontrak parity `3ef624c8` | A3 fixes T33 fixtures and the REQ-B-028 pool; X1 lead decision |
+| H-A13 `3979e212` -> H-C4 `44a5f592` | A1: base merge and `contract:emit` |
+| H-C8 `0cb54933` | A4 ack on REQ-C-022 and B3 re-check |
+| T38 `662e602f` -> T40 `90973d72` | A1 fixes (choose-N overpay) |
+| T36 `5bc34543` | B2 CHANGES-REQUESTED (REQ-B-029); REQ-B-003 is delivered on `r1/t26b-e2e-seed` |
+| T42b `bca92f3d` | A2 merges the base (`review.service.ts`) |
 
-What this leaves out on purpose: Kuiz (B-04), T31 wire, H-A13, T36, hc-parity branches, T38, T42. B4 can run the numbered flow without them; B-04 and the report-from-Semakan check stay red or skipped.
+### 4.1 Two cross-branch hazards
 
-What the minimal set still cannot cover (section 6): PDF/manual intake to approved (R1E2E-02) and the pupil Lapor control. The D90 group and a written part for self-mark come from Studio (T13), not from intake. If B4 wants intake to approved in this run, R1E2E-02 needs a fix first.
+- **X1 (T26 seed with H-A15).** After H-A15, real Sahkan refuses 3472/2 while the e2e seed sets it Disahkan. T26 is in base (BASE-24); T26b `5cfd6ea5` (admin-origin evidence in the seed, REQ-B-003 delivered) is B3 Pass and waits for the lead decision. Until then H-A15 should not merge.
+- **T36 with e2e.** After T36 the PoC papers (ids 2 to 4) return 403 and must not be listed (REQ-B-029). The structured Kertas 2 bank paper for `e2e/api/bijak-part-input.spec.ts` comes from T26b.
 
-Owner actions inside the set: A2 (T33 merges the new BASE), A3 (T34 merges the new BASE and T33; B2 re-review), C3 (T13 and t13b merge the new BASE), B2 (delta reviews of T29, T30, T10, T13). The first two merges need none.
+## 5. What B4 can run now, and what it still needs
 
-## 6. Blockers with no branch at all
+At BASE-60 the numbered flow runs up to the point where it needs T34-stacked units. The first version's "smallest set" is therefore reduced to the units in the table below; everything else in that set is already in base.
 
-| Blocker | Where it shows | Owner | Tracked as |
-|---|---|---|---|
-| Intake DSKP unit picker uses a stand-in list (`admin/intake/lib/dskp.ts`) | PDF and manual intake never reach approved (S1c, S1d) | C3 | R1E2E-02, REQ-B-001 OPEN |
-| Legacy question detail "Hantar untuk Semakan" sends a numeric id (422) | UI approval from the legacy page (S2a). t13b + T33 give another path | C | R1E2E-04, REQ-B-002 OPEN |
-| Pupil "Lapor" control on Bijak attempt and Semakan | AC-R1-18.1 (S-69 in the student parity check) | C (C2/C4) | REQ-A-005 |
-| Structured blockers and `canOverride` on review and publish 422 | f08 override offer uses a text heuristic | A3 | REQ-C-002, T34 follow-up not pushed |
-| Bab empty state | B-01 in the baseline | C4 | H-C1; `r1/hc1-chapter-empty` is not on origin |
-| Playable structured Kertas 2 bank paper for e2e after T36 | `e2e/api/bijak-part-input.spec.ts` | A1 | REQ-B-003 OPEN |
-| `pinned` per placed question in the builder answer ("Disematkan") | V2 parity chip | A3 | T48 (no branch) |
-| Boleh tanda auto in the Kontrak write schema | R1-21.4 | A3 | T44 (no branch) |
-| Chain upgrade and builder publish specs | AC coverage | A3 | T43 (no branch) |
-| Bank filters Tahun/Negeri/Kertas/Jenis and filter-based bulk approve | admin parity | A2 | T47 (no branch) |
-| Stimulus group and stimulus list endpoints, group members summary | Studio group browser | A2 | T49, REQ-C-004/005 accepted, no branch |
-| Bab tile counts all subject questions, not chaptered ones | S5c wording | A | R1E2E-09, to confirm |
-| Reward rule for repeated attempts (once per paper or per attempt) | T38/T40 specs depend on it | lead | REQ-B-004 / Q-B3-M1, a decision, not a branch |
+| Still needed | Gives |
+|---|---|
+| T34 (fixed) | Terbit gates and override, builder routes (S3c) |
+| T10 `f08-builder-ui` (after T34) | Set Builder UI (S3a), Semak Kertas, Terbit UI |
+| H-A13 then H-C4 | "Arkib" on the report row (step 7); archived-paper refusal |
+| T26b and the X1 decision | structured Kertas 2 paper and Disahkan blueprint that survive H-A15 |
+
+What stays outside the run on purpose: T31 wire, T36, T38/T40, T42b, H-C8, hc-builder-parity, Kontrak parity.
+
+Owner actions: A3 (T34 and its stack), C1 (T10 type fixes), A1 (H-A13 contract:emit; T38; X1 decision), A4 (REQ-C-022 ack), B2 (re-reviews).
+
+## 6. Blockers that had no branch on BASE-19
+
+| Blocker | Status at BASE-60 | Tracked as |
+|---|---|---|
+| Intake DSKP unit picker used a stand-in list | **Fixed:** `r1/reqb001-intake-dskp` merged, BASE-47 | R1E2E-02, REQ-B-001 |
+| Legacy question detail "Hantar untuk Semakan" sent a numeric id | **Fixed:** `r1/reqb002-detail-submit` merged, BASE-48 (Studio status buttons from T13b, BASE-55, also give the path) | R1E2E-04, REQ-B-002 |
+| Pupil "Lapor" control on Bijak attempt and Semakan | Branch `r1/reqa005-bijak-lapor` exists; **held** by B1 (REQ-B-031: report only from an owned context, D98, A1 building `r1/reqb031-report-guard`) | REQ-A-005, REQ-B-031 |
+| Structured blockers and `canOverride` on review and publish 422 | Delivered in the T34 follow-up (`blockerDetails[]`, `canOverride`; REQ-C-002 DONE); T34 is still CHANGES-REQUESTED | REQ-C-002 |
+| Bab empty state | Not re-checked in this refresh (unconfirmed); `r1/hc1-chapter-empty` is not on origin | H-C1, B-01 |
+| Playable structured Kertas 2 bank paper for e2e after T36 | Delivered on `r1/t26b-e2e-seed` @ 5cfd6ea5, not in base (X1) | REQ-B-003 |
+| `pinned` per placed question | T48 `bdc70de4`, CHANGES-REQUESTED, not in base | T48 |
+| Boleh tanda auto in the Kontrak write schema | T44 `2d9c100d`, CHANGES-REQUESTED, not in base | T44 |
+| Chain upgrade and builder publish specs | T43 `89d30dab` and T43b `92866aa8`, CHANGES-REQUESTED / pushed, not in base | T43 |
+| Bank filters Tahun/Negeri/Kertas/Jenis and filter-based bulk approve | T47 merged, BASE-33 | T47 |
+| Stimulus group and stimulus list endpoints | T49 merged, BASE-32 | T49, REQ-C-004/005 |
+| Bab tile counts all subject questions, not chaptered ones | `r1/t04-minors` is B2 CHANGES-REQUESTED, not in base | R1E2E-09 |
+| Reward rule for repeated attempts | **Decided** (Q5, D93 second part): every submitted attempt earns; T28 already in base | REQ-B-004 |
 
 ## 7. CI note (REQ-A-001)
 
@@ -234,6 +227,6 @@ Owner actions inside the set: A2 (T33 merges the new BASE), A3 (T34 merges the n
 
 ## 8. Limits
 
-- No test, build or browser run in this unit. Conflict results are from virtual merges against 823d8dfb and say nothing about type checks or specs.
-- Verdicts are copied from the board status files; several heads have moved since those verdicts, and that is marked in the tables.
+- No test, build or browser run in this unit. Conflict results are from virtual merges against BASE-60 (`a3e92b06`) and say nothing about type checks or specs.
+- Verdicts are copied from the board status files; several heads have moved since those verdicts; sections 2 and 4 show the current head. Step tables in section 3 are BASE-19 text with a refresh note.
 - "Expected to pass" for steps 6 and 7 rests on the BASE-19 code and the T04/T05/T35 specs, not on a T23 re-run.
