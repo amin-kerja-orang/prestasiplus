@@ -23,6 +23,7 @@ import {
   BijakSectionPoolOptionSchema,
   BijakSectionPoolsRequestSchema,
   BijakSectionPoolsSchema,
+  BijakBuilderBlockerSchema,
   BijakBuilderOkSchema,
   BijakBuilderPaperCreateResultSchema,
   BijakBuilderPaperCreateSchema,
@@ -79,6 +80,7 @@ export const BIJAK_BUILDER_COMPONENT_SCHEMAS: Record<string, z.ZodType> = {
   BijakBuilderPaperCreateResult: BijakBuilderPaperCreateResultSchema,
   BijakBuilderSectionPatch: BijakBuilderSectionPatchSchema,
   BijakBuilderPaperPatch: BijakBuilderPaperPatchSchema,
+  BijakBuilderBlocker: BijakBuilderBlockerSchema,
   BijakBuilderOk: BijakBuilderOkSchema,
   BijakBuilderPublishResult: BijakBuilderPublishResultSchema,
   BijakBuilderPreviewRequest: BijakBuilderPreviewRequestSchema,
@@ -284,7 +286,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     path: '/admin/papers/{id}/publish',
     tags: [BIJAK_BUILDER_TAG],
     summary: 'Paper builder: publish (draf to terbit)',
-    description: `Optional body { override?: boolean, reason?: string } (R1-T34, V2 Panel tick "Terbitkan walaupun tidak memenuhi kontrak blueprint"): with override true and a reason of at least 5 characters the structural blueprint-conformance blockers ("Soalan {id} tidak layak: ...") are overridden and the paper is published; the reason and the overridden lines go to the audit row bijak.paper.published_override and the answer lists them in \`overridden\`. Override without a reason: 422 "${BIJAK_BUILDER_MESSAGES.overrideReasonRequired}" on fields.reason. Blockers about the questions or the printed structure (not Terbit, duplicates, split or incomplete groups, counts, marks) are never overridable: the answer stays ok false. A normal 200 result (not an error): { ok: true, errors: [] }, or { ok: false, errors: string[] } with the BM lines of checkPaper. Paper-wide lines come first: "Soalan berulang dalam kertas: {ids}" and "Kumpulan rangsangan {group} dipecahkan antara dua bahagian". Each section line follows, prefixed with the section label ("{label}: "): "Kurang N soalan (perlu X, ada Y)" or "Lebih N soalan (perlu X, ada Y)", "Markah M tidak sama dengan bajet B", "Kumpulan rangsangan G tidak berturutan", "Kumpulan rangsangan G tidak lengkap (N soalan tiada)" and "{N} soalan belum Terbit". Nothing changes on ok: false. On ok: true the status becomes terbit, publishedAt is set and the paper appears in GET /bijak/papers; implementations pin the question versions in force (a later edit, version n+1, does not change the paper). A paper that is already terbit is checked again and stays terbit. ${COPY_NOTE} ${ROLE_NOTE}`,
+    description: `Optional body { override?: boolean, reason?: string } (R1-T34, V2 Panel tick "Terbitkan walaupun tidak memenuhi kontrak blueprint"): with override true and a reason of at least 5 characters the structural blueprint-conformance blockers ("Soalan {id} tidak layak: ...") are overridden and the paper is published; the reason and the overridden lines go to the audit row bijak.paper.published_override and the answer lists them in \`overridden\`. Override without a reason: 422 "${BIJAK_BUILDER_MESSAGES.overrideReasonRequired}" on fields.reason. Blockers about the questions or the printed structure (not Terbit, duplicates, split or incomplete groups, counts, marks) are never overridable: the answer stays ok false. A normal 200 result (not an error): { ok: true, errors: [] }, or { ok: false, errors: string[] } with the BM lines of checkPaper. Paper-wide lines come first: "Soalan berulang dalam kertas: {ids}" and "Kumpulan rangsangan {group} dipecahkan antara dua bahagian". Each section line follows, prefixed with the section label ("{label}: "): "Kurang N soalan (perlu X, ada Y)" or "Lebih N soalan (perlu X, ada Y)", "Markah M tidak sama dengan bajet B", "Kumpulan rangsangan G tidak berturutan", "Kumpulan rangsangan G tidak lengkap (N soalan tiada)" and "{N} soalan belum Terbit". Nothing changes on ok: false. The refusal also carries \`blockerDetails\` (the same blockers as \`errors\`, structured: { code, message, overridable, section?, questionId? }) and \`canOverride\`, computed by the same rule as GET /admin/papers/{id}/review (one source of truth; codes in BIJAK_BUILDER_BLOCKER_OVERRIDABLE). On ok: true the status becomes terbit, publishedAt is set and the paper appears in GET /bijak/papers; implementations pin the question versions in force (a later edit, version n+1, does not change the paper). A paper that is already terbit is checked again and stays terbit. ${COPY_NOTE} ${ROLE_NOTE}`,
     request: { params: PaperIdParams, headers: [csrf], body: { required: false as const, content: { 'application/json': { schema: BijakBuilderPublishRequestSchema } } } },
     responses: {
       200: json(envelopeOf(BijakBuilderPublishResultSchema), 'Publish result (ok true or false).'),
@@ -400,7 +402,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     path: '/admin/papers/{id}/review',
     tags: [BIJAK_BUILDER_TAG],
     summary: 'Paper builder: review (blockers, per-row servability, visibility)',
-    description: `Blockers are the publish refusal lines (checkPaper plus the structural tier of verifyComposition). Standard-tier findings (quota, profile, KBAT) are notes and set blueprintNeedsReview; they never block a curated paper (D78 O-2). ${ROLE_NOTE}`,
+    description: `Blockers are the publish refusal lines (checkPaper plus the structural tier of verifyComposition). \`blockerDetails\` is the same list, structured ({ code, message, overridable, section?, questionId? }), and \`canOverride\` is true when no hard blocker is present and at least one is overridable (the Kontrak is the only thing in the way); the publish refusal carries the same two fields. Standard-tier findings (quota, profile, KBAT) are notes and set blueprintNeedsReview; they never block a curated paper (D78 O-2). ${ROLE_NOTE}`,
     request: { params: PaperIdParams },
     responses: {
       200: json(envelopeOf(BijakBuilderReviewSchema), 'The review.'),

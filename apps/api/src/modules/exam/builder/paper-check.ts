@@ -4,7 +4,7 @@
  * blueprint. The section marks come from the shared domain (`effectiveMarks`, via the adapter); this
  * file has no marks-budget or choose-N rule of its own. Lines are the BM texts of the contract.
  */
-import { BIJAK_BUILDER_CHECK_LINES as LINES } from '@pp/contract'
+import { BIJAK_BUILDER_CHECK_LINES as LINES, type BijakBuilderBlockerCode } from '@pp/contract'
 
 import { GROUP_MIN_MEMBERS_MESSAGE, MIN_GROUP_MEMBERS } from './builder.constants'
 import { effectiveMarks } from './exam-core.adapter'
@@ -149,13 +149,34 @@ export interface CheckInput {
   isStimulusGroup?: (groupId: string) => boolean
 }
 
+/** A blocking line of the check with its stable code (R1-T34 follow-up). `message` is the publish line, section prefix included. */
+export interface CheckIssue {
+  code: BijakBuilderBlockerCode
+  message: string
+  /** Label of the Bahagian the line belongs to; absent for paper-wide lines. */
+  section?: string
+}
+
 export function checkPaper(input: CheckInput): PaperCheck {
+  return checkPaperDetailed(input).check
+}
+
+/**
+ * `checkPaper` plus the same blocking lines as coded issues, in the order of `publishErrors` (paper-wide first, then each section).
+ * `issues.map(i => i.message)` equals `publishErrors(check)`.
+ */
+export function checkPaperDetailed(input: CheckInput): { check: PaperCheck; issues: CheckIssue[] } {
   const { specs, sections, marksOf, groupOf, membersOf, isLive } = input
   const errors: string[] = []
+  const paperCodes: BijakBuilderBlockerCode[] = []
+  const addPaper = (code: BijakBuilderBlockerCode, line: string): void => {
+    errors.push(line)
+    paperCodes.push(code)
+  }
   const seen = new Set<string>()
   const dup = new Set<string>()
   for (const s of sections) for (const id of s.questionIds) (seen.has(id) ? dup : seen).add(id)
-  if (dup.size) errors.push(LINES.duplicateQuestion([...dup]))
+  if (dup.size) addPaper('DUPLICATE_QUESTION', LINES.duplicateQuestion([...dup]))
 
   // D93 (a D90 group-integrity rule, never overridable): a stimulus group with fewer than two members cannot be placed.
   const tooSmall = new Set<string>()
@@ -164,7 +185,7 @@ export function checkPaper(input: CheckInput): PaperCheck {
       const g = groupOf(id)
       if (g && (input.isStimulusGroup?.(g) ?? true) && membersOf(g).length < MIN_GROUP_MEMBERS) tooSmall.add(g)
     }
-  if (tooSmall.size) errors.push(GROUP_MIN_MEMBERS_MESSAGE)
+  if (tooSmall.size) addPaper('GROUP_MIN_MEMBERS', GROUP_MIN_MEMBERS_MESSAGE)
 
   // A group must live in one section, contiguous and complete.
   const sectionOfGroup = new Map<string, number>()
@@ -173,23 +194,26 @@ export function checkPaper(input: CheckInput): PaperCheck {
       const g = groupOf(id)
       if (!g) continue
       const prev = sectionOfGroup.get(g)
-      if (prev !== undefined && prev !== si) errors.push(LINES.groupSplit(g))
+      if (prev !== undefined && prev !== si) addPaper('GROUP_SPLIT', LINES.groupSplit(g))
       sectionOfGroup.set(g, si)
     }
   })
 
+  const sectionCodes: BijakBuilderBlockerCode[][] = []
   const out: SectionCheck[] = specs.map((spec, i) => {
     const ids = sections[i]?.questionIds ?? []
     const secErrors: string[] = []
+    const codes: BijakBuilderBlockerCode[] = []
+    sectionCodes.push(codes)
+    const addSec = (code: BijakBuilderBlockerCode, line: string): void => {
+      secErrors.push(line)
+      codes.push(code)
+    }
     const notes: string[] = []
     const marks = effectiveMarks(spec.rule, ids.map(marksOf))
-    if (ids.length !== spec.questionCount)
-      secErrors.push(
-        ids.length < spec.questionCount
-          ? LINES.tooFew(spec.questionCount, ids.length)
-          : LINES.tooMany(spec.questionCount, ids.length),
-      )
-    if (marks !== spec.markBudget) secErrors.push(LINES.marksMismatch(marks, spec.markBudget))
+    if (ids.length < spec.questionCount) addSec('COUNT_TOO_FEW', LINES.tooFew(spec.questionCount, ids.length))
+    else if (ids.length > spec.questionCount) addSec('COUNT_TOO_MANY', LINES.tooMany(spec.questionCount, ids.length))
+    if (marks !== spec.markBudget) addSec('MARKS_MISMATCH', LINES.marksMismatch(marks, spec.markBudget))
     if (spec.rule.type === 'choose') {
       const marksList = ids.map(marksOf)
       if (new Set(marksList).size > 1)
@@ -199,17 +223,17 @@ export function checkPaper(input: CheckInput): PaperCheck {
     const groupsSeen = new Set<string>()
     for (const u of unitList) {
       if (!u.groupId) continue
-      if (groupsSeen.has(u.groupId)) secErrors.push(LINES.groupNotConsecutive(u.groupId))
+      if (groupsSeen.has(u.groupId)) addSec('GROUP_NOT_CONSECUTIVE', LINES.groupNotConsecutive(u.groupId))
       groupsSeen.add(u.groupId)
       const all = membersOf(u.groupId)
       const missing = all.filter((m) => !ids.includes(m))
-      if (missing.length) secErrors.push(LINES.groupIncomplete(u.groupId, missing.length))
+      if (missing.length) addSec('GROUP_INCOMPLETE', LINES.groupIncomplete(u.groupId, missing.length))
       // D90: the members run in the group's published order.
       const expected = all.filter((m) => u.ids.includes(m))
-      if (!missing.length && expected.some((m, i) => u.ids[i] !== m)) secErrors.push(LINES.groupOutOfOrder(u.groupId))
+      if (!missing.length && expected.some((m, i) => u.ids[i] !== m)) addSec('GROUP_OUT_OF_ORDER', LINES.groupOutOfOrder(u.groupId))
     }
     const notLive = ids.filter((id) => !isLive(id))
-    if (notLive.length) secErrors.push(LINES.notPublished(notLive.length))
+    if (notLive.length) addSec('NOT_PUBLISHED', LINES.notPublished(notLive.length))
     return {
       label: spec.label,
       count: ids.length,
@@ -223,13 +247,18 @@ export function checkPaper(input: CheckInput): PaperCheck {
   })
   const totalMarks = out.reduce((n, s) => n + s.marks, 0)
   const totalBudget = specs.reduce((n, s) => n + s.markBudget, 0)
-  return {
+  const check: PaperCheck = {
     sections: out,
     errors,
     totalMarks,
     totalBudget,
     ok: errors.length === 0 && out.every((s) => s.ok),
   }
+  const issues: CheckIssue[] = [
+    ...errors.map((message, i): CheckIssue => ({ code: paperCodes[i]!, message })),
+    ...out.flatMap((s, si) => s.errors.map((e, i): CheckIssue => ({ code: sectionCodes[si]![i]!, message: LINES.sectionLine(s.label, e), section: s.label }))),
+  ]
+  return { check, issues }
 }
 
 /** The publish refusal lines: paper-wide errors first, then each section line prefixed `{label}: `. */

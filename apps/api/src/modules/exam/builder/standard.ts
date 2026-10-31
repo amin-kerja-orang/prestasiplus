@@ -5,6 +5,7 @@
 import {
   BIJAK_BUILDER_CHECK_LINES as LINES,
   BIJAK_BUILDER_INELIGIBLE_TEXT as INELIGIBLE_TEXT,
+  type BijakBuilderBlockerCode,
   type BijakGenerateShortage,
 } from '@pp/contract'
 
@@ -13,6 +14,7 @@ import { MISSING_FROM_POOL_TEXT } from './builder.constants'
 import { toStandard } from '../blueprints/blueprint-standard'
 import type { BlueprintWithSections, PaperTree } from './builder.repository'
 import type { StandardBlueprint, StandardShortage, Violation } from './exam-core.adapter'
+import type { BlockerDraft } from './blockers'
 
 /**
  * The exam-core blueprint a paper is checked against: the structure (label, rule, count, budget) comes
@@ -54,24 +56,36 @@ const text = (reason: string | undefined): string => (INELIGIBLE_TEXT as Record<
  * Notes (never block a curated paper, D78 O-2): the standard tier (quota, profile, KBAT, level share),
  * a question outside the section pool and unequal marks in a choose-N section.
  */
-export function violationLines(violations: readonly Violation[], labelOf: (position: number) => string): { blockers: string[]; fixed: string[]; notes: string[] } {
-  const blockers: string[] = []
+export function violationLines(
+  violations: readonly Violation[],
+  labelOf: (position: number) => string,
+): { blockers: string[]; fixed: string[]; notes: string[]; blockerIssues: BlockerDraft[]; fixedIssues: BlockerDraft[] } {
+  const blockerIssues: BlockerDraft[] = []
   /** Blockers that the audited override can never lift (the question itself cannot be checked at all). */
-  const fixed: string[] = []
+  const fixedIssues: BlockerDraft[] = []
   const notes: string[] = []
   const at = (v: Violation, line: string): string => (v.sectionPosition === undefined ? line : LINES.sectionLine(labelOf(v.sectionPosition), line))
+  const draft = (v: Violation, code: BijakBuilderBlockerCode, line: string): BlockerDraft => ({
+    code,
+    message: at(v, line),
+    ...(v.sectionPosition === undefined ? {} : { section: labelOf(v.sectionPosition) }),
+    ...(v.questionId ? { questionId: v.questionId } : {}),
+  })
   for (const v of violations) {
     if (v.code === 'UNKNOWN_QUESTION') {
-      fixed.push(at(v, LINES.ineligible(v.questionId ?? '', MISSING_FROM_POOL_TEXT)))
+      fixedIssues.push(draft(v, 'UNKNOWN_QUESTION', LINES.ineligible(v.questionId ?? '', MISSING_FROM_POOL_TEXT)))
     } else if (v.code === 'INELIGIBLE' && v.tier === 'structural' && BLOCKING_REASONS.has(v.detail ?? '')) {
-      blockers.push(at(v, LINES.ineligible(v.questionId ?? '', text(v.detail))))
+      blockerIssues.push(draft(v, 'INELIGIBLE', LINES.ineligible(v.questionId ?? '', text(v.detail))))
     } else if (v.code === 'GROUP_BROKEN') {
-      blockers.push(at(v, LINES.groupNotConsecutive(v.detail ?? '')))
+      blockerIssues.push(draft(v, 'GROUP_BROKEN', LINES.groupNotConsecutive(v.detail ?? '')))
     } else if (v.tier === 'standard' || v.code === 'INELIGIBLE' || v.code === 'MARKS_EACH') {
       notes.push(at(v, noteOf(v)))
     }
   }
-  return { blockers: [...new Set(blockers)], fixed: [...new Set(fixed)], notes: [...new Set(notes)] }
+  const unique = (list: BlockerDraft[]): BlockerDraft[] => [...new Map(list.map((b) => [b.message, b])).values()]
+  const blockerList = unique(blockerIssues)
+  const fixedList = unique(fixedIssues)
+  return { blockers: blockerList.map((b) => b.message), fixed: fixedList.map((b) => b.message), notes: [...new Set(notes)], blockerIssues: blockerList, fixedIssues: fixedList }
 }
 
 function noteOf(v: Violation): string {

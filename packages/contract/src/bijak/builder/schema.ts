@@ -147,6 +147,32 @@ export const BIJAK_BUILDER_INELIGIBLE_TEXT = {
   unit_not_in_quota: 'unit tiada dalam kuota',
 } as const
 
+/**
+ * R1-T34 follow-up: the stable code of every Terbit blocker and whether the audited override (`{ override: true, reason }`) can lift it.
+ * This map is the ONE source of truth: the review (`blockerDetails`) and the publish refusal (`blockerDetails`) both read `overridable` from here.
+ * Hard (false) = the paper's own checks (duplicates, split / incomplete / out-of-order / too-small groups, counts, marks, not Terbit), a placed
+ * question missing from the candidate pool and a question pupils cannot be served. Overridable (true) = the blueprint-conformance blockers.
+ */
+export const BIJAK_BUILDER_BLOCKER_OVERRIDABLE = {
+  DUPLICATE_QUESTION: false,
+  GROUP_MIN_MEMBERS: false,
+  GROUP_SPLIT: false,
+  COUNT_TOO_FEW: false,
+  COUNT_TOO_MANY: false,
+  MARKS_MISMATCH: false,
+  GROUP_NOT_CONSECUTIVE: false,
+  GROUP_INCOMPLETE: false,
+  GROUP_OUT_OF_ORDER: false,
+  NOT_PUBLISHED: false,
+  UNKNOWN_QUESTION: false,
+  NOT_SERVABLE: false,
+  BLUEPRINT_NOT_VERIFIED: true,
+  INELIGIBLE: true,
+  GROUP_BROKEN: true,
+} as const
+export type BijakBuilderBlockerCode = keyof typeof BIJAK_BUILDER_BLOCKER_OVERRIDABLE
+export const BIJAK_BUILDER_BLOCKER_CODES = Object.keys(BIJAK_BUILDER_BLOCKER_OVERRIDABLE) as [BijakBuilderBlockerCode, ...BijakBuilderBlockerCode[]]
+
 /** CSRF failure of every mutation (copy of `AUTH_ERROR_MESSAGES.CSRF_INVALID`). */
 export const BIJAK_BUILDER_CSRF_MESSAGE = AUTH_ERROR_MESSAGES.CSRF_INVALID
 
@@ -525,6 +551,25 @@ export const BijakBuilderOkSchema = z
 export type BijakBuilderOk = z.infer<typeof BijakBuilderOkSchema>
 
 /**
+ * One Terbit blocker, structured (R1-T34 follow-up for the Semak Kertas UI). `message` is the same BM line as in the plain string arrays
+ * (`blockers` of the review, `errors` of the publish refusal). `overridable` is true only for the blueprint-conformance blockers; `canOverride` of
+ * the list is true when there is no hard blocker and at least one overridable one (V2 shows "Terbitkan walaupun tidak memenuhi kontrak blueprint" then).
+ */
+export const BijakBuilderBlockerSchema = z
+  .strictObject({
+    code: z.enum(BIJAK_BUILDER_BLOCKER_CODES).meta({
+      description:
+        'Stable code. Hard (overridable false): DUPLICATE_QUESTION, GROUP_MIN_MEMBERS (D93), GROUP_SPLIT, COUNT_TOO_FEW, COUNT_TOO_MANY, MARKS_MISMATCH, GROUP_NOT_CONSECUTIVE, GROUP_INCOMPLETE, GROUP_OUT_OF_ORDER, NOT_PUBLISHED, UNKNOWN_QUESTION (placed question missing from the pool), NOT_SERVABLE (R1E2E-06, pupils cannot be served). Overridable: BLUEPRINT_NOT_VERIFIED (Kontrak not Disahkan), INELIGIBLE (question fails the Kontrak: no unit, TP, marks, key, tag review, mode), GROUP_BROKEN.',
+    }),
+    message: z.string().meta({ description: 'The BM line, identical to the string in `blockers` / `errors`.' }),
+    overridable: z.boolean().meta({ description: 'true when the audited override can lift this blocker.' }),
+    section: z.string().optional().meta({ description: 'Label of the Bahagian the line belongs to (the line is prefixed "{label}: "); absent for paper-wide blockers.' }),
+    questionId: IdSchema.optional().meta({ description: 'The question the blocker names (INELIGIBLE, UNKNOWN_QUESTION, NOT_SERVABLE).' }),
+  })
+  .meta({ id: 'BijakBuilderBlocker' })
+export type BijakBuilderBlocker = z.infer<typeof BijakBuilderBlockerSchema>
+
+/**
  * `publishPaper` result `{ ok: boolean, errors: string[] }` (`PublishPaperResult`), a normal 200
  * result and not an error: `ok: true` comes with `errors: []` and the paper becomes terbit;
  * `ok: false` carries the BM lines of `checkPaper` (see `BIJAK_BUILDER_CHECK_LINES`: paper-wide lines
@@ -542,6 +587,12 @@ export const BijakBuilderPublishResultSchema = z
     }),
     overridden: z.array(z.string()).optional().meta({
       description: 'R1-T34: the blueprint-conformance lines that were overridden (audited `bijak.paper.published_override`); absent without an override.',
+    }),
+    blockerDetails: z.array(BijakBuilderBlockerSchema).meta({
+      description: 'R1-T34 follow-up: the same blockers as `errors`, structured (same order, same lines, same rule as the review). Empty when ok is true.',
+    }),
+    canOverride: z.boolean().meta({
+      description: 'No hard blocker and at least one overridable one: the UI may offer "Terbitkan walaupun tidak memenuhi kontrak blueprint". false when ok is true.',
     }),
   })
   .meta({ id: 'BijakBuilderPublishResult' })
@@ -869,6 +920,12 @@ export const BijakBuilderReviewSchema = z
     status: BijakBuilderPaperStatusSchema,
     ok: z.boolean().meta({ description: 'No blocker: Terbit would succeed.' }),
     blockers: z.array(z.string()).meta({ description: 'Same lines as the publish refusal (BM).' }),
+    blockerDetails: z.array(BijakBuilderBlockerSchema).meta({
+      description: 'R1-T34 follow-up: the same blockers as `blockers`, structured (same order and lines) with a stable code and `overridable`. The publish refusal carries the same list.',
+    }),
+    canOverride: z.boolean().meta({
+      description: 'No hard blocker and at least one overridable one (the Kontrak is the only thing in the way): the UI may show the "Terbitkan walaupun tidak memenuhi kontrak blueprint" tick.',
+    }),
     notes: z.array(z.string()).meta({ description: 'Standard-tier notes; never block a curated paper (D78 O-2).' }),
     blueprintNeedsReview: z.boolean().meta({ description: '"Blueprint perlu semakan".' }),
     visibleToStudents: z.boolean(),

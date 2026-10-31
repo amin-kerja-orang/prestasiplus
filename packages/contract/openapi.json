@@ -63191,6 +63191,57 @@
         },
         "additionalProperties": false
       },
+      "BijakBuilderBlocker": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "DUPLICATE_QUESTION",
+              "GROUP_MIN_MEMBERS",
+              "GROUP_SPLIT",
+              "COUNT_TOO_FEW",
+              "COUNT_TOO_MANY",
+              "MARKS_MISMATCH",
+              "GROUP_NOT_CONSECUTIVE",
+              "GROUP_INCOMPLETE",
+              "GROUP_OUT_OF_ORDER",
+              "NOT_PUBLISHED",
+              "UNKNOWN_QUESTION",
+              "NOT_SERVABLE",
+              "BLUEPRINT_NOT_VERIFIED",
+              "INELIGIBLE",
+              "GROUP_BROKEN"
+            ],
+            "description": "Stable code. Hard (overridable false): DUPLICATE_QUESTION, GROUP_MIN_MEMBERS (D93), GROUP_SPLIT, COUNT_TOO_FEW, COUNT_TOO_MANY, MARKS_MISMATCH, GROUP_NOT_CONSECUTIVE, GROUP_INCOMPLETE, GROUP_OUT_OF_ORDER, NOT_PUBLISHED, UNKNOWN_QUESTION (placed question missing from the pool), NOT_SERVABLE (R1E2E-06, pupils cannot be served). Overridable: BLUEPRINT_NOT_VERIFIED (Kontrak not Disahkan), INELIGIBLE (question fails the Kontrak: no unit, TP, marks, key, tag review, mode), GROUP_BROKEN."
+          },
+          "message": {
+            "type": "string",
+            "description": "The BM line, identical to the string in `blockers` / `errors`."
+          },
+          "overridable": {
+            "type": "boolean",
+            "description": "true when the audited override can lift this blocker."
+          },
+          "section": {
+            "type": "string",
+            "description": "Label of the Bahagian the line belongs to (the line is prefixed \"{label}: \"); absent for paper-wide blockers."
+          },
+          "questionId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The question the blocker names (INELIGIBLE, UNKNOWN_QUESTION, NOT_SERVABLE).",
+            "example": "1042"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "overridable"
+        ],
+        "additionalProperties": false
+      },
       "BijakBuilderOk": {
         "type": "object",
         "properties": {
@@ -63236,11 +63287,24 @@
               "type": "string"
             },
             "description": "R1-T34: the blueprint-conformance lines that were overridden (audited `bijak.paper.published_override`); absent without an override."
+          },
+          "blockerDetails": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakBuilderBlocker"
+            },
+            "description": "R1-T34 follow-up: the same blockers as `errors`, structured (same order, same lines, same rule as the review). Empty when ok is true."
+          },
+          "canOverride": {
+            "type": "boolean",
+            "description": "No hard blocker and at least one overridable one: the UI may offer \"Terbitkan walaupun tidak memenuhi kontrak blueprint\". false when ok is true."
           }
         },
         "required": [
           "ok",
-          "errors"
+          "errors",
+          "blockerDetails",
+          "canOverride"
         ],
         "additionalProperties": false
       },
@@ -64316,6 +64380,17 @@
             },
             "description": "Same lines as the publish refusal (BM)."
           },
+          "blockerDetails": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakBuilderBlocker"
+            },
+            "description": "R1-T34 follow-up: the same blockers as `blockers`, structured (same order and lines) with a stable code and `overridable`. The publish refusal carries the same list."
+          },
+          "canOverride": {
+            "type": "boolean",
+            "description": "No hard blocker and at least one overridable one (the Kontrak is the only thing in the way): the UI may show the \"Terbitkan walaupun tidak memenuhi kontrak blueprint\" tick."
+          },
           "notes": {
             "type": "array",
             "items": {
@@ -64350,6 +64425,8 @@
           "status",
           "ok",
           "blockers",
+          "blockerDetails",
+          "canOverride",
           "notes",
           "blueprintNeedsReview",
           "visibleToStudents",
@@ -109580,7 +109657,7 @@
           "bijak-builder"
         ],
         "summary": "Paper builder: publish (draf to terbit)",
-        "description": "Optional body { override?: boolean, reason?: string } (R1-T34, V2 Panel tick \"Terbitkan walaupun tidak memenuhi kontrak blueprint\"): with override true and a reason of at least 5 characters the structural blueprint-conformance blockers (\"Soalan {id} tidak layak: ...\") are overridden and the paper is published; the reason and the overridden lines go to the audit row bijak.paper.published_override and the answer lists them in `overridden`. Override without a reason: 422 \"Sebab diperlukan untuk menerbitkan walaupun tidak memenuhi kontrak blueprint\" on fields.reason. Blockers about the questions or the printed structure (not Terbit, duplicates, split or incomplete groups, counts, marks) are never overridable: the answer stays ok false. A normal 200 result (not an error): { ok: true, errors: [] }, or { ok: false, errors: string[] } with the BM lines of checkPaper. Paper-wide lines come first: \"Soalan berulang dalam kertas: {ids}\" and \"Kumpulan rangsangan {group} dipecahkan antara dua bahagian\". Each section line follows, prefixed with the section label (\"{label}: \"): \"Kurang N soalan (perlu X, ada Y)\" or \"Lebih N soalan (perlu X, ada Y)\", \"Markah M tidak sama dengan bajet B\", \"Kumpulan rangsangan G tidak berturutan\", \"Kumpulan rangsangan G tidak lengkap (N soalan tiada)\" and \"{N} soalan belum Terbit\". Nothing changes on ok: false. On ok: true the status becomes terbit, publishedAt is set and the paper appears in GET /bijak/papers; implementations pin the question versions in force (a later edit, version n+1, does not change the paper). A paper that is already terbit is checked again and stays terbit. Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "Optional body { override?: boolean, reason?: string } (R1-T34, V2 Panel tick \"Terbitkan walaupun tidak memenuhi kontrak blueprint\"): with override true and a reason of at least 5 characters the structural blueprint-conformance blockers (\"Soalan {id} tidak layak: ...\") are overridden and the paper is published; the reason and the overridden lines go to the audit row bijak.paper.published_override and the answer lists them in `overridden`. Override without a reason: 422 \"Sebab diperlukan untuk menerbitkan walaupun tidak memenuhi kontrak blueprint\" on fields.reason. Blockers about the questions or the printed structure (not Terbit, duplicates, split or incomplete groups, counts, marks) are never overridable: the answer stays ok false. A normal 200 result (not an error): { ok: true, errors: [] }, or { ok: false, errors: string[] } with the BM lines of checkPaper. Paper-wide lines come first: \"Soalan berulang dalam kertas: {ids}\" and \"Kumpulan rangsangan {group} dipecahkan antara dua bahagian\". Each section line follows, prefixed with the section label (\"{label}: \"): \"Kurang N soalan (perlu X, ada Y)\" or \"Lebih N soalan (perlu X, ada Y)\", \"Markah M tidak sama dengan bajet B\", \"Kumpulan rangsangan G tidak berturutan\", \"Kumpulan rangsangan G tidak lengkap (N soalan tiada)\" and \"{N} soalan belum Terbit\". Nothing changes on ok: false. The refusal also carries `blockerDetails` (the same blockers as `errors`, structured: { code, message, overridable, section?, questionId? }) and `canOverride`, computed by the same rule as GET /admin/papers/{id}/review (one source of truth; codes in BIJAK_BUILDER_BLOCKER_OVERRIDABLE). On ok: true the status becomes terbit, publishedAt is set and the paper appears in GET /bijak/papers; implementations pin the question versions in force (a later edit, version n+1, does not change the paper). A paper that is already terbit is checked again and stays terbit. Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -110461,7 +110538,7 @@
           "bijak-builder"
         ],
         "summary": "Paper builder: review (blockers, per-row servability, visibility)",
-        "description": "Blockers are the publish refusal lines (checkPaper plus the structural tier of verifyComposition). Standard-tier findings (quota, profile, KBAT) are notes and set blueprintNeedsReview; they never block a curated paper (D78 O-2). Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "Blockers are the publish refusal lines (checkPaper plus the structural tier of verifyComposition). `blockerDetails` is the same list, structured ({ code, message, overridable, section?, questionId? }), and `canOverride` is true when no hard blocker is present and at least one is overridable (the Kontrak is the only thing in the way); the publish refusal carries the same two fields. Standard-tier findings (quota, profile, KBAT) are notes and set blueprintNeedsReview; they never block a curated paper (D78 O-2). Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {

@@ -77,7 +77,8 @@ import {
   verifyComposition,
   type QuestionFacts,
 } from './exam-core.adapter'
-import { checkPaper, normalizeUnits, publishErrors, reorderUnits, unitsOf, addUnit, removeUnit, type PaperCheck } from './paper-check'
+import { checkPaperDetailed, normalizeUnits, reorderUnits, unitsOf, addUnit, removeUnit, type CheckIssue, type PaperCheck } from './paper-check'
+import { blockerView, toBlockers, type BlockerDraft } from './blockers'
 import { shortageToWire, standardForPaper, violationLines } from './standard'
 import { BijakBuilderPorts, type BuilderGroupInfo, type BuilderQuestionInfo, type BuilderQuestionRef } from './ports'
 
@@ -109,6 +110,8 @@ interface Evaluation {
   info: Info
   groups: ReadonlyMap<string, BuilderGroupInfo>
   check: PaperCheck
+  /** The blocking lines of `check` with their codes (same order as `publishErrors(check)`). */
+  issues: CheckIssue[]
 }
 
 /**
@@ -193,7 +196,7 @@ export class BuilderService {
           if (!marks.has(id)) marks.set(id, pl.marksOverride ?? found?.marks ?? 0)
         }
       const placed = [...marks.keys()]
-      const check = checkPaper({
+      const { check, issues } = checkPaperDetailed({
         specs: paper.sections.map((s) => ({
           label: s.label,
           markBudget: s.markBudget,
@@ -207,7 +210,7 @@ export class BuilderService {
         isLive: (id) => isServableStatus(info.get(id)?.status ?? ''),
         isStimulusGroup: (g) => groups.has(g),
       })
-      return { info, groups, check }
+      return { info, groups, check, issues }
     })
   }
 
@@ -520,16 +523,17 @@ export class BuilderService {
       const ev = await this.evaluate(paper)
       const structural = await this.structuralCheck(paper)
       const reports = await this.servability.reports(paper.sections.flatMap((s) => s.placements.map((pl) => idToString(pl.questionId))))
-      // Hard blockers (never overridable): the paper's own checks (incl. D93 groups), a question missing from the pool, a question pupils cannot be served.
-      const hard = [...new Set([...publishErrors(ev.check), ...structural.fixed, ...this.attemptBlockers(paper, ev, reports)])]
-      // The Kontrak line is overridable like the other blueprint blockers; a paper that is already Terbit keeps its (overridden) Kontrak, so a repeated Terbit stays ok.
-      const overridable = [...(paper.status === 'published' ? [] : structural.contract), ...structural.blockers]
-      const errors = [...new Set([...hard, ...overridable])]
+      // ONE rule for the review and for publish: `collectBlockers` (hard = the paper's own checks incl. D93 groups, a question missing from the
+      // pool, a question pupils cannot be served; overridable = the Kontrak line, which a paper that is already Terbit keeps (overridden), plus the structural blueprint lines).
+      const blockers = this.collectBlockers(paper, ev, structural, reports)
+      const errors = blockers.map((b) => b.message)
+      const overridable = blockers.filter((b) => b.overridable).map((b) => b.message)
+      const view = blockerView(blockers)
       const review = structural.notes.length > 0 ? { notes: structural.notes, blueprintNeedsReview: true } : {}
       // R1-T34 (V2 `studio.paper.published_override`): only the blueprint-conformance blockers (incl. a contract that is not Disahkan) can be overridden, with a reason, audited.
-      const override = request.override === true && hard.length === 0 && overridable.length > 0
-      if (errors.length > 0 && !override) return { ok: false, errors, ...review }
-      if (paper.status === 'published') return { ok: true, errors: [], ...review }
+      const override = request.override === true && view.canOverride
+      if (errors.length > 0 && !override) return { ok: false, errors, ...view, ...review }
+      if (paper.status === 'published') return { ok: true, errors: [], blockerDetails: [], canOverride: false, ...review }
       // Pin every placed question (all members of a group) at the version in force and freeze its marks.
       for (const s of paper.sections)
         for (const pl of s.placements) {
@@ -556,9 +560,9 @@ export class BuilderService {
           overridden: overridable.slice(0, 50),
           count: overridable.length,
         })
-        return { ok: true, errors: [], overridden: overridable, ...review }
+        return { ok: true, errors: [], blockerDetails: [], canOverride: false, overridden: overridable, ...review }
       }
-      return { ok: true, errors: [], ...review }
+      return { ok: true, errors: [], blockerDetails: [], canOverride: false, ...review }
     })
   }
 
@@ -599,13 +603,13 @@ export class BuilderService {
    * (`fixed`: the audited override never lifts it) and every other check still runs. AC-R1-16.2 (R1E2E-07): a
    * contract that is not Disahkan is a blocker (`blockers`, so the audited override applies).
    */
-  private async structuralCheck(paper: PaperTree): Promise<{ blockers: string[]; contract: string[]; fixed: string[]; notes: string[]; report: unknown | null }> {
-    const none = { blockers: [] as string[], contract: [] as string[], fixed: [] as string[], notes: [] as string[], report: null }
+  private async structuralCheck(paper: PaperTree): Promise<{ blockers: BlockerDraft[]; contract: BlockerDraft[]; fixed: BlockerDraft[]; notes: string[]; report: unknown | null }> {
+    const none = { blockers: [] as BlockerDraft[], contract: [] as BlockerDraft[], fixed: [] as BlockerDraft[], notes: [] as string[], report: null }
     if (paper.blueprintId === null) return none
     const subject = (await this.repo.subjectsByIds([paper.subjectId])).get(paper.subjectId.toString())
     const blueprint = await this.repo.blueprintById(paper.blueprintId)
     if (!subject || !blueprint) return none
-    const contract = blueprint.source === 'verified' ? [] : [contractNotVerifiedLine(blueprint.code, blueprint.version, sourceToWire(blueprint.source))]
+    const contract: BlockerDraft[] = blueprint.source === 'verified' ? [] : [{ code: 'BLUEPRINT_NOT_VERIFIED', message: contractNotVerifiedLine(blueprint.code, blueprint.version, sourceToWire(blueprint.source)) }]
     const std = standardForPaper(paper, blueprint, bijakCodeOf(subject.code))
     if (!std) return { ...none, contract }
     const composed = paper.sections.map((s, i) => ({ position: i + 1, questionIds: s.placements.map((pl) => idToString(pl.questionId)) }))
@@ -614,8 +618,29 @@ export class BuilderService {
     const labelOf = (pos: number) => std.sections.find((s) => s.position === pos)?.label ?? `Bahagian ${String(pos)}`
     const lines = violationLines(verifyComposition(std, composed, facts), labelOf)
     // The frozen report needs a clean composition; the contract line alone does not stop it (an override publishes with it).
-    const report = lines.blockers.length === 0 && lines.fixed.length === 0 ? buildStandardReport(std, composed, facts, { seed: 0, solverVersion: SOLVER_VERSION }) : null
-    return { blockers: lines.blockers, contract, fixed: lines.fixed, notes: lines.notes, report }
+    const report = lines.blockerIssues.length === 0 && lines.fixedIssues.length === 0 ? buildStandardReport(std, composed, facts, { seed: 0, solverVersion: SOLVER_VERSION }) : null
+    return { blockers: lines.blockerIssues, contract, fixed: lines.fixedIssues, notes: lines.notes, report }
+  }
+
+  /**
+   * The Terbit blockers of a paper, in display order, with the single `overridable` rule (contract `BIJAK_BUILDER_BLOCKER_OVERRIDABLE`). Used by
+   * `review` AND `publish`, so the two always agree. Hard (never overridable): the paper's own checks (incl. D93 groups), a placed question missing
+   * from the pool, a question pupils cannot be served. Overridable: the Kontrak is not Disahkan (not for a paper that is already Terbit) and the
+   * structural blueprint blockers.
+   */
+  private collectBlockers(
+    paper: PaperTree,
+    ev: Evaluation,
+    structural: { blockers: BlockerDraft[]; contract: BlockerDraft[]; fixed: BlockerDraft[] },
+    reports: ReadonlyMap<string, ServabilityReport>,
+  ) {
+    return toBlockers([
+      ...ev.issues,
+      ...structural.fixed,
+      ...this.attemptBlockers(paper, ev, reports),
+      ...(paper.status === 'published' ? [] : structural.contract),
+      ...structural.blockers,
+    ])
   }
 
   /**
@@ -623,8 +648,8 @@ export class BuilderService {
    * ServabilityService `simulasi_paper` one; "not on a published paper" is the paper's own business, and a question that is not approved is
    * already counted by `checkPaper` ("n soalan belum Terbit"). Never overridable.
    */
-  private attemptBlockers(paper: PaperTree, ev: Evaluation, reports: ReadonlyMap<string, ServabilityReport>): string[] {
-    const out: string[] = []
+  private attemptBlockers(paper: PaperTree, ev: Evaluation, reports: ReadonlyMap<string, ServabilityReport>): BlockerDraft[] {
+    const out: BlockerDraft[] = []
     const seen = new Set<string>()
     for (const s of paper.sections)
       for (const pl of s.placements) {
@@ -635,7 +660,7 @@ export class BuilderService {
         if (!q || !isServableStatus(q.status)) continue
         const sim = reports.get(id)?.activities.find((a) => a.activity === 'simulasi_paper')
         const reason = (sim?.reasons ?? []).find((r) => r.code !== 'not_on_published_paper')
-        if (reason) out.push(attemptRefusalLine(id, reason.message))
+        if (reason) out.push({ code: 'NOT_SERVABLE', message: attemptRefusalLine(id, reason.message), questionId: id })
       }
     return out
   }
@@ -757,7 +782,8 @@ export class BuilderService {
     // "not on a published paper", so that one reason is left out. A question the service does not know keeps the status-only reason.
     const placed = paper.sections.flatMap((s) => s.placements.map((pl) => idToString(pl.questionId)))
     const reports = await this.servability.reports(placed)
-    const blockers = [...new Set([...publishErrors(ev.check), ...structural.fixed, ...this.attemptBlockers(paper, ev, reports), ...(paper.status === 'published' ? [] : structural.contract), ...structural.blockers])]
+    const blockerList = this.collectBlockers(paper, ev, structural, reports)
+    const blockers = blockerList.map((b) => b.message)
     const rows = paper.sections.flatMap((s) =>
       s.placements.map((pl) => {
         const id = idToString(pl.questionId)
@@ -790,6 +816,7 @@ export class BuilderService {
       status: statusOf(paper.status),
       ok: blockers.length === 0,
       blockers,
+      ...blockerView(blockerList),
       notes: structural.notes,
       blueprintNeedsReview: structural.notes.length > 0,
       visibleToStudents: paper.status === 'published',
