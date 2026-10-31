@@ -166,3 +166,53 @@ describe('Laporan Soalan: archive from the report row (R1-B17)', () => {
     expect(res.status).toBe(403)
   })
 })
+
+describe('Laporan Soalan: "Arkib" on a live question with a newer revision in Semakan (T35 follow-up)', () => {
+  let q2 = ''
+  let report2 = ''
+
+  it('setup: a second served question gets a version 2 in Semakan (live stays version 1)', async () => {
+    q2 = (await t.db.query<{ id: string }>(`select question_id::text id from question_versions where number_label = 'SEED-MCQ-MATH-T5' limit 1`))[0]!.id
+    const cols = (
+      await t.db.query<{ column_name: string }>(
+        `select column_name from information_schema.columns where table_name = 'question_versions' and column_name not in ('id', 'version_no', 'status') order by ordinal_position`,
+      )
+    ).map((c) => `"${c.column_name}"`)
+    await t.db.query(
+      `insert into question_versions (version_no, status, ${cols.join(', ')}) select 2, 'review', ${cols.join(', ')} from question_versions where question_id = $1 and version_no = 1`,
+      [q2],
+    )
+    await t.db.query(`update questions set latest_version_no = 2 where id = $1`, [q2])
+    const [row] = await t.db.query<{ live: number; latest: number; status: string }>(
+      `select q.live_version_no live, q.latest_version_no latest, v.status from questions q join question_versions v on v.question_id = q.id and v.version_no = q.latest_version_no where q.id = $1`,
+      [q2],
+    )
+    expect(row).toEqual({ live: 1, latest: 2, status: 'review' })
+    const student = await loginAs(t, STUDENT)
+    const res = await student.post('/api/question-reports', { questionId: q2, reasons: ['wrong_answer'], comment: 'Jawapan tidak tepat' })
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    report2 = (await t.db.query<{ id: string }>(`select id::text from question_reports where question_id = $1`, [q2]))[0]!.id
+  })
+
+  it('Arkib archives the LIVE version (200, not a 409 "Conflict."): serving ends, the revision stays in Semakan, one event on version 1', async () => {
+    const res = await adminPatch(`/api/question-reports/${report2}`, { status: 'fixed', archive: true })
+    expect(res.status, JSON.stringify(res.body)).toBe(200)
+    const versions = await t.db.query<{ version_no: number; status: string }>(`select version_no, status from question_versions where question_id = $1 order by version_no`, [q2])
+    expect(versions).toEqual([
+      { version_no: 1, status: 'archived' },
+      { version_no: 2, status: 'review' },
+    ])
+    expect((await t.db.query<{ live: number | null }>(`select live_version_no live from questions where id = $1`, [q2]))[0]!.live).toBeNull()
+    const events = await t.db.query<{ version_no: number; from_status: string; to_status: string; reason: string | null }>(
+      `select version_no, from_status, to_status, reason from question_status_events where question_id = $1 order by id desc limit 1`,
+      [q2],
+    )
+    expect(events[0]).toMatchObject({ version_no: 1, from_status: 'approved', to_status: 'archived' })
+  })
+
+  it('the archived live question is no longer drawn and a second Arkib is a no-op', async () => {
+    expect(await drawn()).not.toContain(q2)
+    const again = await adminPatch(`/api/question-reports/${report2}`, { status: 'fixed', archive: true })
+    expect(again.status, JSON.stringify(again.body)).toBe(200)
+  })
+})

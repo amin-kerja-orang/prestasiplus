@@ -1,9 +1,9 @@
-import { ModuleRef } from '@nestjs/core'
-import { Body, Controller, Get, Inject, Param, Patch, Post, Query, UseGuards, UseInterceptors } from '@nestjs/common'
+import { Body, Controller, forwardRef, Get, Inject, Param, Patch, Post, Query, UseGuards, UseInterceptors } from '@nestjs/common'
 
 import { NoStoreInterceptor } from '../../../../common/http'
 import { RateLimit, RateLimitGuard } from '../../../../common/throttle'
 import { Actor, AdminOnly, type WorkflowActor } from '../actor'
+import { QuestionWorkflowService } from '../question-workflow.service'
 import { REPORT_ARCHIVE_REASON, REPORT_LIMITS } from './reports.constants'
 import { QuestionReportsService } from './reports.service'
 
@@ -19,8 +19,8 @@ import { QuestionReportsService } from './reports.service'
 export class QuestionReportsController {
   constructor(
     @Inject(QuestionReportsService) private readonly reports: QuestionReportsService,
-    // Resolved on use: the lifecycle imports the reports module, so a constructor token here would be a circular import.
-    @Inject(ModuleRef) private readonly moduleRef: ModuleRef,
+    // forwardRef: the lifecycle imports the reports module, so the workflow service and this controller import each other.
+    @Inject(forwardRef(() => QuestionWorkflowService)) private readonly workflow: QuestionWorkflowService,
   ) {}
 
   @Post()
@@ -45,13 +45,7 @@ export class QuestionReportsController {
   @RateLimit(REPORT_LIMITS.write)
   update(@Actor() actor: WorkflowActor, @Param('id') id: string, @Body() body: unknown) {
     // "Arkib" on the row: the real lifecycle archive (table, status event) in the same transaction as the report update.
-    // An already archived question is left as it is (the move would be a 409).
-    return this.reports.update(actor, id, body, async (questionId) => {
-      // Loaded on use: the lifecycle imports this module, so a static import of the service would be circular.
-      const { QuestionWorkflowService } = await import('../question-workflow.service')
-      const workflow = this.moduleRef.get(QuestionWorkflowService, { strict: false })
-      const info = await workflow.bank.getStatus(questionId)
-      if (info && info.status !== 'archived') await workflow.transition(questionId, 'archived', actor, { reason: REPORT_ARCHIVE_REASON })
-    })
+    // An already archived question is left as it is; a live question with a newer revision in review has its live version archived.
+    return this.reports.update(actor, id, body, (questionId) => this.workflow.archiveReported(questionId, actor, REPORT_ARCHIVE_REASON))
   }
 }

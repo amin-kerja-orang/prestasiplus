@@ -62,6 +62,7 @@ export class CompositeBuilderQuestionSource implements BuilderQuestionSource {
     return {
       questions: ids.flatMap((id) => (byId.has(id) ? [byId.get(id)!] : [])),
       stimuli: { ...(p?.stimuli ?? {}), ...(b?.stimuli ?? {}) } as Record<string, BijakAttemptStimulus>,
+      groupStimuli: { ...(p?.groupStimuli ?? {}), ...(b?.groupStimuli ?? {}) },
       optionBanks: { ...(p?.optionBanks ?? {}), ...(b?.optionBanks ?? {}) },
     }
   }
