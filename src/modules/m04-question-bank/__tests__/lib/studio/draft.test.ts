@@ -6,6 +6,7 @@ import {
   blankLeaf,
   draftGaps,
   draftTp,
+  editAsDraftBody,
   hydrate,
   MAX_OPTIONS,
   MIN_OPTIONS,
@@ -168,5 +169,50 @@ describe('Studio draft', () => {
     for (let i = 0; i < 10; i += 1) leaf = addOption(leaf)
     expect(leaf.options).toHaveLength(MAX_OPTIONS)
     expect(withMode(leaf, 'short_text')).toMatchObject({ mode: 'short_text', options: [], correct: '' })
+  })
+
+  describe('lossless guard (T13b)', () => {
+    const wire = (part: Record<string, unknown>, tag: { unitId: string | null; spIds: string[]; tp: number | null } = { unitId: null, spIds: [], tp: null }) => ({
+      subjectId: '3',
+      educationLevelId: '7',
+      difficultyLevel: 3,
+      questionText: 'Soalan yang cukup panjang.',
+      questionImage: null,
+      curriculumChapterId: null,
+      parts: [{ label: 'a', prompt: { ms: 'P' }, marks: 1, ...part }],
+      tag,
+    })
+    const shortText = { mode: 'short_text', key: { kind: 'accepted', values: ['ya'] } }
+    const numeric = { mode: 'numeric', key: { kind: 'accepted', values: [{ v: 2 }] } }
+
+    it.each([
+      ['reveal', { ...shortText, reveal: 'never' }],
+      ['leaf stimulusId', { ...shortText, stimulusId: '5' }],
+      ['caseSensitive', { mode: 'short_text', key: { kind: 'accepted', values: ['ya'], caseSensitive: true } }],
+      ['anyOrder', { mode: 'short_text', key: { kind: 'accepted', values: ['ya'], anyOrder: true } }],
+      ['numeric tolKind rel', { mode: 'numeric', key: { kind: 'accepted', values: [{ v: 2, tol: 1, tolKind: 'rel' }] } }],
+      ['numeric sigFigs', { mode: 'numeric', key: { kind: 'accepted', values: [{ v: 2, sigFigs: 3 }] } }],
+      ['second numeric value', { mode: 'numeric', key: { kind: 'accepted', values: [{ v: 2 }, { v: 3 }] } }],
+      ['kbat contradicting the level', { ...shortText, cognitiveLevel: 'mengingat', kbat: 'menilai' }],
+      ['prompt.en', { ...shortText, prompt: { ms: 'P', en: 'Q' } }],
+    ])('marks %s as unsupported instead of dropping it', (_n, part) => {
+      expect(hydrate(wire(part)).unsupported).toHaveLength(1)
+    })
+
+    it('marks a stored question TP the leaves do not give as unsupported', () => {
+      expect(hydrate(wire(numeric, { unitId: null, spIds: [], tp: 3 })).unsupported).toHaveLength(1)
+      expect(hydrate(wire({ ...numeric, difficultyTp: 3 }, { unitId: null, spIds: [], tp: 3 })).unsupported).toEqual([])
+    })
+
+    it('accepts null-valued extras and explicit defaults', () => {
+      expect(hydrate(wire({ ...shortText, reveal: null, stimulusId: undefined, key: { kind: 'accepted', values: ['ya'], caseSensitive: false } })).unsupported).toEqual([])
+    })
+
+    it('edit-as-draft sends the four required fields and the stored parts only', () => {
+      const q = { ...wire({ ...shortText, reveal: 'never' }, { unitId: '9', spIds: ['1'], tp: 4 }), numberLabel: '7', kertas: '2' }
+      const body = editAsDraftBody(q)
+      expect(Object.keys(body).sort()).toEqual(['difficultyLevel', 'educationLevelId', 'parts', 'questionText', 'subjectId'])
+      expect(body.parts).toBe(q.parts)
+    })
   })
 })
