@@ -17,6 +17,7 @@ const studio = vi.hoisted(() => ({
   updateStudioQuestion: vi.fn(),
   createQuestionInGroup: vi.fn(),
   fetchGroup: vi.fn(),
+  listGroups: vi.fn(),
   createGroup: vi.fn(),
   createStimulus: vi.fn(),
   updateStimulus: vi.fn(),
@@ -47,6 +48,10 @@ const GROUP = {
   scope: 'section',
   stimuli: [{ id: '70', kind: 'diagram', label: 'Rajah 1', caption: null, alt: 'Segi tiga', body: { ms: 'Penerangan' }, tableData: null, sourceCitation: null, imageId: null }],
   questionIds: ['501', '502'],
+  members: [
+    { id: '501', numberLabel: '1', stem: 'S501 berdasarkan Rajah 1', status: 'draft', servable: false },
+    { id: '502', numberLabel: '2', stem: 'S502 berdasarkan Rajah 1', status: 'draft', servable: false },
+  ],
 }
 const serve = (main: { id: string; [k: string]: unknown }) =>
   studio.fetchStudioQuestion.mockImplementation((id: string) => Promise.resolve(id === main.id ? main : member(id)))
@@ -80,6 +85,7 @@ beforeEach(() => {
   studio.fetchStudioDskp.mockResolvedValue(DSKP)
   studio.fetchStudioQuestion.mockImplementation((id: string) => Promise.resolve(member(id)))
   studio.fetchGroup.mockResolvedValue(GROUP)
+  studio.listGroups.mockResolvedValue({ data: [], meta: { page: 1, pageSize: 10, totalItems: 0 } })
   studio.fetchServability.mockResolvedValue({ questionId: '700', versionNo: 1, servedCount: 0, total: 6, activities: [] })
   lookups.fetchSubjects.mockReset().mockResolvedValue({ data: [{ id: 3, name: 'Matematik' }], meta: {} })
   lookups.fetchEducationLevels.mockReset().mockResolvedValue({ data: [{ id: 7, name: 'Tingkatan 4' }], meta: {} })

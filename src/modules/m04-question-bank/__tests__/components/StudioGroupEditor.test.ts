@@ -8,7 +8,7 @@ import StudioGroupEditor from '../../components/studio/StudioGroupEditor.vue'
 
 const api = vi.hoisted(() => ({
   fetchGroup: vi.fn(),
-  fetchStudioQuestion: vi.fn(),
+  listGroups: vi.fn(),
   createGroup: vi.fn(),
   createStimulus: vi.fn(),
   updateStimulus: vi.fn(),
@@ -22,8 +22,10 @@ const api = vi.hoisted(() => ({
 vi.mock('../../api/studio', () => api)
 
 const stimulus = { id: '70', kind: 'diagram', label: 'Rajah 1', caption: null, alt: 'Segi tiga', body: null, tableData: null, sourceCitation: null, imageId: 'abcdefghijklmnopqrstuv' }
-const detail = (ids = ['11', '12', '13'], warning: string | null = null) => ({ id: '5', label: 'Rajah 1', scope: 'section', stimuli: [stimulus], questionIds: ids, warning })
-const question = (id: string, status = 'draft') => ({ id, status, questionText: `Berdasarkan Rajah 1, apakah S${id}?`, numberLabel: id })
+const member = (id: string, status = 'draft') => ({ id, numberLabel: id, stem: `Berdasarkan Rajah 1, apakah S${id}?`, status, servable: status === 'approved' })
+const detail = (ids = ['11', '12', '13'], warning: string | null = null) => ({ id: '5', label: 'Rajah 1', scope: 'section', stimuli: [stimulus], questionIds: ids, members: ids.map((i) => member(i)), warning })
+const groupRow = (id: string, label: string | null, memberCount = 2) => ({ id, label, scope: 'section', stimuli: [{ id: '70', kind: 'diagram', label: 'Rajah 1', imageId: null }], memberCount, members: [member('21')], status: 'draft', warning: null })
+const page = (rows: unknown[], totalItems = rows.length) => ({ data: rows, meta: { page: 1, pageSize: 10, totalItems } })
 
 let wrapper: VueWrapper | null = null
 async function render(groupId: string | null = '5', props: Record<string, unknown> = {}): Promise<VueWrapper> {
@@ -41,7 +43,7 @@ const order = (w: VueWrapper): string[] => w.findAll('[data-testid^="studio-grou
 beforeEach(() => {
   for (const f of Object.values(api)) f.mockReset()
   api.fetchGroup.mockResolvedValue(detail())
-  api.fetchStudioQuestion.mockImplementation((id: string) => Promise.resolve(question(id)))
+  api.listGroups.mockResolvedValue(page([]))
 })
 afterEach(() => {
   wrapper?.unmount()
@@ -49,10 +51,11 @@ afterEach(() => {
 })
 
 describe('StudioGroupEditor on the stimulus API (T32, D90)', () => {
-  it('shows one stimulus and its members in order, reading each member question', async () => {
+  it('shows one stimulus and its members in order, from the group read (no per-question reads)', async () => {
     const w = await render()
     expect(api.fetchGroup).toHaveBeenCalledWith('5')
-    expect(api.fetchStudioQuestion).toHaveBeenCalledTimes(3)
+    expect(order(w)).toEqual(['11', '12', '13'])
+    expect(w.get('[data-testid="studio-group-member-12"]').text()).toContain('apakah S12?')
     expect(w.findAll('[data-testid^="studio-group-stimulus-"]')).toHaveLength(1)
     expect(order(w)).toEqual(['11', '12', '13'])
     expect(t(w, 'save-members').attributes('disabled')).toBeDefined()
@@ -88,7 +91,7 @@ describe('StudioGroupEditor on the stimulus API (T32, D90)', () => {
   })
 
   it('has no client lock: an approved member does not disable the controls (the server 409 decides)', async () => {
-    api.fetchStudioQuestion.mockImplementation((id: string) => Promise.resolve(question(id, id === '12' ? 'approved' : 'draft')))
+    api.fetchGroup.mockResolvedValue({ ...detail(), members: ['11', '12', '13'].map((i) => member(i, i === '12' ? 'approved' : 'draft')) })
     const w = await render()
     expect(has(w, 'locked')).toBe(false)
     for (const id of ['member-13-up', 'member-13-remove', 'dissolve', 'search', 'add-stimulus']) expect(t(w, id).attributes('disabled')).toBeUndefined()
@@ -179,5 +182,44 @@ describe('StudioGroupEditor on the stimulus API (T32, D90)', () => {
     await t(w, 'undefer').trigger('click')
     await flushPromises()
     expect(w.emitted('update:pending')?.at(-1)?.[0]).toBeNull()
+  })
+
+  it('browses the existing groups (T49) instead of asking for an id, searches them and joins one', async () => {
+    api.listGroups.mockResolvedValue(page([groupRow('8', 'Rajah litar'), groupRow('9', null)], 12))
+    api.addGroupMember.mockResolvedValue({ data: detail(), status: 'ok' })
+    const w = await render(null)
+    expect(api.listGroups).toHaveBeenCalledWith({ q: null, page: 1, pageSize: 10 })
+    expect(has(w, 'attach-id')).toBe(false)
+    expect(t(w, 'group-8').text()).toContain('Rajah litar')
+    expect(t(w, 'group-9').text()).toContain('Rajah 1')
+    vi.useFakeTimers()
+    await w.get('[data-testid="studio-group-group-search"]').setValue('litar')
+    await vi.advanceTimersByTimeAsync(350)
+    vi.useRealTimers()
+    await flushPromises()
+    expect(api.listGroups).toHaveBeenLastCalledWith({ q: 'litar', page: 1, pageSize: 10 })
+    await t(w, 'groups-next').trigger('click')
+    await flushPromises()
+    expect(api.listGroups).toHaveBeenLastCalledWith({ q: 'litar', page: 2, pageSize: 10 })
+    await t(w, 'group-8-join').trigger('click')
+    await flushPromises()
+    expect(api.addGroupMember).toHaveBeenCalledWith('8', '11')
+    expect(w.emitted('update:groupId')?.[0]).toEqual(['5'])
+  })
+
+  it('on an unsaved question joining a group only sets the group id, and an empty browse says so', async () => {
+    api.listGroups.mockResolvedValueOnce(page([])).mockResolvedValue(page([groupRow('8', 'Rajah litar')]))
+    const w = await render(null, { currentQuestionId: null })
+    expect(t(w, 'groups-empty').text()).toBe('Tiada kumpulan dijumpai.')
+    vi.useFakeTimers()
+    await w.get('[data-testid="studio-group-group-search"]').setValue('lit')
+    await vi.advanceTimersByTimeAsync(350)
+    vi.useRealTimers()
+    await flushPromises()
+    // A plain click: the unsaved question has no id yet, so joining only sets the group id.
+    ;(t(w, 'group-8-join').element as HTMLElement).click()
+    await flushPromises()
+    expect(api.addGroupMember).not.toHaveBeenCalled()
+    expect(w.emitted('update:groupId')?.[0]).toEqual(['8'])
   })
 })

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
  * Studio list `/admin/studio` (R1-F03a, V2 admin.md A01, design S1.1): "Studio", "Bank soalan kanonikal - cipta, semak, terbit".
- * Four status tiles (Draft, Reviewed, Approved, Archived) that set the Status filter, the filters the API supports
- * (Subjek, Status, Cari; Tahun, Negeri, Kertas, Jenis wait for the API, UX-19), the table No. / Soalan / Kertas / Sumber / Status
+ * Four status tiles (Draft, Reviewed, Approved, Archived) that set the Status filter, the filters (Subjek, Status, Cari and, on
+ * the source paper, Tahun, Negeri, Kertas, Jenis: T47), the table No. / Soalan / Kertas / Sumber / Status
  * at 25 per page (cards below `md`), and the row actions Pratonton, Edit or Edit sebagai draf, and Sembunyikan ("Arkibkan soalan
  * ini?"). Under each badge: "Dilihat murid di x/n" from the servability batch read. The URL is the state, as on the legacy list.
  * Studio talks to the real API only (D84).
@@ -70,9 +70,18 @@ const STUDIO_PATH = '/admin/studio'
 const CREATE_PATH = '/admin/studio/questions/create'
 const editPath = (id: string): string => `${STUDIO_PATH}/questions/${id}/sunting`
 
+/** Kertas 1 to 3 and the exam types of the source paper (V2 "Jenis"). */
+const KERTAS_OPTIONS = ['1', '2', '3']
+const JENIS_OPTIONS = [
+  { value: 'sebenar', label: 'Sebenar' },
+  { value: 'percubaan', label: 'Percubaan' },
+  { value: 'modul', label: 'Modul' },
+  { value: 'topikal', label: 'Topikal' },
+  { value: 'latihan', label: 'Latihan' },
+]
 const PAGE_SIZES = [25, 50, 100]
 const DEFAULT_PAGE_SIZE = 25
-const KEYS = ['subject_id', 'status', 'search'] as const
+const KEYS = ['subject_id', 'status', 'search', 'tahun', 'negeri', 'kertas', 'jenis'] as const
 type Key = (typeof KEYS)[number]
 
 const route = useRoute()
@@ -85,9 +94,17 @@ const lg = useMedia('(min-width: 1024px)')
 
 const available = studioAvailable()
 
+/** A value the API would refuse (422) is dropped from the URL state, so a hand-typed address cannot break the list. */
+const validFilter = (k: Key, v: string): string => {
+  if (k === 'tahun') return /^\d{4}$/.test(v) ? v : ''
+  if (k === 'kertas') return KERTAS_OPTIONS.includes(v) ? v : ''
+  if (k === 'jenis') return JENIS_OPTIONS.some((o) => o.value === v) ? v : ''
+  if (k === 'negeri') return v.slice(0, 64)
+  return v
+}
 const applied = computed(() => {
   const out = {} as Record<Key, string>
-  for (const k of KEYS) out[k] = queryText(route.query[k]).trim()
+  for (const k of KEYS) out[k] = validFilter(k, queryText(route.query[k]).trim())
   return out
 })
 const page = computed(() => pageOf(route.query.page))
@@ -112,6 +129,10 @@ const list = useApi(
           subjectId: applied.value.subject_id || null,
           status: applied.value.status || null,
           search: applied.value.search || null,
+          tahun: applied.value.tahun || null,
+          negeri: applied.value.negeri || null,
+          kertas: applied.value.kertas || null,
+          jenis: applied.value.jenis || null,
           page: page.value,
           pageSize: perPage.value,
           signal,
@@ -158,12 +179,19 @@ const chips = computed(() => {
   }
   if (applied.value.status !== '') out.push({ key: 'status', label: `Status: ${statusBadge(applied.value.status)}` })
   if (applied.value.search !== '') out.push({ key: 'search', label: `Cari: ${applied.value.search}` })
+  if (applied.value.tahun !== '') out.push({ key: 'tahun', label: `Tahun: ${applied.value.tahun}` })
+  if (applied.value.negeri !== '') out.push({ key: 'negeri', label: `Negeri: ${applied.value.negeri}` })
+  if (applied.value.kertas !== '') out.push({ key: 'kertas', label: `Kertas: ${applied.value.kertas}` })
+  if (applied.value.jenis !== '') out.push({ key: 'jenis', label: `Jenis: ${JENIS_OPTIONS.find((o) => o.value === applied.value.jenis)?.label ?? applied.value.jenis}` })
   return out
 })
 
 async function submitFilter(): Promise<void> {
   const query: Record<string, string> = {}
-  for (const k of KEYS) if (draft.value[k].trim() !== '') query[k] = draft.value[k].trim()
+  for (const k of KEYS) {
+    const v = validFilter(k, draft.value[k].trim())
+    if (v !== '') query[k] = v
+  }
   if (perPage.value !== DEFAULT_PAGE_SIZE) query.per_page = String(perPage.value)
   if (JSON.stringify(query) === JSON.stringify(pagerQuery.value) && !route.query.page) await list.reload()
   else await router.push({ path: STUDIO_PATH, query })
@@ -368,6 +396,24 @@ const cardFields: CardField[] = [
           <DsNativeSelect id="studio-status-filter" v-model="draft.status" name="status" aria-label="Status" data-testid="studio-status-filter">
             <option value="">Semua status</option>
             <option v-for="s in STATUS_ORDER" :key="s" :value="s">{{ statusBadge(s) }}</option>
+          </DsNativeSelect>
+        </div>
+        <div class="w-full min-w-0 md:w-28">
+          <UInput v-model="draft.tahun" type="text" name="tahun" inputmode="numeric" maxlength="4" placeholder="Tahun" aria-label="Tahun" data-testid="studio-tahun-filter" />
+        </div>
+        <div class="w-full min-w-0 md:w-48">
+          <UInput v-model="draft.negeri" type="text" name="negeri" maxlength="64" placeholder="Negeri / badan peperiksaan" aria-label="Negeri" data-testid="studio-negeri-filter" />
+        </div>
+        <div class="w-full min-w-0 md:w-36">
+          <DsNativeSelect id="studio-kertas-filter" v-model="draft.kertas" name="kertas" aria-label="Kertas" data-testid="studio-kertas-filter">
+            <option value="">Semua kertas</option>
+            <option v-for="k in KERTAS_OPTIONS" :key="k" :value="k">Kertas {{ k }}</option>
+          </DsNativeSelect>
+        </div>
+        <div class="w-full min-w-0 md:w-40">
+          <DsNativeSelect id="studio-jenis-filter" v-model="draft.jenis" name="jenis" aria-label="Jenis" data-testid="studio-jenis-filter">
+            <option value="">Semua jenis</option>
+            <option v-for="j in JENIS_OPTIONS" :key="j.value" :value="j.value">{{ j.label }}</option>
           </DsNativeSelect>
         </div>
       </DsFilterBar>

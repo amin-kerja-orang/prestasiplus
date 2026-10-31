@@ -94,6 +94,20 @@ describe('StudioListPage (S1 to S6)', () => {
     expect(studio.fetchStudioList).toHaveBeenLastCalledWith(expect.objectContaining({ subjectId: '3', status: 'review', search: 'litar', page: 1, pageSize: 25 }))
   })
 
+  it('passes the source-paper filters Tahun, Negeri, Kertas and Jenis (T47) and shows them as chips', async () => {
+    const w = await render('/admin/studio?tahun=2024&negeri=Selangor&kertas=2&jenis=percubaan')
+    expect(studio.fetchStudioList).toHaveBeenLastCalledWith(expect.objectContaining({ tahun: '2024', negeri: 'Selangor', kertas: '2', jenis: 'percubaan' }))
+    const text = w.text()
+    for (const chip of ['Tahun: 2024', 'Negeri: Selangor', 'Kertas: 2', 'Jenis: Percubaan']) expect(text).toContain(chip)
+    expect(t(w, 'studio-jenis-filter').text()).toContain('Semua jenis')
+    expect(t(w, 'studio-kertas-filter').text()).toContain('Kertas 3')
+  })
+
+  it('drops a filter value the API would refuse instead of sending it', async () => {
+    await render('/admin/studio?tahun=24&kertas=9&jenis=ujian')
+    expect(studio.fetchStudioList).toHaveBeenLastCalledWith(expect.objectContaining({ tahun: null, kertas: null, jenis: null }))
+  })
+
   it('has Subjek and Status selects with "Semua ..." and the Tapis / Set Semula buttons', async () => {
     const w = await render()
     expect(t(w, 'studio-subject-filter').text()).toContain('Semua subjek')

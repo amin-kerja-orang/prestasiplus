@@ -5,7 +5,7 @@
  * creates the group from a saved question (a stimulus plus at least one more question), edits its stimuli (1 to 3), and adds,
  * removes and reorders its members; member changes are saved together. A group with a served member is read-only here.
  */
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { DsCallout, DsCluster, DsFormField, DsHeading, DsLoadError, DsStack, DsSurface, DsText } from '@/ds'
 
@@ -13,13 +13,14 @@ import {
   addGroupMember,
   createGroup,
   createStimulus,
+  listGroups,
   dissolveGroup,
   fetchGroup,
-  fetchStudioQuestion,
   setGroupMembers,
   searchQuestions,
   setGroupStimuli,
   updateStimulus,
+  type GroupListRow,
   type QuestionPick,
 } from '../../api/studio'
 import {
@@ -66,7 +67,12 @@ const problems = ref<string[]>([])
 const fresh = ref<StimulusForm>(blankStimulus())
 const adding = ref<StimulusForm>(blankStimulus())
 const showAddStimulus = ref(false)
-const attachId = ref('')
+const groupSearch = ref('')
+const groupRows = ref<GroupListRow[]>([])
+const groupsLoading = ref(false)
+const groupsFailed = ref(false)
+const groupPage = ref(1)
+const groupPages = ref(1)
 const search = ref('')
 const found = ref<QuestionPick[]>([])
 const searching = ref(false)
@@ -88,16 +94,10 @@ function adopt(next: GroupView | null): void {
   emit('changed', next)
 }
 
-/** The group and the stem, number and status of each member (the group read carries ids only). */
+/** The group; the group read carries the number and stem of each member (T49), so no per-question reads. */
 async function read(id: string): Promise<GroupView> {
   const g = await fetchGroup(id)
-  const list: GroupMember[] = []
-  for (let i = 0; i < g.questionIds.length; i += 6) {
-    const chunk = await Promise.all(g.questionIds.slice(i, i + 6).map((q) => fetchStudioQuestion(q)))
-    for (const q of chunk) {
-      list.push({ id: q.id, numberLabel: q.numberLabel ?? '', stem: q.questionText.slice(0, 120) })
-    }
-  }
+  const list: GroupMember[] = g.members.map((m) => ({ id: m.id, numberLabel: m.numberLabel ?? '', stem: m.stem }))
   return { id: g.id, stimuli: g.stimuli, members: list, warning: g.warning ?? null }
 }
 
@@ -184,21 +184,53 @@ async function create(): Promise<void> {
   }
 }
 
-/** Joins an existing group by id: a saved question is added to it now; a new one joins when it is saved. */
-function attach(): void {
-  const id = attachId.value.trim()
+const GROUP_PAGE_SIZE = 10
+let groupSeq = 0
+/** Browses the existing groups (T49): newest first, filtered by the search text over the group label and its stimuli. */
+async function loadGroups(page = 1): Promise<void> {
+  const token = ++groupSeq
+  groupsLoading.value = true
+  groupsFailed.value = false
+  try {
+    const res = await listGroups({ q: groupSearch.value.trim() || null, page, pageSize: GROUP_PAGE_SIZE })
+    if (token !== groupSeq) return
+    groupRows.value = res.data
+    groupPage.value = res.meta.page
+    groupPages.value = Math.max(1, Math.ceil(res.meta.totalItems / res.meta.pageSize))
+  } catch {
+    if (token === groupSeq) {
+      groupRows.value = []
+      groupsFailed.value = true
+    }
+  } finally {
+    if (token === groupSeq) groupsLoading.value = false
+  }
+}
+let groupTimer: ReturnType<typeof setTimeout> | undefined
+function onGroupSearch(): void {
+  clearTimeout(groupTimer)
+  groupTimer = setTimeout(() => void loadGroups(1), 300)
+}
+onBeforeUnmount(() => clearTimeout(groupTimer))
+watch(
+  () => view.value === null && !loading.value && !loadFailed.value,
+  (browse) => {
+    if (browse) void loadGroups(1)
+  },
+  { immediate: true },
+)
+
+const groupTitle = (g: GroupListRow): string => g.label?.trim() || g.stimuli.map((s) => s.label).join(', ') || `Kumpulan #${g.id}`
+
+/** Joins an existing group: a saved question is added to it now; a new one joins when it is saved. */
+function attach(id: string): void {
   const me = props.currentQuestionId
-  if (id === '') return
   if (me === null) {
-    attachId.value = ''
     groupId.value = id
     return
   }
   void run(() => addGroupMember(id, me)).then((g) => {
-    if (g) {
-      attachId.value = ''
-      groupId.value = g.id
-    }
+    if (g) groupId.value = g.id
   })
 }
 
@@ -351,12 +383,31 @@ const preview = (m: GroupMember): string => (m.stem.length > 90 ? `${m.stem.slic
           <UButton v-else type="button" color="neutral" variant="soft" :data-testid="`${testid}-undefer`" @click="deferred = false">
             Batalkan rangsangan kongsi
           </UButton>
-          <DsFormField v-slot="{ id }" native label="Atau sertai kumpulan sedia ada (ID)" :for="`${testid}-attach-id`">
-            <UInput :id="id" v-model="attachId" inputmode="numeric" :disabled="disabled" :data-testid="`${testid}-attach-id`" @keydown.enter.prevent="attach" />
-          </DsFormField>
-          <UButton type="button" color="neutral" variant="soft" :disabled="disabled || attachId.trim() === ''" :data-testid="`${testid}-attach`" @click="attach">
-            Sertai
-          </UButton>
+        </DsCluster>
+
+        <DsHeading :level="3">Atau sertai kumpulan sedia ada</DsHeading>
+        <DsFormField v-slot="{ id }" native label="Cari kumpulan" :for="`${testid}-group-search`">
+          <UInput :id="id" v-model="groupSearch" :disabled="disabled" placeholder="Label atau tajuk rangsangan" :data-testid="`${testid}-group-search`" @update:model-value="onGroupSearch" />
+        </DsFormField>
+        <DsText v-if="groupsLoading" variant="caption" tone="muted" :data-testid="`${testid}-groups-loading`">Mencari…</DsText>
+        <DsLoadError v-else-if="groupsFailed" :message="LOAD_ERROR" :testid="`${testid}-groups-error`" :retry-testid="`${testid}-groups-retry`" @retry="loadGroups(groupPage)" />
+        <DsText v-else-if="groupRows.length === 0" variant="caption" tone="muted" :data-testid="`${testid}-groups-empty`">Tiada kumpulan dijumpai.</DsText>
+        <DsStack v-else as="ul" gap="xs" :data-testid="`${testid}-groups`">
+          <DsSurface v-for="g in groupRows" :key="g.id" as="li" level="soft" padding="sm" shadow="none" :data-testid="`${testid}-group-${g.id}`">
+            <DsCluster gap="xs" :wrap="false">
+              <DsStack gap="2xs">
+                <DsText variant="body-strong" truncate>{{ groupTitle(g) }}</DsText>
+                <DsText variant="caption" tone="muted" truncate>#{{ g.id }} · {{ g.memberCount }} soalan · {{ g.status === 'served' ? 'Dipaparkan kepada murid' : 'Belum dipaparkan' }}</DsText>
+                <DsText v-if="g.members[0]" variant="caption" tone="muted" truncate>{{ g.members[0].numberLabel ? `${g.members[0].numberLabel}. ` : '' }}{{ g.members[0].stem }}</DsText>
+              </DsStack>
+              <UButton type="button" color="neutral" variant="soft" :disabled="disabled || busy" :data-testid="`${testid}-group-${g.id}-join`" @click="attach(g.id)">Sertai</UButton>
+            </DsCluster>
+          </DsSurface>
+        </DsStack>
+        <DsCluster v-if="groupPages > 1" gap="sm">
+          <UButton type="button" color="neutral" variant="soft" :disabled="groupPage <= 1 || groupsLoading" :data-testid="`${testid}-groups-prev`" @click="loadGroups(groupPage - 1)">Sebelumnya</UButton>
+          <DsText variant="caption" tone="muted">Halaman {{ groupPage }} / {{ groupPages }}</DsText>
+          <UButton type="button" color="neutral" variant="soft" :disabled="groupPage >= groupPages || groupsLoading" :data-testid="`${testid}-groups-next`" @click="loadGroups(groupPage + 1)">Seterusnya</UButton>
         </DsCluster>
     </template>
 
