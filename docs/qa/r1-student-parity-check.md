@@ -1,6 +1,6 @@
 # R1 student-side parity check (H-A20)
 
-Branch `r1/ha20-student-parity`. Merged base: `feature/v3-bijak-r1` at 8e8812ed (BASE-17). Read-only research; no code, seed or data changed. Twin of `docs/qa/r1-admin-parity-check.md` (H-A19).
+Branch `r1/ha20-student-parity`. Merged base: `feature/v3-bijak-r1` at 823d8dfb (BASE-19). Read-only research; no code, seed or data changed. Twin of `docs/qa/r1-admin-parity-check.md` (H-A19).
 
 Scope: the pupil side of R1 (Bijak SPM / Simulasi list, attempt, Semakan, Cuba Lagi, Kuiz, Databank, Latih Tubi SPM, Soalan by Chapter, Laporan Soalan). Rows walk `docs/discovery/v2-parity/student.md` (B01-B21, C08, C11, C19), with exact copy and behaviour from `docs/discovery/BIJAK-SPM-cloud.md` 3.2-3.7 and `docs/discovery/cloud-student-mechanism.md` 1.7-1.8 and 2.1-2.8. The ACs are `docs/requirements/v3-bijak-spm-scope.md` R1-01 to R1-11 and R1-18. V3 was read with `git show` / `git grep` on the base and on the unmerged team C branches listed in section 2; no other branch was checked out.
 
@@ -25,7 +25,7 @@ Stale rows in `docs/discovery/v2-parity/student.md` (dated 2026-10-30): B15 (sel
 
 ## 2. Code state used (unmerged student-facing branches)
 
-| Branch | Head | In base 8e8812ed? | What it adds for the pupil |
+| Branch | Head | In base 823d8dfb? | What it adds for the pupil |
 |---|---|---|---|
 | `r1/f12-kuiz` | 9e7cb8fb | no | Kuiz pages, routes, hub button (contained in hc8) |
 | `r1/hc8-kuiz-stimuli` | 7ac922a7 | no | Kuiz serves a question's own stimuli of all seven kinds; BM refusal on an unavailable per-paper quiz |
@@ -36,9 +36,8 @@ Stale rows in `docs/discovery/v2-parity/student.md` (dated 2026-10-30): B15 (sel
 | `r1/b16-kuiz` | 97e6c3df | no | API: Kuiz count rule and limits (team A) |
 | `r1/t38-selfmark-reward` | 270e5140 | no | API: D94 self-mark reward (team A) |
 | `r1/t42-reports-intake-acs` | b3cddd1c | no | API: report carries attemptId / paperId (team A) |
-| `r1/t35-report-archive` | 4ea790b1 | no | API: Arkib on a report row (team A) |
 
-Already in base: T28 (XP and streak at submit), self-mark, retry, past sittings, Kuiz API (`bijak/kuiz`), H-A2 reports Darjah, T08 secondary guard, T25, T32.
+Already in base: T35 (Arkib on a report row, BASE-18), T28 (XP and streak at submit), self-mark, retry, past sittings, Kuiz API (`bijak/kuiz`), H-A2 reports Darjah, T08 secondary guard, T25, T32.
 
 ## 3. Legend
 
@@ -157,7 +156,7 @@ parity: same behaviour and copy. label differs: the exact BM on both sides is qu
 | S-70 | C19 | Reasons list in the modal | unconfirmed | Contract reasons: "Jawapan tidak tepat", "Soalan mengelirukan", "Set jawapan tidak tepat" (V1 observed). | unconfirmed | V2 reason list is not in the discovery docs. | Discovery gap. |
 | S-71 | C19 / R1-18.2 | `/laporan-soalan`: own reports only; V2 statuses baru / disemak / diperbaiki / ditolak | parity | `GET question-reports/mine`, own only (reports.spec; AC-R1-18.2 proven). | label differs | `LaporanSoalanPage.vue`: counters Jumlah / "Menunggu" / "Disemak" / "Diperbaiki" / "Dikeluarkan" / "Ditolak"; empty "Tiada Laporan". V3 has "Menunggu" for V2 "baru" and an extra "Dikeluarkan" (ha17 AC-R1-18.2 copy mismatch). | Lead call (AC says baru). |
 | S-72 | R1-18.5 | Pupil sees the new status on the next view; the reporter is notified on a change | parity | Admin update notifies the reporter (reports.spec; proven). | parity | List refreshes on load. | - |
-| S-73 | R1-18.4 | Archived question leaves Databank, Latih Tubi and Kuiz at once; Terbit papers keep their snapshot | parity | report-archive.spec 4, 5, 7 (Kuiz exclusion not asserted: AC-R1-18.4 partial). `r1/t35-report-archive` (4ea790b1) unmerged. | n/a | Admin warning is on the admin side (H-A19). | Team A: Kuiz exclusion step (T42). |
+| S-73 | R1-18.4 | Archived question leaves Databank, Latih Tubi and Kuiz at once; Terbit papers keep their snapshot | parity | report-archive.spec 4, 5, 6, 7, 8 (T35, now in base at BASE-18): Arkib archives through the lifecycle, Latih Tubi SPM and Jana Kertas no longer draw it. A Kuiz draw after Arkib is still not asserted (AC-R1-18.4 partial). | n/a | Admin warning is on the admin side (H-A19). | Team A: Kuiz exclusion step (T42). |
 
 ## 5. Gap list for team A (API)
 
@@ -176,7 +175,7 @@ Class `unconfirmed` and partial proofs (specs T40/T41 cover these):
 5. S-13 resume spec for answers, flags and picks (AC-R1-05.2); S-16 server limit on picks per Bahagian (AC-R1-02.1); S-21 one attempt with all five modes (AC-R1-03.1); S-32 band midpoint rule (AC-R1-06.2); S-34 unmarked parts count 0 (AC-R1-06.5).
 6. S-35 Cuba Lagi does not re-pay attempt 1 (AC-R1-10.2) and V2 reward rates beyond 2 syiling + 10 XP per mark (unconfirmed).
 7. S-62 Latih Tubi SPM "2 syiling per correct": rate not verified here. S-40 history cap of 50: unconfirmed.
-8. S-42 merge `r1/b16-kuiz` (97e6c3df). S-73 Kuiz exclusion after Arkib is not asserted (T42); merge `r1/t35-report-archive`.
+8. S-42 merge `r1/b16-kuiz` (97e6c3df). S-73 Kuiz exclusion after Arkib is not asserted in report-archive.spec (T42).
 9. S-57 loader no-regression is ops evidence (runbook), not a spec.
 
 ## 6. Gap list for team C (FE)
