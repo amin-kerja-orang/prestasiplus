@@ -830,6 +830,7 @@ Master indexes: `docs/requirements/URS.md` and `docs/requirements/SRS.md` link e
 
 | Date | Change |
 |---|---|
+| 2026-10-31 | **BASE-21 (team B, T20): merged T15 `r1/t15-bm-copy` @ 09eabe2e (--no-ff).** BM copy per handoff §7j / QUESTIONS Q1 (docs + comments, 6 files). G4: B2 Approve (open Minor: "— Langkah 3" marked approved though not in Q1/§7j). Re-run on merge result: api tsc 0, contract:check 0, unit m28 474/474. |
 | 2026-10-31 | **BASE-20 (team B, T20): merged T14 `r1/t14-student-bugs` @ 1903b713 (--no-ff).** Student smoke bugs: B-06 stem rows not answer boxes (0-mark row is a stem only when a child row follows), B-09 wrong-answer panel, B-08 "Tiada soalan" tile kept by user decision, B-07 no change. G4: B2 Approve. Re-run on merge result: api tsc 0, contract:check 0, vue-tsc 0, bijak-attempts 173/173, unit m05+m06+m28+exam-core 1255/1255. |
 | 2026-10-31 | **BASE-19 (team B, T20): merged T05 minors `r1/t05-minors` @ 99dd5fef (--no-ff).** Test-only: pool ≤ 50 assertion; BM 50 / MATH 54 / SCI 50 asserted on every surface. G4: B1-as-reviewer Approve. Re-run on merge result: api tsc 0, servable-counts+assignments-adapter 15 passed (15). |
 | 2026-10-31 | **BASE-18 (team B, T20): merged T35 `r1/t35-report-archive` @ 4ea790b1 (--no-ff).** Question report Arkib → real lifecycle archive in the same tx (live version archived when a revision is in Semakan). G4: B2 Approve (delta B1-as-reviewer); B3 Pass (T35-L1/L2 Low open). Re-run on merge result: api tsc 0, contract:check 0, report-archive+questions-workflow+bijak-papers 362 passed (362). |
