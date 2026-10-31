@@ -247,6 +247,11 @@ export class QuestionsService {
     }
   }
 
+  /** The values of the Studio selects that come from data (REQ-C-019): the Negeri / exam board options of the source papers. */
+  async filterOptions(): Promise<{ negeri: string[] }> {
+    return { negeri: await this.repo.examBoards() }
+  }
+
   async getAdmin(id: string): Promise<QuestionDetailView> {
     const record = await this.repo.get(id, 'latest')
     if (!record) throw questionNotFound()

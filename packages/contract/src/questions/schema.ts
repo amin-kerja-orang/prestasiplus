@@ -153,6 +153,9 @@ export const questionFilterShape = {
 
 export const QuestionListQuerySchema = PageQuerySchema.extend(questionFilterShape).meta({ id: 'QuestionListQuery' })
 
+/** R1-C019: the values of the Studio selects that come from data. `negeri` = the distinct `exam_board` of the source papers, sorted. */
+export const QuestionFilterOptionsSchema = z.object({ negeri: z.array(z.string()) }).meta({ id: 'QuestionFilterOptions' })
+
 export const QuestionSummarySchema = z
   .object({
     total: z.number().int().min(0),

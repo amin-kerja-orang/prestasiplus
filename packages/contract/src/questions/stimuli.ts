@@ -234,7 +234,14 @@ const listFilters = {
   q: z.string().max(STIMULUS_LIST_SEARCH_MAX, STIMULUS_MESSAGES.search).optional().meta({ description: 'Case-insensitive text in the label or body (a group: its own label or any of its stimuli). `%` and `_` are literal.' }),
 }
 /** `GET /stimulus-groups`: strict; unknown keys are 422. Empty values count as absent. */
-export const StimulusGroupListQuerySchema = z.strictObject(listFilters).meta({ id: 'StimulusGroupListQuery' })
+export const StimulusGroupListQuerySchema = z
+  .strictObject({
+    ...listFilters,
+    joinable: z.enum(['true'], STIMULUS_MESSAGES.filter).optional().meta({
+      description: '`true` keeps only groups a question can still join: no member is shown to pupils (REQ-C-019, a UX filter; the served lock still decides on the write).',
+    }),
+  })
+  .meta({ id: 'StimulusGroupListQuery' })
 /** `GET /stimuli`: the same filters plus the kind. */
 export const StimulusListQuerySchema = z
   .strictObject({ ...listFilters, kind: QuestionStimulusKindSchema.optional() })

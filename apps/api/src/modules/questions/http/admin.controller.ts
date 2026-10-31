@@ -1,8 +1,9 @@
-import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Post, Put, Query, UseGuards } from '@nestjs/common'
+import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Post, Put, Query, UseGuards, UseInterceptors } from '@nestjs/common'
 import { QUESTION_MESSAGES, QuestionCreateRequestSchema, QuestionUpdateRequestSchema } from '@pp/contract'
 
 import { AuditService } from '../../../common/audit'
 import { Roles } from '../../../common/guards'
+import { NoStoreInterceptor } from '../../../common/http'
 import { ok } from '../../../common/http/respond'
 import { RateLimit, RateLimitGuard, type RateLimitSpec } from '../../../common/throttle'
 import { QuestionsService } from '../questions.service'
@@ -42,6 +43,13 @@ export class AdminQuestionsController {
     const filter = parseAdminList(query)
     const res = await this.questions.list(filter)
     return { data: res.rows.map(rowView), meta: adminMeta(res.page, res.pageSize, res.total, res.counts) }
+  }
+
+  /** REQ-C-019: the Negeri options of the Studio filter, read from the source papers. Declared before `:id`. */
+  @Get('filter-options')
+  @UseInterceptors(NoStoreInterceptor)
+  async filterOptions() {
+    return ok(await this.questions.filterOptions())
   }
 
   @Get('summary')

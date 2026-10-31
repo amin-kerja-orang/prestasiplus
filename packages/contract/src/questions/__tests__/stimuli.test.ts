@@ -94,5 +94,9 @@ describe('R1-T49 list queries', () => {
     expect(StimulusGroupListQuerySchema.safeParse({ kind: 'table' }).success).toBe(false)
     expect(StimulusListQuerySchema.safeParse({ kind: 'table' }).success).toBe(true)
     expect(StimulusListQuerySchema.safeParse({ kind: 'audio' }).success).toBe(false)
+    // REQ-C-019: only the group list takes `joinable`, and only `true`
+    expect(StimulusGroupListQuerySchema.safeParse({ joinable: 'true' }).success).toBe(true)
+    expect(StimulusGroupListQuerySchema.safeParse({ joinable: 'false' }).success).toBe(false)
+    expect(StimulusListQuerySchema.safeParse({ joinable: 'true' }).success).toBe(false)
   })
 })

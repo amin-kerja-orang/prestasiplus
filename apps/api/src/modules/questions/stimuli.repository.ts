@@ -88,6 +88,8 @@ export interface ListFilter {
   subjectId?: string | undefined
   educationLevelId?: string | undefined
   status?: 'draft' | 'served' | undefined
+  /** Groups a question can still join: no member is shown to pupils (the served lock would refuse a change otherwise). */
+  joinable?: boolean | undefined
   q?: string | undefined
   kind?: string | undefined
 }
@@ -218,38 +220,25 @@ export class StimuliRepository {
     const level = f.educationLevelId === undefined ? null : bi(f.educationLevelId)
     if ((f.subjectId !== undefined && subject === null) || (f.educationLevelId !== undefined && level === null)) return { ids: [], total: 0 }
     const pattern = f.q === undefined || f.q === '' ? null : likePattern(f.q)
+    const where = Prisma.sql`
+      (${subject}::bigint IS NULL OR EXISTS (SELECT 1 FROM questions q JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
+                                              WHERE q.group_id = g.id AND lv.subject_id = ${subject}::bigint))
+      AND (${level}::bigint IS NULL OR EXISTS (SELECT 1 FROM questions q JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
+                                                WHERE q.group_id = g.id AND lv.education_level_id = ${level}::bigint))
+      AND (${f.status ?? null}::text IS NULL OR (EXISTS (SELECT 1 FROM questions q WHERE q.group_id = g.id AND ${QUESTION_SERVED})) = (${f.status ?? null}::text = 'served'))
+      AND (${f.joinable === true}::boolean IS NOT TRUE OR NOT EXISTS (SELECT 1 FROM questions q WHERE q.group_id = g.id AND ${QUESTION_SERVED}))
+      AND (${pattern}::text IS NULL OR g.label ILIKE ${pattern}::text ESCAPE '\\'
+           OR EXISTS (SELECT 1 FROM stimulus_group_stimuli gs JOIN stimuli s ON s.id = gs.stimulus_id
+                       WHERE gs.group_id = g.id AND (s.label ILIKE ${pattern}::text ESCAPE '\\' OR s.body_ms ILIKE ${pattern}::text ESCAPE '\\' OR s.body_en ILIKE ${pattern}::text ESCAPE '\\')))`
     const rows = await this.db.$queryRaw<{ id: bigint; total: bigint }[]>`
-      SELECT g.id, count(*) OVER () AS total
-        FROM stimulus_groups g
-       WHERE (${subject}::bigint IS NULL OR EXISTS (SELECT 1 FROM questions q JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
-                                                      WHERE q.group_id = g.id AND lv.subject_id = ${subject}::bigint))
-         AND (${level}::bigint IS NULL OR EXISTS (SELECT 1 FROM questions q JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
-                                                    WHERE q.group_id = g.id AND lv.education_level_id = ${level}::bigint))
-         AND (${f.status ?? null}::text IS NULL OR (EXISTS (SELECT 1 FROM questions q WHERE q.group_id = g.id AND ${QUESTION_SERVED})) = (${f.status ?? null}::text = 'served'))
-         AND (${pattern}::text IS NULL OR g.label ILIKE ${pattern}::text ESCAPE '\\'
-              OR EXISTS (SELECT 1 FROM stimulus_group_stimuli gs JOIN stimuli s ON s.id = gs.stimulus_id
-                          WHERE gs.group_id = g.id AND (s.label ILIKE ${pattern}::text ESCAPE '\\' OR s.body_ms ILIKE ${pattern}::text ESCAPE '\\' OR s.body_en ILIKE ${pattern}::text ESCAPE '\\')))
+      SELECT g.id, count(*) OVER () AS total FROM stimulus_groups g WHERE ${where}
        ORDER BY g.updated_at DESC, g.id DESC
        LIMIT ${f.pageSize} OFFSET ${(f.page - 1) * f.pageSize}`
     if (rows.length > 0) return { ids: rows.map((r) => idToString(r.id)), total: Number(rows[0]?.total ?? 0) }
     // An empty page past the end still reports the real total.
-    const total = f.page === 1 ? 0 : await this.countGroups(f, subject, level, pattern)
-    return { ids: [], total }
-  }
-
-  private async countGroups(f: ListFilter, subject: bigint | null, level: bigint | null, pattern: string | null): Promise<number> {
-    const rows = await this.db.$queryRaw<{ n: bigint }[]>`
-      SELECT count(*) AS n
-        FROM stimulus_groups g
-       WHERE (${subject}::bigint IS NULL OR EXISTS (SELECT 1 FROM questions q JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
-                                                      WHERE q.group_id = g.id AND lv.subject_id = ${subject}::bigint))
-         AND (${level}::bigint IS NULL OR EXISTS (SELECT 1 FROM questions q JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
-                                                    WHERE q.group_id = g.id AND lv.education_level_id = ${level}::bigint))
-         AND (${f.status ?? null}::text IS NULL OR (EXISTS (SELECT 1 FROM questions q WHERE q.group_id = g.id AND ${QUESTION_SERVED})) = (${f.status ?? null}::text = 'served'))
-         AND (${pattern}::text IS NULL OR g.label ILIKE ${pattern}::text ESCAPE '\\'
-              OR EXISTS (SELECT 1 FROM stimulus_group_stimuli gs JOIN stimuli s ON s.id = gs.stimulus_id
-                          WHERE gs.group_id = g.id AND (s.label ILIKE ${pattern}::text ESCAPE '\\' OR s.body_ms ILIKE ${pattern}::text ESCAPE '\\' OR s.body_en ILIKE ${pattern}::text ESCAPE '\\')))`
-    return Number(rows[0]?.n ?? 0)
+    if (f.page === 1) return { ids: [], total: 0 }
+    const count = await this.db.$queryRaw<{ n: bigint }[]>`SELECT count(*) AS n FROM stimulus_groups g WHERE ${where}`
+    return { ids: [], total: Number(count[0]?.n ?? 0) }
   }
 
   /** The groups of a page in the order of `ids`, in one query (no N+1). */

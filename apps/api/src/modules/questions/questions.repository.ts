@@ -804,6 +804,12 @@ export class QuestionsRepository {
     return rows.length > 0
   }
 
+  /** The distinct exam boards ("negeri atau badan peperiksaan") of the source papers, for the Studio Negeri select (REQ-C-019). */
+  async examBoards(): Promise<string[]> {
+    const rows = await this.db.$queryRaw<{ board: string }[]>`SELECT DISTINCT btrim(exam_board) AS board FROM source_papers WHERE exam_board IS NOT NULL AND btrim(exam_board) <> '' ORDER BY 1`
+    return rows.map((r) => r.board)
+  }
+
   async groupExists(id: string): Promise<boolean> {
     const key = bi(id)
     return key !== null && (await this.db.stimulusGroup.count({ where: { id: key } })) > 0
