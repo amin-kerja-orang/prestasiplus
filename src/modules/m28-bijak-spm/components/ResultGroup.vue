@@ -6,7 +6,7 @@
  */
 import { ref } from 'vue'
 
-import { qdCopy } from '@/components/question-display'
+import { qdCopy } from '../../../components/question-display'
 import { useMedia } from '@/ds/useMedia'
 
 import type { StimulusDef } from '../domain/types'
@@ -30,7 +30,7 @@ const label = groupLabel(props.stimuli)
     data-layout="split"
   >
     <aside
-      class="sticky top-20 flex max-h-[calc(100vh-6rem)] flex-col gap-2 self-start overflow-y-auto"
+      class="sticky top-20 flex max-h-screen flex-col gap-2 self-start overflow-y-auto"
       :aria-label="label"
       data-testid="result-group-pane"
     >

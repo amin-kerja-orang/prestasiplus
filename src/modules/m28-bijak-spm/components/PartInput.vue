@@ -12,7 +12,7 @@
  */
 import { computed, ref } from 'vue'
 
-import { EssayAnswer } from '@/components/question-display'
+import { EssayAnswer } from '../../../components/question-display'
 import { DsStack, DsText } from '@/ds'
 
 import { isReadableNumber, latexToPlain } from '../domain/math-expr'

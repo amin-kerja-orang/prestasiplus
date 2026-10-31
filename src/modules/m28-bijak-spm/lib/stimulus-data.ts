@@ -2,7 +2,7 @@
  * Adapters from the served Bijak shapes (`StimulusDef`, `McqOption`) to the shared display library
  * (`@/components/question-display`, P5). Display only: no store, no fetch.
  */
-import type { McqOptionData, StimulusData } from '@/components/question-display'
+import type { McqOptionData, StimulusData } from '../../../components/question-display'
 
 import type { GroupView, McqOption, StimulusDef } from '../domain/types'
 

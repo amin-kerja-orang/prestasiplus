@@ -27,7 +27,7 @@ const DrawerStub = defineComponent({
       ])
   },
 })
-const stubs = { UDrawer: DrawerStub, UTable: { template: '<table data-stub="table" />' } }
+const stubs = { UDrawer: DrawerStub, Drawer: DrawerStub }
 
 const picture = (kind: StimulusDef['kind'], id = 's1'): StimulusDef => ({
   id,
@@ -76,7 +76,7 @@ describe('StimulusView: the seven kinds', () => {
       props: { stimulus: { id: 't', kind: 'table', label: 'Jadual 1', alt: 'j', table: { head: ['a'], rows: [['1']] } } },
       global: { stubs },
     })
-    expect(t.find('[data-stub="table"]').exists()).toBe(true)
+    expect(t.find('table').exists()).toBe(true)
   })
 
   it('a picture that fails shows "Rajah tidak dapat dimuatkan." with Cuba lagi and Lapor and emits error', async () => {
@@ -143,7 +143,7 @@ describe('D90: one stimulus panel per group, members below it', () => {
     expect(w.find('[data-testid=drawer] img').exists()).toBe(true)
   })
 
-  it('a group of several stimuli stacks them in one panel, one chip', async () => {
+  it('a group of several stimuli stacks them in one panel, one chip', () => {
     media(true)
     const two = [picture('image', 'a'), { id: 'b', kind: 'passage' as const, label: 'Petikan A', alt: '', text: 'Isi' }]
     const w = mount(StimulusStack, { props: { stimuli: two }, global: { stubs } })

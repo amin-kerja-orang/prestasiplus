@@ -6,7 +6,7 @@
  */
 import { computed, ref } from 'vue'
 
-import { McqOptions, qdCopy } from '@/components/question-display'
+import { McqOptions, qdCopy } from '../../../components/question-display'
 import { DsQuizOption, DsStack, DsText } from '@/ds'
 
 import { leavesOf } from '../domain/paper-model'
@@ -46,7 +46,7 @@ const correctOption = computed(() => props.check?.parts[0]?.scheme.correctOption
 const partResults = computed(() => props.check?.parts ?? [])
 const leaves = computed(() => leavesOf(props.question.parts ?? []))
 /** An option with a picture switches the choices to the shared `McqOptions` (picture boxes, load-failure state). */
-const optionPictures = computed(() => !!props.question.mcq?.options.some((o) => o.image))
+const optionPictures = computed(() => (props.question.mcq?.options ?? []).some((o) => !!o.image))
 const optionData = computed(() => (props.question.mcq?.options ?? []).map(toOptionData))
 
 function optionState(id: string) {

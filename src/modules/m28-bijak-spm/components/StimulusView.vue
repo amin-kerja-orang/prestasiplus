@@ -10,7 +10,7 @@
  */
 import { computed } from 'vue'
 
-import { StimulusFigure } from '@/components/question-display'
+import { StimulusFigure } from '../../../components/question-display'
 import { DsIconChip } from '@/ds'
 
 import type { StimulusDef } from '../domain/types'
