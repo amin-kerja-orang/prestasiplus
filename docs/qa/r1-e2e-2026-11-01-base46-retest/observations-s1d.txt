@@ -1,0 +1,22 @@
+[mobile] PASS S1d admin D90 group in Studio: one shared stimulus with 2 member questions
+    observed: /admin/studio list renders "Halaman Tidak Dijumpai" (T13b not merged); editor reached by URL
+    observed: Q1: Bab "Bab 1: Fungsi dan Persamaan Kuadratik", unit "1.0 Fungsi dan Persamaan Kuadratik dalam Satu Pemb", 8 SP offered; save bar: 1 markah Batal Simpan draf
+    observed: Q1 save -> POST /api/stimulus-groups/3/questions HTTP 201
+    observed: Q2: Bab "Bab 1: Fungsi dan Persamaan Kuadratik", unit "1.0 Fungsi dan Persamaan Kuadratik dalam Satu Pemb", 8 SP offered; save bar: 1 markah Batal Simpan draf
+    observed: Q2 save -> POST /api/stimulus-groups/3/questions HTTP 201
+    observed: group #3: questions 1272, 1273; stimuli 1; members: 1 1. R1E2E b46retest mobile studio-1: Apakah kesan utama kit | 2 2. R1E2E b46retest mobile studio-2: Mengapakah sisa perlu 
+[tablet] PASS S1d admin D90 group in Studio: one shared stimulus with 2 member questions
+    observed: /admin/studio list renders "Halaman Tidak Dijumpai" (T13b not merged); editor reached by URL
+    observed: Q1: Bab "Bab 1: Fungsi dan Persamaan Kuadratik", unit "1.0 Fungsi dan Persamaan Kuadratik dalam Satu Pemb", 8 SP offered; save bar: 1 markah Batal Simpan draf
+    observed: Q1 save -> POST /api/stimulus-groups/4/questions HTTP 201
+    observed: Q2: Bab "Bab 1: Fungsi dan Persamaan Kuadratik", unit "1.0 Fungsi dan Persamaan Kuadratik dalam Satu Pemb", 8 SP offered; save bar: 1 markah Batal Simpan draf
+    observed: Q2 save -> POST /api/stimulus-groups/4/questions HTTP 201
+    observed: group #4: questions 1274, 1275; stimuli 1; members: 1 1. R1E2E b46retest tablet studio-1: Apakah kesan utama kit | 2 2. R1E2E b46retest tablet studio-2: Mengapakah sisa perlu 
+[desktop] PASS S1d admin D90 group in Studio: one shared stimulus with 2 member questions
+    observed: /admin/studio list renders "Halaman Tidak Dijumpai" (T13b not merged); editor reached by URL
+    observed: Q1: Bab "Bab 1: Fungsi dan Persamaan Kuadratik", unit "1.0 Fungsi dan Persamaan Kuadratik dalam Satu Pemb", 8 SP offered; save bar: 1 markah Batal Simpan draf
+    observed: Q1 save -> POST /api/stimulus-groups/5/questions HTTP 201
+    observed: Q2: Bab "Bab 1: Fungsi dan Persamaan Kuadratik", unit "1.0 Fungsi dan Persamaan Kuadratik dalam Satu Pemb", 8 SP offered; save bar: 1 markah Batal Simpan draf
+    observed: Q2 save -> POST /api/stimulus-groups/5/questions HTTP 201
+    observed: group #5: questions 1276, 1277; stimuli 1; members: 1 1. R1E2E b46retest desktop studio-1: Apakah kesan utama ki | 2 2. R1E2E b46retest desktop studio-2: Mengapakah sisa perlu
+{"mobile":{"passed":1},"tablet":{"passed":1},"desktop":{"passed":1}}

@@ -1,0 +1,21 @@
+[mobile] url /admin/spm; hub visible true; placeholder 0; hscroll 0px; cards 2: Databank Soalan Bank soalan objektif SPM mengikut subjek. 11 perlu perhatian Buka senarai || Bijak SPM Kertas SPM penuh dalam format sebenar. 25 perlu perhatian Buka senarai
+[mobile] hub links: /admin/spm/databank, /admin/spm/simulasi
+[mobile]   /admin/spm/databank -> /admin/spm/databank; placeholder 0; h1 "Kandungan SPM"; hscroll 0px
+[mobile]   /admin/spm/simulasi -> /admin/spm/simulasi; placeholder 0; h1 "Kandungan SPM"; hscroll 0px
+[mobile] errors: 401 /api/session | Failed to load resource: the server responded with a status of 401 (Unauthorized)
+[tablet] url /admin/spm; hub visible true; placeholder 0; hscroll 0px; cards 2: Databank Soalan Bank soalan objektif SPM mengikut subjek. 11 perlu perhatian Buka senarai || Bijak SPM Kertas SPM penuh dalam format sebenar. 25 perlu perhatian Buka senarai
+[tablet] hub links: /admin/spm/databank, /admin/spm/simulasi
+[tablet]   /admin/spm/databank -> /admin/spm/databank; placeholder 0; h1 "Kandungan SPM"; hscroll 0px
+[tablet]   /admin/spm/simulasi -> /admin/spm/simulasi; placeholder 0; h1 "Kandungan SPM"; hscroll 0px
+[tablet] errors: 401 /api/session | Failed to load resource: the server responded with a status of 401 (Unauthorized)
+[desktop] url /admin/spm; hub visible true; placeholder 0; hscroll 0px; cards 2: Databank Soalan Bank soalan objektif SPM mengikut subjek. 11 perlu perhatian Buka senarai || Bijak SPM Kertas SPM penuh dalam format sebenar. 25 perlu perhatian Buka senarai
+[desktop] hub links: /admin/spm/databank, /admin/spm/simulasi
+[desktop]   /admin/spm/databank -> /admin/spm/databank; placeholder 0; h1 "Kandungan SPM"; hscroll 0px
+[desktop]   /admin/spm/simulasi -> /admin/spm/simulasi; placeholder 0; h1 "Kandungan SPM"; hscroll 0px
+[desktop] errors: 401 /api/session | Failed to load resource: the server responded with a status of 401 (Unauthorized)
+databank: 25 edit controls, 6 rows with attention lines; hrefs sample: /admin/spm/soalan/1277/sunting, /admin/spm/soalan/1276/sunting, /admin/spm/soalan/1275/sunting, /admin/spm/soalan/1274/sunting
+  /admin/spm/soalan/1277/sunting -> /admin/spm/soalan/1277/sunting; placeholder 0
+  /admin/spm/soalan/1276/sunting -> /admin/spm/soalan/1276/sunting; placeholder 0
+simulasi: 5 edit controls, 0 rows with attention lines; hrefs sample: /admin/spm/kertas/5, /admin/spm/kertas/4, /admin/spm/kertas/3, /admin/spm/kertas/2
+  /admin/spm/kertas/5 -> /admin/spm/kertas/5; placeholder 0
+  /admin/spm/kertas/4 -> /admin/spm/kertas/4; placeholder 0
