@@ -3,7 +3,15 @@
  * (`BijakServer`, store.ts) and the HTTP client (http.ts). Pages only depend on this interface.
  * Type-only imports: this file must never pull the seed registry into the http bundle.
  */
-import type { BijakGenerateShortage } from '@pp/contract'
+import type {
+  BijakGenerateShortage,
+  BijakKuizCheckRequest,
+  BijakKuizCheckResult,
+  BijakKuizPaperPage,
+  BijakKuizResult,
+  BijakKuizSession,
+  BijakKuizStartRequest,
+} from '@pp/contract'
 
 import type {
   AttemptMode,
@@ -60,7 +68,20 @@ export type BijakGenerateOutcome =
   | { ok: false; reason: 'shortage'; shortages: BijakGenerateShortage[] }
   | { ok: false; reason: 'limit'; limitSections: { section?: string }[] }
 
-export interface BijakApi {
+/**
+ * Simulasi Kuiz (R1-B16): the random quiz (a stored practice session) and the per-paper quiz
+ * (nothing stored). The server marks; an item never carries the key. `startKuiz` rejects with
+ * `BijakError('no_questions')` when no objective question matches.
+ */
+export interface BijakKuizApi {
+  startKuiz(input: BijakKuizStartRequest): Promise<BijakKuizSession>
+  checkKuiz(sessionId: string, input: BijakKuizCheckRequest): Promise<BijakKuizCheckResult>
+  finishKuiz(sessionId: string, timeSpent?: number): Promise<BijakKuizResult>
+  getKuizPaperPage(paperId: string, page: number): Promise<BijakKuizPaperPage>
+  checkKuizPaper(paperId: string, input: BijakKuizCheckRequest): Promise<BijakKuizCheckResult>
+}
+
+export interface BijakApi extends BijakKuizApi {
   /** Sync: the HTTP client fills a reactive list on first call. */
   subjects(): readonly Subject[]
   /** Sync: the server clock (HTTP: local clock plus the offset of the last attempt view). */

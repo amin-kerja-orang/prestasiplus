@@ -181,6 +181,21 @@ describe('http mode uploads new images first', () => {
   })
 })
 
+describe('cognitiveLevel (T33 "Aras pemikiran")', () => {
+  it('create sends the chosen level; none leaves it out; edit sends null to clear', async () => {
+    await createQuestion({ ...base, questionType: 'true_false', tfAnswer: true, cognitiveLevel: 'memahami' })
+    expect(bodyOf(h.post).cognitiveLevel).toBe('memahami')
+    h.post.mockClear()
+    await createQuestion({ ...base, questionType: 'true_false', tfAnswer: true })
+    expect(bodyOf(h.post)).not.toHaveProperty('cognitiveLevel')
+    await updateQuestion(9, { ...base, cognitiveLevel: '' })
+    expect(bodyOf(h.put).cognitiveLevel).toBeNull()
+    h.put.mockClear()
+    await updateQuestion(9, { ...base }) // an edit that does not touch the level sends no key at all (never a null)
+    expect(bodyOf(h.put)).not.toHaveProperty('cognitiveLevel')
+  })
+})
+
 describe('kertas', () => {
   it('create sends the chosen kertas; none leaves it out', async () => {
     await createQuestion({ ...base, questionType: 'true_false', tfAnswer: true, kertas: '2' })

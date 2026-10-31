@@ -202,6 +202,11 @@ export interface AdminListFilter {
   dskpFilter?: string
   tagReview?: boolean
   missing?: 'unit' | 'tp' | 'marks' | 'key'
+  /** V2 Studio filters (R1-21.5, D79): year, state or examining body, kertas and exam type of the source paper. */
+  tahun?: string
+  negeri?: string
+  kertas?: '1' | '2' | '3'
+  jenis?: 'sebenar' | 'percubaan' | 'modul' | 'topikal' | 'latihan'
   complianceFilter?: string
   sourceFilter?: string
   search?: string
