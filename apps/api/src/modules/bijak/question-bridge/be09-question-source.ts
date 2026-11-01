@@ -27,9 +27,9 @@ import type { BridgeRefusal } from './refusals'
  * exported `QuestionsRepository` (`getMany(ids, 'live')`, `groupOf`) and BE-08's `CurriculumRepository`
  * (subject code, unit title); it never queries the question tables itself (ADR-0014).
  *
- * - Attempts (BE-16 `BijakQuestionSource.loadQuestions`): the bundle of each id's LIVE version, mapped
- *   by `mapBe09Question`. M7 working assumption: BE-09 has no pinned-version read yet, so a paper is
- *   served and graded with the live version; the bundle records `versionNo` (deviations doc).
+ * - Attempts (BE-16 `BijakQuestionSource.loadQuestions`): the bundle of the version the paper PINNED (REQ-B-032,
+ *   `getVersions`, as Kuiz does), mapped by `mapBe09Question`; an id with no pin (an attempt started before pins were frozen
+ *   into the composition) is served from its LIVE version; the bundle records `versionNo`.
  * - Papers (BE-15 `BijakQuestionSource.getMany`): marks, group and live `versionNo` of the same mapped
  *   question, so a question the attempt side cannot serve is also not eligible on the paper side.
  *
@@ -56,8 +56,9 @@ export class Be09BijakQuestionSource implements AttemptQuestionSource {
 
   async loadQuestions(
     questionIds: readonly string[],
+    pins?: ReadonlyMap<string, number>,
   ): Promise<ReadonlyMap<string, BijakQuestionBundle>> {
-    const mapped = await this.load(questionIds)
+    const mapped = await this.load(questionIds, false, undefined, pins)
     return new Map([...mapped].map(([id, m]) => [id, m.bundle]))
   }
 
@@ -103,14 +104,22 @@ export class Be09BijakQuestionSource implements AttemptQuestionSource {
     questionIds: readonly string[],
     published = false,
     refused?: Map<string, BridgeRefusal>,
+    pins?: ReadonlyMap<string, number>,
   ): Promise<Map<string, { bundle: Be09QuestionBundle; groupId: string | null }>> {
-    const ids = [...new Set(questionIds)].filter(isIdString)
+    const allIds = [...new Set(questionIds)].filter(isIdString)
     const out = new Map<string, { bundle: Be09QuestionBundle; groupId: string | null }>()
-    if (ids.length === 0) return out
-    let records = (await this.questions.getMany(ids, 'live')).filter(
+    if (allIds.length === 0) return out
+    // REQ-B-032: a published paper serves the version it PINNED (as Kuiz does), whatever is live or active now. The image read rule and
+    // the served lock treat the same versions as served, so the three agree. Ids without a pin keep the live-version path below.
+    const pinned = pins ? allIds.filter((id) => pins.has(id)) : []
+    const pinnedRecords = pinned.length
+      ? await this.questions.getVersions(pinned.map((id) => ({ questionId: id, versionNo: pins!.get(id) as number })))
+      : []
+    const ids = allIds.filter((id) => !pinned.includes(id))
+    let records = ids.length === 0 ? [] : (await this.questions.getMany(ids, 'live')).filter(
       (r) => !published || r.version.status === 'approved',
     )
-    if (!published && records.length < ids.length) {
+    if (!published && ids.length > 0 && records.length < ids.length) {
       // Withdrawn since the paper was built (BE-09 clears the live version): keep serving the version
       // that WAS live when it is still the latest one (archived, once published), so the attempts that
       // hold it can still be shown, graded and auto-submitted. A newer draft on top is not served.
@@ -123,6 +132,7 @@ export class Be09BijakQuestionSource implements AttemptQuestionSource {
       ).filter((r) => r.version.status === 'archived' && r.version.publishedAt !== null)
       records = [...records, ...withdrawn]
     }
+    records = [...pinnedRecords, ...records]
     const groupOwner = new Map<string, string>()
     const labelKeys = new Map<string, QuestionRecord>()
     for (const r of records) {
