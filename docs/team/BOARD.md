@@ -515,7 +515,7 @@ B merged BASE-106 (T10 builder UI) and BASE-107 (hc-builder-parity). Both are FE
 REQ-A-008 needs C's restack on BASE-107 (REQ-B-055) before T31 pairs with it. C3 reports REQ-A-018 FE + 026b READY @ 3942f760.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 23:09 UTC, BASE 47fadc2e)
+### Team A open branches: heads from origin (auto, 2026-11-01 23:10 UTC, BASE 47fadc2e)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -555,7 +555,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/req-c-020 | 8733a3785 | READY (A4): deviation row added; chain 3rd; B2 |
 | r1/req-c012-a2 | 9b1fd35e2 | READY (A2, @9b1fd35e, contains new ha18 + BASE-107): edit-as-draft keeps the import hold; B1 step 3; B3 re-check (REQ-A-024c) |
 | r1/reqa018-paper-servability-route | 9d6ef833f | READY (A2, @9d6ef833, contains BASE-107): admin papers only, cap 200 + meta, batched read, contract exports; contract-tests scenario (4 cases; API conformance 413/413; mock: 3 assertion known-mismatches until C serves it → swap to 1 schema entry when C reqa018-fe lands); full B2 + B3; C reqa018-fe must re-merge |
-| r1/reqb032-pinned-rule | a2cb5bb42 | READY (A2+A3, BASE-105): spec title + R1-limitation row (takedown vs running sitting, KIV R2); 6/6; B2 + B3 |
+| r1/reqb032-pinned-rule | 167986eff | READY (A2+A3, BASE-105): spec title + R1-limitation row (takedown vs running sitting, KIV R2); 6/6; B2 + B3 |
 | r1/reqb049-report-visible | 9ece8d76d | READY (A1b, BASE-105): pre-review Minors fixed (type from the live version, spec titles, real level codes); 316/316; B2 + B3 | A2 B3 pre-scan: CLEAN (no IDOR/oracle, no echo, caps bite under mutation) |
 | r1/reqb052-archived-edit | f3a2448f9 | READY (A3, BASE-105; replaces 17196431): follow-ups done: P1 pinned-clause spec (bites), guard published OR (withdrawn AND EXISTS attempts), header; archived-edit 6/6, pinned-version-rule 6/6, workflow 296/296; tsc/eslint 0; B2 |
 | r1/seed-dangling-placements | 11cbcf458 | READY (A1b, BASE-105): asserts paper titles + counts = POC_BANK; seed 155 + 1 skip; B2 |
@@ -574,7 +574,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t45-builder-acs | ee3a7d2ba | READY (A1b, on T48 6c5ae3a8; specs only): builder-candidate-search giveBab; bab.ts via T48 merge (cmp = fc409ae1); exam-builder 391/391 alone = trial merge with H-A18; tsc/eslint 0; merge after T48; B2 |
 | r1/t45-builder-acs-wip | 078204e1c | SUPERSEDED by r1/t45-builder-acs; do not merge |
 | r1/t45-servability-acs | 954614c69 | READY (A4, BASE-105): pre-review M1/M2 + Minors fixed; trial merge with H-A18 22/22; chain 1st; B2 + B3 | A1b delta re-review 18:5x UTC: all 6 tips green alone, no Blocker/Major; 3 Minors (approval-check guard untested; perf deviation line; jana-null guard) → A4 follow-up, non-blocking |
-| r1/t48-builder-parity | 6c5ae3a86 | READY (A3, BASE-105; migration 0104): giveBab fixture fix, support/bab.ts byte-identical to H-A18; exam-builder + pipeline-chain 409 pass (was 19 red); alone = trial merge with H-A18 fc409ae1, 0 failures, tsc 0; merge AFTER H-A18; B2 + B3 |
+| r1/t48-builder-parity | 37eb5cf7e | READY (A3, BASE-105; migration 0104): giveBab fixture fix, support/bab.ts byte-identical to H-A18; exam-builder + pipeline-chain 409 pass (was 19 red); alone = trial merge with H-A18 fc409ae1, 0 failures, tsc 0; merge AFTER H-A18; B2 + B3 |
 | r1/t48-label-move-fix | 9783849cf | READY (A3, @9783849c, leaf on T48 6c5ae3a8): PUT moving an added question across Bahagian keeps its Nombor soalan (4-line fix in update()); biting spec + same-section control; 410 alone = trial with H-A18; no D9 row (label belongs to the question, as in V2); merge right after T48; pre-review by A2; B2 | A2 delta pre-review: no findings (mutation red) |
 | r1/t49-served-now | 8cb9fa5f1 | READY (A2 + A1a, @8cb9fa5f): blank-filter 422 + filter-options notServed entry in known-mismatches (route ships here); A4 pre-review Approve + B3 checklist Pass; merge BEFORE d72 (clean, A3 merge-tree); conformance proof on this head being re-run (A1a evidence lost in container restart); B2 + B3 |
 | r1/t50-partial-acs | 075e1b587 | READY (A1a, BASE-105): A3 pre-review CLEAN (nits only); B2 |
