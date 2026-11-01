@@ -479,7 +479,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 ### Head audit 2026-11-01 15:00 UTC (superseded)
 This manual table has been removed because it went stale. **The only current source for team A heads and states is the auto table between the `AUDIT:BEGIN/END` markers at the end of this file.** It is regenerated from `git ls-remote` every cycle.
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 18:32 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 18:33 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -489,7 +489,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
 | r1/bridge-table-parts | c805ecc7c | READY (A4, BASE-105): the bridge uses stimulusTableParts (an invalid grid + pipe body shows the table only, as in builder/Studio); bridge 118/118, attempts 180/180, kuiz 39/39; B2. Follow-up after T31 + this merge: drop PENDING_BRIDGE_TEXT in the parity spec (A4) |
 | r1/builder-search-perf | 1216b736c | ON HOLD: T48 builder-parity spec goes red (21 tests, "Sila pilih bab.") once merged with H-A18; A3 is fixing the giveBab fixture on T48, then restacking; do not merge until the new head |
-| r1/docs-credential-scrub | 5cd46c4a1 | IN-PROGRESS (A1a): checking whether the live default passwords in mock/tests are real; if not proven to be placeholder text, they are replaced with fictitious values (D9 row); then B3 decides; do not merge yet |
+| r1/docs-credential-scrub | 5cd46c4a1 | READY (A1a, BASE-105): live default passwords in M02 mock/tests replaced by fictitious same-shape values read from m02-config (ContohAdm01/ContohImp01/00000001), D9 row; M02 unit 724 pass, eslint + vue-tsc 0; B3 (security) + B2 |
 | r1/e05b-l1-spec | 4b9eac57a | READY (A1b, BASE-105): negative control added; 12/12; B2 + B3 |
 | r1/ha17-ac-coverage | 6a0a7931c | docs, auto-refreshed by A3 H-A27 (coverage 124/176) |
 | r1/ha18-gate-facts | fc409ae16 | READY (A2, BASE-105): H-A18 + REQ-B-017/037 + D99 + pre-review fixes (M2 held-issues helper on both edit paths; m1 gate-issue codes; deviation row); workflow 296/296; conformance 409/409; B2 + B3 |
@@ -521,17 +521,17 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t37-r1-runbook | 6544c6855 | READY (A3, BASE-105): runbook incl. the WARM env, 0106/0107 window, pg_trgm, ANALYZE, reverts, T36 demo-host; B2 |
 | r1/t38-selfmark-reward | 13134ced7 | READY (A1b, BASE-105): A3 pre-review CLEAN (concurrency + best-N sound; red proof); B2 delta + B3 |
 | r1/t39-k1-evidence | 1a26f7a60 | check: A3 to confirm state |
-| r1/t40-attempts-acs | 9be88fc7f | ON HOLD: A3 pre-review MAJOR (missing D9 row for R1-02.1 server-side cap) → A1a adds the row (lead: follow V2, the cap is client-side); do not merge |
+| r1/t40-attempts-acs | 9be88fc7f | READY (A1a, BASE-105): D9 row added for R1-02.1 (pick cap is client-side, follows V2, lead decision) + coverage note; docs only, no code change; B2 |
 | r1/t43-chain-publish | 238eb6eb0 | ON HOLD (after T31 + REQ-A-008): fixes done @238eb6eb, on T31 eb0346d2 + BASE-105, 458 pass |
 | r1/t43b-publish-acs | 84db7fb20 | ON HOLD: T48 builder-parity spec goes red (21 tests, "Sila pilih bab.") once merged with H-A18; A3 is fixing the giveBab fixture on T48, then restacking; do not merge until the new head |
 | r1/t45-builder-acs | 3001a0b84 | ON HOLD: builder-candidate-search 6 reds with H-A18 (bab gate); A1b adds giveBab after the A3 T48 tip; do not merge |
 | r1/t45-builder-acs-wip | 078204e1c | SUPERSEDED by r1/t45-builder-acs; do not merge |
-| r1/t45-servability-acs | 954614c69 | READY (A4, BASE-105): pre-review M1/M2 + Minors fixed; trial merge with H-A18 22/22; chain 1st; B2 + B3 |
+| r1/t45-servability-acs | 954614c69 | READY (A4, BASE-105): pre-review M1/M2 + Minors fixed; trial merge with H-A18 22/22; chain 1st; B2 + B3 | A1b delta re-review 18:5x UTC: all 6 tips green alone, no Blocker/Major; 3 Minors (approval-check guard untested; perf deviation line; jana-null guard) → A4 follow-up, non-blocking |
 | r1/t48-builder-parity | 6c5ae3a86 | ON HOLD: T48 builder-parity spec goes red (21 tests, "Sila pilih bab.") once merged with H-A18; A3 is fixing the giveBab fixture on T48, then restacking; do not merge until the new head |
 | r1/t49-served-now | b99068a67 | ON HOLD: pre-review (A3): blank-filter bulk archive could archive the whole bank + missing deviation rows → A2 fixing; do not merge |
 | r1/t50-partial-acs | 075e1b587 | READY (A1a, BASE-105): A3 pre-review CLEAN (nits only); B2 |
 | r1/t51-partial-acs-a3 | 54f631164 | ON HOLD: pre-review (A2) M2: 22 reds once merged with H-A18 (giveBab fixture) → A3 fixing; Nits |
-| r1/t52-examiner-grid | ca1ed739f | ON HOLD: A3 pre-review 2 Minors (examinerGrid reads live, not pinned; be09 coverage) → A1a; do not merge |
+| r1/t52-examiner-grid | ca1ed739f | READY (A1a, BASE-105): getCover reads examinerGrid from marked (live+pinned); be09 test 8 (auto/points-essay/archived) bites on revert; R21 superseded; api tsc + eslint + vue-tsc 0, 15 pass; B2 |
 | r1/t54-perf-400k | 03c76eb0d | READY (A4, docs): credentials replaced by placeholders; may 3-line-conflict with 022a perf docs (trivial); B2 |
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
