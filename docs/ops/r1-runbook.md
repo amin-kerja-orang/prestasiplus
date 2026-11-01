@@ -40,6 +40,7 @@ One page for the operator (DevOps / lead) who applies the R1 release to UAT or p
    - *Why.* Tiers come only from the `core-wallet-tiers` reference seed; migration 0010 only creates the table, and a deploy never seeds (`deploy/vps/deploy.sh:16` "never a seed", `:25-27` reference data is loaded once, explicitly; the flag runs at `:273-276`; `docs/ops/production-vps.md:410-414`). Without tiers the wallet summary throws "M14: no tier is defined", so `GET /api/dashboard` and the wallet answer 500, and **a practice or Kuiz submit that earns no coin (no correct answer) answers 500 and the session rolls back** (it stays in progress; the pupil cannot finish it), as does every token conversion.
    - *If it happens in production.* It is row M08 of the hypercare table (`docs/ops/hypercare-amin2-30oct.md:41`): check Q2 (`tiers` count above zero), then the seed fallback (`deploy.sh --seed-reference`, fix-forward, preferred).
    - *Readiness (pending, `r1/ready-tiers-check`).* Once that branch is in the release, `/api/ready` answers 503 while `tiers` is empty, so a deploy that skipped the reference seed fails its readiness check on purpose (DevOps: this is intended; run the seed, do not loosen the check).
+7. **Stimulus group layout of published papers (read-only SELECT, B4 and ops, before go-live).** Run the SELECT of section 3.7 on UAT. It lists published papers whose stimulus group is split across Bahagian (`GROUP_SPLIT`) or not in one run inside a Bahagian (`GROUP_NOT_CONSECUTIVE`). **Any row means that paper is re-composed in the builder before go-live**; 0 rows is the expected result.
 
 ## 1. Order of work
 
@@ -442,6 +443,72 @@ Real output from the testcontainer database seeded the way the specs seed it (`b
 | cards (3.6) | `BM 5`, `MATH 2`, `SCI 2` (sum 9 = login count) |
 
 On UAT the numbers differ (about 406,396 legacy questions); only the shape is expected to match: the identity holds, (3) is 0, and `servable` after is not below the `servable` recorded before. The UAT before and after counts themselves are ops evidence; this note only fixes the queries.
+
+### 3.7 Before go-live: stimulus groups in published papers (GROUP_SPLIT, GROUP_NOT_CONSECUTIVE)
+
+B4 and ops run this on UAT before go-live (read-only). The builder's check refuses a group that is split or broken up, but a paper that reached `published` by another route (a seed, a migration, an older builder) is not re-checked by it [PROPOSED]. Any row means **that paper is re-composed in the builder before go-live** (open it, put the group back as one run in one Bahagian, Terbit again). 0 rows is the expected result.
+
+The logic follows `checkPaperDetailed` in `apps/api/src/modules/exam/builder/paper-check.ts` (BASE-105 `7ea2208c`, lines 192-199 and 222-227; the same file on the T48, T31 and T43 branches) and the schema: a placement is a row of `paper_placements` (`paper_section_id` -> `paper_sections.paper_id` -> `papers`, ordered by `position`), and its group is `questions.group_id` (the link the builder reads as `groupId`). A **run** is a stretch of placements of one group with nothing else between them (`unitsOf`). `GROUP_SPLIT` = the group's placements are in more than one `paper_sections` row of the paper. `GROUP_NOT_CONSECUTIVE` = inside one Bahagian the group has more than one run, so another placement sits between two members. Only `papers.status = 'published'` is read; every `kind` is included.
+
+```sql
+BEGIN READ ONLY;
+-- Published papers whose stimulus groups break the builder's rules (paper-check.ts):
+--   GROUP_SPLIT           the group's questions sit in more than one Bahagian
+--   GROUP_NOT_CONSECUTIVE inside one Bahagian, another placement sits between two members of the group
+WITH pl AS (
+  SELECT p.id AS paper_id, p.paper_code, p.status, p.kind,
+         s.id AS section_id, pp.position AS pos, q.group_id
+    FROM papers p
+    JOIN paper_sections s     ON s.paper_id = p.id
+    JOIN paper_placements pp  ON pp.paper_section_id = s.id
+    JOIN questions q          ON q.id = pp.question_id
+   WHERE p.status = 'published'
+),
+runs AS (  -- a run starts where the previous placement of the Bahagian has another group (or none)
+  SELECT pl.*,
+         (group_id IS NOT NULL
+          AND group_id IS DISTINCT FROM LAG(group_id) OVER (PARTITION BY section_id ORDER BY pos)) AS run_start
+    FROM pl
+)
+SELECT paper_id, paper_code, status, group_id, reason
+  FROM (
+    SELECT paper_id, paper_code, status, group_id, 'GROUP_SPLIT' AS reason
+      FROM runs WHERE group_id IS NOT NULL
+     GROUP BY paper_id, paper_code, status, group_id
+    HAVING count(DISTINCT section_id) > 1
+    UNION ALL
+    SELECT paper_id, paper_code, status, group_id, 'GROUP_NOT_CONSECUTIVE'
+      FROM runs WHERE group_id IS NOT NULL
+     GROUP BY paper_id, paper_code, status, group_id, section_id
+    HAVING count(*) FILTER (WHERE run_start) > 1
+  ) hits
+ ORDER BY paper_id, group_id, reason;
+ROLLBACK;
+```
+
+Output: paper id, paper code, status, the group id (`stimulus_groups.id`) and the reason. A group is reported once per reason.
+
+Not covered on purpose: a group that is complete or in the wrong member order (`GROUP_INCOMPLETE`, `GROUP_OUT_OF_ORDER`) is a separate builder line and is not selected here. A question whose group has no servable member counts as a plain question in the builder; this SELECT still sees its `group_id` (a rare extra row, which is safe to re-compose). A hit on a `jana` (generated) paper cannot be re-composed in the builder: report it to team A [PROPOSED].
+
+**Run (2026-11-02, A3).** Throwaway Postgres 16 on a scratch port (no server, removed afterwards): the 46 base folders, 0001 to 0103, of BASE-105 `7ea2208c` applied with `prisma migrate deploy`, then the full demo seed (`NODE_ENV=development ALLOW_DEMO_SEED=1 tsx prisma/seed/index.ts`, 28 modules; 1 published paper, 4 withdrawn; 2 stimulus groups, 7 grouped questions). Inside `BEGIN READ ONLY ... ROLLBACK`, on the seeded database:
+
+```
+ paper_id | paper_code | status | group_id | reason
+----------+------------+--------+----------+--------
+(0 rows)
+```
+
+**It bites.** In a second transaction (read-write, rolled back; the paper count was 5 before and 5 after) two published papers were inserted on the demo subject: `BAD/1`, Bahagian A = question 10 (group 1), 20 (plain), 11, 12 (group 1), 13 (group 2), Bahagian B = 14, 15, 16 (group 2); and `OK/1`, Bahagian A = 10, 11, 12, 13, 14, 15, 16, Bahagian B = 20. The same SELECT then returned:
+
+```
+ paper_id | paper_code |  status   | group_id |        reason
+----------+------------+-----------+----------+-----------------------
+        6 | BAD/1      | published |        1 | GROUP_NOT_CONSECUTIVE
+        6 | BAD/1      | published |        2 | GROUP_SPLIT
+(2 rows)
+```
+
+`OK/1` (every group in one run, one Bahagian) is not listed. The builder's own `checkPaperDetailed` on the same two layouts returns `GROUP_NOT_CONSECUTIVE` and `GROUP_SPLIT` (plus `GROUP_INCOMPLETE` for the split group) for `BAD/1` and no line for `OK/1`.
 
 ## 4. DSKP load
 
