@@ -229,6 +229,11 @@ export class QuestionBankAdapter implements QuestionBankPort {
     }
   }
 
+  async liveType(id: string): Promise<'mcq' | 'structured' | null> {
+    const record = await this.repo.get(id, 'live')
+    return record ? (record.version.type === 'mcq' ? 'mcq' : 'structured') : null
+  }
+
   async structuredVisible(id: string): Promise<boolean> {
     const record = await this.repo.get(id, 'live')
     if (!record) return false

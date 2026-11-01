@@ -228,6 +228,9 @@ export interface QuestionBankPort {
    */
   structuredVisible(id: string): Promise<boolean>
 
+  /** The type (`mcq` or `structured`) of the LIVE version, the one pupils are served; null when unknown or nothing is live. */
+  liveType(id: string): Promise<'mcq' | 'structured' | null>
+
   /** Display facts for lists; unknown ids are absent from the map. */
   describe(ids: readonly string[]): Promise<ReadonlyMap<string, QuestionBrief>>
 
@@ -280,6 +283,9 @@ export class EmptyQuestionBank implements QuestionBankPort {
   }
   async structuredVisible(): Promise<boolean> {
     return false
+  }
+  async liveType(): Promise<'mcq' | 'structured' | null> {
+    return null
   }
   async describe(): Promise<ReadonlyMap<string, QuestionBrief>> {
     return new Map()
