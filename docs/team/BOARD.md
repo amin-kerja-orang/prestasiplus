@@ -505,7 +505,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 | T44 | r1/t44-blueprint-fields | 072d8f4b | — | merged at BASE-67 as 77984abc. The newer tip 072d8f4b shows a 19-file delta against base; A3 is asked whether it is WIP (marked IN-PROGRESS until it answers) |
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 16:24 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 16:25 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -515,7 +515,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/builder-search-perf | f0ddb1ca0 | READY (A3; T48 + BASE-105): Cari soalan p50/p95 11.2/12.0 s → 0.89/0.99 s at 407k, same results; 520 + 1 todo; conformance 409/409; merges after T48; B2 |
 | r1/e05b-l1-spec | 4b9eac57a | READY (A1b, BASE-105): negative control added; 12/12; B2 + B3 |
 | r1/ha17-ac-coverage | 4fce94110 | docs, auto-refreshed by A3 H-A27 (coverage 124/176) |
-| r1/ha18-gate-facts | f29aeda9c | CHANGES REQUESTED → A2 fixing with D99 + MAJOR 1 + Minors |
+| r1/ha18-gate-facts | f29aeda9c | IN-PROGRESS (A2): pushed with D99 + MAJOR 1 + Minors + BASE-105; full evidence running (READY ETA ~17:15); trial merge clean with T45 P1, one conflict with REQ-B-052 in questions.service.ts (resolution being prepared) |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
 | r1/ha24-release-input | b8a6a7b95 | READY (A3, BASE-105): G6 release input incl. the WARM env rows (pending on 022a-a4) and 0106/0107 @8183b2c5; B2 |
 | r1/ha26-team-a-state | 56858d047 | docs, auto-refreshed by A3 H-A27 |
@@ -528,7 +528,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/req-b-025c | d47353043 | READY (A1b, BASE-105): Minors fixed (decision row REQ-B-007/025c, lateSync, fixture names); attempts 183/183; B2 |
 | r1/req-b-033 | c0ea2ea96 | READY (A4): missing id evaluated once; chain 4th; B2 |
 | r1/req-c-020 | 78e050b3b | READY (A4): merge only; zero-row Databank subject kept (no V2 source hides it); chain 3rd; B2 |
-| r1/req-c012-a2 | ba57ecc52 | WAITS for fixed H-A18 (A2 slot 1) |
+| r1/req-c012-a2 | ba57ecc52 | IN-PROGRESS (A2 slot 1): merging H-A18 |
 | r1/reqb032-pinned-rule | e9cf34b7f | READY (A2+A3, BASE-105): the attempt serves the pinned version; SERVED_NOW = lock predicate; image rule B; pinned-version-rule 6/6; attempts 180/180; B2 + B3 |
 | r1/reqb049-report-visible | 9ece8d76d | READY (A1b, BASE-105): pre-review Minors fixed (type from the live version, spec titles, real level codes); 316/316; B2 + B3 |
 | r1/reqb052-archived-edit | 50017f8f1 | IN-PROGRESS (A3): fix done @50017f8f (an archived/pinned version branches to a new version; spec 4/4), but it overlaps REQ-B-032 in be09-question-source.ts → A3 is stacking it on REQ-B-032 with one serving rule; order B-032 → B-052 |
