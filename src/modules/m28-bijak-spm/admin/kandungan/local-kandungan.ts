@@ -45,6 +45,20 @@ function reasonsOf(status: BankRow['status']): ServabilityReason[] {
   return [{ code, message: servabilityReasonMs(code, 'databank') }]
 }
 
+/**
+ * Lane status of each mock paper. The mock store only knows draf/terbit, so the unpublished papers take draft, ready,
+ * withdrawn in turn (by their order in the store) and the lane shows all four API statuses, deterministically.
+ */
+export function laneStatusOf(papers: AdminPaperSummary[]): Map<string, ServabilityPaperRow['status']> {
+  const out = new Map<string, ServabilityPaperRow['status']>()
+  let n = 0
+  for (const p of papers) {
+    if (p.status === 'terbit') out.set(p.id, 'published')
+    else out.set(p.id, (['draft', 'ready', 'withdrawn'] as const)[n++ % 3]!)
+  }
+  return out
+}
+
 function page<T>(all: T[], q: LaneQuery, subjects: LaneSubject[]): LanePage<T> {
   const pageSize = q.pageSize ?? 25
   const p = q.page ?? 1
@@ -87,12 +101,10 @@ export function createMockKandungan(): KandunganApi {
   /** Bijak SPM lane rows (filtered by `q`) from one paper read. */
   const paperRows = (papers: AdminPaperSummary[], q: LaneQuery): ServabilityPaperRow[] => {
     const term = q.search?.trim().toLowerCase() ?? ''
+    const wire = laneStatusOf(papers)
     return papers
       .filter((p) => !q.subjectId || p.subject === q.subjectId)
-      .filter(
-        (p) =>
-          !q.status || (q.status === 'published' ? p.status === 'terbit' : p.status !== 'terbit'),
-      )
+      .filter((p) => !q.status || wire.get(p.id) === q.status)
       .filter((p) => !term || p.title.toLowerCase().includes(term))
       .map<ServabilityPaperRow>((p) => {
         const published = p.status === 'terbit'
@@ -101,7 +113,7 @@ export function createMockKandungan(): KandunganApi {
           paperId: p.id,
           title: p.title,
           subject: { id: p.subject, name: p.subjectName },
-          status: published ? 'published' : 'draft',
+          status: wire.get(p.id) ?? 'draft',
           questionCount: p.questionCount,
           attentionCount: bad,
           attention: bad

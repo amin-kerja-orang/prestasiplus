@@ -29,3 +29,19 @@ export const laneCopy = {
   noQuestions: 'Disajikan tetapi tiada soalan',
   empty: 'Tiada rekod dijumpai.',
 } as const
+
+/**
+ * Status of a paper in the "Bijak SPM" lane (`SERVABILITY_PAPER_STATUSES`). "Terbit" / "Draf" are V2 `paper_statuses.label`;
+ * "Sedia" / "Ditarik balik" are [PROPOSED] (UX-79).
+ */
+export const PAPER_STATUS_OPTIONS = [
+  { value: 'draft', label: 'Draf' },
+  { value: 'ready', label: 'Sedia' },
+  { value: 'published', label: 'Terbit' },
+  { value: 'withdrawn', label: 'Ditarik balik' },
+]
+export const paperStatusLabel = (code: string): string => PAPER_STATUS_OPTIONS.find((s) => s.value === code)?.label ?? code
+
+/** Badge look of a paper status (the label always comes from `paperStatusLabel`). */
+export const paperStatusBadge = (code: string): 'draft' | 'awaiting-review' | 'published' | 'inactive' =>
+  code === 'published' ? 'published' : code === 'ready' ? 'awaiting-review' : code === 'withdrawn' ? 'inactive' : 'draft'
