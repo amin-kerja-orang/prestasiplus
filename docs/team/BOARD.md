@@ -523,7 +523,7 @@ The 12 "missing" API rows in r1-admin-parity-check.md (questions/stimuli/intake)
 B1 merged **reqb032 at its reviewed SHA a2cb5bb4**, which does not contain BASE-107/108. It did not use our forward-merged 167986ef. So B merges reviewed SHAs and resolves base drift in the merge itself. **New team A rule:** do NOT forward-merge BASE into READY heads by default, because every new head forces a delta review. Forward-merge only when (a) `git merge-tree` against the current BASE shows a conflict, (b) B asks for it, or (c) the unit has to be re-pushed anyway for a fix. Heads already forward-merged stay as they are (the delta is a base merge only).
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 23:12 UTC, BASE 043e2b15)
+### Team A open branches: heads from origin (auto, 2026-11-01 23:13 UTC, BASE 043e2b15)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -544,7 +544,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/drop-lock-enums | 4d1424c8b | READY (A1a + A2, @4d1424c8, BASE-105): contract drops dead CHAPTER_LOCKED + locked states; negative contract tests; row: no FE reader depends on them (dead local FE types = C follow-up); contract 1435/1435, emit no diff, check ok, api tsc 0; with C reqa014 merged: vue-tsc 0, m03/m05 659/659; merge after reqa014-no-chapter-lock-fe; B2 |
 | r1/e05b-l1-spec | 4b9eac57a | READY (A1b, BASE-105): negative control added; 12/12; B2 + B3 |
 | r1/ha17-ac-coverage | 157b371c3 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b; head 157b371c |
-| r1/ha18-gate-facts | ba5bdd6cd | READY (A2, @ba5bdd6c, contains BASE-107): H-A18 + REQ-B-017/037 + D99 + pre-review fixes; migration 0105; fixes audit-coverage base reds; ha18 specs 47/47; B1 batch 1 step 2 (delta review per REQ-A-024c) |
+| r1/ha18-gate-facts | ba5bdd6cd | READY (A2, @ba5bdd6c, contains BASE-107): H-A18 + REQ-B-017/037 + D99 + pre-review fixes; migration 0105; fixes audit-coverage base reds; ha18 specs 47/47; B1 batch 1 step 2 (delta review per REQ-A-024c) | merge-tree vs BASE-109: clean |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
 | r1/ha24-release-input | a91b7dda2 | READY (A3 docs, @c8d7a413): §3.5 B1 merge order + BM release notes + sign-off checklist (Q12a decided) + r1-kiv-r2.md (32 rows); B1/B2 |
 | r1/ha26-team-a-state | 0f36d006a | READY (A3 docs, @866b1a76): team-a-r1-state.md (ready-tiers-check ON HOLD noted); vs ac-gaps take ha26 side; B2 |
@@ -561,8 +561,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/req-b-025c | d47353043 | READY (A1b, BASE-105): Minors fixed (decision row REQ-B-007/025c, lateSync, fixture names); attempts 183/183; B2 |
 | r1/req-b-033 | b5e713fa4 | READY (A4): deviation row added; chain 4th; B2 |
 | r1/req-c-020 | 8733a3785 | READY (A4): deviation row added; chain 3rd; B2 |
-| r1/req-c012-a2 | 9b1fd35e2 | READY (A2, @9b1fd35e, contains new ha18 + BASE-107): edit-as-draft keeps the import hold; B1 step 3; B3 re-check (REQ-A-024c) |
-| r1/reqa018-paper-servability-route | 9d6ef833f | READY (A2, @9d6ef833, contains BASE-107): admin papers only, cap 200 + meta, batched read, contract exports; contract-tests scenario (4 cases; API conformance 413/413; mock: 3 assertion known-mismatches until C serves it → swap to 1 schema entry when C reqa018-fe lands); full B2 + B3; C reqa018-fe must re-merge |
+| r1/req-c012-a2 | 9b1fd35e2 | READY (A2, @9b1fd35e, contains new ha18 + BASE-107): edit-as-draft keeps the import hold; B1 step 3; B3 re-check (REQ-A-024c) | merge-tree vs BASE-109: clean |
+| r1/reqa018-paper-servability-route | 9d6ef833f | READY (A2, @9d6ef833, contains BASE-107): admin papers only, cap 200 + meta, batched read, contract exports; contract-tests scenario (4 cases; API conformance 413/413; mock: 3 assertion known-mismatches until C serves it → swap to 1 schema entry when C reqa018-fe lands); full B2 + B3; C reqa018-fe must re-merge | merge-tree vs BASE-109: clean |
 | r1/reqb049-report-visible | 9ece8d76d | READY (A1b, BASE-105): pre-review Minors fixed (type from the live version, spec titles, real level codes); 316/316; B2 + B3 | A2 B3 pre-scan: CLEAN (no IDOR/oracle, no echo, caps bite under mutation) |
 | r1/reqb052-archived-edit | f3a2448f9 | READY (A3, BASE-105; replaces 17196431): follow-ups done: P1 pinned-clause spec (bites), guard published OR (withdrawn AND EXISTS attempts), header; archived-edit 6/6, pinned-version-rule 6/6, workflow 296/296; tsc/eslint 0; B2 |
 | r1/seed-dangling-placements | 11cbcf458 | READY (A1b, BASE-105): asserts paper titles + counts = POC_BANK; seed 155 + 1 skip; B2 |
