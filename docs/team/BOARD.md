@@ -505,35 +505,32 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 | T44 | r1/t44-blueprint-fields | 072d8f4b | — | merged at BASE-67 as 77984abc. The newer tip 072d8f4b shows a 19-file delta against base; A3 is asked whether it is WIP (marked IN-PROGRESS until it answers) |
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 15:39 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 15:40 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
-| r1/admin-list-perf | 6526409bc | IN-PROGRESS (A4): REQ-B-050 + 0106 + counts; not READY |
+| r1/admin-list-perf | 6526409bc | IN-PROGRESS (A4): REQ-B-050 + 0106 + 0107 (lead approved) + exact counts; 400k: text search 1.9 s → 0.08 s, kertas 2.0 s → 0.2 s p95; full re-run pending |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
 | r1/builder-search-perf | f0ddb1ca0 | READY (A3; T48 + BASE-105): Cari soalan p50/p95 11.2/12.0 s → 0.89/0.99 s at 407k, same results; 520 + 1 todo; conformance 409/409; merges after T48; B2 |
-| r1/e05b-l1-spec | baa42a152 | Approved (B2 c17) → needs a BASE-105 merge (A1a) |
-| r1/ha17-ac-coverage | d7c9c7840 | docs, auto-refreshed by A3 H-A27 (coverage 124/176) |
+| r1/e05b-l1-spec | f9eab2abf | Approved (B2 c17) → needs a BASE-105 merge (A1a) |
 | r1/ha18-gate-facts | d3842c48c | CHANGES REQUESTED → A2 fixing with D99 + MAJOR 1 + Minors |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
 | r1/ha24-release-input | eb6fba4b9 | docs, auto-refreshed by A3 H-A27 |
-| r1/ha26-team-a-state | 1fba2f226 | docs, auto-refreshed by A3 H-A27 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-a2 | a631198c7 | READY (A2, BASE-105): B-034/035 + B2 Minors; intake-workflow 135/135; ready for the B1 gate |
 | r1/overview-getmany-parallel | a02f658f9 | READY (A4): live record reused from latest; cold overview 9.3 → 6.0 s (total 34.2 → 6.0 s, −82%); parity spec; merges after overview-mcq-shape-once; B2 |
-| r1/overview-mcq-shape-once | b0f1e9b2c | READY (A4): factsOf jana:false; cold overview 15.3→9.3 s (total 34.2→9.3 s); merges after req-b-033; B2 |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
 | r1/req-b-022a-a4 | 6295dc052 | CHANGES REQUESTED (B2 c18, REQ-B-053: empty env breaks API start) → A4 fixing + restack on BASE-105 |
-| r1/req-b-025c | a2865119f | Approved (B2 c17) → needs a BASE-105 merge (A1a) |
+| r1/req-b-025c | 37007e49c | Approved (B2 c17) → needs a BASE-105 merge (A1a) |
 | r1/req-b-033 | 50537328f | Approve w/ Minors, blocked by 022a → A4 restack on BASE-105 |
 | r1/req-c-020 | 6dc3feff8 | Approve w/ Minors, blocked by 022a → A4 restack on BASE-105 |
 | r1/req-c012-a2 | ba57ecc52 | WAITS for fixed H-A18 (A2 slot 1) |
 | r1/reqa014-no-chapter-lock-fe | 8c49b7af9 | (no status — triage) |
 | r1/reqb032-pinned-rule | 77c83c5e6 | IN-PROGRESS (A2 slot 2, moved from A3; WIP 77c83c5e) |
 | r1/reqb049-report-visible | 059841d4c | READY (A1b, BASE-105): pupil no-proof structured report narrowed to isStructuredVisible (Q11); 346 + 1 todo; B2 + B3 |
-| r1/reqc021-followup | 8210ac5bd | Approved (B2 c17) → needs a BASE-105 merge (A1a) |
-| r1/seed-dangling-placements | 7285d961c | Approved (B2 c17) → needs a BASE-105 merge (A1a) |
+| r1/reqc021-followup | 948aa327a | Approved (B2 c17) → needs a BASE-105 merge (A1a) |
+| r1/seed-dangling-placements | 2bbd4f3ca | Approved (B2 c17) → needs a BASE-105 merge (A1a) |
 | r1/t04-minors | cc5116213 | READY (A2, BASE-105): B-044; 108 + 1 skip; ready for the B1 gate |
 | r1/t31-builder-wire | 6a27c8dd3 | READY (A3); needs C1 REQ-A-008 rebased on BASE-102 |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
@@ -549,12 +546,13 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t45-servability-acs | 3175abff8 | Approve w/ Minors; conflicts with BASE-105 → A4 resolving |
 | r1/t48-builder-parity | 1dd07bc1a | READY (A3, BASE-105): B2 cycle-16 Minors fixed; new hard SECTION_EMPTY; 22 codes (4 overridable); DB 516 + 1 todo; conformance 409/409; B2 delta + B3 re-check |
 | r1/t49-served-now | 8a4b46a9f | READY (A2, BASE-105): B-025ab + C-019 + B2 c16 Minors (blank negeri ignored, examBoards distinct case-insensitive); 704/704 incl. conformance; B2 delta |
-| r1/t50-partial-acs | e436e084d | Approved (B2 c17) → needs a BASE-105 merge (A1a) |
+| r1/t50-partial-acs | 075e1b587 | Approved (B2 c17) → needs a BASE-105 merge (A1a) |
 | r1/t51-partial-acs-a3 | 4f812b4e2 | READY (A3; T48 + T43 + T31 + BASE-105): PIPE AC-18.1 + R1-21.3/21.6 backend; overlap resolved toward T48; 965 + 1 todo; conformance 409/409; order T48 → T31 (+REQ-A-008) → T43 → T51; B2 |
-| r1/t52-examiner-grid | addae6444 | Approved (B2 c17) → needs a BASE-105 merge (A1a) |
+| r1/t52-examiner-grid | f2d36f648 | Approved (B2 c17) → needs a BASE-105 merge (A1a) |
 | r1/t54-perf-400k | bbf412c66 | Approved (B2 c17) → needs a BASE-105 merge (A4) |
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
 - **Evidence caveat (A3):** in worktree wt-a3-ha9, a node_modules symlink made conformance load the MAIN tree's @pp/contract openapi.json. So the conformance counts reported earlier for H-A15/T44, H-A9 and an older T43b head were measured against another tree's contract. T43b's final result is valid. H-A15/T44 and H-A9 are merged and passed the B1 gate. A3 dev-2 is re-running conformance on BASE-105 to confirm. Rule for every lane: use per-package symlinks in worktrees (A1a `mknm.sh`), and run `prisma generate` after a branch switch.
 - **Worktree evidence caveat CLOSED (A3):** on a clean BASE-105 with per-package links, conformance + test/r1 give 442 pass + 1 todo, 0 fail (conformance 409/409; pipeline-chain H-A9 24 + 1 todo; blueprint-review-flag H-A15/T44 8/8). The earlier reds came from the symlink, not from the code.
+- **Team A migration numbers used:** 0100, 0101, 0102 (T33), 0103 (in base), 0104 (T48), 0105 (H-A18), **0106 + 0107 (admin-list-perf, A4; 0107 approved by the lead 15:45 UTC)**. Free: 0108, 0109, 0120–0129. 0106 and 0107 need a **maintenance window**: each is a plain index build (Prisma runs one transaction per file) that blocks writes to question_versions, about 21 s in total at 408k. pg_trgm must be allowed on the server.
