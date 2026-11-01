@@ -112,6 +112,9 @@ export const QuestionRowSchema = z
     dskpComplete: z.boolean().optional(),
     sourceType: QuestionSourceTypeSchema.nullable(),
     sourceFile: z.string().nullable(),
+    /** REQ-C-010: V2 Studio columns "Kertas" and "No.": the kertas ('1' to '3', the trailing digit of the paper code) and the printed number label. */
+    kertas: z.enum(['1', '2', '3']).nullable(),
+    numberLabel: z.string().nullable(),
     /** R1-H-A7: present only on an `essay_choice` (esei pilihan) question: its 2 to 6 topics. `questionType` stays `essay`. */
     essayTopics: z.array(QuestionEssayTopicSchema).optional(),
   })
@@ -238,6 +241,19 @@ export const QuestionSchema = z
   .meta({ id: 'Question' })
 
 const DskpRef = z.object({ id: IdSchema, code: z.string(), description: z.string() })
+/** R1-T45b (PIPE AC-04.4): one place where the question sits on a curated paper. */
+export const QUESTION_PLACEMENT_STATUSES = ['draft', 'ready', 'published', 'withdrawn'] as const
+export const QuestionPlacementSchema = z
+  .object({
+    paperId: IdSchema,
+    title: z.string(),
+    status: z.enum(QUESTION_PLACEMENT_STATUSES),
+    section: z.string().meta({ description: 'Label of the section (Bahagian) that places the question.' }),
+    versionNo: z.number().int().min(1).meta({ description: 'The question version printed on the paper (pinned); a published paper keeps it when the question is archived or edited.' }),
+  })
+  .meta({ id: 'QuestionPlacement' })
+export type QuestionPlacement = z.infer<typeof QuestionPlacementSchema>
+
 
 /** R1-B05: what is still missing for "DSKP complete", in the shape of the gate issues (`path` is the `fields` key, `step` the wizard step). */
 export const QuestionDskpStatusSchema = z
@@ -257,6 +273,13 @@ export const QuestionDetailSchema = QuestionSchema.omit({ createdBy: true })
         sp: DskpRef,
       })
       .nullable(),
+    /**
+     * R1-T45b (PIPE AC-04.4), Admin Pusat detail only: the curated papers (Pilihan) that place this question, any status (draft, ready,
+     * published, withdrawn) and any pinned version, published first. Read before editing or archiving: a published paper keeps its frozen snapshot.
+     */
+    placements: z.array(QuestionPlacementSchema).optional(),
+    /** Generated (Jana) papers that place the question; they are counted, not listed. */
+    generatedPaperCount: z.number().int().min(0).optional(),
     /** R1-B05: DSKP completeness with the missing items (not the DSKP chain above, which is `dskp`). */
     dskpStatus: QuestionDskpStatusSchema.optional(),
     createdBy: z.object({ id: IdSchema, name: z.string().nullable() }),
