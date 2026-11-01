@@ -522,6 +522,13 @@ The 12 "missing" API rows in r1-admin-parity-check.md (questions/stimuli/intake)
 ### Cycle 31 note: BASE-109 = REQ-B-032 @ a2cb5bb4; forward-merge policy changed (23:13 UTC)
 B1 merged **reqb032 at its reviewed SHA a2cb5bb4**, which does not contain BASE-107/108. It did not use our forward-merged 167986ef. So B merges reviewed SHAs and resolves base drift in the merge itself. **New team A rule:** do NOT forward-merge BASE into READY heads by default, because every new head forces a delta review. Forward-merge only when (a) `git merge-tree` against the current BASE shows a conflict, (b) B asks for it, or (c) the unit has to be re-pushed anyway for a fix. Heads already forward-merged stay as they are (the delta is a base merge only).
 
+
+### Cycle 32 note: R1 HTTP smoke (A2, local, BASE-117 + 40 READY heads)
+The B4 pack chain was walked by HTTP on SN/2 (4541/2): **96 MATCH, 1 scanner false positive, 2 SKIP; no chain-breaking code bug.**
+- Exact BM matched for: Bab gate, kertas gate, Kontrak Terbit refusal + audited override, D90 one-unit placement, image group served once, reward once (+10 Syiling / +50 XP; a replay adds nothing), self-mark, Cuba Lagi 409s, delete 409 served (single + bulk), and Tarik balik.
+- Pack doc errors (A3): MAT/2 can't reach Terbit with the recipe; Guru intake needs INTAKE_TEACHER_ENABLED; step-8 wording.
+- Low bug, fixed under D9: "(draf)" stays in published titles → r1/publish-title-draft (A2).
+
 <!-- AUDIT:BEGIN -->
 ### Team A open branches: heads from origin (auto, 2026-11-01 23:52 UTC, BASE 1a861ff8)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
