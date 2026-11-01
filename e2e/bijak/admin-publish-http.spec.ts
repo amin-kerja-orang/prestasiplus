@@ -26,7 +26,6 @@ import { expect, test } from '@playwright/test'
 
 import { isDesktopShell } from '../support'
 import { expectNoHorizontalScrollHttp, HTTP_MODE } from './bijak-flow'
-import { publishPaperWithOverride } from '../api/helpers'
 import { demoCreds, NEEDS_PASSWORD } from './http-creds'
 
 const { user: ADMIN_USER, pass: ADMIN_PASS } = demoCreds('adminPusat')
@@ -211,7 +210,8 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () =
     await page.goto('/admin/spm/kertas')
     const id = await createDraft(page, title)
     try {
-      await page.getByTestId('paper-publish').click()
+      // R1-F09: Terbitkan is disabled while the check fails; the reason is shown as text.
+      await expect(page.getByTestId('paper-publish')).toBeDisabled()
       await expect(page.getByTestId('publish-errors')).toContainText(
         'Kertas belum boleh diterbitkan: selesaikan',
       )
@@ -241,21 +241,19 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () =
       await page.getByTestId('paper-save').click()
       await expect(page.getByTestId('paper-save')).toBeDisabled()
 
-      await page.getByTestId('paper-publish').click()
-      // T34 (AC-R1-16.2): a blueprint whose contract is not Disahkan refuses the first Terbitkan (canOverride). Use the
-      // documented audited override, API-assisted. TODO(T10): switch to the UI tick when T10 lands.
-      await expect(
-        page.getByTestId('paper-unpublish').or(page.getByTestId('publish-errors')).first(),
-      ).toBeVisible()
-      if (await page.getByTestId('publish-errors').isVisible()) {
+      // T34 (AC-R1-16.2) + T10: a blueprint whose contract is not Disahkan disables the plain Terbitkan, shows the
+      // reason and offers the audited override tick (UI path, the TODO(T10) from the pre-T10 spec). A Disahkan
+      // blueprint keeps the plain Terbitkan + confirm.
+      if (await page.getByTestId('paper-publish').isDisabled()) {
         await expect(page.getByTestId('publish-errors')).toContainText('belum Disahkan')
-        const ov = await publishPaperWithOverride(page, id)
-        expect(ov.status, 'override publish status').toBeLessThan(300)
-        expect(ov.data.ok === true || ov.data.overridden === true, 'override ok/overridden').toBe(
-          true,
-        )
-        await page.reload()
+        await expect(page.getByTestId('publish-override')).toBeVisible()
+        await page.getByTestId('override-tick').click()
+        await page.getByTestId('override-reason').fill('Kontrak masih Spec, kertas ujian dalaman')
+        await page.getByTestId('override-publish').click()
+      } else {
+        await page.getByTestId('paper-publish').click()
       }
+      await page.locator('[data-ds=confirm-ok]').click()
       await expect(page.getByTestId('paper-unpublish')).toBeVisible()
       await expect(page.getByTestId('paper-view-student')).toBeVisible()
       await expect(page.getByTestId('paper-publish')).toHaveCount(0)
