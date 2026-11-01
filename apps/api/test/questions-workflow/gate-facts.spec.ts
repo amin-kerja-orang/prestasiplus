@@ -9,6 +9,8 @@ import { bootWorkflowApp, expectError, loginAll, type Client, type WorkflowTestA
  * R1-H-A18: the submit and approve gates read real facts (open duplicate, unconfirmed low-confidence fields, media, who edited last, declared
  * marks) through ONE loader, `QuestionsRepository.gateFacts`, instead of "satisfied" defaults. Real bank, real routes.
  */
+const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+
 describe('gate facts (real bank): duplicate, low confidence, media, AI editor, declared marks', () => {
   let t: WorkflowTestApp
   let admin: Client
@@ -153,12 +155,12 @@ describe('gate facts (real bank): duplicate, low confidence, media, AI editor, d
   it('6. gate-check lists exactly what the transition refuses (parity), with every fact failing at once', async () => {
     const id = await make()
     await intakeItem(id, { duplicate: 'pending' })
-    await t.db.query(`update question_versions set last_editor = 'ai', declared_marks = 9, rights_status = 'unclear', import_issues = '[{"code":"legacy_image_unresolved"}]'::jsonb where question_id = $1::bigint`, [id])
+    await t.db.query(`update question_versions set last_editor = 'ai', declared_marks = 9, import_issues = '[{"code":"legacy_image_unresolved"}]'::jsonb where question_id = $1::bigint`, [id])
     const gate = await check(id)
     expect(gate.ok).toBe(false)
     const refused = await move(id, 'approved')
     expect(refused.status).toBe(422)
-    expect(Object.keys(fieldsOf(refused)).sort()).toEqual(['duplicate', 'marks', 'media', 'reviewer', 'rightsStatus'])
+    expect(Object.keys(fieldsOf(refused)).sort()).toEqual(['duplicate', 'marks', 'media', 'reviewer'])
     expect(gate.issues.map((i) => i.path).sort()).toEqual(Object.keys(fieldsOf(refused)).sort())
     expect(await statusOf(id)).toBe('review')
     // a clean question: both agree it passes
@@ -187,6 +189,54 @@ describe('gate facts (real bank): duplicate, low confidence, media, AI editor, d
     expect(Number((await t.db.query<{ n: string }>('select count(*) n from questions'))[0]!.n)).toBe(before)
     await t.db.query(`update stimuli set kind = 'passage', body_ms = 'Isi.' where id = $1::bigint`, [sid])
     expect((await admin.post(`/api/stimulus-groups/${group}/questions`, body({ status: 'approved' }))).status).toBe(201)
+  })
+
+  it('9. the bulk Semakan runs the submit gate per row: a refused draft is a failed[] entry, a clean one moves', async () => {
+    const clean = await make('draft')
+    const lowField = await make('draft')
+    await intakeItem(lowField, { low: ['stem'], confirmed: [] })
+    const noChapter = await make('draft')
+    await t.db.query('update question_versions set chapter_id = null where question_id = $1::bigint', [noChapter])
+    const res = await admin.post('/api/questions/bulk-action', { action: 'review', ids: [clean, lowField, noChapter] })
+    expect(res.status, JSON.stringify(res.body)).toBe(200)
+    expect(res.body.data.affected).toBe(1)
+    const failed = res.body.data.failed as { id: string; code: string; fields: Record<string, string> }[]
+    expect(failed.map((f) => f.id).sort()).toEqual([lowField, noChapter].sort())
+    expect(failed.find((f) => f.id === lowField)).toMatchObject({ code: 'VALIDATION_ERROR', fields: { stem: GATE_MESSAGES.lowConfidence } })
+    expect(failed.find((f) => f.id === noChapter)!.fields.chapterId).toBe(GATE_MESSAGES.chapterId)
+    expect(await statusOf(clean)).toBe('review')
+    expect(await statusOf(lowField)).toBe('draft')
+    expect(await statusOf(noChapter)).toBe('draft')
+  })
+
+  it('10. an edit that does not supply the legacy image keeps the import hold on the new version; one that supplies it drops that issue', async () => {
+    const id = await make('review')
+    await t.db.query(`update question_versions set import_issues = '[{"code":"legacy_image_unresolved","target":"question","path":"a.png"},{"code":"html_math","target":"stem"}]'::jsonb where question_id = $1::bigint`, [id])
+    expect((await move(id, 'approved')).status).toBe(422) // the hold shows as media while it is in force
+    await t.db.query(`update question_versions set import_issues = null where question_id = $1::bigint`, [id])
+    expect((await move(id, 'approved')).status).toBe(200)
+    // an approved question that still carries its hold: an edit without the picture keeps every issue on the new version
+    const makeHeld = async (): Promise<string> => {
+      const q = await make('review')
+      await t.db.query(`update question_versions set import_issues = '[{"code":"legacy_image_unresolved","target":"question","path":"b.png"},{"code":"html_math","target":"stem"}]'::jsonb where question_id = $1::bigint`, [q])
+      await t.db.query(`update question_versions set status = 'approved' where question_id = $1::bigint`, [q])
+      await t.db.query(`update questions set live_version_no = 1 where id = $1::bigint`, [q])
+      return q
+    }
+    const issuesOf = async (q: string, versionNo: number) =>
+      (await t.db.query<{ import_issues: { code: string }[] | null }>(`select import_issues from question_versions where question_id = $1::bigint and version_no = $2`, [q, versionNo]))[0]!.import_issues?.map((i) => i.code) ?? null
+    const kept = await makeHeld()
+    expect((await admin.put(`/api/questions/${kept}`, body({ questionText: 'Berapakah hasil tambah sembilan dan satu?' }))).status).toBe(200)
+    expect(await issuesOf(kept, 2)).toEqual(['legacy_image_unresolved', 'html_math'])
+    // an edit that supplies the picture drops the image issue and keeps the other one
+    const supplied = await makeHeld()
+    const up = await admin.post('/api/files?purpose=question_image').attach('file', Buffer.from(PNG, 'base64'), { filename: 'rajah.png', contentType: 'image/png' })
+    expect(up.status, JSON.stringify(up.body)).toBe(201)
+    const withImage = await admin.put(`/api/questions/${supplied}`, body({ questionText: 'Berapakah hasil tambah sembilan dan satu, ada rajah?', questionImageFileId: up.body.data.id }))
+    expect(withImage.status, JSON.stringify(withImage.body)).toBe(200)
+    expect(await issuesOf(supplied, 2)).toEqual(['html_math'])
+    // the original version keeps its own record
+    expect(await issuesOf(supplied, 1)).toEqual(['legacy_image_unresolved', 'html_math'])
   })
 
   it('8. regression: the seeded approved questions are untouched by the new facts, and the loader reads them as clean', async () => {

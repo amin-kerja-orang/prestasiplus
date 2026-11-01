@@ -23,8 +23,8 @@ describe('migration 0105 gate facts: backfill with before and after counts', () 
     `)
     const person = (await db.query<{ id: string }>(`insert into users (name) values ('Penyemak Contoh') returning id::text`))[0]!.id
     const batch = (await db.query<{ id: string }>(`insert into intake_batches (paper_type, subject, kertas, year, source_text, rights_status) values ('trial', 'MAT', 1, 2025, 'x', 'own') returning id::text`))[0]!.id
-    const item = async (marks: unknown): Promise<string> =>
-      (await db.query<{ id: string }>(`insert into intake_items (batch_id, position, item_type, payload) values ($1::bigint, 1, 'mcq', $2::jsonb) returning id::text`, [batch, JSON.stringify({ marks })]))[0]!.id
+    const item = async (marks: unknown, parts?: unknown[]): Promise<string> =>
+      (await db.query<{ id: string }>(`insert into intake_items (batch_id, position, item_type, payload) values ($1::bigint, 1, 'mcq', $2::jsonb) returning id::text`, [batch, JSON.stringify({ marks, ...(parts === undefined ? {} : { parts }) })]))[0]!.id
     const make = async (name: string, source: string, status: string, intakeItemId: string | null = null): Promise<void> => {
       const q = (await db.query<{ id: string }>(`insert into questions (source_type, latest_version_no) values ($1, 1) returning id::text`, [source]))[0]!.id
       await db.query(`insert into question_versions (question_id, version_no, status, type, stem_ms, intake_item_id) values ($1::bigint, 1, $2, 'mcq', 'x', $3::bigint)`, [q, status, intakeItemId])
@@ -46,6 +46,10 @@ describe('migration 0105 gate facts: backfill with before and after counts', () 
     await make('marks-7.5', 'pdf', 'review', await item(7.5))
     await make('marks-none', 'pdf', 'review', await item(null))
     await make('marks-approved', 'pdf', 'approved', await item(3))
+    await make('marks-zero', 'pdf', 'review', await item(0))
+    await make('parted-zero', 'pdf', 'review', await item(0, [{ label: 'a', marks: 2 }, { label: 'b', marks: 3 }]))
+    await make('parted-total', 'pdf', 'review', await item(5, [{ label: 'a', marks: 2 }, { label: 'b', marks: 3 }]))
+    await make('empty-parts', 'pdf', 'review', await item(4, []))
   })
   afterAll(async () => {
     await db.drop()
@@ -74,7 +78,11 @@ describe('migration 0105 gate facts: backfill with before and after counts', () 
     expect(s['marks-5']!.declared_marks).toBe(5)
     expect(s['marks-approved']!.declared_marks).toBe(3) // approved rows get the value too; the gate never re-checks them
     for (const name of ['marks-text', 'marks-1234', 'marks-7.5', 'marks-none', 'ai-draft', 'manual-draft']) expect(s[name]!.declared_marks, name).toBeNull()
-    expect((await db.query<{ n: string }>(`select count(*) n from question_versions where declared_marks is not null`))[0]!.n).toBe('2')
+    // a zero total and every parted item declare nothing (a parted question's total is the sum of its parts); an empty parts list is no parts
+    for (const name of ['marks-zero', 'parted-zero', 'parted-total']) expect(s[name]!.declared_marks, name).toBeNull()
+    expect(s['empty-parts']!.declared_marks).toBe(4)
+    expect((await db.query<{ n: string }>(`select count(*) n from question_versions where declared_marks = 0`))[0]!.n).toBe('0')
+    expect((await db.query<{ n: string }>(`select count(*) n from question_versions where declared_marks is not null`))[0]!.n).toBe('3')
   })
 
   it('the new rows are constrained and default to person', async () => {

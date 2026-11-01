@@ -12,7 +12,8 @@
 --   last_editor = 'ai'  only for ai_variant questions whose version is draft or review and has no status transition made by a person;
 --   last_editor = 'person' (the default) for everything else, approved and archived rows included. The gate runs only on a NEW approval, so a
 --   question that is already approved is never re-checked (D80 DEC-2).
---   declared_marks from intake_items.payload->>'marks' where the version came from an intake item and the value is a whole number 0..999.
+--   declared_marks from intake_items.payload->>'marks' where the version came from an intake item, the item has NO parts and the value is a whole
+--   number 1..999 (a parted item's total is 0 in the intake payload: its marks are the parts', so nothing is declared for it).
 --
 -- Additive; no existing row changes meaning. Reversible:
 --   ALTER TABLE "question_versions" DROP CONSTRAINT "ck_question_versions_declared_marks", DROP CONSTRAINT "ck_question_versions_last_editor",
@@ -37,7 +38,8 @@ BEGIN
 
   UPDATE "question_versions" v SET "declared_marks" = (i."payload"->>'marks')::smallint
     FROM "intake_items" i
-   WHERE v."intake_item_id" = i."id" AND jsonb_typeof(i."payload"->'marks') = 'number' AND (i."payload"->>'marks') ~ '^[0-9]{1,3}$';
+   WHERE v."intake_item_id" = i."id" AND jsonb_typeof(i."payload"->'marks') = 'number' AND (i."payload"->>'marks') ~ '^[1-9][0-9]{0,2}$'
+     AND jsonb_array_length(CASE WHEN jsonb_typeof(i."payload"->'parts') = 'array' THEN i."payload"->'parts' ELSE '[]'::jsonb END) = 0;
   GET DIAGNOSTICS n_marks = ROW_COUNT;
 
   RAISE NOTICE '0105 backfill: last_editor=ai on % versions, declared_marks set on % versions', n_ai, n_marks;

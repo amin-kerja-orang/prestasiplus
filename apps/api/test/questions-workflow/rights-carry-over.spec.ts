@@ -1,11 +1,11 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { GATE_MESSAGES } from '../../src/modules/questions/workflow/lifecycle/gates'
 import { bootWorkflowApp, loginAll, type Client, type WorkflowTestApp } from './helpers'
 
 /**
- * REQ-B-017: a new version made by editing an approved question keeps the declaration and provenance of the version it came from. Before, the
- * new version had rights_status NULL, which the approve gate reads as `own`: one edit of a question declared `unclear` skipped the rights rule.
+ * REQ-B-017 / REQ-B-037: a new version made by editing an approved question keeps the declaration and provenance of the version it came from
+ * (asserted on the columns themselves). D99 (user, 2026-11-01): V2 asks for source and rights once, at the intake batch, and has no per-question
+ * gate, so a question declared `unclear` (migrated or new) is submitted, approved and published like any other.
  */
 describe('editing keeps the rights declaration and provenance (REQ-B-017)', () => {
   let t: WorkflowTestApp
@@ -68,18 +68,28 @@ describe('editing keeps the rights declaration and provenance (REQ-B-017)', () =
     expect((await columns(id, 2)).rights_status).toBe('unclear')
   })
 
-  it('v1 unclear -> edit (v2 draft) -> submit -> Terbit is still refused with fields.rightsStatus, in a single transition and in bulk', async () => {
+  it('D99: a NEW question with rights unclear is submitted, approved and published; nothing asks for a source or rights per question', async () => {
+    const res = await admin.post('/api/questions', body({ status: 'draft', tag }))
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    const id = res.body.data.id as string
+    await t.db.query(`update question_versions set rights_status = 'unclear', chapter_id = $2::bigint where question_id = $1::bigint`, [id, tag.chapterId])
+    await t.db.query(`update questions set created_by_id = null, source_type = null where id = $1::bigint`, [id]) // no author, no source: nothing is declared at all
+    expect((await move(id, 'review')).status).toBe(200) // Semakan: no "Sila nyatakan sumber soalan."
+    expect((await move(id, 'approved')).status).toBe(200) // Terbitkan: no rights check
+    expect((await t.db.query<{ status: string; live: number }>(`select v.status, q.live_version_no live from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no where q.id = $1::bigint`, [id]))[0]).toEqual({ status: 'approved', live: 1 })
+  })
+
+  it('D99: a MIGRATED question (legacy id, rights unclear) is editable, submittable, approvable and publishable again, single and bulk', async () => {
     const id = await editedFromUnclear()
+    await t.db.query(`update questions set legacy_source = 'cloud', legacy_id = $2 where id = $1::bigint`, [id, `q-${id}`])
     expect((await move(id, 'review')).status).toBe(200)
-    const single = await move(id, 'approved')
-    expect(single.status, JSON.stringify(single.body)).toBe(422)
-    expect(single.body.error.fields.rightsStatus).toBe(GATE_MESSAGES.rights)
-    const bulk = (await admin.post('/api/questions/bulk-action', { action: 'approved', ids: [id] })).body.data
-    expect(bulk.affected).toBe(0)
-    expect(bulk.failed[0]).toMatchObject({ id, code: 'VALIDATION_ERROR', fields: { rightsStatus: GATE_MESSAGES.rights } })
-    // the declaration is read from the version being approved: once the person declares the rights on v2, it passes
-    await t.db.query(`update question_versions set rights_status = 'own' where question_id = $1::bigint and version_no = 2`, [id])
     expect((await move(id, 'approved')).status).toBe(200)
+    // a second edit and the bulk Terbitkan
+    expect((await admin.put(`/api/questions/${id}`, body({ questionText: 'Berapakah hasil tambah sepuluh dan satu?' }))).status).toBe(200)
+    expect((await move(id, 'review')).status).toBe(200)
+    const bulk = (await admin.post('/api/questions/bulk-action', { action: 'approved', ids: [id] })).body.data
+    expect(bulk).toMatchObject({ affected: 1, failed: [] })
+    expect((await columns(id, 3)).rights_status).toBe('unclear') // and the declaration still travels with the content
   })
 
   it('a question with no declaration stays undeclared (null counts as own) and keeps going through', async () => {

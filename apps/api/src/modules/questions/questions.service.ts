@@ -387,6 +387,11 @@ export class QuestionsService {
       if (!record) throw questionNotFound()
       const v = record.version
       if (!isQuestionWorkflowTransitionAllowed(v.status, status, actor)) throw transitionConflict(v.status, status)
+      // Semakan (draft to review) runs the submit gate on every path, the bulk action included: a refused row is a `failed[]` entry like Terbit.
+      if (status === 'review' && v.status === 'draft') {
+        const refused = await this.gateFields('submit', record, v)
+        if (Object.keys(refused).length > 0) throw fail(refused)
+      }
       if (options.event) {
         await this.prisma.client.questionStatusEvent.create({
           data: { questionId: BigInt(id), versionNo: v.versionNo, fromStatus: v.status, toStatus: status, actorUserId: BigInt(options.event.actorUserId), actorRole: options.event.actorRole, reason: options.reason ?? null, requestId: options.event.requestId },
@@ -644,9 +649,14 @@ export class QuestionsService {
    * R1-B05: the DSKP rules bind only an SPM-bound question, on a NEW approval.
    */
   private async approveFields(record: QuestionRecord, version: QuestionVersionRecord): Promise<Record<string, string>> {
+    return this.gateFields('approve', record, version)
+  }
+
+  /** The failures of `gate` on a stored version, on the same facts and builder as the lifecycle routes (empty = the gate holds). */
+  private async gateFields(gate: 'submit' | 'approve', record: QuestionRecord, version: QuestionVersionRecord): Promise<Record<string, string>> {
     const facts = await this.repo.gateFacts(record.id, version.versionNo)
     const spmBound = await this.repo.isSpmBound(version.subjectId, version.educationLevelId)
-    return GATES.approve(gateDataOf({ id: record.id, version }, facts, spmBound))
+    return GATES[gate](gateDataOf({ id: record.id, version }, facts, spmBound))
   }
 
   private async createFrom(n: Normalized, status: QuestionStatus, actor: QuestionActor, provenance?: QuestionProvenance): Promise<QuestionView> {
@@ -679,8 +689,6 @@ export class QuestionsService {
           },
         },
         {
-          rightsStatus: 'own',
-          hasSourceDeclaration: true,
           unconfirmedLowConfidenceFields: [],
           hasOpenDuplicateFlag: false,
           mediaResolved: await this.repo.mediaResolvedFor(draft.stimulusIds, n.stimulusGroupId ? BigInt(n.stimulusGroupId) : null),
@@ -998,7 +1006,16 @@ export class QuestionsService {
       const next = { ...draft, status: statusAfterEdit(fresh.version.status) }
       if (fresh.version.status === 'approved') {
         // Q-5: the live version keeps serving; the edit is version n+1 as a draft.
-        await this.repo.addVersion(record.id, fresh.latestVersionNo + 1, next, now)
+        // An import hold (a legacy image that was not copied) goes on with the content it still applies to: an edit that does not supply the
+        // image keeps the hold, one that supplies it drops that issue (so the gate does not refuse the picture it now has).
+        const optionImages = flatFromVersion({ ...fresh.version, parts: normalized.parts }).optionImageIds
+        const stemImage = normalized.stemImage !== undefined ? normalized.stemImage : fresh.version.stemImageId
+        const held = (await this.repo.heldIssuesOf(record.id, fresh.version.versionNo)).filter((i) => {
+          if (i.code !== 'legacy_image_unresolved') return true
+          if (i.target === 'question') return stemImage == null
+          return !(i.target === 'option' && typeof i.label === 'string' && i.label.length === 1 && optionImages[i.label.charCodeAt(0) - 65] != null)
+        })
+        await this.repo.addVersion(record.id, fresh.latestVersionNo + 1, { ...next, importIssues: held.length === 0 ? null : held }, now)
       } else {
         await this.repo.rewriteVersion(record.id, fresh.version.versionNo, next, now)
       }

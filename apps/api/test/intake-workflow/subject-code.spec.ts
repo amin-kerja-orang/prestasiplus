@@ -163,4 +163,12 @@ describe('intake tag subject: Bijak codes resolve to the curriculum subject (R1E
     expect((await t.db.query(`select 1 from source_papers where year = 2018 and kertas = 'K1' and exam_type = 'sebenar'`))).toHaveLength(1)
     expect((await t.db.query<{ source_paper_id: string }>(`select source_paper_id::text from intake_batches where id = $1`, [batch.id]))[0]!.source_paper_id).toBe(old)
   })
+
+  it('D99: the only source and rights declaration left is the intake batch one: a batch without it is still refused', async () => {
+    const send = (over: Record<string, unknown>) => teacher.agent.post('/api/intake/batches').set('X-CSRF-Token', teacher.csrf).send({ paperType: 'trial', subject: 'MAT', kertas: 1, year: 2025, source: 'Sumber ujian', copyright: 'sendiri', declaration: true, ...over })
+    expect((await send({ declaration: false })).status).toBe(422)
+    expect((await send({ source: ' ' })).status).toBe(422)
+    expect((await send({ copyright: undefined })).status).toBe(422)
+    expect((await send({})).status).toBe(201)
+  })
 })

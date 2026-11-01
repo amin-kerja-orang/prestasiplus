@@ -350,12 +350,9 @@ export interface ContributionCounts {
 
 /**
  * The gate facts that live outside the version row (R1-H-A18), read by `QuestionsRepository.gateFacts` and handed to `gateDataOf`.
- * `rightsStatus` null counts as `own` (the documented default for a version with no declaration); an explicit `unclear` is refused.
+ * D99 (2026-11-01): no per-question source or rights fact. V2 asks for them once, at the intake batch.
  */
 export interface GateFacts {
-  rightsStatus: string
-  /** The question names where it comes from: a source paper, a contributor, a source kind, or how it was made (`source_type`) and by whom. */
-  hasSourceDeclaration: boolean
   /** Fields of the intake item still flagged low-confidence and not confirmed by a person. */
   unconfirmedLowConfidenceFields: string[]
   /** An intake duplicate link of this question that is still `pending` ("Bukan pendua" and the other decisions close it). */

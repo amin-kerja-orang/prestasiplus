@@ -42,8 +42,6 @@ export function gateDataOf(
     unitId: v.unitId,
     spIds: v.spIds,
     tp: v.difficultyTp,
-    rightsStatus: facts.rightsStatus,
-    hasSourceDeclaration: facts.hasSourceDeclaration,
     unconfirmedLowConfidenceFields: facts.unconfirmedLowConfidenceFields,
     hasOpenDuplicateFlag: facts.hasOpenDuplicateFlag,
     mediaResolved: facts.mediaResolved,

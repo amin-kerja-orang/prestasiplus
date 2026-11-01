@@ -60,6 +60,11 @@ export interface VersionDraft {
    */
   paperCode?: string | null
   /** R1-H-A18: who wrote the content last. A person's edit is `person`; the AI service marks its own writes `ai`. */
+  /**
+   * Import holds carried to a NEW version (REQ H-A18 minor): the loader's `import_issues` that still apply to the edited content.
+   * `undefined` leaves the column untouched on a rewrite and stores null on a new version; `null` clears.
+   */
+  importIssues?: { code: string; target?: string; label?: string; path?: string }[] | null
   lastEditor?: 'person' | 'ai'
   /** R1-H-A18: question total declared at intake accept (null = none). A person's edit stores null. */
   declaredMarks?: number | null
@@ -812,22 +817,19 @@ export class QuestionsRepository {
    */
   async gateFacts(questionId: string, versionNo: number): Promise<GateFacts> {
     const key = bi(questionId)
-    const none: GateFacts = { rightsStatus: 'own', hasSourceDeclaration: false, unconfirmedLowConfidenceFields: [], hasOpenDuplicateFlag: false, mediaResolved: true, lastEditedByAi: false, declaredMarks: null }
+    const none: GateFacts = { unconfirmedLowConfidenceFields: [], hasOpenDuplicateFlag: false, mediaResolved: true, lastEditedByAi: false, declaredMarks: null }
     if (key === null) return none
     const rows = await this.db.$queryRaw<
       {
-        rights_status: string | null
         last_editor: string
         declared_marks: number | null
-        has_source: boolean
         duplicate_open: boolean
         low_fields: string[] | null
         confirmed_fields: string[] | null
         media_ok: boolean
       }[]
     >`
-      SELECT v.rights_status, v.last_editor, v.declared_marks,
-             (v.source_paper_id IS NOT NULL OR v.contributor_id IS NOT NULL OR v.source_kind IS NOT NULL OR q.source_type IS NOT NULL OR q.created_by_id IS NOT NULL) AS has_source,
+      SELECT v.last_editor, v.declared_marks,
              EXISTS (SELECT 1 FROM intake_items di JOIN duplicate_links dl ON dl.item_id = di.id
                       WHERE di.question_id = q.id AND dl.decision = 'pending') AS duplicate_open,
              ii.low_fields, ii.confirmed_fields,
@@ -842,8 +844,6 @@ export class QuestionsRepository {
     if (!r) return none
     const confirmed = new Set(r.confirmed_fields ?? [])
     return {
-      rightsStatus: r.rights_status ?? 'own',
-      hasSourceDeclaration: r.has_source,
       unconfirmedLowConfidenceFields: (r.low_fields ?? []).filter((f) => !confirmed.has(f)),
       hasOpenDuplicateFlag: r.duplicate_open,
       mediaResolved: r.media_ok,
@@ -858,6 +858,14 @@ export class QuestionsRepository {
     const group = groupId === null ? Prisma.empty : Prisma.sql`UNION SELECT gs.stimulus_id FROM stimulus_group_stimuli gs WHERE gs.group_id = ${groupId}`
     const rows = await this.db.$queryRaw<{ ok: boolean }[]>`SELECT ${mediaResolvedSql(Prisma.sql`${ids} ${group}`, Prisma.sql`NULL::jsonb`)} AS ok`
     return rows[0]?.ok === true
+  }
+
+  /** The loader's `import_issues` of one version (`[]` when none): why a legacy question was loaded but held inactive. */
+  async heldIssuesOf(questionId: string, versionNo: number): Promise<{ code: string; target?: string; label?: string; path?: string }[]> {
+    const key = bi(questionId)
+    if (key === null) return []
+    const row = await this.db.questionVersion.findUnique({ where: { questionId_versionNo: { questionId: key, versionNo } }, select: { importIssues: true } })
+    return Array.isArray(row?.importIssues) ? (row.importIssues as { code: string; target?: string; label?: string; path?: string }[]) : []
   }
 
   /** Sets who wrote the version last (a person's action clears the AI flag; the AI service sets it on its own writes). */
@@ -1158,6 +1166,7 @@ export class QuestionsRepository {
       sourcePage: c.sourcePage,
       setLabel: c.setLabel,
       ...(c.paperCode === undefined ? {} : { paperCode: c.paperCode }),
+      ...(c.importIssues === undefined ? {} : { importIssues: c.importIssues === null || c.importIssues.length === 0 ? Prisma.DbNull : (c.importIssues as unknown as Prisma.InputJsonValue) }),
       lastEditor: c.lastEditor ?? 'person',
       declaredMarks: c.declaredMarks ?? null,
     }
