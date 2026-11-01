@@ -14,6 +14,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { FakeBank, matBank } from './fakes'
 import { ACCOUNTS, auditRows, bootBuilderApp, count, expectError, loginAs, type BuilderTestApp, type Client } from './helpers'
+import { SERVING, serveSeededBlueprints } from '../support/serve-blueprints'
 
 const Editor = envelopeOf(BijakBuilderEditorSchema)
 const Created = envelopeOf(BijakBuilderPaperCreateResultSchema)
@@ -40,7 +41,8 @@ describe('paper builder API', () => {
 
   beforeAll(async () => {
     bank = matBank()
-    t = await bootBuilderApp({ builderSource: bank, papersSource: bank })
+    t = await bootBuilderApp({ builderSource: bank, papersSource: bank, pool: 'builder-source' })
+    await serveSeededBlueprints(t.db)
     admin = await loginAs(t, ACCOUNTS.admin)
     student = await loginAs(t, ACCOUNTS.student)
   })
@@ -198,7 +200,11 @@ describe('paper builder API', () => {
       const before = await count(t.db, `select count(*) n from audit_events where action = 'bijak.paper.published'`)
       const res = await admin.post(`/api/admin/papers/${id}/publish`)
       expect(res.status).toBe(200)
-      expect(Publish.parse(res.body).data).toEqual({ ok: false, errors: lines })
+      // The paper's own rules come first and exactly; the structural tier of the standard check (the pool facts of the same bank) may add
+      // its lines after them (a broken group is reported by both), and its notes are not part of this contract.
+      const data = Publish.parse(res.body).data
+      expect(data.ok).toBe(false)
+      expect(data.errors.slice(0, lines.length)).toEqual(lines)
       expect(await dbStatus(id)).toBe('draft')
       expect(await count(t.db, `select count(*) n from audit_events where action = 'bijak.paper.published'`)).toBe(before)
       const pinned = await count(t.db, `select count(*) n from paper_placements pl join paper_sections s on s.id = pl.paper_section_id where s.paper_id = $1 and pl.marks_override is not null`, [id])
@@ -386,9 +392,9 @@ describe('paper builder API', () => {
         const err = expectError(await admin.post('/api/admin/papers', body), 'VALIDATION_ERROR', 422, MSG.noBlueprint)
         expect(err.fields).toBeUndefined()
       }
-      await q(`update blueprints set source = 'draft' where code = '4541/1'`)
+      await q(`update blueprints set source = 'draft', serves_students = false, verification_id = null where code = '4541/1'`)
       expectError(await admin.post('/api/admin/papers', { subject: 'SN', kertas: 1 }), 'VALIDATION_ERROR', 422, MSG.noBlueprint)
-      await q(`update blueprints set source = 'spec' where code = '4541/1'`)
+      await q(`update blueprints set ${SERVING} where code = '4541/1'`)
       expect((await admin.post('/api/admin/papers', { subject: 'SN', kertas: 1 })).status).toBe(201)
     })
 

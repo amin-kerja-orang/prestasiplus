@@ -4,8 +4,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { QuestionFacts } from '@pp/exam-core'
 
 import type { BijakQuestionInfo, BijakQuestionSource, BijakServedSource } from '../../src/modules/bijak/papers'
-import { POC_BANK, pocQuestionId } from '../../src/modules/bijak/papers/poc'
 import type { BijakPoolSource } from '../../src/modules/bijak/papers/pool-source'
+import { POC_BANK, pocQuestionId } from '../../prisma/seed/poc/export'
 import { NOT_SERVING, SERVING } from '../support/serve-blueprints'
 import { count, expectError, loginAs, bootPapersApp, serveSeededBlueprints, setPocMarkBudgets, type Client, type PapersTestApp } from './helpers'
 

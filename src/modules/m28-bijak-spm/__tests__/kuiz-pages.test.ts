@@ -271,6 +271,9 @@ describe('KuizPage (random)', () => {
               body: null,
               imageToken: 'abcDEF0123456789abcdef',
               alt: 'Segi tiga',
+              caption: null,
+              source: null,
+              table: null,
             },
           ],
         }),
@@ -473,5 +476,25 @@ describe('PaperQuizPage', () => {
     await flushPromises()
     expect(first.textContent).toContain('Jawapan tidak sah.')
     expect(text('[data-testid=paper-quiz-score]')).toBe('Skor: 0 / 3')
+  })
+})
+
+describe('KuizItem stimulus kinds (H-C8)', () => {
+  it('renders a table stimulus with its grid and caption above the question', async () => {
+    server.startKuiz.mockResolvedValue({
+      sessionId: '22222222-2222-4222-8222-222222222222',
+      count: 1,
+      items: [
+        mcq('t1', {
+          stimuli: [{ kind: 'table', label: 'Jadual 1', body: null, imageToken: null, alt: null, caption: 'Hasil jualan', source: 'Sumber: kajian', table: { head: ['Bulan', 'Jumlah'], rows: [['Jan', '10']] } }],
+        }),
+      ],
+    })
+    await mountPage(KuizPage, '/simulasi/kuiz')
+    const body = document.body.textContent ?? ''
+    expect(body).toContain('Bulan')
+    expect(body).toContain('Jan')
+    expect(body).toContain('Hasil jualan')
+    expect(document.body.querySelector('table')).not.toBeNull()
   })
 })

@@ -141,7 +141,15 @@ export function totalMarks(draft: StudioDraft): number {
   return draft.leaves.reduce((s, l) => s + (Number.isFinite(l.marks) ? l.marks : 0), 0)
 }
 
-export const draftTp = (draft: StudioDraft): number | null => questionTp(draft.leaves) ?? draft.inheritedTp ?? null
+/** The question TP: highest over leaves, where a part without its own TP counts as the stored (inherited) question TP. */
+export const draftTp = (draft: StudioDraft): number | null =>
+  questionTp(draft.leaves.map((l) => ({ tp: l.tp ?? draft.inheritedTp ?? null }))) ?? draft.inheritedTp ?? null
+
+/** The note after "TP soalan: n": the highest part TP when a part carries it, else the TP inherited from the question. */
+export function draftTpNote(draft: StudioDraft): string {
+  const tp = draftTp(draft)
+  return tp !== null && draft.leaves.some((l) => l.tp === tp) ? '(tertinggi antara bahagian)' : '(diwarisi daripada soalan)'
+}
 
 /* -------------------------------------------------------------------------------------------- completeness */
 
@@ -171,7 +179,7 @@ export function draftGaps(d: StudioDraft, levelName = ''): Gap[] {
       gaps.push({ step: 3, message: `Bahagian (${l.label}) tiada skema jawapan.` })
     }
   }
-  for (const m of dskpGaps({ unitId: d.unitId, spIds: d.spIds, leaves: d.leaves })) gaps.push({ step: m.includes('Bahagian') ? 3 : 4, message: m })
+  for (const m of dskpGaps({ unitId: d.unitId, spIds: d.spIds, leaves: d.leaves.map((l) => ({ ...l, tp: l.tp ?? d.inheritedTp ?? null })) })) gaps.push({ step: m.includes('Bahagian') ? 3 : 4, message: m })
   return gaps
 }
 

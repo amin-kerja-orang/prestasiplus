@@ -84,8 +84,10 @@ describe('servability reads contract (R1-T30)', () => {
 
   it('overview has one entry per activity', () => {
     const activities = SERVABILITY_ACTIVITIES.map((activity) => ({ activity, label: SERVABILITY_ACTIVITY_LABELS[activity], served: 1, total: 2, attention: 1, basis: 'sql' as const }))
-    expect(ServabilityOverviewSchema.safeParse({ bank: 2, activities, cards: [] }).success).toBe(true)
-    expect(ServabilityOverviewSchema.safeParse({ bank: 2, activities: activities.slice(1), cards: [] }).success).toBe(false)
+    expect(ServabilityOverviewSchema.safeParse({ bank: 2, activities, cards: [], computedAt: '2026-10-19T09:00:00.000+08:00' }).success).toBe(true)
+    // computedAt is required (H-A21): the cache always sends it
+    expect(ServabilityOverviewSchema.safeParse({ bank: 2, activities, cards: [] }).success).toBe(false)
+    expect(ServabilityOverviewSchema.safeParse({ bank: 2, activities: activities.slice(1), cards: [], computedAt: '2026-10-19T09:00:00.000+08:00' }).success).toBe(false)
   })
 
   it('registers the five routes under /admin/servability', () => {

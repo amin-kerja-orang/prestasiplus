@@ -5,6 +5,7 @@ import { SERVABILITY_ACTIVITIES, type ServabilityActivity, type ServabilityRepor
 import { mulberry32 } from '../../src/db/prng'
 import { Be09BijakQuestionSource } from '../../src/modules/bijak/question-bridge/be09-question-source'
 import { markableLeaf, leavesOf, resolveStimuli } from '../../src/modules/bijak/kuiz/kuiz.mapper'
+import { ownStimuliOf } from '../../src/modules/bijak/kuiz/own-stimuli'
 import { CurriculumRepository } from '../../src/modules/curriculum'
 import { Be09PracticeQuestionSource } from '../../src/modules/practice/question-bridge/be09-practice-question-source'
 import type { UsersRepository } from '../../src/modules/users'
@@ -369,7 +370,7 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     const kept = new Set<string>()
     for (const record of await repo.getMany([...drawn], 'live')) {
       const group = record.groupId ? await repo.groupOf(record.id) : null
-      const assets = new Map((await repo.stimulusAssets(record.version.stimulusIds)).map((a) => [a.id, a]))
+      const assets = await ownStimuliOf(repo, [record], new Map(group && record.groupId ? [[record.groupId, group]] : []))
       const leaf = leavesOf(record.id, record.version.parts)[0]
       if (record.isActive && leaf && markableLeaf(leaf) !== null && resolveStimuli(record, group, assets).complete) kept.add(record.id)
     }
@@ -377,6 +378,13 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     expect(servedBy('simulasi_kuiz').has(made.groupA!)).toBe(true)
     expect(servedBy('simulasi_kuiz').has(made.stemImage!)).toBe(true)
     expect(reasonsOf('structured', 'simulasi_kuiz')).toEqual(['shape_unsupported'])
+    // Explicit cases, stated independently of the helper above: served and not served by the kuiz (what the admin is told).
+    for (const served of ['plain', 'groupA', 'stemImage']) expect(servedBy('simulasi_kuiz').has(made[served]!), `${served} is served`).toBe(true)
+    for (const notServed of ['structured', 'draft', 'archivedLive', 'sharedA']) {
+      expect(servedBy('simulasi_kuiz').has(made[notServed]!), `${notServed} is not served`).toBe(false)
+    }
+    // a stimulus shared by several questions without being a group (D90) is the reason, in words the admin can act on
+    expect(reasonsOf('sharedA', 'simulasi_kuiz')).toEqual(['shape_unsupported'])
   })
 
   it('simulasi_paper: a NEW sitting can be started (live approved, bridge accepts) AND the question sits on a published paper', async () => {

@@ -10,7 +10,7 @@ import {
   type ServabilityBatchResult,
   type ServabilityDatabankRow,
   type ServabilityLaneQuery,
-  type ServabilityOverview,
+  type ServabilityOverviewCounts,
   type ServabilityPaperRow,
 } from '@pp/contract'
 
@@ -80,7 +80,7 @@ export class ServabilityReadsService {
     }
   }
 
-  async overview(): Promise<ServabilityOverview> {
+  async overview(): Promise<ServabilityOverviewCounts> {
     const live = { status: SERVABLE_STATUS, active: true } as const
     const bank = await this.questions.count(live)
     const [spmSubjects, drawn, databankTotal, paperCard] = await Promise.all([this.subjectsListed(), this.spmDraw(), this.databankLaneTotal(), this.paperLaneCard()])
