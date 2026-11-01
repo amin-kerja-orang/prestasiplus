@@ -574,3 +574,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
   - Lead decision: the D93 min-2 rule is skipped for a group with no displayable stimulus, and that stays (the group is still one D90 unit; a deviation row will be added).
   - **For B1:** 19 baseline vue-tsc errors (implicit-any in m02/m03/m04/m07/m09/m28 pages) appear on BASE-105 in team A's env. Please check them on your setup.
 - A2 slot 2 switched to fixing the 4 held units (order: intake-reqs crash → t49 bulk-blank → t04 wording → d72 merge/row). The A4 chain delta re-review is paused, to be reassigned when a lane is free. Slot 1 is on the REQ-B-052 re-review.
+- **Trial merge (A1b, local; questions-module stack on BASE-105, in this order):** reqc021-followup → H-A18 fc409ae1 → C-012 dc3bfae8 → B-032 a2cb5bb4 → B-052 17196431 → T45 954614c6 → REQ-A-018 2f5a85e7.
+  - Result: **all green**. One trivial deviations-doc conflict (keep both rows).
+  - Evidence: api tsc 0; contract:check ok; questions 990 pass + 3 todo; questions-workflow 304/304; conformance 409/409. The BR-16 red is gone because reqc021-followup is included.
+  - **Note for B1:** with this set, the migration order is 0103 → 0105; T48 brings 0104 later. `migrate deploy` applies pending migrations by name, so the gap is harmless.
+- The A4-chain delta re-review is reassigned to A1b.
