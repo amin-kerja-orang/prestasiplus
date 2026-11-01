@@ -6,8 +6,8 @@ import {
 } from '@pp/contract'
 import { describe, expect, it } from 'vitest'
 
-import { POC_BANK, pocQuestionId, pocQuestionMarks } from '../../src/modules/bijak/papers/poc'
-import { PocBuilderQuestionSource } from '../../src/modules/exam/builder/poc-builder-source'
+import { POC_BANK, pocQuestionId, pocQuestionMarks } from '../../prisma/seed/poc/export'
+import { PocBuilderQuestionSource } from '../support/poc/builder-source'
 
 const source = new PocBuilderQuestionSource()
 const wire = (key: string): string => pocQuestionId(key).toString()

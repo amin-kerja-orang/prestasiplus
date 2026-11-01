@@ -463,7 +463,8 @@ describe('QuestionEditPage (M04 S4)', () => {
       detail({ questionType: 'essay', essayTopics: [{ id: 't1', label: 'A' }, { id: 't2', label: 'B' }] }),
     )
     const w = await render('edit')
-    expect(t(w, 'essay-choice-note').text()).toContain('disunting melalui editor Studio')
+    expect(t(w, 'essay-choice-note').text()).toContain('tidak boleh disunting di borang ini')
+    expect(t(w, 'essay-choice-note').text()).not.toMatch(/Studio|berstruktur/)
     expect(w.find('[data-testid=q-cognitive]').exists()).toBe(false) // the level is per part, edited in the Studio
     expect(w.get('[data-testid=q-model]').attributes('disabled')).toBeDefined()
     expect(w.get('[data-testid=q-points]').attributes('disabled')).toBeDefined()

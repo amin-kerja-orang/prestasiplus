@@ -130,10 +130,10 @@ export type BijakPaperCoverSection = z.infer<typeof BijakPaperCoverSectionSchema
 /** A reference-sheet panel (formula sheet), returned verbatim; items may hold `$latex$` spans. */
 export const BijakPaperReferencePanelSchema = z
   .strictObject({
-    title: z.string().min(1).meta({ example: 'Rumus (ringkas)' }),
-    items: z.array(z.string()),
-    imageFileId: z.string().min(1).max(128).optional().meta({
-      description: 'Stored image of the panel (public file token or decimal file id); the pupil read rule of files/question-image-access serves it.',
+    title: z.string().min(1).max(200).meta({ example: 'Rumus (ringkas)' }),
+    items: z.array(z.string().max(500)).max(20).meta({ description: 'At most 20 lines of at most 500 characters each.' }),
+    imageFileId: z.string().min(1).max(64).optional().meta({
+      description: 'Stored image of the panel: the PUBLIC file token (never the internal id); it must be an image the editing admin uploaded or one already on the paper. The pupil read rule of files/question-image-access serves it.',
     }),
   })
   .meta({ id: 'BijakPaperReferencePanel' })

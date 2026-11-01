@@ -1,5 +1,6 @@
-import type { BijakPool, BijakQuestionInfo, BijakQuestionSource } from './ports'
-import { POC_BANK, pocQuestionId, pocQuestionMarks, type PocPart } from './poc'
+import type { BijakPool, BijakQuestionInfo, BijakQuestionSource } from '../../../src/modules/bijak/papers/ports'
+import { POC_BANK, pocQuestionId, pocQuestionMarks } from '../../../prisma/seed/poc/export'
+import type { PocPart } from '../../../prisma/seed/poc/export/types'
 
 /**
  * Default `BijakQuestionSource` until BE-09 provides the question bank: serves the PoC questions

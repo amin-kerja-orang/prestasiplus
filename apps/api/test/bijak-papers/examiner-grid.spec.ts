@@ -7,7 +7,8 @@
 import { BijakPaperCoverSchema, envelopeOf } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { POC_BANK, pocQuestionId, type PocPart } from '../../src/modules/bijak/papers/poc'
+import { POC_BANK, pocQuestionId } from '../../prisma/seed/poc/export'
+import type { PocPart } from '../../prisma/seed/poc/export/types'
 import { infoOf } from '../../src/modules/bijak/question-bridge/be09-mapping'
 import { loginAs, bootPapersApp, serveSeededBlueprints, setPocMarkBudgets, type Client, type PapersTestApp } from './helpers'
 

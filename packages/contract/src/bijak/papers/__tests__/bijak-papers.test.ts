@@ -314,7 +314,8 @@ describe('BijakPaperCover (getCover)', () => {
 
   it('AC-20.3: examinerGrid is a required boolean', () => {
     expect(BijakPaperCoverSchema.parse({ ...coverMatK2, examinerGrid: false }).examinerGrid).toBe(false)
-    const { examinerGrid: _omitted, ...without } = coverMatK2
+    const without = { ...coverMatK2 } as Partial<typeof coverMatK2>
+    delete without.examinerGrid
     expect(BijakPaperCoverSchema.safeParse(without).success).toBe(false)
     expect(BijakPaperCoverSchema.safeParse({ ...coverMatK2, examinerGrid: 'yes' }).success).toBe(false)
   })

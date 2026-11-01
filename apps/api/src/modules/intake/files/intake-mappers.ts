@@ -60,7 +60,15 @@ export interface BatchRow {
   files: Array<{ pageCount: number | null }>
 }
 
-export function toBatchSummary(row: BatchRow): IntakeBatchSummary {
+/** Items of a batch and how many of them have no unconfirmed low-confidence field (REQ-C-009). */
+export interface BatchItemCounts {
+  itemCount: number
+  reviewedCount: number
+}
+
+export const NO_ITEMS: BatchItemCounts = { itemCount: 0, reviewedCount: 0 }
+
+export function toBatchSummary(row: BatchRow, counts: BatchItemCounts = NO_ITEMS): IntakeBatchSummary {
   return {
     id: idToString(row.id),
     status: row.status as IntakeBatchStatus,
@@ -75,6 +83,8 @@ export function toBatchSummary(row: BatchRow): IntakeBatchSummary {
     adminNotes: row.adminNotes,
     fileCount: row.files.length,
     pageCount: row.files.reduce((n, f) => n + (f.pageCount ?? 0), 0),
+    itemCount: counts.itemCount,
+    reviewedCount: counts.reviewedCount,
     owner: row.owner ? { id: idToString(row.owner.id), name: row.owner.name } : null,
     createdAt: toMytTimestamp(row.createdAt),
     updatedAt: toMytTimestamp(row.updatedAt),

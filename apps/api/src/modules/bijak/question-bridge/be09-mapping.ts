@@ -188,7 +188,7 @@ export function mapBe09Question(
   const stimuli = group ? stimuliOf(qid, group, media) : []
   const stimulus = stimuli[0]
   const stimulusIds = new Set(group?.stimuli.map((s) => s.id) ?? [])
-  const own = ownStimuliOf(qid, v.stimulusIds, stimulusIds, media)
+  const own = versionOwnStimuli(qid, v.stimulusIds, stimulusIds, media)
   for (const o of own) stimulusIds.add(o.rawId)
   const stemImage = stemImageOf(own)
 
@@ -386,7 +386,7 @@ const PICTURE_KINDS: ReadonlySet<string> = new Set(['image', 'diagram', 'map', '
  * group, so one that is shared and not grouped is refused (`stimulus_shared_ungrouped`); an unknown or audio one is refused
  * too (`stimulus_outside_group`), never dropped.
  */
-function ownStimuliOf(
+function versionOwnStimuli(
   qid: string,
   versionStimulusIds: readonly string[],
   groupStimulusIds: ReadonlySet<string>,

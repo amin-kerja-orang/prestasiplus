@@ -27,12 +27,12 @@ const itemsOf = (label: string): string[] =>
   PENTADBIRAN_MENU.find((g) => g.label === label)?.items.map((i) => i.id) ?? []
 
 describe('Pentadbiran menu data', () => {
-  it('keeps the full 9-group, 104-item definition as data', () => {
+  it('keeps the full 9-group, 105-item definition as data', () => {
     expect(PENTADBIRAN_FULL_MENU.map((g) => g.items.length)).toEqual([
-      2, 28, 7, 16, 12, 6, 22, 6, 5,
+      2, 28, 8, 16, 12, 6, 22, 6, 5,
     ])
-    expect(FULL_ITEMS).toHaveLength(104)
-    expect(new Set(FULL_ITEMS.map((i) => i.id)).size).toBe(104)
+    expect(FULL_ITEMS).toHaveLength(105)
+    expect(new Set(FULL_ITEMS.map((i) => i.id)).size).toBe(105)
   })
 
   it('renders built screens only and drops empty groups', () => {
@@ -49,6 +49,14 @@ describe('Pentadbiran menu data', () => {
       'KS-08',
       'KS-09',
     ])
+  })
+
+  it('REQ-B-039: Bank Soalan (Studio) opens the Studio list', () => {
+    const bs08 = ALL_ITEMS.find((i) => i.id === 'BS-08')
+    expect(bs08).toMatchObject({ label: 'Bank Soalan (Studio)', to: '/admin/studio' })
+    // it resolves to the real route (T13b), like every other item
+    const router = createAppRouter({ history: createMemoryHistory() })
+    expect(router.resolve('/admin/studio').matched.length).toBeGreaterThan(0)
   })
 
   it('never points a visible item at a placeholder route', () => {

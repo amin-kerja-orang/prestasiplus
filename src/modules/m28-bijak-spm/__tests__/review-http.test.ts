@@ -135,6 +135,8 @@ const batch7 = {
   owner: null,
   fileCount: 1,
   pageCount: 1,
+  itemCount: 0,
+  reviewedCount: 0,
   createdAt: T0,
   updatedAt: T0,
   submittedAt: null,

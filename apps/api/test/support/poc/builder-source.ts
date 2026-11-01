@@ -13,9 +13,9 @@ import {
   type BijakBuilderReviewQuestion,
 } from '@pp/contract'
 
-import { POC_BANK, pocQuestionId, pocQuestionKey, pocQuestionMarks } from '../../bijak/papers/poc'
-import type { PocPart, PocQuestion } from '../../bijak/papers/poc'
-import { leavesOf, type SchemeDef } from './exam-core.adapter'
+import { POC_BANK, pocQuestionId, pocQuestionKey, pocQuestionMarks } from '../../../prisma/seed/poc/export'
+import type { PocPart, PocQuestion } from '../../../prisma/seed/poc/export'
+import { leavesOf, type SchemeDef } from '../../../src/modules/exam/builder/exam-core.adapter'
 import type {
   BuilderCandidateScope,
   BuilderGroupInfo,
@@ -23,7 +23,7 @@ import type {
   BuilderQuestionInfo,
   BuilderQuestionRef,
   BuilderQuestionSource,
-} from './ports'
+} from '../../../src/modules/exam/builder/ports'
 
 type SchemeLine = { tag?: string; text: string; marks?: number }
 type ReviewScheme = BijakBuilderReviewQuestion['scheme']
@@ -44,7 +44,7 @@ const schemeOf = (id: string): SchemeDef | undefined => SCHEMES.get(id)
 
 function stimulusOf(raw: { id: string; kind: string; label: string; [k: string]: unknown }): BijakAttemptStimulus {
   const out: Record<string, unknown> = { id: raw.id, kind: raw.kind, label: raw.label }
-  for (const k of ['caption', 'alt', 'svg', 'text', 'table'] as const) if (raw[k] !== undefined) out[k] = raw[k]
+  for (const k of ['caption', 'alt', 'text', 'table'] as const) if (raw[k] !== undefined) out[k] = raw[k]
   return out as unknown as BijakAttemptStimulus
 }
 
