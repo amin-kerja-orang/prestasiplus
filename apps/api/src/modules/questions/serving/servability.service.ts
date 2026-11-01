@@ -4,8 +4,8 @@ import type { ServabilityReport } from '@pp/contract'
 
 import { idFromString, idToString, isIdString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
-import { optionImageIds, type OwnStimulus } from '../../bijak/kuiz/kuiz.mapper'
-import { ownStimuliOf } from '../../bijak/kuiz/own-stimuli'
+import { optionImageIds } from '../../bijak/kuiz/kuiz.mapper'
+import { withLeafStimuli } from '../../bijak/kuiz/own-stimuli'
 import { outsideStimuliOf } from '../../bijak/question-bridge/outside-media'
 import { QuestionsBijakPoolSource } from '../bijak-pool'
 import { QuestionsRepository } from '../questions.repository'
@@ -60,15 +60,17 @@ export class ServabilityService {
     // question with no live version falls back to its latest one (its status reason decides, the level and subject never serve it).
     const effective = [...latest].map(([id, l]) => live.get(id) ?? l)
 
-    const [levels, subjects, groups, linkedAssets, onPaper, jana] = await Promise.all([
+    const [levels, subjects, groups, onPaper, jana] = await Promise.all([
       this.levelsOf(effective.flatMap((r) => (r.version.educationLevelId ? [r.version.educationLevelId] : []))),
       this.subjectsOf(effective),
       this.groupsOf(bridged),
-      this.assetsOf(records),
       this.onPublishedPaper([...live.keys()]),
       this.janaFactsOf(records),
     ])
+    // ONE read of the own stimuli (versionStimuli + stimulusUseCounts): the bridge's `outside` and the kuiz's `linkedAssets` are both
+    // built from it, so the facts cannot disagree and the pinned read runs once.
     const own = await outsideStimuliOf(this.questions, bridged, groups)
+    const linkedAssets = await withLeafStimuli(this.questions, records, own.outside, groups)
     const tokens = await this.tokensOf(bridged, groups, linkedAssets, own.fileIds)
 
     const bridgeGroupOf = (id: string): StimulusGroupRecord | null => {
@@ -135,10 +137,6 @@ export class ServabilityService {
   private async groupsOf(records: readonly QuestionRecord[]): Promise<Map<string, StimulusGroupRecord>> {
     const ids = [...new Set(records.flatMap((r) => (r.groupId === null ? [] : [r.groupId])))]
     return new Map((await this.questions.groupsByIds(ids)).map((g) => [g.id, g]))
-  }
-
-  private assetsOf(records: readonly QuestionRecord[]): Promise<Map<string, OwnStimulus>> {
-    return ownStimuliOf(this.questions, records)
   }
 
   private async tokensOf(

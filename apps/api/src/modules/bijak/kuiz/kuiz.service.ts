@@ -25,7 +25,7 @@ import { FilesService } from '../../files'
 import { PracticePorts, practiceRewardSource } from '../../practice/ports'
 import { type GradedAnswer, PracticeRepository, type ServedRef, type StoredCheck } from '../../practice/practice.repository'
 import { QuestionsRepository } from '../../questions'
-import type { QuestionRecord } from '../../questions/types'
+import type { QuestionRecord, StimulusGroupRecord } from '../../questions/types'
 import { PapersRepository } from '../papers/papers.repository'
 import {
   alreadyFinished,
@@ -371,10 +371,12 @@ export class KuizService {
 
   /** Groups, linked pictures and whether every stimulus can be shown, for each record (one query per kind, not per record). */
   private async prepare(records: readonly QuestionRecord[]) {
-    const assets = await ownStimuliOf(this.questions, records)
+    const groupIds = [...new Set(records.flatMap((r) => (r.groupId === null ? [] : [r.groupId])))]
+    const groups = new Map<string, StimulusGroupRecord | null>((await this.questions.groupsByIds(groupIds)).map((g) => [g.id, g]))
+    const assets = await ownStimuliOf(this.questions, records, groups)
     const out = []
     for (const record of records) {
-      const group = record.groupId ? await this.questions.groupOf(record.id) : null
+      const group = record.groupId ? (groups.get(record.groupId) ?? null) : null
       const resolved = resolveStimuli(record, group, assets)
       const fileIds = [...resolved.entries.flatMap((e) => (e.file ? [e.file] : [])), ...optionImageIds(record)]
       out.push({ record, resolved, complete: resolved.complete, fileIds })

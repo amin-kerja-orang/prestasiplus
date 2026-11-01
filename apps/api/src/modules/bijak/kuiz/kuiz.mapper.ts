@@ -10,6 +10,7 @@ import type { BijakKuizItem } from '@pp/contract'
 import type { QuestionPart } from '@pp/contract'
 
 import { stimulusTableOf } from '../../questions/stimulus-table'
+import type { OutsideStimulus } from '../question-bridge/be09-mapping'
 import type { QuestionRecord, StimulusGroupRecord } from '../../questions/types'
 
 type Leaf = Extract<QuestionPart, { mode: string }>
@@ -141,25 +142,17 @@ export function linkedStimulusIds(record: QuestionRecord): string[] {
   return [...out]
 }
 
-/** Everything the mapper needs of a stimulus linked straight to a version (outside its group), read by the service. */
-export interface OwnStimulus {
-  kind: string
-  label: string
-  bodyMs: string | null
-  alt: string | null
-  caption: string | null
-  sourceCitation: string | null
-  tableData: unknown
-  assetFileId: string | null
-  /** Distinct active questions linking it; more than one means it must be a stimulus group (D90). */
-  sharedBy: number
-}
+/**
+ * A stimulus linked straight to a version or leaf (outside its group), as THE one reader gives it (`outsideStimuliOf`):
+ * the same type the Bijak bridge uses. `sharedBy` = distinct questions linking it; more than one must be a group (D90).
+ */
+export type OwnStimulus = OutsideStimulus
 
 type StimulusLike = {
   kind: string
-  label: string
-  bodyMs: string | null
-  alt: string | null
+  label?: string
+  bodyMs?: string | null
+  alt?: string | null
   caption?: string | null
   sourceCitation?: string | null
   tableData?: unknown
@@ -174,18 +167,19 @@ const KUIZ_KINDS: ReadonlySet<string> = new Set(['passage', 'table', 'diagram', 
  */
 export function toKuizStimulus(s: StimulusLike): KuizStimulus | null {
   if (!KUIZ_KINDS.has(s.kind)) return null
-  const table = s.kind === 'table' ? (stimulusTableOf(s.tableData, s.bodyMs) ?? null) : null
+  const table = s.kind === 'table' ? (stimulusTableOf(s.tableData, s.bodyMs ?? null) ?? null) : null
   // A table parsed from the body replaces the body text; any other body stays the text.
   const text = s.bodyMs?.trim() ? s.bodyMs : null
+  const label = s.label ?? ""
   const body = table && !s.tableData ? null : text
   if (!body && !table && !s.assetFileId) return null
   return {
     kind: s.kind as KuizStimulus['kind'],
-    label: s.label,
+    label,
     body,
     imageToken: null,
     // An unlabelled own picture still gets a text alternative (same line as the bridge, R1E2E-05b).
-    alt: s.alt ?? (!s.label && s.assetFileId && !body && !table ? 'Gambar untuk soalan ini' : null),
+    alt: s.alt ?? (!label && s.assetFileId && !body && !table ? 'Gambar untuk soalan ini' : null),
     caption: s.caption ?? null,
     source: s.sourceCitation ?? null,
     table,
@@ -230,7 +224,7 @@ export function resolveStimuli(
   for (const id of linkedStimulusIds(record)) {
     if (inGroup.has(id)) continue
     const a = own.get(id)
-    const w = a && a.sharedBy <= 1 ? toKuizStimulus(a) : null
+    const w = a && (a.sharedBy ?? 1) <= 1 ? toKuizStimulus(a) : null
     if (!a || !w) {
       complete = false
       continue

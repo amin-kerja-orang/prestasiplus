@@ -1,47 +1,51 @@
 /**
- * The own-stimulus map of a set of questions, for `resolveStimuli` (R1E2E-05b, H-C8). ONE reader, used by the kuiz service
- * (what is served) and by the servability facts (what the admin is told is served), so the two cannot disagree.
+ * The own-stimulus map of a set of questions for `resolveStimuli` (R1E2E-05b, H-C8). It is a thin layer over THE one reader of a
+ * version's own stimuli, `outsideStimuliOf` (`question-bridge/outside-media.ts`: versionStimuli + stimulusUseCounts): the bridge,
+ * the kuiz and the admin servability facts all start from it, so what is served and what the admin is told cannot disagree.
+ * The only thing added here is a stimulus linked to a LEAF part only: it is not in the version links, so its picture comes from
+ * the asset row (no text of its own).
  */
 import type { QuestionsRepository } from '../../questions/questions.repository'
-import type { QuestionRecord } from '../../questions/types'
+import type { QuestionRecord, StimulusGroupRecord } from '../../questions/types'
+import type { OutsideStimulus } from '../question-bridge/be09-mapping'
+import { type OutsideStimulusReads, outsideStimuliOf } from '../question-bridge/outside-media'
 import { leavesOf, type OwnStimulus } from './kuiz.mapper'
 
-type Reader = Pick<QuestionsRepository, 'versionStimuli' | 'stimulusUseCounts' | 'stimulusAssets'>
+export type LeafReads = Pick<QuestionsRepository, 'stimulusUseCounts' | 'stimulusAssets'>
 
 /**
- * Every stimulus linked to the versions of `records` (version links and leaf links) with its full content in link order and how
- * many questions link it (D90: more than one means it must be a stimulus group). A stimulus linked only to a leaf is not in the
- * version links: its picture is read from the asset row (no text of its own).
+ * `outside` (from `outsideStimuliOf`) plus the pictures that are linked to a leaf of one of `records` and nowhere else. Reads
+ * nothing when no leaf links a stimulus outside `outside` and the groups.
  */
-export async function ownStimuliOf(questions: Reader, records: readonly QuestionRecord[]): Promise<Map<string, OwnStimulus>> {
-  const linked = new Set<string>()
+export async function withLeafStimuli(
+  reads: LeafReads,
+  records: readonly QuestionRecord[],
+  outside: ReadonlyMap<string, OutsideStimulus>,
+  groups: ReadonlyMap<string, StimulusGroupRecord | null>,
+): Promise<Map<string, OwnStimulus>> {
+  const out = new Map<string, OwnStimulus>(outside)
+  const leafOnly = new Set<string>()
   for (const r of records) {
-    for (const id of r.version.stimulusIds) linked.add(id)
-    for (const l of leavesOf(r.id, r.version.parts)) if (l.leaf.stimulusId) linked.add(l.leaf.stimulusId)
-  }
-  const [versioned, uses, assetRows] = await Promise.all([
-    questions.versionStimuli(records.map((r) => ({ questionId: r.id, versionNo: r.version.versionNo }))),
-    questions.stimulusUseCounts([...linked]),
-    questions.stimulusAssets([...linked]),
-  ])
-  const out = new Map<string, OwnStimulus>()
-  for (const a of assetRows) {
-    if (a.assetFileId) out.set(a.id, { kind: a.kind, label: '', bodyMs: null, alt: null, caption: null, sourceCitation: null, tableData: null, assetFileId: a.assetFileId, sharedBy: uses.get(a.id) ?? 1 })
-  }
-  for (const list of versioned.values()) {
-    for (const st of list) {
-      out.set(st.id, {
-        kind: st.kind,
-        label: st.label,
-        bodyMs: st.bodyMs,
-        alt: st.alt,
-        caption: st.caption ?? null,
-        sourceCitation: st.sourceCitation ?? null,
-        tableData: st.tableData ?? null,
-        assetFileId: st.assetFileId,
-        sharedBy: uses.get(st.id) ?? 1,
-      })
+    const inGroup = new Set((r.groupId ? (groups.get(r.groupId)?.stimuli ?? []) : []).map((s) => s.id))
+    for (const l of leavesOf(r.id, r.version.parts)) {
+      const id = l.leaf.stimulusId
+      if (id && !outside.has(id) && !inGroup.has(id) && !r.version.stimulusIds.includes(id)) leafOnly.add(id)
     }
   }
+  if (leafOnly.size === 0) return out
+  const [uses, rows] = await Promise.all([reads.stimulusUseCounts([...leafOnly]), reads.stimulusAssets([...leafOnly])])
+  for (const a of rows) {
+    if (a.assetFileId) out.set(a.id, { kind: a.kind, assetFileId: a.assetFileId, sharedBy: uses.get(a.id) ?? 1 })
+  }
   return out
+}
+
+/** The whole map in one call: the bridge reader, then the leaf-only pictures. */
+export async function ownStimuliOf(
+  reads: OutsideStimulusReads & LeafReads,
+  records: readonly QuestionRecord[],
+  groups: ReadonlyMap<string, StimulusGroupRecord | null>,
+): Promise<Map<string, OwnStimulus>> {
+  const { outside } = await outsideStimuliOf(reads, records, groups)
+  return withLeafStimuli(reads, records, outside, groups)
 }
