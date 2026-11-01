@@ -523,14 +523,14 @@ The 12 "missing" API rows in r1-admin-parity-check.md (questions/stimuli/intake)
 B1 merged **reqb032 at its reviewed SHA a2cb5bb4**, which does not contain BASE-107/108. It did not use our forward-merged 167986ef. So B merges reviewed SHAs and resolves base drift in the merge itself. **New team A rule:** do NOT forward-merge BASE into READY heads by default, because every new head forces a delta review. Forward-merge only when (a) `git merge-tree` against the current BASE shows a conflict, (b) B asks for it, or (c) the unit has to be re-pushed anyway for a fix. Heads already forward-merged stay as they are (the delta is a base merge only).
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 23:18 UTC, BASE 043e2b15)
+### Team A open branches: heads from origin (auto, 2026-11-01 23:19 UTC, BASE 043e2b15)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/a3-qa-doc-nits | e4d4dd322 | READY (A3, BASE-105, docs only): stale QA notes on T38 self-mark reward fixed (2 files); B2 |
 | r1/a4chain-minors | 86dd7ad67 | READY (A4/A1b, @86dd7ad6, contains BASE-107 + chain tip 2809a87f): janaSkipped guard, T45 HTTP BM-reason case, 022a row; B1 step 6 tip; 23/23 |
-| r1/ac-gaps-a1b | 41862c6a1 | READY (multi, @5ac9dfc9, CONTAINS ha17 + t37): coverage doc; runbook (§0 tiers, §2.3 migration rehearsal 0104–0107 by A4: apply/revert/re-apply clean, 408k timings, 0105 ACCESS EXCLUSIVE brief read stall, 0106 P3009 recovery procedure; §3.7 group SELECT; UAT SELECTs; env); B4 QA pack (+ §3x D90 group build-it-yourself recipe); copy-approval table (38 rows); merge after H-A18; B2 |
+| r1/ac-gaps-a1b | 41862c6a1 | READY (multi, @41862c6a, CONTAINS ha17 + t37): coverage doc; runbook (§0 tiers, §2.3 migration rehearsal 0104–0107 by A4: apply/revert/re-apply clean, 408k timings, 0105 ACCESS EXCLUSIVE brief read stall, 0106 P3009 recovery procedure; §3.7 group SELECT; UAT SELECTs; env); B4 QA pack (+ §3x D90 group build-it-yourself recipe); copy-approval table (38 rows); merge after H-A18; B2 |
 | r1/admin-list-perf | 6389cd541 | READY (A4, @6389cd54, BASE-105): REQ-B-050 + 0106 pg_trgm + 0107 kertas index; per-user @RateLimit GET /api/questions (THROTTLE_QUESTIONS_LIST_PER_MINUTE=60); docs: feature_flags 0108, drop_pool_tag 0109, optional B12 0122 / B20 0123 (lead-confirmed); 0107 header gives 0.9 s bare / ~2 s via migrate deploy; B2 + B3 + DevOps (maintenance window, new env) |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
 | r1/bridge-table-parts | c805ecc7c | READY (A4, BASE-105): the bridge uses stimulusTableParts (an invalid grid + pipe body shows the table only, as in builder/Studio); bridge 118/118, attempts 180/180, kuiz 39/39; B2. Follow-up after T31 + this merge: drop PENDING_BRIDGE_TEXT in the parity spec (A4) |

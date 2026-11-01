@@ -101,5 +101,5 @@ The v2-backend-deviations.md conflicts are always "keep both". **Update 23:05 UT
 - 24 ha26: team-a-r1-state.md → ha26 side; docs fast-track.
 
 After merging, run contract:emit/check (openapi auto-merges). Deviation rows: always keep both. | OPEN |
-| REQ-A-031 | C (m04 Studio editor) | 2026-11-01 23:20 UTC | A3 partial-AC re-check (AC-02.2) | The Studio flash "Soalan draf disimpan…" (`src/modules/m04-question-bank/pages/StudioEditorPage.vue:207`, BASE-109) has **no FE unit test**. AC-02.2's backend side is proven, and the other flashes are covered (status.test.ts, StudioStatusBar.test.ts). Please add a component test that asserts the exact flash text after a draft save. | OPEN |
+| REQ-A-031 | C (m04 Studio editor) | 2026-11-01 23:20 UTC | A3 partial-AC re-check (AC-02.2) | The Studio flash "Soalan draf disimpan…" (`src/modules/m04-question-bank/pages/StudioEditorPage.vue:207`, BASE-109) (`flash.success('Soalan draf disimpan. Terbitkan melalui semakan apabila sedia.')`) has **no FE unit test**. AC-02.2's backend side is proven, and the other flashes are covered (status.test.ts, StudioStatusBar.test.ts). Please add a component test that asserts the exact flash text after a draft save. | OPEN |
 
