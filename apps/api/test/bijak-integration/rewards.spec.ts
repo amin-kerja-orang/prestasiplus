@@ -324,6 +324,19 @@ describe('WalletBijakReward.awardSelfMark (D94: V2 rates on the net gain of the 
     expect(await xpOf(studentId)).toBe(xp + 30)
   })
 
+  it('two different levels sent at the same time are serialised by the advisory lock: base 0, scores 2 and 4 pay 4 marks in all, never 6', async () => {
+    const att = randomUUID()
+    const bal = await balance(studentId)
+    const xp = await xpOf(studentId)
+    await Promise.all([total(att, 2, { base: 0 }), total(att, 4, { base: 0 })])
+    // Without the lock both read "nothing paid yet": 2 marks (key :2) and 4 marks (key :4) = 6 marks. With it the second sees the first.
+    const paidRows = await rows(att)
+    const marksPaid = paidRows.reduce((n, r) => n + r.amount, 0) / 2
+    expect(marksPaid).toBe(4)
+    expect(await balance(studentId)).toBe(bal + 8)
+    expect(await xpOf(studentId)).toBe(xp + 40)
+  })
+
   it('the total is clamped to the attempt maximum: nothing above it is ever paid', async () => {
     const att = randomUUID()
     const bal = await balance(studentId)

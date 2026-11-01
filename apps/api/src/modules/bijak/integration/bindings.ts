@@ -108,7 +108,9 @@ export class WalletBijakReward implements BijakRewardPort {
       const gain = level - reached
       if (!(gain > 0)) return
       const coins = wholeCount(gain * SYILING_PER_MARK)
-      if (!(coins >= 1)) return // a gain too small to pay a whole syiling is paid when a later level reaches it
+      // Marks are whole or half marks, so `gain * 2` and `gain * 10` are whole numbers and nothing is ever floored away. Should a gain
+      // still be too small for one syiling, nothing is written here (no ledger key), so `reached` does not move and a later level pays it.
+      if (!(coins >= 1)) return
       const credited = await this.wallet.credit(
         { userId: input.userId, amount: coins, isTest: false, source: BIJAK_REWARD_SOURCE, sourceId: `${prefix}${String(level)}`, description: input.description },
         { tx },
