@@ -16,14 +16,26 @@ import {
   type ServabilityReason,
 } from '@pp/contract'
 
-import type { BankRow } from '../../domain/admin-types'
+import type { AdminPaperSummary, BankRow } from '../../domain/admin-types'
 import { bijakAdminServer } from '../../server/client'
 import type { KandunganApi, LanePage, LaneQuery, LaneSubject } from './api'
 
-const ACTIVITIES: ServabilityActivity[] = ['databank', 'latih_tubi_spm', 'bab', 'simulasi_paper', 'simulasi_kuiz', 'jana_kertas']
+const ACTIVITIES: ServabilityActivity[] = [
+  'databank',
+  'latih_tubi_spm',
+  'bab',
+  'simulasi_paper',
+  'simulasi_kuiz',
+  'jana_kertas',
+]
 
 /** Lifecycle code of the API for a mock bank status. */
-const WIRE_STATUS: Record<BankRow['status'], string> = { terbit: 'approved', semakan: 'review', draf: 'draft', ditolak: 'archived' }
+const WIRE_STATUS: Record<BankRow['status'], string> = {
+  terbit: 'approved',
+  semakan: 'review',
+  draf: 'draft',
+  ditolak: 'archived',
+}
 
 function reasonsOf(status: BankRow['status']): ServabilityReason[] {
   if (status === 'terbit') return []
@@ -42,18 +54,72 @@ export function createMockKandungan(): KandunganApi {
   const bank = async (): Promise<BankRow[]> => admin.listBank({ status: 'semua' })
 
   /** Hub card measured on its unfiltered lane: total = rows, attention = rows with a reason (as the API). */
-  const cardOf = (lane: ServabilityHubLane, rows: { attention: readonly unknown[] }[]): ServabilityHubCard => ({
+  const cardOf = (
+    lane: ServabilityHubLane,
+    rows: { attention: readonly unknown[] }[],
+  ): ServabilityHubCard => ({
     lane,
     ...SERVABILITY_HUB_CARDS[lane],
     total: rows.length,
     attention: rows.filter((r) => r.attention.length > 0).length,
   })
 
+  /** Databank lane rows (filtered by `q`) from one bank read. */
+  const databankRows = (rows: BankRow[], q: LaneQuery): ServabilityDatabankRow[] => {
+    const term = q.search?.trim().toLowerCase() ?? ''
+    return rows
+      .filter((r) => !q.subjectId || r.subject === q.subjectId)
+      .filter((r) => !q.status || WIRE_STATUS[r.status] === q.status)
+      .filter(
+        (r) =>
+          !term || r.previewPlain.toLowerCase().includes(term) || r.id.toLowerCase().includes(term),
+      )
+      .map<ServabilityDatabankRow>((r) => ({
+        questionId: r.id,
+        title: r.previewPlain.slice(0, 90),
+        subject: { id: r.subject, name: r.subjectName },
+        status: WIRE_STATUS[r.status],
+        attention: reasonsOf(r.status),
+      }))
+  }
+  /** Bijak SPM lane rows (filtered by `q`) from one paper read. */
+  const paperRows = (papers: AdminPaperSummary[], q: LaneQuery): ServabilityPaperRow[] => {
+    const term = q.search?.trim().toLowerCase() ?? ''
+    return papers
+      .filter((p) => !q.subjectId || p.subject === q.subjectId)
+      .filter(
+        (p) =>
+          !q.status || (q.status === 'published' ? p.status === 'terbit' : p.status !== 'terbit'),
+      )
+      .filter((p) => !term || p.title.toLowerCase().includes(term))
+      .map<ServabilityPaperRow>((p) => {
+        const published = p.status === 'terbit'
+        const bad = published && !p.ok ? 1 : 0
+        return {
+          paperId: p.id,
+          title: p.title,
+          subject: { id: p.subject, name: p.subjectName },
+          status: published ? 'published' : 'draft',
+          questionCount: p.questionCount,
+          attentionCount: bad,
+          attention: bad
+            ? [
+                {
+                  code: 'no_scheme',
+                  message: servabilityReasonMs('no_scheme', 'simulasi_paper'),
+                  count: bad,
+                },
+              ]
+            : [],
+        }
+      })
+  }
+
   const api: KandunganApi = {
     async overview(): Promise<ServabilityOverview> {
-      const rows = await bank()
+      const [rows, allPapers] = await Promise.all([bank(), admin.listAdminPapers()])
       const approved = rows.filter((r) => r.status === 'terbit').length
-      const papers = (await admin.listAdminPapers()).filter((p) => p.status === 'terbit')
+      const papers = allPapers.filter((p) => p.status === 'terbit')
       const broken = papers.filter((p) => !p.ok).length
       const count = (a: ServabilityActivity): { served: number; total: number } => {
         if (a === 'simulasi_paper') return { served: papers.length - broken, total: papers.length }
@@ -63,11 +129,18 @@ export function createMockKandungan(): KandunganApi {
         bank: rows.length,
         activities: ACTIVITIES.map((activity) => {
           const { served, total } = count(activity)
-          return { activity, label: SERVABILITY_ACTIVITY_LABELS[activity], served, total, attention: total - served, basis: 'evaluated' as const }
+          return {
+            activity,
+            label: SERVABILITY_ACTIVITY_LABELS[activity],
+            served,
+            total,
+            attention: total - served,
+            basis: 'evaluated' as const,
+          }
         }),
         cards: [
-          cardOf('databank', (await api.databankLane({ page: 1, pageSize: Number.MAX_SAFE_INTEGER })).rows),
-          cardOf('bijak-spm', (await api.paperLane({ page: 1, pageSize: Number.MAX_SAFE_INTEGER })).rows),
+          cardOf('databank', databankRows(rows, {})),
+          cardOf('bijak-spm', paperRows(allPapers, {})),
         ],
       }
     },
@@ -77,40 +150,12 @@ export function createMockKandungan(): KandunganApi {
     },
 
     async databankLane(q: LaneQuery): Promise<LanePage<ServabilityDatabankRow>> {
-      const term = q.search?.trim().toLowerCase() ?? ''
-      const all = (await bank())
-        .filter((r) => !q.subjectId || r.subject === q.subjectId)
-        .filter((r) => !q.status || WIRE_STATUS[r.status] === q.status)
-        .filter((r) => !term || r.previewPlain.toLowerCase().includes(term) || r.id.toLowerCase().includes(term))
-        .map<ServabilityDatabankRow>((r) => ({
-          questionId: r.id,
-          title: r.previewPlain.slice(0, 90),
-          subject: { id: r.subject, name: r.subjectName },
-          status: WIRE_STATUS[r.status],
-          attention: reasonsOf(r.status),
-        }))
+      const all = databankRows(await bank(), q)
       return page(all, q)
     },
 
     async paperLane(q: LaneQuery): Promise<LanePage<ServabilityPaperRow>> {
-      const term = q.search?.trim().toLowerCase() ?? ''
-      const all = (await admin.listAdminPapers())
-        .filter((p) => !q.subjectId || p.subject === q.subjectId)
-        .filter((p) => !q.status || (q.status === 'published' ? p.status === 'terbit' : p.status !== 'terbit'))
-        .filter((p) => !term || p.title.toLowerCase().includes(term))
-        .map<ServabilityPaperRow>((p) => {
-          const published = p.status === 'terbit'
-          const bad = published && !p.ok ? 1 : 0
-          return {
-            paperId: p.id,
-            title: p.title,
-            subject: { id: p.subject, name: p.subjectName },
-            status: published ? 'published' : 'draft',
-            questionCount: p.questionCount,
-            attentionCount: bad,
-            attention: bad ? [{ code: 'no_scheme', message: servabilityReasonMs('no_scheme', 'simulasi_paper'), count: bad }] : [],
-          }
-        })
+      const all = paperRows(await admin.listAdminPapers(), q)
       return page(all, q)
     },
   }
