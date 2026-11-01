@@ -485,7 +485,7 @@ BASE-105 + 11 team A READY API heads + C FE heads (reqa014 dc561730, reqa005 3ee
 **Conflicts B1 will see:** `questions.module.ts` (A4 chain `OverviewWarmer` × REQ-A-018 `QuestionPaperServabilityController`: keep both providers/controllers); `stimuli.repository.ts:112` (t49 deletes the `SERVED_NOW`/`VERSION_SERVED_NOW` constants B-032 added: take t49, no use remains); `v2-backend-deviations.md` (keep both sides); C docs in reqa012 (keep both).
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 19:16 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 19:20 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -523,15 +523,15 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/reqb052-archived-edit | f3a2448f9 | READY (A3, BASE-105; replaces 17196431): follow-ups done: P1 pinned-clause spec (bites), guard published OR (withdrawn AND EXISTS attempts), header; archived-edit 6/6, pinned-version-rule 6/6, workflow 296/296; tsc/eslint 0; B2 |
 | r1/reqc021-followup | 948aa327a | READY (A1a, BASE-105): fixes the base red draw-bounded BR-16; merge early |
 | r1/seed-dangling-placements | 11cbcf458 | READY (A1b, BASE-105): asserts paper titles + counts = POC_BANK; seed 155 + 1 skip; B2 |
-| r1/stimulus-list-d72 | 97f2fdc21 | READY (A2, BASE-105; contains t49 b99068a6): one combined where for page+count, joinable+empty-group spec; stimulus-lists 17/17, questions 937, conformance 409; merge AFTER t49; A4 pre-review: Approve w/ 1 Minor; vs A4 chain only conflict = v2-backend-deviations.md (keep both blocks, d72 first), re-run contract:check; B2 | note: frontend-mock conformance needs t49 first (filter-options entry on t49); merge order t49 → d72 |
-| r1/t04-minors | 7ce0016c6 | READY (A2, BASE-105): FD-11/AP-17 row + wording; practice-reads 107; A4 pre-review: Approve w/ 1 Minor (card-ungrouped describe must stay last; non-blocking); B2 |
+| r1/stimulus-list-d72 | 86b402468 | READY (A2, BASE-105; @86b40246, contains t49 b99068a6): one combined where for page+count, joinable+empty-group spec; A4 pre-review Approve; its Minor FIXED (listStimulusIds subject/level now also via question_parts, red-first spec); stimulus-lists 18/18, questions 938, workflow 275; merge AFTER t49; vs A4 chain only v2-backend-deviations.md conflicts (keep both); B2 |
+| r1/t04-minors | 7ce0016c6 | READY (A2, BASE-105; @7ce0016c): FD-11/AP-17 row + wording; A4 pre-review Approve; its Minor fixed (card-ungrouped Bab describe afterEach cleanup + restore proof, bites); practice-reads + chapter-practice 109; B2 |
 | r1/t31-builder-wire | eb0346d25 | ON HOLD (paired): fixes done @eb0346d2 (441 pass); merge ONLY together with C REQ-A-008 after C re-merges this tip (vue-tsc TS2322 otherwise); do not merge alone | 19:05 UTC: C REQ-A-008 r1/reqa008-group-stimulus @29d24be9 now contains T31 eb0346d2; A4 preview #3 steps 30–33 verifying vue-tsc 0 + builder specs; hold lifts on that evidence |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t37-r1-runbook | c9dcb5a08 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b (823bb4a1); head c9dcb5a0 |
 | r1/t38-selfmark-reward | 13134ced7 | READY (A1b, BASE-105): A3 pre-review CLEAN (concurrency + best-N sound; red proof); B2 delta + B3 |
 | r1/t39-k1-evidence | 1a26f7a60 | check: A3 to confirm state |
-| r1/t40-attempts-acs | 9be88fc7f | READY (A1a, BASE-105): D9 row added for R1-02.1 (pick cap is client-side, follows V2, lead decision) + coverage note; docs only, no code change; B2 | A2 delta pre-review: row accurate; Minor: say "best N attempted by awarded marks, ties to lower position" + spec with two different-mark picks → A1a |
+| r1/t40-attempts-acs | 31a684ed4 | READY (A1a, BASE-105): D9 row added for R1-02.1 (pick cap is client-side, follows V2, lead decision) + coverage note; docs only, no code change; B2 | A2 delta pre-review: row accurate; Minor: say "best N attempted by awarded marks, ties to lower position" + spec with two different-mark picks → A1a |
 | r1/t43-chain-publish | 238eb6eb0 | ON HOLD (after T31 + REQ-A-008): fixes done @238eb6eb, on T31 eb0346d2 + BASE-105, 458 pass | 19:05 UTC: C REQ-A-008 r1/reqa008-group-stimulus @29d24be9 now contains T31 eb0346d2; A4 preview #3 steps 30–33 verifying vue-tsc 0 + builder specs; hold lifts on that evidence |
 | r1/t43b-publish-acs | 7a14581a7 | READY (A3, on T48 6c5ae3a8): giveBab in publish-acs; 422 pass (was 12 red); alone = trial merge with H-A18 fc409ae1, 0 failures, tsc 0; merge after T48; B2 |
 | r1/t45-builder-acs | ee3a7d2ba | READY (A1b, on T48 6c5ae3a8; specs only): builder-candidate-search giveBab; bab.ts via T48 merge (cmp = fc409ae1); exam-builder 391/391 alone = trial merge with H-A18; tsc/eslint 0; merge after T48; B2 |
