@@ -78,7 +78,7 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 | ID | Branch @ head | Lane | Depends on | B state |
 |---|---|---|---|---|
 | REQ-B-052: an archived question pinned on a published paper is rewritten in place by update and updateOwn (fix: branch to a new version instead of refusing) | `r1/reqb052-archived-edit` @ 4e64776b | A3 (T48 dev) | none (REQ-B-052) | READY (A3 T48 dev) @ 4e64776b: an edit of an archived or pinned question branches to a new draft version; no migration of its own; contains REQ-B-032 e9cf34b7 and H-A18 f29aeda9; B1 merge order H-A18, then REQ-B-032, then REQ-B-052; known failure not from this stack: draw-bounded.spec.ts BR-16 also fails on BASE-105 |
-| T54 F2: builder pool search matches the text in SQL and describes only the page | `r1/builder-search-perf` @ e1141dbb | A3 | T48 (carries 705468c1); merges after T48 | READY (A3, T54 F2); merges after T48; review not seen (unconfirmed) |
+| T54 F2: builder pool search matches the text in SQL and describes only the page | `r1/builder-search-perf` @ e1141dbb | A3 | T48 (carries 705468c1); merges after T48 | READY (A3, T54 F2) @ e1141dbb, restacked on T48 4800bd78; merges after T48 |
 | T34-L1-residual, taken by team C (REQ-A-013) | `r1/t34-l1-residual-c` @ a2acf754 | team C (REQ-A-013) | BASE-102 (not built from e4bb72eb) | team C has taken T34-L1-residual (REQ-A-013): restacked (a2acf754), 0110 identical; NOT built from A3 e4bb72eb; review not seen (unconfirmed) |
 | REQ-B-022a overview: skip the Jana pool facts in the published-paper pass (cold 15.3 s to 9.3 s on 408k) | `r1/overview-mcq-shape-once` @ 7a6e8bb3 | A4 | T30 (base) | READY (A4); review not seen (unconfirmed) |
 | REQ-B-032 a published paper serves its pinned version (attempt source, image rule B, served lock agree) | `r1/reqb032-pinned-rule` @ e9cf34b7 | A2 (slot 2; moved from A3, earlier from A4) | none (REQ-B-032) | A2 (slot 2): fix and re-pinning spec pushed (e9cf34b7); REQ-B-052 is stacked on it; B1 merge order H-A18, then REQ-B-032, then REQ-B-052 |
@@ -104,9 +104,9 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 | T50 partial ACs | `r1/t50-partial-acs` @ 075e1b58 | A1 | none | B2 Changes requested (A1) |
 | T31 builder wire | `r1/t31-builder-wire` @ 6a27c8dd | READY @ 6a27c8dd (lead, 2026-11-01; BASE-102 merged, virtual merge clean); waits for C1 to rebase REQ-A-008 on BASE-102 | T34; waits for C1 REQ-A-008 | restacked on BASE-102 (6a27c8dd is a base merge of the bf825128 checkpoint), checkpoint, not yet READY (bf825128: builder helper follows T36, poc-flag publishes under a Disahkan Kontrak, openapi re-emitted; evidence still running); REQ-A-008 (C1) follows it |
 | T43 chain + publish ACs | `r1/t43-chain-publish` @ 5ce5894f | READY @ 5ce5894f (lead, 2026-11-01; on T31, Jana Kertas fixtures use a non-KBAT level); merges after T31 | T31 (contains T34) | real commits on the T31 chain (Jana Kertas fixtures use a non-KBAT level, base merges); T31 is a checkpoint, so T43 waits for T31 (A3) |
-| T48 builder parity (0104) | `r1/t48-builder-parity` @ 4800bd78 | A3 | T34; re-verify running | T34 is in base (BASE-101); tip 1dd07bc1 = BASE-105 merge of 705468c1 (B2 minors and B3 audit info fixed (empty admin Bahagian is hard, override-mix spec, docs, messages) on top of fix 2cbe7d28 and spec follow-ups); READY (reported to the lead); B2/B3 re-check pending (migration 0104) |
-| T43b publish ACs | `r1/t43b-publish-acs` @ 372f911a | A3 dev-2 | T43 | READY (4921b3e5 contains T48 final head 1dd07bc1); T43b minors fixed (2f8f69c3); publish-acs.spec covers AC-07.4 to AC-07.9; blocker catalogue 25 (4 overridable) |
-| T51 partial ACs (builder, Terbit, Kontrak, Jana) | `r1/t51-partial-acs-a3` @ 8ed1df5d | A3 dev-1 | T43 | READY (reported to the lead, recorded on BOARD); the code overlap with T48 is resolved; restacked on T48 705468c1 with an openapi re-emit (4f812b4e) |
+| T48 builder parity (0104) | `r1/t48-builder-parity` @ 4800bd78 | A3 | T34; re-verify running | READY (A3); tip 4800bd78 = pre-review minors on top of 705468c1: Padam soalan only unplaces a question that was ever approved (it stays in the bank; audit row deleted:false); a duplicate Bahagian label (trimmed, case-insensitive) is refused with 422 fields.label on add and rename, a swap or self-rename is allowed; new message sectionLabelUsed [PROPOSED]; no migration change; B2 delta and B3 re-check pending |
+| T43b publish ACs | `r1/t43b-publish-acs` @ 372f911a | A3 dev-2 | T43 | READY (372f911a, restacked on T48 4800bd78); T43b minors fixed (2f8f69c3); publish-acs.spec covers AC-07.4 to AC-07.9; blocker catalogue 25 (4 overridable) |
+| T51 partial ACs (builder, Terbit, Kontrak, Jana) | `r1/t51-partial-acs-a3` @ 8ed1df5d | A3 dev-1 | T43 | READY (8ed1df5d, restacked on T48 4800bd78); the code overlap with T48 is resolved |
 | T52 examinerGrid (AC-20.3) | `r1/t52-examiner-grid` @ f2d36f64 | A1 | none | B2 eslint BLOCKER `bijak-papers.test.ts:317` (A1); REQ-A-012 FE waits for it |
 
 ### 1.3 In progress, not pushed
@@ -119,14 +119,14 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 
 | Unit | Branch @ head | Output |
 |---|---|---|
-| T37 runbook | `r1/t37-r1-runbook` @ 0923e828 | `docs/ops/r1-runbook.md` (migrations 0092 to 0105, SELECTs run 74/74 on BASE-62) |
+| T37 runbook | `r1/t37-r1-runbook` @ d9b37fbf | `docs/ops/r1-runbook.md` (migrations 0092 to 0105, SELECTs run 74/74 on BASE-62) |
 | T39 K1 evidence | `r1/t39-k1-evidence` @ 1a26f7a6 | `docs/ops/r1-k1-blueprint-evidence.md` |
-| T46 / H-A17 AC coverage | `r1/ha17-ac-coverage` @ 43948d54 | `docs/qa/r1-backend-ac-coverage.md`, `r1-verify-first-notes.md` (kept current by H-A27) |
+| T46 / H-A17 AC coverage | `r1/ha17-ac-coverage` @ 1aa0d443 | `docs/qa/r1-backend-ac-coverage.md`, `r1-verify-first-notes.md` (kept current by H-A27) |
 | H-A19 admin parity | `r1/ha19-admin-parity` @ c7315b0e | `docs/qa/r1-admin-parity-check.md` |
 | H-A20 student parity | `r1/ha20-student-parity` @ 557e17c6 | `docs/qa/r1-student-parity-check.md` |
 | H-A22 parity docs | `r1/ha22-parity-docs` @ 4fb2a41b | both parity docs refreshed, deviation rows H22-D1/D2 in `v2-bijak-spm.md`, `student.md` rows marked |
 | H-A23 E2E readiness | `r1/ha23-e2e-readiness` @ 9a86b5bb | `docs/qa/r1-e2e-readiness.md` (merge order, minimal set) |
-| H-A24 release input | `r1/ha24-release-input` @ b26f13b5 | `docs/ops/r1-release-input-team-a.md` (+ scope AC-R1-18.2 and 18.4 text) |
+| H-A24 release input | `r1/ha24-release-input` @ f98a46e3 | `docs/ops/r1-release-input-team-a.md` (+ scope AC-R1-18.2 and 18.4 text) |
 | H-A26 this sheet | `r1/ha26-team-a-state` @ this branch (head = tip of the branch) | `docs/handoff/team-a-r1-state.md` |
 
 ## 2. Decisions and answers
@@ -161,7 +161,7 @@ Earlier decisions still in force for R1: D72 (secondary only), D75/D76 (standard
 | 0101 | `0101_essay_choice` | T25 | merged BASE-15 |
 | 0102 | `0102_leaf_cognitive_level` | T33 (`r1/t33-leaf-tags` @ 95cea5be) | merged BASE-27 |
 | 0103 | `0103_question_report_context` | T42 (`r1/t42-reports-intake-acs` @ d1210e96) | merged BASE-41; attempt FK stays NOT VALID |
-| 0104 | `0104_paper_section_admin_created` | T48 (`r1/t48-builder-parity` @ 4800bd78) | T34 is in base (BASE-101); tip 1dd07bc1 = BASE-105 merge of 705468c1 (B2 minors and B3 audit info fixed (empty admin Bahagian is hard, override-mix spec, docs, messages) on top of fix 2cbe7d28 and spec follow-ups); READY (reported to the lead); B2/B3 re-check pending (migration 0104) |
+| 0104 | `0104_paper_section_admin_created` | T48 (`r1/t48-builder-parity` @ 4800bd78) | READY (A3); tip 4800bd78 = pre-review minors on top of 705468c1: Padam soalan only unplaces a question that was ever approved (it stays in the bank; audit row deleted:false); a duplicate Bahagian label (trimmed, case-insensitive) is refused with 422 fields.label on add and rename, a swap or self-rename is allowed; new message sectionLabelUsed [PROPOSED]; no migration change; B2 delta and B3 re-check pending |
 | 0105 | gate facts (BE-09 duplicate, media, AI-editor facts) | H-A18 (A2) `r1/ha18-gate-facts` @ fc409ae1 | review fixes pushed (f29aeda9, then fc409ae1: release the import hold on every edit path, gate issue codes; the 0105 folder is identical in both; declared marks only for no-parts items, bulk Semakan runs the submit gate, import holds carried, D99); B2 verdict not seen; needs the base merge order first in the B-052 stack |
 
 Ranges: team A 0100 to 0109 (overflow 0120 to 0129), team C 0110 to 0119, team B none. 0106 to 0109 free. SQL for 0092 to 0105 is in `docs/ops/r1-runbook.md`.
