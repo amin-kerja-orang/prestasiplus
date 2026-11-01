@@ -530,7 +530,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/req-c-020 | 78e050b3b | Approve w/ Minors, blocked by 022a → A4 restack on BASE-105 |
 | r1/req-c012-a2 | ba57ecc52 | WAITS for fixed H-A18 (A2 slot 1) |
 | r1/reqa014-no-chapter-lock-fe | 8c49b7af9 | (no status — triage) |
-| r1/reqb032-pinned-rule | e9cf34b7f | IN-PROGRESS (A2 slot 2, moved from A3; WIP 77c83c5e) |
+| r1/reqb032-pinned-rule | e9cf34b7f | READY (A2+A3, BASE-105): the attempt serves the pinned version; SERVED_NOW = lock predicate; image rule B; pinned-version-rule 6/6; attempts 180/180; B2 + B3 |
 | r1/reqb049-report-visible | 059841d4c | READY; A3 pre-review found only Minors (no Blocker/Major) → A1b fixing the Minors, new head follows |
 | r1/reqb052-archived-edit | ce0af563f | IN-PROGRESS (A3 T48 dev): red repro ce0af563 proves an admin/Guru PUT rewrites a pinned archived v1 that a pupil sees; fixing (branch to a new version) |
 | r1/reqc021-followup | 948aa327a | READY (A1a, BASE-105): fixes the base red draw-bounded BR-16; merge early |
