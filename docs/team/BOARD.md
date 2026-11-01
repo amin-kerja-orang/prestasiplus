@@ -565,3 +565,4 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
   - **3 reds, one cause: t45-servability-acs** (AC-05.3 approve gate vs specs that approve an unservable question: studio-edit-as-draft, builder-blockers R1E2E-06, builder-review). → A4 fixes the specs on its branch; the gate stays. **B1: HOLD t45-servability-acs until its new head.**
   - Everything else on the stack is green.
 - A1 BASE-105 merges (A1a), all recorded in the auto table: t52 f2d36f64, t50 075e1b58, req-b-025c 37007e49, e05b f9eab2ab, seed 2bbd4f3c, reqc021-followup 948aa327.
+- H-A18 (A2): fixes committed locally (D99 + MAJOR 1 + Minors); merging BASE now. New ETA ~16:30 UTC.
