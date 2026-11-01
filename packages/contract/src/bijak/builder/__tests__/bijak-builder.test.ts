@@ -514,8 +514,8 @@ describe('publish, delete and preview results', () => {
     expect(BijakBuilderBlockerSchema.safeParse({ code: 'MADE_UP', message: 'x', overridable: false }).success).toBe(false)
     expect(BijakBuilderBlockerSchema.safeParse({ code: 'NOT_SERVABLE', message: 'x' }).success).toBe(false)
     expect(BijakBuilderBlockerSchema.safeParse({ ...blocker, extra: 1 }).success).toBe(false)
-    expect(BIJAK_BUILDER_BLOCKER_CODES).toHaveLength(18)
-    expect(BIJAK_BUILDER_BLOCKER_CODES.filter((c) => BIJAK_BUILDER_BLOCKER_OVERRIDABLE[c]).sort()).toEqual(['BLUEPRINT_NOT_VERIFIED', 'GROUP_BROKEN', 'INELIGIBLE', 'RULE_NOT_IN_CONTRACT', 'SECTION_NOT_IN_CONTRACT'])
+    expect(BIJAK_BUILDER_BLOCKER_CODES).toHaveLength(21)
+    expect(BIJAK_BUILDER_BLOCKER_CODES.filter((c) => BIJAK_BUILDER_BLOCKER_OVERRIDABLE[c]).sort()).toEqual(['BLUEPRINT_NOT_VERIFIED', 'INELIGIBLE', 'RULE_NOT_IN_CONTRACT', 'SECTION_NOT_IN_CONTRACT'])
   })
 
   it('requires the errors key and rejects the old union shapes', () => {
@@ -679,7 +679,7 @@ describe('publish, delete and preview results', () => {
     const full = stimulus({
       kind: 'table',
       caption: 'Jadual 1',
-      svg: '<svg viewBox="0 0 10 10"></svg>',
+      image: { url: '/api/files/Zk3x9QmT1bVnR0aYc7LpDw' },
       text: 'Petikan ringkas',
       table: { head: ['x', 'y'], rows: [['1', '2']] },
     })

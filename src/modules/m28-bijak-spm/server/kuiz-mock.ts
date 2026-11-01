@@ -17,7 +17,7 @@ import type {
 
 import { BANK, PAPERS, subjectName } from '../data/registry'
 import { leavesOf } from '../domain/paper-model'
-import type { QuestionDef, StimulusDef } from '../domain/types'
+import type { QuestionDef } from '../domain/types'
 import { parseCount } from '../lib/kuiz-count'
 import { BijakError } from './errors'
 
@@ -39,28 +39,21 @@ function shuffle<T>(list: T[]): T[] {
   return out
 }
 
-/** The kuiz wire knows passage, table and diagram; the pictorial kinds read as `diagram` (same table as the API kuiz mapper). */
-const KUIZ_KIND: Record<StimulusDef['kind'], BijakKuizItem['stimuli'][number]['kind']> = {
-  passage: 'passage',
-  table: 'table',
-  diagram: 'diagram',
-  image: 'diagram',
-  map: 'diagram',
-  infographic: 'diagram',
-  graph: 'diagram',
-}
-
 function stimuliOf(q: QuestionDef): BijakKuizItem['stimuli'] {
   const group = q.groupId ? BANK.groups.get(q.groupId) : undefined
   const st = group ? BANK.stimuli.get(group.stimulusId) : undefined
   if (!st) return []
+  // All seven kinds go out as they are, with caption, source and table (R1-T07), like the API.
   return [
     {
-      kind: KUIZ_KIND[st.kind],
+      kind: st.kind,
       label: st.label,
-      body: st.text ?? st.caption ?? null,
+      body: st.text ?? null,
       imageToken: null,
       alt: st.alt,
+      caption: st.caption ?? null,
+      source: st.source ?? null,
+      table: st.table ? { head: st.table.head, rows: st.table.rows } : null,
     },
   ]
 }

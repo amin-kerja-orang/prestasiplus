@@ -147,6 +147,7 @@ const mcqBody = (text: string, extra: Record<string, unknown> = {}) => ({
   options: ['3', '4', '5', '6'],
   correctAnswer: 1,
   explanation: 'Penjelasan ujian rantaian R1.',
+  cognitiveLevel: 'mengaplikasi', // the T33 approve gate: a level per leaf
   kertas: '2',
   tag: { unitId: fx.unit, spIds: [fx.sp], tp: 3 },
   ...extra,
@@ -163,7 +164,7 @@ async function advance(ids: string[]): Promise<void> {
   for (const action of SERVE_STEPS) {
     const res = await admin.post('/api/questions/bulk-action', { action, ids })
     expect(res.status, `${action}: ${JSON.stringify(res.body)}`).toBe(200)
-    expect(res.body.data, action).toMatchObject({ affected: ids.length, failed: [] })
+    expect(res.body.data, `${action}: ${JSON.stringify(res.body.data)}`).toMatchObject({ affected: ids.length, failed: [] })
   }
 }
 
@@ -246,6 +247,7 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
           {
             label: 'a',
             mode: 'working',
+            cognitiveLevel: 'menganalisis',
             prompt: { ms: 'Kira luas segi empat tepat itu.' },
             marks: 2,
             key: {

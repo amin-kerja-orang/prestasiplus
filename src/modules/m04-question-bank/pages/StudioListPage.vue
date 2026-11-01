@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * Studio list `/admin/studio` (R1-F03a, V2 admin.md A01, design S1.1): "Studio", "Bank soalan kanonikal - cipta, semak, terbit".
- * Four status tiles (Draft, Reviewed, Approved, Archived) that set the Status filter, the filters (Subjek, Status, Cari and, on
+ * Four status tiles (BM words Draf, Menunggu Semakan, Diterbitkan, Diarkibkan, UX-19) that set the Status filter, the filters (Subjek, Status, Cari and, on
  * the source paper, Tahun, Negeri, Kertas, Jenis: T47), the table No. / Soalan / Kertas / Sumber / Status
  * at 25 per page (cards below `md`), and the row actions Pratonton, Edit or Edit sebagai draf, and Sembunyikan ("Arkibkan soalan
  * ini?"). Under each badge: "Dilihat murid di x/n" from the servability batch read. The URL is the state, as on the legacy list.
@@ -326,6 +326,8 @@ function rowActions(row: StudioRow): RowAction[] {
 
 interface TableRow extends Record<string, unknown> {
   id: string
+  /** "No.": the printed number label, else the question id. */
+  no: string
   stem: string
   kertas: string
   sumber: string
@@ -337,8 +339,9 @@ interface TableRow extends Record<string, unknown> {
 const tableRows = computed<TableRow[]>(() =>
   rows.value.map((r) => ({
     id: r.id,
+    no: r.numberLabel || r.id,
     stem: excerpt(r.questionText),
-    kertas: [r.subject?.name, r.level?.name].filter(Boolean).join(' · ') || '-',
+    kertas: r.kertas ? `Kertas ${r.kertas}` : [r.subject?.name, r.level?.name].filter(Boolean).join(' · ') || '-',
     sumber: sourceLabel(r.sourceType),
     statusText: statusBadge(r.status),
     served: reports.value[r.id] ? `${String(reports.value[r.id]!.servedCount)}/${String(reports.value[r.id]!.total)}` : '-',
@@ -349,7 +352,7 @@ const tableRows = computed<TableRow[]>(() =>
 const META_CLASS = 'class'
 const cellClass = (th: string, td = th): { meta: Record<string, unknown> } => ({ meta: { [META_CLASS]: { th, td } } })
 const columns: TableColumn<TableRow>[] = [
-  { accessorKey: 'id', header: 'No.', ...cellClass('w-16') },
+  { accessorKey: 'no', header: 'No.', ...cellClass('w-16') },
   { accessorKey: 'stem', header: 'Soalan', ...cellClass('min-w-48') },
   { accessorKey: 'kertas', header: 'Kertas', ...cellClass('hidden lg:table-cell w-40') },
   { accessorKey: 'sumber', header: 'Sumber', ...cellClass('hidden lg:table-cell w-24') },
@@ -465,8 +468,8 @@ const cardFields: CardField[] = [
         @update:page="goToPage"
         @update:page-size="setPageSize"
       >
-        <template #id-cell="{ row }">
-          <span class="text-label text-dimmed" data-testid="studio-row-id">{{ row.original.id }}</span>
+        <template #no-cell="{ row }">
+          <span class="text-label text-dimmed" data-testid="studio-row-id">{{ row.original.no }}</span>
         </template>
         <template #stem-cell="{ row }">
           <div class="flex min-w-0 flex-col gap-2">

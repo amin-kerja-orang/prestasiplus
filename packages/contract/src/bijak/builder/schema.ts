@@ -197,7 +197,9 @@ export const BIJAK_BUILDER_INELIGIBLE_TEXT = {
  * R1-T34 follow-up: the stable code of every Terbit blocker and whether the audited override (`{ override: true, reason }`) can lift it.
  * This map is the ONE source of truth: the review (`blockerDetails`) and the publish refusal (`blockerDetails`) both read `overridable` from here.
  * Hard (false) = the paper's own checks (duplicates, split / incomplete / out-of-order / too-small groups, counts, marks, not Terbit), a placed
- * question missing from the candidate pool and a question pupils cannot be served. Overridable (true) = the blueprint-conformance blockers.
+ * question missing from the candidate pool, a question pupils cannot be served, and the structural failures of a question (no answer key, no marks,
+ * answer mode not allowed in the section, a broken group). Overridable (true) = only the blueprint-conformance blockers (PIPE AC-07.5, AC-26.3):
+ * the Kontrak is not Disahkan, and a question without DSKP unit, TP or with tags awaiting review.
  */
 export const BIJAK_BUILDER_BLOCKER_OVERRIDABLE = {
   DUPLICATE_QUESTION: false,
@@ -212,9 +214,12 @@ export const BIJAK_BUILDER_BLOCKER_OVERRIDABLE = {
   NOT_PUBLISHED: false,
   UNKNOWN_QUESTION: false,
   NOT_SERVABLE: false,
+  NO_KEY: false,
+  NO_MARKS: false,
+  MODE_NOT_ALLOWED: false,
+  GROUP_BROKEN: false,
   BLUEPRINT_NOT_VERIFIED: true,
   INELIGIBLE: true,
-  GROUP_BROKEN: true,
   /** R1-T48: a Bahagian's answering rule differs from the Kontrak's. */
   RULE_NOT_IN_CONTRACT: true,
   /** R1-T48 (AC-26.1(i)): Pilih N with fewer than N questions in the Bahagian. */
@@ -493,6 +498,9 @@ export const BijakBlueprintViewSchema = z
     evidenceCount: z.number().int().min(0),
     notes: z.string().nullable(),
     subPartRamp: z.boolean(),
+    autoMarkable: z.boolean().nullable().optional().meta({
+      description: '"Boleh tanda auto" (R1-21.4, PIPE AC-06.2): null = not stated. Always sent by the server; optional on the wire so older clients still parse.',
+    }),
     kbatMarks: z.number().int().min(0).nullable().meta({ description: 'Paper-level KBAT marks.' }),
     levelShare: z
       .strictObject({ t4: z.number().int().min(0), t5: z.number().int().min(0) })
@@ -503,7 +511,7 @@ export const BijakBlueprintViewSchema = z
     }),
     needsReview: z.boolean().meta({
       description:
-        'O-2, architecture 6.3a: computed, never stored. True when a published Kertas Pilihan of the subject and kertas (newest 20) has a standard-tier mismatch against this blueprint. Informational: blocks neither verification nor generation. Badge text "Blueprint perlu disemak" [PROPOSED].',
+        'O-2, architecture 6.3a: computed, never stored. True when a published Kertas Pilihan of the subject and kertas (newest 20) has a standard-tier mismatch against this blueprint. Informational: blocks neither verification nor generation. Badge text "Blueprint perlu semakan" (PIPE AC-06.6).',
     }),
     reviewPapers: z.array(BijakReviewPaperSchema).meta({
       description: 'The papers behind needsReview; empty when needsReview is false.',
@@ -630,7 +638,7 @@ export const BijakBuilderBlockerSchema = z
   .strictObject({
     code: z.enum(BIJAK_BUILDER_BLOCKER_CODES).meta({
       description:
-        'Stable code. Hard (overridable false): DUPLICATE_QUESTION, GROUP_MIN_MEMBERS (D93), GROUP_SPLIT, COUNT_TOO_FEW, COUNT_TOO_MANY, MARKS_MISMATCH, GROUP_NOT_CONSECUTIVE, GROUP_INCOMPLETE, GROUP_OUT_OF_ORDER, NOT_PUBLISHED, UNKNOWN_QUESTION (placed question missing from the pool), NOT_SERVABLE (R1E2E-06, pupils cannot be served). Overridable: BLUEPRINT_NOT_VERIFIED (Kontrak not Disahkan), INELIGIBLE (question fails the Kontrak: no unit, TP, marks, key, tag review, mode), GROUP_BROKEN, RULE_NOT_IN_CONTRACT (the rule of a Bahagian differs from the Kontrak), SECTION_NOT_IN_CONTRACT (admin-added Bahagian). Hard (R1-T48): RULE_N_EXCEEDS_QUESTIONS (Pilih N with fewer than N questions in the Bahagian).',
+        'Stable code. Hard (overridable false): DUPLICATE_QUESTION, GROUP_MIN_MEMBERS (D93), GROUP_SPLIT, COUNT_TOO_FEW, COUNT_TOO_MANY, MARKS_MISMATCH, GROUP_NOT_CONSECUTIVE, GROUP_INCOMPLETE, GROUP_OUT_OF_ORDER, NOT_PUBLISHED, UNKNOWN_QUESTION (placed question missing from the pool), NOT_SERVABLE (R1E2E-06, pupils cannot be served). Hard also: NO_KEY, NO_MARKS, MODE_NOT_ALLOWED (structural failures of a question) and GROUP_BROKEN. Overridable: BLUEPRINT_NOT_VERIFIED (Kontrak not Disahkan) and INELIGIBLE (a question without DSKP unit or TP, or with tags awaiting review). Overridable also (R1-T48): RULE_NOT_IN_CONTRACT (the rule of a Bahagian differs from the Kontrak) and SECTION_NOT_IN_CONTRACT (admin-added Bahagian). Hard also (R1-T48): RULE_N_EXCEEDS_QUESTIONS (Pilih N with fewer than N questions in the Bahagian).',
     }),
     message: z.string().meta({ description: 'The BM line, identical to the string in `blockers` / `errors`.' }),
     overridable: z.boolean().meta({ description: 'true when the audited override can lift this blocker.' }),

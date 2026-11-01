@@ -1,4 +1,4 @@
-import { BIJAK_BUILDER_CHECK_LINES as LINES } from '@pp/contract'
+import { BIJAK_BUILDER_CHECK_LINES as LINES, BIJAK_BUILDER_INELIGIBLE_TEXT as INELIGIBLE_TEXT } from '@pp/contract'
 import { describe, expect, it } from 'vitest'
 
 import type { Violation } from '../../src/modules/exam/builder/exam-core.adapter'
@@ -60,21 +60,31 @@ describe('violationLines (D78 O-2)', () => {
     expect(r.notes).toHaveLength(4)
   })
 
-  it('an untagged / keyless question and a broken group block; a pool mismatch only notes', () => {
+  it('only the blueprint-conformance failures are overridable (no unit, no TP, tags awaiting review); the structural ones are fixed (PIPE AC-07.5 / AC-26.3)', () => {
     const r = violationLines(
       [
+        v({ code: 'INELIGIBLE', tier: 'structural', questionId: '1', detail: 'no_unit' }),
+        v({ code: 'INELIGIBLE', tier: 'structural', questionId: '2', detail: 'no_tp' }),
+        v({ code: 'INELIGIBLE', tier: 'structural', questionId: '3', detail: 'tag_review' }),
         v({ code: 'INELIGIBLE', tier: 'structural', questionId: '7', detail: 'no_key' }),
+        v({ code: 'INELIGIBLE', tier: 'structural', questionId: '6', detail: 'no_marks' }),
+        v({ code: 'INELIGIBLE', tier: 'structural', questionId: '5', detail: 'mode_not_allowed' }),
         v({ code: 'INELIGIBLE', tier: 'structural', questionId: '8', detail: 'pool_mismatch' }),
         v({ code: 'GROUP_BROKEN', tier: 'structural', detail: 'G' }),
         v({ code: 'COUNT', tier: 'structural', expected: 3, actual: 2 }),
       ],
       label,
     )
-    expect(r.blockers).toEqual([
-      LINES.sectionLine('Bahagian 1', LINES.ineligible('7', 'tiada kunci jawapan')),
-      LINES.sectionLine('Bahagian 1', LINES.groupNotConsecutive('G')),
+    expect(r.blockerIssues.map((b) => [b.code, b.questionId])).toEqual([['INELIGIBLE', '1'], ['INELIGIBLE', '2'], ['INELIGIBLE', '3']])
+    expect(r.fixedIssues.map((b) => [b.code, b.questionId])).toEqual([
+      ['NO_KEY', '7'],
+      ['NO_MARKS', '6'],
+      ['MODE_NOT_ALLOWED', '5'],
+      ['GROUP_BROKEN', undefined],
     ])
-    expect(r.notes).toHaveLength(1)
+    expect(r.fixed).toContain(LINES.sectionLine('Bahagian 1', LINES.ineligible('7', 'tiada kunci jawapan')))
+    expect(r.fixed).toContain(LINES.sectionLine('Bahagian 1', LINES.groupNotConsecutive('G')))
+    expect(r.notes).toHaveLength(1) // the pool mismatch only notes
   })
 
   it('a question missing from the pool is a fixed blocker with its id; the other blockers are kept', () => {
@@ -82,11 +92,15 @@ describe('violationLines (D78 O-2)', () => {
       [
         v({ code: 'UNKNOWN_QUESTION', tier: 'structural', questionId: '9' }),
         v({ code: 'INELIGIBLE', tier: 'structural', questionId: '7', detail: 'no_key' }),
+        v({ code: 'INELIGIBLE', tier: 'structural', questionId: '4', detail: 'no_unit' }),
       ],
       label,
     )
-    expect(r.fixed).toEqual([LINES.sectionLine('Bahagian 1', LINES.ineligible('9', MISSING_FROM_POOL_TEXT))])
-    expect(r.blockers).toEqual([LINES.sectionLine('Bahagian 1', LINES.ineligible('7', 'tiada kunci jawapan'))])
+    expect(r.fixed).toEqual([
+      LINES.sectionLine('Bahagian 1', LINES.ineligible('9', MISSING_FROM_POOL_TEXT)),
+      LINES.sectionLine('Bahagian 1', LINES.ineligible('7', 'tiada kunci jawapan')),
+    ])
+    expect(r.blockers).toEqual([LINES.sectionLine('Bahagian 1', LINES.ineligible('4', INELIGIBLE_TEXT.no_unit))])
   })
 })
 

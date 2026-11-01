@@ -123,8 +123,12 @@ describe('admin list, detail and mutation shapes', () => {
       dskpTagged: false,
       sourceType: null,
       sourceFile: null,
+      kertas: '2',
+      numberLabel: '12(a)',
     }
     expect(QuestionRowSchema.safeParse(row).success).toBe(true)
+    expect(QuestionRowSchema.safeParse({ ...row, kertas: '4' }).success).toBe(false)
+    expect(QuestionRowSchema.safeParse({ ...row, kertas: null, numberLabel: null }).success).toBe(true)
     expect(QuestionRowSchema.safeParse({ ...row, id: 101 }).success).toBe(false)
     expect(QuestionRowSchema.safeParse({ ...row, status: 'pending_review' }).success).toBe(false)
     expect(QuestionSchema.safeParse(question).success).toBe(true)

@@ -78,10 +78,10 @@ describe('lifecycle (D54a codes, v2-question-bank 4.1)', () => {
     for (const v of ['pending_review', 'rejected', 'pending', 'Draf', '']) expect(ok(QuestionWorkflowStatusSchema, v)).toBe(false)
   })
 
-  it('allows exactly the six pairs of the table, walked over all 4x4 pairs per actor', () => {
-    const allowed = new Set(['draft>review', 'draft>archived', 'review>approved', 'review>draft', 'approved>archived', 'archived>draft'])
-    expect(QUESTION_WORKFLOW_TRANSITIONS).toHaveLength(6)
-    const adminOnly = new Set(['review>approved', 'review>draft', 'approved>archived', 'archived>draft'])
+  it('allows exactly the seven pairs of the table, walked over all 4x4 pairs per actor', () => {
+    const allowed = new Set(['draft>review', 'draft>archived', 'review>approved', 'review>draft', 'review>archived', 'approved>archived', 'archived>draft'])
+    expect(QUESTION_WORKFLOW_TRANSITIONS).toHaveLength(7)
+    const adminOnly = new Set(['review>approved', 'review>draft', 'review>archived', 'approved>archived', 'archived>draft'])
     let seen = 0
     for (const actor of ['admin', 'owner_teacher'] as QuestionWorkflowActor[]) {
       for (const from of QUESTION_WORKFLOW_STATUSES) {
@@ -108,7 +108,8 @@ describe('lifecycle (D54a codes, v2-question-bank 4.1)', () => {
     expect(gate('review', 'approved')).toBe('approve')
     expect(gate('approved', 'archived')).toBeNull()
     const reasonPairs = QUESTION_WORKFLOW_TRANSITIONS.filter((t) => t.reasonRequired).map((t) => `${t.from}>${t.to}`)
-    expect(reasonPairs.sort()).toEqual(['approved>archived', 'review>draft'])
+    // REQ-C-013: an archive needs no reason (V2's dialog has none); only the return from Semakan to Draf does.
+    expect(reasonPairs.sort()).toEqual(['review>draft'])
   })
 
   it('parses a status event row', () => {

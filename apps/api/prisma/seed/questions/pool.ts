@@ -1,5 +1,5 @@
 /**
- * PoC question pool (BE-09 owner seed path, kind `demo`, profile `poc` only). Demo blocker from the full-demo
+ * PoC question pool (BE-09 owner seed path, kind `demo`, profiles `poc` and `e2e`: the e2e paper builder needs the bank pool to reach Sepadan, REQ-B-003). Demo blocker from the full-demo
  * walkthrough (PR #88): the base bank holds at most 3 published MCQs per subject and level, below every draw size.
  *
  * Seed facts (pinned by test/seed/question-pool.spec.ts):
@@ -94,9 +94,9 @@ export function poolSpecs(): PoolSpec[] {
 export const questionPoolSeed: SeedModule = {
   name: 'questions-pool',
   kind: 'demo',
-  profiles: ['poc'],
+  profiles: ['poc', 'e2e'],
   async run(ctx: SeedContext) {
-    assertSeedAllowed()
+    assertSeedAllowed(ctx.env)
     const specs = poolSpecs()
     // Validate every tree first: a bad definition must not leave half a pool behind.
     for (const s of specs) QuestionPartSchema.parse(s.part)

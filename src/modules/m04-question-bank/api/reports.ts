@@ -42,6 +42,8 @@ export interface ReportQuestionView {
   levelName?: string | null
   complianceStatus?: string
   isActive?: boolean
+  /** Lifecycle status when the server sends it (request to team A); `archived` hides "Arkib". */
+  status?: string
   /** "Buka Soalan Sama" (FN-M04-3.2.17); `null` when the question is gone or the subject has no code. */
   practiceUrl?: string | null
 }
@@ -107,6 +109,8 @@ export interface ReportUpdateInput {
   adminNotes?: string | null
   reactivate?: boolean
   forceDeactivate?: boolean
+  /** R1-B17 "Arkib": archive the question through the lifecycle (status archived), applied last. */
+  archive?: boolean
 }
 
 export interface ReportUpdated {
@@ -115,6 +119,9 @@ export interface ReportUpdated {
     status: ReportStatus
     adminNotes: string | null
     updatedAt: string
+    /** H-A13: after "Arkib", the published papers that place the question, and the BM warning about them. */
+    warning?: string
+    papers?: { id: string; title: string }[]
   }
   status: string
 }

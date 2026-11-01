@@ -2,7 +2,7 @@
 /**
  * K2: Penyunting Kontrak (`/admin/spm/kontrak/:subjek/:kertas`, design 4). Tabs Umum, one per
  * Bahagian, Pengesahan; the live "Semakan Kontrak" panel; save as a new version (AC-39.4); the
- * Pengesahan tab verifies the contract (US-39). `?baharu=1` opens an empty Draf (K1 "Tambah Kontrak").
+ * Pengesahan tab verifies the contract (US-39). `?baharu=1` opens an empty Draf (K1 "Baharu").
  */
 import type { BijakBlueprintVersionItem, BijakBlueprintView, BijakUnitRefView } from '@pp/contract'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
@@ -24,6 +24,7 @@ import {
 import ContractCheckPanel from '../components/ContractCheckPanel.vue'
 import GeneralTab from '../components/GeneralTab.vue'
 import SectionEditor from '../components/SectionEditor.vue'
+import SharedBanner from '../components/SharedBanner.vue'
 import SourceBadge from '../components/SourceBadge.vue'
 import VerifyPanel from '../components/VerifyPanel.vue'
 import {
@@ -33,6 +34,7 @@ import {
   toInput,
   type ContractForm,
 } from '../domain/form'
+import { gapText, REVIEW_BADGE } from '../domain/review'
 import { errorsOf, incompleteOf, issueFromProblem, validateForm, type Issue } from '../domain/validate'
 import { KONTRAK_ROUTES, KontrakError } from '../server/api'
 import { kontrakServer } from '../server/client'
@@ -197,7 +199,8 @@ async function commit(): Promise<void> {
     } else {
       saved = await api.saveVersion(subject.value, kertas.value, body)
     }
-    flash.show({ type: 'success', message: 'Kontrak berjaya disimpan.' })
+    // K7 (V2): "Kontrak dicipta." on create, "Kontrak dikemas kini." on update.
+    flash.show({ type: 'success', message: isNew.value ? 'Kontrak dicipta.' : 'Kontrak dikemas kini.' })
     view.value = saved
     versions.value = await api.versions(subject.value, kertas.value)
     form.value = formFromView(saved)
@@ -312,7 +315,7 @@ const poolReason = 'Simpan dahulu'
         variant="subtle"
         :label="`Murid guna v${serving.version} (Disahkan)`"
       />
-      <UBadge v-if="view?.needsReview" color="warning" variant="subtle" icon="i-ph-warning-circle" label="Blueprint perlu disemak" data-testid="needs-review" />
+      <UBadge v-if="view?.needsReview" color="warning" variant="subtle" icon="i-ph-warning-circle" data-testid="needs-review" :label="REVIEW_BADGE" />
     </template>
     <template v-if="status === 'ready' && !isNew" #actions>
       <div class="flex flex-wrap items-center gap-2">
@@ -333,6 +336,8 @@ const poolReason = 'Simpan dahulu'
     <template v-if="status === 'ready'" #tabs>
       <DsPillNav :items="tabs" :active="activeTab" label="Bahagian kontrak" testid-prefix="tab" />
     </template>
+
+    <SharedBanner v-if="status === 'ready'" scope="editor" />
 
     <div v-if="status === 'loading'" role="status" aria-busy="true" class="flex flex-col gap-4">
       <USkeleton class="h-24 w-full" />
@@ -361,6 +366,22 @@ const poolReason = 'Simpan dahulu'
       <div v-else>
         <UButton color="neutral" variant="link" class="min-h-11 px-0" icon="i-ph-info" label="Kontrak ini dikongsi" :aria-expanded="false" @click="toggleShared" />
       </div>
+
+      <UAlert
+        v-if="view?.needsReview && view.reviewPapers.length > 0"
+        color="warning"
+        variant="subtle"
+        icon="i-ph-warning-circle"
+        :title="REVIEW_BADGE"
+        data-testid="review-papers"
+      >
+        <template #description>
+          <p>Kertas Pilihan terbit ini tidak sepadan dengan tahap piawaian blueprint. Ini hanya makluman; tiada apa yang disekat.</p>
+          <ul class="mt-1 flex list-disc flex-col gap-1 ps-5">
+            <li v-for="p in view.reviewPapers" :key="p.paperId" class="break-words">{{ p.title }}: {{ gapText(p.gaps) }}</li>
+          </ul>
+        </template>
+      </UAlert>
 
       <UAlert v-if="versionBanner" :color="versionBanner.color" variant="subtle" icon="i-ph-info" :description="versionBanner.text" data-testid="version-banner" />
 
