@@ -63,3 +63,13 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
 - **AC R1-10.1** stays partial. Confirm against .cloud in R2 (KIV register).
 - **Q12b** (practice XP into the wallet) was not answered separately. Lead default = leave as is (the recommendation); revisit with Q12c in R2.
 
+## Q13 (DECIDED 2026-11-02 by the user via Mandor: FOLLOW V2): choose-N section rule line (AC-10.6, copy-approval row 39)
+- **Options:**
+  - V2 .cloud .blade "Jawab {N} soalan sahaja.";
+  - the API/AC-06.1 [PROPOSED] text "Jawab N daripada M soalan.".
+- **Decision:** "Ikut V2". Choose-N sections read **"Jawab {N} soalan sahaja."**; compulsory sections keep **"Jawab semua soalan."**.
+- **Implementation:** r1/rule-line-v2 (A3); both derivations change (rules.ts + exam-core paper-model.ts).
+- **Accepted known limit:** authored instructions on the PoC seed and goldens keep "daripada" (the PoC is withdrawn).
+- **FE copies (m28 mock/admin):** to team C, REQ-A-035.
+- **Docs:** AC-06.1 and the standards design are updated on the branch.
+
