@@ -463,3 +463,4 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
   - A2 intake-reqs/T04 tips + H-A18: ~15:15–15:30 UTC.
   - A2 t49 tip: ~15:50 UTC.
   - A3 T48 adds a new hard code SECTION_EMPTY for an empty admin Bahagian, then T43b re-merges it. **The catalogue will be 25 codes: 4 overridable, 21 hard.** Team C should re-check the union after T43b.
+- **T54 tip** r1/t54-perf-400k @ bbf412c6 (A4, BASE-102): all B2 Minors fixed (sum reconciled, P11a/b, F3 labelled as EXPLAIN, F4 regex, harness refuses a non-local DB). Ready for the B1 gate.
