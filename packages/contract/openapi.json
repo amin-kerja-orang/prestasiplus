@@ -102716,7 +102716,7 @@
           "questions"
         ],
         "summary": "Admin question list (newest first)",
-        "description": "Page size 20 (max 100). Unknown filter values match nothing, except `status`, which must be one of the v2 codes (422 otherwise, D54a). Legacy PKSK rows are never listed.",
+        "description": "Page size 20 (max 100). Unknown filter values match nothing, except `status`, which must be one of the v2 codes (422 otherwise, D54a). Legacy PKSK rows are never listed. Rate limited per user (`THROTTLE_QUESTIONS_LIST_PER_MINUTE`, default 60): a 1 to 2 character or punctuation-only `search` cannot use the trigram index and scans the bank, and it is still accepted (no 422).",
         "parameters": [
           {
             "schema": {
@@ -102932,6 +102932,16 @@
           },
           "422": {
             "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages), `message` = first message plus the count of the others.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: more than the list limit per minute for this user (Retry-After header, seconds).",
             "content": {
               "application/json": {
                 "schema": {

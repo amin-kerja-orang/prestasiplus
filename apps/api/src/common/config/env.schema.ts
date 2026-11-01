@@ -145,6 +145,8 @@ export const EnvSchema = z.object({
   THROTTLE_STRUCTURED_ATTEMPT_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   // BE-09 (question bank). Optional: the code applies 60 writes per minute per user when unset.
   THROTTLE_QUESTIONS_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  // R1 admin-list-perf (GET /questions, Admin Pusat). Optional: the code applies 60 list reads per minute per user when unset (a short search term scans the bank).
+  THROTTLE_QUESTIONS_LIST_PER_MINUTE: aiInt(1, 1_000_000),
   // R1-B11 (servability reads, Admin Pusat). Optional: the code applies 120 reads per minute per user when unset.
   THROTTLE_SERVABILITY_READ_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   // The overview counts the whole bank, so it has its own bucket. Optional: the code applies 6 per minute per user when unset.

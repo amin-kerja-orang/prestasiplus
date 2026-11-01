@@ -127,10 +127,12 @@ Migration numbers 0100-0109 are team A's range (in code: 0092, 0093, 0100 lifecy
 | 0103 | `stimulus_kinds_wide` | no DDL if the CHECK already allows the 8 kinds (`stimuli.kind` check lists passage, image, diagram, table, graph, map, infographic, audio); migration only asserts it; contract widens |
 | 0104 | `tracking_a_authoring` | ADR-0032 columns and unique index |
 | 0105 | `kertas_subjektif` | ADR-0033 tables, `paper_sections.kertas_paper_id`, file purposes |
-| 0106 | `feature_flags` | ADR-0035 |
-| 0107 | `drop_pool_tag` | delete `question_tags` kind `pool`; narrow CHECK |
+| 0106 | `question_stem_trgm` (built, admin-list-perf) | `pg_trgm` extension and trigram indexes on the question stems (`stem_ms`, `stem_en`) for the admin list search; replaces the planned `feature_flags` here |
+| 0107 | `question_paper_kertas_index` (built, admin-list-perf) | expression index for the Kertas filter of the admin list; replaces the planned `drop_pool_tag` here |
+| 0108 | `feature_flags` (moved from 0106) | ADR-0035 |
+| next free | `drop_pool_tag` (moved from 0107) | delete `question_tags` kind `pool`; narrow CHECK |
 
-> Numbering (R1-T25, resolved): 0100 lifecycle and 0101 `essay_choice` exist in code. Planned, in the order this document implies: 0102 `dskp_leaf_tags_and_facts` (must not add `topics` or the `essay_choice` mode again), 0103 `stimulus_kinds_wide`, 0104 `tracking_a_authoring`, 0105 `kertas_subjektif`, 0106 `feature_flags`, 0107 `drop_pool_tag`. Optional, each only when its task proves a column is needed: 0108 R1-B12 (self-mark), 0109 R1-B20 (file purposes). R1-B16 (practice mode CHECK) and R1-B10 (`needs_review`) would be 0120 and 0121 in the team A overflow range (0120-0129; team C owns 0110-0119), allocated by the LEAD at merge.
+> Numbering (R1-T25, resolved): 0100 lifecycle and 0101 `essay_choice` exist in code. Planned, in the order this document implies: 0102 `dskp_leaf_tags_and_facts` (must not add `topics` or the `essay_choice` mode again), 0103 `stimulus_kinds_wide`, 0104 `tracking_a_authoring`, 0105 `kertas_subjektif`. **Renumbered (admin-list-perf):** 0106 `question_stem_trgm` and 0107 `question_paper_kertas_index` were built by admin-list-perf (approved by the team A lead) and are on `r1/admin-list-perf`, so the two migrations this document had reserved there move: `feature_flags` takes 0108, and `drop_pool_tag` takes the next free team A number after it (0109 unless the LEAD allocates otherwise). The optional ones, each only when its task proves a column is needed, take the next free numbers after those (R1-B12 self-mark, R1-B20 file purposes; formerly 0108 and 0109), or the overflow range. Every other mention of 0106 as `feature_flags` or 0107 as `drop_pool_tag` in this document reads as the numbers just given. R1-B16 (practice mode CHECK) and R1-B10 (`needs_review`) would be 0120 and 0121 in the team A overflow range (0120-0129; team C owns 0110-0119), allocated by the LEAD at merge.
 
 ### 2.1 Prisma (excerpts; field names follow repo `@map` style)
 ```prisma
@@ -519,7 +521,7 @@ Legend: **WT** = changes shared migrations, seeds or contract and runs in an iso
 | BE-A1 | Lifecycle: migration 0100, constant `SERVABLE_STATUS`, replace `'published'` for questions in ~35 files, contract statuses + transition table + bulk values (alias window), seeds/fixtures `published->approved`, lint ban | `prisma/migrations/0100*`, `questions/**`, `practice/**`, `spm/**`, `battle`, `games`, `classes`, `pksk`, `exam/builder`, `bijak/papers`, `files`, `migration/load`, `prisma/seed/*`, `packages/contract/src/question-workflow/lifecycle.ts` | - | Yes |
 | BE-A2 | Contract: `ServedQuestion`, stimulus kinds, `essay_choice`, part `tp/cognitiveLevel`, servability types + BM copy, kertas document schema, tracking-a, flags, error codes | `packages/contract/src/{serving,servability,kertas,tracking-a,flags,questions}` | - | Yes |
 | BE-A3 | Facts + rules + `ServabilityService` (`where`, `evaluate`, families), migration 0102 tables/backfill, `computeFacts` in repository transactions, parity test matrix | `questions/serving/**`, `questions/questions.repository.ts`, migration 0102 | A1, A2 | Yes |
-| BE-A4 | Feature flags module + guard + endpoints, migration 0106 | `modules/feature-flags/**` | A2 | Yes (migration) |
+| BE-A4 | Feature flags module + guard + endpoints, migration 0108 (was 0106) | `modules/feature-flags/**` | A2 | Yes (migration) |
 | BE-B1 | DSKP: leaf `tp/cognitiveLevel` persist, derive `difficulty_tp`, merged approve gate with issues `{path, code, message, step}`, gate-check endpoint, legacy rule, intake `to-question` carries tags | `questions/workflow/lifecycle/gates.ts`, `publish-gate.ts`, `projection.ts`, `intake/workflow/to-question.ts`, controllers | A1, A2, A3 | No |
 | BE-B2 | Remove spmPool (types, repository, create path, views, pksk.service), migration 0107 | `questions/**`, `practice/ports.ts`, `spm/**`, `battle`, `classes/missions`, `exam/builder/question-bank.source.ts` | A3 | Yes (0107) |
 | BE-B3 | Remove PoC fixture and env key; guarded dev purge; rewrite PoC e2e | `bijak/papers/poc*`, `bijak/question-bridge/composite.ts`, `bijak/integration`, `exam/builder/composite.source.ts`, `.env*.example`, docs/ops | A3 | Yes |
@@ -582,7 +584,7 @@ FE-P5 is DONE (`src/components/question-display/`: `AnswerWidget`, `McqOptions`,
 - **Wave 4 (parallel):** BE-D3, FE-A3, FE-A4, FE-A5, FE-A7, FE-S1, FE-S2, FE-S4, DO-1.
 - **Wave 5:** FE-A8, FE-S3, BE-E2, QA-2.
 - **Wave 6:** QA-1, G4 reviews (code-reviewer, security-engineer: file read rules, flag guards, document sanitising, bulk caps), G5.
-Shared-data tasks (WT): BE-A1, BE-A2, BE-A3, BE-A4 (migration), BE-B2, BE-B3, BE-C2, BE-D1, BE-E1. Serialise migrations: A1 (0100), A3 (0102), C2 (0104), D1 (0105), A4 (0106), B2 (0107).
+Shared-data tasks (WT): BE-A1, BE-A2, BE-A3, BE-A4 (migration), BE-B2, BE-B3, BE-C2, BE-D1, BE-E1. Serialise migrations: A1 (0100), A3 (0102), C2 (0104), D1 (0105), A4 (0108, was 0106), B2 (`drop_pool_tag`, was 0107; next free after 0108).
 
 ## 10. First vertical slice (fastest functioning path)
 Goal: admin creates and approves an image MCQ, the student sees it in Latih Tubi and inside a published Simulasi paper.

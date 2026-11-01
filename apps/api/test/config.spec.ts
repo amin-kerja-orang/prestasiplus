@@ -104,6 +104,13 @@ describe('env validation', () => {
     expect(loadEnv({ ...VALID, LOGIN_FAILURE_FLOOR_MS: '0' }).LOGIN_FAILURE_FLOOR_MS).toBe(0)
   })
 
+  it('THROTTLE_QUESTIONS_LIST_PER_MINUTE is optional, a blank counts as unset, and must be a positive integer', () => {
+    expect(loadEnv({ ...VALID }).THROTTLE_QUESTIONS_LIST_PER_MINUTE).toBeUndefined()
+    expect(loadEnv({ ...VALID, THROTTLE_QUESTIONS_LIST_PER_MINUTE: '' }).THROTTLE_QUESTIONS_LIST_PER_MINUTE).toBeUndefined()
+    expect(loadEnv({ ...VALID, THROTTLE_QUESTIONS_LIST_PER_MINUTE: '90' }).THROTTLE_QUESTIONS_LIST_PER_MINUTE).toBe(90)
+    expect(() => loadEnv({ ...VALID, THROTTLE_QUESTIONS_LIST_PER_MINUTE: '0' })).toThrow(/THROTTLE_QUESTIONS_LIST_PER_MINUTE/)
+  })
+
   it('requires a strong SESSION_SECRET in production and defaults it elsewhere', () => {
     const prod = { NODE_ENV: 'production', DATABASE_URL: DB_URL }
     expect(() => loadEnv(prod)).toThrow(/SESSION_SECRET/)
