@@ -343,6 +343,41 @@ SELECT sj.code, count(*) AS n
 
 Note (D91): the practice **card** counts ungrouped questions only; the login count still counts group members, so on the demo seed the card is lower than the login count by the group MCQs. That difference is intended.
 
+### 3.6b R1-11.4: the legacy questions that qualified before still appear; image-held items stay excluded
+
+Read-only. Run the first SELECT **before** the migrations (record it with 3.1) and again after 0100 and after the legacy loader. The identity to check is `live_questions = servable + live_approved_inactive + live_not_approved`, and `servable` after must be at least the `servable`-equivalent you recorded before (nothing that was served before may drop out, apart from questions an admin switched off or archived on purpose). `live_approved_inactive` are live questions switched off (the loader holds a legacy question inactive when its image was not copied); the second and third SELECT must show that every held-image question is excluded and none is served.
+
+```sql
+-- (1) the identity
+SELECT (SELECT count(*) FROM questions WHERE live_version_no IS NOT NULL) AS live_questions,
+       (SELECT count(*) FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no AND v.status = 'approved' WHERE q.is_active) AS servable,
+       (SELECT count(*) FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no AND v.status = 'approved' WHERE NOT q.is_active) AS live_approved_inactive,
+       (SELECT count(*) FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no AND v.status <> 'approved') AS live_not_approved;
+-- (2) image-held questions (live, inactive, loader issue legacy_image_unresolved): expected = the number the loader report listed
+SELECT count(*) AS held_image_inactive
+  FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
+ WHERE NOT q.is_active AND v.import_issues @> '[{"code": "legacy_image_unresolved"}]'::jsonb;
+-- (3) held-image questions that are served anywhere: must be 0
+SELECT count(*) AS held_image_but_served
+  FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no AND v.status = 'approved'
+ WHERE q.is_active AND v.import_issues @> '[{"code": "legacy_image_unresolved"}]'::jsonb;
+```
+
+The login count and the per-subject cards are the SELECTs of 3.6 above (the same text, copied here only for the run below): `login_count` must equal the sum of the card `n`.
+
+Real output from the testcontainer database seeded the way the specs seed it (`bootQuestionsApp`: identity, curriculum, questions seed; one held-image question made as in `test/questions/held-image.spec.ts`; run on 2026-11-01 under `apps/api/test/questions`, output copied as printed):
+
+| SELECT | Output |
+|---|---|
+| (1) on the seed alone | `live_questions 16, servable 16, live_approved_inactive 0, live_not_approved 0` |
+| (1) after one held-image question was added | `live_questions 17, servable 16, live_approved_inactive 1, live_not_approved 0` |
+| (2) | `held_image_inactive 1` |
+| (3) | `held_image_but_served 0` |
+| login count (3.6) | `login_count 9` |
+| cards (3.6) | `BM 5`, `MATH 2`, `SCI 2` (sum 9 = login count) |
+
+On UAT the numbers differ (about 406,396 legacy questions); only the shape is expected to match: the identity holds, (3) is 0, and `servable` after is not below the `servable` recorded before. The UAT before and after counts themselves are ops evidence; this note only fixes the queries.
+
 ## 4. DSKP load
 
 UAT has 0 curriculum nodes until this runs, so DSKP tagging, blueprints and Jana Kertas cannot work there. The loader is a script, not a migration: insert-only, idempotent, one transaction per subject, Tingkatan 1-5 only. Full detail, flags and rollback: [dskp-loader.md](dskp-loader.md).
@@ -372,6 +407,27 @@ SELECT DISTINCT l.code FROM curriculum_nodes n JOIN education_levels l ON l.id =
 SELECT count(*) FROM curriculum_nodes c WHERE parent_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM curriculum_nodes p WHERE p.id = c.parent_id);  -- 0
 SELECT count(*) FROM curriculum_tp_descriptors WHERE tp NOT BETWEEN 1 AND 6;  -- 0
 ```
+
+**R1-12.6 read-only check (curriculum nodes per in-scope subject).** The in-scope subjects are the 13 codes the loader loads (BM, BI, MATH, ADDMATH, PHY, SCI, SEJ, PI, TI, PM, PSV, LNR, KNP). Expected after a real load: every subject has `nodes > 0`, the second SELECT returns **0 rows**, the total is **2,844** (the loader's own report) and the levels are T4 and T5 only. Before the load every subject shows 0 (and 13 rows come back from the second SELECT).
+
+```sql
+-- nodes per in-scope subject (a subject that is missing from `subjects` also shows 0)
+SELECT in_scope.code AS subject, count(n.id) AS nodes
+  FROM (VALUES ('BM'),('BI'),('MATH'),('ADDMATH'),('PHY'),('SCI'),('SEJ'),('PI'),('TI'),('PM'),('PSV'),('LNR'),('KNP')) AS in_scope(code)
+  LEFT JOIN subjects s ON s.code = in_scope.code
+  LEFT JOIN curriculum_nodes n ON n.subject_id = s.id
+ GROUP BY in_scope.code ORDER BY in_scope.code;
+-- in-scope subjects without a node: expected 0 rows after the load
+SELECT in_scope.code AS subject_without_nodes
+  FROM (VALUES ('BM'),('BI'),('MATH'),('ADDMATH'),('PHY'),('SCI'),('SEJ'),('PI'),('TI'),('PM'),('PSV'),('LNR'),('KNP')) AS in_scope(code)
+  LEFT JOIN subjects s ON s.code = in_scope.code
+ WHERE NOT EXISTS (SELECT 1 FROM curriculum_nodes n WHERE n.subject_id = s.id)
+ ORDER BY in_scope.code;
+SELECT count(*) AS nodes FROM curriculum_nodes;
+SELECT DISTINCT l.code FROM curriculum_nodes n JOIN education_levels l ON l.id = n.education_level_id ORDER BY 1;  -- T4, T5 only
+```
+
+Real output from the testcontainer database seeded the way the specs seed it (identity, curriculum and questions seeds, which load the DSKP tree; 2026-11-01, copied as printed): `nodes` per subject ADDMATH 257, BI 122, BM 162, KNP 281, LNR 168, MATH 188, PHY 281, PI 309, PM 198, PSV 216, SCI 306, SEJ 230, TI 126; the second SELECT returned no rows; total `nodes 2844`; levels `T4`, `T5`. UAT must show the same shape after `dskp:load`; the UAT run itself is ops evidence.
 
 Rollback is by deleting what the load added, only before any question is tagged (nodes are referenced `ON DELETE RESTRICT`); after tagging, restore the backup. Steps are in [dskp-loader.md](dskp-loader.md).
 
