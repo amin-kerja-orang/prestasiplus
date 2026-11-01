@@ -505,7 +505,7 @@ Each lane runs 2–3 subagents on independent units: no more than that, and one 
 7. Docs/runbook/release-notes consistency (A3 docs agent).
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 22:59 UTC, BASE d78835b3)
+### Team A open branches: heads from origin (auto, 2026-11-01 22:59 UTC, BASE 256be576)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -550,7 +550,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/reqb052-archived-edit | f3a2448f9 | READY (A3, BASE-105; replaces 17196431): follow-ups done: P1 pinned-clause spec (bites), guard published OR (withdrawn AND EXISTS attempts), header; archived-edit 6/6, pinned-version-rule 6/6, workflow 296/296; tsc/eslint 0; B2 |
 | r1/reqc021-followup | 948aa327a | READY (A1a, BASE-105): fixes the base red draw-bounded BR-16; merge early |
 | r1/seed-dangling-placements | 11cbcf458 | READY (A1b, BASE-105): asserts paper titles + counts = POC_BANK; seed 155 + 1 skip; B2 |
-| r1/servability-stimuli-once | 94efde125 | IN-PROGRESS (A4 slot 2, on A4 chain tip): one versionStimuli/stimulusUseCounts read per factsOf chunk (was 2), verdicts unchanged; + "intentionally not paperHeld" comments; awaiting A4 READY report |
+| r1/servability-stimuli-once | 94efde125 | READY (A4, @94efde12 on A4 chain tip 0ba236ef): no logic change (C2 c6954ae0 already reads once); pins it with a 3-test spy spec + 2 "intentionally not paperHeld" comments; servab/bridge/kuiz 279 tests green; optional; merge after the A4 chain; B2 |
 | r1/stimulus-list-d72 | b45ce5197 | READY (A2, @b45ce519; contains t49 b99068a6): one where for page+count; part-linked Darjah/PKSK hiding spec (bites); A4 + A3 pre-reviews Approve; merge AFTER t49; B2 |
 | r1/t04-minors | 8ae70d6e8 | READY (A2, @8ae70d6e): FD-11/AP-17 row; card-ungrouped afterEach reset + per-test restore assertion (bites, order-independent); A4 + A3 pre-reviews Approve; B2 |
 | r1/t31-builder-wire | eb0346d25 | READY (A3, hold LIFTED 19:55 UTC): merge as a PAIR with C REQ-A-008 r1/reqa008-group-stimulus @29d24be9 right after it (http-admin TS2322 gone, vue-tsc 0); Preview #3 (A4, 33 heads on BASE-105 @525f9ca1, local): ALL GREEN, vue-tsc 0 after REQ-A-008, 0 reds. Order: after T48; then REQ-A-008; B2 |
