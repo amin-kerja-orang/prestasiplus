@@ -871,6 +871,13 @@ export class QuestionsService {
       }
     }
     if (refs.stimulusIds.length > 0 && !(await this.repo.stimuliExist(refs.stimulusIds))) fields.parts = 'Stimulus tidak sah.'
+    // R008-L1: a stimulus belongs to the library the admin manages, and its picture is read by whoever may read the questions that use it. A
+    // Guru may not link just any stimulus id to their own question (that would hand them another author's draft figure by its token): only
+    // the stimuli the stored version already carries stay. Same answer as an unknown id (no existence oracle).
+    if (fields.parts === undefined && n.actor.role !== 'admin' && refs.stimulusIds.length > 0) {
+      const own = new Set<string>([...(previous?.version.stimulusIds ?? []), ...(previous ? referencedIds(previous.version.parts).stimulusIds : [])])
+      if (refs.stimulusIds.some((id) => !own.has(id))) fields.parts = 'Stimulus tidak sah.'
+    }
     if (n.stimulusGroupId && !(await this.repo.groupExists(n.stimulusGroupId))) fields.stimulusGroupId = 'Kumpulan stimulus tidak sah.'
 
     if (Object.keys(fields).length > 0) throw fail(fields)
