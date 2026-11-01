@@ -364,3 +364,10 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
   - D9: Terbit never auto-approves (lead accepted).
   - Needs B2. **Team C:** re-check the blocker union (21 codes).
 - REQ-B-032 moved from A4 to A3 dev-2 (r1/reqb032-pinned-rule).
+- **T38 READY** r1/t38-selfmark-reward @ e8af872f5 (A1b, BASE-101). Fixes the B2 MAJOR, which is the same issue as B3 T38-L1.
+  - Payout is now computed once per attempt: `gain = min(score,max) − max(base best-N automatic score, highest paid level)`. Ledger key `attemptId:score:<level>`, advisory lock per attempt.
+  - Specs cover: choose-N paid once; a displacement pays only the delta; replay and concurrency pay nothing; clamp; Mod Pelajar.
+  - Evidence: bijak-attempts + integration 300 pass + 1 todo; tsc 0; eslint 0.
+  - V2 reference: BIJAK-SPM-cloud §4.5. Needs **B2 + B3** (wallet).
+- **T40 READY** r1/t40-attempts-acs @ 985e2af0b (T38 + BASE-101). B2 Minors fixed (R1-06.2 renamed, choose-N case added), plus the T36 import in cuba-lagi-rewards. 308 pass + 1 todo; tsc 0. Needs B2. Merge after T38.
+- T50 flake fix @ e436e084d (A1b). A1a is merging BASE-101 and doing T52.
