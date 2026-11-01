@@ -149,6 +149,8 @@ export const EnvSchema = z.object({
   THROTTLE_SERVABILITY_READ_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   // The overview counts the whole bank, so it has its own bucket. Optional: the code applies 6 per minute per user when unset.
   THROTTLE_SERVABILITY_OVERVIEW_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  // REQ-B-022(a): compute the admin servability overview once at start (not awaited; a failure only logs). Unset: on in production, off elsewhere.
+  SERVABILITY_OVERVIEW_WARM: z.enum(['true', 'false']).optional(),
   // BE-06: development only. true lets the logging MailPort print the password reset link (a secret) to the log. Ignored outside NODE_ENV=development; refused at start in production.
   MAIL_LOG_RESET_LINKS: z.enum(['true', 'false']).optional(),
   // BE-17 (classes). Throttles per user and the public origin of the join link (QR payload); the code applies the defaults when unset.
