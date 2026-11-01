@@ -65,5 +65,5 @@
 - 24 t04-minors: delta 4 commits.
 - 25 d72: merge **after 23**; **full B2**.
 
-The v2-backend-deviations.md conflicts are always "keep both". | OPEN |
+The v2-backend-deviations.md conflicts are always "keep both". **Update 23:05 UTC (A4 re-simulated on BASE-107, stack 9232aa24):** BASE-107 overlaps no file in the stack, but every head still has to contain it; owners are forward-merging now. Changes: step 7 reqa018 is now **9ce81df5** (+ contract-tests scenario; full B2 + B3). New **step 6b servability-stimuli-once 94efde12** after a4chain-minors (B2 small). Step 17 mock-known-mismatches now conflicts with reqa018's NO_PAPER_SERVABILITY: keep both. Step 23 known-mismatches.ts: keep all NO_* lists (step 17 + NO_FILTER_OPTIONS + NO_PAPER_SERVABILITY) and the 3 filter-options lines, and drop guru/pending. | OPEN |
 

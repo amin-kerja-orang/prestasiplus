@@ -515,7 +515,7 @@ B merged BASE-106 (T10 builder UI) and BASE-107 (hc-builder-parity). Both are FE
 REQ-A-008 needs C's restack on BASE-107 (REQ-B-055) before T31 pairs with it. C3 reports REQ-A-018 FE + 026b READY @ 3942f760.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 23:00 UTC, BASE 256be576)
+### Team A open branches: heads from origin (auto, 2026-11-01 23:03 UTC, BASE 256be576)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -538,8 +538,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha17-ac-coverage | 157b371c3 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b; head 157b371c |
 | r1/ha18-gate-facts | fc409ae16 | READY (A2, BASE-105): H-A18 + REQ-B-017/037 + D99 + pre-review fixes (M2 held-issues helper on both edit paths; m1 gate-issue codes; deviation row); workflow 296/296; conformance 409/409; B2 + B3 |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
-| r1/ha24-release-input | c8d7a4132 | READY (A3 docs, @c8d7a413): §3.5 B1 merge order + BM release notes + sign-off checklist (Q12a decided) + r1-kiv-r2.md (32 rows); B1/B2 |
-| r1/ha26-team-a-state | 866b1a768 | READY (A3 docs, @866b1a76): team-a-r1-state.md (ready-tiers-check ON HOLD noted); vs ac-gaps take ha26 side; B2 |
+| r1/ha24-release-input | a91b7dda2 | READY (A3 docs, @c8d7a413): §3.5 B1 merge order + BM release notes + sign-off checklist (Q12a decided) + r1-kiv-r2.md (32 rows); B1/B2 |
+| r1/ha26-team-a-state | 0f36d006a | READY (A3 docs, @866b1a76): team-a-r1-state.md (ready-tiers-check ON HOLD noted); vs ac-gaps take ha26 side; B2 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-a2 | 8c1964a6f | READY (A2, BASE-105): prefetch crash fixed (awaited Promise.all, failed read → 500, no unhandledRejection; red-first specs); row 908 6 cells; tsc/eslint 0, intake-workflow 137/137; A4 pre-review: Approve; B2 |
 | r1/mock-known-mismatches | a279e68cd | READY (A3, BASE-105): REQ-A-019 base red fixed (7 routes notServed, stale m27 entry removed); conformance 2/2; B2 | A4 pre-review: Approve (nits) |
@@ -547,14 +547,14 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/overview-mcq-shape-once | 5a785be84 | READY (A4): chain 5th; B2 |
 | r1/r1-10-1-practice-spec | cfd6b6f7b | READY (A1b + A2 + A3, @cfd6b6f7, BASE-105; specs + docs): pins practice rewards (19 tests, 11/11 mutations); R1-10.1 row: USER Q12a (2026-11-02) keep 1 syiling, V2 rate unverified, .cloud check R2; B2 |
 | r1/r1-chain-qa-a3 | 9b70ae395 | READY (A3, @9b70ae39, BASE-105; spec + step map): A2 MAJOR fixed (key allow-list on the served pupil shape + recursive forbidden-key walk + reason text absent) + Minors (stimulus once exact, same-key replay, exact 12 syiling / 60 XP, Cuba Lagi 2 attempts); mutations red; ignore the unverified REQ ids in the commit message; B2 |
-| r1/ready-tiers-check | 86e7a52a5 | ON HOLD (A2, @10eca4cd): code correct, but A3 pre-review REQUEST CHANGES — B1 CI api.yml boot smoke curls /api/ready after migrate with no seed → red; M2 first-install deploy (deploy.sh then --seed-reference) ends as a false FAILED deploy. Needs B DevOps changes (REQ-A-028: CI reference-seed step; deploy first-install seed ordering) before merge; A2 fixes Minors (exact 503 body + logger spy; log once per state change) |
+| r1/ready-tiers-check | 9c80f08c3 | ON HOLD (A2, @9c80f08c, contains BASE-107): code correct + Minors fixed (exact 503 body, WARN once per state change, INFO on recovery; mutations red); waits for B DevOps (REQ-A-028: CI seed step + first-install deploy ordering) |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
 | r1/req-b-022a-a4 | d82c52567 | READY (A4): REQ-B-053 + pre-review rows (per-instance warm-up documented; env comment moved); chain 2nd; B2 + B3 + DevOps |
 | r1/req-b-025c | d47353043 | READY (A1b, BASE-105): Minors fixed (decision row REQ-B-007/025c, lateSync, fixture names); attempts 183/183; B2 |
 | r1/req-b-033 | b5e713fa4 | READY (A4): deviation row added; chain 4th; B2 |
 | r1/req-c-020 | 8733a3785 | READY (A4): deviation row added; chain 3rd; B2 |
 | r1/req-c012-a2 | dc3bfae88 | READY (A2, on H-A18 fc409ae1): M1 fixed (edit-as-draft keeps the import hold); 298/298; merges after H-A18; B3 re-check |
-| r1/reqa018-paper-servability-route | 9ce81df57 | READY (A2, @cc42468e — final): admin papers only, cap 200 + meta, one batched read (spy-pinned), chunk 200, contract exports QuestionPaperServabilityMeta/Response; A4 Approve + B3 PASS; C reqa018-fe must re-merge + fix {data,meta} unwrap (REQ-A-026b); B2 + B3 |
+| r1/reqa018-paper-servability-route | 9ce81df57 | READY (A2, @9ce81df5, contains BASE-107): admin papers only, cap 200 + meta, one batched read, chunk 200, contract exports; + contract-tests paper-servability scenario (runner now exercises the route; known-mismatch until C mock sends meta); full B2 + B3 (no verdict at any SHA); C reqa018-fe must re-merge |
 | r1/reqb032-pinned-rule | a2cb5bb42 | READY (A2+A3, BASE-105): spec title + R1-limitation row (takedown vs running sitting, KIV R2); 6/6; B2 + B3 |
 | r1/reqb049-report-visible | 9ece8d76d | READY (A1b, BASE-105): pre-review Minors fixed (type from the live version, spec titles, real level codes); 316/316; B2 + B3 | A2 B3 pre-scan: CLEAN (no IDOR/oracle, no echo, caps bite under mutation) |
 | r1/reqb052-archived-edit | f3a2448f9 | READY (A3, BASE-105; replaces 17196431): follow-ups done: P1 pinned-clause spec (bites), guard published OR (withdrawn AND EXISTS attempts), header; archived-edit 6/6, pinned-version-rule 6/6, workflow 296/296; tsc/eslint 0; B2 |
