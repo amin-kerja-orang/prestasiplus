@@ -103433,7 +103433,7 @@
           "questions"
         ],
         "summary": "Delete a question permanently",
-        "description": "Answers 200 with a flash (\"Soalan berjaya dipadam.\"), not 204, as the mock does. Only a question that is a draft or in review, not shown to pupils and not placed on a paper that is still held; anything else is 409 and an admin archives it instead (D9 fix of the live hard delete).",
+        "description": "Answers 200 with a flash (\"Soalan berjaya dipadam.\"), not 204, as the mock does. Refused with 409 only while a paper that is still held (Terbit, or withdrawn with sittings) places the question (D9 fix of the live hard delete: it would break a sitting); every other state is deleted as on the live site.",
         "parameters": [
           {
             "schema": {
@@ -103510,7 +103510,7 @@
             }
           },
           "409": {
-            "description": "CONFLICT: the question is shown to pupils, held by a Terbit paper (or a withdrawn paper with sittings), or already published or archived; nothing is deleted (details.reason: served, pinned or status). Archive it instead.",
+            "description": "CONFLICT: a paper that is still held (Terbit, or withdrawn with sittings) places the question; nothing is deleted (details.reason: served or pinned).",
             "content": {
               "application/json": {
                 "schema": {
@@ -104163,7 +104163,7 @@
             }
           },
           "409": {
-            "description": "CONFLICT: the question is shown to pupils, held by a Terbit paper (or a withdrawn paper with sittings), or already published or archived; nothing is deleted (details.reason: served, pinned or status). Archive it instead.",
+            "description": "CONFLICT: a paper that is still held (Terbit, or withdrawn with sittings) places the question; nothing is deleted (details.reason: served or pinned).",
             "content": {
               "application/json": {
                 "schema": {

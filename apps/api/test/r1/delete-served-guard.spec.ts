@@ -109,6 +109,16 @@ describe('R1 delete-served-guard', () => {
     const keys = await q(`select to_jsonb(k)::text as j from answer_keys k join question_parts p on p.id = k.part_id join question_versions v on v.id = p.question_version_id where v.question_id = $1 and v.version_no = $2 order by p.depth, p.position`, [questionId, versionNo])
     return JSON.stringify({ version: version.map((r) => r.j), parts: parts.map((r) => r.j), options: options.map((r) => r.j), keys: keys.map((r) => r.j) })
   }
+  /** The stored content of a version without ids, timestamps, version bookkeeping, explanation_ms and last_editor: the row, the part bodies, options and answer keys. */
+  async function contentOf(questionId: string, versionNo: number): Promise<string> {
+    const version = await q(`select (to_jsonb(v) - 'id' - 'version_no' - 'status' - 'explanation_ms' - 'last_editor' - 'created_at' - 'updated_at' - 'published_at')::text as j from question_versions v where v.question_id = $1 and v.version_no = $2`, [questionId, versionNo])
+    const parts = await q(`select (to_jsonb(p) - 'id' - 'question_version_id' - 'parent_part_id' - 'created_at' - 'updated_at')::text as j from question_parts p join question_versions v on v.id = p.question_version_id where v.question_id = $1 and v.version_no = $2 order by p.depth, p.position`, [questionId, versionNo])
+    const options = await q(`select (to_jsonb(o) - 'id' - 'part_id' - 'created_at' - 'updated_at')::text as j from part_options o join question_parts p on p.id = o.part_id join question_versions v on v.id = p.question_version_id where v.question_id = $1 and v.version_no = $2 order by p.depth, p.position, o.position`, [questionId, versionNo])
+    const keys = await q(`select (to_jsonb(k) - 'id' - 'part_id' - 'created_at' - 'updated_at')::text as j from answer_keys k join question_parts p on p.id = k.part_id join question_versions v on v.id = p.question_version_id where v.question_id = $1 and v.version_no = $2 order by p.depth, p.position`, [questionId, versionNo])
+    expect(parts.length, 'the version has parts').toBeGreaterThan(0)
+    expect(keys.length, 'the version has an answer key').toBeGreaterThan(0)
+    return JSON.stringify({ version: version.map((r) => r.j), parts: parts.map((r) => r.j), options: options.map((r) => r.j), keys: keys.map((r) => r.j) })
+  }
   const versions = async (id: string) => (await q(`select version_no, status from question_versions where question_id = $1 order by version_no`, [id])).map((r) => `${String(r.version_no)}:${String(r.status)}`)
   async function served(attempt: string, questionId: string): Promise<string> {
     const res = await pupil.get(`/api/bijak/attempts/${attempt}`)
@@ -170,6 +180,13 @@ describe('R1 delete-served-guard', () => {
       expect(await count(id)).toBe(0)
     })
 
+    it('a Guru-owned APPROVED question that no held paper places is deleted: 200 (as on the live site)', async () => {
+      const own = await guruApproved()
+      const res = await guru.del(`/api/guru/questions/${own}`)
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(await count(own)).toBe(0)
+    })
+
     it('another teacher\'s question is still 404 (no probing), and an unknown id is 404', async () => {
       const mine = await create()
       expect((await guru.del(`/api/guru/questions/${mine}`)).status).toBe(404)
@@ -179,7 +196,7 @@ describe('R1 delete-served-guard', () => {
   })
 
   describe('2. admin DELETE (route and bulk)', () => {
-    it('DELETE /questions/:id on a served question: 409, nothing deleted, the sitting is fine; archived and still pinned by the Terbit paper: 409; archived and unpinned: 409 (archive is the way)', async () => {
+    it('DELETE /questions/:id on a served question: 409, nothing deleted, the sitting is fine; archived and still pinned by the Terbit paper: 409', async () => {
       const { paper, ids } = await publishedPaper()
       const attempt = await sit(paper)
       const res = await admin.del(`/api/questions/${ids[1]!}`)
@@ -192,13 +209,16 @@ describe('R1 delete-served-guard', () => {
       const pinned = await admin.del(`/api/questions/${ids[2]!}`)
       expect(pinned.status).toBe(409)
       expect(pinned.body.error.details.reason).toBe('served')
+    })
 
-      const loose = await approved()
-      expect((await admin.post('/api/questions/bulk-action', { action: 'archived', ids: [loose] })).body.data.failed).toEqual([])
-      const status = await admin.del(`/api/questions/${loose}`)
-      expect(status.status).toBe(409)
-      expect(status.body.error.details.reason).toBe('status')
-      expect(await count(loose)).toBe(1)
+    it('every other state is deleted as on the live site: an approved question and an archived one that no held paper places, a draft, one in review', async () => {
+      const live = await approved()
+      const archived = await approved()
+      expect((await admin.post('/api/questions/bulk-action', { action: 'archived', ids: [archived] })).body.data.failed).toEqual([])
+      for (const id of [live, archived]) {
+        expect((await admin.del(`/api/questions/${id}`)).status, id).toBe(200)
+        expect(await count(id)).toBe(0)
+      }
     })
 
     it('an archived question that a Terbit paper pins, restored to draft: the pin alone refuses the delete (reason pinned)', async () => {
@@ -223,16 +243,13 @@ describe('R1 delete-served-guard', () => {
       expect((await admin.del('/api/questions/987654321')).status).toBe(404)
     })
 
-    it('a question that only a DRAFT paper places is not held (the paper re-pins at Terbit): once it is a draft again it is deleted', async () => {
+    it('a question that only a DRAFT paper places is not held (the paper re-pins at Terbit): it is deleted, even approved and live', async () => {
       const spare = await approved()
       expect((await setPool(spare, ['MAT2-A'])).status).toBe(200)
       const created = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
       const paper = created.body.data.id as string
       const sections = ((await admin.get(`/api/admin/papers/${paper}`)).body.data.paper.sections as { id: string }[]).map((s) => s.id)
       expect((await admin.post(`/api/admin/papers/${paper}/placements`, { sectionId: sections[0], questionId: spare })).status).toBe(201)
-      expect((await admin.del(`/api/questions/${spare}`)).status, 'approved and live: refused').toBe(409)
-      expect((await admin.post('/api/questions/bulk-action', { action: 'archived', ids: [spare] })).body.data.failed).toEqual([])
-      expect((await admin.post(`/api/questions/${spare}/status`, { to: 'draft' })).status).toBe(200)
       expect((await admin.del(`/api/questions/${spare}`)).status).toBe(200)
       expect(await count(spare)).toBe(0)
     })
@@ -332,9 +349,8 @@ describe('R1 delete-served-guard', () => {
       expect(v2.e).not.toBe((await explanationOf(id, 1)).e)
       const cols = (v: number) => q(`select ${PROVENANCE} from question_versions where question_id = $1 and version_no = $2`, [id, v])
       expect(await cols(2)).toEqual(await cols(1))
-      // the stem and key are unchanged on the draft
-      const parts = (v: number) => q(`select p.label, p.marks, (select string_agg(o.label || ':' || o.body_ms, ',' order by o.position) from part_options o where o.part_id = p.id) opts from question_parts p join question_versions x on x.id = p.question_version_id where x.question_id = $1 and x.version_no = $2 order by p.position`, [id, v])
-      expect(await parts(2)).toEqual(await parts(1))
+      // the stem (part prompts), the options and the answer keys are unchanged on the draft: only explanation_ms, last_editor and the bookkeeping differ
+      expect(await contentOf(id, 2)).toEqual(await contentOf(id, 1))
       // a second press rewrites the draft on top in place (it is not served or pinned)
       expect((await admin.post(`/api/questions/${id}/ai-explanation?force=1`)).status).toBe(200)
       expect(await versions(id)).toEqual(['1:approved', '2:draft'])
@@ -378,6 +394,9 @@ describe('R1 delete-served-guard', () => {
       for (const id of [sat.ids[0]!, quiet.ids[0]!]) expect((await admin.post('/api/questions/bulk-action', { action: 'archived', ids: [id] })).body.data.failed).toEqual([])
       expect((await pupil.get(sitImg.url)).status).toBe(200)
       expect((await pupil.get(quietImg.url)).status).toBe(200)
+      // regression guard: while the papers are PUBLISHED, a pupil with no sitting reads the pictures too (the narrowing applies to withdrawn papers only)
+      expect((await other.get(sitImg.url)).status, 'published paper, a pupil with no sitting').toBe(200)
+      expect((await other.get(quietImg.url)).status, 'published paper, a pupil with no sitting').toBe(200)
       for (const p of [sat.paper, quiet.paper]) expect((await admin.post(`/api/admin/papers/${p}/withdraw`)).status).toBe(200)
       expect((await pupil.get(sitImg.url)).status, 'the pupil\'s running sitting keeps its picture').toBe(200)
       expect((await other.get(sitImg.url)).status, 'a pupil who never sat the withdrawn paper').toBe(404)

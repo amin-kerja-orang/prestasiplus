@@ -19,17 +19,22 @@ export const paperHeld = (alias: 'p' | 'spp' | 'pp', userId?: bigint): Prisma.Sq
 }
 
 /**
- * A question is SHOWN TO PUPILS when (A) it is active and its live version is approved, or (B) a placement of a paper that is still held pins one
- * of its versions (approved or archived): the paper serves that version whether the question is active or not, as the attempt bridge and the
- * `question_image` read rule do (`files/question-image-access.ts`). Alias `q` is `questions`. This is the "served lock" predicate.
+ * A paper that is still held pins one of the question's versions (approved or archived): the paper serves that version whether the question is
+ * active or not, as the attempt bridge and the `question_image` read rule do. Alias `q` is `questions`. Also the "served" reason of the delete guard.
  */
-export const QUESTION_SERVED = Prisma.sql`(
-  (q.is_active AND EXISTS (SELECT 1 FROM question_versions sv WHERE sv.question_id = q.id AND sv.version_no = q.live_version_no AND sv.status = 'approved'))
-  OR EXISTS (SELECT 1 FROM paper_placements spl
+export const QUESTION_SERVED_BY_PAPER = Prisma.sql`EXISTS (SELECT 1 FROM paper_placements spl
                JOIN paper_sections sps ON sps.id = spl.paper_section_id
                JOIN papers spp ON spp.id = sps.paper_id AND ${paperHeld('spp')}
                JOIN question_versions spv ON spv.question_id = q.id AND spv.version_no = spl.pinned_version_no AND spv.status IN ('approved', 'archived')
-              WHERE spl.question_id = q.id)
+              WHERE spl.question_id = q.id)`
+
+/**
+ * A question is SHOWN TO PUPILS when (A) it is active and its live version is approved, or (B) a paper that is still held pins one of its versions
+ * (`QUESTION_SERVED_BY_PAPER`). Alias `q` is `questions`. This is the "served lock" predicate of groups and stimuli.
+ */
+export const QUESTION_SERVED = Prisma.sql`(
+  (q.is_active AND EXISTS (SELECT 1 FROM question_versions sv WHERE sv.question_id = q.id AND sv.version_no = q.live_version_no AND sv.status = 'approved'))
+  OR ${QUESTION_SERVED_BY_PAPER}
 )`
 
 /** The same rule for one version `v` of question `q`: it is the live approved version of an active question, or a paper that is still held pins it. */

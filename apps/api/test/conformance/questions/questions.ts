@@ -9,13 +9,11 @@ import { API_ONLY, dataOf, errorOf, expectError, listOf, nextTag } from '../help
  *
  * Seed facts used (prisma/seed/questions): published single MCQ rows owned by the seeded admin with
  * the full curriculum tag, and one `review` row owned by the seeded teacher (`guru@demo.test`).
- * Questions created here are deleted at the end of the scenario that creates them; one that was approved cannot be deleted any more (it is
- * shown to pupils: R1 delete-served-guard), so it is archived instead.
+ * Questions created here are deleted at the end of the scenario that creates them.
  */
 
 type Json = Record<string, unknown>
 
-const DELETE_REFUSED = 'Soalan ini tidak boleh dipadam kerana sudah diterbitkan atau digunakan pada kertas yang masih dipaparkan kepada murid. Arkibkan soalan ini sebagai ganti.'
 const FLASH = { added: 'Soalan berjaya ditambah.', updated: 'Soalan berjaya dikemaskini.', deleted: 'Soalan berjaya dipadam.' }
 
 function flashOf(res: { body: unknown }): unknown {
@@ -134,23 +132,12 @@ export const questionsScenarios: Scenario[] = [
       ctx.check((dataOf(skipped).affected as number) === 0, 'approved -> review was applied')
       ctx.check(listOf(await admin.request('GET', `/questions?status=approved&search=${tag}`)).length === 1, 'the question is not listed as approved')
 
-      // R1 delete-served-guard: an approved (live) question is shown to pupils, so the hard delete is refused (409, BM) and it is archived instead.
-      const refused = await admin.request('DELETE', `/questions/${id}`)
-      expectError(ctx, refused, 409, 'CONFLICT')
-      ctx.check(errorOf(refused).message === DELETE_REFUSED, `delete refusal was ${String(errorOf(refused).message)}`)
-      ctx.expectStatus(await admin.request('GET', `/questions/${id}`), 200)
-      ctx.check((dataOf(await admin.request('POST', '/questions/bulk-action', { body: { action: 'archived', ids: [id] } })).affected as number) === 1, 'the approved question was not archived')
-
-      // A draft that no one is shown is deleted for good.
-      const draft = await admin.request('POST', '/questions', { body: mcq(`${tag}d`, { subjectId: base.subjectId, educationLevelId: base.educationLevelId }) })
-      ctx.expectStatus(draft, 201)
-      const draftId = String(dataOf(draft).id)
-      const removed = await admin.request('DELETE', `/questions/${draftId}`)
+      const removed = await admin.request('DELETE', `/questions/${id}`)
       ctx.expectStatus(removed, 200)
       ctx.check(dataOf(removed).deleted === 1, 'DELETE did not answer { deleted: 1 }')
       ctx.check(flashOf(removed) === FLASH.deleted, `delete flash was ${String(flashOf(removed))}`)
-      expectError(ctx, await admin.request('GET', `/questions/${draftId}`), 404, 'NOT_FOUND')
-      expectError(ctx, await admin.request('DELETE', `/questions/${draftId}`), 404, 'NOT_FOUND')
+      expectError(ctx, await admin.request('GET', `/questions/${id}`), 404, 'NOT_FOUND')
+      expectError(ctx, await admin.request('DELETE', `/questions/${id}`), 404, 'NOT_FOUND')
     },
   },
   {
@@ -192,9 +179,7 @@ export const questionsScenarios: Scenario[] = [
       const direct = await admin.request('POST', '/questions/bulk-action', { body: { action: 'approved', ids: [id] } })
       ctx.expectStatus(direct, 200)
       ctx.check((dataOf(direct).affected as number) === 0, 'draft -> published was applied')
-      // The live version still serves, so the delete is refused (R1 delete-served-guard); archiving is the way out.
-      expectError(ctx, await admin.request('DELETE', `/questions/${id}`), 409, 'CONFLICT')
-      ctx.check((dataOf(await admin.request('POST', '/questions/bulk-action', { body: { action: 'archived', ids: [id] } })).affected as number) === 1, 'the question was not archived')
+      ctx.expectStatus(await admin.request('DELETE', `/questions/${id}`), 200)
     },
   },
   {

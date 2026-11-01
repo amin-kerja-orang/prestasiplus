@@ -29,8 +29,8 @@ export const QUESTION_MESSAGES = {
   added: 'Soalan berjaya ditambah.',
   updated: 'Soalan berjaya dikemaskini.',
   deleted: 'Soalan berjaya dipadam.',
-  /** [PROPOSED] 409 of every hard delete (admin route, bulk `delete`, Guru route): the question is shown to pupils, held by a paper, or already published (R1-delete-served-guard). */
-  deleteRefused: 'Soalan ini tidak boleh dipadam kerana sudah diterbitkan atau digunakan pada kertas yang masih dipaparkan kepada murid. Arkibkan soalan ini sebagai ganti.',
+  /** [PROPOSED] 409 of every hard delete (admin route, bulk `delete`, Guru route): a paper that is still shown to pupils, or still has sittings, places the question (R1-delete-served-guard). */
+  deleteRefused: 'Soalan ini tidak boleh dipadam kerana ia terdapat pada kertas yang masih dipaparkan kepada murid atau yang sedang diduduki.',
   bulkUpdated: (n: number): string => `${String(n)} soalan berjaya dikemaskini.`,
   bulkNoAction: 'Sila pilih tindakan terlebih dahulu.',
   bulkBadAction: 'Tindakan tidak sah.',
