@@ -23,7 +23,7 @@ Path: `practice.service.ts:239` `submit` -> `practice.repository.ts` `completeSe
 | Ledger description | "Latihan: jawapan betul". | `bindings.ts:20` |
 | Session credit | `session_credits` row (coins, points, streak count, balance after), once per session. | `bindings.ts:115`, `wallet.service.ts:303` |
 | Wallet XP total | **Not changed.** The 10 points per correct stay on the session and `session_credits`; `onSessionCompleted` never calls `wallet.addXp`. (Bijak paper submits do: `bindings.ts:74`.) | `bindings.ts:103-140` |
-| Challenges, achievements | After the credit, in savepoints; achievements for practice modes only. They may pay their own bonus rows. | `bindings.ts:134,139` |
+| Challenges, achievements | After the credit. Challenge settlement runs for every session that reaches the binding, in the savepoint `challenges_settle`. Achievement evaluation runs only for `random`, `chapter` and `revision`, in the savepoint `achievements_eval`. Both may pay their own bonus rows. So Ulang Kaji (`revision`) gets challenges and achievements; Latih Tubi (`latih_tubi`) and Databank (`past_year`) get challenges only. Not asserted by the spec. | `bindings.ts:133,139` (`apps/api/src/modules/bijak/integration/`), `practice-facts.ts:12`, `gamification.service.ts:490,572` |
 | Mod Pelajar | Streak is read, not moved; the credit is still written and stamped `is_test`. | `bindings.ts:104` |
 | Response | `results.gamification` = coinsEarned, pointsEarned, streakCount, totalBalance. | `practice.service.ts:309-322` |
 
