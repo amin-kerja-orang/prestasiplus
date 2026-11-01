@@ -504,6 +504,9 @@ export class BuilderService {
         if (sid !== null && patch.label !== undefined) finalLabel.set(sid, patch.label)
       }
       const resulting = new Map<bigint, string[]>(paper.sections.map((s) => [s.id, s.placements.map((pl) => idToString(pl.questionId))]))
+      // R1-T48: the Nombor soalan is the mark of an added question (Padam soalan, the number check). It belongs to the question, so a question moved
+      // to another Bahagian by this patch takes its label along; the repository only restores a label within the same Bahagian.
+      const labelOf = new Map(paper.sections.flatMap((s) => s.placements.map((pl) => [idToString(pl.questionId), pl.numberLabel] as const)))
       for (const patch of sections) {
         const sectionId = parseId(patch.id)
         const section = sectionId === null ? undefined : paper.sections.find((s) => s.id === sectionId)
@@ -536,7 +539,7 @@ export class BuilderService {
           if (!q || q.subject !== bijakSubject) throw invalid(MESSAGES.invalidQuestion)
         }
         resulting.set(section.id, ids)
-        plans.push({ sectionId: section.id, placements: ids.map((id) => ({ questionId: BigInt(id), pinnedVersionNo: st.info.get(id)!.versionNo })) })
+        plans.push({ sectionId: section.id, placements: ids.map((id) => ({ questionId: BigInt(id), pinnedVersionNo: st.info.get(id)!.versionNo, numberLabel: labelOf.get(id) ?? null })) })
       }
       // R1-T34 "Bahan rujukan": every panel image must be a stored file (public token or id), never a free string.
       if (body.reference !== undefined) await this.checkReferenceImages(actor, paper, body.reference.flatMap((p) => (p.imageFileId ? [p.imageFileId] : [])))
