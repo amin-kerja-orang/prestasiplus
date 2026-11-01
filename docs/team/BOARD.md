@@ -479,7 +479,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 ### Head audit 2026-11-01 15:00 UTC (superseded)
 This manual table has been removed because it went stale. **The only current source for team A heads and states is the auto table between the `AUDIT:BEGIN/END` markers at the end of this file.** It is regenerated from `git ls-remote` every cycle.
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 17:15 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 17:16 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -495,6 +495,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha26-team-a-state | fc9af9bde | docs, auto-refreshed by A3 H-A27 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-a2 | a631198c7 | READY (A2, BASE-105): B-034/035 + B2 Minors; intake-workflow 135/135; ready for the B1 gate |
+| r1/mock-known-mismatches | a279e68cd | (no status — triage) |
 | r1/overview-getmany-parallel | f8616d3b7 | ON HOLD: pre-review (A2) found 2 Majors (T45 red alone: missing pin line; fixture clash with H-A18) + Minors → A4 fixing + restacking the chain; do not merge the current heads |
 | r1/overview-mcq-shape-once | 7a6e8bb35 | ON HOLD: pre-review (A2) found 2 Majors (T45 red alone: missing pin line; fixture clash with H-A18) + Minors → A4 fixing + restacking the chain; do not merge the current heads |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
@@ -529,8 +530,6 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t51-partial-acs-a3 | 8ed1df5d2 | READY (A3): restacked on T48 4800bd78; order T48 → T31 (+REQ-A-008) → T43 → T51; B2 |
 | r1/t52-examiner-grid | f2d36f648 | READY (A1a, BASE-105): B2 approved c17; ready for the B1 gate |
 | r1/t54-perf-400k | 96f72e566 | READY (A4, BASE-105, docs only); independent; B2 |
-
-**New branches not yet triaged:** r1/mock-known-mismatches a279e68cd
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
