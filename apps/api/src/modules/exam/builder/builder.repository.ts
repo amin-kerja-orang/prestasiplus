@@ -197,6 +197,17 @@ export class BuilderRepository {
     return this.prisma.client.paperPlacement.count({ where: { questionId } })
   }
 
+  /**
+   * True when the question has ever been served: it has a live version, or any version that is, or was, approved (an archived one was approved before).
+   * "Padam soalan" never deletes such a question from the bank, whatever its newest version reads (R1-T48 pre-review: approve, then a new Draf v2).
+   */
+  async hasBeenApproved(questionId: bigint): Promise<boolean> {
+    const q = await this.prisma.client.question.findUnique({ where: { id: questionId }, select: { liveVersionNo: true } })
+    if (q?.liveVersionNo != null) return true
+    const n = await this.prisma.client.questionVersion.count({ where: { questionId, status: { in: ['approved', 'archived'] } } })
+    return n > 0
+  }
+
   /** The level of a question created inside a paper: the highest active upper-secondary level (SPM, Tingkatan 5), else the highest active secondary one. */
   async defaultQuestionLevelId(): Promise<bigint | null> {
     const upper = await this.prisma.client.educationLevel.findFirst({ where: { isActive: true, stage: 'upper_secondary' }, orderBy: [{ sortOrder: 'desc' }, { id: 'desc' }], select: { id: true } })

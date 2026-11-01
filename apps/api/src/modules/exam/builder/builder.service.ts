@@ -119,6 +119,8 @@ function blankLeaf(mode: 'mcq' | 'short_text' | 'numeric' | 'working' | 'essay',
 
 const DEFAULT_TITLE = (subjectName: string, kertas: number) => `Percubaan SPM ${subjectName} Kertas ${String(kertas)} (draf)`
 
+const sameLabel = (a: string, b: string): boolean => a.trim().toLowerCase() === b.trim().toLowerCase()
+const labelUsed = (): ApiError => ApiError.of('VALIDATION_ERROR', { message: MESSAGES.sectionLabelUsed, fields: { label: MESSAGES.sectionLabelUsed } })
 const statusOf = (dbStatus: string): BijakBuilderPaperStatus => (dbStatus === 'published' ? 'terbit' : 'draf')
 
 /** `stimuli` of a group on the wire: the port's list, else the single stimulus, else none (a group with nothing displayable, D90). */
@@ -504,11 +506,22 @@ export class BuilderService {
       const plans: { sectionId: bigint; placements: { questionId: bigint; pinnedVersionNo: number }[] }[] = []
       const edits: { sectionId: bigint; data: Prisma.PaperSectionUncheckedUpdateInput }[] = []
       const rulePatches: { section: PaperTree['sections'][number]; rule: NonNullable<(typeof sections)[number]['rule']>; patch: (typeof sections)[number] }[] = []
+      // The labels the paper will have once every section patch is applied (so a swap of two labels in one request is allowed).
+      const finalLabel = new Map<bigint, string>()
+      for (const patch of sections) {
+        const sid = parseId(patch.id)
+        if (sid !== null && patch.label !== undefined) finalLabel.set(sid, patch.label)
+      }
       const resulting = new Map<bigint, string[]>(paper.sections.map((s) => [s.id, s.placements.map((pl) => idToString(pl.questionId))]))
       for (const patch of sections) {
         const sectionId = parseId(patch.id)
         const section = sectionId === null ? undefined : paper.sections.find((s) => s.id === sectionId)
         if (!section) throw invalid(MESSAGES.invalidSection)
+        if (patch.label !== undefined) {
+          // Same rule as "Tambah bahagian": against the labels the paper will have (a sibling renamed in this same patch counts).
+          const others = paper.sections.filter((x) => x.id !== section.id).map((x) => finalLabel.get(x.id) ?? x.label)
+          if (others.some((l) => sameLabel(l, patch.label!))) throw labelUsed()
+        }
         // R1-T34 "Sunting bahagian": the printed name, the authored instruction and "mesti dijawab"; the rule and the budget stay the Kontrak's.
         const data: Prisma.PaperSectionUncheckedUpdateInput = {
           ...(patch.rule === undefined ? {} : { ruleType: patch.rule.type, ruleN: patch.rule.type === 'choose' ? patch.rule.n : null }),
@@ -1355,6 +1368,8 @@ export class BuilderService {
       if (paper.status === 'published') throw invalid(MESSAGES.paperLocked)
       const body = parseWith(BijakBuilderSectionAddSchema, rawBody)
       if (paper.sections.length >= MAX_SECTIONS) throw invalid(MESSAGES.sectionLimit)
+      // Blockers are keyed by the Bahagian label, so a label already on the paper (trimmed, case-insensitive) is refused.
+      if (paper.sections.some((x) => sameLabel(x.label, body.label))) throw labelUsed()
       await this.repo.addSection(paper.id, Math.max(0, ...paper.sections.map((x) => x.position)) + 1, body.label)
       await this.repo.updatePaper(paper.id, { updatedAt: this.clock.now() })
       await this.record(actor, AUDIT_ACTIONS.BIJAK_PAPER_UPDATED, paper.id, { from: 'draf', to: 'draf', op: 'section_add', label: body.label })
@@ -1437,7 +1452,8 @@ export class BuilderService {
       const rest = section.placements.filter((pl) => pl !== placement).map((pl) => idToString(pl.questionId))
       await this.repo.replacePlacements(section.id, rest.map((id) => ({ questionId: BigInt(id), pinnedVersionNo: pins.get(id) ?? 1 })))
       const info = (await this.questions.describe([{ id: rawQuestionId }])).get(rawQuestionId)
-      const deleted = info?.status === 'draft' && (await this.repo.placementCount(placement.questionId)) === 0
+      // A question that was ever approved stays in the bank (v1 may have been served or answered), even when a newer Draf version reads 'draft'.
+      const deleted = info?.status === 'draft' && (await this.repo.placementCount(placement.questionId)) === 0 && !(await this.repo.hasBeenApproved(placement.questionId))
       if (deleted) await this.questionStore.remove(rawQuestionId, { userId: actor.userId, role: 'admin' })
       await this.repo.updatePaper(paper.id, { updatedAt: this.clock.now() })
       await this.record(actor, AUDIT_ACTIONS.BIJAK_PAPER_UPDATED, paper.id, { from: 'draf', to: 'draf', op: 'question_delete', questionId: rawQuestionId, number: placement.numberLabel, deleted })

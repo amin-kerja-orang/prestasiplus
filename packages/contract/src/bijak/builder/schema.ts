@@ -97,6 +97,8 @@ export const BIJAK_BUILDER_MESSAGES = {
   adminSectionOnly: 'Soalan hanya boleh ditambah ke bahagian yang dicipta oleh admin.',
   /** [PROPOSED] R1-T48 */
   sectionLimit: 'Bilangan bahagian sudah mencapai had (20).',
+  /** [PROPOSED] R1-T48 pre-review: a Bahagian label already on the paper (trimmed, case-insensitive); blockers are keyed by the label. */
+  sectionLabelUsed: 'Label bahagian ini sudah digunakan dalam kertas ini.',
   /** [PROPOSED] R1-T48 */
   numberRequired: 'Nombor soalan diperlukan',
   /** [PROPOSED] R1-T48 */
