@@ -1,5 +1,7 @@
 # R1 E2E readiness map (H-A23)
 
+> **Superseded by MERGE-LOG and C-POLICY-2 (BASE-100).** Kept as a historical record; its tables describe BASE-60.
+
 Date: 2026-10-31, refreshed 2026-11-01 against BASE-60 (`a3e92b06`). Branch `r1/ha23-e2e-readiness`. First written off BASE-19 (823d8dfb). Docs only; nothing was run.
 
 Question: what must be merged so that B4 (T23) can run the whole R1 acceptance flow on the real stack, and in which order?
