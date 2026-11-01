@@ -66,6 +66,18 @@ export class BuilderRepository {
     await this.prisma.client.$queryRaw`select id from blueprints where id = ${id} for update`
   }
 
+  /**
+   * `select ... for share` on the placed question rows, in id order (no deadlock between two Terbit). A concurrent hard delete
+   * (`questions` row `for update`) then waits until this transaction ends and sees the paper as held (409). Returns how many rows
+   * still exist: fewer than asked = a placed question was deleted already. Call inside the open transaction.
+   */
+  async lockQuestionsShared(ids: readonly bigint[]): Promise<number> {
+    if (ids.length === 0) return 0
+    const sorted = [...ids].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+    const rows = await this.prisma.client.$queryRaw<{ id: bigint }[]>`select id from questions where id = any(${sorted}::bigint[]) order by id for share`
+    return rows.length
+  }
+
   findPilihan(id: bigint): Promise<PaperTree | null> {
     return this.prisma.client.paper.findFirst({ where: { id, kind: 'pilihan' }, include: TREE })
   }

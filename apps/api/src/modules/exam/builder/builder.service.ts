@@ -569,10 +569,14 @@ export class BuilderService {
       const paper = await this.lockedPaper(id)
       // The body is optional (no body = the plain Terbit); a bad body is 422 only after the paper is known to exist.
       if (bodyError !== undefined || request === undefined) throw bodyError
+      // R1 publish-lock-share: a hard delete of a placed question takes the question row FOR UPDATE and then asks whether a held paper places it.
+      // The FOR SHARE lock makes it wait for this Terbit and then refuse (409 served); a delete that committed first leaves fewer rows than
+      // placed, so the reads below are redone (the question is then missing from the pool and the paper is refused).
+      const placedNow = this.placedIdsOf(paper)
+      const locked = await this.repo.lockQuestionsShared(placedNow.map((x) => BigInt(x)))
       const ev = await this.evaluate(paper)
       const structural = await this.structuralCheck(paper)
-      const placedNow = this.placedIdsOf(paper)
-      const { reports, unreadable } = placedNow.length === earlyIds.length && placedNow.every((x, i) => x === earlyIds[i]) ? earlyReads : await this.safeReports(placedNow)
+      const { reports, unreadable } = locked === placedNow.length && placedNow.length === earlyIds.length && placedNow.every((x, i) => x === earlyIds[i]) ? earlyReads : await this.safeReports(placedNow)
       // ONE rule for the review and for publish: `collectBlockers` (hard = the paper's own checks incl. D93 groups, a question missing from the
       // pool, a question pupils cannot be served; overridable = the Kontrak line, which a paper that is already Terbit keeps (overridden), plus the structural blueprint lines).
       const blockers = this.collectBlockers(paper, ev, structural, reports, unreadable)

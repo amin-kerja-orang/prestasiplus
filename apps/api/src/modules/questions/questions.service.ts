@@ -331,8 +331,8 @@ export class QuestionsService {
    * The ONE hard delete of a question (admin route, bulk `delete`, Guru `removeOwn`). R1-delete-served-guard (B3 review of REQ-B-052): a question
    * that a paper which is still held (Terbit, or withdrawn with sittings) places is refused with 409 and kept. `paper_placements.question_id` has no
    * foreign key, so without this a delete leaves a placement on nothing and a running sitting answers 500. Every other state is deletable, as on the
-   * live site. The question lock serialises it against an edit or a publish of the same question; a paper published in the same instant can still
-   * slip past (admin-only window; a FOR SHARE lock on the placements is KIV for R2).
+   * live site. The question lock serialises it against an edit or a publish of the same question; Terbit takes FOR SHARE on the placed question
+   * rows (r1/publish-lock-share), so a delete that races a publish waits for it and then refuses.
    */
   private async removeGuarded(id: string): Promise<boolean> {
     return this.prisma.transaction(async () => {
