@@ -479,7 +479,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 ### Head audit 2026-11-01 15:00 UTC (superseded)
 This manual table has been removed because it went stale. **The only current source for team A heads and states is the auto table between the `AUDIT:BEGIN/END` markers at the end of this file.** It is regenerated from `git ls-remote` every cycle.
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 18:43 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 18:45 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -489,7 +489,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
 | r1/bridge-table-parts | c805ecc7c | READY (A4, BASE-105): the bridge uses stimulusTableParts (an invalid grid + pipe body shows the table only, as in builder/Studio); bridge 118/118, attempts 180/180, kuiz 39/39; B2. Follow-up after T31 + this merge: drop PENDING_BRIDGE_TEXT in the parity spec (A4) |
 | r1/builder-search-perf | 1216b736c | READY (A3, on T48 6c5ae3a8; restack only): 413 pass; alone = trial merge with H-A18 fc409ae1, 0 failures, tsc 0; merge after T48; B2 |
-| r1/docs-credential-scrub | 5cd46c4a1 | READY (A1a, BASE-105): live default passwords in M02 mock/tests replaced by fictitious same-shape values read from m02-config (ContohAdm01/ContohImp01/00000001), D9 row; M02 unit 724 pass, eslint + vue-tsc 0; B3 (security) + B2 |
+| r1/docs-credential-scrub | 5cd46c4a1 | READY → FOLLOW-UP (A1a): A4 pre-review Approve w/ Minors: Demo1234 doc scrub inconsistent (lead: revert Demo1234 doc replacements; it is the allowed fictitious dev default), DOC-02 wording, relabel row as privacy override, srs/M02 revision row; new head pending; do not merge 5cd46c4a yet |
 | r1/e05b-l1-spec | 4b9eac57a | READY (A1b, BASE-105): negative control added; 12/12; B2 + B3 |
 | r1/ha17-ac-coverage | 6a0a7931c | docs, auto-refreshed by A3 H-A27 (coverage 124/176) |
 | r1/ha18-gate-facts | fc409ae16 | READY (A2, BASE-105): H-A18 + REQ-B-017/037 + D99 + pre-review fixes (M2 held-issues helper on both edit paths; m1 gate-issue codes; deviation row); workflow 296/296; conformance 409/409; B2 + B3 |
@@ -497,8 +497,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha24-release-input | 4ff0217ab | READY (A3, BASE-105): G6 release input incl. the WARM env rows and 0106/0107 @2a8ab674 (drift + order notes); B2 |
 | r1/ha26-team-a-state | fc9af9bde | docs, auto-refreshed by A3 H-A27 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
-| r1/intake-reqs-a2 | 8c1964a6f | READY (A2, BASE-105): prefetch crash fixed (awaited Promise.all, failed read → 500, no unhandledRejection; red-first specs); row 908 6 cells; tsc/eslint 0, intake-workflow 137/137; A4 pre-review queued; B2 |
-| r1/mock-known-mismatches | a279e68cd | READY (A3, BASE-105): REQ-A-019 base red fixed (7 routes notServed, stale m27 entry removed); conformance 2/2; B2 |
+| r1/intake-reqs-a2 | 8c1964a6f | READY (A2, BASE-105): prefetch crash fixed (awaited Promise.all, failed read → 500, no unhandledRejection; red-first specs); row 908 6 cells; tsc/eslint 0, intake-workflow 137/137; A4 pre-review: Approve; B2 |
+| r1/mock-known-mismatches | a279e68cd | READY (A3, BASE-105): REQ-A-019 base red fixed (7 routes notServed, stale m27 entry removed); conformance 2/2; B2 | A4 pre-review: Approve (nits) |
 | r1/overview-getmany-parallel | 0ba236ef8 | READY (A4): chain 6th; 1334 pass at the tip (only the known base red); B2 |
 | r1/overview-mcq-shape-once | 5a785be84 | READY (A4): chain 5th; B2 |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
@@ -513,8 +513,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/reqb052-archived-edit | f3a2448f9 | READY (A3, BASE-105; replaces 17196431): follow-ups done: P1 pinned-clause spec (bites), guard published OR (withdrawn AND EXISTS attempts), header; archived-edit 6/6, pinned-version-rule 6/6, workflow 296/296; tsc/eslint 0; B2 |
 | r1/reqc021-followup | 948aa327a | READY (A1a, BASE-105): fixes the base red draw-bounded BR-16; merge early |
 | r1/seed-dangling-placements | 11cbcf458 | READY (A1b, BASE-105): asserts paper titles + counts = POC_BANK; seed 155 + 1 skip; B2 |
-| r1/stimulus-list-d72 | 97f2fdc21 | READY (A2, BASE-105; contains t49 b99068a6): one combined where for page+count, joinable+empty-group spec; stimulus-lists 17/17, questions 937, conformance 409; merge AFTER t49; A4 pre-review queued; B2 |
-| r1/t04-minors | aff6df8f3 | READY (A2, BASE-105): FD-11/AP-17 row + wording; practice-reads 107; A4 pre-review queued; B2 |
+| r1/stimulus-list-d72 | 97f2fdc21 | READY (A2, BASE-105; contains t49 b99068a6): one combined where for page+count, joinable+empty-group spec; stimulus-lists 17/17, questions 937, conformance 409; merge AFTER t49; A4 pre-review: Approve w/ 1 Minor; vs A4 chain only conflict = v2-backend-deviations.md (keep both blocks, d72 first), re-run contract:check; B2 |
+| r1/t04-minors | aff6df8f3 | READY (A2, BASE-105): FD-11/AP-17 row + wording; practice-reads 107; A4 pre-review: Approve w/ 1 Minor (card-ungrouped describe must stay last; non-blocking); B2 |
 | r1/t31-builder-wire | eb0346d25 | ON HOLD (paired): fixes done @eb0346d2 (441 pass); merge ONLY together with C REQ-A-008 after C re-merges this tip (vue-tsc TS2322 otherwise); do not merge alone |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
@@ -528,11 +528,13 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t45-builder-acs-wip | 078204e1c | SUPERSEDED by r1/t45-builder-acs; do not merge |
 | r1/t45-servability-acs | 954614c69 | READY (A4, BASE-105): pre-review M1/M2 + Minors fixed; trial merge with H-A18 22/22; chain 1st; B2 + B3 | A1b delta re-review 18:5x UTC: all 6 tips green alone, no Blocker/Major; 3 Minors (approval-check guard untested; perf deviation line; jana-null guard) → A4 follow-up, non-blocking |
 | r1/t48-builder-parity | 6c5ae3a86 | READY (A3, BASE-105; migration 0104): giveBab fixture fix, support/bab.ts byte-identical to H-A18; exam-builder + pipeline-chain 409 pass (was 19 red); alone = trial merge with H-A18 fc409ae1, 0 failures, tsc 0; merge AFTER H-A18; B2 + B3 |
-| r1/t49-served-now | b99068a67 | READY (A2, BASE-105): bulk approve/archive with all-blank filter → 422 filterBlank [PROPOSED BM]; {} stays Arkib Semua; 4 deviation rows; questions 933 (+BR-16 known), workflow 275, conformance 409; A4 pre-review queued; B2 + B3; merge BEFORE stimulus-list-d72 |
+| r1/t49-served-now | b99068a67 | READY (A2, BASE-105): bulk approve/archive with all-blank filter → 422 filterBlank [PROPOSED BM]; {} stays Arkib Semua; 4 deviation rows; questions 933 (+BR-16 known), workflow 275, conformance 409; A4 pre-review: Approve w/ Minors, B3 checklist Pass; FE note → C (REQ-C-019: Arkib Semua must send filter:{}); B2 + B3; merge BEFORE stimulus-list-d72 |
 | r1/t50-partial-acs | 075e1b587 | READY (A1a, BASE-105): A3 pre-review CLEAN (nits only); B2 |
 | r1/t51-partial-acs-a3 | 54f631164 | READY (A3, on T48 6c5ae3a8; head 54f63116 already held the fix at 18:17 UTC, earlier ON HOLD text was stale): negatives giveBab, A11 exact assertion, deviation row; exam-builder + r1 + bijak-kuiz + stimulus-display 503 pass; alone = trial merge with H-A18 fc409ae1, 0 failures, tsc 0; merge after T48; B2 |
 | r1/t52-examiner-grid | ca1ed739f | READY (A1a, BASE-105): getCover reads examinerGrid from marked (live+pinned); be09 test 8 (auto/points-essay/archived) bites on revert; R21 superseded; api tsc + eslint + vue-tsc 0, 15 pass; B2 |
 | r1/t54-perf-400k | 03c76eb0d | READY (A4, docs): credentials replaced by placeholders; may 3-line-conflict with 022a perf docs (trivial); B2 |
+
+**New branches not yet triaged:** r1/reqa020-kuiz-table-parts 371adfb2a
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
