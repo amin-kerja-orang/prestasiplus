@@ -55,7 +55,8 @@ describe('paper builder with the test-only PoC double plugged and an empty bank'
 
   beforeAll(async () => {
     t = await bootBuilderApp({ builderSource: new FakeBank(), pocBuilder: true })
-    await serveSeededBlueprints(t.db) // AC-R1-16.2: Terbit needs a Disahkan Kontrak
+    // Terbit needs a Disahkan Kontrak (AC-R1-16.2, T34); the seeded PoC blueprints are Spec
+    await serveSeededBlueprints(t.db)
     admin = await loginAs(t, ACCOUNTS.admin)
   })
   afterAll(async () => {
