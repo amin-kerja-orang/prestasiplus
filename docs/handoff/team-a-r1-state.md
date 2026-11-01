@@ -1,6 +1,6 @@
 # Team A R1 state: resume sheet
 
-Date: 2026-11-01. Written off `feature/v3-bijak-r1` @ 96c1395c0 (BASE-104 (not yet in MERGE-LOG)). Docs only. Sources: `docs/team/BOARD.md`, `MERGE-LOG.md`, `QUESTIONS.md` and `requests/` on `origin/team/r1-board`, `git ls-remote`, and `docs/TRACKER.md` on `r1/d91-decisions` (PR #404). Heads change often: re-run `git ls-remote origin 'refs/heads/r1/*'` before relying on one.
+Date: 2026-11-01. Written off `feature/v3-bijak-r1` @ 7ea2208c1 (BASE-105). Docs only. Sources: `docs/team/BOARD.md`, `MERGE-LOG.md`, `QUESTIONS.md` and `requests/` on `origin/team/r1-board`, `git ls-remote`, and `docs/TRACKER.md` on `r1/d91-decisions` (PR #404). Heads change often: re-run `git ls-remote origin 'refs/heads/r1/*'` before relying on one.
 
 Task source: `docs/handoff/CLOUD-HANDOFF.md` section 7. R1 = Bijak SPM release.
 
@@ -62,8 +62,9 @@ Task source: `docs/handoff/CLOUD-HANDOFF.md` section 7. R1 = Bijak SPM release.
 | H-A9 | `r1/ha9-pipeline-chain` @ d3257e69 | BASE-93 | A3 |
 | T34 | `r1/t34-builder-review-c` @ 05451810 | BASE-101 | team C (covering A3 on T34) |
 | REQ-C-021 | `r1/reqc021-no-chapter-lock` @ 15cc2f64 | BASE-102 | A1 |
-| H-A21 | `r1/ha21-overview-cache` @ 669b0caf | BASE-104 | A4 |
 | T45 | `r1/t45-lanes` @ e7e5d3dd | BASE-103 | A4 |
+| H-A21 | `r1/ha21-overview-cache` @ 669b0caf | BASE-104 | A4 |
+| REQ-B-031 | `r1/reqb031-report-guard` @ 9cd9a1ed | BASE-105 | A1 |
 | T30 servability reads | `r1/t30-servability-reads` @ 409df4bf | BASE-28 (T30 tip, contains 05b and own-stimuli) | A4 |
 | R1E2E-05 / 05b own stimuli | `r1/e2e05b-own-stimuli` @ 9895d004 | BASE-28 (T30 tip, contains 05b and own-stimuli) | A4 |
 | servability-own-stimuli | `r1/servability-own-stimuli` @ eea90859 | BASE-28 (T30 tip, contains 05b and own-stimuli) | A4 |
@@ -76,6 +77,7 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 
 | ID | Branch @ head | Lane | Depends on | B state |
 |---|---|---|---|---|
+| REQ-B-022a overview: skip the Jana pool facts in the published-paper pass (cold 15.3 s to 9.3 s on 408k) | `r1/overview-mcq-shape-once` @ b0f1e9b2 | A4 | T30 (base) | READY (A4); review not seen (unconfirmed) |
 | REQ-B-032 a published paper serves its pinned version (attempt source, image rule B, served lock agree) | `r1/reqb032-pinned-rule` @ 77c83c5e | A3 dev-2 (moved from A4) | none (REQ-B-032) | paused WIP @ 77c83c5e, not READY (A3 dev-2) |
 | Seed spec: no published seeded paper holds a dangling placement (25 PoC ones withdrawn) | `r1/seed-dangling-placements` @ 7285d961 | A (lane unconfirmed) | T36 (base) | READY (test-only); lane and review not seen (unconfirmed) |
 | T45 part 3 builder specs (AC-R1-21.3 / 21.6 on the real bank) | `r1/t45-builder-acs` @ 69d16a7f | A1b | T48 (stacked on 4a3ff264; merges after T48) | READY (A1b, specs only, @ 69d16a7f); merges after T48; review not seen (unconfirmed) |
@@ -89,7 +91,6 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 | T54 performance report at ~406k questions (docs) | `r1/t54-perf-400k` @ bbf412c6 | A4 | none (docs) | pushed (A4): docs/qa performance report, 11 paths p50/p95 and fixes for p95 over 1 s; review not seen (unconfirmed) |
 | REQ-B-035 review queue rows carry the stimulus group (D90) | `r1/intake-reqs-a2` @ b70dc957 | A2 | none (REQ-B-035) | READY (A2); review not seen (unconfirmed) |
 | T34-L1-residual (A3 WIP, for B3) | `r1/t34-l1-residual` @ e4bb72eb | A3 | T34 (B3 finding T34-L1-residual) | WIP, untested (A3): the answer to B3 finding T34-L1-residual; not for merge yet |
-| REQ-B-031 report guard, no auto-deactivation, capped (D98) | `r1/reqb031-report-guard` @ 9cd9a1ed | A1 | none (D98); unblocks the Lapor FE | REQ-B-046 follow-up pushed (structured Lapor needs no proof, the cap skips a refresh, no existence/type oracle, at most 8 reasons, stale copy; openapi re-emitted) on top of REP-L1/L2; awaiting B2 re-review (A1) |
 | REQ-C-019 joinable filter on group list and filter-options | `r1/t49-served-now` @ 221c2b28 | A2 | T49 (base) | smoke role for GET /questions/filter-options, trimmed Negeri match, joinable wording pushed (221c2b28); awaiting B1 gate and B2 (A2) |
 | REQ-B-033 paper lane names a placed question the bank does not return | `r1/req-b-033` @ f3da2b7d | A4 | servability lanes (T30, in base) | READY (A4); review not seen (unconfirmed) |
 | T45 part 1 (AC-04.3/04.5/05.3) | `r1/t45-servability-acs` @ 37d24013 | A4 | T29 | fix pushed (T45-L1: approve-time servability check at the shared approve point; cognitiveLevel in the fresh spec); awaiting B2 re-review (A4) |
@@ -168,12 +169,12 @@ Status as recorded in `requests/` (answers files take precedence). "Open for A" 
 
 | Direction | IDs |
 |---|---|
-| Open for A | REQ-B-017, REQ-B-019, REQ-B-022, REQ-B-025, REQ-B-029, REQ-B-032, REQ-B-033, REQ-B-034, REQ-B-035, REQ-B-037, REQ-B-040, REQ-B-043, REQ-B-044, REQ-B-049, REQ-B-050, REQ-B-051, REQ-C-012, REQ-C-019, REQ-C-020, REQ-C-021, REQ-C-024 |
-| Delivered by A (waiting for merge or the other side) | REQ-B-003, REQ-B-004, REQ-B-007, REQ-B-013, REQ-B-014, REQ-B-041, REQ-C-016, REQ-C-017, REQ-C-018 |
-| Open to B | REQ-A-007, REQ-A-009, REQ-A-011 |
-| Open to C | REQ-A-004, REQ-A-013, REQ-A-014, REQ-A-015, REQ-A-016 |
+| Open for A | REQ-B-017, REQ-B-019, REQ-B-025, REQ-B-029, REQ-B-032, REQ-B-034, REQ-B-035, REQ-B-037, REQ-B-040, REQ-B-043, REQ-B-044, REQ-B-049, REQ-B-050, REQ-B-051, REQ-B-052, REQ-C-012, REQ-C-019, REQ-C-021 |
+| Delivered by A (waiting for merge or the other side) | REQ-B-003, REQ-B-004, REQ-B-007, REQ-B-013, REQ-B-014, REQ-C-016, REQ-C-017, REQ-C-018 |
+| Open to B | REQ-A-007, REQ-A-009, REQ-A-011, REQ-A-017 |
+| Open to C | REQ-A-004, REQ-A-013, REQ-A-014, REQ-A-016 |
 | Delivered by B or C to A's request | REQ-A-001, REQ-A-002, REQ-A-003, REQ-A-005, REQ-A-006, REQ-A-008, REQ-A-010, REQ-A-012 |
-| Closed (done, declined, withdrawn) | REQ-B-001, REQ-B-002, REQ-B-005, REQ-B-006, REQ-B-008, REQ-B-009, REQ-B-010, REQ-B-011, REQ-B-012, REQ-B-015, REQ-B-016, REQ-B-018, REQ-B-020, REQ-B-021, REQ-B-023, REQ-B-024, REQ-B-026, REQ-B-027, REQ-B-028, REQ-B-030, REQ-B-038, REQ-B-039, REQ-C-001, REQ-C-002, REQ-C-003, REQ-C-004, REQ-C-005, REQ-C-006, REQ-C-007, REQ-C-008, REQ-C-009, REQ-C-010, REQ-C-011, REQ-C-013, REQ-C-014, REQ-C-015, REQ-C-022, REQ-C-023 |
+| Closed (done, declined, withdrawn) | REQ-A-015, REQ-B-001, REQ-B-002, REQ-B-005, REQ-B-006, REQ-B-008, REQ-B-009, REQ-B-010, REQ-B-011, REQ-B-012, REQ-B-015, REQ-B-016, REQ-B-018, REQ-B-020, REQ-B-021, REQ-B-023, REQ-B-024, REQ-B-026, REQ-B-027, REQ-B-028, REQ-B-030, REQ-B-031, REQ-B-038, REQ-B-039, REQ-B-041, REQ-B-046, REQ-C-001, REQ-C-002, REQ-C-003, REQ-C-004, REQ-C-005, REQ-C-006, REQ-C-007, REQ-C-008, REQ-C-009, REQ-C-010, REQ-C-011, REQ-C-013, REQ-C-014, REQ-C-015, REQ-C-022, REQ-C-023, REQ-C-024 |
 | Raised between B and C, not A | REQ-B-001, REQ-B-002, REQ-B-009, REQ-B-011, REQ-B-016, REQ-B-024, REQ-B-027, REQ-B-030, REQ-B-036, REQ-B-038, REQ-B-039, REQ-B-042, REQ-B-045, REQ-B-047, REQ-B-048, REQ-C-023 |
 
 ## 5. How to resume
@@ -195,5 +196,5 @@ Status as recorded in `requests/` (answers files take precedence). "Open for A" 
 | **T36 (REQ-A-009, REQ-B-029).** Merged as BASE-99 (`r1/t36-remove-poc-c`, team A T36 64ebb379 fixed by team C): `BIJAK_POC_QUESTIONS` is a no-op, `render.yaml:27` removed, demo redeploy check is a read-only count of playable bank papers. | Open Minors (team C log): no explicit guard for reserved PoC ids, stale PoC comments in `e2e-http.yml:90`, `frontend.yml:173`, `prisma/seed/poc/export/attempt-source.ts:8`. The demo database needs at least one published bank paper before the redeploy. |
 | **T34 is in base (BASE-101); its stack is not.** T34 merged as `r1/t34-builder-review-c` @ 05451810 (team A T34 5bb590d0 fixed by team C, Disahkan gate kept, fixtures serve seeded blueprints). A3 WIP `r1/t34-l1-residual` @ e4bb72eb (untested) answers B3 T34-L1-residual. T31, T48 (0104) and T43 now need a base merge and a B2 pass; T10 and hc-builder-parity (team C) restack on BASE-101; REQ-A-008 follows T31. | Order: T31 / T48 / T43 each merge BASE-101 first (`questions.module.ts` and the deviations doc conflict as union). Do not push to `r1/t34-builder-review`. |
 | **0103 attempt FK.** `fk_question_reports_attempt_id` is NOT VALID on purpose. | Never run `VALIDATE CONSTRAINT` in the release. |
-| **Held: Lapor from Bijak Semakan (REQ-B-031, REP-M1 HIGH).** The FE branch is held by B until team A answers. | A1 + lead. |
+| **Lapor (REQ-B-031, REP-M1).** The server guard merged as BASE-105 (B2 Approve w/ Minors, B3 Pass with Lows); REQ-B-049 stays open. The Lapor FE (`r1/reqa005-bijak-lapor`, team C) can proceed. | A1 + team C. |
 | **Branch heads move.** Several READY heads changed after their last B verdict. | A head that moved after review is not merged until B reviews the delta. |
