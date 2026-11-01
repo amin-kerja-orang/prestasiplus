@@ -114094,7 +114094,7 @@
           "bijak-builder"
         ],
         "summary": "Paper builder: Tambah bahagian (a Bahagian the Kontrak does not have)",
-        "description": "V2 Panel \"Semak Kertas Simulasi\" \"Tambah bahagian\". Body { label }. The new Bahagian goes last with the rule Jawab Semua and `adminCreated: true`; its question count and mark budget follow its placements. A paper has at most 20 Bahagian (422 \"Bilangan bahagian sudah mencapai had (20).\"). Because the Kontrak has no such Bahagian, Terbit reports the overridable blocker SECTION_NOT_IN_CONTRACT. Terbit paper: 422 paperLocked. Answers the editor data (201). Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "V2 Panel \"Semak Kertas Simulasi\" \"Tambah bahagian\". Body { label }. The new Bahagian goes last with the rule Jawab Semua and `adminCreated: true`; its question count and mark budget follow its placements. A paper has at most 20 Bahagian (422 \"Bilangan bahagian sudah mencapai had (20).\"). A label already on the paper (trimmed, case-insensitive) is refused (422, fields.label \"Label bahagian ini sudah digunakan dalam kertas ini.\"); the same holds for renaming a Bahagian through the paper patch. Because the Kontrak has no such Bahagian, Terbit reports the overridable blocker SECTION_NOT_IN_CONTRACT. Terbit paper: 422 paperLocked. Answers the editor data (201). Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {

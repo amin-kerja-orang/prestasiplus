@@ -1157,6 +1157,7 @@ describe('R1-T48 builder parity (cover code, rule, sections, added questions, pi
   it('V2 texts and the rule labels', () => {
     expect(BIJAK_BUILDER_EDIT_LINES.numberUsed('21')).toBe('Nombor soalan 21 sudah digunakan dalam kertas ini.')
     expect(BIJAK_BUILDER_MESSAGES.adminSectionOnly).toBe('Soalan hanya boleh ditambah ke bahagian yang dicipta oleh admin.')
+    expect(BIJAK_BUILDER_MESSAGES.sectionLabelUsed).toBe('Label bahagian ini sudah digunakan dalam kertas ini.')
     expect(bijakRuleLabel({ type: 'all' })).toBe('Jawab Semua')
     expect(bijakRuleLabel({ type: 'choose', n: 2 })).toBe('Pilih 2')
   })
