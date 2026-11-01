@@ -263,3 +263,21 @@ Evidence: `servability-reads`, `servability-lanes`, `servability-parity`, `serva
 | JSON | | byte-identical |
 
 Since the start of REQ-B-022(a) the cold overview went from 34.2 s to 9.3 s (-73%). What is left is dominated by `getMany` (7.6 s: it reads each of the 12,438 questions twice, latest and live, in chunks of 200, one chunk after the other). Reading them once, or the chunks in parallel, is the next saving; not done here.
+
+### 9.2 `getMany` on the overview path (branch `r1/overview-getmany-parallel`)
+
+Profile of the published-paper pass (section 9.1): `QuestionsRepository.getMany` took 7.6 s of 14.4 s, because `ServabilityService.factsOf` read every question twice, `getMany(ids, 'latest')` and then `getMany(ids, 'live')`, in sequential chunks of 200.
+
+**Chosen:** read each question once when its live version is its latest version. After the `latest` read, a record whose `liveVersionNo` equals its `version.versionNo` IS the live record (same version row, same tags), so only the questions that are live at an older version are read again with `getMany(.., 'live')`; a question without a live version is still absent from the live map, as before. The change is inside `factsOf` (`servability.service.ts`); **`QuestionsRepository.getMany` is untouched**, so every other caller (practice, builder, attempts, bridge, missions, ...) keeps exactly its behaviour.
+
+**Tried and rejected:** bounded parallel chunks (2 at a time) on top of it: no gain (6.5, 6.1, 6.0 s against 6.2, 6.0, 5.9 s without). The pass is bound by Node-side mapping of the records on one thread and by the pool shared with the other overview reads, not by waiting on the database. One query that reads latest and live together would have meant a change in the shared repository for the same saving, so it was not tried.
+
+| Cold overview on the 408k bank | Before (9.1) | After |
+|---|---|---|
+| `overview()` direct, 3 runs | 10.4, 9.3, 8.8 s (p50 9.3 s) | 6.2, 6.0, 5.9 s (p50 6.0 s) |
+| HTTP first call | 8.9 s | 5.3 s |
+| JSON | | byte-identical |
+
+Since the start of REQ-B-022(a): 34.2 s to 6.0 s (-82%).
+
+Parity: `servability-facts-live.spec.ts` compares, for a bank with a question live at its latest version, live at an older version (draft v2 on top), archived (no live version), draft only, held (inactive) and a stimulus-group member, the `latest` and `live` record of every fact with the repository's own `getMany(ids, 'latest')` and `getMany(ids, 'live')` (deep equal, same ids).

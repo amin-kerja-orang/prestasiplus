@@ -53,9 +53,16 @@ export class ServabilityService {
   async factsOf(ids: readonly string[], opts: { jana?: boolean } = {}): Promise<ReadonlyMap<string, ServabilityFacts>> {
     const wanted = [...new Set(ids)].filter(isIdString)
     if (wanted.length === 0) return new Map()
-    const latest = new Map((await this.questions.getMany(wanted, 'latest')).map((r) => [r.id, r]))
+    const latestRecords = await this.questions.getMany(wanted, 'latest')
+    const latest = new Map(latestRecords.map((r) => [r.id, r]))
     if (latest.size === 0) return new Map()
-    const live = new Map((await this.questions.getMany([...latest.keys()], 'live')).map((r) => [r.id, r]))
+    // REQ-B-022a: a question whose live version IS its latest version has one record, not two: the 'latest' read already returned the
+    // live one (same version row, same tags), so only the questions that are live at an older version, or not live at all, need the
+    // second read (which still returns nothing for a question without a live version). Half the hydration on a paper pass.
+    const liveAtLatest = latestRecords.filter((r) => r.liveVersionNo !== null && r.liveVersionNo === r.version.versionNo)
+    const liveElsewhere = latestRecords.filter((r) => r.liveVersionNo !== null && r.liveVersionNo !== r.version.versionNo).map((r) => r.id)
+    const liveOlder = liveElsewhere.length === 0 ? [] : await this.questions.getMany(liveElsewhere, 'live')
+    const live = new Map([...liveAtLatest, ...liveOlder].map((r) => [r.id, r]))
     const records = [...live.values()]
     // The bridge reads the live version for a NEW sitting (H-A13): a question without one is reported `archived` or `not_approved`,
     // and its running sittings are readability, not servability, so no other version needs its stimuli or group here.
