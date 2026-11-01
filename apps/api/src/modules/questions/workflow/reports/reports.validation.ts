@@ -4,6 +4,7 @@ import {
   QUESTION_REPORT_MCQ_REASONS,
   QUESTION_REPORT_MESSAGES as M,
   QUESTION_REPORT_NOTES_MAX,
+  QUESTION_REPORT_REASONS_MAX,
   QUESTION_REPORT_REF_PATTERN,
   QUESTION_REPORT_SOURCES,
   QUESTION_REPORT_STRUCTURED_REASONS,
@@ -65,6 +66,7 @@ export function validateCreate(raw: unknown): ValidCreate {
   const reasons = Array.isArray(b.reasons) ? b.reasons.filter((x): x is string => typeof x === 'string') : []
   const allowed: readonly string[] = type === 'mcq' ? QUESTION_REPORT_MCQ_REASONS : QUESTION_REPORT_STRUCTURED_REASONS
   if (reasons.length === 0) fields.reasons = M.reasonsRequired
+  else if (reasons.length > QUESTION_REPORT_REASONS_MAX) fields.reasons = M.reasonsTooMany // REP-N2
   else if (reasons.some((x) => !allowed.includes(x))) fields.reasons = M.reasonInvalid
 
   const source = b.source === undefined ? (type === 'mcq' ? 'spm' : 'structured_attempt') : b.source
@@ -90,7 +92,7 @@ export function validateCreate(raw: unknown): ValidCreate {
   return {
     questionId,
     questionType: type,
-    reasons,
+    reasons: [...new Set(reasons)],
     comment: comment === null || comment.trim() === '' ? null : comment,
     source: source as string,
     quizSessionRef: typeof b.quizSessionId === 'string' && b.quizSessionId !== '' ? b.quizSessionId : null,
