@@ -497,7 +497,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha24-release-input | 4ff0217ab | READY (A3, BASE-105): G6 release input incl. the WARM env rows and 0106/0107 @2a8ab674 (drift + order notes); B2 |
 | r1/ha26-team-a-state | fc9af9bde | docs, auto-refreshed by A3 H-A27 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
-| r1/intake-reqs-a2 | 8c1964a6f | ON HOLD: pre-review (A3): unhandled promise rejection in TagResolver.prefetch (process crash risk) + row cells → A2 fixing; do not merge |
+| r1/intake-reqs-a2 | 8c1964a6f | READY (A2, BASE-105): prefetch crash fixed (awaited Promise.all, failed read → 500, no unhandledRejection; red-first specs); row 908 6 cells; tsc/eslint 0, intake-workflow 137/137; A4 pre-review queued; B2 |
 | r1/mock-known-mismatches | a279e68cd | READY (A3, BASE-105): REQ-A-019 base red fixed (7 routes notServed, stale m27 entry removed); conformance 2/2; B2 |
 | r1/overview-getmany-parallel | 0ba236ef8 | READY (A4): chain 6th; 1334 pass at the tip (only the known base red); B2 |
 | r1/overview-mcq-shape-once | 5a785be84 | READY (A4): chain 5th; B2 |
@@ -510,11 +510,11 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/reqa018-paper-servability-route | 2f5a85e7c | READY (A1b; on T45 954614c6 + BASE-105): GET /api/admin/questions/:id/paper-servability (Admin Pusat; 403/401/404); 31/31; contract ok; merges after T45; B2 + B3 |
 | r1/reqb032-pinned-rule | a2cb5bb42 | READY (A2+A3, BASE-105): spec title + R1-limitation row (takedown vs running sitting, KIV R2); 6/6; B2 + B3 |
 | r1/reqb049-report-visible | 9ece8d76d | READY (A1b, BASE-105): pre-review Minors fixed (type from the live version, spec titles, real level codes); 316/316; B2 + B3 |
-| r1/reqb052-archived-edit | 171964317 | READY (A3; contains BASE-105 + H-A18 fc409ae1 + B-032 a2cb5bb4): full verification 2336 pass, 0 failures of its own (1 known base red); order H-A18 → B-032 → B-052; B2 + B3 |
+| r1/reqb052-archived-edit | f3a2448f9 | READY (A3; contains BASE-105 + H-A18 fc409ae1 + B-032 a2cb5bb4): full verification 2336 pass, 0 failures of its own (1 known base red); order H-A18 → B-032 → B-052; B2 + B3 |
 | r1/reqc021-followup | 948aa327a | READY (A1a, BASE-105): fixes the base red draw-bounded BR-16; merge early |
 | r1/seed-dangling-placements | 11cbcf458 | READY (A1b, BASE-105): asserts paper titles + counts = POC_BANK; seed 155 + 1 skip; B2 |
-| r1/stimulus-list-d72 | 97f2fdc21 | ON HOLD: pre-review (A3): row split + merge after t49 (A2 resolves the listGroups conflict); do not merge |
-| r1/t04-minors | aff6df8f3 | ON HOLD: pre-review (A3): FD-11 deviation row + wording → A2; do not merge |
+| r1/stimulus-list-d72 | 97f2fdc21 | READY (A2, BASE-105; contains t49 b99068a6): one combined where for page+count, joinable+empty-group spec; stimulus-lists 17/17, questions 937, conformance 409; merge AFTER t49; A4 pre-review queued; B2 |
+| r1/t04-minors | aff6df8f3 | READY (A2, BASE-105): FD-11/AP-17 row + wording; practice-reads 107; A4 pre-review queued; B2 |
 | r1/t31-builder-wire | eb0346d25 | ON HOLD (paired): fixes done @eb0346d2 (441 pass); merge ONLY together with C REQ-A-008 after C re-merges this tip (vue-tsc TS2322 otherwise); do not merge alone |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
@@ -528,7 +528,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t45-builder-acs-wip | 078204e1c | SUPERSEDED by r1/t45-builder-acs; do not merge |
 | r1/t45-servability-acs | 954614c69 | READY (A4, BASE-105): pre-review M1/M2 + Minors fixed; trial merge with H-A18 22/22; chain 1st; B2 + B3 | A1b delta re-review 18:5x UTC: all 6 tips green alone, no Blocker/Major; 3 Minors (approval-check guard untested; perf deviation line; jana-null guard) → A4 follow-up, non-blocking |
 | r1/t48-builder-parity | 6c5ae3a86 | ON HOLD (A3): giveBab fix pushed @6c5ae3a8 (support/bab.ts byte-identical to H-A18); awaiting A3 proof alone + trial merge with H-A18 before READY; do not merge |
-| r1/t49-served-now | b99068a67 | ON HOLD: pre-review (A3): blank-filter bulk archive could archive the whole bank + missing deviation rows → A2 fixing; do not merge |
+| r1/t49-served-now | b99068a67 | READY (A2, BASE-105): bulk approve/archive with all-blank filter → 422 filterBlank [PROPOSED BM]; {} stays Arkib Semua; 4 deviation rows; questions 933 (+BR-16 known), workflow 275, conformance 409; A4 pre-review queued; B2 + B3; merge BEFORE stimulus-list-d72 |
 | r1/t50-partial-acs | 075e1b587 | READY (A1a, BASE-105): A3 pre-review CLEAN (nits only); B2 |
 | r1/t51-partial-acs-a3 | 54f631164 | ON HOLD: pre-review (A2) M2: 22 reds once merged with H-A18 (giveBab fixture) → A3 fixing; Nits |
 | r1/t52-examiner-grid | ca1ed739f | READY (A1a, BASE-105): getCover reads examinerGrid from marked (live+pinned); be09 test 8 (auto/points-essay/archived) bites on revert; R21 superseded; api tsc + eslint + vue-tsc 0, 15 pass; B2 |
