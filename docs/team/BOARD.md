@@ -505,7 +505,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 | T44 | r1/t44-blueprint-fields | 072d8f4b | — | merged at BASE-67 as 77984abc. The newer tip 072d8f4b shows a 19-file delta against base; A3 is asked whether it is WIP (marked IN-PROGRESS until it answers) |
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 15:24 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 15:28 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -518,7 +518,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha24-release-input | eb6fba4b9 | docs, auto-refreshed by A3 H-A27 |
 | r1/ha26-team-a-state | 17ee69bd8 | docs, auto-refreshed by A3 H-A27 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
-| r1/intake-reqs-a2 | b70dc9571 | Approved (B2 c17) → needs a BASE-105 merge (A2) |
+| r1/intake-reqs-a2 | a631198c7 | READY (A2, BASE-105): B-034/035 + B2 Minors; intake-workflow 135/135; ready for the B1 gate |
 | r1/overview-getmany-parallel | a02f658f9 | READY (A4): live record reused from latest; cold overview 9.3 → 6.0 s (total 34.2 → 6.0 s, −82%); parity spec; merges after overview-mcq-shape-once; B2 |
 | r1/overview-mcq-shape-once | b0f1e9b2c | READY (A4): factsOf jana:false; cold overview 15.3→9.3 s (total 34.2→9.3 s); merges after req-b-033; B2 |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
@@ -532,25 +532,27 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/reqb049-report-visible | 059841d4c | READY (A1b, BASE-105): pupil no-proof structured report narrowed to isStructuredVisible (Q11); 346 + 1 todo; B2 + B3 |
 | r1/reqc021-followup | 8210ac5bd | Approved (B2 c17) → needs a BASE-105 merge (A1a) |
 | r1/seed-dangling-placements | 7285d961c | Approved (B2 c17) → needs a BASE-105 merge (A1a) |
-| r1/t04-minors | cc5116213 | Approved (B2 c17) → needs a BASE-105 merge (A2) |
+| r1/t04-minors | cc5116213 | READY (A2, BASE-105): B-044; 108 + 1 skip; ready for the B1 gate |
 | r1/t31-builder-wire | 6a27c8dd3 | READY (A3); needs C1 REQ-A-008 rebased on BASE-102 |
 | r1/t34-l1-residual | e4bb72eb6 | WIP for team C (REQ-A-013); do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | WIP for team C (REQ-A-013); do not merge |
 | r1/t37-r1-runbook | f4bb197c2 | docs, auto-refreshed by A3 H-A27 |
-| r1/t38-selfmark-reward | 067d4bc2c | IN-PROGRESS (A1b): B2 c16 Minors fixed (concurrency spec red without the lock); BASE-105 merge pending |
+| r1/t38-selfmark-reward | 13134ced7 | IN-PROGRESS (A1b): B2 c16 Minors fixed (concurrency spec red without the lock); BASE-105 merge pending |
 | r1/t39-k1-evidence | 1a26f7a60 | check: A3 to confirm state |
 | r1/t40-attempts-acs | c3ee1626d | IN-PROGRESS (A1b): T38 + BASE-105 merged; re-merges T38 after its BASE-105 merge |
 | r1/t43-chain-publish | 5ce5894f1 | READY (A3, on T31) |
 | r1/t43b-publish-acs | 327e03add | IN-PROGRESS (A3): B2 Minors pushed; T48 1dd07bc1 merge + 25-code catalogue; READY pending |
 | r1/t45-builder-acs | 69d16a7f9 | READY (A1b, on T48), B2 |
 | r1/t45-builder-acs-wip | 078204e1c | SUPERSEDED by r1/t45-builder-acs; do not merge |
-| r1/t45-servability-acs | 37d240136 | Approve w/ Minors; conflicts with BASE-105 → A4 resolving |
+| r1/t45-servability-acs | 3175abff8 | Approve w/ Minors; conflicts with BASE-105 → A4 resolving |
 | r1/t48-builder-parity | 1dd07bc1a | READY (A3, BASE-105): B2 cycle-16 Minors fixed; new hard SECTION_EMPTY; 22 codes (4 overridable); DB 516 + 1 todo; conformance 409/409; B2 delta + B3 re-check |
 | r1/t49-served-now | 8a4b46a9f | READY (A2, BASE-105): B-025ab + C-019 + B2 c16 Minors (blank negeri ignored, examBoards distinct case-insensitive); 704/704 incl. conformance; B2 delta |
 | r1/t50-partial-acs | e436e084d | Approved (B2 c17) → needs a BASE-105 merge (A1a) |
 | r1/t51-partial-acs-a3 | 5b7fc6780 | IN-PROGRESS (A3): merging T48 to drop a duplicate PUT code rule; not READY. Order T48 → T31 (+REQ-A-008) → T43 → T51 |
 | r1/t52-examiner-grid | addae6444 | Approved (B2 c17) → needs a BASE-105 merge (A1a) |
 | r1/t54-perf-400k | bbf412c66 | Approved (B2 c17) → needs a BASE-105 merge (A4) |
+
+**New branches not yet triaged:** r1/t34-l1-residual-c eb9ad806a
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
