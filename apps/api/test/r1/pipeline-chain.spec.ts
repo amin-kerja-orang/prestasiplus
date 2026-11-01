@@ -738,9 +738,11 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       chapterB = chapters[1]!.id
       expect(chapterA).toMatch(/^\d+$/)
       expect(chapterB).not.toBe(chapterA)
-      // the precondition of this step: the chain questions were made without a Bab
+      // Deliberate SQL: the state under test is an APPROVED question with no Bab, which is what a legacy question approved before the Bab gate looks like.
+      // The Studio cannot produce it once the H-A18 gate is in (Semakan asks for a Bab: "Sila pilih bab."), and there is no route that clears a Bab on a live
+      // version. On a stack without H-A18 the question already has none and this is a no-op; with H-A18 the chain fixtures give it the first chapter first.
+      await db.query(`update question_versions v set chapter_id = null from questions q where q.id = v.question_id and v.version_no = q.live_version_no and q.id = $1`, [fx.soloA])
       expect(await babOf(fx.soloA)).toBeNull()
-      expect(await babOf(fx.soloB)).toBeNull()
       const v = await bab(fx.soloA)
       expect(v.served).toBe(false)
       expect(v.reasons.map((r) => r.code)).toEqual(['no_chapter'])

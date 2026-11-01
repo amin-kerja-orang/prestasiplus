@@ -90,21 +90,23 @@ describe('R1-11.4: the runbook no-regression SELECTs (3.6b) on a seeded bank', (
 
   // (2) reads the import issues of the LIVE version, so an edit published without the image moves the question out of (2); it stays inactive, and
   // (3) stays 0: that is the exclusion the AC asks for. (The runbook's "expected = the loader report" is a before-any-edit figure.)
-  it('an admin edit that is published without the missing image leaves the question inactive and unserved: (3) stays 0, servable is unchanged', async () => {
+  // With the H-A18 media gate the approval of an edit that still lacks the image is REFUSED (the old version stays live); without it the approval goes
+  // through. Either way the question stays inactive and unserved, which is what this test pins.
+  it('an admin edit that does not bring the missing image leaves the question inactive and unserved: (3) stays 0, servable is unchanged', async () => {
     const id = await held()
     const before = await read()
     const put = await admin.put(`/api/questions/${id}`, mcqBody(refs, { questionText: 'Soalan yang disunting tanpa gambar?' }))
     expect(put.status, JSON.stringify(put.body)).toBe(200)
     for (const action of ['review', 'approved']) {
       const res = await admin.post('/api/questions/bulk-action', { action, ids: [id] })
-      expect(res.status, JSON.stringify(res.body)).toBe(200)
-      expect(res.body.data.failed, `${action} ${JSON.stringify(res.body)}`).toEqual([])
+      expect(res.status, JSON.stringify(res.body)).toBe(200) // a refused row is in failed[], not an HTTP error
     }
     const after = await read()
     expect(after.heldServed).toBe(0)
     expect(after.id.servable).toBe(before.id.servable)
     const [row] = await t.db.query<{ is_active: boolean; live: number }>(`select is_active, live_version_no live from questions where id = $1`, [id])
-    expect(row).toMatchObject({ is_active: false, live: 2 })
+    expect(row!.is_active).toBe(false)
+    expect([1, 2]).toContain(row!.live) // 2 when the approval went through, 1 when the media gate refused it
     expect(after.id.live_questions).toBe(after.id.servable! + after.id.live_approved_inactive! + after.id.live_not_approved!)
   })
 })
