@@ -381,7 +381,7 @@
   "id": "P11b",
   "path": "Servability overview, cold compute",
   "endpoint": "ServabilityReadsService.overview()",
-  "runs": 5,
+  "runs": 3,
   "cold_ms": 0,
   "p50_ms": 33598.2,
   "p95_ms": 34071,

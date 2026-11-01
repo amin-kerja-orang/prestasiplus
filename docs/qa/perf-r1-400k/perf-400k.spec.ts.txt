@@ -28,6 +28,17 @@ import pg from 'pg'
 vi.setConfig({ testTimeout: 3_600_000, hookTimeout: 600_000 })
 
 const DB_URL = process.env.PERF_DB_URL ?? ''
+/** Never measure (or seed) anything but a local throwaway database. */
+function assertLocalDb(url: string): void {
+  let host = ''
+  try {
+    host = new URL(url).hostname
+  } catch {
+    throw new Error('PERF_DB_URL is not a valid postgres URL')
+  }
+  if (!['127.0.0.1', 'localhost', '::1', '[::1]'].includes(host)) throw new Error(`PERF_DB_URL must point at a local database, got host ${host}`)
+}
+if (DB_URL !== '') assertLocalDb(DB_URL)
 const RUNS = Number(process.env.PERF_RUNS ?? 20)
 const OUT = process.env.PERF_OUT ?? ''
 const ONLY = process.env.PERF_ONLY ?? ''
@@ -250,7 +261,7 @@ describe.runIf(DB_URL !== '')('T54 performance at ~400k questions', () => {
     void cache
     const lines = Object.entries(cold).map(([k, v]) => { const s = [...v].sort((a, b) => a - b); return { step: k, runs: v.length, p50_ms: r1(pct(s, 0.5)), max_ms: r1(s[s.length - 1]!) } })
     process.stderr.write(`[perf] overview cold steps ${JSON.stringify(lines, null, 1)}\n`)
-    results.push({ id: 'P11b', path: 'Servability overview, cold compute', endpoint: 'ServabilityReadsService.overview()', runs: 5, cold_ms: 0, p50_ms: lines[0]!.p50_ms, p95_ms: lines[0]!.max_ms, min_ms: 0, max_ms: lines[0]!.max_ms, status: 200, rows: '', notes: JSON.stringify(lines) })
+    results.push({ id: 'P11b', path: 'Servability overview, cold compute', endpoint: 'ServabilityReadsService.overview()', runs: lines[0]!.runs, cold_ms: 0, p50_ms: lines[0]!.p50_ms, p95_ms: lines[0]!.max_ms, min_ms: 0, max_ms: lines[0]!.max_ms, status: 200, rows: '', notes: JSON.stringify(lines) })
     if (OUT) writeFileSync(OUT, JSON.stringify(results, null, 1))
   })
 })

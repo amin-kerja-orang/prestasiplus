@@ -12,7 +12,7 @@ Local measurement only. Nothing here touched a server. No schema change, migrati
 |---|---|---|
 | P11 Servability overview, **cold compute** | 34 s | Slower than every gateway timeout. The H-A21 cache hides it after the first call, but the first admin visit (and the first one after each deploy) waits ~33 s. **Fix before UAT** (section 5, F1). |
 | P10b Builder candidates, search "Cari soalan" | 14.3 s | **Fix before UAT** (F2). |
-| P8d Admin question list, text search | 1.77 s | Slow; trigram index proposed and tested: 21 ms (F3). |
+| P8d Admin question list, text search | 1.77 s | Slow; trigram index proposed and tested: the search query's EXPLAIN ANALYZE execution went from 1.8 s to 21 ms (one query, not an endpoint p95; F3). |
 | P8b-kertas Admin list, `kertas` filter | 1.61 s (n=3; 0.63 s in an earlier run) | Slow; the cost is the count queries (F4). |
 | P8a, P7, P10a, P10c, P1 | 0.55 to 0.94 s | Under 1 s but close; watch (section 4). |
 | Everything else | at or under 0.35 s | Fine. |
@@ -93,8 +93,8 @@ p50 and p95 in ms. "First call" is the first request of the path in the run, rig
 | 10a | Builder candidates | `GET /api/admin/papers/:id/sections/:sid/pool?pageSize=100` | 794 | 830 | 864 | total 9,034 | Builds the whole candidate list of the subject on every page. |
 | 10b | **Builder search "Cari soalan"** | `...pool?pageSize=100&q=nombor` | **12,209** | **14,311** | 12,111 | total 9,034 | See F2. |
 | 10c | Builder Pratonton kolam | `GET /api/admin/papers/pool-preview?subject=ADDMATH&kertas=2` | 827 | 942 | 883 | 9,190 published | |
-| 11a | **Servability overview, warm** | `GET /api/admin/servability/overview` | 9.5 | 13 | 32,752 | bank 250,073 | Cache hit. The first call computed it: **32.8 s over HTTP**. |
-| 11b | **Servability overview, cold compute** | `ServabilityReadsService.overview()` | 33,598 | 34,071 | | | n=3, direct on the service (no cache). Break-down in section 3.1. |
+| 11a | **Servability overview, warm** | `GET /api/admin/servability/overview` | 9.5 | 13 | 32,752 | bank 250,073 | `bank` is the overview's own scope (contract: approved, active, secondary-level, non-PKSK questions), so it is below the 408,273 generated rows (Darjah and non-approved excluded) and below the 286,516 admin-list total in 8a (secondary, any status). Cache hit. The first call computed it: **32.8 s over HTTP**. |
+| 11b | **Servability overview, cold compute** | `ServabilityReadsService.overview()` | 33,598 | 34,071 | | | n=3, direct on the service (no cache); `results-final.json` said `runs: 5` from a hard-coded value in the harness, now corrected to 3. Break-down in section 3.1. |
 
 Note on the earlier run (not committed): an earlier run on a warm cache (before the Postgres restart) gave first-call times of 0.05 to 0.9 s for paths 1 to 6 and the same warm p50/p95 within about 10% (for example P3 246/306, P4 179/217, P8a 657/798, P10b 10.9 s/12.1 s, P11 compute 28.8 s); P11 cold compute ranged 28.8 to 33.6 s between runs.
 
@@ -117,6 +117,8 @@ Note on the earlier run (not committed): an earlier run on a warm cache (before 
 | **Tail as shipped (sum of the four, one after the other)** | **about 26,000** |
 | **Tail as ONE `Promise.all`** | **18,327** |
 | Whole `overview()` as shipped | 33,598 |
+
+**Why the steps add up to more than the whole (about 36.6 s = 0.6 + 10.0 + 26.0 against 33.6 s measured):** each step was timed on its own, in separate runs, and the table gives each step's p50. p50s of separate runs do not add, and a step timed alone starts with colder buffers than the same step inside one `overview()` call, where the earlier steps have already read the shared tables (questions, versions, parts) into the buffer cache. The tail sum (about 26 s) is the sum of four separately timed reads, not a single measurement. The whole-call figure (33.6 s) is the one to compare against.
 
 **Gain of one `Promise.all` over the tail: about 7.7 s of 26 s (30%) measured here; it takes the whole overview from about 33.6 s to about 26 s.** (The earlier run measured 21.7 s sequential against 15.0 s concurrent, a gain of 6.7 s, 31%.) The gain is limited because the slowest tail item (17.3 s, the per-question evaluation of the questions on published papers) is 2/3 of the tail, and the four statements compete for the same 4 vCPU. It is a measured gain; the two further savings in F1 are estimates and are not measured.
 
@@ -172,7 +174,7 @@ CREATE INDEX CONCURRENTLY ix_question_versions_stem_ms_trgm ON question_versions
 CREATE INDEX CONCURRENTLY ix_question_versions_stem_en_trgm ON question_versions USING gin (stem_en gin_trgm_ops) WHERE stem_en IS NOT NULL;
 ```
 
-Result with the index: `BitmapOr` of the two trigram scans, **Execution 20.7 ms** (from 1,803 ms). Build time on 408k rows: 18 s for `stem_ms` (the index size was not captured). The index needs `pg_trgm` on the production Postgres (a contrib module). The list also runs the status counts with the same filter (1.8 s as is); the same index serves them. Search terms shorter than 3 characters fall back to a scan.
+Result with the index: `BitmapOr` of the two trigram scans, **Execution 20.7 ms** (from 1,803 ms). These are the EXPLAIN ANALYZE execution times of the one search query, not an endpoint p95: the endpoint also runs the status counts and the total (see below and F4), so its p95 was not re-measured with the index. Build time on 408k rows: 18 s for `stem_ms` (the index size was not captured). The index needs `pg_trgm` on the production Postgres (a contrib module). The list also runs the status counts with the same filter (1.8 s as is); the same index serves them. Search terms shorter than 3 characters fall back to a scan.
 
 ### F4. P8a / P8b-kertas: the count queries (0.7 s unfiltered, up to 1.6 s with `kertas`)
 
@@ -186,7 +188,7 @@ Execution Time: 825.9 ms
 GroupAggregate (actual 890..890 rows=4) (counts with kertas=2)  -> Seq Scan on question_versions (rows=39000) ... Execution Time: 925.1 ms
 ```
 
-Options: cache the unfiltered `counts`/total for a few seconds to a minute (they change only when a question changes status); for the `kertas` filter add an expression index so the filter stops scanning: `CREATE INDEX CONCURRENTLY ix_question_versions_paper_kertas ON question_versions ((substring(paper_code from '([0-9])\s*$')));` (only helpful together with the cache or a smaller candidate set).
+Options: cache the unfiltered `counts`/total for a few seconds to a minute (they change only when a question changes status); for the `kertas` filter add an expression index so the filter stops scanning: `CREATE INDEX CONCURRENTLY ix_question_versions_paper_kertas ON question_versions ((substring(paper_code from '([0-9])[[:space:]]*$')));` (only helpful together with the cache or a smaller candidate set).
 
 **Bug found on the way (A2 area, `questions.repository.ts`):** the Kertas filter is written inside a `Prisma.sql` tagged template as `'([0-9])\s*$'`. In a template literal `\s` is cooked to `s`, so Postgres receives `([0-9])s*$` (seen in the Postgres log: `substring(v.paper_code from '([0-9])s*$')`). It still matches a paper code ending in a digit, which is why it works, but a code with trailing spaces (`MATH/2 `) would not match as intended. Proposed fix: write `[[:space:]]*` instead of `\s*` (or `String.raw`). The expression index above must use the same text.
 
