@@ -34,6 +34,9 @@ import {
   BijakBuilderPreviewRequestSchema,
   BijakBuilderPreviewSchema,
   BijakBuilderPublishResultSchema,
+  BijakBuilderBlockerSchema,
+  BIJAK_BUILDER_BLOCKER_CODES,
+  BIJAK_BUILDER_BLOCKER_OVERRIDABLE,
   BijakBuilderQuestionSchema,
   BijakBuilderSchemeLineSchema,
 } from '../schema'
@@ -447,7 +450,7 @@ describe('createPaper and PaperPatch (single PUT)', () => {
     for (const extra of [
       { code: '1449/2' },
       { instructions: [''] }, // instructions are a patch field since R1-B09a, but not blank lines
-      { reference: [] },
+      { reference: [{ title: '', items: [] }] }, // R1-T34: reference panels are a patch field, but not an untitled panel
       { blueprint: null },
       { subject: 'MAT' },
     ]) {
@@ -457,7 +460,7 @@ describe('createPaper and PaperPatch (single PUT)', () => {
     }
     expect(
       BijakBuilderPaperPatchSchema.safeParse({
-        sections: [{ id: 'kp-2-s1', questionIds: ['q-1'], label: 'X' }],
+        sections: [{ id: 'kp-2-s1', questionIds: ['q-1'], rank: 1 }], // label, instruction and compulsory are patch fields since R1-T34, a rank is not
       }).success,
     ).toBe(false)
     expect(
@@ -489,12 +492,24 @@ describe('publish, delete and preview results', () => {
       L.sectionLine('Bahagian B', L.marksMismatch(18, 20)),
       L.sectionLine('Bahagian B', L.notPublished(2)),
     ]
-    const bad = BijakBuilderPublishResultSchema.parse({ ok: false, errors: lines })
+    const bad = BijakBuilderPublishResultSchema.parse({ ok: false, errors: lines, blockerDetails: [], canOverride: false })
     expect(bad.ok).toBe(false)
     expect(
-      envelopeOf(BijakBuilderPublishResultSchema).safeParse({ data: { ok: false, errors: lines } })
+      envelopeOf(BijakBuilderPublishResultSchema).safeParse({ data: { ok: false, errors: lines, blockerDetails: [], canOverride: false } })
         .success,
     ).toBe(true)
+  })
+
+  it('carries the structured blockers: stable codes, the overridable flag of the contract map, and canOverride (R1-T34 follow-up)', () => {
+    const blocker = { code: 'BLUEPRINT_NOT_VERIFIED', message: 'Kontrak Simulasi 1449/2 (versi 1) belum Disahkan (status: Spec); Terbit memerlukan kontrak Disahkan.', overridable: true }
+    expect(BijakBuilderPublishResultSchema.safeParse({ ok: false, errors: [blocker.message], blockerDetails: [blocker], canOverride: true }).success).toBe(true)
+    const parsed = BijakBuilderBlockerSchema.parse({ code: 'NOT_SERVABLE', message: 'x', overridable: false, section: 'Bahagian A', questionId: '12' })
+    expect(parsed.questionId).toBe('12')
+    expect(BijakBuilderBlockerSchema.safeParse({ code: 'MADE_UP', message: 'x', overridable: false }).success).toBe(false)
+    expect(BijakBuilderBlockerSchema.safeParse({ code: 'NOT_SERVABLE', message: 'x' }).success).toBe(false)
+    expect(BijakBuilderBlockerSchema.safeParse({ ...blocker, extra: 1 }).success).toBe(false)
+    expect(BIJAK_BUILDER_BLOCKER_CODES).toHaveLength(18)
+    expect(BIJAK_BUILDER_BLOCKER_CODES.filter((c) => BIJAK_BUILDER_BLOCKER_OVERRIDABLE[c]).sort()).toEqual(['BLUEPRINT_NOT_VERIFIED', 'INELIGIBLE'])
   })
 
   it('requires the errors key and rejects the old union shapes', () => {
@@ -658,7 +673,7 @@ describe('publish, delete and preview results', () => {
     const full = stimulus({
       kind: 'table',
       caption: 'Jadual 1',
-      svg: '<svg viewBox="0 0 10 10"></svg>',
+      image: { url: '/api/files/Zk3x9QmT1bVnR0aYc7LpDw' },
       text: 'Petikan ringkas',
       table: { head: ['x', 'y'], rows: [['1', '2']] },
     })
@@ -825,7 +840,7 @@ describe('openapi document', () => {
     (o) => o.op.tags?.includes(BIJAK_BUILDER_TAG) || o.op.tags?.includes(BIJAK_BLUEPRINT_ADMIN_TAG),
   )
 
-  it('has 21 operations, 16 paper and 5 blueprint, under /admin only', () => {
+  it('has 24 operations, 19 paper and 5 blueprint, under /admin only', () => {
     const keys = mine.map((o) => `${o.method} ${o.path}`).sort()
     expect(keys).toEqual(
       [
@@ -845,6 +860,9 @@ describe('openapi document', () => {
         'delete /admin/papers/{id}/placements/{questionId}',
         'put /admin/papers/{id}/sections/{sid}/order',
         'post /admin/papers/{id}/copy',
+        'put /admin/papers/{id}/groups/{groupId}',
+        'get /admin/section-pools/{questionId}',
+        'put /admin/section-pools/{questionId}',
         'get /admin/blueprints',
         'post /admin/blueprints',
         'get /admin/blueprints/{subject}/{kertas}',
@@ -852,7 +870,7 @@ describe('openapi document', () => {
         'post /admin/blueprints/{subject}/{kertas}/retire',
       ].sort(),
     )
-    expect(mine.filter((o) => o.op.tags?.includes(BIJAK_BUILDER_TAG))).toHaveLength(16)
+    expect(mine.filter((o) => o.op.tags?.includes(BIJAK_BUILDER_TAG))).toHaveLength(19)
     expect(mine.filter((o) => o.op.tags?.includes(BIJAK_BLUEPRINT_ADMIN_TAG))).toHaveLength(5)
     expect(mine.every((o) => o.path.startsWith('/admin/'))).toBe(true)
   })
@@ -901,7 +919,7 @@ describe('openapi document', () => {
       content: Record<string, { schema: { $ref: string } }>
     }
     const writes = mine.filter((o) => o.method !== 'get')
-    expect(writes).toHaveLength(13)
+    expect(writes).toHaveLength(15)
     for (const { path, method, op } of writes) {
       const r = op.responses['429'] as R429 | undefined
       expect(r, `${method} ${path}`).toBeDefined()
@@ -938,7 +956,7 @@ describe('openapi document', () => {
     expect(codes('/admin/papers/{id}', 'get')).toEqual(['200', '401', '403', '404'])
     expect(codes('/admin/papers/{id}', 'put')).toEqual(['200', '401', '403', '404', '422', '429'])
     expect(codes('/admin/papers/{id}', 'delete')).toEqual(['200', '401', '403', '422', '429'])
-    expect(codes('/admin/papers/{id}/publish', 'post')).toEqual(['200', '401', '403', '404', '429'])
+    expect(codes('/admin/papers/{id}/publish', 'post')).toEqual(['200', '401', '403', '404', '422', '429'])
     expect(codes('/admin/papers/{id}/withdraw', 'post')).toEqual([
       '200',
       '401',
@@ -1032,14 +1050,15 @@ describe('openapi document', () => {
     expect(doc.paths['/admin/papers/{id}/preview']).toBeUndefined()
   })
 
-  it('takes no body on publish, withdraw and retire, and a body on the other mutations', () => {
+  it('takes no body on withdraw, copy and retire, an OPTIONAL body on publish (R1-T34 override), and a body on the other mutations', () => {
+    expect((doc.paths['/admin/papers/{id}/publish']?.post?.requestBody as { required?: boolean } | undefined)?.required).toBe(false)
     const noBody = [
       '/admin/papers/{id}/publish',
       '/admin/papers/{id}/withdraw',
       '/admin/papers/{id}/copy',
       '/admin/blueprints/{subject}/{kertas}/retire',
     ]
-    for (const path of noBody) expect(doc.paths[path]?.post?.requestBody, path).toBeUndefined()
+    for (const path of noBody.filter((p) => !p.endsWith('/publish'))) expect(doc.paths[path]?.post?.requestBody, path).toBeUndefined()
     for (const { path, method, op } of mine.filter(
       (o) => o.method !== 'get' && o.method !== 'delete' && !noBody.includes(o.path),
     )) {

@@ -24,7 +24,7 @@ export interface BlueprintViewContext {
   servingVersion?: number
   dependentPaperCount: number
   warnings: BijakBlueprintWarning[]
-  /** TODO(BJS-11): computed from the standard tier of `verifyComposition`; stubbed until then. */
+  /** "Blueprint perlu semakan" (PIPE AC-06.6, architecture 6.3a): computed by `BlueprintViewsService` from the standard tier of `verifyComposition`. */
   needsReview: boolean
   reviewPapers: BijakReviewPaper[]
   /** Display fields of the DSKP units a profile or quota refers to (by node id). */
@@ -112,6 +112,7 @@ export function blueprintView(
     evidenceCount: ctx.evidenceCount,
     notes: row.notes,
     subPartRamp: row.subPartRamp,
+    autoMarkable: row.autoMarkable ?? null,
     kbatMarks: row.kbatMarks,
     levelShare: (row.levelShare as { t4: number; t5: number } | null) ?? null,
     warnings: ctx.warnings,

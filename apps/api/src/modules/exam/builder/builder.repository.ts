@@ -175,6 +175,30 @@ export class BuilderRepository {
     })
   }
 
+  /** R1-T34: edits the label, instruction or compulsory flag of one section. */
+  async updateSection(id: bigint, data: Prisma.PaperSectionUncheckedUpdateInput): Promise<void> {
+    await this.prisma.client.paperSection.update({ where: { id }, data })
+  }
+
+  /**
+   * The given references that may be used as a reference-sheet picture: a stored `question_image` file named by its PUBLIC TOKEN (never the
+   * internal id, which would leak it and lets any caller probe ids) AND either uploaded by the editing admin or already on this paper's sheet.
+   * Another user's unattached upload is therefore refused (B3 T34-L1).
+   */
+  async existingImages(refs: readonly string[], ownerUserId: bigint, onPaper: readonly string[]): Promise<Set<string>> {
+    const unique = [...new Set(refs)].filter((r) => /^[A-Za-z0-9_-]{8,64}$/.test(r))
+    if (unique.length === 0) return new Set()
+    const rows = await this.prisma.client.file.findMany({
+      where: {
+        purpose: 'question_image',
+        publicId: { in: unique },
+        OR: [{ ownerUserId }, { publicId: { in: [...onPaper] } }],
+      },
+      select: { publicId: true },
+    })
+    return new Set(rows.map((r) => r.publicId))
+  }
+
   async pinPlacement(id: bigint, pinnedVersionNo: number, marksOverride: number): Promise<void> {
     await this.prisma.client.paperPlacement.update({ where: { id }, data: { pinnedVersionNo, marksOverride } })
   }
