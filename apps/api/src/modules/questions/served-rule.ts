@@ -6,12 +6,16 @@ import { Prisma } from '../../db/generated/client'
  * keeps its attempts, AC-07.7, and they are served from the pinned versions, REQ-B-032). A draft or ready paper holds nothing: it re-pins at
  * Terbit. `alias` is the SQL alias of `papers` in the query (a fixed identifier chosen in code, never user input).
  *
+ * `userId` narrows the withdrawn branch to the attempts of that one pupil: the `question_image` read rule (files) uses it so a withdrawn paper's
+ * pictures are readable only by the pupils who sat it, not by every pupil.
+ *
  * Cheap form: the attempts lookup runs only for a withdrawn paper (a draft paper cannot have attempts), and uses the `exam_attempts.paper_id` filter.
  * No index is added for it: a withdrawn paper that places the question is rare, and the lookup stops at the first row.
  */
-export const paperHeld = (alias: 'p' | 'spp'): Prisma.Sql => {
+export const paperHeld = (alias: 'p' | 'spp' | 'pp', userId?: bigint): Prisma.Sql => {
   const a = Prisma.raw(alias)
-  return Prisma.sql`(${a}.status = 'published' OR (${a}.status = 'withdrawn' AND EXISTS (SELECT 1 FROM exam_attempts hat WHERE hat.paper_id = ${a}.id)))`
+  const mine = userId === undefined ? Prisma.empty : Prisma.sql` AND hat.user_id = ${userId}`
+  return Prisma.sql`(${a}.status = 'published' OR (${a}.status = 'withdrawn' AND EXISTS (SELECT 1 FROM exam_attempts hat WHERE hat.paper_id = ${a}.id${mine})))`
 }
 
 /**

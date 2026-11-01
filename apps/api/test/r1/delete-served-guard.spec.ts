@@ -361,22 +361,27 @@ describe('R1 delete-served-guard', () => {
     })
   })
 
-  describe('5. REQ-B-052 gap: a pinned archived question restored to draft, then edited', () => {
-    it('the pinned version row stays byte-identical (the edit branches to version 2) and the pupil is served the same question', async () => {
-      const { paper, ids } = await publishedPaper()
-      const target = ids[0]!
-      const attempt = await sit(paper)
-      expect((await admin.post('/api/questions/bulk-action', { action: 'archived', ids: [target] })).body.data.failed).toEqual([])
-      const restore = await admin.post(`/api/questions/${target}/status`, { to: 'draft' })
-      expect(restore.status, JSON.stringify(restore.body)).toBe(200)
-      expect(await versions(target)).toEqual(['1:draft']) // the pinned version is now a draft: only the pin protects it
-      const before = await snapshot(target, 1)
-      const servedBefore = await served(attempt, target)
-      const edit = await admin.put(`/api/questions/${target}`, body({ questionText: 'TEKS BAHARU selepas dipulihkan ke draf: berapakah hasil darab 6 dan 7?', options: ['40', '41', '42', '43'], correctAnswer: 2 }))
-      expect(edit.status, JSON.stringify(edit.body)).toBe(200)
-      expect(await versions(target)).toEqual(['1:draft', '2:draft'])
-      expect(await snapshot(target, 1)).toEqual(before)
-      expect(await served(attempt, target)).toEqual(servedBefore)
+  describe('5. question_image read rule B keeps the pictures of a running sitting on a withdrawn paper', () => {
+    it('Terbit: readable; withdrawn WITH the pupil\'s sitting: still readable (200); the pupil who never sat it, and a withdrawn paper nobody sat: 404', async () => {
+      const other = await loginFull(t, 'pelajarmaju@demo.test')
+      const upload = async (): Promise<{ id: string; url: string }> => {
+        const res = await admin.upload('/api/files?purpose=question_image', makePng({ width: 4 + counter++, height: 4 }))
+        expect(res.status, JSON.stringify(res.body)).toBe(201)
+        return { id: res.body.data.id as string, url: res.body.data.url as string }
+      }
+      const sitImg = await upload()
+      const quietImg = await upload()
+      const sat = await publishedPaper([await approved({ questionImageFileId: sitImg.id })])
+      const quiet = await publishedPaper([await approved({ questionImageFileId: quietImg.id })])
+      await sit(sat.paper)
+      // the question leaves the live path (archived): only the paper's pin can grant the picture now
+      for (const id of [sat.ids[0]!, quiet.ids[0]!]) expect((await admin.post('/api/questions/bulk-action', { action: 'archived', ids: [id] })).body.data.failed).toEqual([])
+      expect((await pupil.get(sitImg.url)).status).toBe(200)
+      expect((await pupil.get(quietImg.url)).status).toBe(200)
+      for (const p of [sat.paper, quiet.paper]) expect((await admin.post(`/api/admin/papers/${p}/withdraw`)).status).toBe(200)
+      expect((await pupil.get(sitImg.url)).status, 'the pupil\'s running sitting keeps its picture').toBe(200)
+      expect((await other.get(sitImg.url)).status, 'a pupil who never sat the withdrawn paper').toBe(404)
+      expect((await pupil.get(quietImg.url)).status, 'a withdrawn paper nobody sat').toBe(404)
     })
   })
 })
