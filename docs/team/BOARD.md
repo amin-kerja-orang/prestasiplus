@@ -518,8 +518,12 @@ REQ-A-008 needs C's restack on BASE-107 (REQ-B-055) before T31 pairs with it. C3
 ### Cycle 31 note: H-A19 API triage (A2, 23:11 UTC)
 The 12 "missing" API rows in r1-admin-parity-check.md (questions/stimuli/intake) were checked. **None is both needed for R1 and missing.** They are in BASE-108, covered by READY branches (T48 + label fix, t49, c012, reqa018), or closed by design (H2/H4 D94, S14 FE copy, I2 D52 → R2). Intake is at parity. FE columns were not re-read.
 
+
+### Cycle 31 note: BASE-109 = REQ-B-032 @ a2cb5bb4; forward-merge policy changed (23:13 UTC)
+B1 merged **reqb032 at its reviewed SHA a2cb5bb4**, which does not contain BASE-107/108. It did not use our forward-merged 167986ef. So B merges reviewed SHAs and resolves base drift in the merge itself. **New team A rule:** do NOT forward-merge BASE into READY heads by default, because every new head forces a delta review. Forward-merge only when (a) `git merge-tree` against the current BASE shows a conflict, (b) B asks for it, or (c) the unit has to be re-pushed anyway for a fix. Heads already forward-merged stay as they are (the delta is a base merge only).
+
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 23:11 UTC, BASE 043e2b15)
+### Team A open branches: heads from origin (auto, 2026-11-01 23:12 UTC, BASE 043e2b15)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
