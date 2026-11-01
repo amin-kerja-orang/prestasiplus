@@ -867,7 +867,8 @@ export class QuestionsRepository {
 
   /**
    * The facts the gates read that are not on the version row (R1-H-A18): ONE loader for the lifecycle transition, `gate-check`, the bulk
-   * action and the workflow bank adapter. Read inside the caller's transaction when there is one.
+   * action and the workflow bank adapter. Read inside the caller's transaction when there is one. The duplicate flag counts open `exact` and `near`
+   * links only: a pending `variant` link is informational (intake `duplicates.ts`) and never blocks Semakan or Terbit (REQ-B-057).
    */
   async gateFacts(questionId: string, versionNo: number): Promise<GateFacts> {
     const key = bi(questionId)
@@ -885,7 +886,7 @@ export class QuestionsRepository {
     >`
       SELECT v.last_editor, v.declared_marks,
              EXISTS (SELECT 1 FROM intake_items di JOIN duplicate_links dl ON dl.item_id = di.id
-                      WHERE di.question_id = q.id AND dl.decision = 'pending') AS duplicate_open,
+                      WHERE di.question_id = q.id AND dl.decision = 'pending' AND dl.kind IN ('exact', 'near')) AS duplicate_open,
              ii.low_fields, ii.confirmed_fields,
              ${mediaResolvedSql(Prisma.sql`SELECT vs.stimulus_id AS sid FROM question_version_stimuli vs WHERE vs.question_version_id = v.id
                UNION SELECT p.stimulus_id FROM question_parts p WHERE p.question_version_id = v.id AND p.stimulus_id IS NOT NULL

@@ -22,8 +22,10 @@
 ALTER TABLE "question_versions" ADD COLUMN "last_editor" TEXT NOT NULL DEFAULT 'person';
 ALTER TABLE "question_versions" ADD COLUMN "declared_marks" SMALLINT;
 
-ALTER TABLE "question_versions" ADD CONSTRAINT "ck_question_versions_last_editor" CHECK ("last_editor" IN ('person', 'ai'));
-ALTER TABLE "question_versions" ADD CONSTRAINT "ck_question_versions_declared_marks" CHECK ("declared_marks" IS NULL OR "declared_marks" >= 0);
+-- NOT VALID, then VALIDATE (as 0103 does for its FK): adding a CHECK validated in one step scans the table under ACCESS EXCLUSIVE; the
+-- VALIDATE below runs after the backfill and takes only SHARE UPDATE EXCLUSIVE (reads and writes continue).
+ALTER TABLE "question_versions" ADD CONSTRAINT "ck_question_versions_last_editor" CHECK ("last_editor" IN ('person', 'ai')) NOT VALID;
+ALTER TABLE "question_versions" ADD CONSTRAINT "ck_question_versions_declared_marks" CHECK ("declared_marks" IS NULL OR "declared_marks" >= 0) NOT VALID;
 
 DO $$
 DECLARE
@@ -44,3 +46,6 @@ BEGIN
 
   RAISE NOTICE '0105 backfill: last_editor=ai on % versions, declared_marks set on % versions', n_ai, n_marks;
 END $$;
+
+ALTER TABLE "question_versions" VALIDATE CONSTRAINT "ck_question_versions_last_editor";
+ALTER TABLE "question_versions" VALIDATE CONSTRAINT "ck_question_versions_declared_marks";
