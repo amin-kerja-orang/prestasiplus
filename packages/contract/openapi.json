@@ -15619,6 +15619,25 @@
         ],
         "additionalProperties": false
       },
+      "QuestionPaperServabilityMeta": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Published admin papers (kind pilihan) that place the question; a pupil's generated paper is never counted."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "True when `total` is more than the rows returned (the first 200 by paper id)."
+          }
+        },
+        "required": [
+          "total",
+          "truncated"
+        ],
+        "additionalProperties": false
+      },
       "CommandCenterMood": {
         "type": "string",
         "enum": [
@@ -84924,7 +84943,7 @@
         ],
         "responses": {
           "200": {
-            "description": "One row per published paper that places the question, by paper id; `[]` when it is on none.",
+            "description": "One row per published admin paper (kind pilihan; a pupil's generated paper is never listed) that places the question, by paper id, at most the first 200; `meta.total` counts all of them and `meta.truncated` says the list is cut. `[]` when it is on none.",
             "content": {
               "application/json": {
                 "schema": {
@@ -84935,10 +84954,14 @@
                       "items": {
                         "$ref": "#/components/schemas/QuestionPaperServabilityRow"
                       }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/QuestionPaperServabilityMeta"
                     }
                   },
                   "required": [
-                    "data"
+                    "data",
+                    "meta"
                   ]
                 }
               }

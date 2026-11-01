@@ -180,3 +180,11 @@ export const QuestionPaperServabilityRowSchema = z
   })
   .meta({ id: 'QuestionPaperServabilityRow' })
 export type QuestionPaperServabilityRow = z.infer<typeof QuestionPaperServabilityRowSchema>
+
+/** `meta` of `GET /admin/questions/{id}/paper-servability`: at most 200 papers are read; `total` counts all of them. */
+export const QuestionPaperServabilityMetaSchema = z
+  .strictObject({
+    total: z.number().int().min(0).meta({ description: 'Published admin papers (kind pilihan) that place the question; a pupil\'s generated paper is never counted.' }),
+    truncated: z.boolean().meta({ description: 'True when `total` is more than the rows returned (the first 200 by paper id).' }),
+  })
+  .meta({ id: 'QuestionPaperServabilityMeta' })
