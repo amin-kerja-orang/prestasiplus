@@ -523,7 +523,7 @@ The 12 "missing" API rows in r1-admin-parity-check.md (questions/stimuli/intake)
 B1 merged **reqb032 at its reviewed SHA a2cb5bb4**, which does not contain BASE-107/108. It did not use our forward-merged 167986ef. So B merges reviewed SHAs and resolves base drift in the merge itself. **New team A rule:** do NOT forward-merge BASE into READY heads by default, because every new head forces a delta review. Forward-merge only when (a) `git merge-tree` against the current BASE shows a conflict, (b) B asks for it, or (c) the unit has to be re-pushed anyway for a fix. Heads already forward-merged stay as they are (the delta is a base merge only).
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 23:38 UTC, BASE 10cc09e7)
+### Team A open branches: heads from origin (auto, 2026-11-01 23:39 UTC, BASE 10cc09e7)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -548,7 +548,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha26-team-a-state | cddc11cb5 | READY (A3 docs, @cddc11cb): team-a-r1-state.md; clean vs BASE-115; B2 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-a2 | 8c1964a6f | READY — B2 APPROVE @8c1964a6 (cycle 21, 07:25 MYT); awaiting B1 merge | READY (A2, BASE-105): prefetch crash fixed (awaited Promise.all, failed read → 500, no unhandledRejection; red-first specs); row 908 6 cells; tsc/eslint 0, intake-workflow 137/137; A4 pre-review: Appr |
-| r1/intake-reqs-followup | 2fe252aba | READY (A2, @2fe252ab on intake-reqs 8c1964a6): unknownSp required, FACTS in unit.spec, deviations row 244 names spNotInTaxonomy; 43/43, tsc 0; merge AFTER intake-reqs (deviations conflict: keep both); B2 small |
+| r1/intake-reqs-followup | 2fe252aba | READY (A2, @2fe252ab on intake-reqs 8c1964a6): unknownSp required, FACTS in unit.spec, deviations row 244 names spNotInTaxonomy; 43/43, tsc 0; merge AFTER intake-reqs (deviations conflict: keep both); B2 small | A1b pre-review: CLEAN (CurriculumFacts internal; both producers always set unknownSp; tsc 0; 43/43) |
 | r1/mock-known-mismatches | a279e68cd | READY (A3, BASE-105): REQ-A-019 base red fixed (7 routes notServed, stale m27 entry removed); conformance 2/2; B2 | A4 pre-review: Approve (nits) |
 | r1/partial-acs-a3 | 1e79f1f88 | READY (A3, @1e79f1f8 on T51 61c1b077; tests only): AC-18.1 "5c Latihan Bab" chain step (bites ×3); R1-11.4 §3.6b SELECT pin (bites); R1-12.6 §4 SELECT pin (bites); 51 pass; merge after T51; B2 | A1b pre-review: Approve (no Blocker/Major), 5 mutations re-verified; 3 Minors (SQL Bab-set comment, vacuous not.toContain, total-count 2844 assert) → A3 optional |
 | r1/publish-lock-share | 49635ca65 | ON HOLD (dep: on delete-served-guard fe7ef537, which waits for ha18 REQ-B-057) — code done (A1b, @49635ca6): Terbit takes FOR SHARE locks on placed questions (sorted ids) before evaluate; a delete that committed first makes publish refuse; 4-test race spec (bites: FOR SHARE removed → 2 red); 314 targeted pass; closes KIV publish race; pre-review queued (A4 slot 3); merge right after delete-served-guard; B2 + B3 |
@@ -582,6 +582,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t49-served-now | 8cb9fa5f1 | READY — B2 APPROVE @8cb9fa5f (cycle 21, 07:25 MYT); awaiting B1 merge | READY (A2 + A1a, @8cb9fa5f): blank-filter 422 + filter-options notServed entry in known-mismatches (route ships here); A4 pre-review Approve + B3 checklist Pass; merge BEFORE d72 (clean, A3 merge-tree |
 | r1/t51-partial-acs-a3 | 61c1b077f | READY (A3, hold LIFTED; @61c1b077 on T43 238eb6eb + T31 eb0346d2 + T48): merge after T48, T31, REQ-A-008, T43; never old T31 6a27c8dd / T43 5ce5894f / T51 54f63116; Preview #3 (A4, 33 heads on BASE-105 @525f9ca1, local): ALL GREEN, vue-tsc 0 after REQ-A-008, 0 reds. B2 |
 | r1/t52-examiner-grid | 5a0d7bd0e | READY — B2 APPROVE @5a0d7bd0 (cycle 21, 07:25 MYT); awaiting B1 merge | READY (A1a/A1b, @5a0d7bd0): examinerGrid from marked (live+pinned), be09 test 8 bites; deviation note live-wins in withPinned; A2 + A3 dev-1 delta pre-reviews CLEAN; 124 tests; B2 (C REQ-A-012 reqa012 |
+
+**New branches not yet triaged:** r1/rule-line-v2 9e5f373e5
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
