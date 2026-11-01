@@ -62,7 +62,7 @@ describe('StudioStatusBar', () => {
   it('shows the V2 badge word and sentence of a draft with its two buttons', async () => {
     studio.fetchServability.mockResolvedValue({ ...REPORT, servedCount: 0 })
     const w = await mountBar({ status: 'draft' })
-    expect(t(w, 'studio-status-badge').text()).toBe('Draft')
+    expect(t(w, 'studio-status-badge').text()).toBe('Draf')
     expect(t(w, 'studio-status-text').text()).toBe('Belum dipapar kepada pelajar.')
     expect(w.findAll('[data-testid^="studio-action-"]').map((b) => b.text())).toEqual(['Hantar untuk semakan', 'Arkib'])
   })

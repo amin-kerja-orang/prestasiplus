@@ -103,9 +103,9 @@ export const EnvSchema = z.object({
     .default('false')
     .transform((v) => v === 'true' || v === '1'),
   /**
-   * Bijak SPM PoC questions (LEAD decision 2026-10-20 16:00: staging only, never prod). true serves the reserved
-   * PoC id block (seeded PoC papers, Jana pool); false (default) refuses those ids, so only BE-09 questions are served.
-   * Set true wherever ALLOW_DEMO_SEED loads the demo seed (staging, dev, e2e).
+   * DEPRECATED NO-OP (R1-B07). The PoC question fixture and the composite id split were removed: Bijak papers, Jana Kertas
+   * and the kuiz read the question bank only, whatever this says. The key is still accepted so an existing environment
+   * file does not break start-up; `true` makes the API log a warning once. Remove it from the environment and, later, here.
    */
   BIJAK_POC_QUESTIONS: z
     .enum(['true', 'false', '1', '0'])

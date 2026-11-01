@@ -41,6 +41,19 @@ const delBtn = (page: Page, row: Locator, id: string): Locator =>
     ? page.getByTestId(`paper-delete-${id}`)
     : row.getByRole('button', { name: 'Padam kertas' })
 
+/**
+ * Terbitkan for a saved, complete draft whose Kontrak is not Disahkan (the mock follows R1-T34): the plain button is
+ * disabled with the reason and the audited override ("Terbitkan walaupun tidak memenuhi kontrak blueprint") publishes it.
+ */
+async function publishWithOverride(page: Page): Promise<void> {
+  await expect(page.getByTestId('paper-publish')).toBeDisabled()
+  await expect(page.getByTestId('publish-errors')).toBeVisible()
+  await page.getByTestId('override-tick').click()
+  await page.getByTestId('override-reason').fill('Kontrak masih Spec, kertas ujian dalaman')
+  await page.getByTestId('override-publish').click()
+  await page.locator('[data-ds=confirm-ok]').click()
+}
+
 /** The draft id from the editor URL `/admin/spm/kertas/:id`. */
 function paperIdOf(page: Page): string {
   return new URL(page.url()).pathname.split('/').pop() ?? ''
@@ -104,8 +117,7 @@ test.describe('Bijak SPM Admin Pusat terbit kertas @bijak', () => {
     await expectNoHorizontalScroll(page)
     await page.keyboard.press('Escape')
 
-    await page.getByTestId('paper-publish').click()
-    await page.locator('[data-ds=confirm-ok]').click() // V2 native-paper confirm (R8)
+    await publishWithOverride(page) // confirm = V2 native-paper confirm (R8)
     // Published: editing controls give way to the student link and "Tarik balik".
     await expect(page.getByTestId('paper-unpublish')).toBeVisible()
     await expect(page.getByTestId('paper-view-student')).toBeVisible()
@@ -209,9 +221,9 @@ test.describe('Bijak SPM Admin Pusat terbit kertas @bijak', () => {
     // Publish it from the editor, then look at the list again.
     await openBtn(page, row, id).click()
     await fillObjektif(page)
-    // Unsaved edits: Terbitkan saves first (Jana set + Terbitkan = 2 clicks).
-    await page.getByTestId('paper-publish').click()
-    await page.locator('[data-ds=confirm-ok]').click()
+    await page.getByTestId('paper-save').click()
+    await expect(page.getByTestId('paper-save')).toBeDisabled()
+    await publishWithOverride(page)
     await expect(page.getByTestId('paper-unpublish')).toBeVisible()
     await openListFromEditor(page)
     await expectNoHorizontalScroll(page)

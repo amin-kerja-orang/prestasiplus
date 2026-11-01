@@ -272,6 +272,30 @@ export interface BuilderGroup {
   questionIds: string[]
 }
 
+/** One page of a section's bank pool (`GET /admin/papers/:id/sections/:sid/pool`, REQ-B-042). */
+export interface SectionPoolPage {
+  /** A question, or a whole stimulus group (D90), eligible for this Bahagian. */
+  units: {
+    groupId?: string
+    /** The group's shared stimulus (groups only). */
+    stimulus?: StimulusDef
+    questionIds: string[]
+    questions: BuilderQuestion[]
+    marks: number
+    eligible: boolean
+    reasons: string[]
+    placed: boolean
+  }[]
+  total: number
+  totalPages: number
+}
+
+export interface SectionPoolQuery {
+  q?: string
+  page?: number
+  pageSize?: number
+}
+
 export interface PaperEditorData {
   paper: AdminPaper
   blueprint: BlueprintView | null

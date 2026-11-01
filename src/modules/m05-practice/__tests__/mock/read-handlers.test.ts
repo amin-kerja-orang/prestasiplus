@@ -428,7 +428,7 @@ describe('#7 / #8 chapter mode (S4, S5; BR-15, BR-16)', () => {
     useOfferedLevels(DARJAH_1_4)
   })
 
-  it('D72 default: no chapter question exists at Tingkatan 4 / 5, so S4 lists no subject and S5 falls back to T4', async () => {
+  it('D72 default (REQ-B-040): the demo chapter questions at Tingkatan 4 / 5 make S4 list MATH and SCI, and S5 falls back to T4', async () => {
     useOfferedLevels()
     const list = await getAs<ListBody<ChapterSubject>>(
       runtime,
@@ -436,13 +436,17 @@ describe('#7 / #8 chapter mode (S4, S5; BR-15, BR-16)', () => {
       '/api/practice/chapter-subjects',
     )
     expect(list.status).toBe(200)
-    expect(list.body.data).toEqual([])
+    expect(list.body.data.map((s) => s.code)).toEqual(['MATH', 'SCI'])
     const math = await data<ChapterSubjectDetail>(
       MAJU,
       '/api/practice/chapter-subjects/MATH?levelId=1',
     )
     expect(math.levels.map((l) => l.id)).toEqual([10, 11])
     expect(math.levelId).toBe(10)
+    // 3 linked chapters at T4, 1 at T5 (fictitious demo links, REQ-B-040).
+    expect(math.chapters.map((c) => c.id)).toEqual([91, 92, 220])
+    expect(math.chapters.every((c) => c.total > 0)).toBe(true)
+    expect(math.levels.every((l) => l.count > 0)).toBe(true)
   })
 
   it('#7 lists the subjects with chapters, with chapter and question counts (MATH 6,538)', async () => {
