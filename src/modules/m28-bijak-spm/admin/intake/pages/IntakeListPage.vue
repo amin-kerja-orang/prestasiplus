@@ -8,6 +8,7 @@ import { DsDataTable, DsEmptyState, DsFilterBar, DsNativeSelect, DsPage, DsStatu
 
 import { bijakAdminServer } from '../../../server/client'
 import { isUnavailable, UNAVAILABLE_TITLE } from '../../../server/errors'
+import { intakeBadge } from '../lib/intake-badge'
 import { INTAKE_MANUAL_PATH, INTAKE_UPLOAD_PATH, intakeReviewPath } from '../lib/intake-routes'
 import type { IntakeStatus, IntakeSummary } from '../types'
 
@@ -170,8 +171,8 @@ const COLUMNS: TableColumn<Row>[] = [
       </template>
       <template #status-cell="{ row }">
         <DsStatusBadge
-          :status="row.original.status === 'draf' ? 'draft' : 'awaiting-review'"
-          :label="row.original.status === 'draf' ? 'Draf' : 'Semakan'"
+          v-bind="intakeBadge(row.original)"
+          data-testid="batch-status"
         />
       </template>
       <template #open-cell="{ row }">

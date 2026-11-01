@@ -271,7 +271,7 @@ describe('random quiz: marking and the practice-session write (U8)', () => {
       )
     }
     await link('SEED-MCQ-SCI-T5', 'image', stimFile.id, null)
-    // a linked passage that is neither in a group nor a picture cannot be shown, so the question is not served
+    // R1E2E-05b / H-C8: a question's own passage (not in a group, not a picture) is served inline with its text
     await link('SEED-MCQ-SCI-T4', 'passage', null, 'Petikan yang tidak boleh dipaparkan.')
 
     const math = sessionOf(await start(student, { subject: 'MATH', count: 5 }))
@@ -282,8 +282,10 @@ describe('random quiz: marking and the practice-session write (U8)', () => {
     const sci = await start(student, { subject: 'SCI', count: 5 })
     const served = sessionOf(sci).items
     const pic = served.find((i) => i.id === id('SEED-MCQ-SCI-T5'))!
-    expect(pic.stimuli).toEqual([{ kind: 'diagram', label: '', body: null, imageToken: stimFile.public_id, alt: null }])
-    expect(served.map((i) => i.id)).not.toContain(id('SEED-MCQ-SCI-T4'))
+    // H-C8: the own picture keeps its stored kind (not collapsed to 'diagram') and its label
+    expect(pic.stimuli).toEqual([{ kind: 'image', label: 'Rajah', body: null, imageToken: stimFile.public_id, alt: null, caption: null, source: null, table: null }])
+    const own = served.find((i) => i.id === id('SEED-MCQ-SCI-T4'))!
+    expect(own.stimuli).toEqual([{ kind: 'passage', label: 'Rajah', body: 'Petikan yang tidak boleh dipaparkan.', imageToken: null, alt: null, caption: null, source: null, table: null }])
     // the wire carries the public token (22 chars), not the internal id
     expect(item.options.find((o) => o.id === 'A')!.imageToken).not.toBe(optionFile.id)
     expect(pic.stimuli[0]!.imageToken).not.toBe(stimFile.id)
@@ -459,7 +461,7 @@ describe('shared stimulus group (D90): one picture, two questions', () => {
     expect(s.items.map((i) => i.id).sort()).toEqual([id('SEED-MCQ-MATH-T4'), id('SEED-MCQ-MATH-T5')].sort())
     for (const item of s.items) {
       expect(item.groupId).toBe(groupId)
-      expect(item.stimuli).toEqual([{ kind: 'diagram', label: 'Rajah kumpulan', body: null, imageToken: picToken, alt: null }])
+      expect(item.stimuli).toEqual([{ kind: 'image', label: 'Rajah kumpulan', body: null, imageToken: picToken, alt: null, caption: null, source: null, table: null }])
     }
     expect(s.items.some((i) => i.id === stim.id && i.kind !== 'mcq')).toBe(false)
   })
@@ -467,12 +469,99 @@ describe('shared stimulus group (D90): one picture, two questions', () => {
   it('23. per-paper quiz: the picture is rendered once, members follow it contiguously in group order', async () => {
     const paper = await createPaper('Kertas kumpulan', [{ label: 'Bahagian A', questionIds: [id('SEED-MCQ-MATH-T4'), id('SEED-MCQ-BM-T4'), id('SEED-MCQ-MATH-T5')] }])
     const page = BijakKuizPaperPageSchema.parse((await student.get(`/api/bijak/kuiz/papers/${paper}`)).body.data)
-    expect(page.groups).toEqual([{ id: groupId, stimuli: [{ kind: 'diagram', label: 'Rajah kumpulan', body: null, imageToken: picToken, alt: null }] }])
+    expect(page.groups).toEqual([{ id: groupId, stimuli: [{ kind: 'image', label: 'Rajah kumpulan', body: null, imageToken: picToken, alt: null, caption: null, source: null, table: null }] }])
     // the group sits at the place of its first placed member (T4), members in group order (T5, T4), then the plain question
     expect(page.items.map((i) => i.id)).toEqual([id('SEED-MCQ-MATH-T5'), id('SEED-MCQ-MATH-T4'), id('SEED-MCQ-BM-T4')])
     expect(page.items.map((i) => i.groupId)).toEqual([groupId, groupId, null])
     expect(page.items.every((i) => i.stimuli.length === 0)).toBe(true)
     expect(JSON.stringify(page).split(picToken).length - 1).toBe(1)
+  })
+})
+
+describe('own stimuli of every kind (H-C8, R1E2E-05b)', () => {
+  const linkOwn = async (ref: string, cols: { kind: string; label: string; body?: string | null; caption?: string | null; source?: string | null; table?: unknown; file?: string | null }, position = 1) => {
+    const st = (
+      await t.db.query<{ id: string }>(
+        `insert into stimuli (kind, label, body_ms, caption, source_citation, table_data, asset_file_id) values ($1, $2, $3, $4, $5, $6::jsonb, $7::bigint) returning id::text`,
+        [cols.kind, cols.label, cols.body ?? null, cols.caption ?? null, cols.source ?? null, cols.table === undefined ? null : JSON.stringify(cols.table), cols.file ?? null],
+      )
+    )[0]!
+    await t.db.query(
+      `insert into question_version_stimuli (question_version_id, stimulus_id, position) select v.id, $2::bigint, $3 from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no where q.id = $1::bigint`,
+      [id(ref), st.id, position],
+    )
+    return st.id
+  }
+  const unlinkAll = async (...refs: string[]) => {
+    for (const ref of refs) {
+      await t.db.query(
+        `delete from question_version_stimuli where question_version_id in (select v.id from questions q join question_versions v on v.question_id = q.id where q.id = $1::bigint)`,
+        [id(ref)],
+      )
+    }
+  }
+
+  it('24. serves a table (grid, caption, source) and a map as their own kinds', async () => {
+    const file = (await t.db.query<{ id: string; public_id: string }>(`insert into files (public_id, purpose, mime, size_bytes, sha256, storage_key) values ('mapPicAaaaaaaaaaaaaaaa', 'question_image', 'image/png', 10, $1, 'kuiz/map.png') returning id::text, public_id`, ['8'.repeat(64)]))[0]!
+    await linkOwn('SEED-MCQ-BM-T4', { kind: 'table', label: 'Jadual 1', caption: 'Hasil jualan', source: 'Sumber: kajian', table: { head: ['Bulan', 'Jumlah'], rows: [['Jan', '10'], ['Feb', '20']] } })
+    await linkOwn('SEED-MCQ-BM-T5', { kind: 'map', label: 'Peta 1', file: file.id })
+    try {
+      const s = sessionOf(await start(student, { subject: 'BM', count: 5 }))
+      expect(s.items.find((i) => i.id === id('SEED-MCQ-BM-T4'))!.stimuli).toEqual([
+        { kind: 'table', label: 'Jadual 1', body: null, imageToken: null, alt: null, caption: 'Hasil jualan', source: 'Sumber: kajian', table: { head: ['Bulan', 'Jumlah'], rows: [['Jan', '10'], ['Feb', '20']] } },
+      ])
+      expect(s.items.find((i) => i.id === id('SEED-MCQ-BM-T5'))!.stimuli).toEqual([
+        { kind: 'map', label: 'Peta 1', body: null, imageToken: file.public_id, alt: null, caption: null, source: null, table: null },
+      ])
+    } finally {
+      await unlinkAll('SEED-MCQ-BM-T4', 'SEED-MCQ-BM-T5')
+    }
+  })
+
+  it('25. a stimulus shared by two questions without being a group (D90) makes both unservable', async () => {
+    const shared = await linkOwn('SEED-MCQ-BM-T4', { kind: 'passage', label: 'Petikan kongsi', body: 'Teks kongsi.' })
+    await t.db.query(
+      `insert into question_version_stimuli (question_version_id, stimulus_id, position) select v.id, $2::bigint, 1 from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no where q.id = $1::bigint`,
+      [id('SEED-MCQ-BM-T5'), shared],
+    )
+    try {
+      const served = sessionOf(await start(student, { subject: 'BM', count: 5 })).items.map((i) => i.id)
+      expect(served).not.toContain(id('SEED-MCQ-BM-T4'))
+      expect(served).not.toContain(id('SEED-MCQ-BM-T5'))
+    } finally {
+      await unlinkAll('SEED-MCQ-BM-T4', 'SEED-MCQ-BM-T5')
+    }
+  })
+})
+
+describe('picture linked only to a leaf part (H-C8, withLeafStimuli)', () => {
+  const linkLeaf = async (ref: string, stimulusId: string | null) => {
+    await t.db.query(
+      `update question_parts set stimulus_id = $2::bigint where question_version_id = (select v.id from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no where q.id = $1::bigint)`,
+      [id(ref), stimulusId],
+    )
+  }
+
+  it('27. a picture linked only to a leaf is served from the asset row; shared by two questions it makes both unservable', async () => {
+    const file = (await t.db.query<{ id: string; public_id: string }>(`insert into files (public_id, purpose, mime, size_bytes, sha256, storage_key) values ('leafPicAaaaaaaaaaaaaaa', 'question_image', 'image/png', 10, $1, 'kuiz/leaf.png') returning id::text, public_id`, ['7'.repeat(64)]))[0]!
+    const st = (await t.db.query<{ id: string }>(`insert into stimuli (kind, label, asset_file_id) values ('diagram', 'Rajah 1', $1::bigint) returning id::text`, [file.id]))[0]!
+    try {
+      await linkLeaf('SEED-MCQ-BM-T4', st.id)
+      const one = sessionOf(await start(student, { subject: 'BM', count: 5 })).items.find((i) => i.id === id('SEED-MCQ-BM-T4'))
+      expect(one).toBeDefined()
+      expect(one?.stimuli).toHaveLength(1)
+      expect(one?.stimuli[0]).toMatchObject({ kind: 'diagram', imageToken: file.public_id })
+
+      await linkLeaf('SEED-MCQ-BM-T5', st.id)
+      const served = sessionOf(await start(student, { subject: 'BM', count: 5 })).items.map((i) => i.id)
+      expect(served).not.toContain(id('SEED-MCQ-BM-T4'))
+      expect(served).not.toContain(id('SEED-MCQ-BM-T5'))
+    } finally {
+      await linkLeaf('SEED-MCQ-BM-T4', null)
+      await linkLeaf('SEED-MCQ-BM-T5', null)
+      await t.db.query(`delete from stimuli where id = $1::bigint`, [st.id])
+      await t.db.query(`delete from files where id = $1::bigint`, [file.id])
+    }
   })
 })
 
