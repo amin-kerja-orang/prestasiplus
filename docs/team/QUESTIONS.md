@@ -55,6 +55,6 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
   - the streak is touched once a day.
 - Evidence: A1b findings (scratchpad a1b/r1-10-1-findings.md); spec branch r1/r1-10-1-practice-spec.
 - **Q12a:** practice syiling rate → recommended: keep 1 per correct (the only observed amount); 2 would be assumed.
-- **Q12b:** practice XP into the wallet → recommended: credit it, like the paper path (consistent; small change).
+- **Q12b:** practice XP into the wallet → recommended: leave as is until V2 evidence exists (crediting it would be new, unobserved behaviour).
 - **Q12c:** can the user supply V2 PracticeRecorder.php or .cloud observations to close the kombo step?
 
