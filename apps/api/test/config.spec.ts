@@ -162,4 +162,24 @@ describe('env validation', () => {
     }
     expect([...keys].sort()).toEqual(Object.keys(EnvSchema.shape).sort())
   })
+
+  // REQ-B-053: the example ships `SERVABILITY_OVERVIEW_WARM=` (empty); CI (e2e-http.yml) copies the example, so '' must count as unset.
+  it('SERVABILITY_OVERVIEW_WARM: empty counts as unset, true/false parse, anything else is refused', () => {
+    expect(loadEnv({ ...VALID, SERVABILITY_OVERVIEW_WARM: '' }).SERVABILITY_OVERVIEW_WARM).toBeUndefined()
+    expect(loadEnv({ ...VALID }).SERVABILITY_OVERVIEW_WARM).toBeUndefined()
+    expect(loadEnv({ ...VALID, SERVABILITY_OVERVIEW_WARM: 'true' }).SERVABILITY_OVERVIEW_WARM).toBe('true')
+    expect(loadEnv({ ...VALID, SERVABILITY_OVERVIEW_WARM: 'false' }).SERVABILITY_OVERVIEW_WARM).toBe('false')
+    for (const junk of ['yes', '1', 'TRUE', ' ']) expect(() => loadEnv({ ...VALID, SERVABILITY_OVERVIEW_WARM: junk }), junk).toThrow(/SERVABILITY_OVERVIEW_WARM/)
+  })
+
+  it('the shipped .env.api.example boots as copied (every active line, empty values included)', () => {
+    const file = fileURLToPath(new URL('../../../.env.api.example', import.meta.url))
+    const raw: Record<string, string> = {}
+    for (const line of readFileSync(file, 'utf8').split(/\r?\n/)) {
+      const m = /^([A-Z][A-Z0-9_]*)=(.*)$/.exec(line)
+      if (m?.[1] !== undefined && m[2] !== undefined) raw[m[1]] = m[2].replace(/\s+#.*$/, '').trim()
+    }
+    expect(raw.SERVABILITY_OVERVIEW_WARM).toBe('')
+    expect(() => loadEnv(raw)).not.toThrow()
+  })
 })
