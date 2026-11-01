@@ -153,8 +153,6 @@ export const DEFAULT_MAP_GRADE = 'TINGKATAN_4'
 
 /** BR-14: `mastered` from this progress percentage (inferred threshold). */
 export const MASTERED_FROM = 80
-/** BR-14: the first two topics are open with no history. */
-export const OPEN_FROM_START = 2
 
 /** BR-15: the pill label, or the code title-cased ("Geografi"). */
 export function mapSubjectLabel(code: string): string {
@@ -174,16 +172,17 @@ export interface TopicProgress {
 
 export const NO_PROGRESS: TopicProgress = Object.freeze({ sessions: 0, questionsAnswered: 0, progress: 0 })
 
-/** BR-14: the island state of every topic, in `sequence` order (input order). */
+/**
+ * BR-14: the island state of every topic, in `sequence` order (input order). REQ-C-021 (D98, V2): no island is locked; a topic
+ * without history is `unlocked`, from a topic with history (`started`) or a `mastered` one on, exactly like the first ones.
+ */
 export function islandStates(progress: readonly TopicProgress[]): TopicState[] {
   const states: TopicState[] = []
-  progress.forEach((p, i) => {
-    const prev = states[i - 1]
+  progress.forEach((p) => {
     let state: TopicState
     if (p.progress >= MASTERED_FROM) state = 'mastered'
     else if (p.sessions >= 1 || p.questionsAnswered >= 1) state = 'started'
-    else if (i < OPEN_FROM_START || prev === 'started' || prev === 'mastered') state = 'unlocked'
-    else state = 'locked'
+    else state = 'unlocked'
     states.push(state)
   })
   return states
