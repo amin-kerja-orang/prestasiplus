@@ -55,7 +55,7 @@ Spec branches: a proof tagged `BASE-n` is in base (BASE-6 or the later merge nam
 | t48a | t48a-paper-list @ e5041595 | exam-builder/builder-api.spec.ts: "REQ-C-008" title at most 200, "R12" paper list filters Subjek and Cari (READY); no matrix row names them |
 | t38 / t40 | t38-selfmark-reward @ 13134ced, t40-attempts-acs @ 43fb5900 (contains t38) | bijak-integration/rewards.spec.ts (D94), cuba-lagi-rewards.spec.ts, bijak-attempts/ac-r1.spec.ts, five-modes.spec.ts, practice/databank-prestasi.spec.ts (READY) |
 | t41 | t41-curriculum-acs @ 067ff3cc | curriculum/dskp-acs.spec.ts (READY) |
-| t50 | t50-partial-acs @ e436e084 | practice/databank-sejarah.spec.ts, bijak-attempts/reveal-data.spec.ts (READY) |
+| t50 | t50-partial-acs @ 075e1b58 | practice/databank-sejarah.spec.ts, bijak-attempts/reveal-data.spec.ts (READY) |
 | ha9 | ha9-pipeline-chain @ d3257e69 | earlier chain spec (READY; superseded by t43) |
 | ha13 | ha13-archived-paper @ 61b8851d | archived-paper refusal, Cuba Lagi 409 (READY) |
 | e2e05 | e2e05-stem-image @ 00cec26f (inside e2e05b-own-stimuli @ 9895d004) | bijak-integration/stem-image.spec.ts (READY) |
