@@ -428,3 +428,10 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
   - Evidence: tsc 0 (all three); contract 1456/1456; DB 1818 + 4 todo; conformance 409/409.
   - **vue-tsc 1 error** (http-admin.ts:198 BuilderGroup.stimulus). C1's REQ-A-008 closes it, but REQ-A-008 @ 7e2e4392 conflicts with BASE-101/102 (PaperEditorPage.vue + deviations doc). **C1 must rebase REQ-A-008 onto BASE-102**; B1 merges T31 together with REQ-A-008.
 - **T43 READY** r1/t43-chain-publish @ 5ce5894f (on T31; spec-only; chain questions are non-KBAT for the Kontrak KBAT quota). 932 pass + 2 todo; tsc 0. Merge order: T31 + REQ-A-008 → T43. A3 dev-1 next: T51.
+- **A4 READY ×5.** Merge order: t45-lanes → H-A21 → 022a-a4 → c-020 → b-033 (A4 is stacking them on BASE-102; final heads follow).
+  - REQ-B-041 re-post: t45-lanes @ e7e5d3dd, H-A21 @ 669b0caf (BASE-102 + B2 Minor). vue-tsc 0; m28 589/589; DB 59/59.
+  - T45 Part 1: r1/t45-servability-acs @ a0f11f68 (BASE-102 merge in progress). B2 MAJOR + B3 T45-L1 fixed. Shared `assertServableSomewhere` is called from questions.service.ts setStatus and createFrom. **This overlaps A2's H-A18 file; A2 has been told the exact lines.** 305/305. Needs B3.
+  - REQ-B-022(a) @ 448366da: cold overview 34 s → 14.5 s. New env SERVABILITY_OVERVIEW_WARM. Needs B3 + DevOps.
+  - REQ-C-020 @ 1a6e2610: lane `subjects`. 65/65.
+  - REQ-B-033 @ 572490e9: new reason `question_missing`. **Seed finding:** 25 placements on the 5 published demo papers point at missing question ids → A1a investigates.
+- FE follow-ups to C: REQ-A-016 (lane subjects, hub reads `cards`, `question_missing` label).
