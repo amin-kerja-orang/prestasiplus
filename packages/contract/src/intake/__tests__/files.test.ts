@@ -51,6 +51,8 @@ const summary = {
   adminNotes: null,
   fileCount: 1,
   pageCount: 2,
+  itemCount: 3,
+  reviewedCount: 2,
   owner: { id: 'u1', name: 'Guru Contoh' },
   createdAt: '2026-10-16T09:30:00+08:00',
   updatedAt: '2026-10-16T09:30:00+08:00',

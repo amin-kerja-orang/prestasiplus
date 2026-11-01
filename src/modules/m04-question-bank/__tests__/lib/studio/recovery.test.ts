@@ -41,6 +41,27 @@ describe('Studio draft recovery (V2 flow 1 step 2)', () => {
     expect(sameDraft(back!, d)).toBe(false)
   })
 
+  it('keeps the inherited question TP through recovery (REQ-B-045)', () => {
+    const store = memory()
+    const d = { ...filled(), inheritedTp: 3 }
+    d.leaves[0]!.tp = null
+    saveSnapshot(store, recoveryKey('1', '5'), d)
+    const back = loadSnapshot(store, recoveryKey('1', '5'))
+    expect(back?.inheritedTp).toBe(3)
+    expect(sameDraft(back!, d)).toBe(true)
+    expect(parseSnapshot(JSON.stringify({ v: 1, draft: { ...d, inheritedTp: 9 } }))).toBeNull()
+    expect(parseSnapshot(JSON.stringify({ v: 1, draft: { ...d, inheritedTp: '3' } }))).toBeNull()
+    const nulled = parseSnapshot(JSON.stringify({ v: 1, draft: { ...d, inheritedTp: null } }))
+    expect(nulled).not.toBeNull()
+    // null, absent and undefined are the same "none" for sameDraft, whatever the key order
+    const { inheritedTp: _drop, ...bare } = d
+    void _drop
+    expect(sameDraft(nulled!, bare)).toBe(true)
+    expect(sameDraft({ ...bare, inheritedTp: null }, bare)).toBe(true)
+    expect(sameDraft({ ...bare, inheritedTp: 3 }, bare)).toBe(false)
+    expect(parseSnapshot(JSON.stringify({ v: 1, draft: { ...d, leaves: [{ ...d.leaves[0], tp: 2.5 }] } }))).toBeNull()
+  })
+
   it('clears the snapshot', () => {
     const store = memory()
     saveSnapshot(store, recoveryKey('1', '5'), filled())

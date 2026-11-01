@@ -15,12 +15,11 @@
  * http client (server/http-admin.ts, wired to BE-39: papers list/get/create/save/publish/unpublish/
  * delete, blueprints). The intake, review-queue and bank methods were wired afterwards (AZ-20, see
  * intake-review-http.spec.ts); only the bank "Sunting" versions and "Minta Pembetulan" have no route.
- * The demo path is Pembina Kertas. B4 (155cf001 on v2-backend: composite builder source) gives the
- * builder the PoC questions when the API runs with BIJAK_POC_QUESTIONS=true, so create + publish
- * works. Subject/kertas used: Matematik Kertas 1 (PoC blueprint "Objektif", take 10, 10 marks, pool
- * MAT1-A with 45 PoC questions: apps/api/src/modules/bijak/papers/poc/poc-bank.ts). Without B4 a
- * publish is refused ("<Bahagian>: Kurang N soalan (perlu X, ada Y)", BE-39 contract,
- * bijak/builder/paths.ts).
+ * The demo path is Pembina Kertas. Since R1-B07 (T36) the builder offers the QUESTION BANK only: the PoC fixture and the composite
+ * builder source are gone from the API (`BIJAK_POC_QUESTIONS` is a deprecated no-op), so create + publish works only on a database with
+ * enough approved bank questions for the blueprint (the demo seed's bank questions, T26 e2e seed). Subject/kertas used: Matematik
+ * Kertas 1 (blueprint "Objektif"). A publish that lacks questions is refused ("<Bahagian>: Kurang N soalan (perlu X, ada Y)", BE-39
+ * contract, bijak/builder/paths.ts).
  */
 import type { Browser, Page, TestInfo } from '@playwright/test'
 import { expect, test } from '@playwright/test'

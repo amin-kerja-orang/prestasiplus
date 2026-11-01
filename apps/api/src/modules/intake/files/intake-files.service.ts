@@ -27,6 +27,7 @@ import {
   errorCodeOrNull,
   RIGHTS_TO_DB,
   toBatchSummary,
+  type BatchItemCounts,
   toFileSummary,
   type BatchRow,
 } from './intake-mappers'
@@ -106,7 +107,9 @@ export class IntakeFilesService {
         include: BATCH_INCLUDE,
       }),
     ])
-    return { data: rows.map((r) => toBatchSummary(r as BatchRow)), meta: listMeta(query.page, query.pageSize, total) }
+    // One aggregate for the whole page (no query per row).
+    const counts = await this.itemCountsOf(rows.map((r) => r.id))
+    return { data: rows.map((r) => toBatchSummary(r as BatchRow, counts.get(r.id))), meta: listMeta(query.page, query.pageSize, total) }
   }
 
   async getBatch(auth: AuthContext, idText: string): Promise<IntakeBatchDetail> {
@@ -124,9 +127,26 @@ export class IntakeFilesService {
     if (!row) throw ApiError.of('NOT_FOUND')
     const progress = await this.progressOf(row.files.map((f) => f.id))
     return {
-      ...toBatchSummary(row as BatchRow),
+      ...toBatchSummary(row as BatchRow, (await this.itemCountsOf([row.id])).get(row.id)),
       files: row.files.map((f) => toFileSummary(f, progress.get(f.id) ?? { total: f.pageCount ?? 0, done: 0, failed: 0 })),
     }
+  }
+
+  /**
+   * Per batch: the items and the items with no unconfirmed low-confidence field (`low_fields` minus `confirmed_fields` is empty), in
+   * one grouped statement for all the given batches (REQ-C-009). A batch without items is absent (the caller falls back to zeros).
+   */
+  async itemCountsOf(batchIds: bigint[]): Promise<Map<bigint, BatchItemCounts>> {
+    const out = new Map<bigint, BatchItemCounts>()
+    if (batchIds.length === 0) return out
+    const rows = await this.prisma.client.$queryRaw<{ batch_id: bigint; n: number; reviewed: number }[]>`
+      SELECT batch_id, count(*)::int AS n,
+             (count(*) FILTER (WHERE NOT EXISTS (SELECT 1 FROM unnest(low_fields) AS f WHERE f <> ALL(confirmed_fields))))::int AS reviewed
+        FROM intake_items
+       WHERE batch_id = ANY(${batchIds}::bigint[])
+       GROUP BY batch_id`
+    for (const r of rows) out.set(r.batch_id, { itemCount: r.n, reviewedCount: r.reviewed })
+    return out
   }
 
   /** Per-file page counts: total, finished (done or not needed) and failed. */
