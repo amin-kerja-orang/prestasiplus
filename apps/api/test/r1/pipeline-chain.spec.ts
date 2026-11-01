@@ -36,6 +36,7 @@ import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { featureModules } from '../../src/modules'
 import { makePng } from '../files/fixtures'
+import { giveBab } from '../support/bab'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
 vi.setConfig({ testTimeout: 120_000, hookTimeout: 300_000 })
@@ -161,6 +162,7 @@ async function createQuestion(body: Record<string, unknown>): Promise<string> {
 }
 
 async function advance(ids: string[]): Promise<void> {
+  await giveBab(db, ids)
   for (const action of SERVE_STEPS) {
     const res = await admin.post('/api/questions/bulk-action', { action, ids })
     expect(res.status, `${action}: ${JSON.stringify(res.body)}`).toBe(200)

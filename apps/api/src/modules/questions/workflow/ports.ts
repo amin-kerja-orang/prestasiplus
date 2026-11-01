@@ -65,10 +65,6 @@ export interface QuestionGateData {
   spIds: string[]
   /** `difficulty_tp`, 1 to 6. */
   tp: number | null
-  /** E-rights_status, or null when no declaration was made. */
-  rightsStatus: string | null
-  /** True when a source declaration (source paper, contributor or kind) is present. */
-  hasSourceDeclaration: boolean
   /** Fields still flagged low-confidence and not yet confirmed by a person (BE-38 intake). */
   unconfirmedLowConfidenceFields: string[]
   /** An open duplicate flag that is not marked "Bukan pendua". */

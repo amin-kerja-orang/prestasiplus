@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { makePng } from '../files/fixtures'
 import { NOT_SERVING, serveSeededBlueprints } from '../support/serve-blueprints'
 import { bootFullApp, loginFull, type FullApp, type FullClient } from '../r1/full-app'
+import { giveBab } from '../support/bab'
 import { ACCOUNTS, auditRows, expectError } from './helpers'
 
 vi.setConfig({ testTimeout: 120_000, hookTimeout: 300_000 })
@@ -42,6 +43,7 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
     return res.body.data.id as string
   }
   async function approve(ids: string[]): Promise<void> {
+    await giveBab(t.db, ids)
     for (const action of ['review', 'approved']) {
       const res = await admin.post('/api/questions/bulk-action', { action, ids })
       expect(res.status, JSON.stringify(res.body)).toBe(200)
