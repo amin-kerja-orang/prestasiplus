@@ -1088,24 +1088,36 @@ export class AdminOps {
     if (!paper) throw this.host.error('not_found', 'Kertas tidak ditemui')
     if (!paper.sections.some((s) => s.id === sectionId)) throw this.host.error('bad_request', 'Bahagian tidak sah')
     const placed = new Set(paper.sections.flatMap((s) => s.questionIds))
+    const bp = BLUEPRINTS.find((b) => b.subject === paper.subject && b.kertas === paper.kertas)
+    const sectionPoolId = bp?.sections[paper.sections.findIndex((s) => s.id === sectionId)]?.pool ?? null
     const term = (query.q ?? '').trim().toLowerCase()
     const done = new Set<string>()
     const units: SectionPoolPage['units'] = []
     for (const qid of this.allQuestionIds()) {
       const q = getQ(qid)
       if (!q || done.has(qid) || this.statusOf(qid) !== 'terbit') continue
-      if (q.curriculum.subject !== paper.subject || kertasOf(qid) !== paper.kertas) continue
+      if (q.curriculum.subject !== paper.subject) continue
+      // Like the real service: the candidates are the subject's bank for this kertas; eligibility is
+      // then decided per Bahagian from the blueprint pool (a K1 MCQ's own `kertas` tag is not the filter).
+      const pools = BANK.pool.filter((p) => p.questionId === qid).map((p) => p.pool)
+      const inKertas = pools.length
+        ? pools.some((p) => new RegExp(`^[A-Z]+${paper.kertas}-`).test(p))
+        : kertasOf(qid) === paper.kertas
+      if (!inKertas) continue
       const members = q.groupId ? membersOf(q.groupId) : [qid]
       members.forEach((m) => done.add(m))
       const questions = members.map((m) => this.builderQuestion(m))
       if (term && !questions.some((x) => `${x.preview} ${x.topic} ${x.id}`.toLowerCase().includes(term))) continue
+      const reasons = sectionPoolId && pools.length && !pools.includes(sectionPoolId) ? ['bukan dalam kolam bahagian ini'] : []
+      const st = q.groupId ? getStimulus(q.groupId) : undefined
       units.push({
         ...(q.groupId ? { groupId: q.groupId } : {}),
+        ...(st ? { stimulus: st } : {}),
         questionIds: members,
         questions,
         marks: questions.reduce((n, x) => n + x.marks, 0),
-        eligible: true,
-        reasons: [],
+        eligible: reasons.length === 0,
+        reasons,
         placed: members.some((m) => placed.has(m)),
       })
     }

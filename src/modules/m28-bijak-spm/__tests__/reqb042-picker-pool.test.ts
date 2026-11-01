@@ -26,18 +26,17 @@ describe('http client: sectionPool', () => {
       request: (req: TransportRequest): Promise<TransportResponse> => {
         requests.push(req)
         if (req.url === '/api/session') return Promise.resolve({ status: 200, headers: {}, body: { data: { csrf: 'c' } } })
-        return Promise.resolve({ status: 200, headers: {}, body: { data: [unit('a'), unit('g1', { groupId: 'grp', questionIds: ['g1', 'g2'] })], meta: { totalItems: 59, totalPages: 3 } } })
+        return Promise.resolve({ status: 200, headers: {}, body: { data: [unit('a'), unit('g1', { groupId: 'grp', questionIds: ['g1', 'g2'], stimulus: { id: 'st1', kind: 'image', label: 'Rajah 2', alt: 'a' } })], meta: { totalItems: 59, totalPages: 3 } } })
       },
     }
     const server = createHttpBijakAdminServer({ client: new ApiClient({ transport }) })
     const page = await server.sectionPool('p1', 's1', { q: ' tolak ', page: 2, pageSize: 20 })
     const req = requests.find((r) => r.url.includes('/pool'))!
     expect(req.method).toBe('GET')
-    expect(req.url.startsWith('/api/admin/papers/p1/sections/s1/pool')).toBe(true)
-    const qs = req.url.includes('?') ? new URLSearchParams(req.url.split('?')[1]) : new URLSearchParams(Object.entries(req.query ?? {}).map(([k, v]) => [k, String(v)]))
-    expect(qs.get('q')).toBe('tolak')
-    expect(qs.get('page')).toBe('2')
-    expect(qs.get('pageSize')).toBe('20')
+    expect(req.url).toBe('/api/admin/papers/p1/sections/s1/pool')
+    expect(req.query).toEqual({ q: 'tolak', page: '2', pageSize: '20' })
+    expect(page.units[1]!.stimulus).toMatchObject({ id: 'st1', label: 'Rajah 2' })
+    expect(page.units[0]!.stimulus).toBeUndefined()
     expect(page.total).toBe(59)
     expect(page.totalPages).toBe(3)
     expect(page.units).toHaveLength(2)
@@ -61,6 +60,22 @@ describe('mock sectionPool mirrors it', () => {
     const hit = await server.sectionPool(id, sid, { q: all.units[0]!.questions[0]!.preview.slice(0, 12) })
     expect(hit.total).toBeGreaterThan(0)
     await expect(server.sectionPool(id, 'nope')).rejects.toBeTruthy()
+  })
+
+  it('K1: the MCQ pool is listed and eligible; groups carry their stimulus; a kertas-2 pool is not offered', async () => {
+    const server = new BijakServer({ storage: new MemoryStorage(), now: () => 1_800_000_000_000 })
+    const id = await server.createPaper({ subject: 'MAT', kertas: 1, title: 'T' })
+    const sid = (await server.getPaperEditor(id)).paper.sections[0]!.id
+    const all = await server.sectionPool(id, sid, { pageSize: 500 })
+    const eligible = all.units.filter((u) => u.eligible)
+    expect(eligible.length).toBeGreaterThan(0)
+    expect(eligible.every((u) => u.questions.every((q) => q.id.startsWith('mat1-')))).toBe(true)
+    const groups = all.units.filter((u) => u.groupId)
+    expect(groups.length).toBeGreaterThan(0)
+    expect(groups.every((u) => u.stimulus && u.stimulus.label)).toBe(true)
+    expect(all.units.filter((u) => !u.groupId).every((u) => u.stimulus === undefined)).toBe(true)
+    // deterministic
+    expect(await server.sectionPool(id, sid, { pageSize: 500 })).toEqual(all)
   })
 })
 
@@ -132,6 +147,100 @@ describe('PaperEditorPage picker', () => {
     expect(document.querySelector('[data-testid="pick-add-m1"]')).toBeNull()
     expect(w.get('[data-testid="section-0-badges"]').text()).toContain('Soalan 1 / 2')
     expect(w.get('[data-testid="section-0-badges"]').text()).toContain('Markah 1 / 2')
+  })
+
+  const grp = {
+    groupId: 'g9',
+    stimulus: { id: 's9', kind: 'image', label: 'Rajah 9', alt: 'a' },
+    questionIds: ['g9a', 'g9b'],
+    questions: ['g9a', 'g9b'].map((id) => ({ id, groupId: 'g9', preview: `Soalan ${id}`, marks: 2, kind: 'objektif', topic: 'T', status: 'terbit', kertas: 0, subject: 'MAT' })),
+    marks: 4, eligible: true, reasons: [], placed: false,
+  }
+
+  it('a group from the pool is ONE unit with its marks, and its stimulus label shows before any reload', async () => {
+    sectionPool.mockResolvedValue({ units: [grp, mk('m1')], total: 2, totalPages: 1 })
+    const w = await render()
+    await w.get('[data-testid="add-0"]').trigger('click')
+    await flushPromises()
+    expect(document.querySelector('[data-testid="pick-g9"]')!.textContent).toContain('Kumpulan Rajah 9 · 2 soalan')
+    ;(document.querySelector('[data-testid="pick-add-g9"]') as HTMLElement).click()
+    await flushPromises()
+    expect(document.querySelector('[data-testid="pick-g9"]')).toBeNull()
+    const unit = w.get('[data-testid="unit-group-g9"]')
+    expect(unit.text()).toContain('Kumpulan rangsangan Rajah 9 · 2 soalan')
+    expect(w.findAll('[data-testid^="unit-group-"]')).toHaveLength(1)
+    expect(w.get('[data-testid="section-0-badges"]').text()).toContain('Soalan 2 / 2')
+    expect(w.get('[data-testid="section-0-badges"]').text()).toContain('Markah 4 / 2')
+  })
+
+  it('"Muat lagi" appends the next page rows; a fully filtered page shows no empty text next to it', async () => {
+    sectionPool.mockResolvedValueOnce({ units: [mk('m1')], total: 2, totalPages: 2 })
+    const w = await render()
+    await w.get('[data-testid="add-0"]').trigger('click')
+    await flushPromises()
+    sectionPool.mockResolvedValueOnce({ units: [mk('m2')], total: 2, totalPages: 2 })
+    ;(document.querySelector('[data-testid="picker-more"]') as HTMLElement).click()
+    await flushPromises()
+    expect(document.querySelectorAll('[data-testid^="pick-add-"]').length).toBe(2)
+    expect(document.querySelector('[data-testid="picker-more"]')).toBeNull()
+    // reopen: page 1 is entirely ineligible, more pages exist -> button only
+    sectionPool.mockResolvedValueOnce({ units: [{ ...mk('x1'), eligible: false }], total: 30, totalPages: 2 })
+    ;(document.querySelector('[data-testid="pick-add-m1"]') as HTMLElement).click()
+    await flushPromises()
+    await w.get('[data-testid="add-0"]').trigger('click')
+    await flushPromises()
+    expect(document.querySelector('[data-testid="picker-empty"]')).toBeNull()
+    expect(document.querySelector('[data-testid="picker-more"]')).not.toBeNull()
+  })
+
+  it('drops a stale response and appends with the query that produced the list', async () => {
+    vi.useFakeTimers()
+    let release: (v: unknown) => void = () => {}
+    sectionPool.mockResolvedValueOnce({ units: [mk('m1')], total: 40, totalPages: 2 })
+    const w = await render()
+    await w.get('[data-testid="add-0"]').trigger('click')
+    await flushPromises()
+    const input = document.querySelector('[data-testid="picker-search"]') as HTMLInputElement
+    // slow answer for 'aa', then a faster one for 'bb': 'aa' must not overwrite
+    sectionPool.mockImplementationOnce(() => new Promise((r) => (release = r)))
+    input.value = 'aa'
+    input.dispatchEvent(new Event('input'))
+    vi.advanceTimersByTime(300)
+    sectionPool.mockResolvedValueOnce({ units: [mk('bb1')], total: 1, totalPages: 1 })
+    input.value = 'bb'
+    input.dispatchEvent(new Event('input'))
+    vi.advanceTimersByTime(300)
+    await flushPromises()
+    release({ units: [mk('aa1')], total: 1, totalPages: 1 })
+    await flushPromises()
+    expect(document.querySelector('[data-testid="pick-add-bb1"]')).not.toBeNull()
+    expect(document.querySelector('[data-testid="pick-add-aa1"]')).toBeNull()
+
+    // "Muat lagi" during the debounce window of a new query still pages the CURRENT list's query
+    sectionPool.mockResolvedValueOnce({ units: [mk('bb1')], total: 40, totalPages: 2 })
+    input.value = 'cc'
+    input.dispatchEvent(new Event('input'))
+    vi.advanceTimersByTime(300)
+    await flushPromises()
+    input.value = 'dd'
+    input.dispatchEvent(new Event('input'))
+    sectionPool.mockResolvedValueOnce({ units: [mk('cc2')], total: 40, totalPages: 2 })
+    ;(document.querySelector('[data-testid="picker-more"]') as HTMLElement).click()
+    await flushPromises()
+    expect(sectionPool.mock.calls.at(-1)![2]).toMatchObject({ q: 'cc', page: 2 })
+  })
+
+  it('a failed search offers "Cuba lagi", which retries', async () => {
+    sectionPool.mockRejectedValueOnce(new Error('x'))
+    const w = await render()
+    await w.get('[data-testid="add-0"]').trigger('click')
+    await flushPromises()
+    expect(document.querySelector('[data-testid="picker-error"]')).not.toBeNull()
+    sectionPool.mockResolvedValueOnce({ units: [mk('m1')], total: 1, totalPages: 1 })
+    ;(document.querySelector('[data-testid="picker-retry"]') as HTMLElement).click()
+    await flushPromises()
+    expect(document.querySelector('[data-testid="picker-error"]')).toBeNull()
+    expect(document.querySelector('[data-testid="pick-add-m1"]')).not.toBeNull()
   })
 
   it('search is debounced; "Muat lagi" asks the next page; a failure is shown', async () => {

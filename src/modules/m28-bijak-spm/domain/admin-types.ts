@@ -272,6 +272,8 @@ export interface SectionPoolPage {
   /** A question, or a whole stimulus group (D90), eligible for this Bahagian. */
   units: {
     groupId?: string
+    /** The group's shared stimulus (groups only). */
+    stimulus?: StimulusDef
     questionIds: string[]
     questions: BuilderQuestion[]
     marks: number

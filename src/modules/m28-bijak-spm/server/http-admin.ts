@@ -408,6 +408,7 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
       }>('GET', `/api/admin/papers/${enc(id)}/sections/${enc(sectionId)}/pool?${qs.toString()}`, { raw: true })
       const units = (res?.data ?? []).map((u) => ({
         ...(u.groupId ? { groupId: u.groupId } : {}),
+        ...(u.stimulus ? { stimulus: u.stimulus } : {}),
         questionIds: u.questionIds,
         questions: u.questions.map(questionFromWire),
         marks: u.marks,

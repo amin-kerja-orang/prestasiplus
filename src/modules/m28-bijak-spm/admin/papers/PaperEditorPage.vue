@@ -13,6 +13,7 @@ import { DsCluster, DsLoadError, DsPage, DsPanel, DsStatRow, DsStatusBadge, type
 
 import RichText from '../../components/RichText.vue'
 import type { BuilderGroup, BuilderQuestion, SectionPoolPage } from '../../domain/admin-types'
+import type { StimulusDef } from '../../domain/types'
 import { checkPaper, moveUnit, removeUnit, unitsOf } from '../../domain/paper-builder'
 import { INTAKE_MANUAL_PATH } from '../intake/lib/intake-routes'
 import { bijakAdminServer } from '../../server/client'
@@ -47,6 +48,7 @@ const publishErrors = ref<string[]>([])
 /** Pool units added through the picker that the editor data does not carry yet. */
 const extraQ = reactive(new Map<string, BuilderQuestion>())
 const extraG = reactive(new Map<string, string[]>())
+const extraStim = reactive(new Map<string, StimulusDef>())
 
 watch(
   data,
@@ -59,6 +61,7 @@ watch(
     dirty.value = false
     extraQ.clear()
     extraG.clear()
+    extraStim.clear()
   },
   { immediate: true },
 )
@@ -127,7 +130,7 @@ function move(sectionId: string, index: number, delta: -1 | 1): void {
 function unitsFor(sectionId: string) {
   return unitsOf(ids[sectionId] ?? [], groupOf)
 }
-const stimulusOf = (gid: string) => gMap.value.get(gid)?.stimulus
+const stimulusOf = (gid: string) => gMap.value.get(gid)?.stimulus ?? extraStim.get(gid)
 
 /* ---------------------------------------------------------------------------- picker */
 const pickerSection = ref<string | null>(null)
@@ -151,6 +154,8 @@ const poolPage = ref(1)
 const poolLoading = ref(false)
 const poolFailed = ref(false)
 let poolSeq = 0
+/** The query that produced `pool`: "Muat lagi" appends with it, never with a half-typed search. */
+let poolQuery = ''
 let poolTimer: ReturnType<typeof setTimeout> | undefined
 onBeforeUnmount(() => clearTimeout(poolTimer))
 
@@ -161,10 +166,12 @@ async function loadPool(append = false): Promise<void> {
   poolLoading.value = true
   poolFailed.value = false
   try {
-    const next = append ? poolPage.value + 1 : 1
-    const res = await server.sectionPool(id.value, sid, { q: search.value, page: next, pageSize: 20 })
+    const next = append && pool.value ? poolPage.value + 1 : 1
+    const q = append && pool.value ? poolQuery : search.value
+    const res = await server.sectionPool(id.value, sid, { q, page: next, pageSize: 20 })
     if (mine !== poolSeq) return
     poolPage.value = next
+    poolQuery = q
     pool.value = append && pool.value ? { ...res, units: [...pool.value.units, ...res.units] } : res
   } catch {
     if (mine !== poolSeq) return
@@ -183,6 +190,7 @@ function openPicker(sectionId: string): void {
   search.value = ''
   pool.value = null
   poolPage.value = 1
+  poolQuery = ''
   void loadPool()
 }
 const candidates = computed(() =>
@@ -193,6 +201,7 @@ const candidates = computed(() =>
       unit: u,
       ids: u.questionIds,
       ...(u.groupId ? { groupId: u.groupId } : {}),
+      stimulusLabel: u.stimulus?.label,
       label: u.questions[0]?.preview ?? u.questionIds[0]!,
     })),
 )
@@ -201,7 +210,10 @@ const hasMore = computed(() => (pool.value ? poolPage.value < pool.value.totalPa
 /** Pool units added here that the editor data does not carry yet (until the next save and reload). */
 function addPoolUnit(sectionId: string, u: SectionPoolPage['units'][number]): void {
   for (const q of u.questions) extraQ.set(q.id, q)
-  if (u.groupId) extraG.set(u.groupId, [...u.questionIds])
+  if (u.groupId) {
+    extraG.set(u.groupId, [...u.questionIds])
+    if (u.stimulus) extraStim.set(u.groupId, u.stimulus)
+  }
   const all = new Set(Object.values(ids).flat())
   setIds(sectionId, [...(ids[sectionId] ?? []), ...u.questionIds.filter((x) => !all.has(x))])
 }
@@ -568,11 +580,23 @@ const previewBlocks = computed(() => {
               data-testid="picker-search"
               @update:model-value="onPickerSearch"
             />
-            <p v-if="poolFailed" class="text-body text-error" role="alert" data-testid="picker-error">
-              Ralat semasa mencari bank soalan.
-            </p>
+            <div v-if="poolFailed" class="flex flex-wrap items-center gap-2">
+              <p class="text-body text-error" role="alert" data-testid="picker-error">
+                Ralat semasa mencari bank soalan.
+              </p>
+              <UButton
+                color="neutral"
+                variant="soft"
+                size="sm"
+                class="min-h-11"
+                label="Cuba lagi"
+                :loading="poolLoading"
+                data-testid="picker-retry"
+                @click="loadPool(!!pool)"
+              />
+            </div>
             <p v-else-if="poolLoading && !pool" class="text-body text-muted" role="status">Memuatkan…</p>
-            <p v-else-if="!candidates.length" class="text-body text-muted" data-testid="picker-empty">
+            <p v-else-if="!candidates.length && !hasMore" class="text-body text-muted" data-testid="picker-empty">
               Tiada soalan sepadan.
             </p>
             <ul class="flex flex-col gap-2">
@@ -585,7 +609,9 @@ const previewBlocks = computed(() => {
                 <div class="flex min-w-0 grow flex-col gap-1">
                   <span class="line-clamp-2 text-body"><RichText :text="c.label" /></span>
                   <span class="text-caption text-muted">
-                    <template v-if="c.groupId">Kumpulan · {{ c.ids.length }} soalan · </template>
+                    <template v-if="c.groupId"
+                      >Kumpulan{{ c.stimulusLabel ? ` ${c.stimulusLabel}` : '' }} · {{ c.ids.length }} soalan ·
+                    </template>
                     {{ c.unit.marks }} markah
                   </span>
                 </div>
