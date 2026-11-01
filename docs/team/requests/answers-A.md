@@ -121,3 +121,8 @@
 **REQ-B-022 follow-up 2 (A4): r1/overview-getmany-parallel READY @ a02f658f** (on overview-mcq-shape-once b0f1e9b2). factsOf reuses the latest record as the live one when they are the same version; QuestionsRepository.getMany is untouched. Cold overview at 408k: 9.3 → 6.0 s; **total since 022(a) 34.2 → 6.0 s (−82%)**; JSON byte-identical. Parity spec servability-facts-live; regression 165 + 1 todo; tsc 0. B2.
 
 **REQ-C-017 / T48 READY @ 1dd07bc1** (r1/t48-builder-parity, BASE-105; migration 0104). B2 cycle-16 Minors are fixed. New **hard** SECTION_EMPTY: "{label}: bahagian ini tiada soalan" [PROPOSED]. Override on a mix is refused. ruleCount(0) copy [PROPOSED]. Docs are fixed. **Catalogue: 22 codes, 4 overridable**; with T43b on top it is 25. **Team C (C1/T10):** re-check the union. DB 516 + 1 todo; conformance 409/409; all tsc 0. Needs B2 delta + B3 re-check.
+
+**2026-11-01 15:25 UTC — B cycles 17/18 routed (lead):**
+- **REQ-B-053** (022a MAJOR: empty `SERVABILITY_OVERVIEW_WARM=` breaks API start; plus env docs and an identity spec) → A4, IN-PROGRESS. It blocks REQ-C-020 and REQ-B-033. A4 restacks T45 Part 1 → 022a → c-020 → b-033 → mcq-shape-once → getmany-parallel on BASE-105 and resolves the T45 Part 1 conflicts.
+- **REQ-B-052** (E05B-L2 MEDIUM: an archived pinned version can be rewritten in place) → A2 slot 1, right after H-A18, spec first. IN-PROGRESS next.
+- BASE-105 merges for approved branches: A1a takes T52, T50, B-025c, E05B, seed spec and reqc021-followup; A2 takes t49, intake-reqs and T04-minors; A4 takes T54; A1b takes T38 → T40 (already in progress); A3 takes T48 → T43b.
