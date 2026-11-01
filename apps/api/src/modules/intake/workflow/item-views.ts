@@ -68,6 +68,8 @@ export class ItemViews {
   /** Live gate issues of open items; none for an accepted or rejected item. */
   async issuesOf(rows: readonly ItemRow[], resolver: TagResolver = this.facts.resolver()): Promise<Map<string, IntakeIssue[]>> {
     const out = new Map<string, IntakeIssue[]>()
+    // One statement per subject and level for every unit and SP code of the page, instead of one per code and row.
+    await resolver.prefetch(rows.filter((r) => !FINAL.includes(r.reviewState as IntakeItemState)).map((r) => questionOf(r).tag))
     for (const row of rows) {
       const id = idToString(row.id)
       if (FINAL.includes(row.reviewState as IntakeItemState)) {
@@ -161,6 +163,8 @@ export class ItemViews {
   /**
    * REQ-B-035 (D90): the group of each row whose stimulus is shared by 2 or more items of its batch. One grouped read for the whole page
    * (the members are counted across the batch, not only on the page): size, and the 1-based place in paper order.
+   * The size counts REJECTED members too (D90: a group is the items that share the figure, in any state; a reviewer who rejects one member
+   * still sees the group as it was extracted).
    */
   private async groupsOf(rows: readonly ItemRow[]): Promise<Map<string, IntakeItemGroup>> {
     const out = new Map<string, IntakeItemGroup>()

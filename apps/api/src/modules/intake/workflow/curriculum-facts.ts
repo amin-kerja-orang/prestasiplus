@@ -65,48 +65,91 @@ export class TagResolver {
     return p
   }
 
-  async resolve(tag: Tag): Promise<Resolved> {
-    const subject = tag.subject ? await this.subject(tag.subject) : null
-    let levelId: bigint | null = null
-    let unitId: bigint | null = null
-    let unitKnown: boolean | null = tag.unit === null ? null : false
-    if (subject) {
-      for (const code of levelCandidates(tag)) {
-        const level = await this.level(code)
+  /**
+   * Reads, with ONE statement per subject and level, every unit and SP code the tags of a page mention, so `resolve` finds them in its
+   * cache (a 100-row page with 20 SP codes each was up to 2,000 single-node queries). Optional: `resolve` alone still works, one node at a time.
+   */
+  async prefetch(tags: readonly Tag[]): Promise<void> {
+    const wanted = new Map<string, { subjectId: bigint; levelId: bigint; codes: Set<string> }>()
+    for (const tag of tags) {
+      const subject = tag.subject ? await this.subject(tag.subject) : null
+      if (!subject) continue
+      for (const lc of levelCandidates(tag)) {
+        const level = await this.level(lc)
         if (!level) continue
-        if (tag.unit !== null) {
-          const unit = await this.node(tag.unit, subject.id, level.id, 'unit')
-          if (unit) {
-            levelId = level.id
-            unitId = unit.id
-            unitKnown = true
-            break
-          }
-          if (levelId === null) levelId = level.id
-        } else {
-          levelId = level.id
-          break
+        const key = `${subject.id}|${level.id}`
+        const entry = wanted.get(key) ?? { subjectId: subject.id, levelId: level.id, codes: new Set<string>() }
+        for (const code of [...(tag.unit === null ? [] : [tag.unit]), ...tag.sp]) {
+          if (!this.nodes.has(`unit|${subject.id}|${level.id}|${code}`) || !this.nodes.has(`sp|${subject.id}|${level.id}|${code}`)) entry.codes.add(code)
+        }
+        wanted.set(key, entry)
+      }
+    }
+    for (const { subjectId, levelId, codes } of wanted.values()) {
+      if (codes.size === 0) continue
+      const found = this.curriculum.nodesByCodes([...codes], { subjectId, educationLevelId: levelId })
+      for (const kind of ['unit', 'sp'] as const) {
+        for (const code of codes) {
+          const key = `${kind}|${subjectId}|${levelId}|${code}`
+          if (!this.nodes.has(key)) this.nodes.set(key, found.then((rows) => rows.find((n) => n.code === code && n.kind === kind) ?? null))
         }
       }
     }
-    if (!subject || levelId === null) return { facts: { subjectKnown: subject !== null, levelKnown: levelId !== null, unitKnown, unknownSp: [] }, ids: null }
-    const spIds: string[] = []
-    // Every typed code is looked up: an unknown one is a field error (REQ-B-034), never silently dropped. At most MAX_SP are kept.
-    const unknownSp: string[] = []
-    for (const code of tag.sp) {
-      const sp = await this.node(code, subject.id, levelId, 'sp')
+  }
+
+  /** The SP codes of a tag at one level: the ids found (at most MAX_SP are kept) and the codes that are not an SP there (each once). */
+  private async spAt(codes: readonly string[], subjectId: bigint, levelId: bigint): Promise<{ ids: string[]; unknown: string[] }> {
+    const ids: string[] = []
+    const unknown: string[] = []
+    for (const code of codes) {
+      const sp = await this.node(code, subjectId, levelId, 'sp')
       if (sp) {
-        if (spIds.length < MAX_SP) spIds.push(idToString(sp.id))
-      } else if (!unknownSp.includes(code)) unknownSp.push(code)
+        if (ids.length < MAX_SP) ids.push(idToString(sp.id))
+      } else if (!unknown.includes(code)) unknown.push(code)
     }
-    const facts: CurriculumFacts = { subjectKnown: true, levelKnown: true, unitKnown, unknownSp }
+    return { ids, unknown }
+  }
+
+  async resolve(tag: Tag): Promise<Resolved> {
+    const subject = tag.subject ? await this.subject(tag.subject) : null
+    const levels: bigint[] = []
+    if (subject) {
+      for (const code of levelCandidates(tag)) {
+        const level = await this.level(code)
+        if (level) levels.push(level.id)
+      }
+    }
+    const levelKnown = levels.length > 0
+    if (!subject || !levelKnown) {
+      return { facts: { subjectKnown: subject !== null, levelKnown, unitKnown: tag.unit === null ? null : false, unknownSp: [] }, ids: null }
+    }
+    // The level: a `T4`/`T5` tag has one candidate; a `T4+T5` tag has two (the form of origin first). When a unit is given, only the
+    // levels that have it can be the level (none: every candidate stays, and the unit is reported as unknown). Among those, the level
+    // whose SP list knows the most of the typed codes wins (the first on a tie), so a valid T5 SP is not refused because T4 came first.
+    const unitAt = new Map<bigint, { id: bigint } | null>()
+    if (tag.unit !== null) for (const lv of levels) unitAt.set(lv, await this.node(tag.unit, subject.id, lv, 'unit'))
+    const withUnit = tag.unit === null ? levels : levels.filter((lv) => unitAt.get(lv) != null)
+    const eligible = withUnit.length > 0 ? withUnit : levels
+    // Every typed code is looked up: an unknown one is a field error (REQ-B-034), never silently dropped. At most MAX_SP are kept.
+    let levelId = eligible[0] as bigint
+    let sp = await this.spAt(tag.sp, subject.id, levelId)
+    for (const other of eligible.slice(1)) {
+      if (sp.unknown.length === 0) break
+      const alt = await this.spAt(tag.sp, subject.id, other)
+      if (alt.unknown.length < sp.unknown.length) {
+        sp = alt
+        levelId = other
+      }
+    }
+    const unit = unitAt.get(levelId) ?? null
+    const facts: CurriculumFacts = { subjectKnown: true, levelKnown: true, unitKnown: tag.unit === null ? null : unit !== null, unknownSp: sp.unknown }
     return {
       facts,
       ids: {
         subjectId: idToString(subject.id),
         educationLevelId: idToString(levelId),
-        unitId: unitId === null ? null : idToString(unitId),
-        spIds,
+        unitId: unit === null ? null : idToString(unit.id),
+        spIds: sp.ids,
         tp: tag.tp,
       },
     }
