@@ -59,6 +59,8 @@ export interface QuestionProvenance {
    * paper builder reads the kertas. Optional; when absent the flat `kertas` of the input (if any) decides.
    */
   paperCode?: string | null
+  /** R1-H-A18: the question total the intake item declared; the approve gate compares it with the sum of the leaf marks. */
+  declaredMarks?: number | null
 }
 
 /** Who performs a write. `role` is the ACTIVE role of the session. */
@@ -183,6 +185,18 @@ export interface QuestionDetailView extends QuestionView {
   } | null
   createdByName: string | null
   stimulusGroup: StimulusGroupRecord | null
+  /** Admin detail only (R1-T45b): see `QuestionPlacement`. Absent on the Guru and structured reads. */
+  placements?: QuestionPlacementRecord[]
+  generatedPaperCount?: number
+}
+
+/** A place where a question sits on a curated paper (R1-T45b). */
+export interface QuestionPlacementRecord {
+  paperId: string
+  title: string
+  status: 'draft' | 'ready' | 'published' | 'withdrawn'
+  section: string
+  versionNo: number
 }
 
 export interface Page<T> {
@@ -313,6 +327,11 @@ export interface SetStatusOptions {
   reason?: string | null
   /** Set by paths that bypass the BE-10 lifecycle (bulk-action): `setStatus` then writes the status event itself. */
   event?: { actorUserId: string; actorRole: string; requestId: string | null }
+  /**
+   * Run the submit gate (`GATES.submit`) on a draft to review move. The lifecycle routes run their gates themselves before they call the
+   * bank, so only the BE-09 bulk route sets this: a refused row is a `failed[]` entry like Terbit. Default off.
+   */
+  submitGate?: boolean
 }
 
 /** One answer of a learner, addressed by the part path (labels joined with `.`, e.g. `a.i`). */
@@ -344,4 +363,21 @@ export interface QuestionGrade {
 export interface ContributionCounts {
   total: number
   byStatus: Record<QuestionStatus, number>
+}
+
+/**
+ * The gate facts that live outside the version row (R1-H-A18), read by `QuestionsRepository.gateFacts` and handed to `gateDataOf`.
+ * D99 (2026-11-01): no per-question source or rights fact. V2 asks for them once, at the intake batch.
+ */
+export interface GateFacts {
+  /** Fields of the intake item still flagged low-confidence and not confirmed by a person. */
+  unconfirmedLowConfidenceFields: string[]
+  /** An intake duplicate link of this question that is still `pending` ("Bukan pendua" and the other decisions close it). */
+  hasOpenDuplicateFlag: boolean
+  /** Every stimulus the question shows (group, version link, part link) has its picture, grid or text; no import hold on a missing image. */
+  mediaResolved: boolean
+  /** The last content written on the version was the AI service's and no person has acted on it since. */
+  lastEditedByAi: boolean
+  /** Question total declared at intake accept, or null. */
+  declaredMarks: number | null
 }

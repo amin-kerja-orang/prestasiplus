@@ -72,26 +72,32 @@ describe('lifecycle transition (BE-10 AC 1, 2, 12)', () => {
     expect((await failure(svc.transition('999999', 'review', actorOf(c.admin)))).getStatus()).toBe(404)
   })
 
-  it('a reason is mandatory for return to Draf, withdraw: blank is 422 and is recorded when given', async () => {
-    t.fake.seed({ id: '2002', status: 'approved' })
+  it('a reason is mandatory only for the return from Semakan to Draf; an archive needs none (REQ-C-013) and records one when given', async () => {
+    t.fake.seed({ id: '2001', status: 'review' })
     for (const reason of [undefined, null, '   ']) {
-      const e = await failure(svc.transition('2002', 'archived', actorOf(c.admin), { reason }))
+      const e = await failure(svc.transition('2001', 'draft', actorOf(c.admin), { reason }))
       expect(e.getStatus()).toBe(422)
       expect(e.fields?.reason).toBe('Sila nyatakan sebab.')
     }
-    expect(await events(t, '2002')).toHaveLength(0)
-    await svc.transition('2002', 'archived', actorOf(c.admin), { reason: '  Silap fakta ' })
-    expect((await events(t, '2002'))[0]?.reason).toBe('Silap fakta')
+    expect(await events(t, '2001')).toHaveLength(0)
+    // Arkib: from Draf, Semakan and Diterbitkan, with no reason, a blank one, or a given one.
+    for (const [id, from, reason] of [['2002', 'approved', undefined], ['2005', 'review', null], ['2006', 'draft', '   '], ['2007', 'approved', '  Silap fakta '], ['2008', 'review', 'Pendua']] as const) {
+      t.fake.seed({ id, status: from })
+      const res = await svc.transition(id, 'archived', actorOf(c.admin), { reason })
+      expect(res.to, id).toBe('archived')
+      const stored = (await events(t, id))[0]?.reason
+      expect(stored, id).toBe(reason === undefined || reason === null || reason.trim() === '' ? null : reason.trim())
+    }
     // restore from archived needs no reason (table)
     await svc.transition('2002', 'draft', actorOf(c.admin))
     expect(await count(t.db, 'select count(*) n from question_status_events where question_id = 2002')).toBe(2)
   })
 
   it('review to approved (Terbitkan) is one step: one merged gate, one event, no approved-to-published hop (ADR-0027)', async () => {
-    t.fake.seed({ id: '2003', status: 'review', gate: { rightsStatus: 'unclear' } })
+    t.fake.seed({ id: '2003', status: 'review', gate: { unitId: null } })
     const e = await failure(svc.transition('2003', 'approved', actorOf(c.admin)))
     expect(e.details).toEqual({ gate: 'approve' })
-    expect(e.fields).toHaveProperty('rightsStatus') // a former publish-gate rule now runs in the approve gate
+    expect(e.fields).toHaveProperty('unitId') // a former publish-gate rule now runs in the approve gate
     expect(await events(t, '2003')).toHaveLength(0)
     t.fake.seed({ id: '2004', status: 'review' })
     const res = await svc.transition('2004', 'approved', actorOf(c.admin))

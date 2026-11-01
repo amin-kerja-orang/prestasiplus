@@ -25,6 +25,7 @@ import {
 import { paperMarks, questionMarks } from '../domain/marks'
 import { validateBatch } from '../domain/validation'
 import { blankQuestion, nextLabel } from '../domain/blank'
+import { intakeBadge } from '../lib/intake-badge'
 import { INTAKE_LIST_PATH } from '../lib/intake-routes'
 import { getPageImages } from '../lib/page-images'
 import type { IntakeBatch, IntakeIssue, IntakeQuestion, IntakeStimulus } from '../types'
@@ -530,8 +531,9 @@ async function submit(): Promise<void> {
           <div class="flex flex-wrap items-center justify-between gap-4">
             <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
               <DsStatusBadge
-                :status="batch.status === 'draf' ? 'draft' : 'awaiting-review'"
-                :label="batch.status === 'draf' ? 'Draf' : 'Semakan'"
+                :status="intakeBadge(batch).status"
+                :label="intakeBadge(batch).label"
+                data-testid="review-status"
               />
               <span>{{ batch.questions.length }} soalan</span>
               <span>{{ total }} markah</span>
@@ -1061,6 +1063,7 @@ async function submit(): Promise<void> {
                       </select>
                     </label>
                     <QuestionEditor
+                      show-cognitive
                       :model-value="q"
                       @update:model-value="updateQuestion(q.id, $event)"
                     />

@@ -5,7 +5,7 @@
  * Reports have no Bijak source of their own (the DB check allows spm, latihan, revision, teacher_databank and structured_attempt),
  * so a Bijak or Kuiz report is filed with the default source `spm`.
  */
-import { QUESTION_REPORT_MESSAGES, SessionSchema } from '@pp/contract'
+import { BIJAK_ATTEMPTS_MESSAGES, QUESTION_REPORT_MESSAGES, SessionSchema } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { prngStream } from '../../src/db/prng'
@@ -15,6 +15,7 @@ import { PracticeQuestionsBridgeModule } from '../../src/modules/practice/questi
 import { QuestionWorkflowModule } from '../../src/modules/questions/workflow'
 import { ADMIN, bootIntegrationApp, DEMO_PASSWORD, type IntegrationApp, loginAs, START, STUDENT } from './helpers'
 
+const OTHER_PUPIL = 'pelajar2@demo.test'
 let t: IntegrationApp
 let qid = ''
 let subjectId = ''
@@ -22,7 +23,8 @@ let levelId = ''
 let paperId = ''
 let reportId = ''
 let attemptId = ''
-let adminPatch: (url: string, body: unknown) => Promise<{ status: number; body: { data?: { status?: string }; error?: unknown } }>
+let marksBefore = 0
+let adminPatch: (url: string, body: unknown) => Promise<{ status: number; body: { data?: { status?: string; papers?: { id: string; title: string }[]; warning?: string }; error?: unknown } }>
 
 beforeAll(async () => {
   t = await bootIntegrationApp({ pocQuestions: false, extraModules: [QuestionWorkflowModule, PracticeQuestionsBridgeModule] })
@@ -91,17 +93,23 @@ describe('Laporan Soalan: archive from the report row (R1-B17)', () => {
     const started = await student.post('/api/bijak/attempts', { paperId, mode: 'exam' })
     expect(started.status, JSON.stringify(started.body)).toBeLessThan(300)
     attemptId = (started.body as { data: { attemptId: string } }).data.attemptId
+    // another pupil, with no sitting, sees the paper in Kertas Pilihan
+    const other = await loginAs(t, OTHER_PUPIL)
+    const card = ((await other.get('/api/bijak/papers')).body as { data: { id: string; marks: number }[] }).data.find((p) => p.id === paperId)
+    expect(card).toBeDefined()
+    marksBefore = card!.marks
+    expect(marksBefore).toBeGreaterThan(0)
   })
 
   it('2. a student files a report against the bank question id: pending, on the live version', async () => {
     const student = await loginAs(t, STUDENT)
-    const res = await student.post('/api/question-reports', { questionId: qid, reasons: ['wrong_answer'], comment: 'Jawapan tidak tepat' })
+    const res = await student.post('/api/question-reports', { questionId: qid, reasons: ['wrong_answer'], comment: 'Jawapan tidak tepat', attemptId })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     const [r] = await t.db.query<{ id: string; status: string; question_version_no: number; source: string }>(`select id::text, status, question_version_no, source from question_reports where question_id = $1`, [qid])
     expect(r).toMatchObject({ status: 'pending', question_version_no: 1, source: 'spm' })
     reportId = r!.id
-    // an MCQ report switches the question off at once (BR-M04-11), which is a deactivation only
-    expect(await questionRow()).toMatchObject({ is_active: false, status: 'approved' })
+    // REQ-B-031 (D98): a report never switches the question off; the admin decides
+    expect(await questionRow()).toMatchObject({ is_active: true, status: 'approved' })
   })
 
   it('3. the admin keeps the question (reactivate): it is served again', async () => {
@@ -114,6 +122,9 @@ describe('Laporan Soalan: archive from the report row (R1-B17)', () => {
     const res = await adminPatch(`/api/question-reports/${reportId}`, { status: 'fixed', adminNotes: 'Diarkibkan', archive: true })
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     expect(res.body.data?.status).toBe('fixed')
+    // H-A13: the admin is told which published papers place the question
+    expect(res.body.data?.papers).toEqual([{ id: paperId, title: 'Kertas dengan soalan dilaporkan' }])
+    expect(res.body.data?.warning).toBe(QUESTION_REPORT_MESSAGES.archivedOnPapers)
     // the real lifecycle archive, not a deactivation
     expect(await questionRow()).toMatchObject({ is_active: true, status: 'archived' })
     const events = await t.db.query<{ from_status: string; to_status: string; reason: string | null }>(
@@ -160,10 +171,57 @@ describe('Laporan Soalan: archive from the report row (R1-B17)', () => {
     expect((cover.body as { data: { questionCount: number } }).data.questionCount).toBe(1)
   })
 
-  it('8. a NEW sitting of that paper is refused (BE-15 eligibility: every placed question must be live), the archive is what withdraws it', async () => {
+  it('8. a NEW sitting of that paper is refused with a BM line (BE-15 eligibility: every placed question must be live); a sitting already open is resumed', async () => {
+    const other = await loginAs(t, OTHER_PUPIL)
+    const refused = await other.post('/api/bijak/attempts', { paperId, mode: 'exam' })
+    expect(refused.status).toBe(403)
+    expect((refused.body as { error: { code: string; message: string } }).error).toMatchObject({ code: 'FORBIDDEN', message: BIJAK_ATTEMPTS_MESSAGES.paperUnavailable })
+    // the pupil whose sitting is open resumes it (the same attempt, nothing new is created)
     const student = await loginAs(t, STUDENT)
-    const res = await student.post('/api/bijak/attempts', { paperId, mode: 'exam' })
-    expect(res.status).toBe(403)
+    const resumed = await student.post('/api/bijak/attempts', { paperId, mode: 'exam' })
+    expect(resumed.status, JSON.stringify(resumed.body)).toBe(200)
+    expect((resumed.body as { data: { attemptId: string; created?: boolean } }).data.attemptId).toBe(attemptId)
+  })
+
+  it('9. Kertas Pilihan hides the paper for a pupil with no open sitting and keeps the card for the pupil who has one', async () => {
+    const other = await loginAs(t, OTHER_PUPIL)
+    expect(((await other.get('/api/bijak/papers')).body as { data: { id: string }[] }).data.map((p) => p.id)).not.toContain(paperId)
+    const student = await loginAs(t, STUDENT)
+    const mine = ((await student.get('/api/bijak/papers')).body as { data: { id: string; status: string }[] }).data.find((p) => p.id === paperId)
+    expect(mine).toMatchObject({ id: paperId, status: 'sedang' })
+  })
+})
+
+describe('Laporan Soalan: after Arkib the paper keeps its marks and a pupil with a sitting keeps the card (H-A13)', () => {
+  it('10. the marks on the cover, its sections and the card come from the pinned version, not from the live info (they do not drop to 0)', async () => {
+    const student = await loginAs(t, STUDENT)
+    const cover = (await student.get(`/api/bijak/papers/${paperId}`)).body as { data: { marks: number; sections: { marks: number }[] } }
+    expect(cover.data.marks).toBe(marksBefore)
+    expect(cover.data.sections.map((x) => x.marks)).toEqual([marksBefore])
+    const card = ((await student.get('/api/bijak/papers')).body as { data: { id: string; marks: number }[] }).data.find((p) => p.id === paperId)
+    expect(card?.marks).toBe(marksBefore)
+  })
+
+  it('11. a pupil whose sitting is SUBMITTED keeps the card (selesai) to open the result and Semakan; a pupil with no sitting still does not see it', async () => {
+    const student = await loginAs(t, STUDENT)
+    const done = await student.post(`/api/bijak/attempts/${attemptId}/submit`, { idempotencyKey: 'h-a13-submit', changes: [] })
+    expect(done.status, JSON.stringify(done.body)).toBe(200)
+    const card = ((await student.get('/api/bijak/papers')).body as { data: { id: string; status: string }[] }).data.find((p) => p.id === paperId)
+    expect(card).toMatchObject({ id: paperId, status: 'selesai' })
+    expect((await student.get(`/api/bijak/attempts/${attemptId}/result`)).status).toBe(200)
+    const other = await loginAs(t, OTHER_PUPIL)
+    expect(((await other.get('/api/bijak/papers')).body as { data: { id: string }[] }).data.map((p) => p.id)).not.toContain(paperId)
+  })
+
+  it('12. Cuba Lagi on that paper is the documented 409 with the retryPaperGone text (not a 403 paperUnavailable)', async () => {
+    const student = await loginAs(t, STUDENT)
+    const res = await student.post(`/api/bijak/attempts/${attemptId}/retry`, {})
+    expect(res.status, JSON.stringify(res.body)).toBe(409)
+    expect((res.body as { error: { code: string; message: string } }).error).toMatchObject({
+      code: 'CONFLICT',
+      message: BIJAK_ATTEMPTS_MESSAGES.retryPaperGone,
+    })
+    expect(BIJAK_ATTEMPTS_MESSAGES.retryPaperGone).toBe('Kertas ini sudah tidak tersedia untuk dicuba semula.')
   })
 })
 
@@ -189,7 +247,7 @@ describe('Laporan Soalan: "Arkib" on a live question with a newer revision in Se
     )
     expect(row).toEqual({ live: 1, latest: 2, status: 'review' })
     const student = await loginAs(t, STUDENT)
-    const res = await student.post('/api/question-reports', { questionId: q2, reasons: ['wrong_answer'], comment: 'Jawapan tidak tepat' })
+    const res = await student.post('/api/question-reports', { questionId: q2, reasons: ['wrong_answer'], comment: 'Jawapan tidak tepat', quizSessionId: await practiceSession(student.userId, q2) })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     report2 = (await t.db.query<{ id: string }>(`select id::text from question_reports where question_id = $1`, [q2]))[0]!.id
   })
@@ -232,7 +290,7 @@ describe('Laporan Soalan: "Arkib" is tied to the reported version (REQ-B-018)', 
   it('setup: a report on version 1 of a served question, then version 2 is published (live moves to 2)', async () => {
     q3 = (await t.db.query<{ id: string }>(`select question_id::text id from question_versions where number_label = 'SEED-MCQ-SCI-T4' limit 1`))[0]!.id
     const student = await loginAs(t, STUDENT)
-    const res = await student.post('/api/question-reports', { questionId: q3, reasons: ['wrong_answer'], comment: 'Jawapan tidak tepat' })
+    const res = await student.post('/api/question-reports', { questionId: q3, reasons: ['wrong_answer'], comment: 'Jawapan tidak tepat', quizSessionId: await practiceSession(student.userId, q3) })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     const [r] = await t.db.query<{ id: string; question_version_no: number }>(`select id::text, question_version_no from question_reports where question_id = $1`, [q3])
     expect(r!.question_version_no).toBe(1)
@@ -301,3 +359,10 @@ describe('Laporan Soalan: the admin list carries the lifecycle status of the que
     expect(await rowOf('SEED-MCQ-MATH-T5')).toMatchObject({ exists: true, status: 'review', liveVersionNo: null })
   })
 })
+
+/** REQ-B-031: a practice session of `userId` that served `questionId`, the proof a pupil needs to report it. */
+async function practiceSession(userId: string, questionId: string): Promise<string> {
+  const [row] = await t.db.query<{ id: string }>(`insert into practice_sessions (user_id, mode, question_count, status, started_at, completed_at) values ($1::bigint, 'random', 1, 'completed', now(), now()) returning id::text`, [userId])
+  await t.db.query(`insert into practice_session_questions (session_id, position, question_id, question_version_no) values ($1::uuid, 1, $2::bigint, 1)`, [row!.id, questionId])
+  return row!.id
+}

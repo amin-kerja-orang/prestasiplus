@@ -30,6 +30,12 @@ export interface ReportPatch {
   now: Date
 }
 
+/** A published Kertas Pilihan that places a question (H-A13). */
+export interface PlacingPaper {
+  id: bigint
+  title: string
+}
+
 /** The only doorway to `question_reports` (uses the ambient transaction through `prisma.client`). */
 @Injectable()
 export class ReportsRepository {
@@ -37,7 +43,9 @@ export class ReportsRepository {
 
   /**
    * One report per reporter, question and version (unique index): a second report of the same user
-   * on the same version refreshes that row and re-opens it, so it is accepted like the first. A
+   * on the same version refreshes that row while it is still pending, so it is accepted like the first.
+   * Once an admin has acted on it (reviewed, fixed, dismissed) the row is left exactly as it is: a re-POST
+   * never re-opens a dismissal or undoes a reactivation (REQ-B-031, D98). A
    * single `INSERT ... ON CONFLICT` keeps concurrent first reports from failing on the index (a
    * unique violation would also abort the surrounding transaction, so a retry is not possible).
    */
@@ -53,8 +61,8 @@ export class ReportsRepository {
       ON CONFLICT (reporter_id, question_id, question_version_no) DO UPDATE SET
         question_type = EXCLUDED.question_type, reasons = EXCLUDED.reasons, comment = EXCLUDED.comment, source = EXCLUDED.source,
         quiz_session_ref = EXCLUDED.quiz_session_ref, room_code = EXCLUDED.room_code,
-        attempt_id = EXCLUDED.attempt_id, paper_id = EXCLUDED.paper_id, paper_label = EXCLUDED.paper_label, status = 'pending',
-        resolved_by_id = NULL, resolved_at = NULL, fixed_in_version_no = NULL, updated_at = EXCLUDED.updated_at`
+        attempt_id = EXCLUDED.attempt_id, paper_id = EXCLUDED.paper_id, paper_label = EXCLUDED.paper_label, updated_at = EXCLUDED.updated_at
+      WHERE question_reports.status = 'pending'`
   }
 
   /** The facts the report context check needs about one attempt (R1-T42): the owner, the paper, its snapshot title and the placed question ids. */
@@ -71,10 +79,29 @@ export class ReportsRepository {
     return { userId: a.userId, paperId: a.paperId, label: a.paperCode ? `${a.title} (${a.paperCode})` : a.title, questionIds: ids }
   }
 
-  countOpenStructured(questionId: bigint): Promise<number> {
-    return this.prisma.client.questionReport.count({
-      where: { questionId, questionType: 'structured', status: { in: ['pending', 'reviewed'] } },
+  /** REP-L1: serializes one reporter's filings (transaction-scoped advisory lock) so the cap count and the insert cannot interleave. */
+  async lockReporter(reporterId: bigint): Promise<void> {
+    await this.prisma.client.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`question-report-cap:${reporterId}`}, 0))`
+  }
+
+  /** REQ-B-031: how many reports this user created since `since` (the cap counts new rows, never refreshes). */
+  countCreatedSince(reporterId: bigint, since: Date): Promise<number> {
+    return this.prisma.client.questionReport.count({ where: { reporterId, createdAt: { gte: since } } })
+  }
+
+  /** REQ-B-031: the practice session (uuid) with the owner and whether it served `questionId`; null when unknown. */
+  async sessionFacts(sessionId: string, questionId: bigint): Promise<{ userId: bigint; holds: boolean } | null> {
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId)) return null
+    const s = await this.prisma.client.practiceSession.findUnique({
+      where: { id: sessionId.toLowerCase() },
+      select: { userId: true, questions: { where: { questionId }, select: { id: true }, take: 1 } },
     })
+    return s ? { userId: s.userId, holds: s.questions.length > 0 } : null
+  }
+
+  /** REQ-B-046: this reporter already has a report row for this question version (a re-POST refreshes it and is not a new report). */
+  async exists(reporterId: bigint, questionId: bigint, versionNo: number): Promise<boolean> {
+    return (await this.prisma.client.questionReport.count({ where: { reporterId, questionId, questionVersionNo: versionNo } })) > 0
   }
 
   get(id: string): Promise<ReportRow | null> {
@@ -134,5 +161,14 @@ export class ReportsRepository {
     if (ids.length === 0) return new Map()
     const rows = await this.prisma.client.subject.findMany({ where: { id: { in: [...ids] } }, select: { id: true, code: true } })
     return new Map(rows.map((r) => [r.id.toString(), r.code]))
+  }
+
+  /** The published curated papers (Kertas Pilihan) that place this question, oldest first (read-only; the papers tables are M28's). */
+  async publishedPapersPlacing(questionId: bigint): Promise<PlacingPaper[]> {
+    return this.prisma.client.paper.findMany({
+      where: { kind: 'pilihan', status: 'published', sections: { some: { placements: { some: { questionId } } } } },
+      select: { id: true, title: true },
+      orderBy: { id: 'asc' },
+    })
   }
 }

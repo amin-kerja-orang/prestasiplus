@@ -60,8 +60,6 @@ function passingGate(id: string): QuestionGateData {
     unitId: '1',
     spIds: ['1'],
     tp: 3,
-    rightsStatus: 'own',
-    hasSourceDeclaration: true,
     unconfirmedLowConfidenceFields: [],
     hasOpenDuplicateFlag: false,
     mediaResolved: true,

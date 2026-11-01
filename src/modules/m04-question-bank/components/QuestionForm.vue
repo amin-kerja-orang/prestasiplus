@@ -57,7 +57,7 @@ const edit = computed(() => props.mode === 'edit')
  */
 const essayChoice = computed(() => (props.initial?.essayTopics?.length ?? 0) > 0)
 const ESSAY_CHOICE_NOTE =
-  'Soalan esei pilihan: jawapan model dan nilai mata disunting melalui editor Studio / berstruktur, bukan di borang ini.'
+  'Soalan esei pilihan: jawapan model dan nilai mata tidak boleh disunting di borang ini.'
 const values = reactive<QuestionFormValues>(
   props.initial ? valuesFromQuestion(props.initial) : emptyValues(),
 )

@@ -60,11 +60,17 @@ export const BijakKuizOptionSchema = z
 
 export const BijakKuizStimulusSchema = z
   .strictObject({
-    kind: z.enum(['diagram', 'passage', 'table']),
+    kind: z.enum(['passage', 'table', 'diagram', 'image', 'map', 'infographic', 'graph']).meta({ description: 'The seven stimulus kinds (R1-T07).' }),
     label: z.string(),
     body: z.string().nullable(),
     imageToken: z.string().nullable(),
     alt: z.string().nullable(),
+    caption: z.string().nullable().meta({ description: 'Figure caption (R1-T07).' }),
+    source: z.string().nullable().meta({ description: 'Source line of a passage or picture (R1-T07).' }),
+    table: z
+      .strictObject({ head: z.array(z.string()), rows: z.array(z.array(z.string())) })
+      .nullable()
+      .meta({ description: 'The grid of a table stimulus; null for every other kind.' }),
   })
   .meta({ id: 'BijakKuizStimulus' })
 
