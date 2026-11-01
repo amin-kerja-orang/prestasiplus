@@ -523,7 +523,7 @@ The 12 "missing" API rows in r1-admin-parity-check.md (questions/stimuli/intake)
 B1 merged **reqb032 at its reviewed SHA a2cb5bb4**, which does not contain BASE-107/108. It did not use our forward-merged 167986ef. So B merges reviewed SHAs and resolves base drift in the merge itself. **New team A rule:** do NOT forward-merge BASE into READY heads by default, because every new head forces a delta review. Forward-merge only when (a) `git merge-tree` against the current BASE shows a conflict, (b) B asks for it, or (c) the unit has to be re-pushed anyway for a fix. Heads already forward-merged stay as they are (the delta is a base merge only).
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 23:21 UTC, BASE 043e2b15)
+### Team A open branches: heads from origin (auto, 2026-11-01 23:22 UTC, BASE 043e2b15)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -554,6 +554,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/overview-getmany-parallel | 2809a87fe | READY (A4, @2809a87f, contains BASE-107; 108 forward-merge pending): A4 chain tip (T45→022a→c-020→b-033→mcq-shape-once→getmany); servab specs 101/101, vue-tsc app 0; B1 step 6 (tip = a4chain-minors) |
 | r1/overview-mcq-shape-once | 5a785be84 | READY (A4): chain 5th; B2 |
 | r1/partial-acs-a3 | 1e79f1f88 | READY (A3, @1e79f1f8 on T51 61c1b077; tests only): AC-18.1 "5c Latihan Bab" chain step (bites ×3); R1-11.4 §3.6b SELECT pin (bites); R1-12.6 §4 SELECT pin (bites); 51 pass; merge after T51; B2 |
+| r1/publish-lock-share | 49635ca65 | ON HOLD (dep: on delete-served-guard fe7ef537, which waits for ha18 REQ-B-057) — code done (A1b, @49635ca6): Terbit takes FOR SHARE locks on placed questions (sorted ids) before evaluate; a delete that committed first makes publish refuse; 4-test race spec (bites: FOR SHARE removed → 2 red); 314 targeted pass; closes KIV publish race; pre-review queued (A4 slot 3); merge right after delete-served-guard; B2 + B3 |
 | r1/r1-10-1-practice-spec | cfd6b6f7b | READY (A1b + A2 + A3, @cfd6b6f7, BASE-105; specs + docs): pins practice rewards (19 tests, 11/11 mutations); R1-10.1 row: USER Q12a (2026-11-02) keep 1 syiling, V2 rate unverified, .cloud check R2; B2 |
 | r1/r1-chain-qa-a3 | 9b70ae395 | READY (A3, @9b70ae39, BASE-105; spec + step map): A2 MAJOR fixed (key allow-list on the served pupil shape + recursive forbidden-key walk + reason text absent) + Minors (stimulus once exact, same-key replay, exact 12 syiling / 60 XP, Cuba Lagi 2 attempts); mutations red; ignore the unverified REQ ids in the commit message; B2 |
 | r1/ready-tiers-check | 9c80f08c3 | ON HOLD (A2, @9c80f08c, contains BASE-107): code correct + Minors fixed (exact 503 body, WARN once per state change, INFO on recovery; mutations red); waits for B DevOps (REQ-A-028: CI seed step + first-install deploy ordering) |
