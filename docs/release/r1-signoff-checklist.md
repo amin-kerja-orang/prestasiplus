@@ -26,7 +26,7 @@ Untuk Delivery Lead, untuk dibawa kepada pengguna **selepas B1 menggabungkan** u
 | 2.1 | Setiap unit yang digabungkan ada keputusan B2 (Approve, atau Approve dengan Minor) | MERGE-LOG, kolum "Merged unit" menulis keputusan dalam kurungan bagi setiap baris. Rekod ulasan penuh: `docs/team/status/B2.md` (dan `B2-C.md`, `C-covers-B.md` bagi unit pasukan C) pada `board`. | | Keputusan tidak diulang di sini dan **tidak boleh disimpulkan** daripada dokumen ini. Baca setiap baris MERGE-LOG. |
 | 2.2 | Unit yang menyentuh pengesahan, data peribadi, muat naik fail atau input luar baharu ada B3 (Pass, atau Pass dengan Low) | `docs/team/status/B3.md` pada `board`; MERGE-LOG (rujuk "B3 Pass"). | | Aturan G4 projek: B3 wajib bagi perubahan jenis ini. Unit tanpa B3 yang ditandakan "tiada B3: tiada input baharu" dalam MERGE-LOG (contoh REQ-C-021) diterima atas sebab yang ditulis di situ. |
 | 2.3 | Tiada Blocker atau Major B2/B3 yang masih terbuka | `docs/team/status/B2.md` dan `B3.md`; bahagian "Team A routing of B2/B3 verdicts" dalam `docs/team/BOARD.md`; jadual AUDIT bagi baris yang masih tertulis "B2 + B3" (belum disemak). | | Cawangan yang dihantar B1 dengan SHA tepat yang disemak, bukan SHA yang kemudian berubah. MERGE-LOG mencatat "merged by exact reviewed SHA". |
-| 2.4 | Minor yang ditangguh dicatat, bukan hilang | Baris "Minors queued" dalam jadual AUDIT (contoh `r1/delete-served-guard`, `r1/reqa018-paper-servability-route`) dan seksyen 5 "Known open items" dalam `docs/qa/r1-b4-qa-handoff.md` pada `ac-gaps`. | | Cadangan [PROPOSED]: setiap Minor ada sama ada pemilik atau catatan R2. |
+| 2.4 | Minor yang ditangguh dicatat, bukan hilang | Baris "Minors queued" dalam jadual AUDIT (contoh `r1/delete-served-guard`, `r1/reqa018-paper-servability-route`) dan seksyen 5 "Known open items" dalam `docs/qa/r1-b4-qa-handoff.md` pada `ac-gaps`. | | Setiap Minor mempunyai pemilik atau catatan R2. |
 
 ## Pintu 3. Keputusan rantaian QA B4
 
@@ -48,7 +48,7 @@ Sumber: `docs/release/r1-nota-keluaran.md` seksyen 2 "Had R1 yang diketahui" dan
 | 4.3 | Ruang perlumbaan semasa Terbit: arkib dalam beberapa saat pembacaan sebelum transaksi. | Seksyen 2 butir 3; N3 (baris R1-T34 dalam fail deviations, 2026-11-01). | | N3 sendiri menyatakan baris itu tidak menamakan ruang ini sebagai had; ia bacaan teks baris tersebut, diterima sebagai had R1 oleh keputusan Delivery Lead. Pengguna patut tahu perkara ini. |
 | 4.4 | Kadar ganjaran latihan belum disahkan dengan V2. | Seksyen 2 butir 4; N4 (baris "R1-10.1 practice reward rate (R1 limitation)"). | | Berkait dengan soalan terbuka Q12 (pintu 5). |
 | 4.5 | Pemadaman boleh dikomit antara bacaan Terbit dan komit penempatan. | Seksyen 2 butir 5; N5 (baris "R1 delete-served-guard" pada `r1/delete-served-guard` @ 7e5d82e6, baris 913, "Known gaps, both KIV"). Kunci `FOR SHARE` ditangguh ke R2. | | Hanya admin; tetingkap sangat sempit. |
-| 4.6 | Pengguna telah membaca dan menerima kelima-lima had di atas | Nota keluaran seksyen 2. | | Tandatangan pengguna: [PROPOSED] cara rekod persetujuan (tarikh dan petikan jawapan dalam `QUESTIONS.md` pada `board`, seperti keputusan Q1 hingga Q11). |
+| 4.6 | Pengguna telah membaca dan menerima kelima-lima had di atas | Nota keluaran seksyen 2. | | Tandatangan pengguna: penerimaan had-had itu oleh pengguna direkodkan dalam `QUESTIONS.md` pada `board` sebagai Q yang telah diputuskan (tarikh dan petikan jawapan, seperti keputusan Q1 hingga Q11), serta satu baris D dalam `docs/TRACKER.md`. |
 
 ## Pintu 5. Soalan pengguna yang masih terbuka
 
