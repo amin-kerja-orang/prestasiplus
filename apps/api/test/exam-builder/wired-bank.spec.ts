@@ -58,12 +58,12 @@ describe('paper builder wired to the BE-09 question bank', () => {
 
   beforeAll(async () => {
     // The papers port knows the bank questions here (in the running API the BE-09 bridge does): a paper whose questions the
-    // port cannot return is not startable, so Kertas Pilihan does not offer it (H-A13).
+    // port cannot return is not startable, so Kertas Pilihan does not offer it (H-A13). The pool is the production BE-09 pool.
     const known: BijakQuestionSource = {
       getMany: async (ids) => new Map(ids.map((id) => [id, { id, marks: 1, groupId: null, versionNo: 1 }])),
       pool: async () => ({ entries: [], groups: new Map() }),
     }
-    t = await bootBuilderApp({ realBank: true, papersSource: known, pool: 'bank' })
+    t = await bootBuilderApp({ realBank: true, pool: 'bank', papersSource: known })
     await serveSeededBlueprints(t.db)
     admin = await loginAs(t, ACCOUNTS.admin)
     student = await loginAs(t, ACCOUNTS.student)

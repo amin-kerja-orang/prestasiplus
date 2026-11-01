@@ -147,7 +147,7 @@ const mcqBody = (text: string, extra: Record<string, unknown> = {}) => ({
   options: ['3', '4', '5', '6'],
   correctAnswer: 1,
   explanation: 'Penjelasan ujian rantaian R1.',
-  cognitiveLevel: 'mengaplikasi', // T33 gate: approving an SPM-bound question needs a level per leaf
+  cognitiveLevel: 'mengaplikasi', // the T33 approve gate: a level per leaf
   kertas: '2',
   tag: { unitId: fx.unit, spIds: [fx.sp], tp: 3 },
   ...extra,
