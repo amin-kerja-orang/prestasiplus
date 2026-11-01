@@ -9,6 +9,10 @@ import { ServabilityReadsService } from './servability-reads.service'
  * compute (about 30 s on a bank of 400,000 questions). Never blocks start-up (the compute is not awaited) and a failure only logs:
  * the first reader then computes as before. `SERVABILITY_OVERVIEW_WARM=true|false`; unset means on in production and off elsewhere,
  * so the specs and local runs do not start a bank-wide read nobody asked for.
+ *
+ * Runs once PER API INSTANCE at boot, with no jitter or leader election (decision A4): R1 runs a single API instance (api-runbook
+ * "Single instance"; production-vps section 14; the rate-limit buckets already require it), so there is one warm-up per deploy. If the API
+ * is ever scaled out, N instances would each start the bank-wide read at the same time; add jitter or a lock before doing so.
  */
 @Injectable()
 export class OverviewWarmer implements OnApplicationBootstrap {

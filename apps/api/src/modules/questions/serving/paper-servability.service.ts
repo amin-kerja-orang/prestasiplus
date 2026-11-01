@@ -89,7 +89,7 @@ export class PaperServabilityService {
     }
     const simulasi = paperLine('simulasi_paper', attention.length > 0 ? [reason('bridge_refused', 'simulasi_paper', `${String(attention.length)} soalan`)] : [])
     // The per-paper quiz (kuiz `visiblePaper`) needs only a published paper.
-    const kuiz = paperLine('simulasi_kuiz', ids.length === 0 ? [reason('shape_unsupported', 'simulasi_kuiz', 'no questions')] : [])
+    const kuiz = paperLine('simulasi_kuiz', ids.length === 0 ? [reason('paper_empty', 'simulasi_kuiz')] : [])
     const activities = [simulasi, kuiz]
     return {
       paperId: idToString(paper.id),
