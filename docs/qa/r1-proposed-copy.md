@@ -9,7 +9,7 @@ One pass for the user: fill the last column of each row with `Lulus` or `Ubah: <
 - Stale or superseded branches (`r1/t39-k1-evidence`, `r1/t44-blueprint-fields`, `r1/admin-list-perf-wip`, `r1/t34-l1-residual`) and team C front-end copy are not covered.
 - Pupil-facing result: **no team A READY head adds a new BM string that a pupil reads.** The pupil-side effects of this round (Kuiz and Simulasi refusing a paper whose group stimulus cannot be shown, "Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini.") reuse text already in base. Every row below is read by guru or admin; the audience column says which.
 - The stack branches (`r1/t45-servability-acs` to `r1/overview-getmany-parallel`, `r1/builder-search-perf`, `r1/t43b-publish-acs` and others) contain the same strings as their parents; each string is listed once, at the branch that adds it.
-- `r1/delete-served-guard` is at `fe7ef537` now; the ha24 page still says `7e5d82e6`.
+- `r1/delete-served-guard` is at `fe7ef537`.
 - V2 counterpart means a quote from `docs/discovery` or `docs/requirements` with file:line; "none found" means a search of `docs/discovery` for the key words found nothing.
 
 ## Table

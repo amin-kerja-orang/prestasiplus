@@ -58,7 +58,7 @@ Heads from `git ls-remote origin refs/heads/r1/<branch>` on the day of writing. 
 | `r1/reqb032-pinned-rule` / `r1/reqb052-archived-edit` | a2cb5bb4 / f3a2448f | REQ-B-032: a sitting is served the version its paper pinned, and grades against it; REQ-B-052: an archived or restored question is never rewritten in place when a Terbit paper pins it | reqb052 contains reqb032 and H-A18 fc409ae1 |
 | `r1/t45-servability-acs` | 954614c6 | Terbitkan notice and refusal when a question is unservable (AC-05.3), indicators fresh (AC-04.5), paper servability (AC-04.3) | none; `r1/reqa018-paper-servability-route` @ b7fe6fbc merges after it |
 | `r1/reqa018-paper-servability-route` | b7fe6fbc | `GET /api/admin/questions/{id}/paper-servability`: the published papers that carry a question and whether pupils can open each (AC-04.3, AC-04.4); route fix: admin papers only (kind `pilihan`; a pupil's generated paper is never listed), at most 200 papers, one servability read | merges after `r1/t45-servability-acs` |
-| `r1/delete-served-guard` | 7e5d82e6 | the delete rules of the question bank (Step 3b); the AI explanation writes a new draft version | none |
+| `r1/delete-served-guard` | fe7ef537 | the delete rules of the question bank (Step 3b); the AI explanation writes a new draft version | none |
 | `r1/t48-label-move-fix` | 9783849c | the Nombor soalan of an added question follows it when it is moved to another Bahagian | needs `r1/t48-builder-parity` 6c5ae3a8 |
 | `r1/a4chain-minors` | 6f2fb793 | exact BM reasons and the HTTP route case for the Terbitkan refusal | contains the T45 specs |
 | `r1/t52-examiner-grid` | 5a0d7bd0 | cover "Untuk Kegunaan Pemeriksa" only when a part is marked by a person (AC-20.3) | none |
@@ -127,7 +127,7 @@ Legend. **FE** = screen route (the SPA). **API** = `/api/...` route. **Msg** = e
 - **Account:** `admin@demo.test` (and `guru@demo.test` for the Guru route).
 - **FE:** `/admin/questions` (bulk "Padam") and `/admin/questions/:id`.
 - **API:** `DELETE /api/questions/{id}`, `POST /api/questions/bulk-action` `{action:'delete'}` (a refused row is a `failed[]` entry), `DELETE /api/guru/questions/{id}`.
-- **Rule (A2, `r1/delete-served-guard` @ 7e5d82e6): only a held paper blocks a delete.** A held paper is a Terbit paper, or a withdrawn paper that has had sittings. Every other delete follows V2: a Draf, a question in Semakan, an archived one, and an approved one that no held paper places are deleted.
+- **Rule (A2, `r1/delete-served-guard` @ fe7ef537): only a held paper blocks a delete.** A held paper is a Terbit paper, or a withdrawn paper that has had sittings. Every other delete follows V2: a Draf, a question in Semakan, an archived one, and an approved one that no held paper places are deleted.
 - **Msg (both [PROPOSED], `packages/contract/src/questions/schema.ts` on that head):**
   - held paper -> 409 `CONFLICT`, `details.reason` `served` or `pinned`: `Soalan ini tidak boleh dipadam kerana ia terdapat pada kertas yang masih dipaparkan kepada murid atau yang sedang diduduki.` (`schema.ts:33`)
   - a set, remedial test or battle still uses it -> 409, `details.reason` `in_use`: `Soalan ini sedang digunakan dalam set, ujian pemulihan atau pertandingan dan tidak boleh dipadam.` (`schema.ts:35`)
