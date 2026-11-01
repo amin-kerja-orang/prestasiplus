@@ -15,6 +15,7 @@ import {
   ServabilityOverviewSchema,
   ServabilityPaperRowSchema,
   QuestionPaperServabilityMetaSchema,
+  QuestionPaperServabilityResponseSchema,
   QuestionPaperServabilityRowSchema,
 } from './reads'
 import {
@@ -79,7 +80,7 @@ export function registerServabilityPaths(registry: OpenAPIRegistry): void {
     request: { params: z.object({ id: IdSchema }) },
     responses: {
       200: json(
-        envelopeOf(z.array(QuestionPaperServabilityRowSchema)).extend({ meta: QuestionPaperServabilityMetaSchema }),
+        QuestionPaperServabilityResponseSchema,
         'One row per published admin paper (kind pilihan; a pupil\'s generated paper is never listed) that places the question, by paper id, at most the first 200; `meta.total` counts all of them and `meta.truncated` says the list is cut. `[]` when it is on none.',
       ),
       401: unauthorized,

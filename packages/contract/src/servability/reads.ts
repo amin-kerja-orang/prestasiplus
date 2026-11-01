@@ -188,3 +188,8 @@ export const QuestionPaperServabilityMetaSchema = z
     truncated: z.boolean().meta({ description: 'True when `total` is more than the rows returned (the first 200 by paper id).' }),
   })
   .meta({ id: 'QuestionPaperServabilityMeta' })
+export type QuestionPaperServabilityMeta = z.infer<typeof QuestionPaperServabilityMetaSchema>
+
+/** The 200 body of `GET /admin/questions/{id}/paper-servability`: `{ data, meta }` (the client resolves exactly this, not a bare array). */
+export const QuestionPaperServabilityResponseSchema = z.object({ data: z.array(QuestionPaperServabilityRowSchema), meta: QuestionPaperServabilityMetaSchema })
+export type QuestionPaperServabilityResponse = z.infer<typeof QuestionPaperServabilityResponseSchema>
