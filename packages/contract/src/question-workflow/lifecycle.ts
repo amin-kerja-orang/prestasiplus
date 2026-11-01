@@ -93,7 +93,7 @@ export type QuestionWorkflowTransitionRule = z.infer<typeof QuestionWorkflowTran
 
 /**
  * The allowed status pairs, exactly the table of v2-question-bank 4.1 (BE-10 AC 1). Every other
- * (from, to) pair, including from = to, answers 409 CONFLICT. ADR-0027 removed `approved` to `draft`
+ * (from, to) pair, including from = to, answers 409 CONFLICT. REQ-C-013 adds review to archived (Admin Pusat: "Arkib" on a question in Semakan). ADR-0027 removed `approved` to `draft`
  * and the combined "Lulus & Terbit": review to approved is the one approving step. A status code outside
  * `QUESTION_WORKFLOW_STATUSES` is a 422 VALIDATION_ERROR, never a transition.
  */
@@ -102,7 +102,9 @@ export const QUESTION_WORKFLOW_TRANSITIONS: readonly QuestionWorkflowTransitionR
   { from: 'draft', to: 'archived', actors: ['owner_teacher', 'admin'], gate: null, reasonRequired: false },
   { from: 'review', to: 'approved', actors: ['admin'], gate: 'approve', reasonRequired: false },
   { from: 'review', to: 'draft', actors: ['admin'], gate: null, reasonRequired: true },
-  { from: 'approved', to: 'archived', actors: ['admin'], gate: null, reasonRequired: true },
+  // REQ-C-013: V2's "Arkibkan soalan ini?" dialog has no reason field, so a reason is optional here (recorded when given, null otherwise).
+  { from: 'review', to: 'archived', actors: ['admin'], gate: null, reasonRequired: false },
+  { from: 'approved', to: 'archived', actors: ['admin'], gate: null, reasonRequired: false },
   { from: 'archived', to: 'draft', actors: ['admin'], gate: null, reasonRequired: false },
 ]
 

@@ -35,6 +35,19 @@ const statusItems = [
   { label: 'Spec', value: 'Spec' },
 ]
 
+/** "Boleh tanda auto": null = not stated (never a conformance failure, PIPE AC-06.5). */
+const autoItems = [
+  { label: 'Tidak dinyatakan', value: 'null' },
+  { label: 'Ya', value: 'true' },
+  { label: 'Tidak', value: 'false' },
+]
+const autoMarkable = computed({
+  get: () => String(form.value.autoMarkable),
+  set: (v: string) => {
+    form.value.autoMarkable = v === 'true' ? true : v === 'false' ? false : null
+  },
+})
+
 function statusOf(i: number): { text: string; color: 'success' | 'warning' | 'error'; icon: string } {
   const st = sectionStatus(props.issues, i)
   const all = Object.values(st)
@@ -75,7 +88,7 @@ async function retire(): Promise<void> {
   if (props.dependentPapers > 0) return
   const ok = await confirm({
     title: 'Padam kontrak ini?',
-    message: `Ini akan memberi kesan kepada kertas draf dan Jana Kertas bagi ${props.subjectName} Kertas ${props.kertas}.`,
+    message: `Padam kontrak Kertas ${props.kertas} bagi ${props.subjectName}? Semua Bahagian kontrak turut dipadam. Ini menjejaskan pintu terbitan untuk SEMUA kertas subjek/kertas ini. Tindakan ini tidak boleh dibatalkan.`,
     tone: 'error',
     confirmLabel: 'Padam',
   })
@@ -94,7 +107,7 @@ async function retire(): Promise<void> {
         <p class="text-label text-default">Kertas</p>
         <p class="mt-2 text-body">Kertas {{ kertas }}</p>
       </div>
-      <DsFormField native :for="fieldId(null, 'code')" label="Kod kertas" required :error="errAt('code')">
+      <DsFormField native :for="fieldId(null, 'code')" label="Kod Kertas" required :error="errAt('code')">
         <template #default="f">
           <UInput :id="f.id" v-model="form.code" :aria-invalid="f.invalid" class="w-full" :ui="{ base: 'min-h-11' }" placeholder="1449/2" />
         </template>
@@ -104,16 +117,16 @@ async function retire(): Promise<void> {
           <NumField :id="f.id" v-model="form.durationMin" :min="1" :invalid="f.invalid" :describedby="f.describedby" />
         </template>
       </DsFormField>
-      <DsFormField native :for="fieldId(null, 'jumlah')" label="Jumlah markah" required :error="errAt('jumlah')">
+      <DsFormField native :for="fieldId(null, 'jumlah')" label="Jumlah Markah" required :error="errAt('jumlah')">
         <template #default="f">
           <NumField :id="f.id" v-model="form.totalMarks" :min="1" :invalid="f.invalid" :describedby="f.describedby" />
         </template>
       </DsFormField>
       <div v-if="form.source === 'Disahkan'">
-        <p class="text-label text-default">Status</p>
+        <p class="text-label text-default">Sumber</p>
         <div class="mt-2"><SourceBadge source="Disahkan" /></div>
       </div>
-      <DsFormField v-else native :for="fieldId(null, 'status')" label="Status">
+      <DsFormField v-else native :for="fieldId(null, 'status')" label="Sumber">
         <template #default="f">
           <DsNativeSelect :id="f.id" v-model="form.source" :items="statusItems" />
         </template>
@@ -168,6 +181,14 @@ async function retire(): Promise<void> {
       </div>
       <DsFormField
         native
+        :for="fieldId(null, 'auto-markable')"
+        label="Boleh tanda auto"
+        hint="Sama ada kertas boleh ditanda secara automatik. Tidak menjejaskan status Disahkan."
+      >
+        <template #default="f"><DsNativeSelect :id="f.id" v-model="autoMarkable" :items="autoItems" data-testid="auto-markable" /></template>
+      </DsFormField>
+      <DsFormField
+        native
         :for="fieldId(null, 'nisbah-t4')"
         label="Nisbah Tingkatan 4"
         hint="Pilihan. Jika diisi, mesti sama dengan nisbah daripada nilai unit di setiap Bahagian."
@@ -220,7 +241,7 @@ async function retire(): Promise<void> {
       </div>
     </DsFormSection>
 
-    <DsFormSection v-if="!isNew" title="Padam Kontrak" icon="trash" tone="error">
+    <DsFormSection v-if="!isNew" title="Padam kontrak" icon="trash" tone="error">
       <p class="text-body text-muted">
         Kontrak yang dipadam tidak lagi disenaraikan dan tidak boleh digunakan untuk kertas baharu.
       </p>
@@ -232,7 +253,7 @@ async function retire(): Promise<void> {
         Tidak boleh dipadam: {{ dependentPapers }} kertas Terbit bergantung pada kontrak ini.
       </p>
       <div>
-        <UButton color="error" variant="soft" class="min-h-11" icon="i-ph-trash" label="Padam Kontrak" :aria-disabled="dependentPapers > 0 ? 'true' : undefined" :aria-describedby="dependentPapers > 0 ? 'retire-blocked' : undefined" data-testid="retire" @click="retire" />
+        <UButton color="error" variant="soft" class="min-h-11" icon="i-ph-trash" label="Padam kontrak" :aria-disabled="dependentPapers > 0 ? 'true' : undefined" :aria-describedby="dependentPapers > 0 ? 'retire-blocked' : undefined" data-testid="retire" @click="retire" />
       </div>
     </DsFormSection>
   </div>
