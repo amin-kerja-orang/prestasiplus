@@ -47,6 +47,10 @@ export const AUDIT_ACTIONS = {
   BIJAK_PAPER_DELETED: 'bijak.paper.deleted',
   BIJAK_PAPER_PUBLISHED: 'bijak.paper.published',
   BIJAK_PAPER_WITHDRAWN: 'bijak.paper.withdrawn',
+  // R1-T34: Terbit past the blueprint-conformance blockers (V2 `studio.paper.published_override`), reason required.
+  BIJAK_PAPER_PUBLISHED_OVERRIDE: 'bijak.paper.published_override',
+  // R1-T34: the section pools (MAT2-A ...) of a question were set by an admin.
+  BIJAK_QUESTION_POOL_UPDATED: 'bijak.question.pool_updated',
   BIJAK_BLUEPRINT_CREATED: 'bijak.blueprint.created',
   BIJAK_BLUEPRINT_VERSION_CREATED: 'bijak.blueprint.version_created',
   BIJAK_BLUEPRINT_RETIRED: 'bijak.blueprint.retired',
