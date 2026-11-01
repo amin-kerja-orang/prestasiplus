@@ -34,4 +34,36 @@
 | REQ-A-023b | C (m04 / m10 mocks, r1/reqa023-ai-draft-delete-409 @ bbb507ea) | 2026-11-01 22:50 UTC | REQ-A-023; delete-served-guard @ fe7ef537 (A2 throwaway merge: clean, vue-tsc 0, touched FE 120/120) | **The FE is sound against the server, with no blocker.** It shows the server message and handles bulk failed[], and the AI draft notice + "Buka draf" work. **Mock-side updates needed:** (1) `m04 mock/handlers/questions.ts:68-69` and `m10 mock/handlers/questions.ts:66-67` hold old copied text; import `QUESTION_MESSAGES.deleteRefused` / `.deleteInUse` from `@pp/contract`. (2) `m04 mock/repository/questions.ts:811-816` `deletionBlock` must return `'served' \| 'pinned' \| 'in_use' \| null`. There is no `status` reason any more, and any state is deletable unless a held paper places it (V2), so use small fixed seed-id sets for served / in_use. (3) The Guru `deleteOwn` (:895-899) refuses only that same set. Update `questions-write.test.ts` ~:505/~:576. (4) Optional edge: `AiExplanationCard.vue:46` shows the draft notice only for approved/archived, but the server also branches a pinned draft. (5) Optional: a mock-mode bulk delete spec with the in_use copy. Note: 7 m10 test failures (GuruDashboardPage / classrooms-store / guru-handlers) fail identically on clean BASE-105; pre-existing, owner C. | OPEN |
 | REQ-A-028 | B (DevOps / release) | 2026-11-01 22:50 UTC | r1/ready-tiers-check @ 10eca4cd (A2; ON HOLD); A3 pre-review | Team A wants `/api/ready` to return 503 while the wallet `tiers` table is empty. Without tiers, every practice/Kuiz submit that earns 0 syiling, plus the dashboard and wallet, return 500 (reference data comes only from `deploy.sh --seed-reference`). Two deploy/CI places need a B change **before** this merges: (1) `.github/workflows/api.yml:226-249`: the Boot smoke curls `/api/ready` right after Migrate with no seed. Add a reference-seed step (`npm run be:db:seed`, NODE_ENV=production → reference modules only) between Migrate and Boot smoke. (2) `deploy/vps/deploy.sh` first install: `pp_health_checks` (lib.sh:197-207) polls `/api/ready` before step 8 `--seed-reference` (production-vps.md:316-318), which gives a false "DEPLOY FAILED". Options: a first-install `--with-seed-reference` that seeds between migrate and the health wait, or treat a tiers-only 503 as "pending seed". Team A does not edit deploy/CI (REQ-A-009 precedent). Please choose, or tell us to drop the readiness change and rely on the runbook §0 precondition only. | OPEN |
 | REQ-A-029 | C (m28 builder / Kandungan FE) | 2026-11-01 23:00 UTC | A3 B4 QA pack §3x on r1/ac-gaps-a1b @ e57b1281; T48 API (READY) | While writing the B4 D90 recipe, team A found that these builder API actions have **no FE control in base**. Please check each one against V2 (D79 admin UX parity) and add the ones V2 has: (1) **Padam soalan** for an added question (DELETE /admin/papers/:id/questions/:qid; BM text in the T48 rows). (2) **Moving a group or question across Bahagian**: only Naik/Turun within a Bahagian exists (PUT /admin/papers/:id). (3) **Salin** paper: LaneSimulasiPage.vue:5-7 / UX-23. (4) A separate **Semak** before Terbit: "Terbitkan" (PaperEditorPage.vue:384) runs the check today. If V2 lacks an action, say so and team A records it as API-only. | OPEN |
+| REQ-A-024c | B (B1, B2, B3) | 2026-11-01 23:05 UTC | REQ-A-024/024b; A4 batch 1+2 merge-prep (simulated stack 1cbdb5c0 on BASE-105; BASE-107 is FE-only, so results hold) | **Review/merge table for steps 1–25.** All owners are merging BASE-107 into these heads now; new heads will show in BOARD AUDIT.
+
+**Batch 1:** steps 1–5 merge clean. The step-6 tip is **r1/a4chain-minors** (contains the whole A4 chain). Step 7 reqa018: questions.module.ts → union (OverviewWarmer + QuestionPaperServabilityController).
+
+**Review status, batch 1.**
+- No verdict yet (full review): reqc021-followup, reqb032, reqb052, reqa018, mcq-shape-once, getmany-parallel, a4chain-minors.
+- Delta review only: ha18 (B3 Pass @3a2ac810, B2 CR @d3842c48 → 4 commits incl. migration 0105); **req-c012 (B3 CR @ba57ecc5 → 9 commits, needs a B3 re-check)**; t45 (2 commits); 022a (7); c-020 (8); b-033 (9).
+
+**Batch 2: step, branch, merge resolution, review action.**
+- 8 bridge-table-parts: clean; **full B2**.
+- 9 t54: r1-perf-400k.md 1 line → take the t54 side; delta from f90a63bd, docs only.
+- 10 admin-list-perf: **full B2 + B3 + DevOps** (0106/0107 window, pg_trgm, env THROTTLE_QUESTIONS_LIST_PER_MINUTE).
+- 11 t38: delta 1 commit + B3 glance.
+- 12 t50: no new delta.
+- 13 req-b-025c: delta 1 commit.
+- 14 e05b: delta 1 commit, spec only.
+- 15 seed-dangling-placements: **B2 small** (1 test file).
+- 16 reqb049: **full B2 + B3**.
+- 17 mock-known-mismatches: B2 small.
+- 18 a3-qa-doc-nits: docs only, quick.
+- 19 docs-credential-scrub: **B2 + B3** (secrets).
+- 20 t40: contains t38, so merge **after 11**; delta 3 commits.
+- 21 t52: delta 2 commits (papers.service.ts).
+- 22 intake-reqs: subject-code.spec.ts → keep both tests; delta 2 commits incl. the prefetch Major fix.
+- 23 t49: merge **after 17**. Resolutions:
+  - stimuli.repository.ts → take t49 (QUESTION_SERVED/VERSION_SERVED);
+  - known-mismatches.ts → keep both NO_* lists + the 3 filter-options lines, and DROP the stale guru/pending line.
+  - Review: delta 3 commits + B3 glance.
+- 24 t04-minors: delta 4 commits.
+- 25 d72: merge **after 23**; **full B2**.
+
+The v2-backend-deviations.md conflicts are always "keep both". | OPEN |
 
