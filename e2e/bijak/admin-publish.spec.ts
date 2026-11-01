@@ -137,6 +137,10 @@ test.describe('Bijak SPM Admin Pusat terbit kertas @bijak', () => {
 
     // Tarik balik: back to Draf, gone from the student hub.
     await page.getByTestId('paper-unpublish').click()
+    // AC-07.7: the V2 confirm comes first.
+    await expect(page.locator('[data-ds=confirm-ok]')).toBeVisible()
+    await expect(page.locator('[data-ds=confirm-message]').filter({ hasText: 'Tarik balik kertas ini ke draf? Pelajar tidak lagi dapat mengaksesnya.' })).toBeVisible()
+    await page.locator('[data-ds=confirm-ok]').click()
     await expect(page.getByTestId('paper-publish')).toBeVisible()
     await page.evaluate(() => {
       window.history.pushState({}, '', '/spm/bijak')
