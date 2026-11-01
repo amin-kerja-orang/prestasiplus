@@ -485,7 +485,7 @@ BASE-105 + 11 team A READY API heads + C FE heads (reqa014 dc561730, reqa005 3ee
 **Conflicts B1 will see:** `questions.module.ts` (A4 chain `OverviewWarmer` × REQ-A-018 `QuestionPaperServabilityController`: keep both providers/controllers); `stimuli.repository.ts:112` (t49 deletes the `SERVED_NOW`/`VERSION_SERVED_NOW` constants B-032 added: take t49, no use remains); `v2-backend-deviations.md` (keep both sides); C docs in reqa012 (keep both).
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 19:12 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 19:13 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -497,7 +497,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
 | r1/bridge-table-parts | c805ecc7c | READY (A4, BASE-105): the bridge uses stimulusTableParts (an invalid grid + pipe body shows the table only, as in builder/Studio); bridge 118/118, attempts 180/180, kuiz 39/39; B2. Follow-up after T31 + this merge: drop PENDING_BRIDGE_TEXT in the parity spec (A4) |
 | r1/builder-search-perf | 1216b736c | READY (A3, on T48 6c5ae3a8; restack only): 413 pass; alone = trial merge with H-A18 fc409ae1, 0 failures, tsc 0; merge after T48; B2 |
-| r1/delete-served-guard | b8d84cba5 | (no status — triage) |
+| r1/delete-served-guard | b8d84cba5 | ON HOLD → restack (A2; b8d84cba): Guru/admin DELETE 409 on served/pinned (D9 row: V2 hard-deletes), one served rule (served-rule.ts, paperHeld = published OR withdrawn with attempts), setExplanation branches to a draft version; 15-test spec, mutations bite; BUT merged OLD B-052 17196431, conflicts in questions.repository.ts with B-052 f3a2448f → A2 restacks on f3a2448f + aligns question-image rule B with paperHeld (lead decision); then A4 pre-review + B2 + B3; merge after H-A18 → B-032 → B-052 |
 | r1/docs-credential-scrub | b3db5e0d2 | READY (A1a, BASE-105; replaces 5cd46c4a): A4 Minors fixed: Demo1234 doc replacements reverted (allowed fictitious dev default; docs match code), DOC-02 wording, row relabelled privacy override, srs/M02 v1.34 revision row (v1.30 keeps placeholders, lead decision); 0 hits for the 3 old values repo-wide; M02 unit 724, eslint + vue-tsc 0; B3 + B2 |
 | r1/e05b-l1-spec | 4b9eac57a | READY (A1b, BASE-105): negative control added; 12/12; B2 + B3 |
 | r1/ha17-ac-coverage | 157b371c3 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b; head 157b371c |
