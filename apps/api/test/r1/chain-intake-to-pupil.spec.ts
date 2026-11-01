@@ -187,6 +187,18 @@ describe('R1 chain QA: intake -> approve -> paper -> Terbit -> pupil -> submit -
     expect(status.map((r) => r.status)).toEqual(['draft'])
   })
 
+  it('3a. H-A18: Semakan without a Bab is refused per row with "Sila pilih bab." and nothing moves (step 3 then gives the Bab and the same Semakan passes)', async () => {
+    await q(`update question_versions set paper_code = 'MATH/2', chapter_id = null where question_id = any($1::bigint[])`, [questionIds])
+    const refused = await admin.post('/api/questions/bulk-action', { action: 'review', ids: questionIds })
+    expect(refused.status, JSON.stringify(refused.body)).toBe(200)
+    expect(refused.body.data, JSON.stringify(refused.body.data)).toMatchObject({ affected: 0 })
+    const failed = refused.body.data.failed as { id: string; code: string; fields?: Record<string, string> }[]
+    expect(failed.map((f) => f.id).sort()).toEqual([...questionIds].sort())
+    for (const f of failed) expect(f).toMatchObject({ code: 'VALIDATION_ERROR', fields: { chapterId: 'Sila pilih bab.' } })
+    // nothing moved: every question is still a Draf
+    expect((await q(`select distinct v.status from question_versions v where v.question_id = any($1::bigint[])`, [questionIds])).map((r) => r.status)).toEqual(['draft'])
+  })
+
   it('3. the admin approves them: Semakan then Terbit pass the gates (T33 cognitive level + kertas; the Bab is given where the H-A18 gate asks for it)', async () => {
     await q(`update question_versions set paper_code = 'MATH/2', chapter_id = (select id from chapters where subject_id = question_versions.subject_id and education_level_id = question_versions.education_level_id order by id limit 1) where question_id = any($1::bigint[])`, [questionIds])
     for (const action of ['review', 'approved']) {
