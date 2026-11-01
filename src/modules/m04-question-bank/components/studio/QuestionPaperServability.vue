@@ -11,7 +11,7 @@ import { useApi } from '@/composables'
 import { DsBadge, DsLoadError, DsText } from '@/ds'
 
 import { fetchPaperServability } from '../../api/paper-servability'
-import { PAPER_SERVED_COPY, paperServedRows, paperServedSummary } from '../../lib/paper-servability'
+import { PAPER_SERVED_COPY, paperServedRows, paperServedSummary, paperServedTruncated } from '../../lib/paper-servability'
 
 const props = defineProps<{ questionId: string | number }>()
 
@@ -19,7 +19,7 @@ const { data, error, loading, reload } = useApi(
   (signal) => fetchPaperServability(props.questionId, signal),
   () => props.questionId,
 )
-const rows = computed(() => (data.value ? paperServedRows(data.value, String(props.questionId)) : []))
+const rows = computed(() => (data.value ? paperServedRows(data.value.data, String(props.questionId)) : []))
 </script>
 
 <template>
@@ -40,6 +40,7 @@ const rows = computed(() => (data.value ? paperServedRows(data.value, String(pro
     <DsText v-else-if="rows.length === 0" variant="body" tone="muted" data-testid="paper-served-empty">{{ PAPER_SERVED_COPY.empty }}</DsText>
     <template v-else>
       <DsText variant="caption" tone="muted" data-testid="paper-served-summary">{{ paperServedSummary(rows) }}</DsText>
+      <DsText v-if="data?.meta.truncated" variant="caption" tone="muted" data-testid="paper-served-truncated">{{ paperServedTruncated(rows.length, data.meta.total) }}</DsText>
       <ul class="m-0 flex list-none flex-col gap-2 p-0" data-testid="paper-served-list">
         <li
           v-for="r in rows"

@@ -1,7 +1,7 @@
 import { SERVABILITY_REASON_MS, type QuestionPaperServabilityRow } from '@pp/contract'
 import { describe, expect, it } from 'vitest'
 
-import { paperServedRows, paperServedSummary, reasonQuestionId } from '../../lib/paper-servability'
+import { paperServedRows, paperServedSummary, paperServedTruncated, reasonQuestionId } from '../../lib/paper-servability'
 
 const OPEN: QuestionPaperServabilityRow = { paperId: '10', title: 'Kertas A', served: true, reasons: [] }
 const MISSING: QuestionPaperServabilityRow = {
@@ -39,5 +39,11 @@ describe('paper servability mapping', () => {
   it('summarises how many papers are open', () => {
     expect(paperServedSummary([OPEN, MISSING])).toBe('Boleh dibuka murid di 1 daripada 2 kertas diterbitkan.')
     expect(paperServedSummary([])).toBe('Boleh dibuka murid di 0 daripada 0 kertas diterbitkan.')
+  })
+})
+
+describe('paperServedTruncated', () => {
+  it('names how many of how many papers are shown', () => {
+    expect(paperServedTruncated(200, 340)).toBe('Menunjukkan 200 daripada 340 kertas.')
   })
 })

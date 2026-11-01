@@ -14,7 +14,8 @@ function handler(req: MockRequest): MockResponse {
   const q = questions.get(req.params.id as number)
   if (!q || q.pkskDomainId !== null) return notFound()
   const subject = nameMaps().subject(q.subjectId)?.name ?? 'Umum'
-  return ok(paperServabilityRows(q, subject))
+  const rows = paperServabilityRows(q, subject)
+  return ok(rows, { meta: { total: rows.length, truncated: false } })
 }
 
 export const paperServabilityRoutes: RouteDef[] = [

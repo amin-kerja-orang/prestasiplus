@@ -22,6 +22,9 @@ export const PAPER_SERVED_COPY = {
 export const paperServedSummary = (rows: readonly Pick<QuestionPaperServabilityRow, 'served'>[]): string =>
   `Boleh dibuka murid di ${String(rows.filter((r) => r.served).length)} daripada ${String(rows.length)} kertas diterbitkan.`
 
+/** [PROPOSED] (UX-77) caption when the API read only the first papers of a longer list (`meta.truncated`). */
+export const paperServedTruncated = (shown: number, total: number): string => `Menunjukkan ${String(shown)} daripada ${String(total)} kertas.`
+
 export interface PaperServedRow {
   paperId: string
   title: string
