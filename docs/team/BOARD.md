@@ -450,3 +450,5 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
   - Evidence: api tsc 0; vue-tsc 0; DB 94/94; m28 589/589; t45 19/19.
 - reqc021-followup @ 8210ac5bd confirmed as the only D98 red. Counts: questions 628 + 3 todo; practice 175; practice-reads 106 + 1 skip; curriculum 257; conformance 409/409.
 - A1a next: **integration preview** (local only, not pushed). It stacks every team A READY head on BASE-102 in merge order and runs the full api suites, so conflicts and reds are found before B1.
+- **Seed dangling placements (A1b)**: there is no seed bug. After a default/e2e seed, the 25 PoC-id placements are all on 4 **withdrawn** PoC papers (T36 exam-retire-poc runs in every profile). They are on published papers only in a test harness that seeds without the retire step. A new spec locks this in: r1/seed-dangling-placements @ 7285d961c, seed + bijak-papers 264 + 1 skip; tsc 0. Needs B2. A4 is asked to confirm its harness, and that the `question_missing` lane counts published papers only.
+- A1b queue: empty after this (A1a is running the integration preview).
