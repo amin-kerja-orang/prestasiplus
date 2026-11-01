@@ -7,7 +7,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { BijakAttemptPaperViewSchema, BijakAttemptResultViewSchema, BijakPaperSummarySchema } from '@pp/contract'
 
-import { POC_BANK, pocQuestionId } from '../../src/modules/bijak/papers/poc'
+import { POC_BANK, pocQuestionId } from '../../prisma/seed/poc/export'
 import { bootIntegrationApp, type Client, type IntegrationApp, loginAs, STUDENT } from './helpers'
 
 let t: IntegrationApp

@@ -8,6 +8,7 @@
  * | R1-05.2 resume returns answers/flags/picks | "R1-05.2" |
  * | R1-06.2 band midpoint                   | "R1-06.2" |
  * | R1-06.5 unmarked written part counts 0   | "R1-06.5" |
+ * | D94 / T38 choose-N self-mark reward     | "D94 choose-N" |
  */
 import { BijakAttemptPaperViewSchema, BijakAttemptResultViewSchema, BijakAttemptSelfMarkResultSchema } from '@pp/contract'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
@@ -95,7 +96,7 @@ describe('R1-05.2: resume restores the saved answers, flags, picks and position'
 })
 
 describe('R1-06.2: the band midpoint', () => {
-  it('floor((from + to) / 2) of every band lies inside its range, and the server keeps that mark as sent (V2 midpointFor)', async () => {
+  it('the server keeps the midpoint a client sends for every band as sent (the V2 midpointFor rule itself is computed by the Semakan screen)', async () => {
     const id = await startAttempt(me, PAPER.sejK2, 'exam', true)
     const sub = await me.post(`/api/bijak/attempts/${id}/submit`, { idempotencyKey: 'band', changes: [change(SEJ_ESSAY_1, { text: 'Perlembagaan menjadi asas undang-undang negara.' })] })
     expect(sub.status, JSON.stringify(sub.body)).toBe(200)
@@ -106,8 +107,6 @@ describe('R1-06.2: the band midpoint', () => {
       const from = Math.min(b.range[0], part.marks)
       const to = Math.min(b.range[1], part.marks)
       const mid = Math.floor((from + to) / 2) // the V2 rule the Semakan screen applies when a band is picked
-      expect(mid).toBeGreaterThanOrEqual(from)
-      expect(mid).toBeLessThanOrEqual(to)
       const r = BijakAttemptSelfMarkResultSchema.parse((await me.post(`/api/bijak/attempts/${id}/self-mark`, { partId: SEJ_ESSAY_1, mark: mid, band: b.name })).body.data)
       expect(r).toMatchObject({ awarded: mid, band: b.name })
     }
@@ -145,5 +144,21 @@ describe('R1-06.5: an unmarked written part counts 0 and the result says it is p
     const marked = BijakAttemptSelfMarkResultSchema.parse((await me.post(`/api/bijak/attempts/${id}/self-mark`, { partId: SEL_B, mark: 2 })).body.data)
     expect(marked.attemptScore).toBe(2)
     expect((await result(me, id)).result.pendingReview).toBe(r.pendingReview - 1)
+  })
+})
+
+describe('D94 choose-N: the self-mark reward is handed over on the best-N total', () => {
+  it('both alternatives of "Pilih 1 daripada 2" self-marked full: the port sees a 4-mark gain each time, never 8; the wallet pays it once (rewards.spec)', async () => {
+    t.reward.selfMarkCalls.length = 0
+    const id = await startAttempt(me, PAPER.sainsK2, 'exam', true)
+    const sub = await me.post(`/api/bijak/attempts/${id}/submit`, { idempotencyKey: 'cn', changes: [] })
+    expect(sub.status, JSON.stringify(sub.body)).toBe(200)
+    const before = (await result(me, id)).result
+    const first = BijakAttemptSelfMarkResultSchema.parse((await me.post(`/api/bijak/attempts/${id}/self-mark`, { partId: OSMOSIS_A, mark: 4 })).body.data)
+    const second = BijakAttemptSelfMarkResultSchema.parse((await me.post(`/api/bijak/attempts/${id}/self-mark`, { partId: FOTO_A, mark: 4 })).body.data)
+    expect(first.attemptScore).toBe(before.score + 4)
+    expect(second.attemptScore).toBe(before.score + 4) // best-N: the second alternative adds nothing
+    expect(t.reward.selfMarkCalls.map((c) => c.score - c.base)).toEqual([4, 4]) // the same level twice: the wallet key per level pays it once
+    expect(new Set(t.reward.selfMarkCalls.map((c) => c.score)).size).toBe(1)
   })
 })
