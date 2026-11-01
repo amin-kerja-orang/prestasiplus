@@ -562,6 +562,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/reqb049-report-visible | 9ece8d76d | READY (A1b, BASE-105): pre-review Minors fixed (type from the live version, spec titles, real level codes); 316/316; B2 + B3 | A2 B3 pre-scan: CLEAN (no IDOR/oracle, no echo, caps bite under mutation) |
 | r1/reqb052-archived-edit | f3a2448f9 | READY (A3, BASE-105; replaces 17196431): follow-ups done: P1 pinned-clause spec (bites), guard published OR (withdrawn AND EXISTS attempts), header; archived-edit 6/6, pinned-version-rule 6/6, workflow 296/296; tsc/eslint 0; B2 | merge AFTER ha18 a9ffe246 (merge-tree clean; fix not needed inside) |
 | r1/reqb058-takedown-pin | c85159884 | READY (A4, @c8515988, BASE-109): new sittings + Kuiz refused (existing 403 copy) when the pinned version is archived with a non-superseded reason (null = takedown, fail-closed; ETL loads no papers); running sittings untouched; 11 new tests + regression green, bites; REQ-B-032 row extended; cover/list flag follow-up pending; B2 + B3 |
+| r1/rule-line-v2 | 9e5f373e5 | ON HOLD — PENDING USER (copy row 39, AC-10.6): pre-staged switch of the section rule line to V2 "Jawab {N} soalan sahaja." (rules.ts + exam-core paper-model.ts + specs + contract examples + docs); A3 dev-1 finishing; deleted if the user keeps the API text; A2 pre-review queued |
 | r1/seed-dangling-placements | 11cbcf458 | READY (A1b, BASE-105): asserts paper titles + counts = POC_BANK; seed 155 + 1 skip; B2 |
 | r1/servability-stimuli-once | f76f729a8 | READY (A4, @f76f729a, contains chain tip + BASE-107): spy spec pins one stimulus read per chunk + 2 comments; optional; step 6b |
 | r1/stimulus-list-d72 | b45ce5197 | READY (A2, @b45ce519; contains t49 b99068a6): one where for page+count; part-linked Darjah/PKSK hiding spec (bites); A4 + A3 pre-reviews Approve; merge AFTER t49; B2 |
@@ -582,8 +583,6 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t49-served-now | 8cb9fa5f1 | READY — B2 APPROVE @8cb9fa5f (cycle 21, 07:25 MYT); awaiting B1 merge | READY (A2 + A1a, @8cb9fa5f): blank-filter 422 + filter-options notServed entry in known-mismatches (route ships here); A4 pre-review Approve + B3 checklist Pass; merge BEFORE d72 (clean, A3 merge-tree |
 | r1/t51-partial-acs-a3 | 61c1b077f | READY (A3, hold LIFTED; @61c1b077 on T43 238eb6eb + T31 eb0346d2 + T48): merge after T48, T31, REQ-A-008, T43; never old T31 6a27c8dd / T43 5ce5894f / T51 54f63116; Preview #3 (A4, 33 heads on BASE-105 @525f9ca1, local): ALL GREEN, vue-tsc 0 after REQ-A-008, 0 reds. B2 |
 | r1/t52-examiner-grid | 5a0d7bd0e | READY — B2 APPROVE @5a0d7bd0 (cycle 21, 07:25 MYT); awaiting B1 merge | READY (A1a/A1b, @5a0d7bd0): examinerGrid from marked (live+pinned), be09 test 8 bites; deviation note live-wins in withPinned; A2 + A3 dev-1 delta pre-reviews CLEAN; 124 tests; B2 (C REQ-A-012 reqa012 |
-
-**New branches not yet triaged:** r1/rule-line-v2 9e5f373e5
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
