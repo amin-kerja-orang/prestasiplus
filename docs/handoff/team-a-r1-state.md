@@ -77,22 +77,22 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 
 | ID | Branch @ head | Lane | Depends on | B state |
 |---|---|---|---|---|
-| T54 F2: builder pool search matches the text in SQL and describes only the page | `r1/builder-search-perf` @ f0ddb1ca | A3 | T48 (carries 705468c1); merges after T48 | READY |
-| T34-L1-residual, taken by team C (REQ-A-013) | `r1/t34-l1-residual-c` @ eb9ad806 | team C (REQ-A-013) | BASE-102 (not built from e4bb72eb) | READY |
-| REQ-B-022a overview: skip the Jana pool facts in the published-paper pass (cold 15.3 s to 9.3 s on 408k) | `r1/overview-mcq-shape-once` @ b0f1e9b2 | A4 | T30 (base) | READY (A4); review not seen (unconfirmed) |
+| T54 F2: builder pool search matches the text in SQL and describes only the page | `r1/builder-search-perf` @ f0ddb1ca | A3 | T48 (carries 705468c1); merges after T48 | READY (A3, T54 F2); merges after T48; review not seen (unconfirmed) |
+| T34-L1-residual, taken by team C (REQ-A-013) | `r1/t34-l1-residual-c` @ eb9ad806 | team C (REQ-A-013) | BASE-102 (not built from e4bb72eb) | team C has taken T34-L1-residual (REQ-A-013): built on BASE-102 with its own commits (a wip, then the finish commit eb9ad806), NOT built from A3 e4bb72eb; review not seen (unconfirmed) |
+| REQ-B-022a overview: skip the Jana pool facts in the published-paper pass (cold 15.3 s to 9.3 s on 408k) | `r1/overview-mcq-shape-once` @ 5ca84dcf | A4 | T30 (base) | READY (A4); review not seen (unconfirmed) |
 | REQ-B-032 a published paper serves its pinned version (attempt source, image rule B, served lock agree) | `r1/reqb032-pinned-rule` @ 77c83c5e | A2 (slot 2; moved from A3, earlier from A4) | none (REQ-B-032) | WIP, not READY: A2 starts from the paused A3 checkpoint 77c83c5e |
-| Seed spec: no published seeded paper holds a dangling placement (25 PoC ones withdrawn) | `r1/seed-dangling-placements` @ 7285d961 | A (lane unconfirmed) | T36 (base) | READY (test-only); lane and review not seen (unconfirmed) |
+| Seed spec: no published seeded paper holds a dangling placement (25 PoC ones withdrawn) | `r1/seed-dangling-placements` @ 2bbd4f3c | A (lane unconfirmed) | T36 (base) | READY (test-only); lane and review not seen (unconfirmed) |
 | T45 part 3 builder specs (AC-R1-21.3 / 21.6 on the real bank) | `r1/t45-builder-acs` @ de8c8c02 | A1b | T48 (stacked on 4a3ff264; merges after T48) | READY (A1b, specs only); restacked on T48 705468c1 (de8c8c02); merges after T48; review not seen (unconfirmed) |
-| REQ-C-021 follow-up: catalogue to D98, stale lock comments, conformance check | `r1/reqc021-followup` @ 8210ac5b | A1 | REQ-C-021 (BASE-102) | READY (A1); review not seen (unconfirmed) |
-| E05B-L1 spec: archived pinned version keeps its own stimulus locked | `r1/e05b-l1-spec` @ baa42a15 | A4 | R1E2E-05b (base) | READY (A4, test-only); review not seen (unconfirmed) |
+| REQ-C-021 follow-up: catalogue to D98, stale lock comments, conformance check | `r1/reqc021-followup` @ 948aa327 | A1 | REQ-C-021 (BASE-102) | READY (A1); review not seen (unconfirmed) |
+| E05B-L1 spec: archived pinned version keeps its own stimulus locked | `r1/e05b-l1-spec` @ f9eab2ab | A4 | R1E2E-05b (base) | READY (A4, test-only); review not seen (unconfirmed) |
 | REQ-B-022a overview cold path in parallel + cold before/after on the 408k bank (docs) | `r1/req-b-022a-a4` @ 6295dc05 | A4 | T30 (base) | READY (A4): overview counts in one Promise.all, routes stay Admin Pusat (REQ-B-022a/c); review not seen (unconfirmed) |
 | REQ-C-020 lane pages carry subjects for the Subjek filter | `r1/req-c-020` @ 6dc3feff | A4 | T30 lanes (base) | READY (A4); review not seen (unconfirmed) |
 | T45 part 3 WIP: AC-R1-21.3 / 21.6 builder specs on the real bank | `r1/t45-builder-acs-wip` @ 078204e1 | A4 | T48 (carries migration 0104) | WIP (A4); stacked on T48, so it carries migration 0104; superseded by `r1/t45-builder-acs` (A1b) |
-| REQ-B-025c a choice-only essay_choice counts as blank (leaf kind passed to isBlank) | `r1/req-b-025c` @ a2865119 | A1b (handed over from A4) | none (REQ-B-025c) | READY (A1b, handed over from A4); review not seen (unconfirmed) |
+| REQ-B-025c a choice-only essay_choice counts as blank (leaf kind passed to isBlank) | `r1/req-b-025c` @ 37007e49 | A1b (handed over from A4) | none (REQ-B-025c) | READY (A1b, handed over from A4); review not seen (unconfirmed) |
 | REQ-B-022a servability overview counts in one Promise.all | `r1/req-b-022a` @ 688529b7 | A4 | T30 (base) | READY (A4); review not seen (unconfirmed) |
 | T54 performance report at ~406k questions (docs) | `r1/t54-perf-400k` @ bbf412c6 | A4 | none (docs) | pushed (A4): docs/qa performance report, 11 paths p50/p95 and fixes for p95 over 1 s; review not seen (unconfirmed) |
 | REQ-B-035 review queue rows carry the stimulus group (D90) | `r1/intake-reqs-a2` @ a631198c | A2 | none (REQ-B-035) | READY (A2); review not seen (unconfirmed) |
-| T34-L1-residual (A3 WIP, for B3) | `r1/t34-l1-residual` @ e4bb72eb | A3 | T34 (B3 finding T34-L1-residual) | WIP, untested (A3): the answer to B3 finding T34-L1-residual; not for merge yet |
+| T34-L1-residual (A3 WIP, for B3) | `r1/t34-l1-residual` @ e4bb72eb | A3 | T34 (B3 finding T34-L1-residual) | A3 WIP, untested; team C took T34-L1-residual (REQ-A-013) in `r1/t34-l1-residual-c`, which is not built from e4bb72eb, so this is not shown as superseded by ancestry (relationship to be confirmed) |
 | REQ-C-019 joinable filter on group list and filter-options | `r1/t49-served-now` @ 8a4b46a9 | A2 | T49 (base) | smoke role for GET /questions/filter-options, trimmed Negeri match, joinable wording pushed (221c2b28); awaiting B1 gate and B2 (A2) |
 | REQ-B-033 paper lane names a placed question the bank does not return | `r1/req-b-033` @ 50537328 | A4 | servability lanes (T30, in base) | READY (A4); review not seen (unconfirmed) |
 | T45 part 1 (AC-04.3/04.5/05.3) | `r1/t45-servability-acs` @ 3175abff | A4 | T29 | fix pushed (T45-L1: approve-time servability check at the shared approve point; cognitiveLevel in the fresh spec); awaiting B2 re-review (A4) |
@@ -100,13 +100,13 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 | T04 minors (R1E2E-09) | `r1/t04-minors` @ cc511621 | A2 | T04 | REQ-B-044 fix pushed (chapter-practice spec follows the Soalan by Chapter tile rule, D91 / FD-11); awaiting B1 gate and B2 (A2) |
 | T38 self-mark reward (D94) | `r1/t38-selfmark-reward` @ 13134ced | A1 | T28 | fix pushed (6995d091: reward on the best-N gain, T38-L1) and base merged; awaiting B2 re-review (A1) |
 | T40 attempts ACs | `r1/t40-attempts-acs` @ 43fb5900 | A1 | T38 | restacked on the T38 fix (midpoint spec renamed, choose-N self-mark reward case); awaiting B2 (A1) |
-| T50 partial ACs | `r1/t50-partial-acs` @ e436e084 | A1 | none | B2 Changes requested (A1) |
+| T50 partial ACs | `r1/t50-partial-acs` @ 075e1b58 | A1 | none | B2 Changes requested (A1) |
 | T31 builder wire | `r1/t31-builder-wire` @ 6a27c8dd | READY @ 6a27c8dd (lead, 2026-11-01; BASE-102 merged, virtual merge clean); waits for C1 to rebase REQ-A-008 on BASE-102 | T34; waits for C1 REQ-A-008 | restacked on BASE-102 (6a27c8dd is a base merge of the bf825128 checkpoint), checkpoint, not yet READY (bf825128: builder helper follows T36, poc-flag publishes under a Disahkan Kontrak, openapi re-emitted; evidence still running); REQ-A-008 (C1) follows it |
 | T43 chain + publish ACs | `r1/t43-chain-publish` @ 5ce5894f | READY @ 5ce5894f (lead, 2026-11-01; on T31, Jana Kertas fixtures use a non-KBAT level); merges after T31 | T31 (contains T34) | real commits on the T31 chain (Jana Kertas fixtures use a non-KBAT level, base merges); T31 is a checkpoint, so T43 waits for T31 (A3) |
 | T48 builder parity (0104) | `r1/t48-builder-parity` @ 1dd07bc1 | A3 | T34; re-verify running | T34 is in base (BASE-101); tip 1dd07bc1 = BASE-105 merge of 705468c1 (B2 minors and B3 audit info fixed (empty admin Bahagian is hard, override-mix spec, docs, messages) on top of fix 2cbe7d28 and spec follow-ups); READY (reported to the lead); B2/B3 re-check pending (migration 0104) |
-| READY (4921b3e5 contains T48 final head 1dd07bc1); T43b minors fixed (2f8f69c3); publish-acs.spec covers AC-07.4 to AC-07.9; blocker catalogue 25 (4 overridable) | `r1/t43b-publish-acs` @ 4921b3e5 | READY (4921b3e5 contains T48 final head 1dd07bc1); T43b minors fixed (2f8f69c3); publish-acs.spec covers AC-07.4 to AC-07.9; blocker catalogue 25 (4 overridable) | READY (4921b3e5 contains T48 final head 1dd07bc1); T43b minors fixed (2f8f69c3); publish-acs.spec covers AC-07.4 to AC-07.9; blocker catalogue 25 (4 overridable) | READY (4921b3e5 contains T48 final head 1dd07bc1); T43b minors fixed (2f8f69c3); publish-acs.spec covers AC-07.4 to AC-07.9; blocker catalogue 25 (4 overridable) |
-| READY (reported to the lead, recorded on BOARD); the code overlap with T48 is resolved; restacked on T48 705468c1 with an openapi re-emit (4f812b4e) | `r1/t51-partial-acs-a3` @ 4f812b4e | READY (reported to the lead, recorded on BOARD); the code overlap with T48 is resolved; restacked on T48 705468c1 with an openapi re-emit (4f812b4e) | READY (reported to the lead, recorded on BOARD); the code overlap with T48 is resolved; restacked on T48 705468c1 with an openapi re-emit (4f812b4e) | READY (reported to the lead, recorded on BOARD); the code overlap with T48 is resolved; restacked on T48 705468c1 with an openapi re-emit (4f812b4e) |
-| T52 examinerGrid (AC-20.3) | `r1/t52-examiner-grid` @ addae644 | A1 | none | B2 eslint BLOCKER `bijak-papers.test.ts:317` (A1); REQ-A-012 FE waits for it |
+| T43b publish ACs | `r1/t43b-publish-acs` @ 4921b3e5 | A3 dev-2 | T43 | READY (4921b3e5 contains T48 final head 1dd07bc1); T43b minors fixed (2f8f69c3); publish-acs.spec covers AC-07.4 to AC-07.9; blocker catalogue 25 (4 overridable) |
+| T51 partial ACs (builder, Terbit, Kontrak, Jana) | `r1/t51-partial-acs-a3` @ 4f812b4e | A3 dev-1 | T43 | READY (reported to the lead, recorded on BOARD); the code overlap with T48 is resolved; restacked on T48 705468c1 with an openapi re-emit (4f812b4e) |
+| T52 examinerGrid (AC-20.3) | `r1/t52-examiner-grid` @ f2d36f64 | A1 | none | B2 eslint BLOCKER `bijak-papers.test.ts:317` (A1); REQ-A-012 FE waits for it |
 
 ### 1.3 In progress, not pushed
 
@@ -120,7 +120,7 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 |---|---|---|
 | T37 runbook | `r1/t37-r1-runbook` @ f4bb197c | `docs/ops/r1-runbook.md` (migrations 0092 to 0105, SELECTs run 74/74 on BASE-62) |
 | T39 K1 evidence | `r1/t39-k1-evidence` @ 1a26f7a6 | `docs/ops/r1-k1-blueprint-evidence.md` |
-| T46 / H-A17 AC coverage | `r1/ha17-ac-coverage` @ d7c9c784 | `docs/qa/r1-backend-ac-coverage.md`, `r1-verify-first-notes.md` (kept current by H-A27) |
+| T46 / H-A17 AC coverage | `r1/ha17-ac-coverage` @ 701064be | `docs/qa/r1-backend-ac-coverage.md`, `r1-verify-first-notes.md` (kept current by H-A27) |
 | H-A19 admin parity | `r1/ha19-admin-parity` @ c7315b0e | `docs/qa/r1-admin-parity-check.md` |
 | H-A20 student parity | `r1/ha20-student-parity` @ 557e17c6 | `docs/qa/r1-student-parity-check.md` |
 | H-A22 parity docs | `r1/ha22-parity-docs` @ 4fb2a41b | both parity docs refreshed, deviation rows H22-D1/D2 in `v2-bijak-spm.md`, `student.md` rows marked |
