@@ -27,9 +27,12 @@ describe('questions list/count filter consistency (no Darjah rows, same filter b
   it('listIds: page, total and per-status counts all hide primary-level questions', async () => {
     const { repo, queries } = fakeRepo()
     await repo.listIds({ page: 1, pageSize: 20, status: 'approved' })
-    expect(queries).toHaveLength(3)
+    // The page and ONE aggregate (the per-status counts also give the total, R1 perf): same filter, the page adds the chosen status.
+    expect(queries).toHaveLength(2)
     for (const q of queries) expect(q).toContain(PRIMARY)
-    expect(whereOf(queries[0]!)).toBe(whereOf(queries[1]!))
+    expect(whereOf(queries[0]!).replace(/ AND v\.status = \$\d+$/, '')).toBe(whereOf(queries[1]!))
+    expect(whereOf(queries[0]!)).toMatch(/ AND v\.status = \$\d+$/)
+    expect(whereOf(queries[1]!)).not.toContain('v.status =')
   })
 
   it('count / groupCount / structured / totals / owner counts hide primary-level questions', async () => {

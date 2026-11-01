@@ -104,3 +104,60 @@ describe('admin question list: Tahun, Negeri, Kertas, Jenis', () => {
     }
   })
 })
+
+describe('list totals come from the one status aggregate (R1 perf, T54 F4)', () => {
+  let t: QuestionsTestApp
+  let admin: Client
+  let refs: Refs
+  beforeAll(async () => {
+    process.env.THROTTLE_QUESTIONS_WRITE_PER_MINUTE = '100000'
+    t = await bootQuestionsApp()
+    admin = await loginAs(t, 'admin')
+    refs = await refsOf(t.db)
+    for (const [i, status] of (['draft', 'draft', 'review', 'approved'] as const).entries()) {
+      const res = await admin.post('/api/questions', mcqBody(refs, { questionText: `Soalan jumlah senarai nombor ${String(i)} dalam ujian.` }))
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      const id = mutationEnvelopeOf(QuestionSchema).parse(res.body).data.id
+      await t.db.query(`update question_versions set status = $2 where question_id = $1`, [id, status])
+      if (status === 'approved') await t.db.query(`update questions set live_version_no = 1 where id = $1`, [id])
+    }
+  })
+  afterAll(async () => {
+    await t.close()
+  })
+
+  const meta = async (query: string) => {
+    const res = await admin.get(`/api/questions?${query}`)
+    expect(res.status, JSON.stringify(res.body)).toBe(200)
+    return (res.body as { data: unknown[]; meta: { totalItems: number; totalPages: number; counts: Record<string, number> } })
+  }
+
+  it('without a status the total is the sum of the counts; with one it is that count; counts ignore the status filter', async () => {
+    const all = await meta('pageSize=2')
+    const sum = Object.values(all.meta.counts).reduce((a, b) => a + b, 0)
+    expect(all.meta.totalItems).toBe(sum)
+    expect(all.meta.totalPages).toBe(Math.ceil(sum / 2))
+    for (const status of ['draft', 'review', 'approved', 'archived'] as const) {
+      const one = await meta(`status=${status}&pageSize=1`)
+      expect(one.meta.totalItems, status).toBe(all.meta.counts[status])
+      expect(one.meta.counts, status).toEqual(all.meta.counts) // the tiles do not shrink with the status filter
+      expect(one.data.length).toBe(Math.min(1, all.meta.counts[status]!))
+    }
+    // a page past the end keeps the right total
+    const past = await meta('page=500&pageSize=20')
+    expect(past.data).toEqual([])
+    expect(past.meta.totalItems).toBe(sum)
+  })
+
+  it('a search narrows the tiles and the total together (exact numbers on the four rows made here)', async () => {
+    const mine = await meta('search=jumlah%20senarai%20nombor')
+    expect(mine.meta.totalItems).toBe(4)
+    expect(mine.meta.counts).toEqual({ draft: 2, review: 1, approved: 1, archived: 0 })
+    const draftsOnly = await meta('search=jumlah%20senarai%20nombor&status=draft')
+    expect(draftsOnly.meta.totalItems).toBe(2)
+    expect(draftsOnly.meta.counts).toEqual({ draft: 2, review: 1, approved: 1, archived: 0 })
+    const one = await meta('search=jumlah%20senarai%20nombor%202')
+    expect(one.meta.totalItems).toBe(1)
+    expect(one.meta.counts).toEqual({ draft: 0, review: 1, approved: 0, archived: 0 })
+  })
+})
