@@ -102,6 +102,23 @@ export const M05_ANCHOR_GROUPS: readonly {
   { ids: [600061, 600065], subjectId: 3, levelId: 1, chapterId: 136 },
 ]
 
+/**
+ * REQ-B-040 (fictitious demo links): `[subject, level, M03 chapter id]` for T4 (10) / T5 (11). MATH (3) and
+ * SCI (4); chapters are the first of each pair in `chapterNumber` order so the unlock chain is walkable.
+ */
+const SPM_CHAPTER_LINKS: readonly (readonly [number, number, number])[] = [
+  [3, 10, 91],
+  [3, 10, 92],
+  [3, 10, 220],
+  [3, 11, 228],
+  [4, 10, 322],
+  [4, 10, 323],
+  [4, 10, 324],
+  [4, 11, 362],
+  [4, 11, 363],
+]
+const SPM_CHAPTER_ROWS_PER_DIFFICULTY = 40
+
 /** Difficulty of the M05 anchor `id` (M05 §6.15 rule). */
 export function m05AnchorDifficulty(id: number): number | null {
   for (const g of M05_ANCHOR_GROUPS) {
@@ -339,6 +356,24 @@ function buildObjective(b: CellBuilder<F>): void {
           { inOrder: true },
         )
       }
+    }
+  }
+
+  // 3b. REQ-B-040: some SPM pool rows (T4/T5) link to a chapter so "Soalan by Chapter" is demonstrable in
+  //     mock mode. Only the chapter facet changes; every pool, status and difficulty count is untouched.
+  //     The `poc` profile keeps ~3 % of a cell (min. 1 row from 17 rows), hence up to 40 rows per
+  //     (chapter, difficulty), always leaving at least half of the pool cell unlinked.
+  for (const [s, l, chapterId] of SPM_CHAPTER_LINKS) {
+    const linked = SPM_CHAPTER_LINKS.filter(([ls, ll]) => ls === s && ll === l).length
+    for (const d of [1, 2, 3, 4]) {
+      const n = Math.min(SPM_CHAPTER_ROWS_PER_DIFFICULTY, Math.floor(poolOf(s, l, d) / (linked + 1)))
+      if (n < 1) continue
+      b.take(
+        and(at(s, l), eligible, (f) => f.spmPool && f.difficultyLevel === d && f.curriculumChapterId === null),
+        n,
+        { curriculumChapterId: chapterId },
+        { inOrder: true },
+      )
     }
   }
 
