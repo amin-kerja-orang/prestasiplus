@@ -99,9 +99,9 @@ export class ReportsRepository {
     return s ? { userId: s.userId, holds: s.questions.length > 0 } : null
   }
 
-  /** REQ-B-031: the user submitted a structured attempt on the question (the structured practice keeps no session). */
-  async answeredStructured(userId: bigint, questionId: bigint): Promise<boolean> {
-    return (await this.prisma.client.structuredAttempt.count({ where: { userId, questionId } })) > 0
+  /** REQ-B-046: this reporter already has a report row for this question version (a re-POST refreshes it and is not a new report). */
+  async exists(reporterId: bigint, questionId: bigint, versionNo: number): Promise<boolean> {
+    return (await this.prisma.client.questionReport.count({ where: { reporterId, questionId, questionVersionNo: versionNo } })) > 0
   }
 
   get(id: string): Promise<ReportRow | null> {

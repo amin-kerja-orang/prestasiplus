@@ -206,15 +206,50 @@ describe('question reports (BE-10 AC 3, 4, 9, 11)', () => {
       expect((await plain.post('/api/question-reports', body(id, { quizSessionId: own }))).status).toBe(201)
     })
 
-    it('a structured attempt of the pupil on the question is enough for a structured question', async () => {
+    it('REQ-B-046: a pupil reports a live structured question before the first submit (no attempt, no session): 201, and a second report refreshes it', async () => {
       const id = seed({ brief: { type: 'structured' } })
       const plain = await loginAs(t, 'pelajar@demo.test')
-      expect((await plain.post('/api/question-reports', body(id, { questionType: 'structured' }))).status).toBe(422)
+      expect((await plain.post('/api/question-reports', body(id, { questionType: 'structured' }))).status).toBe(201)
+      expect((await plain.post('/api/question-reports', body(id))).status).toBe(201) // no questionType sent: the stored type decides
+      expect(await mineOf(id)).toBe(1)
+      await t.db.query(`delete from question_reports where question_id = $1::bigint`, [id]) // keep the later specs' counts
+      // after a submit it is still accepted
       await t.db.query(
         `insert into structured_attempts (user_id, question_id, question_version_no, total_awarded, total_max, submitted_at) values ($1::bigint, $2::bigint, 1, 0, 1, now())`,
         [plain.userId, id],
       )
       expect((await plain.post('/api/question-reports', body(id, { questionType: 'structured' }))).status).toBe(201)
+      await t.db.query(`delete from question_reports where question_id = $1::bigint`, [id])
+    })
+
+    it('REP-N1: a pupil without a proof gets one answer (422 context) for an unknown, a not-live and a live MCQ question, and a wrong questionType is not told', async () => {
+      const live = seed()
+      const hidden = seed({ status: 'draft' })
+      const plain = await loginAs(t, 'pelajar@demo.test')
+      const ctx = { context: 'Anda hanya boleh melapor soalan yang dipaparkan kepada anda.' }
+      for (const id of [live, hidden, '99999991']) {
+        const res = await plain.post('/api/question-reports', body(id))
+        expect(res.status, id).toBe(422)
+        expect(fields(res), id).toEqual(ctx)
+      }
+      const structured = seed({ brief: { type: 'structured' } })
+      // a mismatching questionType on a question the pupil has no proof for reveals neither the type nor the existence
+      expect(fields(await plain.post('/api/question-reports', body(live, { questionType: 'structured' })))).toEqual(ctx)
+      expect(fields(await plain.post('/api/question-reports', body(hidden, { questionType: 'mcq' })))).toEqual(ctx)
+      // a Guru still gets 404 for an unknown question
+      expect((await c.teacher.post('/api/question-reports', body('99999991'))).status).toBe(404)
+      expect(structured).toBeTruthy()
+    })
+
+    it('REP-N2: at most 8 reasons; duplicates are stored once', async () => {
+      const id = seed()
+      const nine = Array.from({ length: 9 }, () => 'typo')
+      const res = await c.student.post('/api/question-reports', body(id, { reasons: nine }))
+      expect(res.status).toBe(422)
+      expect(fields(res)).toEqual({ reasons: 'Terlalu banyak sebab laporan dipilih.' })
+      expect((await c.student.post('/api/question-reports', body(id, { reasons: ['typo', 'typo', 'other'] }))).status).toBe(201)
+      expect((await t.db.query<{ reasons: string[] }>(`select reasons from question_reports where question_id = $1::bigint and reporter_id = $2::bigint`, [id, c.student.userId]))[0]?.reasons).toEqual(['typo', 'other'])
+      await t.db.query(`delete from question_reports where question_id = $1::bigint`, [id]) // keep the later specs' counts
     })
 
     it('a Guru is not asked for a context (Databank guru)', async () => {
@@ -248,6 +283,9 @@ describe('question reports (BE-10 AC 3, 4, 9, 11)', () => {
       expect(over.status).toBe(429)
       expect(over.body.error).toMatchObject({ code: 'RATE_LIMITED', message: 'Anda telah mencapai had 20 laporan sehari. Sila cuba lagi esok.' })
       expect(await mineOf(ids[20]!)).toBe(0)
+      // REQ-B-046: at the cap a re-POST of a report the pupil already has is a refresh, not a new report
+      const again = await proven.post('/api/question-reports', body(ids[0]!, { reasons: ['typo'] }))
+      expect(again.status, JSON.stringify(again.body)).toBe(201)
       // the next Malaysia day: the 20 reports no longer count (their stored time moves back two days)
       await t.db.query(`update question_reports set created_at = created_at - interval '2 days' where reporter_id = $1::bigint`, [plain.userId])
       expect((await proven.post('/api/question-reports', body(ids[20]!))).status).toBe(201)
