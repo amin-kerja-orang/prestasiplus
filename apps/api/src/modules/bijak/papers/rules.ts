@@ -19,10 +19,14 @@ export function ruleOf(ruleType: string, ruleN: number | null): SectionRule {
   return ruleType === 'choose' && ruleN !== null ? { type: 'choose', n: ruleN } : { type: 'all' }
 }
 
-/** Section instruction: the authored line, else "Jawab semua soalan." or "Jawab {n} daripada {count} soalan." (mock getCover). */
+/**
+ * Section instruction: the authored line, else "Jawab semua soalan." or "Jawab {n} soalan sahaja." (V2 .blade text; copy row 39). The question
+ * count is no longer part of the line; the parameter stays so the callers (cover, Kontrak view, builder) and the T48 stack, which edits one call site, do not change.
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function sectionInstruction(authored: string | null, rule: SectionRule, questionCount: number): string {
   if (authored) return authored
-  return rule.type === 'all' ? 'Jawab semua soalan.' : `Jawab ${String(rule.n)} daripada ${String(questionCount)} soalan.`
+  return rule.type === 'all' ? 'Jawab semua soalan.' : `Jawab ${String(rule.n)} soalan sahaja.`
 }
 
 export type ReferencePanel = { title: string; items: string[]; imageFileId?: string }

@@ -393,7 +393,7 @@ export const BijakBlueprintViewSectionSchema = z
     compulsory: z.boolean(),
     instruction: z.string().meta({
       description:
-        'Authored instruction, else the derived line ("Jawab semua soalan." or "Jawab N daripada M soalan."); never empty in the mock view.',
+        'Authored instruction, else the derived line ("Jawab semua soalan." or "Jawab N soalan sahaja."); never empty in the mock view.',
     }),
     rule: BijakBuilderSectionRuleSchema,
     pool: z.string().min(1).nullable().meta({
@@ -821,7 +821,7 @@ export const BijakBlueprintAdminSectionInputSchema = z
     compulsory: z.boolean().optional().meta({ description: 'Default: false.' }),
     instruction: z.string().max(500).optional().meta({
       description:
-        'Authored instruction. Default: absent, and the view derives "Jawab semua soalan." or "Jawab N daripada M soalan.".',
+        'Authored instruction. Default: absent, and the view derives "Jawab semua soalan." or "Jawab N soalan sahaja.".',
     }),
     rule: BijakBuilderSectionRuleSchema,
     pool: z.string().trim().min(1).max(64).optional().meta({
