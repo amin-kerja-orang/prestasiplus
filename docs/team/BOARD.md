@@ -485,13 +485,13 @@ BASE-105 + 11 team A READY API heads + C FE heads (reqa014 dc561730, reqa005 3ee
 **Conflicts B1 will see:** `questions.module.ts` (A4 chain `OverviewWarmer` × REQ-A-018 `QuestionPaperServabilityController`: keep both providers/controllers); `stimuli.repository.ts:112` (t49 deletes the `SERVED_NOW`/`VERSION_SERVED_NOW` constants B-032 added: take t49, no use remains); `v2-backend-deviations.md` (keep both sides); C docs in reqa012 (keep both).
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 19:11 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 19:12 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/a3-qa-doc-nits | e4d4dd322 | READY (A3, BASE-105, docs only): stale QA notes on T38 self-mark reward fixed (2 files); B2 |
-| r1/a4chain-minors | 16ad6053e | ON HOLD (A1a; @16ad6053): A2 pre-review MAJOR fixed by lead (tracked apps/api/node_modules symlink untracked, 16ad6053); Minors open → A1a: janaSkipped check at top of evaluate/evaluateAll, 022a row cites real commits 33255321/a02f658f + servability-overview-once proof; do not merge yet |
+| r1/a4chain-minors | affca77dc | ON HOLD (A1a; @16ad6053): A2 pre-review MAJOR fixed by lead (tracked apps/api/node_modules symlink untracked, 16ad6053); Minors open → A1a: janaSkipped check at top of evaluate/evaluateAll, 022a row cites real commits 33255321/a02f658f + servability-overview-once proof; do not merge yet |
 | r1/ac-gaps-a1b | 823bb4a15 | READY (A1b, BASE-105; @823bb4a1, CONTAINS ha17 157b371c AND t37-r1-runbook c9dcb5a0 — merge this instead of both): R1-18.4 spec + AC-18.1 Latihan Bab spec (both bite), coverage 132 proven / 6 partial / 1 no-proof (AC-18.1 partial until T51), held deps named; runbook UAT SELECTs with real testcontainer output; tsc/eslint 0; A3 dev-1 pre-review in progress; B2 |
 | r1/admin-list-perf | 2a8ab6744 | READY (A4, BASE-105): REQ-B-050 + 0106 + 0107 + exact counts; pre-review Minors fixed (status total ?? 0, no-slash kertas change documented, migration order + drift notes); B2 + B3 + DevOps |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
@@ -510,7 +510,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/mock-known-mismatches | a279e68cd | READY (A3, BASE-105): REQ-A-019 base red fixed (7 routes notServed, stale m27 entry removed); conformance 2/2; B2 | A4 pre-review: Approve (nits) |
 | r1/overview-getmany-parallel | 0ba236ef8 | READY (A4): chain 6th; 1334 pass at the tip (only the known base red); B2 |
 | r1/overview-mcq-shape-once | 5a785be84 | READY (A4): chain 5th; B2 |
-| r1/r1-chain-qa-a3 | 361f92710 | IN-PROGRESS (A3 T48 dev; from BASE-105): R1 acceptance chain QA spec (chain-intake-to-pupil.spec: intake figure group → approve → builder → Terbit → pupil sitting → Cuba Lagi → reward once); step→spec table pending; not READY yet |
+| r1/r1-chain-qa-a3 | 361f92710 | READY (A3, BASE-105; spec only): chain-intake-to-pupil.spec (PDF intake → figure group → approve → builder as one unit → Terbit pins v1 → pupil stimulus once + image → submit 6/6 → Cuba Lagi; 8b reward once on a bank paper); green alone and on the builder stack (r1 + bijak-integration 165, exam-builder + kuiz 465, attempts + workflow 478, 0 fail); step→spec map in A3 report for B4; B2 |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
 | r1/req-b-022a-a4 | d82c52567 | READY (A4): REQ-B-053 + pre-review rows (per-instance warm-up documented; env comment moved); chain 2nd; B2 + B3 + DevOps |
 | r1/req-b-025c | d47353043 | READY (A1b, BASE-105): Minors fixed (decision row REQ-B-007/025c, lateSync, fixture names); attempts 183/183; B2 |
@@ -523,7 +523,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/reqb052-archived-edit | f3a2448f9 | READY (A3, BASE-105; replaces 17196431): follow-ups done: P1 pinned-clause spec (bites), guard published OR (withdrawn AND EXISTS attempts), header; archived-edit 6/6, pinned-version-rule 6/6, workflow 296/296; tsc/eslint 0; B2 |
 | r1/reqc021-followup | 948aa327a | READY (A1a, BASE-105): fixes the base red draw-bounded BR-16; merge early |
 | r1/seed-dangling-placements | 11cbcf458 | READY (A1b, BASE-105): asserts paper titles + counts = POC_BANK; seed 155 + 1 skip; B2 |
-| r1/stimulus-list-d72 | 97f2fdc21 | READY (A2, BASE-105; contains t49 b99068a6): one combined where for page+count, joinable+empty-group spec; stimulus-lists 17/17, questions 937, conformance 409; merge AFTER t49; A4 pre-review: Approve w/ 1 Minor; vs A4 chain only conflict = v2-backend-deviations.md (keep both blocks, d72 first), re-run contract:check; B2 |
+| r1/stimulus-list-d72 | 97f2fdc21 | READY (A2, BASE-105; contains t49 b99068a6): one combined where for page+count, joinable+empty-group spec; stimulus-lists 17/17, questions 937, conformance 409; merge AFTER t49; A4 pre-review: Approve w/ 1 Minor; vs A4 chain only conflict = v2-backend-deviations.md (keep both blocks, d72 first), re-run contract:check; B2 | note: frontend-mock conformance needs t49 first (filter-options entry on t49); merge order t49 → d72 |
 | r1/t04-minors | 7ce0016c6 | READY (A2, BASE-105): FD-11/AP-17 row + wording; practice-reads 107; A4 pre-review: Approve w/ 1 Minor (card-ungrouped describe must stay last; non-blocking); B2 |
 | r1/t31-builder-wire | eb0346d25 | ON HOLD (paired): fixes done @eb0346d2 (441 pass); merge ONLY together with C REQ-A-008 after C re-merges this tip (vue-tsc TS2322 otherwise); do not merge alone | 19:05 UTC: C REQ-A-008 r1/reqa008-group-stimulus @29d24be9 now contains T31 eb0346d2; A4 preview #3 steps 30–33 verifying vue-tsc 0 + builder specs; hold lifts on that evidence |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
@@ -541,7 +541,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t49-served-now | b99068a67 | READY (A2, BASE-105): bulk approve/archive with all-blank filter → 422 filterBlank [PROPOSED BM]; {} stays Arkib Semua; 4 deviation rows; questions 933 (+BR-16 known), workflow 275, conformance 409; A4 pre-review: Approve w/ Minors, B3 checklist Pass; FE note → C (REQ-C-019: Arkib Semua must send filter:{}); B2 + B3; merge BEFORE stimulus-list-d72 |
 | r1/t50-partial-acs | 075e1b587 | READY (A1a, BASE-105): A3 pre-review CLEAN (nits only); B2 |
 | r1/t51-partial-acs-a3 | 61c1b077f | ON HOLD (A3; restacked @61c1b077 on T43 238eb6eb + T31 eb0346d2 + T48): technically ready (537 pass alone = trial merge with H-A18; tsc/eslint 0; vue-tsc only the known http-admin REQ-A-008 error); merge after T31 + REQ-A-008 + T43; held only by that pair | 19:05 UTC: C REQ-A-008 r1/reqa008-group-stimulus @29d24be9 now contains T31 eb0346d2; A4 preview #3 steps 30–33 verifying vue-tsc 0 + builder specs; hold lifts on that evidence |
-| r1/t52-examiner-grid | ca1ed739f | READY (A1a, BASE-105): getCover reads examinerGrid from marked (live+pinned); be09 test 8 (auto/points-essay/archived) bites on revert; R21 superseded; api tsc + eslint + vue-tsc 0, 15 pass; B2 | A2 delta pre-review: Minors closed, test 8 bites; new Minor: cover follows LIVE manual flag over pinned (note in deviation docs) → A1a |
+| r1/t52-examiner-grid | 5a0d7bd0e | READY (A1a, BASE-105): getCover reads examinerGrid from marked (live+pinned); be09 test 8 (auto/points-essay/archived) bites on revert; R21 superseded; api tsc + eslint + vue-tsc 0, 15 pass; B2 | A2 delta pre-review: Minors closed, test 8 bites; new Minor: cover follows LIVE manual flag over pinned (note in deviation docs) → A1a |
 | r1/t54-perf-400k | 03c76eb0d | READY (A4, docs): credentials replaced by placeholders; may 3-line-conflict with 022a perf docs (trivial); B2 |
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
