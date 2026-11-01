@@ -17,6 +17,7 @@ import type {
   Page,
   QuestionFilter,
   QuestionRecord,
+  QuestionPlacementRecord,
   QuestionStatus,
   QuestionVersionRecord,
   SampleFilter,
@@ -355,6 +356,24 @@ export class QuestionsRepository {
   }
 
   /** `listIds` without the totals and status counts: one page (newest first) of the admin filter, by keyset (`idBelow`). */
+  /**
+   * Targets of a filter-based bulk action over the LATEST version: the rows of the filter (`matched`, the total the list shows), the
+   * ones whose status can move to the target (`eligible`) and the first `cap` of those, id ascending (stable between runs).
+   * `fromStatuses` are the statuses that may move to the target.
+   */
+  async filterTargets(filter: Omit<AdminListFilter, 'page' | 'pageSize'>, fromStatuses: readonly QuestionStatus[], cap: number): Promise<{ matched: number; eligible: number; ids: string[] }> {
+    const conds = this.adminConds({ ...filter, page: 1, pageSize: 1 })
+    const from = Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
+    const all = Prisma.join(conds, ' AND ')
+    const elig = Prisma.join([...conds, Prisma.sql`v.status IN (${Prisma.join(fromStatuses.map((x) => Prisma.sql`${x}`))})`], ' AND ')
+    const [counts, rows] = await Promise.all([
+      this.db.$queryRaw<{ matched: number; eligible: number }[]>`
+        SELECT count(*)::int AS matched, (count(*) FILTER (WHERE v.status IN (${Prisma.join(fromStatuses.map((x) => Prisma.sql`${x}`))})))::int AS eligible ${from} WHERE ${all}`,
+      this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${elig} ORDER BY q.id ASC LIMIT ${Math.max(0, cap)}`,
+    ])
+    return { matched: counts[0]?.matched ?? 0, eligible: counts[0]?.eligible ?? 0, ids: rows.map((r) => idToString(r.id)) }
+  }
+
   async listIdsKeyset(filter: Omit<AdminListFilter, 'page' | 'pageSize'>, idBelow: string | undefined, limit: number): Promise<string[]> {
     const conds = this.adminConds({ ...filter, page: 1, pageSize: limit })
     const below = idBelow === undefined ? undefined : bi(idBelow)
@@ -491,25 +510,37 @@ export class QuestionsRepository {
     if (key === null) return null
     const q = await this.db.question.findUnique({ where: { id: key }, select: { groupId: true } })
     if (!q?.groupId) return null
-    const group = await this.db.stimulusGroup.findUnique({
-      where: { id: q.groupId },
+    return (await this.groupsByIds([idToString(q.groupId)]))[0] ?? null
+  }
+
+  /** Stimulus groups by id, in one statement per relation whatever the number of ids (unknown ids are absent). */
+  async groupsByIds(groupIds: readonly string[]): Promise<StimulusGroupRecord[]> {
+    const keys = [...new Set(groupIds)].flatMap((id) => {
+      const k = bi(id)
+      return k === null ? [] : [k]
+    })
+    if (keys.length === 0) return []
+    const groups = await this.db.stimulusGroup.findMany({
+      where: { id: { in: keys } },
+      orderBy: { id: 'asc' },
       include: {
         stimuli: { orderBy: { position: 'asc' }, include: { stimulus: true } },
         options: { orderBy: { position: 'asc' } },
         questions: { orderBy: { groupPosition: 'asc' }, select: { id: true } },
       },
     })
-    if (!group) return null
-    const stimuli: StimulusRecord[] = group.stimuli.flatMap((s) => {
-      const record = stimulusRecordOf(s.stimulus)
-      return record ? [record] : []
+    return groups.map((group) => {
+      const stimuli: StimulusRecord[] = group.stimuli.flatMap((s) => {
+        const record = stimulusRecordOf(s.stimulus)
+        return record ? [record] : []
+      })
+      return {
+        id: idToString(group.id),
+        stimuli,
+        optionBank: group.options.map((o) => ({ label: o.label, bodyMs: o.bodyMs, bodyEn: o.bodyEn })),
+        questionIds: group.questions.map((m) => idToString(m.id)),
+      }
     })
-    return {
-      id: idToString(group.id),
-      stimuli,
-      optionBank: group.options.map((o) => ({ label: o.label, bodyMs: o.bodyMs, bodyEn: o.bodyEn })),
-      questionIds: group.questions.map((m) => idToString(m.id)),
-    }
   }
 
   async listOwn(filter: GuruListFilter): Promise<Page<QuestionRecord>> {
@@ -589,6 +620,12 @@ export class QuestionsRepository {
       // The v2 store has no textbook / dskp / trial / marking_scheme source: only ai_generated exists on the wire.
       conds.push(f.sourceFilter === 'ai_generated' ? Prisma.sql`q.source_type = 'ai_variant'` : Prisma.sql`FALSE`)
     }
+    // V2 Studio filters (D79). Tahun, Negeri and Jenis read the source paper of the version; Kertas is the trailing digit of the
+    // version's paper code (how the paper builder reads it). A question without the value never matches.
+    if (f.tahun !== undefined) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND sp.year = ${Number(f.tahun)})`)
+    if (f.negeri !== undefined) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND lower(sp.exam_board) = lower(${f.negeri}))`)
+    if (f.jenis !== undefined) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND sp.exam_type = ${f.jenis})`)
+    if (f.kertas !== undefined) conds.push(Prisma.sql`substring(v.paper_code from '([0-9])\s*$') = ${f.kertas}`)
     if (f.search !== undefined && f.search.trim() !== '') {
       const like = likePattern(f.search.trim())
       conds.push(Prisma.sql`(v.stem_ms ILIKE ${like} ESCAPE '\\' OR v.stem_en ILIKE ${like} ESCAPE '\\')`)
@@ -700,6 +737,11 @@ export class QuestionsRepository {
    * Stimulus bodies linked DIRECTLY to a question version (`question_version_stimuli`), in link order, audio left out. Keyed
    * `<questionId>:<versionNo>` (one entry per requested ref, an empty array when the version has none or does not exist).
    * For kuiz and the bridges: a stimulus linked to a version may be outside its group (a stem picture, a leaf stimulus).
+   *
+   * PINNED READS ONLY (REQ-B-013a): like `getVersions`, it does not look at status, `is_active`, PKSK or level, because the caller already
+   * holds the version it is serving (a placement's pinned version, or the version `getMany(..., 'live')` returned). The ref carries the
+   * version number; there is no "live" or "latest" fallback here. A caller must therefore pass versions it has already scoped; never
+   * ids taken from a list or a draw. `test/questions/b013-scoping.spec.ts` lists the allowed callers and fails on a new one.
    */
   async versionStimuli(refs: readonly { questionId: string; versionNo: number }[]): Promise<Map<string, StimulusRecord[]>> {
     const out = new Map<string, StimulusRecord[]>()
@@ -727,6 +769,95 @@ export class QuestionsRepository {
       )
     }
     return out
+  }
+
+  /**
+   * R1-T45b (PIPE AC-04.4): the curated papers (kind `pilihan`) that place the question, every status (draft, ready, published, withdrawn) and
+   * every pinned version, published first then newest, at most 100 rows; plus how many generated (`jana`) papers place it (counted, not listed).
+   */
+  async placementsOf(questionId: string): Promise<{ placements: QuestionPlacementRecord[]; generatedPaperCount: number }> {
+    const key = bi(questionId)
+    if (key === null) return { placements: [], generatedPaperCount: 0 }
+    const rows = await this.db.$queryRaw<{ paper_id: bigint; title: string; status: string; section: string; pinned: number }[]>`
+      SELECT p.id AS paper_id, p.title, p.status, s.label AS section, pl.pinned_version_no AS pinned
+        FROM paper_placements pl
+        JOIN paper_sections s ON s.id = pl.paper_section_id
+        JOIN papers p ON p.id = s.paper_id
+       WHERE pl.question_id = ${key} AND p.kind = 'pilihan'
+       ORDER BY (p.status = 'published') DESC, p.id DESC, s.position ASC
+       LIMIT 100`
+    const generated = await this.db.$queryRaw<{ n: bigint }[]>`
+      SELECT count(DISTINCT p.id) AS n
+        FROM paper_placements pl JOIN paper_sections s ON s.id = pl.paper_section_id JOIN papers p ON p.id = s.paper_id
+       WHERE pl.question_id = ${key} AND p.kind = 'jana'`
+    return {
+      placements: rows.map((r) => ({ paperId: idToString(r.paper_id), title: r.title, status: r.status as QuestionPlacementRecord['status'], section: r.section, versionNo: r.pinned })),
+      generatedPaperCount: Number(generated[0]?.n ?? 0),
+    }
+  }
+
+  /** Clears the loader's `import_issues` of one version (a released image hold, T45B-L1). */
+  async clearImportIssues(questionId: string, versionNo: number): Promise<void> {
+    const key = bi(questionId)
+    if (key === null) return
+    await this.db.questionVersion.updateMany({ where: { questionId: key, versionNo }, data: { importIssues: Prisma.DbNull } })
+  }
+
+  /** The loader's `import_issues` of one version (`[]` when none): why a legacy question was loaded but held inactive. */
+  async importIssuesOf(questionId: string, versionNo: number): Promise<{ code: string; target?: string; label?: string }[]> {
+    const key = bi(questionId)
+    if (key === null) return []
+    const row = await this.db.questionVersion.findUnique({ where: { questionId_versionNo: { questionId: key, versionNo } }, select: { importIssues: true } })
+    return Array.isArray(row?.importIssues) ? (row.importIssues as { code: string; target?: string; label?: string }[]) : []
+  }
+
+  /**
+   * How many distinct active questions link each stimulus straight to a version (`question_version_stimuli`) or to one of its
+   * leaf parts (`question_parts.stimulus_id`); the versions and parts of one question count once. 1 = the stimulus is that
+   * question's own; more than 1 = shared (D90: that must be a stimulus group).
+   * Unknown ids are absent.
+   */
+  async stimulusUseCounts(ids: readonly string[]): Promise<Map<string, number>> {
+    const keys = [...new Set(ids.map(bi).filter((k): k is bigint => k !== null))]
+    const out = new Map<string, number>()
+    if (keys.length === 0) return out
+    const rows = await this.db.$queryRaw<{ id: bigint; n: number }[]>`
+      SELECT u.id, count(DISTINCT u.question_id)::int AS n
+        FROM (
+          SELECT l.stimulus_id AS id, v.question_id
+            FROM question_version_stimuli l
+            JOIN question_versions v ON v.id = l.question_version_id
+            JOIN questions q ON q.id = v.question_id AND q.is_active
+           WHERE l.stimulus_id = ANY(${keys}::bigint[])
+          UNION
+          SELECT p.stimulus_id AS id, v.question_id
+            FROM question_parts p
+            JOIN question_versions v ON v.id = p.question_version_id
+            JOIN questions q ON q.id = v.question_id AND q.is_active
+           WHERE p.stimulus_id = ANY(${keys}::bigint[])
+        ) u
+       GROUP BY u.id`
+    for (const r of rows) out.set(idToString(r.id), r.n)
+    return out
+  }
+
+  /** `rights_status` of one version: null when no declaration was made (or the version is unknown). */
+  async rightsStatusOf(questionId: string, versionNo: number): Promise<string | null> {
+    const key = bi(questionId)
+    if (key === null) return null
+    const row = await this.db.questionVersion.findUnique({ where: { questionId_versionNo: { questionId: key, versionNo } }, select: { rightsStatus: true } })
+    return row?.rightsStatus ?? null
+  }
+
+  /** R1-B05: the subject is in the SPM catalogue (`spm_subject_configs`) and the level is Tingkatan 4 or 5. */
+  async isSpmBound(subjectId: string | null, levelId: string | null): Promise<boolean> {
+    const subject = subjectId === null ? null : bi(subjectId)
+    const level = levelId === null ? null : bi(levelId)
+    if (subject === null || level === null) return false
+    const rows = await this.db.$queryRaw<{ one: number }[]>`
+      SELECT 1 AS one FROM spm_subject_configs c JOIN education_levels l ON l.id = ${level} AND l.code IN ('T4', 'T5')
+       WHERE c.subject_id = ${subject} LIMIT 1`
+    return rows.length > 0
   }
 
   async groupExists(id: string): Promise<boolean> {
@@ -1058,6 +1189,7 @@ export class QuestionsRepository {
           formOrigin: d.formOrigin,
           difficultyTp: d.difficultyTp,
           kbat: d.kbat,
+          cognitiveLevel: d.cognitiveLevel,
         },
       })
       if (d.options.length > 0) {
@@ -1082,6 +1214,14 @@ export class QuestionsRepository {
    * (Darjah) questions are always excluded. `learnerVisible` (every eligibility/draw read) also drops questions of any other
    * INACTIVE education level.
    */
+  /**
+   * The SQL a reader applies for `filter` (aliases `q`, `v`), for an admin count that must embed a reader's exact scope inside a
+   * larger statement (the servability hub counts). Same fragments as `count`, `sampleIds` and `eligibleAmong`.
+   */
+  scopeSql(filter: QuestionFilter, learnerVisible = false): { from: Prisma.Sql; where: Prisma.Sql } {
+    return this.scope(filter, learnerVisible)
+  }
+
   private scope(filter: QuestionFilter, learnerVisible = false): { from: Prisma.Sql; where: Prisma.Sql } {
     const live = filter.status === 'approved'
     const from = live

@@ -272,6 +272,8 @@ model QuestionPart {
   unitNodeId        BigInt?  @map("unit_node_id")
   /// Leaf only. t1_t3, t4, t5 (check). NULL = inherit question_versions.form_origin.
   formOrigin        String?  @map("form_origin")
+  /// Leaf only (migration 0102, ADR-0031). mengingat, memahami, mengaplikasi, menganalisis, menilai, mencipta (check). NULL = not set.
+  cognitiveLevel    String?  @map("cognitive_level")
   createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 

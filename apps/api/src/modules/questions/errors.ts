@@ -6,11 +6,12 @@ import { ApiError } from '../../common/errors/api-error'
 export const questionNotFound = (): ApiError => ApiError.of('NOT_FOUND')
 
 /**
- * 409 CONFLICT for a (from, to) pair outside `QUESTION_WORKFLOW_TRANSITIONS`. BE-09 owns the BM copy;
+ * 409 CONFLICT for a (from, to) pair outside `QUESTION_WORKFLOW_TRANSITIONS`. V2 wording (Studio flash, A03; discovery section 3.1):
+ * "Peralihan '{from}' -> '{to}' tidak dibenarkan." with the BM status labels (Draf, Semakan, Diterbitkan, Diarkib). BE-09 owns the copy;
  * BE-10 reuses this function so the message is identical on every path.
  */
 export const TRANSITION_CONFLICT_MESSAGE = (from: QuestionStatus, to: QuestionStatus): string =>
-  `Perubahan status daripada ${QUESTION_WORKFLOW_STATUS_LABELS[from]} kepada ${QUESTION_WORKFLOW_STATUS_LABELS[to]} tidak dibenarkan.`
+  `Peralihan '${QUESTION_WORKFLOW_STATUS_LABELS[from]}' -> '${QUESTION_WORKFLOW_STATUS_LABELS[to]}' tidak dibenarkan.`
 
 export const transitionConflict = (from: QuestionStatus, to: QuestionStatus): ApiError =>
   ApiError.of('CONFLICT', { message: TRANSITION_CONFLICT_MESSAGE(from, to), details: { from, to } })

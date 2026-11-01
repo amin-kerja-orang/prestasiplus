@@ -50,6 +50,8 @@ export interface SessionRecord {
   startedAt: Date
   completedAt: Date | null
   isTest: boolean
+  /** `practice_sessions.legacy_paper`: `paper1`/`paper2` on migrated rows; `bijak_kuiz` marks a Simulasi Kuiz session (R1-B16). */
+  legacyPaper: string | null
 }
 
 function toSession(row: SessionRow): SessionRecord {
@@ -79,6 +81,7 @@ function toSession(row: SessionRow): SessionRecord {
     startedAt: row.startedAt,
     completedAt: row.completedAt,
     isTest: row.isTest,
+    legacyPaper: row.legacyPaper,
   }
 }
 
@@ -107,6 +110,8 @@ export interface NewSession {
   coinsPerCorrect: number | null
   startedAt: Date
   isTest: boolean
+  /** Origin marker written to `legacy_paper` (no migration): `bijak_kuiz` for Simulasi Kuiz; absent for every other mode. */
+  origin?: string
   /** In served order; `position` is the index. */
   served: readonly { questionId: string; versionNo: number }[]
 }
@@ -345,6 +350,7 @@ export class PracticeRepository {
           coinsPerCorrect: input.coinsPerCorrect,
           startedAt: input.startedAt,
           isTest: input.isTest,
+          legacyPaper: input.origin ?? null,
         },
       })
       await this.db.practiceSessionQuestion.createMany({

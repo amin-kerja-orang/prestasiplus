@@ -229,7 +229,10 @@ export function defToIntake(
  * every other question is its own unit. Ids are derived from the batch id so they are stable and
  * never clash with the seed bank.
  */
-export function batchToSeeds(batch: IntakeBatch): ReviewSeed[] {
+export function batchToSeeds(batch: IntakeBatch, opts: { groupBase?: string } = {}): ReviewSeed[] {
+  // `groupBase` keeps a stimulus group id stable when the batch is decided one question at a time (D90):
+  // every member of one figure then joins the same bank group.
+  const gbase = opts.groupBase ?? batch.id
   const manual = batch.sourceKind === 'manual'
   const qid = (i: number): string => `${batch.id}-q${i + 1}`
   const source = manual
@@ -260,8 +263,8 @@ export function batchToSeeds(batch: IntakeBatch): ReviewSeed[] {
     const stim = g ? batch.stimuli.find((s) => s.id === g.stimulusId) : undefined
 
     if (g && stim) {
-      const gid = `${batch.id}-g${g.stimulusId}`
-      const stimulusId = `${batch.id}-${stim.id}`
+      const gid = `${gbase}-g${g.stimulusId}`
+      const stimulusId = `${gbase}-${stim.id}`
       const members = g.questionIds.map((id) => batch.questions[index.get(id)!]!)
       const questions: QuestionDef[] = []
       const schemes: Record<string, SchemeDef> = {}
@@ -279,7 +282,7 @@ export function batchToSeeds(batch: IntakeBatch): ReviewSeed[] {
       const def: GroupDef = { id: gid, stimulusId, questionIds: questions.map((x) => x.id) }
       seeds.push({
         ...meta,
-        key: gid,
+        key: `${batch.id}-g${g.stimulusId}`,
         questions,
         schemes,
         group: { def, stimulus: stimulusDef(stim, stimulusId) },

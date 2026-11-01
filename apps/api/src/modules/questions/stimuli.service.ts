@@ -1,10 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common'
 import {
   IMAGE_STIMULUS_KINDS,
+  STIMULUS_MEMBER_STEM_MAX,
   STIMULUS_MESSAGES,
   type StimulusCreateRequest,
   type StimulusGroupCreateRequest,
   type StimulusGroupDetail,
+  type StimulusGroupListRow,
+  type StimulusListRow,
   type StimulusGroupUpdateRequest,
   type StimulusUpdateRequest,
   type Stimulus,
@@ -15,10 +18,16 @@ import { idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { FilesService } from '../files'
 import { GroupMembers } from './group-members'
-import { type GroupRow, type StimulusData, type StimulusRow, StimuliRepository } from './stimuli.repository'
+import { stimulusTableParts } from './stimulus-table'
+import { type GroupRow, type ListFilter, type MemberBrief, type StimulusData, type StimulusRow, StimuliRepository, plainExcerpt } from './stimuli.repository'
 import { QuestionsService } from './questions.service'
 import { STIMULUS_KINDS } from './types'
 import type { QuestionActor, QuestionCreateInput, QuestionView } from './types'
+
+const memberOf = ({ groupId: _g, ...m }: MemberBrief) => {
+  void _g
+  return m
+}
 
 const TX = { timeout: 20_000, maxWait: 10_000 } as const
 const IMAGE_PURPOSE = 'question_image'
@@ -87,7 +96,14 @@ export class StimuliService {
         const next = await this.imageOf(input.imageFileId, fields)
         assetFileId = next
       }
-      const body = input.body === undefined ? { ms: current.bodyMs, en: current.bodyEn } : { ms: input.body?.ms ?? null, en: input.body?.en ?? null }
+      // A table the intake stored as a pipe table in the body (no grid) is shown as the grid only. When the Studio sends a grid for it and no
+      // body, the old pipe body goes: it would otherwise stay in the row and be shown beside the new grid.
+      const replacesBodyTable = current.bodyIsTable && input.tableData != null && input.body === undefined
+      const body = replacesBodyTable
+        ? { ms: null, en: null }
+        : input.body === undefined
+          ? { ms: current.bodyMs, en: current.bodyEn }
+          : { ms: input.body?.ms ?? null, en: input.body?.en ?? null }
       const data: StimulusData = {
         kind: current.kind,
         label: input.label === undefined ? current.label : input.label,
@@ -101,7 +117,7 @@ export class StimuliService {
       }
       // The merged state must still satisfy the rules of the kind (same rules as the create body).
       if (data.kind === 'passage' && !data.bodyMs) fields.body ??= STIMULUS_MESSAGES.bodyRequired
-      if (data.kind === 'table' && data.tableData === null && data.assetFileId === null) fields.tableData ??= STIMULUS_MESSAGES.tableRequired
+      if (data.kind === 'table' && data.tableData === null && data.assetFileId === null && !stimulusTableParts('table', null, data.bodyMs).table) fields.tableData ??= STIMULUS_MESSAGES.tableRequired
       if ((IMAGE_STIMULUS_KINDS as readonly string[]).includes(data.kind) && data.assetFileId === null) fields.imageFileId ??= STIMULUS_MESSAGES.imageRequired
       if (Object.keys(fields).length > 0) throw fail(fields)
       await this.repo.updateStimulus(id, data)
@@ -271,10 +287,11 @@ export class StimuliService {
       kind: row.kind,
       label: row.label ?? '',
       caption: row.caption,
-      body: row.bodyMs === null && row.bodyEn === null ? null : { ms: row.bodyMs ?? row.bodyEn ?? '', ...(row.bodyMs !== null && row.bodyEn !== null ? { en: row.bodyEn } : {}) },
+      // A table read from the body is shown as the grid only (never the grid and its source text).
+      body: row.bodyIsTable || (row.bodyMs === null && row.bodyEn === null) ? null : { ms: row.bodyMs ?? row.bodyEn ?? '', ...(row.bodyMs !== null && row.bodyEn !== null ? { en: row.bodyEn } : {}) },
       alt: row.altText,
       sourceCitation: row.sourceCitation,
-      tableData: row.tableData,
+      tableData: row.shownTable,
       imageId: row.assetFileId === null ? null : (tokens.get(idToString(row.assetFileId)) ?? null),
       groupCount: row.groupCount,
     }
@@ -308,7 +325,55 @@ export class StimuliService {
         ? {}
         : { optionBank: g.optionBank.map((o) => ({ label: o.label, body: { ms: o.bodyMs ?? o.bodyEn ?? o.label, ...(o.bodyMs !== null && o.bodyEn !== null ? { en: o.bodyEn } : {}) } })) }),
       questionIds: g.questionIds.map(idToString),
+      members: ((await this.repo.memberBriefs([idToString(g.id)])).get(idToString(g.id)) ?? []).map(memberOf),
       warning: this.members.warning(g.questionIds.length),
     }
+  }
+
+  // --- lists (R1-T49) -----------------------------------------------------------------------------
+
+  /** One page of groups with the short form of their members: ids and total (1 query), rows (1), members (1), served flags (1), picture tokens (1). */
+  async listGroups(f: ListFilter): Promise<{ rows: StimulusGroupListRow[]; total: number }> {
+    const { ids, total } = await this.repo.listGroupIds(f)
+    const [groups, briefs, served] = await Promise.all([this.repo.groupsByIds(ids), this.repo.memberBriefs(ids), this.repo.servedGroupIds(ids)])
+    // Picture tokens of the whole page in ONE lookup (not one per stimulus).
+    const assets = [...new Set(groups.flatMap((g) => g.stimuli.flatMap((x) => (x.assetFileId === null ? [] : [idToString(x.assetFileId)]))))]
+    const tokens = assets.length === 0 ? new Map<string, string>() : await this.files.publicIdsOf(assets)
+    const rows = groups.map((g) => {
+      const id = idToString(g.id)
+      const members = (briefs.get(id) ?? []).map(memberOf)
+      return {
+        id,
+        label: g.label,
+        scope: g.scope,
+        stimuli: g.stimuli
+          .filter((x) => (STIMULUS_KINDS as readonly string[]).includes(x.kind))
+          .map((x) => ({ id: idToString(x.id), kind: x.kind, label: x.label ?? '', imageId: x.assetFileId === null ? null : (tokens.get(idToString(x.assetFileId)) ?? null) })),
+        memberCount: members.length,
+        members,
+        status: served.has(id) ? ('served' as const) : ('draft' as const),
+        warning: this.members.warning(members.length),
+      }
+    })
+    return { rows, total }
+  }
+
+  /** One page of stimuli: ids and total (1 query), rows and served flags (2), picture tokens (1). */
+  async listStimuli(f: ListFilter): Promise<{ rows: StimulusListRow[]; total: number }> {
+    const { ids, total } = await this.repo.listStimulusIds(f)
+    const { rows: found, served } = await this.repo.stimuliPage(ids)
+    const assets = found.flatMap((r) => (r.assetFileId === null ? [] : [idToString(r.assetFileId)]))
+    const tokens = assets.length === 0 ? new Map<string, string>() : await this.files.publicIdsOf(assets)
+    const rows = found.map((r) => ({
+      id: idToString(r.id),
+      kind: r.kind as StimulusListRow['kind'],
+      label: r.label ?? '',
+      caption: r.caption,
+      excerpt: r.bodyIsTable ? null : plainExcerpt(r.bodyMs ?? r.bodyEn, STIMULUS_MEMBER_STEM_MAX) || null,
+      imageId: r.assetFileId === null ? null : (tokens.get(idToString(r.assetFileId)) ?? null),
+      groupCount: r.groupCount,
+      status: served.has(idToString(r.id)) ? ('served' as const) : ('draft' as const),
+    }))
+    return { rows, total }
   }
 }

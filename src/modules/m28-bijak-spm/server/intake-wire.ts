@@ -108,10 +108,14 @@ export function summaryFromWire(
     subjectName: name,
     kertas: b.kertas,
     year: b.year,
+    // Every http batch stays Draf (filter, editable); the visible badge is the wire label below.
     status: statusFromWire(),
+    batchStatus: b.status,
+    statusLabel: b.statusLabel,
     sourceKind: 'pdf',
     fileName: `${b.fileCount} fail · ${b.statusLabel}`,
-    questionCount: 0,
+    questionCount: b.itemCount,
+    reviewedCount: b.reviewedCount,
     groupCount: 0,
     lowCount: 0,
     marks: 0,
@@ -187,6 +191,8 @@ export function batchFromWire(b: WireBatchDetail, pages: PageText[], extras: Bat
     sourceKind: manual ? 'manual' : 'pdf',
     userId: 0,
     status: statusFromWire(),
+    batchStatus: b.status,
+    statusLabel: b.statusLabel,
     createdAt: ms(b.createdAt),
     updatedAt: ms(b.updatedAt),
     ...(b.submittedAt ? { submittedAt: ms(b.submittedAt) } : {}),
@@ -213,6 +219,7 @@ const QUESTION_KEYS = [
   'mode',
   'unit',
   'wordRange',
+  'cognitiveLevel',
   'parts',
   'scheme',
   'tag',
@@ -258,7 +265,7 @@ export function itemPatch(prev: IntakeQuestion, next: IntakeQuestion): IntakeIte
   for (const k of ['label', 'type', 'stem', 'options', 'marks', 'mode', 'parts', 'tag', 'page', 'confirmed'] as const) {
     if (!same(prev[k], next[k])) out[k] = next[k]
   }
-  for (const k of ['unit', 'wordRange', 'scheme'] as const) {
+  for (const k of ['unit', 'wordRange', 'cognitiveLevel', 'scheme'] as const) {
     if (!same(prev[k], next[k])) out[k] = next[k] ?? null
   }
   if ((prev.stimulusId ?? null) !== (next.stimulusId || null)) out.stimulusId = next.stimulusId || null

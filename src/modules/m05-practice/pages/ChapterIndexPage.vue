@@ -26,7 +26,7 @@ const subjects = computed(() => data.value?.data ?? [])
 <template>
   <DsPage
     title="Soalan by Chapter"
-    subtitle="Pelajar jawab bab demi bab. Bab seterusnya hanya terbuka selepas bab sebelumnya lengkap dan mencapai sekurang-kurangnya 70%."
+    subtitle="Pelajar jawab bab demi bab."
     data-testid="chapter-index-page"
   >
     <template #breadcrumb>

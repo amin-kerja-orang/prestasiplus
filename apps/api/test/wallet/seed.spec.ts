@@ -134,7 +134,7 @@ describe('wallet seed (BE-11)', () => {
       process.env.NODE_ENV = 'production'
       delete process.env.ALLOW_DEMO_SEED
       try {
-        await expect(walletSeed.run({ profile: 'poc', clock: { now: () => new Date('2026-09-25T07:40:00Z') }, prng: () => { throw new Error('unused') }, prisma: empty.prisma })).rejects.toThrow(/Refusing to seed demo data/)
+        await expect(walletSeed.run({ profile: 'poc', env: process.env, clock: { now: () => new Date('2026-09-25T07:40:00Z') }, prng: () => { throw new Error('unused') }, prisma: empty.prisma })).rejects.toThrow(/Refusing to seed demo data/)
       } finally {
         process.env.NODE_ENV = saved
       }

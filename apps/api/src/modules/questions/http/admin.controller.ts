@@ -8,7 +8,7 @@ import { RateLimit, RateLimitGuard, type RateLimitSpec } from '../../../common/t
 import { QuestionsService } from '../questions.service'
 import { Actor, type HttpActor } from './actor'
 import { QuestionAudit } from './audit'
-import { adminMeta, flash, parseAdminList, parseBody, parseBulk } from './parse'
+import { adminMeta, flash, parseAdminList, parseBody, parseBulk, parseFilterBulk } from './parse'
 import { detailView, questionView, rowView } from './views'
 
 /** D57: writes are rate limited per user. Env `THROTTLE_QUESTIONS_WRITE_PER_MINUTE`, else 60. */
@@ -57,6 +57,29 @@ export class AdminQuestionsController {
     const { affected, ids, failed } = await this.questions.bulkAction(input.action, input.ids, actor)
     await this.audit.bulk(actor, input.action, new Set(input.ids).size, affected, ids)
     return flash({ affected, failed }, QUESTION_MESSAGES.bulkUpdated(affected))
+  }
+
+  /**
+   * AC-03.3, V2 "Luluskan Hasil Tapisan" / "Arkib Semua": the action on the rows of the current filter. Declared before `:id`.
+   * Strict body; `expectedCount` must be the count the client showed (409 otherwise); one run applies at most `FILTER_ACTION_CAP` rows.
+   */
+  @Post('bulk-action/filter')
+  @HttpCode(200)
+  @RateLimit(QUESTIONS_WRITE_LIMIT)
+  async bulkFilter(@Actor() actor: HttpActor, @Body() body: unknown) {
+    const input = parseFilterBulk(body)
+    const out = await this.questions.bulkByFilter(input, actor)
+    if (!out.dryRun) await this.audit.bulkFilter(actor, input.action, input.filter, out.matched, out.processed, out.affected, out.ids)
+    const { ids: _ids, ...data } = out
+    void _ids
+    const status = out.dryRun
+      ? `${String(out.eligible)} soalan boleh diproses daripada ${String(out.matched)} hasil tapisan.`
+      : input.action === 'approved'
+        ? QUESTION_MESSAGES.filterApproved(out.affected)
+        : input.filterEmpty
+          ? QUESTION_MESSAGES.filterArchivedAll(out.affected)
+          : QUESTION_MESSAGES.filterArchived(out.affected)
+    return flash(data, status)
   }
 
   @Get(':id')

@@ -41,6 +41,11 @@ export class QuestionAudit {
     return this.write(AUDIT_ACTIONS.QUESTION_DELETED, actor, id)
   }
 
+  /** A filter-based bulk action: the filter keys used (names only, no values), the counts and the ids changed (at most 200). */
+  bulkFilter(actor: HttpActor, action: string, filter: object, matched: number, processed: number, affected: number, ids: readonly string[]): Promise<void> {
+    return this.write(AUDIT_ACTIONS.QUESTION_BULK_ACTION, actor, null, { action, mode: 'filter', filterKeys: Object.keys(filter), matched, requested: processed, affected, ids: ids.slice(0, 200) })
+  }
+
   /** Ids of the questions changed (ids only, at most 200). */
   bulk(actor: HttpActor, action: string, requested: number, affected: number, ids: readonly string[] = []): Promise<void> {
     return this.write(AUDIT_ACTIONS.QUESTION_BULK_ACTION, actor, null, { action, requested, affected, ids: ids.slice(0, 200) })

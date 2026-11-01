@@ -304,6 +304,15 @@ describe('AdminPaper and AdminPaperSummary (mock shapes)', () => {
       status: 'terbit',
     })
     expect(BijakBuilderPaperListQuerySchema.safeParse({ status: 'ready' }).success).toBe(false)
+    // R12 filters; REQ-C-008 title bound
+    expect(BijakBuilderPaperListQuerySchema.parse({ subject: ' MAT ', search: '  kuarto ' })).toEqual({ subject: 'MAT', search: 'kuarto' })
+    expect(BijakBuilderPaperListQuerySchema.safeParse({ search: 'x'.repeat(101) }).success).toBe(false)
+    expect(BijakBuilderPaperListQuerySchema.safeParse({ subject: 'x'.repeat(33) }).success).toBe(false)
+    expect(BijakBuilderPaperCreateSchema.parse({ subject: 'MAT', kertas: 2, title: ` ${'T'.repeat(200)} ` }).title).toBe('T'.repeat(200))
+    const tooLong = BijakBuilderPaperCreateSchema.safeParse({ subject: 'MAT', kertas: 2, title: 'T'.repeat(201) })
+    expect(tooLong.error?.issues[0]?.message).toBe(BIJAK_BUILDER_MESSAGES.titleTooLong)
+    expect(BijakBuilderPaperPatchSchema.safeParse({ title: 'T'.repeat(201) }).error?.issues[0]?.message).toBe(BIJAK_BUILDER_MESSAGES.titleTooLong)
+    expect(BijakBuilderPaperPatchSchema.safeParse({ title: 'T'.repeat(200) }).success).toBe(true)
   })
 })
 
@@ -505,8 +514,8 @@ describe('publish, delete and preview results', () => {
     expect(BijakBuilderBlockerSchema.safeParse({ code: 'MADE_UP', message: 'x', overridable: false }).success).toBe(false)
     expect(BijakBuilderBlockerSchema.safeParse({ code: 'NOT_SERVABLE', message: 'x' }).success).toBe(false)
     expect(BijakBuilderBlockerSchema.safeParse({ ...blocker, extra: 1 }).success).toBe(false)
-    expect(BIJAK_BUILDER_BLOCKER_CODES).toHaveLength(15)
-    expect(BIJAK_BUILDER_BLOCKER_CODES.filter((c) => BIJAK_BUILDER_BLOCKER_OVERRIDABLE[c]).sort()).toEqual(['BLUEPRINT_NOT_VERIFIED', 'GROUP_BROKEN', 'INELIGIBLE'])
+    expect(BIJAK_BUILDER_BLOCKER_CODES).toHaveLength(18)
+    expect(BIJAK_BUILDER_BLOCKER_CODES.filter((c) => BIJAK_BUILDER_BLOCKER_OVERRIDABLE[c]).sort()).toEqual(['BLUEPRINT_NOT_VERIFIED', 'INELIGIBLE'])
   })
 
   it('requires the errors key and rejects the old union shapes', () => {
@@ -670,7 +679,7 @@ describe('publish, delete and preview results', () => {
     const full = stimulus({
       kind: 'table',
       caption: 'Jadual 1',
-      svg: '<svg viewBox="0 0 10 10"></svg>',
+      image: { url: '/api/files/Zk3x9QmT1bVnR0aYc7LpDw' },
       text: 'Petikan ringkas',
       table: { head: ['x', 'y'], rows: [['1', '2']] },
     })

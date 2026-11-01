@@ -9,6 +9,7 @@ import { RateLimit, RateLimitGuard } from '../../../common/throttle'
 import { ZodValidationPipe } from '../../../common/validation/zod-validation.pipe'
 import { BIJAK_PAPERS_LIMITS } from './papers.constants'
 import { PapersService } from './papers.service'
+import { canUseSpecBlueprints } from './spec-access'
 
 type Req = Request & RequestWithAuth
 
@@ -53,7 +54,7 @@ export class PapersController {
   @RateLimit(BIJAK_PAPERS_LIMITS.generate)
   async generate(@Req() req: Req, @Body(new ZodValidationPipe(BijakGenerateRequestSchema)) body: BijakGenerateRequest) {
     const scope = ScopeContext.fromRequest(req)
-    const canUseSpec = scope.isTest && scope.auth.roles.some((g) => g.role === 'admin')
+    const canUseSpec = canUseSpecBlueprints(scope.auth)
     return { data: await this.papers.generate({ userId: scope.userId, isTest: scope.isTest, canUseSpec }, body) }
   }
 }

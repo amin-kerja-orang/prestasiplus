@@ -97,7 +97,7 @@ export const articleScenarios: Scenario[] = [
     async run(ctx) {
       const admin = await ctx.as('admin')
       const created = await admin.request('POST', '/admin/notes', {
-        body: { title: 'Nota conformance', content: '<p>Isi</p><script>alert(1)</script>', subject: 'sains', noteType: 'RINGKASAN', grade: 'DARJAH_3' },
+        body: { title: 'Nota conformance', content: '<p>Isi</p><script>alert(1)</script>', subject: 'sains', noteType: 'RINGKASAN', grade: 'TINGKATAN_4' },
       })
       ctx.expectStatus(created, 201)
       ctx.check(!/<script/i.test(String(dataOf(created).content)), 'the note body keeps a script')

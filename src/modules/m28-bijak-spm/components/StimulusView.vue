@@ -35,10 +35,8 @@ const tableColumns = computed(() =>
 const tableRows = computed(() =>
   (props.stimulus.table?.rows ?? []).map((r) => Object.fromEntries(r.map((c, i) => [`c${i}`, c]))),
 )
-/** A stored picture that is not hidden behind an inline SVG or a real table. */
-const picture = computed(
-  () => !!props.stimulus.image && !props.stimulus.svg && !props.stimulus.table,
-)
+/** A stored picture that is not hidden behind a real table. */
+const picture = computed(() => !!props.stimulus.image && !props.stimulus.table)
 const figure = computed(() => toStimulusData(props.stimulus))
 </script>
 
@@ -49,17 +47,8 @@ const figure = computed(() => toStimulusData(props.stimulus))
     data-testid="stimulus-thumb"
     :data-stimulus="stimulus.id"
   >
-    <div
-      v-if="stimulus.svg"
-      class="mx-auto w-full max-w-16 overflow-hidden rounded-xl bg-muted p-2 text-highlighted"
-      role="img"
-      :aria-label="stimulus.alt"
-    >
-      <!-- eslint-disable-next-line vue/no-v-html -- bundled seed SVG, not user input -->
-      <div aria-hidden="true" v-html="stimulus.svg" />
-    </div>
     <img
-      v-else-if="picture && stimulus.image"
+      v-if="picture && stimulus.image"
       :src="stimulus.image.url"
       alt=""
       width="48"
@@ -89,16 +78,7 @@ const figure = computed(() => toStimulusData(props.stimulus))
   />
 
   <figure v-else class="flex flex-col gap-2" data-testid="stimulus" :data-stimulus="stimulus.id">
-    <div
-      v-if="stimulus.svg"
-      class="mx-auto w-full max-w-md overflow-hidden rounded-xl bg-muted p-2 text-highlighted"
-      role="img"
-      :aria-label="stimulus.alt"
-    >
-      <!-- eslint-disable-next-line vue/no-v-html -- bundled seed SVG, not user input -->
-      <div aria-hidden="true" v-html="stimulus.svg" />
-    </div>
-    <div v-else-if="stimulus.text" class="rounded-xl bg-muted p-3 text-body text-default">
+    <div v-if="stimulus.text" class="rounded-xl bg-muted p-3 text-body text-default">
       <p v-if="stimulus.title" class="mb-2 font-semibold text-highlighted">{{ stimulus.title }}</p>
       <p><RichText :text="stimulus.text" /></p>
       <p v-if="stimulus.source" class="mt-2 text-caption text-muted">{{ stimulus.source }}</p>

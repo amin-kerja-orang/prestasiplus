@@ -116,6 +116,8 @@ export class QuestionBankAdapter implements QuestionBankPort {
       mediaResolved: true,
       missingRequiredFields: [],
       lastEditedByAi: false,
+      paperCode: v.paperCode ?? null,
+      spmBound: await this.repo.isSpmBound(v.subjectId, v.educationLevelId),
     }
   }
 

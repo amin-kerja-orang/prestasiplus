@@ -22,7 +22,7 @@ function flashOf(res: { body: unknown }): unknown {
 
 /** Subject, level and curriculum tag of a seeded published question, to clone into a taggable body. */
 async function seededTag(ctx: ScenarioContext, admin: HttpClient): Promise<{ subjectId: string; educationLevelId: string; tag: Json }> {
-  const list = await admin.request('GET', '/questions?status=published&pageSize=5')
+  const list = await admin.request('GET', '/questions?status=approved&pageSize=5')
   ctx.expectStatus(list, 200)
   const id = String(listOf(list)[0]?.id)
   const detail = await admin.request('GET', `/questions/${id}`)
@@ -32,6 +32,12 @@ async function seededTag(ctx: ScenarioContext, admin: HttpClient): Promise<{ sub
   ctx.check(tag !== undefined && tag.unitId != null, 'a seeded published question has no curriculum tag in its detail')
   return { subjectId: String(d.subjectId), educationLevelId: String(d.educationLevelId), tag: tag ?? {} }
 }
+
+/**
+ * A new approval of an SPM T4/T5 question needs a cognitive level on the leaf and the kertas (R1-B05, the DSKP-complete gate), so the scenarios that
+ * approve one send them. The untagged 422 case does not: it must still fail on the tag fields.
+ */
+const DSKP = { cognitiveLevel: 'mengingat', kertas: '1' } as const
 
 function mcq(tag: string, extra: Json = {}): Json {
   return {
@@ -82,7 +88,8 @@ export const questionsScenarios: Scenario[] = [
       const base = await seededTag(ctx, admin)
       const tag = nextTag('q')
       const created = await admin.request('POST', '/questions', {
-        body: mcq(tag, { subjectId: base.subjectId, educationLevelId: base.educationLevelId }),
+        // Tagged, because approving a question runs the publish gate (unit, SP, TP) since R1-B01.
+        body: mcq(tag, { subjectId: base.subjectId, educationLevelId: base.educationLevelId, tag: base.tag, ...DSKP }),
       })
       ctx.expectStatus(created, 201)
       ctx.check(flashOf(created) === FLASH.added, `create flash was ${String(flashOf(created))}`)
@@ -99,6 +106,7 @@ export const questionsScenarios: Scenario[] = [
           educationLevelId: base.educationLevelId,
           difficultyLevel: 4,
           questionText: `Soalan konformans ${tag} yang telah dikemaskini.`,
+          ...DSKP,
         },
       })
       ctx.expectStatus(updated, 200)
@@ -144,7 +152,7 @@ export const questionsScenarios: Scenario[] = [
       ctx.check(fields !== undefined && Object.keys(fields).length > 0, 'the publish gate 422 has no fields')
 
       const published = await admin.request('POST', '/questions', {
-        body: mcq(`${tag}b`, { subjectId: base.subjectId, educationLevelId: base.educationLevelId, tag: base.tag, status: 'approved' }),
+        body: mcq(`${tag}b`, { subjectId: base.subjectId, educationLevelId: base.educationLevelId, tag: base.tag, status: 'approved', ...DSKP }),
       })
       ctx.expectStatus(published, 201)
       const id = String(dataOf(published).id)

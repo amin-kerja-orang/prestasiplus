@@ -2,6 +2,7 @@ import { z } from '../zod'
 import { IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
 import { questionWorkflowListMetaOf, questionWorkflowMutationOf } from './common'
+import { QuestionWorkflowStatusSchema } from './lifecycle'
 
 /**
  * Student question reports (mock `m04-question-bank/mock/handlers/reports.ts`, SRS BR-M04-11 to 16,
@@ -22,11 +23,20 @@ export const QUESTION_REPORT_MESSAGES = {
   type: 'Jenis soalan tidak sah.',
   question: 'Sila pilih soalan.',
   reference: 'Rujukan sesi atau bilik tidak sah.',
+  /** R1-T42: the attempt is unknown, not the reporter's, or the id is malformed (one answer: no existence oracle). */
+  attempt: 'Rujukan percubaan tidak sah.',
+  attemptQuestion: 'Soalan ini bukan sebahagian daripada percubaan itu.',
+  paper: 'Kertas tidak sepadan dengan percubaan itu.',
   comment: 'Komen tidak boleh melebihi 500 aksara.',
   status: 'Status tidak sah.',
+  expectedVersionNo: 'Versi soalan tidak sah.',
   adminNotes: 'Nota admin tidak boleh melebihi 1000 aksara.',
   created: 'Laporan berjaya dihantar.',
   updated: 'Laporan berjaya dikemaskini.',
+  /** H-A13 (D94 approved copy): shown to the admin after "Arkib" when published papers place the archived question. */
+  archivedOnPapers: 'Soalan ini ada dalam kertas yang telah diterbitkan. Murid tidak boleh memulakan percubaan baharu pada kertas itu sehingga soalan diganti.',
+  /** 409 on "Arkib" from a report row: the question has moved past the reported version (REQ-B-018). */
+  archiveStaleVersion: 'Soalan ini sudah mempunyai versi yang lebih baharu daripada yang dilaporkan. Arkib dibatalkan; semak versi terkini dahulu.',
   /** Shown by the screen when the request itself fails (FR-M04-69). */
   failure: 'Ralat. Sila cuba lagi.',
 } as const
@@ -105,6 +115,19 @@ const RefField = z
   .optional()
 
 /**
+ * R1-T42 (R1-18.1): where the pupil filed the report. The attempt (`exam_attempts` uuid, a Bijak sitting or its Semakan) is the proof:
+ * the server checks it is the reporter's and holds the question, and takes the paper from it. `paperId` is optional and, when sent, must be
+ * the paper of that attempt. A strict object: nothing else is read; a malformed value is a 422 on `attemptId` / `paperId`.
+ */
+export const QuestionReportContextSchema = z
+  .strictObject({
+    attemptId: z.uuid(QUESTION_REPORT_MESSAGES.attempt),
+    paperId: IdSchema.optional().meta({ description: 'Optional; must equal the paper of the attempt (422 `paperId` otherwise). The stored paper always comes from the attempt.' }),
+  })
+  .meta({ id: 'QuestionReportContext' })
+export type QuestionReportContext = z.infer<typeof QuestionReportContextSchema>
+
+/**
  * POST body (JSON). `reasons` must be non-empty and every reason must belong to the set of the
  * question type. 422 `fields` use the messages in `QUESTION_REPORT_MESSAGES`; `questionId` that is
  * missing or not an id answers `fields.questionId` = "Sila pilih soalan.". A question that does not
@@ -122,6 +145,8 @@ export const QuestionReportCreateRequestSchema = z
     source: QuestionReportSourceSchema.optional(),
     quizSessionId: RefField,
     roomCode: RefField,
+    attemptId: z.string().nullable().optional().meta({ description: 'R1-T42: uuid of the attempt the pupil reported from; see QuestionReportContext. 422 `attemptId` when unknown, not the reporter\'s, or the question is not in it.' }),
+    paperId: IdSchema.nullable().optional().meta({ description: 'R1-T42: optional; must be the paper of `attemptId`; sent without `attemptId` is 422 `attemptId`.' }),
   })
   .superRefine((v, ctx) => {
     const allowed: readonly string[] =
@@ -155,6 +180,10 @@ export const QuestionReportQuestionViewSchema = QuestionReportQuestionRefSchema.
   levelName: z.string().nullable().optional(),
   complianceStatus: z.string().optional(),
   isActive: z.boolean().optional(),
+  /** REQ-C-018: lifecycle status of the question (its LATEST version: draft | review | approved | archived), so the row can hide "Arkib" on an archived question. */
+  status: QuestionWorkflowStatusSchema.optional(),
+  /** REQ-C-018: the version served to pupils; `null` when none is live (for example after "Arkib" with a newer revision in Semakan). */
+  liveVersionNo: z.number().int().min(1).nullable().optional(),
   /** "Buka Soalan Sama"; `null` when the subject has no code. */
   practiceUrl: z.string().nullable().optional(),
 }).meta({ id: 'QuestionReportQuestionView' })
@@ -173,6 +202,8 @@ const reportRow = {
   quizSessionId: z.string().nullable(),
   roomCode: z.string().nullable(),
   sourceSet: z.string().nullable(),
+  /** R1-T42: the paper the report was filed from; `null` when it was filed outside an attempt. `id` is null once the paper is deleted (the label stays). */
+  paper: z.object({ id: IdSchema.nullable(), label: z.string(), attemptId: z.string().nullable() }).nullable().optional(),
   status: QuestionReportStatusSchema,
   displayStatus: QuestionReportDisplayStatusSchema,
   adminNotes: z.string().nullable(),
@@ -244,6 +275,12 @@ export const QuestionReportUpdateRequestSchema = z
     reactivate: FlagSchema.optional(),
     forceDeactivate: FlagSchema.optional(),
     archive: FlagSchema.optional(),
+    expectedVersionNo: z
+      .number(QUESTION_REPORT_MESSAGES.expectedVersionNo)
+      .int()
+      .min(1)
+      .optional()
+      .meta({ description: 'The reported question version the admin is looking at. With `archive`: it must be the version the report was filed against (else 409), and the archive is refused with 409 when the question has moved on to a newer version than the reported one (REQ-B-018).' }),
   })
   .meta({ id: 'QuestionReportUpdateRequest' })
 export type QuestionReportUpdateRequest = z.infer<typeof QuestionReportUpdateRequestSchema>
@@ -254,6 +291,10 @@ export const QuestionReportUpdateResultSchema = z
     status: QuestionReportStatusSchema,
     adminNotes: z.string().nullable(),
     updatedAt: TimestampSchema,
+    /** H-A13: only after `archive`: the published Kertas Pilihan that place the question, so the screen can warn. */
+    papers: z.array(z.strictObject({ id: IdSchema, title: z.string() })).optional(),
+    /** H-A13: the warning line when `papers` is not empty. */
+    warning: z.string().optional(),
   })
   .meta({ id: 'QuestionReportUpdateResult' })
 

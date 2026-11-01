@@ -16,6 +16,8 @@ export interface NewReport {
   source: string
   quizSessionRef: string | null
   roomCode: string | null
+  /** R1-T42: the verified attempt context (paper and label always come from the attempt). */
+  context: { attemptId: string; paperId: bigint | null; paperLabel: string } | null
   isTest: boolean
   now: Date
 }
@@ -26,6 +28,12 @@ export interface ReportPatch {
   adminNotes?: string | null
   resolvedById: bigint
   now: Date
+}
+
+/** A published Kertas Pilihan that places a question (H-A13). */
+export interface PlacingPaper {
+  id: bigint
+  title: string
 }
 
 /** The only doorway to `question_reports` (uses the ambient transaction through `prisma.client`). */
@@ -42,14 +50,31 @@ export class ReportsRepository {
   async upsert(n: NewReport): Promise<void> {
     await this.prisma.client.$executeRaw`
       INSERT INTO question_reports
-        (question_id, question_version_no, question_type, reporter_id, reasons, comment, source, quiz_session_ref, room_code, is_test, created_at, updated_at)
+        (question_id, question_version_no, question_type, reporter_id, reasons, comment, source, quiz_session_ref, room_code,
+         attempt_id, paper_id, paper_label, is_test, created_at, updated_at)
       VALUES
         (${n.questionId}, ${n.questionVersionNo}, ${n.questionType}, ${n.reporterId}, ${n.reasons}::text[], ${n.comment}, ${n.source},
-         ${n.quizSessionRef}, ${n.roomCode}, ${n.isTest}, ${n.now}, ${n.now})
+         ${n.quizSessionRef}, ${n.roomCode}, ${n.context?.attemptId ?? null}::uuid, ${n.context?.paperId ?? null}, ${n.context?.paperLabel ?? null},
+         ${n.isTest}, ${n.now}, ${n.now})
       ON CONFLICT (reporter_id, question_id, question_version_no) DO UPDATE SET
         question_type = EXCLUDED.question_type, reasons = EXCLUDED.reasons, comment = EXCLUDED.comment, source = EXCLUDED.source,
-        quiz_session_ref = EXCLUDED.quiz_session_ref, room_code = EXCLUDED.room_code, status = 'pending',
+        quiz_session_ref = EXCLUDED.quiz_session_ref, room_code = EXCLUDED.room_code,
+        attempt_id = EXCLUDED.attempt_id, paper_id = EXCLUDED.paper_id, paper_label = EXCLUDED.paper_label, status = 'pending',
         resolved_by_id = NULL, resolved_at = NULL, fixed_in_version_no = NULL, updated_at = EXCLUDED.updated_at`
+  }
+
+  /** The facts the report context check needs about one attempt (R1-T42): the owner, the paper, its snapshot title and the placed question ids. */
+  async attemptFacts(attemptId: string): Promise<{ userId: bigint; paperId: bigint | null; label: string; questionIds: Set<string> } | null> {
+    const a = await this.prisma.client.examAttempt.findUnique({ where: { id: attemptId }, select: { userId: true, paperId: true, title: true, paperCode: true, composition: true } })
+    if (!a) return null
+    const ids = new Set<string>()
+    if (Array.isArray(a.composition)) {
+      for (const section of a.composition as unknown[]) {
+        const list = typeof section === 'object' && section !== null ? (section as { questionIds?: unknown }).questionIds : undefined
+        if (Array.isArray(list)) for (const q of list) if (typeof q === 'string' || typeof q === 'number') ids.add(String(q))
+      }
+    }
+    return { userId: a.userId, paperId: a.paperId, label: a.paperCode ? `${a.title} (${a.paperCode})` : a.title, questionIds: ids }
   }
 
   countOpenStructured(questionId: bigint): Promise<number> {
@@ -115,5 +140,14 @@ export class ReportsRepository {
     if (ids.length === 0) return new Map()
     const rows = await this.prisma.client.subject.findMany({ where: { id: { in: [...ids] } }, select: { id: true, code: true } })
     return new Map(rows.map((r) => [r.id.toString(), r.code]))
+  }
+
+  /** The published curated papers (Kertas Pilihan) that place this question, oldest first (read-only; the papers tables are M28's). */
+  async publishedPapersPlacing(questionId: bigint): Promise<PlacingPaper[]> {
+    return this.prisma.client.paper.findMany({
+      where: { kind: 'pilihan', status: 'published', sections: { some: { placements: { some: { questionId } } } } },
+      select: { id: true, title: true },
+      orderBy: { id: 'asc' },
+    })
   }
 }

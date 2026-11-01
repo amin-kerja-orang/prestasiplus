@@ -9,6 +9,7 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import {
+  LATIH_TUBI_LABELS,
   QuizRunner,
   type StartSessionRequest,
   type StartSessionResponse,
@@ -22,7 +23,10 @@ const router = useRouter()
 
 const code = computed(() => String(route.params.code ?? ''))
 const query = computed(() => parseLatihTubiQuery(route.query))
-const backUrl = computed(() => `/spm/latih-tubi/${encodeURIComponent(code.value)}`)
+// The result link "Senarai Subjek" (V2) goes to the subject list; leaving the quiz and a refused start return
+// to this subject's setup.
+const listUrl = '/spm/latih-tubi'
+const setupUrl = computed(() => `/spm/latih-tubi/${encodeURIComponent(code.value)}`)
 
 const start = computed<StartSessionRequest>(() => {
   const q = query.value
@@ -39,7 +43,7 @@ const start = computed<StartSessionRequest>(() => {
 const noQuestions = ref(false)
 const api = createSpmQuizApi((outcome: SpmStartOutcome) => {
   if (outcome === 'no-questions') noQuestions.value = true
-  else void router.replace(backUrl.value)
+  else void router.replace(setupUrl.value)
 })
 
 const headerTitle = (s: StartSessionResponse): string => s.subject?.name ?? ''
@@ -51,10 +55,10 @@ const headerTitle = (s: StartSessionResponse): string => s.subject?.name ?? ''
       color="warning"
       variant="soft"
       icon="i-ph-warning-duotone"
-      title="Tiada soalan untuk tetapan ini. Sila ubah tetapan kuiz."
+      title="Tiada soalan untuk pilihan ini."
     />
     <UButton
-      :to="backUrl"
+      :to="setupUrl"
       size="lg"
       class="min-h-11 self-start"
       data-testid="spm-no-questions-back"
@@ -67,7 +71,9 @@ const headerTitle = (s: StartSessionResponse): string => s.subject?.name ?? ''
     :start="start"
     :api="api"
     :header-title="headerTitle"
-    :back-url="backUrl"
+    :back-url="setupUrl"
+    :result-url="listUrl"
+    :labels="LATIH_TUBI_LABELS"
     retry="restart"
     :report="{ source: 'spm' }"
   />

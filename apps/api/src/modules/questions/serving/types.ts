@@ -1,5 +1,7 @@
 import type { QuestionFacts } from '@pp/exam-core'
 
+import type { OutsideStimulus } from '../../bijak/question-bridge/be09-mapping'
+import type { OwnStimulus } from '../../bijak/kuiz/kuiz.mapper'
 import type { QuestionRecord, StimulusGroupRecord } from '../types'
 
 /** The education level of a version, as the SPM and learner filters read it (`education_levels`). */
@@ -35,8 +37,13 @@ export interface ServabilityFacts {
   subject: SubjectFact | null
   /** The stimulus group of the live question, or null. */
   group: StimulusGroupRecord | null
-  /** Kind and file of every stimulus linked to the live version or to one of its leaves (`QuestionsRepository.stimulusAssets`). */
-  linkedAssets: ReadonlyMap<string, { kind: string; assetFileId: string | null }>
+  /** Every stimulus linked to the live version or to one of its leaves, as the kuiz reads it (`ownStimuliOf`, so the kuiz and this report agree). */
+  linkedAssets: ReadonlyMap<string, OwnStimulus>
+  /**
+   * The stimuli the Bijak bridge reads for this question's own (non-group) links: `outsideStimuliOf`, the same reader the bridge
+   * source uses (R1E2E-05b), for the version the bridge serves (live, or the last published one of an archived question).
+   */
+  outside: ReadonlyMap<string, OutsideStimulus>
   /** Internal file id to public token, for the files that exist (the Bijak bridge refuses a missing file). */
   fileTokens: ReadonlyMap<string, string>
   /** The question is placed on a published, non-generated paper (Simulasi). */

@@ -72,6 +72,7 @@ export class QuestionReportsService {
         throw ApiError.of('VALIDATION_ERROR', { fields: { questionType: M.type } })
       }
       const v = validateCreate({ ...(body as object), questionType: stored })
+      const context = await this.contextOf(v.context, actor, id)
       await this.repo.upsert({
         questionId: v.questionId,
         questionVersionNo: info.liveVersionNo,
@@ -82,6 +83,7 @@ export class QuestionReportsService {
         source: v.source,
         quizSessionRef: v.quizSessionRef,
         roomCode: v.roomCode,
+        context,
         isTest: actor.isTest,
         now: this.clock.now(),
       })
@@ -91,6 +93,22 @@ export class QuestionReportsService {
       }
       return { success: true as const, message: M.created }
     })
+  }
+
+  /**
+   * R1-T42: the attempt a report is filed from is trusted only after it is read back: it must be the reporter's own and hold the question
+   * (an unknown id and someone else's attempt answer alike, so the id is not an oracle). The paper is taken from the attempt; a
+   * `paperId` sent by the client is only compared with it.
+   */
+  private async contextOf(given: { attemptId: string; paperId: string | null } | null, actor: WorkflowActor, questionId: string) {
+    if (given === null) return null
+    const a = await this.repo.attemptFacts(given.attemptId)
+    if (!a || a.userId !== idFromString(actor.userId)) throw ApiError.of('VALIDATION_ERROR', { fields: { attemptId: M.attempt } })
+    if (!a.questionIds.has(questionId)) throw ApiError.of('VALIDATION_ERROR', { fields: { attemptId: M.attemptQuestion } })
+    if (given.paperId !== null && (a.paperId === null || idToString(a.paperId) !== given.paperId)) {
+      throw ApiError.of('VALIDATION_ERROR', { fields: { paperId: M.paper } })
+    }
+    return { attemptId: given.attemptId, paperId: a.paperId, paperLabel: a.label.slice(0, 200) }
   }
 
   /** GET /question-reports (admin): not paged, newest first. */
@@ -124,7 +142,7 @@ export class QuestionReportsService {
   }
 
   /** PATCH /question-reports/:id (admin). */
-  async update(actor: WorkflowActor, id: string, body: unknown, archive?: (questionId: string) => Promise<void>) {
+  async update(actor: WorkflowActor, id: string, body: unknown, archive?: (questionId: string, reportedVersionNo: number) => Promise<void>) {
     const row = await this.repo.get(id)
     if (!row) throw ApiError.of('NOT_FOUND')
     const v = validateUpdate(body)
@@ -141,12 +159,27 @@ export class QuestionReportsService {
       // R1-B17: "Arkib" on the report row is the real lifecycle archive (status event included), not a deactivation.
       if (v.archive) {
         if (!archive) throw new Error('reports: the archive action is not wired')
-        await archive(qid)
+        // REQ-B-018: the archive is tied to the version the report was filed against; a request that names another version is stale.
+        if (v.expectedVersionNo !== undefined && v.expectedVersionNo !== row.questionVersionNo) {
+          throw ApiError.of('CONFLICT', { message: M.archiveStaleVersion })
+        }
+        await archive(qid, row.questionVersionNo)
       }
       if (row.reporterId !== null && row.status !== v.status) await this.notify(next, await this.displayOf(next))
       return next
     })
-    return { data: { id: idToString(updated.id), status: updated.status as Status, adminNotes: updated.adminNotes, updatedAt: toMytTimestamp(updated.updatedAt) }, status: M.updated }
+    // H-A13: after "Arkib", the published papers that place the question cannot start a new sitting; tell the admin which.
+    const papers = v.archive ? (await this.repo.publishedPapersPlacing(row.questionId)).map((p) => ({ id: idToString(p.id), title: p.title })) : []
+    return {
+      data: {
+        id: idToString(updated.id),
+        status: updated.status as Status,
+        adminNotes: updated.adminNotes,
+        updatedAt: toMytTimestamp(updated.updatedAt),
+        ...(papers.length > 0 ? { papers, warning: M.archivedOnPapers } : {}),
+      },
+      status: M.updated,
+    }
   }
 
   /**
@@ -209,6 +242,7 @@ export class QuestionReportsService {
       quizSessionId: r.quizSessionRef,
       roomCode: r.roomCode,
       sourceSet: r.sourceSet,
+      paper: r.paperLabel === null && r.paperId === null ? null : { id: r.paperId === null ? null : idToString(r.paperId), label: r.paperLabel ?? '', attemptId: r.attemptId },
       status: r.status as Status,
       displayStatus: display,
       adminNotes: r.adminNotes,
@@ -243,6 +277,8 @@ export class QuestionReportsService {
           subjectName: brief?.subjectName ?? null,
           levelName: brief?.levelName ?? null,
           isActive: info.isActive,
+          status: info.status,
+          liveVersionNo: info.liveVersionNo,
           practiceUrl:
             type === 'structured' ? `/latihan-berstruktur/${qid}/jawab?scope=spm` : code ? `/spm/latih-tubi/${code}/quiz?question_id=${qid}&count=1` : null,
         }

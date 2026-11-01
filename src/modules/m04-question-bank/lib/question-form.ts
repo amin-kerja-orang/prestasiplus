@@ -6,6 +6,7 @@
 import { isApiError } from '@/api'
 
 import type { QuestionDetail, QuestionInputBody, QuestionType } from '../api/questions'
+import { type CognitiveValue, isCognitive } from './studio/dskp-tags'
 import { GENERIC_ERROR } from './ui-errors'
 
 export const QUESTION_TYPE_OPTIONS: readonly { value: QuestionType; label: string }[] = [
@@ -47,8 +48,24 @@ export interface QuestionFormValues {
   pointsValue: string
   /** '' = none, else '1' | '2' | '3' (Kertas, v2). */
   kertas: '' | '1' | '2' | '3'
+  /** "Aras pemikiran" of the question's single part: '' = none, else one of the six levels (T33). */
+  cognitiveLevel: '' | CognitiveValue
   /** Bab: '' = none, else the chapter id. */
   curriculumChapterId: string
+}
+
+/**
+ * The level of a question with ONE leaf part (what the form edits): `parts[0].cognitiveLevel`. The API detail has no top-level
+ * level. A question with several parts (or a branch part) has no single level: '' here, and the form hides the field.
+ */
+export function leafCognitive(q: Pick<QuestionDetail, 'parts'>): '' | CognitiveValue {
+  const only = q.parts?.length === 1 ? q.parts[0] : undefined
+  return only && isCognitive(only.cognitiveLevel) ? only.cognitiveLevel : ''
+}
+
+/** True when the form cannot set one level for the question: several parts, or a branch part (the Studio edits those). */
+export function hasManyParts(q: Pick<QuestionDetail, 'parts'> | null | undefined): boolean {
+  return (q?.parts?.length ?? 0) > 1 || (q?.parts?.[0]?.children?.length ?? 0) > 0
 }
 
 export function emptyValues(): QuestionFormValues {
@@ -72,6 +89,7 @@ export function emptyValues(): QuestionFormValues {
     language: 'bm',
     pointsValue: '1',
     kertas: '',
+    cognitiveLevel: '',
     curriculumChapterId: '',
   }
 }
@@ -98,6 +116,7 @@ export function valuesFromQuestion(q: QuestionDetail): QuestionFormValues {
     language: q.language,
     pointsValue: String(q.pointsValue),
     kertas: q.kertas ?? '',
+    cognitiveLevel: leafCognitive(q),
     curriculumChapterId: idText(q.curriculumChapterId),
   }
 }
@@ -111,6 +130,8 @@ export function buildBody(
   v: QuestionFormValues,
   dskpSpId: string,
   mode: 'create' | 'edit',
+  /** Edit: the level the question had when the form opened; the level is sent only when it changed (null = field hidden, never sent). */
+  originalCognitive: '' | CognitiveValue | null = null,
 ): QuestionInputBody {
   const body: QuestionInputBody = {
     subjectId: v.subjectId,
@@ -128,9 +149,11 @@ export function buildBody(
   if (mode === 'create') {
     body.questionType = v.questionType
     if (v.kertas !== '') body.kertas = v.kertas
+    if (v.cognitiveLevel !== '') body.cognitiveLevel = v.cognitiveLevel
   } else {
     // Edit: always sent; '' clears it (http mode sends null; the mock ignores the key).
     body.kertas = v.kertas
+    if (originalCognitive !== null && v.cognitiveLevel !== originalCognitive) body.cognitiveLevel = v.cognitiveLevel
     if (v.removeQuestionImage) body.removeQuestionImage = true
   }
 
@@ -169,6 +192,7 @@ export const FIELD_KEYS = [
   'dskpSpId',
   'curriculumChapterId',
   'kertas',
+  'cognitiveLevel',
 ] as const
 
 const isKnownKey = (key: string): boolean =>

@@ -23,7 +23,7 @@ import { chapterListHref, chapterQuizTitle } from '../components/chapter/chapter
 import { parseQuizQuery } from '../components/quiz/practice-config'
 import QuizLoading from '../components/quiz/QuizLoading.vue'
 import QuizRunner from '../components/quiz/QuizRunner.vue'
-import { PRACTICE_LABELS } from '../components/quiz/quiz-labels'
+import { LATIH_TUBI_LABELS, PRACTICE_LABELS } from '../components/quiz/quiz-labels'
 import { DsLoadError } from '@/ds'
 
 const route = useRoute()
@@ -122,6 +122,7 @@ const headerTitle = (s: StartSessionResponse): string => chapterQuizTitle(s.chap
     :start="start"
     :header-title="headerTitle"
     :back-url="listUrl"
+    :labels="{ ...LATIH_TUBI_LABELS, back: 'Senarai Bab' }"
     :locked-url="listUrl"
     retry="restart"
     :report="{ source: 'latihan' }"

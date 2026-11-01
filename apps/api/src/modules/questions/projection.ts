@@ -17,6 +17,7 @@
 import {
   QuestionPublicPartSchema,
   QuestionPublicSchema,
+  type QuestionCognitiveLevel,
   type QuestionPart,
 } from '@pp/contract'
 
@@ -111,6 +112,8 @@ export interface FlatSource {
   pointsValue?: number
   /** One per option, file ids (decimal strings) or null. */
   optionImageIds?: readonly (string | null)[]
+  /** R1-B05: cognitive level of the single leaf. */
+  cognitiveLevel?: string | null
 }
 
 const asBool = (v: unknown): boolean | undefined =>
@@ -119,7 +122,12 @@ const asBool = (v: unknown): boolean | undefined =>
 /** The single-leaf tree of a flat question. Caller guarantees the contract superRefine already held. */
 export function partsFromFlat(src: FlatSource): QuestionPart[] {
   const marks = Math.max(1, src.pointsValue ?? 1)
-  const base = { label: '1', prompt: { ms: src.questionText }, marks }
+  const base = {
+    label: '1',
+    prompt: { ms: src.questionText },
+    marks,
+    ...(src.cognitiveLevel ? { cognitiveLevel: src.cognitiveLevel as QuestionCognitiveLevel } : {}),
+  }
   let leaf: QuestionLeaf
   switch (src.questionType) {
     case 'mcq': {

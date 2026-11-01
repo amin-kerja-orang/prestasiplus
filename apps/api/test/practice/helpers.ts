@@ -98,6 +98,10 @@ export class FakeBank implements PracticeQuestionSource {
     return id
   }
 
+  async spmServable(ids: readonly string[]): Promise<ReadonlySet<string>> {
+    return new Set(ids.filter((id) => this.rows.get(id)?.eligible === true && this.get(id).spmPool))
+  }
+
   /** Edits the question: a new version n+1 becomes the live one; older versions stay readable. */
   edit(id: string, patch: { correct?: number; text?: string; explanation?: string | null }): number {
     const row = this.row(id)

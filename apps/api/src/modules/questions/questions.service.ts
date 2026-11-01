@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common'
 import {
+  QUESTION_WORKFLOW_STATUSES,
   isQuestionWorkflowTransitionAllowed,
   QUESTION_MESSAGES,
   QuestionPartSchema,
@@ -18,6 +19,7 @@ import { gradeQuestion } from './grading'
 import {
   difficultyOf,
   flatFromVersion,
+  kertasOfPaperCode,
   keyIndexOf,
   languageToStore,
   partsFromFlat,
@@ -26,10 +28,12 @@ import {
   type FlatSource,
   type FlatType,
 } from './projection'
-import { checkKeysGate, checkTagGate, MAX_SP_NODES } from './publish-gate'
+import { MAX_SP_NODES } from './publish-gate'
+import { GATES } from './workflow/lifecycle/gates'
+import type { QuestionGateData } from './workflow/ports'
 import { GroupMembers } from './group-members'
 import { QuestionsRepository, type NewGroup, type NewStimulus, type VersionDraft } from './questions.repository'
-import { draftsFromParts, MAX_PART_DEPTH, referencedIds, versionTypeOf } from './tree'
+import { draftsFromParts, MAX_PART_DEPTH, mapOptionImageIds, referencedIds, versionTypeOf } from './tree'
 import { isLeaf, leavesOf } from './grading'
 import type {
   AdminListFilter,
@@ -48,6 +52,7 @@ import type {
   QuestionGuruUpdateInput,
   QuestionProvenance,
   QuestionRecord,
+  QuestionVersionRecord,
   QuestionStatus,
   QuestionStatusInfo,
   QuestionSummaryView,
@@ -61,6 +66,28 @@ import type {
 
 /** A transaction that writes a whole version tree: raised above the Prisma default of 5 s. */
 const TX = { timeout: 20_000, maxWait: 10_000 } as const
+
+/**
+ * Rows one filter-based bulk run applies at most. Each row is its own transaction with the full approve gate (tag, keys, rights, duplicates,
+ * marks, media, DSKP: several reads and writes, tens of ms), so 500 rows stay well inside one HTTP request and one 20 s transaction budget each,
+ * while still covering a normal Studio filter in one or two runs. A larger filter reports `remaining`/`capped` and is run again.
+ */
+export const FILTER_ACTION_CAP = 500
+
+/** Result of `bulkByFilter` (contract `QuestionFilterBulkResult`). */
+export interface FilterBulkOutcome {
+  matched: number
+  eligible: number
+  skipped: number
+  cap: number
+  processed: number
+  affected: number
+  ids: string[]
+  failed: BulkFailure[]
+  remaining: number
+  capped: boolean
+  dryRun: boolean
+}
 
 const parse = (text: string): bigint | null => {
   try {
@@ -153,6 +180,8 @@ interface Normalized {
   chapterId?: string | null | undefined
   topicId?: string | null | undefined
   stimulusGroupId?: string | null | undefined
+  /** V2 `Nombor soalan`: a text sets it, null clears it, undefined keeps what is stored. */
+  numberLabel?: string | null | undefined
   /** Stem image file id: a string sets/replaces it, null removes it, undefined keeps what is stored. */
   stemImage?: string | null | undefined
   /** Kertas: a digit sets it, null clears it, undefined keeps what is stored. */
@@ -173,6 +202,12 @@ interface Normalized {
  * Errors: 404 `NOT_FOUND` for an unknown id and for a row the caller may not see; 422
  * `VALIDATION_ERROR` with `fields`; 409 `CONFLICT` for a status pair outside the contract table.
  */
+/** [PROPOSED] (no V2 phrase): a flat edit of an `essay_choice` question may not change what lives on its part (REQ-B-021c). */
+const ESSAY_CHOICE_FLAT_MESSAGES = {
+  modelAnswer: 'Jawapan model esei pilihan tidak boleh disunting di sini. Ubah kunci rubrik pada bahagian soalan.',
+  pointsValue: 'Markah esei pilihan tidak boleh disunting di sini. Ubah markah pada bahagian soalan.',
+} as const
+
 @Injectable()
 export class QuestionsService {
   private readonly logger = new Logger(QuestionsService.name)
@@ -216,7 +251,8 @@ export class QuestionsService {
   async getAdmin(id: string): Promise<QuestionDetailView> {
     const record = await this.repo.get(id, 'latest')
     if (!record) throw questionNotFound()
-    return this.detail(record)
+    // R1-T45b (PIPE AC-04.4): Admin Pusat only; the Guru and structured reads share `detail` but never get the papers.
+    return { ...(await this.detail(record)), ...(await this.repo.placementsOf(record.id)) }
   }
 
   async create(raw: QuestionCreateInput, actor: QuestionActor, provenance?: QuestionProvenance): Promise<QuestionView> {
@@ -232,6 +268,7 @@ export class QuestionsService {
       ...(input.modelAnswer === undefined ? {} : { modelAnswer: input.modelAnswer }),
       ...(input.pointsValue === undefined ? {} : { pointsValue: input.pointsValue }),
       ...(input.optionImageFileIds === undefined ? {} : { optionImageIds: input.optionImageFileIds }),
+      ...(input.cognitiveLevel == null ? {} : { cognitiveLevel: input.cognitiveLevel }),
     }
     const parts = this.checkedParts(input.parts ?? partsFromFlat(flat), input.parts !== undefined)
     const status = input.status ?? 'draft'
@@ -248,6 +285,7 @@ export class QuestionsService {
         dskpSpId: input.dskpSpId,
         chapterId: input.curriculumChapterId,
         stimulusGroupId: input.stimulusGroupId,
+        numberLabel: input.numberLabel,
         stemImage: input.questionImageFileId,
         kertas: input.kertas,
         paperCode: provenance?.paperCode,
@@ -309,6 +347,37 @@ export class QuestionsService {
     return { affected, ids: done, failed }
   }
 
+  /**
+   * AC-03.3 (V2 "Luluskan Hasil Tapisan", "Arkib Semua"): the action on the rows of a FILTER. `expectedCount` is the total the client
+   * showed; a different count now is a 409 and nothing is applied. Rows whose status cannot move to the target are `skipped`; the others,
+   * up to `cap`, go through `bulkAction` (the same transition rule and the same approve gate as an id list). Not atomic across rows, like
+   * `bulkAction`: a row refused by the gate stays as it was and is reported in `failed`.
+   */
+  async bulkByFilter(
+    input: { action: 'approved' | 'archived'; filter: Omit<AdminListFilter, 'page' | 'pageSize'>; expectedCount?: number | undefined; dryRun?: boolean | undefined },
+    actor: QuestionActor,
+    cap: number = FILTER_ACTION_CAP,
+  ): Promise<FilterBulkOutcome> {
+    const dryRun = input.dryRun === true
+    // Defence in depth (T47-L1): after parse normalisation an approve with no real filter is the whole bank. Never approve that.
+    if (input.action === 'approved' && Object.keys(input.filter).length === 0) throw fail({ filter: QUESTION_MESSAGES.filterNeeded })
+    const from = QUESTION_WORKFLOW_STATUSES.filter((s) => isQuestionWorkflowTransitionAllowed(s, input.action, 'admin'))
+    const targets = await this.repo.filterTargets(input.filter, from, dryRun ? 0 : cap)
+    if (!dryRun && input.expectedCount !== targets.matched) {
+      throw ApiError.of('CONFLICT', {
+        message: QUESTION_MESSAGES.filterCountChanged(input.expectedCount ?? 0, targets.matched),
+        details: { expected: input.expectedCount ?? 0, actual: targets.matched },
+      })
+    }
+    const base = { matched: targets.matched, eligible: targets.eligible, skipped: targets.matched - targets.eligible, cap, dryRun }
+    if (dryRun || targets.ids.length === 0) {
+      return { ...base, processed: 0, affected: 0, ids: [], failed: [], remaining: targets.eligible, capped: false }
+    }
+    const done = await this.bulkAction(input.action, targets.ids, actor)
+    const remaining = targets.eligible - targets.ids.length
+    return { ...base, processed: targets.ids.length, affected: done.affected, ids: done.ids, failed: done.failed, remaining, capped: remaining > 0 }
+  }
+
   // --- lifecycle (BE-10 calls these) ------------------------------------------------------------
 
   async setStatus(id: string, status: QuestionStatus, _actorId: string, options: SetStatusOptions = {}): Promise<QuestionView> {
@@ -325,8 +394,20 @@ export class QuestionsService {
         })
       }
       if (status === 'approved') {
-        const fields = checkTagGate({ subjectId: v.subjectId, educationLevelId: v.educationLevelId, unitId: v.unitId, spIds: v.spIds, tp: v.difficultyTp })
-        Object.assign(fields, checkKeysGate(v.parts))
+        // "No bypass" (ADR-0027, B3): the one merged approve gate, the same function the lifecycle routes run (tag, keys, rights, duplicates,
+        // marks, media, reviewer, DSKP). `lastEditedByAi` is false here: this path is only ever driven by a person.
+        const fields = await this.approveFields({
+          id,
+          parts: v.parts,
+          subjectId: v.subjectId,
+          educationLevelId: v.educationLevelId,
+          chapterId: v.chapterId,
+          unitId: v.unitId,
+          spIds: v.spIds,
+          tp: v.difficultyTp,
+          paperCode: v.paperCode ?? null,
+          rightsStatus: (await this.repo.rightsStatusOf(id, v.versionNo)) ?? 'own',
+        })
         if (Object.keys(fields).length > 0) throw fail(fields)
         // The version that served until now is superseded in the same transaction.
         if (record.liveVersionNo !== null && record.liveVersionNo !== v.versionNo) {
@@ -334,6 +415,7 @@ export class QuestionsService {
         }
         await this.repo.setVersionStatus(id, v.versionNo, 'approved', { publishedAt: this.clock.now() })
         await this.repo.setLiveVersion(id, v.versionNo)
+        if (!record.isActive) await this.releaseImageHold(id, v, record.liveVersionNo)
       } else if (v.status === 'approved') {
         // Taking the live version down (approved -> archived) ends its serving at once.
         await this.repo.setVersionStatus(id, v.versionNo, status, { archiveReason: 'withdrawn' })
@@ -548,10 +630,12 @@ export class QuestionsService {
    * internal ids, so tokens are swapped here, before the tree is built; an unknown token stays as sent and fails the
    * image check with the same 422 as any other bad image.
    */
-  private async withImageKeys<T extends { questionImageFileId?: string | null | undefined; optionImageFileIds?: (string | null)[] | undefined }>(input: T): Promise<T> {
+  private async withImageKeys<T extends { questionImageFileId?: string | null | undefined; optionImageFileIds?: (string | null)[] | undefined; parts?: QuestionPart[] | undefined }>(input: T): Promise<T> {
     const out: T = { ...input }
     if (typeof out.questionImageFileId === 'string') out.questionImageFileId = await this.files.internalIdOf(out.questionImageFileId)
     if (out.optionImageFileIds) out.optionImageFileIds = await Promise.all(out.optionImageFileIds.map((id) => (typeof id === 'string' ? this.files.internalIdOf(id) : id)))
+    // Studio (T13): option pictures of a part tree are named by the same public token, in and out.
+    if (out.parts) out.parts = await mapOptionImageIds(out.parts, (id) => this.files.internalIdOf(id))
     return out
   }
 
@@ -563,6 +647,74 @@ export class QuestionsService {
     return 'questionText'
   }
 
+  /**
+   * PIPE AC-16.3: a legacy question loaded but held inactive only because its image was not copied (import issues all
+   * `legacy_image_unresolved`) is switched on when the version being approved carries every missing image (the stem image for a `question`
+   * issue, the option image of the label for an `option` issue). The issues are read from the version being approved (an in-place edit), else
+   * from the version that was live. A question held for any other reason, or switched off by an admin (no issues), is left as it is.
+   */
+  private async releaseImageHold(id: string, approving: QuestionVersionRecord, priorLiveNo: number | null): Promise<void> {
+    let source = approving.versionNo
+    let issues = await this.repo.importIssuesOf(id, source)
+    if (issues.length === 0 && priorLiveNo !== null) {
+      source = priorLiveNo
+      issues = await this.repo.importIssuesOf(id, source)
+    }
+    if (issues.length === 0 || issues.some((i) => i.code !== 'legacy_image_unresolved')) return
+    const optionImages = flatFromVersion(approving).optionImageIds
+    const resolved = issues.every((i) =>
+      i.target === 'question'
+        ? approving.stemImageId != null
+        : i.target === 'option' && typeof i.label === 'string' && i.label.length === 1 && optionImages[i.label.charCodeAt(0) - 65] != null,
+    )
+    if (!resolved) return
+    await this.repo.reactivate(id)
+    // T45B-L1: the hold is released for good. The issues are cleared on the version that held them (and on the one being approved), so an
+    // admin who later switches the question off is not overridden by the next approval reading the same stale issues.
+    await this.repo.clearImportIssues(id, source)
+    if (source !== approving.versionNo) await this.repo.clearImportIssues(id, approving.versionNo)
+  }
+
+  /**
+   * The approve gate (`GATES.approve`, ADR-0027) over the facts this module holds. The facts BE-09 does not store (open duplicate flag,
+   * unconfirmed low-confidence fields, media check, question-level marks) take the same satisfied defaults as the workflow's bank adapter,
+   * so the lifecycle route, the bulk action and the create path can never disagree. A version with no rights declaration counts as `own`
+   * (the documented default); an explicit `unclear` is refused. R1-B05: the DSKP rules bind only an SPM-bound question, on a NEW approval.
+   */
+  private async approveFields(input: {
+    id: string
+    parts: QuestionGateData['parts']
+    subjectId: string | null
+    educationLevelId: string | null
+    chapterId: string | null
+    unitId: string | null
+    spIds: string[]
+    tp: number | null
+    paperCode: string | null
+    rightsStatus: string
+  }): Promise<Record<string, string>> {
+    return GATES.approve({
+      id: input.id,
+      parts: input.parts,
+      marks: null,
+      subjectId: input.subjectId,
+      educationLevelId: input.educationLevelId,
+      chapterId: input.chapterId,
+      unitId: input.unitId,
+      spIds: input.spIds,
+      tp: input.tp,
+      rightsStatus: input.rightsStatus,
+      hasSourceDeclaration: true,
+      unconfirmedLowConfidenceFields: [],
+      hasOpenDuplicateFlag: false,
+      mediaResolved: true,
+      missingRequiredFields: [],
+      lastEditedByAi: false,
+      paperCode: input.paperCode,
+      spmBound: await this.repo.isSpmBound(input.subjectId, input.educationLevelId),
+    })
+  }
+
   private async createFrom(n: Normalized, status: QuestionStatus, actor: QuestionActor, provenance?: QuestionProvenance): Promise<QuestionView> {
     const { draft, newStemFileId } = await this.draftOf(n, status, null)
     if (provenance) {
@@ -570,15 +722,19 @@ export class QuestionsService {
       draft.sourcePage = provenance.sourcePage
     }
     if (status === 'approved') {
-      const fields = checkTagGate({
+      // Created already approved (an Admin Pusat shortcut that skips the Semakan step): the same merged approve gate as the transition.
+      const fields = await this.approveFields({
+        id: '0',
+        parts: n.parts,
         subjectId: draft.subjectId === null ? null : idToString(draft.subjectId),
         educationLevelId: draft.educationLevelId === null ? null : idToString(draft.educationLevelId),
+        chapterId: null,
         unitId: draft.unitNodeId === null ? null : idToString(draft.unitNodeId),
         spIds: draft.spNodeIds.map(idToString),
         tp: draft.difficultyTp,
+        paperCode: draft.paperCode ?? null,
+        rightsStatus: 'own',
       })
-      // Same keys rule BE-10 offers: marks of a points key equal the leaf marks and the sum of its points.
-      Object.assign(fields, checkKeysGate(n.parts))
       if (Object.keys(fields).length > 0) throw fail(fields)
     }
     const creator = parse(actor.userId)
@@ -590,7 +746,7 @@ export class QuestionsService {
         createdById: creator,
         groupId: groupId === null ? null : BigInt(groupId),
         // D90 / R1-T32: the same member rules as the stimulus routes; locks the group so concurrent creates get distinct positions.
-        groupPosition: groupId === null ? null : await this.groupMembers.joinNew(groupId, draft.subjectId === null ? null : idToString(draft.subjectId)),
+        groupPosition: groupId === null ? null : await this.groupMembers.joinNew(groupId, draft.subjectId === null ? null : idToString(draft.subjectId), kertasOfPaperCode(draft.paperCode ?? null)),
         now: this.clock.now(),
         version: draft,
         ...(provenance
@@ -667,12 +823,13 @@ export class QuestionsService {
       const key = parse(n.chapterId)
       const chapter = key === null ? null : await this.curriculum.chapter(key)
       if (!chapter) fields.curriculumChapterId = QUESTION_MESSAGES.guruChapter
-      else if (subject && level && (chapter.subjectId !== subject.id || chapter.educationLevelId !== level.id)) fields.curriculumChapterId = QUESTION_MESSAGES.chapterMismatch
+      // REQ-B-010: each of subject and level that is known is checked on its own (a chapter of another subject is refused even with no level).
+      else if ((subject && chapter.subjectId !== subject.id) || (level && chapter.educationLevelId !== level.id)) fields.curriculumChapterId = QUESTION_MESSAGES.chapterMismatch
       else chapterKey = chapter.id
-    } else if (n.chapterId === undefined && previous?.version.chapterId && subject && level) {
-      // The chapter is kept, but only while it still belongs to the subject and level being saved.
+    } else if (n.chapterId === undefined && previous?.version.chapterId && (subject || level)) {
+      // The chapter is kept while it still belongs to the subject and the level being saved (the one that is known, when the other is empty).
       const kept = await this.curriculum.chapter(BigInt(previous.version.chapterId))
-      if (kept && kept.subjectId === subject.id && kept.educationLevelId === level.id) chapterKey = kept.id
+      if (kept && (!subject || kept.subjectId === subject.id) && (!level || kept.educationLevelId === level.id)) chapterKey = kept.id
     }
     if (n.topicId) {
       const key = parse(n.topicId)
@@ -714,6 +871,13 @@ export class QuestionsService {
       }
     }
     if (refs.stimulusIds.length > 0 && !(await this.repo.stimuliExist(refs.stimulusIds))) fields.parts = 'Stimulus tidak sah.'
+    // R008-L1: a stimulus belongs to the library the admin manages, and its picture is read by whoever may read the questions that use it. A
+    // Guru may not link just any stimulus id to their own question (that would hand them another author's draft figure by its token): only
+    // the stimuli the stored version already carries stay. Same answer as an unknown id (no existence oracle).
+    if (fields.parts === undefined && n.actor.role !== 'admin' && refs.stimulusIds.length > 0) {
+      const own = new Set<string>([...(previous?.version.stimulusIds ?? []), ...(previous ? referencedIds(previous.version.parts).stimulusIds : [])])
+      if (refs.stimulusIds.some((id) => !own.has(id))) fields.parts = 'Stimulus tidak sah.'
+    }
     if (n.stimulusGroupId && !(await this.repo.groupExists(n.stimulusGroupId))) fields.stimulusGroupId = 'Kumpulan stimulus tidak sah.'
 
     if (Object.keys(fields).length > 0) throw fail(fields)
@@ -741,7 +905,7 @@ export class QuestionsService {
       type: versionTypeOf(n.parts),
       stemMs: n.stem,
       stemEn: v?.stemEn ?? null,
-      numberLabel: v?.numberLabel ?? null,
+      numberLabel: n.numberLabel !== undefined ? (n.numberLabel === '' ? null : n.numberLabel) : (v?.numberLabel ?? null),
       language: n.language,
       explanationMs: n.explanation,
       explanationEn: v?.explanationEn ?? null,
@@ -821,10 +985,21 @@ export class QuestionsService {
         correctAnswerText: input.correctAnswerText === undefined ? flat.correctAnswerText : input.correctAnswerText,
         altAnswers: input.altAnswers ?? flat.altAnswers,
         modelAnswer: input.modelAnswer === undefined ? flat.modelAnswer : input.modelAnswer,
+        // R1-B05: the cognitive level of the single leaf survives a flat edit unless the body sends one (null clears it).
+        cognitiveLevel: input.cognitiveLevel === undefined ? ((single as { cognitiveLevel?: string | null } | undefined)?.cognitiveLevel ?? null) : input.cognitiveLevel,
       }
       if (flat.questionType === 'mcq' && src.options !== undefined && src.options.length !== 4) throw fail({ options: QUESTION_MESSAGES.options })
       parts = this.checkedParts(partsFromFlat(src), false)
     } else {
+      // REQ-B-021c: an essay_choice question has no flat model answer or points field (its key and marks live on the part). A
+      // flat edit that CHANGES either is refused; echoing the stored value (what the edit form reads back) is not a change.
+      if (single !== undefined && isLeaf(single) && single.mode === 'essay_choice') {
+        const blank = (x: string | null | undefined): string => (x ?? '').trim()
+        const refused: Record<string, string> = {}
+        if (input.modelAnswer !== undefined && blank(input.modelAnswer) !== blank(flat.modelAnswer)) refused.modelAnswer = ESSAY_CHOICE_FLAT_MESSAGES.modelAnswer
+        if (input.pointsValue !== undefined && input.pointsValue !== flat.pointsValue) refused.pointsValue = ESSAY_CHOICE_FLAT_MESSAGES.pointsValue
+        if (Object.keys(refused).length > 0) throw fail(refused)
+      }
       parts = v.parts
     }
 
@@ -853,6 +1028,7 @@ export class QuestionsService {
       flatSp: !input.tag && dskpSpId !== undefined,
     }
     if (input.stimulusGroupId !== undefined) normalized.stimulusGroupId = input.stimulusGroupId
+    if (input.numberLabel !== undefined) normalized.numberLabel = input.numberLabel
     if (input.curriculumChapterId !== undefined) normalized.chapterId = input.curriculumChapterId
     const stemImage = input.removeQuestionImage === true ? null : input.questionImageFileId
     if (stemImage !== undefined) normalized.stemImage = stemImage
@@ -877,6 +1053,12 @@ export class QuestionsService {
         await this.repo.addVersion(record.id, fresh.latestVersionNo + 1, next, now)
       } else {
         await this.repo.rewriteVersion(record.id, fresh.version.versionNo, next, now)
+      }
+      // R1-T49: a grouped question that changes subject or kertas must still fit the other members (the only member may change freely).
+      if (fresh.groupId !== null && input.stimulusGroupId === undefined) {
+        const after = { subject: draft.subjectId === null ? null : idToString(draft.subjectId), kertas: kertasOfPaperCode(draft.paperCode ?? null) }
+        const before = { subject: fresh.version.subjectId, kertas: kertasOfPaperCode(fresh.version.paperCode) }
+        if (after.subject !== before.subject || after.kertas !== before.kertas) await this.groupMembers.assertTraitChange(fresh.groupId, record.id, after.subject, after.kertas)
       }
       if (input.stimulusGroupId !== undefined) {
         // D90 / R1-T32: leaving or joining a group goes through the same rules as the stimulus routes (served lock, caps, PKSK, ...).
@@ -906,6 +1088,7 @@ export class QuestionsService {
     for (const r of records) {
       if (r.version.stemImageId) fileIds.add(r.version.stemImageId)
       for (const id of flatFromVersion(r.version).optionImageIds) if (id) fileIds.add(id)
+      for (const id of referencedIds(r.version.parts).imageIds) fileIds.add(id)
     }
     const chapterIds = [...new Set(records.map((r) => r.version.chapterId).filter((c): c is string => !!c).map((c) => BigInt(c)))]
     const chapterNames = new Map(

@@ -47,3 +47,22 @@ export function detachFromStimulus<T extends Ordered>(items: readonly T[], ids: 
   const drop = new Set(ids)
   return items.map((q) => (drop.has(q.id) ? { ...q, stimulusId: null } : q))
 }
+
+/**
+ * Extraction time: puts the items of one figure side by side. A figure's questions form one block at the place of its first
+ * question, in their original order; items without a figure keep their place. Pure and stable.
+ */
+export function gatherByRef<T extends { stimulusRef: string | null }>(items: readonly T[]): T[] {
+  const out: T[] = []
+  const done = new Set<string>()
+  for (const item of items) {
+    if (item.stimulusRef === null) {
+      out.push(item)
+      continue
+    }
+    if (done.has(item.stimulusRef)) continue
+    done.add(item.stimulusRef)
+    for (const m of items) if (m.stimulusRef === item.stimulusRef) out.push(m)
+  }
+  return out
+}

@@ -7,10 +7,14 @@ import { IdSchema } from '../common/ids'
 import {
   QuestionBulkRequestSchema,
   QuestionBulkResultSchema,
+  QuestionFilterBulkRequestSchema,
+  QuestionFilterSchema,
+  QuestionFilterBulkResultSchema,
   QuestionCreateRequestSchema,
   QuestionCurriculumTagSchema,
   QuestionDeleteResultSchema,
   QuestionDetailSchema,
+  QuestionPlacementSchema,
   QuestionGuruCreateRequestSchema,
   QuestionGuruDetailSchema,
   QuestionGuruQuerySchema,
@@ -62,9 +66,13 @@ export const QUESTIONS_COMPONENT_SCHEMAS = {
   QuestionSummary: QuestionSummarySchema,
   Question: QuestionSchema,
   QuestionDetail: QuestionDetailSchema,
+  QuestionPlacement: QuestionPlacementSchema,
   QuestionCreateRequest: QuestionCreateRequestSchema,
   QuestionUpdateRequest: QuestionUpdateRequestSchema,
   QuestionBulkRequest: QuestionBulkRequestSchema,
+  QuestionFilter: QuestionFilterSchema,
+  QuestionFilterBulkRequest: QuestionFilterBulkRequestSchema,
+  QuestionFilterBulkResult: QuestionFilterBulkResultSchema,
   QuestionStructuredRow: QuestionStructuredRowSchema,
   QuestionStructuredSub: QuestionStructuredSubSchema,
   QuestionStructuredDetail: QuestionStructuredDetailSchema,
@@ -89,6 +97,7 @@ const csrf = z.object({
 const unauthorized = err('UNAUTHORIZED: no valid session.')
 const forbidden = err('FORBIDDEN, or CSRF_INVALID when X-CSRF-Token is missing or wrong.')
 const notFound = err('NOT_FOUND: unknown id (for Guru routes also another teacher\'s question; ids cannot be probed).')
+const conflict = err('CONFLICT: the count of the filter is not `expectedCount` any more (details: expected, actual); nothing was applied.')
 const invalid = err('VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages), `message` = first message plus the count of the others.')
 
 const StructuredListEnvelope = z.object({
@@ -129,12 +138,28 @@ export function registerQuestionsPaths(registry: OpenAPIRegistry): void {
     tags: admin,
     summary: 'Apply one lifecycle action to many questions',
     description:
-      'Unknown ids are skipped silently; duplicates count once. Flash: "<n> soalan berjaya dikemaskini." Transition rules and "only Admin Pusat publishes" belong to BE-10; forbidden transitions and their error are BE-10 to define.',
+      'Unknown ids are skipped silently; duplicates count once. Flash: "<n> soalan berjaya dikemaskini." Transition rules and "only Admin Pusat publishes" belong to BE-10; forbidden transitions and their error are BE-10 to define. `approved` runs the merged approve gate (ADR-0027: tag, keys, rights not "belum jelas", duplicates, DSKP-complete for an SPM-bound question) per id, the same as `POST /questions/{id}/status`: a refused id is a `failed[]` entry (VALIDATION_ERROR with the gate `fields`), the others are applied. `POST /questions` with `status: approved` runs the same gate (422, nothing stored).',
     request: { headers: [csrf], body: body(QuestionBulkRequestSchema) },
     responses: {
       200: json(mutationEnvelopeOf(QuestionBulkResultSchema), 'Rows affected, with the flash text.'),
       401: unauthorized,
       403: forbidden,
+      422: invalid,
+    },
+  })
+  registry.registerPath({
+    method: 'post',
+    path: '/questions/bulk-action/filter',
+    tags: admin,
+    summary: 'Approve or archive the questions of the current filter',
+    description:
+      'V2 "Luluskan Hasil Tapisan" (`approved`, needs at least one filter) and "Arkib Semua" (`archived`, an empty filter is the whole bank). The filter is the one of GET /questions (strict, no paging). The client sends `expectedCount`, the total it showed: if the count differs now the answer is 409 CONFLICT (details expected/actual) and nothing is applied. `dryRun: true` counts only. Rows whose status cannot move to the target (approved: only Semakan can; archived: Draf, Semakan, Diterbitkan) are `skipped`, not failures. Every row runs the same gate and the same transition rule as `bulk-action`: a refused row is a `failed[]` entry (VALIDATION_ERROR with the gate `fields`). One run applies at most `cap` rows (500); `remaining`/`capped` say whether to run again. Admin Pusat only, CSRF, write rate limit.',
+    request: { headers: [csrf], body: body(QuestionFilterBulkRequestSchema) },
+    responses: {
+      200: json(mutationEnvelopeOf(QuestionFilterBulkResultSchema), 'Counts and per-row refusals, with the flash text.'),
+      401: unauthorized,
+      403: forbidden,
+      409: conflict,
       422: invalid,
     },
   })

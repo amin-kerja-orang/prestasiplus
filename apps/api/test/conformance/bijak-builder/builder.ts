@@ -69,10 +69,10 @@ export const bijakBuilderScenarios: Scenario[] = [
       expectError(ctx, await admin.request('POST', '/admin/blueprints', { body: { subject: 'SEJ', kertas: 1 } }), 422, 'VALIDATION_ERROR')
 
       const version = await admin.request('POST', '/admin/blueprints/SEJ/1/versions', {
-        body: { ...blueprintBody('1249/1', 'Disahkan'), durationMin: 90 },
+        body: { ...blueprintBody('1249/1'), durationMin: 90 },
       })
       ctx.expectStatus(version, 201)
-      ctx.check(dataOf(version).source === 'Disahkan' && dataOf(version).durationMin === 90, 'the new version view must carry the new content')
+      ctx.check(dataOf(version).source === 'Spec' && dataOf(version).durationMin === 90, 'the new version view must carry the new content')
       const got = await admin.request('GET', '/admin/blueprints/SEJ/1')
       ctx.expectStatus(got, 200)
       ctx.check(dataOf(got).durationMin === 90, 'GET must show the latest version')
@@ -108,7 +108,9 @@ export const bijakBuilderScenarios: Scenario[] = [
       ctx.check(candidates.length >= 3, `expected kertas 2 candidates, got ${String(candidates.length)}`)
 
       // PUT: place candidates (3 in the first section), rename, change duration.
-      const picked = candidates.slice(0, 3).map((q) => String(q.id))
+      // D90: a stimulus group is placed as a unit, so the three picked are single questions (placing a group member would bring the whole group).
+      const picked = candidates.filter((q) => q.groupId === undefined || q.groupId === null).slice(0, 3).map((q) => String(q.id))
+      ctx.check(picked.length === 3, `expected 3 ungrouped kertas 2 candidates, got ${String(picked.length)}`)
       const firstSection = String(sectionsOf(editor)[0]?.id)
       const put = await admin.request('PUT', `/admin/papers/${id}`, {
         body: { title: '  Set uji pembina  ', durationMin: 120, sections: [{ id: firstSection, questionIds: picked }] },
@@ -196,12 +198,17 @@ export const bijakBuilderScenarios: Scenario[] = [
 
       const put = await admin.request('PUT', `/admin/papers/${id}`, { body: { sections: [{ id: String(sectionsOf(editor)[0]?.id), questionIds: chosen }] } })
       ctx.expectStatus(put, 200)
-      // AC-R1-16.2: the seeded Kontrak is Spec, so a plain Terbit is refused with a line naming the contract; the audited override publishes.
-      const plain = await admin.request('POST', `/admin/papers/${id}/publish`)
-      ctx.expectStatus(plain, 200)
-      ctx.check(dataOf(plain).ok === false && arr(dataOf(plain).errors).some((e) => String(e).startsWith('Kontrak Simulasi')), `a Spec contract must block Terbit: ${JSON.stringify(dataOf(plain))}`)
-      const publish = await admin.request('POST', `/admin/papers/${id}/publish`, { body: { override: true, reason: 'Kontrak sedang menunggu pengesahan' } })
+      // AC-R1-16.2: a Spec Kontrak blocks a plain Terbit (a line naming the Kontrak) and the audited override publishes; a Disahkan one (BASE-60 seeding)
+      // publishes plainly. The branch follows the source the API reports for MAT kertas 1.
+      const contract = await admin.request('GET', '/admin/blueprints/MAT/1')
+      ctx.expectStatus(contract, 200)
+      let publish = await admin.request('POST', `/admin/papers/${id}/publish`)
       ctx.expectStatus(publish, 200)
+      if (dataOf(contract).source !== 'Disahkan') {
+        ctx.check(dataOf(publish).ok === false && arr(dataOf(publish).errors).some((e) => String(e).startsWith('Kontrak Simulasi')), `a Spec contract must block Terbit: ${JSON.stringify(dataOf(publish))}`)
+        publish = await admin.request('POST', `/admin/papers/${id}/publish`, { body: { override: true, reason: 'Kontrak sedang menunggu pengesahan' } })
+        ctx.expectStatus(publish, 200)
+      }
       ctx.check(dataOf(publish).ok === true, `publish refused: ${JSON.stringify(dataOf(publish).errors)}`)
       ctx.check(arr(dataOf(publish).errors).length === 0, 'a successful publish carries no errors')
 

@@ -46,6 +46,6 @@ export class QuestionReportsController {
   update(@Actor() actor: WorkflowActor, @Param('id') id: string, @Body() body: unknown) {
     // "Arkib" on the row: the real lifecycle archive (table, status event) in the same transaction as the report update.
     // An already archived question is left as it is; a live question with a newer revision in review has its live version archived.
-    return this.reports.update(actor, id, body, (questionId) => this.workflow.archiveReported(questionId, actor, REPORT_ARCHIVE_REASON))
+    return this.reports.update(actor, id, body, (questionId, reportedVersionNo) => this.workflow.archiveReported(questionId, actor, REPORT_ARCHIVE_REASON, reportedVersionNo))
   }
 }

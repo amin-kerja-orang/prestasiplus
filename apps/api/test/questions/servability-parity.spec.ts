@@ -5,6 +5,7 @@ import { SERVABILITY_ACTIVITIES, type ServabilityActivity, type ServabilityRepor
 import { mulberry32 } from '../../src/db/prng'
 import { Be09BijakQuestionSource } from '../../src/modules/bijak/question-bridge/be09-question-source'
 import { markableLeaf, leavesOf, resolveStimuli } from '../../src/modules/bijak/kuiz/kuiz.mapper'
+import { ownStimuliOf } from '../../src/modules/bijak/kuiz/own-stimuli'
 import { CurriculumRepository } from '../../src/modules/curriculum'
 import { Be09PracticeQuestionSource } from '../../src/modules/practice/question-bridge/be09-practice-question-source'
 import type { UsersRepository } from '../../src/modules/users'
@@ -33,6 +34,7 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
   let reports: ReadonlyMap<string, ServabilityReport>
   let allIds: string[]
   const made: Record<string, string> = {}
+  let refs: { t4: string; other: string; linked: string; inactiveSubject: string; unlinked: string }
 
   const q = (sql: string, params: unknown[] = []) => t.db.query<{ id: string; code: string; public_id: string }>(sql, params)
   let fileSeq = 0
@@ -129,7 +131,7 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     if (other[0]) await q(`update question_versions set education_level_id = $2 where question_id = $1`, [made.otherLevel, other[0].id])
 
     // On a published paper (Simulasi), and one that is only a draft paper.
-    for (const [key, status] of [['onPaper', 'published'], ['onDraftPaper', 'draft']] as const) {
+    for (const [key, status] of [['onPaper', 'published'], ['onDraftPaper', 'draft'], ['archivedOnPaper', 'published']] as const) {
       const id = await publish(key, `Soalan pada kertas ${status} untuk kesamaan kebolehhidangan.`)
       const [paper] = await q(
         `insert into papers (kind, title, subject_id, kertas, printed_duration_min, status, published_at) values ('pilihan', $1, $2, 2, 90, $3, ${status === 'published' ? 'now()' : 'null'}) returning id::text id`,
@@ -138,6 +140,96 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
       const [section] = await q(`insert into paper_sections (paper_id, position, label, question_count, mark_budget) values ($1, 1, 'A', 1, 1) returning id::text id`, [paper!.id])
       await q(`insert into paper_placements (paper_section_id, question_id, pinned_version_no, position) values ($1, $2, 1, 1)`, [section!.id, id])
     }
+
+    // --- R1E2E-05b own stimuli: the bridge serves a question's OWN stimuli (7 kinds, link order); servability must say the same -----
+    const stim = async (kind: string, extra: { body?: string; table?: unknown; file?: boolean; label?: string } = {}): Promise<string> =>
+      (
+        await q(`insert into stimuli (kind, label, body_ms, table_data, asset_file_id, alt_text) values ($1, $2, $3, $4::jsonb, $5, $6) returning id::text id`, [
+          kind,
+          extra.label ?? 'Rangsangan',
+          extra.body ?? null,
+          extra.table === undefined ? null : JSON.stringify(extra.table),
+          extra.file ? await fileRow() : null,
+          extra.file ? 'Rajah' : null,
+        ])
+      )[0]!.id
+    const link = (key: string, ...ids: string[]) =>
+      Promise.all(ids.map((id, i) => q(`insert into question_version_stimuli (question_version_id, stimulus_id, position) select id, $2, $3 from question_versions where question_id = $1 and version_no = 1`, [made[key], id, i + 1])))
+    await publish('ownPassage', 'Soalan dengan petikan sendiri untuk kesamaan kebolehhidangan.')
+    await link('ownPassage', await stim('passage', { body: 'Teks petikan sendiri.' }))
+    await publish('ownTable', 'Soalan dengan jadual sendiri untuk kesamaan kebolehhidangan.')
+    await link('ownTable', await stim('table', { label: 'Jadual 1', table: { head: ['a', 'b'], rows: [['1', '2']] } }))
+    await publish('ownTwoPictures', 'Soalan dengan dua gambar sendiri untuk kesamaan kebolehhidangan.')
+    await link('ownTwoPictures', await stim('image', { file: true }), await stim('diagram', { file: true }))
+    await publish('ownMixed', 'Soalan dengan petikan dan gambar sendiri untuk kesamaan kebolehhidangan.')
+    await link('ownMixed', await stim('passage', { body: 'Petikan campuran.' }), await stim('image', { file: true }), await stim('table', { table: { head: ['x'], rows: [['1']] } }))
+    await publish('ownEmpty', 'Soalan dengan rangsangan kosong untuk kesamaan kebolehhidangan.')
+    await link('ownEmpty', await stim('passage'))
+    await publish('ownNoPicture', 'Soalan dengan gambar tanpa fail (kosong) untuk kesamaan kebolehhidangan.')
+    await link('ownNoPicture', await stim('image'))
+    await publish('ownAudio', 'Soalan dengan audio untuk kesamaan kebolehhidangan.')
+    await link('ownAudio', await stim('audio', { file: true }))
+    const sharedStim = await stim('passage', { body: 'Petikan yang dikongsi.' })
+    await publish('sharedA', 'Soalan pertama berkongsi petikan tanpa kumpulan untuk kesamaan kebolehhidangan.')
+    await publish('sharedB', 'Soalan kedua berkongsi petikan tanpa kumpulan untuk kesamaan kebolehhidangan.')
+    await link('sharedA', sharedStim)
+    await link('sharedB', sharedStim)
+    // Deactivated sharer: the bridge counts ACTIVE questions only, so the stimulus is the survivor's own again.
+    const lonely = await stim('passage', { body: 'Petikan yang tinggal sendiri.' })
+    await publish('sharedGone', 'Soalan berkongsi dengan yang telah ditarik balik untuk kesamaan kebolehhidangan.')
+    await publish('sharedWithdrawn', 'Soalan penolak yang ditarik balik untuk kesamaan kebolehhidangan.')
+    await link('sharedGone', lonely)
+    await link('sharedWithdrawn', lonely)
+    await q(`update questions set is_active = false where id = $1`, [made.sharedWithdrawn])
+
+    // H-A13: archived after the paper was published. The paper still lists it, but a new sitting cannot start (no live approved version).
+    await q(`update question_versions set status = 'archived' where question_id = $1`, [made.archivedOnPaper])
+    await q(`update questions set live_version_no = null where id = $1`, [made.archivedOnPaper])
+
+    // --- level / subject / link fixtures (T29 B2 fix: facts are read for the LIVE version, `live ?? latest`) -----------------
+    const level = async (code: string, active: boolean): Promise<string> =>
+      (await q(`insert into education_levels (code, name, name_en, stage, curriculum, sort_order, is_active) values ($1, $1, $1, 'upper_secondary', 'KSSM', 90, $2) returning id::text id`, [code, active]))[0]!.id
+    const subject = async (code: string, active: boolean, linkedLevelId: string | null): Promise<string> => {
+      const id = (await q(`insert into subjects (code, name, name_en, color, is_active) values ($1, $1, $1, '#112233', $2) returning id::text id`, [code, active]))[0]!.id
+      if (linkedLevelId !== null) await q(`insert into subject_levels (subject_id, education_level_id) values ($1, $2)`, [id, linkedLevelId])
+      // On both SPM lists, so the only objection left to a question here is the level or subject rule under test.
+      await q(`insert into spm_subject_configs (subject_id, grp, display_order, databank_order) values ($1, 'elektif', 50, 50)`, [id])
+      return id
+    }
+    const setVersion = (key: string, versionNo: number, levelId: string | null, subjectId: string | null) =>
+      q(`update question_versions set education_level_id = $3, subject_id = $4 where question_id = $1 and version_no = $2`, [made[key], versionNo, levelId, subjectId])
+    const [t4] = await q(`select id::text id from education_levels where code = 'T4'`)
+    const tz = await level('TZ', true)
+    const linked = await subject('PARLINK', true, t4!.id)
+    const inactiveSubject = await subject('PARINACT', false, t4!.id)
+    const unlinked = await subject('PARNOLINK', true, null)
+    refs = { t4: t4!.id, other: tz, linked, inactiveSubject, unlinked }
+
+    // Control: a plain question on an active subject linked to T4 is served by the SPM activities.
+    await publish('linkedSubject', 'Soalan pada subjek aktif dan berpaut untuk kesamaan kebolehhidangan.')
+    await setVersion('linkedSubject', 1, refs.t4, linked)
+    await publish('inactiveSubject', 'Soalan pada subjek tidak aktif untuk kesamaan kebolehhidangan.')
+    await setVersion('inactiveSubject', 1, refs.t4, inactiveSubject)
+    await publish('unlinkedSubject', 'Soalan pada subjek tanpa pautan tahap untuk kesamaan kebolehhidangan.')
+    await setVersion('unlinkedSubject', 1, refs.t4, unlinked)
+    await publish('noLevel', 'Soalan tanpa tahap untuk kesamaan kebolehhidangan.')
+    await setVersion('noLevel', 1, null, linked)
+    await publish('noSubject', 'Soalan tanpa subjek untuk kesamaan kebolehhidangan.')
+    await setVersion('noSubject', 1, refs.t4, null)
+
+    // Live is not latest: the live v1 (T4, linked subject) is served while the draft v2 moves to another level and subject. The
+    // draws read the live version, so the report must too.
+    await publish('liveServedDraftMoves', 'Soalan hidup tahap empat dengan draf baharu yang berubah untuk kesamaan kebolehhidangan.')
+    await setVersion('liveServedDraftMoves', 1, refs.t4, linked)
+    await svc.update(made.liveServedDraftMoves!, mcqInput(tag, { questionText: 'Draf kedua yang mengubah tahap dan subjek untuk kesamaan kebolehhidangan.' }), admin)
+    await setVersion('liveServedDraftMoves', 2, refs.other, inactiveSubject)
+    // And the reverse: the live v1 is on a level the SPM does not offer while the draft v2 is T4 on a linked subject.
+    await publish('liveOutDraftIn', 'Soalan hidup tahap lain dengan draf tahap empat untuk kesamaan kebolehhidangan.')
+    await setVersion('liveOutDraftIn', 1, refs.other, unlinked)
+    await svc.update(made.liveOutDraftIn!, mcqInput(tag, { questionText: 'Draf kedua tahap empat subjek berpaut untuk kesamaan kebolehhidangan.' }), admin)
+    await setVersion('liveOutDraftIn', 2, refs.t4, linked)
+    const latestNos = await q(`select latest_version_no::text id from questions where id = any($1::bigint[]) order by id`, [[made.liveServedDraftMoves, made.liveOutDraftIn]])
+    expect(latestNos.map((r) => r.id)).toEqual(['2', '2'])
 
     allIds = (await q(`select id::text id from questions order by id`)).map((r) => r.id)
     reports = await servability.reports(allIds)
@@ -149,6 +241,8 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
   const servedBy = (activity: ServabilityActivity): Set<string> =>
     new Set([...reports].filter(([, r]) => r.activities.find((a) => a.activity === activity)?.served).map(([id]) => id))
   const reasonsOf = (key: string, activity: ServabilityActivity) => reports.get(made[key]!)!.activities.find((a) => a.activity === activity)!.reasons.map((r) => r.code)
+  const setVersionOf = (id: string, versionNo: number, levelId: string | null, subjectId: string | null) =>
+    q(`update question_versions set education_level_id = $3, subject_id = $4 where question_id = $1 and version_no = $2`, [id, versionNo, levelId, subjectId])
   const sorted = (s: Iterable<string>) => [...s].sort((a, b) => Number(BigInt(a) - BigInt(b)))
 
   it('reports every known question once, with all six activities in contract order', () => {
@@ -199,6 +293,60 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     for (const id of servedBy('latih_tubi_spm')) expect(inScope.has(id), id).toBe(true)
   })
 
+  it('level and subject facts follow the LIVE version: a draft v2 that moves level or subject changes nothing (T29 B2)', async () => {
+    // Real draws: every subject of every version, the practice source with the SPM pool and the kuiz SQL draw.
+    const subjects = await q(`select distinct subject_id::text id from question_versions where subject_id is not null`)
+    const drawn = new Set<string>()
+    for (const s of subjects) for (const id of await practice.sample({ subjectId: s.id, spmPool: true }, 20_000, mulberry32(7))) drawn.add(id)
+    const kuizDrawn = new Set(await repo.sampleIds(filterOf('simulasi_kuiz'), 20_000, 11))
+
+    // Each question is reported ALONE: in a batch another question's level or subject could mask a fact loaded for the wrong
+    // version (the bug was invisible while the batch also held a T4 question on the same subject).
+    const reasonsAlone = async (key: string, activity: ServabilityActivity): Promise<string[]> =>
+      (await servability.report(made[key]!))!.activities.find((a) => a.activity === activity)!.reasons.map((r) => r.code)
+
+    // Live v1 is T4 on a linked subject: drawn and served, whatever the draft v2 says.
+    expect(drawn.has(made.liveServedDraftMoves!)).toBe(true)
+    expect(kuizDrawn.has(made.liveServedDraftMoves!)).toBe(true)
+    for (const activity of ['latih_tubi_spm', 'databank'] as const) {
+      expect(await reasonsAlone('liveServedDraftMoves', activity), `alone ${activity}`).toEqual([])
+      expect(reasonsOf('liveServedDraftMoves', activity), `batch ${activity}`).toEqual([])
+    }
+    expect(servedBy('latih_tubi_spm').has(made.liveServedDraftMoves!)).toBe(true)
+    // The report evaluates the live version, and says which one.
+    expect(reports.get(made.liveServedDraftMoves!)!.versionNo).toBe(1)
+
+    // Live v1 is on a level SPM does not offer and an unlinked subject: neither drawn nor served, whatever v2 says.
+    expect(drawn.has(made.liveOutDraftIn!)).toBe(false)
+    expect(await reasonsAlone('liveOutDraftIn', 'latih_tubi_spm')).toEqual(['level_not_offered', 'subject_unavailable'])
+    expect(reasonsOf('liveOutDraftIn', 'latih_tubi_spm')).toEqual(['level_not_offered', 'subject_unavailable'])
+    expect(servedBy('latih_tubi_spm').has(made.liveOutDraftIn!)).toBe(false)
+  })
+
+  it('an inactive subject, a subject not linked to the level and a missing level or subject are refused as the SPM filter refuses them', async () => {
+    const subjects = await q(`select distinct subject_id::text id from question_versions where subject_id is not null`)
+    const drawn = new Set<string>()
+    for (const s of subjects) for (const id of await practice.sample({ subjectId: s.id, spmPool: true }, 20_000, mulberry32(7))) drawn.add(id)
+    const inScope = new Set(await repo.eligibleAmong(allIds, filterOf('latih_tubi_spm')))
+
+    // Control on an active, linked subject: drawn, in scope, served by Latih Tubi and Databank.
+    expect(drawn.has(made.linkedSubject!)).toBe(true)
+    expect(inScope.has(made.linkedSubject!)).toBe(true)
+    expect(reasonsOf('linkedSubject', 'latih_tubi_spm')).toEqual([])
+    expect(reasonsOf('linkedSubject', 'databank')).toEqual([])
+
+    for (const key of ['inactiveSubject', 'unlinkedSubject', 'noSubject', 'noLevel'] as const) {
+      expect(drawn.has(made[key]!), `${key} drawn`).toBe(false)
+      expect(inScope.has(made[key]!), `${key} in scope`).toBe(false)
+      expect(servedBy('latih_tubi_spm').has(made[key]!), `${key} served`).toBe(false)
+      expect(servedBy('databank').has(made[key]!), `${key} served (databank)`).toBe(false)
+    }
+    expect(reasonsOf('inactiveSubject', 'latih_tubi_spm')).toEqual(['subject_unavailable'])
+    expect(reasonsOf('unlinkedSubject', 'latih_tubi_spm')).toEqual(['subject_unavailable'])
+    expect(reasonsOf('noSubject', 'latih_tubi_spm')).toEqual(['subject_unavailable'])
+    expect(reasonsOf('noLevel', 'latih_tubi_spm')).toEqual(['level_not_offered', 'subject_unavailable'])
+  })
+
   it('bab: the chapter reader returns exactly the served questions of a chapter', async () => {
     const chapters = await q(`select distinct chapter_id::text id from question_versions where chapter_id is not null`)
     expect(chapters.length).toBeGreaterThan(0)
@@ -222,7 +370,7 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     const kept = new Set<string>()
     for (const record of await repo.getMany([...drawn], 'live')) {
       const group = record.groupId ? await repo.groupOf(record.id) : null
-      const assets = new Map((await repo.stimulusAssets(record.version.stimulusIds)).map((a) => [a.id, a]))
+      const assets = await ownStimuliOf(repo, [record], new Map(group && record.groupId ? [[record.groupId, group]] : []))
       const leaf = leavesOf(record.id, record.version.parts)[0]
       if (record.isActive && leaf && markableLeaf(leaf) !== null && resolveStimuli(record, group, assets).complete) kept.add(record.id)
     }
@@ -230,21 +378,76 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     expect(servedBy('simulasi_kuiz').has(made.groupA!)).toBe(true)
     expect(servedBy('simulasi_kuiz').has(made.stemImage!)).toBe(true)
     expect(reasonsOf('structured', 'simulasi_kuiz')).toEqual(['shape_unsupported'])
+    // Explicit cases, stated independently of the helper above: served and not served by the kuiz (what the admin is told).
+    for (const served of ['plain', 'groupA', 'stemImage']) expect(servedBy('simulasi_kuiz').has(made[served]!), `${served} is served`).toBe(true)
+    for (const notServed of ['structured', 'draft', 'archivedLive', 'sharedA']) {
+      expect(servedBy('simulasi_kuiz').has(made[notServed]!), `${notServed} is not served`).toBe(false)
+    }
+    // a stimulus shared by several questions without being a group (D90) is the reason, in words the admin can act on
+    expect(reasonsOf('sharedA', 'simulasi_kuiz')).toEqual(['shape_unsupported'])
   })
 
-  it('simulasi_paper: the Bijak bridge serves the question AND it sits on a published paper', async () => {
-    // The bridge serves the live version whatever `is_active`, and the last published version of an archived one (B08).
-    const bridged = new Set((await bijak.loadQuestions(allIds)).keys())
-    expect(bridged.has(made.withdrawn!)).toBe(true)
-    expect(bridged.has(made.archivedLive!)).toBe(true)
+  it('simulasi_paper: a NEW sitting can be started (live approved, bridge accepts) AND the question sits on a published paper', async () => {
+    // `getMany` is the paper eligibility read of BE-15 (`published = true`): the live approved version only, whatever `is_active`.
+    // An archived question is not in it, so the paper cannot be started (H-A13); `loadQuestions` (running sittings) still reads it.
+    const startable = new Set((await bijak.getMany(allIds)).keys())
+    expect(startable.has(made.withdrawn!)).toBe(true)
+    expect(startable.has(made.archivedLive!)).toBe(false)
+    expect(startable.has(made.archivedOnPaper!)).toBe(false)
+    expect((await bijak.loadQuestions(allIds)).has(made.archivedOnPaper!)).toBe(true)
     const onPaper = new Set((await q(`select distinct pl.question_id::text id from paper_placements pl join paper_sections ps on ps.id = pl.paper_section_id join papers p on p.id = ps.paper_id where p.status = 'published' and p.kind <> 'jana'`)).map((r) => r.id))
-    const expected = [...bridged].filter((id) => onPaper.has(id))
+    const expected = [...startable].filter((id) => onPaper.has(id))
     expect(sorted(servedBy('simulasi_paper'))).toEqual(sorted(expected))
     expect(servedBy('simulasi_paper').has(made.onPaper!)).toBe(true)
     expect(reasonsOf('onDraftPaper', 'simulasi_paper')).toEqual(['not_on_published_paper'])
     expect(reasonsOf('plain', 'simulasi_paper')).toEqual(['not_on_published_paper'])
-    // Every question the bridge serves but that is on no published paper is reported with exactly that reason.
-    for (const id of bridged) if (!onPaper.has(id)) expect(reports.get(id)!.activities.find((a) => a.activity === 'simulasi_paper')!.reasons.map((r) => r.code)).toEqual(['not_on_published_paper'])
+    // Lead decision (H-A13): archived after the paper was published is `archived` (a new sitting cannot start), never `not_on_published_paper`.
+    expect(reasonsOf('archivedOnPaper', 'simulasi_paper')).toEqual(['archived'])
+    expect(reports.get(made.archivedOnPaper!)!.activities.find((a) => a.activity === 'simulasi_paper')!.reasons[0]!.message).toBe('Diarkibkan — pulihkan ke draf dahulu.')
+    expect(reasonsOf('archivedLive', 'simulasi_paper')).toEqual(['archived'])
+    // Every startable question that is on no published paper is reported with exactly that reason.
+    for (const id of startable) if (!onPaper.has(id)) expect(reports.get(id)!.activities.find((a) => a.activity === 'simulasi_paper')!.reasons.map((r) => r.code)).toEqual(['not_on_published_paper'])
+  })
+
+  it('R1E2E-05b own stimuli: servability agrees with the bridge for every own-stimulus case, with the bridge reason when refused', async () => {
+    const bridged = await bijak.loadQuestions(allIds)
+    const refusals = await bijak.refusalsOf(allIds)
+    const verdict = (key: string) => reports.get(made[key]!)!.activities.find((a) => a.activity === 'simulasi_paper')!
+    // Served by the bridge: an own passage, an own table, two pictures, a mix (7 kinds, link order), and a stimulus whose other sharer is withdrawn.
+    for (const key of ['ownPassage', 'ownTable', 'ownTwoPictures', 'ownMixed', 'sharedGone', 'stemImage']) {
+      expect(bridged.has(made[key]!), `${key} bridged`).toBe(true)
+      expect(refusals.has(made[key]!), `${key} refusal`).toBe(false)
+      expect(verdict(key).reasons.map((r) => r.code), `${key} reasons`).not.toContain('bridge_refused')
+      expect(verdict(key).reasons.map((r) => r.code), `${key} reasons`).not.toContain('image_missing')
+    }
+    // Refused by the bridge: the same reason code, and servability names it in `detail`.
+    const expected: Record<string, string> = {
+      ownEmpty: 'stimulus_empty',
+      ownNoPicture: 'stimulus_empty',
+      ownAudio: 'stimulus_outside_group',
+      sharedA: 'stimulus_shared_ungrouped',
+      sharedB: 'stimulus_shared_ungrouped',
+    }
+    for (const [key, code] of Object.entries(expected)) {
+      expect(bridged.has(made[key]!), `${key} not bridged`).toBe(false)
+      expect(refusals.get(made[key]!)?.code, `${key} bridge reason`).toBe(code)
+      const reason = verdict(key).reasons.find((r) => r.code === 'bridge_refused' || r.code === 'image_missing' || r.code === 'stimulus_shared_ungrouped')
+      expect(reason, `${key} servability reason`).toBeDefined()
+      expect(reason!.detail, `${key} detail`).toBe(refusals.get(made[key]!)!.reasonCode)
+    }
+    expect(refusals.get(made.sharedA!)?.reasonMs).toContain('dikongsi')
+    // D90: the admin sees the dedicated cause (and fix) for a stimulus shared without a group, not the generic wrapper.
+    for (const key of ['sharedA', 'sharedB']) {
+      expect(verdict(key).reasons.map((r) => r.code), key).toEqual(['stimulus_shared_ungrouped', 'not_on_published_paper']) // not placed on a paper in this fixture
+      expect(verdict(key).reasons[0]!.message).toBe('Rangsangan ini dikongsi oleh beberapa soalan tetapi bukan kumpulan rangsangan — jadikan soalan-soalan itu satu kumpulan rangsangan (D90).')
+    }
+    // Every question: servability's Simulasi (kertas) refusal reason set equals the bridge's refusal (the full-bank equality).
+    for (const [id, report] of reports) {
+      const paper = report.activities.find((a) => a.activity === 'simulasi_paper')!
+      const bridgeCodes = paper.reasons.filter((r) => r.code === 'bridge_refused' || r.code === 'image_missing' || r.code === 'stimulus_shared_ungrouped')
+      if (bridged.has(id)) expect(bridgeCodes, `bridged ${id}`).toEqual([])
+      else if (refusals.has(id)) expect(bridgeCodes.map((r) => r.detail), `refused ${id}`).toEqual([refusals.get(id)!.reasonCode])
+    }
   })
 
   it('jana_kertas: pool facts eligible by exam-core and served by the bridge', async () => {
@@ -277,5 +480,29 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     expect(one).toEqual(reports.get(made.groupA!))
     expect(await servability.report('999999999')).toBeNull()
     expect((await servability.reports([])).size).toBe(0)
+  })
+
+  it('an inactive level that SPM offers (T5) is neither drawn nor served, and is served again when it is reactivated', async () => {
+    const [t5] = await q(`select id::text id from education_levels where code = 'T5'`)
+    const key = 'onT5'
+    await publish(key, 'Soalan tahap lima untuk kesamaan kebolehhidangan.')
+    await q(`insert into subject_levels (subject_id, education_level_id) values ($1, $2) on conflict do nothing`, [refs.linked, t5!.id])
+    await setVersionOf(made[key]!, 1, t5!.id, refs.linked)
+    const drawnWith = async (): Promise<boolean> => (await practice.sample({ subjectId: refs.linked, spmPool: true }, 20_000, mulberry32(3))).includes(made[key]!)
+    const reasonCodes = async (): Promise<string[]> => (await servability.report(made[key]!))!.activities.find((a) => a.activity === 'latih_tubi_spm')!.reasons.map((r) => r.code)
+
+    expect(await drawnWith()).toBe(true)
+    expect(await reasonCodes()).toEqual([])
+    await q(`update education_levels set is_active = false where id = $1`, [t5!.id])
+    try {
+      expect(await drawnWith()).toBe(false)
+      expect(await reasonCodes()).toEqual(['level_inactive'])
+      expect((await repo.sampleIds(filterOf('simulasi_kuiz'), 20_000, 5)).includes(made[key]!)).toBe(false)
+      expect((await servability.report(made[key]!))!.activities.find((a) => a.activity === 'simulasi_kuiz')!.served).toBe(false)
+    } finally {
+      await q(`update education_levels set is_active = true where id = $1`, [t5!.id])
+    }
+    expect(await drawnWith()).toBe(true)
+    expect(await reasonCodes()).toEqual([])
   })
 })

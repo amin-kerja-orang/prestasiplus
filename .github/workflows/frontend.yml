@@ -6,7 +6,10 @@
 #            checkout `vue-tsc -b` alone fails with TS2304 until a Vite build or dev server has run once.
 #   e2e-api  The @api Playwright specs (playwright.http.config.ts) on mobile 375, tablet 768 and desktop 1280
 #            against a REAL API: Postgres 16 service + the API checked out from `feature/v2-backend`
-#            (`api_ref` input on a manual run), migrated and seeded with the poc profile. No Docker build:
+#            (`api_ref` input on a manual run), migrated and seeded with the poc profile, then with the T26
+#            local/E2E profile when the API ref has it (`--profile=e2e`, E2E_SEED=1). PoC question papers are
+#            off (BIJAK_POC_QUESTIONS=false, R1-B07 / T36): the Bijak attempt specs use the bank demo paper
+#            (BIJAK_PAPER_ID, looked up after the seed). No Docker build:
 #            the SPA is built with VITE_API_MODE=http and served by `vite preview`, whose proxy sends /api
 #            to the API on :3000 (vite.config.ts `server.proxy`, inherited by preview), so it is same-origin.
 #            A separate job so it can be made a required check later on its own.
@@ -94,12 +97,13 @@ jobs:
     env:
       API_REF: ${{ inputs.api_ref || 'feature/v2-backend' }}
       DATABASE_URL: postgresql://pp:ci-throwaway-not-a-secret@localhost:5432/prestasiplus_e2e
-      # API settings for a local http stack (mirrors compose.http.yaml): dev mode, demo seed, PoC questions,
-      # plain-http cookie and a login throttle high enough for 3 viewports from one address.
+      # API settings for a local http stack (mirrors compose.http.yaml): dev mode, demo seed, no PoC questions
+      # (bank only; the flag is a deprecated no-op after T36), plain-http cookie and a login throttle high
+      # enough for 3 viewports from one address.
       NODE_ENV: development
       PORT: '3000'
       ALLOW_DEMO_SEED: 'true'
-      BIJAK_POC_QUESTIONS: 'true'
+      BIJAK_POC_QUESTIONS: 'false'
       COOKIE_SECURE: 'false'
       THROTTLE_LOGIN_PER_MINUTE: '200'
       THROTTLE_GLOBAL_PER_MINUTE: '3000'
@@ -150,12 +154,38 @@ jobs:
           } >> "$GITHUB_ENV"
 
       # be:build first: its prebuild runs `prisma generate`, which the seed imports (src/db/generated).
-      - name: API - build, migrate, seed (poc profile)
+      # Then the T26 local/E2E seed (docs/ops/e2e-seed.md; this job's NODE_ENV=development, E2E_SEED only on that
+      # command). An API ref without it (e.g. the older feature/v2-backend) gets a notice and the poc seed only.
+      - name: API - build, migrate, seed (poc profile, then e2e profile)
         working-directory: api
+        shell: bash
         run: |
+          set -euo pipefail
           npm run be:build
           npm run be:db:migrate
           npm run be:db:seed
+          if [ -f apps/api/prisma/seed/e2e.ts ]; then
+            E2E_SEED=1 npm run be:db:seed -- --profile=e2e
+          else
+            echo "::notice::API ref ${API_REF} has no e2e seed profile (apps/api/prisma/seed/e2e.ts); poc profile only."
+          fi
+
+      # The PoC papers are listed first (lowest ids) but are not playable without PoC questions, so the Bijak
+      # attempt specs open the demo paper on bank questions (seed poc/bijak-sittings.ts BANK_PAPER_TITLE).
+      - name: Pick the bank demo paper for the Bijak attempt specs (BIJAK_PAPER_ID)
+        shell: bash
+        run: |
+          set -euo pipefail
+          id="$(psql "${DATABASE_URL}" -v ON_ERROR_STOP=1 -tA <<'SQL'
+          select id from papers
+           where kind = 'pilihan' and status = 'published' and title = 'Latihan Demo Matematik Bank Soalan (Contoh)'
+           order by id limit 1;
+          SQL
+          )"
+          id="$(echo "${id}" | tr -d '[:space:]')"
+          if [ -z "${id}" ]; then echo "::error::bank demo paper not found (the demo seed did not create it)"; exit 1; fi
+          echo "BIJAK_PAPER_ID=${id}" >> "$GITHUB_ENV"
+          echo "BIJAK_PAPER_ID=${id}"
 
       - name: API - start on :3000 and wait for /api/ready
         working-directory: api/apps/api

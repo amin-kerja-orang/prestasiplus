@@ -103,9 +103,9 @@ export const EnvSchema = z.object({
     .default('false')
     .transform((v) => v === 'true' || v === '1'),
   /**
-   * Bijak SPM PoC questions (LEAD decision 2026-10-20 16:00: staging only, never prod). true serves the reserved
-   * PoC id block (seeded PoC papers, Jana pool); false (default) refuses those ids, so only BE-09 questions are served.
-   * Set true wherever ALLOW_DEMO_SEED loads the demo seed (staging, dev, e2e).
+   * DEPRECATED NO-OP (R1-B07). The PoC question fixture and the composite id split were removed: Bijak papers, Jana Kertas
+   * and the kuiz read the question bank only, whatever this says. The key is still accepted so an existing environment
+   * file does not break start-up; `true` makes the API log a warning once. Remove it from the environment and, later, here.
    */
   BIJAK_POC_QUESTIONS: z
     .enum(['true', 'false', '1', '0'])
@@ -145,6 +145,10 @@ export const EnvSchema = z.object({
   THROTTLE_STRUCTURED_ATTEMPT_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   // BE-09 (question bank). Optional: the code applies 60 writes per minute per user when unset.
   THROTTLE_QUESTIONS_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  // R1-B11 (servability reads, Admin Pusat). Optional: the code applies 120 reads per minute per user when unset.
+  THROTTLE_SERVABILITY_READ_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  // The overview counts the whole bank, so it has its own bucket. Optional: the code applies 6 per minute per user when unset.
+  THROTTLE_SERVABILITY_OVERVIEW_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   // BE-06: development only. true lets the logging MailPort print the password reset link (a secret) to the log. Ignored outside NODE_ENV=development; refused at start in production.
   MAIL_LOG_RESET_LINKS: z.enum(['true', 'false']).optional(),
   // BE-17 (classes). Throttles per user and the public origin of the join link (QR payload); the code applies the defaults when unset.

@@ -14,6 +14,18 @@
 import { z } from 'zod'
 
 export type DskpNodeKind = 'grouping' | 'unit' | 'sk' | 'sp'
+/**
+ * AC-R1-12.3 / R1-19.3: the plain reasons of the load report are Bahasa Melayu. A rejected TP row reads
+ * "Baris TP tidak disimpan: <why>"; an ignored Darjah (or other non-Tingkatan) unit reads `darjahIgnored`.
+ */
+export const DSKP_REASONS_MS = {
+  notStored: 'Baris TP tidak disimpan:',
+  noTp: 'tiada nombor TP.',
+  badTp: (raw: string): string => `TP "${raw}" bukan satu nombor dari 1 hingga 6.`,
+  duplicateTp: (tp: string): string => `TP ${tp} muncul dua kali pada nod yang sama.`,
+  darjahIgnored: 'Dilangkau: Darjah tidak dimuatkan (hanya Tingkatan 1 hingga 5).',
+} as const
+
 /** Tingkatan 1 to 5 (R1-12); Darjah and any other level is ignored and listed. */
 export type DskpLevel = 'T1' | 'T2' | 'T3' | 'T4' | 'T5'
 const TINGKATAN = /^T[1-5]$/
@@ -146,14 +158,14 @@ export function parseDskpExtract(input: unknown): DskpExtract {
     const tp = typeof raw === 'number' ? raw : null
     if (tp === null || tp < 1 || tp > 6) {
       skipped.missingTp += 1
-      const why = raw === undefined || raw === null ? 'no tp number' : `tp "${String(raw)}" is not a single number from 1 to 6`
-      rejected.push({ level, at, reason: `TP row not stored: ${why}` })
+      const why = raw === undefined || raw === null ? DSKP_REASONS_MS.noTp : DSKP_REASONS_MS.badTp(String(raw))
+      rejected.push({ level, at, reason: `${DSKP_REASONS_MS.notStored} ${why}` })
       return
     }
     const key = `${nodeKey ?? ''}#${tp}`
     if (taken.has(key)) {
       skipped.duplicate += 1
-      rejected.push({ level, at, reason: `TP row not stored: tp ${String(tp)} appears twice for the same node` })
+      rejected.push({ level, at, reason: `${DSKP_REASONS_MS.notStored} ${DSKP_REASONS_MS.duplicateTp(String(tp))}` })
       return
     }
     taken.add(key)

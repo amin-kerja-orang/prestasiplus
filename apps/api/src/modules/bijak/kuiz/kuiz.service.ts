@@ -2,7 +2,7 @@ import { randomInt } from 'node:crypto'
 
 import { Inject, Injectable } from '@nestjs/common'
 import {
-  BIJAK_KUIZ_DEFAULT_COUNT,
+  normaliseKuizCount,
   BijakKuizCheckResultSchema,
   BijakKuizPaperPageSchema,
   BijakKuizResultSchema,
@@ -25,13 +25,14 @@ import { FilesService } from '../../files'
 import { PracticePorts, practiceRewardSource } from '../../practice/ports'
 import { type GradedAnswer, PracticeRepository, type ServedRef, type StoredCheck } from '../../practice/practice.repository'
 import { QuestionsRepository } from '../../questions'
-import type { QuestionRecord } from '../../questions/types'
+import type { QuestionRecord, StimulusGroupRecord } from '../../questions/types'
 import { PapersRepository } from '../papers/papers.repository'
 import {
   alreadyFinished,
   invalidAnswer,
   invalidValue,
   kuizPaperNotFound,
+  kuizPaperUnavailable,
   KUIZ_OVER_FETCH,
   noQuestions,
   quizNotFound,
@@ -47,7 +48,7 @@ import {
   stimuliWithTokens,
   toItem,
 } from './kuiz.mapper'
-
+import { ownStimuliOf } from './own-stimuli'
 export interface KuizCaller {
   userId: string
   /** True under Mod Pelajar: every row written is stamped `is_test`. */
@@ -56,6 +57,8 @@ export interface KuizCaller {
 
 /** Stored mode of a random quiz: decision U8 "disimpan sebagai sesi latih tubi". */
 const KUIZ_MODE = 'latih_tubi' as const
+/** Written to `practice_sessions.legacy_paper`: only a session started here is a kuiz session (a Latih Tubi session shares the mode). */
+const KUIZ_ORIGIN = 'bijak_kuiz'
 
 /**
  * Simulasi Kuiz (R1-B16). The random quiz is a practice session written through `PracticeRepository` (U8), so Soalan Aku
@@ -81,7 +84,7 @@ export class KuizService {
   // --- random quiz -------------------------------------------------------------------------------
 
   async start(caller: KuizCaller, req: BijakKuizStartRequest): Promise<BijakKuizSession> {
-    const count = req.count ?? BIJAK_KUIZ_DEFAULT_COUNT
+    const count = normaliseKuizCount(req.count)
     let subjectId: string | null = null
     if (req.subject !== undefined) {
       const subject = await this.curriculum.subjectByCode(req.subject)
@@ -111,6 +114,7 @@ export class KuizService {
       userId: caller.userId,
       clientUuid: null,
       mode: KUIZ_MODE,
+      origin: KUIZ_ORIGIN,
       subjectId,
       educationLevelId: null,
       difficulty: null,
@@ -137,7 +141,8 @@ export class KuizService {
     const now = this.clock.now()
     return this.prisma.transaction(async () => {
       const session = await this.practice.lockSession(sessionId, caller.userId, 'update')
-      if (!session) throw quizNotFound()
+      // Any other session of the pupil (a Latih Tubi one) is not a kuiz: 404, so check cannot read keys outside the BR-07 trial counter.
+      if (!session || session.legacyPaper !== KUIZ_ORIGIN) throw quizNotFound()
       if (session.status !== 'in_progress') throw alreadyFinished()
       const questionId = questionIdOfItem(req.itemId)
       const served = (await this.practice.sessionQuestions(session.id)).find((s) => s.questionId === questionId)
@@ -180,7 +185,7 @@ export class KuizService {
       { sessionId, userId: caller.userId, now, timeSpent: timeSpent ?? 0, isTest: caller.isTest },
       {
         guard: (session) => {
-          if (session.mode !== KUIZ_MODE) throw quizNotFound()
+          if (session.mode !== KUIZ_MODE || session.legacyPaper !== KUIZ_ORIGIN) throw quizNotFound()
           return Promise.resolve()
         },
         regrade: (_session, served, checks) => this.regrade(served, checks),
@@ -249,7 +254,11 @@ export class KuizService {
       [...s.placements].sort((a, b) => a.position - b.position).map((p) => ({ questionId: idToString(p.questionId), versionNo: p.pinnedVersionNo })),
     )
     const records = await this.questions.getVersions(pins)
-    const byKey = new Map(records.map((r) => [`${r.id}@${String(r.version.versionNo)}`, r]))
+    // A question whose required stimulus cannot be shown is skipped everywhere (page, score total, check), as in random mode
+    // (V2 §1.8 is silent on this case; deviation row UX-22). The pager and `markableTotal` count only what is shown.
+    const allPrepared = await this.prepare(records)
+    const preparedById = new Map(allPrepared.filter((p) => p.complete).map((p) => [`${p.record.id}@${String(p.record.version.versionNo)}`, p]))
+    const byKey = new Map([...preparedById].map(([k, p]) => [k, p.record]))
     // A section without a question to show is not a page (V2 PaperViewBuilder).
     const pages = sections
       .map((s) => ({
@@ -271,19 +280,43 @@ export class KuizService {
     const wanted = page ?? 1
     if (pages.length === 0) {
       if (wanted !== 1) throw invalidValue('page')
-      return BijakKuizPaperPageSchema.parse({ paper: head, page: 1, pageCount: 0, section: null, items: [], markableTotal })
+      return BijakKuizPaperPageSchema.parse({ paper: head, page: 1, pageCount: 0, section: null, items: [], groups: [], markableTotal })
     }
     const current = pages[wanted - 1]
     if (!current) throw invalidValue('page')
 
-    const prepared = await this.prepare(current.questions)
+    const prepared = current.questions.flatMap((q) => preparedById.get(`${q.id}@${String(q.version.versionNo)}`) ?? [])
     const tokens = await this.tokensOf(prepared.flatMap((p) => p.fileIds))
     const subjects = await this.subjectNames(current.questions)
-    const items: BijakKuizItem[] = []
-    for (const p of current.questions.map((q) => prepared.find((x) => x.record.id === q.id))) {
+    // D90: members of one stimulus group are kept together at the place of the first member, in group order, and the group
+    // stimulus is rendered once in `groups`, never repeated on each member.
+    const byId = new Map(prepared.map((p) => [p.record.id, p]))
+    const ordered: typeof prepared = []
+    const groupsSeen = new Set<string>()
+    for (const q of current.questions) {
+      const p = byId.get(q.id)
       if (!p) continue
-      const ctx = this.context(p, tokens, subjects)
-      for (const ref of leavesOf(p.record.id, p.record.version.parts)) items.push(toItem(p.record, ref, ctx))
+      const gid = p.record.groupId
+      if (gid === null) {
+        ordered.push(p)
+      } else if (!groupsSeen.has(gid)) {
+        groupsSeen.add(gid)
+        ordered.push(
+          ...current.questions
+            .filter((m) => m.groupId === gid)
+            .sort((a, b) => (a.groupPosition ?? 0) - (b.groupPosition ?? 0))
+            .flatMap((m) => byId.get(m.id) ?? []),
+        )
+      }
+    }
+    const groups: Array<{ id: string; stimuli: ReturnType<typeof stimuliWithTokens> }> = []
+    const items: BijakKuizItem[] = []
+    for (const p of ordered) {
+      const ctx = this.context(p, tokens, subjects, 'own')
+      const gid = p.record.groupId
+      if (gid !== null && !groups.some((g) => g.id === gid)) groups.push({ id: gid, stimuli: stimuliWithTokens(p.resolved, tokens, 'group') })
+      // The question's own stimuli are shown once, on its first leaf; later parts follow it without repeating them.
+      leavesOf(p.record.id, p.record.version.parts).forEach((ref, i) => items.push(toItem(p.record, ref, i === 0 ? ctx : { ...ctx, stimuli: [] })))
     }
     return BijakKuizPaperPageSchema.parse({
       paper: head,
@@ -291,6 +324,7 @@ export class KuizService {
       pageCount: pages.length,
       section: { id: idToString(current.section.id), label: current.section.label, instruction: current.section.instruction ?? null },
       items,
+      groups,
       markableTotal,
     })
   }
@@ -306,6 +340,8 @@ export class KuizService {
     const ref = record ? leafOf(record, req.itemId) : null
     const leaf = ref ? markableLeaf(ref) : null
     if (!record || !leaf) throw invalidAnswer('itemId')
+    // A question the page skips (its stimulus cannot be shown) is not marked either.
+    if (!(await this.prepare([record]))[0]?.complete) throw invalidAnswer('itemId')
     // V2: the option must belong to the part it claims.
     if (!leaf.options.some((o) => o.label === req.optionId)) throw invalidAnswer('optionId')
     return BijakKuizCheckResultSchema.parse({
@@ -321,6 +357,13 @@ export class KuizService {
     const paper = await this.papers.findPaper(idFromString(paperId))
     if (!paper || paper.status !== 'published') throw kuizPaperNotFound()
     if (paper.kind === 'jana' && paper.generatedForUserId?.toString() !== userId) throw kuizPaperNotFound()
+    // H-A13 / AC-R1-18.4: a paper that places a question the bank no longer serves (archived after Terbit) is refused. This is the
+    // first half of the new-sitting rule (`attempt-source.ts`: a live approved version; `is_active` is NOT checked, the placement is
+    // what the paper froze). It is NOT the whole rule: a new sitting also refuses a question the Bijak bridge cannot map (bridge
+    // refusals), which the kuiz does not check; the kuiz serves such a question or skips it on its own `complete` test. Nothing is
+    // shown or marked from a refused paper.
+    const placed = [...new Set(paper.sections.flatMap((s) => s.placements.map((p) => idToString(p.questionId))))]
+    if (placed.length === 0 || (await this.questions.getMany(placed, 'live')).filter((r) => r.version.status === 'approved').length < placed.length) throw kuizPaperUnavailable()
     return paper
   }
 
@@ -328,13 +371,12 @@ export class KuizService {
 
   /** Groups, linked pictures and whether every stimulus can be shown, for each record (one query per kind, not per record). */
   private async prepare(records: readonly QuestionRecord[]) {
-    const linked = new Set<string>()
-    for (const r of records) for (const id of r.version.stimulusIds) linked.add(id)
-    for (const r of records) for (const l of leavesOf(r.id, r.version.parts)) if (l.leaf.stimulusId) linked.add(l.leaf.stimulusId)
-    const assets = new Map((await this.questions.stimulusAssets([...linked])).map((a) => [a.id, a]))
+    const groupIds = [...new Set(records.flatMap((r) => (r.groupId === null ? [] : [r.groupId])))]
+    const groups = new Map<string, StimulusGroupRecord | null>((await this.questions.groupsByIds(groupIds)).map((g) => [g.id, g]))
+    const assets = await ownStimuliOf(this.questions, records, groups)
     const out = []
     for (const record of records) {
-      const group = record.groupId ? await this.questions.groupOf(record.id) : null
+      const group = record.groupId ? (groups.get(record.groupId) ?? null) : null
       const resolved = resolveStimuli(record, group, assets)
       const fileIds = [...resolved.entries.flatMap((e) => (e.file ? [e.file] : [])), ...optionImageIds(record)]
       out.push({ record, resolved, complete: resolved.complete, fileIds })
@@ -346,10 +388,11 @@ export class KuizService {
     p: { record: QuestionRecord; resolved: ReturnType<typeof resolveStimuli> },
     tokens: ReadonlyMap<string, string>,
     subjects: ReadonlyMap<string, string>,
+    part: 'all' | 'own' = 'all',
   ): ItemContext {
     const subjectId = p.record.version.subjectId
     return {
-      stimuli: stimuliWithTokens(p.resolved, tokens),
+      stimuli: stimuliWithTokens(p.resolved, tokens, part),
       subjectName: subjectId ? (subjects.get(subjectId) ?? null) : null,
       tokens,
       pick: (n) => randomInt(0, n),

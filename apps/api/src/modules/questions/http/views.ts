@@ -23,7 +23,8 @@ import type { z } from 'zod'
 import { toMytTimestamp } from '../../../common/time/myt'
 import { isLeaf, type QuestionLeaf } from '../grading'
 import { constantFields, difficultyLabelOf, flatFromVersion, kertasOfPaperCode, wireSourceType } from '../projection'
-import { stimulusTableOf } from '../stimulus-table'
+import { dskpCompleteness } from '../dskp-gate'
+import { stimulusTableParts } from '../stimulus-table'
 import type { QuestionDetailView, QuestionView, StimulusGroupRecord } from '../types'
 
 export type QuestionRow = z.output<typeof QuestionRowSchema>
@@ -41,6 +42,19 @@ const flatOf = (q: QuestionView) => flatFromVersion(q.version)
 /** Public token of an image file (what `POST /files` returned); the internal id when no token is known. */
 const imageOf = (q: QuestionView, id: string | null | undefined): string | null => (id ? (q.imageTokens?.[id] ?? id) : null)
 const imagesOf = (q: QuestionView, f: ReturnType<typeof flatOf>): (string | null)[] => (f.options === null ? [] : f.optionImageIds.map((id) => imageOf(q, id)))
+
+/** The part tree with each option picture named by its public token (what `POST /files` returned), like the flat `optionImages`. */
+function partsOf(q: QuestionView): QuestionPart[] {
+  const tokens = q.imageTokens
+  if (!tokens || Object.keys(tokens).length === 0) return q.version.parts
+  const swap = (list: readonly QuestionPart[]): QuestionPart[] =>
+    list.map((part) => {
+      if (!isLeaf(part)) return { ...part, children: swap(part.children as QuestionPart[]) } as QuestionPart
+      if (part.mode !== 'mcq' && part.mode !== 'pksk_choice') return part
+      return { ...part, options: part.options.map((o) => (o.imageId ? { ...o, imageId: tokens[o.imageId] ?? o.imageId } : o)) } as QuestionPart
+    })
+  return swap(q.version.parts)
+}
 
 /** The flat objective shape both the admin and the Guru views build on. */
 function flatBase(q: QuestionView) {
@@ -89,13 +103,16 @@ function flatBase(q: QuestionView) {
     createdAt: toMytTimestamp(q.createdAt),
     updatedAt: toMytTimestamp(q.updatedAt),
     usage: c.usage,
-    parts: v.parts,
+    parts: partsOf(q),
+    numberLabel: v.numberLabel,
     tag: { unitId: v.unitId, spIds: v.spIds, tp: v.difficultyTp },
     kbat: v.kbat,
     tagReview: v.tagReview,
     catalogueVersion: v.catalogueVersion,
   }
 }
+
+const table = (s: { kind: string; tableData?: unknown; bodyMs: string | null }) => stimulusTableParts(s.kind, s.tableData, s.bodyMs)
 
 /**
  * `tokens` maps an internal file id to its public token (the wire names a file by the token `POST /files` returned, the same
@@ -108,12 +125,13 @@ export function stimulusGroupView(g: StimulusGroupRecord, tokens: Record<string,
       id: s.id,
       kind: s.kind,
       label: s.label,
-      body: s.bodyMs === null && s.bodyEn === null ? null : { ms: s.bodyMs ?? s.bodyEn ?? '', ...(s.bodyEn === null || s.bodyMs === null ? {} : { en: s.bodyEn }) },
+      // A table read from the body is shown as the grid only (one reader: stimulus-table.ts).
+      body: table(s).bodyIsTable || (s.bodyMs === null && s.bodyEn === null) ? null : { ms: s.bodyMs ?? s.bodyEn ?? '', ...(s.bodyEn === null || s.bodyMs === null ? {} : { en: s.bodyEn }) },
       imageId: s.assetFileId === null ? null : (tokens[s.assetFileId] ?? s.assetFileId),
       alt: s.alt,
       ...(s.caption ? { caption: s.caption } : {}),
       ...(s.sourceCitation ? { sourceCitation: s.sourceCitation } : {}),
-      ...(s.kind === 'table' && stimulusTableOf(s.tableData) ? { tableData: QuestionStimulusTableSchema.parse(stimulusTableOf(s.tableData)) } : {}),
+      ...(table(s).table ? { tableData: QuestionStimulusTableSchema.parse(table(s).table) } : {}),
     })),
     ...(g.optionBank.length === 0
       ? {}
@@ -123,6 +141,10 @@ export function stimulusGroupView(g: StimulusGroupRecord, tokens: Record<string,
 }
 
 // --- admin ---------------------------------------------------------------------------------------
+
+/** R1-B05: DSKP completeness of the question as the admin sees it (the latest version): unit, SP and a TP and cognitive level on every leaf. */
+const dskpOf = (q: QuestionView) =>
+  dskpCompleteness({ parts: q.version.parts, tp: q.version.difficultyTp, unitId: q.version.unitId, spIds: q.version.spIds })
 
 export function rowView(q: QuestionView): QuestionRow {
   const f = flatOf(q)
@@ -138,8 +160,11 @@ export function rowView(q: QuestionView): QuestionRow {
     complianceStatus: c.complianceStatus,
     aiVerified: c.aiVerified,
     dskpTagged: q.version.spIds.length > 0,
+    dskpComplete: dskpOf(q).complete,
     sourceType: wireSourceType(q.sourceType),
     sourceFile: q.version.sourceFile,
+    kertas: kertasOfPaperCode(q.version.paperCode),
+    numberLabel: q.version.numberLabel,
     ...(f.essayTopics === null ? {} : { essayTopics: f.essayTopics }),
   })
 }
@@ -153,11 +178,13 @@ export function detailView(d: QuestionDetailView): QuestionDetailWire {
   void _parts
   return QuestionDetailSchema.parse({
     ...base,
-    parts: d.version.parts,
+    parts: partsOf(d),
     ...(d.stimulusGroup === null ? { stimulusGroup: null } : { stimulusGroup: stimulusGroupView(d.stimulusGroup, d.imageTokens) }),
     subject: d.subject,
     level: d.level,
     dskp: d.dskp,
+    ...(d.placements === undefined ? {} : { placements: d.placements, generatedPaperCount: d.generatedPaperCount ?? 0 }),
+    dskpStatus: dskpOf(d),
     createdBy: { id: d.createdById ?? NO_CREATOR, name: d.createdByName },
   })
 }

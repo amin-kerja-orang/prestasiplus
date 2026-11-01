@@ -9,6 +9,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import {
+  LATIH_TUBI_LABELS,
   QuizRunner,
   type StartSessionRequest,
   type StartSessionResponse,
@@ -37,6 +38,7 @@ const headerTitle = (s: StartSessionResponse): string => s.subject?.name ?? ''
     :start="start"
     :header-title="headerTitle"
     back-url="/spm/tahun-lepas"
+    :labels="LATIH_TUBI_LABELS"
     retry="restart"
     :report="{ source: 'spm' }"
   />

@@ -87,3 +87,7 @@ Then in the admin UI: a question in `review` shows the button "Terbitkan"; press
 - D91: the practice card (`OverviewRepository.bankMatrix`) counts ungrouped questions only (`q.group_id IS NULL`), the hub / draw rule. On the demo seed the BM card is 50 (it was 53 with the 3 SEED-GRP-PASAR group MCQs); the login count (`QUESTION_COUNT_SQL`) still counts group members (493).
 - The old `published` bulk action name is still accepted as an input alias of `approved` for one release (`parseBulk`), and answers never contain it.
 - New environment variables: none.
+
+## Filter bulk actions (R1 T47): "Luluskan Hasil Tapisan" and "Arkib Semua"
+
+`POST /api/questions/bulk-action/filter` processes at most 500 rows per run. Rows refused by the approve gate stay in the filter and are retried first on the next run, so if more than 500 matching rows are persistently refused the run makes no progress (accepted R1 limit). To proceed: fix the refused rows listed in `failed[]` (or archive them), then run again; or narrow the filter so it excludes them.

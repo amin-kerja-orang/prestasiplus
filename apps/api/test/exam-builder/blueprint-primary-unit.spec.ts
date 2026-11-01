@@ -58,6 +58,8 @@ describe('a blueprint cannot use a Darjah unit (D72)', () => {
     expect(res.status, JSON.stringify(res.body)).toBe(422)
     const error = BijakBlueprintInvalidErrorSchema.parse(res.body).error
     expect(error.message).toBe(STD.blueprintInvalid)
+    // R1-19.3 (T41): the exact BM text of the refusal
+    expect(error.message).toBe('Kontrak tidak boleh disimpan. Betulkan masalah yang disenaraikan.')
     expect(error.details.problems.map((p) => p.code)).toContain('QUOTA_UNIT')
     expect(await count(t.db, `select count(*) n from blueprints where code = 'MAT/DJH'`)).toBe(0)
   })

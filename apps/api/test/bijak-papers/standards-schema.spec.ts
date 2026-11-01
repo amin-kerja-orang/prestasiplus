@@ -61,7 +61,8 @@ describe('bijak standards schema (migration 0092_bijak_standards)', () => {
       expect.arrayContaining(['notes', 'sub_part_ramp', 'kbat_marks', 'level_share', 'serves_students', 'structure_hash', 'verification_id', 'cognitive_mix']),
     )
     expect(await cols('question_parts')).toEqual(expect.arrayContaining(['difficulty_tp', 'kbat', 'unit_node_id', 'form_origin']))
-    expect(await cols('question_parts')).not.toContain('cognitive_level')
+    // R1-B05 (migration 0102) adds the per-leaf cognitive level; 0092 itself did not (BJS-06 left it for the KBAT decision).
+    expect(await cols('question_parts')).toContain('cognitive_level')
     expect(await cols('question_versions')).toEqual(expect.arrayContaining(['kbat', 'tag_review', 'catalogue_version']))
     expect(await cols('question_versions')).toContain('cognitive_level') // kept for the replicated KBAT filters
     expect(await cols('papers')).toContain('standard_report')

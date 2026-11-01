@@ -18,9 +18,9 @@ export const schoolsScenarios: Scenario[] = [
       ctx.expectStatus(await admin.request('GET', '/schools?all=1'), 200)
       const code = nextTag('KNF')
       const body = {
-        name: 'SK Konformans',
+        name: 'SMK Konformans',
         code,
-        type: 'SK',
+        type: 'SMK',
         state: 'Selangor',
         district: 'PPD Gombak',
         city: 'GOMBAK',
@@ -30,7 +30,7 @@ export const schoolsScenarios: Scenario[] = [
       ctx.expectStatus(created, 201)
       const id = String(dataOf(created).id)
       ctx.expectStatus(await admin.request('GET', `/admin/schools/${id}`), 200)
-      ctx.expectStatus(await admin.request('PUT', `/admin/schools/${id}`, { body: { ...body, name: 'SK Konformans Dua' } }), 200)
+      ctx.expectStatus(await admin.request('PUT', `/admin/schools/${id}`, { body: { ...body, name: 'SMK Konformans Dua' } }), 200)
       const off = await admin.request('POST', `/admin/schools/${id}/toggle`)
       ctx.expectStatus(off, 200)
       ctx.check(dataOf(off).isActive === false, 'toggle did not switch the school off')

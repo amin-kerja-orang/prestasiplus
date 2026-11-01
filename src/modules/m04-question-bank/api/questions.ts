@@ -83,6 +83,8 @@ export interface QuestionRow {
   dskpTagged: boolean
   sourceType: SourceType | null
   sourceFile: string | null
+  /** R1-H-A7: only on an `essay_choice` (esei pilihan) question: its topics. */
+  essayTopics?: EssayTopic[]
 }
 
 export interface QuestionListQuery {
@@ -126,8 +128,16 @@ export interface PkskOption {
 }
 
 /** DATA-M04-01 as the API returns it (the internal count facets stay in the store). */
+/** A topic of an esei pilihan question. */
+export interface EssayTopic {
+  id: string
+  label: string
+}
+
 export interface Question {
   id: number
+  /** R1-H-A7: only on an `essay_choice` (esei pilihan) question: its topics. */
+  essayTopics?: EssayTopic[]
   subjectId: number | null
   educationLevelId: number | null
   difficultyLevel: number
@@ -145,6 +155,11 @@ export interface Question {
   explanation: string | null
   /** v2 admin response: the paper kertas, or null. */
   kertas?: '1' | '2' | '3' | null
+  /**
+   * The part tree of a v2 row (`parts`): the "Aras pemikiran" lives on the LEAF (`parts[0].cognitiveLevel`), never at the top
+   * (T33). A branch part has `children` and no `mode`.
+   */
+  parts?: { mode?: string; cognitiveLevel?: string | null; children?: unknown[] }[]
   aiExplanation: AiExplanation | null
   language: QuestionLanguage
   pointsValue: number
@@ -240,6 +255,8 @@ export interface QuestionInputBody {
   pointsValue?: number | string | null
   /** Kertas '1' | '2' | '3'; '' or null = none (clears on edit). Omitted keeps. http mode only. */
   kertas?: string | null
+  /** "Aras pemikiran" (T33 six levels); '' or null = none (clears on edit). Omitted keeps. */
+  cognitiveLevel?: string | null
   /** Edit, http mode: the saved option image tokens, kept when a later option gets a new image. */
   savedOptionImages?: readonly (string | null)[]
   /** Edit only: remove the saved question image / option image `i`. */
@@ -263,6 +280,7 @@ export function toQuestionFormData(input: QuestionInputBody): FormData {
   put('questionText', input.questionText)
   put('dskpSpId', input.dskpSpId)
   put('curriculumChapterId', input.curriculumChapterId)
+  put('cognitiveLevel', input.cognitiveLevel)
   if (input.questionImage) form.append('questionImage', input.questionImage)
   input.options?.forEach((text, i) => {
     form.append(`options[${String(i)}]`, text)
@@ -361,6 +379,7 @@ export function toQuestionJson(
   }
   if (input.explanation !== undefined) body.explanation = blankToNull(input.explanation)
   if (input.kertas !== undefined) body.kertas = input.kertas === '' ? null : input.kertas
+  if (input.cognitiveLevel !== undefined) body.cognitiveLevel = input.cognitiveLevel === '' ? null : input.cognitiveLevel
   if (input.removeQuestionImage) body.removeQuestionImage = true
   if (images.questionImageFileId !== undefined) body.questionImageFileId = images.questionImageFileId
   if (images.optionImageFileIds !== undefined) body.optionImageFileIds = images.optionImageFileIds
@@ -484,7 +503,8 @@ export async function bulkQuestionAction(
   const result = await api.post<QuestionMutation<{ affected: number }>>(
     '/api/questions/bulk-action',
     {
-      body: { action: http ? wire(BULK_ACTION_TO_WIRE, action) : action, ids },
+      // http: the contract takes ids as strings (`QuestionBulkRequestSchema`); numbers answer 422 "Senarai soalan tidak sah."
+      body: { action: http ? wire(BULK_ACTION_TO_WIRE, action) : action, ids: http ? ids.map(String) : ids },
       raw: true,
     },
   )

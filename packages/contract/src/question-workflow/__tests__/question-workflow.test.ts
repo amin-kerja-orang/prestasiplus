@@ -36,6 +36,7 @@ import {
   QuestionImportRunSchema,
   QuestionQualityAuditedSchema,
   QuestionQualitySummarySchema,
+  QuestionReportContextSchema,
   QuestionReportCreateRequestSchema,
   QuestionReportCreatedSchema,
   QuestionReportListResponseSchema,
@@ -77,10 +78,10 @@ describe('lifecycle (D54a codes, v2-question-bank 4.1)', () => {
     for (const v of ['pending_review', 'rejected', 'pending', 'Draf', '']) expect(ok(QuestionWorkflowStatusSchema, v)).toBe(false)
   })
 
-  it('allows exactly the six pairs of the table, walked over all 4x4 pairs per actor', () => {
-    const allowed = new Set(['draft>review', 'draft>archived', 'review>approved', 'review>draft', 'approved>archived', 'archived>draft'])
-    expect(QUESTION_WORKFLOW_TRANSITIONS).toHaveLength(6)
-    const adminOnly = new Set(['review>approved', 'review>draft', 'approved>archived', 'archived>draft'])
+  it('allows exactly the seven pairs of the table, walked over all 4x4 pairs per actor', () => {
+    const allowed = new Set(['draft>review', 'draft>archived', 'review>approved', 'review>draft', 'review>archived', 'approved>archived', 'archived>draft'])
+    expect(QUESTION_WORKFLOW_TRANSITIONS).toHaveLength(7)
+    const adminOnly = new Set(['review>approved', 'review>draft', 'review>archived', 'approved>archived', 'archived>draft'])
     let seen = 0
     for (const actor of ['admin', 'owner_teacher'] as QuestionWorkflowActor[]) {
       for (const from of QUESTION_WORKFLOW_STATUSES) {
@@ -107,7 +108,8 @@ describe('lifecycle (D54a codes, v2-question-bank 4.1)', () => {
     expect(gate('review', 'approved')).toBe('approve')
     expect(gate('approved', 'archived')).toBeNull()
     const reasonPairs = QUESTION_WORKFLOW_TRANSITIONS.filter((t) => t.reasonRequired).map((t) => `${t.from}>${t.to}`)
-    expect(reasonPairs.sort()).toEqual(['approved>archived', 'review>draft'])
+    // REQ-C-013: an archive needs no reason (V2's dialog has none); only the return from Semakan to Draf does.
+    expect(reasonPairs.sort()).toEqual(['review>draft'])
   })
 
   it('parses a status event row', () => {
@@ -120,6 +122,16 @@ describe('lifecycle (D54a codes, v2-question-bank 4.1)', () => {
 
 describe('reports', () => {
   const create = { questionId: '41', reasons: ['wrong_answer'] }
+
+  it('the report context is a strict uuid attempt with an optional paper id (R1-T42)', () => {
+    const attemptId = '3f6c1f2a-8f3e-4c53-9a53-2d3f2f6f1a11'
+    expect(ok(QuestionReportContextSchema, { attemptId })).toBe(true)
+    expect(ok(QuestionReportContextSchema, { attemptId, paperId: '12' })).toBe(true)
+    expect(ok(QuestionReportContextSchema, { attemptId: 'abc' })).toBe(false)
+    expect(ok(QuestionReportContextSchema, { attemptId, paper: 'palsu' })).toBe(false) // strict: no other key
+    expect(ok(QuestionReportContextSchema, { paperId: '12' })).toBe(false)
+    expect(ok(QuestionReportCreateRequestSchema, { ...create, attemptId, paperId: '12' })).toBe(true)
+  })
 
   it('accepts a minimal and a full create body', () => {
     expect(ok(QuestionReportCreateRequestSchema, create)).toBe(true)

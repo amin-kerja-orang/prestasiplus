@@ -56,6 +56,7 @@ export const SERVABILITY_REASON_CODES = [
   'bridge_refused',
   'no_marks',
   'tag_review',
+  'stimulus_shared_ungrouped',
 ] as const
 export const ServabilityReasonCodeSchema = z.enum(SERVABILITY_REASON_CODES).meta({ id: 'ServabilityReasonCode' })
 export type ServabilityReasonCode = z.infer<typeof ServabilityReasonCodeSchema>
@@ -90,6 +91,8 @@ export const SERVABILITY_REASON_MS: Readonly<Record<ServabilityReasonCode, strin
   bridge_refused: 'Tidak dapat dihidangkan di {aktiviti}.',
   no_marks: 'Tiada markah pada bahagian soalan.',
   tag_review: 'Perlu semakan tag DSKP.',
+  // [PROPOSED] (V2 has no phrase; D90: a stimulus shared by several questions must be a group).
+  stimulus_shared_ungrouped: 'Rangsangan ini dikongsi oleh beberapa soalan tetapi bukan kumpulan rangsangan — jadikan soalan-soalan itu satu kumpulan rangsangan (D90).',
 }
 
 /** "Tidak dihidangkan kerana {sebab}." (design 9.3, the .cloud exclusion line). `phrase` continues "kerana ...". */
@@ -123,7 +126,12 @@ export const ServabilityActivityResultSchema = z
   .meta({ id: 'ServabilityActivityResult' })
 export type ServabilityActivityResult = z.infer<typeof ServabilityActivityResultSchema>
 
-/** "Dilihat murid di {servedCount} daripada {total}". */
+/**
+ * "Dilihat murid di {servedCount} daripada {total}". `total` is always the number of rows returned (`activities.length`, 6 in R1),
+ * never a literal: design section 9.1/9.2 says "7" because it also counts the Tracking A, Struktur/Subjektif, Permainan and PKSK
+ * families, which R1 does not serve from the bank (D92). The sentence stays honest by counting rows (design 9.2 counting rule);
+ * a client must print `total`, not a constant.
+ */
 export const ServabilityReportSchema = z
   .strictObject({
     questionId: IdSchema,

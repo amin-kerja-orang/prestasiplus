@@ -60,6 +60,8 @@ export interface SittablePaper {
 
 /** Most times a refused question is dropped and the paper composed again before the request answers 503 GENERATE_LIMIT. */
 const MAX_BRIDGE_ROUNDS = 8
+/** Ids per read when the whole Jana pool is checked against the question port (REQ-B-020). */
+const SERVABLE_CHUNK = 500
 
 /**
  * Bijak SPM papers (M28, BE-15): Kertas Pilihan list and cover, the Kontrak list, the subject hub
@@ -86,7 +88,12 @@ export class PapersService {
       this.infoFor(papers),
       this.ports.progressSource.progressFor(userId, papers.map((p) => idToString(p.id))),
     ])
-    return papers.map((p) => this.summary(p, subjects, info, progress))
+    // H-A13: a published paper that places a question the bank no longer serves (archived) cannot start a new sitting
+    // (the attempt source answers 403 with a BM line), so it is not offered, like a paper without a code or a section.
+    // Lead decision: a pupil who has ANY sitting on it, open or submitted, keeps the card, so the result and Semakan stay reachable.
+    const listed = papers.filter((p) => progress.has(idToString(p.id)) || p.sections.every((s) => s.placements.every((pl) => info.has(idToString(pl.questionId)))))
+    const marked = await this.withPinned(info, listed)
+    return listed.map((p) => this.summary(p, subjects, marked, progress))
   }
 
   async getCover(userId: string, paperId: string): Promise<BijakPaperCover> {
@@ -96,15 +103,16 @@ export class PapersService {
       this.infoFor([paper]),
       this.ports.progressSource.progressFor(userId, [idToString(paper.id)]),
     ])
+    const marked = await this.withPinned(info, [paper])
     return {
-      ...this.summary(paper, subjects, info, progress),
+      ...this.summary(paper, subjects, marked, progress),
       instructions: paper.instructions,
       reference: referencePanels(paper.referenceSheets),
       sections: paper.sections.map((s) => {
         const rule = ruleOf(s.ruleType, s.ruleN)
         return {
           label: s.label,
-          marks: this.sectionMarks(s, info),
+          marks: this.sectionMarks(s, marked),
           instruction: sectionInstruction(s.instruction, rule, s.placements.length),
           questionCount: s.placements.length,
           compulsory: s.compulsory,
@@ -213,7 +221,12 @@ export class PapersService {
       const servable = await this.ports.questionSource.getMany(composedIds)
       const refused = new Set(composedIds.filter((id) => !servable.has(id)))
       if (refused.size === 0) break
-      candidates = candidates.filter((f) => !refused.has(f.id))
+      if (round === 0) {
+        // REQ-B-020: the first refusal shows the pool holds questions the bridge refuses. Filtering only the composed ones would need one
+        // round per refusal (a pool full of them ends in 503 while a servable paper exists), so the whole pool is filtered ONCE here.
+        const ok = await this.servableIds(candidates.map((f) => f.id))
+        candidates = candidates.filter((f) => ok.has(f.id))
+      } else candidates = candidates.filter((f) => !refused.has(f.id))
       outcome = composeStandardPaper(std, candidates, { seed, seen })
       if (round === MAX_BRIDGE_ROUNDS - 1 && outcome.ok) throw generateLimit()
     }
@@ -279,10 +292,32 @@ export class PapersService {
     return paper
   }
 
+  /** Ids the question port can serve, asked in chunks (one read per chunk). */
+  private async servableIds(ids: readonly string[]): Promise<ReadonlySet<string>> {
+    const ok = new Set<string>()
+    for (let i = 0; i < ids.length; i += SERVABLE_CHUNK) {
+      for (const id of (await this.ports.questionSource.getMany(ids.slice(i, i + SERVABLE_CHUNK))).keys()) ok.add(id)
+    }
+    return ok
+  }
+
   private async infoFor(papers: readonly PaperWithTree[]): Promise<Info> {
     const ids = new Set<string>()
     for (const p of papers) for (const s of p.sections) for (const pl of s.placements) ids.add(idToString(pl.questionId))
     return ids.size === 0 ? new Map() : this.ports.questionSource.getMany([...ids])
+  }
+
+  /**
+   * `info` (the live, servable questions) plus the pinned info of every placed question the bank no longer serves, so the marks of a
+   * paper do not drop to 0 after "Arkib" (H-A13). Eligibility is still decided on `info` alone.
+   */
+  private async withPinned(info: Info, papers: readonly PaperWithTree[]): Promise<Info> {
+    const missing = new Set<string>()
+    for (const p of papers) for (const s of p.sections) for (const pl of s.placements) if (!info.has(idToString(pl.questionId))) missing.add(idToString(pl.questionId))
+    const getPinned = this.ports.questionSource.getPinned
+    if (missing.size === 0 || !getPinned) return info
+    const pinned = await getPinned.call(this.ports.questionSource, [...missing])
+    return new Map([...pinned, ...info])
   }
 
   private sectionMarks(section: PaperWithTree['sections'][number], info: Info): number {

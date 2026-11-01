@@ -5,6 +5,8 @@ import type { ServabilityReport } from '@pp/contract'
 import { idFromString, idToString, isIdString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { optionImageIds } from '../../bijak/kuiz/kuiz.mapper'
+import { withLeafStimuli } from '../../bijak/kuiz/own-stimuli'
+import { outsideStimuliOf } from '../../bijak/question-bridge/outside-media'
 import { QuestionsBijakPoolSource } from '../bijak-pool'
 import { QuestionsRepository } from '../questions.repository'
 import type { QuestionRecord, StimulusGroupRecord } from '../types'
@@ -18,8 +20,8 @@ const big = (ids: Iterable<string>): bigint[] => [...new Set(ids)].map((id) => i
  * facts table: it asks the same readers as the draws (bank, practice and kuiz mappers, Bijak bridge, pool facts) and the database
  * for the level, subject, paper and file rows. A question the bank does not return (unknown, PKSK, Darjah) has no report.
  *
- * Cost: a handful of statements per call, independent of the number of ids, plus one Jana pool read per distinct subject (the pool
- * facts are subject-wide today). Measure before deciding on a facts table (D92).
+ * Cost: a handful of statements per call, plus one Jana pool read per distinct subject, narrowed to the requested ids (R1-T30; before
+ * it read the whole subject). No facts table (D92).
  */
 @Injectable()
 export class ServabilityService {
@@ -51,17 +53,30 @@ export class ServabilityService {
     if (latest.size === 0) return new Map()
     const live = new Map((await this.questions.getMany([...latest.keys()], 'live')).map((r) => [r.id, r]))
     const records = [...live.values()]
+    // The bridge reads the live version for a NEW sitting (H-A13): a question without one is reported `archived` or `not_approved`,
+    // and its running sittings are readability, not servability, so no other version needs its stimuli or group here.
+    const bridged = records
+    // Level and subject belong to the version pupils are served (live), so the draws and these facts read the same row. Only a
+    // question with no live version falls back to its latest one (its status reason decides, the level and subject never serve it).
+    const effective = [...latest].map(([id, l]) => live.get(id) ?? l)
 
-    const [levels, subjects, groups, linkedAssets, onPaper, jana] = await Promise.all([
-      this.levelsOf([...latest.values()].flatMap((r) => (r.version.educationLevelId ? [r.version.educationLevelId] : []))),
-      this.subjectsOf([...latest.values()]),
-      this.groupsOf(records),
-      this.assetsOf(records),
+    const [levels, subjects, groups, onPaper, jana] = await Promise.all([
+      this.levelsOf(effective.flatMap((r) => (r.version.educationLevelId ? [r.version.educationLevelId] : []))),
+      this.subjectsOf(effective),
+      this.groupsOf(bridged),
       this.onPublishedPaper([...live.keys()]),
       this.janaFactsOf(records),
     ])
-    const tokens = await this.tokensOf(records, groups, linkedAssets)
+    // ONE read of the own stimuli (versionStimuli + stimulusUseCounts): the bridge's `outside` and the kuiz's `linkedAssets` are both
+    // built from it, so the facts cannot disagree and the pinned read runs once.
+    const own = await outsideStimuliOf(this.questions, bridged, groups)
+    const linkedAssets = await withLeafStimuli(this.questions, records, own.outside, groups)
+    const tokens = await this.tokensOf(bridged, groups, linkedAssets, own.fileIds)
 
+    const bridgeGroupOf = (id: string): StimulusGroupRecord | null => {
+      const gid = live.get(id)?.groupId
+      return gid ? (groups.get(gid) ?? null) : null
+    }
     const out = new Map<string, ServabilityFacts>()
     for (const [id, l] of latest) {
       const v = (live.get(id) ?? l).version
@@ -70,8 +85,9 @@ export class ServabilityService {
         latest: l,
         level: v.educationLevelId ? (levels.get(v.educationLevelId) ?? null) : null,
         subject: subjects.get(`${v.subjectId ?? ''}:${v.educationLevelId ?? ''}`) ?? null,
-        group: live.get(id)?.groupId ? (groups.get(live.get(id)!.groupId!) ?? null) : null,
+        group: bridgeGroupOf(id),
         linkedAssets,
+        outside: own.outside,
         fileTokens: tokens,
         onPublishedPaper: onPaper.has(id),
         janaFacts: jana.get(id) ?? null,
@@ -119,30 +135,17 @@ export class ServabilityService {
   }
 
   private async groupsOf(records: readonly QuestionRecord[]): Promise<Map<string, StimulusGroupRecord>> {
-    const out = new Map<string, StimulusGroupRecord>()
-    for (const r of records) {
-      if (r.groupId === null || out.has(r.groupId)) continue
-      const group = await this.questions.groupOf(r.id)
-      if (group) out.set(r.groupId, group)
-    }
-    return out
-  }
-
-  private async assetsOf(records: readonly QuestionRecord[]): Promise<Map<string, { kind: string; assetFileId: string | null }>> {
-    const linked = new Set<string>()
-    for (const r of records) {
-      for (const id of r.version.stimulusIds) linked.add(id)
-      for (const part of walkLeaves(r.version.parts)) if (part.stimulusId) linked.add(part.stimulusId)
-    }
-    return new Map((await this.questions.stimulusAssets([...linked])).map((a) => [a.id, { kind: a.kind, assetFileId: a.assetFileId }]))
+    const ids = [...new Set(records.flatMap((r) => (r.groupId === null ? [] : [r.groupId])))]
+    return new Map((await this.questions.groupsByIds(ids)).map((g) => [g.id, g]))
   }
 
   private async tokensOf(
     records: readonly QuestionRecord[],
     groups: ReadonlyMap<string, StimulusGroupRecord>,
     assets: ReadonlyMap<string, { assetFileId: string | null }>,
+    ownFiles: ReadonlySet<string>,
   ): Promise<Map<string, string>> {
-    const files = new Set<string>()
+    const files = new Set<string>(ownFiles)
     for (const g of groups.values()) for (const s of g.stimuli) if (s.assetFileId) files.add(s.assetFileId)
     for (const a of assets.values()) if (a.assetFileId) files.add(a.assetFileId)
     for (const r of records) for (const id of optionImageIds(r)) files.add(id)
@@ -163,19 +166,14 @@ export class ServabilityService {
     return new Set(rows.map((r) => idToString(r.question_id)))
   }
 
-  /** Jana pool facts of the live versions. The pool reads a whole subject, so it is read once per distinct subject. */
+  /** Jana pool facts of the live versions, read for those question ids only (per subject), never the whole subject. */
   private async janaFactsOf(records: readonly QuestionRecord[]): Promise<Map<string, QuestionFacts>> {
-    const wanted = new Set(records.map((r) => r.id))
-    const subjects = [...new Set(records.flatMap((r) => (r.version.subjectId ? [r.version.subjectId] : [])))]
+    const bySubject = new Map<string, string[]>()
+    for (const r of records) if (r.version.subjectId) bySubject.set(r.version.subjectId, [...(bySubject.get(r.version.subjectId) ?? []), r.id])
     const out = new Map<string, QuestionFacts>()
-    for (const subjectId of subjects) {
-      for (const facts of await this.pool.candidatesOf(subjectId)) if (wanted.has(facts.id)) out.set(facts.id, facts)
+    for (const [subjectId, ids] of bySubject) {
+      for (const facts of await this.pool.candidatesOf(subjectId, ids)) out.set(facts.id, facts)
     }
     return out
   }
-}
-
-type Leaf = Extract<QuestionRecord['version']['parts'][number], { mode: string }>
-function walkLeaves(parts: QuestionRecord['version']['parts']): Leaf[] {
-  return parts.flatMap((p) => ('mode' in p ? [p as Leaf] : walkLeaves(p.children as QuestionRecord['version']['parts'])))
 }

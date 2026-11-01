@@ -18,9 +18,10 @@ const PARK = 5000
  *
  * Rules:
  * - a member exists, is not a PKSK question, is active and not archived, and is in no other group;
- * - the members of a group share a subject (the level may differ: an SPM figure can serve a Tingkatan 4 and a Tingkatan 5 question);
+ * - the members of a group share a subject (the level may differ: an SPM figure can serve a Tingkatan 4 and a Tingkatan 5 question) and,
+ *   when it is set, the kertas (a question with no kertas fits any);
  * - at most 40 members;
- * - SERVED LOCK: a question shown to pupils (active, live version approved) cannot be added to, removed from or reordered within a
+ * - SERVED LOCK: a question shown to pupils (active with an approved live version, or pinned by a published paper) cannot be added to, removed from or reordered within a
  *   group (it must be edited as a draft or archived first); the group's served members keep their relative order and stay. New draft
  *   or review questions can still be added, appended at the end, so a group can be built up (and intake can add the next item of a
  *   figure) while its first question is already served.
@@ -76,13 +77,17 @@ export class GroupMembers {
       if (!f.active || f.archived) throw fail({ [field]: M.memberInactive })
       if (f.served) throw conflict(M.memberServed)
     }
-    // One subject across the group.
-    const pairs = new Map<string, true>()
+    // One subject across the group, and one kertas among the members that have one.
+    const subjects = new Set<string>()
+    const kertas = new Set<string>()
     for (const q of ordered) {
       const f = facts.get(q)
-      if (f !== undefined) pairs.set(f.subjectId ?? '', true)
+      if (f === undefined) continue
+      subjects.add(f.subjectId ?? '')
+      if (f.kertas !== null) kertas.add(f.kertas)
     }
-    if (pairs.size > 1) throw fail({ [field]: M.memberMixed })
+    if (subjects.size > 1) throw fail({ [field]: M.memberMixed })
+    if (kertas.size > 1) throw fail({ [field]: M.memberKertas })
 
     for (const q of removed) await this.repo.detachQuestion(q)
     if (added.length > 0) await this.repo.attachQuestions(groupId, added, PARK)
@@ -92,18 +97,32 @@ export class GroupMembers {
   }
 
   /**
-   * A NEW question joins the group while it is created (`stimulusGroupId` on POST /api/questions): locks the group, checks the cap and
-   * that the question has the group's subject, and returns its position (the end). A new question is never served.
+   * A NEW question joins the group while it is created (`stimulusGroupId` on POST /api/questions): locks the group, checks the cap, that the
+   * question has the group's subject and a compatible kertas, and returns its position (the end). The question is not in the group yet, so
+   * it is not counted; it can be served at once only when it is created already approved (an admin shortcut), which does not bind the group.
    */
-  async joinNew(groupId: string, subjectId: string | null): Promise<number> {
+  async joinNew(groupId: string, subjectId: string | null, kertas: '1' | '2' | '3' | null): Promise<number> {
     await this.lock(groupId).catch(() => {
-      throw fail({ stimulusGroupId: 'Kumpulan stimulus tidak sah.' })
+      throw fail({ stimulusGroupId: M.groupInvalid })
     })
     const current = await this.repo.memberIds(groupId)
     if (current.length >= STIMULUS_LIMITS.groupQuestions) throw fail({ stimulusGroupId: M.membersTooMany })
-    const pairs = await this.repo.memberSubjectLevels(groupId)
-    if (pairs.some((p) => p.subjectId !== subjectId)) throw fail({ stimulusGroupId: M.memberMixed })
+    this.assertFits(await this.repo.memberTraits(groupId), subjectId, kertas, 'stimulusGroupId')
     return current.length === 0 ? 1 : (await this.repo.maxPosition(groupId)) + 1
+  }
+
+  /**
+   * A member's subject or kertas changes (PUT /api/questions on a grouped question): it must still fit the other members, else the group
+   * would hold two subjects (or two kertas). The only member of a group may change freely. Runs inside the edit transaction.
+   */
+  async assertTraitChange(groupId: string, questionId: string, subjectId: string | null, kertas: '1' | '2' | '3' | null): Promise<void> {
+    await this.lock(groupId)
+    this.assertFits(await this.repo.memberTraits(groupId, questionId), subjectId, kertas, 'subjectId')
+  }
+
+  private assertFits(others: readonly { subjectId: string | null; kertas: '1' | '2' | '3' | null }[], subjectId: string | null, kertas: '1' | '2' | '3' | null, field: string): void {
+    if (others.some((o) => o.subjectId !== subjectId)) throw fail({ [field]: M.memberMixed })
+    if (kertas !== null && others.some((o) => o.kertas !== null && o.kertas !== kertas)) throw fail({ [field === 'subjectId' ? 'kertas' : field]: M.memberKertas })
   }
 
   /**
@@ -126,7 +145,7 @@ export class GroupMembers {
     }
     if (to !== null) {
       await this.lock(to).catch(() => {
-        throw fail({ stimulusGroupId: 'Kumpulan stimulus tidak sah.' })
+        throw fail({ stimulusGroupId: M.groupInvalid })
       })
       const current = await this.repo.memberIds(to)
       await this.set(to, [...current, questionId], 'stimulusGroupId')

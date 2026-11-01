@@ -355,6 +355,10 @@ Names only. Values live only in the platform dashboard or the operator's shell. 
 10. **Load the launch content** (D-6) and publish it through Admin Pusat.
 11. **Go/no-go** (§4.3), then open access.
 
+### 4.1a Simulasi Kuiz sessions open at deploy (R1-B16)
+
+A random Kuiz session is a practice session marked `practice_sessions.legacy_paper = 'bijak_kuiz'`. `POST /api/bijak/kuiz/sessions/:id/check` and `/finish` answer 404 for a session without the marker. A kuiz session that was started by a build before the marker existed has no marker, so a pupil with such a quiz open at deploy gets "Kuiz tidak ditemui" on the next Semak and must start a new quiz. Nothing is lost beyond that quiz (nothing is stored for the per-paper quiz). No data fix is needed; if wanted, `update practice_sessions set legacy_paper = 'bijak_kuiz' where status = 'in_progress' and mode = 'latih_tubi' and <started by the kuiz>` cannot be told apart from a Latih Tubi session, so it is not recommended.
+
 ### 4.2 Smoke steps
 
 Run `scripts/demo-smoke.sh` (or `npm run smoke:bijak`, which is on the FE branch `be/integration-frontend` and not in this tree's `package.json`) with `EXPECT_SECURE=1`:

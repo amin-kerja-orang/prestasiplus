@@ -25,8 +25,10 @@ import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { featureModules } from '../../src/modules'
 import { QuestionBankBuilderSource } from '../../src/modules/exam/builder'
-import { PocBuilderQuestionSource } from '../../src/modules/exam/builder/poc-builder-source'
+import { plugPocAttempts, plugPocPapers } from '../support/poc/plug'
+import { PocBuilderQuestionSource } from '../support/poc/builder-source'
 import { battleConformanceEnv, seedBattleConformance } from './battle/fixtures'
+import { serveSeededBlueprints, setPocMarkBudgets } from '../support/serve-blueprints'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
 /** Fixed "now" (Malaysia time) of the injected clock, as the other integration suites use. */
@@ -92,7 +94,6 @@ export function conformanceEnv(dbUrl: string, storageDir: string): Record<string
     INTAKE_MAX_FILE_MB: undefined,
     UPLOAD_RATE_PER_MINUTE: '1000', // the schema maximum
     FILE_READS_PER_MINUTE: '10000', // the schema maximum
-    BIJAK_POC_QUESTIONS: 'true', // the conformance seed is the demo seed (staging): PoC questions served
     // BE-37 intake: volume ceilings raised (a whole suite creates many batches as one teacher) and the job worker
     // ticks fast, so a scenario can wait for a batch to be read. OCR stays off (OCR_ENGINE unset).
     INTAKE_MAX_ACTIVE_BATCHES: '100',
@@ -125,6 +126,14 @@ export interface BootOptions {
 export async function bootConformanceApp(opts: BootOptions = {}): Promise<ConformanceApp> {
   const db = await createTestDatabase()
   await runSeeds(CONFORMANCE_SEEDS, { prisma: db.prisma })
+  // The seeded second demo school (DEMO002) is primary (type SK, a Darjah 4 roster pupil). Secondary-only (D72) hides every primary
+  // school and Darjah pupil from the lists and reads, so the scenarios that need "another school" would find none. The conformance
+  // run makes it a secondary school with one Tingkatan 2 pupil (no teacher, no T4/T5 pupil, as the scenarios expect).
+  await db.prisma.school.update({ where: { code: 'DEMO002' }, data: { type: 'SMK', name: 'SMK Demo Dua' } })
+  await db.prisma.user.updateMany({ where: { username: 'murid01', school: { code: 'DEMO002' } }, data: { grade: 8, classLabel: '2 Cekap' } })
+  // A pupil generates from a serving (Disahkan) blueprint only (D76, migration 0092); the seeded ones are Spec. The suite verifies them as an admin would.
+  await serveSeededBlueprints(db)
+  await setPocMarkBudgets(db)
   await seedBattleConformance(db.prisma) // BE-44: published MCQs so a battle queue can draw its 10 questions
   const dir = await mkdtemp(join(tmpdir(), 'pp-conformance-'))
 
@@ -149,6 +158,9 @@ export async function bootConformanceApp(opts: BootOptions = {}): Promise<Confor
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)
   await app.init()
+  // R1-B07: the PoC fixture is a test double now (the API serves the bank only); the shared scenarios use the seeded PoC papers.
+  plugPocAttempts(app)
+  plugPocPapers(app)
 
   return {
     app,

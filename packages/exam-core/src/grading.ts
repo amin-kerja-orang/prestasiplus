@@ -51,9 +51,13 @@ function wordCount(s: string): number {
   return t ? t.split(' ').length : 0
 }
 
-export function isBlank(a: PartAnswer | undefined): boolean {
+/**
+ * A part with no answer. For `essay_choice` (REQ-B-021b) the topic picked (`choice`) is not an answer by itself: with no essay text
+ * the part is blank, so it is not sent to review or self-mark. For every other mode a `choice` is the answer (MCQ, match_letter).
+ */
+export function isBlank(a: PartAnswer | undefined, kind?: LeafKind | 'mcq'): boolean {
   if (!a) return true
-  if (a.choice) return false
+  if (a.choice && kind !== 'essay_choice') return false
   if (a.final?.trim()) return false
   if (a.text?.trim()) return false
   if (a.steps?.some((x) => x.trim())) return false
@@ -244,7 +248,7 @@ export function gradePart({ part, scheme, answer, ctx }: GradeInput): PartResult
     answer: answer ?? {},
     scheme: reveal(scheme, part),
   }
-  const blank = isBlank(answer)
+  const blank = isBlank(answer, part.kind)
   const a = answer ?? {}
 
   if (scheme.kind === 'option' || scheme.kind === 'mapping') {

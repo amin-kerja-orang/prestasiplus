@@ -1684,7 +1684,7 @@ erDiagram
 | points_earned | int | Y | 0 | |
 | started_at | timestamptz | Y | | |
 | completed_at | timestamptz | N | | null while in progress |
-| legacy_paper | text | N | | .cloud `paper` (`paper1`/`paper2`), no v2 meaning, kept for audit |
+| legacy_paper | text | N | | .cloud `paper` (`paper1`/`paper2`), kept for audit. R1-B16 also writes `bijak_kuiz` here for a Simulasi Kuiz session (mode `latih_tubi`): `bijak/kuiz` check and finish accept only sessions with this marker, so another in-progress practice session cannot be read through the kuiz (BR-07 trial bypass). No migration; no other module reads the column |
 
 Not stored: `accuracy` (recomputed, plan 14.7), `completedAtMs`, the facets `seg/week/band/inP`. Index `(user_id, started_at desc)`, `(user_id, status)`, `(subject_id)`. A second submit of a completed session returns 409; an abandoned session records nothing.
 

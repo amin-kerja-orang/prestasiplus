@@ -301,6 +301,8 @@ export class PracticeStartPlanner {
       if (!isIdString(req.targetQuestionId)) throw invalidField('targetQuestionId')
       const q = (await this.ports.questions.live([req.targetQuestionId])).get(req.targetQuestionId)
       if (!q || !OFFERED_LEVEL_CODES.includes(codes.get(q.educationLevelId ?? '') ?? '') || q.subjectId !== subjectId) throw invalidField('targetQuestionId')
+      // REQ-B-010: the same SPM rule as a draw (SPM_SERVABLE_SQL), not the level code alone.
+      if (!(await this.ports.questions.spmServable([q.id])).has(q.id)) throw invalidField('targetQuestionId')
       return Object.assign(plan, { subjectId, targetQuestionId: q.id, served: [q] })
     }
 

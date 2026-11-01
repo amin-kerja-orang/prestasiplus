@@ -105,6 +105,8 @@ export interface QuestionInput {
   language?: Language
   pointsValue?: number
   curriculumChapterId?: number | null
+  /** R1-B05 / T33: "Aras pemikiran" of the single leaf (one of the six levels), null = none. */
+  cognitiveLevel?: string | null
   curriculumTopicId?: number | null
   scriptType?: ScriptType
   sourceType?: SourceType | null
@@ -291,6 +293,7 @@ function objectiveFromInput(
     language: input.language ?? 'bm',
     pointsValue: input.pointsValue ?? 1,
     curriculumTopicId: input.curriculumTopicId ?? null,
+    cognitiveLevel: input.cognitiveLevel ?? null,
     scriptType: script,
     textDirection: directionOf(script),
     sourceFile,
@@ -553,7 +556,7 @@ export const questionsRepo = defineRepository({
           pkskDomainId: null,
           isActive: true,
           educationLevelId: levelScope(),
-        } as Where<Question>)
+        })
         // A question with no subject / level has no admin row to count against.
         return new Map([...groups].flatMap(([k, n]) => (k === null ? [] : [[k, n] as const])))
       },

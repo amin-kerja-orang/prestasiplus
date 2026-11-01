@@ -213,7 +213,14 @@ export class BijakAttemptsService {
     if (!isIdString(body.paperId)) throw ApiError.of('NOT_FOUND', { message: MSG.paperNotFound })
     const resolved = await this.ports.paperSource.resolveForAttempt({ userId, paperId: body.paperId, isTest })
     if (!resolved.ok) {
-      if (resolved.reason === 'not_eligible') throw ApiError.of('FORBIDDEN')
+      if (resolved.reason === 'not_eligible') {
+        // H-A13: a sitting already open keeps its pinned version, so "Mula" resumes it even though a new sitting is refused.
+        if (!body.restart && !opts.fresh) {
+          const open = (await this.repo.openFor(userId, body.paperId))[0]
+          if (open) return { attemptId: open.id, created: false }
+        }
+        throw ApiError.of('FORBIDDEN', { message: MSG.paperUnavailable })
+      }
       throw ApiError.of('NOT_FOUND', { message: MSG.paperNotFound })
     }
     const paper = resolved.paper
@@ -382,7 +389,8 @@ export class BijakAttemptsService {
       const out = await this.start(auth, { paperId: row.paperId, mode: row.mode }, who, { fresh: true })
       return { attemptId: out.attemptId }
     } catch (err) {
-      if (err instanceof ApiError && err.code === 'NOT_FOUND') throw gone()
+      // H-A13: a paper that places an archived question is refused for a new sitting (403 paperUnavailable); on Cuba Lagi that is the documented 409.
+      if (err instanceof ApiError && (err.code === 'NOT_FOUND' || (err.code === 'FORBIDDEN' && err.message === MSG.paperUnavailable))) throw gone()
       throw err
     }
   }
@@ -444,7 +452,12 @@ export class BijakAttemptsService {
     let photos: Map<string, Map<string, PhotoRow>> | undefined
     const dirty = new Map<string, AnswerRow>()
     for (const c of changes) {
-      if (!index.parts.has(c.partId) || locked.has(c.partId)) continue
+      const leaf = index.parts.get(c.partId)
+      if (!leaf || locked.has(c.partId)) continue
+      // REQ-B-014: the topic of an essay_choice part is one of that part's topics, whatever the revision (nothing is stored on a refusal).
+      if (leaf.topicIds && c.answer.choice !== undefined && !leaf.topicIds.includes(c.answer.choice)) {
+        throw ApiError.of('VALIDATION_ERROR', { fields: { [`answers.${c.partId}.choice`]: MSG.essayTopicUnknown } })
+      }
       const cur = answers.get(c.partId)
       if (cur && cur.rev >= c.rev) continue
       let answer = c.answer

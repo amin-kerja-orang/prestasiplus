@@ -210,6 +210,8 @@ export const IntakeBatchSummarySchema = z
     adminNotes: z.string().nullable().meta({ description: 'Set by Admin Pusat (max 1000).' }),
     fileCount: z.number().int().min(0),
     pageCount: z.number().int().min(0).meta({ description: 'Sum of the page counts of the files read so far.' }),
+    itemCount: z.number().int().min(0).meta({ description: 'Items (questions read from the paper) of the batch, in any state. V2 column "Bilangan Soalan". REQ-C-009.' }),
+    reviewedCount: z.number().int().min(0).meta({ description: 'Items with no unconfirmed low-confidence field (low fields minus confirmed fields is empty). V2 column "Disemak". REQ-C-009.' }),
     owner: IntakeOwnerRefSchema.nullable(),
     createdAt: TimestampSchema,
     updatedAt: TimestampSchema,

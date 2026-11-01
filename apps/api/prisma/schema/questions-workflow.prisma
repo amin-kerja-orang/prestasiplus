@@ -112,8 +112,13 @@ model QuestionReport {
   source            String
   /// uuid of `practice_sessions` (BE-12); no FK yet.
   practiceSessionId String?   @map("practice_session_id") @db.Uuid
-  /// uuid of `exam_attempts` (BE-16); no FK yet.
+  /// uuid of `exam_attempts` the pupil reported from (R1-T42; FK `fk_question_reports_attempt_id` ON DELETE SET NULL, NOT VALID, migration SQL).
+  /// The server checks the attempt is the reporter's and holds the question.
   attemptId         String?   @map("attempt_id") @db.Uuid
+  /// The paper of that attempt (R1-T42; FK papers(id) ON DELETE SET NULL, migration SQL). Always taken from the attempt, never from the client.
+  paperId           BigInt?   @map("paper_id")
+  /// Snapshot "title (paper code)" of the paper at filing time (at most 200 characters, check), so the queue still names a paper that was deleted.
+  paperLabel        String?   @map("paper_label")
   /// Free session reference of the mock (1 to 64 of letters, digits, . _ : -); not a uuid.
   quizSessionRef    String?   @map("quiz_session_ref")
   /// Room code of the mock (same pattern).
@@ -140,6 +145,7 @@ model QuestionReport {
   @@unique([legacySource, legacyId], map: "uq_question_reports_legacy")
   @@index([status, createdAt], map: "ix_question_reports_status_created_at")
   @@index([questionId], map: "ix_question_reports_question_id")
+  @@index([paperId], map: "ix_question_reports_paper_id")
   @@index([reporterId, createdAt], map: "ix_question_reports_reporter_id_created_at")
   @@map("question_reports")
 }

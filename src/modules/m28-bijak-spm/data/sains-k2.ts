@@ -1,6 +1,6 @@
 /** Sains Kertas 2 short sample: keyword-marked structured questions, a shared Rajah, a speed part. */
 import { Bank, curr, leaf } from './builders'
-import { plantCellSvg } from './diagrams'
+import { plantCellSvg, svgImage } from './diagrams'
 import type { PointDef } from '../domain/types'
 
 const POOL_A = 'SN2-A'
@@ -89,9 +89,9 @@ export function seedSainsK2(bank: Bank): { setA: string[]; setB: string[] } {
       label: 'Rajah 1',
       caption: 'Struktur sebuah sel tumbuhan.',
       alt: 'Sel tumbuhan dengan dinding sel, nukleus (P), kloroplas (Q) dan vakuol (R).',
-      svg: plantCellSvg(
+      image: svgImage(plantCellSvg(
         'Sel tumbuhan dengan dinding sel, nukleus (P), kloroplas (Q) dan vakuol (R).',
-      ),
+      )),
     },
   )
 

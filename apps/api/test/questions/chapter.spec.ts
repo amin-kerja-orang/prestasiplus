@@ -78,6 +78,22 @@ describe('admin question Bab (curriculumChapterId)', () => {
     expect(await storedChapter(q.id)).toBe(c1)
   })
 
+  it('REQ-B-010: the chapter is checked against the subject even when the level is empty; a saved chapter is not touched by the refused save', async () => {
+    const q = await create({ curriculumChapterId: c1 })
+    for (const educationLevelId of ['987654321']) {
+      const created = expectError(await admin.post('/api/questions', mcqBody(refs, { educationLevelId, curriculumChapterId: otherSubjectChapter })), 'VALIDATION_ERROR')
+      expect(created.fields?.curriculumChapterId, `create level "${educationLevelId}"`).toBe(QUESTION_MESSAGES.chapterMismatch)
+      expect(created.fields?.educationLevelId).toBeDefined()
+      const edited = expectError(await put(q.id, { educationLevelId, curriculumChapterId: otherSubjectChapter }), 'VALIDATION_ERROR')
+      expect(edited.fields?.curriculumChapterId, `edit level "${educationLevelId}"`).toBe(QUESTION_MESSAGES.chapterMismatch)
+    }
+    expect(await storedChapter(q.id)).toBe(c1)
+    // a chapter of the right subject is not reported as a mismatch while the level is empty (only the level is)
+    const only = expectError(await admin.post('/api/questions', mcqBody(refs, { educationLevelId: '987654321', curriculumChapterId: c1 })), 'VALIDATION_ERROR')
+    expect(only.fields?.curriculumChapterId).toBeUndefined()
+    expect(only.fields?.educationLevelId).toBeDefined()
+  })
+
   it('an unknown chapter id is 422 "Bab tidak sah."', async () => {
     const error = expectError(await admin.post('/api/questions', mcqBody(refs, { curriculumChapterId: '99999999' })), 'VALIDATION_ERROR')
     expect(error.fields?.curriculumChapterId).toBe(QUESTION_MESSAGES.guruChapter)

@@ -56,6 +56,7 @@ function facts(over: Partial<ServabilityFacts> = {}): ServabilityFacts {
     subject: { id: '3', isActive: true, linkedToLevel: true, spmListed: true, databankListed: true },
     group: null,
     linkedAssets: new Map(),
+    outside: new Map(),
     fileTokens: new Map(),
     onPublishedPaper: false,
     janaFacts: null,
@@ -92,6 +93,14 @@ describe('servability rules (pure)', () => {
     expect(codes(f, 'latih_tubi_spm')).toEqual(['withdrawn'])
     expect(codes(f, 'jana_kertas')).toEqual(['withdrawn'])
     expect(evaluate(f, 'simulasi_paper').served).toBe(true)
+  })
+
+  it('Simulasi (kertas): an archived question on a published paper is not served, because a new sitting needs a live approved version (H-A13)', () => {
+    const archived = record({ liveVersionNo: null }, { status: 'archived' })
+    const f = facts({ live: null, latest: archived, onPublishedPaper: true })
+    expect(codes(f, 'simulasi_paper')).toEqual(['archived'])
+    const draft = record({ liveVersionNo: null }, { status: 'draft' })
+    expect(codes(facts({ live: null, latest: draft, onPublishedPaper: true }), 'simulasi_paper')).toEqual(['not_approved'])
   })
 
   it('level rules: inactive level, primary level, and a level the SPM activities do not offer (Bab does not mind)', () => {

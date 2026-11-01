@@ -117,6 +117,12 @@ async function remove(): Promise<void> {
 /** The approve button reads "Terbitkan" in http mode (ADR-0027: review to approved is the one publishing step), "Luluskan" in the mock. */
 const approveLabel = computed(() => (isHttpMode() ? 'Terbitkan' : 'Luluskan'))
 
+/**
+ * Lifecycle (ADR-0027): Draf -> review -> approved. In http mode a draft cannot be approved directly
+ * (the API refuses it), so "Terbitkan" appears after "Hantar untuk Semakan". The mock keeps its single step.
+ */
+const canApprove = computed(() => !(isHttpMode() && question.value?.status === 'draft'))
+
 async function changeStatus(action: 'pending_review' | 'approve'): Promise<void> {
   if (busy.value || !(await confirm({ message: STATUS_CONFIRM }))) return
   busy.value = true
@@ -287,6 +293,14 @@ const isRtlText = (text: string): boolean => /[\u0600-\u06FF]/.test(text)
           </p>
         </DsPanel>
 
+        <DsPanel v-if="question.essayTopics?.length" title="Esei pilihan" icon="i-ph-list-numbers" data-testid="essay-choice">
+          <ul class="flex flex-col gap-1 text-body break-words text-highlighted">
+            <li v-for="(t, i) in question.essayTopics" :key="t.id" data-testid="essay-topic">
+              {{ i + 1 }}. {{ t.label }}
+            </li>
+          </ul>
+        </DsPanel>
+
         <DsPanel
           v-if="question.explanation"
           title="Penjelasan"
@@ -438,6 +452,7 @@ const isRtlText = (text: string): boolean => /[\u0600-\u06FF]/.test(text)
             Hantar untuk Semakan
           </UButton>
           <UButton
+            v-if="canApprove"
             type="button"
             color="success"
             :disabled="busy"

@@ -48,7 +48,10 @@ export interface StimulusDef {
   caption?: string
   /** Accessible description of the diagram. */
   alt: string
-  /** Inline SVG markup (bundled, trusted, uses currentColor / theme variables only). */
+  /**
+   * Inline SVG markup: legacy field of the exam-core model (the API marking mapper still reads it, A4 removes
+   * it later). The pupil UI never renders it (REQ-A-010); diagrams reach the page as a file URL.
+   */
   svg?: string
   text?: string
   /** Source line of a passage. */
@@ -110,8 +113,15 @@ export interface QuestionDef {
   /** Stimulus group this question belongs to. */
   groupId?: string
   stem: string
-  /** The question's own picture (an image stimulus linked to its version, not shared with a group). */
+  /**
+   * The question's own picture: set (back-compat) only when the question's own stimuli are exactly one picture. Prefer `stimuli`.
+   */
   stemImage?: StimulusDef
+  /**
+   * The question's OWN stimuli (R1E2E-05b): linked to its version, not shared with a group; 1..N in link order, any of the seven
+   * kinds. Shown inline above the stem, once (V2 shows each question's own stimulus when no Bahagian-wide one exists).
+   */
+  stimuli?: StimulusDef[]
   /** MCQ: the question itself is the leaf (its id is the answer key). */
   mcq?: { options: McqOption[] }
   /** Structured: nested parts. */
@@ -470,6 +480,8 @@ export interface QuestionView {
   groupId?: string
   stem: string
   stemImage?: StimulusDef
+  /** The question's own stimuli (see `QuestionDef.stimuli`). */
+  stimuli?: StimulusDef[]
   marks: number
   mcq?: { options: McqOption[] }
   parts?: PartView[]

@@ -156,6 +156,8 @@ describe('an admin-created approved T4 MCQ appears in Databank, Latih Tubi SPM a
         options: ['Satu', 'Dua', 'Tiga', 'Empat'],
         correctAnswer: 1,
         explanation: 'Penjelasan ujian T05.',
+        cognitiveLevel: 'mengaplikasi', // R1-B05: a NEW approval of an SPM-bound question needs a level per leaf and the kertas
+        kertas: '1',
         tag: { ...(seeded?.unit_node_id ? { unitId: seeded.unit_node_id } : {}), spIds: sp ? [sp] : [], tp: 3 },
       } as never,
       actor,
@@ -217,6 +219,8 @@ describe('one admin-created approved T4 MCQ is served by all five SPM_SERVABLE_S
         options: ['Satu', 'Dua', 'Tiga', 'Empat'],
         correctAnswer: 1,
         explanation: 'Penjelasan ujian T05.',
+        cognitiveLevel: 'mengaplikasi',
+        kertas: '1',
         tag: { unitId: w.tag.unitId, spIds: [w.tag.spId], tp: 3 },
       } as never,
       actor,
