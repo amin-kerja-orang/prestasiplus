@@ -1,6 +1,22 @@
 /**
  * D90 sweep of the pupil Simulasi Kuiz (lane A3): a stimulus group is ONE unit, shown once with all its members, never a question of its own and
  * never marked. Real wiring (auth + BijakIntegrationModule + the BE-09 seed); HTTP only.
+ *
+ * MUTATIONS (what was changed, and which test went red; each restored afterwards, B2 can re-run them):
+ * (file = the source file changed; each mutation is one edit, the test file named is the one that went red, all other tests stayed green unless noted)
+ *  1. kuiz.mapper.ts `stimuliWithTokens`: part 'all' returns only the first entry (V2 "first stimulus only")  -> "the random Kuiz shows BOTH stimuli ..."
+ *  2. kuiz.mapper.ts `stimuliWithTokens`: the 'all' and 'group' lists reversed                              -> "the random Kuiz shows BOTH stimuli ..."
+ *  3. kuiz.service.ts `paperPage`: items built with the 'all' context (stimulus repeated on each member)      -> "serves the group stimulus ONCE ...", "shows the stimulus once PER PAGE ...", "the random Kuiz shows BOTH stimuli ..."
+ *  4. kuiz.service.ts `paperPage`: the group entry is not pushed                                          -> "serves the group stimulus ONCE ...", "shows the stimulus once PER PAGE ...", "the random Kuiz shows BOTH stimuli ..."
+ *  5. kuiz.mapper.ts `resolveStimuli`: an unshowable group stimulus no longer marks the question incomplete   -> "a group whose stimulus cannot be shown ..."
+ *  6. kuiz.mapper.ts `toItem`: `stem` also carries `explanationMs`                                          -> "the paper page and the random quiz carry only the allow-mapped keys ..." (planted explanation text)
+ *  7. contract kuiz schema: optional `rubric` on the page + the service sets it                              -> same test, "$.rubric: key outside the allow-map" (the recursive allow-map)
+ *  8. marking.ts `partView`: `answer.expected` added to a part                                              -> "a mixed paper: one group entry ..." (Simulasi allow-map, parts[].answer)
+ *  9. marking.ts `buildServedPaper`: `stem` also carries the JSON of the marking schemes                    -> "a mixed paper: one group entry ..." (planted scheme text RAHSIA-SKEMA-*)
+ * 10. marking.ts `buildServedPaper`: group `to` is one too low                                              -> "a mixed paper ...", and the two "current behaviour (KIV R2)" tests
+ * 11. be09-mapping.ts `stimulusDefOf`: the `stimulus_empty` refusal removed                                      -> "a group whose stimulus cannot be shown: the paper is refused ..."
+ * 12. marking.ts `buildServedPaper`: the group stimulus also put on each member question                      -> "a mixed paper: one group entry ..."
+ * The allow-map helper has its own positive control: `plantedLeaksAreReported` plants a top-level key, an item/question key and a `parts[].answer` key and fails unless each is reported.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
@@ -17,6 +33,7 @@ const id = (ref: string): string => {
   return v
 }
 const SECRET = 'Penjelasan-rahsia-'
+const SCHEME_SECRETS = ['RAHSIA-SKEMA-1', 'RAHSIA-SKEMA-2']
 
 beforeAll(async () => {
   t = await bootIntegrationApp()
@@ -29,6 +46,9 @@ beforeAll(async () => {
   for (const r of rows) ids.set(r.ref, r.id)
   // a distinctive explanation on every seed question: it must never appear before the answer is checked
   await t.db.query(`update question_versions set explanation_ms = '${SECRET}' || question_id::text`)
+  // distinctive marking-scheme text on the structured seed (the open-question scheme): same JSON shape, only two labels renamed
+  await t.db.query(`update answer_keys set content = replace(replace(content::text, 'Menjumlahkan ketiga-tiga sisi', '${SCHEME_SECRETS[0]!}'), 'Perimeter = 12', '${SCHEME_SECRETS[1]!}')::jsonb where content::text like '%Menjumlahkan ketiga-tiga sisi%'`)
+  expect(Number((await t.db.query<{ n: string }>(`select count(*)::text n from answer_keys where content::text like '%${SCHEME_SECRETS[0]!}%'`))[0]!.n)).toBeGreaterThan(0)
 }, 180_000)
 afterAll(async () => {
   await t.close()
@@ -68,8 +88,78 @@ const page = async (paper: string, n = 1): Promise<Raw> => {
 }
 const PASSAGE = 'Pasar tani di pekan kecil itu dibuka setiap hujung minggu'
 const count = (raw: unknown, text: string): number => JSON.stringify(raw).split(text).length - 1
-const ITEM_KEYS = ['groupId', 'id', 'kind', 'lead', 'markable', 'marks', 'options', 'path', 'prompt', 'stem', 'stimuli', 'subjectName']
 const STIMULUS_KEYS = ['alt', 'body', 'caption', 'imageToken', 'kind', 'label', 'source', 'table']
+
+/**
+ * A recursive allow-map: the exact key set of every object on the wire, level by level. `leaf` = a scalar; `arr(x)` = an array of x;
+ * `nullable(x)`; `obj(required, optional)` = exactly those keys (an unknown key, or a missing required one, is reported with its path);
+ * `empty` = an object or array with nothing in it (the pupil's own state at the start of a sitting).
+ */
+type Shape = 'leaf' | 'empty' | { arr: Shape } | { nullable: Shape } | { req: Record<string, Shape>; opt: Record<string, Shape> }
+const arr = (x: Shape): Shape => ({ arr: x })
+const nullable = (x: Shape): Shape => ({ nullable: x })
+const obj = (req: Record<string, Shape>, opt: Record<string, Shape> = {}): Shape => ({ req, opt })
+function leaks(v: unknown, sh: Shape, path: string): string[] {
+  const isObj = (x: unknown): x is Record<string, unknown> => x !== null && typeof x === 'object' && !Array.isArray(x)
+  if (sh === 'leaf') return v !== null && typeof v === 'object' ? [`${path}: expected a scalar`] : []
+  if (sh === 'empty') return (Array.isArray(v) && v.length === 0) || (isObj(v) && Object.keys(v).length === 0) ? [] : [`${path}: expected an empty value`]
+  if ('arr' in sh) return Array.isArray(v) ? v.flatMap((x, i) => leaks(x, sh.arr, `${path}[${String(i)}]`)) : [`${path}: expected an array`]
+  if ('nullable' in sh) return v === null ? [] : leaks(v, sh.nullable, path)
+  if (!isObj(v)) return [`${path}: expected an object`]
+  const out: string[] = []
+  for (const k of Object.keys(v)) {
+    const child = sh.req[k] ?? sh.opt[k]
+    if (child === undefined) out.push(`${path}.${k}: key outside the allow-map`)
+    else out.push(...leaks(v[k], child, `${path}.${k}`))
+  }
+  for (const k of Object.keys(sh.req)) if (!(k in v)) out.push(`${path}.${k}: required key missing`)
+  return out
+}
+const STIM: Shape = obj({ kind: 'leaf', label: 'leaf', body: 'leaf', imageToken: 'leaf', alt: 'leaf', caption: 'leaf', source: 'leaf', table: nullable(obj({ head: arr('leaf'), rows: arr(arr('leaf')) })) })
+const ITEM: Shape = obj({
+  id: 'leaf', groupId: 'leaf', kind: 'leaf', stem: 'leaf', lead: arr('leaf'), path: 'leaf', prompt: 'leaf', marks: 'leaf', markable: 'leaf', subjectName: 'leaf',
+  stimuli: arr(STIM), options: arr(obj({ id: 'leaf', label: 'leaf', text: 'leaf', imageToken: 'leaf' })),
+})
+/** `GET /api/bijak/kuiz/papers/{id}` */
+const KUIZ_PAGE = obj({
+  paper: obj({ id: 'leaf', title: 'leaf', subjectName: 'leaf', code: 'leaf' }), page: 'leaf', pageCount: 'leaf', section: nullable(obj({ id: 'leaf', label: 'leaf', instruction: 'leaf' })),
+  items: arr(ITEM), groups: arr(obj({ id: 'leaf', stimuli: arr(STIM) })), markableTotal: 'leaf',
+})
+/** `POST /api/bijak/kuiz/sessions` */
+const KUIZ_SESSION = obj({ sessionId: 'leaf', count: 'leaf', items: arr(ITEM) })
+const SIM_STIM: Shape = obj({ id: 'leaf', kind: 'leaf', label: 'leaf', alt: 'leaf' }, { title: 'leaf', caption: 'leaf', text: 'leaf', source: 'leaf', table: obj({ head: arr('leaf'), rows: arr(arr('leaf')) }), image: obj({ url: 'leaf' }, { width: 'leaf', height: 'leaf', alt: 'leaf' }) })
+const SIM_ANSWER: Shape = obj({ kind: 'leaf' }, { unit: 'leaf', wordRange: obj({ min: 'leaf', max: 'leaf' }), topics: arr(obj({ id: 'leaf', label: 'leaf' })) })
+const SIM_PART: Shape = obj({ id: 'leaf', label: 'leaf', prompt: 'leaf', marks: 'leaf' }, {
+  answer: SIM_ANSWER,
+  children: arr({ req: { id: 'leaf', label: 'leaf', prompt: 'leaf', marks: 'leaf' }, opt: { answer: SIM_ANSWER } }),
+})
+/** `GET /api/bijak/attempts/{id}` at the start of a sitting (a pupil's own answers, flags, picks and checks are empty). */
+const SIM_VIEW = obj({
+  serverNow: 'leaf',
+  attempt: obj({ id: 'leaf', paperId: 'leaf', paperKind: 'leaf', title: 'leaf', subject: 'leaf', kertas: 'leaf', code: 'leaf', mode: 'leaf', status: 'leaf', startedAt: 'leaf', deadline: 'leaf', durationMin: 'leaf', answers: 'empty', flags: 'empty', picks: 'empty', position: 'leaf', checked: 'empty' }),
+  sections: arr(obj({ id: 'leaf', label: 'leaf', rule: obj({ type: 'leaf' }, { n: 'leaf' }), questionIds: arr('leaf'), marks: 'leaf', effectiveMarks: 'leaf' }, { compulsory: 'leaf', instruction: 'leaf' })),
+  questions: arr(obj({ id: 'leaf', number: 'leaf', sectionId: 'leaf', topic: 'leaf', formOrigin: 'leaf', stem: 'leaf', marks: 'leaf' }, { groupId: 'leaf', mcq: obj({ options: arr(obj({ id: 'leaf', text: 'leaf' }, { image: obj({ url: 'leaf' }, { alt: 'leaf', width: 'leaf', height: 'leaf' }) })) }), parts: arr(SIM_PART) })),
+  groups: arr(obj({ id: 'leaf', stimulus: SIM_STIM, stimuli: arr(SIM_STIM), from: 'leaf', to: 'leaf', questionIds: arr('leaf') })),
+  checks: 'empty',
+})
+/** Planted secrets (set in beforeAll): the explanation of every question and the marking-scheme point labels of the structured seed. */
+const secretsIn = (wire: unknown): string[] => [SECRET, ...SCHEME_SECRETS].filter((x) => JSON.stringify(wire).includes(x))
+/** The positive control: a leak key planted at the top level and inside the first part/item MUST be reported by the allow-map. */
+function plantedLeaksAreReported(wire: unknown, sh: Shape): void {
+  const clone = structuredClone(wire) as Record<string, unknown>
+  clone.rubric = { expected: 'x' }
+  const found = leaks(clone, sh, '$')
+  expect(found.some((f) => f.startsWith('$.rubric')), 'a planted top-level key must be reported').toBe(true)
+  const list = (clone.items ?? clone.questions) as Record<string, unknown>[]
+  const first = list[0]!
+  first.answerKey = 'B'
+  expect(leaks(clone, sh, '$').some((f) => f.includes('.answerKey')), 'a planted item/question key must be reported').toBe(true)
+  const withParts = (clone.questions as Record<string, unknown>[] | undefined)?.find((q) => Array.isArray(q.parts))
+  if (withParts) {
+    ;((withParts.parts as Record<string, unknown>[])[0]!.answer as Record<string, unknown>).expected = '12 cm'
+    expect(leaks(clone, sh, '$').some((f) => f.includes('.answer.expected')), 'a planted parts[].answer key must be reported').toBe(true)
+  }
+}
 
 describe('per-paper quiz: a mixed paper (a group, solo MCQs and a structured question)', () => {
   it('serves the group stimulus ONCE, its members contiguous in group order at the first member, solos with no stimulus, and the stimulus with no marks or number', async () => {
@@ -100,8 +190,6 @@ describe('per-paper quiz: a mixed paper (a group, solo MCQs and a structured que
     expect(Object.keys(p.groups[0]!.stimuli[0]!).sort()).toEqual(STIMULUS_KEYS)
     expect(Object.keys(p.groups[0]!).sort()).toEqual(['id', 'stimuli'])
     expect(p.items.filter((i) => i.groupId !== null).map((i) => i.marks)).toEqual([1, 1, 1])
-    // the whole page is "the items plus once the group": nothing else is an item
-    expect(p.items.length).toBe(order.length)
   })
 })
 
@@ -126,9 +214,46 @@ describe('per-paper quiz: a group whose members span Bahagian (legacy / ETL data
   })
 })
 
+describe('a group with two stimuli (a passage and a table): D9 row "every stimulus of the group"', () => {
+  it('the random Kuiz shows BOTH stimuli with each drawn member, in group order (not the first only); the paper page renders them once in the group entry', async () => {
+    const mk = async (kind: string, label: string, body: string | null, table: unknown): Promise<string> =>
+      (await t.db.query<{ id: string }>(`insert into stimuli (kind, label, body_ms, table_data) values ($1, $2, $3, $4::jsonb) returning id::text`, [kind, label, body, table === null ? null : JSON.stringify(table)]))[0]!.id
+    // group order is the TABLE first, then the passage: the reverse of the insertion order and of the alphabet of the kinds
+    const tableId = await mk('table', 'Jadual dua', null, { head: ['Bulan', 'Jumlah'], rows: [['Jan', '10']] })
+    const passageId = await mk('passage', 'Petikan dua', 'Petikan kedua untuk kumpulan dua rangsangan.', null)
+    const groupId = (await t.db.query<{ id: string }>(`insert into stimulus_groups (scope) values ('section') returning id::text`))[0]!.id
+    await t.db.query(`insert into stimulus_group_stimuli (group_id, stimulus_id, position) values ($1::bigint, $2::bigint, 1), ($1::bigint, $3::bigint, 2)`, [groupId, tableId, passageId])
+    const members = [id('SEED-MCQ-SCI-T4'), id('SEED-MCQ-SCI-T5')]
+    await t.db.query(`update questions set group_id = $1::bigint, group_position = case id when $2::bigint then 1 else 2 end where id = any($3::bigint[])`, [groupId, members[0], members])
+    try {
+      const random = await student.post('/api/bijak/kuiz/sessions', { subject: 'SCI', count: 5 })
+      expect(random.status, JSON.stringify(random.body)).toBe(201)
+      const drawn = (random.body.data.items as { id: string; groupId: string; stimuli: { kind: string; label: string }[] }[]).filter((i) => members.includes(i.id))
+      expect(drawn.map((i) => i.id).sort()).toEqual([...members].sort())
+      for (const item of drawn) {
+        expect(item.groupId).toBe(groupId)
+        expect(item.stimuli.map((x) => [x.kind, x.label]), `item ${item.id}`).toEqual([['table', 'Jadual dua'], ['passage', 'Petikan dua']])
+      }
+      const paper = await createPaper('Kertas dua rangsangan', [{ label: 'Bahagian A', questionIds: members }])
+      const p = await page(paper)
+      expect(p.items.map((i) => i.id)).toEqual(members)
+      expect(p.items.every((i) => (i.stimuli as unknown[]).length === 0)).toBe(true)
+      expect(p.groups).toHaveLength(1)
+      expect(p.groups[0]!.stimuli.map((x) => [x.kind, x.label])).toEqual([['table', 'Jadual dua'], ['passage', 'Petikan dua']])
+      expect(count(p, 'Petikan kedua untuk kumpulan dua rangsangan.')).toBe(1)
+    } finally {
+      await t.db.query(`update questions set group_id = null, group_position = null where id = any($1::bigint[])`, [members])
+      await t.db.query(`delete from stimulus_group_stimuli where group_id = $1::bigint`, [groupId])
+      await t.db.query(`delete from stimulus_groups where id = $1::bigint`, [groupId])
+      await t.db.query(`delete from stimuli where id = any($1::bigint[])`, [[tableId, passageId]])
+    }
+  })
+})
+
 describe('a group whose stimulus cannot be shown', () => {
   it('its members are not served at all (never as bare questions): not on the paper page, not marked, not in the random quiz; the other questions are unaffected', async () => {
     const stim = (await t.db.query<{ id: string }>(`select s.id::text id from stimuli s join stimulus_group_stimuli gs on gs.stimulus_id = s.id join questions q on q.group_id = gs.group_id where q.id = $1::bigint`, [id('SEED-GRP-PASAR-1')]))[0]!.id
+    const real = (await t.db.query<{ body_ms: string | null; asset_file_id: string | null }>(`select body_ms, asset_file_id::text from stimuli where id = $1::bigint`, [stim]))[0]!
     await t.db.query(`update stimuli set body_ms = null, asset_file_id = null where id = $1::bigint`, [stim])
     try {
       const paper = await createPaper('Kertas rangsangan kosong', [
@@ -146,47 +271,36 @@ describe('a group whose stimulus cannot be shown', () => {
       for (const ref of ['SEED-GRP-PASAR-1', 'SEED-GRP-PASAR-2', 'SEED-GRP-PASAR-3']) expect(served).not.toContain(id(ref))
       expect(served.length).toBeGreaterThan(0)
     } finally {
-      await t.db.query(`update stimuli set body_ms = $2 where id = $1::bigint`, [stim, `${PASSAGE}. Penjual menyusun sayur, buah dan kuih di atas meja panjang. Pembeli datang awal untuk mendapatkan barangan yang segar.`])
+      await t.db.query(`update stimuli set body_ms = $2, asset_file_id = $3::bigint where id = $1::bigint`, [stim, real.body_ms, real.asset_file_id])
     }
   })
 })
 
-describe('no answer leak on the kuiz wire (allow-list, as chain-qa step 7)', () => {
-  it('the paper page and the random quiz carry only the contract keys, no key-like name, and neither the explanation text nor the reason', async () => {
+describe('no answer leak on the kuiz wire (a recursive allow-map, as chain-qa step 7)', () => {
+  it('the paper page and the random quiz carry only the allow-mapped keys at every level, and neither the explanation nor the scheme text; a planted leak key is reported', async () => {
     const paper = await createPaper('Kertas kunci', [
       { label: 'Bahagian A', questionIds: [id('SEED-MCQ-MATH-T4'), id('SEED-GRP-PASAR-1'), id('SEED-GRP-PASAR-2'), id('SEED-STR-ECF')] },
     ])
-    const random = await student.post('/api/bijak/kuiz/sessions', { subject: 'BM', count: 5 })
-    expect(random.status).toBe(201)
-    const wires: { name: string; body: unknown; items: Record<string, unknown>[]; groups: { stimuli: Record<string, unknown>[] }[] }[] = [
-      { name: 'paper page', body: await page(paper), items: (await page(paper)).items, groups: (await page(paper)).groups },
-      { name: 'random quiz', body: random.body.data, items: random.body.data.items as Record<string, unknown>[], groups: [] },
+    const pageRes = await student.get(`/api/bijak/kuiz/papers/${paper}`)
+    expect(pageRes.status, JSON.stringify(pageRes.body)).toBe(200)
+    const random = await student.post('/api/bijak/kuiz/sessions', { subject: 'MATH', count: 5 })
+    expect(random.status, JSON.stringify(random.body)).toBe(201)
+    const wires: { name: string; body: { items: unknown[] }; shape: Shape }[] = [
+      { name: 'paper page', body: pageRes.body.data, shape: KUIZ_PAGE },
+      { name: 'random quiz', body: random.body.data, shape: KUIZ_SESSION },
     ]
     for (const w of wires) {
-      expect(w.items.length, w.name).toBeGreaterThan(0)
-      for (const item of w.items) {
-        expect(Object.keys(item).sort(), `${w.name} item ${String(item.id)}`).toEqual(ITEM_KEYS)
-        for (const o of item.options as Record<string, unknown>[]) expect(Object.keys(o).sort(), `${w.name} option`).toEqual(['id', 'imageToken', 'label', 'text'])
-        for (const s of item.stimuli as Record<string, unknown>[]) expect(Object.keys(s).sort(), `${w.name} stimulus`).toEqual(STIMULUS_KEYS)
-      }
-      for (const g of w.groups) for (const s of g.stimuli) expect(Object.keys(s).sort()).toEqual(STIMULUS_KEYS)
-      const keyNames: string[] = []
-      const walk = (n: unknown): void => {
-        if (Array.isArray(n)) n.forEach(walk)
-        else if (n !== null && typeof n === 'object') for (const [k, v] of Object.entries(n)) {
-          keyNames.push(k)
-          walk(v)
-        }
-      }
-      walk(w.body)
-      expect(keyNames.filter((k) => /correct|answer|key|scheme|reason|solution|explan/i.test(k)), w.name).toEqual([])
-      expect(JSON.stringify(w.body), w.name).not.toContain(SECRET)
+      expect(w.body.items.length, w.name).toBeGreaterThan(0)
+      expect(leaks(w.body, w.shape, '$'), w.name).toEqual([])
+      expect(secretsIn(w.body), `${w.name}: a planted secret reached the wire`).toEqual([])
+      plantedLeaksAreReported(w.body, w.shape)
     }
+    // the structured question is on the page (its scheme point labels carry the planted secrets) and stays open
+    expect((pageRes.body.data as Raw).items.some((i) => String(i.id).startsWith(`${id('SEED-STR-ECF')}:`) && i.kind === 'open')).toBe(true)
   })
 })
 
 describe('Simulasi (the exam attempt) follows the same one-unit rule as the Kuiz', () => {
-  const QUESTION_KEYS = ['formOrigin', 'groupId', 'id', 'marks', 'mcq', 'number', 'parts', 'sectionId', 'stem', 'topic']
   const startExam = (paper: string) => student.post('/api/bijak/attempts', { paperId: paper, mode: 'exam' })
 
   it('a mixed paper: one group entry with the stimulus once, its members contiguous, no stimulus on any question, no marks or number on the stimulus, no key on the wire', async () => {
@@ -213,19 +327,11 @@ describe('Simulasi (the exam attempt) follows the same one-unit rule as the Kuiz
     expect(Object.keys(g.stimulus).filter((k) => /mark|number|questionId|score/i.test(k))).toEqual([])
     // the members carry the group id; solos and the structured question do not
     expect(view.questions.filter((q) => q.groupId !== undefined).map((q) => q.id)).toEqual(g.questionIds)
-    // allow-list of question keys, no key-like name anywhere, no explanation text
-    for (const q of view.questions) expect(Object.keys(q).filter((k) => !QUESTION_KEYS.includes(k)), `question ${String(q.id)}`).toEqual([])
-    const names: string[] = []
-    const walk = (n: unknown): void => {
-      if (Array.isArray(n)) n.forEach(walk)
-      else if (n !== null && typeof n === 'object') for (const [k, v] of Object.entries(n)) {
-          names.push(k)
-          walk(v)
-        }
-    }
-    walk(res.body.data)
-    expect(names.filter((k) => /correct|answerKey|scheme|reason|solution|explan|modelText|rubric/i.test(k))).toEqual([])
-    expect(JSON.stringify(res.body)).not.toContain(SECRET)
+    // the whole wire against the recursive allow-map (sections, questions, mcq, parts, answer, groups), no planted secret, and a planted leak is reported
+    expect(leaks(res.body.data, SIM_VIEW, '$')).toEqual([])
+    expect(secretsIn(res.body.data)).toEqual([])
+    plantedLeaksAreReported(res.body.data, SIM_VIEW)
+    expect(view.questions.some((q) => Array.isArray(q.parts))).toBe(true) // the structured question is on the paper, so parts[] and answer are covered
   })
 
   it('a group whose stimulus cannot be shown: the paper is refused (403, "sedang dikemas kini"); no member is ever served as a bare question', async () => {
@@ -241,5 +347,42 @@ describe('Simulasi (the exam attempt) follows the same one-unit rule as the Kuiz
     } finally {
       await t.db.query(`update stimuli set body_ms = $2 where id = $1::bigint`, [stim, before])
     }
+  })
+
+  // M3 (A4 pre-review): these two tests PIN what Simulasi does today with a legacy / ETL paper that the builder would refuse. It is a known gap, deviation row
+  // "Simulasi does not regather legacy non-contiguous or split groups" (KIV R2): `buildServedPaper` (marking.ts) builds one group entry from every member in
+  // composition order and takes from/to as the lowest and highest question number. The Kuiz gathers the members instead (tests above). If R2 closes the gap
+  // (regathers, or refuses the paper), change these two expectations on purpose.
+  it('current behaviour (KIV R2): a non-contiguous legacy group is served as stored: one group entry, the stimulus once, and its from..to range contains the solo question between the members', async () => {
+    const paper = await createPaper('Kertas simulasi tidak berturutan', [
+      { label: 'Bahagian A', questionIds: [id('SEED-GRP-PASAR-1'), id('SEED-MCQ-MATH-T4'), id('SEED-GRP-PASAR-2'), id('SEED-GRP-PASAR-3')] },
+    ])
+    const started = await startExam(paper)
+    expect(started.status, JSON.stringify(started.body)).toBe(201)
+    const view = (await student.get(`/api/bijak/attempts/${started.body.data.attemptId}`)).body.data as {
+      questions: { id: string; number: number }[]
+      groups: { questionIds: string[]; from: number; to: number }[]
+    }
+    expect(view.questions.map((q) => [q.id, q.number])).toEqual([[id('SEED-GRP-PASAR-1'), 1], [id('SEED-MCQ-MATH-T4'), 2], [id('SEED-GRP-PASAR-2'), 3], [id('SEED-GRP-PASAR-3'), 4]])
+    expect(view.groups).toHaveLength(1)
+    expect(view.groups[0]).toMatchObject({ questionIds: [id('SEED-GRP-PASAR-1'), id('SEED-GRP-PASAR-2'), id('SEED-GRP-PASAR-3')], from: 1, to: 4 })
+    expect(count(view, PASSAGE)).toBe(2) // once as `stimulus`, once in its one-item `stimuli` list
+  })
+
+  it('current behaviour (KIV R2): a group split across Bahagian is served as one group entry spanning both Bahagian (from 1 to 4), the stimulus once for the whole paper', async () => {
+    const paper = await createPaper('Kertas simulasi kumpulan terbelah', [
+      { label: 'Bahagian A', questionIds: [id('SEED-GRP-PASAR-1'), id('SEED-MCQ-MATH-T4')] },
+      { label: 'Bahagian B', questionIds: [id('SEED-GRP-PASAR-2'), id('SEED-GRP-PASAR-3')] },
+    ])
+    const started = await startExam(paper)
+    expect(started.status, JSON.stringify(started.body)).toBe(201)
+    const view = (await student.get(`/api/bijak/attempts/${started.body.data.attemptId}`)).body.data as {
+      sections: { questionIds: string[] }[]
+      groups: { questionIds: string[]; from: number; to: number }[]
+    }
+    expect(view.sections.map((x) => x.questionIds)).toEqual([[id('SEED-GRP-PASAR-1'), id('SEED-MCQ-MATH-T4')], [id('SEED-GRP-PASAR-2'), id('SEED-GRP-PASAR-3')]])
+    expect(view.groups).toHaveLength(1)
+    expect(view.groups[0]).toMatchObject({ questionIds: [id('SEED-GRP-PASAR-1'), id('SEED-GRP-PASAR-2'), id('SEED-GRP-PASAR-3')], from: 1, to: 4 })
+    expect(count(view, PASSAGE)).toBe(2)
   })
 })
