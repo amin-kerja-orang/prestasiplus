@@ -49,13 +49,13 @@ Spec branches: a proof tagged `BASE-n` is in base (BASE-6 or the later merge nam
 | t44 | t44-blueprint-fields @ 072d8f4b (contains H-A15 @ 7e5d637e) | exam-builder/blueprint-standards-api.spec.ts (autoMarkable, origin filter AC-39.2, note gate, skema Markah AC-39.7), r1/blueprint-review-flag.spec.ts (READY) |
 | t48 | t48-builder-parity @ 54f5e0bc | exam-builder/builder-parity.spec.ts (cover code, per-paper rule, Tambah bahagian / soalan, Padam soalan, pinned, stimulus edit), migration 0104 (READY; contains t34) |
 | t48a | t48a-paper-list @ e5041595 | exam-builder/builder-api.spec.ts: "REQ-C-008" title at most 200, "R12" paper list filters Subjek and Cari (READY); no matrix row names them |
-| t38 / t40 | t38-selfmark-reward @ 6995d091, t40-attempts-acs @ 1ef1341b (contains t38) | bijak-integration/rewards.spec.ts (D94), cuba-lagi-rewards.spec.ts, bijak-attempts/ac-r1.spec.ts, five-modes.spec.ts, practice/databank-prestasi.spec.ts (READY) |
+| t38 / t40 | t38-selfmark-reward @ 6995d091, t40-attempts-acs @ a7e23bb5 (contains t38) | bijak-integration/rewards.spec.ts (D94), cuba-lagi-rewards.spec.ts, bijak-attempts/ac-r1.spec.ts, five-modes.spec.ts, practice/databank-prestasi.spec.ts (READY) |
 | t41 | t41-curriculum-acs @ 067ff3cc | curriculum/dskp-acs.spec.ts (READY) |
 | t50 | t50-partial-acs @ 50dd05ab | practice/databank-sejarah.spec.ts, bijak-attempts/reveal-data.spec.ts (READY) |
 | ha9 | ha9-pipeline-chain @ d3257e69 | earlier chain spec (READY; superseded by t43) |
 | ha13 | ha13-archived-paper @ 61b8851d | archived-paper refusal, Cuba Lagi 409 (READY) |
 | e2e05 | e2e05-stem-image @ 00cec26f (inside e2e05b-own-stimuli @ 9895d004) | bijak-integration/stem-image.spec.ts (READY) |
-| t04-minors / t05-minors | t04-minors @ 40061140 (READY), t05-minors (BASE-19) | only changed existing specs; no new behaviour proof used here |
+| t04-minors / t05-minors | t04-minors @ d248166e (READY), t05-minors (BASE-19) | only changed existing specs; no new behaviour proof used here |
 | t51 / t52 / T50-T52 placeholders | t51-partial-acs-a3 (A3 dev-1), t52-examiner-grid (A1) | not pushed: they are the owners of AC-07.4/07.6/07.7/07.9, AC-18.1 and AC-20.3 |
 
 ## 2. Gap list (partial and no-proof, front-end-only rows excluded)
