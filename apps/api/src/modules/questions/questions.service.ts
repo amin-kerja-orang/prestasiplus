@@ -161,9 +161,12 @@ function treeDepth(parts: unknown, depth = 1): number {
   return max
 }
 
-/** The status an edit leaves behind: it never keeps an approval (the live `approved` version keeps serving; the edit is version n+1 as a draft, Q-5, ADR-0027). */
+/**
+ * The status an edit leaves behind: it never keeps an approval (the live `approved` version keeps serving; the edit is version n+1 as a draft, Q-5,
+ * ADR-0027) and it never keeps an archival (REQ-B-052: an archived version is history, the edit is version n+1 as a draft).
+ */
 function statusAfterEdit(current: QuestionStatus): QuestionStatus {
-  return current === 'approved' ? 'draft' : current
+  return current === 'approved' || current === 'archived' ? 'draft' : current
 }
 
 /** What create, update and the Guru routes all reduce to before touching the database. */
@@ -1058,8 +1061,10 @@ export class QuestionsService {
       }
       await this.attachStem(draft, newStemFileId)
       const next = { ...draft, status: statusAfterEdit(fresh.version.status) }
-      if (fresh.version.status === 'approved') {
-        // Q-5: the live version keeps serving; the edit is version n+1 as a draft.
+      // REQ-B-052: a version is never rewritten in place when it is history that a paper or a sitting still points at: an approved one (Q-5), an
+      // archived one, or any version pinned on a Terbit paper or on a paper that has been sat (a withdrawn paper keeps its sittings, AC-07.7).
+      if (fresh.version.status === 'approved' || fresh.version.status === 'archived' || (await this.repo.versionIsPinned(record.id, fresh.version.versionNo))) {
+        // The live version keeps serving; the edit is version n+1 (as a draft) and version n stays byte-identical.
         await this.repo.addVersion(record.id, fresh.latestVersionNo + 1, next, now)
       } else {
         await this.repo.rewriteVersion(record.id, fresh.version.versionNo, next, now)

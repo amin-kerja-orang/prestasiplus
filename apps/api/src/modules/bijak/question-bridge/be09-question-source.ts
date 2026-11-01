@@ -34,9 +34,10 @@ import type { BridgeRefusal } from './refusals'
  *   question, so a question the attempt side cannot serve is also not eligible on the paper side.
  *
  * Papers see only a `published` live version; attempts see any live version BE-09 returns (see `load`).
- * A withdrawn question (no live version) is still served to attempts from its last published version
- * while that is the latest version; once a newer draft exists on top it is absent (known gap until
- * BE-09 offers a pinned read, #45 M7) and the attempts holding it fail closed.
+ * A withdrawn question (no live version) is still served to attempts from the version that was last
+ * live: the newest archived version that was published (`withdrawnVersionNos`). An edit of an archived
+ * question is a newer draft on top (REQ-B-052), never a rewrite, so that draft is not served and the
+ * sittings holding the question keep the archived version.
  * Media (R1-B08): the bridge puts file TOKEN URLs (`/api/files/<token>`) on the exam-core stimuli and options; the
  * tokens come from `FilesService.publicIdsOf` and the stimuli linked to a version outside its group (the question's own
  * stimuli, R1E2E-05b) from the BE-09 repository (`versionStimuli`, `stimulusUseCounts`). Whether a pupil may load a file is the files read rule, not decided here.
@@ -111,16 +112,13 @@ export class Be09BijakQuestionSource implements AttemptQuestionSource {
       (r) => !published || r.version.status === 'approved',
     )
     if (!published && records.length < ids.length) {
-      // Withdrawn since the paper was built (BE-09 clears the live version): keep serving the version
-      // that WAS live when it is still the latest one (archived, once published), so the attempts that
-      // hold it can still be shown, graded and auto-submitted. A newer draft on top is not served.
+      // Withdrawn since the paper was built (BE-09 clears the live version): keep serving the version that WAS live, the newest archived
+      // version that was published, so the attempts that hold it can still be shown, graded and auto-submitted. An edit of an archived question
+      // is a newer draft on top (REQ-B-052); that draft is never served, the archived version stays what pupils sit.
       const have = new Set(records.map((r) => r.id))
-      const withdrawn = (
-        await this.questions.getMany(
-          ids.filter((id) => !have.has(id)),
-          'latest',
-        )
-      ).filter((r) => r.version.status === 'archived' && r.version.publishedAt !== null)
+      const lost = ids.filter((id) => !have.has(id))
+      const nos = await this.questions.withdrawnVersionNos(lost)
+      const withdrawn = await this.questions.getVersions([...nos].map(([questionId, versionNo]) => ({ questionId, versionNo })))
       records = [...records, ...withdrawn]
     }
     const groupOwner = new Map<string, string>()

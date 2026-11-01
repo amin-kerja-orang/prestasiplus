@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
+import { QuestionsRepository } from '../../src/modules/questions'
 import { ACCOUNTS } from '../exam-builder/helpers'
 import { bootFullApp, loginFull, type FullApp, type FullClient } from '../r1/full-app'
 import { serveSeededBlueprints } from '../support/serve-blueprints'
@@ -146,6 +147,41 @@ describe('REQ-B-052: an archived question pinned on a published paper cannot be 
     expect.soft(await served(attempt, target), 'the pupil must be served the same question after the edit').toEqual(servedBefore)
     if (edit.status === 200) expect((await versions(target)).length, 'a 200 must mean a NEW version, not a rewrite of version 1').toBeGreaterThan(1)
     else expect(await versions(target)).toEqual(['1:archived'])
+    // (a NEW sitting is refused while the paper holds an archived question, before and after the edit: "Kertas ini sedang dikemas kini"; only the sittings that hold it continue)
+    if (edit.status === 200) expect(await versions(target)).toEqual(['1:archived', '2:draft'])
+  })
+
+  it('an archived question that is on no paper also branches to a new draft version (an archived version is history)', async () => {
+    const id = await approved()
+    expect((await admin.post('/api/questions/bulk-action', { action: 'archived', ids: [id] })).body.data.failed).toEqual([])
+    const before = await snapshot(id, 1)
+    const edit = await admin.put(`/api/questions/${id}`, body({ questionText: 'Soalan diarkibkan, disunting: berapakah hasil tambah 8 dan 9?' }))
+    expect(edit.status, JSON.stringify(edit.body)).toBe(200)
+    expect(await versions(id)).toEqual(['1:archived', '2:draft'])
+    expect(await snapshot(id, 1)).toEqual(before)
+    // the next edit rewrites the draft on top in place (it is not pinned anywhere)
+    expect((await admin.put(`/api/questions/${id}`, body({ questionText: 'Soalan diarkibkan, disunting lagi: berapakah hasil tambah 8 dan 9?' }))).status).toBe(200)
+    expect(await versions(id)).toEqual(['1:archived', '2:draft'])
+    expect(await snapshot(id, 1)).toEqual(before)
+  })
+
+  it('versionIsPinned: true on a Terbit paper and on a withdrawn paper that was sat; false on a draft paper and on a withdrawn paper nobody sat', async () => {
+    const repo = t.app.get(QuestionsRepository)
+    const sat = await publishedPaper()
+    const quiet = await publishedPaper()
+    const draft = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
+    const draftId = draft.body.data.id as string
+    const sections = ((await admin.get(`/api/admin/papers/${draftId}`)).body.data.paper.sections as { id: string }[]).map((x) => x.id)
+    const spare = await approved()
+    expect((await admin.post(`/api/admin/papers/${draftId}/placements`, { sectionId: sections[0], questionId: spare })).status).toBe(201)
+    expect(await repo.versionIsPinned(sat.ids[0]!, 1)).toBe(true)
+    expect(await repo.versionIsPinned(quiet.ids[0]!, 1)).toBe(true)
+    expect(await repo.versionIsPinned(spare, 1), 'a draft paper follows the question in force').toBe(false)
+    expect(await repo.versionIsPinned(sat.ids[0]!, 2), 'only the pinned version number').toBe(false)
+    expect((await pupil.post('/api/bijak/attempts', { paperId: sat.paper, mode: 'exam' })).status).toBe(201)
+    for (const p of [sat.paper, quiet.paper]) expect((await admin.post(`/api/admin/papers/${p}/withdraw`)).status).toBe(200)
+    expect(await repo.versionIsPinned(sat.ids[0]!, 1), 'a withdrawn paper keeps its sittings (AC-07.7)').toBe(true)
+    expect(await repo.versionIsPinned(quiet.ids[0]!, 1), 'a withdrawn paper nobody sat').toBe(false)
   })
 
   it('Guru PUT (updateOwn) on their own question: the pinned version stays byte-identical and the pupil is served the same question', async () => {
