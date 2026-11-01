@@ -505,7 +505,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 | T44 | r1/t44-blueprint-fields | 072d8f4b | — | merged at BASE-67 as 77984abc. The newer tip 072d8f4b shows a 19-file delta against base; A3 is asked whether it is WIP (marked IN-PROGRESS until it answers) |
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 15:07 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 15:09 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -543,7 +543,6 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t45-servability-acs | 37d240136 | READY (A4), B2 + B3 |
 | r1/t48-builder-parity | 4a3ff2646 | Approve w/ Minors → A3 fixing (SECTION_EMPTY) + BASE merge |
 | r1/t50-partial-acs | e436e084d | READY (A1a/b), B2 |
-| r1/t51-partial-acs-a3 | 359fe16e4 | IN-PROGRESS (A3 dev-1, on T43) |
 | r1/t52-examiner-grid | addae6444 | READY (A1a), B2 |
 | r1/t54-perf-400k | bbf412c66 | READY (A4), B2 Minors fixed |
 <!-- AUDIT:END -->
