@@ -126,3 +126,9 @@
 - **REQ-B-053** (022a MAJOR: empty `SERVABILITY_OVERVIEW_WARM=` breaks API start; plus env docs and an identity spec) → A4, IN-PROGRESS. It blocks REQ-C-020 and REQ-B-033. A4 restacks T45 Part 1 → 022a → c-020 → b-033 → mcq-shape-once → getmany-parallel on BASE-105 and resolves the T45 Part 1 conflicts.
 - **REQ-B-052** (E05B-L2 MEDIUM: an archived pinned version can be rewritten in place) → A2 slot 1, right after H-A18, spec first. IN-PROGRESS next.
 - BASE-105 merges for approved branches: A1a takes T52, T50, B-025c, E05B, seed spec and reqc021-followup; A2 takes t49, intake-reqs and T04-minors; A4 takes T54; A1b takes T38 → T40 (already in progress); A3 takes T48 → T43b.
+
+**REQ-B-052 (E05B-L2): IN-PROGRESS (A3, moved from A2 because slot 1 is busy).**
+- The red repro is at r1/reqb052-archived-edit @ ce0af563. It confirms that an admin `PUT /api/questions/:id` and a Guru `PUT /api/guru/questions/:id` rewrite an archived, pinned v1 in place, and that a pupil's existing attempt then shows the new stem and options.
+- A Guru's own question CAN reach a published paper: createGuru → admin tags and bulk-approves → builder → Terbit.
+- Fix decided by the lead: an archived or pinned latest version branches to a new version (as the approved path does), and v1 stays byte-identical. This covers both `update` and `updateOwn`.
+- B2 + B3 to review.

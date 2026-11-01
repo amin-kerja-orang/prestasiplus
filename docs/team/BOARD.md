@@ -505,7 +505,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 | T44 | r1/t44-blueprint-fields | 072d8f4b | — | merged at BASE-67 as 77984abc. The newer tip 072d8f4b shows a 19-file delta against base; A3 is asked whether it is WIP (marked IN-PROGRESS until it answers) |
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 15:43 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 15:45 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -532,6 +532,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/reqa014-no-chapter-lock-fe | 8c49b7af9 | (no status — triage) |
 | r1/reqb032-pinned-rule | 77c83c5e6 | IN-PROGRESS (A2 slot 2, moved from A3; WIP 77c83c5e) |
 | r1/reqb049-report-visible | 059841d4c | READY; A3 pre-review found only Minors (no Blocker/Major) → A1b fixing the Minors, new head follows |
+| r1/reqb052-archived-edit | ce0af563f | IN-PROGRESS (A3 T48 dev): red repro ce0af563 proves an admin/Guru PUT rewrites a pinned archived v1 that a pupil sees; fixing (branch to a new version) |
 | r1/reqc021-followup | 948aa327a | READY (A1a, BASE-105): fixes the base red draw-bounded BR-16; merge early |
 | r1/seed-dangling-placements | 2bbd4f3ca | READY; A3 pre-review found only Minors (no Blocker/Major) → A1b fixing the Minors, new head follows |
 | r1/t04-minors | cc5116213 | READY (A2, BASE-105): B-044; 108 + 1 skip; ready for the B1 gate |
