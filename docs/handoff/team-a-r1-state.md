@@ -77,17 +77,17 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 
 | ID | Branch @ head | Lane | Depends on | B state |
 |---|---|---|---|---|
-| REQ-B-052: an archived question pinned on a published paper is rewritten in place by update and updateOwn (fix: branch to a new version instead of refusing) | `r1/reqb052-archived-edit` @ 4e64776b | A3 (T48 dev) | none (REQ-B-052) | READY (A3 T48 dev) @ 4e64776b: an edit of an archived or pinned question branches to a new draft version; no migration of its own; contains REQ-B-032 e9cf34b7 and H-A18 f29aeda9; B1 merge order H-A18, then REQ-B-032, then REQ-B-052; known failure not from this stack: draw-bounded.spec.ts BR-16 also fails on BASE-105 |
+| REQ-B-052: an archived question pinned on a published paper is rewritten in place by update and updateOwn (fix: branch to a new version instead of refusing) | `r1/reqb052-archived-edit` @ 4e64776b | A3 (T48 dev) | none (REQ-B-052) | pending, ON HOLD (pre-review fixes): it contains the held H-A18 and REQ-B-032; it will be re-merged once A2's fixed heads land, so its head (4e64776b) will move. Before the hold: READY (A3 T48 dev) @ 4e64776b: an edit of an archived or pinned question branches to a new draft version; no migration of its own; contains REQ-B-032 e9cf34b7 and H-A18 f29aeda9; B1 merge order H-A18, then REQ-B-032, then REQ-B-052; known failure not from this stack: draw-bounded.spec.ts BR-16 also fails on BASE-105 |
 | T54 F2: builder pool search matches the text in SQL and describes only the page | `r1/builder-search-perf` @ e1141dbb | A3 | T48 (carries 705468c1); merges after T48 | READY (A3, T54 F2) @ e1141dbb, restacked on T48 4800bd78; merges after T48 |
 | T34-L1-residual, taken by team C (REQ-A-013) | `r1/t34-l1-residual-c` @ a2acf754 | team C (REQ-A-013) | BASE-102 (not built from e4bb72eb) | team C has taken T34-L1-residual (REQ-A-013): restacked (a2acf754), 0110 identical; NOT built from A3 e4bb72eb; review not seen (unconfirmed) |
-| REQ-B-022a overview: skip the Jana pool facts in the published-paper pass (cold 15.3 s to 9.3 s on 408k) | `r1/overview-mcq-shape-once` @ 7a6e8bb3 | A4 | T30 (base) | READY (A4); review not seen (unconfirmed) |
-| REQ-B-032 a published paper serves its pinned version (attempt source, image rule B, served lock agree) | `r1/reqb032-pinned-rule` @ e9cf34b7 | A2 (slot 2; moved from A3, earlier from A4) | none (REQ-B-032) | A2 (slot 2): fix and re-pinning spec pushed (e9cf34b7); REQ-B-052 is stacked on it; B1 merge order H-A18, then REQ-B-032, then REQ-B-052 |
+| REQ-B-022a overview: skip the Jana pool facts in the published-paper pass (cold 15.3 s to 9.3 s on 408k) | `r1/overview-mcq-shape-once` @ 7a6e8bb3 | A4 | T30 (base) | pending, ON HOLD (pre-review fixes): A2's pre-review found 2 Majors; A4 is fixing and restacking; the head will move until A4 posts new heads. Before the hold: READY (A4); review not seen (unconfirmed) |
+| REQ-B-032 a published paper serves its pinned version (attempt source, image rule B, served lock agree) | `r1/reqb032-pinned-rule` @ e9cf34b7 | A2 (slot 2; moved from A3, earlier from A4) | none (REQ-B-032) | pending, ON HOLD (pre-review fixes): A2 fixing; REQ-B-052 will be re-merged once A2's fixed heads land. Before the hold: A2 (slot 2): fix and re-pinning spec pushed (e9cf34b7); REQ-B-052 is stacked on it; B1 merge order H-A18, then REQ-B-032, then REQ-B-052 |
 | Seed spec: no published seeded paper holds a dangling placement (25 PoC ones withdrawn) | `r1/seed-dangling-placements` @ 11cbcf45 | A (lane unconfirmed) | T36 (base) | READY (test-only); lane and review not seen (unconfirmed) |
 | T45 part 3 builder specs (AC-R1-21.3 / 21.6 on the real bank) | `r1/t45-builder-acs` @ de8c8c02 | A1b | T48 (stacked on 4a3ff264; merges after T48) | READY (A1b, specs only); restacked on T48 705468c1 (de8c8c02); merges after T48; review not seen (unconfirmed) |
 | REQ-C-021 follow-up: catalogue to D98, stale lock comments, conformance check | `r1/reqc021-followup` @ 948aa327 | A1 | REQ-C-021 (BASE-102) | READY (A1); review not seen (unconfirmed) |
 | E05B-L1 spec: archived pinned version keeps its own stimulus locked | `r1/e05b-l1-spec` @ 4b9eac57 | A4 | R1E2E-05b (base) | READY (A4, test-only); review not seen (unconfirmed) |
-| REQ-B-022a overview cold path in parallel + cold before/after on the 408k bank (docs) | `r1/req-b-022a-a4` @ 438407f6 | A4 | T30 (base) | READY (A4): overview counts in one Promise.all, routes stay Admin Pusat (REQ-B-022a/c); review not seen (unconfirmed) |
-| REQ-C-020 lane pages carry subjects for the Subjek filter | `r1/req-c-020` @ 78e050b3 | A4 | T30 lanes (base) | READY (A4); review not seen (unconfirmed) |
+| REQ-B-022a overview cold path in parallel + cold before/after on the 408k bank (docs) | `r1/req-b-022a-a4` @ 438407f6 | A4 | T30 (base) | pending, ON HOLD (pre-review fixes): A2's pre-review found 2 Majors; A4 is fixing and restacking; the head will move until A4 posts new heads. Before the hold: READY (A4): overview counts in one Promise.all, routes stay Admin Pusat (REQ-B-022a/c); review not seen (unconfirmed) |
+| REQ-C-020 lane pages carry subjects for the Subjek filter | `r1/req-c-020` @ 78e050b3 | A4 | T30 lanes (base) | pending, ON HOLD (pre-review fixes): A2's pre-review found 2 Majors; A4 is fixing and restacking; the head will move until A4 posts new heads. Before the hold: READY (A4); review not seen (unconfirmed) |
 | T45 part 3 WIP: AC-R1-21.3 / 21.6 builder specs on the real bank | `r1/t45-builder-acs-wip` @ 078204e1 | A4 | T48 (carries migration 0104) | WIP (A4); stacked on T48, so it carries migration 0104; superseded by `r1/t45-builder-acs` (A1b) |
 | REQ-B-025c a choice-only essay_choice counts as blank (leaf kind passed to isBlank) | `r1/req-b-025c` @ d4735304 | A1b (handed over from A4) | none (REQ-B-025c) | READY (A1b, handed over from A4); review not seen (unconfirmed) |
 | REQ-B-022a servability overview counts in one Promise.all | `r1/req-b-022a` @ 688529b7 | A4 | T30 (base) | READY (A4); review not seen (unconfirmed) |
@@ -95,8 +95,8 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 | REQ-B-035 review queue rows carry the stimulus group (D90) | `r1/intake-reqs-a2` @ a631198c | A2 | none (REQ-B-035) | READY (A2); review not seen (unconfirmed) |
 | T34-L1-residual (A3 WIP, for B3) | `r1/t34-l1-residual` @ e4bb72eb | A3 | T34 (B3 finding T34-L1-residual) | **SUPERSEDED** (lead decision, 2026-11-01): retired in favour of team C's `r1/t34-l1-residual-c` (REQ-A-013, C-owned); do not merge |
 | REQ-C-019 joinable filter on group list and filter-options | `r1/t49-served-now` @ 8a4b46a9 | A2 | T49 (base) | smoke role for GET /questions/filter-options, trimmed Negeri match, joinable wording pushed (221c2b28); awaiting B1 gate and B2 (A2) |
-| REQ-B-033 paper lane names a placed question the bank does not return | `r1/req-b-033` @ c0ea2ea9 | A4 | servability lanes (T30, in base) | READY (A4); review not seen (unconfirmed) |
-| T45 part 1 (AC-04.3/04.5/05.3) | `r1/t45-servability-acs` @ 58618b2c | A4 | T29 | READY (A4, per the lead): the three specs that approved an unservable question now approve it directly, the AC-05.3 gate stays; B2 re-check pending |
+| REQ-B-033 paper lane names a placed question the bank does not return | `r1/req-b-033` @ c0ea2ea9 | A4 | servability lanes (T30, in base) | pending, ON HOLD (pre-review fixes): A2's pre-review found 2 Majors; A4 is fixing and restacking; the head will move until A4 posts new heads. Before the hold: READY (A4); review not seen (unconfirmed) |
+| T45 part 1 (AC-04.3/04.5/05.3) | `r1/t45-servability-acs` @ 58618b2c | A4 | T29 | pending, ON HOLD (pre-review fixes): A2's pre-review found 2 Majors; A4 is fixing and restacking; the head will move until A4 posts new heads. Before the hold: READY (A4, per the lead): the three specs that approved an unservable question now approve it directly, the AC-05.3 gate stays; B2 re-check pending |
 | H-A8 stale specs | `r1/ha8-stale-specs` @ 56b1b6cc | A2 | base | READY (test-only) |
 | T04 minors (R1E2E-09) | `r1/t04-minors` @ cc511621 | A2 | T04 | REQ-B-044 fix pushed (chapter-practice spec follows the Soalan by Chapter tile rule, D91 / FD-11); awaiting B1 gate and B2 (A2) |
 | T38 self-mark reward (D94) | `r1/t38-selfmark-reward` @ 13134ced | A1 | T28 | fix pushed (6995d091: reward on the best-N gain, T38-L1) and base merged; awaiting B2 re-review (A1) |
@@ -113,20 +113,20 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 
 | ID | Branch | Lane | Depends on |
 |---|---|---|---|
-| H-A18 gate facts (0105) | `r1/ha18-gate-facts` @ fc409ae1 (pushed: move to 1.2 after review) | A2 | T33 |
+| H-A18 gate facts (0105) | `r1/ha18-gate-facts` @ fc409ae1 (pushed: move to 1.2 after review) | A2 | T33 ; pending, ON HOLD (pre-review fixes): A2 is fixing it; the head and the 0105 file may change again. Before the hold: review fixes pushed (f29aeda9, then fc409ae1: release the import hold on every edit path, gate issue codes; the 0105 folder is identical in both; declared marks only for no-parts items, bulk Semakan runs the submit gate, import holds carried, D99); B2 verdict not seen; needs the base merge order first in the B-052 stack |
 
 ### 1.4 Docs units (A3 docs agent), all READY
 
 | Unit | Branch @ head | Output |
 |---|---|---|
-| T37 runbook | `r1/t37-r1-runbook` @ d9b37fbf | `docs/ops/r1-runbook.md` (migrations 0092 to 0105, SELECTs run 74/74 on BASE-62) |
+| T37 runbook | `r1/t37-r1-runbook` @ 8b95e71e | `docs/ops/r1-runbook.md` (migrations 0092 to 0105, SELECTs run 74/74 on BASE-62) |
 | T39 K1 evidence | `r1/t39-k1-evidence` @ 1a26f7a6 | `docs/ops/r1-k1-blueprint-evidence.md` |
-| T46 / H-A17 AC coverage | `r1/ha17-ac-coverage` @ 1aa0d443 | `docs/qa/r1-backend-ac-coverage.md`, `r1-verify-first-notes.md` (kept current by H-A27) |
+| T46 / H-A17 AC coverage | `r1/ha17-ac-coverage` @ 008b7ca5 | `docs/qa/r1-backend-ac-coverage.md`, `r1-verify-first-notes.md` (kept current by H-A27) |
 | H-A19 admin parity | `r1/ha19-admin-parity` @ c7315b0e | `docs/qa/r1-admin-parity-check.md` |
 | H-A20 student parity | `r1/ha20-student-parity` @ 557e17c6 | `docs/qa/r1-student-parity-check.md` |
 | H-A22 parity docs | `r1/ha22-parity-docs` @ 4fb2a41b | both parity docs refreshed, deviation rows H22-D1/D2 in `v2-bijak-spm.md`, `student.md` rows marked |
 | H-A23 E2E readiness | `r1/ha23-e2e-readiness` @ 9a86b5bb | `docs/qa/r1-e2e-readiness.md` (merge order, minimal set) |
-| H-A24 release input | `r1/ha24-release-input` @ f98a46e3 | `docs/ops/r1-release-input-team-a.md` (+ scope AC-R1-18.2 and 18.4 text) |
+| H-A24 release input | `r1/ha24-release-input` @ 3d676ace | `docs/ops/r1-release-input-team-a.md` (+ scope AC-R1-18.2 and 18.4 text) |
 | H-A26 this sheet | `r1/ha26-team-a-state` @ this branch (head = tip of the branch) | `docs/handoff/team-a-r1-state.md` |
 
 ## 2. Decisions and answers
@@ -162,7 +162,7 @@ Earlier decisions still in force for R1: D72 (secondary only), D75/D76 (standard
 | 0102 | `0102_leaf_cognitive_level` | T33 (`r1/t33-leaf-tags` @ 95cea5be) | merged BASE-27 |
 | 0103 | `0103_question_report_context` | T42 (`r1/t42-reports-intake-acs` @ d1210e96) | merged BASE-41; attempt FK stays NOT VALID |
 | 0104 | `0104_paper_section_admin_created` | T48 (`r1/t48-builder-parity` @ 4800bd78) | READY (A3); tip 4800bd78 = pre-review minors on top of 705468c1: Padam soalan only unplaces a question that was ever approved (it stays in the bank; audit row deleted:false); a duplicate Bahagian label (trimmed, case-insensitive) is refused with 422 fields.label on add and rename, a swap or self-rename is allowed; new message sectionLabelUsed [PROPOSED]; no migration change; B2 delta and B3 re-check pending |
-| 0105 | gate facts (BE-09 duplicate, media, AI-editor facts) | H-A18 (A2) `r1/ha18-gate-facts` @ fc409ae1 | review fixes pushed (f29aeda9, then fc409ae1: release the import hold on every edit path, gate issue codes; the 0105 folder is identical in both; declared marks only for no-parts items, bulk Semakan runs the submit gate, import holds carried, D99); B2 verdict not seen; needs the base merge order first in the B-052 stack |
+| 0105 | gate facts (BE-09 duplicate, media, AI-editor facts) | H-A18 (A2) `r1/ha18-gate-facts` @ fc409ae1 | pending, ON HOLD (pre-review fixes): A2 is fixing it; the head and the 0105 file may change again. Before the hold: review fixes pushed (f29aeda9, then fc409ae1: release the import hold on every edit path, gate issue codes; the 0105 folder is identical in both; declared marks only for no-parts items, bulk Semakan runs the submit gate, import holds carried, D99); B2 verdict not seen; needs the base merge order first in the B-052 stack |
 
 Ranges: team A 0100 to 0109 (overflow 0120 to 0129), team C 0110 to 0119, team B none. 0106 to 0109 free. SQL for 0092 to 0105 is in `docs/ops/r1-runbook.md`.
 
@@ -175,7 +175,7 @@ Status as recorded in `requests/` (answers files take precedence). "Open for A" 
 | Open for A | REQ-B-019, REQ-B-029, REQ-B-040, REQ-B-043, REQ-B-050, REQ-B-051, REQ-C-021 |
 | Delivered by A (waiting for merge or the other side) | REQ-B-003, REQ-B-004, REQ-B-007, REQ-B-013, REQ-B-014, REQ-C-016, REQ-C-017, REQ-C-018 |
 | Open to B | REQ-A-007, REQ-A-009, REQ-A-011, REQ-A-017 |
-| Open to C | REQ-A-004 |
+| Open to C | REQ-A-004, REQ-A-019 |
 | Delivered by B or C to A's request | REQ-A-001, REQ-A-002, REQ-A-003, REQ-A-005, REQ-A-006, REQ-A-008, REQ-A-010, REQ-A-012, REQ-A-014, REQ-A-016 |
 | Closed (done, declined, withdrawn) | REQ-A-015, REQ-B-001, REQ-B-002, REQ-B-005, REQ-B-006, REQ-B-008, REQ-B-009, REQ-B-010, REQ-B-011, REQ-B-012, REQ-B-015, REQ-B-016, REQ-B-018, REQ-B-020, REQ-B-021, REQ-B-023, REQ-B-024, REQ-B-026, REQ-B-027, REQ-B-028, REQ-B-030, REQ-B-031, REQ-B-038, REQ-B-039, REQ-B-041, REQ-B-046, REQ-C-001, REQ-C-002, REQ-C-003, REQ-C-004, REQ-C-005, REQ-C-006, REQ-C-007, REQ-C-008, REQ-C-009, REQ-C-010, REQ-C-011, REQ-C-013, REQ-C-014, REQ-C-015, REQ-C-022, REQ-C-023, REQ-C-024 |
 | Raised between B and C, not A | REQ-B-001, REQ-B-002, REQ-B-009, REQ-B-011, REQ-B-016, REQ-B-024, REQ-B-027, REQ-B-030, REQ-B-036, REQ-B-038, REQ-B-039, REQ-B-042, REQ-B-045, REQ-B-047, REQ-B-048, REQ-B-054, REQ-C-023 |
