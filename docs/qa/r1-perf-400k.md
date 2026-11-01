@@ -218,3 +218,24 @@ Data pitfalls found while building the bank (so the next person does not repeat 
 - Concurrency: every path was called by one client at a time, except the cold-overview internals. The H-A21 single flight protects the overview; the others were not load-tested.
 - Draws with a long practice history; the real distribution of the legacy bank; a production-sized `papers` count.
 - The size of the trigram index (not captured) and the effect of F1 items 2 to 4 (estimates).
+
+## 9. REQ-B-022(a) follow-up: servability overview cold path (branch `r1/req-b-022a`)
+
+Same 408k database, same machine, same harness conditions (cold compute: a new application, `ServabilityReadsService.overview()` called directly 3 times with no cache, then the HTTP route once on an empty cache). Measured before and after in the same session; the two results are byte-identical (compared as JSON).
+
+| Cold overview | Before (as in section 3.1) | After |
+|---|---|---|
+| `overview()` direct, 3 runs | 32.3 s, 34.2 s, 38.2 s (p50 34.2 s) | 15.6 s, 14.2 s, 14.5 s (p50 14.5 s) |
+| HTTP first call (empty cache) | 34.0 s | 14.1 s |
+| HTTP second call (cache hit) | 18 ms | 21 ms |
+
+What changed (all in `questions/serving/`; the lane code path is untouched):
+
+1. **The independent reads run together** (item 1 of F1): bab, kuiz, Jana, the published-paper evaluation, `spmDraw`, the Databank lane total and the bank count start in one `Promise.all`. They are capped at **four at a time** by a small in-file limiter, because the database pool has 10 connections by default and eight heavy reads at once would starve live requests during the cold compute (the paper evaluation also uses several connections itself).
+2. **The questions on published papers are evaluated once** (item 2 of F1): `evaluatePublishedPaperQuestions()` loads and evaluates the 12,438 questions (`factsOf` + `evaluate(..., 'simulasi_paper')`) one time; the Simulasi (kertas) row counts its `served` and the Bijak SPM card reuses the same verdicts (`paperRows(papers, evaluated)`). The lane list still evaluates its own page as before. The verdict is the same: a question on a published paper has `onPublishedPaper = true` in both old paths, and a question without a live version is `archived` or `not_approved` in both.
+3. **The cache is warmed at start** (item 3 of F1): `OverviewWarmer` (`OnApplicationBootstrap`) calls the same cache function as the route, not awaited; a failure only logs a warning. `SERVABILITY_OVERVIEW_WARM=true|false`; unset means on in production, off elsewhere, so no spec starts it.
+4. **Not done (item 4, the MCQ-shape triple run):** `spmDraw`, `bab` and `kuiz` each rebuild the same CTE inside `QuestionsRepository.scopeSql`/`groupCount`/`count`. A shared CTE would cut into the repository read paths of the practice draws and is not a clean change in this file; it stays a proposal (F1 item 3). What remains of the 14.5 s is mostly the published-paper pass (12,438 questions through `factsOf`, about 12 s: it also loads the Jana pool facts per subject, which the Simulasi (kertas) verdict does not use; a `factsOf` option to skip that is the next cheap saving, not measured). The result is still bounded by the number of questions on published papers, not by the bank size.
+
+Evidence: `servability-reads`, `servability-lanes`, `servability-parity`, `servability-jana-count`, `servability-rules`, `servability-rate-limit`, `overview-cache` and `overview-cache-http` specs pass unchanged, plus the new `servability-overview-once.spec.ts` (each question on a published paper is loaded once for the whole overview; the warmer is off by default in tests, fills the cache when enabled, and a failure only logs).
+
+**Decision REQ-B-022(c):** the servability routes stay **Admin Pusat only** (D86); teacher and school-admin access is KIV. No route or guard changed.
