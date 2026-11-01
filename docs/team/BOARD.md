@@ -485,14 +485,14 @@ BASE-105 + 11 team A READY API heads + C FE heads (reqa014 dc561730, reqa005 3ee
 **Conflicts B1 will see:** `questions.module.ts` (A4 chain `OverviewWarmer` × REQ-A-018 `QuestionPaperServabilityController`: keep both providers/controllers); `stimuli.repository.ts:112` (t49 deletes the `SERVED_NOW`/`VERSION_SERVED_NOW` constants B-032 added: take t49, no use remains); `v2-backend-deviations.md` (keep both sides); C docs in reqa012 (keep both).
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 20:47 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 20:48 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/a3-qa-doc-nits | e4d4dd322 | READY (A3, BASE-105, docs only): stale QA notes on T38 self-mark reward fixed (2 files); B2 |
 | r1/a4chain-minors | 6f2fb7938 | READY (A1b, @6f2fb793 on 0ba236ef): symlink removed; janaSkipped guard first line of evaluate; T45 HTTP POST /questions/:id/status case with pinned BM reasons; 022a row real commits + proof spec; A3 dev-1 delta pre-review CLEAN (13 files 76 tests, mutations bite); merge after the A4 chain; B2 |
-| r1/ac-gaps-a1b | c2aa332f5 | READY (A1b + A3 + A2, @3858afe0, CONTAINS ha17 + t37): coverage doc, runbook UAT SELECTs, B4 QA pack; AC-18.1 × H-A18 red fixed (cause: H-A18 test helper mcqBody adds a chapter by default — intended, no product bug; spec now passes curriculumChapterId: null), green alone and with fc409ae1, still bites; merge after H-A18; B2 |
+| r1/ac-gaps-a1b | 1b42ed9c7 | READY (A1b + A3 + A2, @1b42ed9c, CONTAINS ha17 + t37): coverage doc, runbook UAT SELECTs, B4 QA pack (refreshed for chain-qa heads + exact rewards); AC-18.1 × H-A18 fixed (fixture cause); docs-only commits since 3858afe0; merge after H-A18; B2 |
 | r1/admin-list-perf | 2a8ab6744 | READY (A4, BASE-105): REQ-B-050 + 0106 + 0107 + exact counts; pre-review Minors fixed (status total ?? 0, no-slash kertas change documented, migration order + drift notes); B2 + B3 + DevOps |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
 | r1/bridge-table-parts | c805ecc7c | READY (A4, BASE-105): the bridge uses stimulusTableParts (an invalid grid + pipe body shows the table only, as in builder/Studio); bridge 118/118, attempts 180/180, kuiz 39/39; B2. Follow-up after T31 + this merge: drop PENDING_BRIDGE_TEXT in the parity spec (A4) |
