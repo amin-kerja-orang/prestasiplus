@@ -37,6 +37,7 @@ import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { featureModules } from '../../src/modules'
 import { makePng } from '../files/fixtures'
+import { giveBab } from '../support/bab'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
 vi.setConfig({ testTimeout: 120_000, hookTimeout: 300_000 })
@@ -687,8 +688,9 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       const res = await pupil.get(`/api/bijak/kuiz/papers/${fx.paper}`)
       expect(res.status, JSON.stringify(res.body)).toBe(200)
       const items = res.body.data.items as { id: string }[]
-      expect(items.length).toBeGreaterThan(0)
-      expect(items.length).toBeLessThanOrEqual(6 * 2) // MCQ and parts of the six placed questions
+      // page 1 is Bahagian A: the two members of the passage group, then soloA, in paper order; one page per Bahagian (A, B, C)
+      expect(items.map((i) => i.id.split(':')[0])).toEqual([...fx.passageMembers, fx.soloA])
+      expect(res.body.data.pageCount).toBe(3)
       expect(JSON.stringify(res.body)).not.toMatch(/"(correct|correctOptionId|scheme)"/)
     })
 
@@ -783,6 +785,7 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     // R1-20.3 / PIPE AC-18.1 (T33 gate, merged at BASE-60): approving an SPM-bound question needs a cognitive level per leaf and the kertas.
     it('a question without the DSKP-complete data cannot be approved: it stays in review with the BM reasons, and is not served anywhere', async () => {
       const incomplete = await createQuestion(mcqBody('Berapakah 10 tolak 4?', { cognitiveLevel: undefined, kertas: undefined }))
+      await giveBab(db, [incomplete]) // H-A18: the submit gate asks for a Bab; this test is about the approve gate (cognitive level, kertas)
       const toReview = await admin.post('/api/questions/bulk-action', { action: 'review', ids: [incomplete] })
       expect(toReview.status, JSON.stringify(toReview.body)).toBe(200)
       const res = await admin.post('/api/questions/bulk-action', { action: 'approved', ids: [incomplete] })
