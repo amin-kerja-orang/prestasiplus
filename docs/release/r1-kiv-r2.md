@@ -51,7 +51,7 @@ Satu jadual bagi setiap perkara yang **ditangguhkan** (KIV, R2, "deferred", "dit
 ## Jumlah
 
 - 27 baris. Baris 1 hingga 6 ialah tuntutan utama yang diminta; baris 7 hingga 14 ialah AC tanpa bukti penuh, hanya front end atau ditangguh; baris 15 hingga 19 ialah skop dan migrasi R2/KIV; baris 20 hingga 27 ialah perkara lain yang ditemui dalam rekod.
-- Kepala yang dipetik dibaca dengan `git ls-remote origin` pada 2026-11-02. `r1/delete-served-guard` ialah `fe7ef537`; baris deviation `:913` dan teks BM `packages/contract/src/questions/schema.ts:33` dan `:35` tidak berubah daripada `7e5d82e6`.
+- Kepala yang dipetik dibaca dengan `git ls-remote origin` pada 2026-11-02. `r1/delete-served-guard` ialah `fe7ef537`; baris deviation `:913` dan teks BM `packages/contract/src/questions/schema.ts:33` dan `:35` tidak berubah berbanding kepala sebelumnya; `git diff` antara kedua-duanya hanya menyentuh `errors.ts` (pengesanan `isForeignKeyViolation`) dan tiga spec.
 
 ## Had dokumen ini
 
