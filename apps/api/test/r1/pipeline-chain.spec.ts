@@ -164,7 +164,7 @@ async function advance(ids: string[]): Promise<void> {
   for (const action of SERVE_STEPS) {
     const res = await admin.post('/api/questions/bulk-action', { action, ids })
     expect(res.status, `${action}: ${JSON.stringify(res.body)}`).toBe(200)
-    expect(res.body.data, action).toMatchObject({ affected: ids.length, failed: [] })
+    expect(res.body.data, `${action}: ${JSON.stringify(res.body.data)}`).toMatchObject({ affected: ids.length, failed: [] })
   }
 }
 
