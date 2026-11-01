@@ -1,5 +1,6 @@
 import { z } from '../zod'
 import { IdSchema } from '../common/ids'
+import { TimestampSchema } from '../common/time'
 import {
   SERVABILITY_ACTIVITIES,
   ServabilityActivitySchema,
@@ -98,10 +99,15 @@ export const ServabilityOverviewSchema = z
   .strictObject({
     bank: z.number().int().min(0).meta({ description: 'Approved, active, secondary-level, non-PKSK questions.' }),
     activities: z.array(ServabilityOverviewActivitySchema).length(SERVABILITY_ACTIVITIES.length),
+    computedAt: TimestampSchema.meta({
+      description: 'When these counts were computed (H-A21). Always sent: the overview is cached for 5 minutes and refreshed in the background after a question event or when the cache is older; show this time next to the counts.',
+    }),
     cards: z.array(ServabilityHubCardSchema).meta({ description: 'The hub cards in V2 order (R1: Databank Soalan, then Bijak SPM).' }),
   })
   .meta({ id: 'ServabilityOverview' })
 export type ServabilityOverview = z.infer<typeof ServabilityOverviewSchema>
+/** The counts alone, as `ServabilityReadsService.overview()` computes them; the cache adds `computedAt` (the time they were computed). */
+export type ServabilityOverviewCounts = Omit<ServabilityOverview, 'computedAt'>
 
 /** Rows a lane list can page through (`page` x `pageSize`): a deeper page is refused so OFFSET never scans the whole bank. */
 export const SERVABILITY_LANE_WINDOW = 10_000
