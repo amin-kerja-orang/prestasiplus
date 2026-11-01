@@ -585,3 +585,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
   - A3 REQ-B-052 stacked on REQ-B-032
 - Idle: A1a, A1b, A4, A2 slot 2, A3 dev-1/dev-2. Everything team A has is READY and waits on B2/B3 review and the B1 gate.
 - A4: **integration preview #2** (local; about 30 team A READY heads on BASE-105 in merge order; 17 api folders; reds bisected to their owners).
+- **Internal pre-review (read-only; B2/B3 checklist; exact SHA against BASE-105).**
+  - A1a: H-A18, C-012, REQ-B-032.
+  - A1b: T48, T43b, builder-search-perf, admin-list-perf.
+  - A2 slot 1: the A4 chain (T45 P1, 022a, c-020, b-033).
+  - Each owner fixes its findings before B reviews. A changed head is recorded the same round.
