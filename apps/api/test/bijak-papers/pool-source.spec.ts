@@ -2,9 +2,9 @@ import { describeQuestion, eligibilityOf, excludedReport, type QuestionFacts } f
 import { describe, expect, it } from 'vitest'
 
 import { BijakPapersPorts } from '../../src/modules/bijak/papers/ports'
-import { PocPoolSource } from '../../src/modules/bijak/papers/poc-pool-source'
+import { PocPoolSource } from '../support/poc/pool-source'
 import { excludedBankQuery, poolTotals, sectionPoolCounts } from '../../src/modules/bijak/papers/pool-source'
-import { CompositeBijakPoolSource } from '../../src/modules/bijak/question-bridge/pool-composite'
+import { BankBijakPoolSource } from '../../src/modules/bijak/question-bridge'
 
 const leaf = (over: Partial<QuestionFacts['leaves'][number]> = {}): QuestionFacts['leaves'][number] => ({
   marks: 2,
@@ -105,21 +105,21 @@ describe('pool totals and section counts (BJS-07)', () => {
   })
 })
 
-describe('CompositeBijakPoolSource and the ports holder (BJS-07)', () => {
-  it('merges bank and PoC facts; production (poc off) is bank only; seen delegates to the served port', async () => {
+describe('BankBijakPoolSource and the ports holder (BJS-07, R1-B07)', () => {
+  it('serves the bank facts only (the PoC fixture is gone); seen delegates to the served port', async () => {
     const bank = { candidatesOf: async (id: string) => [q(`b${id}`)] }
     const served = { servedQuestionIds: async () => new Set(['5']) }
     const scope = { subjectId: '1', subjectCode: 'MATH', kertas: 1 }
-    const both = await new CompositeBijakPoolSource(new PocPoolSource(), bank, served).candidates(scope)
-    expect(both[0]?.id).toBe('b1')
-    expect(both.length).toBeGreaterThan(40)
-    expect(await new CompositeBijakPoolSource(null, bank, served).candidates(scope)).toHaveLength(1)
-    expect([...(await new CompositeBijakPoolSource(null, bank, served).seen('9'))]).toEqual(['5'])
+    const source = new BankBijakPoolSource(bank, served)
+    const facts = await source.candidates(scope)
+    expect(facts.map((f) => f.id)).toEqual(['b1'])
+    expect([...(await source.seen('9'))]).toEqual(['5'])
   })
 
-  it('the holder defaults to the PoC fixture and refuses a second provider', () => {
+  it('the holder defaults to an empty pool and refuses a second provider', async () => {
     const ports = new BijakPapersPorts()
-    expect(ports.poolSource).toBeInstanceOf(PocPoolSource)
+    expect(await ports.poolSource.candidates({ subjectId: '1', subjectCode: 'MATH', kertas: 1 })).toEqual([])
+    expect([...(await ports.poolSource.seen('1'))]).toEqual([])
     const other = new PocPoolSource()
     ports.providePoolSource(other)
     expect(ports.poolSource).toBe(other)

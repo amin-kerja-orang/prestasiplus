@@ -1,4 +1,4 @@
-import { POC_QUESTION_KEYS, pocQuestionId } from '../../../src/modules/bijak/papers/poc'
+import { POC_QUESTION_KEYS, pocQuestionId } from './export'
 
 /**
  * Consistency checks of the PoC profile (BE-26). One SQL assertion per rule; each query returns the VIOLATING rows

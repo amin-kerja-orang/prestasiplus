@@ -1097,21 +1097,29 @@ export class AdminOps {
       const q = getQ(qid)
       if (!q || done.has(qid) || this.statusOf(qid) !== 'terbit') continue
       if (q.curriculum.subject !== paper.subject) continue
-      // Like the real service: the candidates are the subject's bank for this kertas; eligibility is
-      // then decided per Bahagian from the blueprint pool (a K1 MCQ's own `kertas` tag is not the filter).
+      // Like the real service: the candidates are the subject's bank for this kertas (kertas = the LOWEST digit of the
+      // question's pool codes, as apps/api question-bank.mapping.ts kertasOf; a K1 MCQ's own `kertas` tag is not the filter).
+      // Eligibility is then decided per Bahagian from the blueprint pool.
+      // Not modelled here (the real builder also reports them): mode_not_allowed, no_key, no_tp, unit_not_in_quota.
       const pools = BANK.pool.filter((p) => p.questionId === qid).map((p) => p.pool)
-      const inKertas = pools.length
-        ? pools.some((p) => new RegExp(`^[A-Z]+${paper.kertas}-`).test(p))
-        : kertasOf(qid) === paper.kertas
-      if (!inKertas) continue
-      const members = q.groupId ? membersOf(q.groupId) : [qid]
-      members.forEach((m) => done.add(m))
+      const digits = pools.flatMap((p) => {
+        const m = /^[A-Z]+(\d)-/.exec(p)
+        return m ? [Number(m[1])] : []
+      })
+      const kertas = digits.length ? Math.min(...digits) : kertasOf(qid)
+      if (kertas !== paper.kertas) continue
+      const full = q.groupId ? membersOf(q.groupId) : [qid]
+      full.forEach((m) => done.add(m))
+      const members = full.filter((m) => getQ(m)?.curriculum.subject === paper.subject && this.statusOf(m) === 'terbit')
+      // D90: a group with a member that is not offered (groupSize > members) is not offered at all.
+      if (members.length < full.length) continue
       const questions = members.map((m) => this.builderQuestion(m))
       if (term && !questions.some((x) => `${x.preview} ${x.topic} ${x.id}`.toLowerCase().includes(term))) continue
       const reasons = sectionPoolId && pools.length && !pools.includes(sectionPoolId) ? ['bukan dalam kolam bahagian ini'] : []
-      const st = q.groupId ? getStimulus(q.groupId) : undefined
+      const grouped = q.groupId !== undefined && members.length > 1
+      const st = grouped && q.groupId ? getStimulus(q.groupId) : undefined
       units.push({
-        ...(q.groupId ? { groupId: q.groupId } : {}),
+        ...(grouped && q.groupId ? { groupId: q.groupId } : {}),
         ...(st ? { stimulus: st } : {}),
         questionIds: members,
         questions,

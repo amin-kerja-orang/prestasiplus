@@ -548,6 +548,7 @@ describe('picture linked only to a leaf part (H-C8, withLeafStimuli)', () => {
     try {
       await linkLeaf('SEED-MCQ-BM-T4', st.id)
       const one = sessionOf(await start(student, { subject: 'BM', count: 5 })).items.find((i) => i.id === id('SEED-MCQ-BM-T4'))
+      expect(one).toBeDefined()
       expect(one?.stimuli).toHaveLength(1)
       expect(one?.stimuli[0]).toMatchObject({ kind: 'diagram', imageToken: file.public_id })
 
@@ -558,6 +559,8 @@ describe('picture linked only to a leaf part (H-C8, withLeafStimuli)', () => {
     } finally {
       await linkLeaf('SEED-MCQ-BM-T4', null)
       await linkLeaf('SEED-MCQ-BM-T5', null)
+      await t.db.query(`delete from stimuli where id = $1::bigint`, [st.id])
+      await t.db.query(`delete from files where id = $1::bigint`, [file.id])
     }
   })
 })

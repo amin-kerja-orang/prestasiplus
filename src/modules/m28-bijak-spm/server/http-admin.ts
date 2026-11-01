@@ -719,7 +719,10 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
   ): Promise<{ ok: true; batch: IntakeBatch } | { ok: false; issues: IntakeIssue[] }> {
     const review = await this.send<WireReview>('GET', `/api/intake/batches/${enc(id)}/review`)
     if (review.issues.length > 0) return { ok: false, issues: issuesFromWire(review.issues) }
-    const batch = await this.getIntakeBatch(id)
+    // The server status stays ready_for_review; drop the wire status/label so the badge shows the session's "Semakan".
+    const batch = { ...(await this.getIntakeBatch(id)) }
+    delete batch.batchStatus
+    delete batch.statusLabel
     const at = Date.now()
     return { ok: true, batch: { ...batch, status: 'semakan', submittedAt: at, updatedAt: at } }
   }

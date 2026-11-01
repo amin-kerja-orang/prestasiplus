@@ -171,8 +171,7 @@ const COLUMNS: TableColumn<Row>[] = [
       </template>
       <template #status-cell="{ row }">
         <DsStatusBadge
-          :status="intakeBadge(row.original).status"
-          :label="intakeBadge(row.original).label"
+          v-bind="intakeBadge(row.original)"
           data-testid="batch-status"
         />
       </template>
