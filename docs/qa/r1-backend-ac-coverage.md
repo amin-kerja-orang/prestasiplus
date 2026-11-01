@@ -59,7 +59,7 @@ Spec branches: a proof tagged `BASE-n` is in base (BASE-6 or the later merge nam
 | ha9 | ha9-pipeline-chain @ d3257e69 | earlier chain spec (READY; superseded by t43) |
 | ha13 | ha13-archived-paper @ 61b8851d | archived-paper refusal, Cuba Lagi 409 (READY) |
 | e2e05 | e2e05-stem-image @ 00cec26f (inside e2e05b-own-stimuli @ 9895d004) | bijak-integration/stem-image.spec.ts (READY) |
-| t04-minors / t05-minors | t04-minors @ d248166e (READY), t05-minors (BASE-19) | only changed existing specs; no new behaviour proof used here |
+| t04-minors / t05-minors | t04-minors @ d0740a32 (READY), t05-minors (BASE-19) | only changed existing specs; no new behaviour proof used here |
 | t51 / t52 / T50-T52 placeholders | t51-partial-acs-a3 (A3 dev-1), t52-examiner-grid (A1) | not pushed: they are the owners of AC-07.4/07.6/07.7/07.9, AC-18.1 and AC-20.3 |
 
 ## 2. Gap list (partial and no-proof, front-end-only rows excluded)
