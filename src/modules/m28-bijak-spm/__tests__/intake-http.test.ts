@@ -5,6 +5,7 @@ import { IntakeBatchCreateSchema } from '@pp/contract'
 import { ApiClient, ApiError } from '@/api'
 import type { Transport, TransportRequest, TransportResponse } from '@/api'
 
+import { intakeBadge } from '../admin/intake/lib/intake-badge'
 import { createHttpBijakAdminServer, uploadError } from '../server/http-admin'
 import {
   batchCreateToWire,
@@ -48,6 +49,8 @@ const summary: Omit<WireBatchDetail, 'files'> = {
   owner: null,
   fileCount: 1,
   pageCount: 2,
+  itemCount: 0,
+  reviewedCount: 0,
   createdAt: T0,
   updatedAt: T0,
   submittedAt: null,
@@ -101,10 +104,21 @@ describe('intake wire mappers', () => {
       id: 'b1',
       title: 'Matematik Kertas 2 2025',
       status: 'draf',
+      batchStatus: 'ready_for_review',
+      statusLabel: 'Sedia untuk semakan',
       sourceKind: 'pdf',
       questionCount: 0,
+      reviewedCount: 0,
     })
     expect(s.updatedAt).toBe(Date.parse(T0))
+  })
+  it('maps itemCount, reviewedCount and the wire status of a summary (R1E2E-C1)', () => {
+    const s = summaryFromWire({ ...summary, itemCount: 2, reviewedCount: 2 }, () => 'Matematik')
+    expect(s.status).toBe('draf') // every http batch stays in the Draf filter bucket
+    expect(batchFromWire({ ...detail, status: 'ready_for_review', statusLabel: 'Sedia untuk semakan' }, [])).toMatchObject({ status: 'draf', batchStatus: 'ready_for_review', statusLabel: 'Sedia untuk semakan' })
+    expect(s).toMatchObject({ questionCount: 2, reviewedCount: 2, batchStatus: 'ready_for_review', statusLabel: 'Sedia untuk semakan' })
+    const p = summaryFromWire({ ...summary, status: 'processing', statusLabel: 'Sedang diproses' }, () => 'Matematik')
+    expect(p).toMatchObject({ status: 'draf', batchStatus: 'processing', statusLabel: 'Sedang diproses' })
   })
   it('numbers pages continuously across files', () => {
     const p = pagesFromWire([
@@ -221,5 +235,19 @@ describe('intake client', () => {
     const { server } = setup({})
     await expect(server.resubmit('k')).rejects.toMatchObject({ code: 'unavailable' })
     await expect(server.getBankEditable('q')).rejects.toMatchObject({ code: 'unavailable' })
+  })
+
+  it('submitForReview drops the wire status/label so the badge shows Semakan (R1E2E-C1)', async () => {
+    const { server } = setup({
+      'GET /api/intake/batches/b1/review': ok({ issues: [] }),
+      'GET /api/intake/batches/b1': ok(detail),
+    })
+    expect((await server.getIntakeBatch('b1')).statusLabel).toBe('Sedia untuk semakan')
+    const res = await server.submitForReview('b1')
+    if (!res.ok) throw new Error('expected ok')
+    expect(res.batch.status).toBe('semakan')
+    expect(res.batch.batchStatus).toBeUndefined()
+    expect(res.batch.statusLabel).toBeUndefined()
+    expect(intakeBadge(res.batch)).toEqual({ status: 'awaiting-review', label: 'Semakan' })
   })
 })

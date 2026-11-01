@@ -16,10 +16,15 @@ import { defineAppModule } from '../../src/app.module'
 import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { AuthModule } from '../../src/modules/auth'
-import { BijakPapersModule, BijakPapersPorts, type BijakQuestionSource } from '../../src/modules/bijak/papers'
+import { BijakPapersModule, BijakPapersPorts, bijakCodeOf, type BijakPoolSource, type BijakQuestionSource } from '../../src/modules/bijak/papers'
+import { BankBijakPoolSource } from '../../src/modules/bijak/question-bridge'
+import type { BijakServedSource } from '../../src/modules/bijak/papers'
+import { QuestionsBijakPoolSource } from '../../src/modules/questions/bijak-pool'
+import type { QuestionFacts } from '@pp/exam-core'
 import { ExamBlueprintsModule } from '../../src/modules/exam/blueprints'
 import { BijakBuilderPorts, type BuilderQuestionSource, ExamBuilderModule, QuestionBankBuilderSource } from '../../src/modules/exam/builder'
-import { PocBuilderQuestionSource } from '../../src/modules/exam/builder/poc-builder-source'
+import { PocBuilderQuestionSource } from '../support/poc/builder-source'
+import { plugPocBuilder, plugPocPapers } from '../support/poc/plug'
 import { questionsSeed } from '../../prisma/seed/questions'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
@@ -51,8 +56,52 @@ export interface BootOptions {
   realBank?: boolean
   /** BE-15 student-side question port (default: the PoC fixture). Pass the same fake to keep both sides in step. */
   papersSource?: BijakQuestionSource
+  /**
+   * Test only (R1-B07): wrap the registered builder source with the PoC fixture, so the seeded PoC papers (reserved ids, in no table)
+   * can be built, withdrawn and re-published. Default off: the builder sees the question bank only, as in production.
+   */
+  pocBuilder?: boolean
   /** Environment overrides for this app (rate limits). */
   env?: Record<string, string>
+  /**
+   * Pool source of the standard check (a placed question missing from it is a Terbit blocker). `'builder-source'` derives the facts of the
+   * candidates of the builder source (a fake bank), `'bank'` is the production BE-09 pool. Default: the PoC fixture pool.
+   */
+  pool?: 'builder-source' | 'bank'
+}
+
+/** Facts of every candidate of a builder question source, as the production pool would give them (no content, a key, one unit). */
+export function poolFromBuilderSource(source: BuilderQuestionSource): BijakPoolSource {
+  return {
+    async candidates(scope) {
+      const ids = await source.candidates({ subject: bijakCodeOf(scope.subjectCode), kertas: scope.kertas })
+      const infos = await source.describe(ids.map((id) => ({ id })))
+      const groups = await source.groups([...new Set([...infos.values()].flatMap((i) => (i.groupId ? [i.groupId] : [])))])
+      return ids.flatMap((id): QuestionFacts[] => {
+        const q = infos.get(id)
+        if (!q) return []
+        const members = q.groupId ? (groups.get(q.groupId)?.questionIds ?? [id]) : []
+        return [
+          {
+            id,
+            groupId: q.groupId,
+            groupPosition: q.groupId ? members.indexOf(id) + 1 || 1 : null,
+            ...(q.groupId ? { groupSize: members.length } : {}),
+            versionNo: q.versionNo,
+            tagReview: false,
+            unit: { nodeId: '9001', level: 'T4' as const, code: '1.0' },
+            formOrigin: 't4' as const,
+            // tagged for every section of the scope, so the pool-membership note stays out of the way
+            pools: ['A', 'B', 'C', 'D', 'E'].map((x) => `${bijakCodeOf(scope.subjectCode)}${String(scope.kertas)}-${x}`),
+            leaves: [{ marks: q.marks, mode: 'mcq', tp: 2, kbat: false, hasKey: true, unit: { nodeId: '9001', level: 'T4' as const, code: '1.0' } }],
+          },
+        ]
+      })
+    },
+    async seen() {
+      return new Set<string>()
+    },
+  }
 }
 
 /**
@@ -90,7 +139,13 @@ export async function bootBuilderApp(opts: BootOptions = {}): Promise<BuilderTes
   const builderPorts = app.get(BijakBuilderPorts)
   const papersPorts = app.get(BijakPapersPorts)
   if (opts.papersSource) papersPorts.provideQuestionSource(opts.papersSource)
+  if (opts.pool === 'builder-source') papersPorts.providePoolSource(poolFromBuilderSource(opts.builderSource ?? new PocBuilderQuestionSource()))
   await app.init()
+  // `pool: 'bank'` is the production pool (BankBijakPoolSource); set before the PoC plug so the plug wraps it, never the other way
+  if (opts.pool === 'bank') papersPorts.providePoolSource(new BankBijakPoolSource(app.get(QuestionsBijakPoolSource, { strict: false }), { servedQuestionIds: async () => new Set<string>() } as unknown as BijakServedSource))
+  // R1-B07: the papers ports default to nothing now; the seeded PoC papers (reserved ids) are served by the test double unless a source is given.
+  if (!opts.papersSource) plugPocPapers(app)
+  if (opts.pocBuilder) plugPocBuilder(app)
   return {
     app,
     db,
@@ -116,6 +171,8 @@ export interface Client {
   post(url: string, body?: unknown): request.Test
   put(url: string, body?: unknown): request.Test
   del(url: string): request.Test
+  /** Multipart upload of one PNG-like file as field `file` (the Files API). */
+  upload(url: string, file: Buffer): request.Test
   /** The same request without the CSRF header. */
   noCsrf(method: Method, url: string, body?: unknown): request.Test
   /** Enters Mod Pelajar (admin, school admin) and keeps the new CSRF token. */
@@ -135,6 +192,7 @@ export async function loginAs(t: BuilderTestApp, identifier: string): Promise<Cl
     post: (url, body) => withBody(agent.post(url).set('X-CSRF-Token', client.csrf), body),
     put: (url, body) => withBody(agent.put(url).set('X-CSRF-Token', client.csrf), body),
     del: (url) => agent.delete(url).set('X-CSRF-Token', client.csrf),
+    upload: (url, file) => agent.post(url).set('X-CSRF-Token', client.csrf).attach('file', file, { filename: 'rujukan.png', contentType: 'image/png' }),
     noCsrf: (method, url, body) => withBody(agent[method](url), body),
     async enterMod() {
       const r = await agent.post('/api/session/mode').set('X-CSRF-Token', client.csrf).send({ mode: 'mod_pelajar' })
