@@ -1,6 +1,6 @@
 # Team A R1 state: resume sheet
 
-Date: 2026-11-01. Written off `feature/v3-bijak-r1` @ b24d89170 (BASE-101). Docs only. Sources: `docs/team/BOARD.md`, `MERGE-LOG.md`, `QUESTIONS.md` and `requests/` on `origin/team/r1-board`, `git ls-remote`, and `docs/TRACKER.md` on `r1/d91-decisions` (PR #404). Heads change often: re-run `git ls-remote origin 'refs/heads/r1/*'` before relying on one.
+Date: 2026-11-01. Written off `feature/v3-bijak-r1` @ d42351f71 (BASE-102). Docs only. Sources: `docs/team/BOARD.md`, `MERGE-LOG.md`, `QUESTIONS.md` and `requests/` on `origin/team/r1-board`, `git ls-remote`, and `docs/TRACKER.md` on `r1/d91-decisions` (PR #404). Heads change often: re-run `git ls-remote origin 'refs/heads/r1/*'` before relying on one.
 
 Task source: `docs/handoff/CLOUD-HANDOFF.md` section 7. R1 = Bijak SPM release.
 
@@ -61,6 +61,7 @@ Task source: `docs/handoff/CLOUD-HANDOFF.md` section 7. R1 = Bijak SPM release.
 | REQ-C-009/010/013 | `r1/c-requests-a2` @ 60e301d6 | BASE-92 | A2 |
 | H-A9 | `r1/ha9-pipeline-chain` @ d3257e69 | BASE-93 | A3 |
 | T34 | `r1/t34-builder-review-c` @ 05451810 | BASE-101 | team C (covering A3 on T34) |
+| REQ-C-021 | `r1/reqc021-no-chapter-lock` @ 15cc2f64 | BASE-102 | A1 |
 | T30 servability reads | `r1/t30-servability-reads` @ 409df4bf | BASE-28 (T30 tip, contains 05b and own-stimuli) | A4 |
 | R1E2E-05 / 05b own stimuli | `r1/e2e05b-own-stimuli` @ 9895d004 | BASE-28 (T30 tip, contains 05b and own-stimuli) | A4 |
 | servability-own-stimuli | `r1/servability-own-stimuli` @ eea90859 | BASE-28 (T30 tip, contains 05b and own-stimuli) | A4 |
@@ -73,13 +74,13 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 
 | ID | Branch @ head | Lane | Depends on | B state |
 |---|---|---|---|---|
+| REQ-B-025c a choice-only essay_choice counts as blank (leaf kind passed to isBlank) | `r1/req-b-025c` @ a2865119 | A (lane unconfirmed) | none (REQ-B-025c) | READY; owner lane and review not seen (unconfirmed) |
 | REQ-B-022a servability overview counts in one Promise.all | `r1/req-b-022a` @ 688529b7 | A4 | T30 (base) | READY (A4); review not seen (unconfirmed) |
 | T54 performance report at ~406k questions (docs) | `r1/t54-perf-400k` @ f90a63bd | A4 | none (docs) | pushed (A4): docs/qa performance report, 11 paths p50/p95 and fixes for p95 over 1 s; review not seen (unconfirmed) |
-| REQ-C-021 no chapter lock (D98) | `r1/reqc021-no-chapter-lock` @ 15cc2f64 | A1 | none (D98) | READY (A1): drops the chapterLocked helper, fixes the Mod Pelajar spec, adds the D98 deviation row; review not seen (unconfirmed) |
 | REQ-B-035 review queue rows carry the stimulus group (D90) | `r1/intake-reqs-a2` @ a2b7207a | A2 | none (REQ-B-035) | READY (A2); review not seen (unconfirmed) |
 | T34-L1-residual (A3 WIP, for B3) | `r1/t34-l1-residual` @ e4bb72eb | A3 | T34 (B3 finding T34-L1-residual) | WIP, untested (A3): the answer to B3 finding T34-L1-residual; not for merge yet |
 | REQ-B-031 report guard, no auto-deactivation, capped (D98) | `r1/reqb031-report-guard` @ 9311fed0 | A1 | none (D98); unblocks the Lapor FE | fix pushed (REP-L1 advisory lock on the report cap, REP-L2 accepts a served question as proof; lock and burst specs); awaiting B2 re-review (A1) |
-| REQ-C-019 joinable filter on group list and filter-options | `r1/t49-served-now` @ 2e6d06df | A2 | T49 (base) | not ready: conformance smoke role 403 (A2) |
+| REQ-C-019 joinable filter on group list and filter-options | `r1/t49-served-now` @ 221c2b28 | A2 | T49 (base) | smoke role for GET /questions/filter-options, trimmed Negeri match, joinable wording pushed (221c2b28); awaiting B1 gate and B2 (A2) |
 | REQ-B-033 paper lane names a placed question the bank does not return | `r1/req-b-033` @ 572490e9 | A4 | servability lanes (T30, in base) | READY (A4); review not seen (unconfirmed) |
 | H-A21 overview cache | `r1/ha21-overview-cache` @ 95ad2607 | A4 | T30 | same chain as T45 part 1 (A4) |
 | T45 part 1 (AC-04.3/04.5/05.3) | `r1/t45-servability-acs` @ a0f11f68 | A4 | T29 | fix pushed (T45-L1: approve-time servability check at the shared approve point; cognitiveLevel in the fresh spec); awaiting B2 re-review (A4) |
@@ -91,7 +92,7 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 | T50 partial ACs | `r1/t50-partial-acs` @ e436e084 | A1 | none | B2 Changes requested (A1) |
 | T31 builder wire | `r1/t31-builder-wire` @ bf825128 | A3 | T34; waits for C1 REQ-A-008 | restacked on BASE-101, checkpoint, not yet READY (bf825128: builder helper follows T36, poc-flag publishes under a Disahkan Kontrak, openapi re-emitted; evidence still running); REQ-A-008 (C1) follows it |
 | T43 chain + publish ACs | `r1/t43-chain-publish` @ 89d30dab | A3 dev-1 | T31 (contains T34) | T34 is in base (BASE-101); follows T31, needs a base merge |
-| T48 builder parity (0104) | `r1/t48-builder-parity` @ 54f5e0bc | A3 | T34; re-verify running | T34 is in base (BASE-101); needs a base merge and B2 re-review; fix 2cbe7d28 (migration 0104) |
+| T48 builder parity (0104) | `r1/t48-builder-parity` @ 4a3ff264 | A3 | T34; re-verify running | T34 is in base (BASE-101); head 4a3ff264 = fix 2cbe7d28 plus base merge and two spec follow-ups (blocker catalogue has 21 codes; the PoC double re-publish spec serves the seeded Kontrak); needs B2 re-review (migration 0104) |
 | T43b publish ACs | `r1/t43b-publish-acs` @ 9ef2bba6 | A3 dev-2 | T43 | pushed; not yet in the B queue |
 | T51 partial ACs (builder, Terbit, Kontrak, Jana) | `r1/t51-partial-acs-a3` @ 359fe16e | A3 dev-1 | T43 | pushed; not yet in the B queue |
 | T52 examinerGrid (AC-20.3) | `r1/t52-examiner-grid` @ addae644 | A1 | none | B2 eslint BLOCKER `bijak-papers.test.ts:317` (A1); REQ-A-012 FE waits for it |
@@ -108,7 +109,7 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 |---|---|---|
 | T37 runbook | `r1/t37-r1-runbook` @ 801d8b7e | `docs/ops/r1-runbook.md` (migrations 0092 to 0105, SELECTs run 74/74 on BASE-62) |
 | T39 K1 evidence | `r1/t39-k1-evidence` @ 1a26f7a6 | `docs/ops/r1-k1-blueprint-evidence.md` |
-| T46 / H-A17 AC coverage | `r1/ha17-ac-coverage` @ 509ec63f | `docs/qa/r1-backend-ac-coverage.md`, `r1-verify-first-notes.md` (kept current by H-A27) |
+| T46 / H-A17 AC coverage | `r1/ha17-ac-coverage` @ f1cf02eb | `docs/qa/r1-backend-ac-coverage.md`, `r1-verify-first-notes.md` (kept current by H-A27) |
 | H-A19 admin parity | `r1/ha19-admin-parity` @ c7315b0e | `docs/qa/r1-admin-parity-check.md` |
 | H-A20 student parity | `r1/ha20-student-parity` @ 557e17c6 | `docs/qa/r1-student-parity-check.md` |
 | H-A22 parity docs | `r1/ha22-parity-docs` @ 4fb2a41b | both parity docs refreshed, deviation rows H22-D1/D2 in `v2-bijak-spm.md`, `student.md` rows marked |
@@ -148,7 +149,7 @@ Earlier decisions still in force for R1: D72 (secondary only), D75/D76 (standard
 | 0101 | `0101_essay_choice` | T25 | merged BASE-15 |
 | 0102 | `0102_leaf_cognitive_level` | T33 (`r1/t33-leaf-tags` @ 95cea5be) | merged BASE-27 |
 | 0103 | `0103_question_report_context` | T42 (`r1/t42-reports-intake-acs` @ d1210e96) | merged BASE-41; attempt FK stays NOT VALID |
-| 0104 | `0104_paper_section_admin_created` | T48 (`r1/t48-builder-parity` @ 54f5e0bc) | T34 is in base (BASE-101); needs a base merge and B2 re-review; fix 2cbe7d28 (migration 0104) |
+| 0104 | `0104_paper_section_admin_created` | T48 (`r1/t48-builder-parity` @ 4a3ff264) | T34 is in base (BASE-101); head 4a3ff264 = fix 2cbe7d28 plus base merge and two spec follow-ups (blocker catalogue has 21 codes; the PoC double re-publish spec serves the seeded Kontrak); needs B2 re-review (migration 0104) |
 | 0105 | gate facts (BE-09 duplicate, media, AI-editor facts) | H-A18 (A2) `r1/ha18-gate-facts` @ d3842c48 | B3 Pass, B2 pending; needs the Q10 user answer |
 
 Ranges: team A 0100 to 0109 (overflow 0120 to 0129), team C 0110 to 0119, team B none. 0106 to 0109 free. SQL for 0092 to 0105 is in `docs/ops/r1-runbook.md`.
@@ -165,7 +166,7 @@ Status as recorded in `requests/` (answers files take precedence). "Open for A" 
 | Open to C | REQ-A-004, REQ-A-013, REQ-A-014 |
 | Delivered by B or C to A's request | REQ-A-001, REQ-A-002, REQ-A-003, REQ-A-005, REQ-A-006, REQ-A-008, REQ-A-010, REQ-A-012 |
 | Closed (done, declined, withdrawn) | REQ-B-001, REQ-B-002, REQ-B-005, REQ-B-006, REQ-B-008, REQ-B-009, REQ-B-010, REQ-B-011, REQ-B-012, REQ-B-015, REQ-B-016, REQ-B-018, REQ-B-020, REQ-B-021, REQ-B-023, REQ-B-024, REQ-B-026, REQ-B-027, REQ-B-028, REQ-B-030, REQ-B-038, REQ-B-039, REQ-C-001, REQ-C-002, REQ-C-003, REQ-C-004, REQ-C-005, REQ-C-006, REQ-C-007, REQ-C-008, REQ-C-009, REQ-C-010, REQ-C-011, REQ-C-013, REQ-C-014, REQ-C-015, REQ-C-022, REQ-C-023 |
-| Raised between B and C, not A | REQ-B-001, REQ-B-002, REQ-B-009, REQ-B-011, REQ-B-016, REQ-B-024, REQ-B-027, REQ-B-030, REQ-B-036, REQ-B-038, REQ-B-039, REQ-B-042, REQ-B-045, REQ-B-047, REQ-C-023 |
+| Raised between B and C, not A | REQ-B-001, REQ-B-002, REQ-B-009, REQ-B-011, REQ-B-016, REQ-B-024, REQ-B-027, REQ-B-030, REQ-B-036, REQ-B-038, REQ-B-039, REQ-B-042, REQ-B-045, REQ-B-047, REQ-B-048, REQ-C-023 |
 
 ## 5. How to resume
 
