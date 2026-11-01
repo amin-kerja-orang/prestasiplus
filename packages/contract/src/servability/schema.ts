@@ -138,7 +138,7 @@ export const SERVABILITY_REASON_SOURCE: Readonly<Record<ServabilityReasonCode, '
   tag_review: 'PROPOSED',
   paper_empty: 'V2',
   stimulus_shared_ungrouped: 'PROPOSED',
-  question_missing: 'PROPOSED',
+  question_missing: 'PROPOSED', // REQ-B-033 / Q6: BM sentence above is mine (V2 has no phrase); listed for sign-off
 }
 
 /** "Tidak dihidangkan kerana {sebab}." (design 9.3, the .cloud exclusion line). `phrase` continues "kerana ...". */

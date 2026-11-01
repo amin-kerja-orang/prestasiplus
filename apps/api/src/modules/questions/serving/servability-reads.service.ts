@@ -69,10 +69,13 @@ const OVERVIEW_PARALLEL = 4
 
 type PaperEvaluation = ReturnType<typeof evaluate>
 
-/** The questions on published papers with their Simulasi (kertas) verdict: evaluated once and shared by the card and the activity row. */
+/**
+ * The questions on published papers with their Simulasi (kertas) verdict: evaluated once and shared by the card and the activity row.
+ * An id the bank did not return is in `results` with `null` ("looked up, not there"), so no second pass asks for it again.
+ */
 interface PaperQuestionEvaluations {
   ids: string[]
-  results: Map<string, PaperEvaluation>
+  results: Map<string, PaperEvaluation | null>
 }
 
 export interface Paged<T> {
@@ -131,7 +134,7 @@ export class ServabilityReadsService {
     ])
     const sumOver = (by: ReadonlyMap<string, number>, only?: ReadonlySet<string>) => [...by].reduce((n, [k, v]) => n + (only === undefined || only.has(k) ? v : 0), 0)
     let paperServed = 0
-    for (const r of onPapers.results.values()) if (r.served) paperServed++
+    for (const r of onPapers.results.values()) if (r?.served) paperServed++
 
     const rows: [ServabilityActivity, number, number, 'sql' | 'evaluated' | 'pool'][] = [
       ['databank', drawn.databankServed, databankTotal, 'sql'],
@@ -233,7 +236,7 @@ export class ServabilityReadsService {
   }
 
   /** Hub card "Bijak SPM": every row of the lane (no filter), counted. A paper row needs attention when it carries a reason. */
-  private async paperLaneCard(evaluated?: ReadonlyMap<string, PaperEvaluation>): Promise<{ total: number; attention: number }> {
+  private async paperLaneCard(evaluated?: ReadonlyMap<string, PaperEvaluation | null>): Promise<{ total: number; attention: number }> {
     const papers = await this.db.$queryRaw<PaperRow[]>`
       SELECT p.id, p.title, p.status, p.subject_id, (SELECT s.name FROM subjects s WHERE s.id = p.subject_id) AS subject_name
         FROM papers p WHERE ${PAPER_LANE_COND} ORDER BY p.id DESC`
@@ -242,7 +245,7 @@ export class ServabilityReadsService {
   }
 
   /** The lane rows of these papers: placed-question counts for all, reasons for the published ones. */
-  private async paperRows(papers: readonly PaperRow[], evaluated?: ReadonlyMap<string, PaperEvaluation>): Promise<ServabilityPaperRow[]> {
+  private async paperRows(papers: readonly PaperRow[], evaluated?: ReadonlyMap<string, PaperEvaluation | null>): Promise<ServabilityPaperRow[]> {
     const paperIds = papers.map((p) => p.id)
     const placements =
       paperIds.length === 0
@@ -252,14 +255,15 @@ export class ServabilityReadsService {
              WHERE ps.paper_id = ANY(${paperIds}::bigint[])`
     const published = new Set(papers.filter((p) => p.status === 'published').map((p) => p.id))
     const toEvaluate = new Set(placements.filter((p) => published.has(p.paper_id)).map((p) => idToString(p.question_id)))
-    const results = new Map<string, PaperEvaluation>()
-    // Verdicts the caller already has (the overview) are not computed again; any other id is evaluated here as before.
-    for (const id of toEvaluate) {
-      const known = evaluated?.get(id)
-      if (known) results.set(id, known)
-    }
+    const results = new Map<string, PaperEvaluation | null>()
+    // Verdicts the caller already has (the overview) are not computed again, a missing id (`null`) included; any other id is evaluated here as before.
+    for (const id of toEvaluate) if (evaluated?.has(id)) results.set(id, evaluated.get(id) ?? null)
     for (const part of chunks([...toEvaluate].filter((id) => !results.has(id)))) {
-      for (const [id, f] of await this.servability.factsOf(part, { jana: false })) results.set(id, evaluate({ ...f, onPublishedPaper: true }, 'simulasi_paper'))
+      const facts = await this.servability.factsOf(part, { jana: false })
+      for (const id of part) {
+        const f = facts.get(id)
+        results.set(id, f ? evaluate({ ...f, onPublishedPaper: true }, 'simulasi_paper') : null)
+      }
     }
     return papers.map((p) => {
       const ids = placements.filter((x) => x.paper_id === p.id).map((x) => idToString(x.question_id))
@@ -316,9 +320,13 @@ export class ServabilityReadsService {
   /** Every question on a published curated paper, with its Simulasi (kertas) verdict (the paper it sits on is published by definition). */
   private async evaluatePublishedPaperQuestions(): Promise<PaperQuestionEvaluations> {
     const ids = await this.questionsOnPublishedPapers()
-    const results = new Map<string, PaperEvaluation>()
+    const results = new Map<string, PaperEvaluation | null>()
     for (const part of chunks(ids)) {
-      for (const [id, f] of await this.servability.factsOf(part, { jana: false })) results.set(id, evaluate({ ...f, onPublishedPaper: true }, 'simulasi_paper'))
+      const facts = await this.servability.factsOf(part, { jana: false })
+      for (const id of part) {
+        const f = facts.get(id)
+        results.set(id, f ? evaluate({ ...f, onPublishedPaper: true }, 'simulasi_paper') : null)
+      }
     }
     return { ids, results }
   }
