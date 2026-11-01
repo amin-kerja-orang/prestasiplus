@@ -510,7 +510,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
-| r1/admin-list-perf | 04dce9fa7 | READY (A4, BASE-105): REQ-B-050 + 0106 + 0107 + exact counts; 408k p95 text 1.9 s → 79 ms, kertas 2.0 s → 0.2 s; 1362 pass (1 known base red); B2 + B3 + DevOps (maintenance window, pg_trgm) |
+| r1/admin-list-perf | 8183b2c5a | READY (A4, BASE-105): REQ-B-050 + 0106 + 0107 + exact counts; 408k p95 text 1.9 s → 79 ms, kertas 2.0 s → 0.2 s; 1362 pass (1 known base red); B2 + B3 + DevOps (maintenance window, pg_trgm) |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
 | r1/builder-search-perf | f0ddb1ca0 | READY (A3; T48 + BASE-105): Cari soalan p50/p95 11.2/12.0 s → 0.89/0.99 s at 407k, same results; 520 + 1 todo; conformance 409/409; merges after T48; B2 |
 | r1/e05b-l1-spec | f9eab2abf | READY; A3 pre-review found only Minors (no Blocker/Major) → A1b fixing the Minors, new head follows |

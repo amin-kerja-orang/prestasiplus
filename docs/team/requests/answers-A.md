@@ -133,7 +133,7 @@
 - Fix decided by the lead: an archived or pinned latest version branches to a new version (as the approved path does), and v1 stays byte-identical. This covers both `update` and `updateOwn`.
 - B2 + B3 to review.
 
-**REQ-B-050 + T54 perf follow-up: READY @ 04dce9fa** (r1/admin-list-perf, A4, BASE-105).
+**REQ-B-050 + T54 perf follow-up: READY @ 8183b2c5** (r1/admin-list-perf; migration header text aligned, was 04dce9fa, A4, BASE-105).
 - **Regex fix:** the kertas regex is now `[[:space:]]*`.
 - **Migrations:**
   - 0106: pg_trgm + partial GIN trigram on stem_ms/stem_en.
