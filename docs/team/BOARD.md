@@ -479,7 +479,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 ### Head audit 2026-11-01 15:00 UTC (superseded)
 This manual table has been removed because it went stale. **The only current source for team A heads and states is the auto table between the `AUDIT:BEGIN/END` markers at the end of this file.** It is regenerated from `git ls-remote` every cycle.
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 18:39 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 18:40 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -513,7 +513,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/reqb052-archived-edit | 171964317 | READY (A3; contains BASE-105 + H-A18 fc409ae1 + B-032 a2cb5bb4): full verification 2336 pass, 0 failures of its own (1 known base red); order H-A18 → B-032 → B-052; B2 + B3 |
 | r1/reqc021-followup | 948aa327a | READY (A1a, BASE-105): fixes the base red draw-bounded BR-16; merge early |
 | r1/seed-dangling-placements | 11cbcf458 | READY (A1b, BASE-105): asserts paper titles + counts = POC_BANK; seed 155 + 1 skip; B2 |
-| r1/stimulus-list-d72 | 1c2c7416a | ON HOLD: pre-review (A3): row split + merge after t49 (A2 resolves the listGroups conflict); do not merge |
+| r1/stimulus-list-d72 | 97f2fdc21 | ON HOLD: pre-review (A3): row split + merge after t49 (A2 resolves the listGroups conflict); do not merge |
 | r1/t04-minors | aff6df8f3 | ON HOLD: pre-review (A3): FD-11 deviation row + wording → A2; do not merge |
 | r1/t31-builder-wire | eb0346d25 | ON HOLD (paired): fixes done @eb0346d2 (441 pass); merge ONLY together with C REQ-A-008 after C re-merges this tip (vue-tsc TS2322 otherwise); do not merge alone |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
@@ -523,10 +523,11 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t39-k1-evidence | 1a26f7a60 | check: A3 to confirm state |
 | r1/t40-attempts-acs | 9be88fc7f | READY (A1a, BASE-105): D9 row added for R1-02.1 (pick cap is client-side, follows V2, lead decision) + coverage note; docs only, no code change; B2 |
 | r1/t43-chain-publish | 238eb6eb0 | ON HOLD (after T31 + REQ-A-008): fixes done @238eb6eb, on T31 eb0346d2 + BASE-105, 458 pass |
+| r1/t43b-publish-acs | 7a14581a7 | ON HOLD (A3 restack @7a14581a: T48 6c5ae3a8 merged + giveBab in publish-acs); awaiting A3 proof alone + trial merge with H-A18; do not merge |
 | r1/t45-builder-acs | 3001a0b84 | ON HOLD: builder-candidate-search 6 reds with H-A18 (bab gate); A1b adds giveBab after the A3 T48 tip; do not merge |
 | r1/t45-builder-acs-wip | 078204e1c | SUPERSEDED by r1/t45-builder-acs; do not merge |
 | r1/t45-servability-acs | 954614c69 | READY (A4, BASE-105): pre-review M1/M2 + Minors fixed; trial merge with H-A18 22/22; chain 1st; B2 + B3 | A1b delta re-review 18:5x UTC: all 6 tips green alone, no Blocker/Major; 3 Minors (approval-check guard untested; perf deviation line; jana-null guard) → A4 follow-up, non-blocking |
-| r1/t48-builder-parity | 6c5ae3a86 | ON HOLD: T48 builder-parity spec goes red (21 tests, "Sila pilih bab.") once merged with H-A18; A3 is fixing the giveBab fixture on T48, then restacking; do not merge until the new head |
+| r1/t48-builder-parity | 6c5ae3a86 | ON HOLD (A3): giveBab fix pushed @6c5ae3a8 (support/bab.ts byte-identical to H-A18); awaiting A3 proof alone + trial merge with H-A18 before READY; do not merge |
 | r1/t49-served-now | b99068a67 | ON HOLD: pre-review (A3): blank-filter bulk archive could archive the whole bank + missing deviation rows → A2 fixing; do not merge |
 | r1/t50-partial-acs | 075e1b587 | READY (A1a, BASE-105): A3 pre-review CLEAN (nits only); B2 |
 | r1/t51-partial-acs-a3 | 54f631164 | ON HOLD: pre-review (A2) M2: 22 reds once merged with H-A18 (giveBab fixture) → A3 fixing; Nits |
