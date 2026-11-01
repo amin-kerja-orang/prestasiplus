@@ -1142,6 +1142,25 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     await expectNoHScroll(page)
   })
 
+  test('S1j R1E2E-21: Pentadbiran menu > Bank Soalan has a Studio entry that opens /admin/studio', async ({
+    page,
+  }, info) => {
+    await login(page, ADMIN)
+    if (!isDesktopShell(page)) await page.getByTestId('pentadbiran-menu-button').click()
+    const nav = page.locator('[data-testid=pentadbiran-nav]:visible')
+    const link = nav.locator('a[href="/admin/studio"]').first()
+    observe(
+      info,
+      `menu links to /admin/studio: ${await nav.locator('a[href="/admin/studio"]').count()}; label: "${(await link.innerText().catch(() => '')).trim()}"`,
+    )
+    await expect(link, 'a menu entry to /admin/studio').toBeVisible()
+    await expectNoHScroll(page)
+    await link.click()
+    await expect(page).toHaveURL(/\/admin\/studio$/)
+    await expect(page.getByTestId('studio-list-page')).toBeVisible()
+    await expectNoHScroll(page)
+  })
+
   test('S1f admin Studio standalone MCQ with a stem picture (no group)', async ({ page }, info) => {
     const st = readState(info)
     await login(page, ADMIN)
@@ -1268,6 +1287,40 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
       `accepted ${accepted} item(s); bank questions from the PDF now: ${qs.map((q) => `#${q.id} ${q.status}`).join(', ') || 'none'}`,
     )
     expect(qs.length, 'the PDF questions are in the bank').toBeGreaterThanOrEqual(2)
+  })
+
+  test('S2h R1E2E-20: an intake-born question opens and saves in Studio "Sunting"', async ({
+    page,
+  }, info) => {
+    const st = readState(info)
+    test.skip(!st.approvedIntake, 'Blocked: S2b accepted no intake item')
+    await login(page, ADMIN)
+    const q = (await runQuestions(page, `${st.tag} pdf`))[0]
+    test.skip(!q, 'Blocked: no intake question in the bank')
+    await page.goto(`/admin/studio/questions/${q!.id}/sunting`)
+    await expect(
+      page.getByTestId('studio-form').or(page.getByTestId('studio-load-error')).first(),
+    ).toBeVisible()
+    const unsupported = page.getByTestId('studio-unsupported')
+    const blocked = await unsupported.isVisible().catch(() => false)
+    observe(
+      info,
+      `#${q!.id} in Studio: ${blocked ? `refused: ${(await unsupported.innerText()).replace(/\s+/g, ' ').slice(0, 200)}` : 'editable'}`,
+    )
+    await expectNoHScroll(page)
+    expect(blocked, 'Studio opens the intake question for editing').toBe(false)
+    // A real edit: Aras pemikiran of leaf (a) to Mengaplikasi, then "Simpan draf".
+    await page.getByTestId('studio-leaf-0-cognitive').selectOption('mengaplikasi')
+    const put = page.waitForResponse((r) => isApi(r, 'PUT', /\/api\/questions\/\d+$/), {
+      timeout: 20_000,
+    })
+    await page.getByTestId('studio-save-bar').getByRole('button', { name: 'Simpan draf' }).click()
+    const r = await put
+    observe(
+      info,
+      `Studio save -> PUT HTTP ${r.status()}${r.ok() ? '' : ` ${(await r.text()).slice(0, 200)}`}`,
+    )
+    expect(r.status(), 'Studio saves the intake question').toBe(200)
   })
 
   test('S2g R1E2E-12 workaround in the UI: set Aras pemikiran on the intake questions (Studio "Sunting", else the Bank Soalan edit form)', async ({
@@ -2485,6 +2538,80 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     await expect(
       page.locator('[data-testid^=paper-]', { hasText: paper!.title }).first(),
     ).toBeVisible()
+    await expectNoHScroll(page)
+  })
+
+  test('S4f pupil sits the T26c structured K2 fixture paper (seeded, no API assist) and self-marks a written part', async ({
+    page,
+  }, info) => {
+    await login(page, PUPIL_T4)
+    await page.goto('/spm/bijak')
+    await expect(page.getByTestId('bijak-hub')).toBeVisible()
+    const card = page
+      .locator('[data-testid^=paper-]', {
+        hasText: 'E2E fixture: Percubaan Matematik Tambahan Kertas 2',
+      })
+      .first()
+    await expect(card, 'the T26c K2 fixture paper on the T4 hub').toBeVisible()
+    observe(info, `hub card: ${(await card.innerText()).replace(/\s+/g, ' ').slice(0, 140)}`)
+    await expectNoHScroll(page)
+    await card.locator('[data-testid^=open-]').click()
+    await expect(page.getByTestId('bijak-cover')).toBeVisible()
+    await expectNoHScroll(page)
+    const started = page
+      .waitForResponse((r) => isApi(r, 'POST', /\/api\/bijak\/attempts$/), { timeout: 20_000 })
+      .catch(() => null)
+    if (
+      await page
+        .getByTestId('resume-choice')
+        .isVisible()
+        .catch(() => false)
+    ) {
+      await page.getByTestId('restart').click()
+      await page.getByTestId('confirm-restart').click()
+    } else await page.locator('[data-ds=hero-cta]').click()
+    const sr = await started
+    observe(
+      info,
+      `Mula -> ${sr ? `HTTP ${sr.status()} ${sr.ok() ? '' : (await sr.text()).slice(0, 200)}` : 'no request seen'}`,
+    )
+    await expect(page.getByTestId('attempt-shell'), 'the sitting starts').toBeVisible()
+    await expect(page.getByTestId('attempt-loading')).toHaveCount(0)
+    await expectNoHScroll(page)
+    let screens = 0
+    let filled = 0
+    for (let guard = 0; guard < 40; guard++) {
+      screens++
+      for (const box of await page.locator('[data-testid=math-input]:visible').all()) {
+        await box.fill('x = 2')
+        filled++
+      }
+      for (const t of await page.locator('[data-testid=attempt-shell] textarea:visible').all()) {
+        await t.fill('Jawapan bertulis murid.')
+        filled++
+      }
+      const opt = page.locator(
+        '[data-testid^=option-]:visible, [data-testid^=mcq-option-]:not([data-testid=mcq-option-image]):visible',
+      )
+      if ((await opt.count()) > 0) await opt.first().click()
+      if (!(await page.getByTestId('next').isVisible())) break
+      await page.getByTestId('next').click()
+    }
+    observe(info, `screens ${screens}, answer fields filled ${filled}`)
+    await page.getByTestId('submit').click()
+    await page.getByTestId('confirm-submit').click()
+    await expect(page.getByTestId('win-screen')).toBeVisible()
+    const headline = async () =>
+      (await page.getByTestId('win-screen').innerText())
+        .split('\n')
+        .filter(Boolean)
+        .slice(0, 3)
+        .join(' / ')
+    observe(info, `result before self-mark: ${await headline()}`)
+    await selfMarkOne(page, info)
+    await page.reload()
+    await expect(page.getByTestId('win-screen')).toBeVisible()
+    observe(info, `result after self-mark + reload: ${await headline()}`)
     await expectNoHScroll(page)
   })
 

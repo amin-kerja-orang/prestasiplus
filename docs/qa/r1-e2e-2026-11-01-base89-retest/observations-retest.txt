@@ -1,0 +1,172 @@
+[mobile] PASS S0 pupil baseline counts (Databank, Latih Tubi SPM, Soalan by Chapter)
+    observed: Databank MATH 54, Latih Tubi SPM MATH 54, chapter subjects 0, Matematik Bab totals {}
+[mobile] PASS S1c admin PDF intake with a passage shared by 2 questions (Muat Naik Kertas)
+    observed: group header after extraction: 0 reload(s) needed
+    observed: batch 1: 2 question card(s), 1 group header(s)
+    observed: gate after completing: no issues
+[mobile] PASS S1j R1E2E-21: Pentadbiran menu > Bank Soalan has a Studio entry that opens /admin/studio
+    observed: menu links to /admin/studio: 1; label: "Bank Soalan (Studio)"
+[mobile] PASS S1f admin Studio standalone MCQ with a stem picture (no group)
+    observed: Q3: Bab "Bab 1: Fungsi dan Persamaan Kuadratik", unit "1.0 Fungsi dan Persamaan Kuadratik dalam Satu Pemb", 8 SP offered; save bar: 1 markah Batal Simpan draf
+    observed: Q3 save -> POST /api/questions HTTP 201
+[mobile] PASS S2b admin accepts the intake questions in Baris Gilir Semakan (Terima)
+    observed: queue rows of this run: 2
+    observed: item: Berapakah harga sebatang pensel? R1E2E b89run1 mobile pdf Subjek Matematik Markah 1
+    observed: item gate: Pintu terbit Semua syarat dipenuhi: skema lengkap dan markah sepadan.
+    observed: decision button: "Terima (Draf)", enabled true
+    observed: accept -> POST /api/intake/items/1/accept HTTP 200 
+    observed: item: Barangan manakah yang paling murah? R1E2E b89run1 mobile pdf Subjek Matematik Markah 1
+    observed: item gate: Pintu terbit Semua syarat dipenuhi: skema lengkap dan markah sepadan.
+    observed: decision button: "Terima (Draf)", enabled true
+    observed: accept -> POST /api/intake/items/2/accept HTTP 200 
+    observed: accepted 2 item(s); bank questions from the PDF now: #1289 draft, #1288 draft
+[mobile] PASS S2h R1E2E-20: an intake-born question opens and saves in Studio "Sunting"
+    observed: #1289 in Studio: editable
+    observed: Studio save -> PUT HTTP 200
+[mobile] SKIP S2g R1E2E-12 workaround in the UI: set Aras pemikiran on the intake questions (Studio "Sunting", else the Bank Soalan edit form)
+    observed: intake questions without Aras pemikiran after Terima: 0 of 2
+    skip: Not needed: the intake editor set Aras pemikiran on every intake question (R1E2E-12 intake side)
+[mobile] PASS S2a admin approves the Bank Soalan questions (Hantar untuk Semakan, bulk Terbitkan)
+    observed: 3 run question(s) found
+    observed: Hantar untuk Semakan succeeded on 3 of 3 question(s)
+    observed: Terbitkan on 3 row(s) -> HTTP 200, affected 3
+    observed: statuses now (API): #1289 approved, #1288 approved, #1287 approved
+    observed: approved through the UI, per entry path: PDF intake 2/2, Studio 1/1
+[mobile] PASS S3b Pembina Kertas (BASE-1 builder): the admin MCQs are offered and placed in a Kertas 1 paper
+    observed: picker candidates for "R1E2E b89run1 mobile": 1
+    observed: bank candidates left in the picker (empty search): 0
+    observed: budget check after placing: Belum sepadan dengan blueprint (2 perkara) Bahagian A: Kurang 39 soalan (perlu 40, ada 1) Bahagian A: Markah 1 tidak sama dengan bajet 40
+    observed: D90 group units in the paper: 0, of which the run's own: 0
+[mobile] PASS S3f API-assisted: fill the S3b K1 paper from the builder pool, then Terbitkan in the UI
+    observed: API-assisted: 39 pool unit(s) placed; section 40/40 questions
+    observed: publish -> HTTP 200 {"data":{"ok":true,"errors":[],"notes":["Bahagian A: Soalan 128 tidak layak: unit tiada dalam kuota","Bahagian A: Soalan 138 tidak layak: unit tiada dalam kuota","Bahagian A: Soalan 150 tidak layak: unit tiada dalam kuota","Bahagian A: Soal
+[mobile] PASS S4f pupil sits the T26c structured K2 fixture paper (seeded, no API assist) and self-marks a written part
+    observed: hub card: E2E fixture: Percubaan Matematik Tambahan Kertas 2 Kertas 2 100 markah 150 minit 2026 Belum cuba Mula
+    observed: Mula -> HTTP 201 
+    observed: screens 15, answer fields filled 73
+    observed: result before self-mark: Teruskan, Murid! / Awak dapat 4/100 markah (sementara). / 4
+    observed: self-mark controls on the page: 12
+    observed: self-mark save -> POST /api/bijak/attempts/6ee8167a-cf4b-4eb4-9a35-c53059a1f7e4/self-mark 200
+    observed: result after self-mark + reload: Teruskan, Murid! / Awak dapat 5/100 markah (sementara). / 5
+[mobile] PASS S6 pupil T4 Jana Kertas: Matematik Tambahan Kertas 2 (blueprint 3472/2, T26 seed)
+    observed: contract: Matematik Tambahan Kertas 2 · 3472/2 · 150 minit Bahagian A: 7 soalan Bahagian B: 4 soalan Bahagian C: 4 soalan
+    observed: POST /api/bijak/papers/generate -> HTTP 422 {"error":{"code":"SHORTAGE","message":"Kertas tidak dapat dijana kerana soalan tidak mencukupi.","details":{"shortages":[{"section":"Bahagian A","kind":"unit","basis":"marks","unit":{"kind":"unit","nodeId":"489"},"need":6,"have":2},{"section":"Bahagian B","kind":"kbat","need":40,"have":0},{"section":"Bahagian C","kind":"kbat","need":40,"have":0}]},"requestId":"f646f419-7cc7-4f26-9532-53b3ed63cc2a"
+    observed: shown: Kertas tidak dapat dijana kerana soalan tidak mencukupi. Bahagian A: perlu 6 markah, hanya 2 tersedia Bahagian B: perlu 40 markah KBAT, hanya 0 tersedia Bahagian C: perlu 40 markah KBAT, hanya 0 tersedia Cuba subjek atau kertas lain, atau cuba lagi kemudian.
+[mobile] PASS B-01 Soalan by Chapter shows subjects or an empty-state message
+    observed: GET chapter-subjects: {"data":[{"code":"MATH","name":"Matematik","icon":"calculator","color":"#EF4444","chapterCount":1,"questionCount":55}],"meta":{"page":1,"pageSize":1,"totalItems
+    observed: subject tiles 1, empty-state texts 0
+[tablet] PASS S0 pupil baseline counts (Databank, Latih Tubi SPM, Soalan by Chapter)
+    observed: Databank MATH 55, Latih Tubi SPM MATH 55, chapter subjects 1, Matematik Bab totals {"Fungsi dan Persamaan Kuadratik":1}
+[tablet] PASS S1c admin PDF intake with a passage shared by 2 questions (Muat Naik Kertas)
+    observed: group header after extraction: 0 reload(s) needed
+    observed: batch 2: 2 question card(s), 1 group header(s)
+    observed: gate after completing: no issues
+[tablet] PASS S1j R1E2E-21: Pentadbiran menu > Bank Soalan has a Studio entry that opens /admin/studio
+    observed: menu links to /admin/studio: 1; label: "Bank Soalan (Studio)"
+[tablet] PASS S1f admin Studio standalone MCQ with a stem picture (no group)
+    observed: Q3: Bab "Bab 1: Fungsi dan Persamaan Kuadratik", unit "1.0 Fungsi dan Persamaan Kuadratik dalam Satu Pemb", 8 SP offered; save bar: 1 markah Batal Simpan draf
+    observed: Q3 save -> POST /api/questions HTTP 201
+[tablet] PASS S2b admin accepts the intake questions in Baris Gilir Semakan (Terima)
+    observed: queue rows of this run: 2
+    observed: item: Berapakah harga sebatang pensel? R1E2E b89run1 tablet pdf Keyakinan rendah E2E b89run1 Matematik · K2 Objektif 1 Hari ini Menunggu Semakan S
+    observed: item gate: Pintu terbit Semua syarat dipenuhi: skema lengkap dan markah sepadan.
+    observed: decision button: "Terima (Draf)", enabled true
+    observed: accept -> POST /api/intake/items/3/accept HTTP 200 
+    observed: item: Barangan manakah yang paling murah? R1E2E b89run1 tablet pdf Keyakinan rendah E2E b89run1 Matematik · K2 Objektif 1 Hari ini Menunggu Semaka
+    observed: item gate: Pintu terbit Semua syarat dipenuhi: skema lengkap dan markah sepadan.
+    observed: decision button: "Terima (Draf)", enabled true
+    observed: accept -> POST /api/intake/items/4/accept HTTP 200 
+    observed: accepted 2 item(s); bank questions from the PDF now: #1292 draft, #1291 draft
+[tablet] PASS S2h R1E2E-20: an intake-born question opens and saves in Studio "Sunting"
+    observed: #1292 in Studio: editable
+    observed: Studio save -> PUT HTTP 200
+[tablet] SKIP S2g R1E2E-12 workaround in the UI: set Aras pemikiran on the intake questions (Studio "Sunting", else the Bank Soalan edit form)
+    observed: intake questions without Aras pemikiran after Terima: 0 of 2
+    skip: Not needed: the intake editor set Aras pemikiran on every intake question (R1E2E-12 intake side)
+[tablet] PASS S2a admin approves the Bank Soalan questions (Hantar untuk Semakan, bulk Terbitkan)
+    observed: 3 run question(s) found
+    observed: Hantar untuk Semakan succeeded on 3 of 3 question(s)
+    observed: Terbitkan on 3 row(s) -> HTTP 200, affected 3
+    observed: statuses now (API): #1292 approved, #1291 approved, #1290 approved
+    observed: approved through the UI, per entry path: PDF intake 2/2, Studio 1/1
+[tablet] PASS S3b Pembina Kertas (BASE-1 builder): the admin MCQs are offered and placed in a Kertas 1 paper
+    observed: picker candidates for "R1E2E b89run1 tablet": 1
+    observed: bank candidates left in the picker (empty search): 1
+    observed: budget check after placing: Belum sepadan dengan blueprint (2 perkara) Bahagian A: Kurang 38 soalan (perlu 40, ada 2) Bahagian A: Markah 2 tidak sama dengan bajet 40
+    observed: D90 group units in the paper: 0, of which the run's own: 0
+[tablet] PASS S3f API-assisted: fill the S3b K1 paper from the builder pool, then Terbitkan in the UI
+    observed: API-assisted: 38 pool unit(s) placed; section 40/40 questions
+    observed: publish -> HTTP 200 {"data":{"ok":true,"errors":[],"notes":["Bahagian A: Soalan 128 tidak layak: unit tiada dalam kuota","Bahagian A: Soalan 138 tidak layak: unit tiada dalam kuota","Bahagian A: Soalan 150 tidak layak: unit tiada dalam kuota","Bahagian A: Soal
+[tablet] PASS S4f pupil sits the T26c structured K2 fixture paper (seeded, no API assist) and self-marks a written part
+    observed: hub card: E2E fixture: Percubaan Matematik Tambahan Kertas 2 Kertas 2 100 markah 150 minit 2026 5 / 100 Cuba lagi
+    observed: Mula -> HTTP 201 
+    observed: screens 15, answer fields filled 73
+    observed: result before self-mark: Teruskan, Murid! / Awak dapat 4/100 markah (sementara). / 4
+    observed: self-mark controls on the page: 12
+    observed: self-mark save -> POST /api/bijak/attempts/42e3e9a1-3245-4e30-b679-cf2fc545bbdf/self-mark 200
+    observed: result after self-mark + reload: Teruskan, Murid! / Awak dapat 5/100 markah (sementara). / 5
+[tablet] PASS S6 pupil T4 Jana Kertas: Matematik Tambahan Kertas 2 (blueprint 3472/2, T26 seed)
+    observed: contract: Matematik Tambahan Kertas 2 · 3472/2 · 150 minit Bahagian A: 7 soalan Bahagian B: 4 soalan Bahagian C: 4 soalan
+    observed: POST /api/bijak/papers/generate -> HTTP 422 {"error":{"code":"SHORTAGE","message":"Kertas tidak dapat dijana kerana soalan tidak mencukupi.","details":{"shortages":[{"section":"Bahagian A","kind":"unit","basis":"marks","unit":{"kind":"unit","nodeId":"489"},"need":6,"have":2},{"section":"Bahagian B","kind":"kbat","need":40,"have":0},{"section":"Bahagian C","kind":"kbat","need":40,"have":0}]},"requestId":"d3ca1ec9-18a3-40ad-a9a3-788d09904115"
+    observed: shown: Kertas tidak dapat dijana kerana soalan tidak mencukupi. Bahagian A: perlu 6 markah, hanya 2 tersedia Bahagian B: perlu 40 markah KBAT, hanya 0 tersedia Bahagian C: perlu 40 markah KBAT, hanya 0 tersedia Cuba subjek atau kertas lain, atau cuba lagi kemudian.
+[tablet] PASS B-01 Soalan by Chapter shows subjects or an empty-state message
+    observed: GET chapter-subjects: {"data":[{"code":"MATH","name":"Matematik","icon":"calculator","color":"#EF4444","chapterCount":1,"questionCount":56}],"meta":{"page":1,"pageSize":1,"totalItems
+    observed: subject tiles 1, empty-state texts 0
+[desktop] PASS S0 pupil baseline counts (Databank, Latih Tubi SPM, Soalan by Chapter)
+    observed: Databank MATH 56, Latih Tubi SPM MATH 56, chapter subjects 1, Matematik Bab totals {"Fungsi dan Persamaan Kuadratik":2}
+[desktop] PASS S1c admin PDF intake with a passage shared by 2 questions (Muat Naik Kertas)
+    observed: group header after extraction: 0 reload(s) needed
+    observed: batch 3: 2 question card(s), 1 group header(s)
+    observed: gate after completing: no issues
+[desktop] PASS S1j R1E2E-21: Pentadbiran menu > Bank Soalan has a Studio entry that opens /admin/studio
+    observed: menu links to /admin/studio: 0; label: "Bank Soalan (Studio)"
+[desktop] PASS S1f admin Studio standalone MCQ with a stem picture (no group)
+    observed: Q3: Bab "Bab 1: Fungsi dan Persamaan Kuadratik", unit "1.0 Fungsi dan Persamaan Kuadratik dalam Satu Pemb", 8 SP offered; save bar: 1 markah Batal Simpan draf
+    observed: Q3 save -> POST /api/questions HTTP 201
+[desktop] PASS S2b admin accepts the intake questions in Baris Gilir Semakan (Terima)
+    observed: queue rows of this run: 2
+    observed: item: Berapakah harga sebatang pensel? R1E2E b89run1 desktop pdf Keyakinan rendah E2E b89run1 Matematik · K2 Objektif 1 Hari ini Menunggu Semakan 
+    observed: item gate: Pintu terbit Semua syarat dipenuhi: skema lengkap dan markah sepadan.
+    observed: decision button: "Terima (Draf)", enabled true
+    observed: accept -> POST /api/intake/items/5/accept HTTP 200 
+    observed: item: Barangan manakah yang paling murah? R1E2E b89run1 desktop pdf Keyakinan rendah E2E b89run1 Matematik · K2 Objektif 1 Hari ini Menunggu Semak
+    observed: item gate: Pintu terbit Semua syarat dipenuhi: skema lengkap dan markah sepadan.
+    observed: decision button: "Terima (Draf)", enabled true
+    observed: accept -> POST /api/intake/items/6/accept HTTP 200 
+    observed: accepted 2 item(s); bank questions from the PDF now: #1295 draft, #1294 draft
+[desktop] PASS S2h R1E2E-20: an intake-born question opens and saves in Studio "Sunting"
+    observed: #1295 in Studio: editable
+    observed: Studio save -> PUT HTTP 200
+[desktop] SKIP S2g R1E2E-12 workaround in the UI: set Aras pemikiran on the intake questions (Studio "Sunting", else the Bank Soalan edit form)
+    observed: intake questions without Aras pemikiran after Terima: 0 of 2
+    skip: Not needed: the intake editor set Aras pemikiran on every intake question (R1E2E-12 intake side)
+[desktop] PASS S2a admin approves the Bank Soalan questions (Hantar untuk Semakan, bulk Terbitkan)
+    observed: 3 run question(s) found
+    observed: Hantar untuk Semakan succeeded on 3 of 3 question(s)
+    observed: Terbitkan on 3 row(s) -> HTTP 200, affected 3
+    observed: statuses now (API): #1295 approved, #1294 approved, #1293 approved
+    observed: approved through the UI, per entry path: PDF intake 2/2, Studio 1/1
+[desktop] PASS S3b Pembina Kertas (BASE-1 builder): the admin MCQs are offered and placed in a Kertas 1 paper
+    observed: picker candidates for "R1E2E b89run1 desktop": 1
+    observed: bank candidates left in the picker (empty search): 2
+    observed: budget check after placing: Belum sepadan dengan blueprint (2 perkara) Bahagian A: Kurang 37 soalan (perlu 40, ada 3) Bahagian A: Markah 3 tidak sama dengan bajet 40
+    observed: D90 group units in the paper: 0, of which the run's own: 0
+[desktop] PASS S3f API-assisted: fill the S3b K1 paper from the builder pool, then Terbitkan in the UI
+    observed: API-assisted: 37 pool unit(s) placed; section 40/40 questions
+    observed: publish -> HTTP 200 {"data":{"ok":true,"errors":[],"notes":["Bahagian A: Soalan 128 tidak layak: unit tiada dalam kuota","Bahagian A: Soalan 138 tidak layak: unit tiada dalam kuota","Bahagian A: Soalan 150 tidak layak: unit tiada dalam kuota","Bahagian A: prof
+[desktop] PASS S4f pupil sits the T26c structured K2 fixture paper (seeded, no API assist) and self-marks a written part
+    observed: hub card: E2E fixture: Percubaan Matematik Tambahan Kertas 2 Kertas 2 100 markah 150 minit 2026 5 / 100 Cuba lagi
+    observed: Mula -> HTTP 201 
+    observed: screens 15, answer fields filled 73
+    observed: result before self-mark: Teruskan, Murid! / Awak dapat 4/100 markah (sementara). / 4
+    observed: self-mark controls on the page: 12
+    observed: self-mark save -> POST /api/bijak/attempts/33adad3d-0102-4088-a29f-8e208503d329/self-mark 200
+    observed: result after self-mark + reload: Teruskan, Murid! / Awak dapat 5/100 markah (sementara). / 5
+[desktop] PASS S6 pupil T4 Jana Kertas: Matematik Tambahan Kertas 2 (blueprint 3472/2, T26 seed)
+    observed: contract: Matematik Tambahan Kertas 2 · 3472/2 · 150 minit Bahagian A: 7 soalan Bahagian B: 4 soalan Bahagian C: 4 soalan
+    observed: POST /api/bijak/papers/generate -> HTTP 422 {"error":{"code":"SHORTAGE","message":"Kertas tidak dapat dijana kerana soalan tidak mencukupi.","details":{"shortages":[{"section":"Bahagian A","kind":"unit","basis":"marks","unit":{"kind":"unit","nodeId":"489"},"need":6,"have":2},{"section":"Bahagian B","kind":"kbat","need":40,"have":0},{"section":"Bahagian C","kind":"kbat","need":40,"have":0}]},"requestId":"cea65b0c-85fc-487d-b1a9-2686c46af639"
+    observed: shown: Kertas tidak dapat dijana kerana soalan tidak mencukupi. Bahagian A: perlu 6 markah, hanya 2 tersedia Bahagian B: perlu 40 markah KBAT, hanya 0 tersedia Bahagian C: perlu 40 markah KBAT, hanya 0 tersedia Cuba subjek atau kertas lain, atau cuba lagi kemudian.
+[desktop] PASS B-01 Soalan by Chapter shows subjects or an empty-state message
+    observed: GET chapter-subjects: {"data":[{"code":"MATH","name":"Matematik","icon":"calculator","color":"#EF4444","chapterCount":1,"questionCount":57}],"meta":{"page":1,"pageSize":1,"totalItems
+    observed: subject tiles 1, empty-state texts 0
+{"mobile":{"passed":12,"skipped":1},"tablet":{"passed":12,"skipped":1},"desktop":{"passed":12,"skipped":1}}
