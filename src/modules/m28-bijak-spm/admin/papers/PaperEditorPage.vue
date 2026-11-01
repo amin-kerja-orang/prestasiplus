@@ -295,19 +295,15 @@ async function publish(): Promise<void> {
   // V2 native paper: confirm before it goes live (R8; a composite set in the Set Builder has none).
   if (!(await confirm({ message: bt.publishConfirm, confirmLabel: bt.publish }))) return
   if (!(await save())) return
-  busy.value = true
-  try {
-    const res = await server.publishPaper(id.value)
-    if (!res.ok) {
-      publishErrors.value = res.errors
-      flash.show({ type: 'error', message: bt.notPublishable(res.errors.length) })
-      return
-    }
-    flash.show({ type: 'success', message: bt.publishedFlash(data.value?.paper.title ?? title.value) })
-    await reload()
-  } finally {
-    busy.value = false
+  // The builder API applies the T34 rule (hard blockers refuse; a Kontrak not Disahkan needs the audited override below).
+  await actions.loadReview()
+  if (actions.publishBlocked.value) {
+    publishErrors.value = actions.blockers.value
+    flash.show({ type: 'error', message: bt.notPublishable(actions.blockers.value.length) })
+    return
   }
+  publishErrors.value = []
+  await actions.publish()
 }
 async function overridePublish(reason: string): Promise<void> {
   if (!(await confirm({ message: bt.publishConfirm, confirmLabel: bt.publish }))) return

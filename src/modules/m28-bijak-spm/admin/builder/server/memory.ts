@@ -42,10 +42,20 @@ async function loadAdmin() {
 
 /**
  * Test / demo hook: blueprint-conformance lines (the kind T34 lets an admin override, for example
- * "Kontrak Simulasi ... belum Disahkan") for a paper. The default mock has none, so the mock e2e
- * keeps its 2-click publish.
+ * "Kontrak Simulasi ... belum Disahkan") for a paper. The default derives it from the Kontrak source; tests inject their own.
  */
-export type OverridableLines = (editor: PaperEditorData) => string[]
+export type OverridableLines = (editor: PaperEditorData) => string[] | Promise<string[]>
+
+/**
+ * The mock's default for the T34 rule: Terbit needs the paper's Kontrak to be Disahkan; a Draf or Spec
+ * one is the overridable BLUEPRINT_NOT_VERIFIED blocker (same line as `builder.constants.ts`).
+ */
+const blueprintLines: OverridableLines = async (editor) => {
+  const { subject, kertas } = editor.paper
+  const bp = await kontrakServer().get(subject, kertas).catch(() => null)
+  if (!bp || bp.source === 'Disahkan') return []
+  return [`Kontrak Simulasi ${bp.code} (versi ${bp.version}) belum Disahkan (status: ${bp.source}); Terbit memerlukan kontrak Disahkan.`]
+}
 
 /** Contract code of a hard blocker line (BM text of `checkPaper`); the mock only needs a stable code. */
 function hardCode(message: string): 'COUNT_TOO_FEW' | 'COUNT_TOO_MANY' | 'MARKS_MISMATCH' | 'NOT_PUBLISHED' | 'DUPLICATE_QUESTION' | 'GROUP_INCOMPLETE' {
@@ -58,7 +68,7 @@ function hardCode(message: string): 'COUNT_TOO_FEW' | 'COUNT_TOO_MANY' | 'MARKS_
 }
 
 export class MockBuilderServer implements BuilderApi {
-  constructor(private readonly overridable: OverridableLines = () => []) {}
+  constructor(private readonly overridable: OverridableLines = blueprintLines) {}
   private admin: Promise<AdminMock> | null = null
   private a(): Promise<AdminMock> {
     this.admin ??= loadAdmin()
@@ -217,7 +227,7 @@ export class MockBuilderServer implements BuilderApi {
       membersOf: h.membersOf,
       isLive: (qid) => h.q.get(qid)?.status === 'terbit',
     })
-    const overridableLines = this.overridable(ed)
+    const overridableLines = await this.overridable(ed)
     const blockers = [...check.errors, ...check.sections.flatMap((s) => s.errors.map((e) => `${s.label}: ${e}`))]
     const notes = check.sections.flatMap((s) => s.notes.map((n) => `${s.label}: ${n}`))
     return {
@@ -294,7 +304,7 @@ export class MockBuilderServer implements BuilderApi {
     if (options.override && (options.reason ?? '').trim().length < 5)
       throw new BuilderError('invalid', 'Sebab diperlukan untuk menerbitkan walaupun tidak memenuhi kontrak blueprint')
     const a = await this.a()
-    const lines = this.overridable(await a.getPaperEditor(id))
+    const lines = await this.overridable(await a.getPaperEditor(id))
     if (lines.length && !options.override) {
       const rv = await this.review(id)
       return { ok: false, errors: rv.blockers, blockerDetails: rv.blockerDetails, canOverride: rv.canOverride }
