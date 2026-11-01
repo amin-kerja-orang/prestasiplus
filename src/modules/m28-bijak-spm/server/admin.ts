@@ -1123,7 +1123,7 @@ export class AdminOps {
       const st = grouped && q.groupId ? getStimulus(q.groupId) : undefined
       units.push({
         ...(grouped && q.groupId ? { groupId: q.groupId } : {}),
-        ...(st ? { stimulus: st } : {}),
+        ...(st ? { stimulus: st, stimuli: [st] } : {}),
         questionIds: members,
         questions,
         marks: questions.reduce((n, x) => n + x.marks, 0),
