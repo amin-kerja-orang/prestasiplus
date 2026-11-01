@@ -353,3 +353,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 - **REQ-C-021 READY** @ 15cc2f64c (A1a, BASE-101): no chapter lock (D98). FE follow-up is REQ-A-014 (team C).
 - REQ-C-016 DONE (already on base, BASE-76).
 - T50 and T52 move to A1a. A1b keeps T38 + T40.
+- **A2 READY ×2** (BASE-100):
+  - r1/intake-reqs-a2 @ a2b7207a8: REQ-B-034 (unknown SP refused, BM field message) + REQ-B-035 (review-queue `group` badge, D90). contract 1432/1432; intake-workflow 131/131; tsc 0; eslint 0. B3 optional (B-034 is input validation).
+  - REQ-B-044, r1/t04-minors @ d248166ea: spec expectation follows FD-11 (tile counts chaptered + ungrouped + approved); no code change. practice 330 + 1 skip; questions 895 + 3 todo; conformance practice 25/25.
+- REQ-B-040: already in BASE-98. Nothing to do.
