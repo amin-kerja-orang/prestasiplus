@@ -371,3 +371,4 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
   - V2 reference: BIJAK-SPM-cloud §4.5. Needs **B2 + B3** (wallet).
 - **T40 READY** r1/t40-attempts-acs @ 985e2af0b (T38 + BASE-101). B2 Minors fixed (R1-06.2 renamed, choose-N case added), plus the T36 import in cuba-lagi-rewards. 308 pass + 1 todo; tsc 0. Needs B2. Merge after T38.
 - T50 flake fix @ e436e084d (A1b). A1a is merging BASE-101 and doing T52.
+- REQ-B-025(c) and the E05B-L1 spec move from A4 to A1b (no file overlap).
