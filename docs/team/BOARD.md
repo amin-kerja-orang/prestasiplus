@@ -505,7 +505,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 | T44 | r1/t44-blueprint-fields | 072d8f4b | — | merged at BASE-67 as 77984abc. The newer tip 072d8f4b shows a 19-file delta against base; A3 is asked whether it is WIP (marked IN-PROGRESS until it answers) |
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 16:12 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 16:13 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -531,7 +531,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/req-c012-a2 | ba57ecc52 | WAITS for fixed H-A18 (A2 slot 1) |
 | r1/reqb032-pinned-rule | e9cf34b7f | READY (A2+A3, BASE-105): the attempt serves the pinned version; SERVED_NOW = lock predicate; image rule B; pinned-version-rule 6/6; attempts 180/180; B2 + B3 |
 | r1/reqb049-report-visible | 9ece8d76d | READY (A1b, BASE-105): pre-review Minors fixed (type from the live version, spec titles, real level codes); 316/316; B2 + B3 |
-| r1/reqb052-archived-edit | 50017f8f1 | IN-PROGRESS (A3 T48 dev): red repro ce0af563 proves an admin/Guru PUT rewrites a pinned archived v1 that a pupil sees; fixing (branch to a new version) |
+| r1/reqb052-archived-edit | 50017f8f1 | IN-PROGRESS (A3): fix done @50017f8f (an archived/pinned version branches to a new version; spec 4/4), but it overlaps REQ-B-032 in be09-question-source.ts → A3 is stacking it on REQ-B-032 with one serving rule; order B-032 → B-052 |
 | r1/reqc021-followup | 948aa327a | READY (A1a, BASE-105): fixes the base red draw-bounded BR-16; merge early |
 | r1/seed-dangling-placements | 11cbcf458 | READY (A1b, BASE-105): asserts paper titles + counts = POC_BANK; seed 155 + 1 skip; B2 |
 | r1/stimulus-list-d72 | 1c2c7416a | READY (A2, BASE-105): D72 filter on the group/stimulus lists + empty groups kept listed (D9 row); stimulus-lists 13/13; B2 |
@@ -554,6 +554,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t51-partial-acs-a3 | 4f812b4e2 | READY (A3; T48 + T43 + T31 + BASE-105): PIPE AC-18.1 + R1-21.3/21.6 backend; overlap resolved toward T48; 965 + 1 todo; conformance 409/409; order T48 → T31 (+REQ-A-008) → T43 → T51; B2 |
 | r1/t52-examiner-grid | f2d36f648 | READY (A1a, BASE-105): B2 approved c17; ready for the B1 gate |
 | r1/t54-perf-400k | 96f72e566 | READY (A4, BASE-105, docs only); independent; B2 |
+
+**New branches not yet triaged:** r1/reqb036-intake-group-header 50096c38c
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
