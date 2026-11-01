@@ -3,7 +3,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common'
 import { idFromString, isIdString } from '../../../db/ids'
 import { CurriculumRepository } from '../../curriculum'
 import { FilesService } from '../../files'
-import { QuestionsRepository } from '../../questions'
+import { pinServableForNewSitting, QuestionsRepository } from '../../questions'
 import type { QuestionRecord, StimulusGroupRecord } from '../../questions/types'
 import type {
   BijakQuestionBundle,
@@ -75,6 +75,16 @@ export class Be09BijakQuestionSource implements AttemptQuestionSource {
   async getPinned(questionIds: readonly string[]): Promise<ReadonlyMap<string, BijakQuestionInfo>> {
     const mapped = await this.load(questionIds, false)
     return new Map([...mapped].map(([id, m]) => [id, infoOf(m.bundle, m.groupId)]))
+  }
+
+  /**
+   * REQ-B-058: the questions whose pinned version a NEW sitting must not be served (taken down: archived with a reason other than
+   * `superseded`, or not approved). The shared rule is `pinServableForNewSitting`. A pin whose version row does not exist is left to the
+   * bundle load, which already fails closed. Used at start only; a running sitting keeps its pin (`loadQuestions` with pins).
+   */
+  async takenDownPins(pins: ReadonlyMap<string, number>): Promise<ReadonlySet<string>> {
+    const records = await this.questions.getVersions([...pins].map(([questionId, versionNo]) => ({ questionId, versionNo })))
+    return new Set(records.filter((r) => !pinServableForNewSitting(r.version)).map((r) => r.id))
   }
 
   /**

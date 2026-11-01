@@ -58,6 +58,12 @@ export interface BijakQuestionSource {
    * marks after "Arkib" (H-A13). Optional: a source without it leaves the marks of a withdrawn question at 0.
    */
   getPinned?(ids: readonly string[]): Promise<ReadonlyMap<string, BijakQuestionInfo>>
+  /**
+   * REQ-B-058: the question ids whose PINNED version (the map is question id -> pinned version number) is taken down (archived with a reason
+   * other than `superseded`, or not approved): a NEW sitting of a paper that places one is refused. A running sitting does not ask. Optional:
+   * a source without it refuses nothing here.
+   */
+  takenDownPins?(pins: ReadonlyMap<string, number>): Promise<ReadonlySet<string>>
   /** The eligible pool a blueprint section draws from (`blueprint_sections.pool`). */
   pool(pool: string, scope: BijakPoolScope): Promise<BijakPool>
 }
