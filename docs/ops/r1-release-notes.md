@@ -481,23 +481,21 @@ is tagged, because of `ON DELETE RESTRICT`; otherwise restore the backup).
 ## 4. One Disahkan blueprint before pupils use Jana Kertas
 
 After 0092 no blueprint serves pupils. For each subject and kertas that pupils will use, an **Admin Pusat** must verify
-one blueprint. On UAT there are **0 blueprints** today, so a blueprint must first exist (see question Q1 in section 8).
+one blueprint. On UAT there are **0 blueprints** today, so a blueprint must first exist (D95 below: an admin creates it in Kontrak; question Q1 of section 8 is answered).
 
 ### 4.1 Get a blueprint (Spec) to verify
 
-- **Option A (by hand, no seed):** Pentadbiran -> `/admin/spm/kontrak` -> `Tambah Kontrak` -> fill the subject, kertas
-  and sections until the panel shows `Tiada ralat. Kontrak boleh disimpan.` -> save. It is saved as Draf/Spec.
-- **Option B (seed):** the six launch blueprints (1449/1, 1449/2, 3472/1, 3472/2, 4531/2, 1249/2, as Spec, with study
-  evidence) come from the seed module `exam-launch-blueprints`. It is a **demo-kind** module (verified: no
-  `kind: 'reference'`), so a `NODE_ENV=production` seed skips it, and `deploy.sh` refuses `ALLOW_DEMO_SEED=true`.
-  It also needs the DSKP unit nodes from section 3. Using it on UAT needs a LEAD decision (Q1). Do not use it in
-  production without that decision and a security review.
+**D95 (2026-10-31, PR amin-kerja-orang/prestasiplus#404, not merged; not yet a row of `docs/TRACKER.md` on this branch) supersedes the text that stood here ("Option A by hand" and "Option B seed").** On UAT an Admin Pusat creates each blueprint by hand in Kontrak, through the real flow, and presses Sahkan. There is **no seed on UAT**: the demo seeds, the launch-blueprint seed (`exam-launch-blueprints`) and the E2E seed are local / E2E only. The question Q1 of section 8 is answered by D95.
+
+- Pentadbiran -> `/admin/spm/kontrak` -> `Tambah Kontrak` -> fill the subject, kertas and sections until the panel shows `Tiada ralat. Kontrak boleh disimpan.` -> save. It is saved as Draf/Spec.
+- Order and checks: 3472/2 first, then 1449/1, 1249/1, 4531/1 and Sains K1 once evidence from two or more bodies is ready. The steps, the read-only SELECTs for the blueprint state before and after Sahkan, and the "no seed ran" checks are in [r1-runbook.md](r1-runbook.md) section 5. The evidence per blueprint, with every check Sahkan runs and what is missing, is in [r1-k1-blueprint-evidence.md](r1-k1-blueprint-evidence.md) (T39; on branch `r1/t39-k1-evidence` until merged).
 
 ### 4.2 Verify (UI path, Admin Pusat)
 
 1. Pentadbiran -> `/admin/spm/kontrak` -> open the subject and kertas -> tab **Pengesahan**.
 2. Add evidence with `Tambah Bukti` until the meter `Badan berbeza dengan skema:` reaches its target (2 different
-   bodies), unless the seeded study evidence is already there.
+   bodies). On UAT there is no seed (D95), so the admin enters every evidence item here; the evidence per blueprint
+   is listed in [r1-k1-blueprint-evidence.md](r1-k1-blueprint-evidence.md).
 3. Press `Semak Bukti`; every line must pass. A failure shows `Kontrak belum boleh disahkan.` with the list.
 4. Fill `Nota pengesahan` (required), press `Sahkan`, confirm the dialog `Sahkan kontrak ini?` -> `Sahkan`.
 
@@ -692,9 +690,7 @@ Unverified (nothing here was run against any server):
 
 Open questions for the team:
 
-- **Q1 (LEAD):** on UAT, are the launch blueprints created by hand in Kontrak, or may the demo-kind
-  `exam-launch-blueprints` seed run there (it is blocked under `NODE_ENV=production` by design)? Which subject/kertas
-  pairs must be Disahkan before pupils are told about Jana Kertas?
+- **Q1 (LEAD): answered by D95** (PR amin-kerja-orang/prestasiplus#404, not merged; 2026-10-31): on UAT the launch blueprints are created by hand in Kontrak by an Admin Pusat and verified with Sahkan; the demo-kind `exam-launch-blueprints` seed does not run there. Order: 3472/2 first, then 1449/1, 1249/1, 4531/1 and Sains K1 once evidence from two or more bodies is ready (see section 4.1).
 - **Q2 (backend):** confirm 0100 timing on a restored UAT copy and whether it needs a longer window or batching.
 - **Q3 (backend):** answer items 6 and 7 above.
 - **Q4 (LEAD):** OCR/extraction provider for AC-R1-14.2 (D85 U1) is still open; R1 ships with `OCR_ENGINE=none`,

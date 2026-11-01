@@ -37,7 +37,7 @@ import { gradePart, isBlank } from '../domain/grading'
 import { numericValue } from '../domain/math-expr'
 import { effectiveMarks, leavesOf, type Leaf } from '../domain/paper-model'
 import type { PastSittings, ReviewPart, SelfMarkOutcome } from '../domain/semakan'
-import type { BankFilter, DecisionAction, PaperPatch, QueueFilter } from '../domain/admin-types'
+import type { BankFilter, DecisionAction, PaperPatch, QueueFilter, SectionPoolQuery } from '../domain/admin-types'
 import type {
   Attempt,
   AttemptMode,
@@ -1264,6 +1264,10 @@ export class BijakServer implements BijakApi {
   unpublishPaper(id: string) {
     return this.ops.unpublishPaper(id)
   }
+  sectionPool(id: string, sectionId: string, query?: SectionPoolQuery) {
+    return this.ops.sectionPool(id, sectionId, query)
+  }
+
   previewQuestions(ids: string[]) {
     return this.ops.previewQuestions(ids)
   }
