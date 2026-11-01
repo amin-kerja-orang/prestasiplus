@@ -505,7 +505,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 | T44 | r1/t44-blueprint-fields | 072d8f4b | — | merged at BASE-67 as 77984abc. The newer tip 072d8f4b shows a 19-file delta against base; A3 is asked whether it is WIP (marked IN-PROGRESS until it answers) |
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 16:42 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 16:56 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -548,7 +548,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t45-builder-acs | de8c8c02f | READY (A1b, on T48 1dd07bc1 + BASE-105): AC-R1-21.3/21.6 specs; exam-builder 389/389; merges after T48; B2 |
 | r1/t45-builder-acs-wip | 078204e1c | SUPERSEDED by r1/t45-builder-acs; do not merge |
 | r1/t45-servability-acs | 58618b2cb | READY (A4, BASE-105): B2 c18 Minors + 3 preview reds fixed (DB fixture approve, gate unchanged); merge 1st in the A4 chain; B2 + B3 |
-| r1/t48-builder-parity | 1dd07bc1a | READY but pre-review (A1b) found 2 Minors → A3 fixing (hard delete must require no live version; duplicate section labels). The new head will restack T43b, search-perf and T51; A1 re-merges T45-P3 |
+| r1/t48-builder-parity | 4800bd789 | READY but pre-review (A1b) found 2 Minors → A3 fixing (hard delete must require no live version; duplicate section labels). The new head will restack T43b, search-perf and T51; A1 re-merges T45-P3 |
 | r1/t49-served-now | 8a4b46a9f | READY (A2, BASE-105): B-025ab + C-019 + B2 c16 Minors (blank negeri ignored, examBoards distinct case-insensitive); 704/704 incl. conformance; B2 delta |
 | r1/t50-partial-acs | 075e1b587 | READY (A1a, BASE-105): B2 approved c17; ready for the B1 gate |
 | r1/t51-partial-acs-a3 | 4f812b4e2 | READY (A3; T48 + T43 + T31 + BASE-105): PIPE AC-18.1 + R1-21.3/21.6 backend; overlap resolved toward T48; 965 + 1 todo; conformance 409/409; order T48 → T31 (+REQ-A-008) → T43 → T51; B2 |
