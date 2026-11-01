@@ -505,17 +505,17 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 | T44 | r1/t44-blueprint-fields | 072d8f4b | — | merged at BASE-67 as 77984abc. The newer tip 072d8f4b shows a 19-file delta against base; A3 is asked whether it is WIP (marked IN-PROGRESS until it answers) |
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 15:09 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 15:13 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/e05b-l1-spec | baa42a152 | READY (A1b, B2 + B3 to review) |
-| r1/ha17-ac-coverage | 9080a76e7 | docs, auto-refreshed by A3 H-A27 (coverage 124/176) |
+| r1/ha17-ac-coverage | fedfefa71 | docs, auto-refreshed by A3 H-A27 (coverage 124/176) |
 | r1/ha18-gate-facts | d3842c48c | CHANGES REQUESTED → A2 fixing with D99 + MAJOR 1 + Minors |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
-| r1/ha24-release-input | 36d6756bc | docs, auto-refreshed by A3 H-A27 |
-| r1/ha26-team-a-state | 5f0c6252c | docs, auto-refreshed by A3 H-A27 |
+| r1/ha24-release-input | 4060dd7a3 | docs, auto-refreshed by A3 H-A27 |
+| r1/ha26-team-a-state | eaaeabf8d | docs, auto-refreshed by A3 H-A27 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-a2 | b70dc9571 | READY (A2, BASE-102): B-034/035 + B2 Minors; intake-workflow 135/135; B2 delta re-check |
 | r1/overview-mcq-shape-once | b0f1e9b2c | READY (A4): factsOf jana:false; cold overview 15.3→9.3 s (total 34.2→9.3 s); merges after req-b-033; B2 |
@@ -535,16 +535,20 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t37-r1-runbook | f4bb197c2 | docs, auto-refreshed by A3 H-A27 |
 | r1/t38-selfmark-reward | 067d4bc2c | Approve w/ Minors → A1b fixing + BASE merge |
 | r1/t39-k1-evidence | 1a26f7a60 | check: A3 to confirm state |
-| r1/t40-attempts-acs | dae7d4fee | Approve w/ Minors, after T38 → A1b |
+| r1/t40-attempts-acs | c3ee1626d | Approve w/ Minors, after T38 → A1b |
 | r1/t43-chain-publish | 5ce5894f1 | READY (A3, on T31) |
 | r1/t43b-publish-acs | 8841a31bd | Approve w/ Minors → A3 fixing (after T48) |
 | r1/t45-builder-acs | 69d16a7f9 | READY (A1b, on T48), B2 |
 | r1/t45-builder-acs-wip | 078204e1c | SUPERSEDED by r1/t45-builder-acs; do not merge |
 | r1/t45-servability-acs | 37d240136 | READY (A4), B2 + B3 |
-| r1/t48-builder-parity | 4a3ff2646 | Approve w/ Minors → A3 fixing (SECTION_EMPTY) + BASE merge |
+| r1/t48-builder-parity | 1dd07bc1a | IN-PROGRESS (A3): B2 Minors fix pushed (SECTION_EMPTY etc.); READY evidence pending |
+| r1/t49-served-now | 8a4b46a9f | Approve w/ Minors → A2 fixing (trim) + BASE merge |
 | r1/t50-partial-acs | e436e084d | READY (A1a/b), B2 |
+| r1/t51-partial-acs-a3 | 5b7fc6780 | IN-PROGRESS (A3): merging T48 to drop a duplicate PUT code rule; not READY. Order T48 → T31 (+REQ-A-008) → T43 → T51 |
 | r1/t52-examiner-grid | addae6444 | READY (A1a), B2 |
 | r1/t54-perf-400k | bbf412c66 | READY (A4), B2 Minors fixed |
+
+**New branches not yet triaged:** r1/overview-getmany-parallel a02f658f9
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
