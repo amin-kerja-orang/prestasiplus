@@ -78,15 +78,15 @@ export class ServabilityController {
   @Get('lanes/databank')
   @RateLimit(SERVABILITY_READ_LIMIT)
   async databank(@Query() query: unknown) {
-    const res = await this.reads.databankLane(this.laneQuery(query))
-    return { data: res.rows, meta: listMeta(res.page, res.pageSize, res.total) }
+    const [res, subjects] = await Promise.all([this.reads.databankLane(this.laneQuery(query)), this.reads.databankSubjects()])
+    return { data: res.rows, meta: listMeta(res.page, res.pageSize, res.total), subjects }
   }
 
   @Get('lanes/bijak-spm')
   @RateLimit(SERVABILITY_READ_LIMIT)
   async papers(@Query() query: unknown) {
-    const res = await this.reads.paperLane(this.laneQuery(query))
-    return { data: res.rows, meta: listMeta(res.page, res.pageSize, res.total) }
+    const [res, subjects] = await Promise.all([this.reads.paperLane(this.laneQuery(query)), this.reads.paperSubjects()])
+    return { data: res.rows, meta: listMeta(res.page, res.pageSize, res.total), subjects }
   }
 
   private laneQuery(raw: unknown) {

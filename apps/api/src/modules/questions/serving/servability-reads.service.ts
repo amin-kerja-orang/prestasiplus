@@ -245,6 +245,22 @@ export class ServabilityReadsService {
     })
   }
 
+  /** Options of the Databank lane's Subjek filter: the subjects on the Databank list, in subject order. */
+  async databankSubjects(): Promise<{ id: string; name: string }[]> {
+    const rows = await this.db.$queryRaw<{ id: bigint; name: string }[]>`
+      SELECT s.id, s.name FROM subjects s JOIN spm_subject_configs c ON c.subject_id = s.id
+       WHERE c.databank_order IS NOT NULL ORDER BY c.databank_order, s.sort_order, s.id`
+    return rows.map((r) => ({ id: idToString(r.id), name: r.name }))
+  }
+
+  /** Options of the Bijak SPM lane's Subjek filter: the subjects that have a curated paper, in subject order. */
+  async paperSubjects(): Promise<{ id: string; name: string }[]> {
+    const rows = await this.db.$queryRaw<{ id: bigint; name: string }[]>`
+      SELECT s.id, s.name FROM subjects s
+       WHERE EXISTS (SELECT 1 FROM papers p WHERE p.subject_id = s.id AND ${PAPER_LANE_COND}) ORDER BY s.sort_order, s.id`
+    return rows.map((r) => ({ id: idToString(r.id), name: r.name }))
+  }
+
   // --- helpers -------------------------------------------------------------------------------------
 
   /** Subject ids on the Latih Tubi list (any SPM configuration row). */
