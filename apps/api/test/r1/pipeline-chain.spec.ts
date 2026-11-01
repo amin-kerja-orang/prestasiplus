@@ -788,6 +788,7 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       await giveBab(db, [incomplete]) // H-A18: the submit gate asks for a Bab; this test is about the approve gate (cognitive level, kertas)
       const toReview = await admin.post('/api/questions/bulk-action', { action: 'review', ids: [incomplete] })
       expect(toReview.status, JSON.stringify(toReview.body)).toBe(200)
+      expect(toReview.body.data.failed, JSON.stringify(toReview.body)).toEqual([]) // it really reached Semakan: the refusal below is the approve gate's
       const res = await admin.post('/api/questions/bulk-action', { action: 'approved', ids: [incomplete] })
       expect(res.status, JSON.stringify(res.body)).toBe(200)
       expect(res.body.data.affected).toBe(0)

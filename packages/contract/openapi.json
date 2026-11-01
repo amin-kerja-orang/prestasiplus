@@ -64002,7 +64002,7 @@
               "$ref": "#/components/schemas/BijakAttemptStimulus"
             },
             "maxItems": 3,
-            "description": "Every stimulus of the group in order (0 to 3), shown once per group (D90). `stimulus` is the first of them; empty when the group has nothing displayable."
+            "description": "Every stimulus of the group in order (0 to 3), shown once per group (D90). `stimulus` is the first of them; empty when the group has nothing displayable. The API sends it for every group; optional in the schema only so older payloads still parse (then use `[stimulus]`)."
           },
           "questionIds": {
             "type": "array",
@@ -66284,7 +66284,7 @@
               "$ref": "#/components/schemas/BijakAttemptStimulus"
             },
             "maxItems": 3,
-            "description": "Every stimulus of the group in order (0 to 3), shown once per group (D90). `stimulus` is the first of them; empty when the group has nothing displayable."
+            "description": "Every stimulus of the group in order (0 to 3), shown once per group (D90). `stimulus` is the first of them; empty when the group has nothing displayable. The API sends it for every group; optional in the schema only so older payloads still parse (then use `[stimulus]`)."
           },
           "questions": {
             "type": "array",
@@ -66444,7 +66444,7 @@
               "$ref": "#/components/schemas/BijakAttemptStimulus"
             },
             "maxItems": 3,
-            "description": "Every stimulus of the group in order (0 to 3), shown once per group (D90). `stimulus` is the first of them; empty when the group has nothing displayable."
+            "description": "Every stimulus of the group in order (0 to 3), shown once per group (D90). `stimulus` is the first of them; empty when the group has nothing displayable. The API sends it for every group; optional in the schema only so older payloads still parse (then use `[stimulus]`)."
           },
           "questionIds": {
             "type": "array",
