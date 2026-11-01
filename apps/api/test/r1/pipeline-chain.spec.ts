@@ -141,6 +141,9 @@ const fx = {
   retryAttempt: '',
 }
 
+const SOLO_A_TEXT = 'Berapakah luas segi empat tepat 3 cm kali 4 cm, dalam cm persegi?'
+const SOLO_B_TEXT = 'Berapakah perimeter segi empat tepat 3 cm kali 4 cm, dalam cm?'
+
 const mcqBody = (text: string, extra: Record<string, unknown> = {}) => ({
   subjectId: fx.subject,
   educationLevelId: fx.level,
@@ -236,8 +239,8 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     })
 
     it('creates three solo MCQs (Bahagian A, B, C) and one structured/essay question with a marking scheme', async () => {
-      fx.soloA = await createQuestion(mcqBody('Berapakah luas segi empat tepat 3 cm kali 4 cm, dalam cm persegi?'))
-      fx.soloB = await createQuestion(mcqBody('Berapakah perimeter segi empat tepat 3 cm kali 4 cm, dalam cm?'))
+      fx.soloA = await createQuestion(mcqBody(SOLO_A_TEXT))
+      fx.soloB = await createQuestion(mcqBody(SOLO_B_TEXT))
       fx.soloC = await createQuestion(mcqBody('Berapakah panjang pepenjuru segi empat tepat 3 cm kali 4 cm, dalam cm?', { pointsValue: 2 }))
       const res = await admin.post('/api/questions', {
         subjectId: fx.subject,
@@ -707,28 +710,57 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
   // PIPE AC-18.1 (R1-20.4): the one activity 5b does not open is Latihan Bab (Soalan by Chapter). It serves a question only once the question carries a
   // Bab (the admin sets it in the Studio form or at Semakan); the admin reads the exclusion from the SAME rule code, the pupil sees the question in a chapter session.
   describe('5c. Latihan Bab: the chain question reaches Soalan by Chapter once it carries a Bab (AC-18.1)', () => {
-    let chapter = ''
+    let chapterA = ''
+    let chapterB = ''
     const bab = async (id: string) => (await app.get(ServabilityService).reports([id])).get(id)!.activities.find((a) => a.activity === 'bab')!
+    const babOf = async (id: string): Promise<string | null> =>
+      (await db.query<{ chapter_id: string | null }>(`select v.chapter_id::text chapter_id from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no where q.id = $1`, [id]))[0]!.chapter_id
+    /**
+     * The Studio path: the admin edits the question and sets its Bab (PUT /api/questions/:id with curriculumChapterId), then sends the new version
+     * through Semakan and Terbit again (the real bulk route). On an approved question the edit makes a new version; it is live once re-approved.
+     */
+    const setBab = async (id: string, text: string, chapterId: string): Promise<void> => {
+      const put = await admin.put(`/api/questions/${id}`, mcqBody(text, { curriculumChapterId: chapterId }))
+      expect(put.status, JSON.stringify(put.body)).toBe(200)
+      await advance([id])
+      expect(await babOf(id)).toBe(chapterId)
+    }
+    const sessionIds = async (chapterId: string): Promise<string[]> => {
+      const res = await pupil.post('/api/practice/sessions', { mode: 'chapter', chapterId, count: 10 })
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      return (res.body.data.questions as { id: string }[]).map((q) => q.id)
+    }
 
     it('without a Bab the admin report says Latihan Bab is not served, with the reason no_chapter', async () => {
-      chapter = await one(`select c.id::text id from chapters c where c.subject_id = $1 and c.education_level_id = $2 order by c.id limit 1`, [fx.subject, fx.level])
-      expect(chapter).not.toBe('undefined')
-      await db.query(`update question_versions set chapter_id = null where question_id = $1`, [fx.soloA])
+      const chapters = await db.query<{ id: string }>(`select c.id::text id from chapters c where c.subject_id = $1 and c.education_level_id = $2 order by c.id limit 2`, [fx.subject, fx.level])
+      expect(chapters.length, 'MATH T4 has two chapters in the curriculum seed').toBe(2)
+      chapterA = chapters[0]!.id
+      chapterB = chapters[1]!.id
+      expect(chapterA).toMatch(/^\d+$/)
+      expect(chapterB).not.toBe(chapterA)
+      // the precondition of this step: the chain questions were made without a Bab
+      expect(await babOf(fx.soloA)).toBeNull()
+      expect(await babOf(fx.soloB)).toBeNull()
       const v = await bab(fx.soloA)
       expect(v.served).toBe(false)
       expect(v.reasons.map((r) => r.code)).toEqual(['no_chapter'])
       expect(v.reasons[0]!.message.length).toBeGreaterThan(10)
     })
 
-    it('with a Bab it is served, and a pupil\'s Latihan Bab session for that chapter draws it', async () => {
-      await db.query(`update question_versions set chapter_id = $2 where question_id = $1`, [fx.soloA, chapter])
-      expect(await bab(fx.soloA)).toMatchObject({ served: true, reasons: [] })
-      const res = await pupil.post('/api/practice/sessions', { mode: 'chapter', chapterId: chapter, count: 5 })
-      expect(res.status, JSON.stringify(res.body)).toBe(201)
-      const served = (res.body.data.questions as { id: string }[]).map((q) => q.id)
-      expect(served).toContain(fx.soloA)
-      for (const member of [...fx.imageMembers, ...fx.passageMembers]) expect(served).not.toContain(member)
-      expect(served).not.toContain(fx.essay)
+    it('with a Bab set in the Studio and re-approved it is served, and a chapter session draws exactly the questions of that chapter', async () => {
+      await setBab(fx.soloA, SOLO_A_TEXT, chapterA)
+      await setBab(fx.soloB, SOLO_B_TEXT, chapterB)
+      for (const id of [fx.soloA, fx.soloB]) expect(await bab(id)).toMatchObject({ served: true, reasons: [] })
+
+      const a = await sessionIds(chapterA)
+      expect(a).toContain(fx.soloA)
+      expect(a, 'a question of ANOTHER chapter is never drawn').not.toContain(fx.soloB)
+      for (const id of a) expect(await babOf(id), id).toBe(chapterA)
+
+      const b = await sessionIds(chapterB)
+      expect(b).toContain(fx.soloB)
+      expect(b, 'a question of ANOTHER chapter is never drawn').not.toContain(fx.soloA)
+      for (const id of b) expect(await babOf(id), id).toBe(chapterB)
     })
   })
 

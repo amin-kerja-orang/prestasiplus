@@ -27,6 +27,7 @@ SELECT in_scope.code AS subject_without_nodes
   LEFT JOIN subjects s ON s.code = in_scope.code
  WHERE NOT EXISTS (SELECT 1 FROM curriculum_nodes n WHERE n.subject_id = s.id)
  ORDER BY in_scope.code`
+const TOTAL = `SELECT count(*) AS nodes FROM curriculum_nodes`
 const LEVELS = `SELECT DISTINCT l.code FROM curriculum_nodes n JOIN education_levels l ON l.id = n.education_level_id ORDER BY 1`
 
 describe('R1-12.6: curriculum nodes per in-scope subject (runbook section 4 SELECTs)', () => {
@@ -43,6 +44,11 @@ describe('R1-12.6: curriculum nodes per in-scope subject (runbook section 4 SELE
     const rows = await db.query<{ subject: string; nodes: string }>(NODES_PER_SUBJECT)
     expect(rows.map((r) => r.subject)).toEqual([...IN_SCOPE].sort())
     for (const r of rows) expect(Number(r.nodes), r.subject).toBeGreaterThan(0)
+  })
+
+  it('the total is 2,844, the number the runbook (section 4) expects from the loader report', async () => {
+    const [row] = await db.query<{ nodes: string }>(TOTAL)
+    expect(Number(row!.nodes)).toBe(2844)
   })
 
   it('the runbook "subject without a node" SELECT returns no row', async () => {

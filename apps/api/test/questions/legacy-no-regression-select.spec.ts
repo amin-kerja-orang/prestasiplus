@@ -1,4 +1,4 @@
-import { mkdtemp } from 'node:fs/promises'
+import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -33,9 +33,12 @@ describe('R1-11.4: the runbook no-regression SELECTs (3.6b) on a seeded bank', (
   let admin: Client
   let refs: Refs
   let tag: Awaited<ReturnType<typeof tagOf>>
+  let storageDir = ''
+  const saved = { FILE_STORAGE_DIR: process.env.FILE_STORAGE_DIR, THROTTLE_QUESTIONS_WRITE_PER_MINUTE: process.env.THROTTLE_QUESTIONS_WRITE_PER_MINUTE }
 
   beforeAll(async () => {
-    process.env.FILE_STORAGE_DIR = await mkdtemp(join(tmpdir(), 'pp-legacy-select-'))
+    storageDir = await mkdtemp(join(tmpdir(), 'pp-legacy-select-'))
+    process.env.FILE_STORAGE_DIR = storageDir
     process.env.THROTTLE_QUESTIONS_WRITE_PER_MINUTE = '100000'
     t = await bootQuestionsApp()
     admin = await loginAs(t, 'admin')
@@ -44,6 +47,11 @@ describe('R1-11.4: the runbook no-regression SELECTs (3.6b) on a seeded bank', (
   })
   afterAll(async () => {
     await t.close()
+    await rm(storageDir, { recursive: true, force: true })
+    for (const [k, v] of Object.entries(saved)) {
+      if (v === undefined) delete process.env[k]
+      else process.env[k] = v
+    }
   })
 
   const num = async (sql: string): Promise<Record<string, number>> =>
