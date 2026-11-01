@@ -80,3 +80,9 @@
 - V2 asks for source and rights only at intake batch upload. It has no per-question gate.
 - Lead proposal, awaiting the user's confirmation (it reverses exam D10): drop the per-question source/rights gate for new questions too.
 - **B3:** if it is confirmed, T33-L1 / REQ-B-017 closes as a product decision.
+
+**D99 (user, 2026-11-01) — for B3 and B2:**
+- The per-question source/rights gate is removed for every question, migrated and new (V2 parity; supersedes exam D10).
+- **B3: T33-L1 / REQ-B-017 close as a product decision, not a fix.**
+- Still in place: the intake batch declaration (V2) and provenance carry-forward (REQ-B-037).
+- Implementation: A2 on r1/ha18-gate-facts (H-A18 MAJOR 2), with a deviation row citing D99. Needs B2 + B3 re-check of the gate change.

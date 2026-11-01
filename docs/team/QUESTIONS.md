@@ -27,3 +27,4 @@ Lead proposal (pending the user's confirmation, because it reverses exam D10):
 - Drop the per-question submit "Sila nyatakan sumber soalan." and the publish rightsStatus block for every question.
 - Keep provenance carry-forward (REQ-B-037), as data integrity only.
 - B3 to be told: T33-L1 / REQ-B-017 closes as a product decision, not as a fix.
+**Q10b answer (user, 2026-11-01, relayed by Mandor):** "ikut v2 termasuk soalan baharu melalui V3". **DECIDED: follow V2 for every question.** The per-question source/rights gate (submit, approve, Terbit) is removed for migrated and new questions alike. Only the intake batch declaration stays. Provenance carry-forward (REQ-B-037) stays. Recorded as **D99** (supersedes exam D10) on r1/d91-decisions.
