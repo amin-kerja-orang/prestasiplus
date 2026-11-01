@@ -512,7 +512,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha17-ac-coverage | 157b371c3 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b; head 157b371c |
 | r1/ha18-gate-facts | fc409ae16 | READY (A2, BASE-105): H-A18 + REQ-B-017/037 + D99 + pre-review fixes (M2 held-issues helper on both edit paths; m1 gate-issue codes; deviation row); workflow 296/296; conformance 409/409; B2 + B3 |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
-| r1/ha24-release-input | 452b4b453 | READY (A3 docs, @4317f6a8): §3.5 B1 merge order + BM release notes + r1-signoff-checklist.md (rows 2.4/4.6 confirmed); B1/B2 |
+| r1/ha24-release-input | 452b4b453 | READY (A3 docs, @452b4b45→fix pending): §3.5 B1 merge order + BM release notes + sign-off checklist (cue relabel being corrected); B1/B2 |
 | r1/ha26-team-a-state | fa0832000 | READY (A3 docs, @fa083200): team-a-r1-state.md; vs ac-gaps take ha26 side; B2 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-a2 | 8c1964a6f | READY (A2, BASE-105): prefetch crash fixed (awaited Promise.all, failed read → 500, no unhandledRejection; red-first specs); row 908 6 cells; tsc/eslint 0, intake-workflow 137/137; A4 pre-review: Approve; B2 |
