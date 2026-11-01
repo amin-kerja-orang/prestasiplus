@@ -39,6 +39,12 @@ vi.setConfig({ testTimeout: 180_000, hookTimeout: 300_000 })
  */
 const REGION = { page: 1, x: 0.1, y: 0.1, w: 0.5, h: 0.4 }
 const START = '2026-10-19T09:00:00+08:00'
+/** The fixture's marking scheme (helpers `draft`): the correct option and the reason text the pupil must never see before the result. */
+const CORRECT = 'B'
+const REASON = 'Kerana B.'
+/** The keys a served pupil question may carry (V2 Panel shape); `groupId` only on a member of a stimulus group. No scheme, key, reason or per-question stimulus. */
+const QUESTION_KEYS = ['formOrigin', 'groupId', 'id', 'marks', 'mcq', 'number', 'sectionId', 'stem', 'topic']
+const OPTION_KEYS = ['id', 'text', 'image']
 
 let t: WorkflowTestApp
 let teacher: LoggedIn
@@ -134,6 +140,7 @@ describe('R1 chain QA: intake -> approve -> paper -> Terbit -> pupil -> submit -
   let imageToken = ''
   let paperId = ''
   let attempt = ''
+let xpBefore = 0 // the seeded pupil already has XP: the reward is checked as a delta
 
   beforeAll(async () => {
     t = await boot()
@@ -232,6 +239,10 @@ describe('R1 chain QA: intake -> approve -> paper -> Terbit -> pupil -> submit -
     const pins = await q(`select pl.question_id::text id, pl.pinned_version_no n from paper_placements pl join paper_sections s on s.id = pl.paper_section_id where s.paper_id = $1`, [paperId])
     expect(pins).toHaveLength(6)
     expect(pins.every((r) => Number(r.n) === 1)).toBe(true)
+    // Out of scope here: that the pin FOLLOWS an edit (a question edited before it is placed pins the new version; one edited after Terbit keeps the
+    // pinned one). Editing an approved question branches a new version that needs a fresh Semakan and approval, which is its own flow. It is covered by
+    // test/exam-builder/builder-placements.spec.ts "pinned versions stay after a question edit; a draft pins the version in force when placed",
+    // test/exam-builder/publish-acs.spec.ts AC-07.9 and test/r1/pinned-version-rule.spec.ts. This step proves the intake-made questions are pinned.
   })
 
   it('7. the pupil sees the paper and starts it: the figure stimulus is served ONCE with both members and a readable image; no key leaks', async () => {
@@ -247,7 +258,29 @@ describe('R1 chain QA: intake -> approve -> paper -> Terbit -> pupil -> submit -
     expect(view.groups).toHaveLength(1)
     expect(view.groups[0]!.questionIds).toEqual([questionIds[0], questionIds[1]])
     expect(view.groups[0]!.stimulus).toMatchObject({ kind: 'diagram', image: { url: `/api/files/${imageToken}` } })
-    expect(JSON.stringify(res.body)).not.toMatch(/"(correct|scheme|key|modelText)"/)
+    // the stimulus is served ONCE: on the group (as `stimulus` and in its one-item `stimuli` list), never on a question
+    const raw = res.body.data as { questions: Record<string, unknown>[]; groups: { stimuli: unknown[] }[] }
+    expect(raw.groups[0]!.stimuli).toHaveLength(1)
+    expect(raw.questions.every((x) => !('stimuli' in x) && !('stimulus' in x))).toBe(true)
+    expect(JSON.stringify(res.body).split(`/api/files/${imageToken}`)).toHaveLength(1 + 2) // exactly the group's two spellings of the one image
+    // no key leaks: an ALLOW-LIST of keys on every pupil question and every option (a new field fails here, a renamed answer key too) ...
+    for (const x of raw.questions) {
+      expect(Object.keys(x).filter((k) => !QUESTION_KEYS.includes(k)), `question ${String(x.id)} carries a key outside the allow-list`).toEqual([])
+      expect(Object.keys((x.mcq as Record<string, unknown>) ?? {}), `mcq of ${String(x.id)}`).toEqual(['options'])
+      for (const o of (x.mcq as { options: Record<string, unknown>[] }).options) expect(Object.keys(o).filter((k) => !OPTION_KEYS.includes(k)), `option ${String(o.id)}`).toEqual([])
+    }
+    // ... and the payload carries neither the scheme's reason text nor the correct option in a key-like position: no key anywhere is named
+    // like an answer, and the correct id ("B") appears only as an option `id`, never as the value of another key.
+    const walk = (node: unknown, key: string, out: { key: string; value: unknown }[]) => {
+      if (Array.isArray(node)) node.forEach((n) => walk(n, key, out))
+      else if (node !== null && typeof node === 'object') for (const [k, v] of Object.entries(node)) { out.push({ key: k, value: v }); walk(v, k, out) }
+    }
+    const entries: { key: string; value: unknown }[] = []
+    walk(res.body.data, '', entries)
+    // (`answers` is the pupil's OWN saved answers, empty at the start; it is not the key.)
+    expect(entries.map((e) => e.key).filter((k) => k !== 'answers' && /correct|answer|key|scheme|reason|solution|model|explain|rubric/i.test(k))).toEqual([])
+    expect(entries.filter((e) => e.value === CORRECT && e.key !== 'id')).toEqual([])
+    expect(JSON.stringify(res.body)).not.toContain(REASON)
     expect((await pupil.get(view.groups[0]!.stimulus.image!.url)).status).toBe(200)
   })
 
@@ -257,6 +290,7 @@ describe('R1 chain QA: intake -> approve -> paper -> Terbit -> pupil -> submit -
     const changes = view.questions.map((x) => ({ partId: x.parts?.[0]?.id ?? x.id, answer: { choice: 'B' }, rev: 1, savedAt: START }))
     const save = await pupil.put(`/api/bijak/attempts/${attempt}/answers`, { changes })
     expect(save.status, JSON.stringify(save.body)).toBe(200)
+    xpBefore = Number((await q(`select xp from wallets where user_id = $1`, [pupil.userId]))[0]?.xp ?? 0)
     t.clock.set('2026-10-19T09:20:00+08:00')
     const sub = await pupil.post(`/api/bijak/attempts/${attempt}/submit`, { idempotencyKey: 'chain-intake-1', changes: [] })
     expect(sub.status, JSON.stringify(sub.body)).toBe(200)
@@ -266,19 +300,26 @@ describe('R1 chain QA: intake -> approve -> paper -> Terbit -> pupil -> submit -
     expect(result.provisional).toBe(false)
   })
 
-  it('8b. the submit paid the reward ONCE on this bank paper: one quiz_spm ledger row for the attempt (the score in syiling), the XP of the score, a streak', async () => {
+  it('8b. the submit paid the reward ONCE on this bank paper: one quiz_spm ledger row for the attempt (6 marks = 12 syiling), 60 XP, a streak; a replay of the same key or another key adds nothing', async () => {
     const pupilId = pupil.userId
-    const rows = await q(`select user_id::text uid, amount, is_test, type from coin_ledger where source = 'quiz_spm' and source_id = $1`, [attempt])
+    const ledger = () => q(`select user_id::text uid, amount, is_test, type from coin_ledger where source = 'quiz_spm' and source_id = $1`, [attempt])
+    const xp = async () => Number((await q(`select xp from wallets where user_id = $1`, [pupilId]))[0]?.xp ?? 0)
+    const rows = await ledger()
     expect(rows).toHaveLength(1)
+    // 2 syiling and 10 XP per mark (BIJAK reward rate); the score is 6 of 6
     expect(rows[0]).toMatchObject({ uid: pupilId, is_test: false, type: 'earn' })
-    expect(Number(rows[0]!.amount)).toBeGreaterThan(0)
-    const wallet = (await q(`select xp from wallets where user_id = $1`, [pupilId]))[0]
-    expect(Number(wallet?.xp ?? 0)).toBeGreaterThanOrEqual(60) // 10 per mark of a score of 6
+    expect(Number(rows[0]!.amount)).toBe(12)
+    expect((await xp()) - xpBefore).toBe(60)
     expect(Number((await q(`select current from streaks where user_id = $1`, [pupilId]))[0]?.current ?? 0)).toBeGreaterThanOrEqual(1)
-    // a replay of the submit is a replay: still one ledger row
-    const again = await pupil.post(`/api/bijak/attempts/${attempt}/submit`, { idempotencyKey: 'chain-intake-2', changes: [] })
-    expect([200, 409]).toContain(again.status)
-    expect(await q(`select 1 from coin_ledger where source = 'quiz_spm' and source_id = $1`, [attempt])).toHaveLength(1)
+    // The replays. NOTE: the wallet's own replay guard (credit with the same source id) is NOT what stops these: a submit of a closed attempt returns
+    // early in attempts.service.ts (the 'row.status !== 'in_progress'' branch, "A replay (same key) or a later submit"), so the reward port is not
+    // called again. The wallet guard has its own spec (bijak-integration/rewards.spec.ts); this one proves the chain does not pay twice.
+    const same = await pupil.post(`/api/bijak/attempts/${attempt}/submit`, { idempotencyKey: 'chain-intake-1', changes: [] })
+    expect(same.status, JSON.stringify(same.body)).toBe(200)
+    const other = await pupil.post(`/api/bijak/attempts/${attempt}/submit`, { idempotencyKey: 'chain-intake-2', changes: [] })
+    expect(other.status, JSON.stringify(other.body)).toBe(200)
+    expect((await ledger()).map((r) => Number(r.amount))).toEqual([12])
+    expect((await xp()) - xpBefore).toBe(60)
   })
 
   it('9. Cuba Lagi: a NEW attempt on the same paper; the old attempt and its result stay', async () => {
@@ -286,6 +327,14 @@ describe('R1 chain QA: intake -> approve -> paper -> Terbit -> pupil -> submit -
     const retry = await pupil.post(`/api/bijak/attempts/${attempt}/retry`)
     expect(retry.status, JSON.stringify(retry.body)).toBe(201)
     expect(retry.body.data.attemptId).not.toBe(attempt)
+    const fresh = await pupil.get(`/api/bijak/attempts/${retry.body.data.attemptId}`)
+    expect(fresh.status, JSON.stringify(fresh.body)).toBe(200)
+    expect(fresh.body.data.attempt).toMatchObject({ paperId, status: 'in_progress' })
+    // exactly two sittings of this paper for this pupil: the submitted one and the new one
+    const sittings = await q(`select id::text id, status from exam_attempts where user_id = $1 and paper_id = $2 order by started_at, id`, [pupil.userId, paperId])
+    expect(sittings.map((r) => r.id)).toHaveLength(2)
+    expect(sittings.map((r) => r.id)).toContain(attempt)
+    expect(sittings.map((r) => r.id)).toContain(retry.body.data.attemptId)
     const after = await pupil.get(`/api/bijak/attempts/${attempt}/result`)
     expect(after.body.data.result).toEqual(before.body.data.result)
   })
