@@ -489,14 +489,14 @@ BASE-105 + 11 team A READY API heads + C FE heads (reqa014 dc561730, reqa005 3ee
 Wallet tiers come only from the `reference` seed, never from a migration. Prod deploy runs `migrate deploy` only, so an operator must run `deploy.sh --seed-reference`. Without tiers, the dashboard and wallet return 500, and **every practice or Kuiz submit 500s and rolls back** (the reward runs inside the completion tx). Lead decision: (1) add a runbook precondition (`tiers` count = 4) and (3) make /api/ready return not-ready when tiers is empty (r1/ready-tiers-check). No migration. The reward is not made non-fatal, because silent coin loss is worse.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 21:45 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 21:46 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/a3-qa-doc-nits | e4d4dd322 | READY (A3, BASE-105, docs only): stale QA notes on T38 self-mark reward fixed (2 files); B2 |
 | r1/a4chain-minors | 6f2fb7938 | READY (A1b, @6f2fb793 on 0ba236ef): symlink removed; janaSkipped guard first line of evaluate; T45 HTTP POST /questions/:id/status case with pinned BM reasons; 022a row real commits + proof spec; A3 dev-1 delta pre-review CLEAN (13 files 76 tests, mutations bite); merge after the A4 chain; B2 |
-| r1/ac-gaps-a1b | 5c4ec7500 | READY (multi, @5c4ec750+, CONTAINS ha17 + t37): coverage doc, runbook (UAT SELECTs, 0106/0107 window, §0 wallet tiers = 4 precondition), B4 QA pack (refresh in progress, A3 dev-1); merge after H-A18; B2 |
+| r1/ac-gaps-a1b | eda51bf13 | READY (multi, @5c4ec750+, CONTAINS ha17 + t37): coverage doc, runbook (UAT SELECTs, 0106/0107 window, §0 wallet tiers = 4 precondition), B4 QA pack (refresh in progress, A3 dev-1); merge after H-A18; B2 |
 | r1/admin-list-perf | 2cd7889ae | READY (A4, @2cd7889a, BASE-105): REQ-B-050 + 0106 pg_trgm + 0107 kertas index; per-user @RateLimit GET /api/questions (THROTTLE_QUESTIONS_LIST_PER_MINUTE=60); docs: feature_flags 0108, drop_pool_tag 0109, optional B12 0122 / B20 0123 (lead-confirmed); B2 + B3 + DevOps (maintenance window, new env) |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
 | r1/bridge-table-parts | c805ecc7c | READY (A4, BASE-105): the bridge uses stimulusTableParts (an invalid grid + pipe body shows the table only, as in builder/Studio); bridge 118/118, attempts 180/180, kuiz 39/39; B2. Follow-up after T31 + this merge: drop PENDING_BRIDGE_TEXT in the parity spec (A4) |
@@ -504,7 +504,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/chain-qa-bab-3a-a3 | 0efba36c4 | READY (A3, @0efba36c; contains chain-qa-selfmark + H-A18 + T38): Bab-refusal step 3a (bites); 642 pass; merge after H-A18 + chain-qa-selfmark; B2 |
 | r1/chain-qa-selfmark-a3 | 5b93da43f | READY (A3, @5b93da43 = T38 13134ced + chain-qa 9b70ae39 + self-mark reward join, bites); merge after T38 + r1-chain-qa-a3; B2 |
 | r1/d90-builder-sweep-a3 | 6a3206366 | READY (A3, @6a320636 on T48 6c5ae3a8): D90 sweep spec (9 tests, 12 mutations red) + T48 D9 rows complete (Who = LEAD); merge after T48; A2 delta pre-review; B2 |
-| r1/delete-served-guard | 7e5d82e6a | READY (A2, @7e5d82e6; contains B-052 f3a2448f): only held papers block (served/pinned) + FK-restrict (sets/remedial/battle) → 409 in_use; no in-practice block (proven: delete-in-session.spec, no 5xx); 17 + 4 + FK specs; A4 Approve + B3 PASS up to f9c64df0, delta f9c64df0 → 7e5d82e6 with A4; merge after t49 + d72 and H-A18 → B-032 → B-052; B2 + B3 |
+| r1/delete-served-guard | 7e5d82e6a | READY (A2, @7e5d82e6): A4 delta Approve + B3 PASS (FK 409 in_use, no in-practice block); Minors queued with A2 (regrade with deleted question, mixed bulk + other RESTRICT tables + isForeignKeyViolation unit); merge after t49 + d72 and H-A18 → B-032 → B-052; B2 + B3 |
 | r1/docs-credential-scrub | b3db5e0d2 | READY (A1a, BASE-105; replaces 5cd46c4a): A4 Minors fixed: Demo1234 doc replacements reverted (allowed fictitious dev default; docs match code), DOC-02 wording, row relabelled privacy override, srs/M02 v1.34 revision row (v1.30 keeps placeholders, lead decision); 0 hits for the 3 old values repo-wide; M02 unit 724, eslint + vue-tsc 0; B3 + B2 |
 | r1/drop-lock-enums | 4d1424c8b | READY (A1a + A2, @4d1424c8, BASE-105): contract drops dead CHAPTER_LOCKED + locked states; negative contract tests; row: no FE reader depends on them (dead local FE types = C follow-up); contract 1435/1435, emit no diff, check ok, api tsc 0; with C reqa014 merged: vue-tsc 0, m03/m05 659/659; merge after reqa014-no-chapter-lock-fe; B2 |
 | r1/e05b-l1-spec | 4b9eac57a | READY (A1b, BASE-105): negative control added; 12/12; B2 + B3 |
@@ -526,7 +526,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/req-b-033 | b5e713fa4 | READY (A4): deviation row added; chain 4th; B2 |
 | r1/req-c-020 | 8733a3785 | READY (A4): deviation row added; chain 3rd; B2 |
 | r1/req-c012-a2 | dc3bfae88 | READY (A2, on H-A18 fc409ae1): M1 fixed (edit-as-draft keeps the import hold); 298/298; merges after H-A18; B3 re-check |
-| r1/reqa018-paper-servability-route | b7fe6fbc0 | READY (A2 fix, @b7fe6fbc on 2f5a85e7): B3 MAJOR fixed — admin papers only (kind pilihan, V2 parity), cap 200 + meta {total,truncated}, one batched report, specs (Jana not listed, 403 roles, 429, PKSK/primary 404, parity), 6 mutations red; contract emit/check ok; delta re-check by A4 (B3); C reqa018-fe must re-merge this head (REQ-A-026); B2 + B3 |
+| r1/reqa018-paper-servability-route | b7fe6fbc0 | READY (A2, @b7fe6fbc): A4 delta Approve + B3 PASS (MAJOR fixed; 6 mutations real); Minors queued with A2 (pin one batched read; chunk ids by 200); C reqa018-fe must re-merge (REQ-A-026); B2 + B3 |
 | r1/reqb032-pinned-rule | a2cb5bb42 | READY (A2+A3, BASE-105): spec title + R1-limitation row (takedown vs running sitting, KIV R2); 6/6; B2 + B3 |
 | r1/reqb049-report-visible | 9ece8d76d | READY (A1b, BASE-105): pre-review Minors fixed (type from the live version, spec titles, real level codes); 316/316; B2 + B3 | A2 B3 pre-scan: CLEAN (no IDOR/oracle, no echo, caps bite under mutation) |
 | r1/reqb052-archived-edit | f3a2448f9 | READY (A3, BASE-105; replaces 17196431): follow-ups done: P1 pinned-clause spec (bites), guard published OR (withdrawn AND EXISTS attempts), header; archived-edit 6/6, pinned-version-rule 6/6, workflow 296/296; tsc/eslint 0; B2 |
