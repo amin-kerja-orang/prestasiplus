@@ -523,7 +523,7 @@ The 12 "missing" API rows in r1-admin-parity-check.md (questions/stimuli/intake)
 B1 merged **reqb032 at its reviewed SHA a2cb5bb4**, which does not contain BASE-107/108. It did not use our forward-merged 167986ef. So B merges reviewed SHAs and resolves base drift in the merge itself. **New team A rule:** do NOT forward-merge BASE into READY heads by default, because every new head forces a delta review. Forward-merge only when (a) `git merge-tree` against the current BASE shows a conflict, (b) B asks for it, or (c) the unit has to be re-pushed anyway for a fix. Heads already forward-merged stay as they are (the delta is a base merge only).
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 23:33 UTC, BASE 2cef18a8)
+### Team A open branches: heads from origin (auto, 2026-11-01 23:36 UTC, BASE f7b8c0fc)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -557,7 +557,6 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/r1-chain-qa-a3 | 9b70ae395 | READY (A3, @9b70ae39, BASE-105; spec + step map): A2 MAJOR fixed (key allow-list on the served pupil shape + recursive forbidden-key walk + reason text absent) + Minors (stimulus once exact, same-key replay, exact 12 syiling / 60 XP, Cuba Lagi 2 attempts); mutations red; ignore the unverified REQ ids in the commit message; B2 |
 | r1/ready-tiers-check | 9c80f08c3 | ON HOLD (A2, @9c80f08c, contains BASE-107): code correct + Minors fixed (exact 503 body, WARN once per state change, INFO on recovery; mutations red); waits for B DevOps (REQ-A-028: CI seed step + first-install deploy ordering) |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
-| r1/req-b-025c | d47353043 | READY — B2 APPROVE w/ Minors @d4735304 (Minors carried); awaiting B1 | READY (A1b, BASE-105): Minors fixed (decision row REQ-B-007/025c, lateSync, fixture names); attempts 183/183; B2 |
 | r1/req-c012-a2 | 47b854249 | READY (A2, @47b85424 = 9b1fd35e + new ha18): merge after ha18; B3 re-check |
 | r1/reqa018-mock-swap | 76511c9a8 | READY (A2, @76511c9a on route 9d6ef833): drops the 3 paper-servability known-mismatch entries (C mock now matches the contract; verified with C FE 3942f760: 160 scenarios, 0 failing); merge AFTER C reqa018-paper-servability-fe; B2 small |
 | r1/reqa018-paper-servability-route | 9d6ef833f | READY (A2, @9d6ef833, contains BASE-107): admin papers only, cap 200 + meta, batched read, contract exports; contract-tests scenario (4 cases; API conformance 413/413; mock: 3 assertion known-mismatches until C serves it → swap to 1 schema entry when C reqa018-fe lands); full B2 + B3; C reqa018-fe must re-merge | merge-tree vs BASE-109: clean |
@@ -567,13 +566,14 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/seed-dangling-placements | 11cbcf458 | READY (A1b, BASE-105): asserts paper titles + counts = POC_BANK; seed 155 + 1 skip; B2 |
 | r1/servability-stimuli-once | f76f729a8 | READY (A4, @f76f729a, contains chain tip + BASE-107): spy spec pins one stimulus read per chunk + 2 comments; optional; step 6b |
 | r1/stimulus-list-d72 | b45ce5197 | READY (A2, @b45ce519; contains t49 b99068a6): one where for page+count; part-linked Darjah/PKSK hiding spec (bites); A4 + A3 pre-reviews Approve; merge AFTER t49; B2 |
-| r1/t04-minors | 82828a68a | READY — B2 APPROVE @8ae70d6e (cycle 21, 07:25 MYT); awaiting B1 merge | READY (A2, @8ae70d6e): FD-11/AP-17 row; card-ungrouped afterEach reset + per-test restore assertion (bites, order-independent); A4 + A3 pre-reviews Approve; B2 |
+| r1/t04-minors | 82828a68a | READY — B2 APPROVE @8ae70d6e (cycle 21): **B1 merges the reviewed 8ae70d6e**; origin now 82828a68 = + 1 test-only commit (B2 Minor: chapter-subjects tile = sum of levels; mutation-proven) — optional delta |
 | r1/t31-builder-wire | eb0346d25 | READY (A3, hold LIFTED 19:55 UTC): merge as a PAIR with C REQ-A-008 r1/reqa008-group-stimulus @29d24be9 right after it (http-admin TS2322 gone, vue-tsc 0); Preview #3 (A4, 33 heads on BASE-105 @525f9ca1, local): ALL GREEN, vue-tsc 0 after REQ-A-008, 0 reds. Order: after T48; then REQ-A-008; B2 |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t37-r1-runbook | c9dcb5a08 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b (823bb4a1); head c9dcb5a0 |
 | r1/t39-k1-evidence | 1a26f7a60 | check: A3 to confirm state |
 | r1/t40-attempts-acs | 31a684ed4 | READY — B2 APPROVE @31a684ed (cycle 21, 07:25 MYT); awaiting B1 merge | READY (A1a/A1b, @31a684ed): D9 row R1-02.1 (client-side cap, best N attempted by awarded marks, ties to lower position; V2 cited BIJAK-SPM-cloud.md:286-287/372-373) + two-pick spec that bites; A3 dev- |
+| r1/t42b-intake-acs | 34d86311e | (no status — triage) |
 | r1/t43-chain-publish | 238eb6eb0 | READY (A3, hold LIFTED): spec-only on T31 eb0346d2; merge after T31 + REQ-A-008; Preview #3 (A4, 33 heads on BASE-105 @525f9ca1, local): ALL GREEN, vue-tsc 0 after REQ-A-008, 0 reds. B2 |
 | r1/t43b-publish-acs | 7a14581a7 | READY — B2 APPROVE @7a14581a (cycle 21, 07:25 MYT); awaiting B1 merge | READY (A3, on T48 6c5ae3a8): giveBab in publish-acs; 422 pass (was 12 red); alone = trial merge with H-A18 fc409ae1, 0 failures, tsc 0; merge after T48; B2 |
 | r1/t45-builder-acs | ee3a7d2ba | READY — B2 APPROVE w/ Minors @ee3a7d2b (Minors carried); awaiting B1 | READY (A1b, on T48 6c5ae3a8; specs only): builder-candidate-search giveBab; bab.ts via T48 merge (cmp = fc409ae1); exam-builder 391/391 alone = trial merge with |
