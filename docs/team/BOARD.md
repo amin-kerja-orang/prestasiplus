@@ -505,7 +505,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 | T44 | r1/t44-blueprint-fields | 072d8f4b | — | merged at BASE-67 as 77984abc. The newer tip 072d8f4b shows a 19-file delta against base; A3 is asked whether it is WIP (marked IN-PROGRESS until it answers) |
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 15:48 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 15:51 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -517,7 +517,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha17-ac-coverage | 701064be9 | docs, auto-refreshed by A3 H-A27 (coverage 124/176) |
 | r1/ha18-gate-facts | d3842c48c | CHANGES REQUESTED → A2 fixing with D99 + MAJOR 1 + Minors |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
-| r1/ha24-release-input | eb6fba4b9 | docs, auto-refreshed by A3 H-A27 |
+| r1/ha24-release-input | c4c309b7f | READY (A3, BASE-105): G6 release input; every ops item has branch@head/BASE or "pending"; 27/27 SQL checks on throwaway pg16; WARM env placeholder; B2 |
 | r1/ha26-team-a-state | 2794eae6d | docs, auto-refreshed by A3 H-A27 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-a2 | a631198c7 | READY (A2, BASE-105): B-034/035 + B2 Minors; intake-workflow 135/135; ready for the B1 gate |
@@ -529,9 +529,9 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/req-b-033 | c0ea2ea96 | Approve w/ Minors, blocked by 022a → A4 restack on BASE-105 |
 | r1/req-c-020 | 78e050b3b | Approve w/ Minors, blocked by 022a → A4 restack on BASE-105 |
 | r1/req-c012-a2 | ba57ecc52 | WAITS for fixed H-A18 (A2 slot 1) |
-| r1/reqa014-no-chapter-lock-fe | 8c49b7af9 | (no status — triage) |
+| r1/reqa014-no-chapter-lock-fe | dc561730e | (no status — triage) |
 | r1/reqb032-pinned-rule | e9cf34b7f | READY (A2+A3, BASE-105): the attempt serves the pinned version; SERVED_NOW = lock predicate; image rule B; pinned-version-rule 6/6; attempts 180/180; B2 + B3 |
-| r1/reqb049-report-visible | 059841d4c | READY; A3 pre-review found only Minors (no Blocker/Major) → A1b fixing the Minors, new head follows |
+| r1/reqb049-report-visible | 9ece8d76d | READY; A3 pre-review found only Minors (no Blocker/Major) → A1b fixing the Minors, new head follows |
 | r1/reqb052-archived-edit | ce0af563f | IN-PROGRESS (A3 T48 dev): red repro ce0af563 proves an admin/Guru PUT rewrites a pinned archived v1 that a pupil sees; fixing (branch to a new version) |
 | r1/reqc021-followup | 948aa327a | READY (A1a, BASE-105): fixes the base red draw-bounded BR-16; merge early |
 | r1/seed-dangling-placements | 2bbd4f3ca | READY; A3 pre-review found only Minors (no Blocker/Major) → A1b fixing the Minors, new head follows |
@@ -539,7 +539,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t31-builder-wire | 6a27c8dd3 | READY (A3); needs C1 REQ-A-008 rebased on BASE-102 |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
-| r1/t37-r1-runbook | f4bb197c2 | docs, auto-refreshed by A3 H-A27 |
+| r1/t37-r1-runbook | d4c2605ed | READY (A3, BASE-105): runbook incl. 0106/0107 window, pg_trgm, ANALYZE, reverts, T36 demo-host steps; B2 |
 | r1/t38-selfmark-reward | 13134ced7 | READY (A1b, BASE-105): B2 c16 Minors fixed (concurrency spec red without the lock); rewards 22/22; B2 delta + B3 |
 | r1/t39-k1-evidence | 1a26f7a60 | check: A3 to confirm state |
 | r1/t40-attempts-acs | 43fb5900d | READY (A1b, T38 + BASE-105): 28/28; merges after T38; B2 |
