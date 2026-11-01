@@ -485,34 +485,36 @@ BASE-105 + 11 team A READY API heads + C FE heads (reqa014 dc561730, reqa005 3ee
 **Conflicts B1 will see:** `questions.module.ts` (A4 chain `OverviewWarmer` × REQ-A-018 `QuestionPaperServabilityController`: keep both providers/controllers); `stimuli.repository.ts:112` (t49 deletes the `SERVED_NOW`/`VERSION_SERVED_NOW` constants B-032 added: take t49, no use remains); `v2-backend-deviations.md` (keep both sides); C docs in reqa012 (keep both).
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 19:52 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 20:25 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/a3-qa-doc-nits | e4d4dd322 | READY (A3, BASE-105, docs only): stale QA notes on T38 self-mark reward fixed (2 files); B2 |
 | r1/a4chain-minors | 6f2fb7938 | READY (A1b, @6f2fb793 on 0ba236ef): symlink removed; janaSkipped guard first line of evaluate; T45 HTTP POST /questions/:id/status case with pinned BM reasons; 022a row real commits + proof spec; A3 dev-1 delta pre-review CLEAN (13 files 76 tests, mutations bite); merge after the A4 chain; B2 |
-| r1/ac-gaps-a1b | 860b3869a | READY (A1b + A3 dev-1, BASE-105; @860b3869, CONTAINS ha17 157b371c AND t37-r1-runbook c9dcb5a0 — merge this instead of both): R1-18.4 + AC-18.1 specs (both bite), coverage 132 entries proven (129 distinct) / 6 partial / 1 no-proof, deviated rows marked, held deps named; runbook UAT SELECTs read-only + schema-checked; A3 pre-review Minors fixed; tsc/eslint 0; B2 |
+| r1/ac-gaps-a1b | f8653070f | READY (A1b + A3, @f8653070, CONTAINS ha17 + t37): coverage doc + runbook UAT SELECTs + docs/qa/r1-b4-qa-handoff.md (B4 pack); R1-18.4 + AC-18.1 specs bite; B2. Docs-only commits since 860b3869 |
 | r1/admin-list-perf | 2a8ab6744 | READY (A4, BASE-105): REQ-B-050 + 0106 + 0107 + exact counts; pre-review Minors fixed (status total ?? 0, no-slash kertas change documented, migration order + drift notes); B2 + B3 + DevOps |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
 | r1/bridge-table-parts | c805ecc7c | READY (A4, BASE-105): the bridge uses stimulusTableParts (an invalid grid + pipe body shows the table only, as in builder/Studio); bridge 118/118, attempts 180/180, kuiz 39/39; B2. Follow-up after T31 + this merge: drop PENDING_BRIDGE_TEXT in the parity spec (A4) |
 | r1/builder-search-perf | 1216b736c | READY (A3, on T48 6c5ae3a8; restack only): 413 pass; alone = trial merge with H-A18 fc409ae1, 0 failures, tsc 0; merge after T48; B2 |
-| r1/chain-qa-selfmark-a3 | a92cb32d0 | READY (A3, @a92cb32d = T38 13134ced + chain-qa bc8a0351 + test): self-mark reward join in the chain (one row per new score, replay adds nothing; bites); branch alone 620 pass; merge after T38 and r1-chain-qa-a3; the H-A18 Bab-refusal join (3a) goes on a separate stacked branch; B2 |
-| r1/delete-served-guard | fd623f411 | READY (A2, @fd623f41; contains B-052 f3a2448f): Guru/admin DELETE 409 on served/pinned (D9: V2 hard-deletes), one served rule served-rule.ts paperHeld (versionIsPinned, delete guard, stimuli lock, image rule B narrowed to the pupil's own attempt on withdrawn papers), setExplanation → new draft version; 15+4 specs, mutations bite; questions 660, workflow 296, attempts 180, security 185, conformance 409, files 244; A4 pre-review (B3 checklist) next; B2 + B3; merge after H-A18 → B-032 → B-052 |
+| r1/chain-qa-bab-3a-a3 | 8c908c79f | ON HOLD (A3, @8c908c79; contains chain-qa-selfmark + H-A18 + T38): Bab-refusal step 3a (bites), 642 pass; follows the chain-qa MAJOR fix |
+| r1/chain-qa-selfmark-a3 | a92cb32d0 | ON HOLD (A3, @a92cb32d; contains r1-chain-qa-a3): follows the chain-qa MAJOR fix (re-merge after A3 pushes) |
+| r1/delete-served-guard | fd623f411 | READY w/ follow-ups (A2, @fd623f41; contains B-052 f3a2448f): A4 pre-review Approve w/ Minors, B3 PASS (userId from session, no published regression, no cross-pupil read). Follow-ups → A2: M1 v1/v2 snapshot compare incl. keys+parts, M2 published-paper regression guard, M3 deleteRefused copy by reason, M4 lead decision: DROP the status clause (refuse only served/pinned, as V2 allows other deletes), M6 publish race noted in row; M5 index KIV. B2 + B3; merge after H-A18 → B-032 → B-052 |
 | r1/docs-credential-scrub | b3db5e0d2 | READY (A1a, BASE-105; replaces 5cd46c4a): A4 Minors fixed: Demo1234 doc replacements reverted (allowed fictitious dev default; docs match code), DOC-02 wording, row relabelled privacy override, srs/M02 v1.34 revision row (v1.30 keeps placeholders, lead decision); 0 hits for the 3 old values repo-wide; M02 unit 724, eslint + vue-tsc 0; B3 + B2 |
-| r1/drop-lock-enums | df3fc306a | IN-PROGRESS (A1a, @df3fc306, BASE-105): contract drops dead CHAPTER_LOCKED + locked states, openapi re-emitted, deviation row; merge after C reqa014-no-chapter-lock-fe; author evidence lost in container restart → re-run + A2 pre-review before READY |
+| r1/drop-lock-enums | c38a6834e | READY w/ Minors (A1a, @c38a6834, BASE-105): contract drops dead CHAPTER_LOCKED + locked states, openapi re-emitted; A2 review: correct; merge-tree with C reqa014 clean; on the merge contract 1433, api tsc 0, vue-tsc 0, m03/m05 FE 659/659; drop-lock first breaks nothing new. Minors → A2 (row wording "no reader depends on it", negative contract test, row date); merge after reqa014-no-chapter-lock-fe; B2 |
 | r1/e05b-l1-spec | 4b9eac57a | READY (A1b, BASE-105): negative control added; 12/12; B2 + B3 |
 | r1/ha17-ac-coverage | 157b371c3 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b; head 157b371c |
 | r1/ha18-gate-facts | fc409ae16 | READY (A2, BASE-105): H-A18 + REQ-B-017/037 + D99 + pre-review fixes (M2 held-issues helper on both edit paths; m1 gate-issue codes; deviation row); workflow 296/296; conformance 409/409; B2 + B3 |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
-| r1/ha24-release-input | 458e3e20b | READY (A3 docs, refreshed @458e3e20 from BOARD AUDIT c4971d1, 18:54): heads + states current; WARM row t37 kept (drop 022a side on conflict); migrations 0104–0107 team A (0110 is team C t34-l1-residual-c); B2/B1 |
-| r1/ha26-team-a-state | d27c5c76e | READY (A3 docs, refreshed @d27c5c76 from BOARD AUDIT c4971d1, 18:54): heads + states current; WARM row t37 kept (drop 022a side on conflict); migrations 0104–0107 team A (0110 is team C t34-l1-residual-c); B2/B1 |
+| r1/ha24-release-input | ef64b13e7 | READY (A3 docs, @ef64b13e): §3.5 B1 merge order (REQ-A-024) + conflict resolutions; B1/B2 |
+| r1/ha26-team-a-state | bb38990f6 | READY (A3 docs, @bb38990f): team-a-r1-state.md only; vs ac-gaps take ha26 side; B2 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-a2 | 8c1964a6f | READY (A2, BASE-105): prefetch crash fixed (awaited Promise.all, failed read → 500, no unhandledRejection; red-first specs); row 908 6 cells; tsc/eslint 0, intake-workflow 137/137; A4 pre-review: Approve; B2 |
 | r1/mock-known-mismatches | a279e68cd | READY (A3, BASE-105): REQ-A-019 base red fixed (7 routes notServed, stale m27 entry removed); conformance 2/2; B2 | A4 pre-review: Approve (nits) |
 | r1/overview-getmany-parallel | 0ba236ef8 | READY (A4): chain 6th; 1334 pass at the tip (only the known base red); B2 |
 | r1/overview-mcq-shape-once | 5a785be84 | READY (A4): chain 5th; B2 |
-| r1/r1-chain-qa-a3 | bc8a0351d | READY (A3, @bc8a0351): chain-intake-to-pupil.spec + docs/qa/r1-chain-step-map.md (full step→spec table for B4); green alone and on the builder stack; B2 |
+| r1/r1-10-1-practice-spec | 68bfd4132 | IN-PROGRESS (A1b, @68bfd413, BASE-105): pins today's practice rewards (1 syiling/correct, ledger source, 10 points on session, no wallet XP, streak once/day, replay pays nothing); author evidence lost in container restart → being re-verified; user Q12 open |
+| r1/r1-chain-qa-a3 | bc8a0351d | ON HOLD (A3, @bc8a0351): A2 pre-review MAJOR: step 7 key-leak check is a 4-name regex (answerKey / scheme reason text leak undetected) → A3 fixes with an allow-list + Minors (stimulus once, same-key replay, exact syiling, 2 attempt rows, pin follows version); do not merge |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
 | r1/req-b-022a-a4 | d82c52567 | READY (A4): REQ-B-053 + pre-review rows (per-instance warm-up documented; env comment moved); chain 2nd; B2 + B3 + DevOps |
 | r1/req-b-025c | d47353043 | READY (A1b, BASE-105): Minors fixed (decision row REQ-B-007/025c, lateSync, fixture names); attempts 183/183; B2 |
@@ -525,8 +527,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/reqb052-archived-edit | f3a2448f9 | READY (A3, BASE-105; replaces 17196431): follow-ups done: P1 pinned-clause spec (bites), guard published OR (withdrawn AND EXISTS attempts), header; archived-edit 6/6, pinned-version-rule 6/6, workflow 296/296; tsc/eslint 0; B2 |
 | r1/reqc021-followup | 948aa327a | READY (A1a, BASE-105): fixes the base red draw-bounded BR-16; merge early |
 | r1/seed-dangling-placements | 11cbcf458 | READY (A1b, BASE-105): asserts paper titles + counts = POC_BANK; seed 155 + 1 skip; B2 |
-| r1/stimulus-list-d72 | 86b402468 | READY (A2, BASE-105; @86b40246, contains t49 b99068a6): one combined where for page+count, joinable+empty-group spec; A4 pre-review Approve; its Minor FIXED (listStimulusIds subject/level now also via question_parts, red-first spec); stimulus-lists 18/18, questions 938, workflow 275; merge AFTER t49; vs A4 chain only v2-backend-deviations.md conflicts (keep both); B2 | A3 dev-1 delta pre-review: correct, red-first proven, EXPLAIN ok (+30% no-match scan at 100k); 1 Minor (part-linked Darjah/PKSK hiding has no spec) → A2 |
-| r1/t04-minors | 7ce0016c6 | READY (A2, BASE-105; @7ce0016c): FD-11/AP-17 row + wording; A4 pre-review Approve; its Minor fixed (card-ungrouped Bab describe afterEach cleanup + restore proof, bites); practice-reads + chapter-practice 109; B2 | A3 dev-1 delta: isolation holds; 1 Minor (restore proof order-dependent → assert in afterEach) → A2 |
+| r1/stimulus-list-d72 | b45ce5197 | READY (A2, @b45ce519; contains t49 b99068a6): one where for page+count; part-linked Darjah/PKSK hiding spec (bites); A4 + A3 pre-reviews Approve; merge AFTER t49; B2 |
+| r1/t04-minors | 8ae70d6e8 | READY (A2, @8ae70d6e): FD-11/AP-17 row; card-ungrouped afterEach reset + per-test restore assertion (bites, order-independent); A4 + A3 pre-reviews Approve; B2 |
 | r1/t31-builder-wire | eb0346d25 | READY (A3, hold LIFTED 19:55 UTC): merge as a PAIR with C REQ-A-008 r1/reqa008-group-stimulus @29d24be9 right after it (http-admin TS2322 gone, vue-tsc 0); Preview #3 (A4, 33 heads on BASE-105 @525f9ca1, local): ALL GREEN, vue-tsc 0 after REQ-A-008, 0 reds. Order: after T48; then REQ-A-008; B2 |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
@@ -545,6 +547,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t51-partial-acs-a3 | 61c1b077f | READY (A3, hold LIFTED; @61c1b077 on T43 238eb6eb + T31 eb0346d2 + T48): merge after T48, T31, REQ-A-008, T43; never old T31 6a27c8dd / T43 5ce5894f / T51 54f63116; Preview #3 (A4, 33 heads on BASE-105 @525f9ca1, local): ALL GREEN, vue-tsc 0 after REQ-A-008, 0 reds. B2 |
 | r1/t52-examiner-grid | 5a0d7bd0e | READY (A1a/A1b, @5a0d7bd0): examinerGrid from marked (live+pinned), be09 test 8 bites; deviation note live-wins in withPinned; A2 + A3 dev-1 delta pre-reviews CLEAN; 124 tests; B2 (C REQ-A-012 reqa012 813ace12 stacks on it) |
 | r1/t54-perf-400k | 03c76eb0d | READY (A4, docs): credentials replaced by placeholders; may 3-line-conflict with 022a perf docs (trivial); B2 |
+
+**New branches not yet triaged:** r1/reqa023-ai-draft-delete-409 bbb507ea8
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
