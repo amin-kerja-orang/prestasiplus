@@ -529,7 +529,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/a3-qa-doc-nits | e4d4dd322 | READY (A3, BASE-105, docs only): stale QA notes on T38 self-mark reward fixed (2 files); B2 |
-| r1/ac-gaps-a1b | 8dc47197e | READY (multi, @c12f343c (BASE-115 merged; + docs/qa/r1-b-delta-packets.md for B) |
+| r1/ac-gaps-a1b | 8dc47197e | READY (multi, @8dc47197 (BASE-115 merged; + docs/qa/r1-b-delta-packets.md for B) |
 | r1/admin-list-perf | 6389cd541 | READY (A4, @6389cd54, BASE-105): REQ-B-050 + 0106 pg_trgm + 0107 kertas index; per-user @RateLimit GET /api/questions (THROTTLE_QUESTIONS_LIST_PER_MINUTE=60); docs: feature_flags 0108, drop_pool_tag 0109, optional B12 0122 / B20 0123 (lead-confirmed); 0107 header gives 0.9 s bare / ~2 s via migrate deploy; B2 + B3 + DevOps (maintenance window, new env) |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
 | r1/bridge-table-parts | c805ecc7c | READY (A4, BASE-105): the bridge uses stimulusTableParts (an invalid grid + pipe body shows the table only, as in builder/Studio); bridge 118/118, attempts 180/180, kuiz 39/39; B2. Follow-up after T31 + this merge: drop PENDING_BRIDGE_TEXT in the parity spec (A4) |
@@ -544,7 +544,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha17-ac-coverage | 157b371c3 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b; head 157b371c |
 | r1/ha18-gate-facts | a9ffe246f | READY (A2, @a9ffe246; REQ-B-057 MAJOR fixed): gate counts only pending exact/near duplicate links; accepted items may dismiss links (not_duplicate, cleared_duplicate event; V2 rows 252/254); 0105 CHECKs NOT VALID → VALIDATE; gate-facts 1b + accepted-duplicates.spec, mutations red; 70/70 + 8/8. B delta: ba5bdd6c → 629ea0d3 (BASE-108 only) → a9ffe246 (fix). A4 pre-review queued; B2 delta re-review; merge before delete-served-guard / reqb052 / chain-qa-bab-3a |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
-| r1/ha24-release-input | fd54cccc5 | READY (A3 docs, @0589c401): §3.5 merge order (BASE-110..114 in base) + release notes + checklist + KIV; conflicts with BASE-115 (WARM row) → forward-merge approved; B1/B2 |
+| r1/ha24-release-input | fd54cccc5 | READY (A3 docs, @fd54cccc, contains BASE-116): §3.5 merge order (BASE-108..116 in base) + release notes + checklist + KIV; B1/B2 |
 | r1/ha26-team-a-state | cddc11cb5 | READY (A3 docs, @cddc11cb): team-a-r1-state.md; clean vs BASE-115; B2 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-a2 | 8c1964a6f | READY — B2 APPROVE @8c1964a6 (cycle 21, 07:25 MYT); awaiting B1 merge | READY (A2, BASE-105): prefetch crash fixed (awaited Promise.all, failed read → 500, no unhandledRejection; red-first specs); row 908 6 cells; tsc/eslint 0, intake-workflow 137/137; A4 pre-review: Appr |
@@ -582,6 +582,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t49-served-now | 8cb9fa5f1 | READY — B2 APPROVE @8cb9fa5f (cycle 21, 07:25 MYT); awaiting B1 merge | READY (A2 + A1a, @8cb9fa5f): blank-filter 422 + filter-options notServed entry in known-mismatches (route ships here); A4 pre-review Approve + B3 checklist Pass; merge BEFORE d72 (clean, A3 merge-tree |
 | r1/t51-partial-acs-a3 | 61c1b077f | READY (A3, hold LIFTED; @61c1b077 on T43 238eb6eb + T31 eb0346d2 + T48): merge after T48, T31, REQ-A-008, T43; never old T31 6a27c8dd / T43 5ce5894f / T51 54f63116; Preview #3 (A4, 33 heads on BASE-105 @525f9ca1, local): ALL GREEN, vue-tsc 0 after REQ-A-008, 0 reds. B2 |
 | r1/t52-examiner-grid | 5a0d7bd0e | READY — B2 APPROVE @5a0d7bd0 (cycle 21, 07:25 MYT); awaiting B1 merge | READY (A1a/A1b, @5a0d7bd0): examinerGrid from marked (live+pinned), be09 test 8 bites; deviation note live-wins in withPinned; A2 + A3 dev-1 delta pre-reviews CLEAN; 124 tests; B2 (C REQ-A-012 reqa012 |
+
+**New branches not yet triaged:** r1/b4-e2e-base105-t10 67fb78db7
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
