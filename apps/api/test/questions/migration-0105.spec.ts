@@ -86,6 +86,14 @@ describe('migration 0105 gate facts: backfill with before and after counts', () 
   })
 
   it('the new rows are constrained and default to person', async () => {
+    // The CHECKs are added NOT VALID and validated after the backfill (no long ACCESS EXCLUSIVE scan): a convalidated = false constraint would not protect old rows.
+    const checks = await db.query<{ conname: string; convalidated: boolean }>(
+      `select conname, convalidated from pg_constraint where conrelid = 'question_versions'::regclass and conname in ('ck_question_versions_last_editor', 'ck_question_versions_declared_marks') order by conname`,
+    )
+    expect(checks).toEqual([
+      { conname: 'ck_question_versions_declared_marks', convalidated: true },
+      { conname: 'ck_question_versions_last_editor', convalidated: true },
+    ])
     await expect(db.query(`update question_versions set last_editor = 'robot' where question_id = $1::bigint`, [ids['manual-draft']])).rejects.toThrow(/ck_question_versions_last_editor/)
     await expect(db.query(`update question_versions set declared_marks = -1 where question_id = $1::bigint`, [ids['manual-draft']])).rejects.toThrow(/ck_question_versions_declared_marks/)
     await db.query(`insert into question_versions (question_id, version_no, status, type, stem_ms) values ($1::bigint, 2, 'draft', 'mcq', 'y')`, [ids['manual-draft']])
