@@ -48,6 +48,7 @@ describe('R1 T43b publish ACs (PIPE AC-07.4 to AC-07.9)', () => {
       questionText: 'Berapakah hasil tambah 2 dan 3?',
       options: ['4', '5', '6', '7'],
       correctAnswer: 1,
+      cognitiveLevel: 'mengaplikasi', // T33 gate: approving an SPM-bound question needs a level per leaf
       kertas: '2',
       tag,
       ...over,
@@ -59,6 +60,7 @@ describe('R1 T43b publish ACs (PIPE AC-07.4 to AC-07.9)', () => {
     for (const action of ['review', 'approved']) {
       const res = await admin.post('/api/questions/bulk-action', { action, ids })
       expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(res.body.data, `${action}: ${JSON.stringify(res.body.data)}`).toMatchObject({ failed: [] })
     }
   }
   const approved = async (over: Record<string, unknown> = {}): Promise<string> => {
@@ -166,12 +168,12 @@ describe('R1 T43b publish ACs (PIPE AC-07.4 to AC-07.9)', () => {
       expect(await status(paper)).toBe('draft')
     })
 
-    it('no zero-mark section with questions: a question without marks gives ZERO_MARK_SECTION and MARKS_MISMATCH (both hard) and the paper stays draft', async () => {
+    it('no zero-mark section with questions: a question without marks gives ZERO_MARK_SECTION, MARKS_MISMATCH and NO_MARKS (all hard) and the paper stays draft', async () => {
       const { paper, ids } = await fullPaper()
       await q(`update question_parts set marks = 0 where question_version_id in (select id from question_versions where question_id = $1)`, [ids[3]])
       const res = await publish(paper)
       expect(res.ok).toBe(false)
-      expect(res.blockerDetails!.filter((b) => b.section === 'Bahagian B' && b.overridable === false).map((b) => b.code).sort()).toEqual(['MARKS_MISMATCH', 'ZERO_MARK_SECTION'])
+      expect(res.blockerDetails!.filter((b) => b.section === 'Bahagian B' && b.overridable === false).map((b) => b.code).sort()).toEqual(['MARKS_MISMATCH', 'NO_MARKS', 'ZERO_MARK_SECTION'])
       expect(res.canOverride).toBe(false)
       expect(await status(paper)).toBe('draft')
     })
@@ -207,7 +209,9 @@ describe('R1 T43b publish ACs (PIPE AC-07.4 to AC-07.9)', () => {
     it('same subject: a question of another subject cannot be placed (add and PUT), so a published paper has one subject', async () => {
       const paper = await newPaper()
       const [a] = await sectionsOf(paper)
-      const other = await approved({ subjectId: sci, tag: undefined })
+      const sciUnit = await one(`select id::text id from curriculum_nodes where kind = 'unit' and subject_id = ${sci} and education_level_id = ${level} order by sort_order, id limit 1`)
+      const sciSp = await one(`select id::text id from curriculum_nodes where kind = 'sp' and subject_id = ${sci} and education_level_id = ${level} order by sort_order, id limit 1`)
+      const other = await approved({ subjectId: sci, tag: { unitId: sciUnit, spIds: [sciSp], tp: 3 } })
       const added = await place(paper, a!, other)
       expect(added.status, JSON.stringify(added.body)).toBe(422)
       expect(added.body.error.message).toContain(PLACE.otherSubject)
