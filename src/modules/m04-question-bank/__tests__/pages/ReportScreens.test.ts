@@ -482,7 +482,7 @@ describe('ReportQuestionModal (M04 S14)', () => {
 
   it('structured sends questionType and the structured_attempt source by default', async () => {
     api.createQuestionReport.mockResolvedValue({ success: true, message: 'ok' })
-    await open({ variant: 'structured', questionId: 3698 })
+    await open({ variant: 'structured', questionId: 3698, attemptId: 'att-1' })
     await tick('other')
     await click('report-submit')
     expect(api.createQuestionReport).toHaveBeenCalledWith(
@@ -490,6 +490,7 @@ describe('ReportQuestionModal (M04 S14)', () => {
         questionId: 3698,
         questionType: 'structured',
         source: 'structured_attempt',
+        attemptId: 'att-1',
         reasons: ['other'],
       }),
     )

@@ -73,7 +73,7 @@ function pick(id: string): void {
     :data-testid="`question-${question.id}`"
     :aria-labelledby="`h-${question.id}`"
   >
-    <header class="flex items-start justify-between gap-3">
+    <header class="flex flex-wrap items-start justify-between gap-3">
       <div class="min-w-0">
         <h2
           :id="`h-${question.id}`"

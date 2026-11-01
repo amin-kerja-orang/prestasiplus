@@ -23,7 +23,7 @@ const numericId = computed(() => {
       color="neutral"
       variant="ghost"
       icon="i-ph-flag-banner"
-      class="min-h-11"
+      class="min-h-11 shrink-0"
       data-testid="lapor-soalan"
       @click="open = true"
       >Lapor Soalan</UButton

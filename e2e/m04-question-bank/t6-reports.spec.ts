@@ -252,9 +252,7 @@ test.describe('M04 S13 and S14 as the pelajar', { tag: [TAG.smoke, moduleTag(4)]
     await page.getByTestId('harness-open').click()
     await expect(page.getByTestId('report-title')).toHaveText('Lapor Soalan')
     await modalSettled(page)
-    await expect(page.getByTestId('report-subtitle')).toHaveText(
-      'Soalan ini akan dinyahaktifkan sementara',
-    )
+    await expect(page.getByTestId('report-subtitle')).toHaveCount(0)
     await expect(page.locator('[data-testid^=report-reason-]')).toHaveCount(7)
     await expect(page.getByTestId('report-reason-missing_options')).toContainText(
       'Pilihan jawapan tidak lengkap',
@@ -334,9 +332,7 @@ test.describe('M04 S13 and S14 as the pelajar', { tag: [TAG.smoke, moduleTag(4)]
     await gotoApp(`${HARNESS}?variant=structured&questionId=4455`)
     await expect(page.getByTestId('harness-open')).toHaveText('Lapor')
     await page.getByTestId('harness-open').click()
-    await expect(page.getByTestId('report-subtitle')).toHaveText(
-      'Soalan ini akan dinyahaktifkan selepas 3 laporan',
-    )
+    await expect(page.getByTestId('report-subtitle')).toHaveCount(0)
     await expect(page.locator('[data-testid^=report-reason-]')).toHaveCount(5)
     await expect(page.getByTestId('report-reason-wrong_options')).toContainText('Markah tidak adil')
     await page.getByTestId('report-reason-wrong_answer').click()
