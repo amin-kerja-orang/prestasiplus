@@ -479,13 +479,13 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 ### Head audit 2026-11-01 15:00 UTC (superseded)
 This manual table has been removed because it went stale. **The only current source for team A heads and states is the auto table between the `AUDIT:BEGIN/END` markers at the end of this file.** It is regenerated from `git ls-remote` every cycle.
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 19:03 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 19:05 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/a3-qa-doc-nits | e4d4dd322 | READY (A3, BASE-105, docs only): stale QA notes on T38 self-mark reward fixed (2 files); B2 |
-| r1/a4chain-minors | 4f40a1819 | READY (A1a, on overview-getmany-parallel 0ba236ef): empty-reasons spec (guard is redundant, kept; spec pins behaviour), janaSkipped runtime guard + spec, 022a perf identity line; 32 tests, tsc/eslint 0, contract:check ok; A2 pre-review pending; merge after the A4 chain; B2 |
+| r1/a4chain-minors | 16ad6053e | ON HOLD (A1a; @16ad6053): A2 pre-review MAJOR fixed by lead (tracked apps/api/node_modules symlink untracked, 16ad6053); Minors open → A1a: janaSkipped check at top of evaluate/evaluateAll, 022a row cites real commits 33255321/a02f658f + servability-overview-once proof; do not merge yet |
 | r1/ac-gaps-a1b | b4b6ce286 | READY (A1b, BASE-105; CONTAINS ha17-ac-coverage 157b371c — merge this instead of ha17): R1-18.4 spec (bites), coverage 124 → 132 proven / 6 partial / 1 no-proof (AC-18.1 kept partial: no Bab step titled), every non-base proof names its branch + held ones marked; R1-11.4/R1-12.6 read-only UAT SELECTs in r1-runbook 3.6b/4 with real testcontainer output; tsc/eslint 0, report-archive 24/24; B2 |
 | r1/admin-list-perf | 2a8ab6744 | READY (A4, BASE-105): REQ-B-050 + 0106 + 0107 + exact counts; pre-review Minors fixed (status total ?? 0, no-slash kertas change documented, migration order + drift notes); B2 + B3 + DevOps |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
@@ -523,7 +523,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t37-r1-runbook | c9dcb5a08 | READY (A3 docs, refreshed @c9dcb5a0 from BOARD AUDIT c4971d1, 18:54): heads + states current; WARM row t37 kept (drop 022a side on conflict); migrations 0104–0107 team A (0110 is team C t34-l1-residual-c); B2/B1 |
 | r1/t38-selfmark-reward | 13134ced7 | READY (A1b, BASE-105): A3 pre-review CLEAN (concurrency + best-N sound; red proof); B2 delta + B3 |
 | r1/t39-k1-evidence | 1a26f7a60 | check: A3 to confirm state |
-| r1/t40-attempts-acs | 9be88fc7f | READY (A1a, BASE-105): D9 row added for R1-02.1 (pick cap is client-side, follows V2, lead decision) + coverage note; docs only, no code change; B2 |
+| r1/t40-attempts-acs | 9be88fc7f | READY (A1a, BASE-105): D9 row added for R1-02.1 (pick cap is client-side, follows V2, lead decision) + coverage note; docs only, no code change; B2 | A2 delta pre-review: row accurate; Minor: say "best N attempted by awarded marks, ties to lower position" + spec with two different-mark picks → A1a |
 | r1/t43-chain-publish | 238eb6eb0 | ON HOLD (after T31 + REQ-A-008): fixes done @238eb6eb, on T31 eb0346d2 + BASE-105, 458 pass | 19:05 UTC: C REQ-A-008 r1/reqa008-group-stimulus @29d24be9 now contains T31 eb0346d2; A4 preview #3 steps 30–33 verifying vue-tsc 0 + builder specs; hold lifts on that evidence |
 | r1/t43b-publish-acs | 7a14581a7 | READY (A3, on T48 6c5ae3a8): giveBab in publish-acs; 422 pass (was 12 red); alone = trial merge with H-A18 fc409ae1, 0 failures, tsc 0; merge after T48; B2 |
 | r1/t45-builder-acs | ee3a7d2ba | READY (A1b, on T48 6c5ae3a8; specs only): builder-candidate-search giveBab; bab.ts via T48 merge (cmp = fc409ae1); exam-builder 391/391 alone = trial merge with H-A18; tsc/eslint 0; merge after T48; B2 |
@@ -533,7 +533,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t49-served-now | b99068a67 | READY (A2, BASE-105): bulk approve/archive with all-blank filter → 422 filterBlank [PROPOSED BM]; {} stays Arkib Semua; 4 deviation rows; questions 933 (+BR-16 known), workflow 275, conformance 409; A4 pre-review: Approve w/ Minors, B3 checklist Pass; FE note → C (REQ-C-019: Arkib Semua must send filter:{}); B2 + B3; merge BEFORE stimulus-list-d72 |
 | r1/t50-partial-acs | 075e1b587 | READY (A1a, BASE-105): A3 pre-review CLEAN (nits only); B2 |
 | r1/t51-partial-acs-a3 | 61c1b077f | ON HOLD (A3; restacked @61c1b077 on T43 238eb6eb + T31 eb0346d2 + T48): technically ready (537 pass alone = trial merge with H-A18; tsc/eslint 0; vue-tsc only the known http-admin REQ-A-008 error); merge after T31 + REQ-A-008 + T43; held only by that pair | 19:05 UTC: C REQ-A-008 r1/reqa008-group-stimulus @29d24be9 now contains T31 eb0346d2; A4 preview #3 steps 30–33 verifying vue-tsc 0 + builder specs; hold lifts on that evidence |
-| r1/t52-examiner-grid | ca1ed739f | READY (A1a, BASE-105): getCover reads examinerGrid from marked (live+pinned); be09 test 8 (auto/points-essay/archived) bites on revert; R21 superseded; api tsc + eslint + vue-tsc 0, 15 pass; B2 |
+| r1/t52-examiner-grid | ca1ed739f | READY (A1a, BASE-105): getCover reads examinerGrid from marked (live+pinned); be09 test 8 (auto/points-essay/archived) bites on revert; R21 superseded; api tsc + eslint + vue-tsc 0, 15 pass; B2 | A2 delta pre-review: Minors closed, test 8 bites; new Minor: cover follows LIVE manual flag over pinned (note in deviation docs) → A1a |
 | r1/t54-perf-400k | 03c76eb0d | READY (A4, docs): credentials replaced by placeholders; may 3-line-conflict with 022a perf docs (trivial); B2 |
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
