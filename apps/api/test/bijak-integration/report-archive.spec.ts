@@ -103,13 +103,13 @@ describe('Laporan Soalan: archive from the report row (R1-B17)', () => {
 
   it('2. a student files a report against the bank question id: pending, on the live version', async () => {
     const student = await loginAs(t, STUDENT)
-    const res = await student.post('/api/question-reports', { questionId: qid, reasons: ['wrong_answer'], comment: 'Jawapan tidak tepat' })
+    const res = await student.post('/api/question-reports', { questionId: qid, reasons: ['wrong_answer'], comment: 'Jawapan tidak tepat', attemptId })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     const [r] = await t.db.query<{ id: string; status: string; question_version_no: number; source: string }>(`select id::text, status, question_version_no, source from question_reports where question_id = $1`, [qid])
     expect(r).toMatchObject({ status: 'pending', question_version_no: 1, source: 'spm' })
     reportId = r!.id
-    // an MCQ report switches the question off at once (BR-M04-11), which is a deactivation only
-    expect(await questionRow()).toMatchObject({ is_active: false, status: 'approved' })
+    // REQ-B-031 (D98): a report never switches the question off; the admin decides
+    expect(await questionRow()).toMatchObject({ is_active: true, status: 'approved' })
   })
 
   it('3. the admin keeps the question (reactivate): it is served again', async () => {
@@ -247,7 +247,7 @@ describe('Laporan Soalan: "Arkib" on a live question with a newer revision in Se
     )
     expect(row).toEqual({ live: 1, latest: 2, status: 'review' })
     const student = await loginAs(t, STUDENT)
-    const res = await student.post('/api/question-reports', { questionId: q2, reasons: ['wrong_answer'], comment: 'Jawapan tidak tepat' })
+    const res = await student.post('/api/question-reports', { questionId: q2, reasons: ['wrong_answer'], comment: 'Jawapan tidak tepat', quizSessionId: await practiceSession(student.userId, q2) })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     report2 = (await t.db.query<{ id: string }>(`select id::text from question_reports where question_id = $1`, [q2]))[0]!.id
   })
@@ -290,7 +290,7 @@ describe('Laporan Soalan: "Arkib" is tied to the reported version (REQ-B-018)', 
   it('setup: a report on version 1 of a served question, then version 2 is published (live moves to 2)', async () => {
     q3 = (await t.db.query<{ id: string }>(`select question_id::text id from question_versions where number_label = 'SEED-MCQ-SCI-T4' limit 1`))[0]!.id
     const student = await loginAs(t, STUDENT)
-    const res = await student.post('/api/question-reports', { questionId: q3, reasons: ['wrong_answer'], comment: 'Jawapan tidak tepat' })
+    const res = await student.post('/api/question-reports', { questionId: q3, reasons: ['wrong_answer'], comment: 'Jawapan tidak tepat', quizSessionId: await practiceSession(student.userId, q3) })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     const [r] = await t.db.query<{ id: string; question_version_no: number }>(`select id::text, question_version_no from question_reports where question_id = $1`, [q3])
     expect(r!.question_version_no).toBe(1)
@@ -359,3 +359,10 @@ describe('Laporan Soalan: the admin list carries the lifecycle status of the que
     expect(await rowOf('SEED-MCQ-MATH-T5')).toMatchObject({ exists: true, status: 'review', liveVersionNo: null })
   })
 })
+
+/** REQ-B-031: a practice session of `userId` that served `questionId`, the proof a pupil needs to report it. */
+async function practiceSession(userId: string, questionId: string): Promise<string> {
+  const [row] = await t.db.query<{ id: string }>(`insert into practice_sessions (user_id, mode, question_count, status, started_at, completed_at) values ($1::bigint, 'random', 1, 'completed', now(), now()) returning id::text`, [userId])
+  await t.db.query(`insert into practice_session_questions (session_id, position, question_id, question_version_no) values ($1::uuid, 1, $2::bigint, 1)`, [row!.id, questionId])
+  return row!.id
+}
