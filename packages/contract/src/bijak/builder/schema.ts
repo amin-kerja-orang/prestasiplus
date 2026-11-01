@@ -124,6 +124,8 @@ export const BIJAK_BUILDER_EDIT_LINES = {
   notAdded: (id: string) => `Soalan ${id} bukan soalan tambahan kertas ini`,
   /** [PROPOSED] */
   ruleCount: (max: number) => `Bilangan soalan dipilih mesti antara 1 dan ${String(max)}`,
+  /** [PROPOSED] Pilih N on a Bahagian that has no question yet (the cap is the questions placed in it). */
+  ruleNoQuestions: 'Letakkan soalan dalam bahagian ini dahulu sebelum memilih bilangan soalan',
 } as const
 
 /**
@@ -159,6 +161,8 @@ export const BIJAK_BUILDER_CHECK_LINES = {
   /** R1-T48: the answering rule of a Bahagian differs from the Kontrak's (blueprint conformance, overridable). `rule` is "Jawab Semua" or "Pilih N". */
   ruleNotInContract: (paperRule: string, contractRule: string) => `peraturan menjawab ${paperRule} tidak sama dengan Kontrak (${contractRule})`,
   /** R1-T48 (AC-26.1(i), V2 "must be <= question count"): Pilih N with fewer questions than N in the Bahagian; never overridable. */
+  /** R1-T48 (B2): an admin-added Bahagian without a question is never publishable; hard. */
+  sectionEmpty: 'bahagian ini tiada soalan',
   ruleExceeds: (n: number, count: number) => `peraturan menjawab Pilih ${String(n)} melebihi bilangan soalan (${String(count)})`,
   /** R1-T48: a Bahagian an admin added; the Kontrak has none (blueprint conformance, overridable). */
   sectionNotInContract: 'bahagian ini tiada dalam Kontrak',
@@ -235,6 +239,8 @@ export const BIJAK_BUILDER_BLOCKER_OVERRIDABLE = {
   RULE_N_EXCEEDS_QUESTIONS: false,
   /** R1-T48: an admin-added Bahagian (not in the Kontrak). */
   SECTION_NOT_IN_CONTRACT: true,
+  /** R1-T48 (B2): an admin-added Bahagian with no question; a paper cannot be published with an empty Bahagian, whatever the override says. */
+  SECTION_EMPTY: false,
 } as const
 export type BijakBuilderBlockerCode = keyof typeof BIJAK_BUILDER_BLOCKER_OVERRIDABLE
 export const BIJAK_BUILDER_BLOCKER_CODES = Object.keys(BIJAK_BUILDER_BLOCKER_OVERRIDABLE) as [BijakBuilderBlockerCode, ...BijakBuilderBlockerCode[]]
@@ -647,7 +653,7 @@ export const BijakBuilderBlockerSchema = z
   .strictObject({
     code: z.enum(BIJAK_BUILDER_BLOCKER_CODES).meta({
       description:
-        'Stable code. Hard (overridable false): NO_QUESTIONS, ZERO_MARK_SECTION, TOTAL_MARKS_BELOW_ONE (PIPE AC-07.4: no question, a Bahagian with questions but 0 marks, a total under 1), DUPLICATE_QUESTION, GROUP_MIN_MEMBERS (D93), GROUP_SPLIT, COUNT_TOO_FEW, COUNT_TOO_MANY, MARKS_MISMATCH, GROUP_NOT_CONSECUTIVE, GROUP_INCOMPLETE, GROUP_OUT_OF_ORDER, NOT_PUBLISHED, UNKNOWN_QUESTION (placed question missing from the pool), NOT_SERVABLE (R1E2E-06, pupils cannot be served). Hard also: NO_KEY, NO_MARKS, MODE_NOT_ALLOWED (structural failures of a question) and GROUP_BROKEN. Overridable: BLUEPRINT_NOT_VERIFIED (Kontrak not Disahkan) and INELIGIBLE (a question without DSKP unit or TP, or with tags awaiting review). Overridable also (R1-T48): RULE_NOT_IN_CONTRACT (the rule of a Bahagian differs from the Kontrak) and SECTION_NOT_IN_CONTRACT (admin-added Bahagian). Hard also (R1-T48): RULE_N_EXCEEDS_QUESTIONS (Pilih N with fewer than N questions in the Bahagian).',
+        'Stable code. Hard (overridable false): NO_QUESTIONS, ZERO_MARK_SECTION, TOTAL_MARKS_BELOW_ONE (PIPE AC-07.4: no question, a Bahagian with questions but 0 marks, a total under 1), DUPLICATE_QUESTION, GROUP_MIN_MEMBERS (D93), GROUP_SPLIT, COUNT_TOO_FEW, COUNT_TOO_MANY, MARKS_MISMATCH, GROUP_NOT_CONSECUTIVE, GROUP_INCOMPLETE, GROUP_OUT_OF_ORDER, NOT_PUBLISHED, UNKNOWN_QUESTION (placed question missing from the pool), NOT_SERVABLE (R1E2E-06, pupils cannot be served). Hard also: NO_KEY, NO_MARKS, MODE_NOT_ALLOWED (structural failures of a question) and GROUP_BROKEN. Overridable: BLUEPRINT_NOT_VERIFIED (Kontrak not Disahkan) and INELIGIBLE (a question without DSKP unit or TP, or with tags awaiting review). Overridable also (R1-T48): RULE_NOT_IN_CONTRACT (the rule of a Bahagian differs from the Kontrak) and SECTION_NOT_IN_CONTRACT (admin-added Bahagian). Hard also (R1-T48): RULE_N_EXCEEDS_QUESTIONS (Pilih N with fewer than N questions in the Bahagian) and SECTION_EMPTY (an admin-added Bahagian without a question).',
     }),
     message: z.string().meta({ description: 'The BM line, identical to the string in `blockers` / `errors`.' }),
     overridable: z.boolean().meta({ description: 'true when the audited override can lift this blocker.' }),

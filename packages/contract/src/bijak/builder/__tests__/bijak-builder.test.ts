@@ -514,7 +514,8 @@ describe('publish, delete and preview results', () => {
     expect(BijakBuilderBlockerSchema.safeParse({ code: 'MADE_UP', message: 'x', overridable: false }).success).toBe(false)
     expect(BijakBuilderBlockerSchema.safeParse({ code: 'NOT_SERVABLE', message: 'x' }).success).toBe(false)
     expect(BijakBuilderBlockerSchema.safeParse({ ...blocker, extra: 1 }).success).toBe(false)
-    expect(BIJAK_BUILDER_BLOCKER_CODES).toHaveLength(24) // T34's 18 + T48's RULE_NOT_IN_CONTRACT, SECTION_NOT_IN_CONTRACT, RULE_N_EXCEEDS_QUESTIONS + T43b's NO_QUESTIONS, ZERO_MARK_SECTION, TOTAL_MARKS_BELOW_ONE
+    expect(BIJAK_BUILDER_BLOCKER_CODES).toHaveLength(25) // T34's 18 + T48's RULE_NOT_IN_CONTRACT, SECTION_NOT_IN_CONTRACT, RULE_N_EXCEEDS_QUESTIONS, SECTION_EMPTY + T43b's NO_QUESTIONS, ZERO_MARK_SECTION, TOTAL_MARKS_BELOW_ONE
+    expect(BIJAK_BUILDER_BLOCKER_CODES.filter((c) => BIJAK_BUILDER_BLOCKER_OVERRIDABLE[c]).sort()).toEqual(['BLUEPRINT_NOT_VERIFIED', 'INELIGIBLE', 'RULE_NOT_IN_CONTRACT', 'SECTION_NOT_IN_CONTRACT'])
     expect(BIJAK_BUILDER_BLOCKER_CODES.filter((c) => BIJAK_BUILDER_BLOCKER_OVERRIDABLE[c]).sort()).toEqual(['BLUEPRINT_NOT_VERIFIED', 'INELIGIBLE', 'RULE_NOT_IN_CONTRACT', 'SECTION_NOT_IN_CONTRACT'])
   })
 
