@@ -514,8 +514,12 @@ B merged BASE-106 (T10 builder UI) and BASE-107 (hc-builder-parity). Both are FE
 - builder stack: A3 (T48 → leaves; T31 → T43 → T51, with vue-tsc)
 REQ-A-008 needs C's restack on BASE-107 (REQ-B-055) before T31 pairs with it. C3 reports REQ-A-018 FE + 026b READY @ 3942f760.
 
+
+### Cycle 31 note: H-A19 API triage (A2, 23:11 UTC)
+The 12 "missing" API rows in r1-admin-parity-check.md (questions/stimuli/intake) were checked. **None is both needed for R1 and missing.** They are in BASE-108, covered by READY branches (T48 + label fix, t49, c012, reqa018), or closed by design (H2/H4 D94, S14 FE copy, I2 D52 → R2). Intake is at parity. FE columns were not re-read.
+
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 23:10 UTC, BASE 043e2b15)
+### Team A open branches: heads from origin (auto, 2026-11-01 23:11 UTC, BASE 043e2b15)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
