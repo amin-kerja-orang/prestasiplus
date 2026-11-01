@@ -2005,7 +2005,7 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
   })
 
   /**
-   * API-ASSISTED (R1E2E-22): the Pembina Kertas picker offers only questions tagged with the paper's kertas, while the
+   * API-ASSISTED (R1E2E-23): the Pembina Kertas picker offers only questions tagged with the paper's kertas, while the
    * builder's section pool (`GET /api/admin/papers/{id}/sections/{sid}/pool`, T26b bank pool) offers the eligible bank
    * units. This fills the UI-built paper from that pool over the same placement route the builder uses, then presses
    * "Terbitkan" in the UI. Not a UI pass of the fill.
