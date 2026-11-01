@@ -14,7 +14,7 @@ import { createTestDatabase, type TestDatabase } from '../support/db'
  * outside tests); `exam-retire-poc` withdraws them, so every dangling placement of a runtime seed sits on a withdrawn paper.
  * The harness that seeds `examSeed` alone (the integration tests) keeps them published on purpose: they plug the PoC double.
  */
-const DANGLING = `select p.id::text id, p.status, count(*)::int n
+const DANGLING = `select p.id::text id, p.title, p.status, count(*)::int n
   from papers p join paper_sections ps on ps.paper_id = p.id join paper_placements pl on pl.paper_section_id = ps.id
   left join questions q on q.id = pl.question_id where q.id is null group by p.id, p.status order by p.id`
 
@@ -33,16 +33,21 @@ describe('seeded papers: placements resolve to a question row', () => {
   })
 
   it('the default seed run leaves no published paper with a dangling placement', async () => {
-    const rows = await full.query<{ id: string; status: string; n: number }>(DANGLING)
+    const rows = await full.query<{ id: string; title: string; status: string; n: number }>(DANGLING)
     expect(rows.filter((r) => r.status === 'published')).toEqual([])
     expect((await full.query(`select 1 from papers where status = 'published'`)).length).toBeGreaterThan(0) // the bank demo paper stays
   })
 
   it('the 25 dangling placements are exactly those of the four PoC papers, all withdrawn (nothing deleted)', async () => {
-    const rows = await full.query<{ id: string; status: string; n: number }>(DANGLING)
+    const rows = await full.query<{ id: string; title: string; status: string; n: number }>(DANGLING)
+    const expected = POC_BANK.papers.map((p) => ({ title: p.title, n: p.sections.reduce((m, sec) => m + sec.questionIds.length, 0) })).sort((x, y) => x.title.localeCompare(y.title))
+    // the same papers (by title) with the same number of placements each, every one withdrawn
+    expect(rows.map((r) => ({ title: r.title, n: r.n })).sort((x, y) => x.title.localeCompare(y.title))).toEqual(expected)
     expect(rows.map((r) => r.status)).toEqual(rows.map(() => 'withdrawn'))
-    expect(rows.reduce((n, r) => n + r.n, 0)).toBe(POC_BANK.papers.reduce((n, p) => n + p.sections.reduce((m, s) => m + s.questionIds.length, 0), 0))
     expect(rows.reduce((n, r) => n + r.n, 0)).toBe(25)
+    // nothing deleted: every PoC paper row still exists with its placements
+    const kept = await full.query<{ title: string }>(`select title from papers where title = any($1::text[])`, [POC_BANK.papers.map((p) => p.title)])
+    expect(kept.map((r) => r.title).sort()).toEqual(POC_BANK.papers.map((p) => p.title).sort())
   })
 
   it('without the retire step (examSeed alone, the test harness) the same 25 placements are on published papers', async () => {
