@@ -103,6 +103,27 @@ export interface BijakRewardPort {
    * description })`; `sourceId` makes it idempotent. The mock credits nothing (open question 2).
    */
   award(input: BijakRewardInput): Promise<void>
+
+  /**
+   * D94 (V2 `syncAnalytics`, `docs/discovery/BIJAK-SPM-cloud.md` 4.5): a self-mark that RAISES the attempt's best-N total credits the
+   * gain over the highest total already paid (submit or an earlier self-mark), 2 syiling and 10 XP per mark, once per level reached,
+   * never above the attempt's maximum, nothing back for a lower total. Called after the commit of a self-mark of a closed EXAM attempt. Failures are logged and swallowed.
+   */
+  awardSelfMark(input: BijakSelfMarkRewardInput): Promise<void>
+}
+
+export interface BijakSelfMarkRewardInput {
+  attemptId: string
+  userId: string
+  /** True under Mod Pelajar: no reward at all (AC-20.3). */
+  isTest: boolean
+  /** The attempt's best-N score in the AUTOMATIC grading (what the submit reward already paid for). */
+  base: number
+  /** The attempt's best-N score now, with every self-mark applied (counted questions only). */
+  score: number
+  /** The attempt's maximum best-N score; the paid level never goes above it. */
+  max: number
+  description: typeof BIJAK_REWARD_DESCRIPTION
 }
 
 /* ---------------------------------------------------------------------------- US-33: aggregate */
@@ -155,6 +176,7 @@ export class NoQuestions implements BijakQuestionSource {
 
 export class NoReward implements BijakRewardPort {
   async award(): Promise<void> {}
+  async awardSelfMark(): Promise<void> {}
 }
 
 export class NoAggregate implements BijakAttemptAggregatePort {

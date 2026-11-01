@@ -60,7 +60,7 @@ import {
 } from './marking'
 import { assertAttemptPayload } from './payload-limits'
 import { BIJAK_REWARD_DESCRIPTION, BijakAttemptPorts } from './ports'
-import { applySelfMarks, clamp, decorateResult, isSelfMarkable, type SelfMarks } from './self-mark'
+import { applySelfMarks, automaticScore, clamp, decorateResult, isSelfMarkable, type SelfMarks } from './self-mark'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 /** Photos accept only these leaf answer modes (AC-09.2). */
@@ -82,6 +82,8 @@ interface ClosedEvent {
   swept: boolean
   /** A late sync re-graded an attempt that was already closed. */
   regraded: boolean
+  /** D94: set when the regrade is a pupil's self-mark of one part (the reward of the best-N gain, no other regrade pays); `base` is the best-N score of the automatic grading. */
+  selfMark?: { base: number }
 }
 
 export interface CallerInfo {
@@ -317,7 +319,8 @@ export class BijakAttemptsService {
    * must be on this attempt and have a points or rubric scheme; the mark is clamped (never rejected for being
    * out of range); no lock, idempotent (a repeat with the same body changes nothing and records nothing).
    * The totals are recomputed with best-N and the performance aggregate is told (regraded: the same attempt id
-   * replaces its earlier figures). The wallet reward given at submit is NOT repeated.
+   * replaces its earlier figures). The reward given at submit is NOT repeated; D94: a mark that raises the best-N total pays the gain through
+   * `reward.awardSelfMark` (2 syiling and 10 XP per mark of the net gain over the highest paid total, once per level, capped at the maximum), the stored result's coins stay as at submit.
    */
   async selfMark(auth: AuthContext, id: string, body: BijakAttemptSelfMarkRequest): Promise<BijakAttemptSelfMarkResult> {
     await this.owned(auth.userId, id)
@@ -351,7 +354,7 @@ export class BijakAttemptsService {
       const result = this.present(row, { result: stored.result, selfMarks }, this.answerMap(answers), bundles)
       if (!unchanged) {
         await this.repo.saveSelfMarks(id, selfMarks, result)
-        events.push({ attempt: row, status: row.status as FinishedStatus, result, swept: false, regraded: true })
+        events.push({ attempt: row, status: row.status as FinishedStatus, result, swept: false, regraded: true, selfMark: { base: automaticScore(stored.result, row.composition) } })
       }
       const part = result.questions.flatMap((q) => q.parts).find((p) => p.partId === body.partId)!
       return {
@@ -785,6 +788,22 @@ export class BijakAttemptsService {
           } catch (err) {
             this.logger.error(`Reward port failed for attempt ${a.id}: ${err instanceof Error ? err.message : String(err)}`)
           }
+        }
+      }
+      // D94: a self-mark that raises a part pays the gain (exam attempts only, none in Mod Pelajar); no other regrade pays.
+      if (e.regraded && e.selfMark && a.mode === 'exam') {
+        try {
+          await this.ports.reward.awardSelfMark({
+            attemptId: a.id,
+            userId: a.userId,
+            isTest: a.isTest,
+            base: e.selfMark.base,
+            score: e.result.score,
+            max: e.result.max,
+            description: BIJAK_REWARD_DESCRIPTION,
+          })
+        } catch (err) {
+          this.logger.error(`Self-mark reward port failed for attempt ${a.id}: ${err instanceof Error ? err.message : String(err)}`)
         }
       }
       try {
