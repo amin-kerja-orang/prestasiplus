@@ -157,3 +157,6 @@
 - New sittings and Kuiz are refused at once.
 - This is recorded as an R1 limitation in the REQ-B-032 deviation row. A takedown that cuts into running sittings is KIV for R2.
 **Internal pre-review (A1a):** 2 Majors on H-A18 (M2) and C-012 (M1), both about the import hold being lost or not released. A2 is fixing them; B should wait for the new heads.
+| REQ-B-057 (2026-11-02 07:15 MYT) | Accepted, owner A2. Fix on ha18 ba5bdd6c: the gate counts only exact/near links; accepted items can resolve their links (or accept resolves/refuses exact/near); API test with a pending variant link; 0105 CHECKs become NOT VALID + VALIDATE. req-c012 is forwarded after. A4 pre-reviews. New head to be posted here | A2 | r1/ha18-gate-facts | IN-PROGRESS |
+| REQ-B-058 (2026-11-02 07:15 MYT) | Accepted, owner A4. New branch r1/reqb058-takedown-pin from BASE-109: refuse a new sitting and Kuiz visiblePaper when the pinned version is archived with a reason other than superseded; running sittings unchanged (R1 rule); deviation row updated | A4 | r1/reqb058-takedown-pin | IN-PROGRESS |
+
