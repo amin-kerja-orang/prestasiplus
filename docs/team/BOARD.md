@@ -492,7 +492,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/a3-qa-doc-nits | e4d4dd322 | READY (A3, BASE-105, docs only): stale QA notes on T38 self-mark reward fixed (2 files); B2 |
 | r1/a4chain-minors | 6f2fb7938 | READY (A1b, @6f2fb793 on 0ba236ef): symlink removed; janaSkipped guard first line of evaluate; T45 HTTP POST /questions/:id/status case with pinned BM reasons; 022a row real commits + proof spec; A3 dev-1 delta pre-review CLEAN (13 files 76 tests, mutations bite); merge after the A4 chain; B2 |
-| r1/ac-gaps-a1b | 3858afe0b | READY (A1b + A3 + A2, @3858afe0, CONTAINS ha17 + t37): coverage doc, runbook UAT SELECTs, B4 QA pack; AC-18.1 × H-A18 red fixed (cause: H-A18 test helper mcqBody adds a chapter by default — intended, no product bug; spec now passes curriculumChapterId: null), green alone and with fc409ae1, still bites; merge after H-A18; B2 |
+| r1/ac-gaps-a1b | c2aa332f5 | READY (A1b + A3 + A2, @3858afe0, CONTAINS ha17 + t37): coverage doc, runbook UAT SELECTs, B4 QA pack; AC-18.1 × H-A18 red fixed (cause: H-A18 test helper mcqBody adds a chapter by default — intended, no product bug; spec now passes curriculumChapterId: null), green alone and with fc409ae1, still bites; merge after H-A18; B2 |
 | r1/admin-list-perf | 2a8ab6744 | READY (A4, BASE-105): REQ-B-050 + 0106 + 0107 + exact counts; pre-review Minors fixed (status total ?? 0, no-slash kertas change documented, migration order + drift notes); B2 + B3 + DevOps |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
 | r1/bridge-table-parts | c805ecc7c | READY (A4, BASE-105): the bridge uses stimulusTableParts (an invalid grid + pipe body shows the table only, as in builder/Studio); bridge 118/118, attempts 180/180, kuiz 39/39; B2. Follow-up after T31 + this merge: drop PENDING_BRIDGE_TEXT in the parity spec (A4) |
@@ -506,8 +506,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha17-ac-coverage | 157b371c3 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b; head 157b371c |
 | r1/ha18-gate-facts | fc409ae16 | READY (A2, BASE-105): H-A18 + REQ-B-017/037 + D99 + pre-review fixes (M2 held-issues helper on both edit paths; m1 gate-issue codes; deviation row); workflow 296/296; conformance 409/409; B2 + B3 |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
-| r1/ha24-release-input | e451c223a | READY (A3 docs, @ef64b13e): §3.5 B1 merge order (REQ-A-024) + conflict resolutions; B1/B2 |
-| r1/ha26-team-a-state | 57320ae0b | READY (A3 docs, @bb38990f): team-a-r1-state.md only; vs ac-gaps take ha26 side; B2 |
+| r1/ha24-release-input | e451c223a | READY (A3 docs, @e451c223): §3.5 B1 merge order (REQ-A-024/024b) incl. chain-qa stack; B1/B2 |
+| r1/ha26-team-a-state | 57320ae0b | READY (A3 docs, @57320ae0): team-a-r1-state.md only; vs ac-gaps take ha26 side; B2 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-a2 | 8c1964a6f | READY (A2, BASE-105): prefetch crash fixed (awaited Promise.all, failed read → 500, no unhandledRejection; red-first specs); row 908 6 cells; tsc/eslint 0, intake-workflow 137/137; A4 pre-review: Approve; B2 |
 | r1/mock-known-mismatches | a279e68cd | READY (A3, BASE-105): REQ-A-019 base red fixed (7 routes notServed, stale m27 entry removed); conformance 2/2; B2 | A4 pre-review: Approve (nits) |
