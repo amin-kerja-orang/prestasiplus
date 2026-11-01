@@ -19,6 +19,7 @@ import {
   CurriculumSubtopicCreateSchema,
   CurriculumTopicCardSchema,
   CurriculumTopicCreateSchema,
+  CurriculumTopicStateSchema,
   CurriculumTopicUpdateSchema,
   CurriculumTpSchema,
   CurriculumTreeQuerySchema,
@@ -46,6 +47,12 @@ const topic = {
 const subtopic = { id: '300', topicId: '200', name: 'Subtopik', nameEn: null, learningObjective: null, createdAt: ts, updatedAt: ts }
 
 describe('curriculum contract: responses', () => {
+  it('a topic island is never locked: the state enum is mastered, started or unlocked (REQ-C-021, D98)', () => {
+    for (const state of ['mastered', 'started', 'unlocked']) expect(CurriculumTopicStateSchema.safeParse(state).success, state).toBe(true)
+    expect(CurriculumTopicStateSchema.safeParse('locked').success).toBe(false)
+    expect(CurriculumTopicStateSchema.options).not.toContain('locked')
+  })
+
   it('parses mock-shaped entities with string ids', () => {
     expect(CurriculumEducationLevelSchema.safeParse(level).success).toBe(true)
     expect(CurriculumSubjectSchema.safeParse(subject).success).toBe(true)
