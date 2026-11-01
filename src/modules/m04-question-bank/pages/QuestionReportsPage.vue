@@ -60,7 +60,7 @@ const TABS = computed<PillItem<ReportFilter>[]>(() =>
   })),
 )
 
-async function onSaved(message: string): Promise<void> {
+async function onSaved(message: string | string[]): Promise<void> {
   await reload()
   flash.show({ type: 'success', message })
 }

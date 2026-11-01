@@ -4,6 +4,13 @@
  * No E2E ids in the titles on purpose (QA writes them at G5, as for the T4 specs). Q2 (row 28) is
  * provisional (LS-3): live never opened the chapter quiz. S7 is SOURCE-DERIVED (live starts a session
  * on load), so its tests assert the captured source and are not tagged provisional.
+ *
+ * REQ-C-023 refresh (v2 shells, D72/D86): the page title is printed by the v2 shell navbar (Portal
+ * Pembelajaran for pupils and teachers, Portal Pentadbiran for the admin), which has no subtitle for
+ * pupils; tab titles end "| PRESTASIPLUS". R1 is secondary only (D72, D86, Q4: Darjah hidden), so S5
+ * offers Tingkatan 4 / 5 only. The mock has Tingkatan 4 / 5 chapters but no chapter question at those
+ * levels, so S4 lists no subject, S5 lists no chapter card and Q2 cannot start: the tests that need a
+ * chapter card are skipped with {@link NO_T4_T5_CHAPTER} until such data exists.
  */
 
 import type { Page } from '@playwright/test'
@@ -27,6 +34,24 @@ const PELAJARMAJU = 'pelajarmaju@demo.test'
 
 const tid = (page: Page, id: string) => page.getByTestId(id)
 const NOT_FOUND = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
+
+/** The title the v2 shell prints in its navbar (Pembelajaran: h1, or `shell-title` when the page owns the h1; Pentadbiran: h1). */
+const shellTitle = (page: Page) =>
+  page
+    .locator('[data-testid=pembelajaran-header], [data-testid=pentadbiran-header]')
+    .locator('h1, [data-testid=shell-title]')
+    .first()
+
+/**
+ * Skip reason of the tests that need a chapter card (D72, D86, Q4). Their bodies keep the Darjah
+ * expectations observed on live as the reference for a Tingkatan 4 / 5 re-point.
+ */
+const NO_T4_T5_CHAPTER =
+  'D72/D86: Darjah is hidden and the mock has no Tingkatan 4/5 chapter question, so S5 shows no chapter card (REQ-C-023 finding QA-C023-01)'
+
+/** S4 / S5 with no chapter at Tingkatan 4 / 5 (BR-15): the empty states. */
+const NO_SUBJECT = 'Tiada subjek bab tersedia untuk tahap ini.'
+const NO_CHAPTER = 'Tiada bab tersedia untuk tahap ini.'
 
 /** Number of tracks of a CSS grid container. */
 const columnsOf = (page: Page, testId: string) =>
@@ -61,7 +86,7 @@ async function answerAll(page: Page, count: number): Promise<boolean[]> {
 test.describe('M05 S4 chapter subjects', { tag: [moduleTag(5)] }, () => {
   test.use({ mockInit: { latency: 0 } })
 
-  test('header, hero and the 10 subject cards with their counts and links', async ({
+  test('header, hero, "Latih Tubi Rawak" and the empty subject list (no Tingkatan 4/5 chapter)', async ({
     page,
     loginAs,
     gotoApp,
@@ -69,65 +94,32 @@ test.describe('M05 S4 chapter subjects', { tag: [moduleTag(5)] }, () => {
     await loginAs(ADMIN)
     await gotoApp('/practice/chapter')
     await expectTabTitle(page, 'Soalan by Chapter | PRESTASIPLUS')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Soalan by Chapter')
-    if (isDesktopShell(page) || viewportWidth(page) >= 640) {
-      await expect(tid(page, 'shell-user-subtitle')).toHaveText(
-        'Latihan tersusun ikut bab buku teks dan DSKP',
-      )
-    }
-    await expect(tid(page, 'chapter-index-page')).toContainText('Mode Sistematik')
-    const eyebrow = tid(page, 'chapter-index-page').locator('p').first()
-    expect(await eyebrow.evaluate((el) => getComputedStyle(el).textTransform)).toBe('uppercase')
-    await expect(tid(page, 'chapter-index-page').getByRole('heading', { level: 1 })).toHaveText(
-      'Soalan by Chapter',
-    )
-    await expect(tid(page, 'chapter-index-page')).toContainText(
-      'Pelajar jawab bab demi bab.',
-    )
+    // The shell prints the only h1; the subtitle reads "Pelajar jawab bab demi bab." (UX-67). The
+    // admin's Portal Pentadbiran shows it under the shell title, the pupil's page shows it in the body.
+    await expect(shellTitle(page)).toHaveText('Soalan by Chapter')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(['Soalan by Chapter'])
+    await expect(
+      page.getByText('Pelajar jawab bab demi bab.', { exact: true }).filter({ visible: true }),
+    ).toHaveCount(1)
+    const eyebrow = tid(page, 'chapter-index-page').getByText('Mode Sistematik', { exact: true })
+    // The v2 `text-overline` style has no uppercase transform (D28-D32 theme), so only the copy is checked.
+    await expect(eyebrow).toBeVisible()
     await expect(tid(page, 'chapter-random')).toHaveText('Latih Tubi Rawak')
     await expect(tid(page, 'chapter-random')).toHaveAttribute('href', '/practice')
 
-    const expected: [string, string, string, string][] = [
-      ['BM', 'Bahasa Melayu', '18', '4,833'],
-      ['BI', 'Bahasa Inggeris', '14', '3,521'],
-      ['MATH', 'Matematik', '25', '6,538'],
-      ['SCI', 'Sains', '18', '4,903'],
-      ['SEJ', 'Sejarah', '8', '1,931'],
-      ['PI', 'Pendidikan Islam', '14', '3,371'],
-      ['PM', 'Pendidikan Moral', '14', '3,307'],
-      ['GEO', 'Geografi', '8', '800'],
-      ['BA', 'Bahasa Arab', '17', '1,700'],
-      ['JAWI', 'Jawi', '13', '1,300'],
-    ]
-    const cards = tid(page, 'chapter-subject-grid').locator('> a')
-    await expect(cards).toHaveCount(10)
-    for (const [i, [code, name, chapters, questions]] of expected.entries()) {
-      const card = cards.nth(i)
-      await expect(card).toHaveAttribute('href', `/practice/chapter/${code}`)
-      await expect(card.getByTestId('chapter-subject-name')).toHaveText(name)
-      await expect(card.getByTestId('chapter-subject-chapters')).toHaveText(
-        `${chapters} bab tersedia`,
-      )
-      await expect(card.getByTestId('chapter-subject-questions')).toHaveText(
-        `${questions} soalan chapter`,
-      )
-      await expect(
-        card.getByTestId('chapter-subject-icon').locator('svg, span').first(),
-      ).toBeVisible()
-    }
-    // Grid 1 / sm 2 / xl 3 columns.
-    const width = viewportWidth(page)
-    expect(await columnsOf(page, 'chapter-subject-grid')).toBe(
-      width >= 1280 ? 3 : width >= 640 ? 2 : 1,
-    )
+    // D72/D86: the ten live (Darjah) subject cards are gone; no subject has a Tingkatan 4/5 chapter
+    // question in the mock, so BR-15 leaves the list empty (QA-C023-01).
+    await expect(tid(page, 'chapter-subjects-empty')).toHaveText(NO_SUBJECT)
+    await expect(tid(page, 'chapter-subject-grid')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
   })
 
   test('the teacher opens S4', async ({ page, loginAs, gotoApp }) => {
     await loginAs('guru@demo.test')
     await gotoApp('/practice/chapter')
-    await expect(tid(page, 'chapter-subject-grid').locator('> a')).toHaveCount(10)
-    await expect(tid(page, 'shell-user-title')).toHaveText('Soalan by Chapter')
+    await expect(shellTitle(page)).toHaveText('Soalan by Chapter')
+    await expect(tid(page, 'chapter-random')).toBeVisible()
+    await expect(tid(page, 'chapter-subjects-empty')).toHaveText(NO_SUBJECT)
   })
 
   test('the S2 banner leads to S4', async ({ page, loginAs, gotoApp }) => {
@@ -135,7 +127,8 @@ test.describe('M05 S4 chapter subjects', { tag: [moduleTag(5)] }, () => {
     await gotoApp('/practice')
     await tid(page, 'chapter-banner').click()
     await expect(page).toHaveURL(/\/practice\/chapter$/)
-    await expect(tid(page, 'chapter-subject-grid').locator('> a')).toHaveCount(10)
+    await expect(shellTitle(page)).toHaveText('Soalan by Chapter')
+    await expect(tid(page, 'chapter-subjects-empty')).toHaveText(NO_SUBJECT)
   })
 
   test('"Latih Tubi Rawak" is a 44 px touch target below lg', async ({
@@ -154,7 +147,7 @@ test.describe('M05 S4 chapter subjects', { tag: [moduleTag(5)] }, () => {
 test.describe('M05 S5 chapter list', { tag: [moduleTag(5)] }, () => {
   test.use({ mockInit: { latency: 0 } })
 
-  test('Matematik as pelajar2: hero, level options, an open chapter and seven locked ones', async ({
+  test('Matematik as pelajar2: hero, Tingkatan 4/5 level options, no chapter and no unlock rule', async ({
     page,
     loginAs,
     gotoApp,
@@ -162,58 +155,35 @@ test.describe('M05 S5 chapter list', { tag: [moduleTag(5)] }, () => {
     await loginAs(PELAJAR2)
     await gotoApp('/practice/chapter/MATH')
     await expectTabTitle(page, 'Chapter Matematik | PRESTASIPLUS')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Soalan by Chapter')
-    if (viewportWidth(page) >= 640) {
-      await expect(tid(page, 'shell-user-subtitle')).toHaveText('Matematik')
-    }
+    // Pupil shell: no subtitle; the subject is the page heading.
+    await expect(shellTitle(page)).toHaveText('Soalan by Chapter')
     await expect(tid(page, 'chapter-all-subjects')).toHaveAttribute('href', '/practice/chapter')
     await expect(tid(page, 'chapter-all-subjects')).toHaveText('Semua Subjek')
-    const hero = tid(page, 'chapter-subject-hero')
-    await expect(hero).toContainText('Progressive Unlock')
-    expect(
-      await hero
-        .locator('p')
-        .first()
-        .evaluate((el) => getComputedStyle(el).textTransform),
-    ).toBe('uppercase')
     await expect(tid(page, 'chapter-subject-name')).toHaveText('Matematik')
-    await expect(hero).toContainText(
-      'Lengkapkan semua soalan bab semasa dan capai 70% untuk buka bab seterusnya.',
-    )
+    // UX-67: "Progressive Unlock" and the 70% rule show only while a chapter is locked.
+    const hero = tid(page, 'chapter-subject-hero')
+    await expect(hero).not.toContainText('Progressive Unlock')
+    await expect(tid(page, 'chapter-unlock-rule')).toHaveCount(0)
 
-    const options = tid(page, 'chapter-level-select').locator('option')
-    await expect(options).toHaveText([
-      'Darjah 1 — 2,734 soalan',
-      'Darjah 2 — 2,129 soalan',
-      'Darjah 3 — 682 soalan',
-      'Darjah 4 — 993 soalan',
+    // D72 AC-02.1: only Tingkatan 4 and 5 are offered; the first one is selected.
+    const select = tid(page, 'chapter-level-select')
+    await expect(select).toHaveText('Tingkatan 4 — 0 soalan')
+    await select.click()
+    await expect(page.getByRole('option')).toHaveText([
+      'Tingkatan 4 — 0 soalan',
+      'Tingkatan 5 — 0 soalan',
     ])
-    await expect(tid(page, 'chapter-level-select')).toHaveValue('1')
-
-    const open = page.locator('[data-testid^=chapter-card-][data-state=open]')
-    await expect(open).toHaveCount(1)
-    await expect(tid(page, 'chapter-title-1')).toHaveText('Bab 1: Nombor Bulat hingga 100')
-    await expect(tid(page, 'chapter-stats-1')).toHaveText('0/464 soalan unik · Skor 0% · 464 baki')
-    await expect(tid(page, 'chapter-tile-1')).toHaveText('1')
-    const links = tid(page, 'chapter-card-1').locator('a')
-    await expect(links).toHaveText(['5 soalan', '10 soalan', '15 soalan', '20 soalan'])
-    for (const [i, n] of [5, 10, 15, 20].entries()) {
-      await expect(links.nth(i)).toHaveAttribute(
-        'href',
-        `/practice/chapter/MATH/1/quiz?count=${String(n)}`,
-      )
-    }
-    const locked = page.locator('[data-testid^=chapter-card-][data-state=locked]')
-    await expect(locked).toHaveCount(7)
-    await expect(locked.first().getByText('Kunci bab sebelumnya')).toBeVisible()
-    await expect(locked.first().locator('a')).toHaveCount(0)
-    await expect(locked.first().locator('svg').first()).toBeVisible()
+    // QA-C023-01: no Tingkatan 4/5 chapter question in the mock, so no chapter card.
+    await page.keyboard.press('Escape')
+    await expect(tid(page, 'chapter-empty')).toHaveText(NO_CHAPTER)
+    await expect(page.locator('[data-testid^=chapter-card-]')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
 
-    await tid(page, 'chapter-level-select').selectOption('2')
-    await expect(page).toHaveURL(/\/practice\/chapter\/MATH\?level=2$/)
-    await expect(tid(page, 'chapter-level-select')).toHaveValue('2')
-    await expect(page.locator('[data-testid^=chapter-card-][data-state=open]')).toHaveCount(1)
+    await select.click()
+    await page.getByRole('option', { name: 'Tingkatan 5 — 0 soalan' }).click()
+    await expect(page).toHaveURL(/\/practice\/chapter\/MATH\?level=11$/)
+    await expect(select).toHaveText('Tingkatan 5 — 0 soalan')
+    await expect(tid(page, 'chapter-empty')).toHaveText(NO_CHAPTER)
   })
 
   test('stored progress shows on open and locked cards: pelajarmaju Matematik and admin Bahasa Melayu', async ({
@@ -221,6 +191,7 @@ test.describe('M05 S5 chapter list', { tag: [moduleTag(5)] }, () => {
     loginAs,
     gotoApp,
   }) => {
+    test.skip(true, NO_T4_T5_CHAPTER)
     await loginAs(PELAJARMAJU)
     await gotoApp('/practice/chapter/MATH')
     await expect(tid(page, 'chapter-stats-1')).toHaveText(
@@ -244,6 +215,7 @@ test.describe('M05 S5 chapter list', { tag: [moduleTag(5)] }, () => {
     loginAs,
     gotoApp,
   }) => {
+    test.skip(true, NO_T4_T5_CHAPTER)
     await loginAs(ADMIN)
     await gotoApp('/practice/chapter/BM')
     await expect(page.locator('[data-testid^=chapter-card-][data-state=open]')).toHaveCount(1)
@@ -255,16 +227,18 @@ test.describe('M05 S5 chapter list', { tag: [moduleTag(5)] }, () => {
     await expect(locked.nth(1).locator('p')).toHaveText('10/321 soalan unik · Skor 80% · 311 baki')
   })
 
-  test('Matematik Tambahan has no chapter and no level select', async ({
+  test('a subject with no Tingkatan 4/5 level (Jawi) has no chapter and no level select', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
+    // DV-M05-07 was Matematik Tambahan on live (no Darjah level). With Tingkatan 4/5 offered (D72)
+    // Matematik Tambahan now has levels, so the Darjah-only Jawi is the subject with no offered level.
     await loginAs(PELAJAR2)
-    await gotoApp('/practice/chapter/ADDMATH')
-    await expect(tid(page, 'chapter-empty')).toHaveText('Tiada bab tersedia untuk tahap ini.')
+    await gotoApp('/practice/chapter/JAWI')
+    await expect(tid(page, 'chapter-empty')).toHaveText(NO_CHAPTER)
     await expect(tid(page, 'chapter-level-select')).toHaveCount(0)
-    await expect(tid(page, 'chapter-subject-name')).toHaveText('Matematik Tambahan')
+    await expect(tid(page, 'chapter-subject-name')).toHaveText('Jawi')
   })
 
   test('an unknown code is the 404 page', async ({ page, loginAs, gotoApp }) => {
@@ -278,6 +252,7 @@ test.describe('M05 S5 chapter list', { tag: [moduleTag(5)] }, () => {
     loginAs,
     gotoApp,
   }) => {
+    test.skip(true, NO_T4_T5_CHAPTER)
     await loginAs(PELAJAR2)
     await gotoApp('/practice/chapter/MATH')
     const titles = page.locator('[data-testid^=chapter-title-]')
@@ -309,6 +284,7 @@ test.describe('M05 Q2 chapter quiz', { tag: [moduleTag(5)] }, () => {
     'a chapter session serves unanswered chapter questions and the header and tab follow S5',
     provisional('LS-3: the live chapter quiz was never opened; the S7 source is the pattern'),
     async ({ page, loginAs, gotoApp }) => {
+      test.skip(true, NO_T4_T5_CHAPTER)
       await loginAs(PELAJARMAJU)
       await gotoApp('/practice/chapter/MATH')
       await tid(page, 'chapter-count-1-5').click()
@@ -316,7 +292,7 @@ test.describe('M05 Q2 chapter quiz', { tag: [moduleTag(5)] }, () => {
       await expect(tid(page, 'quiz-title')).toHaveText('Bab 1: Nombor Bulat hingga 100')
       await expect(tid(page, 'quiz-progress-text')).toHaveText('Soalan 1 daripada 5')
       await expectTabTitle(page, 'Chapter Matematik | PRESTASIPLUS')
-      await expect(tid(page, 'shell-user-title')).toHaveText('Soalan by Chapter')
+      await expect(shellTitle(page)).toHaveText('Soalan by Chapter')
       await expect(tid(page, 'chip-revision')).toHaveCount(0)
       await expect(tid(page, 'pill-wrong-times')).toHaveCount(0)
       await expectNoHorizontalScroll(page)
@@ -342,6 +318,7 @@ test.describe('M05 Q2 chapter quiz', { tag: [moduleTag(5)] }, () => {
     'completing a chapter with 90 % opens the next one; a locked chapter goes back to S5 without a session',
     provisional('LS-3: the unlock after a completed chapter was never observed on live'),
     async ({ page, loginAs, gotoApp, mock }) => {
+      test.skip(true, NO_T4_T5_CHAPTER)
       await loginAs(PELAJARMAJU)
       await gotoApp('/practice/chapter/MATH')
       const [second, third, fourth] = await lockedIds(page)
@@ -396,17 +373,17 @@ test.describe('M05 S6 revision list', { tag: [moduleTag(5)] }, () => {
     await loginAs(ADMIN)
     await gotoApp('/practice/revision')
     await expectTabTitle(page, 'Soalan Aku Salah | PRESTASIPLUS')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Soalan Aku Salah')
-    await expect(tid(page, 'shell-user-subtitle')).toHaveCount(0)
-    await expect(tid(page, 'revision-list-page').getByRole('heading', { level: 1 })).toHaveText(
-      'Soalan Aku Salah',
-    )
-    await expect(tid(page, 'revision-list-page')).toContainText(
-      'Ulang kaji soalan yang pernah dijawab salah',
-    )
+    // The shell prints the only h1; the admin's Portal Pentadbiran shows the lead under it.
+    await expect(shellTitle(page)).toHaveText('Soalan Aku Salah')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(['Soalan Aku Salah'])
+    await expect(
+      page
+        .getByText('Ulang kaji soalan yang pernah dijawab salah', { exact: true })
+        .filter({ visible: true }),
+    ).toHaveCount(1)
     await expect(tid(page, 'revision-total')).toHaveText('72 soalan perlu diulang kaji')
 
-    const cards = tid(page, 'revision-grid').locator('> a')
+    const cards = tid(page, 'revision-grid').locator('a')
     await expect(cards).toHaveCount(2)
     await expect(cards.nth(0)).toHaveAttribute('href', '/practice/revision/BM')
     await expect(cards.nth(0).getByTestId('revision-subject-name')).toHaveText('Bahasa Melayu')
@@ -502,9 +479,8 @@ test.describe('M05 S7 revision quiz', { tag: [moduleTag(5)] }, () => {
     await expectNoHorizontalScroll(page)
 
     await expect(tid(page, 'quiz-title')).toHaveText('Ulang Kaji — Matematik')
-    await expectTabTitle(page, 'Ulang Kaji — Matematik')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Soalan Aku Salah')
-    await expect(tid(page, 'shell-user-subtitle')).toHaveCount(0)
+    await expectTabTitle(page, 'Ulang Kaji — Matematik | PRESTASIPLUS')
+    await expect(shellTitle(page)).toHaveText('Soalan Aku Salah')
     await expect(tid(page, 'quiz-progress-text')).toContainText(/Soalan 1 daripada \d+/)
     await expect(tid(page, 'chip-revision')).toHaveText(
       'Mode Ulang Kaji — soalan ini pernah dijawab salah',
