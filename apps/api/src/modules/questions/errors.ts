@@ -52,8 +52,9 @@ export const bulkFailureOf = (id: string, e: unknown): BulkFailure | null => {
  */
 export const isForeignKeyViolation = (e: unknown, depth = 0): boolean => {
   if (typeof e !== 'object' || e === null || depth > 4) return false
-  const x = e as { code?: unknown; originalCode?: unknown; message?: unknown; cause?: unknown; meta?: unknown }
+  const x = e as { code?: unknown; originalCode?: unknown; message?: unknown; cause?: unknown; meta?: unknown; driverAdapterError?: unknown }
   if (x.code === 'P2003' || x.code === '23503' || x.originalCode === '23503') return true
   if (typeof x.message === 'string' && /foreign key constraint/i.test(x.message)) return true
-  return isForeignKeyViolation(x.cause, depth + 1) || isForeignKeyViolation(x.meta, depth + 1)
+  // Prisma wraps the driver error: `cause`, `meta` (a raw query: P2010 with `meta.code` 23503) and `meta.driverAdapterError` (with its own `cause`).
+  return isForeignKeyViolation(x.cause, depth + 1) || isForeignKeyViolation(x.meta, depth + 1) || isForeignKeyViolation(x.driverAdapterError, depth + 1)
 }

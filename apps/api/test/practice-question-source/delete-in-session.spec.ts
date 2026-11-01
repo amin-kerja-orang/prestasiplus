@@ -100,6 +100,32 @@ describe('Latih Tubi (POST /practice/sessions)', () => {
     await readsAreFine('latih_tubi after submit')
   })
 
+  it('ANSWERED THEN DELETED: two checked questions are deleted, a replayed check is 422, and submit regrades from the stored checks (200 with a score)', async () => {
+    for (let i = 0; i < 6; i++) await mcq()
+    const start = await startLatihTubi()
+    expect(start.status, JSON.stringify(start.body)).toBe(201)
+    const sid = start.body.data.sessionId as string
+    const served = (start.body.data.questions as { id: string }[]).map((q) => q.id)
+    // served[0] right (option 1 is the key), served[1] wrong, served[2] right; then the first two are deleted
+    for (const [id, option, correct] of [[served[0]!, 1, true], [served[1]!, 0, false], [served[2]!, 1, true]] as const) {
+      const r = await pupil.post(`/practice/sessions/${sid}/check-answer`, { questionId: id, selectedOptionId: option })
+      expect(r.status, JSON.stringify(r.body)).toBe(200)
+      expect(r.body.data.isCorrect).toBe(correct)
+    }
+    await deleteTwo(served)
+    for (const id of served.slice(0, 2)) {
+      const replay = await pupil.post(`/practice/sessions/${sid}/check-answer`, { questionId: id, selectedOptionId: 1 })
+      expect(replay.status, JSON.stringify(replay.body)).toBe(422)
+      expect(replay.body.error.code).toBe('VALIDATION_ERROR')
+    }
+    const sub = await pupil.post(`/practice/sessions/${sid}/submit`, { timeSpent: 30 })
+    expect(sub.status, JSON.stringify(sub.body)).toBe(200)
+    expect(sub.body.data.results.score).toBe(2) // the stored isCorrect of the checks: the deleted right answer still counts, the wrong one does not
+    const late = await pupil.post(`/practice/sessions/${sid}/check-answer`, { questionId: served[0], selectedOptionId: 1 })
+    expect(late.status).toBe(409)
+    await readsAreFine('latih_tubi answered then deleted')
+  })
+
   it('COMPLETED: the result and the history still render after the questions are deleted, and a second submit is 409', async () => {
     for (let i = 0; i < 6; i++) await mcq()
     const start = await startLatihTubi()
@@ -147,6 +173,33 @@ describe('Kuiz (POST /bijak/kuiz/sessions)', () => {
     const fin = await pupil.post(`/bijak/kuiz/sessions/${sid}/finish`, { timeSpent: 30 })
     expect(fin.status, JSON.stringify(fin.body)).toBe(200)
     await readsAreFine('kuiz after finish')
+  })
+
+  it('ANSWERED THEN DELETED: two checked items are deleted, a replayed check is 422, and finish regrades from the stored checks (200 with a score)', async () => {
+    for (let i = 0; i < 6; i++) await mcq()
+    const start = await startKuiz()
+    expect(start.status, JSON.stringify(start.body)).toBe(201)
+    const sid = start.body.data.sessionId as string
+    const items = start.body.data.items as { id: string; options: { id: string }[] }[]
+    const served = items.map((i) => i.id.split(':')[0]!)
+    const key = (item: { options: { id: string }[] }) => item.options.find((o) => o.id === 'B')?.id ?? item.options[1]!.id // option 2 is the key of the fixture questions
+    const wrong = (item: { options: { id: string }[] }) => item.options.find((o) => o.id !== key(item))!.id
+    for (const [item, option] of [[items[0]!, key(items[0]!)], [items[1]!, wrong(items[1]!)], [items[2]!, key(items[2]!)]] as const) {
+      const r = await pupil.post(`/bijak/kuiz/sessions/${sid}/check`, { itemId: item.id, optionId: option })
+      expect(r.status, JSON.stringify(r.body)).toBe(200)
+    }
+    await deleteTwo(served)
+    for (const item of items.slice(0, 2)) {
+      const replay = await pupil.post(`/bijak/kuiz/sessions/${sid}/check`, { itemId: item.id, optionId: item.options[0]!.id })
+      expect(replay.status, JSON.stringify(replay.body)).toBe(422)
+      expect(replay.body.error.code).toBe('VALIDATION_ERROR')
+    }
+    const fin = await pupil.post(`/bijak/kuiz/sessions/${sid}/finish`, { timeSpent: 30 })
+    expect(fin.status, JSON.stringify(fin.body)).toBe(200)
+    expect(JSON.stringify(fin.body.data)).toMatch(/"score":\s*2\b/)
+    const late = await pupil.post(`/bijak/kuiz/sessions/${sid}/check`, { itemId: items[2]!.id, optionId: items[2]!.options[0]!.id })
+    expect(late.status).toBe(409)
+    await readsAreFine('kuiz answered then deleted')
   })
 
   it('COMPLETED: the history still renders after the questions are deleted; a second finish is 409', async () => {

@@ -438,5 +438,60 @@ describe('R1 delete-served-guard', () => {
       expect((await admin.del(`/api/questions/${inSet}`)).status).toBe(200)
       expect(await count(inSet)).toBe(0)
     })
+
+    it('a mixed bulk delete: the deletable one goes (affected 1), the one in a set is a failed[] CONFLICT in_use', async () => {
+      const free = await approved()
+      const held = await approved()
+      const [header] = await q(`insert into question_sets (teacher_id, title, legacy_source, legacy_id, needs_rebuild) values ($1, 'Set campuran', 'cloud', $2, true) returning id::text id`, [guru.userId, `fk-${String(counter++)}`])
+      await q(`insert into question_set_items (question_set_id, position, question_id, question_version_no) values ($1::bigint, 1, $2::bigint, 1)`, [header!.id, held])
+      const res = await admin.post('/api/questions/bulk-action', { action: 'delete', ids: [free, held] })
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(res.body.data.affected).toBe(1)
+      expect(res.body.data.failed).toEqual([{ id: held, code: 'CONFLICT', message: QUESTION_MESSAGES.deleteInUse, fields: {} }])
+      expect(await count(free)).toBe(0)
+      expect(await count(held)).toBe(1)
+    })
+
+    // The other three ON DELETE RESTRICT tables (question_set_items is the case above): each refuses the delete, the route maps it to 409 in_use.
+    const links: [string, (questionId: string) => Promise<void>][] = [
+      [
+        'remedial_test_items',
+        async (id) => {
+          const [test] = await q(`insert into remedial_tests (teacher_id, student_id, subject_id, total_questions, before_accuracy, status) values ($1::bigint, $2::bigint, $3::bigint, 1, 40, 'cancelled') returning id::text id`, [guru.userId, pupil.userId, subject])
+          await q(`insert into remedial_test_items (remedial_test_id, position, question_id, question_version_no) values ($1::bigint, 1, $2::bigint, 1)`, [test!.id, id])
+        },
+      ],
+      [
+        'battle_questions',
+        async (id) => {
+          const [battle] = await q(`insert into battles (mode, question_type) values ('quick_match', 'biasa') returning id::text id`)
+          await q(`insert into battle_questions (battle_id, position, question_id) values ($1::uuid, 1, $2::bigint)`, [battle!.id, id])
+        },
+      ],
+      [
+        'battle_answers',
+        async (id) => {
+          const [battle] = await q(`insert into battles (mode, question_type) values ('quick_match', 'biasa') returning id::text id`)
+          await q(`insert into battle_answers (battle_id, user_id, position, question_id, option_id, correct, seconds, points) values ($1::uuid, $2::bigint, 1, $3::bigint, 0, true, 5, 10)`, [battle!.id, pupil.userId, id])
+        },
+      ],
+    ]
+    for (const [table, link] of links) {
+      it(`${table}: admin delete 409 in_use, rows kept (and the Guru route too)`, async () => {
+        const id = await approved()
+        await link(id)
+        const res = await admin.del(`/api/questions/${id}`)
+        expect(res.status, JSON.stringify(res.body)).toBe(409)
+        expect(res.body.error).toMatchObject({ code: 'CONFLICT', message: QUESTION_MESSAGES.deleteInUse, details: { reason: 'in_use' } })
+        expect(await count(id)).toBe(1)
+        expect(await versions(id)).toEqual(['1:approved'])
+        const own = await guruApproved()
+        await link(own)
+        const g = await guru.del(`/api/guru/questions/${own}`)
+        expect(g.status, JSON.stringify(g.body)).toBe(409)
+        expect(g.body.error.details.reason).toBe('in_use')
+        expect(await count(own)).toBe(1)
+      })
+    }
   })
 })
