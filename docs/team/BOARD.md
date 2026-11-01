@@ -505,7 +505,7 @@ Each lane runs 2–3 subagents on independent units: no more than that, and one 
 7. Docs/runbook/release-notes consistency (A3 docs agent).
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 22:57 UTC, BASE d78835b3)
+### Team A open branches: heads from origin (auto, 2026-11-01 22:58 UTC, BASE d78835b3)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -528,7 +528,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha17-ac-coverage | 157b371c3 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b; head 157b371c |
 | r1/ha18-gate-facts | fc409ae16 | READY (A2, BASE-105): H-A18 + REQ-B-017/037 + D99 + pre-review fixes (M2 held-issues helper on both edit paths; m1 gate-issue codes; deviation row); workflow 296/296; conformance 409/409; B2 + B3 |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
-| r1/ha24-release-input | 009ef5e91 | READY (A3 docs, @009ef5e9): §3.5 B1 merge order + BM release notes + sign-off checklist (Q12a decided) + r1-kiv-r2.md; B1/B2 |
+| r1/ha24-release-input | c8d7a4132 | READY (A3 docs, @c8d7a413): §3.5 B1 merge order + BM release notes + sign-off checklist (Q12a decided) + r1-kiv-r2.md (32 rows); B1/B2 |
 | r1/ha26-team-a-state | 866b1a768 | READY (A3 docs, @866b1a76): team-a-r1-state.md (ready-tiers-check ON HOLD noted); vs ac-gaps take ha26 side; B2 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-a2 | 8c1964a6f | READY (A2, BASE-105): prefetch crash fixed (awaited Promise.all, failed read → 500, no unhandledRejection; red-first specs); row 908 6 cells; tsc/eslint 0, intake-workflow 137/137; A4 pre-review: Approve; B2 |
@@ -544,7 +544,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/req-b-033 | b5e713fa4 | READY (A4): deviation row added; chain 4th; B2 |
 | r1/req-c-020 | 8733a3785 | READY (A4): deviation row added; chain 3rd; B2 |
 | r1/req-c012-a2 | dc3bfae88 | READY (A2, on H-A18 fc409ae1): M1 fixed (edit-as-draft keeps the import hold); 298/298; merges after H-A18; B3 re-check |
-| r1/reqa018-paper-servability-route | cc42468ee | READY (A2, @cc42468e — final): admin papers only, cap 200 + meta, one batched read (spy-pinned), chunk 200, contract exports QuestionPaperServabilityMeta/Response; A4 Approve + B3 PASS; C reqa018-fe must re-merge + fix {data,meta} unwrap (REQ-A-026b); B2 + B3 |
+| r1/reqa018-paper-servability-route | 9ce81df57 | READY (A2, @cc42468e — final): admin papers only, cap 200 + meta, one batched read (spy-pinned), chunk 200, contract exports QuestionPaperServabilityMeta/Response; A4 Approve + B3 PASS; C reqa018-fe must re-merge + fix {data,meta} unwrap (REQ-A-026b); B2 + B3 |
 | r1/reqb032-pinned-rule | a2cb5bb42 | READY (A2+A3, BASE-105): spec title + R1-limitation row (takedown vs running sitting, KIV R2); 6/6; B2 + B3 |
 | r1/reqb049-report-visible | 9ece8d76d | READY (A1b, BASE-105): pre-review Minors fixed (type from the live version, spec titles, real level codes); 316/316; B2 + B3 | A2 B3 pre-scan: CLEAN (no IDOR/oracle, no echo, caps bite under mutation) |
 | r1/reqb052-archived-edit | f3a2448f9 | READY (A3, BASE-105; replaces 17196431): follow-ups done: P1 pinned-clause spec (bites), guard published OR (withdrawn AND EXISTS attempts), header; archived-edit 6/6, pinned-version-rule 6/6, workflow 296/296; tsc/eslint 0; B2 |
@@ -571,6 +571,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t51-partial-acs-a3 | 61c1b077f | READY (A3, hold LIFTED; @61c1b077 on T43 238eb6eb + T31 eb0346d2 + T48): merge after T48, T31, REQ-A-008, T43; never old T31 6a27c8dd / T43 5ce5894f / T51 54f63116; Preview #3 (A4, 33 heads on BASE-105 @525f9ca1, local): ALL GREEN, vue-tsc 0 after REQ-A-008, 0 reds. B2 |
 | r1/t52-examiner-grid | 5a0d7bd0e | READY (A1a/A1b, @5a0d7bd0): examinerGrid from marked (live+pinned), be09 test 8 bites; deviation note live-wins in withPinned; A2 + A3 dev-1 delta pre-reviews CLEAN; 124 tests; B2 (C REQ-A-012 reqa012 813ace12 stacks on it) |
 | r1/t54-perf-400k | 03c76eb0d | READY (A4, docs): credentials replaced by placeholders; may 3-line-conflict with 022a perf docs (trivial); B2 |
+
+**New branches not yet triaged:** r1/servability-stimuli-once 94efde125
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
