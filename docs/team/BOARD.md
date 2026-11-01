@@ -523,14 +523,14 @@ The 12 "missing" API rows in r1-admin-parity-check.md (questions/stimuli/intake)
 B1 merged **reqb032 at its reviewed SHA a2cb5bb4**, which does not contain BASE-107/108. It did not use our forward-merged 167986ef. So B merges reviewed SHAs and resolves base drift in the merge itself. **New team A rule:** do NOT forward-merge BASE into READY heads by default, because every new head forces a delta review. Forward-merge only when (a) `git merge-tree` against the current BASE shows a conflict, (b) B asks for it, or (c) the unit has to be re-pushed anyway for a fix. Heads already forward-merged stay as they are (the delta is a base merge only).
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 23:20 UTC, BASE 043e2b15)
+### Team A open branches: heads from origin (auto, 2026-11-01 23:21 UTC, BASE 043e2b15)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/a3-qa-doc-nits | e4d4dd322 | READY (A3, BASE-105, docs only): stale QA notes on T38 self-mark reward fixed (2 files); B2 |
 | r1/a4chain-minors | 86dd7ad67 | READY (A4/A1b, @86dd7ad6, contains BASE-107 + chain tip 2809a87f): janaSkipped guard, T45 HTTP BM-reason case, 022a row; B1 step 6 tip; 23/23 |
-| r1/ac-gaps-a1b | cd0924d24 | READY (multi, @cd0924d2, CONTAINS ha17 + t37): coverage doc; runbook (§0 tiers, §2.3 migration rehearsal 0104–0107 by A4: apply/revert/re-apply clean, 408k timings, 0105 ACCESS EXCLUSIVE brief read stall, 0106 P3009 recovery procedure; §3.7 group SELECT; UAT SELECTs; env); B4 QA pack (+ §3x D90 group build-it-yourself recipe); copy-approval table (39 rows; row 39 AC-10.6 rule line, user choice); merge after H-A18; B2 |
+| r1/ac-gaps-a1b | caf1e095a | READY (multi, @cd0924d2, CONTAINS ha17 + t37): coverage doc; runbook (§0 tiers, §2.3 migration rehearsal 0104–0107 by A4: apply/revert/re-apply clean, 408k timings, 0105 ACCESS EXCLUSIVE brief read stall, 0106 P3009 recovery procedure; §3.7 group SELECT; UAT SELECTs; env); B4 QA pack (+ §3x D90 group build-it-yourself recipe); copy-approval table (39 rows; row 39 AC-10.6 rule line, user choice); merge after H-A18; B2 |
 | r1/admin-list-perf | 6389cd541 | READY (A4, @6389cd54, BASE-105): REQ-B-050 + 0106 pg_trgm + 0107 kertas index; per-user @RateLimit GET /api/questions (THROTTLE_QUESTIONS_LIST_PER_MINUTE=60); docs: feature_flags 0108, drop_pool_tag 0109, optional B12 0122 / B20 0123 (lead-confirmed); 0107 header gives 0.9 s bare / ~2 s via migrate deploy; B2 + B3 + DevOps (maintenance window, new env) |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
 | r1/bridge-table-parts | c805ecc7c | READY (A4, BASE-105): the bridge uses stimulusTableParts (an invalid grid + pipe body shows the table only, as in builder/Studio); bridge 118/118, attempts 180/180, kuiz 39/39; B2. Follow-up after T31 + this merge: drop PENDING_BRIDGE_TEXT in the parity spec (A4) |
@@ -546,8 +546,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha17-ac-coverage | 157b371c3 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b; head 157b371c |
 | r1/ha18-gate-facts | 629ea0d37 | CHANGES REQUESTED by B2 (REQ-B-057 MAJOR, 07:04 MYT): gateFacts counts pending duplicate links of every kind (variant too) and accepted items cannot clear them → Semakan/Terbit 422 forever; + Minor 0105 CHECKs → NOT VALID + VALIDATE. A2 fixing on ba5bdd6c (then forward to req-c012); do not merge |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
-| r1/ha24-release-input | a91b7dda2 | READY (A3 docs, @c8d7a413): §3.5 B1 merge order + BM release notes + sign-off checklist (Q12a decided) + r1-kiv-r2.md (32 rows); B1/B2 |
-| r1/ha26-team-a-state | 0f36d006a | READY (A3 docs, @866b1a76): team-a-r1-state.md (ready-tiers-check ON HOLD noted); vs ac-gaps take ha26 side; B2 |
+| r1/ha24-release-input | 4c01a4ee1 | READY (A3 docs, @4c01a4ee): §3.5 B1 merge order + BM release notes + sign-off checklist + r1-kiv-r2.md (32 rows, REQ-A-029 rows narrowed per gap); B1/B2 |
+| r1/ha26-team-a-state | 0ea1c0c83 | READY (A3 docs, @0ea1c0c8): team-a-r1-state.md; take ha26 side vs ac-gaps; B2 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-a2 | 8c1964a6f | READY (A2, BASE-105): prefetch crash fixed (awaited Promise.all, failed read → 500, no unhandledRejection; red-first specs); row 908 6 cells; tsc/eslint 0, intake-workflow 137/137; A4 pre-review: Approve; B2 |
 | r1/mock-known-mismatches | a279e68cd | READY (A3, BASE-105): REQ-A-019 base red fixed (7 routes notServed, stale m27 entry removed); conformance 2/2; B2 | A4 pre-review: Approve (nits) |
@@ -582,7 +582,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t45-builder-acs | ee3a7d2ba | READY (A1b, on T48 6c5ae3a8; specs only): builder-candidate-search giveBab; bab.ts via T48 merge (cmp = fc409ae1); exam-builder 391/391 alone = trial merge with H-A18; tsc/eslint 0; merge after T48; B2 |
 | r1/t45-builder-acs-wip | 078204e1c | SUPERSEDED by r1/t45-builder-acs; do not merge |
 | r1/t45-servability-acs | 954614c69 | READY (A4, BASE-105): pre-review M1/M2 + Minors fixed; trial merge with H-A18 22/22; chain 1st; B2 + B3 | A1b delta re-review 18:5x UTC: all 6 tips green alone, no Blocker/Major; 3 Minors (approval-check guard untested; perf deviation line; jana-null guard) → A4 follow-up, non-blocking |
-| r1/t48-builder-parity | 5d3e56fd5 | READY (A3, BASE-105; migration 0104): giveBab fixture fix, support/bab.ts byte-identical to H-A18; exam-builder + pipeline-chain 409 pass (was 19 red); alone = trial merge with H-A18 fc409ae1, 0 failures, tsc 0; merge AFTER H-A18; B2 + B3 |
+| r1/t48-builder-parity | 5d3e56fd5 | READY (A3, BASE-105; migration 0104): giveBab fixture fix, support/bab.ts byte-identical to H-A18; exam-builder + pipeline-chain 409 pass (was 19 red); alone = trial merge with H-A18 fc409ae1, 0 failures, tsc 0; merge AFTER H-A18; B2 + B3 | head now 5d3e56fd = 6c5ae3a8 + BASE-107 + BASE-108 merges (pushed before the no-forward-merge policy; dependants still name 6c5ae3a8) |
 | r1/t48-label-move-fix | 9783849cf | READY (A3, @9783849c, leaf on T48 6c5ae3a8): PUT moving an added question across Bahagian keeps its Nombor soalan (4-line fix in update()); biting spec + same-section control; 410 alone = trial with H-A18; no D9 row (label belongs to the question, as in V2); merge right after T48; pre-review by A2; B2 | A2 delta pre-review: no findings (mutation red) |
 | r1/t49-served-now | 8cb9fa5f1 | READY (A2 + A1a, @8cb9fa5f): blank-filter 422 + filter-options notServed entry in known-mismatches (route ships here); A4 pre-review Approve + B3 checklist Pass; merge BEFORE d72 (clean, A3 merge-tree); conformance proof on this head being re-run (A1a evidence lost in container restart); B2 + B3 |
 | r1/t50-partial-acs | 075e1b587 | READY (A1a, BASE-105): A3 pre-review CLEAN (nits only); B2 |
