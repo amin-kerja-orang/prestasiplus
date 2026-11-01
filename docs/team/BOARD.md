@@ -479,7 +479,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 ### Head audit 2026-11-01 15:00 UTC (superseded)
 This manual table has been removed because it went stale. **The only current source for team A heads and states is the auto table between the `AUDIT:BEGIN/END` markers at the end of this file.** It is regenerated from `git ls-remote` every cycle.
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 17:41 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 17:49 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -512,14 +512,14 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/seed-dangling-placements | 11cbcf458 | READY (A1b, BASE-105): asserts paper titles + counts = POC_BANK; seed 155 + 1 skip; B2 |
 | r1/stimulus-list-d72 | 1c2c7416a | READY (A2, BASE-105): D72 filter on the group/stimulus lists + empty groups kept listed (D9 row); stimulus-lists 13/13; B2 |
 | r1/t04-minors | cc5116213 | READY (A2, BASE-105): B-044; 108 + 1 skip; ready for the B1 gate |
-| r1/t31-builder-wire | 6a27c8dd3 | READY (A3); needs C1 REQ-A-008 rebased on BASE-102 |
+| r1/t31-builder-wire | 6a27c8dd3 | ON HOLD: pre-review (A2) M1: vue-tsc red alone, so it merges ONLY together with C REQ-A-008 77ffe84d; needs a BASE-105 merge + Minors (stimulusTableParts) → A3 |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t37-r1-runbook | 6544c6855 | READY (A3, BASE-105): runbook incl. the WARM env, 0106/0107 window, pg_trgm, ANALYZE, reverts, T36 demo-host; B2 |
 | r1/t38-selfmark-reward | 13134ced7 | READY (A1b, BASE-105): B2 c16 Minors fixed (concurrency spec red without the lock); rewards 22/22; B2 delta + B3 |
 | r1/t39-k1-evidence | 1a26f7a60 | check: A3 to confirm state |
 | r1/t40-attempts-acs | 43fb5900d | READY (A1b, T38 + BASE-105): 28/28; merges after T38; B2 |
-| r1/t43-chain-publish | 5ce5894f1 | READY (A3, on T31) |
+| r1/t43-chain-publish | 5ce5894f1 | ON HOLD: needs a BASE-105 merge (A3); after T31 + REQ-A-008 |
 | r1/t43b-publish-acs | 372f911ae | READY (A3): restacked on T48 4800bd78; merges after T48; B2 |
 | r1/t45-builder-acs | 3001a0b84 | READY (A1b; on T48 4800bd78 + BASE-105): AC-R1-21.3/21.6 specs; exam-builder 391/391; merges after T48; B2 |
 | r1/t45-builder-acs-wip | 078204e1c | SUPERSEDED by r1/t45-builder-acs; do not merge |
@@ -527,7 +527,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t48-builder-parity | 4800bd789 | READY (A3, BASE-105): pre-review Minors fixed (Padam only unplaces an ever-approved question; duplicate Bahagian labels refused [PROPOSED]); 518 + 1 todo; B2 + B3 |
 | r1/t49-served-now | 8a4b46a9f | READY (A2, BASE-105): B-025ab + C-019 + B2 c16 Minors (blank negeri ignored, examBoards distinct case-insensitive); 704/704 incl. conformance; B2 delta |
 | r1/t50-partial-acs | 075e1b587 | READY (A1a, BASE-105): B2 approved c17; ready for the B1 gate |
-| r1/t51-partial-acs-a3 | 8ed1df5d2 | READY (A3): restacked on T48 4800bd78; order T48 → T31 (+REQ-A-008) → T43 → T51; B2 |
+| r1/t51-partial-acs-a3 | 8ed1df5d2 | ON HOLD: pre-review (A2) M2: 22 reds once merged with H-A18 (giveBab fixture) → A3 fixing; Nits |
 | r1/t52-examiner-grid | f2d36f648 | READY (A1a, BASE-105): B2 approved c17; ready for the B1 gate |
 | r1/t54-perf-400k | 03c76eb0d | IN-PROGRESS (A4): pre-review m8 placeholder change being pushed; do not merge until A4 reports |
 <!-- AUDIT:END -->
@@ -567,3 +567,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
   - A2 slot 1: the A4 chain (T45 P1, 022a, c-020, b-033).
   - Each owner fixes its findings before B reviews. A changed head is recorded the same round.
 - A2 fix ETAs (UTC): H-A18 ~17:45 → C-012 ~18:10 → B-032 ~18:25. After each, A3 re-merges H-A18 and B-032 into REQ-B-052.
+- **Pre-review of the A3 builder chain (A2): 2 Majors.**
+  - **T31 merges only together with team C's REQ-A-008** @ 77ffe84d. T31 alone fails vue-tsc.
+  - T51 (and T48's builder-parity spec) gives 22 reds once merged with H-A18, from the bab gate. A3 is fixing the fixture.
+  - Lead decision: the D93 min-2 rule is skipped for a group with no displayable stimulus, and that stays (the group is still one D90 unit; a deviation row will be added).
+  - **For B1:** 19 baseline vue-tsc errors (implicit-any in m02/m03/m04/m07/m09/m28 pages) appear on BASE-105 in team A's env. Please check them on your setup.
