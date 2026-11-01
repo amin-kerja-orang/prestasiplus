@@ -530,10 +530,10 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/req-c-020 | 78e050b3b | Approve w/ Minors, blocked by 022a → A4 restack on BASE-105 |
 | r1/req-c012-a2 | ba57ecc52 | WAITS for fixed H-A18 (A2 slot 1) |
 | r1/reqb032-pinned-rule | e9cf34b7f | READY (A2+A3, BASE-105): the attempt serves the pinned version; SERVED_NOW = lock predicate; image rule B; pinned-version-rule 6/6; attempts 180/180; B2 + B3 |
-| r1/reqb049-report-visible | 9ece8d76d | READY; A3 pre-review found only Minors (no Blocker/Major) → A1b fixing the Minors, new head follows |
+| r1/reqb049-report-visible | 9ece8d76d | IN-PROGRESS (A1b): pre-review Minors being pushed; B: wait for the A1b READY head |
 | r1/reqb052-archived-edit | ce0af563f | IN-PROGRESS (A3 T48 dev): red repro ce0af563 proves an admin/Guru PUT rewrites a pinned archived v1 that a pupil sees; fixing (branch to a new version) |
 | r1/reqc021-followup | 948aa327a | READY (A1a, BASE-105): fixes the base red draw-bounded BR-16; merge early |
-| r1/seed-dangling-placements | 2bbd4f3ca | READY; A3 pre-review found only Minors (no Blocker/Major) → A1b fixing the Minors, new head follows |
+| r1/seed-dangling-placements | 2bbd4f3ca | IN-PROGRESS (A1b): pre-review Minors being pushed; B: wait for the A1b READY head |
 | r1/t04-minors | cc5116213 | READY (A2, BASE-105): B-044; 108 + 1 skip; ready for the B1 gate |
 | r1/t31-builder-wire | 6a27c8dd3 | READY (A3); needs C1 REQ-A-008 rebased on BASE-102 |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
