@@ -303,7 +303,7 @@ async function save(): Promise<void> {
       <DsStack id="studio-section-sub" as="section">
         <DsFormSection title="Langkah 3 Sub-bahagian" description="Setiap bahagian membawa jenis jawapan, markah dan skema tersendiri." icon="list">
           <DsText variant="label" data-testid="studio-total-marks">Jumlah markah: {{ totalMarks(draft) }}</DsText>
-          <DsText v-if="draftTp(draft) !== null" variant="body" tone="muted" data-testid="studio-question-tp">TP soalan: {{ draftTp(draft) }} (tertinggi antara bahagian)</DsText>
+          <DsText v-if="draftTp(draft) !== null" variant="body" tone="muted" data-testid="studio-question-tp">TP soalan: {{ draftTp(draft) }} {{ draft.leaves.some((l) => l.tp !== null) ? '(tertinggi antara bahagian)' : '(diwarisi daripada soalan)' }}</DsText>
           <StudioLeafEditor
             v-for="(leaf, i) in draft.leaves"
             :key="leaf.uid"

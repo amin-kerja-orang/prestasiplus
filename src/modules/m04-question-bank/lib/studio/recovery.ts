@@ -64,10 +64,13 @@ export function parseSnapshot(text: string | null): StudioDraft | null {
   if (!Array.isArray(d.spIds) || !d.spIds.every(isStr) || d.spIds.length > 3) return null
   const leaves = (d.leaves as unknown[]).map(leafOf)
   if (leaves.some((l) => l === null) || leaves.length > 26) return null
+  const inheritedTp = d.inheritedTp
+  if (!(inheritedTp === undefined || inheritedTp === null || (typeof inheritedTp === 'number' && Number.isInteger(inheritedTp) && inheritedTp >= 1 && inheritedTp <= 6))) return null
   return {
     subjectId: d.subjectId, educationLevelId: d.educationLevelId, kertas: d.kertas as StudioDraft['kertas'], numberLabel: d.numberLabel, stem: d.stem,
     stemImageToken: d.stemImageToken, chapterId: d.chapterId, difficulty: d.difficulty, unitId: d.unitId, spIds: d.spIds, groupId: d.groupId,
     leaves: leaves as LeafDraft[],
+    ...(typeof inheritedTp === 'number' ? { inheritedTp } : {}),
   }
 }
 

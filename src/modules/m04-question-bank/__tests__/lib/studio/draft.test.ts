@@ -215,6 +215,16 @@ describe('Studio draft', () => {
       expect(draftTp(edited)).toBe(5)
     })
 
+    it('does not report an inherited part as missing its TP, and keeps the inherited TP when a lower TP part is added (REQ-B-038 minors)', () => {
+      const h = hydrate(wire(numeric, { unitId: null, spIds: [], tp: 3 }))
+      expect(draftGaps(h.draft).map((g) => g.message)).not.toContain('Bahagian (a) belum ada TP.')
+      const b = { ...blankLeaf('b'), tp: 2 }
+      const withB = { ...h.draft, leaves: [...h.draft.leaves, b] }
+      expect(draftTp(withB)).toBe(3)
+      expect(draftGaps(withB).map((g) => g.message)).not.toContain('Bahagian (a) belum ada TP.')
+      expect(draftGaps(withB).map((g) => g.message)).toContain('Bahagian (b) belum ada aras pemikiran.')
+    })
+
     it('does not invent a TP for a question that has none', () => {
       const h = hydrate(wire(numeric))
       expect(h.unsupported).toEqual([])
