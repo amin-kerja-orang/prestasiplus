@@ -55103,8 +55103,7 @@
         "enum": [
           "mastered",
           "started",
-          "unlocked",
-          "locked"
+          "unlocked"
         ]
       },
       "CurriculumTopicsQuery": {
@@ -55530,7 +55529,6 @@
         "type": "string",
         "enum": [
           "TRIAL_EXHAUSTED",
-          "CHAPTER_LOCKED",
           "NOT_ENOUGH_QUESTIONS",
           "SET_NOT_READY",
           "NO_WRONG_QUESTIONS",
@@ -58241,9 +58239,9 @@
           "state": {
             "type": "string",
             "enum": [
-              "open",
-              "locked"
-            ]
+              "open"
+            ],
+            "description": "Always `open` (REQ-C-021, D98: no chapter lock)."
           },
           "complete": {
             "type": "boolean"
