@@ -123,7 +123,7 @@ describe('AC-04.3 paper-level "where can pupils open it"', () => {
   it('a paper with no question is not a quiz; an unknown or malformed paper id has no report', async () => {
     const r = (await paperSvc.report(await paper('published', [])))!
     expect(r.questionCount).toBe(0)
-    expect(codes(r, 'simulasi_kuiz')).toEqual(['shape_unsupported'])
+    expect(codes(r, 'simulasi_kuiz')).toEqual(['paper_empty'])
     expect(await paperSvc.report('999999999')).toBeNull()
     expect(await paperSvc.report('not-an-id')).toBeNull()
   })
