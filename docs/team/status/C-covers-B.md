@@ -17,3 +17,4 @@ Owner instruction (2026-11-01 13:00 MYT): team B is offline (all B lanes silent 
 
 ## Log
 - 2026-11-01 13:00 MYT: started. 4 agents: C1 (REQ-B-042 + T10/parity restack), C2 (H-C8 one-reader + REQ-B-041), C3 (REQ-B-045 + REQ-B-040), QA stand-in for B4 (regression BASE-93).
+- 2026-11-01 13:56 MYT: C2 delivered H-C8 @ c6954ae08 and REQ-B-041 @ 2e3c6ad07 (await B2 review).
