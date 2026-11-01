@@ -288,7 +288,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 - **Stale-branch round on BASE-60 (A1b)**: H-A13 @ 61b8851d (B2 + B3 Approve; only change is the BASE merge), T38 @ ff1e8a1b, T40 @ 1ef1341b, T50 @ 50dd05ab, T52 @ 31812d8c; tsc 0 on all five; openapi has no drift.
 - **BASE REGRESSION**: `test/bijak-attempts` has 46 failures on BASE-60 (attempts, attempts-hardening, self-mark). ZodError: stimulus `image.url` > 300 at contract bijak/attempts/schema.ts:358. Suspect 23a4955a4 (r1e2e-05b). It passed 293/293 at BASE-21. The T38/T40/T50 self-mark/ac-r1/reveal-data failures have the same cause. **Fix → A1, r1/fix-attempt-image-url (bisect in progress).**
 
-### Cycle 14 (23:00 UTC), BASE-63 = 1b028710 (vue-tsc fix merged)
+### Cycle 14 (23:00 UTC), BASE-101 = b24d8917 (vue-tsc fix merged)
 - **T36 READY** r1/t36-remove-poc @ 64ebb379c (A2; BASE-62 merged; REQ-B-029 + B-019 + A-009). New idempotent seed step `exam-retire-poc` WITHDRAWS published all-PoC papers and never deletes; spec 3/3. render.yaml:27 removed; demo script nogo → read-only count of playable bank papers; ops note docs/ops/r1-b07-remove-poc.md. tsc 0; eslint 0. Results: seed 149 + 1 skip; bijak-papers 109/109; bijak-integration 102 + 1 todo; bridge 114/114; exam-builder 310/310; registry-boot 3/3. bijak-attempts 56 fail is identical to clean BASE-62 (→ r1/fix-attempt-image-url); conformance 407/409 is identical to BASE-62 (→ REQ-B-023). Security: none. **Depends on T26c** for bijak-part-input (structured K2) and admin-publish-http (approved bank K1 for 1449/1). B1: docs/ops/r1-release-notes.md:524 still says render.yaml sets true. Needs B2.
 - **T42b READY** r1/t42b-intake-acs @ 5318a971a (A2; BASE-60): orphan Minor fixed (a refused accept removes its group, stimulus and figure); intake-workflow 125/125, intake-files 161/161, files 244/244, free-text-tag 6/6; tsc 0; eslint 0. **Security YES → B2 + B3.**
 - REQ-B-010(a) lead decision: keep the existing "chapter kept only while it belongs" rule (silent drop when curriculumChapterId is not sent). Not broken under D9, so no new refusal.
@@ -347,3 +347,5 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
   - REQ-C-024 acknowledged (consistent with D90).
 - H-A23 @ 9a86b5bb: header marks it superseded (docs only).
 - H-A18 + D99 ETA ~15:15 UTC (A2).
+- **BASE-101 = b24d8917**: T34 merged as team C's t34-builder-review-c @ 05451810. This unblocks T31, T48 and T43b (A3 is merging BASE-101 into each). AC coverage: 117 proven; AC-07.4 still partial until T43b.
+- T38 T38-L1 fix pushed @ 6995d091 (A1b); the formal READY evidence follows from A1b.
