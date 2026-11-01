@@ -14,7 +14,7 @@ export class ReadyController {
 
   constructor(private readonly ready: ReadyService) {}
 
-  /** No auth. 200 only when the database answers and the migrations are applied; otherwise 503 SERVER_ERROR with no detail. */
+  /** No auth. 200 only when the database answers, the migrations are applied and the wallet tiers (reference seed) exist; otherwise 503 SERVER_ERROR with no detail. */
   @Get()
   @Header('Cache-Control', 'no-store')
   async get(): Promise<{ data: { status: 'ready'; db: 'up'; migrations: 'applied'; time: Timestamp } }> {

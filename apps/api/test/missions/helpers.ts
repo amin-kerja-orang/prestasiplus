@@ -10,6 +10,7 @@ import request from 'supertest'
 
 import { runSeeds, type SeedModule } from '../../prisma/seed'
 import { identitySeed } from '../../prisma/seed/core/identity'
+import { walletTiersSeed } from '../../prisma/seed/core/wallet-tiers'
 import { populationSeed } from '../../prisma/seed/core/population'
 import { schoolsSeed } from '../../prisma/seed/core/schools'
 import { curriculumSeed } from '../../prisma/seed/curriculum'
@@ -49,7 +50,8 @@ export interface BootOptions {
 /** Nest app (auth, classes, missions; or every feature module) on a private migrated and seeded database. */
 export async function bootMissionsApp(opts: BootOptions = {}): Promise<MissionsTestApp> {
   const db = await createTestDatabase()
-  const seeds: SeedModule[] = [identitySeed, schoolsSeed, populationSeed, curriculumSeed, questionsSeed]
+  // walletTiersSeed is REFERENCE data (every environment has it): without tiers the wallet summary throws and a practice submit that earns no coin is a 500.
+  const seeds: SeedModule[] = [identitySeed, schoolsSeed, walletTiersSeed, populationSeed, curriculumSeed, questionsSeed]
   await runSeeds(seeds, { prisma: db.prisma })
   const env: Record<string, string | undefined> = {
     DATABASE_URL: db.url,

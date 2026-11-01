@@ -6,6 +6,8 @@ import request from 'supertest'
 import { afterAll, vi, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { ReadyService } from '../../src/common/health/ready.service'
+import { runSeeds } from '../../prisma/seed'
+import { walletTiersSeed } from '../../prisma/seed/core/wallet-tiers'
 import { PrismaService } from '../../src/db/prisma.service'
 import { createTestApp } from '../support/app'
 import { createTestDatabase, type TestDatabase } from '../support/db'
@@ -19,6 +21,7 @@ describe('GET /api/ready (BE-33)', () => {
 
   beforeAll(async () => {
     db = await createTestDatabase()
+    await runSeeds([walletTiersSeed], { prisma: db.prisma }) // the reference data readiness asks for
     app = await createTestApp({ db })
     app.get(ReadyService).ttlMs = 0 // these cases change the DB state between calls
   })
@@ -50,6 +53,21 @@ describe('GET /api/ready (BE-33)', () => {
     expect(res.status).toBe(200)
     expect(res.body).toEqual({ data: { status: 'ready', db: 'up', migrations: 'applied', time: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T.*\+08:00$/) } })
     expect(res.headers['cache-control']).toBe('no-store')
+  })
+
+  it('is 503 while the wallet tiers table is empty (a deploy that skipped the reference seed), and 200 again once they are seeded', async () => {
+    const saved = await db.query<Record<string, unknown>>('select * from tiers')
+    expect(saved.length).toBe(4)
+    await db.query('delete from tiers')
+    try {
+      const res = await request(app.getHttpServer()).get('/api/ready')
+      expect(res.status).toBe(503)
+      expect(res.body.error.code).toBe('SERVER_ERROR')
+      expect(JSON.stringify(res.body)).not.toMatch(/tier|seed/i) // the reason goes to the log only
+    } finally {
+      await runSeeds([walletTiersSeed], { prisma: db.prisma })
+    }
+    expect((await request(app.getHttpServer()).get('/api/ready')).status).toBe(200)
   })
 
   it('is 503 SERVER_ERROR when a migration row is unfinished (failed)', async () => {

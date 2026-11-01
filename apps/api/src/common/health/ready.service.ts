@@ -15,6 +15,8 @@ interface MigrationRow {
   migration_name: string
   finished_at: Date | null
   rolled_back_at: Date | null
+  /** The same value on every row: `tiers` has at least one row. */
+  has_tiers?: boolean
 }
 
 function hereDir(): string {
@@ -53,7 +55,7 @@ export function shippedMigrationNames(): string[] | null {
 
 export type ReadyResult = { ok: true } | { ok: false; reason: string }
 
-/** Readiness: the database answers within 3 s AND every shipped migration is applied (and none is failed). */
+/** Readiness: the database answers within 3 s, every shipped migration is applied (and none is failed) AND the wallet tiers (reference data) exist. */
 @Injectable()
 export class ReadyService {
   private readonly logger = new Logger(ReadyService.name)
@@ -80,13 +82,12 @@ export class ReadyService {
   private async run(): Promise<ReadyResult> {
     let timer: NodeJS.Timeout | undefined
     try {
-      const rows = await Promise.race([
-        this.prisma.$queryRaw<MigrationRow[]>`select migration_name, finished_at, rolled_back_at from _prisma_migrations`,
+      return await Promise.race([
+        this.checkDatabase(),
         new Promise<never>((_, reject) => {
           timer = setTimeout(() => reject(new Error('database check timed out')), READY_DB_TIMEOUT_MS)
         }),
       ])
-      return this.evaluate(rows)
     } catch (err) {
       // The reason goes to the log only; never into the response body.
       // Name and driver code only: a driver message can carry the host name (G4 minor 6).
@@ -96,6 +97,19 @@ export class ReadyService {
     } finally {
       clearTimeout(timer)
     }
+  }
+
+  /**
+   * The migrations first, then the reference data the API cannot serve without: the wallet tiers. ONE query (the migration rows, each carrying a
+   * `select exists` over `tiers`), cached with the rest. A deploy never seeds (deploy.sh), so a database without the reference seed has no tiers and
+   * every dashboard read and practice submit answers 500 ("M14: no tier is defined"); readiness fails on purpose until `deploy.sh --seed-reference` ran.
+   */
+  private async checkDatabase(): Promise<ReadyResult> {
+    const rows = await this.prisma.$queryRaw<MigrationRow[]>`
+      select migration_name, finished_at, rolled_back_at, (select exists (select 1 from tiers)) as has_tiers from _prisma_migrations`
+    const migrations = this.evaluate(rows)
+    if (!migrations.ok) return migrations
+    return rows.some((r) => r.has_tiers === true) ? migrations : { ok: false, reason: 'no wallet tier is defined: run the reference seed (deploy.sh --seed-reference)' }
   }
 
   private evaluate(rows: MigrationRow[]): ReadyResult {
