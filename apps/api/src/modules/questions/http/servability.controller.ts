@@ -36,7 +36,7 @@ export const SERVABILITY_OVERVIEW_LIMIT = {
 /**
  * R1-B11 "Dilihat murid di": where a question is served to pupils and why not, for the Studio status bar, the question list, the
  * SPM hub cards and the two lanes. Admin Pusat only (the `admin` role), read-only; the batch is a POST because it carries ids and
- * so needs the CSRF header. Not under `/questions/...`, so `questions/:id` of the admin controller never swallows these paths.
+ * so needs the CSRF header. Admin Pusat only is a decision (REQ-B-022(c), D86: teacher and school-admin views are KIV). Not under `/questions/...`, so `questions/:id` of the admin controller never swallows these paths.
  * Input is validated at the boundary: ids are decimal ids, at most 100 per batch, lane filters are bounded strings.
  */
 @Roles('admin')
