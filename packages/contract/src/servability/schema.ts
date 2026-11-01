@@ -58,6 +58,7 @@ export const SERVABILITY_REASON_CODES = [
   'tag_review',
   'paper_empty',
   'stimulus_shared_ungrouped',
+  'question_missing',
 ] as const
 export const ServabilityReasonCodeSchema = z.enum(SERVABILITY_REASON_CODES).meta({ id: 'ServabilityReasonCode' })
 export type ServabilityReasonCode = z.infer<typeof ServabilityReasonCodeSchema>
@@ -95,6 +96,8 @@ export const SERVABILITY_REASON_MS: Readonly<Record<ServabilityReasonCode, strin
   paper_empty: 'Disajikan tetapi tiada soalan',
   // [PROPOSED] (V2 has no phrase; D90: a stimulus shared by several questions must be a group).
   stimulus_shared_ungrouped: 'Rangsangan ini dikongsi oleh beberapa soalan tetapi bukan kumpulan rangsangan — jadikan soalan-soalan itu satu kumpulan rangsangan (D90).',
+  // [PROPOSED] (V2 has no phrase): the paper places a question id the bank does not return (no such question, PKSK or Darjah).
+  question_missing: 'Soalan pada kertas ini tiada dalam bank soalan — kertas tidak boleh dimulakan; gantikan atau buang soalan itu.',
 }
 
 /**
@@ -135,6 +138,7 @@ export const SERVABILITY_REASON_SOURCE: Readonly<Record<ServabilityReasonCode, '
   tag_review: 'PROPOSED',
   paper_empty: 'V2',
   stimulus_shared_ungrouped: 'PROPOSED',
+  question_missing: 'PROPOSED',
 }
 
 /** "Tidak dihidangkan kerana {sebab}." (design 9.3, the .cloud exclusion line). `phrase` continues "kerana ...". */

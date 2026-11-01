@@ -7995,7 +7995,8 @@
             "items": {
               "type": "string"
             },
-            "minItems": 1
+            "minItems": 1,
+            "maxItems": 8
           },
           "comment": {
             "type": [
@@ -15165,7 +15166,8 @@
           "no_marks",
           "tag_review",
           "paper_empty",
-          "stimulus_shared_ungrouped"
+          "stimulus_shared_ungrouped",
+          "question_missing"
         ]
       },
       "ServabilityReason": {
