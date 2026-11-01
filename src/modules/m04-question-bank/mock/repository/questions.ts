@@ -803,6 +803,17 @@ export const questionsRepo = defineRepository({
         const current = requireRow(id)
         return transaction(() => setFields(id, patchFromInput(current, patch), now))
       },
+      /**
+       * REQ-A-023: why a question may not be deleted for good, or `null`. Deterministic mock rule (the mock has no paper placements and no
+       * versions): an approved question is shown to pupils (`served`), an archived or rejected one is not a draft (`status`). The server also
+       * answers `pinned`; the mock never does.
+       */
+      deletionBlock: (id: number): 'served' | 'status' | null => {
+        const row = get(id)
+        if (!row) return null
+        if (row.status === 'approved') return 'served'
+        return row.status === 'archived' || row.status === 'rejected' ? 'status' : null
+      },
       /** Permanent delete (BR-M04-01). */
       remove: (id: number): void => {
         requireRow(id)
@@ -880,9 +891,11 @@ export const questionsRepo = defineRepository({
         void _n
         return transaction(() => setFields(id, patchFromInput(row, allowed), now))
       },
-      deleteOwn: (viewer: Viewer, id: number): boolean => {
+      /** `false` = not found / not own (404); `'refused'` = not a draft or in review (409, REQ-A-023). */
+      deleteOwn: (viewer: Viewer, id: number): boolean | 'refused' => {
         const row = get(id)
         if (!row || row.createdBy !== viewer.id || row.pkskDomainId !== null) return false
+        if (row.status !== 'draft' && row.status !== 'pending_review') return 'refused'
         transaction(() => store.remove(id))
         return true
       },

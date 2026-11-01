@@ -487,6 +487,30 @@ export function deleteQuestion(id: number): Promise<QuestionMutation<{ deleted: 
   })
 }
 
+/** One `failed[]` entry of the bulk action: the id the action did not apply to, the error code and the server's BM text. */
+export interface BulkFailedRow {
+  id: number
+  code: string
+  message: string
+}
+
+function failedRowsOf(value: unknown): BulkFailedRow[] {
+  if (!Array.isArray(value)) return []
+  const rows: BulkFailedRow[] = []
+  for (const entry of value as unknown[]) {
+    if (typeof entry !== 'object' || entry === null) continue
+    const e = entry as { id?: unknown; code?: unknown; message?: unknown }
+    const id = Number(e.id)
+    if (!Number.isSafeInteger(id)) continue
+    rows.push({
+      id,
+      code: typeof e.code === 'string' ? e.code : '',
+      message: typeof e.message === 'string' ? e.message : '',
+    })
+  }
+  return rows
+}
+
 /**
  * #7 `POST /api/questions/bulk-action` (422 when no action or no ids).
  *
@@ -498,7 +522,9 @@ export function deleteQuestion(id: number): Promise<QuestionMutation<{ deleted: 
 export async function bulkQuestionAction(
   action: BulkAction,
   ids: readonly number[],
-): Promise<QuestionMutation<{ affected: number }> & { notUpdated?: number[] }> {
+): Promise<
+  QuestionMutation<{ affected: number }> & { notUpdated?: number[]; failed?: BulkFailedRow[] }
+> {
   const http = isHttpMode()
   const result = await api.post<QuestionMutation<{ affected: number }>>(
     '/api/questions/bulk-action',
@@ -508,6 +534,9 @@ export async function bulkQuestionAction(
       raw: true,
     },
   )
+  // REQ-A-023: the API reports a refused id in `data.failed[]` (code + BM message); show that, not a guessed reason.
+  const failed = failedRowsOf((result.data as { failed?: unknown }).failed)
+  if (failed.length > 0) return { ...result, failed }
   const target = BULK_TARGET_STATUS[action]
   const distinct = [...new Set(ids)]
   if (!http || target === undefined || result.data.affected >= distinct.length) return result

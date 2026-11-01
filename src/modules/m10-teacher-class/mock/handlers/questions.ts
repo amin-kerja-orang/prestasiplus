@@ -25,6 +25,7 @@
 
 import {
   blob,
+  conflict,
   created,
   int,
   notFound,
@@ -60,6 +61,10 @@ import {
   type Body,
 } from './common'
 import { planImport, TEMPLATE_CSV, TEMPLATE_NAME } from './csv'
+
+/** [PROPOSED] the server's `QUESTION_MESSAGES.deleteRefused` (REQ-A-023): a Guru may delete only a draft or a question in review. */
+const QUESTION_DELETE_REFUSED =
+  'Soalan ini tidak boleh dipadam kerana sudah diterbitkan atau digunakan pada kertas yang masih dipaparkan kepada murid. Arkibkan soalan ini sebagai ganti.'
 
 const PAGE_SIZE = 20
 const TEXT_MAX = 2000
@@ -535,10 +540,11 @@ export const questionRoutes: RouteDef[] = [
     'DELETE',
     '/api/guru/questions/:id',
     [teacherOnly],
-    (req) =>
-      questions.deleteOwn({ id: viewerId(req) }, Number(req.params.id))
-        ? ok({ removed: 1 })
-        : notFound(),
+    (req) => {
+      const result = questions.deleteOwn({ id: viewerId(req) }, Number(req.params.id))
+      if (result === 'refused') return conflict(QUESTION_DELETE_REFUSED)
+      return result ? ok({ removed: 1 }) : notFound()
+    },
     { params: { id: int() } },
   ),
 ]

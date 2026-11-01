@@ -479,6 +479,7 @@ describe('#6 DELETE /api/questions/:id', () => {
   it('deletes permanently and answers the flash; the second call is 404', async () => {
     const created = await createMcq()
     const id = created.body.data.id
+    questions.bulkAction('pending_review', [id], 0) // REQ-A-023: only a draft or a question in review may go
     const res = await call<QuestionMutation<{ deleted: number }>>(
       'DELETE',
       `/api/questions/${String(id)}`,
@@ -494,10 +495,27 @@ describe('#6 DELETE /api/questions/:id', () => {
 
   it('deletes an observed question and moves the counts', async () => {
     dirty = true
+    questions.bulkAction('pending_review', [129114], 0) // REQ-A-023: an approved question is refused
     const res = await call('DELETE', '/api/questions/129114', ADMIN)
     expect(res.status).toBe(200)
     expect(questions.count('Q-ALL')).toBe(all0 - 1)
     expect((await call('GET', '/api/questions/129114', ADMIN)).status).toBe(404)
+  })
+
+  it('REQ-A-023: an approved (served) or archived question is refused with 409 CONFLICT and kept', async () => {
+    const a = (await createMcq()).body.data.id
+    for (const [status, action] of [
+      ['approved', 'approve'],
+      ['archived', 'archive'],
+    ] as const) {
+      await call('POST', '/api/questions/bulk-action', ADMIN, { action, ids: [a] })
+      expect(questions.get(a)?.status).toBe(status)
+      const res = await call<ErrorBody>('DELETE', `/api/questions/${String(a)}`, ADMIN)
+      expect(res.status).toBe(409)
+      expect(res.body.error.code).toBe('CONFLICT')
+      expect(res.body.error.message).toMatch(/^Soalan ini tidak boleh dipadam/)
+      expect(questions.get(a)).not.toBeNull()
+    }
   })
 
   it('an unknown id and a PKSK row are 404 and nothing is removed', async () => {
@@ -546,12 +564,31 @@ describe('#7 POST /api/questions/bulk-action', () => {
 
   it('delete removes the rows; unknown ids and PKSK ids are not counted', async () => {
     const a = (await createMcq()).body.data.id
+    questions.bulkAction('pending_review', [a], 0)
     const res = await bulk({ action: 'delete', ids: [a, 999_999_999, 177_698, a] })
     expect(res.status).toBe(200)
     expect(res.body.data.affected).toBe(1)
     expect(res.body.status).toBe('1 soalan berjaya dikemaskini.')
     expect(questions.get(a)).toBeNull()
     expect(questions.get(177_698)).not.toBeNull()
+  })
+
+  it('REQ-A-023: delete reports a refused (approved) question in failed[] with code CONFLICT and removes the rest', async () => {
+    const draft = (await createMcq()).body.data.id
+    questions.bulkAction('pending_review', [draft], 0)
+    const served = (await createMcq()).body.data.id
+    await bulk({ action: 'approve', ids: [served] })
+    const res = await bulk({ action: 'delete', ids: [draft, served] })
+    expect(res.status).toBe(200)
+    expect(res.body.data).toMatchObject({
+      affected: 1,
+      failed: [{ id: String(served), code: 'CONFLICT', fields: {} }],
+    })
+    expect((res.body.data as unknown as { failed: { message: string }[] }).failed[0]?.message).toMatch(
+      /^Soalan ini tidak boleh dipadam/,
+    )
+    expect(questions.get(draft)).toBeNull()
+    expect(questions.get(served)).not.toBeNull()
   })
 
   it('422 without an action, without ids, with a bad action or bad ids', async () => {

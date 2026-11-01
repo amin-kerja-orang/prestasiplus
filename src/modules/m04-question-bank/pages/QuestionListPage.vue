@@ -45,6 +45,7 @@ import {
 import QuestionSummaryCard from '../components/QuestionSummaryCard.vue'
 import {
   bulkOptionsFor,
+  failedLines,
   notUpdatedLines,
   bulkConfirmText,
   COMPLIANCE_OPTIONS,
@@ -327,7 +328,9 @@ async function submitBulk(): Promise<void> {
     selected.value = []
     bulkAction.value = ''
     await reloadAfterMutation()
-    if (result.notUpdated && result.notUpdated.length > 0) {
+    if (result.failed && result.failed.length > 0) {
+      flash.show({ type: 'error', message: failedLines(result.data.affected, result.failed, option.verb) })
+    } else if (result.notUpdated && result.notUpdated.length > 0) {
       flash.show({
         type: 'error',
         message: notUpdatedLines(result.data.affected, result.notUpdated, option.verb),

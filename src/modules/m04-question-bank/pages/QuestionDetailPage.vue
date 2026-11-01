@@ -30,6 +30,7 @@ import AiExplanationCard from '../components/AiExplanationCard.vue'
 import {
   cut,
   DELETE_CONFIRM,
+  failedLines,
   LANGUAGE_LABELS,
   notUpdatedLines,
   QUESTIONS_LIST_PATH,
@@ -129,7 +130,9 @@ async function changeStatus(action: 'pending_review' | 'approve'): Promise<void>
   try {
     const result = await bulkQuestionAction(action, [props.id])
     await reload()
-    if (result.notUpdated && result.notUpdated.length > 0) {
+    if (result.failed && result.failed.length > 0) {
+      flash.show({ type: 'error', message: failedLines(result.data.affected, result.failed, 'dikemaskini') })
+    } else if (result.notUpdated && result.notUpdated.length > 0) {
       flash.show({
         type: 'error',
         message: notUpdatedLines(result.data.affected, result.notUpdated, 'dikemaskini'),
@@ -313,6 +316,7 @@ const isRtlText = (text: string): boolean => /[\u0600-\u06FF]/.test(text)
         <AiExplanationCard
           :question-id="id"
           :explanation="question.aiExplanation"
+          :status="question.status"
           @generated="reload()"
         />
       </div>

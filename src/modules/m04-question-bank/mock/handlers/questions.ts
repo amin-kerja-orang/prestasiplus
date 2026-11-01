@@ -22,6 +22,7 @@
 
 import { curriculum } from '@/modules/m03-curriculum/mock'
 import {
+  conflict,
   created,
   int,
   notFound,
@@ -63,6 +64,9 @@ export const QUESTIONS_PAGE_SIZE = 20
 export const QUESTION_ADDED = 'Soalan berjaya ditambah.'
 export const QUESTION_UPDATED = 'Soalan berjaya dikemaskini.'
 export const QUESTION_DELETED = 'Soalan berjaya dipadam.'
+/** [PROPOSED] same text as the server's `QUESTION_MESSAGES.deleteRefused` (REQ-A-023): the 409 of every hard delete. */
+export const QUESTION_DELETE_REFUSED =
+  'Soalan ini tidak boleh dipadam kerana sudah diterbitkan atau digunakan pada kertas yang masih dipaparkan kepada murid. Arkibkan soalan ini sebagai ganti.'
 export const bulkUpdated = (n: number): string => `${String(n)} soalan berjaya dikemaskini.`
 /** The live script alert text, reused as the server message for a missing action. */
 export const BULK_NO_ACTION = 'Sila pilih tindakan terlebih dahulu.'
@@ -175,6 +179,7 @@ function remove(req: MockRequest): MockResponse {
   const id = idOf(req)
   const current = questions.get(id)
   if (!current || current.pkskDomainId !== null) return notFound()
+  if (questions.deletionBlock(id) !== null) return conflict(QUESTION_DELETE_REFUSED)
   questions.remove(id)
   return ok({ deleted: 1 }, { status: QUESTION_DELETED })
 }
@@ -200,8 +205,29 @@ function bulk(req: MockRequest, ctx: MockContext): MockResponse {
     ids = body.ids as number[]
   }
   if (Object.keys(fields).length > 0) return validationError(fields)
-  const affected = questions.bulkAction(action as BulkAction, ids, ctx.clock.now())
-  return ok({ affected }, { status: bulkUpdated(affected) })
+  // REQ-A-023: a delete skips (and reports) the questions the single delete refuses.
+  const refused =
+    action === 'delete'
+      ? [...new Set(ids)].filter((id) => {
+          const row = questions.get(id)
+          return row && row.pkskDomainId === null && questions.deletionBlock(id) !== null
+        })
+      : []
+  const affected = questions.bulkAction(
+    action as BulkAction,
+    ids.filter((id) => !refused.includes(id)),
+    ctx.clock.now(),
+  )
+  // REQ-A-023: a refused delete is a `failed[]` entry (id as a string, code CONFLICT), as the server reports it.
+  const failed = refused.map((id) => ({
+    id: String(id),
+    code: 'CONFLICT',
+    message: QUESTION_DELETE_REFUSED,
+    fields: {},
+  }))
+  return ok(action === 'delete' ? { affected, failed } : { affected }, {
+    status: bulkUpdated(affected),
+  })
 }
 
 function sleep(ms: number): Promise<void> {

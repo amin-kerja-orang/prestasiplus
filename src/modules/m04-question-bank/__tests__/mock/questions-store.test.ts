@@ -722,6 +722,11 @@ describe('writes', () => {
     expect(updated).toMatchObject({ scriptType: 'jawi', textDirection: 'rtl' })
 
     expect(questions.deleteOwn({ id: 1 }, created.id)).toBe(false)
+    // REQ-A-023: a Guru delete of a question that is not a draft or in review is refused.
+    questions.bulkAction('approve', [created.id], NOW_MS)
+    expect(questions.deleteOwn({ id: 5 }, created.id)).toBe('refused')
+    expect(questions.get(created.id)).not.toBeNull()
+    questions.bulkAction('pending_review', [created.id], NOW_MS)
     expect(questions.deleteOwn({ id: 5 }, created.id)).toBe(true)
     expect(questions.get(created.id)).toBeNull()
     expect(questions.count('Q-ALL')).toBe(465_278)
