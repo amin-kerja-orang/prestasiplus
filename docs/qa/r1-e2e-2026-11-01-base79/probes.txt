@@ -1,0 +1,17 @@
+## Builder pool vs picker (MAT K1 paper built in the UI, BEFORE any API fill; debug run b79dbg1 on a fresh DB, paper 6)
+login 200 editor 200 blueprint 1449/1 section 10 Bahagian A count 40
+editor payload questions (picker source): 5 kertas values: 1
+section pool 200 units 76 eligible 59 placed 4
+sample unit: kertas 0 (a T26b pool MCQ: no paper code), eligible true
+(the same probe on the full-run paper 6 AFTER S3f's fill lists the placed pool questions in the editor payload too; not shown)
+
+## PoC paper 1 as murid8@demo.test (375)
+attempt shell false refusal "Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini."
+pictures seen over the questions 0 data-URL pictures 0
+
+## H-A13: archive a placed question, then Mula (375, murid7@demo.test)
+paper 6 status terbit archiving question 148 "Diberi y berubah secara songsang dengan x dan y = 12 apabila"
+Arkibkan -> 200 {"data":{"affected":1,"failed":[]},"status":"1 soalan berjaya dikemaskini."}
+paper still on the hub: false
+Mula -> 201 {"data":{"attemptId":"45ccece4-9249-4ac2-8a48-40d080cc3f11"}}
+shell true refusal -

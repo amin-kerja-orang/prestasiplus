@@ -1877,7 +1877,27 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     )
     let answered = 0
     let sawAdmin = false
+    let pictures = 0
+    let broken = 0
+    let dataUrls = 0
     for (let guard = 0; guard < 60; guard++) {
+      // B2 regression check (REQ-A-010): pictures of the sitting render (no broken image, no data: URL).
+      const imgs = page.locator('[data-testid=attempt-shell] img:visible')
+      await page
+        .waitForFunction(
+          () =>
+            [...document.querySelectorAll('[data-testid=attempt-shell] img')].every(
+              (i) => (i as HTMLImageElement).complete,
+            ),
+          undefined,
+          { timeout: 5_000 },
+        )
+        .catch(() => undefined)
+      pictures += await imgs.count()
+      broken += await imgs.evaluateAll(
+        (els) => els.filter((e) => !(e as HTMLImageElement).naturalWidth).length,
+      )
+      dataUrls += await page.locator('[data-testid=attempt-shell] img[src^="data:"]').count()
       if (
         await page
           .getByText(tag)
@@ -1894,7 +1914,10 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
       if (!(await page.getByTestId('next').isVisible())) break
       await page.getByTestId('next').click()
     }
-    observe(info, `answered ${answered} MCQ(s); admin question seen in the sitting: ${sawAdmin}`)
+    observe(
+      info,
+      `answered ${answered} MCQ(s); admin question seen in the sitting: ${sawAdmin}; pictures shown ${pictures} (broken ${broken}, data: URLs ${dataUrls})`,
+    )
     await expect(page.getByTestId('submit')).toBeVisible()
     await page.getByTestId('submit').click()
     await page.getByTestId('confirm-submit').click()
@@ -1981,6 +2004,74 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     expect(ok, 'published paper offers Tarik balik').toBe(true)
   })
 
+  /**
+   * API-ASSISTED (R1E2E-22): the Pembina Kertas picker offers only questions tagged with the paper's kertas, while the
+   * builder's section pool (`GET /api/admin/papers/{id}/sections/{sid}/pool`, T26b bank pool) offers the eligible bank
+   * units. This fills the UI-built paper from that pool over the same placement route the builder uses, then presses
+   * "Terbitkan" in the UI. Not a UI pass of the fill.
+   */
+  async function fillFromPoolAndPublish(
+    page: Page,
+    info: TestInfo,
+    key: 'paper' | 'controlPaper',
+  ): Promise<void> {
+    const st = readState(info)
+    const p = st[key]
+    test.skip(!p?.id, `Blocked: no ${key === 'paper' ? 'S3b' : 'S3d'} paper`)
+    test.skip(!!p?.published, `Not needed: the ${key} was published through the UI`)
+    await login(page, ADMIN)
+    const csrf = await csrfOf(page)
+    const get = async <T>(path: string): Promise<T> =>
+      ((await (await page.request.get(path)).json()) as { data: T }).data
+    const ed = await get<{
+      paper: { sections: { id: string; questionCount: number; questionIds: string[] }[] }
+    }>(`/api/admin/papers/${p!.id}`)
+    const sec = ed.paper.sections[0]!
+    let have = sec.questionIds.length
+    let placed = 0
+    for (let guard = 0; guard < 60 && have < sec.questionCount; guard++) {
+      const units = await get<{ questionIds: string[]; eligible: boolean; placed: boolean }[]>(
+        `/api/admin/papers/${p!.id}/sections/${sec.id}/pool?pageSize=100`,
+      )
+      const next = units.find(
+        (u) => u.eligible && !u.placed && have + u.questionIds.length <= sec.questionCount,
+      )
+      if (!next) break
+      let res = await page.request.post(`/api/admin/papers/${p!.id}/placements`, {
+        headers: { 'x-csrf-token': csrf },
+        data: { sectionId: sec.id, questionId: next.questionIds[0] },
+      })
+      // The builder's write limiter (429 RATE_LIMITED, retryAfter seconds): wait it out and retry.
+      for (let retry = 0; retry < 3 && res.status() === 429; retry++) {
+        const after =
+          ((await res.json().catch(() => ({}))) as { error?: { retryAfter?: number } }).error
+            ?.retryAfter ?? 30
+        observe(info, `placement rate-limited (429), waiting ${after}s`)
+        await page.waitForTimeout((after + 1) * 1000)
+        res = await page.request.post(`/api/admin/papers/${p!.id}/placements`, {
+          headers: { 'x-csrf-token': csrf },
+          data: { sectionId: sec.id, questionId: next.questionIds[0] },
+        })
+      }
+      expect(res.status(), `placement: ${(await res.text()).slice(0, 200)}`).toBe(201)
+      have += next.questionIds.length
+      placed++
+    }
+    observe(
+      info,
+      `API-assisted: ${placed} pool unit(s) placed; section ${have}/${sec.questionCount} questions`,
+    )
+    const ok = await publishPaper(page, info, p!.id)
+    saveState(info, { [key]: { ...p!, published: ok } })
+    expect(ok, 'the filled paper is Terbit (UI button)').toBe(true)
+  }
+
+  test('S3f API-assisted: fill the S3b K1 paper from the builder pool, then Terbitkan in the UI', async ({
+    page,
+  }, info) => {
+    await fillFromPoolAndPublish(page, info, 'paper')
+  })
+
   test('S4a pupil T4 sits the admin paper (admin MCQs with a stem picture) in Bijak SPM and submits', async ({
     page,
   }, info) => {
@@ -2009,6 +2100,12 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     const ok = await publishPaper(page, info, id)
     saveState(info, { controlPaper: { id, title, published: ok, hasAdminQuestion: true } })
     expect(ok, 'control paper published').toBe(true)
+  })
+
+  test('S3g API-assisted: fill the S3d control paper from the builder pool, then Terbitkan in the UI', async ({
+    page,
+  }, info) => {
+    await fillFromPoolAndPublish(page, info, 'controlPaper')
   })
 
   test('S4a2 pupil T4 sits the control paper (image-free admin MCQ) and submits', async ({
@@ -2467,7 +2564,17 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     )
     // Sains K2 (structured, short text): the smoke doc's reproduction paper.
     const card = page.locator('[data-testid^=paper-]', { hasText: 'Sains' }).first()
-    await expect(card, 'a Sains Kertas 2 paper on the hub').toBeVisible()
+    await page
+      .locator('[data-testid^=paper-]')
+      .first()
+      .waitFor({ state: 'visible', timeout: 10_000 })
+      .catch(() => undefined)
+    // BASE-79: the hub no longer lists the PoC papers to a pupil without a past sitting (R1E2E-14), so the smoke doc's
+    // reproduction paper is gone; self-mark itself is covered by S4b on an admin paper.
+    test.skip(
+      !(await card.isVisible().catch(() => false)),
+      'Blocked: no Sains Kertas 2 paper on the hub (PoC papers no longer listed); self-mark is covered by S4b',
+    )
     await card.locator('[data-testid^=open-]').click()
     await expect(page.getByTestId('bijak-cover')).toBeVisible()
     if (await page.getByTestId('resume-choice').isVisible()) {

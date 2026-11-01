@@ -1,0 +1,22 @@
+[mobile] SKIP B-02 Bijak text answers can be self-marked (stepper with Simpan markah)
+    observed: hub cards: 
+    skip: Blocked: no Sains Kertas 2 paper on the hub (PoC papers no longer listed); self-mark is covered by S4b
+[mobile] PASS B-05 Bijak "Cuba lagi" on the result starts a fresh sitting
+    observed: attempt used: 6002c998-f8da-45b4-bbee-455c36b817b7
+    observed: "Lihat semakan lepas" links on the result: 0
+    observed: old attempt 6002c998-f8da-45b4-bbee-455c36b817b7; after Cuba lagi: /spm/bijak/percubaan/826fa7b2-7263-45b9-8f98-6970ed6ce465 (POST 201)
+[tablet] SKIP B-02 Bijak text answers can be self-marked (stepper with Simpan markah)
+    observed: hub cards: 
+    skip: Blocked: no Sains Kertas 2 paper on the hub (PoC papers no longer listed); self-mark is covered by S4b
+[tablet] PASS B-05 Bijak "Cuba lagi" on the result starts a fresh sitting
+    observed: attempt used: 4f9c0854-7959-4fbe-8bed-5b50c5b9faa1
+    observed: "Lihat semakan lepas" links on the result: 0
+    observed: old attempt 4f9c0854-7959-4fbe-8bed-5b50c5b9faa1; after Cuba lagi: /spm/bijak/percubaan/c2fbf631-b199-43ef-b6c7-65d59249b626 (POST 201)
+[desktop] SKIP B-02 Bijak text answers can be self-marked (stepper with Simpan markah)
+    observed: hub cards: 10 kertas | Latihan Demo Matematik Bank Soalan (Contoh) Kertas 1 6 markah 20 minit | Belum cuba | R1E2E b79run1 mobile kertas Kertas 1 40 markah 90 minit 2026 Sedang di | Sedang dijawab | R1E2E b79run1 mobile kawalan kertas Kertas 1 40 markah 90 minit 2026 1 | 14 / 40 | R1E2E b79run1 mobile kertas 2 berstruktur Kertas 2 100 markah 150 mini | Sedang dijawab | R1E2E b79run1 tablet kertas Kertas 1 40 markah 90 minit 2026 Sedang di | Sedang dijawab | R1E2E b79run1 tablet kawalan kertas Kertas 1 40 markah 90 minit 2026 1 | 18 / 40 | R1E2E b79run1 tablet kertas 2 berstruktur Kertas 2 100 markah 150 mini | Sedang dijawab | R1E2E b79run1 desktop kertas Kertas 1 40 markah 90 minit 2026 Sedang d | Sedang dijawab | R1E2E b79run1 desktop kawalan kertas Kertas 1 40 markah 90 minit 2026  | 22 / 40 | R1E2E b79run1 desktop kertas 2 berstruktur Kertas 2 100 markah 150 min | Sedang dijawab
+    skip: Blocked: no Sains Kertas 2 paper on the hub (PoC papers no longer listed); self-mark is covered by S4b
+[desktop] PASS B-05 Bijak "Cuba lagi" on the result starts a fresh sitting
+    observed: attempt used: c00beded-7039-4768-8c13-961487aaf642
+    observed: "Lihat semakan lepas" links on the result: 0
+    observed: old attempt c00beded-7039-4768-8c13-961487aaf642; after Cuba lagi: /spm/bijak/percubaan/2cad8dd7-dc40-4d35-9658-7406f772b877 (POST 201)
+{"mobile":{"skipped":1,"passed":1},"tablet":{"skipped":1,"passed":1},"desktop":{"skipped":1,"passed":1}}
