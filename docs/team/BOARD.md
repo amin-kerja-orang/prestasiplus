@@ -479,7 +479,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 ### Head audit 2026-11-01 15:00 UTC (superseded)
 This manual table has been removed because it went stale. **The only current source for team A heads and states is the auto table between the `AUDIT:BEGIN/END` markers at the end of this file.** It is regenerated from `git ls-remote` every cycle.
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 17:53 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 17:54 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -487,7 +487,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/admin-list-perf | 2a8ab6744 | READY (A4, BASE-105): REQ-B-050 + 0106 + 0107 + exact counts; pre-review Minors fixed (status total ?? 0, no-slash kertas change documented, migration order + drift notes); B2 + B3 + DevOps |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
 | r1/builder-search-perf | e1141dbbe | ON HOLD: T48 builder-parity spec goes red (21 tests, "Sila pilih bab.") once merged with H-A18; A3 is fixing the giveBab fixture on T48, then restacking; do not merge until the new head |
-| r1/docs-credential-scrub | 01a55110a | READY (A1a, BASE-105, docs only): demo password literal removed from docs/ (26 files) + one throwaway DB URL; AKAUN-DEMO points to the seed constant; B2 |
+| r1/docs-credential-scrub | 01a55110a | READY (A1a, BASE-105, docs only): demo password literal removed from docs/ (26 files) + one throwaway DB URL; AKAUN-DEMO points to the seed constant; needs B2 + B3 (credentials). A repo-wide secret scan (read-only) is running |
 | r1/e05b-l1-spec | 4b9eac57a | READY (A1b, BASE-105): negative control added; 12/12; B2 + B3 |
 | r1/ha17-ac-coverage | 21b87327e | docs, auto-refreshed by A3 H-A27 (coverage 124/176) |
 | r1/ha18-gate-facts | fc409ae16 | READY (A2, BASE-105): H-A18 + REQ-B-017/037 + D99 + pre-review fixes (M2 held-issues helper on both edit paths; m1 gate-issue codes; deviation row); workflow 296/296; conformance 409/409; B2 + B3 |
@@ -505,7 +505,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/req-b-033 | b5e713fa4 | READY (A4): deviation row added; chain 4th; B2 |
 | r1/req-c-020 | 8733a3785 | READY (A4): deviation row added; chain 3rd; B2 |
 | r1/req-c012-a2 | dc3bfae88 | READY (A2, on H-A18 fc409ae1): M1 fixed (edit-as-draft keeps the import hold); 298/298; merges after H-A18; B3 re-check |
-| r1/reqa018-paper-servability-route | d5e57160e | WAITING (A1b): re-merging the new T45 954614c6; then READY |
+| r1/reqa018-paper-servability-route | 2f5a85e7c | WAITING (A1b): re-merging the new T45 954614c6; then READY |
 | r1/reqb032-pinned-rule | a2cb5bb42 | READY (A2+A3, BASE-105): spec title + R1-limitation row (takedown vs running sitting, KIV R2); 6/6; B2 + B3 |
 | r1/reqb049-report-visible | 9ece8d76d | READY (A1b, BASE-105): pre-review Minors fixed (type from the live version, spec titles, real level codes); 316/316; B2 + B3 |
 | r1/reqb052-archived-edit | 171964317 | READY (A3; contains BASE-105 + H-A18 fc409ae1 + B-032 a2cb5bb4): full verification 2336 pass, 0 failures of its own (1 known base red); order H-A18 → B-032 → B-052; B2 + B3 |
