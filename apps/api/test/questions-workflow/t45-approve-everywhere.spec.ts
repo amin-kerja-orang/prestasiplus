@@ -104,4 +104,45 @@ describe('AC-05.3 Terbitkan: notice when unservable somewhere, refused when unse
     await questions.update(id, fixed as never, { userId: c.admin.userId, role: 'admin' })
     expect((await wf.transition(id, 'approved', actorOf(c.admin))).to).toBe('approved')
   })
+
+  // --- T45-L1 (B3): the check lives at the shared approve point, so the other two doors are covered too -------------------------
+
+  const tableFill = (label: string) => ({
+    questionType: 'essay',
+    questionText: label,
+    cognitiveLevel: 'mengaplikasi',
+    kertas: '2',
+    parts: [{ label: '(a)', prompt: { ms: 'Isi jadual' }, mode: 'table_fill', marks: 2, key: { kind: 'mapping', cells: { r1: ['x'] } } }],
+  })
+
+  it('bulk approve: a question unservable everywhere is skipped with the BM reasons and nothing changes; a servable one in the same call is approved', async () => {
+    const bad = await review(tableFill('Isikan jadual melalui tindakan pukal.'))
+    const good = await review({ questionType: 'mcq', options: ['4', '5', '6', '7'], correctAnswer: 1, questionText: 'Soalan pukal yang boleh dipaparkan.' })
+    const before = await events(bad)
+    const res = await questions.bulkAction('approved', [bad, good], { userId: c.admin.userId, role: 'admin' })
+    expect(res.ids).toEqual([good])
+    expect(res.failed).toHaveLength(1)
+    expect(res.failed[0]).toMatchObject({ id: bad, code: 'VALIDATION_ERROR' })
+    expect(Object.keys(res.failed[0]!.fields)).toEqual(expect.arrayContaining(['servability.simulasi_paper', 'servability.databank']))
+    expect(res.failed[0]!.fields['servability.databank']!.length).toBeGreaterThan(10)
+    expect(await t.bank.getStatus(bad)).toMatchObject({ status: 'review', liveVersionNo: null })
+    expect(await events(bad)).toBe(before)
+    expect(await repo.get(bad, 'live')).toBeNull()
+    expect(await repo.get(good, 'live')).not.toBeNull()
+  })
+
+  it('created already approved: refused with the same 422 and no question is left behind', async () => {
+    const rows = async () => Number((await t.db.query<{ n: string }>(`select count(*)::text n from questions`))[0]!.n)
+    const before = await rows()
+    const e = await failure(questions.create({ ...base(), ...tableFill('Isikan jadual semasa dicipta sebagai diluluskan.'), status: 'approved' } as unknown as QuestionCreateInput, { userId: c.admin.userId, role: 'admin' }))
+    expect(e.code).toBe('VALIDATION_ERROR')
+    expect(e.details).toMatchObject({ gate: 'approve', servability: true })
+    expect(Object.keys(e.fields ?? {})).toContain('servability.databank')
+    expect(await rows()).toBe(before) // the transaction rolled back
+  })
+
+  it('created already approved and servable: it is created and live', async () => {
+    const view = await questions.create({ ...base(), questionType: 'mcq', options: ['4', '5', '6', '7'], correctAnswer: 1, questionText: 'Soalan diluluskan semasa dicipta yang boleh dipaparkan.', cognitiveLevel: 'mengaplikasi', kertas: '1', status: 'approved' } as unknown as QuestionCreateInput, { userId: c.admin.userId, role: 'admin' })
+    expect(await repo.get(view.id, 'live')).not.toBeNull()
+  })
 })

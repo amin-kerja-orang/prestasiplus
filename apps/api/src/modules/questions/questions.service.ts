@@ -32,6 +32,8 @@ import { MAX_SP_NODES } from './publish-gate'
 import { GATES } from './workflow/lifecycle/gates'
 import type { QuestionGateData } from './workflow/ports'
 import { GroupMembers } from './group-members'
+import { assertServableSomewhere } from './serving/approval-guard'
+import { ServabilityService } from './serving/servability.service'
 import { QuestionsRepository, type NewGroup, type NewStimulus, type VersionDraft } from './questions.repository'
 import { draftsFromParts, MAX_PART_DEPTH, mapOptionImageIds, referencedIds, versionTypeOf } from './tree'
 import { isLeaf, leavesOf } from './grading'
@@ -219,6 +221,7 @@ export class QuestionsService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(GroupMembers) private readonly groupMembers: GroupMembers,
+    @Inject(ServabilityService) private readonly servability: ServabilityService,
   ) {}
 
   // --- admin (Admin Pusat) ----------------------------------------------------------------------
@@ -413,6 +416,8 @@ export class QuestionsService {
         }
         await this.repo.setVersionStatus(id, v.versionNo, 'approved', { publishedAt: this.clock.now() })
         await this.repo.setLiveVersion(id, v.versionNo)
+        // AC-05.3 (T45-L1): the shared approve point; a question no activity can serve rolls the transition back.
+        await assertServableSomewhere(this.servability, id)
       } else if (v.status === 'approved') {
         // Taking the live version down (approved -> archived) ends its serving at once.
         await this.repo.setVersionStatus(id, v.versionNo, status, { archiveReason: 'withdrawn' })
@@ -731,6 +736,8 @@ export class QuestionsService {
             }
           : {}),
       })
+      // AC-05.3 (T45-L1): created already approved is the second approve point; same check, same rollback.
+      if (status === 'approved') await assertServableSomewhere(this.servability, String(created))
       return created
     }, TX)
     const record = await this.repo.get(id, 'latest')
