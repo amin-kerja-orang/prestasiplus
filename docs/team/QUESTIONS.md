@@ -41,3 +41,20 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
 - Keep option (1): a pupil may report a question they can open, including before the first submit.
 - It is narrowed by `getVisible`: approved, structured, level allowed (REQ-B-049).
 - The daily cap and admin review stay (D98).
+
+## Q12 (OPEN, asked 2026-11-01 20:00 UTC): practice rewards in Latih Tubi / Databank / Ulang Kaji (R1-10.1)
+- AC R1-10.1 (v3-bijak-spm-scope.md:137) says "no amount is assumed", but V2's PracticeRecorder.php is not in the repo.
+- Pinned: Bijak SPM paper submit pays 2 syiling + 10 XP per mark in V2 (BIJAK-SPM-cloud.md:347), and ours matches.
+- Not pinned:
+  - the V2 practice rate;
+  - the kombo step;
+  - whether practice XP reaches the wallet.
+- Ours today:
+  - practice pays 1 syiling per correct, which matches the latest observed V1 ledger (flat_quiz_reward = 1);
+  - 10 points per correct are stored on the session but NOT added to wallet XP;
+  - the streak is touched once a day.
+- Evidence: A1b findings (scratchpad a1b/r1-10-1-findings.md); spec branch r1/r1-10-1-practice-spec.
+- **Q12a:** practice syiling rate → recommended: keep 1 per correct (the only observed amount); 2 would be assumed.
+- **Q12b:** practice XP into the wallet → recommended: credit it, like the paper path (consistent; small change).
+- **Q12c:** can the user supply V2 PracticeRecorder.php or .cloud observations to close the kombo step?
+
