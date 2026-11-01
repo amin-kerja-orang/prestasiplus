@@ -1,0 +1,256 @@
+import 'reflect-metadata'
+
+import { readFileSync, writeFileSync } from 'node:fs'
+import { mkdtemp } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
+import { Test } from '@nestjs/testing'
+import type { INestApplication } from '@nestjs/common'
+import request from 'supertest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+
+import { defineAppModule } from '../../src/app.module'
+import { configureApp } from '../../src/configure-app'
+import { featureModules } from '../../src/modules'
+import { ServabilityReadsService } from '../../src/modules/questions/serving'
+import { OverviewCache } from '../../src/modules/questions/serving/overview-cache'
+import pg from 'pg'
+
+/**
+ * T54 perf harness (local, throwaway Postgres only): the 11 paths of the R1 plan against a database that already holds ~400k questions
+ * (built by the SQL scripts in the scratchpad, see docs/qa/r1-perf-400k.md). It boots the real application in-process (every feature
+ * module) on `PERF_DB_URL` and measures each endpoint over HTTP (supertest): 2 warm-up calls, then PERF_RUNS (20) timed calls.
+ *
+ *   TEST_DATABASE_URL=postgresql://perf:perf@127.0.0.1:55433/postgres PERF_DB_URL=postgresql://perf:perf@127.0.0.1:55433/perf400k \
+ *     PERF_OUT=/path/results.json npx vitest run test/perf-t54/perf-400k.spec.ts
+ */
+vi.setConfig({ testTimeout: 3_600_000, hookTimeout: 600_000 })
+
+const DB_URL = process.env.PERF_DB_URL ?? ''
+const RUNS = Number(process.env.PERF_RUNS ?? 20)
+const OUT = process.env.PERF_OUT ?? ''
+const ONLY = process.env.PERF_ONLY ?? ''
+
+interface Result {
+  id: string
+  path: string
+  endpoint: string
+  runs: number
+  cold_ms: number
+  p50_ms: number
+  p95_ms: number
+  min_ms: number
+  max_ms: number
+  status: number
+  rows: string
+  notes: string
+}
+const results: Result[] = []
+
+const pct = (sorted: number[], p: number): number => sorted[Math.min(sorted.length - 1, Math.ceil(p * sorted.length) - 1)] ?? 0
+const r1 = (n: number): number => Math.round(n * 10) / 10
+
+interface Client {
+  get(url: string): request.Test
+  post(url: string, body?: unknown): request.Test
+}
+
+describe.runIf(DB_URL !== '')('T54 performance at ~400k questions', () => {
+  let app: INestApplication
+  let pupil: Client
+  let admin: Client
+  let db: pg.Pool
+
+  async function login(identifier: string): Promise<Client> {
+    const agent = request.agent(app.getHttpServer())
+    const res = await agent.post('/api/auth/login').send({ identifier, password: 'Demo1234', remember: false })
+    expect(res.status, JSON.stringify(res.body)).toBe(200)
+    const csrf = res.body.data.csrf as string
+    return { get: (u) => agent.get(u), post: (u, b) => (b === undefined ? agent.post(u).set('X-CSRF-Token', csrf) : agent.post(u).set('X-CSRF-Token', csrf).send(b as object)) }
+  }
+
+  /** Times `fn` once cold, then 2 warm-ups, then `runs` timed calls. `describeRes` -> rows text. */
+  async function measure(
+    id: string,
+    path: string,
+    endpoint: string,
+    fn: (i: number) => Promise<request.Response>,
+    opts: { rows?: (body: any) => string; notes?: string; runs?: number; okStatus?: number[] } = {},
+  ): Promise<void> {
+    if (ONLY && !ONLY.split(',').includes(id)) return
+    const runs = opts.runs ?? RUNS
+    const ok = opts.okStatus ?? [200, 201]
+    const t0 = performance.now()
+    let res = await fn(-1)
+    const cold = performance.now() - t0
+    expect(ok, `${id} cold: ${res.status} ${JSON.stringify(res.body).slice(0, 300)}`).toContain(res.status)
+    for (let w = 0; w < 2; w++) res = await fn(-2 - w)
+    const times: number[] = []
+    for (let i = 0; i < runs; i++) {
+      const s = performance.now()
+      res = await fn(i)
+      times.push(performance.now() - s)
+      expect(ok, `${id} run ${String(i)}: ${res.status} ${JSON.stringify(res.body).slice(0, 300)}`).toContain(res.status)
+    }
+    const sorted = [...times].sort((a, b) => a - b)
+    const r: Result = {
+      id, path, endpoint, runs, cold_ms: r1(cold), p50_ms: r1(pct(sorted, 0.5)), p95_ms: r1(pct(sorted, 0.95)), min_ms: r1(sorted[0]!), max_ms: r1(sorted[sorted.length - 1]!),
+      status: res.status, rows: opts.rows ? opts.rows(res.body) : '', notes: opts.notes ?? '',
+    }
+    results.push(r)
+    process.stderr.write(`[perf] ${id} ${path}: cold ${r.cold_ms} p50 ${r.p50_ms} p95 ${r.p95_ms} max ${r.max_ms} ms (${r.rows}) ${r.notes}\n`)
+    if (OUT) writeFileSync(OUT, JSON.stringify(results, null, 1))
+  }
+
+  beforeAll(async () => {
+    const env: Record<string, string> = {
+      DATABASE_URL: DB_URL, COOKIE_SECURE: 'false', SESSION_SECRET: 'perf-secret-0123456789abcdef', LEGACY_BCRYPT_DUMMY_COST: '4', LOGIN_FAILURE_FLOOR_MS: '0',
+      PUBLIC_BASE_URL: 'https://app.example.test', THROTTLE_GLOBAL_PER_MINUTE: '100000', FILE_STORAGE_DIR: await mkdtemp(join(tmpdir(), 'pp-perf-')),
+    }
+    // every THROTTLE_* of .env.api.example is lifted: the harness fires 20+ calls a minute from one address
+    try {
+      const text = readFileSync(join(__dirname, '../../../../.env.api.example'), 'utf8')
+      for (const m of text.matchAll(/^#? *(THROTTLE_[A-Z0-9_]+)=/gm)) env[m[1]!] = '100000'
+    } catch { /* optional */ }
+    env.LOG_LEVEL = process.env.PERF_LOG ?? 'silent'
+    Object.assign(process.env, env)
+    const moduleRef = await Test.createTestingModule({ imports: [defineAppModule(featureModules)] }).compile()
+    app = moduleRef.createNestApplication({ bufferLogs: false })
+    configureApp(app)
+    await app.init()
+    db = new pg.Pool({ connectionString: DB_URL, max: 2 })
+    const pupilId = (await db.query(`select id from users where email = 'murid.t4.e2e@example.test'`)).rows[0].id
+    await db.query(`insert into comp_students (user_id, package_expires_on) values ($1, '2030-12-31') on conflict do nothing`, [pupilId])
+    pupil = await login('murid.t4.e2e@example.test')
+    admin = await login('admin.pusat.e2e@example.test')
+  })
+  afterAll(async () => {
+    if (OUT) writeFileSync(OUT, JSON.stringify(results, null, 1))
+    await db?.end()
+    await app?.close()
+  })
+
+  const n = (a: unknown) => (Array.isArray(a) ? String(a.length) : '')
+
+  it('1 login "N+ Soalan"', async () => {
+    await measure('P1', 'Login count "N+ Soalan"', 'GET /api/public/stats', () => request(app.getHttpServer()).get('/api/public/stats'), {
+      rows: (b) => JSON.stringify(b.data).slice(0, 120),
+    })
+  })
+
+  it('2 practice and Databank cards per subject', async () => {
+    await measure('P2a', 'Databank cards per subject', 'GET /api/spm/databank', () => pupil.get('/api/spm/databank'), { rows: (b) => `${n(b.data)} subjects` })
+    await measure('P2b', 'Practice cards per subject', 'GET /api/practice/subjects', () => pupil.get('/api/practice/subjects'), { rows: (b) => `${n(b.data)} subjects` })
+    await measure('P2c', 'Latih Tubi SPM cards', 'GET /api/spm/latih-tubi', () => pupil.get('/api/spm/latih-tubi'))
+  })
+
+  it('3-4 Latih Tubi SPM draw and Databank draw', async () => {
+    let u = 1
+    const start = (body: Record<string, unknown>) => pupil.post('/api/practice/sessions', { ...body, clientUuid: `00000000-0000-4000-8000-${String(Date.now()).padStart(8, '0').slice(-8)}${String(u++).padStart(4, '0')}` })
+    await measure('P3', 'Latih Tubi SPM draw (40, the MATH target)', 'POST /api/practice/sessions mode=latih_tubi MATH', () => start({ mode: 'latih_tubi', subjectCode: 'MATH', count: 40 }), { rows: (b) => `${n(b.data?.questions)} questions` })
+    await measure('P4', 'Databank draw (20)', 'POST /api/practice/sessions mode=past_year MATH', () => start({ mode: 'past_year', subjectCode: 'MATH', count: 20 }), { rows: (b) => `${n(b.data?.questions)} questions` })
+  })
+
+  it('5 Bab chapter page', async () => {
+    let chapterId = ''
+    await measure('P5a', 'Bab (chapter) page', 'GET /api/practice/chapter-subjects/MATH', () => pupil.get('/api/practice/chapter-subjects/MATH'), {
+      rows: (b) => { chapterId = String(b.data?.chapters?.[0]?.id ?? b.data?.levels?.[0]?.chapters?.[0]?.id ?? ''); return `chapters ${JSON.stringify(b.data).length} bytes` },
+    })
+    if (!chapterId) {
+      const r = await db.query(`select c.id from chapters c join subjects s on s.id=c.subject_id where s.code='MATH' and c.education_level_id=10 order by c.id limit 1`)
+      chapterId = String(r.rows[0].id)
+    }
+    let u = 5000
+    await measure('P5b', 'Bab chapter session start (20)', 'POST /api/practice/sessions mode=chapter', () => pupil.post('/api/practice/sessions', { mode: 'chapter', chapterId, count: 20, clientUuid: `00000000-0000-4000-8000-${String(Date.now()).slice(-8)}${String(u++).padStart(4, '0')}` }), {
+      rows: (b) => `${n(b.data?.questions)} questions`,
+    })
+  })
+
+  it('6 Simulasi Kuiz random (20)', async () => {
+    await measure('P6', 'Simulasi Kuiz random (20)', 'POST /api/bijak/kuiz/sessions MATH', () => pupil.post('/api/bijak/kuiz/sessions', { subject: 'MATH', count: 20 }), { rows: (b) => `${n(b.data?.items)} items` })
+    await measure('P6b', 'Simulasi Kuiz random, all subjects (20)', 'POST /api/bijak/kuiz/sessions (no subject)', () => pupil.post('/api/bijak/kuiz/sessions', { count: 20 }), { rows: (b) => `${n(b.data?.items)} items` })
+  })
+
+  it('7 Jana Kertas generate on a Disahkan blueprint', async () => {
+    await measure('P7', 'Jana Kertas generate (3472/2 Disahkan)', 'POST /api/bijak/papers/generate ADDMATH k2', () => pupil.post('/api/bijak/papers/generate', { subject: process.env.PERF_JANA_SUBJECT ?? 'ADDMATH', kertas: 2 }), {
+      rows: (b) => JSON.stringify(b.data ?? b.error).slice(0, 100), okStatus: [200, 201],
+    })
+  })
+
+  it('8 admin question list page 1 with the T47 filters', async () => {
+    await measure('P8a', 'Admin list page 1, no filter', 'GET /api/questions?page=1&pageSize=20', () => admin.get('/api/questions?page=1&pageSize=20'), { rows: (b) => `total ${String(b.meta?.totalItems)}` })
+    await measure('P8b', 'Admin list page 1, T47 filters', 'GET /api/questions?tahun=2023&negeri=sbp&kertas=2&jenis=percubaan', () => admin.get('/api/questions?page=1&pageSize=20&tahun=2023&negeri=sbp&kertas=2&jenis=percubaan'), { rows: (b) => `total ${String(b.meta?.totalItems)}` })
+    for (const [k, q] of [['tahun', 'tahun=2023'], ['negeri', 'negeri=sbp'], ['kertas', 'kertas=2'], ['jenis', 'jenis=percubaan']] as const)
+      await measure('P8b-' + k, 'Admin list page 1, ' + k + ' only', 'GET /api/questions?' + q, () => admin.get('/api/questions?page=1&pageSize=20&' + q), { rows: (b) => `total ${String(b.meta?.totalItems)}`, runs: 3, okStatus: [200, 500] })
+    await measure('P8c', 'Admin list page 1, subject + level + status', 'GET /api/questions?subjectId=3&educationLevelId=10&status=approved', () => admin.get('/api/questions?page=1&pageSize=20&subjectId=3&educationLevelId=10&status=approved'), { rows: (b) => `total ${String(b.meta?.totalItems)}` })
+    await measure('P8d', 'Admin list page 1, text search', 'GET /api/questions?search=nombor 1234', () => admin.get('/api/questions?page=1&pageSize=20&search=nombor%201234'), { rows: (b) => `total ${String(b.meta?.totalItems)}` })
+  })
+
+  it('9 Studio stimulus lists', async () => {
+    await measure('P9a', 'Studio stimulus list page 1', 'GET /api/stimuli?page=1', () => admin.get('/api/stimuli?page=1&pageSize=20'), { rows: (b) => `total ${String(b.meta?.totalItems)}` })
+    await measure('P9b', 'Studio stimulus-group list page 1', 'GET /api/stimulus-groups?page=1', () => admin.get('/api/stimulus-groups?page=1&pageSize=20'), { rows: (b) => `total ${String(b.meta?.totalItems)}` })
+    await measure('P9c', 'Studio stimulus list, status=served + search', 'GET /api/stimuli?status=served&q=bahan', () => admin.get('/api/stimuli?page=1&pageSize=20&status=served&q=bahan'), { rows: (b) => `total ${String(b.meta?.totalItems)}` })
+    await measure('P9d', 'Studio group list, subject filter + status', 'GET /api/stimulus-groups?subjectId=3&status=served', () => admin.get('/api/stimulus-groups?page=1&pageSize=20&subjectId=3&status=served'), { rows: (b) => `total ${String(b.meta?.totalItems)}` })
+  })
+
+  it('10 builder candidates / search', async () => {
+    const mk = await admin.post('/api/admin/papers', { subject: process.env.PERF_JANA_SUBJECT ?? 'ADDMATH', kertas: 2 })
+    expect(mk.status, JSON.stringify(mk.body)).toBe(201)
+    const paperId = mk.body.data.id as string
+    const ed = await admin.get(`/api/admin/papers/${paperId}`)
+    const sid = ed.body.data.paper.sections[0].id as string
+    await measure('P10a', 'Builder candidates (section pool, page 1 of 100)', 'GET /api/admin/papers/:id/sections/:sid/pool?pageSize=100', () => admin.get(`/api/admin/papers/${paperId}/sections/${sid}/pool?pageSize=100`), { rows: (b) => `total ${String(b.meta?.totalItems)}` })
+    await measure('P10b', 'Builder candidates, search "Cari soalan"', 'GET .../pool?q=nombor', () => admin.get(`/api/admin/papers/${paperId}/sections/${sid}/pool?pageSize=100&q=nombor`), { rows: (b) => `total ${String(b.meta?.totalItems)}` })
+    await measure('P10c', 'Builder Pratonton kolam', 'GET /api/admin/papers/pool-preview?subject&kertas=2', () => admin.get(`/api/admin/papers/pool-preview?subject=${process.env.PERF_JANA_SUBJECT ?? 'ADDMATH'}&kertas=2`), { rows: (b) => `${String(b.data?.verdict)} published ${String(b.data?.publishedTotal)}` })
+  })
+
+  it('11 servability overview, cold and warm (H-A21 cache)', async () => {
+    if (ONLY && !ONLY.includes('P11')) return
+    const COLD = Number(process.env.PERF_COLD_RUNS ?? 5)
+    const cache = app.get(OverviewCache) as any
+    const reads = app.get(ServabilityReadsService) as any
+    // warm (served from the cache): the first call computes
+    await measure('P11a', 'Servability overview, warm (cache hit)', 'GET /api/admin/servability/overview', () => admin.get('/api/admin/servability/overview'), { rows: (b) => `bank ${String(b.data?.bank)}` })
+    // cold: the compute itself, 5 runs, directly on the service (the cache is single-flight, so HTTP cold = this plus HTTP overhead)
+    const cold: Record<string, number[]> = {}
+    const step = async (name: string, fn: () => Promise<unknown>) => { const s = performance.now(); await fn(); (cold[name] ??= []).push(performance.now() - s) }
+    for (let i = 0; i < (ONLY.includes('P11b') && !ONLY.includes('P11c') ? COLD : ONLY ? 0 : COLD); i++) {
+      await step('overview() total (sequential, as shipped)', () => reads.overview())
+    }
+    // REQ-B-022(a): the pieces of the sequential tail, alone and as one Promise.all
+    const live = { status: 'approved', active: true } as const
+    const filterOf = (await import('../../src/modules/questions/serving/filters')).filterOf
+    for (let i = 0; i < COLD; i++) {
+      await step('head: subjectsListed', () => reads.subjectsListed())
+      await step('head: spmDraw', () => reads.spmDraw())
+      await step('head: databankLaneTotal', () => reads.databankLaneTotal())
+      await step('head: paperLaneCard', () => reads.paperLaneCard())
+      await step('tail: questionsOnPublishedPapers (ids only)', async () => { const ids = await reads.questionsOnPublishedPapers(); process.stderr.write(`[perf] questions on published papers: ${String(ids.length)}\n`) })
+      await step('tail: bab groupCount', () => reads.questions.groupCount('chapter', { ...filterOf('bab'), ...live }))
+      await step('tail: kuiz count', () => reads.questions.count({ ...filterOf('simulasi_kuiz'), ...live }))
+      await step('tail: questionsOnPublishedPapers + per-question reports', async () => {
+        const on = await reads.questionsOnPublishedPapers()
+        const chunks = (a: string[]) => { const o: string[][] = []; for (let k = 0; k < a.length; k += 100) o.push(a.slice(k, k + 100)); return o }
+        for (const part of chunks(on)) await reads.servability.reports(part)
+      })
+      await step('tail: janaEligible', () => reads.janaEligible())
+      await step('tail: all four as ONE Promise.all', async () => {
+        await Promise.all([
+          reads.questions.groupCount('chapter', { ...filterOf('bab'), ...live }),
+          reads.questions.count({ ...filterOf('simulasi_kuiz'), ...live }),
+          (async () => { const on = await reads.questionsOnPublishedPapers(); for (let k = 0; k < on.length; k += 100) await reads.servability.reports(on.slice(k, k + 100)) })(),
+          reads.janaEligible(),
+        ])
+      })
+      await step('head: bank count', () => reads.questions.count(live))
+      await step('head: 4-way Promise.all (subjectsListed, spmDraw, databankLaneTotal, paperLaneCard)', () => Promise.all([reads.subjectsListed(), reads.spmDraw(), reads.databankLaneTotal(), reads.paperLaneCard()]))
+    }
+    // HTTP cold: invalidate-and-wait is stale-while-revalidate (serves the old value), so the cold HTTP call is a fresh app; record via a brand-new slot
+    void cache
+    const lines = Object.entries(cold).map(([k, v]) => { const s = [...v].sort((a, b) => a - b); return { step: k, runs: v.length, p50_ms: r1(pct(s, 0.5)), max_ms: r1(s[s.length - 1]!) } })
+    process.stderr.write(`[perf] overview cold steps ${JSON.stringify(lines, null, 1)}\n`)
+    results.push({ id: 'P11b', path: 'Servability overview, cold compute', endpoint: 'ServabilityReadsService.overview()', runs: 5, cold_ms: 0, p50_ms: lines[0]!.p50_ms, p95_ms: lines[0]!.max_ms, min_ms: 0, max_ms: lines[0]!.max_ms, status: 200, rows: '', notes: JSON.stringify(lines) })
+    if (OUT) writeFileSync(OUT, JSON.stringify(results, null, 1))
+  })
+})
