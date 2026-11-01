@@ -17,6 +17,7 @@ import type {
   BijakBuilderEditor,
   BijakBuilderPaper,
   BijakBuilderPaperSummary,
+  BijakBuilderPoolUnit,
   BijakBuilderPreview,
   BijakBuilderQuestion,
   BijakBuilderQuestionStatus,
@@ -30,6 +31,8 @@ import type {
   PaperEditorData,
   PaperPatch,
   PublishPaperResult,
+  SectionPoolPage,
+  SectionPoolQuery,
   QuestionStatus,
   ReviewQuestion,
 } from '../domain/admin-types'
@@ -111,6 +114,7 @@ export type BijakAdminMethods = Omit<
   | 'unpublishPaper'
   | 'deletePaper'
   | 'previewQuestions'
+  | 'sectionPool'
   | 'listBlueprints'
   | 'listIntakeBatches'
   | 'getIntakeBatch'
@@ -386,6 +390,36 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
 
   async deletePaper(id: string): Promise<void> {
     await this.send<unknown>('DELETE', `/api/admin/papers/${enc(id)}`)
+  }
+
+  /**
+   * The builder's section pool: the same eligibility as the Set Builder bank (a K1 paper's MCQs are
+   * eligible although their `kertas` is 0, so the editor data alone cannot list them, REQ-B-042).
+   */
+  async sectionPool(id: string, sectionId: string, query: SectionPoolQuery = {}): Promise<SectionPoolPage> {
+    const qs = new URLSearchParams()
+    if (query.q?.trim()) qs.set('q', query.q.trim())
+    qs.set('page', String(query.page ?? 1))
+    qs.set('pageSize', String(query.pageSize ?? 20))
+    try {
+      const res = await this.client.request<{
+        data: BijakBuilderPoolUnit[]
+        meta?: { totalItems?: number; totalPages?: number }
+      }>('GET', `/api/admin/papers/${enc(id)}/sections/${enc(sectionId)}/pool?${qs.toString()}`, { raw: true })
+      const units = (res?.data ?? []).map((u) => ({
+        ...(u.groupId ? { groupId: u.groupId } : {}),
+        ...(u.stimulus ? { stimulus: u.stimulus } : {}),
+        questionIds: u.questionIds,
+        questions: u.questions.map(questionFromWire),
+        marks: u.marks,
+        eligible: u.eligible,
+        reasons: u.reasons,
+        placed: u.placed,
+      }))
+      return { units, total: res?.meta?.totalItems ?? units.length, totalPages: res?.meta?.totalPages ?? 1 }
+    } catch (e) {
+      throw toBijakError(e)
+    }
   }
 
   async previewQuestions(ids: string[]) {
@@ -685,7 +719,10 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
   ): Promise<{ ok: true; batch: IntakeBatch } | { ok: false; issues: IntakeIssue[] }> {
     const review = await this.send<WireReview>('GET', `/api/intake/batches/${enc(id)}/review`)
     if (review.issues.length > 0) return { ok: false, issues: issuesFromWire(review.issues) }
-    const batch = await this.getIntakeBatch(id)
+    // The server status stays ready_for_review; drop the wire status/label so the badge shows the session's "Semakan".
+    const batch = { ...(await this.getIntakeBatch(id)) }
+    delete batch.batchStatus
+    delete batch.statusLabel
     const at = Date.now()
     return { ok: true, batch: { ...batch, status: 'semakan', submittedAt: at, updatedAt: at } }
   }

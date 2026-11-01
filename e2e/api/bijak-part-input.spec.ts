@@ -1,6 +1,6 @@
 /**
  * @api Bijak SPM structured answers against the REAL API (AZ-17, #78 78-09). A Kertas 2 paper of the
- * PoC seed is opened and started; its leaf parts render through `PartInput.vue`. Every leaf kind the
+ * e2e seed (T26c fixture) is opened and started; its leaf parts render through `PartInput.vue`. Every leaf kind the
  * server sends is a `BijakAttemptLeafKind` (the PKSK leaf `pksk_choice` is never served to Bijak), so
  * no part may show the "not yet available" notice unless the paper really has a `table_fill` leaf.
  *
@@ -14,6 +14,7 @@ import { account, expectNoHScroll } from './helpers'
 test.describe('Bijak structured parts @api', () => {
   test.setTimeout(90_000)
 
+  // T26c: the e2e stack seeds a labelled E2E fixture Kertas 2 paper (3472/2, structured questions, apps/api/prisma/seed/e2e-k2.ts).
   test('a Kertas 2 attempt renders every served leaf kind with its own control @api', async ({ page }) => {
     const { user, pass } = account('student')
     await loginViaUi(page, user, pass)
@@ -23,8 +24,9 @@ test.describe('Bijak structured parts @api', () => {
       { timeout: 30_000 },
     )
     await page.goto('/spm/bijak')
-    const papers = ((await (await papersRes).json()) as { data: { id: string; kertas: number }[] }).data
-    const k2 = papers.find((p) => p.kertas === 2)
+    const papers = ((await (await papersRes).json()) as { data: { id: string; kertas: number; title: string }[] }).data
+    // The E2E fixture paper (T26c) is the honest structured Kertas 2 paper; any other K2 paper of an older seed may be a PoC paper that answers 403.
+    const k2 = papers.find((p) => p.kertas === 2 && p.title.startsWith('E2E fixture:')) ?? papers.find((p) => p.kertas === 2)
     expect(k2, 'a Kertas 2 paper in the seed').toBeDefined()
     await expect(page.getByTestId('bijak-hub')).toBeVisible({ timeout: 20_000 })
     await page.getByTestId(`open-${k2!.id}`).click()
