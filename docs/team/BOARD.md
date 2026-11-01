@@ -507,7 +507,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/reqa018-paper-servability-route | d5e57160e | WAITING (A1b): route done; questions 951 + 3 todo (only the known base red after the pin fix), exam-builder 361/361, conformance 409/409; re-merges A4 new T45 head (held); merges after T45 |
 | r1/reqb032-pinned-rule | a2cb5bb42 | READY (A2+A3, BASE-105): spec title + R1-limitation row (takedown vs running sitting, KIV R2); 6/6; B2 + B3 |
 | r1/reqb049-report-visible | 9ece8d76d | READY (A1b, BASE-105): pre-review Minors fixed (type from the live version, spec titles, real level codes); 316/316; B2 + B3 |
-| r1/reqb052-archived-edit | 171964317 | VERIFYING (A3): re-merged H-A18 fc409ae1 + B-032 a2cb5bb4 (held-issues helper on both paths); questions + workflow 955 pass (1 known base red), archived-edit 5/5, gate-facts 12/12; full bijak/conformance re-run in progress; not yet READY |
+| r1/reqb052-archived-edit | 171964317 | READY (A3; contains BASE-105 + H-A18 fc409ae1 + B-032 a2cb5bb4): full verification 2336 pass, 0 failures of its own (1 known base red); order H-A18 → B-032 → B-052; B2 + B3 |
 | r1/reqc021-followup | 948aa327a | READY (A1a, BASE-105): fixes the base red draw-bounded BR-16; merge early |
 | r1/seed-dangling-placements | 11cbcf458 | READY (A1b, BASE-105): asserts paper titles + counts = POC_BANK; seed 155 + 1 skip; B2 |
 | r1/stimulus-list-d72 | 1c2c7416a | READY (A2, BASE-105): D72 filter on the group/stimulus lists + empty groups kept listed (D9 row); stimulus-lists 13/13; B2 |
