@@ -379,3 +379,16 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 - **T50 READY** @ e436e084d (contains BASE-101): flake fixed, 4 consecutive green runs; tsc 0; eslint 0. Needs B2.
 - **REQ-C-021** full practice + curriculum recount: 571 pass + 1 opt-in skip.
 - A1a next: `r1/a1-ac-proofs`, backend proof specs for unproven R1 ACs (117/176 proven). Gaps are reported, never marked it.fails.
+- **T54 READY** r1/t54-perf-400k @ f90a63bd (A4; docs only, BASE-101). 408k questions bank.
+  - p95 over 1 s, and who fixes it:
+
+    | # | Path | Time | Owner / fix |
+    |---|---|---|---|
+    | 1 | overview cold | 33.6 s | A4 REQ-B-022(a) on r1/req-b-022a |
+    | 2 | builder Cari soalan | 12–14 s | A3, after T48 |
+    | 3 | admin list text search | 1.6–1.8 s | A2, **migration 0106** pg_trgm GIN, approved by lead; 1.8 s → 21 ms |
+    | 4 | admin list counts | ~0.85 s each | A2 |
+
+  - **BUG (A2):** the kertas filter regex `\s` is lost inside a Prisma.sql template.
+  - **Migration ranges:** team A 0105 (H-A18), 0106 (admin-list-perf).
+  - **B1/devops:** pg_trgm must be available on the target DB.
