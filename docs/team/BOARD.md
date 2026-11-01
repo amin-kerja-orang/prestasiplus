@@ -588,3 +588,5 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
   - **vue-tsc TS2322:** enters with T31 → fixed by REQ-A-008 (C). They merge together.
   - **Logic merge:** stimulus-d72 × the c-020/t49 joinable `where`. A2 resolves it and adds a spec.
   - **For B1:** r1-runbook.md would carry the SERVABILITY_OVERVIEW_WARM rows twice (from 022a and from t37). Keep t37's (A3) and drop 022a's on merge.
+- **A2 re-review of REQ-B-052 @17196431:** correct and green on its own. Minors (pinned-clause spec, perf guard, header) → A3 follow-up.
+- **NEW MAJOR outside B-052 (found by A2):** a Guru `DELETE /api/guru/questions/:id` deletes a served or pinned question while a pupil is mid-attempt, and the attempt view then returns 500. Admin DELETE is also unguarded. → A2 slot 1, `r1/delete-served-guard`. It also aligns the served-lock predicate (withdrawn papers with sittings) and the setExplanation in-place rewrite. B2 + B3.
