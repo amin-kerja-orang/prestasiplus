@@ -489,7 +489,7 @@ BASE-105 + 11 team A READY API heads + C FE heads (reqa014 dc561730, reqa005 3ee
 Wallet tiers come only from the `reference` seed, never from a migration. Prod deploy runs `migrate deploy` only, so an operator must run `deploy.sh --seed-reference`. Without tiers, the dashboard and wallet return 500, and **every practice or Kuiz submit 500s and rolls back** (the reward runs inside the completion tx). Lead decision: (1) add a runbook precondition (`tiers` count = 4) and (3) make /api/ready return not-ready when tiers is empty (r1/ready-tiers-check). No migration. The reward is not made non-fatal, because silent coin loss is worse.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 22:13 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 22:14 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -504,8 +504,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/chain-qa-bab-3a-a3 | 0efba36c4 | READY (A3, @0efba36c; contains chain-qa-selfmark + H-A18 + T38): Bab-refusal step 3a (bites); 642 pass; merge after H-A18 + chain-qa-selfmark; B2 |
 | r1/chain-qa-selfmark-a3 | 5b93da43f | READY (A3, @5b93da43 = T38 13134ced + chain-qa 9b70ae39 + self-mark reward join, bites); merge after T38 + r1-chain-qa-a3; B2 |
 | r1/d90-builder-sweep-a3 | 6a3206366 | READY (A3, @6a320636 on T48 6c5ae3a8): D90 sweep spec (9 tests, 12 mutations red) + T48 D9 rows complete (Who = LEAD); merge after T48; A2 delta pre-review; B2 |
-| r1/d90-kuiz-sweep-a3 | 4536f2f8d | READY (A3, @ad574b87, BASE-105; spec only): Kuiz/Simulasi D90 sweep (6 tests, 10 mutations red; allow-list key-leak on Kuiz page + random); finding: Simulasi does not gather a non-contiguous/split group from legacy/ETL data (builder + Terbit block it) → runbook detection SELECT + D9 note; B2 |
-| r1/delete-served-guard | fe7ef5378 | READY (A2, @7e5d82e6): A4 delta Approve + B3 PASS (FK 409 in_use, no in-practice block); Minors queued with A2 (regrade with deleted question, mixed bulk + other RESTRICT tables + isForeignKeyViolation unit); merge after t49 + d72 and H-A18 → B-032 → B-052; B2 + B3 |
+| r1/d90-kuiz-sweep-a3 | e85cd4228 | READY (A3, @ad574b87, BASE-105; spec only): Kuiz/Simulasi D90 sweep (6 tests, 10 mutations red; allow-list key-leak on Kuiz page + random); finding: Simulasi does not gather a non-contiguous/split group from legacy/ETL data (builder + Terbit block it) → runbook detection SELECT + D9 note; B2 |
+| r1/delete-served-guard | fe7ef5378 | READY (A2, @fe7ef537; contains B-052 f3a2448f): only held papers block (served/pinned) + FK-restrict → 409 in_use; no in-practice block (regrade fallback proven); A4 Approve + B3 PASS (7e5d82e6) + Minors fixed (regrade, mixed bulk, all 4 RESTRICT tables, isForeignKeyViolation unit); questions 665, practice 175, security 185, r1 61; merge after t49 + d72 and H-A18 → B-032 → B-052; B2 + B3 |
 | r1/docs-credential-scrub | b3db5e0d2 | READY (A1a, BASE-105; replaces 5cd46c4a): A4 Minors fixed: Demo1234 doc replacements reverted (allowed fictitious dev default; docs match code), DOC-02 wording, row relabelled privacy override, srs/M02 v1.34 revision row (v1.30 keeps placeholders, lead decision); 0 hits for the 3 old values repo-wide; M02 unit 724, eslint + vue-tsc 0; B3 + B2 |
 | r1/drop-lock-enums | 4d1424c8b | READY (A1a + A2, @4d1424c8, BASE-105): contract drops dead CHAPTER_LOCKED + locked states; negative contract tests; row: no FE reader depends on them (dead local FE types = C follow-up); contract 1435/1435, emit no diff, check ok, api tsc 0; with C reqa014 merged: vue-tsc 0, m03/m05 659/659; merge after reqa014-no-chapter-lock-fe; B2 |
 | r1/e05b-l1-spec | 4b9eac57a | READY (A1b, BASE-105): negative control added; 12/12; B2 + B3 |
