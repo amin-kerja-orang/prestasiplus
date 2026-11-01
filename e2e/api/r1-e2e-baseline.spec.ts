@@ -1822,10 +1822,24 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     await page.waitForTimeout(1000)
     observe(info, `bank candidates left in the picker (empty search): ${await picks.count()}`)
     const issues = page.getByTestId('budget-issues')
-    for (let guard = 0; guard < 45; guard++) {
+    // REQ-B-042: the picker pages its candidates ("Muat lagi", `picker-more`). When the visible page has no addable row,
+    // press it (while present) and wait for the list to grow; stop when the quota is met or there are no more pages.
+    const more = page.getByTestId('picker-more')
+    for (let guard = 0; guard < 120; guard++) {
       if ((await issues.count()) === 0) break
       if (!/Kurang/.test(await issues.innerText())) break
-      if ((await picks.count()) === 0) break
+      if ((await picks.count()) === 0) {
+        if (!(await more.isVisible().catch(() => false))) break
+        await more.click()
+        await expect
+          .poll(
+            async () =>
+              (await picks.count()) > 0 || !(await more.isVisible().catch(() => false)),
+            { timeout: 15_000 },
+          )
+          .toBe(true)
+        continue
+      }
       await picks.first().click()
     }
     await page.keyboard.press('Escape')
