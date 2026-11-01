@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { serveSeededBlueprints } from '../support/serve-blueprints'
 import { bootFullApp, loginFull, type FullApp, type FullClient } from '../r1/full-app'
+import { giveBab } from '../support/bab'
 import { ACCOUNTS } from './helpers'
 
 vi.setConfig({ testTimeout: 120_000, hookTimeout: 300_000 })
@@ -39,6 +40,7 @@ describe('R1-T45 builder AC proofs: Tambah soalan errors and the candidate searc
     return res.body.data.id as string
   }
   async function approve(ids: string[]): Promise<void> {
+    await giveBab(t.db, ids) // Semakan asks for a Bab on the bulk route too (R1-H-A18)
     for (const action of ['review', 'approved']) {
       const res = await admin.post('/api/questions/bulk-action', { action, ids })
       expect(res.status, JSON.stringify(res.body)).toBe(200)
