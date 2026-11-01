@@ -479,7 +479,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 ### Head audit 2026-11-01 15:00 UTC (superseded)
 This manual table has been removed because it went stale. **The only current source for team A heads and states is the auto table between the `AUDIT:BEGIN/END` markers at the end of this file.** It is regenerated from `git ls-remote` every cycle.
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 18:47 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 18:51 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -530,9 +530,11 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t48-builder-parity | 6c5ae3a86 | READY (A3, BASE-105; migration 0104): giveBab fixture fix, support/bab.ts byte-identical to H-A18; exam-builder + pipeline-chain 409 pass (was 19 red); alone = trial merge with H-A18 fc409ae1, 0 failures, tsc 0; merge AFTER H-A18; B2 + B3 |
 | r1/t49-served-now | b99068a67 | READY (A2, BASE-105): bulk approve/archive with all-blank filter → 422 filterBlank [PROPOSED BM]; {} stays Arkib Semua; 4 deviation rows; questions 933 (+BR-16 known), workflow 275, conformance 409; A4 pre-review: Approve w/ Minors, B3 checklist Pass; FE note → C (REQ-C-019: Arkib Semua must send filter:{}); B2 + B3; merge BEFORE stimulus-list-d72 |
 | r1/t50-partial-acs | 075e1b587 | READY (A1a, BASE-105): A3 pre-review CLEAN (nits only); B2 |
-| r1/t51-partial-acs-a3 | 54f631164 | READY (A3, on T48 6c5ae3a8; head 54f63116 already held the fix at 18:17 UTC, earlier ON HOLD text was stale): negatives giveBab, A11 exact assertion, deviation row; exam-builder + r1 + bijak-kuiz + stimulus-display 503 pass; alone = trial merge with H-A18 fc409ae1, 0 failures, tsc 0; merge after T48; B2 |
+| r1/t51-partial-acs-a3 | 54f631164 | ON HOLD (A3): 54f63116 contains OLD T31 6a27c8dd + OLD T43 5ce5894f (both held for REQ-A-008), so it cannot be READY (lead error at 18:43, corrected); A3 restacks on new T43 238eb6eb (carries T31 eb0346d2) + row cells + nit; then it stays held until T31/REQ-A-008 clear; merge order T48 → T31 → T43 → T51; do not merge |
 | r1/t52-examiner-grid | ca1ed739f | READY (A1a, BASE-105): getCover reads examinerGrid from marked (live+pinned); be09 test 8 (auto/points-essay/archived) bites on revert; R21 superseded; api tsc + eslint + vue-tsc 0, 15 pass; B2 |
 | r1/t54-perf-400k | 03c76eb0d | READY (A4, docs): credentials replaced by placeholders; may 3-line-conflict with 022a perf docs (trivial); B2 |
+
+**New branches not yet triaged:** r1/a4chain-minors 4f40a1819
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
