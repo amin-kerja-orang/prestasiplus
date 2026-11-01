@@ -53,6 +53,7 @@ import type {
   QuestionGuruUpdateInput,
   QuestionProvenance,
   QuestionRecord,
+  QuestionVersionRecord,
   QuestionStatus,
   QuestionStatusInfo,
   QuestionSummaryView,
@@ -253,7 +254,8 @@ export class QuestionsService {
   async getAdmin(id: string): Promise<QuestionDetailView> {
     const record = await this.repo.get(id, 'latest')
     if (!record) throw questionNotFound()
-    return this.detail(record)
+    // R1-T45b (PIPE AC-04.4): Admin Pusat only; the Guru and structured reads share `detail` but never get the papers.
+    return { ...(await this.detail(record)), ...(await this.repo.placementsOf(record.id)) }
   }
 
   async create(raw: QuestionCreateInput, actor: QuestionActor, provenance?: QuestionProvenance): Promise<QuestionView> {
@@ -419,6 +421,7 @@ export class QuestionsService {
         }
         await this.repo.setVersionStatus(id, v.versionNo, 'approved', { publishedAt: this.clock.now() })
         await this.repo.setLiveVersion(id, v.versionNo)
+        if (!record.isActive) await this.releaseImageHold(id, v, record.liveVersionNo)
       } else if (v.status === 'approved') {
         // Taking the live version down (approved -> archived) ends its serving at once.
         await this.repo.setVersionStatus(id, v.versionNo, status, { archiveReason: 'withdrawn' })
@@ -655,6 +658,34 @@ export class QuestionsService {
   }
 
   /**
+   * PIPE AC-16.3: a legacy question loaded but held inactive only because its image was not copied (import issues all
+   * `legacy_image_unresolved`) is switched on when the version being approved carries every missing image (the stem image for a `question`
+   * issue, the option image of the label for an `option` issue). The issues are read from the version being approved (an in-place edit), else
+   * from the version that was live. A question held for any other reason, or switched off by an admin (no issues), is left as it is.
+   */
+  private async releaseImageHold(id: string, approving: QuestionVersionRecord, priorLiveNo: number | null): Promise<void> {
+    let source = approving.versionNo
+    let issues = await this.repo.importIssuesOf(id, source)
+    if (issues.length === 0 && priorLiveNo !== null) {
+      source = priorLiveNo
+      issues = await this.repo.importIssuesOf(id, source)
+    }
+    if (issues.length === 0 || issues.some((i) => i.code !== 'legacy_image_unresolved')) return
+    const optionImages = flatFromVersion(approving).optionImageIds
+    const resolved = issues.every((i) =>
+      i.target === 'question'
+        ? approving.stemImageId != null
+        : i.target === 'option' && typeof i.label === 'string' && i.label.length === 1 && optionImages[i.label.charCodeAt(0) - 65] != null,
+    )
+    if (!resolved) return
+    await this.repo.reactivate(id)
+    // T45B-L1: the hold is released for good. The issues are cleared on the version that held them (and on the one being approved), so an
+    // admin who later switches the question off is not overridden by the next approval reading the same stale issues.
+    await this.repo.clearImportIssues(id, source)
+    if (source !== approving.versionNo) await this.repo.clearImportIssues(id, approving.versionNo)
+  }
+
+  /**
    * The approve gate (`GATES.approve`, ADR-0027) over the facts this module holds. The facts BE-09 does not store (open duplicate flag,
    * unconfirmed low-confidence fields, media check, question-level marks) take the same satisfied defaults as the workflow's bank adapter,
    * so the lifecycle route, the bulk action and the create path can never disagree. A version with no rights declaration counts as `own`
@@ -850,6 +881,13 @@ export class QuestionsService {
       }
     }
     if (refs.stimulusIds.length > 0 && !(await this.repo.stimuliExist(refs.stimulusIds))) fields.parts = 'Stimulus tidak sah.'
+    // R008-L1: a stimulus belongs to the library the admin manages, and its picture is read by whoever may read the questions that use it. A
+    // Guru may not link just any stimulus id to their own question (that would hand them another author's draft figure by its token): only
+    // the stimuli the stored version already carries stay. Same answer as an unknown id (no existence oracle).
+    if (fields.parts === undefined && n.actor.role !== 'admin' && refs.stimulusIds.length > 0) {
+      const own = new Set<string>([...(previous?.version.stimulusIds ?? []), ...(previous ? referencedIds(previous.version.parts).stimulusIds : [])])
+      if (refs.stimulusIds.some((id) => !own.has(id))) fields.parts = 'Stimulus tidak sah.'
+    }
     if (n.stimulusGroupId && !(await this.repo.groupExists(n.stimulusGroupId))) fields.stimulusGroupId = 'Kumpulan stimulus tidak sah.'
 
     if (Object.keys(fields).length > 0) throw fail(fields)

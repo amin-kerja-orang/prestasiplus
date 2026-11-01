@@ -53,15 +53,18 @@ export function percent(score: number, total: number): number {
   return total ? Math.round((score / total) * 100) : 0
 }
 
-/** Wire stimulus to the shared display shape. A picture token wins; a body is a passage. */
+/** Wire stimulus to the shared display shape: any of the seven kinds, with caption, source and table grid (R1-T07). */
 export function toStimulus(s: BijakKuizItem['stimuli'][number], id: string): StimulusData {
-  // A picture is a diagram/image; text only (passage or a table sent as text) is a passage.
-  const kind: StimulusKind = s.imageToken ? (s.kind === 'diagram' ? 'diagram' : 'image') : 'passage'
+  // A table with no grid and no picture keeps its text: it is shown as a passage (the figure would draw nothing).
+  const kind: StimulusKind = s.kind === 'table' && !s.table && !s.imageToken ? 'passage' : s.kind
   return {
     id,
     kind,
     label: s.label,
     ...(s.body ? { text: s.body } : {}),
+    ...(s.caption ? { caption: s.caption } : {}),
+    ...(s.source ? { source: s.source } : {}),
+    ...(s.table ? { table: { head: s.table.head, rows: s.table.rows } } : {}),
     ...(s.imageToken ? { src: fileUrl(s.imageToken) } : {}),
     ...(s.alt ? { alt: s.alt } : {}),
   }

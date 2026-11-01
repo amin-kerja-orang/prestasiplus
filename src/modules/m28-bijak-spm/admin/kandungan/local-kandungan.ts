@@ -5,9 +5,12 @@
  */
 import {
   SERVABILITY_ACTIVITY_LABELS,
+  SERVABILITY_HUB_CARDS,
   servabilityReasonMs,
   type ServabilityActivity,
   type ServabilityDatabankRow,
+  type ServabilityHubCard,
+  type ServabilityHubLane,
   type ServabilityOverview,
   type ServabilityPaperRow,
   type ServabilityReason,
@@ -38,7 +41,15 @@ export function createMockKandungan(): KandunganApi {
   const admin = bijakAdminServer()
   const bank = async (): Promise<BankRow[]> => admin.listBank({ status: 'semua' })
 
-  return {
+  /** Hub card measured on its unfiltered lane: total = rows, attention = rows with a reason (as the API). */
+  const cardOf = (lane: ServabilityHubLane, rows: { attention: readonly unknown[] }[]): ServabilityHubCard => ({
+    lane,
+    ...SERVABILITY_HUB_CARDS[lane],
+    total: rows.length,
+    attention: rows.filter((r) => r.attention.length > 0).length,
+  })
+
+  const api: KandunganApi = {
     async overview(): Promise<ServabilityOverview> {
       const rows = await bank()
       const approved = rows.filter((r) => r.status === 'terbit').length
@@ -54,6 +65,10 @@ export function createMockKandungan(): KandunganApi {
           const { served, total } = count(activity)
           return { activity, label: SERVABILITY_ACTIVITY_LABELS[activity], served, total, attention: total - served, basis: 'evaluated' as const }
         }),
+        cards: [
+          cardOf('databank', (await api.databankLane({ page: 1, pageSize: Number.MAX_SAFE_INTEGER })).rows),
+          cardOf('bijak-spm', (await api.paperLane({ page: 1, pageSize: Number.MAX_SAFE_INTEGER })).rows),
+        ],
       }
     },
 
@@ -99,4 +114,5 @@ export function createMockKandungan(): KandunganApi {
       return page(all, q)
     },
   }
+  return api
 }

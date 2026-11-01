@@ -26,7 +26,7 @@ const report = {
 
 describe('Studio status copy and rules', () => {
   it('uses the V2 badge words, not the wire codes', () => {
-    expect(['draft', 'review', 'approved', 'archived'].map(statusBadge)).toEqual(['Draft', 'Reviewed', 'Approved', 'Archived'])
+    expect(['draft', 'review', 'approved', 'archived'].map(statusBadge)).toEqual(['Draf', 'Menunggu Semakan', 'Diterbitkan', 'Diarkibkan'])
     expect(statusBadge('odd')).toBe('odd')
   })
 
