@@ -28,7 +28,7 @@ export const QUESTION_REPORT_MESSAGES = {
   attemptQuestion: 'Soalan ini bukan sebahagian daripada percubaan itu.',
   paper: 'Kertas tidak sepadan dengan percubaan itu.',
   /** REQ-B-031 (D98) [PROPOSED]: a pupil may report only a question they answered; no attempt, practice session or structured answer of theirs holds it. */
-  contextRequired: 'Anda hanya boleh melapor soalan yang telah anda jawab.',
+  contextRequired: 'Anda hanya boleh melapor soalan yang dipaparkan kepada anda.',
   /** REQ-B-031: `quizSessionId` is not the pupil's own practice session (unknown and someone else's answer alike). */
   session: 'Rujukan sesi tidak sah.',
   sessionQuestion: 'Soalan ini bukan sebahagian daripada sesi itu.',

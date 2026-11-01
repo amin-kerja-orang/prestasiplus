@@ -73,6 +73,11 @@ export class ReportsRepository {
     return { userId: a.userId, paperId: a.paperId, label: a.paperCode ? `${a.title} (${a.paperCode})` : a.title, questionIds: ids }
   }
 
+  /** REP-L1: serializes one reporter's filings (transaction-scoped advisory lock) so the cap count and the insert cannot interleave. */
+  async lockReporter(reporterId: bigint): Promise<void> {
+    await this.prisma.client.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`question-report-cap:${reporterId}`}, 0))`
+  }
+
   /** REQ-B-031: how many reports this user created since `since` (the cap counts new rows, never refreshes). */
   countCreatedSince(reporterId: bigint, since: Date): Promise<number> {
     return this.prisma.client.questionReport.count({ where: { reporterId, createdAt: { gte: since } } })

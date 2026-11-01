@@ -60,7 +60,7 @@ export class QuestionReportsService {
 
   /**
    * POST /question-reports. A report never changes the question (REQ-B-031, D98): it goes to Laporan Soalan and an admin decides
-   * (Arkib / Tolak). A pupil (the active role `student`, Mod Pelajar included) reports only a question they answered.
+   * (Arkib / Tolak). A pupil (the active role `student`, Mod Pelajar included) reports only a question served to them.
    */
   async create(actor: WorkflowActor, body: unknown): Promise<{ success: true; message: string }> {
     const first = validateCreate(body) // shape first: a bad body is 422 before the question is looked up
@@ -114,7 +114,7 @@ export class QuestionReportsService {
   }
 
   /**
-   * REQ-B-031 (D98): a pupil can report only a question they answered. The proof is the attempt already checked by `contextOf`, or a
+   * REQ-B-031 (D98): a pupil can report only a question served to them (REP-L2: served, not answered, so a broken question can be reported). The proof is the attempt already checked by `contextOf`, or a
    * practice session of theirs that served the question (`quizSessionId`, unknown and someone else's answer alike), or, for a
    * structured question, a structured attempt of theirs. A Guru (Databank guru) is not asked for one; a given session id is still checked.
    */
@@ -135,6 +135,7 @@ export class QuestionReportsService {
   /** REQ-B-031: at most QUESTION_REPORT_DAILY_CAP new reports per reporter per Malaysia day (429, BM text). */
   private async assertUnderDailyCap(actor: WorkflowActor): Promise<void> {
     const since = mytDayStartOf(this.clock.now())
+    await this.repo.lockReporter(idFromString(actor.userId)) // REP-L1: held to the end of the filing transaction
     if ((await this.repo.countCreatedSince(idFromString(actor.userId), since)) >= QUESTION_REPORT_DAILY_CAP) {
       throw ApiError.of('RATE_LIMITED', { message: M.dailyCap, retryAfter: Math.max(1, Math.ceil((since.getTime() + 86_400_000 - this.clock.now().getTime()) / 1000)) })
     }

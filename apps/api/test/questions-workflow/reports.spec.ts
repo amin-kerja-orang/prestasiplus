@@ -187,7 +187,7 @@ describe('question reports (BE-10 AC 3, 4, 9, 11)', () => {
       const plain = await loginAs(t, 'pelajar@demo.test') // no auto proof: a plain pupil client
       const res = await plain.post('/api/question-reports', body(id))
       expect(res.status).toBe(422)
-      expect(fields(res)).toEqual({ context: 'Anda hanya boleh melapor soalan yang telah anda jawab.' })
+      expect(fields(res)).toEqual({ context: 'Anda hanya boleh melapor soalan yang dipaparkan kepada anda.' })
       expect(await mineOf(id)).toBe(0)
       expect(t.fake.questions.get(id)?.isActive).toBe(true)
     })
@@ -250,6 +250,20 @@ describe('question reports (BE-10 AC 3, 4, 9, 11)', () => {
       // the next Malaysia day: the 20 reports no longer count (their stored time moves back two days)
       await t.db.query(`update question_reports set created_at = created_at - interval '2 days' where reporter_id = $1::bigint`, [plain.userId])
       expect((await proven.post('/api/question-reports', body(ids[20]!))).status).toBe(201)
+      await t.db.query(`update question_reports set created_at = created_at + interval '2 days' where reporter_id = $1::bigint and created_at < $2`, [plain.userId, new Date(START)]) // restore the order the list specs rely on
+    })
+
+    it('REP-L1: a parallel burst at cap-1 lets exactly one report through', async () => {
+      const plain = await loginAs(t, 'pelajarmaju@demo.test')
+      const proven = answering(t, plain)
+      const ids = Array.from({ length: 24 }, () => seed())
+      await t.db.query(`update question_reports set created_at = created_at - interval '2 days' where reporter_id = $1::bigint`, [plain.userId]) // earlier specs' rows leave today
+      for (const id of ids.slice(0, 19)) expect((await proven.post('/api/question-reports', body(id))).status).toBe(201)
+      // the 19 reports above are today's; five more new ones race for the last slot
+      const burst = await Promise.all(ids.slice(19).map((id) => proven.post('/api/question-reports', body(id))))
+      expect(burst.filter((r) => r.status === 201)).toHaveLength(1)
+      expect(burst.filter((r) => r.status === 429)).toHaveLength(burst.length - 1)
+      expect((await t.db.query<{ n: string }>(`select count(*)::text n from question_reports where reporter_id = $1::bigint and created_at >= now() - interval '1 day'`, [plain.userId]))[0]?.n).toBe('20')
       await t.db.query(`update question_reports set created_at = created_at + interval '2 days' where reporter_id = $1::bigint and created_at < $2`, [plain.userId, new Date(START)]) // restore the order the list specs rely on
     })
   })
