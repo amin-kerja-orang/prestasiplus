@@ -25,6 +25,7 @@ All seeded accounts use the documented demo password `Demo1234` (`apps/api/prism
 
 - **Seed profiles.** The default `poc` profile (28 modules) gives: the curriculum (2,844 DSKP nodes at T4 and T5), the question bank (1,271 versions), the six launch Kontrak blueprints `1449/1, 1449/2, 3472/1, 3472/2, 4531/2, 1249/2` as **Spec, nothing Disahkan** (`prisma/seed/exam-launch-blueprints.ts` header), one demo bank paper "Latihan Demo Matematik Bank Soalan (Contoh)" sat by 6 pupils, and the four seeded PoC papers **withdrawn** (`exam-retire-poc`, `prisma/seed/exam.ts`). A server run needs `ALLOW_DEMO_SEED=1` for the demo modules outside tests.
 - **Profile `e2e`** (`--profile=e2e` with `E2E_SEED=1`, never on a server): adds a Disahkan Kontrak `3472/2` (Matematik Tambahan Kertas 2) and a small structured question pool (`prisma/seed/e2e.ts`, `e2e-k2.ts`; in base via T26). Use it when you need a Kontrak that is already Disahkan. Known hazard X1 (coverage doc, "Open decisions"): after H-A15 the e2e seed sets 3472/2 Disahkan while the real "Sahkan" action refuses it (`NO_EVIDENCE_BODIES`).
+- **Wallet tiers precondition (reference data).** The QA database must have exactly **4** wallet tiers, or every practice submit and student dashboard answers 500. Check with `select count(*) from tiers;` (it must be 4). If it is 0, load the reference data (`deploy/vps/deploy.sh --seed-reference`: reference modules only, safe to repeat). Source: `docs/ops/r1-runbook.md` section 0 item 6 (line 38 on `r1/ac-gaps-a1b`); the same rule is in `docs/ops/go-live-bijak-spm.md:300` ("the 4 M14 tiers, without which every student dashboard answers 500"). The `poc` seed profile already includes the `core-wallet-tiers` module.
 - **No intake batch is seeded.** The upload step needs the extractor. On a stack without a configured AI provider, use the manual route (`/admin/spm/soalan/manual`), Studio create (`/admin/questions/create`) or CSV import (`/admin/questions/import`) and treat step 1 as covered by the specs only.
 - **Question ids and Kontrak codes in the specs** (`MAT` kertas 2, section pools `MAT2-A`, `MAT2-B`, `MAT2-C`, SAINS K2 Bahagian B) come from the seeds above; the chain specs create their own questions, so a manual run should do the same.
 
@@ -55,7 +56,10 @@ Heads from `git ls-remote origin refs/heads/r1/<branch>` on the day of writing. 
 | `r1/t43b-publish-acs` | 7a14581a | PIPE AC-07.4 to 07.9 (publish checks, withdraw keeps attempts, pinned snapshot) | independent leaf on T48; needs T48 6c5ae3a8 |
 | `r1/t44-blueprint-fields` | 072d8f4b | Kontrak admin fields (autoMarkable, origin filter, note gate, Markah skema); contains H-A15 | none |
 | `r1/reqb032-pinned-rule` / `r1/reqb052-archived-edit` | a2cb5bb4 / f3a2448f | REQ-B-032: a sitting is served the version its paper pinned, and grades against it; REQ-B-052: an archived or restored question is never rewritten in place when a Terbit paper pins it | reqb052 contains reqb032 and H-A18 fc409ae1 |
-| `r1/t45-servability-acs` | 954614c6 | Terbitkan notice and refusal when a question is unservable (AC-05.3), indicators fresh (AC-04.5), paper servability (AC-04.3) | none; `r1/reqa018-paper-servability-route` @ 2f5a85e7 merges after it |
+| `r1/t45-servability-acs` | 954614c6 | Terbitkan notice and refusal when a question is unservable (AC-05.3), indicators fresh (AC-04.5), paper servability (AC-04.3) | none; `r1/reqa018-paper-servability-route` @ b7fe6fbc merges after it |
+| `r1/reqa018-paper-servability-route` | b7fe6fbc | `GET /api/admin/questions/{id}/paper-servability`: the published papers that carry a question and whether pupils can open each (AC-04.3, AC-04.4); route fix: admin papers only (kind `pilihan`; a pupil's generated paper is never listed), at most 200 papers, one servability read | merges after `r1/t45-servability-acs` |
+| `r1/delete-served-guard` | 7e5d82e6 | the delete rules of the question bank (Step 3b); the AI explanation writes a new draft version | none |
+| `r1/t48-label-move-fix` | 9783849c | the Nombor soalan of an added question follows it when it is moved to another Bahagian | needs `r1/t48-builder-parity` 6c5ae3a8 |
 | `r1/a4chain-minors` | 6f2fb793 | exact BM reasons and the HTTP route case for the Terbitkan refusal | contains the T45 specs |
 | `r1/t52-examiner-grid` | 5a0d7bd0 | cover "Untuk Kegunaan Pemeriksa" only when a part is marked by a person (AC-20.3) | none |
 | `r1/t38-selfmark-reward` / `r1/t40-attempts-acs` | 13134ced / 31a684ed | **the self-mark reward** (D94: 2 Syiling + 10 XP per mark gained, once per level, never above the part's marks) and the attempts ACs (pick cap advisory, best N, band midpoint) | t40 contains t38 |
@@ -65,7 +69,7 @@ Heads from `git ls-remote origin refs/heads/r1/<branch>` on the day of writing. 
 | `r1/intake-reqs-a2` | 8c1964a6 | intake: an unknown SP code is refused at accept; review-queue group badge | none |
 | `r1/reqb049-report-visible` | 9ece8d76 | Lapor before the first submit on a structured question (Q11) | none |
 | `r1/t49-served-now` + `r1/stimulus-list-d72` | 8cb9fa5f / b45ce519 | Studio stimulus and group lists (D72 hiding, `joinable`, Negeri options) | d72 already contains t49; they merge cleanly in either order |
-| `r1/admin-list-perf` | 2a8ab674 | admin question list speed; migrations 0106 and 0107 (maintenance window) | REQ-B-050 and 0107 ship together |
+| `r1/admin-list-perf` | 2cd7889a | admin question list speed; migrations 0106 and 0107 (maintenance window); per-user limit of 60 calls a minute on `GET /api/questions` (429 above, see section 4.4) | REQ-B-050 and 0107 ship together |
 | `r1/t04-minors` | 8ae70d6e | Bab card and "Soalan by Chapter" tile count ungrouped, chaptered, approved questions only (FD-11) | none |
 | `r1/mock-known-mismatches` | a279e68c | frontend-mock conformance check green | none |
 
@@ -110,13 +114,26 @@ Legend. **FE** = screen route (the SPA). **API** = `/api/...` route. **Msg** = e
 
 - **Account:** `admin@demo.test`.
 - **FE:** the Studio status action on `/admin/questions/:id`; flash on success: `Soalan diterbitkan — kini boleh dijawab oleh pelajar.` (`src/modules/m04-question-bank/lib/studio/status.ts:48`; the AC text writes a hyphen, the code an em dash: check by hand, section 4).
-- **API:** `POST /api/questions/{id}/status` `{to:'approved'}`; `POST /api/questions/bulk-action` `{action:'approved'}`; report of where it is served: `GET /api/admin/servability/questions/{id}`.
+- **API:** `POST /api/questions/{id}/status` `{to:'approved'}`; `POST /api/questions/bulk-action` `{action:'approved'}`; report of where it is served: `GET /api/admin/servability/questions/{id}`; the papers that carry the question: `GET /api/admin/questions/{id}/paper-servability` (`r1/reqa018-paper-servability-route` @ b7fe6fbc). That route answers `{ data: [{ paperId, title, served, reasons }], meta: { total, truncated } }`: only published admin papers (kind `pilihan`), by paper id, **at most the first 200**; `meta.total` counts all of them and `meta.truncated` is true when the list is cut (`packages/contract/src/servability/reads.ts:185-190`). `[]` when the question is on no such paper; 404 when the bank holds no such question.
 - **Msg (T33 gate, in `fields`):**
   - `Bahagian (1) belum ada aras pemikiran.` (the label is the part label) `apps/api/src/modules/questions/dskp-gate.ts:19`
   - `Sila pilih kertas untuk soalan SPM.` `dskp-gate.ts:21`
 - **Msg (servability refusal, 422 `VALIDATION_ERROR`, one `servability.<activity>` line each):** `Soalan ini tidak boleh dipaparkan di mana-mana aktiviti murid, jadi belum boleh diterbitkan.` `apps/api/src/modules/questions/serving/approval-check.ts:15` on `r1/t45-servability-acs` @ 954614c6. Example lines (pinned by `a4chain-minors` @ 6f2fb793): `Latihan Bab: Belum dipautkan kepada bab — pilih Bab di borang soalan.`, `Simulasi (kertas): Tidak dihidangkan kerana mod isi jadual (table_fill) belum disokong.`
 - **Delivered by:** base (T33); `r1/t45-servability-acs` (+ `r1/a4chain-minors` for the exact lines and the HTTP case).
 - **Spec:** `questions-workflow/dskp-gate.spec.ts :: "gate-check lists the missing cognitive level (Bahagian copy, step 3) and the kertas (step 1) …"`; `bulk-approve-gate.spec.ts :: "a DSKP-incomplete question … is refused per row"`; `pc :: "a question without the DSKP-complete data cannot be approved: it stays in review with the BM reasons, and is not served anywhere"`; `questions-workflow/t45-approve-everywhere.spec.ts :: "unservable everywhere: approval is refused (422, BM reasons per activity) and nothing changes"` and `"POST /api/questions/:id/status {to: approved} on a question unservable everywhere: 422 …"`.
+
+### Step 3b. Padam (delete) a question
+
+- **Account:** `admin@demo.test` (and `guru@demo.test` for the Guru route).
+- **FE:** `/admin/questions` (bulk "Padam") and `/admin/questions/:id`.
+- **API:** `DELETE /api/questions/{id}`, `POST /api/questions/bulk-action` `{action:'delete'}` (a refused row is a `failed[]` entry), `DELETE /api/guru/questions/{id}`.
+- **Rule (A2, `r1/delete-served-guard` @ 7e5d82e6): only a held paper blocks a delete.** A held paper is a Terbit paper, or a withdrawn paper that has had sittings. Every other delete follows V2: a Draf, a question in Semakan, an archived one, and an approved one that no held paper places are deleted.
+- **Msg (both [PROPOSED], `packages/contract/src/questions/schema.ts` on that head):**
+  - held paper -> 409 `CONFLICT`, `details.reason` `served` or `pinned`: `Soalan ini tidak boleh dipadam kerana ia terdapat pada kertas yang masih dipaparkan kepada murid atau yang sedang diduduki.` (`schema.ts:33`)
+  - a set, remedial test or battle still uses it -> 409, `details.reason` `in_use`: `Soalan ini sedang digunakan dalam set, ujian pemulihan atau pertandingan dan tidak boleh dipadam.` (`schema.ts:35`)
+  - **mid-practice is allowed:** a question held by a running Latih Tubi or Kuiz session is not blocked; an answer to the deleted question is 422, the rest of the session and its submit work, and a finished session keeps its result.
+- **Check by hand:** delete a question that sits on a Terbit paper (refused, text above), delete one that only a draft paper places (allowed; that paper's review then reports the missing question), and delete a question during a pupil's open practice session (allowed).
+- **Spec:** `r1/delete-served-guard.spec.ts` (delete guard, served rule, AI explanation) and `practice-question-source/delete-in-session.spec.ts` (mid-practice).
 
 ### Step 4. Kontrak made Disahkan, section pools tagged
 
@@ -240,6 +257,8 @@ From the coverage doc (`docs/qa/r1-backend-ac-coverage.md`, status "FE only" or 
 | AC-20.5, AC-20.6 | paging, hidden questions keep answers, autosave debounce 1 s; the question map rail and flags |
 | AC-17.1 to 17.5, AC-18.7 | the responsive rules below, and the journeys at three widths |
 
+**Moving an added question across Bahagian (`r1/t48-label-move-fix` @ 9783849c, needs T48).** In the paper editor `/admin/spm/kertas/:id`: add a question with `Tambah soalan` in an added Bahagian (give it a Nombor soalan, for example `21`), then move it to another added Bahagian. Check that it **keeps its Nombor soalan** (21), that `Padam soalan` still deletes it, and that a **second `Tambah soalan` with the same number is refused**: 422, `fields.number`, `Nombor soalan 21 sudah digunakan dalam kertas ini.` (`packages/contract/src/bijak/builder/schema.ts:124` on that head). Spec: `exam-builder/builder-parity.spec.ts :: "the Nombor soalan follows an added question that a PUT moves to another Bahagian: Padam soalan still deletes it, and the number stays used"`.
+
 Other texts worth a manual read because only the constant is pinned, not the screen: the withdraw confirm (step 12), `Belum dimarkah — perlu semakan` and `Markah kendiri disimpan` (step 10).
 
 ### 4.2 Responsive checks
@@ -273,6 +292,10 @@ Both are in `docs/ops/r1-runbook.md` on this branch. They contain no INSERT, UPD
 - **AC-R1-12.6 (DSKP nodes per in-scope subject):** runbook section 4, "R1-12.6 read-only check". Expected after a real `dskp:load`: every one of the 13 subjects has `nodes > 0`, the "subject without nodes" SELECT returns 0 rows, the total is 2,844, levels T4 and T5 only. Before the load every subject shows 0.
 
 The UAT before/after numbers themselves are ops evidence; the runbook only fixes the queries.
+
+### 4.4 Expected behaviour that looks like a bug: 429 on the admin question list
+
+On `r1/admin-list-perf` @ 2cd7889a the admin question list `GET /api/questions` is limited **per user**: **60 calls a minute**; above that the answer is 429 `RATE_LIMITED` with a `Retry-After` header (`apps/api/src/modules/questions/http/admin.controller.ts:25-30`; spec `test/questions/list-rate-limit.spec.ts`). Searching or paging the list rapidly in `/admin/questions` can hit it. **That is expected, not a defect**: wait for the `Retry-After` seconds. The limit is the environment variable `THROTTLE_QUESTIONS_LIST_PER_MINUTE` (blank = 60; `.env.api.example:86`, `apps/api/src/common/config/env.schema.ts:149`); the question writes have their own `THROTTLE_QUESTIONS_WRITE_PER_MINUTE` (60). Another user is not affected. Report a 429 only if it appears well below 60 calls a minute.
 
 ## 5. Known open items
 
