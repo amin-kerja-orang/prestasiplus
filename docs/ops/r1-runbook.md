@@ -6,15 +6,18 @@ One page for the operator (DevOps / lead) who applies the R1 release to UAT or p
 
 **Order and links.** This page is the order of work, the migration table, the SQL checks and the blueprint steps. Where it overlaps [r1-release-notes.md](r1-release-notes.md) (preconditions, the deploy run, smoke, rollback, DSKP commands, configuration), the release notes win and this page links to them instead of repeating them.
 
-**What is in the base and what is not** (against `feature/v3-bijak-r1` at BASE-102, `d42351f7`; check `docs/team/MERGE-LOG.md` on the board branch for newer merges).
+**What is in the base and what is not** (against `feature/v3-bijak-r1` at BASE-105, `7ea2208c`, re-read 2026-11-02; check `docs/team/MERGE-LOG.md` on the board branch for newer merges). A row that says **pending** names the branch and its head from `git ls-remote`; such a head can move, re-check it before the release.
 
 | Item | State | Where |
 |---|---|---|
 | Migrations 0092, 0093, 0100, 0101 | in base (0101 since BASE-15) | `apps/api/prisma/migrations/` |
 | Migration 0102 `leaf_cognitive_level` (T33) | in base since BASE-27 | `apps/api/prisma/migrations/0102_leaf_cognitive_level` |
 | Migration 0103 `question_report_context` (T42 part 1) | in base since BASE-41 | `apps/api/prisma/migrations/0103_question_report_context` |
-| Migration 0104 `paper_section_admin_created` (T48) | **not in base**: T48: T34 is in base (BASE-101), so it needs a base merge and a B2 re-review; its head is `4a3ff264` (fix `2cbe7d28` plus base merges), B2 re-review pending | `r1/t48-builder-parity` |
-| Migration 0105 `gate_facts` (H-A18) | **not in base** (pushed at `d3842c48`; B3 Pass, B2 pending, needs the Q10 user answer; its content may still change) | `r1/ha18-gate-facts` |
+| Migration 0104 `paper_section_admin_created` (T48) | **pending, `r1/t48-builder-parity` @ 1dd07bc1** (READY, B2 delta and B3 re-check pending) | `r1/t48-builder-parity` |
+| Migration 0105 `gate_facts` (H-A18) | **pending, `r1/ha18-gate-facts` @ d3842c48** (CHANGES REQUESTED; A2 is fixing it together with D99, so the file may still change) | `r1/ha18-gate-facts` |
+| Migrations 0106 `question_stem_trgm` and 0107 `question_paper_kertas_index` (admin list perf, A4) | **pending, `r1/admin-list-perf` @ 04dce9fa** (IN-PROGRESS; the lead approved both numbers). 0106 creates the extension `pg_trgm` and two GIN indexes: needs a maintenance window and `CREATE EXTENSION` rights | `r1/admin-list-perf` |
+| Migration 0110 `reference_image_tokens` (T34-L1-residual, team C) | **pending, `r1/t34-l1-residual-c` @ eb9ad806** (data fix, not reversible) | `r1/t34-l1-residual-c` |
+| `SERVABILITY_OVERVIEW_WARM` (REQ-B-022(a), REQ-B-053, A4) | **pending, `r1/req-b-022a-a4` @ 6295dc05** (CHANGES REQUESTED; A4 is fixing). Placeholder: the exact rows come from A4 through the lead | `apps/api/src/common/config/env.schema.ts` at that head |
 | `THROTTLE_SERVABILITY_READ_PER_MINUTE`, `THROTTLE_SERVABILITY_OVERVIEW_PER_MINUTE` (T30) | in base since BASE-28 | `apps/api/src/common/config/env.schema.ts` |
 | `THROTTLE_SERVABILITY_OVERVIEW_PER_MINUTE` | optional; default 6 when unset | In base since BASE-28 (T30). Per-user limit of the servability overview, which counts the whole bank and has its own bucket; above it a request answers 429. Integer, minimum 1. `apps/api/src/common/config/env.schema.ts`. Leave unset. |
 | `AI_PROVIDER` (extraction provider) | `mock` for this release | Decided at go-live; a real provider (`anthropic`, `openai`, `gemini`, `openai-compatible`) needs a lead decision (D85 U1) and `AI_MODEL`, `AI_API_KEY` in the server env file only. See [r1-release-notes.md](r1-release-notes.md) section 5. |
@@ -26,7 +29,7 @@ One page for the operator (DevOps / lead) who applies the R1 release to UAT or p
 ## 0. Before you start
 
 1. Take a full dump and test the restore ([db-backup.md](db-backup.md)). Migration 0100 cannot be undone in place (section 2.2).
-2. Maintenance window. 0100 (and 0101, 0102, 0103, 0104, 0105 when included) go out together with the new API/FE build (section 2); a few seconds of mixed state is possible.
+2. Maintenance window. 0100 (and 0101, 0102, 0103, 0104, 0105, 0106, 0107, 0110 when included) go out together with the new API/FE build (section 2); a few seconds of mixed state is possible. **0106 and 0107 block writes to `question_versions` while their indexes build** (A4 measures about 20 s and about 0.9 s at 408k, reads are not blocked; the migration headers say 18 s and 1.2 s; not re-measured here), and 0106 needs a database role that may `CREATE EXTENSION pg_trgm`: plan them into the same window as 0100.
 3. Record the before-state with the SELECTs in section 3.1.
 4. Environment (section 6) is set on the API service before it starts. `E2E_SEED` and `ALLOW_DEMO_SEED` are not set to true (section 6).
 5. **No seed on UAT (D95).** Do not run `be:db:seed` with demo data on UAT. Blueprints are created and verified by an Admin Pusat in the app (section 5).
@@ -36,7 +39,7 @@ One page for the operator (DevOps / lead) who applies the R1 release to UAT or p
 | Step | What | Section |
 |---|---|---|
 | 1 | Backup, window, before-state SELECTs | 0, 3.1 |
-| 2 | `prisma migrate deploy`: 0092, 0093, 0100, then 0101, 0102, 0103, 0104 and 0105 if their builds are in the release, in that order, together with the new API/FE build | 2.1 |
+| 2 | `prisma migrate deploy`: 0092, 0093, 0100, then 0101, 0102, 0103, 0104, 0105, 0106, 0107 and 0110 if their builds are in the release, in that order, together with the new API/FE build | 2.1 |
 | 3 | `VACUUM ANALYZE question_versions` right after 0100 | 2.2 |
 | 4 | After-state SELECTs for every migration applied | 3.2 to 3.6 |
 | 5 | DSKP load: dry run, then real run, then verify | 4 |
@@ -57,12 +60,15 @@ One page for the operator (DevOps / lead) who applies the R1 release to UAT or p
 | `0101_essay_choice` (T25) | yes, BASE-15 | Adds `essay_choice` to the `question_parts.mode` CHECK, a nullable `question_parts.topics` jsonb and `ck_question_parts_topics` (2 to 6 topics, only on an `essay_choice` leaf). Additive; reads no status value. | Yes, after deleting `essay_choice` parts (reverse SQL in the file header). |
 | `0102_leaf_cognitive_level` (T33) | yes (BASE-27) | Adds nullable `question_parts.cognitive_level` with `ck_question_parts_cognitive_level` (mengingat, memahami, mengaplikasi, menganalisis, menilai, mencipta) and `ck_question_parts_cognitive_level_leaf_only` (a part without a mode has none). Additive; no backfill (NULL = not set). | Yes (reverse SQL in the file header: drop the two CHECKs, then the column). |
 | `0103_question_report_context` (T42 part 1) | yes (BASE-41) | Adds nullable `question_reports.paper_id` (bigint) and `paper_label` (text, CHECK at most 200 characters), FK `fk_question_reports_paper_id` to `papers` (ON DELETE SET NULL), FK `fk_question_reports_attempt_id` to `exam_attempts` (**NOT VALID**: rows written before the migration are not checked, new and updated rows are) and index `ix_question_reports_paper_id`. Existing rows keep NULL. | Yes (reverse SQL in the file header: drop the index, the two FKs, the CHECK, then the two columns). |
-| `0104_paper_section_admin_created` (T48) | **no**: `r1/t48-builder-parity` @ 2cbe7d28, CHANGES-REQUESTED (fix pushed, not re-reviewed) | Adds `paper_sections.admin_created boolean NOT NULL DEFAULT false`. The flag tells a Bahagian that comes from the Kontrak (false, every existing row) from one an admin added in Semak Kertas (true); only an admin-added Bahagian takes "Tambah soalan". Additive; a constant default, no rewrite concern at this table's size. | Yes (reverse SQL in the file header: `ALTER TABLE "paper_sections" DROP COLUMN "admin_created"`). |
-| `0105_gate_facts` (H-A18) | **no**: `r1/ha18-gate-facts` @ d3842c48, pushed, B3 Pass, B2 pending | Adds `question_versions.last_editor` (text, NOT NULL, default `person`, CHECK `person` or `ai`) and `question_versions.declared_marks` (smallint, nullable, CHECK at least 0). One DO block backfills: `last_editor = 'ai'` only for a draft or review version of an `ai_variant` question with no status event made by a person; `declared_marks` from `intake_items.payload->>'marks'` when it is a whole number 0 to 999. It prints both counts as a NOTICE (`0105 backfill: last_editor=ai on N versions, declared_marks set on M versions`). Approved and archived rows stay `person`. The approve gate then reads real facts, and only a new approval is checked. | Yes (reverse SQL in the file header: drop the two CHECKs, then the two columns). |
+| `0104_paper_section_admin_created` (T48) | **pending**: `r1/t48-builder-parity` @ 1dd07bc1 | Adds `paper_sections.admin_created boolean NOT NULL DEFAULT false`. The flag tells a Bahagian that comes from the Kontrak (false, every existing row) from one an admin added in Semak Kertas (true); only an admin-added Bahagian takes "Tambah soalan". Additive; a constant default, no rewrite concern at this table's size. | Yes (reverse SQL in the file header: `ALTER TABLE "paper_sections" DROP COLUMN "admin_created"`). |
+| `0105_gate_facts` (H-A18) | **pending**: `r1/ha18-gate-facts` @ d3842c48 (CHANGES REQUESTED, may change) | Adds `question_versions.last_editor` (text, NOT NULL, default `person`, CHECK `person` or `ai`) and `question_versions.declared_marks` (smallint, nullable, CHECK at least 0). One DO block backfills: `last_editor = 'ai'` only for a draft or review version of an `ai_variant` question with no status event made by a person; `declared_marks` from `intake_items.payload->>'marks'` when it is a whole number 0 to 999. It prints both counts as a NOTICE (`0105 backfill: last_editor=ai on N versions, declared_marks set on M versions`). Approved and archived rows stay `person`. The approve gate then reads real facts, and only a new approval is checked. | Yes (reverse SQL in the file header: drop the two CHECKs, then the two columns). |
+| `0106_question_stem_trgm` (admin list perf, A4) | **pending**: `r1/admin-list-perf` @ 04dce9fa (IN-PROGRESS; lead approved) | `CREATE EXTENSION IF NOT EXISTS pg_trgm` and two partial GIN indexes `ix_question_versions_stem_ms_trgm` and `ix_question_versions_stem_en_trgm` (`gin_trgm_ops`, `WHERE column IS NOT NULL`) on `question_versions`, for the admin question list text search. No data change. Plain `CREATE INDEX` (the SQL has no `CONCURRENTLY`; Prisma runs the file in one transaction): writes to `question_versions` wait while each index builds (A4, 408k questions: about 20 s, the `stem_ms` index is 55 MB; the file header says about 18 s; reads are not blocked). Pre-check before the window: `SELECT name, default_version, installed_version FROM pg_available_extensions WHERE name = 'pg_trgm';` must return a row. If `CREATE EXTENSION` is refused the migration stops there with nothing else changed. | Yes (reverse SQL in the file header: drop the two indexes, then `DROP EXTENSION "pg_trgm"` only if nothing else uses it). Run in a rolled-back transaction: ok (section 9). |
+| `0107_question_paper_kertas_index` (admin list perf, A4) | **pending**: same branch and head as 0106 | One partial expression index `ix_question_versions_paper_kertas` on `substring("paper_code" from '/([1-3])[[:space:]]*$')`, for the Kertas filter of the admin list. A SHARE lock on `question_versions` while it builds (writes wait, reads do not): about 0.9 s at 408k (A4); the file header says about 1.2 s. The expression text must stay identical to `QuestionsRepository.adminConds` (`apps/api/src/modules/questions/questions.repository.ts:632` at `04dce9fa`, checked), and **the REQ-B-050 regex fix and 0107 ship together** (the fix alone makes the Kertas filter slower, 2.7 s at 408k, A4). | Yes (reverse SQL in the file header: `DROP INDEX "ix_question_versions_paper_kertas"`). |
+| `0110_reference_image_tokens` (T34-L1-residual, team C) | **pending**: `r1/t34-l1-residual-c` @ eb9ad806 | Two UPDATEs: a reference-sheet `imageFileId` that is a decimal id naming a `question_image` file becomes that file's public token, in `papers.reference_sheets` and `blueprints.reference_sheets`. An id naming no file is left as it is. No schema change. | **No** (the ids are not kept). Restore the dump, or accept the tokens. |
 
 Notes:
 
-- 0101 and 0102 touch different columns of `question_parts` and do not depend on each other or on a status value; 0103 touches `question_reports` only, 0104 `paper_sections` only and 0105 `question_versions` only (two new columns; it does not touch the status column or its CHECK). They still apply in number order. If only some of T25, T33, T42, T48 and H-A18 are in the release, apply only those.
+- 0101 and 0102 touch different columns of `question_parts` and do not depend on each other or on a status value; 0103 touches `question_reports` only, 0104 `paper_sections` only, 0105 `question_versions` only (two new columns; it does not touch the status column or its CHECK), 0106 and 0107 add indexes to `question_versions` only, and 0110 rewrites reference sheets only. They still apply in number order. If only some of T25, T33, T42, T48, H-A18, admin list perf and T34-L1-residual are in the release, apply only those. Numbers: team A 0100 to 0109 (0108 and 0109 free), team C 0110 to 0119.
 - **0103: do NOT run `VALIDATE CONSTRAINT fk_question_reports_attempt_id` in the release.** The constraint is created NOT VALID on purpose. `attempt_id` has existed since migration 0017 with no foreign key and nothing ever wrote it, so old rows may hold values that point nowhere; validating would scan and could fail the release. New and updated rows are checked without it. A later number must never be applied before an earlier pending one is accounted for.
 - The planned table in `docs/architecture/v2-admin-student-pipeline.md` section 2 names 0101 and 0102 differently (`dskp_leaf_tags_and_facts`, `stimulus_kinds_wide`). The migration folders in the repository are the authority; read the `migration.sql` header of any folder before you apply it.
 - Deploy order for 0100: the migration and the API/FE build of the same release together. An old API against the new CHECK fails to write `published`; a new API against old data serves nothing.
@@ -77,13 +83,13 @@ Notes:
 VACUUM ANALYZE question_versions;
 ```
 
-(Source: `docs/ops/r1-b01-question-lifecycle.md` on `r1/t04-minors`, "Verification" step 7. On a compose deployment [r1-release-notes.md](r1-release-notes.md) section 2.4 has the `psql` wrapper. The run time on the production-size table has not been measured.)
+(Source: [r1-release-notes.md](r1-release-notes.md) section 2.4, which has the `psql` wrapper (`VACUUM (ANALYZE) question_versions`, in base); `docs/ops/r1-b01-question-lifecycle.md` on `r1/t04-minors` @ cc511621 (pending) carries the same statement. The run time on the production-size table has not been measured.)
 
 **Rollback path (database).** The authoritative steps are [r1-release-notes.md](r1-release-notes.md) section 6.2 (rollback; migrations are forward-only) and 6.3 (a migration failed during the deploy). In short:
 
 - 0100 cannot be reversed in place. After a failed or unwanted release, restore the pre-deploy dump together with the previous API/FE build (release notes 6.2 "Full rollback", steps 1 to 6). **After a dump restore do not run `prisma migrate resolve`**: the restored `_prisma_migrations` has no row for the migration, so Prisma answers P3011, and the old schema is simply what the dump holds.
 - A **failed** migration (a `_prisma_migrations` row with `finished_at` NULL, found with the SELECT of release notes 6.3 step 2): if nothing changed (the "clean" checks of 6.3 step 3), `prisma migrate resolve --rolled-back <folder>` is the right command, and only for that case. If it left partial changes, restore the dump as above.
-- A **finished** migration that you undo by hand with the reverse SQL of its file header (0101, 0102, 0103, 0104, 0105 are additive and have one): `--rolled-back` does not apply (Prisma answers P3012 because the row is finished). Run the reverse SQL, then delete that migration's history row (a write; use the pattern of release notes 2.3, with the lead's confirmation): `DELETE FROM _prisma_migrations WHERE migration_name = '<folder>'`. Do this only on a database that will not be rolled back to an image that ships the folder (`/api/ready` answers 503 while a shipped name has no applied row).
+- A **finished** migration that you undo by hand with the reverse SQL of its file header (0101, 0102, 0103, 0104, 0105, 0106 and 0107 are additive and have one; 0110 has none): `--rolled-back` does not apply (Prisma answers P3012 because the row is finished). Run the reverse SQL, then delete that migration's history row (a write; use the pattern of release notes 2.3, with the lead's confirmation): `DELETE FROM _prisma_migrations WHERE migration_name = '<folder>'`. Do this only on a database that will not be rolled back to an image that ships the folder (`/api/ready` answers 503 while a shipped name has no applied row).
 - Rolling back the code after the first new approval is possible only together with a restore.
 
 ## 3. Verification SQL (read-only SELECTs)
@@ -303,9 +309,57 @@ The migration history, after all of them:
 SELECT migration_name, finished_at FROM _prisma_migrations
  WHERE migration_name IN ('0092_bijak_standards', '0093_part_options_image_file_index', '0100_question_lifecycle_approved',
                           '0101_essay_choice', '0102_leaf_cognitive_level', '0103_question_report_context',
-                          '0104_paper_section_admin_created', '0105_gate_facts')
+                          '0104_paper_section_admin_created', '0105_gate_facts', '0106_question_stem_trgm',
+                          '0107_question_paper_kertas_index', '0110_reference_image_tokens')
  ORDER BY started_at;
 ```
+
+### 3.5e Before and after 0106, 0107 and 0110 (admin list perf, T34-L1-residual; only when applied)
+
+Before (record; none of these exist yet; the first statement is the 0106 pre-check, run it before the window):
+
+```sql
+SELECT name, default_version, installed_version FROM pg_available_extensions WHERE name = 'pg_trgm';                              -- 1 row, installed_version NULL until 0106
+SELECT count(*) AS versions, count(stem_ms) AS with_stem_ms, count(stem_en) AS with_stem_en FROM question_versions;
+SELECT count(*) AS pg_trgm_installed FROM pg_extension WHERE extname = 'pg_trgm';                                              -- 0
+SELECT count(*) AS stem_trgm_indexes FROM pg_indexes WHERE indexname IN ('ix_question_versions_stem_ms_trgm', 'ix_question_versions_stem_en_trgm');   -- 0
+SELECT count(*) AS kertas_index FROM pg_indexes WHERE indexname = 'ix_question_versions_paper_kertas';                          -- 0
+
+-- 0110: reference-sheet pictures that are still a decimal id (the migration rewrites those that name a stored image)
+SELECT 'papers' AS t, count(*) AS decimal_ids
+  FROM papers p, jsonb_array_elements(CASE WHEN jsonb_typeof(p.reference_sheets) = 'array' THEN p.reference_sheets ELSE '[]'::jsonb END) e
+ WHERE jsonb_typeof(e -> 'imageFileId') = 'string' AND e ->> 'imageFileId' ~ '^[1-9][0-9]{0,17}$'
+UNION ALL
+SELECT 'blueprints', count(*)
+  FROM blueprints b, jsonb_array_elements(CASE WHEN jsonb_typeof(b.reference_sheets) = 'array' THEN b.reference_sheets ELSE '[]'::jsonb END) e
+ WHERE jsonb_typeof(e -> 'imageFileId') = 'string' AND e ->> 'imageFileId' ~ '^[1-9][0-9]{0,17}$';
+```
+
+After:
+
+```sql
+SELECT extname FROM pg_extension WHERE extname = 'pg_trgm';                                                                     -- 1 row
+SELECT c.relname, i.indisvalid, i.indpred IS NOT NULL AS partial, pg_get_indexdef(c.oid) LIKE '%gin_trgm_ops%' AS trigram
+  FROM pg_class c JOIN pg_index i ON i.indexrelid = c.oid
+ WHERE c.relname IN ('ix_question_versions_stem_ms_trgm', 'ix_question_versions_stem_en_trgm') ORDER BY c.relname;               -- 2 rows: t t t
+
+-- the planner can use them (read-only; a small table prefers a sequential scan, so switch that off inside a transaction that is rolled back)
+BEGIN; SET LOCAL enable_seqscan = off;
+EXPLAIN (COSTS OFF) SELECT 1 FROM question_versions WHERE stem_ms ILIKE '%segi%' ESCAPE '\' OR stem_en ILIKE '%segi%' ESCAPE '\';   -- BitmapOr of the two indexes
+ROLLBACK;
+
+SELECT c.relname, i.indisvalid, i.indpred IS NOT NULL AS partial FROM pg_class c JOIN pg_index i ON i.indexrelid = c.oid
+ WHERE c.relname = 'ix_question_versions_paper_kertas';                                                                         -- 1 row: t t
+
+ANALYZE question_versions;                                                                                                       -- once, after 0106 and 0107 (no exclusive lock)
+
+-- 0110: re-run the "decimal_ids" SELECT of the before block. What remains are ids that name no stored image (the Terbit check reports those).
+SELECT count(*) AS versions, count(stem_ms) AS with_stem_ms, count(stem_en) AS with_stem_en FROM question_versions;               -- same as before
+```
+
+Reverse of 0106 and 0107 (run by hand, then delete their `_prisma_migrations` rows as in 2.2): `DROP INDEX "ix_question_versions_stem_en_trgm"; DROP INDEX "ix_question_versions_stem_ms_trgm"; DROP EXTENSION "pg_trgm";` and `DROP INDEX "ix_question_versions_paper_kertas";` (`DROP EXTENSION` only if nothing else uses `pg_trgm`). 0110 has no reverse.
+
+**Ops recommendation, not in the code (A4):** `ALTER DATABASE <db> SET jit = off` (408k questions, unfiltered admin list p50/p95 661/878 ms to 445/618 ms; optional, the operator's call; local default `jit = on`). Admin list timings at 408k p50/p95 (A4, not re-measured here): text search 1575/1912 to 57/79 ms; Kertas filter 1716/2023 to 172/202 ms; unfiltered 739/898 to 661/878 ms.
 
 ### 3.6 The servable count and the login count
 
@@ -385,9 +439,10 @@ After 0092 every blueprint is Spec and serves no pupil, so a pupil's Jana Kertas
 
 - **Only Admin Pusat** can verify (403 for any other role). Sahkan runs the blueprint gate (AC-39.1) and the evidence comparison (AC-39.7) and lists **every** failure at once; the verification row is insert-only and records the verifier.
 - **Two-body evidence rule:** D76(4) in `docs/TRACKER.md`, AC-39.2 and AC-39.7 in `docs/requirements/v2-bijak-spm.md`. The record cites trial papers **and their skema** from at least two bodies, or an LPM format / JSU document. In the code (`packages/exam-core/src/evidence.ts:checkEvidence`): at least two distinct bodies that each have a `trial_paper` item and a `skema` item, unless an `lpm_format` item exists; and every compared value (duration, total marks, and per section mark budget, rule, question count) must be supported by two bodies and contradicted by none. (TRACKER row D95 calls this rule "D77"; the rule itself is D76(4), AC-39.2 and AC-39.7. D77 is an unrelated decision.) Topic quota and KBAT are not compared; they must be filled, and any value marked "Belum disemak" must be reviewed.
+- **Evidence entered by hand only, and a note (H-A15 / T44, in base since BASE-67).** Evidence rows seeded from the study (`origin = 'study'`) are listed in the record but do not count: only `origin = 'admin'` rows reach the body rule and the comparison (`apps/api/src/modules/exam/blueprints/blueprint-verification.service.ts:238`). Sahkan needs a non-blank note: the body `{ note }` answers 422 `fields.note` "Isi nota pengesahan dahulu." without one (`packages/contract/src/bijak/standards/schema.ts:29`). A blueprint verified before this may fail a new Sahkan until evidence is entered by hand. Enter the evidence and the note as an Admin Pusat in the app.
 - Every check Sahkan runs, with the code path and what is missing for each blueprint: [r1-k1-blueprint-evidence.md](r1-k1-blueprint-evidence.md) (T39; lives on branch `r1/t39-k1-evidence` until merged).
 - Do not edit a Disahkan blueprint: a structural edit makes a new Spec version; the older Disahkan version keeps serving pupils until the new one is verified.
-- Admin Pusat in Mod Pelajar may generate from a Spec head (test data); Admin Sekolah and pupils need Disahkan.
+- Admin Pusat in Mod Pelajar may generate from a Spec head (test data); Admin Sekolah and pupils need Disahkan. The test is the role the session returns to (`mode.returnRole === 'admin'`, `apps/api/src/modules/bijak/papers/spec-access.ts:9`), not the roles the account holds.
 
 ### 5.2 Order
 
@@ -486,7 +541,8 @@ Set on the API service before it starts (examples in `.env.api.example`; no secr
 
 | Variable | Value for R1 | Meaning |
 |---|---|---|
-| `BIJAK_POC_QUESTIONS` | `false` on UAT and production | `true` serves the reserved PoC id block (seeded PoC papers, Jana pool), for staging / dev / e2e only. `false` (the default) serves question-bank questions only. |
+| `BIJAK_POC_QUESTIONS` | `false` or removed on every environment | **Deprecated no-op since T36 (BASE-99, `apps/api/src/common/config/env.schema.ts:110`).** The API serves the question bank only whatever it says; `true` only logs one warning at start. Remove it from the Render service by hand (`render.yaml` no longer sets it). The seeded PoC papers are withdrawn by the seed step `exam-retire-poc`, see [r1-release-input-team-a.md](r1-release-input-team-a.md) section 2.2 for the demo-host steps (the demo database needs at least one published bank paper). |
+| `SERVABILITY_OVERVIEW_WARM` | **pending**, `r1/req-b-022a-a4` @ 6295dc05 (A4, REQ-B-022(a), REQ-B-053; CHANGES REQUESTED) | **Placeholder: the exact rows come from A4 through the lead.** At that head: `true` / `false` / empty or unset; unset or empty = on when `NODE_ENV=production`, off elsewhere; when on, the admin servability overview is computed once at start (not awaited; a failure only logs). Any other value stops the API at start (`env.schema.ts` zod). |
 | `OCR_ENGINE` | `none` (default) or `tesseract` | `none`: scanned pages end as `OCR_UNAVAILABLE`. `tesseract`: tesseract.js with local language data, never downloads; then `OCR_LANG_DIR` must be an absolute folder holding `msa.traineddata` and `eng.traineddata`. |
 | `OCR_LANG_DIR` | empty, or the folder above | Required only with `OCR_ENGINE=tesseract`. |
 | `THROTTLE_SERVABILITY_READ_PER_MINUTE` | optional; default 120 when unset | In base since BASE-28 (T30). Per-user rate limit of the admin servability reads ("Dilihat murid di", the hub, the lanes); a request above the limit answers 429. Integer, minimum 1. Cited from `apps/api/src/common/config/env.schema.ts`, `apps/api/src/modules/questions/http/servability.controller.ts` and `.env.api.example` on that branch. A normal admin session needs no change. |
@@ -514,10 +570,14 @@ E2E_SEED=1 npm run be:db:seed -- --profile=e2e
 | 0092 aborts on `topic_weights` | A row holds a value | Take the value out first (the guard prevents silent loss); see the migration header. |
 | Need to go back past 0100 | 0100 is not reversible | Restore the dump with the previous API/FE build ([r1-release-notes.md](r1-release-notes.md) section 6.2); do not run `migrate resolve` after a restore (P3011). |
 | 429 on the servability reads of the admin | `THROTTLE_SERVABILITY_READ_PER_MINUTE` too low for the load | Raise it; default is 120 per user per minute. |
+| 0106 stops at `CREATE EXTENSION` (permission denied) | The migration role may not create `pg_trgm` (a trusted extension on Postgres 13+; a managed host must allow it) | Nothing else in that migration ran. Have the extension created by a privileged role (`CREATE EXTENSION pg_trgm;`), or allow it for the role, then run `prisma migrate deploy` again. |
+| API writes to `question_versions` wait or time out during the deploy | 0106 / 0107 hold a lock while their indexes build (about 20 s and 0.9 s at 408k by A4; 18 s and 1.2 s by the migration headers; reads are not blocked) | Expected inside the window; if it is outside the window, wait for the migration to finish. Do not kill it halfway: it is one transaction and rolls back. |
 
 ## 9. Verification status of this page
 
-**Latest run (H-A25, 2026-11-01): ran on local migrated DB (BASE-62 `17797f48` + 0104 @ `2cbe7d28` (T48) + 0105 @ `3a2ac810` (H-A18), demo seed), 74/74 ok.** Every statement in the SQL blocks of this page (72 SELECTs, the one `VACUUM ANALYZE` and the 0105 reverse SQL) was run one by one with `psql` against a throwaway local Postgres 16 container (no server, no shared database; the container was removed afterwards). Statements that errored: none; no statement was changed by the run. 0104 and 0105 are read from the T48 and H-A18 branches, not from base.
+**Latest run (2026-11-02, A3 release-readiness): the statements new in this version (3.5e) ran, 27/27 ok.** Throwaway Postgres 16 container (own container, removed afterwards; no server): the 46 base folders (0001 to 0103, BASE-105 `7ea2208c`) applied with `prisma migrate deploy`, the demo seed (`ALLOW_DEMO_SEED=1`, profile `poc`, 28 modules, exit 0; 1271 question versions), two synthetic reference sheets (a decimal file id on one paper and on one blueprint, plus a token and an id naming no file), then a second `prisma migrate deploy` that applied 0104 (T48 @ 1dd07bc1), 0105 (H-A18 @ d3842c48), 0106 and 0107 (`r1/admin-list-perf` @ 04dce9fa) and 0110 (`r1/t34-l1-residual-c` @ eb9ad806), copied into a scratch migrations folder and not committed (1.4 s on this size). The 13 SELECTs of 3.5e, the EXPLAIN and the reverse SQL of 0106 and 0107 in rolled-back transactions (4 DDL, 6 SELECT), and the pre-check, `SHOW jit` and `ANALYZE question_versions` (3) all returned what the comments say: `pg_trgm` installed, both trigram indexes and the kertas index valid and partial, the planner uses a BitmapOr of the two trigram indexes with sequential scans off, the decimal ids that name a stored image became the file's token on the paper and the blueprint (the id naming no file stayed), the history rows finished, the reverse SQL dropped the objects and the rollback restored them. Build and lock times on a production-size table were NOT measured (the 20 s and 0.9 s are A4's figures at 408k, the 18 s and 1.2 s the migration headers'). The T36 demo-host check ran on the same database: `exam-retire-poc` withdrew the 4 seeded PoC papers, the bank demo paper stayed `published`, and the redeploy script's `playable` query returned 1.
+
+**Previous run (H-A25, 2026-11-01): ran on local migrated DB (BASE-62 `17797f48` + 0104 @ `2cbe7d28` (T48) + 0105 @ `3a2ac810` (H-A18), demo seed), 74/74 ok.** Every statement in the SQL blocks of this page (72 SELECTs, the one `VACUUM ANALYZE` and the 0105 reverse SQL) was run one by one with `psql` against a throwaway local Postgres 16 container (no server, no shared database; the container was removed afterwards). Statements that errored: none; no statement was changed by the run. 0104 and 0105 are read from the T48 and H-A18 branches, not from base.
 
 - **Staged databases (before-state):** one migrated to 0091 for the three 0092 pre-flight SELECTs of 3.1 (3/3); one migrated to 0093 for the other 17 "before" SELECTs of 3.1, including the 0103, 0104 and 0105 ones (17/17). They return zero rows or zero counts (empty tables): this proves syntax and column names, not counts.
 - **Full database:** the 48 migration folders (the base's 0001 to 0103, plus 0104 and 0105 copied from their branches into a scratch migrations folder, not committed), applied with `prisma migrate deploy` (0105 in a second `migrate deploy`, as on a release that adds it last), then the demo seed with `ALLOW_DEMO_SEED=1` (profile `poc`, 27 modules, exit 0). The other 53 statements (2.2, 3.2 to 3.6, 3.5b, 3.5c, 3.5d, 4, 5.4; 52 SELECTs and the `VACUUM ANALYZE`) ran there, 53/53.
@@ -542,7 +602,7 @@ E2E_SEED=1 npm run be:db:seed -- --profile=e2e
 
 **Still not verified**
 
-- 0104 and 0105 are read from the T48 (`2cbe7d28`, CHANGES-REQUESTED) and H-A18 (`3a2ac810`, not reviewed) branches, not from base; their final content may change in review. `\d paper_sections` and `\d question_versions` after a deploy are the check. 0102 and 0103 are in base.
+- 0104, 0105, 0106, 0107 and 0110 are read from the T48 (@ 1dd07bc1), H-A18 (@ d3842c48, CHANGES REQUESTED, may change), `r1/admin-list-perf` (@ 04dce9fa, in progress) and `r1/t34-l1-residual-c` (@ eb9ad806) branches, not from base; their final content may change in review. `\d paper_sections`, `\d question_versions` and the 3.5e SELECTs after a deploy are the check. 0102 and 0103 are in base.
 - `VACUUM ANALYZE question_versions`: run time on the production-size table was not measured.
 - `THROTTLE_SERVABILITY_READ_PER_MINUTE` and `E2E_SEED` are read from branches `r1/t30-servability-reads` and `r1/t26-e2e-seed`, not from BASE-6.
 - Whether UAT already holds PoC blueprints, DSKP nodes or demo data is unknown; sections 3.1 and 5.4 record it.
