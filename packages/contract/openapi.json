@@ -7995,7 +7995,8 @@
             "items": {
               "type": "string"
             },
-            "minItems": 1
+            "minItems": 1,
+            "maxItems": 8
           },
           "comment": {
             "type": [
@@ -15354,6 +15355,13 @@
               "$ref": "#/components/schemas/ServabilityOverviewActivity"
             }
           },
+          "computedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "\\+08:00$",
+            "description": "When these counts were computed (H-A21). Always sent: the overview is cached for 5 minutes and refreshed in the background after a question event or when the cache is older; show this time next to the counts.",
+            "example": "2026-10-16T09:30:00+08:00"
+          },
           "cards": {
             "type": "array",
             "items": {
@@ -15365,6 +15373,7 @@
         "required": [
           "bank",
           "activities",
+          "computedAt",
           "cards"
         ],
         "additionalProperties": false

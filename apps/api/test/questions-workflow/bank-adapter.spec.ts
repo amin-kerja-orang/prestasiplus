@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { ApiError } from '../../src/common/errors/api-error'
 import { QuestionsRepository, QuestionsService, type QuestionCreateInput } from '../../src/modules/questions'
 import { QuestionBankAdapter, QuestionWorkflowPorts, QuestionWorkflowService } from '../../src/modules/questions/workflow'
-import { bootWorkflowApp, count, loginAll, type Client, type WorkflowTestApp } from './helpers'
+import { answeredSession, bootWorkflowApp, count, loginAll, type Client, type WorkflowTestApp } from './helpers'
 import { curriculumIds, uploadClient } from './imports-support'
 import { actorOf, failure } from './lifecycle-support'
 
@@ -139,13 +139,18 @@ describe('question bank adapter (real BE-09 bank)', () => {
     expect(await t.bank.getStatus(id)).toMatchObject({ status: 'archived', liveVersionNo: null })
   })
 
-  it('a student report on a published MCQ deactivates it in the real bank at once', async () => {
+  it('a student report on a published MCQ does not touch it in the real bank (REQ-B-031): still active and eligible until an admin decides', async () => {
     const id = await draft()
     for (const to of ['review', 'approved'] as const) await svc.transition(id, to, actorOf(c.admin))
     expect(await eligible(id)).toBe(true)
-    const res = await c.student.post('/api/question-reports', { questionId: id, reasons: ['wrong_answer'] })
+    const quizSessionId = await answeredSession(t.db, c.student.userId, id)
+    const res = await c.student.post('/api/question-reports', { questionId: id, reasons: ['wrong_answer'], quizSessionId })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
-    expect(await t.bank.getStatus(id)).toMatchObject({ isActive: false, status: 'approved' })
+    expect(await t.bank.getStatus(id)).toMatchObject({ isActive: true, status: 'approved' })
+    expect(await eligible(id)).toBe(true)
+    // the admin's own decision still drives the bank: forceDeactivate switches it off
+    const rid = (await t.db.query<{ id: string }>(`select id::text from question_reports where question_id = $1::bigint`, [id]))[0]!.id
+    expect((await c.admin.patch(`/api/question-reports/${rid}`, { status: 'fixed', forceDeactivate: true })).status).toBe(200)
     expect(await eligible(id)).toBe(false)
   })
 
