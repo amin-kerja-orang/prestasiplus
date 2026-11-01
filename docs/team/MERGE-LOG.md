@@ -81,3 +81,6 @@
 | BASE-77 | da915c49 | H-A17 `r1/ha17-ac-coverage` @ b74f8e5f (B2 Approve; docs only); merged by exact reviewed SHA | docs-only diff | 2026-11-01 13:30 |
 | BASE-78 | 5d89d40f | H-A26 `r1/ha26-team-a-state` @ 696799a6 (B2 Approve; docs only); merged by exact reviewed SHA | docs-only diff | 2026-11-01 13:30 |
 | BASE-79 | 80af125e | REQ-C-023 `r1/b4-reqc023-e2e-refresh` @ 11074691 (B2 Approve w/ Minors; e2e only); merged by exact reviewed SHA | eslint 0; tsc -p tsconfig.e2e 0. **Final tree:** conformance + bijak-attempts 589/589 | 2026-11-01 13:30 |
+| BASE-80 | ec98435f | T26c `r1/t26c-e2e-k2` @ df8a52a5 (B2 Approve w/ Minors + B3 Pass); merged by exact reviewed SHA | all type checks 0; api seed + e2e-profile-builder + exam-builder 476 pass / 1 skip | 2026-11-01 14:30 |
+| BASE-81 | 16da8539 | T45b `r1/t45b-question-detail-acs` @ cfe98740 (B2 Approve + B3 Pass); merged by exact reviewed SHA | all type checks 0; unit contract questions 98/98; api questions + questions-workflow + intake-workflow + bridge 1108/1108 | 2026-11-01 14:30 |
+| BASE-82 | 5f5e1186 | H-A16 `r1/ha16-table-reader` @ 085dec38 (B2 Approve + B3 Pass); merged by exact reviewed SHA | all type checks 0; api questions + question-bank-stimuli + bridge + exam-builder 1338 pass / 3 todo | 2026-11-01 14:30 |
