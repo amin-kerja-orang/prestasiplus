@@ -83,16 +83,16 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 | REQ-B-025c a choice-only essay_choice counts as blank (leaf kind passed to isBlank) | `r1/req-b-025c` @ a2865119 | A1b (handed over from A4) | none (REQ-B-025c) | READY (A1b, handed over from A4); review not seen (unconfirmed) |
 | REQ-B-022a servability overview counts in one Promise.all | `r1/req-b-022a` @ 688529b7 | A4 | T30 (base) | READY (A4); review not seen (unconfirmed) |
 | T54 performance report at ~406k questions (docs) | `r1/t54-perf-400k` @ f90a63bd | A4 | none (docs) | pushed (A4): docs/qa performance report, 11 paths p50/p95 and fixes for p95 over 1 s; review not seen (unconfirmed) |
-| REQ-B-035 review queue rows carry the stimulus group (D90) | `r1/intake-reqs-a2` @ a2b7207a | A2 | none (REQ-B-035) | READY (A2); review not seen (unconfirmed) |
+| REQ-B-035 review queue rows carry the stimulus group (D90) | `r1/intake-reqs-a2` @ b70dc957 | A2 | none (REQ-B-035) | READY (A2); review not seen (unconfirmed) |
 | T34-L1-residual (A3 WIP, for B3) | `r1/t34-l1-residual` @ e4bb72eb | A3 | T34 (B3 finding T34-L1-residual) | WIP, untested (A3): the answer to B3 finding T34-L1-residual; not for merge yet |
 | REQ-B-031 report guard, no auto-deactivation, capped (D98) | `r1/reqb031-report-guard` @ 9cd9a1ed | A1 | none (D98); unblocks the Lapor FE | REQ-B-046 follow-up pushed (structured Lapor needs no proof, the cap skips a refresh, no existence/type oracle, at most 8 reasons, stale copy; openapi re-emitted) on top of REP-L1/L2; awaiting B2 re-review (A1) |
 | REQ-C-019 joinable filter on group list and filter-options | `r1/t49-served-now` @ 221c2b28 | A2 | T49 (base) | smoke role for GET /questions/filter-options, trimmed Negeri match, joinable wording pushed (221c2b28); awaiting B1 gate and B2 (A2) |
-| REQ-B-033 paper lane names a placed question the bank does not return | `r1/req-b-033` @ 572490e9 | A4 | servability lanes (T30, in base) | READY (A4); review not seen (unconfirmed) |
+| REQ-B-033 paper lane names a placed question the bank does not return | `r1/req-b-033` @ f3da2b7d | A4 | servability lanes (T30, in base) | READY (A4); review not seen (unconfirmed) |
 | H-A21 overview cache | `r1/ha21-overview-cache` @ 669b0caf | A4 | T30 | same chain as T45 part 1 (A4) |
-| T45 part 1 (AC-04.3/04.5/05.3) | `r1/t45-servability-acs` @ a0f11f68 | A4 | T29 | fix pushed (T45-L1: approve-time servability check at the shared approve point; cognitiveLevel in the fresh spec); awaiting B2 re-review (A4) |
+| T45 part 1 (AC-04.3/04.5/05.3) | `r1/t45-servability-acs` @ 37d24013 | A4 | T29 | fix pushed (T45-L1: approve-time servability check at the shared approve point; cognitiveLevel in the fresh spec); awaiting B2 re-review (A4) |
 | T45 part 2 (lanes, V2 hub) | `r1/t45-lanes` @ e7e5d3dd | A4 | T30; R1-21.3/21.6 wait for T48 | same chain as T45 part 1 (A4) |
 | H-A8 stale specs | `r1/ha8-stale-specs` @ 56b1b6cc | A2 | base | READY (test-only) |
-| T04 minors (R1E2E-09) | `r1/t04-minors` @ d248166e | A2 | T04 | REQ-B-044 fix pushed (chapter-practice spec follows the Soalan by Chapter tile rule, D91 / FD-11); awaiting B1 gate and B2 (A2) |
+| T04 minors (R1E2E-09) | `r1/t04-minors` @ d0740a32 | A2 | T04 | REQ-B-044 fix pushed (chapter-practice spec follows the Soalan by Chapter tile rule, D91 / FD-11); awaiting B1 gate and B2 (A2) |
 | T38 self-mark reward (D94) | `r1/t38-selfmark-reward` @ e8af872f | A1 | T28 | fix pushed (6995d091: reward on the best-N gain, T38-L1) and base merged; awaiting B2 re-review (A1) |
 | T40 attempts ACs | `r1/t40-attempts-acs` @ 985e2af0 | A1 | T38 | restacked on the T38 fix (midpoint spec renamed, choose-N self-mark reward case); awaiting B2 (A1) |
 | T50 partial ACs | `r1/t50-partial-acs` @ e436e084 | A1 | none | B2 Changes requested (A1) |
@@ -120,7 +120,7 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 | H-A20 student parity | `r1/ha20-student-parity` @ 557e17c6 | `docs/qa/r1-student-parity-check.md` |
 | H-A22 parity docs | `r1/ha22-parity-docs` @ 4fb2a41b | both parity docs refreshed, deviation rows H22-D1/D2 in `v2-bijak-spm.md`, `student.md` rows marked |
 | H-A23 E2E readiness | `r1/ha23-e2e-readiness` @ 9a86b5bb | `docs/qa/r1-e2e-readiness.md` (merge order, minimal set) |
-| H-A24 release input | `r1/ha24-release-input` @ 529b3fbd | `docs/ops/r1-release-input-team-a.md` (+ scope AC-R1-18.2 and 18.4 text) |
+| H-A24 release input | `r1/ha24-release-input` @ 121b2dac | `docs/ops/r1-release-input-team-a.md` (+ scope AC-R1-18.2 and 18.4 text) |
 | H-A26 this sheet | `r1/ha26-team-a-state` @ this branch (head = tip of the branch) | `docs/handoff/team-a-r1-state.md` |
 
 ## 2. Decisions and answers
@@ -166,7 +166,7 @@ Status as recorded in `requests/` (answers files take precedence). "Open for A" 
 
 | Direction | IDs |
 |---|---|
-| Open for A | REQ-B-017, REQ-B-019, REQ-B-022, REQ-B-025, REQ-B-029, REQ-B-031, REQ-B-032, REQ-B-033, REQ-B-034, REQ-B-035, REQ-B-037, REQ-B-040, REQ-B-043, REQ-B-044, REQ-B-046, REQ-C-012, REQ-C-019, REQ-C-020, REQ-C-021, REQ-C-024 |
+| Open for A | REQ-B-017, REQ-B-019, REQ-B-022, REQ-B-025, REQ-B-029, REQ-B-031, REQ-B-032, REQ-B-033, REQ-B-034, REQ-B-035, REQ-B-037, REQ-B-040, REQ-B-043, REQ-B-044, REQ-B-046, REQ-B-049, REQ-B-050, REQ-B-051, REQ-C-012, REQ-C-019, REQ-C-020, REQ-C-021, REQ-C-024 |
 | Delivered by A (waiting for merge or the other side) | REQ-B-003, REQ-B-004, REQ-B-007, REQ-B-013, REQ-B-014, REQ-B-041, REQ-C-016, REQ-C-017, REQ-C-018 |
 | Open to B | REQ-A-007, REQ-A-009, REQ-A-011 |
 | Open to C | REQ-A-004, REQ-A-013, REQ-A-014, REQ-A-015, REQ-A-016 |
