@@ -8,6 +8,7 @@ import { PrismaService } from '../../db/prisma.service'
 import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, SPM_SERVABLE_SQL } from './learner-visibility'
 import type { Prng } from '../../db/prng'
 import { kbatOf, missingLeafSql } from './effective-leaf'
+import { paperHeld, QUESTION_SERVED } from './served-rule'
 import { isQuestionStatus } from './status'
 import { partsFromRows, type PartDraft, StoredKeyError } from './tree'
 import type {
@@ -906,6 +907,13 @@ export class QuestionsRepository {
     }
   }
 
+  /** The AI service's write of `explanation_ms` on a version nobody is served (a draft or a review version): in place, marked as the AI's. */
+  async setExplanationInPlace(questionId: string, versionNo: number, text: string): Promise<void> {
+    const key = bi(questionId)
+    if (key === null) return
+    await this.db.questionVersion.update({ where: { questionId_versionNo: { questionId: key, versionNo } }, data: { explanationMs: text, lastEditor: 'ai' } })
+  }
+
   /** Media check for a question that is not stored yet (the create-as-approved shortcut): its stimulus links and its group. */
   async mediaResolvedFor(stimulusIds: readonly bigint[], groupId: bigint | null): Promise<boolean> {
     const ids = stimulusIds.length === 0 ? Prisma.sql`SELECT NULL::bigint AS sid WHERE false` : Prisma.sql`SELECT x.sid FROM unnest(${[...stimulusIds]}::bigint[]) AS x(sid)`
@@ -1004,9 +1012,9 @@ export class QuestionsRepository {
   }
 
   /**
-   * REQ-B-052: is this version the one a paper pins (`paper_placements.pinned_version_no`) on a Terbit paper, or on a paper that has been sat
-   * (a withdrawn paper keeps its attempts, AC-07.7)? Such a version is what pupils are served and marked against, so it must never be rewritten.
-   * Draft papers that were never sat do not count: they follow the question in force.
+   * REQ-B-052: is this version the one a paper pins (`paper_placements.pinned_version_no`) on a paper that is still held (`paperHeld`: Terbit, or
+   * withdrawn with sittings, AC-07.7)? Such a version is what pupils are served and marked against, so it must never be rewritten. Draft papers
+   * that were never sat do not count: they follow the question in force.
    */
   async versionIsPinned(questionId: string, versionNo: number): Promise<boolean> {
     const key = bi(questionId)
@@ -1016,10 +1024,33 @@ export class QuestionsRepository {
         FROM paper_placements pl
         JOIN paper_sections s ON s.id = pl.paper_section_id
         JOIN papers p ON p.id = s.paper_id
-       WHERE pl.question_id = ${key} AND pl.pinned_version_no = ${versionNo}
-         AND (p.status = 'published' OR EXISTS (SELECT 1 FROM exam_attempts a WHERE a.paper_id = p.id))
+       WHERE pl.question_id = ${key} AND pl.pinned_version_no = ${versionNo} AND ${paperHeld('p')}
        LIMIT 1`
     return rows.length > 0
+  }
+
+  /**
+   * Why a question may not be deleted for good (R1-delete-served-guard): `served` (pupils are shown it now, `QUESTION_SERVED`), `pinned` (a paper that
+   * is still held places it, whatever version), or `status` (its latest version is not a draft or in review). `null` = it may go; `undefined` = no
+   * such question (a PKSK question counts as unknown here, as everywhere in M04). The caller holds the question lock.
+   */
+  async deletionBlock(questionId: string): Promise<'served' | 'pinned' | 'status' | null | undefined> {
+    const key = bi(questionId)
+    if (key === null) return undefined
+    const rows = await this.db.$queryRaw<{ status: string; served: boolean; pinned: boolean }[]>`
+      SELECT lv.status AS status, ${QUESTION_SERVED} AS served,
+             EXISTS (SELECT 1 FROM paper_placements pl
+                       JOIN paper_sections s ON s.id = pl.paper_section_id
+                       JOIN papers p ON p.id = s.paper_id
+                      WHERE pl.question_id = q.id AND ${paperHeld('p')}) AS pinned
+        FROM questions q
+        JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
+       WHERE q.id = ${key} AND NOT ${IS_PKSK}`
+    const r = rows[0]
+    if (!r) return undefined
+    if (r.served) return 'served'
+    if (r.pinned) return 'pinned'
+    return r.status === 'draft' || r.status === 'review' ? null : 'status'
   }
 
   /**

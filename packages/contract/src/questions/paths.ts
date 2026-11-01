@@ -98,6 +98,7 @@ const unauthorized = err('UNAUTHORIZED: no valid session.')
 const forbidden = err('FORBIDDEN, or CSRF_INVALID when X-CSRF-Token is missing or wrong.')
 const notFound = err('NOT_FOUND: unknown id (for Guru routes also another teacher\'s question; ids cannot be probed).')
 const conflict = err('CONFLICT: the count of the filter is not `expectedCount` any more (details: expected, actual); nothing was applied.')
+const deleteRefused = err('CONFLICT: the question is shown to pupils, held by a Terbit paper (or a withdrawn paper with sittings), or already published or archived; nothing is deleted (details.reason: served, pinned or status). Archive it instead.')
 const invalid = err('VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages), `message` = first message plus the count of the others.')
 
 const StructuredListEnvelope = z.object({
@@ -206,13 +207,14 @@ export function registerQuestionsPaths(registry: OpenAPIRegistry): void {
     path: '/questions/{id}',
     tags: admin,
     summary: 'Delete a question permanently',
-    description: 'Answers 200 with a flash ("Soalan berjaya dipadam."), not 204, as the mock does.',
+    description: 'Answers 200 with a flash ("Soalan berjaya dipadam."), not 204, as the mock does. Only a question that is a draft or in review, not shown to pupils and not placed on a paper that is still held; anything else is 409 and an admin archives it instead (D9 fix of the live hard delete).',
     request: { params: idParams, headers: [csrf] },
     responses: {
       200: json(mutationEnvelopeOf(QuestionDeleteResultSchema), 'Deleted.'),
       401: unauthorized,
       403: forbidden,
       404: notFound,
+      409: deleteRefused,
     },
   })
 
@@ -289,6 +291,6 @@ export function registerQuestionsPaths(registry: OpenAPIRegistry): void {
     tags: guru,
     summary: 'Delete own question (the contribution credit is not taken back)',
     request: { params: idParams, headers: [csrf] },
-    responses: { 200: json(envelopeOf(QuestionGuruRemoveResultSchema), 'Removed.'), 401: unauthorized, 403: forbidden, 404: notFound },
+    responses: { 200: json(envelopeOf(QuestionGuruRemoveResultSchema), 'Removed.'), 401: unauthorized, 403: forbidden, 404: notFound, 409: deleteRefused },
   })
 }

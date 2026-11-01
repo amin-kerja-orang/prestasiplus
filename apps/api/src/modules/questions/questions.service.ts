@@ -323,8 +323,83 @@ export class QuestionsService {
 
   async remove(id: string, actor: QuestionActor): Promise<void> {
     void actor
-    if (!(await this.repo.remove(id))) throw questionNotFound()
+    if (!(await this.removeGuarded(id))) throw questionNotFound()
     this.overview?.invalidate()
+  }
+
+  /**
+   * The ONE hard delete of a question (admin route, bulk `delete`, Guru `removeOwn`). R1-delete-served-guard (B3 review of REQ-B-052): a question that
+   * pupils are shown now, that a paper which is still held pins (Terbit, or withdrawn with sittings), or whose latest version is not a draft or in
+   * review, is refused with 409 and kept. `paper_placements.question_id` has no foreign key, so without this a delete leaves a placement on nothing and
+   * a running sitting answers 500. The question lock serialises it against an edit or a publish of the same question.
+   */
+  private async removeGuarded(id: string): Promise<boolean> {
+    return this.prisma.transaction(async () => {
+      if (!(await this.repo.lock(id))) return false
+      const block = await this.repo.deletionBlock(id)
+      if (block === undefined) return false
+      if (block !== null) throw ApiError.of('CONFLICT', { message: QUESTION_MESSAGES.deleteRefused, details: { reason: block } })
+      return this.repo.remove(id)
+    }, TX)
+  }
+
+  /**
+   * The AI service's explanation write (the workflow stub, `POST /questions/:id/ai-explanation`). It follows the same rule as every other edit
+   * (REQ-B-052, Q-5): an `approved` or `archived` version, or one that a paper which is still held pins, is never rewritten in place, because
+   * pupils are served and marked against it and read its explanation in their results. The text goes to version n+1 as a DRAFT marked as the
+   * AI's write (`last_editor = 'ai'`, H-A18), so a person has to review it before Terbit; the live version keeps serving. A draft or review
+   * version nobody is served is updated in place. Refusing was the alternative; branching keeps the admin's action useful and uses the one edit
+   * path. The copy carries the import hold, the declared marks and (through `addVersion`) the rights and provenance columns.
+   */
+  async setExplanation(id: string, text: string): Promise<boolean> {
+    const now = this.clock.now()
+    let done = false
+    await this.prisma.transaction(async () => {
+      if (!(await this.repo.lock(id))) return
+      const record = await this.repo.get(id, 'latest')
+      if (!record) return
+      const v = record.version
+      if (v.status === 'approved' || v.status === 'archived' || (await this.repo.versionIsPinned(id, v.versionNo))) {
+        const big = (x: string | null): bigint | null => (x === null ? null : BigInt(x))
+        const held = await this.repo.importIssuesOf(id, v.versionNo)
+        const facts = await this.repo.gateFacts(id, v.versionNo)
+        const draft: VersionDraft = {
+          status: 'draft',
+          type: v.type,
+          stemMs: v.stemMs,
+          stemEn: v.stemEn,
+          numberLabel: v.numberLabel,
+          language: v.language,
+          explanationMs: text,
+          explanationEn: v.explanationEn,
+          subjectId: big(v.subjectId),
+          educationLevelId: big(v.educationLevelId),
+          unitNodeId: big(v.unitId),
+          chapterId: big(v.chapterId),
+          topicId: big(v.topicId),
+          formOrigin: v.formOrigin,
+          cognitiveLevel: v.cognitiveLevel,
+          kbat: v.kbat,
+          tagReview: v.tagReview,
+          catalogueVersion: v.catalogueVersion,
+          difficultyTp: v.difficultyTp,
+          sourcePage: v.sourcePage,
+          setLabel: v.setLabel,
+          paperCode: v.paperCode ?? null,
+          importIssues: held.length === 0 ? null : held,
+          lastEditor: 'ai',
+          declaredMarks: facts.declaredMarks,
+          spNodeIds: v.spIds.map((x) => BigInt(x)),
+          stimulusIds: v.stimulusIds.map((x) => BigInt(x)),
+          parts: draftsFromParts(v.parts),
+        }
+        await this.repo.addVersion(id, record.latestVersionNo + 1, draft, now)
+      } else {
+        await this.repo.setExplanationInPlace(id, v.versionNo, text)
+      }
+      done = true
+    }, TX)
+    return done
   }
 
   async bulkAction(
@@ -339,7 +414,7 @@ export class QuestionsService {
     for (const id of new Set(ids)) {
       try {
         if (action === 'delete') {
-          if (await this.repo.remove(id)) {
+          if (await this.removeGuarded(id)) {
             affected += 1
             done.push(id)
           } else {
@@ -573,7 +648,9 @@ export class QuestionsService {
 
   async removeOwn(id: string, userId: string): Promise<void> {
     await this.owned(id, userId)
-    await this.repo.remove(id)
+    // A teacher's own approved question may be on a Terbit paper with a running sitting: the same guard as the admin delete.
+    if (!(await this.removeGuarded(id))) throw questionNotFound()
+    this.overview?.invalidate()
   }
 
   async contributionCountsFor(userId: string): Promise<ContributionCounts> {

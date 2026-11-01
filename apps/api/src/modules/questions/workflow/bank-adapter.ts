@@ -292,19 +292,10 @@ export class QuestionBankAdapter implements QuestionBankPort {
   }
 
   /**
-   * GAP (BE-09 method wanted: `setExplanation(id, versionNo, text)`): the stub's canned text is stored by
-   * a narrow Prisma write of `explanation_ms` on the latest version (no new version, no status change).
+   * The AI explanation write goes through the question service, which applies the one edit rule (REQ-B-052): an approved, archived or pinned
+   * version is never rewritten in place; the text goes to a new draft version marked as the AI's (see `QuestionsService.setExplanation`).
    */
-  async setExplanation(id: string, text: string): Promise<boolean> {
-    const r = await this.repo.get(id, 'latest')
-    const key = bi(id)
-    if (!r || key === null) return false
-    await this.prisma.client.questionVersion.update({
-      where: { questionId_versionNo: { questionId: key, versionNo: r.version.versionNo } },
-      // R1-H-A18: the canned AI text is the AI's write; the approve gate wants a person to act on the version after it.
-      data: { explanationMs: text, lastEditor: 'ai' },
-    })
-    return true
+  setExplanation(id: string, text: string): Promise<boolean> {
+    return this.service.setExplanation(id, text)
   }
 }
-
