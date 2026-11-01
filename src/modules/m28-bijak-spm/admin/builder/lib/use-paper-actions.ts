@@ -7,6 +7,7 @@ import type { BijakBuilderReview, BijakBuilderStudentView } from '@pp/contract'
 import { computed, ref, type Ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import { useConfirm } from '@/ds'
 import { useFlash } from '@/composables/useFlash'
 
 import { builderCopy as t } from '../domain/copy'
@@ -37,6 +38,7 @@ export interface PaperActionsOptions {
 
 export function usePaperActions(o: PaperActionsOptions) {
   const flash = useFlash()
+  const confirm = useConfirm()
   const router = useRouter()
 
   const review = ref<BuilderReviewView | null>(null)
@@ -122,6 +124,7 @@ export function usePaperActions(o: PaperActionsOptions) {
 
   async function withdraw(): Promise<void> {
     if (busy.value) return
+    if (!(await confirm({ message: t.withdrawConfirm, confirmLabel: t.withdrawConfirmLabel, tone: 'error' }))) return
     busy.value = true
     try {
       await o.api.withdraw(o.id.value)
