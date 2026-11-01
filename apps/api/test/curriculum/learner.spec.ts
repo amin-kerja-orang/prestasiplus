@@ -227,7 +227,7 @@ describe('learner reads (AC1, AC7, AC8, AC9)', () => {
   describe('GET /learning-map (AC8, BR-14, BR-15)', () => {
     const map = async (query = '') => parseData(await student.get(`/api/learning-map${query}`), CurriculumLearningMapSchema)
 
-    it('defaults to MATEMATIK and TINGKATAN_4; with the default provider the first two topics are open and the rest locked', async () => {
+    it('defaults to MATEMATIK and TINGKATAN_4; with the default provider every topic is open (REQ-C-021, D98)', async () => {
       const d = await map()
       expect(d.subject).toBe('MATEMATIK')
       expect(d.subjectLabel).toBe('Matematik')
@@ -235,8 +235,8 @@ describe('learner reads (AC1, AC7, AC8, AC9)', () => {
       expect(d.gradeOptions).toEqual(['TINGKATAN_4', 'TINGKATAN_5'])
       expect(d.topics.map((x) => x.name)).toEqual(['Fungsi dan Persamaan Kuadratik', 'Sistem Persamaan', 'Indeks, Surd dan Logaritma'])
       expect(d.topics.map((x) => x.icon)).toEqual([null, null, null])
-      expect(d.topics.map((x) => x.state)).toEqual(['unlocked', 'unlocked', 'locked'])
-      expect(d.topics.map((x) => x.practiceUrl)).toEqual([`/practice?topic_id=${d.topics[0]!.id}`, `/practice?topic_id=${d.topics[1]!.id}`, null])
+      expect(d.topics.map((x) => x.state)).toEqual(['unlocked', 'unlocked', 'unlocked'])
+      expect(d.topics.map((x) => x.practiceUrl)).toEqual(d.topics.map((x) => `/practice?topic_id=${x.id}`))
       expect(d.stats).toEqual({ done: 0, total: 3, progress: 0 })
       expect(d.topics[0]).toMatchObject({ progress: 0, sessions: 0, questionsAnswered: 0 })
     })
@@ -282,10 +282,10 @@ describe('learner reads (AC1, AC7, AC8, AC9)', () => {
       expect((await map('?subject=')).subject).toBe('MATEMATIK')
     })
 
-    it('serves other combinations (Tingkatan 5 Sains has 9 topics, the first open ones in sequence order)', async () => {
+    it('serves other combinations (Tingkatan 5 Sains has 9 topics, all open, in sequence order)', async () => {
       const d = await map('?subject=SAINS&grade=TINGKATAN_5')
       expect(d.stats.total).toBe(9)
-      expect(d.topics.map((x) => x.state)).toEqual(['unlocked', 'unlocked', ...Array<'locked'>(7).fill('locked')])
+      expect(d.topics.map((x) => x.state)).toEqual(Array<'unlocked'>(9).fill('unlocked'))
       expect(d.topics.map((x) => x.name)[0]).toBe('Dunia mikroorganisma')
       expect(d.topics.map((x) => x.name)).toContain('Satelit')
     })
