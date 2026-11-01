@@ -50,7 +50,7 @@ Spec branches: a proof tagged `BASE-n` is in base (BASE-6 or the later merge nam
 | t43 | t43-chain-publish @ 5ce5894f | test/r1/pipeline-chain.spec.ts: Kontrak made Disahkan over the API, plain Terbit, T5 pupil, Jana Kertas T4/T5, SHORTAGE, NO_BLUEPRINT on Spec, draft/withdrawn negatives (READY; contains t31 and t34) |
 | t44 | t44-blueprint-fields @ 072d8f4b (contains H-A15 @ 7e5d637e) | exam-builder/blueprint-standards-api.spec.ts (autoMarkable, origin filter AC-39.2, note gate, skema Markah AC-39.7), r1/blueprint-review-flag.spec.ts (READY) |
 | t48 | t48-builder-parity @ 4800bd78 | exam-builder/builder-parity.spec.ts (cover code, per-paper rule, Tambah bahagian / soalan, Padam soalan, pinned, stimulus edit), migration 0104 (READY; contains t34) |
-| t43b | t43b-publish-acs @ 4921b3e5 | exam-builder/publish-acs.spec.ts (PIPE AC-07.4 to AC-07.9; contains T48 final head 1dd07bc1) (READY) |
+| t43b | t43b-publish-acs @ 372f911a | exam-builder/publish-acs.spec.ts (PIPE AC-07.4 to AC-07.9; contains T48 final head 1dd07bc1) (READY) |
 | t45 part 3 | r1/t45-builder-acs @ de8c8c02 | exam-builder/builder-candidate-search.spec.ts (AC-R1-21.3 Tambah soalan refusals, AC-R1-21.6 candidate search); A1b, specs only, stacked on t48 (4a3ff264); merges after T48 |
 | t48a | t48a-paper-list @ e5041595 | exam-builder/builder-api.spec.ts: "REQ-C-008" title at most 200, "R12" paper list filters Subjek and Cari (READY); no matrix row names them |
 | t38 / t40 | t38-selfmark-reward @ 13134ced, t40-attempts-acs @ 43fb5900 (contains t38) | bijak-integration/rewards.spec.ts (D94), cuba-lagi-rewards.spec.ts, bijak-attempts/ac-r1.spec.ts, five-modes.spec.ts, practice/databank-prestasi.spec.ts (READY) |
