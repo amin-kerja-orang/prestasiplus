@@ -3,7 +3,7 @@
  * prototype (D45: two short papers showing stimulus groups, maths input and equivalence marking,
  * plus a Matematik Kertas 1 and a Sejarah paper), with their sections and placements.
  *
- * Source: the one-time export of the prototype data in `src/modules/bijak/papers/poc/` (invented,
+ * Source: the one-time export of the prototype data in `prisma/seed/poc/export/` (invented,
  * fictitious practice content; never `src/**` of the frontend). Needs the curriculum seed first
  * (it references the subjects MATH, SCI and SEJ by code).
  *
@@ -20,7 +20,7 @@
  * and use `createExamSeed({ questionLoader })` in `seedModules`.
  */
 import type { PrismaClient } from '../../src/db/client'
-import { POC_BANK, type PocBank, type PocBlueprint, type PocPaper, pocQuestionId } from '../../src/modules/bijak/papers/poc'
+import { POC_BANK, POC_QUESTION_ID_BASE, type PocBank, type PocBlueprint, type PocPaper, pocQuestionId } from './poc/export'
 import { curriculumCodeOf } from '../../src/modules/bijak/papers/subject-codes'
 import { structureHashOf } from '../../src/modules/exam/blueprints/blueprint-standard'
 import type { SeedContext, SeedModule } from './index'
@@ -175,10 +175,36 @@ export function createExamSeed(options: ExamSeedOptions = {}): SeedModule {
       // M04 owns the questions (D12): load them only when its tables exist and a loader is wired.
       if (await questionTableExists(prisma)) {
         if (options.questionLoader) await options.questionLoader(ctx, POC_BANK, pocQuestionId)
-        else console.warn('seed exam: PoC questions are not written to the questions table (no PocQuestionLoader wired); with BIJAK_POC_QUESTIONS=true the API serves them at runtime from the PoC bank')
+        // R1-B07: the API serves the question bank only, so these paper rows are placeholders outside tests (see `examRetirePocSeed`).
+        else console.warn('seed exam: PoC questions are not written to the questions table (no PocQuestionLoader wired); the seeded PoC papers stay unplayable outside tests (R1-B07: Bijak serves the question bank only)')
       }
     },
   }
 }
 
 export const examSeed: SeedModule = createExamSeed()
+
+/**
+ * R1-B07 / REQ-B-029: withdraws the seeded PoC papers on a runtime database. The PoC question rows are loaded into no table and the API
+ * serves the question bank only, so a published PoC paper is listed to pupils with "0 markah" and refuses to start (403). The tests
+ * that exercise them seed `examSeed` alone and plug the test double (`test/support/poc`); this step is in `seedModules` only (the CLI,
+ * the demo, staging and e2e seeds, a reseed over an already seeded host).
+ *
+ * Guarded: only a PUBLISHED paper whose placements ALL point at the reserved PoC id block (`POC_QUESTION_ID_BASE` and up) with no
+ * question row of that id is withdrawn, so a paper with any bank question (an admin-made paper, a generated Jana paper, the bank demo
+ * paper) is never touched. Existing attempts and results stay as they are (they reference the paper, which still exists). Idempotent.
+ */
+export const examRetirePocSeed: SeedModule = {
+  name: 'exam-retire-poc',
+  async run(ctx) {
+    const withdrawn = await ctx.prisma.$executeRaw`
+      UPDATE papers p SET status = 'withdrawn', published_at = NULL, updated_at = ${ctx.clock.now()}
+       WHERE p.status = 'published'
+         AND EXISTS (SELECT 1 FROM paper_placements pl JOIN paper_sections ps ON ps.id = pl.paper_section_id WHERE ps.paper_id = p.id)
+         AND NOT EXISTS (
+               SELECT 1 FROM paper_placements pl JOIN paper_sections ps ON ps.id = pl.paper_section_id
+                WHERE ps.paper_id = p.id
+                  AND (pl.question_id < ${POC_QUESTION_ID_BASE} OR EXISTS (SELECT 1 FROM questions q WHERE q.id = pl.question_id)))`
+    if (withdrawn > 0) console.warn(`seed exam-retire-poc: withdrew ${String(withdrawn)} seeded PoC paper(s) (no question bank rows behind them)`)
+  },
+}

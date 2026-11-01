@@ -251,7 +251,8 @@ export class QuestionsService {
   async getAdmin(id: string): Promise<QuestionDetailView> {
     const record = await this.repo.get(id, 'latest')
     if (!record) throw questionNotFound()
-    return this.detail(record)
+    // R1-T45b (PIPE AC-04.4): Admin Pusat only; the Guru and structured reads share `detail` but never get the papers.
+    return { ...(await this.detail(record)), ...(await this.repo.placementsOf(record.id)) }
   }
 
   async create(raw: QuestionCreateInput, actor: QuestionActor, provenance?: QuestionProvenance): Promise<QuestionView> {
@@ -317,7 +318,12 @@ export class QuestionsService {
     if (!(await this.repo.remove(id))) throw questionNotFound()
   }
 
-  async bulkAction(action: QuestionBulkAction, ids: readonly string[], actor: QuestionActor): Promise<{ affected: number; ids: string[]; failed: BulkFailure[] }> {
+  async bulkAction(
+    action: QuestionBulkAction,
+    ids: readonly string[],
+    actor: QuestionActor,
+    opts: { submitGate?: boolean } = {},
+  ): Promise<{ affected: number; ids: string[]; failed: BulkFailure[] }> {
     let affected = 0
     const done: string[] = []
     const failed: BulkFailure[] = []
@@ -332,7 +338,7 @@ export class QuestionsService {
           }
         } else {
           const a = actor as QuestionActor & { roleCode?: string; requestId?: string | null }
-          await this.setStatus(id, action, actor.userId, { event: { actorUserId: actor.userId, actorRole: a.roleCode ?? actor.role, requestId: a.requestId ?? null } })
+          await this.setStatus(id, action, actor.userId, { ...(opts.submitGate === true ? { submitGate: true } : {}), event: { actorUserId: actor.userId, actorRole: a.roleCode ?? actor.role, requestId: a.requestId ?? null } })
           affected += 1
           done.push(id)
         }
@@ -387,8 +393,8 @@ export class QuestionsService {
       if (!record) throw questionNotFound()
       const v = record.version
       if (!isQuestionWorkflowTransitionAllowed(v.status, status, actor)) throw transitionConflict(v.status, status)
-      // Semakan (draft to review) runs the submit gate on every path, the bulk action included: a refused row is a `failed[]` entry like Terbit.
-      if (status === 'review' && v.status === 'draft') {
+      // Semakan (draft to review) through the bulk route runs the submit gate per row: a refused row is a `failed[]` entry like Terbit.
+      if (options.submitGate === true && status === 'review' && v.status === 'draft') {
         const refused = await this.gateFields('submit', record, v)
         if (Object.keys(refused).length > 0) throw fail(refused)
       }
@@ -409,6 +415,7 @@ export class QuestionsService {
         await this.repo.setVersionStatus(id, v.versionNo, 'approved', { publishedAt: this.clock.now() })
         await this.repo.setLiveVersion(id, v.versionNo)
         await this.repo.setLastEditor(id, v.versionNo, 'person') // a person approved it
+        if (!record.isActive) await this.releaseImageHold(id, v, record.liveVersionNo)
       } else if (v.status === 'approved') {
         // Taking the live version down (approved -> archived) ends its serving at once.
         await this.repo.setVersionStatus(id, v.versionNo, status, { archiveReason: 'withdrawn' })
@@ -643,9 +650,37 @@ export class QuestionsService {
   }
 
   /**
+   * PIPE AC-16.3: a legacy question loaded but held inactive only because its image was not copied (import issues all
+   * `legacy_image_unresolved`) is switched on when the version being approved carries every missing image (the stem image for a `question`
+   * issue, the option image of the label for an `option` issue). The issues are read from the version being approved (an in-place edit), else
+   * from the version that was live. A question held for any other reason, or switched off by an admin (no issues), is left as it is.
+   */
+  private async releaseImageHold(id: string, approving: QuestionVersionRecord, priorLiveNo: number | null): Promise<void> {
+    let source = approving.versionNo
+    let issues = await this.repo.importIssuesOf(id, source)
+    if (issues.length === 0 && priorLiveNo !== null) {
+      source = priorLiveNo
+      issues = await this.repo.importIssuesOf(id, source)
+    }
+    if (issues.length === 0 || issues.some((i) => i.code !== 'legacy_image_unresolved')) return
+    const optionImages = flatFromVersion(approving).optionImageIds
+    const resolved = issues.every((i) =>
+      i.target === 'question'
+        ? approving.stemImageId != null
+        : i.target === 'option' && typeof i.label === 'string' && i.label.length === 1 && optionImages[i.label.charCodeAt(0) - 65] != null,
+    )
+    if (!resolved) return
+    await this.repo.reactivate(id)
+    // T45B-L1: the hold is released for good. The issues are cleared on the version that held them (and on the one being approved), so an
+    // admin who later switches the question off is not overridden by the next approval reading the same stale issues.
+    await this.repo.clearImportIssues(id, source)
+    if (source !== approving.versionNo) await this.repo.clearImportIssues(id, approving.versionNo)
+  }
+
+  /**
    * The approve gate (`GATES.approve`, ADR-0027) on the real facts of a stored version: ONE loader (`gateFacts`) and ONE builder
    * (`gateDataOf`) that the workflow bank adapter uses too, so the lifecycle route, `gate-check`, the bulk action and this path cannot
-   * disagree. A version with no rights declaration counts as `own` (the documented default); an explicit `unclear` is refused.
+   * disagree. D99: no per-question source or rights rule (V2 asks for them once, at the intake batch).
    * R1-B05: the DSKP rules bind only an SPM-bound question, on a NEW approval.
    */
   private async approveFields(record: QuestionRecord, version: QuestionVersionRecord): Promise<Record<string, string>> {
@@ -834,6 +869,13 @@ export class QuestionsService {
       }
     }
     if (refs.stimulusIds.length > 0 && !(await this.repo.stimuliExist(refs.stimulusIds))) fields.parts = 'Stimulus tidak sah.'
+    // R008-L1: a stimulus belongs to the library the admin manages, and its picture is read by whoever may read the questions that use it. A
+    // Guru may not link just any stimulus id to their own question (that would hand them another author's draft figure by its token): only
+    // the stimuli the stored version already carries stay. Same answer as an unknown id (no existence oracle).
+    if (fields.parts === undefined && n.actor.role !== 'admin' && refs.stimulusIds.length > 0) {
+      const own = new Set<string>([...(previous?.version.stimulusIds ?? []), ...(previous ? referencedIds(previous.version.parts).stimulusIds : [])])
+      if (refs.stimulusIds.some((id) => !own.has(id))) fields.parts = 'Stimulus tidak sah.'
+    }
     if (n.stimulusGroupId && !(await this.repo.groupExists(n.stimulusGroupId))) fields.stimulusGroupId = 'Kumpulan stimulus tidak sah.'
 
     if (Object.keys(fields).length > 0) throw fail(fields)
@@ -1010,7 +1052,7 @@ export class QuestionsService {
         // image keeps the hold, one that supplies it drops that issue (so the gate does not refuse the picture it now has).
         const optionImages = flatFromVersion({ ...fresh.version, parts: normalized.parts }).optionImageIds
         const stemImage = normalized.stemImage !== undefined ? normalized.stemImage : fresh.version.stemImageId
-        const held = (await this.repo.heldIssuesOf(record.id, fresh.version.versionNo)).filter((i) => {
+        const held = (await this.repo.importIssuesOf(record.id, fresh.version.versionNo)).filter((i) => {
           if (i.code !== 'legacy_image_unresolved') return true
           if (i.target === 'question') return stemImage == null
           return !(i.target === 'option' && typeof i.label === 'string' && i.label.length === 1 && optionImages[i.label.charCodeAt(0) - 65] != null)

@@ -7,7 +7,8 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { runSeeds } from '../../prisma/seed'
 import { identitySeed } from '../../prisma/seed/core/identity'
 import { curriculumSeed } from '../../prisma/seed/curriculum'
-import { E2E_ADMIN_EMAIL, E2E_PUPIL_EMAIL, e2eSeed, e2eSeedEnabled } from '../../prisma/seed/e2e'
+import { E2E_K2_LABEL_PREFIX, E2E_K2_PAPER_TITLE, K2_SPECS, assertFixtureShape } from '../../prisma/seed/e2e-k2'
+import { E2E_ADMIN_EMAIL, E2E_EVIDENCE_NOTE, E2E_PUPIL_EMAIL, e2eSeed, e2eSeedEnabled } from '../../prisma/seed/e2e'
 import { examSeed } from '../../prisma/seed/exam'
 import { examDemoBlueprintsSeed } from '../../prisma/seed/exam-demo-blueprints'
 import { examLaunchBlueprintsSeed } from '../../prisma/seed/exam-launch-blueprints'
@@ -124,10 +125,69 @@ describe('e2e seed with the guard on', () => {
     expect(await db.query(`select 1 from blueprints where provenance = 'paper' and code <> $1 and source = 'verified'`, [CODE])).toHaveLength(0)
   })
 
+  it('H-A15: Sahkan counts only admin-origin evidence, so the seed replaces the study rows by admin rows labelled as an E2E fixture (and keeps their values)', async () => {
+    const rows = await db.query<{ origin: string; note: string | null; body: string; created_by_id: string | null }>(
+      `select e.origin, e.note, e.body, e.created_by_id::text from blueprint_evidence e join blueprints b on b.id = e.blueprint_id where b.code = $1 and b.status = 'active'`,
+      [CODE],
+    )
+    expect(rows.length).toBeGreaterThanOrEqual(4)
+    expect(rows.every((r) => r.origin === 'admin' && r.note === E2E_EVIDENCE_NOTE && r.created_by_id !== null)).toBe(true)
+    expect(new Set(rows.map((r) => r.body)).size).toBeGreaterThanOrEqual(2)
+    const v = (await db.query<{ note: string; snapshot: { origin: string }[] }>(
+      `select v.note, v.evidence_snapshot snapshot from blueprint_verifications v join blueprints b on b.id = v.blueprint_id where b.code = $1`,
+      [CODE],
+    ))[0]
+    expect(v?.note?.trim().length).toBeGreaterThan(0)
+    expect(v?.snapshot.every((e) => e.origin === 'admin')).toBe(true)
+  })
+
+  it('T26c: the E2E fixture K2 pool is 15 approved multi-part questions (5 to 10 marks) with per-leaf TP and cognitive level, labelled as a fixture', async () => {
+    assertFixtureShape()
+    expect(K2_SPECS).toHaveLength(15)
+    const rows = await db.query<{ label: string; status: string; marks: number; leaves: number; untagged: number; board: string; set_label: string; paper_code: string; live: number }>(
+      `select v.number_label label, v.status, sum(p.marks)::int marks, count(p.id)::int leaves,
+              count(*) filter (where p.difficulty_tp is null or p.cognitive_level is null or p.mode is null)::int untagged,
+              v.exam_board board, v.set_label, v.paper_code, q.live_version_no live
+         from question_versions v join questions q on q.id = v.question_id join question_parts p on p.question_version_id = v.id
+        where v.number_label like $1 group by v.id, q.live_version_no order by v.number_label`,
+      [`${E2E_K2_LABEL_PREFIX}%`],
+    )
+    expect(rows).toHaveLength(15)
+    for (const r of rows) {
+      expect(r.status).toBe('approved')
+      expect(r.live).toBe(1)
+      expect(r.leaves).toBeGreaterThanOrEqual(2)
+      expect(r.marks).toBeGreaterThanOrEqual(5)
+      expect(r.marks).toBeLessThanOrEqual(10)
+      expect(r.untagged).toBe(0)
+      expect(r.board).toBe('E2E fixture')
+      expect(r.set_label).toBe('E2E fixture')
+      expect(r.paper_code).toBe(CODE)
+    }
+  })
+
+  it('T26c: one published Kertas 2 paper of 3 sections (7, 4, 4 questions) is built from the fixture pool on the Disahkan blueprint', async () => {
+    const papers = await db.query<{ status: string; blueprint_source: string; sections: number }>(
+      `select p.status, b.source blueprint_source, (select count(*)::int from paper_sections s where s.paper_id = p.id) sections
+         from papers p join blueprints b on b.id = p.blueprint_id where p.title = $1`,
+      [E2E_K2_PAPER_TITLE],
+    )
+    expect(papers).toEqual([{ status: 'published', blueprint_source: 'verified', sections: 3 }])
+    const counts = await db.query<{ position: number; n: number; marks: number }>(
+      `select s.position, count(pl.id)::int n, sum(pl.marks_override)::int marks
+         from papers p join paper_sections s on s.paper_id = p.id join paper_placements pl on pl.paper_section_id = s.id
+        where p.title = $1 group by s.position order by s.position`,
+      [E2E_K2_PAPER_TITLE],
+    )
+    expect(counts).toEqual([{ position: 1, n: 7, marks: 50 }, { position: 2, n: 4, marks: 40 }, { position: 3, n: 4, marks: 40 }])
+  })
+
   it('is idempotent: a second run keeps one verification row and the same accounts', async () => {
     await runSeeds([e2eSeed], { prisma: db.prisma, profile: 'e2e', env: FLAGGED })
     expect(await db.query(`select 1 from blueprint_verifications v join blueprints b on b.id = v.blueprint_id where b.code = $1`, [CODE])).toHaveLength(1)
     expect(await db.query(`select 1 from users where email in ($1, $2)`, [E2E_PUPIL_EMAIL, E2E_ADMIN_EMAIL])).toHaveLength(2)
+    expect(await db.query(`select 1 from question_versions where number_label like $1`, [`${E2E_K2_LABEL_PREFIX}%`])).toHaveLength(15)
+    expect(await db.query(`select 1 from papers where title = $1`, [E2E_K2_PAPER_TITLE])).toHaveLength(1)
   })
 
   it('the pupil can Jana Kertas against it: 201, or a 422 SHORTAGE that the question bank explains (never NO_BLUEPRINT)', async () => {

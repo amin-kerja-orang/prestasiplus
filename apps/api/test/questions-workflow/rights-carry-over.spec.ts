@@ -69,7 +69,7 @@ describe('editing keeps the rights declaration and provenance (REQ-B-017)', () =
   })
 
   it('D99: a NEW question with rights unclear is submitted, approved and published; nothing asks for a source or rights per question', async () => {
-    const res = await admin.post('/api/questions', body({ status: 'draft', tag }))
+    const res = await admin.post('/api/questions', body({ status: 'draft' }))
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     const id = res.body.data.id as string
     await t.db.query(`update question_versions set rights_status = 'unclear', chapter_id = $2::bigint where question_id = $1::bigint`, [id, tag.chapterId])

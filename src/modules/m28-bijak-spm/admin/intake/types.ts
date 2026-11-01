@@ -164,6 +164,9 @@ export interface IntakeBatch extends IntakeMeta {
   forPaperId?: string
   userId: number
   status: IntakeStatus
+  /** Server processing status and BM label (http mode only); shown instead of Draf/Semakan. */
+  batchStatus?: 'submitted' | 'processing' | 'ready_for_review' | 'failed' | 'cancelled'
+  statusLabel?: string
   createdAt: number
   updatedAt: number
   submittedAt?: number
@@ -210,6 +213,9 @@ export interface IntakeSummary {
   lowCount: number
   /** Questions with no unconfirmed low-confidence field (V2 "Disemak"); absent when the source gives no item counts. */
   reviewedCount?: number
+  /** Server processing status and its BM label (http mode only); the mock has just `status`. */
+  batchStatus?: 'submitted' | 'processing' | 'ready_for_review' | 'failed' | 'cancelled'
+  statusLabel?: string
   marks: number
   updatedAt: number
 }

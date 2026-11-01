@@ -33,6 +33,8 @@ export const QUESTION_REPORT_MESSAGES = {
   adminNotes: 'Nota admin tidak boleh melebihi 1000 aksara.',
   created: 'Laporan berjaya dihantar.',
   updated: 'Laporan berjaya dikemaskini.',
+  /** H-A13 (D94 approved copy): shown to the admin after "Arkib" when published papers place the archived question. */
+  archivedOnPapers: 'Soalan ini ada dalam kertas yang telah diterbitkan. Murid tidak boleh memulakan percubaan baharu pada kertas itu sehingga soalan diganti.',
   /** 409 on "Arkib" from a report row: the question has moved past the reported version (REQ-B-018). */
   archiveStaleVersion: 'Soalan ini sudah mempunyai versi yang lebih baharu daripada yang dilaporkan. Arkib dibatalkan; semak versi terkini dahulu.',
   /** Shown by the screen when the request itself fails (FR-M04-69). */
@@ -289,6 +291,10 @@ export const QuestionReportUpdateResultSchema = z
     status: QuestionReportStatusSchema,
     adminNotes: z.string().nullable(),
     updatedAt: TimestampSchema,
+    /** H-A13: only after `archive`: the published Kertas Pilihan that place the question, so the screen can warn. */
+    papers: z.array(z.strictObject({ id: IdSchema, title: z.string() })).optional(),
+    /** H-A13: the warning line when `papers` is not empty. */
+    warning: z.string().optional(),
   })
   .meta({ id: 'QuestionReportUpdateResult' })
 

@@ -15,6 +15,7 @@ import type {
   ReportView,
 } from '../../api/reports'
 import { questions, reports, structured } from '../../mock'
+import { setPlacingPapers } from '../../mock/handlers/reports'
 import {
   REPORT_COMMENT_MESSAGE,
   REPORT_REASONS_MESSAGE,
@@ -270,6 +271,24 @@ describe('#16 update (BR-M04-13, FR-M04-79…81)', () => {
     })
     expect(structured.get(3_698)?.isActive).toBe(false)
     expect(reports.get(10)).toMatchObject({ status: 'reviewed' })
+  })
+
+  it('"Arkib" (archive: true) archives an MCQ and sets the report reviewed (R1-B17)', async () => {
+    dirty = true
+    expect(questions.get(136_891)?.status).not.toBe('archived')
+    const r = await patch(6, { status: 'reviewed', adminNotes: 'Diarkibkan oleh admin', archive: true })
+    expect(r.status).toBe(200)
+    expect(questions.get(136_891)?.status).toBe('archived')
+    expect(reports.get(6)).toMatchObject({ status: 'reviewed' })
+  })
+
+  it('archive on a question placed on a published paper returns the warning and papers (H-A13)', async () => {
+    dirty = true
+    setPlacingPapers(136_891, [{ id: '7', title: 'Percubaan A' }])
+    const r = await patch(6, { status: 'reviewed', archive: true })
+    expect(r.body.data).toMatchObject({ papers: [{ id: '7', title: 'Percubaan A' }] })
+    expect(r.body.data.warning).toContain('Murid tidak boleh memulakan percubaan baharu')
+    setPlacingPapers(136_891, [])
   })
 
   it('an omitted adminNotes keeps the note; an empty one clears it', async () => {

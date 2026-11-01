@@ -18,6 +18,7 @@ import type {
   QuestionFilter,
   QuestionRecord,
   GateFacts,
+  QuestionPlacementRecord,
   QuestionStatus,
   QuestionVersionRecord,
   SampleFilter,
@@ -760,6 +761,11 @@ export class QuestionsRepository {
    * Stimulus bodies linked DIRECTLY to a question version (`question_version_stimuli`), in link order, audio left out. Keyed
    * `<questionId>:<versionNo>` (one entry per requested ref, an empty array when the version has none or does not exist).
    * For kuiz and the bridges: a stimulus linked to a version may be outside its group (a stem picture, a leaf stimulus).
+   *
+   * PINNED READS ONLY (REQ-B-013a): like `getVersions`, it does not look at status, `is_active`, PKSK or level, because the caller already
+   * holds the version it is serving (a placement's pinned version, or the version `getMany(..., 'live')` returned). The ref carries the
+   * version number; there is no "live" or "latest" fallback here. A caller must therefore pass versions it has already scoped; never
+   * ids taken from a list or a draw. `test/questions/b013-scoping.spec.ts` lists the allowed callers and fails on a new one.
    */
   async versionStimuli(refs: readonly { questionId: string; versionNo: number }[]): Promise<Map<string, StimulusRecord[]>> {
     const out = new Map<string, StimulusRecord[]>()
@@ -790,8 +796,49 @@ export class QuestionsRepository {
   }
 
   /**
-   * How many distinct active questions link each stimulus straight to a version (`question_version_stimuli`; the versions of one
-   * question count once). 1 = the stimulus is that question's own; more than 1 = shared (D90: that must be a stimulus group).
+   * R1-T45b (PIPE AC-04.4): the curated papers (kind `pilihan`) that place the question, every status (draft, ready, published, withdrawn) and
+   * every pinned version, published first then newest, at most 100 rows; plus how many generated (`jana`) papers place it (counted, not listed).
+   */
+  async placementsOf(questionId: string): Promise<{ placements: QuestionPlacementRecord[]; generatedPaperCount: number }> {
+    const key = bi(questionId)
+    if (key === null) return { placements: [], generatedPaperCount: 0 }
+    const rows = await this.db.$queryRaw<{ paper_id: bigint; title: string; status: string; section: string; pinned: number }[]>`
+      SELECT p.id AS paper_id, p.title, p.status, s.label AS section, pl.pinned_version_no AS pinned
+        FROM paper_placements pl
+        JOIN paper_sections s ON s.id = pl.paper_section_id
+        JOIN papers p ON p.id = s.paper_id
+       WHERE pl.question_id = ${key} AND p.kind = 'pilihan'
+       ORDER BY (p.status = 'published') DESC, p.id DESC, s.position ASC
+       LIMIT 100`
+    const generated = await this.db.$queryRaw<{ n: bigint }[]>`
+      SELECT count(DISTINCT p.id) AS n
+        FROM paper_placements pl JOIN paper_sections s ON s.id = pl.paper_section_id JOIN papers p ON p.id = s.paper_id
+       WHERE pl.question_id = ${key} AND p.kind = 'jana'`
+    return {
+      placements: rows.map((r) => ({ paperId: idToString(r.paper_id), title: r.title, status: r.status as QuestionPlacementRecord['status'], section: r.section, versionNo: r.pinned })),
+      generatedPaperCount: Number(generated[0]?.n ?? 0),
+    }
+  }
+
+  /** Clears the loader's `import_issues` of one version (a released image hold, T45B-L1). */
+  async clearImportIssues(questionId: string, versionNo: number): Promise<void> {
+    const key = bi(questionId)
+    if (key === null) return
+    await this.db.questionVersion.updateMany({ where: { questionId: key, versionNo }, data: { importIssues: Prisma.DbNull } })
+  }
+
+  /** The loader's `import_issues` of one version (`[]` when none): why a legacy question was loaded but held inactive. */
+  async importIssuesOf(questionId: string, versionNo: number): Promise<{ code: string; target?: string; label?: string }[]> {
+    const key = bi(questionId)
+    if (key === null) return []
+    const row = await this.db.questionVersion.findUnique({ where: { questionId_versionNo: { questionId: key, versionNo } }, select: { importIssues: true } })
+    return Array.isArray(row?.importIssues) ? (row.importIssues as { code: string; target?: string; label?: string }[]) : []
+  }
+
+  /**
+   * How many distinct active questions link each stimulus straight to a version (`question_version_stimuli`) or to one of its
+   * leaf parts (`question_parts.stimulus_id`); the versions and parts of one question count once. 1 = the stimulus is that
+   * question's own; more than 1 = shared (D90: that must be a stimulus group).
    * Unknown ids are absent.
    */
   async stimulusUseCounts(ids: readonly string[]): Promise<Map<string, number>> {
@@ -799,17 +846,25 @@ export class QuestionsRepository {
     const out = new Map<string, number>()
     if (keys.length === 0) return out
     const rows = await this.db.$queryRaw<{ id: bigint; n: number }[]>`
-      SELECT l.stimulus_id AS id, count(DISTINCT v.question_id)::int AS n
-        FROM question_version_stimuli l
-        JOIN question_versions v ON v.id = l.question_version_id
-        JOIN questions q ON q.id = v.question_id AND q.is_active
-       WHERE l.stimulus_id = ANY(${keys}::bigint[])
-       GROUP BY l.stimulus_id`
+      SELECT u.id, count(DISTINCT u.question_id)::int AS n
+        FROM (
+          SELECT l.stimulus_id AS id, v.question_id
+            FROM question_version_stimuli l
+            JOIN question_versions v ON v.id = l.question_version_id
+            JOIN questions q ON q.id = v.question_id AND q.is_active
+           WHERE l.stimulus_id = ANY(${keys}::bigint[])
+          UNION
+          SELECT p.stimulus_id AS id, v.question_id
+            FROM question_parts p
+            JOIN question_versions v ON v.id = p.question_version_id
+            JOIN questions q ON q.id = v.question_id AND q.is_active
+           WHERE p.stimulus_id = ANY(${keys}::bigint[])
+        ) u
+       GROUP BY u.id`
     for (const r of rows) out.set(idToString(r.id), r.n)
     return out
   }
 
-  /** R1-B05: the subject is in the SPM catalogue (`spm_subject_configs`) and the level is Tingkatan 4 or 5. */
   /** `rights_status` of one version: null when no declaration was made (or the version is unknown). */
   /**
    * The facts the gates read that are not on the version row (R1-H-A18): ONE loader for the lifecycle transition, `gate-check`, the bulk
@@ -860,14 +915,6 @@ export class QuestionsRepository {
     return rows[0]?.ok === true
   }
 
-  /** The loader's `import_issues` of one version (`[]` when none): why a legacy question was loaded but held inactive. */
-  async heldIssuesOf(questionId: string, versionNo: number): Promise<{ code: string; target?: string; label?: string; path?: string }[]> {
-    const key = bi(questionId)
-    if (key === null) return []
-    const row = await this.db.questionVersion.findUnique({ where: { questionId_versionNo: { questionId: key, versionNo } }, select: { importIssues: true } })
-    return Array.isArray(row?.importIssues) ? (row.importIssues as { code: string; target?: string; label?: string; path?: string }[]) : []
-  }
-
   /** Sets who wrote the version last (a person's action clears the AI flag; the AI service sets it on its own writes). */
   async setLastEditor(questionId: string, versionNo: number, editor: 'person' | 'ai'): Promise<void> {
     const key = bi(questionId)
@@ -875,6 +922,7 @@ export class QuestionsRepository {
     await this.db.questionVersion.updateMany({ where: { questionId: key, versionNo, lastEditor: { not: editor } }, data: { lastEditor: editor } })
   }
 
+  /** R1-B05: the subject is in the SPM catalogue (`spm_subject_configs`) and the level is Tingkatan 4 or 5. */
   async isSpmBound(subjectId: string | null, levelId: string | null): Promise<boolean> {
     const subject = subjectId === null ? null : bi(subjectId)
     const level = levelId === null ? null : bi(levelId)

@@ -22,7 +22,11 @@ export const recoveryKey = (userId: string, questionId?: string): string =>
   `${PREFIX}${userId}:${questionId === undefined ? 'baharu' : `soalan-${questionId}`}`
 
 /** The state without the local row keys, so two drafts compare by content. */
-export const contentOf = (d: StudioDraft): string => JSON.stringify({ ...d, leaves: d.leaves.map((l) => ({ ...l, uid: '' })) })
+export const contentOf = (d: StudioDraft): string => {
+  // `inheritedTp` null / undefined / absent all mean "none", so they compare equal whatever the key order.
+  const { inheritedTp, ...rest } = d
+  return JSON.stringify({ ...rest, inheritedTp: inheritedTp ?? null, leaves: d.leaves.map((l) => ({ ...l, uid: '' })) })
+}
 
 export const sameDraft = (a: StudioDraft, b: StudioDraft): boolean => contentOf(a) === contentOf(b)
 
@@ -35,7 +39,7 @@ function leafOf(v: unknown): LeafDraft | null {
   const mode = LEAF_MODES.find((m) => m.value === v.mode)?.value
   const num = isObj(v.numeric) ? v.numeric : null
   if (!mode || !isStr(v.label) || !isStr(v.prompt) || typeof v.marks !== 'number' || !Array.isArray(v.options) || !isStr(v.correct) || !isStr(v.accepted) || !num) return null
-  if (!(v.tp === null || (typeof v.tp === 'number' && v.tp >= 1 && v.tp <= 6)) || !(v.cognitive === null || isCognitive(v.cognitive))) return null
+  if (!(v.tp === null || (typeof v.tp === 'number' && Number.isInteger(v.tp) && v.tp >= 1 && v.tp <= 6)) || !(v.cognitive === null || isCognitive(v.cognitive))) return null
   if (!isStr(num.value) || !isStr(num.tolerance) || !isStr(num.unit)) return null
   const options = []
   for (const o of v.options) {
@@ -64,10 +68,13 @@ export function parseSnapshot(text: string | null): StudioDraft | null {
   if (!Array.isArray(d.spIds) || !d.spIds.every(isStr) || d.spIds.length > 3) return null
   const leaves = (d.leaves as unknown[]).map(leafOf)
   if (leaves.some((l) => l === null) || leaves.length > 26) return null
+  const inheritedTp = d.inheritedTp
+  if (!(inheritedTp === undefined || inheritedTp === null || (typeof inheritedTp === 'number' && Number.isInteger(inheritedTp) && inheritedTp >= 1 && inheritedTp <= 6))) return null
   return {
     subjectId: d.subjectId, educationLevelId: d.educationLevelId, kertas: d.kertas as StudioDraft['kertas'], numberLabel: d.numberLabel, stem: d.stem,
     stemImageToken: d.stemImageToken, chapterId: d.chapterId, difficulty: d.difficulty, unitId: d.unitId, spIds: d.spIds, groupId: d.groupId,
     leaves: leaves as LeafDraft[],
+    ...(typeof inheritedTp === 'number' ? { inheritedTp } : {}),
   }
 }
 

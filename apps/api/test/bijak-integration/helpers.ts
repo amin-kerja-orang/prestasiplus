@@ -7,7 +7,7 @@ import request from 'supertest'
 import type TestAgent from 'supertest/lib/agent'
 import { expect } from 'vitest'
 
-import { runSeeds, type SeedModule } from '../../prisma/seed'
+import { runSeeds, seedModules, type SeedModule } from '../../prisma/seed'
 import { identitySeed } from '../../prisma/seed/core/identity'
 import { curriculumSeed } from '../../prisma/seed/curriculum'
 import { examSeed } from '../../prisma/seed/exam'
@@ -19,6 +19,7 @@ import { CLOCK, FixedClock } from '../../src/db/clock'
 import { AuthModule } from '../../src/modules/auth'
 import { BijakIntegrationModule } from '../../src/modules/bijak/integration'
 import { createTestDatabase, type TestDatabase } from '../support/db'
+import { plugPocFixture } from '../support/poc/plug'
 
 export const DEMO_PASSWORD = 'Demo1234'
 export const START = '2026-10-20T09:00:00+08:00'
@@ -39,9 +40,11 @@ export interface IntegrationApp {
  * No port is plugged by the test. The BE-09 question seed runs too, so every flow runs on the merged stack
  * (PoC papers on the reserved ids AND bank questions in `question_versions`).
  */
-export async function bootIntegrationApp(opts: { pocQuestions?: boolean; extraModules?: Type<unknown>[]; extraSeeds?: SeedModule[] } = {}): Promise<IntegrationApp> {
+export async function bootIntegrationApp(opts: { pocQuestions?: boolean; extraModules?: Type<unknown>[]; extraSeeds?: SeedModule[]; e2eProfile?: boolean } = {}): Promise<IntegrationApp> {
   const db = await createTestDatabase()
-  await runSeeds([identitySeed, curriculumSeed, questionsSeed, examSeed, walletSeed, ...(opts.extraSeeds ?? [])], { prisma: db.prisma })
+  // `e2eProfile`: the whole `e2e` seed profile with E2E_SEED=1, exactly what the e2e stack is seeded with (REQ-B-003).
+  if (opts.e2eProfile) await runSeeds(seedModules, { prisma: db.prisma, profile: 'e2e', env: { ...process.env, E2E_SEED: '1' } })
+  else await runSeeds([identitySeed, curriculumSeed, questionsSeed, examSeed, walletSeed, ...(opts.extraSeeds ?? [])], { prisma: db.prisma })
   const env: Record<string, string | undefined> = {
     DATABASE_URL: db.url,
     COOKIE_SECURE: 'false',
@@ -62,8 +65,6 @@ export async function bootIntegrationApp(opts: { pocQuestions?: boolean; extraMo
     BIJAK_SWEEP_INTERVAL_SECONDS: '0',
     UPLOAD_RATE_PER_MINUTE: '1000',
     FILE_STORAGE_DIR: undefined,
-    // The test boot runs the demo seed, as staging does: PoC questions on unless a spec asks for the production default.
-    BIJAK_POC_QUESTIONS: opts.pocQuestions === false ? 'false' : 'true',
   }
   for (const [k, v] of Object.entries(env)) {
     if (v === undefined) delete process.env[k]
@@ -77,6 +78,8 @@ export async function bootIntegrationApp(opts: { pocQuestions?: boolean; extraMo
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)
   await app.init()
+  // R1-B07: the API serves the bank only; a spec that needs the seeded PoC papers (reserved ids) opts in (the default, as staging was).
+  if (opts.pocQuestions !== false) plugPocFixture(app)
   return {
     app,
     db,
