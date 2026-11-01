@@ -32,8 +32,9 @@ describe('curriculum delete with children: 409', () => {
     vi.restoreAllMocks()
   })
 
+  // Secondary-only (D72): a subject can only be linked to a non-primary level (the curriculum module hides the primary stage).
   const newLevel = async (): Promise<string> =>
-    (await admin.post('/api/admin/education-levels', { name: 'Tahap C', nameEn: 'Level C', code: `c${++n}`, stage: 'primary', curriculum: 'KSSR' })).body.data.id
+    (await admin.post('/api/admin/education-levels', { name: 'Tahap C', nameEn: 'Level C', code: `c${++n}`, stage: 'lower_secondary', curriculum: 'KSSM' })).body.data.id
   const newSubject = async (): Promise<string> =>
     (await admin.post('/api/admin/subjects', { name: 'Subjek C', nameEn: 'Subject C', code: `s${++n}` })).body.data.id
   const newChapter = async (subjectId: string, educationLevelId: string): Promise<string> =>
