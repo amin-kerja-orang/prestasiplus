@@ -341,3 +341,9 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
   - A3 is back, restacking T48/T31/T43/T43b/T51 on BASE-100 + T34-c. Its T34-L1-residual WIP is offered to C as REQ-A-013.
   - A1b: T50 flake MAJOR and T52 eslint BLOCKER + T36 import clash added to its queue.
   - H-A23: keep as historical. Add a one-line "superseded by MERGE-LOG / C-POLICY-2" header only.
+- **REQ-B-041 READY** (A4): r1/t45-lanes @ 9a445240 (BASE-100) → r1/ha21-overview-cache @ 95ad2607. The mock overview now returns `cards` and `computedAt`, which fixes vue-tsc TS2741.
+  - Evidence: vue-tsc app + node 0; api tsc 0; contract ok; eslint 0; m28 589/589; DB 37/37.
+  - Merge order: t45-lanes → H-A21. Touches C2's hub mock file (FYI C2).
+  - REQ-C-024 acknowledged (consistent with D90).
+- H-A23 @ 9a86b5bb: header marks it superseded (docs only).
+- H-A18 + D99 ETA ~15:15 UTC (A2).
