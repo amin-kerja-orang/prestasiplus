@@ -505,7 +505,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 | T44 | r1/t44-blueprint-fields | 072d8f4b | — | merged at BASE-67 as 77984abc. The newer tip 072d8f4b shows a 19-file delta against base; A3 is asked whether it is WIP (marked IN-PROGRESS until it answers) |
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 15:47 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 15:48 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -522,15 +522,15 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-a2 | a631198c7 | READY (A2, BASE-105): B-034/035 + B2 Minors; intake-workflow 135/135; ready for the B1 gate |
 | r1/overview-getmany-parallel | a02f658f9 | READY (A4): live record reused from latest; cold overview 9.3 → 6.0 s (total 34.2 → 6.0 s, −82%); parity spec; merges after overview-mcq-shape-once; B2 |
-| r1/overview-mcq-shape-once | 5ca84dcfa | READY (A4): factsOf jana:false; cold overview 15.3→9.3 s (total 34.2→9.3 s); merges after req-b-033; B2 |
+| r1/overview-mcq-shape-once | 7a6e8bb35 | READY (A4): factsOf jana:false; cold overview 15.3→9.3 s (total 34.2→9.3 s); merges after req-b-033; B2 |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
-| r1/req-b-022a-a4 | 6295dc052 | CHANGES REQUESTED (B2 c18, REQ-B-053: empty env breaks API start) → A4 fixing + restack on BASE-105 |
+| r1/req-b-022a-a4 | 438407f65 | CHANGES REQUESTED (B2 c18, REQ-B-053: empty env breaks API start) → A4 fixing + restack on BASE-105 |
 | r1/req-b-025c | 37007e49c | READY; A3 pre-review found only Minors (no Blocker/Major) → A1b fixing the Minors, new head follows |
-| r1/req-b-033 | 50537328f | Approve w/ Minors, blocked by 022a → A4 restack on BASE-105 |
-| r1/req-c-020 | 6dc3feff8 | Approve w/ Minors, blocked by 022a → A4 restack on BASE-105 |
+| r1/req-b-033 | c0ea2ea96 | Approve w/ Minors, blocked by 022a → A4 restack on BASE-105 |
+| r1/req-c-020 | 78e050b3b | Approve w/ Minors, blocked by 022a → A4 restack on BASE-105 |
 | r1/req-c012-a2 | ba57ecc52 | WAITS for fixed H-A18 (A2 slot 1) |
 | r1/reqa014-no-chapter-lock-fe | 8c49b7af9 | (no status — triage) |
-| r1/reqb032-pinned-rule | 77c83c5e6 | IN-PROGRESS (A2 slot 2, moved from A3; WIP 77c83c5e) |
+| r1/reqb032-pinned-rule | e9cf34b7f | IN-PROGRESS (A2 slot 2, moved from A3; WIP 77c83c5e) |
 | r1/reqb049-report-visible | 059841d4c | READY; A3 pre-review found only Minors (no Blocker/Major) → A1b fixing the Minors, new head follows |
 | r1/reqb052-archived-edit | ce0af563f | IN-PROGRESS (A3 T48 dev): red repro ce0af563 proves an admin/Guru PUT rewrites a pinned archived v1 that a pupil sees; fixing (branch to a new version) |
 | r1/reqc021-followup | 948aa327a | READY (A1a, BASE-105): fixes the base red draw-bounded BR-16; merge early |
