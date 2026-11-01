@@ -100,6 +100,26 @@ describe('DSKP-complete approve gate, gate-check and status route (real bank)', 
       expect(out.servability?.questionId).toBe(id)
     })
 
+    it('REQ-B-027: a question the Tambah Soalan form creates (cognitiveLevel and kertas in the create body) passes the gate and is approved', async () => {
+      const id = await draft({ cognitiveLevel: 'mengaplikasi', kertas: '1' })
+      expect(await leafOf(id)).toEqual({ cognitive_level: 'mengaplikasi', kbat: 'mengaplikasi' })
+      expect((await issues(c.admin, id)).ok).toBe(true)
+      expect((await status(c.admin, id, 'review')).status).toBe(200)
+      const res = await status(c.admin, id, 'approved')
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(envelopeOf(QuestionStatusResultSchema).parse(res.body).data.question.status).toBe('approved')
+    })
+
+    it('REQ-B-027: an edit that omits cognitiveLevel keeps the level; only an explicit null clears it', async () => {
+      const id = await draft({ cognitiveLevel: 'menilai', kertas: '1' })
+      const kept = await c.admin.put(`/api/questions/${id}`, body({ kertas: '1' }))
+      expect(kept.status, JSON.stringify(kept.body)).toBe(200)
+      expect((await leafOf(id)).cognitive_level).toBe('menilai')
+      const cleared = await c.admin.put(`/api/questions/${id}`, body({ kertas: '1', cognitiveLevel: null }))
+      expect(cleared.status).toBe(200)
+      expect((await leafOf(id)).cognitive_level).toBeNull()
+    })
+
     it('a lower level (mengingat, memahami) is not KBAT', async () => {
       const id = await draft({ cognitiveLevel: 'memahami' })
       expect(await leafOf(id)).toEqual({ cognitive_level: 'memahami', kbat: 'bukan' })
@@ -218,6 +238,37 @@ describe('DSKP-complete approve gate, gate-check and status route (real bank)', 
       expect((await status(c.admin, id, 'draft', 'Jawapan tidak jelas.')).status).toBe(200)
       expect((await status(c.admin, '987654321', 'review')).status).toBe(404)
       expect((await check(c.admin, '987654321')).status).toBe(404)
+    })
+
+    it('REQ-C-013: Arkib needs no reason, from Semakan or Diterbitkan; the event records null (or the reason when one is given)', async () => {
+      const inReview = await draft()
+      expect((await status(c.admin, inReview, 'review')).status).toBe(200)
+      const a = await status(c.admin, inReview, 'archived') // review -> archived is in the table now
+      expect(a.status, JSON.stringify(a.body)).toBe(200)
+      // An SPM subject: the approve gate asks for the cognitive level and the kertas (REQ-B-027), and the stem must differ from the other drafts.
+      const live = await draft({ questionText: 'Soalan Arkib tanpa sebab yang unik untuk ujian REQ-C-013.', cognitiveLevel: 'mengaplikasi', kertas: '1' })
+      expect((await status(c.admin, live, 'review')).status).toBe(200)
+      const approved = await status(c.admin, live, 'approved')
+      expect(approved.status, JSON.stringify(approved.body)).toBe(200)
+      const b = await status(c.admin, live, 'archived')
+      expect(b.status, JSON.stringify(b.body)).toBe(200)
+      const reasons = await t.db.query<{ question_id: string; from_status: string; to_status: string; reason: string | null }>(
+        `select question_id::text, from_status, to_status, reason from question_status_events where question_id = any($1::bigint[]) and to_status = 'archived' order by question_id`,
+        [[inReview, live]],
+      )
+      expect(reasons).toEqual([
+        { question_id: inReview, from_status: 'review', to_status: 'archived', reason: null },
+        { question_id: live, from_status: 'approved', to_status: 'archived', reason: null },
+      ])
+      const given = await draft()
+      expect((await status(c.admin, given, 'review')).status).toBe(200)
+      expect((await status(c.admin, given, 'archived', 'Pendua')).status).toBe(200)
+      expect((await t.db.query<{ reason: string }>(`select reason from question_status_events where question_id = $1 and to_status = 'archived'`, [given]))[0]!.reason).toBe('Pendua')
+      // The owning Guru still cannot archive a question in Semakan (Admin Pusat only); a Guru draft -> archived is unchanged.
+      const own = await draft({ questionText: 'Soalan milik Guru untuk ujian Arkib REQ-C-013.' })
+      await t.db.query('update questions set created_by_id = $1::bigint where id = $2::bigint', [c.teacher.userId, own]) // the Guru owns it
+      expect((await status(c.teacher, own, 'review')).status).toBe(200)
+      expect((await status(c.teacher, own, 'archived')).status).toBe(403)
     })
 
     it('a CSRF-less status call is refused', async () => {

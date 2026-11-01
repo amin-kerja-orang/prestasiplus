@@ -50,3 +50,6 @@ export const contractNotVerifiedLine = (code: string, version: number, status: s
 
 /** Text search of the section pool describes candidates in chunks of this size. */
 export const DESCRIBE_CHUNK = 1000
+
+/** A placed question whose servability report could not be read (the bank failed closed): hard NOT_SERVABLE, never silently allowed [PROPOSED copy]. */
+export const unreadableLine = (questionId: string): string => `Soalan ${questionId} tidak dapat disemak untuk murid; cuba lagi.`

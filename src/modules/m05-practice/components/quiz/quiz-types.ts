@@ -34,6 +34,8 @@ export interface QuizLabels {
   retry: string
   /** Results link back to the host list ("Senarai Subjek" / "Kembali"). */
   back: string
+  /** Results line under the heading, `{subject}` replaced by the subject name (V2 Latih Tubi); absent = "{subject} · {message}". */
+  completed?: string
   /** Feedback card titles. */
   correctTitle: string
   wrongTitle: string

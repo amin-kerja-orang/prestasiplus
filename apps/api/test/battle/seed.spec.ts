@@ -160,34 +160,39 @@ describe('battle demo seed (BE-44)', () => {
       expect(await schools('')).toEqual({ activePeriod: 'weekly', rows: [], podium: [] })
     })
 
-    it('monthly (2026-09): the school of the 2026-09-16 battles only, 8 sides 4 won 4 lost by 2 pupils; students 2 / 0 / 2 each', async () => {
-      const month = await schools('?period=monthly')
-      expect(month.rows.map((r) => [r.name, r.battles, r.menang, r.seri, r.kalah, r.pelajar])).toEqual([['SJK(C) Demo Empat', 8, 4, 0, 4, 2]])
-      const rows = await students('?period=monthly')
-      expect(rows.map((r) => [r.menang, r.seri, r.kalah])).toEqual([[2, 0, 2], [2, 0, 2]])
-      // 4 battles: scores 8313/6230, 0/0, 8430/8930, 6431/3465 -> round(score / 100) per side, sums of the two pupils: 591.
-      expect(rows.reduce((n, r) => n + r.skor, 0)).toBe(83 + 62 + 0 + 0 + 84 + 89 + 64 + 35)
+    // D72: the prototype replay sits on primary-type demo schools (SK / SJK(C)) with Darjah pupils, which the school and student standings hide
+    // on purpose. The seed mirrors what was observed, so these cases assert the data exists and that it is hidden, not that it is listed.
+    const sidesOf = async (code: string, month?: string): Promise<number> =>
+      Number(
+        (
+          await t.db.query<{ n: string }>(
+            `select count(*) n from battle_participants p join schools s on s.id = p.school_id join battles b on b.id = p.battle_id
+              where s.code = $1 and ($2::text is null or to_char(b.created_at at time zone 'Asia/Kuala_Lumpur', 'YYYY-MM') = $2)`,
+            [code, month ?? null],
+          )
+        )[0]!.n,
+      )
+
+    it('monthly (2026-09): the 8 seeded sides of SJK(C) Demo Empat exist, but the primary school and its Darjah pupils are hidden from both standings (D72)', async () => {
+      expect(await sidesOf('DEMO004', '2026-09')).toBe(8)
+      expect(await schools('?period=monthly')).toEqual({ activePeriod: 'monthly', rows: [], podium: [] })
+      expect(await students('?period=monthly')).toEqual([])
     })
 
-    it('all time: counts of the prototype rows (sides, wins, draws, losses), with the 7 observed schools folded onto the 4 demo schools', async () => {
+    it('all time: the replay rows of the primary demo schools exist, but only the secondary SMK Demo Satu is listed (D72)', async () => {
+      // Seeded sides (two per battle, a side per pupil): the prototype rows of the SK / SJK(C) schools are in the database.
+      for (const code of ['DEMO002', 'DEMO003', 'DEMO004']) expect(await sidesOf(code), code).toBeGreaterThan(0)
+      expect(await sidesOf('DEMO004')).toBe(10) // 8082 alone
       const all = await schools('?period=all_time')
+      const names = all.rows.map((r) => r.name)
+      for (const hidden of ['SJK(C) Demo Empat', 'SK Demo Dua', 'SK Demo Tiga']) expect(names).not.toContain(hidden)
       const by = new Map(all.rows.map((r) => [r.name, r]))
-      const fig = (name: string) => {
-        const r = by.get(name)!
-        return [r.battles, r.menang, r.seri, r.kalah]
-      }
-      expect(fig('SJK(C) Demo Empat')).toEqual([10, 5, 0, 5]) // 8082 alone
-      expect(by.get('SJK(C) Demo Empat')!.pelajar).toBe(4)
-      expect(fig('SMK Demo Satu')).toEqual([19 + 3, 12 + 2, 1, 6 + 1]) // 8106 + 8880
-      expect(fig('SK Demo Dua')).toEqual([18 + 30, 9 + 15, 0, 9 + 15]) // 8090 + 8080
-      expect(fig('SK Demo Tiga')).toEqual([40 + 3, 20 + 1, 0, 20 + 2]) // 8078 + 2710
-      expect(all.rows.map((r) => r.rank)).toEqual([1, 2, 3, 4])
-      expect(all.podium).toHaveLength(3)
-      expect(all.podium.map((p) => p.skor)).toEqual(all.rows.slice(0, 3).map((r) => r.skor))
-      // Both Johor schools keep their national rank under a state filter.
-      const johor = await schools('?period=all_time&state=Johor')
-      expect(johor.rows.map((r) => r.rank)).toEqual(all.rows.filter((r) => r.state === 'Johor').map((r) => r.rank))
-      expect(johor.rows).toHaveLength(2)
+      const smk = by.get('SMK Demo Satu')!
+      expect([smk.battles, smk.menang, smk.seri, smk.kalah, smk.pelajar]).toEqual([19 + 3, 12 + 2, 1, 6 + 1, 7]) // 8106 + 8880
+      expect(all.rows.map((r) => r.rank)).toEqual([1])
+      expect(all.podium.map((p) => p.name)).toEqual(['SMK Demo Satu'])
+      // Both Johor schools are primary: a state filter leaves nothing.
+      expect((await schools('?period=all_time&state=Johor')).rows).toEqual([])
     })
 
     it('history of the demo student: the 8 finished battles of the first observed pupil, newest first', async () => {
@@ -199,15 +204,18 @@ describe('battle demo seed (BE-44)', () => {
       expect(rows.map((r) => r.createdAt)).toEqual([...rows.map((r) => r.createdAt)].sort().reverse())
     })
 
-    it('the school page of the monthly school: week null, month box, fighters empty (no battle this week), recent newest first', async () => {
+    it('the school page of SJK(C) Demo Empat (hidden by D72): 200, zero totals, no week or month box, no fighters; the seeded battles still list as recent rows', async () => {
       const id = (await t.db.query<{ id: string }>(`select id::text from schools where code = 'DEMO004'`))[0]!.id
       const res = await getAs(pelajar, `/battle/schools/${id}`)
+      expect(res.status).toBe(200)
       const data = res.body.data
+      expect(data.school).toEqual({ id, name: 'SJK(C) Demo Empat', ppd: 'PPD JOHOR BAHRU', state: 'Johor', type: 'SJK(C)' })
+      expect(data.allTime).toEqual({ battles: 0, menang: 0, ketepatan: 0, pelajar: 0 })
       expect(data.week).toBeNull()
-      expect(data.month).toMatchObject({ rank: 1, battles: 8, menang: 4, kalah: 4 })
+      expect(data.month).toBeNull()
       expect(data.fighters).toEqual([])
+      expect(data.recent.map((r: { uuid: string }) => r.uuid)).toEqual([30, 31, 32, 33, 34].map((n) => `00000000-0000-4000-8000-0000000000${String(n)}`))
       expect(data.recent[0].createdAt).toBe('2026-09-16T21:58:00.000+08:00')
-      expect(data.recent).toHaveLength(5)
     })
   })
 })

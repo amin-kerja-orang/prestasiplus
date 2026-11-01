@@ -21,7 +21,7 @@ import { idFromString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { bijakCodeOf, curriculumCodeOf } from '../../bijak/papers/subject-codes'
 import { QuestionsRepository } from '../../questions'
-import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL } from '../../questions/learner-visibility'
+import { ACTIVE_SUBJECT_SQL, LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL } from '../../questions/learner-visibility'
 import { CANDIDATE_SLACK, MAX_EDITOR_CANDIDATES } from './builder.constants'
 import { BuilderRepository } from './builder.repository'
 import {
@@ -72,13 +72,13 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
     if (!subject) return []
     const pool = poolPattern(scope.subject)
     // One bounded query. Same eligibility as `QuestionsRepository.eligibleIds` (live version approved AND
-    // active, not PKSK, not a Darjah or inactive level: R1-B21 secondary-only) and the same kertas rule as `kertasOf` (lowest pool digit, else the paper code digit).
+    // active, not PKSK, not a Darjah or inactive level: R1-B21 secondary-only, and an active subject: REQ-B-013) and the same kertas rule as `kertasOf` (lowest pool digit, else the paper code digit).
     const rows = await this.db.$queryRaw<{ id: bigint }[]>`
       SELECT q.id
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
        WHERE q.is_active AND v.status = 'approved' AND v.subject_id = ${subject.id}
-         AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL}
+         AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${ACTIVE_SUBJECT_SQL}
          AND COALESCE(
                (SELECT min((substring(t.code from ${pool}))::int) FROM question_tags t
                  WHERE t.question_id = q.id AND t.kind = 'pool' AND t.code ~ ${pool}),
@@ -179,11 +179,12 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
       },
     })
     // Secondary-only (R1-B21): Darjah (and PKSK) members leave the group; a group left with no member is absent.
-    const members = await this.servableLatest(groups.flatMap((g) => g.questions.map((m) => m.id)))
+    const members = await this.servableCurrent(groups.flatMap((g) => g.questions.map((m) => m.id)))
+    // One file lookup for the pictures of every group of the call (not one per group).
+    const tokens = await this.tokensOf(groups.flatMap((g) => g.stimuli.map((s) => s.stimulus)))
     for (const g of groups) {
       // D90: the group is always emitted, with or without a displayable stimulus, so every builder read treats its members as one unit.
       // A group with nothing to display (audio only, or empty) has no `stimulus` and `stimuli: []`.
-      const tokens = await this.tokensOf(g.stimuli.map((s) => s.stimulus))
       const shown = stimuliOf(g.stimuli.map((s) => s.stimulus), tokens)
       const [stimulus, ...rest] = shown
       const questionIds = g.questions.filter((m) => members.has(m.id)).map((m) => m.id.toString())
@@ -206,12 +207,15 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
     return new Set(rows.map((r) => r.id))
   }
 
-  /** `servableVersions` for the latest version of each question. */
-  private async servableLatest(ids: readonly bigint[]): Promise<Set<bigint>> {
+  /**
+   * `servableVersions` for the version a question is read at: the LIVE one, else (no live version) the latest. A group member that
+   * is live at secondary level is not hidden by a newer draft that moved it to Darjah, and the reverse (REQ-B-013c, as T29).
+   */
+  private async servableCurrent(ids: readonly bigint[]): Promise<Set<bigint>> {
     if (ids.length === 0) return new Set()
     const rows = await this.db.$queryRaw<{ id: bigint }[]>`
       SELECT q.id FROM questions q
-        JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
+        JOIN question_versions v ON v.question_id = q.id AND v.version_no = COALESCE(q.live_version_no, q.latest_version_no)
        WHERE q.id = ANY(${[...new Set(ids)]}::bigint[]) AND ${NOT_PKSK_SQL} AND ${NOT_PRIMARY_LEVEL_SQL}`
     return new Set(rows.map((r) => r.id))
   }
@@ -262,8 +266,10 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
         where: { id: { in: groupKeys } },
         include: { stimuli: { orderBy: { position: 'asc' }, include: { stimulus: true } }, options: { orderBy: { position: 'asc' } } },
       })
+      // One file lookup for the pictures of every group of the call (not one per group).
+      const tokens = await this.tokensOf(groups.flatMap((g) => g.stimuli.map((s) => s.stimulus)))
       for (const g of groups) {
-        const all = stimuliOf(g.stimuli.map((s) => s.stimulus), await this.tokensOf(g.stimuli.map((s) => s.stimulus)))
+        const all = stimuliOf(g.stimuli.map((s) => s.stimulus), tokens)
         if (all[0]) {
           stimuli[g.id.toString()] = all[0]
           groupStimuli[g.id.toString()] = all

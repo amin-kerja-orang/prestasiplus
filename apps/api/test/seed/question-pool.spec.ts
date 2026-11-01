@@ -179,8 +179,8 @@ describe('PoC question pool seed (database)', () => {
     expect(names.indexOf('questions-pool')).toBeLessThan(names.indexOf('spm-subject-configs'))
   })
 
-  it('runs in the poc profile only and is refused in production', async () => {
-    expect(questionPoolSeed.profiles).toEqual(['poc'])
+  it('runs in the poc and e2e profiles only and is refused in production', async () => {
+    expect(questionPoolSeed.profiles).toEqual(['poc', 'e2e'])
     expect(questionPoolSeed.kind).toBe('demo')
     expect(await runSeeds([questionPoolSeed], { prisma: db.prisma, profile: 'other', env: { NODE_ENV: 'test' } })).toEqual([])
     expect(await runSeeds([questionPoolSeed], { prisma: db.prisma, profile: 'poc', env: { NODE_ENV: 'production' } })).toEqual([])

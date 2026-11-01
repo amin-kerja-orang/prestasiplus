@@ -48,7 +48,10 @@ export interface StimulusDef {
   caption?: string
   /** Accessible description of the diagram. */
   alt: string
-  /** Inline SVG markup (bundled, trusted, uses currentColor / theme variables only). */
+  /**
+   * Inline SVG markup: legacy field of the exam-core model (the API marking mapper still reads it, A4 removes
+   * it later). The pupil UI never renders it (REQ-A-010); diagrams reach the page as a file URL.
+   */
   svg?: string
   text?: string
   /** Source line of a passage. */

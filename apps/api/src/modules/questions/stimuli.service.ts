@@ -18,14 +18,11 @@ import { idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { FilesService } from '../files'
 import { GroupMembers } from './group-members'
+import { stimulusTableParts } from './stimulus-table'
 import { type GroupRow, type ListFilter, type MemberBrief, type StimulusData, type StimulusRow, StimuliRepository, plainExcerpt } from './stimuli.repository'
 import { QuestionsService } from './questions.service'
-import { stimulusTableOf } from './stimulus-table'
 import { STIMULUS_KINDS } from './types'
 import type { QuestionActor, QuestionCreateInput, QuestionView } from './types'
-
-/** A table stimulus whose grid was read from the body text: the body is the grid, not an excerpt. */
-const tableFromBody = (r: StimulusRow): boolean => r.kind === 'table' && stimulusTableOf(r.tableData) === undefined && stimulusTableOf(null, r.bodyMs) !== undefined
 
 const memberOf = ({ groupId: _g, ...m }: MemberBrief) => {
   void _g
@@ -99,7 +96,14 @@ export class StimuliService {
         const next = await this.imageOf(input.imageFileId, fields)
         assetFileId = next
       }
-      const body = input.body === undefined ? { ms: current.bodyMs, en: current.bodyEn } : { ms: input.body?.ms ?? null, en: input.body?.en ?? null }
+      // A table the intake stored as a pipe table in the body (no grid) is shown as the grid only. When the Studio sends a grid for it and no
+      // body, the old pipe body goes: it would otherwise stay in the row and be shown beside the new grid.
+      const replacesBodyTable = current.bodyIsTable && input.tableData != null && input.body === undefined
+      const body = replacesBodyTable
+        ? { ms: null, en: null }
+        : input.body === undefined
+          ? { ms: current.bodyMs, en: current.bodyEn }
+          : { ms: input.body?.ms ?? null, en: input.body?.en ?? null }
       const data: StimulusData = {
         kind: current.kind,
         label: input.label === undefined ? current.label : input.label,
@@ -113,7 +117,7 @@ export class StimuliService {
       }
       // The merged state must still satisfy the rules of the kind (same rules as the create body).
       if (data.kind === 'passage' && !data.bodyMs) fields.body ??= STIMULUS_MESSAGES.bodyRequired
-      if (data.kind === 'table' && data.tableData === null && data.assetFileId === null) fields.tableData ??= STIMULUS_MESSAGES.tableRequired
+      if (data.kind === 'table' && data.tableData === null && data.assetFileId === null && !stimulusTableParts('table', null, data.bodyMs).table) fields.tableData ??= STIMULUS_MESSAGES.tableRequired
       if ((IMAGE_STIMULUS_KINDS as readonly string[]).includes(data.kind) && data.assetFileId === null) fields.imageFileId ??= STIMULUS_MESSAGES.imageRequired
       if (Object.keys(fields).length > 0) throw fail(fields)
       await this.repo.updateStimulus(id, data)
@@ -283,10 +287,11 @@ export class StimuliService {
       kind: row.kind,
       label: row.label ?? '',
       caption: row.caption,
-      body: row.bodyMs === null && row.bodyEn === null ? null : { ms: row.bodyMs ?? row.bodyEn ?? '', ...(row.bodyMs !== null && row.bodyEn !== null ? { en: row.bodyEn } : {}) },
+      // A table read from the body is shown as the grid only (never the grid and its source text).
+      body: row.bodyIsTable || (row.bodyMs === null && row.bodyEn === null) ? null : { ms: row.bodyMs ?? row.bodyEn ?? '', ...(row.bodyMs !== null && row.bodyEn !== null ? { en: row.bodyEn } : {}) },
       alt: row.altText,
       sourceCitation: row.sourceCitation,
-      tableData: row.tableData,
+      tableData: row.shownTable,
       imageId: row.assetFileId === null ? null : (tokens.get(idToString(row.assetFileId)) ?? null),
       groupCount: row.groupCount,
     }
@@ -364,7 +369,7 @@ export class StimuliService {
       kind: r.kind as StimulusListRow['kind'],
       label: r.label ?? '',
       caption: r.caption,
-      excerpt: tableFromBody(r) ? null : plainExcerpt(r.bodyMs ?? r.bodyEn, STIMULUS_MEMBER_STEM_MAX) || null,
+      excerpt: r.bodyIsTable ? null : plainExcerpt(r.bodyMs ?? r.bodyEn, STIMULUS_MEMBER_STEM_MAX) || null,
       imageId: r.assetFileId === null ? null : (tokens.get(idToString(r.assetFileId)) ?? null),
       groupCount: r.groupCount,
       status: served.has(idToString(r.id)) ? ('served' as const) : ('draft' as const),

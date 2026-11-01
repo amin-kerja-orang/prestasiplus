@@ -707,6 +707,7 @@ describe('OpenAPI registration', () => {
       .filter(([p]) => p.startsWith('/intake') && !p.startsWith('/intake/dashboard')) // BE-40 routes: dashboard.test.ts
       .flatMap(([p, ops]) => Object.keys(ops).map((m) => `${m} ${p}`))
       .filter((r) => !BE37_ROUTES.has(r)) // BE-37 routes are covered by files.test.ts
+      .filter((r) => r !== 'post /intake/stimuli/{id}/link-references') // R1-T13 route: questions/studio
       .sort()
     expect(registered).toEqual(ROUTES.map(([m, p]) => `${m} ${p}`).sort())
   })

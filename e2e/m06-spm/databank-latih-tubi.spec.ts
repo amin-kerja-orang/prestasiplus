@@ -3,6 +3,10 @@
  * S2–S4/Q1/Q2 part of -04, -06, -39, -40). Every test runs on the three viewport projects.
  * Provisional: the quiz pages Q1/Q2 were never opened live (L-1, L-3), and the S4 seed split is PROPOSED
  * (DV-M06-01).
+ *
+ * REQ-C-023 refresh (v2 shells): the page title is printed by the Portal Pembelajaran navbar (no
+ * subtitle), tab titles end "| PRESTASIPLUS", and a picked level / difficulty / count is a solid
+ * button with `aria-pressed="true"` (the v2 buttons carry no live colour classes).
  */
 
 import type { Page } from '@playwright/test'
@@ -12,7 +16,6 @@ import {
   expectNoHorizontalScroll,
   expectTabTitle,
   expectTouchTarget,
-  isDesktopShell,
   isMobileWidth,
   moduleTag,
   provisional,
@@ -29,6 +32,14 @@ import {
   tid,
 } from './support'
 
+/** The title the Portal Pembelajaran navbar prints (h1, or `shell-title` when the page owns the h1). */
+const shellTitle = (page: Page) =>
+  page.getByTestId('pembelajaran-header').locator('h1, [data-testid=shell-title]').first()
+
+/** The leading figure of a hub tile such as "20,529 Jumlah Soalan". */
+const leadingNumber = async (page: Page, testId: string) =>
+  Number(((await tid(page, testId).innerText()).match(/[\d,]+/)?.[0] ?? '').replace(/,/g, ''))
+
 test.describe('M06 S2 databank', { tag: [moduleTag(6)] }, () => {
   test.use({ mockInit: { latency: 0 } })
 
@@ -40,10 +51,7 @@ test.describe('M06 S2 databank', { tag: [moduleTag(6)] }, () => {
     await loginAs(PELAJAR)
     await gotoApp('/spm/tahun-lepas')
     await expectTabTitle(page, 'Databank Soalan SPM | PRESTASIPLUS')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Databank Soalan SPM')
-    if (isDesktopShell(page)) {
-      await expect(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')
-    }
+    await expect(shellTitle(page)).toHaveText('Databank Soalan SPM')
     await expect(tid(page, 'spm-back')).toHaveText('Kembali ke Mod SPM')
     await expect(tid(page, 'spm-back')).toHaveAttribute('href', '/spm')
     await expect(tid(page, 'spm-heading')).toHaveText('Databank Soalan SPM')
@@ -69,7 +77,9 @@ test.describe('M06 S2 databank', { tag: [moduleTag(6)] }, () => {
     const mula = bm.getByTestId('databank-mula')
     await expect(mula).toHaveText('Mula')
     expect(await mula.evaluate((el) => el.closest('a'))).toBeNull()
-    expect(await cards.first().evaluate((el) => el.tagName)).toBe('DIV')
+    expect(
+      await cards.first().evaluate((el) => el.tagName !== 'A' && el.closest('a') === null),
+    ).toBe(true)
     await expect(page.locator('select')).toHaveCount(0)
     // Every icon tile shows a glyph (DV-M06-03).
     const blank = await page
@@ -107,7 +117,7 @@ test.describe('M06 S2 databank', { tag: [moduleTag(6)] }, () => {
       await expect(page).toHaveURL(/\/spm\/tahun-lepas\/BM\/quiz\?count=10$/)
       await expect(tid(page, 'quiz-title')).toHaveText('Bahasa Melayu')
       await expect(tid(page, 'quiz-progress-text')).toHaveText('Soalan 1 daripada 10')
-      await expect(tid(page, 'shell-user-title')).toHaveText('Databank Soalan SPM')
+      await expect(shellTitle(page)).toHaveText('Databank Soalan SPM')
 
       const posts = (await mock.requests('/api/practice/sessions')).filter(
         (r) => r.method === 'POST',
@@ -136,9 +146,7 @@ test.describe('M06 S2 databank', { tag: [moduleTag(6)] }, () => {
       await expect(first.getByTestId('row-coins')).toHaveText(/^\s*\+\d+ 🪙\s*$/)
       expect(total).toBeGreaterThanOrEqual(0)
       await gotoApp('/spm')
-      await expect(
-        page.locator('[data-testid=spm-mine-sessions] [data-testid=mine-value]'),
-      ).toHaveText('5')
+      await expect.poll(() => leadingNumber(page, 'spm-mine-sessions')).toBe(5)
     },
   )
 
@@ -166,12 +174,10 @@ test.describe('M06 S3 latih tubi', { tag: [moduleTag(6)] }, () => {
     await loginAs(PELAJAR)
     await gotoApp('/spm/latih-tubi')
     await expectTabTitle(page, 'Latih Tubi SPM | PRESTASIPLUS')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Latih Tubi SPM')
+    await expect(shellTitle(page)).toHaveText('Latih Tubi SPM')
     await expect(tid(page, 'spm-back')).toHaveText('Kembali ke Mod SPM')
     await expect(tid(page, 'spm-heading')).toHaveText('Latih Tubi SPM')
-    await expect(tid(page, 'spm-sub')).toHaveText(
-      'Pilih subjek untuk mula berlatih (Tingkatan 4 & 5)',
-    )
+    await expect(tid(page, 'spm-sub')).toHaveText('Pilih subjek untuk mula berlatih')
     await expect(page.getByTestId('section-heading')).toHaveText([
       'Subjek Teras (7)',
       'Subjek Elektif (12)',
@@ -255,7 +261,7 @@ test.describe('M06 S3 latih tubi', { tag: [moduleTag(6)] }, () => {
     await loginAs(PELAJAR)
     await gotoApp('/spm/latih-tubi')
     const ba = tid(page, 'latih-tubi-card-BA')
-    await expect(ba).toHaveClass(/border-amber-300/)
+    await expect(ba).toHaveAttribute('data-locked', 'true')
     await expect(ba).toHaveClass(/pointer-events-none/)
     await expect(ba).toHaveAttribute('href', 'javascript:void(0)')
     await expect(ba.getByTestId('latih-tubi-count')).toHaveText('0 soalan')
@@ -268,7 +274,7 @@ test.describe('M06 S3 latih tubi', { tag: [moduleTag(6)] }, () => {
     await expect(tid(page, 'config-sub')).toContainText('0 soalan tersedia')
     await expect(tid(page, 'level-10').getByTestId('level-count')).toHaveText('0 soalan')
     await expect(tid(page, 'level-11').getByTestId('level-count')).toHaveText('0 soalan')
-    await expect(page.getByTestId('difficulty-count')).toHaveText(Array(4).fill('0 soalan'))
+    await expect(page.getByTestId('difficulty-count')).toHaveText(Array(5).fill('0 soalan'))
   })
 })
 
@@ -283,10 +289,10 @@ test.describe('M06 S4 settings and Q2', { tag: [moduleTag(6)] }, () => {
     async ({ page, loginAs, gotoApp }) => {
       await loginAs(PELAJAR)
       await gotoApp('/spm/latih-tubi/MATH')
-      await expectTabTitle(page, 'Latih Tubi SPM — Matematik')
-      await expect(tid(page, 'shell-user-title')).toHaveText('Latih Tubi SPM — Matematik')
-      await expect(tid(page, 'shell-user-subtitle')).toHaveCount(0)
-      await expect(tid(page, 'spm-back')).toHaveText('Kembali')
+      // DV-M06-07: the subject is in the tab title; the v2 navbar prints the section title.
+      await expectTabTitle(page, 'Latih Tubi SPM — Matematik | PRESTASIPLUS')
+      await expect(shellTitle(page)).toHaveText('Latih Tubi SPM')
+      await expect(tid(page, 'spm-back')).toHaveText('Kembali ke Senarai Subjek')
       await expect(tid(page, 'spm-back')).toHaveAttribute('href', '/spm/latih-tubi')
       await expect(tid(page, 'config-title')).toHaveText('Matematik')
       await expect(tid(page, 'config-sub')).toHaveText(
@@ -296,30 +302,60 @@ test.describe('M06 S4 settings and Q2', { tag: [moduleTag(6)] }, () => {
 
       expect(await tabCount(page, 'level-10')).toBe('976 soalan')
       expect(await tabCount(page, 'level-11')).toBe('705 soalan')
-      expect(await diff(page)).toEqual(['514 soalan', '577 soalan', '85 soalan', '0 soalan'])
+      expect(await diff(page)).toEqual([
+        '505 soalan',
+        '514 soalan',
+        '577 soalan',
+        '85 soalan',
+        '0 soalan',
+      ])
       await expect(page.getByText('Biarkan kosong untuk campuran semua tahap')).toBeVisible()
 
+      await expect(tid(page, 'level-all')).toHaveAttribute('aria-pressed', 'true')
       await tid(page, 'level-10').click()
-      await expect(tid(page, 'level-10')).toHaveClass(/border-blue-500/)
-      await expect(tid(page, 'level-10')).toHaveClass(/bg-blue-50/)
-      expect(await diff(page)).toEqual(['309 soalan', '410 soalan', '58 soalan', '0 soalan'])
+      await expect(tid(page, 'level-10')).toHaveAttribute('aria-pressed', 'true')
+      await expect(tid(page, 'level-all')).toHaveAttribute('aria-pressed', 'false')
+      expect(await diff(page)).toEqual([
+        '199 soalan',
+        '309 soalan',
+        '410 soalan',
+        '58 soalan',
+        '0 soalan',
+      ])
       await tid(page, 'level-11').click()
-      expect(await diff(page)).toEqual(['205 soalan', '167 soalan', '27 soalan', '0 soalan'])
+      expect(await diff(page)).toEqual([
+        '306 soalan',
+        '205 soalan',
+        '167 soalan',
+        '27 soalan',
+        '0 soalan',
+      ])
       await tid(page, 'level-11').click()
-      await expect(tid(page, 'level-11')).not.toHaveClass(/border-blue-500/)
-      expect(await diff(page)).toEqual(['514 soalan', '577 soalan', '85 soalan', '0 soalan'])
+      await expect(tid(page, 'level-11')).toHaveAttribute('aria-pressed', 'false')
+      await expect(tid(page, 'level-all')).toHaveAttribute('aria-pressed', 'true')
+      expect(await diff(page)).toEqual([
+        '505 soalan',
+        '514 soalan',
+        '577 soalan',
+        '85 soalan',
+        '0 soalan',
+      ])
 
+      // One difficulty at a time; clicking the picked one clears it.
+      const pressed = () =>
+        page
+          .locator('[data-testid^=difficulty-][aria-pressed=true]')
+          .evaluateAll((els) => els.map((e) => e.getAttribute('data-testid')))
       await tid(page, 'difficulty-2').click()
-      await expect(tid(page, 'difficulty-2')).toHaveClass(/border-green-500/)
+      await expect.poll(pressed).toEqual(['difficulty-2'])
       await tid(page, 'difficulty-3').click()
-      await expect(tid(page, 'difficulty-3')).toHaveClass(/border-yellow-500/)
-      await expect(tid(page, 'difficulty-2')).not.toHaveClass(/border-green-500/)
+      await expect.poll(pressed).toEqual(['difficulty-3'])
       await tid(page, 'difficulty-4').click()
-      await expect(tid(page, 'difficulty-4')).toHaveClass(/border-orange-500/)
+      await expect.poll(pressed).toEqual(['difficulty-4'])
       await tid(page, 'difficulty-5').click()
-      await expect(tid(page, 'difficulty-5')).toHaveClass(/border-red-500/)
+      await expect.poll(pressed).toEqual(['difficulty-5'])
       await tid(page, 'difficulty-5').click()
-      await expect(tid(page, 'difficulty-5')).not.toHaveClass(/border-red-500/)
+      await expect.poll(pressed).toEqual([])
 
       // Unformatted difficulty counts vs separated level counts (D-6, replicated).
       await gotoApp('/spm/latih-tubi/SCI')
@@ -340,7 +376,7 @@ test.describe('M06 S4 settings and Q2', { tag: [moduleTag(6)] }, () => {
     await loginAs(PELAJAR)
     await gotoApp('/spm/latih-tubi/MATH')
     await expect(page.locator('[data-testid^=count-]')).toHaveText(['40 (Target SPM)'])
-    await expect(tid(page, 'count-40')).toHaveClass(/bg-blue-500/)
+    await expect(tid(page, 'count-40')).toHaveAttribute('aria-pressed', 'true')
     await expect(tid(page, 'config-helper')).toHaveText(
       'Set penuh target spm untuk Matematik disasar pada 40 soalan.',
     )
@@ -382,7 +418,7 @@ test.describe('M06 S4 settings and Q2', { tag: [moduleTag(6)] }, () => {
       '50',
       '60',
     ])
-    await expect(tid(page, 'count-10')).toHaveClass(/bg-blue-500/)
+    await expect(tid(page, 'count-10')).toHaveAttribute('aria-pressed', 'true')
     await expect(tid(page, 'config-helper')).toHaveText(
       'Pilih bilangan soalan ikut keperluan latihan anda.',
     )
@@ -393,14 +429,17 @@ test.describe('M06 S4 settings and Q2', { tag: [moduleTag(6)] }, () => {
     )
   })
 
-  test('E2E-M06-40 S4 difficulty is 2 per row at 375 and 4 per row from 640; "Pertengahan" stays inside', async ({
+  test('E2E-M06-40 S4 difficulty is 2 per row at 375, 3 from 640 and 5 from 1024; "Pertengahan" stays inside', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
     await loginAs(PELAJAR)
     await gotoApp('/spm/latih-tubi/MATH')
-    expect(await columnsOf(page, 'config-difficulties')).toBe(isMobileWidth(page) ? 2 : 4)
+    const width = viewportWidth(page)
+    expect(await columnsOf(page, 'config-difficulties')).toBe(
+      width >= 1024 ? 5 : width >= 640 ? 3 : 2,
+    )
     const inside = await tid(page, 'difficulty-3').evaluate(
       (el) => el.scrollWidth <= el.clientWidth,
     )
@@ -418,10 +457,12 @@ test.describe('M06 S4 settings and Q2', { tag: [moduleTag(6)] }, () => {
     'E2E-M06-13 Q2: MATH count=40 level=11 difficulty=4 starts the filtered session and S10 lists it',
     provisional('L-3/L-4: the live quiz was never opened; the seed split (27) is PROPOSED'),
     async ({ page, loginAs, gotoApp, mock }) => {
+      // 27 answered questions plus a second boot do not fit the 30 s default.
+      test.slow()
       await loginAs(PELAJAR)
       await gotoApp('/spm/latih-tubi/MATH/quiz?count=40&level=11&difficulty=4')
       await expect(tid(page, 'quiz-title')).toHaveText('Matematik')
-      await expect(tid(page, 'shell-user-title')).toHaveText('Latih Tubi SPM')
+      await expect(shellTitle(page)).toHaveText('Latih Tubi SPM')
       await expect(tid(page, 'quiz-progress-text')).toHaveText('Soalan 1 daripada 27')
       const posts = (await mock.requests('/api/practice/sessions')).filter(
         (r) => r.method === 'POST',
@@ -504,9 +545,7 @@ test.describe('M06 Q2 no matching question', { tag: [moduleTag(6)] }, () => {
       await expect(tid(page, 'quiz-progress-text')).toHaveText('Soalan 1 daripada 3')
 
       await gotoApp('/spm/latih-tubi/MATH/quiz?count=40&level=11&difficulty=5')
-      await expect(tid(page, 'spm-no-questions')).toContainText(
-        'Tiada soalan untuk tetapan ini. Sila ubah tetapan kuiz.',
-      )
+      await expect(tid(page, 'spm-no-questions')).toContainText('Tiada soalan untuk pilihan ini.')
       await expectNoHorizontalScroll(page)
       await tid(page, 'spm-no-questions-back').click()
       await expect(page).toHaveURL(/\/spm\/latih-tubi\/MATH$/)
@@ -559,9 +598,8 @@ test.describe('M06 count consistency', { tag: [moduleTag(6)] }, () => {
     }
 
     await gotoApp('/spm')
-    const total = num(
-      await page.locator('[data-testid=spm-stat-total] [data-testid=stat-value]').innerText(),
-    )
+    const total = await leadingNumber(page, 'spm-stat-total')
+    expect(total).toBeGreaterThan(0)
     for (const chip of await page.getByTestId('module-chip').allInnerTexts()) {
       if (/soalan$/.test(chip)) expect(num(chip)).toBeLessThanOrEqual(total)
     }

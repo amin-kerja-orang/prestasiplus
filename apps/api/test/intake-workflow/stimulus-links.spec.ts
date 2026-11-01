@@ -34,6 +34,8 @@ async function figureFor(batchId: string, ids: string[]): Promise<{ stimulusId: 
   const up = await admin.agent.post('/api/files?purpose=question_image').set('X-CSRF-Token', admin.csrf).attach('file', makePng(), { filename: 'rajah.png', contentType: 'image/png' })
   expect(up.status, JSON.stringify(up.body)).toBe(201)
   const crop = (await one<{ id: string }>(`select id::text id from files order by id desc limit 1`)).id
+  // Real crops are `intake_figure` files (reviewer only); the upload route cannot make one, so the uploaded PNG is re-purposed.
+  await t.db.query(`update files set purpose = 'intake_figure' where id = $1`, [crop])
   const page = await one<{ id: string }>(`select p.id::text id from intake_pages p join intake_files f on f.id = p.intake_file_id where f.batch_id = $1 order by p.id limit 1`, [batchId])
   const figure = await one<{ id: string }>(`insert into intake_figures (intake_page_id, bbox, crop_file_id) values ($1, '{"x":0,"y":0,"w":0.5,"h":0.5}', $2) returning id::text id`, [page.id, crop])
   await t.db.query(`update intake_stimuli set figure_id = $1 where id = $2`, [figure.id, s.id])
@@ -54,6 +56,7 @@ describe('intake: every question that refers to a figure is linked to it (D90)',
     const stimuliBefore = Number((await one<{ n: string }>('select count(*)::text n from stimuli')).n)
     const groupsBefore = Number((await one<{ n: string }>('select count(*)::text n from stimulus_groups')).n)
     const questionsBefore = Number((await one<{ n: string }>('select count(*)::text n from questions')).n)
+    const imagesBefore = Number((await one<{ n: string }>(`select count(*)::text n from files where purpose = 'question_image'`)).n)
 
     const res = await post(admin, '/intake/items/bulk', { action: 'accept', ids: [a, b, c, plain] })
     expect(res.status, JSON.stringify(res.body)).toBe(200)
@@ -69,15 +72,20 @@ describe('intake: every question that refers to a figure is linked to it (D90)',
     expect([qa.pos, qb.pos, qc.pos]).toEqual([1, 2, 3])
     expect((await questionOf(plain)).g).toBeNull()
 
-    // The bank stimulus is a snapshot of the figure: kind, caption, alt and the crop file; one link row for the group.
-    const group = await one<{ n: string; stimulus: string; kind: string; asset: string | null; caption: string | null; alt: string | null }>(
-      `select (select count(*) from stimulus_group_stimuli where group_id = g.id)::text n, s.id::text stimulus, s.kind, s.asset_file_id::text asset, s.caption, s.alt_text alt
-         from stimulus_groups g join stimulus_group_stimuli gs on gs.group_id = g.id join stimuli s on s.id = gs.stimulus_id where g.id = $1`,
+    // The bank stimulus is a snapshot of the figure: kind, caption, alt and a question_image file made from the crop (R1-14.3: the crop
+    // itself is an intake_figure, reviewer only); one link row for the group, and ONE image file for the three items, not one each.
+    const group = await one<{ n: string; stimulus: string; kind: string; asset: string | null; purpose: string | null; caption: string | null; alt: string | null }>(
+      `select (select count(*) from stimulus_group_stimuli where group_id = g.id)::text n, s.id::text stimulus, s.kind, s.asset_file_id::text asset, f.purpose, s.caption, s.alt_text alt
+         from stimulus_groups g join stimulus_group_stimuli gs on gs.group_id = g.id join stimuli s on s.id = gs.stimulus_id left join files f on f.id = s.asset_file_id where g.id = $1`,
       [qa.g],
     )
     expect(group.n).toBe('1')
     expect(group.kind).toBe('diagram')
-    expect(group.asset).toBe(cropFileId)
+    expect(group.purpose).toBe('question_image')
+    expect(group.asset).not.toBe(cropFileId)
+    expect(group.asset).toBeTruthy()
+    expect(Number((await one<{ n: string }>(`select count(*)::text n from files where purpose = 'question_image'`)).n)).toBe(imagesBefore + 1)
+    expect((await one<{ purpose: string }>('select purpose from files where id = $1', [cropFileId])).purpose).toBe('intake_figure') // the crop stays for the reviewer
     expect(group.alt).toBe('Rajah segi tiga')
 
     // Read back through the question detail: each member shows the same single stimulus, the group lists all three members, no marks on the group.

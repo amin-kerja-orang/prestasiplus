@@ -17,6 +17,7 @@ const studio = vi.hoisted(() => ({
   updateStudioQuestion: vi.fn(),
   createQuestionInGroup: vi.fn(),
   fetchGroup: vi.fn(),
+  listGroups: vi.fn(),
   createGroup: vi.fn(),
   createStimulus: vi.fn(),
   updateStimulus: vi.fn(),
@@ -27,6 +28,13 @@ const studio = vi.hoisted(() => ({
   reorderGroupMembers: vi.fn(),
   searchQuestions: vi.fn(),
   uploadStudioImage: vi.fn(),
+  editAsDraft: vi.fn(),
+  EditAsDraftRefused: class EditAsDraftRefused extends Error {
+    lines: string[] = []
+  },
+  fetchServability: vi.fn(),
+  fetchGateCheck: vi.fn(),
+  moveQuestionStatus: vi.fn(),
 }))
 const lookups = vi.hoisted(() => ({ fetchSubjects: vi.fn(), fetchEducationLevels: vi.fn(), fetchChapters: vi.fn() }))
 vi.mock('../../api/studio', () => studio)
@@ -40,6 +48,10 @@ const GROUP = {
   scope: 'section',
   stimuli: [{ id: '70', kind: 'diagram', label: 'Rajah 1', caption: null, alt: 'Segi tiga', body: { ms: 'Penerangan' }, tableData: null, sourceCitation: null, imageId: null }],
   questionIds: ['501', '502'],
+  members: [
+    { id: '501', numberLabel: '1', stem: 'S501 berdasarkan Rajah 1', status: 'draft', servable: false },
+    { id: '502', numberLabel: '2', stem: 'S502 berdasarkan Rajah 1', status: 'draft', servable: false },
+  ],
 }
 const serve = (main: { id: string; [k: string]: unknown }) =>
   studio.fetchStudioQuestion.mockImplementation((id: string) => Promise.resolve(id === main.id ? main : member(id)))
@@ -73,6 +85,8 @@ beforeEach(() => {
   studio.fetchStudioDskp.mockResolvedValue(DSKP)
   studio.fetchStudioQuestion.mockImplementation((id: string) => Promise.resolve(member(id)))
   studio.fetchGroup.mockResolvedValue(GROUP)
+  studio.listGroups.mockResolvedValue({ data: [], meta: { page: 1, pageSize: 10, totalItems: 0 } })
+  studio.fetchServability.mockResolvedValue({ questionId: '700', versionNo: 1, servedCount: 0, total: 6, activities: [] })
   lookups.fetchSubjects.mockReset().mockResolvedValue({ data: [{ id: 3, name: 'Matematik' }], meta: {} })
   lookups.fetchEducationLevels.mockReset().mockResolvedValue({ data: [{ id: 7, name: 'Tingkatan 4' }], meta: {} })
   lookups.fetchChapters.mockReset().mockResolvedValue([{ id: 12, name: 'Bentuk piawai', chapterNumber: 1 }])
@@ -187,16 +201,26 @@ describe('StudioEditorPage (R1-F03b)', () => {
     expect(t(w, 'studio-save-bar').find('button[type="submit"]').attributes('disabled')).toBeDefined()
   })
 
-  it('an approved question is read-only until "Edit sebagai draf"', async () => {
-    studio.fetchStudioQuestion.mockResolvedValue({
-      id: '700', status: 'published', subjectId: '3', educationLevelId: '7', difficultyLevel: 3, questionText: 'Soalan yang sudah diterbitkan kepada murid.',
+  it('an approved question is read-only until "Edit sebagai draf" writes the draft at once', async () => {
+    const approved = {
+      id: '700', status: 'approved', subjectId: '3', educationLevelId: '7', difficultyLevel: 3, questionText: 'Soalan yang sudah diterbitkan kepada murid.',
       questionImage: null, curriculumChapterId: null, stimulusGroup: null, tag: { unitId: '40', spIds: ['41'], tp: 2 },
       parts: [{ label: 'a', prompt: { ms: 'Pilih.' }, mode: 'short_text', marks: 1, difficultyTp: 2, kbat: 'bukan', key: { kind: 'accepted', values: ['abc'] } }],
+    }
+    studio.fetchStudioQuestion.mockResolvedValue(approved)
+    studio.editAsDraft.mockImplementation(() => {
+      studio.fetchStudioQuestion.mockResolvedValue({ ...approved, status: 'draft' })
+      return Promise.resolve('700')
     })
     const w = await render('/admin/studio/questions/700/sunting', '700')
+    expect(t(w, 'studio-status-badge').text()).toBe('Diterbitkan')
+    expect(t(w, 'studio-status-text').text()).toBe('Soalan ini boleh dijawab oleh pelajar.')
     expect(t(w, 'studio-approved-note').text()).toContain('Edit sebagai draf')
     expect(t(w, 'studio-stem').attributes('disabled')).toBeDefined()
-    await t(w, 'studio-edit-as-draft').trigger('click')
+    await t(w, 'studio-action-edit-as-draft').trigger('click')
+    await flushPromises()
+    expect(studio.editAsDraft).toHaveBeenCalledWith('700')
+    expect(t(w, 'studio-status-badge').text()).toBe('Draf')
     expect(t(w, 'studio-stem').attributes('disabled')).toBeUndefined()
   })
 

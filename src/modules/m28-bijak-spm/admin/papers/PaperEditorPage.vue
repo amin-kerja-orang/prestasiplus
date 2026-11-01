@@ -4,7 +4,7 @@
  * check, questions added from the bank (a stimulus group moves as one unit and stays contiguous),
  * a student-view preview and publish. Fixes .cloud N-11 (the blueprint is enforced, not advisory).
  */
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables/useApi'
@@ -12,9 +12,10 @@ import { useFlash } from '@/composables/useFlash'
 import { DsCluster, DsLoadError, DsPage, DsPanel, DsStatRow, DsStatusBadge, type StatItem } from '@/ds'
 
 import RichText from '../../components/RichText.vue'
-import type { BuilderGroup, BuilderQuestion } from '../../domain/admin-types'
-import { addUnit, checkPaper, moveUnit, removeUnit, unitsOf } from '../../domain/paper-builder'
-import { editorGroupLabel } from '../../lib/stimulus-data'
+import type { BuilderGroup, BuilderQuestion, SectionPoolPage } from '../../domain/admin-types'
+import type { StimulusDef } from '../../domain/types'
+import { checkPaper, moveUnit, removeUnit, unitsOf } from '../../domain/paper-builder'
+import { editorGroupLabel, editorStimuliOf } from '../../lib/stimulus-data'
 import { INTAKE_MANUAL_PATH } from '../intake/lib/intake-routes'
 import { bijakAdminServer } from '../../server/client'
 import QuestionPreview from './QuestionPreview.vue'
@@ -45,6 +46,11 @@ const dirty = ref(false)
 const busy = ref(false)
 const publishErrors = ref<string[]>([])
 
+/** Pool units added through the picker that the editor data does not carry yet. */
+const extraQ = reactive(new Map<string, BuilderQuestion>())
+const extraG = reactive(new Map<string, string[]>())
+const extraStim = reactive(new Map<string, StimulusDef[]>())
+
 watch(
   data,
   (d) => {
@@ -54,19 +60,22 @@ watch(
     for (const k of Object.keys(ids)) delete ids[k]
     for (const s of d.paper.sections) ids[s.id] = [...s.questionIds]
     dirty.value = false
+    extraQ.clear()
+    extraG.clear()
+    extraStim.clear()
   },
   { immediate: true },
 )
 
 const readonly = computed(() => data.value?.paper.status === 'terbit')
 const qMap = computed(
-  () => new Map<string, BuilderQuestion>((data.value?.questions ?? []).map((q) => [q.id, q])),
+  () => new Map<string, BuilderQuestion>([...(data.value?.questions ?? []).map((q): [string, BuilderQuestion] => [q.id, q]), ...extraQ]),
 )
 const gMap = computed(
   () => new Map<string, BuilderGroup>((data.value?.groups ?? []).map((g) => [g.id, g])),
 )
 const groupOf = (qid: string): string | undefined => qMap.value.get(qid)?.groupId
-const membersOf = (gid: string): string[] => gMap.value.get(gid)?.questionIds ?? []
+const membersOf = (gid: string): string[] => gMap.value.get(gid)?.questionIds ?? extraG.get(gid) ?? []
 
 const sections = computed(() => data.value?.paper.sections ?? [])
 
@@ -113,9 +122,6 @@ function setIds(sectionId: string, next: string[]): void {
   dirty.value = true
   publishErrors.value = []
 }
-function add(sectionId: string, qid: string): void {
-  setIds(sectionId, addUnit(ids[sectionId] ?? [], qid, groupOf, membersOf))
-}
 function remove(sectionId: string, qid: string): void {
   setIds(sectionId, removeUnit(ids[sectionId] ?? [], qid, groupOf))
 }
@@ -128,10 +134,8 @@ function unitsFor(sectionId: string) {
 /** Label of a group's stimuli; '' for a stimulus-less group, which stays a unit (D90, REQ-A-008). */
 const groupLabelOf = (gid: string): string => {
   const g = gMap.value.get(gid)
-  return g ? editorGroupLabel(g) : ''
+  return g ? editorGroupLabel(g) : editorGroupLabel({ stimuli: extraStim.get(gid) ?? [] })
 }
-const unitMarks = (unitIds: string[]): number =>
-  unitIds.reduce((n, q) => n + (qMap.value.get(q)?.marks ?? 0), 0)
 
 /* ---------------------------------------------------------------------------- picker */
 const pickerSection = ref<string | null>(null)
@@ -143,26 +147,81 @@ const pickerOpen = computed({
   },
 })
 const usedIds = computed(() => new Set(Object.values(ids).flat()))
-const candidates = computed(() => {
-  const term = search.value.trim().toLowerCase()
-  const out: { key: string; ids: string[]; groupId?: string; label: string }[] = []
-  const done = new Set<string>()
-  for (const q of data.value?.questions ?? []) {
-    if (q.status !== 'terbit' || done.has(q.id)) continue
-    const unit = q.groupId ? membersOf(q.groupId) : [q.id]
-    unit.forEach((x) => done.add(x))
-    if (unit.some((x) => usedIds.value.has(x))) continue
-    const text = `${q.preview} ${q.topic} ${q.id}`.toLowerCase()
-    if (term && !text.includes(term)) continue
-    out.push({
-      key: q.groupId ?? q.id,
-      ids: unit,
-      ...(q.groupId ? { groupId: q.groupId } : {}),
-      label: q.preview,
-    })
+
+/**
+ * The picker lists the builder's section pool (`GET .../sections/:sid/pool`), the same eligibility as the
+ * Set Builder bank, not the editor's own question list: a K1 paper's MCQs carry `kertas: 0`, so the old
+ * client-side filter found none (REQ-B-042). Search is debounced; a stale answer is dropped; "Muat lagi"
+ * pages on.
+ */
+const pool = ref<SectionPoolPage | null>(null)
+const poolPage = ref(1)
+const poolLoading = ref(false)
+const poolFailed = ref(false)
+let poolSeq = 0
+/** The query that produced `pool`: "Muat lagi" appends with it, never with a half-typed search. */
+let poolQuery = ''
+let poolTimer: ReturnType<typeof setTimeout> | undefined
+onBeforeUnmount(() => clearTimeout(poolTimer))
+
+async function loadPool(append = false): Promise<void> {
+  const sid = pickerSection.value
+  if (!sid) return
+  const mine = ++poolSeq
+  poolLoading.value = true
+  poolFailed.value = false
+  try {
+    const next = append && pool.value ? poolPage.value + 1 : 1
+    const q = append && pool.value ? poolQuery : search.value
+    const res = await server.sectionPool(id.value, sid, { q, page: next, pageSize: 20 })
+    if (mine !== poolSeq) return
+    poolPage.value = next
+    poolQuery = q
+    pool.value = append && pool.value ? { ...res, units: [...pool.value.units, ...res.units] } : res
+  } catch {
+    if (mine !== poolSeq) return
+    poolFailed.value = true
+    if (!append) pool.value = null
+  } finally {
+    if (mine === poolSeq) poolLoading.value = false
   }
-  return out
-})
+}
+function onPickerSearch(): void {
+  clearTimeout(poolTimer)
+  poolTimer = setTimeout(() => void loadPool(), 250)
+}
+function openPicker(sectionId: string): void {
+  pickerSection.value = sectionId
+  search.value = ''
+  pool.value = null
+  poolPage.value = 1
+  poolQuery = ''
+  void loadPool()
+}
+const candidates = computed(() =>
+  (pool.value?.units ?? [])
+    .filter((u) => u.eligible && !u.questionIds.some((x) => usedIds.value.has(x)))
+    .map((u) => ({
+      key: u.groupId ?? u.questionIds[0]!,
+      unit: u,
+      ids: u.questionIds,
+      ...(u.groupId ? { groupId: u.groupId } : {}),
+      stimulusLabel: editorGroupLabel(u),
+      label: u.questions[0]?.preview ?? u.questionIds[0]!,
+    })),
+)
+const hasMore = computed(() => (pool.value ? poolPage.value < pool.value.totalPages : false))
+
+/** Pool units added here that the editor data does not carry yet (until the next save and reload). */
+function addPoolUnit(sectionId: string, u: SectionPoolPage['units'][number]): void {
+  for (const q of u.questions) extraQ.set(q.id, q)
+  if (u.groupId) {
+    extraG.set(u.groupId, [...u.questionIds])
+    extraStim.set(u.groupId, editorStimuliOf(u))
+  }
+  const all = new Set(Object.values(ids).flat())
+  setIds(sectionId, [...(ids[sectionId] ?? []), ...u.questionIds.filter((x) => !all.has(x))])
+}
 
 /* --------------------------------------------------------------------- save / publish */
 function patch() {
@@ -494,7 +553,7 @@ const previewBlocks = computed(() => {
               variant="soft"
               class="min-h-11"
               :data-testid="`add-${si}`"
-              @click="((pickerSection = s.id), (search = ''))"
+              @click="openPicker(s.id)"
             />
             <UButton
               icon="i-ph-pencil-simple-line"
@@ -524,9 +583,26 @@ const previewBlocks = computed(() => {
               placeholder="Cari teks atau topik..."
               class="w-full"
               data-testid="picker-search"
+              @update:model-value="onPickerSearch"
             />
-            <p v-if="!candidates.length" class="text-body text-muted">
-              Tiada soalan Terbit yang tersedia.
+            <div v-if="poolFailed" class="flex flex-wrap items-center gap-2">
+              <p class="text-body text-error" role="alert" data-testid="picker-error">
+                Ralat semasa mencari bank soalan.
+              </p>
+              <UButton
+                color="neutral"
+                variant="soft"
+                size="sm"
+                class="min-h-11"
+                label="Cuba lagi"
+                :loading="poolLoading"
+                data-testid="picker-retry"
+                @click="loadPool(!!pool)"
+              />
+            </div>
+            <p v-else-if="poolLoading && !pool" class="text-body text-muted" role="status">Memuatkan…</p>
+            <p v-else-if="!candidates.length && !hasMore" class="text-body text-muted" data-testid="picker-empty">
+              Tiada soalan sepadan.
             </p>
             <ul class="flex flex-col gap-2">
               <li
@@ -539,9 +615,9 @@ const previewBlocks = computed(() => {
                   <span class="line-clamp-2 text-body"><RichText :text="c.label" /></span>
                   <span class="text-caption text-muted">
                     <template v-if="c.groupId"
-                      >Kumpulan{{ groupLabelOf(c.groupId) ? ` ${groupLabelOf(c.groupId)}` : '' }} · {{ c.ids.length }} soalan ·
+                      >Kumpulan{{ c.stimulusLabel ? ` ${c.stimulusLabel}` : '' }} · {{ c.ids.length }} soalan ·
                     </template>
-                    {{ unitMarks(c.ids) }} markah
+                    {{ c.unit.marks }} markah
                   </span>
                 </div>
                 <UButton
@@ -550,10 +626,20 @@ const previewBlocks = computed(() => {
                   label="Tambah"
                   class="min-h-11"
                   :data-testid="`pick-add-${c.key}`"
-                  @click="pickerSection && add(pickerSection, c.ids[0]!)"
+                  @click="pickerSection && addPoolUnit(pickerSection, c.unit)"
                 />
               </li>
             </ul>
+            <UButton
+              v-if="hasMore"
+              color="neutral"
+              variant="soft"
+              class="min-h-11 self-start"
+              label="Muat lagi"
+              :loading="poolLoading"
+              data-testid="picker-more"
+              @click="loadPool(true)"
+            />
           </div>
         </template>
       </USlideover>

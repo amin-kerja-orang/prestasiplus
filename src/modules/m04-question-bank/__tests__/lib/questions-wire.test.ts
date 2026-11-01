@@ -15,7 +15,7 @@ import { bulkQuestionAction, fetchQuestions } from '../../api/questions'
 
 interface Req {
   query?: { status?: unknown }
-  body?: { action?: string; ids?: number[] }
+  body?: { action?: string; ids?: (number | string)[] }
 }
 /** The options object (2nd argument) of the nth call of a mock. */
 const reqOf = (fn: { mock: { calls: unknown[][] } }, n: number): Req =>
@@ -37,11 +37,13 @@ describe('request building by transport mode', () => {
     await fetchQuestions({ status: 'published' })
     expect(reqOf(h.list, 2).query?.status).toBe('published') // unknown values pass through untouched
     await bulkQuestionAction('approve', [7])
-    expect(reqOf(h.post, 0).body).toEqual({ action: 'approved', ids: [7] })
+    expect(reqOf(h.post, 0).body).toEqual({ action: 'approved', ids: ['7'] })
     await bulkQuestionAction('publish', [7])
-    expect(reqOf(h.post, 1).body).toEqual({ action: 'approved', ids: [7] }) // Terbitkan = approve (ADR-0027)
+    expect(reqOf(h.post, 1).body).toEqual({ action: 'approved', ids: ['7'] }) // Terbitkan = approve (ADR-0027)
     await bulkQuestionAction('archive', [7])
     expect(reqOf(h.post, 2).body?.action).toBe('archived')
+    // REQ-B-002: the contract id shape is a string, never a number
+    expect(reqOf(h.post, 2).body?.ids).toEqual(['7'])
   })
 
   it('http mode: a partial publish lists the questions the API left untouched, one by one', async () => {

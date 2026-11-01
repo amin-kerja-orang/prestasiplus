@@ -49,6 +49,8 @@ export const KESUKARAN = [
 ] as const
 
 export interface StudioDraft {
+  /** Stored question TP of a question whose parts carry no TP (intake-born): the parts inherit it, a save keeps it. */
+  inheritedTp?: number | null
   subjectId: string
   educationLevelId: string
   kertas: Kertas
@@ -139,7 +141,15 @@ export function totalMarks(draft: StudioDraft): number {
   return draft.leaves.reduce((s, l) => s + (Number.isFinite(l.marks) ? l.marks : 0), 0)
 }
 
-export const draftTp = (draft: StudioDraft): number | null => questionTp(draft.leaves)
+/** The question TP: highest over leaves, where a part without its own TP counts as the stored (inherited) question TP. */
+export const draftTp = (draft: StudioDraft): number | null =>
+  questionTp(draft.leaves.map((l) => ({ tp: l.tp ?? draft.inheritedTp ?? null }))) ?? draft.inheritedTp ?? null
+
+/** The note after "TP soalan: n": the highest part TP when a part carries it, else the TP inherited from the question. */
+export function draftTpNote(draft: StudioDraft): string {
+  const tp = draftTp(draft)
+  return tp !== null && draft.leaves.some((l) => l.tp === tp) ? '(tertinggi antara bahagian)' : '(diwarisi daripada soalan)'
+}
 
 /* -------------------------------------------------------------------------------------------- completeness */
 
@@ -169,7 +179,7 @@ export function draftGaps(d: StudioDraft, levelName = ''): Gap[] {
       gaps.push({ step: 3, message: `Bahagian (${l.label}) tiada skema jawapan.` })
     }
   }
-  for (const m of dskpGaps({ unitId: d.unitId, spIds: d.spIds, leaves: d.leaves })) gaps.push({ step: m.includes('Bahagian') ? 3 : 4, message: m })
+  for (const m of dskpGaps({ unitId: d.unitId, spIds: d.spIds, leaves: d.leaves.map((l) => ({ ...l, tp: l.tp ?? d.inheritedTp ?? null })) })) gaps.push({ step: m.includes('Bahagian') ? 3 : 4, message: m })
   return gaps
 }
 
@@ -235,11 +245,17 @@ export function toRequestBody(d: StudioDraft): Json {
 
 interface WirePart {
   label: string
-  prompt: { ms: string }
+  prompt: { ms: string; en?: string }
   marks?: number
   mode?: string
-  options?: Array<{ label: string; body: { ms: string }; imageId?: string | null }>
-  key?: { kind: string; correct?: string; values?: Array<string | { v: number; tol?: number; unit?: string }> }
+  options?: Array<{ label: string; body: { ms: string; en?: string }; imageId?: string | null }>
+  key?: {
+    kind: string
+    correct?: string
+    values?: Array<string | { v: number; tol?: number; tolKind?: string; unit?: string; unitAlt?: string[]; sigFigs?: number | null; decimals?: number | null }>
+    caseSensitive?: boolean
+    anyOrder?: boolean
+  }
   difficultyTp?: number | null
   kbat?: string | null
   cognitiveLevel?: string | null
@@ -266,6 +282,61 @@ export interface Hydrated {
   unsupported: string[]
 }
 
+const LEAF_KEYS = new Set(['label', 'prompt', 'marks', 'mode', 'options', 'key', 'difficultyTp', 'cognitiveLevel', 'kbat'])
+const isSet = (v: unknown): boolean => v !== undefined && v !== null
+
+/** Everything on a stored leaf that `leafToPart` would not write back (so a save would drop it). Empty = lossless. */
+function lossOf(p: WirePart): string[] {
+  const lost: string[] = []
+  for (const k of Object.keys(p)) if (!LEAF_KEYS.has(k) && isSet((p as unknown as Record<string, unknown>)[k])) lost.push(k)
+  if (isSet(p.prompt?.en)) lost.push('prompt.en')
+  for (const o of p.options ?? []) if (isSet(o.body?.en) || Object.keys(o).some((k) => !['label', 'body', 'imageId'].includes(k))) lost.push('options')
+  const key = p.key
+  if (key) {
+    for (const k of Object.keys(key)) if (!['kind', 'correct', 'values', 'caseSensitive', 'anyOrder'].includes(k)) lost.push(`key.${k}`)
+    if (key.caseSensitive === true) lost.push('key.caseSensitive')
+    if (key.anyOrder === true) lost.push('key.anyOrder')
+    if (p.mode === 'short_text') {
+      const values = key.values ?? []
+      if (values.some((v) => typeof v !== 'string' || v !== v.trim() || v.includes('\n'))) lost.push('key.values')
+    }
+    if (p.mode === 'numeric') {
+      const values = key.values ?? []
+      if (values.length > 1) lost.push('key.values')
+      for (const v of values) {
+        if (typeof v !== 'object') continue
+        if (isSet(v.tolKind) && v.tolKind !== 'abs') lost.push('key.tolKind')
+        if ((v.unitAlt ?? []).length > 0) lost.push('key.unitAlt')
+        if (isSet(v.sigFigs)) lost.push('key.sigFigs')
+        if (isSet(v.decimals)) lost.push('key.decimals')
+      }
+    }
+  }
+  // The save writes `kbat` from the cognitive level; a stored `kbat` that contradicts it is lost. (`kbat: 'bukan'` alone is read as
+  // "level unset, author chooses" by design.)
+  if (isSet(p.kbat) && isCognitive(p.cognitiveLevel)) {
+    const written = isKbat(p.cognitiveLevel) ? p.cognitiveLevel : 'bukan'
+    if (p.kbat !== written) lost.push('kbat')
+  }
+  return [...new Set(lost)]
+}
+
+/**
+ * Body of "Edit sebagai draf": `PUT /api/questions/:id` is a patch (only the four required fields are mandatory), so the stored
+ * question is sent back as it was read: its own `parts` verbatim (never rebuilt from the editor model) and nothing else. Every
+ * other field (tag, TP, chapter, kertas, number, language, explanation, pictures, group) is omitted and so kept by the server,
+ * which writes version n+1 as a draft equal to the live one.
+ */
+export function editAsDraftBody(q: WireQuestion): Json {
+  return {
+    subjectId: q.subjectId ?? '',
+    educationLevelId: q.educationLevelId ?? '',
+    difficultyLevel: q.difficultyLevel,
+    questionText: q.questionText,
+    ...(q.parts === undefined ? {} : { parts: q.parts }),
+  }
+}
+
 /** Builds the form state from the admin read. A question the editor cannot hold faithfully is read-only (`unsupported`). */
 export function hydrate(q: WireQuestion): Hydrated {
   const unsupported: string[] = []
@@ -274,6 +345,11 @@ export function hydrate(q: WireQuestion): Hydrated {
     const p = raw as WirePart
     if (Array.isArray(p.children)) {
       unsupported.push(`Bahagian (${p.label}) mempunyai sub-bahagian bersarang.`)
+      continue
+    }
+    const lost = lossOf(p)
+    if (lost.length > 0) {
+      unsupported.push(`Bahagian (${p.label}) mempunyai tetapan yang belum boleh disunting di Studio (${lost.join(', ')}).`)
       continue
     }
     const leaf = blankLeaf(p.label)
@@ -301,6 +377,13 @@ export function hydrate(q: WireQuestion): Hydrated {
     }
     leaves.push(leaf)
   }
+  // A save writes the question TP as the highest leaf TP. Parts without any TP inherit the stored question TP (kept as `inheritedTp`);
+  // a stored TP that the parts' own TPs do not give would be reset, so that stays refused.
+  const leafTp = questionTp(leaves)
+  const storedTp = typeof q.tag?.tp === 'number' ? q.tag.tp : null
+  if (unsupported.length === 0 && isSet(q.tag?.tp) && leafTp !== null && q.tag?.tp !== leafTp) {
+    unsupported.push('TP soalan tidak sepadan dengan TP bahagian, jadi tidak boleh disimpan semula di Studio.')
+  }
   const draft: StudioDraft = {
     subjectId: q.subjectId ?? '',
     educationLevelId: q.educationLevelId ?? '',
@@ -314,6 +397,7 @@ export function hydrate(q: WireQuestion): Hydrated {
     spIds: q.tag?.spIds ?? [],
     groupId: q.stimulusGroup?.id ?? null,
     leaves: leaves.length === 0 && unsupported.length === 0 ? [blankLeaf('a')] : leaves,
+    ...(leafTp === null && storedTp !== null ? { inheritedTp: storedTp } : {}),
   }
   return { draft, unsupported }
 }

@@ -5,7 +5,7 @@
  * Stimulus groups: a figure or passage is stored once and several questions attach to it; the
  * group stays contiguous. "Hantar untuk semakan" is blocked until the quality gates pass.
  */
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { usePageMeta } from '@/composables/usePageMeta'
 import { DsEmptyState, DsPage, DsPanel, DsStack, DsStateView, DsStatusBadge, DsText } from '@/ds'
@@ -25,6 +25,7 @@ import {
 import { paperMarks, questionMarks } from '../domain/marks'
 import { validateBatch } from '../domain/validation'
 import { blankQuestion, nextLabel } from '../domain/blank'
+import { intakeBadge } from '../lib/intake-badge'
 import { INTAKE_LIST_PATH } from '../lib/intake-routes'
 import { getPageImages } from '../lib/page-images'
 import type { IntakeBatch, IntakeIssue, IntakeQuestion, IntakeStimulus } from '../types'
@@ -68,7 +69,10 @@ async function load(): Promise<void> {
     batch.value = await server.getIntakeBatch(props.batchId)
     loadState.value = 'ready'
     const first = batch.value.questions[0]
-    if (first) open.value = new Set([first.id])
+    if (first) {
+      open.value = new Set([first.id])
+      current.value = first.id
+    }
   } catch (e) {
     loadState.value = isUnavailable(e)
       ? 'unavailable'
@@ -180,10 +184,14 @@ async function save(): Promise<void> {
 }
 
 /** http mode: rows and rajah added in the editor got server ids; adopt them (local id to server id). */
+const adopted = new Map<string, string>()
+const resolveId = (id: string): string => adopted.get(id) ?? id
 function applyIdMap(m: NonNullable<IntakeBatch['idMap']>): void {
   const b = batch.value
   if (!b) return
   const qi = m.items
+  for (const [local, server] of Object.entries(qi)) adopted.set(local, server)
+  if (current.value && current.value in qi) current.value = qi[current.value]!
   const si = m.stimuli
   if (b.questions.every((q) => !(q.id in qi) && !(q.stimulusId && q.stimulusId in si)) && b.stimuli.every((s) => !(s.id in si))) return
   b.questions = b.questions.map((q) => ({
@@ -241,7 +249,10 @@ function removeQuestion(id: string): void {
 function toggle(id: string): void {
   const s = new Set(open.value)
   if (s.has(id)) s.delete(id)
-  else s.add(id)
+  else {
+    s.add(id)
+    current.value = id
+  }
   open.value = s
 }
 
@@ -337,6 +348,131 @@ function goTo(i: IntakeIssue): void {
   )
 }
 
+/* ------------------------------------------------------------------------------ V2 item actions (I6, I7) */
+// V2 "Studio — Semak Import": "Terima (A)", "Tolak (R)", "Simpan Sunting (E)" on the item, and
+// "Terima semua yang belum disemak" on the page. Accept makes a Draf question; nothing is published.
+const current = ref<string | null>(null)
+const deciding = ref(false)
+const decisionErrors = ref<string[]>([])
+const decisionNote = ref('')
+const rejectingId = ref<string | null>(null)
+const rejectReason = ref('')
+const canDecide = computed(() => !readonly.value && !batch.value?.itemsUnavailable && !!server.decideIntakeItem)
+
+function afterDecision(next: IntakeBatch): void {
+  loaded = false // this replacement is not an edit: the autosave watcher skips it
+  batch.value = next
+  open.value = new Set(next.questions[0] ? [next.questions[0].id] : [])
+  current.value = next.questions[0]?.id ?? null
+}
+
+/** Saves pending edits first; a decision is taken only on saved content (never on a failed save). */
+async function settle(): Promise<boolean> {
+  clearTimeout(timer)
+  await save()
+  await nextTick() // adopting server ids (http mode) re-marks the page as edited: save that once more
+  if (saveState.value === 'belum') {
+    clearTimeout(timer)
+    await save()
+  }
+  if (saveState.value === 'tersimpan') return true
+  decisionErrors.value = ['Simpanan gagal, jadi soalan belum diputuskan. Cuba lagi.']
+  return false
+}
+const failMessage = (e: unknown): string => (e instanceof Error && e.message ? e.message : 'Tindakan gagal. Cuba lagi.')
+
+async function accept(id: string): Promise<void> {
+  const b = batch.value
+  if (!b || deciding.value) return
+  deciding.value = true
+  decisionErrors.value = []
+  decisionNote.value = ''
+  try {
+    if (!(await settle())) return
+    const r = await server.decideIntakeItem(b.id, resolveId(id), { action: 'terbit' })
+    if (r.ok) {
+      decisionNote.value = `Soalan #${resolveId(id)} dicipta sebagai draf.`
+      afterDecision(r.batch)
+    } else decisionErrors.value = r.errors
+  } catch (e) {
+    decisionErrors.value = [failMessage(e)]
+  } finally {
+    deciding.value = false
+  }
+}
+
+function askReject(id: string): void {
+  rejectingId.value = id
+  rejectReason.value = ''
+  decisionErrors.value = []
+}
+async function confirmReject(): Promise<void> {
+  const b = batch.value
+  const id = rejectingId.value
+  if (!b || !id || deciding.value) return
+  if (!rejectReason.value.trim()) {
+    decisionErrors.value = ['Sebab diperlukan untuk Tolak.']
+    return
+  }
+  deciding.value = true
+  decisionNote.value = ''
+  try {
+    if (!(await settle())) return
+    const r = await server.decideIntakeItem(b.id, resolveId(id), { action: 'tolak', reason: rejectReason.value.trim() })
+    if (r.ok) {
+      decisionErrors.value = []
+      decisionNote.value = 'Soalan ditolak.'
+      rejectingId.value = null
+      afterDecision(r.batch)
+    } else decisionErrors.value = r.errors
+  } catch (e) {
+    decisionErrors.value = [failMessage(e)]
+  } finally {
+    deciding.value = false
+  }
+}
+
+async function acceptAll(): Promise<void> {
+  const b = batch.value
+  if (!b || deciding.value) return
+  deciding.value = true
+  decisionErrors.value = []
+  decisionNote.value = ''
+  try {
+    if (!(await settle())) return
+    const r = await server.acceptUnreviewed(b.id)
+    decisionNote.value =
+      r.skipped.length > 0
+        ? `${r.done} soalan diterima sebagai draf. ${r.skipped.length} dilangkau: keyakinan rendah atau semakan kualiti belum lulus.`
+        : `${r.done} soalan diterima sebagai draf.`
+    afterDecision(r.batch)
+  } catch (e) {
+    decisionErrors.value = [failMessage(e)]
+  } finally {
+    deciding.value = false
+  }
+}
+
+/** V2 shortcuts A, R and E act on the question being worked on; never while typing in a field. */
+function onKey(e: KeyboardEvent): void {
+  if (e.ctrlKey || e.metaKey || e.altKey || !canDecide.value || !current.value) return
+  const t = e.target as HTMLElement | null
+  if (t && (t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName))) return
+  const k = e.key.toLowerCase()
+  if (k === 'a') {
+    e.preventDefault()
+    void accept(current.value)
+  } else if (k === 'r') {
+    e.preventDefault()
+    askReject(current.value)
+  } else if (k === 'e') {
+    e.preventDefault()
+    void save()
+  }
+}
+onMounted(() => window.addEventListener('keydown', onKey))
+onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
+
 async function submit(): Promise<void> {
   const b = batch.value
   if (!b || issues.value.length > 0 || submitting.value) return
@@ -395,8 +531,9 @@ async function submit(): Promise<void> {
           <div class="flex flex-wrap items-center justify-between gap-4">
             <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
               <DsStatusBadge
-                :status="batch.status === 'draf' ? 'draft' : 'awaiting-review'"
-                :label="batch.status === 'draf' ? 'Draf' : 'Semakan'"
+                :status="intakeBadge(batch).status"
+                :label="intakeBadge(batch).label"
+                data-testid="review-status"
               />
               <span>{{ batch.questions.length }} soalan</span>
               <span>{{ total }} markah</span>
@@ -424,6 +561,18 @@ async function submit(): Promise<void> {
                 @click="save"
               >
                 Simpan draf
+              </UButton>
+              <UButton
+                v-if="canDecide && batch.questions.length > 0"
+                variant="outline"
+                color="success"
+                icon="i-ph-checks"
+                class="min-h-11"
+                :loading="deciding"
+                data-testid="accept-all"
+                @click="acceptAll"
+              >
+                Terima semua yang belum disemak
               </UButton>
               <UButton
                 icon="i-ph-paper-plane-tilt"
@@ -486,7 +635,7 @@ async function submit(): Promise<void> {
             <button
               type="button"
               class="mt-4 flex min-h-11 w-full items-center justify-between gap-2 rounded-lg px-3 text-left"
-              :class="issues.length > 0 ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'"
+              :class="issues.length > 0 || serverIssues.length > 0 ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'"
               :aria-expanded="showIssues"
               data-testid="issues-toggle"
               @click="showIssues = !showIssues"
@@ -495,7 +644,9 @@ async function submit(): Promise<void> {
                 {{
                   issues.length > 0
                     ? `${issues.length} perkara perlu dibaiki sebelum dihantar`
-                    : 'Semua semakan kualiti lulus. Sedia dihantar.'
+                    : serverIssues.length > 0
+                      ? `Pelayan menolak ${serverIssues.length} perkara. Baiki sebelum dihantar semula.`
+                      : 'Semua semakan kualiti lulus. Sedia dihantar.'
                 }}
               </span>
               <span class="i-ph-caret-down" aria-hidden="true" />
@@ -516,6 +667,31 @@ async function submit(): Promise<void> {
               </li>
             </ul>
           </template>
+          <UAlert
+            v-if="decisionNote"
+            class="mt-3"
+            color="success"
+            variant="subtle"
+            icon="i-ph-check-circle"
+            :title="decisionNote"
+            role="status"
+            data-testid="decision-note"
+          />
+          <UAlert
+            v-if="decisionErrors.length > 0"
+            class="mt-3"
+            color="error"
+            variant="subtle"
+            icon="i-ph-warning-circle"
+            title="Tindakan tidak dapat dilakukan"
+            data-testid="decision-errors"
+          >
+            <template #description>
+              <ul class="flex flex-col gap-1">
+                <li v-for="m in decisionErrors" :key="m">{{ m }}</li>
+              </ul>
+            </template>
+          </UAlert>
           <UAlert
             v-if="serverIssues.length > 0"
             class="mt-3"
@@ -720,7 +896,7 @@ async function submit(): Promise<void> {
                       @click="dropStimulus(s.id)"
                     />
                   </div>
-                  <StimulusView v-if="s.svg || s.text" :stimulus="s" />
+                  <StimulusView v-if="s.image || s.text" :stimulus="s" />
                   <img
                     v-else-if="previewImage(s)"
                     :src="previewImage(s)!.dataUrl"
@@ -825,7 +1001,7 @@ async function submit(): Promise<void> {
                       · {{ groupLabel(groupFor(q)!) }} berkongsi rajah ini
                     </span>
                   </p>
-                  <StimulusView v-if="stimulusOf(q)!.svg || stimulusOf(q)!.text" :stimulus="stimulusOf(q)!" />
+                  <StimulusView v-if="stimulusOf(q)!.image || stimulusOf(q)!.text" :stimulus="stimulusOf(q)!" />
                   <p v-else class="text-sm text-muted">{{ stimulusOf(q)!.alt || 'Tiada pratonton' }}</p>
                 </div>
                 <article
@@ -887,9 +1063,83 @@ async function submit(): Promise<void> {
                       </select>
                     </label>
                     <QuestionEditor
+                      show-cognitive
                       :model-value="q"
                       @update:model-value="updateQuestion(q.id, $event)"
                     />
+                    <div v-if="canDecide" class="flex flex-col gap-3" data-testid="item-actions">
+                      <p class="text-caption text-muted" data-testid="item-counter">
+                        Item {{ batch.questions.findIndex((x) => x.id === q.id) + 1 }} / {{ batch.questions.length }}
+                      </p>
+                      <div
+                        class="flex flex-wrap gap-2 max-sm:sticky max-sm:bottom-0 max-sm:z-10 max-sm:border-t max-sm:border-default max-sm:bg-default max-sm:py-2"
+                        data-testid="item-buttons"
+                      >
+                        <UButton
+                          color="success"
+                          icon="i-ph-check"
+                          class="min-h-11"
+                          :loading="deciding"
+                          data-testid="item-accept"
+                          @click="accept(q.id)"
+                        >
+                          Terima<span class="pointer-coarse:hidden"> (A)</span>
+                        </UButton>
+                        <UButton
+                          color="error"
+                          variant="outline"
+                          icon="i-ph-x"
+                          class="min-h-11"
+                          :disabled="deciding"
+                          data-testid="item-reject"
+                          @click="askReject(q.id)"
+                        >
+                          Tolak<span class="pointer-coarse:hidden"> (R)</span>
+                        </UButton>
+                        <UButton
+                          color="neutral"
+                          variant="outline"
+                          icon="i-ph-floppy-disk"
+                          class="min-h-11"
+                          :disabled="deciding"
+                          data-testid="item-save"
+                          @click="save"
+                        >
+                          Simpan Sunting<span class="pointer-coarse:hidden"> (E)</span>
+                        </UButton>
+                      </div>
+                      <div v-if="rejectingId === q.id" class="flex flex-col gap-2" data-testid="reject-box">
+                        <label class="flex flex-col gap-1 text-sm">
+                          <span class="font-medium">Sebab menolak</span>
+                          <input
+                            v-model="rejectReason"
+                            type="text"
+                            maxlength="500"
+                            class="min-h-11 rounded-lg border border-default bg-default px-3"
+                            data-testid="reject-reason"
+                          />
+                        </label>
+                        <div class="flex flex-wrap gap-2">
+                          <UButton
+                            color="error"
+                            class="min-h-11"
+                            :loading="deciding"
+                            data-testid="reject-confirm"
+                            @click="confirmReject"
+                          >
+                            Tolak soalan
+                          </UButton>
+                          <UButton
+                            color="neutral"
+                            variant="ghost"
+                            class="min-h-11"
+                            @click="rejectingId = null"
+                          >
+                            Batal
+                          </UButton>
+                        </div>
+                      </div>
+                    </div>
                     <div class="flex justify-end">
                       <UButton
                         color="error"

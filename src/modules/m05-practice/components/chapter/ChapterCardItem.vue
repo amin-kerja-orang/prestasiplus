@@ -14,6 +14,8 @@ import { CHAPTER_COUNTS, chapterQuizHref, chapterStats, progressWidth } from './
 
 const props = defineProps<{ code: string; chapter: ChapterCard }>()
 
+// V2 (REQ-A-005, S-65): a chapter with no question is a locked chip "Tiada soalan", never a start link.
+const empty = computed(() => props.chapter.total <= 0)
 const locked = computed(() => props.chapter.state === 'locked')
 const title = computed(() =>
   props.chapter.number === null
@@ -67,7 +69,17 @@ const progress = computed(() => progressWidth(props.chapter))
 
       <div class="flex flex-wrap gap-2 lg:justify-end">
         <UBadge
-          v-if="locked"
+          v-if="empty"
+          color="neutral"
+          variant="soft"
+          size="lg"
+          icon="i-ph-lock-bold"
+          :title="`Belum ada soalan untuk ${chapter.name}`"
+          :data-testid="`chapter-empty-${String(chapter.id)}`"
+          >Tiada soalan</UBadge
+        >
+        <UBadge
+          v-else-if="locked"
           color="neutral"
           variant="soft"
           size="lg"

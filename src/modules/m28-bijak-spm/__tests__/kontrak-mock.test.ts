@@ -1,7 +1,7 @@
 import type { BijakBlueprintView, BijakEvidenceInput } from '@pp/contract'
 import { describe, expect, it } from 'vitest'
 
-import { formFromView, toInput } from '../admin/kontrak/domain/form'
+import { formFromView, structuralKey, toInput } from '../admin/kontrak/domain/form'
 import { KontrakError } from '../admin/kontrak/server/api'
 import { MockKontrakServer } from '../admin/kontrak/server/memory'
 
@@ -86,6 +86,21 @@ describe('Kontrak mock: version rules (AC-39.4)', () => {
     const versions = await s.versions('SN', 2)
     expect(versions.find((v) => v.servesStudents)?.version).toBe(cosmetic.version)
     expect(versions[0]!.version).toBe(structural.version)
+  })
+
+  it('"Boleh tanda auto" alone is cosmetic: a Disahkan contract stays Disahkan', async () => {
+    const s = server()
+    await completeSn(s)
+    await s.addEvidence('SN', 2, evidence('sbp'))
+    await s.addEvidence('SN', 2, evidence('selangor_mpsm'))
+    const verified = await s.verify('SN', 2, 'Disemak')
+    const f = formFromView(verified)
+    f.autoMarkable = f.autoMarkable === true ? false : true
+    expect(structuralKey(toInput(f))).toBe(structuralKey(toInput(formFromView(verified))))
+    const saved = await s.saveVersion('SN', 2, toInput(f))
+    expect(saved.source).toBe('Disahkan')
+    expect(saved.servesStudents).toBe(true)
+    expect(saved.autoMarkable).toBe(f.autoMarkable)
   })
 })
 

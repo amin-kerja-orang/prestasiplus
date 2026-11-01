@@ -3,7 +3,7 @@
  * schemes (accepted equivalents, tolerance, ECF) and shared Rajah groups. Fictitious practice items.
  */
 import { Bank, branch, curr, leaf } from './builders'
-import { triangleSvg } from './diagrams'
+import { triangleSvg, svgImage } from './diagrams'
 import type { PointDef, QuestionDef } from '../domain/types'
 
 const POOL_A = 'MAT2-A'
@@ -165,11 +165,11 @@ function triangleGroup(bank: Bank, v: number): string[] {
       label: 'Rajah 1',
       caption: 'Segi tiga ABC bersudut tegak di B.',
       alt: `Segi tiga ABC bersudut tegak di B, AB ${d.ab} cm dan BC ${d.bc} cm.`,
-      svg: triangleSvg(
+      image: svgImage(triangleSvg(
         d.ab,
         d.bc,
         `Segi tiga ABC bersudut tegak di B, AB ${d.ab} cm dan BC ${d.bc} cm.`,
-      ),
+      )),
     },
   )
   return [q1, q2]
