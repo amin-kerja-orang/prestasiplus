@@ -21,6 +21,8 @@ const NO_FILES =
   'Mock side: no /api/files route (404); file storage is a backend service (BE-04) and the mock keeps pictures inline.'
 const NO_BUILDER =
   'Mock side: no Bijak paper builder / blueprint admin routes (404); the contract routes come from BE-37 to BE-39.'
+const NO_FILTER_OPTIONS =
+  'Mock side: no GET /api/questions/filter-options route (404); not mocked (never was), the API serves it (r1/t49-served-now).'
 
 /**
  * A route the mock does not serve answers 404, which the runner sees as two violations: an
@@ -47,6 +49,9 @@ export const KNOWN_MISMATCHES: KnownMismatch[] = [
       'Mock side: the user rows carry no username, no roles[] and no isSuspended; the contract (BE-05, v2-frontend section 6) requires them.',
   },
   ...notServed('school-admin-pending/GET /admin-sekolah/guru/pending -> 200', 'Mock side: no GET /api/admin-sekolah/guru/pending route (404); the contract adds it for BE-21 AC13 (self-registered teachers are verified by the school admin).'),
+  ...notServed('questions/GET /questions/filter-options -> 200', NO_FILTER_OPTIONS),
+  ...notServed('questions/GET /questions/filter-options anonymous -> 401', NO_FILTER_OPTIONS),
+  ...notServed('questions/GET /questions/filter-options as student -> 403', NO_FILTER_OPTIONS),
   ...notServed('bijak-builder/GET /admin/papers -> 200', NO_BUILDER),
   ...notServed('bijak-builder/GET /admin/papers anonymous -> 401', NO_BUILDER),
   ...notServed('bijak-builder/GET /admin/papers as student -> 403', NO_BUILDER),
