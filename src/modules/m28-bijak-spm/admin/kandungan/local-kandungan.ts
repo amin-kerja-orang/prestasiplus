@@ -16,6 +16,8 @@ import {
   type ServabilityReason,
 } from '@pp/contract'
 
+import { toIsoMyt } from '@/lib/time/zone'
+
 import type { BankRow } from '../../domain/admin-types'
 import { bijakAdminServer } from '../../server/client'
 import type { KandunganApi, LanePage, LaneQuery, LaneSubject } from './api'
@@ -61,6 +63,7 @@ export function createMockKandungan(): KandunganApi {
       }
       return {
         bank: rows.length,
+        computedAt: toIsoMyt(Date.now()),
         activities: ACTIVITIES.map((activity) => {
           const { served, total } = count(activity)
           return { activity, label: SERVABILITY_ACTIVITY_LABELS[activity], served, total, attention: total - served, basis: 'evaluated' as const }
