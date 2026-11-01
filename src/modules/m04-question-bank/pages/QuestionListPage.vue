@@ -11,7 +11,7 @@
  * - Bulk bar: the action select is `required`; confirmation through `useConfirm`; the API `status` is the flash.
  * - The table fits the width from `xl`; below that Tahap folds into Subjek; below `md` rows are cards.
  */
-import type { TableColumn } from '@nuxt/ui'
+import type { DropdownMenuItem, TableColumn } from '@nuxt/ui'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -370,6 +370,25 @@ function filterErrorLines(err: unknown): string[] {
   return own.length > 0 ? own : errorLines(err)
 }
 
+/** Below `sm`: the bulk actions in one menu (design S3.2 "Widths"). */
+const moreActionItems = computed<DropdownMenuItem[]>(() => [
+  ...(hasFilter.value
+    ? [
+        {
+          label: BULK_FILTER_LABELS.approved,
+          icon: 'i-ph-check-circle',
+          onSelect: (): void => void runFilterBulk('approved'),
+        },
+      ]
+    : []),
+  {
+    label: BULK_FILTER_LABELS.archived,
+    icon: 'i-ph-archive',
+    color: 'error' as const,
+    onSelect: (): void => void runFilterBulk('archived'),
+  },
+])
+
 async function runFilterBulk(action: QuestionFilterAction): Promise<void> {
   if (filterBusy.value) return
   filterErrors.value = []
@@ -495,7 +514,7 @@ const cardFields: CardField[] = [
           color="primary"
           variant="soft"
           icon="i-ph-check-circle"
-          class="min-h-11"
+          class="hidden min-h-11 sm:inline-flex"
           :disabled="!hasFilter || filterBusy"
           :title="hasFilter ? BULK_FILTER_TITLES.approved : BULK_FILTER_NEEDED"
           :loading="filterBusy"
@@ -508,7 +527,7 @@ const cardFields: CardField[] = [
           color="error"
           variant="soft"
           icon="i-ph-archive"
-          class="min-h-11"
+          class="hidden min-h-11 sm:inline-flex"
           :disabled="filterBusy"
           :title="BULK_FILTER_TITLES.archived"
           data-testid="questions-archive-all"
@@ -516,6 +535,20 @@ const cardFields: CardField[] = [
         >
           {{ BULK_FILTER_LABELS.archived }}
         </UButton>
+        <!-- Below sm the two bulk actions collapse into one menu; "Luluskan Hasil Tapisan" only with a filter. -->
+        <UDropdownMenu :items="moreActionItems" class="sm:hidden">
+          <UButton
+            color="neutral"
+            variant="soft"
+            icon="i-ph-dots-three-vertical"
+            class="min-h-11 sm:hidden"
+            :disabled="filterBusy"
+            aria-label="Lagi Tindakan"
+            data-testid="questions-more-actions"
+          >
+            Lagi Tindakan
+          </UButton>
+        </UDropdownMenu>
         <UButton
         :to="QUESTIONS_CREATE_PATH"
         icon="i-ph-plus"
@@ -594,7 +627,7 @@ const cardFields: CardField[] = [
     <!-- Bulk-by-filter: the no-filter hint, the server's 422/409 message, the outcome. -->
     <p
       v-if="!hasFilter"
-      class="text-caption text-muted"
+      class="hidden text-caption text-muted sm:block"
       data-testid="questions-approve-filter-hint"
     >
       {{ BULK_FILTER_NEEDED }}
