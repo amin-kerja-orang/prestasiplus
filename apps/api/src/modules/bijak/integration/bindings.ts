@@ -80,26 +80,32 @@ export class WalletBijakReward implements BijakRewardPort {
   }
 
   /**
-   * D94: the gain of a self-mark. `level` is the part's mark now, clamped to its full marks; `reached` is the highest mark of this
-   * part already paid for: the mark of the automatic grading (`base`, paid at submit) or the highest level of an earlier self-mark
-   * credit, read from the ledger (`quiz_spm`, `sourceId = <attemptId>:<partId>:<level>`). Only `level - reached` marks are paid, at
-   * 2 syiling and 10 XP per mark; a lower or equal mark pays nothing and takes nothing back. The key per level makes a replay or a
-   * repeated self-mark a no-op, and the advisory lock serialises two self-marks of one part. Mod Pelajar: nothing (AC-20.3).
+   * D94: the gain of a self-mark, computed at ATTEMPT level on the best-N total (V2 `syncAnalytics`/`recomputeScore`,
+   * BIJAK-SPM-cloud.md 4.5). `score` is the best-N score of the attempt now (counted questions only, so a choose-N paper never pays
+   * both alternatives and a raise that displaces a counted question pays only the net change); `base` is the best-N score of the
+   * automatic grading (paid at submit). `reached` is the higher of `base` and the highest level already paid by an earlier self-mark,
+   * read from the ledger (`quiz_spm`, `sourceId = <attemptId>:score:<level>`). Only `score - reached` marks are paid, at 2 syiling
+   * and 10 XP per mark; a lower or equal total pays nothing and takes nothing back. The key per level makes a replay or a repeated
+   * self-mark a no-op, and the advisory lock serialises two self-marks of one attempt. Mod Pelajar: nothing (AC-20.3).
+   *
+   * A post-commit port failure is only logged by the caller (the attempt is already saved); re-sending the same mark pays nothing
+   * because the unchanged mark is not handed to this port again, so a failed payment is recovered by the next raise, which pays
+   * the whole gain over the highest paid level.
    */
   async awardSelfMark(input: BijakSelfMarkRewardInput): Promise<void> {
     if (input.isTest) return
-    const level = Math.min(input.mark, input.marks)
+    const level = Math.min(input.score, input.max)
     if (!(level > 0)) return
-    const prefix = `${input.attemptId}:${input.partId}:`
+    const prefix = `${input.attemptId}:score:`
     await this.prisma.transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`bijak-selfmark:${input.attemptId}:${input.partId}`}, 0))`
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`bijak-selfmark:${input.attemptId}`}, 0))`
       const rows = await tx.coinLedger.findMany({
         where: { userId: BigInt(input.userId), source: BIJAK_REWARD_SOURCE, sourceId: { startsWith: prefix } },
         select: { sourceId: true },
       })
       const paid = rows.map((r) => Number((r.sourceId ?? '').slice(prefix.length))).filter((n) => Number.isFinite(n))
       const reached = Math.max(input.base, ...paid)
-      const gain = Math.min(level, input.marks) - reached
+      const gain = level - reached
       if (!(gain > 0)) return
       const coins = wholeCount(gain * SYILING_PER_MARK)
       if (!(coins >= 1)) return // a gain too small to pay a whole syiling is paid when a later level reaches it

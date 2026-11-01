@@ -104,9 +104,9 @@ export interface BijakRewardPort {
   award(input: BijakRewardInput): Promise<void>
 
   /**
-   * D94 (V2 `PracticeRecorder`, `docs/discovery/BIJAK-SPM-cloud.md` 4.5): a self-mark that RAISES a part's mark credits the gain,
-   * 2 syiling and 10 XP per mark, once per part and level reached, never above the part's full marks, nothing back for a lower
-   * mark. Called after the commit of a self-mark of a closed EXAM attempt. Failures are logged and swallowed.
+   * D94 (V2 `syncAnalytics`, `docs/discovery/BIJAK-SPM-cloud.md` 4.5): a self-mark that RAISES the attempt's best-N total credits the
+   * gain over the highest total already paid (submit or an earlier self-mark), 2 syiling and 10 XP per mark, once per level reached,
+   * never above the attempt's maximum, nothing back for a lower total. Called after the commit of a self-mark of a closed EXAM attempt. Failures are logged and swallowed.
    */
   awardSelfMark(input: BijakSelfMarkRewardInput): Promise<void>
 }
@@ -116,13 +116,12 @@ export interface BijakSelfMarkRewardInput {
   userId: string
   /** True under Mod Pelajar: no reward at all (AC-20.3). */
   isTest: boolean
-  partId: string
-  /** The part's full marks. */
-  marks: number
-  /** The part's mark in the AUTOMATIC grading (what the submit reward already paid for). */
+  /** The attempt's best-N score in the AUTOMATIC grading (what the submit reward already paid for). */
   base: number
-  /** The pupil's mark now (already clamped by the self-mark rule). */
-  mark: number
+  /** The attempt's best-N score now, with every self-mark applied (counted questions only). */
+  score: number
+  /** The attempt's maximum best-N score; the paid level never goes above it. */
+  max: number
   description: typeof BIJAK_REWARD_DESCRIPTION
 }
 
