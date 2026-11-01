@@ -6,6 +6,7 @@ import {
   blankLeaf,
   draftGaps,
   draftTp,
+  draftTpNote,
   editAsDraftBody,
   hydrate,
   MAX_OPTIONS,
@@ -223,6 +224,16 @@ describe('Studio draft', () => {
       expect(draftTp(withB)).toBe(3)
       expect(draftGaps(withB).map((g) => g.message)).not.toContain('Bahagian (a) belum ada TP.')
       expect(draftGaps(withB).map((g) => g.message)).toContain('Bahagian (b) belum ada aras pemikiran.')
+    })
+
+    it('words the TP note by where the TP comes from', () => {
+      const h = hydrate(wire(numeric, { unitId: null, spIds: [], tp: 3 }))
+      expect(draftTpNote(h.draft)).toBe('(diwarisi daripada soalan)')
+      const mixed = { ...h.draft, leaves: [...h.draft.leaves, { ...blankLeaf('b'), tp: 2 }] }
+      expect(draftTp(mixed)).toBe(3)
+      expect(draftTpNote(mixed)).toBe('(diwarisi daripada soalan)')
+      const own = { ...h.draft, leaves: [...h.draft.leaves, { ...blankLeaf('b'), tp: 5 }] }
+      expect(draftTpNote(own)).toBe('(tertinggi antara bahagian)')
     })
 
     it('does not invent a TP for a question that has none', () => {

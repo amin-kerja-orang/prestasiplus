@@ -145,6 +145,12 @@ export function totalMarks(draft: StudioDraft): number {
 export const draftTp = (draft: StudioDraft): number | null =>
   questionTp(draft.leaves.map((l) => ({ tp: l.tp ?? draft.inheritedTp ?? null }))) ?? draft.inheritedTp ?? null
 
+/** The note after "TP soalan: n": the highest part TP when a part carries it, else the TP inherited from the question. */
+export function draftTpNote(draft: StudioDraft): string {
+  const tp = draftTp(draft)
+  return tp !== null && draft.leaves.some((l) => l.tp === tp) ? '(tertinggi antara bahagian)' : '(diwarisi daripada soalan)'
+}
+
 /* -------------------------------------------------------------------------------------------- completeness */
 
 export interface Gap {

@@ -51,7 +51,15 @@ describe('Studio draft recovery (V2 flow 1 step 2)', () => {
     expect(sameDraft(back!, d)).toBe(true)
     expect(parseSnapshot(JSON.stringify({ v: 1, draft: { ...d, inheritedTp: 9 } }))).toBeNull()
     expect(parseSnapshot(JSON.stringify({ v: 1, draft: { ...d, inheritedTp: '3' } }))).toBeNull()
-    expect(parseSnapshot(JSON.stringify({ v: 1, draft: { ...d, inheritedTp: null } }))?.inheritedTp).toBeUndefined()
+    const nulled = parseSnapshot(JSON.stringify({ v: 1, draft: { ...d, inheritedTp: null } }))
+    expect(nulled).not.toBeNull()
+    // null, absent and undefined are the same "none" for sameDraft, whatever the key order
+    const { inheritedTp: _drop, ...bare } = d
+    void _drop
+    expect(sameDraft(nulled!, bare)).toBe(true)
+    expect(sameDraft({ ...bare, inheritedTp: null }, bare)).toBe(true)
+    expect(sameDraft({ ...bare, inheritedTp: 3 }, bare)).toBe(false)
+    expect(parseSnapshot(JSON.stringify({ v: 1, draft: { ...d, leaves: [{ ...d.leaves[0], tp: 2.5 }] } }))).toBeNull()
   })
 
   it('clears the snapshot', () => {
