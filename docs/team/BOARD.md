@@ -590,3 +590,4 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
   - A1b: T48, T43b, builder-search-perf, admin-list-perf.
   - A2 slot 1: the A4 chain (T45 P1, 022a, c-020, b-033).
   - Each owner fixes its findings before B reviews. A changed head is recorded the same round.
+- A2 fix ETAs (UTC): H-A18 ~17:45 → C-012 ~18:10 → B-032 ~18:25. After each, A3 re-merges H-A18 and B-032 into REQ-B-052.
