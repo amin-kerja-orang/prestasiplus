@@ -117,3 +117,5 @@
 - T48 (REQ-C-017): r1/t48-builder-parity @ 4a3ff264 (BASE-101). A3 is re-merging BASE-102 and adding SECTION_EMPTY.
 
 **REQ-B-022 follow-up (A4): r1/overview-mcq-shape-once READY @ b0f1e9b2** (contains BASE-105). The overview's published-paper pass skips Jana facts (`factsOf(ids,{jana:false})`). Cold overview at 408k: 15.3 → 9.3 s. Total since REQ-B-022(a): 34.2 → 9.3 s. JSON byte-identical. The "MCQ shape once" idea was measured but not shipped: no gain (r1-perf-400k.md §9.1). Merges after req-b-033 f3da2b7d. B2.
+
+**REQ-B-022 follow-up 2 (A4): r1/overview-getmany-parallel READY @ a02f658f** (on overview-mcq-shape-once b0f1e9b2). factsOf reuses the latest record as the live one when they are the same version; QuestionsRepository.getMany is untouched. Cold overview at 408k: 9.3 → 6.0 s; **total since 022(a) 34.2 → 6.0 s (−82%)**; JSON byte-identical. Parity spec servability-facts-live; regression 165 + 1 todo; tsc 0. B2.

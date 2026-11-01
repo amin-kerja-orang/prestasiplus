@@ -518,6 +518,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha26-team-a-state | eaaeabf8d | docs, auto-refreshed by A3 H-A27 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-a2 | b70dc9571 | READY (A2, BASE-102): B-034/035 + B2 Minors; intake-workflow 135/135; B2 delta re-check |
+| r1/overview-getmany-parallel | a02f658f9 | READY (A4): live record reused from latest; cold overview 9.3 → 6.0 s (total 34.2 → 6.0 s, −82%); parity spec; merges after overview-mcq-shape-once; B2 |
 | r1/overview-mcq-shape-once | b0f1e9b2c | READY (A4): factsOf jana:false; cold overview 15.3→9.3 s (total 34.2→9.3 s); merges after req-b-033; B2 |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
 | r1/req-b-022a-a4 | e81f64d56 | READY (A4), B3 + DevOps (new env) |
@@ -547,8 +548,6 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t51-partial-acs-a3 | 5b7fc6780 | IN-PROGRESS (A3): merging T48 to drop a duplicate PUT code rule; not READY. Order T48 → T31 (+REQ-A-008) → T43 → T51 |
 | r1/t52-examiner-grid | addae6444 | READY (A1a), B2 |
 | r1/t54-perf-400k | bbf412c66 | READY (A4), B2 Minors fixed |
-
-**New branches not yet triaged:** r1/overview-getmany-parallel a02f658f9
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
