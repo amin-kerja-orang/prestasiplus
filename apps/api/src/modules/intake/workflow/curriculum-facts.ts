@@ -85,16 +85,20 @@ export class TagResolver {
         wanted.set(key, entry)
       }
     }
-    for (const { subjectId, levelId, codes } of wanted.values()) {
-      if (codes.size === 0) continue
-      const found = this.curriculum.nodesByCodes([...codes], { subjectId, educationLevelId: levelId })
-      for (const kind of ['unit', 'sp'] as const) {
-        for (const code of codes) {
-          const key = `${kind}|${subjectId}|${levelId}|${code}`
-          if (!this.nodes.has(key)) this.nodes.set(key, found.then((rows) => rows.find((n) => n.code === code && n.kind === kind) ?? null))
+    // The statements run together (one per subject and level). Each is awaited here and only its rows are cached, so no cached promise can
+    // reject on its own (an unhandled rejection ends the process): a failed read rejects `prefetch`, and the request fails (500), never passes the gate.
+    await Promise.all(
+      [...wanted.values()].map(async ({ subjectId, levelId, codes }) => {
+        if (codes.size === 0) return
+        const rows = await this.curriculum.nodesByCodes([...codes], { subjectId, educationLevelId: levelId })
+        for (const kind of ['unit', 'sp'] as const) {
+          for (const code of codes) {
+            const key = `${kind}|${subjectId}|${levelId}|${code}`
+            if (!this.nodes.has(key)) this.nodes.set(key, Promise.resolve(rows.find((n) => n.code === code && n.kind === kind) ?? null))
+          }
         }
-      }
-    }
+      }),
+    )
   }
 
   /** The SP codes of a tag at one level: the ids found (at most MAX_SP are kept) and the codes that are not an SP there (each once). */

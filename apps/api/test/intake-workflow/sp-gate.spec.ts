@@ -125,4 +125,43 @@ describe('REQ-B-034: unknown SP codes are refused (review minors)', () => {
     spy.mockRestore()
     single.mockRestore()
   })
+
+  it('a curriculum read that rejects during the prefetch fails the call and leaves no rejected promise behind (the process stays up)', async () => {
+    const seen: unknown[] = []
+    const onUnhandled = (reason: unknown) => seen.push(reason)
+    process.on('unhandledRejection', onUnhandled)
+    const spy = vi.spyOn(repo, 'nodesByCodes').mockRejectedValue(new Error('curriculum read failed'))
+    try {
+      const resolver = facts.resolver()
+      // several codes, so several derived lookups would be cached; none may be left to reject on its own
+      await expect(resolver.prefetch([tagOf({ unit: t.codes.unit, sp: [t.codes.sp, '9.9.9'] }), tagOf({ sp: [t.codes.sp] })])).rejects.toThrow('curriculum read failed')
+      await new Promise((resolve) => setTimeout(resolve, 100)) // Node reports an unhandled rejection after the microtask queue drains
+      expect(seen).toEqual([])
+    } finally {
+      spy.mockRestore()
+      process.off('unhandledRejection', onUnhandled)
+    }
+  })
+
+  it('the items page answers 500 (not a silent pass of the gate) when the prefetch fails, and the next request is served', async () => {
+    t.ai.paper = () => paper([draft(t.codes, '1')])
+    const batch = await createBatch(admin, { subject: 'MATH' })
+    await uploadOk(admin, batch.id, [{ bytes: Buffer.concat([textPdf(1), Buffer.from('\n% prefetch rejects\n')]), filename: 'rej.pdf' }])
+    await t.drain()
+    await extractAndRun(t, admin, batch.id)
+    const seen: unknown[] = []
+    const onUnhandled = (reason: unknown) => seen.push(reason)
+    process.on('unhandledRejection', onUnhandled)
+    const spy = vi.spyOn(repo, 'nodesByCodes').mockRejectedValue(new Error('curriculum read failed'))
+    try {
+      const res = await admin.agent.get(`/api/intake/items?batchId=${batch.id}&pageSize=100`)
+      expect(res.status, JSON.stringify(res.body)).toBe(500)
+      await new Promise((resolve) => setTimeout(resolve, 100))
+      expect(seen).toEqual([])
+    } finally {
+      spy.mockRestore()
+      process.off('unhandledRejection', onUnhandled)
+    }
+    expect((await itemsOf(admin, batch.id)).length).toBeGreaterThan(0)
+  })
 })
