@@ -394,3 +394,10 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
   - **B1/devops:** pg_trgm must be available on the target DB.
 - A2 ETAs (UTC): t49 fixes ~14:45 · H-A18 (D99) ~15:15 · C-012 ~15:45 · admin-list-perf (0106) ~16:30. A3: r1/builder-search-perf right after T48 READY.
 - **t49-served-now READY** r1/t49-served-now @ 221c2b287 (A2, BASE-101): REQ-B-025(a)(b) + REQ-C-019 B2 fixes. MAJOR fixed (smoke ALLOWED_ROLE filter-options → admin); conformance 409/409. Negeri filter is now trim + case-insensitive. joinable wording updated. Evidence: questions 899 + 3 todo; workflow 267/267; tsc 0; eslint 0. Needs a B2 re-check and B3 (new input).
+- **T48 READY** r1/t48-builder-parity @ 4a3ff264 (A3; BASE-101 + T34-c; migration 0104).
+  - Catalogue is now 21 codes (T34's 18 + RULE_NOT_IN_CONTRACT, SECTION_NOT_IN_CONTRACT (both overridable) + RULE_N_EXCEEDS_QUESTIONS (hard)). Overridable: 4.
+  - All B2 items are in this head, including REQ-C-017 `pinned` on pool unit questions.
+  - Evidence: all tsc 0; vue-tsc 0; contract 1460/1460; DB 514 + 1 todo; conformance 409/409.
+  - Needs **B2 + B3**.
+  - **Merge order: T48 → T43b.** T43b is merging T48 now to reach a 24-code catalogue. **Team C:** re-check the union after T43b.
+- A1a: T45 Part 3 builder AC specs (R1-21.3 / R1-21.6) on r1/t45-builder-acs off T48, handed over from A4.
