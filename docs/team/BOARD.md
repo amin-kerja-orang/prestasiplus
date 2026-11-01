@@ -505,7 +505,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 | T44 | r1/t44-blueprint-fields | 072d8f4b | — | merged at BASE-67 as 77984abc. The newer tip 072d8f4b shows a 19-file delta against base; A3 is asked whether it is WIP (marked IN-PROGRESS until it answers) |
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 15:29 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 15:33 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -522,10 +522,10 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/overview-getmany-parallel | a02f658f9 | READY (A4): live record reused from latest; cold overview 9.3 → 6.0 s (total 34.2 → 6.0 s, −82%); parity spec; merges after overview-mcq-shape-once; B2 |
 | r1/overview-mcq-shape-once | b0f1e9b2c | READY (A4): factsOf jana:false; cold overview 15.3→9.3 s (total 34.2→9.3 s); merges after req-b-033; B2 |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
-| r1/req-b-022a-a4 | e81f64d56 | CHANGES REQUESTED (B2 c18, REQ-B-053: empty env breaks API start) → A4 fixing + restack on BASE-105 |
+| r1/req-b-022a-a4 | 6295dc052 | CHANGES REQUESTED (B2 c18, REQ-B-053: empty env breaks API start) → A4 fixing + restack on BASE-105 |
 | r1/req-b-025c | a2865119f | Approved (B2 c17) → needs a BASE-105 merge (A1a) |
 | r1/req-b-033 | f3da2b7d3 | Approve w/ Minors, blocked by 022a → A4 restack on BASE-105 |
-| r1/req-c-020 | e5e39d515 | Approve w/ Minors, blocked by 022a → A4 restack on BASE-105 |
+| r1/req-c-020 | 6dc3feff8 | Approve w/ Minors, blocked by 022a → A4 restack on BASE-105 |
 | r1/req-c012-a2 | ba57ecc52 | WAITS for fixed H-A18 (A2 slot 1) |
 | r1/reqa014-no-chapter-lock-fe | 8c49b7af9 | (no status — triage) |
 | r1/reqb032-pinned-rule | 77c83c5e6 | IN-PROGRESS (A2 slot 2, moved from A3; WIP 77c83c5e) |
@@ -543,7 +543,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t40-attempts-acs | 43fb5900d | READY (A1b, T38 + BASE-105): 28/28; merges after T38; B2 |
 | r1/t43-chain-publish | 5ce5894f1 | READY (A3, on T31) |
 | r1/t43b-publish-acs | 327e03add | IN-PROGRESS (A3): B2 Minors pushed; T48 1dd07bc1 merge + 25-code catalogue; READY pending |
-| r1/t45-builder-acs | 69d16a7f9 | READY (A1b, on T48), B2 |
+| r1/t45-builder-acs | de8c8c02f | READY (A1b, on T48 1dd07bc1 + BASE-105): AC-R1-21.3/21.6 specs; exam-builder 389/389; merges after T48; B2 |
 | r1/t45-builder-acs-wip | 078204e1c | SUPERSEDED by r1/t45-builder-acs; do not merge |
 | r1/t45-servability-acs | 3175abff8 | Approve w/ Minors; conflicts with BASE-105 → A4 resolving |
 | r1/t48-builder-parity | 1dd07bc1a | READY (A3, BASE-105): B2 cycle-16 Minors fixed; new hard SECTION_EMPTY; 22 codes (4 overridable); DB 516 + 1 todo; conformance 409/409; B2 delta + B3 re-check |
