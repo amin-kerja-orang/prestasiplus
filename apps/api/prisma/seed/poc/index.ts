@@ -70,6 +70,7 @@ export const POC_PROFILE_ORDER = [
   'practice',
   'core-marketplace-categories',
   'marketplace',
+  'exam-retire-poc',
   'gamification',
   'poc-profile',
 ] as const
