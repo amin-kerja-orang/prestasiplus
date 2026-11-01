@@ -479,7 +479,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 ### Head audit 2026-11-01 15:00 UTC (superseded)
 This manual table has been removed because it went stale. **The only current source for team A heads and states is the auto table between the `AUDIT:BEGIN/END` markers at the end of this file.** It is regenerated from `git ls-remote` every cycle.
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 19:02 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 19:03 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -517,14 +517,14 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/seed-dangling-placements | 11cbcf458 | READY (A1b, BASE-105): asserts paper titles + counts = POC_BANK; seed 155 + 1 skip; B2 |
 | r1/stimulus-list-d72 | 97f2fdc21 | READY (A2, BASE-105; contains t49 b99068a6): one combined where for page+count, joinable+empty-group spec; stimulus-lists 17/17, questions 937, conformance 409; merge AFTER t49; A4 pre-review: Approve w/ 1 Minor; vs A4 chain only conflict = v2-backend-deviations.md (keep both blocks, d72 first), re-run contract:check; B2 |
 | r1/t04-minors | aff6df8f3 | READY (A2, BASE-105): FD-11/AP-17 row + wording; practice-reads 107; A4 pre-review: Approve w/ 1 Minor (card-ungrouped describe must stay last; non-blocking); B2 |
-| r1/t31-builder-wire | eb0346d25 | ON HOLD (paired): fixes done @eb0346d2 (441 pass); merge ONLY together with C REQ-A-008 after C re-merges this tip (vue-tsc TS2322 otherwise); do not merge alone |
+| r1/t31-builder-wire | eb0346d25 | ON HOLD (paired): fixes done @eb0346d2 (441 pass); merge ONLY together with C REQ-A-008 after C re-merges this tip (vue-tsc TS2322 otherwise); do not merge alone | 19:05 UTC: C REQ-A-008 r1/reqa008-group-stimulus @29d24be9 now contains T31 eb0346d2; A4 preview #3 steps 30–33 verifying vue-tsc 0 + builder specs; hold lifts on that evidence |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t37-r1-runbook | c9dcb5a08 | READY (A3 docs, refreshed @c9dcb5a0 from BOARD AUDIT c4971d1, 18:54): heads + states current; WARM row t37 kept (drop 022a side on conflict); migrations 0104–0107 team A (0110 is team C t34-l1-residual-c); B2/B1 |
 | r1/t38-selfmark-reward | 13134ced7 | READY (A1b, BASE-105): A3 pre-review CLEAN (concurrency + best-N sound; red proof); B2 delta + B3 |
 | r1/t39-k1-evidence | 1a26f7a60 | check: A3 to confirm state |
 | r1/t40-attempts-acs | 9be88fc7f | READY (A1a, BASE-105): D9 row added for R1-02.1 (pick cap is client-side, follows V2, lead decision) + coverage note; docs only, no code change; B2 |
-| r1/t43-chain-publish | 238eb6eb0 | ON HOLD (after T31 + REQ-A-008): fixes done @238eb6eb, on T31 eb0346d2 + BASE-105, 458 pass |
+| r1/t43-chain-publish | 238eb6eb0 | ON HOLD (after T31 + REQ-A-008): fixes done @238eb6eb, on T31 eb0346d2 + BASE-105, 458 pass | 19:05 UTC: C REQ-A-008 r1/reqa008-group-stimulus @29d24be9 now contains T31 eb0346d2; A4 preview #3 steps 30–33 verifying vue-tsc 0 + builder specs; hold lifts on that evidence |
 | r1/t43b-publish-acs | 7a14581a7 | READY (A3, on T48 6c5ae3a8): giveBab in publish-acs; 422 pass (was 12 red); alone = trial merge with H-A18 fc409ae1, 0 failures, tsc 0; merge after T48; B2 |
 | r1/t45-builder-acs | ee3a7d2ba | READY (A1b, on T48 6c5ae3a8; specs only): builder-candidate-search giveBab; bab.ts via T48 merge (cmp = fc409ae1); exam-builder 391/391 alone = trial merge with H-A18; tsc/eslint 0; merge after T48; B2 |
 | r1/t45-builder-acs-wip | 078204e1c | SUPERSEDED by r1/t45-builder-acs; do not merge |
@@ -532,7 +532,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t48-builder-parity | 6c5ae3a86 | READY (A3, BASE-105; migration 0104): giveBab fixture fix, support/bab.ts byte-identical to H-A18; exam-builder + pipeline-chain 409 pass (was 19 red); alone = trial merge with H-A18 fc409ae1, 0 failures, tsc 0; merge AFTER H-A18; B2 + B3 |
 | r1/t49-served-now | b99068a67 | READY (A2, BASE-105): bulk approve/archive with all-blank filter → 422 filterBlank [PROPOSED BM]; {} stays Arkib Semua; 4 deviation rows; questions 933 (+BR-16 known), workflow 275, conformance 409; A4 pre-review: Approve w/ Minors, B3 checklist Pass; FE note → C (REQ-C-019: Arkib Semua must send filter:{}); B2 + B3; merge BEFORE stimulus-list-d72 |
 | r1/t50-partial-acs | 075e1b587 | READY (A1a, BASE-105): A3 pre-review CLEAN (nits only); B2 |
-| r1/t51-partial-acs-a3 | 61c1b077f | ON HOLD (A3; restacked @61c1b077 on T43 238eb6eb + T31 eb0346d2 + T48): technically ready (537 pass alone = trial merge with H-A18; tsc/eslint 0; vue-tsc only the known http-admin REQ-A-008 error); merge after T31 + REQ-A-008 + T43; held only by that pair |
+| r1/t51-partial-acs-a3 | 61c1b077f | ON HOLD (A3; restacked @61c1b077 on T43 238eb6eb + T31 eb0346d2 + T48): technically ready (537 pass alone = trial merge with H-A18; tsc/eslint 0; vue-tsc only the known http-admin REQ-A-008 error); merge after T31 + REQ-A-008 + T43; held only by that pair | 19:05 UTC: C REQ-A-008 r1/reqa008-group-stimulus @29d24be9 now contains T31 eb0346d2; A4 preview #3 steps 30–33 verifying vue-tsc 0 + builder specs; hold lifts on that evidence |
 | r1/t52-examiner-grid | ca1ed739f | READY (A1a, BASE-105): getCover reads examinerGrid from marked (live+pinned); be09 test 8 (auto/points-essay/archived) bites on revert; R21 superseded; api tsc + eslint + vue-tsc 0, 15 pass; B2 |
 | r1/t54-perf-400k | 03c76eb0d | READY (A4, docs): credentials replaced by placeholders; may 3-line-conflict with 022a perf docs (trivial); B2 |
 <!-- AUDIT:END -->
