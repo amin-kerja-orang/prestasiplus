@@ -72,7 +72,7 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 | ID | Branch @ head | Lane | Depends on | B state |
 |---|---|---|---|---|
 | T34-L1-residual (A3 WIP, for B3) | `r1/t34-l1-residual` @ e4bb72eb | A3 | T34 (B3 finding T34-L1-residual) | WIP, untested (A3): the answer to B3 finding T34-L1-residual; not for merge yet |
-| T34 builder review, fixed by team C (owns T34 now) | `r1/t34-builder-review-c` @ 13d10f96 | team C (covering A3 on T34) | T34 5bb590d0 + BASE-98 | C-for-B2 independent Approve w/ Minors @ 13d10f96 (fixtures follow the Disahkan Terbit gate, no source change); restack on BASE-100 in progress (conflicts with T36 in builder.module.ts and test/exam-builder/helpers.ts); then B1 gate and merge. Replaces `r1/t34-builder-review` 5bb590d0 |
+| T34 builder review, fixed by team C (owns T34 now) | `r1/t34-builder-review-c` @ 05451810 | team C (covering A3 on T34) | T34 5bb590d0 + BASE-98 | C-for-B2 independent Approve w/ Minors @ 13d10f96 (fixtures follow the Disahkan Terbit gate, no source change); restack on BASE-100 in progress (conflicts with T36 in builder.module.ts and test/exam-builder/helpers.ts); then B1 gate and merge. Replaces `r1/t34-builder-review` 5bb590d0 |
 | REQ-B-031 report guard, no auto-deactivation, capped (D98) | `r1/reqb031-report-guard` @ 8e913fb5 | A1 | none (D98); unblocks the Lapor FE | B2 Changes requested (structured report before submit) (A1); Lapor FE waits for it |
 | REQ-C-019 joinable filter on group list and filter-options | `r1/t49-served-now` @ 2e6d06df | A2 | T49 (base) | not ready: conformance smoke role 403 (A2) |
 | REQ-B-033 paper lane names a placed question the bank does not return | `r1/req-b-033` @ 572490e9 | A4 | servability lanes (T30, in base) | READY (A4); review not seen (unconfirmed) |
@@ -102,14 +102,14 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 
 | Unit | Branch @ head | Output |
 |---|---|---|
-| T37 runbook | `r1/t37-r1-runbook` @ 1dabdc0e | `docs/ops/r1-runbook.md` (migrations 0092 to 0105, SELECTs run 74/74 on BASE-62) |
+| T37 runbook | `r1/t37-r1-runbook` @ 1d0497b4 | `docs/ops/r1-runbook.md` (migrations 0092 to 0105, SELECTs run 74/74 on BASE-62) |
 | T39 K1 evidence | `r1/t39-k1-evidence` @ 1a26f7a6 | `docs/ops/r1-k1-blueprint-evidence.md` |
-| T46 / H-A17 AC coverage | `r1/ha17-ac-coverage` @ a221432c | `docs/qa/r1-backend-ac-coverage.md`, `r1-verify-first-notes.md` (kept current by H-A27) |
+| T46 / H-A17 AC coverage | `r1/ha17-ac-coverage` @ 31c6679c | `docs/qa/r1-backend-ac-coverage.md`, `r1-verify-first-notes.md` (kept current by H-A27) |
 | H-A19 admin parity | `r1/ha19-admin-parity` @ c7315b0e | `docs/qa/r1-admin-parity-check.md` |
 | H-A20 student parity | `r1/ha20-student-parity` @ 557e17c6 | `docs/qa/r1-student-parity-check.md` |
 | H-A22 parity docs | `r1/ha22-parity-docs` @ 4fb2a41b | both parity docs refreshed, deviation rows H22-D1/D2 in `v2-bijak-spm.md`, `student.md` rows marked |
 | H-A23 E2E readiness | `r1/ha23-e2e-readiness` @ ef24addc | `docs/qa/r1-e2e-readiness.md` (merge order, minimal set) |
-| H-A24 release input | `r1/ha24-release-input` @ cd067337 | `docs/ops/r1-release-input-team-a.md` (+ scope AC-R1-18.2 and 18.4 text) |
+| H-A24 release input | `r1/ha24-release-input` @ 654b42e5 | `docs/ops/r1-release-input-team-a.md` (+ scope AC-R1-18.2 and 18.4 text) |
 | H-A26 this sheet | `r1/ha26-team-a-state` @ this branch (head = tip of the branch) | `docs/handoff/team-a-r1-state.md` |
 
 ## 2. Decisions and answers
