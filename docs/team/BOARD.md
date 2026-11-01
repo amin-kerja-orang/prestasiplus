@@ -479,7 +479,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 ### Head audit 2026-11-01 15:00 UTC (superseded)
 This manual table has been removed because it went stale. **The only current source for team A heads and states is the auto table between the `AUDIT:BEGIN/END` markers at the end of this file.** It is regenerated from `git ls-remote` every cycle.
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 18:11 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 18:13 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -487,8 +487,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/a3-qa-doc-nits | e4d4dd322 | READY (A3, BASE-105, docs only): stale QA notes on T38 self-mark reward fixed (2 files); B2 |
 | r1/admin-list-perf | 2a8ab6744 | READY (A4, BASE-105): REQ-B-050 + 0106 + 0107 + exact counts; pre-review Minors fixed (status total ?? 0, no-slash kertas change documented, migration order + drift notes); B2 + B3 + DevOps |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
-| r1/builder-search-perf | e1141dbbe | ON HOLD: T48 builder-parity spec goes red (21 tests, "Sila pilih bab.") once merged with H-A18; A3 is fixing the giveBab fixture on T48, then restacking; do not merge until the new head |
-| r1/docs-credential-scrub | b73a03fea | IN-PROGRESS (A1a): checking whether the live default passwords in mock/tests are real; if not proven to be placeholder text, they are replaced with fictitious values (D9 row); then B3 decides; do not merge yet |
+| r1/builder-search-perf | 1216b736c | ON HOLD: T48 builder-parity spec goes red (21 tests, "Sila pilih bab.") once merged with H-A18; A3 is fixing the giveBab fixture on T48, then restacking; do not merge until the new head |
+| r1/docs-credential-scrub | 5cd46c4a1 | IN-PROGRESS (A1a): checking whether the live default passwords in mock/tests are real; if not proven to be placeholder text, they are replaced with fictitious values (D9 row); then B3 decides; do not merge yet |
 | r1/e05b-l1-spec | 4b9eac57a | READY (A1b, BASE-105): negative control added; 12/12; B2 + B3 |
 | r1/ha17-ac-coverage | 6a0a7931c | docs, auto-refreshed by A3 H-A27 (coverage 124/176) |
 | r1/ha18-gate-facts | fc409ae16 | READY (A2, BASE-105): H-A18 + REQ-B-017/037 + D99 + pre-review fixes (M2 held-issues helper on both edit paths; m1 gate-issue codes; deviation row); workflow 296/296; conformance 409/409; B2 + B3 |
@@ -515,16 +515,16 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/seed-dangling-placements | 11cbcf458 | READY (A1b, BASE-105): asserts paper titles + counts = POC_BANK; seed 155 + 1 skip; B2 |
 | r1/stimulus-list-d72 | 1c2c7416a | ON HOLD: pre-review (A3): row split + merge after t49 (A2 resolves the listGroups conflict); do not merge |
 | r1/t04-minors | cc5116213 | ON HOLD: pre-review (A3): FD-11 deviation row + wording → A2; do not merge |
-| r1/t31-builder-wire | 6a27c8dd3 | ON HOLD: pre-review (A2) M1: vue-tsc red alone, so it merges ONLY together with C REQ-A-008 77ffe84d; needs a BASE-105 merge + Minors (stimulusTableParts) → A3 |
+| r1/t31-builder-wire | eb0346d25 | ON HOLD: pre-review (A2) M1: vue-tsc red alone, so it merges ONLY together with C REQ-A-008 77ffe84d; needs a BASE-105 merge + Minors (stimulusTableParts) → A3 |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t37-r1-runbook | 6544c6855 | READY (A3, BASE-105): runbook incl. the WARM env, 0106/0107 window, pg_trgm, ANALYZE, reverts, T36 demo-host; B2 |
 | r1/t38-selfmark-reward | 13134ced7 | READY (A1b, BASE-105): A3 pre-review CLEAN (concurrency + best-N sound; red proof); B2 delta + B3 |
 | r1/t39-k1-evidence | 1a26f7a60 | check: A3 to confirm state |
-| r1/t40-attempts-acs | 43fb5900d | ON HOLD: A3 pre-review MAJOR (missing D9 row for R1-02.1 server-side cap) → A1a adds the row (lead: follow V2, the cap is client-side); do not merge |
+| r1/t40-attempts-acs | 9be88fc7f | ON HOLD: A3 pre-review MAJOR (missing D9 row for R1-02.1 server-side cap) → A1a adds the row (lead: follow V2, the cap is client-side); do not merge |
 | r1/t43-chain-publish | 5ce5894f1 | ON HOLD: needs a BASE-105 merge (A3); after T31 + REQ-A-008 |
 | r1/t43b-publish-acs | 84db7fb20 | ON HOLD: T48 builder-parity spec goes red (21 tests, "Sila pilih bab.") once merged with H-A18; A3 is fixing the giveBab fixture on T48, then restacking; do not merge until the new head |
-| r1/t45-builder-acs | 3001a0b84 | ON HOLD: T48 builder-parity spec goes red (21 tests, "Sila pilih bab.") once merged with H-A18; A3 is fixing the giveBab fixture on T48, then restacking; do not merge until the new head |
+| r1/t45-builder-acs | 3001a0b84 | ON HOLD: builder-candidate-search 6 reds with H-A18 (bab gate); A1b adds giveBab after the A3 T48 tip; do not merge |
 | r1/t45-builder-acs-wip | 078204e1c | SUPERSEDED by r1/t45-builder-acs; do not merge |
 | r1/t45-servability-acs | 954614c69 | READY (A4, BASE-105): pre-review M1/M2 + Minors fixed; trial merge with H-A18 22/22; chain 1st; B2 + B3 |
 | r1/t48-builder-parity | 6c5ae3a86 | ON HOLD: T48 builder-parity spec goes red (21 tests, "Sila pilih bab.") once merged with H-A18; A3 is fixing the giveBab fixture on T48, then restacking; do not merge until the new head |
@@ -581,3 +581,10 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
   - Evidence: api tsc 0; contract:check ok; questions 990 pass + 3 todo; questions-workflow 304/304; conformance 409/409. The BR-16 red is gone because reqc021-followup is included.
   - **Note for B1:** with this set, the migration order is 0103 → 0105; T48 brings 0104 later. `migrate deploy` applies pending migrations by name, so the gap is harmless.
 - The A4-chain delta re-review is reassigned to A1b.
+- **Integration preview #2 (A4, local; all 33 team A heads stacked on BASE-105).**
+  - Migrations 0103–0107 appear once each, in order. tsc 0, contract ok, lint:migration ok.
+  - 15 of 17 folders are green, including conformance 409/409 and questions-workflow 304/304.
+  - **Reds, one root cause:** H-A18's bab submit gate meets fixtures that have no bab. The affected units are T48 builder-parity, T43b publish-acs and T51 pipeline-chain (A3 fixing) and t45-builder-acs (A1b after the T48 tip).
+  - **vue-tsc TS2322:** enters with T31 → fixed by REQ-A-008 (C). They merge together.
+  - **Logic merge:** stimulus-d72 × the c-020/t49 joinable `where`. A2 resolves it and adds a spec.
+  - **For B1:** r1-runbook.md would carry the SERVABILITY_OVERVIEW_WARM rows twice (from 022a and from t37). Keep t37's (A3) and drop 022a's on merge.
