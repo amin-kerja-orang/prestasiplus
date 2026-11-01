@@ -7,12 +7,16 @@ import type { QuestionGateIssue, ServabilityReport } from '@pp/contract'
 
 export type StudioStatus = 'draft' | 'review' | 'approved' | 'archived'
 
-/** The V2 badge words (admin.md A01/A03): Draft, Reviewed, Approved, Archived. */
+/**
+ * BM badge words (R1E2E-C2, UX-19): the words of the question list (`lib/question-list.ts`: Draf, Menunggu Semakan, and
+ * Diterbitkan for `approved`, which is the published state in the real API, ADR-0027; Diarkibkan) in place of V2's English
+ * Draft / Reviewed / Approved / Archived on a BM screen.
+ */
 export const STATUS_BADGE: Readonly<Record<StudioStatus, string>> = {
-  draft: 'Draft',
-  review: 'Reviewed',
-  approved: 'Approved',
-  archived: 'Archived',
+  draft: 'Draf',
+  review: 'Menunggu Semakan',
+  approved: 'Diterbitkan',
+  archived: 'Diarkibkan',
 }
 
 export const STATUS_ORDER: readonly StudioStatus[] = ['draft', 'review', 'approved', 'archived']

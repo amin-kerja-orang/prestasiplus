@@ -10,7 +10,7 @@ v2 has two hops after review: `approved` and `published`. Students are served on
 ## Decision
 1. Question statuses become `draft`, `review`, `approved`, `archived`. A question is student-servable when its live version has `status = 'approved'`, `questions.is_active = true`, and the per-activity rules of ADR-0028 hold.
 2. The literal is defined once (`SERVABLE_STATUS = 'approved'` in `questions/learner-visibility.ts`, SQL and Prisma forms). No module writes `'published'` for questions.
-3. Transitions: draft->review, draft->archived, review->approved (Terbitkan, runs the merged gate), review->draft, approved->archived, archived->draft. `approved->draft` and the combined "Lulus & Terbit" are removed.
+3. Transitions: draft->review, draft->archived, review->approved (Terbitkan, runs the merged gate), review->draft, review->archived (REQ-C-013, Admin Pusat; no reason needed), approved->archived (no reason needed since REQ-C-013: V2's dialog has none), archived->draft. `approved->draft` and the combined "Lulus & Terbit" are removed.
 4. "Edit sebagai draf" keeps the existing mechanism: it creates version n+1 as `draft`; the live approved version keeps serving; approving n+1 sets `live_version_no = n+1` and archives n ("Diarkib (digantikan)") in one transaction.
 5. The submit gate stays; the approve and publish gates merge into one approve gate (keys, marks, tags, DSKP completeness ADR-0031, rights, duplicates, media resolved).
 6. `question_versions.published_at` keeps its column name and now means "approved at". Renaming the column is deferred (no behavioural value, high churn).

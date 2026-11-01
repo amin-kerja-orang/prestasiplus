@@ -3,11 +3,12 @@
  * `--profile=e2e` AND `E2E_SEED=1` (or `true`) is set. Default off: with the flag missing the module logs one line and creates nothing,
  * and a server never runs it by default (the `poc` profile does not include it, and as a demo module the production guard skips it). Besides that, `run` throws when `countsAsProduction(ctx.env)` is true, even with ALLOW_DEMO_SEED. The flag and the blueprint override are read from the runner env (`ctx.env`), not from `process.env`.
  *
- * Question pool: none is loaded. Blueprint 3472/2 asks for structured Matematik Tambahan questions of 5 to 10 marks per unit; the only pool seed (`questions-pool`) holds 1-mark MCQs, so no honest pool exists for it and this seed invents none: Jana Kertas on 3472/2 answers 422 SHORTAGE until a structured pool is seeded.
+ * Question pool: blueprint 3472/2 asks for structured Matematik Tambahan questions of 5 to 10 marks per unit, and the only pool seed (`questions-pool`) holds 1-mark MCQs. So this seed adds a small, clearly labelled E2E FIXTURE (`e2e-k2.ts`, T26c): 15 structured questions (approved, per-leaf TP and cognitive level) and one published (Terbit) Kertas 2 paper built from them, so a pupil can list and sit a Kertas 2 paper. It runs only here, behind the guard and the flag, and only for the default 3472/2 blueprint. Jana Kertas on 3472/2 may still answer 422 SHORTAGE (15 questions are not a generation pool).
  *
  * What it creates or ensures (all fictitious, idempotent):
  * - a Tingkatan 4 pupil (`murid.t4.e2e@example.test`, grade 10, school DEMO001);
  * - an Admin Pusat (`admin.pusat.e2e@example.test`, national scope);
+ * - the study evidence of that blueprint entered as admin evidence (H-A15: study rows do not count at Sahkan), labelled as an E2E fixture;
  * - one T4 launch blueprint (default Matematik Tambahan Kertas 2, code `3472/2`, override with `E2E_BLUEPRINT`). It is the one launch blueprint that can pass the checks as
  *   seeded: its layer-2 KBAT values are complete and its study evidence has two bodies with a trial paper and a skema each (D77); the others are INCOMPLETE
  *   in `docs/reference/blueprints/README.md` or have a single body, and the seed never invents evidence) moved from Spec to Disahkan with
@@ -30,6 +31,7 @@ import { reviewedQuotaDoc, structureHashOf, toStandard, unitLevelsOf } from '../
 import { BlueprintsRepository } from '../../src/modules/exam/blueprints/blueprints.repository'
 import { checkEvidence, validateForVerification, type EvidenceItem } from '../../src/modules/exam/blueprints/exam-core.adapter'
 import { demoPasswordHash } from './core/demo-password'
+import { E2E_K2_BLUEPRINT, seedE2eK2 } from './e2e-k2'
 import { countsAsProduction } from './guard'
 import type { SeedContext, SeedModule } from './index'
 
@@ -65,6 +67,35 @@ async function ensureUser(
   return user.id
 }
 
+export const E2E_EVIDENCE_NOTE = 'E2E fixture: copied from the study evidence of the launch blueprint, entered as admin evidence for local end-to-end runs.'
+
+/**
+ * Replaces every study-origin evidence row of the blueprint by an admin-origin row with the same values and a fixture note (the admin's
+ * "delete the study row, enter the value by hand"). Idempotent: with no study row left it does nothing. Only called by the guarded e2e seed.
+ */
+async function replaceStudyEvidence(repo: BlueprintsRepository, blueprintId: bigint, adminId: bigint, at: Date): Promise<void> {
+  for (const row of await repo.evidenceOf(blueprintId)) {
+    if (row.origin !== 'study') continue
+    await repo.addEvidence(
+      {
+        blueprintId,
+        kind: row.kind,
+        body: row.body,
+        year: row.year,
+        paperCode: row.paperCode,
+        setLabel: row.setLabel,
+        sourceRef: row.sourceRef,
+        values: row.values as never,
+        origin: 'admin',
+        note: E2E_EVIDENCE_NOTE,
+        createdById: adminId,
+      },
+      at,
+    )
+    await repo.deleteEvidence(blueprintId, row.id)
+  }
+}
+
 /** Spec -> Disahkan through the repository the Sahkan action uses. Idempotent: an already Disahkan head is left as it is. */
 async function verifyBlueprint(prisma: PrismaClient, code: string, adminId: bigint, at: Date): Promise<void> {
   const row = await prisma.blueprint.findFirst({ where: { code, status: 'active' }, select: { id: true, subjectId: true, kertas: true } })
@@ -91,8 +122,11 @@ async function verifyBlueprint(prisma: PrismaClient, code: string, adminId: bigi
     unitLevels: unitLevelsOf(units),
     subjectHasBothLevels: units.some((u) => u.level === 'T4') && units.some((u) => u.level === 'T5'),
   })
+  // AC-39.2 (H-A15): evidence read from the study (`origin = 'study'`) does not count at Sahkan; only rows entered by an admin do. The seed
+  // takes the same path an admin takes: each study row is replaced by an admin-origin row with the same values, labelled as an E2E fixture.
+  await replaceStudyEvidence(repo, head.id, adminId, at)
   const evidenceRows = await repo.evidenceOf(head.id)
-  const items: EvidenceItem[] = evidenceRows.map((r) => ({ id: r.id.toString(), kind: r.kind as EvidenceItem['kind'], body: r.body, values: BijakEvidenceValuesSchema.parse(r.values) }))
+  const items: EvidenceItem[] = evidenceRows.filter((r) => r.origin === 'admin').map((r) => ({ id: r.id.toString(), kind: r.kind as EvidenceItem['kind'], body: r.body, values: BijakEvidenceValuesSchema.parse(r.values) }))
   const evidence = checkEvidence(bp, items)
   const passes = gate.problems.length === 0 && gate.completeness.length === 0 && evidence.completeness.length === 0 && evidence.passes
   if (!passes) {
@@ -142,5 +176,7 @@ export const e2eSeed: SeedModule = {
     const adminId = await ensureUser(ctx, { email: E2E_ADMIN_EMAIL, name: 'Admin Pusat Ujian E2E', username: 'admin-pusat-e2e', role: 'admin', grade: null, schoolId: null, national: true })
     const code = (ctx.env.E2E_BLUEPRINT ?? E2E_DEFAULT_BLUEPRINT).trim() || E2E_DEFAULT_BLUEPRINT
     await verifyBlueprint(prisma, code, adminId, ctx.clock.now())
+    // E2E fixture (T26c): the structured Kertas 2 pool and its published paper, only for the default 3472/2 blueprint (the one that is Disahkan above).
+    if (code === E2E_K2_BLUEPRINT) await seedE2eK2(ctx, adminId)
   },
 }
