@@ -9,12 +9,11 @@ const TopicDetail = envelopeOf(CurriculumTopicDetailLearnerSchema)
 
 /** The mock formulas (src/modules/m03-curriculum/mock/repository/{rules,progress}.ts, SRS BR-14, BR-19), written out again. */
 const mockProgress = (correct: number) => Math.min(100, Math.round((100 * correct) / 20))
-type State = 'mastered' | 'started' | 'unlocked' | 'locked'
+type State = 'mastered' | 'started' | 'unlocked'
 function mockStates(p: { progress: number; sessions: number; questionsAnswered: number }[]): State[] {
   const out: State[] = []
-  p.forEach((x, i) => {
-    const prev = out[i - 1]
-    out.push(x.progress >= 80 ? 'mastered' : x.sessions >= 1 || x.questionsAnswered >= 1 ? 'started' : i < 2 || prev === 'started' || prev === 'mastered' ? 'unlocked' : 'locked')
+  p.forEach((x) => {
+    out.push(x.progress >= 80 ? 'mastered' : x.sessions >= 1 || x.questionsAnswered >= 1 ? 'started' : 'unlocked')
   })
   return out
 }
@@ -60,9 +59,9 @@ async function seedStudent(): Promise<void> {
 const map = async (c: Client, query = 'subject=MATEMATIK&grade=TINGKATAN_4') => LearningMap.parse((await c.get(`/api/learning-map?${query}`)).body).data
 
 describe('AC8: BE-08 TopicProgressProvider from the answer rows (BR-14, BR-19)', () => {
-  it('a student with no answer reads the no-history state: first two islands open, nothing started', async () => {
+  it('a student with no answer reads the no-history state: every island open (REQ-C-021, D98), nothing started', async () => {
     const m = await map(pelajar)
-    expect(m.topics.map((x) => x.state)).toEqual(['unlocked', 'unlocked', 'locked'])
+    expect(m.topics.map((x) => x.state)).toEqual(['unlocked', 'unlocked', 'unlocked'])
     expect(m.stats).toEqual({ done: 0, total: 3, progress: 0 })
     expect(m.topics.every((x) => x.sessions === 0 && x.questionsAnswered === 0 && x.progress === 0)).toBe(true)
   })
