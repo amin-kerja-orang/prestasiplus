@@ -532,7 +532,10 @@ export class BuilderService {
       for (const { section, rule } of rulePatches) {
         if (rule.type !== 'choose') continue
         const max = section.adminCreated ? new Set(resulting.get(section.id) ?? []).size : section.questionCount
-        if (rule.n > max) throw ApiError.of('VALIDATION_ERROR', { message: EDIT.ruleCount(max), fields: { rule: EDIT.ruleCount(max) } })
+        if (rule.n > max) {
+          const message = max === 0 ? EDIT.ruleNoQuestions : EDIT.ruleCount(max)
+          throw ApiError.of('VALIDATION_ERROR', { message, fields: { rule: message } })
+        }
       }
       const everywhere = [...resulting.values()].flat()
       // D90: a stimulus group lives in ONE section, so a group member twice on the paper is refused here. A plain
@@ -746,13 +749,15 @@ export class BuilderService {
   }
 
   /**
-   * R1-T48 (AC-26.1(i), V2 "must be <= question count"): Pilih N with fewer than N questions in the Bahagian is never valid, so it is a HARD
+   * R1-T48 hard blockers of the Bahagian figures: an empty admin-added Bahagian (SECTION_EMPTY) and (AC-26.1(i), V2 "must be <= question count") Pilih N with fewer than N questions in the Bahagian is never valid, so it is a HARD
    * blocker (the pupil cover would say "Jawab 5 daripada 1 soalan."). The count is the printed one (a Kontrak Bahagian) or the placed one (admin-added).
    * `checkPaper` is left untouched: it must equal the prototype's.
    */
   private ruleBlockers(paper: PaperTree, ev: Evaluation): BlockerDraft[] {
     const out: BlockerDraft[] = []
     for (const s of paper.sections) {
+      // An admin-added Bahagian with no question (printed as 0 questions, 0 marks) is never publishable; the Kontrak override cannot lift it.
+      if (s.adminCreated && s.placements.length === 0) out.push({ code: 'SECTION_EMPTY', message: LINES.sectionLine(s.label, LINES.sectionEmpty), section: s.label })
       const rule = ruleOf(s.ruleType, s.ruleN)
       if (rule.type !== 'choose') continue
       const count = sectionFigures(s, (id) => ev.info.get(id)?.marks ?? 0).questionCount
@@ -1303,11 +1308,13 @@ export class BuilderService {
       const onPaper = new Set(placed.flatMap((qid) => (st.groupOf(qid) ? [st.groupOf(qid)!] : [])))
       if (!onPaper.has(groupId)) throw invalid(MESSAGES.groupNotOnPaper)
       const editsStimulus = body.caption !== undefined || body.body !== undefined
+      let stimulusTarget: string | undefined
       if (editsStimulus) {
         const detail = await this.stimuli.getGroup(groupId)
         const target = body.stimulusId ?? detail.stimuli[0]?.id
         if (target === undefined) throw invalid(MESSAGES.groupNoStimulus)
         if (!detail.stimuli.some((x) => x.id === target)) throw invalid(MESSAGES.groupStimulusMismatch)
+        stimulusTarget = target
         await this.stimuli.updateStimulus(target, {
           ...(body.caption === undefined ? {} : { caption: body.caption }),
           ...(body.body === undefined ? {} : { body: body.body }),
@@ -1320,7 +1327,7 @@ export class BuilderService {
         to: 'draf',
         op: 'group_label',
         groupId,
-        ...(editsStimulus ? { stimulus: { caption: body.caption !== undefined, body: body.body !== undefined } } : {}),
+        ...(editsStimulus ? { stimulus: { id: stimulusTarget, caption: body.caption !== undefined, body: body.body !== undefined } } : {}),
       })
       return paper.id
     })
@@ -1350,9 +1357,10 @@ export class BuilderService {
   }
 
   /**
-   * "Tambah soalan" (V2 `Nombor soalan`, `Jenis jawapan`, `Markah`): a blank Draf question in the one question bank, placed at the end of an
-   * admin-added Bahagian. The T33 DSKP gate runs on APPROVAL, not on create: the Draf has no tag or cognitive level, so it cannot be approved (and
-   * Terbit waits, "1 soalan belum Terbit") until the unit, SP, TP and a cognitive level per leaf are set in the question editor.
+   * "Tambah soalan" (V2 `Nombor soalan`, `Jenis jawapan`, `Markah`): creates a blank Draf question in the one question bank (placeholder stem and
+   * key valid for the mode, the Markah as part marks) and places it at the end of an admin-added Bahagian with its Nombor soalan. The T33 DSKP
+   * gate runs on APPROVAL, not on create: the Draf has no unit, SP, TP or cognitive level, so it cannot be approved, and Terbit waits
+   * ("1 soalan belum Terbit"), until they are set in the question editor.
    */
   async createQuestion(actor: AuditActor, rawId: string, rawSection: string, rawBody: unknown): Promise<BijakBuilderPlacementResult> {
     const paperId = parseId(rawId)

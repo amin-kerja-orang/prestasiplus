@@ -7995,7 +7995,8 @@
             "items": {
               "type": "string"
             },
-            "minItems": 1
+            "minItems": 1,
+            "maxItems": 8
           },
           "comment": {
             "type": [
@@ -15164,6 +15165,7 @@
           "bridge_refused",
           "no_marks",
           "tag_review",
+          "paper_empty",
           "stimulus_shared_ungrouped"
         ]
       },
@@ -15352,13 +15354,74 @@
             "items": {
               "$ref": "#/components/schemas/ServabilityOverviewActivity"
             }
+          },
+          "computedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "\\+08:00$",
+            "description": "When these counts were computed (H-A21). Always sent: the overview is cached for 5 minutes and refreshed in the background after a question event or when the cache is older; show this time next to the counts.",
+            "example": "2026-10-16T09:30:00+08:00"
+          },
+          "cards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ServabilityHubCard"
+            },
+            "description": "The hub cards in V2 order (R1: Databank Soalan, then Bijak SPM)."
           }
         },
         "required": [
           "bank",
-          "activities"
+          "activities",
+          "computedAt",
+          "cards"
         ],
         "additionalProperties": false
+      },
+      "ServabilityHubCard": {
+        "type": "object",
+        "properties": {
+          "lane": {
+            "$ref": "#/components/schemas/ServabilityHubLane"
+          },
+          "title": {
+            "type": "string",
+            "example": "Databank Soalan"
+          },
+          "description": {
+            "type": "string"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Rows of the lane (Databank: MCQs of Databank subjects, any status; Bijak SPM: pilihan papers, any status)."
+          },
+          "attention": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Lane rows that carry at least one reason (`attention.length > 0`)."
+          },
+          "attentionLabel": {
+            "type": "string",
+            "description": "V2 label printed after the count: \"{attention} {attentionLabel}\", or \"Semua elok\" when 0."
+          }
+        },
+        "required": [
+          "lane",
+          "title",
+          "description",
+          "total",
+          "attention",
+          "attentionLabel"
+        ],
+        "additionalProperties": false
+      },
+      "ServabilityHubLane": {
+        "type": "string",
+        "enum": [
+          "databank",
+          "bijak-spm"
+        ]
       },
       "ServabilityLaneQuery": {
         "type": "object",
@@ -55320,7 +55383,7 @@
                     "string",
                     "null"
                   ],
-                  "description": "null when the topic is locked."
+                  "description": "Always set: no topic is locked (REQ-C-021, D98). null stays allowed for old clients."
                 }
               },
               "required": [
@@ -64721,9 +64784,10 @@
               "INELIGIBLE",
               "RULE_NOT_IN_CONTRACT",
               "RULE_N_EXCEEDS_QUESTIONS",
-              "SECTION_NOT_IN_CONTRACT"
+              "SECTION_NOT_IN_CONTRACT",
+              "SECTION_EMPTY"
             ],
-            "description": "Stable code. Hard (overridable false): DUPLICATE_QUESTION, GROUP_MIN_MEMBERS (D93), GROUP_SPLIT, COUNT_TOO_FEW, COUNT_TOO_MANY, MARKS_MISMATCH, GROUP_NOT_CONSECUTIVE, GROUP_INCOMPLETE, GROUP_OUT_OF_ORDER, NOT_PUBLISHED, UNKNOWN_QUESTION (placed question missing from the pool), NOT_SERVABLE (R1E2E-06, pupils cannot be served). Hard also: NO_KEY, NO_MARKS, MODE_NOT_ALLOWED (structural failures of a question) and GROUP_BROKEN. Overridable: BLUEPRINT_NOT_VERIFIED (Kontrak not Disahkan) and INELIGIBLE (a question without DSKP unit or TP, or with tags awaiting review). Overridable also (R1-T48): RULE_NOT_IN_CONTRACT (the rule of a Bahagian differs from the Kontrak) and SECTION_NOT_IN_CONTRACT (admin-added Bahagian). Hard also (R1-T48): RULE_N_EXCEEDS_QUESTIONS (Pilih N with fewer than N questions in the Bahagian)."
+            "description": "Stable code. Hard (overridable false): DUPLICATE_QUESTION, GROUP_MIN_MEMBERS (D93), GROUP_SPLIT, COUNT_TOO_FEW, COUNT_TOO_MANY, MARKS_MISMATCH, GROUP_NOT_CONSECUTIVE, GROUP_INCOMPLETE, GROUP_OUT_OF_ORDER, NOT_PUBLISHED, UNKNOWN_QUESTION (placed question missing from the pool), NOT_SERVABLE (R1E2E-06, pupils cannot be served). Hard also: NO_KEY, NO_MARKS, MODE_NOT_ALLOWED (structural failures of a question) and GROUP_BROKEN. Overridable: BLUEPRINT_NOT_VERIFIED (Kontrak not Disahkan) and INELIGIBLE (a question without DSKP unit or TP, or with tags awaiting review). Overridable also (R1-T48): RULE_NOT_IN_CONTRACT (the rule of a Bahagian differs from the Kontrak) and SECTION_NOT_IN_CONTRACT (admin-added Bahagian). Hard also (R1-T48): RULE_N_EXCEEDS_QUESTIONS (Pilih N with fewer than N questions in the Bahagian) and SECTION_EMPTY (an admin-added Bahagian without a question)."
           },
           "message": {
             "type": "string",
@@ -89254,7 +89318,7 @@
             }
           },
           "409": {
-            "description": "CHAPTER_LOCKED \"Bab ini masih dikunci.\"; ALREADY_COMPLETED \"Misi ini sudah diselesaikan.\" (mission) or \"Ujian ini sudah selesai.\" (remedial); NO_ATTEMPTS_LEFT \"Tiada percubaan lagi untuk set ini.\".",
+            "description": "ALREADY_COMPLETED \"Misi ini sudah diselesaikan.\" (mission) or \"Ujian ini sudah selesai.\" (remedial); NO_ATTEMPTS_LEFT \"Tiada percubaan lagi untuk set ini.\".",
             "content": {
               "application/json": {
                 "schema": {
@@ -89827,7 +89891,7 @@
           "practice-reads"
         ],
         "summary": "Chapters of a subject with the caller progress (S5)",
-        "description": "Mock GET /api/practice/chapter-subjects/:code?levelId=. Chapter 1 is open; chapter k is open when chapter k - 1 is complete and its score is at least 70 (BR-16). A locked chapter is refused at session start (BE-12 CHAPTER_LOCKED), not here. Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
+        "description": "Mock GET /api/practice/chapter-subjects/:code?levelId=. Every chapter is open (REQ-C-021, D98: V2 has no progressive lock; the 70 percent rule of BR-16 is dropped), so \"state\" is always \"open\". \"locked\" stays in the enum for old clients. Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
         "parameters": [
           {
             "schema": {
@@ -112511,7 +112575,7 @@
           "bijak-builder"
         ],
         "summary": "Paper builder: edit a paper (single PUT, PaperPatch)",
-        "description": "Body { title?, year?, durationMin?, reference?, sections?: [{ id, questionIds?, label?, instruction?, compulsory? }] }; only the keys sent change (R1-T34: `reference` replaces the whole list of reference panels, max 10, a panel image must be a stored question image; a section can be renamed, get an instruction (null clears it) or be marked compulsory; the rule and the mark budget stay the Kontrak's). This one route carries every edit (the mock savePaper). Checks run in the mock order: 1. the paper exists (404 NOT_FOUND), 2. the paper is not terbit, 3. the title is not blank, 4. year and durationMin apply, 5. each section id and its questions, in the order sent. A terbit paper is refused: 422 VALIDATION_ERROR \"Kertas Terbit tidak boleh disunting. Tarik balik dahulu.\" (no field). Other refusals: title \"Tajuk kertas diperlukan\"; a section id that is not a section of the paper \"Bahagian tidak sah\"; a question id that does not exist, or whose curriculum subject differs from the paper subject, \"Soalan tidak sah untuk kertas ini\" (an existence and subject check only, not a kertas or status check). R1-B09a / D90: a stimulus group is one unit, so a list that holds a member of a group is stored with the WHOLE group (all members, contiguous, in the group's published order); a question twice on the paper is refused with \"Soalan berulang dalam kertas: {ids}\". Status is not checked here (publish reports \"{N} soalan belum Terbit\"); POST /placements is the servable-checked way to add. R1-T48: `code` (V2 \"Kod kertas (kulit)\", the printed paper code, trimmed, at most 32 characters, else 422 \"Kod kertas terlalu panjang (paling banyak 32 aksara)\"; blank = the subject code, as the V2 cover) and, per section, `rule` ({ type: all } or { type: choose, n }, V2 \"Peraturan menjawab\" / \"Bilangan soalan dipilih\"; n from 1 to the printed question count (an admin-added Bahagian: the questions placed in it), else 422 \"Bilangan soalan dipilih mesti antara 1 dan {count}\"; a Pilih N that later exceeds the questions in the Bahagian is the hard blocker RULE_N_EXCEEDS_QUESTIONS) are editable on a draf. The Kontrak keeps the final say: a rule that differs shows at Terbit as the overridable blocker RULE_NOT_IN_CONTRACT, and a mark total that no longer matches the budget as MARKS_MISMATCH. Answers the editor data (PaperEditorData), as the mock does. The mock throws error kind bad_request for these refusals (not_found for a missing paper); ErrorCode has no BAD_REQUEST, so the refusal is 422 VALIDATION_ERROR (mapping awaits the LEAD decision, deviations log). Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "Body { title?, year?, durationMin?, code?, reference?, sections?: [{ id, questionIds?, label?, instruction?, compulsory?, rule? }] }; only the keys sent change (R1-T34: `reference` replaces the whole list of reference panels, max 10, a panel image must be a stored question image; a section can be renamed, get an instruction (null clears it) or be marked compulsory; R1-T48 below adds the answering rule; the mark budget stays the Kontrak's). This one route carries every edit (the mock savePaper). Checks run in the mock order: 1. the paper exists (404 NOT_FOUND), 2. the paper is not terbit, 3. the title is not blank, 4. year and durationMin apply, 5. each section id and its questions, in the order sent. A terbit paper is refused: 422 VALIDATION_ERROR \"Kertas Terbit tidak boleh disunting. Tarik balik dahulu.\" (no field). Other refusals: title \"Tajuk kertas diperlukan\"; a section id that is not a section of the paper \"Bahagian tidak sah\"; a question id that does not exist, or whose curriculum subject differs from the paper subject, \"Soalan tidak sah untuk kertas ini\" (an existence and subject check only, not a kertas or status check). R1-B09a / D90: a stimulus group is one unit, so a list that holds a member of a group is stored with the WHOLE group (all members, contiguous, in the group's published order); a question twice on the paper is refused with \"Soalan berulang dalam kertas: {ids}\". Status is not checked here (publish reports \"{N} soalan belum Terbit\"); POST /placements is the servable-checked way to add. R1-T48: `code` (V2 \"Kod kertas (kulit)\", the printed paper code, trimmed, at most 32 characters, else 422 \"Kod kertas terlalu panjang (paling banyak 32 aksara)\"; blank = the subject code, as the V2 cover) and, per section, `rule` ({ type: all } or { type: choose, n }, V2 \"Peraturan menjawab\" / \"Bilangan soalan dipilih\"; n from 1 to the printed question count (an admin-added Bahagian: the questions placed in it), else 422 \"Bilangan soalan dipilih mesti antara 1 dan {count}\"; a Pilih N on a Bahagian without a question: 422 \"Letakkan soalan dalam bahagian ini dahulu sebelum memilih bilangan soalan\"; a Pilih N that later exceeds the questions in the Bahagian is the hard blocker RULE_N_EXCEEDS_QUESTIONS) are editable on a draf. The Kontrak keeps the final say: a rule that differs shows at Terbit as the overridable blocker RULE_NOT_IN_CONTRACT, and a mark total that no longer matches the budget as MARKS_MISMATCH. Answers the editor data (PaperEditorData), as the mock does. The mock throws error kind bad_request for these refusals (not_found for a missing paper); ErrorCode has no BAD_REQUEST, so the refusal is 422 VALIDATION_ERROR (mapping awaits the LEAD decision, deviations log). Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -112751,7 +112815,7 @@
           "bijak-builder"
         ],
         "summary": "Paper builder: publish (draf to terbit)",
-        "description": "Optional body { override?: boolean, reason?: string } (R1-T34, V2 Panel tick \"Terbitkan walaupun tidak memenuhi kontrak blueprint\"): with override true and a reason of at least 5 characters the blueprint-conformance blockers (the Kontrak is not Disahkan: \"Kontrak Simulasi {code} (versi {n}) belum Disahkan (status: {status}); Terbit memerlukan kontrak Disahkan.\", and \"Soalan {id} tidak layak: ...\") are overridden and the paper is published; the reason and the overridden lines go to the audit row bijak.paper.published_override and the answer lists them in `overridden`. Override without a reason: 422 \"Sebab diperlukan untuk menerbitkan walaupun tidak memenuhi kontrak blueprint\" on fields.reason. Blockers about the questions or the printed structure (not Terbit, duplicates, split or incomplete groups, counts, marks) are never overridable: the answer stays ok false. A normal 200 result (not an error): { ok: true, errors: [] }, or { ok: false, errors: string[] } with the BM lines of checkPaper. Paper-wide lines come first: \"Soalan berulang dalam kertas: {ids}\" and \"Kumpulan rangsangan {group} dipecahkan antara dua bahagian\". Each section line follows, prefixed with the section label (\"{label}: \"): \"Kurang N soalan (perlu X, ada Y)\" or \"Lebih N soalan (perlu X, ada Y)\", \"Markah M tidak sama dengan bajet B\", \"Kumpulan rangsangan G tidak berturutan\", \"Kumpulan rangsangan G tidak lengkap (N soalan tiada)\" and \"{N} soalan belum Terbit\". Nothing changes on ok: false. A refusal (ok false) also carries `blockerDetails` (the same blockers as `errors`, structured: { code, message, overridable, section?, questionId? }) and `canOverride`, computed by the same rule as GET /admin/papers/{id}/review (one source of truth; codes in BIJAK_BUILDER_BLOCKER_OVERRIDABLE). On ok: true the status becomes terbit, publishedAt is set and the paper appears in GET /bijak/papers; implementations pin the question versions in force (a later edit, version n+1, does not change the paper). A paper that is already terbit is checked again and stays terbit. Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "Optional body { override?: boolean, reason?: string } (R1-T34, V2 Panel tick \"Terbitkan walaupun tidak memenuhi kontrak blueprint\"): with override true and a reason of at least 5 characters the blueprint-conformance blockers are overridden and the paper is published. Exactly four codes are overridable: BLUEPRINT_NOT_VERIFIED (\"Kontrak Simulasi {code} (versi {n}) belum Disahkan (status: {status}); Terbit memerlukan kontrak Disahkan.\"), INELIGIBLE (\"Soalan {id} tidak layak: ...\" for a missing DSKP unit or TP, or tags awaiting review), RULE_NOT_IN_CONTRACT (the answering rule of a Bahagian differs from the Kontrak) and SECTION_NOT_IN_CONTRACT (an admin-added Bahagian); the reason and the overridden lines go to the audit row bijak.paper.published_override and the answer lists them in `overridden`. Override without a reason: 422 \"Sebab diperlukan untuk menerbitkan walaupun tidak memenuhi kontrak blueprint\" on fields.reason. Every other blocker is hard and is never overridable, alone or mixed with an overridable one: the answer stays ok false and `canOverride` false. They are the printed structure and the questions (not Terbit, duplicates, split, incomplete or small groups, counts, marks), a question missing from the pool or that pupils cannot be served, NO_KEY, NO_MARKS, MODE_NOT_ALLOWED, GROUP_BROKEN, a Pilih N with fewer questions than N (RULE_N_EXCEEDS_QUESTIONS) and an admin-added Bahagian without a question (SECTION_EMPTY). A normal 200 result (not an error): { ok: true, errors: [] }, or { ok: false, errors: string[] } with the BM lines of checkPaper. Paper-wide lines come first: \"Soalan berulang dalam kertas: {ids}\" and \"Kumpulan rangsangan {group} dipecahkan antara dua bahagian\". Each section line follows, prefixed with the section label (\"{label}: \"): \"Kurang N soalan (perlu X, ada Y)\" or \"Lebih N soalan (perlu X, ada Y)\", \"Markah M tidak sama dengan bajet B\", \"Kumpulan rangsangan G tidak berturutan\", \"Kumpulan rangsangan G tidak lengkap (N soalan tiada)\" and \"{N} soalan belum Terbit\". Nothing changes on ok: false. A refusal (ok false) also carries `blockerDetails` (the same blockers as `errors`, structured: { code, message, overridable, section?, questionId? }) and `canOverride`, computed by the same rule as GET /admin/papers/{id}/review (one source of truth; codes in BIJAK_BUILDER_BLOCKER_OVERRIDABLE). On ok: true the status becomes terbit, publishedAt is set and the paper appears in GET /bijak/papers; implementations pin the question versions in force (a later edit, version n+1, does not change the paper). A paper that is already terbit is checked again and stays terbit. Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {

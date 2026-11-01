@@ -125,12 +125,12 @@ Migration numbers 0100-0109 are team A's range (in code: 0092, 0093, 0100 lifecy
 | 0101 | `essay_choice` (built, R1-T25) | `question_parts.topics` jsonb (`[{ id, label }]`, 2..6, free-string ids per V2 `config.topics`, CHECK `ck_question_parts_topics`); CHECK mode adds `essay_choice`; word range reuses `word_min`/`word_max`; independent of the lifecycle statuses of 0100 |
 | 0102 | `dskp_leaf_tags_and_facts` | `question_parts.tp`, `.cognitive_level` (NOT `.topics` and NOT the `essay_choice` mode CHECK: both already added by 0101 `essay_choice`); table `question_version_facts`; backfill facts for all existing versions by a SQL function (same logic as `computeFacts`; a post-migration script compares both on a sample) |
 | 0103 | `stimulus_kinds_wide` | no DDL if the CHECK already allows the 8 kinds (`stimuli.kind` check lists passage, image, diagram, table, graph, map, infographic, audio); migration only asserts it; contract widens |
-| 0104 | `tracking_a_authoring` | ADR-0032 columns and unique index |
+| 0104 | `paper_section_admin_created` (T48, `paper_sections.admin_created`; was reserved for `tracking_a_authoring`, which moves to the next free number of team A's range 0100-0109) | additive column for the V2 "Tambah bahagian" |
 | 0105 | `kertas_subjektif` | ADR-0033 tables, `paper_sections.kertas_paper_id`, file purposes |
 | 0106 | `feature_flags` | ADR-0035 |
 | 0107 | `drop_pool_tag` | delete `question_tags` kind `pool`; narrow CHECK |
 
-> Numbering (R1-T25, resolved): 0100 lifecycle and 0101 `essay_choice` exist in code. Planned, in the order this document implies: 0102 `dskp_leaf_tags_and_facts` (must not add `topics` or the `essay_choice` mode again), 0103 `stimulus_kinds_wide`, 0104 `tracking_a_authoring`, 0105 `kertas_subjektif`, 0106 `feature_flags`, 0107 `drop_pool_tag`. Optional, each only when its task proves a column is needed: 0108 R1-B12 (self-mark), 0109 R1-B20 (file purposes). R1-B16 (practice mode CHECK) and R1-B10 (`needs_review`) would be 0120 and 0121 in the team A overflow range (0120-0129; team C owns 0110-0119), allocated by the LEAD at merge.
+> Numbering (R1-T25, resolved): 0100 lifecycle and 0101 `essay_choice` exist in code. Planned, in the order this document implies: 0102 `dskp_leaf_tags_and_facts` (must not add `topics` or the `essay_choice` mode again), 0103 `stimulus_kinds_wide`, a free number for `tracking_a_authoring` (0104 is taken by T48 `paper_section_admin_created`), 0105 `kertas_subjektif`, 0106 `feature_flags`, 0107 `drop_pool_tag`. Optional, each only when its task proves a column is needed: 0108 R1-B12 (self-mark), 0109 R1-B20 (file purposes). R1-B16 (practice mode CHECK) and R1-B10 (`needs_review`) would be 0120 and 0121 in the team A overflow range (0120-0129; team C owns 0110-0119), allocated by the LEAD at merge.
 
 ### 2.1 Prisma (excerpts; field names follow repo `@map` style)
 ```prisma
@@ -529,7 +529,7 @@ Legend: **WT** = changes shared migrations, seeds or contract and runs in an iso
 | BE-B7 | SPM pools: Latih Tubi SPM, Databank, Mock K1/K2, Struktur/Subjektif counts, Misi, Set Guru, Remedial, Bab counts via `where()` | `spm/**`, `classes/**`, `practice/reads/**` | A3, B4 | No |
 | BE-B8 | Admin servability endpoints (single, batch, shortfall, overview/lanes), bulk-action rework with per-item reasons, edit-as-draft, status response with servability | `questions/http/admin.controller.ts`, `spm/**` | A3, B1 | No |
 | BE-C1 | Papers: blank/generate/pool-preview, placements API, review endpoint, publish conformance (AC-07.4), override audit, native approve in transaction, pin versions, withdraw, copy, attach document | `exam/builder/**`, `exam/blueprints/**`, `bijak/papers/**` | A3, B1, B5, (D1 for attach) | No |
-| BE-C2 | Tracking A CRUD + fill/swap + student visibility, migration 0104 | `spm/tracking*.ts`, new controller | A3 | Yes (0104, seed) |
+| BE-C2 | Tracking A CRUD + fill/swap + student visibility, migration (next free number of range 0100-0109; 0104 is `paper_section_admin_created`) | `spm/tracking*.ts`, new controller | A3 | Yes (0104, seed) |
 | BE-C3 | Simulasi Kuiz mode, paper quiz + check, Pembetulan read | `practice/**`, `bijak/papers/**` | B4, B5 | No |
 | BE-D1 | Kertas Subjektif module: migration 0105, CRUD, publish/unpublish gate, flag guard, file purposes + pupil read rule | `modules/kertas-subjektif/**`, `files/**`, `prisma/schema/kertas.prisma` | A2, A4 | Yes |
 | BE-D2 | Pipeline: upload, jobs, page reading via `DocumentReader` (text layer + Tesseract), `assembleDocument`, progress, failure codes, fixtures (one digital, one scanned test PDF) | `kertas-subjektif/pipeline/**` | D1 | No |
@@ -582,7 +582,7 @@ FE-P5 is DONE (`src/components/question-display/`: `AnswerWidget`, `McqOptions`,
 - **Wave 4 (parallel):** BE-D3, FE-A3, FE-A4, FE-A5, FE-A7, FE-S1, FE-S2, FE-S4, DO-1.
 - **Wave 5:** FE-A8, FE-S3, BE-E2, QA-2.
 - **Wave 6:** QA-1, G4 reviews (code-reviewer, security-engineer: file read rules, flag guards, document sanitising, bulk caps), G5.
-Shared-data tasks (WT): BE-A1, BE-A2, BE-A3, BE-A4 (migration), BE-B2, BE-B3, BE-C2, BE-D1, BE-E1. Serialise migrations: A1 (0100), A3 (0102), C2 (0104), D1 (0105), A4 (0106), B2 (0107).
+Shared-data tasks (WT): BE-A1, BE-A2, BE-A3, BE-A4 (migration), BE-B2, BE-B3, BE-C2, BE-D1, BE-E1. Serialise migrations: A1 (0100), A3 (0102), C2 (the next free number: 0104 is taken by T48 `paper_section_admin_created`), D1 (0105), A4 (0106), B2 (0107).
 
 ## 10. First vertical slice (fastest functioning path)
 Goal: admin creates and approves an image MCQ, the student sees it in Latih Tubi and inside a published Simulasi paper.
