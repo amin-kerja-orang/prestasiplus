@@ -23,14 +23,14 @@ Same throwaway database and harness as T54 (`docs/qa/perf-r1-400k/perf-400k.spec
 | 1. Code only (one aggregate, regex fix) | 1,530 / 1,726 | 2,671 / 3,586 | 716 / 861 | 124 / 154 |
 | 2. + migration 0106 (trigram) | **54 / 73** | 2,860 / 3,560 | 677 / 847 | 118 / 145 |
 | 3. + migration 0107 (kertas index) | 57 / 79 | **172 / 202** | 661 / 878 | 118 / 142 |
-| 4. Step 3 with `jit = off` on the database (recommendation, not part of this branch) | 59 / 67 | 147 / 198 | **445 / 618** | 108 / 137 |
+| 4. Step 3 with `jit = off` on the database (ops recommendation, not part of this branch) | 59 / 67 | 147 / 198 | **445 / 618** | 108 / 137 |
 
 Reading the table:
 
 - Text search: 1.58 s to 54 ms (about 29 times faster), from the trigram indexes. Total 79 rows, same as before.
 - `kertas` alone: 1.72 s to 172 ms. Step 1 is slower than step 0 because `[[:space:]]*` costs more per row than the cooked `s*`; the cost shows only while there is no index (2.4 s of regex work over 408k rows), and step 3 removes it (EXPLAIN of the count query: 2,694 ms to 157 ms, Index Scan on `ix_question_versions_paper_kertas`, 39,000 rows). The fix of the bug (trailing whitespace) is therefore only affordable together with 0107: ship them together.
-- Unfiltered list: the one aggregate saves about 3 to 10 percent only. The remaining cost is the exact count over 286,516 rows: a hash join of `question_versions` (seq scan) and `questions`, an anti join for PKSK, and a status group. About 300 ms of the 660 ms is JIT compilation: the planner cost of the query (above 500,000) is over `jit_above_cost`, so Postgres compiles it for each call. With `jit = off` the same query takes 445 ms p50 (EXPLAIN: 900 ms to 530 ms). This is a database setting (B1/DevOps): `ALTER DATABASE <db> SET jit = off` (usual advice for an OLTP application). It was not hard-coded in the application.
-- P8a is therefore NOT below 0.5 s p95 with this branch alone (0.88 s), and 0.62 s with `jit = off`. Going lower without approximating needs either a maintained counter table (a write-path change in every status transition) or a cache invalidated on every status change; both were left out on purpose (exactness first). Left as a decision for the lead.
+- Unfiltered list: the one aggregate saves about 3 to 10 percent only. The remaining cost is the exact count over 286,516 rows: a hash join of `question_versions` (seq scan) and `questions`, an anti join for PKSK, and a status group. About 300 ms of the 660 ms is JIT compilation: the planner cost of the query (above 500,000) is over `jit_above_cost`, so Postgres compiles it for each call. With `jit = off` the same query takes 445 ms p50 (EXPLAIN: 900 ms to 530 ms). This is a database setting and stays an **ops recommendation** only (B1/DevOps): `ALTER DATABASE <db> SET jit = off` (usual advice for an OLTP application). No setting is in code or in a migration (lead decision).
+- P8a p95 is 0.88 s with this branch alone (below the 1 s target), and 0.62 s with `jit = off`. Going lower without approximating would need either a maintained counter table (a write-path change in every status transition) or a cache invalidated on every status change. Neither is done, by lead decision (exactness first); both are recorded here as a **possible future step** only.
 
 Build cost of the indexes on 408k questions (local): 0106 about 20 s (`stem_ms` 55 MB; `stem_en` is nearly empty in this bank), 0107 0.9 s (552 kB). Both take a lock that blocks writes to `question_versions` while they build.
 
@@ -38,7 +38,7 @@ Build cost of the indexes on 408k questions (local): 0106 about 20 s (`stem_ms` 
 
 - Migrations 0106 and 0107 use a plain `CREATE INDEX` (Prisma runs each migration file in one transaction, `CONCURRENTLY` cannot run there). **Maintenance window needed**: writes to `question_versions` wait about 20 s at 400k rows (0106) and about 1 s (0107).
 - `pg_trgm` must be allowed on the production Postgres (trusted extension: the database owner can create it; managed hosts must have it enabled). If `CREATE EXTENSION` is refused the deploy stops at 0106 and nothing else has changed.
-- Suggested database setting: `jit = off`.
+- Ops recommendation: `jit = off` on the database (not in code or migrations).
 - Revert SQL is in each migration header.
 - Run `ANALYZE question_versions` after the migrations (the planner then knows the new expression index).
 
