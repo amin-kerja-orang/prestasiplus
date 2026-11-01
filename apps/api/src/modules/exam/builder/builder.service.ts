@@ -87,7 +87,10 @@ type Info = ReadonlyMap<string, BuilderQuestionInfo>
 
 const MAX_KERTAS = 32767
 
-const DEFAULT_TITLE = (subjectName: string, kertas: number) => `Percubaan SPM ${subjectName} Kertas ${String(kertas)} (draf)`
+/** The suffix the auto title carries while the paper is a Draf. Terbit drops it from an auto title and from nothing else. */
+const DRAFT_SUFFIX = ' (draf)'
+const PUBLISHED_TITLE = (subjectName: string, kertas: number) => `Percubaan SPM ${subjectName} Kertas ${String(kertas)}`
+const DEFAULT_TITLE = (subjectName: string, kertas: number) => `${PUBLISHED_TITLE(subjectName, kertas)}${DRAFT_SUFFIX}`
 
 const statusOf = (dbStatus: string): BijakBuilderPaperStatus => (dbStatus === 'published' ? 'terbit' : 'draf')
 
@@ -591,10 +594,15 @@ export class BuilderService {
           if (q) await this.repo.pinPlacement(pl.id, q.versionNo, q.marks)
         }
       const now = this.clock.now()
+      // D9 (a wrong label shown to pupils): a title that is EXACTLY the auto default of this subject and kertas loses its " (draf)" at Terbit.
+      // Any other title, including a custom one that merely ends in "(draf)", is the admin's and is never touched. Same transaction as the status.
+      const subjectName = (await this.repo.subjectsByIds([paper.subjectId])).get(paper.subjectId.toString())?.name
+      const publishedTitle = subjectName !== undefined && paper.title === DEFAULT_TITLE(subjectName, paper.kertas) ? PUBLISHED_TITLE(subjectName, paper.kertas) : undefined
       await this.repo.updatePaper(paper.id, {
         status: 'published',
         publishedAt: now,
         updatedAt: now,
+        ...(publishedTitle !== undefined ? { title: publishedTitle } : {}),
         ...(structural.report ? { standardReport: structural.report as never } : {}),
         ...(paper.status === 'withdrawn' ? { version: paper.version + 1 } : {}),
       })
