@@ -108,8 +108,8 @@ export class PapersService {
       ...this.summary(paper, subjects, marked, progress),
       instructions: paper.instructions,
       reference: referencePanels(paper.referenceSheets),
-      // AC-20.3: "Untuk Kegunaan Pemeriksa" is printed only when the paper holds a part a person marks.
-      examinerGrid: paper.sections.some((s) => s.placements.some((pl) => info.get(idToString(pl.questionId))?.manual === true)),
+      // AC-20.3: "Untuk Kegunaan Pemeriksa" is printed only when the paper holds a part a person marks. Read from `marked` (live and pinned) so a question archived after Terbit keeps the grid.
+      examinerGrid: paper.sections.some((s) => s.placements.some((pl) => marked.get(idToString(pl.questionId))?.manual === true)),
       sections: paper.sections.map((s) => {
         const rule = ruleOf(s.ruleType, s.ruleN)
         return {
