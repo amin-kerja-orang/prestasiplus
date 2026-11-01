@@ -77,7 +77,7 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 
 | ID | Branch @ head | Lane | Depends on | B state |
 |---|---|---|---|---|
-| REQ-B-052: an archived question pinned on a published paper is rewritten in place by update and updateOwn (fix: branch to a new version instead of refusing) | `r1/reqb052-archived-edit` @ 7ec49fe8 | A3 (T48 dev) | none (REQ-B-052) | A3 (T48 dev): the fix commit 50017f8f is pushed (an edit of an archived or pinned question branches to a new version, never rewrites it; the sittings holding a withdrawn question keep the original), stacked on REQ-B-032 (7217a6c9, e9cf34b7); head 7ec49fe8; READY status not announced (unconfirmed) |
+| REQ-B-052: an archived question pinned on a published paper is rewritten in place by update and updateOwn (fix: branch to a new version instead of refusing) | `r1/reqb052-archived-edit` @ 7ec49fe8 | A3 (T48 dev) | none (REQ-B-052) | A3 (T48 dev): MID-WORK, not READY (the READY report is still coming); fix commit 50017f8f pushed (an edit of an archived or pinned question branches to a new draft version, never rewrites it; no migration), stacked on REQ-B-032 (7217a6c9, e9cf34b7); head 7ec49fe8 |
 | T54 F2: builder pool search matches the text in SQL and describes only the page | `r1/builder-search-perf` @ f0ddb1ca | A3 | T48 (carries 705468c1); merges after T48 | READY (A3, T54 F2); merges after T48; review not seen (unconfirmed) |
 | T34-L1-residual, taken by team C (REQ-A-013) | `r1/t34-l1-residual-c` @ a2acf754 | team C (REQ-A-013) | BASE-102 (not built from e4bb72eb) | team C has taken T34-L1-residual (REQ-A-013): restacked (a2acf754), 0110 identical; NOT built from A3 e4bb72eb; review not seen (unconfirmed) |
 | REQ-B-022a overview: skip the Jana pool facts in the published-paper pass (cold 15.3 s to 9.3 s on 408k) | `r1/overview-mcq-shape-once` @ 7a6e8bb3 | A4 | T30 (base) | READY (A4); review not seen (unconfirmed) |
@@ -121,7 +121,7 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 |---|---|---|
 | T37 runbook | `r1/t37-r1-runbook` @ 548e81b1 | `docs/ops/r1-runbook.md` (migrations 0092 to 0105, SELECTs run 74/74 on BASE-62) |
 | T39 K1 evidence | `r1/t39-k1-evidence` @ 1a26f7a6 | `docs/ops/r1-k1-blueprint-evidence.md` |
-| T46 / H-A17 AC coverage | `r1/ha17-ac-coverage` @ 4fce9411 | `docs/qa/r1-backend-ac-coverage.md`, `r1-verify-first-notes.md` (kept current by H-A27) |
+| T46 / H-A17 AC coverage | `r1/ha17-ac-coverage` @ 43948d54 | `docs/qa/r1-backend-ac-coverage.md`, `r1-verify-first-notes.md` (kept current by H-A27) |
 | H-A19 admin parity | `r1/ha19-admin-parity` @ c7315b0e | `docs/qa/r1-admin-parity-check.md` |
 | H-A20 student parity | `r1/ha20-student-parity` @ 557e17c6 | `docs/qa/r1-student-parity-check.md` |
 | H-A22 parity docs | `r1/ha22-parity-docs` @ 4fb2a41b | both parity docs refreshed, deviation rows H22-D1/D2 in `v2-bijak-spm.md`, `student.md` rows marked |
