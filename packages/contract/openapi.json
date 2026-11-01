@@ -39070,6 +39070,20 @@
           "subjects"
         ]
       },
+      "QuestionFilterOptions": {
+        "type": "object",
+        "properties": {
+          "negeri": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "negeri"
+        ]
+      },
       "Question": {
         "type": "object",
         "properties": {
@@ -40474,7 +40488,6 @@
           },
           "negeri": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 64
           },
           "kertas": {
@@ -102940,7 +102953,6 @@
           {
             "schema": {
               "type": "string",
-              "minLength": 1,
               "maxLength": 64
             },
             "required": false,
@@ -103108,6 +103120,55 @@
           },
           "422": {
             "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages), `message` = first message plus the count of the others.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/questions/filter-options": {
+      "get": {
+        "tags": [
+          "questions"
+        ],
+        "summary": "The Negeri options of the Studio filter (exam boards of the source papers)",
+        "description": "Admin Pusat only, no-store. `negeri` lists the distinct, trimmed `exam_board` values of `source_papers`, sorted; the list filter `negeri` matches them case-insensitively.",
+        "responses": {
+          "200": {
+            "description": "The options.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/QuestionFilterOptions"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN, or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
             "content": {
               "application/json": {
                 "schema": {
@@ -104562,6 +104623,19 @@
             "required": false,
             "description": "Case-insensitive text in the label or body (a group: its own label or any of its stimuli). `%` and `_` are literal.",
             "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true"
+              ],
+              "description": "`true` keeps only groups with no member shown to pupils (REQ-C-019). A deliberate narrowing for the picker: a draft question may still join a group that has a served member through the members route (the served lock only protects the served members and their order), so a group missing from this list is not necessarily closed to a draft."
+            },
+            "required": false,
+            "description": "`true` keeps only groups with no member shown to pupils (REQ-C-019). A deliberate narrowing for the picker: a draft question may still join a group that has a served member through the members route (the served lock only protects the served members and their order), so a group missing from this list is not necessarily closed to a draft.",
+            "name": "joinable",
             "in": "query"
           }
         ],

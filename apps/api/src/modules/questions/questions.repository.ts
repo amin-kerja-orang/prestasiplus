@@ -623,7 +623,7 @@ export class QuestionsRepository {
     // V2 Studio filters (D79). Tahun, Negeri and Jenis read the source paper of the version; Kertas is the trailing digit of the
     // version's paper code (how the paper builder reads it). A question without the value never matches.
     if (f.tahun !== undefined) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND sp.year = ${Number(f.tahun)})`)
-    if (f.negeri !== undefined) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND lower(sp.exam_board) = lower(${f.negeri}))`)
+    if (f.negeri !== undefined && f.negeri.trim() !== '') conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND lower(btrim(sp.exam_board)) = lower(btrim(${f.negeri})))`)
     if (f.jenis !== undefined) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND sp.exam_type = ${f.jenis})`)
     if (f.kertas !== undefined) conds.push(Prisma.sql`substring(v.paper_code from '([0-9])\s*$') = ${f.kertas}`)
     if (f.search !== undefined && f.search.trim() !== '') {
@@ -858,6 +858,22 @@ export class QuestionsRepository {
       SELECT 1 AS one FROM spm_subject_configs c JOIN education_levels l ON l.id = ${level} AND l.code IN ('T4', 'T5')
        WHERE c.subject_id = ${subject} LIMIT 1`
     return rows.length > 0
+  }
+
+  /**
+   * The distinct exam boards ("negeri atau badan peperiksaan") of the source papers, for the Studio Negeri select (REQ-C-019). Distinct
+   * case-insensitively on the trimmed text (the Negeri filter matches that way, so two spellings would be one choice); the display form is the
+   * most used spelling, then the first in byte order, so the answer is deterministic. Sorted by the lower-case form.
+   */
+  async examBoards(): Promise<string[]> {
+    const rows = await this.db.$queryRaw<{ board: string }[]>`
+      SELECT board FROM (
+        SELECT DISTINCT ON (k) board, k FROM (
+          SELECT btrim(exam_board) AS board, lower(btrim(exam_board)) AS k, count(*) AS n
+            FROM source_papers WHERE exam_board IS NOT NULL AND btrim(exam_board) <> '' GROUP BY 1, 2
+        ) g ORDER BY k, n DESC, board ASC
+      ) d ORDER BY k`
+    return rows.map((r) => r.board)
   }
 
   async groupExists(id: string): Promise<boolean> {

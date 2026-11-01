@@ -28,6 +28,8 @@ const NO_SERVABILITY = 'Mock side: no GET /api/admin/servability/overview route 
 const NO_INTAKE_ITEMS = 'Mock side: no GET /api/intake/items route (404); not mocked (never was), the API serves it.'
 const NO_INTAKE_BATCHES = 'Mock side: no GET /api/intake/batches route (404); not mocked (never was), the API serves it.'
 const NO_INTAKE_DASHBOARD = 'Mock side: no GET /api/intake/dashboard route (404); not mocked (never was), the API serves it.'
+const NO_FILTER_OPTIONS =
+  'Mock side: no GET /api/questions/filter-options route (404); not mocked (never was), the API serves it (r1/t49-served-now).'
 
 /**
  * A route the mock does not serve answers 404, which the runner sees as two violations: an
@@ -53,6 +55,9 @@ export const KNOWN_MISMATCHES: KnownMismatch[] = [
     reason:
       'Mock side: the user rows carry no username, no roles[] and no isSuspended; the contract (BE-05, v2-frontend section 6) requires them.',
   },
+  ...notServed('questions/GET /questions/filter-options -> 200', NO_FILTER_OPTIONS),
+  ...notServed('questions/GET /questions/filter-options anonymous -> 401', NO_FILTER_OPTIONS),
+  ...notServed('questions/GET /questions/filter-options as student -> 403', NO_FILTER_OPTIONS),
   ...notServed('bijak-builder/GET /admin/papers -> 200', NO_BUILDER),
   ...notServed('bijak-builder/GET /admin/papers anonymous -> 401', NO_BUILDER),
   ...notServed('bijak-builder/GET /admin/papers as student -> 403', NO_BUILDER),
