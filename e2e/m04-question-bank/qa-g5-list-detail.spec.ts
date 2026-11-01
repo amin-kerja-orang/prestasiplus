@@ -10,6 +10,7 @@ import {
   answerConfirm,
   applyFilters,
   clickRowDelete,
+  isNarrow,
   listRows,
   openMoreFilters,
   openSubjectTable,
@@ -107,8 +108,11 @@ test.describe('QA G5 S1 list', { tag: [moduleTag(4), '@qa'] }, () => {
     expect(tamil).toContain('15,718')
     expect(tamil).toContain('6,300')
     expect(tamil).toContain('lulus')
-    expect(names.find((n) => n.startsWith('Bahasa Melayu'))).toContain('Teras')
-    expect(tamil).toContain('Elektif')
+    // The group badge column is hidden below md (the per-subject table folds its columns).
+    if (!isNarrow(page)) {
+      expect(names.find((n) => n.startsWith('Bahasa Melayu'))).toContain('Teras')
+      expect(tamil).toContain('Elektif')
+    }
     await expect(byId(page, 'questions-group-teras')).toHaveCount(7)
     await expect(byId(page, 'questions-group-elektif')).toHaveCount(24)
     // The KPI strip carries the same group counts.
@@ -205,25 +209,32 @@ test.describe('QA G5 S1 list', { tag: [moduleTag(4), '@qa'] }, () => {
     gotoApp,
   }) => {
     await gotoApp('/admin/questions?status=archived')
-    await expect(byId(page, 'question-status').first()).toHaveText('Arkib')
-    await expect(byId(page, 'question-active').first()).toHaveText('INACTIVE')
+    if (isNarrow(page)) {
+      // Cards show the status as a labelled field, not the pill/ACTIVE badge testids.
+      await expect(listRows(page).first()).toContainText('Arkib')
+    } else {
+      await expect(byId(page, 'question-status').first()).toHaveText('Arkib')
+      await expect(byId(page, 'question-active').first()).toHaveText('INACTIVE')
+    }
 
     await gotoApp('/admin/questions?compliance_filter=pending_mapping')
-    await expect(byId(page, 'question-compliance').first()).toHaveText('PENDING MAPPING')
+    // The compliance badge is a table-only element; cards (< md) do not render it.
+    if (!isNarrow(page)) await expect(byId(page, 'question-compliance').first()).toHaveText('PENDING MAPPING')
+    else await expect(listRows(page).first()).toBeVisible()
 
     await gotoApp('/admin/questions?compliance_filter=missing_source')
     await expect(listRows(page).first()).toBeVisible()
     await expect(byId(page, 'question-source-file')).toHaveCount(0)
 
     await gotoApp('/admin/questions?compliance_filter=draft')
-    await expect(byId(page, 'question-source').first()).toContainText('Source: TIADA')
+    if (!isNarrow(page)) await expect(byId(page, 'question-source').first()).toContainText('Source: TIADA')
 
     await gotoApp('/admin/questions?compliance_filter=verified_generated')
-    await expect(byId(page, 'question-ai-verified').first()).toContainText('AI Verified')
+    if (!isNarrow(page)) await expect(byId(page, 'question-ai-verified').first()).toContainText('AI Verified')
 
     // type / question_type / sort are ignored.
     await gotoApp('/admin/questions?type=essay&question_type=essay&sort=id')
-    await expect(byId(page, 'question-id').first()).toHaveText('564159')
+    if (!isNarrow(page)) await expect(byId(page, 'question-id').first()).toHaveText('564159')
     await expect(pager(page)).toBeVisible()
 
     await gotoApp('/admin/questions?status=draft&subject_id=31')
@@ -300,15 +311,21 @@ test.describe('QA G5 S1 list', { tag: [moduleTag(4), '@qa'] }, () => {
     await byId(page, 'questions-bulk-submit').click()
     await answerConfirm(page, 'ok')
     await expect(page).toHaveURL(/subject_id=4/)
-    await expect(byId(page, 'question-status').nth(0)).toHaveText('Arkib')
-    await expect(byId(page, 'question-status').nth(1)).toHaveText('Arkib')
+    if (isNarrow(page)) {
+      await expect(listRows(page).nth(0)).toContainText('Arkib')
+      await expect(listRows(page).nth(1)).toContainText('Arkib')
+    } else {
+      await expect(byId(page, 'question-status').nth(0)).toHaveText('Arkib')
+      await expect(byId(page, 'question-status').nth(1)).toHaveText('Arkib')
+    }
 
     await rowChecks(page).nth(2).check()
     await byId(page, 'questions-bulk-action').selectOption('delete')
-    const id = (await byId(page, 'question-id').nth(2).innerText()).trim()
+    // Cards (< md) do not render the id; the total drop below proves the delete there.
+    const id = isNarrow(page) ? '' : (await byId(page, 'question-id').nth(2).innerText()).trim()
     await byId(page, 'questions-bulk-submit').click()
     await answerConfirm(page, 'ok')
-    await expect(byId(page, 'question-id').getByText(id, { exact: true })).toHaveCount(0)
+    if (id) await expect(byId(page, 'question-id').getByText(id, { exact: true })).toHaveCount(0)
     await expect.poll(() => totalOf(page)).toBeLessThan(totalBefore)
     await expect(page).toHaveURL(/subject_id=4/)
   })
@@ -321,17 +338,28 @@ test.describe('QA G5 S1 list', { tag: [moduleTag(4), '@qa'] }, () => {
     // Delete sits in the row "..." menu and asks through the DS confirm dialog.
     await clickRowDelete(first)
     await answerConfirm(page, 'cancel', 'Adakah anda pasti mahu memadamkan soalan ini?')
-    await expect(rowOf(page, '564159')).toHaveCount(1)
+    // Cards do not render the id, so below md the first card stands in for row 564159.
+    await expect(isNarrow(page) ? listRows(page).first() : rowOf(page, '564159')).toHaveCount(1)
     expect(await totalOf(page)).toBe(total)
-    await expect(first.getByTestId('question-view')).toHaveAttribute(
-      'href',
-      '/admin/questions/564159',
-    )
-    await expect(first.getByTestId('question-edit')).toHaveAttribute(
-      'href',
-      '/admin/questions/564159/edit',
-    )
-    await first.getByTestId('question-edit').click()
+    if (isNarrow(page)) {
+      // Cards fold every action into the "..." menu (inline 0).
+      await first.getByTestId('question-more').click()
+      await expect(page.getByRole('menuitem', { name: 'Lihat' })).toHaveAttribute(
+        'href',
+        '/admin/questions/564159',
+      )
+      await page.getByRole('menuitem', { name: 'Edit' }).click()
+    } else {
+      await expect(first.getByTestId('question-view')).toHaveAttribute(
+        'href',
+        '/admin/questions/564159',
+      )
+      await expect(first.getByTestId('question-edit')).toHaveAttribute(
+        'href',
+        '/admin/questions/564159/edit',
+      )
+      await first.getByTestId('question-edit').click()
+    }
     await expect(page).toHaveURL(/\/admin\/questions\/564159\/edit$/)
   })
 
