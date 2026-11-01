@@ -21,7 +21,7 @@ import { QuestionsRepository } from '../../../questions'
 import { SubscriptionService } from '../../../subscriptions'
 import { UsersRepository } from '../../../users'
 import { StreakService, WalletService } from '../../../wallet'
-import { OFFERED_LEVEL_CODES, UNLOCK_SCORE } from '../../rules'
+import { OFFERED_LEVEL_CODES } from '../../rules'
 import { BankFacts } from './bank-facts'
 import { OverviewRepository } from './overview.repository'
 import { bannerAudiences, cutQuestionText, difficultyLevelOfTp, greetingPeriod, pct, round, weekEndMyt, weekStartMyt } from './rules'
@@ -304,15 +304,13 @@ export class OverviewService {
     if (shown) {
       const ids = shown.chapters.map((c) => idToString(c.id))
       const latest = await this.repo.chapterLatest(who.userId, ids, who.isTest)
-      let prev: { complete: boolean; scorePct: number } | null = null
       for (const [i, chapter] of shown.chapters.entries()) {
         const id = ids[i] as string
         const total = counts.get(id) ?? 0
         const l = latest.get(id) ?? { answered: 0, correct: 0 }
         const scorePct = l.answered === 0 ? 0 : (l.correct / l.answered) * 100
         const complete = l.answered >= total && total > 0
-        // BR-16: chapter 1 is open; chapter k is open when chapter k - 1 is complete with a score of at least 70.
-        const open = i === 0 || (prev !== null && prev.complete && prev.scorePct >= UNLOCK_SCORE)
+        // REQ-C-021 (D98, V2): no progressive lock; every chapter is open (BR-16's 70 percent rule is dropped).
         chapters.push({
           id,
           number: chapter.chapterNumber,
@@ -322,10 +320,9 @@ export class OverviewService {
           correct: l.correct,
           scorePct: round(scorePct, 1),
           remaining: Math.max(0, total - l.answered),
-          state: open ? 'open' : 'locked',
+          state: 'open',
           complete,
         })
-        prev = { complete, scorePct }
       }
     }
     return {
