@@ -507,7 +507,6 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/req-b-033 | b5e713fa4 | READY (A4): deviation row added; chain 4th; B2 |
 | r1/req-c-020 | 8733a3785 | READY (A4): deviation row added; chain 3rd; B2 |
 | r1/req-c012-a2 | dc3bfae88 | READY (A2, on H-A18 fc409ae1): M1 fixed (edit-as-draft keeps the import hold); 298/298; merges after H-A18; B3 re-check |
-| r1/reqa018-paper-servability-fe | e6d964621 | (no status — triage) |
 | r1/reqa018-paper-servability-route | 2f5a85e7c | READY (A1b; on T45 954614c6 + BASE-105): GET /api/admin/questions/:id/paper-servability (Admin Pusat; 403/401/404); 31/31; contract ok; merges after T45; B2 + B3 |
 | r1/reqb032-pinned-rule | a2cb5bb42 | READY (A2+A3, BASE-105): spec title + R1-limitation row (takedown vs running sitting, KIV R2); 6/6; B2 + B3 |
 | r1/reqb049-report-visible | 9ece8d76d | READY (A1b, BASE-105): pre-review Minors fixed (type from the live version, spec titles, real level codes); 316/316; B2 + B3 |
