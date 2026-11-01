@@ -1,6 +1,6 @@
 /**
  * Menu of the Portal Pentadbiran (D30; `docs/requirements/v2-portals.md` section 6): 9 groups and
- * 104 items for Admin Pusat. `PENTADBIRAN_FULL_MENU` keeps the whole definition as data for the
+ * 105 items for Admin Pusat. `PENTADBIRAN_FULL_MENU` keeps the whole definition as data for the
  * next round; `PENTADBIRAN_MENU` (rendered) holds built screens only and drops empty groups.
  * Unbuilt items are listed in `docs/requirements/v2-pentadbiran-backlog.md`.
  */
@@ -99,6 +99,8 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
       ['BS-05', 'Laporan Soalan', '/admin/question-reports'],
       ['BS-06', 'Soalan PKSK', '/admin/pksk/questions'],
       ['BS-07', 'Audio KBAT', '/admin/audio-kbat'],
+      // Studio list (V2 `Question Studio`, scope R1-21 P5); the screen is in base (T13b), REQ-B-039.
+      ['BS-08', 'Bank Soalan (Studio)', '/admin/studio'],
     ]),
   },
   {

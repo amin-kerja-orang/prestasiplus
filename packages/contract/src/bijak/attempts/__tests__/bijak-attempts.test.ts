@@ -21,6 +21,7 @@ import {
   BijakAttemptSaveResultSchema,
   BijakAttemptStartRequestSchema,
   BijakAttemptStartResultSchema,
+  BijakAttemptStimulusSchema,
   BijakAttemptSubmitPayloadSchema,
   BijakAttemptSubmitResultSchema,
 } from '../schema'
@@ -99,7 +100,7 @@ const stimulusGroup = {
     label: 'Rajah 2',
     caption: 'Garis lurus AB',
     alt: 'Garis lurus AB pada satah Cartes.',
-    svg: '<svg viewBox="0 0 10 10"><line x1="0" y1="10" x2="10" y2="0" stroke="currentColor"/></svg>',
+    image: { url: '/api/files/Zk3x9QmT1bVnR0aYc7LpDw' },
   },
   from: 4,
   to: 4,
@@ -899,5 +900,30 @@ describe('OpenAPI document', () => {
     walk(schemas.BijakAttemptResultView, false)
     expect(names.has('scheme')).toBe(true)
     expect(names.has('correctOption')).toBe(true)
+  })
+})
+
+describe('the picture and stimulus wire (REQ-B-014 b, c)', () => {
+  const ok = (url: string) => BijakAttemptStimulusSchema.safeParse({ id: 's1', kind: 'image', label: 'Rajah 1', alt: 'Rajah', image: { url } }).success
+
+  it('a picture URL is a file token URL and nothing else', () => {
+    expect(ok('/api/files/Zk3x9QmT1bVnR0aYc7LpDw')).toBe(true)
+    expect(ok('/api/files/tok-1_A')).toBe(true)
+    for (const bad of ['', 'https://evil.test/a.png', 'javascript:alert(1)', 'data:image/svg+xml,<svg/>', '//evil.test/a', '/api/files/', '/api/files/a/b', '/api/files/a?x=1', '/api/files/a#f', '/api/files/../x', '/api/files/ a', 'api/files/a']) {
+      expect(ok(bad), bad).toBe(false)
+    }
+  })
+
+  it('an option picture is held to the same rule', () => {
+    const option = (url: string) => BijakAttemptPaperViewSchema.shape.questions.element.shape.mcq.unwrap().shape.options.element.safeParse({ id: 'A', text: 'x', image: { url } }).success
+    expect(option('/api/files/abc')).toBe(true)
+    expect(option('https://evil.test/a.png')).toBe(false)
+  })
+
+  it('there is no inline SVG field: a stimulus carrying one is refused (the browser would render it with v-html)', () => {
+    const base = { id: 's1', kind: 'diagram', label: 'Rajah 1', alt: 'Rajah' }
+    expect(BijakAttemptStimulusSchema.safeParse(base).success).toBe(true)
+    expect(BijakAttemptStimulusSchema.safeParse({ ...base, svg: '<svg onload="alert(1)"/>' }).success).toBe(false)
+    expect(Object.keys(BijakAttemptStimulusSchema.shape)).not.toContain('svg')
   })
 })

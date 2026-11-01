@@ -12,7 +12,7 @@
  * with the `exam` rule (`createBlueprintIfAbsent`): skipped when the code exists at version 1 or the
  * subject and kertas already have an active blueprint (an admin-made one included). Never updates rows.
  */
-import { POC_BANK, type PocBlueprint, type PocPaper } from '../../src/modules/bijak/papers/poc'
+import { POC_BANK, type PocBlueprint, type PocPaper } from './poc/export'
 import { createBlueprintIfAbsent, subjectIds } from './exam'
 import type { SeedModule } from './index'
 
