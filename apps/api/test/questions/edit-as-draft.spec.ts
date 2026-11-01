@@ -46,6 +46,9 @@ describe('edit as draft', () => {
       { version_no: 2, status: 'draft' },
     ])
     expect(await live(id)).toBe(1) // served until the draft is approved
+    // m3: the call is audited (QUESTION_UPDATED with mode edit_as_draft), as the other Studio writes are
+    const audit = await t.db.query<{ detail: { mode?: string; versionNo?: number } | null }>(`select detail from audit_events where target_id = $1 and detail->>'mode' = 'edit_as_draft'`, [id])
+    expect(audit.map((a) => a.detail?.versionNo)).toEqual([2])
 
     // Same content: every content column, the SP nodes and the part tree (options and keys) are equal.
     const cols = await t.db.query<Record<string, unknown>>(
@@ -99,6 +102,22 @@ describe('edit as draft', () => {
     expect(error.message).toBe(QUESTION_MESSAGES.editAsDraftNotApproved)
     expect((await versions(gone)).length).toBe(1)
     expectError(await admin.post('/api/questions/987654321/edit-as-draft'), 'NOT_FOUND')
+  })
+
+  it('an import hold on the live version goes on to version 2: the draft keeps every issue and Terbit refuses media until the picture is supplied', async () => {
+    const id = await served()
+    const held = '[{"code":"legacy_image_unresolved","target":"question","path":"a.png"},{"code":"html_math","target":"stem"}]'
+    await t.db.query(`update question_versions set import_issues = $2::jsonb where question_id = $1::bigint and version_no = 1`, [id, held])
+    expect((await admin.post(`/api/questions/${id}/edit-as-draft`)).status).toBe(201)
+    const issues = (await t.db.query<{ import_issues: unknown }>(`select import_issues from question_versions where question_id = $1::bigint and version_no = 2`, [id]))[0]!.import_issues
+    expect(issues).toEqual(JSON.parse(held))
+    expect((await admin.post('/api/questions/bulk-action', { action: 'review', ids: [id] })).body.data.failed).toEqual([])
+    const approve = await admin.post('/api/questions/bulk-action', { action: 'approved', ids: [id] })
+    expect(approve.status, JSON.stringify(approve.body)).toBe(200)
+    const failed = approve.body.data.failed as { id: string; code: string; fields: Record<string, string> }[]
+    expect(failed.map((f) => f.id)).toEqual([id])
+    expect(failed[0]!.fields).toHaveProperty('media')
+    expect(await live(id)).toBe(1) // the held draft did not take over
   })
 
   it('the draft can be approved again: it supersedes version 1', async () => {

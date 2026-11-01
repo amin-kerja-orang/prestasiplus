@@ -338,6 +338,7 @@ export class QuestionsService {
       }
       if (v.status !== 'approved' || record.liveVersionNo !== v.versionNo) throw ApiError.of('CONFLICT', { message: QUESTION_MESSAGES.editAsDraftNotApproved })
       const big = (x: string | null): bigint | null => (x === null ? null : BigInt(x))
+      const held = await this.repo.importIssuesOf(id, v.versionNo)
       const draft: VersionDraft = {
         status: 'draft',
         type: v.type,
@@ -364,6 +365,8 @@ export class QuestionsService {
         spNodeIds: v.spIds.map((x) => BigInt(x)),
         stimulusIds: v.stimulusIds.map((x) => BigInt(x)),
         parts: draftsFromParts(v.parts),
+        // The copy is unchanged, so an import hold (a legacy image that was not copied) goes on with it; without it Terbit would pass on v(n+1).
+        importIssues: held.length === 0 ? null : held,
       }
       versionNo = record.latestVersionNo + 1
       await this.repo.addVersion(id, versionNo, draft, now)
