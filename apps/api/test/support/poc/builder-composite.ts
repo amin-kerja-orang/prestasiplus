@@ -9,7 +9,7 @@
  */
 import type { BijakAttemptStimulus } from '@pp/contract'
 
-import { isPocReservedId } from '../../bijak/question-bridge/composite'
+import { isPocReservedId } from './composite'
 import type {
   BuilderCandidateScope,
   BuilderGroupInfo,
@@ -17,7 +17,7 @@ import type {
   BuilderQuestionInfo,
   BuilderQuestionRef,
   BuilderQuestionSource,
-} from './ports'
+} from '../../../src/modules/exam/builder/ports'
 
 async function mergedMaps<V>(parts: Promise<ReadonlyMap<string, V>>[]): Promise<ReadonlyMap<string, V>> {
   const out = new Map<string, V>()

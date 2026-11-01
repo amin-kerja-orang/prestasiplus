@@ -10,6 +10,7 @@ export const ITEM_ICON: Readonly<Record<string, string>> = {
   'PM-05': 'i-ph-chart-bar',
   'BS-01': 'i-ph-books',
   'BS-02': 'i-ph-upload-simple',
+  'BS-08': 'i-ph-database',
   'BS-04': 'i-ph-seal-check',
   'BS-05': 'i-ph-flag',
   'BS-06': 'i-ph-exam',
