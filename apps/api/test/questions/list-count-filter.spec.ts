@@ -21,7 +21,7 @@ function fakeRepo(): { repo: QuestionsRepository; queries: string[] } {
   return { repo: new QuestionsRepository({ client } as never), queries }
 }
 
-const whereOf = (sql: string): string => sql.slice(sql.indexOf('WHERE')).replace(/ORDER BY .*$/s, '').trim()
+const whereOf = (sql: string): string => sql.slice(sql.indexOf('WHERE')).replace(/(ORDER BY|GROUP BY) .*$/s, '').trim()
 
 describe('questions list/count filter consistency (no Darjah rows, same filter before pagination)', () => {
   it('listIds: page, total and per-status counts all hide primary-level questions', async () => {
@@ -30,8 +30,8 @@ describe('questions list/count filter consistency (no Darjah rows, same filter b
     // The page and ONE aggregate (the per-status counts also give the total, R1 perf): same filter, the page adds the chosen status.
     expect(queries).toHaveLength(2)
     for (const q of queries) expect(q).toContain(PRIMARY)
-    expect(whereOf(queries[0]!).replace(/ AND v\.status = \$\d+$/, '')).toBe(whereOf(queries[1]!))
-    expect(whereOf(queries[0]!)).toMatch(/ AND v\.status = \$\d+$/)
+    expect(whereOf(queries[0]!).replace(/ AND v\.status = (\$\d+|\?)$/, '')).toBe(whereOf(queries[1]!))
+    expect(whereOf(queries[0]!)).toMatch(/ AND v\.status = (\$\d+|\?)$/)
     expect(whereOf(queries[1]!)).not.toContain('v.status =')
   })
 
