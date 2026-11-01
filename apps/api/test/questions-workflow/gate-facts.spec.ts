@@ -239,6 +239,26 @@ describe('gate facts (real bank): duplicate, low confidence, media, AI editor, d
     expect(await issuesOf(supplied, 1)).toEqual(['legacy_image_unresolved', 'html_math'])
   })
 
+  it('10b. a draft edited twice: the import hold stays while the picture is missing and is released by the edit that supplies it (the draft is rewritten in place)', async () => {
+    const id = await make('draft')
+    await t.db.query(`update question_versions set import_issues = '[{"code":"legacy_image_unresolved","target":"question","path":"c.png"},{"code":"html_math","target":"stem"}]'::jsonb where question_id = $1::bigint`, [id])
+    const issues = async () =>
+      (await t.db.query<{ import_issues: { code: string }[] | null }>(`select import_issues from question_versions where question_id = $1::bigint and version_no = 1`, [id]))[0]!.import_issues?.map((i) => i.code) ?? null
+    // the first edit does not supply the picture: the draft is rewritten and keeps the hold
+    expect((await admin.put(`/api/questions/${id}`, body({ questionText: 'Berapakah hasil tambah sembilan dan dua?' }))).status).toBe(200)
+    expect(await issues()).toEqual(['legacy_image_unresolved', 'html_math'])
+    // the second edit supplies it: the image issue goes, the other one stays
+    const up = await admin.post('/api/files?purpose=question_image').attach('file', Buffer.from(PNG, 'base64'), { filename: 'rajah.png', contentType: 'image/png' })
+    expect(up.status, JSON.stringify(up.body)).toBe(201)
+    const second = await admin.put(`/api/questions/${id}`, body({ questionText: 'Berapakah hasil tambah sembilan dan dua, ada rajah?', questionImageFileId: up.body.data.id }))
+    expect(second.status, JSON.stringify(second.body)).toBe(200)
+    expect(await issues()).toEqual(['html_math'])
+    // so Terbit no longer refuses media
+    expect((await move(id, 'review')).status).toBe(200)
+    const approved = await move(id, 'approved')
+    expect(approved.status, JSON.stringify(approved.body)).toBe(200)
+  })
+
   it('8. regression: the seeded approved questions are untouched by the new facts, and the loader reads them as clean', async () => {
     const counts = await t.db.query<{ last_editor: string; n: string; declared: string }>(`select last_editor, count(*) n, count(declared_marks) declared from question_versions where number_label like 'SEED-%' group by last_editor`)
     expect(counts.find((c) => c.last_editor === 'ai')).toBeUndefined()

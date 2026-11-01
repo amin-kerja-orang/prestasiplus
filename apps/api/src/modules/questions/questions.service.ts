@@ -69,7 +69,7 @@ import type {
 const TX = { timeout: 20_000, maxWait: 10_000 } as const
 
 /**
- * Rows one filter-based bulk run applies at most. Each row is its own transaction with the full approve gate (tag, keys, rights, duplicates,
+ * Rows one filter-based bulk run applies at most. Each row is its own transaction with the full approve gate (tag, keys, duplicates,
  * marks, media, DSKP: several reads and writes, tens of ms), so 500 rows stay well inside one HTTP request and one 20 s transaction budget each,
  * while still covering a normal Studio filter in one or two runs. A larger filter reports `remaining`/`capped` and is run again.
  */
@@ -464,7 +464,7 @@ export class QuestionsService {
       }
       if (status === 'approved') {
         // "No bypass" (ADR-0027, B3): the one merged approve gate, the same function the lifecycle routes run, on the same facts
-        // (`gateFacts` + `gateDataOf`: tag, keys, rights, open duplicate, marks, media, who edited last, DSKP).
+        // (`gateFacts` + `gateDataOf`: tag, keys, open duplicate, marks, media, who edited last, DSKP).
         const fields = await this.approveFields(record, v)
         if (Object.keys(fields).length > 0) throw fail(fields)
         // The version that served until now is superseded in the same transaction.
@@ -1109,20 +1109,13 @@ export class QuestionsService {
       }
       await this.attachStem(draft, newStemFileId)
       const next = { ...draft, status: statusAfterEdit(fresh.version.status) }
+      // An import hold goes on with the edit, whichever way the edit is stored (a new version or the draft rewritten in place).
+      const importIssues = await this.heldIssuesAfter(record.id, fresh.version, normalized)
       if (fresh.version.status === 'approved') {
         // Q-5: the live version keeps serving; the edit is version n+1 as a draft.
-        // An import hold (a legacy image that was not copied) goes on with the content it still applies to: an edit that does not supply the
-        // image keeps the hold, one that supplies it drops that issue (so the gate does not refuse the picture it now has).
-        const optionImages = flatFromVersion({ ...fresh.version, parts: normalized.parts }).optionImageIds
-        const stemImage = normalized.stemImage !== undefined ? normalized.stemImage : fresh.version.stemImageId
-        const held = (await this.repo.importIssuesOf(record.id, fresh.version.versionNo)).filter((i) => {
-          if (i.code !== 'legacy_image_unresolved') return true
-          if (i.target === 'question') return stemImage == null
-          return !(i.target === 'option' && typeof i.label === 'string' && i.label.length === 1 && optionImages[i.label.charCodeAt(0) - 65] != null)
-        })
-        await this.repo.addVersion(record.id, fresh.latestVersionNo + 1, { ...next, importIssues: held.length === 0 ? null : held }, now)
+        await this.repo.addVersion(record.id, fresh.latestVersionNo + 1, { ...next, importIssues }, now)
       } else {
-        await this.repo.rewriteVersion(record.id, fresh.version.versionNo, next, now)
+        await this.repo.rewriteVersion(record.id, fresh.version.versionNo, { ...next, importIssues }, now)
       }
       // R1-T49: a grouped question that changes subject or kertas must still fit the other members (the only member may change freely).
       if (fresh.groupId !== null && input.stimulusGroupId === undefined) {
@@ -1138,6 +1131,26 @@ export class QuestionsService {
     const after = await this.repo.get(record.id, 'latest')
     if (!after) throw questionNotFound()
     return after
+  }
+
+  /**
+   * The import issues a version keeps after an edit (R1-H-A18): a hold (a legacy image that was not copied) goes on with the content it still
+   * applies to. An edit that does not supply the image keeps the hold; one that supplies it drops that issue, so the gate does not refuse the
+   * picture it now has. `null` when nothing is left (the column is cleared), so the rewrite of a draft releases the hold too.
+   */
+  private async heldIssuesAfter(
+    questionId: string,
+    version: QuestionVersionRecord,
+    normalized: Pick<Normalized, 'parts' | 'stemImage'>,
+  ): Promise<{ code: string; target?: string; label?: string }[] | null> {
+    const optionImages = flatFromVersion({ ...version, parts: normalized.parts }).optionImageIds
+    const stemImage = normalized.stemImage !== undefined ? normalized.stemImage : version.stemImageId
+    const held = (await this.repo.importIssuesOf(questionId, version.versionNo)).filter((i) => {
+      if (i.code !== 'legacy_image_unresolved') return true
+      if (i.target === 'question') return stemImage == null
+      return !(i.target === 'option' && typeof i.label === 'string' && i.label.length === 1 && optionImages[i.label.charCodeAt(0) - 65] != null)
+    })
+    return held.length === 0 ? null : held
   }
 
   // --- views --------------------------------------------------------------------------------------
