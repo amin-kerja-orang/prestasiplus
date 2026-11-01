@@ -142,6 +142,50 @@ describe('stimulus group and stimulus lists (admin, real database)', () => {
       expect(row.warning).not.toBeNull() // one member
     })
 
+    it('REQ-B-025a: a group whose only pinned member was archived or deactivated still lists as served while a published paper pins it', async () => {
+      const pin = async (questionId: string, status = 'published'): Promise<void> => {
+        const p = (await t.db.query<{ id: string }>(`insert into papers (kind, title, subject_id, kertas, printed_duration_min, status) values ('pilihan', 'Kertas terbit', $1, 1, 60, $2) returning id::text id`, [refs.mathId, status]))[0]!.id
+        const sec = (await t.db.query<{ id: string }>(`insert into paper_sections (paper_id, position, label, question_count, mark_budget) values ($1, 1, 'Bahagian A', 1, 0) returning id::text id`, [p]))[0]!.id
+        await t.db.query(`insert into paper_placements (paper_section_id, question_id, pinned_version_no, position) values ($1, $2, 1, 1)`, [sec, questionId])
+      }
+      const s = await group([await stimulus()], [])
+      const made = await admin.post(`/api/stimulus-groups/${s.id}/questions`, mcqBody(refs, { status: 'approved', tag }))
+      const qid = made.body.data.id as string
+      await pin(qid)
+      // archived (the live version goes) and deactivated: only the published pin serves it now
+      expect((await admin.post('/api/questions/bulk-action', { action: 'archived', ids: [qid] })).status).toBe(200)
+      await t.db.query(`update questions set is_active = false where id = $1`, [qid])
+      const row = (await groups('status=served&pageSize=100')).data.find((r) => r.id === s.id)
+      expect(row, 'listed as served').toBeDefined()
+      expect(row!.members[0]).toMatchObject({ id: qid, status: 'archived', servable: true })
+      expect((await groups('status=draft&pageSize=100')).data.map((r) => r.id)).not.toContain(s.id)
+      // a draft paper pins nothing for pupils: another archived member of a group is draft
+      const d = await group([await stimulus()], [])
+      const made2 = await admin.post(`/api/stimulus-groups/${d.id}/questions`, mcqBody(refs, { status: 'approved', tag }))
+      await pin(made2.body.data.id as string, 'draft')
+      await admin.post('/api/questions/bulk-action', { action: 'archived', ids: [made2.body.data.id as string] })
+      expect((await groups('status=draft&pageSize=100')).data.map((r) => r.id)).toContain(d.id)
+    })
+
+    it('REQ-C-019: joinable=true keeps the groups without a served member (served, draft and empty groups are told apart)', async () => {
+      const draft = await group([await stimulus()], [await question(), await question()])
+      const empty = await group([await stimulus()], [])
+      const served = await group([await stimulus()], [])
+      expect((await admin.post(`/api/stimulus-groups/${served.id}/questions`, mcqBody(refs, { status: 'approved', tag }))).status).toBe(201)
+      const joinable = (await groups('joinable=true&pageSize=100')).data.map((r) => r.id)
+      expect(joinable).toEqual(expect.arrayContaining([draft.id, empty.id]))
+      expect(joinable).not.toContain(served.id)
+      const all = (await groups('pageSize=100')).data.map((r) => r.id)
+      expect(all).toContain(served.id) // without the filter it is listed
+      // it combines with the other filters and the total follows
+      const both = await groups('joinable=true&status=draft&pageSize=100')
+      expect(both.data.map((r) => r.id)).not.toContain(served.id)
+      expect(both.meta.totalItems).toBe(both.data.length)
+      expect((await groups('joinable=true&status=served&pageSize=100')).data).toEqual([])
+      expect((await admin.get('/api/stimulus-groups?joinable=false')).status).toBe(422)
+      expect((await admin.get('/api/stimuli?joinable=true')).status).toBe(422) // the stimulus list has no such filter
+    })
+
     it('filters by subject and by level of the members', async () => {
       const math = await group([await stimulus()], [await question(), await question()])
       const sci = await group([await stimulus()], [await question({ subjectId: refs.sciId }), await question({ subjectId: refs.sciId })])
@@ -297,6 +341,59 @@ describe('stimulus group and stimulus lists (admin, real database)', () => {
       expect([...(await listedGroups(`q=${mark}&educationLevelId=${refs.t4Id}`))].sort()).toEqual([empty.id, withMember.id, other.id].sort())
       // status: an empty group has no served member, so it is a draft
       expect(await listedGroups(`q=${mark}&status=draft&subjectId=${refs.mathId}`).then((x) => [...x].sort())).toEqual([empty.id, withMember.id].sort())
+    })
+
+    it('joinable=true with a subject filter lists an EMPTY group (no served member, fits any subject), hides the served and the Darjah ones, and the total agrees on every page', async () => {
+      const mark = `Gabung${tagTag}`
+      const empty = await group([await stimulus({ label: `${mark} kosong` })], [])
+      const draftMember = await group([await stimulus({ label: `${mark} draf` })], [await question({ questionText: 'Soalan draf untuk gabungan joinable dan subjek.' })])
+      const served = await group([await stimulus({ label: `${mark} diterbit` })], [])
+      expect((await admin.post(`/api/stimulus-groups/${served.id}/questions`, mcqBody(refs, { status: 'approved', tag }))).status).toBe(201)
+      const primaryQ = await question({ questionText: 'Soalan Darjah untuk gabungan joinable dan subjek.' })
+      const primary = await group([await stimulus({ label: `${mark} darjah` })], [primaryQ])
+      await setLevel(primaryQ, await darjah())
+      const other = await group([await stimulus({ label: `${mark} sains` })], [await question({ questionText: 'Soalan Sains untuk gabungan joinable dan subjek.', subjectId: refs.sciId })])
+
+      const base = `q=${mark}&joinable=true&subjectId=${refs.mathId}`
+      expect([...(await listedGroups(base))].sort()).toEqual([empty.id, draftMember.id].sort())
+      for (const hidden of [served.id, primary.id, other.id]) expect(await listedGroups(base)).not.toContain(hidden)
+      // page 1 and page 2 hold one group each; page 3 is past the end (the count path): the total is 2 on all three
+      const seen: string[] = []
+      for (const page of [1, 2, 3]) {
+        const res = await groups(`${base}&pageSize=1&page=${page}`)
+        expect(res.meta.totalItems, `page ${page}`).toBe(2)
+        seen.push(...res.data.map((r) => r.id))
+      }
+      expect([...seen].sort()).toEqual([empty.id, draftMember.id].sort())
+      // a group hidden by D72 is only hidden from the lists: the admin detail by id still answers
+      const detail = await admin.get(`/api/stimulus-groups/${primary.id}`)
+      expect(detail.status, JSON.stringify(detail.body)).toBe(200)
+    })
+  })
+
+  describe('GET /api/questions/filter-options (REQ-C-019)', () => {
+    it('lists the distinct exam boards of the source papers, trimmed and sorted; Admin Pusat only; no-store', async () => {
+      for (const [board, key] of [['Johor', 'a'], [' Selangor ', 'b'], ['Johor', 'c'], ['', 'd'], [null, 'e'], ['JOHOR', 'f'], ['selangor', 'g'], ['Selangor', 'h']] as const) {
+        await t.db.query(`insert into source_papers (natural_key, subject_id, kertas, year, exam_type, exam_board, rights_status) values ($1, $2::bigint, 'K1', 2020, 'sebenar', $3, 'own')`, [`fo|${key}|${tagTag}`, refs.mathId, board])
+      }
+      const res = await admin.get('/api/questions/filter-options')
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(res.headers['cache-control']).toBe('no-store')
+      expect(res.body.data.negeri).toEqual(expect.arrayContaining(['Johor', 'Selangor']))
+      expect(res.body.data.negeri.filter((n: string) => n === 'Johor')).toHaveLength(1)
+      // case-insensitively distinct (the Negeri filter matches that way): one entry per spelling family, the most used spelling shown
+      const lower = res.body.data.negeri.map((n: string) => n.toLowerCase())
+      expect(new Set(lower).size).toBe(lower.length)
+      expect(res.body.data.negeri).toContain('Selangor') // ' Selangor ' (trimmed) + 'Selangor' beat 'selangor'
+      expect(res.body.data.negeri).not.toContain('JOHOR')
+      expect(res.body.data.negeri).not.toContain('selangor')
+      expect(res.body.data.negeri.every((n: string) => n.trim() === n && n !== '')).toBe(true)
+      expect(res.body.data.negeri).toEqual([...res.body.data.negeri].sort((a: string, b: string) => (a.toLowerCase() < b.toLowerCase() ? -1 : a.toLowerCase() > b.toLowerCase() ? 1 : 0)))
+      // the value is what the Negeri list filter matches (case-insensitively)
+      expect((await admin.get('/api/questions?negeri=johor')).status).toBe(200)
+      expect((await teacher.get('/api/questions/filter-options')).status).toBe(403)
+      expect((await pupil.get('/api/questions/filter-options')).status).toBe(403)
+      expect((await t.http().get('/api/questions/filter-options')).status).toBe(401)
     })
   })
 })

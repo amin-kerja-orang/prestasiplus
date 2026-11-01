@@ -170,10 +170,34 @@ describe('filter-based bulk action (Luluskan Hasil Tapisan, Arkib Semua)', () =>
     const svc = t.app.get(QuestionsService)
     await expect(svc.bulkByFilter({ action: 'approved', filter: {}, expectedCount: total }, { userId: admin.userId, role: 'admin' })).rejects.toMatchObject({ code: 'VALIDATION_ERROR' })
     for (const id of b.review) expect(await statusOf(id)).toBe('review')
-    // A blank search on archive is the same as no filter: Arkib Semua is allowed (dry run only here, so the bank stays for the next tests).
-    const dry = await post(admin, { action: 'archived', filter: { search: '   ' }, dryRun: true })
+    // Arkib Semua is the truly EMPTY filter. A blank search sent on archive is refused (it would archive the whole bank by accident).
+    const dry = await post(admin, { action: 'archived', filter: {}, dryRun: true })
     expect(dry.status, JSON.stringify(dry.body)).toBe(200)
     expect(dry.body.data.matched).toBe(total)
+  })
+
+  it('REQ-C-019 follow-up: archived with a filter that only has blank values is 422 (BM), applying nothing; an empty filter {} is still Arkib Semua', async () => {
+    const b = await batch({ review: 1 })
+    const total = (await admin.get('/api/questions?pageSize=1')).body.meta.totalItems as number
+    const liveRows = async () => ((await admin.get('/api/questions?pageSize=1&status=archived')).body.meta.totalItems as number)
+    const archivedBefore = await liveRows()
+    for (const filter of [{ negeri: '' }, { negeri: '  ' }, { negeri: '  ', search: '' }, { search: '   ' }, { search: '\t\n ' }]) {
+      for (const extra of [{ dryRun: true }, { expectedCount: total }]) {
+        const res = await post(admin, { action: 'archived', filter, ...extra })
+        const error = expectError(res, 'VALIDATION_ERROR')
+        expect(error.fields?.filter, JSON.stringify(filter)).toBe(QUESTION_MESSAGES.filterBlank)
+      }
+    }
+    expect(await liveRows()).toBe(archivedBefore)
+    expect(await statusOf(b.review[0]!)).toBe('review')
+    // a real filter next to a blank one still acts on the real one only
+    const mixed = await post(admin, { action: 'archived', filter: { tahun: b.year, negeri: '  ' }, dryRun: true })
+    expect(mixed.status, JSON.stringify(mixed.body)).toBe(200)
+    expect(mixed.body.data.matched).toBeLessThan(total)
+    // {} is Arkib Semua (dry run here)
+    const all = await post(admin, { action: 'archived', filter: {}, dryRun: true })
+    expect(all.status, JSON.stringify(all.body)).toBe(200)
+    expect(all.body.data.matched).toBe(total)
   })
 
   it('Admin Pusat only, with a session and a CSRF token', async () => {

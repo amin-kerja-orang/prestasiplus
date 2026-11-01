@@ -251,6 +251,11 @@ export class QuestionsService {
     }
   }
 
+  /** The values of the Studio selects that come from data (REQ-C-019): the Negeri / exam board options of the source papers. */
+  async filterOptions(): Promise<{ negeri: string[] }> {
+    return { negeri: await this.repo.examBoards() }
+  }
+
   async getAdmin(id: string): Promise<QuestionDetailView> {
     const record = await this.repo.get(id, 'latest')
     if (!record) throw questionNotFound()
@@ -1065,7 +1070,8 @@ export class QuestionsService {
         await this.repo.rewriteVersion(record.id, fresh.version.versionNo, next, now)
       }
       // R1-T49: a grouped question that changes subject or kertas must still fit the other members (the only member may change freely).
-      if (fresh.groupId !== null && input.stimulusGroupId === undefined) {
+      // The body may repeat the CURRENT group id (the Studio sends it with every save): that is no move, so the check still runs (REQ-B-025b).
+      if (fresh.groupId !== null && (input.stimulusGroupId === undefined || input.stimulusGroupId === fresh.groupId)) {
         const after = { subject: draft.subjectId === null ? null : idToString(draft.subjectId), kertas: kertasOfPaperCode(draft.paperCode ?? null) }
         const before = { subject: fresh.version.subjectId, kertas: kertasOfPaperCode(fresh.version.paperCode) }
         if (after.subject !== before.subject || after.kertas !== before.kertas) await this.groupMembers.assertTraitChange(fresh.groupId, record.id, after.subject, after.kertas)
