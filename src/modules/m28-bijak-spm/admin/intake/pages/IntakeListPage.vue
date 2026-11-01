@@ -4,6 +4,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed, ref } from 'vue'
 
 import { useApi } from '@/composables/useApi'
+import type { DsStatus } from '@/ds/status'
 import { DsDataTable, DsEmptyState, DsFilterBar, DsNativeSelect, DsPage, DsStatusBadge } from '@/ds'
 
 import { bijakAdminServer } from '../../../server/client'
@@ -56,6 +57,18 @@ function removeChip(key: string): void {
   if (key === 'subject') subject.value = 'semua'
   if (key === 'q') search.value = ''
   apply()
+}
+
+const WIRE_TONE: Record<NonNullable<IntakeSummary['batchStatus']>, DsStatus> = {
+  submitted: 'pending-approval',
+  processing: 'in-progress',
+  ready_for_review: 'awaiting-review',
+  failed: 'rejected',
+  cancelled: 'inactive',
+}
+function badgeStatus(r: IntakeSummary): DsStatus {
+  if (r.batchStatus) return WIRE_TONE[r.batchStatus]
+  return r.status === 'draf' ? 'draft' : 'awaiting-review'
 }
 
 // V2 "Import & Semakan" > "Kelompok Item": Fail Sumber, Subjek, Bilangan Soalan, Disemak, Status, Semak.
@@ -170,8 +183,8 @@ const COLUMNS: TableColumn<Row>[] = [
       </template>
       <template #status-cell="{ row }">
         <DsStatusBadge
-          :status="row.original.status === 'draf' ? 'draft' : 'awaiting-review'"
-          :label="row.original.status === 'draf' ? 'Draf' : 'Semakan'"
+          :status="badgeStatus(row.original)"
+          :label="row.original.statusLabel ?? (row.original.status === 'draf' ? 'Draf' : 'Semakan')"
         />
       </template>
       <template #open-cell="{ row }">

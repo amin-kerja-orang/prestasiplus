@@ -102,11 +102,20 @@ describe('intake wire mappers', () => {
     expect(s).toMatchObject({
       id: 'b1',
       title: 'Matematik Kertas 2 2025',
-      status: 'draf',
+      status: 'semakan',
+      batchStatus: 'ready_for_review',
+      statusLabel: 'Sedia untuk semakan',
       sourceKind: 'pdf',
       questionCount: 0,
+      reviewedCount: 0,
     })
     expect(s.updatedAt).toBe(Date.parse(T0))
+  })
+  it('maps itemCount, reviewedCount and the wire status of a summary (R1E2E-C1)', () => {
+    const s = summaryFromWire({ ...summary, itemCount: 2, reviewedCount: 2 }, () => 'Matematik')
+    expect(s).toMatchObject({ questionCount: 2, reviewedCount: 2, batchStatus: 'ready_for_review', statusLabel: 'Sedia untuk semakan' })
+    const p = summaryFromWire({ ...summary, status: 'processing', statusLabel: 'Sedang diproses' }, () => 'Matematik')
+    expect(p).toMatchObject({ status: 'draf', batchStatus: 'processing', statusLabel: 'Sedang diproses' })
   })
   it('numbers pages continuously across files', () => {
     const p = pagesFromWire([
