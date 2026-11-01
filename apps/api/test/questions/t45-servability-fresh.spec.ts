@@ -46,7 +46,7 @@ describe('AC-04.5 servability indicators re-read correctly after each state chan
     const [ch] = await q<{ id: string }>(`select id::text id from chapters where subject_id = $1 and education_level_id = $2 limit 1`, [tag.subjectId, tag.levelId])
     chapterId = ch!.id
     // R1-B05: a NEW approval of an SPM-bound question needs a cognitive level per leaf and the kertas (as servable-counts.spec.ts)
-    const created = await svc.create(mcqInput(tag, { questionText: 'Soalan untuk ujian penyegaran penunjuk kebolehhidangan.', tag: tagBody(tag, 3), cognitiveLevel: 'mengaplikasi', kertas: '1' } as never), admin)
+    const created = await svc.create(mcqInput(tag, { questionText: 'Soalan untuk ujian penyegaran penunjuk kebolehhidangan.', tag: tagBody(tag, 3), cognitiveLevel: 'mengaplikasi', kertas: '1', curriculumChapterId: null } as never), admin)
     id = created.id
   })
   afterAll(async () => {
