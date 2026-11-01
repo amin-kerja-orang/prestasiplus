@@ -64,6 +64,7 @@ import {
   MIN_GROUP_MEMBERS,
   POOL_PAGE_SIZE,
 } from './builder.constants'
+import { imageRefsOf } from '../reference-images'
 import { BuilderRepository, type PaperTree, type SubjectRef } from './builder.repository'
 import { excludedBankQuery } from '../../bijak/papers/pool-source'
 import { sourceToWire } from '../../bijak/papers/rules'
@@ -519,6 +520,18 @@ export class BuilderService {
     return { ok: true }
   }
 
+  /**
+   * B3 T34-L1-residual: the reference sheet of a paper may have come from the Kontrak or from Salin set, not only from `PUT`. At Terbit (and in the
+   * review) every picture must still be a token naming a stored question image; a picture that is not is a HARD blocker (the sheet is printed on
+   * the cover that pupils read, so it cannot be overridden). Writes already enforce the owner rule.
+   */
+  private async referenceImageBlockers(paper: PaperTree): Promise<BlockerDraft[]> {
+    const refs = imageRefsOf(paper.referenceSheets)
+    if (refs.length === 0) return []
+    const known = await this.repo.storedImages(refs)
+    return [...new Set(refs)].filter((r) => !known.has(r)).map((): BlockerDraft => ({ code: 'REFERENCE_IMAGE_INVALID', message: MESSAGES.referenceImageInvalid }))
+  }
+
   /** Ids of the questions placed on a paper (unique, in paper order). */
   private placedIdsOf(paper: PaperTree | null): string[] {
     return paper ? [...new Set(paper.sections.flatMap((s) => s.placements.map((pl) => idToString(pl.questionId))))] : []
@@ -575,7 +588,7 @@ export class BuilderService {
       const { reports, unreadable } = placedNow.length === earlyIds.length && placedNow.every((x, i) => x === earlyIds[i]) ? earlyReads : await this.safeReports(placedNow)
       // ONE rule for the review and for publish: `collectBlockers` (hard = the paper's own checks incl. D93 groups, a question missing from the
       // pool, a question pupils cannot be served; overridable = the Kontrak line, which a paper that is already Terbit keeps (overridden), plus the structural blueprint lines).
-      const blockers = this.collectBlockers(paper, ev, structural, reports, unreadable)
+      const blockers = this.collectBlockers(paper, ev, structural, reports, unreadable, await this.referenceImageBlockers(paper))
       const errors = blockers.map((b) => b.message)
       const overridable = blockers.filter((b) => b.overridable).map((b) => b.message)
       const view = blockerView(blockers)
@@ -684,11 +697,13 @@ export class BuilderService {
     structural: { blockers: BlockerDraft[]; contract: BlockerDraft[]; fixed: BlockerDraft[] },
     reports: ReadonlyMap<string, ServabilityReport>,
     unreadable: readonly string[],
+    referenceImages: readonly BlockerDraft[],
   ) {
     return toBlockers([
       ...ev.issues,
       ...structural.fixed,
       ...this.attemptBlockers(paper, ev, reports),
+      ...referenceImages,
       ...unreadable.map((id): BlockerDraft => ({ code: 'NOT_SERVABLE', message: unreadableLine(id), questionId: id })),
       ...(paper.status === 'published' ? [] : structural.contract),
       ...structural.blockers,
@@ -834,7 +849,7 @@ export class BuilderService {
     // "not on a published paper", so that one reason is left out. A question the service does not know keeps the status-only reason.
     const placed = paper.sections.flatMap((s) => s.placements.map((pl) => idToString(pl.questionId)))
     const { reports, unreadable } = await this.safeReports(placed)
-    const blockerList = this.collectBlockers(paper, ev, structural, reports, unreadable)
+    const blockerList = this.collectBlockers(paper, ev, structural, reports, unreadable, await this.referenceImageBlockers(paper))
     const blockers = blockerList.map((b) => b.message)
     const rows = paper.sections.flatMap((s) =>
       s.placements.map((pl) => {
