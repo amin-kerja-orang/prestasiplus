@@ -35,6 +35,10 @@ One page for the operator (DevOps / lead) who applies the R1 release to UAT or p
 3. Record the before-state with the SELECTs in section 3.1.
 4. Environment (section 6) is set on the API service before it starts. `E2E_SEED` and `ALLOW_DEMO_SEED` are not set to true (section 6).
 5. **No seed on UAT (D95).** Do not run `be:db:seed` with demo data on UAT. Blueprints are created and verified by an Admin Pusat in the app (section 5).
+6. **Wallet tiers precondition (reference data).** Run `select count(*) from tiers;` on the target database. It must be **4**. If it is 0, run `deploy/vps/deploy.sh --seed-reference` (reference modules only, `ALLOW_DEMO_SEED=false`; an upsert, safe to repeat; the output lists `core-wallet-tiers` and "demo modules skipped") before the API takes traffic. This is NOT the demo seed that item 5 forbids on UAT.
+   - *Why.* Tiers come only from the `core-wallet-tiers` reference seed; migration 0010 only creates the table, and a deploy never seeds (`deploy/vps/deploy.sh:16` "never a seed", `:25-27` reference data is loaded once, explicitly; the flag runs at `:273-276`; `docs/ops/production-vps.md:410-414`). Without tiers the wallet summary throws "M14: no tier is defined", so `GET /api/dashboard` and the wallet answer 500, and **every practice and Kuiz submit answers 500 and the session rolls back** (it stays in progress; pupils cannot finish any session).
+   - *If it happens in production.* It is row M08 of the hypercare table (`docs/ops/hypercare-amin2-30oct.md:41`): check Q2 (`tiers` count above zero), then the seed fallback (`deploy.sh --seed-reference`, fix-forward, preferred).
+   - *Readiness (pending, `r1/ready-tiers-check`).* Once that branch is in the release, `/api/ready` answers 503 while `tiers` is empty, so a deploy that skipped the reference seed fails its readiness check on purpose (DevOps: this is intended; run the seed, do not loosen the check).
 
 ## 1. Order of work
 
