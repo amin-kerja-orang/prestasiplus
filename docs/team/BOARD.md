@@ -489,14 +489,14 @@ BASE-105 + 11 team A READY API heads + C FE heads (reqa014 dc561730, reqa005 3ee
 Wallet tiers come only from the `reference` seed, never from a migration. Prod deploy runs `migrate deploy` only, so an operator must run `deploy.sh --seed-reference`. Without tiers, the dashboard and wallet return 500, and **every practice or Kuiz submit 500s and rolls back** (the reward runs inside the completion tx). Lead decision: (1) add a runbook precondition (`tiers` count = 4) and (3) make /api/ready return not-ready when tiers is empty (r1/ready-tiers-check). No migration. The reward is not made non-fatal, because silent coin loss is worse.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 22:23 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 22:45 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/a3-qa-doc-nits | e4d4dd322 | READY (A3, BASE-105, docs only): stale QA notes on T38 self-mark reward fixed (2 files); B2 |
 | r1/a4chain-minors | 6f2fb7938 | READY (A1b, @6f2fb793 on 0ba236ef): symlink removed; janaSkipped guard first line of evaluate; T45 HTTP POST /questions/:id/status case with pinned BM reasons; 022a row real commits + proof spec; A3 dev-1 delta pre-review CLEAN (13 files 76 tests, mutations bite); merge after the A4 chain; B2 |
-| r1/ac-gaps-a1b | 5de69d2e0 | READY (multi, @5de69d2e, CONTAINS ha17 + t37): coverage doc, runbook (§0 tiers, §3.7 group SELECT, UAT SELECTs, 0106/0107 window, env), B4 QA pack, docs/qa/r1-proposed-copy.md (38 [PROPOSED] BM strings for one-pass user approval); merge after H-A18; B2 |
+| r1/ac-gaps-a1b | 810ce9e27 | READY (multi, @810ce9e2, CONTAINS ha17 + t37): coverage doc; runbook (§0 tiers, §2.3 migration rehearsal 0104–0107 by A4: apply/revert/re-apply clean, 408k timings, 0105 ACCESS EXCLUSIVE brief read stall, 0106 P3009 recovery procedure; §3.7 group SELECT; UAT SELECTs; env); B4 QA pack; copy-approval table (38 rows); merge after H-A18; B2 |
 | r1/admin-list-perf | 2cd7889ae | READY (A4, @2cd7889a, BASE-105): REQ-B-050 + 0106 pg_trgm + 0107 kertas index; per-user @RateLimit GET /api/questions (THROTTLE_QUESTIONS_LIST_PER_MINUTE=60); docs: feature_flags 0108, drop_pool_tag 0109, optional B12 0122 / B20 0123 (lead-confirmed); B2 + B3 + DevOps (maintenance window, new env) |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
 | r1/bridge-table-parts | c805ecc7c | READY (A4, BASE-105): the bridge uses stimulusTableParts (an invalid grid + pipe body shows the table only, as in builder/Studio); bridge 118/118, attempts 180/180, kuiz 39/39; B2. Follow-up after T31 + this merge: drop PENDING_BRIDGE_TEXT in the parity spec (A4) |
@@ -512,8 +512,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha17-ac-coverage | 157b371c3 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b; head 157b371c |
 | r1/ha18-gate-facts | fc409ae16 | READY (A2, BASE-105): H-A18 + REQ-B-017/037 + D99 + pre-review fixes (M2 held-issues helper on both edit paths; m1 gate-issue codes; deviation row); workflow 296/296; conformance 409/409; B2 + B3 |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
-| r1/ha24-release-input | 9b7801f85 | READY (A3 docs, @9b7801f8): §3.5 B1 merge order + BM release notes + sign-off checklist (cues placed: 3.1 [ditentukan B4], 3.4/8.2 [PROPOSED] → copy-approval table); B1/B2 |
-| r1/ha26-team-a-state | fa0832000 | READY (A3 docs, @fa083200): team-a-r1-state.md; vs ac-gaps take ha26 side; B2 |
+| r1/ha24-release-input | cfca1d840 | READY (A3 docs, @cfca1d84): §3.5 B1 merge order + BM release notes + sign-off checklist + r1-kiv-r2.md (27 rows); B1/B2 |
+| r1/ha26-team-a-state | 686813a3c | READY (A3 docs, @686813a3): team-a-r1-state.md; vs ac-gaps take ha26 side; B2 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-a2 | 8c1964a6f | READY (A2, BASE-105): prefetch crash fixed (awaited Promise.all, failed read → 500, no unhandledRejection; red-first specs); row 908 6 cells; tsc/eslint 0, intake-workflow 137/137; A4 pre-review: Approve; B2 |
 | r1/mock-known-mismatches | a279e68cd | READY (A3, BASE-105): REQ-A-019 base red fixed (7 routes notServed, stale m27 entry removed); conformance 2/2; B2 | A4 pre-review: Approve (nits) |
@@ -521,14 +521,14 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/overview-mcq-shape-once | 5a785be84 | READY (A4): chain 5th; B2 |
 | r1/r1-10-1-practice-spec | 568f2e55c | READY (A1b + A2 + A3, @568f2e55, BASE-105; specs + docs): pins today's practice rewards (19 tests, 11/11 mutations); R1-10.1 row reworded from code (challenges every mode; achievements random/chapter/revision only); Q12 open; B2 |
 | r1/r1-chain-qa-a3 | 9b70ae395 | READY (A3, @9b70ae39, BASE-105; spec + step map): A2 MAJOR fixed (key allow-list on the served pupil shape + recursive forbidden-key walk + reason text absent) + Minors (stimulus once exact, same-key replay, exact 12 syiling / 60 XP, Cuba Lagi 2 attempts); mutations red; ignore the unverified REQ ids in the commit message; B2 |
-| r1/ready-tiers-check | 10eca4cdb | READY (A2, @10eca4cd, BASE-105): /api/ready → 503 while tiers is empty (one cached query, no detail in body); bootMissionsApp seeds tiers; ready.spec bites; DevOps flag: deploys skipping --seed-reference fail readiness (intended); B2 + DevOps |
+| r1/ready-tiers-check | 10eca4cdb | ON HOLD (A2, @10eca4cd): code correct, but A3 pre-review REQUEST CHANGES — B1 CI api.yml boot smoke curls /api/ready after migrate with no seed → red; M2 first-install deploy (deploy.sh then --seed-reference) ends as a false FAILED deploy. Needs B DevOps changes (REQ-A-028: CI reference-seed step; deploy first-install seed ordering) before merge; A2 fixes Minors (exact 503 body + logger spy; log once per state change) |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
 | r1/req-b-022a-a4 | d82c52567 | READY (A4): REQ-B-053 + pre-review rows (per-instance warm-up documented; env comment moved); chain 2nd; B2 + B3 + DevOps |
 | r1/req-b-025c | d47353043 | READY (A1b, BASE-105): Minors fixed (decision row REQ-B-007/025c, lateSync, fixture names); attempts 183/183; B2 |
 | r1/req-b-033 | b5e713fa4 | READY (A4): deviation row added; chain 4th; B2 |
 | r1/req-c-020 | 8733a3785 | READY (A4): deviation row added; chain 3rd; B2 |
 | r1/req-c012-a2 | dc3bfae88 | READY (A2, on H-A18 fc409ae1): M1 fixed (edit-as-draft keeps the import hold); 298/298; merges after H-A18; B3 re-check |
-| r1/reqa018-paper-servability-route | 00a114de9 | READY (A2, @00a114de): admin papers only, cap 200 + meta, one batched read pinned by spy, ids chunked by 200 (unit spec); A4 delta Approve + B3 PASS (b7fe6fbc) + Minors fixed; C reqa018-fe @e6d96462 must re-merge (REQ-A-026); B2 + B3 |
+| r1/reqa018-paper-servability-route | cc42468ee | READY (A2, @cc42468e — final): admin papers only, cap 200 + meta, one batched read (spy-pinned), chunk 200, contract exports QuestionPaperServabilityMeta/Response; A4 Approve + B3 PASS; C reqa018-fe must re-merge + fix {data,meta} unwrap (REQ-A-026b); B2 + B3 |
 | r1/reqb032-pinned-rule | a2cb5bb42 | READY (A2+A3, BASE-105): spec title + R1-limitation row (takedown vs running sitting, KIV R2); 6/6; B2 + B3 |
 | r1/reqb049-report-visible | 9ece8d76d | READY (A1b, BASE-105): pre-review Minors fixed (type from the live version, spec titles, real level codes); 316/316; B2 + B3 | A2 B3 pre-scan: CLEAN (no IDOR/oracle, no echo, caps bite under mutation) |
 | r1/reqb052-archived-edit | f3a2448f9 | READY (A3, BASE-105; replaces 17196431): follow-ups done: P1 pinned-clause spec (bites), guard published OR (withdrawn AND EXISTS attempts), header; archived-edit 6/6, pinned-version-rule 6/6, workflow 296/296; tsc/eslint 0; B2 |
