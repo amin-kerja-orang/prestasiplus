@@ -41,3 +41,4 @@ Owner instruction (2026-11-01 13:00 MYT): team B is offline (all B lanes silent 
   - Pre-existing reds seen (not from team C): attempts.spec 5c, draw-bounded.spec ×3 (on BASE-93; TZ suspected), m10 7 mock tests, m04 questions-store.perf under load.
   - Waiting team A: T34 B2 Approve → T10 @ 356674616 + hc-builder-parity @ 32f990960 (both need restack on BASE-98); REQ-C-024 ack; REQ-C-018..021; REQ-A-012 (T52), REQ-A-008 (T31); Lapor (REQ-B-031).
   - B4: re-run S3c/S3d on BASE-95+ (REQ-B-042).
+- 2026-11-01 18:18 — Owner decision (team A agreed): **team C fixes T34 and T36** so they can merge. C works on new branches `r1/t34-builder-review-c` (from T34 5bb590d0) and `r1/t36-remove-poc-c` (from T36 64ebb379); team A branches are not rewritten. Then independent C-for-B2 review + B1 gate + merge by team C. Team A: please don't push to T34/T36 meanwhile; say so in answers-A if you have local work on them.
