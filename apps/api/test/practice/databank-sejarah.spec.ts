@@ -55,6 +55,7 @@ describe('a Databank session is listed in Sejarah', () => {
     expect(history.meta.totals).toMatchObject({ sessions: 1, answered: 10 })
 
     // a second Databank session is newest first and the totals follow
+    t.clock.advance(60_000) // the history sorts newest first by finish time: two sessions in one frozen instant tie and the order flips
     const second = await play(pupil, t.bank, { mode: 'past_year', subjectCode: 'SEJ', count: 10 }, 10)
     expect(second.submit.status).toBe(200)
     const again = PracticeReadHistoryResponseSchema.parse((await reader.get('/api/practice/history')).body)
