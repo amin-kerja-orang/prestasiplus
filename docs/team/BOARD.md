@@ -410,3 +410,10 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 - Not yet reviewed by B: T38, T40, T43b, T48, T52, T50, t49-served-now, T54, H-A18 (pending).
 - C items from B: REQ-B-047 (C2 hub rebuild on H-A21), REQ-B-048 (C3 m03 mock test red since BASE-98).
 - AC coverage 120/176 (A3 @ f1cf02eb). A2 ETAs: intake-reqs + T04-minors tips ~15:15 UTC; admin-list-perf ~17:00 UTC.
+- **REQ-B-025(c) READY** r1/req-b-025c @ a2865119f (A1b, BASE-101).
+  - A choice-only essay_choice is no longer counted as attempted in best-N, and its self-mark gives "kosong".
+  - The spec was red before the fix.
+  - Evidence: bijak-attempts + integration 292 + 1 todo; tsc 0; eslint 0.
+  - Needs B2. It touches lines in attempts.service.ts different from T38's.
+- **E05B-L1 spec READY** r1/e05b-l1-spec @ baa42a152 (A1b): editing a pinned own stimulus while it is served is refused with 409, and the pupil still sees the original text. 11/11 pass; tsc 0. No finding. Needs B2 + B3 to close E05B-L1.
+- T45 Part 3 moved to A1b. A1a stays on REQ-B-046.
