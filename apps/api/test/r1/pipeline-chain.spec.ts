@@ -704,6 +704,34 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     })
   })
 
+  // PIPE AC-18.1 (R1-20.4): the one activity 5b does not open is Latihan Bab (Soalan by Chapter). It serves a question only once the question carries a
+  // Bab (the admin sets it in the Studio form or at Semakan); the admin reads the exclusion from the SAME rule code, the pupil sees the question in a chapter session.
+  describe('5c. Latihan Bab: the chain question reaches Soalan by Chapter once it carries a Bab (AC-18.1)', () => {
+    let chapter = ''
+    const bab = async (id: string) => (await app.get(ServabilityService).reports([id])).get(id)!.activities.find((a) => a.activity === 'bab')!
+
+    it('without a Bab the admin report says Latihan Bab is not served, with the reason no_chapter', async () => {
+      chapter = await one(`select c.id::text id from chapters c where c.subject_id = $1 and c.education_level_id = $2 order by c.id limit 1`, [fx.subject, fx.level])
+      expect(chapter).not.toBe('undefined')
+      await db.query(`update question_versions set chapter_id = null where question_id = $1`, [fx.soloA])
+      const v = await bab(fx.soloA)
+      expect(v.served).toBe(false)
+      expect(v.reasons.map((r) => r.code)).toEqual(['no_chapter'])
+      expect(v.reasons[0]!.message.length).toBeGreaterThan(10)
+    })
+
+    it('with a Bab it is served, and a pupil\'s Latihan Bab session for that chapter draws it', async () => {
+      await db.query(`update question_versions set chapter_id = $2 where question_id = $1`, [fx.soloA, chapter])
+      expect(await bab(fx.soloA)).toMatchObject({ served: true, reasons: [] })
+      const res = await pupil.post('/api/practice/sessions', { mode: 'chapter', chapterId: chapter, count: 5 })
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      const served = (res.body.data.questions as { id: string }[]).map((q) => q.id)
+      expect(served).toContain(fx.soloA)
+      for (const member of [...fx.imageMembers, ...fx.passageMembers]) expect(served).not.toContain(member)
+      expect(served).not.toContain(fx.essay)
+    })
+  })
+
   // R1-20.2: the same with Jana Kertas under the Disahkan Kontrak (exact-or-refuse).
   describe('6. Jana Kertas under the Disahkan Kontrak (pupil)', () => {
     it('a Tingkatan 4 and a Tingkatan 5 pupil each generate a private paper from the approved pool and start it', async () => {
