@@ -98,9 +98,6 @@ watch(
 )
 
 const readonly = computed(() => data.value?.paper.status === 'terbit')
-/** Pool units added through Tambah soalan that the editor data does not carry yet (until the next reload). */
-const extraQ = reactive(new Map<string, BuilderQuestion>())
-const extraG = reactive(new Map<string, string[]>())
 const qMap = computed(
   () => new Map<string, BuilderQuestion>([...(data.value?.questions ?? []).map((q): [string, BuilderQuestion] => [q.id, q]), ...extraQ]),
 )
@@ -365,7 +362,7 @@ const knownQuestion = (qid: string) => {
   return q ? { preview: q.preview, ...(q.groupId ? { groupId: q.groupId } : {}) } : undefined
 }
 /** Tambah / Padam soalan share the local model with the picker: applied on Simpan draf or Terbitkan. */
-function addPoolUnit(sectionId: string, u: BijakBuilderPoolUnit): void {
+function addOpsUnit(sectionId: string, u: BijakBuilderPoolUnit): void {
   for (const q of u.questions) {
     const wire = q as unknown as { status: string }
     const status = ['draft', 'review', 'approved', 'archived'].includes(wire.status)
@@ -373,7 +370,10 @@ function addPoolUnit(sectionId: string, u: BijakBuilderPoolUnit): void {
       : (wire.status as BuilderQuestion['status'])
     extraQ.set(q.id, { ...(q as unknown as BuilderQuestion), status })
   }
-  if (u.groupId) extraG.set(u.groupId, [...u.questionIds])
+  if (u.groupId) {
+    extraG.set(u.groupId, [...u.questionIds])
+    if (u.stimulus) extraStim.set(u.groupId, u.stimulus)
+  }
   const all = new Set(Object.values(ids).flat())
   setIds(sectionId, [...(ids[sectionId] ?? []), ...u.questionIds.filter((q) => !all.has(q))])
 }
@@ -666,7 +666,7 @@ const previewBlocks = computed(() => {
           :known="knownQuestion"
           :readonly="readonly"
           :load-pool="loadOpsPool"
-          @add="addPoolUnit"
+          @add="addOpsUnit"
           @remove="removeIds"
         />
       </DsPanel>

@@ -15,7 +15,7 @@ import { publishGate } from '../domain/publish-gate'
 import { builderMessage, builderPath, type BuilderApi, type PublishOptions } from '../server/api'
 
 /** The review with plain blocker lines for display and the flags for the override offer. */
-export type BuilderReviewView = BijakBuilderReview & { blockerInfo: BlockerInfo[]; canOverride?: boolean }
+export type BuilderReviewView = BijakBuilderReview & { blockerInfo: BlockerInfo[] }
 
 export interface PaperActionsOptions {
   api: BuilderApi

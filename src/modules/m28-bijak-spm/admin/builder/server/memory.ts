@@ -47,6 +47,16 @@ async function loadAdmin() {
  */
 export type OverridableLines = (editor: PaperEditorData) => string[]
 
+/** Contract code of a hard blocker line (BM text of `checkPaper`); the mock only needs a stable code. */
+function hardCode(message: string): 'COUNT_TOO_FEW' | 'COUNT_TOO_MANY' | 'MARKS_MISMATCH' | 'NOT_PUBLISHED' | 'DUPLICATE_QUESTION' | 'GROUP_INCOMPLETE' {
+  if (/Lebih \d+ soalan/.test(message)) return 'COUNT_TOO_MANY'
+  if (/^.*Markah /.test(message)) return 'MARKS_MISMATCH'
+  if (/belum Terbit/.test(message)) return 'NOT_PUBLISHED'
+  if (/berulang/.test(message)) return 'DUPLICATE_QUESTION'
+  if (/tidak lengkap/.test(message)) return 'GROUP_INCOMPLETE'
+  return 'COUNT_TOO_FEW'
+}
+
 export class MockBuilderServer implements BuilderApi {
   constructor(private readonly overridable: OverridableLines = () => []) {}
   private admin: Promise<AdminMock> | null = null
@@ -216,8 +226,8 @@ export class MockBuilderServer implements BuilderApi {
       ok: blockers.length === 0 && overridableLines.length === 0,
       blockers: [...blockers, ...overridableLines],
       blockerDetails: [
-        ...blockers.map((message) => ({ code: 'COUNT_TOO_FEW', message, overridable: false })),
-        ...overridableLines.map((message) => ({ code: 'BLUEPRINT_NOT_VERIFIED', message, overridable: true })),
+        ...blockers.map((message) => ({ code: hardCode(message), message, overridable: false })),
+        ...overridableLines.map((message) => ({ code: 'BLUEPRINT_NOT_VERIFIED' as const, message, overridable: true })),
       ],
       canOverride: blockers.length === 0 && overridableLines.length > 0,
       notes,
@@ -285,9 +295,16 @@ export class MockBuilderServer implements BuilderApi {
       throw new BuilderError('invalid', 'Sebab diperlukan untuk menerbitkan walaupun tidak memenuhi kontrak blueprint')
     const a = await this.a()
     const lines = this.overridable(await a.getPaperEditor(id))
-    if (lines.length && !options.override) return { ok: false, errors: lines }
+    if (lines.length && !options.override) {
+      const rv = await this.review(id)
+      return { ok: false, errors: rv.blockers, blockerDetails: rv.blockerDetails, canOverride: rv.canOverride }
+    }
     const r = await a.publishPaper(id)
-    return { ok: r.ok, errors: r.errors, ...(r.ok && lines.length ? { overridden: lines } : {}) }
+    if (!r.ok) {
+      const rv = await this.review(id)
+      return { ok: false, errors: r.errors, blockerDetails: rv.blockerDetails, canOverride: rv.canOverride }
+    }
+    return { ok: true, errors: [], ...(lines.length ? { overridden: lines } : {}) }
   }
 
   async updateSection(id: string, sectionId: string, patch: SectionPatch): Promise<PaperEditorData> {

@@ -40,10 +40,10 @@ describe('PaperMetaForm title', () => {
 })
 
 describe('PublishOverride', () => {
-  it('is offered only when every blocker is a blueprint line, and needs a 5+ char reason', async () => {
-    const no = mount(PublishOverride, { props: { blockers: ['Soalan q1 tidak layak: x', 'Bahagian A: Kurang 1 soalan'] } })
+  it('is offered only when the server says canOverride, and needs a 5+ char reason', async () => {
+    const no = mount(PublishOverride, { props: { blockers: ['Soalan q1 tidak layak: x', 'Bahagian A: Kurang 1 soalan'], available: false } })
     expect(no.find('[data-testid="publish-override"]').exists()).toBe(false)
-    const w = mount(PublishOverride, { props: { blockers: ['Soalan q1 tidak layak: x'] } })
+    const w = mount(PublishOverride, { props: { blockers: ['Soalan q1 tidak layak: x'], available: true } })
     await w.get('[data-testid="override-tick"]').trigger('click')
     await nextTick()
     expect(w.get('[data-testid="override-publish"]').attributes('disabled')).toBeDefined()
@@ -71,25 +71,22 @@ describe('Sunting bahagian / petikan (mock)', () => {
   })
 })
 
-describe('override offer: both blocker shapes', () => {
+describe('override offer: the server flags', () => {
   const line = 'Soalan q1 tidak layak: x'
-  it('reads the A3 flags when present', () => {
-    const info = normalizeBlockers([{ message: 'Bahagian A: Kurang 1', overridable: false }, { message: line, overridable: true }])
-    expect(overrideOffered(info)).toBe(false)
-    expect(overrideOffered(normalizeBlockers([{ message: 'cuma teks', overridable: true }]))).toBe(true)
-    // canOverride wins over per-blocker flags and over the text.
-    expect(overrideOffered(normalizeBlockers([line]), false)).toBe(false)
-    expect(overrideOffered(normalizeBlockers(['Bahagian A: Kurang 1']), true)).toBe(true)
+  it('offers the tick only with canOverride and something to override', () => {
+    const info = normalizeBlockers([
+      { code: 'COUNT_TOO_FEW', message: 'Bahagian A: Kurang 1', overridable: false },
+      { code: 'INELIGIBLE', message: line, overridable: true, questionId: 'q1' },
+    ])
+    expect(overrideOffered(info, false)).toBe(false)
+    expect(overrideOffered(info, true)).toBe(true)
+    expect(overrideOffered(info, undefined)).toBe(false)
+    expect(overrideOffered([], true)).toBe(false)
   })
-  it('falls back to the text heuristic for plain strings', () => {
-    expect(overrideOffered(normalizeBlockers([line]))).toBe(true)
-    expect(overrideOffered(normalizeBlockers([line, 'Bahagian A: Kurang 1 soalan']))).toBe(false)
-    expect(overrideOffered([])).toBe(false)
-  })
-  it('the component honours `available` over the text', () => {
+  it('the component follows `available`', () => {
     const w = mount(PublishOverride, { props: { blockers: ['Bahagian A: Kurang 1'], available: true } })
     expect(w.find('[data-testid="publish-override"]').exists()).toBe(true)
-    const n = mount(PublishOverride, { props: { blockers: [line], available: false } })
+    const n = mount(PublishOverride, { props: { blockers: ['Soalan q1 tidak layak: x'], available: false } })
     expect(n.find('[data-testid="publish-override"]').exists()).toBe(false)
   })
 })
@@ -219,12 +216,11 @@ describe('Empty-group placeholder (T07) and title rules', () => {
   })
 })
 
-describe('blockersOf: blockerDetails first, string list as fallback (REQ-C-002)', () => {
-  it('prefers blockerDetails and keeps the flags', () => {
+describe('blockersOf: contract blockerDetails', () => {
+  it('keeps message and the overridable flag', () => {
     const info = blockersOf({
-      blockers: ['a', 'b'],
       blockerDetails: [
-        { code: 'COUNT_TOO_FEW', message: 'a', overridable: false },
+        { code: 'COUNT_TOO_FEW', message: 'a', overridable: false, section: 'Bahagian A' },
         { code: 'BLUEPRINT_NOT_VERIFIED', message: 'b', overridable: true },
       ],
     })
@@ -233,13 +229,7 @@ describe('blockersOf: blockerDetails first, string list as fallback (REQ-C-002)'
       { message: 'b', overridable: true },
     ])
     expect(overrideOffered(info, false)).toBe(false)
-    expect(overrideOffered(blockersOf({ blockers: ['x'], blockerDetails: [{ code: 'INELIGIBLE', message: 'x', overridable: true }] }), true)).toBe(true)
-  })
-  it('falls back to the plain lines (no flags) when blockerDetails is absent', () => {
-    const info = blockersOf({ blockers: ['Soalan q1 tidak layak: x'] })
-    expect(info).toEqual([{ message: 'Soalan q1 tidak layak: x', overridable: undefined }])
-    expect(overrideOffered(info)).toBe(true)
-    expect(overrideOffered(blockersOf({ blockers: ['Bahagian A: Kurang 1'] }))).toBe(false)
+    expect(overrideOffered(info, true)).toBe(true)
   })
 })
 
@@ -258,11 +248,14 @@ describe('Override path in the mock and with unsaved edits', () => {
     expect(rv.blockerDetails?.every((b) => typeof b.message === 'string')).toBe(true)
     // structural blockers (an empty draft) make it non-overridable
     expect(rv.canOverride).toBe(false)
-    expect(await api.publish(id)).toMatchObject({ ok: false, errors: lines })
+    // the refusal carries the same blockers as the review (contract: errors == blockers, blockerDetails, canOverride)
+    const refused = await api.publish(id)
+    expect(refused).toMatchObject({ ok: false, errors: rv.blockers, blockerDetails: rv.blockerDetails, canOverride: false })
+    expect(refused.errors).toContain(lines[0])
     await expect(api.publish(id, { override: true, reason: 'x' })).rejects.toThrow()
   })
   it('the offer follows canOverride; saving first can remove it', () => {
-    const info = normalizeBlockers([{ message: lines[0]!, overridable: true }])
+    const info = normalizeBlockers([{ code: 'BLUEPRINT_NOT_VERIFIED', message: lines[0]!, overridable: true }])
     expect(overrideOffered(info, true)).toBe(true)
     expect(overrideOffered(info, false)).toBe(false)
   })

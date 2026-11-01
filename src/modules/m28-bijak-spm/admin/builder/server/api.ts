@@ -15,7 +15,6 @@ import type {
   BijakPoolPreview,
 } from '@pp/contract'
 
-import type { RawBlocker } from '../domain/blockers'
 import type { AdminPaperSummary, PaperEditorData } from '../../../domain/admin-types'
 
 export type BuilderErrorKind =
@@ -93,20 +92,16 @@ export interface ReferencePanel {
 }
 
 /** Terbitkan with the audited override (R1-T34 `BijakBuilderPublishRequest`): reason of at least 5 characters. */
-/** Publish answer; `overridden` is R1-T34 (absent on the base contract until T34 merges). */
-export type PublishResult = BijakBuilderPublishResult & { overridden?: string[] }
+/** Publish answer (R1-T34): `errors`, and on a refusal `blockerDetails` + `canOverride`; `overridden` after an override. */
+export type PublishResult = BijakBuilderPublishResult
 
 export interface PublishOptions {
   override?: boolean
   reason?: string
 }
 
-/** Review answer: `blockers` stays `string[]`; `blockerDetails` and `canOverride` come with A3 (see `domain/blockers.ts`). */
-export type RawReview = BijakBuilderReview & {
-  /** A3 REQ-C-002; absent on older servers. */
-  blockerDetails?: RawBlocker[]
-  canOverride?: boolean
-}
+/** Review answer, exactly the contract's (`blockerDetails` and `canOverride` are required). */
+export type RawReview = BijakBuilderReview
 
 export interface BuilderApi {
   listSets(): Promise<AdminPaperSummary[]>

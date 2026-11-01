@@ -52,7 +52,7 @@ function editor(p: AdminPaper = paper()): PaperEditorData {
 }
 
 const okReview: BijakBuilderReview = {
-  paperId: 'p1', status: 'draf', ok: true, blockers: [], notes: [], blueprintNeedsReview: false,
+  paperId: 'p1', status: 'draf', ok: true, blockers: [], blockerDetails: [], canOverride: false, notes: [], blueprintNeedsReview: false,
   visibleToStudents: false, totalMarks: 6, totalBudget: 10, rows: [],
 }
 
@@ -133,7 +133,7 @@ describe('SetBuilderPage', () => {
   })
 
   it('disables Terbitkan and shows the reason while the review lists blockers', async () => {
-    const { m, api } = stub({ review: vi.fn().mockResolvedValue({ ...okReview, ok: false, blockers: ['Bahagian A: kurang 1 soalan', 'Jumlah markah tidak sepadan'] }) })
+    const { m, api } = stub({ review: vi.fn().mockResolvedValue({ ...okReview, ok: false, blockers: ['Bahagian A: kurang 1 soalan', 'Jumlah markah tidak sepadan'], blockerDetails: [{ code: 'COUNT_TOO_FEW', message: 'Bahagian A: kurang 1 soalan', overridable: false }, { code: 'MARKS_MISMATCH', message: 'Jumlah markah tidak sepadan', overridable: false }] }) })
     const w = await render(api)
     expect(w.get('[data-testid="builder-publish"]').attributes('disabled')).toBeDefined()
     expect(w.get('[data-testid="builder-publish-reason"]').text()).toContain('2 masalah')
