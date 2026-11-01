@@ -56,15 +56,17 @@ describe('R1-T51 Semak Kertas and Pembina Set: backend criteria', () => {
       expect((await admin.get(`/api/admin/papers/${copy.body.data.id as string}`)).body.data.paper.code).toBe('1449/2-B')
     })
 
-    it('a blank Kod kertas, a blank Tajuk, a zero Tempoh and an over-long code are refused (422, nothing saved)', async () => {
+    it('a blank Tajuk, a zero Tempoh and a Kod kertas over 32 characters are refused (422, nothing saved); a blank Kod kertas falls back to the subject code (T48, V2 rule)', async () => {
       const id = await newPaper()
-      const blankCode = await admin.put(`/api/admin/papers/${id}`, { code: '   ' })
-      expect(blankCode.status, JSON.stringify(blankCode.body)).toBe(422)
-      expect(blankCode.body.error.fields.code).toBe(MSG.codeRequired)
+      const tooLong = await admin.put(`/api/admin/papers/${id}`, { code: 'X'.repeat(33) })
+      expect(tooLong.status, JSON.stringify(tooLong.body)).toBe(422)
+      expect(tooLong.body.error.fields.code).toBe(MSG.codeTooLong)
       expect((await admin.put(`/api/admin/papers/${id}`, { title: '   ' })).status).toBe(422)
       expect((await admin.put(`/api/admin/papers/${id}`, { durationMin: 0 })).status).toBe(422)
-      expect((await admin.put(`/api/admin/papers/${id}`, { code: 'X'.repeat(31) })).status).toBe(422)
       expect((await admin.get(`/api/admin/papers/${id}`)).body.data.paper.code).toBe('1449/2')
+      const blank = await admin.put(`/api/admin/papers/${id}`, { code: '   ' })
+      expect(blank.status, JSON.stringify(blank.body)).toBe(200)
+      expect(blank.body.data.paper.code).toBe('MAT')
     })
 
     it('after Terbit the metadata is read-only with the Salin set message, and a student-facing Kod kertas is the one saved at Terbit', async () => {
