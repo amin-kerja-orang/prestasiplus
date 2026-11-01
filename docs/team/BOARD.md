@@ -505,7 +505,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 | T44 | r1/t44-blueprint-fields | 072d8f4b | — | merged at BASE-67 as 77984abc. The newer tip 072d8f4b shows a 19-file delta against base; A3 is asked whether it is WIP (marked IN-PROGRESS until it answers) |
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 16:56 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 17:02 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -529,6 +529,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/req-b-033 | c0ea2ea96 | READY (A4): missing id evaluated once; chain 4th; B2 |
 | r1/req-c-020 | 78e050b3b | READY (A4): merge only; zero-row Databank subject kept (no V2 source hides it); chain 3rd; B2 |
 | r1/req-c012-a2 | 64d24e69d | PRE-REVIEW MAJOR (A1a M1: edit-as-draft drops the import hold → held question approvable without its picture) → A2 fixing; B: wait |
+| r1/reqa018-paper-servability-route | a4b303f69 | IN-PROGRESS (A1b): GET /api/admin/questions/:id/paper-servability built (admin only; 23/23 targeted); full questions/exam-builder/conformance run pending; merges after t45-servability-acs |
 | r1/reqb032-pinned-rule | e9cf34b7f | READY; pre-review Minor/Nit (spec title; takedown-vs-pin decision recorded as an R1 limitation) → A2 small update |
 | r1/reqb049-report-visible | 9ece8d76d | READY (A1b, BASE-105): pre-review Minors fixed (type from the live version, spec titles, real level codes); 316/316; B2 + B3 |
 | r1/reqb052-archived-edit | 7ec49fe84 | IN-PROGRESS (A3): fix done @50017f8f (an archived/pinned version branches to a new version; spec 4/4), but it overlaps REQ-B-032 in be09-question-source.ts → A3 is stacking it on REQ-B-032 with one serving rule; order B-032 → B-052 |
@@ -551,7 +552,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t48-builder-parity | 4800bd789 | READY but pre-review (A1b) found 2 Minors → A3 fixing (hard delete must require no live version; duplicate section labels). The new head will restack T43b, search-perf and T51; A1 re-merges T45-P3 |
 | r1/t49-served-now | 8a4b46a9f | READY (A2, BASE-105): B-025ab + C-019 + B2 c16 Minors (blank negeri ignored, examBoards distinct case-insensitive); 704/704 incl. conformance; B2 delta |
 | r1/t50-partial-acs | 075e1b587 | READY (A1a, BASE-105): B2 approved c17; ready for the B1 gate |
-| r1/t51-partial-acs-a3 | 4f812b4e2 | READY (A3; T48 + T43 + T31 + BASE-105): PIPE AC-18.1 + R1-21.3/21.6 backend; overlap resolved toward T48; 965 + 1 todo; conformance 409/409; order T48 → T31 (+REQ-A-008) → T43 → T51; B2 |
+| r1/t51-partial-acs-a3 | 8ed1df5d2 | READY (A3; T48 + T43 + T31 + BASE-105): PIPE AC-18.1 + R1-21.3/21.6 backend; overlap resolved toward T48; 965 + 1 todo; conformance 409/409; order T48 → T31 (+REQ-A-008) → T43 → T51; B2 |
 | r1/t52-examiner-grid | f2d36f648 | READY (A1a, BASE-105): B2 approved c17; ready for the B1 gate |
 | r1/t54-perf-400k | 96f72e566 | READY (A4, BASE-105, docs only); independent; B2 |
 <!-- AUDIT:END -->
