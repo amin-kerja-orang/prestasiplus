@@ -459,3 +459,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
   - **Ready for the B1 gate:** REQ-B-031 9cd9a1eda (Lapor FE after it); T45 e7e5d3dd → H-A21 669b0caf.
   - **Approve w/ Minors (need BASE-102 merged + tip posted):** T38 → T40 (A1b); T48 → T43b (A3); t49 (A2); T54 (A4); intake-reqs, T04-minors (A2).
   - **Routed:** REQ-B-049 → A1b (+ Q11 to user); REQ-B-050 regex = A2 admin-list-perf item 1.
+- ETAs:
+  - A2 intake-reqs/T04 tips + H-A18: ~15:15–15:30 UTC.
+  - A2 t49 tip: ~15:50 UTC.
+  - A3 T48 adds a new hard code SECTION_EMPTY for an empty admin Bahagian, then T43b re-merges it. **The catalogue will be 25 codes: 4 overridable, 21 hard.** Team C should re-check the union after T43b.
