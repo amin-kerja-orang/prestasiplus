@@ -515,13 +515,13 @@ B merged BASE-106 (T10 builder UI) and BASE-107 (hc-builder-parity). Both are FE
 REQ-A-008 needs C's restack on BASE-107 (REQ-B-055) before T31 pairs with it. C3 reports REQ-A-018 FE + 026b READY @ 3942f760.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 23:10 UTC, BASE 47fadc2e)
+### Team A open branches: heads from origin (auto, 2026-11-01 23:10 UTC, BASE 043e2b15)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/a3-qa-doc-nits | e4d4dd322 | READY (A3, BASE-105, docs only): stale QA notes on T38 self-mark reward fixed (2 files); B2 |
-| r1/a4chain-minors | 86dd7ad67 | READY (A1b, @6f2fb793 on 0ba236ef): symlink removed; janaSkipped guard first line of evaluate; T45 HTTP POST /questions/:id/status case with pinned BM reasons; 022a row real commits + proof spec; A3 dev-1 delta pre-review CLEAN (13 files 76 tests, mutations bite); merge after the A4 chain; B2 |
+| r1/a4chain-minors | 86dd7ad67 | READY (A4/A1b, @86dd7ad6, contains BASE-107 + chain tip 2809a87f): janaSkipped guard, T45 HTTP BM-reason case, 022a row; B1 step 6 tip; 23/23 |
 | r1/ac-gaps-a1b | 5ac9dfc9d | READY (multi, @5ac9dfc9, CONTAINS ha17 + t37): coverage doc; runbook (§0 tiers, §2.3 migration rehearsal 0104–0107 by A4: apply/revert/re-apply clean, 408k timings, 0105 ACCESS EXCLUSIVE brief read stall, 0106 P3009 recovery procedure; §3.7 group SELECT; UAT SELECTs; env); B4 QA pack (+ §3x D90 group build-it-yourself recipe); copy-approval table (38 rows); merge after H-A18; B2 |
 | r1/admin-list-perf | 6389cd541 | READY (A4, @6389cd54, BASE-105): REQ-B-050 + 0106 pg_trgm + 0107 kertas index; per-user @RateLimit GET /api/questions (THROTTLE_QUESTIONS_LIST_PER_MINUTE=60); docs: feature_flags 0108, drop_pool_tag 0109, optional B12 0122 / B20 0123 (lead-confirmed); 0107 header gives 0.9 s bare / ~2 s via migrate deploy; B2 + B3 + DevOps (maintenance window, new env) |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
@@ -543,7 +543,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-a2 | 8c1964a6f | READY (A2, BASE-105): prefetch crash fixed (awaited Promise.all, failed read → 500, no unhandledRejection; red-first specs); row 908 6 cells; tsc/eslint 0, intake-workflow 137/137; A4 pre-review: Approve; B2 |
 | r1/mock-known-mismatches | a279e68cd | READY (A3, BASE-105): REQ-A-019 base red fixed (7 routes notServed, stale m27 entry removed); conformance 2/2; B2 | A4 pre-review: Approve (nits) |
-| r1/overview-getmany-parallel | 2809a87fe | READY (A4): chain 6th; 1334 pass at the tip (only the known base red); B2 |
+| r1/overview-getmany-parallel | 2809a87fe | READY (A4, @2809a87f, contains BASE-107; 108 forward-merge pending): A4 chain tip (T45→022a→c-020→b-033→mcq-shape-once→getmany); servab specs 101/101, vue-tsc app 0; B1 step 6 (tip = a4chain-minors) |
 | r1/overview-mcq-shape-once | 5a785be84 | READY (A4): chain 5th; B2 |
 | r1/r1-10-1-practice-spec | cfd6b6f7b | READY (A1b + A2 + A3, @cfd6b6f7, BASE-105; specs + docs): pins practice rewards (19 tests, 11/11 mutations); R1-10.1 row: USER Q12a (2026-11-02) keep 1 syiling, V2 rate unverified, .cloud check R2; B2 |
 | r1/r1-chain-qa-a3 | 9b70ae395 | READY (A3, @9b70ae39, BASE-105; spec + step map): A2 MAJOR fixed (key allow-list on the served pupil shape + recursive forbidden-key walk + reason text absent) + Minors (stimulus once exact, same-key replay, exact 12 syiling / 60 XP, Cuba Lagi 2 attempts); mutations red; ignore the unverified REQ ids in the commit message; B2 |
@@ -555,11 +555,10 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/req-c-020 | 8733a3785 | READY (A4): deviation row added; chain 3rd; B2 |
 | r1/req-c012-a2 | 9b1fd35e2 | READY (A2, @9b1fd35e, contains new ha18 + BASE-107): edit-as-draft keeps the import hold; B1 step 3; B3 re-check (REQ-A-024c) |
 | r1/reqa018-paper-servability-route | 9d6ef833f | READY (A2, @9d6ef833, contains BASE-107): admin papers only, cap 200 + meta, batched read, contract exports; contract-tests scenario (4 cases; API conformance 413/413; mock: 3 assertion known-mismatches until C serves it → swap to 1 schema entry when C reqa018-fe lands); full B2 + B3; C reqa018-fe must re-merge |
-| r1/reqb032-pinned-rule | 167986eff | READY (A2+A3, BASE-105): spec title + R1-limitation row (takedown vs running sitting, KIV R2); 6/6; B2 + B3 |
 | r1/reqb049-report-visible | 9ece8d76d | READY (A1b, BASE-105): pre-review Minors fixed (type from the live version, spec titles, real level codes); 316/316; B2 + B3 | A2 B3 pre-scan: CLEAN (no IDOR/oracle, no echo, caps bite under mutation) |
 | r1/reqb052-archived-edit | f3a2448f9 | READY (A3, BASE-105; replaces 17196431): follow-ups done: P1 pinned-clause spec (bites), guard published OR (withdrawn AND EXISTS attempts), header; archived-edit 6/6, pinned-version-rule 6/6, workflow 296/296; tsc/eslint 0; B2 |
 | r1/seed-dangling-placements | 11cbcf458 | READY (A1b, BASE-105): asserts paper titles + counts = POC_BANK; seed 155 + 1 skip; B2 |
-| r1/servability-stimuli-once | f76f729a8 | READY (A4, @94efde12 on A4 chain tip 0ba236ef): no logic change (C2 c6954ae0 already reads once); pins it with a 3-test spy spec + 2 "intentionally not paperHeld" comments; servab/bridge/kuiz 279 tests green; optional; merge after the A4 chain; B2 |
+| r1/servability-stimuli-once | f76f729a8 | READY (A4, @f76f729a, contains chain tip + BASE-107): spy spec pins one stimulus read per chunk + 2 comments; optional; step 6b |
 | r1/stimulus-list-d72 | b45ce5197 | READY (A2, @b45ce519; contains t49 b99068a6): one where for page+count; part-linked Darjah/PKSK hiding spec (bites); A4 + A3 pre-reviews Approve; merge AFTER t49; B2 |
 | r1/t04-minors | 8ae70d6e8 | READY (A2, @8ae70d6e): FD-11/AP-17 row; card-ungrouped afterEach reset + per-test restore assertion (bites, order-independent); A4 + A3 pre-reviews Approve; B2 |
 | r1/t31-builder-wire | eb0346d25 | READY (A3, hold LIFTED 19:55 UTC): merge as a PAIR with C REQ-A-008 r1/reqa008-group-stimulus @29d24be9 right after it (http-admin TS2322 gone, vue-tsc 0); Preview #3 (A4, 33 heads on BASE-105 @525f9ca1, local): ALL GREEN, vue-tsc 0 after REQ-A-008, 0 reds. Order: after T48; then REQ-A-008; B2 |
