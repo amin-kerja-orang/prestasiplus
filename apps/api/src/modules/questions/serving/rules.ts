@@ -155,7 +155,6 @@ function activityReasons(f: ServabilityFacts, activity: ServabilityActivity): Se
     case 'simulasi_paper':
       return simulasiPaperReasons(f)
     case 'jana_kertas': {
-      if (f.janaSkipped) throw new Error('servability: the Jana Kertas verdict was evaluated on facts loaded with { jana: false } (janaFacts not loaded)')
       if (f.janaFacts === null) return [reason('subject_unavailable', activity)]
       const own = describeQuestion(f.janaFacts).reasons.map((r) => reason(JANA_REASON[r], activity, r))
       return [...own, ...bridgeReasons(f, activity)]
@@ -165,6 +164,11 @@ function activityReasons(f: ServabilityFacts, activity: ServabilityActivity): Se
 
 /** One activity: served when no rule objects; otherwise the reasons in the order they were checked. */
 export function evaluate(f: ServabilityFacts, activity: ServabilityActivity): ServabilityActivityResult {
+  // Checked first, whatever the other rules say: a question with no live version (archived) or a common reason would otherwise return its
+  // verdict from facts that never had the Jana pool facts, and the same facts would throw for a servable question.
+  if (activity === 'jana_kertas' && f.janaSkipped) {
+    throw new Error('servability: the Jana Kertas verdict was evaluated on facts loaded with { jana: false } (janaFacts not loaded)')
+  }
   if (activity === 'simulasi_paper') {
     const reasons = simulasiPaperReasons(f)
     return { activity, label: SERVABILITY_ACTIVITY_LABELS[activity], served: reasons.length === 0, reasons }
