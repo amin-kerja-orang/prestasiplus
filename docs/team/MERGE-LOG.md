@@ -84,3 +84,10 @@
 | BASE-80 | ec98435f | T26c `r1/t26c-e2e-k2` @ df8a52a5 (B2 Approve w/ Minors + B3 Pass); merged by exact reviewed SHA | all type checks 0; api seed + e2e-profile-builder + exam-builder 476 pass / 1 skip | 2026-11-01 14:30 |
 | BASE-81 | 16da8539 | T45b `r1/t45b-question-detail-acs` @ cfe98740 (B2 Approve + B3 Pass); merged by exact reviewed SHA | all type checks 0; unit contract questions 98/98; api questions + questions-workflow + intake-workflow + bridge 1108/1108 | 2026-11-01 14:30 |
 | BASE-82 | 5f5e1186 | H-A16 `r1/ha16-table-reader` @ 085dec38 (B2 Approve + B3 Pass); merged by exact reviewed SHA | all type checks 0; api questions + question-bank-stimuli + bridge + exam-builder 1338 pass / 3 todo | 2026-11-01 14:30 |
+| BASE-83 | f90a885c | R008-L1 `r1/r008-l1` @ 4cd62e5b (B2 Approve + B3 Pass, R008-L1 closed); merged by exact reviewed SHA | all type checks 0; api questions + files 1128 pass / 3 todo | 2026-11-01 15:20 |
+| BASE-84 | dfb222ef | REQ-B-038 `r1/reqb038-studio-tp-inherit` @ e4fe89bb (B2 Approve w/ Minors; FE only); merged by exact reviewed SHA | all type checks 0; eslint 0; unit m04 + stores 645/645 | 2026-11-01 15:20 |
+| BASE-85 | 9564c0cd | REQ-B-039 `r1/reqb039-menu-studio` @ eb7fe3f5 (B2 Approve; FE only); merged by exact reviewed SHA | all type checks 0; eslint 0; unit shells 216/216 | 2026-11-01 15:20 |
+| BASE-86 | cdf5bf51 | T37/H-A25 runbook delta @ 1dabdc0e (B2 Approve w/ Minors; docs only); merged by exact reviewed SHA | docs-only diff | 2026-11-01 15:20 |
+| BASE-87 | 11254fec | H-A24 delta @ cd067337 (B2 Approve w/ Minors; docs only); merged by exact reviewed SHA | docs-only diff | 2026-11-01 15:20 |
+| BASE-88 | 72b86d60 | H-A17 delta @ a221432c (B2 Approve w/ Minors; docs only); merged by exact reviewed SHA | docs-only diff | 2026-11-01 15:20 |
+| BASE-89 | f4b28a26 | H-A26 delta @ 46641db6 (B2 Approve w/ Minors; docs only); merged by exact reviewed SHA | docs-only diff | 2026-11-01 15:20 |
