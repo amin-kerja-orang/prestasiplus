@@ -150,3 +150,9 @@
 
 - **Tests:** 1362 pass. The 1 fail is the known base red, fixed by reqc021-followup.
 - **Ops:** run in a maintenance window (≈21 s write wait on question_versions); pg_trgm must be allowed; ANALYZE afterwards. jit=off is a recommendation only. Needs B2 + B3 + DevOps.
+
+**Lead decision (2026-11-01 16:40 UTC), REQ-B-032 pre-review m4:**
+- A running sitting keeps its pinned version until submit, even after a `source_takedown` archive or a later level retag.
+- New sittings and Kuiz are refused at once.
+- This is recorded as an R1 limitation in the REQ-B-032 deviation row. A takedown that cuts into running sittings is KIV for R2.
+**Internal pre-review (A1a):** 2 Majors on H-A18 (M2) and C-012 (M1), both about the import hold being lost or not released. A2 is fixing them; B should wait for the new heads.
