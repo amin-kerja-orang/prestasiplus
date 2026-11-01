@@ -73,7 +73,8 @@ describe('Bab set by the admin feeds GET /api/practice/chapter-subjects', () => 
 
     const rows = await list()
     expect(rows.map((s) => s.code)).toEqual(['MATH'])
-    // questionCount is the subject's practice questions (the untagged one counts too); chapterCount is the Bab that has a question.
-    expect(rows[0]).toMatchObject({ chapterCount: 1, questionCount: 2 })
+    // questionCount is what the chapter draw can serve (chaptered, ungrouped, approved; D91, FD-11, R1E2E-09): the question without a chapter
+    // does not count in the tile, though it is a practice question of the subject. chapterCount is the Bab that has a question.
+    expect(rows[0]).toMatchObject({ chapterCount: 1, questionCount: 1 })
   })
 })
