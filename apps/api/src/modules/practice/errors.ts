@@ -9,7 +9,6 @@ export function practiceError(code: PracticeErrorCode, messageIndex = 0): ApiErr
 }
 
 export const trialExhausted = (): ApiError => practiceError('TRIAL_EXHAUSTED')
-export const chapterLocked = (): ApiError => practiceError('CHAPTER_LOCKED')
 export const notEnoughQuestions = (): ApiError => practiceError('NOT_ENOUGH_QUESTIONS')
 export const setNotReady = (): ApiError => practiceError('SET_NOT_READY')
 export const noWrongQuestions = (): ApiError => practiceError('NO_WRONG_QUESTIONS')

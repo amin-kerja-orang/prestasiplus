@@ -134,12 +134,12 @@ describe('AC8 Mod Pelajar stamps every row it writes with is_test', () => {
     expect(t.reward.calls[0]?.isTest).toBe(false)
   })
 
-  it('BR-16 reads the caller\'s own mode: test answers do not unlock chapters for real play', async () => {
+  it('REQ-C-021 (D98): no chapter lock in either mode; chapter 2 starts for real play with no history', async () => {
     const admin = await loginModPelajar(t, 'admin@demo.test')
     await play(admin, t.bank, { mode: 'chapter', chapterId: w.chapter.c1, count: 20 }, 6)
     expect((await admin.post('/api/practice/sessions', { mode: 'chapter', chapterId: w.chapter.c2, count: 5 })).status).toBe(201)
     const real = await loginAs(t, 'admin@demo.test')
-    expect((await real.post('/api/practice/sessions', { mode: 'chapter', chapterId: w.chapter.c2, count: 5 })).status).toBe(409)
+    expect((await real.post('/api/practice/sessions', { mode: 'chapter', chapterId: w.chapter.c2, count: 5 })).status).toBe(201)
     expect(bank.chapters.c1).toHaveLength(6)
   })
 })
