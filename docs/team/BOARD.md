@@ -485,14 +485,14 @@ BASE-105 + 11 team A READY API heads + C FE heads (reqa014 dc561730, reqa005 3ee
 **Conflicts B1 will see:** `questions.module.ts` (A4 chain `OverviewWarmer` × REQ-A-018 `QuestionPaperServabilityController`: keep both providers/controllers); `stimuli.repository.ts:112` (t49 deletes the `SERVED_NOW`/`VERSION_SERVED_NOW` constants B-032 added: take t49, no use remains); `v2-backend-deviations.md` (keep both sides); C docs in reqa012 (keep both).
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 19:20 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 19:25 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/a3-qa-doc-nits | e4d4dd322 | READY (A3, BASE-105, docs only): stale QA notes on T38 self-mark reward fixed (2 files); B2 |
 | r1/a4chain-minors | affca77dc | ON HOLD (A1b fixing A2 Minors; WIP head moves, see Origin head): symlink MAJOR fixed by lead (16ad6053); open: janaSkipped check at top of evaluate/evaluateAll, 022a row real commits + proof spec; do not merge until A1b reports READY |
-| r1/ac-gaps-a1b | 823bb4a15 | READY (A1b, BASE-105; @823bb4a1, CONTAINS ha17 157b371c AND t37-r1-runbook c9dcb5a0 — merge this instead of both): R1-18.4 spec + AC-18.1 Latihan Bab spec (both bite), coverage 132 proven / 6 partial / 1 no-proof (AC-18.1 partial until T51), held deps named; runbook UAT SELECTs with real testcontainer output; tsc/eslint 0; A3 dev-1 pre-review: no Blocker/Major, both new specs bite, runbook SELECTs read-only + schema-valid; Minors (deviated rows AC-07.7/07.9, count lines 19/30, AC-20.3 cites) being fixed by A3 dev-1 on this branch; T45 BM-reason Minor → a4chain-minors (A1b); B2 |
+| r1/ac-gaps-a1b | 860b3869a | READY (A1b + A3 dev-1, BASE-105; @860b3869, CONTAINS ha17 157b371c AND t37-r1-runbook c9dcb5a0 — merge this instead of both): R1-18.4 + AC-18.1 specs (both bite), coverage 132 entries proven (129 distinct) / 6 partial / 1 no-proof, deviated rows marked, held deps named; runbook UAT SELECTs read-only + schema-checked; A3 pre-review Minors fixed; tsc/eslint 0; B2 |
 | r1/admin-list-perf | 2a8ab6744 | READY (A4, BASE-105): REQ-B-050 + 0106 + 0107 + exact counts; pre-review Minors fixed (status total ?? 0, no-slash kertas change documented, migration order + drift notes); B2 + B3 + DevOps |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
 | r1/bridge-table-parts | c805ecc7c | READY (A4, BASE-105): the bridge uses stimulusTableParts (an invalid grid + pipe body shows the table only, as in builder/Studio); bridge 118/118, attempts 180/180, kuiz 39/39; B2. Follow-up after T31 + this merge: drop PENDING_BRIDGE_TEXT in the parity spec (A4) |
@@ -543,6 +543,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t51-partial-acs-a3 | 61c1b077f | ON HOLD (A3; restacked @61c1b077 on T43 238eb6eb + T31 eb0346d2 + T48): technically ready (537 pass alone = trial merge with H-A18; tsc/eslint 0; vue-tsc only the known http-admin REQ-A-008 error); merge after T31 + REQ-A-008 + T43; held only by that pair | 19:05 UTC: C REQ-A-008 r1/reqa008-group-stimulus @29d24be9 now contains T31 eb0346d2; A4 preview #3 steps 30–33 verifying vue-tsc 0 + builder specs; hold lifts on that evidence |
 | r1/t52-examiner-grid | 5a0d7bd0e | READY (A1a, BASE-105): getCover reads examinerGrid from marked (live+pinned); be09 test 8 (auto/points-essay/archived) bites on revert; R21 superseded; api tsc + eslint + vue-tsc 0, 15 pass; B2 | A2 delta pre-review: Minors closed, test 8 bites; new Minor: cover follows LIVE manual flag over pinned (note in deviation docs) → A1a |
 | r1/t54-perf-400k | 03c76eb0d | READY (A4, docs): credentials replaced by placeholders; may 3-line-conflict with 022a perf docs (trivial); B2 |
+
+**New branches not yet triaged:** r1/chain-qa-selfmark-a3 a92cb32d0
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
