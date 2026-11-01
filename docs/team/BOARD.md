@@ -393,3 +393,4 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
   - **Migration ranges:** team A 0105 (H-A18), 0106 (admin-list-perf).
   - **B1/devops:** pg_trgm must be available on the target DB.
 - A2 ETAs (UTC): t49 fixes ~14:45 · H-A18 (D99) ~15:15 · C-012 ~15:45 · admin-list-perf (0106) ~16:30. A3: r1/builder-search-perf right after T48 READY.
+- **t49-served-now READY** r1/t49-served-now @ 221c2b287 (A2, BASE-101): REQ-B-025(a)(b) + REQ-C-019 B2 fixes. MAJOR fixed (smoke ALLOWED_ROLE filter-options → admin); conformance 409/409. Negeri filter is now trim + case-insensitive. joinable wording updated. Evidence: questions 899 + 3 todo; workflow 267/267; tsc 0; eslint 0. Needs a B2 re-check and B3 (new input).
