@@ -505,20 +505,20 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 | T44 | r1/t44-blueprint-fields | 072d8f4b | — | merged at BASE-67 as 77984abc. The newer tip 072d8f4b shows a 19-file delta against base; A3 is asked whether it is WIP (marked IN-PROGRESS until it answers) |
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 17:04 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 17:09 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/admin-list-perf | 2a8ab6744 | READY (A4, BASE-105): REQ-B-050 + 0106 + 0107 + exact counts; pre-review Minors fixed (status total ?? 0, no-slash kertas change documented, migration order + drift notes); B2 + B3 + DevOps |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
-| r1/builder-search-perf | f0ddb1ca0 | READY (A3; T48 + BASE-105): Cari soalan p50/p95 11.2/12.0 s → 0.89/0.99 s at 407k, same results; 520 + 1 todo; conformance 409/409; merges after T48; B2 |
+| r1/builder-search-perf | e1141dbbe | READY (A3): restacked on T48 4800bd78; merges after T48; B2 |
 | r1/e05b-l1-spec | 4b9eac57a | READY (A1b, BASE-105): negative control added; 12/12; B2 + B3 |
-| r1/ha17-ac-coverage | 43948d54d | docs, auto-refreshed by A3 H-A27 (coverage 124/176) |
-| r1/ha18-gate-facts | f29aeda9c | PRE-REVIEW MAJOR (A1a M2: import hold not released on the draft rewrite path) + Minors → A2 fixing; B: wait for the new head |
+| r1/ha17-ac-coverage | 1aa0d443e | docs, auto-refreshed by A3 H-A27 (coverage 124/176) |
+| r1/ha18-gate-facts | fc409ae16 | PRE-REVIEW MAJOR (A1a M2: import hold not released on the draft rewrite path) + Minors → A2 fixing; B: wait for the new head |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
-| r1/ha24-release-input | b26f13b59 | READY (A3, BASE-105): G6 release input incl. the WARM env rows and 0106/0107 @2a8ab674 (drift + order notes); B2 |
-| r1/ha26-team-a-state | 895085f28 | docs, auto-refreshed by A3 H-A27 |
+| r1/ha24-release-input | f98a46e35 | READY (A3, BASE-105): G6 release input incl. the WARM env rows and 0106/0107 @2a8ab674 (drift + order notes); B2 |
+| r1/ha26-team-a-state | a0733fc24 | docs, auto-refreshed by A3 H-A27 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-a2 | a631198c7 | READY (A2, BASE-105): B-034/035 + B2 Minors; intake-workflow 135/135; ready for the B1 gate |
 | r1/overview-getmany-parallel | f8616d3b7 | READY (A4): merge + b013-scoping spec 8/8; chain 6th; B2 |
@@ -540,19 +540,19 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t31-builder-wire | 6a27c8dd3 | READY (A3); needs C1 REQ-A-008 rebased on BASE-102 |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
-| r1/t37-r1-runbook | 0923e828e | READY (A3, BASE-105): runbook incl. the WARM env, 0106/0107 window, pg_trgm, ANALYZE, reverts, T36 demo-host; B2 |
+| r1/t37-r1-runbook | d9b37fbfa | READY (A3, BASE-105): runbook incl. the WARM env, 0106/0107 window, pg_trgm, ANALYZE, reverts, T36 demo-host; B2 |
 | r1/t38-selfmark-reward | 13134ced7 | READY (A1b, BASE-105): B2 c16 Minors fixed (concurrency spec red without the lock); rewards 22/22; B2 delta + B3 |
 | r1/t39-k1-evidence | 1a26f7a60 | check: A3 to confirm state |
 | r1/t40-attempts-acs | 43fb5900d | READY (A1b, T38 + BASE-105): 28/28; merges after T38; B2 |
 | r1/t43-chain-publish | 5ce5894f1 | READY (A3, on T31) |
-| r1/t43b-publish-acs | 4921b3e58 | READY (A3; T48 + BASE-105): 25 codes (4 overridable, 21 hard); B2 Minors fixed; publish-acs 13; 946 + 1 todo; merges after T48; B2 |
-| r1/t45-builder-acs | de8c8c02f | READY (A1b, on T48 1dd07bc1 + BASE-105): AC-R1-21.3/21.6 specs; exam-builder 389/389; merges after T48; B2 |
+| r1/t43b-publish-acs | 372f911ae | READY (A3): restacked on T48 4800bd78; merges after T48; B2 |
+| r1/t45-builder-acs | de8c8c02f | WAITING: A1 re-merges the new T48 tip 4800bd78 (was on 1dd07bc1); do not merge the old head |
 | r1/t45-builder-acs-wip | 078204e1c | SUPERSEDED by r1/t45-builder-acs; do not merge |
 | r1/t45-servability-acs | 58618b2cb | READY (A4, BASE-105): B2 c18 Minors + 3 preview reds fixed (DB fixture approve, gate unchanged); merge 1st in the A4 chain; B2 + B3 |
-| r1/t48-builder-parity | 4800bd789 | READY but pre-review (A1b) found 2 Minors → A3 fixing (hard delete must require no live version; duplicate section labels). The new head will restack T43b, search-perf and T51; A1 re-merges T45-P3 |
+| r1/t48-builder-parity | 4800bd789 | READY (A3, BASE-105): pre-review Minors fixed (Padam only unplaces an ever-approved question; duplicate Bahagian labels refused [PROPOSED]); 518 + 1 todo; B2 + B3 |
 | r1/t49-served-now | 8a4b46a9f | READY (A2, BASE-105): B-025ab + C-019 + B2 c16 Minors (blank negeri ignored, examBoards distinct case-insensitive); 704/704 incl. conformance; B2 delta |
 | r1/t50-partial-acs | 075e1b587 | READY (A1a, BASE-105): B2 approved c17; ready for the B1 gate |
-| r1/t51-partial-acs-a3 | 8ed1df5d2 | READY (A3; T48 + T43 + T31 + BASE-105): PIPE AC-18.1 + R1-21.3/21.6 backend; overlap resolved toward T48; 965 + 1 todo; conformance 409/409; order T48 → T31 (+REQ-A-008) → T43 → T51; B2 |
+| r1/t51-partial-acs-a3 | 8ed1df5d2 | READY (A3): restacked on T48 4800bd78; order T48 → T31 (+REQ-A-008) → T43 → T51; B2 |
 | r1/t52-examiner-grid | f2d36f648 | READY (A1a, BASE-105): B2 approved c17; ready for the B1 gate |
 | r1/t54-perf-400k | 96f72e566 | READY (A4, BASE-105, docs only); independent; B2 |
 <!-- AUDIT:END -->
