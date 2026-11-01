@@ -45,7 +45,7 @@ Spec branches: a proof tagged `BASE-n` is in base (BASE-6 or the later merge nam
 | t29 | t29-servability @ c53e655d | questions/servability-rules.spec.ts, servability-parity.spec.ts, packages/contract servability test (READY) |
 | t30 | t30-servability-reads @ 409df4bf | questions/servability-reads.spec.ts, servability-perf.spec.ts (READY) |
 | t33 | t33-leaf-tags @ 95cea5be | questions-workflow/dskp-gate.spec.ts, intake-workflow/cognitive-level.spec.ts, migration 0102 (READY) |
-| t31 / t34 | t31-builder-wire @ bf825128, t34-builder-review @ 5bb590d0 | exam-builder/builder-review.spec.ts, builder-blockers.spec.ts (structured blockers, canOverride), test/r1/pipeline-chain.spec.ts (READY; t31 contains t34) |
+| t31 / t34 | t31-builder-wire @ 6a27c8dd, t34-builder-review @ 5bb590d0 | exam-builder/builder-review.spec.ts, builder-blockers.spec.ts (structured blockers, canOverride), test/r1/pipeline-chain.spec.ts (READY; t31 contains t34) |
 | t43 | t43-chain-publish @ 89d30dab | test/r1/pipeline-chain.spec.ts: Kontrak made Disahkan over the API, plain Terbit, T5 pupil, Jana Kertas T4/T5, SHORTAGE, NO_BLUEPRINT on Spec, draft/withdrawn negatives (READY; contains t31 and t34) |
 | t44 | t44-blueprint-fields @ 072d8f4b (contains H-A15 @ 7e5d637e) | exam-builder/blueprint-standards-api.spec.ts (autoMarkable, origin filter AC-39.2, note gate, skema Markah AC-39.7), r1/blueprint-review-flag.spec.ts (READY) |
 | t48 | t48-builder-parity @ 4a3ff264 | exam-builder/builder-parity.spec.ts (cover code, per-paper rule, Tambah bahagian / soalan, Padam soalan, pinned, stimulus edit), migration 0104 (READY; contains t34) |
