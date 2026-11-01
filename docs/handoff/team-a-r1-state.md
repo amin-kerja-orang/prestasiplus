@@ -183,7 +183,7 @@ Earlier decisions still in force for R1: D72 (secondary only), D75/D76 (standard
 | 0104 | `0104_paper_section_admin_created` | T48 (`r1/t48-builder-parity` @ 6c5ae3a8) | READY (A3, BASE-105; 0104): giveBab fixture fix, support/bab.ts byte-identical to H-A18; exam-builder + pipeline-chain 409 pass (was 19 red); alone = trial merge with H-A18 fc409ae1, 0 failures, tsc 0; merge AFTER H-A18; Padam only unplaces a question that was ever approved; duplicate Bahagian label gets 422; B2 + B3 |
 | 0105 | gate facts (BE-09 duplicate, media, AI-editor facts) | H-A18 (A2) `r1/ha18-gate-facts` @ fc409ae1 | READY (A2, BASE-105): H-A18 + REQ-B-017/037 + D99 + pre-review fixes (held-issues helper on both edit paths, gate issue codes, deviation row); workflow 296/296, conformance 409/409; B2 + B3; merge first of the stack |
 
-Ranges: team A 0100 to 0109 (overflow 0120 to 0129), team C 0110 to 0119, team B none. 0106 to 0109 free. SQL for 0092 to 0105 is in `docs/ops/r1-runbook.md`.
+Ranges: team A 0100 to 0109 (overflow 0120 to 0129), team C 0110 to 0119, team B none. Taken inside that range (lead decision): 0106 and 0107 by `r1/admin-list-perf` (A4), 0108 by `feature_flags`, 0109 by `drop_pool_tag` (R1-B06); nothing in 0106 to 0109 is free. Any optional B12 or B20 migration goes to 0120 or above (the overflow range). SQL for 0092 to 0107 is in `docs/ops/r1-runbook.md`.
 
 ## 4. Open cross-team requests
 
