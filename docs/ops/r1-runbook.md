@@ -6,14 +6,14 @@ One page for the operator (DevOps / lead) who applies the R1 release to UAT or p
 
 **Order and links.** This page is the order of work, the migration table, the SQL checks and the blueprint steps. Where it overlaps [r1-release-notes.md](r1-release-notes.md) (preconditions, the deploy run, smoke, rollback, DSKP commands, configuration), the release notes win and this page links to them instead of repeating them.
 
-**What is in the base and what is not** (against `feature/v3-bijak-r1` at BASE-101, `b24d8917`; check `docs/team/MERGE-LOG.md` on the board branch for newer merges).
+**What is in the base and what is not** (against `feature/v3-bijak-r1` at BASE-102, `d42351f7`; check `docs/team/MERGE-LOG.md` on the board branch for newer merges).
 
 | Item | State | Where |
 |---|---|---|
 | Migrations 0092, 0093, 0100, 0101 | in base (0101 since BASE-15) | `apps/api/prisma/migrations/` |
 | Migration 0102 `leaf_cognitive_level` (T33) | in base since BASE-27 | `apps/api/prisma/migrations/0102_leaf_cognitive_level` |
 | Migration 0103 `question_report_context` (T42 part 1) | in base since BASE-41 | `apps/api/prisma/migrations/0103_question_report_context` |
-| Migration 0104 `paper_section_admin_created` (T48) | **not in base**: T48: T34 is in base (BASE-101), so it needs a base merge and a B2 re-review; its head is `54f5e0bc` (fix `2cbe7d28` plus base merges), B2 re-review pending | `r1/t48-builder-parity` |
+| Migration 0104 `paper_section_admin_created` (T48) | **not in base**: T48: T34 is in base (BASE-101), so it needs a base merge and a B2 re-review; its head is `4a3ff264` (fix `2cbe7d28` plus base merges), B2 re-review pending | `r1/t48-builder-parity` |
 | Migration 0105 `gate_facts` (H-A18) | **not in base** (pushed at `d3842c48`; B3 Pass, B2 pending, needs the Q10 user answer; its content may still change) | `r1/ha18-gate-facts` |
 | `THROTTLE_SERVABILITY_READ_PER_MINUTE`, `THROTTLE_SERVABILITY_OVERVIEW_PER_MINUTE` (T30) | in base since BASE-28 | `apps/api/src/common/config/env.schema.ts` |
 | `THROTTLE_SERVABILITY_OVERVIEW_PER_MINUTE` | optional; default 6 when unset | In base since BASE-28 (T30). Per-user limit of the servability overview, which counts the whole bank and has its own bucket; above it a request answers 429. Integer, minimum 1. `apps/api/src/common/config/env.schema.ts`. Leave unset. |
