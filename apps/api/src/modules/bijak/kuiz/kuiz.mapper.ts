@@ -146,7 +146,7 @@ export function linkedStimulusIds(record: QuestionRecord): string[] {
  * A stimulus linked straight to a version or leaf (outside its group), as THE one reader gives it (`outsideStimuliOf`):
  * the same type the Bijak bridge uses. `sharedBy` = distinct questions linking it; more than one must be a group (D90).
  */
-export type OwnStimulus = OutsideStimulus
+export type OwnStimulus = OutsideStimulus & { sharedBy: number }
 
 type StimulusLike = {
   kind: string
@@ -170,7 +170,7 @@ export function toKuizStimulus(s: StimulusLike): KuizStimulus | null {
   const table = s.kind === 'table' ? (stimulusTableOf(s.tableData, s.bodyMs ?? null) ?? null) : null
   // A table parsed from the body replaces the body text; any other body stays the text.
   const text = s.bodyMs?.trim() ? s.bodyMs : null
-  const label = s.label ?? ""
+  const label = s.label ?? ''
   const body = table && !s.tableData ? null : text
   if (!body && !table && !s.assetFileId) return null
   return {
@@ -224,7 +224,7 @@ export function resolveStimuli(
   for (const id of linkedStimulusIds(record)) {
     if (inGroup.has(id)) continue
     const a = own.get(id)
-    const w = a && (a.sharedBy ?? 1) <= 1 ? toKuizStimulus(a) : null
+    const w = a && a.sharedBy <= 1 ? toKuizStimulus(a) : null
     if (!a || !w) {
       complete = false
       continue

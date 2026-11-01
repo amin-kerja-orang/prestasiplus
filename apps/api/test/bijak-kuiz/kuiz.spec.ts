@@ -534,6 +534,34 @@ describe('own stimuli of every kind (H-C8, R1E2E-05b)', () => {
   })
 })
 
+describe('picture linked only to a leaf part (H-C8, withLeafStimuli)', () => {
+  const linkLeaf = async (ref: string, stimulusId: string | null) => {
+    await t.db.query(
+      `update question_parts set stimulus_id = $2::bigint where question_version_id = (select v.id from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no where q.id = $1::bigint)`,
+      [id(ref), stimulusId],
+    )
+  }
+
+  it('27. a picture linked only to a leaf is served from the asset row; shared by two questions it makes both unservable', async () => {
+    const file = (await t.db.query<{ id: string; public_id: string }>(`insert into files (public_id, purpose, mime, size_bytes, sha256, storage_key) values ('leafPicAaaaaaaaaaaaaaa', 'question_image', 'image/png', 10, $1, 'kuiz/leaf.png') returning id::text, public_id`, ['7'.repeat(64)]))[0]!
+    const st = (await t.db.query<{ id: string }>(`insert into stimuli (kind, label, asset_file_id) values ('diagram', 'Rajah 1', $1::bigint) returning id::text`, [file.id]))[0]!
+    try {
+      await linkLeaf('SEED-MCQ-BM-T4', st.id)
+      const one = sessionOf(await start(student, { subject: 'BM', count: 5 })).items.find((i) => i.id === id('SEED-MCQ-BM-T4'))
+      expect(one?.stimuli).toHaveLength(1)
+      expect(one?.stimuli[0]).toMatchObject({ kind: 'diagram', imageToken: file.public_id })
+
+      await linkLeaf('SEED-MCQ-BM-T5', st.id)
+      const served = sessionOf(await start(student, { subject: 'BM', count: 5 })).items.map((i) => i.id)
+      expect(served).not.toContain(id('SEED-MCQ-BM-T4'))
+      expect(served).not.toContain(id('SEED-MCQ-BM-T5'))
+    } finally {
+      await linkLeaf('SEED-MCQ-BM-T4', null)
+      await linkLeaf('SEED-MCQ-BM-T5', null)
+    }
+  })
+})
+
 describe('kuiz marker (paywall bypass guard)', () => {
   it('26. an in-progress practice session that is not a kuiz is 404 on kuiz check and finish', async () => {
     const q = id('SEED-MCQ-MATH-T5')

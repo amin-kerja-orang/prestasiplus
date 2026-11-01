@@ -23,7 +23,10 @@ export async function withLeafStimuli(
   outside: ReadonlyMap<string, OutsideStimulus>,
   groups: ReadonlyMap<string, StimulusGroupRecord | null>,
 ): Promise<Map<string, OwnStimulus>> {
-  const out = new Map<string, OwnStimulus>(outside)
+  // `sharedBy` is optional on the bridge type; here it is required. A producer that left it out is treated as shared by many
+  // (fail closed: the question is not served) rather than as the question's own.
+  const out = new Map<string, OwnStimulus>()
+  for (const [id, s] of outside) out.set(id, { ...s, sharedBy: s.sharedBy ?? Number.POSITIVE_INFINITY })
   const leafOnly = new Set<string>()
   for (const r of records) {
     const inGroup = new Set((r.groupId ? (groups.get(r.groupId)?.stimuli ?? []) : []).map((s) => s.id))
@@ -40,7 +43,10 @@ export async function withLeafStimuli(
   return out
 }
 
-/** The whole map in one call: the bridge reader, then the leaf-only pictures. */
+/**
+ * The kuiz's map: the bridge reader, then the leaf-only pictures. Servability does not call this; it calls `outsideStimuliOf`
+ * itself (it also needs `outside` on its own for the bridge facts) and then `withLeafStimuli` on that result.
+ */
 export async function ownStimuliOf(
   reads: OutsideStimulusReads & LeafReads,
   records: readonly QuestionRecord[],

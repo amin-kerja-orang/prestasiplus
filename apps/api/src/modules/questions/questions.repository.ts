@@ -812,8 +812,9 @@ export class QuestionsRepository {
   }
 
   /**
-   * How many distinct active questions link each stimulus straight to a version (`question_version_stimuli`; the versions of one
-   * question count once). 1 = the stimulus is that question's own; more than 1 = shared (D90: that must be a stimulus group).
+   * How many distinct active questions link each stimulus straight to a version (`question_version_stimuli`) or to one of its
+   * leaf parts (`question_parts.stimulus_id`); the versions and parts of one question count once. 1 = the stimulus is that
+   * question's own; more than 1 = shared (D90: that must be a stimulus group).
    * Unknown ids are absent.
    */
   async stimulusUseCounts(ids: readonly string[]): Promise<Map<string, number>> {
@@ -821,12 +822,21 @@ export class QuestionsRepository {
     const out = new Map<string, number>()
     if (keys.length === 0) return out
     const rows = await this.db.$queryRaw<{ id: bigint; n: number }[]>`
-      SELECT l.stimulus_id AS id, count(DISTINCT v.question_id)::int AS n
-        FROM question_version_stimuli l
-        JOIN question_versions v ON v.id = l.question_version_id
-        JOIN questions q ON q.id = v.question_id AND q.is_active
-       WHERE l.stimulus_id = ANY(${keys}::bigint[])
-       GROUP BY l.stimulus_id`
+      SELECT u.id, count(DISTINCT u.question_id)::int AS n
+        FROM (
+          SELECT l.stimulus_id AS id, v.question_id
+            FROM question_version_stimuli l
+            JOIN question_versions v ON v.id = l.question_version_id
+            JOIN questions q ON q.id = v.question_id AND q.is_active
+           WHERE l.stimulus_id = ANY(${keys}::bigint[])
+          UNION
+          SELECT p.stimulus_id AS id, v.question_id
+            FROM question_parts p
+            JOIN question_versions v ON v.id = p.question_version_id
+            JOIN questions q ON q.id = v.question_id AND q.is_active
+           WHERE p.stimulus_id = ANY(${keys}::bigint[])
+        ) u
+       GROUP BY u.id`
     for (const r of rows) out.set(idToString(r.id), r.n)
     return out
   }
