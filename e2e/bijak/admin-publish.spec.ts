@@ -48,6 +48,9 @@ const delBtn = (page: Page, row: Locator, id: string): Locator =>
 async function publishWithOverride(page: Page): Promise<void> {
   await expect(page.getByTestId('paper-publish')).toBeDisabled()
   await expect(page.getByTestId('publish-errors')).toBeVisible()
+  // REQ-B-054: the server's reason is shown, not only a count, and the override sits right under it.
+  await expect(page.getByTestId('publish-errors')).toContainText('belum Disahkan')
+  await expect(page.getByTestId('publish-override')).toBeVisible()
   await page.getByTestId('override-tick').click()
   await page.getByTestId('override-reason').fill('Kontrak masih Spec, kertas ujian dalaman')
   await page.getByTestId('override-publish').click()

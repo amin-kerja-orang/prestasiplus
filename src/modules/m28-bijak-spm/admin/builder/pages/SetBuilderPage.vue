@@ -586,6 +586,13 @@ const dskpItems = computed(() => [
             {{ actions.publishReason.value }}
           </p>
         </div>
+        <ul
+          v-if="actions.publishBlocked.value && actions.blockers.value.length"
+          class="flex list-disc flex-col gap-1 ps-6 text-caption text-error"
+          data-testid="builder-publish-blockers"
+        >
+          <li v-for="b in actions.blockers.value" :key="b">{{ b }}</li>
+        </ul>
         <PublishOverride
           :blockers="actions.blockers.value"
           :available="actions.overrideAvailable.value"
