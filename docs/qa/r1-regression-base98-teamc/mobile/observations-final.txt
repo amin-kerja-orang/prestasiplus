@@ -1,0 +1,204 @@
+## S0 pupil baseline counts (Databank, Latih Tubi SPM, Soalan by Chapter) -> passed
+  observed: Databank MATH 54, Latih Tubi SPM MATH 54, chapter subjects 0, Matematik Bab totals {}
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S0.jpg
+## S1a admin creates a T4 MCQ with an image and a Bab via the form (Bank Soalan) -> passed
+  observed: Bab chosen: Bab 1: Fungsi dan Persamaan Kuadratik
+  observed: DSKP chosen: PERKAITAN DAN ALGEBRA > 1.1 - Fungsi dan Persamaan Kuadratik > 1.1.1 - Mengenal pasti dan menerangkan c
+  observed: Aras pemikiran field present: Memahami chosen
+  observed: created question id 1287; response status field: draft
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S1a.jpg
+## S1e control: admin creates the same MCQ WITHOUT an image (isolates the image path) -> passed
+  observed: Bab chosen: Bab 1: Fungsi dan Persamaan Kuadratik
+  observed: DSKP chosen: PERKAITAN DAN ALGEBRA > 1.1 - Fungsi dan Persamaan Kuadratik > 1.1.1 - Mengenal pasti dan menerangkan c
+  observed: Aras pemikiran field present: Memahami chosen
+  observed: created question id 1288; response status field: draft
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S1e.jpg
+## S1b admin imports a CSV of 2 MCQs (Import & Semakan) -> passed
+  observed: POST import -> 201 {"data":{"id":"1","fileName":"soalan.csv","importedCount":2,"failedCount":0,"failures":[],"defaults":{"subjectId":"3","educationLevelId":"10","difficultyLevel":2},"createdBy":"53","createdAt":"2026-11
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S1b.jpg
+## S1c admin PDF intake with a passage shared by 2 questions (Muat Naik Kertas) -> passed
+  observed: group header after extraction: 0 reload(s) needed
+  observed: batch 1: 2 question card(s), 1 group header(s)
+  observed: gate after completing: no issues
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S1c.jpg
+## S1h R1E2E-17 / R1E2E-03 probe: an unknown SP code in the intake editor; is it refused, and -> failed
+  observed: server gate on SP "1.1": no issue (accepted); banner "(none)"; "Dihantar untuk semakan" shown: true
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S1h.jpg
+## S1d admin D90 group in Studio: one shared stimulus with 2 member questions -> passed
+  observed: /admin/studio list exists
+  observed: Q1: Bab "Bab 1: Fungsi dan Persamaan Kuadratik", unit "1.0 Fungsi dan Persamaan Kuadratik dalam Satu Pemb", 8 SP offered; save bar: 1 markah Batal Simpan draf
+  observed: Q1 save -> POST /api/stimulus-groups/3/questions HTTP 201
+  observed: Q2: Bab "Bab 1: Fungsi dan Persamaan Kuadratik", unit "1.0 Fungsi dan Persamaan Kuadratik dalam Satu Pemb", 8 SP offered; save bar: 1 markah Batal Simpan draf
+  observed: Q2 save -> POST /api/stimulus-groups/3/questions HTTP 201
+  observed: group #3: questions 1291, 1292; stimuli 1; members: 1 1. R1E2E c98mobile mobile studio-1: Apakah kesan utama kit | 2 2. R1E2E c98mobile mobile studio-2: Mengapakah sisa perlu 
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S1d.jpg
+## S1i Studio list (T13b): /admin/studio lists the S1d group questions and opens them -> passed
+  observed: menu links to /admin/studio: 1 (Bank Soalan group: Bank Soalan, Import & Semakan, Kualiti Soalan, Laporan Soalan, Soalan PKSK, Audio KBAT, Bank Soalan (Studio), Bank Soalan SPM, Import Pelajar, Akses PKSK)
+  observed: list rows for the search: 1; first: R1E2E c98mobile mobile studio-1: Apakah kesan utama kitar semula? Kertas Kertas 1 Sumber TIADA Status Draf Dilihat murid di 0/6
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S1i.jpg
+## S1j R1E2E-21: Pentadbiran menu > Bank Soalan has a Studio entry that opens /admin/studio -> passed
+  observed: menu links to /admin/studio: 1; label: "Bank Soalan (Studio)"
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S1j.jpg
+## S1f admin Studio standalone MCQ with a stem picture (no group) -> passed
+  observed: Q3: Bab "Bab 1: Fungsi dan Persamaan Kuadratik", unit "1.0 Fungsi dan Persamaan Kuadratik dalam Satu Pemb", 8 SP offered; save bar: 1 markah Batal Simpan draf
+  observed: Q3 save -> POST /api/questions HTTP 201
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S1f.jpg
+## S2b admin accepts the intake questions in Baris Gilir Semakan (Terima) -> passed
+  observed: queue rows of this run: 2
+  observed: item: Berapakah harga sebatang pensel? R1E2E c98mobile mobile pdf Subjek Matematik Markah 1
+  observed: item gate: Pintu terbit Semua syarat dipenuhi: skema lengkap dan markah sepadan.
+  observed: decision button: "Terima (Draf)", enabled true
+  observed: accept -> POST /api/intake/items/1/accept HTTP 200 
+  observed: item: Barangan manakah yang paling murah? R1E2E c98mobile mobile pdf Subjek Matematik Markah 1
+  observed: item gate: Pintu terbit Semua syarat dipenuhi: skema lengkap dan markah sepadan.
+  observed: decision button: "Terima (Draf)", enabled true
+  observed: accept -> POST /api/intake/items/2/accept HTTP 200 
+  observed: accepted 2 item(s); bank questions from the PDF now: #1295 draft, #1294 draft
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S2b.jpg
+## S2h R1E2E-20: an intake-born question opens and saves in Studio "Sunting" -> passed
+  observed: #1295 in Studio: editable
+  observed: Studio save -> PUT HTTP 200
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S2h.jpg
+## S2g R1E2E-12 workaround in the UI: set Aras pemikiran on the intake questions (Studio "Sun -> skipped
+  observed: intake questions without Aras pemikiran after Terima: 0 of 2
+  skip: Not needed: the intake editor set Aras pemikiran on every intake question (R1E2E-12 intake side)
+## S2a admin approves the Bank Soalan questions (Hantar untuk Semakan, bulk Terbitkan) -> passed
+  observed: 9 run question(s) found
+  observed: Hantar untuk Semakan succeeded on 9 of 9 question(s)
+  observed: Terbitkan on 9 row(s) -> HTTP 200, affected 7, refused: Sila pilih unit DSKP. Sila pilih sekurang-kurangnya satu SP DSKP. Bahagian (1) belum ada aras pemikiran.
+  observed: statuses now (API): #1295 approved, #1294 approved, #1293 approved, #1292 approved, #1291 approved, #1290 review, #1289 review, #1288 approved, #1287 approved
+  observed: approved through the UI, per entry path: PDF intake 2/2, Studio 3/3, CSV 0/2, Bank Soalan form 2/2
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S2a.jpg
+## S2c API-assisted lifecycle (UI path blocked): review -> approved, so the pupil side can be -> skipped
+  skip: Not needed: S2a approved the questions through the UI
+## S2e R1E2E-10 re-test: bulk "Terbitkan" on an already approved question -> failed
+  observed: bulk actions offered for an approved row: Pilih Tindakan, Terbitkan, Arkibkan, Padam
+  observed: Terbitkan on 1 row(s) -> HTTP 200, affected 0, refused: Peralihan 'Diterbitkan' -> 'Diterbitkan' tidak dibenarkan.
+  observed: statuses now (API): #1293 approved
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S2e.jpg
+## S5a Databank Soalan SPM receives the admin's approved MCQs (count rises) -> passed
+  observed: path: approved via UI (S2a); Databank MATH 54 -> 57; approved MCQs this run: 7 (form, DSKP-tagged: 2; CSV, untagged: 2)
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S5a.jpg
+## S5b Latih Tubi SPM receives the admin's approved MCQs (count rises) -> passed
+  observed: path: approved via UI (S2a); Latih Tubi SPM MATH 54 -> 57; approved MCQs this run: 7 (form, DSKP-tagged: 2; CSV, untagged: 2)
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S5b.jpg
+## S5e Latih Tubi SPM in the UI (REQ-A-005): setup, Mula Kuiz, answer, result, back to the li -> passed
+  observed: pupil: murid4@demo.test
+  observed: setup: Matematik; Tahap Pendidikan Semua Tahap Kesukaran Semua Bilangan Soalan 40
+  observed: answered 40; result 10/40 (25%)
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S5e.jpg
+## S5c Soalan by Chapter lists the admin question's Bab -> passed
+  observed: approved: Bab "Fungsi dan Persamaan Kuadratik" total 0 -> 5
+  observed: Matematik tile on Soalan by Chapter: Matematik 1 bab tersedia 57 soalan chapter
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S5c.jpg
+## S2d BASE-1 interim: admin publishes the approved questions (bulk Terbitkan) -> skipped
+  skip: Not applicable since BASE-4 (T04, ADR-0027): approved = "Diterbitkan" is the served status, no Terbitkan hop
+## S5d BASE-1 interim: Databank, Latih Tubi SPM and Bab serve the published admin MCQs -> skipped
+  skip: Not applicable since BASE-4: S5a-S5c cover the served (approved) questions
+## S3a Set Builder: build a paper from the approved questions (group moves as a unit) -> failed
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S3a.jpg
+## S3b Pembina Kertas (BASE-1 builder): the admin MCQs are offered and placed in a Kertas 1 p -> passed
+  observed: picker candidates for "R1E2E c98mobile mobile": 5
+  observed: bank candidates left in the picker (empty search): 18
+  observed: budget check after placing: Belum sepadan dengan blueprint (2 perkara) Bahagian A: Kurang 15 soalan (perlu 40, ada 25) Bahagian A: Markah 25 tidak sama dengan bajet 40
+  observed: D90 group units in the paper: 2, of which the run's own: 2
+  observed: run's Studio group placed as unit(s): 1
+  observed: group unit unit-group-3 at position 3 -> "Naik" -> 2 of 23
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S3b.jpg
+## S3c Terbit: the paper publishes (review shows no blockers) -> failed
+  observed: publish -> HTTP 200 {"data":{"ok":false,"errors":["Bahagian A: Kurang 15 soalan (perlu 40, ada 25)","Bahagian A: Markah 25 tidak sama dengan bajet 40"],"notes":["Bahagian A: Soalan 128 tidak layak: unit tiada dalam kuota","Bahagian A: profil kesukaran bahagian
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S3c.jpg
+## S3f API-assisted: fill the S3b K1 paper from the builder pool, then Terbitkan in the UI -> passed
+  observed: API-assisted: 15 pool unit(s) placed; section 40/40 questions
+  observed: publish -> HTTP 200 {"data":{"ok":true,"errors":[],"notes":["Bahagian A: Soalan 128 tidak layak: unit tiada dalam kuota","Bahagian A: Soalan 138 tidak layak: unit tiada dalam kuota","Bahagian A: profil kesukaran bahagian tidak dipenuhi","Bahagian A: kuota topi
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S3f.jpg
+## S4a pupil T4 sits the admin paper (admin MCQs with a stem picture) in Bijak SPM and submit -> passed
+  observed: Mula -> POST /api/bijak/attempts HTTP 201 
+  observed: answered 40 MCQ(s); admin question seen in the sitting: true; pictures shown 2 (broken 0, data: URLs 0)
+  observed: result headline: Teruskan, Murid! / Awak dapat 16/40 markah. / 16
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S4a.jpg
+## S3d control paper: only the image-free admin MCQ (S1e), built and published -> failed
+  observed: picker candidates for "R1E2E c98mobile mobile kawalan": 1
+  observed: bank candidates left in the picker (empty search): 18
+  observed: budget check after placing: Belum sepadan dengan blueprint (2 perkara) Bahagian A: Kurang 21 soalan (perlu 40, ada 19) Bahagian A: Markah 19 tidak sama dengan bajet 40
+  observed: D90 group units in the paper: 0, of which the run's own: 0
+  observed: publish -> HTTP 200 {"data":{"ok":false,"errors":["Bahagian A: Kurang 21 soalan (perlu 40, ada 19)","Bahagian A: Markah 19 tidak sama dengan bajet 40"],"notes":["Bahagian A: Soalan 128 tidak layak: unit tiada dalam kuota","Bahagian A: profil kesukaran bahagian
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S3d.jpg
+## S3g API-assisted: fill the S3d control paper from the builder pool, then Terbitkan in the  -> passed
+  observed: API-assisted: 21 pool unit(s) placed; section 40/40 questions
+  observed: publish -> HTTP 200 {"data":{"ok":true,"errors":[],"notes":["Bahagian A: Soalan 128 tidak layak: unit tiada dalam kuota","Bahagian A: Soalan 138 tidak layak: unit tiada dalam kuota","Bahagian A: Soalan 150 tidak layak: unit tiada dalam kuota","Bahagian A: Soal
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S3g.jpg
+## S4a2 pupil T4 sits the control paper (image-free admin MCQ) and submits -> passed
+  observed: Mula -> POST /api/bijak/attempts HTTP 201 
+  observed: answered 40 MCQ(s); admin question seen in the sitting: true; pictures shown 0 (broken 0, data: URLs 0)
+  observed: result headline: Teruskan, Murid! / Awak dapat 11/40 markah. / 11
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S4a2.jpg
+## S3e API-assisted: structured Kertas 2 paper (1449/2) for the self-mark check -> passed
+  observed: intake questions placed in Bahagian A: 2 (2 markah)
+  observed: review: HTTP 200 affected 15 of 15
+  observed: approved: HTTP 200 affected 15 of 15
+  observed: API-assisted: 15 structured questions (Bahagian A 10q/40m, Bahagian B 5q/45m, Bahagian C 2q/15m); paper 9; publish -> HTTP 200 {"data":{"ok":true,"errors":[],"notes":["Bahagian A: profil kesukaran bahagian tidak dipenuhi","Bahagian A: kuota topik tidak dipenuhi (perlu 8, ada 0)","Bahagian A: kuota topik tidak dipenuhi (perlu 4, ada 40)","Bahagian A: kuota topik tidak dipenuhi (perlu 4, ada 0)","Bahagian A: nisbah Tin
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S3e.jpg
+## S4b pupil self-marks a written part of an admin paper (Simpan markah) -> passed
+  observed: sitting Q1: own-stimuli blocks 1, pictures inside 1, all pictures on screen 1
+  observed: written answers entered: 15
+  observed: shared passage (intake D90 group) in the sitting: member screen: chip -> drawer, passage 1x; member screen: chip -> drawer, passage 1x
+  observed: result before self-mark: Teruskan, Murid! / Awak dapat 2/100 markah (sementara). / 2
+  observed: self-mark controls on the page: 15
+  observed: self-mark save -> POST /api/bijak/attempts/c90f15a6-4a29-4410-8b0a-be0f307fe039/self-mark 200
+  observed: result after self-mark + reload: Teruskan, Murid! / Awak dapat 3/100 markah (sementara). / 3
+  observed: result: own-stimuli blocks 1, pictures inside 1
+  observed: result: shared passage chip -> drawer 1x; members under the group: 2
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S4b.jpg
+## S4c pupil sees the result (score / max, per Bahagian) -> passed
+  observed: sitting of the admin MCQ paper (S4a/S4a2)
+  observed: attempt bcca36e7-4f27-4317-94cb-718842a182d1; headline: Teruskan, Murid! / Awak dapat 16/40 markah.; sections: 16 / 40; questions listed: 40
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S4c.jpg
+## S4d pupil presses Cuba Lagi: a new blank attempt of the same paper -> passed
+  observed: sitting of the admin MCQ paper (S4a/S4a2)
+  observed: old bcca36e7-4f27-4317-94cb-718842a182d1 -> new /spm/bijak/percubaan/0af83fc7-845f-4073-b464-26f0ef6d48a5
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S4d.jpg
+## S4e pupil T5 sees the admin paper on the Bijak SPM hub -> passed
+  observed: paper: built in Pembina Kertas
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S4e.jpg
+## S4f pupil sits the T26c structured K2 fixture paper (seeded, no API assist) and self-marks -> passed
+  observed: hub card: E2E fixture: Percubaan Matematik Tambahan Kertas 2 Kertas 2 100 markah 150 minit 2026 Belum cuba Mula
+  observed: Mula -> HTTP 201 
+  observed: screens 15, answer fields filled 73
+  observed: result before self-mark: Teruskan, Murid! / Awak dapat 4/100 markah (sementara). / 4
+  observed: self-mark controls on the page: 12
+  observed: self-mark save -> POST /api/bijak/attempts/ba003767-db28-4111-a020-2f89ee6d2e0d/self-mark 200
+  observed: result after self-mark + reload: Teruskan, Murid! / Awak dapat 5/100 markah (sementara). / 5
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S4f.jpg
+## S6 pupil T4 Jana Kertas: Matematik Tambahan Kertas 2 (blueprint 3472/2, T26 seed) -> passed
+  observed: contract: Matematik Tambahan Kertas 2 · 3472/2 · 150 minit Bahagian A: 7 soalan Bahagian B: 4 soalan Bahagian C: 4 soalan
+  observed: POST /api/bijak/papers/generate -> HTTP 422 {"error":{"code":"SHORTAGE","message":"Kertas tidak dapat dijana kerana soalan tidak mencukupi.","details":{"shortages":[{"section":"Bahagian A","kind":"unit","basis":"marks","unit":{"kind":"unit","nodeId":"489"},"need":6,"have":2},{"section":"Bahagian B","kind":"kbat","need":40,"have":0},{"section":"Bahagian C","kind":"kbat","need":40,"have":0}]},"requestId":"eeb71227-fff3
+  observed: shown: Kertas tidak dapat dijana kerana soalan tidak mencukupi. Bahagian A: perlu 6 markah, hanya 2 tersedia Bahagian B: perlu 40 markah KBAT, hanya 0 tersedia Bahagian C: perlu 40 markah KBAT, hanya 0 tersedia Cuba subjek atau kertas lain, atau cuba lagi kemudian.
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-S6.jpg
+## B-01 Soalan by Chapter shows subjects or an empty-state message -> passed
+  observed: GET chapter-subjects: {"data":[{"code":"MATH","name":"Matematik","icon":"calculator","color":"#EF4444","chapterCount":1,"questionCount":57}],"meta":{"page":1,"pageSize":1,"totalItems
+  observed: subject tiles 1, empty-state texts 0
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-B-01.jpg
+## B-02 Bijak text answers can be self-marked (stepper with Simpan markah) -> skipped
+  observed: hub cards: 5 kertas | Latihan Demo Matematik Bank Soalan (Contoh) Kertas 1 6 markah 20 minit | Belum cuba | R1E2E c98mobile mobile kertas Kertas 1 40 markah 90 minit 2026 Sedang  | Sedang dijawab | R1E2E c98mobile mobile kawalan kertas Kertas 1 40 markah 90 minit 2026 | 11 / 40 | R1E2E c98mobile mobile kertas 2 berstruktur Kertas 2 100 markah 150 mi | 3 / 100 | E2E fixture: Percubaan Matematik Tambahan Kertas 2 Kerta
+  skip: Blocked: no Sains Kertas 2 paper on the hub (PoC papers no longer listed); self-mark is covered by S4b
+## B-04 Simulasi Kuiz in the UI: hub entry, answer, Semak, Tamat, result -> passed
+  observed: header: Soalan 1 daripada 20 00:00 Masa
+  observed: first verdict: 😟 Salah
+  observed: answered 20; result: Markah 6/20 Markah, Ketepatan 30% Ketepatan
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-B-04.jpg
+## B-04c per-paper Kuiz from the paper cover (DEMO/1): answer, Semak, pages -> passed
+  observed: checked 6 item(s); Skor: 0 / 6
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-B-04c.jpg
+## B-04b Simulasi Kuiz backend (T11): API check as the T4 pupil, NOT a UI pass -> passed
+  observed: API: POST /api/bijak/kuiz/sessions {MATH, 5} -> HTTP 201; count 5, items 5 (mcq), key exposed before check: false
+  observed: API: check item 137 with A -> HTTP 200 {"data":{"correct":false,"correctOptionId":"B","explanation":null}}
+  observed: API: finish -> HTTP 200 {"data":{"score":0,"total":5,"answered":1,"gamification":{"coinsEarned":0,"streakCount":1,"pointsEarned":0,"totalBalance":96}}}
+  observed: API: GET /api/bijak/kuiz/papers/5 (DEMO/1) -> HTTP 200 {"data":{"paper":{"id":"5","title":"Latihan Demo Matematik Bank Soalan (Contoh)","subjectName":"Matematik","code":"DEMO/1"},"page":1,"pageCount":1,"section":{"i
+  observed: UI: cover of DEMO/1, "Pilih mod": Mod menjawab Mod Peperiksaan Bermasa, tiada markah segera. Skema pemarkahan dipaparkan selepas Hantar. Mod Latihan Satu soalan pada satu masa dengan Semak dan m
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-B-04b.jpg
+## B-05 Bijak "Cuba lagi" on the result starts a fresh sitting -> passed
+  observed: attempt used: c90f15a6-4a29-4410-8b0a-be0f307fe039
+  observed: "Lihat semakan lepas" links on the result: 0
+  observed: old attempt c90f15a6-4a29-4410-8b0a-be0f307fe039; after Cuba lagi: /spm/bijak/percubaan/fe8b4703-0023-45e9-8c66-dd68ddbc49a2 (POST 201)
+  screenshot: docs/qa/r1-regression-base98-teamc/mobile/mobile-B-05.jpg
