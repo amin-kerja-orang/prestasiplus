@@ -33,7 +33,7 @@ import type { Page, Response, TestInfo } from '@playwright/test'
 
 import { API_PASSWORD, expect, test } from '../fixtures/api'
 import { isDesktopShell } from '../support'
-import { csrfOf, expectNoHScroll } from './helpers'
+import { csrfOf, expectNoHScroll, publishPaperWithOverride } from './helpers'
 
 const RUN = process.env.R1_E2E_RUN || 'r-local'
 const SHOTS = process.env.R1_E2E_SHOTS || 'docs/qa/r1-e2e-baseline-2026-10-31'
@@ -134,6 +134,9 @@ async function expectRouteExists(page: Page, path: string): Promise<void> {
 
 const firstNumber = (text: string): number =>
   Number(/(\d[\d,.]*)/.exec(text)?.[1]?.replace(/[,.]/g, '') ?? NaN)
+
+/** T34 (AC-R1-16.2) is in the base under test; set R1_E2E_T34=0 for a base that predates it. */
+const T34 = process.env.R1_E2E_T34 !== '0'
 
 const isApi = (r: Response, method: string, re: RegExp) =>
   r.request().method() === method && re.test(r.url())
@@ -1874,8 +1877,18 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     return { id, offered }
   }
 
-  /** Terbitkan on the paper editor; records the server verdict. Returns true when published. */
-  async function publishPaper(page: Page, info: TestInfo, id: string): Promise<boolean> {
+  /**
+   * Terbitkan on the paper editor; records the server verdict. Returns true when published.
+   * T34 (AC-R1-16.2 / R1E2E-07): Matematik K1 blueprint 1449/1 is Spec, not Disahkan, so the first Terbitkan is refused with
+   * a BLUEPRINT_NOT_VERIFIED blocker (`canOverride: true`). The documented audited-override path then publishes it.
+   * `R1_E2E_T34=0` runs against a base without T34 (the first press publishes); `requireRefusal` asserts the refusal.
+   */
+  async function publishPaper(
+    page: Page,
+    info: TestInfo,
+    id: string,
+    opts: { requireRefusal?: boolean } = {},
+  ): Promise<boolean> {
     await page.goto(`/admin/spm/kertas/${id}`)
     await expect(page.getByTestId('paper-editor-page')).toBeVisible()
     const publish = page.getByTestId('paper-publish')
@@ -1889,14 +1902,50 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
       .catch(() => null)
     await publish.click()
     const res = await posted
+    const text = res ? await res.text().catch(() => '') : ''
     observe(
       info,
-      `publish -> ${res ? `HTTP ${res.status()} ${(await res.text().catch(() => '')).slice(0, 240)}` : 'no request seen'}`,
+      `publish -> ${res ? `HTTP ${res.status()} ${text.slice(0, 240)}` : 'no request seen'}`,
     )
     await expect(
       page.getByTestId('paper-unpublish').or(page.getByTestId('publish-errors')).first(),
     ).toBeVisible({ timeout: 20_000 })
     await expectNoHScroll(page)
+    if (await page.getByTestId('paper-unpublish').isVisible()) {
+      expect(
+        opts.requireRefusal && T34,
+        'T34: the first Terbitkan of a Spec (not Disahkan) blueprint must be refused',
+      ).toBeFalsy()
+      return true
+    }
+    // Refused: the blocker line, and (when the payload is reachable) the machine-readable detail.
+    if (T34 && /1449\/1/.test(await page.getByTestId('paper-editor-page').innerText())) {
+      await expect(page.getByTestId('publish-errors'), 'Kontrak ... belum Disahkan').toContainText('belum Disahkan')
+      type Detail = { code?: string; canOverride?: boolean }
+      const parsed = (() => {
+        try {
+          return JSON.parse(text) as { data?: { blockerDetails?: Detail[] }; blockerDetails?: Detail[] }
+        } catch {
+          return {}
+        }
+      })()
+      const details = parsed.data?.blockerDetails ?? parsed.blockerDetails
+      if (details) {
+        const d = details.find((x) => x.code === 'BLUEPRINT_NOT_VERIFIED')
+        expect(d, 'blockerDetails has BLUEPRINT_NOT_VERIFIED').toBeTruthy()
+        expect(d?.canOverride, 'BLUEPRINT_NOT_VERIFIED canOverride').toBe(true)
+      } else {
+        observe(info, 'blockerDetails not in the publish response body (not asserted)')
+      }
+      // TODO(T10): switch to the UI tick "Terbitkan walaupun tidak memenuhi kontrak blueprint" when T10 lands.
+      const ov = await publishPaperWithOverride(page, id)
+      observe(info, `publish override (API-assisted) -> HTTP ${ov.status} ${JSON.stringify(ov.data).slice(0, 160)}`)
+      expect(ov.status, 'override publish status').toBeLessThan(300)
+      expect(ov.data.ok === true || ov.data.overridden === true, 'override publish ok/overridden').toBe(true)
+      await page.reload()
+      await expect(page.getByTestId('paper-unpublish'), 'published after override').toBeVisible({ timeout: 20_000 })
+      await expectNoHScroll(page)
+    }
     return page.getByTestId('paper-unpublish').isVisible()
   }
 
@@ -2066,7 +2115,7 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     test.skip(!st.paper?.id, 'Blocked: S3b created no paper')
     test.skip(!st.paper?.hasAdminQuestion, "Blocked: S3b placed none of the admin's questions")
     await login(page, ADMIN)
-    const ok = await publishPaper(page, info, st.paper!.id)
+    const ok = await publishPaper(page, info, st.paper!.id, { requireRefusal: true })
     saveState(info, { paper: { ...st.paper!, published: ok } })
     expect(ok, 'published paper offers Tarik balik').toBe(true)
   })
