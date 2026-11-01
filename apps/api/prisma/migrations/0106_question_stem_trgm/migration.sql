@@ -11,7 +11,7 @@
 --
 -- The indexes are partial (WHERE column IS NOT NULL): ILIKE is strict, so the planner proves the predicate from the query and rows without
 -- an English stem take no index space. Plain CREATE INDEX, not CONCURRENTLY: Prisma runs this multi-statement file in one transaction
--- (CONCURRENTLY would fail), as 0011 and 0044 did. The build takes about 18 s on 400k rows and blocks writes to question_versions for that
+-- (CONCURRENTLY would fail), as 0011 and 0044 did. The build took about 20 s on 408k rows (measured) and blocks writes to question_versions for that
 -- time: deploy in the maintenance window (the same window as 0100).
 --
 -- Reversible:
