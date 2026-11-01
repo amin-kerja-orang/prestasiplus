@@ -91,7 +91,7 @@ export function registerQuestionGatePaths(registry: OpenAPIRegistry): void {
     tags: ['questions'],
     summary: 'Move a question along the lifecycle',
     description:
-      'Draft to review (the owning Guru or Admin), review to approved ("Terbitkan", Admin Pusat; runs the merged approve gate), approved to archived, review to draft and archived to draft (Admin; a reason is required where the table says so). `approved` is the only servable status, so the answer carries the ServabilityReport of an approval. Refusals: 409 for a pair outside the table, 422 with `fields` keyed by path (the gate issues) and `details.gate`, 403 for a role that may not move it.',
+      'Draft to review (the owning Guru or Admin), review to approved ("Terbitkan", Admin Pusat; runs the merged approve gate), review to archived and approved to archived (Admin; no reason needed, one is recorded when given), review to draft (a reason is required) and archived to draft (Admin). `approved` is the only servable status, so the answer carries the ServabilityReport of an approval. Refusals: 409 for a pair outside the table, 422 with `fields` keyed by path (the gate issues) and `details.gate`, 403 for a role that may not move it.',
     request: { params: idParams, headers: [csrf], body: { required: true, content: { 'application/json': { schema: QuestionStatusRequestSchema } } } },
     responses: {
       200: json(envelopeOf(QuestionStatusResultSchema), 'The question after the change.'),
