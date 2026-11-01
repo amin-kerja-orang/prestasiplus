@@ -266,6 +266,21 @@ describe('R1 chain QA: intake -> approve -> paper -> Terbit -> pupil -> submit -
     expect(result.provisional).toBe(false)
   })
 
+  it('8b. the submit paid the reward ONCE on this bank paper: one quiz_spm ledger row for the attempt (the score in syiling), the XP of the score, a streak', async () => {
+    const pupilId = pupil.userId
+    const rows = await q(`select user_id::text uid, amount, is_test, type from coin_ledger where source = 'quiz_spm' and source_id = $1`, [attempt])
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({ uid: pupilId, is_test: false, type: 'earn' })
+    expect(Number(rows[0]!.amount)).toBeGreaterThan(0)
+    const wallet = (await q(`select xp from wallets where user_id = $1`, [pupilId]))[0]
+    expect(Number(wallet?.xp ?? 0)).toBeGreaterThanOrEqual(60) // 10 per mark of a score of 6
+    expect(Number((await q(`select current from streaks where user_id = $1`, [pupilId]))[0]?.current ?? 0)).toBeGreaterThanOrEqual(1)
+    // a replay of the submit is a replay: still one ledger row
+    const again = await pupil.post(`/api/bijak/attempts/${attempt}/submit`, { idempotencyKey: 'chain-intake-2', changes: [] })
+    expect([200, 409]).toContain(again.status)
+    expect(await q(`select 1 from coin_ledger where source = 'quiz_spm' and source_id = $1`, [attempt])).toHaveLength(1)
+  })
+
   it('9. Cuba Lagi: a NEW attempt on the same paper; the old attempt and its result stay', async () => {
     const before = await pupil.get(`/api/bijak/attempts/${attempt}/result`)
     const retry = await pupil.post(`/api/bijak/attempts/${attempt}/retry`)
