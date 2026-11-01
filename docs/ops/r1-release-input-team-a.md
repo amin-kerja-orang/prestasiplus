@@ -1,6 +1,6 @@
 # R1 release-notes input from team A (H-A24)
 
-For B1's T24 (`docs/ops/r1-release-notes.md`) and DevOps (G6). Date: 2026-11-02. Branch `r1/ha24-release-input`. First written at a6ff0c0d (BASE-21); **refreshed 2026-11-02 against BASE-112 (`8c8de86d`)**: the SQL, migration and environment claims were read at BASE-105 (`7ea2208c`). Since then BASE-106 (team C's T10 front end) and BASE-107 (hc-builder-parity) changed `src/` and its tests only; BASE-108 (REQ-C-021 follow-up), BASE-109 (REQ-B-032), BASE-110 (the A4 chain: T45 part 1, REQ-B-022(a), REQ-C-020, REQ-B-033, overview perf), BASE-111 (T54, docs) and BASE-112 (T38 self-mark reward) changed api code, specs and docs. `git diff 7ea2208c 8c8de86d` touches nothing under `apps/api/prisma`, so no new migration folder entered the base; it touches the environment in one place only (the optional `SERVABILITY_OVERVIEW_WARM`, 3 lines in `env.schema.ts` and 2 in `.env.api.example`, BASE-110) and `docs/ops/r1-runbook.md` and this file (A4's WARM rows, BASE-110); every claim below was re-read at the file and line of the head named beside it; what is not in base says "pending, branch @head" with the head from `git ls-remote` on the day. Docs only, except the SQL in section 1.1, which was run on a throwaway local Postgres 16 (27/27 ok).
+For B1's T24 (`docs/ops/r1-release-notes.md`) and DevOps (G6). Date: 2026-11-02. Branch `r1/ha24-release-input`. First written at a6ff0c0d (BASE-21); **refreshed 2026-11-02 against BASE-113 (`2cef18a8`)**: the SQL, migration and environment claims were read at BASE-105 (`7ea2208c`). Since then BASE-106 (team C's T10 front end) and BASE-107 (hc-builder-parity) changed `src/` and its tests only; BASE-108 (REQ-C-021 follow-up), BASE-109 (REQ-B-032), BASE-110 (the A4 chain: T45 part 1, REQ-B-022(a), REQ-C-020, REQ-B-033, overview perf), BASE-111 (T54, docs) BASE-112 (T38 self-mark reward) and BASE-113 (T50, specs only) changed api code, specs and docs. `git diff 7ea2208c 2cef18a8` touches nothing under `apps/api/prisma`, so no new migration folder entered the base; it touches the environment in one place only (the optional `SERVABILITY_OVERVIEW_WARM`, 3 lines in `env.schema.ts` and 2 in `.env.api.example`, BASE-110) and `docs/ops/r1-runbook.md` and this file (A4's WARM rows, BASE-110); every claim below was re-read at the file and line of the head named beside it; what is not in base says "pending, branch @head" with the head from `git ls-remote` on the day. Docs only, except the SQL in section 1.1, which was run on a throwaway local Postgres 16 (27/27 ok).
 
 How to read the state column:
 
@@ -162,7 +162,7 @@ Unmerged units that add or change a variable: only the one above (scan of every 
 
 After T36 the question bank is the only source for Bijak papers, attempts, Jana Kertas, Kuiz and the paper builder (`apps/api/src/modules/bijak/question-bridge/bank-sources.ts`; `docs/ops/r1-b07-remove-poc.md` in base). `true` only logs one warning at start. The four seeded PoC papers stay in the database, withdrawn by the seed step below; starting one answers 403 "not eligible" and Jana Kertas has no PoC pool (422 SHORTAGE).
 
-Deploy-config lines, all re-read in base at BASE-105 (`7ea2208c`; BASE-106 to BASE-112 touch no deploy file):
+Deploy-config lines, all re-read in base at BASE-105 (`7ea2208c`; BASE-106 to BASE-113 touch no deploy file):
 
 | File:line | Value in base | State |
 |---|---|---|
@@ -241,6 +241,7 @@ The BASE column is the MERGE-LOG number. Rows from BASE-24 onward were READY in 
 | A4 chain (A4 / A1b) | `r1/a4chain-minors` @ 6f2fb793 (T45 part 1, REQ-B-022(a), REQ-C-020, REQ-B-033, overview perf, minors; B2 Approve w/ Minors, B3 Pass) | **BASE-110** (`a6b74ba5`) | H-A21 (BASE-104), T29 | env `SERVABILITY_OVERVIEW_WARM` (section 2); `subjects` on the lane pages; no migration | see the chain row in 3.2 | see 3.2 |
 | T54 performance report | `r1/t54-perf-400k` @ 03c76eb0 (A4, docs) | **BASE-111** (`b1443308`) | none | none | none (the 400k performance report) | none |
 | T38 self-mark reward | `r1/t38-selfmark-reward` @ 13134ced (A1b) | **BASE-112** (`8c8de86d`) | T28 | none | D94 self-mark reward (see the T38 / T40 row in 3.2) | ledger rows with source `quiz_spm` |
+| T50 partial ACs | `r1/t50-partial-acs` @ 075e1b58 (A1a, specs only) | **BASE-113** (`2cef18a8`) | none | none | none (specs) | none |
 | REQ-C-021 no chapter lock (D98) | `r1/reqc021-no-chapter-lock` @ 15cc2f64 | BASE-102 | none | `POST /practice/sessions` mode `chapter`: no `CHAPTER_LOCKED` 409; `GET /practice/chapter-subjects/{code}`: `state` is always `open` (deviations log, REQ-C-021 row; read there, not re-read in the code) | A pupil may start any chapter that has a servable question; the progressive "unlock at 70" is gone (V2 has none). A chapter with no servable question is still refused (422 NOT_ENOUGH_QUESTIONS) | `test/questions/draw-bounded.spec.ts` "BR-16: a chapter holding one non-servable MCQ..." expects the old lock (409) and fails on base: a stale spec of A1, not a deploy item |
 
 Also merged since BASE-21, not described row by row in this page (see MERGE-LOG on `origin/team/r1-board`): REQ-B-010/012/015 (BASE-31), T49 stimulus lists (BASE-32), REQ-B-018/020 (BASE-35), REQ-B-021 (BASE-36), REQ-B-008 (BASE-38), REQ-B-005/006/007/014a (BASE-39), T41 specs (BASE-40), T53 specs (BASE-42), REQ-A-010 (BASE-50). Their deploy effect was not re-derived here (unconfirmed); read the MERGE-LOG line for each.
@@ -250,7 +251,7 @@ Also merged since BASE-62 and not described row by row (see MERGE-LOG): T26b (BA
 
 ### 3.2 Not in base: pending branches
 
-State is the board's auto table (`docs/team/BOARD.md` on `origin/team/r1-board`, 2026-11-01 evening UTC, base BASE-112 `8c8de86d`; the units below were built on BASE-105 unless a row says otherwise), with each head checked against `git ls-remote`. The merge order is in 3.5 (A4's integration preview #3). A pending unit can still move: re-check the head before quoting it. "Merges after" is the board's order.
+State is the board's auto table (`docs/team/BOARD.md` on `origin/team/r1-board`, 2026-11-01 evening UTC, base BASE-113 `2cef18a8`; the units below were built on BASE-105 unless a row says otherwise), with each head checked against `git ls-remote`. The merge order is in 3.5 (A4's integration preview #3). A pending unit can still move: re-check the head before quoting it. "Merges after" is the board's order.
 
 | Unit | Branch @ head | State | Depends on | New routes / contract | Visible change | Check |
 |---|---|---|---|---|---|---|
@@ -299,7 +300,7 @@ Decisions from `docs/team/QUESTIONS.md` on `origin/team/r1-board` (user answers 
 
 ### 3.5 Merge order for B1 (A4 integration preview #3)
 
-Source: REQ-A-024 in `docs/team/requests/from-A.md` on `origin/team/r1-board`, and the BOARD rows of T31, T43 and T51. A4 stacked 33 team A heads on BASE-105 in a local preview (@525f9ca1, not pushed): questions 1048, workflow 308, bijak-integration 122, conformance 409, exam-builder 434, r1 56, kuiz 39, M02 724; api tsc 0 and vue-tsc 0 (after REQ-A-008); migrations 0104 to 0107 once each; 0 logic conflicts. **Heads move on fixes: re-check the BOARD AUDIT table and `git ls-remote` before each merge.** Smaller batches are fine; this is the order that was proven. This order is A4's preview #3 on BASE-105; **BASE-106 to BASE-112 have merged since** (steps 1, 4, 6, 9 and 11 are in base: BASE-108, 109, 110, 111, 112), and H-A18 (step 2) is CHANGES REQUESTED, so steps 2, 3, 5 and everything stacked on H-A18 wait for A2's fix. The heads below were checked against `git ls-remote` for this page; where one differs from the plan text it is marked.
+Source: REQ-A-024 in `docs/team/requests/from-A.md` on `origin/team/r1-board`, and the BOARD rows of T31, T43 and T51. A4 stacked 33 team A heads on BASE-105 in a local preview (@525f9ca1, not pushed): questions 1048, workflow 308, bijak-integration 122, conformance 409, exam-builder 434, r1 56, kuiz 39, M02 724; api tsc 0 and vue-tsc 0 (after REQ-A-008); migrations 0104 to 0107 once each; 0 logic conflicts. **Heads move on fixes: re-check the BOARD AUDIT table and `git ls-remote` before each merge.** Smaller batches are fine; this is the order that was proven. This order is A4's preview #3 on BASE-105; **BASE-106 to BASE-113 have merged since** (steps 1, 4, 6, 9, 11 and 12 are in base: BASE-108, 109, 110, 111, 112, 113), and H-A18 (step 2) is CHANGES REQUESTED, so steps 2, 3, 5 and everything stacked on H-A18 wait for A2's fix. The heads below were checked against `git ls-remote` for this page; where one differs from the plan text it is marked.
 
 | Step | Branch @ head | Note |
 |---|---|---|
@@ -314,7 +315,7 @@ Source: REQ-A-024 in `docs/team/requests/from-A.md` on `origin/team/r1-board`, a
 | 9 | `r1/t54-perf-400k` @ 03c76eb0 | **merged: BASE-111** |
 | 10 | `r1/admin-list-perf` @ 6389cd54 | migrations 0106 and 0107 need a maintenance window (section 1); new env `THROTTLE_QUESTIONS_LIST_PER_MINUTE` (section 2) |
 | 11 | `r1/t38-selfmark-reward` @ 13134ced | **merged: BASE-112** |
-| 12 | `r1/t50-partial-acs` @ 075e1b58 | |
+| 12 | `r1/t50-partial-acs` @ 075e1b58 | **merged: BASE-113** |
 | 13 | `r1/req-b-025c` @ d4735304 | |
 | 14 | `r1/e05b-l1-spec` @ 4b9eac57 | |
 | 15 | `r1/seed-dangling-placements` @ 11cbcf45 | |
@@ -365,7 +366,7 @@ Then, after the 33 (each stacked on the step in brackets): `r1/delete-served-gua
 
 ## 5. Limits
 
-- Branch heads were read with `git ls-remote origin` on 2026-11-02 against BASE-112 (`8c8de86d`; the unit rows name BASE-105 where they were built on it); the board moves daily. Re-check a head before quoting it.
+- Branch heads were read with `git ls-remote origin` on 2026-11-02 against BASE-113 (`2cef18a8`; the unit rows name BASE-105 where they were built on it); the board moves daily. Re-check a head before quoting it.
 - Read in the code at the cited file and line: the migration SQL of 0104 to 0107 and 0110 (from their branch heads), the env schema and warm-up of `SERVABILITY_OVERVIEW_WARM`, the T36 deploy lines and the seed step, the servability, bulk-filter and gate-check routes, the gate messages, the daily report cap and the structured-visibility rule. Taken from the board or a commit title and **not** re-read are marked in the text ("not re-read"); the per-unit "Visible change" of unmerged units was not exercised.
 - SQL run: the 0103 SELECTs and the earlier runs (1.1) and the 24 new statements of 2026-11-02 (0106, 0107, 0110). The unit checks marked "probe" or written from the schema were not run. The runbook's SELECTs for 0092 to 0102 were run on a local database (its section 9).
 - Not measured here: build and lock times of 0100, 0106, 0107 on a production-size table, the T47 500-row stall, the H-A21 and overview figures on a 400k bank, the 0110 data fix on production rows.
