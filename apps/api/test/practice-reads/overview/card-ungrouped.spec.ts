@@ -53,9 +53,11 @@ describe('Bab card and Soalan by Chapter tile count what the chapter draw can se
 
   // The test below chapters some seeded questions in the shared database. The demo seed has none, so putting them back to "no chapter" restores it.
   let chaptered: string | null = null
+  // The check runs after EVERY test, right after the reset, so it does not depend on the order of the tests (a later test would otherwise read a dirty seed).
   afterEach(async () => {
     if (chaptered !== null) await db.query(`update question_versions set chapter_id = null where chapter_id = $1::bigint`, [chaptered])
     chaptered = null
+    expect(Number((await db.query<{ c: string }>(`select count(*)::text c from question_versions where chapter_id is not null`))[0]?.c), 'no chaptered question is left behind').toBe(0)
   })
 
   it('a chaptered grouped MCQ is not counted: Bab count = drawable (ungrouped) count; unchaptered ones never count', async () => {
@@ -94,12 +96,5 @@ describe('Bab card and Soalan by Chapter tile count what the chapter draw can se
     // The tile sums these per-chapter counts (OverviewService.chapterSubjects), so tile = chapter-drawable, never the subject total.
     const subjectTotal = bank.practice(bm, offeredIds)
     expect(subjectTotal).toBeGreaterThan(drawable)
-  })
-
-  it('the seed is back as it was after the test above: no chaptered question, so the test does not depend on its order', async () => {
-    const repo = new OverviewRepository({ client: db.prisma } as never)
-    const chapter = (await db.query<{ id: string }>(`select c.id::text id from chapters c where c.subject_id = $1 order by c.id limit 1`, [await subjectId('BM')]))[0]?.id as string
-    expect((await repo.chapterQuestionCounts([chapter])).get(chapter)).toBeUndefined()
-    expect(Number((await db.query<{ c: string }>(`select count(*)::text c from question_versions where chapter_id is not null`))[0]?.c)).toBe(0)
   })
 })
