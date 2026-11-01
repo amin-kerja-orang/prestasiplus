@@ -547,7 +547,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/overview-mcq-shape-once | 5a785be84 | READY (A4): chain 5th; B2 |
 | r1/r1-10-1-practice-spec | cfd6b6f7b | READY (A1b + A2 + A3, @cfd6b6f7, BASE-105; specs + docs): pins practice rewards (19 tests, 11/11 mutations); R1-10.1 row: USER Q12a (2026-11-02) keep 1 syiling, V2 rate unverified, .cloud check R2; B2 |
 | r1/r1-chain-qa-a3 | 9b70ae395 | READY (A3, @9b70ae39, BASE-105; spec + step map): A2 MAJOR fixed (key allow-list on the served pupil shape + recursive forbidden-key walk + reason text absent) + Minors (stimulus once exact, same-key replay, exact 12 syiling / 60 XP, Cuba Lagi 2 attempts); mutations red; ignore the unverified REQ ids in the commit message; B2 |
-| r1/ready-tiers-check | 10eca4cdb | ON HOLD (A2, @10eca4cd): code correct, but A3 pre-review REQUEST CHANGES — B1 CI api.yml boot smoke curls /api/ready after migrate with no seed → red; M2 first-install deploy (deploy.sh then --seed-reference) ends as a false FAILED deploy. Needs B DevOps changes (REQ-A-028: CI reference-seed step; deploy first-install seed ordering) before merge; A2 fixes Minors (exact 503 body + logger spy; log once per state change) |
+| r1/ready-tiers-check | 86e7a52a5 | ON HOLD (A2, @10eca4cd): code correct, but A3 pre-review REQUEST CHANGES — B1 CI api.yml boot smoke curls /api/ready after migrate with no seed → red; M2 first-install deploy (deploy.sh then --seed-reference) ends as a false FAILED deploy. Needs B DevOps changes (REQ-A-028: CI reference-seed step; deploy first-install seed ordering) before merge; A2 fixes Minors (exact 503 body + logger spy; log once per state change) |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
 | r1/req-b-022a-a4 | d82c52567 | READY (A4): REQ-B-053 + pre-review rows (per-instance warm-up documented; env comment moved); chain 2nd; B2 + B3 + DevOps |
 | r1/req-b-025c | d47353043 | READY (A1b, BASE-105): Minors fixed (decision row REQ-B-007/025c, lateSync, fixture names); attempts 183/183; B2 |
@@ -582,8 +582,6 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t51-partial-acs-a3 | 61c1b077f | READY (A3, hold LIFTED; @61c1b077 on T43 238eb6eb + T31 eb0346d2 + T48): merge after T48, T31, REQ-A-008, T43; never old T31 6a27c8dd / T43 5ce5894f / T51 54f63116; Preview #3 (A4, 33 heads on BASE-105 @525f9ca1, local): ALL GREEN, vue-tsc 0 after REQ-A-008, 0 reds. B2 |
 | r1/t52-examiner-grid | 5a0d7bd0e | READY (A1a/A1b, @5a0d7bd0): examinerGrid from marked (live+pinned), be09 test 8 bites; deviation note live-wins in withPinned; A2 + A3 dev-1 delta pre-reviews CLEAN; 124 tests; B2 (C REQ-A-012 reqa012 813ace12 stacks on it) |
 | r1/t54-perf-400k | 03c76eb0d | READY (A4, docs): credentials replaced by placeholders; may 3-line-conflict with 022a perf docs (trivial); B2 |
-
-**New branches not yet triaged:** r1/reqa027-list-throttle 6432067a7
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
