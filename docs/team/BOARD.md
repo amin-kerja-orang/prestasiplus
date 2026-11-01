@@ -489,7 +489,7 @@ BASE-105 + 11 team A READY API heads + C FE heads (reqa014 dc561730, reqa005 3ee
 Wallet tiers come only from the `reference` seed, never from a migration. Prod deploy runs `migrate deploy` only, so an operator must run `deploy.sh --seed-reference`. Without tiers, the dashboard and wallet return 500, and **every practice or Kuiz submit 500s and rolls back** (the reward runs inside the completion tx). Lead decision: (1) add a runbook precondition (`tiers` count = 4) and (3) make /api/ready return not-ready when tiers is empty (r1/ready-tiers-check). No migration. The reward is not made non-fatal, because silent coin loss is worse.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 21:49 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 21:51 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
