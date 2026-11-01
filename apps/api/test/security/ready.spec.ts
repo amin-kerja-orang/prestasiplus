@@ -1,10 +1,11 @@
 import { readdirSync, statSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-import type { INestApplication } from '@nestjs/common'
+import { Logger, type INestApplication } from '@nestjs/common'
 import request from 'supertest'
 import { afterAll, vi, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
+import { ReadyController } from '../../src/common/health/ready.controller'
 import { ReadyService } from '../../src/common/health/ready.service'
 import { runSeeds } from '../../prisma/seed'
 import { walletTiersSeed } from '../../prisma/seed/core/wallet-tiers'
@@ -68,6 +69,60 @@ describe('GET /api/ready (BE-33)', () => {
       await runSeeds([walletTiersSeed], { prisma: db.prisma })
     }
     expect((await request(app.getHttpServer()).get('/api/ready')).status).toBe(200)
+  })
+
+  /** The controller keeps what the last poll said so it logs once per change; each case starts from "no poll yet". */
+  const forgetLastPoll = () => {
+    ;(app.get(ReadyController) as unknown as { last: string | undefined }).last = undefined
+  }
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+  it('M3: with no tiers the 503 body is exactly { error: { code, message, requestId } } (no reason), and the reason is logged at WARN', async () => {
+    forgetLastPoll()
+    const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+    const error = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined)
+    await db.query('delete from tiers')
+    try {
+      const res = await request(app.getHttpServer()).get('/api/ready')
+      expect(res.status).toBe(503)
+      expect(res.body).toEqual({ error: { code: 'SERVER_ERROR', message: 'Server Error', requestId: expect.stringMatching(UUID) } })
+      expect(warn).toHaveBeenCalledTimes(1)
+      expect(String(warn.mock.calls[0]?.[0])).toBe('not ready: no wallet tier is defined: run the reference seed (deploy.sh --seed-reference)')
+      expect(error).not.toHaveBeenCalled() // an expected deploy state is not an error line
+    } finally {
+      warn.mockRestore()
+      error.mockRestore()
+      await runSeeds([walletTiersSeed], { prisma: db.prisma })
+    }
+  })
+
+  it('N4: three consecutive not-ready polls log ONE warn; a changed reason logs again; going back to ready logs ONE info line, then nothing', async () => {
+    forgetLastPoll()
+    const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+    const info = vi.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined)
+    const get = () => request(app.getHttpServer()).get('/api/ready')
+    await db.query('delete from tiers')
+    try {
+      for (let i = 0; i < 3; i++) expect((await get()).status).toBe(503)
+      expect(warn).toHaveBeenCalledTimes(1)
+      expect(info).not.toHaveBeenCalled()
+      // another reason while still not ready: a new line
+      await setState([])
+      expect((await get()).status).toBe(503)
+      expect(warn).toHaveBeenCalledTimes(2)
+      expect(String(warn.mock.calls[1]?.[0])).toBe('not ready: no migration applied')
+      // recovery: one info line, then silence
+      await setState(allApplied())
+      await runSeeds([walletTiersSeed], { prisma: db.prisma })
+      for (let i = 0; i < 3; i++) expect((await get()).status).toBe(200)
+      expect(info).toHaveBeenCalledTimes(1)
+      expect(String(info.mock.calls[0]?.[0])).toBe('ready again')
+      expect(warn).toHaveBeenCalledTimes(2)
+    } finally {
+      warn.mockRestore()
+      info.mockRestore()
+      await runSeeds([walletTiersSeed], { prisma: db.prisma })
+    }
   })
 
   it('is 503 SERVER_ERROR when a migration row is unfinished (failed)', async () => {
