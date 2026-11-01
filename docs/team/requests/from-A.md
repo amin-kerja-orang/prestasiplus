@@ -67,4 +67,38 @@
 
 The v2-backend-deviations.md conflicts are always "keep both". **Update 23:05 UTC (A4 re-simulated on BASE-107, stack 9232aa24):** BASE-107 overlaps no file in the stack, but every head still has to contain it; owners are forward-merging now. Changes: step 7 reqa018 is now **9ce81df5** (+ contract-tests scenario; full B2 + B3). New **step 6b servability-stimuli-once 94efde12** after a4chain-minors (B2 small). Step 17 mock-known-mismatches now conflicts with reqa018's NO_PAPER_SERVABILITY: keep both. Step 23 known-mismatches.ts: keep all NO_* lists (step 17 + NO_FILTER_OPTIONS + NO_PAPER_SERVABILITY) and the 3 filter-options lines, and drop guru/pending. | OPEN |
 | REQ-A-030 | C (m04 mock: admin question list) | 2026-11-01 23:10 UTC | A2, contract-tests scenario work on r1/reqa018-paper-servability-route @ 9d6ef833 | The **mock admin question list rows fail the contract**: `data.0.kertas` and `data.0.numberLabel` do not match the `GET /api/questions` 200 schema. That is why the new scenario could not take an id from the mock list. Please align the mock list rows with the contract (field presence and types per packages/contract). When C's reqa018-paper-servability-fe lands with `meta`, team A will swap the 3 `assertion` known-mismatch entries for paper-servability into 1 `schema` entry, or remove them once the mock serves the route correctly. | OPEN |
+| REQ-A-024d | B (B1, B2, B3) | 2026-11-01 23:12 UTC | A4 batch 3 merge-prep (24 steps chained on the batch 1+2 stack, BASE-107; the end merges clean with BASE-108) | **Review/merge table for the remaining steps.** Heads at prep time; always re-check BOARD AUDIT.
+
+**⚠ LOGIC: C reqa008 29d24be9 × T10 (REQ-B-055).** The textual merge is clean, but vue-tsc breaks. In PaperEditorPage.vue:381, `addOpsUnit` does `extraStim.set(u.groupId, u.stimulus)`; it must be `extraStim.set(u.groupId, editorStimuliOf(u))`, as addPoolUnit :268 does. C1 restacks, or B1 applies the fix in the merge.
+
+**Steps.**
+- 1 t48 6c5ae3a8: v2-admin-student-pipeline.md → keep the 0108/0109 text + add T48's 0104 line. Delta 3 commits (code; B2 + B3).
+- 2 t48-label-move-fix 9783849c: review 1 commit.
+- 3 d90-builder-sweep 5200156b: fast-track.
+- 4 t43b 7a14581a: delta 2 test commits.
+- 5 builder-search-perf 1216b736: **full B2**.
+- 6 t45-builder-acs ee3a7d2b: fast-track.
+- 7 t31 eb0346d2: B2 Approve exact; B3 delta 4 commits. **Pair with 8.**
+- 8 C reqa008: hold for the restack, or apply the fix above.
+- 9 t43 238eb6eb: fast-track after 7–8.
+- 10 t51 61c1b077: review, test-only.
+- 11 delete-served-guard fe7ef537, 3 conflicts:
+  - stimuli.repository.ts → import QUESTION_SERVED/VERSION_SERVED from ./served-rule and keep the D72 constants. Intended: the group lists use the held-paper rule.
+  - contract questions/paths.ts → keep stateConflict + deleteRefused.
+  - deviations → keep both.
+  - Review: delta 1 commit + B3 glance.
+- 12–14 a4chain-minors / reqa018 / servability-stimuli-once: already in the stack at batch-1 steps 6/7/6b.
+- 15 ac-gaps 5ac9dfc9+:
+  - runbook → ac-gaps side;
+  - coverage doc → the stack side (T40 sentence);
+  - docs fast-track + a glance at 2 specs.
+- 16–18 chain-qa trio: deviations duplicate T38/H-A18 rows → stack side; fast-track.
+- 19 r1-10-1 cfd6b6f7: fast-track.
+- 20 d90-kuiz 1bf273ca: fast-track.
+- 21 **C reqa014-no-chapter-lock-fe dc561730**: full review (FE).
+- 22 drop-lock-enums 4d1424c8, after 21: review.
+- 23 ha24: release-input → ha24 side; docs fast-track.
+- 24 ha26: team-a-r1-state.md → ha26 side; docs fast-track.
+
+After merging, run contract:emit/check (openapi auto-merges). Deviation rows: always keep both. | OPEN |
 
