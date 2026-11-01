@@ -1,5 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
+import { Be09BijakQuestionSource } from '../../src/modules/bijak/question-bridge/be09-question-source'
+import { QuestionsRepository } from '../../src/modules/questions'
 import { StimuliRepository } from '../../src/modules/questions/stimuli.repository'
 import { ACCOUNTS } from '../exam-builder/helpers'
 import { makePng } from '../files/fixtures'
@@ -180,5 +182,32 @@ describe('REQ-B-032 a published paper serves its pinned version', () => {
     const result = (await pupil.get(`/api/bijak/attempts/${attempt}/result`)).body.data.result as { questions: { questionId: string; awarded: number; marks: number }[] }
     const row = result.questions.find((x) => x.questionId === target)!
     expect(row).toMatchObject({ awarded: 1, marks: 1 })
+  })
+
+  it('until a paper pins version 2, its image is not readable by the pupil; once the placement pins it, it is, and a new sitting is served version 2 while the submitted one keeps version 1', async () => {
+    expect((await pupil.get(v2.image.url)).status).toBe(404) // not pinned yet (the question is still inactive and the paper pins version 1)
+    await q(`update paper_placements set pinned_version_no = 2 where question_id = ${target} and paper_section_id in (select id from paper_sections where paper_id = ${paper})`)
+    expect((await pupil.get(v2.image.url)).status).toBe(200) // rule B follows the pin
+    const again = await pupil.post('/api/bijak/attempts', { paperId: paper, mode: 'exam' })
+    expect(again.status, JSON.stringify(again.body)).toBe(201)
+    attempt = again.body.data.attemptId as string
+    expect((await served()).stem, 'a new sitting is served the newly pinned version').toBe(v2.text)
+    const first = await q(`select count(*)::int n from exam_attempts where status <> 'in_progress' and paper_id = ${paper}`)
+    expect(Number(first[0]!.n)).toBeGreaterThanOrEqual(1) // the earlier, submitted sitting is untouched
+  })
+
+  it('regression: without a pin (Latih Tubi, random Kuiz, practice) the LIVE approved version is served', async () => {
+    await q(`update questions set is_active = true where id = ${target}`)
+    // The practice and kuiz draws read the live approved version of an active question (version 2 here), not the pinned version 1.
+    const repo = t.app.get(QuestionsRepository, { strict: false })
+    expect(await repo.eligibleAmong([target], {})).toEqual([target])
+    const live = await repo.getMany([target], 'live')
+    expect(live[0]?.version.versionNo).toBe(2)
+    const bundles = await t.app.get(Be09BijakQuestionSource, { strict: false }).loadQuestions([target])
+    expect(JSON.stringify([...bundles.values()])).toContain(v2.text)
+    expect(JSON.stringify([...bundles.values()])).not.toContain(v1.text)
+    // an inactive question with no pin is not served at all
+    await q(`update questions set is_active = false where id = ${target}`)
+    expect(await repo.eligibleAmong([target], {})).toEqual([])
   })
 })
