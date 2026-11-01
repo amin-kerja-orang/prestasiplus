@@ -28,6 +28,8 @@ import type {
   HistoryEntry,
   PaperEditorData,
   PaperPatch,
+  SectionPoolPage,
+  SectionPoolQuery,
   PublishPaperResult,
   QueueFilter,
   QueueItem,
@@ -1073,6 +1075,47 @@ export class AdminOps {
       throw this.host.error('bad_request', 'Tarik balik kertas Terbit sebelum memadam')
     delete this.papers[id]
     this.host.persist()
+  }
+
+  /**
+   * The section pool (REQ-B-042): every approved question of the paper's subject and kertas that is not
+   * placed elsewhere, as units (a stimulus group is ONE unit, D90), filtered by text and paged. Mirrors the
+   * real endpoint's shape so the editor picker works the same in the mock.
+   */
+  async sectionPool(id: string, sectionId: string, query: SectionPoolQuery = {}): Promise<SectionPoolPage> {
+    await this.host.tick()
+    const paper = this.papers[id]
+    if (!paper) throw this.host.error('not_found', 'Kertas tidak ditemui')
+    if (!paper.sections.some((s) => s.id === sectionId)) throw this.host.error('bad_request', 'Bahagian tidak sah')
+    const placed = new Set(paper.sections.flatMap((s) => s.questionIds))
+    const term = (query.q ?? '').trim().toLowerCase()
+    const done = new Set<string>()
+    const units: SectionPoolPage['units'] = []
+    for (const qid of this.allQuestionIds()) {
+      const q = getQ(qid)
+      if (!q || done.has(qid) || this.statusOf(qid) !== 'terbit') continue
+      if (q.curriculum.subject !== paper.subject || kertasOf(qid) !== paper.kertas) continue
+      const members = q.groupId ? membersOf(q.groupId) : [qid]
+      members.forEach((m) => done.add(m))
+      const questions = members.map((m) => this.builderQuestion(m))
+      if (term && !questions.some((x) => `${x.preview} ${x.topic} ${x.id}`.toLowerCase().includes(term))) continue
+      units.push({
+        ...(q.groupId ? { groupId: q.groupId } : {}),
+        questionIds: members,
+        questions,
+        marks: questions.reduce((n, x) => n + x.marks, 0),
+        eligible: true,
+        reasons: [],
+        placed: members.some((m) => placed.has(m)),
+      })
+    }
+    const pageSize = query.pageSize ?? 20
+    const page = query.page ?? 1
+    return {
+      units: units.slice((page - 1) * pageSize, page * pageSize),
+      total: units.length,
+      totalPages: Math.max(1, Math.ceil(units.length / pageSize)),
+    }
   }
 
   /** Student-view preview of questions (builder): content only, grouped stimuli resolved. */
