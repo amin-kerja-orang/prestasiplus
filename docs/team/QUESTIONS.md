@@ -73,3 +73,8 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
 - **FE copies (m28 mock/admin):** to team C, REQ-A-035.
 - **Docs:** AC-06.1 and the standards design are updated on the branch.
 
+
+## Q14 (DECIDED 2026-11-02 07:09 MYT by the user, via B1 / REQ-B-059): T38 retries and the syiling/XP cap
+- **Decision:** T38 merges per D94. R1 has **no cross-attempt cap** on syiling or XP.
+- **Accepted known risk:** a blank Cuba Lagi plus a full self-mark can pay up to 2 × max syiling and 10 × max XP per attempt.
+- **Follow-up:** a per-day or per-paper cap is a KIV R2 item (ha24 r1-kiv-r2.md). The T38 deviation row records the accepted risk (A3 docs agent, small docs branch, because T38 is already merged as BASE-112).
