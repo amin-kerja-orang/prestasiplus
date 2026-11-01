@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 import {
   QUESTION_REPORT_DISPLAY_LABELS,
+  QUESTION_REPORT_DAILY_CAP,
   QUESTION_REPORT_FILTERS,
   QUESTION_REPORT_MESSAGES as M,
   type QuestionReportMineView,
@@ -16,7 +17,7 @@ import { PrismaService } from '../../../../db/prisma.service'
 import { NotificationsService } from '../../../notifications'
 import type { WorkflowActor } from '../actor'
 import { QuestionWorkflowPorts, type QuestionBankPort, type QuestionBrief, type QuestionStatusInfo } from '../ports'
-import { REPORT_NOTIFICATION_TYPE, STRUCTURED_DEACTIVATE_AT, reasonLabel, reportCategory } from './reports.constants'
+import { REPORT_NOTIFICATION_TYPE, mytDayStartOf, reasonLabel, reportCategory } from './reports.constants'
 import { ReportsRepository, type ReportRow } from './reports.repository'
 import { validateCreate, validateUpdate } from './reports.validation'
 
@@ -57,25 +58,39 @@ export class QuestionReportsService {
     return this.ports.questionBank
   }
 
-  /** POST /question-reports: the report and its deactivation commit together (BR-M04-11/12). */
+  /**
+   * POST /question-reports. A report never changes the question (REQ-B-031, D98): it goes to Laporan Soalan and an admin decides
+   * (Arkib / Tolak). A pupil (the active role `student`, Mod Pelajar included) reports only a question served to them (REQ-B-046: a structured one needs no further proof).
+   */
   async create(actor: WorkflowActor, body: unknown): Promise<{ success: true; message: string }> {
     const first = validateCreate(body) // shape first: a bad body is 422 before the question is looked up
     const raw = body as { questionType?: unknown }
     const id = idToString(first.questionId)
     return this.prisma.transaction(async () => {
       const info = await this.bank.getStatus(id)
-      // Only a question served to learners (live version, active) can be reported; else as unknown.
-      if (!info || info.liveVersionNo === null || !info.isActive) throw ApiError.of('NOT_FOUND')
+      const live = !!info && info.liveVersionNo !== null && info.isActive
+      const student = actor.role === 'student'
+      // Only a question served to learners (live version, active) can be reported; else as unknown. REP-N1: a pupil without a proof gets
+      // the proof answer (422 context) for a question that is not live, as for a live MCQ, so the answer does not reveal existence.
+      if (!live && !student) throw ApiError.of('NOT_FOUND')
       // The stored type decides the reason set and the deactivation threshold, never the client.
-      const stored: 'mcq' | 'structured' = (await this.bank.describe([id])).get(id)?.type === 'structured' ? 'structured' : 'mcq'
-      if (raw.questionType !== undefined && raw.questionType !== stored) {
+      const stored: 'mcq' | 'structured' = live && (await this.bank.describe([id])).get(id)?.type === 'structured' ? 'structured' : 'mcq'
+      // A type mismatch is told only to a caller that has passed the proof (REP-N1); a Guru has no proof to pass.
+      if (!student && raw.questionType !== undefined && raw.questionType !== stored) {
         throw ApiError.of('VALIDATION_ERROR', { fields: { questionType: M.type } })
       }
       const v = validateCreate({ ...(body as object), questionType: stored })
       const context = await this.contextOf(v.context, actor, id)
+      await this.assertServed(actor, v.quizSessionRef, context !== null, v.questionId, live, stored)
+      if (student && raw.questionType !== undefined && raw.questionType !== stored) {
+        throw ApiError.of('VALIDATION_ERROR', { fields: { questionType: M.type } })
+      }
+      const versionNo = info!.liveVersionNo as number
+      // REQ-B-046: a re-POST of a report this reporter already has is a refresh, not a new report, so the cap does not apply to it.
+      if (!(await this.repo.exists(idFromString(actor.userId), v.questionId, versionNo))) await this.assertUnderDailyCap(actor)
       await this.repo.upsert({
         questionId: v.questionId,
-        questionVersionNo: info.liveVersionNo,
+        questionVersionNo: versionNo,
         questionType: v.questionType,
         reporterId: idFromString(actor.userId),
         reasons: v.reasons,
@@ -87,10 +102,6 @@ export class QuestionReportsService {
         isTest: actor.isTest,
         now: this.clock.now(),
       })
-      // MCQ: inactive at the first report; structured: at the third open report (mock rule, OQ 1).
-      if (v.questionType === 'mcq' || (await this.repo.countOpenStructured(v.questionId)) >= STRUCTURED_DEACTIVATE_AT) {
-        await this.bank.deactivate(id)
-      }
       return { success: true as const, message: M.created }
     })
   }
@@ -109,6 +120,41 @@ export class QuestionReportsService {
       throw ApiError.of('VALIDATION_ERROR', { fields: { paperId: M.paper } })
     }
     return { attemptId: given.attemptId, paperId: a.paperId, paperLabel: a.label.slice(0, 200) }
+  }
+
+  /**
+   * REQ-B-031 / REQ-B-046 (D98): a pupil can report only a question served to them. The proof is the attempt already checked by
+   * `contextOf`, or a practice session of theirs that served the question (`quizSessionId`, unknown and someone else's answer alike).
+   * A live structured question needs no proof: the structured practice keeps no session and the report is offered before the first
+   * submit, so serving it is the proof (the daily cap bounds abuse). A question that is not live gives a pupil the same 422 as an
+   * MCQ without proof. A Guru (Databank guru) is not asked for one; a given session id is still checked.
+   */
+  private async assertServed(actor: WorkflowActor, sessionRef: string | null, hasAttempt: boolean, questionId: bigint, live: boolean, type: 'mcq' | 'structured'): Promise<void> {
+    const me = idFromString(actor.userId)
+    let session = false
+    if (sessionRef !== null) {
+      const s = await this.repo.sessionFacts(sessionRef, questionId)
+      if (!s || s.userId !== me) throw ApiError.of('VALIDATION_ERROR', { fields: { quizSessionId: M.session } })
+      if (!s.holds) throw ApiError.of('VALIDATION_ERROR', { fields: { quizSessionId: M.sessionQuestion } })
+      session = true
+    }
+    if (actor.role !== 'student') return
+    // A pupil whose own proof names the question knows it exists: a question that is no longer live is then a plain 404.
+    if (hasAttempt || session) {
+      if (!live) throw ApiError.of('NOT_FOUND')
+      return
+    }
+    if (live && type === 'structured') return
+    throw ApiError.of('VALIDATION_ERROR', { fields: { context: M.contextRequired } })
+  }
+
+  /** REQ-B-031: at most QUESTION_REPORT_DAILY_CAP new reports per reporter per Malaysia day (429, BM text). */
+  private async assertUnderDailyCap(actor: WorkflowActor): Promise<void> {
+    const since = mytDayStartOf(this.clock.now())
+    await this.repo.lockReporter(idFromString(actor.userId)) // REP-L1: held to the end of the filing transaction
+    if ((await this.repo.countCreatedSince(idFromString(actor.userId), since)) >= QUESTION_REPORT_DAILY_CAP) {
+      throw ApiError.of('RATE_LIMITED', { message: M.dailyCap, retryAfter: Math.max(1, Math.ceil((since.getTime() + 86_400_000 - this.clock.now().getTime()) / 1000)) })
+    }
   }
 
   /** GET /question-reports (admin): not paged, newest first. */
