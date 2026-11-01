@@ -485,7 +485,7 @@ BASE-105 + 11 team A READY API heads + C FE heads (reqa014 dc561730, reqa005 3ee
 **Conflicts B1 will see:** `questions.module.ts` (A4 chain `OverviewWarmer` × REQ-A-018 `QuestionPaperServabilityController`: keep both providers/controllers); `stimuli.repository.ts:112` (t49 deletes the `SERVED_NOW`/`VERSION_SERVED_NOW` constants B-032 added: take t49, no use remains); `v2-backend-deviations.md` (keep both sides); C docs in reqa012 (keep both).
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 20:55 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 20:57 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -506,14 +506,14 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha17-ac-coverage | 157b371c3 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b; head 157b371c |
 | r1/ha18-gate-facts | fc409ae16 | READY (A2, BASE-105): H-A18 + REQ-B-017/037 + D99 + pre-review fixes (M2 held-issues helper on both edit paths; m1 gate-issue codes; deviation row); workflow 296/296; conformance 409/409; B2 + B3 |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
-| r1/ha24-release-input | 633125dd7 | READY (A3 docs, @633125dd): §3.5 B1 merge order + docs/release/r1-nota-keluaran.md (BM release notes; unmerged items [PROPOSED]); B1/B2 |
+| r1/ha24-release-input | 84c282dbe | READY (A3 docs, @84c282db): §3.5 B1 merge order + BM release notes (#4 points at the R1-10.1 row); B1/B2 |
 | r1/ha26-team-a-state | 2cb54cb22 | READY (A3 docs, @2cb54cb2): team-a-r1-state.md only; vs ac-gaps take ha26 side; B2 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-a2 | 8c1964a6f | READY (A2, BASE-105): prefetch crash fixed (awaited Promise.all, failed read → 500, no unhandledRejection; red-first specs); row 908 6 cells; tsc/eslint 0, intake-workflow 137/137; A4 pre-review: Approve; B2 |
 | r1/mock-known-mismatches | a279e68cd | READY (A3, BASE-105): REQ-A-019 base red fixed (7 routes notServed, stale m27 entry removed); conformance 2/2; B2 | A4 pre-review: Approve (nits) |
 | r1/overview-getmany-parallel | 0ba236ef8 | READY (A4): chain 6th; 1334 pass at the tip (only the known base red); B2 |
 | r1/overview-mcq-shape-once | 5a785be84 | READY (A4): chain 5th; B2 |
-| r1/r1-10-1-practice-spec | 5a88b8f8e | READY (A1b + A2, @5a88b8f8, BASE-105; specs + doc only): pins today's practice rewards; A4 pre-review Approve, 11/11 mutations killed; Minors fixed (blank lines, total_balance after replay, typing); per-file DB clone confirmed; 19/19, tsc/eslint 0; characterises current behaviour pending user Q12; B2 |
+| r1/r1-10-1-practice-spec | 488ce41bd | READY (A1b + A2 + A3, @488ce41b, BASE-105; specs + docs): pins today's practice rewards (19 tests, A4 11/11 mutations); deviation row "R1-10.1 practice reward rate (R1 limitation)" (1 syiling/correct; 10 points on the session, never wallet XP; challenge/achievement bonuses may still add XP; kombo once per MYT day); user Q12 open; B2 |
 | r1/r1-chain-qa-a3 | 9b70ae395 | READY (A3, @9b70ae39, BASE-105; spec + step map): A2 MAJOR fixed (key allow-list on the served pupil shape + recursive forbidden-key walk + reason text absent) + Minors (stimulus once exact, same-key replay, exact 12 syiling / 60 XP, Cuba Lagi 2 attempts); mutations red; ignore the unverified REQ ids in the commit message; B2 |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
 | r1/req-b-022a-a4 | d82c52567 | READY (A4): REQ-B-053 + pre-review rows (per-instance warm-up documented; env comment moved); chain 2nd; B2 + B3 + DevOps |
