@@ -479,7 +479,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 ### Head audit 2026-11-01 15:00 UTC (superseded)
 This manual table has been removed because it went stale. **The only current source for team A heads and states is the auto table between the `AUDIT:BEGIN/END` markers at the end of this file.** It is regenerated from `git ls-remote` every cycle.
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 18:13 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 18:23 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -515,14 +515,14 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/seed-dangling-placements | 11cbcf458 | READY (A1b, BASE-105): asserts paper titles + counts = POC_BANK; seed 155 + 1 skip; B2 |
 | r1/stimulus-list-d72 | 1c2c7416a | ON HOLD: pre-review (A3): row split + merge after t49 (A2 resolves the listGroups conflict); do not merge |
 | r1/t04-minors | cc5116213 | ON HOLD: pre-review (A3): FD-11 deviation row + wording → A2; do not merge |
-| r1/t31-builder-wire | eb0346d25 | ON HOLD: pre-review (A2) M1: vue-tsc red alone, so it merges ONLY together with C REQ-A-008 77ffe84d; needs a BASE-105 merge + Minors (stimulusTableParts) → A3 |
+| r1/t31-builder-wire | eb0346d25 | READY (A3, BASE-105): pre-review fixes (stimulusTableParts, D93-skip D9 row, contract text); 441 pass; merges ONLY together with C REQ-A-008 (C must re-merge this new T31 tip); B2 |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t37-r1-runbook | 6544c6855 | READY (A3, BASE-105): runbook incl. the WARM env, 0106/0107 window, pg_trgm, ANALYZE, reverts, T36 demo-host; B2 |
 | r1/t38-selfmark-reward | 13134ced7 | READY (A1b, BASE-105): A3 pre-review CLEAN (concurrency + best-N sound; red proof); B2 delta + B3 |
 | r1/t39-k1-evidence | 1a26f7a60 | check: A3 to confirm state |
 | r1/t40-attempts-acs | 9be88fc7f | ON HOLD: A3 pre-review MAJOR (missing D9 row for R1-02.1 server-side cap) → A1a adds the row (lead: follow V2, the cap is client-side); do not merge |
-| r1/t43-chain-publish | 5ce5894f1 | ON HOLD: needs a BASE-105 merge (A3); after T31 + REQ-A-008 |
+| r1/t43-chain-publish | 238eb6eb0 | READY (A3, on T31 eb0346d2 + BASE-105): 458 pass; after T31 + REQ-A-008; B2 |
 | r1/t43b-publish-acs | 84db7fb20 | ON HOLD: T48 builder-parity spec goes red (21 tests, "Sila pilih bab.") once merged with H-A18; A3 is fixing the giveBab fixture on T48, then restacking; do not merge until the new head |
 | r1/t45-builder-acs | 3001a0b84 | ON HOLD: builder-candidate-search 6 reds with H-A18 (bab gate); A1b adds giveBab after the A3 T48 tip; do not merge |
 | r1/t45-builder-acs-wip | 078204e1c | SUPERSEDED by r1/t45-builder-acs; do not merge |
