@@ -21,8 +21,6 @@ const NO_FILES =
   'Mock side: no /api/files route (404); file storage is a backend service (BE-04) and the mock keeps pictures inline.'
 const NO_BUILDER =
   'Mock side: no Bijak paper builder / blueprint admin routes (404); the contract routes come from BE-37 to BE-39.'
-const NO_PAPER_SERVABILITY =
-  'Mock side: no GET /api/admin/questions/{id}/paper-servability route in this tree (404); r1/reqa018-paper-servability-fe adds it, and its answer then lacks the contract `meta` (REQ-A-026b, see the schema entry to add on that merge).'
 
 /**
  * A route the mock does not serve answers 404, which the runner sees as two violations: an
@@ -35,10 +33,6 @@ const notServed = (scenario: string, reason: string): KnownMismatch[] => [
 ]
 
 export const KNOWN_MISMATCHES: KnownMismatch[] = [
-  // REQ-A-018: the route is not in the mock of this tree, so the 200, 401 and 403 scenarios get 404 (a 404 is a declared answer, so only the assertion fails).
-  { scenario: 'servability/GET /admin/questions/{id}/paper-servability -> 200', kind: 'assertion', reason: NO_PAPER_SERVABILITY },
-  { scenario: 'servability/GET /admin/questions/{id}/paper-servability anonymous -> 401', kind: 'assertion', reason: NO_PAPER_SERVABILITY },
-  { scenario: 'servability/GET /admin/questions/{id}/paper-servability as student -> 403', kind: 'assertion', reason: NO_PAPER_SERVABILITY },
   ...notServed('files/POST /files anonymous -> 401', NO_FILES),
   {
     scenario: 'schools/GET /admin/schools -> 200',
