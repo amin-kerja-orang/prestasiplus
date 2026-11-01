@@ -6,7 +6,7 @@ The flow: admin uploads questions -> approves -> builds a paper -> Terbit -> the
 
 ## 0. How to read this pack
 
-- **Sources.** Step to spec map: `docs/qa/r1-chain-step-map.md` on `origin/r1/r1-chain-qa-a3` @ bc8a0351. Proof rows: `docs/qa/r1-backend-ac-coverage.md` (this branch). UAT SELECTs: `docs/ops/r1-runbook.md` (this branch). Seeds: `apps/api/prisma/seed`. FE routes: `src/modules/m28-bijak-spm/routes*`, `src/modules/m04-question-bank/routes/*`.
+- **Sources.** Step to spec map: `docs/qa/r1-chain-step-map.md` on `origin/r1/r1-chain-qa-a3` @ 9b70ae39. Proof rows: `docs/qa/r1-backend-ac-coverage.md` (this branch). UAT SELECTs: `docs/ops/r1-runbook.md` (this branch). Seeds: `apps/api/prisma/seed`. FE routes: `src/modules/m28-bijak-spm/routes*`, `src/modules/m04-question-bank/routes/*`.
 - **BM messages are copied from code or contract constants** and carry `file:line` on the branch named beside them. A line number is only valid on that branch (or on base when the branch column says "base"). Where a screen shows a text that is not a constant (a flash), the source file is cited the same way.
 - **Nothing here was run for this pack.** Heads were read with `git ls-remote` on the day of writing; specs are named, not executed. The step map reports its own counts (section 2.3).
 - **Never put a real name, a secret or a production login in a bug report.** Use the seeded fictitious accounts below.
@@ -54,14 +54,14 @@ Heads from `git ls-remote origin refs/heads/r1/<branch>` on the day of writing. 
 | `r1/t51-partial-acs-a3` | 61c1b077 | chain steps for the partial ACs; A11 paper quiz view | contains T43 and T31; same pairing; merge **after** T43 |
 | `r1/t43b-publish-acs` | 7a14581a | PIPE AC-07.4 to 07.9 (publish checks, withdraw keeps attempts, pinned snapshot) | independent leaf on T48; needs T48 6c5ae3a8 |
 | `r1/t44-blueprint-fields` | 072d8f4b | Kontrak admin fields (autoMarkable, origin filter, note gate, Markah skema); contains H-A15 | none |
-| `r1/reqb032-pinned-rule` / `r1/reqb052-archived-edit` | a2cb5bb4 / f3a2448f | a sitting is served the pinned version; an archived or restored question is never rewritten in place | reqb052 contains reqb032 and H-A18 fc409ae1 |
+| `r1/reqb052-archived-edit` | f3a2448f | an archived or restored question is never rewritten in place when a Terbit paper pins it (separate from the chain specs; not part of the B4 chain steps) | contains `r1/reqb032-pinned-rule` a2cb5bb4 and H-A18 fc409ae1 |
 | `r1/t45-servability-acs` | 954614c6 | Terbitkan notice and refusal when a question is unservable (AC-05.3), indicators fresh (AC-04.5), paper servability (AC-04.3) | none; `r1/reqa018-paper-servability-route` @ 2f5a85e7 merges after it |
 | `r1/a4chain-minors` | 6f2fb793 | exact BM reasons and the HTTP route case for the Terbitkan refusal | contains the T45 specs |
 | `r1/t52-examiner-grid` | 5a0d7bd0 | cover "Untuk Kegunaan Pemeriksa" only when a part is marked by a person (AC-20.3) | none |
 | `r1/t38-selfmark-reward` / `r1/t40-attempts-acs` | 13134ced / 31a684ed | **the self-mark reward** (D94: 2 Syiling + 10 XP per mark gained, once per level, never above the part's marks) and the attempts ACs (pick cap advisory, best N, band midpoint) | t40 contains t38 |
-| `r1/chain-qa-bab-3a-a3` | 8c908c79 | chain spec for the Bab gate: Semakan without a Bab is refused per row and nothing moves, then passes once the Bab is given (`ci` 3a) | merges after `r1/ha18-gate-facts` fc409ae1 and `r1/chain-qa-selfmark-a3`; it contains both |
-| `r1/chain-qa-selfmark-a3` | a92cb32d | chain spec: a self-marked structured question earns the self-mark reward once per level | needs T38 |
-| `r1/r1-chain-qa-a3` | bc8a0351 | `test/r1/chain-intake-to-pupil.spec.ts` (intake figure group -> approve -> builder -> Terbit -> pupil -> Cuba Lagi) and the step map; based on BASE-105 alone, 10/10 there | none |
+| `r1/chain-qa-bab-3a-a3` | 0efba36c | chain spec for the Bab gate: Semakan without a Bab is refused per row and nothing moves, then passes once the Bab is given (`ci` 3a) | merges after `r1/ha18-gate-facts` fc409ae1 and `r1/chain-qa-selfmark-a3`; it contains both |
+| `r1/chain-qa-selfmark-a3` | 5b93da43 | chain spec: a self-marked structured question earns the self-mark reward once per level | needs T38 |
+| `r1/r1-chain-qa-a3` | 9b70ae39 | `test/r1/chain-intake-to-pupil.spec.ts` (intake figure group -> approve -> builder -> Terbit -> pupil -> Cuba Lagi) and the step map; based on BASE-105 alone | none |
 | `r1/intake-reqs-a2` | 8c1964a6 | intake: an unknown SP code is refused at accept; review-queue group badge | none |
 | `r1/reqb049-report-visible` | 9ece8d76 | Lapor before the first submit on a structured question (Q11) | none |
 | `r1/t49-served-now` + `r1/stimulus-list-d72` | 8cb9fa5f / b45ce519 | Studio stimulus and group lists (D72 hiding, `joinable`, Negeri options) | d72 already contains t49; they merge cleanly in either order |
@@ -69,8 +69,8 @@ Heads from `git ls-remote origin refs/heads/r1/<branch>` on the day of writing. 
 | `r1/t04-minors` | 8ae70d6e | Bab card and "Soalan by Chapter" tile count ungrouped, chaptered, approved questions only (FD-11) | none |
 | `r1/mock-known-mismatches` | a279e68c | frontend-mock conformance check green | none |
 
-- **`r1/chain-qa-bab-3a-a3` @ 8c908c79** is the chain step for the Bab gate: `chain-qa-selfmark-a3` a92cb32d plus H-A18 fc409ae1 (`--no-ff`), and the test `ci :: "3a. H-A18: Semakan without a Bab is refused per row with \"Sila pilih bab.\" and nothing moves (step 3 then gives the Bab and the same Semakan passes)"` in `apps/api/test/r1/chain-intake-to-pupil.spec.ts`. It merges **after H-A18 and `chain-qa-selfmark-a3`**. A3 reports 642 passed, 0 failed on it, and the chain spec 11/11 (not re-run for this pack). The per-row Bab specs remain (`gate-facts.spec.ts` 9, `lifecycle-bulk.spec.ts`).
-- **Recommended test stack** (the one the A3 chain QA verified, merge order, all `--no-ff`): `reqc021-followup` -> `ha18-gate-facts` -> `req-c012-a2` -> `reqb032-pinned-rule` -> `reqb052-archived-edit` -> T48 -> T43b -> `builder-search-perf` -> T51. The heads in the step map were older for some of these than in the table above; re-read section 2.2 when you build.
+- **`r1/chain-qa-bab-3a-a3` @ 0efba36c** is the chain step for the Bab gate: `chain-qa-selfmark-a3` 5b93da43 plus H-A18 fc409ae1 (`--no-ff`), and the test `ci :: "3a. H-A18: Semakan without a Bab is refused per row with \"Sila pilih bab.\" and nothing moves (step 3 then gives the Bab and the same Semakan passes)"` in `apps/api/test/r1/chain-intake-to-pupil.spec.ts`. It merges **after H-A18 and `chain-qa-selfmark-a3`**. A3 reports 642 passed, 0 failed on it, and the chain spec 11/11 (not re-run for this pack). The per-row Bab specs remain (`gate-facts.spec.ts` 9, `lifecycle-bulk.spec.ts`).
+- **Building a test stack.** The A3 chain QA ran on a local, never-pushed stack over BASE-105 (list and counts in `docs/qa/r1-chain-step-map.md` on `r1/r1-chain-qa-a3`). Do not copy its order from here: build the stack from the prerequisites in this section (T48 -> T31 -> T43 -> T51 with REQ-A-008; H-A18 before the Bab and selfmark chain branches; T38 for the self-mark reward) and re-read the heads in the table above.
 - **T31, T43 and T51 do not go in without REQ-A-008.** Do not report the `http-admin.ts:202` type error as a defect of the flow.
 
 ### 2.3 What the specs already prove on that stack (from the step map)
@@ -104,7 +104,7 @@ Legend. **FE** = screen route (the SPA). **API** = `/api/...` route. **Msg** = e
   - `Sila pilih subjek.` (:19) and `Sila pilih tahap pendidikan.` (:20), same file
   - summary `Soalan belum memenuhi syarat untuk dihantar semakan.` (`GATE_SUMMARY.submit`, same file :29)
 - **Delivered by:** `r1/ha18-gate-facts` (chain proof: `r1/chain-qa-bab-3a-a3`). **On base alone, Semakan does not ask for a Bab.**
-- **Spec:** `questions-workflow/gate-facts.spec.ts :: "9. the bulk Semakan runs the submit gate per row: a refused draft is a failed[] entry, a clean one moves"` (noChapter case); `questions-workflow/lifecycle-bulk.spec.ts :: "moves the passing questions and reports the rest with code and fields"`; `gates.spec.ts` "chapter set" row (all on H-A18). Chain: `ci :: "3a. H-A18: Semakan without a Bab is refused per row with \"Sila pilih bab.\" and nothing moves (step 3 then gives the Bab and the same Semakan passes)"` on `r1/chain-qa-bab-3a-a3` @ 8c908c79, then `ci :: "3. the admin approves them: Semakan then Terbit pass the gates (T33 …; the Bab is given where the H-A18 gate asks for it)"`.
+- **Spec:** `questions-workflow/gate-facts.spec.ts :: "9. the bulk Semakan runs the submit gate per row: a refused draft is a failed[] entry, a clean one moves"` (noChapter case); `questions-workflow/lifecycle-bulk.spec.ts :: "moves the passing questions and reports the rest with code and fields"`; `gates.spec.ts` "chapter set" row (all on H-A18). Chain: `ci :: "3a. H-A18: Semakan without a Bab is refused per row with \"Sila pilih bab.\" and nothing moves (step 3 then gives the Bab and the same Semakan passes)"` on `r1/chain-qa-bab-3a-a3` @ 0efba36c, then `ci :: "3. the admin approves them: Semakan then Terbit pass the gates (T33 …; the Bab is given where the H-A18 gate asks for it)"`.
 
 ### Step 3. Terbitkan (review -> approved)
 
@@ -165,8 +165,13 @@ Legend. **FE** = screen route (the SPA). **API** = `/api/...` route. **Msg** = e
 - **FE:** `/spm/bijak/percubaan/:attemptId`.
 - **API:** `POST /api/bijak/attempts` `{paperId, mode:'exam'}`, `GET /api/bijak/attempts/{id}`, `PUT /api/bijak/attempts/{id}/answers` (autosave), `GET /api/bijak/papers/{paperId}/in-progress`.
 - **Msg:** `Percubaan tidak ditemui` (`attempts/schema.ts:33`); a new sitting of a paper that places an archived question: 403 `Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini.` (`attempts/schema.ts:51`).
-- **Rules to eyeball:** the group stimulus appears once above both members; no answer key in the payload; the image file is readable by the pupil only once its question is live.
-- **Spec:** `pc :: "starts an attempt: the group stimulus is served ONCE with both members; no answer key leaks"`; `pc :: "the group image file is readable by the pupil once its member question is live (R1-B20) …"`; `ci :: "7. the pupil sees the paper and starts it: the figure stimulus is served ONCE with both members and a readable image; no key leaks"`; `r1/pinned-version-rule.spec.ts :: "a new version is approved (version 1 is superseded): the sitting keeps version 1, and so does its grading"` (REQ-B-032).
+- **Rules to eyeball:** the group stimulus appears once above both members, on the group and never on a question; the image file is readable by the pupil only once its question is live.
+- **No key leaks, as the chain spec now proves it (an allow-list, `ci` 7):**
+  - a served question may carry only the keys `formOrigin`, `id`, `marks`, `mcq`, `number`, `sectionId`, `stem`, `topic`, plus `groupId` on a member of a stimulus group; `mcq` holds only `options`;
+  - an option may carry only `{id, text, image}`;
+  - a recursive scan of the whole payload finds no key named like `correct`, `answer`, `key`, `scheme`, `reason`, `solution`, `model`, `explain` or `rubric` (the pupil's own `answers` is excluded), the correct option id appears only as an option `id`, and the scheme's reason text is absent.
+  A new field on a pupil question, or a renamed answer key, fails that test.
+- **Spec:** `pc :: "starts an attempt: the group stimulus is served ONCE with both members; no answer key leaks"`; `pc :: "the group image file is readable by the pupil once its member question is live (R1-B20) …"`; `ci :: "7. the pupil sees the paper and starts it: the figure stimulus is served ONCE with both members and a readable image; no key leaks"`.
 
 ### Step 9. Hantar (submit) and the result
 
@@ -174,7 +179,7 @@ Legend. **FE** = screen route (the SPA). **API** = `/api/...` route. **Msg** = e
 - **FE:** button "Hantar" (`AttemptPage.vue:663`), result `/spm/bijak/percubaan/:attemptId/keputusan`.
 - **API:** `POST /api/bijak/attempts/{id}/submit` (idempotent), `GET /api/bijak/attempts/{id}/result`.
 - **Msg:** before Hantar the scheme is hidden: `Skema hanya didedahkan selepas Hantar` (`attempts/schema.ts:37`); `Percubaan sudah tamat` (:38).
-- **Reward:** one `quiz_spm` ledger row per attempt (2 Syiling per mark), XP 10 per mark once, streak (kombo) touched; none for `latihan`, an abandoned attempt, or the admin in Mod Pelajar. **The amounts for Latih Tubi and Databank sessions are still open (section 5).**
+- **Reward:** one `quiz_spm` ledger row per attempt (2 Syiling per mark), XP 10 per mark once, streak (kombo) touched. On the chain paper (6 marks) `ci` 8b asserts exactly **12 Syiling in one ledger row** and an **XP delta of 60**, and that a replay of the same key, or another key, adds nothing; none for `latihan`, an abandoned attempt, or the admin in Mod Pelajar. **The amounts for Latih Tubi and Databank sessions are still open (section 5).**
 - **Spec:** `pc :: "answers every question and submits"`; `pc :: "sees the result: MCQs auto-marked, the structured part waits for self-mark with a suggestion"`; `bijak-integration/flow.spec.ts :: "3. credits the wallet once …"` and `"3b. adds the XP … touches the streak"`; `ci :: "8. …"` and `"8b. the submit paid the reward ONCE on this bank paper …"`.
 
 ### Step 10. Semakan: Markah kendiri (self-mark)
@@ -184,7 +189,7 @@ Legend. **FE** = screen route (the SPA). **API** = `/api/...` route. **Msg** = e
 - **API:** `POST /api/bijak/attempts/{id}/self-mark` `{partId, mark, band?}`.
 - **Msg:** `Bahagian ini tiada dalam kertas ini.` (`attempts/schema.ts:42`), `Bahagian ini ditanda automatik; markah kendiri tidak diperlukan.` (:43), `Band tidak sah untuk bahagian ini.` (:44), `Bahagian ini tidak menggunakan band.` (:45); before Hantar: 409 `NOT_SUBMITTED` with `Skema hanya didedahkan selepas Hantar`.
 - **Reward:** a later self-mark that raises the score pays 2 Syiling + 10 XP per mark gained, once per level, never above the part's marks (D94). **This needs `r1/t38-selfmark-reward` @ 13134ced. On base (and on the A3 stack) a self-mark pays nothing extra.**
-- **Spec:** `pc :: "self-marks the structured part (b12) and the total is recomputed"`; `bijak-attempts/self-mark.spec.ts` (R1-B12 cases; "records the change to the performance aggregate (regraded) … without a second reward" is the base behaviour); with T38: `r1/chain-qa-selfmark-a3` @ a92cb32d `pc :: "T38: a self-marked structured question earns the self-mark reward once per level; a replayed or lower self-mark adds nothing"`; `bijak-integration/rewards.spec.ts` (D94).
+- **Spec:** `pc :: "self-marks the structured part (b12) and the total is recomputed"`; `bijak-attempts/self-mark.spec.ts` (R1-B12 cases; "records the change to the performance aggregate (regraded) … without a second reward" is the base behaviour); with T38: `r1/chain-qa-selfmark-a3` @ 5b93da43 `pc :: "T38: a self-marked structured question earns the self-mark reward once per level; a replayed or lower self-mark adds nothing"`; `bijak-integration/rewards.spec.ts` (D94).
 
 ### Step 11. Cuba Lagi
 
@@ -273,7 +278,7 @@ The UAT before/after numbers themselves are ops evidence; the runbook only fixes
 
 - **R1-10.1 rates are pending the user (Q1 to Q3).** The repo documents only that V2's `PracticeRecorder` pays 2 Syiling and 10 XP per correct unit on a paper submit (`docs/discovery/BIJAK-SPM-cloud.md:347`). Still unknown: the V2 rate for Latih Tubi and Databank sessions (ours is 1 per correct, `practice/rules.ts:60`; V1 observed 1), and the V2 kombo step. Do not file the Latih Tubi / Databank syiling amount as a defect until the answers are in; coverage row `AC-R1-10.1` stays `partial`.
 - **The self-mark reward needs T38** (`r1/t38-selfmark-reward` @ 13134ced; `r1/t40-attempts-acs` contains it). Without it a later self-mark changes the score but pays nothing.
-- **The Bab gate needs H-A18** (`r1/ha18-gate-facts` @ fc409ae1). Without it Semakan does not ask for a Bab and "Sila pilih bab." never appears. The chain spec for it is `ci :: "3a. …"` on `r1/chain-qa-bab-3a-a3` @ 8c908c79 (merge after H-A18 and `chain-qa-selfmark-a3`).
+- **The Bab gate needs H-A18** (`r1/ha18-gate-facts` @ fc409ae1). Without it Semakan does not ask for a Bab and "Sila pilih bab." never appears. The chain spec for it is `ci :: "3a. …"` on `r1/chain-qa-bab-3a-a3` @ 0efba36c (merge after H-A18 and `chain-qa-selfmark-a3`).
 - **T31, T43 and T51 merge only with REQ-A-008** (`r1/reqa008-group-stimulus` @ 29d24be9); order T48 -> T31 -> T43 -> T51; T43b is an independent leaf after T48.
 - **AC-R1-18.1 stays partial:** the Latihan Bab step is named (`questions/chapter-practice.spec.ts :: "AC-18.1 Latihan Bab: …"`) but the full clean-DB chain with the Bab activity is not one spec.
 - **AC-R1-11.4 and AC-R1-12.6 are partial** until the UAT run (section 4.3).
