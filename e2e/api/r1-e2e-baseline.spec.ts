@@ -720,10 +720,13 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
       `"${q2}",8,9,7,6,B,2,1`,
     ].join('\n')
     await login(page, ADMIN)
-    // DIAGNOSTIC ONLY (default off): R1_E2E_DIAG_S1B_DIRECT=1 opens the CSV import page by URL. With T10 (R1-F09, BS-02) the menu entry
-    // "Import & Semakan" opens the batch list (/admin/spm/soalan/ekstrak), not the CSV page. The graded run never sets it.
-    if (process.env.R1_E2E_DIAG_S1B_DIRECT === '1') await page.goto('/admin/questions/import')
-    else await adminMenu(page, 'Import & Semakan')
+    // V2 I1 (R1-F09, commit 524887207): the menu entry BS-02 "Import & Semakan" opens the batch list (same screen as KS-14
+    // "Senarai Ekstrak"), deliberately. The CSV import page is reached by its real route.
+    await adminMenu(page, 'Import & Semakan')
+    await expect(page, 'BS-02 opens the batch list').toHaveURL(/\/admin\/spm\/soalan\/ekstrak$/)
+    await expect(page.getByTestId('intake-list-page')).toBeVisible()
+    await expectNoHScroll(page)
+    await page.goto('/admin/questions/import')
     await expect(page.getByTestId('import-page')).toBeVisible()
     await expectNoHScroll(page)
     await page.getByTestId('import-file').setInputFiles({
@@ -1881,10 +1884,12 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
   }
 
   /**
-   * Terbitkan on the paper editor; records the server verdict. Returns true when published.
-   * T34 (AC-R1-16.2 / R1E2E-07): Matematik K1 blueprint 1449/1 is Spec, not Disahkan, so the first Terbitkan is refused with
-   * a BLUEPRINT_NOT_VERIFIED blocker (`canOverride: true`). The documented audited-override path then publishes it.
-   * `R1_E2E_T34=0` runs against a base without T34 (the first press publishes); `requireRefusal` asserts the refusal.
+   * Terbitkan on the paper editor (T10 flow, R1-F09 / REQ-B-054); records the server verdict. Returns true when published.
+   * T34 (AC-R1-16.2 / R1E2E-07): Matematik K1 blueprint 1449/1 is Spec, not Disahkan. The editor then (1) disables the plain
+   * Terbitkan, (2) shows the reason under the budget line in `publish-errors` ("Kontrak ... belum Disahkan"), and (3) offers the
+   * audited override: tick, reason (5+ characters), "Terbitkan walaupun tidak memenuhi kontrak", then the confirm dialog.
+   * A refused plain publish (no override) is checked on the wire (`blockerDetails`, `canOverride`) and changes nothing.
+   * `R1_E2E_T34=0` runs against a base without T34 (the plain Terbitkan is enabled and publishes after the confirm).
    */
   async function publishPaper(
     page: Page,
@@ -1895,94 +1900,66 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     await page.goto(`/admin/spm/kertas/${id}`)
     await expect(page.getByTestId('paper-editor-page')).toBeVisible()
     const publish = page.getByTestId('paper-publish')
-    // DIAGNOSTIC ONLY (default off): R1_E2E_DIAG_T10_UI=1 follows the T10 (R1-F09/REQ-B-054) editor: a not-Disahkan blueprint
-    // disables the plain Terbitkan, shows the reason in `publish-errors`, and offers the override tick + reason + confirm.
-    // The graded run never sets it (it expects the pre-T10 plain Terbitkan).
-    if (process.env.R1_E2E_DIAG_T10_UI === '1') {
-      await expect(publish, 'Terbitkan present on a draft paper').toBeVisible()
-      if (await publish.isDisabled()) {
-        await expect(page.getByTestId('publish-errors'), 'T10: reason shown up front').toContainText('belum Disahkan')
-        await expect(page.getByTestId('publish-override'), 'T10: override offered').toBeVisible()
-        observe(info, 'DIAG T10: plain Terbitkan disabled, reason shown, override offered')
-        await expectNoHScroll(page)
-        await page.getByTestId('override-tick').click()
-        await page.getByTestId('override-reason').fill('Kontrak masih Spec, kertas ujian dalaman')
-        await page.getByTestId('override-publish').click()
-      } else {
-        await publish.click()
-      }
-      await page.locator('[data-ds=confirm-ok]').click()
-      await expect(page.getByTestId('paper-unpublish'), 'published (T10 UI path)').toBeVisible({ timeout: 20_000 })
-      await expectNoHScroll(page)
-      return true
-    }
-    await expect(publish, 'Terbitkan shown on a draft paper').toBeEnabled()
-    const posted = page
-      .waitForResponse(
+    await expect(publish, 'Terbitkan present on a draft paper').toBeVisible()
+    const gated = T34 && /1449\/1/.test(await page.getByTestId('paper-editor-page').innerText())
+    const publishPosted = () =>
+      page.waitForResponse(
         (r) =>
-          r.request().method() !== 'GET' && /\/api\/admin\/papers\/[^/]+\/publish/.test(r.url()),
+          r.request().method() === 'POST' && /\/api\/admin\/papers\/[^/]+\/publish/.test(r.url()),
         { timeout: 20_000 },
       )
-      .catch(() => null)
-    await publish.click()
-    const res = await posted
-    const text = res ? await res.text().catch(() => '') : ''
-    observe(
-      info,
-      `publish -> ${res ? `HTTP ${res.status()} ${text.slice(0, 240)}` : 'no request seen'}`,
-    )
-    await expect(
-      page.getByTestId('paper-unpublish').or(page.getByTestId('publish-errors')).first(),
-    ).toBeVisible({ timeout: 20_000 })
-    await expectNoHScroll(page)
-    if (await page.getByTestId('paper-unpublish').isVisible()) {
+    if (gated) {
+      // (1) + (2): the plain button is disabled and the reason is shown up front.
+      await expect(publish, 'T34: plain Terbitkan disabled for a Spec (not Disahkan) blueprint').toBeDisabled()
+      await expect(page.getByTestId('publish-errors'), 'Kontrak ... belum Disahkan').toContainText('belum Disahkan')
+      await expect(page.getByTestId('publish-override'), 'audited override offered').toBeVisible()
+      await expectNoHScroll(page)
+      // Wire shape (apps/api builder/blockers.ts `blockerView`): `data.blockerDetails[] = {code, message, overridable}` and a
+      // top-level `data.canOverride`. A plain publish is refused (ok:false) and changes nothing.
+      const csrf = await csrfOf(page)
+      const plain = await page.request.post(`/api/admin/papers/${id}/publish`, {
+        headers: { 'x-csrf-token': csrf },
+        data: {},
+      })
+      type Detail = { code?: string; overridable?: boolean }
+      const body = ((await plain.json().catch(() => ({}))) as {
+        data?: { ok?: boolean; blockerDetails?: Detail[]; canOverride?: boolean }
+      }).data
+      observe(info, `plain publish (API) -> HTTP ${plain.status()} ok=${String(body?.ok)}`)
+      expect(body?.ok, 'a plain publish of a not-Disahkan blueprint is refused').toBe(false)
+      const d = body?.blockerDetails?.find((x) => x.code === 'BLUEPRINT_NOT_VERIFIED')
+      expect(d, 'blockerDetails has BLUEPRINT_NOT_VERIFIED').toBeTruthy()
+      expect(d?.overridable, 'BLUEPRINT_NOT_VERIFIED overridable').toBe(true)
+      expect(body?.canOverride, 'publish refusal canOverride').toBe(true)
+      // (3): the UI override.
+      await page.getByTestId('override-tick').click()
+      await page.getByTestId('override-reason').fill('Kontrak masih Spec, kertas ujian dalaman')
+      const posted = publishPosted()
+      await page.getByTestId('override-publish').click()
+      await page.locator('[data-ds=confirm-ok]').click()
+      const res = await posted
+      const text = await res.text().catch(() => '')
+      observe(info, `publish override (UI) -> HTTP ${res.status()} ${text.slice(0, 200)}`)
+      expect(res.status(), 'override publish status').toBeLessThan(300)
+      expect(text, 'override publish reports ok and what it overrode').toMatch(/"ok":true/)
+      expect(text, 'override publish lists the overridden blocker').toMatch(/belum Disahkan/)
+    } else {
       expect(
         opts.requireRefusal && T34,
         'T34: the first Terbitkan of a Spec (not Disahkan) blueprint must be refused',
       ).toBeFalsy()
-      return true
+      await expect(publish, 'Terbitkan enabled on a complete draft paper').toBeEnabled()
+      const posted = publishPosted()
+      await publish.click()
+      await page.locator('[data-ds=confirm-ok]').click()
+      const res = await posted
+      observe(info, `publish -> HTTP ${res.status()} ${(await res.text().catch(() => '')).slice(0, 200)}`)
     }
-    // Refused: the blocker line, and (when the payload is reachable) the machine-readable detail.
-    if (T34 && /1449\/1/.test(await page.getByTestId('paper-editor-page').innerText())) {
-      // DIAGNOSTIC ONLY (default off): R1_E2E_DIAG_SKIP_REASON_TEXT=1 skips this assertion so the downstream steps can be observed
-      // while the refusal reason is not shown in the UI (BASE-102 finding R1E2E-C5). The graded run never sets it.
-      if (process.env.R1_E2E_DIAG_SKIP_REASON_TEXT === '1') {
-        observe(info, 'DIAG: refusal reason text assertion skipped (R1E2E-C5)')
-        await expect(page.getByTestId('publish-errors')).toBeVisible()
-      } else {
-        await expect(page.getByTestId('publish-errors'), 'Kontrak ... belum Disahkan').toContainText('belum Disahkan')
-      }
-      // Wire shape (apps/api builder/blockers.ts `blockerView`): `data.blockerDetails[] = {code, message, overridable}` and a
-      // top-level `data.canOverride`. (Harness fix, BASE-102: the spec read `canOverride` on each detail, which never carries it.)
-      type Detail = { code?: string; overridable?: boolean }
-      type Body = { blockerDetails?: Detail[]; canOverride?: boolean }
-      const parsed = (() => {
-        try {
-          const j = JSON.parse(text) as { data?: Body } & Body
-          return (j.data ?? j) as Body
-        } catch {
-          return {} as Body
-        }
-      })()
-      const details = parsed.blockerDetails
-      if (details) {
-        const d = details.find((x) => x.code === 'BLUEPRINT_NOT_VERIFIED')
-        expect(d, 'blockerDetails has BLUEPRINT_NOT_VERIFIED').toBeTruthy()
-        expect(d?.overridable, 'BLUEPRINT_NOT_VERIFIED overridable').toBe(true)
-        expect(parsed.canOverride, 'publish refusal canOverride').toBe(true)
-      } else {
-        observe(info, 'blockerDetails not in the publish response body (not asserted)')
-      }
-      // TODO(T10): switch to the UI tick "Terbitkan walaupun tidak memenuhi kontrak blueprint" when T10 lands.
-      const ov = await publishPaperWithOverride(page, id)
-      observe(info, `publish override (API-assisted) -> HTTP ${ov.status} ${JSON.stringify(ov.data).slice(0, 160)}`)
-      expect(ov.status, 'override publish status').toBeLessThan(300)
-      expect(ov.data.ok === true || ov.data.overridden === true, 'override publish ok/overridden').toBe(true)
-      await page.reload()
-      await expect(page.getByTestId('paper-unpublish'), 'published after override').toBeVisible({ timeout: 20_000 })
-      await expectNoHScroll(page)
-    }
-    return page.getByTestId('paper-unpublish').isVisible()
+    await expect(page.getByTestId('paper-unpublish'), 'published: Tarik balik offered').toBeVisible({
+      timeout: 20_000,
+    })
+    await expectNoHScroll(page)
+    return true
   }
 
   /** The pupil opens the paper from the Bijak SPM hub, presses Mula, answers every MCQ, Hantar. */
