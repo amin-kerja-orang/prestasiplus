@@ -55,3 +55,4 @@
 | REQ-A-018 (update 2026-11-02 04:06) | FE "Dilihat murid di" done and verified (detail page 3 widths); Studio copy unit-tested only | C3 | r1/reqa018-paper-servability-fe @ e6d964621 | DELIVERED (READY-FOR-REVIEW; merge after the A route branch) |
 | REQ-A-021 (update 2026-11-02 04:12) | Filter-bulk UI built (incl. 375 "Lagi Tindakan"), blank filter keys never sent, 422 shown | C4 | r1/reqa021-bulk-filter @ 1cbbeb574 | DELIVERED (READY-FOR-REVIEW) |
 | REQ-A-023 (update 2026-11-02 04:21) | FE done: AI draft notice + link; 409 deleteRefused shown (single) and failed[] CONFLICT rows (bulk); merge after r1/delete-served-guard | C3 | r1/reqa023-ai-draft-delete-409 @ bbb507ea8 | DELIVERED (READY-FOR-REVIEW) |
+| REQ-A-022 (update 2026-11-02 04:21) | Done on the hub branch: 4 statuses with labels (Sedia / Ditarik balik [PROPOSED]) | C2 | r1/reqb041-hub-cards @ 151648eb2 | DELIVERED (READY-FOR-REVIEW; merge after r1/req-b-033) |
