@@ -295,6 +295,51 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
       expect(own.status, JSON.stringify(own.body)).toBe(200)
     })
 
+    // B3 T34-L1-residual: a list that is left unchanged never fails; a legacy decimal id already on the paper is rewritten to its token.
+    it('Bahan rujukan: a legacy decimal id already on the paper is kept as the token on save; a decimal id that is not on the paper is still refused', async () => {
+      const paper = await newPaper()
+      const up = await admin.upload('/api/files?purpose=question_image', makePng())
+      const token = up.body.data.id as string
+      const internal = String((await q(`select id::text id from files where public_id = $1`, [token]))[0]!.id)
+      await q(`update papers set reference_sheets = $2::jsonb where id = $1`, [paper, JSON.stringify([{ title: 'Rajah', items: ['a'], imageFileId: internal }])])
+      const saved = await admin.put(`/api/admin/papers/${paper}`, { reference: [{ title: 'Rajah', items: ['a'], imageFileId: internal }] })
+      expect(saved.status, JSON.stringify(saved.body)).toBe(200)
+      expect((await q(`select reference_sheets->0->>'imageFileId' ref from papers where id = $1`, [paper]))[0]?.ref).toBe(token)
+      // a second paper that does not hold the id
+      const other = await newPaper()
+      const refused = await admin.put(`/api/admin/papers/${other}`, { reference: [{ title: 'Rajah', items: [], imageFileId: internal }] })
+      expect(refused.status).toBe(422)
+      expect(refused.body.error.fields.reference).toBe(MSG.referenceImageInvalid)
+    })
+
+    it('a sheet picture that a teacher uploaded (stored before the write rule) is a hard REFERENCE_IMAGE_INVALID at Terbit', async () => {
+      const { paper } = await fullPaper()
+      const teacher = await loginFull(t, ACCOUNTS.teacher)
+      const foreign = (await teacher.upload('/api/files?purpose=question_image', makePng())).body.data.id as string
+      await q(`update papers set reference_sheets = $2::jsonb where id = $1`, [paper, JSON.stringify([{ title: 'Rajah', items: [], imageFileId: foreign }])])
+      const review = (await admin.get(`/api/admin/papers/${paper}/review`)).body.data
+      expect(review.blockerDetails.find((b: { code: string }) => b.code === 'REFERENCE_IMAGE_INVALID')).toMatchObject({ overridable: false })
+      const forced = await admin.post(`/api/admin/papers/${paper}/publish`, { override: true, reason: 'sebab yang sah' })
+      expect(forced.body.data.ok).toBe(false)
+    })
+
+    it('migration 0110 rewrites a decimal imageFileId on papers and blueprints to the public token and leaves other panels alone', async () => {
+      const { readFileSync } = await import('node:fs')
+      const sql = readFileSync(new URL('../../prisma/migrations/0110_reference_image_tokens/migration.sql', import.meta.url), 'utf8')
+      const paper = await newPaper()
+      const up = await admin.upload('/api/files?purpose=question_image', makePng())
+      const token = up.body.data.id as string
+      const internal = String((await q(`select id::text id from files where public_id = $1`, [token]))[0]!.id)
+      await q(`update papers set reference_sheets = $2::jsonb where id = $1`, [
+        paper,
+        JSON.stringify([{ title: 'A', items: [] }, { title: 'B', items: ['x'], imageFileId: internal }, { title: 'C', items: [], imageFileId: '99999999999' }, { title: 'D', items: [], imageFileId: token }]),
+      ])
+      await q(sql)
+      const refs = (await q(`select jsonb_path_query_array(reference_sheets, '$[*].imageFileId') r from papers where id = $1`, [paper]))[0]?.r
+      expect(refs).toEqual([token, '99999999999', token])
+      expect((await q(`select reference_sheets->0 s from papers where id = $1`, [paper]))[0]?.s).toEqual({ title: 'A', items: [] })
+    })
+
     // B3 T34-L3: a panel is bounded (title 200, 20 items of 500 characters), so a reference sheet cannot be used to store a blob.
     it('Bahan rujukan: an over-long title, too many items or an over-long item are refused', async () => {
       const paper = await newPaper()

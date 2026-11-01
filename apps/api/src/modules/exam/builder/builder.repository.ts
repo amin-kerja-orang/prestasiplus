@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common'
 
 import type { Blueprint, BlueprintSection, Paper, PaperPlacement, PaperSection, Prisma } from '../../../db/generated/client'
 import { PrismaService } from '../../../db/prisma.service'
-import { storedReferenceImages, writableReferenceImages } from '../reference-images'
+import { storedReferenceImages, writableReferenceSheet } from '../reference-images'
 
 export type PaperTree = Paper & { sections: (PaperSection & { placements: PaperPlacement[] })[] }
 export type BlueprintWithSections = Blueprint & { sections: BlueprintSection[] }
@@ -181,12 +181,12 @@ export class BuilderRepository {
     await this.prisma.client.paperSection.update({ where: { id }, data })
   }
 
-  /** See `exam/reference-images`: the refs that may stay on a sheet written by this admin. */
-  existingImages(refs: readonly string[], ownerUserId: bigint, onPaper: readonly string[]): Promise<Set<string>> {
-    return writableReferenceImages(this.prisma.client, refs, ownerUserId, onPaper)
+  /** See `exam/reference-images`: the sheet to store for a write by this admin, or null when a picture is refused. */
+  writableSheet<P extends { imageFileId?: string | undefined }>(sheet: readonly P[], ownerUserId: bigint, onPaper: readonly string[]): Promise<P[] | null> {
+    return writableReferenceSheet(this.prisma.client, sheet, ownerUserId, onPaper)
   }
 
-  /** The refs that are a token naming a stored question image: the re-check at Terbit. */
+  /** The refs that are a token naming a stored question image uploaded by an admin: the re-check at Terbit. */
   storedImages(refs: readonly string[]): Promise<Set<string>> {
     return storedReferenceImages(this.prisma.client, refs)
   }

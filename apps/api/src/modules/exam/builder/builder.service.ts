@@ -331,14 +331,14 @@ export class BuilderService {
 
   // --- operations --------------------------------------------------------------------------------
 
-  /** R1-T34: every reference-panel image must be a stored question image named by its public token, uploaded by the editing admin or already on this paper. */
-  private async checkReferenceImages(actor: AuditActor, paper: PaperTree, refs: readonly string[]): Promise<void> {
-    if (refs.length === 0) return
-    const onPaper = referencePanels(paper.referenceSheets).flatMap((p) => (p.imageFileId ? [p.imageFileId] : []))
-    const known = await this.repo.existingImages(refs, BigInt(actor.userId), onPaper)
-    if (refs.some((r) => !known.has(r))) {
-      throw ApiError.of('VALIDATION_ERROR', { message: MESSAGES.referenceImageInvalid, fields: { reference: MESSAGES.referenceImageInvalid } })
-    }
+  /**
+   * R1-T34 + B3 T34-L1-residual: every reference-panel image must be a stored question image named by its public token, uploaded by the editing
+   * admin or already on this paper (a legacy decimal id already on the paper is rewritten to its token). Returns the sheet to store.
+   */
+  private async checkedReference<P extends { imageFileId?: string | undefined }>(actor: AuditActor, paper: PaperTree, sheet: readonly P[]): Promise<P[]> {
+    const out = await this.repo.writableSheet(sheet, BigInt(actor.userId), imageRefsOf(paper.referenceSheets))
+    if (out === null) throw ApiError.of('VALIDATION_ERROR', { message: MESSAGES.referenceImageInvalid, fields: { reference: MESSAGES.referenceImageInvalid } })
+    return out
   }
 
   async list(rawQuery: unknown): Promise<{ data: BijakBuilderPaperSummary[]; meta: ListMeta }> {
@@ -474,7 +474,7 @@ export class BuilderService {
         plans.push({ sectionId: section.id, placements: ids.map((id) => ({ questionId: BigInt(id), pinnedVersionNo: st.info.get(id)!.versionNo })) })
       }
       // R1-T34 "Bahan rujukan": every panel image must be a stored file (public token or id), never a free string.
-      if (body.reference !== undefined) await this.checkReferenceImages(actor, paper, body.reference.flatMap((p) => (p.imageFileId ? [p.imageFileId] : [])))
+      const reference = body.reference === undefined ? undefined : await this.checkedReference(actor, paper, body.reference)
       const everywhere = [...resulting.values()].flat()
       // D90: a stimulus group lives in ONE section, so a group member twice on the paper is refused here. A plain
       // question repeated across sections stays accepted and is reported by the publish check (the mock's order).
@@ -486,7 +486,7 @@ export class BuilderService {
         ...(body.year !== undefined ? { year: body.year } : {}),
         ...(body.durationMin !== undefined ? { printedDurationMin: body.durationMin } : {}),
         ...(body.instructions !== undefined ? { instructions: body.instructions } : {}),
-        ...(body.reference !== undefined ? { referenceSheets: body.reference as unknown as Prisma.InputJsonValue } : {}),
+        ...(reference !== undefined ? { referenceSheets: reference as unknown as Prisma.InputJsonValue } : {}),
         updatedAt: this.clock.now(),
       })
       for (const edit of edits) await this.repo.updateSection(edit.sectionId, edit.data)
