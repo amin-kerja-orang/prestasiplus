@@ -67,6 +67,31 @@ describe('R1-02.1: the pick cap of a choose-N Bahagian', () => {
     expect(section?.counted).toHaveLength(1)
     expect((await result(me, id)).attempt.picks).toEqual(picks)
   })
+
+  it('best N by awarded marks, ties to the lower position, whatever was ticked: the higher-marked alternative counts, and a raise or a tie moves the count (V2 ExamBestNScorer)', async () => {
+    const id = await startAttempt(me, PAPER.sainsK2, 'exam', true)
+    // the pupil ticks only the FIRST alternative (osmosis) but answers both
+    const picks = { [SAINS_B]: ['sn2-osmosis'] }
+    const sub = await me.post(`/api/bijak/attempts/${id}/submit`, {
+      idempotencyKey: 'bestn',
+      picks,
+      changes: [change(OSMOSIS_A, { text: 'Air melalui membran.' }), change(FOTO_A, { text: 'Cahaya menghasilkan glukosa.' })],
+    })
+    expect(sub.status, JSON.stringify(sub.body)).toBe(200)
+    const mark = (partId: string, n: number) => me.post(`/api/bijak/attempts/${id}/self-mark`, { partId, mark: n })
+    const counted = async (): Promise<string[]> => {
+      const r = (await result(me, id)).result
+      return r.sections.find((s) => s.chooseN === 1 && s.counted.some((q) => q.startsWith('sn2-')))!.counted
+    }
+    expect((await mark(OSMOSIS_A, 1)).status).toBe(200)
+    expect((await mark(FOTO_A, 3)).status).toBe(200)
+    expect(await counted()).toEqual(['sn2-fotosintesis']) // 3 beats 1, although only osmosis was ticked
+    expect((await mark(OSMOSIS_A, 3)).status).toBe(200)
+    expect(await counted()).toEqual(['sn2-osmosis']) // 3 = 3: the tie goes to the lower position (osmosis comes first)
+    expect((await mark(OSMOSIS_A, 2)).status).toBe(200)
+    expect(await counted()).toEqual(['sn2-fotosintesis']) // lowering osmosis hands the count back to fotosintesis
+    expect((await result(me, id)).result.score).toBeGreaterThanOrEqual(3)
+  })
 })
 
 describe('R1-05.2: resume restores the saved answers, flags, picks and position', () => {
