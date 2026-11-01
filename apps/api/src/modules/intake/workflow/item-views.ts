@@ -6,6 +6,7 @@ import {
   type IntakeDuplicateEntry,
   type IntakeIssue,
   type IntakeItem,
+  type IntakeItemGroup,
   type IntakeItemEvent,
   type IntakeItemRow,
   type IntakeItemState,
@@ -157,10 +158,39 @@ export class ItemViews {
     }
   }
 
+  /**
+   * REQ-B-035 (D90): the group of each row whose stimulus is shared by 2 or more items of its batch. One grouped read for the whole page
+   * (the members are counted across the batch, not only on the page): size, and the 1-based place in paper order.
+   */
+  private async groupsOf(rows: readonly ItemRow[]): Promise<Map<string, IntakeItemGroup>> {
+    const out = new Map<string, IntakeItemGroup>()
+    const stimulusIds = [...new Set(rows.flatMap((r) => (r.stimulusId === null ? [] : [r.stimulusId])))]
+    if (stimulusIds.length === 0) return out
+    const members = await this.prisma.client.intakeItem.findMany({
+      where: { stimulusId: { in: stimulusIds } },
+      select: { id: true, stimulusId: true },
+      orderBy: [{ position: 'asc' }, { id: 'asc' }],
+    })
+    const byStimulus = new Map<string, bigint[]>()
+    for (const m of members) {
+      const key = idToString(m.stimulusId as bigint)
+      byStimulus.set(key, [...(byStimulus.get(key) ?? []), m.id])
+    }
+    for (const row of rows) {
+      if (row.stimulusId === null) continue
+      const key = idToString(row.stimulusId)
+      const ids = byStimulus.get(key) ?? []
+      if (ids.length < 2) continue
+      out.set(idToString(row.id), { key, label: row.stimulus?.label ?? '', size: ids.length, position: ids.indexOf(row.id) + 1 })
+    }
+    return out
+  }
+
   /** Rows of the review queue. */
   async rows(auth: AuthContext, rows: readonly ItemRow[]): Promise<IntakeItemRow[]> {
     const l = await this.lookups(auth, rows)
     const issues = await this.issuesOf(rows)
+    const groups = await this.groupsOf(rows)
     return rows.map((row) => {
       const q = questionOf(row)
       const id = idToString(row.id)
@@ -174,6 +204,7 @@ export class ItemViews {
         page: q.page,
         subject: row.batch.subject,
         ...(row.stimulusId === null ? {} : { stimulusId: idToString(row.stimulusId) }),
+        ...(groups.get(id) === undefined ? {} : { group: groups.get(id) }),
         lowCount,
         issueCount: (issues.get(id) ?? []).length,
         needsManual: row.needsManual,

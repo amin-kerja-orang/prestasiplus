@@ -311,6 +311,20 @@ const itemCommon = {
   updatedAt: TimestampSchema,
 } as const
 
+/**
+ * REQ-B-035 (D90): the figure or passage group an item belongs to, so the review queue can show the items that share it as ONE unit
+ * (badge "Kumpulan N soalan"). Present only when at least 2 items of the batch share the stimulus; the key is the intake stimulus id.
+ */
+export const IntakeItemGroupSchema = z
+  .strictObject({
+    key: IdSchema.meta({ description: 'Group key: the id of the shared intake stimulus. Items with the same key are one group.' }),
+    label: z.string().max(100).meta({ description: 'Label of the shared stimulus, e.g. "Rajah 1".' }),
+    size: z.number().int().min(2).meta({ description: 'Items of the whole batch that share the stimulus (not only the ones on this page).' }),
+    position: z.number().int().min(1).meta({ description: '1-based place of this item among the members, in paper order.' }),
+  })
+  .meta({ id: 'IntakeItemGroup' })
+export type IntakeItemGroup = z.infer<typeof IntakeItemGroupSchema>
+
 /** A row of the review queue (`GET /intake/items`, AC-07.1). */
 export const IntakeItemRowSchema = z
   .strictObject({
@@ -322,6 +336,7 @@ export const IntakeItemRowSchema = z
     page: z.number().int().min(1),
     subject: z.string().min(1).max(32),
     stimulusId: IdSchema.optional(),
+    group: IntakeItemGroupSchema.optional().meta({ description: 'REQ-B-035 (D90): the group the item belongs to (2 or more items share its stimulus); absent otherwise.' }),
     lowCount: z.number().int().min(0).meta({ description: 'Low-confidence fields not yet confirmed (prototype IntakeSummary.lowCount, per item).' }),
     issueCount: z.number().int().min(0).meta({ description: 'Open quality-gate issues of this item.' }),
     needsManual: z.boolean(),
