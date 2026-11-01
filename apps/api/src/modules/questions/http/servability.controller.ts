@@ -115,8 +115,8 @@ export class QuestionPaperServabilityController {
   @RateLimit(SERVABILITY_READ_LIMIT)
   async paperServability(@Param('id') id: string) {
     if (!isIdString(id)) throw ApiError.of('NOT_FOUND')
-    const rows = await this.papers.forQuestion(id)
-    if (rows === null) throw ApiError.of('NOT_FOUND')
-    return ok(rows)
+    const out = await this.papers.forQuestion(id)
+    if (out === null) throw ApiError.of('NOT_FOUND')
+    return { data: out.rows, meta: { total: out.total, truncated: out.total > out.rows.length } }
   }
 }
