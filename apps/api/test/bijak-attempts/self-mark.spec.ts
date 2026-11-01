@@ -76,6 +76,33 @@ const sejarah = () =>
     change(SEJ_ESSAY_2, { text: 'Kerjasama antara kaum membina perpaduan.' }),
   ])
 
+describe('D94 choose-N self-mark reward inputs (best-N, attempt level)', () => {
+  const OSMOSIS = 'sn2-osmosis-a' // Sains K2 Bahagian B "Pilih 1 daripada 2": 4 marks each
+  const FOTOSINTESIS = 'sn2-fotosintesis-a'
+  const open = () => sit(me, PAPER.sainsK2, [])
+
+  it('both alternatives self-marked full: the best-N score rises once (by 4), the second alternative leaves it at the same level', async () => {
+    const id = await open()
+    const base = (await result(me, id)).result.score
+    await selfMark(me, id, { partId: OSMOSIS, mark: 4 })
+    await selfMark(me, id, { partId: FOTOSINTESIS, mark: 4 })
+    const r = (await result(me, id)).result
+    expect(r.score).toBe(base + 4) // only one of the two counts
+    expect(t.reward.selfMarkCalls.map((c) => [c.base, c.score])).toEqual([
+      [base, base + 4],
+      [base, base + 4],
+    ])
+  })
+
+  it('a raise that displaces the counted alternative moves the best-N score by the net change only', async () => {
+    const id = await open()
+    const base = (await result(me, id)).result.score
+    await selfMark(me, id, { partId: OSMOSIS, mark: 2 })
+    await selfMark(me, id, { partId: FOTOSINTESIS, mark: 4 }) // displaces osmosis
+    expect(t.reward.selfMarkCalls.map((c) => c.score)).toEqual([base + 2, base + 4])
+  })
+})
+
 describe('R1-B13 keyword suggestion in the result', () => {
   it('V2 submit :408-414: a matched suggestion is stored as the awarded mark, flagged autoSuggested, and the total stays provisional', async () => {
     const id = await sains()
@@ -188,14 +215,14 @@ describe('R1-B12 self-mark', () => {
     expect(t.aggregate.calls).toHaveLength(1)
   })
 
-  it('D94: every changed self-mark is handed to the reward port with the automatic base and the clamped mark (the wallet pays only a raise); a repeat is not', async () => {
+  it('D94: every changed self-mark is handed to the reward port with the automatic best-N base and the new best-N score (the wallet pays only a raise); a repeat is not', async () => {
     const id = await sains()
     await selfMark(me, id, { partId: SEL_B, mark: 99 }) // above the full marks: clamped to 2
     await selfMark(me, id, { partId: SEL_B, mark: 99 }) // the same body: unchanged, no new call
     await selfMark(me, id, { partId: SEL_B, mark: 0 }) // lower: still handed over, nothing is clawed back (the wallet decides)
-    expect(t.reward.selfMarkCalls.map((c) => [c.mark, c.base, c.marks])).toEqual([
-      [2, 1, 2],
-      [0, 1, 2],
+    expect(t.reward.selfMarkCalls.map((c) => [c.score, c.base])).toEqual([
+      [2, 1],
+      [0, 1],
     ])
   })
 
@@ -207,8 +234,9 @@ describe('R1-B12 self-mark', () => {
     expect(t.aggregate.calls).toHaveLength(1)
     expect(t.aggregate.calls[0]).toMatchObject({ attemptId: id, regraded: true, score: 2 })
     expect(t.reward.calls).toHaveLength(rewards) // the submit reward is not repeated
-    // D94: the gain goes to the self-mark reward port: base 1 (the keyword suggestion paid at submit) -> mark 2 of 2
-    expect(t.reward.selfMarkCalls).toEqual([{ attemptId: id, userId: me.userId, isTest: false, partId: SEL_B, marks: 2, base: 1, mark: 2, description: BIJAK_REWARD_DESCRIPTION }])
+    // D94: the gain goes to the self-mark reward port at attempt level: base 1 (the keyword suggestion paid at submit) -> best-N score 2
+    const max = (await result(me, id)).result.max
+    expect(t.reward.selfMarkCalls).toEqual([{ attemptId: id, userId: me.userId, isTest: false, base: 1, score: 2, max, description: BIJAK_REWARD_DESCRIPTION }])
     const row = (await t.db.query<{ score: string; pending_review: number }>(`select score::text, pending_review from attempt_results where attempt_id = $1`, [id]))[0]!
     expect(Number(row.score)).toBe(2)
     const hist = await me.get('/api/bijak/history')
@@ -376,10 +404,10 @@ describe('R1-B15 Cuba Lagi', () => {
     expect((await result(me, old)).attempt.status).toBe('submitted')
   })
 
-  it('a paper the pupil may not sit any more is 403', async () => {
+  it('a paper the pupil may not sit any more (not eligible, e.g. it places an archived question) is the documented 409 retryPaperGone', async () => {
     const old = await sains()
     vi.spyOn(t.papers, 'resolveForAttempt').mockResolvedValue({ ok: false, reason: 'not_eligible' })
-    expectError(await me.post(`/api/bijak/attempts/${old}/retry`), 'FORBIDDEN')
+    expectError(await me.post(`/api/bijak/attempts/${old}/retry`), 'CONFLICT', 'Kertas ini sudah tidak tersedia untuk dicuba semula.')
   })
 
   it('owner only: 403 for another pupil, 404 for an unknown attempt, no CSRF refused', async () => {

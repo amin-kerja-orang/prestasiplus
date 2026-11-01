@@ -19,7 +19,8 @@ import { CLOCK, FixedClock } from '../../src/db/clock'
 import { featureModules } from '../../src/modules'
 import { MAIL_PORT, type MailPort, type PasswordResetMail } from '../../src/modules/account/ports'
 import { QuestionBankBuilderSource } from '../../src/modules/exam/builder'
-import { PocBuilderQuestionSource } from '../../src/modules/exam/builder/poc-builder-source'
+import { PocBuilderQuestionSource } from '../support/poc/builder-source'
+import { plugPocAttempts, plugPocPapers } from '../support/poc/plug'
 import { conformanceEnv, CONFORMANCE_SEEDS, CONFORMANCE_START } from '../conformance/boot'
 import { DEMO_PASSWORD } from '../conformance/accounts'
 import { createTestDatabase, type TestDatabase } from '../support/db'
@@ -85,6 +86,8 @@ export async function bootSecurityApp(opts: SecurityBootOptions = {}): Promise<S
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)
   await app.init()
+  plugPocAttempts(app)
+  plugPocPapers(app)
   ;(app.getHttpServer() as { setMaxListeners(n: number): void }).setMaxListeners(0)
   return {
     app,

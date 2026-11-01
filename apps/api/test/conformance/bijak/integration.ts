@@ -1,6 +1,6 @@
 import type { Scenario } from '@pp/contract-tests'
 
-import { POC_BANK, pocQuestionId } from '../../../src/modules/bijak/papers/poc'
+import { POC_BANK, pocQuestionId } from '../../../prisma/seed/poc/export'
 import { registerStudent } from '../account/account'
 import { API_ONLY, dataOf, listOf } from '../helpers'
 
