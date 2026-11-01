@@ -42,3 +42,4 @@
 | REQ-B-047 (update 2026-11-02 00:25) | Rebuilt on BASE-105 (H-A21 in base); card total = lane rows | C2 | r1/reqb041-hub-cards @ 41e0cb3bc | DELIVERED (READY; merge after r1/req-b-033) |
 | REQ-A-016 (update 2026-11-02 00:25) | Done on the same branch (subjects from lane response, cards by lane, question_missing sentence) | C2 | r1/reqb041-hub-cards @ 41e0cb3bc | DELIVERED (READY; merge after r1/req-b-033) |
 | REQ-A-008 (update 2026-11-02 00:28) | Done on top of T31 6a27c8dd + BASE-105; T31 now type-checks with it | C1 | r1/reqa008-group-stimulus @ 77ffe84dc | DELIVERED (READY-FOR-REVIEW; contains T31) |
+| REQ-B-054 (update 2026-11-02 00:43) | Done in T10: blocker messages in publish-errors, override reachable after a refused publish at 375/768/1280 | C1 | r1/f08-builder-ui @ bf78ca930 | DELIVERED (READY-FOR-REVIEW) |
