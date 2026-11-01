@@ -505,7 +505,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 | T44 | r1/t44-blueprint-fields | 072d8f4b | — | merged at BASE-67 as 77984abc. The newer tip 072d8f4b shows a 19-file delta against base; A3 is asked whether it is WIP (marked IN-PROGRESS until it answers) |
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 15:51 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 15:52 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -529,7 +529,6 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/req-b-033 | c0ea2ea96 | Approve w/ Minors, blocked by 022a → A4 restack on BASE-105 |
 | r1/req-c-020 | 78e050b3b | Approve w/ Minors, blocked by 022a → A4 restack on BASE-105 |
 | r1/req-c012-a2 | ba57ecc52 | WAITS for fixed H-A18 (A2 slot 1) |
-| r1/reqa014-no-chapter-lock-fe | dc561730e | (no status — triage) |
 | r1/reqb032-pinned-rule | e9cf34b7f | READY (A2+A3, BASE-105): the attempt serves the pinned version; SERVED_NOW = lock predicate; image rule B; pinned-version-rule 6/6; attempts 180/180; B2 + B3 |
 | r1/reqb049-report-visible | 9ece8d76d | READY; A3 pre-review found only Minors (no Blocker/Major) → A1b fixing the Minors, new head follows |
 | r1/reqb052-archived-edit | ce0af563f | IN-PROGRESS (A3 T48 dev): red repro ce0af563 proves an admin/Guru PUT rewrites a pinned archived v1 that a pupil sees; fixing (branch to a new version) |
@@ -567,3 +566,13 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
   - Everything else on the stack is green.
 - A1 BASE-105 merges (A1a), all recorded in the auto table: t52 f2d36f64, t50 075e1b58, req-b-025c 37007e49, e05b f9eab2ab, seed 2bbd4f3c, reqc021-followup 948aa327.
 - H-A18 (A2): fixes committed locally (D99 + MAJOR 1 + Minors); merging BASE now. New ETA ~16:30 UTC.
+
+### Cycle 20 (2026-11-01 15:52 UTC, BASE-105 = 7ea2208c). No new merges and no new B verdicts since cycle 19.
+- Lanes:
+  - A1b: pre-review Minors on four branches.
+  - A1a: idle; integration preview done.
+  - A2 slot 1: H-A18 (ETA 16:30).
+  - A2 slot 2: stimulus-list D72.
+  - A3: REQ-B-052 fix + H-A27 docs.
+  - A4: REQ-B-053 restack + migration header alignment.
+- Team C has REQ-A-014 FE up: r1/reqa014-no-chapter-lock-fe @ dc561730.
