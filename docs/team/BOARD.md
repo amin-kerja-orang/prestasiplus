@@ -510,7 +510,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
-| r1/admin-list-perf-wip | 9cc78c4db | IN-PROGRESS (A4, handed over from A2): REQ-B-050 + 0106 (no CONCURRENTLY: needs a maintenance window) + counts WIP (1 failing spec) |
+| r1/admin-list-perf | 6526409bc | IN-PROGRESS (A4): REQ-B-050 + 0106 + counts; not READY |
+| r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
 | r1/builder-search-perf | f0ddb1ca0 | READY (A3; T48 + BASE-105): Cari soalan p50/p95 11.2/12.0 s → 0.89/0.99 s at 407k, same results; 520 + 1 todo; conformance 409/409; merges after T48; B2 |
 | r1/e05b-l1-spec | baa42a152 | Approved (B2 c17) → needs a BASE-105 merge (A1a) |
 | r1/ha17-ac-coverage | d7c9c7840 | docs, auto-refreshed by A3 H-A27 (coverage 124/176) |
@@ -552,8 +553,6 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t51-partial-acs-a3 | 4f812b4e2 | READY (A3; T48 + T43 + T31 + BASE-105): PIPE AC-18.1 + R1-21.3/21.6 backend; overlap resolved toward T48; 965 + 1 todo; conformance 409/409; order T48 → T31 (+REQ-A-008) → T43 → T51; B2 |
 | r1/t52-examiner-grid | addae6444 | Approved (B2 c17) → needs a BASE-105 merge (A1a) |
 | r1/t54-perf-400k | bbf412c66 | Approved (B2 c17) → needs a BASE-105 merge (A4) |
-
-**New branches not yet triaged:** r1/admin-list-perf 6526409bc
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
