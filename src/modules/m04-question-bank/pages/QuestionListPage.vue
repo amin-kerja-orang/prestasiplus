@@ -34,15 +34,28 @@ import {
 import { useMedia } from '@/ds/useMedia'
 
 import {
+  buildBulkFilter,
   bulkQuestionAction,
+  bulkQuestionsByFilter,
   deleteQuestion,
   fetchEducationLevels,
   fetchQuestions,
   fetchQuestionSummary,
   fetchSubjects,
+  type QuestionFilterAction,
+  type QuestionFilterBulkResult,
   type QuestionRow,
 } from '../api'
+import BulkFilterResult from '../components/BulkFilterResult.vue'
 import QuestionSummaryCard from '../components/QuestionSummaryCard.vue'
+import {
+  BULK_FILTER_CONFIRM,
+  BULK_FILTER_LABELS,
+  BULK_FILTER_NEEDED,
+  BULK_FILTER_NONE_ELIGIBLE,
+  BULK_FILTER_TITLES,
+  bulkFilterCountLine,
+} from '../lib/bulk-filter'
 import {
   bulkOptionsFor,
   notUpdatedLines,
@@ -67,7 +80,7 @@ import {
   type FilterKey,
 } from '../lib/question-list'
 import { pageOf, queryText } from '../lib/route-query'
-import { errorLines, LOAD_ERROR } from '../lib/ui-errors'
+import { errorLines, fieldErrors, LOAD_ERROR } from '../lib/ui-errors'
 
 const route = useRoute()
 const router = useRouter()
@@ -342,6 +355,58 @@ async function submitBulk(): Promise<void> {
   }
 }
 
+// --- "Luluskan Hasil Tapisan" / "Arkib Semua" (S3.2, AC-03.3; REQ-A-021): dry run, confirm with the
+// count, then the real call with `expectedCount`. Only non-blank filter keys are sent.
+const filterBusy = ref(false)
+const filterErrors = ref<string[]>([])
+const filterOutcome = ref<{ action: QuestionFilterAction; result: QuestionFilterBulkResult } | null>(null)
+const bulkFilterBody = computed(() => buildBulkFilter(applied.value))
+const hasFilter = computed(() => Object.keys(bulkFilterBody.value).length > 0)
+
+/** 422 `fields.filter` / `fields.expectedCount` first (the server message), else the usual lines. */
+function filterErrorLines(err: unknown): string[] {
+  const fields = fieldErrors(err)
+  const own = [fields.filter, fields.expectedCount].filter((m): m is string => typeof m === 'string')
+  return own.length > 0 ? own : errorLines(err)
+}
+
+async function runFilterBulk(action: QuestionFilterAction): Promise<void> {
+  if (filterBusy.value) return
+  filterErrors.value = []
+  filterOutcome.value = null
+  // "Arkib Semua" is the whole bank (empty filter); "Luluskan Hasil Tapisan" needs a filter.
+  const filter = action === 'archived' ? {} : bulkFilterBody.value
+  if (action === 'approved' && Object.keys(filter).length === 0) {
+    filterErrors.value = [BULK_FILTER_NEEDED]
+    return
+  }
+  filterBusy.value = true
+  try {
+    const dry = (await bulkQuestionsByFilter(action, filter, { dryRun: true })).data
+    if (dry.eligible === 0) {
+      filterErrors.value = [BULK_FILTER_NONE_ELIGIBLE[action]]
+      return
+    }
+    const confirmed = await confirm({
+      title: BULK_FILTER_LABELS[action],
+      message: `${BULK_FILTER_CONFIRM[action]}\n\n${bulkFilterCountLine(action, dry)}`,
+      confirmLabel: BULK_FILTER_LABELS[action],
+      tone: action === 'archived' ? 'error' : 'primary',
+    })
+    if (!confirmed) return
+    const done = await bulkQuestionsByFilter(action, filter, { expectedCount: dry.matched })
+    selected.value = []
+    filterOutcome.value = { action, result: done.data }
+    await reloadAfterMutation()
+  } catch (err) {
+    filterErrors.value = filterErrorLines(err)
+    // A stale count (409) means the list on screen is out of date.
+    await Promise.all([list.reload(), summary.reload()])
+  } finally {
+    filterBusy.value = false
+  }
+}
+
 /** The confirmation ran in `DsRowActions` (live message); this only calls the API. */
 async function remove(row: QuestionRow): Promise<void> {
   if (busy.value) return
@@ -425,7 +490,33 @@ const cardFields: CardField[] = [
 <template>
   <DsPage subtitle="Urus bank soalan untuk platform PRESTASIPLUS" data-testid="questions-page">
     <template #actions>
-      <UButton
+      <div class="flex flex-wrap items-center gap-2" data-testid="questions-header-actions">
+        <UButton
+          color="primary"
+          variant="soft"
+          icon="i-ph-check-circle"
+          class="min-h-11"
+          :disabled="!hasFilter || filterBusy"
+          :title="hasFilter ? BULK_FILTER_TITLES.approved : BULK_FILTER_NEEDED"
+          :loading="filterBusy"
+          data-testid="questions-approve-filter"
+          @click="runFilterBulk('approved')"
+        >
+          {{ BULK_FILTER_LABELS.approved }}
+        </UButton>
+        <UButton
+          color="error"
+          variant="soft"
+          icon="i-ph-archive"
+          class="min-h-11"
+          :disabled="filterBusy"
+          :title="BULK_FILTER_TITLES.archived"
+          data-testid="questions-archive-all"
+          @click="runFilterBulk('archived')"
+        >
+          {{ BULK_FILTER_LABELS.archived }}
+        </UButton>
+        <UButton
         :to="QUESTIONS_CREATE_PATH"
         icon="i-ph-plus"
         class="min-h-11 shrink-0"
@@ -434,7 +525,9 @@ const cardFields: CardField[] = [
         <span class="hidden sm:inline">Tambah Soalan</span>
         <span class="sm:hidden">Tambah</span>
       </UButton>
+      </div>
     </template>
+
 
     <QuestionSummaryCard :summary="summary.data.value" :active-subject-id="activeSubjectId" />
 
@@ -497,6 +590,32 @@ const cardFields: CardField[] = [
         </DsFormField>
       </template>
     </DsFilterBar>
+
+    <!-- Bulk-by-filter: the no-filter hint, the server's 422/409 message, the outcome. -->
+    <p
+      v-if="!hasFilter"
+      class="text-caption text-muted"
+      data-testid="questions-approve-filter-hint"
+    >
+      {{ BULK_FILTER_NEEDED }}
+    </p>
+    <UAlert
+      v-if="filterErrors.length > 0"
+      color="error"
+      variant="subtle"
+      icon="i-ph-warning-circle"
+      role="alert"
+      data-testid="questions-filter-bulk-error"
+    >
+      <template #description>
+        <p v-for="(line, i) in filterErrors" :key="i">{{ line }}</p>
+      </template>
+    </UAlert>
+    <BulkFilterResult
+      v-if="filterOutcome"
+      :action="filterOutcome.action"
+      :result="filterOutcome.result"
+    />
 
     <!-- Load failure: alert in place of the table + retry (INFERRED copy, SRS §8.2). -->
     <DsLoadError
