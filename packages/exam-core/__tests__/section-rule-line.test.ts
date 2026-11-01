@@ -13,7 +13,7 @@ const section = (over: { rule: { type: 'all' } | { type: 'choose'; n: number }; 
   questionIds: over.ids ?? ['q1', 'q2', 'q3'],
 })
 
-describe('sectionRuleLine (copy row 39)', () => {
+describe('sectionRuleLine (USER Q13)', () => {
   it('choose-N reads "Jawab N soalan sahaja." and does not mention how many questions the Bahagian has', () => {
     expect(sectionRuleLine(section({ rule: { type: 'choose', n: 2 } }))).toBe('Jawab 2 soalan sahaja.')
     expect(sectionRuleLine(section({ rule: { type: 'choose', n: 1 }, ids: ['q1', 'q2'] }))).toBe('Jawab 1 soalan sahaja.')

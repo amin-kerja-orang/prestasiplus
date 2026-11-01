@@ -242,6 +242,7 @@ export class BuilderService {
           markBudget: s.markBudget,
           questionCount: s.questionCount,
           ...(s.compulsory ? { compulsory: true as const } : {}),
+          // The editor view carries the AUTHORED line only (contract: absent = derived from the rule), so the "Sunting bahagian" box never shows a derived line as if it were authored; the FE derives the default for display.
           ...(s.instruction ? { instruction: sectionInstruction(s.instruction, rule, s.questionCount) } : {}),
           rule,
           questionIds: s.placements.map((pl) => idToString(pl.questionId)),

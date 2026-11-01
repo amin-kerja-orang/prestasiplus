@@ -120,7 +120,7 @@ describe('Bijak papers API (BE-15)', () => {
       const cover = envelopeOf(BijakPaperCoverSchema).parse((await student.get(`/api/bijak/papers/${id}`)).body).data
       // The seeded PoC papers store their rule lines as authored instructions (the prototype's text), so this is the authored line.
       expect(cover.sections.map((s) => s.instruction)).toEqual(['Jawab semua soalan.', 'Jawab semua soalan.', 'Jawab 1 daripada 2 soalan.'])
-      // An authored line wins over the derived one; choose-N derives from the rule N alone (copy row 39, V2 text).
+      // An authored line wins over the derived one; choose-N derives from the rule N alone (USER Q13, V2 text).
       await t.db.query(`update paper_sections set instruction = 'Jawab dengan teliti.' where label = 'Bahagian A' and paper_id = $1`, [id])
       await t.db.query(`update paper_sections set instruction = null where label = 'Bahagian C' and paper_id = $1`, [id])
       const again = envelopeOf(BijakPaperCoverSchema).parse((await student.get(`/api/bijak/papers/${id}`)).body).data

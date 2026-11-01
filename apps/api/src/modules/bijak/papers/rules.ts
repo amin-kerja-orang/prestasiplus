@@ -20,8 +20,9 @@ export function ruleOf(ruleType: string, ruleN: number | null): SectionRule {
 }
 
 /**
- * Section instruction: the authored line, else "Jawab semua soalan." or "Jawab {n} soalan sahaja." (V2 .blade text; copy row 39). The question
+ * Section instruction: the authored line, else "Jawab semua soalan." or "Jawab {n} soalan sahaja." (V2 .blade text; USER Q13 2026-11-02). The question
  * count is no longer part of the line; the parameter stays so the callers (cover, Kontrak view, builder) and the T48 stack, which edits one call site, do not change.
+ * Known limit (accepted): only the DERIVED line changes. Authored instructions in the PoC seed (`prisma/seed/poc/export/poc-bank.ts`) and the goldens keep the original "daripada" text; the PoC is withdrawn by `exam-retire-poc` (lead decision).
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function sectionInstruction(authored: string | null, rule: SectionRule, questionCount: number): string {

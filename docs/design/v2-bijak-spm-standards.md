@@ -206,7 +206,7 @@ Wireframe 1280 (tab Bahagian B, illustrative values from the Matematik K2 skelet
 | Field | Control | Rules / copy |
 |---|---|---|
 | Label | `UInput` | required, e.g. "Bahagian A" |
-| Arahan bahagian | `UTextarea` (cosmetic) | free text; default shown to students when empty is the system line "Jawab semua soalan." / "Jawab {N} soalan sahaja." (AC-06.1; pending user choice, copy row 39) |
+| Arahan bahagian | `UTextarea` (cosmetic) | free text; default shown to students when empty is the system line "Jawab semua soalan." / "Jawab {N} soalan sahaja." (AC-06.1; USER Q13 2026-11-02: follow V2) |
 | Peraturan | `URadioGroup` horizontal: "Jawab semua" / "Jawab N soalan sahaja" | choose-N reveals **Jawab (N)**. |
 | Bilangan soalan (M) | number | min 1; error if M < N (AC-25.7) |
 | Belanjawan markah (selepas pilih N) | number | the effective marks (AC-34.1) |
