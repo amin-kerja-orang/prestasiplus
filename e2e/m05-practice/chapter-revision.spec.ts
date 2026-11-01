@@ -330,6 +330,22 @@ test.describe('M05 Q2 chapter quiz', { tag: [moduleTag(5)] }, () => {
     },
   )
 
+  test(
+    'completing a chapter with 90 % opens the next one',
+    provisional('LS-3: the unlock after a completed chapter was never observed on live'),
+    async ({ page, loginAs, gotoApp, mock }) => {
+      await loginAs(PELAJAR2)
+      await gotoApp('/practice/chapter/MATH')
+      await expect(tid(page, 'chapter-card-92')).toHaveAttribute('data-state', 'locked')
+      // pelajar2 is user 3; MATH chapter 91 is Bab 1.
+      await mock.hook('answerChapter', 3, 91, { correctPct: 90 })
+      await gotoApp('/practice/chapter/MATH')
+      await expect(tid(page, 'chapter-card-91')).toHaveAttribute('data-state', 'open')
+      await expect(tid(page, 'chapter-card-92')).toHaveAttribute('data-state', 'open')
+      await expect(tid(page, 'chapter-card-220')).toHaveAttribute('data-state', 'locked')
+    },
+  )
+
   test('an unknown code is the 404 page', async ({ page, loginAs, gotoApp }) => {
     await loginAs(PELAJARMAJU)
     await gotoApp('/practice/chapter/XYZ/1/quiz?count=5')

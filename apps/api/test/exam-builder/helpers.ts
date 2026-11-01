@@ -17,13 +17,14 @@ import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { AuthModule } from '../../src/modules/auth'
 import { BijakPapersModule, BijakPapersPorts, bijakCodeOf, type BijakPoolSource, type BijakQuestionSource } from '../../src/modules/bijak/papers'
-import { CompositeBijakPoolSource } from '../../src/modules/bijak/question-bridge/pool-composite'
+import { BankBijakPoolSource } from '../../src/modules/bijak/question-bridge'
 import type { BijakServedSource } from '../../src/modules/bijak/papers'
 import { QuestionsBijakPoolSource } from '../../src/modules/questions/bijak-pool'
 import type { QuestionFacts } from '@pp/exam-core'
 import { ExamBlueprintsModule } from '../../src/modules/exam/blueprints'
 import { BijakBuilderPorts, type BuilderQuestionSource, ExamBuilderModule, QuestionBankBuilderSource } from '../../src/modules/exam/builder'
-import { PocBuilderQuestionSource } from '../../src/modules/exam/builder/poc-builder-source'
+import { PocBuilderQuestionSource } from '../support/poc/builder-source'
+import { plugPocBuilder, plugPocPapers } from '../support/poc/plug'
 import { questionsSeed } from '../../prisma/seed/questions'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
@@ -55,6 +56,11 @@ export interface BootOptions {
   realBank?: boolean
   /** BE-15 student-side question port (default: the PoC fixture). Pass the same fake to keep both sides in step. */
   papersSource?: BijakQuestionSource
+  /**
+   * Test only (R1-B07): wrap the registered builder source with the PoC fixture, so the seeded PoC papers (reserved ids, in no table)
+   * can be built, withdrawn and re-published. Default off: the builder sees the question bank only, as in production.
+   */
+  pocBuilder?: boolean
   /** Environment overrides for this app (rate limits). */
   env?: Record<string, string>
   /**
@@ -135,7 +141,11 @@ export async function bootBuilderApp(opts: BootOptions = {}): Promise<BuilderTes
   if (opts.papersSource) papersPorts.provideQuestionSource(opts.papersSource)
   if (opts.pool === 'builder-source') papersPorts.providePoolSource(poolFromBuilderSource(opts.builderSource ?? new PocBuilderQuestionSource()))
   await app.init()
-  if (opts.pool === 'bank') papersPorts.providePoolSource(new CompositeBijakPoolSource(null, app.get(QuestionsBijakPoolSource, { strict: false }), { servedQuestionIds: async () => new Set<string>() } as unknown as BijakServedSource))
+  // `pool: 'bank'` is the production pool (BankBijakPoolSource); set before the PoC plug so the plug wraps it, never the other way
+  if (opts.pool === 'bank') papersPorts.providePoolSource(new BankBijakPoolSource(app.get(QuestionsBijakPoolSource, { strict: false }), { servedQuestionIds: async () => new Set<string>() } as unknown as BijakServedSource))
+  // R1-B07: the papers ports default to nothing now; the seeded PoC papers (reserved ids) are served by the test double unless a source is given.
+  if (!opts.papersSource) plugPocPapers(app)
+  if (opts.pocBuilder) plugPocBuilder(app)
   return {
     app,
     db,
