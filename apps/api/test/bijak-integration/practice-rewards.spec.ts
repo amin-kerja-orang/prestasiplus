@@ -1,13 +1,11 @@
 import 'reflect-metadata'
 
-
-
-import type { StartSessionResponse } from '@pp/contract'
+import type { PracticeMode, StartSessionResponse } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { PrismaService } from '../../src/db/prisma.service'
 import { PRACTICE_REWARD_DESCRIPTION, WalletPracticeReward } from '../../src/modules/bijak/integration'
-import { PracticePorts } from '../../src/modules/practice/ports'
+import { PracticePorts, type PracticeRewardSource } from '../../src/modules/practice/ports'
 import { FakeBank, fillBank, loadWorld, makeSubscribed, type World } from '../practice/helpers'
 import { bootIntegrationApp, type Client, type IntegrationApp, loginAs, STUDENT } from './helpers'
 
@@ -79,9 +77,9 @@ const queueMath = async (n: number) => {
     await t.db.query(`insert into revision_queue (user_id, question_id, subject_id, wrong_times, last_wrong_at) values ($1, $2, $3, 1, '2026-10-01T00:00:00Z'::timestamptz + ($4 || ' minutes')::interval)`, [student.userId, id, w.subject.math, String(i)])
 }
 
-const MODES: { name: string; mode: string; source: string; start: () => Promise<Record<string, unknown>> }[] = [
-  { name: 'Latih Tubi', mode: 'latih_tubi', source: 'quiz_spm', start: async () => ({ mode: 'latih_tubi', subjectCode: 'SEJ', count: 40 }) },
-  { name: 'Databank', mode: 'past_year', source: 'quiz_spm', start: async () => ({ mode: 'past_year', subjectCode: 'SEJ', count: 5 }) },
+const MODES: { name: string; mode: PracticeMode; source: PracticeRewardSource; start: () => Promise<Record<string, unknown>> }[] = [
+  { name: 'Latih Tubi', mode: 'latih_tubi', source: 'quiz_spm', start: () => Promise.resolve({ mode: 'latih_tubi', subjectCode: 'SEJ', count: 40 }) },
+  { name: 'Databank', mode: 'past_year', source: 'quiz_spm', start: () => Promise.resolve({ mode: 'past_year', subjectCode: 'SEJ', count: 5 }) },
   {
     name: 'Ulang Kaji',
     mode: 'revision',
@@ -131,7 +129,7 @@ describe.each(MODES)('$name ($mode) submit', ({ mode, source, start }) => {
 
   it('5. a second submit of the same session is refused (409 ALREADY_SUBMITTED) and pays nothing more', async () => {
     const p = await play(await start(), 3)
-    const after = { balance: await balance(), xp: await xp(), ledger: await ledger(p.sessionId), streak: await streak() }
+    const after = { balance: await balance(), xp: await xp(), ledger: await ledger(p.sessionId), streak: await streak(), credit: await credit(p.sessionId) }
     const again = await student.post(`/api/practice/sessions/${p.sessionId}/submit`, { timeSpent: 60 })
     expect(again.status).toBe(409)
     expect(again.body.error.code).toBe('ALREADY_SUBMITTED')
@@ -140,6 +138,8 @@ describe.each(MODES)('$name ($mode) submit', ({ mode, source, start }) => {
     expect(await ledger(p.sessionId)).toEqual(after.ledger)
     expect(await streak()).toEqual(after.streak)
     expect((await credit(p.sessionId))!.coins_earned).toBe(3)
+    expect((await credit(p.sessionId))!.total_balance).toBe(after.credit!.total_balance) // the stored balance of the session is not rewritten by the refused submit
+    expect(await credit(p.sessionId)).toEqual(after.credit)
   })
 
   it('6. the reward binding is idempotent per session: calling it again for the same session returns the stored result and writes nothing', async () => {
@@ -148,7 +148,7 @@ describe.each(MODES)('$name ($mode) submit', ({ mode, source, start }) => {
     const prisma = t.app.get(PrismaService)
     const reward = t.app.get(WalletPracticeReward)
     const out = await prisma.transaction((tx) =>
-      reward.onSessionCompleted({ userId: student.userId, sessionId: p.sessionId, mode: mode as never, source: source as never, correct: s.correct_count, total: p.total, timeSpent: 60, completedAt: new Date('2026-10-20T01:00:00Z'), pointsEarned: s.points_earned, sessionCoins: s.coins_earned, isTest: false }, tx),
+      reward.onSessionCompleted({ userId: student.userId, sessionId: p.sessionId, mode, source, correct: s.correct_count, total: p.total, timeSpent: 60, completedAt: new Date('2026-10-20T01:00:00Z'), pointsEarned: s.points_earned, sessionCoins: s.coins_earned, isTest: false }, tx),
     )
     expect(out.coinsEarned).toBe(2)
     expect(await ledger(p.sessionId)).toHaveLength(1)
