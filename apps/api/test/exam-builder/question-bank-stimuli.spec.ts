@@ -63,6 +63,20 @@ describe('builder stimulus mapping (R1-T07)', () => {
     expect(t?.text).toBeUndefined()
   })
 
+  it('H-A16 probe: an invalid grid beside a pipe body shows the table once (the body becomes the grid, not also the text)', () => {
+    const pipe = 'Tahun | Peristiwa\n--- | ---\n1957 | Merdeka'
+    const grid = { head: ['Tahun', 'Peristiwa'], rows: [['1957', 'Merdeka']] }
+    for (const tableData of [{ head: 'x', rows: [] }, {}, [], 'x']) {
+      const t = stimulusOf(source({ id: 8n, kind: 'table', label: 'Jadual 1', bodyMs: pipe, tableData }))
+      expect(t?.table, JSON.stringify(tableData)).toEqual(grid)
+      expect(t?.text, JSON.stringify(tableData)).toBeUndefined()
+    }
+    // a stored grid never hides the body; a body that is not a table stays the text
+    expect(stimulusOf(source({ id: 9n, kind: 'table', bodyMs: 'Catatan', tableData: grid }))).toMatchObject({ table: grid, text: 'Catatan' })
+    expect(stimulusOf(source({ id: 9n, kind: 'table', bodyMs: pipe, tableData: grid }))).toMatchObject({ table: grid, text: pipe })
+    expect(stimulusOf(source({ id: 9n, kind: 'table', bodyMs: 'Jadual berikut', tableData: { head: 'x', rows: [] } }))).toMatchObject({ text: 'Jadual berikut' })
+  })
+
   it('reads the table grid through the shared helper: every stored shape gives the same grid as the Studio and Bijak readers', () => {
     const grid = { head: ['A', 'B'], rows: [['1', '2']] }
     for (const data of [grid, { headers: ['A', 'B'], rows: [['1', '2']] }, { columns: ['A', 'B'], rows: [['1', '2']] }, [['A', 'B'], ['1', '2']]]) {
@@ -173,6 +187,8 @@ describe('builder table stimulus = the bridge table stimulus (one stimulusTableO
     ['an image-only table (picture, no table)', { bodyMs: null, tableData: null, assetFileId: '5' }],
   ]
 
+  /** The one case where the bridge still differs from the builder (text only). */
+  const BRIDGE_TEXT_PENDING = 'a malformed grid beside a pipe body (the body wins)'
   for (const [name, c] of cases) {
     it(name, () => {
       const stored = { id: '70', kind: 'table', label: 'Jadual 1', bodyMs: c.bodyMs, bodyEn: null, assetFileId: c.assetFileId ?? null, alt: null, caption: 'Jualan', tableData: c.tableData, sourceCitation: 'Sumber: JPN' }
@@ -189,7 +205,12 @@ describe('builder table stimulus = the bridge table stimulus (one stimulusTableO
       expect(builder?.table).toEqual(bridge?.table)
       const { id: bridgeId, ...bridgeRest } = bridge!
       const { id: builderId, ...builderRest } = builder!
-      expect(builderRest).toEqual(bridgeRest)
+      if (name === BRIDGE_TEXT_PENDING) {
+        // The builder follows the H-A16 reader (the body that became the grid is not also the text); the bridge (`be09-mapping.ts`, A4's file) still
+        // keeps the body text beside a malformed `tableData`. Everything else must agree; drop this branch when the bridge switches.
+        expect(builder?.text).toBeUndefined()
+        expect({ ...builderRest, text: undefined }).toEqual({ ...bridgeRest, text: undefined })
+      } else expect(builderRest).toEqual(bridgeRest)
       expect(bridgeId).toBe('qb-s70')
       expect(builderId).toBe('70')
     })
