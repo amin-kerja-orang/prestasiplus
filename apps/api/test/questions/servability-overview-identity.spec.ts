@@ -1,4 +1,6 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+
+import { SERVABILITY_REASON_MS } from '@pp/contract'
 
 import { QuestionsService } from '../../src/modules/questions'
 import { ServabilityReadsService, ServabilityService } from '../../src/modules/questions/serving'
@@ -82,9 +84,21 @@ describe('servability overview: the shared pass equals the pre-change evaluation
     const expected = draft.activities.find((a) => a.activity === 'simulasi_paper')!.reasons.map((r) => ({ code: r.code, message: r.message, count: 1 }))
     expect(expected.length).toBeGreaterThan(0)
     expect(row.questionCount).toBe(3)
-    expect(row.attentionCount).toBe(1) // the draft; the missing id adds no reason in this unit (REQ-B-033 names it)
-    expect(row.attention).toEqual(expected)
+    expect(row.attentionCount).toBe(2) // the draft and the missing id (REQ-B-033: `question_missing`, not "no reason")
+    expect(row.attention).toEqual([...expected, { code: 'question_missing', message: SERVABILITY_REASON_MS.question_missing, count: 1 }])
     // the paper that holds only the served question, and the draft paper, carry nothing
     expect(lane.rows.filter((r) => r.paperId !== mixedPaper).every((r) => r.attention.length === 0)).toBe(true)
+  })
+
+  it('a missing id is looked up once for the whole overview, not once for the row and again for the card', async () => {
+    const spy = vi.spyOn(ServabilityService.prototype, 'factsOf')
+    try {
+      await reads.overview()
+      const asked = spy.mock.calls.flatMap((c) => [...c[0]])
+      expect(asked.filter((id) => id === MISSING)).toEqual([MISSING])
+      expect(asked.filter((id) => id === draftId)).toEqual([draftId])
+    } finally {
+      spy.mockRestore()
+    }
   })
 })
