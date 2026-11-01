@@ -1,6 +1,7 @@
 import { BIJAK_BUILDER_MESSAGES as MSG } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
+import { giveBab } from '../support/bab'
 import { serveSeededBlueprints } from '../support/serve-blueprints'
 import { bootFullApp, loginFull, type FullApp, type FullClient } from '../r1/full-app'
 import { ACCOUNTS, auditRows } from './helpers'
@@ -41,6 +42,7 @@ describe('R1-T48 builder parity: cover code, rule, sections, added questions, pi
     return res.body.data.id as string
   }
   async function approve(ids: string[]): Promise<void> {
+    await giveBab(t.db, ids) // H-A18: the submit gate (Semakan) asks for a Bab
     for (const action of ['review', 'approved']) {
       const res = await admin.post('/api/questions/bulk-action', { action, ids })
       expect(res.status, JSON.stringify(res.body)).toBe(200)
@@ -420,6 +422,7 @@ describe('R1-T48 builder parity: cover code, rule, sections, added questions, pi
       // in review (no longer a Draf) it is kept as well
       const second = await withBahagianD()
       const kept = (await addQuestion(second.paper, second.d, { number: '9', mode: 'mcq', marks: 1 })).body.data.added[0] as string
+      await giveBab(t.db, [kept])
       expect((await admin.post('/api/questions/bulk-action', { action: 'review', ids: [kept] })).status).toBe(200)
       expect((await admin.del(`/api/admin/papers/${second.paper}/questions/${kept}`)).status).toBe(200)
       expect((await admin.get(`/api/questions/${kept}`)).status).toBe(200)
