@@ -31,6 +31,7 @@ import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { featureModules } from '../../src/modules'
 import { createTestDatabase, type TestDatabase } from '../support/db'
+import { serveSeededBlueprints } from '../support/serve-blueprints'
 
 vi.setConfig({ testTimeout: 120_000, hookTimeout: 300_000 })
 
@@ -192,6 +193,8 @@ describe('PIPE AC-06.5: a null blueprint value never fails conformance', () => {
   })
 
   it('a curated paper on it publishes: no blocker, no note, no "needs review" flag', async () => {
+    // Terbit needs a Disahkan Kontrak (AC-R1-16.2, T34); the seeded PoC blueprints are Spec, so serve them first
+    await serveSeededBlueprints(db)
     first = await publishedPaper('Percubaan satu')
     expect(first.publish).toMatchObject({ ok: true, errors: [] })
     expect(first.publish.notes ?? []).toEqual([])
@@ -233,6 +236,8 @@ describe('PIPE AC-06.6: a curated paper that misses quota/KBAT is never blocked;
   })
 
   it('another curated paper still publishes (never blocked) and its result carries the flag and notes', async () => {
+    // the saved version 2 is Spec again; Terbit needs it Disahkan (AC-R1-16.2), so the admin verifies it first
+    await serveSeededBlueprints(db)
     const second = await publishedPaper('Percubaan dua')
     expect(second.publish).toMatchObject({ ok: true, errors: [], blueprintNeedsReview: true })
     expect((second.publish.notes as string[]).length).toBeGreaterThan(0)

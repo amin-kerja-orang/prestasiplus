@@ -84,7 +84,7 @@ describe('StudioListPage (S1 to S6)', () => {
     const w = await render()
     expect(w.text()).toContain('Bank soalan kanonikal - cipta, semak, terbit')
     const tiles = t(w, 'studio-tiles').text().replace(/\s+/g, ' ')
-    for (const word of ['Draft', 'Reviewed', 'Approved', 'Archived']) expect(tiles).toContain(word)
+    for (const word of ['Draf', 'Menunggu Semakan', 'Diterbitkan', 'Diarkibkan']) expect(tiles).toContain(word)
     expect(tiles).toContain('20')
     expect(t(w, 'studio-create').attributes('href')).toBe('/admin/studio/questions/create')
   })
@@ -119,9 +119,19 @@ describe('StudioListPage (S1 to S6)', () => {
     const w = await render()
     const heads = w.findAll('th').map((h) => h.text())
     expect(heads).toEqual(expect.arrayContaining(['No.', 'Soalan', 'Kertas', 'Sumber', 'Status']))
-    expect(w.findAll('[data-testid="studio-row-status"]').map((b) => b.text())).toEqual(['Draft', 'Approved', 'Reviewed'])
+    expect(w.findAll('[data-testid="studio-row-status"]').map((b) => b.text())).toEqual(['Draf', 'Diterbitkan', 'Menunggu Semakan'])
     expect(t(w, 'studio-row-served').text()).toBe('Dilihat murid di 4/6')
     expect(t(w, 'studio-row-dskp').text()).toBe('Belum ditanda DSKP')
+  })
+
+  it('shows the row kertas and numberLabel (REQ-C-010), else the old display (R1E2E-C2)', async () => {
+    studio.fetchStudioList.mockResolvedValue(page([row('41', 'draft', { kertas: '2', numberLabel: '7(b)' }), row('42', 'draft')]))
+    const w = await render()
+    const nos = w.findAll('[data-testid="studio-row-id"]').map((b) => b.text())
+    expect(nos).toEqual(['7(b)', '42'])
+    const text = w.text()
+    expect(text).toContain('Kertas 2')
+    expect(text).toContain('Matematik · Tingkatan 4')
   })
 
   it('row actions: Edit for a draft, Edit sebagai draf for an approved question, Sembunyikan only where the lifecycle allows', async () => {

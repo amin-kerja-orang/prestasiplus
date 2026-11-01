@@ -49,6 +49,8 @@ export const KESUKARAN = [
 ] as const
 
 export interface StudioDraft {
+  /** Stored question TP of a question whose parts carry no TP (intake-born): the parts inherit it, a save keeps it. */
+  inheritedTp?: number | null
   subjectId: string
   educationLevelId: string
   kertas: Kertas
@@ -139,7 +141,15 @@ export function totalMarks(draft: StudioDraft): number {
   return draft.leaves.reduce((s, l) => s + (Number.isFinite(l.marks) ? l.marks : 0), 0)
 }
 
-export const draftTp = (draft: StudioDraft): number | null => questionTp(draft.leaves)
+/** The question TP: highest over leaves, where a part without its own TP counts as the stored (inherited) question TP. */
+export const draftTp = (draft: StudioDraft): number | null =>
+  questionTp(draft.leaves.map((l) => ({ tp: l.tp ?? draft.inheritedTp ?? null }))) ?? draft.inheritedTp ?? null
+
+/** The note after "TP soalan: n": the highest part TP when a part carries it, else the TP inherited from the question. */
+export function draftTpNote(draft: StudioDraft): string {
+  const tp = draftTp(draft)
+  return tp !== null && draft.leaves.some((l) => l.tp === tp) ? '(tertinggi antara bahagian)' : '(diwarisi daripada soalan)'
+}
 
 /* -------------------------------------------------------------------------------------------- completeness */
 
@@ -169,7 +179,7 @@ export function draftGaps(d: StudioDraft, levelName = ''): Gap[] {
       gaps.push({ step: 3, message: `Bahagian (${l.label}) tiada skema jawapan.` })
     }
   }
-  for (const m of dskpGaps({ unitId: d.unitId, spIds: d.spIds, leaves: d.leaves })) gaps.push({ step: m.includes('Bahagian') ? 3 : 4, message: m })
+  for (const m of dskpGaps({ unitId: d.unitId, spIds: d.spIds, leaves: d.leaves.map((l) => ({ ...l, tp: l.tp ?? d.inheritedTp ?? null })) })) gaps.push({ step: m.includes('Bahagian') ? 3 : 4, message: m })
   return gaps
 }
 
@@ -367,8 +377,11 @@ export function hydrate(q: WireQuestion): Hydrated {
     }
     leaves.push(leaf)
   }
-  // A save writes the question TP as the highest leaf TP; a stored TP the leaves do not give would be reset.
-  if (unsupported.length === 0 && isSet(q.tag?.tp) && q.tag?.tp !== questionTp(leaves)) {
+  // A save writes the question TP as the highest leaf TP. Parts without any TP inherit the stored question TP (kept as `inheritedTp`);
+  // a stored TP that the parts' own TPs do not give would be reset, so that stays refused.
+  const leafTp = questionTp(leaves)
+  const storedTp = typeof q.tag?.tp === 'number' ? q.tag.tp : null
+  if (unsupported.length === 0 && isSet(q.tag?.tp) && leafTp !== null && q.tag?.tp !== leafTp) {
     unsupported.push('TP soalan tidak sepadan dengan TP bahagian, jadi tidak boleh disimpan semula di Studio.')
   }
   const draft: StudioDraft = {
@@ -384,6 +397,7 @@ export function hydrate(q: WireQuestion): Hydrated {
     spIds: q.tag?.spIds ?? [],
     groupId: q.stimulusGroup?.id ?? null,
     leaves: leaves.length === 0 && unsupported.length === 0 ? [blankLeaf('a')] : leaves,
+    ...(leafTp === null && storedTp !== null ? { inheritedTp: storedTp } : {}),
   }
   return { draft, unsupported }
 }

@@ -19,6 +19,11 @@ describe('school battle page (M16-20)', () => {
     me = await t.login(S.ADMIN) // full names and ids (the masking is covered in privacy.spec.ts)
     d1 = await schoolIdOf(t.db, 'DEMO001')
     d3 = await schoolIdOf(t.db, 'DEMO003')
+    // Secondary-only (D72): the school standings leave out primary-type schools and pupils below grade 7, and the seeded DEMO002 / DEMO003
+    // schools (SK) with their Darjah pupils are exactly that. These tests use them as rival schools, so the fixture makes the schools and
+    // their pupils secondary for this database only; the seeds are unchanged.
+    await t.db.query(`update schools set type = 'SMK' where code in ('DEMO002', 'DEMO003')`)
+    await t.db.query(`update users set grade = 10 where school_id in (select id from schools where code in ('DEMO002', 'DEMO003')) and grade < 7`)
   })
   afterAll(async () => {
     await t.close()
