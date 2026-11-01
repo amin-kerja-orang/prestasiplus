@@ -67,3 +67,8 @@
 | REQ-A-029 (2026-11-02 07:20) | Waiting for A3's per-gap note vs BASE-109 as asked; gap (1) Padam soalan likely closed by T10 PaperQuestionOps | C1 | — | ACCEPTED (waits A3 note) |
 | REQ-A-030 (2026-11-02 07:20) | Accepted: align m04 mock admin list rows with QuestionRow (kertas, numberLabel, other required fields) | C3 | r1/reqa030-mock-list-contract | IN-PROGRESS |
 | REQ-A-031 (2026-11-02 07:20) | Accepted: unit test for the Studio draft-saved flash (AC-02.2) | C3 | r1/reqa031-studio-draft-flash-test | IN-PROGRESS |
+| REQ-B-060 (2026-11-02 07:47) | Accepted, urgent (base red): add KS-17 Set Builder to packages/contract access matrix so access + access-doc tests agree with v2-portals.md | C1 | r1/reqb060-ks17-csv-link | IN-PROGRESS |
+| REQ-A-034 / REQ-B-063 (2026-11-02 07:47) | Accepted: make CSV import (/admin/questions/import) reachable from BS-02 per v2-portals.md:139 (same branch as REQ-B-060) | C1 | r1/reqb060-ks17-csv-link | IN-PROGRESS |
+| REQ-A-035 (2026-11-02 07:47) | Accepted: FE copies switch to "Jawab {N} soalan sahaja." (Q13, follow V2); with/after r1/rule-line-v2 | C2 | r1/reqa035-rule-line-fe | IN-PROGRESS |
+| REQ-A-032 (2026-11-02 07:47) | Accepted: fix the 7 m10 FE unit reds per team A's root cause (D72 users dataset) | C2 | r1/reqa032-m10-fe-reds | IN-PROGRESS |
+| REQ-B-061 (2026-11-02 07:47) | C part noted: m28 BankPage / http-admin list fan-out (~4N calls per load) and StudioGroupEditor callers vs the 60/min limit — C4 picks it up after REQ-B-056 (Lapor); A4 owns the limit side | C4 | — | ACCEPTED |
