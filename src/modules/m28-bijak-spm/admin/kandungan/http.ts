@@ -7,13 +7,14 @@ import type { ServabilityDatabankRow, ServabilityOverview, ServabilityPaperRow }
 import { api } from '@/api'
 
 import { toBijakError } from '../../server/http'
-import type { KandunganApi, LanePage, LaneQuery, LaneSubject } from './api'
+import type { KandunganApi, LanePage, LaneQuery } from './api'
 
 const enc = encodeURIComponent
 
 interface ListBody<T> {
   data?: T[]
   meta?: { page?: number; pageSize?: number; totalItems?: number }
+  subjects?: { id: string; name: string }[]
 }
 
 function qs(q: LaneQuery): string {
@@ -35,6 +36,7 @@ export class HttpKandunganServer implements KandunganApi {
         page: res?.meta?.page ?? q.page ?? 1,
         pageSize: res?.meta?.pageSize ?? q.pageSize ?? 25,
         total: res?.meta?.totalItems ?? res?.data?.length ?? 0,
+        subjects: (res?.subjects ?? []).map((s) => ({ id: s.id, name: s.name })),
       }
     } catch (e) {
       throw toBijakError(e)
@@ -44,16 +46,6 @@ export class HttpKandunganServer implements KandunganApi {
   async overview(): Promise<ServabilityOverview> {
     try {
       return await api.request<ServabilityOverview>('GET', '/api/admin/servability/overview')
-    } catch (e) {
-      throw toBijakError(e)
-    }
-  }
-
-  /** The Subjek filter: the bank subjects with their ids (`GET /api/questions/summary`, the same read as the Bank page). */
-  async subjects(): Promise<LaneSubject[]> {
-    try {
-      const res = await api.request<{ subjects?: { id: string; name: string }[] }>('GET', '/api/questions/summary')
-      return (res?.subjects ?? []).map((s) => ({ id: s.id, name: s.name }))
     } catch (e) {
       throw toBijakError(e)
     }

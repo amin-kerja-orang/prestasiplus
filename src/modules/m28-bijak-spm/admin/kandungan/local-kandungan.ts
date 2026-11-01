@@ -45,10 +45,10 @@ function reasonsOf(status: BankRow['status']): ServabilityReason[] {
   return [{ code, message: servabilityReasonMs(code, 'databank') }]
 }
 
-function page<T>(all: T[], q: LaneQuery): LanePage<T> {
+function page<T>(all: T[], q: LaneQuery, subjects: LaneSubject[]): LanePage<T> {
   const pageSize = q.pageSize ?? 25
   const p = q.page ?? 1
-  return { rows: all.slice((p - 1) * pageSize, p * pageSize), page: p, pageSize, total: all.length }
+  return { rows: all.slice((p - 1) * pageSize, p * pageSize), page: p, pageSize, total: all.length, subjects }
 }
 
 export function createMockKandungan(): KandunganApi {
@@ -148,18 +148,17 @@ export function createMockKandungan(): KandunganApi {
       }
     },
 
-    subjects(): Promise<LaneSubject[]> {
-      return Promise.resolve(admin.subjects().map((s) => ({ id: s.code, name: s.name })))
-    },
-
     async databankLane(q: LaneQuery): Promise<LanePage<ServabilityDatabankRow>> {
       const all = databankRows(await bank(), q)
-      return page(all, q)
+      return page(all, q, admin.subjects().map((s) => ({ id: s.code, name: s.name })))
     },
 
     async paperLane(q: LaneQuery): Promise<LanePage<ServabilityPaperRow>> {
-      const all = paperRows(await admin.listAdminPapers(), q)
-      return page(all, q)
+      const papers = await admin.listAdminPapers()
+      /** The subjects that have a paper, whatever the filters are (as the API). */
+      const seen = new Map<string, LaneSubject>()
+      for (const p of papers) if (!seen.has(p.subject)) seen.set(p.subject, { id: p.subject, name: p.subjectName })
+      return page(paperRows(papers, q), q, [...seen.values()])
     },
   }
   return api
