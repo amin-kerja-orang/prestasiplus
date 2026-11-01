@@ -491,7 +491,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/a3-qa-doc-nits | e4d4dd322 | READY (A3, BASE-105, docs only): stale QA notes on T38 self-mark reward fixed (2 files); B2 |
-| r1/a4chain-minors | affca77dc | ON HOLD (A1a; @16ad6053): A2 pre-review MAJOR fixed by lead (tracked apps/api/node_modules symlink untracked, 16ad6053); Minors open → A1a: janaSkipped check at top of evaluate/evaluateAll, 022a row cites real commits 33255321/a02f658f + servability-overview-once proof; do not merge yet |
+| r1/a4chain-minors | affca77dc | ON HOLD (A1b fixing A2 Minors; WIP head moves, see Origin head): symlink MAJOR fixed by lead (16ad6053); open: janaSkipped check at top of evaluate/evaluateAll, 022a row real commits + proof spec; do not merge until A1b reports READY |
 | r1/ac-gaps-a1b | 823bb4a15 | READY (A1b, BASE-105; @823bb4a1, CONTAINS ha17 157b371c AND t37-r1-runbook c9dcb5a0 — merge this instead of both): R1-18.4 spec + AC-18.1 Latihan Bab spec (both bite), coverage 132 proven / 6 partial / 1 no-proof (AC-18.1 partial until T51), held deps named; runbook UAT SELECTs with real testcontainer output; tsc/eslint 0; A3 dev-1 pre-review in progress; B2 |
 | r1/admin-list-perf | 2a8ab6744 | READY (A4, BASE-105): REQ-B-050 + 0106 + 0107 + exact counts; pre-review Minors fixed (status total ?? 0, no-slash kertas change documented, migration order + drift notes); B2 + B3 + DevOps |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
