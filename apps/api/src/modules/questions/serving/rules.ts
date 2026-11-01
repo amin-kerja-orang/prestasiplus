@@ -101,6 +101,8 @@ function bridgeReasons(f: ServabilityFacts, activity: ServabilityActivity, recor
   const refusal = bridgeRefusal(f, record)
   if (refusal === null) return []
   if (refusal.code === 'file_missing') return [reason('image_missing', activity, refusal.reasonCode)]
+  // D90: a stimulus linked to several questions must be a group; the admin gets the cause and the fix, not the generic wrapper.
+  if (refusal.code === 'stimulus_shared_ungrouped') return [reason('stimulus_shared_ungrouped', activity, refusal.reasonCode)]
   return [reason('bridge_refused', activity, refusal.reasonCode, BRIDGE_REFUSAL_REASONS_MS[refusal.code])]
 }
 
