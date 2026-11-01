@@ -505,7 +505,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 | T44 | r1/t44-blueprint-fields | 072d8f4b | — | merged at BASE-67 as 77984abc. The newer tip 072d8f4b shows a 19-file delta against base; A3 is asked whether it is WIP (marked IN-PROGRESS until it answers) |
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 15:56 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 15:58 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -513,7 +513,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/admin-list-perf | 8183b2c5a | READY (A4, BASE-105): REQ-B-050 + 0106 + 0107 + exact counts; 408k p95 text 1.9 s → 79 ms, kertas 2.0 s → 0.2 s; 1362 pass (1 known base red); B2 + B3 + DevOps (maintenance window, pg_trgm) |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
 | r1/builder-search-perf | f0ddb1ca0 | READY (A3; T48 + BASE-105): Cari soalan p50/p95 11.2/12.0 s → 0.89/0.99 s at 407k, same results; 520 + 1 todo; conformance 409/409; merges after T48; B2 |
-| r1/e05b-l1-spec | 4b9eac57a | IN-PROGRESS (A1b): pre-review Minors being pushed; the earlier BASE-105 head is superseded; B: wait for the A1b READY head |
+| r1/e05b-l1-spec | 4b9eac57a | READY (A1b, BASE-105): negative control added; 12/12; B2 + B3 |
 | r1/ha17-ac-coverage | 701064be9 | docs, auto-refreshed by A3 H-A27 (coverage 124/176) |
 | r1/ha18-gate-facts | d3842c48c | CHANGES REQUESTED → A2 fixing with D99 + MAJOR 1 + Minors |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
@@ -525,15 +525,15 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/overview-mcq-shape-once | 7a6e8bb35 | READY (A4): factsOf jana:false; cold overview 15.3→9.3 s (total 34.2→9.3 s); merges after req-b-033; B2 |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
 | r1/req-b-022a-a4 | 438407f65 | CHANGES REQUESTED (B2 c18, REQ-B-053: empty env breaks API start) → A4 fixing + restack on BASE-105 |
-| r1/req-b-025c | d47353043 | IN-PROGRESS (A1b): pre-review Minors being pushed; the earlier BASE-105 head is superseded; B: wait for the A1b READY head |
+| r1/req-b-025c | d47353043 | READY (A1b, BASE-105): Minors fixed (decision row REQ-B-007/025c, lateSync, fixture names); attempts 183/183; B2 |
 | r1/req-b-033 | c0ea2ea96 | Approve w/ Minors, blocked by 022a → A4 restack on BASE-105 |
 | r1/req-c-020 | 78e050b3b | Approve w/ Minors, blocked by 022a → A4 restack on BASE-105 |
 | r1/req-c012-a2 | ba57ecc52 | WAITS for fixed H-A18 (A2 slot 1) |
 | r1/reqb032-pinned-rule | e9cf34b7f | READY (A2+A3, BASE-105): the attempt serves the pinned version; SERVED_NOW = lock predicate; image rule B; pinned-version-rule 6/6; attempts 180/180; B2 + B3 |
-| r1/reqb049-report-visible | 9ece8d76d | IN-PROGRESS (A1b): pre-review Minors being pushed; B: wait for the A1b READY head |
+| r1/reqb049-report-visible | 9ece8d76d | READY (A1b, BASE-105): pre-review Minors fixed (type from the live version, spec titles, real level codes); 316/316; B2 + B3 |
 | r1/reqb052-archived-edit | ce0af563f | IN-PROGRESS (A3 T48 dev): red repro ce0af563 proves an admin/Guru PUT rewrites a pinned archived v1 that a pupil sees; fixing (branch to a new version) |
 | r1/reqc021-followup | 948aa327a | READY (A1a, BASE-105): fixes the base red draw-bounded BR-16; merge early |
-| r1/seed-dangling-placements | 2bbd4f3ca | IN-PROGRESS (A1b): pre-review Minors being pushed; B: wait for the A1b READY head |
+| r1/seed-dangling-placements | 11cbcf458 | READY (A1b, BASE-105): asserts paper titles + counts = POC_BANK; seed 155 + 1 skip; B2 |
 | r1/t04-minors | cc5116213 | READY (A2, BASE-105): B-044; 108 + 1 skip; ready for the B1 gate |
 | r1/t31-builder-wire | 6a27c8dd3 | READY (A3); needs C1 REQ-A-008 rebased on BASE-102 |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
