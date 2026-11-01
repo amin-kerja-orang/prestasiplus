@@ -180,7 +180,7 @@ export function registerPracticeReadsPaths(registry: OpenAPIRegistry): void {
     path: '/practice/chapter-subjects/{code}',
     tags: [TAG],
     summary: 'Chapters of a subject with the caller progress (S5)',
-    description: `Mock GET /api/practice/chapter-subjects/:code?levelId=. Chapter 1 is open; chapter k is open when chapter k - 1 is complete and its score is at least 70 (BR-16). A locked chapter is refused at session start (BE-12 CHAPTER_LOCKED), not here. ${WHO}`,
+    description: `Mock GET /api/practice/chapter-subjects/:code?levelId=. Every chapter is open (REQ-C-021, D98: V2 has no progressive lock; the 70 percent rule of BR-16 is dropped), so "state" is always "open". "locked" stays in the enum for old clients. ${WHO}`,
     request: { params: PracticeReadCodeParamsSchema, query: PracticeReadChapterSubjectQuerySchema },
     responses: { 200: json(envelopeOf(PracticeReadChapterSubjectDetailSchema), 'The chapter list of one level.'), 401: UNAUTHORIZED, 404: NOT_FOUND_CODE },
   })
