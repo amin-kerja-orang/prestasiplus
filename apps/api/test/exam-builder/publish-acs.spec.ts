@@ -206,6 +206,29 @@ describe('R1 T43b publish ACs (PIPE AC-07.4 to AC-07.9)', () => {
       expect(await status(paper)).toBe('draft')
     })
 
+    it('ZERO_MARK_SECTION and TOTAL_MARKS_BELOW_ONE fire on their own: a paper with no Kontrak at all (the blueprint check returns nothing) is still refused', async () => {
+      const paper = await newPaper()
+      const [a] = await sectionsOf(paper)
+      const id = await approved()
+      expect((await place(paper, a!, id)).status).toBe(201)
+      await q(`update papers set blueprint_id = null where id = $1`, [paper])
+      await q(`update question_parts set marks = 0 where question_version_id in (select id from question_versions where question_id = $1)`, [id])
+      const res = await publish(paper)
+      expect(res.ok).toBe(false)
+      // no Kontrak: none of the Kontrak lines can be there, so these come from the paper's own check
+      expect(codes(res)).not.toContain('BLUEPRINT_NOT_VERIFIED')
+      expect(res.blockerDetails).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ code: 'TOTAL_MARKS_BELOW_ONE', message: LINES.totalMarksBelowOne, overridable: false }),
+          expect.objectContaining({ code: 'ZERO_MARK_SECTION', section: 'Bahagian A', message: `Bahagian A: ${LINES.zeroMarkSection}`, overridable: false }),
+        ]),
+      )
+      expect(res.canOverride).toBe(false)
+      const forced = await publish(paper, { override: true, reason: 'cuba paksa menerbitkan' })
+      expect(forced.ok).toBe(false)
+      expect(await status(paper)).toBe('draft')
+    })
+
     it('same subject: a question of another subject cannot be placed (add and PUT), so a published paper has one subject', async () => {
       const paper = await newPaper()
       const [a] = await sectionsOf(paper)
@@ -348,13 +371,22 @@ describe('R1 T43b publish ACs (PIPE AC-07.4 to AC-07.9)', () => {
       expect(edit.status, JSON.stringify(edit.body)).toBe(200)
       expect((await q(`select latest_version_no v from questions where id = $1`, [ids[0]]))[0]?.v).toBeGreaterThanOrEqual(2)
       expect(await pinned()).toEqual(snapshot)
-      const view = await student.post('/api/bijak/attempts', { paperId: paper, mode: 'exam' })
-      expect(view.status, JSON.stringify(view.body)).toBe(201)
-      const served = (await student.get(`/api/bijak/attempts/${view.body.data.attemptId as string}`)).body.data.questions as { id: string; text?: string }[]
-      expect(served.map((x) => x.id)).toEqual(ids)
+      // what the pupil is served is the content of the pinned version, not the edited one
+      const sit = async (): Promise<{ attempt: string; ids: string[]; json: string }> => {
+        const started = await student.post('/api/bijak/attempts', { paperId: paper, mode: 'exam' })
+        expect(started.status, JSON.stringify(started.body)).toBe(201)
+        const res = await student.get(`/api/bijak/attempts/${started.body.data.attemptId as string}`)
+        expect(res.status, JSON.stringify(res.body)).toBe(200)
+        return { attempt: started.body.data.attemptId as string, ids: (res.body.data.questions as { id: string }[]).map((x) => x.id), json: JSON.stringify(res.body.data) }
+      }
+      const first = await sit()
+      expect(first.ids).toEqual(ids)
+      expect(first.json).toContain('Berapakah hasil tambah 2 dan 3?')
+      expect(first.json).not.toContain('Soalan yang telah diubah selepas kertas diterbitkan?')
+      expect((await student.post(`/api/bijak/attempts/${first.attempt}/abandon`)).status).toBe(204)
 
       // an addition after Terbit is refused: the paper is read-only, so no "added after publish" question can exist
-      const extra = await approved()
+      const extra = await approved({ questionText: 'Soalan tambahan selepas tarik balik: berapakah 9 + 9?' })
       const added = await place(paper, sections[0]!, extra)
       expect(added.status).toBe(422)
       expect(added.body.error.message).toBe(MSG_ALL.paperLocked)
@@ -366,9 +398,13 @@ describe('R1 T43b publish ACs (PIPE AC-07.4 to AC-07.9)', () => {
       expect((await place(paper, sections[2]!, extra)).status).toBe(201)
       expect((await publish(paper)).ok).toBe(true)
       expect((await q(`select version from papers where id = $1`, [paper]))[0]?.version).toBe(2)
-      const again = await q(`select pl.pinned_version_no v from paper_placements pl join paper_sections s on s.id = pl.paper_section_id where s.paper_id = $1`, [paper])
-      expect(again).toHaveLength(6)
-      expect(again.every((r) => Number(r.v) >= 1)).toBe(true)
+      const again = await q(`select pl.question_id::text qid, pl.pinned_version_no v from paper_placements pl join paper_sections s on s.id = pl.paper_section_id where s.paper_id = $1 order by s.position, pl.position`, [paper])
+      expect(again.map((r) => [r.qid, r.v])).toEqual([...ids.slice(0, 5), extra].map((id) => [id, 1]))
+      // the new sitting is served the re-pinned paper: the added question, no longer the removed one, and still the original content of the edited one
+      const second = await sit()
+      expect(second.ids).toEqual([...ids.slice(0, 5), extra])
+      expect(second.json).toContain('Soalan tambahan selepas tarik balik: berapakah 9 + 9?')
+      expect(second.json).not.toContain('Soalan yang telah diubah selepas kertas diterbitkan?')
     })
   })
 })
