@@ -2,12 +2,15 @@ import { Inject, Injectable } from '@nestjs/common'
 import {
   SERVABILITY_ACTIVITIES,
   SERVABILITY_ACTIVITY_LABELS,
+  SERVABILITY_HUB_CARDS,
   SERVABILITY_PAPER_STATUSES,
+  SERVABILITY_REASON_MS,
+  type ServabilityHubCard,
   type ServabilityActivity,
   type ServabilityBatchResult,
   type ServabilityDatabankRow,
   type ServabilityLaneQuery,
-  type ServabilityOverview,
+  type ServabilityOverviewCounts,
   type ServabilityPaperRow,
 } from '@pp/contract'
 
@@ -22,6 +25,15 @@ import { ServabilityService } from './servability.service'
 
 const TITLE_MAX = 90
 const CHUNK = 200
+/** The rows of the Bijak SPM lane: the curated (pilihan) papers, any status. The lane list and the hub card both start here. */
+const PAPER_LANE_COND = Prisma.sql`p.kind = 'pilihan'`
+interface PaperRow {
+  id: bigint
+  title: string
+  status: string
+  subject_id: bigint
+  subject_name: string | null
+}
 const PAPER_STATUSES: readonly string[] = SERVABILITY_PAPER_STATUSES
 const paperStatusOf = (status: string): ServabilityPaperRow['status'] => SERVABILITY_PAPER_STATUSES.find((s) => s === status) ?? 'draft'
 
@@ -68,10 +80,10 @@ export class ServabilityReadsService {
     }
   }
 
-  async overview(): Promise<ServabilityOverview> {
+  async overview(): Promise<ServabilityOverviewCounts> {
     const live = { status: SERVABLE_STATUS, active: true } as const
     const bank = await this.questions.count(live)
-    const [spmSubjects, drawn, databankTotal] = await Promise.all([this.subjectsListed(), this.spmDraw(), this.databankLaneTotal()])
+    const [spmSubjects, drawn, databankTotal, paperCard] = await Promise.all([this.subjectsListed(), this.spmDraw(), this.databankLaneTotal(), this.paperLaneCard()])
     const sumOver = (by: ReadonlyMap<string, number>, only?: ReadonlySet<string>) => [...by].reduce((n, [k, v]) => n + (only === undefined || only.has(k) ? v : 0), 0)
 
     const bab = await this.questions.groupCount('chapter', { ...filterOf('bab'), ...live })
@@ -92,8 +104,11 @@ export class ServabilityReadsService {
       ['simulasi_kuiz', kuiz, bank, 'sql'],
       ['jana_kertas', jana, bank, 'pool'],
     ]
+    // Hub cards (R1-21.1), V2 order: Databank Soalan, then Bijak SPM. Each counts the ROWS of the lane it opens.
+    const card = (lane: ServabilityHubCard['lane'], total: number, attention: number): ServabilityHubCard => ({ lane, ...SERVABILITY_HUB_CARDS[lane], total, attention })
     return {
       bank,
+      cards: [card('databank', databankTotal, Math.max(0, databankTotal - drawn.databankServed)), card('bijak-spm', paperCard.total, paperCard.attention)],
       activities: SERVABILITY_ACTIVITIES.map((a) => {
         const [activity, served, total, basis] = rows.find((r) => r[0] === a)!
         return { activity, label: SERVABILITY_ACTIVITY_LABELS[activity], served, total, attention: Math.max(0, total - served), basis }
@@ -158,21 +173,39 @@ export class ServabilityReadsService {
     }
   }
 
-  /** Lane "Bijak SPM": curated papers (newest first) with the placed questions the bridge cannot serve, by reason. */
+  /**
+   * Lane "Bijak SPM": curated papers (newest first). V2 (`SpmAttention::brokenSimulasiPaperIds`) flags only PUBLISHED papers: one
+   * that has no question ("Disajikan tetapi tiada soalan") and, here, the placed questions the bridge cannot serve, by reason.
+   * The hub card counts the same rows (`paperLaneCard`), so card and lane cannot differ.
+   */
   async paperLane(q: ServabilityLaneQuery): Promise<Paged<ServabilityPaperRow>> {
     const statusOk = q.status === undefined || PAPER_STATUSES.includes(q.status)
-    const conds: Prisma.Sql[] = [Prisma.sql`p.kind = 'pilihan'`, statusOk ? Prisma.sql`TRUE` : Prisma.sql`FALSE`]
+    const conds: Prisma.Sql[] = [PAPER_LANE_COND, statusOk ? Prisma.sql`TRUE` : Prisma.sql`FALSE`]
     if (q.status !== undefined && statusOk) conds.push(Prisma.sql`p.status = ${q.status}`)
     if (q.subjectId !== undefined) conds.push(isIdString(q.subjectId) ? Prisma.sql`p.subject_id = ${idFromString(q.subjectId)}` : Prisma.sql`FALSE`)
     if (q.search) conds.push(Prisma.sql`p.title ILIKE ${like(q.search)}`)
     const where = Prisma.join(conds, ' AND ')
     const offset = (q.page - 1) * q.pageSize
     const [papers, totals] = await Promise.all([
-      this.db.$queryRaw<{ id: bigint; title: string; status: string; subject_id: bigint; subject_name: string | null }[]>`
+      this.db.$queryRaw<PaperRow[]>`
         SELECT p.id, p.title, p.status, p.subject_id, (SELECT s.name FROM subjects s WHERE s.id = p.subject_id) AS subject_name
           FROM papers p WHERE ${where} ORDER BY p.id DESC LIMIT ${q.pageSize} OFFSET ${offset}`,
       this.db.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n FROM papers p WHERE ${where}`,
     ])
+    return { rows: await this.paperRows(papers), page: q.page, pageSize: q.pageSize, total: totals[0]?.n ?? 0 }
+  }
+
+  /** Hub card "Bijak SPM": every row of the lane (no filter), counted. A paper row needs attention when it carries a reason. */
+  private async paperLaneCard(): Promise<{ total: number; attention: number }> {
+    const papers = await this.db.$queryRaw<PaperRow[]>`
+      SELECT p.id, p.title, p.status, p.subject_id, (SELECT s.name FROM subjects s WHERE s.id = p.subject_id) AS subject_name
+        FROM papers p WHERE ${PAPER_LANE_COND} ORDER BY p.id DESC`
+    const rows = await this.paperRows(papers)
+    return { total: rows.length, attention: rows.filter((r) => r.attention.length > 0).length }
+  }
+
+  /** The lane rows of these papers: placed-question counts for all, reasons for the published ones. */
+  private async paperRows(papers: readonly PaperRow[]): Promise<ServabilityPaperRow[]> {
     const paperIds = papers.map((p) => p.id)
     const placements =
       paperIds.length === 0
@@ -180,38 +213,36 @@ export class ServabilityReadsService {
         : await this.db.$queryRaw<{ paper_id: bigint; question_id: bigint }[]>`
             SELECT ps.paper_id, pl.question_id FROM paper_placements pl JOIN paper_sections ps ON ps.id = pl.paper_section_id
              WHERE ps.paper_id = ANY(${paperIds}::bigint[])`
+    const published = new Set(papers.filter((p) => p.status === 'published').map((p) => p.id))
+    const toEvaluate = new Set(placements.filter((p) => published.has(p.paper_id)).map((p) => idToString(p.question_id)))
     const results = new Map<string, ReturnType<typeof evaluate>>()
-    for (const part of chunks([...new Set(placements.map((p) => idToString(p.question_id)))])) {
+    for (const part of chunks([...toEvaluate])) {
       for (const [id, f] of await this.servability.factsOf(part)) results.set(id, evaluate({ ...f, onPublishedPaper: true }, 'simulasi_paper'))
     }
-    return {
-      rows: papers.map((p) => {
-        const ids = placements.filter((x) => x.paper_id === p.id).map((x) => idToString(x.question_id))
-        const counts = new Map<string, { code: ServabilityPaperRow['attention'][number]['code']; message: string; count: number }>()
-        let attentionCount = 0
-        for (const id of ids) {
-          const reasons = results.get(id)?.reasons ?? []
-          if (reasons.length > 0) attentionCount++
-          for (const r of reasons) {
-            const c = counts.get(r.code)
-            if (c) c.count++
-            else counts.set(r.code, { code: r.code, message: r.message, count: 1 })
-          }
+    return papers.map((p) => {
+      const ids = placements.filter((x) => x.paper_id === p.id).map((x) => idToString(x.question_id))
+      const counts = new Map<string, { code: ServabilityPaperRow['attention'][number]['code']; message: string; count: number }>()
+      let attentionCount = 0
+      if (published.has(p.id) && ids.length === 0) counts.set('paper_empty', { code: 'paper_empty', message: SERVABILITY_REASON_MS.paper_empty, count: 1 })
+      for (const id of published.has(p.id) ? ids : []) {
+        const reasons = results.get(id)?.reasons ?? []
+        if (reasons.length > 0) attentionCount++
+        for (const r of reasons) {
+          const c = counts.get(r.code)
+          if (c) c.count++
+          else counts.set(r.code, { code: r.code, message: r.message, count: 1 })
         }
-        return {
-          paperId: idToString(p.id),
-          title: p.title,
-          subject: { id: idToString(p.subject_id), name: p.subject_name ?? '' },
-          status: paperStatusOf(p.status),
-          questionCount: ids.length,
-          attentionCount,
-          attention: [...counts.values()],
-        }
-      }),
-      page: q.page,
-      pageSize: q.pageSize,
-      total: totals[0]?.n ?? 0,
-    }
+      }
+      return {
+        paperId: idToString(p.id),
+        title: p.title,
+        subject: { id: idToString(p.subject_id), name: p.subject_name ?? '' },
+        status: paperStatusOf(p.status),
+        questionCount: ids.length,
+        attentionCount,
+        attention: [...counts.values()],
+      }
+    })
   }
 
   // --- helpers -------------------------------------------------------------------------------------
