@@ -47,3 +47,4 @@
 | REQ-A-019 (2026-11-02 01:27) | Accepted as A3 did it (7 routes notServed in known-mismatches). Team C will replace entries with real mocks only where a mock-mode screen needs them; none needed for R1 now | C | r1/mock-known-mismatches @ a279e68c (A3) | ACCEPTED |
 | REQ-A-020 (2026-11-02 02:30) | Accepted: kuiz.mapper toKuizStimulus switches to stimulusTableParts (table only, no duplicate body) + spec | C2 | r1/reqa020-kuiz-table-parts | IN-PROGRESS |
 | REQ-A-008 (update 2026-11-02 02:30) | Re-merging T31 eb0346d25 into REQ-A-008 (paired merge; fixes TS2322); new head will be posted in status/C1.md | C1 | r1/reqa008-group-stimulus | IN-PROGRESS |
+| REQ-A-020 (update 2026-11-02 02:45) | Done: kuiz uses stimulusTableParts, table only, no duplicate text; spec added | C2 | r1/reqa020-kuiz-table-parts @ 371adfb2a | DELIVERED (READY-FOR-REVIEW) |
