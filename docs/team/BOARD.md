@@ -489,14 +489,14 @@ BASE-105 + 11 team A READY API heads + C FE heads (reqa014 dc561730, reqa005 3ee
 Wallet tiers come only from the `reference` seed, never from a migration. Prod deploy runs `migrate deploy` only, so an operator must run `deploy.sh --seed-reference`. Without tiers, the dashboard and wallet return 500, and **every practice or Kuiz submit 500s and rolls back** (the reward runs inside the completion tx). Lead decision: (1) add a runbook precondition (`tiers` count = 4) and (3) make /api/ready return not-ready when tiers is empty (r1/ready-tiers-check). No migration. The reward is not made non-fatal, because silent coin loss is worse.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 21:46 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 21:49 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/a3-qa-doc-nits | e4d4dd322 | READY (A3, BASE-105, docs only): stale QA notes on T38 self-mark reward fixed (2 files); B2 |
 | r1/a4chain-minors | 6f2fb7938 | READY (A1b, @6f2fb793 on 0ba236ef): symlink removed; janaSkipped guard first line of evaluate; T45 HTTP POST /questions/:id/status case with pinned BM reasons; 022a row real commits + proof spec; A3 dev-1 delta pre-review CLEAN (13 files 76 tests, mutations bite); merge after the A4 chain; B2 |
-| r1/ac-gaps-a1b | eda51bf13 | READY (multi, @5c4ec750+, CONTAINS ha17 + t37): coverage doc, runbook (UAT SELECTs, 0106/0107 window, §0 wallet tiers = 4 precondition), B4 QA pack (refresh in progress, A3 dev-1); merge after H-A18; B2 |
+| r1/ac-gaps-a1b | eda51bf13 | READY (multi, @eda51bf1, CONTAINS ha17 + t37): coverage doc, runbook (UAT SELECTs, 0106/0107 window, §0 wallet tiers precondition, env THROTTLE_QUESTIONS_LIST_PER_MINUTE), B4 QA pack refreshed (reqa018 fix, delete rules, label-move check, expected 429, tiers); merge after H-A18; B2 |
 | r1/admin-list-perf | 2cd7889ae | READY (A4, @2cd7889a, BASE-105): REQ-B-050 + 0106 pg_trgm + 0107 kertas index; per-user @RateLimit GET /api/questions (THROTTLE_QUESTIONS_LIST_PER_MINUTE=60); docs: feature_flags 0108, drop_pool_tag 0109, optional B12 0122 / B20 0123 (lead-confirmed); B2 + B3 + DevOps (maintenance window, new env) |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
 | r1/bridge-table-parts | c805ecc7c | READY (A4, BASE-105): the bridge uses stimulusTableParts (an invalid grid + pipe body shows the table only, as in builder/Studio); bridge 118/118, attempts 180/180, kuiz 39/39; B2. Follow-up after T31 + this merge: drop PENDING_BRIDGE_TEXT in the parity spec (A4) |
@@ -511,7 +511,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha17-ac-coverage | 157b371c3 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b; head 157b371c |
 | r1/ha18-gate-facts | fc409ae16 | READY (A2, BASE-105): H-A18 + REQ-B-017/037 + D99 + pre-review fixes (M2 held-issues helper on both edit paths; m1 gate-issue codes; deviation row); workflow 296/296; conformance 409/409; B2 + B3 |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
-| r1/ha24-release-input | b963eed03 | READY (A3 docs, @b963eed0): §3.5 B1 merge order (incl. label fix 26a, d90 26b, delete-served-guard 7e5d82e6, reqa018 b7fe6fbc) + env THROTTLE_QUESTIONS_LIST_PER_MINUTE + BM release notes; migrations 0104–0107 used, 0108/0109 reserved; B1/B2 |
+| r1/ha24-release-input | d98a0f1d1 | READY (A3 docs, @d98a0f1d): §3.5 B1 merge order + BM release notes (5 known limits, tiers pre-deploy check, list throttle env); B1/B2 |
 | r1/ha26-team-a-state | 3c6d98390 | READY (A3 docs, @3c6d9839): team-a-r1-state.md; vs ac-gaps take ha26 side; B2 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-a2 | 8c1964a6f | READY (A2, BASE-105): prefetch crash fixed (awaited Promise.all, failed read → 500, no unhandledRejection; red-first specs); row 908 6 cells; tsc/eslint 0, intake-workflow 137/137; A4 pre-review: Approve; B2 |
