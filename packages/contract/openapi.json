@@ -12981,10 +12981,15 @@
           "kind": {
             "type": "string",
             "enum": [
-              "diagram",
               "passage",
-              "table"
-            ]
+              "table",
+              "diagram",
+              "image",
+              "map",
+              "infographic",
+              "graph"
+            ],
+            "description": "The seven stimulus kinds (R1-T07)."
           },
           "label": {
             "type": "string"
@@ -13006,6 +13011,49 @@
               "string",
               "null"
             ]
+          },
+          "caption": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Figure caption (R1-T07)."
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Source line of a passage or picture (R1-T07)."
+          },
+          "table": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "head": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "required": [
+              "head",
+              "rows"
+            ],
+            "additionalProperties": false,
+            "description": "The grid of a table stimulus; null for every other kind."
           }
         },
         "required": [
@@ -13013,7 +13061,10 @@
           "label",
           "body",
           "imageToken",
-          "alt"
+          "alt",
+          "caption",
+          "source",
+          "table"
         ],
         "additionalProperties": false
       },
