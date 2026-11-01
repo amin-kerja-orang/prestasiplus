@@ -435,3 +435,5 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
   - REQ-C-020 @ 1a6e2610: lane `subjects`. 65/65.
   - REQ-B-033 @ 572490e9: new reason `question_missing`. **Seed finding:** 25 placements on the 5 published demo papers point at missing question ids → A1a investigates.
 - FE follow-ups to C: REQ-A-016 (lane subjects, hub reads `cards`, `question_missing` label).
+- **T45 Part 3 READY** r1/t45-builder-acs @ 69d16a7f9 (A1b, on T48 4a3ff264, specs only): proves AC-R1-21.3 + AC-R1-21.6. exam-builder 387/387; tsc 0; eslint 0. Needs B2. Merges after T48.
+- The dangling-placements seed finding (REQ-B-033) goes to **A1b**, not A1a: r1/seed-dangling-placements.
