@@ -305,6 +305,69 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
       expect((await put({ title: 'T', items: ['x'.repeat(501)] })).status).toBe(422)
     })
 
+    // B3 T34-L1-residual: a Kontrak reference sheet is copied to every paper made from it, so the Kontrak write follows the paper rule, and Terbit re-checks.
+    it('Kontrak reference sheet: a decimal id and another user\'s upload are refused at create and at a new version; the editor\'s own token is kept', async () => {
+      const own = await admin.upload('/api/files?purpose=question_image', makePng())
+      expect(own.status).toBe(201)
+      const token = own.body.data.id as string
+      const internal = String((await q(`select id::text id from files where public_id = $1`, [token]))[0]!.id)
+      const teacher = await loginFull(t, ACCOUNTS.teacher)
+      const foreignUp = await teacher.upload('/api/files?purpose=question_image', makePng())
+      expect(foreignUp.status, JSON.stringify(foreignUp.body)).toBe(201)
+      const foreign = foreignUp.body.data.id as string
+      const body = (reference: unknown[]) => ({
+        subject: 'MAT',
+        kertas: 7,
+        source: 'Spec',
+        code: 'MAT/REF7',
+        durationMin: 60,
+        instructions: ['Jawab semua.'],
+        sections: [{ label: 'Bahagian A', markBudget: 1, questionCount: 1, rule: { type: 'all' } }],
+        reference,
+      })
+      for (const imageFileId of [internal, foreign, 'bukan-fail-sebenar']) {
+        const res = await admin.post('/api/admin/blueprints', body([{ title: 'Rajah', items: [], imageFileId }]))
+        expect(res.status, `${imageFileId}: ${JSON.stringify(res.body)}`).toBe(422)
+        expect(res.body.error.fields.reference).toBe(MSG.referenceImageInvalid)
+      }
+      expect((await q(`select count(*)::int n from blueprints where code = 'MAT/REF7'`))[0]!.n).toBe(0)
+      const ok = await admin.post('/api/admin/blueprints', body([{ title: 'Rajah', items: [], imageFileId: token }]))
+      expect(ok.status, JSON.stringify(ok.body)).toBe(201)
+      // a new version: the foreign image and the decimal id are refused; the sheet already on the Kontrak keeps its own token
+      const { subject: _s, kertas: _k, ...version } = body([{ title: 'Rajah', items: [], imageFileId: foreign }])
+      void _s
+      void _k
+      const bad = await admin.post('/api/admin/blueprints/MAT/7/versions', version)
+      expect(bad.status, JSON.stringify(bad.body)).toBe(422)
+      expect(bad.body.error.fields.reference).toBe(MSG.referenceImageInvalid)
+      const again = await admin.post('/api/admin/blueprints/MAT/7/versions', { ...version, reference: [{ title: 'Rajah', items: [], imageFileId: token }] })
+      expect(again.status, JSON.stringify(again.body)).toBe(201)
+    })
+
+    it('a bad picture already on a paper (made from a legacy Kontrak, or copied by Salin set) is a hard REFERENCE_IMAGE_INVALID at Terbit that the override cannot lift', async () => {
+      const { paper } = await fullPaper()
+      // the legacy case: the sheet holds the internal decimal id of a stored image
+      const up = await admin.upload('/api/files?purpose=question_image', makePng())
+      const internal = String((await q(`select id::text id from files where public_id = $1`, [up.body.data.id as string]))[0]!.id)
+      await q(`update papers set reference_sheets = $2::jsonb where id = $1`, [paper, JSON.stringify([{ title: 'Rajah', items: [], imageFileId: internal }])])
+      const review = (await admin.get(`/api/admin/papers/${paper}/review`)).body.data
+      expect(review.blockerDetails.find((b: { code: string }) => b.code === 'REFERENCE_IMAGE_INVALID')).toMatchObject({ overridable: false, message: MSG.referenceImageInvalid })
+      expect(review.canOverride).toBe(false)
+      const forced = await admin.post(`/api/admin/papers/${paper}/publish`, { override: true, reason: 'sebab yang sah' })
+      expect(forced.body.data.ok).toBe(false)
+      expect((await q(`select status from papers where id = $1`, [paper]))[0]?.status).toBe('draft')
+      // Salin set carries the sheet as it is, and the copy is refused at Terbit in the same way
+      const copy = await admin.post(`/api/admin/papers/${paper}/copy`)
+      expect(copy.status).toBe(201)
+      const copied = (await admin.get(`/api/admin/papers/${copy.body.data.id as string}/review`)).body.data
+      expect(copied.blockerDetails.some((b: { code: string }) => b.code === 'REFERENCE_IMAGE_INVALID')).toBe(true)
+      // a stored image named by its token passes
+      const token = up.body.data.id as string
+      await q(`update papers set reference_sheets = $2::jsonb where id = $1`, [paper, JSON.stringify([{ title: 'Rajah', items: [], imageFileId: token }])])
+      const fixed = (await admin.get(`/api/admin/papers/${paper}/review`)).body.data
+      expect(fixed.blockerDetails.some((b: { code: string }) => b.code === 'REFERENCE_IMAGE_INVALID')).toBe(false)
+    })
+
     it('Sunting petikan: renames the group title; the group must be on the paper', async () => {
       const stim = await admin.post('/api/stimuli', { kind: 'passage', label: 'Petikan lama', body: { ms: 'Petikan ujian untuk kertas.' } })
       expect(stim.status, JSON.stringify(stim.body)).toBe(201)
