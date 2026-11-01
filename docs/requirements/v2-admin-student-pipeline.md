@@ -482,7 +482,7 @@ Note on Penguasaan (not asked): the discovery doc describes no behaviour, so AC-
 - [x] Q-01 answered by the user (D81: upload -> OCR -> sunting -> terbit); no open questions remain.
 - [ ] G2 decisions for user approval: OCR engine and cost, quota routing (AC-14.23).
 - [ ] DEC-1 recorded in TRACKER (drops the publish hop of D54a for questions).
-- [ ] Fidelity deviations FD-1..FD-11 carried into the architect's deviation table.
+- [x] Fidelity deviations FD-1..FD-11 carried into the architect's deviation table (`docs/architecture/v2-admin-student-pipeline.md` 7.1, AP-01..AP-17).
 - Then G2: solution-architect and ui-ux-designer in parallel.
 
 ## 12. Counts (final)

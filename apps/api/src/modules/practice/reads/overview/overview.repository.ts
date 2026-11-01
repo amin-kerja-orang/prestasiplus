@@ -134,7 +134,7 @@ export class OverviewRepository {
 
   /**
    * Q-CHAPTER (BR-15): eligible objective questions (live version published, `is_active`, type mcq) per chapter.
-   * Ungrouped only (`q.group_id IS NULL`, D91), as `bankMatrix`: a stimulus-group member is never drawn, so the Bab card equals the drawable pool.
+   * Ungrouped only (`q.group_id IS NULL`, D91), as `bankMatrix`: a stimulus-group member is never drawn, so the Bab card equals the chapter-drawable candidates.
    * `QuestionsRepository` has no chapter filter yet, so this is one grouped statement on the bank tables.
    */
   async chapterQuestionCounts(chapterIds: readonly string[]): Promise<Map<string, number>> {
