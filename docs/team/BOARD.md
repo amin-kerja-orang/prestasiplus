@@ -495,7 +495,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha26-team-a-state | fc9af9bde | docs, auto-refreshed by A3 H-A27 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-a2 | a631198c7 | READY (A2, BASE-105): B-034/035 + B2 Minors; intake-workflow 135/135; ready for the B1 gate |
-| r1/mock-known-mismatches | a279e68cd | (no status — triage) |
+| r1/mock-known-mismatches | a279e68cd | READY (A3, BASE-105): REQ-A-019 base red fixed (7 routes notServed, stale m27 entry removed); conformance 2/2; B2 |
 | r1/overview-getmany-parallel | f8616d3b7 | ON HOLD: pre-review (A2) found 2 Majors (T45 red alone: missing pin line; fixture clash with H-A18) + Minors → A4 fixing + restacking the chain; do not merge the current heads |
 | r1/overview-mcq-shape-once | 7a6e8bb35 | ON HOLD: pre-review (A2) found 2 Majors (T45 red alone: missing pin line; fixture clash with H-A18) + Minors → A4 fixing + restacking the chain; do not merge the current heads |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
