@@ -21,6 +21,13 @@ const NO_FILES =
   'Mock side: no /api/files route (404); file storage is a backend service (BE-04) and the mock keeps pictures inline.'
 const NO_BUILDER =
   'Mock side: no Bijak paper builder / blueprint admin routes (404); the contract routes come from BE-37 to BE-39.'
+const NO_AI_STATUS = 'Mock side: no GET /api/ai/status route (404); not mocked (never was), the API serves it.'
+const NO_KUIZ = 'Mock side: no POST /api/bijak/kuiz/sessions route (404); not mocked (never was), the API serves it.'
+const NO_BIJAK_SUBJECTS = 'Mock side: no GET /api/admin/bijak/subjects route (404); not mocked (never was), the API serves it.'
+const NO_SERVABILITY = 'Mock side: no GET /api/admin/servability/overview route (404); not mocked (never was), the API serves it.'
+const NO_INTAKE_ITEMS = 'Mock side: no GET /api/intake/items route (404); not mocked (never was), the API serves it.'
+const NO_INTAKE_BATCHES = 'Mock side: no GET /api/intake/batches route (404); not mocked (never was), the API serves it.'
+const NO_INTAKE_DASHBOARD = 'Mock side: no GET /api/intake/dashboard route (404); not mocked (never was), the API serves it.'
 
 /**
  * A route the mock does not serve answers 404, which the runner sees as two violations: an
@@ -46,13 +53,31 @@ export const KNOWN_MISMATCHES: KnownMismatch[] = [
     reason:
       'Mock side: the user rows carry no username, no roles[] and no isSuspended; the contract (BE-05, v2-frontend section 6) requires them.',
   },
-  ...notServed('school-admin-pending/GET /admin-sekolah/guru/pending -> 200', 'Mock side: no GET /api/admin-sekolah/guru/pending route (404); the contract adds it for BE-21 AC13 (self-registered teachers are verified by the school admin).'),
   ...notServed('bijak-builder/GET /admin/papers -> 200', NO_BUILDER),
   ...notServed('bijak-builder/GET /admin/papers anonymous -> 401', NO_BUILDER),
   ...notServed('bijak-builder/GET /admin/papers as student -> 403', NO_BUILDER),
   ...notServed('bijak-blueprint-admin/GET /admin/blueprints -> 200', NO_BUILDER),
   ...notServed('bijak-blueprint-admin/GET /admin/blueprints anonymous -> 401', NO_BUILDER),
   ...notServed('bijak-blueprint-admin/GET /admin/blueprints as student -> 403', NO_BUILDER),
+  ...notServed('ai/GET /ai/status -> 200', NO_AI_STATUS),
+  ...notServed('ai/GET /ai/status anonymous -> 401', NO_AI_STATUS),
+  ...notServed('ai/GET /ai/status as student -> 403', NO_AI_STATUS),
+  ...notServed('bijak-kuiz/POST /bijak/kuiz/sessions anonymous -> 401', NO_KUIZ),
+  ...notServed('bijak-standards/GET /admin/bijak/subjects -> 200', NO_BIJAK_SUBJECTS),
+  ...notServed('bijak-standards/GET /admin/bijak/subjects anonymous -> 401', NO_BIJAK_SUBJECTS),
+  ...notServed('bijak-standards/GET /admin/bijak/subjects as student -> 403', NO_BIJAK_SUBJECTS),
+  ...notServed('servability/GET /admin/servability/overview -> 200', NO_SERVABILITY),
+  ...notServed('servability/GET /admin/servability/overview anonymous -> 401', NO_SERVABILITY),
+  ...notServed('servability/GET /admin/servability/overview as student -> 403', NO_SERVABILITY),
+  ...notServed('intake/GET /intake/items -> 200', NO_INTAKE_ITEMS),
+  ...notServed('intake/GET /intake/items anonymous -> 401', NO_INTAKE_ITEMS),
+  ...notServed('intake/GET /intake/items as student -> 403', NO_INTAKE_ITEMS),
+  ...notServed('intake-files/GET /intake/batches -> 200', NO_INTAKE_BATCHES),
+  ...notServed('intake-files/GET /intake/batches anonymous -> 401', NO_INTAKE_BATCHES),
+  ...notServed('intake-files/GET /intake/batches as student -> 403', NO_INTAKE_BATCHES),
+  ...notServed('intake-dashboard/GET /intake/dashboard -> 200', NO_INTAKE_DASHBOARD),
+  ...notServed('intake-dashboard/GET /intake/dashboard anonymous -> 401', NO_INTAKE_DASHBOARD),
+  ...notServed('intake-dashboard/GET /intake/dashboard as student -> 403', NO_INTAKE_DASHBOARD),
   {
     scenario: 'auth/POST /auth/login -> 200',
     reason:
