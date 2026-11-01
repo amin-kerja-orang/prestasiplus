@@ -238,7 +238,7 @@ export const StimulusGroupListQuerySchema = z
   .strictObject({
     ...listFilters,
     joinable: z.enum(['true'], STIMULUS_MESSAGES.filter).optional().meta({
-      description: '`true` keeps only groups a question can still join: no member is shown to pupils (REQ-C-019, a UX filter; the served lock still decides on the write).',
+      description: '`true` keeps only groups with no member shown to pupils (REQ-C-019). A deliberate narrowing for the picker: a draft question may still join a group that has a served member through the members route (the served lock only protects the served members and their order), so a group missing from this list is not necessarily closed to a draft.',
     }),
   })
   .meta({ id: 'StimulusGroupListQuery' })

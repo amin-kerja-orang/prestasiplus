@@ -39,6 +39,7 @@ describe('admin question list: Tahun, Negeri, Kertas, Jenis', () => {
     await make('b', { kertas: '2' }, b)
     await make('c', { kertas: '2' }, c)
     await make('d', {}, null) // no source paper, no kertas
+    await make('e', {}, await paper(2022, '  Perak ', 'latihan')) // an exam board stored with spaces
   })
   afterAll(async () => {
     await t.close()
@@ -63,6 +64,10 @@ describe('admin question list: Tahun, Negeri, Kertas, Jenis', () => {
     expect(await listed('negeri=johor')).toEqual(keys('b'))
     expect(await listed('negeri=LPM')).toEqual(keys('c'))
     expect(await listed('negeri=Sela')).toEqual([]) // exact, not a prefix
+    // a board stored with spaces matches its trimmed option (filter-options lists the trimmed value), with or without spaces in the filter
+    expect(await listed('negeri=Perak')).toEqual(keys('e'))
+    expect(await listed('negeri=perak')).toEqual(keys('e'))
+    expect(await listed(`negeri=${encodeURIComponent(' PERAK ')}`)).toEqual(keys('e'))
   })
 
   it('Kertas: 1, 2 or 3 (the trailing digit of the paper code)', async () => {
