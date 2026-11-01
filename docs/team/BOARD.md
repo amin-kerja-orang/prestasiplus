@@ -505,20 +505,20 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 | T44 | r1/t44-blueprint-fields | 072d8f4b | — | merged at BASE-67 as 77984abc. The newer tip 072d8f4b shows a 19-file delta against base; A3 is asked whether it is WIP (marked IN-PROGRESS until it answers) |
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 14:57 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 15:00 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/e05b-l1-spec | baa42a152 | READY (A1b, B2 + B3 to review) |
-| r1/ha17-ac-coverage | 55562fa6a | docs, auto-refreshed by A3 H-A27 (coverage 124/176) |
+| r1/ha17-ac-coverage | 9080a76e7 | docs, auto-refreshed by A3 H-A27 (coverage 124/176) |
 | r1/ha18-gate-facts | d3842c48c | CHANGES REQUESTED → A2 fixing with D99 + MAJOR 1 + Minors |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
-| r1/ha24-release-input | 625be6520 | docs, auto-refreshed by A3 H-A27 |
-| r1/ha26-team-a-state | dd2bee07a | docs, auto-refreshed by A3 H-A27 |
+| r1/ha24-release-input | 36d6756bc | docs, auto-refreshed by A3 H-A27 |
+| r1/ha26-team-a-state | 5f0c6252c | docs, auto-refreshed by A3 H-A27 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-a2 | b70dc9571 | IN-PROGRESS: B2 Minors pushed, A2 running evidence (READY ~15:20) |
-| r1/overview-mcq-shape-once | 390fbdd75 | IN-PROGRESS (A4) |
+| r1/overview-mcq-shape-once | b0f1e9b2c | IN-PROGRESS (A4) |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
 | r1/req-b-022a-a4 | e81f64d56 | READY (A4), B3 + DevOps (new env) |
 | r1/req-b-025c | a2865119f | READY (A1b), B2 |
