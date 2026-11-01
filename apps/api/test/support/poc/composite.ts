@@ -1,14 +1,14 @@
 import type {
   BijakQuestionBundle,
   BijakQuestionSource as AttemptQuestionSource,
-} from '../attempts/ports'
-import { POC_QUESTION_ID_BASE } from '../papers/poc'
+} from '../../../src/modules/bijak/attempts/ports'
+import { POC_QUESTION_ID_BASE } from '../../../prisma/seed/poc/export'
 import type {
   BijakPool,
   BijakPoolScope,
   BijakQuestionInfo,
   BijakQuestionSource as PaperQuestionSource,
-} from '../papers/ports'
+} from '../../../src/modules/bijak/papers/ports'
 
 /**
  * Size of the reserved PoC id block: `[POC_QUESTION_ID_BASE, POC_QUESTION_ID_BASE + POC_ID_BLOCK)`.

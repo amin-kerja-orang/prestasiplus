@@ -4,7 +4,10 @@ import {
   BIJAK_BUILDER_MESSAGES as MESSAGES,
   BijakBuilderPaperCreateSchema,
   BijakBuilderPaperListQuerySchema,
+  BijakBuilderGroupLabelSchema,
+  servabilityReasonMs,
   BijakBuilderPaperPatchSchema,
+  BijakBuilderPublishRequestSchema,
   BijakBuilderPreviewRequestSchema,
   type BijakBlueprintView,
   BIJAK_BUILDER_PLACEMENT_LINES as PLACE,
@@ -26,11 +29,13 @@ import {
   type BijakBuilderPreview,
   type BijakBuilderPublishResult,
   type BijakBuilderQuestion,
+  type ServabilityReport,
   type ListMeta,
 } from '@pp/contract'
 import type { z } from 'zod'
 
 import { AUDIT_ACTIONS, AuditService } from '../../../common/audit'
+import type { Prisma } from '../../../db/generated/client'
 import { ApiError } from '../../../common/errors/api-error'
 import { listMeta } from '../../../common/http/respond'
 import { toMytTimestamp } from '../../../common/time/myt'
@@ -43,10 +48,22 @@ import { generateLimit, noBlueprint, shortage } from '../../bijak/papers/errors'
 import { BijakPapersPorts } from '../../bijak/papers/ports'
 import { bijakCodeOf, curriculumCodeOf } from '../../bijak/papers/subject-codes'
 import { mytYear, referencePanels, ruleOf, sectionInstruction } from '../../bijak/papers/rules'
+import { ServabilityService, StimuliService } from '../../questions'
 import { blueprintView } from '../blueprints/blueprint-view'
 import { toStandard } from '../blueprints/blueprint-standard'
 import type { AuditActor } from './actor'
-import { BIJAK_BUILDER_PAGE_SIZE, isServableStatus, MAX_EDITOR_CANDIDATES, POOL_PAGE_SIZE } from './builder.constants'
+import {
+  attemptRefusalLine,
+  unreadableLine,
+  BIJAK_BUILDER_PAGE_SIZE,
+  contractNotVerifiedLine,
+  DESCRIBE_CHUNK,
+  GROUP_MIN_MEMBERS_MESSAGE,
+  isServableStatus,
+  MAX_EDITOR_CANDIDATES,
+  MIN_GROUP_MEMBERS,
+  POOL_PAGE_SIZE,
+} from './builder.constants'
 import { BuilderRepository, type PaperTree, type SubjectRef } from './builder.repository'
 import { excludedBankQuery } from '../../bijak/papers/pool-source'
 import { sourceToWire } from '../../bijak/papers/rules'
@@ -61,7 +78,8 @@ import {
   verifyComposition,
   type QuestionFacts,
 } from './exam-core.adapter'
-import { checkPaper, normalizeUnits, publishErrors, reorderUnits, unitsOf, addUnit, removeUnit, type PaperCheck } from './paper-check'
+import { checkPaperDetailed, normalizeUnits, reorderUnits, unitsOf, addUnit, removeUnit, type CheckIssue, type PaperCheck } from './paper-check'
+import { blockerView, toBlockers, type BlockerDraft } from './blockers'
 import { shortageToWire, standardForPaper, violationLines } from './standard'
 import { BijakBuilderPorts, type BuilderGroupInfo, type BuilderQuestionInfo, type BuilderQuestionRef } from './ports'
 
@@ -93,6 +111,8 @@ interface Evaluation {
   info: Info
   groups: ReadonlyMap<string, BuilderGroupInfo>
   check: PaperCheck
+  /** The blocking lines of `check` with their codes (same order as `publishErrors(check)`). */
+  issues: CheckIssue[]
 }
 
 /**
@@ -109,6 +129,8 @@ export class BuilderService {
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(BijakBuilderPorts) private readonly ports: BijakBuilderPorts,
     @Inject(BijakPapersPorts) private readonly papersPorts: BijakPapersPorts,
+    @Inject(ServabilityService) private readonly servability: ServabilityService,
+    @Inject(StimuliService) private readonly stimuli: StimuliService,
   ) {}
 
   private get questions() {
@@ -175,7 +197,7 @@ export class BuilderService {
           if (!marks.has(id)) marks.set(id, pl.marksOverride ?? found?.marks ?? 0)
         }
       const placed = [...marks.keys()]
-      const check = checkPaper({
+      const { check, issues } = checkPaperDetailed({
         specs: paper.sections.map((s) => ({
           label: s.label,
           markBudget: s.markBudget,
@@ -187,8 +209,9 @@ export class BuilderService {
         groupOf: (id) => info.get(id)?.groupId ?? undefined,
         membersOf: (g) => groups.get(g)?.questionIds ?? placed.filter((id) => info.get(id)?.groupId === g),
         isLive: (id) => isServableStatus(info.get(id)?.status ?? ''),
+        isStimulusGroup: (g) => groups.has(g),
       })
-      return { info, groups, check }
+      return { info, groups, check, issues }
     })
   }
 
@@ -307,6 +330,16 @@ export class BuilderService {
 
   // --- operations --------------------------------------------------------------------------------
 
+  /** R1-T34: every reference-panel image must be a stored question image named by its public token, uploaded by the editing admin or already on this paper. */
+  private async checkReferenceImages(actor: AuditActor, paper: PaperTree, refs: readonly string[]): Promise<void> {
+    if (refs.length === 0) return
+    const onPaper = referencePanels(paper.referenceSheets).flatMap((p) => (p.imageFileId ? [p.imageFileId] : []))
+    const known = await this.repo.existingImages(refs, BigInt(actor.userId), onPaper)
+    if (refs.some((r) => !known.has(r))) {
+      throw ApiError.of('VALIDATION_ERROR', { message: MESSAGES.referenceImageInvalid, fields: { reference: MESSAGES.referenceImageInvalid } })
+    }
+  }
+
   async list(rawQuery: unknown): Promise<{ data: BijakBuilderPaperSummary[]; meta: ListMeta }> {
     const query = parseWith(BijakBuilderPaperListQuerySchema, rawQuery)
     const page = query.page ?? 1
@@ -407,19 +440,28 @@ export class BuilderService {
       // Resolve every section patch before anything is written (a refusal leaves the paper untouched).
       const sections = body.sections ?? []
       const wanted = new Set<string>()
-      for (const patch of sections) for (const qid of patch.questionIds) if (parseId(qid) !== null) wanted.add(qid)
+      for (const patch of sections) for (const qid of patch.questionIds ?? []) if (parseId(qid) !== null) wanted.add(qid)
       const st = await this.structure([...wanted])
       const plans: { sectionId: bigint; placements: { questionId: bigint; pinnedVersionNo: number }[] }[] = []
+      const edits: { sectionId: bigint; data: Prisma.PaperSectionUncheckedUpdateInput }[] = []
       const resulting = new Map<bigint, string[]>(paper.sections.map((s) => [s.id, s.placements.map((pl) => idToString(pl.questionId))]))
       for (const patch of sections) {
         const sectionId = parseId(patch.id)
         const section = sectionId === null ? undefined : paper.sections.find((s) => s.id === sectionId)
         if (!section) throw invalid(MESSAGES.invalidSection)
+        // R1-T34 "Sunting bahagian": the printed name, the authored instruction and "mesti dijawab"; the rule and the budget stay the Kontrak's.
+        const data: Prisma.PaperSectionUncheckedUpdateInput = {
+          ...(patch.label !== undefined ? { label: patch.label } : {}),
+          ...(patch.instruction !== undefined ? { instruction: patch.instruction === null || patch.instruction === '' ? null : patch.instruction } : {}),
+          ...(patch.compulsory !== undefined ? { compulsory: patch.compulsory } : {}),
+        }
+        if (Object.keys(data).length > 0) edits.push({ sectionId: section.id, data })
+        if (patch.questionIds === undefined) continue
         for (const qid of patch.questionIds) {
           const q = parseId(qid) === null ? undefined : st.info.get(qid)
           if (!q || q.subject !== bijakSubject) throw invalid(MESSAGES.invalidQuestion)
         }
-        const dups = patch.questionIds.filter((qid, i) => patch.questionIds.indexOf(qid) !== i)
+        const dups = patch.questionIds.filter((qid, i) => patch.questionIds!.indexOf(qid) !== i)
         if (dups.length) throw invalid(LINES.duplicateQuestion([...new Set(dups)]))
         // D90: a group is placed whole, contiguous and in published order; a lone member brings the group along.
         const ids = normalizeUnits(patch.questionIds, st.groupOf, st.membersOf)
@@ -430,6 +472,8 @@ export class BuilderService {
         resulting.set(section.id, ids)
         plans.push({ sectionId: section.id, placements: ids.map((id) => ({ questionId: BigInt(id), pinnedVersionNo: st.info.get(id)!.versionNo })) })
       }
+      // R1-T34 "Bahan rujukan": every panel image must be a stored file (public token or id), never a free string.
+      if (body.reference !== undefined) await this.checkReferenceImages(actor, paper, body.reference.flatMap((p) => (p.imageFileId ? [p.imageFileId] : [])))
       const everywhere = [...resulting.values()].flat()
       // D90: a stimulus group lives in ONE section, so a group member twice on the paper is refused here. A plain
       // question repeated across sections stays accepted and is reported by the publish check (the mock's order).
@@ -441,11 +485,19 @@ export class BuilderService {
         ...(body.year !== undefined ? { year: body.year } : {}),
         ...(body.durationMin !== undefined ? { printedDurationMin: body.durationMin } : {}),
         ...(body.instructions !== undefined ? { instructions: body.instructions } : {}),
+        ...(body.reference !== undefined ? { referenceSheets: body.reference as unknown as Prisma.InputJsonValue } : {}),
         updatedAt: this.clock.now(),
       })
+      for (const edit of edits) await this.repo.updateSection(edit.sectionId, edit.data)
       for (const plan of plans) await this.repo.replacePlacements(plan.sectionId, plan.placements)
       const status = statusOf(paper.status)
-      await this.record(actor, AUDIT_ACTIONS.BIJAK_PAPER_UPDATED, paper.id, { from: status, to: status, sections: plans.length })
+      await this.record(actor, AUDIT_ACTIONS.BIJAK_PAPER_UPDATED, paper.id, {
+        from: status,
+        to: status,
+        sections: plans.length,
+        ...(edits.length > 0 ? { sectionEdits: edits.length } : {}),
+        ...(body.reference !== undefined ? { reference: body.reference.length } : {}),
+      })
       return paper.id
     })
     const fresh = await this.repo.findPilihan(paperId)
@@ -467,15 +519,70 @@ export class BuilderService {
     return { ok: true }
   }
 
-  async publish(actor: AuditActor, rawId: string): Promise<BijakBuilderPublishResult> {
+  /** Ids of the questions placed on a paper (unique, in paper order). */
+  private placedIdsOf(paper: PaperTree | null): string[] {
+    return paper ? [...new Set(paper.sections.flatMap((s) => s.placements.map((pl) => idToString(pl.questionId))))] : []
+  }
+
+  /**
+   * The ServabilityService reports of some questions. The bank fails closed on a stored question it cannot read (a stored key that is
+   * missing or invalid is a 500 with the part logged): that must not take the whole review or Terbit down (B3 T34-L2). On that failure the
+   * questions are read one by one; a question that still cannot be read is listed in `unreadable` and becomes a HARD NOT_SERVABLE blocker
+   * (it must never publish just because its verdict is missing). Its own named blocker (NO_KEY) comes from the pool facts.
+   */
+  private async safeReports(ids: readonly string[]): Promise<{ reports: ReadonlyMap<string, ServabilityReport>; unreadable: string[] }> {
+    if (ids.length === 0) return { reports: new Map(), unreadable: [] }
+    try {
+      return { reports: await this.servability.reports(ids), unreadable: [] }
+    } catch (e) {
+      if (!(e instanceof ApiError) || e.getStatus() < 500) throw e
+      const reports = new Map<string, ServabilityReport>()
+      const unreadable: string[] = []
+      for (const id of ids) {
+        try {
+          for (const [k, v] of await this.servability.reports([id])) reports.set(k, v)
+        } catch (inner) {
+          if (!(inner instanceof ApiError) || inner.getStatus() < 500) throw inner
+          unreadable.push(id)
+        }
+      }
+      return { reports, unreadable }
+    }
+  }
+
+  async publish(actor: AuditActor, rawId: string, rawBody?: unknown): Promise<BijakBuilderPublishResult> {
     const id = parseId(rawId)
+    // The body is parsed first so a bad body does not cost the bank reads below; its 422 is still raised only after the paper is known to exist.
+    let request: ReturnType<typeof BijakBuilderPublishRequestSchema.parse> | undefined
+    let bodyError: unknown
+    try {
+      request = parseWith(BijakBuilderPublishRequestSchema, rawBody ?? {})
+    } catch (e) {
+      bodyError = e
+    }
+    // The servability batch reads the whole bank for the placed questions: it is done BEFORE the transaction takes the paper lock (a slow read must
+    // not hold the lock of the 5 s transaction). Inside, the placed set is compared with the locked paper and re-read only if it moved.
+    const early = id === null ? null : await this.repo.findPilihan(id)
+    const earlyIds = this.placedIdsOf(early)
+    const earlyReads = bodyError === undefined ? await this.safeReports(earlyIds) : { reports: new Map<string, ServabilityReport>(), unreadable: [] as string[] }
     return this.prisma.transaction(async () => {
       const paper = await this.lockedPaper(id)
+      // The body is optional (no body = the plain Terbit); a bad body is 422 only after the paper is known to exist.
+      if (bodyError !== undefined || request === undefined) throw bodyError
       const ev = await this.evaluate(paper)
       const structural = await this.structuralCheck(paper)
-      const errors = [...new Set([...publishErrors(ev.check), ...structural.blockers])]
+      const placedNow = this.placedIdsOf(paper)
+      const { reports, unreadable } = placedNow.length === earlyIds.length && placedNow.every((x, i) => x === earlyIds[i]) ? earlyReads : await this.safeReports(placedNow)
+      // ONE rule for the review and for publish: `collectBlockers` (hard = the paper's own checks incl. D93 groups, a question missing from the
+      // pool, a question pupils cannot be served; overridable = the Kontrak line, which a paper that is already Terbit keeps (overridden), plus the structural blueprint lines).
+      const blockers = this.collectBlockers(paper, ev, structural, reports, unreadable)
+      const errors = blockers.map((b) => b.message)
+      const overridable = blockers.filter((b) => b.overridable).map((b) => b.message)
+      const view = blockerView(blockers)
       const review = structural.notes.length > 0 ? { notes: structural.notes, blueprintNeedsReview: true } : {}
-      if (errors.length > 0) return { ok: false, errors, ...review }
+      // R1-T34 (V2 `studio.paper.published_override`): only the blueprint-conformance blockers (incl. a contract that is not Disahkan) can be overridden, with a reason, audited.
+      const override = request.override === true && view.canOverride
+      if (errors.length > 0 && !override) return { ok: false, errors, ...view, ...review }
       if (paper.status === 'published') return { ok: true, errors: [], ...review }
       // Pin every placed question (all members of a group) at the version in force and freeze its marks.
       for (const s of paper.sections)
@@ -495,7 +602,16 @@ export class BuilderService {
         from: 'draf',
         to: 'terbit',
         ...(structural.notes.length > 0 ? { blueprintNeedsReview: true, notes: structural.notes.length } : {}),
+        ...(override ? { override: true } : {}),
       })
+      if (override) {
+        await this.record(actor, AUDIT_ACTIONS.BIJAK_PAPER_PUBLISHED_OVERRIDE, paper.id, {
+          reason: request.reason,
+          overridden: overridable.slice(0, 50),
+          count: overridable.length,
+        })
+        return { ok: true, errors: [], overridden: overridable, ...review }
+      }
       return { ok: true, errors: [], ...review }
     })
   }
@@ -533,26 +649,72 @@ export class BuilderService {
   /**
    * Publish check of the standard domain. Curated papers use tier 'structural' of `verifyComposition`
    * for blockers; the standard tier (quota, profile, KBAT) only produces notes and "Blueprint perlu
-   * semakan" (D78 O-2). Runs only when facts exist for EVERY placed question (a question missing from
-   * the pool is not live, which `checkPaper` already blocks).
+   * semakan" (D78 O-2). A placed question that is missing from the candidate pool raises ONE blocker with its id
+   * (`fixed`: the audited override never lifts it) and every other check still runs. AC-R1-16.2 (R1E2E-07): a
+   * contract that is not Disahkan is a blocker (`blockers`, so the audited override applies).
    */
-  private async structuralCheck(paper: PaperTree): Promise<{ blockers: string[]; notes: string[]; report: unknown | null }> {
-    const none = { blockers: [], notes: [], report: null }
+  private async structuralCheck(paper: PaperTree): Promise<{ blockers: BlockerDraft[]; contract: BlockerDraft[]; fixed: BlockerDraft[]; notes: string[]; report: unknown | null }> {
+    const none = { blockers: [] as BlockerDraft[], contract: [] as BlockerDraft[], fixed: [] as BlockerDraft[], notes: [] as string[], report: null }
     if (paper.blueprintId === null) return none
     const subject = (await this.repo.subjectsByIds([paper.subjectId])).get(paper.subjectId.toString())
     const blueprint = await this.repo.blueprintById(paper.blueprintId)
     if (!subject || !blueprint) return none
+    const contract: BlockerDraft[] = blueprint.source === 'verified' ? [] : [{ code: 'BLUEPRINT_NOT_VERIFIED', message: contractNotVerifiedLine(blueprint.code, blueprint.version, sourceToWire(blueprint.source)) }]
     const std = standardForPaper(paper, blueprint, bijakCodeOf(subject.code))
-    if (!std) return none
+    if (!std) return { ...none, contract }
     const composed = paper.sections.map((s, i) => ({ position: i + 1, questionIds: s.placements.map((pl) => idToString(pl.questionId)) }))
-    const placed = composed.flatMap((c) => c.questionIds)
-    if (placed.length === 0) return none
+    if (composed.every((c) => c.questionIds.length === 0)) return { ...none, contract }
     const facts = await this.factsFor(subject, paper.kertas)
-    if (placed.some((id) => !facts.has(id))) return none
     const labelOf = (pos: number) => std.sections.find((s) => s.position === pos)?.label ?? `Bahagian ${String(pos)}`
-    const { blockers, notes } = violationLines(verifyComposition(std, composed, facts), labelOf)
-    const report = blockers.length === 0 ? buildStandardReport(std, composed, facts, { seed: 0, solverVersion: SOLVER_VERSION }) : null
-    return { blockers, notes, report }
+    const lines = violationLines(verifyComposition(std, composed, facts), labelOf)
+    // The frozen report needs a clean composition; the contract line alone does not stop it (an override publishes with it).
+    const report = lines.blockerIssues.length === 0 && lines.fixedIssues.length === 0 ? buildStandardReport(std, composed, facts, { seed: 0, solverVersion: SOLVER_VERSION }) : null
+    return { blockers: lines.blockerIssues, contract, fixed: lines.fixedIssues, notes: lines.notes, report }
+  }
+
+  /**
+   * The Terbit blockers of a paper, in display order, with the single `overridable` rule (contract `BIJAK_BUILDER_BLOCKER_OVERRIDABLE`). Used by
+   * `review` AND `publish`, so the two always agree. Hard (never overridable): the paper's own checks (incl. D93 groups), a placed question missing
+   * from the pool, a question pupils cannot be served. Overridable: the Kontrak is not Disahkan (not for a paper that is already Terbit) and the
+   * structural blueprint blockers.
+   */
+  private collectBlockers(
+    paper: PaperTree,
+    ev: Evaluation,
+    structural: { blockers: BlockerDraft[]; contract: BlockerDraft[]; fixed: BlockerDraft[] },
+    reports: ReadonlyMap<string, ServabilityReport>,
+    unreadable: readonly string[],
+  ) {
+    return toBlockers([
+      ...ev.issues,
+      ...structural.fixed,
+      ...this.attemptBlockers(paper, ev, reports),
+      ...unreadable.map((id): BlockerDraft => ({ code: 'NOT_SERVABLE', message: unreadableLine(id), questionId: id })),
+      ...(paper.status === 'published' ? [] : structural.contract),
+      ...structural.blockers,
+    ])
+  }
+
+  /**
+   * R1E2E-06: every placed question the attempt path would refuse (`resolveForAttempt` + the BE-09 bridge) blocks Terbit. The verdict is the
+   * ServabilityService `simulasi_paper` one; "not on a published paper" is the paper's own business, and a question that is not approved is
+   * already counted by `checkPaper` ("n soalan belum Terbit"). Never overridable.
+   */
+  private attemptBlockers(paper: PaperTree, ev: Evaluation, reports: ReadonlyMap<string, ServabilityReport>): BlockerDraft[] {
+    const out: BlockerDraft[] = []
+    const seen = new Set<string>()
+    for (const s of paper.sections)
+      for (const pl of s.placements) {
+        const id = idToString(pl.questionId)
+        if (seen.has(id)) continue
+        seen.add(id)
+        const q = ev.info.get(id)
+        if (!q || !isServableStatus(q.status)) continue
+        const sim = reports.get(id)?.activities.find((a) => a.activity === 'simulasi_paper')
+        const reason = (sim?.reasons ?? []).find((r) => r.code !== 'not_on_published_paper')
+        if (reason) out.push({ code: 'NOT_SERVABLE', message: attemptRefusalLine(id, reason.message), questionId: id })
+      }
+    return out
   }
 
   // --- R1-B09a: placements -------------------------------------------------------------------------
@@ -668,18 +830,36 @@ export class BuilderService {
     if (!paper) throw notFound()
     const ev = await this.evaluate(paper)
     const structural = await this.structuralCheck(paper)
-    const blockers = [...new Set([...publishErrors(ev.check), ...structural.blockers])]
+    // R1-T34 (B09a, "Dilihat murid di"): the per-row verdict comes from ServabilityService (one batch); the paper is the authority for
+    // "not on a published paper", so that one reason is left out. A question the service does not know keeps the status-only reason.
+    const placed = paper.sections.flatMap((s) => s.placements.map((pl) => idToString(pl.questionId)))
+    const { reports, unreadable } = await this.safeReports(placed)
+    const blockerList = this.collectBlockers(paper, ev, structural, reports, unreadable)
+    const blockers = blockerList.map((b) => b.message)
     const rows = paper.sections.flatMap((s) =>
       s.placements.map((pl) => {
         const id = idToString(pl.questionId)
         const q = ev.info.get(id)
-        const reason = !q ? PLACE.notFound : isServableStatus(q.status) ? null : this.statusText(q.status)
+        const report = reports.get(id)
+        const sim = report?.activities.find((a) => a.activity === 'simulasi_paper')
+        const fromReport = (sim?.reasons ?? []).filter((r) => r.code !== 'not_on_published_paper')
+        const legacy = !q ? PLACE.notFound : isServableStatus(q.status) ? null : this.statusText(q.status)
+        // The builder places approved questions only (D54a): a status that is not servable is reported with the same cause and fix copy
+        // as "Dilihat murid di", even where a published paper would keep serving an archived version.
+        const reasons: { code: string; message: string; detail?: string }[] =
+          legacy !== null && fromReport.length === 0 && q
+            ? [{ code: q.status === 'archived' ? 'archived' : 'not_approved', message: servabilityReasonMs(q.status === 'archived' ? 'archived' : 'not_approved', 'simulasi_paper') }]
+            : fromReport
+        const reason = legacy ?? (reasons[0] ? reasons[0].message : null)
+        const ok = reason === null
         return {
           questionId: id,
           ...(q?.groupId ? { groupId: q.groupId } : {}),
           section: s.label,
-          ok: reason === null,
-          ...(reason ? { reason: `Tidak disajikan: ${reason}` } : {}),
+          ok,
+          ...(reason ? { reason: legacy ? `Tidak disajikan: ${legacy}` : `Tidak disajikan: ${reason}` } : {}),
+          ...(reasons.length > 0 ? { reasons: reasons.map((r) => ({ code: r.code, message: r.message, ...(r.detail ? { detail: r.detail } : {}) })) } : {}),
+          ...(report ? { seenIn: { served: report.servedCount, total: report.total } } : {}),
         }
       }),
     )
@@ -688,6 +868,7 @@ export class BuilderService {
       status: statusOf(paper.status),
       ok: blockers.length === 0,
       blockers,
+      ...blockerView(blockerList),
       notes: structural.notes,
       blueprintNeedsReview: structural.notes.length > 0,
       visibleToStudents: paper.status === 'published',
@@ -777,7 +958,8 @@ export class BuilderService {
         continue
       }
       for (const m of sorted) seen.add(m.id)
-      units.push({ ids: sorted.map((m) => m.id), ...(f.groupId && sorted.length > 1 ? { groupId: f.groupId } : {}), facts: sorted })
+      // D90: a group stays a group (groupId + stimulus) even with one member; D93 then marks it not placeable below.
+      units.push({ ids: sorted.map((m) => m.id), ...(f.groupId ? { groupId: f.groupId } : {}), facts: sorted })
     }
     const levelOf = (f: QuestionFacts) => (f.unit ? f.unit.level.toLowerCase() : f.formOrigin)
     const filtered = units.filter((u) => {
@@ -797,7 +979,13 @@ export class BuilderService {
     let candidates = filtered
     let described: ReadonlyMap<string, BuilderQuestionInfo> = new Map()
     if (query.q) {
-      described = await this.questions.describe(filtered.flatMap((u) => u.ids).slice(0, MAX_EDITOR_CANDIDATES + 500).map((id) => ({ id })))
+      // The whole filtered candidate set is searched (chunked), then paged: nothing is truncated before the filter.
+      const all = filtered.flatMap((u) => u.ids)
+      const got = new Map<string, BuilderQuestionInfo>()
+      for (let i = 0; i < all.length; i += DESCRIBE_CHUNK) {
+        for (const [id, info] of await this.questions.describe(all.slice(i, i + DESCRIBE_CHUNK).map((id) => ({ id })))) got.set(id, info)
+      }
+      described = got
       const needle = query.q.toLowerCase()
       candidates = filtered.filter((u) => u.ids.some((id) => (described.get(id)?.preview ?? '').toLowerCase().includes(needle) || (described.get(id)?.topic ?? '').toLowerCase().includes(needle)))
     }
@@ -811,6 +999,8 @@ export class BuilderService {
       const questions = u.ids.flatMap((id) => (info.get(id) ? [this.questionWire(info.get(id)!)] : []))
       const group = u.groupId ? groups.get(u.groupId) : undefined
       const reasons = eligibilityOfUnit(u)
+      // D93: a stimulus group with fewer than two members cannot be placed (only a group the bank knows has a stimulus).
+      if (group && u.ids.length < MIN_GROUP_MEMBERS) reasons.push(GROUP_MIN_MEMBERS_MESSAGE)
       return {
         ...(u.groupId ? { groupId: u.groupId } : {}),
         ...(group ? { stimulus: group.stimulus } : {}),
@@ -861,25 +1051,32 @@ export class BuilderService {
     }
   }
 
-  /** Jana set: a DRAFT curated paper filled by `composeStandardPaper` (exact or refuse). */
+  /**
+   * Jana set: a DRAFT curated paper filled by `composeStandardPaper` (exact or refuse). The blueprint row is locked FIRST, the head is
+   * re-read under the lock, and only then are the candidates read and the paper composed, all in one transaction, so a concurrent
+   * retire / new version / edit of the Kontrak cannot slip in between composing and writing.
+   */
   async generateDraft(actor: AuditActor, rawBody: unknown): Promise<{ paperId: string }> {
     const body = parseWith(BijakDraftGenerateRequestSchema, rawBody)
-    const { subject, blueprint } = await this.generationBlueprint(body.subject, body.kertas)
-    if (!subject || !blueprint) throw noBlueprint()
-    const std = toStandard(blueprint, bijakCodeOf(subject.code))
-    const candidates = [...(await this.factsFor(subject, body.kertas)).values()]
-    const now = this.clock.now()
-    const [seen, previous] = await Promise.all([this.papersPorts.poolSource.seen(actor.userId), this.repo.countPilihan(undefined)])
-    const seed = fnv1a32(`${now.toISOString()}|${actor.userId}|${blueprint.code}|${String(previous)}`)
-    const outcome = composeStandardPaper(std, candidates, { seed, seen })
-    if (!outcome.ok) {
-      if (outcome.reason === 'shortage') throw shortage(outcome.shortages.map(shortageToWire))
-      if (outcome.reason === 'limit') throw generateLimit()
-      throw new Error('bijak draft generate: the independent re-check found a violation')
-    }
-    const factsById = new Map(candidates.map((f) => [f.id, f]))
+    const first = await this.generationBlueprint(body.subject, body.kertas)
+    if (!first.subject || !first.blueprint) throw noBlueprint()
+    const subject = first.subject
     const id = await this.prisma.transaction(async () => {
-      await this.repo.lockBlueprint(blueprint.id)
+      await this.repo.lockBlueprint(first.blueprint!.id)
+      const { blueprint } = await this.generationBlueprint(body.subject, body.kertas)
+      if (!blueprint) throw noBlueprint()
+      const std = toStandard(blueprint, bijakCodeOf(subject.code))
+      const candidates = [...(await this.factsFor(subject, body.kertas)).values()]
+      const now = this.clock.now()
+      const [seen, previous] = await Promise.all([this.papersPorts.poolSource.seen(actor.userId), this.repo.countPilihan(undefined)])
+      const seed = fnv1a32(`${now.toISOString()}|${actor.userId}|${blueprint.code}|${String(previous)}`)
+      const outcome = composeStandardPaper(std, candidates, { seed, seen })
+      if (!outcome.ok) {
+        if (outcome.reason === 'shortage') throw shortage(outcome.shortages.map(shortageToWire))
+        if (outcome.reason === 'limit') throw generateLimit()
+        throw new Error('bijak draft generate: the independent re-check found a violation')
+      }
+      const factsById = new Map(candidates.map((f) => [f.id, f]))
       const paperId = await this.repo.createPaper(this.newPaperFrom(blueprint, subject, body.kertas, actor, now, DEFAULT_TITLE(subject.name, body.kertas)))
       const fresh = await this.repo.findPilihan(paperId)
       for (const [i, section] of (fresh?.sections ?? []).entries()) {
@@ -923,6 +1120,8 @@ export class BuilderService {
     const sourceId = parseId(rawId)
     const id = await this.prisma.transaction(async () => {
       const source = await this.lockedPaper(sourceId)
+      // A curated paper always conforms to a blueprint; a row without one cannot be copied (no cast, no null written).
+      if (source.blueprintId === null) throw invalid(MESSAGES.noBlueprint)
       const now = this.clock.now()
       const newId = await this.repo.createPaper({
         title: `${source.title}${PLACE.copySuffix}`,
@@ -933,7 +1132,7 @@ export class BuilderService {
         printedDurationMin: source.printedDurationMin,
         instructions: source.instructions,
         referenceSheets: referencePanels(source.referenceSheets),
-        blueprintId: source.blueprintId as bigint,
+        blueprintId: source.blueprintId,
         createdById: BigInt(actor.userId),
         isTest: actor.isTest,
         sections: source.sections.map((s) => ({
@@ -971,6 +1170,27 @@ export class BuilderService {
       await this.record(actor, AUDIT_ACTIONS.BIJAK_PAPER_WITHDRAWN, paper.id, { from: 'terbit', to: 'draf' })
     })
     return { ok: true }
+  }
+
+  /** R1-T34 "Sunting petikan": the title of a stimulus group placed on a draft paper (the group is shared by the bank, D90). */
+  async setGroupLabel(actor: AuditActor, rawId: string, groupId: string, rawBody: unknown): Promise<BijakBuilderEditor> {
+    const pid = parseId(rawId)
+    const paperId = await this.prisma.transaction(async () => {
+      const paper = await this.lockedPaper(pid)
+      if (paper.status === 'published') throw invalid(MESSAGES.paperLocked)
+      const body = parseWith(BijakBuilderGroupLabelSchema, rawBody)
+      const placed = paper.sections.flatMap((s) => s.placements.map((pl) => idToString(pl.questionId)))
+      const st = await this.structure(placed)
+      const onPaper = new Set(placed.flatMap((qid) => (st.groupOf(qid) ? [st.groupOf(qid)!] : [])))
+      if (!onPaper.has(groupId)) throw invalid(MESSAGES.groupNotOnPaper)
+      await this.stimuli.updateGroup(groupId, { label: body.label })
+      await this.repo.updatePaper(paper.id, { updatedAt: this.clock.now() })
+      await this.record(actor, AUDIT_ACTIONS.BIJAK_PAPER_UPDATED, paper.id, { from: 'draf', to: 'draf', op: 'group_label', groupId })
+      return paper.id
+    })
+    const fresh = await this.repo.findPilihan(paperId)
+    if (!fresh) throw notFound()
+    return this.editorOf(fresh)
   }
 
   async preview(rawBody: unknown): Promise<BijakBuilderPreview> {

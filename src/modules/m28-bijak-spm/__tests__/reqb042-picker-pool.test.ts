@@ -9,6 +9,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import { ApiClient } from '@/api'
 import type { Transport, TransportRequest, TransportResponse } from '@/api'
 
+import { BANK } from '../data/registry'
 import PaperEditorPage from '../admin/papers/PaperEditorPage.vue'
 import type { AdminPaper, PaperEditorData, SectionPoolPage } from '../domain/admin-types'
 import { BijakServer, MemoryStorage } from '../server/store'
@@ -76,6 +77,39 @@ describe('mock sectionPool mirrors it', () => {
     expect(all.units.filter((u) => !u.groupId).every((u) => u.stimulus === undefined)).toBe(true)
     // deterministic
     expect(await server.sectionPool(id, sid, { pageSize: 500 })).toEqual(all)
+  })
+
+  it('kertas = the lowest pool-code digit; an incomplete group is dropped; groupId only for more than one member (D90)', async () => {
+    const server = new BijakServer({ storage: new MemoryStorage(), now: () => 1_800_000_000_000 })
+    const poolOf = async (kertas: 1 | 2) => {
+      const id = await server.createPaper({ subject: 'MAT', kertas, title: 'T' })
+      const sid = (await server.getPaperEditor(id)).paper.sections[0]!.id
+      return server.sectionPool(id, sid, { pageSize: 1000 })
+    }
+    const k1 = await poolOf(1)
+    const lone = k1.units.find((u) => !u.groupId)!.questionIds[0]!
+    const group = k1.units.find((u) => u.groupId)!
+    expect(group.questionIds.length).toBeGreaterThan(1)
+    expect(k1.units.every((u) => !u.groupId || u.questionIds.length > 1)).toBe(true)
+
+    const added = { questionId: lone, pool: 'MAT2-ZZZ' }
+    const q = BANK.questions.get(group.questionIds[0]!)!
+    const subject = q.curriculum.subject
+    BANK.pool.push(added)
+    try {
+      // lowest digit stays 1: still K1, and (a `some` match) not pulled into K2
+      expect((await poolOf(1)).units.some((u) => u.questionIds.includes(lone))).toBe(true)
+      expect((await poolOf(2)).units.some((u) => u.questionIds.includes(lone))).toBe(false)
+      // one member leaves the subject: the group is not offered at all
+      q.curriculum.subject = 'BM'
+      const broken = await poolOf(1)
+      expect(broken.units.some((u) => u.groupId === group.groupId)).toBe(false)
+      expect(broken.units.some((u) => group.questionIds.some((m) => u.questionIds.includes(m)))).toBe(false)
+    } finally {
+      q.curriculum.subject = subject
+      BANK.pool.splice(BANK.pool.indexOf(added), 1)
+    }
+    expect((await poolOf(1)).units.some((u) => u.groupId === group.groupId)).toBe(true)
   })
 })
 
