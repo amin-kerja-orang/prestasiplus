@@ -27,3 +27,4 @@ Owner instruction (2026-11-01 13:00 MYT): team B is offline (all B lanes silent 
 - 2026-11-01 13:56 MYT: C2 delivered H-C8 @ c6954ae08 and REQ-B-041 @ 2e3c6ad07 (await B2 review).
 - 2026-11-01 14:00 MYT: C-for-B2 H-C8 Approve with Minors @ c6954ae08; C2 fixing the Minors before any merge. No merge done by team C.
 - 2026-11-01 14:14 — H-C8 head 36e41d57e (Minors fixed; also touches questions.repository.ts stimulusUseCounts). Independent re-review of c6954ae08..36e41d57e in progress. No merge by team C.
+- 2026-11-01 14:15 — C-for-B2 (independent agent) verdict: Approve with Minors @ 36e41d57e (H-C8). No Blocker/Major. Open (non-blocking): Minor — stimulusUseCounts does not count group membership (pre-existing gap, D90 edge: leaf of B links a group stimulus of A); Nits — test 27 leaves files/stimuli rows, add expect(one).toBeDefined(), comment on leaf ?? 1 asymmetry. Head 36e41d57e = tip, base not moved. Waiting team B B2/B1 for merge; no merge by team C.
