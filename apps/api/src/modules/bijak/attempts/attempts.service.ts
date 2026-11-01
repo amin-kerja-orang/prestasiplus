@@ -309,7 +309,7 @@ export class BijakAttemptsService {
 
   /** The result as served: automatic grading + keyword suggestions (R1-B13) + the pupil's self-marks on top (R1-B12). */
   private present(row: AttemptRow, stored: { result: BijakAttemptResult; selfMarks: SelfMarks }, answers: Map<string, PartAnswer>, bundles: Bundles): BijakAttemptResult {
-    return applySelfMarks(decorateResult(stored.result, bundles, answers), row.composition, stored.selfMarks)
+    return applySelfMarks(decorateResult(stored.result, bundles, answers), row.composition, stored.selfMarks, bundles)
   }
 
   /* ------------------------------------------------------------ self-mark (Semakan, R1-B12) */
@@ -524,10 +524,11 @@ export class BijakAttemptsService {
     const index = await this.leafIndexOf(row, load)
     const changed = await this.merge(row, answers, ok, index, new Set())
     if (!changed) return false
-    const base = gradeAttempt(row.composition, await load(), this.answerMap(answers))
+    const bundles = await load() // memoised by `lazyBundles`: one load for the grading and the self-marks
+    const base = gradeAttempt(row.composition, bundles, this.answerMap(answers))
     // A self-mark made in between (R1-B12) stays: the new automatic grading gets the pupil's marks on top again.
     const selfMarks = (await this.repo.gradedWithMarks(row.id))?.selfMarks ?? {}
-    const result = applySelfMarks(base, row.composition, selfMarks)
+    const result = applySelfMarks(base, row.composition, selfMarks, bundles)
     await this.repo.saveResult(row.id, base, selfMarks, result)
     events.push({ attempt: row, status: 'auto_submitted', result, swept: false, regraded: true })
     return true
