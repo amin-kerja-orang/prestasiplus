@@ -530,9 +530,9 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/req-c-020 | 78e050b3b | READY (A4): merge only; zero-row Databank subject kept (no V2 source hides it); chain 3rd; B2 |
 | r1/req-c012-a2 | 64d24e69d | PRE-REVIEW MAJOR (A1a M1: edit-as-draft drops the import hold → held question approvable without its picture) → A2 fixing; B: wait |
 | r1/reqa018-paper-servability-route | a4b303f69 | IN-PROGRESS (A1b): GET /api/admin/questions/:id/paper-servability built (admin only; 23/23 targeted); full questions/exam-builder/conformance run pending; merges after t45-servability-acs |
-| r1/reqb032-pinned-rule | e9cf34b7f | READY; pre-review Minor/Nit (spec title; takedown-vs-pin decision recorded as an R1 limitation) → A2 small update |
+| r1/reqb032-pinned-rule | e9cf34b7f | WAITING: A2 small update pending (spec title + m4 R1-limitation row); B: wait for the new head |
 | r1/reqb049-report-visible | 9ece8d76d | READY (A1b, BASE-105): pre-review Minors fixed (type from the live version, spec titles, real level codes); 316/316; B2 + B3 |
-| r1/reqb052-archived-edit | 4e64776b3 | READY (A3; contains BASE-105 + REQ-B-032 e9cf34b7 + H-A18 f29aeda9): archived/pinned edit branches to a new version; withdrawnVersionNos kept minimal + spec; archived-edit 5/5, pinned-version-rule 6/6, 736 + 528 + 1360 pass (1 known base red). Will re-merge A2 new H-A18/B-032 heads. Order H-A18 → B-032 → B-052; B2 + B3 |
+| r1/reqb052-archived-edit | 4e64776b3 | BLOCKED / WAITING: B-052 itself is done, but 4e64776b contains H-A18 f29aeda9 (2 pre-review Majors) and REQ-B-032 e9cf34b7 (changing). DO NOT review or merge 4e64776b. READY again only after A3 re-merges the new H-A18 and B-032 heads |
 | r1/reqc021-followup | 948aa327a | READY (A1a, BASE-105): fixes the base red draw-bounded BR-16; merge early |
 | r1/seed-dangling-placements | 11cbcf458 | READY (A1b, BASE-105): asserts paper titles + counts = POC_BANK; seed 155 + 1 skip; B2 |
 | r1/stimulus-list-d72 | 1c2c7416a | READY (A2, BASE-105): D72 filter on the group/stimulus lists + empty groups kept listed (D9 row); stimulus-lists 13/13; B2 |
