@@ -485,14 +485,14 @@ BASE-105 + 11 team A READY API heads + C FE heads (reqa014 dc561730, reqa005 3ee
 **Conflicts B1 will see:** `questions.module.ts` (A4 chain `OverviewWarmer` × REQ-A-018 `QuestionPaperServabilityController`: keep both providers/controllers); `stimuli.repository.ts:112` (t49 deletes the `SERVED_NOW`/`VERSION_SERVED_NOW` constants B-032 added: take t49, no use remains); `v2-backend-deviations.md` (keep both sides); C docs in reqa012 (keep both).
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 20:26 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 20:31 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/a3-qa-doc-nits | e4d4dd322 | READY (A3, BASE-105, docs only): stale QA notes on T38 self-mark reward fixed (2 files); B2 |
 | r1/a4chain-minors | 6f2fb7938 | READY (A1b, @6f2fb793 on 0ba236ef): symlink removed; janaSkipped guard first line of evaluate; T45 HTTP POST /questions/:id/status case with pinned BM reasons; 022a row real commits + proof spec; A3 dev-1 delta pre-review CLEAN (13 files 76 tests, mutations bite); merge after the A4 chain; B2 |
-| r1/ac-gaps-a1b | f8653070f | READY (A1b + A3, @f8653070, CONTAINS ha17 + t37): coverage doc + runbook UAT SELECTs + docs/qa/r1-b4-qa-handoff.md (B4 pack); R1-18.4 + AC-18.1 specs bite; B2. Docs-only commits since 860b3869 |
+| r1/ac-gaps-a1b | f8653070f | ON HOLD (A1b + A3, @f8653070, CONTAINS ha17 + t37): A4 preview #4 RED × H-A18: chapter-practice AC-18.1 test expects no_chapter but after H-A18 an approved question created without curriculumChapterId gets a chapter → A2 checks whether H-A18 defaults the chapter, then the spec sets curriculumChapterId: null explicitly (as t45-servability-fresh did); docs/B4 pack otherwise fine; merge after H-A18 once green |
 | r1/admin-list-perf | 2a8ab6744 | READY (A4, BASE-105): REQ-B-050 + 0106 + 0107 + exact counts; pre-review Minors fixed (status total ?? 0, no-slash kertas change documented, migration order + drift notes); B2 + B3 + DevOps |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
 | r1/bridge-table-parts | c805ecc7c | READY (A4, BASE-105): the bridge uses stimulusTableParts (an invalid grid + pipe body shows the table only, as in builder/Studio); bridge 118/118, attempts 180/180, kuiz 39/39; B2. Follow-up after T31 + this merge: drop PENDING_BRIDGE_TEXT in the parity spec (A4) |
@@ -501,7 +501,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/chain-qa-selfmark-a3 | a92cb32d0 | ON HOLD (A3, @a92cb32d; contains r1-chain-qa-a3): follows the chain-qa MAJOR fix (re-merge after A3 pushes) |
 | r1/delete-served-guard | fd623f411 | READY w/ follow-ups (A2, @fd623f41; contains B-052 f3a2448f): A4 pre-review Approve w/ Minors, B3 PASS (userId from session, no published regression, no cross-pupil read). Follow-ups → A2: M1 v1/v2 snapshot compare incl. keys+parts, M2 published-paper regression guard, M3 deleteRefused copy by reason, M4 lead decision: DROP the status clause (refuse only served/pinned, as V2 allows other deletes), M6 publish race noted in row; M5 index KIV. B2 + B3; merge after H-A18 → B-032 → B-052 |
 | r1/docs-credential-scrub | b3db5e0d2 | READY (A1a, BASE-105; replaces 5cd46c4a): A4 Minors fixed: Demo1234 doc replacements reverted (allowed fictitious dev default; docs match code), DOC-02 wording, row relabelled privacy override, srs/M02 v1.34 revision row (v1.30 keeps placeholders, lead decision); 0 hits for the 3 old values repo-wide; M02 unit 724, eslint + vue-tsc 0; B3 + B2 |
-| r1/drop-lock-enums | c38a6834e | READY w/ Minors (A1a, @c38a6834, BASE-105): contract drops dead CHAPTER_LOCKED + locked states, openapi re-emitted; A2 review: correct; merge-tree with C reqa014 clean; on the merge contract 1433, api tsc 0, vue-tsc 0, m03/m05 FE 659/659; drop-lock first breaks nothing new. Minors → A2 (row wording "no reader depends on it", negative contract test, row date); merge after reqa014-no-chapter-lock-fe; B2 |
+| r1/drop-lock-enums | 4d1424c8b | READY (A1a + A2, @4d1424c8, BASE-105): contract drops dead CHAPTER_LOCKED + locked states; negative contract tests; row: no FE reader depends on them (dead local FE types = C follow-up); contract 1435/1435, emit no diff, check ok, api tsc 0; with C reqa014 merged: vue-tsc 0, m03/m05 659/659; merge after reqa014-no-chapter-lock-fe; B2 |
 | r1/e05b-l1-spec | 4b9eac57a | READY (A1b, BASE-105): negative control added; 12/12; B2 + B3 |
 | r1/ha17-ac-coverage | 157b371c3 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b; head 157b371c |
 | r1/ha18-gate-facts | fc409ae16 | READY (A2, BASE-105): H-A18 + REQ-B-017/037 + D99 + pre-review fixes (M2 held-issues helper on both edit paths; m1 gate-issue codes; deviation row); workflow 296/296; conformance 409/409; B2 + B3 |
