@@ -18,7 +18,7 @@ const placementOnly = (activity: string, code: string): boolean => activity === 
 
 /** True when no activity serves the question and none would once the question is placed on a published paper. */
 export function unservableEverywhere(report: ServabilityReport): boolean {
-  return report.activities.every((a) => !a.served && !a.reasons.every((r) => placementOnly(a.activity, r.code)))
+  return report.activities.every((a) => !a.served && a.reasons.length > 0 && !a.reasons.every((r) => placementOnly(a.activity, r.code)))
 }
 
 /** The `fields` of the 422: one BM sentence per activity (its first reason), keyed `servability.<activity>`, in the contract order. */
