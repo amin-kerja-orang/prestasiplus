@@ -100,7 +100,12 @@ describe('Bab set by the admin feeds GET /api/practice/chapter-subjects', () => 
     expect(withoutBab).toMatchObject({ label: 'Latihan Bab', served: false })
     expect(withoutBab.reasons.map((r) => r.code)).toEqual(['no_chapter'])
 
-    const chapter = await chapterIdOf(t.db, 'MATH', 'T4', 2)
+    // a MATH T4 chapter that carries no question yet, whatever the other cases of this file did: only then does the list grow by one
+    const [free] = await t.db.query<{ id: string }>(
+      `select c.id::text id from chapters c where c.subject_id = $1::bigint and c.education_level_id = $2::bigint and not exists (select 1 from question_versions v where v.chapter_id = c.id) order by c.id limit 1`,
+      [refs.mathId, refs.t4Id],
+    )
+    const chapter = free!.id
     const withBab = await admin.post('/api/questions', mcqBody(refs, { status: 'approved', tag, curriculumChapterId: chapter }))
     expect(withBab.status, JSON.stringify(withBab.body)).toBe(201)
     expect(await bab(withBab.body.data.id as string)).toMatchObject({ label: 'Latihan Bab', served: true, reasons: [] })

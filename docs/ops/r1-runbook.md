@@ -462,7 +462,7 @@ SELECT s.code AS subject, l.code AS level, count(*) AS nodes
   JOIN education_levels l ON l.id = n.education_level_id
  GROUP BY s.code, l.code ORDER BY s.code, l.code;
 
-SELECT DISTINCT l.code FROM curriculum_nodes n JOIN education_levels l ON l.id = n.education_level_id;  -- T4, T5 only
+SELECT DISTINCT l.code FROM curriculum_nodes n JOIN education_levels l ON l.id = n.education_level_id ORDER BY 1;  -- T4, T5 only
 SELECT count(*) FROM curriculum_nodes c WHERE parent_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM curriculum_nodes p WHERE p.id = c.parent_id);  -- 0
 SELECT count(*) FROM curriculum_tp_descriptors WHERE tp NOT BETWEEN 1 AND 6;  -- 0
 ```
