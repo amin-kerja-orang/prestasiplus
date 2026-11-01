@@ -1,8 +1,9 @@
 import { QuestionPaperServabilityRowSchema } from '@pp/contract'
 import { z } from 'zod'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { QuestionsService } from '../../src/modules/questions'
+import { ServabilityService } from '../../src/modules/questions/serving'
 import { PaperServabilityService, QUESTION_PAPERS_MAX } from '../../src/modules/questions/serving/paper-servability.service'
 import { adminActor, mcqInput, tagBody, tagOf, type Tag } from './fixtures'
 import { bootQuestionsApp, expectError, loginAs, type Client, type QuestionsTestApp } from './helpers'
@@ -116,10 +117,39 @@ describe('REQ-A-018 GET /api/admin/questions/:id/paper-servability', () => {
     expect(res.body.meta).toEqual({ total: 1, truncated: false })
   })
 
+  it('ONE batched servability read serves every listed paper: the guard call plus one batch over the union of the placed ids (no read per paper)', async () => {
+    const shared = await question(true)
+    const [a, b, c, d] = [await question(true), await question(true), await question(false), await question(true)]
+    await paper('Kertas I', 'published', [shared, a])
+    await paper('Kertas J', 'published', [shared, b, c])
+    await paper('Kertas K', 'published', [shared, a, d])
+    const serv = t.app.get(ServabilityService)
+    const spy = vi.spyOn(serv, 'reports')
+    try {
+      const res = await admin.get(url(shared))
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(res.body.data).toHaveLength(3)
+      // call 1 is the 404 guard (`report(id)`), call 2 the one batch over the union of the three papers' questions
+      expect(spy.mock.calls).toHaveLength(2)
+      expect([...spy.mock.calls[0]![0]]).toEqual([shared])
+      expect([...spy.mock.calls[1]![0]].sort()).toEqual([shared, a, b, c, d].sort())
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
   it('at most QUESTION_PAPERS_MAX papers are read, the first by id; meta.total counts all and meta.truncated says the list is cut', async () => {
     const id = await question(true)
-    const created: string[] = []
-    for (let i = 0; i < QUESTION_PAPERS_MAX + 1; i++) created.push(await paper(`Kertas banyak ${String(i)}`, 'published', [id]))
+    const made = await t.db.prisma.paper.createManyAndReturn({
+      data: Array.from({ length: QUESTION_PAPERS_MAX + 1 }, (_v, i) => ({ kind: 'pilihan', title: `Kertas banyak ${String(i)}`, subjectId: BigInt(tag.subjectId), kertas: 2, paperCode: '1449/2', printedDurationMin: 60, status: 'published', publishedAt: new Date() })),
+      select: { id: true },
+    })
+    const sections = await t.db.prisma.paperSection.createManyAndReturn({
+      data: made.map((p) => ({ paperId: p.id, position: 1, label: 'Bahagian A', questionCount: 1, markBudget: 0 })),
+      select: { id: true },
+    })
+    await t.db.prisma.paperPlacement.createMany({ data: sections.map((s) => ({ paperSectionId: s.id, questionId: BigInt(id), position: 1, pinnedVersionNo: 1 })) })
+    const created = made.map((p) => p.id).sort((x, y) => (x < y ? -1 : x > y ? 1 : 0)).map(String)
     const res = await admin.get(url(id))
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     expect(res.body.data).toHaveLength(QUESTION_PAPERS_MAX)
