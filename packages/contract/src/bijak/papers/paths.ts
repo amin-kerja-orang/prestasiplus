@@ -102,7 +102,7 @@ export function registerBijakPapersPaths(registry: OpenAPIRegistry): void {
     path: '/bijak/papers/{id}',
     tags: ['bijak-papers'],
     summary: 'Paper cover: instructions, reference sheet, sections, marks and duration',
-    description: `Mock method getCover(userId, paperId). A curated paper resolves for any permitted caller; a generated paper (kind jana) only for its creator. Section instruction defaults to "Jawab semua soalan." or "Jawab {n} daripada {count} soalan.". ${ROLE_NOTE}`,
+    description: `Mock method getCover(userId, paperId). A curated paper resolves for any permitted caller; a generated paper (kind jana) only for its creator. Section instruction defaults to "Jawab semua soalan." or "Jawab {n} soalan sahaja.". ${ROLE_NOTE}`,
     request: { params: IdParams },
     responses: {
       200: json(envelopeOf(BijakPaperCoverSchema), 'The paper cover.'),

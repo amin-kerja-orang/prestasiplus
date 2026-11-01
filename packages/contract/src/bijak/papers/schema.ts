@@ -112,8 +112,8 @@ export const BijakPaperCoverSectionSchema = z
     marks: z.number().int().min(0).meta({ description: 'Effective marks after choose-N.' }),
     instruction: z.string().min(1).meta({
       description:
-        'Authored instruction, else "Jawab semua soalan." (rule all) or "Jawab {n} daripada {count} soalan." (rule choose).',
-      example: 'Jawab 1 daripada 2 soalan.',
+        'Authored instruction, else "Jawab semua soalan." (rule all) or "Jawab {n} soalan sahaja." (rule choose).',
+      example: 'Jawab 1 soalan sahaja.',
     }),
     questionCount: z.number().int().min(0),
     compulsory: z.boolean().meta({ description: '"Soalan ini mesti dijawab".' }),
