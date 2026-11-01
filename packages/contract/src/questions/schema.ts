@@ -37,6 +37,7 @@ export const QUESTION_MESSAGES = {
   /** Filter-based actions (AC-03.3; V2 A11 "Luluskan Hasil Tapisan" / "Arkib Semua"). */
   filterInvalid: 'Nilai penapis tidak sah.',
   filterNeeded: 'Sila pilih sekurang-kurangnya satu penapis (subjek/aras/status/carian) sebelum meluluskan secara pukal.',
+  filterBlank: 'Penapis yang dipilih tidak mempunyai nilai. Isi nilai penapis, atau buang penapis itu.',
   filterCountNeeded: 'Sila hantar bilangan soalan hasil tapisan yang dipaparkan (expectedCount).',
   filterCountChanged: (expected: number, actual: number): string =>
     `Bilangan soalan hasil tapisan telah berubah (dijangka ${String(expected)}, kini ${String(actual)}). Muat semula senarai dan semak semula sebelum meneruskan.`,
@@ -162,7 +163,7 @@ export const questionFilterShape = {
 
 export const QuestionListQuerySchema = PageQuerySchema.extend(questionFilterShape).meta({ id: 'QuestionListQuery' })
 
-/** R1-C019: the values of the Studio selects that come from data. `negeri` = the distinct `exam_board` of the source papers, sorted. */
+/** REQ-C-019: the values of the Studio selects that come from data. `negeri` = the distinct `exam_board` of the source papers, sorted. */
 export const QuestionFilterOptionsSchema = z.object({ negeri: z.array(z.string()) }).meta({ id: 'QuestionFilterOptions' })
 
 export const QuestionSummarySchema = z
