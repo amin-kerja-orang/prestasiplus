@@ -1,4 +1,4 @@
-import { QuestionSchema, mutationEnvelopeOf } from '@pp/contract'
+import { QUESTION_MESSAGES, QuestionSchema, mutationEnvelopeOf } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { bootQuestionsApp, expectError, loginAs, type Client, type QuestionsTestApp } from './helpers'
@@ -40,6 +40,7 @@ describe('admin question list: Tahun, Negeri, Kertas, Jenis', () => {
     await make('c', { kertas: '2' }, c)
     await make('d', {}, null) // no source paper, no kertas
     await make('e', {}, await paper(2022, '  Perak ', 'latihan')) // an exam board stored with spaces
+    await make('g', {}, await paper(2021, '   ', 'latihan')) // a blank exam board
   })
   afterAll(async () => {
     await t.close()
@@ -68,6 +69,19 @@ describe('admin question list: Tahun, Negeri, Kertas, Jenis', () => {
     expect(await listed('negeri=Perak')).toEqual(keys('e'))
     expect(await listed('negeri=perak')).toEqual(keys('e'))
     expect(await listed(`negeri=${encodeURIComponent(' PERAK ')}`)).toEqual(keys('e'))
+  })
+
+  it('a blank Negeri (spaces only) is no filter: it lists every row and never matches a blank exam board; the bulk body treats it the same', async () => {
+    for (const q of ['negeri=%20', 'negeri=%20%20%20', 'negeri=']) expect(await listed(q), q).toEqual(keys('a', 'b', 'c', 'd', 'e', 'g'))
+    expect(await listed('negeri=%20&tahun=2021')).toEqual(keys('g')) // only the other filter acts
+    // Luluskan Hasil Tapisan needs a real filter: a blank negeri is none (V2 guard text); Arkib Semua previews the whole bank.
+    const approve = await admin.post('/api/questions/bulk-action/filter', { action: 'approved', filter: { negeri: '   ' }, dryRun: true })
+    expect(approve.status, JSON.stringify(approve.body)).toBe(422)
+    expect(approve.body.error.fields.filter).toBe(QUESTION_MESSAGES.filterNeeded)
+    const total = (await admin.get('/api/questions?pageSize=1')).body.meta.totalItems as number
+    const archive = await admin.post('/api/questions/bulk-action/filter', { action: 'archived', filter: { negeri: '   ' }, dryRun: true })
+    expect(archive.status, JSON.stringify(archive.body)).toBe(200)
+    expect(archive.body.data.matched).toBe(total)
   })
 
   it('Kertas: 1, 2 or 3 (the trailing digit of the paper code)', async () => {

@@ -147,7 +147,13 @@ export const questionFilterShape = {
   /** V2 "Tahun": exam year of the source paper, four digits. */
   tahun: z.string({ error: QUESTION_MESSAGES.filterInvalid }).regex(/^\d{4}$/, QUESTION_MESSAGES.filterInvalid).optional(),
   /** V2 "Negeri" ("negeri atau badan peperiksaan"): `source_papers.exam_board`, matched case-insensitively. */
-  negeri: z.string({ error: QUESTION_MESSAGES.filterInvalid }).min(1, QUESTION_MESSAGES.filterInvalid).max(64, QUESTION_MESSAGES.filterInvalid).optional(),
+  // A blank value (spaces only, `negeri=%20`) is no filter, like a blank search (T47-L1): it is dropped before the value rules run.
+  negeri: z
+    .preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.string({ error: QUESTION_MESSAGES.filterInvalid }).max(64, QUESTION_MESSAGES.filterInvalid).optional(),
+    )
+    .optional(),
   /** V2 "Kertas" (Kertas 1-3). */
   kertas: z.enum(['1', '2', '3'], QUESTION_MESSAGES.filterInvalid).optional(),
   /** V2 "Jenis" ("jenis peperiksaan"). */

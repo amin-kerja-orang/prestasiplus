@@ -276,7 +276,7 @@ describe('stimulus group and stimulus lists (admin, real database)', () => {
 
   describe('GET /api/questions/filter-options (REQ-C-019)', () => {
     it('lists the distinct exam boards of the source papers, trimmed and sorted; Admin Pusat only; no-store', async () => {
-      for (const [board, key] of [['Johor', 'a'], [' Selangor ', 'b'], ['Johor', 'c'], ['', 'd'], [null, 'e']] as const) {
+      for (const [board, key] of [['Johor', 'a'], [' Selangor ', 'b'], ['Johor', 'c'], ['', 'd'], [null, 'e'], ['JOHOR', 'f'], ['selangor', 'g'], ['Selangor', 'h']] as const) {
         await t.db.query(`insert into source_papers (natural_key, subject_id, kertas, year, exam_type, exam_board, rights_status) values ($1, $2::bigint, 'K1', 2020, 'sebenar', $3, 'own')`, [`fo|${key}|${tagTag}`, refs.mathId, board])
       }
       const res = await admin.get('/api/questions/filter-options')
@@ -284,8 +284,14 @@ describe('stimulus group and stimulus lists (admin, real database)', () => {
       expect(res.headers['cache-control']).toBe('no-store')
       expect(res.body.data.negeri).toEqual(expect.arrayContaining(['Johor', 'Selangor']))
       expect(res.body.data.negeri.filter((n: string) => n === 'Johor')).toHaveLength(1)
+      // case-insensitively distinct (the Negeri filter matches that way): one entry per spelling family, the most used spelling shown
+      const lower = res.body.data.negeri.map((n: string) => n.toLowerCase())
+      expect(new Set(lower).size).toBe(lower.length)
+      expect(res.body.data.negeri).toContain('Selangor') // ' Selangor ' (trimmed) + 'Selangor' beat 'selangor'
+      expect(res.body.data.negeri).not.toContain('JOHOR')
+      expect(res.body.data.negeri).not.toContain('selangor')
       expect(res.body.data.negeri.every((n: string) => n.trim() === n && n !== '')).toBe(true)
-      expect(res.body.data.negeri).toEqual([...res.body.data.negeri].sort())
+      expect(res.body.data.negeri).toEqual([...res.body.data.negeri].sort((a: string, b: string) => (a.toLowerCase() < b.toLowerCase() ? -1 : a.toLowerCase() > b.toLowerCase() ? 1 : 0)))
       // the value is what the Negeri list filter matches (case-insensitively)
       expect((await admin.get('/api/questions?negeri=johor')).status).toBe(200)
       expect((await teacher.get('/api/questions/filter-options')).status).toBe(403)
