@@ -417,3 +417,10 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
   - Needs B2. It touches lines in attempts.service.ts different from T38's.
 - **E05B-L1 spec READY** r1/e05b-l1-spec @ baa42a152 (A1b): editing a pinned own stimulus while it is served is refused with 409, and the pupil still sees the original text. 11/11 pass; tsc 0. No finding. Needs B2 + B3 to close E05B-L1.
 - T45 Part 3 moved to A1b. A1a stays on REQ-B-046.
+- **REQ-B-031 / REQ-B-046 READY** r1/reqb031-report-guard @ 9cd9a1eda (A1a, BASE-102):
+  - The MAJOR is fixed: a structured question can be reported before its first submit (live = served proof, capped).
+  - Re-POST at the cap returns 201. Copy fixed.
+  - REP-N1: a pupil gets one uniform 422 until the proof passes. REP-N2: at most 8 reasons.
+  - Evidence: reports 39/39; contract 1455; tsc 0; eslint 0; contract:check ok.
+  - **Needs B2 + B3 re-check.** Lapor FE follows; FE strings sent to C as REQ-A-015.
+- A1a next: r1/reqc021-followup (B2 Minors on C-021). A1b: T45 Part 3 from the WIP @ 078204e1c.
