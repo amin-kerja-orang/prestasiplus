@@ -259,8 +259,8 @@ export class ServabilityReadsService {
       if (known) results.set(id, known)
     }
     for (const part of chunks([...toEvaluate].filter((id) => !results.has(id)))) {
-      // onPublishedPaper is forced true: every id here was read from a PUBLISHED paper's placements, so the fact is true by construction
-      // (the same answer `factsOf` would give, without its second query over the whole bank); see the REQ-B-022(a) deviation row.
+      // onPublishedPaper is forced true: every id here was read from the placements of a PUBLISHED, non-jana paper, which is exactly what
+      // the fact tests, so the value is the same (see the REQ-B-022(a) deviation row).
       for (const [id, f] of await this.servability.factsOf(part)) results.set(id, evaluate({ ...f, onPublishedPaper: true }, 'simulasi_paper'))
     }
     return papers.map((p) => {
@@ -302,8 +302,8 @@ export class ServabilityReadsService {
     const ids = await this.questionsOnPublishedPapers()
     const results = new Map<string, PaperEvaluation>()
     for (const part of chunks(ids)) {
-      // onPublishedPaper is forced true: every id here was read from a PUBLISHED paper's placements, so the fact is true by construction
-      // (the same answer `factsOf` would give, without its second query over the whole bank); see the REQ-B-022(a) deviation row.
+      // onPublishedPaper is forced true: every id here was read from the placements of a PUBLISHED, non-jana paper, which is exactly what
+      // the fact tests, so the value is the same (see the REQ-B-022(a) deviation row).
       for (const [id, f] of await this.servability.factsOf(part)) results.set(id, evaluate({ ...f, onPublishedPaper: true }, 'simulasi_paper'))
     }
     return { ids, results }
