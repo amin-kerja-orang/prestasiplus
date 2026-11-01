@@ -76,5 +76,10 @@ describe('Bab set by the admin feeds GET /api/practice/chapter-subjects', () => 
     // questionCount is what the chapter draw can serve (chaptered, ungrouped, approved; D91, FD-11, R1E2E-09): the question without a chapter
     // does not count in the tile, though it is a practice question of the subject. chapterCount is the Bab that has a question.
     expect(rows[0]).toMatchObject({ chapterCount: 1, questionCount: 1 })
+    // The tile equals the sum of the per-level counts of the subject's Bab page (card = detail = drawable).
+    const detail = await student.get('/api/practice/chapter-subjects/MATH')
+    expect(detail.status, JSON.stringify(detail.body)).toBe(200)
+    const levels = (detail.body as { data: { levels: { count: number }[] } }).data.levels
+    expect(levels.reduce((n, l) => n + l.count, 0)).toBe(rows[0]!.questionCount)
   })
 })
