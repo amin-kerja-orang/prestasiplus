@@ -1,9 +1,8 @@
-import { BIJAK_BUILDER_MESSAGES as MSG } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { serveSeededBlueprints } from '../support/serve-blueprints'
 import { bootFullApp, loginFull, type FullApp, type FullClient } from '../r1/full-app'
-import { ACCOUNTS, auditRows } from './helpers'
+import { ACCOUNTS } from './helpers'
 
 vi.setConfig({ testTimeout: 120_000, hookTimeout: 300_000 })
 
@@ -124,10 +123,10 @@ describe('R1-T45 builder AC proofs: Tambah soalan errors and the candidate searc
       const { paper, sections } = await fullPaper()
       const d = ((await addSection(paper, 'Bahagian D')).body.data.paper.sections as { id: string }[]).at(-1)!.id
       expect((await addQuestion(paper, d, { number: '9', mode: 'mcq', marks: 1 })).status).toBe(201)
-      const [{ n: before }] = (await q(`select count(*)::int n from questions`)) as { n: number }[]
+      const before = Number((await q(`select count(*)::int n from questions`))[0]!.n)
       expect((await addQuestion(paper, sections[1]!, { number: '10', mode: 'mcq', marks: 1 })).status).toBe(422)
       expect((await addQuestion(paper, d, { number: '9', mode: 'mcq', marks: 1 })).status).toBe(422)
-      const [{ n: after }] = (await q(`select count(*)::int n from questions`)) as { n: number }[]
+      const after = Number((await q(`select count(*)::int n from questions`))[0]!.n)
       expect(after).toBe(before)
     })
   })
