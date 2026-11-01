@@ -166,6 +166,7 @@ export class ServabilityService {
   }
 
   /** Questions placed on a published paper that pupils can sit (a per-pupil generated paper does not count). */
+  // Intentionally NOT `paperHeld`: the servability verdict counts published papers only; `paperHeld` is the served/pinned lock (it also holds a withdrawn paper with sittings).
   private async onPublishedPaper(ids: readonly string[]): Promise<Set<string>> {
     if (ids.length === 0) return new Set()
     const rows = await this.db.$queryRaw<{ question_id: bigint }[]>`

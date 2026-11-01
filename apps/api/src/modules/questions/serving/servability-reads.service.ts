@@ -253,6 +253,7 @@ export class ServabilityReadsService {
         : await this.db.$queryRaw<{ paper_id: bigint; question_id: bigint }[]>`
             SELECT ps.paper_id, pl.question_id FROM paper_placements pl JOIN paper_sections ps ON ps.id = pl.paper_section_id
              WHERE ps.paper_id = ANY(${paperIds}::bigint[])`
+    // Intentionally NOT `paperHeld`: the servability verdict covers published papers only; `paperHeld` is the served/pinned lock (it also holds a withdrawn paper with sittings).
     const published = new Set(papers.filter((p) => p.status === 'published').map((p) => p.id))
     const toEvaluate = new Set(placements.filter((p) => published.has(p.paper_id)).map((p) => idToString(p.question_id)))
     const results = new Map<string, PaperEvaluation | null>()
