@@ -502,3 +502,4 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 | H-A18 | r1/ha18-gate-facts | d3842c48c | 62 | CHANGES REQUESTED; A2 fixing (D99) |
 | REQ-B-032 | r1/reqb032-pinned-rule | 77c83c5e | — | WIP, paused (A3) |
 | A3 docs | ha17 55562fa6, ha24 625be652, ha26 0427fe7d, t37 runbook f4bb197c | — | 104 | refreshed |
+| T44 | r1/t44-blueprint-fields | 072d8f4b | — | merged at BASE-67 as 77984abc. The newer tip 072d8f4b shows a 19-file delta against base; A3 is asked whether it is WIP (marked IN-PROGRESS until it answers) |
