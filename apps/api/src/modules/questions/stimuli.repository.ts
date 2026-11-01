@@ -347,6 +347,11 @@ export class StimuliRepository {
         FROM question_version_stimuli vs JOIN question_versions v ON v.id = vs.question_version_id JOIN questions q ON q.id = v.question_id
         JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
        WHERE vs.stimulus_id = s.id
+      UNION ALL
+      SELECT lv.subject_id, lv.education_level_id
+        FROM question_parts p JOIN question_versions v ON v.id = p.question_version_id JOIN questions q ON q.id = v.question_id
+        JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
+       WHERE p.stimulus_id = s.id
     )`
     const where = Prisma.sql`
       s.kind <> 'audio'

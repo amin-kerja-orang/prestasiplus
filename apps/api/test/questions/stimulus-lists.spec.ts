@@ -329,6 +329,20 @@ describe('stimulus group and stimulus lists (admin, real database)', () => {
       expect((await stimuli(`q=${mark}`)).meta.totalItems).toBe(2)
     })
 
+    it('a stimulus linked only through a PART of a question follows that question\'s subject and level (the Subjek and Tahap filters read part links too)', async () => {
+      const mark = `Bahagian${tagTag}`
+      const viaPart = await stimulus({ label: `${mark} pautan bahagian` })
+      const q = await question({ questionText: 'Soalan Sains dengan rangsangan pada bahagian untuk penapis subjek.', subjectId: refs.sciId })
+      const attached = await t.db.query<{ id: string }>(
+        `update question_parts set stimulus_id = $2::bigint where id = (select p.id from question_parts p join question_versions v on v.id = p.question_version_id where v.question_id = $1 order by p.id limit 1) returning id::text id`,
+        [q, viaPart],
+      )
+      expect(attached).toHaveLength(1)
+      expect(await listedStimuli(`q=${mark}&subjectId=${refs.sciId}`)).toEqual([viaPart])
+      expect(await listedStimuli(`q=${mark}&subjectId=${refs.mathId}`)).toEqual([])
+      expect(await listedStimuli(`q=${mark}&educationLevelId=${refs.t4Id}`)).toEqual([viaPart])
+    })
+
     it('a group with no member yet is listed under a subject or level filter (it fits any: the first question decides)', async () => {
       const mark = `Kosong${tagTag}`
       const empty = await group([await stimulus({ label: `${mark} kumpulan kosong` })], [])
