@@ -50,3 +50,12 @@ Also `BLOCKED (reason)` and `WAITING (dependency)`.
 4. Targeted tests: exact command + pass/fail counts.
 5. Flags: touches auth / files / new input? (yes → security review needed).
 6. V2 behaviour cited (discovery doc + section) and fidelity-deviation rows added, if any.
+
+
+## Record rule (all teams; team A applies it from 2026-11-01) (user, 2026-11-01, effective now)
+"Jangan ada yang buat kerja cuai, mana-mana team sekalipun."
+1. **READY = record in the same round.** A unit is READY only when, in one round, (a) the branch is pushed, (b) its BOARD row carries the real head, and (c) every related REQ row in requests/answers-A.md carries status + head + base. A message alone does not make a unit READY. Lanes A2–A4 and subagents do not write the tracker; they send READY to the lead, and the lead writes BOARD + answers-A.md **before** acknowledging or forwarding it.
+2. **Head changed = record changed.** Every new push to a READY branch updates its head in BOARD and answers-A.md in the same round.
+3. **Check before reporting.** Before reporting READY, run `git ls-remote origin <branch>` and `git show origin/team/r1-board:docs/team/requests/answers-A.md | grep <REQ>`. Branch, BOARD and answers-A must match.
+4. **No stale records.** At the start of every cycle, the lead checks every READY/IN-PROGRESS head in BOARD and answers-A.md against origin and fixes any mismatch.
+5. Teams B and C are asked to apply the same rule (REQ-A-017).
