@@ -149,7 +149,7 @@ describe('lane Databank Soalan (AC-R1-21.2)', () => {
 })
 
 describe('lane Bijak SPM (AC-R1-21.2)', () => {
-  const paper = (id: string, status: 'draft' | 'published', questionCount: number, attention: { code: string; message: string; count: number }[] = []) => ({
+  const paper = (id: string, status: 'draft' | 'ready' | 'published' | 'withdrawn', questionCount: number, attention: { code: string; message: string; count: number }[] = []) => ({
     paperId: id, title: `Kertas ${id}`, subject: { id: 'MAT', name: 'Matematik' }, status, questionCount, attentionCount: attention.length, attention,
   })
   it('on a narrow screen the card list carries the same Perhatian text and Sunting', async () => {
@@ -181,6 +181,20 @@ describe('lane Bijak SPM (AC-R1-21.2)', () => {
     expect(body).toContain('Terbit')
     expect(body).toContain('Draf')
     expect(q('[data-testid=lane-edit-p2]')).not.toBeNull()
+  })
+
+  it('labels ready and withdrawn papers and offers all four statuses in the filter (REQ-A-022)', async () => {
+    server.paperLane.mockResolvedValue({
+      rows: [paper('p1', 'ready', 3), paper('p2', 'withdrawn', 2), paper('p3', 'published', 1), paper('p4', 'draft', 0)],
+      page: 1, pageSize: 25, total: 4, subjects: SUBJECTS,
+    })
+    await mountAt(LaneSimulasiPage, '/admin/spm/simulasi')
+    const body = document.body.textContent ?? ''
+    expect(body).toContain('Sedia')
+    expect(body).toContain('Ditarik balik')
+    expect(body).not.toMatch(/\b(ready|withdrawn)\b/)
+    expect(q('[data-testid=attention-p1]')).toBeNull()
+    expect(q('[data-testid=attention-p2]')).toBeNull()
   })
 
   it('shows the question_missing reason sentence from the API (REQ-A-016)', async () => {
