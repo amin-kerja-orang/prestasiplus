@@ -62,6 +62,8 @@ export function usePaperActions(o: PaperActionsOptions) {
   }
 
   const blockers = computed(() => review.value?.blockers ?? [])
+  /** The blockers with the server's reason lines (the review's, or the latest publish refusal's). */
+  const blockerInfo = computed(() => review.value?.blockerInfo ?? [])
   /** Terbitkan is off while the server still lists a blocker; the reason is shown next to it. */
   const gate = computed(() =>
     publishGate({ localIssues: 0, dirty: false, reviewFailed: reviewError.value, blockers: blockers.value.length }),
@@ -85,6 +87,20 @@ export function usePaperActions(o: PaperActionsOptions) {
       const r = options ? await o.api.publish(o.id.value, options) : await o.api.publish(o.id.value)
       if (!r.ok) {
         flash.show({ type: 'error', message: t.notPublishable(r.errors.length) })
+        // The refusal carries the same blockers and `canOverride` as the review: show them at once (the
+        // reload below only confirms), so the reason and the audited override never depend on a second call.
+        if (review.value) {
+          const details = r.blockerDetails ?? []
+          const infos = details.length ? blockersOf({ blockerDetails: details }) : r.errors.map((m) => ({ message: m, overridable: false }))
+          review.value = {
+            ...review.value,
+            ok: false,
+            blockers: infos.map((b) => b.message),
+            blockerDetails: details,
+            canOverride: r.canOverride ?? false,
+            blockerInfo: infos,
+          }
+        }
         await loadReview()
         return false
       }
@@ -149,6 +165,7 @@ export function usePaperActions(o: PaperActionsOptions) {
     reviewError,
     loadReview,
     blockers,
+    blockerInfo,
     overrideAvailable,
     publishBlocked,
     publishReason,

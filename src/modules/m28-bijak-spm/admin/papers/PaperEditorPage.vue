@@ -138,6 +138,11 @@ const gate = computed(() =>
     blockers: actions.blockers.value.length,
   }),
 )
+/** Server blocker lines the issue list above does not already show (the live check lists the structural ones). */
+const extraBlockers = computed(() => {
+  const shown = new Set(allIssues.value)
+  return [...new Set([...actions.blockers.value, ...publishErrors.value])].filter((m) => !shown.has(m))
+})
 const publishBlockedCount = computed(() => gate.value.count)
 const publishBlocked = computed(() => gate.value.blocked)
 
@@ -571,8 +576,8 @@ const previewBlocks = computed(() => {
       <DsPanel data-testid="budget-check" role="status" aria-live="polite">
         <div class="flex items-center gap-2">
           <UIcon
-            :name="allIssues.length ? 'i-ph-warning' : 'i-ph-check-circle'"
-            :class="allIssues.length ? 'text-warning' : 'text-success'"
+            :name="allIssues.length || publishBlocked ? 'i-ph-warning' : 'i-ph-check-circle'"
+            :class="allIssues.length || publishBlocked ? 'text-warning' : 'text-success'"
             class="size-5"
           />
           <h3 class="text-subheading text-highlighted">
@@ -590,20 +595,35 @@ const previewBlocks = computed(() => {
         >
           <li v-for="e in allIssues" :key="e">{{ e }}</li>
         </ul>
-        <p
-          v-if="publishBlocked && !readonly"
-          class="mt-2 text-body font-semibold text-error"
+        <div
+          v-if="(publishBlocked || publishErrors.length) && !readonly"
+          class="mt-2 flex flex-col gap-2"
           role="status"
           data-testid="publish-errors"
         >
-          <template v-if="allIssues.length">
-            Kertas belum boleh diterbitkan: selesaikan {{ publishBlockedCount }} perkara di atas.
-          </template>
-          <template v-else>{{ gate.reason }}</template>
-        </p>
-        <p v-else-if="publishErrors.length" class="mt-2 text-body font-semibold text-error" role="alert">
-          Kertas belum boleh diterbitkan: selesaikan {{ publishErrors.length }} perkara di atas.
-        </p>
+          <p class="text-body font-semibold text-error">
+            <template v-if="allIssues.length || publishErrors.length">
+              Kertas belum boleh diterbitkan: selesaikan {{ allIssues.length ? publishBlockedCount : publishErrors.length }} perkara di atas.
+            </template>
+            <template v-else>{{ gate.reason }}</template>
+          </p>
+          <!-- REQ-B-054: the server's reason for each blocker not already listed above (the Kontrak is not Disahkan). -->
+          <ul
+            v-if="extraBlockers.length"
+            class="flex list-disc flex-col gap-1 ps-6 text-body text-error"
+            data-testid="publish-blockers"
+          >
+            <li v-for="b in extraBlockers" :key="b">{{ b }}</li>
+          </ul>
+        </div>
+        <PublishOverride
+          v-if="!readonly"
+          class="mt-3"
+          :blockers="actions.blockers.value"
+          :available="actions.overrideAvailable.value"
+          :busy="actions.busy.value"
+          @override="overridePublish"
+        />
       </DsPanel>
 
       <DsPanel data-testid="paper-review" aria-live="polite">
@@ -684,14 +704,6 @@ const previewBlocks = computed(() => {
           :busy="busy"
           @section="saveSection"
           @passage="savePassage"
-        />
-        <PublishOverride
-          v-if="!readonly"
-          class="mt-4"
-          :blockers="actions.blockers.value"
-          :available="actions.overrideAvailable.value"
-          :busy="actions.busy.value"
-          @override="overridePublish"
         />
       </DsPanel>
 
