@@ -74,3 +74,9 @@
 - REQ-C-016: A1a, docs (AC-R1-18.4 → pinned version per D80/D85).
 - T38 MAJOR (best-N self-mark gain): A1b → then T40 restack + B2 Minors, T50/T52 refresh on BASE-100.
 - T34/T36 are now owned by team C (owner decision, 18:18). Team A does not touch T34 without C's agreement. A3's T34-L1-residual work is handed to C as a note.
+
+**Q10 → H-A18 MAJOR 2 (B2) / T33-L1, REQ-B-017 (B3):** user decision: follow V2 (2026-11-01).
+- Migrated .cloud questions are never blocked by the source/rights gate after an edit. A2 implements this on r1/ha18-gate-facts.
+- V2 asks for source and rights only at intake batch upload. It has no per-question gate.
+- Lead proposal, awaiting the user's confirmation (it reverses exam D10): drop the per-question source/rights gate for new questions too.
+- **B3:** if it is confirmed, T33-L1 / REQ-B-017 closes as a product decision.

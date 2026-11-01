@@ -12,7 +12,18 @@
 | Q8 | Lapor soalan: satu laporan murid terus matikan soalan untuk semua (B3, REQ-B-031). | Admin semak dulu | **Admin reviews first** (user, 2026-11-01): pupil reports only a question from their own attempt/practice session; a report never auto-deactivates; admin decides in Laporan Soalan (Arkib/Tolak); per-pupil daily cap (D98) | REQ-B-031 |
 | Q9 | Soalan by Chapter: kunci bab 70% (V1) atau tiada kunci (V2)? (REQ-C-021) | Ikut V2 | **Follow V2: no chapter lock** (user, 2026-11-01); 70% rule text removed (D98) | REQ-C-021 |
 
-## Q10 (open, 2026-10-31 23:20 UTC): migrated .cloud questions after an edit (B2 MAJOR on H-A18)
+## Q10 (DECIDED 2026-11-01 by the user via Mandor: FOLLOW V2) (asked 2026-10-31 23:20 UTC): migrated .cloud questions after an edit (B2 MAJOR on H-A18)
 Every question migrated from .cloud has rights 'unclear', no owner and no source. With the new gate (H-A18 / T33-L1), editing one blocks it at submit ("Sila nyatakan sumber soalan.") and at Terbit, and no screen can declare the source. On BASE today the same flow publishes.
 Options: (1) follow V2: the migration counts as the source declaration, so editing and republishing still works and the rights gate applies to new questions only; (2) add a "Sumber & hak" field to the edit form (A2 API + C3 UI) and allow republish only after it is filled in; (3) migrated questions cannot be republished after an edit.
 Lead recommendation: (1).
+
+**Q10 answer (user, 2026-11-01, relayed by Mandor):** "v3 over engineer bab ni since v2 tak ada pun". **Follow V2**: questions migrated from .cloud can be edited, submitted and published again; the migration counts as their source declaration, so the rights gate never blocks them.
+V2 check (lead, docs):
+- V2 asks for the source and rights **once, at intake batch upload**: "Pengisytiharan sumber diperlukan." / "Status hak cipta diperlukan." (docs/architecture/v2-api-catalogue/learning-exam.md:1483,1501; v2-data-model.md:1235, AC-17.1).
+- V2 has **no per-question source/rights gate** at submit, approve or publish. The .cloud `complianceStatus` is not carried (v2-data-model.md:3402).
+- The per-question block comes from exam D10 (v2-data-model.md:1089, v2-exam-schema.md:431: "third_party/unclear cannot reach published without a recorded decision") plus T33-L1 / REQ-B-017 (H-A18).
+Lead proposal (pending the user's confirmation, because it reverses exam D10):
+- Keep the V2 intake batch declaration.
+- Drop the per-question submit "Sila nyatakan sumber soalan." and the publish rightsStatus block for every question.
+- Keep provenance carry-forward (REQ-B-037), as data integrity only.
+- B3 to be told: T33-L1 / REQ-B-017 closes as a product decision, not as a fix.
