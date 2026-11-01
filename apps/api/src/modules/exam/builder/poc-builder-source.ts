@@ -44,7 +44,7 @@ const schemeOf = (id: string): SchemeDef | undefined => SCHEMES.get(id)
 
 function stimulusOf(raw: { id: string; kind: string; label: string; [k: string]: unknown }): BijakAttemptStimulus {
   const out: Record<string, unknown> = { id: raw.id, kind: raw.kind, label: raw.label }
-  for (const k of ['caption', 'alt', 'svg', 'text', 'table'] as const) if (raw[k] !== undefined) out[k] = raw[k]
+  for (const k of ['caption', 'alt', 'text', 'table'] as const) if (raw[k] !== undefined) out[k] = raw[k]
   return out as unknown as BijakAttemptStimulus
 }
 
