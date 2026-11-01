@@ -720,7 +720,10 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
       `"${q2}",8,9,7,6,B,2,1`,
     ].join('\n')
     await login(page, ADMIN)
-    await adminMenu(page, 'Import & Semakan')
+    // DIAGNOSTIC ONLY (default off): R1_E2E_DIAG_S1B_DIRECT=1 opens the CSV import page by URL. With T10 (R1-F09, BS-02) the menu entry
+    // "Import & Semakan" opens the batch list (/admin/spm/soalan/ekstrak), not the CSV page. The graded run never sets it.
+    if (process.env.R1_E2E_DIAG_S1B_DIRECT === '1') await page.goto('/admin/questions/import')
+    else await adminMenu(page, 'Import & Semakan')
     await expect(page.getByTestId('import-page')).toBeVisible()
     await expectNoHScroll(page)
     await page.getByTestId('import-file').setInputFiles({
@@ -1892,6 +1895,27 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     await page.goto(`/admin/spm/kertas/${id}`)
     await expect(page.getByTestId('paper-editor-page')).toBeVisible()
     const publish = page.getByTestId('paper-publish')
+    // DIAGNOSTIC ONLY (default off): R1_E2E_DIAG_T10_UI=1 follows the T10 (R1-F09/REQ-B-054) editor: a not-Disahkan blueprint
+    // disables the plain Terbitkan, shows the reason in `publish-errors`, and offers the override tick + reason + confirm.
+    // The graded run never sets it (it expects the pre-T10 plain Terbitkan).
+    if (process.env.R1_E2E_DIAG_T10_UI === '1') {
+      await expect(publish, 'Terbitkan present on a draft paper').toBeVisible()
+      if (await publish.isDisabled()) {
+        await expect(page.getByTestId('publish-errors'), 'T10: reason shown up front').toContainText('belum Disahkan')
+        await expect(page.getByTestId('publish-override'), 'T10: override offered').toBeVisible()
+        observe(info, 'DIAG T10: plain Terbitkan disabled, reason shown, override offered')
+        await expectNoHScroll(page)
+        await page.getByTestId('override-tick').click()
+        await page.getByTestId('override-reason').fill('Kontrak masih Spec, kertas ujian dalaman')
+        await page.getByTestId('override-publish').click()
+      } else {
+        await publish.click()
+      }
+      await page.locator('[data-ds=confirm-ok]').click()
+      await expect(page.getByTestId('paper-unpublish'), 'published (T10 UI path)').toBeVisible({ timeout: 20_000 })
+      await expectNoHScroll(page)
+      return true
+    }
     await expect(publish, 'Terbitkan shown on a draft paper').toBeEnabled()
     const posted = page
       .waitForResponse(
