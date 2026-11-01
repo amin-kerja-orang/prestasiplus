@@ -1093,15 +1093,24 @@ export class BuilderService {
     let candidates = filtered
     let described: ReadonlyMap<string, BuilderQuestionInfo> = new Map()
     if (query.q) {
-      // The whole filtered candidate set is searched (chunked), then paged: nothing is truncated before the filter.
-      const all = filtered.flatMap((u) => u.ids)
-      const got = new Map<string, BuilderQuestionInfo>()
-      for (let i = 0; i < all.length; i += DESCRIBE_CHUNK) {
-        for (const [id, info] of await this.questions.describe(all.slice(i, i + DESCRIBE_CHUNK).map((id) => ({ id })))) got.set(id, info)
-      }
-      described = got
       const needle = query.q.toLowerCase()
-      candidates = filtered.filter((u) => u.ids.some((id) => (described.get(id)?.preview ?? '').toLowerCase().includes(needle) || (described.get(id)?.topic ?? '').toLowerCase().includes(needle)))
+      if (this.questions.matchText) {
+        // The store matches the text in SQL over the candidate ids; only the page that is shown is described below (a 400k bank has ~9k candidates).
+        const hit = await this.questions.matchText(
+          filtered.flatMap((u) => u.ids),
+          query.q,
+        )
+        candidates = filtered.filter((u) => u.ids.some((id) => hit.has(id)))
+      } else {
+        // A source without a text match: the whole filtered candidate set is described (chunked) and searched, then paged.
+        const all = filtered.flatMap((u) => u.ids)
+        const got = new Map<string, BuilderQuestionInfo>()
+        for (let i = 0; i < all.length; i += DESCRIBE_CHUNK) {
+          for (const [id, info] of await this.questions.describe(all.slice(i, i + DESCRIBE_CHUNK).map((id) => ({ id })))) got.set(id, info)
+        }
+        described = got
+        candidates = filtered.filter((u) => u.ids.some((id) => (described.get(id)?.preview ?? '').toLowerCase().includes(needle) || (described.get(id)?.topic ?? '').toLowerCase().includes(needle)))
+      }
     }
     const slice = candidates.slice((page - 1) * pageSize, page * pageSize)
     const info = new Map(described)

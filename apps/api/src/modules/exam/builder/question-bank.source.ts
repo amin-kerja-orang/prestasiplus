@@ -165,6 +165,46 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
     return out
   }
 
+  /**
+   * "Cari soalan" in SQL (the picker text search of the section pool): of the given question ids, those whose `preview` or topic contains the
+   * needle. The preview is built exactly as `previewOfRows` does, from the version `describe` shows (the live one, else the latest): the trimmed
+   * stem, then " {label} {prompt}" of the first top-level part when that part is a leaf (the prompt alone for a blank stem, the stem alone when
+   * it equals the prompt). The match is a literal case-insensitive ILIKE (the wildcards of the needle are escaped). Differences from the
+   * in-memory filter: only ASCII whitespace is trimmed, and case folding follows the database collation.
+   */
+  async matchText(ids: readonly string[], needle: string): Promise<Set<string>> {
+    const keys = [...new Set(ids)].flatMap((id) => {
+      const k = toBigint(id)
+      return k === null ? [] : [k]
+    })
+    if (keys.length === 0 || needle === '') return new Set()
+    const pattern = `%${needle.replace(/[\\%_]/g, (c) => `\\${c}`)}%`
+    // `ws` = the ASCII whitespace JS `trim()` removes (space, tab, LF, CR, FF, VT), built with chr() so no escape sequence is cooked by the template.
+    const rows = await this.db.$queryRaw<{ id: bigint }[]>`
+      SELECT q.id
+        FROM questions q
+        JOIN question_versions v ON v.question_id = q.id AND v.version_no = COALESCE(q.live_version_no, q.latest_version_no)
+        CROSS JOIN LATERAL (SELECT chr(32) || chr(9) || chr(10) || chr(13) || chr(12) || chr(11) AS w) ws
+        CROSS JOIN LATERAL (SELECT btrim(COALESCE(v.stem_ms, ''), ws.w) AS s) st
+        LEFT JOIN LATERAL (
+          SELECT p.label, p.prompt_ms, p.mode
+            FROM question_parts p
+           WHERE p.question_version_id = v.id AND p.parent_part_id IS NULL
+           ORDER BY p.position
+           LIMIT 1) t ON true
+        LEFT JOIN curriculum_nodes u ON u.id = v.unit_node_id
+       WHERE q.id = ANY(${keys}::bigint[])
+         AND (
+           (CASE
+              WHEN t.prompt_ms IS NULL OR t.mode IS NULL THEN st.s
+              WHEN st.s = '' THEN t.prompt_ms
+              WHEN st.s = btrim(t.prompt_ms, ws.w) THEN st.s
+              ELSE st.s || ' ' || t.label || ' ' || t.prompt_ms
+            END) ILIKE ${pattern}
+           OR COALESCE(u.title, '') ILIKE ${pattern})`
+    return new Set(rows.map((r) => r.id.toString()))
+  }
+
   async groups(groupIds: readonly string[]): Promise<ReadonlyMap<string, BuilderGroupInfo>> {
     const out = new Map<string, BuilderGroupInfo>()
     const keys = groupIds.flatMap((id) => {
