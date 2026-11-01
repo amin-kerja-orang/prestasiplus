@@ -45,11 +45,15 @@ Each assertion was checked by mutating the code, running the spec (red) and rest
 | `ALREADY_SUBMITTED` guard removed (`practice.repository.ts:459`) | 3 red |
 | wallet replay check removed (`wallet.service.ts:176`) | 3 red |
 
-## Open: not pinned (user decision pending)
+## Decided and open
+
+**Decided (Q12a, user, 2026-11-02, via Mandor):** keep **1 syiling and 10 points per correct answer** for Latih Tubi, Databank and Ulang Kaji in R1, as pinned by the spec. The V2 rate stays unverified (V1 observed 1 + 10; the Bijak paper rate is 2 + 10; the kombo rule is undocumented); confirm against `.cloud` in R2. Q12b (practice points are not added to wallet XP) stays as it is by lead default; it is not a user decision. AC R1-10.1 stays **partial** in the coverage matrix.
+
+### Still open (not pinned)
 
 - V2 `PracticeRecorder` rate for `latih_tubi`, `revision` and Databank. Only the paper rate is documented (2 syiling, 10 XP per mark, `docs/discovery/BIJAK-SPM-cloud.md:347`). The last observed V1 practice ledger is 1 per correct (`flat_quiz_reward` = 1; `docs/discovery/M14-gamification.md:580`), equal to ours. The older April-May 2026 rows paid 2-4 per correct.
 - V2 kombo (streak) step and any streak bonus.
 - Whether V2 practice credits the wallet XP (the client shows +10 mata; the admin XP contradicts it, `M14-gamification.md:612`). Today V3 does not; the spec pins "not changed".
 - Whether `flat_quiz_reward` overrides the tier rates (inferred only).
 
-If the decision changes a rate, the XP rule or the streak step, change this spec in the same commit.
+If the R2 confirmation against `.cloud` changes a rate, the XP rule or the streak step, change this spec in the same commit.
