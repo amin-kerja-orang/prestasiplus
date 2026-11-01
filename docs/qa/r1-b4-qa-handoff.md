@@ -54,7 +54,7 @@ Heads from `git ls-remote origin refs/heads/r1/<branch>` on the day of writing. 
 | `r1/t51-partial-acs-a3` | 61c1b077 | chain steps for the partial ACs; A11 paper quiz view | contains T43 and T31; same pairing; merge **after** T43 |
 | `r1/t43b-publish-acs` | 7a14581a | PIPE AC-07.4 to 07.9 (publish checks, withdraw keeps attempts, pinned snapshot) | independent leaf on T48; needs T48 6c5ae3a8 |
 | `r1/t44-blueprint-fields` | 072d8f4b | Kontrak admin fields (autoMarkable, origin filter, note gate, Markah skema); contains H-A15 | none |
-| `r1/reqb052-archived-edit` | f3a2448f | an archived or restored question is never rewritten in place when a Terbit paper pins it (separate from the chain specs; not part of the B4 chain steps) | contains `r1/reqb032-pinned-rule` a2cb5bb4 and H-A18 fc409ae1 |
+| `r1/reqb032-pinned-rule` / `r1/reqb052-archived-edit` | a2cb5bb4 / f3a2448f | REQ-B-032: a sitting is served the version its paper pinned, and grades against it; REQ-B-052: an archived or restored question is never rewritten in place when a Terbit paper pins it | reqb052 contains reqb032 and H-A18 fc409ae1 |
 | `r1/t45-servability-acs` | 954614c6 | Terbitkan notice and refusal when a question is unservable (AC-05.3), indicators fresh (AC-04.5), paper servability (AC-04.3) | none; `r1/reqa018-paper-servability-route` @ 2f5a85e7 merges after it |
 | `r1/a4chain-minors` | 6f2fb793 | exact BM reasons and the HTTP route case for the Terbitkan refusal | contains the T45 specs |
 | `r1/t52-examiner-grid` | 5a0d7bd0 | cover "Untuk Kegunaan Pemeriksa" only when a part is marked by a person (AC-20.3) | none |
@@ -70,7 +70,7 @@ Heads from `git ls-remote origin refs/heads/r1/<branch>` on the day of writing. 
 | `r1/mock-known-mismatches` | a279e68c | frontend-mock conformance check green | none |
 
 - **`r1/chain-qa-bab-3a-a3` @ 0efba36c** is the chain step for the Bab gate: `chain-qa-selfmark-a3` 5b93da43 plus H-A18 fc409ae1 (`--no-ff`), and the test `ci :: "3a. H-A18: Semakan without a Bab is refused per row with \"Sila pilih bab.\" and nothing moves (step 3 then gives the Bab and the same Semakan passes)"` in `apps/api/test/r1/chain-intake-to-pupil.spec.ts`. It merges **after H-A18 and `chain-qa-selfmark-a3`**. A3 reports 642 passed, 0 failed on it, and the chain spec 11/11 (not re-run for this pack). The per-row Bab specs remain (`gate-facts.spec.ts` 9, `lifecycle-bulk.spec.ts`).
-- **Building a test stack.** The A3 chain QA ran on a local, never-pushed stack over BASE-105 (list and counts in `docs/qa/r1-chain-step-map.md` on `r1/r1-chain-qa-a3`). Do not copy its order from here: build the stack from the prerequisites in this section (T48 -> T31 -> T43 -> T51 with REQ-A-008; H-A18 before the Bab and selfmark chain branches; T38 for the self-mark reward) and re-read the heads in the table above.
+- **Recommended test stack** (the one the A3 chain QA verified, merge order, all `--no-ff`): `reqc021-followup` -> `ha18-gate-facts` -> `req-c012-a2` -> `reqb032-pinned-rule` -> `reqb052-archived-edit` -> T48 -> T43b -> `builder-search-perf` -> T51. The heads in the step map were older for some of these than in the table above; re-read section 2.2 when you build. **T51:** the chain QA took T51 at 54f63116; T51 is now **61c1b077** (restacked on T43 238eb6eb and T31 eb0346d2) and pairs with REQ-A-008 `r1/reqa008-group-stimulus` @ 29d24be9, like T31 and T43.
 - **T31, T43 and T51 do not go in without REQ-A-008.** Do not report the `http-admin.ts:202` type error as a defect of the flow.
 
 ### 2.3 What the specs already prove on that stack (from the step map)
@@ -171,7 +171,7 @@ Legend. **FE** = screen route (the SPA). **API** = `/api/...` route. **Msg** = e
   - an option may carry only `{id, text, image}`;
   - a recursive scan of the whole payload finds no key named like `correct`, `answer`, `key`, `scheme`, `reason`, `solution`, `model`, `explain` or `rubric` (the pupil's own `answers` is excluded), the correct option id appears only as an option `id`, and the scheme's reason text is absent.
   A new field on a pupil question, or a renamed answer key, fails that test.
-- **Spec:** `pc :: "starts an attempt: the group stimulus is served ONCE with both members; no answer key leaks"`; `pc :: "the group image file is readable by the pupil once its member question is live (R1-B20) …"`; `ci :: "7. the pupil sees the paper and starts it: the figure stimulus is served ONCE with both members and a readable image; no key leaks"`.
+- **Spec:** `pc :: "starts an attempt: the group stimulus is served ONCE with both members; no answer key leaks"`; `pc :: "the group image file is readable by the pupil once its member question is live (R1-B20) …"`; `ci :: "7. the pupil sees the paper and starts it: the figure stimulus is served ONCE with both members and a readable image; no key leaks"`.; `r1/pinned-version-rule.spec.ts :: "a new version is approved (version 1 is superseded): the sitting keeps version 1, and so does its grading"` (REQ-B-032, `r1/reqb032-pinned-rule` @ a2cb5bb4)
 
 ### Step 9. Hantar (submit) and the result
 
