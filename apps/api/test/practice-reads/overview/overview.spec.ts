@@ -385,6 +385,24 @@ describe('#7 / #8 chapter mode (S4, S5; BR-15, BR-16)', () => {
     expect((await guru.get('/api/practice/chapter-subjects')).status).toBe(200)
   })
 
+  it('#7 the Bab tile is the sum of the per-level counts of the same subject (D91): a grouped, draft or inactive question never counts, through the service', async () => {
+    const d2c1 = await chapterIdOf(t.db, 'MATH', 'T5', 1)
+    const gid = (await t.db.query<{ id: string }>(`insert into stimulus_groups (scope) values ('section') returning id::text`))[0]?.id as string
+    await q({ subject: w.math, level: w.d1, chapter: w.c1 })
+    await q({ subject: w.math, level: w.d1, chapter: w.c2 })
+    await q({ subject: w.math, level: w.d2, chapter: d2c1 })
+    await q({ subject: w.math, level: w.d2, chapter: d2c1 })
+    const grouped = await q({ subject: w.math, level: w.d1, chapter: w.c1 })
+    await t.db.query('update questions set group_id = $1::bigint, group_position = 1 where id = $2::bigint', [gid, grouped]) // a stimulus-group member: the chapter draw never serves it
+    await q({ subject: w.math, level: w.d1, chapter: w.c1, status: 'draft' })
+    await q({ subject: w.math, level: w.d1, chapter: w.c1, active: false })
+    const tile = PracticeReadChapterSubjectListResponseSchema.parse((await pelajar.get('/api/practice/chapter-subjects')).body).data.find((s) => s.code === 'MATH')
+    const detail = ChapterDetail.parse((await pelajar.get('/api/practice/chapter-subjects/MATH')).body).data
+    expect(detail.levels.map((l) => l.count)).toEqual([2, 2])
+    expect(tile?.questionCount).toBe(4)
+    expect(tile?.questionCount).toBe(detail.levels.reduce((n, l) => n + l.count, 0))
+  })
+
   it('#8 every chapter is open whatever the caller answered (REQ-C-021, D98: no progressive lock); the figures still follow the answers', async () => {
     const c1 = [await q({ subject: w.math, level: w.d1, chapter: w.c1 }), await q({ subject: w.math, level: w.d1, chapter: w.c1 }), await q({ subject: w.math, level: w.d1, chapter: w.c1 }), await q({ subject: w.math, level: w.d1, chapter: w.c1 })]
     const c2 = [await q({ subject: w.math, level: w.d1, chapter: w.c2 }), await q({ subject: w.math, level: w.d1, chapter: w.c2 })]
