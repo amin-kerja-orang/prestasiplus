@@ -38824,6 +38824,24 @@
               "null"
             ]
           },
+          "kertas": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "1",
+              "2",
+              "3",
+              null
+            ]
+          },
+          "numberLabel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "essayTopics": {
             "type": "array",
             "items": {
@@ -38843,7 +38861,9 @@
           "aiVerified",
           "dskpTagged",
           "sourceType",
-          "sourceFile"
+          "sourceFile",
+          "kertas",
+          "numberLabel"
         ]
       },
       "QuestionComplianceStatus": {
@@ -71428,6 +71448,16 @@
             "minimum": 0,
             "description": "Sum of the page counts of the files read so far."
           },
+          "itemCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Items (questions read from the paper) of the batch, in any state. V2 column \"Bilangan Soalan\". REQ-C-009."
+          },
+          "reviewedCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Items with no unconfirmed low-confidence field (low fields minus confirmed fields is empty). V2 column \"Disemak\". REQ-C-009."
+          },
           "owner": {
             "allOf": [
               {
@@ -71475,6 +71505,8 @@
           "adminNotes",
           "fileCount",
           "pageCount",
+          "itemCount",
+          "reviewedCount",
           "owner",
           "createdAt",
           "updatedAt",
@@ -71549,6 +71581,16 @@
             "minimum": 0,
             "description": "Sum of the page counts of the files read so far."
           },
+          "itemCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Items (questions read from the paper) of the batch, in any state. V2 column \"Bilangan Soalan\". REQ-C-009."
+          },
+          "reviewedCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Items with no unconfirmed low-confidence field (low fields minus confirmed fields is empty). V2 column \"Disemak\". REQ-C-009."
+          },
           "owner": {
             "allOf": [
               {
@@ -71602,6 +71644,8 @@
           "adminNotes",
           "fileCount",
           "pageCount",
+          "itemCount",
+          "reviewedCount",
           "owner",
           "createdAt",
           "updatedAt",
@@ -105553,7 +105597,7 @@
           "questions"
         ],
         "summary": "Move a question along the lifecycle",
-        "description": "Draft to review (the owning Guru or Admin), review to approved (\"Terbitkan\", Admin Pusat; runs the merged approve gate), approved to archived, review to draft and archived to draft (Admin; a reason is required where the table says so). `approved` is the only servable status, so the answer carries the ServabilityReport of an approval. Refusals: 409 for a pair outside the table, 422 with `fields` keyed by path (the gate issues) and `details.gate`, 403 for a role that may not move it.",
+        "description": "Draft to review (the owning Guru or Admin), review to approved (\"Terbitkan\", Admin Pusat; runs the merged approve gate), review to archived and approved to archived (Admin; no reason needed, one is recorded when given), review to draft (a reason is required) and archived to draft (Admin). `approved` is the only servable status, so the answer carries the ServabilityReport of an approval. Refusals: 409 for a pair outside the table, 422 with `fields` keyed by path (the gate issues) and `details.gate`, 403 for a role that may not move it.",
         "parameters": [
           {
             "schema": {

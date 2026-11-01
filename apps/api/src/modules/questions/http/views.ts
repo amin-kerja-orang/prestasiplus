@@ -163,6 +163,8 @@ export function rowView(q: QuestionView): QuestionRow {
     dskpComplete: dskpOf(q).complete,
     sourceType: wireSourceType(q.sourceType),
     sourceFile: q.version.sourceFile,
+    kertas: kertasOfPaperCode(q.version.paperCode),
+    numberLabel: q.version.numberLabel,
     ...(f.essayTopics === null ? {} : { essayTopics: f.essayTopics }),
   })
 }
