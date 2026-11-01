@@ -573,3 +573,4 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
   - T51 (and T48's builder-parity spec) gives 22 reds once merged with H-A18, from the bab gate. A3 is fixing the fixture.
   - Lead decision: the D93 min-2 rule is skipped for a group with no displayable stimulus, and that stays (the group is still one D90 unit; a deviation row will be added).
   - **For B1:** 19 baseline vue-tsc errors (implicit-any in m02/m03/m04/m07/m09/m28 pages) appear on BASE-105 in team A's env. Please check them on your setup.
+- A2 slot 2 switched to fixing the 4 held units (order: intake-reqs crash → t49 bulk-blank → t04 wording → d72 merge/row). The A4 chain delta re-review is paused, to be reassigned when a lane is free. Slot 1 is on the REQ-B-052 re-review.
