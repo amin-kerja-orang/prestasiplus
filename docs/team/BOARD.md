@@ -1,6 +1,6 @@
 # R1 board: Bijak SPM, admin → student question pipeline
 
-Writer: team A lead. Last refresh: 2026-11-01 14:55 UTC (cycle 18). Current BASE: **BASE-102** = `feature/v3-bijak-r1` @ d42351f7. Every open team A branch merges the latest BASE before re-marking READY.
+Writer: team A lead. Last refresh: 2026-11-01 14:55 UTC (cycle 18). Current BASE: **BASE-105** = `feature/v3-bijak-r1` @ 7ea2208c. Every open team A branch merges the latest BASE before re-marking READY.
 Source of every task: `docs/handoff/CLOUD-HANDOFF.md` §7 on `feature/v3-bijak-r1`. Read the protocol in [README.md](README.md).
 
 ## Team A record rule (user, 2026-11-01, effective now)
@@ -503,3 +503,50 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 | REQ-B-032 | r1/reqb032-pinned-rule | 77c83c5e | — | WIP, paused (A3) |
 | A3 docs | ha17 55562fa6, ha24 625be652, ha26 0427fe7d, t37 runbook f4bb197c | — | 104 | refreshed |
 | T44 | r1/t44-blueprint-fields | 072d8f4b | — | merged at BASE-67 as 77984abc. The newer tip 072d8f4b shows a 19-file delta against base; A3 is asked whether it is WIP (marked IN-PROGRESS until it answers) |
+
+<!-- AUDIT:BEGIN -->
+### Team A open branches: heads from origin (auto, 2026-11-01 14:56 UTC, BASE 7ea2208c)
+This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
+| Branch | Origin head | State |
+|---|---|---|
+| r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
+| r1/e05b-l1-spec | baa42a152 | READY (A1b, B2 + B3 to review) |
+| r1/ha15-blueprint-evidence | 7e5d637e5 | merged via T44 (BASE-67); leftover tip, do not merge (A3 to confirm) |
+| r1/ha17-ac-coverage | 55562fa6a | docs, auto-refreshed by A3 H-A27 (coverage 124/176) |
+| r1/ha18-gate-facts | d3842c48c | CHANGES REQUESTED → A2 fixing with D99 + MAJOR 1 + Minors |
+| r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
+| r1/ha24-release-input | 625be6520 | docs, auto-refreshed by A3 H-A27 |
+| r1/ha26-team-a-state | dd2bee07a | docs, auto-refreshed by A3 H-A27 |
+| r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
+| r1/intake-reqs-a2 | b70dc9571 | IN-PROGRESS: B2 Minors pushed, A2 running evidence (READY ~15:20) |
+| r1/overview-mcq-shape-once | 390fbdd75 | IN-PROGRESS (A4) |
+| r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
+| r1/req-b-022a-a4 | e81f64d56 | READY (A4), B3 + DevOps (new env) |
+| r1/req-b-025c | a2865119f | READY (A1b), B2 |
+| r1/req-b-033 | f3da2b7d3 | READY (A4, on c-020), B2 |
+| r1/req-c-020 | e5e39d515 | READY (A4, on 022a-a4), B2 |
+| r1/req-c012-a2 | ba57ecc52 | WAITS for fixed H-A18 (A2 slot 1) |
+| r1/reqb032-pinned-rule | 77c83c5e6 | WIP, paused (A3) |
+| r1/reqc021-followup | 8210ac5bd | READY (A1a), fixes BASE-102 red draw-bounded; merge early |
+| r1/seed-dangling-placements | 7285d961c | READY (A1b, spec only), B2 |
+| r1/t04-minors | d0740a32a | IN-PROGRESS: tile-sum assertion pushed, A2 running evidence |
+| r1/t31-builder-wire | 6a27c8dd3 | READY (A3); needs C1 REQ-A-008 rebased on BASE-102 |
+| r1/t34-l1-residual | e4bb72eb6 | WIP for team C (REQ-A-013); do not merge |
+| r1/t34-l1-residual-a3 | e4bb72eb6 | WIP for team C (REQ-A-013); do not merge |
+| r1/t37-r1-runbook | f4bb197c2 | docs, auto-refreshed by A3 H-A27 |
+| r1/t38-selfmark-reward | e8af872f5 | Approve w/ Minors → A1b fixing + BASE merge |
+| r1/t39-k1-evidence | 1a26f7a60 | check: A3 to confirm state |
+| r1/t40-attempts-acs | 985e2af0b | Approve w/ Minors, after T38 → A1b |
+| r1/t43-chain-publish | 5ce5894f1 | READY (A3, on T31) |
+| r1/t43b-publish-acs | 8841a31bd | Approve w/ Minors → A3 fixing (after T48) |
+| r1/t44-blueprint-fields | 072d8f4b4 | merged at BASE-67 (77984abc); newer tip under check by A3 |
+| r1/t45-builder-acs | 69d16a7f9 | READY (A1b, on T48), B2 |
+| r1/t45-builder-acs-wip | 078204e1c | SUPERSEDED by r1/t45-builder-acs; do not merge |
+| r1/t45-servability-acs | 37d240136 | READY (A4), B2 + B3 |
+| r1/t48-builder-parity | 4a3ff2646 | Approve w/ Minors → A3 fixing (SECTION_EMPTY) + BASE merge |
+| r1/t49-served-now | 221c2b287 | Approve w/ Minors → A2 fixing (trim) + BASE merge |
+| r1/t50-partial-acs | e436e084d | READY (A1a/b), B2 |
+| r1/t51-partial-acs-a3 | 359fe16e4 | IN-PROGRESS (A3 dev-1, on T43) |
+| r1/t52-examiner-grid | addae6444 | READY (A1a), B2 |
+| r1/t54-perf-400k | bbf412c66 | READY (A4), B2 Minors fixed |
+<!-- AUDIT:END -->
