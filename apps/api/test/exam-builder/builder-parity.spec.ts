@@ -264,6 +264,31 @@ describe('R1-T48 builder parity: cover code, rule, sections, added questions, pi
       expect(await q(`select question_count, mark_budget from paper_sections where paper_id = $1 and admin_created`, [paper])).toEqual([{ question_count: 1, mark_budget: 1 }])
     })
 
+    it('refuses a label already on the paper (trimmed, case-insensitive, 422 fields.label), on add and on rename; a swap in one patch and a rename to itself are fine', async () => {
+      const { paper, sections } = await fullPaper()
+      const eachLabel = async () => ((await editorOf(paper)).paper.sections as { id: string; label: string }[]).map((x) => x.label)
+      const labels = await eachLabel()
+      const dup = await addSection(paper, `  ${labels[0]!.toUpperCase()}  `)
+      expect(dup.status, JSON.stringify(dup.body)).toBe(422)
+      expect(dup.body.error.fields.label).toBe(MSG.sectionLabelUsed)
+      expect(dup.body.error.message).toBe('Label bahagian ini sudah digunakan dalam kertas ini.')
+      expect(await eachLabel()).toEqual(labels)
+      expect((await addSection(paper, 'Bahagian D')).status).toBe(201)
+      const again = await addSection(paper, ' bahagian d ')
+      expect(again.status).toBe(422)
+      expect(again.body.error.fields.label).toBe(MSG.sectionLabelUsed)
+      // rename onto another Bahagian's label: refused, nothing written
+      const clash = await admin.put(`/api/admin/papers/${paper}`, { sections: [{ id: sections[1]!, label: `${labels[0]!} ` }] })
+      expect(clash.status, JSON.stringify(clash.body)).toBe(422)
+      expect(clash.body.error.fields.label).toBe(MSG.sectionLabelUsed)
+      expect((await eachLabel()).slice(0, 3)).toEqual(labels)
+      // renaming a Bahagian to its own label (even in another case), and swapping two labels in one request, are allowed
+      expect((await admin.put(`/api/admin/papers/${paper}`, { sections: [{ id: sections[0]!, label: labels[0]!.toUpperCase() }] })).status).toBe(200)
+      const swap = await admin.put(`/api/admin/papers/${paper}`, { sections: [{ id: sections[1]!, label: labels[2]! }, { id: sections[2]!, label: labels[1]! }] })
+      expect(swap.status, JSON.stringify(swap.body)).toBe(200)
+      expect((await eachLabel()).slice(1, 3)).toEqual([labels[2], labels[1]])
+    })
+
     it('refuses a blank label and more than 20 Bahagian, needs an admin, and a Terbit paper is read-only', async () => {
       const { paper } = await fullPaper()
       const blank = await addSection(paper, '   ')
@@ -398,6 +423,39 @@ describe('R1-T48 builder parity: cover code, rule, sections, added questions, pi
       expect((await admin.post('/api/questions/bulk-action', { action: 'review', ids: [kept] })).status).toBe(200)
       expect((await admin.del(`/api/admin/papers/${second.paper}/questions/${kept}`)).status).toBe(200)
       expect((await admin.get(`/api/questions/${kept}`)).status).toBe(200)
+    })
+
+    it('a question that was approved and now has a newer Draf version only leaves the paper: it stays in the bank with its approved version', async () => {
+      const { paper, d } = await withBahagianD()
+      const body = { subjectId: subject, educationLevelId: level, difficultyLevel: 3, questionText: 'Berapakah hasil tambah 2 dan 3?', options: ['4', '5', '6', '7'], correctAnswer: 1, kertas: '2', cognitiveLevel: 'mengaplikasi', tag }
+      const approvedThenDraft = async (number: string): Promise<string> => {
+        const id = (await addQuestion(paper, d, { number, mode: 'mcq', marks: 2 })).body.data.added[0] as string
+        expect((await admin.put(`/api/questions/${id}`, body)).status).toBe(200)
+        await approve([id])
+        // editing an approved question opens a new Draf version; v1 stays the live one
+        const edit = await admin.put(`/api/questions/${id}`, { ...body, questionText: `Berapakah hasil tambah ${number} dan 4?` })
+        expect(edit.status, JSON.stringify(edit.body)).toBe(200)
+        const versions = await q(`select version_no, status from question_versions where question_id = $1 order by version_no`, [id])
+        expect(versions.map((v) => v.status)).toEqual(['approved', 'draft'])
+        return id
+      }
+      const kept = async (id: string): Promise<void> => {
+        const res = await admin.del(`/api/admin/papers/${paper}/questions/${id}`)
+        expect(res.status, JSON.stringify(res.body)).toBe(200)
+        expect(res.body.data.removed).toEqual([id])
+        expect((await admin.get(`/api/questions/${id}`)).status).toBe(200)
+        expect(await q(`select count(*)::int n from question_versions where question_id = $1`, [id])).toEqual([{ n: 2 }])
+        expect(await q(`select count(*)::int n from paper_placements where question_id = $1`, [id])).toEqual([{ n: 0 }])
+        expect((await auditRows(t.db, 'bijak.paper.updated')).some((r) => r.target_id === paper && (r.detail as { op?: string; questionId?: string; deleted?: boolean }).op === 'question_delete' && (r.detail as { questionId?: string }).questionId === id && (r.detail as { deleted?: boolean }).deleted === false)).toBe(true)
+      }
+      // v1 live, v2 Draf
+      await kept(await approvedThenDraft('21'))
+      // v1 no longer live (withdrawn: archived, no live version) and v2 Draf: the newest version reads 'draft', the question was still served once
+      const withdrawn = await approvedThenDraft('22')
+      await q(`update question_versions set status = 'archived' where question_id = $1 and version_no = 1`, [withdrawn])
+      await q(`update questions set live_version_no = null where id = $1`, [withdrawn])
+      expect(await q(`select live_version_no, latest_version_no from questions where id = $1`, [withdrawn])).toEqual([{ live_version_no: null, latest_version_no: 2 }])
+      await kept(withdrawn)
     })
 
     it('a Terbit paper is read-only', async () => {
