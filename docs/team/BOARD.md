@@ -505,12 +505,12 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 | T44 | r1/t44-blueprint-fields | 072d8f4b | — | merged at BASE-67 as 77984abc. The newer tip 072d8f4b shows a 19-file delta against base; A3 is asked whether it is WIP (marked IN-PROGRESS until it answers) |
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 15:45 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 15:47 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
-| r1/admin-list-perf | 6526409bc | IN-PROGRESS (A4): REQ-B-050 + 0106 + 0107 (lead approved) + exact counts; 400k: text search 1.9 s → 0.08 s, kertas 2.0 s → 0.2 s p95; full re-run pending |
+| r1/admin-list-perf | 04dce9fa7 | READY (A4, BASE-105): REQ-B-050 + 0106 + 0107 + exact counts; 408k p95 text 1.9 s → 79 ms, kertas 2.0 s → 0.2 s; 1362 pass (1 known base red); B2 + B3 + DevOps (maintenance window, pg_trgm) |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
 | r1/builder-search-perf | f0ddb1ca0 | READY (A3; T48 + BASE-105): Cari soalan p50/p95 11.2/12.0 s → 0.89/0.99 s at 407k, same results; 520 + 1 todo; conformance 409/409; merges after T48; B2 |
 | r1/e05b-l1-spec | f9eab2abf | READY; A3 pre-review found only Minors (no Blocker/Major) → A1b fixing the Minors, new head follows |
@@ -518,7 +518,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha18-gate-facts | d3842c48c | CHANGES REQUESTED → A2 fixing with D99 + MAJOR 1 + Minors |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
 | r1/ha24-release-input | eb6fba4b9 | docs, auto-refreshed by A3 H-A27 |
-| r1/ha26-team-a-state | 539dd6020 | docs, auto-refreshed by A3 H-A27 |
+| r1/ha26-team-a-state | 2794eae6d | docs, auto-refreshed by A3 H-A27 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-a2 | a631198c7 | READY (A2, BASE-105): B-034/035 + B2 Minors; intake-workflow 135/135; ready for the B1 gate |
 | r1/overview-getmany-parallel | a02f658f9 | READY (A4): live record reused from latest; cold overview 9.3 → 6.0 s (total 34.2 → 6.0 s, −82%); parity spec; merges after overview-mcq-shape-once; B2 |
@@ -547,7 +547,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t43b-publish-acs | 4921b3e58 | READY (A3; T48 + BASE-105): 25 codes (4 overridable, 21 hard); B2 Minors fixed; publish-acs 13; 946 + 1 todo; merges after T48; B2 |
 | r1/t45-builder-acs | de8c8c02f | READY (A1b, on T48 1dd07bc1 + BASE-105): AC-R1-21.3/21.6 specs; exam-builder 389/389; merges after T48; B2 |
 | r1/t45-builder-acs-wip | 078204e1c | SUPERSEDED by r1/t45-builder-acs; do not merge |
-| r1/t45-servability-acs | 3175abff8 | Approve w/ Minors BUT the integration preview found 3 reds it causes (AC-05.3 gate vs specs that approve unservable questions) → A4 fixing the specs + BASE-105 restack. HOLD |
+| r1/t45-servability-acs | 58618b2cb | Approve w/ Minors BUT the integration preview found 3 reds it causes (AC-05.3 gate vs specs that approve unservable questions) → A4 fixing the specs + BASE-105 restack. HOLD |
 | r1/t48-builder-parity | 1dd07bc1a | READY (A3, BASE-105): B2 cycle-16 Minors fixed; new hard SECTION_EMPTY; 22 codes (4 overridable); DB 516 + 1 todo; conformance 409/409; B2 delta + B3 re-check |
 | r1/t49-served-now | 8a4b46a9f | READY (A2, BASE-105): B-025ab + C-019 + B2 c16 Minors (blank negeri ignored, examBoards distinct case-insensitive); 704/704 incl. conformance; B2 delta |
 | r1/t50-partial-acs | 075e1b587 | READY (A1a, BASE-105): B2 approved c17; ready for the B1 gate |

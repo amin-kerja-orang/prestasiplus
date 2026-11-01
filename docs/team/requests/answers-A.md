@@ -132,3 +132,20 @@
 - A Guru's own question CAN reach a published paper: createGuru → admin tags and bulk-approves → builder → Terbit.
 - Fix decided by the lead: an archived or pinned latest version branches to a new version (as the approved path does), and v1 stays byte-identical. This covers both `update` and `updateOwn`.
 - B2 + B3 to review.
+
+**REQ-B-050 + T54 perf follow-up: READY @ 04dce9fa** (r1/admin-list-perf, A4, BASE-105).
+- **Regex fix:** the kertas regex is now `[[:space:]]*`.
+- **Migrations:**
+  - 0106: pg_trgm + partial GIN trigram on stem_ms/stem_en.
+  - 0107: partial index on the kertas expression; approved by the lead. It must ship together with the regex fix.
+- **Counts:** total and status counts come from one exact aggregate; a parity spec covers 16 filter combos × 5 statuses × 3 scopes.
+- **408k p50/p95:**
+
+  | Query | Before | After |
+  |---|---|---|
+  | Text search | 1575/1912 ms | 57/79 ms |
+  | Kertas | 1716/2023 ms | 172/202 ms |
+  | Unfiltered | 739/898 ms | 661/878 ms |
+
+- **Tests:** 1362 pass. The 1 fail is the known base red, fixed by reqc021-followup.
+- **Ops:** run in a maintenance window (≈21 s write wait on question_versions); pg_trgm must be allowed; ANALYZE afterwards. jit=off is a recommendation only. Needs B2 + B3 + DevOps.
