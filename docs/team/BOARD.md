@@ -505,7 +505,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 | T44 | r1/t44-blueprint-fields | 072d8f4b | — | merged at BASE-67 as 77984abc. The newer tip 072d8f4b shows a 19-file delta against base; A3 is asked whether it is WIP (marked IN-PROGRESS until it answers) |
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 16:01 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 16:05 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -521,13 +521,13 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha26-team-a-state | 2794eae6d | docs, auto-refreshed by A3 H-A27 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-a2 | a631198c7 | READY (A2, BASE-105): B-034/035 + B2 Minors; intake-workflow 135/135; ready for the B1 gate |
-| r1/overview-getmany-parallel | f8616d3b7 | READY (A4): live record reused from latest; cold overview 9.3 → 6.0 s (total 34.2 → 6.0 s, −82%); parity spec; merges after overview-mcq-shape-once; B2 |
-| r1/overview-mcq-shape-once | 7a6e8bb35 | READY (A4): factsOf jana:false; cold overview 15.3→9.3 s (total 34.2→9.3 s); merges after req-b-033; B2 |
+| r1/overview-getmany-parallel | f8616d3b7 | READY (A4): merge + b013-scoping spec 8/8; chain 6th; B2 |
+| r1/overview-mcq-shape-once | 7a6e8bb35 | READY (A4): merge; chain 5th; B2 |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
-| r1/req-b-022a-a4 | 438407f65 | CHANGES REQUESTED (B2 c18, REQ-B-053: empty env breaks API start) → A4 restack IN-PROGRESS (pushed, READY pending) on BASE-105 |
+| r1/req-b-022a-a4 | 438407f65 | READY (A4): REQ-B-053 fixed (empty env = unset; config.spec incl. copied .env.api.example) + identity spec; chain 2nd; B2 + B3 + DevOps |
 | r1/req-b-025c | d47353043 | READY (A1b, BASE-105): Minors fixed (decision row REQ-B-007/025c, lateSync, fixture names); attempts 183/183; B2 |
-| r1/req-b-033 | c0ea2ea96 | Approve w/ Minors, blocked by 022a → A4 restack IN-PROGRESS (pushed, READY pending) |
-| r1/req-c-020 | 78e050b3b | Approve w/ Minors, blocked by 022a → A4 restack IN-PROGRESS (pushed, READY pending) |
+| r1/req-b-033 | c0ea2ea96 | READY (A4): missing id evaluated once; chain 4th; B2 |
+| r1/req-c-020 | 78e050b3b | READY (A4): merge only; zero-row Databank subject kept (no V2 source hides it); chain 3rd; B2 |
 | r1/req-c012-a2 | ba57ecc52 | WAITS for fixed H-A18 (A2 slot 1) |
 | r1/reqb032-pinned-rule | e9cf34b7f | READY (A2+A3, BASE-105): the attempt serves the pinned version; SERVED_NOW = lock predicate; image rule B; pinned-version-rule 6/6; attempts 180/180; B2 + B3 |
 | r1/reqb049-report-visible | 9ece8d76d | READY (A1b, BASE-105): pre-review Minors fixed (type from the live version, spec titles, real level codes); 316/316; B2 + B3 |
@@ -546,13 +546,13 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t43b-publish-acs | 4921b3e58 | READY (A3; T48 + BASE-105): 25 codes (4 overridable, 21 hard); B2 Minors fixed; publish-acs 13; 946 + 1 todo; merges after T48; B2 |
 | r1/t45-builder-acs | de8c8c02f | READY (A1b, on T48 1dd07bc1 + BASE-105): AC-R1-21.3/21.6 specs; exam-builder 389/389; merges after T48; B2 |
 | r1/t45-builder-acs-wip | 078204e1c | SUPERSEDED by r1/t45-builder-acs; do not merge |
-| r1/t45-servability-acs | 58618b2cb | Approve w/ Minors BUT the integration preview found 3 reds it causes (AC-05.3 gate vs specs that approve unservable questions) → A4 fixing the specs + BASE-105 restack. HOLD |
+| r1/t45-servability-acs | 58618b2cb | READY (A4, BASE-105): B2 c18 Minors + 3 preview reds fixed (DB fixture approve, gate unchanged); merge 1st in the A4 chain; B2 + B3 |
 | r1/t48-builder-parity | 1dd07bc1a | READY (A3, BASE-105): B2 cycle-16 Minors fixed; new hard SECTION_EMPTY; 22 codes (4 overridable); DB 516 + 1 todo; conformance 409/409; B2 delta + B3 re-check |
 | r1/t49-served-now | 8a4b46a9f | READY (A2, BASE-105): B-025ab + C-019 + B2 c16 Minors (blank negeri ignored, examBoards distinct case-insensitive); 704/704 incl. conformance; B2 delta |
 | r1/t50-partial-acs | 075e1b587 | READY (A1a, BASE-105): B2 approved c17; ready for the B1 gate |
 | r1/t51-partial-acs-a3 | 4f812b4e2 | READY (A3; T48 + T43 + T31 + BASE-105): PIPE AC-18.1 + R1-21.3/21.6 backend; overlap resolved toward T48; 965 + 1 todo; conformance 409/409; order T48 → T31 (+REQ-A-008) → T43 → T51; B2 |
 | r1/t52-examiner-grid | f2d36f648 | READY (A1a, BASE-105): B2 approved c17; ready for the B1 gate |
-| r1/t54-perf-400k | bbf412c66 | Approved (B2 c17) → needs a BASE-105 merge (A4) |
+| r1/t54-perf-400k | 96f72e566 | READY (A4, BASE-105, docs only); independent; B2 |
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
