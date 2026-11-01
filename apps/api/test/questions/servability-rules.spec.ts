@@ -67,6 +67,11 @@ function facts(over: Partial<ServabilityFacts> = {}): ServabilityFacts {
 const codes = (f: ServabilityFacts, a: (typeof SERVABILITY_ACTIVITIES)[number]) => evaluate(f, a).reasons.map((r) => r.code)
 
 describe('servability rules (pure)', () => {
+  it('throws a clear internal error when the Jana verdict is evaluated on facts loaded with jana:false', () => {
+    expect(() => evaluate(facts({ janaSkipped: true }), 'jana_kertas')).toThrow(/jana: false/)
+    expect(evaluate(facts(), 'jana_kertas').reasons.map((r) => r.code)).toContain('subject_unavailable')
+  })
+
   it('serves a plain text MCQ in Databank, Latih Tubi SPM, Bab and Simulasi Kuiz', () => {
     const f = facts()
     for (const a of ['databank', 'latih_tubi_spm', 'bab', 'simulasi_kuiz'] as const) expect(evaluate(f, a).served, a).toBe(true)

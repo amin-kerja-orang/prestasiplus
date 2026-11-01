@@ -155,6 +155,7 @@ function activityReasons(f: ServabilityFacts, activity: ServabilityActivity): Se
     case 'simulasi_paper':
       return simulasiPaperReasons(f)
     case 'jana_kertas': {
+      if (f.janaSkipped) throw new Error('servability: the Jana Kertas verdict was evaluated on facts loaded with { jana: false } (janaFacts not loaded)')
       if (f.janaFacts === null) return [reason('subject_unavailable', activity)]
       const own = describeQuestion(f.janaFacts).reasons.map((r) => reason(JANA_REASON[r], activity, r))
       return [...own, ...bridgeReasons(f, activity)]

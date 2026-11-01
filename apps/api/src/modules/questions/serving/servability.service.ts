@@ -102,6 +102,7 @@ export class ServabilityService {
         fileTokens: tokens,
         onPublishedPaper: onPaper.has(id),
         janaFacts: jana.get(id) ?? null,
+        ...(opts.jana === false ? { janaSkipped: true as const } : {}),
       })
     }
     return out

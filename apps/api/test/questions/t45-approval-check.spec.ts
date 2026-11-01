@@ -30,6 +30,12 @@ describe('approval check (R1-T45, AC-05.3)', () => {
     expect(fields['servability.databank']).toBe('Databank Soalan: Sebab shape_unsupported untuk databank.')
   })
 
+  it('an unserved activity with no reasons does not count as unservable everywhere (the reasons.length guard)', () => {
+    const r = report({})
+    r.activities = r.activities.map((a) => ({ ...a, served: false, reasons: [] }))
+    expect(unservableEverywhere(r)).toBe(false)
+  })
+
   it('a question the bridge would serve once placed is not unservable everywhere (not_on_published_paper is about the paper)', () => {
     expect(unservableEverywhere(report({ simulasi_paper: ['not_on_published_paper'] }))).toBe(false)
     expect(unservableEverywhere(report({ simulasi_paper: ['not_on_published_paper', 'bridge_refused'] }))).toBe(true)
