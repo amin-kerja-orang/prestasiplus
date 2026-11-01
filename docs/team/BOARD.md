@@ -505,7 +505,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 | T44 | r1/t44-blueprint-fields | 072d8f4b | — | merged at BASE-67 as 77984abc. The newer tip 072d8f4b shows a 19-file delta against base; A3 is asked whether it is WIP (marked IN-PROGRESS until it answers) |
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 15:28 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 15:29 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -536,10 +536,11 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t31-builder-wire | 6a27c8dd3 | READY (A3); needs C1 REQ-A-008 rebased on BASE-102 |
 | r1/t34-l1-residual | e4bb72eb6 | WIP for team C (REQ-A-013); do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | WIP for team C (REQ-A-013); do not merge |
+| r1/t34-l1-residual-c | eb9ad806a | (no status — triage) |
 | r1/t37-r1-runbook | f4bb197c2 | docs, auto-refreshed by A3 H-A27 |
-| r1/t38-selfmark-reward | 13134ced7 | IN-PROGRESS (A1b): B2 c16 Minors fixed (concurrency spec red without the lock); BASE-105 merge pending |
+| r1/t38-selfmark-reward | 13134ced7 | READY (A1b, BASE-105): B2 c16 Minors fixed (concurrency spec red without the lock); rewards 22/22; B2 delta + B3 |
 | r1/t39-k1-evidence | 1a26f7a60 | check: A3 to confirm state |
-| r1/t40-attempts-acs | c3ee1626d | IN-PROGRESS (A1b): T38 + BASE-105 merged; re-merges T38 after its BASE-105 merge |
+| r1/t40-attempts-acs | 43fb5900d | READY (A1b, T38 + BASE-105): 28/28; merges after T38; B2 |
 | r1/t43-chain-publish | 5ce5894f1 | READY (A3, on T31) |
 | r1/t43b-publish-acs | 327e03add | IN-PROGRESS (A3): B2 Minors pushed; T48 1dd07bc1 merge + 25-code catalogue; READY pending |
 | r1/t45-builder-acs | 69d16a7f9 | READY (A1b, on T48), B2 |
@@ -551,8 +552,6 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t51-partial-acs-a3 | 5b7fc6780 | IN-PROGRESS (A3): merging T48 to drop a duplicate PUT code rule; not READY. Order T48 → T31 (+REQ-A-008) → T43 → T51 |
 | r1/t52-examiner-grid | addae6444 | Approved (B2 c17) → needs a BASE-105 merge (A1a) |
 | r1/t54-perf-400k | bbf412c66 | Approved (B2 c17) → needs a BASE-105 merge (A4) |
-
-**New branches not yet triaged:** r1/t34-l1-residual-c eb9ad806a
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
