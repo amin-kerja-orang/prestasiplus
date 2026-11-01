@@ -472,7 +472,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     path: '/admin/papers/{id}/sections',
     tags: [BIJAK_BUILDER_TAG],
     summary: 'Paper builder: Tambah bahagian (a Bahagian the Kontrak does not have)',
-    description: `V2 Panel "Semak Kertas Simulasi" "Tambah bahagian". Body { label }. The new Bahagian goes last with the rule Jawab Semua and \`adminCreated: true\`; its question count and mark budget follow its placements. A paper has at most 20 Bahagian (422 "${BIJAK_BUILDER_MESSAGES.sectionLimit}"). Because the Kontrak has no such Bahagian, Terbit reports the overridable blocker SECTION_NOT_IN_CONTRACT. Terbit paper: 422 paperLocked. Answers the editor data (201). ${ROLE_NOTE}`,
+    description: `V2 Panel "Semak Kertas Simulasi" "Tambah bahagian". Body { label }. The new Bahagian goes last with the rule Jawab Semua and \`adminCreated: true\`; its question count and mark budget follow its placements. A paper has at most 20 Bahagian (422 "${BIJAK_BUILDER_MESSAGES.sectionLimit}"). A label already on the paper (trimmed, case-insensitive) is refused (422, fields.label "${BIJAK_BUILDER_MESSAGES.sectionLabelUsed}"); the same holds for renaming a Bahagian through the paper patch. Because the Kontrak has no such Bahagian, Terbit reports the overridable blocker SECTION_NOT_IN_CONTRACT. Terbit paper: 422 paperLocked. Answers the editor data (201). ${ROLE_NOTE}`,
     request: { params: PaperIdParams, headers: [csrf], body: body(BijakBuilderSectionAddSchema) },
     responses: {
       201: json(envelopeOf(BijakBuilderEditorSchema), 'The editor data with the new Bahagian.'),
