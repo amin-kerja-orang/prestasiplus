@@ -148,7 +148,7 @@ const mcqBody = (text: string, extra: Record<string, unknown> = {}) => ({
   options: ['3', '4', '5', '6'],
   correctAnswer: 1,
   explanation: 'Penjelasan ujian rantaian R1.',
-  cognitiveLevel: 'mengaplikasi', // the T33 approve gate: a level per leaf
+  cognitiveLevel: 'memahami', // the T33 approve gate: a level per leaf (not KBAT, so the Kontrak's KBAT quota of 0 holds for Jana Kertas)
   kertas: '3',
   tag: { unitId: fx.unit, spIds: [fx.sp], tp: 3 },
   ...extra,
@@ -248,7 +248,7 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
         parts: [
           {
             label: 'a',
-            cognitiveLevel: 'mengaplikasi', // per leaf (T33 gate)
+            cognitiveLevel: 'memahami', // per leaf (T33 gate)
             mode: 'working',
             prompt: { ms: 'Kira luas segi empat tepat itu.' },
             marks: 2,
