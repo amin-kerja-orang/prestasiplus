@@ -478,6 +478,12 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 
 ### Head audit 2026-11-01 15:00 UTC (superseded)
 This manual table has been removed because it went stale. **The only current source for team A heads and states is the auto table between the `AUDIT:BEGIN/END` markers at the end of this file.** It is regenerated from `git ls-remote` every cycle.
+
+### Cycle 25 note: cross-team wire check (A1a, 19:20 UTC, local only)
+BASE-105 + 11 team A READY API heads + C FE heads (reqa014 dc561730, reqa005 3ee17660, reqb041 41e0cb3b, reqa018-fe e6d96462, reqa020 371adfb2, reqa012 813ace12): **no wire mismatch that breaks the pupil or admin flow**. contract:emit no diff, contract:check ok, api tsc 0, vue-tsc 0, FE unit m28/m04 1212 + m05/m03/api 706 pass; conformance green except `GET /questions/filter-options` (t49, not mocked → A1a adds a notServed entry).
+**Merge order for B1:** team A API heads first → `reqa012-examiner-grid` (stacked on T52) → `reqa018-paper-servability-fe` (contains the REQ-A-018 route) → other C FE branches.
+**Conflicts B1 will see:** `questions.module.ts` (A4 chain `OverviewWarmer` × REQ-A-018 `QuestionPaperServabilityController`: keep both providers/controllers); `stimuli.repository.ts:112` (t49 deletes the `SERVED_NOW`/`VERSION_SERVED_NOW` constants B-032 added: take t49, no use remains); `v2-backend-deviations.md` (keep both sides); C docs in reqa012 (keep both).
+
 <!-- AUDIT:BEGIN -->
 ### Team A open branches: heads from origin (auto, 2026-11-01 19:08 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
