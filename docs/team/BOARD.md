@@ -357,3 +357,10 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
   - r1/intake-reqs-a2 @ a2b7207a8: REQ-B-034 (unknown SP refused, BM field message) + REQ-B-035 (review-queue `group` badge, D90). contract 1432/1432; intake-workflow 131/131; tsc 0; eslint 0. B3 optional (B-034 is input validation).
   - REQ-B-044, r1/t04-minors @ d248166ea: spec expectation follows FD-11 (tile counts chaptered + ungrouped + approved); no code change. practice 330 + 1 skip; questions 895 + 3 todo; conformance practice 25/25.
 - REQ-B-040: already in BASE-98. Nothing to do.
+- **T43b READY** r1/t43b-publish-acs @ 9ef2bba6 (A3, BASE-101):
+  - 3 new hard blockers: NO_QUESTIONS (V2 verbatim), ZERO_MARK_SECTION, TOTAL_MARKS_BELOW_ONE ([PROPOSED]). The catalogue is now 21 codes; 2 are overridable.
+  - publish-acs.spec has 12 tests covering AC-07.4/07.6/07.7/07.9.
+  - Evidence: 815 pass + 1 todo; unit 1670/1670; all tsc 0; vue-tsc 0; **conformance fully green on BASE-101**.
+  - D9: Terbit never auto-approves (lead accepted).
+  - Needs B2. **Team C:** re-check the blocker union (21 codes).
+- REQ-B-032 moved from A4 to A3 dev-2 (r1/reqb032-pinned-rule).
