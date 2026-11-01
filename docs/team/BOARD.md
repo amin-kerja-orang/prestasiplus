@@ -439,3 +439,12 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 - The dangling-placements seed finding (REQ-B-033) goes to **A1b**, not A1a: r1/seed-dangling-placements.
 - **BASE-102 RED (found by A1a):** `apps/api/test/questions/draw-bounded.spec.ts` "BR-16: a chapter holding one non-servable MCQ…" still expects the old 409 lock and fails with 201 since REQ-C-021 merged. **Fix READY** in r1/reqc021-followup @ 8210ac5bd (A1a, BASE-102), together with the B2 C-021 Minors (catalogue docs, comments, conformance check "no chapter is locked"). draw-bounded + topic-progress 40/40; tsc 0; eslint 0. A1a is running the whole questions/practice/curriculum/conformance suites for more lock assertions. **B1: merge early.**
 - AC coverage 124/176 (120 base + 4 READY on T43b) (A3 @ 58c004bb). R1-21.3/21.6 are READY on r1/t45-builder-acs. T43b head 8841a31b (T48 merged, 24 codes); READY evidence pending.
+- **A4 servability chain on BASE-102, final heads (no conflicts left).** Merge order:
+  1. t45-lanes @ e7e5d3dd
+  2. H-A21 @ 669b0caf
+  3. req-b-022a-a4 @ e81f64d5 (r1/req-b-022a is fully superseded)
+  4. req-c-020 @ e5e39d51
+  5. req-b-033 @ f3da2b7d
+
+  r1/t45-servability-acs @ 37d24013 merges at any time.
+  - Evidence: api tsc 0; vue-tsc 0; DB 94/94; m28 589/589; t45 19/19.
