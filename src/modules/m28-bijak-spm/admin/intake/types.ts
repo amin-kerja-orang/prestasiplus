@@ -164,6 +164,9 @@ export interface IntakeBatch extends IntakeMeta {
   forPaperId?: string
   userId: number
   status: IntakeStatus
+  /** Server processing status and BM label (http mode only); shown instead of Draf/Semakan. */
+  batchStatus?: 'submitted' | 'processing' | 'ready_for_review' | 'failed' | 'cancelled'
+  statusLabel?: string
   createdAt: number
   updatedAt: number
   submittedAt?: number

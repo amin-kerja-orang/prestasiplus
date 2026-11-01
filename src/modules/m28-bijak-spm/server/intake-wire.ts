@@ -108,8 +108,8 @@ export function summaryFromWire(
     subjectName: name,
     kertas: b.kertas,
     year: b.year,
-    // Filter bucket only: a batch that is ready for review is "Semakan"; the badge shows the real wire label.
-    status: b.status === 'ready_for_review' ? 'semakan' : 'draf',
+    // Every http batch stays Draf (filter, editable); the visible badge is the wire label below.
+    status: statusFromWire(),
     batchStatus: b.status,
     statusLabel: b.statusLabel,
     sourceKind: 'pdf',
@@ -191,6 +191,8 @@ export function batchFromWire(b: WireBatchDetail, pages: PageText[], extras: Bat
     sourceKind: manual ? 'manual' : 'pdf',
     userId: 0,
     status: statusFromWire(),
+    batchStatus: b.status,
+    statusLabel: b.statusLabel,
     createdAt: ms(b.createdAt),
     updatedAt: ms(b.updatedAt),
     ...(b.submittedAt ? { submittedAt: ms(b.submittedAt) } : {}),

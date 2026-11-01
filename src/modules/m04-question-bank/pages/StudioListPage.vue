@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * Studio list `/admin/studio` (R1-F03a, V2 admin.md A01, design S1.1): "Studio", "Bank soalan kanonikal - cipta, semak, terbit".
- * Four status tiles (Draft, Reviewed, Approved, Archived) that set the Status filter, the filters (Subjek, Status, Cari and, on
+ * Four status tiles (BM words Draf, Menunggu Semakan, Diterbitkan, Diarkibkan, UX-19) that set the Status filter, the filters (Subjek, Status, Cari and, on
  * the source paper, Tahun, Negeri, Kertas, Jenis: T47), the table No. / Soalan / Kertas / Sumber / Status
  * at 25 per page (cards below `md`), and the row actions Pratonton, Edit or Edit sebagai draf, and Sembunyikan ("Arkibkan soalan
  * ini?"). Under each badge: "Dilihat murid di x/n" from the servability batch read. The URL is the state, as on the legacy list.

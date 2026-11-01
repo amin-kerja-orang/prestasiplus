@@ -159,7 +159,7 @@ Where the admin sees the result: every question and paper shows **Dilihat murid 
 | P-MODAL | `DsDialog` | At 375 the dialog is a full-height bottom sheet; at 768 and 1280 it is centred, max width 560px (upload modals 640px). Primary button right, `Batal` left; stacked full width below 640. Busy label replaces the primary label and disables both buttons. |
 | P-CONFIRM | `useConfirm` / `DsDialog` | Title + body = the verbatim .cloud confirm; buttons as .cloud. Buttons >= 44px. |
 | P-FLASH | Success toast 4 s, error as `DsCallout tone="error"` at the page top | Flash text is the verbatim .cloud flash. Errors stay until dismissed. |
-| P-STATUS | `DsStatusBadge` | Question: `Draft`, `Reviewed`, `Approved`, `Archived` (verbatim English, DISC 3.1). Paper: `Draf`, `Terbit`. Contract: `Draf`, `Spec`, `Disahkan`. Always icon + word. |
+| P-STATUS | `DsStatusBadge` | Question: `Draft`, `Reviewed`, `Approved`, `Archived` (verbatim English, DISC 3.1; the built Studio shows BM words, see UX-19 in section 16). Paper: `Draf`, `Terbit`. Contract: `Draf`, `Spec`, `Disahkan`. Always icon + word. |
 | P-VIS | `DsVisibilityList` [PROPOSED domain component] | "Dilihat murid di" block, section 9. |
 | P-EMPTY/LOAD/ERR | Template 1.8 | Skeleton for loading; `DsEmptyState`; `DsLoadError` "Tidak dapat memuatkan {benda}. Sila cuba semula." + `Cuba Semula`. |
 | P-CARDS | Table at `< md` | Card list (`cardTitle`, max 4 `cardFields`), row actions inline. No horizontal scroll. |
@@ -196,7 +196,7 @@ Clicks: `Cipta baharu`, `Simpan draf`, `Hantar untuk semakan`, `Terbitkan` = **4
 - Title (navbar): `Bank Soalan (Studio)`. Subtitle (.cloud verbatim): "Bank soalan kanonikal — cipta, semak, terbit".
 - Template: P-LIST.
 - Header actions (secondary tonal first, primary last): `Import DOCX (ZIP)`, `Import BI Kertas 1`, `Import PDF` [PROPOSED, D-5], primary `Cipta baharu` (D-1). On 375 the three imports collapse into the "Lagi Tindakan" menu; `Cipta baharu` stays visible full width.
-- KPI strip (4 tiles, status tiles with counts, verbatim names): `Draft`, `Reviewed`, `Approved`, `Archived`. Each tile is a link that sets the Status filter.
+- KPI strip (4 tiles, status tiles with counts, verbatim names; the built Studio uses the BM words of UX-19, section 16): `Draft`, `Reviewed`, `Approved`, `Archived`. Each tile is a link that sets the Status filter.
 - Filter bar (selects, aria labels verbatim from DISC 3.1): `Semua subjek`, `Semua status`, `Semua tahun`, `Semua negeri` (aria "negeri atau badan peperiksaan"), `Semua kertas` (Kertas 1-3), `Semua jenis`; apply button `Tapis`. Inline at `md`+ up to 3, rest under "Lagi Penapis" (template 1.9). Below `md`: search-less bar with `Penapis` button and drawer (`Tapis`, `Set Semula`).
 - Table columns (1280): `No.` (8%), `Soalan` (stem truncated 90 chars, 2-line clamp, badges under it: `Belum ditanda DSKP` when applicable) (38%), `Kertas` (paper title or "Bank (tiada kertas)" + subject code) (18%), `Sumber` (provenance badge) (12%), `Status` (badge; under it caption "Dilihat murid di 5/7" [PROPOSED], section 9) (14%), actions (112px: `Pratonton`, `Edit` or `Edit sebagai draf`, "..." menu with `Arkib`).
 - Pager: 25 per page (verbatim DISC), default of the DS pager overridden to 25; options `[25, 50, 100]`.
@@ -260,7 +260,7 @@ Same body as S1.2 plus the **status bar** at the top (verbatim).
 
 ```
 +--------------------------------------------------------------------------------------+
-| Status  [Reviewed]  Menunggu keputusan. (text per state below)                        |
+| Status  [Reviewed]  (BM word per UX-19, section 16)  Menunggu keputusan. (text per state below)                        |
 | [Pratonton]  [Hantar untuk semakan | Terbitkan]  [Arkib]                              |
 | Dilihat murid di 5 daripada 7 aktiviti                          [Lihat]   (section 9) |
 +--------------------------------------------------------------------------------------+
@@ -269,7 +269,7 @@ Same body as S1.2 plus the **status bar** at the top (verbatim).
 | Status | Badge | Text (verbatim) | Buttons |
 |---|---|---|---|
 | Draft | `Draft` | "Belum dipapar kepada pelajar." | `Pratonton`, `Hantar untuk semakan`, `Arkib` |
-| Reviewed | `Reviewed` | [PROPOSED] "Menunggu keputusan penerbitan." | `Pratonton`, `Terbitkan`, `Arkib`; also back to draft: menu "Kembali ke draf" [PROPOSED label for the allowed reviewed->draft move] |
+| Reviewed | `Reviewed` (built: BM per UX-19, section 16) | [PROPOSED] "Menunggu keputusan penerbitan." | `Pratonton`, `Terbitkan`, `Arkib`; also back to draft: menu "Kembali ke draf" [PROPOSED label for the allowed reviewed->draft move] |
 | Approved | `Approved` | "Soalan ini boleh dijawab oleh pelajar." | `Pratonton`, `Edit sebagai draf`, `Arkib`. Fields are read-only with the callout "Soalan ini telah diterbitkan. Gunakan "Edit sebagai draf" untuk menyuntingnya." |
 | Archived | `Archived` | [PROPOSED] "Tidak dipapar kepada pelajar." | `Pratonton`, menu `Pulihkan ke draf` [PROPOSED label for archived->draft] |
 

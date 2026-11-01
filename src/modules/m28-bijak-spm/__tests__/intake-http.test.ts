@@ -102,7 +102,7 @@ describe('intake wire mappers', () => {
     expect(s).toMatchObject({
       id: 'b1',
       title: 'Matematik Kertas 2 2025',
-      status: 'semakan',
+      status: 'draf',
       batchStatus: 'ready_for_review',
       statusLabel: 'Sedia untuk semakan',
       sourceKind: 'pdf',
@@ -113,6 +113,8 @@ describe('intake wire mappers', () => {
   })
   it('maps itemCount, reviewedCount and the wire status of a summary (R1E2E-C1)', () => {
     const s = summaryFromWire({ ...summary, itemCount: 2, reviewedCount: 2 }, () => 'Matematik')
+    expect(s.status).toBe('draf') // every http batch stays in the Draf filter bucket
+    expect(batchFromWire({ ...detail, status: 'ready_for_review', statusLabel: 'Sedia untuk semakan' }, [])).toMatchObject({ status: 'draf', batchStatus: 'ready_for_review', statusLabel: 'Sedia untuk semakan' })
     expect(s).toMatchObject({ questionCount: 2, reviewedCount: 2, batchStatus: 'ready_for_review', statusLabel: 'Sedia untuk semakan' })
     const p = summaryFromWire({ ...summary, status: 'processing', statusLabel: 'Sedang diproses' }, () => 'Matematik')
     expect(p).toMatchObject({ status: 'draf', batchStatus: 'processing', statusLabel: 'Sedang diproses' })
