@@ -372,3 +372,10 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 - **T40 READY** r1/t40-attempts-acs @ 985e2af0b (T38 + BASE-101). B2 Minors fixed (R1-06.2 renamed, choose-N case added), plus the T36 import in cuba-lagi-rewards. 308 pass + 1 todo; tsc 0. Needs B2. Merge after T38.
 - T50 flake fix @ e436e084d (A1b). A1a is merging BASE-101 and doing T52.
 - REQ-B-025(c) and the E05B-L1 spec move from A4 to A1b (no file overlap).
+- **T52 READY** r1/t52-examiner-grid @ addae6444 (A1a, BASE-101).
+  - Fixes: eslint BLOCKER fixed; T36 import clash fixed.
+  - Evidence: tsc 0; eslint 0; papers + bridge 232/232; attempts + integration 289 + 1 todo; contract papers 26/26.
+  - Needs B2. C1's REQ-A-012 merges after it.
+- **T50 READY** @ e436e084d (contains BASE-101): flake fixed, 4 consecutive green runs; tsc 0; eslint 0. Needs B2.
+- **REQ-C-021** full practice + curriculum recount: 571 pass + 1 opt-in skip.
+- A1a next: `r1/a1-ac-proofs`, backend proof specs for unproven R1 ACs (117/176 proven). Gaps are reported, never marked it.fails.
