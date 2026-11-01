@@ -259,6 +259,8 @@ export class ServabilityReadsService {
     // Verdicts the caller already has (the overview) are not computed again, a missing id (`null`) included; any other id is evaluated here as before.
     for (const id of toEvaluate) if (evaluated?.has(id)) results.set(id, evaluated.get(id) ?? null)
     for (const part of chunks([...toEvaluate].filter((id) => !results.has(id)))) {
+      // onPublishedPaper is forced true: every id here was read from the placements of a PUBLISHED, non-jana paper, which is exactly what
+      // the fact tests, so the value is the same (see the REQ-B-022(a) deviation row).
       const facts = await this.servability.factsOf(part)
       for (const id of part) {
         const f = facts.get(id)
@@ -322,6 +324,8 @@ export class ServabilityReadsService {
     const ids = await this.questionsOnPublishedPapers()
     const results = new Map<string, PaperEvaluation | null>()
     for (const part of chunks(ids)) {
+      // onPublishedPaper is forced true: every id here was read from the placements of a PUBLISHED, non-jana paper, which is exactly what
+      // the fact tests, so the value is the same (see the REQ-B-022(a) deviation row).
       const facts = await this.servability.factsOf(part)
       for (const id of part) {
         const f = facts.get(id)
