@@ -479,7 +479,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 ### Head audit 2026-11-01 15:00 UTC (superseded)
 This manual table has been removed because it went stale. **The only current source for team A heads and states is the auto table between the `AUDIT:BEGIN/END` markers at the end of this file.** It is regenerated from `git ls-remote` every cycle.
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 17:29 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 17:41 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -497,17 +497,17 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/intake-reqs-a2 | a631198c7 | READY (A2, BASE-105): B-034/035 + B2 Minors; intake-workflow 135/135; ready for the B1 gate |
 | r1/mock-known-mismatches | a279e68cd | READY (A3, BASE-105): REQ-A-019 base red fixed (7 routes notServed, stale m27 entry removed); conformance 2/2; B2 |
 | r1/overview-getmany-parallel | f8616d3b7 | ON HOLD: pre-review (A2) found 2 Majors (T45 red alone: missing pin line; fixture clash with H-A18) + Minors → A4 fixing + restacking the chain; do not merge the current heads |
-| r1/overview-mcq-shape-once | 7a6e8bb35 | ON HOLD: pre-review (A2) found 2 Majors (T45 red alone: missing pin line; fixture clash with H-A18) + Minors → A4 fixing + restacking the chain; do not merge the current heads |
+| r1/overview-mcq-shape-once | 5a785be84 | ON HOLD: pre-review (A2) found 2 Majors (T45 red alone: missing pin line; fixture clash with H-A18) + Minors → A4 fixing + restacking the chain; do not merge the current heads |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
-| r1/req-b-022a-a4 | 438407f65 | ON HOLD: pre-review (A2) found 2 Majors (T45 red alone: missing pin line; fixture clash with H-A18) + Minors → A4 fixing + restacking the chain; do not merge the current heads |
+| r1/req-b-022a-a4 | d82c52567 | ON HOLD: pre-review (A2) found 2 Majors (T45 red alone: missing pin line; fixture clash with H-A18) + Minors → A4 fixing + restacking the chain; do not merge the current heads |
 | r1/req-b-025c | d47353043 | READY (A1b, BASE-105): Minors fixed (decision row REQ-B-007/025c, lateSync, fixture names); attempts 183/183; B2 |
-| r1/req-b-033 | c0ea2ea96 | ON HOLD: pre-review (A2) found 2 Majors (T45 red alone: missing pin line; fixture clash with H-A18) + Minors → A4 fixing + restacking the chain; do not merge the current heads |
-| r1/req-c-020 | 78e050b3b | ON HOLD: pre-review (A2) found 2 Majors (T45 red alone: missing pin line; fixture clash with H-A18) + Minors → A4 fixing + restacking the chain; do not merge the current heads |
+| r1/req-b-033 | b5e713fa4 | ON HOLD: pre-review (A2) found 2 Majors (T45 red alone: missing pin line; fixture clash with H-A18) + Minors → A4 fixing + restacking the chain; do not merge the current heads |
+| r1/req-c-020 | 8733a3785 | ON HOLD: pre-review (A2) found 2 Majors (T45 red alone: missing pin line; fixture clash with H-A18) + Minors → A4 fixing + restacking the chain; do not merge the current heads |
 | r1/req-c012-a2 | dc3bfae88 | READY (A2, on H-A18 fc409ae1): M1 fixed (edit-as-draft keeps the import hold); 298/298; merges after H-A18; B3 re-check |
 | r1/reqa018-paper-servability-route | d5e57160e | WAITING (A1b): route done; questions 951 + 3 todo (only the known base red after the pin fix), exam-builder 361/361, conformance 409/409; re-merges A4 new T45 head (held); merges after T45 |
 | r1/reqb032-pinned-rule | a2cb5bb42 | READY (A2+A3, BASE-105): spec title + R1-limitation row (takedown vs running sitting, KIV R2); 6/6; B2 + B3 |
 | r1/reqb049-report-visible | 9ece8d76d | READY (A1b, BASE-105): pre-review Minors fixed (type from the live version, spec titles, real level codes); 316/316; B2 + B3 |
-| r1/reqb052-archived-edit | 4e64776b3 | BLOCKED / WAITING: A3 re-merging the new H-A18 fc409ae1 + B-032 a2cb5bb4; DO NOT merge the current head |
+| r1/reqb052-archived-edit | 171964317 | VERIFYING (A3): re-merged H-A18 fc409ae1 + B-032 a2cb5bb4 (held-issues helper on both paths); questions + workflow 955 pass (1 known base red), archived-edit 5/5, gate-facts 12/12; full bijak/conformance re-run in progress; not yet READY |
 | r1/reqc021-followup | 948aa327a | READY (A1a, BASE-105): fixes the base red draw-bounded BR-16; merge early |
 | r1/seed-dangling-placements | 11cbcf458 | READY (A1b, BASE-105): asserts paper titles + counts = POC_BANK; seed 155 + 1 skip; B2 |
 | r1/stimulus-list-d72 | 1c2c7416a | READY (A2, BASE-105): D72 filter on the group/stimulus lists + empty groups kept listed (D9 row); stimulus-lists 13/13; B2 |
