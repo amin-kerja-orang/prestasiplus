@@ -111,7 +111,7 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 | T52 examinerGrid (AC-20.3) | `r1/t52-examiner-grid` @ 5a0d7bd0 | A1 | none | READY (A1a/A1b, @ 5a0d7bd0): examinerGrid from marked (live+pinned), be09 test 8 bites; deviation note live-wins in withPinned; A2 + A3 dev-1 delta pre-reviews CLEAN; 124 tests; B2 |
 | H-A18 gate facts (0105) | `r1/ha18-gate-facts` @ fc409ae1 | A2 | T33 | READY (A2, BASE-105): H-A18 + REQ-B-017/037 + D99 + pre-review fixes (held-issues helper on both edit paths, gate issue codes, deviation row); workflow 296/296, conformance 409/409; B2 + B3; merge first of the stack |
 | A4 chain Minors: empty-reasons spec, janaSkipped runtime guard, 022a perf identity line | `r1/a4chain-minors` @ 6f2fb793 | A1a | A4 chain tip overview-getmany-parallel (merges after the chain) | READY (A1b, @ 6f2fb793 on 0ba236ef): janaSkipped guard first line of evaluate; T45 HTTP POST /questions/:id/status case with pinned BM reasons; 022a row with real commits + proof spec; A3 dev-1 delta pre-review CLEAN (13 files, 76 tests); merge after the A4 chain; B2 |
-| R1 AC sweep: R1-18.4 spec, coverage doc 117 to 133 proven (A1b) | `r1/ac-gaps-a1b` @ 5c4ec750 | A1b + A3 dev-1 | none (contains ha17 and t37) | READY (A1b + A3 + A2; history A2 3858afe0 -> c2aa332f -> b15385b6 -> 1b42ed9c -> dev-1 runbook rows to 5c4ec750; CONTAINS ha17 157b371c AND t37-r1-runbook c9dcb5a0: merge this instead of both): coverage doc, runbook (UAT SELECTs, row 2a window, migration numbers), B4 QA pack docs/qa/r1-b4-qa-handoff.md; R1-18.4 + AC-18.1 specs (the AC-18.1 x H-A18 red fixed by A2); merge after H-A18; B2 |
+| R1 AC sweep: R1-18.4 spec, coverage doc 117 to 133 proven (A1b) | `r1/ac-gaps-a1b` @ eda51bf1 | A1b + A3 dev-1 | none (contains ha17 and t37) | READY (A1b + A3 + A2; history A2 3858afe0 -> c2aa332f -> b15385b6 -> 1b42ed9c -> dev-1 runbook rows to eda51bf1; CONTAINS ha17 157b371c AND t37-r1-runbook c9dcb5a0: merge this instead of both): coverage doc, runbook (UAT SELECTs, row 2a window, migration numbers), B4 QA pack docs/qa/r1-b4-qa-handoff.md; R1-18.4 + AC-18.1 specs (the AC-18.1 x H-A18 red fixed by A2); merge after H-A18; B2 |
 | REQ-B-050 admin list perf (0106 pg_trgm, 0107 Kertas index) + exact counts | `r1/admin-list-perf` @ 2cd7889a | A4 | none (0106, 0107) | READY (A4, @ 2cd7889a, BASE-105): REQ-B-050 + 0106 pg_trgm + 0107 kertas index; per-user rate limit on GET /api/questions (env THROTTLE_QUESTIONS_LIST_PER_MINUTE, default 60, 429 above); docs: feature_flags 0108, drop_pool_tag 0109, optional B12 0122 / B20 0123 (lead-confirmed); migration SQL unchanged since 2a8ab674; B2 + B3 + DevOps (maintenance window, new env) |
 | REQ-B-049 Lapor on a structured question before the first submit (Q11) | `r1/reqb049-report-visible` @ 9ece8d76 | A1b | REQ-B-031 (base) | READY (A1b, BASE-105): pre-review Minors fixed; 316/316; B2 + B3 |
 | D72 stimulus lists: one combined where for page and count, joinable spec | `r1/stimulus-list-d72` @ b45ce519 | A2 | T49 (merge t49-served-now first) | READY (A2, BASE-105; contains t49 b99068a6; board row says 86b40246, ls-remote has b45ce519 = the spec-only follow-up of A2 closing the part-linked Darjah/PKSK Minor): Minor fixed (listStimulusIds subject/level via question_parts); stimulus-lists 18/18, questions 938, workflow 275; merge AFTER t49; only v2-backend-deviations.md conflicts vs the A4 chain (keep both); A3 dev-1 delta: correct; B2 |
@@ -140,6 +140,8 @@ None: every unit is pushed.
 
 | Unit | Branch @ head | Output |
 |---|---|---|
+| R1 release notes (BM) | `r1/ha24-release-input` @ 264b74ad | `docs/release/r1-nota-keluaran.md` (written by dev-1 on this release-input branch) |
+| R1 sign-off checklist (BM) | `r1/ha24-release-input` @ 264b74ad | `docs/release/r1-signoff-checklist.md` (8 gates, Status column empty on purpose) |
 | T37 runbook | `r1/t37-r1-runbook` @ c9dcb5a0 | FROZEN, contained in `r1/ac-gaps-a1b` (B1 merges that instead); `docs/ops/r1-runbook.md` is edited only there |
 | T39 K1 evidence | `r1/t39-k1-evidence` @ 1a26f7a6 | `docs/ops/r1-k1-blueprint-evidence.md` |
 | T46 / H-A17 AC coverage | `r1/ha17-ac-coverage` @ 157b371c | FROZEN, contained in `r1/ac-gaps-a1b` (A1b owns `docs/qa/r1-backend-ac-coverage.md` now) |
@@ -147,7 +149,7 @@ None: every unit is pushed.
 | H-A20 student parity | `r1/ha20-student-parity` @ 557e17c6 | `docs/qa/r1-student-parity-check.md` |
 | H-A22 parity docs | `r1/ha22-parity-docs` @ 4fb2a41b | both parity docs refreshed, deviation rows H22-D1/D2 in `v2-bijak-spm.md`, `student.md` rows marked |
 | H-A23 E2E readiness | `r1/ha23-e2e-readiness` @ 9a86b5bb | `docs/qa/r1-e2e-readiness.md` (merge order, minimal set) |
-| H-A24 release input | `r1/ha24-release-input` @ 6dfd471a | `docs/ops/r1-release-input-team-a.md` (+ scope AC-R1-18.2 and 18.4 text) |
+| H-A24 release input | `r1/ha24-release-input` @ 264b74ad | `docs/ops/r1-release-input-team-a.md` (+ scope AC-R1-18.2 and 18.4 text) |
 | H-A26 this sheet | `r1/ha26-team-a-state` @ this branch (head = tip of the branch) | `docs/handoff/team-a-r1-state.md` |
 
 ## 2. Decisions and answers
