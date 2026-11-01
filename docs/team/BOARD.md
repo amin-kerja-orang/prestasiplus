@@ -479,14 +479,14 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 ### Head audit 2026-11-01 15:00 UTC (superseded)
 This manual table has been removed because it went stale. **The only current source for team A heads and states is the auto table between the `AUDIT:BEGIN/END` markers at the end of this file.** It is regenerated from `git ls-remote` every cycle.
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 18:56 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 19:02 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/a3-qa-doc-nits | e4d4dd322 | READY (A3, BASE-105, docs only): stale QA notes on T38 self-mark reward fixed (2 files); B2 |
 | r1/a4chain-minors | 4f40a1819 | READY (A1a, on overview-getmany-parallel 0ba236ef): empty-reasons spec (guard is redundant, kept; spec pins behaviour), janaSkipped runtime guard + spec, 022a perf identity line; 32 tests, tsc/eslint 0, contract:check ok; A2 pre-review pending; merge after the A4 chain; B2 |
-| r1/ac-gaps-a1b | 8a3b60f95 | IN-PROGRESS (A1b, BASE-105): R1 AC sweep: R1-18.4 spec (todo → real, bites), coverage doc 117 → 133 proven; fixing AC-18.1 row (rests on T51, which is ON HOLD) before READY |
+| r1/ac-gaps-a1b | b4b6ce286 | IN-PROGRESS (A1b, BASE-105): R1 AC sweep: R1-18.4 spec (todo → real, bites), coverage doc 117 → 133 proven; fixing AC-18.1 row (rests on T51, which is ON HOLD) before READY |
 | r1/admin-list-perf | 2a8ab6744 | READY (A4, BASE-105): REQ-B-050 + 0106 + 0107 + exact counts; pre-review Minors fixed (status total ?? 0, no-slash kertas change documented, migration order + drift notes); B2 + B3 + DevOps |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
 | r1/bridge-table-parts | c805ecc7c | READY (A4, BASE-105): the bridge uses stimulusTableParts (an invalid grid + pipe body shows the table only, as in builder/Studio); bridge 118/118, attempts 180/180, kuiz 39/39; B2. Follow-up after T31 + this merge: drop PENDING_BRIDGE_TEXT in the parity spec (A4) |
@@ -532,7 +532,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t48-builder-parity | 6c5ae3a86 | READY (A3, BASE-105; migration 0104): giveBab fixture fix, support/bab.ts byte-identical to H-A18; exam-builder + pipeline-chain 409 pass (was 19 red); alone = trial merge with H-A18 fc409ae1, 0 failures, tsc 0; merge AFTER H-A18; B2 + B3 |
 | r1/t49-served-now | b99068a67 | READY (A2, BASE-105): bulk approve/archive with all-blank filter → 422 filterBlank [PROPOSED BM]; {} stays Arkib Semua; 4 deviation rows; questions 933 (+BR-16 known), workflow 275, conformance 409; A4 pre-review: Approve w/ Minors, B3 checklist Pass; FE note → C (REQ-C-019: Arkib Semua must send filter:{}); B2 + B3; merge BEFORE stimulus-list-d72 |
 | r1/t50-partial-acs | 075e1b587 | READY (A1a, BASE-105): A3 pre-review CLEAN (nits only); B2 |
-| r1/t51-partial-acs-a3 | 54f631164 | ON HOLD (A3): 54f63116 contains OLD T31 6a27c8dd + OLD T43 5ce5894f (both held for REQ-A-008), so it cannot be READY (lead error at 18:43, corrected); A3 restacks on new T43 238eb6eb (carries T31 eb0346d2) + row cells + nit; then it stays held until T31/REQ-A-008 clear; merge order T48 → T31 → T43 → T51; do not merge |
+| r1/t51-partial-acs-a3 | 61c1b077f | ON HOLD (A3; restacked @61c1b077 on T43 238eb6eb + T31 eb0346d2 + T48): technically ready (537 pass alone = trial merge with H-A18; tsc/eslint 0; vue-tsc only the known http-admin REQ-A-008 error); merge after T31 + REQ-A-008 + T43; held only by that pair |
 | r1/t52-examiner-grid | ca1ed739f | READY (A1a, BASE-105): getCover reads examinerGrid from marked (live+pinned); be09 test 8 (auto/points-essay/archived) bites on revert; R21 superseded; api tsc + eslint + vue-tsc 0, 15 pass; B2 |
 | r1/t54-perf-400k | 03c76eb0d | READY (A4, docs): credentials replaced by placeholders; may 3-line-conflict with 022a perf docs (trivial); B2 |
 <!-- AUDIT:END -->
