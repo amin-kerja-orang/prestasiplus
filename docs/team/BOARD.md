@@ -336,3 +336,8 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 - In base since cycle 15: T26b, T26c, fix-attempt-image-url, REQ-B-026, T36 (team C version, BASE-99).
 - T34/T36 now owned by team C (owner decision). A3: T48, T31, T43, T43b, T51 restack onto BASE-100.
 - Q10 (migrated rights after an edit) is still open with the user; it blocks H-A18 MAJOR 2.
+- Cycle 16 notes:
+  - A2 is back (c-requests-a2 merged at BASE-92). It is implementing Q10 inside H-A18.
+  - A3 is back, restacking T48/T31/T43/T43b/T51 on BASE-100 + T34-c. Its T34-L1-residual WIP is offered to C as REQ-A-013.
+  - A1b: T50 flake MAJOR and T52 eslint BLOCKER + T36 import clash added to its queue.
+  - H-A23: keep as historical. Add a one-line "superseded by MERGE-LOG / C-POLICY-2" header only.
