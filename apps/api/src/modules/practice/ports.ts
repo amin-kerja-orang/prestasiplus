@@ -70,7 +70,7 @@ export interface PracticeQuestionSource {
   /**
    * Question count per chapter, one grouped statement; a chapter with none is absent or 0. Cheap form (default): eligible
    * published plain MCQs (BR-15 list). `exact: true` also checks the servable shape per row (one part, no stimulus, no option
-   * image, the key names an option): use it for a few chapters only (the target and the one before it, BR-16).
+   * image, the key names an option): use it for a few chapters only (the chapter being started; there is no chapter lock any more, REQ-C-021 / D98).
    */
   chapterCounts(chapterIds: readonly string[], exact?: boolean): Promise<ReadonlyMap<string, number>>
   /** Up to `limit` servable questions of a chapter in ascending id order, never one of `excludeIds` (BR-17 unanswered first). */
