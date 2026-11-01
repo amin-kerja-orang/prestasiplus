@@ -505,14 +505,14 @@ Each lane runs 2–3 subagents on independent units: no more than that, and one 
 7. Docs/runbook/release-notes consistency (A3 docs agent).
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 22:54 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 22:55 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/a3-qa-doc-nits | e4d4dd322 | READY (A3, BASE-105, docs only): stale QA notes on T38 self-mark reward fixed (2 files); B2 |
 | r1/a4chain-minors | 6f2fb7938 | READY (A1b, @6f2fb793 on 0ba236ef): symlink removed; janaSkipped guard first line of evaluate; T45 HTTP POST /questions/:id/status case with pinned BM reasons; 022a row real commits + proof spec; A3 dev-1 delta pre-review CLEAN (13 files 76 tests, mutations bite); merge after the A4 chain; B2 |
-| r1/ac-gaps-a1b | c48e67f74 | READY (multi, @c48e67f7, CONTAINS ha17 + t37): coverage doc; runbook (§0 tiers, §2.3 migration rehearsal 0104–0107 by A4: apply/revert/re-apply clean, 408k timings, 0105 ACCESS EXCLUSIVE brief read stall, 0106 P3009 recovery procedure; §3.7 group SELECT; UAT SELECTs; env); B4 QA pack; copy-approval table (38 rows); merge after H-A18; B2 |
+| r1/ac-gaps-a1b | e57b1281e | READY (multi, @c48e67f7, CONTAINS ha17 + t37): coverage doc; runbook (§0 tiers, §2.3 migration rehearsal 0104–0107 by A4: apply/revert/re-apply clean, 408k timings, 0105 ACCESS EXCLUSIVE brief read stall, 0106 P3009 recovery procedure; §3.7 group SELECT; UAT SELECTs; env); B4 QA pack; copy-approval table (38 rows); merge after H-A18; B2 |
 | r1/admin-list-perf | 6389cd541 | READY (A4, @6389cd54, BASE-105): REQ-B-050 + 0106 pg_trgm + 0107 kertas index; per-user @RateLimit GET /api/questions (THROTTLE_QUESTIONS_LIST_PER_MINUTE=60); docs: feature_flags 0108, drop_pool_tag 0109, optional B12 0122 / B20 0123 (lead-confirmed); 0107 header gives 0.9 s bare / ~2 s via migrate deploy; B2 + B3 + DevOps (maintenance window, new env) |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
 | r1/bridge-table-parts | c805ecc7c | READY (A4, BASE-105): the bridge uses stimulusTableParts (an invalid grid + pipe body shows the table only, as in builder/Studio); bridge 118/118, attempts 180/180, kuiz 39/39; B2. Follow-up after T31 + this merge: drop PENDING_BRIDGE_TEXT in the parity spec (A4) |
