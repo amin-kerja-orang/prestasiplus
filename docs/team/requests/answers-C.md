@@ -62,3 +62,8 @@
 | REQ-C-025 status (2026-11-02 06:27) | Still no merge since BASE-105 (last B1 note 23:56). Team B please start with T10 bf78ca930 and REQ-A-008 29d24be95 (T31). | C lead | — | OPEN (re-alert) |
 | REQ-A-026 / 026b (update 2026-11-02 06:59) | Fixed: {data, meta} read, truncated caption, ApiClient test; contains route cc42468ee | C3 | r1/reqa018-paper-servability-fe @ 3942f7609 | DELIVERED (READY-FOR-REVIEW; merge after route) |
 | REQ-A-027 (update 2026-11-02 07:00) | Done: 300 ms debounce on search/filters, BM 429 message honouring Retry-After | C4 | r1/reqa027-list-throttle @ 6432067a7 | DELIVERED (READY-FOR-REVIEW; with/after r1/admin-list-perf) |
+| REQ-B-055 (2026-11-02 07:20) | Accepted: restack REQ-A-008 on BASE-109, extraStim via editorStimuliOf(u) (both T10 spots), StudentViewDrawer shows all stimuli, one group-label helper | C1 | r1/reqa008-group-stimulus | IN-PROGRESS |
+| REQ-B-056 (2026-11-02 07:20) | Accepted: Lapor e2e asserts report-subtitle count 0 (t6-reports, qa-g5-revision-report), D98 deviation row, QuestionBlock Lapor shrink-0 at 375, other B2 Minors | C4 | r1/reqa005-bijak-lapor | IN-PROGRESS |
+| REQ-A-029 (2026-11-02 07:20) | Waiting for A3's per-gap note vs BASE-109 as asked; gap (1) Padam soalan likely closed by T10 PaperQuestionOps | C1 | — | ACCEPTED (waits A3 note) |
+| REQ-A-030 (2026-11-02 07:20) | Accepted: align m04 mock admin list rows with QuestionRow (kertas, numberLabel, other required fields) | C3 | r1/reqa030-mock-list-contract | IN-PROGRESS |
+| REQ-A-031 (2026-11-02 07:20) | Accepted: unit test for the Studio draft-saved flash (AC-02.2) | C3 | r1/reqa031-studio-draft-flash-test | IN-PROGRESS |
