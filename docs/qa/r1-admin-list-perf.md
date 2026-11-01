@@ -9,7 +9,7 @@ Branch `r1/admin-list-perf`. Source of the findings: `docs/qa/r1-perf-400k.md` (
 | Migration 0106: `pg_trgm` and two partial trigram GIN indexes on `question_versions.stem_ms` / `stem_en` | `apps/api/prisma/migrations/0106_question_stem_trgm` | The `ILIKE '%x%'` search stops scanning every row. |
 | Migration 0107: partial expression index for the Kertas filter | `apps/api/prisma/migrations/0107_question_paper_kertas_index` | `kertas` alone stops running the regular expression on every row. The expression text must equal `adminConds` in `questions.repository.ts`. |
 | `listIds`: the total comes from the one per-status aggregate | `questions.repository.ts` | One count scan instead of two (the total was a second full scan with the same joins). Exact, no cache. |
-| REQ-B-050: Kertas regex `[[:space:]]*` (the `\s` was cooked to `s` in the template literal) | `questions.repository.ts` | A code with trailing spaces or a tab matches, as the row view does. |
+| REQ-B-050: Kertas regex `[[:space:]]*` (the `\s` was cooked to `s` in the template literal) | `questions.repository.ts` | A code with trailing spaces or a tab matches, as the row view does. **Behaviour change:** the filter now needs `/` plus a digit 1–3 (as `kertasOfPaperCode`); the old cooked `([0-9])s*$` matched any trailing digit, so a code like `MATH 2` (no slash) no longer matches a Kertas filter. Recorded in `docs/architecture/v2-backend-deviations.md`. |
 
 Exactness: `total` is the sum of the groups of the aggregate (all of them without a status filter, that status with one). `status` is limited to four values by `ck_question_versions_status`. `list-totals-parity.spec.ts` keeps the previous implementation (separate `count(*)` plus the grouped counts) and requires identical `total`, `counts` and page ids for 16 filter combinations, each over 5 status values and 3 subject/level scopes, on a mixed fixture.
 
@@ -41,6 +41,8 @@ Build cost of the indexes on 408k questions (local): 0106 about 20 s (`stem_ms` 
 - Ops recommendation: `jit = off` on the database (not in code or migrations).
 - Revert SQL is in each migration header.
 - Run `ANALYZE question_versions` after the migrations (the planner then knows the new expression index).
+- Order: `prisma migrate deploy` applies all pending migrations in number order. 0106/0107 only add an extension and indexes and depend on no other team A migration, so it is harmless if they land in the same deploy as 0104/0105 or merge before them.
+- Drift: the GIN trigram indexes (0106) and the expression index (0107) cannot be expressed in `schema.prisma`, so `prisma migrate diff` / `migrate dev` may report them as drift. Same precedent as 0011 and 0044: keep them, do not let a generated migration drop them.
 
 ## Reproduce
 

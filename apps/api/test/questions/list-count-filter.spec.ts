@@ -35,6 +35,11 @@ describe('questions list/count filter consistency (no Darjah rows, same filter b
     expect(whereOf(queries[1]!)).not.toContain('v.status =')
   })
 
+  it('listIds: a status the counts do not know gives total 0, never undefined (as before the one-aggregate change)', async () => {
+    const { repo } = fakeRepo()
+    expect((await repo.listIds({ page: 1, pageSize: 20, status: 'unknown' as never })).total).toBe(0)
+  })
+
   it('count / groupCount / structured / totals / owner counts hide primary-level questions', async () => {
     const { repo, queries } = fakeRepo()
     await repo.count({ status: 'approved' })

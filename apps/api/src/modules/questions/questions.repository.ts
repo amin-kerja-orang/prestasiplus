@@ -581,7 +581,7 @@ export class QuestionsRepository {
     const counts = NO_STATUS_COUNTS()
     for (const c of counted) if (isQuestionStatus(c.status)) counts[c.status] = c.n
     // Sum over every group the database returned (not only the known statuses), so a row with an unexpected status still counts as it did.
-    const total = filter.status ? counts[filter.status] : counted.reduce((n, c) => n + c.n, 0)
+    const total = filter.status ? (counts[filter.status] ?? 0) : counted.reduce((n, c) => n + c.n, 0)
     return { ids: rows.map((r) => idToString(r.id)), total, counts }
   }
 
