@@ -1,6 +1,6 @@
 # R1 release-notes input from team A (H-A24)
 
-For B1's T24 (`docs/ops/r1-release-notes.md`) and DevOps (G6). Date: 2026-11-02. Branch `r1/ha24-release-input`. First written at a6ff0c0d (BASE-21); **refreshed 2026-11-02 against BASE-105 (`7ea2208c`)**: every claim below was re-read at the file and line of the head named beside it; what is not in base says "pending, branch @head" with the head from `git ls-remote` on the day. Docs only, except the SQL in section 1.1, which was run on a throwaway local Postgres 16 (27/27 ok).
+For B1's T24 (`docs/ops/r1-release-notes.md`) and DevOps (G6). Date: 2026-11-02. Branch `r1/ha24-release-input`. First written at a6ff0c0d (BASE-21); **refreshed 2026-11-02 against BASE-106 (`d78835b3`)**: the SQL, migration and environment claims were read at BASE-105 (`7ea2208c`), and BASE-106 (team C's T10 front end) changes `src/` and its tests only (`git diff 7ea2208c d78835b3` touches no file under `apps/`, `packages/` or `docs/ops/`), so they still hold; every claim below was re-read at the file and line of the head named beside it; what is not in base says "pending, branch @head" with the head from `git ls-remote` on the day. Docs only, except the SQL in section 1.1, which was run on a throwaway local Postgres 16 (27/27 ok).
 
 How to read the state column:
 
@@ -162,7 +162,7 @@ Unmerged units that add or change a variable: only the one above (scan of every 
 
 After T36 the question bank is the only source for Bijak papers, attempts, Jana Kertas, Kuiz and the paper builder (`apps/api/src/modules/bijak/question-bridge/bank-sources.ts`; `docs/ops/r1-b07-remove-poc.md` in base). `true` only logs one warning at start. The four seeded PoC papers stay in the database, withdrawn by the seed step below; starting one answers 403 "not eligible" and Jana Kertas has no PoC pool (422 SHORTAGE).
 
-Deploy-config lines, all re-read in base at BASE-105 (`7ea2208c`):
+Deploy-config lines, all re-read in base at BASE-105 (`7ea2208c`; BASE-106 touches no deploy file):
 
 | File:line | Value in base | State |
 |---|---|---|
@@ -234,6 +234,7 @@ The BASE column is the MERGE-LOG number. Rows from BASE-24 onward were READY in 
 | H-A21 overview cache | `r1/ha21-overview-cache` @ 669b0caf | BASE-104 | T30 | `computedAt` on the overview | Overview is cached 5 minutes, stale-while-revalidate, single flight, invalidated on question events and a papers fingerprint. No env var | warm p95 target under 500 ms (unit's claim, not re-measured here) |
 | t45-lanes | `r1/t45-lanes` @ e7e5d3dd | BASE-103 | T30 | same lane routes, V2 hub order and wording | Kandungan SPM hub cards in V2 order; Bijak SPM card counts paper rows | none |
 | REQ-B-031 report guard | `r1/reqb031-report-guard` @ 9cd9a1ed | BASE-105 | none | `POST /api/question-reports` rules (D98, per the board decision; implementation not re-read here) | A pupil reports only a question held by their own attempt or practice session; a report does not deactivate a question by itself (admin triage in Laporan Soalan); a re-POST never undoes an admin dismiss; a per-pupil daily cap of 20 | `SELECT status, count(*) FROM question_reports GROUP BY 1;` (written from the schema, not run) |
+| T10 Set Builder and Semak Kertas UI (team C) | `r1/f08-builder-ui` @ bf78ca93 (team C; the MERGE-LOG line for it was not on the board when this was written) | **BASE-106** | T34, T48 API as the UI calls it | none (front end only; `src/` and tests, no `apps/`, `packages/` or `docs/ops/` file) | Admin: the Set Builder page and the Semak Kertas screens (menu KS-17): Tambah and Padam soalan on the local model (applied on Simpan draf or Terbitkan), Salin set, Tarik balik, student view, and the Kontrak blocker reason with the audited override after a refused Terbitkan (REQ-B-054). The lane row of `LaneSimulasiPage.vue` still says Pratonton and Salin need screens not in base (UX-23). **This changes the premise of KIV rows 28 to 31 of `docs/release/r1-kiv-r2.md` (REQ-A-029): re-check which of the four controls now exist before quoting them.** | the B4 pack §3x file and line numbers predate BASE-106 |
 | REQ-C-021 no chapter lock (D98) | `r1/reqc021-no-chapter-lock` @ 15cc2f64 | BASE-102 | none | `POST /practice/sessions` mode `chapter`: no `CHAPTER_LOCKED` 409; `GET /practice/chapter-subjects/{code}`: `state` is always `open` (deviations log, REQ-C-021 row; read there, not re-read in the code) | A pupil may start any chapter that has a servable question; the progressive "unlock at 70" is gone (V2 has none). A chapter with no servable question is still refused (422 NOT_ENOUGH_QUESTIONS) | `test/questions/draw-bounded.spec.ts` "BR-16: a chapter holding one non-servable MCQ..." expects the old lock (409) and fails on base: a stale spec of A1, not a deploy item |
 
 Also merged since BASE-21, not described row by row in this page (see MERGE-LOG on `origin/team/r1-board`): REQ-B-010/012/015 (BASE-31), T49 stimulus lists (BASE-32), REQ-B-018/020 (BASE-35), REQ-B-021 (BASE-36), REQ-B-008 (BASE-38), REQ-B-005/006/007/014a (BASE-39), T41 specs (BASE-40), T53 specs (BASE-42), REQ-A-010 (BASE-50). Their deploy effect was not re-derived here (unconfirmed); read the MERGE-LOG line for each.
@@ -243,7 +244,7 @@ Also merged since BASE-62 and not described row by row (see MERGE-LOG): T26b (BA
 
 ### 3.2 Not in base: pending branches
 
-State is the board's auto table (`docs/team/BOARD.md` on `origin/team/r1-board`, 2026-11-01 19:5x UTC, BASE-105 `7ea2208c`), with each head checked against `git ls-remote`. The merge order is in 3.5 (A4's integration preview #3). A pending unit can still move: re-check the head before quoting it. "Merges after" is the board's order.
+State is the board's auto table (`docs/team/BOARD.md` on `origin/team/r1-board`, 2026-11-01 evening UTC, base BASE-106 `d78835b3`; the units below were built on BASE-105 unless a row says otherwise), with each head checked against `git ls-remote`. The merge order is in 3.5 (A4's integration preview #3). A pending unit can still move: re-check the head before quoting it. "Merges after" is the board's order.
 
 | Unit | Branch @ head | State | Depends on | New routes / contract | Visible change | Check |
 |---|---|---|---|---|---|---|
@@ -358,7 +359,7 @@ Then, after the 33 (each stacked on the step in brackets): `r1/delete-served-gua
 
 ## 5. Limits
 
-- Branch heads were read with `git ls-remote origin` on 2026-11-02 against BASE-105 (`7ea2208c`); the board moves daily. Re-check a head before quoting it.
+- Branch heads were read with `git ls-remote origin` on 2026-11-02 against BASE-106 (`d78835b3`; the unit rows name BASE-105 where they were built on it); the board moves daily. Re-check a head before quoting it.
 - Read in the code at the cited file and line: the migration SQL of 0104 to 0107 and 0110 (from their branch heads), the env schema and warm-up of `SERVABILITY_OVERVIEW_WARM`, the T36 deploy lines and the seed step, the servability, bulk-filter and gate-check routes, the gate messages, the daily report cap and the structured-visibility rule. Taken from the board or a commit title and **not** re-read are marked in the text ("not re-read"); the per-unit "Visible change" of unmerged units was not exercised.
 - SQL run: the 0103 SELECTs and the earlier runs (1.1) and the 24 new statements of 2026-11-02 (0106, 0107, 0110). The unit checks marked "probe" or written from the schema were not run. The runbook's SELECTs for 0092 to 0102 were run on a local database (its section 9).
 - Not measured here: build and lock times of 0100, 0106, 0107 on a production-size table, the T47 500-row stall, the H-A21 and overview figures on a 400k bank, the 0110 data fix on production rows.
