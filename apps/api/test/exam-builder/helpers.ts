@@ -17,6 +17,8 @@ import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { AuthModule } from '../../src/modules/auth'
 import { BijakPapersModule, BijakPapersPorts, bijakCodeOf, type BijakPoolSource, type BijakQuestionSource } from '../../src/modules/bijak/papers'
+import { BankBijakPoolSource } from '../../src/modules/bijak/question-bridge'
+import type { BijakServedSource } from '../../src/modules/bijak/papers'
 import { QuestionsBijakPoolSource } from '../../src/modules/questions/bijak-pool'
 import type { QuestionFacts } from '@pp/exam-core'
 import { ExamBlueprintsModule } from '../../src/modules/exam/blueprints'
@@ -139,11 +141,8 @@ export async function bootBuilderApp(opts: BootOptions = {}): Promise<BuilderTes
   if (opts.papersSource) papersPorts.provideQuestionSource(opts.papersSource)
   if (opts.pool === 'builder-source') papersPorts.providePoolSource(poolFromBuilderSource(opts.builderSource ?? new PocBuilderQuestionSource()))
   await app.init()
-  if (opts.pool === 'bank') {
-    // The production BE-09 pool (the bank only, since the PoC source is gone); nothing is "served before" in these specs.
-    const bank = app.get(QuestionsBijakPoolSource, { strict: false })
-    papersPorts.providePoolSource({ candidates: (scope) => bank.candidatesOf(scope.subjectId), seen: async () => new Set<string>() })
-  }
+  // `pool: 'bank'` is the production pool (BankBijakPoolSource); set before the PoC plug so the plug wraps it, never the other way
+  if (opts.pool === 'bank') papersPorts.providePoolSource(new BankBijakPoolSource(app.get(QuestionsBijakPoolSource, { strict: false }), { servedQuestionIds: async () => new Set<string>() } as unknown as BijakServedSource))
   // R1-B07: the papers ports default to nothing now; the seeded PoC papers (reserved ids) are served by the test double unless a source is given.
   if (!opts.papersSource) plugPocPapers(app)
   if (opts.pocBuilder) plugPocBuilder(app)

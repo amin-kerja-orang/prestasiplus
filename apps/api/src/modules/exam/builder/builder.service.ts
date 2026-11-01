@@ -561,15 +561,23 @@ export class BuilderService {
 
   async publish(actor: AuditActor, rawId: string, rawBody?: unknown): Promise<BijakBuilderPublishResult> {
     const id = parseId(rawId)
+    // The body is parsed first so a bad body does not cost the bank reads below; its 422 is still raised only after the paper is known to exist.
+    let request: ReturnType<typeof BijakBuilderPublishRequestSchema.parse> | undefined
+    let bodyError: unknown
+    try {
+      request = parseWith(BijakBuilderPublishRequestSchema, rawBody ?? {})
+    } catch (e) {
+      bodyError = e
+    }
     // The servability batch reads the whole bank for the placed questions: it is done BEFORE the transaction takes the paper lock (a slow read must
     // not hold the lock of the 5 s transaction). Inside, the placed set is compared with the locked paper and re-read only if it moved.
     const early = id === null ? null : await this.repo.findPilihan(id)
     const earlyIds = this.placedIdsOf(early)
-    const earlyReads = await this.safeReports(earlyIds)
+    const earlyReads = bodyError === undefined ? await this.safeReports(earlyIds) : { reports: new Map<string, ServabilityReport>(), unreadable: [] as string[] }
     return this.prisma.transaction(async () => {
       const paper = await this.lockedPaper(id)
       // The body is optional (no body = the plain Terbit); a bad body is 422 only after the paper is known to exist.
-      const request = parseWith(BijakBuilderPublishRequestSchema, rawBody ?? {})
+      if (bodyError !== undefined || request === undefined) throw bodyError
       const ev = await this.evaluate(paper)
       const structural = await this.structuralCheck(paper)
       const placedNow = this.placedIdsOf(paper)
