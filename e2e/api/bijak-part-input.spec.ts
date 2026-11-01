@@ -14,7 +14,10 @@ import { account, expectNoHScroll } from './helpers'
 test.describe('Bijak structured parts @api', () => {
   test.setTimeout(90_000)
 
-  test('a Kertas 2 attempt renders every served leaf kind with its own control @api', async ({ page }) => {
+  // REQ-A-001 / REQ-B-003: the e2e stack no longer runs on the PoC papers, and the bank seed holds no honest structured Kertas 2 paper
+  // (3 structured questions in total; every K2 blueprint needs 5 or more, and the only K2 papers seeded are PoC papers that answer 403 on start).
+  // Re-enable when a structured K2 paper is seeded from bank questions (test/bijak-integration/e2e-profile-builder.spec.ts pins the gap).
+  test.fixme('a Kertas 2 attempt renders every served leaf kind with its own control @api', async ({ page }) => {
     const { user, pass } = account('student')
     await loginViaUi(page, user, pass)
 

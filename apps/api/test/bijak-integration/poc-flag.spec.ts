@@ -9,13 +9,19 @@ import { BijakPaperSummarySchema } from '@pp/contract'
 import { bootIntegrationApp, type Client, type IntegrationApp, loginAs, START, STUDENT } from './helpers'
 import { serveSeededBlueprints } from '../support/serve-blueprints'
 
-async function seededPocPaper(c: Client): Promise<string> {
+async function seededPocPaper(c: Client, t: IntegrationApp, listed: boolean): Promise<string> {
   const res = await c.get('/api/bijak/papers')
   expect(res.status, JSON.stringify(res.body)).toBe(200)
   const list = (res.body.data as unknown[]).map((p) => BijakPaperSummarySchema.parse(p))
   const p = list.find((x) => x.code === '1449/1' && x.kertas === 1)
-  if (!p) throw new Error('seeded PoC paper 1449/1 not listed')
-  return p.id
+  if (listed) {
+    if (!p) throw new Error('seeded PoC paper 1449/1 not listed')
+    return p.id
+  }
+  // H-A13: with the PoC questions off the paper places questions the bank does not serve, so Kertas Pilihan does not offer it.
+  expect(p).toBeUndefined()
+  const row = await t.db.query<{ id: string }>(`select id::text id from papers where paper_code = '1449/1' and kind = 'pilihan' and status = 'published' order by id limit 1`)
+  return row[0]!.id
 }
 
 async function be09Paper(t: IntegrationApp): Promise<string> {
@@ -69,7 +75,7 @@ for (const on of [false, true]) {
     })
 
     it(on ? 'a seeded PoC paper starts' : 'a seeded PoC paper is not startable: 403 like any refused question', async () => {
-      const res = await start(student, await seededPocPaper(student))
+      const res = await start(student, await seededPocPaper(student, t, on))
       if (on) {
         expect(res.status, JSON.stringify(res.body)).toBeLessThan(300)
       } else {

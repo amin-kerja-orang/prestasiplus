@@ -15,7 +15,7 @@ const groupId = ref<string | null>(props.id)
 </script>
 
 <template>
-  <DsPage layout="form" back-to="/admin/questions" data-testid="studio-group-page">
+  <DsPage layout="form" back-to="/admin/studio" data-testid="studio-group-page">
     <DsCallout v-if="!studioAvailable()" tone="info" data-testid="studio-unavailable">{{ STUDIO_UNAVAILABLE }}</DsCallout>
     <!-- A raised card, so the filled fields (page-coloured when empty) stand out from the page (REQ-B-030). -->
     <DsPanel v-else data-testid="studio-group-panel">
