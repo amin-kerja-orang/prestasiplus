@@ -479,7 +479,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 ### Head audit 2026-11-01 15:00 UTC (superseded)
 This manual table has been removed because it went stale. **The only current source for team A heads and states is the auto table between the `AUDIT:BEGIN/END` markers at the end of this file.** It is regenerated from `git ls-remote` every cycle.
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 18:40 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 18:41 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -510,7 +510,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/reqa018-paper-servability-route | 2f5a85e7c | READY (A1b; on T45 954614c6 + BASE-105): GET /api/admin/questions/:id/paper-servability (Admin Pusat; 403/401/404); 31/31; contract ok; merges after T45; B2 + B3 |
 | r1/reqb032-pinned-rule | a2cb5bb42 | READY (A2+A3, BASE-105): spec title + R1-limitation row (takedown vs running sitting, KIV R2); 6/6; B2 + B3 |
 | r1/reqb049-report-visible | 9ece8d76d | READY (A1b, BASE-105): pre-review Minors fixed (type from the live version, spec titles, real level codes); 316/316; B2 + B3 |
-| r1/reqb052-archived-edit | f3a2448f9 | READY (A3; contains BASE-105 + H-A18 fc409ae1 + B-032 a2cb5bb4): full verification 2336 pass, 0 failures of its own (1 known base red); order H-A18 → B-032 → B-052; B2 + B3 |
+| r1/reqb052-archived-edit | f3a2448f9 | READY (A3, BASE-105; replaces 17196431): follow-ups done: P1 pinned-clause spec (bites), guard published OR (withdrawn AND EXISTS attempts), header; archived-edit 6/6, pinned-version-rule 6/6, workflow 296/296; tsc/eslint 0; B2 |
 | r1/reqc021-followup | 948aa327a | READY (A1a, BASE-105): fixes the base red draw-bounded BR-16; merge early |
 | r1/seed-dangling-placements | 11cbcf458 | READY (A1b, BASE-105): asserts paper titles + counts = POC_BANK; seed 155 + 1 skip; B2 |
 | r1/stimulus-list-d72 | 97f2fdc21 | READY (A2, BASE-105; contains t49 b99068a6): one combined where for page+count, joinable+empty-group spec; stimulus-lists 17/17, questions 937, conformance 409; merge AFTER t49; A4 pre-review queued; B2 |
