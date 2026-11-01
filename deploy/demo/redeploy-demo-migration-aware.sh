@@ -673,9 +673,15 @@ targets_check() {
   ok "Render auto-deploy = no"
   live_branch=$(jq -r '.branch' <<<"$svc")
   log "Render branch now: $live_branch (rollback target: $RUNNING_BRANCH @ ${RUNNING_SHA:0:8})"
-  [ "$(render GET "/services/$RENDER_SERVICE_ID/env-vars?limit=100" | jq '[.[].envVar | select(.key == "BIJAK_POC_QUESTIONS" and .value == "true")] | length')" = 1 ] \
-    || nogo "Render BIJAK_POC_QUESTIONS must be true (else the PoC papers have no questions)"
-  ok "Render BIJAK_POC_QUESTIONS = true"
+  # R1-B07 (T36): BIJAK_POC_QUESTIONS is a deprecated no-op (the API serves the question bank only), so it is no longer required.
+  # What matters is that the demo database has playable papers: published papers whose questions are all in the question bank
+  # (bank papers or the e2e seed, T26). Read-only; a host that has none is a warning, not a stop (the seed run below may add them).
+  playable=$(psqlq -c "select count(*) from papers p where p.status = 'published' and exists (select 1 from paper_placements pl join paper_sections ps on ps.id = pl.paper_section_id where ps.paper_id = p.id) and not exists (select 1 from paper_placements pl join paper_sections ps on ps.id = pl.paper_section_id where ps.paper_id = p.id and not exists (select 1 from questions q where q.id = pl.question_id))" 2>/dev/null || echo "?")
+  if [ "$playable" = "?" ] || [ "$playable" = 0 ]; then
+    log "WARN no playable published paper (bank questions only) on the demo database yet ($playable): reseed with the bank paper / e2e seed, see docs/ops/r1-b07-remove-poc.md"
+  else
+    ok "demo database: $playable playable published paper(s) (bank questions)"
+  fi
   proj=$(cf GET "/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PAGES_PROJECT") || nogo "cannot read the Pages project"
   expect_eq "$(jq -r '.result.production_branch' <<<"$proj")" "$PAGES_BRANCH" "Pages production branch"
   PAGES_PREV=$(pages_prod_deployments | head -1 | cut -d' ' -f1) || true

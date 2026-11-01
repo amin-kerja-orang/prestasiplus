@@ -38,6 +38,7 @@ export async function withLeafStimuli(
   if (leafOnly.size === 0) return out
   const [uses, rows] = await Promise.all([reads.stimulusUseCounts([...leafOnly]), reads.stimulusAssets([...leafOnly])])
   for (const a of rows) {
+    // Leaf path: absent from `uses` means no other question links it (the count query is keyed by stimulus), so 1 = its own; the outside path above fails closed because a missing count there means an unknown producer.
     if (a.assetFileId) out.set(a.id, { kind: a.kind, assetFileId: a.assetFileId, sharedBy: uses.get(a.id) ?? 1 })
   }
   return out
