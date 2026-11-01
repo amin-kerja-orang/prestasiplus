@@ -492,6 +492,18 @@ Wallet tiers come only from the `reference` seed, never from a migration. Prod d
 ### Cycle 30 note: team B active again (22:50 UTC = 06:50 MYT)
 B cycle 45 accepted REQ-A-024/024b as merge-queue input. Rule: the reviewed head must contain the latest BASE, and the gate runs on the merge result. A moved head gets a delta review first. 0106/0107 merge as code only; the maintenance window belongs to the human deploy. Under B review now: C's T10 bf78ca93 → hc-builder-parity 8b27be4d; **REQ-A-008 29d24be9 with T31 eb0346d2**; Lapor 3ee17660 (B2 + B3). The E2E trial runs on BASE-105 + T10. B4 pushed r1/b4-e2e-base102.
 
+
+### Standing order (user via Mandor, 2026-11-02 06:53 MYT): no idle lanes, efficient subagents
+Each lane runs 2–3 subagents on independent units: no more than that, and one vitest at a time per container. A unit that waits on B or C hands over to the next one right away. Run targeted tests, reuse worktrees, one owner per unit, and record heads in the same round.
+**Team A reserve queue** (any free agent takes the top item it can own, then tells the lead):
+1. **B1's first batch, REQ-A-024 steps 1–7** (reqc021-followup → ha18 → req-c012 → reqb032 → reqb052 → A4 chain tip → reqa018 route): a merge-result proof on the current BASE: each head contains BASE, merge-tree is clean, and the targeted folders are green (A1a).
+2. Delta pre-reviews of any head that moved after its last review (check the BOARD AUDIT "pre-review" notes).
+3. Partial R1 ACs that the backend can still prove (the coverage doc on ac-gaps lists the 6 partial rows).
+4. KIV R2 items that need no decision (docs/release/r1-kiv-r2.md on ha24), e.g. the publish/delete race (a FOR SHARE lock on the placed questions at Terbit).
+5. Integration preview on the latest heads after each batch of moves (A4).
+6. Deferred Minors from pre-reviews (search BOARD/status for "Minor" with no fix head).
+7. Docs/runbook/release-notes consistency (A3 docs agent).
+
 <!-- AUDIT:BEGIN -->
 ### Team A open branches: heads from origin (auto, 2026-11-01 22:52 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
