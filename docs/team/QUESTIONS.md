@@ -28,3 +28,8 @@ Lead proposal (pending the user's confirmation, because it reverses exam D10):
 - Keep provenance carry-forward (REQ-B-037), as data integrity only.
 - B3 to be told: T33-L1 / REQ-B-017 closes as a product decision, not as a fix.
 **Q10b answer (user, 2026-11-01, relayed by Mandor):** "ikut v2 termasuk soalan baharu melalui V3". **DECIDED: follow V2 for every question.** The per-question source/rights gate (submit, approve, Terbit) is removed for migrated and new questions alike. Only the intake batch declaration stays. Provenance carry-forward (REQ-B-037) stays. Recorded as **D99** (supersedes exam D10) on r1/d91-decisions.
+
+## Q11 (open, 2026-11-01 14:55 UTC): Lapor on a structured question before any attempt (REQ-B-049, B2/B3)
+D98 says a pupil may report only from an attempt or practice session of their own that holds the question. The structured-question page shows Lapor before the pupil's first submit, with no attempt id, so a first report was refused (B2 MAJOR REQ-B-046). The lead allowed it: a structured question that is visible to this pupil can be reported, still with the daily cap and admin review. This is slightly wider than D98.
+Options: (1) keep the lead rule, narrowed to questions the pupil can actually open (getVisible: approved, structured, level allowed); (2) strict D98: Lapor for structured questions appears only after a submit.
+Lead recommendation: (1). It matches V2: Lapor is on the question page, and the admin reviews every report first.
