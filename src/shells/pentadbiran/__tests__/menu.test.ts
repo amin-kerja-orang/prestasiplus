@@ -27,12 +27,12 @@ const itemsOf = (label: string): string[] =>
   PENTADBIRAN_MENU.find((g) => g.label === label)?.items.map((i) => i.id) ?? []
 
 describe('Pentadbiran menu data', () => {
-  it('keeps the full 9-group, 105-item definition as data', () => {
+  it('keeps the full 9-group, 106-item definition as data', () => {
     expect(PENTADBIRAN_FULL_MENU.map((g) => g.items.length)).toEqual([
-      2, 28, 8, 16, 12, 6, 22, 6, 5,
+      2, 28, 8, 17, 12, 6, 22, 6, 5,
     ])
-    expect(FULL_ITEMS).toHaveLength(105)
-    expect(new Set(FULL_ITEMS.map((i) => i.id)).size).toBe(105)
+    expect(FULL_ITEMS).toHaveLength(106)
+    expect(new Set(FULL_ITEMS.map((i) => i.id)).size).toBe(106)
   })
 
   it('renders built screens only and drops empty groups', () => {
@@ -48,7 +48,14 @@ describe('Pentadbiran menu data', () => {
       'KS-02',
       'KS-08',
       'KS-09',
+      'KS-17',
     ])
+  })
+
+  it('V2 labels (D79): Kontrak Simulasi, Studio list', () => {
+    const byId = new Map(ALL_ITEMS.map((i) => [i.id, i]))
+    expect(byId.get('KS-08')?.label).toBe('Kontrak Simulasi')
+    expect(byId.get('BS-08')).toMatchObject({ label: 'Bank Soalan (Studio)', to: '/admin/studio' })
   })
 
   it('REQ-B-039: Bank Soalan (Studio) opens the Studio list', () => {
@@ -66,7 +73,8 @@ describe('Pentadbiran menu data', () => {
   it('activates the longest matching item (drill pages stay on Langsung)', () => {
     expect(activeItem('/admin/command-center/school/3')?.id).toBe('PM-01')
     expect(activeItem('/admin/command-center/daily-activity')?.id).toBe('PM-02')
-    expect(activeItem('/admin/questions/import')?.id).toBe('BS-02')
+    // BS-02 now opens the batch list (V2 I1); the CSV import page falls back to the Bank Soalan entry.
+    expect(activeItem('/admin/questions/import')?.id).toBe('BS-01')
     expect(activeItem('/admin/spm/soalan/manual')?.id).toBe('KS-16')
     expect(activeItem('/admin/spm/soalan/mat1-pub-1/sunting')?.id).toBe('KS-02')
   })
