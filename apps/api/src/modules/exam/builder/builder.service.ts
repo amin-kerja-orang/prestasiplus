@@ -1,6 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common'
 import {
   BIJAK_BUILDER_CHECK_LINES as LINES,
+  BIJAK_BUILDER_EDIT_LINES as EDIT,
+  bijakRuleLabel,
+  BijakBuilderQuestionCreateSchema,
+  BijakBuilderSectionAddSchema,
   BIJAK_BUILDER_MESSAGES as MESSAGES,
   BijakBuilderPaperCreateSchema,
   BijakBuilderPaperListQuerySchema,
@@ -23,6 +27,7 @@ import {
   type BijakBuilderStudentView,
   type BijakPoolPreview,
   type BijakBuilderEditor,
+  type QuestionPart,
   type BijakBuilderPaper,
   type BijakBuilderPaperStatus,
   type BijakBuilderPaperSummary,
@@ -48,7 +53,7 @@ import { generateLimit, noBlueprint, shortage } from '../../bijak/papers/errors'
 import { BijakPapersPorts } from '../../bijak/papers/ports'
 import { bijakCodeOf, curriculumCodeOf } from '../../bijak/papers/subject-codes'
 import { mytYear, referencePanels, ruleOf, sectionInstruction } from '../../bijak/papers/rules'
-import { ServabilityService, StimuliService } from '../../questions'
+import { QuestionsService, ServabilityService, StimuliService } from '../../questions'
 import { blueprintView } from '../blueprints/blueprint-view'
 import { toStandard } from '../blueprints/blueprint-standard'
 import type { AuditActor } from './actor'
@@ -87,6 +92,30 @@ type Info = ReadonlyMap<string, BuilderQuestionInfo>
 
 const MAX_KERTAS = 32767
 
+/** R1-T48: a paper holds at most this many Bahagian (the PaperPatch limit). */
+const MAX_SECTIONS = 20
+
+/** The legacy question type behind each "Jenis jawapan" of "Tambah soalan" (only used for the flat fields; the parts carry the mode). */
+const QUESTION_TYPE_OF = { mcq: 'mcq', short_text: 'short_answer', numeric: 'short_answer', working: 'essay', essay: 'essay' } as const
+
+/** The placeholder leaf of a question added inside a paper: valid for its mode, to be replaced in the question editor. */
+function blankLeaf(mode: 'mcq' | 'short_text' | 'numeric' | 'working' | 'essay', marks: number, prompt: string): QuestionPart {
+  const base = { label: '1', prompt: { ms: prompt }, marks }
+  const point = { id: 'p1', code: 'M' as const, label: 'Mata 1', marks }
+  switch (mode) {
+    case 'mcq':
+      return { ...base, mode: 'mcq', options: ['A', 'B', 'C', 'D'].map((label) => ({ label, body: { ms: `Pilihan ${label}` } })), key: { kind: 'option', correct: 'A' } }
+    case 'short_text':
+      return { ...base, mode: 'short_text', key: { kind: 'accepted', values: ['(jawapan)'] } }
+    case 'numeric':
+      return { ...base, mode: 'numeric', key: { kind: 'accepted', values: [{ v: 0 }] } }
+    case 'working':
+      return { ...base, mode: 'working', key: { kind: 'points', marks, points: [point] } }
+    case 'essay':
+      return { ...base, mode: 'essay', key: { kind: 'points', marks, points: [point] } }
+  }
+}
+
 const DEFAULT_TITLE = (subjectName: string, kertas: number) => `Percubaan SPM ${subjectName} Kertas ${String(kertas)} (draf)`
 
 const statusOf = (dbStatus: string): BijakBuilderPaperStatus => (dbStatus === 'published' ? 'terbit' : 'draf')
@@ -105,6 +134,18 @@ function parseId(text: string): bigint | null {
 /** Parses a raw body or query with a contract schema; failure is 422 VALIDATION_ERROR with `fields`. */
 function parseWith<T extends z.ZodType>(schema: T, value: unknown): z.output<T> {
   return new ZodValidationPipe(schema).transform(value)
+}
+
+type SectionRow = PaperTree['sections'][number]
+
+/**
+ * The question count and mark budget of a section. A Kontrak Bahagian keeps the stored (blueprint) values; a Bahagian the admin added
+ * (R1-T48) has no Kontrak value, so its figures follow its placements: the count placed and the marks that count under its rule.
+ */
+function sectionFigures(s: SectionRow, marksOf: (questionId: string) => number): { questionCount: number; markBudget: number } {
+  if (!s.adminCreated) return { questionCount: s.questionCount, markBudget: s.markBudget }
+  const ids = s.placements.map((pl) => idToString(pl.questionId))
+  return { questionCount: ids.length, markBudget: effectiveMarks(ruleOf(s.ruleType, s.ruleN), ids.map(marksOf)) }
 }
 
 interface Evaluation {
@@ -131,6 +172,7 @@ export class BuilderService {
     @Inject(BijakPapersPorts) private readonly papersPorts: BijakPapersPorts,
     @Inject(ServabilityService) private readonly servability: ServabilityService,
     @Inject(StimuliService) private readonly stimuli: StimuliService,
+    @Inject(QuestionsService) private readonly questionStore: QuestionsService,
   ) {}
 
   private get questions() {
@@ -200,8 +242,7 @@ export class BuilderService {
       const { check, issues } = checkPaperDetailed({
         specs: paper.sections.map((s) => ({
           label: s.label,
-          markBudget: s.markBudget,
-          questionCount: s.questionCount,
+          ...sectionFigures(s, (id) => marks.get(id) ?? 0),
           rule: ruleOf(s.ruleType, s.ruleN),
         })),
         sections: paper.sections.map((s) => ({ questionIds: s.placements.map((pl) => idToString(pl.questionId)) })),
@@ -221,7 +262,7 @@ export class BuilderService {
 
   // --- wire shapes -------------------------------------------------------------------------------
 
-  private paperWire(paper: PaperTree, subject: SubjectRef | undefined): BijakBuilderPaper {
+  private paperWire(paper: PaperTree, subject: SubjectRef | undefined, marksOf: (questionId: string) => number): BijakBuilderPaper {
     const reference = referencePanels(paper.referenceSheets)
     return {
       id: idToString(paper.id),
@@ -235,16 +276,20 @@ export class BuilderService {
       ...(reference.length ? { reference } : {}),
       sections: paper.sections.map((s) => {
         const rule = ruleOf(s.ruleType, s.ruleN)
+        const figures = sectionFigures(s, marksOf)
+        const numbers = Object.fromEntries(s.placements.flatMap((pl) => (pl.numberLabel ? [[idToString(pl.questionId), pl.numberLabel] as const] : [])))
         return {
           id: idToString(s.id),
           label: s.label,
           ...(s.title ? { title: s.title } : {}),
-          markBudget: s.markBudget,
-          questionCount: s.questionCount,
+          markBudget: figures.markBudget,
+          questionCount: figures.questionCount,
           ...(s.compulsory ? { compulsory: true as const } : {}),
-          ...(s.instruction ? { instruction: sectionInstruction(s.instruction, rule, s.questionCount) } : {}),
+          ...(s.instruction ? { instruction: sectionInstruction(s.instruction, rule, figures.questionCount) } : {}),
           rule,
           questionIds: s.placements.map((pl) => idToString(pl.questionId)),
+          ...(Object.keys(numbers).length > 0 ? { numberLabels: numbers } : {}),
+          ...(s.adminCreated ? { adminCreated: true as const } : {}),
         }
       }),
       status: statusOf(paper.status),
@@ -254,7 +299,7 @@ export class BuilderService {
     }
   }
 
-  private questionWire(info: BuilderQuestionInfo): BijakBuilderQuestion {
+  private questionWire(info: BuilderQuestionInfo, pinned?: boolean): BijakBuilderQuestion {
     return {
       id: info.id,
       ...(info.groupId ? { groupId: info.groupId } : {}),
@@ -266,14 +311,19 @@ export class BuilderService {
       status: info.status,
       kertas: info.kertas,
       subject: info.subject,
+      ...(pinned === undefined ? {} : { pinned }),
     }
   }
 
   private async editorOf(paper: PaperTree): Promise<BijakBuilderEditor> {
     const subject = (await this.repo.subjectsByIds([paper.subjectId])).get(paper.subjectId.toString())
-    const wire = this.paperWire(paper, subject)
     const used = this.refsOf(paper)
     const usedInfo = used.length ? await this.questions.describe(used) : new Map<string, BuilderQuestionInfo>()
+    const overrides = new Map(paper.sections.flatMap((sec) => sec.placements.map((pl) => [idToString(pl.questionId), pl.marksOverride] as const)))
+    const wire = this.paperWire(paper, subject, (id) => overrides.get(id) ?? usedInfo.get(id)?.marks ?? 0)
+    // R1-T48 (V2 "Disematkan"): a placed question is pinned when the paper is Terbit (version and marks frozen).
+    const placed = new Set(used.map((r) => r.id))
+    const pinned = paper.status === 'published'
     // The picker shows at most MAX_EDITOR_CANDIDATES candidates, so a large bank cannot make one editor read unbounded.
     const candidateIds = (await this.questions.candidates({ subject: wire.subject, kertas: paper.kertas }))
       .filter((id) => !usedInfo.has(id))
@@ -295,7 +345,7 @@ export class BuilderService {
     return {
       paper: wire,
       blueprint,
-      questions: ordered.map((q) => this.questionWire(q)),
+      questions: ordered.map((q) => this.questionWire(q, placed.has(q.id) ? pinned : undefined)),
       groups: groupIds.flatMap((id) => {
         const g = groupMap.get(id)
         return g ? [{ id: g.id, stimulus: g.stimulus, questionIds: g.questionIds }] : []
@@ -444,6 +494,7 @@ export class BuilderService {
       const st = await this.structure([...wanted])
       const plans: { sectionId: bigint; placements: { questionId: bigint; pinnedVersionNo: number }[] }[] = []
       const edits: { sectionId: bigint; data: Prisma.PaperSectionUncheckedUpdateInput }[] = []
+      const rulePatches: { section: PaperTree['sections'][number]; rule: NonNullable<(typeof sections)[number]['rule']>; patch: (typeof sections)[number] }[] = []
       const resulting = new Map<bigint, string[]>(paper.sections.map((s) => [s.id, s.placements.map((pl) => idToString(pl.questionId))]))
       for (const patch of sections) {
         const sectionId = parseId(patch.id)
@@ -451,11 +502,13 @@ export class BuilderService {
         if (!section) throw invalid(MESSAGES.invalidSection)
         // R1-T34 "Sunting bahagian": the printed name, the authored instruction and "mesti dijawab"; the rule and the budget stay the Kontrak's.
         const data: Prisma.PaperSectionUncheckedUpdateInput = {
+          ...(patch.rule === undefined ? {} : { ruleType: patch.rule.type, ruleN: patch.rule.type === 'choose' ? patch.rule.n : null }),
           ...(patch.label !== undefined ? { label: patch.label } : {}),
           ...(patch.instruction !== undefined ? { instruction: patch.instruction === null || patch.instruction === '' ? null : patch.instruction } : {}),
           ...(patch.compulsory !== undefined ? { compulsory: patch.compulsory } : {}),
         }
         if (Object.keys(data).length > 0) edits.push({ sectionId: section.id, data })
+        if (patch.rule !== undefined) rulePatches.push({ section, rule: patch.rule, patch })
         if (patch.questionIds === undefined) continue
         for (const qid of patch.questionIds) {
           const q = parseId(qid) === null ? undefined : st.info.get(qid)
@@ -474,6 +527,13 @@ export class BuilderService {
       }
       // R1-T34 "Bahan rujukan": every panel image must be a stored file (public token or id), never a free string.
       if (body.reference !== undefined) await this.checkReferenceImages(actor, paper, body.reference.flatMap((p) => (p.imageFileId ? [p.imageFileId] : [])))
+      // R1-T48: the number to answer (V2 "Bilangan soalan dipilih") must be at most the questions in the Bahagian: the printed count of a Kontrak
+      // Bahagian, the questions placed in an admin-added one (AC-26.1(i)). The Kontrak itself is checked at Terbit.
+      for (const { section, rule } of rulePatches) {
+        if (rule.type !== 'choose') continue
+        const max = section.adminCreated ? new Set(resulting.get(section.id) ?? []).size : section.questionCount
+        if (rule.n > max) throw ApiError.of('VALIDATION_ERROR', { message: EDIT.ruleCount(max), fields: { rule: EDIT.ruleCount(max) } })
+      }
       const everywhere = [...resulting.values()].flat()
       // D90: a stimulus group lives in ONE section, so a group member twice on the paper is refused here. A plain
       // question repeated across sections stays accepted and is reported by the publish check (the mock's order).
@@ -484,6 +544,7 @@ export class BuilderService {
         ...(body.title !== undefined ? { title: body.title } : {}),
         ...(body.year !== undefined ? { year: body.year } : {}),
         ...(body.durationMin !== undefined ? { printedDurationMin: body.durationMin } : {}),
+        ...(body.code !== undefined ? { paperCode: body.code === '' ? bijakSubject : body.code } : {}),
         ...(body.instructions !== undefined ? { instructions: body.instructions } : {}),
         ...(body.reference !== undefined ? { referenceSheets: body.reference as unknown as Prisma.InputJsonValue } : {}),
         updatedAt: this.clock.now(),
@@ -497,6 +558,7 @@ export class BuilderService {
         sections: plans.length,
         ...(edits.length > 0 ? { sectionEdits: edits.length } : {}),
         ...(body.reference !== undefined ? { reference: body.reference.length } : {}),
+        ...(body.code !== undefined ? { code: body.code } : {}),
       })
       return paper.id
     })
@@ -570,7 +632,7 @@ export class BuilderService {
       // The body is optional (no body = the plain Terbit); a bad body is 422 only after the paper is known to exist.
       if (bodyError !== undefined || request === undefined) throw bodyError
       const ev = await this.evaluate(paper)
-      const structural = await this.structuralCheck(paper)
+      const structural = await this.structuralCheck(paper, ev)
       const placedNow = this.placedIdsOf(paper)
       const { reports, unreadable } = placedNow.length === earlyIds.length && placedNow.every((x, i) => x === earlyIds[i]) ? earlyReads : await this.safeReports(placedNow)
       // ONE rule for the review and for publish: `collectBlockers` (hard = the paper's own checks incl. D93 groups, a question missing from the
@@ -590,6 +652,12 @@ export class BuilderService {
           const q = ev.info.get(idToString(pl.questionId))
           if (q) await this.repo.pinPlacement(pl.id, q.versionNo, q.marks)
         }
+      // R1-T48: the figures of an admin-added Bahagian follow its placements; Terbit freezes them (the student side reads the stored values).
+      for (const s of paper.sections) {
+        if (!s.adminCreated) continue
+        const f = sectionFigures(s, (id) => ev.info.get(id)?.marks ?? 0)
+        await this.repo.setSectionFigures(s.id, f.questionCount, f.markBudget)
+      }
       const now = this.clock.now()
       await this.repo.updatePaper(paper.id, {
         status: 'published',
@@ -653,14 +721,19 @@ export class BuilderService {
    * (`fixed`: the audited override never lifts it) and every other check still runs. AC-R1-16.2 (R1E2E-07): a
    * contract that is not Disahkan is a blocker (`blockers`, so the audited override applies).
    */
-  private async structuralCheck(paper: PaperTree): Promise<{ blockers: BlockerDraft[]; contract: BlockerDraft[]; fixed: BlockerDraft[]; notes: string[]; report: unknown | null }> {
+  private async structuralCheck(paper: PaperTree, ev: Evaluation): Promise<{ blockers: BlockerDraft[]; contract: BlockerDraft[]; fixed: BlockerDraft[]; notes: string[]; report: unknown | null }> {
     const none = { blockers: [] as BlockerDraft[], contract: [] as BlockerDraft[], fixed: [] as BlockerDraft[], notes: [] as string[], report: null }
     if (paper.blueprintId === null) return none
     const subject = (await this.repo.subjectsByIds([paper.subjectId])).get(paper.subjectId.toString())
     const blueprint = await this.repo.blueprintById(paper.blueprintId)
     if (!subject || !blueprint) return none
-    const contract: BlockerDraft[] = blueprint.source === 'verified' ? [] : [{ code: 'BLUEPRINT_NOT_VERIFIED', message: contractNotVerifiedLine(blueprint.code, blueprint.version, sourceToWire(blueprint.source)) }]
-    const std = standardForPaper(paper, blueprint, bijakCodeOf(subject.code))
+    const contract: BlockerDraft[] = [
+      ...(blueprint.source === 'verified' ? [] : [{ code: 'BLUEPRINT_NOT_VERIFIED' as const, message: contractNotVerifiedLine(blueprint.code, blueprint.version, sourceToWire(blueprint.source)) }]),
+      ...this.contractConformance(paper, blueprint),
+    ]
+    // An admin-added Bahagian has no Kontrak figures: its count and budget follow its placements (R1-T48).
+    const view: PaperTree = { ...paper, sections: paper.sections.map((s) => (s.adminCreated ? { ...s, ...sectionFigures(s, (id) => ev.info.get(id)?.marks ?? 0) } : s)) }
+    const std = standardForPaper(view, blueprint, bijakCodeOf(subject.code))
     if (!std) return { ...none, contract }
     const composed = paper.sections.map((s, i) => ({ position: i + 1, questionIds: s.placements.map((pl) => idToString(pl.questionId)) }))
     if (composed.every((c) => c.questionIds.length === 0)) return { ...none, contract }
@@ -670,6 +743,45 @@ export class BuilderService {
     // The frozen report needs a clean composition; the contract line alone does not stop it (an override publishes with it).
     const report = lines.blockerIssues.length === 0 && lines.fixedIssues.length === 0 ? buildStandardReport(std, composed, facts, { seed: 0, solverVersion: SOLVER_VERSION }) : null
     return { blockers: lines.blockerIssues, contract, fixed: lines.fixedIssues, notes: lines.notes, report }
+  }
+
+  /**
+   * R1-T48 (AC-26.1(i), V2 "must be <= question count"): Pilih N with fewer than N questions in the Bahagian is never valid, so it is a HARD
+   * blocker (the pupil cover would say "Jawab 5 daripada 1 soalan."). The count is the printed one (a Kontrak Bahagian) or the placed one (admin-added).
+   * `checkPaper` is left untouched: it must equal the prototype's.
+   */
+  private ruleBlockers(paper: PaperTree, ev: Evaluation): BlockerDraft[] {
+    const out: BlockerDraft[] = []
+    for (const s of paper.sections) {
+      const rule = ruleOf(s.ruleType, s.ruleN)
+      if (rule.type !== 'choose') continue
+      const count = sectionFigures(s, (id) => ev.info.get(id)?.marks ?? 0).questionCount
+      if (rule.n > count) out.push({ code: 'RULE_N_EXCEEDS_QUESTIONS', message: LINES.sectionLine(s.label, LINES.ruleExceeds(rule.n, count)), section: s.label })
+    }
+    return out
+  }
+
+  /**
+   * R1-T48: the paper against the Kontrak it conforms to, beyond the question checks. A Bahagian the admin added is not in the Kontrak, and
+   * a Bahagian whose answering rule the admin changed differs from the Kontrak's. Both are blueprint conformance (overridable, like the
+   * V2 "Terbitkan walaupun tidak memenuhi kontrak blueprint"); the printed counts and marks are checked by `checkPaper` (hard).
+   */
+  private contractConformance(paper: PaperTree, blueprint: NonNullable<Awaited<ReturnType<BuilderRepository['blueprintById']>>>): BlockerDraft[] {
+    const out: BlockerDraft[] = []
+    for (const s of paper.sections) {
+      if (s.adminCreated) {
+        out.push({ code: 'SECTION_NOT_IN_CONTRACT', message: LINES.sectionLine(s.label, LINES.sectionNotInContract), section: s.label })
+        continue
+      }
+      const b = blueprint.sections.find((x) => x.position === s.position)
+      if (!b) continue
+      const mine = ruleOf(s.ruleType, s.ruleN)
+      const theirs = ruleOf(b.ruleType === 'choose' ? 'choose' : 'all', b.ruleN)
+      if (mine.type !== theirs.type || (mine.type === 'choose' && theirs.type === 'choose' && mine.n !== theirs.n)) {
+        out.push({ code: 'RULE_NOT_IN_CONTRACT', message: LINES.sectionLine(s.label, LINES.ruleNotInContract(bijakRuleLabel(mine), bijakRuleLabel(theirs))), section: s.label })
+      }
+    }
+    return out
   }
 
   /**
@@ -687,6 +799,7 @@ export class BuilderService {
   ) {
     return toBlockers([
       ...ev.issues,
+      ...this.ruleBlockers(paper, ev),
       ...structural.fixed,
       ...this.attemptBlockers(paper, ev, reports),
       ...unreadable.map((id): BlockerDraft => ({ code: 'NOT_SERVABLE', message: unreadableLine(id), questionId: id })),
@@ -829,7 +942,7 @@ export class BuilderService {
     const paper = pid === null ? null : await this.repo.findPilihan(pid)
     if (!paper) throw notFound()
     const ev = await this.evaluate(paper)
-    const structural = await this.structuralCheck(paper)
+    const structural = await this.structuralCheck(paper, ev)
     // R1-T34 (B09a, "Dilihat murid di"): the per-row verdict comes from ServabilityService (one batch); the paper is the authority for
     // "not on a published paper", so that one reason is left out. A question the service does not know keeps the status-only reason.
     const placed = paper.sections.flatMap((s) => s.placements.map((pl) => idToString(pl.questionId)))
@@ -857,6 +970,7 @@ export class BuilderService {
           ...(q?.groupId ? { groupId: q.groupId } : {}),
           section: s.label,
           ok,
+          pinned: paper.status === 'published',
           ...(reason ? { reason: legacy ? `Tidak disajikan: ${legacy}` : `Tidak disajikan: ${reason}` } : {}),
           ...(reasons.length > 0 ? { reasons: reasons.map((r) => ({ code: r.code, message: r.message, ...(r.detail ? { detail: r.detail } : {}) })) } : {}),
           ...(report ? { seenIn: { served: report.servedCount, total: report.total } } : {}),
@@ -996,7 +1110,8 @@ export class BuilderService {
     const gids = [...new Set(slice.flatMap((u) => (u.groupId ? [u.groupId] : [])))]
     const groups = gids.length ? await this.questions.groups(gids) : new Map<string, BuilderGroupInfo>()
     const data = slice.map((u): BijakBuilderPoolUnit => {
-      const questions = u.ids.flatMap((id) => (info.get(id) ? [this.questionWire(info.get(id)!)] : []))
+      // REQ-C-017 / P5: a member already placed on this paper carries `pinned` (V2 "Disematkan"), as in the editor.
+      const questions = u.ids.flatMap((id) => (info.get(id) ? [this.questionWire(info.get(id)!, onPaper.has(id) ? paper.status === 'published' : undefined)] : []))
       const group = u.groupId ? groups.get(u.groupId) : undefined
       const reasons = eligibilityOfUnit(u)
       // D93: a stimulus group with fewer than two members cannot be placed (only a group the bank knows has a stimulus).
@@ -1143,6 +1258,7 @@ export class BuilderService {
           questionCount: s.questionCount,
           markBudget: s.markBudget,
           compulsory: s.compulsory,
+          adminCreated: s.adminCreated,
         })),
       })
       const fresh = await this.repo.findPilihan(newId)
@@ -1151,7 +1267,7 @@ export class BuilderService {
         const placements = source.sections[i]?.placements ?? []
         await this.repo.replacePlacements(
           section.id,
-          placements.map((pl) => ({ questionId: pl.questionId, pinnedVersionNo: info.get(idToString(pl.questionId))?.versionNo ?? pl.pinnedVersionNo })),
+          placements.map((pl) => ({ questionId: pl.questionId, pinnedVersionNo: info.get(idToString(pl.questionId))?.versionNo ?? pl.pinnedVersionNo, numberLabel: pl.numberLabel })),
         )
       }
       await this.record(actor, AUDIT_ACTIONS.BIJAK_PAPER_CREATED, newId, { from: null, to: 'draf', copyOf: idToString(source.id) })
@@ -1172,7 +1288,10 @@ export class BuilderService {
     return { ok: true }
   }
 
-  /** R1-T34 "Sunting petikan": the title of a stimulus group placed on a draft paper (the group is shared by the bank, D90). */
+  /**
+   * R1-T34 "Sunting petikan": the title of a stimulus group placed on a draft paper (the group is shared by the bank, D90). R1-T48 adds the
+   * caption and the body of one stimulus of the group; they go through `StimuliService.updateStimulus`, so the bank's rules apply.
+   */
   async setGroupLabel(actor: AuditActor, rawId: string, groupId: string, rawBody: unknown): Promise<BijakBuilderEditor> {
     const pid = parseId(rawId)
     const paperId = await this.prisma.transaction(async () => {
@@ -1183,14 +1302,131 @@ export class BuilderService {
       const st = await this.structure(placed)
       const onPaper = new Set(placed.flatMap((qid) => (st.groupOf(qid) ? [st.groupOf(qid)!] : [])))
       if (!onPaper.has(groupId)) throw invalid(MESSAGES.groupNotOnPaper)
-      await this.stimuli.updateGroup(groupId, { label: body.label })
+      const editsStimulus = body.caption !== undefined || body.body !== undefined
+      if (editsStimulus) {
+        const detail = await this.stimuli.getGroup(groupId)
+        const target = body.stimulusId ?? detail.stimuli[0]?.id
+        if (target === undefined) throw invalid(MESSAGES.groupNoStimulus)
+        if (!detail.stimuli.some((x) => x.id === target)) throw invalid(MESSAGES.groupStimulusMismatch)
+        await this.stimuli.updateStimulus(target, {
+          ...(body.caption === undefined ? {} : { caption: body.caption }),
+          ...(body.body === undefined ? {} : { body: body.body }),
+        })
+      }
+      if (body.label !== undefined) await this.stimuli.updateGroup(groupId, { label: body.label })
       await this.repo.updatePaper(paper.id, { updatedAt: this.clock.now() })
-      await this.record(actor, AUDIT_ACTIONS.BIJAK_PAPER_UPDATED, paper.id, { from: 'draf', to: 'draf', op: 'group_label', groupId })
+      await this.record(actor, AUDIT_ACTIONS.BIJAK_PAPER_UPDATED, paper.id, {
+        from: 'draf',
+        to: 'draf',
+        op: 'group_label',
+        groupId,
+        ...(editsStimulus ? { stimulus: { caption: body.caption !== undefined, body: body.body !== undefined } } : {}),
+      })
       return paper.id
     })
     const fresh = await this.repo.findPilihan(paperId)
     if (!fresh) throw notFound()
     return this.editorOf(fresh)
+  }
+
+  // --- R1-T48: Tambah bahagian, Tambah soalan, Padam soalan ---------------------------------------
+
+  /** "Tambah bahagian": appends a Bahagian the Kontrak does not have. */
+  async addSection(actor: AuditActor, rawId: string, rawBody: unknown): Promise<BijakBuilderEditor> {
+    const pid = parseId(rawId)
+    const paperId = await this.prisma.transaction(async () => {
+      const paper = await this.lockedPaper(pid)
+      if (paper.status === 'published') throw invalid(MESSAGES.paperLocked)
+      const body = parseWith(BijakBuilderSectionAddSchema, rawBody)
+      if (paper.sections.length >= MAX_SECTIONS) throw invalid(MESSAGES.sectionLimit)
+      await this.repo.addSection(paper.id, Math.max(0, ...paper.sections.map((x) => x.position)) + 1, body.label)
+      await this.repo.updatePaper(paper.id, { updatedAt: this.clock.now() })
+      await this.record(actor, AUDIT_ACTIONS.BIJAK_PAPER_UPDATED, paper.id, { from: 'draf', to: 'draf', op: 'section_add', label: body.label })
+      return paper.id
+    })
+    const fresh = await this.repo.findPilihan(paperId)
+    if (!fresh) throw notFound()
+    return this.editorOf(fresh)
+  }
+
+  /**
+   * "Tambah soalan" (V2 `Nombor soalan`, `Jenis jawapan`, `Markah`): a blank Draf question in the one question bank, placed at the end of an
+   * admin-added Bahagian. The T33 DSKP gate runs on APPROVAL, not on create: the Draf has no tag or cognitive level, so it cannot be approved (and
+   * Terbit waits, "1 soalan belum Terbit") until the unit, SP, TP and a cognitive level per leaf are set in the question editor.
+   */
+  async createQuestion(actor: AuditActor, rawId: string, rawSection: string, rawBody: unknown): Promise<BijakBuilderPlacementResult> {
+    const paperId = parseId(rawId)
+    const out = await this.prisma.transaction(async () => {
+      const paper = await this.lockedPaper(paperId)
+      if (paper.status === 'published') throw invalid(MESSAGES.paperLocked)
+      const body = parseWith(BijakBuilderQuestionCreateSchema, rawBody)
+      const sid = parseId(rawSection)
+      const section = sid === null ? undefined : paper.sections.find((x) => x.id === sid)
+      if (!section) throw invalid(MESSAGES.invalidSection)
+      if (!section.adminCreated) throw invalid(MESSAGES.adminSectionOnly)
+      const used = paper.sections.flatMap((x) => x.placements.map((pl) => pl.numberLabel?.toLowerCase()))
+      if (used.includes(body.number.toLowerCase())) {
+        const message = EDIT.numberUsed(body.number)
+        throw ApiError.of('VALIDATION_ERROR', { message, fields: { number: message } })
+      }
+      const levelId = await this.repo.defaultQuestionLevelId()
+      if (levelId === null) throw invalid(MESSAGES.noDefaultLevel)
+      const created = await this.questionStore.create(
+        {
+          subjectId: idToString(paper.subjectId),
+          educationLevelId: idToString(levelId),
+          difficultyLevel: 3,
+          questionText: `Soalan ${body.number} (belum disunting)`,
+          questionType: QUESTION_TYPE_OF[body.mode],
+          ...(['1', '2', '3'].includes(String(paper.kertas)) ? { kertas: String(paper.kertas) as '1' | '2' | '3' } : {}),
+          parts: [blankLeaf(body.mode, body.marks, `Soalan ${body.number} (belum disunting)`)],
+          status: 'draft',
+        },
+        { userId: actor.userId, role: 'admin' },
+      )
+      const st = await this.structure([created.id])
+      const info = st.info.get(created.id)
+      if (!info) throw invalid(MESSAGES.invalidQuestion)
+      const pins = this.pinsOf(section)
+      const current = section.placements.map((pl) => idToString(pl.questionId))
+      await this.repo.replacePlacements(section.id, [
+        ...current.map((id) => ({ questionId: BigInt(id), pinnedVersionNo: pins.get(id) ?? 1 })),
+        { questionId: BigInt(created.id), pinnedVersionNo: info.versionNo, numberLabel: body.number },
+      ])
+      await this.repo.updatePaper(paper.id, { updatedAt: this.clock.now() })
+      await this.record(actor, AUDIT_ACTIONS.BIJAK_PAPER_UPDATED, paper.id, { from: 'draf', to: 'draf', op: 'question_create', questionId: created.id, number: body.number, mode: body.mode, marks: body.marks })
+      return { id: paper.id, added: [created.id] }
+    })
+    return this.editorResult(out.id, { added: out.added })
+  }
+
+  /**
+   * "Padam soalan": removes a question added through "Tambah soalan" (a placement with a Nombor soalan). V2 deleted the extra question with the
+   * paper; here the question lives in the bank, so it is deleted too only while it is still a Draf on no other paper, else it just leaves
+   * the paper. A bank question placed by "Tambah soalan" of the picker is taken off with `removePlacement` instead.
+   */
+  async deleteAddedQuestion(actor: AuditActor, rawId: string, rawQuestionId: string): Promise<BijakBuilderPlacementResult> {
+    const paperId = parseId(rawId)
+    const out = await this.prisma.transaction(async () => {
+      const paper = await this.lockedPaper(paperId)
+      if (paper.status === 'published') throw invalid(MESSAGES.paperLocked)
+      const section = paper.sections.find((x) => x.placements.some((pl) => idToString(pl.questionId) === rawQuestionId))
+      if (!section) throw invalid(PLACE.notPlaced(rawQuestionId))
+      const placement = section.placements.find((pl) => idToString(pl.questionId) === rawQuestionId)!
+      // V2 "Soalan asal kertas tidak boleh dipadam.": only an extra question of an admin-added Bahagian can be deleted.
+      if (!section.adminCreated) throw invalid(MESSAGES.originalNotDeletable)
+      if (!placement.numberLabel) throw invalid(EDIT.notAdded(rawQuestionId))
+      const pins = this.pinsOf(section)
+      const rest = section.placements.filter((pl) => pl !== placement).map((pl) => idToString(pl.questionId))
+      await this.repo.replacePlacements(section.id, rest.map((id) => ({ questionId: BigInt(id), pinnedVersionNo: pins.get(id) ?? 1 })))
+      const info = (await this.questions.describe([{ id: rawQuestionId }])).get(rawQuestionId)
+      const deleted = info?.status === 'draft' && (await this.repo.placementCount(placement.questionId)) === 0
+      if (deleted) await this.questionStore.remove(rawQuestionId, { userId: actor.userId, role: 'admin' })
+      await this.repo.updatePaper(paper.id, { updatedAt: this.clock.now() })
+      await this.record(actor, AUDIT_ACTIONS.BIJAK_PAPER_UPDATED, paper.id, { from: 'draf', to: 'draf', op: 'question_delete', questionId: rawQuestionId, number: placement.numberLabel, deleted })
+      return { id: paper.id, removed: [rawQuestionId] }
+    })
+    return this.editorResult(out.id, { removed: out.removed })
   }
 
   async preview(rawBody: unknown): Promise<BijakBuilderPreview> {
