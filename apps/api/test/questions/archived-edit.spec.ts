@@ -184,6 +184,24 @@ describe('REQ-B-052: an archived question pinned on a published paper cannot be 
     expect(await repo.versionIsPinned(quiet.ids[0]!, 1), 'a withdrawn paper nobody sat').toBe(false)
   })
 
+  it('a sitting frozen BEFORE the pins existed (no `versions` in its composition) still reads the archived version after the edit, not the draft on top', async () => {
+    // REQ-B-032 makes a sitting serve the version its paper pinned (recorded in the frozen composition). A sitting frozen earlier has no pins and
+    // falls back to "the version that was last live": the newest archived published version (never the draft the edit put on top).
+    const { paper, ids } = await publishedPaper()
+    const target = ids[0]!
+    const start = await pupil.post('/api/bijak/attempts', { paperId: paper, mode: 'exam' })
+    expect(start.status, JSON.stringify(start.body)).toBe(201)
+    const attempt = start.body.data.attemptId as string
+    await q(`update exam_attempts set composition = (select coalesce(jsonb_agg(s - 'versions'), '[]'::jsonb) from jsonb_array_elements(composition) s) where id = $1`, [attempt])
+    expect(String((await q(`select composition::text c from exam_attempts where id = $1`, [attempt]))[0]!.c)).not.toContain('versions')
+    expect((await admin.post('/api/questions/bulk-action', { action: 'archived', ids: [target] })).body.data.failed).toEqual([])
+    const servedBefore = await served(attempt, target)
+    const edit = await admin.put(`/api/questions/${target}`, body({ questionText: 'TEKS BAHARU: berapakah hasil darab 6 dan 7?', options: ['40', '41', '42', '43'], correctAnswer: 2 }))
+    expect(edit.status, JSON.stringify(edit.body)).toBe(200)
+    expect(await versions(target)).toEqual(['1:archived', '2:draft'])
+    expect(await served(attempt, target), 'a pin-less sitting is served the archived version, not the draft on top').toEqual(servedBefore)
+  })
+
   it('Guru PUT (updateOwn) on their own question: the pinned version stays byte-identical and the pupil is served the same question', async () => {
     // A Guru question reaches a published paper like this: the Guru submits it (saved as `review`, owner = the Guru), Admin Pusat adds the
     // DSKP tag and approves it, the builder places it and Terbit publishes; the owner stays the Guru.
