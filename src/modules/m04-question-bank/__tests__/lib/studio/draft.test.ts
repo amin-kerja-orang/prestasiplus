@@ -6,6 +6,7 @@ import {
   blankLeaf,
   draftGaps,
   draftTp,
+  draftTpNote,
   editAsDraftBody,
   hydrate,
   MAX_OPTIONS,
@@ -199,9 +200,46 @@ describe('Studio draft', () => {
       expect(hydrate(wire(part)).unsupported).toHaveLength(1)
     })
 
-    it('marks a stored question TP the leaves do not give as unsupported', () => {
-      expect(hydrate(wire(numeric, { unitId: null, spIds: [], tp: 3 })).unsupported).toHaveLength(1)
+    it('marks a stored question TP that differs from the part TPs as unsupported', () => {
+      expect(hydrate(wire({ ...numeric, difficultyTp: 2 }, { unitId: null, spIds: [], tp: 3 })).unsupported).toHaveLength(1)
       expect(hydrate(wire({ ...numeric, difficultyTp: 3 }, { unitId: null, spIds: [], tp: 3 })).unsupported).toEqual([])
+    })
+
+    it('lets a single part without a TP inherit the stored question TP (intake-born, REQ-B-038)', () => {
+      const h = hydrate(wire(numeric, { unitId: null, spIds: [], tp: 3 }))
+      expect(h.unsupported).toEqual([])
+      expect(h.draft.leaves[0]?.tp).toBeNull()
+      expect(draftTp(h.draft)).toBe(3)
+      expect((toRequestBody(h.draft).tag as { tp: number | null }).tp).toBe(3)
+      // once the author sets a part TP, the highest part TP wins
+      const edited = { ...h.draft, leaves: h.draft.leaves.map((l) => ({ ...l, tp: 5 })) }
+      expect(draftTp(edited)).toBe(5)
+    })
+
+    it('does not report an inherited part as missing its TP, and keeps the inherited TP when a lower TP part is added (REQ-B-038 minors)', () => {
+      const h = hydrate(wire(numeric, { unitId: null, spIds: [], tp: 3 }))
+      expect(draftGaps(h.draft).map((g) => g.message)).not.toContain('Bahagian (a) belum ada TP.')
+      const b = { ...blankLeaf('b'), tp: 2 }
+      const withB = { ...h.draft, leaves: [...h.draft.leaves, b] }
+      expect(draftTp(withB)).toBe(3)
+      expect(draftGaps(withB).map((g) => g.message)).not.toContain('Bahagian (a) belum ada TP.')
+      expect(draftGaps(withB).map((g) => g.message)).toContain('Bahagian (b) belum ada aras pemikiran.')
+    })
+
+    it('words the TP note by where the TP comes from', () => {
+      const h = hydrate(wire(numeric, { unitId: null, spIds: [], tp: 3 }))
+      expect(draftTpNote(h.draft)).toBe('(diwarisi daripada soalan)')
+      const mixed = { ...h.draft, leaves: [...h.draft.leaves, { ...blankLeaf('b'), tp: 2 }] }
+      expect(draftTp(mixed)).toBe(3)
+      expect(draftTpNote(mixed)).toBe('(diwarisi daripada soalan)')
+      const own = { ...h.draft, leaves: [...h.draft.leaves, { ...blankLeaf('b'), tp: 5 }] }
+      expect(draftTpNote(own)).toBe('(tertinggi antara bahagian)')
+    })
+
+    it('does not invent a TP for a question that has none', () => {
+      const h = hydrate(wire(numeric))
+      expect(h.unsupported).toEqual([])
+      expect(draftTp(h.draft)).toBeNull()
     })
 
     it('accepts null-valued extras and explicit defaults', () => {

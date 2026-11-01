@@ -5,6 +5,7 @@ import type { ServabilityReport } from '@pp/contract'
 import { idFromString, idToString, isIdString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { optionImageIds } from '../../bijak/kuiz/kuiz.mapper'
+import { withLeafStimuli } from '../../bijak/kuiz/own-stimuli'
 import { outsideStimuliOf } from '../../bijak/question-bridge/outside-media'
 import { QuestionsBijakPoolSource } from '../bijak-pool'
 import { QuestionsRepository } from '../questions.repository'
@@ -52,29 +53,28 @@ export class ServabilityService {
     if (latest.size === 0) return new Map()
     const live = new Map((await this.questions.getMany([...latest.keys()], 'live')).map((r) => [r.id, r]))
     const records = [...live.values()]
-    // The version the Bijak bridge serves: the live one, else the last published version of an archived question (B08).
-    const bridged = [...latest].flatMap(([id, l]) => {
-      const record = live.get(id) ?? (l.version.status === 'archived' && l.version.publishedAt !== null ? l : null)
-      return record === null ? [] : [record]
-    })
+    // The bridge reads the live version for a NEW sitting (H-A13): a question without one is reported `archived` or `not_approved`,
+    // and its running sittings are readability, not servability, so no other version needs its stimuli or group here.
+    const bridged = records
     // Level and subject belong to the version pupils are served (live), so the draws and these facts read the same row. Only a
     // question with no live version falls back to its latest one (its status reason decides, the level and subject never serve it).
     const effective = [...latest].map(([id, l]) => live.get(id) ?? l)
 
-    const [levels, subjects, groups, linkedAssets, onPaper, jana] = await Promise.all([
+    const [levels, subjects, groups, onPaper, jana] = await Promise.all([
       this.levelsOf(effective.flatMap((r) => (r.version.educationLevelId ? [r.version.educationLevelId] : []))),
       this.subjectsOf(effective),
       this.groupsOf(bridged),
-      this.assetsOf(records),
       this.onPublishedPaper([...live.keys()]),
       this.janaFactsOf(records),
     ])
+    // ONE read of the own stimuli (versionStimuli + stimulusUseCounts): the bridge's `outside` and the kuiz's `linkedAssets` are both
+    // built from it, so the facts cannot disagree and the pinned read runs once.
     const own = await outsideStimuliOf(this.questions, bridged, groups)
+    const linkedAssets = await withLeafStimuli(this.questions, records, own.outside, groups)
     const tokens = await this.tokensOf(bridged, groups, linkedAssets, own.fileIds)
 
-    const bridgedById = new Map(bridged.map((r) => [r.id, r]))
     const bridgeGroupOf = (id: string): StimulusGroupRecord | null => {
-      const gid = bridgedById.get(id)?.groupId
+      const gid = live.get(id)?.groupId
       return gid ? (groups.get(gid) ?? null) : null
     }
     const out = new Map<string, ServabilityFacts>()
@@ -139,15 +139,6 @@ export class ServabilityService {
     return new Map((await this.questions.groupsByIds(ids)).map((g) => [g.id, g]))
   }
 
-  private async assetsOf(records: readonly QuestionRecord[]): Promise<Map<string, { kind: string; assetFileId: string | null }>> {
-    const linked = new Set<string>()
-    for (const r of records) {
-      for (const id of r.version.stimulusIds) linked.add(id)
-      for (const part of walkLeaves(r.version.parts)) if (part.stimulusId) linked.add(part.stimulusId)
-    }
-    return new Map((await this.questions.stimulusAssets([...linked])).map((a) => [a.id, { kind: a.kind, assetFileId: a.assetFileId }]))
-  }
-
   private async tokensOf(
     records: readonly QuestionRecord[],
     groups: ReadonlyMap<string, StimulusGroupRecord>,
@@ -185,9 +176,4 @@ export class ServabilityService {
     }
     return out
   }
-}
-
-type Leaf = Extract<QuestionRecord['version']['parts'][number], { mode: string }>
-function walkLeaves(parts: QuestionRecord['version']['parts']): Leaf[] {
-  return parts.flatMap((p) => ('mode' in p ? [p as Leaf] : walkLeaves(p.children as QuestionRecord['version']['parts'])))
 }
