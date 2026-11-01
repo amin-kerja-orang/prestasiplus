@@ -205,3 +205,30 @@ export async function cloneTeacher(db: TestDatabase): Promise<void> {
     [id],
   )
 }
+
+/**
+ * REQ-B-031: a practice session of `userId` that served `questionId`, the proof a pupil needs to report it. Returns the session id
+ * (a uuid) to send as `quizSessionId`. Raw SQL: the workflow harness has no practice module.
+ */
+export async function answeredSession(db: TestDatabase, userId: string, questionId: string): Promise<string> {
+  const [row] = await db.query<{ id: string }>(
+    `insert into practice_sessions (user_id, mode, question_count, status, started_at, completed_at) values ($1::bigint, 'random', 1, 'completed', now(), now()) returning id::text`,
+    [userId],
+  )
+  await db.query(`insert into practice_session_questions (session_id, position, question_id, question_version_no) values ($1::uuid, 1, $2::bigint, 1)`, [row!.id, questionId])
+  return row!.id
+}
+
+/** A client that first "answers" the question of every `POST /api/question-reports` that names none of its own proof (existing specs file many reports). */
+export function answering(t: WorkflowTestApp, client: Client): Client {
+  const proven = async (url: string, body: unknown): Promise<unknown> => {
+    const b = body as { questionId?: unknown; quizSessionId?: unknown; attemptId?: unknown } | undefined
+    if (url !== '/api/question-reports' || !b || typeof b.questionId !== 'string' || !/^[0-9]+$/.test(b.questionId)) return body
+    if (b.quizSessionId !== undefined || b.attemptId !== undefined) return body
+    return { ...b, quizSessionId: await answeredSession(t.db, client.userId, b.questionId) }
+  }
+  return {
+    ...client,
+    post: (url, body) => ({ then: (ok: (v: unknown) => unknown, bad?: (e: unknown) => unknown) => proven(url, body).then((b) => client.post(url, b)).then(ok, bad) }) as unknown as request.Test,
+  }
+}
