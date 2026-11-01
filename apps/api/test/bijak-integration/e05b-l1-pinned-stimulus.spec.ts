@@ -32,7 +32,7 @@ afterAll(async () => {
 const one = async (sql: string, params: unknown[] = []) => (await t.db.query<Record<string, string>>(sql, params))[0]!
 
 /** An approved (Terbit) T4 MCQ, no group; returns its id and live version id. */
-async function approvedMcq(): Promise<{ qid: string; vid: string }> {
+async function approvedBankMcq(): Promise<{ qid: string; vid: string }> {
   const res = await admin
     .post('/api/questions')
     .set('X-CSRF-Token', adminCsrf)
@@ -54,7 +54,7 @@ async function approvedMcq(): Promise<{ qid: string; vid: string }> {
   ).toBe('1')
   return { qid, vid: (await one(`select id::text from question_versions where question_id = $1 and version_no = 1`, [qid])).id! }
 }
-const newStimulus = async (kind: string, extra: { body?: string; label?: string } = {}): Promise<string> =>
+const insertOwnStimulus = async (kind: string, extra: { body?: string; label?: string } = {}): Promise<string> =>
   (
     await one(`insert into stimuli (kind, asset_file_id, body_ms, label) values ($1, $2, $3, $4) returning id::text`, [
       kind,
@@ -63,11 +63,11 @@ const newStimulus = async (kind: string, extra: { body?: string; label?: string 
       extra.label ?? null,
     ])
   ).id!
-const linkStimulus = (vid: string, sid: string, position = 1) =>
+const linkToVersion = (vid: string, sid: string, position = 1) =>
   t.db.query(`insert into question_version_stimuli (question_version_id, stimulus_id, position) values ($1, $2, $3)`, [vid, sid, position])
 
-/** A Terbit pilihan paper placing the question (pinned to its live version), as the builder publishes it. */
-async function publishedPaper(qid: string): Promise<string> {
+/** A Terbit pilihan paper that places the question pinned to version 1 (its live version), as the builder publishes it. */
+async function paperPinningLiveVersion(qid: string): Promise<string> {
   const paper = await t.db.prisma.paper.create({
     data: {
       kind: 'pilihan',
@@ -95,12 +95,12 @@ async function publishedPaper(qid: string): Promise<string> {
 }
 
 
-describe('E05B-L1 an archived version pinned on a published paper keeps its own stimulus locked', () => {
-  it('PUT /api/stimuli/:id is refused with 409 and the pupil still reads the original text', async () => {
-    const { qid, vid } = await approvedMcq()
-    const sid = await newStimulus('passage', { body: 'Petikan asal untuk soalan ini.', label: 'Petikan' })
-    await linkStimulus(vid, sid)
-    const paperId = await publishedPaper(qid)
+describe('E05B-L1 the served lock of a question\'s OWN stimulus after its version is archived', () => {
+  it('pinned on a published paper with a sitting open: PUT /api/stimuli/:id is refused with 409 and the pupil still reads the original text', async () => {
+    const { qid, vid } = await approvedBankMcq()
+    const sid = await insertOwnStimulus('passage', { body: 'Petikan asal untuk soalan ini.', label: 'Petikan' })
+    await linkToVersion(vid, sid)
+    const paperId = await paperPinningLiveVersion(qid)
 
     const started = await pupil.post('/api/bijak/attempts', { paperId, mode: 'exam' })
     expect(started.status, JSON.stringify(started.body)).toBe(201)
@@ -118,5 +118,16 @@ describe('E05B-L1 an archived version pinned on a published paper keeps its own 
 
     const v = BijakAttemptPaperViewSchema.parse((await pupil.get(`/api/bijak/attempts/${attemptId}`)).body.data)
     expect(v.questions.find((x) => x.id === qid)?.stimuli?.[0]).toMatchObject({ kind: 'passage', text: 'Petikan asal untuk soalan ini.' })
+  })
+
+  it('negative control: the same archived own stimulus on NO published paper is not locked, the edit is 200', async () => {
+    const { qid, vid } = await approvedBankMcq()
+    const sid = await insertOwnStimulus('passage', { body: 'Petikan tanpa kertas.', label: 'Petikan' })
+    await linkToVersion(vid, sid)
+    const arch = await admin.post('/api/questions/bulk-action').set('X-CSRF-Token', adminCsrf).send({ action: 'archived', ids: [qid] })
+    expect(arch.status, JSON.stringify(arch.body)).toBe(200)
+    const put = await admin.put(`/api/stimuli/${sid}`).set('X-CSRF-Token', adminCsrf).send({ body: { ms: 'Teks diubah.' } })
+    expect(put.status, JSON.stringify(put.body)).toBe(200)
+    expect((await one(`select body_ms from stimuli where id = $1`, [sid])).body_ms).toBe('Teks diubah.')
   })
 })
