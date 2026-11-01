@@ -229,4 +229,74 @@ describe('stimulus group and stimulus lists (admin, real database)', () => {
       expect(paged.meta.page).toBe(2)
     })
   })
+
+  describe('secondary only (D72) and memberless groups', () => {
+    const darjah = async (): Promise<string> => (await t.db.query<{ id: string }>(`select id::text id from education_levels where stage = 'primary' order by id limit 1`))[0]!.id
+    const setLevel = (questionId: string, levelId: string) => t.db.query(`update question_versions set education_level_id = $2::bigint where question_id = $1`, [questionId, levelId])
+    const listedGroups = async (query: string): Promise<string[]> => (await groups(`${query}&pageSize=100`)).data.map((r) => r.id)
+    const listedStimuli = async (query: string): Promise<string[]> => (await stimuli(`${query}&pageSize=100`)).data.map((r) => r.id)
+
+    it('a group with a Darjah (primary-level) member, and one with a PKSK member, is not listed; a secondary group is; the total follows', async () => {
+      const mark = `D72g${tagTag}`
+      const ok = await group([await stimulus({ label: `${mark} ok` })], [await question({ questionText: 'Soalan menengah untuk senarai D72 kumpulan.' })])
+      const primaryQ = await question({ questionText: 'Soalan Darjah untuk senarai D72 kumpulan.' })
+      const primary = await group([await stimulus({ label: `${mark} darjah` })], [primaryQ])
+      await setLevel(primaryQ, await darjah())
+      const pkskQ = await question({ questionText: 'Soalan PKSK untuk senarai D72 kumpulan.' })
+      const pksk = await group([await stimulus({ label: `${mark} pksk` })], [pkskQ])
+      await t.db.query(`insert into question_tags (question_id, kind, code) values ($1::bigint, 'pksk_domain', 'ujian')`, [pkskQ])
+      // a mixed group (one secondary, one Darjah member) is hidden as a whole: it cannot be shown without a Darjah row
+      const mixedPrimary = await question({ questionText: 'Soalan Darjah dalam kumpulan campuran D72.' })
+      const mixed = await group([await stimulus({ label: `${mark} campuran` })], [await question({ questionText: 'Soalan menengah dalam kumpulan campuran D72.' }), mixedPrimary])
+      await setLevel(mixedPrimary, await darjah())
+
+      const found = await listedGroups(`q=${mark}`)
+      expect(found).toEqual([ok.id])
+      expect(found).not.toContain(primary.id)
+      expect(found).not.toContain(pksk.id)
+      expect(found).not.toContain(mixed.id)
+      expect((await groups(`q=${mark}`)).meta.totalItems).toBe(1)
+      // the subject filter and the status filter obey it too
+      expect(await listedGroups(`q=${mark}&subjectId=${refs.mathId}`)).toEqual([ok.id])
+      expect(await listedGroups(`q=${mark}&status=draft`)).toEqual([ok.id])
+    })
+
+    it('a stimulus used only by Darjah or PKSK questions is not listed; an unused one and a secondary one are', async () => {
+      const mark = `D72s${tagTag}`
+      const used = await stimulus({ label: `${mark} menengah` })
+      await group([used], [await question({ questionText: 'Soalan menengah untuk senarai D72 rangsangan.' })])
+      const primaryStim = await stimulus({ label: `${mark} darjah` })
+      const primaryQ = await question({ questionText: 'Soalan Darjah untuk senarai D72 rangsangan.' })
+      await group([primaryStim], [primaryQ])
+      await setLevel(primaryQ, await darjah())
+      const pkskStim = await stimulus({ label: `${mark} pksk` })
+      const pkskQ = await question({ questionText: 'Soalan PKSK untuk senarai D72 rangsangan.' })
+      await group([pkskStim], [pkskQ])
+      await t.db.query(`insert into question_tags (question_id, kind, code) values ($1::bigint, 'pksk_domain', 'ujian')`, [pkskQ])
+      const unused = await stimulus({ label: `${mark} belum guna` })
+      // a stimulus linked straight to a Darjah question version (not through a group) is hidden as well
+      const linked = await stimulus({ label: `${mark} pautan darjah` })
+      const linkedQ = await question({ questionText: 'Soalan Darjah dengan pautan terus untuk D72.' })
+      await t.db.query(`insert into question_version_stimuli (question_version_id, stimulus_id, position) select v.id, $2::bigint, 1 from question_versions v where v.question_id = $1 and v.version_no = 1`, [linkedQ, linked])
+      await setLevel(linkedQ, await darjah())
+
+      const found = await listedStimuli(`q=${mark}`)
+      expect([...found].sort()).toEqual([used, unused].sort())
+      expect((await stimuli(`q=${mark}`)).meta.totalItems).toBe(2)
+    })
+
+    it('a group with no member yet is listed under a subject or level filter (it fits any: the first question decides)', async () => {
+      const mark = `Kosong${tagTag}`
+      const empty = await group([await stimulus({ label: `${mark} kumpulan kosong` })], [])
+      const withMember = await group([await stimulus({ label: `${mark} dengan ahli` })], [await question({ questionText: 'Soalan untuk kumpulan dengan ahli subjek MATH.' })])
+      const other = await group([await stimulus({ label: `${mark} sains` })], [await question({ questionText: 'Soalan untuk kumpulan subjek Sains sahaja.', subjectId: refs.sciId })])
+      expect([...(await listedGroups(`q=${mark}`))].sort()).toEqual([empty.id, withMember.id, other.id].sort())
+      const math = await listedGroups(`q=${mark}&subjectId=${refs.mathId}`)
+      expect([...math].sort()).toEqual([empty.id, withMember.id].sort()) // the empty group stays; the Sains group does not
+      expect(await listedGroups(`q=${mark}&subjectId=${refs.sciId}`).then((x) => [...x].sort())).toEqual([empty.id, other.id].sort())
+      expect([...(await listedGroups(`q=${mark}&educationLevelId=${refs.t4Id}`))].sort()).toEqual([empty.id, withMember.id, other.id].sort())
+      // status: an empty group has no served member, so it is a draft
+      expect(await listedGroups(`q=${mark}&status=draft&subjectId=${refs.mathId}`).then((x) => [...x].sort())).toEqual([empty.id, withMember.id].sort())
+    })
+  })
 })
