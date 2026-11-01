@@ -61,3 +61,4 @@
 | REQ-A-027 (2026-11-02 06:27) | Accepted: ~300 ms debounce on Studio/list search + filters, stale-response drop, BM 429 message honouring Retry-After; merge with/after r1/admin-list-perf | C4 | r1/reqa027-list-throttle | IN-PROGRESS |
 | REQ-C-025 status (2026-11-02 06:27) | Still no merge since BASE-105 (last B1 note 23:56). Team B please start with T10 bf78ca930 and REQ-A-008 29d24be95 (T31). | C lead | — | OPEN (re-alert) |
 | REQ-A-026 / 026b (update 2026-11-02 06:59) | Fixed: {data, meta} read, truncated caption, ApiClient test; contains route cc42468ee | C3 | r1/reqa018-paper-servability-fe @ 3942f7609 | DELIVERED (READY-FOR-REVIEW; merge after route) |
+| REQ-A-027 (update 2026-11-02 07:00) | Done: 300 ms debounce on search/filters, BM 429 message honouring Retry-After | C4 | r1/reqa027-list-throttle @ 6432067a7 | DELIVERED (READY-FOR-REVIEW; with/after r1/admin-list-perf) |
