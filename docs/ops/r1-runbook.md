@@ -519,6 +519,8 @@ Real output from the testcontainer database seeded the way the specs seed it (`b
 
 On UAT the numbers differ (about 406,396 legacy questions); only the shape is expected to match: the identity holds, (3) is 0, and `servable` after is not below the `servable` recorded before. The UAT before and after counts themselves are ops evidence; this note only fixes the queries.
 
+Pinned by `apps/api/test/questions/legacy-no-regression-select.spec.ts` ("R1-11.4: the runbook no-regression SELECTs (3.6b) on a seeded bank", 3 tests, the SELECT text copied from here) on `r1/partial-acs-a3` @ 1e79f1f8. **Note on SELECT 2:** it reads the import issues of the LIVE version, so "expected = the number the loader report listed" holds only before any edit. An admin edit published without the missing image leaves the question inactive and unserved (SELECT 3 stays 0, `servable` unchanged) but moves it out of SELECT 2.
+
 ### 3.7 Before go-live: stimulus groups in published papers (GROUP_SPLIT, GROUP_NOT_CONSECUTIVE)
 
 B4 and ops run this on UAT before go-live (read-only). The builder's check refuses a group that is split or broken up, but a paper that reached `published` by another route (a seed, a migration, an older builder) is not re-checked by it. Any row means **that paper is re-composed in the builder before go-live** (open it, put the group back as one run in one Bahagian, Terbit again). 0 rows is the expected result.
@@ -635,6 +637,8 @@ SELECT DISTINCT l.code FROM curriculum_nodes n JOIN education_levels l ON l.id =
 ```
 
 Real output from the testcontainer database seeded the way the specs seed it (identity, curriculum and questions seeds, which load the DSKP tree; 2026-11-01, copied as printed): `nodes` per subject ADDMATH 257, BI 122, BM 162, KNP 281, LNR 168, MATH 188, PHY 281, PI 309, PM 198, PSV 216, SCI 306, SEJ 230, TI 126; the second SELECT returned no rows; total `nodes 2844`; levels `T4`, `T5`. UAT must show the same shape after `dskp:load`; the UAT run itself is ops evidence.
+
+Pinned by `apps/api/test/curriculum/nodes-per-in-scope-subject.spec.ts` ("R1-12.6: curriculum nodes per in-scope subject (runbook section 4 SELECTs)", 4 tests, the SELECT text copied from here; identity and curriculum seeds) on `r1/partial-acs-a3` @ 1e79f1f8. The UAT run after `dskp:load` is still owed.
 
 Rollback is by deleting what the load added, only before any question is tagged (nodes are referenced `ON DELETE RESTRICT`); after tagging, restore the backup. Steps are in [dskp-loader.md](dskp-loader.md).
 
