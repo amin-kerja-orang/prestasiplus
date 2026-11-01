@@ -403,4 +403,40 @@ describe('R1 delete-served-guard', () => {
       expect((await pupil.get(quietImg.url)).status, 'a withdrawn paper nobody sat').toBe(404)
     })
   })
+
+  describe('6. a delete that a foreign key refuses is a 409 in_use, never a 500', () => {
+    it('a question in a teacher\'s set (question_set_items, ON DELETE RESTRICT): admin, bulk and Guru', async () => {
+      const inSet = await approved()
+      const [header] = await q(`insert into question_sets (teacher_id, title, legacy_source, legacy_id, needs_rebuild) values ($1, 'Set ujian FK', 'cloud', $2, true) returning id::text id`, [guru.userId, `fk-${String(counter++)}`])
+      await q(`insert into question_set_items (question_set_id, position, question_id, question_version_no) values ($1::bigint, 1, $2::bigint, 1)`, [header!.id, inSet])
+      const res = await admin.del(`/api/questions/${inSet}`)
+      expect(res.status, JSON.stringify(res.body)).toBe(409)
+      expect(res.body.error).toMatchObject({ code: 'CONFLICT', message: QUESTION_MESSAGES.deleteInUse, details: { reason: 'in_use' } })
+      expect(await count(inSet)).toBe(1)
+
+      const inSet2 = await approved()
+      await q(`insert into question_set_items (question_set_id, position, question_id, question_version_no) values ($1::bigint, 3, $2::bigint, 1)`, [header!.id, inSet2])
+
+      const bulk = await admin.post('/api/questions/bulk-action', { action: 'delete', ids: [inSet, inSet2] })
+      expect(bulk.status, JSON.stringify(bulk.body)).toBe(200)
+      expect(bulk.body.data.affected).toBe(0)
+      expect(bulk.body.data.failed).toEqual([
+        { id: inSet, code: 'CONFLICT', message: QUESTION_MESSAGES.deleteInUse, fields: {} },
+        { id: inSet2, code: 'CONFLICT', message: QUESTION_MESSAGES.deleteInUse, fields: {} },
+      ])
+
+      // a Guru-owned one in a set: the same 409 on the Guru route
+      const own = await guruApproved()
+      await q(`insert into question_set_items (question_set_id, position, question_id, question_version_no) values ($1::bigint, 2, $2::bigint, 1)`, [header!.id, own])
+      const g = await guru.del(`/api/guru/questions/${own}`)
+      expect(g.status, JSON.stringify(g.body)).toBe(409)
+      expect(g.body.error.details.reason).toBe('in_use')
+      expect(await count(own)).toBe(1)
+
+      // the 409 rolled everything back: once the set no longer uses it, the delete goes through
+      await q(`delete from question_set_items where question_id = $1::bigint`, [inSet])
+      expect((await admin.del(`/api/questions/${inSet}`)).status).toBe(200)
+      expect(await count(inSet)).toBe(0)
+    })
+  })
 })

@@ -103510,7 +103510,7 @@
             }
           },
           "409": {
-            "description": "CONFLICT: a paper that is still held (Terbit, or withdrawn with sittings) places the question; nothing is deleted (details.reason: served or pinned).",
+            "description": "CONFLICT: a paper that is still held (Terbit, or withdrawn with sittings) places the question; nothing is deleted (details.reason: served or pinned); also 409 details.reason in_use when a set, remedial test or battle still uses it.",
             "content": {
               "application/json": {
                 "schema": {
@@ -104163,7 +104163,7 @@
             }
           },
           "409": {
-            "description": "CONFLICT: a paper that is still held (Terbit, or withdrawn with sittings) places the question; nothing is deleted (details.reason: served or pinned).",
+            "description": "CONFLICT: a paper that is still held (Terbit, or withdrawn with sittings) places the question; nothing is deleted (details.reason: served or pinned); also 409 details.reason in_use when a set, remedial test or battle still uses it.",
             "content": {
               "application/json": {
                 "schema": {

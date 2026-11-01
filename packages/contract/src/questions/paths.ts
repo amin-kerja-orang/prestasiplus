@@ -98,7 +98,7 @@ const unauthorized = err('UNAUTHORIZED: no valid session.')
 const forbidden = err('FORBIDDEN, or CSRF_INVALID when X-CSRF-Token is missing or wrong.')
 const notFound = err('NOT_FOUND: unknown id (for Guru routes also another teacher\'s question; ids cannot be probed).')
 const conflict = err('CONFLICT: the count of the filter is not `expectedCount` any more (details: expected, actual); nothing was applied.')
-const deleteRefused = err('CONFLICT: a paper that is still held (Terbit, or withdrawn with sittings) places the question; nothing is deleted (details.reason: served or pinned).')
+const deleteRefused = err('CONFLICT: a paper that is still held (Terbit, or withdrawn with sittings) places the question; nothing is deleted (details.reason: served or pinned); also 409 details.reason in_use when a set, remedial test or battle still uses it.')
 const invalid = err('VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages), `message` = first message plus the count of the others.')
 
 const StructuredListEnvelope = z.object({

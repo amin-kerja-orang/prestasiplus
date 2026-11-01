@@ -15,7 +15,7 @@ import { OverviewCache } from './serving/overview-cache'
 import { CurriculumRepository } from '../curriculum'
 import { FilesService } from '../files'
 import { UsersRepository } from '../users'
-import { bulkFailureOf, notFoundFailure, questionNotFound, transitionConflict, type BulkFailure } from './errors'
+import { bulkFailureOf, isForeignKeyViolation, notFoundFailure, questionNotFound, transitionConflict, type BulkFailure } from './errors'
 import { gradeQuestion } from './grading'
 import {
   difficultyOf,
@@ -340,7 +340,13 @@ export class QuestionsService {
       const block = await this.repo.deletionBlock(id)
       if (block === undefined) return false
       if (block !== null) throw ApiError.of('CONFLICT', { message: QUESTION_MESSAGES.deleteRefused, details: { reason: block } })
-      return this.repo.remove(id)
+      try {
+        return await this.repo.remove(id)
+      } catch (e) {
+        // A teacher's set, a remedial test or a battle still uses it (ON DELETE RESTRICT): refuse, never a 500.
+        if (isForeignKeyViolation(e)) throw ApiError.of('CONFLICT', { message: QUESTION_MESSAGES.deleteInUse, details: { reason: 'in_use' } })
+        throw e
+      }
     }, TX)
   }
 
