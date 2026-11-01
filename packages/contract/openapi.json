@@ -103081,7 +103081,7 @@
           "questions"
         ],
         "summary": "Apply one lifecycle action to many questions",
-        "description": "Unknown ids are skipped silently; duplicates count once. Flash: \"<n> soalan berjaya dikemaskini.\" Transition rules and \"only Admin Pusat publishes\" belong to BE-10; forbidden transitions and their error are BE-10 to define. `approved` runs the merged approve gate (ADR-0027: tag, keys, rights not \"belum jelas\", duplicates, DSKP-complete for an SPM-bound question) per id, the same as `POST /questions/{id}/status`: a refused id is a `failed[]` entry (VALIDATION_ERROR with the gate `fields`), the others are applied. `POST /questions` with `status: approved` runs the same gate (422, nothing stored).",
+        "description": "Unknown ids are skipped silently; duplicates count once. Flash: \"<n> soalan berjaya dikemaskini.\" Transition rules and \"only Admin Pusat publishes\" belong to BE-10; forbidden transitions and their error are BE-10 to define. `approved` runs the merged approve gate (ADR-0027: tag, keys, open duplicate, marks, media, AI as last editor, DSKP-complete for an SPM-bound question; no per-question source or rights rule, D99) per id, the same as `POST /questions/{id}/status`: a refused id is a `failed[]` entry (VALIDATION_ERROR with the gate `fields`), the others are applied. `POST /questions` with `status: approved` runs the same gate (422, nothing stored).",
         "parameters": [
           {
             "schema": {
@@ -105905,7 +105905,7 @@
           "questions"
         ],
         "summary": "Check a gate without changing the question",
-        "description": "`gate=approve` (default) is the merged approve gate (\"Terbitkan\"): marks, one key per MCQ, a key for every other mode, images resolved, unit, SP and TP chosen, copyright, no open duplicate; and for an SPM-bound question (a subject of the SPM catalogue at Tingkatan 4 or 5) a cognitive level on every leaf (\"Bahagian (b) belum ada aras pemikiran.\") and the kertas. `gate=submit` is the draft-to-review gate. Legacy questions already approved are never re-checked (D80 DEC-2): the gate runs only on a new approval.",
+        "description": "`gate=approve` (default) is the merged approve gate (\"Terbitkan\"): marks, one key per MCQ, a key for every other mode, images resolved, unit, SP and TP chosen, no open duplicate (no per-question source or rights rule: V2 asks for them once, at the intake batch, D99); and for an SPM-bound question (a subject of the SPM catalogue at Tingkatan 4 or 5) a cognitive level on every leaf (\"Bahagian (b) belum ada aras pemikiran.\") and the kertas. `gate=submit` is the draft-to-review gate. Legacy questions already approved are never re-checked (D80 DEC-2): the gate runs only on a new approval.",
         "parameters": [
           {
             "schema": {

@@ -21,7 +21,7 @@ function flashOf(res: { body: unknown }): unknown {
 }
 
 /** Subject, level and curriculum tag of a seeded published question, to clone into a taggable body. */
-async function seededTag(ctx: ScenarioContext, admin: HttpClient): Promise<{ subjectId: string; educationLevelId: string; tag: Json }> {
+async function seededTag(ctx: ScenarioContext, admin: HttpClient): Promise<{ subjectId: string; educationLevelId: string; tag: Json; chapterId: string | null }> {
   const list = await admin.request('GET', '/questions?status=approved&pageSize=5')
   ctx.expectStatus(list, 200)
   const id = String(listOf(list)[0]?.id)
@@ -30,7 +30,12 @@ async function seededTag(ctx: ScenarioContext, admin: HttpClient): Promise<{ sub
   const d = dataOf(detail)
   const tag = d.tag as Json | undefined
   ctx.check(tag !== undefined && tag.unitId != null, 'a seeded published question has no curriculum tag in its detail')
-  return { subjectId: String(d.subjectId), educationLevelId: String(d.educationLevelId), tag: tag ?? {} }
+  // A bab of the subject and level: the bulk Semakan step asks for one (submit gate, H-A18) and a seeded question may have none.
+  const treeRes = await admin.request('GET', `/admin/curriculum?subjectId=${String(d.subjectId)}&educationLevelId=${String(d.educationLevelId)}`)
+  ctx.expectStatus(treeRes, 200)
+  const chapters = (dataOf(treeRes).chapters as Json[] | undefined) ?? []
+  ctx.check(chapters.length > 0, 'the seeded subject and level have no chapter')
+  return { subjectId: String(d.subjectId), educationLevelId: String(d.educationLevelId), tag: tag ?? {}, chapterId: chapters[0]?.id == null ? null : String(chapters[0].id) }
 }
 
 /**
@@ -88,8 +93,8 @@ export const questionsScenarios: Scenario[] = [
       const base = await seededTag(ctx, admin)
       const tag = nextTag('q')
       const created = await admin.request('POST', '/questions', {
-        // Tagged, because approving a question runs the publish gate (unit, SP, TP) since R1-B01.
-        body: mcq(tag, { subjectId: base.subjectId, educationLevelId: base.educationLevelId, tag: base.tag, ...DSKP }),
+        // Tagged, because approving a question runs the publish gate (unit, SP, TP) since R1-B01; with a bab, because the bulk route's Semakan step runs the submit gate (H-A18).
+        body: mcq(tag, { subjectId: base.subjectId, educationLevelId: base.educationLevelId, tag: base.tag, curriculumChapterId: base.chapterId, ...DSKP }),
       })
       ctx.expectStatus(created, 201)
       ctx.check(flashOf(created) === FLASH.added, `create flash was ${String(flashOf(created))}`)

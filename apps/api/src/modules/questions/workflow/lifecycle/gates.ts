@@ -20,11 +20,9 @@ export const GATE_MESSAGES = {
   educationLevelId: 'Sila pilih tahap pendidikan.',
   chapterId: 'Sila pilih bab.',
   duplicate: 'Soalan ini ditandakan pendua. Selesaikan atau tandakan "Bukan pendua".',
-  source: 'Sila nyatakan sumber soalan.',
   reviewerAi: 'Penyemak tidak boleh perkhidmatan AI.',
   marksTotal: 'Jumlah markah soalan tidak sama dengan jumlah markah bahagian.',
   media: 'Rujukan stimulus atau gambar rajah belum dipadankan dengan fail yang dimuat naik.',
-  rights: 'Sila isi pengisytiharan hak cipta (bukan "belum jelas").',
 } as const
 
 export const GATE_SUMMARY: Record<GateName, string> = {
@@ -41,7 +39,6 @@ export function submitGate(d: QuestionGateData): GateFields {
   if (d.educationLevelId === null) f.educationLevelId = GATE_MESSAGES.educationLevelId
   if (d.chapterId === null) f.chapterId = GATE_MESSAGES.chapterId
   if (d.hasOpenDuplicateFlag) f.duplicate = GATE_MESSAGES.duplicate // duplicate resolved
-  if (!d.hasSourceDeclaration) f.source = GATE_MESSAGES.source // source declaration
   return f
 }
 
@@ -58,12 +55,12 @@ export function approveGate(d: QuestionGateData, reviewerIsAi = false): GateFiel
   return f
 }
 
-/** Approve gate part 2 (formerly the publish gate, merged by ADR-0027): keys, difficulty, DSKP topic, rights, duplicates. */
+/** Approve gate part 2 (formerly the publish gate, merged by ADR-0027): keys, difficulty, DSKP topic, duplicates. D99 (2026-11-01, user): no per-question source or rights rule, as in V2 (source and
+ * rights are declared once, at the intake batch). */
 export function publishGate(d: QuestionGateData): GateFields {
   const f: GateFields = {}
   Object.assign(f, checkKeysGate(d.parts)) // answer key / mark scheme (marks agree with the scheme)
   Object.assign(f, checkTagGate(d)) // difficulty TP, DSKP unit and SP chosen from the curriculum
-  if (d.rightsStatus === null || d.rightsStatus === 'unclear') f.rightsStatus = GATE_MESSAGES.rights // not "belum jelas"
   if (d.hasOpenDuplicateFlag) f.duplicate = GATE_MESSAGES.duplicate // no open duplicate flag
   // R1-B05 (ADR-0031): DSKP complete for a NEW approval of an SPM-bound question: a cognitive level on every leaf, and the kertas.
   Object.assign(f, checkDskpGate({ parts: d.parts, tp: d.tp, unitId: d.unitId, spIds: d.spIds, paperCode: d.paperCode ?? null, spmBound: d.spmBound ?? false }))
