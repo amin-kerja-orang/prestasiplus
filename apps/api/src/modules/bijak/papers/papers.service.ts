@@ -15,7 +15,7 @@ import { toStandard } from '../../exam/blueprints/blueprint-standard'
 import { shortageToWire } from '../../exam/builder/standard'
 import { composeStandardPaper, describeQuestion, effectiveMarks } from './exam-core.adapter'
 import { generateLimit, noBlueprint, paperNotFound, shortage } from './errors'
-import { BijakPapersPorts, type BijakQuestionInfo } from './ports'
+import { BijakPapersPorts, type BijakQuestionInfo, type PinRef, pinKey } from './ports'
 import { PapersRepository, type PaperWithTree, type SubjectRef } from './papers.repository'
 import { generationSeed, mytYear, referencePanels, ruleOf, sectionInstruction, sourceToWire } from './rules'
 import { bijakCodeOf, curriculumCodeOf } from './subject-codes'
@@ -91,7 +91,9 @@ export class PapersService {
     // H-A13: a published paper that places a question the bank no longer serves (archived) cannot start a new sitting
     // (the attempt source answers 403 with a BM line), so it is not offered, like a paper without a code or a section.
     // Lead decision: a pupil who has ANY sitting on it, open or submitted, keeps the card, so the result and Semakan stay reachable.
-    const listed = papers.filter((p) => progress.has(idToString(p.id)) || p.sections.every((s) => s.placements.every((pl) => info.has(idToString(pl.questionId)))))
+    // REQ-B-058: a pinned version that is taken down refuses a new sitting too, so the paper is not offered either (one read for the whole list).
+    const down = await this.takenDownOf(papers)
+    const listed = papers.filter((p) => progress.has(idToString(p.id)) || p.sections.every((s) => s.placements.every((pl) => info.has(idToString(pl.questionId)) && !down.has(pinKey({ questionId: idToString(pl.questionId), versionNo: pl.pinnedVersionNo })))))
     const marked = await this.withPinned(info, listed)
     return listed.map((p) => this.summary(p, subjects, marked, progress))
   }
@@ -299,6 +301,12 @@ export class PapersService {
       for (const id of (await this.ports.questionSource.getMany(ids.slice(i, i + SERVABLE_CHUNK))).keys()) ok.add(id)
     }
     return ok
+  }
+
+  private async takenDownOf(papers: readonly PaperWithTree[]): Promise<ReadonlySet<string>> {
+    const pins: PinRef[] = papers.flatMap((p) => p.sections.flatMap((s) => s.placements.map((pl) => ({ questionId: idToString(pl.questionId), versionNo: pl.pinnedVersionNo }))))
+    const takenDown = this.ports.questionSource.takenDownPins
+    return !takenDown || pins.length === 0 ? new Set() : takenDown.call(this.ports.questionSource, pins)
   }
 
   private async infoFor(papers: readonly PaperWithTree[]): Promise<Info> {

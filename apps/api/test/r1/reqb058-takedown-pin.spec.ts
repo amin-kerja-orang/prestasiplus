@@ -19,6 +19,8 @@ describe('REQ-B-058 a taken-down pinned version is not served to new sittings', 
   let t: FullApp
   let admin: FullClient
   let pupil: FullClient
+  /** A pupil with no sitting on the paper: the list hides an unavailable paper from this pupil (a pupil with a sitting keeps the card). */
+  let fresh: FullClient
   let subject: string
   let level: string
   let tag: { unitId: string; spIds: string[]; tp: number }
@@ -70,6 +72,11 @@ describe('REQ-B-058 a taken-down pinned version is not served to new sittings', 
     return json.includes(V1) ? V1 : json.includes(V2) ? V2 : ''
   }
   const kuiz = () => pupil.get(`/api/bijak/kuiz/papers/${paper}`)
+  const listed = async (c: FullClient): Promise<boolean> => {
+    const res = await c.get('/api/bijak/papers')
+    expect(res.status, JSON.stringify(res.body)).toBe(200)
+    return (res.body.data as { id: string }[]).some((p) => p.id === paper)
+  }
   const kuizCheck = () => pupil.post(`/api/bijak/kuiz/papers/${paper}/check`, { itemId: target, optionId: 'B' })
 
   beforeAll(async () => {
@@ -77,6 +84,7 @@ describe('REQ-B-058 a taken-down pinned version is not served to new sittings', 
     await serveSeededBlueprints(t.db)
     admin = await loginFull(t, ACCOUNTS.admin)
     pupil = await loginFull(t, ACCOUNTS.student)
+    fresh = await loginFull(t, 'pelajar2@demo.test')
     subject = await one(`select id::text id from subjects where code = 'MATH'`)
     level = await one(`select id::text id from education_levels where code = 'T4'`)
     const unit = await one(`select id::text id from curriculum_nodes where kind = 'unit' and subject_id = ${subject} and education_level_id = ${level} order by sort_order, id limit 1`)
@@ -137,6 +145,7 @@ describe('REQ-B-058 a taken-down pinned version is not served to new sittings', 
     expect(page.status, JSON.stringify(page.body)).toBe(200)
     expect(JSON.stringify(page.body)).toContain(V1)
     expect((await kuizCheck()).status).toBe(200)
+    expect(await listed(fresh), 'a superseded pin is listed').toBe(true)
   })
 
   /*
@@ -163,6 +172,11 @@ describe('REQ-B-058 a taken-down pinned version is not served to new sittings', 
     }
   })
 
+  it('the paper list does not offer the taken-down paper to a pupil with no sitting on it; a pupil with a sitting keeps the card', async () => {
+    expect(await listed(fresh)).toBe(false)
+    expect(await listed(pupil)).toBe(true)
+  })
+
   it('(d) the sitting started before the takedown keeps serving version 1, and "Mula" without restart resumes it', async () => {
     expect(await stemOf(running)).toBe(V1)
     const again = await pupil.post('/api/bijak/attempts', { paperId: paper, mode: 'exam' })
@@ -180,11 +194,13 @@ describe('REQ-B-058 a taken-down pinned version is not served to new sittings', 
       expect(k.body.error.message).toBe(REFUSED)
     }
     expect(await stemOf(running)).toBe(V1) // the running sitting is untouched
+    expect(await listed(fresh)).toBe(false)
   })
 
   it('a pin with no archive reason recorded is refused too (not a supersede)', async () => {
     await q(`update question_versions set archive_reason = null where question_id = ${target} and version_no = 1`)
     expect((await newSitting()).status).toBe(403)
     expect((await kuiz()).status).toBe(403)
+    expect(await listed(fresh)).toBe(false)
   })
 })

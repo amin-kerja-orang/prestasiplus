@@ -9,7 +9,7 @@ import type {
   BijakQuestionBundle,
   BijakQuestionSource as AttemptQuestionSource,
 } from '../attempts/ports'
-import type { BijakQuestionInfo } from '../papers/ports'
+import { type BijakQuestionInfo, type PinRef, pinKey } from '../papers/ports'
 import { bijakCodeOf } from '../papers/subject-codes'
 import {
   type Be09QuestionBundle,
@@ -82,9 +82,9 @@ export class Be09BijakQuestionSource implements AttemptQuestionSource {
    * `superseded`, or not approved). The shared rule is `pinServableForNewSitting`. A pin whose version row does not exist is left to the
    * bundle load, which already fails closed. Used at start only; a running sitting keeps its pin (`loadQuestions` with pins).
    */
-  async takenDownPins(pins: ReadonlyMap<string, number>): Promise<ReadonlySet<string>> {
-    const records = await this.questions.getVersions([...pins].map(([questionId, versionNo]) => ({ questionId, versionNo })))
-    return new Set(records.filter((r) => !pinServableForNewSitting(r.version)).map((r) => r.id))
+  async takenDownPins(pins: readonly PinRef[]): Promise<ReadonlySet<string>> {
+    const records = await this.questions.getVersions(pins)
+    return new Set(records.filter((r) => !pinServableForNewSitting(r.version)).map((r) => pinKey({ questionId: r.id, versionNo: r.version.versionNo })))
   }
 
   /**

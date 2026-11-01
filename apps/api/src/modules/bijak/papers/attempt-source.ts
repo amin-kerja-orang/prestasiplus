@@ -93,7 +93,7 @@ export class BijakPapersAttemptSource implements BijakPaperSource {
     // REQ-B-058: the check above only looks at the LIVE version. A NEW sitting is also refused when the version a placement PINNED has been
     // taken down (archived "withdrawn" / "source_takedown") while a later version is live; a `superseded` pin is still served. A sitting
     // already open is not affected: `start` resumes it on `not_eligible` and its pinned version is read as before.
-    const pins = new Map(paper.sections.flatMap((s) => s.placements.map((p) => [idToString(p.questionId), p.pinnedVersionNo] as const)))
+    const pins = paper.sections.flatMap((s) => s.placements.map((p) => ({ questionId: idToString(p.questionId), versionNo: p.pinnedVersionNo })))
     if (this.ports.questionSource.takenDownPins && (await this.ports.questionSource.takenDownPins(pins)).size > 0) return { ok: false, reason: 'not_eligible' }
 
     const subject = (await this.repo.subjectsByIds([paper.subjectId])).get(paper.subjectId.toString())

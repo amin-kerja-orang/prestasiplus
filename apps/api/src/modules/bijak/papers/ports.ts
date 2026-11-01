@@ -24,6 +24,13 @@ import { Injectable } from '@nestjs/common'
 
 import type { BijakPoolSource } from './pool-source'
 
+export interface PinRef {
+  questionId: string
+  versionNo: number
+}
+/** Key of a pin in the set `takenDownPins` returns. */
+export const pinKey = (r: PinRef): string => `${r.questionId}@${String(r.versionNo)}`
+
 export interface BijakQuestionInfo {
   /** Decimal-string question id. */
   id: string
@@ -59,11 +66,11 @@ export interface BijakQuestionSource {
    */
   getPinned?(ids: readonly string[]): Promise<ReadonlyMap<string, BijakQuestionInfo>>
   /**
-   * REQ-B-058: the question ids whose PINNED version (the map is question id -> pinned version number) is taken down (archived with a reason
-   * other than `superseded`, or not approved): a NEW sitting of a paper that places one is refused. A running sitting does not ask. Optional:
-   * a source without it refuses nothing here.
+   * REQ-B-058: of these (question, pinned version) pairs, the `pinKey`s of those taken down (archived with a reason other than
+   * `superseded`, or not approved): a NEW sitting of a paper that places one is refused and the list does not offer it. A running sitting
+   * does not ask. One read per call. Optional: a source without it refuses nothing here.
    */
-  takenDownPins?(pins: ReadonlyMap<string, number>): Promise<ReadonlySet<string>>
+  takenDownPins?(pins: readonly PinRef[]): Promise<ReadonlySet<string>>
   /** The eligible pool a blueprint section draws from (`blueprint_sections.pool`). */
   pool(pool: string, scope: BijakPoolScope): Promise<BijakPool>
 }

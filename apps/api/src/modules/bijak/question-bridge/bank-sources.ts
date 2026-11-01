@@ -6,6 +6,7 @@ import type {
   BijakQuestionInfo,
   BijakQuestionSource as PaperQuestionSource,
   BijakServedSource,
+  PinRef,
 } from '../papers/ports'
 
 /**
@@ -32,9 +33,9 @@ export class BankPaperQuestionSource implements PaperQuestionSource {
   }
 
   /** REQ-B-058: pinned versions that are taken down; a bank without it refuses nothing. */
-  takenDownPins(pins: ReadonlyMap<string, number>): Promise<ReadonlySet<string>> {
+  takenDownPins(pins: readonly PinRef[]): Promise<ReadonlySet<string>> {
     const down = this.bank.takenDownPins
-    return pins.size === 0 || !down ? Promise.resolve(new Set()) : down.call(this.bank, pins)
+    return pins.length === 0 || !down ? Promise.resolve(new Set()) : down.call(this.bank, pins)
   }
 
   pool(): Promise<BijakPool> {
