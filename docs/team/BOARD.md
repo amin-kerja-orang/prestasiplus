@@ -505,7 +505,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 | T44 | r1/t44-blueprint-fields | 072d8f4b | — | merged at BASE-67 as 77984abc. The newer tip 072d8f4b shows a 19-file delta against base; A3 is asked whether it is WIP (marked IN-PROGRESS until it answers) |
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 15:01 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 15:07 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -517,7 +517,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha24-release-input | 36d6756bc | docs, auto-refreshed by A3 H-A27 |
 | r1/ha26-team-a-state | 5f0c6252c | docs, auto-refreshed by A3 H-A27 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
-| r1/intake-reqs-a2 | b70dc9571 | IN-PROGRESS: B2 Minors pushed, A2 running evidence (READY ~15:20) |
+| r1/intake-reqs-a2 | b70dc9571 | READY (A2, BASE-102): B-034/035 + B2 Minors; intake-workflow 135/135; B2 delta re-check |
 | r1/overview-mcq-shape-once | b0f1e9b2c | READY (A4): factsOf jana:false; cold overview 15.3→9.3 s (total 34.2→9.3 s); merges after req-b-033; B2 |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
 | r1/req-b-022a-a4 | e81f64d56 | READY (A4), B3 + DevOps (new env) |
@@ -528,14 +528,14 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/reqb032-pinned-rule | 77c83c5e6 | WIP, paused (A3) |
 | r1/reqc021-followup | 8210ac5bd | READY (A1a), fixes BASE-102 red draw-bounded; merge early |
 | r1/seed-dangling-placements | 7285d961c | READY (A1b, spec only), B2 |
-| r1/t04-minors | d0740a32a | IN-PROGRESS: tile-sum assertion pushed, A2 running evidence |
+| r1/t04-minors | d0740a32a | READY (A2, BASE-102): B-044 + tile-sum assertion; 108 + 1 skip; B2 delta re-check |
 | r1/t31-builder-wire | 6a27c8dd3 | READY (A3); needs C1 REQ-A-008 rebased on BASE-102 |
 | r1/t34-l1-residual | e4bb72eb6 | WIP for team C (REQ-A-013); do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | WIP for team C (REQ-A-013); do not merge |
 | r1/t37-r1-runbook | f4bb197c2 | docs, auto-refreshed by A3 H-A27 |
-| r1/t38-selfmark-reward | e8af872f5 | Approve w/ Minors → A1b fixing + BASE merge |
+| r1/t38-selfmark-reward | 067d4bc2c | Approve w/ Minors → A1b fixing + BASE merge |
 | r1/t39-k1-evidence | 1a26f7a60 | check: A3 to confirm state |
-| r1/t40-attempts-acs | 985e2af0b | Approve w/ Minors, after T38 → A1b |
+| r1/t40-attempts-acs | dae7d4fee | Approve w/ Minors, after T38 → A1b |
 | r1/t43-chain-publish | 5ce5894f1 | READY (A3, on T31) |
 | r1/t43b-publish-acs | 8841a31bd | Approve w/ Minors → A3 fixing (after T48) |
 | r1/t45-builder-acs | 69d16a7f9 | READY (A1b, on T48), B2 |
