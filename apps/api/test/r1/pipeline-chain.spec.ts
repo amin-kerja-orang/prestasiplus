@@ -683,6 +683,15 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       }
     })
 
+    it('A11: the paper quiz view of the Terbit paper lists its questions page by page for the pupil (PIPE A11)', async () => {
+      const res = await pupil.get(`/api/bijak/kuiz/papers/${fx.paper}`)
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      const items = res.body.data.items as { id: string }[]
+      expect(items.length).toBeGreaterThan(0)
+      expect(items.length).toBeLessThanOrEqual(6 * 2) // MCQ and parts of the six placed questions
+      expect(JSON.stringify(res.body)).not.toMatch(/"(correct|correctOptionId|scheme)"/)
+    })
+
     it('the pupil\'s Simulasi Kuiz can draw every admin-approved solo MCQ (Databank and Kuiz show an approved MCQ, R1-20.4)', async () => {
       const res = await pupil.post('/api/bijak/kuiz/sessions', { subject: 'MATH', count: 40 })
       expect(res.status, JSON.stringify(res.body)).toBe(201)
@@ -771,8 +780,25 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
 
   // R1-20.3 negatives.
   describe('7. negatives: the T33 gate, a draft is invisible, a withdrawn paper', () => {
-    // T33 (branch r1/t33-leaf-tags @ 276a6622, not in this base): the DSKP approve gate for SPM T4/T5.
-    it.todo('a question without a DSKP tag cannot be approved (AC-R1-20.3, T33 merged approve gate, POST /api/questions/bulk-action approved -> 422)')
+    // R1-20.3 / PIPE AC-18.1 (T33 gate, merged at BASE-60): approving an SPM-bound question needs a cognitive level per leaf and the kertas.
+    it('a question without the DSKP-complete data cannot be approved: it stays in review with the BM reasons, and is not served anywhere', async () => {
+      const incomplete = await createQuestion(mcqBody('Berapakah 10 tolak 4?', { cognitiveLevel: undefined, kertas: undefined }))
+      const toReview = await admin.post('/api/questions/bulk-action', { action: 'review', ids: [incomplete] })
+      expect(toReview.status, JSON.stringify(toReview.body)).toBe(200)
+      const res = await admin.post('/api/questions/bulk-action', { action: 'approved', ids: [incomplete] })
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(res.body.data.affected).toBe(0)
+      expect(res.body.data.failed).toHaveLength(1)
+      expect(res.body.data.failed[0]).toMatchObject({
+        id: incomplete,
+        code: 'VALIDATION_ERROR',
+        fields: { 'parts.1.cognitiveLevel': 'Bahagian (1) belum ada aras pemikiran.', kertas: 'Sila pilih kertas untuk soalan SPM.' },
+      })
+      expect((await db.query<{ status: string }>(`select v.status from question_versions v join questions q on q.id = v.question_id and q.latest_version_no = v.version_no where q.id = $1`, [incomplete]))[0]?.status).toBe('review')
+      // not in the pupil's Kuiz either
+      const kuiz = await pupil.post('/api/bijak/kuiz/sessions', { subject: 'MATH', count: 40 })
+      expect((kuiz.body.data.items as { id: string }[]).map((i) => i.id.split(':')[0])).not.toContain(incomplete)
+    })
 
     it('a draft paper is not visible to a pupil; a withdrawn paper is gone for the pupil and cannot be retried, but the past attempt and its result stay (R1-20.3)', async () => {
       const draft = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 3 })
