@@ -48,8 +48,6 @@ function gateInputOf(row: ImportedQuestionInput, status: QuestionWorkflowStatus)
     unitId: null,
     spIds: [],
     tp: null,
-    rightsStatus: null,
-    hasSourceDeclaration: true,
     unconfirmedLowConfidenceFields: [],
     hasOpenDuplicateFlag: false,
     mediaResolved: true,

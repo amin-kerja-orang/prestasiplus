@@ -530,6 +530,10 @@ export class IntakeReviewService {
         sourceFileId: file === null || file === undefined ? null : idToString(file.fileId),
         aiRunId: row.aiRunId === null ? null : idToString(row.aiRunId),
         aiModel: row.run?.model ?? null,
+        // R1-H-A18: the question total the item declared; the approve gate compares it with the sum of the leaf marks.
+        // Only a question with NO parts declares a total: for a parted question the intake total is 0 (its marks are the parts'), and the
+        // gate would compare that 0 with the sum of the parts.
+        declaredMarks: q.parts.length === 0 && Number.isInteger(q.marks) && q.marks > 0 && q.marks <= 999 ? q.marks : null,
         paperCode: paper?.paperCode && /\/[0-9]\s*$/.test(paper.paperCode) ? paper.paperCode : null,
       })
     } catch (err) {

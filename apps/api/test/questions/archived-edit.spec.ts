@@ -25,6 +25,7 @@ describe('REQ-B-052: an archived question pinned on a published paper cannot be 
   let subject: string
   let level: string
   let tag: { unitId: string; spIds: string[]; tp: number }
+  let chapter: string
 
   const q = (sql: string, params: unknown[] = []) => t.db.query<Record<string, unknown>>(sql, params)
   const one = async (sql: string) => String((await q(sql))[0]!.id)
@@ -46,6 +47,7 @@ describe('REQ-B-052: an archived question pinned on a published paper cannot be 
     correctAnswer: 1,
     kertas: '2',
     cognitiveLevel: 'mengaplikasi',
+    curriculumChapterId: chapter,
     tag,
     ...over,
   })
@@ -114,6 +116,7 @@ describe('REQ-B-052: an archived question pinned on a published paper cannot be 
     const unit = await one(`select id::text id from curriculum_nodes where kind = 'unit' and subject_id = ${subject} and education_level_id = ${level} order by sort_order, id limit 1`)
     const sp = await one(`select id::text id from curriculum_nodes where kind = 'sp' and subject_id = ${subject} and education_level_id = ${level} order by sort_order, id limit 1`)
     tag = { unitId: unit, spIds: [sp], tp: 3 }
+    chapter = await one(`select id::text id from chapters where subject_id = ${subject} and education_level_id = ${level} order by id limit 1`)
   })
   afterAll(async () => {
     await t.close()

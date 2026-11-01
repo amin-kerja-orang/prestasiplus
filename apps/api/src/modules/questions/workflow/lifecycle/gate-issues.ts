@@ -17,9 +17,7 @@ const BY_KEY: Readonly<Record<string, { code: string; step: 1 | 2 | 3 | 4 }>> = 
   unitId: { code: 'UNIT_MISSING', step: 4 },
   spIds: { code: 'SP_MISSING', step: 4 },
   tp: { code: 'TP_MISSING', step: 4 },
-  rightsStatus: { code: 'RIGHTS_MISSING', step: 4 },
   duplicate: { code: 'DUPLICATE_OPEN', step: 4 },
-  source: { code: 'SOURCE_MISSING', step: 4 },
   reviewer: { code: 'REVIEWER_IS_AI', step: 4 },
   year: { code: 'LOW_CONFIDENCE', step: 4 },
 }
