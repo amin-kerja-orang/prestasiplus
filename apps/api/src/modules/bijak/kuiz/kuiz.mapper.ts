@@ -9,6 +9,8 @@
 import type { BijakKuizItem } from '@pp/contract'
 import type { QuestionPart } from '@pp/contract'
 
+import { stimulusTableOf } from '../../questions/stimulus-table'
+import type { OutsideStimulus } from '../question-bridge/be09-mapping'
 import type { QuestionRecord, StimulusGroupRecord } from '../../questions/types'
 
 type Leaf = Extract<QuestionPart, { mode: string }>
@@ -140,57 +142,101 @@ export function linkedStimulusIds(record: QuestionRecord): string[] {
   return [...out]
 }
 
-/** The kuiz wire knows passage, table and diagram; the four pictorial kinds of the store read as `diagram` (as before R1-T07). */
-const KUIZ_KIND: Record<StimulusGroupRecord['stimuli'][number]['kind'], KuizStimulus['kind']> = {
-  passage: 'passage',
-  table: 'table',
-  diagram: 'diagram',
-  image: 'diagram',
-  map: 'diagram',
-  infographic: 'diagram',
-  graph: 'diagram',
+/**
+ * A stimulus linked straight to a version or leaf (outside its group), as THE one reader gives it (`outsideStimuliOf`):
+ * the same type the Bijak bridge uses. `sharedBy` = distinct questions linking it; more than one must be a group (D90).
+ */
+export type OwnStimulus = OutsideStimulus & { sharedBy: number }
+
+type StimulusLike = {
+  kind: string
+  label?: string
+  bodyMs?: string | null
+  alt?: string | null
+  caption?: string | null
+  sourceCitation?: string | null
+  tableData?: unknown
+  assetFileId: string | null
+}
+
+const KUIZ_KINDS: ReadonlySet<string> = new Set(['passage', 'table', 'diagram', 'image', 'map', 'infographic', 'graph'])
+
+/**
+ * One stimulus on the kuiz wire, all seven kinds with caption, source and table grid (R1-T07 read model, same table reader
+ * as the Studio and the bridge). Null when the kind is unknown or there is nothing to show (no text, table or picture).
+ */
+export function toKuizStimulus(s: StimulusLike): KuizStimulus | null {
+  if (!KUIZ_KINDS.has(s.kind)) return null
+  const table = s.kind === 'table' ? (stimulusTableOf(s.tableData, s.bodyMs ?? null) ?? null) : null
+  // A table parsed from the body replaces the body text; any other body stays the text.
+  const text = s.bodyMs?.trim() ? s.bodyMs : null
+  const label = s.label ?? ''
+  const body = table && !s.tableData ? null : text
+  if (!body && !table && !s.assetFileId) return null
+  return {
+    kind: s.kind as KuizStimulus['kind'],
+    label,
+    body,
+    imageToken: null,
+    // An unlabelled own picture still gets a text alternative (same line as the bridge, R1E2E-05b).
+    alt: s.alt ?? (!label && s.assetFileId && !body && !table ? 'Gambar untuk soalan ini' : null),
+    caption: s.caption ?? null,
+    source: s.sourceCitation ?? null,
+    table,
+  }
 }
 
 export interface ResolvedStimuli {
   /** Each stimulus with the internal file id of its picture (null when it has none); tokens are filled by `stimuliWithTokens`. */
   entries: Array<{ stimulus: KuizStimulus; file: string | null }>
-  /** False when a linked stimulus has neither a group home nor a picture: its text cannot be shown, so the question cannot be answered. */
+  /** False when a stimulus cannot be shown (unknown, audio, empty, or shared by several questions without being a group): the question cannot be served. */
   complete: boolean
   /** The first `groupCount` entries belong to the question's stimulus group (D90); the rest are linked to the question itself. */
   groupCount: number
 }
 
 /**
- * Stimuli of a question: those of its group (text, tables, pictures), then the pictures linked straight to the version
- * or to a leaf (the stem image included). A linked stimulus that is not a picture and not in the group cannot be shown.
+ * Stimuli of a question: those of its group (any of the seven kinds), then the question's OWN stimuli linked straight to the
+ * version or to a leaf (R1E2E-05b: any kind, link order, with caption, source, table). D90: a stimulus linked to several
+ * questions must be a group, so one that is shared and not grouped makes the question incomplete, as does an unknown, audio
+ * or empty one. Never silently dropped.
  */
 export function resolveStimuli(
   record: QuestionRecord,
   group: StimulusGroupRecord | null,
-  linkedAssets: ReadonlyMap<string, { kind: string; assetFileId: string | null }>,
+  own: ReadonlyMap<string, OwnStimulus>,
 ): ResolvedStimuli {
   const entries: ResolvedStimuli['entries'] = []
   const inGroup = new Set<string>()
   const files = new Set<string>()
+  let complete = true
   for (const s of group?.stimuli ?? []) {
     inGroup.add(s.id)
-    entries.push({ stimulus: { kind: KUIZ_KIND[s.kind], label: s.label, body: s.bodyMs, imageToken: null, alt: s.alt }, file: s.assetFileId })
+    const w = toKuizStimulus(s)
+    if (!w) {
+      complete = false
+      continue
+    }
+    entries.push({ stimulus: w, file: s.assetFileId })
     if (s.assetFileId) files.add(s.assetFileId)
   }
-  let complete = true
+  const groupCount = entries.length
   for (const id of linkedStimulusIds(record)) {
     if (inGroup.has(id)) continue
-    const a = linkedAssets.get(id)
-    if (a?.assetFileId) {
-      if (!files.has(a.assetFileId)) {
-        files.add(a.assetFileId)
-        entries.push({ stimulus: { kind: 'diagram', label: '', body: null, imageToken: null, alt: null }, file: a.assetFileId })
-      }
-    } else {
+    const a = own.get(id)
+    const w = a && a.sharedBy <= 1 ? toKuizStimulus(a) : null
+    if (!a || !w) {
       complete = false
+      continue
     }
+    if (a.assetFileId) {
+      // The same picture twice is shown once, but only when the duplicate has no label of its own (the stem picture of a group).
+      if (files.has(a.assetFileId) && !w.label) continue
+      files.add(a.assetFileId)
+    }
+    entries.push({ stimulus: w, file: a.assetFileId })
   }
-  return { entries, complete, groupCount: group?.stimuli.length ?? 0 }
+  return { entries, complete, groupCount }
 }
 
 /**

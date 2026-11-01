@@ -10,7 +10,9 @@ import {
 } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import type { BijakQuestionSource } from '../../src/modules/bijak/papers'
 import { ACCOUNTS, bootBuilderApp, loginAs, type BuilderTestApp, type Client } from './helpers'
+import { serveSeededBlueprints } from '../support/serve-blueprints'
 
 const Editor = envelopeOf(BijakBuilderEditorSchema)
 const Created = envelopeOf(BijakBuilderPaperCreateResultSchema)
@@ -55,7 +57,14 @@ describe('paper builder wired to the BE-09 question bank', () => {
   let ids: { a: string[]; b: string; c: string[]; draft: string; review: string; kertas1: string; sci: string }
 
   beforeAll(async () => {
-    t = await bootBuilderApp({ realBank: true })
+    // The papers port knows the bank questions here (in the running API the BE-09 bridge does): a paper whose questions the
+    // port cannot return is not startable, so Kertas Pilihan does not offer it (H-A13). The pool is the production BE-09 pool.
+    const known: BijakQuestionSource = {
+      getMany: async (ids) => new Map(ids.map((id) => [id, { id, marks: 1, groupId: null, versionNo: 1 }])),
+      pool: async () => ({ entries: [], groups: new Map() }),
+    }
+    t = await bootBuilderApp({ realBank: true, pool: 'bank', papersSource: known })
+    await serveSeededBlueprints(t.db)
     admin = await loginAs(t, ACCOUNTS.admin)
     student = await loginAs(t, ACCOUNTS.student)
     const one = async (sql: string) => String((await q(sql))[0]!.id)
@@ -131,7 +140,8 @@ describe('paper builder wired to the BE-09 question bank', () => {
     expect(e.questions.find((x) => x.id === ids.draft)).toMatchObject({ status: 'draft', marks: 1 })
     const out = Publish.parse((await admin.post(`/api/admin/papers/${id}/publish`)).body).data
     expect(out.ok).toBe(false)
-    expect(out.errors).toEqual(['Bahagian A: 1 soalan belum Terbit'])
+    // the draft question is also missing from the pool of approved questions: one more line, with its id
+    expect(out.errors).toEqual(['Bahagian A: 1 soalan belum Terbit', LINES.sectionLine('Bahagian A', LINES.ineligible(ids.draft, 'tiada dalam kolam soalan kertas ini'))])
     expect(out.errors).toContain(LINES.sectionLine('Bahagian A', LINES.notPublished(1)))
     expect((await q('select status from papers where id = $1', [id]))[0]?.status).toBe('draft')
 
@@ -139,7 +149,7 @@ describe('paper builder wired to the BE-09 question bank', () => {
     await fill(review, { A: [ids.a[0]!, ids.a[1]!, ids.review], B: [ids.b], C: ids.c })
     const again = Publish.parse((await admin.post(`/api/admin/papers/${review}/publish`)).body).data
     expect(again).toMatchObject({ ok: false })
-    expect(again.errors).toEqual(['Bahagian A: 1 soalan belum Terbit'])
+    expect(again.errors).toEqual(['Bahagian A: 1 soalan belum Terbit', LINES.sectionLine('Bahagian A', LINES.ineligible(ids.review, 'tiada dalam kolam soalan kertas ini'))])
   })
 
   it('a question of another subject is refused with 422 on the PUT', async () => {
@@ -153,7 +163,8 @@ describe('paper builder wired to the BE-09 question bank', () => {
     const res = await fill(id, { A: ids.a, B: [ids.b], C: ids.c })
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     const out = Publish.parse((await admin.post(`/api/admin/papers/${id}/publish`)).body)
-    expect(out.data).toEqual({ ok: true, errors: [] })
+    // (untagged section pools only add notes)
+    expect(out.data).toMatchObject({ ok: true, errors: [] })
 
     const placements = await q(
       `select pl.question_id::text qid, pl.pinned_version_no, pl.marks_override from paper_placements pl

@@ -167,7 +167,14 @@ export type BijakVerificationState = z.infer<typeof BijakVerificationStateSchema
 
 /** `POST .../verify` body. */
 export const BijakVerifyInputSchema = z
-  .strictObject({ note: z.string().trim().max(2000).optional() })
+  .strictObject({
+    note: z
+      .string({ error: BIJAK_STANDARDS_MESSAGES.noteRequired })
+      .trim()
+      .min(1, BIJAK_STANDARDS_MESSAGES.noteRequired)
+      .max(2000)
+      .meta({ description: 'Nota pengesahan (AC-39.2): required, not blank; "Isi nota pengesahan dahulu." as `fields.note` otherwise.' }),
+  })
   .meta({ id: 'BijakVerifyInput' })
 export type BijakVerifyInput = z.infer<typeof BijakVerifyInputSchema>
 
