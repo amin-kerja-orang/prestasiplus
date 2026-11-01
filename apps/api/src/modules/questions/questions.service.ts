@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common'
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common'
 import {
   QUESTION_WORKFLOW_STATUSES,
   isQuestionWorkflowTransitionAllowed,
@@ -11,6 +11,7 @@ import { ApiError } from '../../common/errors/api-error'
 import { CLOCK, type Clock } from '../../db/clock'
 import { idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
+import { OverviewCache } from './serving/overview-cache'
 import { CurriculumRepository } from '../curriculum'
 import { FilesService } from '../files'
 import { UsersRepository } from '../users'
@@ -223,6 +224,8 @@ export class QuestionsService {
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(GroupMembers) private readonly groupMembers: GroupMembers,
     @Inject(ServabilityService) private readonly servability: ServabilityService,
+    /** H-A21: told when a question event changes what pupils are served (marks the servability overview stale). */
+    @Optional() @Inject(OverviewCache) private readonly overview?: OverviewCache,
   ) {}
 
   // --- admin (Admin Pusat) ----------------------------------------------------------------------
@@ -275,7 +278,7 @@ export class QuestionsService {
     }
     const parts = this.checkedParts(input.parts ?? partsFromFlat(flat), input.parts !== undefined)
     const status = input.status ?? 'draft'
-    return this.createFrom(
+    const created = await this.createFrom(
       {
         subjectId: input.subjectId,
         educationLevelId: input.educationLevelId,
@@ -299,6 +302,8 @@ export class QuestionsService {
       actor,
       provenance,
     )
+    if (status === 'approved') this.overview?.invalidate()
+    return created
   }
 
   /**
@@ -319,6 +324,7 @@ export class QuestionsService {
   async remove(id: string, actor: QuestionActor): Promise<void> {
     void actor
     if (!(await this.repo.remove(id))) throw questionNotFound()
+    this.overview?.invalidate()
   }
 
   async bulkAction(action: QuestionBulkAction, ids: readonly string[], actor: QuestionActor): Promise<{ affected: number; ids: string[]; failed: BulkFailure[] }> {
@@ -434,6 +440,8 @@ export class QuestionsService {
         }
       }
     }, TX)
+    // Approve (Terbit), archive (Tarik balik) and the other transitions change what pupils are served (H-A21).
+    this.overview?.invalidate()
     const after = await this.repo.get(id, 'latest')
     if (!after) throw questionNotFound()
     return this.viewOf(after)
@@ -454,10 +462,12 @@ export class QuestionsService {
 
   async deactivate(id: string): Promise<void> {
     if (!(await this.repo.deactivate(id))) throw questionNotFound()
+    this.overview?.invalidate()
   }
 
   async reactivate(id: string): Promise<void> {
     if (!(await this.repo.reactivate(id))) throw questionNotFound()
+    this.overview?.invalidate()
   }
 
   // --- structured (admin reads) -----------------------------------------------------------------

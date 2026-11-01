@@ -96,6 +96,19 @@ describe('AC-04.3 paper-level "where can pupils open it"', () => {
     expect(codes(p, 'simulasi_kuiz')).toEqual([]) // the per-paper quiz needs only a published paper
   })
 
+  it('a placement on an id the bank does not hold is reported question_missing (not not_approved) and keeps the paper closed', async () => {
+    const good = await question(true)
+    const gone = '987654321012' // no such question
+    const id = await paper('published', [good, gone])
+    const r = (await paperSvc.report(id))!
+    expect(r.open).toBe(false)
+    expect(r.attention).toHaveLength(1)
+    expect(r.attention[0]?.questionId).toBe(gone)
+    expect(r.attention[0]?.reasons.map((x) => x.code)).toEqual(['question_missing'])
+    expect(r.attention[0]?.reasons[0]?.message).toBe('Soalan pada kertas ini tiada dalam bank soalan — kertas tidak boleh dimulakan; gantikan atau buang soalan itu.')
+    expect(codes(r, 'simulasi_paper')).toEqual(['bridge_refused'])
+  })
+
   it('re-reads on the next view: publish opens the paper, withdraw closes it, no job in between', async () => {
     const id = await paper('draft', [await question(true)])
     expect((await paperSvc.report(id))!.open).toBe(false)

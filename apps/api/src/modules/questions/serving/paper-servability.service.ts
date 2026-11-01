@@ -26,6 +26,11 @@ export interface PaperAttention {
  * R1-T45 / AC-04.3 (v2-admin-student-pipeline US-04): the paper-level line of "Dilihat murid di". For any paper (draft, ready, published,
  * withdrawn) it says whether pupils can open it and where, and for a paper that is not yet open what stands in the way.
  *
+ * INTENT (reported to the lead): this is the AC-04.3 read ("where pupils open it" at paper level) and is deliberately without a route or
+ * consumer yet. The frontend consumer (the Pembina Kertas paper header / "Dilihat murid di" strip) is pending, and the draft-blockers banner
+ * with it; `ServabilityReadsService` carries the lane and overview reads, this one the single-paper read. When the consumer lands, expose
+ * it through `ServabilityController` (admin) rather than adding a second reader.
+ *
  * Tracking A is not a line: in R1 Tracking A is served from its own sets (`spm_tracking_sets`), not from papers, and the servability
  * contract has six activities (D92: "total" is the number of rows, never a literal).
  */
@@ -71,7 +76,8 @@ export class PaperServabilityService {
     // A placed question the bridge cannot serve. `not_on_published_paper` is about the paper, which is what this report decides.
     const attention: PaperAttention[] = ids.flatMap((id): PaperAttention[] => {
       const r = reports.get(id)
-      if (!r) return [{ questionId: id, reasons: [reason('not_approved', 'simulasi_paper')] }]
+      // The bank returns no report for an id it does not hold (no such question, PKSK or Darjah): a placement on nothing.
+      if (!r) return [{ questionId: id, reasons: [reason('question_missing', 'simulasi_paper')] }]
       const own = r.activities.find((a) => a.activity === 'simulasi_paper')?.reasons.filter((x) => x.code !== 'not_on_published_paper') ?? []
       return own.length > 0 ? [{ questionId: id, reasons: own }] : []
     })

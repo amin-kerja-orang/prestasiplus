@@ -7,6 +7,10 @@ import { SERVABILITY_ACTIVITIES, type ServabilityReport } from '@pp/contract'
  * "Unservable everywhere" is read on the report of the question AFTER it became live. One reason is not a defect of the question:
  * `not_on_published_paper` (Simulasi): placing the question on a paper is the step after Terbitkan, so a question the Bijak bridge would
  * serve once placed counts as servable there. Every other reason, on every activity, makes the question unservable everywhere.
+ *
+ * COPY: the refusal sentence below and the field line `"{label}: {reason}"` are [PROPOSED] (not V2). The V2/.cloud heading is "Soalan belum boleh
+ * diterbitkan — sila betulkan isu di bawah." (cloud-student-mechanism.md:343, design S1.3 state 3); the sentence here is kept because it names the
+ * cause (nothing pupil-facing can show the question), and is listed in docs/ops/r1-release-input-team-a.md (T45 row) for sign-off.
  */
 export const APPROVAL_UNSERVABLE_MESSAGE = 'Soalan ini tidak boleh dipaparkan di mana-mana aktiviti murid, jadi belum boleh diterbitkan.'
 
