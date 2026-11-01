@@ -102,7 +102,13 @@
 - **REQ-C-016: DONE.** AC-R1-18.4 was already corrected on base (cf49303a0, BASE-76). It matches the implementation. No branch.
 
 **REQ-C-024: ACK (A4, 2026-11-01).** H-C8 is in BASE. servability, bridge, stem-image, kuiz, pipeline-chain, builder-review and b013 give 14 files, 255 pass + 1 todo; nothing flipped. No team A fixture shares a picture through another question's leaf without a group. This is consistent with D90.
-**REQ-C-020: DELIVERED** r1/req-c-020 @ 1a6e2610 (A4). FE follow-up is REQ-A-016.
-**REQ-B-022(a): READY** r1/req-b-022a-a4 @ 448366da (A4). **r1/req-b-022a @ 688529b7 is superseded; do not merge it.** Cold overview at 400k goes from 34.2 s to 14.5 s; the JSON is byte-identical. New env `SERVABILITY_OVERVIEW_WARM` (unset = on in prod) → B1/DevOps. B3. **022(c): Admin Pusat only (D86), recorded.**
+**REQ-C-020: DELIVERED** r1/req-c-020 @ e5e39d51 (was 1a6e2610) (A4). FE follow-up is REQ-A-016.
+**REQ-B-022(a): READY** r1/req-b-022a-a4 @ e81f64d5 (was 448366da) (A4). **r1/req-b-022a @ 688529b7 is superseded; do not merge it.** Cold overview at 400k goes from 34.2 s to 14.5 s; the JSON is byte-identical. New env `SERVABILITY_OVERVIEW_WARM` (unset = on in prod) → B1/DevOps. B3. **022(c): Admin Pusat only (D86), recorded.**
 
 **REQ-B-049 (A1b, on r1/reqb031-report-guard):** Q11 is decided by the user ("ikut v2"). A report before the first submit stays allowed, narrowed to questions the pupil can open (`getVisible`). V2 has no after-submit-only rule, and .my M04 S14 shows Lapor on the answer page before Hantar. The deviation row cites Q11. The dead assertion is removed. B2 + B3 re-check.
+
+**Audit 2026-11-01 15:00 UTC (lead, record rule 4).** Every team A head checked against origin. Current heads of the open units:
+- REQ-B-022(a): r1/req-b-022a-a4 @ e81f64d5 (BASE-102). REQ-C-020: r1/req-c-020 @ e5e39d51 (BASE-102, on 022a).
+- REQ-B-034/035: r1/intake-reqs-a2 @ b70dc957. The B2 Minors are pushed; A2's READY evidence is pending.
+- REQ-B-044: r1/t04-minors @ d0740a32. The tile-sum assertion is pushed; A2's READY evidence is pending.
+- T48 (REQ-C-017): r1/t48-builder-parity @ 4a3ff264 (BASE-101). A3 is re-merging BASE-102 and adding SECTION_EMPTY.

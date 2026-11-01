@@ -474,3 +474,31 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
   - A3 T48 adds a new hard code SECTION_EMPTY for an empty admin Bahagian, then T43b re-merges it. **The catalogue will be 25 codes: 4 overridable, 21 hard.** Team C should re-check the union after T43b.
 - **T54 tip** r1/t54-perf-400k @ bbf412c6 (A4, BASE-102): all B2 Minors fixed (sum reconciled, P11a/b, F3 labelled as EXPLAIN, F4 regex, harness refuses a non-local DB). Ready for the B1 gate.
 - **REQ-B-031 / REQ-B-046 READY @ 9cd9a1eda (BASE-102)**: B2 Approve w/ Minors, B3 Pass w/ Lows. **Ready for the B1 gate.** Lapor FE (team C) merges right after it (REQ-A-015). REQ-B-049 follow-up is on its own branch r1/reqb049-report-visible; it does not block this merge.
+
+### Head audit 2026-11-01 15:00 UTC (record rule 4). Origin is the source of truth; these heads replace older mentions.
+| Unit | Branch | Head | Base | State |
+|---|---|---|---|---|
+| REQ-B-031/046 | r1/reqb031-report-guard | 9cd9a1eda | 102 | READY, gate-ready |
+| REQ-C-021 follow-up + base red fix | r1/reqc021-followup | 8210ac5bd | 102 | READY |
+| T45 → H-A21 | r1/t45-lanes / r1/ha21-overview-cache | merged BASE-103 / BASE-104 | — | MERGED |
+| REQ-B-022(a) | r1/req-b-022a-a4 | e81f64d5 | 102 | READY |
+| REQ-C-020 | r1/req-c-020 | e5e39d51 | 102 | READY |
+| REQ-B-033 | r1/req-b-033 | f3da2b7d | 102 | READY |
+| T45 Part 1 | r1/t45-servability-acs | 37d24013 | 102 | READY |
+| T45 Part 3 | r1/t45-builder-acs | 69d16a7f9 | T48 | READY |
+| REQ-B-034/035 | r1/intake-reqs-a2 | b70dc957 | 102 | minors pushed, READY pending (A2) |
+| REQ-B-044 | r1/t04-minors | d0740a32 | 102 | minors pushed, READY pending (A2) |
+| REQ-B-025ab + C-019 | r1/t49-served-now | 221c2b287 | 101 | Approve w/ Minors; A2 fixing |
+| T38 → T40 | r1/t38-selfmark-reward / r1/t40-attempts-acs | e8af872f5 / 985e2af0b | 101 | Approve w/ Minors; A1b fixing |
+| REQ-B-025(c) | r1/req-b-025c | a2865119f | 101 | READY |
+| E05B-L1 | r1/e05b-l1-spec | baa42a152 | 101 | READY |
+| T50 | r1/t50-partial-acs | e436e084d | 101 | READY |
+| T52 | r1/t52-examiner-grid | addae6444 | 101 | READY |
+| seed lock spec | r1/seed-dangling-placements | 7285d961c | 102 | READY |
+| T48 | r1/t48-builder-parity | 4a3ff264 | 101 | Approve w/ Minors; A3 fixing |
+| T43b | r1/t43b-publish-acs | 8841a31bd | 101 | Approve w/ Minors; A3 fixing |
+| T31 → T43 | r1/t31-builder-wire / r1/t43-chain-publish | 6a27c8dd / 5ce5894f | 102 | READY (needs C1's REQ-A-008 rebase) |
+| T54 | r1/t54-perf-400k | bbf412c6 | 102 | READY |
+| H-A18 | r1/ha18-gate-facts | d3842c48c | 62 | CHANGES REQUESTED; A2 fixing (D99) |
+| REQ-B-032 | r1/reqb032-pinned-rule | 77c83c5e | — | WIP, paused (A3) |
+| A3 docs | ha17 55562fa6, ha24 625be652, ha26 0427fe7d, t37 runbook f4bb197c | — | 104 | refreshed |
