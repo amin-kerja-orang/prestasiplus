@@ -71,6 +71,16 @@ describe('admin question list: Tahun, Negeri, Kertas, Jenis', () => {
     expect(await listed('kertas=3')).toEqual([])
   })
 
+  it('Kertas: a paper code with trailing whitespace still matches (POSIX class, no backslash in the SQL text)', async () => {
+    await make('f', { kertas: '3' }, null)
+    await t.db.query(`update question_versions set paper_code = 'MATH/3 ' || chr(9) || ' ' where question_id = $1`, [ids.f])
+    expect(await listed('kertas=3')).toEqual(keys('f'))
+    await t.db.query(`update question_versions set paper_code = 'MATH/2   ' where question_id = $1`, [ids.f])
+    expect(await listed('kertas=3')).toEqual([])
+    expect(await listed('kertas=2')).toEqual(keys('b', 'c', 'f'))
+    await t.db.query(`update question_versions set paper_code = null where question_id = $1`, [ids.f])
+  })
+
   it('Jenis: the exam type of the source paper', async () => {
     expect(await listed('jenis=percubaan')).toEqual(keys('a'))
     expect(await listed('jenis=sebenar')).toEqual(keys('b', 'c'))
