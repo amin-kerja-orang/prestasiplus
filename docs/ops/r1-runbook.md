@@ -446,7 +446,7 @@ On UAT the numbers differ (about 406,396 legacy questions); only the shape is ex
 
 ### 3.7 Before go-live: stimulus groups in published papers (GROUP_SPLIT, GROUP_NOT_CONSECUTIVE)
 
-B4 and ops run this on UAT before go-live (read-only). The builder's check refuses a group that is split or broken up, but a paper that reached `published` by another route (a seed, a migration, an older builder) is not re-checked by it [PROPOSED]. Any row means **that paper is re-composed in the builder before go-live** (open it, put the group back as one run in one Bahagian, Terbit again). 0 rows is the expected result.
+B4 and ops run this on UAT before go-live (read-only). The builder's check refuses a group that is split or broken up, but a paper that reached `published` by another route (a seed, a migration, an older builder) is not re-checked by it. Any row means **that paper is re-composed in the builder before go-live** (open it, put the group back as one run in one Bahagian, Terbit again). 0 rows is the expected result.
 
 The logic follows `checkPaperDetailed` in `apps/api/src/modules/exam/builder/paper-check.ts` (BASE-105 `7ea2208c`, lines 192-199 and 222-227; the same file on the T48, T31 and T43 branches) and the schema: a placement is a row of `paper_placements` (`paper_section_id` -> `paper_sections.paper_id` -> `papers`, ordered by `position`), and its group is `questions.group_id` (the link the builder reads as `groupId`). A **run** is a stretch of placements of one group with nothing else between them (`unitsOf`). `GROUP_SPLIT` = the group's placements are in more than one `paper_sections` row of the paper. `GROUP_NOT_CONSECUTIVE` = inside one Bahagian the group has more than one run, so another placement sits between two members. Only `papers.status = 'published'` is read; every `kind` is included.
 
@@ -488,7 +488,7 @@ ROLLBACK;
 
 Output: paper id, paper code, status, the group id (`stimulus_groups.id`) and the reason. A group is reported once per reason.
 
-Not covered on purpose: a group that is complete or in the wrong member order (`GROUP_INCOMPLETE`, `GROUP_OUT_OF_ORDER`) is a separate builder line and is not selected here. A question whose group has no servable member counts as a plain question in the builder; this SELECT still sees its `group_id` (a rare extra row, which is safe to re-compose). A hit on a `jana` (generated) paper cannot be re-composed in the builder: report it to team A [PROPOSED].
+Not covered on purpose: a group that is complete or in the wrong member order (`GROUP_INCOMPLETE`, `GROUP_OUT_OF_ORDER`) is a separate builder line and is not selected here. A question whose group has no servable member counts as a plain question in the builder; this SELECT still sees its `group_id` (a rare extra row, which is safe to re-compose). A hit on a `jana` (generated) paper cannot be re-composed in the builder: report it to team A.
 
 **Run (2026-11-02, A3).** Throwaway Postgres 16 on a scratch port (no server, removed afterwards): the 46 base folders, 0001 to 0103, of BASE-105 `7ea2208c` applied with `prisma migrate deploy`, then the full demo seed (`NODE_ENV=development ALLOW_DEMO_SEED=1 tsx prisma/seed/index.ts`, 28 modules; 1 published paper, 4 withdrawn; 2 stimulus groups, 7 grouped questions). Inside `BEGIN READ ONLY ... ROLLBACK`, on the seeded database:
 
