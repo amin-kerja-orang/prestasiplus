@@ -239,3 +239,27 @@ What changed (all in `questions/serving/`; the lane code path is untouched):
 Evidence: `servability-reads`, `servability-lanes`, `servability-parity`, `servability-jana-count`, `servability-rules`, `servability-rate-limit`, `overview-cache` and `overview-cache-http` specs pass unchanged, plus the new `servability-overview-once.spec.ts` (each question on a published paper is loaded once for the whole overview; the warmer is off by default in tests, fills the cache when enabled, and a failure only logs).
 
 **Decision REQ-B-022(c):** the servability routes stay **Admin Pusat only** (D86); teacher and school-admin access is KIV. No route or guard changed.
+
+### 9.1 "MCQ shape check once" (branch `r1/overview-mcq-shape-once`): result and what was shipped instead
+
+**Tried:** one statement that computes the MCQ shape verdict once (a shared `MATERIALIZED` CTE over the union of the SPM-draw, Bab and Kuiz candidates, `plain` and `single` flags) and feeds the three counts, leaving the repository functions untouched. Counts were equal to the three separate scopes on a bank with every kind of shape fault (no key, key names a missing option, two parts, non-MCQ part, no options, extra option, linked stimulus, group members, held, draft).
+
+**Measured on the 408k bank (cold, warm cache):**
+
+| Read | Time |
+|---|---|
+| `spmDraw` + `bab` + `kuiz` as three statements (sequential sum) | 4.9 + 3.3 + 2.0 = 10.3 s |
+| the same three counts as ONE statement with the shared shape CTE | 8.5 to 9.1 s |
+| cold `overview()` before / after the change | 15.3 / 14.4 / 15.5 s vs 15.0 / 13.5 / 15.9 s (identical JSON) |
+
+**Why no gain:** EXPLAIN ANALYZE of the combined statement shows the shape CTE is only 2.6 s of 10 s (a 69 MB external merge sort, `Sort Method: external merge Disk: 68928kB`); each of the three branches still costs about 2 to 2.6 s on its own (the scans, the `databankServedPredicate` subquery, the aggregation). And one statement runs on ONE connection, while the three separate reads already ran in parallel inside the overview (section 9), so the three were never on the critical path: the 14 s critical path is the published-paper pass. The change would save about 1.4 s of database CPU but not wall-clock, and add a second copy of the shape SQL (drift risk). **Not shipped.** The patch and its parity spec are kept in the scratchpad of the work session only; it can be rebuilt from this description if the database is ever CPU-bound rather than latency-bound.
+
+**Shipped instead (the real critical path):** profiling the published-paper pass (12,438 questions, 14.4 s) showed `getMany` 7.6 s and `janaFactsOf` 6.4 s; the Jana pool facts are read only by the Jana verdict, never by Simulasi (kertas). `ServabilityService.factsOf(ids, { jana: false })` skips them (`janaFacts` stays null; default behaviour unchanged) and the paper pass and the lane's paper rows use it.
+
+| Cold overview on the 408k bank | Before (section 9) | After |
+|---|---|---|
+| `overview()` direct, 3 runs | 15.3, 14.4, 15.5 s (p50 15.3 s) | 10.4, 9.3, 8.8 s (p50 9.3 s) |
+| HTTP first call | 14.7 s | 8.9 s |
+| JSON | | byte-identical |
+
+Since the start of REQ-B-022(a) the cold overview went from 34.2 s to 9.3 s (-73%). What is left is dominated by `getMany` (7.6 s: it reads each of the 12,438 questions twice, latest and live, in chunks of 200, one chunk after the other). Reading them once, or the chunks in parallel, is the next saving; not done here.

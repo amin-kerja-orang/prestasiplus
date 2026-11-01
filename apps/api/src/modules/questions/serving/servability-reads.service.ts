@@ -259,7 +259,7 @@ export class ServabilityReadsService {
       if (known) results.set(id, known)
     }
     for (const part of chunks([...toEvaluate].filter((id) => !results.has(id)))) {
-      for (const [id, f] of await this.servability.factsOf(part)) results.set(id, evaluate({ ...f, onPublishedPaper: true }, 'simulasi_paper'))
+      for (const [id, f] of await this.servability.factsOf(part, { jana: false })) results.set(id, evaluate({ ...f, onPublishedPaper: true }, 'simulasi_paper'))
     }
     return papers.map((p) => {
       const ids = placements.filter((x) => x.paper_id === p.id).map((x) => idToString(x.question_id))
@@ -318,7 +318,7 @@ export class ServabilityReadsService {
     const ids = await this.questionsOnPublishedPapers()
     const results = new Map<string, PaperEvaluation>()
     for (const part of chunks(ids)) {
-      for (const [id, f] of await this.servability.factsOf(part)) results.set(id, evaluate({ ...f, onPublishedPaper: true }, 'simulasi_paper'))
+      for (const [id, f] of await this.servability.factsOf(part, { jana: false })) results.set(id, evaluate({ ...f, onPublishedPaper: true }, 'simulasi_paper'))
     }
     return { ids, results }
   }

@@ -45,8 +45,12 @@ export class ServabilityService {
     return new Map([...facts].map(([id, f]) => [id, evaluateAll(f)]))
   }
 
-  /** The loaded facts (exported for the specs and for T30 reads that need the same data). */
-  async factsOf(ids: readonly string[]): Promise<ReadonlyMap<string, ServabilityFacts>> {
+  /**
+   * The loaded facts (exported for the specs and for T30 reads that need the same data). `jana: false` skips the Jana pool facts
+   * (`janaFacts` stays null): only the Jana verdict reads them, and loading them is about half the cost on a large paper pass
+   * (REQ-B-022a: 6.4 s of 14.4 s for the 12,438 questions on published papers).
+   */
+  async factsOf(ids: readonly string[], opts: { jana?: boolean } = {}): Promise<ReadonlyMap<string, ServabilityFacts>> {
     const wanted = [...new Set(ids)].filter(isIdString)
     if (wanted.length === 0) return new Map()
     const latest = new Map((await this.questions.getMany(wanted, 'latest')).map((r) => [r.id, r]))
@@ -65,7 +69,7 @@ export class ServabilityService {
       this.subjectsOf(effective),
       this.groupsOf(bridged),
       this.onPublishedPaper([...live.keys()]),
-      this.janaFactsOf(records),
+      opts.jana === false ? Promise.resolve(new Map<string, QuestionFacts>()) : this.janaFactsOf(records),
     ])
     // ONE read of the own stimuli (versionStimuli + stimulusUseCounts): the bridge's `outside` and the kuiz's `linkedAssets` are both
     // built from it, so the facts cannot disagree and the pinned read runs once.

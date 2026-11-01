@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { QuestionsService } from '../../src/modules/questions'
-import { ServabilityReadsService, ServabilityService } from '../../src/modules/questions/serving'
+import { ServabilityReadsService, ServabilityService, evaluate } from '../../src/modules/questions/serving'
 import { OverviewCache } from '../../src/modules/questions/serving/overview-cache'
 import { OverviewWarmer } from '../../src/modules/questions/serving/overview-warmer'
 import { adminActor, mcqInput, tagBody, tagOf, type Tag } from './fixtures'
@@ -66,6 +66,18 @@ describe('servability overview: one pass over the questions on published papers 
     const reports = await t.app.get(ServabilityService).reports(ids)
     const served = [...reports.values()].filter((r) => r.activities.find((a) => a.activity === 'simulasi_paper')?.served).length
     expect(overview.activities.find((a) => a.activity === 'simulasi_paper')?.served).toBe(served)
+  })
+
+  it('factsOf without the Jana pool facts gives the same Simulasi (kertas) verdict; only the Jana verdict needs them', async () => {
+    const svc = t.app.get(ServabilityService)
+    const full = await svc.factsOf(ids)
+    const lean = await svc.factsOf(ids, { jana: false })
+    expect([...lean.keys()].sort()).toEqual([...full.keys()].sort())
+    for (const [id, f] of lean) {
+      expect(f.janaFacts, id).toBeNull()
+      expect(evaluate({ ...f, onPublishedPaper: true }, 'simulasi_paper')).toEqual(evaluate({ ...full.get(id)!, onPublishedPaper: true }, 'simulasi_paper'))
+    }
+    expect([...full.values()].some((f) => f.janaFacts !== null)).toBe(true)
   })
 
   it('the cache warmer fills the cache when enabled, stays off by default in tests, and a failure only logs', async () => {
