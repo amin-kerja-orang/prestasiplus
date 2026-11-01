@@ -188,6 +188,37 @@ describe('R1-T48 builder parity: cover code, rule, sections, added questions, pi
       expect((await reviewOf(paper)).blockerDetails.map((b) => b.code).sort()).toEqual(['SECTION_NOT_IN_CONTRACT'])
     })
 
+    it('the override is refused on a mix of the new overridable codes and a hard one, and nothing is published or audited', async () => {
+      const { paper, sections } = await fullPaper()
+      // RULE_NOT_IN_CONTRACT (Bahagian B: Pilih 1 of 1 keeps the marks) + SECTION_NOT_IN_CONTRACT (an empty Bahagian D) + the hard SECTION_EMPTY
+      expect((await admin.put(`/api/admin/papers/${paper}`, { sections: [{ id: sections[1], rule: { type: 'choose', n: 1 } }] })).status).toBe(200)
+      expect((await addSection(paper, 'Bahagian D')).status).toBe(201)
+      const review = await reviewOf(paper)
+      expect(review.blockerDetails.map((b) => [b.code, b.overridable]).sort()).toEqual([
+        ['RULE_NOT_IN_CONTRACT', true],
+        ['SECTION_EMPTY', false],
+        ['SECTION_NOT_IN_CONTRACT', true],
+      ])
+      expect(review.canOverride).toBe(false)
+      const forced = await admin.post(`/api/admin/papers/${paper}/publish`, { override: true, reason: 'sebab yang sah' })
+      expect(forced.body.data).toMatchObject({ ok: false, canOverride: false, blockerDetails: review.blockerDetails })
+      expect(forced.body.data.overridden).toBeUndefined()
+      expect((await q(`select status from papers where id = $1`, [paper]))[0]?.status).toBe('draft')
+      expect((await auditRows(t.db, 'bijak.paper.published_override')).filter((r) => r.target_id === paper)).toHaveLength(0)
+      // a hard counts blocker beside the two Kontrak codes is refused the same way
+      const extra = await approved()
+      expect((await place(paper, sections[0]!, extra)).status).toBe(201)
+      expect((await reviewOf(paper)).blockerDetails.some((b) => b.code === 'COUNT_TOO_MANY')).toBe(true)
+      expect((await admin.post(`/api/admin/papers/${paper}/publish`, { override: true, reason: 'sebab yang sah' })).body.data.ok).toBe(false)
+    })
+
+    it('Pilih N on a Bahagian that holds no question yet gets its own message (not "antara 1 dan 0")', async () => {
+      const { paper, d } = await withBahagianD()
+      const res = await admin.put(`/api/admin/papers/${paper}`, { sections: [{ id: d, rule: { type: 'choose', n: 1 } }] })
+      expect(res.status).toBe(422)
+      expect(res.body.error.fields.rule).toBe('Letakkan soalan dalam bahagian ini dahulu sebelum memilih bilangan soalan')
+    })
+
     it('Pilih N must be between 1 and the printed question count (fields.rule); a bad rule shape is 422', async () => {
       const { paper, sections } = await fullPaper()
       const over = await admin.put(`/api/admin/papers/${paper}`, { sections: [{ id: sections[0], rule: { type: 'choose', n: 4 } }] })
@@ -208,15 +239,25 @@ describe('R1-T48 builder parity: cover code, rule, sections, added questions, pi
       expect(sections).toHaveLength(4)
       expect(sections[3]).toMatchObject({ label: 'Bahagian D', rule: { type: 'all' }, questionCount: 0, markBudget: 0, questionIds: [], adminCreated: true })
       expect(sections[0]!.adminCreated).toBeUndefined()
-      const review = await reviewOf(paper)
-      expect(review.blockerDetails).toEqual([{ code: 'SECTION_NOT_IN_CONTRACT', message: 'Bahagian D: bahagian ini tiada dalam Kontrak', overridable: true, section: 'Bahagian D' }])
-      expect(review.canOverride).toBe(true)
+      // empty, it prints 0 questions and 0 marks: the hard SECTION_EMPTY next to the overridable SECTION_NOT_IN_CONTRACT, so the override cannot publish it
+      const empty = await reviewOf(paper)
+      expect(empty.blockerDetails).toEqual([
+        { code: 'SECTION_EMPTY', message: 'Bahagian D: bahagian ini tiada soalan', overridable: false, section: 'Bahagian D' },
+        { code: 'SECTION_NOT_IN_CONTRACT', message: 'Bahagian D: bahagian ini tiada dalam Kontrak', overridable: true, section: 'Bahagian D' },
+      ])
+      expect(empty.canOverride).toBe(false)
+      const refused = await admin.post(`/api/admin/papers/${paper}/publish`, { override: true, reason: 'Bahagian kosong diluluskan' })
+      expect(refused.body.data).toMatchObject({ ok: false, canOverride: false })
+      expect(refused.body.data.overridden).toBeUndefined()
+      expect((await q(`select status from papers where id = $1`, [paper]))[0]?.status).toBe('draft')
       // a bank question placed in it moves its figures; no count or marks blocker appears
       const extra = await approved()
       expect((await place(paper, (sections[3] as { id: string }).id, extra)).status).toBe(201)
       const after = paperOf(await editorOf(paper)).sections[3] as { questionCount: number; markBudget: number }
       expect(after).toMatchObject({ questionCount: 1, markBudget: 1 })
-      expect((await reviewOf(paper)).blockerDetails.map((b) => b.code)).toEqual(['SECTION_NOT_IN_CONTRACT'])
+      const filled = await reviewOf(paper)
+      expect(filled.blockerDetails.map((b) => b.code)).toEqual(['SECTION_NOT_IN_CONTRACT'])
+      expect(filled.canOverride).toBe(true)
       // the override publishes it and freezes the figures for the student side
       const done = await admin.post(`/api/admin/papers/${paper}/publish`, { override: true, reason: 'Bahagian tambahan diluluskan' })
       expect(done.body.data).toMatchObject({ ok: true, errors: [] })
