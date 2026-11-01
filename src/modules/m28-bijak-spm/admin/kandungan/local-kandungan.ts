@@ -5,9 +5,12 @@
  */
 import {
   SERVABILITY_ACTIVITY_LABELS,
+  SERVABILITY_HUB_CARDS,
   servabilityReasonMs,
   type ServabilityActivity,
   type ServabilityDatabankRow,
+  type ServabilityHubCard,
+  type ServabilityHubLane,
   type ServabilityOverview,
   type ServabilityPaperRow,
   type ServabilityReason,
@@ -48,8 +51,17 @@ export function createMockKandungan(): KandunganApi {
         if (a === 'simulasi_paper') return { served: papers.length - broken, total: papers.length }
         return { served: approved, total: rows.length }
       }
+      const dbRows = rows.length
+      const dbBad = dbRows - approved
+      const cardOf = (lane: ServabilityHubLane, total: number, attention: number): ServabilityHubCard => ({
+        lane,
+        ...SERVABILITY_HUB_CARDS[lane],
+        total,
+        attention,
+      })
       return {
         bank: rows.length,
+        cards: [cardOf('databank', dbRows, dbBad), cardOf('bijak-spm', papers.length, broken)],
         activities: ACTIVITIES.map((activity) => {
           const { served, total } = count(activity)
           return { activity, label: SERVABILITY_ACTIVITY_LABELS[activity], served, total, attention: total - served, basis: 'evaluated' as const }

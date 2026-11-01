@@ -17,8 +17,15 @@ const server = vi.hoisted(() => ({
 vi.mock('../admin/kandungan/client', () => ({ kandunganServer: () => server }))
 
 const act = (activity: string, label: string, attention: number) => ({ activity, label, served: 10 - attention, total: 10, attention, basis: 'sql' })
+const card = (lane: string, title: string, description: string, attention: number, attentionLabel: string) => ({
+  lane, title, description, total: 10, attention, attentionLabel,
+})
 const OVERVIEW = {
   bank: 10,
+  cards: [
+    card('databank', 'Databank Soalan', 'Bank soalan objektif SPM mengikut subjek.', 3, 'tidak boleh ditanda'),
+    card('bijak-spm', 'Bijak SPM', 'Kertas SPM penuh dalam format sebenar.', 0, 'tiada kunci jawapan'),
+  ],
   activities: [
     act('databank', 'Databank Soalan', 3),
     act('latih_tubi_spm', 'Latih Tubi SPM', 0),
@@ -80,7 +87,7 @@ describe('Kandungan SPM hub (AC-R1-21.1)', () => {
 
   it('shows the attention count or "Semua elok", and "Buka senarai" on each card', async () => {
     await mountAt(KandunganHubPage, '/admin/spm')
-    expect(text('[data-testid=kandungan-attention-databank]')).toContain('3')
+    expect(text('[data-testid=kandungan-attention-databank]')).toBe('3 tidak boleh ditanda') // the V2 label, from the API card
     expect(text('[data-testid=kandungan-attention-simulasi]')).toBe('Semua elok')
     expect(text('[data-testid=kandungan-open-databank]')).toBe('Buka senarai')
     expect(text('[data-testid=kandungan-open-simulasi]')).toBe('Buka senarai')
