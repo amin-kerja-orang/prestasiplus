@@ -324,9 +324,30 @@ describe('stimulus group and stimulus lists (admin, real database)', () => {
       await t.db.query(`insert into question_version_stimuli (question_version_id, stimulus_id, position) select v.id, $2::bigint, 1 from question_versions v where v.question_id = $1 and v.version_no = 1`, [linkedQ, linked])
       await setLevel(linkedQ, await darjah())
 
+      // a stimulus reachable ONLY through a PART of a question (no group, no version link): hidden when that question is Darjah or PKSK, listed when it is secondary
+      const attachToPart = async (questionId: string, stimulusId: string): Promise<void> => {
+        const done = await t.db.query<{ id: string }>(
+          `update question_parts set stimulus_id = $2::bigint where id = (select p.id from question_parts p join question_versions v on v.id = p.question_version_id where v.question_id = $1 order by p.id limit 1) returning id::text id`,
+          [questionId, stimulusId],
+        )
+        expect(done).toHaveLength(1)
+      }
+      const partPrimaryStim = await stimulus({ label: `${mark} bahagian darjah` })
+      const partPrimaryQ = await question({ questionText: 'Soalan Darjah dengan rangsangan pada bahagian untuk D72.' })
+      await attachToPart(partPrimaryQ, partPrimaryStim)
+      await setLevel(partPrimaryQ, await darjah())
+      const partPkskStim = await stimulus({ label: `${mark} bahagian pksk` })
+      const partPkskQ = await question({ questionText: 'Soalan PKSK dengan rangsangan pada bahagian untuk D72.' })
+      await attachToPart(partPkskQ, partPkskStim)
+      await t.db.query(`insert into question_tags (question_id, kind, code) values ($1::bigint, 'pksk_domain', 'ujian')`, [partPkskQ])
+      const partOkStim = await stimulus({ label: `${mark} bahagian menengah` })
+      await attachToPart(await question({ questionText: 'Soalan menengah dengan rangsangan pada bahagian untuk D72.' }), partOkStim)
+
       const found = await listedStimuli(`q=${mark}`)
-      expect([...found].sort()).toEqual([used, unused].sort())
-      expect((await stimuli(`q=${mark}`)).meta.totalItems).toBe(2)
+      expect([...found].sort()).toEqual([used, unused, partOkStim].sort())
+      expect(found).not.toContain(partPrimaryStim)
+      expect(found).not.toContain(partPkskStim)
+      expect((await stimuli(`q=${mark}`)).meta.totalItems).toBe(3)
     })
 
     it('a stimulus linked only through a PART of a question follows that question\'s subject and level (the Subjek and Tahap filters read part links too)', async () => {
