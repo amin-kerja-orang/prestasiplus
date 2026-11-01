@@ -489,7 +489,7 @@ BASE-105 + 11 team A READY API heads + C FE heads (reqa014 dc561730, reqa005 3ee
 Wallet tiers come only from the `reference` seed, never from a migration. Prod deploy runs `migrate deploy` only, so an operator must run `deploy.sh --seed-reference`. Without tiers, the dashboard and wallet return 500, and **every practice or Kuiz submit 500s and rolls back** (the reward runs inside the completion tx). Lead decision: (1) add a runbook precondition (`tiers` count = 4) and (3) make /api/ready return not-ready when tiers is empty (r1/ready-tiers-check). No migration. The reward is not made non-fatal, because silent coin loss is worse.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 21:39 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 21:43 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -503,7 +503,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/builder-search-perf | 1216b736c | READY (A3, on T48 6c5ae3a8; restack only): 413 pass; alone = trial merge with H-A18 fc409ae1, 0 failures, tsc 0; merge after T48; B2 |
 | r1/chain-qa-bab-3a-a3 | 0efba36c4 | READY (A3, @0efba36c; contains chain-qa-selfmark + H-A18 + T38): Bab-refusal step 3a (bites); 642 pass; merge after H-A18 + chain-qa-selfmark; B2 |
 | r1/chain-qa-selfmark-a3 | 5b93da43f | READY (A3, @5b93da43 = T38 13134ced + chain-qa 9b70ae39 + self-mark reward join, bites); merge after T38 + r1-chain-qa-a3; B2 |
-| r1/d90-builder-sweep-a3 | 8201f2a3d | READY (A3, @8201f2a3 on T48 6c5ae3a8): D90 sweep spec (9 tests, 12 mutations red) + T48 D9 rows completed to 6 cells (no-cascade note, stale cells fixed); merge after T48; B2 |
+| r1/d90-builder-sweep-a3 | 6a3206366 | READY (A3, @6a320636 on T48 6c5ae3a8): D90 sweep spec (9 tests, 12 mutations red) + T48 D9 rows complete (Who = LEAD); merge after T48; A2 delta pre-review; B2 |
 | r1/delete-served-guard | 7e5d82e6a | READY (A2, @7e5d82e6; contains B-052 f3a2448f): only held papers block (served/pinned) + FK-restrict (sets/remedial/battle) → 409 in_use; no in-practice block (proven: delete-in-session.spec, no 5xx); 17 + 4 + FK specs; A4 Approve + B3 PASS up to f9c64df0, delta f9c64df0 → 7e5d82e6 with A4; merge after t49 + d72 and H-A18 → B-032 → B-052; B2 + B3 |
 | r1/docs-credential-scrub | b3db5e0d2 | READY (A1a, BASE-105; replaces 5cd46c4a): A4 Minors fixed: Demo1234 doc replacements reverted (allowed fictitious dev default; docs match code), DOC-02 wording, row relabelled privacy override, srs/M02 v1.34 revision row (v1.30 keeps placeholders, lead decision); 0 hits for the 3 old values repo-wide; M02 unit 724, eslint + vue-tsc 0; B3 + B2 |
 | r1/drop-lock-enums | 4d1424c8b | READY (A1a + A2, @4d1424c8, BASE-105): contract drops dead CHAPTER_LOCKED + locked states; negative contract tests; row: no FE reader depends on them (dead local FE types = C follow-up); contract 1435/1435, emit no diff, check ok, api tsc 0; with C reqa014 merged: vue-tsc 0, m03/m05 659/659; merge after reqa014-no-chapter-lock-fe; B2 |
@@ -511,7 +511,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha17-ac-coverage | 157b371c3 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b; head 157b371c |
 | r1/ha18-gate-facts | fc409ae16 | READY (A2, BASE-105): H-A18 + REQ-B-017/037 + D99 + pre-review fixes (M2 held-issues helper on both edit paths; m1 gate-issue codes; deviation row); workflow 296/296; conformance 409/409; B2 + B3 |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
-| r1/ha24-release-input | 485ed9e21 | READY (A3 docs, @485ed9e2): §3.5 B1 merge order + BM release notes (0106/0107 window = estimate); B1/B2 |
+| r1/ha24-release-input | 6dfd471a9 | READY (A3 docs, @6dfd471a): §3.5 B1 merge order + BM release notes (delete rule per delete-served-guard 7e5d82e6); B1/B2 |
 | r1/ha26-team-a-state | c6345c05b | READY (A3 docs, @c6345c05): team-a-r1-state.md (migration allocation 0106–0109 used; 0120+ overflow); vs ac-gaps take ha26 side; B2 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-a2 | 8c1964a6f | READY (A2, BASE-105): prefetch crash fixed (awaited Promise.all, failed read → 500, no unhandledRejection; red-first specs); row 908 6 cells; tsc/eslint 0, intake-workflow 137/137; A4 pre-review: Approve; B2 |
