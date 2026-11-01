@@ -69,7 +69,7 @@ describe('AC-05.3 Terbitkan: notice when unservable somewhere, refused when unse
     const bab = report?.activities.find((a) => a.activity === 'bab')
     expect(bab?.served).toBe(false)
     expect(bab?.reasons[0]?.code).toBe('no_chapter')
-    expect(bab?.reasons[0]?.message.length).toBeGreaterThan(10)
+    expect(bab?.reasons[0]?.message).toBe('Belum dipautkan kepada bab — pilih Bab di borang soalan.') // the exact BM sentence the admin reads
     expect(report?.servedCount).toBeGreaterThan(0)
     expect(report?.servedCount).toBeLessThan(report?.total ?? 0)
   })
@@ -87,6 +87,7 @@ describe('AC-05.3 Terbitkan: notice when unservable somewhere, refused when unse
     const fields = e.fields ?? {}
     expect(Object.keys(fields).length).toBeGreaterThan(0)
     for (const message of Object.values(fields)) expect(message.length).toBeGreaterThan(10)
+    expect(fields['servability.simulasi_paper']).toBe('Simulasi (kertas): Tidak dihidangkan kerana mod isi jadual (table_fill) belum disokong.') // one exact BM reason
     expect(await t.bank.getStatus(id)).toMatchObject({ status: 'review', liveVersionNo: null })
     expect(await events(id)).toBe(before)
     expect(await repo.get(id, 'live')).toBeNull()
@@ -144,5 +145,31 @@ describe('AC-05.3 Terbitkan: notice when unservable somewhere, refused when unse
   it('created already approved and servable: it is created and live', async () => {
     const view = await questions.create({ ...base(), questionType: 'mcq', options: ['4', '5', '6', '7'], correctAnswer: 1, questionText: 'Soalan diluluskan semasa dicipta yang boleh dipaparkan.', cognitiveLevel: 'mengaplikasi', kertas: '1', status: 'approved' } as unknown as QuestionCreateInput, { userId: c.admin.userId, role: 'admin' })
     expect(await repo.get(view.id, 'live')).not.toBeNull()
+  })
+
+  // --- over HTTP: the route the Studio button calls ------------------------------------------------------------------------------
+
+  it('POST /api/questions/:id/status {to: approved} on a question unservable everywhere: 422 VALIDATION_ERROR with the BM message and one BM line per activity; nothing changes; a servable one answers 200 with the report', async () => {
+    const bad = await review(tableFill('Isikan jadual melalui laluan HTTP.'))
+    const before = await events(bad)
+    const res = await c.admin.post(`/api/questions/${bad}/status`, { to: 'approved' })
+    expect(res.status, JSON.stringify(res.body)).toBe(422)
+    expect(res.body.error.code).toBe('VALIDATION_ERROR')
+    expect(res.body.error.message).toBe('Soalan ini tidak boleh dipaparkan di mana-mana aktiviti murid, jadi belum boleh diterbitkan.')
+    expect(Object.keys(res.body.error.fields)).toEqual(expect.arrayContaining(['servability.databank', 'servability.simulasi_paper']))
+    // the activities that refuse a table_fill by its shape, word for word (the Databank and Latih Tubi lines depend on the fixture's subject list)
+    expect(res.body.error.fields).toMatchObject({
+      'servability.simulasi_paper': 'Simulasi (kertas): Tidak dihidangkan kerana mod isi jadual (table_fill) belum disokong.',
+      'servability.simulasi_kuiz': 'Simulasi Kuiz: Bentuk soalan ini tidak dipaparkan di Simulasi Kuiz.',
+      'servability.jana_kertas': 'Jana Kertas: Tidak dihidangkan kerana mod isi jadual (table_fill) belum disokong.',
+      'servability.bab': 'Latihan Bab: Belum dipautkan kepada bab — pilih Bab di borang soalan.',
+    })
+    expect(await t.bank.getStatus(bad)).toMatchObject({ status: 'review', liveVersionNo: null })
+    expect(await events(bad)).toBe(before)
+
+    const good = await review({ questionType: 'mcq', options: ['4', '5', '6', '7'], correctAnswer: 1, questionText: 'Soalan HTTP yang boleh dipaparkan.' })
+    const ok = await c.admin.post(`/api/questions/${good}/status`, { to: 'approved' })
+    expect(ok.status, JSON.stringify(ok.body)).toBe(200)
+    expect(ok.body.data.servability.activities.length).toBe(SERVABILITY_ACTIVITIES.length)
   })
 })
