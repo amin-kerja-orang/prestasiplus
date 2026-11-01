@@ -1012,9 +1012,13 @@ export class QuestionsRepository {
   }
 
   /**
-   * REQ-B-052: is this version the one a paper pins (`paper_placements.pinned_version_no`) on a paper that is still held (`paperHeld`: Terbit, or
-   * withdrawn with sittings, AC-07.7)? Such a version is what pupils are served and marked against, so it must never be rewritten. Draft papers
+   * REQ-B-052: is this version the one a paper pins (`paper_placements.pinned_version_no`) on a paper that is still held (`paperHeld`, served-rule.ts: Terbit,
+   * or withdrawn with sittings, AC-07.7)? Such a version is what pupils are served and marked against, so it must never be rewritten. Draft papers
    * that were never sat do not count: they follow the question in force.
+   *
+   * The attempts probe runs only for a withdrawn paper: an attempt needs a published paper at start (`BijakPapersAttemptSource.resolveForAttempt`), a paper
+   * never goes back to `draft` or `ready` (draft -> published -> withdrawn -> published), and the migrated attempts have `paper_id` NULL, so no
+   * other status can hold attempts.
    */
   async versionIsPinned(questionId: string, versionNo: number): Promise<boolean> {
     const key = bi(questionId)
