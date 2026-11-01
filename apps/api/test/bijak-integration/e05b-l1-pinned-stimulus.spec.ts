@@ -54,11 +54,11 @@ async function approvedMcq(): Promise<{ qid: string; vid: string }> {
   ).toBe('1')
   return { qid, vid: (await one(`select id::text from question_versions where question_id = $1 and version_no = 1`, [qid])).id! }
 }
-const newStimulus = async (kind: string, extra: { img?: Img; body?: string; label?: string } = {}): Promise<string> =>
+const newStimulus = async (kind: string, extra: { body?: string; label?: string } = {}): Promise<string> =>
   (
     await one(`insert into stimuli (kind, asset_file_id, body_ms, label) values ($1, $2, $3, $4) returning id::text`, [
       kind,
-      extra.img?.dbId ?? null,
+      null,
       extra.body ?? null,
       extra.label ?? null,
     ])
