@@ -1,6 +1,6 @@
 # Team A R1 state: resume sheet
 
-Date: 2026-11-01. Written off `feature/v3-bijak-r1` @ d42351f71 (BASE-102). Docs only. Sources: `docs/team/BOARD.md`, `MERGE-LOG.md`, `QUESTIONS.md` and `requests/` on `origin/team/r1-board`, `git ls-remote`, and `docs/TRACKER.md` on `r1/d91-decisions` (PR #404). Heads change often: re-run `git ls-remote origin 'refs/heads/r1/*'` before relying on one.
+Date: 2026-11-01. Written off `feature/v3-bijak-r1` @ 96c1395c0 (BASE-104 (not yet in MERGE-LOG)). Docs only. Sources: `docs/team/BOARD.md`, `MERGE-LOG.md`, `QUESTIONS.md` and `requests/` on `origin/team/r1-board`, `git ls-remote`, and `docs/TRACKER.md` on `r1/d91-decisions` (PR #404). Heads change often: re-run `git ls-remote origin 'refs/heads/r1/*'` before relying on one.
 
 Task source: `docs/handoff/CLOUD-HANDOFF.md` section 7. R1 = Bijak SPM release.
 
@@ -62,6 +62,8 @@ Task source: `docs/handoff/CLOUD-HANDOFF.md` section 7. R1 = Bijak SPM release.
 | H-A9 | `r1/ha9-pipeline-chain` @ d3257e69 | BASE-93 | A3 |
 | T34 | `r1/t34-builder-review-c` @ 05451810 | BASE-101 | team C (covering A3 on T34) |
 | REQ-C-021 | `r1/reqc021-no-chapter-lock` @ 15cc2f64 | BASE-102 | A1 |
+| H-A21 | `r1/ha21-overview-cache` @ 669b0caf | BASE-104 | A4 |
+| T45 | `r1/t45-lanes` @ e7e5d3dd | BASE-103 | A4 |
 | T30 servability reads | `r1/t30-servability-reads` @ 409df4bf | BASE-28 (T30 tip, contains 05b and own-stimuli) | A4 |
 | R1E2E-05 / 05b own stimuli | `r1/e2e05b-own-stimuli` @ 9895d004 | BASE-28 (T30 tip, contains 05b and own-stimuli) | A4 |
 | servability-own-stimuli | `r1/servability-own-stimuli` @ eea90859 | BASE-28 (T30 tip, contains 05b and own-stimuli) | A4 |
@@ -74,6 +76,7 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 
 | ID | Branch @ head | Lane | Depends on | B state |
 |---|---|---|---|---|
+| REQ-B-032 a published paper serves its pinned version (attempt source, image rule B, served lock agree) | `r1/reqb032-pinned-rule` @ 77c83c5e | A (lane unconfirmed) | none (REQ-B-032) | READY; lane and review not seen (unconfirmed) |
 | Seed spec: no published seeded paper holds a dangling placement (25 PoC ones withdrawn) | `r1/seed-dangling-placements` @ 7285d961 | A (lane unconfirmed) | T36 (base) | READY (test-only); lane and review not seen (unconfirmed) |
 | T45 part 3 builder specs (AC-R1-21.3 / 21.6 on the real bank) | `r1/t45-builder-acs` @ 69d16a7f | A1b | T48 (stacked on 4a3ff264; merges after T48) | READY (A1b, specs only, @ 69d16a7f); merges after T48; review not seen (unconfirmed) |
 | REQ-C-021 follow-up: catalogue to D98, stale lock comments, conformance check | `r1/reqc021-followup` @ 8210ac5b | A1 | REQ-C-021 (BASE-102) | READY (A1); review not seen (unconfirmed) |
@@ -83,15 +86,13 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 | T45 part 3 WIP: AC-R1-21.3 / 21.6 builder specs on the real bank | `r1/t45-builder-acs-wip` @ 078204e1 | A4 | T48 (carries migration 0104) | WIP (A4); stacked on T48, so it carries migration 0104; superseded by `r1/t45-builder-acs` (A1b) |
 | REQ-B-025c a choice-only essay_choice counts as blank (leaf kind passed to isBlank) | `r1/req-b-025c` @ a2865119 | A1b (handed over from A4) | none (REQ-B-025c) | READY (A1b, handed over from A4); review not seen (unconfirmed) |
 | REQ-B-022a servability overview counts in one Promise.all | `r1/req-b-022a` @ 688529b7 | A4 | T30 (base) | READY (A4); review not seen (unconfirmed) |
-| T54 performance report at ~406k questions (docs) | `r1/t54-perf-400k` @ f90a63bd | A4 | none (docs) | pushed (A4): docs/qa performance report, 11 paths p50/p95 and fixes for p95 over 1 s; review not seen (unconfirmed) |
+| T54 performance report at ~406k questions (docs) | `r1/t54-perf-400k` @ bbf412c6 | A4 | none (docs) | pushed (A4): docs/qa performance report, 11 paths p50/p95 and fixes for p95 over 1 s; review not seen (unconfirmed) |
 | REQ-B-035 review queue rows carry the stimulus group (D90) | `r1/intake-reqs-a2` @ b70dc957 | A2 | none (REQ-B-035) | READY (A2); review not seen (unconfirmed) |
 | T34-L1-residual (A3 WIP, for B3) | `r1/t34-l1-residual` @ e4bb72eb | A3 | T34 (B3 finding T34-L1-residual) | WIP, untested (A3): the answer to B3 finding T34-L1-residual; not for merge yet |
 | REQ-B-031 report guard, no auto-deactivation, capped (D98) | `r1/reqb031-report-guard` @ 9cd9a1ed | A1 | none (D98); unblocks the Lapor FE | REQ-B-046 follow-up pushed (structured Lapor needs no proof, the cap skips a refresh, no existence/type oracle, at most 8 reasons, stale copy; openapi re-emitted) on top of REP-L1/L2; awaiting B2 re-review (A1) |
 | REQ-C-019 joinable filter on group list and filter-options | `r1/t49-served-now` @ 221c2b28 | A2 | T49 (base) | smoke role for GET /questions/filter-options, trimmed Negeri match, joinable wording pushed (221c2b28); awaiting B1 gate and B2 (A2) |
 | REQ-B-033 paper lane names a placed question the bank does not return | `r1/req-b-033` @ f3da2b7d | A4 | servability lanes (T30, in base) | READY (A4); review not seen (unconfirmed) |
-| H-A21 overview cache | `r1/ha21-overview-cache` @ 669b0caf | A4 | T30 | same chain as T45 part 1 (A4) |
 | T45 part 1 (AC-04.3/04.5/05.3) | `r1/t45-servability-acs` @ 37d24013 | A4 | T29 | fix pushed (T45-L1: approve-time servability check at the shared approve point; cognitiveLevel in the fresh spec); awaiting B2 re-review (A4) |
-| T45 part 2 (lanes, V2 hub) | `r1/t45-lanes` @ e7e5d3dd | A4 | T30; R1-21.3/21.6 wait for T48 | same chain as T45 part 1 (A4) |
 | H-A8 stale specs | `r1/ha8-stale-specs` @ 56b1b6cc | A2 | base | READY (test-only) |
 | T04 minors (R1E2E-09) | `r1/t04-minors` @ d0740a32 | A2 | T04 | REQ-B-044 fix pushed (chapter-practice spec follows the Soalan by Chapter tile rule, D91 / FD-11); awaiting B1 gate and B2 (A2) |
 | T38 self-mark reward (D94) | `r1/t38-selfmark-reward` @ e8af872f | A1 | T28 | fix pushed (6995d091: reward on the best-N gain, T38-L1) and base merged; awaiting B2 re-review (A1) |
@@ -167,7 +168,7 @@ Status as recorded in `requests/` (answers files take precedence). "Open for A" 
 
 | Direction | IDs |
 |---|---|
-| Open for A | REQ-B-017, REQ-B-019, REQ-B-022, REQ-B-025, REQ-B-029, REQ-B-031, REQ-B-032, REQ-B-033, REQ-B-034, REQ-B-035, REQ-B-037, REQ-B-040, REQ-B-043, REQ-B-044, REQ-B-046, REQ-B-049, REQ-B-050, REQ-B-051, REQ-C-012, REQ-C-019, REQ-C-020, REQ-C-021, REQ-C-024 |
+| Open for A | REQ-B-017, REQ-B-019, REQ-B-022, REQ-B-025, REQ-B-029, REQ-B-032, REQ-B-033, REQ-B-034, REQ-B-035, REQ-B-037, REQ-B-040, REQ-B-043, REQ-B-044, REQ-B-049, REQ-B-050, REQ-B-051, REQ-C-012, REQ-C-019, REQ-C-020, REQ-C-021, REQ-C-024 |
 | Delivered by A (waiting for merge or the other side) | REQ-B-003, REQ-B-004, REQ-B-007, REQ-B-013, REQ-B-014, REQ-B-041, REQ-C-016, REQ-C-017, REQ-C-018 |
 | Open to B | REQ-A-007, REQ-A-009, REQ-A-011 |
 | Open to C | REQ-A-004, REQ-A-013, REQ-A-014, REQ-A-015, REQ-A-016 |
