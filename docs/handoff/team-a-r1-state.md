@@ -77,11 +77,11 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 
 | ID | Branch @ head | Lane | Depends on | B state |
 |---|---|---|---|---|
-| REQ-B-052: an archived question pinned on a published paper is rewritten in place by update and updateOwn (fix: branch to a new version instead of refusing) | `r1/reqb052-archived-edit` @ 50017f8f | A3 (T48 dev) | none (REQ-B-052) | A3 (T48 dev): fix in progress; the red repro spec (archived-edit.spec) is the first commit; the fix branches an archived or pinned question to a new version instead of refusing; not READY; when READY it may prove rows about pinned or served versions (check the AC matrix then) |
+| REQ-B-052: an archived question pinned on a published paper is rewritten in place by update and updateOwn (fix: branch to a new version instead of refusing) | `r1/reqb052-archived-edit` @ 7ec49fe8 | A3 (T48 dev) | none (REQ-B-052) | A3 (T48 dev): the fix commit 50017f8f is pushed (an edit of an archived or pinned question branches to a new version, never rewrites it; the sittings holding a withdrawn question keep the original), stacked on REQ-B-032 (7217a6c9, e9cf34b7); head 7ec49fe8; READY status not announced (unconfirmed) |
 | T54 F2: builder pool search matches the text in SQL and describes only the page | `r1/builder-search-perf` @ f0ddb1ca | A3 | T48 (carries 705468c1); merges after T48 | READY (A3, T54 F2); merges after T48; review not seen (unconfirmed) |
 | T34-L1-residual, taken by team C (REQ-A-013) | `r1/t34-l1-residual-c` @ a2acf754 | team C (REQ-A-013) | BASE-102 (not built from e4bb72eb) | team C has taken T34-L1-residual (REQ-A-013): restacked (a2acf754), 0110 identical; NOT built from A3 e4bb72eb; review not seen (unconfirmed) |
 | REQ-B-022a overview: skip the Jana pool facts in the published-paper pass (cold 15.3 s to 9.3 s on 408k) | `r1/overview-mcq-shape-once` @ 7a6e8bb3 | A4 | T30 (base) | READY (A4); review not seen (unconfirmed) |
-| REQ-B-032 a published paper serves its pinned version (attempt source, image rule B, served lock agree) | `r1/reqb032-pinned-rule` @ e9cf34b7 | A2 (slot 2; moved from A3, earlier from A4) | none (REQ-B-032) | WIP, not READY: A2 starts from the paused A3 checkpoint 77c83c5e |
+| REQ-B-032 a published paper serves its pinned version (attempt source, image rule B, served lock agree) | `r1/reqb032-pinned-rule` @ e9cf34b7 | A2 (slot 2; moved from A3, earlier from A4) | none (REQ-B-032) | A2 (slot 2): fix 7217a6c9 and the re-pinning spec e9cf34b7 pushed; REQ-B-052 is stacked on it; READY status not announced (unconfirmed) |
 | Seed spec: no published seeded paper holds a dangling placement (25 PoC ones withdrawn) | `r1/seed-dangling-placements` @ 11cbcf45 | A (lane unconfirmed) | T36 (base) | READY (test-only); lane and review not seen (unconfirmed) |
 | T45 part 3 builder specs (AC-R1-21.3 / 21.6 on the real bank) | `r1/t45-builder-acs` @ de8c8c02 | A1b | T48 (stacked on 4a3ff264; merges after T48) | READY (A1b, specs only); restacked on T48 705468c1 (de8c8c02); merges after T48; review not seen (unconfirmed) |
 | REQ-C-021 follow-up: catalogue to D98, stale lock comments, conformance check | `r1/reqc021-followup` @ 948aa327 | A1 | REQ-C-021 (BASE-102) | READY (A1); review not seen (unconfirmed) |
@@ -113,20 +113,20 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 
 | ID | Branch | Lane | Depends on |
 |---|---|---|---|
-| H-A18 gate facts (0105) | `r1/ha18-gate-facts` @ d3842c48 (pushed: move to 1.2 after review) | A2 | T33 |
+| H-A18 gate facts (0105) | `r1/ha18-gate-facts` @ f29aeda9 (pushed: move to 1.2 after review) | A2 | T33 |
 
 ### 1.4 Docs units (A3 docs agent), all READY
 
 | Unit | Branch @ head | Output |
 |---|---|---|
-| T37 runbook | `r1/t37-r1-runbook` @ 3a595fe3 | `docs/ops/r1-runbook.md` (migrations 0092 to 0105, SELECTs run 74/74 on BASE-62) |
+| T37 runbook | `r1/t37-r1-runbook` @ 548e81b1 | `docs/ops/r1-runbook.md` (migrations 0092 to 0105, SELECTs run 74/74 on BASE-62) |
 | T39 K1 evidence | `r1/t39-k1-evidence` @ 1a26f7a6 | `docs/ops/r1-k1-blueprint-evidence.md` |
-| T46 / H-A17 AC coverage | `r1/ha17-ac-coverage` @ 701064be | `docs/qa/r1-backend-ac-coverage.md`, `r1-verify-first-notes.md` (kept current by H-A27) |
+| T46 / H-A17 AC coverage | `r1/ha17-ac-coverage` @ 4fce9411 | `docs/qa/r1-backend-ac-coverage.md`, `r1-verify-first-notes.md` (kept current by H-A27) |
 | H-A19 admin parity | `r1/ha19-admin-parity` @ c7315b0e | `docs/qa/r1-admin-parity-check.md` |
 | H-A20 student parity | `r1/ha20-student-parity` @ 557e17c6 | `docs/qa/r1-student-parity-check.md` |
 | H-A22 parity docs | `r1/ha22-parity-docs` @ 4fb2a41b | both parity docs refreshed, deviation rows H22-D1/D2 in `v2-bijak-spm.md`, `student.md` rows marked |
 | H-A23 E2E readiness | `r1/ha23-e2e-readiness` @ 9a86b5bb | `docs/qa/r1-e2e-readiness.md` (merge order, minimal set) |
-| H-A24 release input | `r1/ha24-release-input` @ 37422abf | `docs/ops/r1-release-input-team-a.md` (+ scope AC-R1-18.2 and 18.4 text) |
+| H-A24 release input | `r1/ha24-release-input` @ b8a6a7b9 | `docs/ops/r1-release-input-team-a.md` (+ scope AC-R1-18.2 and 18.4 text) |
 | H-A26 this sheet | `r1/ha26-team-a-state` @ this branch (head = tip of the branch) | `docs/handoff/team-a-r1-state.md` |
 
 ## 2. Decisions and answers
@@ -162,7 +162,7 @@ Earlier decisions still in force for R1: D72 (secondary only), D75/D76 (standard
 | 0102 | `0102_leaf_cognitive_level` | T33 (`r1/t33-leaf-tags` @ 95cea5be) | merged BASE-27 |
 | 0103 | `0103_question_report_context` | T42 (`r1/t42-reports-intake-acs` @ d1210e96) | merged BASE-41; attempt FK stays NOT VALID |
 | 0104 | `0104_paper_section_admin_created` | T48 (`r1/t48-builder-parity` @ 1dd07bc1) | T34 is in base (BASE-101); tip 1dd07bc1 = BASE-105 merge of 705468c1 (B2 minors and B3 audit info fixed (empty admin Bahagian is hard, override-mix spec, docs, messages) on top of fix 2cbe7d28 and spec follow-ups); READY (reported to the lead); B2/B3 re-check pending (migration 0104) |
-| 0105 | gate facts (BE-09 duplicate, media, AI-editor facts) | H-A18 (A2) `r1/ha18-gate-facts` @ d3842c48 | B3 Pass, B2 pending; needs the Q10 user answer |
+| 0105 | gate facts (BE-09 duplicate, media, AI-editor facts) | H-A18 (A2) `r1/ha18-gate-facts` @ f29aeda9 | B3 Pass, B2 pending; needs the Q10 user answer |
 
 Ranges: team A 0100 to 0109 (overflow 0120 to 0129), team C 0110 to 0119, team B none. 0106 to 0109 free. SQL for 0092 to 0105 is in `docs/ops/r1-runbook.md`.
 
@@ -172,7 +172,7 @@ Status as recorded in `requests/` (answers files take precedence). "Open for A" 
 
 | Direction | IDs |
 |---|---|
-| Open for A | REQ-B-017, REQ-B-019, REQ-B-029, REQ-B-037, REQ-B-040, REQ-B-043, REQ-B-050, REQ-B-051, REQ-B-052, REQ-C-012, REQ-C-021 |
+| Open for A | REQ-B-019, REQ-B-029, REQ-B-040, REQ-B-043, REQ-B-050, REQ-B-051, REQ-B-052, REQ-C-021 |
 | Delivered by A (waiting for merge or the other side) | REQ-B-003, REQ-B-004, REQ-B-007, REQ-B-013, REQ-B-014, REQ-C-016, REQ-C-017, REQ-C-018 |
 | Open to B | REQ-A-007, REQ-A-009, REQ-A-011, REQ-A-017 |
 | Open to C | REQ-A-004, REQ-A-014, REQ-A-016, REQ-A-018 |
