@@ -91,19 +91,19 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 | T54 performance report at ~406k questions (docs) | `r1/t54-perf-400k` @ bbf412c6 | A4 | none (docs) | pushed (A4): docs/qa performance report, 11 paths p50/p95 and fixes for p95 over 1 s; review not seen (unconfirmed) |
 | REQ-B-035 review queue rows carry the stimulus group (D90) | `r1/intake-reqs-a2` @ b70dc957 | A2 | none (REQ-B-035) | READY (A2); review not seen (unconfirmed) |
 | T34-L1-residual (A3 WIP, for B3) | `r1/t34-l1-residual` @ e4bb72eb | A3 | T34 (B3 finding T34-L1-residual) | WIP, untested (A3): the answer to B3 finding T34-L1-residual; not for merge yet |
-| REQ-C-019 joinable filter on group list and filter-options | `r1/t49-served-now` @ 221c2b28 | A2 | T49 (base) | smoke role for GET /questions/filter-options, trimmed Negeri match, joinable wording pushed (221c2b28); awaiting B1 gate and B2 (A2) |
+| REQ-C-019 joinable filter on group list and filter-options | `r1/t49-served-now` @ 8a4b46a9 | A2 | T49 (base) | smoke role for GET /questions/filter-options, trimmed Negeri match, joinable wording pushed (221c2b28); awaiting B1 gate and B2 (A2) |
 | REQ-B-033 paper lane names a placed question the bank does not return | `r1/req-b-033` @ f3da2b7d | A4 | servability lanes (T30, in base) | READY (A4); review not seen (unconfirmed) |
 | T45 part 1 (AC-04.3/04.5/05.3) | `r1/t45-servability-acs` @ 37d24013 | A4 | T29 | fix pushed (T45-L1: approve-time servability check at the shared approve point; cognitiveLevel in the fresh spec); awaiting B2 re-review (A4) |
 | H-A8 stale specs | `r1/ha8-stale-specs` @ 56b1b6cc | A2 | base | READY (test-only) |
 | T04 minors (R1E2E-09) | `r1/t04-minors` @ d0740a32 | A2 | T04 | REQ-B-044 fix pushed (chapter-practice spec follows the Soalan by Chapter tile rule, D91 / FD-11); awaiting B1 gate and B2 (A2) |
-| T38 self-mark reward (D94) | `r1/t38-selfmark-reward` @ e8af872f | A1 | T28 | fix pushed (6995d091: reward on the best-N gain, T38-L1) and base merged; awaiting B2 re-review (A1) |
-| T40 attempts ACs | `r1/t40-attempts-acs` @ 985e2af0 | A1 | T38 | restacked on the T38 fix (midpoint spec renamed, choose-N self-mark reward case); awaiting B2 (A1) |
+| T38 self-mark reward (D94) | `r1/t38-selfmark-reward` @ 067d4bc2 | A1 | T28 | fix pushed (6995d091: reward on the best-N gain, T38-L1) and base merged; awaiting B2 re-review (A1) |
+| T40 attempts ACs | `r1/t40-attempts-acs` @ dae7d4fe | A1 | T38 | restacked on the T38 fix (midpoint spec renamed, choose-N self-mark reward case); awaiting B2 (A1) |
 | T50 partial ACs | `r1/t50-partial-acs` @ e436e084 | A1 | none | B2 Changes requested (A1) |
 | T31 builder wire | `r1/t31-builder-wire` @ 6a27c8dd | READY @ 6a27c8dd (lead, 2026-11-01; BASE-102 merged, virtual merge clean); waits for C1 to rebase REQ-A-008 on BASE-102 | T34; waits for C1 REQ-A-008 | restacked on BASE-102 (6a27c8dd is a base merge of the bf825128 checkpoint), checkpoint, not yet READY (bf825128: builder helper follows T36, poc-flag publishes under a Disahkan Kontrak, openapi re-emitted; evidence still running); REQ-A-008 (C1) follows it |
 | T43 chain + publish ACs | `r1/t43-chain-publish` @ 5ce5894f | READY @ 5ce5894f (lead, 2026-11-01; on T31, Jana Kertas fixtures use a non-KBAT level); merges after T31 | T31 (contains T34) | real commits on the T31 chain (Jana Kertas fixtures use a non-KBAT level, base merges); T31 is a checkpoint, so T43 waits for T31 (A3) |
-| T48 builder parity (0104) | `r1/t48-builder-parity` @ 4a3ff264 | A3 | T34; re-verify running | T34 is in base (BASE-101); head 4a3ff264 = fix 2cbe7d28 plus base merge and two spec follow-ups (blocker catalogue has 21 codes; the PoC double re-publish spec serves the seeded Kontrak); needs B2 re-review (migration 0104) |
+| T48 builder parity (0104) | `r1/t48-builder-parity` @ 705468c1 | A3 | T34; re-verify running | T34 is in base (BASE-101); head 4a3ff264 = fix 2cbe7d28 plus base merge and two spec follow-ups (blocker catalogue has 21 codes; the PoC double re-publish spec serves the seeded Kontrak); needs B2 re-review (migration 0104) |
 | T43b publish ACs | `r1/t43b-publish-acs` @ 8841a31b | A3 dev-2 | T43 | publish-acs.spec pushed (AC-07.4 to AC-07.9, NO_QUESTIONS / ZERO_MARK_SECTION / TOTAL_MARKS_BELOW_ONE checks, carries T48); READY status not announced (unconfirmed) (A3) |
-| T51 partial ACs (builder, Terbit, Kontrak, Jana) | `r1/t51-partial-acs-a3` @ 359fe16e | A3 dev-1 | T43 | pushed; not yet in the B queue |
+| T51 partial ACs (builder, Terbit, Kontrak, Jana) | `r1/t51-partial-acs-a3` @ 5b7fc678 | A3 dev-1 | T43 | real commits (chain activities step 5b, T33 approve-gate negative, Semak Kertas metadata spec, AC-18.1 coverage); READY status not announced (unconfirmed) (A3) |
 | T52 examinerGrid (AC-20.3) | `r1/t52-examiner-grid` @ addae644 | A1 | none | B2 eslint BLOCKER `bijak-papers.test.ts:317` (A1); REQ-A-012 FE waits for it |
 
 ### 1.3 In progress, not pushed
@@ -118,12 +118,12 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 |---|---|---|
 | T37 runbook | `r1/t37-r1-runbook` @ f4bb197c | `docs/ops/r1-runbook.md` (migrations 0092 to 0105, SELECTs run 74/74 on BASE-62) |
 | T39 K1 evidence | `r1/t39-k1-evidence` @ 1a26f7a6 | `docs/ops/r1-k1-blueprint-evidence.md` |
-| T46 / H-A17 AC coverage | `r1/ha17-ac-coverage` @ 55562fa6 | `docs/qa/r1-backend-ac-coverage.md`, `r1-verify-first-notes.md` (kept current by H-A27) |
+| T46 / H-A17 AC coverage | `r1/ha17-ac-coverage` @ 9080a76e | `docs/qa/r1-backend-ac-coverage.md`, `r1-verify-first-notes.md` (kept current by H-A27) |
 | H-A19 admin parity | `r1/ha19-admin-parity` @ c7315b0e | `docs/qa/r1-admin-parity-check.md` |
 | H-A20 student parity | `r1/ha20-student-parity` @ 557e17c6 | `docs/qa/r1-student-parity-check.md` |
 | H-A22 parity docs | `r1/ha22-parity-docs` @ 4fb2a41b | both parity docs refreshed, deviation rows H22-D1/D2 in `v2-bijak-spm.md`, `student.md` rows marked |
 | H-A23 E2E readiness | `r1/ha23-e2e-readiness` @ 9a86b5bb | `docs/qa/r1-e2e-readiness.md` (merge order, minimal set) |
-| H-A24 release input | `r1/ha24-release-input` @ 625be652 | `docs/ops/r1-release-input-team-a.md` (+ scope AC-R1-18.2 and 18.4 text) |
+| H-A24 release input | `r1/ha24-release-input` @ 36d6756b | `docs/ops/r1-release-input-team-a.md` (+ scope AC-R1-18.2 and 18.4 text) |
 | H-A26 this sheet | `r1/ha26-team-a-state` @ this branch (head = tip of the branch) | `docs/handoff/team-a-r1-state.md` |
 
 ## 2. Decisions and answers
@@ -158,7 +158,7 @@ Earlier decisions still in force for R1: D72 (secondary only), D75/D76 (standard
 | 0101 | `0101_essay_choice` | T25 | merged BASE-15 |
 | 0102 | `0102_leaf_cognitive_level` | T33 (`r1/t33-leaf-tags` @ 95cea5be) | merged BASE-27 |
 | 0103 | `0103_question_report_context` | T42 (`r1/t42-reports-intake-acs` @ d1210e96) | merged BASE-41; attempt FK stays NOT VALID |
-| 0104 | `0104_paper_section_admin_created` | T48 (`r1/t48-builder-parity` @ 4a3ff264) | T34 is in base (BASE-101); head 4a3ff264 = fix 2cbe7d28 plus base merge and two spec follow-ups (blocker catalogue has 21 codes; the PoC double re-publish spec serves the seeded Kontrak); needs B2 re-review (migration 0104) |
+| 0104 | `0104_paper_section_admin_created` | T48 (`r1/t48-builder-parity` @ 705468c1) | T34 is in base (BASE-101); head 4a3ff264 = fix 2cbe7d28 plus base merge and two spec follow-ups (blocker catalogue has 21 codes; the PoC double re-publish spec serves the seeded Kontrak); needs B2 re-review (migration 0104) |
 | 0105 | gate facts (BE-09 duplicate, media, AI-editor facts) | H-A18 (A2) `r1/ha18-gate-facts` @ d3842c48 | B3 Pass, B2 pending; needs the Q10 user answer |
 
 Ranges: team A 0100 to 0109 (overflow 0120 to 0129), team C 0110 to 0119, team B none. 0106 to 0109 free. SQL for 0092 to 0105 is in `docs/ops/r1-runbook.md`.
@@ -169,7 +169,7 @@ Status as recorded in `requests/` (answers files take precedence). "Open for A" 
 
 | Direction | IDs |
 |---|---|
-| Open for A | REQ-B-017, REQ-B-019, REQ-B-025, REQ-B-029, REQ-B-032, REQ-B-034, REQ-B-035, REQ-B-037, REQ-B-040, REQ-B-043, REQ-B-044, REQ-B-049, REQ-B-050, REQ-B-051, REQ-B-052, REQ-C-012, REQ-C-019, REQ-C-021 |
+| Open for A | REQ-B-017, REQ-B-019, REQ-B-025, REQ-B-029, REQ-B-032, REQ-B-037, REQ-B-040, REQ-B-043, REQ-B-049, REQ-B-050, REQ-B-051, REQ-B-052, REQ-B-053, REQ-C-012, REQ-C-019, REQ-C-021 |
 | Delivered by A (waiting for merge or the other side) | REQ-B-003, REQ-B-004, REQ-B-007, REQ-B-013, REQ-B-014, REQ-C-016, REQ-C-017, REQ-C-018 |
 | Open to B | REQ-A-007, REQ-A-009, REQ-A-011, REQ-A-017 |
 | Open to C | REQ-A-004, REQ-A-013, REQ-A-014, REQ-A-016 |
