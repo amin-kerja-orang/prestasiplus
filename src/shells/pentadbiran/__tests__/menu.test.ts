@@ -77,11 +77,7 @@ describe('Pentadbiran menu data', () => {
 describe('Pentadbiran routing', () => {
   it('every item resolves to a real route (not the 404 catch-all)', () => {
     const router = createAppRouter({ history: createMemoryHistory() })
-    // BS-08 `/admin/studio` (Studio list, C3 T13b) is built on another branch (REQ-A-004). Remove it
-    // from this set when that screen merges. KS-01 `/admin/spm` (hub) is in base.
-    const AWAITING_SCREEN = new Set(['BS-08'])
     for (const item of ALL_ITEMS) {
-      if (AWAITING_SCREEN.has(item.id)) continue
       const resolved = router.resolve(item.to)
       expect(resolved.matched.length, `${item.id} ${item.to}`).toBeGreaterThan(0)
       expect(String(resolved.name), `${item.id} ${item.to}`).not.toMatch(/not-found|404/i)

@@ -785,7 +785,6 @@ export class QuestionsRepository {
     return out
   }
 
-  /** R1-B05: the subject is in the SPM catalogue (`spm_subject_configs`) and the level is Tingkatan 4 or 5. */
   /** `rights_status` of one version: null when no declaration was made (or the version is unknown). */
   async rightsStatusOf(questionId: string, versionNo: number): Promise<string | null> {
     const key = bi(questionId)
@@ -794,6 +793,7 @@ export class QuestionsRepository {
     return row?.rightsStatus ?? null
   }
 
+  /** R1-B05: the subject is in the SPM catalogue (`spm_subject_configs`) and the level is Tingkatan 4 or 5. */
   async isSpmBound(subjectId: string | null, levelId: string | null): Promise<boolean> {
     const subject = subjectId === null ? null : bi(subjectId)
     const level = levelId === null ? null : bi(levelId)

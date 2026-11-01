@@ -121,6 +121,8 @@ export function toQuestion(q: Question): ApiQuestion {
     dskpSpId: q.dskpSpId,
     curriculumChapterId: q.curriculumChapterId,
     curriculumTopicId: q.curriculumTopicId,
+    // Like the API: the level is on the leaf part, not at the top.
+    ...(q.cognitiveLevel ? { parts: [{ mode: q.questionType, cognitiveLevel: q.cognitiveLevel }] } : {}),
     chapterLabel: q.chapterLabel,
     scriptType: q.scriptType,
     textDirection: q.textDirection,

@@ -9,7 +9,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { DsStatusBadge } from '@/ds'
+import { DsStatusBadge, useConfirm } from '@/ds'
 import { diffForHumans } from '@/lib/time'
 
 import {
@@ -18,6 +18,7 @@ import {
   type ReportView,
 } from '../../api/reports'
 import {
+  ARCHIVE_NOTE,
   DEACTIVATE_NOTE,
   DISMISS_NOTE,
   DISPLAY_STATUS_DS,
@@ -26,7 +27,7 @@ import {
 } from '../../lib/report-reasons'
 
 const props = defineProps<{ report: ReportView }>()
-const emit = defineEmits<{ saved: [message: string]; failed: [error: unknown] }>()
+const emit = defineEmits<{ saved: [message: string | string[]]; failed: [error: unknown] }>()
 
 const router = useRouter()
 
@@ -45,6 +46,10 @@ const r = computed(() => props.report)
 const q = computed(() => r.value.question)
 const isStructured = computed(() => r.value.questionType === 'structured')
 const hasActions = computed(() => r.value.status === 'pending' || r.value.status === 'reviewed')
+/** The report view carries no lifecycle status; a question that was archived from a report is taken out of practice too. */
+const archived = computed(
+  () => q.value.status === 'archived' || (r.value.adminNotes === ARCHIVE_NOTE && q.value.isActive === false),
+)
 const inactive = computed(() => q.value.exists && q.value.isActive === false)
 const options = computed(() =>
   (q.value.options ?? []).map((text, i) => ({
@@ -77,7 +82,11 @@ async function act(input: ReportUpdateInput): Promise<void> {
   busy.value = true
   try {
     const result = await updateQuestionReport(r.value.id, input)
-    emit('saved', result.status)
+    const { warning, papers } = result.data
+    // H-A13: an archived question on a published paper: the admin is told which papers cannot start a new sitting.
+    if (warning && papers?.length)
+      emit('saved', [result.status, warning, `Kertas: ${papers.map((p) => p.title).join('; ')}`])
+    else emit('saved', result.status)
   } catch (err) {
     emit('failed', err)
   } finally {
@@ -89,6 +98,18 @@ const markFixed = () => act({ status: 'fixed', adminNotes: notes.value })
 const dismiss = () => act({ status: 'dismissed', adminNotes: DISMISS_NOTE, reactivate: true })
 const deactivate = () =>
   act({ status: 'reviewed', adminNotes: DEACTIVATE_NOTE, forceDeactivate: true })
+// V2 Panel: dialog "Arkibkan soalan ini?" before the action (cloud-student-mechanism section 3.1).
+const confirm = useConfirm()
+const archive = async (): Promise<void> => {
+  const ok = await confirm({
+    title: 'Arkibkan soalan ini?',
+    // [PROPOSED] body (UX-73): V2's archive text is a success flash, not a confirm body.
+    message: `Soalan #${String(r.value.questionId)} akan diarkibkan dan dikeluarkan daripada semua aktiviti murid.`,
+    tone: 'error',
+    confirmLabel: 'Arkib',
+  })
+  if (ok) await act({ status: 'reviewed', adminNotes: ARCHIVE_NOTE, archive: true })
+}
 </script>
 
 <template>
@@ -289,6 +310,20 @@ const deactivate = () =>
           @click="deactivate"
         >
           Nyahaktif Segera
+        </UButton>
+        <UButton
+          v-if="q.exists && !archived"
+          type="button"
+          color="neutral"
+          variant="soft"
+          icon="i-ph-archive"
+          block
+          :disabled="busy"
+          class="min-h-11"
+          data-testid="report-archive"
+          @click="archive"
+        >
+          Arkib
         </UButton>
       </div>
     </article>

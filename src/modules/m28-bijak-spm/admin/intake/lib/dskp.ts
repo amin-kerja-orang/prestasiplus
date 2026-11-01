@@ -1,7 +1,13 @@
 /**
- * Small stand-in for the loaded DSKP (the real list comes from M03 curriculum later). Unit codes
- * here are prototype codes, not official ones. Controlled list: free text is not accepted (AC-05.2).
+ * The DSKP unit list of the intake tag picker (controlled list: free text is not accepted, AC-05.2).
+ *
+ * The picker reads the real curriculum units from `GET /api/questions/studio/dskp` (REQ-B-001, the Studio
+ * picker's route; the server gate `unitNotInTaxonomy` checks `tag.unit` against the same units). `DSKP_UNITS`
+ * below is ONLY the prototype stand-in of the in-browser mock (`mockStudioDskp` serves it in the same
+ * `StudioDskp` shape) and of the mock extractor's keyword guess; it is never shown in http mode.
  */
+import type { StudioDskp } from '@pp/contract'
+
 import type { CurriculumTag, SubjectCode } from '../../../domain/types'
 
 export interface DskpUnit {
@@ -11,8 +17,28 @@ export interface DskpUnit {
   form: 'T4' | 'T5'
   /** Lower-case words that suggest this unit in extracted text. */
   keywords: string[]
+  /** SP codes of the unit (served units only; the tag's SP stays a typed list). */
+  sps?: string[]
 }
 
+/** The units of one subject and form from the server shape (`StudioDskp` of one subject and level). */
+export function unitsFromStudio(subject: SubjectCode, form: 'T4' | 'T5', dskp: StudioDskp): DskpUnit[] {
+  return dskp.units.map((u) => ({ code: u.code, label: u.title, subject, form, keywords: [], sps: u.sps.map((sp) => sp.code) }))
+}
+
+/** Mock of `GET /api/questions/studio/dskp`: the stand-in units in the server's shape (ids are stable strings). */
+export function mockStudioDskp(subject: SubjectCode, form: 'T4' | 'T5'): StudioDskp {
+  return {
+    units: DSKP_UNITS.filter((u) => u.subject === subject && u.form === form).map((u) => ({
+      id: `mock-${u.code}`,
+      code: u.code,
+      title: u.label,
+      sps: [1, 2].map((n) => ({ id: `mock-${u.code}-${n}`, code: `${u.code.slice(-2)}.${n}`, title: `${u.label} ${n}`, skCode: null })),
+    })),
+  }
+}
+
+/** Stand-in units of the in-browser mock only. */
 export const DSKP_UNITS: DskpUnit[] = [
   { code: 'MAT-T4-02', label: 'Asas Nombor', subject: 'MAT', form: 'T4', keywords: ['bentuk piawai', 'asas nombor'] },
   { code: 'MAT-T4-03', label: 'Fungsi dan Persamaan Kuadratik', subject: 'MAT', form: 'T4', keywords: ['kuadratik', 'fungsi'] },
@@ -28,12 +54,8 @@ export const DSKP_UNITS: DskpUnit[] = [
   { code: 'SEJ-T5-02', label: 'Kemerdekaan Tanah Melayu', subject: 'SEJ', form: 'T5', keywords: ['merdeka', 'kemerdekaan'] },
 ]
 
-export function unitsFor(subject: SubjectCode): DskpUnit[] {
+function unitsFor(subject: SubjectCode): DskpUnit[] {
   return DSKP_UNITS.filter((u) => u.subject === subject)
-}
-
-export function unitByCode(code: string | null): DskpUnit | undefined {
-  return code ? DSKP_UNITS.find((u) => u.code === code) : undefined
 }
 
 export function guessUnit(subject: SubjectCode, text: string): DskpUnit | undefined {
