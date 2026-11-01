@@ -2,7 +2,7 @@
 
 Semua akaun ialah **akaun demo rekaan** dalam data tiruan (mock) prototaip. Ia tidak wujud di prestasiplus.my atau prestasiplus.cloud sebenar.
 
-**Kata laluan semua akaun: `<DEMO_PASSWORD>`**
+**Kata laluan semua akaun: `<DEMO_PASSWORD>`** (local/dev seed default: `DEMO_PASSWORD` in apps/api/prisma/seed/core/demo-password.ts; deployed environments refuse it, see deploy/demo/redeploy-demo-migration-aware.sh)
 
 ## Cara buka prototaip v2
 
