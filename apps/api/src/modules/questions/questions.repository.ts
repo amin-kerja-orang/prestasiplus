@@ -60,12 +60,12 @@ export interface VersionDraft {
    * `undefined` leaves the stored value untouched on a rewrite and stores null on a new version.
    */
   paperCode?: string | null
-  /** R1-H-A18: who wrote the content last. A person's edit is `person`; the AI service marks its own writes `ai`. */
   /**
    * Import holds carried to a NEW version (REQ H-A18 minor): the loader's `import_issues` that still apply to the edited content.
    * `undefined` leaves the column untouched on a rewrite and stores null on a new version; `null` clears.
    */
   importIssues?: { code: string; target?: string; label?: string; path?: string }[] | null
+  /** R1-H-A18: who wrote the content last. A person's edit is `person`; the AI service marks its own writes `ai`. */
   lastEditor?: 'person' | 'ai'
   /** R1-H-A18: question total declared at intake accept (null = none). A person's edit stores null. */
   declaredMarks?: number | null
@@ -865,7 +865,6 @@ export class QuestionsRepository {
     return out
   }
 
-  /** `rights_status` of one version: null when no declaration was made (or the version is unknown). */
   /**
    * The facts the gates read that are not on the version row (R1-H-A18): ONE loader for the lifecycle transition, `gate-check`, the bulk
    * action and the workflow bank adapter. Read inside the caller's transaction when there is one.
