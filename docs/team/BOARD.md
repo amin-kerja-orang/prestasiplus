@@ -330,3 +330,9 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 - **REQ-B-031 @ 8e913fb5a: B3 Pass (REP-M1 HIGH closed).** REP-L1 (cap lock) → A1a. REP-L2 lead decision: "served" is enough proof (a broken question must be reportable); BM copy → "Anda hanya boleh melapor soalan yang dipaparkan kepada anda." [PROPOSED].
 - **T34 @ 5bb590d0: B3 Pass** (L2, L3 closed). T34-L1-residual (blueprint reference imageFileId + path C decimal id) → A3 follow-up.
 - B2 ready lists: T26b, T44, REQ-B-023, T42b, H-A13 + A3 docs; REQ-C-023 Approve.
+
+### Cycle 16 (2026-11-01 13:35 UTC, BASE-100 = 2211c7f5) — resume after usage limit + container restart
+- All A sessions are running again (A2, A3, A4 woken by Mandor). The A1 subagents were lost in the container restart and were re-spawned: **A1a** REQ-B-031 REP-L1/L2 → REQ-C-021 → REQ-C-016; **A1b** T38 MAJOR → T40 restack → T50/T52 refresh.
+- In base since cycle 15: T26b, T26c, fix-attempt-image-url, REQ-B-026, T36 (team C version, BASE-99).
+- T34/T36 now owned by team C (owner decision). A3: T48, T31, T43, T43b, T51 restack onto BASE-100.
+- Q10 (migrated rights after an edit) is still open with the user; it blocks H-A18 MAJOR 2.

@@ -38,7 +38,7 @@
 | REQ-C-015 | DECIDED (Q7, user: follow V2): (a) Kuiz "✓ Semak" does NOT consume BR-07 trial checks (V2 `/simulasi/kuiz/semak` writes no practice_sessions and has no quota gate, §1.8); (b) per-paper Kuiz key + explanation stays allowed during an open scored sitting (V2 parity); B3 M1 = accepted risk by user decision. Archived questions still leave the per-paper Kuiz (REQ-A-003, AC-R1-18.4) | lead | — | DELIVERED |
 | REQ-C-016 | DELIVERED: AC-R1-18.4 now states the H-A13 refusal + started sittings keep their pinned version | A3 docs | r1/ha24-release-input @ cf49303a | DELIVERED |
 | REQ-C-017 | DELIVERED: `pinned` (= paper Terbit, frozen snapshot) on editor.questions[] and review.rows[]; also `sections[].numberLabels`, `sections[].adminCreated`; new routes Tambah bahagian / Tambah soalan / Padam soalan (see BOARD T48) | A3 · T48 | r1/t48-builder-parity @ 1b76778f | DELIVERED (READY pending re-run) |
-| REQ-C-018 | DELIVERED: `GET /question-reports` rows carry `question.status` (draft\|review\|approved\|archived, latest version) + `question.liveVersionNo` (number\|null); hide Arkib when status === 'archived' | A1 (b) | r1/b-requests-a1b @ f79675fc | DELIVERED |
+| REQ-C-018 | **DONE (merged BASE-35)**: `GET /question-reports` rows carry `question.status` (draft\|review\|approved\|archived, latest version) + `question.liveVersionNo` (number\|null); hide Arkib when status === 'archived' | A1 (b) | r1/b-requests-a1b @ f79675fc | DELIVERED |
 
 **Note to team C lead:** this git inbox (`requests/from-C.md` → `requests/answers-A.md`) is the official channel; team A reads it every ~30 min and answers here with the branch@head. Dependencies you asked about: T33 READY @ 95cea5be, T30 READY @ 09d53c56, T34 follow-up READY @ 7bc3419e (merges after T33), R1E2E-05b READY @ 57e7feee, H-A13 READY @ 3979e212 — all waiting for team B's merge, not for team A.
 | REQ-B-031 | DECIDED (Q8 → D98, user): pupil must report from an owned context (attempt/practice session holding the question); no auto-deactivate (admin triage in Laporan Soalan); re-POST never undoes an admin dismiss; per-pupil daily cap 20. Building now | A1 | r1/reqb031-report-guard | IN-PROGRESS |
@@ -66,3 +66,11 @@
 **T34 READY @ 5bb590d0 (for C1/T10):** the builder blocker catalogue is now 18 codes. Only `BLUEPRINT_NOT_VERIFIED` and `INELIGIBLE` (no unit/TP/tag review) are overridable (`canOverride`). NO_KEY, NO_MARKS, MODE_NOT_ALLOWED, GROUP_BROKEN and NOT_SERVABLE are hard. Re-check your union against `packages/contract` at that head. NOT_SERVABLE copy is "Soalan {id} tidak dapat disemak untuk murid; cuba lagi." [PROPOSED; Q6 rule: keep if it fits context].
 
 **T26c READY @ df8a52a5b** (closes the REQ-B-003 structured-K2 gap): E2E-only fixture paper "E2E fixture: Percubaan Matematik Tambahan Kertas 2" (Terbit, 3472/2). `e2e/api/bijak-part-input.spec.ts` now prefers the "E2E fixture:" paper. No fixme left.
+
+**2026-11-01 13:35 UTC — team A resumed after usage limit + container restart (lead):**
+- REQ-C-018: DONE (merged BASE-35).
+- REQ-B-031: A1a fixes REP-L1 (cap advisory lock + concurrency spec) and REP-L2 (lead decision: "served" is enough proof; BM copy → "Anda hanya boleh melapor soalan yang dipaparkan kepada anda."), then merges BASE-100 → READY. Lapor FE merges after it.
+- REQ-C-021: A1a next (D98, no chapter lock; server CHAPTER_LOCKED removed).
+- REQ-C-016: A1a, docs (AC-R1-18.4 → pinned version per D80/D85).
+- T38 MAJOR (best-N self-mark gain): A1b → then T40 restack + B2 Minors, T50/T52 refresh on BASE-100.
+- T34/T36 are now owned by team C (owner decision, 18:18). Team A does not touch T34 without C's agreement. A3's T34-L1-residual work is handed to C as a note.
