@@ -558,6 +558,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
 | r1/req-b-025c | d47353043 | READY — B2 APPROVE w/ Minors @d4735304 (Minors carried); awaiting B1 | READY (A1b, BASE-105): Minors fixed (decision row REQ-B-007/025c, lateSync, fixture names); attempts 183/183; B2 |
 | r1/req-c012-a2 | 9b1fd35e2 | ON HOLD (A2, @9b1fd35e): sits on ha18; picks up the REQ-B-057 fix after it lands |
+| r1/reqa018-mock-swap | 76511c9a8 | READY (A2, @76511c9a on route 9d6ef833): drops the 3 paper-servability known-mismatch entries (C mock now matches the contract; verified with C FE 3942f760: 160 scenarios, 0 failing); merge AFTER C reqa018-paper-servability-fe; B2 small |
 | r1/reqa018-paper-servability-route | 9d6ef833f | READY (A2, @9d6ef833, contains BASE-107): admin papers only, cap 200 + meta, batched read, contract exports; contract-tests scenario (4 cases; API conformance 413/413; mock: 3 assertion known-mismatches until C serves it → swap to 1 schema entry when C reqa018-fe lands); full B2 + B3; C reqa018-fe must re-merge | merge-tree vs BASE-109: clean |
 | r1/reqb049-report-visible | 9ece8d76d | READY (A1b, BASE-105): pre-review Minors fixed (type from the live version, spec titles, real level codes); 316/316; B2 + B3 | A2 B3 pre-scan: CLEAN (no IDOR/oracle, no echo, caps bite under mutation) |
 | r1/reqb052-archived-edit | f3a2448f9 | ON HOLD (dep: contains H-A18, CHANGES REQUESTED by B2 REQ-B-057; merge only after the ha18 fix) | was READY (A3, BASE-105; replaces 17196431): follow-ups done: P1 pinned-clause spec (bites), guard published OR (withdrawn AND EXISTS attempts), header; archived-edit 6/6, pinned-version-rule 6/6, workflow 296/296; tsc/eslint 0; B2 |
@@ -583,8 +584,6 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t51-partial-acs-a3 | 61c1b077f | READY (A3, hold LIFTED; @61c1b077 on T43 238eb6eb + T31 eb0346d2 + T48): merge after T48, T31, REQ-A-008, T43; never old T31 6a27c8dd / T43 5ce5894f / T51 54f63116; Preview #3 (A4, 33 heads on BASE-105 @525f9ca1, local): ALL GREEN, vue-tsc 0 after REQ-A-008, 0 reds. B2 |
 | r1/t52-examiner-grid | 5a0d7bd0e | READY — B2 APPROVE @5a0d7bd0 (cycle 21, 07:25 MYT); awaiting B1 merge | READY (A1a/A1b, @5a0d7bd0): examinerGrid from marked (live+pinned), be09 test 8 bites; deviation note live-wins in withPinned; A2 + A3 dev-1 delta pre-reviews CLEAN; 124 tests; B2 (C REQ-A-012 reqa012 |
 | r1/t54-perf-400k | 03c76eb0d | READY — B2 APPROVE @03c76eb0 (cycle 21, 07:25 MYT); awaiting B1 merge | READY (A4, docs): credentials replaced by placeholders; may 3-line-conflict with 022a perf docs (trivial); B2 |
-
-**New branches not yet triaged:** r1/reqa018-mock-swap 76511c9a8
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
