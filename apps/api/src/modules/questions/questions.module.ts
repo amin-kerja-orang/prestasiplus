@@ -30,7 +30,7 @@ import { StudioController, StudioDskpService } from './studio'
   imports: [CurriculumModule, UsersModule, FilesModule, AuditModule, ThrottleModule],
   controllers: [AdminQuestionsController, StructuredQuestionsController, GuruQuestionsController, StimuliController, StudioController, ServabilityController],
   providers: [QuestionsRepository, QuestionsService, StimuliRepository, GroupMembers, StimuliService, PkskQuestionsService, QuestionCountsAdapter, QuestionsBijakPoolSource, StudioDskpService, ServabilityService, ServabilityReadsService, OverviewCache],
-  exports: [QuestionsRepository, QuestionsService, PkskQuestionsService, QuestionsBijakPoolSource, ServabilityService, OverviewCache],
+  exports: [QuestionsRepository, QuestionsService, StimuliService, PkskQuestionsService, QuestionsBijakPoolSource, ServabilityService, OverviewCache],
 })
 export class QuestionsModule implements OnModuleInit {
   constructor(

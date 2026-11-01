@@ -74,8 +74,8 @@ export class BuilderController {
   @Post(':id/publish')
   @HttpCode(200)
   @RateLimit(BIJAK_BUILDER_LIMITS.write)
-  async publish(@Actor() actor: AuditActor, @Param('id') id: string) {
-    return ok(await this.builder.publish(actor, id))
+  async publish(@Actor() actor: AuditActor, @Param('id') id: string, @Body() body: unknown) {
+    return ok(await this.builder.publish(actor, id, body))
   }
 
   @Get(':id/review')
@@ -112,6 +112,13 @@ export class BuilderController {
   @RateLimit(BIJAK_BUILDER_LIMITS.write)
   async reorder(@Actor() actor: AuditActor, @Param('id') id: string, @Param('sid') sid: string, @Body() body: unknown) {
     return ok(await this.builder.reorderSection(actor, id, sid, body))
+  }
+
+  /** R1-T34 "Sunting petikan": the title of a stimulus group on the paper. */
+  @Put(':id/groups/:groupId')
+  @RateLimit(BIJAK_BUILDER_LIMITS.write)
+  async groupLabel(@Actor() actor: AuditActor, @Param('id') id: string, @Param('groupId') groupId: string, @Body() body: unknown) {
+    return ok(await this.builder.setGroupLabel(actor, id, groupId, body))
   }
 
   @Post(':id/copy')

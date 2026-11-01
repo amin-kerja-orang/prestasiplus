@@ -82,19 +82,28 @@ export class ServabilityReadsService {
 
   async overview(): Promise<ServabilityOverviewCounts> {
     const live = { status: SERVABLE_STATUS, active: true } as const
-    const bank = await this.questions.count(live)
-    const [spmSubjects, drawn, databankTotal, paperCard] = await Promise.all([this.subjectsListed(), this.spmDraw(), this.databankLaneTotal(), this.paperLaneCard()])
+    const [bank, spmSubjects, drawn, databankTotal, paperCard] = await Promise.all([
+      this.questions.count(live),
+      this.subjectsListed(),
+      this.spmDraw(),
+      this.databankLaneTotal(),
+      this.paperLaneCard(),
+    ])
     const sumOver = (by: ReadonlyMap<string, number>, only?: ReadonlySet<string>) => [...by].reduce((n, [k, v]) => n + (only === undefined || only.has(k) ? v : 0), 0)
 
-    const bab = await this.questions.groupCount('chapter', { ...filterOf('bab'), ...live })
-    const kuiz = await this.questions.count({ ...filterOf('simulasi_kuiz'), ...live })
-    const onPapers = await this.questionsOnPublishedPapers()
+    // R1-B22(a): the independent counts run together (one Promise.all), not one after another; the DB serves them in parallel and the
+    // overview takes the longest of them, not their sum. Paper counts: the questions on published papers, then their reports.
+    const [bab, kuiz, onPapers, jana] = await Promise.all([
+      this.questions.groupCount('chapter', { ...filterOf('bab'), ...live }),
+      this.questions.count({ ...filterOf('simulasi_kuiz'), ...live }),
+      this.questionsOnPublishedPapers(),
+      this.janaEligible(),
+    ])
     let paperServed = 0
     for (const part of chunks(onPapers)) {
       const reports = await this.servability.reports(part)
       for (const r of reports.values()) if (r.activities.find((a) => a.activity === 'simulasi_paper')?.served) paperServed++
     }
-    const jana = await this.janaEligible()
 
     const rows: [ServabilityActivity, number, number, 'sql' | 'evaluated' | 'pool'][] = [
       ['databank', drawn.databankServed, databankTotal, 'sql'],

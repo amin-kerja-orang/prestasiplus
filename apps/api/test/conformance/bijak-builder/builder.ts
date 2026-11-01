@@ -198,8 +198,17 @@ export const bijakBuilderScenarios: Scenario[] = [
 
       const put = await admin.request('PUT', `/admin/papers/${id}`, { body: { sections: [{ id: String(sectionsOf(editor)[0]?.id), questionIds: chosen }] } })
       ctx.expectStatus(put, 200)
-      const publish = await admin.request('POST', `/admin/papers/${id}/publish`)
+      // AC-R1-16.2: a Spec Kontrak blocks a plain Terbit (a line naming the Kontrak) and the audited override publishes; a Disahkan one (BASE-60 seeding)
+      // publishes plainly. The branch follows the source the API reports for MAT kertas 1.
+      const contract = await admin.request('GET', '/admin/blueprints/MAT/1')
+      ctx.expectStatus(contract, 200)
+      let publish = await admin.request('POST', `/admin/papers/${id}/publish`)
       ctx.expectStatus(publish, 200)
+      if (dataOf(contract).source !== 'Disahkan') {
+        ctx.check(dataOf(publish).ok === false && arr(dataOf(publish).errors).some((e) => String(e).startsWith('Kontrak Simulasi')), `a Spec contract must block Terbit: ${JSON.stringify(dataOf(publish))}`)
+        publish = await admin.request('POST', `/admin/papers/${id}/publish`, { body: { override: true, reason: 'Kontrak sedang menunggu pengesahan' } })
+        ctx.expectStatus(publish, 200)
+      }
       ctx.check(dataOf(publish).ok === true, `publish refused: ${JSON.stringify(dataOf(publish).errors)}`)
       ctx.check(arr(dataOf(publish).errors).length === 0, 'a successful publish carries no errors')
 

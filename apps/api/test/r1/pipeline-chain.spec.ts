@@ -147,7 +147,7 @@ const mcqBody = (text: string, extra: Record<string, unknown> = {}) => ({
   options: ['3', '4', '5', '6'],
   correctAnswer: 1,
   explanation: 'Penjelasan ujian rantaian R1.',
-  cognitiveLevel: 'mengaplikasi', // T33 gate: approving an SPM-bound question needs a level per leaf
+  cognitiveLevel: 'mengaplikasi', // the T33 approve gate: a level per leaf
   kertas: '2',
   tag: { unitId: fx.unit, spIds: [fx.sp], tp: 3 },
   ...extra,
@@ -246,8 +246,8 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
         parts: [
           {
             label: 'a',
-            cognitiveLevel: 'mengaplikasi', // per leaf (T33 gate)
             mode: 'working',
+            cognitiveLevel: 'menganalisis',
             prompt: { ms: 'Kira luas segi empat tepat itu.' },
             marks: 2,
             key: {
@@ -290,6 +290,23 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       expect(fx.sections).toHaveLength(3)
     })
 
+    // G3 (closed by T34): the admin gives each question its section pool (Bahagian A/B/C of the Kontrak) over HTTP.
+    it('tags the section pools of the questions (PUT /api/admin/section-pools/:id)', async () => {
+      const plan: [string, string][] = [
+        ...fx.passageMembers.map((id): [string, string] => [id, 'MAT2-A']),
+        ...fx.imageMembers.map((id): [string, string] => [id, 'MAT2-A']),
+        [fx.soloA, 'MAT2-A'],
+        [fx.soloB, 'MAT2-B'],
+        [fx.soloC, 'MAT2-C'],
+        [fx.essay, 'MAT2-C'],
+      ]
+      for (const [id, pool] of plan) {
+        const res = await admin.put(`/api/admin/section-pools/${id}`, { pools: [pool] })
+        expect(res.status, JSON.stringify(res.body)).toBe(200)
+        expect(res.body.data.pools).toEqual([pool])
+      }
+    })
+
     it('the pool offers the approved questions of the paper subject and kertas', async () => {
       const e = await admin.get(`/api/admin/papers/${fx.paper}`)
       const offered = (e.body.data.questions as { id: string }[]).map((q) => q.id)
@@ -319,7 +336,9 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     it('the review (structural tier) has no blocker, shows every row ok and the paper is not visible yet', async () => {
       const res = await admin.get(`/api/admin/papers/${fx.paper}/review`)
       expect(res.status, JSON.stringify(res.body)).toBe(200)
-      expect(res.body.data).toMatchObject({ ok: true, blockers: [], status: 'draf', visibleToStudents: false })
+      // The only blocker is the Spec contract (AC-R1-16.2); the paper itself is complete.
+      expect(res.body.data).toMatchObject({ ok: false, status: 'draf', visibleToStudents: false })
+      expect(res.body.data.blockers).toEqual([expect.stringMatching(/^Kontrak Simulasi 1449\/2 .* belum Disahkan/)])
       expect((res.body.data.rows as { ok: boolean }[]).every((r) => r.ok)).toBe(true)
       expect((res.body.data.rows as unknown[]).length).toBe(6)
       const list = await pupil.get('/api/bijak/papers')
@@ -336,13 +355,17 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     })
 
     it('Terbit: the publish answers ok and the paper is Terbit', async () => {
-      const res = await admin.post(`/api/admin/papers/${fx.paper}/publish`)
+      // AC-R1-16.2: the PoC contract 1449/2 is Spec. A plain Terbit is refused with a line naming the contract; the audited override (PIPE AC-07.5,
+      // reason >= 5 characters) publishes. (T43 upgrades this step to a Kontrak made Disahkan over the API.)
+      const plain = await admin.post(`/api/admin/papers/${fx.paper}/publish`)
+      expect(plain.body.data.ok).toBe(false)
+      expect((plain.body.data.errors as string[]).some((e) => e.startsWith('Kontrak Simulasi 1449/2'))).toBe(true)
+      const res = await admin.post(`/api/admin/papers/${fx.paper}/publish`, { override: true, reason: 'Kontrak 1449/2 belum disahkan' })
       expect(res.status, JSON.stringify(res.body)).toBe(200)
       expect(res.body.data).toMatchObject({ ok: true, errors: [] })
-      // Structural tier only: the Spec blueprint still needs review, and the fixtures carry no section pool tag (MAT2-A/B/C), which
-      // the builder reports as non-blocking notes. R1 GAP G3: no admin HTTP route writes a pool tag, so the notes cannot be cleared.
-      expect(res.body.data.blueprintNeedsReview).toBe(true)
-      expect((res.body.data.notes as string[]).every((n) => n.includes('bukan dalam kolam bahagian ini'))).toBe(true)
+      expect((res.body.data.overridden as string[]).some((e) => e.startsWith('Kontrak Simulasi 1449/2'))).toBe(true)
+      // Structural tier. With the section pools tagged (previous step) there is no "bukan dalam kolam bahagian ini" note any more.
+      expect((res.body.data.notes ?? []).some((n: string) => n.includes('bukan dalam kolam bahagian ini'))).toBe(false)
       expect((await db.query<{ status: string }>(`select status from papers where id = $1`, [fx.paper]))[0]?.status).toBe('published')
       const pins = await db.query<{ v: number }>(`select pinned_version_no v from paper_placements pl join paper_sections s on s.id = pl.paper_section_id where s.paper_id = $1`, [fx.paper])
       expect(pins).toHaveLength(6)
@@ -364,7 +387,7 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       expect(g.status, JSON.stringify(g.body)).toBe(201)
       expect(g.body.data.added).toEqual(fx.imageMembers)
       for (const [sec, q] of [[0, fx.soloA], [1, fx.soloB], [2, fx.soloC], [2, fx.essay]] as const) expect((await place(sections[sec]!, q)).status).toBe(201)
-      const pub = await admin.post(`/api/admin/papers/${imagePaper}/publish`)
+      const pub = await admin.post(`/api/admin/papers/${imagePaper}/publish`, { override: true, reason: 'Kontrak 1449/2 belum disahkan' })
       expect(pub.status, JSON.stringify(pub.body)).toBe(200)
       expect(pub.body.data.ok).toBe(true)
     })
