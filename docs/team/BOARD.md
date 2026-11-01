@@ -424,3 +424,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
   - Evidence: reports 39/39; contract 1455; tsc 0; eslint 0; contract:check ok.
   - **Needs B2 + B3 re-check.** Lapor FE follows; FE strings sent to C as REQ-A-015.
 - A1a next: r1/reqc021-followup (B2 Minors on C-021). A1b: T45 Part 3 from the WIP @ 078204e1c.
+- **T31 READY** r1/t31-builder-wire @ 6a27c8dd (A3, BASE-102).
+  - Evidence: tsc 0 (all three); contract 1456/1456; DB 1818 + 4 todo; conformance 409/409.
+  - **vue-tsc 1 error** (http-admin.ts:198 BuilderGroup.stimulus). C1's REQ-A-008 closes it, but REQ-A-008 @ 7e2e4392 conflicts with BASE-101/102 (PaperEditorPage.vue + deviations doc). **C1 must rebase REQ-A-008 onto BASE-102**; B1 merges T31 together with REQ-A-008.
+- **T43 READY** r1/t43-chain-publish @ 5ce5894f (on T31; spec-only; chain questions are non-KBAT for the Kontrak KBAT quota). 932 pass + 2 todo; tsc 0. Merge order: T31 + REQ-A-008 → T43. A3 dev-1 next: T51.
