@@ -2,7 +2,7 @@
 
 Branch `r1/c-qa-base98` = `feature/v3-bijak-r1` @ **`a350dac25545e13f30ffda973facb8cc05fe5da1`** (BASE-98) + B4's two E2E files unchanged from `origin/r1/t23-e2e` @ d61f98bd5 (`playwright.r1-e2e.config.ts`, `e2e/api/r1-e2e-baseline.spec.ts`). Same HTTP-stack method as `r1-regression-base93-teamc.md`: API `dist/main.js` rebuilt at BASE-98 with `JOBS_WORKER_ENABLED=true`, SPA `VITE_API_MODE=http` (`--mode demo`) via `vite preview`, local PG 16 on 55432 (session TZ forced to UTC), migrations 0001..0103 applied in order, seeds `poc` then `e2e`, a fresh DB clone per viewport, 1 worker. B4.md, MERGE-LOG, BOARD and TRACKER untouched. Nothing run or changed on any remote server. Test DBs, API and preview processes started by me are stopped/dropped.
 
-**Verdict: Not ready** (E2E gate: S1h/R1E2E-17, S2e/R1E2E-10, T10 and the S3c/S3d spec steps still fail). But the BASE-98 changes themselves look good: R1E2E-C1, R1E2E-C2 and REQ-B-042 are confirmed fixed, H-C8 stimuli show in Simulasi Kuiz, no new defect, no responsive break. S3c/S3d still fail only because the harness (B4's spec) never presses "Muat lagi"; a manual run of the same flow publishes a 40/40 paper (details below).
+**Verdict: Not ready** (updated after the section 5 rerun: S3c/S3d now pass; E2E gate: S1h/R1E2E-17, S2e/R1E2E-10, T10 and the S3c/S3d spec steps still fail). But the BASE-98 changes themselves look good: R1E2E-C1, R1E2E-C2 and REQ-B-042 are confirmed fixed, H-C8 stimuli show in Simulasi Kuiz, no new defect, no responsive break. S3c/S3d still fail only because the harness (B4's spec) never presses "Muat lagi"; a manual run of the same flow publishes a 40/40 paper (details below).
 
 ## 1. E2E, B4's T23 flow, 43 tests per viewport
 
@@ -53,7 +53,29 @@ No new defect (R1E2E-C3 and above: none). Two observations, not defects:
 
 Status of old items: R1E2E-C1 and R1E2E-C2 closed. R1E2E-16, -09, -07 not re-probed (not asserted by the spec). Studio 1291/1293 flake note: one Kuiz probe run failed to find options right after 30 quick session POSTs that returned 429 (throttle) and did not reproduce in 5 further runs; treated as my own rate-limit artefact.
 
-## 5. Not run / limits
+## 5. Rerun with the fixed spec (branch `r1/t23-e2e-c` @ 8f5028538)
+
+Obs-1 fixed in the spec itself: the picker fill loop (S3b/S3d `buildPaper`) now presses `picker-more` when the visible page has no addable row and polls until the list grows or the button disappears (no fixed sleep). Branch = `origin/r1/t23-e2e` (d61f98bd5) + merge of BASE-98 (clean, no conflicts) + that one commit. Obs-2 (numberLabel): the e2e seed has no row with a `numberLabel`, so no seed was added; stays noted.
+
+Same harness, fresh DB per viewport, 1 worker, BASE-98 API/SPA builds.
+
+| Viewport | Pass / fail / skip | Failing steps |
+|---|---|---|
+| desktop 1280 | **33 / 3 / 7** | S1h, S2e, S3a |
+| mobile 375 | 32 / 4 / 7 | S1h, S2e, S3a + S5e (intermittent, see below) |
+| tablet 768 | 32 / 4 / 7 | S1h, S2e, S3a + B-04 (intermittent, see below) |
+
+- **S3c and S3d now pass through the UI at all three widths** (S3c: "Sepadan dengan blueprint", Terbitkan ok:true; S3d control paper 40/40 published); S4a/S4a2 (pupil sits them) pass. S3f/S3g now skip by design ("Not needed: the paper was published through the UI"), so the totals are 33/3/7 and not the 35/3/5 expected in the brief: two fixed steps moved from fail to pass, two workaround steps moved from pass to skip.
+- Remaining real failures: S1h (R1E2E-17), S2e (R1E2E-10), S3a (T10 Set Builder 404). Unchanged.
+- **Two intermittent pupil-side failures, not caused by the spec change** (steps untouched, they passed in every earlier BASE-93/BASE-98 run; machine was at about 5 GB used by other agents):
+  - mobile S5e (Latih Tubi SPM in the UI): timeout waiting for `btn-next`, final page was the Dashboard. Rerun alone on the same DB: pass, then fail.
+  - tablet B-04 (Simulasi Kuiz in the UI): the post-"next" predicate (done visible or counter changed) timed out at 15 s although the page snapshot at failure already shows "Kuiz Selesai! 3/20". Rerun alone: pass, then fail.
+  Both look like timing flakes under load; not reproduced as product defects. Owner to watch: B4/C (pupil Latih Tubi and Kuiz E2E waits). If they recur on an idle machine they should be logged as R1E2E-C3/C4.
+- The first desktop rerun had an unrelated process mishap on my side (a `pkill` pattern killed my own shell); the stack was restarted cleanly and the mobile run repeated from a fresh DB.
+
+Evidence for the rerun: `docs/qa/r1-regression-base98-teamc/{desktop3,mobile3,tablet3}/observations-final.txt`.
+
+## 6. Not run / limits
 
 - Full API DB sweep and the non-touched FE unit sets (per brief).
 - `db/migrate-cli.spec.ts` (Prisma engine download blocked).
