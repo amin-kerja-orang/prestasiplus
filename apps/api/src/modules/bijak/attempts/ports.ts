@@ -67,10 +67,11 @@ export interface BijakQuestionBundle {
 
 export interface BijakQuestionSource {
   /**
-   * Returns the bundles for `questionIds` (the version pinned for the paper). An id that cannot be
-   * loaded is omitted; the attempt then fails with a 500 rather than serving a broken paper.
+   * Returns the bundles for `questionIds`. `pins` (REQ-B-032) names the version the paper pinned for an id: that exact version is
+   * served, live or not, active or not; an id without a pin is served from its live version. An id that cannot be loaded is
+   * omitted; the attempt then fails with a 500 rather than serving a broken paper.
    */
-  loadQuestions(questionIds: readonly string[]): Promise<ReadonlyMap<string, BijakQuestionBundle>>
+  loadQuestions(questionIds: readonly string[], pins?: ReadonlyMap<string, number>): Promise<ReadonlyMap<string, BijakQuestionBundle>>
 }
 
 /* ------------------------------------------------------------------------------ BE-11: reward */

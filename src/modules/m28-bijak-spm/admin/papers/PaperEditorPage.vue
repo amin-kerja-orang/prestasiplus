@@ -9,7 +9,7 @@ import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables/useApi'
 import { useFlash } from '@/composables/useFlash'
-import { DsCluster, DsLoadError, DsPage, DsPanel, DsStatRow, DsStatusBadge, type StatItem } from '@/ds'
+import { useConfirm, DsCluster, DsLoadError, DsPage, DsPanel, DsStatRow, DsStatusBadge, type StatItem } from '@/ds'
 
 import RichText from '../../components/RichText.vue'
 import type { BuilderGroup, BuilderQuestion, SectionPoolPage } from '../../domain/admin-types'
@@ -18,10 +18,27 @@ import { checkPaper, moveUnit, removeUnit, unitsOf } from '../../domain/paper-bu
 import { editorGroupLabel, editorStimuliOf } from '../../lib/stimulus-data'
 import { INTAKE_MANUAL_PATH } from '../intake/lib/intake-routes'
 import { bijakAdminServer } from '../../server/client'
+import PaperReferenceEditor from '../builder/components/PaperReferenceEditor.vue'
+import PaperQuestionOps from '../builder/components/PaperQuestionOps.vue'
+import PaperEditBlocks from '../builder/components/PaperEditBlocks.vue'
+import PublishOverride from '../builder/components/PublishOverride.vue'
+import PaperMetaForm from '../builder/components/PaperMetaForm.vue'
+import ReviewBlock from '../builder/components/ReviewBlock.vue'
+import StudentViewDrawer from '../builder/components/StudentViewDrawer.vue'
+import { builderCopy as bt } from '../builder/domain/copy'
+import { validTitle } from '../builder/domain/stimulus'
+import { publishGate } from '../builder/domain/publish-gate'
+import { usePaperActions } from '../builder/lib/use-paper-actions'
+import { uploadQuestionImage } from '@/api/files'
+import type { BijakBuilderPoolUnit, BijakBuilderQuestionStatus } from '@pp/contract'
+import { questionStatusFromWire } from '../../server/http-admin'
+import { builderMessage, builderPath, type ReferencePanel } from '../builder/server/api'
+import { builderServer } from '../builder/server/client'
 import QuestionPreview from './QuestionPreview.vue'
 import { ADMIN_ROUTES, KIND_LABEL, detailMessage } from './ui'
 
 const server = bijakAdminServer()
+const confirm = useConfirm()
 const route = useRoute()
 const flash = useFlash()
 
@@ -39,6 +56,17 @@ const manualLink = computed(() => ({
 }))
 const { data, error, reload } = useApi(() => server.getPaperEditor(id.value), id)
 
+/* Semak Kertas (R1-F09): server review, Salin set, Tarik balik, student view. V2 3.4. */
+const actions = usePaperActions({
+  api: builderServer(),
+  id,
+  title: () => data.value?.paper.title ?? title.value,
+  ensureSaved: () => (dirty.value ? save() : Promise.resolve(true)),
+  onChanged: reload,
+  copyTarget: (nid) => `/admin/spm/kertas/${encodeURIComponent(nid)}`,
+})
+const { review, viewOpen, view, viewError } = actions
+
 const title = ref('')
 const durationMin = ref(0)
 const ids = reactive<Record<string, string[]>>({})
@@ -55,6 +83,9 @@ watch(
   data,
   (d) => {
     if (!d) return
+    void actions.loadReview()
+    extraQ.clear()
+    extraG.clear()
     title.value = d.paper.title
     durationMin.value = d.paper.durationMin
     for (const k of Object.keys(ids)) delete ids[k]
@@ -98,6 +129,23 @@ const allIssues = computed(() => [
   ...check.value.errors,
   ...check.value.sections.flatMap((s) => s.errors.map((e) => `${s.label}: ${e}`)),
 ])
+
+/** Terbitkan stays off while a local check fails, or (nothing unsaved) the server lists a blocker. */
+const gate = computed(() =>
+  publishGate({
+    localIssues: allIssues.value.length,
+    dirty: dirty.value,
+    reviewFailed: actions.reviewError.value,
+    blockers: actions.blockers.value.length,
+  }),
+)
+/** Server blocker lines the issue list above does not already show (the live check lists the structural ones). */
+const extraBlockers = computed(() => {
+  const shown = new Set(allIssues.value)
+  return [...new Set([...actions.blockers.value, ...publishErrors.value])].filter((m) => !shown.has(m))
+})
+const publishBlockedCount = computed(() => gate.value.count)
+const publishBlocked = computed(() => gate.value.blocked)
 
 const stats = computed<StatItem[]>(() => [
   {
@@ -232,10 +280,15 @@ function patch() {
   }
 }
 async function save(): Promise<boolean> {
+  if (!validTitle(title.value)) {
+    flash.show({ type: 'error', message: bt.titleInvalid })
+    return false
+  }
   busy.value = true
   try {
     await server.savePaper(id.value, patch())
     dirty.value = false
+    void actions.loadReview()
     return true
   } catch (e) {
     flash.show({ type: 'error', message: detailMessage(e) })
@@ -248,33 +301,104 @@ async function onSave(): Promise<void> {
   if (await save()) flash.show({ type: 'success', message: 'Draf kertas disimpan.' })
 }
 async function publish(): Promise<void> {
+  if (publishBlocked.value) return
+  // V2 native paper: confirm before it goes live (R8; a composite set in the Set Builder has none).
+  if (!(await confirm({ message: bt.publishConfirm, confirmLabel: bt.publish }))) return
   if (!(await save())) return
-  busy.value = true
-  try {
-    const res = await server.publishPaper(id.value)
-    if (!res.ok) {
-      publishErrors.value = res.errors
-      return
-    }
-    flash.show({
-      type: 'success',
-      message: 'Kertas diterbitkan. Ia kini ada dalam hab Bijak SPM pelajar.',
-    })
-    await reload()
-  } finally {
-    busy.value = false
+  // The builder API applies the T34 rule (hard blockers refuse; a Kontrak not Disahkan needs the audited override below).
+  await actions.loadReview()
+  if (actions.publishBlocked.value) {
+    publishErrors.value = actions.blockers.value
+    flash.show({ type: 'error', message: bt.notPublishable(actions.blockers.value.length) })
+    return
   }
+  publishErrors.value = []
+  await actions.publish()
+}
+async function overridePublish(reason: string): Promise<void> {
+  if (!(await confirm({ message: bt.publishConfirm, confirmLabel: bt.publish }))) return
+  await actions.publish({ override: true, reason })
 }
 async function unpublish(): Promise<void> {
   busy.value = true
   try {
     await server.unpublishPaper(id.value)
-    flash.show({ type: 'success', message: 'Kertas ditarik balik ke Draf.' })
+    flash.show({ type: 'success', message: bt.withdrawnFlash(data.value?.paper.title ?? title.value) })
     await reload()
   } finally {
     busy.value = false
   }
 }
+
+/* ---------------------------------------------------------------------------- metadata */
+async function saveMeta(patchData: Parameters<ReturnType<typeof builderServer>['updateHeader']>[1]): Promise<void> {
+  if (dirty.value && !(await save())) return
+  busy.value = true
+  try {
+    await builderServer().updateHeader(id.value, patchData)
+    flash.show({ type: 'success', message: bt.metaSaved(data.value?.paper.title ?? title.value) })
+    await reload()
+  } catch (e) {
+    flash.show({ type: 'error', message: builderMessage(e, bt.errMeta) })
+  } finally {
+    busy.value = false
+  }
+}
+
+/** Sunting bahagian / petikan: unsaved placements go first (the reload resets them), then one call. */
+async function editThen(run: () => Promise<unknown>, okMessage: string, fallback: string = bt.errRename): Promise<void> {
+  if (dirty.value && !(await save())) return
+  busy.value = true
+  try {
+    await run()
+    flash.show({ type: 'success', message: okMessage })
+    await reload()
+  } catch (e) {
+    flash.show({ type: 'error', message: builderMessage(e, fallback) })
+  } finally {
+    busy.value = false
+  }
+}
+const saveSection = (sid: string, p: Parameters<ReturnType<typeof builderServer>['updateSection']>[2]): Promise<void> =>
+  editThen(() => builderServer().updateSection(id.value, sid, p), bt.sectionSaved(p.label ?? ''), bt.errRename)
+const loadOpsPool = (sid: string, q: string, page: number) =>
+  builderServer().pool(id.value, sid, { q, page, pageSize: 20 })
+const knownQuestion = (qid: string) => {
+  const q = qMap.value.get(qid)
+  return q ? { preview: q.preview, ...(q.groupId ? { groupId: q.groupId } : {}) } : undefined
+}
+/** Tambah / Padam soalan share the local model with the picker: applied on Simpan draf or Terbitkan. */
+function addOpsUnit(sectionId: string, u: BijakBuilderPoolUnit): void {
+  for (const q of u.questions) {
+    const wire = q as unknown as { status: string }
+    const status = ['draft', 'review', 'approved', 'archived'].includes(wire.status)
+      ? questionStatusFromWire(wire.status as BijakBuilderQuestionStatus)
+      : (wire.status as BuilderQuestion['status'])
+    extraQ.set(q.id, { ...(q as unknown as BuilderQuestion), status })
+  }
+  if (u.groupId) {
+    extraG.set(u.groupId, [...u.questionIds])
+    if (u.stimulus) extraStim.set(u.groupId, u.stimulus)
+  }
+  const all = new Set(Object.values(ids).flat())
+  setIds(sectionId, [...(ids[sectionId] ?? []), ...u.questionIds.filter((q) => !all.has(q))])
+}
+function removeIds(sectionId: string, qids: string[]): void {
+  const gone = new Set(qids)
+  setIds(sectionId, (ids[sectionId] ?? []).filter((q) => !gone.has(q)))
+}
+const referencePanels = computed(
+  () => ((data.value?.paper as { reference?: ReferencePanel[] } | undefined)?.reference ?? []),
+)
+/** Reference images use the question image upload (security-reviewed input); the mock keeps a placeholder token. */
+const uploadReferenceImage = (file: File): Promise<string> =>
+  import.meta.env.VITE_API_MODE === 'http'
+    ? uploadQuestionImage(file, 'reference')
+    : Promise.resolve(`mock-${file.name}`)
+const saveReference = (panels: ReferencePanel[]): Promise<void> =>
+  editThen(() => builderServer().updateReference(id.value, panels), bt.refSaved, bt.errReference)
+const savePassage = (gid: string, label: string): Promise<void> =>
+  editThen(() => builderServer().updateGroupLabel(id.value, gid, label), bt.passageSaved(label), bt.errPassage)
 
 /* -------------------------------------------------------------------------- preview */
 const previewOpen = ref(false)
@@ -372,6 +496,35 @@ const previewBlocks = computed(() => {
               data-testid="paper-preview"
               @click="openPreview"
             />
+            <UButton
+              color="neutral"
+              variant="soft"
+              icon="i-ph-student"
+              :label="bt.studentView + ' (disimpan)'"
+              class="min-h-11"
+              :disabled="dirty"
+              data-testid="paper-student-view"
+              @click="actions.openStudentView"
+            />
+            <UButton
+              color="neutral"
+              variant="soft"
+              icon="i-ph-copy"
+              :label="bt.copy"
+              class="min-h-11"
+              :loading="actions.busy.value"
+              data-testid="paper-copy"
+              @click="actions.copy"
+            />
+            <UButton
+              :to="builderPath(id)"
+              color="neutral"
+              variant="ghost"
+              icon="i-ph-hammer"
+              :label="bt.openBuilder"
+              class="min-h-11"
+              data-testid="paper-open-builder"
+            />
             <template v-if="!readonly">
               <UButton
                 color="neutral"
@@ -389,6 +542,7 @@ const previewBlocks = computed(() => {
                 label="Terbitkan"
                 class="min-h-11"
                 :loading="busy"
+                :disabled="publishBlocked"
                 data-testid="paper-publish"
                 @click="publish"
               />
@@ -405,9 +559,9 @@ const previewBlocks = computed(() => {
                 color="warning"
                 variant="soft"
                 icon="i-ph-arrow-u-up-left"
-                label="Tarik balik"
+                label="Sembunyikan"
                 class="min-h-11"
-                :loading="busy"
+                :loading="busy || actions.busy.value"
                 data-testid="paper-unpublish"
                 @click="unpublish"
               />
@@ -427,8 +581,8 @@ const previewBlocks = computed(() => {
       <DsPanel data-testid="budget-check" role="status" aria-live="polite">
         <div class="flex items-center gap-2">
           <UIcon
-            :name="allIssues.length ? 'i-ph-warning' : 'i-ph-check-circle'"
-            :class="allIssues.length ? 'text-warning' : 'text-success'"
+            :name="allIssues.length || publishBlocked ? 'i-ph-warning' : 'i-ph-check-circle'"
+            :class="allIssues.length || publishBlocked ? 'text-warning' : 'text-success'"
             class="size-5"
           />
           <h3 class="text-subheading text-highlighted">
@@ -446,14 +600,116 @@ const previewBlocks = computed(() => {
         >
           <li v-for="e in allIssues" :key="e">{{ e }}</li>
         </ul>
-        <p
-          v-if="publishErrors.length"
-          class="mt-2 text-body font-semibold text-error"
-          role="alert"
+        <div
+          v-if="(publishBlocked || publishErrors.length) && !readonly"
+          class="mt-2 flex flex-col gap-2"
+          role="status"
           data-testid="publish-errors"
         >
-          Kertas belum boleh diterbitkan: selesaikan {{ publishErrors.length }} perkara di atas.
+          <p class="text-body font-semibold text-error">
+            <template v-if="allIssues.length || publishErrors.length">
+              Kertas belum boleh diterbitkan: selesaikan {{ allIssues.length ? publishBlockedCount : publishErrors.length }} perkara di atas.
+            </template>
+            <template v-else>{{ gate.reason }}</template>
+          </p>
+          <!-- REQ-B-054: the server's reason for each blocker not already listed above (the Kontrak is not Disahkan). -->
+          <ul
+            v-if="extraBlockers.length"
+            class="flex list-disc flex-col gap-1 ps-6 text-body text-error"
+            data-testid="publish-blockers"
+          >
+            <li v-for="b in extraBlockers" :key="b">{{ b }}</li>
+          </ul>
+        </div>
+        <PublishOverride
+          v-if="!readonly"
+          class="mt-3"
+          :blockers="actions.blockers.value"
+          :available="actions.overrideAvailable.value"
+          :busy="actions.busy.value"
+          @override="overridePublish"
+        />
+      </DsPanel>
+
+      <DsPanel data-testid="paper-review" aria-live="polite">
+        <h3 class="mb-2 text-heading text-highlighted">{{ bt.review }}</h3>
+        <p class="mb-2 text-body" data-testid="paper-contract">
+          <span class="font-semibold">{{ bt.contractTitle }}:</span>
+          {{
+            data.blueprint
+              ? bt.contractLine(data.blueprint.subjectName, data.paper.kertas, data.blueprint.source)
+              : bt.contractNone
+          }}
         </p>
+        <div v-if="readonly" class="mb-2 flex flex-wrap items-center gap-3" data-testid="paper-live-note">
+          <p class="text-body text-muted">{{ bt.live }} {{ bt.lockedNote }}</p>
+          <UButton
+            color="neutral"
+            variant="soft"
+            icon="i-ph-copy"
+            :label="bt.copyForEdit"
+            class="min-h-11"
+            :loading="actions.busy.value"
+            data-testid="paper-copy-for-edit"
+            @click="actions.copy"
+          />
+        </div>
+        <ReviewBlock v-if="review" :review="review" />
+        <p v-else-if="actions.reviewError.value" class="text-body text-error" role="alert">
+          {{ bt.reviewError }}
+        </p>
+        <p v-if="dirty" class="mt-2 text-caption text-muted">{{ bt.reviewStale }}</p>
+        <UButton
+          :to="{ name: 'm28.admin.kontrak.edit', params: { subjek: data.paper.subject, kertas: String(data.paper.kertas) } }"
+          color="neutral"
+          variant="link"
+          class="mt-2 min-h-11"
+          :label="bt.editContract"
+          data-testid="paper-edit-contract"
+        />
+      </DsPanel>
+
+      <DsPanel data-testid="paper-meta">
+        <PaperMetaForm
+          v-model:title="title"
+          :paper="data.paper"
+          :readonly="readonly"
+          :busy="busy"
+          @update:title="dirty = true"
+          @save="saveMeta"
+        />
+      </DsPanel>
+
+      <DsPanel data-testid="paper-question-ops">
+        <PaperQuestionOps
+          :sections="sections"
+          :ids="ids"
+          :known="knownQuestion"
+          :readonly="readonly"
+          :load-pool="loadOpsPool"
+          @add="addOpsUnit"
+          @remove="removeIds"
+        />
+      </DsPanel>
+
+      <DsPanel data-testid="paper-reference">
+        <PaperReferenceEditor
+          :panels="referencePanels"
+          :readonly="readonly"
+          :busy="busy"
+          :upload="uploadReferenceImage"
+          @save="saveReference"
+        />
+      </DsPanel>
+
+      <DsPanel data-testid="paper-edit-blocks">
+        <PaperEditBlocks
+          :editor="data"
+          :readonly="readonly"
+          :busy="busy"
+          @section="saveSection"
+          @passage="savePassage"
+        />
       </DsPanel>
 
       <DsPanel v-for="(s, si) in sections" :key="s.id" :data-testid="`section-${si}`">
@@ -643,6 +899,8 @@ const previewBlocks = computed(() => {
           </div>
         </template>
       </USlideover>
+
+      <StudentViewDrawer v-model:open="viewOpen" :view="view" :error="viewError" />
 
       <USlideover
         v-model:open="previewOpen"
