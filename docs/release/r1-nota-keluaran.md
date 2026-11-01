@@ -113,6 +113,13 @@ Semua dijalankan bersama pelepasan API dan FE, dalam urutan nombor, dan semuanya
 - **Syor.** Biarkan tidak ditetapkan.
 - **Status:** belum dalam pangkalan kod utama (unit admin-list-perf) **[PROPOSED]** sehingga digabungkan.
 
+### 4.4 Semakan sebelum deploy: data rujukan tahap (`tiers`)
+
+- **Semak.** Pada pangkalan data sasaran, jalankan `select count(*) from tiers;`. Jawapannya mesti **4**. Jika bukan 4, jalankan `deploy.sh --seed-reference` sebelum API menerima trafik.
+- **Mengapa.** Tahap dompet datang daripada data rujukan sahaja; deploy biasa tidak memuatkannya. Tanpa tahap, papan pemuka dan dompet menjawab ralat 500. Satu latihan atau Kuiz yang dihantar dan layak mendapat 0 syiling juga menjawab ralat 500 dan sesi itu digulung balik, jadi murid tidak dapat menamatkan sesi.
+- **Selamat diulang.** Bendera itu hanya memuatkan data rujukan (tahap dompet) dan bukan data demo; ia mengemas kini baris sedia ada, jadi aman dijalankan semula. Ia bukan seed demo yang dilarang pada UAT.
+- **Sumber.** `docs/ops/r1-runbook.md` §0 butir 6 (cawangan `r1/ac-gaps-a1b` @ 5c4ec750), yang merujuk `deploy/vps/deploy.sh` dan `docs/ops/production-vps.md:410-414`.
+
 ---
 
 ## Catatan hujung
