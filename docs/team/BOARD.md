@@ -584,3 +584,4 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
   - A2 slot 1 H-A18 (late; head pending)
   - A3 REQ-B-052 stacked on REQ-B-032
 - Idle: A1a, A1b, A4, A2 slot 2, A3 dev-1/dev-2. Everything team A has is READY and waits on B2/B3 review and the B1 gate.
+- A4: **integration preview #2** (local; about 30 team A READY heads on BASE-105 in merge order; 17 api folders; reds bisected to their owners).
