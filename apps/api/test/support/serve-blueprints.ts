@@ -6,14 +6,17 @@ type Db = { query: (sql: string) => Promise<unknown> }
  * Spec, and a pupil generates from a serving version only (AC-R1-15.3, D76).
  */
 export async function serveSeededBlueprints(db: Db): Promise<void> {
+  // Idempotent: a call after a new Spec version was saved must not meet the older version that still serves (uq_blueprints_serving)
+  await db.query(`update blueprints set source = 'spec', serves_students = false, verification_id = null
+    where serves_students and status <> 'active'`)
   await db.query(
     `insert into blueprint_verifications (blueprint_id, verified_by_id, verifier_role, structure_hash, check_result, evidence_snapshot)
      select b.id, (select min(id) from users), 'admin', b.structure_hash, '{}'::jsonb, '[]'::jsonb
-       from blueprints b where b.status = 'active' and b.source <> 'draft'`,
+       from blueprints b where b.status = 'active' and b.source <> 'draft' and not b.serves_students`,
   )
   await db.query(`update blueprints b set source = 'verified', serves_students = true,
       verification_id = (select max(v.id) from blueprint_verifications v where v.blueprint_id = b.id)
-    where b.status = 'active' and b.source <> 'draft'`)
+    where b.status = 'active' and b.source <> 'draft' and not b.serves_students`)
 }
 
 /** SQL fragments that flip one blueprint between "serving" and "not serving" without breaking the verification CHECKs. */
