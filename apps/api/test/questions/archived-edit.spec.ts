@@ -8,14 +8,15 @@ import { serveSeededBlueprints } from '../support/serve-blueprints'
 vi.setConfig({ testTimeout: 180_000, hookTimeout: 300_000 })
 
 /**
- * REQ-B-052 (B3 E05B-L2, MEDIUM) - SPEC-FIRST REPRO, RED TODAY. An `archived` version that is still pinned on a published paper must not be
- * rewritten: `QuestionsService.applyUpdate` adds a version only when the latest version is `approved`, otherwise `rewriteVersion` replaces the
- * stem, parts, options, key and stimulus links IN PLACE; `statusAfterEdit('archived')` stays archived and there is no status or pin guard on
- * `update` (admin) or `updateOwn` (Guru). The paper is Terbit and its pupils are served the pinned version, so an edit changes what they sit and
- * the marking key. Done = the edit is refused (409, BM) OR it branches to a new version, and the pinned version row stays byte-identical.
+ * REQ-B-052 (B3 E05B-L2, MEDIUM). A version that a Terbit paper (or a paper that has been sat) still pins must never be rewritten in place:
+ * `QuestionsService.applyUpdate` adds a version n+1 (as a draft) when the latest version is `approved` or `archived`, or when
+ * `QuestionsRepository.versionIsPinned` says a published (or sat, withdrawn) paper pins it; only an unpinned draft is rewritten on top. The
+ * paper is Terbit and its pupils are served the pinned version, so an in-place edit would change what they sit and the marking key. The same rule
+ * covers the admin `PUT /questions/:id` and the Guru `PUT` of an own question (`updateOwn`).
  *
- * The spec accepts either fix: it checks the outcome (the stored pinned version and what the pupil is served do not change, and a 200 means a
- * NEW version), not one status code.
+ * The cases check the outcome, not one status code: the stored pinned version and what the pupil is served do not change, and a 200 means a
+ * NEW version. The pinned clause has its own case (P1): a version restored to `draft` is neither approved nor archived, so only
+ * `versionIsPinned` sends its edit to a new version; the case is red when that clause is removed.
  */
 describe('REQ-B-052: an archived question pinned on a published paper cannot be rewritten in place', () => {
   let t: FullApp
@@ -166,6 +167,31 @@ describe('REQ-B-052: an archived question pinned on a published paper cannot be 
     expect((await admin.put(`/api/questions/${id}`, body({ questionText: 'Soalan diarkibkan, disunting lagi: berapakah hasil tambah 8 dan 9?' }))).status).toBe(200)
     expect(await versions(id)).toEqual(['1:archived', '2:draft'])
     expect(await snapshot(id, 1)).toEqual(before)
+  })
+
+  it('P1 (the pinned clause): a version restored to draft but still pinned on a Terbit paper is not rewritten; the edit becomes version 2', async () => {
+    const { paper, ids } = await publishedPaper()
+    const target = ids[0]!
+    expect((await admin.post('/api/questions/bulk-action', { action: 'archived', ids: [target] })).body.data.failed).toEqual([])
+    // restore it to draft: version 1 is now a `draft` (not approved, not archived), yet the Terbit paper still pins it
+    const restored = await admin.post(`/api/questions/${target}/status`, { to: 'draft' })
+    expect(restored.status, JSON.stringify(restored.body)).toBe(200)
+    expect(await versions(target)).toEqual(['1:draft'])
+    expect((await q(`select status from papers where id = $1`, [paper]))[0]?.status).toBe('published')
+    expect(Number((await q(`select pinned_version_no from paper_placements where question_id = $1`, [target]))[0]!.pinned_version_no)).toBe(1)
+    const repo = t.app.get(QuestionsRepository)
+    expect(await repo.versionIsPinned(target, 1)).toBe(true)
+
+    const before = await snapshot(target, 1)
+    const edit = await admin.put(`/api/questions/${target}`, body({ questionText: 'TEKS BAHARU selepas dipulihkan: berapakah hasil darab 6 dan 7?', options: ['40', '41', '42', '43'], correctAnswer: 2 }))
+    expect(edit.status, JSON.stringify(edit.body)).toBe(200)
+    expect(await versions(target), 'the edit branches to version 2').toEqual(['1:draft', '2:draft'])
+    expect(await snapshot(target, 1), 'version 1 (stem, parts, options, key) is byte-identical').toEqual(before)
+    expect(JSON.stringify((await admin.get(`/api/questions/${target}`)).body.data)).toContain('TEKS BAHARU')
+    // version 2 is not pinned anywhere: the next edit rewrites it in place
+    expect((await admin.put(`/api/questions/${target}`, body({ questionText: 'TEKS BAHARU lagi: berapakah hasil darab 6 dan 7?' }))).status).toBe(200)
+    expect(await versions(target)).toEqual(['1:draft', '2:draft'])
+    expect(await snapshot(target, 1)).toEqual(before)
   })
 
   it('versionIsPinned: true on a Terbit paper and on a withdrawn paper that was sat; false on a draft paper and on a withdrawn paper nobody sat', async () => {

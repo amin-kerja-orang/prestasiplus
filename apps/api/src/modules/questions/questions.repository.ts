@@ -1007,6 +1007,10 @@ export class QuestionsRepository {
    * REQ-B-052: is this version the one a paper pins (`paper_placements.pinned_version_no`) on a Terbit paper, or on a paper that has been sat
    * (a withdrawn paper keeps its attempts, AC-07.7)? Such a version is what pupils are served and marked against, so it must never be rewritten.
    * Draft papers that were never sat do not count: they follow the question in force.
+   *
+   * The attempts probe runs only for a withdrawn paper: an attempt needs a published paper at start (`BijakPapersAttemptSource.resolveForAttempt`), a paper
+   * never goes back to `draft` or `ready` (draft -> published -> withdrawn -> published), and the migrated attempts have `paper_id` NULL, so no
+   * other status can hold attempts.
    */
   async versionIsPinned(questionId: string, versionNo: number): Promise<boolean> {
     const key = bi(questionId)
@@ -1017,7 +1021,7 @@ export class QuestionsRepository {
         JOIN paper_sections s ON s.id = pl.paper_section_id
         JOIN papers p ON p.id = s.paper_id
        WHERE pl.question_id = ${key} AND pl.pinned_version_no = ${versionNo}
-         AND (p.status = 'published' OR EXISTS (SELECT 1 FROM exam_attempts a WHERE a.paper_id = p.id))
+         AND (p.status = 'published' OR (p.status = 'withdrawn' AND EXISTS (SELECT 1 FROM exam_attempts a WHERE a.paper_id = p.id)))
        LIMIT 1`
     return rows.length > 0
   }
