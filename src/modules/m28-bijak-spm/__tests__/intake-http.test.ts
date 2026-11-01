@@ -5,6 +5,7 @@ import { IntakeBatchCreateSchema } from '@pp/contract'
 import { ApiClient, ApiError } from '@/api'
 import type { Transport, TransportRequest, TransportResponse } from '@/api'
 
+import { intakeBadge } from '../admin/intake/lib/intake-badge'
 import { createHttpBijakAdminServer, uploadError } from '../server/http-admin'
 import {
   batchCreateToWire,
@@ -234,5 +235,19 @@ describe('intake client', () => {
     const { server } = setup({})
     await expect(server.resubmit('k')).rejects.toMatchObject({ code: 'unavailable' })
     await expect(server.getBankEditable('q')).rejects.toMatchObject({ code: 'unavailable' })
+  })
+
+  it('submitForReview drops the wire status/label so the badge shows Semakan (R1E2E-C1)', async () => {
+    const { server } = setup({
+      'GET /api/intake/batches/b1/review': ok({ issues: [] }),
+      'GET /api/intake/batches/b1': ok(detail),
+    })
+    expect((await server.getIntakeBatch('b1')).statusLabel).toBe('Sedia untuk semakan')
+    const res = await server.submitForReview('b1')
+    if (!res.ok) throw new Error('expected ok')
+    expect(res.batch.status).toBe('semakan')
+    expect(res.batch.batchStatus).toBeUndefined()
+    expect(res.batch.statusLabel).toBeUndefined()
+    expect(intakeBadge(res.batch)).toEqual({ status: 'awaiting-review', label: 'Semakan' })
   })
 })
