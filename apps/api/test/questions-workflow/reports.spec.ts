@@ -1,4 +1,5 @@
 import { QuestionReportCountsSchema, QuestionReportListResponseSchema, QuestionReportMineResponseSchema, QuestionReportUpdatedSchema } from '@pp/contract'
+import pg from 'pg'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { QuestionReportsService } from '../../src/modules/questions/workflow/reports'
@@ -263,8 +264,29 @@ describe('question reports (BE-10 AC 3, 4, 9, 11)', () => {
       const burst = await Promise.all(ids.slice(19).map((id) => proven.post('/api/question-reports', body(id))))
       expect(burst.filter((r) => r.status === 201)).toHaveLength(1)
       expect(burst.filter((r) => r.status === 429)).toHaveLength(burst.length - 1)
-      expect((await t.db.query<{ n: string }>(`select count(*)::text n from question_reports where reporter_id = $1::bigint and created_at >= now() - interval '1 day'`, [plain.userId]))[0]?.n).toBe('20')
+      expect((await t.db.query<{ n: string }>(`select count(*)::text n from question_reports where reporter_id = $1::bigint and created_at >= $2`, [plain.userId, new Date(START)]))[0]?.n).toBe('20')
       await t.db.query(`update question_reports set created_at = created_at + interval '2 days' where reporter_id = $1::bigint and created_at < $2`, [plain.userId, new Date(START)]) // restore the order the list specs rely on
+    })
+
+    it('REP-L1: a filing waits for the reporter lock (the cap count cannot interleave with another filing)', async () => {
+      const plain = await loginAs(t, 'pelajar@demo.test')
+      const proven = answering(t, plain)
+      const id = seed()
+      const holder = new pg.Client({ connectionString: t.db.url })
+      await holder.connect()
+      try {
+        await holder.query('BEGIN')
+        await holder.query(`SELECT pg_advisory_xact_lock(hashtextextended('question-report-cap:' || $1::text, 0))`, [plain.userId])
+        let done = false
+        const pending = proven.post('/api/question-reports', body(id)).then((r) => ((done = true), r))
+        await new Promise((r) => setTimeout(r, 600))
+        expect(done).toBe(false) // blocked on the lock held by the other transaction
+        await holder.query('COMMIT')
+        expect((await pending).status).toBe(201)
+        await t.db.query(`delete from question_reports where question_id = $1::bigint`, [id]) // keep the later specs' counts
+      } finally {
+        await holder.end()
+      }
     })
   })
 
