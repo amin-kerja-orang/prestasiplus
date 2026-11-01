@@ -9,7 +9,7 @@ import { QuestionsBijakPoolSource } from './bijak-pool'
 import { ServabilityReadsService, ServabilityService } from './serving'
 import { PaperServabilityService } from './serving/paper-servability.service'
 import { OverviewCache } from './serving/overview-cache'
-import { ServabilityController } from './http/servability.controller'
+import { QuestionPaperServabilityController, ServabilityController } from './http/servability.controller'
 import { QuestionCountsAdapter } from './curriculum-bridge'
 import { AdminQuestionsController, GuruQuestionsController, StimuliController, StructuredQuestionsController } from './http'
 import { PkskQuestionsService } from './pksk.service'
@@ -29,7 +29,7 @@ import { StudioController, StudioDskpService } from './studio'
  */
 @Module({
   imports: [CurriculumModule, UsersModule, FilesModule, AuditModule, ThrottleModule],
-  controllers: [AdminQuestionsController, StructuredQuestionsController, GuruQuestionsController, StimuliController, StudioController, ServabilityController],
+  controllers: [AdminQuestionsController, StructuredQuestionsController, GuruQuestionsController, StimuliController, StudioController, ServabilityController, QuestionPaperServabilityController],
   providers: [QuestionsRepository, QuestionsService, StimuliRepository, GroupMembers, StimuliService, PkskQuestionsService, QuestionCountsAdapter, QuestionsBijakPoolSource, StudioDskpService, ServabilityService, ServabilityReadsService, PaperServabilityService, OverviewCache],
   exports: [QuestionsRepository, QuestionsService, StimuliService, PkskQuestionsService, QuestionsBijakPoolSource, ServabilityService, PaperServabilityService, OverviewCache],
 })

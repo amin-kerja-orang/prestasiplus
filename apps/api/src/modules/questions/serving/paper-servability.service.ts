@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import {
   SERVABILITY_ACTIVITY_LABELS,
   servabilityReasonMs,
+  type QuestionPaperServabilityRow,
   type ServabilityActivity,
   type ServabilityActivityResult,
   type ServabilityReason,
@@ -61,6 +62,40 @@ export class PaperServabilityService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(ServabilityService) private readonly servability: ServabilityService,
   ) {}
+
+  /**
+   * REQ-A-018 / AC-04.3, AC-04.4: the published papers that place the question, each with whether pupils can open it and what stops it.
+   * Null when the bank holds no such question (unknown, PKSK or Darjah), `[]` when it is on no published paper. The reasons are those of
+   * the placed questions that stop the paper (`report().attention`), `question_missing` included; `detail` starts with that question's id.
+   */
+  async forQuestion(questionId: string): Promise<QuestionPaperServabilityRow[] | null> {
+    if (!isIdString(questionId)) return null
+    if (!(await this.servability.report(questionId))) return null
+    const papers = await this.prisma.client.paper.findMany({
+      where: { status: 'published', sections: { some: { placements: { some: { questionId: idFromString(questionId) } } } } },
+      select: { id: true, title: true },
+      orderBy: { id: 'asc' },
+    })
+    const rows: QuestionPaperServabilityRow[] = []
+    for (const p of papers) {
+      const report = await this.report(idToString(p.id))
+      if (!report) continue
+      const seen = new Set<string>()
+      const reasons = report.open
+        ? []
+        : report.attention.flatMap((a) =>
+            a.reasons.flatMap((r): ServabilityReason[] => {
+              const detail = r.detail === undefined ? a.questionId : `${a.questionId}: ${r.detail}`
+              const key = `${r.code}|${detail}`
+              if (seen.has(key)) return []
+              seen.add(key)
+              return [{ ...r, detail }]
+            }),
+          )
+      rows.push({ paperId: report.paperId, title: p.title, served: report.open, reasons })
+    }
+    return rows
+  }
 
   /** Null when the id is not a paper. Read on demand: no cache, so the next view after a publish or withdraw is already right. */
   async report(paperId: string): Promise<PaperServabilityReport | null> {

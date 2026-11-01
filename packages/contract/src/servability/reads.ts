@@ -165,3 +165,18 @@ export const ServabilityPaperRowSchema = z
   })
   .meta({ id: 'ServabilityPaperRow' })
 export type ServabilityPaperRow = z.infer<typeof ServabilityPaperRowSchema>
+
+/**
+ * REQ-A-018 / AC-04.3, AC-04.4 (V2 question detail "Dilihat murid di"): one published paper that carries the question, and whether pupils
+ * can open that paper. `reasons` is empty when `served`; otherwise it lists, for each placed question that stops the paper, the reason
+ * (`question_missing` for a placement that points at no question). `detail` is the id of that placed question, then the machine detail.
+ */
+export const QuestionPaperServabilityRowSchema = z
+  .strictObject({
+    paperId: IdSchema,
+    title: z.string(),
+    served: z.boolean().meta({ description: 'Pupils can open the paper in Simulasi (published and every placed question servable).' }),
+    reasons: z.array(ServabilityReasonSchema).meta({ description: 'Empty when `served`. `detail` starts with the id of the placed question that stops the paper.' }),
+  })
+  .meta({ id: 'QuestionPaperServabilityRow' })
+export type QuestionPaperServabilityRow = z.infer<typeof QuestionPaperServabilityRowSchema>

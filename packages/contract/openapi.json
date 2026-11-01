@@ -15590,6 +15590,35 @@
         ],
         "additionalProperties": false
       },
+      "QuestionPaperServabilityRow": {
+        "type": "object",
+        "properties": {
+          "paperId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "served": {
+            "type": "boolean",
+            "description": "Pupils can open the paper in Simulasi (published and every placed question servable)."
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ServabilityReason"
+            },
+            "description": "Empty when `served`. `detail` starts with the id of the placed question that stops the paper."
+          }
+        },
+        "required": [
+          "paperId",
+          "title",
+          "served",
+          "reasons"
+        ],
+        "additionalProperties": false
+      },
       "CommandCenterMood": {
         "type": "string",
         "enum": [
@@ -84834,6 +84863,78 @@
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/ServabilityReport"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (not Admin Pusat), or CSRF_INVALID on the batch POST.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id, a PKSK question or a Darjah question.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/questions/{id}/paper-servability": {
+      "get": {
+        "tags": [
+          "servability"
+        ],
+        "summary": "The published papers that carry a question, and whether pupils can open each (AC-04.3 / AC-04.4)",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One row per published paper that places the question, by paper id; `[]` when it is on none.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/QuestionPaperServabilityRow"
+                      }
                     }
                   },
                   "required": [

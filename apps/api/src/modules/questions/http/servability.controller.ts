@@ -9,6 +9,7 @@ import { RateLimit, RateLimitGuard, type RateLimitSpec } from '../../../common/t
 import { isIdString } from '../../../db/ids'
 import { toMytTimestamp } from '../../../common/time/myt'
 import { OverviewCache } from '../serving/overview-cache'
+import { PaperServabilityService } from '../serving/paper-servability.service'
 import { ServabilityReadsService } from '../serving/servability-reads.service'
 import { ServabilityService } from '../serving/servability.service'
 import { BODY_MESSAGE, fieldsOf, invalid, parseBody } from './parse'
@@ -96,5 +97,26 @@ export class ServabilityController {
     const res = ServabilityLaneQuerySchema.safeParse(clean)
     if (!res.success) throw invalid(fieldsOf(res.error))
     return res.data
+  }
+}
+
+/**
+ * REQ-A-018 (AC-04.3, AC-04.4): "Dilihat murid di" at paper level on the question detail. Admin Pusat only, read-only, the same bucket as the
+ * other servability reads. A separate controller because the path is under `admin/questions`, not `admin/servability`.
+ */
+@Roles('admin')
+@Controller('admin/questions')
+@UseGuards(RateLimitGuard)
+@UseInterceptors(NoStoreInterceptor)
+export class QuestionPaperServabilityController {
+  constructor(@Inject(PaperServabilityService) private readonly papers: PaperServabilityService) {}
+
+  @Get(':id/paper-servability')
+  @RateLimit(SERVABILITY_READ_LIMIT)
+  async paperServability(@Param('id') id: string) {
+    if (!isIdString(id)) throw ApiError.of('NOT_FOUND')
+    const rows = await this.papers.forQuestion(id)
+    if (rows === null) throw ApiError.of('NOT_FOUND')
+    return ok(rows)
   }
 }

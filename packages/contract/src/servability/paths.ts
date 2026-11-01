@@ -14,6 +14,7 @@ import {
   ServabilityOverviewActivitySchema,
   ServabilityOverviewSchema,
   ServabilityPaperRowSchema,
+  QuestionPaperServabilityRowSchema,
 } from './reads'
 import {
   ServabilityActivityResultSchema,
@@ -39,6 +40,7 @@ export const SERVABILITY_COMPONENT_SCHEMAS = {
   ServabilityDatabankRow: ServabilityDatabankRowSchema,
   ServabilityAttentionCount: ServabilityAttentionCountSchema,
   ServabilityPaperRow: ServabilityPaperRowSchema,
+  QuestionPaperServabilityRow: QuestionPaperServabilityRowSchema,
 } as const
 
 const json = (schema: z.ZodType, description: string) => ({ description, content: { 'application/json': { schema } } })
@@ -62,6 +64,19 @@ export function registerServabilityPaths(registry: OpenAPIRegistry): void {
     request: { params: z.object({ id: IdSchema }) },
     responses: {
       200: json(envelopeOf(ServabilityReportSchema), 'The report; `versionNo` is the live version evaluated.'),
+      401: unauthorized,
+      403: forbidden,
+      404: err('NOT_FOUND: unknown id, a PKSK question or a Darjah question.'),
+    },
+  })
+  registry.registerPath({
+    method: 'get',
+    path: '/admin/questions/{id}/paper-servability',
+    tags,
+    summary: 'The published papers that carry a question, and whether pupils can open each (AC-04.3 / AC-04.4)',
+    request: { params: z.object({ id: IdSchema }) },
+    responses: {
+      200: json(envelopeOf(z.array(QuestionPaperServabilityRowSchema)), 'One row per published paper that places the question, by paper id; `[]` when it is on none.'),
       401: unauthorized,
       403: forbidden,
       404: err('NOT_FOUND: unknown id, a PKSK question or a Darjah question.'),
