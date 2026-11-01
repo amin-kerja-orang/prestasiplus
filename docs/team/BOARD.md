@@ -517,17 +517,17 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha17-ac-coverage | 701064be9 | docs, auto-refreshed by A3 H-A27 (coverage 124/176) |
 | r1/ha18-gate-facts | d3842c48c | CHANGES REQUESTED → A2 fixing with D99 + MAJOR 1 + Minors |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
-| r1/ha24-release-input | 37422abfd | READY (A3, BASE-105): G6 release input; every ops item has branch@head/BASE or "pending"; 27/27 SQL checks on throwaway pg16; WARM env placeholder; B2 |
+| r1/ha24-release-input | 37422abfd | READY (A3, BASE-105): G6 release input incl. the WARM env rows (pending on 022a-a4) and 0106/0107 @8183b2c5; B2 |
 | r1/ha26-team-a-state | 2794eae6d | docs, auto-refreshed by A3 H-A27 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-a2 | a631198c7 | READY (A2, BASE-105): B-034/035 + B2 Minors; intake-workflow 135/135; ready for the B1 gate |
 | r1/overview-getmany-parallel | f8616d3b7 | READY (A4): live record reused from latest; cold overview 9.3 → 6.0 s (total 34.2 → 6.0 s, −82%); parity spec; merges after overview-mcq-shape-once; B2 |
 | r1/overview-mcq-shape-once | 7a6e8bb35 | READY (A4): factsOf jana:false; cold overview 15.3→9.3 s (total 34.2→9.3 s); merges after req-b-033; B2 |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
-| r1/req-b-022a-a4 | 438407f65 | CHANGES REQUESTED (B2 c18, REQ-B-053: empty env breaks API start) → A4 fixing + restack on BASE-105 |
+| r1/req-b-022a-a4 | 438407f65 | CHANGES REQUESTED (B2 c18, REQ-B-053: empty env breaks API start) → A4 restack IN-PROGRESS (pushed, READY pending) on BASE-105 |
 | r1/req-b-025c | d47353043 | READY (A1b, BASE-105): Minors fixed (decision row REQ-B-007/025c, lateSync, fixture names); attempts 183/183; B2 |
-| r1/req-b-033 | c0ea2ea96 | Approve w/ Minors, blocked by 022a → A4 restack on BASE-105 |
-| r1/req-c-020 | 78e050b3b | Approve w/ Minors, blocked by 022a → A4 restack on BASE-105 |
+| r1/req-b-033 | c0ea2ea96 | Approve w/ Minors, blocked by 022a → A4 restack IN-PROGRESS (pushed, READY pending) |
+| r1/req-c-020 | 78e050b3b | Approve w/ Minors, blocked by 022a → A4 restack IN-PROGRESS (pushed, READY pending) |
 | r1/req-c012-a2 | ba57ecc52 | WAITS for fixed H-A18 (A2 slot 1) |
 | r1/reqb032-pinned-rule | e9cf34b7f | READY (A2+A3, BASE-105): the attempt serves the pinned version; SERVED_NOW = lock predicate; image rule B; pinned-version-rule 6/6; attempts 180/180; B2 + B3 |
 | r1/reqb049-report-visible | 9ece8d76d | READY (A1b, BASE-105): pre-review Minors fixed (type from the live version, spec titles, real level codes); 316/316; B2 + B3 |
@@ -538,7 +538,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t31-builder-wire | 6a27c8dd3 | READY (A3); needs C1 REQ-A-008 rebased on BASE-102 |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
-| r1/t37-r1-runbook | 3a595fe36 | READY (A3, BASE-105): runbook incl. 0106/0107 window, pg_trgm, ANALYZE, reverts, T36 demo-host steps; B2 |
+| r1/t37-r1-runbook | 3a595fe36 | READY (A3, BASE-105): runbook incl. the WARM env, 0106/0107 window, pg_trgm, ANALYZE, reverts, T36 demo-host; B2 |
 | r1/t38-selfmark-reward | 13134ced7 | READY (A1b, BASE-105): B2 c16 Minors fixed (concurrency spec red without the lock); rewards 22/22; B2 delta + B3 |
 | r1/t39-k1-evidence | 1a26f7a60 | check: A3 to confirm state |
 | r1/t40-attempts-acs | 43fb5900d | READY (A1b, T38 + BASE-105): 28/28; merges after T38; B2 |
