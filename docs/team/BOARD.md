@@ -510,7 +510,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
-| r1/admin-list-perf-wip | 9cc78c4db | IN-PROGRESS → handed to A4 (REQ-B-050 regex + 0106 pg_trgm + counts WIP; no full evidence yet) |
+| r1/admin-list-perf-wip | 9cc78c4db | IN-PROGRESS (A4, handed over from A2): REQ-B-050 + 0106 (no CONCURRENTLY: needs a maintenance window) + counts WIP (1 failing spec) |
 | r1/e05b-l1-spec | baa42a152 | READY (A1b, B2 + B3 to review) |
 | r1/ha17-ac-coverage | 83a09c1e9 | docs, auto-refreshed by A3 H-A27 (coverage 124/176) |
 | r1/ha18-gate-facts | d3842c48c | CHANGES REQUESTED → A2 fixing with D99 + MAJOR 1 + Minors |
@@ -527,7 +527,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/req-b-033 | f3da2b7d3 | READY (A4, on c-020), B2 |
 | r1/req-c-020 | e5e39d515 | READY (A4, on 022a-a4), B2 |
 | r1/req-c012-a2 | ba57ecc52 | WAITS for fixed H-A18 (A2 slot 1) |
-| r1/reqb032-pinned-rule | 77c83c5e6 | WIP, paused (A3) |
+| r1/reqb032-pinned-rule | 77c83c5e6 | IN-PROGRESS (A2 slot 2, moved from A3; WIP 77c83c5e) |
 | r1/reqc021-followup | 8210ac5bd | READY (A1a), fixes BASE-102 red draw-bounded; merge early |
 | r1/seed-dangling-placements | 7285d961c | READY (A1b, spec only), B2 |
 | r1/t04-minors | d0740a32a | READY (A2, BASE-102): B-044 + tile-sum assertion; 108 + 1 skip; B2 delta re-check |
