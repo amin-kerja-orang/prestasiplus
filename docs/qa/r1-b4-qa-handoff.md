@@ -171,7 +171,7 @@ Legend. **FE** = screen route (the SPA). **API** = `/api/...` route. **Msg** = e
   - an option may carry only `{id, text, image}`;
   - a recursive scan of the whole payload finds no key named like `correct`, `answer`, `key`, `scheme`, `reason`, `solution`, `model`, `explain` or `rubric` (the pupil's own `answers` is excluded), the correct option id appears only as an option `id`, and the scheme's reason text is absent.
   A new field on a pupil question, or a renamed answer key, fails that test.
-- **Spec:** `pc :: "starts an attempt: the group stimulus is served ONCE with both members; no answer key leaks"`; `pc :: "the group image file is readable by the pupil once its member question is live (R1-B20) …"`; `ci :: "7. the pupil sees the paper and starts it: the figure stimulus is served ONCE with both members and a readable image; no key leaks"`.; `r1/pinned-version-rule.spec.ts :: "a new version is approved (version 1 is superseded): the sitting keeps version 1, and so does its grading"` (REQ-B-032, `r1/reqb032-pinned-rule` @ a2cb5bb4)
+- **Spec:** `pc :: "starts an attempt: the group stimulus is served ONCE with both members; no answer key leaks"`; `pc :: "the group image file is readable by the pupil once its member question is live (R1-B20) …"`; `ci :: "7. the pupil sees the paper and starts it: the figure stimulus is served ONCE with both members and a readable image; no key leaks"`; `r1/pinned-version-rule.spec.ts :: "a new version is approved (version 1 is superseded): the sitting keeps version 1, and so does its grading"` (REQ-B-032, `r1/reqb032-pinned-rule` @ a2cb5bb4).
 
 ### Step 9. Hantar (submit) and the result
 
