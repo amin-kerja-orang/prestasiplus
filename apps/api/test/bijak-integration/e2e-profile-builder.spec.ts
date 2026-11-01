@@ -8,12 +8,16 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { E2E_K2_PAPER_TITLE } from '../../prisma/seed/e2e-k2'
 import { ExamBlueprintsModule } from '../../src/modules/exam/blueprints'
 import { ExamBuilderModule } from '../../src/modules/exam/builder'
+import { serveSeededBlueprints } from '../support/serve-blueprints'
 import { ADMIN, bootIntegrationApp, type IntegrationApp, loginAs, STUDENT } from './helpers'
 
 let t: IntegrationApp
 
 beforeAll(async () => {
   t = await bootIntegrationApp({ pocQuestions: false, e2eProfile: true, extraModules: [ExamBuilderModule, ExamBlueprintsModule] })
+  // Terbit needs a Disahkan Kontrak (AC-R1-16.2, T34). The e2e seed verifies only its own blueprint (3472/2): 1449/1 has no admin
+  // evidence to pass Sahkan, so this spec serves the seeded blueprints as an admin verification would.
+  await serveSeededBlueprints(t.db)
 }, 300_000)
 afterAll(async () => {
   await t.close()
