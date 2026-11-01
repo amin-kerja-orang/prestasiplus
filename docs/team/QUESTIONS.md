@@ -42,7 +42,7 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
 - It is narrowed by `getVisible`: approved, structured, level allowed (REQ-B-049).
 - The daily cap and admin review stay (D98).
 
-## Q12 (OPEN, asked 2026-11-01 20:00 UTC): practice rewards in Latih Tubi / Databank / Ulang Kaji (R1-10.1)
+## Q12 (Q12a DECIDED 2026-11-02 by the user via Mandor: KEEP 1 syiling; Q12b/Q12c lead default) (asked 2026-11-01 20:00 UTC): practice rewards in Latih Tubi / Databank / Ulang Kaji (R1-10.1)
 - AC R1-10.1 (v3-bijak-spm-scope.md:137) says "no amount is assumed", but V2's PracticeRecorder.php is not in the repo.
 - Pinned: Bijak SPM paper submit pays 2 syiling + 10 XP per mark in V2 (BIJAK-SPM-cloud.md:347), and ours matches.
 - Not pinned:
@@ -57,4 +57,9 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
 - **Q12a:** practice syiling rate → recommended: keep 1 per correct (the only observed amount); 2 would be assumed.
 - **Q12b:** practice XP into the wallet → recommended: leave as is until V2 evidence exists (crediting it would be new, unobserved behaviour).
 - **Q12c:** can the user supply V2 PracticeRecorder.php or .cloud observations to close the kombo step?
+**Decision (2026-11-02, the user via Mandor):** "Kekal 1 syiling (Disyorkan)".
+- **R1:** Latih Tubi, Databank and Ulang Kaji keep paying 1 syiling + 10 points per correct answer.
+- **Deviation row** "R1-10.1 practice reward rate (R1 limitation)": the V2 rate is unverified. Observed V1 = 1 + 10; Bijak paper = 2 + 10; the kombo rule is undocumented.
+- **AC R1-10.1** stays partial. Confirm against .cloud in R2 (KIV register).
+- **Q12b** (practice XP into the wallet) was not answered separately. Lead default = leave as is (the recommendation); revisit with Q12c in R2.
 
