@@ -48,8 +48,6 @@ export const MAX_SECONDS_PER_QUESTION = 180
 export const POINTS_PER_CORRECT = 10
 /** BR-09: mission sessions pay 3 coins per correct answer unless the mission says otherwise. */
 export const MISSION_COINS_PER_CORRECT = 3
-/** BR-16: chapter unlock score (percent). */
-export const UNLOCK_SCORE = 70
 /** Largest page number the history accepts (a deeper page is 422, so a skip cannot be abused). */
 export const HISTORY_MAX_PAGE = 10_000
 /** Default page size of the history list. */
