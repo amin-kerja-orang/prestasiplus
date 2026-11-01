@@ -60,6 +60,14 @@ describe('Pentadbiran menu data', () => {
     expect(byId.get('BS-08')).toMatchObject({ label: 'Bank Soalan (Studio)', to: '/admin/studio' })
   })
 
+  it('REQ-B-039: Bank Soalan (Studio) opens the Studio list', () => {
+    const bs08 = ALL_ITEMS.find((i) => i.id === 'BS-08')
+    expect(bs08).toMatchObject({ label: 'Bank Soalan (Studio)', to: '/admin/studio' })
+    // it resolves to the real route (T13b), like every other item
+    const router = createAppRouter({ history: createMemoryHistory() })
+    expect(router.resolve('/admin/studio').matched.length).toBeGreaterThan(0)
+  })
+
   it('never points a visible item at a placeholder route', () => {
     for (const item of ALL_ITEMS) expect(item.to, item.id).not.toContain('/admin/p/')
   })
