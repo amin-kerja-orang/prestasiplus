@@ -1,4 +1,5 @@
 import { ApiError } from '../../src/common/errors/api-error'
+import { isStructuredVisible } from '../../src/modules/questions/structured-visibility'
 import type { QuestionWorkflowStatus } from '@pp/contract'
 
 import type {
@@ -217,6 +218,15 @@ export class FakeQuestionBank implements QuestionBankPort {
 
   async listIdsBySourcePaper(sourcePaperId: string): Promise<string[]> {
     return [...this.questions.values()].filter((q) => q.sourcePaperId === sourcePaperId).map((q) => q.id)
+  }
+
+  /** The levels the fake treats as T4 and T5 (a seed with another `brief.educationLevelId` is outside the structured practice). */
+  static readonly STRUCTURED_LEVEL_IDS: ReadonlySet<string> = new Set(['1', '2'])
+
+  async structuredVisible(id: string): Promise<boolean> {
+    const q = this.questions.get(id)
+    if (!q || q.liveVersionNo === null) return false
+    return isStructuredVisible({ isActive: q.isActive, version: { status: 'approved', type: q.brief.type, educationLevelId: q.brief.educationLevelId } }, FakeQuestionBank.STRUCTURED_LEVEL_IDS)
   }
 
   async describe(ids: readonly string[]): Promise<ReadonlyMap<string, QuestionBrief>> {

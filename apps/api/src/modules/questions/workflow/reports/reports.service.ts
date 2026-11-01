@@ -144,7 +144,8 @@ export class QuestionReportsService {
       if (!live) throw ApiError.of('NOT_FOUND')
       return
     }
-    if (live && type === 'structured') return
+    // REQ-B-049: only what the structured practice would show this pupil (approved live version, active, structured, level T4/T5).
+    if (live && type === 'structured' && (await this.bank.structuredVisible(String(questionId)))) return
     throw ApiError.of('VALIDATION_ERROR', { fields: { context: M.contextRequired } })
   }
 

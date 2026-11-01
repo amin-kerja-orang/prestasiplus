@@ -232,13 +232,27 @@ describe('question reports (BE-10 AC 3, 4, 9, 11)', () => {
         expect(res.status, id).toBe(422)
         expect(fields(res), id).toEqual(ctx)
       }
-      const structured = seed({ brief: { type: 'structured' } })
       // a mismatching questionType on a question the pupil has no proof for reveals neither the type nor the existence
       expect(fields(await plain.post('/api/question-reports', body(live, { questionType: 'structured' })))).toEqual(ctx)
       expect(fields(await plain.post('/api/question-reports', body(hidden, { questionType: 'mcq' })))).toEqual(ctx)
       // a Guru still gets 404 for an unknown question
       expect((await c.teacher.post('/api/question-reports', body('99999991'))).status).toBe(404)
-      expect(structured).toBeTruthy()
+    })
+
+    it('REQ-B-049: a structured question the pupil cannot open (level outside T4/T5, no live version, inactive) gets the same uniform 422 as a question without proof; T4 and T5 are reported', async () => {
+      const plain = await loginAs(t, 'pelajar@demo.test')
+      const ctx = { context: 'Anda hanya boleh melapor soalan yang dipaparkan kepada anda.' }
+      const t5 = seed({ brief: { type: 'structured', educationLevelId: '2' } })
+      expect((await plain.post('/api/question-reports', body(t5, { questionType: 'structured' }))).status).toBe(201)
+      const hiddenLevel = seed({ brief: { type: 'structured', educationLevelId: '9' } }) // e.g. a T1 to T3 set: not in the structured practice
+      const inactive = seed({ isActive: false, brief: { type: 'structured' } })
+      const unpublished = seed({ status: 'draft', brief: { type: 'structured' } })
+      for (const id of [hiddenLevel, inactive, unpublished, '99999992']) {
+        const res = await plain.post('/api/question-reports', body(id, { questionType: 'structured' }))
+        expect(res.status, id).toBe(422)
+        expect(fields(res), id).toEqual(ctx)
+      }
+      expect(await count(t.db, `select count(*) n from question_reports where question_id = any($1::bigint[])`, [[hiddenLevel, inactive, unpublished]])).toBe(0)
     })
 
     it('REP-N2: at most 8 reasons; duplicates are stored once', async () => {

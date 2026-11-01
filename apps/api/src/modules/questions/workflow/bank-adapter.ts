@@ -17,8 +17,10 @@ import type { QuestionPart, QuestionWorkflowStatus } from '@pp/contract'
 import { PrismaService } from '../../../db/prisma.service'
 import { CurriculumRepository } from '../../curriculum'
 import {
+  isStructuredVisible,
   QuestionsRepository,
   QuestionsService,
+  STRUCTURED_LEVEL_CODES,
   transitionConflict,
   type QuestionCreateInput,
   type QuestionRecord,
@@ -225,6 +227,13 @@ export class QuestionBankAdapter implements QuestionBankPort {
       subjects: new Map(subjects.map((s) => [s.id.toString(), s.name])),
       levels: new Map(levels.map((l) => [l.id.toString(), l.name])),
     }
+  }
+
+  async structuredVisible(id: string): Promise<boolean> {
+    const record = await this.repo.get(id, 'live')
+    if (!record) return false
+    const levels = new Set((await this.curriculum.levels()).filter((l) => STRUCTURED_LEVEL_CODES.includes(l.code)).map((l) => l.id.toString()))
+    return isStructuredVisible(record, levels)
   }
 
   async describe(ids: readonly string[]): Promise<ReadonlyMap<string, QuestionBrief>> {
