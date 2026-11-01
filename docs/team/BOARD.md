@@ -510,6 +510,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
+| r1/admin-list-perf-wip | 3df15f67e | IN-PROGRESS → handed to A4 (REQ-B-050 regex + 0106 pg_trgm + counts WIP; no full evidence yet) |
 | r1/e05b-l1-spec | baa42a152 | READY (A1b, B2 + B3 to review) |
 | r1/ha17-ac-coverage | 83a09c1e9 | docs, auto-refreshed by A3 H-A27 (coverage 124/176) |
 | r1/ha18-gate-facts | d3842c48c | CHANGES REQUESTED → A2 fixing with D99 + MAJOR 1 + Minors |
@@ -543,13 +544,11 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t45-builder-acs-wip | 078204e1c | SUPERSEDED by r1/t45-builder-acs; do not merge |
 | r1/t45-servability-acs | 37d240136 | READY (A4), B2 + B3 |
 | r1/t48-builder-parity | 1dd07bc1a | READY (A3, BASE-105): B2 cycle-16 Minors fixed; new hard SECTION_EMPTY; 22 codes (4 overridable); DB 516 + 1 todo; conformance 409/409; B2 delta + B3 re-check |
-| r1/t49-served-now | 8a4b46a9f | Approve w/ Minors → A2 fixing (trim) + BASE merge |
+| r1/t49-served-now | 8a4b46a9f | IN-PROGRESS (A2): BASE-102 + negeri trim + examBoards nit pushed; READY evidence pending |
 | r1/t50-partial-acs | e436e084d | READY (A1a/b), B2 |
 | r1/t51-partial-acs-a3 | 5b7fc6780 | IN-PROGRESS (A3): merging T48 to drop a duplicate PUT code rule; not READY. Order T48 → T31 (+REQ-A-008) → T43 → T51 |
 | r1/t52-examiner-grid | addae6444 | READY (A1a), B2 |
 | r1/t54-perf-400k | bbf412c66 | READY (A4), B2 Minors fixed |
-
-**New branches not yet triaged:** r1/admin-list-perf-wip 3df15f67e
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
