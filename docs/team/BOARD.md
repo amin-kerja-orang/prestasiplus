@@ -448,3 +448,5 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 
   r1/t45-servability-acs @ 37d24013 merges at any time.
   - Evidence: api tsc 0; vue-tsc 0; DB 94/94; m28 589/589; t45 19/19.
+- reqc021-followup @ 8210ac5bd confirmed as the only D98 red. Counts: questions 628 + 3 todo; practice 175; practice-reads 106 + 1 skip; curriculum 257; conformance 409/409.
+- A1a next: **integration preview** (local only, not pushed). It stacks every team A READY head on BASE-102 in merge order and runs the full api suites, so conflicts and reds are found before B1.
