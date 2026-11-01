@@ -77,6 +77,8 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 
 | ID | Branch @ head | Lane | Depends on | B state |
 |---|---|---|---|---|
+| T54 F2: builder pool search matches the text in SQL and describes only the page | `r1/builder-search-perf` @ f0ddb1ca | A3 | T48 (carries 705468c1); merges after T48 | READY |
+| T34-L1-residual, taken by team C (REQ-A-013) | `r1/t34-l1-residual-c` @ eb9ad806 | team C (REQ-A-013) | BASE-102 (not built from e4bb72eb) | READY |
 | REQ-B-022a overview: skip the Jana pool facts in the published-paper pass (cold 15.3 s to 9.3 s on 408k) | `r1/overview-mcq-shape-once` @ b0f1e9b2 | A4 | T30 (base) | READY (A4); review not seen (unconfirmed) |
 | REQ-B-032 a published paper serves its pinned version (attempt source, image rule B, served lock agree) | `r1/reqb032-pinned-rule` @ 77c83c5e | A2 (slot 2; moved from A3, earlier from A4) | none (REQ-B-032) | WIP, not READY: A2 starts from the paused A3 checkpoint 77c83c5e |
 | Seed spec: no published seeded paper holds a dangling placement (25 PoC ones withdrawn) | `r1/seed-dangling-placements` @ 7285d961 | A (lane unconfirmed) | T36 (base) | READY (test-only); lane and review not seen (unconfirmed) |
@@ -102,8 +104,8 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 | T31 builder wire | `r1/t31-builder-wire` @ 6a27c8dd | READY @ 6a27c8dd (lead, 2026-11-01; BASE-102 merged, virtual merge clean); waits for C1 to rebase REQ-A-008 on BASE-102 | T34; waits for C1 REQ-A-008 | restacked on BASE-102 (6a27c8dd is a base merge of the bf825128 checkpoint), checkpoint, not yet READY (bf825128: builder helper follows T36, poc-flag publishes under a Disahkan Kontrak, openapi re-emitted; evidence still running); REQ-A-008 (C1) follows it |
 | T43 chain + publish ACs | `r1/t43-chain-publish` @ 5ce5894f | READY @ 5ce5894f (lead, 2026-11-01; on T31, Jana Kertas fixtures use a non-KBAT level); merges after T31 | T31 (contains T34) | real commits on the T31 chain (Jana Kertas fixtures use a non-KBAT level, base merges); T31 is a checkpoint, so T43 waits for T31 (A3) |
 | T48 builder parity (0104) | `r1/t48-builder-parity` @ 1dd07bc1 | A3 | T34; re-verify running | T34 is in base (BASE-101); tip 1dd07bc1 = BASE-105 merge of 705468c1 (B2 minors and B3 audit info fixed (empty admin Bahagian is hard, override-mix spec, docs, messages) on top of fix 2cbe7d28 and spec follow-ups); READY (reported to the lead); B2/B3 re-check pending (migration 0104) |
-| T43b publish ACs | `r1/t43b-publish-acs` @ 4921b3e5 | A3 dev-2 | T43 | restacked on T48 705468c1 (4921b3e5); T43b minors fixed (2f8f69c3: blueprint-free guards for ZERO_MARK_SECTION / TOTAL_MARKS_BELOW_ONE, AC-07.9 compares served content, deviation rows); publish-acs.spec covers AC-07.4 to AC-07.9; READY status not announced (unconfirmed) (A3) |
-| T51 partial ACs (builder, Terbit, Kontrak, Jana) | `r1/t51-partial-acs-a3` @ 4f812b4e | A3 dev-1 | T43 | IN-PROGRESS (A3); restacked on T48 705468c1 with an openapi re-emit (27ba7ff6); being reworked to drop a code-field duplicate of T48; real commits so far (chain activities step 5b, T33 approve-gate negative, AC-18.1 coverage); not READY |
+| READY (4921b3e5 contains T48 final head 1dd07bc1); T43b minors fixed (2f8f69c3); publish-acs.spec covers AC-07.4 to AC-07.9; blocker catalogue 25 (4 overridable) | `r1/t43b-publish-acs` @ 4921b3e5 | READY (4921b3e5 contains T48 final head 1dd07bc1); T43b minors fixed (2f8f69c3); publish-acs.spec covers AC-07.4 to AC-07.9; blocker catalogue 25 (4 overridable) | READY (4921b3e5 contains T48 final head 1dd07bc1); T43b minors fixed (2f8f69c3); publish-acs.spec covers AC-07.4 to AC-07.9; blocker catalogue 25 (4 overridable) | READY (4921b3e5 contains T48 final head 1dd07bc1); T43b minors fixed (2f8f69c3); publish-acs.spec covers AC-07.4 to AC-07.9; blocker catalogue 25 (4 overridable) |
+| READY (reported to the lead, recorded on BOARD); the code overlap with T48 is resolved; restacked on T48 705468c1 with an openapi re-emit (4f812b4e) | `r1/t51-partial-acs-a3` @ 4f812b4e | READY (reported to the lead, recorded on BOARD); the code overlap with T48 is resolved; restacked on T48 705468c1 with an openapi re-emit (4f812b4e) | READY (reported to the lead, recorded on BOARD); the code overlap with T48 is resolved; restacked on T48 705468c1 with an openapi re-emit (4f812b4e) | READY (reported to the lead, recorded on BOARD); the code overlap with T48 is resolved; restacked on T48 705468c1 with an openapi re-emit (4f812b4e) |
 | T52 examinerGrid (AC-20.3) | `r1/t52-examiner-grid` @ addae644 | A1 | none | B2 eslint BLOCKER `bijak-papers.test.ts:317` (A1); REQ-A-012 FE waits for it |
 
 ### 1.3 In progress, not pushed
@@ -118,7 +120,7 @@ Other teams' units also in base: T24 (BASE-6), T14 (BASE-20), T15 (BASE-21), T13
 |---|---|---|
 | T37 runbook | `r1/t37-r1-runbook` @ f4bb197c | `docs/ops/r1-runbook.md` (migrations 0092 to 0105, SELECTs run 74/74 on BASE-62) |
 | T39 K1 evidence | `r1/t39-k1-evidence` @ 1a26f7a6 | `docs/ops/r1-k1-blueprint-evidence.md` |
-| T46 / H-A17 AC coverage | `r1/ha17-ac-coverage` @ 599c8b20 | `docs/qa/r1-backend-ac-coverage.md`, `r1-verify-first-notes.md` (kept current by H-A27) |
+| T46 / H-A17 AC coverage | `r1/ha17-ac-coverage` @ d7c9c784 | `docs/qa/r1-backend-ac-coverage.md`, `r1-verify-first-notes.md` (kept current by H-A27) |
 | H-A19 admin parity | `r1/ha19-admin-parity` @ c7315b0e | `docs/qa/r1-admin-parity-check.md` |
 | H-A20 student parity | `r1/ha20-student-parity` @ 557e17c6 | `docs/qa/r1-student-parity-check.md` |
 | H-A22 parity docs | `r1/ha22-parity-docs` @ 4fb2a41b | both parity docs refreshed, deviation rows H22-D1/D2 in `v2-bijak-spm.md`, `student.md` rows marked |
@@ -172,7 +174,7 @@ Status as recorded in `requests/` (answers files take precedence). "Open for A" 
 | Open for A | REQ-B-017, REQ-B-019, REQ-B-029, REQ-B-032, REQ-B-037, REQ-B-040, REQ-B-043, REQ-B-050, REQ-B-051, REQ-B-052, REQ-B-053, REQ-C-012, REQ-C-021 |
 | Delivered by A (waiting for merge or the other side) | REQ-B-003, REQ-B-004, REQ-B-007, REQ-B-013, REQ-B-014, REQ-C-016, REQ-C-017, REQ-C-018 |
 | Open to B | REQ-A-007, REQ-A-009, REQ-A-011, REQ-A-017 |
-| Open to C | REQ-A-004, REQ-A-013, REQ-A-014, REQ-A-016 |
+| Open to C | REQ-A-004, REQ-A-014, REQ-A-016 |
 | Delivered by B or C to A's request | REQ-A-001, REQ-A-002, REQ-A-003, REQ-A-005, REQ-A-006, REQ-A-008, REQ-A-010, REQ-A-012 |
 | Closed (done, declined, withdrawn) | REQ-A-015, REQ-B-001, REQ-B-002, REQ-B-005, REQ-B-006, REQ-B-008, REQ-B-009, REQ-B-010, REQ-B-011, REQ-B-012, REQ-B-015, REQ-B-016, REQ-B-018, REQ-B-020, REQ-B-021, REQ-B-023, REQ-B-024, REQ-B-026, REQ-B-027, REQ-B-028, REQ-B-030, REQ-B-031, REQ-B-038, REQ-B-039, REQ-B-041, REQ-B-046, REQ-C-001, REQ-C-002, REQ-C-003, REQ-C-004, REQ-C-005, REQ-C-006, REQ-C-007, REQ-C-008, REQ-C-009, REQ-C-010, REQ-C-011, REQ-C-013, REQ-C-014, REQ-C-015, REQ-C-022, REQ-C-023, REQ-C-024 |
 | Raised between B and C, not A | REQ-B-001, REQ-B-002, REQ-B-009, REQ-B-011, REQ-B-016, REQ-B-024, REQ-B-027, REQ-B-030, REQ-B-036, REQ-B-038, REQ-B-039, REQ-B-042, REQ-B-045, REQ-B-047, REQ-B-048, REQ-C-023 |
