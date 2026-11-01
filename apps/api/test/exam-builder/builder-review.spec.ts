@@ -403,8 +403,12 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
         parts: [{ label: 'a', mode: 'working', cognitiveLevel: 'mengaplikasi', prompt: { ms: 'Kira luas segi empat tepat itu.' }, marks: 2, reveal: 'never', key: { kind: 'points', marks: 2, points: [{ id: 'p1', code: 'M', label: 'Darabkan', marks: 2, text: { ms: 'panjang darab lebar' } }] } }],
       })
       expect(res.status, JSON.stringify(res.body)).toBe(201)
-      await approve([res.body.data.id as string])
-      return res.body.data.id as string
+      const id = res.body.data.id as string
+      // The T45 approve gate (AC-05.3) refuses an unservable question, but approved-but-unservable rows exist in real data (migrated, or
+      // unservable after approval). This test is about what the builder does with one, so the approved state is written directly.
+      await q(`update question_versions set status = 'approved', published_at = now() where question_id = $1`, [id])
+      await q(`update questions set live_version_no = 1 where id = $1`, [id])
+      return id
     }
 
     it('names the question and the bridge reason; the audited override cannot lift it; a paper of valid questions publishes', async () => {

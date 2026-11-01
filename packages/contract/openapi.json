@@ -15166,7 +15166,8 @@
           "no_marks",
           "tag_review",
           "paper_empty",
-          "stimulus_shared_ungrouped"
+          "stimulus_shared_ungrouped",
+          "question_missing"
         ]
       },
       "ServabilityReason": {
@@ -85073,7 +85074,7 @@
         ],
         "responses": {
           "200": {
-            "description": "A page of rows, newest first. `status` filters the lifecycle code.",
+            "description": "A page of rows, newest first, and `subjects` (the options of the Subjek filter). `status` filters the lifecycle code.",
             "content": {
               "application/json": {
                 "schema": {
@@ -85087,11 +85088,19 @@
                     },
                     "meta": {
                       "$ref": "#/components/schemas/ListMeta"
+                    },
+                    "subjects": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ServabilityLaneSubject"
+                      },
+                      "description": "The options of the `Subjek` filter of this lane."
                     }
                   },
                   "required": [
                     "data",
-                    "meta"
+                    "meta",
+                    "subjects"
                   ]
                 }
               }
@@ -85189,7 +85198,7 @@
         ],
         "responses": {
           "200": {
-            "description": "A page of papers, newest first. `status` is draft, ready, published or withdrawn.",
+            "description": "A page of papers, newest first, and `subjects` (the options of the Subjek filter). `status` is draft, ready, published or withdrawn.",
             "content": {
               "application/json": {
                 "schema": {
@@ -85203,11 +85212,19 @@
                     },
                     "meta": {
                       "$ref": "#/components/schemas/ListMeta"
+                    },
+                    "subjects": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ServabilityLaneSubject"
+                      },
+                      "description": "The options of the `Subjek` filter of this lane."
                     }
                   },
                   "required": [
                     "data",
-                    "meta"
+                    "meta",
+                    "subjects"
                   ]
                 }
               }

@@ -168,7 +168,10 @@ describe('R1-T34 structured blockers: review and publish agree', () => {
     })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     const bad = res.body.data.id as string
-    await approve([bad])
+    // The T45 approve gate (AC-05.3) refuses an unservable question, but approved-but-unservable rows exist in real data (migrated, or
+    // unservable after approval). This test is about what the builder does with one, so the approved state is written directly.
+    await q(`update question_versions set status = 'approved', published_at = now() where question_id = $1`, [bad])
+    await q(`update questions set live_version_no = 1 where id = $1`, [bad])
     expect((await setPool(bad, ['MAT2-C'])).status).toBe(200)
     const { paper } = await fullPaper({ last: bad })
     const review = await expectAgree(paper)
