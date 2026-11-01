@@ -517,7 +517,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha17-ac-coverage | 43948d54d | docs, auto-refreshed by A3 H-A27 (coverage 124/176) |
 | r1/ha18-gate-facts | f29aeda9c | PRE-REVIEW MAJOR (A1a M2: import hold not released on the draft rewrite path) + Minors → A2 fixing; B: wait for the new head |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
-| r1/ha24-release-input | b26f13b59 | READY (A3, BASE-105): G6 release input incl. the WARM env rows (pending on 022a-a4) and 0106/0107 @8183b2c5; B2 |
+| r1/ha24-release-input | b26f13b59 | READY (A3, BASE-105): G6 release input incl. the WARM env rows and 0106/0107 @2a8ab674 (drift + order notes); B2 |
 | r1/ha26-team-a-state | 895085f28 | docs, auto-refreshed by A3 H-A27 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-a2 | a631198c7 | READY (A2, BASE-105): B-034/035 + B2 Minors; intake-workflow 135/135; ready for the B1 gate |
@@ -548,7 +548,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t45-builder-acs | de8c8c02f | READY (A1b, on T48 1dd07bc1 + BASE-105): AC-R1-21.3/21.6 specs; exam-builder 389/389; merges after T48; B2 |
 | r1/t45-builder-acs-wip | 078204e1c | SUPERSEDED by r1/t45-builder-acs; do not merge |
 | r1/t45-servability-acs | 58618b2cb | READY (A4, BASE-105): B2 c18 Minors + 3 preview reds fixed (DB fixture approve, gate unchanged); merge 1st in the A4 chain; B2 + B3 |
-| r1/t48-builder-parity | 1dd07bc1a | READY but pre-review (A1b) found 2 Minors → A3 fixing (hard delete must require no live version; duplicate section labels). New head will restack T43b/search-perf/T45-P3/T31/T43/T51 |
+| r1/t48-builder-parity | 1dd07bc1a | READY but pre-review (A1b) found 2 Minors → A3 fixing (hard delete must require no live version; duplicate section labels). The new head will restack T43b, search-perf and T51; A1 re-merges T45-P3 |
 | r1/t49-served-now | 8a4b46a9f | READY (A2, BASE-105): B-025ab + C-019 + B2 c16 Minors (blank negeri ignored, examBoards distinct case-insensitive); 704/704 incl. conformance; B2 delta |
 | r1/t50-partial-acs | 075e1b587 | READY (A1a, BASE-105): B2 approved c17; ready for the B1 gate |
 | r1/t51-partial-acs-a3 | 4f812b4e2 | READY (A3; T48 + T43 + T31 + BASE-105): PIPE AC-18.1 + R1-21.3/21.6 backend; overlap resolved toward T48; 965 + 1 todo; conformance 409/409; order T48 → T31 (+REQ-A-008) → T43 → T51; B2 |
