@@ -479,13 +479,14 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 ### Head audit 2026-11-01 15:00 UTC (superseded)
 This manual table has been removed because it went stale. **The only current source for team A heads and states is the auto table between the `AUDIT:BEGIN/END` markers at the end of this file.** It is regenerated from `git ls-remote` every cycle.
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 18:53 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 18:54 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/a3-qa-doc-nits | e4d4dd322 | READY (A3, BASE-105, docs only): stale QA notes on T38 self-mark reward fixed (2 files); B2 |
 | r1/a4chain-minors | 4f40a1819 | READY (A1a, on overview-getmany-parallel 0ba236ef): empty-reasons spec (guard is redundant, kept; spec pins behaviour), janaSkipped runtime guard + spec, 022a perf identity line; 32 tests, tsc/eslint 0, contract:check ok; A2 pre-review pending; merge after the A4 chain; B2 |
+| r1/ac-gaps-a1b | 8a3b60f95 | IN-PROGRESS (A1b, BASE-105): R1 AC sweep: R1-18.4 spec (todo → real, bites), coverage doc 117 → 133 proven; fixing AC-18.1 row (rests on T51, which is ON HOLD) before READY |
 | r1/admin-list-perf | 2a8ab6744 | READY (A4, BASE-105): REQ-B-050 + 0106 + 0107 + exact counts; pre-review Minors fixed (status total ?? 0, no-slash kertas change documented, migration order + drift notes); B2 + B3 + DevOps |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
 | r1/bridge-table-parts | c805ecc7c | READY (A4, BASE-105): the bridge uses stimulusTableParts (an invalid grid + pipe body shows the table only, as in builder/Studio); bridge 118/118, attempts 180/180, kuiz 39/39; B2. Follow-up after T31 + this merge: drop PENDING_BRIDGE_TEXT in the parity spec (A4) |
