@@ -154,7 +154,7 @@ describe('REQ-B-032 a published paper serves its pinned version', () => {
     expect((await pupil.put(`/api/bijak/attempts/${attempt}/answers`, { changes })).status).toBe(200)
   })
 
-  it('a report deactivates the question: image rule B grants the pinned version images and not the unpinned live ones; the served lock holds on the pinned version', async () => {
+  it('the question is deactivated (admin): image rule B grants the pinned version images and not the unpinned live ones; the served lock holds on the pinned version', async () => {
     await q(`update questions set is_active = false where id = ${target}`)
     // (1) the sitting still gets version 1
     const s = await served()
