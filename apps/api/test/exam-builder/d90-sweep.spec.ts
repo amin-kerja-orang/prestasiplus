@@ -11,6 +11,25 @@ vi.setConfig({ testTimeout: 120_000, hookTimeout: 300_000 })
  * D90 builder group-integrity sweep (lane A3). D90: a shared image or passage is ONE group, shown once with all its questions; it is never a
  * standalone question and carries no marks; in the builder a group moves as a unit. These specs close the paths that the older specs
  * (builder-placements, builder-api, builder-parity) leave open, on the real bank and the real servability rules: HTTP only.
+ *
+ * MUTATIONS (what was changed, and which test went red):
+ * (S = builder.service.ts, C = paper-check.ts, Q = question-bank.source.ts; every mutation is ONE edit, restored afterwards; the other tests stayed green.
+ *  Re-run: apply the edit, run this file, `git checkout` the source file.)
+ *  1. S `update`: `normalizeUnits(patch.questionIds, ...)` -> `[...patch.questionIds]`                         -> "naming ONE member ...", "a PUT that lists the members apart ...", "Padam soalan on an added question that was grouped ..."
+ *  2. S `update`: the `repeated` group-member refusal disabled                                                -> "adding a member to another Bahagian while the group stays in the first ..."
+ *  3. C `normalizeUnits`: the expanded group members reversed                                                 -> the same three tests as 1
+ *  4. S `createQuestion`: the new question is placed BEFORE the existing placements                           -> "Tambah soalan appends a SOLO question after the group ..."
+ *  5. S `deleteAddedQuestion`: the `notAdded` refusal removed                                                 -> "Padam soalan on a member of a group placed from the bank is refused ..."
+ *  6. C `checkPaperDetailed`: the D93 `GROUP_MIN_MEMBERS` line removed                                        -> "Padam soalan on an added question that was grouped ... D93 blocks Terbit"
+ *  7. S `deleteAddedQuestion`: `rest` emptied (Padam soalan unplaces every other question)                    -> the same test as 6
+ *  8. S `copy`: every pin forced to 99                                                                         -> "copies the group whole in the SOURCE order ... version IN FORCE ..."
+ *  9. S `copy`: the last placement dropped                                                                     -> the same test as 8
+ * 10. S `copy`: the placements sorted by question id (the solo was made BEFORE the group, placed AFTER it)     -> the same test as 8
+ * 11. S `copy`: the SOURCE pin kept instead of the version in force (member 2 has an approved v2)              -> the same test as 8
+ * 12. Q `describe`: `latestVersionNo` before `liveVersionNo` (the Draf v3 would be pinned)                     -> the same test as 8
+ * 13. S `sectionPool`: eligibility read from the FIRST member only                                            -> "a group is offered as ONE unit; tagging only the FIRST or only the LAST member ..." (last-only case)
+ * 14. S `sectionPool`: eligibility read from the LAST member only                                             -> the same test as 13 (first-only case)
+ * 15. S `sectionPool` (fallback text search): `some` -> `every` over the group's members                      -> "a text hit on ONE member offers the whole group as ONE unit ..."
  */
 describe('D90 builder sweep: a stimulus group is one unit on every builder path', () => {
   let t: FullApp
@@ -53,11 +72,12 @@ describe('D90 builder sweep: a stimulus group is one unit on every builder path'
     return id
   }
   /** A real stimulus group of `n` approved members (a passage stimulus), members in the order made. */
-  async function group(n = 2): Promise<{ groupId: string; members: string[] }> {
+  async function group(n = 2, text?: string): Promise<{ groupId: string; members: string[] }> {
     const stim = await admin.post('/api/stimuli', { kind: 'passage', label: 'Petikan ujian', caption: 'Kapsyen', body: { ms: 'Petikan ujian untuk kertas.' } })
     expect(stim.status, JSON.stringify(stim.body)).toBe(201)
     const members: string[] = []
-    for (let i = 0; i < n; i++) members.push(await mk())
+    // `text` makes the members findable by the pool text filter, so a test can scope the pool to its own fixtures on the shared database
+    for (let i = 0; i < n; i++) members.push(await mk(text === undefined ? {} : { questionText: `${text} soalan ${String(i + 1)}` }))
     const made = await admin.post('/api/stimulus-groups', { label: 'Petikan ujian', stimulusIds: [stim.body.data.id], questionIds: members })
     expect(made.status, JSON.stringify(made.body)).toBe(201)
     await approve(members)
@@ -158,7 +178,8 @@ describe('D90 builder sweep: a stimulus group is one unit on every builder path'
       expect(added.status, JSON.stringify(added.body)).toBe(201)
       const id = (added.body.data.added as string[])[0]!
       expect(await idsIn(paper, d)).toEqual([g.members[0], g.members[1], id])
-      expect((await q(`select group_id from questions where id = $1`, [id]))[0]!.group_id).toBeNull()
+      // the new question did not join the group: the group's rows in the bank are still exactly its two members, in order
+      expect((await q(`select id::text id from questions where group_id = $1 order by group_position`, [g.groupId])).map((r) => r.id)).toEqual(g.members)
       const groups = (added.body.data.editor.groups as { id: string; questionIds: string[] }[]).filter((x) => x.id === g.groupId)
       expect(groups).toHaveLength(1)
       expect(groups[0]!.questionIds).toEqual(g.members)
@@ -213,29 +234,38 @@ describe('D90 builder sweep: a stimulus group is one unit on every builder path'
   })
 
   describe('Salin set (copy) with a group', () => {
-    it('copies the group whole, contiguous and in order, with every member pinned to the version in force (a newer Draf version is not pinned)', async () => {
-      const a = await approved()
+    it('copies the group whole in the SOURCE order (a solo placed after the group stays after it) and pins every question to the version IN FORCE, not the source pin and not the latest Draf', async () => {
+      // the solo is made BEFORE the group (lower ids) and placed AFTER it: an id-sorted copy would put it first
+      const solo = await approved()
       const g = await group(3)
       const paper = await newPaper()
       const [secA] = await sectionsOf(paper)
-      expect((await place(paper, secA!, a)).status).toBe(201)
       expect((await place(paper, secA!, g.members[1]!)).status).toBe(201)
-      expect(await idsIn(paper, secA!)).toEqual([a, ...g.members])
-      // a member is edited after it was placed: a new Draf version 2, version 1 stays the one in force
-      const body = { subjectId: subject, educationLevelId: level, difficultyLevel: 3, questionType: 'mcq', questionText: 'Soalan disunting selepas diletakkan?', options: ['4', '5', '6', '7'], correctAnswer: 1, kertas: '2', cognitiveLevel: 'mengaplikasi', tag }
-      expect((await admin.put(`/api/questions/${g.members[2]}`, body)).status).toBe(200)
-      expect((await q(`select max(version_no)::int n from question_versions where question_id = $1`, [g.members[2]]))[0]!.n).toBe(2)
+      expect((await place(paper, secA!, solo)).status).toBe(201)
+      expect(await idsIn(paper, secA!)).toEqual([...g.members, solo])
+      expect(Number(solo)).toBeLessThan(Number(g.members[0]))
+      expect(await pinsOf(paper)).toEqual(Object.fromEntries([...g.members, solo].map((x) => [x, 1])))
+      // after placing: member 2 gets a NEW approved version 2 (version in force), then a newer Draf version 3 (latest, not in force)
+      const edit = (text: string) =>
+        admin.put(`/api/questions/${g.members[1]}`, { subjectId: subject, educationLevelId: level, difficultyLevel: 3, questionType: 'mcq', questionText: text, options: ['4', '5', '6', '7'], correctAnswer: 1, kertas: '2', cognitiveLevel: 'mengaplikasi', tag })
+      expect((await edit('Soalan disunting: versi dua')).status).toBe(200)
+      await approve([g.members[1]!])
+      expect((await q(`select live_version_no::int n from questions where id = $1`, [g.members[1]]))[0]!.n).toBe(2)
+      expect((await edit('Soalan disunting: versi tiga (draf)')).status).toBe(200)
+      expect(await q(`select live_version_no::int live, latest_version_no::int latest from questions where id = $1`, [g.members[1]])).toEqual([{ live: 2, latest: 3 }])
       const res = await admin.post(`/api/admin/papers/${paper}/copy`)
       expect(res.status, JSON.stringify(res.body)).toBe(201)
       const copy = res.body.data.id as string
       const [copyA] = await sectionsOf(copy)
-      expect(await idsIn(copy, copyA!)).toEqual([a, ...g.members])
+      // order follows the source: the group whole and contiguous, then the solo
+      expect(await idsIn(copy, copyA!)).toEqual([...g.members, solo])
       // the editor lists the group once, with all its members (it also lists the groups of the picker's candidates: filter to this one)
       const groups = ((await editorOf(copy)).groups as { id: string; questionIds: string[] }[]).filter((x) => x.id === g.groupId)
       expect(groups).toHaveLength(1)
       expect(groups[0]!.questionIds).toEqual(g.members)
-      expect(await pinsOf(copy)).toEqual(Object.fromEntries([a, ...g.members].map((id) => [id, 1])))
-      expect(await pinsOf(copy)).toEqual(await pinsOf(paper))
+      // pins: the copy pins the version in force (member 2 -> 2); everything else is still version 1. The source keeps its own pins.
+      expect(await pinsOf(copy)).toEqual({ [g.members[0]!]: 1, [g.members[1]!]: 2, [g.members[2]!]: 1, [solo]: 1 })
+      expect(await pinsOf(paper)).toEqual(Object.fromEntries([...g.members, solo].map((x) => [x, 1])))
       // the position column is dense and in the same order as the source
       const pos = (id: string) => q(`select pl.question_id::text qid from paper_placements pl join paper_sections s on s.id = pl.paper_section_id where s.paper_id = $1 and s.position = 1 order by pl.position`, [id])
       expect(await pos(copy)).toEqual(await pos(paper))
@@ -244,9 +274,11 @@ describe('D90 builder sweep: a stimulus group is one unit on every builder path'
 
   describe('candidate search (the pool text search)', () => {
     it('a text hit on ONE member offers the whole group as ONE unit; a hit on both members does not offer it twice', async () => {
-      const lone = await mk({ questionText: 'Zebrakuda tunggal unik soalan' })
-      const first = await mk({ questionText: 'Harimau bertompok soalan pertama kumpulan' })
-      const second = await mk({ questionText: 'Gajah berbelang soalan kedua kumpulan' })
+      // every search term carries a token unique to this run, so the pool is scoped to this test's own fixtures on the shared database
+      const tok = `kmp${String(Date.now())}`
+      const lone = await mk({ questionText: `Zebrakuda${tok} tunggal unik soalan` })
+      const first = await mk({ questionText: `Harimau${tok} bertompok soalan pertama kelompok${tok}` })
+      const second = await mk({ questionText: `Gajah${tok} berbelang soalan kedua kelompok${tok}` })
       const stim = await admin.post('/api/stimuli', { kind: 'passage', label: 'Petikan haiwan', body: { ms: 'Petikan tentang haiwan.' } })
       const made = await admin.post('/api/stimulus-groups', { label: 'Petikan haiwan', stimulusIds: [stim.body.data.id], questionIds: [first, second] })
       expect(made.status, JSON.stringify(made.body)).toBe(201)
@@ -259,40 +291,48 @@ describe('D90 builder sweep: a stimulus group is one unit on every builder path'
         return res.body.data as { groupId?: string; questionIds: string[]; stimulus?: unknown; questions: { id: string }[] }[]
       }
       // the word is in the SECOND member only: the unit is the whole group, with the stimulus once
-      const hitOne = await search('gajah')
+      const hitOne = await search(`gajah${tok}`)
       expect(hitOne).toHaveLength(1)
       expect(hitOne[0]).toMatchObject({ groupId: made.body.data.id, questionIds: [first, second] })
       expect(hitOne[0]!.stimulus).toBeDefined()
       expect(hitOne[0]!.questions.map((x) => x.id)).toEqual([first, second])
       // the word is in BOTH members: still one unit
-      const hitBoth = await search('kumpulan')
+      const hitBoth = await search(`kelompok${tok}`)
       expect(hitBoth).toHaveLength(1)
       expect(hitBoth[0]!.questionIds).toEqual([first, second])
       // a solo question stays solo and a miss offers nothing
-      expect((await search('zebrakuda')).map((u) => u.questionIds)).toEqual([[lone]])
-      expect(await search('tiada padanan sama sekali')).toEqual([])
+      expect((await search(`zebrakuda${tok}`)).map((u) => u.questionIds)).toEqual([[lone]])
+      expect(await search(`tiada padanan sama sekali ${tok}`)).toEqual([])
     })
   })
 
   describe('section pool tags', () => {
-    it('a group is offered as ONE unit; tagging only one member leaves the unit with a reason, tagging both clears it', async () => {
-      const g = await group(2)
+    it('a group is offered as ONE unit; tagging only the FIRST or only the LAST member leaves the unit with a reason, tagging every member clears it', async () => {
+      const tok = `plt${String(Date.now())}`
+      const g = await group(3, tok) // members are findable by `tok`, so the pool listing below is scoped to this test's own group
       const paper = await newPaper()
       const [secA] = await sectionsOf(paper)
       const pool = async () => {
-        const res = await admin.get(`/api/admin/papers/${paper}/sections/${secA}/pool?pageSize=100`)
+        const res = await admin.get(`/api/admin/papers/${paper}/sections/${secA}/pool?pageSize=100&q=${encodeURIComponent(tok)}`)
         expect(res.status, JSON.stringify(res.body)).toBe(200)
-        return (res.body.data as { groupId?: string; questionIds: string[]; eligible: boolean; reasons: string[] }[]).filter((u) => u.questionIds.some((id) => g.members.includes(id)))
+        return res.body.data as { groupId?: string; questionIds: string[]; eligible: boolean; reasons: string[] }[]
       }
-      expect((await admin.put(`/api/admin/section-pools/${g.members[0]}`, { pools: ['MAT2-A'] })).status).toBe(200)
-      const half = await pool()
-      expect(half).toHaveLength(1)
-      expect(half[0]).toMatchObject({ groupId: g.groupId, questionIds: g.members })
-      expect(half[0]).toMatchObject({ eligible: false, reasons: ['bukan dalam kolam bahagian ini'] })
-      expect((await admin.put(`/api/admin/section-pools/${g.members[1]}`, { pools: ['MAT2-A'] })).status).toBe(200)
-      const full = await pool()
-      expect(full).toHaveLength(1)
-      expect(full[0]).toMatchObject({ groupId: g.groupId, questionIds: g.members, eligible: true, reasons: [] })
+      const tag = async (member: string, pools: string[]) => expect((await admin.put(`/api/admin/section-pools/${member}`, { pools })).status).toBe(200)
+      const [first, middle, last] = g.members as [string, string, string]
+      const expectOneUnit = async (eligible: boolean) => {
+        const units = await pool()
+        expect(units).toHaveLength(1)
+        expect(units[0]).toMatchObject({ groupId: g.groupId, questionIds: g.members, eligible, reasons: eligible ? [] : ['bukan dalam kolam bahagian ini'] })
+      }
+      await tag(first, ['MAT2-A'])
+      await expectOneUnit(false) // only the first member
+      await tag(first, [])
+      await tag(last, ['MAT2-A'])
+      await expectOneUnit(false) // only the last member
+      await tag(middle, ['MAT2-A'])
+      await expectOneUnit(false) // the last and the middle, not the first
+      await tag(first, ['MAT2-A'])
+      await expectOneUnit(true) // every member
     })
   })
 })
