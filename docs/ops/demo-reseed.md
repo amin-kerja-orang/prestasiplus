@@ -37,7 +37,7 @@ if [ -z "$(printf '%s' "${SEED_DEMO_PASSWORD_HASH:-}" | tr -d '[:space:]')" ]; t
 
 Expected last line: `seed: profile=poc, N module(s): ...` (`poc` is also the default profile). To start from an empty database, recreate the Supabase project schema first (or restore a clean backup), then run the two commands above.
 
-## Path B: already seeded with the published dev password (Demo1234)
+## Path B: already seeded with the published dev password (<DEMO_PASSWORD>)
 
 The seed writes the hash only when the stored `users.password_hash` is NULL (`existing.passwordHash ?? demoPasswordHash()` in `core/identity.ts` and `core/population.ts`, and the same rule in `poc/bijak-sittings.ts`). So the hashes of the demo accounts must be emptied first. Take a Supabase backup first (Dashboard -> Database -> Backups). Alternative: reset the database and follow Path A.
 
@@ -93,7 +93,7 @@ Log in at the staging site with the vault password:
 | `admin@demo.test` | Admin Pusat | Command Center loads |
 | `pelajar@demo.test` (and one of `murid4`..`murid8@demo.test`) | pupil | `/dashboard` loads |
 
-Also check that `Demo1234` is **rejected**, for at least one account of each group the reset touched: an identity account above, one of `murid4`..`murid8@demo.test`, one `@example.test` account, and `murid01` (DEMO002). If `Demo1234` still works anywhere, the seed ran without `SEED_DEMO_PASSWORD_HASH`: repeat Path B with it set.
+Also check that `<DEMO_PASSWORD>` is **rejected**, for at least one account of each group the reset touched: an identity account above, one of `murid4`..`murid8@demo.test`, one `@example.test` account, and `murid01` (DEMO002). If `<DEMO_PASSWORD>` still works anywhere, the seed ran without `SEED_DEMO_PASSWORD_HASH`: repeat Path B with it set.
 
 Then check the data:
 1. School-admin dashboard (`adminsekolah@demo.test`, school DEMO001): at least 5 pupils and a non-empty practice block.

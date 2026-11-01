@@ -152,7 +152,7 @@ Only the lead runs the anonymiser on real data (OD-18), on the lead's PC, on an 
 | `pseudonym:ic` | IC number | `YY00DD-00-NNNN` (month 00 and place code 00 do not exist). The NRIC has no check digit, so the shape is made invalid instead. Only 8 digits are free, so a collision is resolved by a deterministic re-hash (same input, same fake, within a run and across runs over the same source order); the run aborts only after 50 failed attempts in a row. |
 | `pseudonym:username` / `code` / `opaque` / `ip` | usernames, join and referral codes, Google ids, visitor ids, client uuids, battle tokens, audit subject ids, IP addresses | fakes of the same kind; IPs come from the documentation ranges |
 | `pseudonym:path` | upload paths (`media_assets.path`, `banners.image_path`, `audio_kbat.audio_path`, `questions.image_path`, `question_options.image_path`) | `files/<20 letters and digits>.<extension of the original>` |
-| `hash-password-dummy` | `users.password` | **Only for the roles `pelajar`, `guru`, `ibu_bapa`** (config key `dummyPasswordRoles`): the hash of the documented dummy password `Demo1234`, keeping the hash class (`$2y$`/`$2b$` bcrypt, argon2id; plain text becomes `not-a-hash-anonymised`), so developers can log in as a student, teacher or parent. **Every other role (admin, admin_sekolah, pegawai_ppd, penaja, an unknown role, no role) gets the unusable `not-a-hash-anonymised`**, so the dump never holds a known admin password. NULL and empty stay as they are. |
+| `hash-password-dummy` | `users.password` | **Only for the roles `pelajar`, `guru`, `ibu_bapa`** (config key `dummyPasswordRoles`): the hash of the documented dummy password `<DEMO_PASSWORD>`, keeping the hash class (`$2y$`/`$2b$` bcrypt, argon2id; plain text becomes `not-a-hash-anonymised`), so developers can log in as a student, teacher or parent. **Every other role (admin, admin_sekolah, pegawai_ppd, penaja, an unknown role, no role) gets the unusable `not-a-hash-anonymised`**, so the dump never holds a known admin password. NULL and empty stay as they are. |
 | `null` | `remember_token`, `parent_invite_token` | NULL (BE-27 M4) |
 | `scrub-text` | tickets, comments, setting values, json answers (student notes, mood notes and chat bodies are not staged at all since FIT-FIX; content `notes` are public and `keep`) | `Teks anonim.` (json keeps its shape; numbers and booleans stay) |
 | `redact-pii` | question-bank content that must stay readable (A1-LEAK, see below) | only the flagged spans become `[maklumat peribadi dipadam]`; the text around them is kept |
@@ -259,7 +259,7 @@ For dumps made with `dump:produce`, the deletion steps and the written confirmat
 **Dependencies on other cards (open until done):**
 
 - **BE-28 (ETL):** must refuse to run in production when the staging data comes from an anonymised or synthetic manifest (the load records the marker; BE-28 must check it before it writes any v2 table).
-- **BE-33 (auth hardening):** refuse a login in production whose stored password hash equals the published dummy hash (the `Demo1234` bcrypt or argon2id hash in `anonymise/passwords.ts`). BE-35 does not touch auth code.
+- **BE-33 (auth hardening):** refuse a login in production whose stored password hash equals the published dummy hash (the `<DEMO_PASSWORD>` bcrypt or argon2id hash in `anonymise/passwords.ts`). BE-35 does not touch auth code.
 - Open question for the auth owner: should the hash comparison be a startup check that fails when a production database holds the dummy hash, or a login-time refusal, or both?
 
 Decisions and assumptions:

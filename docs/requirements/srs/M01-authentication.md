@@ -397,7 +397,7 @@ Stored in `localStorage` key `pp.auth` in both cases (live cookies survive a bro
 
 ### 6.8 Seed data (placeholder accounts only; all values fictitious)
 
-The demo password for every account is `Demo1234` (≥6). It lives in the fixture/E2E config, and may also be documented in `README.md` for stakeholder demos (Delivery Lead decision, 2026-09-26). It is fictitious and demo-only; real credentials are never stored.
+The demo password for every account is `<DEMO_PASSWORD>` (≥6). It lives in the fixture/E2E config, and may also be documented in `README.md` for stakeholder demos (Delivery Lead decision, 2026-09-26). It is fictitious and demo-only; real credentials are never stored.
 
 | id | Email | Role | Name | Grade | IC | School | Notifications | Purpose |
 |---|---|---|---|---|---|---|---|---|

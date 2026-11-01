@@ -2,7 +2,7 @@
 
 Semua akaun ialah **akaun demo rekaan** dalam data tiruan (mock) prototaip. Ia tidak wujud di prestasiplus.my atau prestasiplus.cloud sebenar.
 
-**Kata laluan semua akaun: `Demo1234`**
+**Kata laluan semua akaun: `<DEMO_PASSWORD>`**
 
 ## Cara buka prototaip v2
 

@@ -19,7 +19,7 @@ Date: 2026-10-03. Branch `feature/student-prototype` (working tree, uncommitted 
 - App: `npx vite build --mode e2e --outDir dist-e2e-4817`, served by `vite preview --port 4817 --strictPort`. Ports 4173/5173 not used. Preview stopped and `dist-e2e-4817`, scratch configs and `test-results-m11m12qa*` deleted afterwards.
 - Scratch Playwright config (copy of `playwright.config.ts`): port 4817, testDir `e2e`, 1 worker, test timeout 120 s, webServer timeout 600 s, `E2E_BOOT_TIMEOUT_MS=60000`. For the re-runs of load-timeouts a second scratch copy with test timeout 300 s and `expect` timeout 20 s was used (see Runs).
 - Chromium; projects mobile 375x812, tablet 768x1024, desktop 1280x800. Manual checks: Playwright MCP lane 3 only (`mcp__playwright3__*`) on the local preview at 320, 375, 768, 1280. Where period figures were checked the browser clock was pinned to the project default `2026-09-25 15:40 +08:00` (E2E default); without the pin the 7d/30d/3m figures differ because the real date is later.
-- Accounts: admin 1, guru 5, adminsekolah 8 (SMK DEMO 900001), all `Demo1234`.
+- Accounts: admin 1, guru 5, adminsekolah 8 (SMK DEMO 900001), all `<DEMO_PASSWORD>`.
 - The machine was shared and at 85-100 % CPU for the whole session (other sessions running). Total E2E wall time more than 4 h.
 
 ## Runs

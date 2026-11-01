@@ -716,7 +716,7 @@ Two tasks of the same module in one wave (e.g. W2: M01-T3 and M01-T2) only touch
 - Repository methods and `ctx.transaction` are **synchronous** (the owner scope ends at the first `await`).
 
 **F-11 Core data.** In `src/mock/core-data` and `src/mock/auth`:
-- canonical accounts 1–11 (TRACKER table; password `Demo1234` in fixture config, and documented in README for stakeholder demos, overview §7), exported for E2E;
+- canonical accounts 1–11 (TRACKER table; password `<DEMO_PASSWORD>` in fixture config, and documented in README for stakeholder demos, overview §7), exported for E2E;
 - account school references to the M02 fixture schools 900001, 900002 and **900004** (account 4 is at 900004 since 2026-09-27, XL3 R2-01, M02 v1.16; overview X-2; the school records themselves are anchors built in F-23);
 - the auth `sessions` table (120 min sliding, remember +5 years, `expireSession`);
 - `landing.ts` (BR-07);

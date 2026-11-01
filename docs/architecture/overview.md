@@ -690,7 +690,7 @@ Hook names are global. A module registering a name that already exists throws at
 
 | Aspect | Design | Source |
 |---|---|---|
-| Accounts | Canonical accounts 1–11 in `src/mock/core-data/accounts.ts`. Password `Demo1234` for all. It lives in the fixture/E2E config and may also be documented in `README.md` for stakeholder demos (Delivery Lead decision, 2026-09-26). It is fictitious and demo-only, and real credentials are never stored. `accounts.ts` is the single source that E2E imports too | TRACKER table, M01 §6.8 |
+| Accounts | Canonical accounts 1–11 in `src/mock/core-data/accounts.ts`. Password `<DEMO_PASSWORD>` for all. It lives in the fixture/E2E config and may also be documented in `README.md` for stakeholder demos (Delivery Lead decision, 2026-09-26). It is fictitious and demo-only, and real credentials are never stored. `accounts.ts` is the single source that E2E imports too | TRACKER table, M01 §6.8 |
 | Login | `POST /api/auth/login {email, password, remember}` (M01 #1): credentials check (one message for unknown email or wrong password), inactive check → `403 ACCOUNT_INACTIVE`, throttle → `429 RATE_LIMITED` | M01 BR-01, BR-02, BR-23 |
 | Session record | Mock `sessions` table `{token, userId, remember, expiresAt}`. Non-remember: 120 min **sliding** (every authenticated request extends it). Remember: +5 years | M01 BR-06, DATA-M01-02 |
 | Client storage | `localStorage['pp.auth'] = {token, remember, expiresAt, user: UserMe}`. The cached `user` feeds the shell identity blocks immediately and is refreshed by `GET /api/me` on each navigation (live renders it per page) | M01 DATA-M01-02, FR-M01-52 |
