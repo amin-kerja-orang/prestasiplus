@@ -48,7 +48,7 @@ export RENDER_API_KEY='...' CLOUDFLARE_API_TOKEN='...'       # from the vault
 ```
 
 `PGPASSWORD` and `DEMO_PASSWORD` are **not** exported: the script asks for each on a silent prompt, checks them,
-and never prints them. The demo password must not be `<DEMO_PASSWORD>` (the published dev password); the script refuses
+and never prints them. The demo password must not be `Demo1234` (the published dev password); the script refuses
 it before anything is written.
 
 `PP_RUNNING_BACKEND_SHA` defaults to the backend the demo runs today. **Check it** — if Render serves a different
@@ -200,7 +200,7 @@ container image — same throwaway database, same client tools.
 | Nothing to migrate | exit 3, pointing at the plain redeploy |
 | A deliberately breaking migration (`DROP COLUMN`, `SET NOT NULL`) | refused; `PP_ACCEPT_DOWNTIME=1` lets it through after the window is accepted |
 | Wrong `PP_RUNNING_BACKEND_SHA` | drift detected and refused; `PP_ACCEPT_DRIFT=1` goes by the database |
-| `SNAPSHOT_DIR` inside the repo, `DEMO_PASSWORD=<DEMO_PASSWORD>` | both refused before anything was written |
+| `SNAPSHOT_DIR` inside the repo, `DEMO_PASSWORD=Demo1234` | both refused before anything was written |
 | `run --resume` with the snapshot of an interrupted run | migration step skipped, deploy and verify ran, and the resumed run still restored that snapshot when its smoke failed (38 → 36, newest back to `0042`) |
 | `run --resume` with migrations still pending, and with a tampered snapshot | refused in both cases |
 | the Pages rollback target (stubbed Cloudflare, five cases) | this run's upload live → steps back one; a different commit live → leaves Pages alone; no earlier deployment, or the list unreadable → hands it to the operator and still restores the database; an explicit id wins |

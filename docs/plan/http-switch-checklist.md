@@ -27,7 +27,7 @@ Status 2026-10-21: L1 is **partly done** on the integration branch `be/integrati
 
 1. Contract merged and registered; `npm run contract:check` is green.
 2. Conformance scenarios for the domain run in `apps/api/test/conformance` (no "not yet implemented" for it).
-3. Seed present in the poc profile (idempotent; demo accounts use `<DEMO_PASSWORD>`).
+3. Seed present in the poc profile (idempotent; demo accounts use `Demo1234`).
 4. Ids are strings or numbers exactly as the contract says; the UI does not do arithmetic or `Number()` on opaque ids (file ids are opaque 128-bit strings).
 5. Hybrid prefix added to the env list (for example `/api/admin/users`), and the mock handler for that prefix is no longer reached.
 6. Module e2e passes in both modes: the mock suite (`npm run test:e2e:module -- <mXX>`) and the real-API suite (`@api` specs, 3 viewports).

@@ -270,7 +270,7 @@ No horizontal page scroll at 320–1920px; every button and link tap target ≥4
 
 ## 12. E2E test scenarios
 
-Every scenario runs on the mobile (375×812), tablet (768×1024) and desktop (1280×800) projects, starts from `mock.reset()` and uses the M01 §6.8 / M02 §6.15 seed accounts (password `<DEMO_PASSWORD>`).
+Every scenario runs on the mobile (375×812), tablet (768×1024) and desktop (1280×800) projects, starts from `mock.reset()` and uses the M01 §6.8 / M02 §6.15 seed accounts (password `Demo1234`).
 
 | ID | Scenario (abridged) | ACs | FRs |
 |---|---|---|---|

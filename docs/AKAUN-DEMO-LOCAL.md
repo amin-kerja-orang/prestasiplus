@@ -3,7 +3,7 @@
 Akaun ini datang daripada seed demo API (`apps/api/prisma/seed`, profil `poc`). Semuanya rekaan dan hanya wujud dalam pangkalan data lokal. Untuk prototaip mock (tanpa API), rujuk [AKAUN-DEMO.md](AKAUN-DEMO.md).
 
 **URL:** http://localhost:5192/login
-**Kata laluan semua akaun: `<DEMO_PASSWORD>`** (local/dev seed default: `DEMO_PASSWORD` in apps/api/prisma/seed/core/demo-password.ts; deployed environments refuse it, see deploy/demo/redeploy-demo-migration-aware.sh)
+**Kata laluan semua akaun: `Demo1234`**
 
 Disemak dengan log masuk sebenar ke API pada 29 Okt 2026.
 
@@ -11,7 +11,7 @@ Disemak dengan log masuk sebenar ke API pada 29 Okt 2026.
 
 1. Pastikan stack hidup: `npm run stack:up` (kali pertama atau selepas ubah kod), atau semak http://localhost:5192/api/health (mesti `"status":"ok","db":"up"`).
 2. Buka http://localhost:5192/login.
-3. Masukkan e-mel di bawah dan kata laluan `<DEMO_PASSWORD>` (lihat baris 6).
+3. Masukkan e-mel di bawah dan kata laluan `Demo1234`.
 4. Untuk tukar peranan: log keluar, kemudian log masuk dengan akaun lain.
 
 ## Portal Pentadbiran
