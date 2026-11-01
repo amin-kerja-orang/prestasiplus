@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
 import { runSeeds, seedModules } from '../../../prisma/seed'
 import { QUESTION_COUNT_SQL } from '../../../src/modules/account/account-data.repository'
@@ -51,12 +51,20 @@ describe('Bab card and Soalan by Chapter tile count what the chapter draw can se
   const COUNT_DRAWABLE = `select count(*)::text c from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no
     where v.chapter_id = $1::bigint and q.is_active and v.status = 'approved' and v.type = 'mcq' and q.group_id is null`
 
+  // The test below chapters some seeded questions in the shared database. The demo seed has none, so putting them back to "no chapter" restores it.
+  let chaptered: string | null = null
+  afterEach(async () => {
+    if (chaptered !== null) await db.query(`update question_versions set chapter_id = null where chapter_id = $1::bigint`, [chaptered])
+    chaptered = null
+  })
+
   it('a chaptered grouped MCQ is not counted: Bab count = drawable (ungrouped) count; unchaptered ones never count', async () => {
     const bm = await subjectId('BM')
     const chapters = await db.query<{ id: string; education_level_id: string }>(
       `select c.id::text id, c.education_level_id::text education_level_id from chapters c where c.subject_id = $1 order by c.id`, [bm])
     expect(chapters.length).toBeGreaterThan(0)
     const chapterId = (chapters[0] as { id: string }).id
+    chaptered = chapterId
     const repo = new OverviewRepository({ client: db.prisma } as never)
     expect((await repo.chapterQuestionCounts([chapterId])).get(chapterId)).toBeUndefined() // the demo seed has no chaptered question
 
@@ -86,5 +94,12 @@ describe('Bab card and Soalan by Chapter tile count what the chapter draw can se
     // The tile sums these per-chapter counts (OverviewService.chapterSubjects), so tile = chapter-drawable, never the subject total.
     const subjectTotal = bank.practice(bm, offeredIds)
     expect(subjectTotal).toBeGreaterThan(drawable)
+  })
+
+  it('the seed is back as it was after the test above: no chaptered question, so the test does not depend on its order', async () => {
+    const repo = new OverviewRepository({ client: db.prisma } as never)
+    const chapter = (await db.query<{ id: string }>(`select c.id::text id from chapters c where c.subject_id = $1 order by c.id limit 1`, [await subjectId('BM')]))[0]?.id as string
+    expect((await repo.chapterQuestionCounts([chapter])).get(chapter)).toBeUndefined()
+    expect(Number((await db.query<{ c: string }>(`select count(*)::text c from question_versions where chapter_id is not null`))[0]?.c)).toBe(0)
   })
 })
