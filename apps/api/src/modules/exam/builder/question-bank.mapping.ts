@@ -20,7 +20,7 @@ import {
 
 import { fileUrlOf } from '../../bijak/question-bridge/be09-mapping'
 import type { QuestionPart } from '../../questions'
-import { stimulusTableOf } from '../../questions/stimulus-table'
+import { stimulusTableParts } from '../../questions/stimulus-table'
 
 type SchemeLine = { tag?: string; text: string; marks?: number }
 type ReviewScheme = BijakBuilderReviewQuestion['scheme']
@@ -136,10 +136,9 @@ export function stimulusOf(s: StimulusSource, tokens: FileTokens = new Map()): B
   if (!WIRE_KINDS.has(s.kind)) return undefined
   const kind = s.kind as BijakAttemptStimulus['kind']
   const label = s.label ?? ''
-  const table = kind === 'table' ? stimulusTableOf(s.tableData, s.bodyMs) : undefined
-  // A table parsed from the body replaces the body text; any other body stays the text. Same rule as the Bijak bridge (parity spec);
-  // H-A16 (`stimulusTableParts`) changes it for both at once.
-  const text = table && !s.tableData ? undefined : (s.bodyMs ?? undefined)
+  // One table reader (H-A16): a stored grid is shown and never hides the body; a table read from the body REPLACES the body text, so the grid is not shown twice.
+  const { table, bodyIsTable } = stimulusTableParts(kind, s.tableData, s.bodyMs)
+  const text = bodyIsTable ? undefined : (s.bodyMs ?? undefined)
   const token = s.assetFileId == null ? undefined : tokens.get(s.assetFileId.toString())
   return {
     id: s.id.toString(),
