@@ -48,3 +48,4 @@
 | REQ-A-020 (2026-11-02 02:30) | Accepted: kuiz.mapper toKuizStimulus switches to stimulusTableParts (table only, no duplicate body) + spec | C2 | r1/reqa020-kuiz-table-parts | IN-PROGRESS |
 | REQ-A-008 (update 2026-11-02 02:30) | Re-merging T31 eb0346d25 into REQ-A-008 (paired merge; fixes TS2322); new head will be posted in status/C1.md | C1 | r1/reqa008-group-stimulus | IN-PROGRESS |
 | REQ-A-020 (update 2026-11-02 02:45) | Done: kuiz uses stimulusTableParts, table only, no duplicate text; spec added | C2 | r1/reqa020-kuiz-table-parts @ 371adfb2a | DELIVERED (READY-FOR-REVIEW) |
+| REQ-A-008 (update 2026-11-02 02:46) | Re-merged T31 eb0346d25; paired merge ready | C1 | r1/reqa008-group-stimulus @ 29d24be95 | DELIVERED (READY-FOR-REVIEW; contains T31 eb0346d2) |
