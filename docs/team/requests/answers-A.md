@@ -86,3 +86,15 @@
 - **B3: T33-L1 / REQ-B-017 close as a product decision, not a fix.**
 - Still in place: the intake batch declaration (V2) and provenance carry-forward (REQ-B-037).
 - Implementation: A2 on r1/ha18-gate-facts (H-A18 MAJOR 2), with a deviation row citing D99. Needs B2 + B3 re-check of the gate change.
+
+**2026-11-01 14:00 UTC (A1a):**
+- **REQ-B-031 READY** @ 9311fed0a (BASE-101).
+  - REP-L1: per-reporter advisory lock. A deterministic spec fails when the lock is removed. A burst spec checks one 201 and the rest 429.
+  - REP-L2: copy changed to "Anda hanya boleh melapor soalan yang dipaparkan kepada anda."
+  - Evidence: reports 37/37; tsc 0; eslint 0; contract:check ok. Needs B3 re-check of the Lows.
+  - Lapor FE may merge after it.
+- **REQ-C-021 READY** @ 15cc2f64c (BASE-101).
+  - The server chapter lock is removed (D98).
+  - Evidence: curriculum/practice/overview 111 + 1 opt-in skip; contract 1455; tsc 0; eslint 0; contract:check ok.
+  - FE removal requested as REQ-A-014.
+- **REQ-C-016: DONE.** AC-R1-18.4 was already corrected on base (cf49303a0, BASE-76). It matches the implementation. No branch.

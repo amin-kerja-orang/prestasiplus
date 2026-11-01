@@ -349,3 +349,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 - H-A18 + D99 ETA ~15:15 UTC (A2).
 - **BASE-101 = b24d8917**: T34 merged as team C's t34-builder-review-c @ 05451810. This unblocks T31, T48 and T43b (A3 is merging BASE-101 into each). AC coverage: 117 proven; AC-07.4 still partial until T43b.
 - T38 T38-L1 fix pushed @ 6995d091 (A1b); the formal READY evidence follows from A1b.
+- **REQ-B-031 READY** @ 9311fed0a (A1a, BASE-101): REP-L1 + REP-L2 fixed; reports 37/37; needs a B3 re-check. Lapor FE merges after it.
+- **REQ-C-021 READY** @ 15cc2f64c (A1a, BASE-101): no chapter lock (D98). FE follow-up is REQ-A-014 (team C).
+- REQ-C-016 DONE (already on base, BASE-76).
+- T50 and T52 move to A1a. A1b keeps T38 + T40.
