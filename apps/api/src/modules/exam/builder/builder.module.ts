@@ -7,6 +7,8 @@ import { QuestionsModule } from '../../questions'
 import { BuilderController } from './builder.controller'
 import { BuilderRepository } from './builder.repository'
 import { BuilderService } from './builder.service'
+import { SectionPoolsController } from './section-pool.controller'
+import { SectionPoolService } from './section-pool.service'
 import { BijakBuilderPorts } from './ports'
 import { QuestionBankBuilderSource } from './question-bank.source'
 
@@ -17,8 +19,8 @@ import { QuestionBankBuilderSource } from './question-bank.source'
  */
 @Module({
   imports: [AuditModule, ThrottleModule, QuestionsModule, BijakPapersModule],
-  controllers: [BuilderController],
-  providers: [BijakBuilderPorts, BuilderRepository, BuilderService, QuestionBankBuilderSource],
+  controllers: [BuilderController, SectionPoolsController],
+  providers: [BijakBuilderPorts, BuilderRepository, BuilderService, SectionPoolService, QuestionBankBuilderSource],
   exports: [BijakBuilderPorts, BuilderRepository],
 })
 export class ExamBuilderModule implements OnModuleInit {
