@@ -8,6 +8,7 @@ import { UsersModule } from '../users'
 import { QuestionsBijakPoolSource } from './bijak-pool'
 import { ServabilityReadsService, ServabilityService } from './serving'
 import { OverviewCache } from './serving/overview-cache'
+import { OverviewWarmer } from './serving/overview-warmer'
 import { ServabilityController } from './http/servability.controller'
 import { QuestionCountsAdapter } from './curriculum-bridge'
 import { AdminQuestionsController, GuruQuestionsController, StimuliController, StructuredQuestionsController } from './http'
@@ -29,8 +30,8 @@ import { StudioController, StudioDskpService } from './studio'
 @Module({
   imports: [CurriculumModule, UsersModule, FilesModule, AuditModule, ThrottleModule],
   controllers: [AdminQuestionsController, StructuredQuestionsController, GuruQuestionsController, StimuliController, StudioController, ServabilityController],
-  providers: [QuestionsRepository, QuestionsService, StimuliRepository, GroupMembers, StimuliService, PkskQuestionsService, QuestionCountsAdapter, QuestionsBijakPoolSource, StudioDskpService, ServabilityService, ServabilityReadsService, OverviewCache],
-  exports: [QuestionsRepository, QuestionsService, PkskQuestionsService, QuestionsBijakPoolSource, ServabilityService, OverviewCache],
+  providers: [QuestionsRepository, QuestionsService, StimuliRepository, GroupMembers, StimuliService, PkskQuestionsService, QuestionCountsAdapter, QuestionsBijakPoolSource, StudioDskpService, ServabilityService, ServabilityReadsService, OverviewCache, OverviewWarmer],
+  exports: [QuestionsRepository, QuestionsService, StimuliService, PkskQuestionsService, QuestionsBijakPoolSource, ServabilityService, OverviewCache],
 })
 export class QuestionsModule implements OnModuleInit {
   constructor(

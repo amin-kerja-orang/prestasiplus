@@ -183,6 +183,18 @@ export interface QuestionDetailView extends QuestionView {
   } | null
   createdByName: string | null
   stimulusGroup: StimulusGroupRecord | null
+  /** Admin detail only (R1-T45b): see `QuestionPlacement`. Absent on the Guru and structured reads. */
+  placements?: QuestionPlacementRecord[]
+  generatedPaperCount?: number
+}
+
+/** A place where a question sits on a curated paper (R1-T45b). */
+export interface QuestionPlacementRecord {
+  paperId: string
+  title: string
+  status: 'draft' | 'ready' | 'published' | 'withdrawn'
+  section: string
+  versionNo: number
 }
 
 export interface Page<T> {

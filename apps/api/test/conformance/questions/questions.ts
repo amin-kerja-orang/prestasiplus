@@ -33,6 +33,12 @@ async function seededTag(ctx: ScenarioContext, admin: HttpClient): Promise<{ sub
   return { subjectId: String(d.subjectId), educationLevelId: String(d.educationLevelId), tag: tag ?? {} }
 }
 
+/**
+ * A new approval of an SPM T4/T5 question needs a cognitive level on the leaf and the kertas (R1-B05, the DSKP-complete gate), so the scenarios that
+ * approve one send them. The untagged 422 case does not: it must still fail on the tag fields.
+ */
+const DSKP = { cognitiveLevel: 'mengingat', kertas: '1' } as const
+
 function mcq(tag: string, extra: Json = {}): Json {
   return {
     questionType: 'mcq',
@@ -83,7 +89,7 @@ export const questionsScenarios: Scenario[] = [
       const tag = nextTag('q')
       const created = await admin.request('POST', '/questions', {
         // Tagged, because approving a question runs the publish gate (unit, SP, TP) since R1-B01.
-        body: mcq(tag, { subjectId: base.subjectId, educationLevelId: base.educationLevelId, tag: base.tag }),
+        body: mcq(tag, { subjectId: base.subjectId, educationLevelId: base.educationLevelId, tag: base.tag, ...DSKP }),
       })
       ctx.expectStatus(created, 201)
       ctx.check(flashOf(created) === FLASH.added, `create flash was ${String(flashOf(created))}`)
@@ -100,6 +106,7 @@ export const questionsScenarios: Scenario[] = [
           educationLevelId: base.educationLevelId,
           difficultyLevel: 4,
           questionText: `Soalan konformans ${tag} yang telah dikemaskini.`,
+          ...DSKP,
         },
       })
       ctx.expectStatus(updated, 200)
@@ -145,7 +152,7 @@ export const questionsScenarios: Scenario[] = [
       ctx.check(fields !== undefined && Object.keys(fields).length > 0, 'the publish gate 422 has no fields')
 
       const published = await admin.request('POST', '/questions', {
-        body: mcq(`${tag}b`, { subjectId: base.subjectId, educationLevelId: base.educationLevelId, tag: base.tag, status: 'approved' }),
+        body: mcq(`${tag}b`, { subjectId: base.subjectId, educationLevelId: base.educationLevelId, tag: base.tag, status: 'approved', ...DSKP }),
       })
       ctx.expectStatus(published, 201)
       const id = String(dataOf(published).id)

@@ -70,6 +70,19 @@ export class FakePaperSource implements BijakPaperSource {
   }
 }
 
+/**
+ * The prototype registry (`src/modules/m28-bijak-spm/data`) is the mock of the FRONT END. Since REQ-A-010 its diagrams also carry a
+ * `data:image/svg+xml` picture (the page no longer renders inline SVG). The server never serves that: a stored picture is a file token URL
+ * (`/api/files/<token>`, at most 300 characters, `BijakAttemptImageSchema`), so the fixture drops the data-URL picture and keeps the
+ * inline `svg` the PoC papers always carried.
+ */
+export function servedStimulus<T extends { image?: { url: string } }>(s: T): T {
+  if (!s.image || !s.image.url.startsWith('data:')) return s
+  const rest: Partial<T> = { ...s }
+  delete rest.image
+  return rest as T
+}
+
 export class FakeQuestionSource implements BijakQuestionSource {
   loads = 0
   async loadQuestions(ids: readonly string[]): Promise<ReadonlyMap<string, BijakQuestionBundle>> {
@@ -82,7 +95,7 @@ export class FakeQuestionSource implements BijakQuestionSource {
       const leafIds = q.mcq ? [q.id] : leavesOf(q.parts ?? []).map((l) => l.id)
       out.set(id, {
         question: q,
-        ...(g ? { group: { id: g.id, stimulus: BANK.stimuli.get(g.stimulusId)!, ...(g.optionBank ? { optionBank: g.optionBank } : {}) } } : {}),
+        ...(g ? { group: { id: g.id, stimulus: servedStimulus(BANK.stimuli.get(g.stimulusId)!), ...(g.optionBank ? { optionBank: g.optionBank } : {}) } } : {}),
         schemes: Object.fromEntries(leafIds.map((l) => [l, BANK.schemes.get(l)!])),
       })
     }

@@ -203,6 +203,26 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
     expect(row.subject).toEqual({ id: tag.subjectId, name: expect.any(String) })
   })
 
+  // --- REQ-C-020: the Subjek filter options travel with the lane ------------------------------------
+
+  it('REQ-C-020: each lane page carries `subjects` [{id, name}] for its Subjek filter, whatever the other filters are', async () => {
+    const subjectsOf = async (lane: string, query = '') => (await admin.get(`/api/admin/servability/lanes/${lane}?pageSize=5${query}`)).body.subjects as { id: string; name: string }[]
+    const names = new Map((await t.db.query<{ id: string; name: string }>(`select id::text id, name from subjects`)).map((r) => [r.id, r.name]))
+    // Databank: the subjects on the Databank list (MATH and SCI here), with their names.
+    const databank = await subjectsOf('databank')
+    expect(databank.map((s) => s.id).sort()).toEqual([tag.subjectId, sciId].sort())
+    for (const s of databank) expect(s.name).toBe(names.get(s.id))
+    // Bijak SPM: the subjects that have a curated paper (MATH and SCI).
+    const papers = await subjectsOf('bijak-spm')
+    expect(papers.map((s) => s.id).sort()).toEqual([tag.subjectId, sciId].sort())
+    // Filters narrow the rows, never the options.
+    expect(await subjectsOf('databank', `&subjectId=${sciId}&status=draft&search=zzz`)).toEqual(databank)
+    expect(await subjectsOf('bijak-spm', `&subjectId=${sciId}&status=ready`)).toEqual(papers)
+    // Every id the lane shows in a row is one of its options.
+    const rows = (await wholeLane<ServabilityPaperRow>('bijak-spm', ServabilityPaperRowSchema)).rows
+    for (const r of rows) expect(papers.map((s) => s.id)).toContain(r.subject?.id)
+  })
+
   // --- every BM string, pinned --------------------------------------------------------------------
 
   it('pins every servability sentence and where it comes from (V2 verbatim or [PROPOSED])', () => {

@@ -39,4 +39,7 @@ export const LEARNER_LEVEL_SQL = Prisma.sql`(v.education_level_id IS NULL OR NOT
  * so the status constant stays in one place.
  */
 const OFFERED_LIST = OFFERED_LEVEL_CODES.map((c) => `'${c.replaceAll("'", '')}'`).join(', ')
+/** R1-T08 follow-up (REQ-B-013): the question's subject is active (a deactivated subject offers no question to pupils or to the paper builder). */
+export const ACTIVE_SUBJECT_SQL = Prisma.sql`EXISTS (SELECT 1 FROM subjects sj WHERE sj.id = v.subject_id AND sj.is_active)`
+
 export const SPM_SERVABLE_SQL = Prisma.sql`(${LEARNER_LEVEL_SQL} AND ${NOT_PKSK_SQL} AND EXISTS (SELECT 1 FROM education_levels ol WHERE ol.id = v.education_level_id AND ol.code IN (${Prisma.raw(OFFERED_LIST)})) AND EXISTS (SELECT 1 FROM subjects sj WHERE sj.id = v.subject_id AND sj.is_active) AND EXISTS (SELECT 1 FROM subject_levels sl WHERE sl.subject_id = v.subject_id AND sl.education_level_id = v.education_level_id))`

@@ -385,31 +385,31 @@ describe('#7 / #8 chapter mode (S4, S5; BR-15, BR-16)', () => {
     expect((await guru.get('/api/practice/chapter-subjects')).status).toBe(200)
   })
 
-  it('#8 chapter 1 is open; chapter k opens when chapter k-1 is complete with a score of at least 70 (BR-16)', async () => {
+  it('#8 every chapter is open whatever the caller answered (REQ-C-021, D98: no progressive lock); the figures still follow the answers', async () => {
     const c1 = [await q({ subject: w.math, level: w.d1, chapter: w.c1 }), await q({ subject: w.math, level: w.d1, chapter: w.c1 }), await q({ subject: w.math, level: w.d1, chapter: w.c1 }), await q({ subject: w.math, level: w.d1, chapter: w.c1 })]
     const c2 = [await q({ subject: w.math, level: w.d1, chapter: w.c2 }), await q({ subject: w.math, level: w.d1, chapter: w.c2 })]
     await q({ subject: w.math, level: w.d1, chapter: w.c3 })
     const none = ChapterDetail.parse((await pelajar.get('/api/practice/chapter-subjects/MATH')).body).data
-    expect(none.chapters.map((c) => c.state)).toEqual(['open', 'locked', 'locked'])
+    expect(none.chapters.map((c) => c.state)).toEqual(['open', 'open', 'open'])
     expect(none.chapters[0]).toMatchObject({ id: w.c1, number: 1, total: 4, answered: 0, correct: 0, scorePct: 0, remaining: 4, complete: false })
 
-    // chapter 1: 3 of 4 right (75 %), complete -> chapter 2 opens
+    // chapter 1: 3 of 4 right (75 %), complete
     for (const [i, id] of c1.entries()) await addAnswer(t.db, { user: u.pelajar, question: id, subject: w.math, chapter: w.c1, correct: i !== 3, at: MON })
     const open2 = ChapterDetail.parse((await pelajar.get('/api/practice/chapter-subjects/MATH')).body).data
-    expect(open2.chapters.map((c) => c.state)).toEqual(['open', 'open', 'locked'])
+    expect(open2.chapters.map((c) => c.state)).toEqual(['open', 'open', 'open'])
     expect(open2.chapters[0]).toMatchObject({ answered: 4, correct: 3, scorePct: 75, remaining: 0, complete: true })
 
-    // chapter 2: one of two answered -> not complete -> chapter 3 stays locked
+    // chapter 2: one of two answered -> not complete, chapter 3 is open all the same
     await addAnswer(t.db, { user: u.pelajar, question: c2[0], subject: w.math, chapter: w.c2, correct: true, at: MON })
     const part = ChapterDetail.parse((await pelajar.get('/api/practice/chapter-subjects/MATH')).body).data
     expect(part.chapters[1]).toMatchObject({ answered: 1, correct: 1, scorePct: 100, remaining: 1, complete: false })
-    expect(part.chapters[2]?.state).toBe('locked')
+    expect(part.chapters[2]?.state).toBe('open')
 
-    // complete but 50 % -> chapter 3 stays locked
+    // complete but 50 %: chapter 3 is open all the same
     await addAnswer(t.db, { user: u.pelajar, question: c2[1], subject: w.math, chapter: w.c2, correct: false, at: MON })
     const low = ChapterDetail.parse((await pelajar.get('/api/practice/chapter-subjects/MATH')).body).data
     expect(low.chapters[1]).toMatchObject({ complete: true, scorePct: 50 })
-    expect(low.chapters[2]?.state).toBe('locked')
+    expect(low.chapters[2]?.state).toBe('open')
 
     // the latest answer of a question counts: the wrong one is answered again, right
     await addAnswer(t.db, { user: u.pelajar, question: c2[1], subject: w.math, chapter: w.c2, correct: true, at: '2026-10-19T11:00:00+08:00' })
@@ -418,14 +418,14 @@ describe('#7 / #8 chapter mode (S4, S5; BR-15, BR-16)', () => {
     expect(fixed.chapters[2]?.state).toBe('open')
   })
 
-  it('#8 score is rounded to 1 decimal; the unlock test uses the exact score', async () => {
+  it('#8 score is rounded to 1 decimal; a score below 70 locks nothing', async () => {
     const ids: string[] = []
     for (let i = 0; i < 3; i++) ids.push(await q({ subject: w.math, level: w.d1, chapter: w.c1 }))
     await q({ subject: w.math, level: w.d1, chapter: w.c2 })
     for (const [i, id] of ids.entries()) await addAnswer(t.db, { user: u.pelajar, question: id, subject: w.math, chapter: w.c1, correct: i < 2, at: MON })
     const d = ChapterDetail.parse((await pelajar.get('/api/practice/chapter-subjects/MATH')).body).data
     expect(d.chapters[0]?.scorePct).toBe(66.7)
-    expect(d.chapters[1]?.state).toBe('locked') // 66.7 < 70
+    expect(d.chapters[1]?.state).toBe('open') // 66.7 < 70, and still open
   })
 
   it('#8 reads the caller own answers only (AC4) and in the caller mode (Mod Pelajar rows are not counted)', async () => {
@@ -435,7 +435,7 @@ describe('#7 / #8 chapter mode (S4, S5; BR-15, BR-16)', () => {
     await addAnswer(t.db, { user: u.pelajar, question: id, subject: w.math, chapter: w.c1, correct: true, at: MON, isTest: true })
     const d = ChapterDetail.parse((await pelajar.get('/api/practice/chapter-subjects/MATH')).body).data
     expect(d.chapters[0]).toMatchObject({ answered: 0, correct: 0 })
-    expect(d.chapters[1]?.state).toBe('locked')
+    expect(d.chapters[1]?.state).toBe('open')
     // a teacher may open it (no role rule)
     expect((await guru.get('/api/practice/chapter-subjects/MATH')).status).toBe(200)
   })

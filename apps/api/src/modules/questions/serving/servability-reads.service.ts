@@ -44,6 +44,37 @@ const clip = (s: string | null): string => {
   return t.length > TITLE_MAX ? `${t.slice(0, TITLE_MAX - 1)}…` : t
 }
 
+/**
+ * At most `max` calls run at once; the others wait their turn in order. The overview starts about eight heavy reads; the database
+ * pool is small (10 connections by default), so they run four at a time instead of taking the whole pool from live requests.
+ */
+function concurrencyLimit(max: number): <T>(fn: () => Promise<T>) => Promise<T> {
+  let active = 0
+  const waiting: (() => void)[] = []
+  return async <T>(fn: () => Promise<T>): Promise<T> => {
+    if (active >= max) await new Promise<void>((resolve) => waiting.push(resolve))
+    else active++
+    try {
+      return await fn()
+    } finally {
+      const next = waiting.shift()
+      if (next) next()
+      else active--
+    }
+  }
+}
+
+/** Overview reads running at once (the pool is 10; a paper evaluation uses several connections itself). */
+const OVERVIEW_PARALLEL = 4
+
+type PaperEvaluation = ReturnType<typeof evaluate>
+
+/** The questions on published papers with their Simulasi (kertas) verdict: evaluated once and shared by the card and the activity row. */
+interface PaperQuestionEvaluations {
+  ids: string[]
+  results: Map<string, PaperEvaluation>
+}
+
 export interface Paged<T> {
   rows: T[]
   page: number
@@ -82,25 +113,31 @@ export class ServabilityReadsService {
 
   async overview(): Promise<ServabilityOverviewCounts> {
     const live = { status: SERVABLE_STATUS, active: true } as const
-    const bank = await this.questions.count(live)
-    const [spmSubjects, drawn, databankTotal, paperCard] = await Promise.all([this.subjectsListed(), this.spmDraw(), this.databankLaneTotal(), this.paperLaneCard()])
+    // REQ-B-022(a): the reads do not depend on each other, so they run together (four at a time, longest first) instead of one after
+    // the other. The questions on published papers are evaluated ONCE: the Bijak SPM card and the Simulasi (kertas) row both use it.
+    const run = concurrencyLimit(OVERVIEW_PARALLEL)
+    const paperQuestions = run(() => this.evaluatePublishedPaperQuestions())
+    const paperCardP = paperQuestions.then((evaluated) => this.paperLaneCard(evaluated.results))
+    const [onPapers, drawn, bab, kuiz, jana, databankTotal, bank, spmSubjects, paperCard] = await Promise.all([
+      paperQuestions,
+      run(() => this.spmDraw()),
+      run(() => this.questions.groupCount('chapter', { ...filterOf('bab'), ...live })),
+      run(() => this.questions.count({ ...filterOf('simulasi_kuiz'), ...live })),
+      run(() => this.janaEligible()),
+      run(() => this.databankLaneTotal()),
+      run(() => this.questions.count(live)),
+      this.subjectsListed(),
+      paperCardP,
+    ])
     const sumOver = (by: ReadonlyMap<string, number>, only?: ReadonlySet<string>) => [...by].reduce((n, [k, v]) => n + (only === undefined || only.has(k) ? v : 0), 0)
-
-    const bab = await this.questions.groupCount('chapter', { ...filterOf('bab'), ...live })
-    const kuiz = await this.questions.count({ ...filterOf('simulasi_kuiz'), ...live })
-    const onPapers = await this.questionsOnPublishedPapers()
     let paperServed = 0
-    for (const part of chunks(onPapers)) {
-      const reports = await this.servability.reports(part)
-      for (const r of reports.values()) if (r.activities.find((a) => a.activity === 'simulasi_paper')?.served) paperServed++
-    }
-    const jana = await this.janaEligible()
+    for (const r of onPapers.results.values()) if (r.served) paperServed++
 
     const rows: [ServabilityActivity, number, number, 'sql' | 'evaluated' | 'pool'][] = [
       ['databank', drawn.databankServed, databankTotal, 'sql'],
       ['latih_tubi_spm', sumOver(drawn.bySubject, spmSubjects), bank, 'sql'],
       ['bab', sumOver(bab), bank, 'sql'],
-      ['simulasi_paper', paperServed, onPapers.length, 'evaluated'],
+      ['simulasi_paper', paperServed, onPapers.ids.length, 'evaluated'],
       ['simulasi_kuiz', kuiz, bank, 'sql'],
       ['jana_kertas', jana, bank, 'pool'],
     ]
@@ -196,16 +233,16 @@ export class ServabilityReadsService {
   }
 
   /** Hub card "Bijak SPM": every row of the lane (no filter), counted. A paper row needs attention when it carries a reason. */
-  private async paperLaneCard(): Promise<{ total: number; attention: number }> {
+  private async paperLaneCard(evaluated?: ReadonlyMap<string, PaperEvaluation>): Promise<{ total: number; attention: number }> {
     const papers = await this.db.$queryRaw<PaperRow[]>`
       SELECT p.id, p.title, p.status, p.subject_id, (SELECT s.name FROM subjects s WHERE s.id = p.subject_id) AS subject_name
         FROM papers p WHERE ${PAPER_LANE_COND} ORDER BY p.id DESC`
-    const rows = await this.paperRows(papers)
+    const rows = await this.paperRows(papers, evaluated)
     return { total: rows.length, attention: rows.filter((r) => r.attention.length > 0).length }
   }
 
   /** The lane rows of these papers: placed-question counts for all, reasons for the published ones. */
-  private async paperRows(papers: readonly PaperRow[]): Promise<ServabilityPaperRow[]> {
+  private async paperRows(papers: readonly PaperRow[], evaluated?: ReadonlyMap<string, PaperEvaluation>): Promise<ServabilityPaperRow[]> {
     const paperIds = papers.map((p) => p.id)
     const placements =
       paperIds.length === 0
@@ -215,8 +252,13 @@ export class ServabilityReadsService {
              WHERE ps.paper_id = ANY(${paperIds}::bigint[])`
     const published = new Set(papers.filter((p) => p.status === 'published').map((p) => p.id))
     const toEvaluate = new Set(placements.filter((p) => published.has(p.paper_id)).map((p) => idToString(p.question_id)))
-    const results = new Map<string, ReturnType<typeof evaluate>>()
-    for (const part of chunks([...toEvaluate])) {
+    const results = new Map<string, PaperEvaluation>()
+    // Verdicts the caller already has (the overview) are not computed again; any other id is evaluated here as before.
+    for (const id of toEvaluate) {
+      const known = evaluated?.get(id)
+      if (known) results.set(id, known)
+    }
+    for (const part of chunks([...toEvaluate].filter((id) => !results.has(id)))) {
       for (const [id, f] of await this.servability.factsOf(part)) results.set(id, evaluate({ ...f, onPublishedPaper: true }, 'simulasi_paper'))
     }
     return papers.map((p) => {
@@ -247,12 +289,38 @@ export class ServabilityReadsService {
     })
   }
 
+  /** Options of the Databank lane's Subjek filter: the subjects on the Databank list, in subject order. */
+  async databankSubjects(): Promise<{ id: string; name: string }[]> {
+    const rows = await this.db.$queryRaw<{ id: bigint; name: string }[]>`
+      SELECT s.id, s.name FROM subjects s JOIN spm_subject_configs c ON c.subject_id = s.id
+       WHERE c.databank_order IS NOT NULL ORDER BY c.databank_order, s.sort_order, s.id`
+    return rows.map((r) => ({ id: idToString(r.id), name: r.name }))
+  }
+
+  /** Options of the Bijak SPM lane's Subjek filter: the subjects that have a curated paper, in subject order. */
+  async paperSubjects(): Promise<{ id: string; name: string }[]> {
+    const rows = await this.db.$queryRaw<{ id: bigint; name: string }[]>`
+      SELECT s.id, s.name FROM subjects s
+       WHERE EXISTS (SELECT 1 FROM papers p WHERE p.subject_id = s.id AND ${PAPER_LANE_COND}) ORDER BY s.sort_order, s.id`
+    return rows.map((r) => ({ id: idToString(r.id), name: r.name }))
+  }
+
   // --- helpers -------------------------------------------------------------------------------------
 
   /** Subject ids on the Latih Tubi list (any SPM configuration row). */
   private async subjectsListed(): Promise<Set<string>> {
     const rows = await this.db.$queryRaw<{ subject_id: bigint }[]>`SELECT subject_id FROM spm_subject_configs`
     return new Set(rows.map((r) => idToString(r.subject_id)))
+  }
+
+  /** Every question on a published curated paper, with its Simulasi (kertas) verdict (the paper it sits on is published by definition). */
+  private async evaluatePublishedPaperQuestions(): Promise<PaperQuestionEvaluations> {
+    const ids = await this.questionsOnPublishedPapers()
+    const results = new Map<string, PaperEvaluation>()
+    for (const part of chunks(ids)) {
+      for (const [id, f] of await this.servability.factsOf(part)) results.set(id, evaluate({ ...f, onPublishedPaper: true }, 'simulasi_paper'))
+    }
+    return { ids, results }
   }
 
   private async questionsOnPublishedPapers(): Promise<string[]> {
