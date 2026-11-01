@@ -479,7 +479,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 ### Head audit 2026-11-01 15:00 UTC (superseded)
 This manual table has been removed because it went stale. **The only current source for team A heads and states is the auto table between the `AUDIT:BEGIN/END` markers at the end of this file.** It is regenerated from `git ls-remote` every cycle.
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 17:13 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 17:15 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -488,11 +488,11 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
 | r1/builder-search-perf | e1141dbbe | READY (A3): restacked on T48 4800bd78; merges after T48; B2 |
 | r1/e05b-l1-spec | 4b9eac57a | READY (A1b, BASE-105): negative control added; 12/12; B2 + B3 |
-| r1/ha17-ac-coverage | 008b7ca51 | docs, auto-refreshed by A3 H-A27 (coverage 124/176) |
+| r1/ha17-ac-coverage | 21b87327e | docs, auto-refreshed by A3 H-A27 (coverage 124/176) |
 | r1/ha18-gate-facts | fc409ae16 | PRE-REVIEW MAJOR (A1a M2: import hold not released on the draft rewrite path) + Minors → A2 fixing; B: wait for the new head |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
-| r1/ha24-release-input | 3d676acee | READY (A3, BASE-105): G6 release input incl. the WARM env rows and 0106/0107 @2a8ab674 (drift + order notes); B2 |
-| r1/ha26-team-a-state | 183184d2e | docs, auto-refreshed by A3 H-A27 |
+| r1/ha24-release-input | 4ff0217ab | READY (A3, BASE-105): G6 release input incl. the WARM env rows and 0106/0107 @2a8ab674 (drift + order notes); B2 |
+| r1/ha26-team-a-state | fc9af9bde | docs, auto-refreshed by A3 H-A27 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-a2 | a631198c7 | READY (A2, BASE-105): B-034/035 + B2 Minors; intake-workflow 135/135; ready for the B1 gate |
 | r1/overview-getmany-parallel | f8616d3b7 | ON HOLD: pre-review (A2) found 2 Majors (T45 red alone: missing pin line; fixture clash with H-A18) + Minors → A4 fixing + restacking the chain; do not merge the current heads |
@@ -503,7 +503,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/req-b-033 | c0ea2ea96 | ON HOLD: pre-review (A2) found 2 Majors (T45 red alone: missing pin line; fixture clash with H-A18) + Minors → A4 fixing + restacking the chain; do not merge the current heads |
 | r1/req-c-020 | 78e050b3b | ON HOLD: pre-review (A2) found 2 Majors (T45 red alone: missing pin line; fixture clash with H-A18) + Minors → A4 fixing + restacking the chain; do not merge the current heads |
 | r1/req-c012-a2 | 64d24e69d | PRE-REVIEW MAJOR (A1a M1: edit-as-draft drops the import hold → held question approvable without its picture) → A2 fixing; B: wait |
-| r1/reqa018-paper-servability-route | d5e57160e | WAITING: built on T45 58618b2c; re-merges the new T45 head after the A4 fix; full run pending |
+| r1/reqa018-paper-servability-route | d5e57160e | WAITING (A1b): route done; questions 951 + 3 todo (only the known base red after the pin fix), exam-builder 361/361, conformance 409/409; re-merges A4 new T45 head (held); merges after T45 |
 | r1/reqb032-pinned-rule | e9cf34b7f | WAITING: A2 small update pending (spec title + m4 R1-limitation row); B: wait for the new head |
 | r1/reqb049-report-visible | 9ece8d76d | READY (A1b, BASE-105): pre-review Minors fixed (type from the live version, spec titles, real level codes); 316/316; B2 + B3 |
 | r1/reqb052-archived-edit | 4e64776b3 | BLOCKED / WAITING: B-052 itself is done, but 4e64776b contains H-A18 f29aeda9 (2 pre-review Majors) and REQ-B-032 e9cf34b7 (changing). DO NOT review or merge 4e64776b. READY again only after A3 re-merges the new H-A18 and B-032 heads |
@@ -514,13 +514,13 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t31-builder-wire | 6a27c8dd3 | READY (A3); needs C1 REQ-A-008 rebased on BASE-102 |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
-| r1/t37-r1-runbook | 8b95e71ef | READY (A3, BASE-105): runbook incl. the WARM env, 0106/0107 window, pg_trgm, ANALYZE, reverts, T36 demo-host; B2 |
+| r1/t37-r1-runbook | 6544c6855 | READY (A3, BASE-105): runbook incl. the WARM env, 0106/0107 window, pg_trgm, ANALYZE, reverts, T36 demo-host; B2 |
 | r1/t38-selfmark-reward | 13134ced7 | READY (A1b, BASE-105): B2 c16 Minors fixed (concurrency spec red without the lock); rewards 22/22; B2 delta + B3 |
 | r1/t39-k1-evidence | 1a26f7a60 | check: A3 to confirm state |
 | r1/t40-attempts-acs | 43fb5900d | READY (A1b, T38 + BASE-105): 28/28; merges after T38; B2 |
 | r1/t43-chain-publish | 5ce5894f1 | READY (A3, on T31) |
 | r1/t43b-publish-acs | 372f911ae | READY (A3): restacked on T48 4800bd78; merges after T48; B2 |
-| r1/t45-builder-acs | de8c8c02f | WAITING: A1 re-merges the new T48 tip 4800bd78 (was on 1dd07bc1); do not merge the old head |
+| r1/t45-builder-acs | 3001a0b84 | READY (A1b; on T48 4800bd78 + BASE-105): AC-R1-21.3/21.6 specs; exam-builder 391/391; merges after T48; B2 |
 | r1/t45-builder-acs-wip | 078204e1c | SUPERSEDED by r1/t45-builder-acs; do not merge |
 | r1/t45-servability-acs | 58618b2cb | ON HOLD: pre-review (A2) found 2 Majors (T45 red alone: missing pin line; fixture clash with H-A18) + Minors → A4 fixing + restacking the chain; do not merge the current heads |
 | r1/t48-builder-parity | 4800bd789 | READY (A3, BASE-105): pre-review Minors fixed (Padam only unplaces an ever-approved question; duplicate Bahagian labels refused [PROPOSED]); 518 + 1 todo; B2 + B3 |
@@ -529,6 +529,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t51-partial-acs-a3 | 8ed1df5d2 | READY (A3): restacked on T48 4800bd78; order T48 → T31 (+REQ-A-008) → T43 → T51; B2 |
 | r1/t52-examiner-grid | f2d36f648 | READY (A1a, BASE-105): B2 approved c17; ready for the B1 gate |
 | r1/t54-perf-400k | 96f72e566 | READY (A4, BASE-105, docs only); independent; B2 |
+
+**New branches not yet triaged:** r1/mock-known-mismatches a279e68cd
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
