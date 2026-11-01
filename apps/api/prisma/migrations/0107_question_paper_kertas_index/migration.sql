@@ -8,7 +8,7 @@
 -- The index is partial (paper_code IS NOT NULL): the equality is strict, so the planner proves the predicate from the query.
 --
 -- Plain CREATE INDEX, not CONCURRENTLY: Prisma runs each migration file in one transaction and CONCURRENTLY cannot run there (as 0011, 0044 and
--- 0106). It takes a SHARE lock on question_versions, so writes to that table wait while it builds (about 0.9 s on 408k rows (measured), 552 kB):
+-- 0106). It takes a SHARE lock on question_versions, so writes to that table wait while it builds (at 408k rows, 552 kB: about 0.9 s for the bare index build, about 2 s through `prisma migrate deploy` (rehearsal, docs/ops/r1-runbook.md §2.3)):
 -- deploy in the same maintenance window as 0106.
 --
 -- Reversible:
