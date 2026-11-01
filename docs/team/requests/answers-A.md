@@ -102,3 +102,5 @@
 **REQ-C-024: ACK (A4, 2026-11-01).** H-C8 is in BASE. servability, bridge, stem-image, kuiz, pipeline-chain, builder-review and b013 give 14 files, 255 pass + 1 todo; nothing flipped. No team A fixture shares a picture through another question's leaf without a group. This is consistent with D90.
 **REQ-C-020: DELIVERED** r1/req-c-020 @ 1a6e2610 (A4). FE follow-up is REQ-A-016.
 **REQ-B-022(a): READY** r1/req-b-022a-a4 @ 448366da (A4). **r1/req-b-022a @ 688529b7 is superseded; do not merge it.** Cold overview at 400k goes from 34.2 s to 14.5 s; the JSON is byte-identical. New env `SERVABILITY_OVERVIEW_WARM` (unset = on in prod) → B1/DevOps. B3. **022(c): Admin Pusat only (D86), recorded.**
+
+**REQ-B-049 (A1b, on r1/reqb031-report-guard):** Q11 is decided by the user ("ikut v2"). A report before the first submit stays allowed, narrowed to questions the pupil can open (`getVisible`). V2 has no after-submit-only rule, and .my M04 S14 shows Lapor on the answer page before Hantar. The deviation row cites Q11. The dead assertion is removed. B2 + B3 re-check.
