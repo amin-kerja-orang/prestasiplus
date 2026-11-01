@@ -505,7 +505,7 @@ In progress: T34 (A3, B2 MAJORs + B3 lows, hard-code fix approved), T48, T31 (+ 
 | T44 | r1/t44-blueprint-fields | 072d8f4b | — | merged at BASE-67 as 77984abc. The newer tip 072d8f4b shows a 19-file delta against base; A3 is asked whether it is WIP (marked IN-PROGRESS until it answers) |
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 15:34 UTC, BASE 7ea2208c)
+### Team A open branches: heads from origin (auto, 2026-11-01 15:36 UTC, BASE 7ea2208c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -542,7 +542,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t39-k1-evidence | 1a26f7a60 | check: A3 to confirm state |
 | r1/t40-attempts-acs | 43fb5900d | READY (A1b, T38 + BASE-105): 28/28; merges after T38; B2 |
 | r1/t43-chain-publish | 5ce5894f1 | READY (A3, on T31) |
-| r1/t43b-publish-acs | 327e03add | IN-PROGRESS (A3): B2 Minors pushed; T48 1dd07bc1 merge + 25-code catalogue; READY pending |
+| r1/t43b-publish-acs | 4921b3e58 | READY (A3; T48 + BASE-105): 25 codes (4 overridable, 21 hard); B2 Minors fixed; publish-acs 13; 946 + 1 todo; merges after T48; B2 |
 | r1/t45-builder-acs | de8c8c02f | READY (A1b, on T48 1dd07bc1 + BASE-105): AC-R1-21.3/21.6 specs; exam-builder 389/389; merges after T48; B2 |
 | r1/t45-builder-acs-wip | 078204e1c | SUPERSEDED by r1/t45-builder-acs; do not merge |
 | r1/t45-servability-acs | 3175abff8 | Approve w/ Minors; conflicts with BASE-105 → A4 resolving |
@@ -555,3 +555,4 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
+- **Evidence caveat (A3):** in worktree wt-a3-ha9, a node_modules symlink made conformance load the MAIN tree's @pp/contract openapi.json. So the conformance counts reported earlier for H-A15/T44, H-A9 and an older T43b head were measured against another tree's contract. T43b's final result is valid. H-A15/T44 and H-A9 are merged and passed the B1 gate. A3 dev-2 is re-running conformance on BASE-105 to confirm. Rule for every lane: use per-package symlinks in worktrees (A1a `mknm.sh`), and run `prisma generate` after a branch switch.
