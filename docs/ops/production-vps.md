@@ -104,9 +104,10 @@ Decisions and why:
 - **Packages:** `git curl openssl ca-certificates logrotate`; for the restore drill **Node 22** (the drill wraps
   `scripts/db-restore-check.mjs`; use NodeSource or `nvm` for the deploy user); for off-site copies `awscli` (S3-compatible) or `rsync`;
   optional `gnupg` (encrypt copies that leave the server).
-- **Disk encryption:** backups hold personal data of minors. `LEAD:` confirm the VPS disk or the backup volume is encrypted
-  (LUKS on a data volume if the provider does not encrypt at rest). Without encryption at rest do not store backups there
-  ([db-backup.md](db-backup.md)).
+- **Disk encryption:** backups hold personal data of minors. For R1 the production data volume is **not encrypted**: the
+  owner accepted this residual risk with mitigations (Q23 item 1, REQ-B-108, REQ-B-113; [r1-runbook.md](r1-runbook.md) section
+  "Q23 disk mitigation"). Encryption at rest (LUKS on a data volume if the provider does not encrypt at rest) remains the
+  target; until then follow the Q23 mitigations, and see [db-backup.md](db-backup.md).
 
 - **Image pinning.** Tags in the pack: `nginx:1.28-alpine` (edge), `postgres:16-alpine`, `certbot/certbot:v3.0.1`, `clamav/clamav:1.4`, `louislam/uptime-kuma:1.23.16`.
   The build environment had no network to resolve digests, and those tags were not checked against the registries. `LEAD:` at install, confirm each tag is a currently supported release (for nginx the
@@ -140,7 +141,7 @@ Who sets what: **LEAD** = the LEAD supplies or approves the value; **OPS** = the
 | `PP_LETSENCRYPT_EMAIL` | none | LEAD | Let's Encrypt expiry notices |
 | `PP_ENV_DIR` | `/etc/pretasiplus` | OPS | Folder of the three files |
 | `PP_LE_DIR`, `PP_LE_LOG_DIR`, `PP_WEBROOT_DIR` | `/srv/pretasiplus/letsencrypt`, `-log`, `certbot-webroot` | OPS | Certificates (certbot writes, edge reads), its log, the ACME webroot |
-| `PP_BACKUP_DIR` | `/var/backups/pretasiplus` | OPS | Dumps. Must be outside the repo; encrypted volume |
+| `PP_BACKUP_DIR` | `/var/backups/pretasiplus` | OPS | Dumps. Must be outside the repo. For R1 the volume is not encrypted (owner acceptance Q23 item 1, REQ-B-113; mitigations in [r1-runbook.md](r1-runbook.md) "Q23 disk mitigation") |
 | `PP_STATE_DIR` | `/var/lib/pretasiplus-deploy` | OPS | `current.tag`, `previous.tag`, `history.log`, probe state |
 | `PP_IMAGE_TAG` | `prod` (scripts set the git sha) | script | Image tag |
 | `PP_SCRATCH_HOST` | unset | OPS | **A4 scratch host only, never on production.** `yes` allows `slot.sh load --synthetic-scratch` (a synthetic fixture, with `PP_OFFSITE_KIND=none` and the host name typed). Read from this file only, never from the environment. With it set, or after a synthetic load, `slot.sh gonogo` prints `NO-GO` and exits 3, and `copy` / `etl --apply` refuse synthetic stage data on a host without it |

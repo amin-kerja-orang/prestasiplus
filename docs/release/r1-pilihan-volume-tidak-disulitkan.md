@@ -19,13 +19,13 @@ Penyulitan cakera ialah kunci pada peti simpanan. Tanpa kunci itu, sesiapa yang 
 - Kata laluan aplikasi atau pangkalan data yang bocor.
 - Pentadbir yang tersalah beri akses, atau fail yang dihantar keluar tanpa disulitkan.
 
-**Data pada volum:** data peribadi murid dan guru (nama, e-mel, kelas), cincang IC (IC hash), pangkalan data PostgreSQL (volum `pgdata`), fail muat naik (volum `apifiles`), dan salinan sandaran jika disimpan setempat di `PP_BACKUP_DIR` (termasuk arkib WAL). Data kanak-kanak ialah data sensitif di bawah PDPA. Rujukan: `deploy/vps/compose.prod.yaml`, `compose.yaml` (`pgdata:/var/lib/postgresql/data`), `docs/ops/production-vps.md` bahagian 9.
+**Data pada volum:** data peribadi murid dan guru (nama, e-mel, kelas), cincang IC (IC hash), pangkalan data PostgreSQL (volum `pgdata`), fail muat naik (volum `apifiles`), dan salinan sandaran jika disimpan setempat di `PP_BACKUP_DIR` (termasuk arkib WAL). Ia termasuk data peribadi kanak-kanak; dokumen ini tidak membuat penilaian undang-undang PDPA. Rujukan: `deploy/vps/compose.prod.yaml`, `compose.yaml` (`pgdata:/var/lib/postgresql/data`), `docs/ops/production-vps.md` bahagian 9.
 
 ## 2. Pilihan (a): terima untuk R1 dengan langkah pengurangan risiko
 
 **Masa:** hampir 0 kelewatan go-live.
 
-**Langkah yang sudah ada (dengan rujukan):**
+**Langkah yang tersedia, sahkan di host (dengan rujukan):**
 - Salinan luar-tapak disulitkan GPG sebelum keluar pelayan; muat naik tanpa sulit dihalang melainkan `PP_OFFSITE_ALLOW_PLAINTEXT=true` (`deploy/vps/backup/offsite.sh`, `docs/ops/db-backup.md`).
 - TLS pada pintu masuk (nginx + Let's Encrypt), `docs/ops/production-vps.md`.
 - Peranan DB hak minimum `pp_app` (`deploy/vps/db-roles.sh`), DB tiada port hos.
