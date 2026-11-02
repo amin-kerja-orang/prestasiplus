@@ -196,3 +196,5 @@
 | BASE-191 | 119a60ca | REQ-A-027 + REQ-B-061 list fan-out @ 93643599 (B2 Approve w/ Minors); merged by exact reviewed SHA | all compile and lint steps 0; unit 1357 passed (1357); DB 13 passed (13) | 2026-11-02 12:46 |
 | BASE-192 | e3dfff7c | REQ-A-036 @ b52ee2f2 (B2 Approve w/ Minors); merged by exact reviewed SHA | all compile and lint steps 0; unit 698 passed (698); DB 13 passed (13) | 2026-11-02 12:46 |
 | BASE-193 | 11b8a71a | REQ-B-071 Bab optional + chain specs + minors @ c38ee66c (B2 Approve; user accepted Q17); merged by exact reviewed SHA | all compile and lint steps 0; unit 70 passed (70); DB 2011 passed | 2 todo (2013) | 2026-11-02 12:46 |
+| BASE-194 | 3e7ddb05 | partial-acs + minors-kbat-chain @ a253b3bf (B2 Approve w/ Minors); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 694 passed | 1 todo (695) | 2026-11-02 12:56 |
+| BASE-195 | 12c8710b | REQ-B-074 @ 45a75f68 (B2 Approve w/ Minors, B3 Pass with Lows); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 614 passed (614) | 2026-11-02 12:56 |
