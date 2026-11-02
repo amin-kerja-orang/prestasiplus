@@ -232,6 +232,10 @@ jobs:
 
       - name: E2E @api (mobile, tablet, desktop)
         working-directory: fe
+        env:
+          # The redirect is in (src/app/router/guards.ts). The spec flags its own accounts with psql on this job's database.
+          E2E_FORCED_PASSWORD: '1'
+          E2E_DATABASE_URL: ${{ env.DATABASE_URL }}
         run: npm run test:e2e:http
 
       - name: Upload the Playwright report
