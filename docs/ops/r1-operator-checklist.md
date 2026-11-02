@@ -14,9 +14,9 @@ Short form of [r1-runbook.md](r1-runbook.md) (section numbers below point there)
 - [ ] Migrate role may create it, with `$PSQL`; it must return `t` (name the role: `$PSQL` is the superuser):
   `SELECT has_database_privilege('pp_owner', current_database(), 'CREATE');`
 - [ ] `THROTTLE_GLOBAL_PER_MINUTE=3000` in `api.env` (REQ-B-080; unset = 300 and only a preflight warning). `TRUST_PROXY_HOPS`: nothing to set on the VPS, the overlay forces 1. After the deploy: `$PC exec -T api sh -c 'echo "$THROTTLE_GLOBAL_PER_MINUTE $TRUST_PROXY_HOPS"'` shows `3000 1`.
-- [ ] No demo accounts, with `$PSQL`: `select count(*) from users where email ilike '%@demo.test';` must be **0**. Otherwise **stop**: the production bundle carries the demo password (runbook section 0 item 8).
+- [ ] No demo accounts, with `$PSQL`: `select count(*) from users where email ilike '%@demo.test';` must be **0**. Otherwise **stop**: the production bundle carries the demo password (runbook section 0 item 8). On a first install this and the next check error (no tables yet): run them right after `deploy.sh`.
 - [ ] Six-digit `@prestasiplus.my` accounts holding an IC hash, with `$PSQL`: `select count(*) from users where email ~ '^[0-9]{6}@prestasiplus\.my$' and ic_hash is not null;` Above 0: **the owner decides before live** (runbook section 0 item 9).
-- [ ] No CDN or extra proxy in front of the edge: `PP_DOMAIN=$(grep '^PP_DOMAIN=' /etc/pretasiplus/prod.env | cut -d= -f2)`, then `dig +short "$PP_DOMAIN"` (or `getent ahostsv4`) gives only the VPS address and `curl -sI "https://$PP_DOMAIN/" | grep -iE '^(via|cf-ray|x-cache|x-served-by|x-amz-cf-id):'` prints nothing. Otherwise **stop**: clients would share one throttle address (runbook section 0 item 10).
+- [ ] No CDN or extra proxy in front of the edge (`$PP_DOMAIN`: shell setup): `dig +short "$PP_DOMAIN"` (or `getent ahostsv4`) gives only the VPS address, and `H="$(curl -sSI -m 15 "https://$PP_DOMAIN/")" && grep -q '^HTTP/' <<<"$H" && ! grep -iE '^(via|cf-ray|x-cache|x-served-by|x-amz-cf-id):' <<<"$H" && echo NO-CDN-HEADERS` prints `NO-CDN-HEADERS`. Anything else: **stop**, clients would share one throttle address (runbook section 0 item 10).
 - [ ] Pre-migration counts recorded (runbook 3.1).
 - [ ] Wallet tiers (runbook section 0 item 6): `select count(*) from tiers;` must be **4**. If it is not 4, run `deploy/vps/deploy.sh --seed-reference` (reference modules only, not the demo seed that item 5 forbids) before the API takes traffic; on a first install, right after `deploy.sh` (no schema before it, and the deploy does not pause). `/api/ready` stays 200 with empty tiers, so this count is the only guard. `spm_subject_configs` is 0 until `subjects` exist: run the seed again after they do (19 when all 19 subject codes exist).
 - [ ] Stimulus group layout (runbook section 0 item 7): run the SELECT of 3.7 on the target. 0 rows is expected; any row means that paper is re-composed in the builder before go-live.
@@ -56,10 +56,11 @@ Use this whenever the migrate client (the process, its container or SSH session)
 2. Check what 0105 left (read-only):
    - `SELECT column_name, data_type, is_nullable, column_default FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'question_versions' AND column_name IN ('last_editor', 'declared_marks');`
    - `SELECT conname, convalidated FROM pg_constraint WHERE conrelid = 'question_versions'::regclass AND conname IN ('ck_question_versions_last_editor', 'ck_question_versions_declared_marks');`
-3. Both columns and both validated constraints present: `$PC run --rm --no-deps -w /app/apps/api migrate npx prisma migrate resolve --applied 0105_gate_facts` (the backfill is kept), then `deploy/vps/deploy.sh`.
+3. End the blocker now, or the next `deploy` waits behind it again: the activity query of section 1, then `SELECT pg_terminate_backend(<pid>);`.
+4. Both columns and both validated constraints present: `$PC run --rm --no-deps -w /app/apps/api migrate npx prisma migrate resolve --applied 0105_gate_facts` (the backfill is kept), then `deploy/vps/deploy.sh`.
    None present: the same command with `--rolled-back`, then `deploy/vps/deploy.sh`. `PP_IMAGE_TAG` = the failed release's tag.
    Some but not all (or a constraint not validated): run the `DROP ... IF EXISTS` revert in runbook 2.4 (Recovery step 2), then the rolled-back path. **Never run that revert when both columns and both validated constraints are present.**
-4. Re-run the detection query (0 rows) and check `/api/ready`.
+5. Re-run the detection query (0 rows) and check `/api/ready`.
 
 All cases tested: runbook 2.4 table. Chose `--rolled-back` on a complete 0105 by mistake? `deploy` fails 42701; `--applied` still recovers it (tested).
 

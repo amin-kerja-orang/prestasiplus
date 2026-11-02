@@ -27,6 +27,7 @@ Shell setup (once per operator shell, from the release checkout):
 # section 21 "Admin Pusat bootstrap/reset command").
 export PP_IMAGE_TAG="<IMAGE_TAG>"   # after a finished deploy: $(cat /var/lib/pretasiplus-deploy/current.tag)
 PC="docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env"
+PP_DOMAIN="$(grep '^PP_DOMAIN=' /etc/pretasiplus/prod.env | cut -d= -f2)"
 # If PP_PROFILES is set in prod.env (comma-separated), append one --profile per entry, as deploy/vps/lib.sh does:
 #   PC="$PC --profile tls --profile monitoring"
 # Read-only psql in the db container. PGPASSWORD is taken from the container's own environment (single quotes: the
