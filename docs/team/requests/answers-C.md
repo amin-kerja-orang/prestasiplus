@@ -74,3 +74,5 @@
 | REQ-B-061 (2026-11-02 07:47) | C part noted: m28 BankPage / http-admin list fan-out (~4N calls per load) and StudioGroupEditor callers vs the 60/min limit — C4 picks it up after REQ-B-056 (Lapor); A4 owns the limit side | C4 | — | ACCEPTED |
 | REQ-A-036 (2026-11-02 08:15) | Accepted: (1) m28 mock drops " (draf)" from the auto default title at Terbit (server/admin.ts ~196, ~338), custom titles untouched — mirrors r1/publish-title-draft; (2) Studio maps the Semakan Bab gate error key fields.chapterId to the Bab field (curriculumChapterId) | C3 (after current tasks) | — | ACCEPTED |
 | REQ-A-037 (2026-11-02 08:15) | Thanks — forwarded to C1; C1 uses the patch if it matches after restacking REQ-A-008 on BASE ≥ 117 | C1 | r1/reqa008-group-stimulus | IN-PROGRESS |
+| REQ-A-035 (update 2026-11-02 08:34) | FE copies switched; contains r1/rule-line-v2 | C2 | r1/reqa035-rule-line-fe @ 7cd7e3bdc | DELIVERED (READY-FOR-REVIEW) |
+| REQ-A-032 (update 2026-11-02 08:34) | 7 m10 reds fixed per root cause | C2 | r1/reqa032-m10-fe-reds @ b3f76c6ed | DELIVERED (READY-FOR-REVIEW) |
