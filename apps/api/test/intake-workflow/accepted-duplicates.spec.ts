@@ -82,3 +82,63 @@ describe('REQ-B-057: duplicate entries of an accepted item', () => {
     expect(res.status, JSON.stringify(res.body)).toBe(409)
   })
 })
+
+describe('REQ-B-057 (A4 minor): "Bukan pendua" is idempotent', () => {
+  const counts = async (itemId: string) => ({
+    events: (await t.db.query<{ n: string }>(`select count(*)::text n from intake_item_events where item_id = $1::bigint and event = 'cleared_duplicate'`, [itemId]))[0]!.n,
+    audits: (await t.db.query<{ n: string }>(`select count(*)::text n from audit_events where action = 'intake.item_duplicate_decided' and target_type = 'intake_item' and target_id = $1::text`, [itemId]))[0]!.n,
+  })
+
+  it('a repeat on an accepted item answers 200 with the same view, writes no event or audit row and keeps the first reviewer and time', async () => {
+    const stem = uniqueStem()
+    await acceptStem(stem)
+    const second = await acceptStem(stem)
+    const [dup] = (await itemOf(second.itemId)).duplicates
+    const send = () => post(teacher, `/intake/items/${second.itemId}/duplicate`, { decision: 'not_duplicate', duplicateId: dup!.id })
+    const first = await send()
+    expect(first.status, JSON.stringify(first.body)).toBe(200)
+    const before = await counts(second.itemId)
+    const decided = (await t.db.query<{ decided_at: Date; decided_by_id: string }>(`select decided_at, decided_by_id::text from duplicate_links where id = $1::bigint`, [dup!.id]))[0]!
+
+    const again = await send()
+    expect(again.status, JSON.stringify(again.body)).toBe(200)
+    expect(again.body.data.state).toBe('accepted')
+    expect(again.body.data.duplicates).toEqual(first.body.data.duplicates)
+    expect(await counts(second.itemId)).toEqual(before)
+    const after = (await t.db.query<{ decided_at: Date; decided_by_id: string }>(`select decided_at, decided_by_id::text from duplicate_links where id = $1::bigint`, [dup!.id]))[0]!
+    expect(after).toEqual(decided)
+  })
+
+  it('a repeat on an open item is the same no-op', async () => {
+    const stem = uniqueStem()
+    await acceptStem(stem)
+    t.ai.paper = () => paper([draft(t.codes, '1', { stem })])
+    const { batchId } = await readyBatch(t, teacher)
+    await extractAndRun(t, teacher, batchId)
+    const [item] = await itemsOf(teacher, batchId)
+    const [dup] = (await itemOf(item!.id)).duplicates
+    const send = () => post(teacher, `/intake/items/${item!.id}/duplicate`, { decision: 'not_duplicate', duplicateId: dup!.id })
+    expect((await send()).status).toBe(200)
+    const before = await counts(item!.id)
+    const again = await send()
+    expect(again.status, JSON.stringify(again.body)).toBe(200)
+    expect(await counts(item!.id)).toEqual(before)
+  })
+
+  it('an entry decided earlier (a variant link) is not re-decided once the item is accepted: 409, nothing changes', async () => {
+    const base = uniqueStem()
+    const first = await acceptStem(`${base} apabila x ialah 12`)
+    t.ai.paper = () => paper([draft(t.codes, '1', { stem: `${base} apabila x ialah 47` })])
+    const { batchId } = await readyBatch(t, teacher)
+    await extractAndRun(t, teacher, batchId)
+    const [item] = await itemsOf(teacher, batchId)
+    const [dup] = (await itemOf(item!.id)).duplicates
+    const linked = await post(teacher, `/intake/items/${item!.id}/duplicate`, { decision: 'variant', matchedQuestionId: first.questionId })
+    expect(linked.status, JSON.stringify(linked.body)).toBe(200)
+    expect((await post(teacher, `/intake/items/${item!.id}/accept`)).status).toBe(200)
+    const entry = (await itemOf(item!.id)).duplicates.find((d) => d.id === dup!.id) ?? (await itemOf(item!.id)).duplicates[0]!
+    const res = await post(teacher, `/intake/items/${item!.id}/duplicate`, { decision: 'not_duplicate', duplicateId: entry.id })
+    expect(res.status, JSON.stringify(res.body)).toBe(409)
+    expect((await itemOf(item!.id)).duplicates.find((d) => d.id === entry.id)?.status).toBe(entry.status)
+  })
+})

@@ -22,8 +22,11 @@
 ALTER TABLE "question_versions" ADD COLUMN "last_editor" TEXT NOT NULL DEFAULT 'person';
 ALTER TABLE "question_versions" ADD COLUMN "declared_marks" SMALLINT;
 
--- NOT VALID, then VALIDATE (as 0103 does for its FK): adding a CHECK validated in one step scans the table under ACCESS EXCLUSIVE; the
--- VALIDATE below runs after the backfill and takes only SHARE UPDATE EXCLUSIVE (reads and writes continue).
+-- The two CHECKs are added NOT VALID and validated after the backfill. Adding a CHECK validated in one step scans the table while the ADD COLUMN
+-- lock is held; the split makes that scan cheaper (the ADD CONSTRAINT no longer scans, the VALIDATE below scans once, after the backfill). It does NOT make this
+-- migration online: Prisma runs the file as ONE transaction and ADD COLUMN holds ACCESS EXCLUSIVE on "question_versions" until the end, so the
+-- VALIDATE also runs under that lock (its weaker SHARE UPDATE EXCLUSIVE adds nothing while the stronger one is held). Readers and writers wait for
+-- the whole file; at 408k questions a reader stalled for about 3 s in the A4 rehearsal (result2.log). Run it inside the maintenance window.
 ALTER TABLE "question_versions" ADD CONSTRAINT "ck_question_versions_last_editor" CHECK ("last_editor" IN ('person', 'ai')) NOT VALID;
 ALTER TABLE "question_versions" ADD CONSTRAINT "ck_question_versions_declared_marks" CHECK ("declared_marks" IS NULL OR "declared_marks" >= 0) NOT VALID;
 
