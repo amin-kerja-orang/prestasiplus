@@ -140,3 +140,13 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
 - **Owner:** A1b on r1/reqb074-takedown-lows (with the stale DSG spec fix). FE placeholder → team C (REQ-A-046).
 - *Decided under delegation; for user review. To be added to the user decision pack.*
 - **USER DECISION 12:45 MYT (REQ-B-077, overrides the delegated rule above):** takedown here is for **quality**, not a legal/copyright removal. A pupil with a sitting (any sitting) keeps a taken-down image, and a running sitting keeps its text. Accepted for R1, no strict change. This is the behaviour of REQ-B-074 @45a75f68 (BASE-195). The rights-vs-ordinary split is **not built**; REQ-A-046 (FE placeholder) is withdrawn. REQ-B-076 stays as a normal-priority fix (A1b, r1/reqb076-live-takedown).
+
+## Q19 (USER DECISION 2026-11-02 ~17:00 MYT, relayed by Mandor): frontend ratchet raises for live
+- **Approved by the user:** (1) raise the ds-admin / ds-debt eslint ratchet baselines with `--force` (about 500 rows of new R1 frontend debt; owner approval per frontend-dev-guide §2.3); (2) raise the demo bundle budget (entry js 340,000 → 383,000 bytes; all js 10.0M → 11.578M; gzip 2.846M → 3.338M).
+- Merged as BASE-209 3acc2bc1 (r1/b1-reqb081-frontend-green @3c65fff5).
+- **KIV R2 (2 items):** pay down the ds-admin/ds-debt debt back to the old baselines (the per-branch justification table from A4 is the pay-down list); reduce the bundle size (`sideEffects:false`, contract tree-shaking).
+
+## Q20 (USER DECISION 2026-11-02 ~17:10 MYT, relayed by Mandor): integrator role
+- **Lane A1 (team A lead) holds the B1 Integrator role** on the owner's instruction. Mandor only monitors. The procedure is docs/team/handover/team-b.md §1–2: merge only the exact reviewed SHA (a B2 verdict, or A4/A1b standing in for B2, recorded); merge --no-ff in an isolated worktree on the latest base; gate on the merge result with real output; push only if the base is unchanged; one BASE-n row in MERGE-LOG.md + status/B1.md.
+- **The owner freeze still applies:** until release, docs only + owner-approved items. Other code (REQ-A-051 approve-gate, REQ-A-040/041, …) is not merged without the owner's "ya".
+- After every code merge, B4/B run CI + E2E on the new candidate. No deploy, no server, no secrets.
