@@ -8,7 +8,7 @@ import { toMytTimestamp } from '../../../../common/time/myt'
 import { CLOCK, type Clock } from '../../../../db/clock'
 import { idToString } from '../../../../db/ids'
 import { CurriculumRepository } from '../../../curriculum'
-import { QuestionsRepository, type QuestionRecord } from '../../../questions'
+import { isStructuredVisible, QuestionsRepository, type QuestionRecord } from '../../../questions'
 import { SchoolsRepository } from '../../../schools'
 import { UsersRepository } from '../../../users'
 import { StructuredAttemptsRepository } from './attempts.repository'
@@ -118,8 +118,7 @@ export class StructuredService {
 
   private async getVisible(id: string, levels: Map<string, string>): Promise<QuestionRecord | null> {
     const r = await this.questions.get(id, 'live')
-    if (!r || !r.isActive || r.version.status !== 'approved' || r.version.type !== 'structured') return null
-    return r.version.educationLevelId !== null && levels.has(r.version.educationLevelId) ? r : null
+    return r && isStructuredVisible(r, levels) ? r : null
   }
 
   private subjectOptions(scope: Scope, track: Track, subjects: Map<string, { code: string; name: string; active: boolean }>): { id: string; name: string }[] {
