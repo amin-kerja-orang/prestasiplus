@@ -8,6 +8,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
+import { isApiError } from '@/api'
 import { useApi } from '@/composables/useApi'
 import {
   DsDataTable,
@@ -21,6 +22,8 @@ import {
   DsStatusBadge,
   type StatItem,
 } from '@/ds'
+
+import { listLoadMessage, useDebouncedFilter } from '@/modules/m04-question-bank'
 
 import RichText from '../../components/RichText.vue'
 import type { BankRow, QuestionStatus } from '../../domain/admin-types'
@@ -64,6 +67,12 @@ const { data, error, loading, reload } = useApi(
   applied,
 )
 const rows = computed(() => (data.value ?? []) as Row[])
+/** 429 shows the server's BM message; any other failure keeps the usual text. */
+const loadMessage = computed(() =>
+  isApiError(error.value) && error.value.status === 429
+    ? listLoadMessage(error.value)
+    : 'Tidak dapat memuatkan bank soalan.',
+)
 
 const kpi = computed<StatItem[]>(() => {
   const s = stats.value
@@ -93,9 +102,19 @@ function pick(code: string): void {
   draft.subject = code
   apply()
 }
+/** Same filter as the applied one: no new read (the debounce and the Tapis button may both fire). */
 function apply(): void {
+  debounced.cancel()
+  if (JSON.stringify(applied.value) === JSON.stringify(draft)) return
   applied.value = { ...draft }
 }
+// REQ-B-061: GET /api/questions has a per-user limit, so a typed term or a changed filter is applied 300 ms
+// after the last change (one read), not on every keystroke.
+const debounced = useDebouncedFilter(
+  computed(() => draft as unknown as Record<string, string>),
+  ['q', 'subject', 'kertas', 'kind', 'status'],
+  apply,
+)
 function reset(): void {
   Object.assign(draft, { q: '', subject: '', kertas: '', kind: '', status: 'terbit' })
   apply()
@@ -238,7 +257,7 @@ const {
     </DsFilterBar>
 
     <DsEmptyState v-if="isUnavailable(error)" :title="UNAVAILABLE_TITLE" data-testid="unavailable-state" />
-    <DsLoadError v-else-if="error"  message="Tidak dapat memuatkan bank soalan." @retry="reload()" />
+    <DsLoadError v-else-if="error" :message="loadMessage" @retry="reload()" />
     <DsDataTable
       v-else
       :data="rows"

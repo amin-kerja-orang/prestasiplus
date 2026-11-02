@@ -38,3 +38,6 @@ export {
 export type { CaretEdit, KeyboardMode, PanelPlacement } from './lib/arabic-keyboard'
 /** The six cognitive levels of the Studio ("Aras pemikiran"), reused by the m28 intake editor. */
 export { COGNITIVE_OPTIONS } from './lib/studio/dskp-tags'
+
+// REQ-B-061: the M28 Bank Soalan page applies its filters with the same 300 ms debounce and shows the same 429 text.
+export { FILTER_DEBOUNCE_MS, listLoadMessage, useDebouncedFilter } from './lib/list-load'

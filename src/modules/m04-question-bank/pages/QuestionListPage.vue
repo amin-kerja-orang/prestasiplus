@@ -81,7 +81,8 @@ import {
   type FilterKey,
 } from '../lib/question-list'
 import { pageOf, queryText } from '../lib/route-query'
-import { errorLines, fieldErrors, LOAD_ERROR } from '../lib/ui-errors'
+import { listLoadMessage, useDebouncedFilter } from '../lib/list-load'
+import { errorLines, fieldErrors } from '../lib/ui-errors'
 
 const route = useRoute()
 const router = useRouter()
@@ -248,13 +249,26 @@ const chips = computed(() => {
   return out
 })
 
-async function submitFilter(): Promise<void> {
+function draftQuery(): Record<string, string> {
   const query: Record<string, string> = {}
   for (const key of FILTER_KEYS) {
     const value = draft.value[key].trim()
     if (value !== '') query[key] = value
   }
   if (perPage.value !== DEFAULT_PAGE_SIZE) query.per_page = String(perPage.value)
+  return query
+}
+/** REQ-A-027: typing or choosing applies the filter 300 ms later; a change that leaves the URL as it is reads nothing. */
+const debounced = useDebouncedFilter(draft, FILTER_KEYS, async () => {
+  const query = draftQuery()
+  if (JSON.stringify(query) !== JSON.stringify(pagerQuery.value)) {
+    await router.push({ path: QUESTIONS_LIST_PATH, query })
+  }
+})
+
+async function submitFilter(): Promise<void> {
+  debounced.cancel()
+  const query = draftQuery()
   // Submitting the same filter reloads the page, as a live GET form does.
   if (JSON.stringify(query) === JSON.stringify(pagerQuery.value) && !route.query.page) {
     await Promise.all([list.reload(), summary.reload()])
@@ -656,7 +670,7 @@ const cardFields: CardField[] = [
     <!-- Load failure: alert in place of the table + retry (INFERRED copy, SRS §8.2). -->
     <DsLoadError
       v-if="list.error.value"
-      :message="LOAD_ERROR"
+      :message="listLoadMessage(list.error.value)"
       testid="questions-error"
       retry-testid="questions-retry"
       @retry="list.reload()"
