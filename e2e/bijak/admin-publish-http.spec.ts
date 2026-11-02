@@ -79,7 +79,17 @@ async function assembleUntilMatching(page: Page): Promise<void> {
     if ((await check.innerText()).includes('Sepadan dengan blueprint')) return
     await page.getByTestId('add-0').click()
     await expect(page.getByTestId('picker')).toBeVisible()
-    await page.locator('[data-testid^=pick-add-]').first().click()
+    // The picker lists the section pool 20 units a page and hides what the paper already holds (REQ-B-042), so
+    // once the first page is used up (the blueprint needs 40) the next candidates sit behind "Muat lagi".
+    const add = page.locator('[data-testid^=pick-add-]')
+    const more = page.getByTestId('picker-more')
+    await expect(add.or(more).first()).toBeVisible()
+    while ((await add.count()) === 0 && (await more.isVisible())) {
+      const paged = page.waitForResponse((r) => /\/pool\?/.test(r.url()))
+      await more.click()
+      await paged
+    }
+    await add.first().click()
     await page.keyboard.press('Escape')
     await expect(page.getByTestId('picker')).toBeHidden()
   }
@@ -229,6 +239,9 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () =
     browser,
   }, testInfo) => {
     test.skip(!STUDENT_USER || !STUDENT_PASS, NEEDS_PASSWORD)
+    // The full 7-step flow (draft, Sepadan, Simpan, Terbitkan, student, Tarik balik, delete) adds the blueprint's 40 questions one
+    // by one (about 0.7 s each): 52 s measured locally under the CI config, so the 30 s default cannot hold it. This test only.
+    test.setTimeout(120_000)
     const title = `E2E-http publish ${Date.now()}`
     await login(page, ADMIN_USER ?? '', ADMIN_PASS ?? '')
     await page.goto('/admin/command-center')
@@ -241,7 +254,13 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () =
       await page.getByTestId('paper-save').click()
       await expect(page.getByTestId('paper-save')).toBeDisabled()
 
-      await page.getByTestId('paper-publish').click()
+      // REQ-B-054: the demo seed Disahkan only 3472/2, so the Kontrak of Matematik Kertas 1 (1449/1) is still Spec: the plain
+      // Terbitkan is disabled with the server's reason and the audited override publishes (the same path as admin-publish.spec.ts).
+      await expect(page.getByTestId('paper-publish')).toBeDisabled()
+      await expect(page.getByTestId('publish-errors')).toContainText('belum Disahkan')
+      await page.getByTestId('override-tick').click()
+      await page.getByTestId('override-reason').fill('Kontrak masih Spec, kertas ujian dalaman')
+      await page.getByTestId('override-publish').click()
       await page.locator('[data-ds=confirm-ok]').click()
       await expect(page.getByTestId('paper-unpublish')).toBeVisible()
       await expect(page.getByTestId('paper-view-student')).toBeVisible()
