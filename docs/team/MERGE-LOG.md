@@ -154,3 +154,15 @@
 | BASE-149 | 985012dd | delete-served-guard @ da7a12e7 (B2 Approve, B3 Pass); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 1312 passed | 3 todo (1315) | 2026-11-02 10:11 |
 | BASE-150 | e9125d3f | Lapor + REQ-A-015 @ 53fa8fad (B2 Approve w/ Minors, B3 Pass with Lows); merged by exact reviewed SHA | all compile and lint steps 0; unit 1318 passed (1318); DB 310 passed (310) | 2026-11-02 10:11 |
 | BASE-151 | f9f8c721 | REQ-A-025 @ eb211b64 (B2 Approve); merged by exact reviewed SHA | all compile and lint steps 0; unit 682 passed (682); DB 13 passed (13) | 2026-11-02 10:11 |
+| BASE-152 | 11213ff8 | T48 label move fix @ 9783849c (B2 Approve); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 392 passed (392) | 2026-11-02 10:35 |
+| BASE-153 | 5474f2ca | builder-search-perf @ 1216b736 (B2 Approve); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 396 passed (396) | 2026-11-02 10:35 |
+| BASE-154 | 4f1e0f2a | T45 Part 3 @ ee3a7d2b (B2 Approve w/ Minors); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 403 passed (403) | 2026-11-02 10:35 |
+| BASE-155 | 6f007a70 | R1E2E-10 bulk publish no-op @ 5990fb6b (B2 Approve w/ Minors; FE skipped[] is REQ-A-040); merged by exact reviewed SHA | all compile and lint steps 0; unit 165 passed (165); DB 330 passed (330) | 2026-11-02 10:35 |
+| BASE-156 | see BASE-157 | REQ-A-008 + T31 `r1/reqa008-group-stimulus` @ 94880200 (B2 Approve w/ Minors; T31 eb0346d2 B2 Approve, B3 Pass); pushed with BASE-157 | gated with BASE-157 | 2026-11-02 10:35 |
+| BASE-157 | b9cec414 | REQ-B-069 fixture @ 2046a330 (B2 Approve), gated together with BASE-156 REQ-A-008 + T31 @ 94880200; merged by exact reviewed SHA | all compile and lint steps 0; unit 853 passed (853); DB 541 passed (541) | 2026-11-02 10:35 |
+| BASE-158 | fb8e3c23 | T43 @ 238eb6eb (B2 Approve w/ Minors); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 84 passed | 2 todo (86) | 2026-11-02 10:35 |
+| BASE-159 | 4fe8f0b6 | T51 @ 7cb8d814 (B2 Approve); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 519 passed | 1 todo (520) | 2026-11-02 10:35 |
+| BASE-160 | f29fa935 | T43b @ 457db6ae (B2 Approve); merged by exact reviewed SHA | all compile and lint steps 0; unit 189 passed (189); DB 443 passed (443) | 2026-11-02 10:35 |
+| BASE-161 | 13049caa | D90 builder sweep @ eeebce89 (B2 Approve); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 452 passed (452) | 2026-11-02 10:35 |
+| BASE-162 | b2251dc4 | H-A26 @ 21360a86 (B2 Approve w/ Minors); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 13 passed (13) | 2026-11-02 10:35 |
+| BASE-163 | 4218bee3 | AC gaps @ c2b93710 (B2 Approve w/ Minors); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 2 passed (2) | 2026-11-02 10:35 |
