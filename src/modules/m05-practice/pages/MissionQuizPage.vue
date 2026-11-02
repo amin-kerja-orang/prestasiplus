@@ -26,7 +26,8 @@ onMounted(() => {
   }
   fetchTodayMissions()
     .then((r) => {
-      missionTitle.value = r.data.find((m) => m.id === id.value)?.title ?? null
+      // The API's mission ids are strings (`IdSchema`), the mock's numbers; the route gives a number.
+      missionTitle.value = r.data.find((m) => String(m.id) === String(id.value))?.title ?? null
     })
     .catch(() => {
       /* the title falls back to the subject name */

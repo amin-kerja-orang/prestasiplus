@@ -186,7 +186,8 @@ export interface ChapterSubject {
 }
 
 export interface ChapterCard {
-  id: number
+  /** A number in the mock; a string on the real API (contract `IdSchema`). */
+  id: EntityId
   number: number | null
   name: string
   total: number
@@ -202,9 +203,10 @@ export interface ChapterCard {
 
 export interface ChapterSubjectDetail {
   subject: { code: string; name: string; color: string }
-  levels: { id: number; name: string; count: number }[]
+  /** Level ids: numbers in the mock; strings on the real API (contract `IdSchema`). */
+  levels: { id: EntityId; name: string; count: number }[]
   /** The level shown; `null` when the subject offers none. */
-  levelId: number | null
+  levelId: EntityId | null
   chapters: ChapterCard[]
 }
 
@@ -560,7 +562,8 @@ export interface RemedialTestItem {
 }
 
 export interface MissionItem {
-  id: number
+  /** A number in the mock; a string on the real API (contract `IdSchema`). */
+  id: EntityId
   title: string
   /** "Latih Tubi SPM" / "Tracking A" / "Soalan & Rujukan". */
   typeLabel: string
