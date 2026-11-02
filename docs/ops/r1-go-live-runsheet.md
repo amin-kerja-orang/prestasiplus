@@ -1,8 +1,12 @@
+**Baca helaian ini hanya dari `origin/feature/v3-bijak-r1`:** `git show origin/feature/v3-bijak-r1:docs/ops/r1-go-live-runsheet.md`. **Kod deploy: `<R1_SHA>`, tag `<R1_TAG>`,** walaupun tip dalam MERGE-LOG lebih baharu dan hanya berbeza pada docs.
+
+> **Q36 (3 Nov): deploy sekarang UAT sahaja: ikut `docs/ops/r1-uat-deploy.md`, bukan helaian ini.** Helaian ini untuk cutover ke prestasiplus.cloud, keputusan kemudian oleh pemilik. Baca hanya dari `origin/feature/v3-bijak-r1`. `<R1_SHA>` dan `<R1_TAG>` ditetapkan semula pada masa itu, dengan CI hijau pada SHA tersebut. Selepas S5, sebelum deploy semula: `git -C /opt/pretasiplus checkout --detach <R1_SHA>`, `export PP_IMAGE_TAG` baharu, dan `VITE_PROTOTYPE_SCOPE=on` semula dalam `prod.env`.
+
 # Runsheet go-live R1 (susunan B), 3 Nov 2026 MYT
 
 ## Open K items (English note for the owner and Team B)
 
-**Status: not started.** REQ-B-128: the owner wants the window started now, 3 Nov morning. T0 = the `.cloud` freeze, set by the owner today; no freeze until gate 0.11 passes. `T_PUPIL` is the owner's value given today; Q33's limits (T0 about 04:00, `T_PUPIL` 09:30) are void. **Sections 5 and 6 are NOT yet rehearsed on the Linux VM;** sections 3.3 to 4.3 and S3 were, on fixtures.
+**Status: not started.** REQ-B-128: the owner wants the window started now, 3 Nov morning. T0 = the `.cloud` freeze, set by the owner today; no freeze until gate 0.11 passes. `T_PUPIL` is the owner's value given today; Q33's limits (T0 about 04:00, `T_PUPIL` 09:30) are void. **Rehearsed on the Linux VM on fixtures:** 3.3 to 4.3, 5.1 to 5.10, 6.2 to 6.4, S3, S5, S6. **Not rehearsed:** real data, a real `.cloud` dump, real DNS, certificate renewal. No rehearsal is recorded for 5.11 or the rest of section 7; 7.5 could not run there.
 
 Decided: K1 restore `pre_etl`; K6 accept `https://www` failing and fix after live; K9 unencrypted disk accepted with mitigations (Q23 item 1, REQ-B-113); `REGISTRATION_OPEN` stays `true`; OCR mock accepted for AC-R1-14.2 (Q23), `AI_PROVIDER=mock` confirmed; `--as-of` 2026-11-03; `VITE_PROTOTYPE_SCOPE=on` for live.
 
@@ -15,13 +19,14 @@ Open:
 - **K5 (owner):** freeze proof. The repo has no command: a read-only SELECT from DevOps, or written acceptance of partial proof.
 - **K9b (owner):** delete dates for what stays after the load: `staging_cloud`, PITR base backups and archived WAL, restore points, local dumps and the orphan banner files left in the `apifiles` volume (REQ-B-113 accepts that only the raw dump file is deleted at once; dates still to set; default purge 2026-11-06 needs re-checking). `archive_cloud` is kept 12 months.
 - **Still pending from Q23:** limits 4.1 to 4.4, Q15/Q16 review, copy row 42, M02 rotation after deploy.
+- **After live:** the certificate has `authenticator = manual`, so `renew` (`renew.sh`, webroot) may not work. Valid to 28 Jan 2027; fix before then.
 - **Re-confirm:** the rollback deadline of switch + 4 hours was set on 22 Oct for the old plan.
 
 ---
 
-**Status: belum bermula.** REQ-B-128: pemilik mahu tingkap bermula sekarang, pagi 3 Nov. T0 = saat beku, ditetapkan pemilik hari ini. Pemilik .cloud dan operator dump hadir bersama. **Bahagian 5 dan 6 BELUM dilatih pada VM Linux** (hanya `deploy.sh` ke `43fef0510` pada Docker tempatan, REPORT-6). Bahagian 3.3 hingga 4.3 dan S3 dilatih pada VM Linux dengan fixture, bukan data sebenar.
+**Status: belum bermula.** REQ-B-128: pemilik mahu tingkap bermula sekarang, pagi 3 Nov. T0 = saat beku, ditetapkan pemilik hari ini. Pemilik .cloud dan operator dump hadir bersama. **Dilatih pada VM Linux dengan fixture:** 3.3 hingga 4.3, 5.1 hingga 5.10, 6.2 hingga 6.4, S3, S5, S6. **Belum dilatih: data sebenar, dump `.cloud` sebenar, DNS sebenar, pembaharuan sijil.** Tiada rekod latihan untuk 5.11 dan baki bahagian 7; 7.5 tidak boleh dijalankan di sana.
 
-**Susunan B (pilihan pengguna):** ETL dari imej migrate `cb7332d0b` pada DB UAT di 0091 → semak semula → deploy R1 `46c14574018880f7146414ef2f1442ed09275b11` → `--seed-reference` → `PP_DOMAIN` dan DNS ke 187.52.120.11.
+**Susunan B (pilihan pengguna):** ETL dari imej migrate `cb7332d0b` pada DB UAT di 0091 → semak semula → deploy R1 `<R1_SHA>` → `--seed-reference` → `PP_DOMAIN` dan DNS ke 187.52.120.11.
 
 **Peraturan.** Hanya manusia menjalankan setiap arahan pada pelayan. **Tiada AI pada PC dump.** Tiada rahsia, tiada baris data, hanya kiraan dalam laporan. Setiap langkah: baca output, kemudian teruskan. Output tidak seperti tertulis = HENTI. Fakta pelayan dalam fail ini dibaca pada 2 Nov malam, baca sahaja; 0.6 dan 0.11 membacanya semula.
 
@@ -33,7 +38,7 @@ Open:
 
 **SHA.**
 - ETL: `cb7332d0b3b532a2ac93784e837f92afb874b73a` (tag imej `cb7332d0b3b5`).
-- R1: **`46c14574018880f7146414ef2f1442ed09275b11`, tag imej `46c145740188`** (MERGE-LOG BASE-232). Bukti CI pada `79fbeea2` (`79fbeea2..46c14574` hanya `docs/`, disemak dengan `git diff --name-only`). Jangan guna SHA lain.
+- R1: **`<R1_SHA>`, tag imej `<R1_TAG>`**. Bukti CI pada `79fbeea2` (`79fbeea2..46c14574` hanya `docs/`, disemak dengan `git diff --name-only`). Jangan guna SHA lain.
 
 **Masa, relatif kepada T0 (saat `.cloud` beku, 1.2). Pemilik menetapkan T0.** Inferens daripada anggaran, belum diukur pada data sebenar.
 
@@ -54,7 +59,7 @@ Open:
 
 ## Fakta rehearsal (Docker tempatan, fixture, tiada data sebenar, 2 Nov, atas `43fef0510`)
 
-Laporan: `r1-migration-rehearsal/REPORT-6-etl-then-r1.md`. **Susunan B lulus.** `46c14574018880f7146414ef2f1442ed09275b11` kemudian berbeza; rehearsal tidak meliputinya.
+Laporan: `r1-migration-rehearsal/REPORT-6-etl-then-r1.md`. **Susunan B lulus.** `<R1_SHA>` kemudian berbeza; rehearsal tidak meliputinya.
 
 | Perkara | Keputusan |
 |---|---|
@@ -160,10 +165,11 @@ git -C /opt/pretasiplus rev-parse --short HEAD
 ```
 grep -c '^PP_MIGRATE_ROSTER_DEFAULT_HASHES=' /etc/pretasiplus/etl.env
 sudo grep -c '^IC_HASH_KEY=' /etc/pretasiplus/api.env
+sudo grep '^REGISTRATION_OPEN=' /etc/pretasiplus/api.env
 ```
  Jangan ubah `IC_HASH_KEY` (runbook: kunci stabil seumur sistem). Semak nilai hash roster dalam petikan tunggal (#391, belum merge): **BELUM DISAHKAN** `grep -c "^PP_MIGRATE_ROSTER_DEFAULT_HASHES='" /etc/pretasiplus/etl.env`
-- Jangkaan: `1`, `1`, `1`
-- Henti jika: mana-mana bukan 1. Tanpa petikan, Compose memotong hash dan F10 gagal.
+- Jangkaan: `1`, `1`, `REGISTRATION_OPEN=true` (K8; bukan rahsia; 7.4 bergantung padanya), `1`
+- Henti jika: mana-mana bukan seperti itu. Tanpa petikan, Compose memotong hash dan F10 gagal.
 - Bila henti: pemegang rahsia betulkan fail; jangan paste nilai dalam chat.
 - Minit: 2
 
@@ -178,6 +184,7 @@ sudo grep -c '^IC_HASH_KEY=' /etc/pretasiplus/api.env
 **0.5 Sandaran keadaan UAT sekarang, `D0` (jalan balik ke keadaan sebelum 3.2)**
 - Siapa: operator di UAT
 - Arahan: `deploy/vps/backup/backup.sh --tag pre-deploy --no-files` kemudian `D0="$(ls -t /var/backups/pretasiplus/pp-backup-*.dump | head -1)"; echo "$D0"; $PC exec -T db pg_restore --list < "$D0" > /dev/null; echo $?`
+- **Tulis laluan penuh `D0` dalam log kerja sekarang** (nama fail sahaja, tiada data). Blok 8.1 memerlukannya; `ls -t` kemudian boleh memberi fail lain.
 - Jangkaan: `dump ok: pp-backup-<UTC>-pre-deploy.dump ...`; akhir `0`
 - Henti jika: selain `0`. Baris terakhir `backup start` lama = disekat kunci DDL.
 - Bila henti: semak `pg_stat_activity`; jangan teruskan tanpa sandaran.
@@ -277,9 +284,9 @@ $R raw-check
   4. Arahan beku **dan** nyahbeku `.cloud` ada secara bertulis daripada pemilik .cloud.
   5. Jawapan bertulis: K2, K3, K5, K7b, **K10**. K7a sudah dijawab sebelum bahagian 0.
   6. Masa: T0 + 4:20 tidak melebihi `T_PUPIL`.
-  7. Team B mengesahkan `46c14574018880f7146414ef2f1442ed09275b11` dengan CI akhir hijau. Tanpanya jangan beku: selepas 3.2 API turun sehingga deploy R1. Bandingkan dengan pokok yang dilatih (**BELUM DISAHKAN**, git am, baca sahaja):
-     `git diff --stat 43fef0510 46c14574018880f7146414ef2f1442ed09275b11 -- deploy/vps compose.yaml apps/api/prisma/migrations docs/ops/sql src/app/prototype-scope.ts` → **kosong**.
-     `git diff --name-only 43fef0510 46c14574018880f7146414ef2f1442ed09275b11 -- apps/api/prisma/seed` → kosong, atau hanya fail profil e2e dari `r1/a4-e2e-chapter-seed` dan `r1/trial-exhausted-midquiz` (`e2e.ts`, `e2e-chapter.ts`, `e2e-trial.ts`). Selain itu: HENTI, Team B nilai semula. Bacaan repo pada SHA ini (`git diff`, dibuat oleh Team B): diff pertama kosong; seed: `e2e.ts`, `e2e-chapter.ts`, `e2e-trial.ts`, semuanya fail profil e2e; `e2e-trial.ts` datang dari unit lain (`r1/trial-exhausted-midquiz`), bukan `r1/a4-e2e-chapter-seed`.
+  7. Team B mengesahkan `<R1_SHA>` dengan CI akhir hijau. Tanpanya jangan beku: selepas 3.2 API turun sehingga deploy R1. Bandingkan dengan pokok yang dilatih (**BELUM DISAHKAN**, git am, baca sahaja):
+     `git diff --stat 43fef0510 <R1_SHA> -- deploy/vps compose.yaml apps/api/prisma/migrations docs/ops/sql src/app/prototype-scope.ts` → **kosong**.
+     `git diff --name-only 43fef0510 <R1_SHA> -- apps/api/prisma/seed` → kosong, atau hanya fail profil e2e dari `r1/a4-e2e-chapter-seed` dan `r1/trial-exhausted-midquiz` (`e2e.ts`, `e2e-chapter.ts`, `e2e-trial.ts`). Selain itu: HENTI, Team B nilai semula. Bacaan repo pada SHA ini (`git diff`, dibuat oleh Team B): diff pertama kosong; seed: `e2e.ts`, `e2e-chapter.ts`, `e2e-trial.ts`, semuanya fail profil e2e; `e2e-trial.ts` datang dari unit lain (`r1/trial-exhausted-midquiz`), bukan `r1/a4-e2e-chapter-seed`.
   8. Pemilik .cloud dan operator dump hadir; akaun `pp_dump_ro` boleh dibuka. **Pemilik boleh dihubungi hingga T0 + 5:30 dan sepanjang tempoh rollback (switch + 4 jam).**
 - Henti jika: mana-mana tidak
 - Bila henti: tiada apa berubah. `sudo systemctl start pp-backup.timer pp-cert-renew.timer`, `$S throwaway-down`. Tangguh.
@@ -359,7 +366,7 @@ mkdir -m 700 <dir>/x
 sudo chown -R 1000:1000 <dir>/x/files
 du -sh <dir>/x <dir>/$name; df -BG /srv/pretasiplus/stage
 ```
- Frasa laluan diberi secara lisan sahaja, tiada dalam chat atau fail. Selepas sha256 sama, di PC dump: `npm run dump:wipe -w @pp/api -- --dir "$work"`, tutup terowong.
+ Jika tiada `files` (K3): langkau `chown`; abaikan `du` pada `files`. Frasa laluan diberi secara lisan sahaja, tiada dalam chat atau fail. Selepas sha256 sama, di PC dump: `npm run dump:wipe -w @pp/api -- --dir "$work"`, tutup terowong.
 - Jangkaan: exit 0; kiraan `tar -t` = fail + direktori; dua sha256 sama; `<dir>/x/raw/manifest.json` wujud; "local copies deleted"; **ruang bebas stage ≥ 5 x saiz dump** (pelan 3.1, kini dump sebenar diketahui)
 - Henti jika: sha256 berbeza dua kali; ruang kurang daripada 5 x
 - Bila henti: sekali pindah semula; kali kedua Blok HENTI
@@ -508,6 +515,8 @@ Bila henti: henti dan lapor kepada pengguna; ke go/no-go 5.0 dengan keputusan. M
 
 ## 5. Deploy R1 (`r1-operator-checklist.md`, `r1-runbook.md`)
 
+**5.1 hingga 5.10 dilatih pada VM Linux dengan fixture.**
+
 **5.0 GO/NO-GO pemilik (kira-kira T0 + 2:00)**
 - Siapa: pemilik, atas bacaan operator di UAT
 - Syarat: 3.8 `verify pass` dan `Z0` = 0; 3.11 `verify pass`; 4.0 dan 4.1 sudah dibaca; CI hijau pada `79fbeea2`; 5.7 boleh bermula sebelum T0 + 3:15; T0 + 4:20 tidak melebihi `T_PUPIL`.
@@ -525,11 +534,11 @@ PSQL_RO='PGPASSWORD="$POSTGRES_PASSWORD" PGOPTIONS="-c default_transaction_read_
 psql_ro() { $PC exec -T db sh -c "$PSQL_RO" sh "$@"; }
 PSQL=psql_ro
 ```
-Jangkaan `$PC config --images`: `:46c145740188`.
+Jangkaan `$PC config --images`: `:<R1_TAG>`.
 
 **5.1 Checkout R1**
 - Siapa: operator di UAT
-- Arahan: **BELUM DISAHKAN** (arahan git am; dokumen hanya menyatakan "release checkout"): `git -C /opt/pretasiplus fetch origin && git -C /opt/pretasiplus checkout --detach 46c14574018880f7146414ef2f1442ed09275b11`. Semak: `git rev-parse HEAD` = `46c14574018880f7146414ef2f1442ed09275b11`; `git merge-base --is-ancestor 2fabf472 HEAD && echo has-BASE-213` (checklist :40).
+- Arahan: **BELUM DISAHKAN** (arahan git am; dokumen hanya menyatakan "release checkout"): `git -C /opt/pretasiplus fetch origin && git -C /opt/pretasiplus checkout --detach <R1_SHA>`. Semak: `git rev-parse HEAD` = `<R1_SHA>`; `git merge-base --is-ancestor 2fabf472 HEAD && echo has-BASE-213` (checklist :40).
 - Jangkaan: `has-BASE-213`; `git status --porcelain --untracked-files=no` kosong (`deploy.sh` menolak jika kotor)
 - Henti jika: fail tempatan diubah. Bila henti: laporkan, jangan `--allow-dirty`.
 - Minit: 2
@@ -543,12 +552,12 @@ Jangkaan `$PC config --images`: `:46c145740188`.
 - **Nota:** job CI e2e @api membina dengan `on` (`.github/workflows/frontend.yml`:216), jadi nilai ini sama dengan CI; UAT `off` yang berbeza. Mesej penolakan menyebut "prototaip" dan akan dilihat pengguna sebenar.
 - Minit: 1
 
-**5.2 Bina imej R1 (checklist A7)**: `export PP_IMAGE_TAG=$(git rev-parse --short=12 HEAD); $PC build api migrate frontend`. Jangkaan: tag `46c145740188`. Henti jika gagal bukan rangkaian. Minit: 11.
+**5.2 Bina imej R1 (checklist A7)**: `export PP_IMAGE_TAG=$(git rev-parse --short=12 HEAD); $PC build api migrate frontend`. Jangkaan: tag `<R1_TAG>`. Henti jika gagal bukan rangkaian. Minit: 11.
 
 **5.3 REQ-B-080 (A2)**: `sudo grep -c '^THROTTLE_GLOBAL_PER_MINUTE=3000' /etc/pretasiplus/api.env` → `1` (**BELUM DISAHKAN** bentuk grep; nilai disahkan oleh REQ-B-103). Minit: 1.
 
 **5.4 Sandaran B0 (checklist B0, runbook 2.2)**
-- Arahan: `deploy/vps/backup/backup.sh --tag pre-deploy --no-files`, kemudian `D=<fail absolut>; $PC exec -T db pg_restore --list < "$D" > /dev/null; echo $?`
+- Arahan: `deploy/vps/backup/backup.sh --tag pre-deploy --no-files`, kemudian `D="$(ls -t /var/backups/pretasiplus/pp-backup-*-pre-deploy.dump | head -1)"; echo "$D"; $PC exec -T db pg_restore --list < "$D" > /dev/null; echo $?`. **Tulis laluan penuh `D` dalam log kerja** (blok 8.1)
 - Jangkaan: `0`. Rekod nama dan sha256. **Ini jalan balik sebelum 0100, memegang `archive_cloud` belum diminimumkan, tanpa `staging_cloud`.**
 - Henti jika: selain `0`. Bila henti: jangan deploy. Minit: 5 hingga 15.
 
@@ -605,19 +614,21 @@ $PSQL -c "SELECT migration_name, started_at, finished_at, rolled_back_at, logs F
 
 ## 6. `PP_DOMAIN`, nginx, sijil, DNS, `www`, kuki
 
+**6.2 hingga 6.4 dilatih pada VM Linux dengan fixture.** DNS sebenar belum.
+
 **Nota rekod.** Tukar `PP_DOMAIN` pada hos hidup **tidak direkod** dalam dokumen. Langkah ini dibina daripada kod `deploy.sh`.
 
-**6.1 Sijil.** Telah disemak di 0.11. **BELUM DISAHKAN** (fail certbot, bukan repo): `sudo grep -E 'authenticator|webroot_path' /srv/pretasiplus/letsencrypt/renewal/prestasiplus.cloud.conf`. Tujuan: pembaharuan guna webroot (`renew.sh`). Tidak menghalang go-live. Minit: 1.
+**6.1 Sijil.** Telah disemak di 0.11. Fakta: fail pembaharuan ada `authenticator = manual`, manakala `renew.sh` guna `--webroot`, jadi pembaharuan **mungkin tidak berfungsi**. Tidak menghalang go-live; sijil sah hingga 28 Jan 2027. **Catat untuk selepas live.** Minit: 0.
 
 **6.2 prod.env.** Siapa: operator di UAT. `sudoedit /etc/pretasiplus/prod.env`, tukar kepada `PP_DOMAIN=prestasiplus.cloud`. Fail di luar checkout, jadi pokok tidak jadi kotor. Simpan nilai lama. Minit: 1.
 
 **6.3 Gunakan dengan `deploy.sh` (cadangan, bukan cipta semula manual)**
 - Sebab: preflight menolak sijil tiada, self-signed atau tamat (`deploy.sh`:176-187); langkah 6 dan 7 mencipta semula api dan edge; langkah 8 memeriksa `/api/health`, `/api/ready`, `/`, `/api/metrics` 404 dan redirect melalui `--resolve` sebelum DNS; dengan tag sama `previous.tag` tidak disentuh (`deploy.sh`:354), jadi `6d81162c87f0` kekal sasaran rollback. Kos: satu lagi sandaran, bina cached, migrate tiada kerja.
 - Siapa: operator di UAT
-- Arahan: `deploy/vps/deploy.sh --dry-run` kemudian `deploy/vps/deploy.sh`, taip `prestasiplus.cloud`
-- Jangkaan: amaran `the new tag equals the current one`; `deploy complete: 46c145740188`; `uat.` HTTPS kini ditolak dan port 80 301 ke domain baharu
+- Arahan: `deploy/vps/deploy.sh --dry-run` kemudian `deploy/vps/deploy.sh`. Gesaan `Type the domain to confirm:`: taip domain **BAHARU**, `prestasiplus.cloud`
+- Jangkaan: amaran `the new tag equals the current one`; `deploy complete: <R1_TAG>. Roll back the images with: deploy/vps/rollback.sh <R1_TAG>`: **abaikan petunjuk rollback itu; sasaran kekal `6d81162c87f0`.** `previous.tag` kekal betul; `history.log` menunjukkan `previous=<R1_TAG>`. `uat.` HTTPS kini ditolak dan port 80 301 ke domain baharu
 - Henti jika: mana-mana langkah gagal
-- Bila henti: S6. Sandaran manual jika `deploy.sh` tidak boleh: `export PP_IMAGE_TAG=$(cat /var/lib/pretasiplus-deploy/current.tag)`; `$PC config --images | grep -E 'pretasiplus-api:'` mesti `:46c145740188`, jika tidak HENTI; `$PC up -d --no-deps --force-recreate --wait api`; `$PC up -d --wait --no-deps --force-recreate edge`
+- Bila henti: S6. Sandaran manual jika `deploy.sh` tidak boleh: `export PP_IMAGE_TAG=$(cat /var/lib/pretasiplus-deploy/current.tag)`; `$PC config --images | grep -E 'pretasiplus-api:'` mesti `:<R1_TAG>`, jika tidak HENTI; `$PC up -d --no-deps --force-recreate --wait api`; `$PC up -d --wait --no-deps --force-recreate edge`
 - Minit: 5 hingga 10
 
 **6.4 Semak tempatan sebelum DNS** (bentuk `_pp_curl_edge`, `lib.sh`; `PP_HTTP_BIND=0.0.0.0` maka 127.0.0.1):
@@ -659,9 +670,9 @@ Jangkaan: `187.52.120.11`; `NO-CDN-HEADERS`; `200`, `200`. Henti jika mana-mana 
 
 **7.3** `$PSQL < /opt/pretasiplus/docs/ops/sql/smoke-readonly.sql` (fail R1 pada skema R1, 0 FAIL pada rehearsal). Fail `cb7332d0b` atas skema R1 **tidak pernah dijalankan: jangan guna.** **BELUM DISAHKAN pada data sebenar:** rehearsal 0 reject. Fail R1 tiada X4 dan X5, jadi reject yang dijangka akan muncul sebagai `FAIL` X3 (#398): bandingkan entiti dengan X4 di 3.8. F6 atau F9 boleh `FAIL` jika akaun berbendera diubah di sasaran, termasuk rotasi M02 (rehearsal); terangkan dan rekod. `FAIL` lain: HENTI.
 
-**7.4** `curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d '{}' https://$PP_DOMAIN/api/auth/register` (`production-vps.md`:685; pelan C3). Jangkaan `422` (K8: kekal buka; pelan C3: 422, bukan 403). Selain itu: HENTI, laporkan. Tulisan melalui pendaftaran wujud hanya di v2 (S7).
+**7.4** `curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d '{}' https://$PP_DOMAIN/api/auth/register` (`production-vps.md`:685; pelan C3). Jangkaan `422` (K8: kekal buka; `403` hanya bila `false`, dilihat pada latihan). Selain itu: HENTI, laporkan. Tulisan melalui pendaftaran wujud hanya di v2 (S7).
 
-**7.5** Sijil selepas DNS: `docker compose --profile tls run --rm certbot renew --dry-run` (`renew.sh`:15; gunakan `-f` dan `--env-file` `$PC`). Jangkaan: lulus untuk `prestasiplus.cloud` dan `www`. Gagal = tidak menghalang go-live, sijil hingga 28 Jan 2027, tetapi direkod.
+**7.5** Sijil selepas DNS: `docker compose --profile tls run --rm certbot renew --dry-run` (`renew.sh`:15; gunakan `-f` dan `--env-file` `$PC`). **Tidak dapat dijalankan pada latihan.** `authenticator = manual` (6.1): boleh gagal. Gagal = tidak menghalang go-live, sijil hingga 28 Jan 2027, tetapi direkod untuk selepas live.
 
 **7.5b K9: semakan akhir salinan**
 - Arahan: `$R raw-check` ; carian `.gpg` seperti 3.13 (**BELUM DISAHKAN**, Linux am)
@@ -701,33 +712,40 @@ $R raw-check
 | **S0** bahagian 0 | Tiada apa berubah | Stop. `sudo systemctl start pp-backup.timer pp-cert-renew.timer`. `$S throwaway-down` |
 | **S1** beku | `.cloud` beku | Nyahbeku (arahan bertulis 0.11; dari pemilik .cloud, **BELUM DISAHKAN**). UAT tidak berubah |
 | **S2** dump | Salinan mentah | Blok HENTI; nyahbeku. UAT tidak berubah |
-| **S3** selepas 3.2, sebelum 5.7 | UAT dipulihkan/dimuat, **api dan frontend berhenti** | Blok HENTI. Nyahbeku `.cloud` dahulu. (a) `D0`: **blok 8.1** (`D=$D0`); atau (b) `$R restore pre_etl` kemudian `deploy/vps/db-roles.sh check`. **DB dan peranan dahulu, kemudian hidupkan:** `git -C /opt/pretasiplus checkout --detach 6d81162c87f0a17761df99ba48e2d4f541bcebf7` (jika 5.1 sudah jalan); `cd /opt/pretasiplus; export PP_IMAGE_TAG="$(cat /var/lib/pretasiplus-deploy/current.tag)"` (`6d81162c87f0` selagi `deploy.sh` belum siap; semak); `$PC up -d --wait --no-deps api frontend`; `$PC up -d --wait --no-deps --force-recreate edge`. **Jangan guna `rollback.sh`:** ia mati `already the release that is running` (`rollback.sh`: tag = current, tiada `previous.tag`). **Edge mesti dimulakan dari `/opt`:** bind mount relatif (`compose.prod.yaml`:202-204). **Skop:** imej lama sudah dibina, `up` tidak membina, jadi nilainya kekal `off` walau apa isi `prod.env`. Jika 5.1b sudah jalan, pulihkan `VITE_PROTOTYPE_SCOPE=off` dalam `prod.env` juga: hanya untuk mengelak bina semula kemudian mengambil `on`. Cuba semula memerlukan beku baru dan eksport baru (pelan 6.3 item 4) |
+| **S3** selepas 3.2, sebelum 5.7 | UAT dipulihkan/dimuat, **api dan frontend berhenti** | Blok HENTI. Nyahbeku `.cloud` dahulu. (a) `D0`: **blok 8.1** (D = laluan bertulis 0.5); atau (b) `$R restore pre_etl` kemudian `deploy/vps/db-roles.sh check`. **DB dan peranan dahulu, kemudian hidupkan:** `git -C /opt/pretasiplus checkout --detach 6d81162c87f0a17761df99ba48e2d4f541bcebf7` (jika 5.1 sudah jalan); `cd /opt/pretasiplus; export PP_IMAGE_TAG="$(cat /var/lib/pretasiplus-deploy/current.tag)"` (`6d81162c87f0` selagi `deploy.sh` belum siap; semak); `$PC up -d --wait --no-deps api frontend`; `$PC up -d --wait --no-deps --force-recreate edge`. **Jangan guna `rollback.sh`:** ia mati `already the release that is running` (`rollback.sh`: tag = current, tiada `previous.tag`). **Edge mesti dimulakan dari `/opt`:** bind mount relatif (`compose.prod.yaml`:202-204). **Skop:** imej lama sudah dibina, `up` tidak membina, jadi nilainya kekal `off` walau apa isi `prod.env`. Jika 5.1b sudah jalan, pulihkan `VITE_PROTOTYPE_SCOPE=off` dalam `prod.env` juga: hanya untuk mengelak bina semula kemudian mengambil `on`. Cuba semula memerlukan beku baru dan eksport baru (pelan 6.3 item 4) |
 | **S4** `deploy.sh` gagal sebelum langkah 5 | **API sudah turun sejak 3.2 hingga 5.7 selesai**, jadi tiada keluaran lama hidup; `deploy.sh` boleh mencetak "old release still running", abaikan untuk kes ini | Baca mesej, betulkan, ulang `deploy.sh`, dalam had T0 + 5:30. Abort: S3. `.cloud` tetap beku sehingga keputusan. Keluarkan `options=...` dari `migrate.env` (5.10) |
-| **S5** semasa/selepas migrate, sebelum DNS | Skema ke hadapan | Checklist 3 dan 4 (W1). **Selepas 0100 commit hanya dump `D` (5.4):** **blok 8.1**, tiada `migrate resolve` (P3011), kemudian **jangan hidupkan seperti S3: `current.tag` kini `46c145740188`, ia menjalankan R1 atas skema lama.** Guna `deploy/vps/rollback.sh --dry-run --checkout 6d81162c87f0` dan kemudian tanpa `--dry-run`, taip domain (`rollback.sh`:45-63; `--checkout` perlukan baris `history.log` untuk tag itu, ada di pelayan). Sandaran: `git -C /opt/pretasiplus checkout --detach 6d81162c87f0a17761df99ba48e2d4f541bcebf7; cd /opt/pretasiplus; export PP_IMAGE_TAG=6d81162c87f0`, kemudian `$PC up` seperti S3, **tidak pernah `current.tag`**. Skop: imej lama kekal `off`, pulihkan `prod.env`. Dump `D` memegang data dimuatkan, tanpa `staging_cloud`, jadi deploy boleh diulang tanpa dump baru. `.cloud` nyahbeku hanya bila abort |
-| **S6** selepas `PP_DOMAIN`, sebelum DNS atau DNS baru | `.cloud` beku, pengguna tidak terjejas | DNS: A kembali ke `187.77.149.107` (TTL 300 s). `sudoedit` `PP_DOMAIN=uat.prestasiplus.cloud`, `deploy/vps/deploy.sh` taip domain itu, atau sandaran manual 6.3 dengan semakan `$PC config --images | grep -E 'pretasiplus-api:'` = `:46c145740188`. Nyahbeku bila keputusan dibuat |
+| **S5** semasa/selepas migrate, sebelum DNS | Skema ke hadapan | Checklist 3 dan 4 (W1). **Lulus pada VM.** **Selepas 0100 commit hanya dump `D` (5.4):** **blok 8.1** (D = laluan bertulis 5.4), tiada `migrate resolve` (P3011), kemudian **jangan hidupkan seperti S3: `current.tag` kini `<R1_TAG>`, ia menjalankan R1 atas skema lama.** Guna `deploy/vps/rollback.sh --dry-run --checkout 6d81162c87f0` dan kemudian tanpa `--dry-run`, taip domain (`rollback.sh`:45-63; `--checkout` perlukan baris `history.log` untuk tag itu, ada di pelayan). Sandaran: `git -C /opt/pretasiplus checkout --detach 6d81162c87f0a17761df99ba48e2d4f541bcebf7; cd /opt/pretasiplus; export PP_IMAGE_TAG=6d81162c87f0`, kemudian `$PC up` seperti S3, **tidak pernah `current.tag`**. Skop: imej lama kekal `off`, pulihkan `prod.env`. **Selepas S5, `/opt` memegang teks bab 8 lama: jangan rujuk; guna blok 8.1 helaian ini.** Dump `D` memegang data dimuatkan, tanpa `staging_cloud`, jadi deploy boleh diulang tanpa dump baru. `.cloud` nyahbeku hanya bila abort |
+| **S6** selepas `PP_DOMAIN`, sebelum DNS atau DNS baru | `.cloud` beku, pengguna tidak terjejas | **Lulus pada VM (bahagian `deploy.sh`).** DNS: A kembali ke `187.77.149.107` (TTL 300 s). `sudoedit` `PP_DOMAIN=uat.prestasiplus.cloud`, `deploy/vps/deploy.sh` taip domain itu, atau sandaran manual 6.3 dengan semakan `$PC config --images | grep -E 'pretasiplus-api:'` = `:<R1_TAG>`. Nyahbeku bila keputusan dibuat |
 | **S7** selepas DNS, pengguna menulis, dalam 4 jam | Tulisan v2 sebenar | **Keputusan pengguna.** Hentikan tulisan: `$PC stop api`. Semak kiraan tidak berubah 1 min. `$R take post_switch` (shell bahagian 5). DNS kembali. Nyahbeku `.cloud`. Simpan data untuk analisis (pelan 6.3). Tulisan v2 hilang; tiada migrasi songsang. Kata laluan baharu tidak sah di `.cloud` |
 
 **S3 (a) dan (b) lulus pada VM Linux.**
 
 ### 8.1 Pulih DB dari dump (S3 a, S5)
 
-**Jangan baca `production-vps.md` bab 8 dari checkout di hos:** versi itu guna `$PC cp`, yang gagal pada `db` baca-sahaja, dan baris seterusnya meninggalkan DB kosong. Arahan di bawah dari `git show 46c14574:docs/ops/production-vps.md` bab 8.
+**Jangan baca `production-vps.md` bab 8 dari checkout di hos:** versi lama guna `$PC cp`, yang gagal pada `db` baca-sahaja, dan baris seterusnya meninggalkan DB kosong. Arahan di bawah dari `git show 46c14574:docs/ops/production-vps.md` bab 8; `</dev/null` pada `drop` ditambah supaya tampalan tidak memakan baris seterusnya.
+
+**Pagar 1.** Isi `D` dengan laluan bertulis: 0.5 untuk S3, 5.4 untuk S5. Kosong = pagar gagal dan tiada `DUMP-OK`.
 ```
 cd /opt/pretasiplus
 PC="docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env"
 export PP_BACKUP_KEEP_AUX=20
-D=/var/backups/pretasiplus/<dump>
+D=''
 $PC stop api frontend
 deploy/vps/backup/backup.sh --tag drill --no-offsite --no-files
-(cd "$(dirname "$D")" && sha256sum -c "$(basename "$D").sha256")
-$PC exec -T db pg_restore --list < "$D" > /dev/null; echo $?
-$PC exec -T db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" psql -h 127.0.0.1 -U "$POSTGRES_USER" -d postgres -c "drop database \"$POSTGRES_DB\" with (force)" -c "create database \"$POSTGRES_DB\""'
+[ -s "$D" ] && (cd "$(dirname "$D")" && sha256sum -c "$(basename "$D").sha256") && $PC exec -T db pg_restore --list < "$D" > /dev/null && echo DUMP-OK
+```
+- Jangkaan: `...: OK`; `DUMP-OK`.
+- Henti jika: tiada `DUMP-OK`: **jangan drop**. Pilih dump lain yang tertulis, atau HENTI dan tanya pemilik. API kekal turun.
+
+**Pagar 2. Satu baris pada satu masa, hanya selepas `DUMP-OK`.**
+```
+$PC exec -T db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" psql -h 127.0.0.1 -U "$POSTGRES_USER" -d postgres -c "drop database \"$POSTGRES_DB\" with (force)" -c "create database \"$POSTGRES_DB\""' </dev/null
 $PC exec -T db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" pg_restore -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --exit-on-error' < "$D"; echo $?
 deploy/vps/db-roles.sh apply
 deploy/vps/db-roles.sh check
 ```
-- Jangkaan: `<dump>: OK`; `0`; `0`; `DB ROLES CHECK PASSED`. Kemudian `$PSQL -c "SELECT (SELECT count(*) FROM users) AS users, (SELECT count(*) FROM _prisma_migrations WHERE finished_at IS NOT NULL) AS migrations;"`: kedua-dua > 0. `check` membuktikan peranan, bukan restore: bukti ialah status keluar dan kiraan.
-- Henti jika: `sha256sum` atau `--list` gagal: **jangan drop**, pilih dump lain. `pg_restore` bukan `0`: API kekal turun, ulang dari `drop`.
+- Jangkaan: `DROP DATABASE`, `CREATE DATABASE`; `0`; `DB ROLES CHECK PASSED`. Kemudian (shell `$PSQL` bahagian 5) `$PSQL -c "SELECT (SELECT count(*) FROM users) AS users, (SELECT count(*) FROM _prisma_migrations WHERE finished_at IS NOT NULL) AS migrations;"`: kedua-dua > 0. `check` membuktikan peranan, bukan restore: bukti ialah status keluar dan kiraan.
+- Henti jika: `pg_restore` bukan `0`: API kekal turun, ulang dari `drop` dengan dump yang disahkan.
 - Kemudian: S3 baris `up` dari `/opt`; S5 `rollback.sh --checkout 6d81162c87f0`. Jangan hidupkan API sebelum `check` lulus.
 
 **Titik tiada kembali.**

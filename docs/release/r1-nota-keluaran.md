@@ -89,6 +89,8 @@ Had yang diketahui, akan dibetulkan selepas live (REQ-B-118):
 
 ---
 
+**Skrin pemantauan guru (privasi, #349, #382).** Guru kini hanya nampak murid dalam kelas sendiri pada semua kiraan, jadual dan eksport, supaya sama dengan senarai; angka guru akan turun berbanding UAT sebelum ini, dan itu dijangka. Admin sekolah kini hanya nampak kelas guru di sekolah sendiri; kelas yang tiada sekolah tidak dipaparkan kepada admin sekolah.
+
 ## 3. Apa yang admin perlu buat secara berbeza
 
 1. **Bab tidak lagi diperlukan untuk Semakan atau Terbitkan (Q17).** Anda boleh menghantar soalan tanpa Bab ke Semakan dan menerbitkannya; kelengkapan DSKP diperiksa semasa Terbitkan (AC-03.2): tanpa nod kurikulum, Terbitkan ditolak dengan "Sila pilih unit DSKP." dan "Sila pilih sekurang-kurangnya satu SP DSKP.". Sistem mengisi Bab sendiri hanya apabila tepat satu Bab sepadan dengan kod unit DSKP; jika tidak, soalan itu diterbitkan tetapi tidak dihidangkan dalam Latihan Bab dan tidak dikira dalam Soalan mengikut Bab, jadi memilih Bab dalam borang soalan (Studio, `Sunting`) tetap berguna. Soalan yang diimport tanpa Bab (CSV atau Muat Naik PDF) tidak dipaparkan dalam Latihan Bab sehingga Bab dipilih (atau Bab dapat diisi daripada kod DSKP unit). Keputusan pengguna Q17 (REQ-B-075); dalam base sejak BASE-193 (`r1/reqb071-minors` @ c38ee66c).
