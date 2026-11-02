@@ -137,8 +137,8 @@ async function grant(): Promise<void> {
   grantTop.value = []
   try {
     const result = await grantPkskAccess({
-      userId: Number(userId.value),
-      packageId: Number(packageId.value),
+      userId: String(userId.value).trim(),
+      packageId: packageId.value,
       expiresAt: expiresAt.value !== '' ? expiresAt.value : null,
     })
     // The page reloads: the form is hidden again and cleared.

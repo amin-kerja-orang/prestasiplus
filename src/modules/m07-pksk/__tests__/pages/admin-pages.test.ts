@@ -204,7 +204,7 @@ describe('PkskQuestionListPage (S5)', () => {
     await attr(w, 'bulk-approve').trigger('click')
     await flushPromises()
     expect(confirmSpy).not.toHaveBeenCalled()
-    expect(admin.bulkPkskQuestions).toHaveBeenCalledWith('approve', [1, 3])
+    expect(admin.bulkPkskQuestions).toHaveBeenCalledWith('approve', ['1', '3'])
     expect(admin.fetchPkskQuestionStats).toHaveBeenCalledTimes(2)
     expect(useFlashStore().current).toEqual({
       type: 'success',
@@ -324,7 +324,7 @@ describe('PkskQuestionFormPage create (S6)', () => {
     await flushPromises()
     expect(admin.createPkskQuestion).toHaveBeenCalledWith({
       bahagian: 'C',
-      pkskDomainId: 15,
+      pkskDomainId: '15',
       pkskTargetLevel: 'T1',
       questionText: 'Esei',
       difficultyLevel: 3,
@@ -346,7 +346,7 @@ describe('PkskQuestionFormPage create (S6)', () => {
     await flushPromises()
     expect(admin.createPkskQuestion.mock.calls[0]![0]).toMatchObject({
       bahagian: 'B',
-      pkskDomainId: 2,
+      pkskDomainId: '2',
       explanation: 'Mudah',
       options: [
         { text: '1', isCorrect: false },
@@ -500,7 +500,7 @@ describe('PkskQuestionFormPage edit (S7)', () => {
     await flushPromises()
     expect(admin.updatePkskQuestion).toHaveBeenCalledWith(
       55,
-      expect.objectContaining({ pkskDomainId: 1, status: 'pending', questionText: 'Teks asal' }),
+      expect.objectContaining({ pkskDomainId: '1', status: 'pending', questionText: 'Teks asal' }),
     )
     expect(useFlashStore().pending?.message).toBe('Soalan PKSK berjaya dikemaskini.')
   })
@@ -615,8 +615,8 @@ describe('PkskAccessPage (S8)', () => {
     await attr(w, 'grant-form').trigger('submit')
     await flushPromises()
     expect(admin.grantPkskAccess).toHaveBeenCalledWith({
-      userId: 3,
-      packageId: 2,
+      userId: '3',
+      packageId: '2',
       expiresAt: '2026-12-31',
     })
     expect(attr(w, 'grant-form').isVisible()).toBe(false)
@@ -630,7 +630,7 @@ describe('PkskAccessPage (S8)', () => {
     await attr(w, 'grant-user').setValue('3')
     await attr(w, 'grant-form').trigger('submit')
     await flushPromises()
-    expect(admin.grantPkskAccess).toHaveBeenCalledWith({ userId: 3, packageId: 1, expiresAt: null })
+    expect(admin.grantPkskAccess).toHaveBeenCalledWith({ userId: '3', packageId: '1', expiresAt: null })
   })
 
   it('shows "Pengguna tidak dijumpai." under "ID Pengguna" for an unknown user', async () => {

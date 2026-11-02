@@ -195,7 +195,7 @@ async function submit(): Promise<void> {
     const result =
       editing.value && numericId.value !== null
         ? await updatePkskQuestion(numericId.value, {
-            pkskDomainId: Number(form.domainId),
+            pkskDomainId: form.domainId,
             pkskTargetLevel: form.level,
             status: form.status,
             questionText: form.text,
@@ -205,7 +205,7 @@ async function submit(): Promise<void> {
           })
         : await createPkskQuestion({
             bahagian: form.bahagian as Bahagian,
-            pkskDomainId: Number(form.domainId),
+            pkskDomainId: form.domainId,
             pkskTargetLevel: form.level,
             questionText: form.text,
             difficultyLevel: Number(form.difficulty),

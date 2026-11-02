@@ -170,7 +170,7 @@ function goToPage(page: number): void {
 // --- selection (FR-M07-28) --------------------------------------------------------------------
 
 const selection = ref<TableRow[]>([])
-const selectedIds = computed(() => selection.value.map((r) => r.id))
+const selectedIds = computed(() => selection.value.map((r) => String(r.id)))
 
 function clearSelection(): void {
   selection.value = []
