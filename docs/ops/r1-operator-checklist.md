@@ -1,5 +1,35 @@
 # R1 operator checklist (one page)
 
+## Go-live timeline (target 22:00 MYT, 2026-11-02)
+
+**Candidate: BASE-214 `61b788c5`** (`feature/v3-bijak-r1` `61b788c55`) = BASE-205 product code + CI fixes BASE-206/207 + the frontend CI fix BASE-209 (including + 2 icons in `src/theme/ds-icons.ts`: `footprints`, `file-x`) + the REQ-B-090 Kontrak fix (BASE-213) + e2e @api (BASE-214, an e2e-only seed fixture behind `E2E_DEMO_SECONDARY` and stale @api specs; not product code) + docs. **CI on BASE-214 is PENDING** (sign-off 6.7: `[CI BASE-214: ____ (run ____)]`, `[E2E@API: ____ (run ____)]`). Owner confirmation Q21 ("Proceed deploy") is conditional on CI green on BASE-214, a human operator running this page, and REQ-B-080 plus a full backup and a restore test before migrate. A person runs every command; teams A and B touch no server. No secrets, hosts or addresses are written here. Section numbers point at [r1-runbook.md](r1-runbook.md). Durations are estimates unless marked "rehearsal".
+
+### A. Can start now (before CI is green; nothing here deploys or migrates)
+
+| # | Step | Where | Duration |
+|---|---|---|---|
+| A1 | Full backup (`deploy/vps/backup/backup.sh --tag pre-deploy --no-files`) and a restore test into a scratch database, never the live one | section 1 below, first item; runbook section 0 item 1 | estimate: 20 to 40 min, depends on the database size |
+| A2 | REQ-B-080: confirm on the server `THROTTLE_GLOBAL_PER_MINUTE=3000` and `TRUST_PROXY_HOPS=1` (the VPS overlay forces 1) | section 1 below, the REQ-B-080 item; runbook section 6 | estimate: 5 min |
+| A3 | `pg_trgm` is available and the migrate role has the CREATE privilege (`pg_available_extensions`, `has_database_privilege`) | section 1 below; runbook 2.4 item 3 | estimate: 5 min |
+| A4 | Wallet tiers: `select count(*) from tiers;` must be 4, else `deploy.sh --seed-reference` | runbook section 0 item 6 | estimate: 5 min |
+| A5 | Stimulus group layout check (runbook 3.7 SELECT, expect 0 rows) and the other pre-live SELECTs of section 1 below (no demo accounts, six-digit accounts with an IC hash, null `blueprint_id` papers 3.7d) | runbook 3.7, 3.7d | estimate: 10 min |
+| A6 | Announce and fix the maintenance window; no blocking sessions | section 1 below; runbook 2.4 | estimate: 10 min (the window itself is B2) |
+| A7 | Prepare the build of BASE-214 (`export PP_IMAGE_TAG=$(git rev-parse --short=12 HEAD); $PC build api migrate frontend`); build only, no deploy | section 1 below | rehearsal: about 11 min |
+
+### B. Only after CI is green on BASE-214 (e2e@api and the frontend and API verify jobs)
+
+| # | Step | Where | Duration |
+|---|---|---|---|
+| B1 | `migrate deploy` through `deploy/vps/deploy.sh` with `lock_timeout` 5 s via `options=-c%20lock_timeout%3D5s` in the migrate `DATABASE_URL` (removed afterwards) | section 2 below; runbook 2.1, 2.4 | rehearsal: the write-blocking window is about 21 s at 408k rows (the whole `migrate deploy` 0104 to 0110: 21.3 s cold); production size not measured |
+| B2 | Failed-migration detection SELECT (0 rows expected; any row means stop and go to section 4 below) | section 3 below; runbook 2.4, 8 | estimate: 2 min |
+| B3 | `VACUUM ANALYZE question_versions` when 0100 is in this deploy, and `ANALYZE question_versions` after 0106/0107, right after `deploy.sh` ends | section 2 below; runbook 2.2, 2.4 item 4 | estimate: 1 to 5 min |
+| B4 | Deploy the built images (done by `deploy.sh`); `GET /api/ready` 200 and `GET /api/health` 200 | section 6 below | estimate: 5 min |
+| B5 | DSKP load (dry run, real run, verify) and the blueprints (an Admin Pusat creates each Kontrak and presses Sahkan, runbook 5.2) if the runbook lists them post-migrate | runbook sections 4 and 5; section 6 below | estimate: 30 to 60 min for the load and blueprints; depends on the data |
+| B6 | Smoke: login count, one Jana Kertas, one Latih Tubi SPM draw | runbook section 1 step 7; 3.6, 5.5 | estimate: 10 min |
+| B7 | The owner rotates the M02 default passwords on live, then confirms; only then sign-off 6.8 is ticked | sign-off 6.8 | owner action |
+
+Still owed before the sign-off is complete: CI green on BASE-214, the M02 rotation (6.8), and the written acceptances of OCR AC-R1-14.2, limits 4.1 to 4.4, Q15/Q16 and copy row 42 (marked "deploy diteruskan atas arahan pemilik; penerimaan bertulis masih tertunggak"; not accepted).
+
 Short form of [r1-runbook.md](r1-runbook.md) (section numbers below point there). A human with deploy rights runs this, after the lead's explicit confirmation. Placeholders only: `<DATABASE_URL>`, `<migrate_role>` (the role `prisma migrate deploy` connects as), `<pid>`. No secrets on this page.
 
 **Rehearsed locally (runbook 2.4, 2.5):** `deploy.sh`, the compose path, the roles, the API as `pp_app`, every W1 case. **Not exercised:** a real VPS, Let's Encrypt, `ppdeploy` permissions, `PP_PG_ARCHIVE_MODE=on`, an old API running during the migrate, real data, Kontrak and Sahkan in the app. Shell setup for `$PC` and `$PSQL`: [r1-release-notes.md](r1-release-notes.md), top. The migration rehearsal (REQ-B-083: local Postgres 16, 409k `question_versions`, base `87466acc`) covered the normal apply (20.3 s total, 0106 16.6 s), revert, re-apply, `/api/ready` and the reference seed.
