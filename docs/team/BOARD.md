@@ -572,6 +572,8 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 - **Disk:** check `docker system df` and prune orphaned anonymous test volumes when there are 0 containers. A3 reclaimed 3.4 GB this way.
 
 ### Process lessons (2026-11-02, live day; process, not blame)
+
+- 2026-11-03 (A1): **A merge gate must include the repo-wide guard tests** (`eslint/**/__tests__` ds-* ratchets, `scripts/**/__tests__`, `packages/**/__tests__`) besides the touched modules; they are in the CI `unit` project. BASE-226 went red on ds-debt-ratchet because the gate ran m05/m07/m16 only.
 - **CI dispatch must pin `api_ref`.** frontend.yml's default API ref is the old `feature/v2-backend`. A dispatch without `api_ref` tests the R1 frontend against the V2 API (run 41439407511: invalid as R1 evidence). Every dispatch states `api_ref=<candidate SHA>`, and step 4 ("Checkout the API (<sha>)") is checked before the run counts.
 - **A head is READY only with local proof at ALL 3 widths (375/768/1280) on the exact CI config** (http-mode build, seed poc → e2e with E2E_SEED=1 E2E_DEMO_SECONDARY=1, THROTTLE 3000, retries 0). Today's reds were width-specific (intake-review-http failed only at 375), and desktop was never covered by a full run.
 - **Don't trust a local green on a different config:** B4's local e2e passed while the CI e2e failed (seed, timeouts, picker paging). The CI config is the reference.
