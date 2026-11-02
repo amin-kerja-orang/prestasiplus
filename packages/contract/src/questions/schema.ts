@@ -30,6 +30,8 @@ export const QUESTION_MESSAGES = {
   updated: 'Soalan berjaya dikemaskini.',
   deleted: 'Soalan berjaya dipadam.',
   bulkUpdated: (n: number): string => `${String(n)} soalan berjaya dikemaskini.`,
+  /** Bulk Terbitkan on a row that is already Diterbitkan (R1E2E-10, Mandor Q16): the row is left as it is, with this reason [PROPOSED]. */
+  bulkAlreadyApproved: 'Soalan ini sudah diterbitkan.',
   /** `POST /questions/:id/edit-as-draft` (REQ-C-012; V2 flash "Draf baharu #{id} dicipta. ..."). */
   editAsDraft: (id: string): string => `Draf baharu #${id} dicipta. Soalan asal kekal diterbitkan sehingga draf ini diterbitkan.`,
   editAsDraftExists: 'Soalan ini sudah mempunyai draf atau semakan yang belum diterbitkan. Sunting draf itu.',
@@ -427,7 +429,7 @@ export const QuestionBulkFailureSchema = z
     code: z.enum(QUESTION_BULK_FAILURE_CODES),
     message: z.string().meta({
       description:
-        'The BM text for this id. NOT_FOUND: "Soalan tidak dijumpai." [PROPOSED]; CONFLICT: the transition text; VALIDATION_ERROR: the distinct `fields` values in field order, joined by one space (render `fields` for a per-field view).',
+        'The BM text for this id. NOT_FOUND: "Soalan tidak dijumpai." [PROPOSED]; CONFLICT: the transition text, or "Soalan ini sudah diterbitkan." [PROPOSED] for a bulk Terbitkan of a question that is already Diterbitkan (an idempotent no-op: nothing is written, it is not counted in `affected`); VALIDATION_ERROR: the distinct `fields` values in field order, joined by one space (render `fields` for a per-field view).',
     }),
     fields: z.record(z.string(), z.string()).meta({ description: 'The exact gate field messages (VALIDATION_ERROR); `{}` otherwise.' }),
   })

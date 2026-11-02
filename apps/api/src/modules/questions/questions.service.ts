@@ -15,7 +15,7 @@ import { OverviewCache } from './serving/overview-cache'
 import { CurriculumRepository } from '../curriculum'
 import { FilesService } from '../files'
 import { UsersRepository } from '../users'
-import { bulkFailureOf, notFoundFailure, questionNotFound, transitionConflict, type BulkFailure } from './errors'
+import { AlreadyInStatusError, bulkFailureOf, notFoundFailure, questionNotFound, transitionConflict, type BulkFailure } from './errors'
 import { gradeQuestion } from './grading'
 import {
   difficultyOf,
@@ -411,7 +411,7 @@ export class QuestionsService {
           }
         } else {
           const a = actor as QuestionActor & { roleCode?: string; requestId?: string | null }
-          await this.setStatus(id, action, actor.userId, { ...(opts.submitGate === true ? { submitGate: true } : {}), event: { actorUserId: actor.userId, actorRole: a.roleCode ?? actor.role, requestId: a.requestId ?? null } })
+          await this.setStatus(id, action, actor.userId, { ...(opts.submitGate === true ? { submitGate: true } : {}), ...(action === 'approved' ? { skipIfAlready: true } : {}), event: { actorUserId: actor.userId, actorRole: a.roleCode ?? actor.role, requestId: a.requestId ?? null } })
           affected += 1
           done.push(id)
         }
@@ -465,6 +465,7 @@ export class QuestionsService {
       const record = await this.repo.get(id, 'latest')
       if (!record) throw questionNotFound()
       const v = record.version
+      if (options.skipIfAlready === true && v.status === status) throw new AlreadyInStatusError(status)
       if (!isQuestionWorkflowTransitionAllowed(v.status, status, actor)) throw transitionConflict(v.status, status)
       // Semakan (draft to review) through the bulk route runs the submit gate per row: a refused row is a `failed[]` entry like Terbit.
       if (options.submitGate === true && status === 'review' && v.status === 'draft') {

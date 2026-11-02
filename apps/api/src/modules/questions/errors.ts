@@ -13,6 +13,16 @@ export const questionNotFound = (): ApiError => ApiError.of('NOT_FOUND')
 export const TRANSITION_CONFLICT_MESSAGE = (from: QuestionStatus, to: QuestionStatus): string =>
   `Peralihan '${QUESTION_WORKFLOW_STATUS_LABELS[from]}' -> '${QUESTION_WORKFLOW_STATUS_LABELS[to]}' tidak dibenarkan.`
 
+/**
+ * Signal (not an HTTP error) from `setStatus` under `skipIfAlready`: the question is already in the target status. The bulk action turns it
+ * into the `failed[]` no-op entry of R1E2E-10; nothing was written (the transaction is rolled back).
+ */
+export class AlreadyInStatusError extends Error {
+  constructor(readonly status: QuestionStatus) {
+    super(`already ${status}`)
+  }
+}
+
 export const transitionConflict = (from: QuestionStatus, to: QuestionStatus): ApiError =>
   ApiError.of('CONFLICT', { message: TRANSITION_CONFLICT_MESSAGE(from, to), details: { from, to } })
 
@@ -34,8 +44,12 @@ export type BulkFailure = QuestionBulkFailure
 /** The `failed` entry of an id that does not exist. */
 export const notFoundFailure = (id: string): BulkFailure => ({ id, code: 'NOT_FOUND', message: QUESTION_NOT_FOUND_MESSAGE, fields: {} })
 
+/** The `failed` entry of a bulk Terbitkan row that is already Diterbitkan: a no-op with its reason, CONFLICT so the shape is unchanged. */
+export const alreadyApprovedFailure = (id: string): BulkFailure => ({ id, code: 'CONFLICT', message: QUESTION_MESSAGES.bulkAlreadyApproved, fields: {} })
+
 /** Maps a per-id error of the bulk action to its `failed` entry; `null` means the error is not a skip (re-throw it). */
 export const bulkFailureOf = (id: string, e: unknown): BulkFailure | null => {
+  if (e instanceof AlreadyInStatusError) return alreadyApprovedFailure(id)
   if (!(e instanceof ApiError)) return null
   if (e.code === 'NOT_FOUND') return notFoundFailure(id)
   if (e.code === 'CONFLICT') return { id, code: 'CONFLICT', message: e.message, fields: {} }
