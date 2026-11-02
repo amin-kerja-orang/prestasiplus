@@ -48,6 +48,8 @@ interface Universe {
   loggedBySchool: Map<string, number>
   answersBySchool: Map<string, number>
   scope: string[] | null
+  /** A teacher's own-class pupils (the S3/S5 minimisation filter); null = no pupil filter. */
+  pupilIds: string[] | null
 }
 
 const NOT_FOUND = (): never => {
@@ -73,11 +75,12 @@ export class MonitoringService {
     const state = isSchoolForced(ctx.role) ? '' : (filters.state ?? '')
     const tahap = filters.tahap ?? ''
     const from = periodFromMs(period, now.getTime())
+    const pupilIds = await this.ownPupilIds(ctx)
     const [facts, registered, teachers, engagement, withUsers] = await Promise.all([
       this.repo.schools(scope),
-      this.repo.registeredBySchool(scope),
-      this.repo.teachersBySchool(scope),
-      this.repo.engagement(scope, from === null ? null : new Date(from)),
+      this.repo.registeredBySchool(scope, pupilIds),
+      this.repo.teachersBySchool(scope, this.ownTeacherIds(ctx)),
+      this.repo.engagement(scope, from === null ? null : new Date(from), pupilIds),
       this.repo.schoolsWithUsers(scope),
     ])
     const factOf = new Map<string, SchoolFact>(facts.map((f) => [f.id, f]))
@@ -125,6 +128,7 @@ export class MonitoringService {
       loggedBySchool,
       answersBySchool: new Map([...engagement].map(([id, e]) => [id, e.answers])),
       scope,
+      pupilIds,
     }
   }
 
@@ -167,8 +171,8 @@ export class MonitoringService {
 
   /** BR-M11-15 weekly tracking over the student-table schools (state filter only). */
   private async weekly(u: Universe, weeks: { k: number }[]): Promise<WeeklyRow[]> {
-    const perSchool = await this.repo.answersByWeek(u.scope)
-    const totals = u.period === '' ? u.answersBySchool : new Map([...(await this.repo.engagement(u.scope, null))].map(([id, e]) => [id, e.answers]))
+    const perSchool = await this.repo.answersByWeek(u.scope, u.pupilIds)
+    const totals = u.period === '' ? u.answersBySchool : new Map([...(await this.repo.engagement(u.scope, null, u.pupilIds))].map(([id, e]) => [id, e.answers]))
     const ordered = [...u.rows].sort((a, b) => {
       const ta = totals.get(a.schoolId) ?? 0
       const tb = totals.get(b.schoolId) ?? 0
@@ -241,9 +245,26 @@ export class MonitoringService {
   }
 
   /** Data minimisation: a teacher sees the pupils of the own active classes only; other roles see the whole school. */
+  private async ownPupilIds(ctx: Ctx): Promise<string[] | null> {
+    return ctx.role === 'teacher' ? this.classes.teacherStudentIds(ctx.userId) : null
+  }
+
+  /** Data minimisation for teachers: a teacher caller sees only themself; null = no teacher filter. */
+  private ownTeacherIds(ctx: Ctx): string[] | null {
+    return ctx.role === 'teacher' ? [ctx.userId] : null
+  }
+
+  /** The one teacher filter: S2 teacher counts (via `ownTeacherIds`) and the S3 teacher list. */
+  private visibleTeachers<T extends { id: string }>(ctx: Ctx, teachers: T[]): T[] {
+    const ids = this.ownTeacherIds(ctx)
+    return ids === null ? teachers : teachers.filter((t) => ids.includes(t.id))
+  }
+
+  /** The one minimisation filter: S2 counts (via `ownPupilIds`), S3 and S5 lists all use it. */
   private async visiblePupils<T extends { id: string }>(ctx: Ctx, pupils: T[]): Promise<T[]> {
-    if (ctx.role !== 'teacher') return pupils
-    const own = new Set(await this.classes.teacherStudentIds(ctx.userId))
+    const ids = await this.ownPupilIds(ctx)
+    if (ids === null) return pupils
+    const own = new Set(ids)
     return pupils.filter((p) => own.has(p.id))
   }
 
@@ -264,7 +285,7 @@ export class MonitoringService {
       this.repo.latestSubscription(fact.id),
     ])
     const pupils = await this.visiblePupils(ctx, allPupils)
-    const teachers = ctx.role === 'teacher' ? allTeachers.filter((t) => t.id === ctx.userId) : allTeachers
+    const teachers = this.visibleTeachers(ctx, allTeachers)
     const [stats, flags] = await Promise.all([this.repo.pupilStats(pupils.map((p) => p.id)), this.repo.flagsOf(pupils.map((p) => p.id))])
 
     const students = pupils
