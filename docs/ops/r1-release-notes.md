@@ -517,7 +517,7 @@ Announce Jana Kertas to pupils only for the pairs counted here.
 
 ## 5. Configuration
 
-**Go-live order (REQ-B-119):** `docs/ops/r1-go-live-runsheet.md` (oleh Team B). Not the checklist alone; no deploy straight after CI green. Timing: malam 2–3 Nov sebaik CI akhir hijau dan semua peranan hadir (REQ-B-120, Q29).
+**Go-live order (REQ-B-119):** `docs/ops/r1-go-live-runsheet.md` (oleh Team B; cawangan `r1/b1-go-live-runsheet` @ ebb3ed9c, kelompok yang sama). Not the checklist alone; no deploy straight after CI green. Timing: malam 3 Nov; T0 ditetapkan pemilik; tetingkap dianggar T0 + 4:20, mesti tamat sebelum murid perlukan sistem (REQ-B-121; bermula hanya selepas CI akhir hijau dan semua peranan hadir, REQ-B-120) (Q29 butir 2 digantikan).
 
 | Key | Value for R1 | Why / where |
 |---|---|---|

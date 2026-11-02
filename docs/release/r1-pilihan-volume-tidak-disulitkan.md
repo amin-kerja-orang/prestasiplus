@@ -1,7 +1,7 @@
 # R1: Pilihan untuk risiko "volum data pelayan tidak disulitkan"
 
 Untuk: pemilik projek. Disediakan: 2026-11-02. Status: **DIPUTUSKAN oleh pemilik pada 3 Nov 2026: pilihan (a), terima dengan mitigasi (Q23 butir 1; REQ-B-108, REQ-B-113).** Pek ini asalnya pilihan sahaja (2 Nov); bahagian lain dikekalkan sebagai sejarah.
-Konteks (2 Nov): go-live R1 ditangguhkan (REQ-B-108); go-live kini malam 2–3 Nov sebaik CI akhir hijau dan semua peranan hadir (Q29, REQ-B-120; menggantikan Q23 butir 2). Satu risiko terbuka ialah volum data pelayan produksi **tidak disulitkan (unencrypted) semasa disimpan**.
+Konteks (2 Nov): go-live R1 ditangguhkan (REQ-B-108); go-live kini malam 3 Nov; T0 ditetapkan pemilik; tetingkap dianggar T0 + 4:20, mesti tamat sebelum murid perlukan sistem (REQ-B-121; bermula hanya selepas CI akhir hijau dan semua peranan hadir, REQ-B-120) (Q29 butir 2 digantikan). Satu risiko terbuka ialah volum data pelayan produksi **tidak disulitkan (unencrypted) semasa disimpan**.
 
 Asal risiko: `docs/ops/production-vps.md` bahagian 2 ("Disk encryption", tanda `LEAD:`) dan jadual pemboleh ubah `PP_BACKUP_DIR` ("encrypted volume"); `docs/ops/db-backup.md` bahagian "Where backups go" ("Without full-disk encryption do not store backups"). Di papan pasukan: **REQ-B-108** (`docs/team/requests/from-B.md:111` pada `team/r1-board@8614e499`): "Encrypted volume, plan requires it and the host has none: 'Tangguh'"; penghalang (1): "a decision by whoever can accept or fix the unencrypted volume for raw data including minors". Pek ini menjawab REQ-A-063.
 
