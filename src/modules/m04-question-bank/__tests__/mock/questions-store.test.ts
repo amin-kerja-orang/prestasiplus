@@ -41,6 +41,7 @@ import {
 import { questionSpec } from '../../mock/datasets/questions-spec'
 import { structuredDataset, structuredSpec } from '../../mock/datasets/structured'
 import { questionQueries, structuredQueries } from '../../mock/repository/queries'
+import { MOCK_IN_USE_IDS, MOCK_SERVED_IDS } from '../../mock/repository/questions'
 import { showPrimaryLevels } from '../../mock/repository/visible-levels'
 import { SEED_REPORTS } from '../../mock/seeds/reports'
 
@@ -722,9 +723,18 @@ describe('writes', () => {
     expect(updated).toMatchObject({ scriptType: 'jawi', textDirection: 'rtl' })
 
     expect(questions.deleteOwn({ id: 1 }, created.id)).toBe(false)
+    // REQ-A-023b: a Guru delete is refused only for a served / in_use question, not for an approved one.
+    questions.bulkAction('approve', [created.id], NOW_MS)
     expect(questions.deleteOwn({ id: 5 }, created.id)).toBe(true)
     expect(questions.get(created.id)).toBeNull()
     expect(questions.count('Q-ALL')).toBe(465_278)
+    // REQ-A-023b: the fixed served / in_use sets are existing seed ids (never invented records).
+    for (const id of MOCK_SERVED_IDS) expect(questions.get(id)).not.toBeNull()
+    for (const id of MOCK_IN_USE_IDS) expect(questions.get(id)).not.toBeNull()
+    expect([136891, 124733].map((id) => questions.deletionBlock(id))).toEqual(['served', 'served'])
+    expect(questions.deletionBlock(129216)).toBe('in_use')
+    expect(questions.deletionBlock(564159)).toBeNull()
+    expect(questions.deleteOwn({ id: 5 }, 136891)).toBe(false) // not an own question: 404, not 409
 
     // A second runtime row skips nothing below the floor.
     const next = questions.create(

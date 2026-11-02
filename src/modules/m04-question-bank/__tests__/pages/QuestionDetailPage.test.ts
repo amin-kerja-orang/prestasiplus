@@ -284,6 +284,18 @@ describe('QuestionDetailPage (M04 S3)', () => {
     })
   })
 
+  it('REQ-A-023: a refused delete (409) shows the server message and stays on the page', async () => {
+    const message = 'Soalan ini tidak boleh dipadam (teks pelayan).'
+    questions.deleteQuestion.mockRejectedValue(
+      new ApiError({ status: 409, code: 'CONFLICT', message }),
+    )
+    const w = await render()
+    await t(w, 'question-delete').trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.path).not.toBe('/admin/questions')
+    expect(useFlashStore().current).toEqual({ type: 'error', message: [message] })
+  })
+
   it('an unknown id sets the standard 404 outcome', async () => {
     questions.fetchQuestion.mockRejectedValue(
       new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Tidak dijumpai' }),
@@ -306,6 +318,34 @@ describe('QuestionDetailPage (M04 S3)', () => {
 })
 
 describe('AI explanation card (M04 S3)', () => {
+  it('REQ-A-023: on an approved question the success points to the new draft (UX-80)', async () => {
+    questions.fetchQuestion.mockResolvedValue(detail({ status: 'approved' }))
+    questions.generateAiExplanation.mockResolvedValue({
+      status: 200,
+      headers: {},
+      body: { ok: true, message: 'Penjelasan AI berjaya dijana.' },
+    })
+    const w = await render()
+    expect(w.find('[data-testid="ai-draft-notice"]').exists()).toBe(false)
+    await t(w, 'ai-generate').trigger('click')
+    await flushPromises()
+    expect(t(w, 'ai-draft-notice').text()).toContain('Penjelasan AI disimpan sebagai draf baharu')
+    expect(t(w, 'ai-draft-link').attributes('href')).toBe('/admin/studio/questions/564159/sunting')
+  })
+
+  it('REQ-A-023: no draft notice on a draft question', async () => {
+    questions.fetchQuestion.mockResolvedValue(detail({ status: 'draft' }))
+    questions.generateAiExplanation.mockResolvedValue({
+      status: 200,
+      headers: {},
+      body: { ok: true, message: 'Penjelasan AI berjaya dijana.' },
+    })
+    const w = await render()
+    await t(w, 'ai-generate').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-testid="ai-draft-notice"]').exists()).toBe(false)
+  })
+
   it('shows the empty state and the generate button', async () => {
     const w = await render()
     expect(t(w, 'ai-empty').text()).toBe(
