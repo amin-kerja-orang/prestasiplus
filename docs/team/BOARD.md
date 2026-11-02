@@ -566,7 +566,7 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 **Status legend (team A records):** READY = pushed and evidenced, ready for B; IN-REVIEW-A = in team A pre-review (A4/A1b), **not** a B "Changes requested"; IN-PROGRESS = being changed, not for merge; ON HOLD = waits on a dependency; MERGED = in base.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 03:33 UTC, BASE 1216dbe7)
+### Team A open branches: heads from origin (auto, 2026-11-02 03:34 UTC, BASE 1216dbe7)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -581,14 +581,12 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ready-tiers-check | 9c80f08c3 | ON HOLD (A2, @9c80f08c, contains BASE-107): code correct + Minors fixed (exact 503 body, WARN once per state change, INFO on recovery; mutations red); waits for B DevOps (REQ-A-028: CI seed step + first-install deploy ordering) |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
 | r1/reqb071-bab-submit | 4e38af8e6 | IN-REVIEW-A (A2, @4e38af8e; A4 pre-review running; not a B "Changes requested"). Clean vs BASE-189 except DEV doc keep-both. **Do NOT merge alone (chain 3-9 red): B1 merges r1/reqb071-chain-specs-a3 d22af990, which contains it** |
-| r1/reqb071-chain-specs-a3 | 826403b2d | IN-REVIEW-A (A3, @d22af990 = chain specs + merge of reqb071-bab-submit 4e38af8e; B1 merges THIS one head to bring both; A3 counts + A4 pre-review pending) |
+| r1/reqb071-chain-specs-a3 | 826403b2d | IN-REVIEW-A (A3, @826403b2 = chain specs + merge of reqb071-bab-submit 4e38af8e; chain-intake 13/13, +pipeline/blueprint/pinned 70; 3 mutations red; clean vs BASE-189 except DEV doc). **B1 merges THIS head (it brings A2 4e38af8e)**; A4 pre-review of 4e38af8e running |
 | r1/reqb074-takedown-lows | 45a75f68c | READY (A1b, @45a75f68 = ae78bf82 + A4 review fixes: deviation row matches code (any sitting keeps pictures, as paperHeld), comments, composite.ts required; 832 pass, tsc 0). A4 pre-review: code sound, 0 B; Major was doc-only (now fixed). **Needs B security-engineer** (image access); DEV doc keep-both; B2 |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 
 **Merged content, origin head has only base-merge commits since (no new work):** r1/a4chain-minors 86dd7ad67, r1/ha15-blueprint-evidence 7e5d637e5, r1/reqb032-pinned-rule 167986eff, r1/t44-blueprint-fields 072d8f4b4, r1/t48-builder-parity 10c624376
-
-**Origin head moved since last record (re-triage):** r1/reqb071-chain-specs-a3: status says @d22af990, origin is 826403b2d
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
