@@ -538,7 +538,7 @@ A3 dev-1 rehearsed this locally. `prisma migrate deploy` does not run a migratio
 - ha18-minors must restore 0105 byte-for-byte (A2); it is IN-PROGRESS until then.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 01:38 UTC, BASE 529fafe7)
+### Team A open branches: heads from origin (auto, 2026-11-02 01:43 UTC, BASE 76d65694)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -554,8 +554,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha18-gate-facts | f988b670f | MERGED by B1 as BASE-132 259f4616 @a9ffe246 (alone, not paired with reqb052; pinned-version-rule check by A4 running). Origin head f988b670 → follow-up r1/ha18-minors |
 | r1/ha18-minors | 17450966c | READY (A2, @17450966; B2 delta vs BASE: 5 files, review.service not_duplicate idempotent / 409 itemLocked + duplicateId audit, accepted-duplicates e2e gate-dismiss test, helpers withQuestionWorkflow opt-in, contract description + openapi 1 line; **no migration change** (0105 restored byte-for-byte, lead verified the 3-dot diff)). A1b Approve on content; A4 proof green; re-run 22/22, contract:check ok. B: run npm run check -w @pp/contract |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
-| r1/ha24-release-input | 4335759e8 | READY (A3 docs, @4335759e: release-input/KIV/nota/sign-off aligned with the DO/non-DO model; KIV 39 rows incl. split VALIDATE (R2)); B1/B2 |
-| r1/ha26-team-a-state | ca175679f | READY (A3 docs, @ca175679: merged to BASE-135, all open heads, §4 re-read; T48 stack marked not-for-merge pending REQ-B-068); B1 |
+| r1/ha24-release-input | 4335759e8 | READY (A3 docs, @4335759e; c0f7a45d MERGED as BASE-145 76d65694): **B delta c0f7a45d..4335759e** = DO/non-DO migration model in ri/nota/sign-off + KIV 39 rows (split VALIDATE); B1/B2 |
+| r1/ha26-team-a-state | 8caeb072f | READY (A3 docs, @8caeb072: REQ-B-070 fixed; written off BASE-145, merged rows 136-145, current heads, H-A18 alone; merge-tree clean). **Merge before ac-gaps** (B2); B1/B2 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-followup | 2fe252aba | READY (A2, @2fe252ab on intake-reqs 8c1964a6): unknownSp required, FACTS in unit.spec, deviations row 244 names spNotInTaxonomy; 43/43, tsc 0; merge AFTER intake-reqs (deviations conflict: keep both); B2 small | A1b pre-review: CLEAN (CurriculumFacts internal; both producers always set unknownSp; tsc 0; 43/43) |
 | r1/minors-b025c-a3 | a4feeab01 | READY (A3, @a4feeab0 on BASE-131; test only): essay-choice-blank 9 tests on a choose-N Bahagian (best-N, V2 self-mark rule pinned), mutations red; closes A1b REQ-B-025c carried Minors; B2 |
@@ -587,7 +587,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t43b-publish-acs | 7a14581a7 | IN-PROGRESS (REQ-B-068 restack by A3; current origin head is NOT for merge) | was: READY — B2 APPROVE @7a14581a (cycle 21, 07:25 MYT); awaiting B1 merge | READY (A3, on T48 6c5ae3a8): giveBab in publish-acs; 422 pass (was 12 red); alone = tria |
 | r1/t45-builder-acs | ee3a7d2ba | IN-PROGRESS (REQ-B-068 restack by A3; current origin head is NOT for merge) | was: READY — B2 APPROVE w/ Minors @ee3a7d2b (Minors carried); awaiting B1 | READY (A1b, on T48 6c5ae3a8; specs only): builder-candidate-search giveBab; bab.ts via T4 |
 | r1/t45-builder-acs-wip | 078204e1c | SUPERSEDED by r1/t45-builder-acs; do not merge |
-| r1/t48-builder-parity | 4b082d914 | IN-PROGRESS (REQ-B-068, A3): @4b082d91 = REQ-A-013 resolution (fda5f818) + BASE-140 merge (pipeline doc vs base facts); merge-tree vs BASE-143 clean; 417 + contract 54, tsc/vue-tsc 0; doc follow-up (:691 + 0105 table) pending; A4 pre-review running; dependents restacking; NOT for merge yet |
+| r1/t48-builder-parity | 8d84f6abe | IN-PROGRESS (REQ-B-068, A3): @8d84f6ab = REQ-A-013 resolution (fda5f818) + BASE-140 merge (4b082d91) + pipeline doc fix (0105 = gate_facts; built-folders note; kertas_subjektif/tracking → overflow 0120-0129, lead confirms at merge); A4 pre-review running; dependents restacking on 8d84f6ab; NOT for merge yet |
 | r1/t48-label-move-fix | 9783849cf | IN-PROGRESS (REQ-B-068 restack by A3; current origin head is NOT for merge) | was: READY — B2 c23 APPROVED @9783849c (Approve) |
 | r1/t51-partial-acs-a3 | 74242a28d | IN-PROGRESS (REQ-B-068 restack by A3; current origin head is NOT for merge) | was: READY — B2 c23 APPROVED @61c1b077 (AwM); merge after T48, T31, REQ-A-008, T43 |
 
