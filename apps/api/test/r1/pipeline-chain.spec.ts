@@ -25,6 +25,7 @@ import type TestAgent from 'supertest/lib/agent'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { runSeeds } from '../../prisma/seed'
+import { ServabilityService } from '../../src/modules/questions'
 import { identitySeed } from '../../prisma/seed/core/identity'
 import { walletTiersSeed } from '../../prisma/seed/core/wallet-tiers'
 import { curriculumSeed } from '../../prisma/seed/curriculum'
@@ -690,6 +691,59 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     it.todo('R2: grouped members appear in Databank / Latih Tubi SPM WITH their stimulus (today they are refused: ungrouped filter)')
   })
 
+  // R1-20.4 / AC-18.1 / AC-18.3 / AC-18.4 (T51): each applicable activity serves exactly what its rule says, and the admin reason for an exclusion
+  // comes from the SAME rule code (ServabilityService). The paper is Terbit here, so Simulasi (kertas) is served.
+  describe('5b. every activity: where each chain question is served, and why not', () => {
+    type Verdict = { served: boolean; reasons: { code: string; message: string }[] }
+    const activities = async (id: string): Promise<Record<string, Verdict>> => {
+      const report = (await app.get(ServabilityService).reports([id])).get(id)!
+      return Object.fromEntries(report.activities.map((a) => [a.activity, { served: a.served, reasons: a.reasons }]))
+    }
+
+    it('a solo approved MCQ is served in Databank, Latih Tubi SPM, Simulasi Kuiz and Simulasi (kertas)', async () => {
+      const v = await activities(fx.soloA)
+      for (const a of ['databank', 'latih_tubi_spm', 'simulasi_kuiz', 'simulasi_paper']) expect(v[a], a).toMatchObject({ served: true, reasons: [] })
+    })
+
+    it('a stimulus-group member is served in Simulasi only: Databank / Latih Tubi SPM refuse it with the reason has_stimulus (AC-18.3, D87 U2)', async () => {
+      const v = await activities(fx.passageMembers[0]!)
+      expect(v.simulasi_paper).toMatchObject({ served: true })
+      for (const a of ['databank', 'latih_tubi_spm']) {
+        expect(v[a]!.served, a).toBe(false)
+        expect(v[a]!.reasons.map((r) => r.code), a).toContain('has_stimulus')
+        expect(v[a]!.reasons[0]!.message.length, a).toBeGreaterThan(10)
+      }
+    })
+
+    it('the structured essay is served in Simulasi (kertas) only; every other activity says why in BM (AC-18.4)', async () => {
+      const v = await activities(fx.essay)
+      expect(v.simulasi_paper).toMatchObject({ served: true })
+      for (const a of ['databank', 'latih_tubi_spm', 'simulasi_kuiz']) {
+        expect(v[a]!.served, a).toBe(false)
+        expect(v[a]!.reasons.length, a).toBeGreaterThan(0)
+      }
+    })
+
+    it('A11: the paper quiz view of the Terbit paper lists its questions page by page for the pupil (PIPE A11)', async () => {
+      const res = await pupil.get(`/api/bijak/kuiz/papers/${fx.paper}`)
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      const items = res.body.data.items as { id: string }[]
+      // page 1 is Bahagian A: the two members of the passage group, then soloA, in paper order; one page per Bahagian (A, B, C)
+      expect(items.map((i) => i.id.split(':')[0])).toEqual([...fx.passageMembers, fx.soloA])
+      expect(res.body.data.pageCount).toBe(3)
+      expect(JSON.stringify(res.body)).not.toMatch(/"(correct|correctOptionId|scheme)"/)
+    })
+
+    it('the pupil\'s Simulasi Kuiz can draw every admin-approved solo MCQ (Databank and Kuiz show an approved MCQ, R1-20.4)', async () => {
+      const res = await pupil.post('/api/bijak/kuiz/sessions', { subject: 'MATH', count: 40 })
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      const ids = (res.body.data.items as { id: string }[]).map((i) => i.id.split(':')[0]!)
+      for (const id of [fx.soloA, fx.soloB, fx.soloC]) expect(ids, id).toContain(id)
+      // no answer key leaks into the quiz item
+      expect(JSON.stringify(res.body)).not.toMatch(/"(correct|correctOptionId|scheme)"/)
+    })
+  })
+
   // R1-20.2: the same with Jana Kertas under the Disahkan Kontrak (exact-or-refuse).
   describe('6. Jana Kertas under the Disahkan Kontrak (pupil)', () => {
     it('a Tingkatan 4 and a Tingkatan 5 pupil each generate a private paper from the approved pool and start it', async () => {
@@ -768,8 +822,27 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
 
   // R1-20.3 negatives.
   describe('7. negatives: the T33 gate, a draft is invisible, a withdrawn paper', () => {
-    // T33 (branch r1/t33-leaf-tags @ 276a6622, not in this base): the DSKP approve gate for SPM T4/T5.
-    it.todo('a question without a DSKP tag cannot be approved (AC-R1-20.3, T33 merged approve gate, POST /api/questions/bulk-action approved -> 422)')
+    // R1-20.3 / PIPE AC-18.1 (T33 gate, merged at BASE-60): approving an SPM-bound question needs a cognitive level per leaf and the kertas.
+    it('a question without the DSKP-complete data cannot be approved: it stays in review with the BM reasons, and is not served anywhere', async () => {
+      const incomplete = await createQuestion(mcqBody('Berapakah 10 tolak 4?', { cognitiveLevel: undefined, kertas: undefined }))
+      await giveBab(db, [incomplete]) // H-A18: the submit gate asks for a Bab; this test is about the approve gate (cognitive level, kertas)
+      const toReview = await admin.post('/api/questions/bulk-action', { action: 'review', ids: [incomplete] })
+      expect(toReview.status, JSON.stringify(toReview.body)).toBe(200)
+      expect(toReview.body.data.failed, JSON.stringify(toReview.body)).toEqual([]) // it really reached Semakan: the refusal below is the approve gate's
+      const res = await admin.post('/api/questions/bulk-action', { action: 'approved', ids: [incomplete] })
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(res.body.data.affected).toBe(0)
+      expect(res.body.data.failed).toHaveLength(1)
+      expect(res.body.data.failed[0]).toMatchObject({
+        id: incomplete,
+        code: 'VALIDATION_ERROR',
+        fields: { 'parts.1.cognitiveLevel': 'Bahagian (1) belum ada aras pemikiran.', kertas: 'Sila pilih kertas untuk soalan SPM.' },
+      })
+      expect((await db.query<{ status: string }>(`select v.status from question_versions v join questions q on q.id = v.question_id and q.latest_version_no = v.version_no where q.id = $1`, [incomplete]))[0]?.status).toBe('review')
+      // not in the pupil's Kuiz either
+      const kuiz = await pupil.post('/api/bijak/kuiz/sessions', { subject: 'MATH', count: 40 })
+      expect((kuiz.body.data.items as { id: string }[]).map((i) => i.id.split(':')[0])).not.toContain(incomplete)
+    })
 
     it('a draft paper is not visible to a pupil; a withdrawn paper is gone for the pupil and cannot be retried, but the past attempt and its result stay (R1-20.3)', async () => {
       const draft = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 3 })
