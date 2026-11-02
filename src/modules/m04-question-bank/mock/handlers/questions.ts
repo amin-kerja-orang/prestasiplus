@@ -12,6 +12,7 @@
  * | 6 | `DELETE /api/questions/:id` | permanent; 200 `{data: {deleted}, status}`; 404 (also a PKSK row) |
  * | 7 | `POST /api/questions/bulk-action` | `{data: {affected}, status}`; 422 |
  * | 8 | `POST /api/questions/:id/ai-explanation` | live-shaped `{ok, message}` (`ai-explanation.ts`) |
+ * | 10 | `POST /api/questions/:id/edit-as-draft` | REQ-A-038: 201 `{data: {id, versionNo}, status}`; 409 (`details {id, versionNo}` when a draft or review is already there); 404 (also a PKSK row) |
  * | 9 | `POST /api/questions/bulk-action/filter` | v2 contract (AC-03.3): dry run, `expectedCount`, cap 500; same filter as #1 |
  *
  * Module-wide rules for the admin screens: an unknown id answers `404`; validation errors come in one
@@ -64,6 +65,9 @@ export const QUESTIONS_PAGE_SIZE = 20
 
 /** UNVERIFIED COPY (§8). */
 export const QUESTION_ADDED = 'Soalan berjaya ditambah.'
+/** The mock has no version history: the draft made from the live version is always the second. */
+const DRAFT_VERSION_NO = 2
+
 export const QUESTION_UPDATED = 'Soalan berjaya dikemaskini.'
 export const QUESTION_DELETED = 'Soalan berjaya dipadam.'
 /** The 409 text of a refused hard delete, as the server (REQ-A-023b): `in_use` has its own sentence. */
@@ -175,6 +179,23 @@ async function update(req: MockRequest, ctx: MockContext): Promise<MockResponse>
   if (!parsed.ok) return validationError(parsed.fields)
   const row = ctx.transaction(() => questions.update(id, parsed.input, ctx.clock.now()))
   return ok(toQuestion(row), { status: QUESTION_UPDATED })
+}
+
+/**
+ * REQ-A-038, as `QuestionsService.editAsDraft`. The mock keeps one row and one status per question (no version history), so the approved
+ * row becomes the draft (`draft`) and the version number is the first one after the live version, `2`; an earlier edit shows as
+ * `draft` / `pending_review` (the API's draft / review) and answers 409 naming that same version. Any other status is not live: 409.
+ */
+function editAsDraft(req: MockRequest, ctx: MockContext): MockResponse {
+  const id = idOf(req)
+  const current = questions.get(id)
+  if (!current || current.pkskDomainId !== null) return notFound()
+  if (current.status === 'draft' || current.status === 'pending_review') {
+    return conflict(QUESTION_MESSAGES.editAsDraftExists, undefined, { id: String(id), versionNo: DRAFT_VERSION_NO })
+  }
+  if (current.status !== 'approved') return conflict(QUESTION_MESSAGES.editAsDraftNotApproved)
+  ctx.transaction(() => questions.update(id, { status: 'draft' }, ctx.clock.now()))
+  return created({ id: String(id), versionNo: DRAFT_VERSION_NO }, { status: QUESTION_MESSAGES.editAsDraft(String(id)) })
 }
 
 function remove(req: MockRequest): MockResponse {
@@ -401,6 +422,7 @@ export const questionRoutes: RouteDef[] = [
   route('POST', '/api/questions', [adminOnly], create),
   route('GET', '/api/questions/:id', [adminOnly], detail, { params: { id: int() } }),
   route('PUT', '/api/questions/:id', [adminOnly], update, { params: { id: int() } }),
+  route('POST', '/api/questions/:id/edit-as-draft', [adminOnly], editAsDraft, { params: { id: int() } }),
   route('DELETE', '/api/questions/:id', [adminOnly], remove, { params: { id: int() } }),
   route('POST', '/api/questions/:id/ai-explanation', [adminOnly], aiExplanation, {
     params: { id: int() },

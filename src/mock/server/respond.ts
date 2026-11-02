@@ -84,6 +84,8 @@ export function list<M extends BaseListMeta>(
 export interface FailExtra {
   /** Seconds, for `429 RATE_LIMITED`; also sent as the `Retry-After` header. */
   retryAfter?: number
+  /** Structured extras of the error (`error.details`), e.g. the newer version a 409 names. */
+  details?: Record<string, unknown>
   headers?: Record<string, string>
 }
 
@@ -99,6 +101,7 @@ export function fail(
   }
   const error: ErrorPayload = { code, message }
   if (fields && Object.keys(fields).length > 0) error.fields = { ...fields }
+  if (extra.details) error.details = { ...extra.details }
   const headers = JSON_HEADERS()
   if (extra.retryAfter !== undefined) {
     error.retryAfter = extra.retryAfter
@@ -117,8 +120,11 @@ export const forbidden = (
 ) => fail(403, code ?? API_ERROR_CODES.FORBIDDEN, message)
 export const notFound = (message: string = DEFAULT_ERROR_MESSAGES.NOT_FOUND) =>
   fail(404, API_ERROR_CODES.NOT_FOUND, message)
-export const conflict = (message: string = DEFAULT_ERROR_MESSAGES.CONFLICT, code?: ApiErrorCode) =>
-  fail(409, code ?? API_ERROR_CODES.CONFLICT, message)
+export const conflict = (
+  message: string = DEFAULT_ERROR_MESSAGES.CONFLICT,
+  code?: ApiErrorCode,
+  details?: Record<string, unknown>,
+) => fail(409, code ?? API_ERROR_CODES.CONFLICT, message, undefined, details ? { details } : {})
 export const serverError = (message: string = DEFAULT_ERROR_MESSAGES.SERVER_ERROR) =>
   fail(500, API_ERROR_CODES.SERVER_ERROR, message)
 export const rateLimited = (

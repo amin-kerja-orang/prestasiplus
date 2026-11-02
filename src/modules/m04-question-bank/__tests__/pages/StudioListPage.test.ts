@@ -154,8 +154,17 @@ describe('StudioListPage (S1 to S6)', () => {
     expect(studio.fetchStudioList).toHaveBeenCalledTimes(2)
   })
 
+  it('"Edit sebagai draf" with a draft already there opens that draft with the existing-draft sentence', async () => {
+    studio.editAsDraft.mockResolvedValue({ id: '12', versionNo: 2, existing: true })
+    const w = await render()
+    await w.get('[data-testid="studio-row-edit-draft"]').trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.fullPath).toBe('/admin/studio/questions/12/sunting')
+    expect(useFlashStore().pending).toEqual({ type: 'success', message: 'Soalan ini sudah mempunyai draf atau semakan yang belum diterbitkan. Sunting draf itu.' })
+  })
+
   it('"Edit sebagai draf" creates the draft and opens the editor', async () => {
-    studio.editAsDraft.mockResolvedValue('12')
+    studio.editAsDraft.mockResolvedValue({ id: '12', versionNo: 2, existing: false })
     const w = await render()
     await w.get('[data-testid="studio-row-edit-draft"]').trigger('click')
     await flushPromises()

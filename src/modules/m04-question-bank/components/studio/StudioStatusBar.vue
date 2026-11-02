@@ -26,6 +26,7 @@ import {
   APPROVED_NOTE,
   archiveBody,
   ARCHIVE_DIALOG,
+  DRAFT_EXISTS_FLASH,
   draftCreatedFlash,
   GATE_HEADING,
   gateLines,
@@ -144,8 +145,8 @@ async function run(action: StatusAction): Promise<void> {
   busy.value = action
   try {
     if (action === 'edit-as-draft') {
-      const id = await editAsDraft(props.questionId)
-      flash.show({ type: 'success', message: draftCreatedFlash(id) })
+      const res = await editAsDraft(props.questionId)
+      flash.show({ type: 'success', message: res.existing ? DRAFT_EXISTS_FLASH : draftCreatedFlash(res.id) })
       emit('changed')
     } else {
       await move(action)

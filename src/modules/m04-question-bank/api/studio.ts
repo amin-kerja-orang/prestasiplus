@@ -4,18 +4,20 @@
  * (`VITE_API_MODE=http`, D84); `studioAvailable()` tells a page to say so. Ids are opaque strings. Mutations resolve to
  * `{data, status}` where `status` is the server's flash text.
  */
-import type {
-  QuestionGateCheck,
-  ServabilityBatchResult,
-  ServabilityReport,
-  StimulusCreateRequest,
-  StimulusUpdateRequest,
-  StudioDskp,
+import {
+  QuestionEditAsDraftResultSchema,
+  type ErrorBody,
+  type QuestionGateCheck,
+  type ServabilityBatchResult,
+  type ServabilityReport,
+  type StimulusCreateRequest,
+  type StimulusUpdateRequest,
+  type StudioDskp,
 } from '@pp/contract'
 
-import { api, isHttpMode, uploadQuestionImage, type ListResult } from '@/api'
+import { api, isApiError, isHttpMode, uploadQuestionImage, type ListResult } from '@/api'
 
-import { editAsDraftBody, hydrate, type WireQuestion } from '../lib/studio/draft'
+import { hydrate, type WireQuestion } from '../lib/studio/draft'
 import type { WireStimulus } from '../lib/studio/stimulus'
 
 export type { StudioDskp }
@@ -226,15 +228,31 @@ export class EditAsDraftRefused extends Error {
   }
 }
 
+/** The draft "Edit sebagai draf" opens: version `versionNo` of question `id`; `existing` when a draft or review was already there (409). */
+export interface EditedAsDraft {
+  id: string
+  versionNo: number
+  existing: boolean
+}
+
 /**
- * "Edit sebagai draf" (V2 A03): creates the draft at once. V3 has no `edit-as-draft` route; `PUT /api/questions/:id` on an
- * approved question writes version n+1 as a draft while the live version keeps serving (Q-5, ADR-0027), so the stored content is
- * read and written back as it is (`editAsDraftBody`: its own parts, no editor-model rebuild; UX-17). Resolves to the question id.
+ * "Edit sebagai draf" (V2 A03, REQ-A-038): `POST /api/questions/:id/edit-as-draft` copies the live version into version n+1 as a draft
+ * (the live version keeps serving). 201 `{data: {id, versionNo}, status}` opens that draft; 409 CONFLICT whose `details {id, versionNo}`
+ * name a draft or review that already exists opens that one instead (not an error). Any other 409 (not live) is rethrown. A question the
+ * editor cannot hold is refused first, as before (`EditAsDraftRefused`).
  */
-export async function editAsDraft(id: string): Promise<string> {
+export async function editAsDraft(id: string): Promise<EditedAsDraft> {
   const q = await fetchStudioQuestion(id)
   const h = hydrate(q)
   if (h.unsupported.length > 0) throw new EditAsDraftRefused(h.unsupported)
-  const res = await updateStudioQuestion(id, editAsDraftBody(q))
-  return res.data.id
+  try {
+    const res = await api.post<Flash<unknown>>(`/api/questions/${id}/edit-as-draft`, { raw: true })
+    const made = QuestionEditAsDraftResultSchema.parse(res.data)
+    return { id: made.id, versionNo: made.versionNo, existing: false }
+  } catch (err) {
+    const details = isApiError(err, 'CONFLICT') && err.status === 409 ? (err.body as ErrorBody | null)?.error.details : undefined
+    const parsed = QuestionEditAsDraftResultSchema.safeParse(details)
+    if (parsed.success) return { id: parsed.data.id, versionNo: parsed.data.versionNo, existing: true }
+    throw err
+  }
 }

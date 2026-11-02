@@ -13,7 +13,7 @@ import type { Question, QuestionDetail, QuestionMutation, QuestionRow } from '..
 import { AI_FAIL_KEY, AI_LATENCY_KEY } from '../../mock/handlers/ai-explanation'
 import { questions } from '../../mock'
 import { showPrimaryLevels } from '../../mock/repository/visible-levels'
-import { ADMIN, bootM04, callAs, form, type ErrorBody, type ListBody } from './helpers-questions'
+import { ADMIN, bootM04, callAs, form, NOW, PELAJAR, type ErrorBody, type ListBody } from './helpers-questions'
 
 let runtime: MockRuntime
 let call: ReturnType<typeof callAs>
@@ -530,6 +530,52 @@ describe('#6 DELETE /api/questions/:id', () => {
       expect((await call('DELETE', `/api/questions/${String(id)}`, ADMIN)).status).toBe(404)
     }
     expect(questions.get(177_698)).not.toBeNull()
+  })
+})
+
+describe('REQ-A-038 POST /api/questions/:id/edit-as-draft', () => {
+  type Conflict = { error: { code: string; message: string; details?: Record<string, unknown> } }
+
+  it('201 {id, versionNo} with the contract flash; the approved row becomes the draft', async () => {
+    const id = (await createMcq()).body.data.id
+    expect(questions.get(id)?.status).toBe('approved')
+    const res = await call<QuestionMutation<{ id: string; versionNo: number }>>('POST', `/api/questions/${String(id)}/edit-as-draft`, ADMIN)
+    expect(res.status).toBe(201)
+    expect(res.body.data).toEqual({ id: String(id), versionNo: 2 })
+    expect(res.body.status).toBe(QUESTION_MESSAGES.editAsDraft(String(id)))
+    expect(questions.get(id)?.status).toBe('draft')
+  })
+
+  it('409 CONFLICT naming the existing draft in details {id, versionNo}; a second click makes no second draft', async () => {
+    const id = (await createMcq()).body.data.id
+    await call('POST', `/api/questions/${String(id)}/edit-as-draft`, ADMIN)
+    for (const status of ['draft', 'pending_review'] as const) {
+      questions.update(id, { status }, Date.parse(NOW))
+      const res = await call<Conflict>('POST', `/api/questions/${String(id)}/edit-as-draft`, ADMIN)
+      expect(res.status).toBe(409)
+      expect(res.body.error.code).toBe('CONFLICT')
+      expect(res.body.error.message).toBe(QUESTION_MESSAGES.editAsDraftExists)
+      expect(res.body.error.details).toEqual({ id: String(id), versionNo: 2 })
+      expect(questions.get(id)?.status).toBe(status)
+    }
+  })
+
+  it('409 without details when the question is not live (archived), and nothing changes', async () => {
+    const id = (await createMcq()).body.data.id
+    await call('POST', '/api/questions/bulk-action', ADMIN, { action: 'archive', ids: [id] })
+    const res = await call<Conflict>('POST', `/api/questions/${String(id)}/edit-as-draft`, ADMIN)
+    expect(res.status).toBe(409)
+    expect(res.body.error.message).toBe(QUESTION_MESSAGES.editAsDraftNotApproved)
+    expect(res.body.error.details).toBeUndefined()
+    expect(questions.get(id)?.status).toBe('archived')
+  })
+
+  it('404 for an unknown id and a PKSK row; 401 for a guest; 403 for a pelajar', async () => {
+    for (const id of [999_999_999, 177_698]) {
+      expect((await call('POST', `/api/questions/${String(id)}/edit-as-draft`, ADMIN)).status).toBe(404)
+    }
+    expect((await call('POST', '/api/questions/1/edit-as-draft', null)).status).toBe(401)
+    expect((await call('POST', '/api/questions/1/edit-as-draft', PELAJAR)).status).toBe(403)
   })
 })
 

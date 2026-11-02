@@ -55,6 +55,7 @@ import {
   ARCHIVE_DIALOG,
   archiveBody,
   canArchive,
+  DRAFT_EXISTS_FLASH,
   draftCreatedFlash,
   FLASH,
   REASON,
@@ -275,9 +276,9 @@ async function makeDraft(row: StudioRow): Promise<void> {
   if (busy.value !== null) return
   busy.value = row.id
   try {
-    const id = await editAsDraft(row.id)
-    flash.success(draftCreatedFlash(id))
-    await router.push(editPath(id))
+    const res = await editAsDraft(row.id)
+    flash.success(res.existing ? DRAFT_EXISTS_FLASH : draftCreatedFlash(res.id))
+    await router.push(editPath(res.id))
   } catch (err) {
     flash.show({ type: 'error', message: err instanceof EditAsDraftRefused ? err.lines : errorLines(err) })
   } finally {

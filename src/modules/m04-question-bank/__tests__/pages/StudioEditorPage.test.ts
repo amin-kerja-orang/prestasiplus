@@ -230,7 +230,7 @@ describe('StudioEditorPage (R1-F03b)', () => {
     studio.fetchStudioQuestion.mockResolvedValue(approved)
     studio.editAsDraft.mockImplementation(() => {
       studio.fetchStudioQuestion.mockResolvedValue({ ...approved, status: 'draft' })
-      return Promise.resolve('700')
+      return Promise.resolve({ id: '700', versionNo: 2, existing: false })
     })
     const w = await render('/admin/studio/questions/700/sunting', '700')
     expect(t(w, 'studio-status-badge').text()).toBe('Diterbitkan')

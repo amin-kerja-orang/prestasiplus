@@ -3,7 +3,7 @@
  * edit page. V2 words are verbatim (parity doc S1 to S14, design S1.1, S1.3, 9.2); a PROPOSED label is marked.
  * Wire statuses are the lifecycle codes of ADR-0027: draft, review, approved, archived.
  */
-import type { QuestionGateIssue, ServabilityReport } from '@pp/contract'
+import { QUESTION_MESSAGES, type QuestionGateIssue, type ServabilityReport } from '@pp/contract'
 
 export type StudioStatus = 'draft' | 'review' | 'approved' | 'archived'
 
@@ -55,6 +55,9 @@ export const FLASH = {
 /** V2 flash of "Edit sebagai draf". */
 export const draftCreatedFlash = (id: string): string =>
   `Draf baharu #${id} dicipta. Soalan asal kekal diterbitkan sehingga draf ini diterbitkan.`
+
+/** The 409 of "Edit sebagai draf" when a draft or review is already there: that draft is opened, with this sentence (not an error). */
+export const DRAFT_EXISTS_FLASH = QUESTION_MESSAGES.editAsDraftExists
 
 export const GATE_HEADING = 'Soalan belum boleh diterbitkan — sila betulkan isu di bawah.'
 export const UNSAVED_HINT = 'Simpan draf dahulu — perubahan belum disimpan.'

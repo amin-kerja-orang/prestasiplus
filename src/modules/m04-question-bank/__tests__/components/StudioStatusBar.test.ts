@@ -126,12 +126,21 @@ describe('StudioStatusBar', () => {
   })
 
   it('"Edit sebagai draf" writes the draft at once and flashes the V2 sentence with the id', async () => {
-    studio.editAsDraft.mockResolvedValue('9')
+    studio.editAsDraft.mockResolvedValue({ id: '9', versionNo: 2, existing: false })
     const w = await mountBar({ status: 'approved' })
     await t(w, 'studio-action-edit-as-draft').trigger('click')
     await flushPromises()
     expect(studio.editAsDraft).toHaveBeenCalledWith('9')
     expect(flashNow()?.message).toBe('Draf baharu #9 dicipta. Soalan asal kekal diterbitkan sehingga draf ini diterbitkan.')
+    expect(w.emitted('changed')).toHaveLength(1)
+  })
+
+  it('"Edit sebagai draf" on a question that already has a draft opens it with the existing-draft sentence (no error)', async () => {
+    studio.editAsDraft.mockResolvedValue({ id: '9', versionNo: 2, existing: true })
+    const w = await mountBar({ status: 'approved' })
+    await t(w, 'studio-action-edit-as-draft').trigger('click')
+    await flushPromises()
+    expect(flashNow()).toEqual({ type: 'success', message: 'Soalan ini sudah mempunyai draf atau semakan yang belum diterbitkan. Sunting draf itu.' })
     expect(w.emitted('changed')).toHaveLength(1)
   })
 
