@@ -173,3 +173,31 @@ export const ServabilityPaperRowSchema = z
   })
   .meta({ id: 'ServabilityPaperRow' })
 export type ServabilityPaperRow = z.infer<typeof ServabilityPaperRowSchema>
+
+/**
+ * REQ-A-018 / AC-04.3, AC-04.4 (V2 question detail "Dilihat murid di"): one published paper that carries the question, and whether pupils
+ * can open that paper. `reasons` is empty when `served`; otherwise it lists, for each placed question that stops the paper, the reason
+ * (`question_missing` for a placement that points at no question). `detail` is the id of that placed question, then the machine detail.
+ */
+export const QuestionPaperServabilityRowSchema = z
+  .strictObject({
+    paperId: IdSchema,
+    title: z.string(),
+    served: z.boolean().meta({ description: 'Pupils can open the paper in Simulasi (published and every placed question servable).' }),
+    reasons: z.array(ServabilityReasonSchema).meta({ description: 'Empty when `served`. `detail` starts with the id of the placed question that stops the paper.' }),
+  })
+  .meta({ id: 'QuestionPaperServabilityRow' })
+export type QuestionPaperServabilityRow = z.infer<typeof QuestionPaperServabilityRowSchema>
+
+/** `meta` of `GET /admin/questions/{id}/paper-servability`: at most 200 papers are read; `total` counts all of them. */
+export const QuestionPaperServabilityMetaSchema = z
+  .strictObject({
+    total: z.number().int().min(0).meta({ description: 'Published admin papers (kind pilihan) that place the question; a pupil\'s generated paper is never counted.' }),
+    truncated: z.boolean().meta({ description: 'True when `total` is more than the rows returned (the first 200 by paper id).' }),
+  })
+  .meta({ id: 'QuestionPaperServabilityMeta' })
+export type QuestionPaperServabilityMeta = z.infer<typeof QuestionPaperServabilityMetaSchema>
+
+/** The 200 body of `GET /admin/questions/{id}/paper-servability`: `{ data, meta }` (the client resolves exactly this, not a bare array). */
+export const QuestionPaperServabilityResponseSchema = z.object({ data: z.array(QuestionPaperServabilityRowSchema), meta: QuestionPaperServabilityMetaSchema })
+export type QuestionPaperServabilityResponse = z.infer<typeof QuestionPaperServabilityResponseSchema>

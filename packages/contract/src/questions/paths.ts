@@ -120,13 +120,14 @@ export function registerQuestionsPaths(registry: OpenAPIRegistry): void {
     tags: admin,
     summary: 'Admin question list (newest first)',
     description:
-      'Page size 20 (max 100). Unknown filter values match nothing, except `status`, which must be one of the v2 codes (422 otherwise, D54a). Legacy PKSK rows are never listed.',
+      'Page size 20 (max 100). Unknown filter values match nothing, except `status`, which must be one of the v2 codes (422 otherwise, D54a). Legacy PKSK rows are never listed. Rate limited per user (`THROTTLE_QUESTIONS_LIST_PER_MINUTE`, default 60): a 1 to 2 character or punctuation-only `search` cannot use the trigram index and scans the bank, and it is still accepted (no 422).',
     request: { query: QuestionListQuerySchema },
     responses: {
       200: json(listEnvelopeOf(QuestionRowSchema), 'A page of rows.'),
       401: unauthorized,
       403: forbidden,
       422: invalid,
+      429: err('RATE_LIMITED: more than the list limit per minute for this user (Retry-After header, seconds).'),
     },
   })
   registry.registerPath({

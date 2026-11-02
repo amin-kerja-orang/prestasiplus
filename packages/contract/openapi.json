@@ -15595,6 +15595,54 @@
         ],
         "additionalProperties": false
       },
+      "QuestionPaperServabilityRow": {
+        "type": "object",
+        "properties": {
+          "paperId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "served": {
+            "type": "boolean",
+            "description": "Pupils can open the paper in Simulasi (published and every placed question servable)."
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ServabilityReason"
+            },
+            "description": "Empty when `served`. `detail` starts with the id of the placed question that stops the paper."
+          }
+        },
+        "required": [
+          "paperId",
+          "title",
+          "served",
+          "reasons"
+        ],
+        "additionalProperties": false
+      },
+      "QuestionPaperServabilityMeta": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Published admin papers (kind pilihan) that place the question; a pupil's generated paper is never counted."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "True when `total` is more than the rows returned (the first 200 by paper id)."
+          }
+        },
+        "required": [
+          "total",
+          "truncated"
+        ],
+        "additionalProperties": false
+      },
       "CommandCenterMood": {
         "type": "string",
         "enum": [
@@ -85135,6 +85183,82 @@
         }
       }
     },
+    "/admin/questions/{id}/paper-servability": {
+      "get": {
+        "tags": [
+          "servability"
+        ],
+        "summary": "The published papers that carry a question, and whether pupils can open each (AC-04.3 / AC-04.4)",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One row per published admin paper (kind pilihan; a pupil's generated paper is never listed) that places the question, by paper id, at most the first 200; `meta.total` counts all of them and `meta.truncated` says the list is cut. `[]` when it is on none.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/QuestionPaperServabilityRow"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/QuestionPaperServabilityMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (not Admin Pusat), or CSRF_INVALID on the batch POST.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id, a PKSK question or a Darjah question.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/servability/questions/batch": {
       "post": {
         "tags": [
@@ -102992,7 +103116,7 @@
           "questions"
         ],
         "summary": "Admin question list (newest first)",
-        "description": "Page size 20 (max 100). Unknown filter values match nothing, except `status`, which must be one of the v2 codes (422 otherwise, D54a). Legacy PKSK rows are never listed.",
+        "description": "Page size 20 (max 100). Unknown filter values match nothing, except `status`, which must be one of the v2 codes (422 otherwise, D54a). Legacy PKSK rows are never listed. Rate limited per user (`THROTTLE_QUESTIONS_LIST_PER_MINUTE`, default 60): a 1 to 2 character or punctuation-only `search` cannot use the trigram index and scans the bank, and it is still accepted (no 422).",
         "parameters": [
           {
             "schema": {
@@ -103207,6 +103331,16 @@
           },
           "422": {
             "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages), `message` = first message plus the count of the others.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: more than the list limit per minute for this user (Retry-After header, seconds).",
             "content": {
               "application/json": {
                 "schema": {
