@@ -538,7 +538,7 @@ A3 dev-1 rehearsed this locally. `prisma migrate deploy` does not run a migratio
 - ha18-minors must restore 0105 byte-for-byte (A2); it is IN-PROGRESS until then.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 02:33 UTC, BASE b2251dc4)
+### Team A open branches: heads from origin (auto, 2026-11-02 02:38 UTC, BASE a31b9e0a)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -547,7 +547,6 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ac-gaps-a1b | 3f9072c29 | READY (multi, @3f9072c2: runbook at BASE-154; coverage doc cites BASE numbers; Q17 notes in the B4 pack ([PENDING A2] Terbitkan copy); handoff byte-identical to ha26); merge AFTER ha26; B4/B2 |
 | r1/alp-comment-240 | 84b0c3a99 | READY (A4, @84b0c3a9 on approved admin-list-perf 69f465c8; comment only): env.schema.ts:148 says 240 (REQ-B-066 part); merge after admin-list-perf; B2 | A1b Approve (comment only) |
 | r1/c012-doc-followup | b71dc2add | READY (A2, @b71dc2ad on BASE-134; docs, 1 line): pipeline doc :297 edit-as-draft response (201 {id, versionNo}; 409 newer draft/review; 409 live not approved); B2 |
-| r1/ha17-ac-coverage | 157b371c3 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b; head 157b371c |
 | r1/ha18-gate-facts | f988b670f | MERGED by B1 as BASE-132 259f4616 @a9ffe246 (alone, not paired with reqb052; pinned-version-rule check by A4 running). Origin head f988b670 → follow-up r1/ha18-minors |
 | r1/ha18-minors | 17450966c | READY (A2, @17450966; B2 delta vs BASE: 5 files, review.service not_duplicate idempotent / 409 itemLocked + duplicateId audit, accepted-duplicates e2e gate-dismiss test, helpers withQuestionWorkflow opt-in, contract description + openapi 1 line; **no migration change** (0105 restored byte-for-byte, lead verified the 3-dot diff)). A1b Approve on content; A4 proof green; re-run 22/22, contract:check ok. B: run npm run check -w @pp/contract |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
@@ -563,19 +562,16 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/partial-acs-a3 | e6ceece19 | READY-AFTER-FIX (A3, @e6ceece1 restacked on T48 10c62437): exam-builder 416/417 RED: builder-review "stays outside D93" (same as REQ-B-069; likely pool page cap ?pageSize=100 vs 106 units). Fixed by r1/t31-pool-lookup-fixture merged after T31 (no cascade needed); merge after t31-pool-lookup-fixture |
 | r1/publish-lock-share | 7ef73b79d | READY (A1b, @7ef73b79 = 225b6941 + BASE-148 merge; A4 APPROVE: the dropped early-read was T34's perf choice (5df0b2f1), fully replaced by post-lock reads + PUBLISH_TX; the in-lock-window test exists since 11c827b7; 418/418). DSG is merged (BASE-149), so it can merge now; B2 delta |
 | r1/publish-title-draft | 335e9cbb8 | READY (A2, @335e9cbb = 4e768673 + BASE-148 merge: title constants + T48 helpers; exam-builder 396/396, tsc 0; merge-tree vs BASE clean); A4 pre-review AwM (merge resolution exact; nit: DEV row line cite); B2 delta |
-| r1/r1e2e10-bulk-publish-noop | fe228f56f | CR (A2, @fe228f56; 5990fb6b MERGED as BASE-155): delta 5990fb6b..fe228f56 = bulkByFilter race fold into integer skipped + race test + errors.ts; merge-tree clean vs BASE-161; A1b pre-review |
+| r1/r1e2e10-bulk-publish-noop | fe228f56f | READY (A2, @fe228f56; 5990fb6b MERGED as BASE-155): **B2 delta 5990fb6b..fe228f56** = bulkByFilter race rows folded into integer skipped (in processed, not affected/failed), contract descriptions, race test + mutation, errors.ts; clean on BASE-161; A1b pre-review APPROVE (16 pass, mutation red) |
 | r1/ready-tiers-check | 9c80f08c3 | ON HOLD (A2, @9c80f08c, contains BASE-107): code correct + Minors fixed (exact 503 body, WARN once per state change, INFO on recovery; mutations red); waits for B DevOps (REQ-A-028: CI seed step + first-install deploy ordering) |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
 | r1/reqa018-mock-swap | 0b774bd2f | READY (A4, @0b774bd2): clean vs BASE-148; mock conformance 2/2 STANDALONE on BASE-148 (C fe in base since BASE-146), contract-tests 22/22. Merge any time; B2 small |
-| r1/reqb058-dedupe-test-a3 | d7665dfad | READY (A3, @d7665dfa = a5f4d355 + takedown-pin f7cee944 + inline Bab; 17 pass on BASE-148; mutations red); merge after reqb058-takedown-pin; DEV doc keep-both; B2 |
-| r1/reqb058-takedown-pin | f7cee944e | READY (A4, @f7cee944 = b1e96566 + test-only inline Bab update in advance() (H-A18 gate); reqb058 9/9, pin-servable 3, be09-paper 8 on BASE + head; bite 6 red). A1b pre-review Approve (b1e96566). Merge note: DEV doc keep the edited REQ-B-032 row + both BASE rows; B2 |
-| r1/reqb067-etl-guards | d402fdf2a | READY (A1a, @d402fdf2 off BASE-132): REQ-B-067 real (macOS-visible) defects fixed: files.ts realOf (realpath first, ancestor walk, dangling symlinks followed ≤40 hops) closes the "separate directories" guard bypass; .github/workflows/api.yml >1 MB guard portable + fail-closed (pipefail, || exit 1). A1b pre-review Approve (0 B/M); its 3 Minors fixed, each new test bites; security + files.db 41, staging 148, tsc/eslint 0. **Needs B security-engineer + DevOps (CI config)** |
+| r1/reqb067-etl-guards | d402fdf2a | READY (A1a, @d402fdf2 off BASE-132): REQ-B-067 real (macOS-visible) defects fixed: files.ts realOf (realpath first, ancestor walk, dangling symlinks followed ≤40 hops) closes the "separate directories" guard bypass; .github/workflows/api.yml >1 MB guard portable + fail-closed (pipefail, || exit 1). A1b pre-review Approve (0 B/M); its 3 Minors fixed, each new test bites; security + files.db 41, staging 148, tsc/eslint 0. **Needs B security-engineer + DevOps (CI config)** | A1b re-verify on BASE-161: clean, 148 pass, realOf + CI guard behaviour confirmed |
 | r1/rule-line-v2 | a425206c6 | READY (A3, @a425206c = 89961f9f + BASE-148 merge (comment kept; base figures.questionCount kept, output identical); exam-builder + bijak-papers 507, exam-core 221, tsc/vue-tsc 0; merge-tree clean); A4 pre-review AwM (merge resolution exact; nit: T48 comment :780 still quotes old line); B2 delta |
 | r1/servability-stimuli-once | f76f729a8 | READY (A4, @f76f729a, contains chain tip + BASE-107): spy spec pins one stimulus read per chunk + 2 comments; optional; step 6b |
 | r1/t04-minors | 82828a68a | MERGED by B1 as BASE-119 e927c3ee @8ae70d6e (reviewed SHA; 82828a68 delta not merged: optional test-only, left) |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
-| r1/t37-r1-runbook | c9dcb5a08 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b (823bb4a1); head c9dcb5a0 |
 | r1/t38-cap-risk-row | ee421f520 | READY (A3 docs, @ee421f52 on BASE-120): T38 accepted-risk deviation row (USER Q14, REQ-B-059); docs only; B1 | A1a pre-review Approve (bindings.ts citations exact) |
 | r1/t39-k1-evidence | 669a11099 | READY (A3 docs, @669a1109: K1 blueprint evidence re-checked at BASE-148, time-bound facts marked; fixes the dead base links in runbook/release notes); merge-tree clean; B2 |
 | r1/t42b-intake-acs | 34d86311e | READY (A2, @34d86311 on 5318a971; test-only Minor): refused accept deletes the figure copy storage object (mutation: drop files.discard → red); 6/6; B2 small | A1b pre-review: Approve (mutation bites) |
