@@ -210,3 +210,6 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
 
 ## Q32 (USER DECISION 3 Nov ~03:05 MYT, asked by Mandor): approve batch 2 without B2
 - Answer: **"Saya luluskan, push sekarang"**. The owner approves batch 2 tip `79fbeea2` (BASE-227..230: fb1938c8, cfc55d40, cbaba4be, 295d0ea6) in place of B2, who had given no verdict since 01:34 MYT. A2 Approved all four; A1b full gate green (unit 4786 pass, API DB 1069 pass). Pushed by Mandor (FF from a5d618b4); api.yml 41506569465 (push) and frontend.yml 41506584611 (api_ref = 79fbeea23f4ab2d72732ef012cb6bfafea10d298). B2 may still review after the fact; any finding comes back as a REQ.
+
+## Q33 (USER DECISION 3 Nov ~03:30 MYT, asked by Mandor): deploy timing
+- Answer: **"Sebaik CI hijau (~04:00)"**. Supersedes REQ-B-121 ("malam 3 Nov"). Go-live starts as soon as the final CI on 79fbeea2 (frontend 41506584611 + api 41506569465) is green, T0 ≈ 04:00 MYT; window estimated T0 + 4:20 (≈ 08:20 MYT), pupils have no access in the window. Preconditions unchanged: server operator, `.cloud` owner and dump operator (PC with no AI agent) present; runsheet `docs/ops/r1-go-live-runsheet.md` order (freeze → dump → restore pre_etl → ETL cb7332d0 at 0091 → check → table B on 79fbeea2 with scope on + --seed-reference → PP_DOMAIN + DNS); deploy is human-only. Notice text to pupils/schools before freeze.
