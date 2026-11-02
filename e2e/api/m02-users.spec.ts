@@ -596,8 +596,20 @@ test.describe('M02 user management role guards @api', () => {
       ).toEqual([own!.id])
 
       // A user of another school is hidden as 404, never data.
-      const all = (await central.get('/api/admin/users?perPage=100')).body as UserList
-      const foreign = all.data.find((u) => u.school && u.school.id !== own!.id)
+      // The list is one page of 25, newest first (USERS_PAGE_SIZE; there is no perPage): look the user up per
+      // school, so own-school fixture or runtime users at the top of the list cannot hide every foreign one.
+      const otherSchools = dataOf<{ schools: { id: string }[] }>(
+        await central.get('/api/admin/users/filters'),
+        'central filters',
+      ).schools.filter((s) => s.id !== own!.id)
+      let foreign: WireUser | undefined
+      for (const s of otherSchools) {
+        const bySchool = (
+          await central.get(`/api/admin/users?schoolId=${encodeURIComponent(s.id)}`)
+        ).body as UserList
+        foreign = bySchool.data.find((u) => u.school && u.school.id !== own!.id)
+        if (foreign) break
+      }
       expect(foreign, 'the seed has users of other schools').toBeTruthy()
       expect((await school.get(`/api/admin/users/${foreign!.id}`)).status).toBe(404)
 
