@@ -388,7 +388,7 @@ describe('admin landmines (Q5, Q6)', () => {
   })
 })
 
-describe('servable shape in SQL (battle, games, BR-16)', () => {
+describe('servable shape in SQL (battle, games, chapter counts)', () => {
   it('a five-option question keyed E is never drawn into a battle, and the pool count and the draw agree', async () => {
     const deps = t.get(BattleDeps)
     deps.invalidateCache()
@@ -425,15 +425,16 @@ describe('servable shape in SQL (battle, games, BR-16)', () => {
     expect(fourOption.length).toBeGreaterThan(20)
   })
 
-  it('BR-16: a chapter holding one non-servable MCQ counts only the servable ones, so the next chapter can unlock', async () => {
+  it('a chapter holding one non-servable MCQ counts only the servable ones; chapter 2 is open with no chapter lock (REQ-C-021, D98)', async () => {
     const source = t.get(Be09PracticeQuestionSource)
     expect((await source.chapterCounts([chapterA])).get(chapterA)).toBe(4) // the cheap count (BR-15 list) sees four plain MCQs
     const counts = await source.chapterCounts([chapterA, chapterB], true)
     expect(counts.get(chapterA)).toBe(3) // the exact count (BR-16) drops the two-part one
     expect(counts.get(chapterB)).toBe(2)
     expect(await source.chapterPage(chapterA, [], 10)).toHaveLength(3)
-    const locked = await s1.post('/practice/sessions', { mode: 'chapter', chapterId: chapterB, count: 5 })
-    expect(locked.status).toBe(409)
+    // REQ-C-021 (D98): no progressive lock, so chapter 2 starts before chapter 1 is played
+    const early = await s1.post('/practice/sessions', { mode: 'chapter', chapterId: chapterB, count: 5 })
+    expect(early.status, JSON.stringify(early.body)).toBe(201)
     const started = await s1.post('/practice/sessions', { mode: 'chapter', chapterId: chapterA, count: 10 })
     expect(started.status, JSON.stringify(started.body)).toBe(201)
     const served = started.body.data.questions as { id: string }[]
@@ -443,8 +444,8 @@ describe('servable shape in SQL (battle, games, BR-16)', () => {
       expect(r.status, JSON.stringify(r.body)).toBe(200)
     }
     expect((await s1.post(`/practice/sessions/${started.body.data.sessionId as string}/submit`, { timeSpent: 30 })).status).toBe(200)
-    const open = await s1.post('/practice/sessions', { mode: 'chapter', chapterId: chapterB, count: 5 })
-    expect(open.status, JSON.stringify(open.body)).toBe(201)
+    const after = await s1.post('/practice/sessions', { mode: 'chapter', chapterId: chapterB, count: 5 })
+    expect(after.status, JSON.stringify(after.body)).toBe(201)
   })
 
   it('excludeIds is one array parameter: a very long exclude list works', async () => {

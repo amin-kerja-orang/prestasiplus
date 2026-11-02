@@ -2,7 +2,7 @@ import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi'
 
 import { z } from '../zod'
 import { ErrorBodySchema } from '../common/error'
-import { envelopeOf, listEnvelopeOf } from '../common/envelope'
+import { envelopeOf } from '../common/envelope'
 import { IdSchema } from '../common/ids'
 import {
   ServabilityAttentionCountSchema,
@@ -11,9 +11,13 @@ import {
   ServabilityDatabankRowSchema,
   ServabilityLaneQuerySchema,
   ServabilityLaneSubjectSchema,
+  servabilityLaneListOf,
   ServabilityOverviewActivitySchema,
   ServabilityOverviewSchema,
   ServabilityPaperRowSchema,
+  QuestionPaperServabilityMetaSchema,
+  QuestionPaperServabilityResponseSchema,
+  QuestionPaperServabilityRowSchema,
 } from './reads'
 import {
   ServabilityActivityResultSchema,
@@ -39,6 +43,8 @@ export const SERVABILITY_COMPONENT_SCHEMAS = {
   ServabilityDatabankRow: ServabilityDatabankRowSchema,
   ServabilityAttentionCount: ServabilityAttentionCountSchema,
   ServabilityPaperRow: ServabilityPaperRowSchema,
+  QuestionPaperServabilityRow: QuestionPaperServabilityRowSchema,
+  QuestionPaperServabilityMeta: QuestionPaperServabilityMetaSchema,
 } as const
 
 const json = (schema: z.ZodType, description: string) => ({ description, content: { 'application/json': { schema } } })
@@ -62,6 +68,22 @@ export function registerServabilityPaths(registry: OpenAPIRegistry): void {
     request: { params: z.object({ id: IdSchema }) },
     responses: {
       200: json(envelopeOf(ServabilityReportSchema), 'The report; `versionNo` is the live version evaluated.'),
+      401: unauthorized,
+      403: forbidden,
+      404: err('NOT_FOUND: unknown id, a PKSK question or a Darjah question.'),
+    },
+  })
+  registry.registerPath({
+    method: 'get',
+    path: '/admin/questions/{id}/paper-servability',
+    tags,
+    summary: 'The published papers that carry a question, and whether pupils can open each (AC-04.3 / AC-04.4)',
+    request: { params: z.object({ id: IdSchema }) },
+    responses: {
+      200: json(
+        QuestionPaperServabilityResponseSchema,
+        'One row per published admin paper (kind pilihan; a pupil\'s generated paper is never listed) that places the question, by paper id, at most the first 200; `meta.total` counts all of them and `meta.truncated` says the list is cut. `[]` when it is on none.',
+      ),
       401: unauthorized,
       403: forbidden,
       404: err('NOT_FOUND: unknown id, a PKSK question or a Darjah question.'),
@@ -93,7 +115,7 @@ export function registerServabilityPaths(registry: OpenAPIRegistry): void {
     tags,
     summary: 'Lane "Databank Soalan": bank questions of the Databank subjects with their reasons',
     request: { query: ServabilityLaneQuerySchema },
-    responses: { 200: json(listEnvelopeOf(ServabilityDatabankRowSchema), 'A page of rows, newest first. `status` filters the lifecycle code.'), 401: unauthorized, 403: forbidden, 422: invalid },
+    responses: { 200: json(servabilityLaneListOf(ServabilityDatabankRowSchema), 'A page of rows, newest first, and `subjects` (the options of the Subjek filter). `status` filters the lifecycle code.'), 401: unauthorized, 403: forbidden, 422: invalid },
   })
   registry.registerPath({
     method: 'get',
@@ -101,6 +123,6 @@ export function registerServabilityPaths(registry: OpenAPIRegistry): void {
     tags,
     summary: 'Lane "Bijak SPM": papers with the count of placed questions the bridge cannot serve',
     request: { query: ServabilityLaneQuerySchema },
-    responses: { 200: json(listEnvelopeOf(ServabilityPaperRowSchema), 'A page of papers, newest first. `status` is draft, ready, published or withdrawn.'), 401: unauthorized, 403: forbidden, 422: invalid },
+    responses: { 200: json(servabilityLaneListOf(ServabilityPaperRowSchema), 'A page of papers, newest first, and `subjects` (the options of the Subjek filter). `status` is draft, ready, published or withdrawn.'), 401: unauthorized, 403: forbidden, 422: invalid },
   })
 }

@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common'
 
 import type { Blueprint, BlueprintSection, Paper, PaperPlacement, PaperSection, Prisma } from '../../../db/generated/client'
 import { PrismaService } from '../../../db/prisma.service'
+import { storedReferenceImages, writableReferenceSheet } from '../reference-images'
 
 export type PaperTree = Paper & { sections: (PaperSection & { placements: PaperPlacement[] })[] }
 export type BlueprintWithSections = Blueprint & { sections: BlueprintSection[] }
@@ -191,23 +192,14 @@ export class BuilderRepository {
     await this.prisma.client.paperSection.update({ where: { id }, data })
   }
 
-  /**
-   * The given references that may be used as a reference-sheet picture: a stored `question_image` file named by its PUBLIC TOKEN (never the
-   * internal id, which would leak it and lets any caller probe ids) AND either uploaded by the editing admin or already on this paper's sheet.
-   * Another user's unattached upload is therefore refused (B3 T34-L1).
-   */
-  async existingImages(refs: readonly string[], ownerUserId: bigint, onPaper: readonly string[]): Promise<Set<string>> {
-    const unique = [...new Set(refs)].filter((r) => /^[A-Za-z0-9_-]{8,64}$/.test(r))
-    if (unique.length === 0) return new Set()
-    const rows = await this.prisma.client.file.findMany({
-      where: {
-        purpose: 'question_image',
-        publicId: { in: unique },
-        OR: [{ ownerUserId }, { publicId: { in: [...onPaper] } }],
-      },
-      select: { publicId: true },
-    })
-    return new Set(rows.map((r) => r.publicId))
+  /** See `exam/reference-images`: the sheet to store for a write by this admin, or null when a picture is refused. */
+  writableSheet<P extends { imageFileId?: string | undefined }>(sheet: readonly P[], ownerUserId: bigint, onPaper: readonly string[]): Promise<P[] | null> {
+    return writableReferenceSheet(this.prisma.client, sheet, ownerUserId, onPaper)
+  }
+
+  /** The refs that are a token naming a stored question image uploaded by an admin: the re-check at Terbit. */
+  storedImages(refs: readonly string[]): Promise<Set<string>> {
+    return storedReferenceImages(this.prisma.client, refs)
   }
 
   async pinPlacement(id: bigint, pinnedVersionNo: number, marksOverride: number): Promise<void> {

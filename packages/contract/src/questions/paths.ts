@@ -14,6 +14,7 @@ import {
   QuestionCurriculumTagSchema,
   QuestionDeleteResultSchema,
   QuestionDetailSchema,
+  QuestionEditAsDraftResultSchema,
   QuestionPlacementSchema,
   QuestionGuruCreateRequestSchema,
   QuestionGuruDetailSchema,
@@ -41,6 +42,7 @@ import {
   QuestionStructuredRowSchema,
   QuestionStructuredStatsSchema,
   QuestionStructuredSubSchema,
+  QuestionFilterOptionsSchema,
   QuestionSummarySchema,
   QuestionTypeSchema,
   QuestionUpdateRequestSchema,
@@ -64,6 +66,7 @@ export const QUESTIONS_COMPONENT_SCHEMAS = {
   QuestionStimulusGroup: QuestionStimulusGroupSchema,
   QuestionRow: QuestionRowSchema,
   QuestionSummary: QuestionSummarySchema,
+  QuestionFilterOptions: QuestionFilterOptionsSchema,
   Question: QuestionSchema,
   QuestionDetail: QuestionDetailSchema,
   QuestionPlacement: QuestionPlacementSchema,
@@ -99,6 +102,7 @@ const forbidden = err('FORBIDDEN, or CSRF_INVALID when X-CSRF-Token is missing o
 const notFound = err('NOT_FOUND: unknown id (for Guru routes also another teacher\'s question; ids cannot be probed).')
 const conflict = err('CONFLICT: the count of the filter is not `expectedCount` any more (details: expected, actual); nothing was applied.')
 const deleteRefused = err('CONFLICT: a paper that is still held (Terbit, or withdrawn with sittings) places the question; nothing is deleted (details.reason: served or pinned); also 409 details.reason in_use when a set, remedial test or battle still uses it.')
+const stateConflict = err('CONFLICT: the request does not fit the current state of the question (details when it names another version).')
 const invalid = err('VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages), `message` = first message plus the count of the others.')
 
 const StructuredListEnvelope = z.object({
@@ -117,14 +121,23 @@ export function registerQuestionsPaths(registry: OpenAPIRegistry): void {
     tags: admin,
     summary: 'Admin question list (newest first)',
     description:
-      'Page size 20 (max 100). Unknown filter values match nothing, except `status`, which must be one of the v2 codes (422 otherwise, D54a). Legacy PKSK rows are never listed.',
+      'Page size 20 (max 100). Unknown filter values match nothing, except `status`, which must be one of the v2 codes (422 otherwise, D54a). Legacy PKSK rows are never listed. Rate limited per user (`THROTTLE_QUESTIONS_LIST_PER_MINUTE`, default 60): a 1 to 2 character or punctuation-only `search` cannot use the trigram index and scans the bank, and it is still accepted (no 422).',
     request: { query: QuestionListQuerySchema },
     responses: {
       200: json(listEnvelopeOf(QuestionRowSchema), 'A page of rows.'),
       401: unauthorized,
       403: forbidden,
       422: invalid,
+      429: err('RATE_LIMITED: more than the list limit per minute for this user (Retry-After header, seconds).'),
     },
+  })
+  registry.registerPath({
+    method: 'get',
+    path: '/questions/filter-options',
+    tags: admin,
+    summary: 'The Negeri options of the Studio filter (exam boards of the source papers)',
+    description: 'Admin Pusat only, no-store. `negeri` lists the distinct, trimmed `exam_board` values of `source_papers`, sorted; the list filter `negeri` matches them case-insensitively.',
+    responses: { 200: json(envelopeOf(QuestionFilterOptionsSchema), 'The options.'), 401: unauthorized, 403: forbidden },
   })
   registry.registerPath({
     method: 'get',
@@ -200,6 +213,22 @@ export function registerQuestionsPaths(registry: OpenAPIRegistry): void {
       403: forbidden,
       404: notFound,
       422: invalid,
+    },
+  })
+  registry.registerPath({
+    method: 'post',
+    path: '/questions/{id}/edit-as-draft',
+    tags: admin,
+    summary: 'Edit an approved question as a draft (V2 "Edit sebagai draf")',
+    description:
+      'Admin Pusat only. Copies the live (approved) version unchanged into version n+1 with status `draft`; the live version keeps serving until n+1 is approved. Replaces a PUT with unchanged content. 409 CONFLICT (`details.id`, `details.versionNo` of the newer version) when the latest version is already a draft or review; 409 when the question is not live (archived). Flash: "Draf baharu #{id} dicipta. Soalan asal kekal diterbitkan sehingga draf ini diterbitkan."',
+    request: { params: idParams, headers: [csrf] },
+    responses: {
+      201: json(mutationEnvelopeOf(QuestionEditAsDraftResultSchema), 'The new draft version, with the flash text.'),
+      401: unauthorized,
+      403: forbidden,
+      404: notFound,
+      409: stateConflict,
     },
   })
   registry.registerPath({

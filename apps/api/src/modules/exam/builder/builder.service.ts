@@ -64,6 +64,7 @@ import {
   MIN_GROUP_MEMBERS,
   POOL_PAGE_SIZE,
 } from './builder.constants'
+import { imageRefsOf } from '../reference-images'
 import { BuilderRepository, type PaperTree, type SubjectRef } from './builder.repository'
 import { excludedBankQuery } from '../../bijak/papers/pool-source'
 import { sourceToWire } from '../../bijak/papers/rules'
@@ -332,14 +333,14 @@ export class BuilderService {
 
   // --- operations --------------------------------------------------------------------------------
 
-  /** R1-T34: every reference-panel image must be a stored question image named by its public token, uploaded by the editing admin or already on this paper. */
-  private async checkReferenceImages(actor: AuditActor, paper: PaperTree, refs: readonly string[]): Promise<void> {
-    if (refs.length === 0) return
-    const onPaper = referencePanels(paper.referenceSheets).flatMap((p) => (p.imageFileId ? [p.imageFileId] : []))
-    const known = await this.repo.existingImages(refs, BigInt(actor.userId), onPaper)
-    if (refs.some((r) => !known.has(r))) {
-      throw ApiError.of('VALIDATION_ERROR', { message: MESSAGES.referenceImageInvalid, fields: { reference: MESSAGES.referenceImageInvalid } })
-    }
+  /**
+   * R1-T34 + B3 T34-L1-residual: every reference-panel image must be a stored question image named by its public token, uploaded by the editing
+   * admin or already on this paper (a legacy decimal id already on the paper is rewritten to its token). Returns the sheet to store.
+   */
+  private async checkedReference<P extends { imageFileId?: string | undefined }>(actor: AuditActor, paper: PaperTree, sheet: readonly P[]): Promise<P[]> {
+    const out = await this.repo.writableSheet(sheet, BigInt(actor.userId), imageRefsOf(paper.referenceSheets))
+    if (out === null) throw ApiError.of('VALIDATION_ERROR', { message: MESSAGES.referenceImageInvalid, fields: { reference: MESSAGES.referenceImageInvalid } })
+    return out
   }
 
   async list(rawQuery: unknown): Promise<{ data: BijakBuilderPaperSummary[]; meta: ListMeta }> {
@@ -475,7 +476,7 @@ export class BuilderService {
         plans.push({ sectionId: section.id, placements: ids.map((id) => ({ questionId: BigInt(id), pinnedVersionNo: st.info.get(id)!.versionNo })) })
       }
       // R1-T34 "Bahan rujukan": every panel image must be a stored file (public token or id), never a free string.
-      if (body.reference !== undefined) await this.checkReferenceImages(actor, paper, body.reference.flatMap((p) => (p.imageFileId ? [p.imageFileId] : [])))
+      const reference = body.reference === undefined ? undefined : await this.checkedReference(actor, paper, body.reference)
       const everywhere = [...resulting.values()].flat()
       // D90: a stimulus group lives in ONE section, so a group member twice on the paper is refused here. A plain
       // question repeated across sections stays accepted and is reported by the publish check (the mock's order).
@@ -487,7 +488,7 @@ export class BuilderService {
         ...(body.year !== undefined ? { year: body.year } : {}),
         ...(body.durationMin !== undefined ? { printedDurationMin: body.durationMin } : {}),
         ...(body.instructions !== undefined ? { instructions: body.instructions } : {}),
-        ...(body.reference !== undefined ? { referenceSheets: body.reference as unknown as Prisma.InputJsonValue } : {}),
+        ...(reference !== undefined ? { referenceSheets: reference as unknown as Prisma.InputJsonValue } : {}),
         updatedAt: this.clock.now(),
       })
       for (const edit of edits) await this.repo.updateSection(edit.sectionId, edit.data)
@@ -519,6 +520,18 @@ export class BuilderService {
       await this.record(actor, AUDIT_ACTIONS.BIJAK_PAPER_DELETED, paper.id, { from: statusOf(paper.status), to: null })
     })
     return { ok: true }
+  }
+
+  /**
+   * B3 T34-L1-residual: the reference sheet of a paper may have come from the Kontrak or from Salin set, not only from `PUT`. At Terbit (and in the
+   * review) every picture must still be a token naming a stored question image; a picture that is not is a HARD blocker (the sheet is printed on
+   * the cover that pupils read, so it cannot be overridden). Writes already enforce the owner rule.
+   */
+  private async referenceImageBlockers(paper: PaperTree): Promise<BlockerDraft[]> {
+    const refs = imageRefsOf(paper.referenceSheets)
+    if (refs.length === 0) return []
+    const known = await this.repo.storedImages(refs)
+    return [...new Set(refs)].filter((r) => !known.has(r)).map((): BlockerDraft => ({ code: 'REFERENCE_IMAGE_INVALID', message: MESSAGES.referenceImageInvalid }))
   }
 
   /** Ids of the questions placed on a paper (unique, in paper order). */
@@ -579,7 +592,7 @@ export class BuilderService {
       const { reports, unreadable } = await this.safeReports(placedNow)
       // ONE rule for the review and for publish: `collectBlockers` (hard = the paper's own checks incl. D93 groups, a question missing from the
       // pool, a question pupils cannot be served; overridable = the Kontrak line, which a paper that is already Terbit keeps (overridden), plus the structural blueprint lines).
-      const blockers = this.collectBlockers(paper, ev, structural, reports, unreadable)
+      const blockers = this.collectBlockers(paper, ev, structural, reports, unreadable, await this.referenceImageBlockers(paper))
       const errors = blockers.map((b) => b.message)
       const overridable = blockers.filter((b) => b.overridable).map((b) => b.message)
       const view = blockerView(blockers)
@@ -688,11 +701,13 @@ export class BuilderService {
     structural: { blockers: BlockerDraft[]; contract: BlockerDraft[]; fixed: BlockerDraft[] },
     reports: ReadonlyMap<string, ServabilityReport>,
     unreadable: readonly string[],
+    referenceImages: readonly BlockerDraft[],
   ) {
     return toBlockers([
       ...ev.issues,
       ...structural.fixed,
       ...this.attemptBlockers(paper, ev, reports),
+      ...referenceImages,
       ...unreadable.map((id): BlockerDraft => ({ code: 'NOT_SERVABLE', message: unreadableLine(id), questionId: id })),
       ...(paper.status === 'published' ? [] : structural.contract),
       ...structural.blockers,
@@ -838,7 +853,7 @@ export class BuilderService {
     // "not on a published paper", so that one reason is left out. A question the service does not know keeps the status-only reason.
     const placed = paper.sections.flatMap((s) => s.placements.map((pl) => idToString(pl.questionId)))
     const { reports, unreadable } = await this.safeReports(placed)
-    const blockerList = this.collectBlockers(paper, ev, structural, reports, unreadable)
+    const blockerList = this.collectBlockers(paper, ev, structural, reports, unreadable, await this.referenceImageBlockers(paper))
     const blockers = blockerList.map((b) => b.message)
     const rows = paper.sections.flatMap((s) =>
       s.placements.map((pl) => {

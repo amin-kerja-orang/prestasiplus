@@ -150,7 +150,7 @@ Reading: several ⚠️ rows (A02, A07, A09, A11, A18, A19, A20) are partial bec
 
 ## 6. Top 20 gaps, Bijak SPM first
 
-1. **A25 Kawalan Ciri** (P0): build migration 0106, `GET /api/feature-flags`, `GET/PUT /api/admin/feature-flags/:key`; FE `/admin/feature-toggles` (SY-02). Decide about the other ~25 V2 flags.
+1. **A25 Kawalan Ciri** (P0): build migration 0108 (`feature_flags`; 0106 and 0107 went to admin-list-perf), `GET /api/feature-flags`, `GET/PUT /api/admin/feature-flags/:key`; FE `/admin/feature-toggles` (SY-02). Decide about the other ~25 V2 flags.
 2. **A03 Question lifecycle `approved`** (P0): ADR-0027 in `apps/api/src/modules/questions`; status bar on the edit screen (`Hantar untuk semakan`, `Terbitkan`, `Arkib`, `Edit sebagai draf`).
 3. **A18 Set Builder / Jana set** (P0): `POST /api/admin/papers` mode generate or blank, `pool-preview`, placements, snapshot pinning on publish; FE `/admin/studio/sets*`. UAT has 0 papers, so Bijak SPM is empty until papers exist.
 4. **A20 Kontrak Simulasi screen** (P0): BE `admin/blueprints` is ready; build `/admin/spm/kontrak` list and editor with `Sumber` Draf/Spec/Disahkan and the Disahkan gate (D76).

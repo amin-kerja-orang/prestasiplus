@@ -66,7 +66,7 @@ export class StimuliController {
   @UseInterceptors(NoStoreInterceptor)
   async listGroups(@Query() query: unknown) {
     const q = parseQuery(StimulusGroupListQuerySchema, query)
-    const res = await this.stimuli.listGroups(q)
+    const res = await this.stimuli.listGroups({ ...q, joinable: q.joinable === 'true' })
     return { data: res.rows, meta: listMeta(q.page, q.pageSize, res.total) }
   }
 

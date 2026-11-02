@@ -234,7 +234,7 @@ describe('question image read rule for pupils (real database)', () => {
     expect(await status(pupil, img)).toBe(404)
   })
 
-  it('a reference-sheet image of a published paper is readable by token or decimal id; an unpublished paper keeps it private', async () => {
+  it('a reference-sheet image of a published paper is readable by its public token only; the internal decimal id never matches (B3 T34-L1-residual)', async () => {
     const byToken = await upload()
     const byId = await upload()
     const { paper } = await publishedPaper()
@@ -243,7 +243,8 @@ describe('question image read rule for pupils (real database)', () => {
       JSON.stringify([{ title: 'Rumus', items: ['a'], imageFileId: byToken.id }, { title: 'Jadual', items: [], imageFileId: byId.dbId }]),
     ])
     expect(await status(pupil, byToken)).toBe(200)
-    expect(await status(pupil, byId)).toBe(200)
+    // a decimal id on the sheet (legacy data) opens nothing: the pupil gets the uniform 404
+    expect(await status(pupil, byId)).toBe(404)
     await t.db.query(`update papers set status = 'draft' where id = $1`, [paper])
     expect(await status(pupil, byToken)).toBe(404)
     expect(await status(pupil, byId)).toBe(404)

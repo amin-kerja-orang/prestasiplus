@@ -158,6 +158,7 @@ describe('PaperEditorPage picker', () => {
         { path: '/admin/spm/kertas/:id', name: 'm28.admin.papers.edit', component: PaperEditorPage },
         { path: '/admin/spm/kertas', name: 'm28.admin.papers', component: stub },
         { path: '/admin/spm/semakan', name: 'm28.admin.review', component: stub },
+        { path: '/admin/spm/kontrak/:subjek/:kertas', name: 'm28.admin.kontrak.edit', component: stub },
         { path: '/:p(.*)*', component: stub },
       ],
     })

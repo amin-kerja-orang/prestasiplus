@@ -11,7 +11,7 @@ import { questions } from '@/modules/m04-question-bank/mock'
 import type { PracticeSubject } from '../../api/types'
 import { DAY_MS, startOfMytDay } from '../datasets/calendar'
 import { chapterStats, type ChapterStats } from '../repository/reads'
-import { offeredPracticeLevelIds, UNLOCK_SCORE } from '../repository/rules'
+import { offeredPracticeLevelIds } from '../repository/rules'
 
 export type SubjectRecord = NonNullable<ReturnType<typeof curriculum.subject>>
 
@@ -116,22 +116,17 @@ export function practiceChapters(subjectId: number, levelId: number) {
 export interface ChapterEntry {
   chapter: ReturnType<typeof practiceChapters>[number]
   stats: ChapterStats
-  open: boolean
 }
 
 /**
- * The chapters of a pair with the viewer's stats and BR-16 state: chapter 1 is open; chapter k is
- * open ⇔ chapter k − 1 is complete and its score ≥ 70.
+ * The chapters of a pair with the viewer's stats. No chapter lock (D98, follow V2): every chapter is open.
  */
 export function chapterEntries(userId: number, subjectId: number, levelId: number): ChapterEntry[] {
   const list = practiceChapters(subjectId, levelId)
   const out: ChapterEntry[] = []
-  for (const [i, chapter] of list.entries()) {
+  for (const chapter of list) {
     const stats = chapterStats(userId, chapter.id)
-    const prev = out[i - 1]
-    const open =
-      i === 0 || (prev !== undefined && prev.stats.complete && prev.stats.scorePct >= UNLOCK_SCORE)
-    out.push({ chapter, stats, open })
+    out.push({ chapter, stats })
   }
   return out
 }

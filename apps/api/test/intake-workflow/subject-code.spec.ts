@@ -164,6 +164,43 @@ describe('intake tag subject: Bijak codes resolve to the curriculum subject (R1E
     expect((await t.db.query<{ source_paper_id: string }>(`select source_paper_id::text from intake_batches where id = $1`, [batch.id]))[0]!.source_paper_id).toBe(old)
   })
 
+  it('REQ-B-034: an SP code that does not exist is refused at accept with a field message; a real SP code is accepted', async () => {
+    const [real] = await t.db.query<{ code: string }>(`select code from curriculum_nodes where kind = 'sp' and code = $1 limit 1`, [t.codes.sp])
+    expect(real?.code).toBe(t.codes.sp)
+    // the resolver reports the unknown code and still resolves the known one
+    const unknown = tagOf('MAT', 'T4', t.codes.unit, [t.codes.sp, '99.99.99'])
+    const resolved = await facts.resolver().resolve(unknown)
+    expect(resolved.facts.unknownSp).toEqual(['99.99.99'])
+    expect(resolved.ids?.spIds).toHaveLength(1)
+    expect((await facts.resolver().resolve(tagOf('MAT', 'T4', t.codes.unit, [t.codes.sp]))).facts.unknownSp).toEqual([])
+
+    const run = async (sp: string[], mark: string): Promise<{ id: string }> => {
+      t.ai.paper = () => paper([draft(t.codes, '1', { tag: tagOf('MAT', 'T4', t.codes.unit, sp) })])
+      const batch = await createBatch(teacher, { subject: 'MAT' })
+      await uploadOk(teacher, batch.id, [{ bytes: Buffer.concat([textPdf(1), Buffer.from(`\n% ${mark}\n`)]), filename: `${mark}.pdf` }])
+      await t.drain()
+      await extractAndRun(t, teacher, batch.id)
+      const [item] = await itemsOf(teacher, batch.id)
+      return item!
+    }
+    const bad = await run(['1.1'], 'sp salah')
+    // the review item already lists the issue, and accept refuses it
+    const detail = await teacher.agent.get(`/api/intake/items/${bad.id}`)
+    expect(detail.status, JSON.stringify(detail.body)).toBe(200)
+    const escaped = JSON.stringify(G.spNotInTaxonomy('1.1')).slice(1, -1) // the message as it sits inside a JSON string
+    expect(JSON.stringify(detail.body.data.issues)).toContain(escaped)
+    const refused = await post(teacher, `/intake/items/${bad.id}/accept`)
+    expect(refused.status, JSON.stringify(refused.body)).toBe(422)
+    expect(JSON.stringify(refused.body)).toContain(escaped)
+    expect((await t.db.query(`select 1 from intake_items where id = $1::bigint and question_id is not null`, [bad.id])).length).toBe(0)
+    // with a real SP code the same item is accepted and the question keeps the SP
+    const good = await run([t.codes.sp], 'sp betul')
+    const ok = await post(teacher, `/intake/items/${good.id}/accept`)
+    expect(ok.status, JSON.stringify(ok.body)).toBe(200)
+    const sp = await t.db.query(`select 1 from question_version_sp_nodes where question_version_id = (select id from question_versions where question_id = $1::bigint and version_no = 1)`, [ok.body.data.question.id])
+    expect(sp).toHaveLength(1)
+  })
+
   it('D99: the only source and rights declaration left is the intake batch one: a batch without it is still refused', async () => {
     const send = (over: Record<string, unknown>) => teacher.agent.post('/api/intake/batches').set('X-CSRF-Token', teacher.csrf).send({ paperType: 'trial', subject: 'MAT', kertas: 1, year: 2025, source: 'Sumber ujian', copyright: 'sendiri', declaration: true, ...over })
     expect((await send({ declaration: false })).status).toBe(422)

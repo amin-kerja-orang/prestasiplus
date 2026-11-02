@@ -419,7 +419,11 @@ export class IntakeReviewService {
     await this.prisma.transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM intake_items WHERE id = ${first.id} FOR UPDATE`
       const row = await this.loadVisible(auth, idText, tx)
-      if (!OPEN.includes(row.reviewState as IntakeItemState)) throw conflict(INTAKE_MESSAGES.itemLocked)
+      // REQ-B-057: accept does not wait for the duplicate entries (they stay open, BE-10 Semakan enforces them), so an ACCEPTED item must still be
+      // able to dismiss them ("Bukan pendua", v2-question-bank "duplicate flag resolved or marked Bukan pendua"), or the question could never
+      // leave Draf. Nothing else is decided after accept (no Gabung, no variant link) and the state stays `accepted`.
+      const accepted = row.reviewState === 'accepted'
+      if (accepted ? body.decision !== 'not_duplicate' : !OPEN.includes(row.reviewState as IntakeItemState)) throw conflict(INTAKE_MESSAGES.itemLocked)
       const from = row.reviewState as IntakeItemState
       const now = new Date()
       const decidedBy = idFromString(auth.userId)
@@ -471,8 +475,10 @@ export class IntakeReviewService {
       }
 
       const dups = await tx.duplicateLink.findMany({ where: { itemId: row.id } })
-      const to = intakeOpenState({ lowFields: row.lowFields, confirmed: row.confirmedFields, needsManual: row.needsManual, duplicates: stateDuplicates(dups) })
-      await tx.intakeItem.update({ where: { id: row.id }, data: { reviewState: to } })
+      const to = accepted
+        ? from
+        : intakeOpenState({ lowFields: row.lowFields, confirmed: row.confirmedFields, needsManual: row.needsManual, duplicates: stateDuplicates(dups) })
+      if (!accepted) await tx.intakeItem.update({ where: { id: row.id }, data: { reviewState: to } })
       await tx.intakeItemEvent.create({
         data: { itemId: row.id, event, fromState: from, toState: to, reason: body.note ?? null, actorUserId: decidedBy, actorRole: auth.active.role },
       })
