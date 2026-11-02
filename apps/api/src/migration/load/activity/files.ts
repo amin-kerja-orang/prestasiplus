@@ -20,7 +20,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { constants } from 'node:fs'
 import { access, lstat, open, realpath, stat } from 'node:fs/promises'
-import { isAbsolute, join, relative, resolve } from 'node:path'
+import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path'
 
 import { FILE_PURPOSE_RULES, type FilePurpose } from '@pp/contract'
 import { EXTENSION_OF, inspectUpload, sniffMime } from '../../../modules/files/content-inspect'
@@ -61,7 +61,23 @@ const isInside = (child: string, parent: string): boolean => {
   return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel))
 }
 
-const realOf = async (p: string): Promise<string> => realpath(p).catch(() => resolve(p))
+/**
+ * The real path of `p`, also when `p` does not exist yet: the nearest existing ancestor is resolved through its symlinks and the missing
+ * tail is appended. A bare `resolve(p)` fallback left a not-yet-created folder under a symlinked ancestor (macOS `/var` -> `/private/var`)
+ * unresolved, so it never compared as "inside" the resolved `--files-dir`.
+ */
+const realOf = async (p: string): Promise<string> => {
+  const abs = resolve(p)
+  const tail: string[] = []
+  for (let cur = abs; ; cur = dirname(cur)) {
+    try {
+      return join(await realpath(cur), ...tail.reverse())
+    } catch {
+      if (dirname(cur) === cur) return abs
+      tail.push(basename(cur))
+    }
+  }
+}
 
 /**
  * A staged path as a normalised relative path, or null. Refuses an empty value, NUL and other control characters, a

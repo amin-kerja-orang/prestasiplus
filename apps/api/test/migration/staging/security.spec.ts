@@ -176,10 +176,17 @@ describe('git guards for dumps and reports (AC4, BE-NFR-13)', () => {
     })
     afterEach(() => repo.cleanup())
 
-    const runGuard = () => {
+    const runGuard = (env: NodeJS.ProcessEnv = process.env) => {
       const script = join(repo.path, '.guard.sh')
       writeFileSync(script, guardScript())
-      return spawnSync('bash', [script], { cwd: repo.path, encoding: 'utf8' })
+      return spawnSync('bash', [script], { cwd: repo.path, encoding: 'utf8', env })
+    }
+    /** A `stat` that behaves like BSD/macOS stat: it has no `-c` (REQ-B-067). Putting it first on PATH shows whether the guard depends on GNU stat. */
+    const bsdStatEnv = (): NodeJS.ProcessEnv => {
+      const bin = join(repo.path, '.fakebin')
+      mkdirSync(bin, { recursive: true })
+      writeFileSync(join(bin, 'stat'), '#!/bin/sh\necho "stat: illegal option -- c" >&2\nexit 1\n', { mode: 0o755 })
+      return { ...process.env, PATH: `${bin}:${process.env.PATH ?? ''}` }
     }
     const stage = (path: string, content: string | Buffer) => {
       mkdirSync(join(repo.path, path, '..'), { recursive: true })
@@ -207,6 +214,26 @@ describe('git guards for dumps and reports (AC4, BE-NFR-13)', () => {
     it.runIf(hasBash)('fails when a file over 1 MB is staged under apps/api/test/migration/', () => {
       stage('apps/api/test/migration/fixtures/big.ndjson', Buffer.alloc(1024 * 1024 + 1, 97))
       expect(runGuard().status).toBe(1)
+    })
+
+    it.runIf(hasBash)('does not depend on GNU stat: with a BSD-style stat (no -c) a file over 1 MB still fails, and exactly 1 MB passes', () => {
+      stage('apps/api/test/migration/fixtures/limit.ndjson', Buffer.alloc(1024 * 1024, 97))
+      expect(runGuard(bsdStatEnv()).status, 'exactly 1 MiB is allowed').toBe(0)
+      stage('apps/api/test/migration/fixtures/big.ndjson', Buffer.alloc(1024 * 1024 + 1, 97))
+      const res = runGuard(bsdStatEnv())
+      expect(res.status).toBe(1)
+      expect(res.stdout).toContain('big.ndjson')
+      expect(res.stdout).not.toContain('limit.ndjson')
+    })
+
+    it.runIf(hasBash)('a file with a space in its name is measured too', () => {
+      stage('apps/api/test/migration/fixtures/big file.ndjson', Buffer.alloc(1024 * 1024 + 1, 97))
+      expect(runGuard(bsdStatEnv()).status).toBe(1)
+    })
+
+    it.runIf(hasBash)('a large file elsewhere is not this guard\'s business', () => {
+      stage('docs/large.bin', Buffer.alloc(1024 * 1024 + 1, 97))
+      expect(runGuard(bsdStatEnv()).status).toBe(0)
     })
   })
 })

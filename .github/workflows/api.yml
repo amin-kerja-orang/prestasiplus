@@ -74,7 +74,8 @@ jobs:
       - name: Guard - no dumps, no .migration-out, no large migration fixtures (BE-NFR-13)
         run: |
           bad="$(git ls-files -- '*.dump' '*.sql.gz' '.migration-out/*' '*/.migration-out/*')"
-          big="$(git ls-files -z -- apps/api/test/migration | xargs -0 -r stat -c '%s %n' | awk '$1 > 1048576')"
+          # wc -c, not stat -c: `stat -c` is GNU only (BSD/macOS stat takes -f), and there it failed silently and let a big file through.
+          big="$(git ls-files -z -- apps/api/test/migration | xargs -0 -r -n 1 wc -c | awk '$1 > 1048576')"
           if [ -n "$bad" ] || [ -n "$big" ]; then
             echo "Forbidden files are tracked (dumps, .migration-out/, or a file over 1 MB under apps/api/test/migration/):"
             echo "$bad"

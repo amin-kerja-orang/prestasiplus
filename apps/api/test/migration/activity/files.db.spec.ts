@@ -133,6 +133,25 @@ describe('refusals before any work', () => {
     await expect(h.run('dry-run', opts({ env: { ...h.runEnv, FILE_STORAGE_DIR: join(exportDir, 'store') } }))).rejects.toThrow(/separate directories/)
     await expect(h.run('dry-run', opts({ env: { ...h.runEnv, FILE_STORAGE_DIR: 'relative/dir' } }))).rejects.toThrow(/absolute/)
   })
+
+  it('a storage folder that does not exist yet is still compared through the symlinks of its ancestors (REQ-B-067: macOS /var -> /private/var)', async () => {
+    // The export is opened through its real path; a not-yet-created storage folder reached through a symlinked ancestor used to stay unresolved
+    // and so never counted as "inside" the export. Here the alias plays the part of macOS /var.
+    const aliasHome = mkdtempSync(join(tmpdir(), 'pp-ac9-alias-'))
+    try {
+      symlinkSync(root, join(aliasHome, 'alias'))
+      for (const sub of ['store', join('a', 'b', 'store')]) {
+        const viaAlias = join(aliasHome, 'alias', 'export', sub)
+        await expect(h.run('dry-run', opts({ env: { ...h.runEnv, FILE_STORAGE_DIR: viaAlias } })), sub).rejects.toThrow(/separate directories/)
+      }
+      // a storage folder next to the export, also not created yet, is fine
+      const sibling = join(aliasHome, 'alias', 'storage-new')
+      await expect(h.run('dry-run', opts({ env: { ...h.runEnv, FILE_STORAGE_DIR: sibling } }))).resolves.toBeDefined()
+      expect(existsSync(join(root, 'storage-new'))).toBe(false) // a dry-run creates nothing
+    } finally {
+      rmSync(aliasHome, { recursive: true, force: true })
+    }
+  })
 })
 
 describe('without --files-dir', () => {
