@@ -163,6 +163,15 @@ describe('REQ-B-071: the Bab is optional at Semakan and Terbitkan; it is derived
       expect(n).toBe('0')
     })
 
+    it('an out-of-tree Bab (in_tree = false) with the matching dskp_code is not derived', async () => {
+      const hidden = await newChapter(tag.unitCode)
+      await t.db.query(`update chapters set in_tree = false where id = $1::bigint`, [hidden])
+      const q = await chapterless({}, 'review')
+      expect((await move(q, 'approved')).status).toBe(200)
+      expect(await chapterOf(q)).toBeNull()
+      await t.db.query(`update chapters set dskp_code = null where id = $1::bigint`, [hidden])
+    })
+
     it('several Babs match the unit code: the question is approved chapterless (never a guess)', async () => {
       const x = await newChapter(tag.unitCode)
       const y = await newChapter(tag.unitCode)
