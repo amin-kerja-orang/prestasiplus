@@ -30,10 +30,16 @@ describe('approval check (R1-T45, AC-05.3)', () => {
     expect(fields['servability.databank']).toBe('Databank Soalan: Sebab shape_unsupported untuk databank.')
   })
 
-  it('an unserved activity with no reasons does not count as unservable everywhere (the reasons.length guard)', () => {
+  // Not reachable from the servability rules (an unserved activity always has a reason); it pins what the pure check does with such a report: the empty
+  // `every` is true, so the activity does not count as refusing. Breaking the `every` (to `some`) or dropping the placement clause turns it red.
+  it('an unserved activity with no reasons does not count as unservable everywhere', () => {
     const r = report({})
     r.activities = r.activities.map((a) => ({ ...a, served: false, reasons: [] }))
     expect(unservableEverywhere(r)).toBe(false)
+    // one such activity among otherwise refusing ones is enough to say "not everywhere"
+    const mixed = report({})
+    mixed.activities = mixed.activities.map((a, i) => (i === 0 ? { ...a, served: false, reasons: [] } : a))
+    expect(unservableEverywhere(mixed)).toBe(false)
   })
 
   it('a question the bridge would serve once placed is not unservable everywhere (not_on_published_paper is about the paper)', () => {
