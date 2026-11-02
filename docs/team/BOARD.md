@@ -530,7 +530,7 @@ The B4 pack chain was walked by HTTP on SN/2 (4541/2): **96 MATCH, 1 scanner fal
 - Low bug, fixed under D9: "(draf)" stays in published titles → r1/publish-title-draft (A2).
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 00:50 UTC, BASE 259f4616)
+### Team A open branches: heads from origin (auto, 2026-11-02 00:51 UTC, BASE 259f4616)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -548,8 +548,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/delete-served-guard | fe7ef5378 | READY — B2 c23 APPROVED @fe7ef537 (AwM; B3 c45 Pass). Merge after ha18 + reqb052 + t49 (BASE-121) + d72 |
 | r1/drop-lock-enums | 4d1424c8b | READY (A1a + A2, @4d1424c8, BASE-105): contract drops dead CHAPTER_LOCKED + locked states; negative contract tests; row: no FE reader depends on them (dead local FE types = C follow-up); contract 1435/1435, emit no diff, check ok, api tsc 0; with C reqa014 merged: vue-tsc 0, m03/m05 659/659; merge after reqa014-no-chapter-lock-fe; B2 |
 | r1/ha17-ac-coverage | 157b371c3 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b; head 157b371c |
-| r1/ha18-gate-facts | f988b670f | READY — B2 c23 APPROVED @a9ffe246 (AwM; B3 c45 Pass). **B1: merge a9ffe246 as a PAIR with reqb052 f3a2448f** (reqb052 carries the pinned-version-rule chapter fix; a9ffe246 alone turns BASE test/r1 red). Origin head f988b670 = + minors (0105 comment, not_duplicate idempotent, duplicateId) → follow-up r1/ha18-minors for B2 delta |
-| r1/ha18-minors | 301e9c4bc | CR (A2, @301e9c4b on f988b670 → B2 delta a9ffe246..301e9c4b): pre-review minors (0105 comment not-online, not_duplicate idempotent / 409 itemLocked, duplicateId in audit) + B2 c23 Minor e2e test (gate stops counting after a dismiss) + A1a Lows (audit assertion, contract description); 29/29 + contract intake 130, mutations red; A1b pre-review; merge after the ha18 a9ffe246 + reqb052 pair |
+| r1/ha18-gate-facts | f988b670f | MERGED by B1 as BASE-132 259f4616 @a9ffe246 (alone, not paired with reqb052; pinned-version-rule check by A4 running). Origin head f988b670 → follow-up r1/ha18-minors |
+| r1/ha18-minors | 301e9c4bc | CR (A2, @301e9c4b on f988b670 → B2 delta a9ffe246..301e9c4b): pre-review minors (0105 comment not-online, not_duplicate idempotent / 409 itemLocked, duplicateId in audit) + B2 c23 Minor e2e test (gate stops counting after a dismiss) + A1a Lows (audit assertion, contract description); 29/29 + contract intake 130, mutations red; A1b pre-review; ha18 merged at BASE-132; merge after reqb052 |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
 | r1/ha24-release-input | b1ab28af5 | READY (A3 docs, @b1ab28af on BASE-131: H-A18 approved/pair wording; release-input 0104–0110 reservations (REQ-B-066); KIV 38 rows incl. REQ-B-059 cap, setGroupLabel label-only, PKSK, number-clash wider check); A1a pre-review Approve on rows 35/36; B1/B2 |
 | r1/ha26-team-a-state | edbf61edb | READY (A3 docs, @edbf61ed: merged to BASE-131, all open heads incl. B2 c23 approvals, §4 refreshed, KIV 38); B1 |
@@ -574,7 +574,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/reqa031-studio-draft-flash-test | 0c515ad23 | (no status — triage) |
 | r1/reqa032-m10-fe-reds | b3f76c6ed | (no status — triage) |
 | r1/reqa035-rule-line-fe | 7cd7e3bdc | (no status — triage) |
-| r1/reqb052-archived-edit | f3a2448f9 | READY — B2 c23 APPROVED @f3a2448f (AwM). Merge right after ha18 a9ffe246 (pair; carries the pinned-version-rule chapter fix) |
+| r1/reqb052-archived-edit | f3a2448f9 | READY — B2 c23 APPROVED @f3a2448f (AwM). **Merge NEXT after BASE-132**: it carries the pinned-version-rule chapter fix that BASE-132 (ha18 alone) needs |
 | r1/reqb058-dedupe-test-a3 | a5f4d3553 | READY (A3, @a5f4d355 on reqb058 b1e96566; test only): one question in two sections, getVersions dedupe + takedown paths, 5 tests, mutations red; closes A1b Minor 3; merge after reqb058; B2 | A1a pre-review Approve (2 mutations red) |
 | r1/reqb058-takedown-pin | b1e965665 | READY (A4, @b1e96566: list drops taken-down papers for a pupil with no sitting, batched pins; cover unchanged by lead decision). A1b pre-review Approve (0 B/M; 3 optional minors), bite 3 red; B2 |
 | r1/reqb060-ks17-csv-link | 05d12e414 | (no status — triage) |
