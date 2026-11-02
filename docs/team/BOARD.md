@@ -572,7 +572,7 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 - **Disk:** check `docker system df` and prune orphaned anonymous test volumes when there are 0 containers. A3 reclaimed 3.4 GB this way.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 05:20 UTC, BASE 404e2e7a)
+### Team A open branches: heads from origin (auto, 2026-11-02 05:29 UTC, BASE 404e2e7a)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -589,7 +589,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ready-tiers-check | 9c80f08c3 | KIV R2 (B1 answer to REQ-A-028, 2026-11-02 13:15 MYT: kept on hold for R1; rely on runbook section 0; revisit in R2). Do not merge |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
 | r1/reqb074-takedown-lows | 33b0a0b1c | SUPERSEDED: 45a75f68 merged as BASE-195; the later commit 33b0a0b1 carried the Q18 rule, which the user overrode (REQ-B-077). Do not merge 33b0a0b1. Follow-ups: r1/reqb074-dsg-spec-fix, then r1/reqb076-live-takedown (A1b) |
-| r1/reqb076-live-takedown | c8965bb89 | IN-REVIEW-A (A1b, @c8965bb8 = 1 commit on BASE-195; REQ-B-076: a re-approved version of a taken-down source is not drawn/served on the live path (shared NOT_SOURCE_TAKEN_DOWN_SQL; image rule A 404 without a sitting; sitting exception unchanged per REQ-B-077); spec 3/3, questions + bijak-kuiz 1149/0, 3 mutations red, tsc 0). A4 pre-review + practice-*/exam-builder runs pending. Admin servability report = KIV R2 (DEV row) |
+| r1/reqb076-live-takedown | c8965bb89 | IN-PROGRESS (A1b): A4 pre-review on c8965bb8 = REQUEST CHANGES (read-path predicate half applied: overview card ≠ lane ≠ report; live hydrate paths (revision, chapter repeat, listing, visibleSets, games/missions…) still serve). Lead redesign: an approve gate refuses approving a version whose source has takedown_at (single/bulk/filter/create-as-approved/import; no override in R1); read-path predicates reverted. New head to follow; do not review c8965bb8 |
 | r1/reqb079-t34-t36-minors | 52345db7c | (no status — triage) |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
