@@ -12,7 +12,7 @@
 import { computed, onScopeDispose, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { isApiError } from '@/api'
+import { isApiError, type EntityId } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { usePageMeta } from '@/composables'
 
@@ -32,7 +32,7 @@ const code = computed(() => String(route.params.code ?? ''))
 const chapterId = computed(() => Number.parseInt(String(route.params.chapterId ?? ''), 10))
 const count = computed(() => parseQuizQuery(route.query).count)
 
-const resolved = ref<{ key: string; levelId: number; subjectName: string } | null>(null)
+const resolved = ref<{ key: string; levelId: EntityId; subjectName: string } | null>(null)
 const failed = ref(false)
 const attempt = ref(0)
 const key = computed(() => `${code.value}/${String(chapterId.value)}`)
@@ -42,11 +42,12 @@ async function resolveLevel(
   subject: string,
   id: number,
   token: { cancelled: boolean; controller: AbortController },
-): Promise<{ levelId: number; subjectName: string } | null> {
+): Promise<{ levelId: EntityId; subjectName: string } | null> {
   const signal = token.controller.signal
   const first = await fetchChapterSubject(subject, {}, { signal })
   if (token.cancelled) return null
-  const inLevel = (d: typeof first): boolean => d.chapters.some((c) => c.id === id)
+  // The API's chapter ids are strings (`IdSchema`), the mock's numbers; the route gives a number.
+  const inLevel = (d: typeof first): boolean => d.chapters.some((c) => String(c.id) === String(id))
   if (first.levelId !== null && inLevel(first)) {
     return { levelId: first.levelId, subjectName: first.subject.name }
   }
