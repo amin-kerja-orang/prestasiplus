@@ -439,7 +439,7 @@ const home = computed(() => landingPath.value || '/dashboard')
                     :suggestion="review(p).suggestion!"
                     :max="p.marks"
                   />
-                  <SelfMarkControl :part="review(p)" :save="saveSelfMark" @dirty="onDirty" />
+                  <SelfMarkControl :key="attemptId" :part="review(p)" :save="saveSelfMark" @dirty="onDirty" />
                 </template>
               </PartResultCard>
             </div>
