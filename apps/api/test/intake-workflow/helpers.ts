@@ -26,6 +26,7 @@ import { IntakeWorkflowModule } from '../../src/modules/intake/workflow'
 import { JobsService } from '../../src/modules/jobs'
 import { OCR_ENGINE } from '../../src/modules/ocr'
 import { QuestionsModule } from '../../src/modules/questions'
+import { QuestionWorkflowModule } from '../../src/modules/questions/workflow'
 import { type AuthTestApp, START } from '../auth/helpers'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 import { FakeOcrEngine, createBatch, uploadOk, type LoggedIn } from '../intake-files/helpers'
@@ -76,6 +77,8 @@ export interface BootWorkflowOptions {
    * `t.ai` then records nothing.
    */
   provider?: ExtractionProvider
+  /** Also mounts the question workflow module (`POST /questions/:id/status`, the real Semakan / Terbit gate), for end-to-end checks of the gate. */
+  withQuestionWorkflow?: boolean
 }
 
 export async function bootWorkflowApp(env: Record<string, string | undefined> = {}, opts: BootWorkflowOptions = {}): Promise<WorkflowTestApp> {
@@ -113,7 +116,7 @@ export async function bootWorkflowApp(env: Record<string, string | undefined> = 
   const ai = new MockExtractor()
   const clock = new FixedClock(START)
   const builder = Test.createTestingModule({
-    imports: [defineAppModule([AuthModule, FilesModule, CurriculumModule, QuestionsModule, IntakeFilesModule, IntakeWorkflowModule])],
+    imports: [defineAppModule([AuthModule, FilesModule, CurriculumModule, QuestionsModule, IntakeFilesModule, IntakeWorkflowModule, ...(opts.withQuestionWorkflow ? [QuestionWorkflowModule] : [])])],
   })
     .overrideProvider(CLOCK)
     .useValue(clock)
