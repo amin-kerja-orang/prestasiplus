@@ -34,6 +34,7 @@ import {
   RARITY_LABELS,
   DAILY_LOGIN_DESCRIPTION,
   DAILY_LOGIN_REWARD,
+  REFERRAL_MAX_PER_REFERRER_PER_DAY,
   REFERRAL_REWARD_REFEREE,
   REFERRAL_REWARD_REFERRER,
 } from './gamification.constants'
@@ -702,7 +703,11 @@ export class GamificationService {
   /**
    * XR-M14-02 / BR-M14-19 (called by registration): a known code of ANOTHER existing user, and a referee not
    * referred before, pays the new user 25 and the referrer 50 (`bonus` / `referral`, key `referral:<referee id>`)
-   * and stores a rewarded referral. Otherwise nothing. The two wallets are written in ascending user id order.
+   * and stores a referral. Otherwise nothing. The two wallets are written in ascending user id order.
+   *
+   * Follow-up rules: a referrer with `REFERRAL_MAX_PER_REFERRER_PER_DAY` referrals in the 24 hours up to `at` earns
+   * nothing more (no row, no credit). Each party is credited only when `coinsEnabled` (the row is stored either way;
+   * `rewarded` records whether the referrer was credited).
    */
   async applyReferral(newUserId: string, code: string | null | undefined, opts: EntryOptions): Promise<{ applied: boolean }> {
     const normalised = (code ?? '').trim().toUpperCase()
@@ -711,10 +716,15 @@ export class GamificationService {
       const tx = db as TxClient
       const referrerId = await this.repo.referralOwner(tx, normalised)
       if (!referrerId || referrerId === newUserId || !(await this.repo.userBasics(tx, referrerId))) return { applied: false }
+      await this.repo.lockReferrer(tx, referrerId) // per-referrer lock: the cap's count-then-insert is race-free
       const at = opts.at ?? this.clock.now()
-      if (!(await this.repo.insertReferral(tx, { referrerId, refereeId: newUserId, code: normalised, at }))) return { applied: false }
+      if ((await this.repo.referralsInLastDay(tx, referrerId, at)) >= REFERRAL_MAX_PER_REFERRER_PER_DAY) return { applied: false }
+      const refereeCoins = await this.coinsEnabled(newUserId, { tx })
+      const referrerCoins = await this.coinsEnabled(referrerId, { tx })
+      if (!(await this.repo.insertReferral(tx, { referrerId, refereeId: newUserId, code: normalised, rewarded: referrerCoins, at }))) return { applied: false }
       for (const id of walletLockOrder([newUserId, referrerId])) {
         const isReferee = id === newUserId
+        if (!(isReferee ? refereeCoins : referrerCoins)) continue
         await this.wallet.credit(
           {
             userId: id,
