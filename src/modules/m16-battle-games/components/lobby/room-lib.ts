@@ -11,12 +11,13 @@ type Player = RoomView['players'][number]
 /** Longest time a question may take for the speed bonus and the `seconds` field. */
 export const MAX_ANSWER_SECONDS = 15
 
+// The session keeps `user.id` as a number (`withPrototypeIds`); the API's room ids are strings (`IdSchema`).
 export const isHost = (room: RoomView, userId: number | null): boolean =>
-  userId !== null && room.host.id === userId
+  userId !== null && String(room.host.id) === String(userId)
 
 /** The acting player of the room (the host who started it); others watch (BR-M16-19). */
 export const canAct = (room: RoomView, userId: number | null): boolean =>
-  userId !== null && room.state !== null && room.state.humanId === userId
+  userId !== null && room.state !== null && String(room.state.humanId) === String(userId)
 
 /** Whether the host may start (BR-M16-19: the game's minimum players are in). */
 export const canStart = (room: RoomView): boolean =>
