@@ -224,7 +224,7 @@ describe('R1 T43b publish ACs (PIPE AC-07.4 to AC-07.9)', () => {
       expect(await status(paper)).toBe('draft')
     })
 
-    it('ZERO_MARK_SECTION and TOTAL_MARKS_BELOW_ONE fire on their own: a paper with no Kontrak at all (the blueprint check returns nothing) is still refused', async () => {
+    it('ZERO_MARK_SECTION and TOTAL_MARKS_BELOW_ONE fire on their own: a paper with no Kontrak at all is refused, and its (overridable) "Tiada blueprint" line cannot lift them', async () => {
       const paper = await newPaper()
       const [a] = await sectionsOf(paper)
       const id = await approved()
@@ -233,8 +233,8 @@ describe('R1 T43b publish ACs (PIPE AC-07.4 to AC-07.9)', () => {
       await q(`update question_parts set marks = 0 where question_version_id in (select id from question_versions where question_id = $1)`, [id])
       const res = await publish(paper)
       expect(res.ok).toBe(false)
-      // no Kontrak: none of the Kontrak lines can be there, so these come from the paper's own check
-      expect(codes(res)).not.toContain('BLUEPRINT_NOT_VERIFIED')
+      // no Kontrak (REQ-B-079): the only Kontrak line is "Tiada blueprint ...", overridable; the two below come from the paper's own check
+      expect(res.blockerDetails).toEqual(expect.arrayContaining([expect.objectContaining({ code: 'BLUEPRINT_NOT_VERIFIED', message: 'Tiada blueprint untuk subjek dan kertas ini', overridable: true })]))
       expect(res.blockerDetails).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ code: 'TOTAL_MARKS_BELOW_ONE', message: LINES.totalMarksBelowOne, overridable: false }),

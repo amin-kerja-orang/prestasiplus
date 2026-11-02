@@ -19,7 +19,7 @@ import { idFromString, idToString, isIdString } from '../../db/ids'
 import { Prisma } from '../../db/generated/client'
 import { PrismaService } from '../../db/prisma.service'
 import { loadEffectiveLeaves, type EffectiveLeaf } from './effective-leaf'
-import { ACTIVE_SUBJECT_SQL, LEARNER_LEVEL_SQL, NOT_PKSK_SQL } from './learner-visibility'
+import { ACTIVE_SUBJECT_SQL, LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_SOURCE_TAKEN_DOWN_SQL } from './learner-visibility'
 
 const CHUNK = 5000
 
@@ -75,7 +75,7 @@ export class QuestionsBijakPoolSource {
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no AND (${wanted === null ? Prisma.sql`TRUE` : Prisma.sql`q.id = ANY(${wanted}::bigint[])`})
        WHERE q.is_active AND v.status = 'approved' AND v.subject_id = ${idFromString(subjectId)}
-         AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${ACTIVE_SUBJECT_SQL}
+         AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${ACTIVE_SUBJECT_SQL}
        ORDER BY q.id`
     if (rows.length === 0) return []
 

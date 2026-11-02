@@ -79,7 +79,7 @@ deploy/demo/redeploy-demo-migration-aware.sh run
 
 Order, and why:
 
-1. **Read-only checks** of Render (auto-deploy off, `BIJAK_POC_QUESTIONS=true`) and Pages (production branch, and
+1. **Read-only checks** of Render (auto-deploy off; `BIJAK_POC_QUESTIONS` `false` or unset: it is a deprecated no-op since R1-B07 / T36 and must not be `true`) and Pages (production branch, and
    the current production deployment, which becomes the rollback target — the run prints that id and writes it to
    `out/pages-previous-deployment.txt` in its work directory. Note it down: a later manual `rollback` takes it as
    `ROLLBACK_PAGES_DEPLOYMENT_ID`.)

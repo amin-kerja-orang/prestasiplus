@@ -287,7 +287,7 @@ throttle bucket (5 a minute). Nobody should use the demo during that gap.
 | `COOKIE_SECURE` | keep `true` |
 | `TRUST_PROXY_HOPS` | keep `2` |
 | `FILE_STORAGE_DIR` | keep `/var/lib/pretasiplus/files` |
-| `BIJAK_POC_QUESTIONS` | **must be `true`** (else the PoC papers have no questions) |
+| `BIJAK_POC_QUESTIONS` | `false` or removed (a deprecated no-op since R1-B07 / T36: Bijak serves the question bank only; `true` only logs a warning) |
 | `ALLOW_DEMO_SEED` | keep `false` (the API never seeds) |
 | `LOG_LEVEL` | keep `info` |
 | `CLIENT_IP_HEADER` | **set** `x-pp-client-ip` |

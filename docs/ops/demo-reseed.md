@@ -32,7 +32,7 @@ Set `SEED_DEMO_PASSWORD_HASH` BEFORE the first seed (an account that already has
 ```bash
 npm run be:db:migrate        # prisma migrate deploy; safe to re-run
 if [ -z "$(printf '%s' "${SEED_DEMO_PASSWORD_HASH:-}" | tr -d '[:space:]')" ]; then echo 'SEED_DEMO_PASSWORD_HASH is not set (or blank): the seed would use the published dev password'; else
-  ALLOW_DEMO_SEED=true BIJAK_POC_QUESTIONS=true npm run be:db:seed -- --profile=poc; fi
+  ALLOW_DEMO_SEED=true npm run be:db:seed -- --profile=poc; fi
 ```
 
 Expected last line: `seed: profile=poc, N module(s): ...` (`poc` is also the default profile). To start from an empty database, recreate the Supabase project schema first (or restore a clean backup), then run the two commands above.
@@ -69,7 +69,7 @@ Then re-run the seed (same env as Path A):
 
 ```bash
 if [ -z "$(printf '%s' "${SEED_DEMO_PASSWORD_HASH:-}" | tr -d '[:space:]')" ]; then echo 'SEED_DEMO_PASSWORD_HASH is not set (or blank): the seed would use the published dev password'; else
-  ALLOW_DEMO_SEED=true BIJAK_POC_QUESTIONS=true npm run be:db:seed -- --profile=poc; fi
+  ALLOW_DEMO_SEED=true npm run be:db:seed -- --profile=poc; fi
 ```
 
 **No follow-up SQL is needed.** Every seed that writes demo accounts (`core/identity.ts`, `core/population.ts` and the Bijak PoC `poc/bijak-sittings.ts`, which owns murid4 to murid8) refills a NULL `password_hash` from the shared `demoPasswordHash()` (`core/demo-password.ts`, honours `SEED_DEMO_PASSWORD_HASH`). An existing non-NULL hash is kept. Check afterwards that no demo account is left without a hash (expect 0):
@@ -103,6 +103,6 @@ Then check the data:
 ## Notes
 
 - The seed is idempotent and deterministic (upsert by natural key, fixed clock and PRNG). Re-running it is safe.
-- `BIJAK_POC_QUESTIONS=true` must also be set in the **API runtime env** (Render), not only for the seed command, or the PoC papers have no questions. Redeploy after changing it.
+- `BIJAK_POC_QUESTIONS` is a **deprecated no-op** since R1-B07 / T36 (`apps/api/src/common/config/env.schema.ts`): Bijak serves the question bank only, so the seed command and the API runtime env do not need it. Leave it `false` or remove it (`true` only logs one warning at start, and the R1 `deploy.sh` refuses `true|1`). The seeded PoC papers are withdrawn by the seed step `exam-retire-poc`; the demo needs at least one published bank paper (the "Latihan Demo Matematik Bank Soalan" paper).
 - `ALLOW_DEMO_SEED` must never be set on production. Without it, `be:db:seed` there loads reference data only (`school_packages`).
 - Do not put `SEED_DEMO_PASSWORD_HASH` in the repo; it is only needed in the shell that runs the seed.

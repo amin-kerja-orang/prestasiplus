@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common'
 
 import { idFromString, idToString } from '../../../../db/ids'
 import { PrismaService } from '../../../../db/prisma.service'
-import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL } from '../../../questions/learner-visibility'
+import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_SOURCE_TAKEN_DOWN_SQL } from '../../../questions/learner-visibility'
 
 export interface AnswerFigures {
   answered: number
@@ -105,7 +105,7 @@ export class OverviewRepository {
       SELECT v.subject_id, v.education_level_id AS level_id, v.difficulty_tp AS tp, (v.type = 'mcq') AS mcq, count(*)::int AS n
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-       WHERE q.is_active AND v.status = 'approved' AND q.group_id IS NULL AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL}
+       WHERE q.is_active AND v.status = 'approved' AND q.group_id IS NULL AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL}
        GROUP BY 1, 2, 3, 4`
     return rows.map((r) => ({
       subjectId: r.subject_id === null ? null : idToString(r.subject_id),
@@ -126,7 +126,7 @@ export class OverviewRepository {
       SELECT q.id
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-       WHERE q.is_active AND v.status = 'approved' AND v.type = 'mcq' AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL}
+       WHERE q.is_active AND v.status = 'approved' AND v.type = 'mcq' AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL}
        ORDER BY q.id DESC
        LIMIT ${limit}`
     return rows.map((r) => idToString(r.id))
@@ -144,7 +144,7 @@ export class OverviewRepository {
       SELECT v.chapter_id, count(*)::int AS n
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-       WHERE v.chapter_id = ANY(${big(chapterIds)}::bigint[]) AND q.is_active AND v.status = 'approved' AND v.type = 'mcq' AND q.group_id IS NULL AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL}
+       WHERE v.chapter_id = ANY(${big(chapterIds)}::bigint[]) AND q.is_active AND v.status = 'approved' AND v.type = 'mcq' AND q.group_id IS NULL AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL}
        GROUP BY v.chapter_id`
     for (const r of rows) out.set(idToString(r.chapter_id), r.n)
     return out

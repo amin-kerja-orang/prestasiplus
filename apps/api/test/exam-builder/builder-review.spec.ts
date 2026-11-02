@@ -2,7 +2,7 @@ import { BIJAK_BUILDER_MESSAGES as MSG } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { makePng } from '../files/fixtures'
-import { NOT_SERVING, serveSeededBlueprints } from '../support/serve-blueprints'
+import { NOT_SERVING, SERVING, serveSeededBlueprints } from '../support/serve-blueprints'
 import { bootFullApp, loginFull, type FullApp, type FullClient } from '../r1/full-app'
 import { giveBab } from '../support/bab'
 import { ACCOUNTS, auditRows, expectError } from './helpers'
@@ -698,6 +698,44 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
       const ok = await admin.post(`/api/admin/papers/${paper}/publish`, { override: true, reason: 'Kontrak sedang menunggu pengesahan' })
       expect(ok.body.data).toMatchObject({ ok: true, errors: [], overridden: [line] })
       expect((await auditRows(t.db, 'bijak.paper.published_override')).filter((r) => r.target_id === paper)).toHaveLength(1)
+    })
+
+    // REQ-B-079 (B2 re-check of T34): a paper with no Kontrak at all (`papers.blueprint_id` is nullable; only the demo seeds write a null) used to skip
+    // this gate. It is now the same class of blocker: the existing code BLUEPRINT_NOT_VERIFIED with the existing line "Tiada blueprint ...".
+    const NO_CONTRACT_LINE = 'Tiada blueprint untuk subjek dan kertas ini'
+    const withoutKontrak = async (paper: string) => q(`update papers set blueprint_id = null where id = $1`, [paper])
+
+    it('REQ-B-079: a paper with no Kontrak (null blueprint_id) is refused at Terbit with the "Tiada blueprint" line, which the review lists too, and nothing is published', async () => {
+      const { paper } = await fullPaper()
+      await withoutKontrak(paper)
+      const refused = await admin.post(`/api/admin/papers/${paper}/publish`)
+      expect(refused.status).toBe(200)
+      expect(refused.body.data, JSON.stringify(refused.body.data)).toMatchObject({ ok: false, errors: [NO_CONTRACT_LINE], canOverride: true })
+      expect(refused.body.data.blockerDetails).toEqual([expect.objectContaining({ code: 'BLUEPRINT_NOT_VERIFIED', message: NO_CONTRACT_LINE, overridable: true })])
+      expect((await admin.get(`/api/admin/papers/${paper}/review`)).body.data.blockers).toEqual([NO_CONTRACT_LINE])
+      expect((await q(`select status from papers where id = $1`, [paper]))[0]?.status).toBe('draft')
+    })
+
+    it('REQ-B-079: the audited override publishes a paper with no Kontrak: overridden lists the line and one published_override audit row is written', async () => {
+      const { paper } = await fullPaper()
+      await withoutKontrak(paper)
+      const ok = await admin.post(`/api/admin/papers/${paper}/publish`, { override: true, reason: 'Kertas contoh tanpa kontrak' })
+      expect(ok.body.data, JSON.stringify(ok.body.data)).toMatchObject({ ok: true, errors: [], overridden: [NO_CONTRACT_LINE] })
+      expect((await q(`select status from papers where id = $1`, [paper]))[0]?.status).toBe('published')
+      expect((await auditRows(t.db, 'bijak.paper.published_override')).filter((r) => r.target_id === paper)).toHaveLength(1)
+    })
+
+    it('REQ-B-079: a re-publish after withdraw is refused for a paper with no Kontrak, while a paper that is already Terbit is not newly blocked', async () => {
+      await q(`update blueprints set ${SERVING} where status = 'active' and kertas = 2 and subject_id = $1`, [subject])
+      const { paper } = await fullPaper()
+      expect((await admin.post(`/api/admin/papers/${paper}/publish`)).body.data).toMatchObject({ ok: true })
+      await withoutKontrak(paper)
+      // Terbit already: the contract line is skipped (as the Disahkan line is), so the repeat call is still ok
+      expect((await admin.post(`/api/admin/papers/${paper}/publish`)).body.data).toMatchObject({ ok: true, errors: [] })
+      expect((await admin.post(`/api/admin/papers/${paper}/withdraw`)).status).toBe(200)
+      const again = await admin.post(`/api/admin/papers/${paper}/publish`)
+      expect(again.body.data, JSON.stringify(again.body.data)).toMatchObject({ ok: false, errors: [NO_CONTRACT_LINE] })
+      expect((await q(`select status from papers where id = $1`, [paper]))[0]?.status).toBe('withdrawn')
     })
   })
 
