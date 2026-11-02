@@ -15595,6 +15595,54 @@
         ],
         "additionalProperties": false
       },
+      "QuestionPaperServabilityRow": {
+        "type": "object",
+        "properties": {
+          "paperId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "served": {
+            "type": "boolean",
+            "description": "Pupils can open the paper in Simulasi (published and every placed question servable)."
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ServabilityReason"
+            },
+            "description": "Empty when `served`. `detail` starts with the id of the placed question that stops the paper."
+          }
+        },
+        "required": [
+          "paperId",
+          "title",
+          "served",
+          "reasons"
+        ],
+        "additionalProperties": false
+      },
+      "QuestionPaperServabilityMeta": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Published admin papers (kind pilihan) that place the question; a pupil's generated paper is never counted."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "True when `total` is more than the rows returned (the first 200 by paper id)."
+          }
+        },
+        "required": [
+          "total",
+          "truncated"
+        ],
+        "additionalProperties": false
+      },
       "CommandCenterMood": {
         "type": "string",
         "enum": [
@@ -64731,6 +64779,7 @@
               "NOT_PUBLISHED",
               "UNKNOWN_QUESTION",
               "NOT_SERVABLE",
+              "REFERENCE_IMAGE_INVALID",
               "NO_KEY",
               "NO_MARKS",
               "MODE_NOT_ALLOWED",
@@ -64738,7 +64787,7 @@
               "BLUEPRINT_NOT_VERIFIED",
               "INELIGIBLE"
             ],
-            "description": "Stable code. Hard (overridable false): DUPLICATE_QUESTION, GROUP_MIN_MEMBERS (D93), GROUP_SPLIT, COUNT_TOO_FEW, COUNT_TOO_MANY, MARKS_MISMATCH, GROUP_NOT_CONSECUTIVE, GROUP_INCOMPLETE, GROUP_OUT_OF_ORDER, NOT_PUBLISHED, UNKNOWN_QUESTION (placed question missing from the pool), NOT_SERVABLE (R1E2E-06, pupils cannot be served). Hard also: NO_KEY, NO_MARKS, MODE_NOT_ALLOWED (structural failures of a question) and GROUP_BROKEN. Overridable: BLUEPRINT_NOT_VERIFIED (Kontrak not Disahkan) and INELIGIBLE (a question without DSKP unit or TP, or with tags awaiting review)."
+            "description": "Stable code. Hard (overridable false): DUPLICATE_QUESTION, GROUP_MIN_MEMBERS (D93), GROUP_SPLIT, COUNT_TOO_FEW, COUNT_TOO_MANY, MARKS_MISMATCH, GROUP_NOT_CONSECUTIVE, GROUP_INCOMPLETE, GROUP_OUT_OF_ORDER, NOT_PUBLISHED, UNKNOWN_QUESTION (placed question missing from the pool), NOT_SERVABLE (R1E2E-06, pupils cannot be served). Hard also: REFERENCE_IMAGE_INVALID (a reference-sheet picture that is not a stored question image, re-checked at Terbit), NO_KEY, NO_MARKS, MODE_NOT_ALLOWED (structural failures of a question) and GROUP_BROKEN. Overridable: BLUEPRINT_NOT_VERIFIED (Kontrak not Disahkan) and INELIGIBLE (a question without DSKP unit or TP, or with tags awaiting review)."
           },
           "message": {
             "type": "string",
@@ -73079,6 +73128,22 @@
         },
         "required": [
           "affected"
+        ]
+      },
+      "QuestionEditAsDraftResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "versionNo": {
+            "type": "integer",
+            "minimum": 2
+          }
+        },
+        "required": [
+          "id",
+          "versionNo"
         ]
       },
       "QuestionDeleteResult": {
@@ -84926,6 +84991,82 @@
                   },
                   "required": [
                     "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (not Admin Pusat), or CSRF_INVALID on the batch POST.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id, a PKSK question or a Darjah question.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/questions/{id}/paper-servability": {
+      "get": {
+        "tags": [
+          "servability"
+        ],
+        "summary": "The published papers that carry a question, and whether pupils can open each (AC-04.3 / AC-04.4)",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One row per published admin paper (kind pilihan; a pupil's generated paper is never listed) that places the question, by paper id, at most the first 200; `meta.total` counts all of them and `meta.truncated` says the list is cut. `[]` when it is on none.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/QuestionPaperServabilityRow"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/QuestionPaperServabilityMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
                   ]
                 }
               }
@@ -103234,7 +103375,7 @@
           "questions"
         ],
         "summary": "Apply one lifecycle action to many questions",
-        "description": "Unknown ids are skipped silently; duplicates count once. Flash: \"<n> soalan berjaya dikemaskini.\" Transition rules and \"only Admin Pusat publishes\" belong to BE-10; forbidden transitions and their error are BE-10 to define. `approved` runs the merged approve gate (ADR-0027: tag, keys, rights not \"belum jelas\", duplicates, DSKP-complete for an SPM-bound question) per id, the same as `POST /questions/{id}/status`: a refused id is a `failed[]` entry (VALIDATION_ERROR with the gate `fields`), the others are applied. `POST /questions` with `status: approved` runs the same gate (422, nothing stored).",
+        "description": "Unknown ids are skipped silently; duplicates count once. Flash: \"<n> soalan berjaya dikemaskini.\" Transition rules and \"only Admin Pusat publishes\" belong to BE-10; forbidden transitions and their error are BE-10 to define. `approved` runs the merged approve gate (ADR-0027: tag, keys, open duplicate, marks, media, AI as last editor, DSKP-complete for an SPM-bound question; no per-question source or rights rule, D99) per id, the same as `POST /questions/{id}/status`: a refused id is a `failed[]` entry (VALIDATION_ERROR with the gate `fields`), the others are applied. `POST /questions` with `status: approved` runs the same gate (422, nothing stored).",
         "parameters": [
           {
             "schema": {
@@ -103654,6 +103795,101 @@
           },
           "404": {
             "description": "NOT_FOUND: unknown id (for Guru routes also another teacher's question; ids cannot be probed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/questions/{id}/edit-as-draft": {
+      "post": {
+        "tags": [
+          "questions"
+        ],
+        "summary": "Edit an approved question as a draft (V2 \"Edit sebagai draf\")",
+        "description": "Admin Pusat only. Copies the live (approved) version unchanged into version n+1 with status `draft`; the live version keeps serving until n+1 is approved. Replaces a PUT with unchanged content. 409 CONFLICT (`details.id`, `details.versionNo` of the newer version) when the latest version is already a draft or review; 409 when the question is not live (archived). Flash: \"Draf baharu #{id} dicipta. Soalan asal kekal diterbitkan sehingga draf ini diterbitkan.\"",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The new draft version, with the flash text.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/QuestionEditAsDraftResult"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN, or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id (for Guru routes also another teacher's question; ids cannot be probed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the request does not fit the current state of the question (details when it names another version).",
             "content": {
               "application/json": {
                 "schema": {
@@ -106071,7 +106307,7 @@
           "questions"
         ],
         "summary": "Check a gate without changing the question",
-        "description": "`gate=approve` (default) is the merged approve gate (\"Terbitkan\"): marks, one key per MCQ, a key for every other mode, images resolved, unit, SP and TP chosen, copyright, no open duplicate; and for an SPM-bound question (a subject of the SPM catalogue at Tingkatan 4 or 5) a cognitive level on every leaf (\"Bahagian (b) belum ada aras pemikiran.\") and the kertas. `gate=submit` is the draft-to-review gate. Legacy questions already approved are never re-checked (D80 DEC-2): the gate runs only on a new approval.",
+        "description": "`gate=approve` (default) is the merged approve gate (\"Terbitkan\"): marks, one key per MCQ, a key for every other mode, images resolved, unit, SP and TP chosen, no open duplicate (no per-question source or rights rule: V2 asks for them once, at the intake batch, D99); and for an SPM-bound question (a subject of the SPM catalogue at Tingkatan 4 or 5) a cognitive level on every leaf (\"Bahagian (b) belum ada aras pemikiran.\") and the kertas. `gate=submit` is the draft-to-review gate. Legacy questions already approved are never re-checked (D80 DEC-2): the gate runs only on a new approval.",
         "parameters": [
           {
             "schema": {
@@ -121785,7 +122021,7 @@
           "intake"
         ],
         "summary": "Link an item to the question or item it duplicates, or dismiss the flag",
-        "description": "Card BE-38, v2-question-bank US-06. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403. Only a human decision sets the state `duplicate`; the automatic check adds `open` entries and leaves the item generated or needs_review. `duplicate` (also \"Gabung\") links exactly one of matchedQuestionId (bank) or matchedItemId (SAME batch) and sets the state `duplicate`; `variant` [PROPOSED] links as an informational variant without changing the state; `not_duplicate` (\"Bukan pendua\") dismisses the entry named by duplicateId for that pair only. A target that does not exist, is in another batch, or is not readable by the caller (BE-09 scope) gets the identical 422 \"Padanan pendua tidak ditemui\" on the field, so ids cannot be probed.",
+        "description": "Card BE-38, v2-question-bank US-06. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403. Only a human decision sets the state `duplicate`; the automatic check adds `open` entries and leaves the item generated or needs_review. `duplicate` (also \"Gabung\") links exactly one of matchedQuestionId (bank) or matchedItemId (SAME batch) and sets the state `duplicate`; `variant` [PROPOSED] links as an informational variant without changing the state; `not_duplicate` (\"Bukan pendua\") dismisses the entry named by duplicateId for that pair only; it is also allowed on an ACCEPTED item (the open entries do not block accept, so the reviewer must be able to clear them before Semakan), and leaves the state `accepted`: every other decision on an accepted or rejected item is 409. A target that does not exist, is in another batch, or is not readable by the caller (BE-09 scope) gets the identical 422 \"Padanan pendua tidak ditemui\" on the field, so ids cannot be probed.",
         "parameters": [
           {
             "schema": {

@@ -81,7 +81,7 @@ export function registerQuestionGatePaths(registry: OpenAPIRegistry): void {
     tags: ['questions'],
     summary: 'Check a gate without changing the question',
     description:
-      '`gate=approve` (default) is the merged approve gate ("Terbitkan"): marks, one key per MCQ, a key for every other mode, images resolved, unit, SP and TP chosen, copyright, no open duplicate; and for an SPM-bound question (a subject of the SPM catalogue at Tingkatan 4 or 5) a cognitive level on every leaf ("Bahagian (b) belum ada aras pemikiran.") and the kertas. `gate=submit` is the draft-to-review gate. Legacy questions already approved are never re-checked (D80 DEC-2): the gate runs only on a new approval.',
+      '`gate=approve` (default) is the merged approve gate ("Terbitkan"): marks, one key per MCQ, a key for every other mode, images resolved, unit, SP and TP chosen, no open duplicate (no per-question source or rights rule: V2 asks for them once, at the intake batch, D99); and for an SPM-bound question (a subject of the SPM catalogue at Tingkatan 4 or 5) a cognitive level on every leaf ("Bahagian (b) belum ada aras pemikiran.") and the kertas. `gate=submit` is the draft-to-review gate. Legacy questions already approved are never re-checked (D80 DEC-2): the gate runs only on a new approval.',
     request: { params: idParams, query: z.object({ gate: QuestionGateNameSchema.optional() }) },
     responses: { 200: json(envelopeOf(QuestionGateCheckSchema), 'The issues, in reading order.'), 401: unauthorized, 403: forbidden, 404: notFound },
   })

@@ -62,7 +62,7 @@ export class AdminQuestionsController {
   @RateLimit(QUESTIONS_WRITE_LIMIT)
   async bulk(@Actor() actor: HttpActor, @Body() body: unknown) {
     const input = parseBulk(body)
-    const { affected, ids, failed } = await this.questions.bulkAction(input.action, input.ids, actor)
+    const { affected, ids, failed } = await this.questions.bulkAction(input.action, input.ids, actor, { submitGate: true })
     await this.audit.bulk(actor, input.action, new Set(input.ids).size, affected, ids)
     return flash({ affected, failed }, QUESTION_MESSAGES.bulkUpdated(affected))
   }
@@ -113,6 +113,15 @@ export class AdminQuestionsController {
     const updated = await this.questions.update(id, input, actor)
     await this.audit.updated(actor, updated.id)
     return flash(questionView(updated), QUESTION_MESSAGES.updated)
+  }
+
+  /** V2 "Edit sebagai draf" (REQ-C-012): version n+1 as a draft, copied unchanged from the live version. Admin Pusat only. */
+  @Post(':id/edit-as-draft')
+  @RateLimit(QUESTIONS_WRITE_LIMIT)
+  async editAsDraft(@Actor() actor: HttpActor, @Param('id') id: string) {
+    const out = await this.questions.editAsDraft(id, actor)
+    await this.audit.editedAsDraft(actor, out.id, out.versionNo)
+    return flash(out, QUESTION_MESSAGES.editAsDraft(out.id))
   }
 
   @Delete(':id')

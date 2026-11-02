@@ -14,6 +14,7 @@ import {
   QuestionCurriculumTagSchema,
   QuestionDeleteResultSchema,
   QuestionDetailSchema,
+  QuestionEditAsDraftResultSchema,
   QuestionPlacementSchema,
   QuestionGuruCreateRequestSchema,
   QuestionGuruDetailSchema,
@@ -100,6 +101,7 @@ const unauthorized = err('UNAUTHORIZED: no valid session.')
 const forbidden = err('FORBIDDEN, or CSRF_INVALID when X-CSRF-Token is missing or wrong.')
 const notFound = err('NOT_FOUND: unknown id (for Guru routes also another teacher\'s question; ids cannot be probed).')
 const conflict = err('CONFLICT: the count of the filter is not `expectedCount` any more (details: expected, actual); nothing was applied.')
+const stateConflict = err('CONFLICT: the request does not fit the current state of the question (details when it names another version).')
 const invalid = err('VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages), `message` = first message plus the count of the others.')
 
 const StructuredListEnvelope = z.object({
@@ -148,7 +150,7 @@ export function registerQuestionsPaths(registry: OpenAPIRegistry): void {
     tags: admin,
     summary: 'Apply one lifecycle action to many questions',
     description:
-      'Unknown ids are skipped silently; duplicates count once. Flash: "<n> soalan berjaya dikemaskini." Transition rules and "only Admin Pusat publishes" belong to BE-10; forbidden transitions and their error are BE-10 to define. `approved` runs the merged approve gate (ADR-0027: tag, keys, rights not "belum jelas", duplicates, DSKP-complete for an SPM-bound question) per id, the same as `POST /questions/{id}/status`: a refused id is a `failed[]` entry (VALIDATION_ERROR with the gate `fields`), the others are applied. `POST /questions` with `status: approved` runs the same gate (422, nothing stored).',
+      'Unknown ids are skipped silently; duplicates count once. Flash: "<n> soalan berjaya dikemaskini." Transition rules and "only Admin Pusat publishes" belong to BE-10; forbidden transitions and their error are BE-10 to define. `approved` runs the merged approve gate (ADR-0027: tag, keys, open duplicate, marks, media, AI as last editor, DSKP-complete for an SPM-bound question; no per-question source or rights rule, D99) per id, the same as `POST /questions/{id}/status`: a refused id is a `failed[]` entry (VALIDATION_ERROR with the gate `fields`), the others are applied. `POST /questions` with `status: approved` runs the same gate (422, nothing stored).',
     request: { headers: [csrf], body: body(QuestionBulkRequestSchema) },
     responses: {
       200: json(mutationEnvelopeOf(QuestionBulkResultSchema), 'Rows affected, with the flash text.'),
@@ -209,6 +211,22 @@ export function registerQuestionsPaths(registry: OpenAPIRegistry): void {
       403: forbidden,
       404: notFound,
       422: invalid,
+    },
+  })
+  registry.registerPath({
+    method: 'post',
+    path: '/questions/{id}/edit-as-draft',
+    tags: admin,
+    summary: 'Edit an approved question as a draft (V2 "Edit sebagai draf")',
+    description:
+      'Admin Pusat only. Copies the live (approved) version unchanged into version n+1 with status `draft`; the live version keeps serving until n+1 is approved. Replaces a PUT with unchanged content. 409 CONFLICT (`details.id`, `details.versionNo` of the newer version) when the latest version is already a draft or review; 409 when the question is not live (archived). Flash: "Draf baharu #{id} dicipta. Soalan asal kekal diterbitkan sehingga draf ini diterbitkan."',
+    request: { params: idParams, headers: [csrf] },
+    responses: {
+      201: json(mutationEnvelopeOf(QuestionEditAsDraftResultSchema), 'The new draft version, with the flash text.'),
+      401: unauthorized,
+      403: forbidden,
+      404: notFound,
+      409: stateConflict,
     },
   })
   registry.registerPath({
