@@ -147,6 +147,10 @@ export const BijakPaperCoverSchema = z
     reference: z
       .array(BijakPaperReferencePanelSchema)
       .meta({ description: 'Reference-sheet panels; empty when the paper has none.' }),
+    examinerGrid: z.boolean().meta({
+      description:
+        'AC-20.3: true when any placed question has a part that is not marked automatically (mark-scheme points or rubric); the cover then shows the "Untuk Kegunaan Pemeriksa" grid. False for an all-objective paper.',
+    }),
     sections: z.array(BijakPaperCoverSectionSchema).min(1),
   })
   .meta({ id: 'BijakPaperCover' })

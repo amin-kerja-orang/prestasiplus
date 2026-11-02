@@ -19,6 +19,19 @@ describe('kuiz stimulus mapping (H-C8)', () => {
     const w = toKuizStimulus({ kind: 'table', label: 'J', bodyMs: 'a | b\n1 | 2', alt: null, assetFileId: null })
     expect(w).toMatchObject({ body: null, table: { head: ['a', 'b'], rows: [['1', '2']] } })
   })
+  it('an invalid stored grid ({} or []) next to a pipe body shows the body table only, no duplicate text (REQ-A-020)', () => {
+    for (const tableData of [{}, []]) {
+      const w = toKuizStimulus({ kind: 'table', label: 'J', bodyMs: 'a | b\n1 | 2', alt: null, assetFileId: null, tableData })
+      expect(w).toMatchObject({ body: null, table: { head: ['a', 'b'], rows: [['1', '2']] } })
+    }
+  })
+  it('a real stored grid wins over a pipe body and the body text stays; other kinds are unchanged (REQ-A-020)', () => {
+    const t = toKuizStimulus({ kind: 'table', label: 'J', bodyMs: 'a | b\n1 | 2', alt: null, assetFileId: null, tableData: { head: ['x'], rows: [['9']] } })
+    expect(t).toMatchObject({ body: 'a | b\n1 | 2', table: { head: ['x'], rows: [['9']] } })
+    const p = toKuizStimulus({ kind: 'passage', label: 'P', bodyMs: 'a | b\n1 | 2', alt: null, assetFileId: null, tableData: {} })
+    expect(p).toMatchObject({ body: 'a | b\n1 | 2', table: null })
+    expect(toKuizStimulus({ kind: 'table', label: 'J', bodyMs: 'teks biasa', alt: null, assetFileId: null, tableData: {} })).toMatchObject({ body: 'teks biasa', table: null })
+  })
   it('own stimuli in link order; unknown, empty or shared ones make the question incomplete', () => {
     const map = new Map([['a', own({ label: 'A' })], ['b', own({ kind: 'map', label: 'B', bodyMs: null, assetFileId: '5' })]])
     const ok = resolveStimuli(record(['a', 'b']), null, map)

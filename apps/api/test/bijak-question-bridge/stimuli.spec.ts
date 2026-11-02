@@ -326,6 +326,38 @@ describe('option images and the stem picture', () => {
     expect(own[0]?.table).toEqual({ head: ['A', 'B'], rows: [['1', '2']] })
   })
 
+  it('an invalid grid ({} or []) beside a pipe body shows the table once: the table from the body, no duplicate text (own and group stimulus, on the attempt wire)', () => {
+    const PIPE = 'Tahun | Peristiwa\n--- | ---\n1957 | Merdeka'
+    const want = { head: ['Tahun', 'Peristiwa'], rows: [['1957', 'Merdeka']] }
+    for (const tableData of [{}, []]) {
+      const m = media({}, new Map<string, OutsideStimulus>([['311', { kind: 'table', assetFileId: null, bodyMs: PIPE, tableData }]]))
+      const bundle = map([mcq()], { stimulusIds: ['311'] }, null, m)
+      const served = buildServedPaper(
+        [{ id: 's', label: 'A', rule: { type: 'all' }, questionIds: ['501'] }],
+        new Map([['501', bundle]]),
+      )
+      const own = BijakAttemptQuestionSchema.parse(served.questions[0]).stimuli?.[0]
+      expect(own?.table, JSON.stringify(tableData)).toEqual(want)
+      expect(own).not.toHaveProperty('text')
+      const g = group([stim({ kind: 'table', bodyMs: PIPE, tableData })])
+      const gs = map([mcq()], { groupId: '9' }, g).group?.stimulus
+      expect(gs?.table, JSON.stringify(tableData)).toEqual(want)
+      expect(gs).not.toHaveProperty('text')
+    }
+  })
+
+  it('a valid grid keeps a plain body as text; a pipe body beside a valid grid is kept too (a stored grid never hides the body)', () => {
+    const grid = { head: ['a'], rows: [['1']] }
+    const plain = map([mcq()], { groupId: '9' }, group([stim({ kind: 'table', bodyMs: 'Jadual berikut', tableData: grid })])).group?.stimulus
+    expect(plain).toMatchObject({ table: grid, text: 'Jadual berikut' })
+    const piped = map([mcq()], { groupId: '9' }, group([stim({ kind: 'table', bodyMs: 'x | y\n1 | 2', tableData: grid })])).group?.stimulus
+    expect(piped).toMatchObject({ table: grid, text: 'x | y\n1 | 2' })
+    // Another kind never gets a table: a pipe body stays text.
+    const passage = map([mcq()], { groupId: '9' }, group([stim({ kind: 'passage', bodyMs: 'x | y\n1 | 2' })])).group?.stimulus
+    expect(passage).toMatchObject({ text: 'x | y\n1 | 2' })
+    expect(passage).not.toHaveProperty('table')
+  })
+
   it('an own stimulus that is shared by several questions but is not a group is refused (D90)', () => {
     const m = media({}, new Map<string, OutsideStimulus>([['320', { kind: 'passage', assetFileId: null, bodyMs: 'Petikan', sharedBy: 2 }]]))
     const e = refusal(() => map([mcq()], { stimulusIds: ['320'] }, null, m))

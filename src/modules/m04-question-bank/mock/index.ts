@@ -40,6 +40,8 @@ import {
 import { workflowRoutes } from './handlers/workflow'
 // M04-T6 (reports): routes #14–#17.
 import { reportRoutes } from './handlers/reports'
+// REQ-A-018: paper-level "Dilihat murid di".
+import { paperServabilityRoutes } from './handlers/paper-servability'
 import { qualityAuditRepo, qualityAuditTable } from './repository/audit-state'
 import { masterNotesRepo, masterNotesTable } from './repository/master-notes'
 import { submissionsRepo, submissionsTable } from './repository/submissions'
@@ -80,7 +82,7 @@ const plugin = defineMockModule({
   finalise(ctx) {
     finaliseWorkflow(ctx)
   },
-  routes: [...questionRoutes, ...dskpRoutes, ...workflowRoutes, ...reportRoutes],
+  routes: [...questionRoutes, ...dskpRoutes, ...workflowRoutes, ...reportRoutes, ...paperServabilityRoutes],
   hooks: {
     createQuestionFixture: (
       row: Partial<Question> & { id: number; subjectId: number; educationLevelId: number },
