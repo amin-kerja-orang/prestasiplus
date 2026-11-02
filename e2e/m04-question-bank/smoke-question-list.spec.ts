@@ -106,6 +106,63 @@ test.describe('M04 S1 question list', { tag: [TAG.smoke, moduleTag(4)] }, () => 
     await expectNoHorizontalScroll(page)
   })
 
+  test('Luluskan Hasil Tapisan / Arkib Semua: menu below sm, disabled without a filter, no scroll', async ({
+    page,
+  }) => {
+    if (isMobileWidth(page)) {
+      await expect(page.getByTestId('questions-approve-filter')).toBeHidden()
+      await expectTouchTarget(page.getByTestId('questions-more-actions'))
+      await page.getByTestId('questions-more-actions').click()
+      // No filter: only "Arkib Semua" is listed.
+      await expect(page.getByRole('menuitem', { name: 'Arkib Semua' })).toBeVisible()
+      await expect(page.getByRole('menuitem', { name: 'Luluskan Hasil Tapisan' })).toHaveCount(0)
+      await page.keyboard.press('Escape')
+    } else {
+      await expect(page.getByTestId('questions-more-actions')).toBeHidden()
+      await expect(page.getByTestId('questions-approve-filter')).toBeDisabled()
+      await expect(page.getByTestId('questions-approve-filter-hint')).toContainText(
+        'Sila pilih sekurang-kurangnya satu penapis',
+      )
+      await expectTouchTarget(page.getByTestId('questions-archive-all'))
+    }
+    await expectNoHorizontalScroll(page)
+
+    // With a filter the menu also lists "Luluskan Hasil Tapisan".
+    await page.evaluate(async () => {
+      type RouterLike = { push(to: string): Promise<unknown> }
+      const el = document.querySelector('#app') as Element & {
+        __vue_app__: { config: { globalProperties: { $router: RouterLike } } }
+      }
+      await el.__vue_app__.config.globalProperties.$router.push('/admin/questions?status=pending_review')
+    })
+    await expect(page).toHaveURL(/status=pending_review$/)
+    if (isMobileWidth(page)) {
+      await page.getByTestId('questions-more-actions').click()
+      await expect(page.getByRole('menuitem', { name: 'Luluskan Hasil Tapisan' })).toBeVisible()
+      await page.keyboard.press('Escape')
+    } else {
+      await expect(page.getByTestId('questions-approve-filter')).toBeEnabled()
+    }
+    await expectNoHorizontalScroll(page)
+  })
+
+  test('Arkib Semua: dry run, confirm with the count, then the result banner', async ({ page }) => {
+    if (isMobileWidth(page)) {
+      await page.getByTestId('questions-more-actions').click()
+      await page.getByRole('menuitem', { name: 'Arkib Semua' }).click()
+    } else {
+      await page.getByTestId('questions-archive-all').click()
+    }
+    // The DS confirm dialog: the V2 text, then the dry-run count line.
+    const message = (await page.locator('[data-ds="confirm-message"]').textContent()) ?? ''
+    expect(message).toContain('ARKIB SEMUA soalan?')
+    expect(message).toMatch(/\d+ daripada \d+ soalan sepadan akan diarkibkan\./)
+    await page.locator('[data-ds="confirm-ok"]').click()
+    await expect(page.getByTestId('bulk-filter-success')).toContainText('Berjaya arkib 500 soalan.')
+    await expect(page.getByTestId('bulk-filter-note').filter({ hasText: 'Baki' })).toHaveCount(1)
+    await expectNoHorizontalScroll(page)
+  })
+
   test('bulk action: needs an action, asks to confirm, then flashes the API status', async ({
     page,
   }) => {

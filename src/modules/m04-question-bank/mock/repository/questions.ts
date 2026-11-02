@@ -86,6 +86,20 @@ import type {
 // ---------------------------------------------------------------------------------------------
 
 /** Fields of a created/edited objective question (SRS §5, #3/#5; M10 #53–#58). */
+/** Result of `bulkByFilter` (contract `QuestionFilterBulkResult`). */
+export interface FilterBulkOutcome {
+  matched: number
+  eligible: number
+  skipped: number
+  cap: number
+  processed: number
+  affected: number
+  failed: { id: string; code: string; message: string; fields: Record<string, string> }[]
+  remaining: number
+  capped: boolean
+  dryRun: boolean
+}
+
 export interface QuestionInput {
   subjectId: number
   educationLevelId: number
@@ -435,6 +449,18 @@ export const questionsRepo = defineRepository({
   methods: ({ store, stores, transaction, phase }) => {
     const get = (id: number): Question | null => store.get(id) ?? null
 
+    const adminListImpl = (filter: AdminListFilter & { page?: number; pageSize?: number } = {}) => {
+      const term = filter.search?.trim() ?? ''
+      return store.query({
+        // Secondary-only (D72): the questions of a hidden Darjah level are never listed or counted.
+        where: { ...adminWhere(filter), educationLevelId: levelScope(filter.educationLevelId) },
+        sort: NEWEST_FIRST,
+        page: filter.page ?? 1,
+        pageSize: filter.pageSize ?? 20,
+        search: term !== '' ? { term, fields: ['questionText'] } : undefined,
+      })
+    }
+
     const requireRow = (id: number): Question => {
       const row = get(id)
       if (!row) throw new RepositoryError('CONTRACT', `questions: id ${String(id)} not found`)
@@ -596,17 +622,7 @@ export const questionsRepo = defineRepository({
         }
       },
       /** S1 list (§7 #1): filters BR-M04-04…07, newest first (BR-M04-31), 20 per page. */
-      adminList: (filter: AdminListFilter & { page?: number; pageSize?: number } = {}) => {
-        const term = filter.search?.trim() ?? ''
-        return store.query({
-          // Secondary-only (D72): the questions of a hidden Darjah level are never listed or counted.
-          where: { ...adminWhere(filter), educationLevelId: levelScope(filter.educationLevelId) },
-          sort: NEWEST_FIRST,
-          page: filter.page ?? 1,
-          pageSize: filter.pageSize ?? 20,
-          search: term !== '' ? { term, fields: ['questionText'] } : undefined,
-        })
-      },
+      adminList: adminListImpl,
       /** S11 MCQ list: `needsDiagram` rows, id desc, 20 per page (BR-M04-19). */
       flagged: (
         filter: { subjectId?: number; creatorIds?: readonly number[]; page?: number } = {},
@@ -827,6 +843,63 @@ export const questionsRepo = defineRepository({
           }
           return n
         }),
+      /**
+       * `POST /questions/bulk-action/filter` (AC-03.3). The rows are those of the list filter (`adminList`);
+       * `eligible` = matched rows whose status can move to the target (approved: pending_review; archived:
+       * draft, pending_review, approved). One run applies at most `cap` rows. Mock gate for `approved`: a row
+       * with an incomplete DSKP mapping (`pending_mapping`, not tagged) is refused, the others pass.
+       */
+      bulkByFilter: (
+        action: 'approved' | 'archived',
+        filter: AdminListFilter,
+        opts: { dryRun: boolean; now: number; cap: number },
+      ): FilterBulkOutcome => {
+        const from: readonly QuestionStatus[] =
+          action === 'approved' ? ['pending_review'] : ['draft', 'pending_review', 'approved']
+        const statuses = filter.status ? from.filter((s) => s === filter.status) : from
+        const matched = adminListImpl({ ...filter, page: 1, pageSize: 1 }).total
+        const counts = statuses.map((s) => adminListImpl({ ...filter, status: s, page: 1, pageSize: 1 }).total)
+        const eligible = counts.reduce((a, b) => a + b, 0)
+        const processed = opts.dryRun ? 0 : Math.min(eligible, opts.cap)
+        const failed: FilterBulkOutcome['failed'] = []
+        let affected = 0
+        if (processed > 0) {
+          const picked: Question[] = []
+          for (const s of statuses) {
+            if (picked.length >= processed) break
+            picked.push(
+              ...adminListImpl({ ...filter, status: s, page: 1, pageSize: processed - picked.length }).rows,
+            )
+          }
+          transaction(() => {
+            for (const row of picked) {
+              if (action === 'approved' && !row.dskpTagged && row.complianceStatus === 'pending_mapping') {
+                failed.push({
+                  id: String(row.id),
+                  code: 'VALIDATION_ERROR',
+                  message: 'Tag DSKP belum lengkap.',
+                  fields: { dskp: 'Tag DSKP belum lengkap.' },
+                })
+                continue
+              }
+              setFields(row.id, { status: action }, opts.now)
+              affected++
+            }
+          })
+        }
+        return {
+          matched,
+          eligible,
+          skipped: matched - eligible,
+          cap: opts.cap,
+          processed,
+          affected,
+          failed,
+          remaining: eligible - processed,
+          capped: eligible - processed > 0 && !opts.dryRun,
+          dryRun: opts.dryRun,
+        }
+      },
       /** BR-M04-12: a report (or an admin) takes the question out of practice. */
       deactivate: (id: number, now?: number): Question =>
         transaction(() => {

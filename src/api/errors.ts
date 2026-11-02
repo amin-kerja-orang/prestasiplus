@@ -3,7 +3,7 @@
  *
  * Any non-2xx response of a normal client call becomes an `ApiError`. The `code` is taken from the
  * `{ error: { code } }` body; module codes (e.g. `ACCOUNT_INACTIVE`, `TRIAL_EXHAUSTED`,
- * `CHAPTER_LOCKED`, `NO_WRONG_QUESTIONS`) pass through unchanged. When a body carries no code, it
+ * `NO_WRONG_QUESTIONS`) pass through unchanged. When a body carries no code, it
  * is derived from the status (`codeForStatus`). `NETWORK_ERROR` is client-only: no response at all.
  */
 

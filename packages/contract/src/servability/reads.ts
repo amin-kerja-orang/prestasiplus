@@ -1,4 +1,5 @@
 import { z } from '../zod'
+import { listEnvelopeOf } from '../common/envelope'
 import { IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
 import {
@@ -129,6 +130,13 @@ export const ServabilityLaneQuerySchema = z
 export type ServabilityLaneQuery = z.infer<typeof ServabilityLaneQuerySchema>
 
 export const ServabilityLaneSubjectSchema = z.strictObject({ id: IdSchema, name: z.string() }).meta({ id: 'ServabilityLaneSubject' })
+
+/**
+ * A lane page is the list envelope plus `subjects`: the options of the lane's `Subjek` filter (REQ-C-020), in subject order, whatever
+ * the current filters are (Databank: the subjects on the Databank list; Bijak SPM: the subjects that have a pilihan paper).
+ */
+export const servabilityLaneListOf = <T extends z.ZodType>(row: T) =>
+  listEnvelopeOf(row).extend({ subjects: z.array(ServabilityLaneSubjectSchema).meta({ description: 'The options of the `Subjek` filter of this lane.' }) })
 
 /** Lane "Databank Soalan": one bank question per row; `attention` are the reasons it is not served in the Databank (empty = served). */
 export const ServabilityDatabankRowSchema = z

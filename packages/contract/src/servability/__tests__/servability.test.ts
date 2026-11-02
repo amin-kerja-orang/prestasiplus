@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { buildOpenApiDocument } from '../../openapi'
-import { SERVABILITY_BATCH_MAX, SERVABILITY_LANE_WINDOW, ServabilityBatchRequestSchema, ServabilityLaneQuerySchema, ServabilityOverviewSchema } from '../reads'
+import { servabilityLaneListOf, ServabilityDatabankRowSchema, SERVABILITY_BATCH_MAX, SERVABILITY_LANE_WINDOW, ServabilityBatchRequestSchema, ServabilityLaneQuerySchema, ServabilityOverviewSchema } from '../reads'
 import {
   SERVABILITY_ACTIVITIES,
   SERVABILITY_ACTIVITY_LABELS,
@@ -80,6 +80,14 @@ describe('servability reads contract (R1-T30)', () => {
     expect(deep.success).toBe(false)
     expect(deep.error?.issues[0]).toMatchObject({ path: ['page'], message: 'Halaman terlalu jauh. Gunakan Tapis atau Cari untuk mengecilkan senarai.' })
     expect(ServabilityLaneQuerySchema.safeParse({ page: '100000' }).success).toBe(false)
+  })
+
+  it('a lane page is the list envelope plus the Subjek options (REQ-C-020)', () => {
+    const meta = { page: 1, pageSize: 25, totalItems: 0, totalPages: 1, from: null, to: null }
+    const lane = servabilityLaneListOf(ServabilityDatabankRowSchema)
+    expect(lane.safeParse({ data: [], meta, subjects: [{ id: '3', name: 'Matematik' }] }).success).toBe(true)
+    expect(lane.safeParse({ data: [], meta }).success).toBe(false)
+    expect(lane.safeParse({ data: [], meta, subjects: [{ id: '3' }] }).success).toBe(false)
   })
 
   it('overview has one entry per activity', () => {
