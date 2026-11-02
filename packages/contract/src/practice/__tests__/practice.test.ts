@@ -9,6 +9,7 @@ import {
   PRACTICE_ERRORS,
   PRACTICE_ERROR_CODES,
   PRACTICE_MODES,
+  PracticeErrorCodeSchema,
   PRACTICE_START_MODES,
   SessionListResponseSchema,
   StartSessionRequestSchema,
@@ -172,6 +173,12 @@ describe('history list', () => {
 })
 
 describe('errors', () => {
+  it('has no chapter-lock code (REQ-C-021, D98): CHAPTER_LOCKED is neither a code nor an entry, and its body does not parse', () => {
+    expect(PRACTICE_ERROR_CODES as readonly string[]).not.toContain('CHAPTER_LOCKED')
+    expect(PRACTICE_ERRORS).not.toHaveProperty('CHAPTER_LOCKED')
+    expect(PracticeErrorCodeSchema.safeParse('CHAPTER_LOCKED').success).toBe(false)
+  })
+
   it('has a status and exact BM message for every module code', () => {
     expect(Object.keys(PRACTICE_ERRORS).sort()).toEqual([...PRACTICE_ERROR_CODES].sort())
     expect(PRACTICE_ERRORS.TRIAL_EXHAUSTED).toEqual({ status: 402, messages: ['Baki percubaan percuma anda telah habis.'] })
