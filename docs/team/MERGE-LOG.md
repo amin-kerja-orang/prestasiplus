@@ -192,3 +192,7 @@
 | BASE-187 | 453b132e | alp-comment-240 @ 84b0c3a9 (B2 Approve); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 13 passed (13) | 2026-11-02 11:26 |
 | BASE-188 | 3b8d346a | REQ-C-012 doc @ b71dc2ad (B2 Approve); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 13 passed (13) | 2026-11-02 11:26 |
 | BASE-189 | 1216dbe7 | T39 K1 evidence @ 669a1109 (B2 Approve w/ Minors); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 13 passed (13) | 2026-11-02 11:26 |
+| BASE-190 | fc0a535a | REQ-A-023 @ 151c94b0 (B2 Approve w/ Minors); merged by exact reviewed SHA | all compile and lint steps 0; unit 1096 passed | 5 todo (1101); DB 13 passed (13) | 2026-11-02 12:46 |
+| BASE-191 | 119a60ca | REQ-A-027 + REQ-B-061 list fan-out @ 93643599 (B2 Approve w/ Minors); merged by exact reviewed SHA | all compile and lint steps 0; unit 1357 passed (1357); DB 13 passed (13) | 2026-11-02 12:46 |
+| BASE-192 | e3dfff7c | REQ-A-036 @ b52ee2f2 (B2 Approve w/ Minors); merged by exact reviewed SHA | all compile and lint steps 0; unit 698 passed (698); DB 13 passed (13) | 2026-11-02 12:46 |
+| BASE-193 | 11b8a71a | REQ-B-071 Bab optional + chain specs + minors @ c38ee66c (B2 Approve; user accepted Q17); merged by exact reviewed SHA | all compile and lint steps 0; unit 70 passed (70); DB 2011 passed | 2 todo (2013) | 2026-11-02 12:46 |
