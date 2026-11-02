@@ -82,4 +82,26 @@ describe('Terbit drops "(draf)" from the auto title only (D9)', () => {
     const cover = (await student.get(`/api/bijak/papers/${auto.id}`)).body.data as { title: string }
     expect(cover.title).not.toContain('(draf)')
   })
+
+  it('(e) withdraw then re-publish keeps the clean title and bumps the version; the audit row names the title change once', async () => {
+    const { id, draftTitle } = await terbit()
+    const clean = draftTitle.slice(0, -' (draf)'.length)
+    const version = async () => Number((await t.db.query<{ version: number }>('select version from papers where id = $1', [id]))[0]!.version)
+    const v1 = await version()
+    const withdrawn = await admin.post(`/api/admin/papers/${id}/withdraw`)
+    expect(withdrawn.status, JSON.stringify(withdrawn.body)).toBe(200)
+    expect(await dbTitle(id)).toBe(clean) // withdraw does not put " (draf)" back (known limit, D9 row)
+    const again = await admin.post(`/api/admin/papers/${id}/publish`)
+    expect(again.status, JSON.stringify(again.body)).toBe(200)
+    expect(again.body.data).toMatchObject({ ok: true })
+    expect(await dbTitle(id)).toBe(clean)
+    expect(await version()).toBe(v1 + 1)
+    expect(await pupilTitle(id)).toBe(clean)
+    // N1: the first Terbit records titleFrom/titleTo; the re-publish changed no title, so its row has neither
+    const rows = await t.db.query<{ detail: Record<string, unknown> }>(`select detail from audit_events where action = 'bijak.paper.published' and target_id = $1 order by id`, [id])
+    expect(rows).toHaveLength(2)
+    expect(rows[0]!.detail).toMatchObject({ titleFrom: draftTitle, titleTo: clean })
+    expect(rows[1]!.detail).not.toHaveProperty('titleFrom')
+    expect(rows[1]!.detail).not.toHaveProperty('titleTo')
+  })
 })

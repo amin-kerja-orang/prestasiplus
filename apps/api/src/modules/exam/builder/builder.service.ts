@@ -609,6 +609,7 @@ export class BuilderService {
       await this.record(actor, AUDIT_ACTIONS.BIJAK_PAPER_PUBLISHED, paper.id, {
         from: 'draf',
         to: 'terbit',
+        ...(publishedTitle !== undefined ? { titleFrom: paper.title, titleTo: publishedTitle } : {}),
         ...(structural.notes.length > 0 ? { blueprintNeedsReview: true, notes: structural.notes.length } : {}),
         ...(override ? { override: true } : {}),
       })
