@@ -169,3 +169,10 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
 ## Q20 update (USER DECISION, REQ-B-102, relayed by Mandor 2026-11-02 ~22:30 MYT): integrator role back to team B
 - **The B1 Integrator role is back with team B** (REQ-B-102 changes Q20). **Team A stops merging; A1 is no longer the integrator.** Team B merged BASE-218..221 (tip 43fef051) and dispatched frontend CI 41462039389 (api_ref=43fef051).
 - Team A continues as a developer/reviewer lane. Docs updates go to B (B1 merges).
+
+## Q23 (USER DECISIONS, 3 Nov ~00:0x MYT, relayed by Mandor)
+1. **Unencrypted disk: "Terima + mitigasi"** (option (a) of REQ-A-063). Mitigations: the raw dump is deleted immediately after it is loaded; root-only access; no other copies kept. A3 adds these steps to the runbook / operator checklist (docs).
+2. **Go-live: "Esok siang (3 Nov)"**, with the `.cloud` owner and the dump operator (a PC with no AI agent) present at the same time. The owner sets the exact time; team B prepares the runsheet.
+3. **REQ-B-109: "fix sekarang utk go live!"** = the owner APPROVES the fix entering R1 under the freeze. A4 is priority #1 (red-first + 3 widths on the CI config); A1b reviews; then team B merges (B1) + a full CI with api_ref = the new SHA. The same pattern on other PUPIL pages (A2 sweep: MissionQuizPage) is fixed in the same unit.
+4. **OCR: "Setuju mock, uji OCR kemudian"** = written acceptance of AC-R1-14.2 with mock OCR (an exception to D87 U5), recorded as a user decision.
+- **Still pending from the user:** limits 4.1–4.4, the Q15/Q16 review, copy row 42, M02 after deploy.
