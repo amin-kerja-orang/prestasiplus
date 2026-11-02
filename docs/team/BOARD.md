@@ -530,13 +530,13 @@ The B4 pack chain was walked by HTTP on SN/2 (4541/2): **96 MATCH, 1 scanner fal
 - Low bug, fixed under D9: "(draf)" stays in published titles → r1/publish-title-draft (A2).
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 00:07 UTC, BASE a1520263)
+### Team A open branches: heads from origin (auto, 2026-11-02 00:08 UTC, BASE a1520263)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/ac-gaps-a1b | 1f922ddd7 | READY (multi, @1f922ddd: row 39 per USER Q13; B4 pack fixes from A2 walk + ha18 head refs a9ffe246); B4 |
-| r1/admin-list-perf | 6389cd541 | READY (A4, @6389cd54, BASE-105): REQ-B-050 + 0106 pg_trgm + 0107 kertas index; per-user @RateLimit GET /api/questions (THROTTLE_QUESTIONS_LIST_PER_MINUTE=60); docs: feature_flags 0108, drop_pool_tag 0109, optional B12 0122 / B20 0123 (lead-confirmed); 0107 header gives 0.9 s bare / ~2 s via migrate deploy; B2 + B3 + DevOps (maintenance window, new env) |
+| r1/admin-list-perf | 69f465c89 | READY (A4, @69f465c8 = 6389cd54 + REQ-B-061 fix: list limit default 60→240/min, env override kept, spec 240→200/241st→429 bites, docs+deviation row); B2 delta re-review; C side = REQ-A-027 |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
 | r1/builder-search-perf | 1216b736c | READY (A3, on T48 6c5ae3a8; restack only): 413 pass; alone = trial merge with H-A18 fc409ae1, 0 failures, tsc 0; merge after T48; B2 |
 | r1/chain-qa-bab-3a-a3 | 0efba36c4 | READY (A3, @0efba36c; contains chain-qa-selfmark + H-A18 + T38): Bab-refusal step 3a (bites); 642 pass; merge after H-A18 + chain-qa-selfmark; B2 | merge AFTER ha18 a9ffe246 (merge-tree clean; fix not needed inside) |
