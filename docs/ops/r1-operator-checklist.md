@@ -6,17 +6,19 @@ Short form of [r1-runbook.md](r1-runbook.md) (section numbers below point there)
 
 ## 1. Pre-deploy
 
+- [ ] Release checkout is the tip named in `docs/team/MERGE-LOG.md` once the final CI is green. BASE-210 and `87466acc` have the Kontrak form bug and must not ship.
 - [ ] Full dump: `deploy/vps/backup/backup.sh --tag pre-deploy --no-files` (`deploy.sh` step 2 takes another). Restore tested: `deploy/vps/backup/restore-drill.sh` (needs Node 22 on the host and stops the api) or a throwaway restore. 0100 cannot be undone in place.
 - [ ] Images built before the window: `export PP_IMAGE_TAG=$(git rev-parse --short=12 HEAD); $PC build api migrate frontend`. A network failure in `npm ci` changes nothing; run it again.
-- [ ] Maintenance window agreed; `options=-c%20lock_timeout%3D5s` added to `DATABASE_URL` in `migrate.env`, removed afterwards (runbook 2.4). **The role default does not survive `deploy.sh`** (step 4 resets it). The option makes the database cancel a waiting file whole; W1 below applies whenever the migrate client dies.
+- [ ] Maintenance window of **60 minutes** agreed (runbook 2.5); `options=-c%20lock_timeout%3D5s` added to `DATABASE_URL` in `migrate.env`, removed afterwards (runbook 2.4). **The role default does not survive `deploy.sh`** (step 4 resets it). The option makes the database cancel a waiting file whole; W1 below applies whenever the migrate client dies.
 - [ ] No blocking sessions, with `$PSQL` (a DDL holder also hangs the backup of step 2 with no message): `SELECT pid, usename, state, xact_start, left(query, 80) FROM pg_stat_activity WHERE state <> 'idle' AND pid <> pg_backend_pid() ORDER BY xact_start;`
 - [ ] `pg_trgm` is available (2.4 item 3): `SELECT name, default_version, installed_version FROM pg_available_extensions WHERE name = 'pg_trgm';` returns 1 row.
 - [ ] Migrate role may create it, with `$PSQL`; it must return `t` (name the role: `$PSQL` is the superuser):
   `SELECT has_database_privilege('pp_owner', current_database(), 'CREATE');`
 - [ ] `THROTTLE_GLOBAL_PER_MINUTE=3000` in `api.env` (REQ-B-080; unset = 300 and only a preflight warning). `TRUST_PROXY_HOPS`: nothing to set on the VPS, the overlay forces 1. After the deploy: `$PC exec -T api sh -c 'echo "$THROTTLE_GLOBAL_PER_MINUTE $TRUST_PROXY_HOPS"'` shows `3000 1`.
-- [ ] No demo accounts, with `$PSQL`: `select count(*) from users where email ilike '%@demo.test';` must be **0**. Otherwise **stop**: the production bundle carries the demo password (runbook section 0 item 8). On a first install this and the next check error (no tables yet): run them right after `deploy.sh`.
+- [ ] No demo accounts, with `$PSQL`: `select count(*) from users where email ilike '%@demo.test';` must be **0**. Otherwise **no live**: the production bundle carries the demo password (runbook section 0 item 8). On a first install this and the next check error (no tables yet): run them right after `deploy.sh`.
 - [ ] Six-digit `@prestasiplus.my` accounts holding an IC hash, with `$PSQL`: `select count(*) from users where email ~ '^[0-9]{6}@prestasiplus\.my$' and ic_hash is not null;` Above 0: **the owner decides before live** (runbook section 0 item 9).
 - [ ] No CDN or extra proxy in front of the edge (`$PP_DOMAIN`: shell setup): `dig +short "$PP_DOMAIN"` (or `getent ahostsv4`) gives only the VPS address, and `H="$(curl -sSI -m 15 "https://$PP_DOMAIN/")" && grep -q '^HTTP/' <<<"$H" && ! grep -iE '^(via|cf-ray|x-cache|x-served-by|x-amz-cf-id):' <<<"$H" && echo NO-CDN-HEADERS` prints `NO-CDN-HEADERS`. Anything else: **stop**, clients would share one throttle address (runbook section 0 item 10). On a first install no edge exists yet, so curl fails: run this right after `deploy.sh`.
+- [ ] **M02 default passwords: the owner confirms they are rotated on live. A human step, NOT confirmed done (sign-off 6.8).** Forced password change works in a real browser on BASE-214: `e2e/api/forced-password-change.spec.ts` 9/9 with `E2E_FORCED_PASSWORD=1`, redirect at `src/app/router/guards.ts:92-96`, URL and API bypass refused for all roles (admin API limited to `/admin/users`). This does not replace the rotation.
 - [ ] Pre-migration counts recorded (runbook 3.1).
 - [ ] Wallet tiers (runbook section 0 item 6): `select count(*) from tiers;` must be **4**. If it is not 4, run `deploy/vps/deploy.sh --seed-reference` (reference modules only, not the demo seed that item 5 forbids) before the API takes traffic; on a first install, right after `deploy.sh` (no schema before it, and the deploy does not pause). `/api/ready` stays 200 with empty tiers, so this count is the only guard. `spm_subject_configs` is 0 until `subjects` exist: run the seed again after they do (19 when all 19 subject codes exist).
 - [ ] Stimulus group layout (runbook section 0 item 7): run the SELECT of 3.7 on the target. 0 rows is expected; any row means that paper is re-composed in the builder before go-live.
@@ -24,6 +26,7 @@ Short form of [r1-runbook.md](r1-runbook.md) (section numbers below point there)
 ## 2. Deploy
 
 - [ ] `deploy/vps/deploy.sh --dry-run`, then `deploy/vps/deploy.sh` (type the domain). Order and list: runbook 2.1. Expect 0105 to hold a lock on `question_versions` for under a second; 0106 47 to 96 s and 0100 about 30 s at 409k rows under the production limits on local Docker Desktop, not the production box (writes wait; `/api/ready` is 503 for the whole migrate). `deploy.sh` about 4 minutes at that size; plan a 60 minute window (runbook 2.5).
+- [ ] First install only, right after `deploy.sh`: `deploy/vps/deploy.sh --seed-reference`, `tiers` = 4, then the demo, six-digit and CDN checks of section 1.
 - [ ] Right after `deploy.sh` ends (it does not pause between migrations), with `$PSQL`: `VACUUM ANALYZE question_versions;` when 0100 was in this deploy (runbook 2.2), and `ANALYZE question_versions;` (runbook 2.4 item 4).
 
 ## Where a deployer gets stuck (detail: runbook 2.5)
