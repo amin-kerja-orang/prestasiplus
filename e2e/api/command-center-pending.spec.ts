@@ -145,7 +145,7 @@ test.describe('command center and pending teachers @api', () => {
       await expect(value).not.toHaveText('--')
     }
     await expect(page.getByTestId('cc-unavailable')).toHaveCount(0)
-    await expect(page.getByTestId('cc-panels')).toBeVisible()
+    for (const row of ['cc-row-1', 'cc-row-2', 'cc-row-3']) await expect(page.getByTestId(row)).toBeVisible()
     await expectNoHScroll(page)
 
     // Daily activity board (S3).

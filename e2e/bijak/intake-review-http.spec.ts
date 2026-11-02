@@ -105,6 +105,29 @@ function paperLines(token: string): string[] {
   ]
 }
 
+/**
+ * REQ-B-034: the server gate takes only an SP of the subject and level, and the mock extractor's "10.1" is not one.
+ * Types the first SP of the unit shown in the editor (`T4:1.0`), read from the DSKP API, as an editor would.
+ */
+async function realSpCode(page: Page, subjectName: string, unitKey: string): Promise<string> {
+  const [form, unit] = unitKey.split(':')
+  const list = async <T>(path: string): Promise<T[]> =>
+    ((await (await page.request.get(path)).json()) as { data?: T[] }).data ?? []
+  const subject = (await list<{ id: string | number; name: string }>('/api/subjects?pageSize=100')).find(
+    (x) => x.name === subjectName,
+  )
+  const level = (await list<{ id: string | number; name: string }>('/api/education-levels')).find(
+    (x) => x.name === (form === 'T5' ? 'Tingkatan 5' : 'Tingkatan 4'),
+  )
+  const res = await page.request.get(
+    `/api/questions/studio/dskp?subjectId=${String(subject?.id)}&educationLevelId=${String(level?.id)}`,
+  )
+  const units = ((await res.json()) as { data?: { units: { code: string; sps: { code: string }[] }[] } }).data?.units ?? []
+  const code = (units.find((u) => u.code === unit) ?? units[0])?.sps[0]?.code
+  expect(code, `an SP of ${subjectName} ${unitKey}`).toBeTruthy()
+  return code ?? ''
+}
+
 /** Sets the bank filter: the inline form from 768 px, the filter sheet below it. */
 async function filterBank(page: Page, status: string, search: string): Promise<void> {
   await page.getByTestId('bank-search').fill(search)
@@ -172,8 +195,16 @@ test.describe('Intake review over HTTP @bijak @api', () => {
       const stem = page.getByTestId('q-stem').first()
       await expect(stem).toBeVisible()
       await stem.fill(`Pada tahun berapakah Persekutuan Tanah Melayu merdeka? ${token}`)
+      const realSp = async (index: 'first' | 'last'): Promise<void> => {
+        const unit = await page.getByTestId('q-unit')[index]().inputValue()
+        const sp = page.getByTestId('q-sp')[index]()
+        await sp.fill(await realSpCode(page, 'Sejarah', unit))
+        await sp.press('Tab')
+      }
+      await realSp('first')
       await page.getByTestId('confirm-tag.sp').first().click()
       await cards.nth(1).getByRole('button').first().click()
+      await realSp('last')
       await page.getByTestId('confirm-tag.sp').last().click()
       await expect(page.getByTestId('save-state')).toHaveText('Semua perubahan disimpan', {
         timeout: 20_000,

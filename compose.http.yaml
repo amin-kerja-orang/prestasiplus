@@ -39,7 +39,7 @@ services:
           *) echo "REFUSED: migrate and seeds run only against the compose-local db (DATABASE_URL host must be db, localhost or 127.0.0.1)" >&2; exit 1 ;;
         esac
         npm run be:db:migrate && npm run be:db:seed || exit 1
-        NODE_ENV=development E2E_SEED=1 npm run be:db:seed -- --profile=e2e
+        NODE_ENV=development E2E_SEED=1 E2E_DEMO_SECONDARY=1 npm run be:db:seed -- --profile=e2e
     environment:
       # Demo accounts with a published password: dev and e2e only. The production base job never sets this.
       ALLOW_DEMO_SEED: 'true'
