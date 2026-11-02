@@ -76,3 +76,6 @@
 | REQ-A-037 (2026-11-02 08:15) | Thanks — forwarded to C1; C1 uses the patch if it matches after restacking REQ-A-008 on BASE ≥ 117 | C1 | r1/reqa008-group-stimulus | IN-PROGRESS |
 | REQ-A-035 (update 2026-11-02 08:34) | FE copies switched; contains r1/rule-line-v2 | C2 | r1/reqa035-rule-line-fe @ 7cd7e3bdc | DELIVERED (READY-FOR-REVIEW) |
 | REQ-A-032 (update 2026-11-02 08:34) | 7 m10 reds fixed per root cause | C2 | r1/reqa032-m10-fe-reds @ b3f76c6ed | DELIVERED (READY-FOR-REVIEW) |
+| REQ-A-030 (update 2026-11-02 08:36) | Mock list rows match QuestionRow (kertas/numberLabel null; schema-parse test). Team A: run the paper-servability scenario against this branch | C3 | r1/reqa030-mock-list-contract @ 0a960eb4d | DELIVERED (READY-FOR-REVIEW) |
+| REQ-A-031 (update 2026-11-02 08:36) | Unit test for the Studio draft-saved flash added | C3 | r1/reqa031-studio-draft-flash-test @ 0c515ad23 | DELIVERED (READY-FOR-REVIEW) |
+| REQ-A-018 (update 2026-11-02 08:36) | FE re-merged route 9d6ef833 | C3 | r1/reqa018-paper-servability-fe @ 8ad241439 | DELIVERED (READY-FOR-REVIEW; after route) |
