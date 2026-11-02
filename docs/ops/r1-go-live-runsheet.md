@@ -2,9 +2,9 @@
 
 ## Open K items (English note for the owner and Team B)
 
-**Status: not started.** REQ-B-121: go-live is the night of 3 Nov MYT. The owner has not yet set T0 (the moment `.cloud` freezes). `<R1_SHA>` is not final: it waits for the remaining units and a green full CI.
+**Status: not started.** REQ-B-128: the owner wants the window started now, 3 Nov morning. T0 = the `.cloud` freeze, set by the owner today; no freeze until gate 0.11 passes. `T_PUPIL` is the owner's value given today; Q33's limits (T0 about 04:00, `T_PUPIL` 09:30) are void. **Sections 5 and 6 are NOT yet rehearsed on the Linux VM;** sections 3.3 to 4.3 and S3 were, on fixtures.
 
-Decided: K1 restore `pre_etl`; K6 accept `https://www` failing and fix after live; K9 unencrypted disk accepted with mitigations (Q23 item 1, REQ-B-113); `REGISTRATION_OPEN` stays `true`; OCR mock accepted for AC-R1-14.2 (Q23); `--as-of` 2026-11-03; `VITE_PROTOTYPE_SCOPE=on` for live.
+Decided: K1 restore `pre_etl`; K6 accept `https://www` failing and fix after live; K9 unencrypted disk accepted with mitigations (Q23 item 1, REQ-B-113); `REGISTRATION_OPEN` stays `true`; OCR mock accepted for AC-R1-14.2 (Q23), `AI_PROVIDER=mock` confirmed; `--as-of` 2026-11-03; `VITE_PROTOTYPE_SCOPE=on` for live.
 
 Open:
 - **K7a (owner):** T0, and `T_PUPIL`, the time by which pupils must be served again. The real limit is the earlier of T0 + 5:30 and `T_PUPIL`. Due before section 0.
@@ -13,15 +13,15 @@ Open:
 - **K2 (`.cloud` owner):** `articles.body` column and grant. Without it, 0 articles migrate.
 - **K3 (owner):** read-only access to `.cloud` storage for `--files-dir`. Without it, banner images are not migrated.
 - **K5 (owner):** freeze proof. The repo has no command: a read-only SELECT from DevOps, or written acceptance of partial proof.
-- **K9b (owner):** delete dates for what stays after the load: `staging_cloud`, PITR base backups and archived WAL, restore points and local dumps (REQ-B-113 accepts that only the raw dump file is deleted at once; dates still to set; default purge 2026-11-06 needs re-checking). `archive_cloud` is kept 12 months.
+- **K9b (owner):** delete dates for what stays after the load: `staging_cloud`, PITR base backups and archived WAL, restore points, local dumps and the orphan banner files left in the `apifiles` volume (REQ-B-113 accepts that only the raw dump file is deleted at once; dates still to set; default purge 2026-11-06 needs re-checking). `archive_cloud` is kept 12 months.
 - **Still pending from Q23:** limits 4.1 to 4.4, Q15/Q16 review, copy row 42, M02 rotation after deploy.
 - **Re-confirm:** the rollback deadline of switch + 4 hours was set on 22 Oct for the old plan.
 
 ---
 
-**Status: belum bermula.** REQ-B-121: malam 3 Nov. Pemilik menetapkan masa tepat (T0). Pemilik .cloud dan operator dump hadir bersama. `<R1_SHA>` belum muktamad.
+**Status: belum bermula.** REQ-B-128: pemilik mahu tingkap bermula sekarang, pagi 3 Nov. T0 = saat beku, ditetapkan pemilik hari ini. Pemilik .cloud dan operator dump hadir bersama. **Bahagian 5 dan 6 BELUM dilatih pada VM Linux** (hanya `deploy.sh` ke `43fef0510` pada Docker tempatan, REPORT-6). Bahagian 3.3 hingga 4.3 dan S3 dilatih pada VM Linux dengan fixture, bukan data sebenar.
 
-**Susunan B (pilihan pengguna):** ETL dari imej migrate `cb7332d0b` pada DB UAT di 0091 → semak semula → deploy R1 `<R1_SHA>` → `--seed-reference` → `PP_DOMAIN` dan DNS ke 187.52.120.11.
+**Susunan B (pilihan pengguna):** ETL dari imej migrate `cb7332d0b` pada DB UAT di 0091 → semak semula → deploy R1 `46c14574018880f7146414ef2f1442ed09275b11` → `--seed-reference` → `PP_DOMAIN` dan DNS ke 187.52.120.11.
 
 **Peraturan.** Hanya manusia menjalankan setiap arahan pada pelayan. **Tiada AI pada PC dump.** Tiada rahsia, tiada baris data, hanya kiraan dalam laporan. Setiap langkah: baca output, kemudian teruskan. Output tidak seperti tertulis = HENTI. Fakta pelayan dalam fail ini dibaca pada 2 Nov malam, baca sahaja; 0.6 dan 0.11 membacanya semula.
 
@@ -33,7 +33,7 @@ Open:
 
 **SHA.**
 - ETL: `cb7332d0b3b532a2ac93784e837f92afb874b73a` (tag imej `cb7332d0b3b5`).
-- R1: **`<R1_SHA>` = tip dalam `docs/team/MERGE-LOG.md` (cawangan `team/r1-board`) dengan CI akhir hijau.** `<R1_TAG>` = 12 aksara pertama `<R1_SHA>`. Team B memberikan kedua-duanya. Jangan guna SHA lain.
+- R1: **`46c14574018880f7146414ef2f1442ed09275b11`, tag imej `46c145740188`** (MERGE-LOG BASE-232). Bukti CI pada `79fbeea2` (`79fbeea2..46c14574` hanya `docs/`, disemak dengan `git diff --name-only`). Jangan guna SHA lain.
 
 **Masa, relatif kepada T0 (saat `.cloud` beku, 1.2). Pemilik menetapkan T0.** Inferens daripada anggaran, belum diukur pada data sebenar.
 
@@ -48,13 +48,13 @@ Open:
 | DNS (6.5) | kira-kira T0 + 4:00 | |
 | **Had abort** | **yang lebih awal antara T0 + 5:30 dan `T_PUPIL`** | Belum 5.7 = S3; sudah 5.7 = pemilik pilih |
 
-**Murid terjejas dari T0.** `.cloud` baca-sahaja dari T0 dan alamat baharu hanya selepas DNS, jadi murid tidak boleh menulis sepanjang tempoh itu. Waktu sokongan yang direkod ialah 07:00 hingga 18:00 (hypercare), dan pelan 6.2 mengingatkan pertukaran pada pagi sekolah bertembung dengan trafik tertinggi. Q29: sebaik CI akhir hijau (dijangka kira-kira 03:00 MYT), orang sedia dari kira-kira 02:30. Pemilik tetapkan `T_PUPIL`, masa murid mesti dilayan semula, sebelum bahagian 0. **Had sebenar = yang lebih awal antara T0 + 5:30 dan `T_PUPIL`.** Contoh, inferens: T0 03:00 memberi 08:30, jadi `T_PUPIL` 07:00 menjadi had, dan anggaran siap T0 + 4:20 = 07:20 sudah melepasinya. **Syarat beku: T0 + 4:20 tidak melebihi `T_PUPIL`.** Jika tidak, pemilik tukar `T_PUPIL` atau tangguh.
+**Murid terjejas dari T0.** `.cloud` baca-sahaja dari T0 dan alamat baharu hanya selepas DNS, jadi murid tidak boleh menulis sepanjang tempoh itu, **dan tingkap ini dalam waktu sekolah** (sokongan 07:00 hingga 18:00, hypercare; pelan 6.2: trafik pagi tertinggi). `T_PUPIL` = nilai pemilik hari ini; had Q33 (T0 kira-kira 04:00, `T_PUPIL` 09:30) terbatal. **Had sebenar = yang lebih awal antara T0 + 5:30 dan `T_PUPIL`. Syarat beku: T0 + 4:20 tidak melebihi `T_PUPIL`.** Contoh, inferens: T0 07:30 memberi anggaran siap 11:50 dan had 13:00. Jika syarat gagal, pemilik tukar `T_PUPIL` atau tangguh.
 
 ---
 
 ## Fakta rehearsal (Docker tempatan, fixture, tiada data sebenar, 2 Nov, atas `43fef0510`)
 
-Laporan: `r1-migration-rehearsal/REPORT-6-etl-then-r1.md`. **Susunan B lulus.** `<R1_SHA>` kemudian berbeza; rehearsal tidak meliputinya.
+Laporan: `r1-migration-rehearsal/REPORT-6-etl-then-r1.md`. **Susunan B lulus.** `46c14574018880f7146414ef2f1442ed09275b11` kemudian berbeza; rehearsal tidak meliputinya.
 
 | Perkara | Keputusan |
 |---|---|
@@ -66,7 +66,7 @@ Laporan: `r1-migration-rehearsal/REPORT-6-etl-then-r1.md`. **Susunan B lulus.** 
 
 **Arahan yang berjalan** (bentuk `docker run` dengan env sama seperti `slot.sh etl`): `deploy.sh` di `cb7332d0b`; `staging:load`; `db-roles.sh apply`; `migrate:all --apply --as-of=...`; `migrate:questions --apply`; `deploy.sh` di R1; `deploy.sh --seed-reference`; `psql -XtA < docs/ops/sql/smoke-readonly.sql`.
 
-**TIDAK dilatih:** **`slot.sh etl` dan `slot.sh copy`**, `--files-dir`, `--content-owner` (tidak dalam senarai arahan yang berjalan), data sebenar, masa sebenar, VPS sebenar, hantar penuh soalan, imej `cb7332d0b` atas skema R1. `staging:load` sebagai `pp_owner` gagal 42501 bila `pp_stager` memiliki skema; di pelayan guna `slot.sh`.
+**VM Linux, kemudian (laporan penyelaras):** 3.3 hingga 4.3 dan S3 (a), (b) dilatih pada fixture. **TIDAK dilatih dalam REPORT-6:** **`slot.sh etl` dan `slot.sh copy`**, `--files-dir`, `--content-owner` (tidak dalam senarai arahan yang berjalan), data sebenar, masa sebenar, VPS sebenar, hantar penuh soalan, imej `cb7332d0b` atas skema R1. `staging:load` sebagai `pp_owner` gagal 42501 bila `pp_stager` memiliki skema; di pelayan guna `slot.sh`.
 
 **Masa pada data sebenar:** migrate kira-kira 2 min 42 s pada 409k versi, dengan 0106 47 hingga 96 s (Docker tempatan). Masa fixture lain tidak bermakna.
 
@@ -81,7 +81,7 @@ Laporan: `r1-migration-rehearsal/REPORT-6-etl-then-r1.md`. **Susunan B lulus.** 
 | K8 | `REGISTRATION_OPEN` | **DIPUTUSKAN: kekal `true`** ("Kekal buka"). #352 masih OPEN dan tiada dalam R1; dokumen hypercare mahu ia merge dahulu, jadi pengguna perlu tahu | Pengguna | selesai |
 | K9 | Volum tidak disulitkan (`/dev/sda1` ext4, tiada crypt, cakera sama dengan `pgdata`) | **DIPUTUSKAN: terima + mitigasi (Q23 item 1, REQ-B-113).** Langkah di bawah | Pengguna | selesai |
 | Skop | `VITE_PROTOTYPE_SCOPE` | **DIPUTUSKAN: `on` untuk live** (5.1b) | Pemilik | selesai |
-| OCR | AC-R1-14.2 dengan OCR mock | **DIPUTUSKAN: diterima (Q23).** Uji OCR kemudian | Pengguna | selesai |
+| OCR | AC-R1-14.2 dengan OCR mock | **DIPUTUSKAN: diterima (Q23).** `AI_PROVIDER=mock` disahkan. Uji OCR kemudian | Pengguna | selesai |
 | K4 | `PITR off` | Tertutup: PITR on pada 2 Nov. Jika berubah di 0.6: HENTI dan tanya pemilik | - | 0.6 |
 | **K7a** | T0 dan `T_PUPIL` | **TERBUKA**, wajib | Pemilik | **bahagian 0** |
 | **K7b** | Teks dan saluran notis kepada sekolah (P10); tiada dalam repo | **TERBUKA**, wajib | Pemilik | 1.1 |
@@ -89,7 +89,7 @@ Laporan: `r1-migration-rehearsal/REPORT-6-etl-then-r1.md`. **Susunan B lulus.** 
 | **K2** | `articles.body`: lajur wujud dan geran dibuat. Tanpanya: 0 artikel | **TERBUKA**, wajib | Pemilik .cloud | 0.8 |
 | **K3** | Fail banner (`--files-dir`): akses baca-sahaja storan `.cloud`? Jika tiada: tanpa flag, imej banner tidak dipindah, tulis sebagai pengecualian | **TERBUKA** | Pemilik | 0.11 |
 | **K5** | Bukti beku: tiada arahan dalam repo. SELECT dari DevOps, atau terima bertulis kiraan `dump:check` = manifest sebagai bukti separa | **TERBUKA** | Pemilik | 0.11 |
-| **K9b** | Tarikh padam salinan yang tinggal (7.7) | **TERBUKA** | Pemilik | 7.7 |
+| **K9b** | Tarikh padam salinan yang tinggal (7.7), termasuk fail banner yatim dalam volum `apifiles` | **TERBUKA** | Pemilik | 7.7 |
 
 ### K9: mitigasi disk, langkah konkrit
 
@@ -255,7 +255,7 @@ $PSQL -c "SELECT count(*) FILTER (WHERE r.role='admin') AS admin_v2 FROM users u
 - Siapa: operator di UAT; pemilik sahkan senarai akaun
 - Arahan (**BELUM DISAHKAN**, arahan Linux am, bukan dari repo, kecuali `$R raw-check`):
 ```
-sudo stat -c '%U:%G %a %n' /srv/pretasiplus/stage /srv/pretasiplus/migration-out
+sudo stat -c '%u:%g %a %n' /srv/pretasiplus/stage /srv/pretasiplus/migration-out
 getent group docker sudo ppdeploy
 who
 sudo wc -l /root/.ssh/authorized_keys
@@ -263,7 +263,7 @@ sudo find /srv /var/backups /home /tmp -xdev \( -name 'pp-cutover-dump-*' -o -na
 sudo find /srv/pretasiplus/stage -mindepth 1 -maxdepth 1 -printf '%f\n'
 $R raw-check
 ```
-- Jangkaan: `ppdeploy:ppdeploy 700` untuk `stage`; `1000:1000 700` untuk `migration-out` (`production-migration-slot.md` bahagian 1); ahli kumpulan dan kunci SSH root hanya yang pemilik sahkan, disenaraikan mengikut peranan (REQ-B-113); tiada `.gpg` atau dump lama; `stage` hanya `pgdata`. `raw-check` direkod untuk K9b.
+- Jangkaan: `<uid ppdeploy>:<gid> 700` untuk `stage`; `1000:1000 700` untuk `migration-out` (`production-migration-slot.md` bahagian 1); ahli kumpulan dan kunci SSH root hanya yang pemilik sahkan, disenaraikan mengikut peranan (REQ-B-113); tiada `.gpg` atau dump lama; `stage` hanya `pgdata` dan `stage.pw`. `raw-check` direkod untuk K9b.
 - Henti jika: akaun lain; mode lain; dump lama wujud
 - Bila henti: tiada apa berubah. Pemilik putuskan. **Jangan padam fail yang tidak dikenali tanpa keputusan pemilik.**
 - Minit: 5
@@ -277,9 +277,9 @@ $R raw-check
   4. Arahan beku **dan** nyahbeku `.cloud` ada secara bertulis daripada pemilik .cloud.
   5. Jawapan bertulis: K2, K3, K5, K7b, **K10**. K7a sudah dijawab sebelum bahagian 0.
   6. Masa: T0 + 4:20 tidak melebihi `T_PUPIL`.
-  7. Team B mengesahkan `<R1_SHA>` dengan CI akhir hijau. Tanpanya jangan beku: selepas 3.2 API turun sehingga deploy R1. Bandingkan dengan pokok yang dilatih (**BELUM DISAHKAN**, git am, baca sahaja):
-     `git diff --stat 43fef0510 <R1_SHA> -- deploy/vps compose.yaml apps/api/prisma/migrations docs/ops/sql src/app/prototype-scope.ts` → **kosong**.
-     `git diff --name-only 43fef0510 <R1_SHA> -- apps/api/prisma/seed` → kosong, atau hanya fail profil e2e dari `r1/a4-e2e-chapter-seed` dan `r1/trial-exhausted-midquiz` (`e2e.ts`, `e2e-chapter.ts`, `e2e-trial.ts`). Selain itu: HENTI, Team B nilai semula.
+  7. Team B mengesahkan `46c14574018880f7146414ef2f1442ed09275b11` dengan CI akhir hijau. Tanpanya jangan beku: selepas 3.2 API turun sehingga deploy R1. Bandingkan dengan pokok yang dilatih (**BELUM DISAHKAN**, git am, baca sahaja):
+     `git diff --stat 43fef0510 46c14574018880f7146414ef2f1442ed09275b11 -- deploy/vps compose.yaml apps/api/prisma/migrations docs/ops/sql src/app/prototype-scope.ts` → **kosong**.
+     `git diff --name-only 43fef0510 46c14574018880f7146414ef2f1442ed09275b11 -- apps/api/prisma/seed` → kosong, atau hanya fail profil e2e dari `r1/a4-e2e-chapter-seed` dan `r1/trial-exhausted-midquiz` (`e2e.ts`, `e2e-chapter.ts`, `e2e-trial.ts`). Selain itu: HENTI, Team B nilai semula. Bacaan repo pada SHA ini (`git diff`, dibuat oleh Team B): diff pertama kosong; seed: `e2e.ts`, `e2e-chapter.ts`, `e2e-trial.ts`, semuanya fail profil e2e; `e2e-trial.ts` datang dari unit lain (`r1/trial-exhausted-midquiz`), bukan `r1/a4-e2e-chapter-seed`.
   8. Pemilik .cloud dan operator dump hadir; akaun `pp_dump_ro` boleh dibuka. **Pemilik boleh dihubungi hingga T0 + 5:30 dan sepanjang tempoh rollback (switch + 4 jam).**
 - Henti jika: mana-mana tidak
 - Bila henti: tiada apa berubah. `sudo systemctl start pp-backup.timer pp-cert-renew.timer`, `$S throwaway-down`. Tangguh.
@@ -341,13 +341,14 @@ ssh <storage host> 'cd <storage root> && find <banner dir> -type f -print0 | sor
 
 **2.4 Sulit dan pindah**
 - Siapa: operator dump; operator di UAT menerima
-- Arahan (PC dump; `<dir>` = `/srv/pretasiplus/stage/in-<stamp>`, luar repo; volum **tidak disulitkan**, K9):
+- Dahulu, di UAT sebagai `ppdeploy`: `mkdir -m 700 <dir>`.
+- Arahan (PC dump; `<dir>` = `/srv/pretasiplus/stage/in-<stamp>`, luar repo; volum **tidak disulitkan**, K9; `<user>` mesti `ppdeploy`):
 ```
 name="pp-cutover-dump-<stamp>.tar.gz.gpg"; out="$work/$name"
 ( set -o pipefail; tar -C "$work" -czf - raw files | gpg --symmetric --cipher-algo AES256 -o "$out" ); echo "exit $?"
 ( set -o pipefail; gpg --decrypt "$out" | tar -tzf - | wc -l ); echo "exit $?"
 sha256sum "$out"
-scp "$out" <user>@<UAT>:<dir>/
+scp "$out" ppdeploy@<UAT>:<dir>/
 ```
  Di UAT:
 ```
@@ -355,6 +356,7 @@ name="pp-cutover-dump-<stamp>.tar.gz.gpg"
 sha256sum <dir>/$name
 mkdir -m 700 <dir>/x
 ( set -o pipefail; gpg --decrypt <dir>/$name | tar -xzf - -C <dir>/x )
+sudo chown -R 1000:1000 <dir>/x/files
 du -sh <dir>/x <dir>/$name; df -BG /srv/pretasiplus/stage
 ```
  Frasa laluan diberi secara lisan sahaja, tiada dalam chat atau fail. Selepas sha256 sama, di PC dump: `npm run dump:wipe -w @pp/api -- --dir "$work"`, tutup terowong.
@@ -369,12 +371,14 @@ du -sh <dir>/x <dir>/$name; df -BG /srv/pretasiplus/stage
 
 ## 3. Load dan ETL (dari worktree, shell bahagian 0)
 
+**3.3 hingga 4.3 dilatih pada VM Linux dengan fixture** (bukan data sebenar, bukan masa sebenar).
+
 **3.1** `D0` dari 0.5 kekal sebagai jalan balik. Dalam shell baharu, ulang blok shell bahagian 0, termasuk `export PP_IMAGE_TAG=cb7332d0b3b5`, dan semak `$PC config --images | grep migrate` mesti tunjuk `:cb7332d0b3b5`, jika tidak HENTI.
 
 **3.2 Restore `pre_etl` (K1). Langkah sehala: tulisan selepas 27 Oct hilang dari DB kecuali melalui `D0`**
 - Siapa: operator di UAT
-- Arahan: `$R restore pre_etl` (taip nama DB bila diminta)
-- Jangkaan: `RESTORED: pre_etl (...) in <N> s. api and frontend stay stopped...` . **API turun dari sini hingga 5.7 selesai;** `/api` 502 dijangka, DNS belum berubah.
+- Arahan: `$R restore pre_etl`. Gesaan tepat: `RESTORE of pre_etl (pre_etl-<UTC>.dump): every write after it is lost on database prestasiplus. Type the database name to confirm:`. Jawapan = `POSTGRES_DB` dari `db.env`. Jawapan salah: rc 2, tiada perubahan.
+- Jangkaan: `RESTORED: pre_etl (...) in <N> s. api and frontend stay stopped...` . Baris itu menyebut "cutover plan section 6.3": **abaikan, teruskan ke 3.3.** **API turun dari sini hingga 5.7 selesai;** `/api` 502 dijangka, DNS belum berubah.
 - Henti jika: bukan exit 0
 - Bila henti: lihat jadual 8, baris S3. `.cloud` masih beku; UAT turun.
 - Minit: 2 hingga 5
@@ -411,7 +415,7 @@ $PSQL -c "SELECT (SELECT count(*) FROM tiers) AS tiers, (SELECT count(*) FROM us
 - Arahan (tanpa `--files-dir` jika K3 = tiada): `$PC config --images | grep migrate` mesti tunjuk `:cb7332d0b3b5`, jika tidak HENTI. `$S etl migrate:all --dry-run --as-of=2026-11-03 --files-dir=<dir>/x/files --content-owner=<owner>`
 - Jangkaan: `ETL STEP migrate:all exit=0`; jadual entiti teras; reject mengikut sebab. Pada muatan pertama aktiviti "skipped" = dijangka.
 - Henti jika: exit 2 `Preflight failed: staging_cloud.articles lacks column(s) body`; `uid 1000 cannot read`; exit bukan 0; 4 = kunci dipegang
-- Bila henti: `setfacl` yang dicetak oleh slot.sh jika isu baca; selain itu Blok HENTI, jadual 8. Jangan guna `migrate:core` atau `migrate:activity` berasingan (`slot.sh` menolak).
+- Bila henti: jika `uid 1000 cannot read`: `sudo chown -R 1000:1000 <dir>/x/files` dan ulang. **Jangan guna `setfacl` yang dicetak slot.sh: ia tidak akan lulus (`slot.sh`:380, `test -r` BusyBox).** Selain itu Blok HENTI, jadual 8. Jangan guna `migrate:core` atau `migrate:activity` berasingan (`slot.sh` menolak).
 - Minit: 5
 
 **3.7 Apply `migrate:all`**
@@ -450,7 +454,7 @@ $PSQL < docs/ops/sql/smoke-readonly.sql
 
 **3.9 Bukti imej** Siapa: operator di UAT. Arahan: `$PSQL -c "SELECT DISTINCT git_sha FROM etl_runs;"` (**BELUM DISAHKAN**: lajur disebut dalam komen `slot.sh`, bentuk SELECT bukan dari repo). Jangkaan: `cb7332d0...` sahaja. Henti jika sha lain: laporkan. Minit: 1.
 
-**3.10 `migrate:questions` sekarang, sebelum R1: dry-run**
+**3.10 `migrate:questions` sekarang, sebelum R1: dry-run. BUKAN pilihan: 3.11 menolak tanpa dry-run yang lulus, juga selepas sebarang restore**
 - Siapa: operator di UAT
 - Sebab: 0100 mesti menukar `published` → `approved` selepas soalan masuk; imej `cb7332d0` menulis `published` dan akan ditolak CHECK jika 0100 sudah jalan (inferens; tidak dilatih). Rehearsal: `published` → `approved` lulus.
 - Arahan: `$PC config --images | grep migrate` mesti tunjuk `:cb7332d0b3b5`, jika tidak HENTI. `$S etl migrate:questions --as-of=2026-11-03`
@@ -459,7 +463,7 @@ $PSQL < docs/ops/sql/smoke-readonly.sql
 - Bila henti: tiada tulisan. Pelan: boleh buka tanpa bank soalan hanya dengan keputusan pengguna; ini R1 Bijak, jadi kemungkinan besar perlu tangguh (inferens). Jadual 8.
 - Minit: 5
 
-**3.11 Apply `migrate:questions`**
+**3.11 Apply `migrate:questions`** (perlu 3.10 lulus dengan input sama; selepas restore ulang 3.10)
 - Siapa: operator di UAT
 - Arahan: `$PC config --images | grep migrate` mesti tunjuk `:cb7332d0b3b5`, jika tidak HENTI. `$S etl migrate:questions --apply --as-of=2026-11-03` kemudian `$S etl migrate:verify` kemudian `$S etl migrate:questions --as-of=2026-11-03` (ulang dry-run)
 - Jangkaan: `run <id> succeeded`; `loaded = eligible − rejected`; `verify pass`, baris soalan `ok`; dry-run kedua dalam fail `report:` `inserted` 0, `updated` 0. Rekod kiraan `held_*` untuk pengguna. Jumlah dibandingkan 406,396 UAT lama (CLOUD-HANDOFF).
@@ -506,7 +510,7 @@ Bila henti: henti dan lapor kepada pengguna; ke go/no-go 5.0 dengan keputusan. M
 
 **5.0 GO/NO-GO pemilik (kira-kira T0 + 2:00)**
 - Siapa: pemilik, atas bacaan operator di UAT
-- Syarat: 3.8 `verify pass` dan `Z0` = 0; 3.11 `verify pass`; 4.0 dan 4.1 sudah dibaca; `<R1_SHA>` CI akhir hijau; 5.7 boleh bermula sebelum T0 + 3:15; T0 + 4:20 tidak melebihi `T_PUPIL`.
+- Syarat: 3.8 `verify pass` dan `Z0` = 0; 3.11 `verify pass`; 4.0 dan 4.1 sudah dibaca; CI hijau pada `79fbeea2`; 5.7 boleh bermula sebelum T0 + 3:15; T0 + 4:20 tidak melebihi `T_PUPIL`.
 - No-go atau selepas had: jadual 8, S3.
 - **Selepas 5.7 tiada lagi jalan pulang yang murah.**
 
@@ -521,11 +525,11 @@ PSQL_RO='PGPASSWORD="$POSTGRES_PASSWORD" PGOPTIONS="-c default_transaction_read_
 psql_ro() { $PC exec -T db sh -c "$PSQL_RO" sh "$@"; }
 PSQL=psql_ro
 ```
-Jangkaan `$PC config --images`: `:<R1_TAG>`.
+Jangkaan `$PC config --images`: `:46c145740188`.
 
 **5.1 Checkout R1**
 - Siapa: operator di UAT
-- Arahan: **BELUM DISAHKAN** (arahan git am; dokumen hanya menyatakan "release checkout"): `git -C /opt/pretasiplus fetch origin && git -C /opt/pretasiplus checkout --detach <R1_SHA>`. Semak: `git rev-parse HEAD` = `<R1_SHA>`; `git merge-base --is-ancestor 2fabf472 HEAD && echo has-BASE-213` (checklist :40).
+- Arahan: **BELUM DISAHKAN** (arahan git am; dokumen hanya menyatakan "release checkout"): `git -C /opt/pretasiplus fetch origin && git -C /opt/pretasiplus checkout --detach 46c14574018880f7146414ef2f1442ed09275b11`. Semak: `git rev-parse HEAD` = `46c14574018880f7146414ef2f1442ed09275b11`; `git merge-base --is-ancestor 2fabf472 HEAD && echo has-BASE-213` (checklist :40).
 - Jangkaan: `has-BASE-213`; `git status --porcelain --untracked-files=no` kosong (`deploy.sh` menolak jika kotor)
 - Henti jika: fail tempatan diubah. Bila henti: laporkan, jangan `--allow-dirty`.
 - Minit: 2
@@ -539,7 +543,7 @@ Jangkaan `$PC config --images`: `:<R1_TAG>`.
 - **Nota:** job CI e2e @api membina dengan `on` (`.github/workflows/frontend.yml`:216), jadi nilai ini sama dengan CI; UAT `off` yang berbeza. Mesej penolakan menyebut "prototaip" dan akan dilihat pengguna sebenar.
 - Minit: 1
 
-**5.2 Bina imej R1 (checklist A7)**: `export PP_IMAGE_TAG=$(git rev-parse --short=12 HEAD); $PC build api migrate frontend`. Jangkaan: tag `<R1_TAG>`. Henti jika gagal bukan rangkaian. Minit: 11.
+**5.2 Bina imej R1 (checklist A7)**: `export PP_IMAGE_TAG=$(git rev-parse --short=12 HEAD); $PC build api migrate frontend`. Jangkaan: tag `46c145740188`. Henti jika gagal bukan rangkaian. Minit: 11.
 
 **5.3 REQ-B-080 (A2)**: `sudo grep -c '^THROTTLE_GLOBAL_PER_MINUTE=3000' /etc/pretasiplus/api.env` → `1` (**BELUM DISAHKAN** bentuk grep; nilai disahkan oleh REQ-B-103). Minit: 1.
 
@@ -611,9 +615,9 @@ $PSQL -c "SELECT migration_name, started_at, finished_at, rolled_back_at, logs F
 - Sebab: preflight menolak sijil tiada, self-signed atau tamat (`deploy.sh`:176-187); langkah 6 dan 7 mencipta semula api dan edge; langkah 8 memeriksa `/api/health`, `/api/ready`, `/`, `/api/metrics` 404 dan redirect melalui `--resolve` sebelum DNS; dengan tag sama `previous.tag` tidak disentuh (`deploy.sh`:354), jadi `6d81162c87f0` kekal sasaran rollback. Kos: satu lagi sandaran, bina cached, migrate tiada kerja.
 - Siapa: operator di UAT
 - Arahan: `deploy/vps/deploy.sh --dry-run` kemudian `deploy/vps/deploy.sh`, taip `prestasiplus.cloud`
-- Jangkaan: amaran `the new tag equals the current one`; `deploy complete: <R1_TAG>`; `uat.` HTTPS kini ditolak dan port 80 301 ke domain baharu
+- Jangkaan: amaran `the new tag equals the current one`; `deploy complete: 46c145740188`; `uat.` HTTPS kini ditolak dan port 80 301 ke domain baharu
 - Henti jika: mana-mana langkah gagal
-- Bila henti: S6. Sandaran manual jika `deploy.sh` tidak boleh: `export PP_IMAGE_TAG=$(cat /var/lib/pretasiplus-deploy/current.tag)`; `$PC config --images | grep -E 'pretasiplus-api:'` mesti `:<R1_TAG>`, jika tidak HENTI; `$PC up -d --no-deps --force-recreate --wait api`; `$PC up -d --wait --no-deps --force-recreate edge`
+- Bila henti: S6. Sandaran manual jika `deploy.sh` tidak boleh: `export PP_IMAGE_TAG=$(cat /var/lib/pretasiplus-deploy/current.tag)`; `$PC config --images | grep -E 'pretasiplus-api:'` mesti `:46c145740188`, jika tidak HENTI; `$PC up -d --no-deps --force-recreate --wait api`; `$PC up -d --wait --no-deps --force-recreate edge`
 - Minit: 5 hingga 10
 
 **6.4 Semak tempatan sebelum DNS** (bentuk `_pp_curl_edge`, `lib.sh`; `PP_HTTP_BIND=0.0.0.0` maka 127.0.0.1):
@@ -667,7 +671,7 @@ Jangkaan: `187.52.120.11`; `NO-CDN-HEADERS`; `200`, `200`. Henti jika mana-mana 
 **7.6 Hanya selepas 7.1 hingga 7.5b lulus: hidupkan timer**
 - Siapa: operator di UAT
 - Arahan: `sudo systemctl start pp-backup.timer pp-cert-renew.timer`. Tiada `pp-restore-drill.timer` di hos ini (fakta 2 Nov).
-- Jangkaan: kedua-duanya `Persistent=true`, jadi larian yang terlepas semasa berhenti **berjalan segera**. Jika 02:15 terlepas (tingkap malam, Q29): **`pp-backup` berjalan segera dan memegang kunci kongsi**, jadi tiada `deploy.sh`, `rollback.sh` atau `backup.sh` lain sehingga siap; sebab itu smoke dahulu. `pp-cert-renew` (03:40, 15:40) juga mungkin, tiada kerja kerana sijil > 30 hari. Sandaran seterusnya memegang `archive_cloud` belum diminimumkan (K9b); tiada off-site (`PP_OFFSITE_KIND=none`).
+- Jangkaan: kedua-duanya `Persistent=true`, jadi larian yang terlepas semasa berhenti **berjalan segera**. Tingkap pagi: `pp-backup` (02:15) tiada larian terlepas jika dihentikan selepas 02:15. Jika ada larian terlepas ia **berjalan segera dan memegang kunci kongsi**, jadi tiada `deploy.sh`, `rollback.sh` atau `backup.sh` lain sehingga siap; sebab itu smoke dahulu. `pp-cert-renew` (15:40) hanya jika tingkap melepasinya, tiada kerja kerana sijil > 30 hari. Sandaran seterusnya memegang `archive_cloud` belum diminimumkan (K9b); tiada off-site (`PP_OFFSITE_KIND=none`).
 - Henti jika: unit gagal. Bila henti: laporkan; tidak menghalang go-live.
 - Rekod masa switch. Pemantauan: `PP_ALERT_WEBHOOK_URL` tiada (REQ-B-103), jadi manual, 4 jam pertama.
 - Minit: 2
@@ -683,6 +687,7 @@ $R raw-check
 ```
  (Bentuk `drop` daripada `target_psql`, `slot.sh`, **BELUM DISAHKAN** sebagai arahan terus. `purge-raw` memadam hanya restore point `raw_data=yes` yang lebih lama.)
 - **Padam dump `D0`, `D` dan dump harian yang memegang `archive_cloud` belum diminimumkan, serta WAL dan base backup: BELUM DISAHKAN**, tiada arahan dalam repo. `PP_OFFSITE_KIND=none`: hanya senarai custody tempatan (`restore-points/custody.tsv`, `/var/backups/pretasiplus`), tiada S3.
+- **Volum `apifiles` menyimpan fail banner daripada muatan lama: restore tidak memadamnya, jadi fail yatim. Senaraikan bawah K9b; arahan padam BELUM DISAHKAN, tiada dalam repo.**
 - `archive_cloud` kekal 12 bulan selepas diminimumkan (pelan 7, Q12). Diterima (REQ-B-113).
 - `PP_RAW_PURGE_BY` lalai 2026-11-06; tarikh had bergerak mengikut muatan baharu (pelan 7), pemilik sahkan.
 - Buang worktree dan imej `cb7332d0b3b5` selepas sign-off: **BELUM DISAHKAN**, tiada arahan dalam repo.
@@ -696,11 +701,34 @@ $R raw-check
 | **S0** bahagian 0 | Tiada apa berubah | Stop. `sudo systemctl start pp-backup.timer pp-cert-renew.timer`. `$S throwaway-down` |
 | **S1** beku | `.cloud` beku | Nyahbeku (arahan bertulis 0.11; dari pemilik .cloud, **BELUM DISAHKAN**). UAT tidak berubah |
 | **S2** dump | Salinan mentah | Blok HENTI; nyahbeku. UAT tidak berubah |
-| **S3** selepas 3.2, sebelum 5.7 | UAT dipulihkan/dimuat, **api dan frontend berhenti** | Blok HENTI. Nyahbeku `.cloud` dahulu. (a) `D0`: `production-vps.md` bab 8 langkah 1 hingga 3, hingga `DB ROLES CHECK PASSED`; atau (b) `$R restore pre_etl` kemudian `deploy/vps/db-roles.sh check`. **DB dan peranan dahulu, kemudian hidupkan:** `git -C /opt/pretasiplus checkout --detach 6d81162c87f0a17761df99ba48e2d4f541bcebf7` (jika 5.1 sudah jalan); `cd /opt/pretasiplus; export PP_IMAGE_TAG="$(cat /var/lib/pretasiplus-deploy/current.tag)"` (`6d81162c87f0` selagi `deploy.sh` belum siap; semak); `$PC up -d --wait --no-deps api frontend`; `$PC up -d --wait --no-deps --force-recreate edge`. **Jangan guna `rollback.sh`:** ia mati `already the release that is running` (`rollback.sh`: tag = current, tiada `previous.tag`). **Edge mesti dimulakan dari `/opt`:** bind mount relatif (`compose.prod.yaml`:202-204). **Skop:** imej lama sudah dibina, `up` tidak membina, jadi nilainya kekal `off` walau apa isi `prod.env`. Jika 5.1b sudah jalan, pulihkan `VITE_PROTOTYPE_SCOPE=off` dalam `prod.env` juga: hanya untuk mengelak bina semula kemudian mengambil `on`. Cuba semula memerlukan beku baru dan eksport baru (pelan 6.3 item 4) |
+| **S3** selepas 3.2, sebelum 5.7 | UAT dipulihkan/dimuat, **api dan frontend berhenti** | Blok HENTI. Nyahbeku `.cloud` dahulu. (a) `D0`: **blok 8.1** (`D=$D0`); atau (b) `$R restore pre_etl` kemudian `deploy/vps/db-roles.sh check`. **DB dan peranan dahulu, kemudian hidupkan:** `git -C /opt/pretasiplus checkout --detach 6d81162c87f0a17761df99ba48e2d4f541bcebf7` (jika 5.1 sudah jalan); `cd /opt/pretasiplus; export PP_IMAGE_TAG="$(cat /var/lib/pretasiplus-deploy/current.tag)"` (`6d81162c87f0` selagi `deploy.sh` belum siap; semak); `$PC up -d --wait --no-deps api frontend`; `$PC up -d --wait --no-deps --force-recreate edge`. **Jangan guna `rollback.sh`:** ia mati `already the release that is running` (`rollback.sh`: tag = current, tiada `previous.tag`). **Edge mesti dimulakan dari `/opt`:** bind mount relatif (`compose.prod.yaml`:202-204). **Skop:** imej lama sudah dibina, `up` tidak membina, jadi nilainya kekal `off` walau apa isi `prod.env`. Jika 5.1b sudah jalan, pulihkan `VITE_PROTOTYPE_SCOPE=off` dalam `prod.env` juga: hanya untuk mengelak bina semula kemudian mengambil `on`. Cuba semula memerlukan beku baru dan eksport baru (pelan 6.3 item 4) |
 | **S4** `deploy.sh` gagal sebelum langkah 5 | **API sudah turun sejak 3.2 hingga 5.7 selesai**, jadi tiada keluaran lama hidup; `deploy.sh` boleh mencetak "old release still running", abaikan untuk kes ini | Baca mesej, betulkan, ulang `deploy.sh`, dalam had T0 + 5:30. Abort: S3. `.cloud` tetap beku sehingga keputusan. Keluarkan `options=...` dari `migrate.env` (5.10) |
-| **S5** semasa/selepas migrate, sebelum DNS | Skema ke hadapan | Checklist 3 dan 4 (W1). **Selepas 0100 commit hanya dump `D` (5.4):** `production-vps.md` bab 8, tiada `migrate resolve` (P3011), kemudian **jangan hidupkan seperti S3: `current.tag` kini `<R1_TAG>`, ia menjalankan R1 atas skema lama.** Guna `deploy/vps/rollback.sh --dry-run --checkout 6d81162c87f0` dan kemudian tanpa `--dry-run`, taip domain (`rollback.sh`:45-63; `--checkout` perlukan baris `history.log` untuk tag itu, ada di pelayan). Sandaran: `git -C /opt/pretasiplus checkout --detach 6d81162c87f0a17761df99ba48e2d4f541bcebf7; cd /opt/pretasiplus; export PP_IMAGE_TAG=6d81162c87f0`, kemudian `$PC up` seperti S3, **tidak pernah `current.tag`**. Skop: imej lama kekal `off`, pulihkan `prod.env`. Dump `D` memegang data dimuatkan, tanpa `staging_cloud`, jadi deploy boleh diulang tanpa dump baru. `.cloud` nyahbeku hanya bila abort |
-| **S6** selepas `PP_DOMAIN`, sebelum DNS atau DNS baru | `.cloud` beku, pengguna tidak terjejas | DNS: A kembali ke `187.77.149.107` (TTL 300 s). `sudoedit` `PP_DOMAIN=uat.prestasiplus.cloud`, `deploy/vps/deploy.sh` taip domain itu, atau sandaran manual 6.3 dengan semakan `$PC config --images | grep -E 'pretasiplus-api:'` = `:<R1_TAG>`. Nyahbeku bila keputusan dibuat |
+| **S5** semasa/selepas migrate, sebelum DNS | Skema ke hadapan | Checklist 3 dan 4 (W1). **Selepas 0100 commit hanya dump `D` (5.4):** **blok 8.1**, tiada `migrate resolve` (P3011), kemudian **jangan hidupkan seperti S3: `current.tag` kini `46c145740188`, ia menjalankan R1 atas skema lama.** Guna `deploy/vps/rollback.sh --dry-run --checkout 6d81162c87f0` dan kemudian tanpa `--dry-run`, taip domain (`rollback.sh`:45-63; `--checkout` perlukan baris `history.log` untuk tag itu, ada di pelayan). Sandaran: `git -C /opt/pretasiplus checkout --detach 6d81162c87f0a17761df99ba48e2d4f541bcebf7; cd /opt/pretasiplus; export PP_IMAGE_TAG=6d81162c87f0`, kemudian `$PC up` seperti S3, **tidak pernah `current.tag`**. Skop: imej lama kekal `off`, pulihkan `prod.env`. Dump `D` memegang data dimuatkan, tanpa `staging_cloud`, jadi deploy boleh diulang tanpa dump baru. `.cloud` nyahbeku hanya bila abort |
+| **S6** selepas `PP_DOMAIN`, sebelum DNS atau DNS baru | `.cloud` beku, pengguna tidak terjejas | DNS: A kembali ke `187.77.149.107` (TTL 300 s). `sudoedit` `PP_DOMAIN=uat.prestasiplus.cloud`, `deploy/vps/deploy.sh` taip domain itu, atau sandaran manual 6.3 dengan semakan `$PC config --images | grep -E 'pretasiplus-api:'` = `:46c145740188`. Nyahbeku bila keputusan dibuat |
 | **S7** selepas DNS, pengguna menulis, dalam 4 jam | Tulisan v2 sebenar | **Keputusan pengguna.** Hentikan tulisan: `$PC stop api`. Semak kiraan tidak berubah 1 min. `$R take post_switch` (shell bahagian 5). DNS kembali. Nyahbeku `.cloud`. Simpan data untuk analisis (pelan 6.3). Tulisan v2 hilang; tiada migrasi songsang. Kata laluan baharu tidak sah di `.cloud` |
+
+**S3 (a) dan (b) lulus pada VM Linux.**
+
+### 8.1 Pulih DB dari dump (S3 a, S5)
+
+**Jangan baca `production-vps.md` bab 8 dari checkout di hos:** versi itu guna `$PC cp`, yang gagal pada `db` baca-sahaja, dan baris seterusnya meninggalkan DB kosong. Arahan di bawah dari `git show 46c14574:docs/ops/production-vps.md` bab 8.
+```
+cd /opt/pretasiplus
+PC="docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env"
+export PP_BACKUP_KEEP_AUX=20
+D=/var/backups/pretasiplus/<dump>
+$PC stop api frontend
+deploy/vps/backup/backup.sh --tag drill --no-offsite --no-files
+(cd "$(dirname "$D")" && sha256sum -c "$(basename "$D").sha256")
+$PC exec -T db pg_restore --list < "$D" > /dev/null; echo $?
+$PC exec -T db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" psql -h 127.0.0.1 -U "$POSTGRES_USER" -d postgres -c "drop database \"$POSTGRES_DB\" with (force)" -c "create database \"$POSTGRES_DB\""'
+$PC exec -T db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" pg_restore -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --exit-on-error' < "$D"; echo $?
+deploy/vps/db-roles.sh apply
+deploy/vps/db-roles.sh check
+```
+- Jangkaan: `<dump>: OK`; `0`; `0`; `DB ROLES CHECK PASSED`. Kemudian `$PSQL -c "SELECT (SELECT count(*) FROM users) AS users, (SELECT count(*) FROM _prisma_migrations WHERE finished_at IS NOT NULL) AS migrations;"`: kedua-dua > 0. `check` membuktikan peranan, bukan restore: bukti ialah status keluar dan kiraan.
+- Henti jika: `sha256sum` atau `--list` gagal: **jangan drop**, pilih dump lain. `pg_restore` bukan `0`: API kekal turun, ulang dari `drop`.
+- Kemudian: S3 baris `up` dari `/opt`; S5 `rollback.sh --checkout 6d81162c87f0`. Jangan hidupkan API sebelum `check` lulus.
 
 **Titik tiada kembali.**
 - **Langkah sehala lebih awal:** 3.2 (DB UAT diganti; hanya `D0` membawa balik) dan 3.4 (salinan lama digugurkan, dump dipadam; cuba semula perlu eksport baru).
