@@ -55,6 +55,11 @@ Hab `Kandungan SPM` menunjukkan satu kad bagi setiap lorong, dengan bilangan yan
 
 **g) Lapor.** Murid boleh melapor soalan yang bermasalah daripada skrin soalan. Melapor soalan berstruktur sebelum hantar pertama (unit REQ-B-049, dalam base sejak BASE-126).
 
+### 1.3 Tambahan R1 (Q31)
+
+- **Percubaan percuma habis semasa memulakan latihan:** murid kini melihat mesej "Baki percubaan percuma anda telah habis." dan tidak lagi dibawa ke halaman yang tidak tersedia.
+- **Pratonton Kolam pada Kontrak:** pentadbir boleh melihat pratonton kolam soalan bagi sesuatu Kontrak (sebelum ini ralat "tidak ditemui").
+
 ---
 
 ## 2. Had R1 yang diketahui
@@ -80,7 +85,6 @@ Had yang diketahui, akan dibetulkan selepas live (REQ-B-118):
 - Menu murid **"Jemput Ibu Bapa"** masih kelihatan, tetapi ibu bapa yang dijemput akan menerima mesej di atas dan tidak dapat masuk.
 - Perkataan "prototaip" kelihatan dalam skrin.
 - Penolakan ini dibuat pada skrin sahaja; API masih menerima peranan ini selepas log masuk.
-- Murid yang percubaan percumanya sudah habis ketika memulakan latihan dibawa ke halaman harga, yang memaparkan "Belum tersedia dalam prototaip"; tiada langkah seterusnya.
 - Jika percubaan habis di tengah kuiz, murid melihat "Baki percubaan percuma anda telah habis." tetapi tanpa pautan langganan (keputusan pemilik REQ-B-122), dan tiada butang ke halaman keputusan. Jawapan yang sudah disemak dalam sesi itu tidak dikreditkan.
 
 ---
