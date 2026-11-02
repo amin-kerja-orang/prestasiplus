@@ -246,7 +246,7 @@ let xpBefore = 0 // the seeded pupil already has XP: the reward is checked as a 
       [solo],
     )
     expect(row!.chapter).toBeNull() // no manual Bab
-    const [target] = await q(`select c.id::text id from chapters c where c.subject_id = $1::bigint and c.education_level_id = $2::bigint and c.dskp_code is null order by c.id limit 1`, [row!.subject, row!.level])
+    const [target] = await q(`select c.id::text id from chapters c where c.subject_id = $1::bigint and c.education_level_id = $2::bigint and c.is_active and c.dskp_code is null order by c.id limit 1`, [row!.subject, row!.level])
     expect(target, 'the fixture needs a chapter of the unit subject and level').toBeDefined()
     await q(`update chapters set dskp_code = $2 where id = $1::bigint`, [target!.id, row!.unit_code])
     try {
