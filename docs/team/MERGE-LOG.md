@@ -176,3 +176,19 @@
 | BASE-171 | f3a43149 | publish-title-draft @ 335e9cbb (B2 Approve); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 457 passed (457) | 2026-11-02 10:55 |
 | BASE-172 | 17b9c92f | a2-carried-minors @ 45f15242 (B2 Approve w/ Minor); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 13 passed (13) | 2026-11-02 10:55 |
 | BASE-173 | 85620b10 | T38 cap risk row @ ee421f52 (B2 Approve); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 13 passed (13) | 2026-11-02 10:55 |
+| BASE-174 | 29188d35 | REQ-A-018 mock swap @ 0b774bd2 (B2 Approve); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 413 passed (413) | 2026-11-02 11:26 |
+| BASE-175 | 4f92aac0 | minors-t45 @ eb8165ed (B2 Approve); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 458 passed (458) | 2026-11-02 11:26 |
+| BASE-176 | 5e6f03ed | REQ-B-067 ETL guards @ d402fdf2 (B2 Approve w/ Minors); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 41 passed (41) | 2026-11-02 11:26 |
+| BASE-177 | 44403c6f | publish-lock-share @ 7ef73b79 (B2 Approve w/ Minors); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 458 passed (458) | 2026-11-02 11:26 |
+| BASE-178 | 30c96eb3 | R1E2E-10 delta @ fe228f56 (B2 Approve); merged by exact reviewed SHA | all compile and lint steps 0; unit 122 passed (122); DB 11 passed (11) | 2026-11-02 11:26 |
+| BASE-179 | 4659c083 | H-A18 minors @ 17450966 (B2 Approve w/ Minors); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 159 passed (159) | 2026-11-02 11:26 |
+| BASE-180 | ac4426f3 | servability-stimuli-once @ f76f729a (B2 Approve); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 72 passed (72) | 2026-11-02 11:26 |
+| BASE-181 | d00827b9 | intake-reqs follow-up @ 2fe252ab (B2 Approve); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 21 passed (21) | 2026-11-02 11:26 |
+| BASE-182 | 51f5b9f6 | minors-chain-tip @ 41c22c96 (B2 Approve); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 80 passed (80) | 2026-11-02 11:26 |
+| BASE-183 | e066590a | minors-b025c @ a4feeab0 (B2 Approve); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 9 passed (9) | 2026-11-02 11:26 |
+| BASE-184 | 8227a76d | minors-snapshot-versions @ 1ef2eb2e (B2 Approve); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 4 passed (4) | 2026-11-02 11:26 |
+| BASE-185 | a9416009 | T42b @ 34d86311 (B2 Approve); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 14 passed (14) | 2026-11-02 11:26 |
+| BASE-186 | 424fa070 | T04 minors delta @ 82828a68 (B2 Approve); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 2 passed (2) | 2026-11-02 11:26 |
+| BASE-187 | 453b132e | alp-comment-240 @ 84b0c3a9 (B2 Approve); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 13 passed (13) | 2026-11-02 11:26 |
+| BASE-188 | 3b8d346a | REQ-C-012 doc @ b71dc2ad (B2 Approve); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 13 passed (13) | 2026-11-02 11:26 |
+| BASE-189 | 1216dbe7 | T39 K1 evidence @ 669a1109 (B2 Approve w/ Minors); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 13 passed (13) | 2026-11-02 11:26 |
