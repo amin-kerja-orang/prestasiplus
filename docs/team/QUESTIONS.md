@@ -78,3 +78,13 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
 - **Decision:** T38 merges per D94. R1 has **no cross-attempt cap** on syiling or XP.
 - **Accepted known risk:** a blank Cuba Lagi plus a full self-mark can pay up to 2 × max syiling and 10 × max XP per attempt.
 - **Follow-up:** a per-day or per-paper cap is a KIV R2 item (ha24 r1-kiv-r2.md). The T38 deviation row records the accepted risk (A3 docs agent, small docs branch, because T38 is already merged as BASE-112).
+
+## Delegation note (2026-11-02 09:10 MYT, user instruction relayed by Mandor)
+- **While the user is away for a few hours,** product questions are decided by this rule: **follow V2 first; if V2 has no answer, take the best approach.**
+- Each such decision is recorded here with its V2 reference (file/route) or its rationale, and marked **"decided under delegation"** for the user to review later.
+- Team A sends product questions to Mandor, with the V2 evidence where there is any. Mandor decides. Team A does not stop to wait for the user.
+- **Not decidable under the delegation (hold; other work continues):**
+  - deploy or cutover to a real server;
+  - any action on live;
+  - secrets;
+  - deleting data or branches.
