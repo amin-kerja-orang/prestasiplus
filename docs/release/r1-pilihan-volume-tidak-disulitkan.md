@@ -1,7 +1,7 @@
 # R1: Pilihan untuk risiko "volum data pelayan tidak disulitkan"
 
-Untuk: pemilik projek. Disediakan: 2026-11-02. Status: **pilihan sahaja, tiada keputusan dibuat.**
-Konteks: go-live R1 ditangguhkan. Satu risiko terbuka ialah volum data pelayan produksi **tidak disulitkan (unencrypted) semasa disimpan**.
+Untuk: pemilik projek. Disediakan: 2026-11-02. Status: **DIPUTUSKAN oleh pemilik pada 3 Nov 2026: pilihan (a), terima dengan mitigasi (Q23 butir 1; REQ-B-108, REQ-B-113).** Pek ini asalnya pilihan sahaja (2 Nov); bahagian lain dikekalkan sebagai sejarah.
+Konteks (2 Nov): go-live R1 ditangguhkan (REQ-B-108); go-live kini siang 3 Nov (Q23 butir 2). Satu risiko terbuka ialah volum data pelayan produksi **tidak disulitkan (unencrypted) semasa disimpan**.
 
 Asal risiko: `docs/ops/production-vps.md` bahagian 2 ("Disk encryption", tanda `LEAD:`) dan jadual pemboleh ubah `PP_BACKUP_DIR` ("encrypted volume"); `docs/ops/db-backup.md` bahagian "Where backups go" ("Without full-disk encryption do not store backups"). Di papan pasukan: **REQ-B-108** (`docs/team/requests/from-B.md:111` pada `team/r1-board@8614e499`): "Encrypted volume, plan requires it and the host has none: 'Tangguh'"; penghalang (1): "a decision by whoever can accept or fix the unencrypted volume for raw data including minors". Pek ini menjawab REQ-A-063.
 
@@ -31,14 +31,22 @@ Penyulitan cakera ialah kunci pada peti simpanan. Tanpa kunci itu, sesiapa yang 
 - Peranan DB hak minimum `pp_app` (`deploy/vps/db-roles.sh`), DB tiada port hos.
 - Sandaran bertempoh simpanan terhad, dan latihan pemulihan bulanan (`db-backup.md`).
 
-**Langkah tambahan dicadangkan (kerja operator, kecil):**
-1. Pastikan **tiada dump tanpa sulit** tinggal lama pada volum; hanya salinan luar-tapak yang disulitkan menjadi salinan jangka panjang. Kecilkan `PP_BACKUP_KEEP_*` jika perlu.
-2. Padam pangkalan data sementara (scratch) selepas setiap latihan pemulihan; sahkan skrip tidak meninggalkannya.
-3. Gunakan snapshot penyedia yang pendek umur sahaja, dan padam snapshot lama.
-4. Semak dengan penyedia sama ada mereka menyulitkan storan di sebelah mereka (dan dokumenkan jawapannya).
-5. Rekod keputusan pemilik bertarikh dan **tarikh semak semula** (cadangan: 30 hari selepas go-live).
+**Maksud mitigasi yang diterima pemilik (Q23 butir 1; REQ-B-113, jawapan pemilik "Ya, terima"):**
+1. Fail dump mentah dipadam sebaik sahaja dimuat. **Hanya fail dump itu.**
+2. Data mentah selebihnya **kekal tidak disulitkan pada cakera pelayan**: `staging_cloud`, sandaran asas PITR dan WAL terarkib, titik pulih (restore point), dan dump setempat tidak disulitkan (`backup.sh` menyimpannya), sehingga dibersihkan pada tarikh yang ditetapkan. **Tarikh pembersihan belum ditetapkan**; lalai pembersihan mentah 2026-11-06 perlu disemak semula.
+3. `archive_cloud` disimpan 12 bulan.
+4. "Akses root" bermaksud root **dan** akaun setara root: `ppdeploy` melalui kumpulan docker, dan kunci SSH pada root. Senarai mengikut PERANAN (tanpa nama) disimpan oleh operator.
+5. Penyulitan PC dump sendiri kekal diwajibkan.
 
-**Baki risiko:** cakera/snapshot yang bocor atau dilupuskan di penyedia masih boleh dibaca. Data murid dan guru terdedah dalam kes itu. Pemilik menerima risiko ini secara bertulis, sementara.
+**Langkah tambahan untuk operator (kerja kecil):**
+1. Padam fail dump mentah sebaik muat berjaya; sahkan ia tiada lagi. Dump setempat tidak disulitkan dalam `PP_BACKUP_DIR` dicatat sebagai data mentah yang masih ada sehingga dibersihkan; hanya salinan luar-tapak yang disulitkan menjadi salinan jangka panjang.
+2. Padam pangkalan data sementara (scratch) selepas setiap latihan pemulihan; sahkan skrip tidak meninggalkannya.
+3. Tetapkan dan catat tarikh pembersihan `staging_cloud`, PITR/WAL dan titik pulih; semak semula lalai 2026-11-06.
+4. Gunakan snapshot penyedia yang pendek umur sahaja; semak dengan penyedia sama ada storan disulitkan di sebelah mereka.
+5. Senaraikan akaun setara root mengikut peranan (`ppdeploy`/docker, kunci SSH root) dan kurangkan yang tidak perlu.
+6. Rekod keputusan pemilik bertarikh (di bawah) dan **tarikh semak semula** (cadangan: 30 hari selepas go-live).
+
+**Baki risiko:** cakera/snapshot yang bocor atau dilupuskan di penyedia masih boleh dibaca, termasuk data mentah yang belum dibersihkan. Akaun setara root masih boleh membacanya. Dokumen ini **tidak** menyatakan pematuhan PDPA; ia merekod penerimaan baki risiko oleh pemilik dan mitigasinya (sahkan dengan pemilik/pegawai perlindungan data jika perlu pernyataan pematuhan).
 
 ## 3. Pilihan (b): sulitkan dahulu
 
@@ -65,12 +73,12 @@ Semua kerja dibuat oleh **operator manusia**; saya tidak menyentuh pelayan. Angg
 
 | Tanda | Pilihan | Kelewatan go-live | Baki risiko |
 |---|---|---|---|
-| [ ] | (a) Terima untuk R1 + langkah pengurangan, semak semula pada tarikh: ________ | ~0 | Cakera/snapshot bocor di penyedia boleh dibaca |
+| [x] **DIPILIH 3 Nov 2026** (Q23 butir 1, `docs/team/QUESTIONS.md`; REQ-B-108, REQ-B-113) | (a) Terima untuk R1 + langkah pengurangan, semak semula pada tarikh: ________ (belum ditetapkan) | ~0 | Cakera/snapshot bocor di penyedia boleh dibaca |
 | [ ] | (b1) LUKS pada volum baharu dahulu | beberapa jam | Kunci perlu dijaga; pelayan hidup masih terdedah |
 | [ ] | (b2) Volum disulitkan penyedia (selepas disahkan ada) | beberapa jam | Kunci di tangan penyedia |
 | [ ] | (b3) Bina semula dengan root disulitkan | 1 hingga 2 hari | Terendah, usaha tertinggi |
 
-Keputusan pemilik: ____ (tarikh ____)
+Keputusan pemilik: (a) Terima + mitigasi (tarikh 3 Nov 2026; sumber: Q23 butir 1 "Terima + mitigasi" dan REQ-B-113 "Ya, terima", disampaikan oleh Mandor dan ketua pasukan B). Pilihan (b1), (b2), (b3) tidak dipilih dan dikekalkan sebagai sejarah.
 
 ## Lampiran operator (English)
 

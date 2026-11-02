@@ -2,7 +2,7 @@
 
 Backs up the PostgreSQL `db` service (`pgdata` volume) with `pg_dump` custom format (`-Fc`) and proves the backup is usable with a restore into a throwaway database.
 
-**Personal data warning (PDPA).** A backup contains the personal data of minors (students, parents, teachers). Access is restricted to the lead and the named operator. A backup is never shared, emailed, uploaded to chat or issue trackers, or copied to a personal device. A suspected leak or a copy on an unencrypted disk is reported to the lead immediately (same rule as `docs/architecture/v2-migration-runbook.md` section 0).
+**Personal data warning (PDPA).** A backup contains the personal data of minors (students, parents, teachers). Access is restricted to the lead and the named operator. A backup is never shared, emailed, uploaded to chat or issue trackers, or copied to a personal device. A suspected leak or a copy on an unencrypted disk is reported to the lead immediately (the production server volume is the one accepted exception, owner decision Q23 item 1, 3 Nov 2026; that acceptance is of residual risk, not a statement of PDPA compliance) (same rule as `docs/architecture/v2-migration-runbook.md` section 0).
 
 ## Files
 
@@ -34,7 +34,7 @@ Schedule it (the lead decides the cadence; suggested daily): Windows Task Schedu
 
 ## Where backups go, and protection
 
-- Outside the repo, on an **encrypted volume**: BitLocker on Windows (`manage-bde -status D:` must show "Protection On"), LUKS on Linux. Without full-disk encryption do not store backups (migration runbook rule 5).
+- Outside the repo, on an **encrypted volume**: BitLocker on Windows (`manage-bde -status D:` must show "Protection On"), LUKS on Linux. Without full-disk encryption do not store backups (migration runbook rule 5). **Exception, allowed under the owner decision Q23 item 1 (3 Nov 2026):** the production server data volume is unencrypted and the owner accepted that with mitigations (raw dump file deleted right after the load; other raw data stays unencrypted until set clean-up dates; root-equivalent accounts listed by role; see `docs/ops/r1-runbook.md`, section "Q23 disk mitigation"). The dump PC's own encryption stays required, and copies that leave the server stay GPG-encrypted. Earlier rule kept as history.
 - `.gitignore` and the `no-dumps.yml` CI guard block `*.dump` and `*.sql.gz` in git; the scripts also refuse a destination inside the repo.
 - Keep at least one copy on a **second encrypted device or an encrypted off-site location** approved by the lead; each copy follows the same retention and is listed by the lead.
 - Restrict the folder: owner only (`chmod 700`; on Windows remove inherited access and grant only the operator, as file modes are not enforced there).
@@ -78,7 +78,7 @@ Once a month (first working day), the operator:
 
 1. Runs `npm run db:backup` and then `npm run db:restore-check` on the **newest scheduled backup** (not the one just made), and checks the sha256.
 2. Confirms the row counts look sane against the live system (users and `_prisma_migrations` are not zero and not wildly different from production).
-3. Confirms the backup folder is on an encrypted volume, permissions are restricted, and the number of copies matches the lead's list.
+3. Confirms the backup folder is on an encrypted volume (on the production server this check is waived under the owner decision Q23 item 1, 3 Nov 2026; the mitigations apply instead; the dump PC stays encrypted), permissions are restricted, and the number of copies matches the lead's list.
 4. Writes one line in the ops log: date, backup file name, sha256, table count, `_prisma_migrations` rows, result, operator.
 5. Reports any failure to the lead the same day; a failed drill blocks releases until a good backup exists.
 
