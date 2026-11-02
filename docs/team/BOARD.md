@@ -565,6 +565,12 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 
 **Status legend (team A records):** READY = pushed and evidenced, ready for B; IN-REVIEW-A = in team A pre-review (A4/A1b), **not** a B "Changes requested"; IN-PROGRESS = being changed, not for merge; ON HOLD = waits on a dependency; MERGED = in base.
 
+
+### Infra note: dockerd dies on sandbox resume (02 Nov, 03:38 UTC; diagnosed by A3 dev-1)
+- **Cause:** the session VM is rebooted or resumed (Firecracker). dockerd is not restarted at boot. This is not an OOM and not a crash.
+- **Rule for every lane:** before each test unit, run `pgrep -x dockerd >/dev/null || { setsid nohup dockerd >> $SCRATCH/dockerd.log 2>&1 & until docker info >/dev/null 2>&1; do sleep 1; done; }`. Re-run it after any "Test database unavailable" error. Start it only when none is running.
+- **Disk:** check `docker system df` and prune orphaned anonymous test volumes when there are 0 containers. A3 reclaimed 3.4 GB this way.
+
 <!-- AUDIT:BEGIN -->
 ### Team A open branches: heads from origin (auto, 2026-11-02 03:38 UTC, BASE 1216dbe7)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
