@@ -563,7 +563,7 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 **Done:** final R1 QA chain run all green (answers-A, A4, 10:52 MYT); 0 code conflicts across all READY heads on BASE-175; Q12a/Q13/Q14 decided by the user.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 03:15 UTC, BASE 4659c083)
+### Team A open branches: heads from origin (auto, 2026-11-02 03:23 UTC, BASE 424fa070)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -575,24 +575,18 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha24-release-input | 55227da7e | READY (A3 docs, @55227da7; c0f7a45d in BASE-145 → B delta c0f7a45d..55227da7: DO/non-DO, KIV 39, Q17 Semakan/Terbitkan notes (Terbitkan copy [PENDING A2]), BASE-148..154 merged); B1/B2 |
 | r1/ha26-team-a-state | 84501e1ac | READY (A3 docs, @84501e1a; 21360a86 MERGED as BASE-162 b2251dc4) → B delta 21360a86..84501e1a (BASE-154 refresh); B1/B2 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
-| r1/intake-reqs-followup | 2fe252aba | READY (A2, @2fe252ab on intake-reqs 8c1964a6): unknownSp required, FACTS in unit.spec, deviations row 244 names spNotInTaxonomy; 43/43, tsc 0; merge AFTER intake-reqs (deviations conflict: keep both); B2 small | A1b pre-review: CLEAN (CurriculumFacts internal; both producers always set unknownSp; tsc 0; 43/43) |
-| r1/minors-b025c-a3 | a4feeab01 | READY (A3, @a4feeab0 on BASE-131; test only): essay-choice-blank 9 tests on a choose-N Bahagian (best-N, V2 self-mark rule pinned), mutations red; closes A1b REQ-B-025c carried Minors; B2 |
-| r1/minors-chain-tip-a3 | 41c22c969 | READY (A3, @41c22c96 on BASE-128): (a) dead reasons.length guard removed in approval-check (A1b Approve on 666102d0); (b) every servability-overview read goes through the limiter (4), max-in-flight spy spec, per A4 reading; closes B2 c20 Minors; B2 |
 | r1/minors-kbat-chain-a3 | a253b3bf3 | READY-AFTER-FIX (A3, @a253b3bf restacked on T48 10c62437): exam-builder 416/417 RED: builder-review "stays outside D93" (same as REQ-B-069; likely pool page cap ?pageSize=100 vs 106 units). Fixed by r1/t31-pool-lookup-fixture merged after T31 (no cascade needed); merge after t31-pool-lookup-fixture |
-| r1/minors-snapshot-versions-a3 | 1ef2eb2e5 | READY (A3, @1ef2eb2e on BASE-120; type only): AttemptSectionSnapshot.versions; attempt-source 4/4, tsc 0; closes B2 c20 Minor; B2 | A1b pre-review Approve |
 | r1/partial-acs-a3 | e6ceece19 | READY-AFTER-FIX (A3, @e6ceece1 restacked on T48 10c62437): exam-builder 416/417 RED: builder-review "stays outside D93" (same as REQ-B-069; likely pool page cap ?pageSize=100 vs 106 units). Fixed by r1/t31-pool-lookup-fixture merged after T31 (no cascade needed); merge after t31-pool-lookup-fixture |
 | r1/ready-tiers-check | 9c80f08c3 | ON HOLD (A2, @9c80f08c, contains BASE-107): code correct + Minors fixed (exact 503 body, WARN once per state change, INFO on recovery; mutations red); waits for B DevOps (REQ-A-028: CI seed step + first-install deploy ordering) |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
+| r1/reqb071-bab-submit | 4e38af8e6 | CR (A2, @4e38af8e, 2 commits on BASE-151; REQ-B-071 / Q17): no Bab at submit/approve/Terbitkan/create-as-approved; DSKP (AC-03.2) kept; dskp_code-only Bab derivation; A4 pre-review running; A3 chain specs to merge |
 | r1/reqb071-chain-specs-a3 | ee9474e09 | WIP (A3, @ee9474e0; test only; red until A2 r1/reqb071-bab-submit): chain 3a Semakan without a Bab, 3b no node refused, 3 approved chapter null + Latihan Bab no_chapter, 3c dskp_code-derived Bab; target 13/13 + 3 mutations; NOT for merge |
 | r1/reqb074-takedown-lows | ae78bf820 | CR (A1b, @ae78bf82 on BASE-165; REQ-B-074): L1 image rule B serves only approved or archived-superseded pins with no source takedown (a pupil with a sitting keeps reading: lead accepts, consistent with REQ-B-058 (d)); L2 read-time source_papers.takedown_at check for new sittings/Kuiz; L3 takenDownPins required; files 244, 66-file wider run green, 6 mutations red; A4 pre-review; **needs B security-engineer** |
-| r1/servability-stimuli-once | f76f729a8 | READY (A4, @f76f729a, contains chain tip + BASE-107): spy spec pins one stimulus read per chunk + 2 comments; optional; step 6b |
-| r1/t04-minors | 82828a68a | MERGED by B1 as BASE-119 e927c3ee @8ae70d6e (reviewed SHA; 82828a68 delta not merged: optional test-only, left) |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t39-k1-evidence | 669a11099 | READY (A3 docs, @669a1109: K1 blueprint evidence re-checked at BASE-148, time-bound facts marked; fixes the dead base links in runbook/release notes); merge-tree clean; B2 |
-| r1/t42b-intake-acs | 34d86311e | READY (A2, @34d86311 on 5318a971; test-only Minor): refused accept deletes the figure copy storage object (mutation: drop files.discard → red); 6/6; B2 small | A1b pre-review: Approve (mutation bites) |
 
-**Merged content, origin head has only base-merge commits since (no new work):** r1/a4chain-minors 86dd7ad67, r1/ha15-blueprint-evidence 7e5d637e5, r1/overview-getmany-parallel 2809a87fe, r1/reqb032-pinned-rule 167986eff, r1/t44-blueprint-fields 072d8f4b4, r1/t48-builder-parity 10c624376
+**Merged content, origin head has only base-merge commits since (no new work):** r1/a4chain-minors 86dd7ad67, r1/ha15-blueprint-evidence 7e5d637e5, r1/reqb032-pinned-rule 167986eff, r1/t44-blueprint-fields 072d8f4b4, r1/t48-builder-parity 10c624376
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
