@@ -436,7 +436,7 @@ function insertMath(field: 'stem'): void {
           <select
             :value="selectedUnit"
             :disabled="q.tag.formOrigin === 'T1-T3'"
-            class="min-h-11 rounded-lg border border-default bg-default px-3"
+            class="min-h-11 w-full min-w-0 rounded-lg border border-default bg-default px-3"
             data-testid="q-unit"
             @change="setUnit(($event.target as HTMLSelectElement).value)"
           >
