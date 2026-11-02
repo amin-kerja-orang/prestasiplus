@@ -2,7 +2,7 @@
 
 For B4 (manual and e2e QA of the R1 flow). Written 2026-11-02 on `r1/ac-gaps-a1b`, which owns the QA docs.
 
-The flow: admin uploads questions -> approves -> builds a paper -> Terbit -> the pupil sits -> submits -> self-marks -> Cuba Lagi; also Tarik balik (withdraw) and Arkib (archive).
+The flow: admin uploads questions -> approves -> builds a paper -> Terbit -> the pupil sits -> submits -> self-marks -> Cuba Lagi; also Tarik balik (withdraw; the editor button is "Sembunyikan") and Arkib (archive).
 
 ## 0. How to read this pack
 
@@ -25,7 +25,7 @@ All seeded accounts use the documented demo password `Demo1234` (`apps/api/prism
 
 - **Seed profiles.** The default `poc` profile (28 modules) gives: the curriculum (2,844 DSKP nodes at T4 and T5), the question bank (1,271 versions), the six launch Kontrak blueprints `1449/1, 1449/2, 3472/1, 3472/2, 4531/2, 1249/2` as **Spec, nothing Disahkan** (`prisma/seed/exam-launch-blueprints.ts` header), one demo bank paper "Latihan Demo Matematik Bank Soalan (Contoh)" sat by 6 pupils, and the four seeded PoC papers **withdrawn** (`exam-retire-poc`, `prisma/seed/exam.ts`). A server run needs `ALLOW_DEMO_SEED=1` for the demo modules outside tests.
 - **Profile `e2e`** (`--profile=e2e` with `E2E_SEED=1`, never on a server): adds a Disahkan Kontrak `3472/2` (Matematik Tambahan Kertas 2) and a small structured question pool (`prisma/seed/e2e.ts`, `e2e-k2.ts`; in base via T26). Use it when you need a Kontrak that is already Disahkan. Known hazard X1 (coverage doc, "Open decisions"): after H-A15 the e2e seed sets 3472/2 Disahkan while the real "Sahkan" action refuses it (`NO_EVIDENCE_BODIES`).
-- **Wallet tiers precondition (reference data).** The QA database must have exactly **4** wallet tiers, or every practice submit and student dashboard answers 500. Check with `select count(*) from tiers;` (it must be 4). If it is 0, load the reference data (`deploy/vps/deploy.sh --seed-reference`: reference modules only, safe to repeat). Source: `docs/ops/r1-runbook.md` section 0 item 6 (line 38 on `r1/ac-gaps-a1b`); the same rule is in `docs/ops/go-live-bijak-spm.md:300` ("the 4 M14 tiers, without which every student dashboard answers 500"). The `poc` seed profile already includes the `core-wallet-tiers` module.
+- **Wallet tiers precondition (reference data).** The QA database must have exactly **4** wallet tiers, or every practice submit and student dashboard answers 500. Check with `select count(*) from tiers;` (it must be 4). If it is 0, load the reference data (`deploy/vps/deploy.sh --seed-reference`: reference modules only, safe to repeat). Source: `docs/ops/r1-runbook.md` section 0 item 6 (line 39 on `r1/ac-gaps-a1b`); the same rule is in `docs/ops/go-live-bijak-spm.md:300` ("the 4 M14 tiers, without which every student dashboard answers 500"). The `poc` seed profile already includes the `core-wallet-tiers` module.
 - **No intake batch is seeded.** The upload step needs the extractor. On a stack without a configured AI provider, use the manual route (`/admin/spm/soalan/manual`), Studio create (`/admin/questions/create`) or CSV import (`/admin/questions/import`) and treat step 1 as covered by the specs only.
 - **Question ids and Kontrak codes in the specs** (`MAT` kertas 2, section pools `MAT2-A`, `MAT2-B`, `MAT2-C`, SAINS K2 Bahagian B) come from the seeds above; the chain specs create their own questions, so a manual run should do the same. The chain specs build their own `MAT` kertas 2 Kontrak; the seeded live `1449/2` differs from it (see the note under step 5), so a manual run uses `SN/2`.
 
@@ -69,7 +69,7 @@ Heads from `git ls-remote origin refs/heads/r1/<branch>` on the day of writing. 
 | `r1/intake-reqs-a2` | 8c1964a6 | intake: an unknown SP code is refused at accept; review-queue group badge | none |
 | `r1/reqb049-report-visible` | 9ece8d76 | Lapor before the first submit on a structured question (Q11) | none |
 | `r1/t49-served-now` + `r1/stimulus-list-d72` | 8cb9fa5f / b45ce519 | Studio stimulus and group lists (D72 hiding, `joinable`, Negeri options) | d72 already contains t49; they merge cleanly in either order |
-| `r1/admin-list-perf` | 2cd7889a | admin question list speed; migrations 0106 and 0107 (maintenance window); per-user limit of 60 calls a minute on `GET /api/questions` (429 above, see section 4.4) | REQ-B-050 and 0107 ship together |
+| `r1/admin-list-perf` | 69f465c8 | admin question list speed; migrations 0106 and 0107 (maintenance window); per-user limit of 240 calls a minute (REQ-B-061; 60 before it) on `GET /api/questions` (429 above, see section 4.4) | REQ-B-050 and 0107 ship together |
 | `r1/t04-minors` | 8ae70d6e | Bab card and "Soalan by Chapter" tile count ungrouped, chaptered, approved questions only (FD-11) | none |
 | `r1/mock-known-mismatches` | a279e68c | frontend-mock conformance check green | none |
 
@@ -162,7 +162,7 @@ Legend. **FE** = screen route (the SPA). **API** = `/api/...` route. **Msg** = e
 ### Step 6. Review and Terbit
 
 - **Account:** `admin@demo.test`.
-- **FE:** the same editor `/admin/spm/kertas/:id` (button "Terbitkan", `PaperEditorPage.vue:384`).
+- **FE:** the same editor `/admin/spm/kertas/:id` (button "Terbitkan", `PaperEditorPage.vue:537`, test id `paper-publish`).
 - **API:** `GET /api/admin/papers/{id}/review` (blockers with `code`, `message`, `overridable`), `POST /api/admin/papers/{id}/publish` (optional `{override, reason}`), `GET .../student-view`.
 - **Msg (blockers, `builder.constants.ts`):**
   - `Kontrak Simulasi <kod> (versi <n>) belum Disahkan (status: <Spec|Draf>); Terbit memerlukan kontrak Disahkan.` `:49-50`; `BLUEPRINT_NOT_VERIFIED` is overridable (audited reason required: `Sebab diperlukan untuk menerbitkan walaupun tidak memenuhi kontrak blueprint`, `schema.ts:77`).
@@ -223,10 +223,10 @@ Legend. **FE** = screen route (the SPA). **API** = `/api/...` route. **Msg** = e
 - **Rule:** a new attempt and a new reward key; the old attempt, result and history row stay (D93, second part).
 - **Spec:** `pc :: "Cuba Lagi: a NEW attempt on the same paper; the old attempt, its result and its history row stay"`; `bijak-attempts/self-mark.spec.ts :: "R1-B15 Cuba Lagi"`; `ci :: "9. Cuba Lagi: a NEW attempt on the same paper; the old attempt and its result stay"`; `bijak-integration/cuba-lagi-rewards.spec.ts` (T38/T40).
 
-### Step 12. Tarik balik (withdraw)
+### Step 12. Tarik balik (withdraw; button "Sembunyikan")
 
 - **Account:** `admin@demo.test`.
-- **FE:** button "Tarik balik" (`PaperEditorPage.vue:403`). The AC confirm text is `Tarik balik kertas ini ke draf? Pelajar tidak lagi dapat mengaksesnya.` (`docs/requirements/v2-admin-student-pipeline.md`, AC-07.7); **I did not find it in `src/`: check by hand that the confirm appears** (section 4).
+- **FE:** the button is labelled **"Sembunyikan"** (`PaperEditorPage.vue:557` on base, test id `paper-unpublish`; `builder/domain/copy.ts:112`, "withdraw"); the flash after it works is `Kertas '<title>' ditarik balik ke DRAF — tidak lagi diakses pelajar.` (`copy.ts:113`). The AC confirm text is `Tarik balik kertas ini ke draf? Pelajar tidak lagi dapat mengaksesnya.` (`docs/requirements/v2-admin-student-pipeline.md`, AC-07.7); **I did not find it in `src/`: check by hand that the confirm appears** (section 4).
 - **API:** `POST /api/admin/papers/{id}/withdraw`.
 - **Rule (as deviated, T43b row of `docs/architecture/v2-backend-deviations.md`):** only the paper goes back (status `withdrawn`); its questions stay approved. Past attempts, answers and results remain; the pupil no longer lists, starts or retries it.
 - **Msg:** `Kertas Terbit tidak boleh disunting. Tarik balik dahulu.` (an edit while Terbit); `Tarik balik kertas Terbit sebelum memadam` (delete while Terbit, `schema.ts:63`); retry on a withdrawn paper: `Kertas ini sudah tidak tersedia untuk dicuba semula.`
@@ -321,7 +321,7 @@ The UAT before/after numbers themselves are ops evidence; the runbook only fixes
 
 ### 4.4 Expected behaviour that looks like a bug: 429 on the admin question list
 
-On `r1/admin-list-perf` @ 2cd7889a the admin question list `GET /api/questions` is limited **per user**: **60 calls a minute**; above that the answer is 429 `RATE_LIMITED` with a `Retry-After` header (`apps/api/src/modules/questions/http/admin.controller.ts:25-30`; spec `test/questions/list-rate-limit.spec.ts`). Searching or paging the list rapidly in `/admin/questions` can hit it. **That is expected, not a defect**: wait for the `Retry-After` seconds. The limit is the environment variable `THROTTLE_QUESTIONS_LIST_PER_MINUTE` (blank = 60; `.env.api.example:86`, `apps/api/src/common/config/env.schema.ts:149`); the question writes have their own `THROTTLE_QUESTIONS_WRITE_PER_MINUTE` (60). Another user is not affected. Report a 429 only if it appears well below 60 calls a minute.
+On `r1/admin-list-perf` @ 69f465c8 the admin question list `GET /api/questions` is limited **per user**: **240 calls a minute** (60 before REQ-B-061, which raised it because normal use reached 60); above that the answer is 429 `RATE_LIMITED` with a `Retry-After` header (`apps/api/src/modules/questions/http/admin.controller.ts:23-34`; spec `test/questions/list-rate-limit.spec.ts`). Searching or paging the list rapidly in `/admin/questions` can hit it. **That is expected, not a defect**: wait for the `Retry-After` seconds. The limit is the environment variable `THROTTLE_QUESTIONS_LIST_PER_MINUTE` (blank = 240; `.env.api.example:86`, `apps/api/src/common/config/env.schema.ts:149`); the question writes have their own `THROTTLE_QUESTIONS_WRITE_PER_MINUTE` (60). Another user is not affected. Report a 429 only if it appears well below 240 calls a minute.
 
 ## 5. Known open items
 
