@@ -2,6 +2,7 @@ import { QUESTION_MESSAGES } from '@pp/contract'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { BuilderRepository } from '../../src/modules/exam/builder'
+import { MISSING_FROM_POOL_TEXT } from '../../src/modules/exam/builder/builder.constants'
 import { ACCOUNTS } from '../exam-builder/helpers'
 import { serveSeededBlueprints } from '../support/serve-blueprints'
 import { bootFullApp, loginFull, type FullApp, type FullClient } from './full-app'
@@ -77,8 +78,12 @@ describe('R1 publish-lock-share', () => {
   const statusOf = async (paper: string) => String((await q(`select status from papers where id = $1`, [paper]))[0]!.status)
   const placed = async (paper: string) => Number((await q(`select count(*)::int n from paper_placements pl join paper_sections s on s.id = pl.paper_section_id where s.paper_id = $1`, [paper]))[0]!.n)
 
+  /** Resolves when the parked call is reached, or fails after 10 s (a lost gate must not hang the suite until the test timeout). */
+  const within = (p: Promise<void>, what: string): Promise<void> =>
+    Promise.race([p, new Promise<void>((_, rej) => setTimeout(() => rej(new Error(`${what}: the publish request never reached the gate`)), 10_000))])
+
   /** Parks the first call of a repository method until `open()`; `reached` resolves when the publish transaction is parked there. */
-  function gate(method: 'updatePaper' | 'lockQuestionsShared'): { reached: Promise<void>; open: () => void } {
+  function gate(method: 'updatePaper' | 'lockQuestionsShared'): { parked: () => Promise<void>; open: () => void } {
     let open!: () => void
     let hit!: () => void
     const wait = new Promise<void>((r) => (open = r))
@@ -99,7 +104,7 @@ describe('R1 publish-lock-share', () => {
       target[method] = saved as never
     })
     restore.push(open) // a failed assertion must not leave the parked publish request hanging
-    return { reached, open }
+    return { parked: () => within(reached, method), open }
   }
   /** True once some backend is waiting on a lock (the delete is queued behind the Terbit share lock). */
   async function lockWaiter(): Promise<boolean> {
@@ -135,7 +140,7 @@ describe('R1 publish-lock-share', () => {
     const victim = ids[1]!
     const g = gate('updatePaper')
     const pub = Promise.resolve(publish(paper))
-    await g.reached // Terbit holds the paper lock and, with the fix, the share locks; it has not committed
+    await g.parked() // Terbit holds the paper lock and, with the fix, the share locks; it has not committed
     let settled = false
     const del = Promise.resolve(admin.del(`/api/questions/${victim}`)).then((r) => {
       settled = true
@@ -161,7 +166,7 @@ describe('R1 publish-lock-share', () => {
     const victim = ids[2]!
     const g = gate('updatePaper')
     const pub = Promise.resolve(publish(paper))
-    await g.reached
+    await g.parked()
     const del = Promise.resolve(admin.post('/api/questions/bulk-action', { action: 'delete', ids: [victim] }))
     expect(await lockWaiter()).toBe(true)
     g.open()
@@ -185,17 +190,19 @@ describe('R1 publish-lock-share', () => {
     expect(await statusOf(paper)).not.toBe('published')
   })
 
-  it('reverse order, tight: the delete commits after Terbit read the bank but before it locks the rows: Terbit re-reads and refuses', async () => {
+  it('reverse order, tight: the delete commits after Terbit began but before it locks the rows: Terbit names the missing question and refuses', async () => {
     const { paper, ids } = await draftPaper()
     const victim = ids[3]!
     const g = gate('lockQuestionsShared')
     const pub = Promise.resolve(publish(paper))
-    await g.reached // the bank reads before the transaction saw every question; no lock is taken yet
+    await g.parked() // Terbit is inside its transaction, the paper is locked, no question lock is taken yet
     const del = await admin.del(`/api/questions/${victim}`)
     expect(del.status, JSON.stringify(del.body)).toBe(200)
     g.open()
     const res = await pub
     expect(res.body.data.ok, JSON.stringify(res.body)).toBe(false)
+    // The exact blocker: the deleted question is missing from the pool (UNKNOWN_QUESTION), named with its id.
+    expect((res.body.data.errors as string[]).some((e) => e.includes(victim) && e.includes(MISSING_FROM_POOL_TEXT)), JSON.stringify(res.body.data.errors)).toBe(true)
     expect(await statusOf(paper)).not.toBe('published')
     expect(await count(victim)).toBe(0)
   })
