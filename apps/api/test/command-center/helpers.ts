@@ -233,6 +233,8 @@ export async function buildWorld(t: CcTestApp): Promise<World> {
   const ids = await db.query<{ id: string; code: string }>(`select id::text, code from schools where code in ('DEMO001','DEMO002')`)
   const school1 = ids.find((r) => r.code === 'DEMO001')?.id as string
   const school2 = ids.find((r) => r.code === 'DEMO002')?.id as string
+  // Secondary-only (D72): the Command Center hides pupils of a primary school; DEMO002 is seeded as SK, so the world's second school is made a secondary one.
+  await db.query(`update schools set type = 'SMK' where id = $1::bigint`, [school2])
   const idOf = async (email: string): Promise<string> => (await db.query<{ id: string }>(`select id::text from users where email = $1`, [email]))[0]?.id as string
   const adminId = await idOf(ADMIN)
   const schoolAdminId = await idOf(SCHOOL_ADMIN)
