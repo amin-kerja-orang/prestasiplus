@@ -97,13 +97,16 @@ describe('REQ-B-076: a re-approved version of a taken-down source is not served 
     expect((await image()).status).toBe(200)
   })
 
-  it('the source is taken down and a new version is re-approved (the source id is carried): not drawn in Kuiz random or practice, and the picture is 404 for a pupil with no sitting', async () => {
-    await q(`update source_papers set takedown_at = now() where id = ${sourceId}`)
+  it('a live version whose source is taken down (state reached by SQL: the approve gate blocks the API route by design): not drawn in Kuiz random or practice, and the picture is 404 for a pupil with no sitting', async () => {
+    // These predicates are the second line (defence in depth) for data the approve gate never sees (legacy ETL, direct SQL). Through the API a version of a
+    // taken-down source cannot be approved (REQ-B-076, `reqb076-approve-gate.spec.ts`), so the state is built in the other order: v2 is approved while the
+    // source is NOT taken down (the source id is carried by the edit), and `takedown_at` is set afterwards by SQL.
     const edit = await admin.put(`/api/questions/${qid}`, body(STEM2, token))
     expect(edit.status, JSON.stringify(edit.body)).toBe(200)
     await advance(qid)
+    await q(`update source_papers set takedown_at = now() where id = ${sourceId}`)
     const live = await q(`select v.version_no n, v.status, v.source_paper_id::text sp from questions qq join question_versions v on v.question_id = qq.id and v.version_no = qq.live_version_no where qq.id = ${qid}`)
-    expect(live[0], 'the re-approved version is live and carries the taken-down source').toMatchObject({ n: 2, status: 'approved', sp: sourceId })
+    expect(live[0], 'v2 is live and carries the taken-down source').toMatchObject({ n: 2, status: 'approved', sp: sourceId })
     expect(await kuizHas(STEM2)).toBe(false)
     expect(await practiceHas(qid)).toBe(false)
     expect((await image()).status).toBe(404)
