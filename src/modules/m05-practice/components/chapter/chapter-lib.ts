@@ -2,6 +2,8 @@
  * Pure helpers of the chapter screens S4 / S5 / Q2 (SRS M05 v1.19 FR-M05-58…67, BR-16).
  */
 
+import type { EntityId } from '@/api'
+
 import type { ChapterCard } from '../../api/types'
 
 /** The four question counts of an open chapter (FR-M05-63). */
@@ -26,12 +28,12 @@ export function progressWidth(c: Pick<ChapterCard, 'answered' | 'total'>): numbe
 }
 
 /** Q2 link of an open chapter (FR-M05-63). */
-export function chapterQuizHref(code: string, chapterId: number, count: number): string {
+export function chapterQuizHref(code: string, chapterId: EntityId, count: number): string {
   return `/practice/chapter/${encodeURIComponent(code)}/${String(chapterId)}/quiz?count=${String(count)}`
 }
 
 /** S5 URL of a subject, with the level when known (FR-M05-60, 66). */
-export function chapterListHref(code: string, levelId: number | null): string {
+export function chapterListHref(code: string, levelId: EntityId | null): string {
   const base = `/practice/chapter/${encodeURIComponent(code)}`
   return levelId === null ? base : `${base}?level=${String(levelId)}`
 }

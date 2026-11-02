@@ -3,6 +3,8 @@
  * spin keep the live JSON bodies; the others use the `{data}` envelope (the client functions unwrap it).
  */
 
+import type { EntityId } from '@/api'
+
 export type RoomGame =
   | 'papan-bijak'
   | 'perang-fakta'
@@ -63,7 +65,8 @@ export interface RoomView {
   code: string
   game: RoomGame
   status: RoomStatus
-  host: { id: number; name: string }
+  /** A number in the mock; a string on the real API (contract `IdSchema`), as `state.humanId`. */
+  host: { id: EntityId; name: string }
   players: {
     id: number
     name: string
@@ -85,7 +88,7 @@ export interface RoomView {
     awaiting: 'roll' | 'answer' | null
     round: number
     total: number
-    humanId: number
+    humanId: EntityId
     board?: string[]
     positions?: Record<string, number>
     meter?: Record<string, number>
