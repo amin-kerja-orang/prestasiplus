@@ -117,7 +117,7 @@ sequenceDiagram
 
 ## 2. Data model changes (Prisma + migrations)
 
-Migration numbers 0100-0109 are team A's range (in code: 0092, 0093, 0100 lifecycle and 0101 `essay_choice`; every higher number below is a plan; D68: LEAD confirms at merge). Every migration is forward only, idempotent where possible, and states its verification query. Enums stay text + CHECK (repo convention).
+Migration numbers 0100-0109 are team A's range (the built folders are listed under the table; every other number below is a plan; D68: LEAD confirms at merge). Every migration is forward only, idempotent where possible, and states its verification query. Enums stay text + CHECK (repo convention).
 
 | # | Migration | Content |
 |---|---|---|
@@ -125,12 +125,16 @@ Migration numbers 0100-0109 are team A's range (in code: 0092, 0093, 0100 lifecy
 | 0101 | `essay_choice` (built, R1-T25) | `question_parts.topics` jsonb (`[{ id, label }]`, 2..6, free-string ids per V2 `config.topics`, CHECK `ck_question_parts_topics`); CHECK mode adds `essay_choice`; word range reuses `word_min`/`word_max`; independent of the lifecycle statuses of 0100 |
 | 0102 | `dskp_leaf_tags_and_facts` | `question_parts.tp`, `.cognitive_level` (NOT `.topics` and NOT the `essay_choice` mode CHECK: both already added by 0101 `essay_choice`); table `question_version_facts`; backfill facts for all existing versions by a SQL function (same logic as `computeFacts`; a post-migration script compares both on a sample) |
 | 0103 | `stimulus_kinds_wide` | no DDL if the CHECK already allows the 8 kinds (`stimuli.kind` check lists passage, image, diagram, table, graph, map, infographic, audio); migration only asserts it; contract widens |
-| 0104 | `tracking_a_authoring` | ADR-0032 columns and unique index |
-| 0105 | `kertas_subjektif` | ADR-0033 tables, `paper_sections.kertas_paper_id`, file purposes |
-| 0106 | `feature_flags` | ADR-0035 |
-| 0107 | `drop_pool_tag` | delete `question_tags` kind `pool`; narrow CHECK |
+| 0104 | `paper_section_admin_created` (T48, `paper_sections.admin_created`; was reserved for `tracking_a_authoring`, which moves to the team A overflow range 0120-0129, LEAD confirms at merge) | additive column for the V2 "Tambah bahagian" |
+| 0105 | `gate_facts` (built, H-A18, merged BASE-132; was reserved for `kertas_subjektif`, which moves to the next free number of the team A overflow range 0120-0129, LEAD confirms at merge) | `question_versions` columns and CHECKs for the H-A18 gate facts |
+| 0106 | `question_stem_trgm` (built, admin-list-perf) | `pg_trgm` extension and trigram indexes on the question stems (`stem_ms`, `stem_en`) for the admin list search; replaces the planned `feature_flags` here |
+| 0107 | `question_paper_kertas_index` (built, admin-list-perf) | expression index for the Kertas filter of the admin list; replaces the planned `drop_pool_tag` here |
+| 0108 | `feature_flags` (moved from 0106) | ADR-0035 |
+| 0109 | `drop_pool_tag` (moved from 0107) | delete `question_tags` kind `pool`; narrow CHECK |
 
-> Numbering (R1-T25, resolved): 0100 lifecycle and 0101 `essay_choice` exist in code. Planned, in the order this document implies: 0102 `dskp_leaf_tags_and_facts` (must not add `topics` or the `essay_choice` mode again), 0103 `stimulus_kinds_wide`, 0104 `tracking_a_authoring`, 0105 `kertas_subjektif`, 0106 `feature_flags`, 0107 `drop_pool_tag`. Optional, each only when its task proves a column is needed: 0108 R1-B12 (self-mark), 0109 R1-B20 (file purposes). R1-B16 (practice mode CHECK) and R1-B10 (`needs_review`) would be 0120 and 0121 in the team A overflow range (0120-0129; team C owns 0110-0119), allocated by the LEAD at merge.
+> Built folders (source of truth: `ls apps/api/prisma/migrations`, BASE-140): 0100 `question_lifecycle_approved`, 0101 `essay_choice`, 0102 `leaf_cognitive_level`, 0103 `question_report_context`, 0104 `paper_section_admin_created`, 0105 `gate_facts`, 0106 `question_stem_trgm`, 0107 `question_paper_kertas_index`, 0110 `reference_image_tokens` (team C). Where a planned name in the table above differs from a built folder, the folder name is what exists.
+
+> Numbering (R1-T25, resolved): 0100 lifecycle and 0101 `essay_choice` exist in code. Planned, in the order this document implies: 0102 `dskp_leaf_tags_and_facts` (must not add `topics` or the `essay_choice` mode again), 0103 `stimulus_kinds_wide`, and free numbers for `kertas_subjektif` and `tracking_a_authoring` (0104 is taken by T48 `paper_section_admin_created` and 0105 by H-A18 `gate_facts`; 0106 and 0107 are built, 0108 and 0109 are allocated below, so both take the team A overflow range 0120-0129, LEAD confirms the numbers at merge). **Renumbered (admin-list-perf):** 0106 `question_stem_trgm` and 0107 `question_paper_kertas_index` were built by admin-list-perf (approved by the team A lead) and are on `r1/admin-list-perf`, so the two migrations this document had reserved there move: `feature_flags` takes 0108, and `drop_pool_tag` takes 0109. **Allocation (team A lead):** 0108 `feature_flags`, 0109 `drop_pool_tag`, and the optional migrations all in the team A overflow range 0120-0129 (team C owns 0110-0119), each only when its task proves a column is needed: R1-B16 (practice mode CHECK) 0120, R1-B10 (`needs_review`) 0121, R1-B12 (self-mark; formerly 0108) 0122, R1-B20 (file purposes; formerly 0109) 0123; the LEAD confirms the exact numbers at merge.
 
 ### 2.1 Prisma (excerpts; field names follow repo `@map` style)
 ```prisma
@@ -276,7 +280,7 @@ model KertasDocumentSection {
 | Versions `approved` not live | become `review` (stay invisible; admin presses Terbitkan) |
 | QLOAD legacy MCQs (7,000+ approved) | stay approved; `dskp_complete=false`; "Belum ditanda DSKP" |
 | Image-held QLOAD items | stay inactive; reason `image_missing` |
-| Pool tags | deleted (0107) |
+| Pool tags | deleted (0109) |
 | `question_tags` pksk | unchanged |
 | PoC papers/attempts (dev only) | purged by guarded script; production none |
 | Seeds | `published` -> `approved`; PoC pool seed dropped; seed:dev only |
@@ -294,7 +298,7 @@ Conventions: decimal-string ids; cookie session + CSRF header on writes; error b
 | POST `/api/admin/questions/servability:batch` | admin, staff | `{ ids: Id[<=100] }` | `{ data: [{ id, visibleCount, totalFamilies, attention: string[] }] }` | 422 `TOO_MANY_IDS` |
 | GET `/api/questions/:id/gate-check?gate=submit\|approve` | admin, owner guru | - | `{ ok, issues:[{ path, code, message, step }] }` (no state change; drives the "· n belum lengkap" counter) | 404 |
 | POST `/api/questions/:id/status` (existing, changed) | admin (guru: draft->review, draft->archived own) | `{ to: draft\|review\|approved\|archived, reason? }` | `{ question, servability?: ServabilityReport }` (report included when `to=approved`) | 409 `ILLEGAL_TRANSITION` message "Peralihan '{from}' -> '{to}' tidak dibenarkan."; 422 `QUESTION_GATE_FAILED { issues[] }` "Soalan belum boleh diterbitkan - sila betulkan isu di bawah."; 422 if `approved` would be unservable everywhere (`UNSERVABLE_EVERYWHERE`); 422 `to=published` during deprecation window maps to approved with header `Deprecation: true` |
-| POST `/api/questions/:id/edit-as-draft` | admin | - | `{ draftQuestion }` (version n+1) | 409 if a newer draft already exists (returns its id) |
+| POST `/api/questions/:id/edit-as-draft` | admin | - | 201 `{ id, versionNo }` (version n+1) | 409 `CONFLICT` if a newer draft or review version already exists (`details { id, versionNo }`); 409 if the live version is not approved |
 | POST `/api/questions/bulk-action` (existing, changed) | admin | `{ action: approve\|archive\|review, ids?: Id[], filter?: QuestionFilter, confirm: true }`; exactly one of ids/filter; filter needs >= 1 criterion | `{ done: n, failed: [{ id, issues[] }], skipped: n }` per-item reasons | 422 `BULK_FILTER_REQUIRED` "Sila pilih sekurang-kurangnya satu penapis ... sebelum meluluskan secara pukal."; 422 `BULK_TOO_LARGE` (> 2,000, narrow the filter) |
 | GET `/api/questions` (existing, extended) | admin, staff | adds `dskp=tagged\|untagged`, `visible=family:ok\|no`, status tiles via `GET /api/questions/status-counts` | each row adds `dskpComplete`, `visibleCount` | |
 | POST/PUT `/api/questions` (existing, extended) | admin, guru | leaf parts take `tp` (1..6), `cognitiveLevel`; part mode `essay_choice` with `topics`; stimulus kinds 7; `kertas` already written | question read adds `dskp { complete, issues }` | 422 field errors |
@@ -470,7 +474,7 @@ sequenceDiagram
 1. Order: deploy migrations 0100 then 0102 (0101 `essay_choice` is independent) with the code that reads `approved` in the same release (maintenance window of seconds; `learner-visibility` constant flips). Pre-flight: dump; count of `published`, `approved` rows logged.
 2. Contract compatibility: one release alias `published -> approved` on input; responses never emit `published`. FE updates its status maps in the same release (FE-A1).
 3. Facts backfill job processes versions in batches of 5,000 (7,000+ legacy rows is small); until finished, `servable` returns no rows for versions without facts, so the order is: migration -> backfill (inline in migration for current volume) -> deploy code.
-4. PoC and spm pool removal are code-only plus 0107 and a dev purge script. Production verification: `SELECT count(*) FROM question_tags WHERE kind='pool'` = 0.
+4. PoC and spm pool removal are code-only plus 0109 and a dev purge script. Production verification: `SELECT count(*) FROM question_tags WHERE kind='pool'` = 0.
 5. Rollback: code rollback is possible before the first new approval; after that, `published` cannot be reconstructed (documented in ADR-0027).
 
 ### 7.1 Proposed rows for `docs/architecture/v2-backend-deviations.md` (not written now)
@@ -520,9 +524,9 @@ Legend: **WT** = changes shared migrations, seeds or contract and runs in an iso
 | BE-A1 | Lifecycle: migration 0100, constant `SERVABLE_STATUS`, replace `'published'` for questions in ~35 files, contract statuses + transition table + bulk values (alias window), seeds/fixtures `published->approved`, lint ban | `prisma/migrations/0100*`, `questions/**`, `practice/**`, `spm/**`, `battle`, `games`, `classes`, `pksk`, `exam/builder`, `bijak/papers`, `files`, `migration/load`, `prisma/seed/*`, `packages/contract/src/question-workflow/lifecycle.ts` | - | Yes |
 | BE-A2 | Contract: `ServedQuestion`, stimulus kinds, `essay_choice`, part `tp/cognitiveLevel`, servability types + BM copy, kertas document schema, tracking-a, flags, error codes | `packages/contract/src/{serving,servability,kertas,tracking-a,flags,questions}` | - | Yes |
 | BE-A3 | Facts + rules + `ServabilityService` (`where`, `evaluate`, families), migration 0102 tables/backfill, `computeFacts` in repository transactions, parity test matrix | `questions/serving/**`, `questions/questions.repository.ts`, migration 0102 | A1, A2 | Yes |
-| BE-A4 | Feature flags module + guard + endpoints, migration 0106 | `modules/feature-flags/**` | A2 | Yes (migration) |
+| BE-A4 | Feature flags module + guard + endpoints, migration 0108 (was 0106) | `modules/feature-flags/**` | A2 | Yes (migration) |
 | BE-B1 | DSKP: leaf `tp/cognitiveLevel` persist, derive `difficulty_tp`, merged approve gate with issues `{path, code, message, step}`, gate-check endpoint, legacy rule, intake `to-question` carries tags | `questions/workflow/lifecycle/gates.ts`, `publish-gate.ts`, `projection.ts`, `intake/workflow/to-question.ts`, controllers | A1, A2, A3 | No |
-| BE-B2 | Remove spmPool (types, repository, create path, views, pksk.service), migration 0107 | `questions/**`, `practice/ports.ts`, `spm/**`, `battle`, `classes/missions`, `exam/builder/question-bank.source.ts` | A3 | Yes (0107) |
+| BE-B2 | Remove spmPool (types, repository, create path, views, pksk.service), migration 0109 | `questions/**`, `practice/ports.ts`, `spm/**`, `battle`, `classes/missions`, `exam/builder/question-bank.source.ts` | A3 | Yes (0109) |
 | BE-B3 | Remove PoC fixture and env key; guarded dev purge; rewrite PoC e2e | `bijak/papers/poc*`, `bijak/question-bridge/composite.ts`, `bijak/integration`, `exam/builder/composite.source.ts`, `.env*.example`, docs/ops | A3 | Yes |
 | BE-B4 | `to-served` mapper + practice bridge rewrite (stimuli, images, groups), level scope, session wire adds fields | `questions/serving/to-served.ts`, `practice/question-bridge/**`, `practice/start.planner.ts`, `practice/rules.ts` | A2, A3 | No |
 | BE-B5 | exam-core + Bijak bridge: image stimuli, option images, 2-3 stimulus groups, `essay_choice`, reduced refusals; attempt payload `stimuli[]` | `packages/exam-core/**`, `bijak/question-bridge/be09-mapping.ts`, `bijak/attempts/**` | A2, A3 | No (exam-core tests run) |
@@ -530,9 +534,9 @@ Legend: **WT** = changes shared migrations, seeds or contract and runs in an iso
 | BE-B7 | SPM pools: Latih Tubi SPM, Databank, Mock K1/K2, Struktur/Subjektif counts, Misi, Set Guru, Remedial, Bab counts via `where()` | `spm/**`, `classes/**`, `practice/reads/**` | A3, B4 | No |
 | BE-B8 | Admin servability endpoints (single, batch, shortfall, overview/lanes), bulk-action rework with per-item reasons, edit-as-draft, status response with servability | `questions/http/admin.controller.ts`, `spm/**` | A3, B1 | No |
 | BE-C1 | Papers: blank/generate/pool-preview, placements API, review endpoint, publish conformance (AC-07.4), override audit, native approve in transaction, pin versions, withdraw, copy, attach document | `exam/builder/**`, `exam/blueprints/**`, `bijak/papers/**` | A3, B1, B5, (D1 for attach) | No |
-| BE-C2 | Tracking A CRUD + fill/swap + student visibility, migration 0104 | `spm/tracking*.ts`, new controller | A3 | Yes (0104, seed) |
+| BE-C2 | Tracking A CRUD + fill/swap + student visibility, migration (next free number of range 0100-0109; 0104 is `paper_section_admin_created`) | `spm/tracking*.ts`, new controller | A3 | Yes (0104, seed) |
 | BE-C3 | Simulasi Kuiz mode, paper quiz + check, Pembetulan read | `practice/**`, `bijak/papers/**` | B4, B5 | No |
-| BE-D1 | Kertas Subjektif module: migration 0105, CRUD, publish/unpublish gate, flag guard, file purposes + pupil read rule | `modules/kertas-subjektif/**`, `files/**`, `prisma/schema/kertas.prisma` | A2, A4 | Yes |
+| BE-D1 | Kertas Subjektif module: migration in the team A overflow range 0120-0129 (0105 is `gate_facts`), CRUD, publish/unpublish gate, flag guard, file purposes + pupil read rule | `modules/kertas-subjektif/**`, `files/**`, `prisma/schema/kertas.prisma` | A2, A4 | Yes |
 | BE-D2 | Pipeline: upload, jobs, page reading via `DocumentReader` (text layer + Tesseract), `assembleDocument`, progress, failure codes, fixtures (one digital, one scanned test PDF) | `kertas-subjektif/pipeline/**` | D1 | No |
 | BE-D3 | Document save (version conflict), section accept/auto-resolve, figures upload/recrop, page image read, student reads | `kertas-subjektif/**` | D1, D2 | No |
 | BE-E1 | Dev seeds on the new model (T4/T5 approved questions of all shapes incl. image files), `seed:dev` split | `prisma/seed/**` | A1, B1 | Yes |
@@ -583,7 +587,7 @@ FE-P5 is DONE (`src/components/question-display/`: `AnswerWidget`, `McqOptions`,
 - **Wave 4 (parallel):** BE-D3, FE-A3, FE-A4, FE-A5, FE-A7, FE-S1, FE-S2, FE-S4, DO-1.
 - **Wave 5:** FE-A8, FE-S3, BE-E2, QA-2.
 - **Wave 6:** QA-1, G4 reviews (code-reviewer, security-engineer: file read rules, flag guards, document sanitising, bulk caps), G5.
-Shared-data tasks (WT): BE-A1, BE-A2, BE-A3, BE-A4 (migration), BE-B2, BE-B3, BE-C2, BE-D1, BE-E1. Serialise migrations: A1 (0100), A3 (0102), C2 (0104), D1 (0105), A4 (0106), B2 (0107).
+Shared-data tasks (WT): BE-A1, BE-A2, BE-A3, BE-A4 (migration), BE-B2, BE-B3, BE-C2, BE-D1, BE-E1. Serialise migrations: A1 (0100), A3 (0102), C2 (the next free number: 0104 is taken by T48 `paper_section_admin_created`), D1 (overflow 0120-0129; 0105 is `gate_facts`), A4 (0108, was 0106), B2 (`drop_pool_tag`, 0109, was 0107).
 
 ## 10. First vertical slice (fastest functioning path)
 Goal: admin creates and approves an image MCQ, the student sees it in Latih Tubi and inside a published Simulasi paper.
@@ -646,14 +650,14 @@ Size: S under 1 day, M 1-3 days, L 3-5 days (one Sonnet agent, tests included). 
 | R1-F01 | Pentadbiran menu and routes for the Panel screens, verbatim labels [FE-N1] | S | L0 | 1 | No |
 | R1-B03 | Facts table, `ServabilityService`, rules for databank, latih_tubi_spm, simulasi_paper, simulasi_kuiz, jana_kertas, bab; migration 0102 [BE-A3] | L | B01, B02 | 2 | Yes (migration) |
 | R1-B10 | Blueprint Disahkan gate verified end to end (conformance at publish and Jana, delete, duplicate error, `needs_review`) | S | B02 | 2 | Only if `needs_review` missing (migration 0121, team A overflow range) |
-| R1-B12 | Self-mark endpoints (per part, per Bahagian) and result shape [new] | M | B02 | 2 | Maybe (migration 0108) |
+| R1-B12 | Self-mark endpoints (per part, per Bahagian) and result shape [new] | M | B02 | 2 | Maybe (migration 0122, team A overflow range) |
 | R1-B13 | Keyword-suggested marks for `mark_scheme_points` [new, B13] | M | B02 | 2 | No |
 | R1-B15 | Cuba Lagi and "Lihat semakan lepas" reads [new, B16] | S | B02 | 2 | No |
-| R1-B20 | Files: stimulus/option image purposes and pupil read rule [R11] | M | B02 | 2 | Maybe (migration 0109) |
+| R1-B20 | Files: stimulus/option image purposes and pupil read rule [R11] | M | B02 | 2 | Maybe (migration 0123, team A overflow range) |
 | R1-F02 | API clients and adapters (status maps, ServedQuestion to display props, ServabilityReport to VisibilityList) [FE-A1] | M | B02 | 2 | No |
 | R1-F06 | Kontrak Simulasi editor with Sumber Draf/Spec/Disahkan [FE-A6] | M | F01 (BE exists) | 2 | No |
 | R1-B05 | DSKP leaf tags, merged approve gate, gate-check, status endpoint with servability report [BE-B1 + part B8] | L | B01, B02, B03, B04 | 3 | No |
-| R1-B06 | Remove `spmPool` and pool tag; repoint readers to `where()`; Databank fed by bank; migration 0107 [BE-B2 + B7 swap] | L | B03 | 3 | Yes (migration) |
+| R1-B06 | Remove `spmPool` and pool tag; repoint readers to `where()`; Databank fed by bank; migration 0109 [BE-B2 + B7 swap] | L | B03 | 3 | Yes (migration) |
 | R1-B07 | Remove PoC fixture and composite split; bank is the only source [BE-B3] | M | B03 | 3 | Yes (seeds) |
 | R1-B08 | exam-core and Bijak bridge: image stimuli, option images, 2-3 stimulus groups, `essay_choice`, choose_n, 5 modes, payload `stimuli[]` [BE-B5] | L | B02, B03, B20 | 3 | No |
 | R1-B09a | Papers builder API: blank, generate, pool-preview, placements, review (blockers, visibility, conformance), publish with pinning and override audit, withdraw, copy [BE-C1] | L | B03, B05, B10 | 3 | No |
@@ -686,7 +690,7 @@ Size: S under 1 day, M 1-3 days, L 3-5 days (one Sonnet agent, tests included). 
 | R1-Q02 | Regression: servability matrix, published-to-approved check on a QLOAD copy, AC execution table | M | B01, B03, B06 | 6 | No |
 | R1-G4 | `code-reviewer` and `security-engineer` (file read rule, self-mark authorization and clamp, publish, bulk caps) | M | all | 6 | No |
 
-Counts: 21 BE, 15 FE (F17 deferred), 2 DO, 2 QA, 1 lead, 1 review gate. Migration numbers: 0100 (B01), 0101 (`essay_choice`, built), 0102 (B03), 0107 (B06); 0103-0106 are tracking, kertas, flags and `stimulus_kinds_wide`; optional 0108 (B12), 0109 (B20), and 0120 (B16) and 0121 (B10) in the team A overflow range (0120-0129; team C owns 0110-0119). LEAD confirms final numbers at merge (D68).
+Counts: 21 BE, 15 FE (F17 deferred), 2 DO, 2 QA, 1 lead, 1 review gate. Migration numbers: 0100 (B01), 0101 (`essay_choice`, built), 0102 (B03), 0109 (B06); 0103 is `stimulus_kinds_wide` (planned), 0104 is the built T48 `paper_section_admin_created`, 0105 is the built H-A18 `gate_facts`, tracking and kertas take free numbers in the overflow range 0120-0129, 0106 and 0107 are the built admin-list-perf indexes, 0108 is `feature_flags`; optional 0120 (B16), 0121 (B10), 0122 (B12) and 0123 (B20) in the team A overflow range (0120-0129; team C owns 0110-0119). LEAD confirms final numbers at merge (D68).
 
 ### 13.4 Task detail (goal | files | covers | tests)
 Tests use the repo's existing test, lint and type-check scripts (never pnpm). Every task adds unit tests for its rules and an API or component test; FE tasks add 375/768/1280 layout checks.
@@ -697,7 +701,7 @@ Tests use the repo's existing test, lint and type-check scripts (never pnpm). Ev
 - **R1-B03** Facts and `ServabilityService` for the R1 rule keys; `computeFacts` in the repository write transaction; SQL backfill; parity matrix. | `questions/serving/**`, `questions.repository.ts`, migration 0102 (ADR-0028) | B20, pipeline AC-04.x | SQL-vs-`evaluate` parity test, facts rows = version rows, performance check at 400k rows.
 - **R1-B04** Copy `docs/reference/dskp/*.json` into `apps/api/prisma/seed-data/dskp/` (checksum test keeps both equal); script `curriculum:load-dskp` in `apps/api/scripts/` using `parseDskpExtract` and the same insert-missing logic as `seedDskp` (shared code, no second implementation); one transaction per subject (a subject loads fully or not at all, AC-R1-12.3); Darjah rows in a source are ignored and listed (AC-R1-12.2); maps each extract to `curriculum_nodes` as grouping, unit, sk, sp with `education_level_id` (Tingkatan 4/5), `edition`, `is_elective`, plus the TP descriptors (design in 13.8a); report of nodes and TP rows inserted/skipped per subject and level; `--dry-run`; non-zero exit on parse error; never updates or deletes. Also verify T1-T3 levels and their Bab/Topik (`curriculum-data/`) are active and present. | `curriculum/dskp/*`, `prisma/seed/curriculum.ts`, `apps/api/scripts/*` | C04, B20 | existing parser tests, idempotency (second run = 0 inserts), per-subject counts against the README table, DSKP lookups return nodes after load.
 - **R1-B05** Leaf `tp`/`cognitiveLevel` persisted; merged approve gate (marks, MCQ one key, non-MCQ key, images resolve, DSKP complete for new approvals, legacy rule); `GET /api/questions/:id/gate-check`; status response with `servability`; `essay_choice` topics; intake `to-question` carries tags. | `questions/workflow/**`, `projection.ts`, `intake/workflow/to-question.ts` (ADR-0031) | A01-A04, A06-A08, A12 | exact BM issue messages from mechanism 3.1, 422 shapes, create-to-approve API journey.
-- **R1-B06** Remove `spmPool` and the `pool` tag (0107 only after readers are repointed); repoint `practice/question-bridge`, `spm/**`, `battle`, `games`, `classes/missions`, builder bank source to `where()`; level list from active levels. | listed modules (ADR-0029, ADR-0036) | C11, A11 | admin question appears in Databank when approved; unapproved or image question does not and shows a reason; counts equal dataset; practice, battle, games suites green.
+- **R1-B06** Remove `spmPool` and the `pool` tag (0109 only after readers are repointed); repoint `practice/question-bridge`, `spm/**`, `battle`, `games`, `classes/missions`, builder bank source to `where()`; level list from active levels. | listed modules (ADR-0029, ADR-0036) | C11, A11 | admin question appears in Databank when approved; unapproved or image question does not and shows a reason; counts equal dataset; practice, battle, games suites green.
 - **R1-B07** Remove `BIJAK_POC_QUESTIONS`, `poc-question-source`, composite id split, `poc-builder-source`; guarded dev purge. | `bijak/papers/poc*`, `bijak/question-bridge/composite.ts`, `bijak/integration/poc-question-source.ts`, `.env*.example` | A18, B20 | e2e on bank ids, boot test.
 - **R1-B08** Image stimuli (`fileId`, size), option images, groups of 2-3, `essay_choice`, choose_n best-N; refusals reduced to the named unsupported list (table_fill, multi-blank stay refused with a code). | `bijak/question-bridge/be09-mapping.ts`, `packages/exam-core/**`, `bijak/attempts/**` (ADR-0030) | B07 (R1 modes), B08 | exam-core tests unchanged plus additive; mapper fixture per stimulus kind (passage, image, diagram, table, map, infographic, graph); marking of the 5 modes.
 - **R1-B09a** Builder API per section 3.2; per-row `simulasi_paper` servability; conformance; audited override; pin `pinned_version_no`; one-transaction publish; withdraw; copy ("Salin set"). | `exam/builder/**`, `exam/blueprints` (read), `bijak/papers/**` | A18, A19, A09, A20 | one test per blocker message (AC-07.4), POOL_SHORT, pin and "belum dibekukan" detection, read-only after publish.
@@ -791,20 +795,20 @@ Critical path: R1-L0 -> B01 -> B03 -> B05 -> F03a -> F03b -> B09a -> F08 -> F09 
 
 ### 13.7 Notes for DevOps (documentation only; no server action by the architect or agents)
 All deliverables are code in the repo, pushed to GitHub; DevOps decides when to run them.
-1. **Migrations in order:** 0100 lifecycle (pre-flight: record counts of `published`/`approved`/`review` live versions; ADR-0027: `approved` but not live becomes `review`; after the first new approval `published` cannot be reconstructed), 0101 `essay_choice` (independent), 0102 facts table and backfill (about 400k versions; verification: facts rows = version rows), 0107 drop `pool` tags (only after the code that stops reading `spmPool` is live; verification `SELECT count(*) FROM question_tags WHERE kind='pool'` = 0), then whichever of 0108, 0109, 0120 and 0121 the tasks create. Forward only. UAT is at 0091 and the repo top is 0092, so 0092 also applies.
+1. **Migrations in order:** 0100 lifecycle (pre-flight: record counts of `published`/`approved`/`review` live versions; ADR-0027: `approved` but not live becomes `review`; after the first new approval `published` cannot be reconstructed), 0101 `essay_choice` (independent), 0102 facts table and backfill (about 400k versions; verification: facts rows = version rows), 0109 drop `pool` tags (only after the code that stops reading `spmPool` is live; verification `SELECT count(*) FROM question_tags WHERE kind='pool'` = 0), then whichever of 0120, 0121, 0122 and 0123 the tasks create. Forward only. UAT is at 0091 and the repo top is 0092, so 0092 also applies.
 2. **DSKP load (per environment, repeatable):** script `curriculum:load-dskp` (R1-B04): `--dry-run` first, then real; idempotent insert-only; prints counts per subject and level. It is not a migration because the data is large, editable by admins afterwards, and must not be re-applied by `migrate`. Verification: `curriculum_nodes` > 0 for Tingkatan 4 and 5. UAT has 0 nodes today.
 3. **Seeds:** the dev seed stays dev-only; no demo seed on UAT/production. B19 seeds are for local/E2E.
 4. **Env:** `BIJAK_POC_QUESTIONS` stays false (key removed from templates by B07); QLOAD content stays and is not re-imported. UAT has `AI_PROVIDER=mock` and `OCR_ENGINE=none`, so PDF intake yields no real extraction; for the PDF step to be real, set `OCR_ENGINE=tesseract` (U1), ship `OCR_LANG_DIR` traineddata and configure an extraction provider; until then admins use Studio and Tulis Soalan Manual. Level scope: UAT has all levels active; the secondary-only level setting (Darjah inactive, D72) is local work not yet deployed and must ship with R1.
 5. **Files:** new purposes (B20), storage sizing for stimulus images, pupil read rule config.
 6. **CI:** add the servability parity test and `registry-boot.test.ts` on Postgres (D02). G6 still needs the user's confirmation.
-7. **Backups:** dump before 0100 and before 0107.
+7. **Backups:** dump before 0100 and before 0109.
 
 ### 13.8 Risks and collision control
 | # | Risk | Control |
 |---|---|---|
 | X1 | The shared tree has 500+ uncommitted files from several sessions; B01 touches about 35 files and B06 more | R1-L0 first: owners commit or stash, one integration base. B01 and B06 run in worktrees from that base and merge only when `registry-boot.test.ts` and owner tests pass. |
 | X2 | Parallel agents edit the same files | Each task is a small additive change with its own tests; files per task are listed in 13.4; new code goes in new files where possible (`keyword-suggest.ts`, adapters, new pages); edits to a file owned by another task go through that owner. |
-| X3 | Shared migration, seed and contract changes collide | One baton per wave, one owner task per shared surface. Order: B02 (contract) -> B01 (0100) -> B04 (seed data) -> B03 (0102); wave 3: B06 (0107) -> B07; optional migrations 0108, 0109, 0120 and 0121 strictly by number, each only when its task proves a column is needed; B19 last. Contract changes land only through B02 plus at most one addendum per wave. |
+| X3 | Shared migration, seed and contract changes collide | One baton per wave, one owner task per shared surface. Order: B02 (contract) -> B01 (0100) -> B04 (seed data) -> B03 (0102); wave 3: B06 (0109) -> B07; optional migrations 0120, 0121, 0122 and 0123 strictly by number, each only when its task proves a column is needed; B19 last. Contract changes land only through B02 plus at most one addendum per wave. |
 | X4 | FE built against an unmerged API | FE waits for B02 types; no mock fixtures (D84). |
 | X5 | Lifecycle rename hides content | grep gate plus parity test. |
 | X6 | Backfill on 400k versions slow or drifting | Batches, compare job, load test. |

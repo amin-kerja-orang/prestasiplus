@@ -1307,7 +1307,7 @@ Contract status for every operation below: **missing** (no `bijak` schema in `pa
 - **Purpose:** paper cover (instructions, reference sheet, sections, marks).
 - **Maps to endpoint:** BE-15 `GET /bijak/papers/:id` (404 for unpublished or another user's generated paper).
 - **Input:** `userId`, `paperId`. A fixed paper resolves for anyone; a generated paper only for its creator.
-- **Output:** `PaperCover` = `PaperSummary` plus `instructions:string[]`, `reference:{title,items:string[]}[]` (reference-sheet panels, verbatim), `sections:{ label, marks (effective marks after choose-N), instruction, questionCount, compulsory:boolean, chooseN? }[]`. Default instruction when the section has none: "Jawab semua soalan." (rule `all`) or "Jawab <n> daripada <count> soalan." (rule `choose`).
+- **Output:** `PaperCover` = `PaperSummary` plus `instructions:string[]`, `reference:{title,items:string[]}[]` (reference-sheet panels, verbatim), `sections:{ label, marks (effective marks after choose-N), instruction, questionCount, compulsory:boolean, chooseN? }[]`. Default instruction when the section has none: "Jawab semua soalan." (rule `all`) or "Jawab <n> soalan sahaja." (rule `choose`; USER Q13 2026-11-02: follow V2).
 - **Errors:** `not_found` "Kertas tidak ditemui" (unknown paper, or someone else's generated paper). **Side effects:** none.
 - **Card:** BE-15. **Contract:** missing.
 

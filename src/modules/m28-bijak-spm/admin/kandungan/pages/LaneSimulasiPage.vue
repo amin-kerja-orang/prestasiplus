@@ -13,7 +13,7 @@ import { DsDataTable, DsLoadError, DsStatusBadge } from '@/ds'
 
 import { ADMIN_ROUTES } from '../../papers/ui'
 import { kandunganServer } from '../client'
-import { laneCopy } from '../lanes'
+import { laneCopy, PAPER_STATUS_OPTIONS, paperStatusBadge, paperStatusLabel } from '../lanes'
 import { PAGE_SIZE, useLane } from '../use-lane'
 import LaneShell from './LaneShell.vue'
 
@@ -21,15 +21,11 @@ import type { ServabilityPaperRow } from '@pp/contract'
 
 type Row = ServabilityPaperRow & { no: number } & Record<string, unknown>
 
-/** V2 `paper_statuses.label`: "Terbit" / "Draf". */
-const STATUSES = [
-  { value: 'published', label: 'Terbit' },
-  { value: 'draft', label: 'Draf' },
-]
-const statusText = (code: string): string => STATUSES.find((s) => s.value === code)?.label ?? code
+const statusText = paperStatusLabel
+const STATUSES = PAPER_STATUS_OPTIONS
 
 const server = kandunganServer()
-const { filters, page, subjects, list, chips, removeChip } = useLane(server, (q) => server.paperLane(q), statusText)
+const { filters, page, subjects, list, chips, removeChip } = useLane((q) => server.paperLane(q), statusText)
 
 const rows = computed<Row[]>(() =>
   (list.data.value?.rows ?? []).map((r, i) => ({ ...r, no: (page.value - 1) * PAGE_SIZE + i + 1 })),
@@ -85,7 +81,7 @@ const meta = (r: ServabilityPaperRow): string => `${r.subject?.name ?? ''} · ${
         </div>
       </template>
       <template #status-cell="{ row }">
-        <DsStatusBadge :status="row.original.status === 'published' ? 'published' : 'draft'" :label="statusText(row.original.status)" />
+        <DsStatusBadge :status="paperStatusBadge(row.original.status)" :label="statusText(row.original.status)" />
       </template>
       <template #attention-cell="{ row }">
         <ul v-if="lines(row.original).length" class="flex flex-col gap-1" :data-testid="`attention-${row.original.paperId}`">
@@ -96,7 +92,7 @@ const meta = (r: ServabilityPaperRow): string => `${r.subject?.name ?? ''} · ${
         <div class="flex min-w-0 flex-1 flex-col gap-1">
           <p class="break-words text-body">{{ row.title }}</p>
           <p class="text-caption text-muted">{{ meta(row as unknown as ServabilityPaperRow) }}</p>
-          <DsStatusBadge :status="row.status === 'published' ? 'published' : 'draft'" :label="statusText(row.status as string)" />
+          <DsStatusBadge :status="paperStatusBadge(row.status as string)" :label="statusText(row.status as string)" />
           <ul v-if="lines(row as unknown as ServabilityPaperRow).length" class="flex flex-col gap-1">
             <li v-for="l in lines(row as unknown as ServabilityPaperRow)" :key="l" class="text-caption text-error">{{ l }}</li>
           </ul>

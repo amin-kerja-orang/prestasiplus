@@ -4,7 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
-import { ApiClient } from '@/api'
+import { ApiClient, ApiError } from '@/api'
 import type { Transport, TransportRequest, TransportResponse } from '@/api'
 
 import IntakeListPage from '../admin/intake/pages/IntakeListPage.vue'
@@ -304,6 +304,13 @@ describe('admin pages in http mode do not crash', () => {
     return html
   }
 
+  it('IntakeListPage links to the CSV import page (REQ-B-063)', async () => {
+    const { server } = setup()
+    const html = await renderPage(IntakeListPage, {}, server)
+    expect(html).toContain('data-testid="intake-csv"')
+    expect(html).toContain('href="/admin/questions/import"')
+  })
+
   it.each([
     ['BankPage', BankPage, {}, 'listBank'],
     ['ReviewQueuePage', ReviewQueuePage, {}, 'listReviewQueue'],
@@ -337,6 +344,44 @@ describe('admin pages in http mode do not crash', () => {
     const none = await renderPage(IntakeReviewPage, { batchId: 'b1' }, server)
     expect(none).toContain('Tiada soalan dikesan')
     expect(none).not.toContain('all-decided')
+  })
+
+  it('BankPage: typing applies one read 300 ms after the last key; a same filter is no read (REQ-B-061)', async () => {
+    const server = setup().server as unknown as Record<string, unknown>
+    const listBank = vi.fn(() => Promise.resolve([]))
+    server.listBank = listBank
+    server.bankStats = () => Promise.resolve({ total: 0, bySubject: [] })
+    setBijakServerForTests(server as never)
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/', component: { template: '<i/>' } }, ...adminPaperRoutes, ...adminIntakeRoutes],
+    })
+    await router.push('/')
+    const w = mount(BankPage as never, { attachTo: document.body, global: { plugins: [router] } })
+    await flushPromises()
+    expect(listBank).toHaveBeenCalledTimes(1) // the load
+    vi.useFakeTimers()
+    const input = w.get('[data-testid="bank-search"] input, input[data-testid="bank-search"]')
+    for (const text of ['a', 'al', 'alg', 'alge']) {
+      await input.setValue(text)
+      await vi.advanceTimersByTimeAsync(100)
+    }
+    expect(listBank).toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(300)
+    vi.useRealTimers()
+    await flushPromises()
+    expect(listBank).toHaveBeenCalledTimes(2)
+    expect(listBank).toHaveBeenLastCalledWith(expect.objectContaining({ q: 'alge' }))
+    w.unmount()
+  })
+
+  it('BankPage: a 429 shows the server message, not the generic text', async () => {
+    const server = setup().server as unknown as Record<string, unknown>
+    server.listBank = () =>
+      Promise.reject(new ApiError({ status: 429, code: 'RATE_LIMITED', message: 'Terlalu banyak permintaan. Cuba lagi sebentar.' }))
+    const html = await renderPage(BankPage, {}, server)
+    expect(html).toContain('Terlalu banyak permintaan. Cuba lagi sebentar.')
+    expect(html).not.toContain('Tidak dapat memuatkan bank soalan.')
   })
 
   it('keeps the generic load error for any other failure', async () => {

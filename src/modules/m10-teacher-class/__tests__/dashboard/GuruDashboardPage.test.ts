@@ -117,7 +117,7 @@ describe('S1 GuruDashboardPage', () => {
     expect(cards).toEqual([
       ['Kelas Aktif', '0', '0 jumlah kelas'],
       ['Pelajar', '0', 'Merentasi semua kelas'],
-      ['Soalan', '20719', '✅ 19361 diluluskan'],
+      ['Soalan', '20,719', '✅ 19361 diluluskan'],
       ['Tugasan', '0', 'Jumlah tugasan dibuat'],
     ])
     const text = w.text()

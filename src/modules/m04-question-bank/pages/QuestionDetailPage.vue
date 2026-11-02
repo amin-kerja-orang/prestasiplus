@@ -27,9 +27,11 @@ import { formatDateTime } from '@/lib/time'
 
 import { bulkQuestionAction, deleteQuestion, fetchQuestion } from '../api'
 import AiExplanationCard from '../components/AiExplanationCard.vue'
+import QuestionPaperServability from '../components/studio/QuestionPaperServability.vue'
 import {
   cut,
   DELETE_CONFIRM,
+  failedLines,
   LANGUAGE_LABELS,
   notUpdatedLines,
   QUESTIONS_LIST_PATH,
@@ -129,7 +131,9 @@ async function changeStatus(action: 'pending_review' | 'approve'): Promise<void>
   try {
     const result = await bulkQuestionAction(action, [props.id])
     await reload()
-    if (result.notUpdated && result.notUpdated.length > 0) {
+    if (result.failed && result.failed.length > 0) {
+      flash.show({ type: 'error', message: failedLines(result.data.affected, result.failed, 'dikemaskini') })
+    } else if (result.notUpdated && result.notUpdated.length > 0) {
       flash.show({
         type: 'error',
         message: notUpdatedLines(result.data.affected, result.notUpdated, 'dikemaskini'),
@@ -313,6 +317,7 @@ const isRtlText = (text: string): boolean => /[\u0600-\u06FF]/.test(text)
         <AiExplanationCard
           :question-id="id"
           :explanation="question.aiExplanation"
+          :status="question.status"
           @generated="reload()"
         />
       </div>
@@ -396,6 +401,11 @@ const isRtlText = (text: string): boolean => /[\u0600-\u06FF]/.test(text)
               </dd>
             </div>
           </dl>
+        </DsPanel>
+
+        <!-- REQ-A-018 (AC-04.3): the published papers that carry this question and whether pupils can open them. -->
+        <DsPanel v-if="!isPksk" title="Dilihat murid di" icon="i-ph-eye" data-testid="question-served">
+          <QuestionPaperServability :question-id="id" />
         </DsPanel>
 
         <DsPanel

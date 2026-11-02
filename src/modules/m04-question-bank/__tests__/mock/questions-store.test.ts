@@ -41,6 +41,7 @@ import {
 import { questionSpec } from '../../mock/datasets/questions-spec'
 import { structuredDataset, structuredSpec } from '../../mock/datasets/structured'
 import { questionQueries, structuredQueries } from '../../mock/repository/queries'
+import { MOCK_IN_USE_IDS, MOCK_SERVED_IDS } from '../../mock/repository/questions'
 import { showPrimaryLevels } from '../../mock/repository/visible-levels'
 import { SEED_REPORTS } from '../../mock/seeds/reports'
 
@@ -722,9 +723,18 @@ describe('writes', () => {
     expect(updated).toMatchObject({ scriptType: 'jawi', textDirection: 'rtl' })
 
     expect(questions.deleteOwn({ id: 1 }, created.id)).toBe(false)
+    // REQ-A-023b: a Guru delete is refused only for a served / in_use question, not for an approved one.
+    questions.bulkAction('approve', [created.id], NOW_MS)
     expect(questions.deleteOwn({ id: 5 }, created.id)).toBe(true)
     expect(questions.get(created.id)).toBeNull()
     expect(questions.count('Q-ALL')).toBe(465_278)
+    // REQ-A-023b: the fixed served / in_use sets are existing seed ids (never invented records).
+    for (const id of MOCK_SERVED_IDS) expect(questions.get(id)).not.toBeNull()
+    for (const id of MOCK_IN_USE_IDS) expect(questions.get(id)).not.toBeNull()
+    expect([136891, 124733].map((id) => questions.deletionBlock(id))).toEqual(['served', 'served'])
+    expect(questions.deletionBlock(129216)).toBe('in_use')
+    expect(questions.deletionBlock(564159)).toBeNull()
+    expect(questions.deleteOwn({ id: 5 }, 136891)).toBe(false) // not an own question: 404, not 409
 
     // A second runtime row skips nothing below the floor.
     const next = questions.create(
@@ -772,15 +782,19 @@ describe('writes', () => {
     ).toBe('CONTRACT')
   }, 60_000)
 
-  it('a report deactivates an MCQ at once (BR-M04-12) and a 3rd open report deactivates a structured question', async () => {
+  it('a report no longer deactivates (D98); an admin forceDeactivate takes an MCQ and a structured question out of practice', async () => {
     await runtime.reset()
     const res = reports.create({ questionId: 564161, reasons: ['typo'], source: 'spm' }, 2, NOW_MS)
     expect(res).toMatchObject({ success: true, message: 'Laporan berjaya dihantar.' })
+    expect(questions.get(564161)?.isActive).toBe(true)
+    expect(questions.eligibleForPractice(564161)).toBe(true)
+    expect(reports.count('R-STATUS', 'pending')).toBe(3)
+    const mcqReport = reports.list('pending').find((r) => r.questionId === 564161)
+    reports.update(mcqReport?.id ?? 0, { status: 'reviewed', forceDeactivate: true }, NOW_MS)
     expect(questions.get(564161)?.isActive).toBe(false)
     expect(questions.count('Q-ELIGIBLE')).toBe(128_988)
     expect(questions.count('Q-SPM-POOL', 4)).toBe(2_075)
     expect(questions.eligibleForPractice(564161)).toBe(false)
-    expect(reports.count('R-STATUS', 'pending')).toBe(3)
 
     for (let i = 0; i < 2; i++) {
       reports.create(
@@ -795,7 +809,7 @@ describe('writes', () => {
       )
     }
     expect(structured.get(3704)?.isActive).toBe(true)
-    reports.create(
+    const third = reports.create(
       {
         questionId: 3704,
         questionType: 'structured',
@@ -805,11 +819,12 @@ describe('writes', () => {
       3,
       NOW_MS,
     )
+    expect(structured.get(3704)?.isActive).toBe(true)
+    reports.update(third.id, { status: 'reviewed', forceDeactivate: true }, NOW_MS)
     expect(structured.get(3704)?.isActive).toBe(false)
     expect(structured.count('Q-STRUCT-VISIBLE')).toBe(4_058)
 
-    const report = reports.list('pending').find((r) => r.questionId === 564161)
-    reports.update(report?.id ?? 0, { status: 'dismissed', reactivate: true }, NOW_MS)
+    reports.update(mcqReport?.id ?? 0, { status: 'dismissed', reactivate: true }, NOW_MS)
     expect(questions.get(564161)?.isActive).toBe(true)
     expect(
       repoError(() => reports.create({ questionId: 1, reasons: [], source: 'spm' }, 2, NOW_MS))

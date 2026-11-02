@@ -76,13 +76,16 @@ describe('question bank adapter (real BE-09 bank)', () => {
     ])
   })
 
-  it('a pair outside the table is 409 and the gates read real data (an untagged draft cannot be submitted)', async () => {
+  it('a pair outside the table is 409 and the gates read real data (a draft without a subject cannot be submitted)', async () => {
     const id = await draft()
     expect((await failure(svc.transition(id, 'approved', actorOf(c.admin)))).code).toBe('CONFLICT')
     const [untagged] = await t.db.query<{ question_id: string }>("select question_id::text from question_versions where number_label = 'SEED-DRAFT-BM-T4'")
+    // REQ-B-071 (Q17): the seed draft has no Bab and that is no longer a submit rule; a draft without a subject is still refused.
+    await t.db.query('update question_versions set subject_id = null where question_id = $1::bigint', [untagged!.question_id])
     const err = await failure(svc.transition(untagged!.question_id, 'review', actorOf(c.admin)))
     expect(err.code).toBe('VALIDATION_ERROR')
-    expect(err.fields).toMatchObject({ chapterId: expect.any(String) })
+    expect(err.fields).toMatchObject({ subjectId: expect.any(String) })
+    expect(err.fields).not.toHaveProperty('chapterId')
   })
 
   it('a stale expectedFrom is a 409 and changes nothing', async () => {
@@ -195,8 +198,12 @@ describe('question bank adapter (real BE-09 bank)', () => {
     const first = await c.admin.post(`/api/questions/${id}/ai-explanation`)
     expect(first.status, JSON.stringify(first.body)).toBe(200)
     expect(first.body).toMatchObject({ ok: true, stub: true })
-    const [row] = await t.db.query<{ explanation_ms: string }>('select explanation_ms from question_versions where question_id = $1::bigint and version_no = 1', [id])
-    expect(row?.explanation_ms).toContain('## Penjelasan')
+    // R1 delete-served-guard: the seeded question is approved and live, so the text goes to version 2 as a draft; version 1 is not rewritten.
+    const rows = await t.db.query<{ version_no: number; status: string; explanation_ms: string | null; last_editor: string }>('select version_no, status, explanation_ms, last_editor from question_versions where question_id = $1::bigint order by version_no', [id])
+    expect(rows.map((r) => `${String(r.version_no)}:${r.status}`)).toEqual(['1:approved', '2:draft'])
+    expect(rows[0]?.explanation_ms ?? '').not.toContain('## Penjelasan')
+    expect(rows[1]?.explanation_ms).toContain('## Penjelasan')
+    expect(rows[1]?.last_editor).toBe('ai')
     expect((await c.admin.post(`/api/questions/${id}/ai-explanation`)).body.message).toBe('Penjelasan AI sudah wujud.')
     expect((await c.admin.post('/api/questions/999999999/ai-explanation')).status).toBe(404)
   })

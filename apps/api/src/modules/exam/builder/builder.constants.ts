@@ -1,3 +1,5 @@
+import { STIMULUS_MESSAGES } from '@pp/contract'
+
 import type { RateLimitSpec } from '../../../common/throttle'
 
 /**
@@ -33,11 +35,8 @@ export const CANDIDATE_SLACK = 500
 /** D90/D93: a stimulus group needs at least this many member questions to be placed in a paper. */
 export const MIN_GROUP_MEMBERS = 2
 
-/**
- * D93 builder blocker (exact BM text). Mirrors T32 `STIMULUS_MESSAGES.builderBlocker`
- * (`packages/contract/src/questions/stimuli.ts` on branch r1/t32-stimulus-api): swap this constant for that export once T32 is merged.
- */
-export const GROUP_MIN_MEMBERS_MESSAGE = 'Kumpulan perlu sekurang-kurangnya 2 soalan.'
+/** D93 builder blocker (exact BM text): the contract's `STIMULUS_MESSAGES.builderBlocker` (T32). */
+export const GROUP_MIN_MEMBERS_MESSAGE: string = STIMULUS_MESSAGES.builderBlocker
 
 /** R1E2E-06: a placed question the attempt path (`resolveForAttempt` + BE-09 bridge) would refuse blocks Terbit; `reason` is the Servability sentence. */
 export const attemptRefusalLine = (questionId: string, reason: string): string => `Soalan ${questionId} tidak dapat dihidangkan kepada murid: ${reason}`

@@ -107,7 +107,7 @@ export const PAPERS: PaperDef[] = [
       {
         id: 'mat-k2-2025-a-s3',
         label: 'Bahagian C',
-        instruction: 'Jawab 1 daripada 2 soalan.',
+        instruction: 'Jawab 1 soalan sahaja.',
         rule: { type: 'choose', n: 1 },
         markBudget: 6,
         questionCount: 2,
@@ -136,7 +136,7 @@ export const PAPERS: PaperDef[] = [
       {
         id: 'sn-k2-2025-a-s2',
         label: 'Bahagian B',
-        instruction: 'Jawab 1 daripada 2 soalan.',
+        instruction: 'Jawab 1 soalan sahaja.',
         rule: { type: 'choose', n: 1 },
         markBudget: 4,
         questionCount: 2,
@@ -169,7 +169,7 @@ export const PAPERS: PaperDef[] = [
       {
         id: 'sej-k2-2025-a-s2',
         label: 'Bahagian B',
-        instruction: 'Jawab 1 daripada 2 soalan.',
+        instruction: 'Jawab 1 soalan sahaja.',
         rule: { type: 'choose', n: 1 },
         markBudget: 10,
         questionCount: 2,
@@ -205,7 +205,7 @@ export const BLUEPRINTS: Blueprint[] = [
       { label: 'Bahagian B', rule: { type: 'all' }, pool: 'MAT2-B', take: 1, markBudget: 6 },
       {
         label: 'Bahagian C',
-        instruction: 'Jawab 1 daripada 2 soalan.',
+        instruction: 'Jawab 1 soalan sahaja.',
         rule: { type: 'choose', n: 1 },
         pool: 'MAT2-C',
         take: 2,
@@ -224,7 +224,7 @@ export const BLUEPRINTS: Blueprint[] = [
       { label: 'Bahagian A', rule: { type: 'all' }, pool: 'SN2-A', take: 3, markBudget: 9 },
       {
         label: 'Bahagian B',
-        instruction: 'Jawab 1 daripada 2 soalan.',
+        instruction: 'Jawab 1 soalan sahaja.',
         rule: { type: 'choose', n: 1 },
         pool: 'SN2-B',
         take: 2,

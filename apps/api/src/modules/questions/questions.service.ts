@@ -15,7 +15,7 @@ import { OverviewCache } from './serving/overview-cache'
 import { CurriculumRepository } from '../curriculum'
 import { FilesService } from '../files'
 import { UsersRepository } from '../users'
-import { bulkFailureOf, notFoundFailure, questionNotFound, transitionConflict, type BulkFailure } from './errors'
+import { bulkFailureOf, isForeignKeyViolation, notFoundFailure, questionNotFound, transitionConflict, type BulkFailure, alreadyApprovedSkip, AlreadyInStatusError, type BulkSkipped } from './errors'
 import { gradeQuestion } from './grading'
 import {
   difficultyOf,
@@ -387,8 +387,90 @@ export class QuestionsService {
 
   async remove(id: string, actor: QuestionActor): Promise<void> {
     void actor
-    if (!(await this.repo.remove(id))) throw questionNotFound()
+    if (!(await this.removeGuarded(id))) throw questionNotFound()
     this.overview?.invalidate()
+  }
+
+  /**
+   * The ONE hard delete of a question (admin route, bulk `delete`, Guru `removeOwn`). R1-delete-served-guard (B3 review of REQ-B-052): a question
+   * that a paper which is still held (Terbit, or withdrawn with sittings) places is refused with 409 and kept. `paper_placements.question_id` has no
+   * foreign key, so without this a delete leaves a placement on nothing and a running sitting answers 500. Every other state is deletable, as on the
+   * live site. The question lock serialises it against an edit or a publish of the same question; Terbit takes FOR SHARE on the placed question
+   * rows (r1/publish-lock-share), so a delete that races a publish waits for it and then refuses.
+   */
+  private async removeGuarded(id: string): Promise<boolean> {
+    return this.prisma.transaction(async () => {
+      if (!(await this.repo.lock(id))) return false
+      const block = await this.repo.deletionBlock(id)
+      if (block === undefined) return false
+      if (block !== null) throw ApiError.of('CONFLICT', { message: QUESTION_MESSAGES.deleteRefused, details: { reason: block } })
+      try {
+        return await this.repo.remove(id)
+      } catch (e) {
+        // A teacher's set, a remedial test or a battle still uses it (ON DELETE RESTRICT): refuse, never a 500.
+        if (isForeignKeyViolation(e)) throw ApiError.of('CONFLICT', { message: QUESTION_MESSAGES.deleteInUse, details: { reason: 'in_use' } })
+        throw e
+      }
+    }, TX)
+  }
+
+  /**
+   * The AI service's explanation write (the workflow stub, `POST /questions/:id/ai-explanation`). It follows the same rule as every other edit
+   * (REQ-B-052, Q-5): an `approved` or `archived` version, or one that a paper which is still held pins, is never rewritten in place, because
+   * pupils are served and marked against it and read its explanation in their results. The text goes to version n+1 as a DRAFT marked as the
+   * AI's write (`last_editor = 'ai'`, H-A18), so a person has to review it before Terbit; the live version keeps serving. A draft or review
+   * version nobody is served is updated in place. Refusing was the alternative; branching keeps the admin's action useful and uses the one edit
+   * path. The copy carries the import hold, the declared marks and (through `addVersion`) the rights and provenance columns.
+   */
+  async setExplanation(id: string, text: string): Promise<boolean> {
+    const now = this.clock.now()
+    let done = false
+    await this.prisma.transaction(async () => {
+      if (!(await this.repo.lock(id))) return
+      const record = await this.repo.get(id, 'latest')
+      if (!record) return
+      const v = record.version
+      if (v.status === 'approved' || v.status === 'archived' || (await this.repo.versionIsPinned(id, v.versionNo))) {
+        const big = (x: string | null): bigint | null => (x === null ? null : BigInt(x))
+        const held = await this.repo.importIssuesOf(id, v.versionNo)
+        const facts = await this.repo.gateFacts(id, v.versionNo)
+        const draft: VersionDraft = {
+          status: 'draft',
+          type: v.type,
+          stemMs: v.stemMs,
+          stemEn: v.stemEn,
+          numberLabel: v.numberLabel,
+          language: v.language,
+          explanationMs: text,
+          explanationEn: v.explanationEn,
+          subjectId: big(v.subjectId),
+          educationLevelId: big(v.educationLevelId),
+          unitNodeId: big(v.unitId),
+          chapterId: big(v.chapterId),
+          topicId: big(v.topicId),
+          formOrigin: v.formOrigin,
+          cognitiveLevel: v.cognitiveLevel,
+          kbat: v.kbat,
+          tagReview: v.tagReview,
+          catalogueVersion: v.catalogueVersion,
+          difficultyTp: v.difficultyTp,
+          sourcePage: v.sourcePage,
+          setLabel: v.setLabel,
+          paperCode: v.paperCode ?? null,
+          importIssues: held.length === 0 ? null : held,
+          lastEditor: 'ai',
+          declaredMarks: facts.declaredMarks,
+          spNodeIds: v.spIds.map((x) => BigInt(x)),
+          stimulusIds: v.stimulusIds.map((x) => BigInt(x)),
+          parts: draftsFromParts(v.parts),
+        }
+        await this.repo.addVersion(id, record.latestVersionNo + 1, draft, now)
+      } else {
+        await this.repo.setExplanationInPlace(id, v.versionNo, text)
+      }
+      done = true
+    }, TX)
+    return done
   }
 
   async bulkAction(
@@ -396,14 +478,15 @@ export class QuestionsService {
     ids: readonly string[],
     actor: QuestionActor,
     opts: { submitGate?: boolean } = {},
-  ): Promise<{ affected: number; ids: string[]; failed: BulkFailure[] }> {
+  ): Promise<{ affected: number; ids: string[]; failed: BulkFailure[]; skipped?: BulkSkipped[] }> {
     let affected = 0
     const done: string[] = []
     const failed: BulkFailure[] = []
+    const skipped: BulkSkipped[] = []
     for (const id of new Set(ids)) {
       try {
         if (action === 'delete') {
-          if (await this.repo.remove(id)) {
+          if (await this.removeGuarded(id)) {
             affected += 1
             done.push(id)
           } else {
@@ -411,18 +494,24 @@ export class QuestionsService {
           }
         } else {
           const a = actor as QuestionActor & { roleCode?: string; requestId?: string | null }
-          await this.setStatus(id, action, actor.userId, { ...(opts.submitGate === true ? { submitGate: true } : {}), event: { actorUserId: actor.userId, actorRole: a.roleCode ?? actor.role, requestId: a.requestId ?? null } })
+          await this.setStatus(id, action, actor.userId, { ...(opts.submitGate === true ? { submitGate: true } : {}), ...(action === 'approved' ? { skipIfAlready: true } : {}), event: { actorUserId: actor.userId, actorRole: a.roleCode ?? actor.role, requestId: a.requestId ?? null } })
           affected += 1
           done.push(id)
         }
       } catch (e) {
+        // A row already Diterbitkan is a no-op (R1E2E-10): listed in `skipped`, not a refusal.
+        if (e instanceof AlreadyInStatusError) {
+          skipped.push(alreadyApprovedSkip(id))
+          continue
+        }
         // An unknown id, a refused transition and a failed publish gate leave that id untouched.
         const failure = bulkFailureOf(id, e)
         if (!failure) throw e
         failed.push(failure)
       }
     }
-    return { affected, ids: done, failed }
+    // `skipped` is present only when a row was skipped (additive on the wire).
+    return { affected, ids: done, failed, ...(skipped.length > 0 ? { skipped } : {}) }
   }
 
   /**
@@ -453,7 +542,10 @@ export class QuestionsService {
     }
     const done = await this.bulkAction(input.action, targets.ids, actor)
     const remaining = targets.eligible - targets.ids.length
-    return { ...base, processed: targets.ids.length, affected: done.affected, ids: done.ids, failed: done.failed, remaining, capped: remaining > 0 }
+    // A row another request approved between `filterTargets` and `bulkAction` is left as it is (R1E2E-10): it is not applied and not a refusal,
+    // so it counts in `skipped` (and still in `processed`, which counts rows tried), never in `affected` or `failed`.
+    const raced = done.skipped?.length ?? 0
+    return { ...base, skipped: base.skipped + raced, processed: targets.ids.length, affected: done.affected, ids: done.ids, failed: done.failed, remaining, capped: remaining > 0 }
   }
 
   // --- lifecycle (BE-10 calls these) ------------------------------------------------------------
@@ -465,6 +557,7 @@ export class QuestionsService {
       const record = await this.repo.get(id, 'latest')
       if (!record) throw questionNotFound()
       const v = record.version
+      if (options.skipIfAlready === true && v.status === status) throw new AlreadyInStatusError(status)
       if (!isQuestionWorkflowTransitionAllowed(v.status, status, actor)) throw transitionConflict(v.status, status)
       // Semakan (draft to review) through the bulk route runs the submit gate per row: a refused row is a `failed[]` entry like Terbit.
       if (options.submitGate === true && status === 'review' && v.status === 'draft') {
@@ -484,6 +577,12 @@ export class QuestionsService {
         // The version that served until now is superseded in the same transaction.
         if (record.liveVersionNo !== null && record.liveVersionNo !== v.versionNo) {
           await this.repo.setVersionStatus(id, record.liveVersionNo, 'archived', { archiveReason: 'superseded' })
+        }
+        // REQ-B-071 (Q17): the Bab is not required to approve; when the admin gave none, fill it from the DSKP unit (one chapter whose dskp_code is the unit code), so
+        // Soalan by Chapter, Peta Belajar and Latihan Bab still count the question. No match, or several: it stays chapterless.
+        if (v.chapterId === null) {
+          const derived = await this.repo.chapterOfUnit(v.subjectId, v.educationLevelId, v.unitId)
+          if (derived !== null) await this.repo.fillChapter(id, v.versionNo, derived)
         }
         await this.repo.setVersionStatus(id, v.versionNo, 'approved', { publishedAt: this.clock.now() })
         await this.repo.setLiveVersion(id, v.versionNo)
@@ -639,7 +738,9 @@ export class QuestionsService {
 
   async removeOwn(id: string, userId: string): Promise<void> {
     await this.owned(id, userId)
-    await this.repo.remove(id)
+    // A teacher's own approved question may be on a Terbit paper with a running sitting: the same guard as the admin delete.
+    if (!(await this.removeGuarded(id))) throw questionNotFound()
+    this.overview?.invalidate()
   }
 
   async contributionCountsFor(userId: string): Promise<ContributionCounts> {
@@ -782,6 +883,11 @@ export class QuestionsService {
     // R1-H-A18: who wrote this content and what total the intake declared. An AI variant is the AI's until a person acts on it.
     draft.lastEditor = provenance?.sourceType === 'ai_variant' ? 'ai' : 'person'
     draft.declaredMarks = provenance?.declaredMarks ?? null
+    if (status === 'approved' && draft.chapterId === null) {
+      // REQ-B-071 (Q17): created already approved without a Bab: derive it from the DSKP node, as the transition does.
+      const derived = await this.repo.chapterOfUnit(draft.subjectId === null ? null : idToString(draft.subjectId), draft.educationLevelId === null ? null : idToString(draft.educationLevelId), draft.unitNodeId === null ? null : idToString(draft.unitNodeId))
+      if (derived !== null) draft.chapterId = BigInt(derived)
+    }
     if (status === 'approved') {
       // Created already approved (an Admin Pusat shortcut that skips the Semakan step): the same merged approve gate as the transition,
       // on the same builder. The question is not stored yet, so the facts that need a stored row are the new-question ones.

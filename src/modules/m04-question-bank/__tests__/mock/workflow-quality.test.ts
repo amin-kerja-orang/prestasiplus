@@ -266,7 +266,7 @@ describe('reports: create → deactivate in one transaction (BR-M04-11/12/13)', 
       NOW_MS,
     )
 
-  it('an MCQ report is saved pending and takes the question out of practice at once', () => {
+  it('an MCQ report is saved pending and leaves the question in practice (D98)', () => {
     dirty = true
     expect(questions.getEligible(564_161)).not.toBeNull()
     const eligible = questions.count('Q-ELIGIBLE')
@@ -279,9 +279,9 @@ describe('reports: create → deactivate in one transaction (BR-M04-11/12/13)', 
       reasons: ['wrong_answer'],
       createdAt: '2026-09-25T15:40:00+08:00',
     })
-    expect(questions.get(564_161)).toMatchObject({ isActive: false, status: 'approved' })
-    expect(questions.getEligible(564_161)).toBeNull()
-    expect(questions.count('Q-ELIGIBLE')).toBe(eligible - 1)
+    expect(questions.get(564_161)).toMatchObject({ isActive: true, status: 'approved' })
+    expect(questions.getEligible(564_161)).not.toBeNull()
+    expect(questions.count('Q-ELIGIBLE')).toBe(eligible)
     // R-STATUS: 2 seeded pending + 1.
     expect(reports.count('R-STATUS', 'pending')).toBe(3)
   })
@@ -315,18 +315,17 @@ describe('reports: create → deactivate in one transaction (BR-M04-11/12/13)', 
     expect(questions.getEligible(136_891)).not.toBeNull()
   })
 
-  it('a structured question goes inactive at its third open report, not before (E2E-M04-38)', () => {
+  it('a structured question stays active however many open reports it has (D98); an admin deactivates it', () => {
     dirty = true
     expect(structured.get(4455)?.isActive).toBe(true)
     create(4455, 'structured', ['typo'])
     create(4455, 'structured', ['other'])
+    const third = create(4455, 'structured', ['wrong_answer'])
     expect(structured.get(4455)?.isActive).toBe(true)
-    create(4455, 'structured', ['wrong_answer'])
+    expect(reports.list('pending').filter((r) => r.questionId === 4455)).toHaveLength(3)
+    reports.update(third.id, { status: 'reviewed', forceDeactivate: true }, NOW_MS)
     expect(structured.get(4455)?.isActive).toBe(false)
-    // Fixed / dismissed reports no longer count: reactivate, then only 1 open report remains
-    const open = reports.list('pending').filter((r) => r.questionId === 4455)
-    expect(open).toHaveLength(3)
-    reports.update(open[0]?.id as number, { status: 'dismissed', reactivate: true }, NOW_MS)
+    reports.update(third.id, { status: 'dismissed', reactivate: true }, NOW_MS)
     expect(structured.get(4455)?.isActive).toBe(true)
   })
 
@@ -353,18 +352,17 @@ describe('reports: create → deactivate in one transaction (BR-M04-11/12/13)', 
     expect(questions.getEligible(564_161)).not.toBeNull()
   })
 
-  it('writes the report and the deactivation in one transaction: a failure after both rolls both back', () => {
+  it('writes the report in one transaction: a failure afterwards rolls it back', () => {
     const before = reports.count('R-STATUS')
     expect(() =>
       runtime.db.transaction(() => {
         create(564_159)
-        // Both writes are visible inside the transaction …
+        // The write is visible inside the transaction …
         expect(reports.count('R-STATUS')).toBe(before + 1)
-        expect(questions.get(564_159)?.isActive).toBe(false)
         throw new Error('the request failed afterwards')
       }),
     ).toThrow('the request failed afterwards')
-    // … and neither survives the rollback.
+    // … and does not survive the rollback.
     expect(reports.count('R-STATUS')).toBe(before)
     expect(questions.get(564_159)?.isActive).toBe(true)
     expect(questions.getEligible(564_159)).not.toBeNull()

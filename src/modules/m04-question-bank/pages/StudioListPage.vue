@@ -64,7 +64,8 @@ import {
   statusBadge,
   statusTone,
 } from '../lib/studio/status'
-import { errorLines, LOAD_ERROR } from '../lib/ui-errors'
+import { listLoadMessage, useDebouncedFilter } from '../lib/list-load'
+import { errorLines } from '../lib/ui-errors'
 
 const STUDIO_PATH = '/admin/studio'
 const CREATE_PATH = '/admin/studio/questions/create'
@@ -199,13 +200,23 @@ const chips = computed(() => {
   return out
 })
 
-async function submitFilter(): Promise<void> {
+function draftQuery(): Record<string, string> {
   const query: Record<string, string> = {}
   for (const k of KEYS) {
     const v = validFilter(k, draft.value[k].trim())
     if (v !== '') query[k] = v
   }
   if (perPage.value !== DEFAULT_PAGE_SIZE) query.per_page = String(perPage.value)
+  return query
+}
+/** REQ-A-027: typing or choosing applies the filter 300 ms later; a change that leaves the URL as it is reads nothing. */
+const debounced = useDebouncedFilter(draft, KEYS, async () => {
+  const query = draftQuery()
+  if (JSON.stringify(query) !== JSON.stringify(pagerQuery.value)) await router.push({ path: STUDIO_PATH, query })
+})
+async function submitFilter(): Promise<void> {
+  debounced.cancel()
+  const query = draftQuery()
   if (JSON.stringify(query) === JSON.stringify(pagerQuery.value) && !route.query.page) await list.reload()
   else await router.push({ path: STUDIO_PATH, query })
 }
@@ -436,7 +447,7 @@ const cardFields: CardField[] = [
         </div>
       </DsFilterBar>
 
-      <DsLoadError v-if="list.error.value" :message="LOAD_ERROR" testid="studio-error" retry-testid="studio-retry" @retry="list.reload()" />
+      <DsLoadError v-if="list.error.value" :message="listLoadMessage(list.error.value)" testid="studio-error" retry-testid="studio-retry" @retry="list.reload()" />
 
       <DsPanel v-else-if="!firstLoad && rows.length === 0" data-testid="studio-empty">
         <DsEmptyState :title="activeCount > 0 ? 'Tiada soalan dijumpai.' : 'Belum ada soalan.'" icon="tray" :filtered="activeCount > 0">

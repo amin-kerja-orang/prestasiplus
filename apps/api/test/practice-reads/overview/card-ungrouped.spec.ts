@@ -93,8 +93,9 @@ describe('Bab card and Soalan by Chapter tile count what the chapter draw can se
     expect(drawable).toBe(2)
     const counts = await repo.chapterQuestionCounts([chapterId])
     expect(counts.get(chapterId)).toBe(drawable) // 2, not 5
-    // The tile sums these per-chapter counts (OverviewService.chapterSubjects), so tile = chapter-drawable, never the subject total.
-    const subjectTotal = bank.practice(bm, offeredIds)
+    // The tile sums these per-chapter counts (OverviewService.chapterSubjects, asserted through the service in overview.spec.ts: tile = sum of levels[].count),
+    // so tile = chapter-drawable, never the subject total. The facts are rebuilt AFTER the mutation here.
+    const subjectTotal = new BankFacts(await repo.bankMatrix()).practice(bm, offeredIds)
     expect(subjectTotal).toBeGreaterThan(drawable)
   })
 })

@@ -18,8 +18,9 @@ import {
   type BijakBuilderReviewQuestion,
 } from '@pp/contract'
 
+import { fileUrlOf } from '../../bijak/question-bridge/be09-mapping'
 import type { QuestionPart } from '../../questions'
-import { stimulusTableOf } from '../../questions/stimulus-table'
+import { stimulusTableParts } from '../../questions/stimulus-table'
 
 type SchemeLine = { tag?: string; text: string; marks?: number }
 type ReviewScheme = BijakBuilderReviewQuestion['scheme']
@@ -108,60 +109,56 @@ export interface StimulusSource {
   caption: string | null
   altText: string | null
   tableData: unknown
+  /** R1-T31: citation line of a passage or picture (`BijakAttemptStimulus.source`). */
+  sourceCitation?: string | null
+  /** R1-T31: the stored picture (internal file id); its public token comes from `tokens`. */
+  assetFileId?: bigint | null
 }
 
 /** At most three stimuli per group (OD-28, `QuestionStimulusGroupSchema`). */
 export const MAX_GROUP_STIMULI = 3
 
 /**
- * Store kind -> builder wire kind. The wire (`BijakAttemptStimulus.kind`) already accepts all seven kinds (R1-B08), but this
- * table still reads the four pictorial ones (image, map, infographic, graph) as `diagram`; R1-T31 (lane A3) replaces it with a
- * pass-through of the seven. Audio and any other kind is not displayable. Change this ONE table then.
+ * The seven kinds of the store AND of the builder wire (`BijakAttemptStimulus.kind`, widened by R1-B08): passage, image, diagram,
+ * table, map, infographic, graph. R1-T31 removed the old collapse of the four pictorial kinds to `diagram`; audio (and any kind
+ * outside the seven) is not displayable and yields undefined.
  */
-const WIRE_KIND: Record<string, BijakAttemptStimulus['kind']> = {
-  passage: 'passage',
-  table: 'table',
-  diagram: 'diagram',
-  image: 'diagram',
-  map: 'diagram',
-  infographic: 'diagram',
-  graph: 'diagram',
-}
+const WIRE_KINDS: ReadonlySet<string> = new Set<BijakAttemptStimulus['kind']>(['passage', 'image', 'diagram', 'table', 'map', 'infographic', 'graph'])
 
-/** One stimulus for the builder; audio (and a kind outside the seven) is not displayable and yields undefined. */
-export function stimulusOf(s: StimulusSource): BijakAttemptStimulus | undefined {
-  const kind = WIRE_KIND[s.kind]
-  if (kind === undefined) return undefined
+/** Internal file id (decimal string) -> public file token, the same `/api/files/<token>` form the Bijak bridge and the attempt view use. */
+export type FileTokens = ReadonlyMap<string, string>
+
+/**
+ * One stimulus for the builder: label, caption, alt, source line, passage/body text, the table grid and, for a picture, its public
+ * file URL (admin preview). A picture whose file is missing keeps its text and alt but has no `image`.
+ */
+export function stimulusOf(s: StimulusSource, tokens: FileTokens = new Map()): BijakAttemptStimulus | undefined {
+  if (!WIRE_KINDS.has(s.kind)) return undefined
+  const kind = s.kind as BijakAttemptStimulus['kind']
   const label = s.label ?? ''
-  const table = kind === 'table' ? stimulusTableOf(s.tableData) : undefined
+  // One table reader (H-A16): a stored grid is shown and never hides the body; a table read from the body REPLACES the body text, so the grid is not shown twice.
+  const { table, bodyIsTable } = stimulusTableParts(kind, s.tableData, s.bodyMs)
+  const text = bodyIsTable ? undefined : (s.bodyMs ?? undefined)
+  const token = s.assetFileId == null ? undefined : tokens.get(s.assetFileId.toString())
   return {
     id: s.id.toString(),
     kind,
     label,
     ...(s.caption ? { caption: s.caption } : {}),
     alt: s.altText ?? label,
-    ...(kind === 'passage' && s.bodyMs ? { text: s.bodyMs } : {}),
+    ...(s.sourceCitation ? { source: s.sourceCitation } : {}),
+    ...(text ? { text } : {}),
     ...(table ? { table } : {}),
+    ...(token ? { image: { url: fileUrlOf(token) } } : {}),
   }
 }
-
-/**
- * D90: a group with no displayable stimulus (audio only, or empty) is STILL a group: its members move as one unit and are never
- * placed alone. The builder wire requires a stimulus on a group, so such a group carries this empty one (no text, no picture).
- */
-export const emptyGroupStimulus = (groupId: string | bigint): BijakAttemptStimulus => ({
-  id: `group-${groupId.toString()}`,
-  kind: 'passage',
-  label: '',
-  alt: '',
-})
 
 /**
  * D90: every displayable stimulus of a group in link order (1 to 3). The stimulus belongs to the GROUP: it is shown once above
  * all member questions, carries no marks and is never a question of its own. Empty when the group has nothing to show.
  */
-export function stimuliOf(list: readonly StimulusSource[]): BijakAttemptStimulus[] {
-  return list.flatMap((s) => stimulusOf(s) ?? []).slice(0, MAX_GROUP_STIMULI)
+export function stimuliOf(list: readonly StimulusSource[], tokens: FileTokens = new Map()): BijakAttemptStimulus[] {
+  return list.flatMap((s) => stimulusOf(s, tokens) ?? []).slice(0, MAX_GROUP_STIMULI)
 }
 
 /* ---------------------------------------------------------------------------------- scheme */

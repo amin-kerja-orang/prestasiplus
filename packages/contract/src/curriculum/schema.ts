@@ -332,9 +332,9 @@ export const CurriculumLegacySubjectCodeSchema = z
   ])
   .meta({ id: 'CurriculumLegacySubjectCode' })
 
-/** `locked` stays in the enum for old clients; the API never returns it (REQ-C-021, D98: no island is locked). */
+/** No island is locked (REQ-C-021, D98); `locked` was dropped from the enum (REQ-A-014 follow-up). */
 export const CurriculumTopicStateSchema = z
-  .enum(['mastered', 'started', 'unlocked', 'locked'])
+  .enum(['mastered', 'started', 'unlocked'])
   .meta({ id: 'CurriculumTopicState' })
 
 /** Query of `GET /topics`: both case-insensitive, AND-combined; unknown values match nothing. */

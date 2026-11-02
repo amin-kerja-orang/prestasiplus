@@ -17,7 +17,6 @@ const BY_KEY: Readonly<Record<string, { code: string; step: 1 | 2 | 3 | 4 }>> = 
   marks: { code: 'MARKS_MISMATCH', step: 3 },
   subjectId: { code: 'SUBJECT_MISSING', step: 4 },
   educationLevelId: { code: 'LEVEL_MISSING', step: 4 },
-  chapterId: { code: 'CHAPTER_MISSING', step: 4 },
   unitId: { code: 'UNIT_MISSING', step: 4 },
   spIds: { code: 'SP_MISSING', step: 4 },
   tp: { code: 'TP_MISSING', step: 4 },

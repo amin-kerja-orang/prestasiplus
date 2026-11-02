@@ -139,7 +139,7 @@ test.describe('QA G5 S14 report modal', { tag: [moduleTag(4), '@qa'] }, () => {
     await expect(byId(page, 'report-message')).toHaveText('Ralat. Sila cuba lagi.')
   })
 
-  test('E2E-M04-37/38 an MCQ report is on S7 "Menunggu" and deactivates the MCQ; structured needs 3 reports (AC-17.7, 18.3)', async ({
+  test('E2E-M04-37/38 an MCQ report is on S7 "Menunggu" and leaves the MCQ active; no number of structured reports deactivates it (D98)', async ({
     page,
     gotoApp,
     mock,
@@ -160,21 +160,24 @@ test.describe('QA G5 S14 report modal', { tag: [moduleTag(4), '@qa'] }, () => {
     }
 
     await asUser(page, mock, ADMIN, `${S7}?status=all`)
-    await expect(byId(page, 'reports-title')).toBeVisible()
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Laporan Soalan', exact: true }),
+    ).toBeVisible()
     await expect(tab(page, 'all')).toHaveText('Semua (14)')
     const cards = page.locator('[data-card=report]')
     await expect(cards).toHaveCount(14)
     const mcq = cards.filter({ hasText: 'ID Soalan: 564161' })
     await expect(mcq).toHaveCount(1)
     await expect(mcq.getByTestId('report-status')).toHaveText('Menunggu')
-    await expect(mcq.getByTestId('report-inactive')).toHaveText('Dinyahaktif')
+    // D98: a report does not take the question out of practice.
+    await expect(mcq.getByTestId('report-inactive')).toHaveCount(0)
     const four = cards.filter({ hasText: 'ID Soalan: 4455' })
     await expect(four).toHaveCount(2)
-    // Two structured reports: still active.
+    // Two structured reports: active.
     await expect(four.getByTestId('report-inactive')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
 
-    // Third structured report as the pelajar: the question becomes inactive.
+    // A third structured report as the pelajar: still active (D98).
     await asUser(page, mock, PELAJAR, `${HARNESS}?variant=structured&questionId=4455`)
     await byId(page, 'harness-open').click()
     await byId(page, 'report-reason-other').click()
@@ -183,7 +186,7 @@ test.describe('QA G5 S14 report modal', { tag: [moduleTag(4), '@qa'] }, () => {
     await asUser(page, mock, ADMIN, `${S7}?status=all`)
     const four3 = page.locator('[data-card=report]').filter({ hasText: 'ID Soalan: 4455' })
     await expect(four3).toHaveCount(3)
-    await expect(four3.first().getByTestId('report-inactive')).toHaveText('Dinyahaktif')
+    await expect(four3.getByTestId('report-inactive')).toHaveCount(0)
   })
 })
 
@@ -285,7 +288,7 @@ test.describe('QA G5 S7 report cards', { tag: [moduleTag(4), '@qa'] }, () => {
     await expect(byId(page, 'question-detail-page')).toBeVisible()
     await gotoApp('/admin/questions?search=136891')
     // The row (if listed by id search) is ACTIVE; fall back to the detail page.
-    await expect(byId(page, 'shell-admin-title')).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
   })
 
   test('E2E-M04-43 "Nyahaktif Segera" moves the report to Disemak with the fixed note (AC-20.3)', async ({

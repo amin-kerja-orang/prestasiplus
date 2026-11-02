@@ -42,6 +42,8 @@ function row(id: number, extra: Partial<QuestionRow> = {}): QuestionRow {
     dskpTagged: true,
     sourceType: 'textbook',
     sourceFile: 'buku-contoh.pdf',
+    kertas: null,
+    numberLabel: null,
     ...extra,
   }
 }
@@ -293,6 +295,29 @@ describe('QuestionListPage (M04 S1)', () => {
       message: '2 soalan berjaya dikemaskini.',
     })
     expect(w.find('[data-testid="questions-bulk-bar"]').exists()).toBe(false)
+  })
+
+  it('REQ-A-023: a delete with failed[] lists each refused row with the server message', async () => {
+    questions.bulkQuestionAction.mockResolvedValue({
+      data: { affected: 1 },
+      status: '1 soalan berjaya dikemaskini.',
+      failed: [{ id: 564160, code: 'CONFLICT', message: 'Teks pelayan: tidak boleh dipadam.' }],
+    })
+    const w = await render()
+    const boxes = w.findAll('tbody [role="checkbox"]')
+    await boxes[0]?.trigger('click')
+    await boxes[1]?.trigger('click')
+    await flushPromises()
+    await t(w, 'questions-bulk-action').setValue('delete')
+    await w.get('[data-testid="questions-bulk-bar"]').trigger('submit')
+    await flushPromises()
+    expect(useFlashStore().current).toEqual({
+      type: 'error',
+      message: [
+        '1 soalan berjaya dikemaskini, 1 tidak dikemaskini.',
+        'Soalan #564160: Teks pelayan: tidak boleh dipadam.',
+      ],
+    })
   })
 
   it('sends nothing when the bulk confirm is dismissed', async () => {

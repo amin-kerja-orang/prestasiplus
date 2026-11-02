@@ -14,6 +14,7 @@ import type { PartAnswer, QuestionResult, QuestionView } from '../domain/types'
 import { toOptionData } from '../lib/stimulus-data'
 import PartNode from './PartNode.vue'
 import PartResultCard from './PartResultCard.vue'
+import ReportQuestionButton from './ReportQuestionButton.vue'
 import RichText from './RichText.vue'
 import StimulusStack from './StimulusStack.vue'
 
@@ -72,7 +73,7 @@ function pick(id: string): void {
     :data-testid="`question-${question.id}`"
     :aria-labelledby="`h-${question.id}`"
   >
-    <header class="flex items-start justify-between gap-3">
+    <header class="flex flex-wrap items-start justify-between gap-3">
       <div class="min-w-0">
         <h2
           :id="`h-${question.id}`"
@@ -97,6 +98,7 @@ function pick(id: string): void {
         @click="emit('toggle-flag')"
         >{{ flagged ? 'Ditanda' : 'Tanda soalan' }}</UButton
       >
+      <ReportQuestionButton :question-id="question.id" :attempt-id="attemptId" :variant="question.mcq ? 'mcq' : 'structured'" />
     </header>
 
     <DsStack v-if="choose" gap="2xs">

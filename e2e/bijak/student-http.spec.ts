@@ -153,7 +153,7 @@ test.describe('Bijak SPM Murid over HTTP @bijak @api', () => {
       await page.locator('[data-testid^=option-]').nth(1).click()
       const res1 = await saved1
       expect(is2xx(res1), `PUT answers status ${res1.status()}`).toBe(true)
-      await expect(page.getByTestId('save-status')).toHaveText('Disimpan')
+      await expect(page.getByTestId('save-status')).toHaveText('disimpan')
       expect(await pressed(page)).toContain('true')
 
       // Q2 when there is one.
@@ -162,7 +162,7 @@ test.describe('Bijak SPM Murid over HTTP @bijak @api', () => {
         const saved2 = page.waitForResponse(answersPut)
         await page.locator('[data-testid^=option-]').first().click()
         expect(is2xx(await saved2)).toBe(true)
-        await expect(page.getByTestId('save-status')).toHaveText('Disimpan')
+        await expect(page.getByTestId('save-status')).toHaveText('disimpan')
       }
       await expectNoHorizontalScrollHttp(page)
     })
@@ -176,7 +176,7 @@ test.describe('Bijak SPM Murid over HTTP @bijak @api', () => {
         moves++
       }
       if (moves > 0) expect(is2xx(await savedPos)).toBe(true)
-      await expect(page.getByTestId('save-status')).toHaveText('Disimpan')
+      await expect(page.getByTestId('save-status')).toHaveText('disimpan')
       positionBefore = await questionNumber(page)
 
       // Answers of the first question as the server must restore them.
@@ -190,7 +190,7 @@ test.describe('Bijak SPM Murid over HTTP @bijak @api', () => {
           await page.getByTestId('next').click()
         }
         expect(is2xx(await savedBack)).toBe(true)
-        await expect(page.getByTestId('save-status')).toHaveText('Disimpan')
+        await expect(page.getByTestId('save-status')).toHaveText('disimpan')
       }
 
       const clockBefore = clockSeconds(await page.getByTestId('clock').innerText())

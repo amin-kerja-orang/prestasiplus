@@ -21,6 +21,7 @@
  * repository (`questions`) and `question-input.ts`.
  */
 
+import { QUESTION_MESSAGES } from '@pp/contract'
 import { curriculum } from '@/modules/m03-curriculum/mock'
 import {
   conflict,
@@ -65,6 +66,9 @@ export const QUESTIONS_PAGE_SIZE = 20
 export const QUESTION_ADDED = 'Soalan berjaya ditambah.'
 export const QUESTION_UPDATED = 'Soalan berjaya dikemaskini.'
 export const QUESTION_DELETED = 'Soalan berjaya dipadam.'
+/** The 409 text of a refused hard delete, as the server (REQ-A-023b): `in_use` has its own sentence. */
+export const deleteRefusedMessage = (reason: 'served' | 'pinned' | 'in_use'): string =>
+  reason === 'in_use' ? QUESTION_MESSAGES.deleteInUse : QUESTION_MESSAGES.deleteRefused
 export const bulkUpdated = (n: number): string => `${String(n)} soalan berjaya dikemaskini.`
 /** The live script alert text, reused as the server message for a missing action. */
 export const BULK_NO_ACTION = 'Sila pilih tindakan terlebih dahulu.'
@@ -177,6 +181,8 @@ function remove(req: MockRequest): MockResponse {
   const id = idOf(req)
   const current = questions.get(id)
   if (!current || current.pkskDomainId !== null) return notFound()
+  const block = questions.deletionBlock(id)
+  if (block !== null) return conflict(deleteRefusedMessage(block))
   questions.remove(id)
   return ok({ deleted: 1 }, { status: QUESTION_DELETED })
 }
@@ -202,8 +208,29 @@ function bulk(req: MockRequest, ctx: MockContext): MockResponse {
     ids = body.ids as number[]
   }
   if (Object.keys(fields).length > 0) return validationError(fields)
-  const affected = questions.bulkAction(action as BulkAction, ids, ctx.clock.now())
-  return ok({ affected }, { status: bulkUpdated(affected) })
+  // REQ-A-023: a delete skips (and reports) the questions the single delete refuses.
+  const refused =
+    action === 'delete'
+      ? [...new Set(ids)].filter((id) => {
+          const row = questions.get(id)
+          return row && row.pkskDomainId === null && questions.deletionBlock(id) !== null
+        })
+      : []
+  const affected = questions.bulkAction(
+    action as BulkAction,
+    ids.filter((id) => !refused.includes(id)),
+    ctx.clock.now(),
+  )
+  // REQ-A-023: a refused delete is a `failed[]` entry (id as a string, code CONFLICT), as the server reports it.
+  const failed = refused.map((id) => ({
+    id: String(id),
+    code: 'CONFLICT',
+    message: deleteRefusedMessage(questions.deletionBlock(id) ?? 'served'),
+    fields: {},
+  }))
+  return ok(action === 'delete' ? { affected, failed } : { affected }, {
+    status: bulkUpdated(affected),
+  })
 }
 
 /** Contract copy of `POST /questions/bulk-action/filter` (packages/contract QUESTION_MESSAGES). */

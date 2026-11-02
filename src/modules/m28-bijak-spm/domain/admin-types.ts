@@ -173,8 +173,9 @@ export interface BankStats {
     name: string
     terbit: number
     semakan: number
-    draf: number
-    ditolak: number
+    /** The HTTP server does not read Draf and Ditolak (no screen shows them; REQ-B-061). */
+    draf?: number
+    ditolak?: number
   }[]
 }
 
@@ -268,7 +269,13 @@ export interface BuilderQuestion {
 
 export interface BuilderGroup {
   id: string
-  stimulus: StimulusDef
+  /**
+   * The first stimulus. Absent when the group has nothing displayable (audio only, or empty): the group
+   * is still a unit (D90), shown with a label and its member questions, never filtered out (REQ-A-008).
+   */
+  stimulus?: StimulusDef
+  /** Every stimulus of the group in order (0 to 3). */
+  stimuli?: StimulusDef[]
   questionIds: string[]
 }
 
@@ -277,8 +284,10 @@ export interface SectionPoolPage {
   /** A question, or a whole stimulus group (D90), eligible for this Bahagian. */
   units: {
     groupId?: string
-    /** The group's shared stimulus (groups only). */
+    /** The group's first stimulus (groups only); absent for a stimulus-less group (D90). */
     stimulus?: StimulusDef
+    /** Every stimulus of the group in order (0 to 3). */
+    stimuli?: StimulusDef[]
     questionIds: string[]
     questions: BuilderQuestion[]
     marks: number

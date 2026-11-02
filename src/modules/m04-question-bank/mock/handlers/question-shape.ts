@@ -83,6 +83,9 @@ export function toRow(q: Question, names: NameMaps): QuestionRow {
     dskpTagged: q.dskpTagged,
     sourceType: q.sourceType,
     sourceFile: q.sourceFile,
+    // REQ-A-030: required (nullable) by the contract; the mock MCQ store keeps no paper code or printed number.
+    kertas: null,
+    numberLabel: null,
   }
 }
 
