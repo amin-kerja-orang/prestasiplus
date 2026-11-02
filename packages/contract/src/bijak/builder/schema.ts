@@ -76,8 +76,6 @@ export const BIJAK_BUILDER_MESSAGES = {
   /** [PROPOSED] R1-T34: V2 Panel has the override tick "Terbitkan walaupun tidak memenuhi kontrak blueprint" (audited). */
   overrideReasonRequired: 'Sebab diperlukan untuk menerbitkan walaupun tidak memenuhi kontrak blueprint',
   /** [PROPOSED] R1-T34 */
-  overrideNotAllowed: 'Kesilapan ini tidak boleh dikecualikan: soalan, markah atau susunan kertas perlu dibetulkan dahulu',
-  /** [PROPOSED] R1-T34 */
   groupNotOnPaper: 'Kumpulan rangsangan ini tiada dalam kertas ini',
   /** [PROPOSED] R1-T34 */
   groupLabelRequired: 'Tajuk petikan diperlukan',
