@@ -22,6 +22,7 @@ const BY_KEY: Readonly<Record<string, { code: string; step: 1 | 2 | 3 | 4 }>> = 
   tp: { code: 'TP_MISSING', step: 4 },
   duplicate: { code: 'DUPLICATE_OPEN', step: 4 },
   reviewer: { code: 'REVIEWER_IS_AI', step: 4 },
+  source: { code: 'SOURCE_TAKEN_DOWN', step: 1 },
   year: { code: 'LOW_CONFIDENCE', step: 4 },
 }
 

@@ -885,7 +885,7 @@ export class QuestionsRepository {
    */
   async gateFacts(questionId: string, versionNo: number): Promise<GateFacts> {
     const key = bi(questionId)
-    const none: GateFacts = { unconfirmedLowConfidenceFields: [], hasOpenDuplicateFlag: false, mediaResolved: true, lastEditedByAi: false, declaredMarks: null }
+    const none: GateFacts = { unconfirmedLowConfidenceFields: [], hasOpenDuplicateFlag: false, mediaResolved: true, lastEditedByAi: false, declaredMarks: null, sourceTakenDown: false }
     if (key === null) return none
     const rows = await this.db.$queryRaw<
       {
@@ -895,9 +895,11 @@ export class QuestionsRepository {
         low_fields: string[] | null
         confirmed_fields: string[] | null
         media_ok: boolean
+        source_down: boolean
       }[]
     >`
       SELECT v.last_editor, v.declared_marks,
+             EXISTS (SELECT 1 FROM source_papers tsp WHERE tsp.id = v.source_paper_id AND tsp.takedown_at IS NOT NULL) AS source_down,
              EXISTS (SELECT 1 FROM intake_items di JOIN duplicate_links dl ON dl.item_id = di.id
                       WHERE di.question_id = q.id AND dl.decision = 'pending' AND dl.kind IN ('exact', 'near')) AS duplicate_open,
              ii.low_fields, ii.confirmed_fields,
@@ -917,7 +919,16 @@ export class QuestionsRepository {
       mediaResolved: r.media_ok,
       lastEditedByAi: r.last_editor === 'ai',
       declaredMarks: r.declared_marks,
+      sourceTakenDown: r.source_down,
     }
+  }
+
+  /** REQ-B-076: is this source paper taken down (`takedown_at` set)? A new question created already approved can carry a source id (the facts of a stored version come from `gateFacts`). */
+  async sourceTakenDown(sourcePaperId: string | null | undefined): Promise<boolean> {
+    const key = sourcePaperId == null ? null : bi(sourcePaperId)
+    if (key === null) return false
+    const rows = await this.db.$queryRaw<{ n: number }[]>`SELECT 1 AS n FROM source_papers WHERE id = ${key} AND takedown_at IS NOT NULL`
+    return rows.length > 0
   }
 
   /** The AI service's write of `explanation_ms` on a version nobody is served (a draft or a review version): in place, marked as the AI's. */

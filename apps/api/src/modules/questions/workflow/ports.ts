@@ -75,6 +75,8 @@ export interface QuestionGateData {
   missingRequiredFields: string[]
   /** True when the last editor is the AI service (the approve gate refuses an AI reviewer). */
   lastEditedByAi: boolean
+  /** REQ-B-076: the version's source paper is taken down; the approve gate refuses it. Optional so older fakes compile; absent = false. */
+  sourceTakenDown?: boolean
   /** R1-B05: the stored paper code (the kertas is its trailing digit). Optional so older fakes compile; absent = none. */
   paperCode?: string | null
   /** R1-B05: the subject is in the SPM catalogue at Tingkatan 4 or 5 (the new-approval DSKP rules bind only then). Absent = false. */

@@ -387,4 +387,6 @@ export interface GateFacts {
   lastEditedByAi: boolean
   /** Question total declared at intake accept, or null. */
   declaredMarks: number | null
+  /** REQ-B-076: the version's source paper is taken down (`source_papers.takedown_at`). The approve gate refuses such a version (no override in R1). */
+  sourceTakenDown: boolean
 }

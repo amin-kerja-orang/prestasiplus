@@ -914,6 +914,7 @@ export class QuestionsService {
           mediaResolved: await this.repo.mediaResolvedFor(draft.stimulusIds, n.stimulusGroupId ? BigInt(n.stimulusGroupId) : null),
           lastEditedByAi: draft.lastEditor === 'ai',
           declaredMarks: draft.declaredMarks ?? null,
+          sourceTakenDown: await this.repo.sourceTakenDown(provenance?.sourcePaperId),
         },
         await this.repo.isSpmBound(subjectId, levelId),
       )

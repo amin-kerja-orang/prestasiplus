@@ -22,6 +22,8 @@ export const GATE_MESSAGES = {
   reviewerAi: 'Penyemak tidak boleh perkhidmatan AI.',
   marksTotal: 'Jumlah markah soalan tidak sama dengan jumlah markah bahagian.',
   media: 'Rujukan stimulus atau gambar rajah belum dipadankan dengan fail yang dimuat naik.',
+  /** [PROPOSED] REQ-B-076: the source paper of the version was taken down; no override in R1. */
+  sourceTakenDown: 'Sumber soalan ini telah ditarik balik, jadi soalan tidak boleh diterbitkan.',
 } as const
 
 export const GATE_SUMMARY: Record<GateName, string> = {
@@ -52,6 +54,7 @@ export function approveGate(d: QuestionGateData, reviewerIsAi = false): GateFiel
     if (sum !== d.marks) f.marks = GATE_MESSAGES.marksTotal // marks total = sum of part marks
   }
   if (!d.mediaResolved) f.media = GATE_MESSAGES.media // media resolves
+  if (d.sourceTakenDown === true) f.source = GATE_MESSAGES.sourceTakenDown // REQ-B-076: a taken-down source is never re-approved (v(n+1) carries the source id)
   return f
 }
 

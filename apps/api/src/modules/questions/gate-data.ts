@@ -47,6 +47,7 @@ export function gateDataOf(
     mediaResolved: facts.mediaResolved,
     missingRequiredFields: missingRequiredFieldsOf(v.stemMs, v.parts),
     lastEditedByAi: facts.lastEditedByAi,
+    sourceTakenDown: facts.sourceTakenDown,
     paperCode: v.paperCode ?? null,
     spmBound,
   }
