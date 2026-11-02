@@ -538,7 +538,7 @@ A3 dev-1 rehearsed this locally. `prisma migrate deploy` does not run a migratio
 - ha18-minors must restore 0105 byte-for-byte (A2); it is IN-PROGRESS until then.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 02:42 UTC, BASE a31b9e0a)
+### Team A open branches: heads from origin (auto, 2026-11-02 02:43 UTC, BASE a31b9e0a)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -562,11 +562,12 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/partial-acs-a3 | e6ceece19 | READY-AFTER-FIX (A3, @e6ceece1 restacked on T48 10c62437): exam-builder 416/417 RED: builder-review "stays outside D93" (same as REQ-B-069; likely pool page cap ?pageSize=100 vs 106 units). Fixed by r1/t31-pool-lookup-fixture merged after T31 (no cascade needed); merge after t31-pool-lookup-fixture |
 | r1/publish-lock-share | 7ef73b79d | READY (A1b, @7ef73b79 = 225b6941 + BASE-148 merge; A4 APPROVE: the dropped early-read was T34's perf choice (5df0b2f1), fully replaced by post-lock reads + PUBLISH_TX; the in-lock-window test exists since 11c827b7; 418/418). DSG is merged (BASE-149), so it can merge now; B2 delta |
 | r1/publish-title-draft | 335e9cbb8 | READY (A2, @335e9cbb = 4e768673 + BASE-148 merge: title constants + T48 helpers; exam-builder 396/396, tsc 0; merge-tree vs BASE clean); A4 pre-review AwM (merge resolution exact; nit: DEV row line cite); B2 delta |
-| r1/r1e2e10-bulk-publish-noop | fe228f56f | READY (A2, @fe228f56; 5990fb6b MERGED as BASE-155): **B2 delta 5990fb6b..fe228f56** = bulkByFilter race rows folded into integer skipped (in processed, not affected/failed), contract descriptions, race test + mutation, errors.ts; clean on BASE-161; A1b pre-review APPROVE (16 pass, mutation red) |
+| r1/r1e2e10-bulk-publish-noop | fe228f56f | READY (A2, @fe228f56; 5990fb6b MERGED as BASE-155): **B2 delta 5990fb6b..fe228f56** = bulkByFilter race rows folded into integer skipped (in processed, not affected/failed), contract descriptions, race test + mutation, errors.ts; clean on BASE-161; A1b pre-review APPROVE (16 pass, mutation red) | A2 re-verified on 4218bee3: clean, filter-bulk 11, bulk 5, workflow 310 |
 | r1/ready-tiers-check | 9c80f08c3 | ON HOLD (A2, @9c80f08c, contains BASE-107): code correct + Minors fixed (exact 503 body, WARN once per state change, INFO on recovery; mutations red); waits for B DevOps (REQ-A-028: CI seed step + first-install deploy ordering) |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
 | r1/reqa018-mock-swap | 0b774bd2f | READY (A4, @0b774bd2): clean vs BASE-148; mock conformance 2/2 STANDALONE on BASE-148 (C fe in base since BASE-146), contract-tests 22/22. Merge any time; B2 small |
 | r1/reqb067-etl-guards | d402fdf2a | READY (A1a, @d402fdf2 off BASE-132): REQ-B-067 real (macOS-visible) defects fixed: files.ts realOf (realpath first, ancestor walk, dangling symlinks followed ≤40 hops) closes the "separate directories" guard bypass; .github/workflows/api.yml >1 MB guard portable + fail-closed (pipefail, || exit 1). A1b pre-review Approve (0 B/M); its 3 Minors fixed, each new test bites; security + files.db 41, staging 148, tsc/eslint 0. **Needs B security-engineer + DevOps (CI config)** | A1b re-verify on BASE-161: clean, 148 pass, realOf + CI guard behaviour confirmed |
+| r1/reqb071-chain-specs-a3 | f11f37f34 | WIP (A3, @f11f37f3 off BASE-163; test only; EXPECTED RED until A2 r1/reqb071-bab-submit): chain 3a/3b/3 per Q17; node→Bab derivation rule open (A2); NOT for merge |
 | r1/rule-line-v2 | a425206c6 | READY (A3, @a425206c = 89961f9f + BASE-148 merge (comment kept; base figures.questionCount kept, output identical); exam-builder + bijak-papers 507, exam-core 221, tsc/vue-tsc 0; merge-tree clean); A4 pre-review AwM (merge resolution exact; nit: T48 comment :780 still quotes old line); B2 delta |
 | r1/servability-stimuli-once | f76f729a8 | READY (A4, @f76f729a, contains chain tip + BASE-107): spy spec pins one stimulus read per chunk + 2 comments; optional; step 6b |
 | r1/t04-minors | 82828a68a | MERGED by B1 as BASE-119 e927c3ee @8ae70d6e (reviewed SHA; 82828a68 delta not merged: optional test-only, left) |
@@ -577,8 +578,6 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t42b-intake-acs | 34d86311e | READY (A2, @34d86311 on 5318a971; test-only Minor): refused accept deletes the figure copy storage object (mutation: drop files.discard → red); 6/6; B2 small | A1b pre-review: Approve (mutation bites) |
 
 **Merged content, origin head has only base-merge commits since (no new work):** r1/a4chain-minors 86dd7ad67, r1/ha15-blueprint-evidence 7e5d637e5, r1/overview-getmany-parallel 2809a87fe, r1/reqb032-pinned-rule 167986eff, r1/t44-blueprint-fields 072d8f4b4, r1/t48-builder-parity 10c624376
-
-**New branches not yet triaged:** r1/reqb071-chain-specs-a3 f11f37f34
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
