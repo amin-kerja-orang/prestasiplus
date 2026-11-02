@@ -842,6 +842,113 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     })
   })
 
+  // B2 cycle 17 Minor on T43 ("no chain step runs Jana Kertas with a KBAT quota above 0"): every Kontrak above uses kbatMarks 0. Here a Kontrak asks for
+  // 3 KBAT marks in a 4-question Bahagian; the pool holds 3 KBAT and 6 non-KBAT MCQs (1 mark each), so the quota is binding: a draw that ignored it would
+  // almost never hit exactly 3. The KBAT marks of the generated paper are counted from the pinned versions (leaf cognitive levels mengaplikasi to mencipta).
+  describe('6b. Jana Kertas under a Kontrak with a KBAT quota above 0', () => {
+    const KBAT_LEVELS = "('mengaplikasi', 'menganalisis', 'menilai', 'mencipta')"
+    const kbatIds: string[] = []
+    const plainIds: string[] = []
+
+    const makeKontrak = async (kertas: number, code: string, count: number, kbatMarks: number): Promise<void> => {
+      const pool = `MAT${String(kertas)}-A`
+      const create = await admin.post('/api/admin/blueprints', {
+        subject: 'MAT',
+        kertas,
+        source: 'Spec',
+        code,
+        durationMin: 30,
+        instructions: ['Jawab semua soalan.'],
+        sections: [
+          {
+            label: 'Bahagian A',
+            pool,
+            markBudget: count,
+            questionCount: count,
+            rule: { type: 'all' },
+            profile: { kind: 'bahagian', groups: [{ from: 1, to: count, tpMin: 1, tpMax: 6 }] },
+            quota: { basis: 'questions', lines: [{ unit: { kind: 'unit', nodeId: fx.unit }, value: count }] },
+            kbatMarks,
+          },
+        ],
+      })
+      expect(create.status, JSON.stringify(create.body)).toBe(201)
+      const ev = await admin.post(`/api/admin/blueprints/MAT/${String(kertas)}/evidence`, {
+        kind: 'lpm_format',
+        body: 'lpm',
+        year: 2025,
+        paperCode: `1449/${String(kertas)}`,
+        values: { durationMin: 30, totalMarks: count, sections: [{ position: 1, markBudget: count, rule: { type: 'all' }, questionCount: count }] },
+      })
+      expect(ev.status, JSON.stringify(ev.body)).toBe(201)
+      const ok = await admin.post(`/api/admin/blueprints/MAT/${String(kertas)}/verify`, { note: 'Struktur disemak dengan dokumen format LPM.' })
+      expect(ok.status, JSON.stringify(ok.body)).toBe(200)
+      expect(ok.body.data).toMatchObject({ source: 'Disahkan', servesStudents: true })
+    }
+
+    const kbatMarksOf = async (paperId: string): Promise<{ questions: number; kbat: number; total: number }> => {
+      const [row] = await db.query<{ questions: string; kbat: string; total: string }>(
+        `select count(distinct pl.question_id) questions,
+                coalesce(sum(qp.marks) filter (where qp.cognitive_level in ${KBAT_LEVELS}), 0) kbat,
+                coalesce(sum(qp.marks), 0) total
+           from paper_sections s
+           join paper_placements pl on pl.paper_section_id = s.id
+           join question_versions v on v.question_id = pl.question_id and v.version_no = pl.pinned_version_no
+           join question_parts qp on qp.question_version_id = v.id
+          where s.paper_id = $1`,
+        [paperId],
+      )
+      return { questions: Number(row!.questions), kbat: Number(row!.kbat), total: Number(row!.total) }
+    }
+
+    it('the questions: 3 KBAT and 6 non-KBAT MCQs of 1 mark, approved', async () => {
+      // the plain ones first, so the KBAT ones have the HIGHEST ids: a draw that ignored the quota and took the lowest ids would then miss it
+      for (let i = 0; i < 6; i++) plainIds.push(await createQuestion(mcqBody(`Soalan biasa ${String(i + 1)}: berapakah ${String(i + 2)} tambah ${String(i + 3)}?`)))
+      for (let i = 0; i < 3; i++) kbatIds.push(await createQuestion(mcqBody(`Soalan KBAT ${String(i + 1)}: nilaikan hubungan antara panjang dan lebar segi empat tepat.`, { cognitiveLevel: 'menganalisis' })))
+      await advance([...kbatIds, ...plainIds])
+      // the KBAT split really is in the stored leaves
+      const levels = await db.query<{ id: string; kbat: boolean }>(
+        `select q.id::text id, bool_or(qp.cognitive_level in ${KBAT_LEVELS}) kbat from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no
+          join question_parts qp on qp.question_version_id = v.id where q.id = any($1::bigint[]) group by q.id`,
+        [[...kbatIds, ...plainIds]],
+      )
+      expect(levels.filter((r) => r.kbat).map((r) => r.id).sort()).toEqual([...kbatIds].sort())
+    })
+
+    // The section pool a question may carry must exist in an active Kontrak of its subject, so both Kontrak are made before the pools are tagged.
+    // MAT kertas 5: 3 KBAT marks out of 4 (reachable). MAT kertas 6: 5 KBAT marks out of 5 (the pool holds only 3 KBAT questions).
+    it('two Disahkan Kontrak with a KBAT quota are made, and the questions are tagged to their pools MAT5-A and MAT6-A', async () => {
+      await makeKontrak(5, 'MAT/E2E-K', 4, 3)
+      await makeKontrak(6, 'MAT/E2E-K2', 5, 5)
+      for (const id of [...kbatIds, ...plainIds]) {
+        const res = await admin.put(`/api/admin/section-pools/${id}`, { pools: ['MAT5-A', 'MAT6-A'] })
+        expect(res.status, JSON.stringify(res.body)).toBe(200)
+        expect(res.body.data.pools).toEqual(['MAT5-A', 'MAT6-A'])
+      }
+    })
+
+    it('a Disahkan Kontrak asks for 3 KBAT marks out of 4: the generated paper has exactly 4 questions and exactly 3 KBAT marks', async () => {
+      const res = await pupil.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 5 })
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      const paperId = res.body.data.paperId as string
+      expect((await db.query<{ kind: string }>(`select kind from papers where id = $1`, [paperId]))[0]!.kind).toBe('jana')
+      expect(await kbatMarksOf(paperId)).toEqual({ questions: 4, kbat: 3, total: 4 })
+      // the KBAT questions are exactly the three of the pool (all of them), plus one non-KBAT
+      const placed = (await db.query<{ id: string }>(`select pl.question_id::text id from paper_placements pl join paper_sections s on s.id = pl.paper_section_id where s.paper_id = $1`, [paperId])).map((r) => r.id)
+      for (const id of kbatIds) expect(placed, id).toContain(id)
+      expect(placed.filter((id) => plainIds.includes(id))).toHaveLength(1)
+    })
+
+    it('an unreachable KBAT quota is refused with SHORTAGE (kind kbat), never a paper that misses the quota', async () => {
+      const before = Number((await db.query<{ n: string }>(`select count(*) n from papers where kind = 'jana'`))[0]!.n)
+      const res = await pupil.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 6 })
+      expect(res.status, JSON.stringify(res.body)).toBe(422)
+      expect(res.body.error).toMatchObject({ code: 'SHORTAGE', message: 'Kertas tidak dapat dijana kerana soalan tidak mencukupi.' })
+      expect(res.body.error.details.shortages).toEqual([expect.objectContaining({ section: 'Bahagian A', kind: 'kbat', need: 5, have: 3 })])
+      expect(Number((await db.query<{ n: string }>(`select count(*) n from papers where kind = 'jana'`))[0]!.n)).toBe(before)
+    })
+  })
+
   // R1-20.3 negatives.
   describe('7. negatives: the T33 gate, a draft is invisible, a withdrawn paper', () => {
     // R1-20.3 / PIPE AC-18.1 (T33 gate, merged at BASE-60): approving an SPM-bound question needs a cognitive level per leaf and the kertas.
