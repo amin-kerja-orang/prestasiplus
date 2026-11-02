@@ -115,6 +115,33 @@ async function deleteDraft(page: Page, id: string, title: string): Promise<void>
   if (await button.count()) await button.first().click()
 }
 
+/**
+ * Runs `body`, then `cleanup`, and reports the first failure. A `finally` would let a failing cleanup replace it: after
+ * a test timeout the page is closed, so the cleanup's own "Target page closed" hid the action that had really hung. A
+ * cleanup failure still fails a test whose body passed (its Tarik balik steps are checks too).
+ */
+async function withCleanup(
+  info: TestInfo,
+  body: () => Promise<void>,
+  cleanup: () => Promise<void>,
+): Promise<void> {
+  let failed = false
+  let first: unknown
+  try {
+    await body()
+  } catch (e) {
+    failed = true
+    first = e
+  }
+  try {
+    await cleanup()
+  } catch (e) {
+    if (!failed) throw e
+    info.annotations.push({ type: 'cleanup-failed', description: String(e) })
+  }
+  if (failed) throw first
+}
+
 /** A student in a SEPARATE browser context sees the paper title in the Bijak list. */
 async function studentSees(browser: Browser, info: TestInfo, title: string): Promise<void> {
   const context = await browser.newContext({
@@ -232,12 +259,12 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () =
 
   test('Terbitkan on an empty draft is refused with the gap list, then cleaned up @bijak', async ({
     page,
-  }) => {
+  }, testInfo) => {
     const title = `E2E-http refuse ${Date.now()}`
     await login(page, ADMIN_USER ?? '', ADMIN_PASS ?? '')
     await page.goto('/admin/spm/kertas')
     const id = await createDraft(page, title)
-    try {
+    await withCleanup(testInfo, async () => {
       // R1-F09: Terbitkan is disabled while the check fails; the reason is shown as text.
       await expect(page.getByTestId('paper-publish')).toBeDisabled()
       await expect(page.getByTestId('publish-errors')).toContainText(
@@ -246,10 +273,10 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () =
       await expect(page.getByTestId('budget-issues')).toContainText('Kurang') // e.g. "Objektif: Kurang 10 soalan (perlu 10, ada 0)" (Needs confirmation: exact numbers)
       await expect(page.getByTestId('paper-unpublish')).toHaveCount(0)
       await expectNoHorizontalScrollHttp(page)
-    } finally {
+    }, async () => {
       // Cleanup: delete the draft from the list.
       await deleteDraft(page, id, title)
-    }
+    })
   })
 
   test('draft, assemble to Sepadan, Simpan, Terbitkan, student sees it, Tarik balik, delete @bijak', async ({
@@ -266,7 +293,7 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () =
     await expect(page.getByTestId('papers-page')).toBeVisible()
     await expectNoHorizontalScrollHttp(page)
     const id = await createDraft(page, title)
-    try {
+    await withCleanup(testInfo, async () => {
       await assembleUntilMatching(page)
       await page.getByTestId('paper-save').click()
       await expect(page.getByTestId('paper-save')).toBeDisabled()
@@ -295,7 +322,7 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () =
       await expectNoHorizontalScrollHttp(page)
 
       await studentSees(browser, testInfo, title)
-    } finally {
+    }, async () => {
       // Cleanup so staging is not polluted: Tarik balik, then delete the draft.
       if (await page.getByTestId('paper-unpublish').isVisible()) {
         await page.getByTestId('paper-unpublish').click()
@@ -304,6 +331,6 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () =
         await expect(page.getByTestId('paper-publish')).toBeVisible()
       }
       await deleteDraft(page, id, title)
-    }
+    })
   })
 })

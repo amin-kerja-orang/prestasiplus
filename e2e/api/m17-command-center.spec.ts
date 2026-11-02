@@ -92,9 +92,10 @@ test.describe('M17 Command Center board (Admin Pusat) @api', () => {
     expect(data.scope).toBe('platform')
 
     await expect(page.getByTestId('cc-s2')).toBeVisible({ timeout: 20_000 })
-    await expect(page).toHaveTitle(/Langsung/) // PM-01 "Langsung" (was Command Center), docs/requirements/v2-portals.md
+    // PM-01 "Langsung" (was Command Center), docs/requirements/v2-portals.md; tab title format: `useShellTabTitle`.
+    await expect(page).toHaveTitle(/^Langsung \| PRESTASIPLUS$/)
     // The staff shell prints the page title (DsPageHeader showTitle="auto"), so the board has no heading of its own.
-    await expect(page.locator('h1').first()).toHaveText('Langsung')
+    await expect(page.getByTestId('pentadbiran-header').locator('h1')).toHaveText('Langsung')
     // DV-M17-54: no LIVE pill, clock or header buttons
     await expect(page.getByTestId('cc-live-badge')).toHaveCount(0)
     await expect(page.getByTestId('cc-clock')).toHaveCount(0)
