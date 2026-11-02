@@ -99,3 +99,14 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
 - **V2 evidence:** docs/discovery/cloud-student-mechanism.md:318,360,366; docs/discovery/v2-parity/admin.md:46; docs/design/v2-admin-student-pipeline.md §2.1–2.2.
 - **Owner:** C1 (menu.ts + menu.test.ts). E2E-M04-54 is re-opened (test.fixme removed), and both routes are tested through the menu/link at 375/768/1280.
 - *Decided under delegation; for user review.*
+
+## Q16 (DECIDED UNDER DELEGATION 2026-11-02 09:12 MYT by Mandor, best approach; no V2 reference): R1E2E-10, bulk Terbitkan on already-Diterbitkan rows
+- **Decision:** already-Diterbitkan rows in a bulk Terbitkan are an idempotent no-op:
+  - no error, and not counted in `affected`;
+  - the exact per-row reason "Soalan ini sudah diterbitkan.";
+  - the other rows in the batch are still processed;
+  - no audit or transition entry for no-op rows.
+- **Rationale:** the action is idempotent. Mandor checked docs/discovery and v2-*; V2 has no reference for this bulk flow.
+- **Tests:** a mixed batch (Lulus + Diterbitkan) publishes the Lulus rows and skips the Diterbitkan rows with the reason; an all-Diterbitkan batch gives affected 0 and no error.
+- **Owner:** A2 (r1/r1e2e10-bulk-publish-noop). B4 re-runs S2e after the merge.
+- *Decided under delegation; for user review.*
