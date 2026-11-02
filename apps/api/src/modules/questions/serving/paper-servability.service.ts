@@ -27,7 +27,8 @@ export interface PaperAttention {
  * withdrawn) it says whether pupils can open it and where, and for a paper that is not yet open what stands in the way.
  *
  * This is the AC-04.3 read ("where pupils open it" at paper level). It has no route of its own in this module's `ServabilityController`:
- * REQ-A-018 exposes it on a separate admin controller, because that path sits under `admin/questions` (`GET /api/admin/questions/{id}/paper-servability`,
+ * it is exposed by REQ-A-018 (r1/reqa018-paper-servability-route) once merged, on a separate admin controller, because that path sits under
+ * `admin/questions` (`GET /api/admin/questions/{id}/paper-servability`,
  * `pilihan` papers only), and the frontend consumer (the "Dilihat murid di" panel) is its own branch. `ServabilityReadsService` carries the lane and
  * overview reads, this one the single-paper read; expose it through that route rather than adding a second reader.
  *
