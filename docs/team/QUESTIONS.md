@@ -165,3 +165,7 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
 - **The user chose (a): FIX ALL.** This covers the fix units needed for a fully green CI under the freeze: (1) the A3 e2e-profile seed step (D72 demo schools; groups 1–3); (2) the stale specs spm-hub "Semua Tahap" + CC-01 "Langsung" (design cites); (3) D-02 (Darjah 4 → Tingkatan 4, per A4's classification); (4) B4's fix for the 2 bijak specs (A1b reviews).
 - The Kontrak fix REQ-B-090 was approved under the freeze and merged as **BASE-213 2fabf472** (r1/b1-kontrak-tabs-fix @881a0b06).
 - Each unit: reviewer + A1 gate → Mandor pushes. Mandor dispatches frontend CI (verify + e2e@api) once, on the final candidate (no mid-way CI except to prove the bijak root cause). The deploy stays blocked until that CI is green (Q21).
+
+## Q20 update (USER DECISION, REQ-B-102, relayed by Mandor 2026-11-02 ~22:30 MYT): integrator role back to team B
+- **The B1 Integrator role is back with team B** (REQ-B-102 changes Q20). **Team A stops merging; A1 is no longer the integrator.** Team B merged BASE-218..221 (tip 43fef051) and dispatched frontend CI 41462039389 (api_ref=43fef051).
+- Team A continues as a developer/reviewer lane. Docs updates go to B (B1 merges).
