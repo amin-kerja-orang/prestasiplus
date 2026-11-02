@@ -300,7 +300,7 @@ describe('QuizRunner question', () => {
     await t(w, 'btn-check').trigger('click')
     await flushPromises()
     const notice = t(w, 'trial-exhausted')
-    expect(notice.text()).toContain('Percubaan percuma anda telah habis.')
+    expect(notice.text()).toContain('Baki percubaan percuma anda telah habis.')
     const link = notice.get('a')
     expect(link.text()).toBe('Langgan untuk akses tanpa had')
     expect(link.attributes('href')).toBe('/pricing')

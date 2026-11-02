@@ -3,6 +3,8 @@
  * M05-T5 / T7 and M06 import these and override single keys where their SRS says so.
  */
 
+import { PRACTICE_ERRORS } from '@pp/contract'
+
 import type { QuizLabels } from './quiz-types'
 
 /**
@@ -56,6 +58,9 @@ export const PRACTICE_LABELS: QuizLabels = {
   networkErrorFallback: 'Maaf, terdapat masalah memuatkan kuiz.',
 }
 
-/** Mid-quiz free-trial limit (402 `TRIAL_EXHAUSTED` on #5); the link text is the one of the config page notice. */
-export const TRIAL_EXHAUSTED_TEXT = 'Percubaan percuma anda telah habis.'
+/**
+ * Mid-quiz free-trial limit (402 `TRIAL_EXHAUSTED` on #5): the contract text, which the server returns too
+ * (`PRACTICE_ERRORS.TRIAL_EXHAUSTED`, packages/contract practice/schema.ts). The link text is the one of the config page notice.
+ */
+export const TRIAL_EXHAUSTED_TEXT: string = PRACTICE_ERRORS.TRIAL_EXHAUSTED.messages[0]
 export const SUBSCRIBE_LINK_TEXT = 'Langgan untuk akses tanpa had'

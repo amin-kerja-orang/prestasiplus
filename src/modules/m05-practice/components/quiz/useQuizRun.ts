@@ -7,7 +7,8 @@
  * - the timer counts up from the moment the quiz shows, +1 per second, and stops on the results;
  * - a check response of any JSON shape (an error body too) marks the question checked; a network
  *   failure changes nothing (FR-M05-79);
- * - exception: a 402 `TRIAL_EXHAUSTED` leaves the question unchecked and unscored and sets `trialExhausted`;
+ * - exception: a 402 `TRIAL_EXHAUSTED` (the only 402 in the API/contract is TRIAL_EXHAUSTED, start + check,
+ *   packages/contract practice/paths.ts:82 and :106) leaves the question unchecked and unscored and sets `trialExhausted`;
  * - only checked answers are kept and submitted; the score shown is the client's own count;
  * - a failed submit leaves the results without the rewards card.
  * With `timeLimitSec` (Q6, PROPOSED) the timer counts down and the run finishes at 0.
