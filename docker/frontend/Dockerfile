@@ -27,9 +27,11 @@ ENV VITE_API_MODE=$VITE_API_MODE \
     VITE_MOCK_LATENCY_MS=$VITE_MOCK_LATENCY_MS \
     VITE_API_BASE_URL=$VITE_API_BASE_URL
 
-# Type-check, lint and tests run in CI, not here. The demo guard fails the build if test hooks leak.
+# Type-check, lint and tests run in CI, not here. The demo guard fails the build if test hooks leak; an http build
+# (production, staging) also fails if anything of the in-browser mock or a source map is in it.
 RUN npx vite build --mode "$BUILD_MODE" --outDir dist \
- && if [ "$BUILD_MODE" = "demo" ]; then node scripts/check-demo-bundle.mjs dist; fi
+ && if [ "$BUILD_MODE" = "demo" ]; then node scripts/check-demo-bundle.mjs dist; fi \
+ && if [ "$VITE_API_MODE" = "http" ]; then node scripts/check-demo-bundle.mjs dist --production; fi
 
 # ---- serve ----
 FROM nginx:1.27-alpine AS runtime

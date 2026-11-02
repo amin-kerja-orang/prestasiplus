@@ -56,6 +56,17 @@ jobs:
       - name: Build (vite build --mode demo; also generates auto-imports.d.ts and components.d.ts)
         run: npx vite build --mode demo
 
+      # Before the demo check on purpose: a demo size-budget failure must not hide a mock that came back in the production bundle.
+      - name: Production bundle check (http build as deploy/vps/compose.prod.yaml; no mock, no seed passwords, no source maps)
+        env:
+          VITE_API_MODE: http
+          VITE_TEST_HOOKS: 'false'
+          VITE_PROTOTYPE_SCOPE: 'on'
+          VITE_API_BASE_URL: ''
+        run: |
+          npx vite build --mode production --outDir dist-http
+          node scripts/check-demo-bundle.mjs dist-http --production
+
       - name: Demo bundle check (test hooks, markers, size budget)
         shell: bash
         run: |

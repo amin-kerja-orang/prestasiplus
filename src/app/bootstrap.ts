@@ -81,7 +81,9 @@ async function createTransport(
   /** Deferred demo boot only: resolves when the mock (and so the mock clock) is ready. */
   mockReady: Promise<unknown> | null
 }> {
-  if (isHttpMode()) {
+  // A literal env check, not `isHttpMode()`: the bundler folds only the literal, and that is what drops `import('@/mock')` from
+  // the http build. `scripts/check-demo-bundle.mjs --production` fails the build if the mock comes back.
+  if (import.meta.env.VITE_API_MODE === 'http') {
     // Cookie session (V2-T31): cookies always sent, the stored CSRF token goes on every write, and
     // the mock-era bearer header is dropped. `withSessionSliding` still sees the bearer on the way in.
     const transport = createHttpTransport({

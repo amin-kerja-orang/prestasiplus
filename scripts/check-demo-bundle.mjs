@@ -3,12 +3,17 @@
 // never ships `window.__mock`. Run against the e2e build (`dist-e2e/`) it must FAIL, which proves
 // the markers are really emitted when the hooks are built in.
 // It also enforces the size budget below (V2-T03, spike risk R7), but only for the default demo `dist`.
-// Usage: node scripts/check-demo-bundle.mjs [dist-path]   (default `dist`)
+// Usage: node scripts/check-demo-bundle.mjs [dist-path] [--production]   (default `dist`)
+// `--production` is for a `VITE_API_MODE=http` build (B3 N1, deploy/vps/compose.prod.yaml): it also fails on anything of the
+// in-browser mock (seed passwords, demo accounts, mock chunks) and on source maps. A demo build keeps its mock, so it does not use the flag.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { gzipSync } from 'node:zlib'
 
-const DIST = process.argv[2] ?? 'dist'
+const args = process.argv.slice(2)
+const PRODUCTION = args.includes('--production')
+const DIST_ARG = args.find((a) => a !== '--production')
+const DIST = DIST_ARG ?? 'dist'
 
 /**
  * - The dedicated sentinel `TEST_HOOKS_SENTINEL` of `src/mock/testing/hooks.ts` (keep in step; a
@@ -19,6 +24,16 @@ const DIST = process.argv[2] ?? 'dist'
  * @type {string[]}
  */
 const MARKERS = ['pp-test-hooks-sentinel-5c1f0e7a', '__charts', '__e2e/report-modal']
+
+/**
+ * What only the in-browser mock carries, so none of it may be in an http build: the boot hook of `src/app/bootstrap.ts`, the seed
+ * password and the demo accounts (`src/mock/core-data/accounts.ts`), and the fictitious default passwords (`m02-config.ts`).
+ * @type {string[]}
+ */
+const PRODUCTION_MARKERS = ['__MOCK_INIT__', 'Demo1234', '@demo.test', 'ContohAdm01', 'ContohImp01']
+
+/** A `mock/index.ts` chunk is named `mock-<hash>`. `mock-lib-<hash>` is `src/modules/m06-spm/components/mock-lib.ts`, the Mock Exam screens (no mock data). */
+const MOCK_CHUNK = /^mock-(?!lib-)[^\\/]*\.m?js$/
 
 if (!existsSync(join(DIST, 'index.html'))) {
   console.error(`check-demo-bundle: ${DIST}/index.html not found. Run the demo build first.`)
@@ -34,13 +49,20 @@ function files(dir) {
 }
 
 const scanned = files(DIST).filter((f) => /\.(js|mjs|cjs|html|css|map)$/.test(f))
+const checked = PRODUCTION ? [...MARKERS, ...PRODUCTION_MARKERS] : MARKERS
 const hits = scanned.flatMap((f) => {
   const text = readFileSync(f, 'utf8')
-  return MARKERS.filter((m) => text.includes(m)).map((m) => `${f}: ${m}`)
+  return checked.filter((m) => text.includes(m)).map((m) => `${f}: ${m}`)
 })
+if (PRODUCTION) {
+  for (const f of files(DIST)) {
+    if (f.endsWith('.map')) hits.push(`${f}: source map`)
+    if (MOCK_CHUNK.test(basename(f))) hits.push(`${f}: mock chunk`)
+  }
+}
 
 if (hits.length > 0) {
-  console.error(`check-demo-bundle: FAIL: test-hook marker found in ${DIST}:\n` + hits.join('\n'))
+  console.error(`check-demo-bundle: FAIL: test-hook${PRODUCTION ? ' or mock' : ''} marker found in ${DIST}:\n` + hits.join('\n'))
   process.exit(1)
 }
 
@@ -86,7 +108,7 @@ function measure(list) {
 const fmt = (n) => n.toLocaleString('en')
 
 // Only the default demo `dist` is budgeted (an explicit path, e.g. the e2e build, is not).
-if (process.argv[2] === undefined) {
+if (DIST_ARG === undefined && !PRODUCTION) {
   const all = files(DIST)
   /** @param {string} ext */
   const entry = (ext) =>
@@ -115,5 +137,5 @@ if (process.argv[2] === undefined) {
 }
 
 console.log(
-  `check-demo-bundle: OK (${String(MARKERS.length)} marker(s), ${String(scanned.length)} file(s) checked in ${DIST})`,
+  `check-demo-bundle: OK (${String(checked.length)} marker(s), ${String(scanned.length)} file(s) checked in ${DIST}${PRODUCTION ? ', production' : ''})`,
 )

@@ -69,7 +69,8 @@ slug, contoh `npm run test:e2e:module -- m01-authentication --project=mobile`.
 Ujian E2E dibina ke folder `dist-e2e/` (`npm run build:e2e`, dijalankan secara automatik oleh
 Playwright), berasingan daripada binaan demo dalam `dist/`, supaya `dist/` tidak pernah mengandungi
 test hooks. Pengawal binaan demo boleh disemak pada folder lain:
-`node scripts/check-demo-bundle.mjs dist-e2e`.
+`node scripts/check-demo-bundle.mjs dist-e2e`. Binaan `VITE_API_MODE=http` disemak dengan
+`node scripts/check-demo-bundle.mjs <folder> --production`: gagal jika ada mock, kata laluan benih atau source map.
 
 Ujian E2E yang meliputi tingkah laku yang belum diperhatikan di laman sebenar diberi tag `@provisional`
 dalam tajuk ujian. Tajuk ujian bermula dengan ID SRS (contoh `E2E-M01-03 ...`) dan membawa tag modul
