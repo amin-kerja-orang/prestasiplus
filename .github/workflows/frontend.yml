@@ -157,6 +157,7 @@ jobs:
       # be:build first: its prebuild runs `prisma generate`, which the seed imports (src/db/generated).
       # Then the T26 local/E2E seed (docs/ops/e2e-seed.md; this job's NODE_ENV=development, E2E_SEED only on that
       # command). An API ref without it (e.g. the older feature/v2-backend) gets a notice and the poc seed only.
+      # E2E_DEMO_SECONDARY: the specs use DEMO002..004 as their other schools, and D72 hides primary schools.
       - name: API - build, migrate, seed (poc profile, then e2e profile)
         working-directory: api
         shell: bash
@@ -166,7 +167,7 @@ jobs:
           npm run be:db:migrate
           npm run be:db:seed
           if [ -f apps/api/prisma/seed/e2e.ts ]; then
-            E2E_SEED=1 npm run be:db:seed -- --profile=e2e
+            E2E_SEED=1 E2E_DEMO_SECONDARY=1 npm run be:db:seed -- --profile=e2e
           else
             echo "::notice::API ref ${API_REF} has no e2e seed profile (apps/api/prisma/seed/e2e.ts); poc profile only."
           fi

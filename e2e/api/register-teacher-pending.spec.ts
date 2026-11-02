@@ -136,7 +136,7 @@ test.describe('register: teacher pending verification @api', () => {
     const password = newPassword()
     await gotoApi(page, '/register')
     await fillCommon(page, 'Murid Contoh Baru', email, password)
-    await page.getByTestId('grade-3').click()
+    await page.getByTestId('grade-9').click() // Tingkatan 3 (D72: no Darjah)
 
     const response = page.waitForResponse(
       (r) => r.url().endsWith('/api/auth/register') && r.request().method() === 'POST',

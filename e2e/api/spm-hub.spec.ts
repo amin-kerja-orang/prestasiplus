@@ -131,7 +131,7 @@ test.describe('M06 SPM hub @api', () => {
     const levelIds = Object.keys(config.levelCounts)
     expect(levelIds).toHaveLength(2)
     const levels = page.getByTestId('config-levels').getByRole('button')
-    await expect(levels).toHaveText([/Tingkatan 4/, /Tingkatan 5/])
+    await expect(levels).toHaveText([/Semua Tahap/, /Tingkatan 4/, /Tingkatan 5/])
     for (const id of levelIds) {
       expect(digits(await page.getByTestId(`level-${id}`).getByTestId('level-count').textContent())).toBe(
         String(config.levelCounts[id]),

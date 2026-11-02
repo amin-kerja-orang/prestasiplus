@@ -84,7 +84,7 @@ async function load(): Promise<void> {
   }
 }
 onMounted(load)
-watch(() => [route.params.subjek, route.params.kertas, route.query.baharu], load)
+watch([() => route.params.subjek, () => route.params.kertas, () => route.query.baharu], load)
 
 /* -------------------------------------------------------------------------- issues, tabs */
 const refused = ref<Issue[]>([])
