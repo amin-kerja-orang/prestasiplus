@@ -529,8 +529,16 @@ The B4 pack chain was walked by HTTP on SN/2 (4541/2): **96 MATCH, 1 scanner fal
 - Pack doc errors (A3): MAT/2 can't reach Terbit with the recipe; Guru intake needs INTAKE_TEACHER_ENABLED; step-8 wording.
 - Low bug, fixed under D9: "(draf)" stays in published titles → r1/publish-title-draft (A2).
 
+
+### Cycle 35 risk note: Prisma 7.10.1 migrations are NOT atomic (02 Nov, 01:04 UTC)
+A3 dev-1 rehearsed this locally. `prisma migrate deploy` does not run a migration file in one transaction. A failed statement leaves the earlier statements of the same file applied. Seen: CREATE EXTENSION pg_trgm survived a failed 0106 CREATE INDEX; a probe left a table and an extension.
+**Risk for deploy (B4/runbook):** after a lock timeout or a failure mid-file, `resolve --rolled-back` followed by a redeploy fails with "already exists" until stray objects are dropped. The runbook §2.4/§8 on ac-gaps gets an object check (pg_index plus \dx) before resolve (A3 docs).
+- The 0106/0107 header comments ("one transaction") are inaccurate. They are corrected in the runbook plus a deviations row; migration files are not edited (checksums).
+- 0105 atomicity and lock hold are being re-checked under real Prisma (A4).
+- ha18-minors must restore 0105 byte-for-byte (A2); it is IN-PROGRESS until then.
+
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 01:03 UTC, BASE ef987d27)
+### Team A open branches: heads from origin (auto, 2026-11-02 01:04 UTC, BASE b34f4cab)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -550,7 +558,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/drop-lock-enums | 4d1424c8b | READY (A1a + A2, @4d1424c8, BASE-105): contract drops dead CHAPTER_LOCKED + locked states; negative contract tests; row: no FE reader depends on them (dead local FE types = C follow-up); contract 1435/1435, emit no diff, check ok, api tsc 0; with C reqa014 merged: vue-tsc 0, m03/m05 659/659; merge after reqa014-no-chapter-lock-fe; B2 |
 | r1/ha17-ac-coverage | 157b371c3 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b; head 157b371c |
 | r1/ha18-gate-facts | f988b670f | MERGED by B1 as BASE-132 259f4616 @a9ffe246 (alone, not paired with reqb052; pinned-version-rule check by A4 running). Origin head f988b670 → follow-up r1/ha18-minors |
-| r1/ha18-minors | 301e9c4bc | READY (A2, @301e9c4b; B2 delta a9ffe246..301e9c4b); A1b Approve; proof A4: BASE-133 + reqb052 + ha18-minors 495 + 1 todo green, migration-0105 + accepted-duplicates + gate-facts 22/22. **Pending one more commit (A2): restore the 0105 migration.sql byte-for-byte to the BASE-132 version** (0105 is merged; a comment edit changes the checksum; the "one transaction" claim is wrong on Prisma 7.10.1). B: run `npm run check -w @pp/contract` (paths.ts/openapi touched) |
+| r1/ha18-minors | 301e9c4bc | IN-PROGRESS (A2; origin @301e9c4b is NOT for review): waiting for the A2 commit that restores 0105 migration.sql byte-for-byte to BASE-132 (checksum). READY only after the new head is pushed + tests re-run. Content as reviewed: not_duplicate idempotent / 409 itemLocked, duplicateId audit, e2e gate-dismiss test, contract description (A1b Approve on 301e9c4b) |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
 | r1/ha24-release-input | f644a9ecb | READY (A3 docs, @f644a9ec on BASE-131: 0105/window wording aligned, publish-lock-share cite e223b433; H-A18 approved/pair wording; release-input 0104–0110 reservations (REQ-B-066); KIV 38 rows incl. REQ-B-059 cap, setGroupLabel label-only, PKSK, number-clash wider check); A1a pre-review Approve on rows 35/36; B1/B2 |
 | r1/ha26-team-a-state | edbf61edb | READY (A3 docs, @edbf61ed: merged to BASE-131, all open heads incl. B2 c23 approvals, §4 refreshed, KIV 38); B1 |
@@ -580,7 +588,6 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/reqb067-etl-guards | d84326cee | CR (A1a, @d84326ce off BASE-132; + comment-only note in wipe.ts/render.ts, not affected): REQ-B-067 real (macOS-visible) defects: (1) files.ts realOf resolves the nearest existing ancestor (guard bypass via symlinked ancestor, also on Linux); (2) .github/workflows/api.yml size guard portable (BSD stat failed open). Tests bite; security 23, files.db 15, tsc/eslint 0. Touches CI config → B DevOps + security-engineer review; A1b pre-review |
 | r1/rule-line-v2 | 89961f9f2 | READY (A3, @89961f9f, BASE-109; USER Q13 2026-11-02 follow V2): rules.ts + exam-core paper-model.ts → "Jawab {N} soalan sahaja." ("Jawab semua soalan." unchanged); new exam-core test (bites); contract examples + openapi; AC-06.1/standards/catalogue aligned; PoC/golden authored "daripada" = accepted limit (deviation row); A2 pre-review Minors closed (eslint keeps _questionCount disable, stated); exam-core 219, bijak-papers 109, conformance 403; FE copies REQ-A-035 (C); B2 |
 | r1/servability-stimuli-once | f76f729a8 | READY (A4, @f76f729a, contains chain tip + BASE-107): spy spec pins one stimulus read per chunk + 2 comments; optional; step 6b |
-| r1/stimulus-list-d72 | b45ce5197 | READY — B2 c23 APPROVED @b45ce519 (AwM) |
 | r1/t04-minors | 82828a68a | MERGED by B1 as BASE-119 e927c3ee @8ae70d6e (reviewed SHA; 82828a68 delta not merged: optional test-only, left) |
 | r1/t31-builder-wire | eb0346d25 | READY (A3, @eb0346d2): already an ancestor of C reqa008 f85db8ff (B2 c23 AwM) → merging reqa008 brings T31; A4 pair check on BASE-129 GREEN (exam-builder 438, m28 FE 650, vue-tsc 0); nothing needed from team A. B2 |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
