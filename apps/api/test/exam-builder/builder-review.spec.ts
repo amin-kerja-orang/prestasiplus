@@ -63,6 +63,19 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
     return res.body.data.id as string
   }
   const sectionsOf = async (id: string): Promise<string[]> => ((await admin.get(`/api/admin/papers/${id}`)).body.data.paper.sections as { id: string }[]).map((s) => s.id)
+  /**
+   * Every unit of a section pool, all pages. The bank grows with each test of this file (and every default question shares one stem), so a
+   * single page of 100 stops holding a late fixture once the file creates more than 100 pool units: walk `meta.totalPages` instead.
+   */
+  async function poolUnits<T>(paper: string, sectionId: string, query = ''): Promise<T[]> {
+    const units: T[] = []
+    for (let page = 1; ; page++) {
+      const res = await admin.get(`/api/admin/papers/${paper}/sections/${sectionId}/pool?${query}${query ? '&' : ''}pageSize=100&page=${page}`)
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      units.push(...(res.body.data as T[]))
+      if (page >= (res.body.meta.totalPages as number)) return units
+    }
+  }
   const place = (paper: string, sectionId: string, questionId: string) => admin.post(`/api/admin/papers/${paper}/placements`, { sectionId, questionId })
   /** A full MAT kertas 2 paper: A 3 questions, B 1, C 2 (as the PoC blueprint); every question is tagged with its section pool. */
   async function fullPaper(opts: { tagged?: boolean; last?: string } = {}): Promise<{ paper: string; ids: string[]; sections: string[] }> {
@@ -577,9 +590,8 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
       // section pool (another paper, nothing placed yet): the group is ONE unit with its stimuli
       const fresh = await newPaper()
       const [fa] = await sectionsOf(fresh)
-      const pool = await admin.get(`/api/admin/papers/${fresh}/sections/${fa!}/pool?pageSize=100`)
-      expect(pool.status, JSON.stringify(pool.body)).toBe(200)
-      const poolUnit = (pool.body.data as { groupId?: string; stimuli?: Wire[]; questionIds: string[] }[]).find((u) => u.groupId === g.id)!
+      const pool = await poolUnits<{ groupId?: string; stimuli?: Wire[]; questionIds: string[] }>(fresh, fa!)
+      const poolUnit = pool.find((u) => u.groupId === g.id)!
       expect(poolUnit.questionIds).toEqual(g.members)
       check(poolUnit.stimuli!)
 
@@ -706,7 +718,7 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
 
       const paper = await newPaper()
       const sections = await sectionsOf(paper)
-      const pool = (await admin.get(`/api/admin/papers/${paper}/sections/${sections[0]}/pool?q=${encodeURIComponent('hasil tambah')}&pageSize=100`)).body.data as { groupId?: string; stimulus?: unknown; questionIds: string[]; eligible: boolean; reasons: string[] }[]
+      const pool = await poolUnits<{ groupId?: string; stimulus?: unknown; questionIds: string[]; eligible: boolean; reasons: string[] }>(paper, sections[0]!, `q=${encodeURIComponent('hasil tambah')}`)
       const unit = pool.find((u) => u.questionIds.includes(lone))!
       expect(unit).toMatchObject({ groupId, questionIds: [lone], eligible: false })
       expect(unit.stimulus).toBeDefined()
@@ -774,7 +786,7 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
       expect((await place(paper, a!, members[0]!)).status).toBe(201)
       const review = (await admin.get(`/api/admin/papers/${paper}/review`)).body.data
       expect(review.blockers).not.toContain('Kumpulan perlu sekurang-kurangnya 2 soalan.')
-      const pool = (await admin.get(`/api/admin/papers/${paper}/sections/${a}/pool?pageSize=100`)).body.data as { groupId?: string; stimulus?: unknown; questionIds: string[]; reasons: string[] }[]
+      const pool = await poolUnits<{ groupId?: string; stimulus?: unknown; questionIds: string[]; reasons: string[] }>(paper, a!)
       const unit = pool.find((u) => u.questionIds.includes(members[0]!))!
       expect(unit.groupId).toBe(groupId)
       expect(unit.stimulus).toBeUndefined()
