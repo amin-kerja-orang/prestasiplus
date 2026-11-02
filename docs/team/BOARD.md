@@ -572,7 +572,7 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 - **Disk:** check `docker system df` and prune orphaned anonymous test volumes when there are 0 containers. A3 reclaimed 3.4 GB this way.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 06:24 UTC, BASE 87466acc)
+### Team A open branches: heads from origin (auto, 2026-11-02 06:30 UTC, BASE 87466acc)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -583,7 +583,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
 | r1/reqb074-takedown-lows | 33b0a0b1c | SUPERSEDED: 45a75f68 merged as BASE-195; the later commit 33b0a0b1 carried the Q18 rule, which the user overrode (REQ-B-077). Do not merge 33b0a0b1. Follow-ups: r1/reqb074-dsg-spec-fix, then r1/reqb076-live-takedown (A1b) |
 | r1/reqb076-approve-gate | d23b43f3b | READY (A1b, @d23b43f3; A4 FINAL APPROVE: BASE-205 + head r1 134 + 1 todo / 0 failed, questions-workflow 320/320, tsc 0; merge-tree clean vs BASE-205). REQ-A-051 to B (after B4's final E2E on BASE-205). Needs a B2 delta review (B2 had approved the superseded c8965bb8) |
-| r1/reqb082-docs | 0fcac9901 | IN-PROGRESS (A3, @0fcac990 → BASE-205 sync commit to follow: the owner included the held units, freeze item removed, REQ-B-076 status, B4 final E2E on BASE-205). Do not merge 0fcac990 |
+| r1/reqb079-sweepuser-followup | 0964edaee | R2 CANDIDATE, not for R1 (A3, @0964edae from BASE-205: sweepUser try/catch + logger.warn so one dead sitting no longer 404s the pupil's whole history; override audit-detail asserts; a Terbit null-blueprint /review test; exam-builder + bijak-attempts 667/667; tsc 0). KIV 55 |
+| r1/reqb082-docs | 132034a55 | READY (A3, @132034a5 = docs only on BASE-200 + BASE-205 sync: freeze item removed; the owner included the held units (B1 cycle 61); REQ-B-076 'incomplete but safe; closed by approve-gate (pending)'; B4 final E2E running on BASE-205; KIV 56/51). Answers REQ-B-082 |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 
