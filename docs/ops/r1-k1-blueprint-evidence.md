@@ -1,9 +1,9 @@
 # R1 evidence list: 3472/2 (worked example) and the four go-live Kertas 1 blueprints
 
 - **Task:** T39 (lane A3). Research and docs only: no seed, no blueprint data change, no code change, no server access.
-- **Date:** 2026-10-31. **Base:** `feature/v3-bijak-r1` at BASE-6 (`21ae62dd`).
+- **Date:** 2026-10-31. **Base:** `feature/v3-bijak-r1` at BASE-6 (`21ae62dd`). **Re-checked 2026-11-02 at BASE-148 (`c3098c9a`)**: section 9 lists what was confirmed and what changed; a fact that changed is marked "as of BASE-6, re-checked at BASE-148 (`c3098c9a`)" at the place where it appears, and the new value is written there.
 - **Context (user decision on Q3, D95 revised, as briefed by the Delivery Lead):** on UAT, Admin Pusat creates and verifies ("Sahkan") blueprints by hand in Kontrak Blueprint, following the real flow, with no seed. Order: 3472/2 first, then Matematik 1449/1, Sejarah 1249/1, Fizik 4531/1 and Sains K1.
-- **Neither D95 nor Q3 exists in `docs/TRACKER.md` at BASE-6** (the decision table ends at D91). The briefed rule "evidence from 2 or more bodies" is in the repo as D76(4), AC-39.2 and AC-39.7 (`docs/requirements/v2-bijak-spm.md`). D77 in the TRACKER is the unrelated Pemantauan revoke.
+- **Neither D95 nor Q3 (as a decision) exists in `docs/TRACKER.md` at BASE-6, re-checked at BASE-148 (`c3098c9a`)** (as of BASE-6 this said the decision table ends at D91; it ends at D90 at both BASE-6 and BASE-148, D91 and later are on `r1/d91-decisions`, PR #404, not merged; the TRACKER's own "Q3" is an unrelated question about Killer Features). The briefed rule "evidence from 2 or more bodies" is in the repo as D76(4), AC-39.2 and AC-39.7 (`docs/requirements/v2-bijak-spm.md`). D77 in the TRACKER is the unrelated Pemantauan revoke.
 - **Tags:** "confirmed" = read in a repo file (path given) or replayed (see 1.3). "unconfirmed" = not verifiable in the repo; do not treat as fact. Bodies are the exam-board ids of the Kontrak evidence form (`sbp`, `selangor_mpsm`, `lpm`, `mrsm`, free text normalised to snake_case).
 - **Privacy:** no person names appear here. Documents are named by kind, body and year only.
 
@@ -11,7 +11,7 @@
 
 | Blueprint | Ready to Sahkan? | Missing evidence |
 |---|---|---|
-| **3472/2** Matematik Tambahan K2 (worked example, section 2) | **Yes on repo data, with one unconfirmed input.** Replay of the seed definitions: gate (a) to (d) and (f) clean once values are typed by the admin; evidence check passes (2 bodies, each paper + skema). Caveat below. | Duration (150) has two supporting bodies only if both covers state it. SPP says the Selangor file has no cover page, so its 150 is unconfirmed (the seed evidence states it anyway). Needs: the cover page of the Selangor 2025 3472/2 paper, or a cover of a third body's 3472/2 paper, or an LPM format document. If neither exists the admin enters duration for one body only and `durationMin` stays "tidak disahkan", which blocks Sahkan. |
+| **3472/2** Matematik Tambahan K2 (worked example, section 2) | **Yes on repo data, with one unconfirmed input.** Replay of the seed definitions: gate (a) to (d) and (f) clean once values are typed by the admin; evidence check passes (2 bodies, each paper + skema) once those four rows are typed by the admin (as of BASE-6 it also passed on the seeded study rows; re-checked at BASE-148 (`c3098c9a`): seeded study rows no longer count, section 1.2 C7). Caveat below. | Duration (150) has two supporting bodies only if both covers state it. SPP says the Selangor file has no cover page, so its 150 is unconfirmed (the seed evidence states it anyway). Needs: the cover page of the Selangor 2025 3472/2 paper, or a cover of a third body's 3472/2 paper, or an LPM format document. If neither exists the admin enters duration for one body only and `durationMin` stays "tidak disahkan", which blocks Sahkan. |
 | **1449/1** Matematik K1 | **No.** | (1) Section KBAT marks undetermined (35 or 36; Q13 page of the SBP paper unreadable): needs a legible scan of the SBP 2025 1449/1 paper, page with Q13. (2) Body rule: SBP has paper + skema, Selangor has a paper only: needs the Selangor 2025 1449/1 skema (SPP 10.1 says it was read, but no value is recorded in the repo), or the Johor 2025 Set 1 1449/1 paper + scheme (read per `v2-exam-schema.md` section 1, values only in prose), or an LPM format document. (3) Duration conflict to settle: 90 (3 trial bodies) vs 75 (existing PoC row, "official" convention). |
 | **1249/1** Sejarah K1 | **No.** | One body only (Selangor 2025 paper; its scheme read per `v2-exam-schema.md` 8.2). Needs a second body's 1249/1 paper + skema (any other state or SBP 2025 set) or an LPM format document. Also: difficulty profile, per-Tajuk quota (T5 side not derivable in the repo; needs a textbook Bab-to-SK table) and KBAT marks do not exist anywhere. |
 | **4531/1** Fizik K1 | **No.** | Papers: Selangor 2025 only; SBP has a skema (K1 key table inside the 4531/2 skema file) but no K1 paper in the repo. Needs the SBP 2025 4531/1 question paper (or another body's paper + skema, or an LPM format document). Also: difficulty profile and KBAT marks do not exist; quota exists only as a single-body reading (section 5.1). |
@@ -26,14 +26,14 @@ Shortest path for all four: one LPM format / JSU document per paper (`lpm_format
 | Step | Code |
 |---|---|
 | Route `POST /admin/blueprints/:subject/:kertas/verify` (Admin Pusat only, `@Roles('admin')`) | `apps/api/src/modules/exam/blueprints/blueprints.controller.ts` (`@Post(':subject/:kertas/verify')`) |
-| Verify flow: lock head, run check, 422 `VERIFICATION_FAILED` with the full `check`, else insert-only verification row and flip `source`/`serves_students` | `apps/api/src/modules/exam/blueprints/blueprint-verification.service.ts:BlueprintVerificationService.verify` (line 180) |
+| Verify flow: lock head, run check, 422 `VERIFICATION_FAILED` with the full `check`, else insert-only verification row and flip `source`/`serves_students` | `apps/api/src/modules/exam/blueprints/blueprint-verification.service.ts:BlueprintVerificationService.verify` (line 180; same at BASE-148) |
 | The check itself (all failures listed at once) | same file, `private check` (line 228) |
 | Live check without writing (the Pengesahan tab) | same file, `state` (line 157) |
 | AC-39.1 (a) to (d) and (f): `validateBlueprint` plus completeness | `packages/exam-core/src/validate.ts:validateForVerification` (line 274), `:validateBlueprint` (line 204) |
-| AC-39.1 (e) and AC-39.7: evidence comparison and body rule | `packages/exam-core/src/evidence.ts:checkEvidence` (line 106), `:buildLine` (line 63) |
+| AC-39.1 (e) and AC-39.7: evidence comparison and body rule | `packages/exam-core/src/evidence.ts:checkEvidence` (line 108 at BASE-148; line 106 at BASE-6), `:buildLine` (line 65 at BASE-148; line 63 at BASE-6) |
 | Adapter (only import point of exam-core in the exam module) | `apps/api/src/modules/exam/blueprints/exam-core.adapter.ts` |
 | Evidence writes (locked once Disahkan, 409) | `blueprint-verification.service.ts:addEvidence` (line 88), `:removeEvidence`, `:assertEditable` |
-| Save = new version; values typed by the admin are "reviewed" | `apps/api/src/modules/exam/blueprints/blueprints.service.ts:create` (line 167), `:addVersion` (line 210), `:input` (reviewed flags) |
+| Save = new version; values typed by the admin are "reviewed" | `apps/api/src/modules/exam/blueprints/blueprints.service.ts:create` (line 181 at BASE-148; line 167 at BASE-6), `:addVersion` (line 225; was 210), `:input` (reviewed flags; line 348) |
 | Requirement text | `docs/requirements/v2-bijak-spm.md` AC-39.1, AC-39.2, AC-39.7, AC-39.9; design `docs/architecture/v2-bijak-spm-standards.md` 6.6 |
 | Front end gate rows, Sahkan button, evidence drawer | `src/modules/m28-bijak-spm/admin/kontrak/domain/verify.ts:gateRows`, `components/VerifyPanel.vue`, `components/EvidenceDrawer.vue` |
 
@@ -49,10 +49,10 @@ Shortest path for all four: one LPM format / JSU document per paper (`lpm_format
 | C4 | Quota per section (c) | same | `NO_QUOTA`; `NO_SHARE` when the subject has T4 and T5 units in the DSKP and a section's unit levels cannot be derived |
 | C5 | KBAT per section (d) | same | `NO_KBAT` when `kbatMarks` is null (0 counts as filled) |
 | C6 | Reviewed (f, AC-39.9) | same | `UNREVIEWED` for each quota line or section KBAT still "Belum disemak". A value typed and saved by the admin is reviewed (`blueprints.service.ts:input`, `quotaToDoc`), so this only affects seeded rows. |
-| C7 | Body rule (e, AC-39.2) | `evidence.ts:checkEvidence` | `NO_EVIDENCE_BODIES` unless some `lpm_format` item exists or at least 2 distinct bodies each have a `trial_paper` item AND a `skema` item |
-| C8 | Evidence lines (AC-39.7) | `evidence.ts:checkEvidence`, `:buildLine` | For `durationMin`, `totalMarks`, and per section matched by position `markBudget`, `rule`, `questionCount`: any contradicting statement = `differs`; no statement = `not_covered`; fewer than 2 supporting bodies = `tidak_disahkan`; else `ok`. An `lpm_format` item counts as one extra supporting body. Every line must be `ok`. Topic quota and KBAT are not compared. |
+| C7 | Body rule (e, AC-39.2) | `evidence.ts:checkEvidence` | `NO_EVIDENCE_BODIES` unless some `lpm_format` item exists or at least 2 distinct bodies each have a `trial_paper` item AND a `skema` item. **Changed after BASE-6 (AC-39.2, design D-5; re-checked at BASE-148 (`c3098c9a`)):** only rows with `origin = 'admin'` reach this rule and the comparison; rows seeded from the study (`origin = 'study'`) are listed in the record but do not count until the verifier has entered evidence by hand (`blueprint-verification.service.ts:check` filters `evidenceRows` by `origin === 'admin'`, line 228 onwards) |
+| C8 | Evidence lines (AC-39.7) | `evidence.ts:checkEvidence`, `:buildLine` | For `durationMin`, `totalMarks`, and per section matched by position `markBudget`, `rule`, `questionCount`: any contradicting statement = `differs`; no statement = `not_covered`; fewer than 2 supporting bodies = `tidak_disahkan`; else `ok`. An `lpm_format` item counts as one extra supporting body. Every line must be `ok`. Topic quota and KBAT are not compared. **Changed after BASE-6 (re-checked at BASE-148 (`c3098c9a`)):** on a choose-N section a skema's `markBudget` agrees with either the effective budget or the OFFERED marks (budget / N x M): `evidence.ts` `agrees` for `kind === 'skema'`; a trial paper is still compared with the effective budget. |
 
-Front end only (not server rules): Sahkan is refused while the form is unsaved ("Simpan perubahan dahulu.") and while "Nota pengesahan" is empty (the server accepts an empty note). Source: `VerifyPanel.vue`, `reason`.
+Front end only (not server rules): Sahkan is refused while the form is unsaved ("Simpan perubahan dahulu.") and while "Nota pengesahan" is empty ("Isi nota pengesahan dahulu."). **Changed after BASE-6 (re-checked at BASE-148 (`c3098c9a`)):** the server now also requires the note (`BijakVerifyInputSchema`, `packages/contract/src/bijak/standards/admin.ts:169`: required, not blank, at most 2000 characters; the same sentence as `fields.note`); as of BASE-6 it accepted an empty note. Source: `VerifyPanel.vue`, `reason`.
 
 ### 1.3 How "would it pass today" was determined
 
@@ -62,6 +62,8 @@ Front end only (not server rules): Sahkan is refused while the form is unsaved (
 |---|---|---|---|
 | 3472/2 | no problems; `UNREVIEWED` only | **clean** | **passes** (all lines ok, bodies rule met) |
 | 1449/1 | no problems; `NO_KBAT@1`, `UNREVIEWED` | `NO_KBAT@1` | all lines ok, but `NO_EVIDENCE_BODIES` |
+
+**As of BASE-6; re-checked at BASE-148 (`c3098c9a`):** the replay was not re-run (the scripts were scratch files and the workspace is not installed here). The gate columns stand: `validate.ts`, `layer1.ts`, `evidence.ts` (seed), `docs/reference/blueprints/*.json` and `docs/reference/dskp/*.json` are byte-identical between BASE-6 and BASE-148 (`git diff 21ae62dd c3098c9a` over those paths is empty). The evidence column does not stand for seeded rows: the server now ignores `origin = 'study'` rows (C7), so on a database that holds only the seeded study rows every blueprint answers `NO_EVIDENCE_BODIES` until the admin types rows by hand; the variants below were replayed on admin-style rows and keep their results, except that a skema `markBudget` on a choose section now also agrees with the offered marks (C8).
 
 Variants replayed for K1 (one section, all, 40 questions, 40 marks):
 
@@ -75,17 +77,17 @@ Variants replayed for K1 (one section, all, 40 questions, 40 marks):
 
 ## 2. Worked example: 3472/2 Matematik Tambahan Kertas 2 (the admin does this first)
 
-Why first: both layer-1 and layer-2 values exist, all four sections of the check are satisfiable from repo data, and there is no PoC row to collide with (the PoC bank holds only Matematik K1/K2 and Sains K1/K2; `apps/api/src/modules/bijak/papers/poc/poc-bank.ts`).
+Why first: both layer-1 and layer-2 values exist, all four sections of the check are satisfiable from repo data, and there is no PoC row to collide with (the PoC bank holds only Matematik K1/K2 and Sains K1/K2; `apps/api/prisma/seed/poc/export/poc-bank.ts` at BASE-148; it was `apps/api/src/modules/bijak/papers/poc/poc-bank.ts` at BASE-6, moved by the PoC removal (T36), same rows: `1449/1` 75 min at lines 39-40 and 245-246 with pool `MAT1-A` and `take: 10` at line 271, `4541/1` at line 363).
 
 ### 2.1 Prerequisites (unconfirmed on UAT: no server access)
 
 1. Logged in as Admin Pusat (`admin`). Other roles get 403 (AC-39.3).
 2. The DSKP loader has run, so "Tambah unit" lists Matematik Tambahan T4 and T5 units (`docs/ops/dskp-loader.md`: UAT had 0 nodes before it ran). Without units, quota lines cannot be added and the gate fails.
-3. No existing 3472/2 contract. If "Tambah Kontrak" shows "Kontrak untuk subjek dan kertas ini sudah wujud.", open it with "Buka kontrak" instead and edit; each Simpan then makes a new version.
+3. No existing 3472/2 contract. If the dialog "Kontrak Baharu" ("Tambah Kontrak" at BASE-6) shows "Kontrak untuk subjek dan kertas ini sudah wujud.", open it with "Buka kontrak" instead and edit; each Simpan then makes a new version.
 
 ### 2.2 Steps in Kontrak Blueprint
 
-1. Open Kontrak Blueprint, press **Tambah Kontrak**. Subjek: Matematik Tambahan. Kertas: Kertas 2. Press **Teruskan** (opens an empty Draf).
+1. Open Kontrak Blueprint, press **Baharu** (dialog "Kontrak Baharu", `KontrakListPage.vue:202`; the button was **Tambah Kontrak** as of BASE-6, re-checked at BASE-148 (`c3098c9a`)). Subjek: Matematik Tambahan. Kertas: Kertas 2. Press **Teruskan** (opens an empty Draf).
 2. **Maklumat Kertas:** Kod kertas `3472/2`; Tempoh (minit) `150`; Jumlah markah `100`; Status `Spec` (Draf is allowed; Disahkan is set only by Sahkan).
 3. **Piawaian Peringkat Kertas (optional):** Sub-bahagian menaik off. Nisbah Tingkatan 4 / 5 may stay empty (each section carries its own). Kuota KBAT kertas: `130` is allowed; if filled it must equal the sum of the section values (`KBAT_TOTAL`).
 4. **Tambah Bahagian** three times and fill:
@@ -96,7 +98,7 @@ Why first: both layer-1 and layer-2 values exist, all four sections of the check
 | Bilangan soalan (M) | 7 | 4 | 4 |
 | Jawab | semua | pilih N = 3 | pilih N = 2 |
 | Belanjawan markah (selepas pilih N) | 50 | 30 | 20 |
-| Mod jawapan dibenarkan | none (any) | none | none |
+| Mod Jawapan Dijangka (the legend read "Mod jawapan dibenarkan" at BASE-6; `SectionEditor.vue:182`, re-checked at BASE-148 (`c3098c9a`)) | none (any) | none | none |
 | Profil Kesukaran | `bahagian`, one group slot 1-7, TP 3-5, markah setiap soalan 5-9 | `bahagian`, one group slot 1-4, TP 4-5, markah 10-10 | `bahagian`, one group slot 1-4, TP 4-6, markah 10-10 |
 | Kuota Topik, basis | markah | markah | markah |
 | Kuota Topik, lines (T4/T5 unit = value) | T4 1.0 = 7; T4 2.0 = 8; T4 4.0 = 8; T4 8.0 = 6; T5 1.0 = 6; T5 2.0 = 7; T5 6.0 = 8 (sum 50) | T4 6.0 = 10; T4 7.0 = 10; T5 3.0 = 10; T5 5.0 = 10 (sum 40) | T4 9.0 = 10; T4 10.0 = 10; T5 7.0 = 10; T5 8.0 = 10 (sum 40) |
@@ -111,10 +113,10 @@ Why first: both layer-1 and layer-2 values exist, all four sections of the check
 |---|---|---|---|---|
 | E1 | Kertas percubaan | SBP | Tempoh 150 (only if the cover shows it, see caveat); Jumlah markah 100; rows: A markah 50, Jawab semua, 7 soalan; B markah 30, N daripada M with N = 3, 4 soalan; C markah 20, N = 2, 4 soalan | `evidence.ts` `ADD_K2`; `docs/discovery/SPM-paper-patterns.md` (SPP) section 4 and 10.2 |
 | E2 | Kertas percubaan | Selangor MPSM | Same as E1. Leave Tempoh empty unless the cover is seen (SPP section 2: "cover and formula pages absent from the file") | same |
-| E3 | Skema jawapan | SBP | One row only: A markah 50. Do not add rows for B and C | SPP 10.2 (all 15 totals confirmed) |
-| E4 | Skema jawapan | Selangor MPSM | One row only: A markah 50 | SPP 10.2 |
+| E3 | Skema jawapan | SBP | One row only: A markah 50. Rows for B and C are optional since BASE-148: a skema's Markah on a choose section is accepted as the offered marks (40 and 40) or as the budget (30 and 20); as of BASE-6 only the budget was accepted, so B and C had to be left out | SPP 10.2 (all 15 totals confirmed) |
+| E4 | Skema jawapan | Selangor MPSM | One row only: A markah 50 (same note) | SPP 10.2 |
 
-   Entry rules that avoid false failures (from `EvidenceDrawer.vue`): a row's rule defaults to "Semua" and is always sent, so a skema row for a choose section would state "all" and be marked `differs`. A skema prints offered marks for B and C (40 each), but the "Markah" field is compared with the effective budget (30 and 20), so typing 40 would also be `differs`. Rows are matched by order (row 1 = A). Use the same body id every time (the form lowercases and underscores: "Selangor MPSM" becomes `selangor_mpsm`).
+   Entry rules (from `EvidenceDrawer.vue`). **As of BASE-6 (superseded; re-checked at BASE-148 (`c3098c9a`)):** a row's rule defaulted to "Semua" and was always sent, so a skema row for a choose section stated "all" and was marked `differs`; and a skema printed offered marks for B and C (40 each) but "Markah" was compared with the effective budget (30 and 20), so typing 40 was `differs`. **At BASE-148:** for a skema the drawer hides Tempoh and the answering rule and does not send them (`isSkema`, data-testid `skema-no-rule`: "Skema tidak mencetak peraturan menjawab atau tempoh, jadi kedua-duanya tidak diisi."), and a skema's Markah on a choose section is accepted either as the budget or as the offered marks. Still true: rows are matched by order (row 1 = A); use the same body id every time (the form lowercases and underscores: "Selangor MPSM" becomes `selangor_mpsm`).
 7. Press **Semak Bukti**. Expected: every line "Sepadan", gate rows green. If Tempoh shows "Tidak disahkan", only one body supplied a duration: see the caveat.
 8. Fill **Nota pengesahan**, press **Sahkan**, confirm "Sahkan kontrak ini?". Expected message: "Kontrak berjaya disahkan." The badge becomes Disahkan, evidence is locked (409 on further evidence edits) and any structural edit afterwards becomes a new Spec version (AC-39.4).
 
@@ -139,7 +141,7 @@ Common to all: one section, rule "Jawab semua", answer mode "Aneka pilihan" (`mc
 
 | Field | 1449/1 Matematik K1 | 1249/1 Sejarah K1 | 4531/1 Fizik K1 | Sains K1 |
 |---|---|---|---|---|
-| Kod kertas | `1449/1` | `1249/1` | `4531/1` | **unconfirmed**: PoC bank `4541/1` (`poc-bank.ts`; 4541 is the printed Kimia code), web search result `1511/1` (not verified here); read it from a cover |
+| Kod kertas | `1449/1` | `1249/1` | `4531/1` | **unconfirmed**: PoC bank `4541/1` (`apps/api/prisma/seed/poc/export/poc-bank.ts:363` at BASE-148; 4541 is the printed Kimia code), web search result `1511/1` (not verified here); read it from a cover |
 | Tempoh (minit) | **90** per seed and SPP 4 (SBP, Selangor), Johor scheme cover (`v2-exam-schema.md` D7). Conflict: existing PoC row 75; D7 calls 75 the "official, INFERRED" convention | 90 (printed "1 jam 30 minit", Selangor; `v2-exam-schema.md` D7) | 75 (printed "1 jam 15 minit", Selangor; D7) | unconfirmed: 75 in the .cloud DB (D7), 60 in the PoC row |
 | Jumlah markah | 40 | 40 | 40 | 40 (DB, D7) |
 | Bahagian (label) | one section; seed label "Bahagian A" (D7 calls it "Objektif") | one section, label free | one section, label free | one section, label free |
@@ -156,7 +158,7 @@ Validity rules for a K1 profile (`validate.ts:profileProblems`): groups must til
 
 ### 4.1 Definition in the repo (seed)
 
-`apps/api/prisma/seed/bijak-standards/layer1.ts` (structure, profile, confidence high, bodies sbp + selangor_mpsm) and `docs/reference/blueprints/1449-1.json` (quota, share, notes). The seed module `exam-launch-blueprints.ts` (`examLaunchBlueprintsSeed`) is not used on UAT; its values are the admin's typing source.
+`apps/api/prisma/seed/bijak-standards/layer1.ts` (structure, profile, confidence high, bodies sbp + selangor_mpsm) and `docs/reference/blueprints/1449-1.json` (quota, share, notes). The seed module `apps/api/prisma/seed/exam-launch-blueprints.ts` (`examLaunchBlueprintsSeed`, line 175) is not used on UAT; its values are the admin's typing source.
 
 Quota lines (basis questions, sum 40): T4 1.0 = 1; 2.0 = 2; 3.0 = 2; 4.0 = 2; 5.0 = 1; 6.0 = 1; 7.0 = 2; 8.0 = 1; 10.0 = 1 (13); T5 1.0 = 1; 2.0 = 2; 3.0 = 2; 4.0 = 1; 5.0 = 2; 6.0 = 2 (10); bucket "T1-T3, luar DSKP" = 17. Nisbah T4 13 : T5 10. Tags per `docs/reference/blueprints/README.md`: 0 observed, 2 inferred, 14 single-source (SBP only, because Selangor was sampled at 15 of 40). The 17 in the bucket includes 3 ambiguous items (Q20, Q25, Q28) placed there by rule; T4 4.0 = 2 comes from a partly legible page.
 
@@ -232,7 +234,7 @@ Nothing in the repo is a paper-derived definition.
 | Source | Content | File |
 |---|---|---|
 | .cloud DB figures | K1 75 min, 40, single mcq section, confidence Medium; "no DSKP-aligned paper in the sample" | `docs/requirements/v2-exam-schema.md` D7 |
-| PoC bank | Sains K1 contract `4541/1`, 60 min | `apps/api/src/modules/bijak/papers/poc/poc-bank.ts` |
+| PoC bank | Sains K1 contract `4541/1`, 60 min | `apps/api/prisma/seed/poc/export/poc-bank.ts` (BASE-148; was `apps/api/src/modules/bijak/papers/poc/poc-bank.ts` at BASE-6) |
 | DSKP | 21 units (T4 12, T5 9), usable for the quota picker | `docs/reference/dskp/sains.json` |
 
 The code `1511/1`: no repo file states it; a web search summary gave 40 objective questions in 1 jam 15 minit for 1511/1, but this was not confirmed against a paper cover and must be treated as **unconfirmed**. The PoC code `4541/1` shares the printed number of Kimia (Fizik is 4531, Biologi 4551 in SPP), so it may be a prototype placeholder; also unconfirmed.
@@ -243,16 +245,16 @@ Checks today: not runnable (no definition, no evidence); expect C3, C4, C5, C7 t
 
 ## 7. Surprises and contradictions found
 
-1. `docs/SPM-SIMULASI-BLUEPRINT.md` named in the brief **does not exist** at BASE-6 (no file with "SIMULASI" in its name). Nothing was read from it.
+1. `docs/SPM-SIMULASI-BLUEPRINT.md` named in the brief **does not exist** at BASE-6 (no file with "SIMULASI" in its name). Nothing was read from it. Re-checked at BASE-148: still absent (no file with "SIMULASI" in its name).
 2. Seed vs doc, 3472/2: `evidence.ts` (`ADD_K2`) gives the Selangor trial paper `durationMin: 150`, but SPP section 2 says the Selangor 3472/2 file has no cover page, and `v2-exam-schema.md` D7 calls the duration "INFERRED; cover not read". The Sahkan duration line may have only one real supporting body.
 3. Seed vs PoC: seed 1449/1 duration 90 and 40 marks versus the existing PoC contract `1449/1` (75 min, 10 marks, one section `take: 10`). On a UAT database that ran the exam seed, the admin edits that row; the PoC papers stay on version 1.
 4. Duration of Matematik K1: 90 in three trial bodies (SPP 4, D7) against 75 "official, INFERRED" in D7. Unresolved by the repo.
 5. Sains K1 code: no repo file says `1511/1`; the PoC bank says `4541/1`, the Kimia number.
-6. Brief vs TRACKER: "D77" is not the two-body rule (that is D76(4), AC-39.2); D95 and Q3 are not in the TRACKER at BASE-6.
-7. AC-39.2 amended text says seeded study rows do not count towards the two bodies; the server check does not filter by origin (`blueprint-verification.service.ts:check` passes every evidence row to `checkEvidence`), while the front-end body counter does (`domain/verify.ts:evidenceBodies`, `origin === 'admin'`). No effect on the no-seed UAT flow, but the two disagree.
-8. Evidence drawer traps (section 2.2 step 6): rows always send a rule ("Semua" by default) and "Markah" is compared with the effective budget, so skema rows for choose sections produce `differs`.
+6. Brief vs TRACKER: "D77" is not the two-body rule (that is D76(4), AC-39.2); D95 and Q3 are not in the TRACKER at BASE-6 or at BASE-148 (the table ends at D90; as of BASE-6 this item said D91).
+7. **Fixed after BASE-6 (re-checked at BASE-148 (`c3098c9a`)).** As of BASE-6: AC-39.2 amended text says seeded study rows do not count towards the two bodies; the server check did not filter by origin (`blueprint-verification.service.ts:check` passed every evidence row to `checkEvidence`), while the front-end body counter did (`domain/verify.ts:evidenceBodies`, `origin === 'admin'`, line 146-147). At BASE-148 the server filters too (`evidenceRows.filter((r) => r.origin === 'admin')`, design D-5), so the two agree. No effect on the no-seed UAT flow.
+8. **Fixed after BASE-6 (re-checked at BASE-148 (`c3098c9a`)).** As of BASE-6: evidence drawer traps (section 2.2 step 6): rows always send a rule ("Semua" by default) and "Markah" is compared with the effective budget, so skema rows for choose sections produced `differs`. At BASE-148 the drawer sends no rule or duration for a skema and the server accepts the offered marks for a skema (section 1.2 C8, 2.2 step 6).
 9. SPP says Fizik K1 and Sejarah K1 were not read (SBP 2025 study) while `v2-exam-schema.md` holds Selangor K1 readings for both. These are different bodies and sessions, not a conflict, but the repo has no stored values file for either.
-10. The "Nota pengesahan" field is required by the front end but optional on the server (`BijakVerifyInputSchema`).
+10. **Fixed after BASE-6 (re-checked at BASE-148 (`c3098c9a`)).** As of BASE-6: the "Nota pengesahan" field was required by the front end but optional on the server (`BijakVerifyInputSchema`). At BASE-148 the server requires it too (section 1.2).
 
 ## 8. Documents to obtain (by kind, no persons)
 
@@ -264,3 +266,26 @@ Checks today: not runnable (no definition, no evidence); expect C3, C4, C5, C7 t
 | 4531/1 | SBP 2025 4531/1 question paper; or another body's 4531/1 paper and skema |
 | Sains K1 | two bodies' 2025 or later Sains K1 papers with skema (cover shows the paper code and duration) |
 | any | an LPM format or JSU document per paper (replaces the two-body rule, open items Q-B16 and Q-B17) |
+
+## 9. Re-check at BASE-148 (2026-11-02, `c3098c9a`)
+
+Scope: the five blueprints (3472/2, 1449/1, 1249/1, 4531/1, Sains K1), their Kontrak fields, the evidence in the repo, the missing bodies and the Sahkan checks, read against the code, seed and docs at `origin/feature/v3-bijak-r1` BASE-148 (`c3098c9a`, "merge T48"). The doc was written at BASE-6 (`21ae62dd`) on the branch `r1/t39-k1-evidence`; the branch is not merged and merge-tree against the base is clean.
+
+**Confirmed unchanged** (byte-identical between BASE-6 and BASE-148 over `git diff 21ae62dd c3098c9a`, or re-read at the cited line):
+- The six layer-1 definitions (`apps/api/prisma/seed/bijak-standards/layer1.ts`), the seeded study evidence (`evidence.ts`: `MAT_K1`, `ADD_K2`, durations 90 and 150), and `docs/reference/blueprints/` (`1249-2`, `1449-1`, `1449-2`, `3472-1`, `3472-2`, `4531-2` and the README: still no definition or evidence file for 1249/1, 4531/1 or Sains K1), `docs/reference/dskp/*.json`, `docs/discovery/SPM-paper-patterns.md`, `docs/requirements/v2-exam-schema.md`, `docs/architecture/v2-bijak-spm-standards.md`, `docs/ops/dskp-loader.md`, `subject-codes.ts`.
+- The gate rules C1 to C6 (`validate.ts` unchanged; `validateBlueprint` line 204, `validateForVerification` line 274), `BlueprintVerificationService.verify` (180), `state` (157), `private check` (228), `addEvidence` (88).
+- The Kontrak flow and its texts: "Teruskan" (`KontrakListPage.vue:376`), "Buka kontrak", "Tambah Bahagian", "Tambah Bukti", "Semak Bukti", "Sahkan kontrak ini?", "Kontrak berjaya disahkan.", "Simpan perubahan dahulu.", "Kontrak untuk subjek dan kertas ini sudah wujud.", "Nota pengesahan", "Belum disemak", the status values Draf / Spec / Disahkan, and the PoC contract rows (`1449/1` 75 min, 10 marks, `MAT1-A`, `take: 10`; `4541/1` 60 min).
+- The missing bodies for 1449/1, 1249/1, 4531/1 and Sains K1: no new paper, skema or LPM document entered the repo; the Sahkan results in sections 4 to 6 (C5 and C7 fail, C8 `tidak_disahkan`) stand.
+- `docs/SPM-SIMULASI-BLUEPRINT.md` is still absent.
+
+**Changed** (applied inline above, marked "as of BASE-6, re-checked at BASE-148"):
+1. **Seeded study rows no longer count** in the body rule or the comparison (`origin = 'admin'` only; AC-39.2, design D-5). The "evidence check with the seeded study rows" column of 1.3 is therefore obsolete for seeded rows; the 3472/2 flow is unaffected because the admin types E1 to E4 by hand (section 2.2). Surprise 7 is fixed.
+2. **Skema rows**: the drawer hides and does not send Tempoh and the answering rule, and the server accepts a skema's Markah as the offered marks on a choose-N section (`evidence.ts` `agrees`). The step-6 traps (surprise 8) are fixed; the B and C skema rows for 3472/2 became optional.
+3. **"Nota pengesahan" is required on the server** (`BijakVerifyInputSchema`, `admin.ts:169`; surprise 10 fixed).
+4. **Labels**: the add button "Tambah Kontrak" is now "Baharu" with the dialog "Kontrak Baharu" (`KontrakListPage.vue:202`, header comment line 4), and the legend "Mod jawapan dibenarkan" is now "Mod Jawapan Dijangka" (`SectionEditor.vue:182`).
+5. **Paths and lines**: `poc-bank.ts` moved to `apps/api/prisma/seed/poc/export/poc-bank.ts`; `exam-launch-blueprints.ts` is at `apps/api/prisma/seed/exam-launch-blueprints.ts:175`; `checkEvidence` 106 to 108, `buildLine` 63 to 65, `create` 167 to 181, `addVersion` 210 to 225.
+6. **TRACKER**: the decision table ends at D90 (the doc said D91); D95 and Q3 are still not in it (PR #404, `r1/d91-decisions`).
+
+**Not re-done:** the bun replay of C1 to C8 (section 1.3) was not re-run; the gate results rest on `validate.ts` and the seeds being unchanged, and the evidence results on reading the diff of `evidence.ts` and `blueprint-verification.service.ts`.
+
+**Links from base.** `docs/ops/r1-runbook.md` lines 3, 24 and 389 and `docs/ops/r1-release-notes.md` lines 491 and 498 link to `r1-k1-blueprint-evidence.md` (file name matches; none of the links uses a section anchor, so no anchor can have drifted). The file is not in base until this branch merges, so those links are dead until then. The runbook line 389 describes it as "every check Sahkan runs, with the code path and what is missing for each blueprint", which matches sections 1 to 6.
