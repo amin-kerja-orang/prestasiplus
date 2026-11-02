@@ -87,6 +87,8 @@ Why first: both layer-1 and layer-2 values exist, all four sections of the check
 
 ### 2.2 Steps in Kontrak Blueprint
 
+**Blocked until `KontrakEditorPage.vue:87` is fixed (`r1/b1-kontrak-tabs-fix`, pending owner approval):** any tab switch resets the form, so a new contract cannot be saved in the app (runbook 2.5).
+
 1. Open Kontrak Blueprint, press **Baharu** (dialog "Kontrak Baharu", `KontrakListPage.vue:202`; the button was **Tambah Kontrak** as of BASE-6, re-checked at BASE-148 (`c3098c9a`)). Subjek: Matematik Tambahan. Kertas: Kertas 2. Press **Teruskan** (opens an empty Draf).
 2. **Maklumat Kertas:** Kod kertas `3472/2`; Tempoh (minit) `150`; Jumlah markah `100`; Sumber stays `Draf` (Sahkan passed from Draf on 2026-11-02; Disahkan is set only by Sahkan).
 3. **Piawaian Peringkat Kertas (optional):** Sub-bahagian menaik off. Nisbah Tingkatan 4 / 5 may stay empty (each section carries its own). Kuota KBAT kertas: `130` is allowed; if filled it must equal the sum of the section values (`KBAT_TOTAL`).

@@ -182,7 +182,7 @@ Then:
 
 ```
 (cd /var/backups/pretasiplus && sha256sum -c pp-backup-<UTC>-pre-deploy.dump.sha256)   # expect: OK
-$PC exec -T db pg_restore --list < /var/backups/pretasiplus/pp-backup-<UTC>-pre-deploy.dump | head   # expect: a table of contents
+$PC exec -T db pg_restore --list < /var/backups/pretasiplus/pp-backup-<UTC>-pre-deploy.dump > /dev/null; echo $?   # expect: 0 (no pipe: it hides the exit status)
 ```
 
 Write the dump file name into the deploy log: it is the **only** way back after 0100 (section 6).
@@ -488,7 +488,7 @@ one blueprint. On UAT there are **0 blueprints** today, so a blueprint must firs
 
 **D95 (2026-10-31, PR amin-kerja-orang/prestasiplus#404, not merged; not yet a row of `docs/TRACKER.md` on this branch) supersedes the text that stood here ("Option A by hand" and "Option B seed").** On UAT an Admin Pusat creates each blueprint by hand in Kontrak, through the real flow, and presses Sahkan. There is **no seed on UAT**: the demo seeds, the launch-blueprint seed (`exam-launch-blueprints`) and the E2E seed are local / E2E only. The question Q1 of section 8 is answered by D95.
 
-- Pentadbiran -> `/admin/spm/kontrak` -> `Tambah Kontrak` -> fill the subject, kertas and sections until the panel shows `Tiada ralat. Kontrak boleh disimpan.` -> save. It is saved as Draf/Spec.
+- **Blocked until `KontrakEditorPage.vue:87` is fixed (`r1/b1-kontrak-tabs-fix`, pending owner approval):** any tab switch resets the form, so a new contract cannot be saved in the app (runbook 2.5). Pentadbiran -> `/admin/spm/kontrak` -> `Baharu` -> `Teruskan` -> fill the subject, kertas and sections until the panel shows `Tiada ralat. Kontrak boleh disimpan.` -> save. It is saved as Draf/Spec.
 - Order and checks: 3472/2 first, then 1449/1, 1249/1, 4531/1 and Sains K1 once evidence from two or more bodies is ready. The steps, the read-only SELECTs for the blueprint state before and after Sahkan, and the "no seed ran" checks are in [r1-runbook.md](r1-runbook.md) section 5. The evidence per blueprint, with every check Sahkan runs and what is missing, is in [r1-k1-blueprint-evidence.md](r1-k1-blueprint-evidence.md) (T39; on branch `r1/t39-k1-evidence` until merged).
 
 ### 4.2 Verify (UI path, Admin Pusat)
@@ -584,9 +584,13 @@ Full rollback (LEAD confirmation and a maintenance notice required; production-v
 
 1. `$PC stop api frontend` (keep `db`). Take a safety dump of the current state:
    `deploy/vps/backup/backup.sh --tag drill --no-offsite --no-files`.
-2. Prove the pre-deploy dump from 1.4 reads (`sha256sum -c`, `pg_restore --list | head`).
-3. Drop and recreate the database, `pg_restore` the dump, then `deploy/vps/db-roles.sh apply` and
-   `deploy/vps/db-roles.sh check` (must end with `DB ROLES CHECK PASSED` before the api starts).
+2. Prove the pre-deploy dump from 1.4 reads, with the two checks of 1.4 (`<dump>: OK` and `0`). Either fails: drop nothing;
+   choose an earlier verified dump or stop and tell the LEAD (production-vps.md section 8 step 2).
+3. Drop and recreate the database and restore the dump on standard input, with the commands of production-vps.md section 8
+   step 3. **`pg_restore` must exit 0; otherwise stop, leave the API down, and repeat from the drop with the verified dump.**
+   Then `users` and finished `_prisma_migrations` rows must both count above 0 (same section). Then
+   `deploy/vps/db-roles.sh apply` and `deploy/vps/db-roles.sh check` (must end with `DB ROLES CHECK PASSED` before the api
+   starts; it proves the roles, not the restore: a dump cut at 99% passed it with 0 rows).
 4. `deploy/vps/rollback.sh --checkout <PREV_TAG>` (images and the compose/nginx files of the old release), then check
    `/api/ready` and a login.
 5. Check: `SELECT max(migration_name) FROM _prisma_migrations WHERE finished_at IS NOT NULL` = `0091_...`;
