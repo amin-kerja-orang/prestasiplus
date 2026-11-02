@@ -130,7 +130,7 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
 - **FE:** the bulk UI must show the per-row refusal reason from failed[]. A bulk 200 with affected 0 and no reason is not acceptable (REQ-A-041 to C).
 - *Decided under delegation; for user review.*
 
-## Q18 (DECIDED UNDER DELEGATION 2026-11-02 12:28 MYT by Mandor; for user review): REQ-B-074, does a pupil's past sitting keep a taken-down question image?
+## Q18 (**SUPERSEDED BY THE USER 2026-11-02 12:45 MYT**, relayed by team B in REQ-B-077; originally decided under delegation 12:28 MYT by Mandor): REQ-B-074, does a pupil's past sitting keep a taken-down question image?
 - **Context:** REQ-B-074 (45a75f68) keeps taken-down images for ANY exam_attempts row on the paper (question-image-access.ts:104), as paperHeld, including submitted or abandoned ones and rights takedowns. No V2 reference exists for this behaviour, so it was decided on the best approach. Evidence: AC-17.3 (a rights complaint pulls every question from the source; "US-14 rules apply"), AC-14.1 (no longer served within 60 s), NFR-05 (copyright policy).
 - **Decision (option B, refined):**
   1. **Rights takedown** (source_takedown / takedown_at): the image is NOT served in a submitted or abandoned attempt (history review). The UI shows a neutral placeholder; question text and historical marks remain.
@@ -139,3 +139,4 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
 - **Mandatory tests:** (a) rights takedown + submitted → no image; (b) rights takedown + in progress → image, gone after submit; (c) ordinary takedown + submitted → image.
 - **Owner:** A1b on r1/reqb074-takedown-lows (with the stale DSG spec fix). FE placeholder → team C (REQ-A-046).
 - *Decided under delegation; for user review. To be added to the user decision pack.*
+- **USER DECISION 12:45 MYT (REQ-B-077, overrides the delegated rule above):** takedown here is for **quality**, not a legal/copyright removal. A pupil with a sitting (any sitting) keeps a taken-down image, and a running sitting keeps its text. Accepted for R1, no strict change. This is the behaviour of REQ-B-074 @45a75f68 (BASE-195). The rights-vs-ordinary split is **not built**; REQ-A-046 (FE placeholder) is withdrawn. REQ-B-076 stays as a normal-priority fix (A1b, r1/reqb076-live-takedown).
