@@ -166,3 +166,13 @@
 | BASE-161 | 13049caa | D90 builder sweep @ eeebce89 (B2 Approve); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 452 passed (452) | 2026-11-02 10:35 |
 | BASE-162 | b2251dc4 | H-A26 @ 21360a86 (B2 Approve w/ Minors); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 13 passed (13) | 2026-11-02 10:35 |
 | BASE-163 | 4218bee3 | AC gaps @ c2b93710 (B2 Approve w/ Minors); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 2 passed (2) | 2026-11-02 10:35 |
+| BASE-164 | 9342a088 | REQ-B-058 @ d7665dfa (B2 Approve w/ Minors, B3 Pass with Lows; REQ-B-074); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 471 passed | 1 todo (472) | 2026-11-02 10:55 |
+| BASE-165 | a31b9e0a | m04 e2e refresh @ 0c0b41f4 (B2 Approve w/ Minors); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 13 passed (13) | 2026-11-02 10:55 |
+| BASE-166 | 0425b7df | REQ-A-032 @ b3f76c6e (B2 Approve w/ Minors); merged by exact reviewed SHA | all compile and lint steps 0; unit 450 passed | 5 todo (455); DB 13 passed (13) | 2026-11-02 10:55 |
+| BASE-167 | 5c7ca1d6 | REQ-A-030 @ 0a960eb4 (B2 Approve); merged by exact reviewed SHA | all compile and lint steps 0; unit 666 passed (666); DB 13 passed (13) | 2026-11-02 10:55 |
+| BASE-168 | 92ee8903 | REQ-A-031 @ 0c515ad2 (B2 Approve); merged by exact reviewed SHA | all compile and lint steps 0; unit 691 passed (691); DB 13 passed (13) | 2026-11-02 10:55 |
+| BASE-169 | f305ddf8 | rule-line V2 @ a425206c (B2 Approve w/ Minors); merged by exact reviewed SHA | all compile and lint steps 0; unit 408 passed (408); DB 312 passed (312) | 2026-11-02 10:55 |
+| BASE-170 | 6da4c44b | REQ-A-035 @ 7cd7e3bd (B2 Approve w/ Minors); merged by exact reviewed SHA | all compile and lint steps 0; unit 691 passed (691); DB 13 passed (13) | 2026-11-02 10:55 |
+| BASE-171 | f3a43149 | publish-title-draft @ 335e9cbb (B2 Approve); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 457 passed (457) | 2026-11-02 10:55 |
+| BASE-172 | 17b9c92f | a2-carried-minors @ 45f15242 (B2 Approve w/ Minor); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 13 passed (13) | 2026-11-02 10:55 |
+| BASE-173 | 85620b10 | T38 cap risk row @ ee421f52 (B2 Approve); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 13 passed (13) | 2026-11-02 10:55 |
