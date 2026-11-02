@@ -14,8 +14,9 @@ vi.setConfig({ testTimeout: 120_000, hookTimeout: 300_000 })
  * applied once per version (not once per placement) and nothing is duplicated or fails on a duplicate key.
  *
  * MUTATIONS (what was changed, and which test went red; restored afterwards):
+ *  (re-run on BASE c3098c9a, throwaway merge, after the Bab step: both mutations still red as listed)
  *  1. questions.repository.ts `getVersions`: the `wanted` map replaced by a plain list (no dedupe)  -> "getVersions reads a repeated pin once ..." and "(a) takedown applies once ..."
- *  2. kuiz.service.ts `visiblePaper`: the REQ-B-058 `.some(...)` check removed                         -> "(a) takedown applies once ..." (Kuiz page, check) and the new-sitting refusal
+ *  2. kuiz.service.ts `visiblePaper`: the REQ-B-058 `.some(...)` check removed                         -> "(a) takedown applies once ..." (Kuiz page, check) and "a pin with no archive reason, placed twice, is a takedown too ..."
  */
 const REFUSED = 'Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini.'
 
