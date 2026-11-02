@@ -39,10 +39,21 @@ export const E2E_FLAG = 'E2E_SEED'
 export const E2E_PUPIL_EMAIL = 'murid.t4.e2e@example.test'
 export const E2E_ADMIN_EMAIL = 'admin.pusat.e2e@example.test'
 export const E2E_DEFAULT_BLUEPRINT = '3472/2'
+/** With `E2E_SEED`: the `@api` browser specs (`playwright.http.config.ts`) use DEMO002..004 as their other schools. */
+export const E2E_DEMO_SECONDARY_FLAG = 'E2E_DEMO_SECONDARY'
 
 /** True only for an explicit `E2E_SEED=1` or `E2E_SEED=true` in `env`; the seed passes the environment of the run (`ctx.env`). */
 export function e2eSeedEnabled(env: Record<string, string | undefined>): boolean {
   return env[E2E_FLAG] === '1' || env[E2E_FLAG] === 'true'
+}
+
+/**
+ * D72 hides primary schools and Darjah pupils, and the demo schools DEMO002..004 are primary. Same fixture as `test/support/secondary.ts`
+ * (REQ-A-044): they count as secondary and their pupils move up to Tingkatan. Idempotent.
+ */
+async function treatDemoAsSecondary(prisma: PrismaClient): Promise<void> {
+  await prisma.$executeRaw`update schools set type = 'SMK' where code in ('DEMO002', 'DEMO003', 'DEMO004')`
+  await prisma.$executeRaw`update users set grade = least(grade + 6, 11) where grade <= 6 and school_id in (select id from schools where code in ('DEMO001', 'DEMO002', 'DEMO003', 'DEMO004'))`
 }
 
 async function ensureUser(
@@ -178,5 +189,6 @@ export const e2eSeed: SeedModule = {
     await verifyBlueprint(prisma, code, adminId, ctx.clock.now())
     // E2E fixture (T26c): the structured Kertas 2 pool and its published paper, only for the default 3472/2 blueprint (the one that is Disahkan above).
     if (code === E2E_K2_BLUEPRINT) await seedE2eK2(ctx, adminId)
+    if (ctx.env[E2E_DEMO_SECONDARY_FLAG] === '1') await treatDemoAsSecondary(prisma)
   },
 }

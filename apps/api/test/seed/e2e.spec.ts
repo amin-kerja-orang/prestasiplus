@@ -6,9 +6,10 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
 import { runSeeds } from '../../prisma/seed'
 import { identitySeed } from '../../prisma/seed/core/identity'
+import { schoolsSeed } from '../../prisma/seed/core/schools'
 import { curriculumSeed } from '../../prisma/seed/curriculum'
 import { E2E_K2_LABEL_PREFIX, E2E_K2_PAPER_TITLE, K2_SPECS, assertFixtureShape } from '../../prisma/seed/e2e-k2'
-import { E2E_ADMIN_EMAIL, E2E_EVIDENCE_NOTE, E2E_PUPIL_EMAIL, e2eSeed, e2eSeedEnabled } from '../../prisma/seed/e2e'
+import { E2E_ADMIN_EMAIL, E2E_DEMO_SECONDARY_FLAG, E2E_EVIDENCE_NOTE, E2E_PUPIL_EMAIL, e2eSeed, e2eSeedEnabled } from '../../prisma/seed/e2e'
 import { examSeed } from '../../prisma/seed/exam'
 import { examDemoBlueprintsSeed } from '../../prisma/seed/exam-demo-blueprints'
 import { examLaunchBlueprintsSeed } from '../../prisma/seed/exam-launch-blueprints'
@@ -205,4 +206,18 @@ describe('e2e seed with the guard on', () => {
       expectError(res, 'SHORTAGE', 422)
     }
   })
+
+  it('E2E_DEMO_SECONDARY=1 only: the demo schools become SMK and their Darjah pupils move up to Tingkatan, idempotent', async () => {
+    const typeOf = async (code: string) => (await db.query<{ type: string }>(`select type from schools where code = $1`, [code]))[0]?.type
+    const gradeOf = async () => (await db.query<{ grade: number }>(`select grade from users where email = 'pelajar@demo.test'`))[0]?.grade
+    await db.query(`update users set grade = 3 where email = 'pelajar@demo.test'`)
+    await runSeeds([schoolsSeed, e2eSeed], { prisma: db.prisma, profile: 'e2e', env: FLAGGED })
+    expect(await typeOf('DEMO003')).toBe('SK')
+    expect(await gradeOf()).toBe(3)
+    for (let run = 0; run < 2; run += 1) {
+      await runSeeds([e2eSeed], { prisma: db.prisma, profile: 'e2e', env: { ...FLAGGED, [E2E_DEMO_SECONDARY_FLAG]: '1' } })
+      expect(await typeOf('DEMO003')).toBe('SMK')
+      expect(await gradeOf()).toBe(9)
+    }
+  }, 180_000)
 })

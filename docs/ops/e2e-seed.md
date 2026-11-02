@@ -11,6 +11,8 @@ E2E_SEED=1 npm run be:db:seed -- --profile=e2e
 
 Both are required: `--profile=e2e` and `E2E_SEED=1` (or `true`). Without the flag the module logs one line and creates nothing. Optional: `E2E_BLUEPRINT=<code>` to verify another launch blueprint (default `3472/2`, Matematik Tambahan Kertas 2).
 
+With `E2E_DEMO_SECONDARY=1` as well, the demo schools DEMO002..004 become type SMK and their pupils move up to Tingkatan, because D72 hides primary schools and the `@api` browser specs (`playwright.http.config.ts`) use them as their other schools. Same fixture as `apps/api/test/support/secondary.ts`. `frontend.yml` and `compose.http.yaml` set it.
+
 ## What it creates (idempotent, fictitious)
 
 | What | Value |
