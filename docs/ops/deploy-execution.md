@@ -59,7 +59,7 @@ Auto-Deploy off. Environment (dashboard):
 | `PUBLIC_BASE_URL` | `https://<project>.pages.dev` | set in step 5 once the Pages domain is known |
 | `PUBLIC_ORIGINS` | `https://<project>.pages.dev` | same; used for article/banner image URLs |
 | `ALLOW_DEMO_SEED` | `true` (optional) | staging only. The API runtime ignores it; the seed is run from the laptop in step 1.4 |
-| `BIJAK_POC_QUESTIONS` | `true` (staging only) | NOT in the env schema on 17f946b8 (`git grep` finds only a decision note in AGENT-SYNC.md), so it has no effect yet; unknown keys are ignored, so setting it is harmless. Set it now, and confirm it takes effect once the flag PR merges. |
+| `BIJAK_POC_QUESTIONS` | `false` or removed | Deprecated no-op since R1-B07 / T36 (`apps/api/src/common/config/env.schema.ts:110`): Bijak serves the question bank only; `true` only logs one warning at start and the R1 `deploy.sh` refuses `true|1`. (Older text here said `true` for staging.) |
 | `PORT` | do not set | Render injects it; the API reads it |
 
 Every other key in `apps/api/src/common/config/env.schema.ts` has a default or is optional (throttles, `LOG_LEVEL`, `MAX_UPLOAD_MB`, `INTAKE_MAX_FILE_MB`, `SESSION_*`, `LOGIN_*`, `MAIL_LOG_RESET_LINKS`, ...), so the first boot needs only the five required rows above (`NODE_ENV`, `DATABASE_URL`, `SESSION_SECRET`, `IC_HASH_KEY`, and `FILE_STORAGE_DIR` which the image provides). `MAIL_LOG_RESET_LINKS` must not be `true` in production.

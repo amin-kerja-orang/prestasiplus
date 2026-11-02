@@ -699,6 +699,18 @@ SELECT count(*) FILTER (WHERE dskp_code IS NOT NULL) AS with_code, count(*) AS a
 
 Expected today: `with_code` 0. A non-zero value means some Babs can be derived; two active, in-tree Babs of one subject and level sharing a code are never derived (the question stays chapterless).
 
+### 3.7d Before go-live: published and draft papers with no Kontrak (null `blueprint_id`; REQ-B-079, KIV row 54)
+
+A paper's Kontrak (blueprint) is `papers.blueprint_id` (`apps/api/prisma/schema/exam.prisma`, model `Paper`, `blueprintId BigInt? @map("blueprint_id")`; nullable). The demo seeds write papers with a null `blueprint_id` (`apps/api/prisma/seed/exam.ts:143` `blueprintId: blueprint?.id ?? null`; `apps/api/prisma/seed/poc/bijak-sittings.ts:422` creates the bank paper with no `blueprintId`). REQ-B-079 (`r1/reqb079-t34-t36-minors` @ 52345db7, **held, not in BASE-200**) makes a paper with no Kontrak a Terbit blocker, so such a paper would need the audited override to be published again. R1 = BASE-200 does not have that rule; held code units are R2 pending the owner's decision. See [r1-kiv-r2.md](../release/r1-kiv-r2.md) row 54. Read-only, written from the schema, **not run**:
+
+```sql
+BEGIN READ ONLY;
+SELECT id, paper_code, title, kind, status FROM papers WHERE blueprint_id IS NULL ORDER BY status, id;
+ROLLBACK;
+```
+
+Expected on UAT and production after the real data is loaded: record the rows. Any `published` row is a paper that would need the override to be re-published once REQ-B-079 is in; a `jana` (generated) paper is not built in the builder, so report such rows instead of acting on them.
+
 ## 4. DSKP load
 
 UAT has 0 curriculum nodes until this runs, so DSKP tagging, blueprints and Jana Kertas cannot work there. The loader is a script, not a migration: insert-only, idempotent, one transaction per subject, Tingkatan 1-5 only. Full detail, flags and rollback: [dskp-loader.md](dskp-loader.md).
@@ -867,6 +879,8 @@ Set on the API service before it starts (examples in `.env.api.example`; no secr
 | Variable | Value for R1 | Meaning |
 |---|---|---|
 | `BIJAK_POC_QUESTIONS` | `false` or removed on every environment | **Deprecated no-op since T36 (BASE-99, `apps/api/src/common/config/env.schema.ts:110`).** The API serves the question bank only whatever it says; `true` only logs one warning at start. Remove it from the Render service by hand (`render.yaml` no longer sets it). The seeded PoC papers are withdrawn by the seed step `exam-retire-poc`, see [r1-release-input-team-a.md](r1-release-input-team-a.md) section 2.2 for the demo-host steps (the demo database needs at least one published bank paper). |
+| `THROTTLE_GLOBAL_PER_MINUTE` | **Operator must confirm before deploy (REQ-B-080):** the recommended value is `3000`. Code default **300** when unset | Global per-address ceiling per minute on every `/api` route except `/api/health` and `/api/ready`, per process, in memory. Schema `apps/api/src/common/config/env.schema.ts:132` (optional, integer, minimum 1), default 300 in `apps/api/src/common/security/global-rate-limit.guard.ts:16-17` (`GLOBAL_RATE_SPEC`, `default: 300`). Behind a proxy all pupils on one school network share one address, so 300 can be reached by normal use. The route buckets (`@RateLimit`) stay stricter and are counted separately. Whether `3000` is set on the server is **not verifiable from the repo**: the operator reads the server environment (names and values only, no secret) and records it before deploy. |
+| `TRUST_PROXY_HOPS` | **Operator must confirm before deploy (REQ-B-080):** the recommended value is `1` (one reverse proxy in front of the API). Code default **0** when unset | Number of `X-Forwarded-For` hops trusted for the client address; with `0` the address is the socket address, so behind a proxy every client shares the proxy's address and one throttle bucket (`apps/api/src/common/config/env.schema.ts:87`, `.default(0)`; `apps/api/src/common/net/client-ip.ts`). With a value above 0 set `CLIENT_IP_HEADER` and `EDGE_PROXY_SECRET` too, or `req.ip` can be spoofed by a direct call to the origin (the API logs a boot warning, `clientIpBootWarning`, `client-ip.ts:72`). Confirm the real proxy chain length of the deployment; do not copy the demo host's value. |
 | `OCR_ENGINE` | `none` (default) or `tesseract` | `none`: scanned pages end as `OCR_UNAVAILABLE`. `tesseract`: tesseract.js with local language data, never downloads; then `OCR_LANG_DIR` must be an absolute folder holding `msa.traineddata` and `eng.traineddata`. |
 | `OCR_LANG_DIR` | empty, or the folder above | Required only with `OCR_ENGINE=tesseract`. |
 | `THROTTLE_SERVABILITY_READ_PER_MINUTE` | optional; default 120 when unset | In base since BASE-28 (T30). Per-user rate limit of the admin servability reads ("Dilihat murid di", the hub, the lanes); a request above the limit answers 429. Integer, minimum 1. Cited from `apps/api/src/common/config/env.schema.ts`, `apps/api/src/modules/questions/http/servability.controller.ts` and `.env.api.example` on that branch. A normal admin session needs no change. |
