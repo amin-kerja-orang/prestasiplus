@@ -117,7 +117,7 @@ sequenceDiagram
 
 ## 2. Data model changes (Prisma + migrations)
 
-Migration numbers 0100-0109 are team A's range (in code: 0092, 0093, 0100 lifecycle and 0101 `essay_choice`; every higher number below is a plan; D68: LEAD confirms at merge). Every migration is forward only, idempotent where possible, and states its verification query. Enums stay text + CHECK (repo convention).
+Migration numbers 0100-0109 are team A's range (the built folders are listed under the table; every other number below is a plan; D68: LEAD confirms at merge). Every migration is forward only, idempotent where possible, and states its verification query. Enums stay text + CHECK (repo convention).
 
 | # | Migration | Content |
 |---|---|---|
@@ -125,14 +125,16 @@ Migration numbers 0100-0109 are team A's range (in code: 0092, 0093, 0100 lifecy
 | 0101 | `essay_choice` (built, R1-T25) | `question_parts.topics` jsonb (`[{ id, label }]`, 2..6, free-string ids per V2 `config.topics`, CHECK `ck_question_parts_topics`); CHECK mode adds `essay_choice`; word range reuses `word_min`/`word_max`; independent of the lifecycle statuses of 0100 |
 | 0102 | `dskp_leaf_tags_and_facts` | `question_parts.tp`, `.cognitive_level` (NOT `.topics` and NOT the `essay_choice` mode CHECK: both already added by 0101 `essay_choice`); table `question_version_facts`; backfill facts for all existing versions by a SQL function (same logic as `computeFacts`; a post-migration script compares both on a sample) |
 | 0103 | `stimulus_kinds_wide` | no DDL if the CHECK already allows the 8 kinds (`stimuli.kind` check lists passage, image, diagram, table, graph, map, infographic, audio); migration only asserts it; contract widens |
-| 0104 | `tracking_a_authoring` | ADR-0032 columns and unique index |
-| 0105 | `kertas_subjektif` | ADR-0033 tables, `paper_sections.kertas_paper_id`, file purposes |
+| 0104 | `paper_section_admin_created` (T48, `paper_sections.admin_created`; was reserved for `tracking_a_authoring`, which moves to the team A overflow range 0120-0129, LEAD confirms at merge) | additive column for the V2 "Tambah bahagian" |
+| 0105 | `gate_facts` (built, H-A18, merged BASE-132; was reserved for `kertas_subjektif`, which moves to the next free number of the team A overflow range 0120-0129, LEAD confirms at merge) | `question_versions` columns and CHECKs for the H-A18 gate facts |
 | 0106 | `question_stem_trgm` (built, admin-list-perf) | `pg_trgm` extension and trigram indexes on the question stems (`stem_ms`, `stem_en`) for the admin list search; replaces the planned `feature_flags` here |
 | 0107 | `question_paper_kertas_index` (built, admin-list-perf) | expression index for the Kertas filter of the admin list; replaces the planned `drop_pool_tag` here |
 | 0108 | `feature_flags` (moved from 0106) | ADR-0035 |
 | 0109 | `drop_pool_tag` (moved from 0107) | delete `question_tags` kind `pool`; narrow CHECK |
 
-> Numbering (R1-T25, resolved): 0100 lifecycle and 0101 `essay_choice` exist in code. Planned, in the order this document implies: 0102 `dskp_leaf_tags_and_facts` (must not add `topics` or the `essay_choice` mode again), 0103 `stimulus_kinds_wide`, 0104 `tracking_a_authoring`, 0105 `kertas_subjektif`. **Renumbered (admin-list-perf):** 0106 `question_stem_trgm` and 0107 `question_paper_kertas_index` were built by admin-list-perf (approved by the team A lead) and are on `r1/admin-list-perf`, so the two migrations this document had reserved there move: `feature_flags` takes 0108, and `drop_pool_tag` takes 0109. **Allocation (team A lead):** 0108 `feature_flags`, 0109 `drop_pool_tag`, and the optional migrations all in the team A overflow range 0120-0129 (team C owns 0110-0119), each only when its task proves a column is needed: R1-B16 (practice mode CHECK) 0120, R1-B10 (`needs_review`) 0121, R1-B12 (self-mark; formerly 0108) 0122, R1-B20 (file purposes; formerly 0109) 0123; the LEAD confirms the exact numbers at merge.
+> Built folders (source of truth: `ls apps/api/prisma/migrations`, BASE-140): 0100 `question_lifecycle_approved`, 0101 `essay_choice`, 0102 `leaf_cognitive_level`, 0103 `question_report_context`, 0104 `paper_section_admin_created`, 0105 `gate_facts`, 0106 `question_stem_trgm`, 0107 `question_paper_kertas_index`, 0110 `reference_image_tokens` (team C). Where a planned name in the table above differs from a built folder, the folder name is what exists.
+
+> Numbering (R1-T25, resolved): 0100 lifecycle and 0101 `essay_choice` exist in code. Planned, in the order this document implies: 0102 `dskp_leaf_tags_and_facts` (must not add `topics` or the `essay_choice` mode again), 0103 `stimulus_kinds_wide`, and free numbers for `kertas_subjektif` and `tracking_a_authoring` (0104 is taken by T48 `paper_section_admin_created` and 0105 by H-A18 `gate_facts`; 0106 and 0107 are built, 0108 and 0109 are allocated below, so both take the team A overflow range 0120-0129, LEAD confirms the numbers at merge). **Renumbered (admin-list-perf):** 0106 `question_stem_trgm` and 0107 `question_paper_kertas_index` were built by admin-list-perf (approved by the team A lead) and are on `r1/admin-list-perf`, so the two migrations this document had reserved there move: `feature_flags` takes 0108, and `drop_pool_tag` takes 0109. **Allocation (team A lead):** 0108 `feature_flags`, 0109 `drop_pool_tag`, and the optional migrations all in the team A overflow range 0120-0129 (team C owns 0110-0119), each only when its task proves a column is needed: R1-B16 (practice mode CHECK) 0120, R1-B10 (`needs_review`) 0121, R1-B12 (self-mark; formerly 0108) 0122, R1-B20 (file purposes; formerly 0109) 0123; the LEAD confirms the exact numbers at merge.
 
 ### 2.1 Prisma (excerpts; field names follow repo `@map` style)
 ```prisma
@@ -532,9 +534,9 @@ Legend: **WT** = changes shared migrations, seeds or contract and runs in an iso
 | BE-B7 | SPM pools: Latih Tubi SPM, Databank, Mock K1/K2, Struktur/Subjektif counts, Misi, Set Guru, Remedial, Bab counts via `where()` | `spm/**`, `classes/**`, `practice/reads/**` | A3, B4 | No |
 | BE-B8 | Admin servability endpoints (single, batch, shortfall, overview/lanes), bulk-action rework with per-item reasons, edit-as-draft, status response with servability | `questions/http/admin.controller.ts`, `spm/**` | A3, B1 | No |
 | BE-C1 | Papers: blank/generate/pool-preview, placements API, review endpoint, publish conformance (AC-07.4), override audit, native approve in transaction, pin versions, withdraw, copy, attach document | `exam/builder/**`, `exam/blueprints/**`, `bijak/papers/**` | A3, B1, B5, (D1 for attach) | No |
-| BE-C2 | Tracking A CRUD + fill/swap + student visibility, migration 0104 | `spm/tracking*.ts`, new controller | A3 | Yes (0104, seed) |
+| BE-C2 | Tracking A CRUD + fill/swap + student visibility, migration (next free number of range 0100-0109; 0104 is `paper_section_admin_created`) | `spm/tracking*.ts`, new controller | A3 | Yes (0104, seed) |
 | BE-C3 | Simulasi Kuiz mode, paper quiz + check, Pembetulan read | `practice/**`, `bijak/papers/**` | B4, B5 | No |
-| BE-D1 | Kertas Subjektif module: migration 0105, CRUD, publish/unpublish gate, flag guard, file purposes + pupil read rule | `modules/kertas-subjektif/**`, `files/**`, `prisma/schema/kertas.prisma` | A2, A4 | Yes |
+| BE-D1 | Kertas Subjektif module: migration in the team A overflow range 0120-0129 (0105 is `gate_facts`), CRUD, publish/unpublish gate, flag guard, file purposes + pupil read rule | `modules/kertas-subjektif/**`, `files/**`, `prisma/schema/kertas.prisma` | A2, A4 | Yes |
 | BE-D2 | Pipeline: upload, jobs, page reading via `DocumentReader` (text layer + Tesseract), `assembleDocument`, progress, failure codes, fixtures (one digital, one scanned test PDF) | `kertas-subjektif/pipeline/**` | D1 | No |
 | BE-D3 | Document save (version conflict), section accept/auto-resolve, figures upload/recrop, page image read, student reads | `kertas-subjektif/**` | D1, D2 | No |
 | BE-E1 | Dev seeds on the new model (T4/T5 approved questions of all shapes incl. image files), `seed:dev` split | `prisma/seed/**` | A1, B1 | Yes |
@@ -585,7 +587,7 @@ FE-P5 is DONE (`src/components/question-display/`: `AnswerWidget`, `McqOptions`,
 - **Wave 4 (parallel):** BE-D3, FE-A3, FE-A4, FE-A5, FE-A7, FE-S1, FE-S2, FE-S4, DO-1.
 - **Wave 5:** FE-A8, FE-S3, BE-E2, QA-2.
 - **Wave 6:** QA-1, G4 reviews (code-reviewer, security-engineer: file read rules, flag guards, document sanitising, bulk caps), G5.
-Shared-data tasks (WT): BE-A1, BE-A2, BE-A3, BE-A4 (migration), BE-B2, BE-B3, BE-C2, BE-D1, BE-E1. Serialise migrations: A1 (0100), A3 (0102), C2 (0104), D1 (0105), A4 (0108, was 0106), B2 (`drop_pool_tag`, 0109, was 0107).
+Shared-data tasks (WT): BE-A1, BE-A2, BE-A3, BE-A4 (migration), BE-B2, BE-B3, BE-C2, BE-D1, BE-E1. Serialise migrations: A1 (0100), A3 (0102), C2 (the next free number: 0104 is taken by T48 `paper_section_admin_created`), D1 (overflow 0120-0129; 0105 is `gate_facts`), A4 (0108, was 0106), B2 (`drop_pool_tag`, 0109, was 0107).
 
 ## 10. First vertical slice (fastest functioning path)
 Goal: admin creates and approves an image MCQ, the student sees it in Latih Tubi and inside a published Simulasi paper.
@@ -688,7 +690,7 @@ Size: S under 1 day, M 1-3 days, L 3-5 days (one Sonnet agent, tests included). 
 | R1-Q02 | Regression: servability matrix, published-to-approved check on a QLOAD copy, AC execution table | M | B01, B03, B06 | 6 | No |
 | R1-G4 | `code-reviewer` and `security-engineer` (file read rule, self-mark authorization and clamp, publish, bulk caps) | M | all | 6 | No |
 
-Counts: 21 BE, 15 FE (F17 deferred), 2 DO, 2 QA, 1 lead, 1 review gate. Migration numbers: 0100 (B01), 0101 (`essay_choice`, built), 0102 (B03), 0109 (B06); 0103-0105 are `stimulus_kinds_wide`, tracking and kertas, 0106 and 0107 are the built admin-list-perf indexes, 0108 is `feature_flags`; optional 0120 (B16), 0121 (B10), 0122 (B12) and 0123 (B20) in the team A overflow range (0120-0129; team C owns 0110-0119). LEAD confirms final numbers at merge (D68).
+Counts: 21 BE, 15 FE (F17 deferred), 2 DO, 2 QA, 1 lead, 1 review gate. Migration numbers: 0100 (B01), 0101 (`essay_choice`, built), 0102 (B03), 0109 (B06); 0103 is `stimulus_kinds_wide` (planned), 0104 is the built T48 `paper_section_admin_created`, 0105 is the built H-A18 `gate_facts`, tracking and kertas take free numbers in the overflow range 0120-0129, 0106 and 0107 are the built admin-list-perf indexes, 0108 is `feature_flags`; optional 0120 (B16), 0121 (B10), 0122 (B12) and 0123 (B20) in the team A overflow range (0120-0129; team C owns 0110-0119). LEAD confirms final numbers at merge (D68).
 
 ### 13.4 Task detail (goal | files | covers | tests)
 Tests use the repo's existing test, lint and type-check scripts (never pnpm). Every task adds unit tests for its rules and an API or component test; FE tasks add 375/768/1280 layout checks.

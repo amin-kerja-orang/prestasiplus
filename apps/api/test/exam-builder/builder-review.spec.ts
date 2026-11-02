@@ -415,6 +415,33 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
       expect(fixed.blockerDetails.some((b: { code: string }) => b.code === 'REFERENCE_IMAGE_INVALID')).toBe(false)
     })
 
+    // REQ-B-068: the reference-image check (REQ-A-013) and the Pilih N rule check (R1-T48) sit on one PUT; each runs once and neither hides the other.
+    it('a missing reference picture is exactly ONE blocker (the same picture on two panels, review and publish alike), and the picture check and the Pilih N check both still run on one PUT', async () => {
+      // an empty paper: no extra approved questions (the D93 pool search below pages 100 questions of the same text)
+      const paper = await newPaper()
+      const sections = await sectionsOf(paper)
+      const up = await admin.upload('/api/files?purpose=question_image', makePng())
+      const internal = String((await q(`select id::text id from files where public_id = $1`, [up.body.data.id as string]))[0]!.id)
+      const panel = (title: string) => ({ title, items: [], imageFileId: internal })
+      await q(`update papers set reference_sheets = $2::jsonb where id = $1`, [paper, JSON.stringify([panel('Rajah 1'), panel('Rajah 2')])])
+      const review = (await admin.get(`/api/admin/papers/${paper}/review`)).body.data
+      const mine = (review.blockerDetails as { code: string; message: string }[]).filter((b) => b.code === 'REFERENCE_IMAGE_INVALID')
+      expect(mine).toHaveLength(1)
+      expect((review.blockers as string[]).filter((e) => e === MSG.referenceImageInvalid)).toHaveLength(1)
+      const pub = await admin.post(`/api/admin/papers/${paper}/publish`, {})
+      expect((pub.body.data.errors as string[]).filter((e) => e === MSG.referenceImageInvalid)).toHaveLength(1)
+      // one PUT with a valid stored picture AND a Pilih N above the Bahagian's questions: the picture passes, the rule is refused (422 on `rule`, not on `reference`)
+      const token = up.body.data.id as string
+      const both = await admin.put(`/api/admin/papers/${paper}`, { reference: [{ title: 'Rajah', items: [], imageFileId: token }], sections: [{ id: sections[0], rule: { type: 'choose', n: 99 } }] })
+      expect(both.status, JSON.stringify(both.body)).toBe(422)
+      expect(both.body.error.fields.rule).toBeTruthy()
+      expect(both.body.error.fields.reference).toBeUndefined()
+      // and with a refused picture on the same PUT the picture is what is reported (it is checked first)
+      const bothBad = await admin.put(`/api/admin/papers/${paper}`, { reference: [{ title: 'X', items: [], imageFileId: 'bukan-fail-sebenar' }], sections: [{ id: sections[0], rule: { type: 'choose', n: 99 } }] })
+      expect(bothBad.status).toBe(422)
+      expect(bothBad.body.error.fields.reference).toBe(MSG.referenceImageInvalid)
+    })
+
     it('Sunting petikan: renames the group title; the group must be on the paper', async () => {
       const stim = await admin.post('/api/stimuli', { kind: 'passage', label: 'Petikan lama', body: { ms: 'Petikan ujian untuk kertas.' } })
       expect(stim.status, JSON.stringify(stim.body)).toBe(201)
