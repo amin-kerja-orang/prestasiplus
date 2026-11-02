@@ -18,7 +18,7 @@ import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL, SERVABLE_STATUS } from '../questions/l
  *      The paper is the authority here, so an archived (superseded) pinned version, a later-withdrawn question or a hidden
  *      level do not hide it from a paper that is still published.
  *   C. REFERENCE: a published, sittable paper whose `reference_sheets` has a panel carrying the file as `imageFileId`
- *      (the public token or the internal decimal id).
+ *      (the PUBLIC token only: the internal decimal id never matches, so an unattached image cannot be read by guessing ids; B3 T34-L1-residual).
  */
 
 /** Statuses of a question version a pupil can be served from (ADR-0027): `approved` only; `published` no longer exists for questions. */
@@ -95,7 +95,7 @@ export function pupilMayReadQuestionImageSql(fileId: bigint, userId: bigint, pub
      WHERE jsonb_typeof(s.reference_sheets) = 'array'
        AND jsonb_path_exists(
              s.reference_sheets,
-             '$[*] ? (@.imageFileId == $pub || @.imageFileId == $dec)',
-             jsonb_build_object('pub', ${publicToken}::text, 'dec', ${fileId.toString()}::text))
+             '$[*] ? (@.imageFileId == $pub)',
+             jsonb_build_object('pub', ${publicToken}::text))
     LIMIT 1`
 }

@@ -1,4 +1,5 @@
 import { ApiError } from '../../src/common/errors/api-error'
+import { isStructuredVisible, STRUCTURED_LEVEL_CODES } from '../../src/modules/questions/structured-visibility'
 import type { QuestionWorkflowStatus } from '@pp/contract'
 
 import type {
@@ -30,6 +31,8 @@ export interface FakeQuestion {
   diagramFileId: string | null
   /** Live versions archived through `target: 'live'` (for tests). */
   archivedLive: number[]
+  /** Type of the LIVE version when a newer version (the latest, `brief`) has another type. */
+  liveType?: 'mcq' | 'structured'
 }
 
 export interface FakeSeed {
@@ -43,6 +46,8 @@ export interface FakeSeed {
   /** Overrides of the gate data (a passing question by default). */
   gate?: Partial<QuestionGateData>
   brief?: Partial<QuestionBrief>
+  /** Type of the live version when it differs from the latest (`brief.type`). */
+  liveType?: 'mcq' | 'structured'
   quality?: Partial<QualityQuestion>
   diagram?: DiagramCandidate | null
   explanation?: string | null
@@ -139,6 +144,7 @@ export class FakeQuestionBank implements QuestionBankPort {
       sourcePaperId: input.sourcePaperId ?? null,
       diagramFileId: null,
       archivedLive: [],
+      ...(input.liveType ? { liveType: input.liveType } : {}),
     }
     this.questions.set(input.id, q)
     return q
@@ -217,6 +223,22 @@ export class FakeQuestionBank implements QuestionBankPort {
 
   async listIdsBySourcePaper(sourcePaperId: string): Promise<string[]> {
     return [...this.questions.values()].filter((q) => q.sourcePaperId === sourcePaperId).map((q) => q.id)
+  }
+
+  /** The fake's level ids by code (`gate.educationLevelId` '1' is T4); the structured ones come from the real `STRUCTURED_LEVEL_CODES`. */
+  static readonly LEVEL_ID_BY_CODE: Readonly<Record<string, string>> = { T4: '1', T5: '2' }
+  static readonly STRUCTURED_LEVEL_IDS: ReadonlySet<string> = new Set(STRUCTURED_LEVEL_CODES.flatMap((c) => FakeQuestionBank.LEVEL_ID_BY_CODE[c] ?? []))
+
+  async liveType(id: string): Promise<'mcq' | 'structured' | null> {
+    const q = this.questions.get(id)
+    if (!q || q.liveVersionNo === null) return null
+    return q.liveType ?? (q.brief.type === 'structured' ? 'structured' : 'mcq')
+  }
+
+  async structuredVisible(id: string): Promise<boolean> {
+    const q = this.questions.get(id)
+    if (!q || q.liveVersionNo === null) return false
+    return isStructuredVisible({ isActive: q.isActive, version: { status: 'approved', type: q.liveType ?? q.brief.type, educationLevelId: q.brief.educationLevelId } }, FakeQuestionBank.STRUCTURED_LEVEL_IDS)
   }
 
   async describe(ids: readonly string[]): Promise<ReadonlyMap<string, QuestionBrief>> {

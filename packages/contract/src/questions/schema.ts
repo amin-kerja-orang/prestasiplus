@@ -37,6 +37,7 @@ export const QUESTION_MESSAGES = {
   /** Filter-based actions (AC-03.3; V2 A11 "Luluskan Hasil Tapisan" / "Arkib Semua"). */
   filterInvalid: 'Nilai penapis tidak sah.',
   filterNeeded: 'Sila pilih sekurang-kurangnya satu penapis (subjek/aras/status/carian) sebelum meluluskan secara pukal.',
+  filterBlank: 'Penapis yang dipilih tidak mempunyai nilai. Isi nilai penapis, atau buang penapis itu.',
   filterCountNeeded: 'Sila hantar bilangan soalan hasil tapisan yang dipaparkan (expectedCount).',
   filterCountChanged: (expected: number, actual: number): string =>
     `Bilangan soalan hasil tapisan telah berubah (dijangka ${String(expected)}, kini ${String(actual)}). Muat semula senarai dan semak semula sebelum meneruskan.`,
@@ -147,7 +148,13 @@ export const questionFilterShape = {
   /** V2 "Tahun": exam year of the source paper, four digits. */
   tahun: z.string({ error: QUESTION_MESSAGES.filterInvalid }).regex(/^\d{4}$/, QUESTION_MESSAGES.filterInvalid).optional(),
   /** V2 "Negeri" ("negeri atau badan peperiksaan"): `source_papers.exam_board`, matched case-insensitively. */
-  negeri: z.string({ error: QUESTION_MESSAGES.filterInvalid }).min(1, QUESTION_MESSAGES.filterInvalid).max(64, QUESTION_MESSAGES.filterInvalid).optional(),
+  // A blank value (spaces only, `negeri=%20`) is no filter, like a blank search (T47-L1): it is dropped before the value rules run.
+  negeri: z
+    .preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.string({ error: QUESTION_MESSAGES.filterInvalid }).max(64, QUESTION_MESSAGES.filterInvalid).optional(),
+    )
+    .optional(),
   /** V2 "Kertas" (Kertas 1-3). */
   kertas: z.enum(['1', '2', '3'], QUESTION_MESSAGES.filterInvalid).optional(),
   /** V2 "Jenis" ("jenis peperiksaan"). */
@@ -155,6 +162,9 @@ export const questionFilterShape = {
 } as const
 
 export const QuestionListQuerySchema = PageQuerySchema.extend(questionFilterShape).meta({ id: 'QuestionListQuery' })
+
+/** REQ-C-019: the values of the Studio selects that come from data. `negeri` = the distinct `exam_board` of the source papers, sorted. */
+export const QuestionFilterOptionsSchema = z.object({ negeri: z.array(z.string()) }).meta({ id: 'QuestionFilterOptions' })
 
 export const QuestionSummarySchema = z
   .object({
