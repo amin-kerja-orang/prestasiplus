@@ -137,6 +137,12 @@ export const BIJAK_BUILDER_EDIT_LINES = {
  * `{label}: ` through `sectionLine`. `group` is a group id. Clients show every line verbatim.
  */
 export const BIJAK_BUILDER_CHECK_LINES = {
+  /** PIPE AC-07.4: the first publish check, a paper with no question at all (V2 text). */
+  noQuestions: 'Kertas ini tiada soalan — tidak boleh diterbitkan.',
+  /** [PROPOSED] PIPE AC-07.4: a Bahagian that holds questions but adds up to 0 marks (never overridable). */
+  zeroMarkSection: 'Bahagian ini ada soalan tetapi jumlah markahnya 0',
+  /** [PROPOSED] PIPE AC-07.4: the whole paper adds up to less than 1 mark (never overridable). */
+  totalMarksBelowOne: 'Jumlah markah kertas mesti sekurang-kurangnya 1',
   duplicateQuestion: (ids: readonly string[]) => `Soalan berulang dalam kertas: ${ids.join(', ')}`,
   groupSplit: (group: string) => `Kumpulan rangsangan ${group} dipecahkan antara dua bahagian`,
   tooFew: (need: number, have: number) =>
@@ -208,6 +214,9 @@ export const BIJAK_BUILDER_INELIGIBLE_TEXT = {
  * the Kontrak is not Disahkan, and a question without DSKP unit, TP or with tags awaiting review.
  */
 export const BIJAK_BUILDER_BLOCKER_OVERRIDABLE = {
+  NO_QUESTIONS: false,
+  ZERO_MARK_SECTION: false,
+  TOTAL_MARKS_BELOW_ONE: false,
   DUPLICATE_QUESTION: false,
   GROUP_MIN_MEMBERS: false,
   GROUP_SPLIT: false,
@@ -663,7 +672,7 @@ export const BijakBuilderBlockerSchema = z
   .strictObject({
     code: z.enum(BIJAK_BUILDER_BLOCKER_CODES).meta({
       description:
-        'Stable code. Hard (overridable false): DUPLICATE_QUESTION, GROUP_MIN_MEMBERS (D93), GROUP_SPLIT, COUNT_TOO_FEW, COUNT_TOO_MANY, MARKS_MISMATCH, GROUP_NOT_CONSECUTIVE, GROUP_INCOMPLETE, GROUP_OUT_OF_ORDER, NOT_PUBLISHED, UNKNOWN_QUESTION (placed question missing from the pool), NOT_SERVABLE (R1E2E-06, pupils cannot be served). Hard also: REFERENCE_IMAGE_INVALID (a reference-sheet picture that is not a stored question image, re-checked at Terbit), NO_KEY, NO_MARKS, MODE_NOT_ALLOWED (structural failures of a question) and GROUP_BROKEN. Overridable: BLUEPRINT_NOT_VERIFIED (Kontrak not Disahkan) and INELIGIBLE (a question without DSKP unit or TP, or with tags awaiting review). Overridable also (R1-T48): RULE_NOT_IN_CONTRACT (the rule of a Bahagian differs from the Kontrak) and SECTION_NOT_IN_CONTRACT (admin-added Bahagian). Hard also (R1-T48): RULE_N_EXCEEDS_QUESTIONS (Pilih N with fewer than N questions in the Bahagian) and SECTION_EMPTY (an admin-added Bahagian without a question).',
+        'Stable code. Hard (overridable false): NO_QUESTIONS, ZERO_MARK_SECTION, TOTAL_MARKS_BELOW_ONE (PIPE AC-07.4: no question, a Bahagian with questions but 0 marks, a total under 1), DUPLICATE_QUESTION, GROUP_MIN_MEMBERS (D93), GROUP_SPLIT, COUNT_TOO_FEW, COUNT_TOO_MANY, MARKS_MISMATCH, GROUP_NOT_CONSECUTIVE, GROUP_INCOMPLETE, GROUP_OUT_OF_ORDER, NOT_PUBLISHED, UNKNOWN_QUESTION (placed question missing from the pool), NOT_SERVABLE (R1E2E-06, pupils cannot be served). Hard also: REFERENCE_IMAGE_INVALID (a reference-sheet picture that is not a stored question image, re-checked at Terbit), NO_KEY, NO_MARKS, MODE_NOT_ALLOWED (structural failures of a question) and GROUP_BROKEN. Overridable: BLUEPRINT_NOT_VERIFIED (Kontrak not Disahkan) and INELIGIBLE (a question without DSKP unit or TP, or with tags awaiting review). Overridable also (R1-T48): RULE_NOT_IN_CONTRACT (the rule of a Bahagian differs from the Kontrak) and SECTION_NOT_IN_CONTRACT (admin-added Bahagian). Hard also (R1-T48): RULE_N_EXCEEDS_QUESTIONS (Pilih N with fewer than N questions in the Bahagian) and SECTION_EMPTY (an admin-added Bahagian without a question).',
     }),
     message: z.string().meta({ description: 'The BM line, identical to the string in `blockers` / `errors`.' }),
     overridable: z.boolean().meta({ description: 'true when the audited override can lift this blocker.' }),
