@@ -213,8 +213,9 @@ let xpBefore = 0 // the seeded pupil already has XP: the reward is checked as a 
     expect(res.body.data.affected, JSON.stringify(res.body.data)).toBe(0)
     const failed = res.body.data.failed as { id: string; code: string; fields: Record<string, string> }[]
     expect(failed).toHaveLength(1)
-    expect(failed[0]).toMatchObject({ id: solo, code: 'VALIDATION_ERROR', fields: { unitId: 'Sila pilih unit DSKP.' } })
-    expect(Object.keys(failed[0]!.fields)).not.toContain('chapterId') // the only DSKP check left; a missing Bab is not an issue
+    expect(failed[0]).toMatchObject({ id: solo, code: 'VALIDATION_ERROR' })
+    // EXACTLY the DSKP unit and SP issues (UNIT_MISSING + SP_MISSING); no chapterId: a missing Bab is not an issue
+    expect(failed[0]!.fields).toEqual({ unitId: 'Sila pilih unit DSKP.', spIds: 'Sila pilih sekurang-kurangnya satu SP DSKP.' })
     expect((await q(`select v.status from question_versions v where v.question_id = $1::bigint`, [solo])).map((r) => r.status)).toEqual(['review'])
     await q(`update question_versions set unit_node_id = $2::bigint where question_id = $1::bigint`, [solo, before!.unit])
   })
