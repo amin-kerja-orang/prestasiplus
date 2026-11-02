@@ -5,8 +5,8 @@
 #            `auto-imports.d.ts` and `components.d.ts` that vue-tsc needs (`useToast`, ...). On a clean
 #            checkout `vue-tsc -b` alone fails with TS2304 until a Vite build or dev server has run once.
 #   e2e-api  The @api Playwright specs (playwright.http.config.ts) on mobile 375, tablet 768 and desktop 1280
-#            against a REAL API: Postgres 16 service + the API checked out from `feature/v2-backend`
-#            (`api_ref` input on a manual run), migrated and seeded with the poc profile, then with the T26
+#            against a REAL API: Postgres 16 service + the API of the same commit as the frontend
+#            (`api_ref` input on a manual run to use another ref), migrated and seeded with the poc profile, then with the T26
 #            local/E2E profile when the API ref has it (`--profile=e2e`, E2E_SEED=1). PoC question papers are
 #            off (BIJAK_POC_QUESTIONS=false, R1-B07 / T36): the Bijak attempt specs use the bank demo paper
 #            (BIJAK_PAPER_ID, looked up after the seed). No Docker build:
@@ -23,13 +23,13 @@ on:
   pull_request:
     branches: [be/integration-frontend]
   push:
-    branches: [be/integration-frontend]
+    branches: [be/integration-frontend, feature/v3-bijak-r1]
   workflow_dispatch:
     inputs:
       api_ref:
-        description: Branch, tag or SHA of the API to run the e2e-api job against
+        description: Branch, tag or SHA of the API to run the e2e-api job against (empty = the commit under test)
         required: false
-        default: feature/v2-backend
+        default: ''
 
 permissions:
   contents: read
@@ -96,7 +96,7 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     env:
-      API_REF: ${{ inputs.api_ref || 'feature/v2-backend' }}
+      API_REF: ${{ inputs.api_ref || github.sha }}
       DATABASE_URL: postgresql://pp:ci-throwaway-not-a-secret@localhost:5432/prestasiplus_e2e
       # API settings for a local http stack (mirrors compose.http.yaml): dev mode, demo seed, no PoC questions
       # (bank only; the flag is a deprecated no-op after T36), plain-http cookie and a login throttle high
@@ -158,7 +158,7 @@ jobs:
 
       # be:build first: its prebuild runs `prisma generate`, which the seed imports (src/db/generated).
       # Then the T26 local/E2E seed (docs/ops/e2e-seed.md; this job's NODE_ENV=development, E2E_SEED only on that
-      # command). An API ref without it (e.g. the older feature/v2-backend) gets a notice and the poc seed only.
+      # command). An API ref without it (e.g. an older branch) gets a notice and the poc seed only.
       # E2E_DEMO_SECONDARY: the specs use DEMO002..004 as their other schools, and D72 hides primary schools.
       - name: API - build, migrate, seed (poc profile, then e2e profile)
         working-directory: api
