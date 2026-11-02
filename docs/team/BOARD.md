@@ -530,13 +530,13 @@ The B4 pack chain was walked by HTTP on SN/2 (4541/2): **96 MATCH, 1 scanner fal
 - Low bug, fixed under D9: "(draf)" stays in published titles → r1/publish-title-draft (A2).
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 00:44 UTC, BASE 0f7269f0)
+### Team A open branches: heads from origin (auto, 2026-11-02 00:45 UTC, BASE 0f7269f0)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/a2-carried-minors | 45f152423 | READY (A2, @45f15242 = 6b9104d3 + A1b Minor JSDoc wording; comments/docs only): REQ-A-018 JSDoc, D9 row simulasi_kuiz limit, deviation row PKSK applyStatus no approve gate (LEAD, KIV R2); A1b Approve; C3 doc line deferred until c012 merges; B2 |
-| r1/ac-gaps-a1b | 1fb686503 | READY (multi, @e507754b: row 39 per USER Q13; B4 pack fixes; runbook 0105 NOT online + caveats; consistency fixes B8–B12: T31/T43/T51 READY + merge order, Sembunyikan button, Terbitkan cite, THROTTLE default 240; B4 pack tiers precondition "if it is not 4"; runbook 0106/0107 window procedure (REQ-B-066) + A1b runbook findings); B4 |
+| r1/ac-gaps-a1b | 1fb686503 | READY (multi, @1fb68650: H-A18 = B2-approved a9ffe246, pair with reqb052; row 39 per USER Q13; B4 pack fixes; runbook 0105 NOT online + caveats; consistency fixes B8–B12: T31/T43/T51 READY + merge order, Sembunyikan button, Terbitkan cite, THROTTLE default 240; B4 pack tiers precondition "if it is not 4"; runbook 0106/0107 window procedure (REQ-B-066) + A1b runbook findings); B4 |
 | r1/admin-list-perf | 69f465c89 | READY — B2 c23 APPROVED @69f465c8 (AwM; REQ-B-061 closed). REQ-B-066 before deploy: env.schema.ts:148 comment → follow-up r1/alp-comment-240 (A4); runbook 0106/0107 entry + release-input:27 (A3 docs) |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
 | r1/alp-comment-240 | 84b0c3a99 | READY (A4, @84b0c3a9 on approved admin-list-perf 69f465c8; comment only): env.schema.ts:148 says 240 (REQ-B-066 part); merge after admin-list-perf; B2 | A1b Approve (comment only) |
@@ -550,8 +550,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha17-ac-coverage | 157b371c3 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b; head 157b371c |
 | r1/ha18-gate-facts | f988b670f | READY — B2 c23 APPROVED @a9ffe246 (AwM; B3 c45 Pass). **B1: merge a9ffe246 as a PAIR with reqb052 f3a2448f** (reqb052 carries the pinned-version-rule chapter fix; a9ffe246 alone turns BASE test/r1 red). Origin head f988b670 = + minors (0105 comment, not_duplicate idempotent, duplicateId) → follow-up r1/ha18-minors for B2 delta |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
-| r1/ha24-release-input | 3b9307aaa | READY (A3 docs, @33739c36: on BASE-131; release-input 0104–0110 reservations (REQ-B-066); KIV 37 rows incl. PKSK; checklist to BASE-120+, KIV 36 rows incl. REQ-B-059 cap and setGroupLabel label-only; ); A1a pre-review Approve on KIV rows 35/36 (note: row 36 cites T48 6c5ae3a8 lines not in BASE); B1/B2 |
-| r1/ha26-team-a-state | d1a639c97 | READY (A3 docs, @d1a639c9: merged to BASE-131, coverage 132, d90 text); refresh with new heads + §4 pending; B1 |
+| r1/ha24-release-input | 3b9307aaa | READY (A3 docs, @3b9307aa: H-A18 approved/pair wording; on BASE-131; release-input 0104–0110 reservations (REQ-B-066); KIV 37 rows incl. PKSK; checklist to BASE-120+, KIV 36 rows incl. REQ-B-059 cap and setGroupLabel label-only; ); A1a pre-review Approve on KIV rows 35/36 (note: row 36 cites T48 6c5ae3a8 lines not in BASE); B1/B2 |
+| r1/ha26-team-a-state | 9e5143a96 | READY (A3 docs, @9e5143a9: merged to BASE-131, all open heads incl. B2 c23 approvals, §4 request status refreshed); B1 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-followup | 2fe252aba | READY (A2, @2fe252ab on intake-reqs 8c1964a6): unknownSp required, FACTS in unit.spec, deviations row 244 names spNotInTaxonomy; 43/43, tsc 0; merge AFTER intake-reqs (deviations conflict: keep both); B2 small | A1b pre-review: CLEAN (CurriculumFacts internal; both producers always set unknownSp; tsc 0; 43/43) |
 | r1/minors-chain-tip-a3 | 41c22c969 | READY (A3, @41c22c96 on BASE-128): (a) dead reasons.length guard removed in approval-check (A1b Approve on 666102d0); (b) every servability-overview read goes through the limiter (4), max-in-flight spy spec, per A4 reading; closes B2 c20 Minors; B2 |
@@ -575,6 +575,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/reqb052-archived-edit | f3a2448f9 | READY — B2 c23 APPROVED @f3a2448f (AwM). Merge right after ha18 a9ffe246 (pair; carries the pinned-version-rule chapter fix) |
 | r1/reqb058-dedupe-test-a3 | a5f4d3553 | READY (A3, @a5f4d355 on reqb058 b1e96566; test only): one question in two sections, getVersions dedupe + takedown paths, 5 tests, mutations red; closes A1b Minor 3; merge after reqb058; B2 | A1a pre-review Approve (2 mutations red) |
 | r1/reqb058-takedown-pin | b1e965665 | READY (A4, @b1e96566: list drops taken-down papers for a pupil with no sitting, batched pins; cover unchanged by lead decision). A1b pre-review Approve (0 B/M; 3 optional minors), bite 3 red; B2 |
+| r1/reqb060-ks17-csv-link | 05d12e414 | (no status — triage) |
 | r1/rule-line-v2 | 89961f9f2 | READY (A3, @89961f9f, BASE-109; USER Q13 2026-11-02 follow V2): rules.ts + exam-core paper-model.ts → "Jawab {N} soalan sahaja." ("Jawab semua soalan." unchanged); new exam-core test (bites); contract examples + openapi; AC-06.1/standards/catalogue aligned; PoC/golden authored "daripada" = accepted limit (deviation row); A2 pre-review Minors closed (eslint keeps _questionCount disable, stated); exam-core 219, bijak-papers 109, conformance 403; FE copies REQ-A-035 (C); B2 |
 | r1/servability-stimuli-once | f76f729a8 | READY (A4, @f76f729a, contains chain tip + BASE-107): spy spec pins one stimulus read per chunk + 2 comments; optional; step 6b |
 | r1/stimulus-list-d72 | b45ce5197 | READY — B2 c23 APPROVED @b45ce519 (AwM) |
@@ -595,10 +596,6 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t51-partial-acs-a3 | 61c1b077f | READY — B2 c23 APPROVED @61c1b077 (AwM); merge after T48, T31, REQ-A-008, T43 |
 
 **Merged content, origin head has only base-merge commits since (no new work):** r1/a4chain-minors 86dd7ad67, r1/ha15-blueprint-evidence 7e5d637e5, r1/overview-getmany-parallel 2809a87fe, r1/reqb032-pinned-rule 167986eff, r1/t44-blueprint-fields 072d8f4b4
-
-**Origin head moved since last record (re-triage):** r1/ac-gaps-a1b: status says @e507754b, origin is 1fb686503; r1/ha24-release-input: status says @33739c36, origin is 3b9307aaa
-
-**New branches not yet triaged:** r1/reqb060-ks17-csv-link 05d12e414
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
