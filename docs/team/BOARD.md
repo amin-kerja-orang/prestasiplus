@@ -572,7 +572,7 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 - **Disk:** check `docker system df` and prune orphaned anonymous test volumes when there are 0 containers. A3 reclaimed 3.4 GB this way.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 07:28 UTC, BASE 87466acc)
+### Team A open branches: heads from origin (auto, 2026-11-02 07:37 UTC, BASE 87466acc)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -584,7 +584,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/reqb074-takedown-lows | 33b0a0b1c | SUPERSEDED: 45a75f68 merged as BASE-195; the later commit 33b0a0b1 carried the Q18 rule, which the user overrode (REQ-B-077). Do not merge 33b0a0b1. Follow-ups: r1/reqb074-dsg-spec-fix, then r1/reqb076-live-takedown (A1b) |
 | r1/reqb076-approve-gate | d23b43f3b | AFTER RELEASE (owner decision B1 cycle 63: R1 code = BASE-205; docs only until release). @d23b43f3, A4 Approve, clean on BASE-205; REQ-A-051. R1 known limit: re-approve of a taken-down source |
 | r1/reqb079-sweepuser-followup | 0964edaee | R2 CANDIDATE, not for R1 (A3, @0964edae from BASE-205: sweepUser try/catch + logger.warn so one dead sitting no longer 404s the pupil's whole history; override audit-detail asserts; a Terbit null-blueprint /review test; exam-builder + bijak-attempts 667/667; tsc 0). KIV 55 |
-| r1/reqb082-docs | 132034a55 | IN-PROGRESS (A3, @132034a5 + one more commit: the R1 = BASE-205 owner decision, the known limits (mixed bulk publish count only; re-approve after a takedown), approve-gate after release). New head to follow |
+| r1/reqb082-docs | 9c23e3543 | READY, FINAL (A3, @9c23e354 = docs only, a descendant of BASE-205 (fast-forward merge); 11 files +80/-41; answers REQ-B-082: R1 = BASE-205; known limits 7 (mixed bulk: skipped rows invisible) and 8 (re-approve after a takedown: VERIFIED unfiltered pupil paths); deviations :962 corrected; KIV 53 backfill note; runbook throttle/proxy + null-blueprint SELECT; KIV 56/51) |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 
