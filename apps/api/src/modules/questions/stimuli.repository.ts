@@ -5,6 +5,7 @@ import { Prisma } from '../../db/generated/client'
 import { idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { stimulusTableOf, stimulusTableParts, type StimulusTable } from './stimulus-table'
+import { NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL } from './learner-visibility'
 import { kertasOfPaperCode } from './projection'
 import type { StimulusKind } from './types'
 
@@ -63,6 +64,37 @@ const VERSION_SERVED = Prisma.sql`(
                JOIN papers spp ON spp.id = sps.paper_id AND spp.status = 'published'
               WHERE spl.question_id = q.id AND spl.pinned_version_no = v.version_no))
 )`
+
+/**
+ * Secondary only (D72, OQ-06), for the Studio lists of groups and stimuli: a question of a primary-stage level (Darjah) or a PKSK question is
+ * hidden from everyone, admin included, so a group with such a member, and a stimulus used by such a question, are not listed (a mixed group
+ * cannot be shown without a Darjah row). The question predicates are the ones of the question list (`learner-visibility`), on the LATEST
+ * version, as the subject and level filters here. A group without members, and a stimulus nobody uses, have nothing to hide.
+ */
+const GROUP_SECONDARY_ONLY = Prisma.sql`NOT EXISTS (
+  SELECT 1 FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
+   WHERE q.group_id = g.id AND NOT (${NOT_PKSK_SQL} AND ${NOT_PRIMARY_LEVEL_SQL}))`
+const STIMULUS_SECONDARY_ONLY = Prisma.sql`NOT EXISTS (
+  SELECT 1 FROM (
+    SELECT gq.id AS qid FROM stimulus_group_stimuli gs JOIN questions gq ON gq.group_id = gs.group_id WHERE gs.stimulus_id = s.id
+    UNION ALL
+    SELECT lq.id FROM question_version_stimuli vs JOIN question_versions lv ON lv.id = vs.question_version_id JOIN questions lq ON lq.id = lv.question_id WHERE vs.stimulus_id = s.id
+    UNION ALL
+    SELECT pq.id FROM question_parts pp JOIN question_versions pv ON pv.id = pp.question_version_id JOIN questions pq ON pq.id = pv.question_id WHERE pp.stimulus_id = s.id
+  ) u JOIN questions q ON q.id = u.qid JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
+  WHERE NOT (${NOT_PKSK_SQL} AND ${NOT_PRIMARY_LEVEL_SQL}))`
+
+/**
+ * A group with no member yet fits any EXISTING subject or level (the first question decides, and a group is made before its first
+ * question: the Studio picker for a subject must offer it); otherwise a member must match. An id that is not a subject / level matches nothing.
+ */
+const groupFits = (column: 'subject_id' | 'education_level_id', value: bigint | null): Prisma.Sql => {
+  const col = Prisma.raw(`lv.${column}`)
+  const table = Prisma.raw(column === 'subject_id' ? 'subjects' : 'education_levels')
+  return Prisma.sql`(${value}::bigint IS NULL
+    OR (NOT EXISTS (SELECT 1 FROM questions q WHERE q.group_id = g.id) AND EXISTS (SELECT 1 FROM ${table} x WHERE x.id = ${value}::bigint))
+    OR EXISTS (SELECT 1 FROM questions q JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no WHERE q.group_id = g.id AND ${col} = ${value}::bigint))`
+}
 
 /** What the member rules need to know about a question. */
 export interface QuestionFacts {
@@ -220,10 +252,9 @@ export class StimuliRepository {
     if ((f.subjectId !== undefined && subject === null) || (f.educationLevelId !== undefined && level === null)) return { ids: [], total: 0 }
     const pattern = f.q === undefined || f.q === '' ? null : likePattern(f.q)
     const where = Prisma.sql`
-      (${subject}::bigint IS NULL OR EXISTS (SELECT 1 FROM questions q JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
-                                              WHERE q.group_id = g.id AND lv.subject_id = ${subject}::bigint))
-      AND (${level}::bigint IS NULL OR EXISTS (SELECT 1 FROM questions q JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
-                                                WHERE q.group_id = g.id AND lv.education_level_id = ${level}::bigint))
+      ${GROUP_SECONDARY_ONLY}
+      AND ${groupFits('subject_id', subject)}
+      AND ${groupFits('education_level_id', level)}
       AND (${f.status ?? null}::text IS NULL OR (EXISTS (SELECT 1 FROM questions q WHERE q.group_id = g.id AND ${QUESTION_SERVED})) = (${f.status ?? null}::text = 'served'))
       AND (${f.joinable === true}::boolean IS NOT TRUE OR NOT EXISTS (SELECT 1 FROM questions q WHERE q.group_id = g.id AND ${QUESTION_SERVED}))
       AND (${pattern}::text IS NULL OR g.label ILIKE ${pattern}::text ESCAPE '\\'
@@ -316,9 +347,15 @@ export class StimuliRepository {
         FROM question_version_stimuli vs JOIN question_versions v ON v.id = vs.question_version_id JOIN questions q ON q.id = v.question_id
         JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
        WHERE vs.stimulus_id = s.id
+      UNION ALL
+      SELECT lv.subject_id, lv.education_level_id
+        FROM question_parts p JOIN question_versions v ON v.id = p.question_version_id JOIN questions q ON q.id = v.question_id
+        JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
+       WHERE p.stimulus_id = s.id
     )`
     const where = Prisma.sql`
       s.kind <> 'audio'
+      AND ${STIMULUS_SECONDARY_ONLY}
       AND (${f.kind ?? null}::text IS NULL OR s.kind = ${f.kind ?? null}::text)
       AND (${subject}::bigint IS NULL OR EXISTS (SELECT 1 FROM ${users} u WHERE u.subject_id = ${subject}::bigint))
       AND (${level}::bigint IS NULL OR EXISTS (SELECT 1 FROM ${users} u WHERE u.education_level_id = ${level}::bigint))
