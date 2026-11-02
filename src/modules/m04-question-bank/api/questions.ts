@@ -83,6 +83,9 @@ export interface QuestionRow {
   dskpTagged: boolean
   sourceType: SourceType | null
   sourceFile: string | null
+  /** REQ-C-010: kertas ('1' to '3') and printed number label of the Studio list columns. */
+  kertas: '1' | '2' | '3' | null
+  numberLabel: string | null
   /** R1-H-A7: only on an `essay_choice` (esei pilihan) question: its topics. */
   essayTopics?: EssayTopic[]
 }
