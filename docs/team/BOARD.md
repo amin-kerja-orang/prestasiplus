@@ -1,6 +1,6 @@
 # R1 board: Bijak SPM, admin → student question pipeline
 
-Writer: team A lead. Last refresh: 2026-11-02 06:16 UTC (cycle 45). Current BASE: **BASE-205** = `feature/v3-bijak-r1` @ 87466acc. Every open team A branch merges the latest BASE before re-marking READY.
+Writer: team A lead. Last refresh: 2026-11-02 09:14 UTC (A1 = B1 integrator). Current BASE: **BASE-210** = `feature/v3-bijak-r1` @ 141d5c46. Every open team A branch merges the latest BASE before re-marking READY.
 Source of every task: `docs/handoff/CLOUD-HANDOFF.md` §7 on `feature/v3-bijak-r1`. Read the protocol in [README.md](README.md).
 > **Current state = the auto table at the end of this file (AUDIT:BEGIN/END).** History sections below are a log; a READY there is only valid if the auto table agrees.
 
@@ -572,7 +572,7 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 - **Disk:** check `docker system df` and prune orphaned anonymous test volumes when there are 0 containers. A3 reclaimed 3.4 GB this way.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 08:44 UTC, BASE 7db748ac)
+### Team A open branches: heads from origin (auto, 2026-11-02 09:09 UTC, BASE 141d5c46)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -584,7 +584,6 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/reqb074-takedown-lows | 33b0a0b1c | SUPERSEDED: 45a75f68 merged as BASE-195; the later commit 33b0a0b1 carried the Q18 rule, which the user overrode (REQ-B-077). Do not merge 33b0a0b1. Follow-ups: r1/reqb074-dsg-spec-fix, then r1/reqb076-live-takedown (A1b) |
 | r1/reqb076-approve-gate | d23b43f3b | AFTER RELEASE (owner decision B1 cycle 63: R1 code = BASE-205; docs only until release). @d23b43f3, A4 Approve, clean on BASE-205; REQ-A-051. R1 known limit: re-approve of a taken-down source |
 | r1/reqb079-sweepuser-followup | 0964edaee | R2 CANDIDATE, not for R1 (A3, @0964edae from BASE-205: sweepUser try/catch + logger.warn so one dead sitting no longer 404s the pupil's whole history; override audit-detail asserts; a Terbit null-blueprint /review test; exam-builder + bijak-attempts 667/667; tsc 0). KIV 55 |
-| r1/reqb082-docs | 13170bbef | READY (A3, @13170bbe = docs only, a fast-forward on BASE-207; answers REQ-B-082/083/085/087/088: M02 rotation = a pending owner action with unticked sign-off item 6.8; CI red described correctly (demo bundle check + cancelled E2E, B session); checklist order; nota:5; runbook 42701) |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 
