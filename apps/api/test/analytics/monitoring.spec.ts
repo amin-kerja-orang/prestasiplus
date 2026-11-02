@@ -230,6 +230,37 @@ describe('M11 monitoring S2 to S5 and export (AC 1 to 3, 5)', () => {
       expect(row.cells).toHaveLength(36)
     })
 
+    it('a teacher S2 counts and export use the S3/S5 filter: only pupils of the own classes (G5-M11 bug 5)', async () => {
+      const body = AnalyticsMonitoringOverviewSchema.parse((await teacherA.get('/monitoring/overview')).body.data)
+      const detail = AnalyticsSchoolDetailSchema.parse((await teacherA.get(`/monitoring/schools/${w.schoolA}`)).body.data)
+      const teacher = AnalyticsTeacherDetailSchema.parse((await teacherA.get(`/monitoring/schools/${w.schoolA}/teachers/${ids.teacherA}`)).body.data)
+      // The own class holds p1 and p2 only; maju and susp are in the school but outside the teacher's classes.
+      expect(detail.students.map((r) => r.id).sort()).toEqual([ids.p1, ids.p2].sort())
+      expect(teacher.cards.students).toBe(detail.cards.students)
+      expect(rowOf(body.studentRows, w.schoolA)).toMatchObject({ registered: detail.cards.students, engaged: 1 })
+      expect(body.kpi.students).toBe(detail.cards.students)
+      expect(body.kpi.engaged).toBe(detail.cards.engaged)
+      expect(body.kpi.answers).toBe(detail.cards.answers)
+      const weekly = rowOf(body.weekly, w.schoolA) as unknown as (typeof body.weekly)[number]
+      expect(weekly.cells.reduce((n, c) => n + c.count, 0)).toBe(detail.cards.answers)
+      // Teachers: the S2 teacher table and KPIs follow the S3 teacher list (the caller only).
+      expect(detail.teachers.map((x) => x.id)).toEqual([ids.teacherA])
+      expect(rowOf(body.teacherRows, w.schoolA)).toMatchObject({ registered: detail.cards.teachers, loggedIn: detail.cards.teachersLoggedIn })
+      expect(body.kpi.teachers).toBe(detail.cards.teachers)
+      expect(body.kpi.teachersLoggedIn).toBe(detail.cards.teachersLoggedIn)
+      const exported = AnalyticsMonitoringExportSchema.parse((await teacherA.get('/monitoring/export?format=csv')).body.data)
+      expect(rowOf(exported.rows, w.schoolA)).toMatchObject({ registered: detail.cards.students, engaged: 1 })
+    })
+
+    it('the S3/S5 filter narrows a teacher only: school admin and admin keep the whole school', async () => {
+      for (const who of [adminA, admin]) {
+        const body = AnalyticsMonitoringOverviewSchema.parse((await who.get('/monitoring/overview')).body.data)
+        expect(rowOf(body.studentRows, w.schoolA)).toMatchObject({ registered: 4 })
+        const exported = AnalyticsMonitoringExportSchema.parse((await who.get('/monitoring/export?format=csv')).body.data)
+        expect(rowOf(exported.rows, w.schoolA)).toMatchObject({ registered: 4 })
+      }
+    })
+
     it('teacher and school_admin are forced to the own school whatever the query says', async () => {
       for (const who of [teacherA, adminA]) {
         const body = AnalyticsMonitoringOverviewSchema.parse((await who.get(`/monitoring/overview?state=Negeri%20Ujian%20Dua&schoolId=${w.schoolB}`)).body.data)
@@ -513,9 +544,27 @@ describe('M11 monitoring S2 to S5 and export (AC 1 to 3, 5)', () => {
       expect(self.cards.students).toBe(2)
     })
 
-    it('the overview and the export stay school-wide aggregates (counts per school, no pupil identities)', async () => {
+    it('a teacher with no class gets no pupil counts and only the own teacher row, not an error and not the school', async () => {
+      const email = 'guru.tanpa.kelas@example.test'
+      const row = (await t.db.query<{ id: string }>(
+        `insert into users (name, email, school_id, is_active, password_hash)
+         select 'Guru Tanpa Kelas', $1, school_id, true, password_hash from users where id = $2 returning id::text`,
+        [email, ids.teacherA],
+      ))[0] as { id: string }
+      await t.db.query(`insert into user_roles (user_id, role) values ($1, 'teacher')`, [row.id])
+      const empty = await client(t, email)
+      const o = AnalyticsMonitoringOverviewSchema.parse((await empty.get('/monitoring/overview')).body.data)
+      expect(o.kpi).toMatchObject({ students: 0, engaged: 0, answers: 0, teachers: 1, teachersLoggedIn: 1 })
+      expect(o.studentRows).toEqual([])
+      expect(o.weekly).toEqual([])
+      expect(o.teacherRows.map((r) => r.schoolId)).toEqual([w.schoolA])
+      const e = AnalyticsMonitoringExportSchema.parse((await empty.get('/monitoring/export?format=csv')).body.data)
+      expect(e.rows).toEqual([])
+    })
+
+    it('the overview and the export count the own-class pupils only (G5-M11 bug 5), with no pupil identities', async () => {
       const o = AnalyticsMonitoringOverviewSchema.parse((await teacherA.get('/monitoring/overview')).body.data)
-      expect(rowOf(o.studentRows, w.schoolA)).toMatchObject({ registered: 4 })
+      expect(rowOf(o.studentRows, w.schoolA)).toMatchObject({ registered: 2 })
       const e = AnalyticsMonitoringExportSchema.parse((await teacherA.get('/monitoring/export?format=csv')).body.data)
       expect(JSON.stringify(e)).not.toContain('@')
     })
