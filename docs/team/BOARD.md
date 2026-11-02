@@ -563,7 +563,7 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 **Done:** final R1 QA chain run all green (answers-A, A4, 10:52 MYT); 0 code conflicts across all READY heads on BASE-175; Q12a/Q13/Q14 decided by the user.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 03:10 UTC, BASE 5e6f03ed)
+### Team A open branches: heads from origin (auto, 2026-11-02 03:15 UTC, BASE 4659c083)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -571,8 +571,6 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ac-gaps-a1b | 3f9072c29 | READY (multi, @3f9072c2; c2b93710 MERGED as BASE-163 4218bee3) → B delta c2b93710..3f9072c2 (+4a3474f9 Q17 comment, runbook BASE-154, Q17 notes); B4/B2 |
 | r1/alp-comment-240 | 84b0c3a99 | READY (A4, @84b0c3a9 on approved admin-list-perf 69f465c8; comment only): env.schema.ts:148 says 240 (REQ-B-066 part); merge after admin-list-perf; B2 | A1b Approve (comment only) |
 | r1/c012-doc-followup | b71dc2add | READY (A2, @b71dc2ad on BASE-134; docs, 1 line): pipeline doc :297 edit-as-draft response (201 {id, versionNo}; 409 newer draft/review; 409 live not approved); B2 |
-| r1/ha18-gate-facts | f988b670f | MERGED by B1 as BASE-132 259f4616 @a9ffe246 (alone, not paired with reqb052; pinned-version-rule check by A4 running). Origin head f988b670 → follow-up r1/ha18-minors |
-| r1/ha18-minors | 17450966c | READY (A2, @17450966; B2 delta vs BASE: 5 files, review.service not_duplicate idempotent / 409 itemLocked + duplicateId audit, accepted-duplicates e2e gate-dismiss test, helpers withQuestionWorkflow opt-in, contract description + openapi 1 line; **no migration change** (0105 restored byte-for-byte, lead verified the 3-dot diff)). A1b Approve on content; A4 proof green; re-run 22/22, contract:check ok. B: run npm run check -w @pp/contract |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
 | r1/ha24-release-input | 55227da7e | READY (A3 docs, @55227da7; c0f7a45d in BASE-145 → B delta c0f7a45d..55227da7: DO/non-DO, KIV 39, Q17 Semakan/Terbitkan notes (Terbitkan copy [PENDING A2]), BASE-148..154 merged); B1/B2 |
 | r1/ha26-team-a-state | 84501e1ac | READY (A3 docs, @84501e1a; 21360a86 MERGED as BASE-162 b2251dc4) → B delta 21360a86..84501e1a (BASE-154 refresh); B1/B2 |
@@ -583,8 +581,6 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/minors-kbat-chain-a3 | a253b3bf3 | READY-AFTER-FIX (A3, @a253b3bf restacked on T48 10c62437): exam-builder 416/417 RED: builder-review "stays outside D93" (same as REQ-B-069; likely pool page cap ?pageSize=100 vs 106 units). Fixed by r1/t31-pool-lookup-fixture merged after T31 (no cascade needed); merge after t31-pool-lookup-fixture |
 | r1/minors-snapshot-versions-a3 | 1ef2eb2e5 | READY (A3, @1ef2eb2e on BASE-120; type only): AttemptSectionSnapshot.versions; attempt-source 4/4, tsc 0; closes B2 c20 Minor; B2 | A1b pre-review Approve |
 | r1/partial-acs-a3 | e6ceece19 | READY-AFTER-FIX (A3, @e6ceece1 restacked on T48 10c62437): exam-builder 416/417 RED: builder-review "stays outside D93" (same as REQ-B-069; likely pool page cap ?pageSize=100 vs 106 units). Fixed by r1/t31-pool-lookup-fixture merged after T31 (no cascade needed); merge after t31-pool-lookup-fixture |
-| r1/publish-lock-share | 7ef73b79d | READY (A1b, @7ef73b79 = 225b6941 + BASE-148 merge; A4 APPROVE: the dropped early-read was T34's perf choice (5df0b2f1), fully replaced by post-lock reads + PUBLISH_TX; the in-lock-window test exists since 11c827b7; 418/418). DSG is merged (BASE-149), so it can merge now; B2 delta |
-| r1/r1e2e10-bulk-publish-noop | fe228f56f | READY (A2, @fe228f56; 5990fb6b MERGED as BASE-155): **B2 delta 5990fb6b..fe228f56** = bulkByFilter race rows folded into integer skipped (in processed, not affected/failed), contract descriptions, race test + mutation, errors.ts; clean on BASE-161; A1b pre-review APPROVE (16 pass, mutation red) | A2 re-verified on 4218bee3: clean, filter-bulk 11, bulk 5, workflow 310 |
 | r1/ready-tiers-check | 9c80f08c3 | ON HOLD (A2, @9c80f08c, contains BASE-107): code correct + Minors fixed (exact 503 body, WARN once per state change, INFO on recovery; mutations red); waits for B DevOps (REQ-A-028: CI seed step + first-install deploy ordering) |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
 | r1/reqb071-chain-specs-a3 | ee9474e09 | WIP (A3, @ee9474e0; test only; red until A2 r1/reqb071-bab-submit): chain 3a Semakan without a Bab, 3b no node refused, 3 approved chapter null + Latihan Bab no_chapter, 3c dskp_code-derived Bab; target 13/13 + 3 mutations; NOT for merge |
