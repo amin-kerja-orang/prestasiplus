@@ -65,10 +65,6 @@ export interface QuestionGateData {
   spIds: string[]
   /** `difficulty_tp`, 1 to 6. */
   tp: number | null
-  /** E-rights_status, or null when no declaration was made. */
-  rightsStatus: string | null
-  /** True when a source declaration (source paper, contributor or kind) is present. */
-  hasSourceDeclaration: boolean
   /** Fields still flagged low-confidence and not yet confirmed by a person (BE-38 intake). */
   unconfirmedLowConfidenceFields: string[]
   /** An open duplicate flag that is not marked "Bukan pendua". */
@@ -222,6 +218,15 @@ export interface QuestionBankPort {
   /** Ids of every question whose latest version came from the source paper (takedown, D40c). */
   listIdsBySourcePaper(sourcePaperId: string): Promise<string[]>
 
+  /**
+   * REQ-B-049: can a pupil open this question in the structured practice? The LIVE version is approved, the question is active, its type
+   * is `structured` and its level is T4 or T5: the predicate of the practice (`isStructuredVisible`). False when unknown.
+   */
+  structuredVisible(id: string): Promise<boolean>
+
+  /** The type (`mcq` or `structured`) of the LIVE version, the one pupils are served; null when unknown or nothing is live. */
+  liveType(id: string): Promise<'mcq' | 'structured' | null>
+
   /** Display facts for lists; unknown ids are absent from the map. */
   describe(ids: readonly string[]): Promise<ReadonlyMap<string, QuestionBrief>>
 
@@ -271,6 +276,12 @@ export class EmptyQuestionBank implements QuestionBankPort {
   }
   async listIdsBySourcePaper(): Promise<string[]> {
     return []
+  }
+  async structuredVisible(): Promise<boolean> {
+    return false
+  }
+  async liveType(): Promise<'mcq' | 'structured' | null> {
+    return null
   }
   async describe(): Promise<ReadonlyMap<string, QuestionBrief>> {
     return new Map()

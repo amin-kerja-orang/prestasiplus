@@ -2,8 +2,7 @@
  * SRS M05 v1.17 §7 #7 `GET /api/practice/chapter-subjects` (S4) and #8
  * `GET /api/practice/chapter-subjects/:code?levelId=` (S5, BR-11, BR-15, BR-16). Any session (A).
  *
- * The teacher (5) may open S4 (build-plan M05-T5): there is no role rule. A locked chapter is refused
- * at session start (#4 `CHAPTER_LOCKED`), not here.
+ * The teacher (5) may open S4 (build-plan M05-T5): there is no role rule. There is no chapter lock (D98).
  */
 
 import { notFound, ok, queryInt, requireAuth, route, unpaged, type RouteDef } from '@/mock/define'
@@ -63,7 +62,7 @@ export const chapterRoutes: RouteDef[] = [
     const chapters: ChapterCard[] =
       levelId === null
         ? []
-        : chapterEntries(userIdOf(req), s.id, levelId).map(({ chapter, stats, open }) => ({
+        : chapterEntries(userIdOf(req), s.id, levelId).map(({ chapter, stats }) => ({
             id: chapter.id,
             number: chapter.chapterNumber,
             name: chapter.name ?? '',
@@ -72,7 +71,7 @@ export const chapterRoutes: RouteDef[] = [
             correct: stats.correct,
             scorePct: round(stats.scorePct, 1),
             remaining: stats.remaining,
-            state: open ? 'open' : 'locked',
+            state: 'open',
             complete: stats.complete,
           }))
     const detail: ChapterSubjectDetail = {

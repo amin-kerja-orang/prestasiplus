@@ -484,7 +484,7 @@ describe('canonical accounts (§6.12)', () => {
     expect(chapters('M1')).toEqual(new Set([1]))
     expect(chapters('M3')).toEqual(new Set([143, 136]))
     expect(chapters('M4')).toEqual(new Set([1, 143, 136]))
-    // S5: Bab 1 20/464 95 % (open, 444 baki), Bab 2 5/302 60 % (locked), Bab 3 5/316 80 % (locked).
+    // S5: Bab 1 20/464 95 % (open, 444 baki), Bab 2 5/302 60 %, Bab 3 5/316 80 % (all open, D98).
     expect(practice.chapterStats(4, 1)).toMatchObject({
       total: 464,
       answered: 20,
@@ -1016,14 +1016,13 @@ describe('write path (BR-31)', () => {
     })
   })
 
-  it('start validation: unknown subject 404, bad count 422, locked chapter 409, empty revision 422', async () => {
+  it('start validation: unknown subject 404, bad count 422, a previously locked chapter now starts 201 (D98), empty revision 422', async () => {
     const token = setUser(4).token
     const post = (b: unknown) => request(runtime, 'POST', '/api/practice/sessions', token, b)
     expect((await post({ mode: 'random', subjectCode: 'XXX', count: 5 })).status).toBe(404)
     expect((await post({ mode: 'random', subjectCode: 'MATH', count: 7 })).status).toBe(422)
-    const locked = await post({ mode: 'chapter', chapterId: 143, count: 5 })
-    expect(locked.status).toBe(409)
-    expect((locked.body as { error: { code: string } }).error.code).toBe('CHAPTER_LOCKED')
+    const later = await post({ mode: 'chapter', chapterId: 143, count: 5 })
+    expect(later.status).toBe(201)
     const none = await request(runtime, 'POST', '/api/practice/sessions', setUser(3).token, {
       mode: 'revision',
       subjectCode: 'MATH',
