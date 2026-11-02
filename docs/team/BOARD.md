@@ -530,12 +530,11 @@ The B4 pack chain was walked by HTTP on SN/2 (4541/2): **96 MATCH, 1 scanner fal
 - Low bug, fixed under D9: "(draf)" stays in published titles → r1/publish-title-draft (A2).
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 00:05 UTC, BASE 70229637)
+### Team A open branches: heads from origin (auto, 2026-11-02 00:07 UTC, BASE a1520263)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
-| r1/a3-qa-doc-nits | e4d4dd322 | READY (A3, BASE-105, docs only): stale QA notes on T38 self-mark reward fixed (2 files); B2 |
 | r1/ac-gaps-a1b | 1f922ddd7 | READY (multi, @1f922ddd: row 39 per USER Q13; B4 pack fixes from A2 walk + ha18 head refs a9ffe246); B4 |
 | r1/admin-list-perf | 6389cd541 | READY (A4, @6389cd54, BASE-105): REQ-B-050 + 0106 pg_trgm + 0107 kertas index; per-user @RateLimit GET /api/questions (THROTTLE_QUESTIONS_LIST_PER_MINUTE=60); docs: feature_flags 0108, drop_pool_tag 0109, optional B12 0122 / B20 0123 (lead-confirmed); 0107 header gives 0.9 s bare / ~2 s via migrate deploy; B2 + B3 + DevOps (maintenance window, new env) |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
@@ -545,13 +544,12 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/d90-builder-sweep-a3 | da0bb7f35 | READY (A3, @da0bb7f3 on T48 6c5ae3a8): D90 builder sweep + A4 Minors (Salin order/pins, tag first/last/all) + B2 T48 Minor (duplicate Bahagian label D9 row, LEAD); 15 mutations listed, all red; 418 pass; merge after T48 + label-move-fix; B2 |
 | r1/d90-kuiz-sweep-a3 | f95745b97 | READY (A3, @f95745b9, BASE-105 side): Kuiz/Simulasi D90 sweep + A4 Minors fixed (recursive allow-map with planted secrets + positive control, table+passage group, legacy KIV pins); 12 mutations listed, all red; 337 pass; 3 D9 rows; A4 delta re-check; B2 |
 | r1/delete-served-guard | fe7ef5378 | READY (A2, @fe7ef537; contains B-052 f3a2448f): only held papers block (served/pinned) + FK-restrict → 409 in_use; no in-practice block (regrade fallback proven); A4 Approve + B3 PASS (7e5d82e6) + Minors fixed (regrade, mixed bulk, all 4 RESTRICT tables, isForeignKeyViolation unit); questions 665, practice 175, security 185, r1 61; merge after t49 + d72 and H-A18 → B-032 → B-052; B2 + B3 | merge AFTER ha18 a9ffe246 (merge-tree clean; fix not needed inside) |
-| r1/docs-credential-scrub | b3db5e0d2 | READY (A1a, BASE-105; replaces 5cd46c4a): A4 Minors fixed: Demo1234 doc replacements reverted (allowed fictitious dev default; docs match code), DOC-02 wording, row relabelled privacy override, srs/M02 v1.34 revision row (v1.30 keeps placeholders, lead decision); 0 hits for the 3 old values repo-wide; M02 unit 724, eslint + vue-tsc 0; B3 + B2 |
 | r1/drop-lock-enums | 4d1424c8b | READY (A1a + A2, @4d1424c8, BASE-105): contract drops dead CHAPTER_LOCKED + locked states; negative contract tests; row: no FE reader depends on them (dead local FE types = C follow-up); contract 1435/1435, emit no diff, check ok, api tsc 0; with C reqa014 merged: vue-tsc 0, m03/m05 659/659; merge after reqa014-no-chapter-lock-fe; B2 |
 | r1/ha17-ac-coverage | 157b371c3 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b; head 157b371c |
 | r1/ha18-gate-facts | a9ffe246f | READY (A2, @a9ffe246; REQ-B-057 MAJOR fixed): gate counts only pending exact/near duplicate links; accepted items may dismiss links (not_duplicate, cleared_duplicate event; V2 rows 252/254); 0105 CHECKs NOT VALID → VALIDATE; gate-facts 1b + accepted-duplicates.spec, mutations red; 70/70 + 8/8. B delta: ba5bdd6c → 629ea0d3 (BASE-108 only) → a9ffe246 (fix). A4 pre-review queued; B2 delta re-review; merge before delete-served-guard / reqb052 / chain-qa-bab-3a |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
 | r1/ha24-release-input | fdfaa8102 | READY (A3 docs, @fdfaa810: checklist rows to BASE-120; KIV 36 rows incl. REQ-B-059 cap (row 35) and setGroupLabel label-only (row 36)); B1/B2 |
-| r1/ha26-team-a-state | cddc11cb5 | READY (A3 docs, @cddc11cb): team-a-r1-state.md; clean vs BASE-115; B2 |
+| r1/ha26-team-a-state | 37c79de67 | READY (A3 docs, @37c79de6: merged list BASE-110..124, pending trimmed, KIV 36 @ha24 fdfaa810); B1 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-followup | 2fe252aba | READY (A2, @2fe252ab on intake-reqs 8c1964a6): unknownSp required, FACTS in unit.spec, deviations row 244 names spNotInTaxonomy; 43/43, tsc 0; merge AFTER intake-reqs (deviations conflict: keep both); B2 small | A1b pre-review: CLEAN (CurriculumFacts internal; both producers always set unknownSp; tsc 0; 43/43) |
 | r1/partial-acs-a3 | 01ab13f70 | READY (A3, @01ab13f7 on T51; tests only): AC-18.1 5c via Studio path + real negative; R1-11.4/12.6 SELECT pins; robust in both orders with ha18 a9ffe246 (trial 52 pass); A1b pre-review Approve + Minors fixed; merge after T51; B2 |
@@ -564,6 +562,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/req-c012-a2 | 47b854249 | READY (A2, @47b85424 = 9b1fd35e + new ha18): merge after ha18; B3 re-check |
 | r1/reqa018-mock-swap | 76511c9a8 | READY (A2, @76511c9a on route 9d6ef833): drops the 3 paper-servability known-mismatch entries (C mock now matches the contract; verified with C FE 3942f760: 160 scenarios, 0 failing); merge AFTER C reqa018-paper-servability-fe; B2 small | A1b pre-review: Approve; with C FE 8ad24143 + mock-known-mismatches: mock conformance 2/2, no stale |
 | r1/reqa018-paper-servability-route | 9d6ef833f | READY (A2, @9d6ef833, contains BASE-107): admin papers only, cap 200 + meta, batched read, contract exports; contract-tests scenario (4 cases; API conformance 413/413; mock: 3 assertion known-mismatches until C serves it → swap to 1 schema entry when C reqa018-fe lands); full B2 + B3; C reqa018-fe must re-merge | merge-tree vs BASE-109: clean |
+| r1/reqa035-rule-line-fe | 7cd7e3bdc | (no status — triage) |
 | r1/reqb049-report-visible | 9ece8d76d | READY (A1b, BASE-105): pre-review Minors fixed (type from the live version, spec titles, real level codes); 316/316; B2 + B3 | A2 B3 pre-scan: CLEAN (no IDOR/oracle, no echo, caps bite under mutation) |
 | r1/reqb052-archived-edit | f3a2448f9 | READY (A3, BASE-105; replaces 17196431): follow-ups done: P1 pinned-clause spec (bites), guard published OR (withdrawn AND EXISTS attempts), header; archived-edit 6/6, pinned-version-rule 6/6, workflow 296/296; tsc/eslint 0; B2 | merge AFTER ha18 a9ffe246 (merge-tree clean; fix not needed inside) |
 | r1/reqb058-takedown-pin | b1e965665 | CR (A4 @b1e96566 follow-up: list drops taken-down papers for a pupil with no sitting, batched pins; cover unchanged by lead decision): A1b delta pre-review from c8515988 |
@@ -585,8 +584,6 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t48-builder-parity | 5d3e56fd5 | READY — B2 APPROVE w/ Minors @6c5ae3a8 (merge THIS SHA; origin 5d3e56fd = + BASE-107/108 merges only); Minor (dup-label D9 row) closed on d90-builder-sweep da0bb7f3; merge after H-A18 |
 | r1/t48-label-move-fix | 9783849cf | READY (A3, @9783849c, leaf on T48 6c5ae3a8): PUT moving an added question across Bahagian keeps its Nombor soalan (4-line fix in update()); biting spec + same-section control; 410 alone = trial with H-A18; no D9 row (label belongs to the question, as in V2); merge right after T48; pre-review by A2; B2 | A2 delta pre-review: no findings (mutation red) |
 | r1/t51-partial-acs-a3 | 61c1b077f | READY (A3, hold LIFTED; @61c1b077 on T43 238eb6eb + T31 eb0346d2 + T48): merge after T48, T31, REQ-A-008, T43; never old T31 6a27c8dd / T43 5ce5894f / T51 54f63116; Preview #3 (A4, 33 heads on BASE-105 @525f9ca1, local): ALL GREEN, vue-tsc 0 after REQ-A-008, 0 reds. B2 |
-
-**New branches not yet triaged:** r1/reqa035-rule-line-fe 7cd7e3bdc
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
