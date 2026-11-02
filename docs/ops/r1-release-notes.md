@@ -57,7 +57,7 @@ items is in section 8.
 
 Related runbooks: [production-vps.md](production-vps.md) (sections 7 deploy, 8 rollback, 9 backups, 10 monitoring,
 11 logs), [api-runbook.md](api-runbook.md) (sections 4 health, 6 migrations, 13 secrets), [db-backup.md](db-backup.md),
-[dskp-loader.md](dskp-loader.md), and `docs/ops/r1-b01-question-lifecycle.md` (on branch `r1/b01-lifecycle` until it merges).
+[dskp-loader.md](dskp-loader.md), and `docs/ops/r1-b01-question-lifecycle.md`.
 
 ---
 
@@ -99,11 +99,7 @@ Do not start the window until every box is ticked. Record each answer in the dep
 ### 1.1 Release gates
 
 - [ ] G3 to G5 passed for the release commit (lint, type-check, tests with real output; code-reviewer Approve; QA Ready).
-- [ ] `r1/b01-lifecycle` is finished, reviewed and merged into `feature/v3-bijak-r1`. At handoff it was **WIP** (`cf2aa784`):
-      tsc, eslint, the FE m04 tests and the last spec batch were not run, and 4 code spots still named `'published'` as
-      a question status. Now (T04) at `2f16c1fe`, READY-FOR-REVIEW with review "Changes requested"; its 0100 SQL is
-      unchanged since `cf2aa784` (`git diff` shows no change under `apps/api/prisma/migrations`), so section 2.4 still
-      applies. **0100 must ship in the same release as the B01 API and FE code** (an old API on the new CHECK
+- [x] `r1/b01-lifecycle` is merged (BASE-4), so section 2.4 applies. **0100 must ship in the same release as the B01 API and FE code** (an old API on the new CHECK
       fails to write `published`; a new API on old data serves nothing).
 - [ ] The DB-backed specs listed as never run in the handoff (B06 `SPM_SERVABLE_SQL`, the bijak integration specs, B08
       bridge if merged) have been run green on the release commit.
@@ -116,6 +112,7 @@ git fetch origin --tags
 git checkout <RELEASE_TAG>
 git rev-parse HEAD                                    # expect: <RELEASE_SHA>
 git status --porcelain --untracked-files=no           # expect: no output (deploy.sh refuses a dirty tree)
+git merge-base --is-ancestor 2fabf472 <RELEASE_SHA> && echo has-BASE-213   # expect: has-BASE-213 (the Kontrak form fix)
 ls apps/api/prisma/migrations | sed -n '/^009[2-9]_/p;/^01[0-9][0-9]_/p'   # 0092-0099 and 0100-0199 only
 ```
 
@@ -486,9 +483,9 @@ one blueprint. On UAT there are **0 blueprints** today, so a blueprint must firs
 
 ### 4.1 Get a blueprint (Spec) to verify
 
-**D95 (2026-10-31, PR amin-kerja-orang/prestasiplus#404, not merged; not yet a row of `docs/TRACKER.md` on this branch) supersedes the text that stood here ("Option A by hand" and "Option B seed").** On UAT an Admin Pusat creates each blueprint by hand in Kontrak, through the real flow, and presses Sahkan. There is **no seed on UAT**: the demo seeds, the launch-blueprint seed (`exam-launch-blueprints`) and the E2E seed are local / E2E only. The question Q1 of section 8 is answered by D95.
+**D95 (2026-10-31; `docs/TRACKER.md`, in base since BASE-210) supersedes the text that stood here ("Option A by hand" and "Option B seed").** On UAT an Admin Pusat creates each blueprint by hand in Kontrak, through the real flow, and presses Sahkan. There is **no seed on UAT**: the demo seeds, the launch-blueprint seed (`exam-launch-blueprints`) and the E2E seed are local / E2E only. The question Q1 of section 8 is answered by D95.
 
-- **Fixed by BASE-213 (`KontrakEditorPage.vue:87`); a build before BASE-213 has the bug:** any tab switch resets the form, so a new contract cannot be saved in the app (runbook 2.5). Guards: `src/modules/m28-bijak-spm/__tests__/kontrak-editor-tabs.test.ts` and `kontrak-http.spec.ts` (`r1/b4-kontrak-http-spec`, not in base at BASE-214). Pentadbiran -> `/admin/spm/kontrak` -> `Baharu` -> `Teruskan` -> fill the subject, kertas and sections until the panel shows `Tiada ralat. Kontrak boleh disimpan.` -> save. It is saved as Draf/Spec.
+- **Fixed by BASE-213 (`KontrakEditorPage.vue:87`); a build before BASE-213 has the bug:** any tab switch resets the form, so a new contract cannot be saved in the app (runbook 2.5). Guards: `src/modules/m28-bijak-spm/__tests__/kontrak-editor-tabs.test.ts` and `e2e/bijak/kontrak-http.spec.ts` (manual, not in CI; on `r1/b4-kontrak-http-spec`, not in base at BASE-214). Pentadbiran -> `/admin/spm/kontrak` -> `Baharu` -> `Teruskan` -> fill the subject, kertas and sections until the panel shows `Tiada ralat. Kontrak boleh disimpan.` -> save. It is saved as Draf/Spec.
 - Order and checks: 3472/2 first, then 1449/1, 1249/1, 4531/1 and Sains K1 once evidence from two or more bodies is ready. The steps, the read-only SELECTs for the blueprint state before and after Sahkan, and the "no seed ran" checks are in [r1-runbook.md](r1-runbook.md) section 5. The evidence per blueprint, with every check Sahkan runs and what is missing, is in [r1-k1-blueprint-evidence.md](r1-k1-blueprint-evidence.md) (T39; on branch `r1/t39-k1-evidence` until merged).
 
 ### 4.2 Verify (UI path, Admin Pusat)
@@ -696,7 +693,7 @@ Unverified (nothing here was run against any server):
 
 Open questions for the team:
 
-- **Q1 (LEAD): answered by D95** (PR amin-kerja-orang/prestasiplus#404, not merged; 2026-10-31): on UAT the launch blueprints are created by hand in Kontrak by an Admin Pusat and verified with Sahkan; the demo-kind `exam-launch-blueprints` seed does not run there. Order: 3472/2 first, then 1449/1, 1249/1, 4531/1 and Sains K1 once evidence from two or more bodies is ready (see section 4.1).
+- **Q1 (LEAD): answered by D95** (`docs/TRACKER.md`, 2026-10-31): on UAT the launch blueprints are created by hand in Kontrak by an Admin Pusat and verified with Sahkan; the demo-kind `exam-launch-blueprints` seed does not run there. Order: 3472/2 first, then 1449/1, 1249/1, 4531/1 and Sains K1 once evidence from two or more bodies is ready (see section 4.1).
 - **Q2 (backend):** confirm 0100 timing on a restored UAT copy and whether it needs a longer window or batching.
 - **Q3 (backend):** answer items 6 and 7 above.
 - **Q4 (LEAD):** OCR/extraction provider for AC-R1-14.2 (D85 U1) is still open; R1 ships with `OCR_ENGINE=none`,
