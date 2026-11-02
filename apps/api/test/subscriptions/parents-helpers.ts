@@ -82,6 +82,6 @@ export async function newParent(t: UsersTestApp, admin: Api, email: string, name
 
 /** Creates a student in a school through the admin API (no login). */
 export async function newStudent(admin: Api, schoolId: string, email: string, name = 'Murid Ujian'): Promise<string> {
-  const res = await admin.post('/admin/users', { roles: ['student'], name, email, schoolId, grade: 4 })
+  const res = await admin.post('/admin/users', { roles: ['student'], name, email, schoolId, grade: 10 })
   return CreatedUserSchema.parse(res.body.data).id
 }

@@ -13,6 +13,7 @@ import {
   type Api,
   type UsersTestApp,
 } from './parents-helpers'
+import { treatDemoAsSecondary } from '../support/secondary'
 
 /** BE-25 AC 7 (LEAD decision 2026-10-19): a school_admin sees a parent only with >= 1 child and ALL children in its school. */
 describe('parent visibility for a school_admin (AC 7)', () => {
@@ -46,6 +47,8 @@ describe('parent visibility for a school_admin (AC 7)', () => {
 
   beforeAll(async () => {
     t = await bootParentsApp()
+    // Secondary-only (D72): DEMO002 is seeded as SK, and the service refuses a secondary-grade student in a primary school (grade 10 here).
+    await treatDemoAsSecondary(t.db, false)
     admin = apiOf(await login(t, ADMIN))
     sa = apiOf(await login(t, SCHOOL_ADMIN))
     s1 = await schoolIdOf(t.db, 'DEMO001')

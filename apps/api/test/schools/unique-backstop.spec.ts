@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { SchoolsRepository } from '../../src/modules/schools'
+import { treatDemoAsSecondary } from '../support/secondary'
 import { bootSchoolsApp, expectError, loginAs, schoolIdOf, type LoggedIn, type SchoolsTestApp } from './helpers'
 
 const VALID = { name: 'SK Backstop', code: 'BACK001', type: 'SK', state: 'Selangor', district: 'Gombak', city: 'Gombak' }
@@ -17,6 +18,8 @@ describe('lower(code) unique index as the backstop (P2002 mapped to 422)', () =>
   beforeAll(async () => {
     t = await bootSchoolsApp({ env: { THROTTLE_ADMIN_WRITE_PER_MINUTE: '1000', THROTTLE_ADMIN_READ_PER_MINUTE: '1000' } })
     admin = await loginAs(t, 'admin@demo.test')
+    // Secondary-only (D72): DEMO003 is seeded as SK, and the service 404s a primary school before the code check.
+    await treatDemoAsSecondary(t.db, false)
   })
   afterAll(async () => {
     await t.close()

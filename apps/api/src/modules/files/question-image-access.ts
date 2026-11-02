@@ -1,5 +1,5 @@
 import { Prisma } from '../../db/generated/client'
-import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL, SERVABLE_STATUS } from '../questions/learner-visibility'
+import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_SOURCE_TAKEN_DOWN_SQL, SERVABLE_STATUS } from '../questions/learner-visibility'
 import { paperHeld } from '../questions/served-rule'
 
 /**
@@ -19,8 +19,9 @@ import { paperHeld } from '../questions/served-rule'
  *      delete-served-guard: a withdrawal does not cut a running sitting, so it keeps its pictures; a pupil who never sat the withdrawn paper gets
  *      the uniform 404). The pinned version must be `approved` or `superseded` and its source not taken down; a taken-down pin (archived "withdrawn" /
  *      "source_takedown", or its source paper taken down) is readable only by a pupil who has ANY sitting on that paper (REQ-B-074: open, submitted or
- *      abandoned, as `paperHeld`; a sitting keeps its version, REQ-B-058 d, and result review needs the pictures; nobody else can start it, so nobody else gets the picture). The paper is the authority here, so a superseded pinned version, a
- *      later-withdrawn question or a hidden level do not hide it from a paper that is still held.
+ *      abandoned, as `paperHeld`; a sitting keeps its version, REQ-B-058 d, and result review needs the pictures; nobody else can start it, so nobody else gets the picture). The paper is the authority here, so a superseded pinned version or a
+ *      hidden level does not hide it from a paper that is still held. A later-withdrawn question (archive "withdrawn") IS a taken-down pin: a pupil without a
+ *      sitting on that paper no longer gets the picture (REQ-B-074); a pupil with a sitting still does (REQ-B-077).
  *   C. REFERENCE: a sittable paper (as in B) whose `reference_sheets` has a panel carrying the file as `imageFileId`
  *      (the PUBLIC token only: the internal decimal id never matches, so an unattached image cannot be read by guessing ids; B3 T34-L1-residual).
  */
@@ -35,7 +36,7 @@ export const SERVABLE_VERSION_STATUSES = [SERVABLE_STATUS] as const
  */
 const PINNED_SERVABLE = Prisma.sql`(
   (v.status = 'approved' OR (v.status = 'archived' AND v.archive_reason = 'superseded'))
-  AND NOT EXISTS (SELECT 1 FROM source_papers tsp WHERE tsp.id = v.source_paper_id AND tsp.takedown_at IS NOT NULL)
+  AND ${NOT_SOURCE_TAKEN_DOWN_SQL}
 )`
 
 const inList = (values: readonly string[]): Prisma.Sql => Prisma.join(values.map((v) => Prisma.sql`${v}`))
@@ -93,7 +94,7 @@ export function pupilMayReadQuestionImageSql(fileId: bigint, userId: bigint, pub
       JOIN questions q ON q.id = v.question_id
      WHERE (q.live_version_no = v.version_no AND q.is_active
             AND v.status IN (${inList(SERVABLE_VERSION_STATUSES)})
-            AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL})
+            AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL})
         OR (v.status IN ('approved', 'archived')
             AND EXISTS (SELECT 1
                           FROM paper_placements pl
