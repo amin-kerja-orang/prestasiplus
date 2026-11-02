@@ -42,6 +42,8 @@ function row(id: number, extra: Partial<QuestionRow> = {}): QuestionRow {
     dskpTagged: true,
     sourceType: 'textbook',
     sourceFile: 'buku-contoh.pdf',
+    kertas: null,
+    numberLabel: null,
     ...extra,
   }
 }
