@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import {
   SERVABILITY_ACTIVITY_LABELS,
   servabilityReasonMs,
+  type QuestionPaperServabilityRow,
   type ServabilityActivity,
   type ServabilityActivityResult,
   type ServabilityReason,
@@ -55,6 +56,14 @@ const reason = (code: ServabilityReasonCode, activity: ServabilityActivity, deta
   ...(detail === undefined ? {} : { detail }),
 })
 
+/** The most papers `forQuestion` reads (a popular question can sit on many); `meta.total` in the answer tells a cut list. */
+export const QUESTION_PAPERS_MAX = 200
+/** Questions read per servability call (the chunk of the servability reads). */
+export const REPORT_CHUNK = 200
+
+const PAPER_SELECT = { id: true, title: true, status: true, kind: true, sections: { select: { placements: { select: { questionId: true } } } } } as const
+type PaperForReport = { id: bigint; status: string; kind: string; sections: { placements: { questionId: bigint }[] }[] }
+
 @Injectable()
 export class PaperServabilityService {
   constructor(
@@ -62,17 +71,67 @@ export class PaperServabilityService {
     @Inject(ServabilityService) private readonly servability: ServabilityService,
   ) {}
 
+  /**
+   * REQ-A-018 / AC-04.3, AC-04.4: the published ADMIN papers (kind `pilihan`, the same set as the Bijak SPM lane) that place the question, each
+   * with whether pupils can open it and what stops it. A pupil's generated (Jana) paper is that pupil's own and is never listed. At most
+   * `QUESTION_PAPERS_MAX` papers (by id) are read; `total` says how many there are, so the caller can tell a cut list. Null when the bank
+   * holds no such question (unknown, PKSK or Darjah), `[]` when it is on no published paper. The reasons are those of the placed questions that
+   * stop the paper (`attention`), `question_missing` included; `detail` starts with that question's id. ONE servability read covers the
+   * placed questions of every paper listed (not one per paper).
+   */
+  async forQuestion(questionId: string): Promise<{ rows: QuestionPaperServabilityRow[]; total: number } | null> {
+    if (!isIdString(questionId)) return null
+    if (!(await this.servability.report(questionId))) return null
+    const where = { status: 'published', kind: 'pilihan', sections: { some: { placements: { some: { questionId: idFromString(questionId) } } } } } as const
+    const [total, papers] = await Promise.all([
+      this.prisma.client.paper.count({ where }),
+      this.prisma.client.paper.findMany({ where, select: PAPER_SELECT, orderBy: { id: 'asc' }, take: QUESTION_PAPERS_MAX }),
+    ])
+    const ids = [...new Set(papers.flatMap((p) => p.sections.flatMap((s) => s.placements.map((pl) => idToString(pl.questionId)))))]
+    const reports = await this.reportsOf(ids)
+    const rows: QuestionPaperServabilityRow[] = papers.map((p) => {
+      const report = this.reportOf(p, reports)
+      const seen = new Set<string>()
+      const reasons = report.open
+        ? []
+        : report.attention.flatMap((a) =>
+            a.reasons.flatMap((r): ServabilityReason[] => {
+              const detail = r.detail === undefined ? a.questionId : `${a.questionId}: ${r.detail}`
+              const key = `${r.code}|${detail}`
+              if (seen.has(key)) return []
+              seen.add(key)
+              return [{ ...r, detail }]
+            }),
+          )
+      return { paperId: report.paperId, title: p.title, served: report.open, reasons }
+    })
+    return { rows, total }
+  }
+
   /** Null when the id is not a paper. Read on demand: no cache, so the next view after a publish or withdraw is already right. */
   async report(paperId: string): Promise<PaperServabilityReport | null> {
     if (!isIdString(paperId)) return null
-    const paper = await this.prisma.client.paper.findUnique({
-      where: { id: idFromString(paperId) },
-      select: { id: true, status: true, kind: true, sections: { select: { placements: { select: { questionId: true } } } } },
-    })
+    const paper = await this.prisma.client.paper.findUnique({ where: { id: idFromString(paperId) }, select: PAPER_SELECT })
     if (!paper) return null
     const ids = [...new Set(paper.sections.flatMap((s) => s.placements.map((p) => idToString(p.questionId))))]
-    const reports: ReadonlyMap<string, ServabilityReport> = ids.length === 0 ? new Map() : await this.servability.reports(ids)
+    return this.reportOf(paper, await this.reportsOf(ids))
+  }
 
+  /**
+   * The servability reports of these questions: ONE call for up to `REPORT_CHUNK` ids (the size `ServabilityReadsService` reads in), then one
+   * more per further `REPORT_CHUNK`, merged. 200 papers of 40 questions each is up to 8,000 ids: a bounded number of reads, never one per paper.
+   */
+  private async reportsOf(ids: readonly string[]): Promise<ReadonlyMap<string, ServabilityReport>> {
+    const merged = new Map<string, ServabilityReport>()
+    for (let i = 0; i < ids.length; i += REPORT_CHUNK) {
+      for (const [id, r] of await this.servability.reports(ids.slice(i, i + REPORT_CHUNK))) merged.set(id, r)
+    }
+    return merged
+  }
+
+  /** The report of one paper from the servability reports of its placed questions (the one place both reads compute it). */
+  private reportOf(paper: PaperForReport, reports: ReadonlyMap<string, ServabilityReport>): PaperServabilityReport {
+    const ids = [...new Set(paper.sections.flatMap((s) => s.placements.map((p) => idToString(p.questionId))))]
     // A placed question the bridge cannot serve. `not_on_published_paper` is about the paper, which is what this report decides.
     const attention: PaperAttention[] = ids.flatMap((id): PaperAttention[] => {
       const r = reports.get(id)
