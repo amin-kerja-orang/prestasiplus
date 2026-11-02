@@ -13,8 +13,11 @@ import { ClassesRepository } from './classes.repository'
 export class TeacherClassroomsAdapter implements TeacherClassroomsProvider {
   constructor(@Inject(ClassesRepository) private readonly repo: ClassesRepository) {}
 
-  async activeOf(teacherId: string): Promise<TeacherClassroomRow[]> {
+  async activeOf(teacherId: string, scope?: { schoolId: string | null }): Promise<TeacherClassroomRow[]> {
     const rows = await this.repo.forTeacher(teacherId)
-    return rows.filter(isCompTargetClass).map((c) => ({ id: c.id, name: c.name, classCode: c.joinCode ?? '-' }))
+    return rows
+      .filter(isCompTargetClass)
+      .filter((c) => scope === undefined || (scope.schoolId !== null && c.schoolId === scope.schoolId))
+      .map((c) => ({ id: c.id, name: c.name, classCode: c.joinCode ?? '-' }))
   }
 }
