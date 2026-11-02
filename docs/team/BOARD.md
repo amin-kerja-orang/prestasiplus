@@ -538,7 +538,7 @@ A3 dev-1 rehearsed this locally. `prisma migrate deploy` does not run a migratio
 - ha18-minors must restore 0105 byte-for-byte (A2); it is IN-PROGRESS until then.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 02:04 UTC, BASE 985012dd)
+### Team A open branches: heads from origin (auto, 2026-11-02 02:10 UTC, BASE f9f8c721)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -563,8 +563,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/minors-snapshot-versions-a3 | 1ef2eb2e5 | READY (A3, @1ef2eb2e on BASE-120; type only): AttemptSectionSnapshot.versions; attempt-source 4/4, tsc 0; closes B2 c20 Minor; B2 | A1b pre-review Approve |
 | r1/minors-t45-a3 | eb8165ed1 | READY (A3, @eb8165ed off T45; test only); clean; merge after T45 |
 | r1/partial-acs-a3 | e6ceece19 | READY-AFTER-FIX (A3, @e6ceece1 restacked on T48 10c62437): exam-builder 416/417 RED: builder-review "stays outside D93" (same as REQ-B-069; likely pool page cap ?pageSize=100 vs 106 units). Fixed by r1/t31-pool-lookup-fixture merged after T31 (no cascade needed); merge after t31-pool-lookup-fixture |
-| r1/publish-lock-share | 225b69411 | IN-PROGRESS (A1b): builder.service conflicts with BASE-148 (T48); BASE merge pending; merge after DSG da7a12e7 | was READY @225b6941 |
-| r1/publish-title-draft | 4e768673c | IN-PROGRESS (A2): builder.service conflicts with BASE-148 (T48); BASE merge pending | was READY @4e768673 |
+| r1/publish-lock-share | 7ef73b79d | CR (A1b, @7ef73b79 = 225b6941 + BASE-148 merge: T48 structuralCheck(paper, ev) + C referenceImageBlockers kept; post-lock reads; BASE early-read comparison dropped (A4 verifying origin/safety); exam-builder + DSG + pls 418 pass, tsc 0). Merge after DSG da7a12e7 |
+| r1/publish-title-draft | 335e9cbb8 | IN-PROGRESS (A2): builder.service conflicts with BASE-148 (T48); BASE merge pending | was READY @4e768673 |
 | r1/r1e2e10-bulk-publish-noop | 5990fb6b0 | CR (A2, @5990fb6b on BASE-135; Q16): bulk Terbitkan already-Diterbitkan rows → optional `skipped[]: {id, reason}` ("Soalan ini sudah diterbitkan."), not failed[], not affected, no audit/transition; contract QuestionBulkSkippedSchema + openapi; 5 specs, mutations red; questions 715, workflow 310, conformance 409, contract 95; A1b pre-review APPROVE 0 B/M (4 mutations red); Minor 1 (bulkByFilter race should surface skipped) → A2 commit pending; C FE = REQ-A-040 |
 | r1/ready-tiers-check | 9c80f08c3 | ON HOLD (A2, @9c80f08c, contains BASE-107): code correct + Minors fixed (exact 503 body, WARN once per state change, INFO on recovery; mutations red); waits for B DevOps (REQ-A-028: CI seed step + first-install deploy ordering) |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
@@ -572,7 +572,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/reqb058-dedupe-test-a3 | d7665dfad | IN-PROGRESS (A3): restack onto takedown-pin f7cee944 + Bab in its spec pending |
 | r1/reqb058-takedown-pin | f7cee944e | READY (A4, @f7cee944 = b1e96566 + test-only inline Bab update in advance() (H-A18 gate); reqb058 9/9, pin-servable 3, be09-paper 8 on BASE + head; bite 6 red). A1b pre-review Approve (b1e96566). Merge note: DEV doc keep the edited REQ-B-032 row + both BASE rows; B2 |
 | r1/reqb067-etl-guards | d402fdf2a | READY (A1a, @d402fdf2 off BASE-132): REQ-B-067 real (macOS-visible) defects fixed: files.ts realOf (realpath first, ancestor walk, dangling symlinks followed ≤40 hops) closes the "separate directories" guard bypass; .github/workflows/api.yml >1 MB guard portable + fail-closed (pipefail, || exit 1). A1b pre-review Approve (0 B/M); its 3 Minors fixed, each new test bites; security + files.db 41, staging 148, tsc/eslint 0. **Needs B security-engineer + DevOps (CI config)** |
-| r1/rule-line-v2 | 89961f9f2 | IN-PROGRESS (A3): builder.service conflicts with BASE-148 (T48); BASE merge pending | was READY @89961f9f |
+| r1/rule-line-v2 | a425206c6 | IN-PROGRESS (A3): builder.service conflicts with BASE-148 (T48); BASE merge pending | was READY @89961f9f |
 | r1/servability-stimuli-once | f76f729a8 | READY (A4, @f76f729a, contains chain tip + BASE-107): spy spec pins one stimulus read per chunk + 2 comments; optional; step 6b |
 | r1/t04-minors | 82828a68a | MERGED by B1 as BASE-119 e927c3ee @8ae70d6e (reviewed SHA; 82828a68 delta not merged: optional test-only, left) |
 | r1/t31-builder-wire | eb0346d25 | READY (A3, @eb0346d2): already an ancestor of C reqa008 f85db8ff (B2 c23 AwM) → merging reqa008 brings T31; A4 pair check on BASE-129 GREEN (exam-builder 438, m28 FE 650, vue-tsc 0); nothing needed from team A. B2 |
@@ -588,9 +588,11 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t45-builder-acs | ee3a7d2ba | READY (A1b, @ee3a7d2b); clean on T48 10c62437; merge after T48 |
 | r1/t45-builder-acs-wip | 078204e1c | SUPERSEDED by r1/t45-builder-acs; do not merge |
 | r1/t48-label-move-fix | 9783849cf | READY — B2 c23 APPROVED @9783849c; clean on restacked T48 10c62437 (no merge needed); merge after T48 |
-| r1/t51-partial-acs-a3 | 7cb8d814a | READY-AFTER-FIX (A3, @7cb8d814 restacked on T48 10c62437): exam-builder 416/417 RED: builder-review "stays outside D93" (same as REQ-B-069; likely pool page cap ?pageSize=100 vs 106 units). Fixed by r1/t31-pool-lookup-fixture merged after T31 (no cascade needed); merge after t31-pool-lookup-fixture |
+| r1/t51-partial-acs-a3 | 7cb8d814a | READY-AFTER-FIX (A3, @7cb8d814 restacked on T48 10c62437): exam-builder 416/417 RED: builder-review "stays outside D93" (same as REQ-B-069; likely pool page cap ?pageSize=100 vs 106 units). Fixed by r1/t31-pool-lookup-fixture merged after T31 (no cascade needed); merge after t31-pool-lookup-fixture | B2 c26 APPROVED @74242a28 (intermediate head); merge after REQ-A-008 + T43 + t31-pool-lookup-fixture |
 
 **Merged content, origin head has only base-merge commits since (no new work):** r1/a4chain-minors 86dd7ad67, r1/ha15-blueprint-evidence 7e5d637e5, r1/overview-getmany-parallel 2809a87fe, r1/reqb032-pinned-rule 167986eff, r1/t44-blueprint-fields 072d8f4b4, r1/t48-builder-parity 10c624376
+
+**Origin head moved since last record (re-triage):** r1/publish-title-draft: status says @4e768673, origin is 335e9cbb8; r1/rule-line-v2: status says @89961f9f, origin is a425206c6
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
