@@ -2,7 +2,7 @@
 
 Untuk pengguna dan pentadbir (Admin Pusat). Ditulis dalam bahasa mudah; istilah teknikal diletakkan di bahagian "Nota operasi" sahaja.
 
-**Asas keluaran.** Calon R1 ialah BASE-207 (`7db748ac5`) = kod produk BASE-205 (`87466acc`, keputusan pemilik, B1 kitaran 63) + pembetulan CI BASE-206 dan BASE-207 (`.gitleaksignore`, `.github/workflows/api.yml`; tiada fail produk berubah, `git diff --stat 87466accd 7db748ac5`); hanya dokumen berubah sehingga keluaran, dan unit kod lain pergi selepas keluaran.
+**Asas keluaran.** Calon R1 ialah BASE-207 (`7db748ac5`) = kod produk BASE-205 (`87466acc`, keputusan pemilik, B1 kitaran 63) + pembetulan CI BASE-206 dan BASE-207 (`.gitleaksignore`, `.github/workflows/api.yml`; tiada fail produk berubah, `git diff --stat 87466accd 7db748ac5`); hanya dokumen berubah sehingga keluaran, dan unit kod lain pergi selepas keluaran. Calon bergerak jika satu pembetulan CI digabungkan (contohnya `r1/b1-reqb081-frontend-green`, kerja Team B untuk CI frontend yang merah).
 
 **Cara membaca nota ini.** Teks dalam tanda petikan ialah teks sebenar yang anda akan lihat di skrin. Perkara yang belum disahkan, atau yang bergantung pada kerja yang belum digabungkan ke dalam keluaran, ditandakan **[PROPOSED]**. Nombor kecil seperti (N1) menunjuk ke catatan hujung di bahagian akhir.
 

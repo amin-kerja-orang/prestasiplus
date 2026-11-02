@@ -1,6 +1,6 @@
 # R1 operator checklist (one page)
 
-Short form of [r1-runbook.md](r1-runbook.md) (section numbers below point there). A human with deploy rights runs this, after the lead's explicit confirmation. Placeholders only: `<DATABASE_URL>`, `<pid>`. No secrets on this page.
+Short form of [r1-runbook.md](r1-runbook.md) (section numbers below point there). A human with deploy rights runs this, after the lead's explicit confirmation. Placeholders only: `<DATABASE_URL>`, `<migrate_role>` (the role `prisma migrate deploy` connects as), `<pid>`. No secrets on this page.
 
 **Not covered by the rehearsal:** `deploy.sh` and the compose path, the API running as `pp_app`. The migration rehearsal (REQ-B-083: local Postgres 16, 409k `question_versions`, base `87466acc`) covered the normal apply (20.3 s total, 0106 16.6 s), revert, re-apply, `/api/ready` and the reference seed.
 
@@ -22,8 +22,6 @@ Short form of [r1-runbook.md](r1-runbook.md) (section numbers below point there)
 - [ ] `prisma migrate deploy` (via the deploy script, the normal path). Order and list: runbook 2.1. Expect 0105 to hold a lock on `question_versions` for under a second; 0106 about 17 to 20 s at 409k rows (writes wait, reads do not).
 - [ ] Right after 0100: `VACUUM ANALYZE question_versions;` (runbook 2.2; order of work step 3).
 - [ ] Right after 0106 and 0107: `ANALYZE question_versions;` (runbook 2.4 item 4).
-- [ ] DSKP load: dry run, then the real run, then verify (runbook section 4; order of work step 5).
-- [ ] Blueprints: an Admin Pusat creates each in Kontrak and presses Sahkan, in the order of runbook 5.2 (section 5; order of work step 6).
 
 ## 3. Detect a failed migration
 
@@ -64,5 +62,7 @@ For a lock timeout while the client is still connected, the database cancels 010
 - [ ] `GET /api/ready` answers 200 (`db` up, `migrations` applied) and `GET /api/health` 200.
 - [ ] Detection query of section 3 returns 0 rows.
 - [ ] Schema checks 3.5d and 3.5e; servable counts 3.6.
+- [ ] DSKP load: dry run, then the real run, then verify (runbook section 4; order of work step 5).
+- [ ] Blueprints: an Admin Pusat creates each in Kontrak and presses Sahkan, in the order of runbook 5.2 (section 5; order of work step 6).
 - [ ] Smoke (runbook section 1 step 7; sections 3.6 and 5.5; release notes 6.1): login count, one Jana Kertas, one Latih Tubi SPM draw.
 - [ ] Record the date, the build, the migration list applied and who ran it.
