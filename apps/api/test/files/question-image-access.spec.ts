@@ -89,6 +89,8 @@ describe('question image read rule for pupils (real database)', () => {
     )).id!
     return { paper, section }
   }
+  /** The paper id of a section made by `publishedPaper`. */
+  const publishedPaperOf = async (section: string): Promise<{ paper: string }> => ({ paper: (await one(`select paper_id::text id from paper_sections where id = $1`, [section])).id! })
   const place = (section: string, qid: string, pinned = 1) =>
     t.db.query(`insert into paper_placements (paper_section_id, question_id, position, pinned_version_no) values ($1, $2, 1, $3)`, [section, qid, pinned])
   const status = async (c: Client, img: Img) => (await c.get(img.url)).status
@@ -181,9 +183,17 @@ describe('question image read rule for pupils (real database)', () => {
     const img = await upload()
     await onOption(vid, img)
     const { section } = await publishedPaper()
+    const { paper } = await publishedPaperOf(section)
     await place(section, qid, 1)
     // Supersede version 1 (archived) and withdraw the question: the published paper still pins version 1.
     await svc.setStatus(qid, 'archived', adminId)
+    // REQ-B-074: an archive "withdrawn" is a takedown of the pin; only a pupil with a sitting on the paper keeps its picture (REQ-B-058 d)
+    expect(await status(pupil, img), 'no sitting').toBe(404)
+    await t.db.query(
+      `insert into exam_attempts (user_id, paper_id, paper_kind, title, subject, subject_name, kertas, paper_code, mode, started_at, duration_min)
+       values ($1, $2, 'pilihan', 'Terbit', 'MAT', 'Matematik', 1, 'P1', 'exam', now(), 60)`,
+      [pupilId, paper],
+    )
     expect(await status(pupil, img)).toBe(200)
     expect((await t.http().get(img.url)).status).toBe(401)
   })
@@ -198,6 +208,8 @@ describe('question image read rule for pupils (real database)', () => {
     await svc.setStatus(a.qid, 'archived', adminId)
     await svc.setStatus(b.qid, 'archived', adminId)
     expect(await status(pupil, imgA)).toBe(404)
+    // These two are archived as superseded (not a takedown), so the paper below serves version 1 without any sitting (REQ-B-074 is about takedowns).
+    await t.db.query(`update question_versions set archive_reason = 'superseded' where question_id = any($1::bigint[])`, [[a.qid, b.qid]])
 
     // Only question A sits in a published paper: B stays denied; a placement pinning version 2 does not open version 1.
     const pub = await publishedPaper()

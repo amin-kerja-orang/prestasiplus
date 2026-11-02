@@ -25,6 +25,8 @@ describe('REQ-B-058 a taken-down pinned version is not served to new sittings', 
   let level: string
   let tag: { unitId: string; spIds: string[]; tp: number }
   let target = ''
+  /** The stem picture of version 1 of `target` (only version 1 carries it), by its public token. */
+  let v1Image = ''
   let paper = ''
   let running = ''
   const V1 = 'Versi satu: berapakah 2 + 3?'
@@ -96,7 +98,8 @@ describe('REQ-B-058 a taken-down pinned version is not served to new sittings', 
     const sp = await one(`select id::text id from curriculum_nodes where kind = 'sp' and subject_id = ${subject} and education_level_id = ${level} order by sort_order, id limit 1`)
     tag = { unitId: unit, spIds: [sp], tp: 3 }
 
-    const first = await admin.post('/api/questions', body(V1, await upload(), 1))
+    v1Image = await upload()
+    const first = await admin.post('/api/questions', body(V1, v1Image, 1))
     expect(first.status, JSON.stringify(first.body)).toBe(201)
     target = first.body.data.id as string
     const rest: string[] = []
@@ -207,5 +210,52 @@ describe('REQ-B-058 a taken-down pinned version is not served to new sittings', 
     expect((await newSitting()).status).toBe(403)
     expect((await kuiz()).status).toBe(403)
     expect(await listed(fresh)).toBe(false)
+  })
+
+  /*
+   * REQ-B-074 (B3 Lows on REQ-B-058). L1: the picture of a taken-down pinned version stays readable by a token holder (rule B had no archive-reason check).
+   * L2: a takedown archives only the latest and the live version of each question, so an older `superseded` version from the same source stayed servable
+   * once a newer version was approved; the source paper's `takedown_at` is the authority and is checked with the pin.
+   */
+  const setReasonSql = (reason: string | null) => q(`update question_versions set archive_reason = ${reason === null ? 'null' : `'${reason}'`} where question_id = ${target} and version_no = 1`)
+  /** `fresh` has no sitting on the paper; `pupil` has (REQ-B-074: a running sitting keeps the picture of its pinned version). */
+  const readImage = (who: FullClient = fresh) => who.get(`/api/files/${v1Image}`)
+
+  it('L1: the picture of the pinned version is readable only while the pin is superseded (withdrawn, source_takedown or no reason: 404)', async () => {
+    for (const [reason, readable] of [['superseded', true], ['withdrawn', false], ['source_takedown', false], [null, false], ['superseded', true]] as const) {
+      await setReasonSql(reason)
+      const res = await readImage()
+      expect(res.status, `archive_reason ${String(reason)}: ${JSON.stringify(res.body).slice(0, 120)}`).toBe(readable ? 200 : 404)
+      // the pupil whose sitting is running keeps the picture of the version it was started on
+      expect((await readImage(pupil)).status, `sitting, ${String(reason)}`).toBe(200)
+    }
+  })
+
+  it('L2: a SUPERSEDED version 1 whose source paper is taken down is refused to new sittings, Kuiz and the list, and its picture is 404; lifting the takedown_at restores it', async () => {
+    await setReasonSql('superseded')
+    const [sp] = await q(`insert into source_papers (rights_status) values ('own') returning id::text id`)
+    await q(`update question_versions set source_paper_id = ${String(sp!.id)} where question_id = ${target} and version_no = 1`)
+    // control: the source is not taken down
+    expect((await newSitting()).status).toBe(201)
+    expect((await kuiz()).status).toBe(200)
+    expect(await listed(fresh)).toBe(true)
+    expect((await readImage()).status).toBe(200)
+    // the source paper is taken down: version 1 stays `superseded`, as the real takedown leaves it
+    await q(`update source_papers set takedown_at = now() where id = ${String(sp!.id)}`)
+    const res = await newSitting()
+    expect(res.status, JSON.stringify(res.body)).toBe(403)
+    expect(res.body.error.message).toBe(REFUSED)
+    for (const k of [await kuiz(), await kuizCheck()]) {
+      expect(k.status, JSON.stringify(k.body)).toBe(403)
+      expect(k.body.error.message).toBe(REFUSED)
+    }
+    expect(await listed(fresh)).toBe(false)
+    expect((await readImage()).status).toBe(404)
+    expect((await readImage(pupil)).status, 'the running sitting keeps the picture').toBe(200)
+    expect((await q(`select status, archive_reason from question_versions where question_id = ${target} and version_no = 1`))[0]).toMatchObject({ status: 'archived', archive_reason: 'superseded' })
+    // lifting it (not a product feature; shows the check reads the source row) restores the pin
+    await q(`update source_papers set takedown_at = null where id = ${String(sp!.id)}`)
+    expect((await newSitting()).status).toBe(201)
+    expect((await readImage()).status).toBe(200)
   })
 })

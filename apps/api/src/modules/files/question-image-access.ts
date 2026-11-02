@@ -17,8 +17,10 @@ import { paperHeld } from '../questions/served-rule'
  *   B. PAPER: the version is the version PINNED by a placement of a `published` paper the pupil can sit
  *      (a per-pupil `jana` paper only for the pupil it was generated for), or of a `withdrawn` paper this pupil has a sitting on (R1
  *      delete-served-guard: a withdrawal does not cut a running sitting, so it keeps its pictures; a pupil who never sat the withdrawn paper gets
- *      the uniform 404). The pinned version must have left draft/review. The paper is the authority here, so an archived (superseded) pinned
- *      version, a later-withdrawn question or a hidden level do not hide it from a paper that is still held.
+ *      the uniform 404). The pinned version must be `approved` or `superseded` and its source not taken down; a taken-down pin (archived "withdrawn" /
+ *      "source_takedown", or its source paper taken down) is readable only by a pupil who has a sitting on that paper (REQ-B-074: a running sitting keeps its
+ *      version, REQ-B-058 d; nobody else can start it, so nobody else gets the picture). The paper is the authority here, so a superseded pinned version, a
+ *      later-withdrawn question or a hidden level do not hide it from a paper that is still held.
  *   C. REFERENCE: a sittable paper (as in B) whose `reference_sheets` has a panel carrying the file as `imageFileId`
  *      (the PUBLIC token only: the internal decimal id never matches, so an unattached image cannot be read by guessing ids; B3 T34-L1-residual).
  */
@@ -26,8 +28,15 @@ import { paperHeld } from '../questions/served-rule'
 /** Statuses of a question version a pupil can be served from (ADR-0027): `approved` only; `published` no longer exists for questions. */
 export const SERVABLE_VERSION_STATUSES = [SERVABLE_STATUS] as const
 
-/** A pinned paper version must be past the authoring stages. `archived` stays readable: a published paper pins it. */
-const PAPER_PINNED_STATUSES = ['approved', 'archived'] as const
+/**
+ * REQ-B-074: is the pinned version one a NEW sitting may be served (`pinServableForNewSitting`)? `approved`, or `archived` because a newer version
+ * replaced it (`superseded`), and its source paper not taken down (`source_papers.takedown_at`: a takedown archives the latest and the live version of
+ * each question, not the older ones). Any other archive reason (or none) is a takedown.
+ */
+const PINNED_SERVABLE = Prisma.sql`(
+  (v.status = 'approved' OR (v.status = 'archived' AND v.archive_reason = 'superseded'))
+  AND NOT EXISTS (SELECT 1 FROM source_papers tsp WHERE tsp.id = v.source_paper_id AND tsp.takedown_at IS NOT NULL)
+)`
 
 const inList = (values: readonly string[]): Prisma.Sql => Prisma.join(values.map((v) => Prisma.sql`${v}`))
 
@@ -85,12 +94,14 @@ export function pupilMayReadQuestionImageSql(fileId: bigint, userId: bigint, pub
      WHERE (q.live_version_no = v.version_no AND q.is_active
             AND v.status IN (${inList(SERVABLE_VERSION_STATUSES)})
             AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL})
-        OR (v.status IN (${inList(PAPER_PINNED_STATUSES)})
+        OR (v.status IN ('approved', 'archived')
             AND EXISTS (SELECT 1
                           FROM paper_placements pl
                           JOIN paper_sections ps ON ps.id = pl.paper_section_id
                           JOIN sittable s ON s.id = ps.paper_id
-                         WHERE pl.question_id = q.id AND pl.pinned_version_no = v.version_no))
+                         WHERE pl.question_id = q.id AND pl.pinned_version_no = v.version_no
+                           AND (${PINNED_SERVABLE}
+                                OR EXISTS (SELECT 1 FROM exam_attempts sat WHERE sat.paper_id = s.id AND sat.user_id = ${userId}))))
     UNION ALL
     SELECT 1 AS one
       FROM sittable s

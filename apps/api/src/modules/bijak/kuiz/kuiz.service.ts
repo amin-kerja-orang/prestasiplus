@@ -367,7 +367,7 @@ export class KuizService {
     // REQ-B-058: the same refusal when a placement's PINNED version is taken down (archived "withdrawn" / "source_takedown") while a later
     // version is live. A `superseded` pin is still served. The pinned reads do not check status, so it is checked here.
     const pins = paper.sections.flatMap((s) => s.placements.map((p) => ({ questionId: idToString(p.questionId), versionNo: p.pinnedVersionNo })))
-    if ((await this.questions.getVersions(pins)).some((r) => !pinServableForNewSitting(r.version))) throw kuizPaperUnavailable()
+    if ((await this.questions.getVersions(pins, { withSourceTakedown: true })).some((r) => !pinServableForNewSitting(r.version))) throw kuizPaperUnavailable()
     return paper
   }
 

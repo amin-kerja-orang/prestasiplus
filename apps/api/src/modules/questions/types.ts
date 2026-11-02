@@ -109,6 +109,8 @@ export interface QuestionVersionRecord {
   versionNo: number
   status: QuestionStatus
   archiveReason: 'superseded' | 'withdrawn' | 'source_takedown' | null
+  /** Set only by `getVersions(refs, { withSourceTakedown: true })`: the version's source paper is taken down (`source_papers.takedown_at`). Absent otherwise. */
+  sourceTakenDown?: boolean
   publishedAt: Date | null
   type: StoreQuestionType
   stemMs: string | null

@@ -18,6 +18,7 @@ describe('BijakPapersAttemptSource (BE-15 -> BE-16)', () => {
     const real = t.ports.questionSource
     const filtered: BijakQuestionSource = {
       pool: (pool, scope) => real.pool(pool, scope),
+      takenDownPins: (pins) => real.takenDownPins(pins),
       getMany: async (ids) => {
         const all = await real.getMany(ids)
         return new Map([...all].filter(([id]) => !missing.has(id)))

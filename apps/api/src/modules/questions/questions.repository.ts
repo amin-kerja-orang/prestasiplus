@@ -304,7 +304,7 @@ export class QuestionsRepository {
    * Pinned reads (grading, and serving a pinned placement such as a kuiz paper page): never use it for a draw or a list. It skips
    * the active, published and PKSK scope that `sample` / `eligibleIds` / `getMany('live')` apply; a Darjah question is still not found (R1-B21).
    */
-  async getVersions(refs: readonly { questionId: string; versionNo: number }[]): Promise<QuestionRecord[]> {
+  async getVersions(refs: readonly { questionId: string; versionNo: number }[], opts: { withSourceTakedown?: boolean } = {}): Promise<QuestionRecord[]> {
     const wanted = new Map<string, { id: bigint; versionNo: number }>()
     for (const r of refs) {
       const id = bi(r.questionId)
@@ -312,7 +312,15 @@ export class QuestionsRepository {
       wanted.set(`${id}:${r.versionNo}`, { id, versionNo: r.versionNo })
     }
     if (wanted.size === 0) return []
-    return this.hydrateVersions([...wanted.values()])
+    const records = await this.hydrateVersions([...wanted.values()])
+    if (opts.withSourceTakedown !== true || records.length === 0) return records
+    // REQ-B-074: one more statement for the callers that decide whether a NEW sitting may be served the pin (`pinServableForNewSitting`).
+    const down = await this.db.$queryRaw<{ id: bigint }[]>`
+      SELECT v.id FROM question_versions v JOIN source_papers sp ON sp.id = v.source_paper_id
+       WHERE v.id = ANY(${records.map((r) => BigInt(r.version.id))}::bigint[]) AND sp.takedown_at IS NOT NULL`
+    if (down.length === 0) return records
+    const downIds = new Set(down.map((r) => idToString(r.id)))
+    return records.map((r) => (downIds.has(r.version.id) ? { ...r, version: { ...r.version, sourceTakenDown: true } } : r))
   }
 
   async count(filter: QuestionFilter = {}): Promise<number> {
