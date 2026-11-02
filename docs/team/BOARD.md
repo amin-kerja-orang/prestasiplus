@@ -1,6 +1,6 @@
 # R1 board: Bijak SPM, admin → student question pipeline
 
-Writer: team A lead. Last refresh: 2026-11-02 06:12 UTC (cycle 44). Current BASE: **BASE-202** = `feature/v3-bijak-r1` @ 1045e798. Every open team A branch merges the latest BASE before re-marking READY.
+Writer: team A lead. Last refresh: 2026-11-02 06:16 UTC (cycle 45). Current BASE: **BASE-205** = `feature/v3-bijak-r1` @ 87466acc. Every open team A branch merges the latest BASE before re-marking READY.
 Source of every task: `docs/handoff/CLOUD-HANDOFF.md` §7 on `feature/v3-bijak-r1`. Read the protocol in [README.md](README.md).
 > **Current state = the auto table at the end of this file (AUDIT:BEGIN/END).** History sections below are a log; a READY there is only valid if the auto table agrees.
 
@@ -572,7 +572,7 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 - **Disk:** check `docker system df` and prune orphaned anonymous test volumes when there are 0 containers. A3 reclaimed 3.4 GB this way.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 06:10 UTC, BASE 87466acc)
+### Team A open branches: heads from origin (auto, 2026-11-02 06:19 UTC, BASE 87466acc)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -582,7 +582,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ready-tiers-check | 9c80f08c3 | KIV R2 (B1 answer to REQ-A-028, 2026-11-02 13:15 MYT: kept on hold for R1; rely on runbook section 0; revisit in R2). Do not merge |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
 | r1/reqb074-takedown-lows | 33b0a0b1c | SUPERSEDED: 45a75f68 merged as BASE-195; the later commit 33b0a0b1 carried the Q18 rule, which the user overrode (REQ-B-077). Do not merge 33b0a0b1. Follow-ups: r1/reqb074-dsg-spec-fix, then r1/reqb076-live-takedown (A1b) |
-| r1/reqb076-approve-gate | c3557c608 | IN-PROGRESS (A1b): A4 pre-review on c3557c60 = Approve w/ minors (every app writer gated). But BASE-202 (which contains c8965bb8 as BASE-201) + this branch = r1 2 red (the old live-takedown spec re-approves via the API, which the gate now refuses). Fix in progress: merge BASE-202, rewrite that spec setup via SQL, reconcile the DEV rows (predicates kept as defence in depth), cite :26, filter/gate-check tests |
+| r1/reqb076-approve-gate | d23b43f3b | IN-REVIEW-A (A1b, @d23b43f3 = c3557c60 + the BASE-202 merge + the old live-takedown spec setup via SQL + DEV reconcile (the gate is primary, the predicates are defence in depth) + filter/gate-check tests; r1 + questions-workflow 452/0; tsc 0; clean on BASE-205). A4 delta review on BASE-205 pending. The last team A code unit outstanding |
 | r1/reqb082-docs | 0fcac9901 | READY (A3, @0fcac990 = 2 docs commits on BASE-200; answers REQ-B-082: runbook §6 throttle/proxy (REQ-B-080), §3.7d read-only null-blueprint SELECT, release-input admin-list-perf, decision pack section e (R1 freeze on BASE-200 + 5 held units + REQ-B-080 + copy row 42 + B4 E2E), signoff, 3 ops docs, KIV 56 rows / 51 open). Merge after B1 confirms the R1 scope |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
