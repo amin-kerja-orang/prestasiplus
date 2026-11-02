@@ -44,7 +44,7 @@ const lo = computed(() => selected.value?.from ?? 0)
 const hi = computed(() => selected.value?.to ?? max.value)
 
 watch(
-  () => [props.part.awarded, props.part.band, props.part.selfMarked] as const,
+  [() => props.part.awarded, () => props.part.band, () => props.part.selfMarked],
   () => {
     draft.value = props.part.awarded
     band.value = initialBand()

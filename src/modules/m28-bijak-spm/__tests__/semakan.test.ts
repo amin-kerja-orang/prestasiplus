@@ -254,6 +254,85 @@ describe('SelfMarkControl: band picker', () => {
   })
 })
 
+describe('SelfMarkControl: a new part object from a refreshed result', () => {
+  const rubric = () => part({ scheme: { marks: 4, rubric: RUBRIC as never } })
+  const value = () => text('[data-testid="selfmark-value"]')
+  const state = () => text('[data-testid="selfmark-state"]')
+  function mountControl(p: ReviewPart) {
+    wrapper = mount(SelfMarkControl, {
+      props: { part: p, save: vi.fn().mockResolvedValue(undefined) },
+      attachTo: document.body,
+    })
+    return wrapper
+  }
+
+  it('keeps an unsaved draft and its dirty state when the values are the same', async () => {
+    const w = mountControl(part())
+    ;(q('[data-testid="selfmark-inc"]') as HTMLButtonElement).click()
+    await flushPromises()
+    expect(value()).toBe('1 / 4')
+
+    await w.setProps({ part: part() })
+    await flushPromises()
+
+    expect(value()).toBe('1 / 4')
+    expect(state()).toBe('Belum disahkan')
+    expect(w.emitted('dirty')).toEqual([['p1', true]])
+  })
+
+  it('keeps an unsaved band when the values are the same', async () => {
+    const w = mountControl(rubric())
+    document.body.querySelectorAll<HTMLElement>('[role="radio"]')[1]!.click()
+    await flushPromises()
+    expect(value()).toBe('2 / 4')
+
+    await w.setProps({ part: rubric() })
+    await flushPromises()
+
+    expect(value()).toBe('2 / 4')
+    expect(document.body.querySelectorAll('[role="radio"]')[1]!.getAttribute('aria-checked')).toBe('true')
+    expect((q('[data-testid="selfmark-inc"]') as HTMLButtonElement).disabled).toBe(false)
+  })
+
+  it('shows the saved mark of a part that was saved', async () => {
+    const w = mountControl(part())
+    ;(q('[data-testid="selfmark-inc"]') as HTMLButtonElement).click()
+    await flushPromises()
+
+    await w.setProps({ part: part({ awarded: 1, selfMarked: true, status: 'separa' }) })
+    await flushPromises()
+
+    expect(value()).toBe('1 / 4')
+    expect(state()).toBe('Markah kendiri disimpan')
+    expect(w.emitted('dirty')).toEqual([['p1', true], ['p1', false]])
+  })
+
+  it('applies a value the server corrected, over the draft', async () => {
+    const w = mountControl(part())
+    const inc = q('[data-testid="selfmark-inc"]') as HTMLButtonElement
+    inc.click()
+    inc.click()
+    inc.click()
+    await flushPromises()
+    expect(value()).toBe('3 / 4')
+
+    await w.setProps({ part: part({ awarded: 2, selfMarked: true, status: 'separa' }) })
+    await flushPromises()
+
+    expect(value()).toBe('2 / 4')
+    expect(state()).toBe('Markah kendiri disimpan')
+  })
+
+  it('applies a band the server changed', async () => {
+    const w = mountControl(rubric())
+    await w.setProps({ part: part({ scheme: { marks: 4, rubric: RUBRIC as never }, awarded: 4, band: '3', selfMarked: true }) })
+    await flushPromises()
+
+    expect(value()).toBe('4 / 4')
+    expect(document.body.querySelectorAll('[role="radio"]')[2]!.getAttribute('aria-checked')).toBe('true')
+  })
+})
+
 describe('KeywordSuggestion', () => {
   it('writes the V2 line and ticks the matched points', () => {
     wrapper = mount(KeywordSuggestion, {
@@ -483,6 +562,35 @@ describe('ResultPage Semakan', () => {
     })
     await render()
     expect(q('[data-testid="past-sittings"]')?.getAttribute('href')).toBe('/r/a0')
+  })
+  it('saving one part keeps the unsaved draft of another part', async () => {
+    const a = part({ partId: 'pa' })
+    const b = part({ partId: 'pb' })
+    const twoParts = (pa: ReviewPart, pb: ReviewPart, score: number) => {
+      const r = resultOf(pa, score)
+      r.questions[0]!.parts = [pa, pb]
+      return r
+    }
+    server.getResult.mockResolvedValue(view(twoParts(a, b, 0)))
+    server.selfMark.mockResolvedValue({
+      result: twoParts(part({ partId: 'pa', awarded: 2, status: 'separa', selfMarked: true }), part({ partId: 'pb' }), 2),
+    })
+    await render()
+    const control = (id: string) => q(`[data-testid="selfmark-${id}"]`)!
+    const pick = (id: string, sel: string) => control(id).querySelector<HTMLElement>(`[data-testid="${sel}"]`)!
+    pick('pa', 'selfmark-inc').click()
+    pick('pa', 'selfmark-inc').click()
+    pick('pb', 'selfmark-inc').click()
+    await flushPromises()
+    expect(pick('pb', 'selfmark-value').textContent).toContain('1 / 4')
+
+    pick('pa', 'selfmark-save').click()
+    await flushPromises()
+
+    expect(server.selfMark).toHaveBeenCalledWith(7, 'a1', { partId: 'pa', mark: 2 })
+    expect(pick('pa', 'selfmark-state').textContent).toContain('Markah kendiri disimpan')
+    expect(pick('pb', 'selfmark-value').textContent).toContain('1 / 4')
+    expect(pick('pb', 'selfmark-state').textContent).toContain('Belum disahkan')
   })
 })
 
