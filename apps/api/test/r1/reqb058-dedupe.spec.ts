@@ -38,6 +38,11 @@ describe('REQ-B-058: one question placed in two sections of one paper (the getVe
     explanation: 'Penjelasan ujian.', cognitiveLevel: 'mengaplikasi', kertas: '2', tag,
   })
   async function advance(ids: string[]): Promise<void> {
+    // H-A18: the submit gate needs a Bab; the fixtures (and the new version 2) carry the first chapter of the subject and level (same inline step as reqb058-takedown-pin.spec.ts)
+    await q(
+      `update question_versions set chapter_id = (select id from chapters where subject_id = $2::bigint and education_level_id = $3::bigint order by id limit 1) where question_id = any($1::bigint[]) and chapter_id is null`,
+      [ids, subject, level],
+    )
     for (const action of ['review', 'approved']) {
       const res = await admin.post('/api/questions/bulk-action', { action, ids })
       expect(res.status, JSON.stringify(res.body)).toBe(200)
