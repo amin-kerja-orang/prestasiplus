@@ -203,3 +203,8 @@
 | BASE-198 | 4e10e170 | H-A24 release docs @ 1253c113 (B2 Approve w/ Minors); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 13 passed (13) | 2026-11-02 13:36 |
 | BASE-199 | 63fa75c0 | H-A26 handoff @ 553793a8 (B2 Approve w/ Minors); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 13 passed (13) | 2026-11-02 13:36 |
 | BASE-200 | 550b8819 | AC gaps refresh @ 55041db3 (B2 Approve w/ Minors); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 2 passed (2) | 2026-11-02 13:36 |
+| BASE-201 | 6aee8f4f | REQ-B-076 @ c8965bb8 (B2 Approve w/ Minors); owner chose to include; merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 2401 passed | 1 skipped | 2 todo (2404) | 2026-11-02 14:08 |
+| BASE-202 | 1045e798 | bulk-publish-allskipped @ 9b8b3940 (B2 Approve); owner chose to include; merged by exact reviewed SHA | all compile and lint steps 0; unit 122 passed (122); DB 351 passed (351) | 2026-11-02 14:08 |
+| BASE-203 | 9238b8c6 | builder publish P2028 @ 645744da (B2 Approve); owner chose to include; merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 458 passed (458) | 2026-11-02 14:08 |
+| BASE-204 | e9f7c96e | REQ-B-079 @ 52345db7 (B2 Approve w/ Minors); owner chose to include; merged by exact reviewed SHA | all compile and lint steps 0; unit 189 passed (189); DB 923 passed (923) | 2026-11-02 14:08 |
+| BASE-205 | 87466acc | E05B-L1 split control @ c4153ed7 (B2 Approve); owner chose to include; merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 145 passed (145) | 2026-11-02 14:08 |
