@@ -778,10 +778,15 @@ export class BuilderService {
    */
   private async structuralCheck(paper: PaperTree, ev: Evaluation): Promise<{ blockers: BlockerDraft[]; contract: BlockerDraft[]; fixed: BlockerDraft[]; notes: string[]; report: unknown | null }> {
     const none = { blockers: [] as BlockerDraft[], contract: [] as BlockerDraft[], fixed: [] as BlockerDraft[], notes: [] as string[], report: null }
-    if (paper.blueprintId === null) return none
+    // REQ-B-079 (B2 re-check of T34): a paper with no Kontrak (a null `blueprint_id`, or a row that is gone) used to skip the Disahkan gate altogether.
+    // App-created papers always carry one; only the demo seeds write a null. It is the same class of blocker as a Kontrak that is not Disahkan:
+    // refused at Terbit, listed in the review, lifted only by the audited override, and skipped once the paper is Terbit (`collectBlockers`).
+    const noContract = { ...none, contract: [{ code: 'BLUEPRINT_NOT_VERIFIED' as const, message: MESSAGES.noBlueprint }] }
+    if (paper.blueprintId === null) return noContract
     const subject = (await this.repo.subjectsByIds([paper.subjectId])).get(paper.subjectId.toString())
     const blueprint = await this.repo.blueprintById(paper.blueprintId)
-    if (!subject || !blueprint) return none
+    if (!subject) return none
+    if (!blueprint) return noContract
     const contract: BlockerDraft[] = [
       ...(blueprint.source === 'verified' ? [] : [{ code: 'BLUEPRINT_NOT_VERIFIED' as const, message: contractNotVerifiedLine(blueprint.code, blueprint.version, sourceToWire(blueprint.source)) }]),
       ...this.contractConformance(paper, blueprint),
