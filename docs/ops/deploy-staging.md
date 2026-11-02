@@ -40,7 +40,7 @@ Secrets live only in the platform dashboards. Never put a real value in the repo
    | `SESSION_SECRET`, `IC_HASH_KEY` | random, 32+ chars, different from each other |
    | `PUBLIC_BASE_URL`, `PUBLIC_ORIGINS` | the Pages origin, `https://<project>.pages.dev` (or the custom domain) |
    | `ALLOW_DEMO_SEED` | `true` on staging only (never production). The seed itself is a manual one-off, below. |
-   | `BIJAK_POC_QUESTIONS` | `true` on staging only. NOT on `origin/feature/v2-backend` 6694de7c (`git grep` finds nothing); set it when #49 and the flag PR merge. |
+   | `BIJAK_POC_QUESTIONS` | `false` or removed. Deprecated no-op since R1-B07 / T36 (`apps/api/src/common/config/env.schema.ts:110`): Bijak serves the question bank only; `true` only logs one warning at start and the R1 `deploy.sh` refuses `true|1`. (Older text here said `true` on staging.) |
 3. Free tier: the service sleeps after 15 minutes idle, so open the site once before a demo (the first request takes about 30-60 s). Uploads go to the container disk (`FILE_STORAGE_DIR`), which is **ephemeral** on free: files vanish on redeploy or restart.
 4. **User action - deploy needs G6 confirmation.** Nothing here is applied by the agent. With `CLIENT_IP_HEADER=x-pp-client-ip` and `EDGE_PROXY_SECRET` set on both sides the throttle key is `X-PP-Client-IP` (trusted only with the matching secret; otherwise the socket peer); rollout order and rollback: [demo-cloudflare-supabase.md](demo-cloudflare-supabase.md), "Edge client IP + no-store (go-live fix)". `TRUST_PROXY_HOPS=2` then only governs `req.secure`. Without them: `TRUST_PROXY_HOPS=2`: the Function overwrites `X-Forwarded-For` with `CF-Connecting-IP` (the client), then Render's proxy appends the address it saw (the Function's Cloudflare egress IP). Chain: `client, cf-egress`, socket = Render proxy. Express with 2 trusted hops skips the socket peer and the last XFF entry and reads the next one: the client. With 1, every user looks like the Cloudflare egress address (one shared throttle bucket); too high lets a client choose its address. This is reasoning, not yet measured: after deploy, send wrong-password logins from two networks and confirm the throttle is per client; if Render adds another hop, adjust the number.
 5. CSRF/origin: the API protects mutations with the session-bound `X-CSRF-Token` header, not an Origin comparison. `PUBLIC_ORIGINS` only allows image URLs in articles/banners and `PUBLIC_BASE_URL` builds links, so set both to the Pages origin. The Function forwards `Origin`, `Referer` and `x-csrf-token` unchanged.
@@ -74,7 +74,7 @@ Run migrations before deploying a release that carries a new migration, after ta
 - [ ] `https://<project>.pages.dev/` loads; reload on a deep link returns the app.
 - [ ] `https://<project>.pages.dev/api/health` returns OK (the first call is slow while Render wakes).
 - [ ] Login with a demo account: the response sets `pp_session` on the Pages domain, `HttpOnly; Secure; SameSite=Lax`.
-- [ ] A Bijak paper list loads (needs #49 and `BIJAK_POC_QUESTIONS=true`).
+- [ ] A Bijak paper list loads (needs #49; `BIJAK_POC_QUESTIONS` is a deprecated no-op, leave it `false` or removed).
 - [ ] An upload under the limit works; one over 22 MB gets a 413 JSON error.
 - [ ] Render logs show the client address, not a Cloudflare one (see `TRUST_PROXY_HOPS`).
 
@@ -116,7 +116,7 @@ Browser and API share one origin, so there is no CORS and the cookie session and
 | `.env.api` | `SESSION_SECRET`, `IC_HASH_KEY` | random, 32+ chars, different from each other (`openssl rand -hex 32`) |
 | `.env.api` | `PUBLIC_BASE_URL` | `https://<staging domain>` |
 | `.env.api` | `ALLOW_DEMO_SEED` | leave `false`. Demo accounts are loaded only by the explicit one-off command below, staging only. Never `true` in production. |
-| `.env.api` | `BIJAK_POC_QUESTIONS` | `true` on staging only. Not on this base yet: set it when BE-15/16 merge (it is not in `env.schema.ts` here). |
+| `.env.api` | `BIJAK_POC_QUESTIONS` | `false` or removed. Deprecated no-op since R1-B07 / T36 (`apps/api/src/common/config/env.schema.ts:110`); `true` only logs one warning at start and the R1 `deploy.sh` refuses `true|1`. |
 | `.env.db` | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | own values, random password |
 
 ### Deploy
@@ -145,7 +145,7 @@ Log in with a demo account at `https://<domain>/` (credentials from the seed doc
 - [ ] SPA loads at `https://<domain>/`; a deep link (reload on a client route) returns the app, not 404.
 - [ ] `/api/health` returns OK through the domain.
 - [ ] Login succeeds; the response sets `pp_session` with `HttpOnly; Secure; SameSite=Lax` (browser dev tools, Application, Cookies).
-- [ ] A Bijak paper list loads for a student (needs BE-15/16 and `BIJAK_POC_QUESTIONS=true`).
+- [ ] A Bijak paper list loads for a student (needs BE-15/16; `BIJAK_POC_QUESTIONS` is a deprecated no-op, leave it `false` or removed).
 - [ ] An upload under the limit works (default 10 MB; nginx allows 22 MB on `/api/files`); an oversize one is rejected cleanly.
 - [ ] `docker compose ... logs api` shows structured log lines and no stack traces for the above.
 
