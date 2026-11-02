@@ -595,14 +595,18 @@ export class QuestionsRepository {
     const below = filter.idBelow === undefined ? null : bi(filter.idBelow)
     const pageWhere = filter.idBelow === undefined ? whereAll : Prisma.sql`${whereAll} AND ${below === null ? Prisma.sql`FALSE` : Prisma.sql`q.id < ${below}`}`
     const offset = filter.idBelow === undefined ? (filter.page - 1) * filter.pageSize : 0
-    const [rows, totals, counted] = await Promise.all([
+    // ONE aggregate for the totals (R1 perf, T54 F4): the per-status counts of the filter WITHOUT its status, which the list returns in
+    // `meta.counts`, also give the total: all of them, or the one of the chosen status. It used to be a second full scan with the same
+    // joins and conditions (`count(*)` over `whereAll`). The numbers are the same, so the answer stays exact; no cache, nothing to invalidate.
+    const [rows, counted] = await Promise.all([
       this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${pageWhere} ORDER BY q.id DESC LIMIT ${filter.pageSize} OFFSET ${offset}`,
-      this.db.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n ${from} WHERE ${whereAll}`,
       this.db.$queryRaw<{ status: string; n: number }[]>`SELECT v.status AS status, count(*)::int AS n ${from} WHERE ${whereBase} GROUP BY 1`,
     ])
     const counts = NO_STATUS_COUNTS()
     for (const c of counted) if (isQuestionStatus(c.status)) counts[c.status] = c.n
-    return { ids: rows.map((r) => idToString(r.id)), total: totals[0]?.n ?? 0, counts }
+    // Sum over every group the database returned (not only the known statuses), so a row with an unexpected status still counts as it did.
+    const total = filter.status ? (counts[filter.status] ?? 0) : counted.reduce((n, c) => n + c.n, 0)
+    return { ids: rows.map((r) => idToString(r.id)), total, counts }
   }
 
   private adminConds(f: AdminListFilter): Prisma.Sql[] {
@@ -649,7 +653,7 @@ export class QuestionsRepository {
     if (f.tahun !== undefined) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND sp.year = ${Number(f.tahun)})`)
     if (f.negeri !== undefined && f.negeri.trim() !== '') conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND lower(btrim(sp.exam_board)) = lower(btrim(${f.negeri})))`)
     if (f.jenis !== undefined) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND sp.exam_type = ${f.jenis})`)
-    if (f.kertas !== undefined) conds.push(Prisma.sql`substring(v.paper_code from '([0-9])\s*$') = ${f.kertas}`)
+    if (f.kertas !== undefined) conds.push(Prisma.sql`substring(v.paper_code from '/([1-3])[[:space:]]*$') = ${f.kertas}`)
     if (f.search !== undefined && f.search.trim() !== '') {
       const like = likePattern(f.search.trim())
       conds.push(Prisma.sql`(v.stem_ms ILIKE ${like} ESCAPE '\\' OR v.stem_en ILIKE ${like} ESCAPE '\\')`)
