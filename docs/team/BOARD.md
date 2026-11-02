@@ -530,7 +530,7 @@ The B4 pack chain was walked by HTTP on SN/2 (4541/2): **96 MATCH, 1 scanner fal
 - Low bug, fixed under D9: "(draf)" stays in published titles → r1/publish-title-draft (A2).
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 00:59 UTC, BASE ef987d27)
+### Team A open branches: heads from origin (auto, 2026-11-02 01:03 UTC, BASE ef987d27)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -550,7 +550,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/drop-lock-enums | 4d1424c8b | READY (A1a + A2, @4d1424c8, BASE-105): contract drops dead CHAPTER_LOCKED + locked states; negative contract tests; row: no FE reader depends on them (dead local FE types = C follow-up); contract 1435/1435, emit no diff, check ok, api tsc 0; with C reqa014 merged: vue-tsc 0, m03/m05 659/659; merge after reqa014-no-chapter-lock-fe; B2 |
 | r1/ha17-ac-coverage | 157b371c3 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b; head 157b371c |
 | r1/ha18-gate-facts | f988b670f | MERGED by B1 as BASE-132 259f4616 @a9ffe246 (alone, not paired with reqb052; pinned-version-rule check by A4 running). Origin head f988b670 → follow-up r1/ha18-minors |
-| r1/ha18-minors | 301e9c4bc | READY (A2, @301e9c4b on f988b670; B2 delta a9ffe246..301e9c4b): 0105 comment, not_duplicate idempotent / 409 itemLocked, duplicateId in audit, B2 c23 e2e gate-dismiss test, contract description; A1b pre-review Approve 0/0/0 (4 mutations red; stack BASE-132+reqb052+minors intake+questions-workflow 454/454); reqb052 merged at BASE-134; can merge now; B2 |
+| r1/ha18-minors | 301e9c4bc | READY (A2, @301e9c4b; B2 delta a9ffe246..301e9c4b); A1b Approve; proof A4: BASE-133 + reqb052 + ha18-minors 495 + 1 todo green, migration-0105 + accepted-duplicates + gate-facts 22/22. **Pending one more commit (A2): restore the 0105 migration.sql byte-for-byte to the BASE-132 version** (0105 is merged; a comment edit changes the checksum; the "one transaction" claim is wrong on Prisma 7.10.1). B: run `npm run check -w @pp/contract` (paths.ts/openapi touched) |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
 | r1/ha24-release-input | f644a9ecb | READY (A3 docs, @f644a9ec on BASE-131: 0105/window wording aligned, publish-lock-share cite e223b433; H-A18 approved/pair wording; release-input 0104–0110 reservations (REQ-B-066); KIV 38 rows incl. REQ-B-059 cap, setGroupLabel label-only, PKSK, number-clash wider check); A1a pre-review Approve on rows 35/36; B1/B2 |
 | r1/ha26-team-a-state | edbf61edb | READY (A3 docs, @edbf61ed: merged to BASE-131, all open heads incl. B2 c23 approvals, §4 refreshed, KIV 38); B1 |
@@ -577,6 +577,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/reqb058-dedupe-test-a3 | a5f4d3553 | READY (A3, @a5f4d355 on reqb058 b1e96566; test only): one question in two sections, getVersions dedupe + takedown paths, 5 tests, mutations red; closes A1b Minor 3; merge after reqb058; B2 | A1a pre-review Approve (2 mutations red) |
 | r1/reqb058-takedown-pin | b1e965665 | READY (A4, @b1e96566: list drops taken-down papers for a pupil with no sitting, batched pins; cover unchanged by lead decision). A1b pre-review Approve (0 B/M; 3 optional minors), bite 3 red; B2 |
 | r1/reqb060-ks17-csv-link | 05d12e414 | (no status — triage) |
+| r1/reqb067-etl-guards | d84326cee | CR (A1a, @d84326ce off BASE-132; + comment-only note in wipe.ts/render.ts, not affected): REQ-B-067 real (macOS-visible) defects: (1) files.ts realOf resolves the nearest existing ancestor (guard bypass via symlinked ancestor, also on Linux); (2) .github/workflows/api.yml size guard portable (BSD stat failed open). Tests bite; security 23, files.db 15, tsc/eslint 0. Touches CI config → B DevOps + security-engineer review; A1b pre-review |
 | r1/rule-line-v2 | 89961f9f2 | READY (A3, @89961f9f, BASE-109; USER Q13 2026-11-02 follow V2): rules.ts + exam-core paper-model.ts → "Jawab {N} soalan sahaja." ("Jawab semua soalan." unchanged); new exam-core test (bites); contract examples + openapi; AC-06.1/standards/catalogue aligned; PoC/golden authored "daripada" = accepted limit (deviation row); A2 pre-review Minors closed (eslint keeps _questionCount disable, stated); exam-core 219, bijak-papers 109, conformance 403; FE copies REQ-A-035 (C); B2 |
 | r1/servability-stimuli-once | f76f729a8 | READY (A4, @f76f729a, contains chain tip + BASE-107): spy spec pins one stimulus read per chunk + 2 comments; optional; step 6b |
 | r1/stimulus-list-d72 | b45ce5197 | READY — B2 c23 APPROVED @b45ce519 (AwM) |
