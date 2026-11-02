@@ -24,6 +24,7 @@ import { expectNoHorizontalScrollHttp, HTTP_MODE } from './bijak-flow'
 test.skip(!HTTP_MODE, 'needs BASE_URL or BIJAK_API_BASE (integration stack)')
 
 const expect = baseExpect.configure({ timeout: 15_000 })
+test.use({ actionTimeout: 30_000 })
 
 const SUBJECT = 'SEJ'
 const SUBJECT_NAME = 'Sejarah'
