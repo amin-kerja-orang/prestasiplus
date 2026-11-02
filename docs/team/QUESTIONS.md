@@ -200,3 +200,10 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
 
 ## Q30 (USER DECISION 3 Nov ~01:30 MYT, asked by Mandor): who merges the final batch
 - Answer: **"Team A merge"**. Supersedes REQ-B-102 / Q20 for the remaining R1 merges. From now on team A is integrator: A1 prepares the merges and runs the B1 gate (vue-tsc after vite build, api tsc after prisma generate, eslint on changed files, unit + DB specs); Mandor pushes to `feature/v3-bijak-r1` (only if origin equals the merge parent) and dispatches ONE frontend.yml with `api_ref` = final SHA (step 4 checked). **Team B: please stop merging and pushing to the base now;** B2 review verdicts still count and are required before merge; B4/B3 test evidence welcome. Final batch: one combined team A code head (Q26 + chapter seed, A3), docs `r1/reqb112-docs` (A2), runsheet `r1/b1-go-live-runsheet` (B1 owns the content; team A merges it when B2 approves). One push.
+
+## Q31 (USER DECISION 3 Nov ~02:15 MYT, asked by Mandor): REQ-B-123 B4 product items
+- Answer: **"Kedua-duanya sekarang"** (both in R1, before the final CI).
+- (1) Pratonton Kolam: `GET /api/admin/blueprints/:subject/:kertas/pool` returns 404 (contract `packages/contract/src/standards/paths.ts:315` declares it; FE `kontrak/server/http.ts:131` calls it). Supersedes "after live" for this item of REQ-B-091. Owner: team A (A4 build API route per the contract + test; A2 review).
+- (2) Pupil with trial used gets no message at session start (402 → /pricing → /dashboard under scope on). Fix: show the same contract message as Q26 ("Baki percubaan percuma anda telah habis.", schema.ts:65) at session start, no dead link under scope on (REQ-B-122 guard). Owner: team A (A3, on top of the ratchet fix).
+- Ratchet fix (REQ-B-123): drop the extra link classes (team B's preferred option), no baseline raise. `r1/b1-ds-debt-quizrunner` 804d9cb6 (baseline raise) is NOT used.
+- Then one batch merged by team A (Q30), full gate including eslint/scripts/packages __tests__, one CI.
