@@ -91,10 +91,10 @@ describe('Studio list under the read limit (REQ-A-027)', () => {
     expect(studio.fetchStudioList.mock.calls.length).toBe(calls)
   })
 
-  it('shows the server 429 message, then the list again on retry', async () => {
+  it('shows the 429 wait in seconds, then the list again on retry', async () => {
     studio.fetchStudioList.mockRejectedValueOnce(new ApiError({ status: 429, code: 'RATE_LIMITED', message: 'Terlalu banyak permintaan. Cuba sebentar lagi.', retryAfter: 9 }))
     const w = await render()
-    expect(w.get('[data-testid="studio-error"]').text()).toContain('Terlalu banyak permintaan. Cuba sebentar lagi.')
+    expect(w.get('[data-testid="studio-error"]').text()).toContain('Terlalu banyak carian dalam masa singkat. Cuba lagi dalam 9 saat.')
     await w.get('[data-testid="studio-retry"]').trigger('click')
     await flushPromises()
     expect(w.find('[data-testid="studio-error"]').exists()).toBe(false)

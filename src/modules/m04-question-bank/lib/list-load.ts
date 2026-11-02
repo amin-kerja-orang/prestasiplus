@@ -22,8 +22,11 @@ export function rateLimitedFallback(retryAfter: number | undefined): string {
 /** Text of the red box above a list that failed to load: the 429 message, else the usual load error. */
 export function listLoadMessage(err: unknown): string {
   if (isApiError(err) && (err.status === 429 || err.code === 'RATE_LIMITED')) {
+    // On the real API `errorFromResponse` already replaces every 429 message with a generic BM line, so a
+    // known wait (body `retryAfter` or the Retry-After header) must win over the message text.
+    if (err.retryAfter !== undefined) return rateLimitedFallback(err.retryAfter)
     const own = err.message.trim()
-    return own === '' || /^HTTP \d+$/.test(own) ? rateLimitedFallback(err.retryAfter) : own
+    return own === '' || /^HTTP \d+$/.test(own) ? rateLimitedFallback(undefined) : own
   }
   return LOAD_ERROR
 }
