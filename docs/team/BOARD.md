@@ -572,7 +572,7 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 - **Disk:** check `docker system df` and prune orphaned anonymous test volumes when there are 0 containers. A3 reclaimed 3.4 GB this way.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 05:00 UTC, BASE 12c8710b)
+### Team A open branches: heads from origin (auto, 2026-11-02 05:07 UTC, BASE 12c8710b)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -583,13 +583,14 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/e05b-l1-split-control | c4153ed75 | READY (A3, @c4153ed7 on BASE-192, test-only: r2-prep minor #5. The E05B-L1 negative control is split into pin-only / sitting-only / withdrawn paper with and without a sitting / neither; 5/5; 4 mutations each red; tsc/eslint 0). Needs B2 review |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
 | r1/ha24-kiv-49-52 | d9adac614 | IN-PROGRESS (A3, REQ-B-078: refresh on BASE-195; ha24 folds in ha24-kiv-49-52; one merge order ha24 → ha26 → ac-gaps with exact SHAs to follow). Do not merge the current head |
-| r1/ha24-release-input | 9a5e1e3d5 | IN-PROGRESS (A3, REQ-B-078: refresh on BASE-195; ha24 folds in ha24-kiv-49-52; one merge order ha24 → ha26 → ac-gaps with exact SHAs to follow). Do not merge the current head |
-| r1/ha26-team-a-state | 9473b2f7a | IN-PROGRESS (A3, REQ-B-078: refresh on BASE-195; ha24 folds in ha24-kiv-49-52; one merge order ha24 → ha26 → ac-gaps with exact SHAs to follow). Do not merge the current head |
+| r1/ha24-release-input | 1253c1132 | IN-PROGRESS (A3, REQ-B-078: refresh on BASE-195; ha24 folds in ha24-kiv-49-52; one merge order ha24 → ha26 → ac-gaps with exact SHAs to follow). Do not merge the current head |
+| r1/ha26-team-a-state | d05b7e934 | IN-PROGRESS (A3, REQ-B-078: refresh on BASE-195; ha24 folds in ha24-kiv-49-52; one merge order ha24 → ha26 → ac-gaps with exact SHAs to follow). Do not merge the current head |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/ready-tiers-check | 9c80f08c3 | ON HOLD (A2, @9c80f08c, contains BASE-107): code correct + Minors fixed (exact 503 body, WARN once per state change, INFO on recovery; mutations red); waits for B DevOps (REQ-A-028: CI seed step + first-install deploy ordering) |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
 | r1/reqb074-dsg-spec-fix | 51eaf09bf | READY, URGENT (A1b, @51eaf09b = 1 commit on BASE-195 12c8710b; test + comment only). It fixes the base red at delete-served-guard test 5 (red on 12c8710b: 1 failed / 21 passed; the test now marks its pins superseded, so it tests rule B/paper, not takedown) and the stale rule B comment in question-image-access.ts (REQ-B-077 wording). delete-served-guard + test/files: 13 files 266/0; eslint clean. B2 delta, B1 merge first; A4 pre-review APPROVE (41/41) |
 | r1/reqb074-takedown-lows | 33b0a0b1c | SUPERSEDED: 45a75f68 merged as BASE-195; the later commit 33b0a0b1 carried the Q18 rule, which the user overrode (REQ-B-077). Do not merge 33b0a0b1. Follow-ups: r1/reqb074-dsg-spec-fix, then r1/reqb076-live-takedown (A1b) |
+| r1/reqb076-live-takedown | c8965bb89 | IN-REVIEW-A (A1b, @c8965bb8 = 1 commit on BASE-195; REQ-B-076: a re-approved version of a taken-down source is not drawn/served on the live path (shared NOT_SOURCE_TAKEN_DOWN_SQL; image rule A 404 without a sitting; sitting exception unchanged per REQ-B-077); spec 3/3, questions + bijak-kuiz 1149/0, 3 mutations red, tsc 0). A4 pre-review + practice-*/exam-builder runs pending. Admin servability report = KIV R2 (DEV row) |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 
