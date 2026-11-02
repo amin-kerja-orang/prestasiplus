@@ -563,14 +563,12 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 **Done:** final R1 QA chain run all green (answers-A, A4, 10:52 MYT); 0 code conflicts across all READY heads on BASE-175; Q12a/Q13/Q14 decided by the user.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 03:23 UTC, BASE 424fa070)
+### Team A open branches: heads from origin (auto, 2026-11-02 03:29 UTC, BASE 1216dbe7)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/ac-gaps-a1b | 3f9072c29 | READY (multi, @3f9072c2; c2b93710 MERGED as BASE-163 4218bee3) → B delta c2b93710..3f9072c2 (+4a3474f9 Q17 comment, runbook BASE-154, Q17 notes); B4/B2 |
-| r1/alp-comment-240 | 84b0c3a99 | READY (A4, @84b0c3a9 on approved admin-list-perf 69f465c8; comment only): env.schema.ts:148 says 240 (REQ-B-066 part); merge after admin-list-perf; B2 | A1b Approve (comment only) |
-| r1/c012-doc-followup | b71dc2add | READY (A2, @b71dc2ad on BASE-134; docs, 1 line): pipeline doc :297 edit-as-draft response (201 {id, versionNo}; 409 newer draft/review; 409 live not approved); B2 |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
 | r1/ha24-release-input | 55227da7e | READY (A3 docs, @55227da7; c0f7a45d in BASE-145 → B delta c0f7a45d..55227da7: DO/non-DO, KIV 39, Q17 Semakan/Terbitkan notes (Terbitkan copy [PENDING A2]), BASE-148..154 merged); B1/B2 |
 | r1/ha26-team-a-state | 84501e1ac | READY (A3 docs, @84501e1a; 21360a86 MERGED as BASE-162 b2251dc4) → B delta 21360a86..84501e1a (BASE-154 refresh); B1/B2 |
@@ -581,10 +579,9 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
 | r1/reqb071-bab-submit | 4e38af8e6 | CR (A2, @4e38af8e, 2 commits on BASE-151; REQ-B-071 / Q17): no Bab at submit/approve/Terbitkan/create-as-approved; DSKP (AC-03.2) kept; dskp_code-only Bab derivation; A4 pre-review running; A3 chain specs to merge |
 | r1/reqb071-chain-specs-a3 | ee9474e09 | WIP (A3, @ee9474e0; test only; red until A2 r1/reqb071-bab-submit): chain 3a Semakan without a Bab, 3b no node refused, 3 approved chapter null + Latihan Bab no_chapter, 3c dskp_code-derived Bab; target 13/13 + 3 mutations; NOT for merge |
-| r1/reqb074-takedown-lows | ae78bf820 | CR (A1b, @ae78bf82 on BASE-165; REQ-B-074): L1 image rule B serves only approved or archived-superseded pins with no source takedown (a pupil with a sitting keeps reading: lead accepts, consistent with REQ-B-058 (d)); L2 read-time source_papers.takedown_at check for new sittings/Kuiz; L3 takenDownPins required; files 244, 66-file wider run green, 6 mutations red; A4 pre-review; **needs B security-engineer** |
+| r1/reqb074-takedown-lows | 45a75f68c | READY (A1b, @45a75f68 = ae78bf82 + A4 review fixes: deviation row matches code (any sitting keeps pictures, as paperHeld), comments, composite.ts required; 832 pass, tsc 0). A4 pre-review: code sound, 0 B; Major was doc-only (now fixed). **Needs B security-engineer** (image access); DEV doc keep-both; B2 |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
-| r1/t39-k1-evidence | 669a11099 | READY (A3 docs, @669a1109: K1 blueprint evidence re-checked at BASE-148, time-bound facts marked; fixes the dead base links in runbook/release notes); merge-tree clean; B2 |
 
 **Merged content, origin head has only base-merge commits since (no new work):** r1/a4chain-minors 86dd7ad67, r1/ha15-blueprint-evidence 7e5d637e5, r1/reqb032-pinned-rule 167986eff, r1/t44-blueprint-fields 072d8f4b4, r1/t48-builder-parity 10c624376
 <!-- AUDIT:END -->
