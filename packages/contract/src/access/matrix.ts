@@ -76,7 +76,7 @@ const ROWS: Record<AccessGroupId, readonly Row[]> = {
     ['BS-07', 'Audio KBAT', 'F', '-', '-'],
   ],
   'kertas-spm': [
-    ['KS-01', 'Gambaran SPM', 'F', '-', '-'],
+    ['KS-01', 'SPM', 'F', '-', '-'],
     ['KS-02', 'Databank Soalan', 'F', '-', '-'],
     ['KS-03', 'Latih Tubi', 'F', '-', '-'],
     ['KS-04', 'Tracking A', 'F', '-', '-'],
@@ -88,6 +88,7 @@ const ROWS: Record<AccessGroupId, readonly Row[]> = {
     ['KS-10', 'Tanda Karangan', 'F', '-', '-'],
     ['KS-11', 'Ramalan SPM', 'F', '-', '-'],
     ['KS-12', 'Set Soalan', 'F', '-', '-'],
+    ['KS-17', 'Set Builder', 'F', '-', '-'],
   ],
   'kurikulum-kandungan': [
     ['KK-01', 'Kurikulum', 'F', '-', '-'],
@@ -206,9 +207,15 @@ const SCHOOL_ADMIN_PROTOTYPE_ITEM_IDS: ReadonlySet<string> = new Set(
   SCHOOL_ADMIN_PROTOTYPE_ROWS.flatMap((r) => r.itemIds ?? []),
 )
 
+// KS-09 and KS-17 share the label "Set Builder" in v2-portals.md; the later one gets an id-suffixed slug
+// so routes and capability keys stay unique (the first occurrence keeps its original slug).
+const usedSlugs = new Set<string>()
+
 export const ACCESS_MATRIX: readonly MatrixItem[] = ACCESS_GROUPS.flatMap((group) =>
   ROWS[group.id].map(([id, labelBm, admin, ppd, school, ppdOnly]): MatrixItem => {
-    const slug = slugify(labelBm)
+    const baseSlug = slugify(labelBm)
+    const slug = usedSlugs.has(`${group.id}/${baseSlug}`) ? `${baseSlug}-${id.toLowerCase()}` : baseSlug
+    usedSlugs.add(`${group.id}/${baseSlug}`)
     return {
       id,
       group: group.id,
