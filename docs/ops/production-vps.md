@@ -309,7 +309,7 @@ Every step that touches the server is the operator's, after the LEAD's go. `LEAD
 2. As `ppdeploy`: `sudo mkdir -p /opt/pretasiplus && sudo chown ppdeploy: /opt/pretasiplus && git clone <repo url> /opt/pretasiplus && cd /opt/pretasiplus && git checkout <release tag>`.
    `LEAD:` the repo URL/deploy key and the release tag.
 3. Folders: `sudo install -d -m 750 -o root -g ppdeploy /etc/pretasiplus && sudo install -d -o ppdeploy -g ppdeploy -m 700 /var/backups/pretasiplus /var/lib/pretasiplus-deploy /var/log/pretasiplus /srv/pretasiplus/letsencrypt /srv/pretasiplus/letsencrypt-log /srv/pretasiplus/certbot-webroot`
-   (a separate encrypted volume mounted at `/var/backups/pretasiplus` is better).
+   (a separate encrypted volume mounted at `/var/backups/pretasiplus` is better; for R1 the owner accepted an unencrypted volume with mitigations, Q23 item 1, REQ-B-113, see [db-backup.md](db-backup.md) and [r1-runbook.md](r1-runbook.md) "Q23 disk mitigation").
 4. Env files: `sudo install -m 640 -o root -g ppdeploy deploy/vps/.env.prod.example /etc/pretasiplus/prod.env`, same for `api.env.example` -> `api.env`
    and `db.env.example` -> `db.env`; edit all three with `sudoedit` (`LEAD:` values; leave the `api.env` `DATABASE_URL` line as it is). Choose the size profile of section 13.
    Then `sudo deploy/vps/db-roles.sh secrets`: it writes the `api.env` `DATABASE_URL` (`pp_app`) and creates `migrate.env` and `etl.env` (section 3.1).

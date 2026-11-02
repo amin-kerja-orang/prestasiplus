@@ -42,7 +42,7 @@ Penyulitan cakera ialah kunci pada peti simpanan. Tanpa kunci itu, sesiapa yang 
 1. Padam fail dump mentah sebaik muat berjaya; sahkan ia tiada lagi. Dump setempat tidak disulitkan dalam `PP_BACKUP_DIR` dicatat sebagai data mentah yang masih ada sehingga dibersihkan; hanya salinan luar-tapak yang disulitkan menjadi salinan jangka panjang.
 2. Padam pangkalan data sementara (scratch) selepas setiap latihan pemulihan; sahkan skrip tidak meninggalkannya.
 3. Tetapkan dan catat tarikh pembersihan `staging_cloud`, PITR/WAL dan titik pulih; semak semula lalai 2026-11-06.
-4. Gunakan snapshot penyedia yang pendek umur sahaja; semak dengan penyedia sama ada storan disulitkan di sebelah mereka.
+4. *(Cadangan operator, bukan sebahagian daripada kata-kata penerimaan pemilik.)* Gunakan snapshot penyedia yang pendek umur sahaja; semak dengan penyedia sama ada storan disulitkan di sebelah mereka.
 5. Senaraikan akaun setara root mengikut peranan (`ppdeploy`/docker, kunci SSH root) dan kurangkan yang tidak perlu.
 6. Rekod keputusan pemilik bertarikh (di bawah) dan **tarikh semak semula** (cadangan: 30 hari selepas go-live).
 
