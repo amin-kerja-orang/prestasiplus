@@ -4,6 +4,8 @@
  * with its stem, options or parts and the mark scheme. Used by the review workspace and the bank
  * preview drawer.
  */
+import { computed } from 'vue'
+
 import { DsPanel } from '@/ds'
 
 import RichText from '../../components/RichText.vue'
@@ -11,20 +13,25 @@ import StimulusView from '../../components/StimulusView.vue'
 import type { ReviewQuestion } from '../../domain/admin-types'
 import type { McqOption, PartDef, StimulusDef } from '../../domain/types'
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     questions: ReviewQuestion[]
     stimulus?: StimulusDef
+    /** Every stimulus of the group, up to 3, shown once above its questions (D90). */
+    stimuli?: StimulusDef[]
     optionBank?: McqOption[]
     /** Student view: no scheme. */
     hideScheme?: boolean
     /** Number of the first question. */
     start?: number
   }>(),
-  { stimulus: undefined, optionBank: undefined, hideScheme: false, start: 1 },
+  { stimulus: undefined, stimuli: undefined, optionBank: undefined, hideScheme: false, start: 1 },
 )
 
 const LETTERS = 'ABCDEFGH'
+
+/** `stimuli` when given (0 to 3), else the lone `stimulus`. */
+const shown = computed(() => (props.stimuli ?? (props.stimulus ? [props.stimulus] : [])).slice(0, 3))
 
 function flat(parts: PartDef[], depth = 0): { part: PartDef; depth: number }[] {
   return parts.flatMap((p) => [{ part: p, depth }, ...flat(p.children ?? [], depth + 1)])
@@ -33,7 +40,7 @@ function flat(parts: PartDef[], depth = 0): { part: PartDef; depth: number }[] {
 
 <template>
   <div class="flex flex-col gap-4" data-testid="question-preview">
-    <DsPanel v-if="stimulus" data-testid="preview-stimulus">
+    <DsPanel v-if="shown.length" data-testid="preview-stimulus">
       <p class="mb-2 text-caption font-semibold text-muted">
         {{
           questions.length > 1
@@ -41,7 +48,7 @@ function flat(parts: PartDef[], depth = 0): { part: PartDef; depth: number }[] {
             : 'Rangsangan soalan ini'
         }}
       </p>
-      <StimulusView :stimulus="stimulus" />
+      <StimulusView v-for="st in shown" :key="st.id" :stimulus="st" class="mb-3 last:mb-0" />
     </DsPanel>
     <DsPanel v-if="optionBank?.length" data-testid="preview-option-bank">
       <ul class="flex flex-col gap-1 text-body">

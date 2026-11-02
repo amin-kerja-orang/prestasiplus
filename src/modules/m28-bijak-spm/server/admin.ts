@@ -331,11 +331,20 @@ export function gateErrors(
   return out
 }
 
+const DRAFT_SUFFIX = ' (draf)'
+const autoTitle = (subject: string, kertas: number) => `Percubaan SPM ${subjectName(subject)} Kertas ${kertas}`
+
+/** REQ-A-036 (mirrors the API): Terbit drops " (draf)" from the EXACT auto title of the paper's subject and kertas; any other title is untouched. */
+export function publishedTitle(paper: { title: string; subject: string; kertas: number }): string {
+  const base = autoTitle(paper.subject, paper.kertas)
+  return paper.title === `${base}${DRAFT_SUFFIX}` ? base : paper.title
+}
+
 function newPaper(id: string, bp: Blueprint, now: number): AdminPaper {
   return {
     id,
     status: 'draf',
-    title: `Percubaan SPM ${subjectName(bp.subject)} Kertas ${bp.kertas} (draf)`,
+    title: `${autoTitle(bp.subject, bp.kertas)}${DRAFT_SUFFIX}`,
     subject: bp.subject,
     kertas: bp.kertas,
     year: new Date(now).getFullYear(),
@@ -368,7 +377,7 @@ function blueprintView(bp: Blueprint): BlueprintView {
       s.instruction ??
       (s.rule.type === 'all'
         ? 'Jawab semua soalan.'
-        : `Jawab ${s.rule.n} daripada ${s.take} soalan.`),
+        : `Jawab ${s.rule.n} soalan sahaja.`),
     rule: s.rule,
     pool: s.pool,
   }))
@@ -977,11 +986,14 @@ export class AdminOps {
     )
     const ids = [...new Set([...used, ...candidates])]
     const groupIds = [...new Set(ids.map(groupOf).filter((g): g is string => !!g))]
-    const groups: BuilderGroup[] = groupIds.map((gid) => ({
-      id: gid,
-      stimulus: getStimulus(gid)!,
-      questionIds: membersOf(gid),
-    }))
+    const groups: BuilderGroup[] = groupIds.map((gid) => {
+      const st = getStimulus(gid)
+      return {
+        id: gid,
+        ...(st ? { stimulus: st, stimuli: [st] } : { stimuli: [] }),
+        questionIds: membersOf(gid),
+      }
+    })
     const bp = BLUEPRINTS.find((b) => b.subject === paper.subject && b.kertas === paper.kertas)
     return {
       paper,
@@ -1051,6 +1063,7 @@ export class AdminOps {
     ]
     if (errors.length) return { ok: false, errors }
     paper.status = 'terbit'
+    paper.title = publishedTitle(paper)
     paper.publishedAt = this.host.now()
     paper.updatedAt = paper.publishedAt
     this.host.persist()
@@ -1120,7 +1133,7 @@ export class AdminOps {
       const st = grouped && q.groupId ? getStimulus(q.groupId) : undefined
       units.push({
         ...(grouped && q.groupId ? { groupId: q.groupId } : {}),
-        ...(st ? { stimulus: st } : {}),
+        ...(st ? { stimulus: st, stimuli: [st] } : {}),
         questionIds: members,
         questions,
         marks: questions.reduce((n, x) => n + x.marks, 0),
@@ -1142,11 +1155,14 @@ export class AdminOps {
   async previewQuestions(ids: string[]): Promise<{
     questions: ReviewQuestion[]
     stimuli: Record<string, StimulusDef>
+    /** Every stimulus of each group (0 to 3, D90); `stimuli[gid]` is the first. */
+    groupStimuli: Record<string, StimulusDef[]>
     optionBanks: Record<string, NonNullable<ReviewDetail['optionBank']>>
   }> {
     await this.host.tick()
     const questions: ReviewQuestion[] = []
     const stimuli: Record<string, StimulusDef> = {}
+    const groupStimuli: Record<string, StimulusDef[]> = {}
     const optionBanks: Record<string, NonNullable<ReviewDetail['optionBank']>> = {}
     for (const id of ids) {
       const q = getQ(id)
@@ -1154,12 +1170,15 @@ export class AdminOps {
       questions.push(reviewQuestion(q))
       if (q.groupId) {
         const st = getStimulus(q.groupId)
-        if (st) stimuli[q.groupId] = st
+        if (st) {
+          stimuli[q.groupId] = st
+          groupStimuli[q.groupId] = [st]
+        }
         const ob = getGroup(q.groupId)?.optionBank
         if (ob) optionBanks[q.groupId] = ob
       }
     }
-    return { questions, stimuli, optionBanks }
+    return { questions, stimuli, groupStimuli, optionBanks }
   }
 
   /** Student side: papers published by the admin, as curated papers. */

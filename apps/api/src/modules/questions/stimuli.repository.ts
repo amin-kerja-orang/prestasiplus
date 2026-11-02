@@ -7,6 +7,7 @@ import { PrismaService } from '../../db/prisma.service'
 import { stimulusTableOf, stimulusTableParts, type StimulusTable } from './stimulus-table'
 import { NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL } from './learner-visibility'
 import { kertasOfPaperCode } from './projection'
+import { QUESTION_SERVED, VERSION_SERVED } from './served-rule'
 import type { StimulusKind } from './types'
 
 /** The five columns a stimulus write may set. `null` clears. */
@@ -41,29 +42,6 @@ export interface GroupRow {
 }
 
 const PKSK_TAG = 'pksk_domain'
-
-/**
- * A question is SHOWN TO PUPILS when (A) it is active and its live version is approved, or (B) a placement of a published paper pins one of
- * its versions (approved or archived): the paper serves that version whether the question is active or not, as the attempt bridge and the
- * `question_image` read rule do (`files/question-image-access.ts`). Alias `q` is `questions`. This is the "served lock" predicate.
- */
-const QUESTION_SERVED = Prisma.sql`(
-  (q.is_active AND EXISTS (SELECT 1 FROM question_versions sv WHERE sv.question_id = q.id AND sv.version_no = q.live_version_no AND sv.status = 'approved'))
-  OR EXISTS (SELECT 1 FROM paper_placements spl
-               JOIN paper_sections sps ON sps.id = spl.paper_section_id
-               JOIN papers spp ON spp.id = sps.paper_id AND spp.status = 'published'
-               JOIN question_versions spv ON spv.question_id = q.id AND spv.version_no = spl.pinned_version_no AND spv.status IN ('approved', 'archived')
-              WHERE spl.question_id = q.id)
-)`
-
-/** The same rule for one version `v` of question `q`: it is the live approved version of an active question, or a published paper pins it. */
-const VERSION_SERVED = Prisma.sql`(
-  (q.live_version_no = v.version_no AND q.is_active AND v.status = 'approved')
-  OR (v.status IN ('approved', 'archived') AND EXISTS (SELECT 1 FROM paper_placements spl
-               JOIN paper_sections sps ON sps.id = spl.paper_section_id
-               JOIN papers spp ON spp.id = sps.paper_id AND spp.status = 'published'
-              WHERE spl.question_id = q.id AND spl.pinned_version_no = v.version_no))
-)`
 
 /**
  * Secondary only (D72, OQ-06), for the Studio lists of groups and stimuli: a question of a primary-stage level (Darjah) or a PKSK question is

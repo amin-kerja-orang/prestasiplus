@@ -163,7 +163,7 @@ Wireframe 1280 (tab Bahagian B, illustrative values from the Matematik K2 skelet
 |           | +-----------------------------------------------------------+ +------------------------------+ |
 |           | | Struktur Bahagian                                         | | Semakan Kontrak              | |
 |           | | Label [Bahagian B]  Arahan [Jawab semua soalan.      ]    | | Jumlah markah  100 / 100  ok | |
-|           | | Peraturan (o) Jawab semua  ( ) Jawab N daripada M         | | A  ok ok ok ok               | |
+|           | | Peraturan (o) Jawab semua  ( ) Jawab N soalan sahaja      | | A  ok ok ok ok               | |
 |           | | Bil. soalan (M) [5]  Jawab (N) [-]  Markah [45]           | | B  ok x  ! ok                | |
 |           | | Mod jawapan dibenarkan [x] Struktur [ ] Esei ...          | | C  ok ok ok ok               | |
 |           | | Soalan 11 - 15 (dikira)  [ ] Sub-bahagian menaik          | | Ralat (2)                    | |
@@ -206,8 +206,8 @@ Wireframe 1280 (tab Bahagian B, illustrative values from the Matematik K2 skelet
 | Field | Control | Rules / copy |
 |---|---|---|
 | Label | `UInput` | required, e.g. "Bahagian A" |
-| Arahan bahagian | `UTextarea` (cosmetic) | free text; default shown to students when empty is the system line "Jawab semua soalan." / "Jawab {N} daripada {M} soalan" (AC-06.1) |
-| Peraturan | `URadioGroup` horizontal: "Jawab semua" / "Jawab N daripada M" | choose-N reveals **Jawab (N)**. |
+| Arahan bahagian | `UTextarea` (cosmetic) | free text; default shown to students when empty is the system line "Jawab semua soalan." / "Jawab {N} soalan sahaja." (AC-06.1; USER Q13 2026-11-02: follow V2) |
+| Peraturan | `URadioGroup` horizontal: "Jawab semua" / "Jawab N soalan sahaja" | choose-N reveals **Jawab (N)**. |
 | Bilangan soalan (M) | number | min 1; error if M < N (AC-25.7) |
 | Belanjawan markah (selepas pilih N) | number | the effective marks (AC-34.1) |
 | Markah setiap soalan **[NEW]** | `DsSwitchField` "Tetapkan markah mengikut slot" | Off (default): only the section total is checked (hint: "Markah soalan boleh berbeza dalam bahagian ini."). On: run-length list "Slot {dari} - {hingga} - {markah} markah" with add/remove rows; sum rule: effective sum must equal the budget (choose-N: every question has the same marks and marks x N = budget, AC-34.2). |

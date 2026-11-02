@@ -47,7 +47,7 @@ test.describe('Bijak SPM Admin Mod Pelajar @bijak', () => {
 
     await startPaper(page)
     await pickOption(page, 0)
-    await expect(page.getByTestId('save-status')).toHaveText('Disimpan')
+    await expect(page.getByTestId('save-status')).toHaveText('disimpan')
     await submitAttempt(page)
     await expect(page.getByTestId('section-score').first()).toBeVisible()
 

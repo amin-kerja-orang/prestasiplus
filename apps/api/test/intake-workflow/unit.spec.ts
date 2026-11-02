@@ -7,7 +7,7 @@ import { attachToStimulus, detachFromStimulus, gatherByRef, groupsOf } from '../
 import { ConvertError, toQuestionInput } from '../../src/modules/intake/workflow/to-question'
 import { bandReaches } from '../../src/modules/intake/workflow/workflow.config'
 
-const FACTS = { subjectKnown: true, levelKnown: true, unitKnown: true }
+const FACTS = { subjectKnown: true, levelKnown: true, unitKnown: true, unknownSp: [] as string[] }
 
 function question(over: Partial<IntakeQuestion> = {}): IntakeQuestion {
   return {
@@ -44,7 +44,6 @@ describe('gate (prototype validateBatch rules)', () => {
     expect(messages).toContain(G.spNotInTaxonomy('9.9'))
     expect(messages).toContain('SP "1.1" tiada dalam senarai kurikulum. Pilih SP daripada senarai DSKP.')
     expect(itemIssues(question(), undefined, { ...FACTS, unknownSp: [] })).toEqual([])
-    expect(itemIssues(question(), undefined, FACTS)).toEqual([]) // older callers without the field
   })
 
   it('reports every broken rule with the contract copy', () => {

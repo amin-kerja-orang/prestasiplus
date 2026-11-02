@@ -6,6 +6,7 @@ import type {
   BijakQuestionInfo,
   BijakQuestionSource as PaperQuestionSource,
   BijakServedSource,
+  PinRef,
 } from '../papers/ports'
 
 /**
@@ -19,7 +20,7 @@ import type {
  * `BankBijakPoolSource` and the standard generator); it stays empty.
  */
 export class BankPaperQuestionSource implements PaperQuestionSource {
-  constructor(private readonly bank: Pick<PaperQuestionSource, 'getMany'> & Partial<Pick<PaperQuestionSource, 'getPinned'>>) {}
+  constructor(private readonly bank: Pick<PaperQuestionSource, 'getMany' | 'takenDownPins'> & Partial<Pick<PaperQuestionSource, 'getPinned'>>) {}
 
   getMany(questionIds: readonly string[]): ReturnType<PaperQuestionSource['getMany']> {
     return this.bank.getMany(questionIds) as Promise<ReadonlyMap<string, BijakQuestionInfo>>
@@ -29,6 +30,11 @@ export class BankPaperQuestionSource implements PaperQuestionSource {
   getPinned(questionIds: readonly string[]): Promise<ReadonlyMap<string, BijakQuestionInfo>> {
     const pinned = this.bank.getPinned
     return questionIds.length === 0 || !pinned ? Promise.resolve(new Map()) : pinned.call(this.bank, questionIds)
+  }
+
+  /** REQ-B-058: pinned versions that are taken down (REQ-B-074: required, a bank must answer; no pins, no read). */
+  takenDownPins(pins: readonly PinRef[]): Promise<ReadonlySet<string>> {
+    return pins.length === 0 ? Promise.resolve(new Set()) : this.bank.takenDownPins(pins)
   }
 
   pool(): Promise<BijakPool> {

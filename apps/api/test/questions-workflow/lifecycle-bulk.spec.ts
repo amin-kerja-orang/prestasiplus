@@ -19,18 +19,20 @@ describe('bulk transition (BE-10 AC 1 no bypass)', () => {
 
   it('moves the passing questions and reports the rest with code and fields', async () => {
     t.fake.seed({ id: '5001', status: 'draft' })
-    t.fake.seed({ id: '5002', status: 'draft', gate: { chapterId: null } })
+    t.fake.seed({ id: '5002', status: 'draft', gate: { subjectId: null } })
+    t.fake.seed({ id: '5004', status: 'draft', gate: { chapterId: null } }) // REQ-B-071 (Q17): no Bab does not stop Semakan
     t.fake.seed({ id: '5003', status: 'approved' }) // published -> review is not in the table
-    const res = await svc.bulkTransition(['5001', '5002', '5003', '5999'], 'review', actorOf(c.admin))
-    expect(res.affected).toBe(1)
+    const res = await svc.bulkTransition(['5001', '5002', '5003', '5004', '5999'], 'review', actorOf(c.admin))
+    expect(res.affected).toBe(2)
     expect(res.skipped).toEqual([
-      { id: '5002', code: 'VALIDATION_ERROR', fields: { chapterId: 'Sila pilih bab.' } },
+      { id: '5002', code: 'VALIDATION_ERROR', fields: { subjectId: 'Sila pilih subjek.' } },
       { id: '5003', code: 'CONFLICT', fields: {} },
       { id: '5999', code: 'NOT_FOUND', fields: {} },
     ])
     expect((await t.fake.getStatus('5001'))?.status).toBe('review')
     expect((await t.fake.getStatus('5002'))?.status).toBe('draft')
-    expect(await count(t.db, "select count(*) n from question_status_events where question_id between 5001 and 5003")).toBe(1)
+    expect((await t.fake.getStatus('5004'))?.status).toBe('review')
+    expect(await count(t.db, "select count(*) n from question_status_events where question_id between 5001 and 5004")).toBe(2)
   })
 
   it('a Guru skips the questions of others (404) and an invalid status is 422 for the whole call', async () => {

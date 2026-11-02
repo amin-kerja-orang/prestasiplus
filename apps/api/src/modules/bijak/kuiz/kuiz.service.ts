@@ -24,7 +24,7 @@ import { CurriculumRepository } from '../../curriculum'
 import { FilesService } from '../../files'
 import { PracticePorts, practiceRewardSource } from '../../practice/ports'
 import { type GradedAnswer, PracticeRepository, type ServedRef, type StoredCheck } from '../../practice/practice.repository'
-import { QuestionsRepository } from '../../questions'
+import { pinServableForNewSitting, QuestionsRepository } from '../../questions'
 import type { QuestionRecord, StimulusGroupRecord } from '../../questions/types'
 import { PapersRepository } from '../papers/papers.repository'
 import {
@@ -364,6 +364,10 @@ export class KuizService {
     // shown or marked from a refused paper.
     const placed = [...new Set(paper.sections.flatMap((s) => s.placements.map((p) => idToString(p.questionId))))]
     if (placed.length === 0 || (await this.questions.getMany(placed, 'live')).filter((r) => r.version.status === 'approved').length < placed.length) throw kuizPaperUnavailable()
+    // REQ-B-058: the same refusal when a placement's PINNED version is taken down (archived "withdrawn" / "source_takedown") while a later
+    // version is live. A `superseded` pin is still served. The pinned reads do not check status, so it is checked here.
+    const pins = paper.sections.flatMap((s) => s.placements.map((p) => ({ questionId: idToString(p.questionId), versionNo: p.pinnedVersionNo })))
+    if ((await this.questions.getVersions(pins, { withSourceTakedown: true })).some((r) => !pinServableForNewSitting(r.version))) throw kuizPaperUnavailable()
     return paper
   }
 

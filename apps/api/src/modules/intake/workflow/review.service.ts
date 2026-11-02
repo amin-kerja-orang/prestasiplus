@@ -433,6 +433,13 @@ export class IntakeReviewService {
       if (body.decision === 'not_duplicate') {
         const entry = body.duplicateId === undefined ? undefined : row.duplicates.find((d) => idToString(d.id) === body.duplicateId)
         if (!entry) throw invalid('duplicateId', INTAKE_MESSAGES.duplicateTargetNotFound)
+        // Idempotent (AC-06.5: the decision and its reviewer are logged): a link that is already "Bukan pendua" keeps its first reviewer and time, and a
+        // repeat writes no new event and no audit row; the answer is the same item view (200).
+        if (entry.decision === 'not_duplicate') {
+          return
+        }
+        // After accept only an OPEN entry can be dismissed; an entry decided earlier (Gabung, variant link) is not re-decided on an accepted item.
+        if (accepted && entry.decision !== 'pending') throw conflict(INTAKE_MESSAGES.itemLocked)
         await tx.duplicateLink.update({ where: { id: entry.id }, data: { decision: 'not_duplicate', ...who_ } })
         event = 'cleared_duplicate'
       } else {
@@ -482,7 +489,7 @@ export class IntakeReviewService {
       await tx.intakeItemEvent.create({
         data: { itemId: row.id, event, fromState: from, toState: to, reason: body.note ?? null, actorUserId: decidedBy, actorRole: auth.active.role },
       })
-      await this.record(INTAKE_AUDIT.itemDuplicate, auth, row, who, { from, to, decision: body.decision, ...(body.note ? { reason: body.note } : {}) }, tx)
+      await this.record(INTAKE_AUDIT.itemDuplicate, auth, row, who, { from, to, decision: body.decision, ...(body.duplicateId ? { duplicateId: body.duplicateId } : {}), ...(body.note ? { reason: body.note } : {}) }, tx)
     }, TX)
     return this.views.detail(auth, await this.loadVisible(auth, idText))
   }

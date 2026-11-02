@@ -25,6 +25,7 @@
 
 import {
   blob,
+  conflict,
   created,
   int,
   notFound,
@@ -37,6 +38,7 @@ import {
   type MockRequest,
   type RouteDef,
 } from '@/mock/define'
+import { QUESTION_MESSAGES } from '@pp/contract'
 import { curriculum } from '@/modules/m03-curriculum/mock'
 import {
   questions,
@@ -535,10 +537,14 @@ export const questionRoutes: RouteDef[] = [
     'DELETE',
     '/api/guru/questions/:id',
     [teacherOnly],
-    (req) =>
-      questions.deleteOwn({ id: viewerId(req) }, Number(req.params.id))
-        ? ok({ removed: 1 })
-        : notFound(),
+    (req) => {
+      const result = questions.deleteOwn({ id: viewerId(req) }, Number(req.params.id))
+      // REQ-A-023b: only a question a held paper places (served) or a set / test / battle uses (in_use) is refused, as the real API.
+      if (typeof result === 'string') {
+        return conflict(result === 'in_use' ? QUESTION_MESSAGES.deleteInUse : QUESTION_MESSAGES.deleteRefused)
+      }
+      return result ? ok({ removed: 1 }) : notFound()
+    },
     { params: { id: int() } },
   ),
 ]

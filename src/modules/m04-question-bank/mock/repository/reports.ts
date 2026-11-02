@@ -68,11 +68,6 @@ export const reportsRepo = defineRepository({
   store: reportsTable,
   queries: reportQueries,
   methods: ({ store, transaction }) => {
-    const openReports = (questionId: number) =>
-      store
-        .query({ where: { questionId, questionType: 'structured' } })
-        .rows.filter((r) => r.status === 'pending' || r.status === 'reviewed').length
-
     const setQuestionActive = (
       type: ReportQuestionType,
       id: number,
@@ -97,7 +92,7 @@ export const reportsRepo = defineRepository({
       mine: (reporterId: number): QuestionReport[] =>
         store.query({ where: { reporterId } }).rows.sort(newestFirst),
       /**
-       * #15 (BR-M04-11/12): `pending` report + deactivation, in one transaction. Returns the live
+       * #15 (BR-M04-11, D98): a `pending` report; the question stays in practice. Returns the live
        * response `{ success, message }` plus the new id.
        */
       create: (input: ReportInput, reporterId: number, now: number) => {
@@ -127,10 +122,7 @@ export const reportsRepo = defineRepository({
             createdAt: iso,
             updatedAt: iso,
           })
-          if (type === 'mcq') setQuestionActive('mcq', input.questionId, false, now)
-          else if (openReports(input.questionId) >= 3) {
-            setQuestionActive('structured', input.questionId, false, now)
-          }
+          // D98: a report no longer takes the question out of practice; an admin does that ("Nyahaktif Segera" / "Arkib").
           return { success: true as const, message: REPORT_SUCCESS_MESSAGE, id: row.id }
         })
       },

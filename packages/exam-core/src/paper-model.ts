@@ -76,7 +76,7 @@ export function sectionRuleLine(
   if (s.instruction) return s.instruction
   return s.rule.type === 'all'
     ? 'Jawab semua soalan.'
-    : `Jawab ${s.rule.n} daripada ${s.questionIds.length} soalan.`
+    : `Jawab ${s.rule.n} soalan sahaja.`
 }
 
 export function isAnswered(a: PartAnswer | undefined): boolean {

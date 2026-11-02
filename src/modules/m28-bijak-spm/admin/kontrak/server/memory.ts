@@ -107,7 +107,7 @@ function unitView(subject: string, ref: { kind: 'unit'; nodeId: string } | { kin
 
 function instructionOf(s: SectionInput): string {
   if (s.instruction) return s.instruction
-  return s.rule.type === 'all' ? 'Jawab semua soalan.' : `Jawab ${s.rule.n} daripada ${s.questionCount} soalan.`
+  return s.rule.type === 'all' ? 'Jawab semua soalan.' : `Jawab ${s.rule.n} soalan sahaja.`
 }
 
 function sectionView(subject: string, s: SectionInput, position: number, seededUnreviewed: boolean): BijakBlueprintView['sections'][number] {
