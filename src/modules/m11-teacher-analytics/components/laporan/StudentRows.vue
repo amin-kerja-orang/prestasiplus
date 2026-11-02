@@ -24,10 +24,12 @@ defineProps<{
     >
       <UAvatar :src="s.avatarUrl || undefined" :alt="s.name" size="md" />
       <div class="min-w-0 flex-1">
-        <p class="truncate text-label text-highlighted" data-testid="student-name">
+        <p class="truncate text-label text-highlighted" :title="s.name" data-testid="student-name">
           {{ s.name }}
         </p>
-        <p class="truncate text-caption text-muted" data-testid="student-email">{{ s.email }}</p>
+        <p class="truncate text-caption text-muted" :title="s.email" data-testid="student-email">
+          {{ s.email }}
+        </p>
       </div>
       <UBadge
         v-if="s.activities !== undefined"

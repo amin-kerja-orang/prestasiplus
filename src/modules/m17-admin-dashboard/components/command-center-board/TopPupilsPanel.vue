@@ -36,6 +36,7 @@ const paths = ccPaths(props.basePath)
           color="neutral"
           class="h-auto min-w-0 flex-1 justify-start p-0 text-start"
           :label="s.name"
+          :title="s.name"
           data-testid="cc-top-pupil-link"
         />
         <span class="tabular shrink-0 text-body text-muted" data-testid="cc-top-pupil-stat"

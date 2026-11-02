@@ -110,6 +110,9 @@ describe('S2 admin board', () => {
     expect(w.get('[data-testid="cc-top-pupil-link"]').attributes('href')).toBe(
       '/admin/command-center/student/2022',
     )
+    // SWEEP-320 F6: an ellipsised name can still be read in full.
+    const topLink = w.get('[data-testid="cc-top-pupil-link"]')
+    expect(topLink.attributes('title')).toBe(topLink.text())
     expect(texts(w, 'cc-mood-count')).toEqual(['307', '280', '72', '91'])
     expect([
       ...texts(w, 'cc-correction-total'),
