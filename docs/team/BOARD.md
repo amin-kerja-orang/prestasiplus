@@ -572,28 +572,30 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 - **Disk:** check `docker system df` and prune orphaned anonymous test volumes when there are 0 containers. A3 reclaimed 3.4 GB this way.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 04:56 UTC, BASE 12c8710b)
+### Team A open branches: heads from origin (auto, 2026-11-02 05:00 UTC, BASE 12c8710b)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/ac-gaps-a1b | c1d186610 | IN-PROGRESS (A3, REQ-B-078: refresh on BASE-195; ha24 folds in ha24-kiv-49-52; one merge order ha24 → ha26 → ac-gaps with exact SHAs to follow). Do not merge the current head |
-| r1/builder-publish-p2028-test | 31c9baaa0 | IN-PROGRESS (A3, @31c9baaa: r2-prep minor #12; the P2028 spec proves a full Terbit rollback, but found that builder publish maps P2028 to 500. Lead OK'd the fix (429 RATE_LIMITED + Retry-After, as the other paths); new head to follow) |
+| r1/builder-publish-p2028-test | 645744daf | IN-PROGRESS (A3, @31c9baaa: r2-prep minor #12; the P2028 spec proves a full Terbit rollback, but found that builder publish maps P2028 to 500. Lead OK'd the fix (429 RATE_LIMITED + Retry-After, as the other paths); new head to follow) |
 | r1/bulk-publish-allskipped | 9b8b39409 | READY (A3, @9b8b3940 on BASE-189: r2-prep minor #11 (r1e2e10). An all-skipped bulk publish (affected 0, failed 0, skipped>0) now shows 'Soalan ini sudah diterbitkan.' instead of '0 soalan berjaya dikemaskini.'; any failed row keeps the old text. The 409 test now goes over HTTP. Group 133/133, mutation red, contract:check ok, DEV row (no V2 wording). Merge-tree clean on BASE-192). Needs B2 review |
 | r1/e05b-l1-split-control | c4153ed75 | READY (A3, @c4153ed7 on BASE-192, test-only: r2-prep minor #5. The E05B-L1 negative control is split into pin-only / sitting-only / withdrawn paper with and without a sitting / neither; 5/5; 4 mutations each red; tsc/eslint 0). Needs B2 review |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
 | r1/ha24-kiv-49-52 | d9adac614 | IN-PROGRESS (A3, REQ-B-078: refresh on BASE-195; ha24 folds in ha24-kiv-49-52; one merge order ha24 → ha26 → ac-gaps with exact SHAs to follow). Do not merge the current head |
-| r1/ha24-release-input | 7b6304c86 | IN-PROGRESS (A3, REQ-B-078: refresh on BASE-195; ha24 folds in ha24-kiv-49-52; one merge order ha24 → ha26 → ac-gaps with exact SHAs to follow). Do not merge the current head |
+| r1/ha24-release-input | 9a5e1e3d5 | IN-PROGRESS (A3, REQ-B-078: refresh on BASE-195; ha24 folds in ha24-kiv-49-52; one merge order ha24 → ha26 → ac-gaps with exact SHAs to follow). Do not merge the current head |
 | r1/ha26-team-a-state | 9473b2f7a | IN-PROGRESS (A3, REQ-B-078: refresh on BASE-195; ha24 folds in ha24-kiv-49-52; one merge order ha24 → ha26 → ac-gaps with exact SHAs to follow). Do not merge the current head |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/ready-tiers-check | 9c80f08c3 | ON HOLD (A2, @9c80f08c, contains BASE-107): code correct + Minors fixed (exact 503 body, WARN once per state change, INFO on recovery; mutations red); waits for B DevOps (REQ-A-028: CI seed step + first-install deploy ordering) |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
-| r1/reqb074-dsg-spec-fix | 51eaf09bf | READY, URGENT (A1b, @51eaf09b = 1 commit on BASE-195 12c8710b; test + comment only). It fixes the base red at delete-served-guard test 5 (red on 12c8710b: 1 failed / 21 passed; the test now marks its pins superseded, so it tests rule B/paper, not takedown) and the stale rule B comment in question-image-access.ts (REQ-B-077 wording). delete-served-guard + test/files: 13 files 266/0; eslint clean. B2 delta, B1 merge first |
+| r1/reqb074-dsg-spec-fix | 51eaf09bf | READY, URGENT (A1b, @51eaf09b = 1 commit on BASE-195 12c8710b; test + comment only). It fixes the base red at delete-served-guard test 5 (red on 12c8710b: 1 failed / 21 passed; the test now marks its pins superseded, so it tests rule B/paper, not takedown) and the stale rule B comment in question-image-access.ts (REQ-B-077 wording). delete-served-guard + test/files: 13 files 266/0; eslint clean. B2 delta, B1 merge first; A4 pre-review APPROVE (41/41) |
 | r1/reqb074-takedown-lows | 33b0a0b1c | SUPERSEDED: 45a75f68 merged as BASE-195; the later commit 33b0a0b1 carried the Q18 rule, which the user overrode (REQ-B-077). Do not merge 33b0a0b1. Follow-ups: r1/reqb074-dsg-spec-fix, then r1/reqb076-live-takedown (A1b) |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 
 **Merged content, origin head has only base-merge commits since (no new work):** r1/a4chain-minors 86dd7ad67, r1/ha15-blueprint-evidence 7e5d637e5, r1/reqb032-pinned-rule 167986eff, r1/t44-blueprint-fields 072d8f4b4, r1/t48-builder-parity 10c624376
+
+**Origin head moved since last record (re-triage):** r1/builder-publish-p2028-test: status says @31c9baaa, origin is 645744daf
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
