@@ -50,6 +50,7 @@ import { CLOCK, type Clock } from '../../../db/clock'
 import { idFromString, idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { fnv1a32 } from '../../../db/prng'
+import { isOverloadError } from '../../auth/auth.errors'
 import { generateLimit, noBlueprint, shortage } from '../../bijak/papers/errors'
 import { BijakPapersPorts } from '../../bijak/papers/ports'
 import { bijakCodeOf, curriculumCodeOf } from '../../bijak/papers/subject-codes'
@@ -659,7 +660,21 @@ export class BuilderService {
     }
   }
 
+  /**
+   * Terbit. An overloaded database or pool (Prisma P2028 expired transaction, P2024 pool timeout, a dropped connection) is retryable: 429 RATE_LIMITED
+   * with Retry-After 5, never a 500, as on every other write path (BE-05 deviation row). The transaction has rolled back, so nothing is half-written.
+   * Any other error (an ApiError such as a 404 or 422 included) passes through unchanged.
+   */
   async publish(actor: AuditActor, rawId: string, rawBody?: unknown): Promise<BijakBuilderPublishResult> {
+    try {
+      return await this.publishInTransaction(actor, rawId, rawBody)
+    } catch (err) {
+      if (!(err instanceof ApiError) && isOverloadError(err)) throw ApiError.of('RATE_LIMITED', { retryAfter: 5 })
+      throw err
+    }
+  }
+
+  private async publishInTransaction(actor: AuditActor, rawId: string, rawBody?: unknown): Promise<BijakBuilderPublishResult> {
     const id = parseId(rawId)
     // The body is parsed first so a bad body does not cost the bank reads below; its 422 is still raised only after the paper is known to exist.
     let request: ReturnType<typeof BijakBuilderPublishRequestSchema.parse> | undefined

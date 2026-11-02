@@ -18,12 +18,12 @@ vi.setConfig({ testTimeout: 180_000, hookTimeout: 300_000 })
  *  1. the publish transaction is opened with the PUBLISH_TX budget (and with no other option);
  *  2. a P2028 raised AFTER the pins, the Bahagian figures and the status update were written rolls the whole Terbit back: the paper stays Draf with
  *     no `published_at`, the placements keep their pins and marks, no `bijak.paper.published` audit row exists, and a retry then publishes;
- *  3. KNOWN GAP (documented, not endorsed): unlike the content, school-admin and auth paths, the builder publish has no `isOverloadError` mapping, so
- *     the client sees the generic 500 SERVER_ERROR (the other paths answer 429 RATE_LIMITED with Retry-After). The assertion on the status line below
- *     is the one to change when a 429 mapping is added.
+ *  3. the overload is answered 429 RATE_LIMITED with `retryAfter` 5 and the `Retry-After` header (the `isOverloadError` mapping of the other write
+ *     paths: content, school-admin, auth, users), not the generic 500 it was before (D9, lead decision).
  *
  * MUTATIONS (restored afterwards): (a) the `PUBLISH_TX` argument removed from the publish transaction -> test 1 red;
- * (b) the publish body run outside any transaction (no rollback) -> test 2 red (the paper is left Terbit).
+ * (b) the publish body run outside any transaction (no rollback) -> test 2 red (the paper is left Terbit);
+ * (c) the `isOverloadError` catch removed from `publish` -> test 2 red (500 SERVER_ERROR instead of 429).
  */
 describe('R2-prep minor 12: P2028 on the builder publish transaction', () => {
   let t: FullApp
@@ -135,9 +135,10 @@ describe('R2-prep minor 12: P2028 on the builder publish transaction', () => {
     restore.push(() => spy.mockRestore())
     const res = await publish(paper)
     expect(spy.mock.calls.some((c) => c[0].action === 'bijak.paper.published'), 'the failing step was reached').toBe(true)
-    // KNOWN GAP: no overload mapping on the builder publish, so the generic 500 (the other paths answer 429 RATE_LIMITED + Retry-After). Change this line with a mapping.
-    expect(res.status, JSON.stringify(res.body)).toBe(500)
-    expect(res.body.error).toMatchObject({ code: 'SERVER_ERROR' })
+    // an overload is retryable: 429 RATE_LIMITED with Retry-After 5, as on the other write paths (BE-05 deviation row), never a 500
+    expect(res.status, JSON.stringify(res.body)).toBe(429)
+    expect(res.body.error).toMatchObject({ code: 'RATE_LIMITED', retryAfter: 5 })
+    expect(res.headers['retry-after']).toBe('5')
     expect(JSON.stringify(res.body)).not.toContain('P2028')
     // nothing half-written
     expect(await paperRow(paper)).toEqual(before.row)
