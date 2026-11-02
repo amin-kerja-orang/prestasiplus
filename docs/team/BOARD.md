@@ -542,7 +542,7 @@ A3 dev-1 rehearsed this locally. `prisma migrate deploy` does not run a migratio
 BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, contract and vue-tsc all 0. Folders: r1 118, bijak-attempts 202, bijak-kuiz 52, intake-workflow 146, questions-workflow 310, exam-builder 458, with 0 failed. The R1 pupil chain is green at every stage: admin uploads → approves → builds paper → Terbit → pupil sits, self-marks, retries, plus Kuiz. Open before R1 sign-off: REQ-B-071 (Q17 Bab gate; A2 + A3), REQ-B-074 (takedown Lows; A1b), REQ-B-067 (security-engineer/DevOps review), and the B merges of REQ-A-024f.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 02:53 UTC, BASE 17b9c92f)
+### Team A open branches: heads from origin (auto, 2026-11-02 03:01 UTC, BASE 4f92aac0)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -561,20 +561,17 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/minors-chain-tip-a3 | 41c22c969 | READY (A3, @41c22c96 on BASE-128): (a) dead reasons.length guard removed in approval-check (A1b Approve on 666102d0); (b) every servability-overview read goes through the limiter (4), max-in-flight spy spec, per A4 reading; closes B2 c20 Minors; B2 |
 | r1/minors-kbat-chain-a3 | a253b3bf3 | READY-AFTER-FIX (A3, @a253b3bf restacked on T48 10c62437): exam-builder 416/417 RED: builder-review "stays outside D93" (same as REQ-B-069; likely pool page cap ?pageSize=100 vs 106 units). Fixed by r1/t31-pool-lookup-fixture merged after T31 (no cascade needed); merge after t31-pool-lookup-fixture |
 | r1/minors-snapshot-versions-a3 | 1ef2eb2e5 | READY (A3, @1ef2eb2e on BASE-120; type only): AttemptSectionSnapshot.versions; attempt-source 4/4, tsc 0; closes B2 c20 Minor; B2 | A1b pre-review Approve |
-| r1/minors-t45-a3 | eb8165ed1 | READY (A3, @eb8165ed off T45; test only); clean; merge after T45 |
 | r1/partial-acs-a3 | e6ceece19 | READY-AFTER-FIX (A3, @e6ceece1 restacked on T48 10c62437): exam-builder 416/417 RED: builder-review "stays outside D93" (same as REQ-B-069; likely pool page cap ?pageSize=100 vs 106 units). Fixed by r1/t31-pool-lookup-fixture merged after T31 (no cascade needed); merge after t31-pool-lookup-fixture |
 | r1/publish-lock-share | 7ef73b79d | READY (A1b, @7ef73b79 = 225b6941 + BASE-148 merge; A4 APPROVE: the dropped early-read was T34's perf choice (5df0b2f1), fully replaced by post-lock reads + PUBLISH_TX; the in-lock-window test exists since 11c827b7; 418/418). DSG is merged (BASE-149), so it can merge now; B2 delta |
 | r1/r1e2e10-bulk-publish-noop | fe228f56f | READY (A2, @fe228f56; 5990fb6b MERGED as BASE-155): **B2 delta 5990fb6b..fe228f56** = bulkByFilter race rows folded into integer skipped (in processed, not affected/failed), contract descriptions, race test + mutation, errors.ts; clean on BASE-161; A1b pre-review APPROVE (16 pass, mutation red) | A2 re-verified on 4218bee3: clean, filter-bulk 11, bulk 5, workflow 310 |
 | r1/ready-tiers-check | 9c80f08c3 | ON HOLD (A2, @9c80f08c, contains BASE-107): code correct + Minors fixed (exact 503 body, WARN once per state change, INFO on recovery; mutations red); waits for B DevOps (REQ-A-028: CI seed step + first-install deploy ordering) |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
-| r1/reqa018-mock-swap | 0b774bd2f | READY (A4, @0b774bd2): clean vs BASE-148; mock conformance 2/2 STANDALONE on BASE-148 (C fe in base since BASE-146), contract-tests 22/22. Merge any time; B2 small |
 | r1/reqb067-etl-guards | d402fdf2a | READY (A1a, @d402fdf2 off BASE-132): REQ-B-067 real (macOS-visible) defects fixed: files.ts realOf (realpath first, ancestor walk, dangling symlinks followed ≤40 hops) closes the "separate directories" guard bypass; .github/workflows/api.yml >1 MB guard portable + fail-closed (pipefail, || exit 1). A1b pre-review Approve (0 B/M); its 3 Minors fixed, each new test bites; security + files.db 41, staging 148, tsc/eslint 0. **Needs B security-engineer + DevOps (CI config)** | A1b re-verify on BASE-161: clean, 148 pass, realOf + CI guard behaviour confirmed |
 | r1/reqb071-chain-specs-a3 | ee9474e09 | WIP (A3, @ee9474e0; test only; red until A2 r1/reqb071-bab-submit): chain 3a Semakan without a Bab, 3b no node refused, 3 approved chapter null + Latihan Bab no_chapter, 3c dskp_code-derived Bab; target 13/13 + 3 mutations; NOT for merge |
 | r1/servability-stimuli-once | f76f729a8 | READY (A4, @f76f729a, contains chain tip + BASE-107): spy spec pins one stimulus read per chunk + 2 comments; optional; step 6b |
 | r1/t04-minors | 82828a68a | MERGED by B1 as BASE-119 e927c3ee @8ae70d6e (reviewed SHA; 82828a68 delta not merged: optional test-only, left) |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
-| r1/t38-cap-risk-row | ee421f520 | READY (A3 docs, @ee421f52 on BASE-120): T38 accepted-risk deviation row (USER Q14, REQ-B-059); docs only; B1 | A1a pre-review Approve (bindings.ts citations exact) |
 | r1/t39-k1-evidence | 669a11099 | READY (A3 docs, @669a1109: K1 blueprint evidence re-checked at BASE-148, time-bound facts marked; fixes the dead base links in runbook/release notes); merge-tree clean; B2 |
 | r1/t42b-intake-acs | 34d86311e | READY (A2, @34d86311 on 5318a971; test-only Minor): refused accept deletes the figure copy storage object (mutation: drop files.discard → red); 6/6; B2 small | A1b pre-review: Approve (mutation bites) |
 
