@@ -217,6 +217,19 @@ export interface JutawanFilter {
 
 export type BulkAction = 'approve' | 'reject' | 'archive' | 'delete' | 'pending_review'
 
+/** Why a hard delete is refused (REQ-A-023b); the server's `details.reason` less `pinned`, which the mock never answers. */
+export type DeletionBlock = 'served' | 'pinned' | 'in_use'
+
+/**
+ * Fixed observed seed ids standing for "a held paper places it" and "a set, remedial test or battle uses it" (the mock has no paper store).
+ * Every other question, in any status, is deletable, as `removeGuarded` of the real API.
+ */
+export const MOCK_SERVED_IDS: ReadonlySet<number> = new Set([136891, 124733])
+export const MOCK_IN_USE_IDS: ReadonlySet<number> = new Set([129216])
+
+const deletionBlockOf = (id: number): DeletionBlock | null =>
+  MOCK_SERVED_IDS.has(id) ? 'served' : MOCK_IN_USE_IDS.has(id) ? 'in_use' : null
+
 // ---------------------------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------------------------
@@ -820,16 +833,11 @@ export const questionsRepo = defineRepository({
         return transaction(() => setFields(id, patchFromInput(current, patch), now))
       },
       /**
-       * REQ-A-023: why a question may not be deleted for good, or `null`. Deterministic mock rule (the mock has no paper placements and no
-       * versions): an approved question is shown to pupils (`served`), an archived or rejected one is not a draft (`status`). The server also
-       * answers `pinned`; the mock never does.
+       * REQ-A-023 / REQ-A-023b: why a question may not be deleted for good, or `null`. As the server's `removeGuarded`, only a placement in a
+       * held paper (`served`, `pinned`) or a set, remedial test or battle that uses it (`in_use`) refuses; every state is deletable otherwise.
+       * The mock has no paper store, so two fixed observed seed ids stand for `served` and one for `in_use`; it never answers `pinned`.
        */
-      deletionBlock: (id: number): 'served' | 'status' | null => {
-        const row = get(id)
-        if (!row) return null
-        if (row.status === 'approved') return 'served'
-        return row.status === 'archived' || row.status === 'rejected' ? 'status' : null
-      },
+      deletionBlock: (id: number): DeletionBlock | null => deletionBlockOf(id),
       /** Permanent delete (BR-M04-01). */
       remove: (id: number): void => {
         requireRow(id)
@@ -964,11 +972,12 @@ export const questionsRepo = defineRepository({
         void _n
         return transaction(() => setFields(id, patchFromInput(row, allowed), now))
       },
-      /** `false` = not found / not own (404); `'refused'` = not a draft or in review (409, REQ-A-023). */
-      deleteOwn: (viewer: Viewer, id: number): boolean | 'refused' => {
+      /** `false` = not found / not own (404); `'served'` / `'in_use'` = refused with 409, as `deletionBlock` (REQ-A-023b); `true` = removed. */
+      deleteOwn: (viewer: Viewer, id: number): boolean | DeletionBlock => {
         const row = get(id)
         if (!row || row.createdBy !== viewer.id || row.pkskDomainId !== null) return false
-        if (row.status !== 'draft' && row.status !== 'pending_review') return 'refused'
+        const block = deletionBlockOf(id)
+        if (block !== null) return block
         transaction(() => store.remove(id))
         return true
       },

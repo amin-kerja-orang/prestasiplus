@@ -38,6 +38,7 @@ import {
   type MockRequest,
   type RouteDef,
 } from '@/mock/define'
+import { QUESTION_MESSAGES } from '@pp/contract'
 import { curriculum } from '@/modules/m03-curriculum/mock'
 import {
   questions,
@@ -61,10 +62,6 @@ import {
   type Body,
 } from './common'
 import { planImport, TEMPLATE_CSV, TEMPLATE_NAME } from './csv'
-
-/** [PROPOSED] the server's `QUESTION_MESSAGES.deleteRefused` (REQ-A-023): a Guru may delete only a draft or a question in review. */
-const QUESTION_DELETE_REFUSED =
-  'Soalan ini tidak boleh dipadam kerana sudah diterbitkan atau digunakan pada kertas yang masih dipaparkan kepada murid. Arkibkan soalan ini sebagai ganti.'
 
 const PAGE_SIZE = 20
 const TEXT_MAX = 2000
@@ -542,7 +539,10 @@ export const questionRoutes: RouteDef[] = [
     [teacherOnly],
     (req) => {
       const result = questions.deleteOwn({ id: viewerId(req) }, Number(req.params.id))
-      if (result === 'refused') return conflict(QUESTION_DELETE_REFUSED)
+      // REQ-A-023b: only a question a held paper places (served) or a set / test / battle uses (in_use) is refused, as the real API.
+      if (typeof result === 'string') {
+        return conflict(result === 'in_use' ? QUESTION_MESSAGES.deleteInUse : QUESTION_MESSAGES.deleteRefused)
+      }
       return result ? ok({ removed: 1 }) : notFound()
     },
     { params: { id: int() } },

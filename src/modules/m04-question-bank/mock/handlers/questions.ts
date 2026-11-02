@@ -21,6 +21,7 @@
  * repository (`questions`) and `question-input.ts`.
  */
 
+import { QUESTION_MESSAGES } from '@pp/contract'
 import { curriculum } from '@/modules/m03-curriculum/mock'
 import {
   conflict,
@@ -65,9 +66,9 @@ export const QUESTIONS_PAGE_SIZE = 20
 export const QUESTION_ADDED = 'Soalan berjaya ditambah.'
 export const QUESTION_UPDATED = 'Soalan berjaya dikemaskini.'
 export const QUESTION_DELETED = 'Soalan berjaya dipadam.'
-/** [PROPOSED] same text as the server's `QUESTION_MESSAGES.deleteRefused` (REQ-A-023): the 409 of every hard delete. */
-export const QUESTION_DELETE_REFUSED =
-  'Soalan ini tidak boleh dipadam kerana sudah diterbitkan atau digunakan pada kertas yang masih dipaparkan kepada murid. Arkibkan soalan ini sebagai ganti.'
+/** The 409 text of a refused hard delete, as the server (REQ-A-023b): `in_use` has its own sentence. */
+export const deleteRefusedMessage = (reason: 'served' | 'pinned' | 'in_use'): string =>
+  reason === 'in_use' ? QUESTION_MESSAGES.deleteInUse : QUESTION_MESSAGES.deleteRefused
 export const bulkUpdated = (n: number): string => `${String(n)} soalan berjaya dikemaskini.`
 /** The live script alert text, reused as the server message for a missing action. */
 export const BULK_NO_ACTION = 'Sila pilih tindakan terlebih dahulu.'
@@ -180,7 +181,8 @@ function remove(req: MockRequest): MockResponse {
   const id = idOf(req)
   const current = questions.get(id)
   if (!current || current.pkskDomainId !== null) return notFound()
-  if (questions.deletionBlock(id) !== null) return conflict(QUESTION_DELETE_REFUSED)
+  const block = questions.deletionBlock(id)
+  if (block !== null) return conflict(deleteRefusedMessage(block))
   questions.remove(id)
   return ok({ deleted: 1 }, { status: QUESTION_DELETED })
 }
@@ -223,7 +225,7 @@ function bulk(req: MockRequest, ctx: MockContext): MockResponse {
   const failed = refused.map((id) => ({
     id: String(id),
     code: 'CONFLICT',
-    message: QUESTION_DELETE_REFUSED,
+    message: deleteRefusedMessage(questions.deletionBlock(id) ?? 'served'),
     fields: {},
   }))
   return ok(action === 'delete' ? { affected, failed } : { affected }, {

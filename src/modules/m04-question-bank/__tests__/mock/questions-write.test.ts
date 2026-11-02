@@ -4,6 +4,7 @@
  * only tests that edit observed rows set \, which resets the mock afterwards.
  */
 
+import { QUESTION_MESSAGES } from '@pp/contract'
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import type { MockRuntime } from '@/mock/index'
@@ -495,27 +496,33 @@ describe('#6 DELETE /api/questions/:id', () => {
 
   it('deletes an observed question and moves the counts', async () => {
     dirty = true
-    questions.bulkAction('pending_review', [129114], 0) // REQ-A-023: an approved question is refused
+    // REQ-A-023b: an archived question is deletable (only a served / in_use seed id is refused)
     const res = await call('DELETE', '/api/questions/129114', ADMIN)
     expect(res.status).toBe(200)
     expect(questions.count('Q-ALL')).toBe(all0 - 1)
     expect((await call('GET', '/api/questions/129114', ADMIN)).status).toBe(404)
   })
 
-  it('REQ-A-023: an approved (served) or archived question is refused with 409 CONFLICT and kept', async () => {
-    const a = (await createMcq()).body.data.id
-    for (const [status, action] of [
-      ['approved', 'approve'],
-      ['archived', 'archive'],
+  it('REQ-A-023b: a served or in_use seed id is refused with 409 CONFLICT and the contract text; any other state is deletable', async () => {
+    for (const [id, text] of [
+      [136891, QUESTION_MESSAGES.deleteRefused],
+      [124733, QUESTION_MESSAGES.deleteRefused],
+      [129216, QUESTION_MESSAGES.deleteInUse],
     ] as const) {
-      await call('POST', '/api/questions/bulk-action', ADMIN, { action, ids: [a] })
-      expect(questions.get(a)?.status).toBe(status)
-      const res = await call<ErrorBody>('DELETE', `/api/questions/${String(a)}`, ADMIN)
+      const res = await call<ErrorBody>('DELETE', `/api/questions/${String(id)}`, ADMIN)
       expect(res.status).toBe(409)
       expect(res.body.error.code).toBe('CONFLICT')
-      expect(res.body.error.message).toMatch(/^Soalan ini tidak boleh dipadam/)
-      expect(questions.get(a)).not.toBeNull()
+      expect(res.body.error.message).toBe(text)
+      expect(questions.deletionBlock(id)).not.toBeNull()
+      expect(questions.get(id)).not.toBeNull()
     }
+    const a = (await createMcq()).body.data.id
+    for (const action of ['approve', 'archive'] as const) {
+      await call('POST', '/api/questions/bulk-action', ADMIN, { action, ids: [a] })
+      expect(questions.deletionBlock(a)).toBeNull()
+    }
+    expect((await call('DELETE', `/api/questions/${String(a)}`, ADMIN)).status).toBe(200)
+    expect(questions.get(a)).toBeNull()
   })
 
   it('an unknown id and a PKSK row are 404 and nothing is removed', async () => {
@@ -573,22 +580,21 @@ describe('#7 POST /api/questions/bulk-action', () => {
     expect(questions.get(177_698)).not.toBeNull()
   })
 
-  it('REQ-A-023: delete reports a refused (approved) question in failed[] with code CONFLICT and removes the rest', async () => {
-    const draft = (await createMcq()).body.data.id
-    questions.bulkAction('pending_review', [draft], 0)
-    const served = (await createMcq()).body.data.id
-    await bulk({ action: 'approve', ids: [served] })
-    const res = await bulk({ action: 'delete', ids: [draft, served] })
+  it('REQ-A-023b: delete reports a served and an in_use seed id in failed[] with code CONFLICT and its own text, and removes the rest', async () => {
+    const approved = (await createMcq()).body.data.id
+    await bulk({ action: 'approve', ids: [approved] })
+    const res = await bulk({ action: 'delete', ids: [approved, 136891, 129216] })
     expect(res.status).toBe(200)
     expect(res.body.data).toMatchObject({
       affected: 1,
-      failed: [{ id: String(served), code: 'CONFLICT', fields: {} }],
+      failed: [
+        { id: '136891', code: 'CONFLICT', message: QUESTION_MESSAGES.deleteRefused, fields: {} },
+        { id: '129216', code: 'CONFLICT', message: QUESTION_MESSAGES.deleteInUse, fields: {} },
+      ],
     })
-    expect((res.body.data as unknown as { failed: { message: string }[] }).failed[0]?.message).toMatch(
-      /^Soalan ini tidak boleh dipadam/,
-    )
-    expect(questions.get(draft)).toBeNull()
-    expect(questions.get(served)).not.toBeNull()
+    expect(questions.get(approved)).toBeNull()
+    expect(questions.get(136891)).not.toBeNull()
+    expect(questions.get(129216)).not.toBeNull()
   })
 
   it('422 without an action, without ids, with a bad action or bad ids', async () => {
