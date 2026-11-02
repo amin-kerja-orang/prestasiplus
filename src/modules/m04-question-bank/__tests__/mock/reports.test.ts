@@ -133,7 +133,7 @@ describe('#15 create (BR-M04-11/12, FR-M04-69…71)', () => {
   const post = (body: unknown, as: number | null = PELAJAR) =>
     call<ReportCreated>('POST', '/api/question-reports', as, body)
 
-  it('an MCQ report: 201, stored pending, the question inactive at once', async () => {
+  it('an MCQ report: 201, stored pending, the question stays active (D98)', async () => {
     dirty = true
     expect(questions.get(564_161)?.isActive).toBe(true)
     const r = await post({
@@ -145,7 +145,7 @@ describe('#15 create (BR-M04-11/12, FR-M04-69…71)', () => {
     })
     expect(r.status).toBe(201)
     expect(r.body).toEqual({ success: true, message: 'Laporan berjaya dihantar.' })
-    expect(questions.get(564_161)?.isActive).toBe(false)
+    expect(questions.get(564_161)?.isActive).toBe(true)
     const mine = reports.mine(PELAJAR)
     expect(mine).toHaveLength(1)
     expect(mine[0]).toMatchObject({
@@ -159,7 +159,7 @@ describe('#15 create (BR-M04-11/12, FR-M04-69…71)', () => {
     })
     const tab = await adminList()
     expect(tab.body.meta.counts.pending).toBe(3)
-    expect(tab.body.data[0]).toMatchObject({ id: mine[0]?.id, question: { isActive: false } })
+    expect(tab.body.data[0]).toMatchObject({ id: mine[0]?.id, question: { isActive: true } })
   })
 
   it('defaults the source per variant and accepts the other sources and `outdated`', async () => {
@@ -180,7 +180,7 @@ describe('#15 create (BR-M04-11/12, FR-M04-69…71)', () => {
     })
   })
 
-  it('a structured question stays active for 2 reports and goes inactive at the 3rd', async () => {
+  it('a structured question stays active however many reports it gets (D98)', async () => {
     dirty = true
     const before = reports
       .list()
@@ -192,7 +192,7 @@ describe('#15 create (BR-M04-11/12, FR-M04-69…71)', () => {
     await send()
     expect(structured.get(4_455)?.isActive).toBe(true)
     await send()
-    expect(structured.get(4_455)?.isActive).toBe(false)
+    expect(structured.get(4_455)?.isActive).toBe(true)
   })
 
   it('422: no reason, a reason of the other variant, a bad source, a long comment', async () => {

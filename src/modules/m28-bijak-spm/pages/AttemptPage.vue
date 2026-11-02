@@ -405,10 +405,11 @@ const saveText = computed(
   () =>
     ({
       idle: '',
-      saving: 'Menyimpan…',
-      saved: 'Disimpan',
-      offline: 'Luar talian — jawapan disimpan pada peranti ini',
-      error: 'Gagal simpan — cuba lagi',
+      // V2 words verbatim (AC-R1-05.1, D79; parity S-13).
+      saving: 'menyimpan…',
+      saved: 'disimpan',
+      offline: 'luar talian',
+      error: 'gagal simpan',
       closed: 'Masa tamat. Jawapan yang disimpan sebelum masa tamat telah dihantar.',
     })[saveStatus.value],
 )
