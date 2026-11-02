@@ -43,3 +43,21 @@ Baseline: B4 r1-e2e-baseline 36/0/7 per width with raised throttles, on BASE-195
 Other KIV rows:
 - Row 33 is closed.
 - Row 44 (Guru dismisses an exact duplicate): option (a) is size S with no contract change; option (b) is size M with additive decidedBy/decidedAt.
+
+## R2 item 1 (added 2026-11-02 14:41 UTC): e2e hardening, r1/e2e-hardening-usr05-r1 @b0f32503 (WIP, A3)
+- Scope: specs only (m02-users.spec.ts USR-05; admin-publish-http.spec.ts R1). Not needed before release: the BASE-217 CI had 0 flaky.
+- **USR-05:**
+  - click() + wait for users-selected-count 1/2;
+  - the bulk-delete status assertion carries the response body;
+  - the 404 read-after-delete check uses expect.poll.
+- **R1:** add.or(more) uses a 20 s expect timeout.
+- **Throttle evidence:** users.admin.write is 30 per user, in a FIXED 60 s window held in memory (common/throttle/rate-limit.ts). m02-users makes about 14 admin writes per project.
+  - One 429 was reproduced, but it was confounded, so the throttle is plausible but **not proven** as the CI cause.
+  - BASE-220 raises THROTTLE_ADMIN_WRITE in the e2e env, which covers it.
+- **check()→click is a hypothesis** from reading UserListPage.vue:208-212; it was not reproduced.
+- **Still to do before review:**
+  - repeat-each=3 on the full set;
+  - admin-publish-http on its own;
+  - a run with THROTTLE_ADMIN_WRITE=1000;
+  - tsc/eslint on the specs;
+  - rebase on the final base.
