@@ -75,11 +75,27 @@ async function createDraft(page: Page, title: string): Promise<string> {
 /** Adds the first picker candidate to section 0 until the blueprint matches. */
 async function assembleUntilMatching(page: Page): Promise<void> {
   const check = page.getByTestId('budget-check')
-  for (let i = 0; i < 40; i++) {
+  const picks = page.locator('[data-testid^=pick-add-]')
+  const more = page.getByTestId('picker-more')
+  for (let i = 0; i < 80; i++) {
     if ((await check.innerText()).includes('Sepadan dengan blueprint')) return
     await page.getByTestId('add-0').click()
     await expect(page.getByTestId('picker')).toBeVisible()
-    await page.locator('[data-testid^=pick-add-]').first().click()
+    // REQ-B-042: the picker pages its candidates by 20 ("Muat lagi", `picker-more`). Wait for the page to load; when it has no
+    // addable row, press "Muat lagi" and wait again. No addable row and no more pages is a real shortage: the poll times out.
+    for (let guard = 0; guard < 20; guard++) {
+      await expect
+        .poll(async () => (await picks.count()) > 0 || (await more.isVisible().catch(() => false)), {
+          message: 'the picker offers an addable question or another page',
+          timeout: 15_000,
+        })
+        .toBe(true)
+      if ((await picks.count()) > 0) break
+      // The next page may land (and the button go) between the poll and the click: a short click that gives up is fine,
+      // the next round of the loop looks again; a real shortage still fails in the poll above.
+      await more.click({ timeout: 3_000 }).catch(() => undefined)
+    }
+    await picks.first().click()
     await page.keyboard.press('Escape')
     await expect(page.getByTestId('picker')).toBeHidden()
   }
@@ -229,6 +245,8 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () =
     browser,
   }, testInfo) => {
     test.skip(!STUDENT_USER || !STUDENT_PASS, NEEDS_PASSWORD)
+    // 40 picks (one per question, picker reopened each time), Simpan, Terbitkan, a second browser context: over the 30 s default.
+    test.setTimeout(150_000)
     const title = `E2E-http publish ${Date.now()}`
     await login(page, ADMIN_USER ?? '', ADMIN_PASS ?? '')
     await page.goto('/admin/command-center')
