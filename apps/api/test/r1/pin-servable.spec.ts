@@ -19,4 +19,10 @@ describe('pinServableForNewSitting', () => {
     expect(pinServableForNewSitting({ status: 'draft', archiveReason: null })).toBe(false)
     expect(pinServableForNewSitting({ status: 'review', archiveReason: null })).toBe(false)
   })
+
+  it('REQ-B-074: a version whose source paper is taken down is never servable, whatever its own status and reason', () => {
+    expect(pinServableForNewSitting({ status: 'archived', archiveReason: 'superseded', sourceTakenDown: true })).toBe(false)
+    expect(pinServableForNewSitting({ status: 'approved', archiveReason: null, sourceTakenDown: true })).toBe(false)
+    expect(pinServableForNewSitting({ status: 'archived', archiveReason: 'superseded', sourceTakenDown: false })).toBe(true)
+  })
 })

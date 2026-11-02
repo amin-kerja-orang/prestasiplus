@@ -95,7 +95,7 @@ describe('question image read rule for teachers (REQ-B-008, real database)', () 
     // Jana-only: the image sits on version 1 of an ARCHIVED question that only a published per-pupil Jana paper pins
     const jana = await upload(admin)
     const jq = await question(await userIdOf(t.db, ACCOUNTS.admin), 'approved', jana)
-    await t.db.query(`update question_versions set status = 'archived' where id = $1`, [jq.vid])
+    await t.db.query(`update question_versions set status = 'archived', archive_reason = 'superseded' where id = $1`, [jq.vid])
     await t.db.query(`update questions set live_version_no = null where id = $1`, [jq.qid])
     const paper = (
       await one(

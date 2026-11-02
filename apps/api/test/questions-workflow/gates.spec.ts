@@ -16,7 +16,6 @@ const RULES: [Gate, string, Partial<QuestionGateData>, string][] = [
   ['submit', 'low-confidence confirmed', { unconfirmedLowConfidenceFields: ['year'] }, 'year'],
   ['submit', 'subject set', { subjectId: null }, 'subjectId'],
   ['submit', 'level set', { educationLevelId: null }, 'educationLevelId'],
-  ['submit', 'chapter set', { chapterId: null }, 'chapterId'],
   ['submit', 'duplicate resolved', { hasOpenDuplicateFlag: true }, 'duplicate'],
   ['approve', 'reviewer is not the AI service', { lastEditedByAi: true }, 'reviewer'],
   ['approve', 'tags valid (unit)', { unitId: null }, 'unitId'],
@@ -56,7 +55,7 @@ describe('lifecycle gates (BE-10 AC 1, 12)', () => {
   })
 
   it('a Guru submitting their own draft hits the submit gate too', async () => {
-    t.fake.seed({ id: '3900', status: 'draft', createdById: c.teacher.userId, gate: { chapterId: null } })
+    t.fake.seed({ id: '3900', status: 'draft', createdById: c.teacher.userId, gate: { subjectId: null } })
     const e = await failure(svc.transition('3900', 'review', actorOf(c.teacher)))
     expect(e.details).toEqual({ gate: 'submit' })
   })
@@ -73,7 +72,15 @@ describe('lifecycle gates (BE-10 AC 1, 12)', () => {
   it('gate functions are pure and name each failing rule (AI reviewer flag, multiple fields at once)', () => {
     const base = t.fake.seed({ id: '3902' }).gate
     expect(approveGate(base, true)).toHaveProperty('reviewer')
-    const f = submitGate({ ...base, subjectId: null, chapterId: null })
-    expect(Object.keys(f).sort()).toEqual(['chapterId', 'subjectId'])
+    const f = submitGate({ ...base, subjectId: null, educationLevelId: null, chapterId: null })
+    expect(Object.keys(f).sort()).toEqual(['educationLevelId', 'subjectId']) // the Bab is not a submit rule (REQ-B-071, Q17)
+  })
+
+  it('REQ-B-071 (Q17): a question without a Bab passes the submit gate and the merged approve gate', () => {
+    const base = t.fake.seed({ id: '3904' }).gate
+    const bare = { ...base, chapterId: null }
+    expect(submitGate(bare)).toEqual({})
+    expect(approveGate(bare)).toEqual({})
+    expect(publishGate(bare)).toEqual({})
   })
 })

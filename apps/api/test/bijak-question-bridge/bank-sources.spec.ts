@@ -18,7 +18,7 @@ describe('bank-sources adapters (unit)', () => {
   it('BankPaperQuestionSource reads placed questions from the bank and has an empty legacy pool', async () => {
     const asked: (readonly string[])[] = []
     const found = new Map([['7', { id: '7' }]])
-    const src = new BankPaperQuestionSource({ getMany: (ids) => (asked.push(ids), Promise.resolve(found as never)) })
+    const src = new BankPaperQuestionSource({ takenDownPins: () => Promise.resolve(new Set<string>()), getMany: (ids) => (asked.push(ids), Promise.resolve(found as never)) })
     expect(await src.getMany(['7', '8'])).toBe(found)
     expect(asked).toEqual([['7', '8']])
     const pool = await src.pool()

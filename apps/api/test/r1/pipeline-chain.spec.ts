@@ -141,6 +141,9 @@ const fx = {
   retryAttempt: '',
 }
 
+const SOLO_A_TEXT = 'Berapakah luas segi empat tepat 3 cm kali 4 cm, dalam cm persegi?'
+const SOLO_B_TEXT = 'Berapakah perimeter segi empat tepat 3 cm kali 4 cm, dalam cm?'
+
 const mcqBody = (text: string, extra: Record<string, unknown> = {}) => ({
   subjectId: fx.subject,
   educationLevelId: fx.level,
@@ -164,7 +167,7 @@ async function createQuestion(body: Record<string, unknown>): Promise<string> {
 }
 
 async function advance(ids: string[]): Promise<void> {
-  await giveBab(db, ids)
+  await giveBab(db, ids) // REQ-B-071: not needed for Semakan or Terbitkan any more; kept so the chain questions carry a Bab (Latihan Bab serving)
   for (const action of SERVE_STEPS) {
     const res = await admin.post('/api/questions/bulk-action', { action, ids })
     expect(res.status, `${action}: ${JSON.stringify(res.body)}`).toBe(200)
@@ -237,8 +240,8 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     })
 
     it('creates three solo MCQs (Bahagian A, B, C) and one structured/essay question with a marking scheme', async () => {
-      fx.soloA = await createQuestion(mcqBody('Berapakah luas segi empat tepat 3 cm kali 4 cm, dalam cm persegi?'))
-      fx.soloB = await createQuestion(mcqBody('Berapakah perimeter segi empat tepat 3 cm kali 4 cm, dalam cm?'))
+      fx.soloA = await createQuestion(mcqBody(SOLO_A_TEXT))
+      fx.soloB = await createQuestion(mcqBody(SOLO_B_TEXT))
       fx.soloC = await createQuestion(mcqBody('Berapakah panjang pepenjuru segi empat tepat 3 cm kali 4 cm, dalam cm?', { pointsValue: 2 }))
       const res = await admin.post('/api/questions', {
         subjectId: fx.subject,
@@ -744,6 +747,65 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     })
   })
 
+  // PIPE AC-18.1 (R1-20.4): the one activity 5b does not open is Latihan Bab (Soalan by Chapter). It serves a question only once the question carries a
+  // Bab (the admin sets it in the Studio form or at Semakan); the admin reads the exclusion from the SAME rule code, the pupil sees the question in a chapter session.
+  describe('5c. Latihan Bab: the chain question reaches Soalan by Chapter once it carries a Bab (AC-18.1)', () => {
+    let chapterA = ''
+    let chapterB = ''
+    const bab = async (id: string) => (await app.get(ServabilityService).reports([id])).get(id)!.activities.find((a) => a.activity === 'bab')!
+    const babOf = async (id: string): Promise<string | null> =>
+      (await db.query<{ chapter_id: string | null }>(`select v.chapter_id::text chapter_id from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no where q.id = $1`, [id]))[0]!.chapter_id
+    /**
+     * The Studio path: the admin edits the question and sets its Bab (PUT /api/questions/:id with curriculumChapterId), then sends the new version
+     * through Semakan and Terbit again (the real bulk route). On an approved question the edit makes a new version; it is live once re-approved.
+     */
+    const setBab = async (id: string, text: string, chapterId: string): Promise<void> => {
+      const put = await admin.put(`/api/questions/${id}`, mcqBody(text, { curriculumChapterId: chapterId }))
+      expect(put.status, JSON.stringify(put.body)).toBe(200)
+      await advance([id])
+      expect(await babOf(id)).toBe(chapterId)
+    }
+    const sessionIds = async (chapterId: string): Promise<string[]> => {
+      const res = await pupil.post('/api/practice/sessions', { mode: 'chapter', chapterId, count: 10 })
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      return (res.body.data.questions as { id: string }[]).map((q) => q.id)
+    }
+
+    it('without a Bab the admin report says Latihan Bab is not served, with the reason no_chapter', async () => {
+      const chapters = await db.query<{ id: string }>(`select c.id::text id from chapters c where c.subject_id = $1 and c.education_level_id = $2 order by c.id limit 2`, [fx.subject, fx.level])
+      expect(chapters.length, 'MATH T4 has two chapters in the curriculum seed').toBe(2)
+      chapterA = chapters[0]!.id
+      chapterB = chapters[1]!.id
+      expect(chapterA).toMatch(/^\d+$/)
+      expect(chapterB).not.toBe(chapterA)
+      // Deliberate SQL: the state under test is an APPROVED question with no Bab, which is what a legacy question approved before the Bab gate looks like.
+      // The Studio cannot produce it once the H-A18 gate is in (Semakan asks for a Bab: "Sila pilih bab."), and there is no route that clears a Bab on a live
+      // version. On a stack without H-A18 the question already has none and this is a no-op; with H-A18 the chain fixtures give it the first chapter first.
+      await db.query(`update question_versions v set chapter_id = null from questions q where q.id = v.question_id and v.version_no = q.live_version_no and q.id = $1`, [fx.soloA])
+      expect(await babOf(fx.soloA)).toBeNull()
+      const v = await bab(fx.soloA)
+      expect(v.served).toBe(false)
+      expect(v.reasons.map((r) => r.code)).toEqual(['no_chapter'])
+      expect(v.reasons[0]!.message.length).toBeGreaterThan(10)
+    })
+
+    it('with a Bab set in the Studio and re-approved it is served, and a chapter session draws exactly the questions of that chapter', async () => {
+      await setBab(fx.soloA, SOLO_A_TEXT, chapterA)
+      await setBab(fx.soloB, SOLO_B_TEXT, chapterB)
+      for (const id of [fx.soloA, fx.soloB]) expect(await bab(id)).toMatchObject({ served: true, reasons: [] })
+
+      const a = await sessionIds(chapterA)
+      expect(a).toContain(fx.soloA)
+      expect(a, 'a question of ANOTHER chapter is never drawn').not.toContain(fx.soloB)
+      for (const id of a) expect(await babOf(id), id).toBe(chapterA)
+
+      const b = await sessionIds(chapterB)
+      expect(b).toContain(fx.soloB)
+      expect(b, 'a question of ANOTHER chapter is never drawn').not.toContain(fx.soloA)
+      for (const id of b) expect(await babOf(id), id).toBe(chapterB)
+    })
+  })
+
   // R1-20.2: the same with Jana Kertas under the Disahkan Kontrak (exact-or-refuse).
   describe('6. Jana Kertas under the Disahkan Kontrak (pupil)', () => {
     it('a Tingkatan 4 and a Tingkatan 5 pupil each generate a private paper from the approved pool and start it', async () => {
@@ -820,12 +882,119 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     })
   })
 
+  // B2 cycle 17 Minor on T43 ("no chain step runs Jana Kertas with a KBAT quota above 0"): every Kontrak above uses kbatMarks 0. Here a Kontrak asks for
+  // 3 KBAT marks in a 4-question Bahagian; the pool holds 3 KBAT and 6 non-KBAT MCQs (1 mark each), so the quota is binding: a draw that ignored it would
+  // almost never hit exactly 3. The KBAT marks of the generated paper are counted from the pinned versions (leaf cognitive levels mengaplikasi to mencipta).
+  describe('6b. Jana Kertas under a Kontrak with a KBAT quota above 0', () => {
+    const KBAT_LEVELS = "('mengaplikasi', 'menganalisis', 'menilai', 'mencipta')"
+    const kbatIds: string[] = []
+    const plainIds: string[] = []
+
+    const makeKontrak = async (kertas: number, code: string, count: number, kbatMarks: number): Promise<void> => {
+      const pool = `MAT${String(kertas)}-A`
+      const create = await admin.post('/api/admin/blueprints', {
+        subject: 'MAT',
+        kertas,
+        source: 'Spec',
+        code,
+        durationMin: 30,
+        instructions: ['Jawab semua soalan.'],
+        sections: [
+          {
+            label: 'Bahagian A',
+            pool,
+            markBudget: count,
+            questionCount: count,
+            rule: { type: 'all' },
+            profile: { kind: 'bahagian', groups: [{ from: 1, to: count, tpMin: 1, tpMax: 6 }] },
+            quota: { basis: 'questions', lines: [{ unit: { kind: 'unit', nodeId: fx.unit }, value: count }] },
+            kbatMarks,
+          },
+        ],
+      })
+      expect(create.status, JSON.stringify(create.body)).toBe(201)
+      const ev = await admin.post(`/api/admin/blueprints/MAT/${String(kertas)}/evidence`, {
+        kind: 'lpm_format',
+        body: 'lpm',
+        year: 2025,
+        paperCode: `1449/${String(kertas)}`,
+        values: { durationMin: 30, totalMarks: count, sections: [{ position: 1, markBudget: count, rule: { type: 'all' }, questionCount: count }] },
+      })
+      expect(ev.status, JSON.stringify(ev.body)).toBe(201)
+      const ok = await admin.post(`/api/admin/blueprints/MAT/${String(kertas)}/verify`, { note: 'Struktur disemak dengan dokumen format LPM.' })
+      expect(ok.status, JSON.stringify(ok.body)).toBe(200)
+      expect(ok.body.data).toMatchObject({ source: 'Disahkan', servesStudents: true })
+    }
+
+    const kbatMarksOf = async (paperId: string): Promise<{ questions: number; kbat: number; total: number }> => {
+      const [row] = await db.query<{ questions: string; kbat: string; total: string }>(
+        `select count(distinct pl.question_id) questions,
+                coalesce(sum(qp.marks) filter (where qp.cognitive_level in ${KBAT_LEVELS}), 0) kbat,
+                coalesce(sum(qp.marks), 0) total
+           from paper_sections s
+           join paper_placements pl on pl.paper_section_id = s.id
+           join question_versions v on v.question_id = pl.question_id and v.version_no = pl.pinned_version_no
+           join question_parts qp on qp.question_version_id = v.id
+          where s.paper_id = $1`,
+        [paperId],
+      )
+      return { questions: Number(row!.questions), kbat: Number(row!.kbat), total: Number(row!.total) }
+    }
+
+    it('the questions: 3 KBAT and 6 non-KBAT MCQs of 1 mark, approved', async () => {
+      // the plain ones first, so the KBAT ones have the HIGHEST ids: a draw that ignored the quota and took the lowest ids would then miss it
+      for (let i = 0; i < 6; i++) plainIds.push(await createQuestion(mcqBody(`Soalan biasa ${String(i + 1)}: berapakah ${String(i + 2)} tambah ${String(i + 3)}?`)))
+      for (let i = 0; i < 3; i++) kbatIds.push(await createQuestion(mcqBody(`Soalan KBAT ${String(i + 1)}: nilaikan hubungan antara panjang dan lebar segi empat tepat.`, { cognitiveLevel: 'menganalisis' })))
+      await advance([...kbatIds, ...plainIds])
+      // the KBAT split really is in the stored leaves
+      const levels = await db.query<{ id: string; kbat: boolean }>(
+        `select q.id::text id, bool_or(qp.cognitive_level in ${KBAT_LEVELS}) kbat from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no
+          join question_parts qp on qp.question_version_id = v.id where q.id = any($1::bigint[]) group by q.id`,
+        [[...kbatIds, ...plainIds]],
+      )
+      expect(levels.filter((r) => r.kbat).map((r) => r.id).sort()).toEqual([...kbatIds].sort())
+    })
+
+    // The section pool a question may carry must exist in an active Kontrak of its subject, so both Kontrak are made before the pools are tagged.
+    // MAT kertas 5: 3 KBAT marks out of 4 (reachable). MAT kertas 6: 5 KBAT marks out of 5 (the pool holds only 3 KBAT questions).
+    it('two Disahkan Kontrak with a KBAT quota are made, and the questions are tagged to their pools MAT5-A and MAT6-A', async () => {
+      await makeKontrak(5, 'MAT/E2E-K', 4, 3)
+      await makeKontrak(6, 'MAT/E2E-K2', 5, 5)
+      for (const id of [...kbatIds, ...plainIds]) {
+        const res = await admin.put(`/api/admin/section-pools/${id}`, { pools: ['MAT5-A', 'MAT6-A'] })
+        expect(res.status, JSON.stringify(res.body)).toBe(200)
+        expect(res.body.data.pools).toEqual(['MAT5-A', 'MAT6-A'])
+      }
+    })
+
+    it('a Disahkan Kontrak asks for 3 KBAT marks out of 4: the generated paper has exactly 4 questions and exactly 3 KBAT marks', async () => {
+      const res = await pupil.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 5 })
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      const paperId = res.body.data.paperId as string
+      expect((await db.query<{ kind: string }>(`select kind from papers where id = $1`, [paperId]))[0]!.kind).toBe('jana')
+      expect(await kbatMarksOf(paperId)).toEqual({ questions: 4, kbat: 3, total: 4 })
+      // the KBAT questions are exactly the three of the pool (all of them), plus one non-KBAT
+      const placed = (await db.query<{ id: string }>(`select pl.question_id::text id from paper_placements pl join paper_sections s on s.id = pl.paper_section_id where s.paper_id = $1`, [paperId])).map((r) => r.id)
+      for (const id of kbatIds) expect(placed, id).toContain(id)
+      expect(placed.filter((id) => plainIds.includes(id))).toHaveLength(1)
+    })
+
+    it('an unreachable KBAT quota is refused with SHORTAGE (kind kbat), never a paper that misses the quota', async () => {
+      const before = Number((await db.query<{ n: string }>(`select count(*) n from papers where kind = 'jana'`))[0]!.n)
+      const res = await pupil.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 6 })
+      expect(res.status, JSON.stringify(res.body)).toBe(422)
+      expect(res.body.error).toMatchObject({ code: 'SHORTAGE', message: 'Kertas tidak dapat dijana kerana soalan tidak mencukupi.' })
+      expect(res.body.error.details.shortages).toEqual([expect.objectContaining({ section: 'Bahagian A', kind: 'kbat', need: 5, have: 3 })])
+      expect(Number((await db.query<{ n: string }>(`select count(*) n from papers where kind = 'jana'`))[0]!.n)).toBe(before)
+    })
+  })
+
   // R1-20.3 negatives.
   describe('7. negatives: the T33 gate, a draft is invisible, a withdrawn paper', () => {
     // R1-20.3 / PIPE AC-18.1 (T33 gate, merged at BASE-60): approving an SPM-bound question needs a cognitive level per leaf and the kertas.
     it('a question without the DSKP-complete data cannot be approved: it stays in review with the BM reasons, and is not served anywhere', async () => {
       const incomplete = await createQuestion(mcqBody('Berapakah 10 tolak 4?', { cognitiveLevel: undefined, kertas: undefined }))
-      await giveBab(db, [incomplete]) // H-A18: the submit gate asks for a Bab; this test is about the approve gate (cognitive level, kertas)
+      await giveBab(db, [incomplete]) // REQ-B-071: no Bab rule at Semakan any more (kept for the fixture); this test is about the approve gate (cognitive level, kertas)
       const toReview = await admin.post('/api/questions/bulk-action', { action: 'review', ids: [incomplete] })
       expect(toReview.status, JSON.stringify(toReview.body)).toBe(200)
       expect(toReview.body.data.failed, JSON.stringify(toReview.body)).toEqual([]) // it really reached Semakan: the refusal below is the approve gate's

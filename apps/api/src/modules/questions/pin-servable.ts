@@ -12,7 +12,10 @@ import type { QuestionVersionRecord } from './types'
  * (`superseded`). An archive with any other reason, or none recorded, is a takedown. A draft or in-review version is not servable
  * either. Running sittings do not use this rule: they read the pin directly, unchanged.
  */
-export function pinServableForNewSitting(version: Pick<QuestionVersionRecord, 'status' | 'archiveReason'>): boolean {
+export function pinServableForNewSitting(version: Pick<QuestionVersionRecord, 'status' | 'archiveReason' | 'sourceTakenDown'>): boolean {
+  // REQ-B-074: a takedown archives the latest and live version of each question, not the older `superseded` ones from the same source; the source
+  // paper's `takedown_at` is the one authority (read at check time, so it also covers takedowns done before this rule existed).
+  if (version.sourceTakenDown === true) return false
   if (version.status === 'approved') return true
   return version.status === 'archived' && version.archiveReason === 'superseded'
 }

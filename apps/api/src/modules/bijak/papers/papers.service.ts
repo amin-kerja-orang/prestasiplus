@@ -307,8 +307,7 @@ export class PapersService {
 
   private async takenDownOf(papers: readonly PaperWithTree[]): Promise<ReadonlySet<string>> {
     const pins: PinRef[] = papers.flatMap((p) => p.sections.flatMap((s) => s.placements.map((pl) => ({ questionId: idToString(pl.questionId), versionNo: pl.pinnedVersionNo }))))
-    const takenDown = this.ports.questionSource.takenDownPins
-    return !takenDown || pins.length === 0 ? new Set() : takenDown.call(this.ports.questionSource, pins)
+    return pins.length === 0 ? new Set() : this.ports.questionSource.takenDownPins(pins)
   }
 
   private async infoFor(papers: readonly PaperWithTree[]): Promise<Info> {

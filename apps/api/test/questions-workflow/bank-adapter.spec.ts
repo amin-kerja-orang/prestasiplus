@@ -76,13 +76,16 @@ describe('question bank adapter (real BE-09 bank)', () => {
     ])
   })
 
-  it('a pair outside the table is 409 and the gates read real data (an untagged draft cannot be submitted)', async () => {
+  it('a pair outside the table is 409 and the gates read real data (a draft without a subject cannot be submitted)', async () => {
     const id = await draft()
     expect((await failure(svc.transition(id, 'approved', actorOf(c.admin)))).code).toBe('CONFLICT')
     const [untagged] = await t.db.query<{ question_id: string }>("select question_id::text from question_versions where number_label = 'SEED-DRAFT-BM-T4'")
+    // REQ-B-071 (Q17): the seed draft has no Bab and that is no longer a submit rule; a draft without a subject is still refused.
+    await t.db.query('update question_versions set subject_id = null where question_id = $1::bigint', [untagged!.question_id])
     const err = await failure(svc.transition(untagged!.question_id, 'review', actorOf(c.admin)))
     expect(err.code).toBe('VALIDATION_ERROR')
-    expect(err.fields).toMatchObject({ chapterId: expect.any(String) })
+    expect(err.fields).toMatchObject({ subjectId: expect.any(String) })
+    expect(err.fields).not.toHaveProperty('chapterId')
   })
 
   it('a stale expectedFrom is a 409 and changes nothing', async () => {
