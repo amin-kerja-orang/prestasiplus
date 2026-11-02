@@ -563,7 +563,7 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 **Done:** final R1 QA chain run all green (answers-A, A4, 10:52 MYT); 0 code conflicts across all READY heads on BASE-175; Q12a/Q13/Q14 decided by the user.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 03:07 UTC, BASE 4f92aac0)
+### Team A open branches: heads from origin (auto, 2026-11-02 03:10 UTC, BASE 5e6f03ed)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -587,7 +587,6 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/r1e2e10-bulk-publish-noop | fe228f56f | READY (A2, @fe228f56; 5990fb6b MERGED as BASE-155): **B2 delta 5990fb6b..fe228f56** = bulkByFilter race rows folded into integer skipped (in processed, not affected/failed), contract descriptions, race test + mutation, errors.ts; clean on BASE-161; A1b pre-review APPROVE (16 pass, mutation red) | A2 re-verified on 4218bee3: clean, filter-bulk 11, bulk 5, workflow 310 |
 | r1/ready-tiers-check | 9c80f08c3 | ON HOLD (A2, @9c80f08c, contains BASE-107): code correct + Minors fixed (exact 503 body, WARN once per state change, INFO on recovery; mutations red); waits for B DevOps (REQ-A-028: CI seed step + first-install deploy ordering) |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
-| r1/reqb067-etl-guards | d402fdf2a | READY (A1a, @d402fdf2 off BASE-132): REQ-B-067 real (macOS-visible) defects fixed: files.ts realOf (realpath first, ancestor walk, dangling symlinks followed ≤40 hops) closes the "separate directories" guard bypass; .github/workflows/api.yml >1 MB guard portable + fail-closed (pipefail, || exit 1). A1b pre-review Approve (0 B/M); its 3 Minors fixed, each new test bites; security + files.db 41, staging 148, tsc/eslint 0. **Needs B security-engineer + DevOps (CI config)** | A1b re-verify on BASE-161: clean, 148 pass, realOf + CI guard behaviour confirmed |
 | r1/reqb071-chain-specs-a3 | ee9474e09 | WIP (A3, @ee9474e0; test only; red until A2 r1/reqb071-bab-submit): chain 3a Semakan without a Bab, 3b no node refused, 3 approved chapter null + Latihan Bab no_chapter, 3c dskp_code-derived Bab; target 13/13 + 3 mutations; NOT for merge |
 | r1/reqb074-takedown-lows | ae78bf820 | CR (A1b, @ae78bf82 on BASE-165; REQ-B-074): L1 image rule B serves only approved or archived-superseded pins with no source takedown (a pupil with a sitting keeps reading: lead accepts, consistent with REQ-B-058 (d)); L2 read-time source_papers.takedown_at check for new sittings/Kuiz; L3 takenDownPins required; files 244, 66-file wider run green, 6 mutations red; A4 pre-review; **needs B security-engineer** |
 | r1/servability-stimuli-once | f76f729a8 | READY (A4, @f76f729a, contains chain tip + BASE-107): spy spec pins one stimulus read per chunk + 2 comments; optional; step 6b |
