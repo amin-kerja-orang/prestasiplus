@@ -26,7 +26,8 @@ ALTER TABLE "question_versions" ADD COLUMN "declared_marks" SMALLINT;
 -- lock is held; the split makes that scan cheaper (the ADD CONSTRAINT no longer scans, the VALIDATE below scans once, after the backfill). It does NOT make this
 -- migration online: Prisma runs the file as ONE transaction and ADD COLUMN holds ACCESS EXCLUSIVE on "question_versions" until the end, so the
 -- VALIDATE also runs under that lock (its weaker SHARE UPDATE EXCLUSIVE adds nothing while the stronger one is held). Readers and writers wait for
--- the whole file; at 408k questions a reader stalled for about 3 s in the A4 rehearsal (result2.log). Run it inside the maintenance window.
+-- the whole file. The A4 rehearsal measured the whole migration at about 0.4 s warm / 6.2 s cold at 408k questions, with a backfill that matched
+-- 0 rows, so the cost of a real backfill was not measured. Run it inside the maintenance window.
 ALTER TABLE "question_versions" ADD CONSTRAINT "ck_question_versions_last_editor" CHECK ("last_editor" IN ('person', 'ai')) NOT VALID;
 ALTER TABLE "question_versions" ADD CONSTRAINT "ck_question_versions_declared_marks" CHECK ("declared_marks" IS NULL OR "declared_marks" >= 0) NOT VALID;
 
