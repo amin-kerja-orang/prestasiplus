@@ -566,12 +566,12 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 **Status legend (team A records):** READY = pushed and evidenced, ready for B; IN-REVIEW-A = in team A pre-review (A4/A1b), **not** a B "Changes requested"; IN-PROGRESS = being changed, not for merge; ON HOLD = waits on a dependency; MERGED = in base.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 03:34 UTC, BASE 1216dbe7)
+### Team A open branches: heads from origin (auto, 2026-11-02 03:38 UTC, BASE 1216dbe7)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
-| r1/ac-gaps-a1b | 991879caf | READY (multi, @991879ca: runbook/B4 pack/coverage to BASE-189, AC-10.6 PARTIAL (dimming by-hand check), Q17 notes, handoff byte-identical to ha26); B delta over BASE-163 c2b93710; merge after ha26 |
+| r1/ac-gaps-a1b | 9a3ea90a4 | READY (multi, @9a3ea90a: AC coverage refreshed to BASE-189 (AC-R1 71/81 proven, PIPE 58/92; 7 open rows unchanged), B4 pack/runbook; merge-tree clean); B delta over BASE-163; merge after ha26 |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
 | r1/ha24-release-input | 322b9a61e | READY (A3 docs, @322b9a61: BASE-155..189 pass; Q17 real behaviour cited @4e38af8e "pending merge"; KIV 41; copy table 41 rows); B delta over BASE-145 c0f7a45d |
 | r1/ha26-team-a-state | 9027ff7a0 | READY (A3 docs, @9027ff7a: written off BASE-189); B delta over BASE-162 21360a86; merge before ac-gaps |
