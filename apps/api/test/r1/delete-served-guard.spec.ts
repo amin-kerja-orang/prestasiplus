@@ -392,6 +392,9 @@ describe('R1 delete-served-guard', () => {
       await sit(sat.paper)
       // the question leaves the live path (archived): only the paper's pin can grant the picture now
       for (const id of [sat.ids[0]!, quiet.ids[0]!]) expect((await admin.post('/api/questions/bulk-action', { action: 'archived', ids: [id] })).body.data.failed).toEqual([])
+      // This test is about rule B and the paper (published/withdrawn, sitting or not), not about a takedown. REQ-B-074: an archive "withdrawn" is a takedown of the
+      // pinned version, whose picture only a pupil WITH a sitting reads (pinned in `reqb058-takedown-pin.spec.ts`), so the pins here are marked superseded.
+      await q(`update question_versions set archive_reason = 'superseded' where question_id = any($1::bigint[])`, [[sat.ids[0]!, quiet.ids[0]!]])
       expect((await pupil.get(sitImg.url)).status).toBe(200)
       expect((await pupil.get(quietImg.url)).status).toBe(200)
       // regression guard: while the papers are PUBLISHED, a pupil with no sitting reads the pictures too (the narrowing applies to withdrawn papers only)
