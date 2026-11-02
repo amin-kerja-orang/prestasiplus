@@ -140,7 +140,12 @@ export class BijakAttemptsService {
     return row
   }
 
-  private async loadBundles(composition: readonly SectionSnapshot[], onMissing: () => ApiError = () => ApiError.of('SERVER_ERROR')): Promise<Bundles> {
+  /**
+   * `onMissing` is what a bundle that the question source no longer returns becomes. REQ-B-079 (1): for a sitting that is already open it is a
+   * paper that is gone (the retired PoC paper of the demo seed, a question deleted from the bank), so 404 "Kertas tidak ditemui" (the copy a start on
+   * an unknown or unpublished paper uses), not a 500. The start path passes its own 422 "Tiada soalan layak untuk kertas ini.".
+   */
+  private async loadBundles(composition: readonly SectionSnapshot[], onMissing: () => ApiError = () => ApiError.of('NOT_FOUND', { message: MSG.paperNotFound })): Promise<Bundles> {
     const ids = [...new Set(questionIdsOf(composition))]
     const pins = new Map<string, number>()
     for (const section of composition) for (const [qid, versionNo] of Object.entries(section.versions ?? {})) pins.set(qid, versionNo)
