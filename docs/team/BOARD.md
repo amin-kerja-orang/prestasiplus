@@ -538,13 +538,13 @@ A3 dev-1 rehearsed this locally. `prisma migrate deploy` does not run a migratio
 - ha18-minors must restore 0105 byte-for-byte (A2); it is IN-PROGRESS until then.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 02:18 UTC, BASE 4f1e0f2a)
+### Team A open branches: heads from origin (auto, 2026-11-02 02:19 UTC, BASE 4f1e0f2a)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/a2-carried-minors | 45f152423 | READY (A2, @45f15242 = 6b9104d3 + A1b Minor JSDoc wording; comments/docs only): REQ-A-018 JSDoc, D9 row simulasi_kuiz limit, deviation row PKSK applyStatus no approve gate (LEAD, KIV R2); A1b Approve; C3 doc line deferred until c012 merges; B2 |
-| r1/ac-gaps-a1b | c2b937105 | READY (multi, @c2b93710: runbook final (DO/non-DO, 0106/0107 in base since BASE-137); handoff file byte-identical to ha26 21360a86 (no conflict); merge-tree clean); merge AFTER ha26; B4/B2 |
+| r1/ac-gaps-a1b | 4a3474f9d | READY (multi, @4a3474f9: + REQ-B-071 comment fix in chapter-practice.spec (re-check on A2 head pending); runbook final (DO/non-DO, 0106/0107 in base since BASE-137); handoff file byte-identical to ha26 21360a86 (no conflict); merge-tree clean); merge AFTER ha26; B4/B2 |
 | r1/alp-comment-240 | 84b0c3a99 | READY (A4, @84b0c3a9 on approved admin-list-perf 69f465c8; comment only): env.schema.ts:148 says 240 (REQ-B-066 part); merge after admin-list-perf; B2 | A1b Approve (comment only) |
 | r1/c012-doc-followup | b71dc2add | READY (A2, @b71dc2ad on BASE-134; docs, 1 line): pipeline doc :297 edit-as-draft response (201 {id, versionNo}; 409 newer draft/review; 409 live not approved); B2 |
 | r1/d90-builder-sweep-a3 | eeebce89a | READY (A3, @eeebce89 = B2-approved da0bb7f3 + T48 10c62437 merged (deviations keep-both); exam-builder 400/400). Merge after T48; B2 delta |
