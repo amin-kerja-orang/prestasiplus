@@ -164,7 +164,7 @@ async function createQuestion(body: Record<string, unknown>): Promise<string> {
 }
 
 async function advance(ids: string[]): Promise<void> {
-  await giveBab(db, ids)
+  await giveBab(db, ids) // REQ-B-071: not needed for Semakan or Terbitkan any more; kept so the chain questions carry a Bab (Latihan Bab serving)
   for (const action of SERVE_STEPS) {
     const res = await admin.post('/api/questions/bulk-action', { action, ids })
     expect(res.status, `${action}: ${JSON.stringify(res.body)}`).toBe(200)
@@ -825,7 +825,7 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     // R1-20.3 / PIPE AC-18.1 (T33 gate, merged at BASE-60): approving an SPM-bound question needs a cognitive level per leaf and the kertas.
     it('a question without the DSKP-complete data cannot be approved: it stays in review with the BM reasons, and is not served anywhere', async () => {
       const incomplete = await createQuestion(mcqBody('Berapakah 10 tolak 4?', { cognitiveLevel: undefined, kertas: undefined }))
-      await giveBab(db, [incomplete]) // H-A18: the submit gate asks for a Bab; this test is about the approve gate (cognitive level, kertas)
+      await giveBab(db, [incomplete]) // REQ-B-071: no Bab rule at Semakan any more (kept for the fixture); this test is about the approve gate (cognitive level, kertas)
       const toReview = await admin.post('/api/questions/bulk-action', { action: 'review', ids: [incomplete] })
       expect(toReview.status, JSON.stringify(toReview.body)).toBe(200)
       expect(toReview.body.data.failed, JSON.stringify(toReview.body)).toEqual([]) // it really reached Semakan: the refusal below is the approve gate's

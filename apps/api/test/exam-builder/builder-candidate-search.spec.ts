@@ -40,7 +40,7 @@ describe('R1-T45 builder AC proofs: Tambah soalan errors and the candidate searc
     return res.body.data.id as string
   }
   async function approve(ids: string[]): Promise<void> {
-    await giveBab(t.db, ids) // Semakan asks for a Bab on the bulk route too (R1-H-A18)
+    await giveBab(t.db, ids) // REQ-B-071: no Bab rule any more; kept so the fixtures keep a chapter (harmless)
     for (const action of ['review', 'approved']) {
       const res = await admin.post('/api/questions/bulk-action', { action, ids })
       expect(res.status, JSON.stringify(res.body)).toBe(200)

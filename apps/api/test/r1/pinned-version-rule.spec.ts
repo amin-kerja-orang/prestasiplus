@@ -52,7 +52,7 @@ describe('REQ-B-032 a published paper serves its pinned version', () => {
     ...extra,
   })
   async function advance(ids: string[]): Promise<void> {
-    // H-A18 (D89): the submit gate asks for a Bab; the fixtures carry one of the subject and level
+    // REQ-B-071: a Bab is not required at Semakan or Terbitkan any more; the fixtures still carry one of the subject and level (harmless)
     await q(`update question_versions set chapter_id = (select id from chapters where subject_id = ${subject} and education_level_id = ${level} order by id limit 1) where question_id = any($1::bigint[]) and chapter_id is null`, [ids])
     for (const action of ['review', 'approved']) {
       const res = await admin.post('/api/questions/bulk-action', { action, ids })
