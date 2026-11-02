@@ -102,7 +102,7 @@ Sumber: `docs/team/QUESTIONS.md` pada `board`. Dibaca sahaja pada kepala `6401be
 |---|---|---|---|---|
 | 7.1 | `r1/t31-builder-wire` @ eb0346d2 dan REQ-A-008 `r1/reqa008-group-stimulus` @ 29d24be9 digabungkan **bersama**, bukan satu tanpa yang lain | `docs/ops/r1-release-input-team-a.md` seksyen 3.5, langkah 30 ("the pair starts here") dan 31 ("right after T31; vue-tsc 0 from here"). | | |
 | 7.2 | `r1/t43-chain-publish` @ 238eb6eb digabungkan **selepas** T31 dan REQ-A-008 | Seksyen 3.5 langkah 32. | | Susunan dalam seksyen 3.5: T31 (30), REQ-A-008 (31), T43 (32), T51 (33). Kata-kata ringkas "T31, T43, T51 selepas REQ-A-008" boleh disalah baca sebagai REQ-A-008 sebelum T31; ikut seksyen 3.5. |
-| 7.3 | `r1/t51-partial-acs-a3` @ 7cb8d814 (REQ-B-068 restack, DALAM PROSES; merah terbuka REQ-B-069) digabungkan selepas T48, T31, REQ-A-008 dan T43 | Seksyen 3.5 langkah 33. | | Tidak mengandungi T43b (`r1/t43b-publish-acs` @ 457db6ae, langkah 27, REQ-B-068 restack, DALAM PROSES, bebas selepas T48). |
+| 7.3 | `r1/t51-partial-acs-a3` @ 7cb8d814 (SIAP-SELEPAS-BETUL: bersih terhadap BASE-148; merah REQ-B-069 dibetulkan oleh `r1/t31-pool-lookup-fixture` 2046a330, digabungkan selepas T31) digabungkan selepas T48, T31, REQ-A-008 dan T43 | Seksyen 3.5 langkah 33. | | Tidak mengandungi T43b (`r1/t43b-publish-acs` @ 457db6ae, langkah 27, READY dan bersih terhadap BASE-148, bebas selepas T48). |
 | 7.4 | `vue-tsc` lulus pada keputusan gabungan | MERGE-LOG, kolum "Re-run evidence" bagi baris gabungan REQ-A-008 dan selepasnya. | | Seksyen 3.5 menyatakan `vue-tsc 0` hanya dari REQ-A-008 ke atas. |
 
 ## Pintu 8. Penggabungan semula FE pasukan C
