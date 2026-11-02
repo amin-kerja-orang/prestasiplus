@@ -541,6 +541,27 @@ A3 dev-1 rehearsed this locally. `prisma migrate deploy` does not run a migratio
 ### Cycle 38 note: final R1 QA chain run ALL GREEN (02 Nov, 02:52 UTC, A4)
 BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, contract and vue-tsc all 0. Folders: r1 118, bijak-attempts 202, bijak-kuiz 52, intake-workflow 146, questions-workflow 310, exam-builder 458, with 0 failed. The R1 pupil chain is green at every stage: admin uploads → approves → builds paper → Terbit → pupil sits, self-marks, retries, plus Kuiz. Open before R1 sign-off: REQ-B-071 (Q17 Bab gate; A2 + A3), REQ-B-074 (takedown Lows; A1b), REQ-B-067 (security-engineer/DevOps review), and the B merges of REQ-A-024f.
 
+
+### R1 sign-off checklist, team A part (02 Nov, 03:05 UTC; A1a read-only check on BASE-175 4f92aac0)
+**Verdict: not yet.** The code is essentially complete and the final QA chain run is green; G5 waits for a new B4 E2E run.
+| # | Item | Owner | Status |
+|---|---|---|---|
+| 1 | G5: B4 E2E re-run on the final base (last graded BASE-137: S2a, S2e, S3e failed) | B4 | OPEN: re-run after REQ-B-071 lands |
+| 2 | REQ-B-071 / Q17 (S2a, S3e: Bab gate) | A2 (r1/reqb071-bab-submit), A3 (chain specs ee9474e0) | IN PROGRESS |
+| 3 | R1E2E-10 (S2e): 5990fb6b in base (BASE-155); delta fe228f56 READY | B1/B2 | MERGE OWED |
+| 4 | REQ-A-024f remaining heads (18, all clean on BASE-175) + ha18-minors (REQ-A-042 URGENT) | B1/B2 | MERGE OWED |
+| 5 | REQ-B-074 (takedown Lows) | A1b, then A4 pre-review + B security | IN PROGRESS |
+| 6 | REQ-B-067 (CI guard) security-engineer + DevOps review | B | REVIEW OWED |
+| 7 | UAT runbook SELECTs (R1-11.4, R1-12.6) on UAT/production | Ops (B DevOps) | OWED (deploy-time) |
+| 8 | OCR provider AC-R1-14.2 (ships OCR_ENGINE=none, AI_PROVIDER=mock) | **USER** (accept-as-mock or defer) | DECISION OWED (not decidable under delegation if it touches deploy/secrets) |
+| 9 | User acceptance of the 5 known limits (checklist gate 4.6) | **USER** | OWED |
+| 10 | Delegated decisions Q15, Q16, Q17 | **USER** review | OWED |
+| 11 | REQ-A-028 ready-tiers-check (on hold) | B DevOps | OWED (or a manual deploy step) |
+| 12 | Team C FE: REQ-A-023, REQ-A-027/REQ-B-061 C part, REQ-A-040, REQ-A-041 | C | OPEN |
+| 13 | ha24 sign-off checklist numbers refresh | A3 docs | IN PROGRESS (BASE-155..175 pass) |
+| 14 | Deploy prerequisites (checklist gate 6) | B DevOps / B1, needs user confirmation for deploy | NOT STARTED (no deploy without the user) |
+**Done:** final R1 QA chain run all green (answers-A, A4, 10:52 MYT); 0 code conflicts across all READY heads on BASE-175; Q12a/Q13/Q14 decided by the user.
+
 <!-- AUDIT:BEGIN -->
 ### Team A open branches: heads from origin (auto, 2026-11-02 03:01 UTC, BASE 4f92aac0)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
