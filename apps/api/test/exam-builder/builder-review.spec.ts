@@ -453,9 +453,8 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
       // section pool (another paper, nothing placed yet): the group is ONE unit with its stimuli
       const fresh = await newPaper()
       const [fa] = await sectionsOf(fresh)
-      const pool = await admin.get(`/api/admin/papers/${fresh}/sections/${fa!}/pool?pageSize=100`)
-      expect(pool.status, JSON.stringify(pool.body)).toBe(200)
-      const poolUnit = (pool.body.data as { groupId?: string; stimuli?: Wire[]; questionIds: string[] }[]).find((u) => u.groupId === g.id)!
+      const pool = await poolUnits<{ groupId?: string; stimuli?: Wire[]; questionIds: string[] }>(fresh, fa!)
+      const poolUnit = pool.find((u) => u.groupId === g.id)!
       expect(poolUnit.questionIds).toEqual(g.members)
       check(poolUnit.stimuli!)
 
