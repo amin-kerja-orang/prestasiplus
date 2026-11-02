@@ -307,6 +307,7 @@ describe('Jana Kertas through the pool source (standard facts, D75)', () => {
 
   // Reads of a generated paper (the cover) take marks from the question port, not from the pool facts.
   const questions: BijakQuestionSource = {
+    takenDownPins: () => Promise.resolve(new Set<string>()),
     getMany: async (ids) =>
       new Map(
         ids.flatMap((id) => {

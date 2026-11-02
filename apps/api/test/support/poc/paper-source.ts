@@ -17,6 +17,10 @@ export class PocQuestionSource implements BijakQuestionSource {
   private readonly groupIdByKey = new Map<string, string>()
   private readonly groupMembers = new Map<string, string[]>()
 
+  async takenDownPins(): Promise<ReadonlySet<string>> {
+    return new Set()
+  }
+
   constructor() {
     for (const g of POC_BANK.groups) this.groupMembers.set(g.id, g.questionIds)
     for (const q of POC_BANK.questions) {

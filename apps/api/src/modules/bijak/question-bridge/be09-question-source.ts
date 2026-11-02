@@ -84,7 +84,7 @@ export class Be09BijakQuestionSource implements AttemptQuestionSource {
    * bundle load, which already fails closed. Used at start only; a running sitting keeps its pin (`loadQuestions` with pins).
    */
   async takenDownPins(pins: readonly PinRef[]): Promise<ReadonlySet<string>> {
-    const records = await this.questions.getVersions(pins)
+    const records = await this.questions.getVersions(pins, { withSourceTakedown: true })
     return new Set(records.filter((r) => !pinServableForNewSitting(r.version)).map((r) => pinKey({ questionId: r.id, versionNo: r.version.versionNo })))
   }
 

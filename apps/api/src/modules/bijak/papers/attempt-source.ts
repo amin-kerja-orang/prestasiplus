@@ -100,7 +100,7 @@ export class BijakPapersAttemptSource implements BijakPaperSource {
     // taken down (archived "withdrawn" / "source_takedown") while a later version is live; a `superseded` pin is still served. A sitting
     // already open is not affected: `start` resumes it on `not_eligible` and its pinned version is read as before.
     const pins = paper.sections.flatMap((s) => s.placements.map((p) => ({ questionId: idToString(p.questionId), versionNo: p.pinnedVersionNo })))
-    if (this.ports.questionSource.takenDownPins && (await this.ports.questionSource.takenDownPins(pins)).size > 0) return { ok: false, reason: 'not_eligible' }
+    if ((await this.ports.questionSource.takenDownPins(pins)).size > 0) return { ok: false, reason: 'not_eligible' }
 
     const subject = (await this.repo.subjectsByIds([paper.subjectId])).get(paper.subjectId.toString())
     const code = subject ? bijakCodeOf(subject.code) : ''

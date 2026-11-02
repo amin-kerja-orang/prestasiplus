@@ -73,9 +73,9 @@ export interface BijakQuestionSource {
   /**
    * REQ-B-058: of these (question, pinned version) pairs, the `pinKey`s of those taken down (archived with a reason other than
    * `superseded`, or not approved): a NEW sitting of a paper that places one is refused and the list does not offer it. A running sitting
-   * does not ask. One read per call. Optional: a source without it refuses nothing here.
+   * does not ask. One read per call. Required (REQ-B-074): a source that cannot tell must answer an empty set, not omit the method.
    */
-  takenDownPins?(pins: readonly PinRef[]): Promise<ReadonlySet<string>>
+  takenDownPins(pins: readonly PinRef[]): Promise<ReadonlySet<string>>
   /** The eligible pool a blueprint section draws from (`blueprint_sections.pool`). */
   pool(pool: string, scope: BijakPoolScope): Promise<BijakPool>
 }
@@ -107,6 +107,9 @@ class NoProgress implements BijakProgressSource {
 class NoQuestionsKnown implements BijakQuestionSource {
   async getMany(): Promise<ReadonlyMap<string, BijakQuestionInfo>> {
     return new Map()
+  }
+  async takenDownPins(): Promise<ReadonlySet<string>> {
+    return new Set()
   }
   async pool(): Promise<BijakPool> {
     return { entries: [], groups: new Map() }

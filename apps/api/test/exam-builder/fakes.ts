@@ -38,6 +38,11 @@ export class FakeBank implements BuilderQuestionSource, BijakQuestionSource {
   private readonly questions = new Map<string, FakeQuestion>()
   private readonly groupDefs = new Map<string, string[]>()
 
+  /** REQ-B-074: required by the papers port; the fake bank takes nothing down. */
+  async takenDownPins(): Promise<ReadonlySet<string>> {
+    return new Set()
+  }
+
   add(init: FakeQuestionInit): this {
     this.questions.set(init.id, {
       id: init.id,
