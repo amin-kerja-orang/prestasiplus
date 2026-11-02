@@ -27,6 +27,7 @@ import { formatDateTime } from '@/lib/time'
 
 import { bulkQuestionAction, deleteQuestion, fetchQuestion } from '../api'
 import AiExplanationCard from '../components/AiExplanationCard.vue'
+import QuestionPaperServability from '../components/studio/QuestionPaperServability.vue'
 import {
   cut,
   DELETE_CONFIRM,
@@ -396,6 +397,11 @@ const isRtlText = (text: string): boolean => /[\u0600-\u06FF]/.test(text)
               </dd>
             </div>
           </dl>
+        </DsPanel>
+
+        <!-- REQ-A-018 (AC-04.3): the published papers that carry this question and whether pupils can open them. -->
+        <DsPanel v-if="!isPksk" title="Dilihat murid di" icon="i-ph-eye" data-testid="question-served">
+          <QuestionPaperServability :question-id="id" />
         </DsPanel>
 
         <DsPanel

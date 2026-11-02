@@ -2,7 +2,7 @@
 /**
  * Studio status bar (R1-F03a, design S1.3 and 9.1). The V2 status row of the edit page: badge, state sentence, the moves of
  * the state ("Hantar untuk semakan", "Terbitkan", "Arkib", "Edit sebagai draf", plus the PROPOSED way back to draft), the
- * approval refusal list when the gate says no, and "Dilihat murid di x daripada n aktiviti" with a `Lihat` disclosure.
+ * approval refusal list when the gate says no, and "Dilihat murid di x daripada n aktiviti" with a `Lihat` disclosure (which also lists the published papers that carry the question, REQ-A-018).
  * "Terbitkan" asks for no confirmation (V2); "Arkib" uses the Panel dialog "Arkibkan soalan ini?". The page reloads on `changed`.
  */
 import type { QuestionGateIssue, ServabilityReport } from '@pp/contract'
@@ -20,6 +20,7 @@ import {
   moveQuestionStatus,
 } from '../../api/studio'
 import { errorLines } from '../../lib/ui-errors'
+import QuestionPaperServability from './QuestionPaperServability.vue'
 import {
   APPROVED_NOTE,
   archiveBody,
@@ -225,6 +226,7 @@ async function run(action: StatusAction): Promise<void> {
         </li>
       </ul>
       <DsText v-if="unservedCount === 0" variant="caption" tone="muted">Soalan ini dipaparkan di semua aktiviti.</DsText>
+      <QuestionPaperServability class="mt-3" :question-id="questionId" />
     </div>
   </DsStack>
 </template>
