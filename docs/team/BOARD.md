@@ -538,13 +538,13 @@ A3 dev-1 rehearsed this locally. `prisma migrate deploy` does not run a migratio
 - ha18-minors must restore 0105 byte-for-byte (A2); it is IN-PROGRESS until then.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 01:06 UTC, BASE b34f4cab)
+### Team A open branches: heads from origin (auto, 2026-11-02 01:09 UTC, BASE b34f4cab)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/a2-carried-minors | 45f152423 | READY (A2, @45f15242 = 6b9104d3 + A1b Minor JSDoc wording; comments/docs only): REQ-A-018 JSDoc, D9 row simulasi_kuiz limit, deviation row PKSK applyStatus no approve gate (LEAD, KIV R2); A1b Approve; C3 doc line deferred until c012 merges; B2 |
-| r1/ac-gaps-a1b | 9bab52f19 | READY (multi, @9bab52f1: + §2.4/§8 dev-1 0106/0107 lock-timeout results, Prisma 7.10.1 non-atomic (0105 under re-check by A4), object check before resolve; row 39 per USER Q13; B4 pack fixes; runbook: 0105 not online, §2.4 0106/0107 window with lock_timeout 5 s rehearsed by A4 (URL option preferred, ALTER ROLE fallback + RESET, no PGOPTIONS), P3018/P3009 recovery verified; H-A18 approved/pair; consistency fixes); B4 |
+| r1/ac-gaps-a1b | ce103d293 | READY (multi, @9bab52f1: + §2.4/§8 dev-1 0106/0107 lock-timeout results, Prisma 7.10.1 non-atomic (0105 under re-check by A4), object check before resolve; row 39 per USER Q13; B4 pack fixes; runbook: 0105 not online, §2.4 0106/0107 window with lock_timeout 5 s rehearsed by A4 (URL option preferred, ALTER ROLE fallback + RESET, no PGOPTIONS), P3018/P3009 recovery verified; H-A18 approved/pair; consistency fixes); B4 |
 | r1/admin-list-perf | 69f465c89 | READY — B2 c23 APPROVED @69f465c8 (AwM; REQ-B-061 closed). REQ-B-066 before deploy: env.schema.ts:148 comment → follow-up r1/alp-comment-240 (A4); runbook 0106/0107 entry + release-input:27 (A3 docs) |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
 | r1/alp-comment-240 | 84b0c3a99 | READY (A4, @84b0c3a9 on approved admin-list-perf 69f465c8; comment only): env.schema.ts:148 says 240 (REQ-B-066 part); merge after admin-list-perf; B2 | A1b Approve (comment only) |
@@ -560,7 +560,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha18-gate-facts | f988b670f | MERGED by B1 as BASE-132 259f4616 @a9ffe246 (alone, not paired with reqb052; pinned-version-rule check by A4 running). Origin head f988b670 → follow-up r1/ha18-minors |
 | r1/ha18-minors | 17450966c | READY (A2, @17450966; B2 delta vs BASE: 5 files, review.service not_duplicate idempotent / 409 itemLocked + duplicateId audit, accepted-duplicates e2e gate-dismiss test, helpers withQuestionWorkflow opt-in, contract description + openapi 1 line; **no migration change** (0105 restored byte-for-byte, lead verified the 3-dot diff)). A1b Approve on content; A4 proof green; re-run 22/22, contract:check ok. B: run npm run check -w @pp/contract |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
-| r1/ha24-release-input | 1284e2487 | READY (A3 docs, @f644a9ec on BASE-131: 0105/window wording aligned, publish-lock-share cite e223b433; H-A18 approved/pair wording; release-input 0104–0110 reservations (REQ-B-066); KIV 38 rows incl. REQ-B-059 cap, setGroupLabel label-only, PKSK, number-clash wider check); A1a pre-review Approve on rows 35/36; B1/B2 |
+| r1/ha24-release-input | c0f7a45dc | READY (A3 docs, @f644a9ec on BASE-131: 0105/window wording aligned, publish-lock-share cite e223b433; H-A18 approved/pair wording; release-input 0104–0110 reservations (REQ-B-066); KIV 38 rows incl. REQ-B-059 cap, setGroupLabel label-only, PKSK, number-clash wider check); A1a pre-review Approve on rows 35/36; B1/B2 |
 | r1/ha26-team-a-state | edbf61edb | READY (A3 docs, @edbf61ed: merged to BASE-131, all open heads incl. B2 c23 approvals, §4 refreshed, KIV 38); B1 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-followup | 2fe252aba | READY (A2, @2fe252ab on intake-reqs 8c1964a6): unknownSp required, FACTS in unit.spec, deviations row 244 names spNotInTaxonomy; 43/43, tsc 0; merge AFTER intake-reqs (deviations conflict: keep both); B2 small | A1b pre-review: CLEAN (CurriculumFacts internal; both producers always set unknownSp; tsc 0; 43/43) |
@@ -580,7 +580,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/reqa018-paper-servability-route | 9d6ef833f | READY (A2, @9d6ef833, contains BASE-107): admin papers only, cap 200 + meta, batched read, contract exports; contract-tests scenario (4 cases; API conformance 413/413; mock: 3 assertion known-mismatches until C serves it → swap to 1 schema entry when C reqa018-fe lands); full B2 + B3; C reqa018-fe must re-merge | merge-tree vs BASE-109: clean |
 | r1/reqb058-dedupe-test-a3 | a5f4d3553 | READY (A3, @a5f4d355 on reqb058 b1e96566; test only): one question in two sections, getVersions dedupe + takedown paths, 5 tests, mutations red; closes A1b Minor 3; merge after reqb058; B2 | A1a pre-review Approve (2 mutations red) |
 | r1/reqb058-takedown-pin | b1e965665 | READY (A4, @b1e96566: list drops taken-down papers for a pupil with no sitting, batched pins; cover unchanged by lead decision). A1b pre-review Approve (0 B/M; 3 optional minors), bite 3 red; B2 |
-| r1/reqb067-etl-guards | d84326cee | CR (A1a, @d84326ce): A1b pre-review Approve 0 B/M + 3 Minors (realpath first, dangling-symlink ancestor, api.yml pipefail) → A1a fix commit; then B security-engineer + DevOps |
+| r1/reqb067-etl-guards | d402fdf2a | READY (A1a, @d402fdf2 off BASE-132): REQ-B-067 real (macOS-visible) defects fixed: files.ts realOf (realpath first, ancestor walk, dangling symlinks followed ≤40 hops) closes the "separate directories" guard bypass; .github/workflows/api.yml >1 MB guard portable + fail-closed (pipefail, || exit 1). A1b pre-review Approve (0 B/M); its 3 Minors fixed, each new test bites; security + files.db 41, staging 148, tsc/eslint 0. **Needs B security-engineer + DevOps (CI config)** |
 | r1/rule-line-v2 | 89961f9f2 | READY (A3, @89961f9f, BASE-109; USER Q13 2026-11-02 follow V2): rules.ts + exam-core paper-model.ts → "Jawab {N} soalan sahaja." ("Jawab semua soalan." unchanged); new exam-core test (bites); contract examples + openapi; AC-06.1/standards/catalogue aligned; PoC/golden authored "daripada" = accepted limit (deviation row); A2 pre-review Minors closed (eslint keeps _questionCount disable, stated); exam-core 219, bijak-papers 109, conformance 403; FE copies REQ-A-035 (C); B2 |
 | r1/servability-stimuli-once | f76f729a8 | READY (A4, @f76f729a, contains chain tip + BASE-107): spy spec pins one stimulus read per chunk + 2 comments; optional; step 6b |
 | r1/t04-minors | 82828a68a | MERGED by B1 as BASE-119 e927c3ee @8ae70d6e (reviewed SHA; 82828a68 delta not merged: optional test-only, left) |
@@ -601,7 +601,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 
 **Merged content, origin head has only base-merge commits since (no new work):** r1/a4chain-minors 86dd7ad67, r1/ha15-blueprint-evidence 7e5d637e5, r1/overview-getmany-parallel 2809a87fe, r1/reqb032-pinned-rule 167986eff, r1/t44-blueprint-fields 072d8f4b4
 
-**Origin head moved since last record (re-triage):** r1/ha24-release-input: status says @f644a9ec, origin is 1284e2487
+**Origin head moved since last record (re-triage):** r1/ac-gaps-a1b: status says @9bab52f1, origin is ce103d293; r1/ha24-release-input: status says @f644a9ec, origin is c0f7a45dc
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
