@@ -81,7 +81,7 @@ Had yang diketahui, akan dibetulkan selepas live (REQ-B-118):
 - Perkataan "prototaip" kelihatan dalam skrin.
 - Penolakan ini dibuat pada skrin sahaja; API masih menerima peranan ini selepas log masuk.
 - Murid yang percubaan percumanya sudah habis ketika memulakan latihan dibawa ke halaman harga, yang memaparkan "Belum tersedia dalam prototaip"; tiada langkah seterusnya.
-- Jika percubaan habis di tengah kuiz, murid melihat "Baki percubaan percuma anda telah habis." tetapi tanpa pautan langganan, dan tiada butang ke halaman keputusan.
+- Jika percubaan habis di tengah kuiz, murid melihat "Baki percubaan percuma anda telah habis." tetapi tanpa pautan langganan (keputusan pemilik REQ-B-122), dan tiada butang ke halaman keputusan. Jawapan yang sudah disemak dalam sesi itu tidak dikreditkan.
 
 ---
 
