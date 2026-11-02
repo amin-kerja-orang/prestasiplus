@@ -587,7 +587,15 @@ export class BijakAttemptsService {
   /** Closes the caller's expired attempts (called by the routes that list or open attempts). */
   private async sweepUser(userId: string): Promise<void> {
     const cutoff = new Date(this.now().getTime() - GRACE_SECONDS * 1000)
-    for (const id of await this.repo.expiredIds(cutoff, SWEEP_BATCH, userId)) await this.closeExpired(id)
+    for (const id of await this.repo.expiredIds(cutoff, SWEEP_BATCH, userId)) {
+      // REQ-B-079: a missing bundle is a 404; one dead expired sitting (its questions are gone) must not make history, the in-progress lookup and
+      // the past sittings fail for the whole pupil. It is skipped with a warning and left unchanged, as `sweepExpired` does for the scheduled sweep.
+      try {
+        await this.closeExpired(id)
+      } catch (err) {
+        this.logger.warn(`Could not close expired attempt ${id}: ${err instanceof Error ? err.message : String(err)}`)
+      }
+    }
   }
 
   /** The scheduled sweep: every open exam attempt past deadline + grace. Returns how many were closed. */
