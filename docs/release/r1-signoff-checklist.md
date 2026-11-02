@@ -8,7 +8,7 @@ Untuk Delivery Lead, untuk dibawa kepada pengguna **selepas B1 menggabungkan** u
 - **[PROPOSED]** bermaksud tidak disahkan oleh sumber yang ditunjuk; ia cadangan penulis dokumen ini.
 - Tiada nama orang, rahsia atau nama hos dalam dokumen ini.
 
-**Singkatan.** `board` = cawangan `team/r1-board` (kepala `54646eb2`), fail di bawah `docs/team/`. `ha24` = cawangan `r1/ha24-release-input`. `ac-gaps` = cawangan `r1/ac-gaps-a1b` (kepala `e507754b`).
+**Singkatan.** `board` = cawangan `team/r1-board` (kepala `54646eb2`), fail di bawah `docs/team/`. `ha24` = cawangan `r1/ha24-release-input`. `ac-gaps` = cawangan `r1/ac-gaps-a1b` (kepala `1fb68650`).
 
 ## Pintu 1. Semua unit READY telah digabungkan oleh B1
 
@@ -56,7 +56,7 @@ Untuk Delivery Lead, untuk dibawa kepada pengguna **selepas B1 menggabungkan** u
 
 | # | Pintu | Bukti | Status | Nota |
 |---|---|---|---|---|
-| 3.1 | Pek serah QA B4 telah dijalankan langkah demi langkah | `docs/qa/r1-b4-qa-handoff.md` pada `ac-gaps` (kepala `e507754b`): langkah 1 hingga 13, termasuk 3b (Padam), bahagian 4 (semakan dengan tangan, responsif, SELECT UAT) dan 4.4 (429 pada senarai soalan admin adalah dijangka). | | Hasil sebenar B4 belum dalam pek; tulis lokasi laporan B4 di sini [ditentukan B4]: ________ . |
+| 3.1 | Pek serah QA B4 telah dijalankan langkah demi langkah | `docs/qa/r1-b4-qa-handoff.md` pada `ac-gaps` (kepala `1fb68650`): langkah 1 hingga 13, termasuk 3b (Padam), bahagian 4 (semakan dengan tangan, responsif, SELECT UAT) dan 4.4 (429 pada senarai soalan admin adalah dijangka). | | Hasil sebenar B4 belum dalam pek; tulis lokasi laporan B4 di sini [ditentukan B4]: ________ . |
 | 3.2 | Peta langkah ke spec | `docs/qa/r1-chain-step-map.md` pada `r1/chain-qa-bab-3a-a3` (kepala `0efba36c`, versi terkini); versi lebih awal pada `r1/chain-qa-selfmark-a3` (`5b93da43`) dan `r1/r1-chain-qa-a3` (`9b70ae39`). Fail ini **tiada** pada `ac-gaps`. | | Peta disahkan pada timbunan setempat yang tidak pernah ditolak (pushed); jalankan semula pada hasil gabungan B1. |
 | 3.3 | Keputusan B4 pada BASE selepas gabungan: Ready | `docs/team/status/B4.md` pada `board`; laporan B4 (3.1). | | Bacaan terakhir `B4.md`: E2E pada BASE-102 = **Not ready**, tiada regresi berbanding BASE-98, belum dijalankan semula pada BASE-105. Syarat G5 projek: setiap AC dilaksanakan dan Lulus, tiada pepijat Critical/High yang terbuka. |
 | 3.4 | Semakan dengan tangan (tiada bukti backend) | `docs/qa/r1-b4-qa-handoff.md` bahagian 4.1 (FE sahaja dan AC separa, termasuk semakan `t48-label-move-fix`), 4.2 (responsif 375/768/1280), 4.3 (SELECT UAT, baca sahaja). | | Teks BM bagi mesej 409 padam kertas terhold dan "in_use" ditandakan [PROPOSED] dalam pek; sahkan dengan pengguna jika perlu (ditutup melalui jadual kelulusan teks `docs/qa/r1-proposed-copy.md`). |
