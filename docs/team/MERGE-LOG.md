@@ -148,3 +148,9 @@
 | BASE-143 | 9b1d8b4c | R1-10.1 practice spec @ cfd6b6f7 (B2 Approve); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 107 passed | 1 skipped (108) | 2026-11-02 09:39 |
 | BASE-144 | 529fafe7 | drop-lock-enums @ 4d1424c8 (B2 Approve w/ Minor); merged by exact reviewed SHA | all compile and lint steps 0; unit 86 passed (86); DB 413 passed (413) | 2026-11-02 09:39 |
 | BASE-145 | 76d65694 | H-A24 release input @ c0f7a45d (B2 Approve w/ Minors); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 13 passed (13) | 2026-11-02 09:39 |
+| BASE-146 | 8c398cb7 | REQ-A-018 FE @ 8ad24143 (B2 Approve w/ Minors); merged by exact reviewed SHA | all compile and lint steps 0; unit 664 passed (664); DB 13 passed (13) | 2026-11-02 10:11 |
+| BASE-147 | 9eb16f6c | Kandungan hub @ 151648eb (B2 Approve w/ Minors); merged by exact reviewed SHA | all compile and lint steps 0; unit 677 passed (677); DB 13 passed (13) | 2026-11-02 10:11 |
+| BASE-148 | c3098c9a | T48 @ 8d84f6ab (B2 Approve; REQ-B-068 closed; migration 0104; release-input doc kept the BASE side, A3 to refresh the T48 row); merged by exact reviewed SHA | all compile and lint steps 0; unit 188 passed (188); DB 442 passed | 1 todo (443) | 2026-11-02 10:11 |
+| BASE-149 | 985012dd | delete-served-guard @ da7a12e7 (B2 Approve, B3 Pass); merged by exact reviewed SHA | all compile and lint steps 0; unit 27 passed (27); DB 1312 passed | 3 todo (1315) | 2026-11-02 10:11 |
+| BASE-150 | e9125d3f | Lapor + REQ-A-015 @ 53fa8fad (B2 Approve w/ Minors, B3 Pass with Lows); merged by exact reviewed SHA | all compile and lint steps 0; unit 1318 passed (1318); DB 310 passed (310) | 2026-11-02 10:11 |
+| BASE-151 | f9f8c721 | REQ-A-025 @ eb211b64 (B2 Approve); merged by exact reviewed SHA | all compile and lint steps 0; unit 682 passed (682); DB 13 passed (13) | 2026-11-02 10:11 |
