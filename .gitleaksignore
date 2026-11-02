@@ -1,0 +1,2 @@
+# Fake image token in a unit test fixture (not a secret): 'abcDEF0123456789abcdef', a sequential placeholder.
+db83978c99f31ce0a037a3145f9d0f7e24113615:src/modules/m28-bijak-spm/__tests__/kuiz-pages.test.ts:generic-api-key:229
