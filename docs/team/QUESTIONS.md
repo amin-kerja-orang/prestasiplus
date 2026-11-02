@@ -122,5 +122,8 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
   - A2 removes the chapterId condition from the H-A18 submit-to-review gate, and keeps the DSKP refusal at Terbitkan per AC-03.2. Branch r1/reqb071-bab-submit.
   - Spec updates: lifecycle-bulk and gate-facts (A2); chain-intake-to-pupil 3a (A3); release notes r1-nota-keluaran.md:20/72 (A3).
   - New tests: CSV/PDF rows without a Bab enter Semakan; Terbitkan without a curriculum node is refused with the issue list.
+- **Follow-up (Mandor, 10:13 MYT, under delegation):** drop the Bab requirement at **Terbitkan/approve** too. Keep ONLY the AC-03.2 DSKP check: curriculum node + TP/cognitive level per leaf part (+ kertas for SPM), with the .cloud-style issue list.
+  - If the node sits under a Bab in the curriculum tree, chapterId is derived/filled from the node (or read through it), so Soalan by Chapter / Peta Belajar still count the question.
+  - Tests: with a node but no manual chapterId → passes; with no node → refused with the issue list.
 - **FE:** the bulk UI must show the per-row refusal reason from failed[]. A bulk 200 with affected 0 and no reason is not acceptable (REQ-A-041 to C).
 - *Decided under delegation; for user review.*
