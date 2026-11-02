@@ -572,15 +572,15 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 - **Disk:** check `docker system df` and prune orphaned anonymous test volumes when there are 0 containers. A3 reclaimed 3.4 GB this way.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 04:12 UTC, BASE 1216dbe7)
+### Team A open branches: heads from origin (auto, 2026-11-02 04:14 UTC, BASE 1216dbe7)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
-| r1/ac-gaps-a1b | fc9c44f60 | READY (multi, @fc9c44f6: AC coverage refreshed to BASE-189 (AC-R1 71/81 proven, PIPE 58/92; 7 open rows unchanged), B4 pack/runbook; merge-tree clean); B delta over BASE-163; merge after ha26 | Q17 user decision wording; imported-without-Bab note |
+| r1/ac-gaps-a1b | c1d186610 | READY (multi, @c1d18661: AC coverage refreshed to BASE-189 (AC-R1 71/81 proven, PIPE 58/92; 7 open rows unchanged), B4 pack/runbook; merge-tree clean); B delta over BASE-163; merge after ha26 | Q17 user decision wording; imported-without-Bab note |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
-| r1/ha24-release-input | 3822dc09e | READY (A3 docs, @3822dc09: BASE-155..189 pass; Q17 real behaviour cited @4e38af8e "pending merge"; KIV 41; copy table 41 rows); B delta over BASE-145 c0f7a45d | Q17 user decision wording; imported-without-Bab note + user decision pack docs/release/r1-pek-keputusan-pengguna.md (BM) + KIV 48 rows (42-48 B3 Lows, LEAD no R1 change) |
-| r1/ha26-team-a-state | ef1d9b54d | READY (A3 docs, @ef1d9b54: written off BASE-189); B delta over BASE-162 21360a86; merge before ac-gaps | Q17 user decision wording; imported-without-Bab note |
+| r1/ha24-release-input | 7b6304c86 | READY (A3 docs, @7b6304c8: BASE-155..189 pass; Q17 real behaviour cited @4e38af8e "pending merge"; KIV 41; copy table 41 rows); B delta over BASE-145 c0f7a45d | Q17 user decision wording; imported-without-Bab note + user decision pack docs/release/r1-pek-keputusan-pengguna.md (BM) + KIV 52 rows (42-48 B3 Lows, LEAD no R1 change) |
+| r1/ha26-team-a-state | 9473b2f7a | READY (A3 docs, @9473b2f7: written off BASE-189); B delta over BASE-162 21360a86; merge before ac-gaps | Q17 user decision wording; imported-without-Bab note |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/minors-kbat-chain-a3 | a253b3bf3 | READY-AFTER-FIX (A3, @a253b3bf restacked on T48 10c62437): exam-builder 416/417 RED: builder-review "stays outside D93" (same as REQ-B-069; likely pool page cap ?pageSize=100 vs 106 units). Fixed by r1/t31-pool-lookup-fixture merged after T31 (no cascade needed); merge after t31-pool-lookup-fixture |
 | r1/partial-acs-a3 | e6ceece19 | READY-AFTER-FIX (A3, @e6ceece1 restacked on T48 10c62437): exam-builder 416/417 RED: builder-review "stays outside D93" (same as REQ-B-069; likely pool page cap ?pageSize=100 vs 106 units). Fixed by r1/t31-pool-lookup-fixture merged after T31 (no cascade needed); merge after t31-pool-lookup-fixture |
