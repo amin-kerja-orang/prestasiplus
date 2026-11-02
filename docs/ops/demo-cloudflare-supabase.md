@@ -151,8 +151,8 @@ anywhere; it is not needed.
    | `EDGE_PROXY_SECRET` | secret, at least 32 characters, the SAME value as the Pages secret of the same name. Generate it on the laptop with `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"` and paste it straight into the dashboard; never write it in the repo, a ticket or a chat |
 
    Fixed by the blueprint (check, do not change): `NODE_ENV=production`, `COOKIE_SECURE=true`,
-   `TRUST_PROXY_HOPS=2`, `FILE_STORAGE_DIR=/var/lib/pretasiplus/files`, `BIJAK_POC_QUESTIONS=true`,
-   `ALLOW_DEMO_SEED=false`, `LOG_LEVEL=info`. Leave `COOKIE_DOMAIN` and `PORT` unset. All throttle variables keep
+   `TRUST_PROXY_HOPS=2`, `FILE_STORAGE_DIR=/var/lib/pretasiplus/files`,
+   `ALLOW_DEMO_SEED=false`, `LOG_LEVEL=info`. `BIJAK_POC_QUESTIONS` is (a deprecated no-op since R1-B07 / T36, `apps/api/src/common/config/env.schema.ts:110`: Bijak serves the question bank only; leave it `false` or remove it; `true` only logs one warning at start and the R1 `deploy.sh` refuses `true|1`). Leave `COOKIE_DOMAIN` and `PORT` unset. All throttle variables keep
    their code defaults (`.env.api.example` documents each); do not lower them for the demo.
 3. Service -> **Environment** -> **Secret Files** -> Add: filename `supabase-ca.crt`, contents = the downloaded
    `prod-ca-2021.crt`. Render mounts it at `/etc/secrets/supabase-ca.crt`.
@@ -474,9 +474,7 @@ the verify queries: `leaked_grants` = 0). The new tables (`classrooms`, `enrolme
 be readable through the Data API.
 
 ### 9.5 Render: change the branch and deploy (~6 min build)
-1. Render -> `prestasiplus-api` -> **Environment**: check `BIJAK_POC_QUESTIONS` = `true`. The variable is new on
-   the base (#51, default `false`); the #56 build never read it. Without it the new API refuses the PoC Bijak
-   papers (start = 403) and the student demo breaks. Also check `PUBLIC_BASE_URL` = the Pages origin.
+1. Render -> `prestasiplus-api` -> **Environment**: check `BIJAK_POC_QUESTIONS` is `false` or removed (a deprecated no-op since R1-B07 / T36, `apps/api/src/common/config/env.schema.ts:110`: Bijak serves the question bank only; leave it `false` or remove it; `true` only logs one warning at start and the R1 `deploy.sh` refuses `true|1`). Historical note: before R1 it had to be `true` for the PoC papers; that is no longer so. Also check `PUBLIC_BASE_URL` = the Pages origin.
 2. **Settings** -> Build & Deploy -> **Branch** -> `feature/v2-backend` -> Save. Auto-deploy stays **off**.
 3. **Manual Deploy** -> **Deploy latest commit** (or "Deploy a specific commit" with the SHA from 9.1). Wait for
    "Live"; the log ends with `API listening on port 10000`.
@@ -502,7 +500,7 @@ needs no rollback: the old API works with the new tables (additive).
 3. Seed top-up from the base: `11 module(s)`; row counts changed ONLY for `classrooms` 0 -> 14 and
    `enrolments` 0 -> 23. A second run changed no row count. A fresh DB built from the base (all migrations +
    seed) has exactly the same row count in all 101 tables and the same classes and rosters.
-4. Base API (`npm run be:build`, `NODE_ENV=production`, `BIJAK_POC_QUESTIONS=true`) against that DB:
+4. Base API (`npm run be:build`, `NODE_ENV=production`; `BIJAK_POC_QUESTIONS` was `true` for this pre-R1 rehearsal and is now a deprecated no-op) against that DB:
    `/api/health` db up; `scripts/demo-smoke.sh` straight at the API: 25 passed, the 3 failures are the
    proxy-only checks (SPA `/`, deep link, `no-store` added by the Pages worker); student login with CSRF, wrong
    CSRF = 403, Bijak papers (4), exam start/autosave/submit/result/history, Admin Pusat checks all passed, and the
@@ -597,7 +595,7 @@ Pages and Render both build the same SHA (see also [deploy-execution.md](deploy-
    Function and `render.yaml`; today 17f946b8 has neither).
 3. **#51** (`be/bijak-poc-flag`), optional: the only conflict with the base is in
    `docs/architecture/v2-backend-deviations.md`. Without #51 the API serves the PoC questions anyway; with it,
-   `BIJAK_POC_QUESTIONS=true` (already in `render.yaml`) is required.
+   `BIJAK_POC_QUESTIONS` was required to be `true` (pre-R1); since R1-B07 / T36 it is a deprecated no-op (`false` or removed).
 4. **278cea1** from #48 into the deploy branch (cherry-pick, manual resolution in
    `src/modules/m28-bijak-spm/server/http.ts`). Without it the demo works, but Bijak working photos stay in the
    browser's IndexedDB and never reach the server. 17f946b8 does not have it.
