@@ -462,7 +462,7 @@ describe('#7 / #8 chapter mode (S4, S5; BR-15, BR-16)', () => {
     expect(r.body.data.every((s) => s.chapterCount > 0)).toBe(true)
   })
 
-  it('#8 pelajarmaju MATH D1: Bab 1 20/464 at 95 % open, Bab 2 5/302 at 60 %, Bab 3 5/316 at 80 %, all others locked', async () => {
+  it('#8 pelajarmaju MATH D1: Bab 1 20/464 at 95 % open, Bab 2 5/302 at 60 %, Bab 3 5/316 at 80 %, all others open (D98)', async () => {
     const c = await data<ChapterSubjectDetail>(MAJU, '/api/practice/chapter-subjects/MATH')
     expect(c.subject).toEqual({ code: 'MATH', name: 'Matematik', color: '#EF4444' })
     expect(c.levelId).toBe(1)
@@ -479,11 +479,11 @@ describe('#7 / #8 chapter mode (S4, S5; BR-15, BR-16)', () => {
       state: 'open',
       complete: false,
     })
-    expect(b2).toMatchObject({ id: 143, total: 302, answered: 5, scorePct: 60, state: 'locked' })
-    expect(b3).toMatchObject({ id: 136, total: 316, answered: 5, scorePct: 80, state: 'locked' })
+    expect(b2).toMatchObject({ id: 143, total: 302, answered: 5, scorePct: 60, state: 'open' })
+    expect(b3).toMatchObject({ id: 136, total: 316, answered: 5, scorePct: 80, state: 'open' })
     expect(rest).toHaveLength(5)
     for (const ch of rest) {
-      expect(ch).toMatchObject({ answered: 0, correct: 0, scorePct: 0, state: 'locked' })
+      expect(ch).toMatchObject({ answered: 0, correct: 0, scorePct: 0, state: 'open' })
       expect(ch.total).toBeGreaterThan(0)
       expect(ch.name).not.toBe('')
     }
@@ -507,15 +507,15 @@ describe('#7 / #8 chapter mode (S4, S5; BR-15, BR-16)', () => {
       answered: 5,
       correct: 3,
       scorePct: 60,
-      state: 'locked',
+      state: 'open',
     })
     expect(c.chapters[2]).toMatchObject({ total: 321, answered: 10, correct: 8, scorePct: 80 })
   })
 
-  it('#8 a user with no answer sees chapter 1 open and the rest locked; the teacher may open it too', async () => {
+  it('#8 a user with no answer sees every chapter open (D98); the teacher may open it too', async () => {
     const c = await data<ChapterSubjectDetail>(GURU, '/api/practice/chapter-subjects/MATH')
     expect(c.chapters[0]).toMatchObject({ answered: 0, state: 'open' })
-    expect(c.chapters.slice(1).every((ch) => ch.state === 'locked')).toBe(true)
+    expect(c.chapters.every((ch) => ch.state === 'open')).toBe(true)
   })
 
   it('#8 ?levelId= picks a level; an unknown level falls back to the first offered', async () => {

@@ -103,7 +103,7 @@ only when the secret must change, and expect that gap.
 # a throwaway Postgres on your own machine, e.g. docker run --rm -d -p 55432:5432 \
 #   -e POSTGRES_PASSWORD=throwaway -e POSTGRES_DB=demo_snapcheck postgres:17
 export PP_SNAPSHOT_VERIFY=restore
-export PP_VERIFY_PG_URL='postgresql://postgres:throwaway@127.0.0.1:55432/demo_snapcheck'
+export PP_VERIFY_PG_URL='postgresql://postgres:<password>@127.0.0.1:55432/demo_snapcheck'
 ```
 
 The snapshot is then really restored there and every table's exact row count is compared with the live database.

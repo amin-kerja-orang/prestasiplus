@@ -55,7 +55,7 @@ describe('gate facts (real bank): duplicate, low confidence, media, AI editor, d
   const fieldsOf = (res: { body: { error?: { fields?: Record<string, string> } } }) => res.body.error?.fields ?? {}
   const statusOf = async (id: string) => (await t.db.query<{ status: string }>(`select status from question_versions where question_id = $1::bigint order by version_no desc limit 1`, [id]))[0]!.status
   /** An accepted intake item for the question, with an optional duplicate link and low-confidence fields. */
-  async function intakeItem(questionId: string, opts: { duplicate?: string; low?: string[]; confirmed?: string[]; marks?: number } = {}): Promise<string> {
+  async function intakeItem(questionId: string, opts: { duplicate?: string; kind?: 'exact' | 'near' | 'variant'; low?: string[]; confirmed?: string[]; marks?: number } = {}): Promise<string> {
     const batch = (await t.db.query<{ id: string }>(`insert into intake_batches (paper_type, subject, kertas, year, source_text, rights_status) values ('trial', 'MAT', 1, 2025, 'x', 'own') returning id::text`))[0]!.id
     const item = (
       await t.db.query<{ id: string }>(
@@ -65,7 +65,7 @@ describe('gate facts (real bank): duplicate, low confidence, media, AI editor, d
       )
     )[0]!.id
     await t.db.query(`update question_versions set intake_item_id = $1::bigint where question_id = $2::bigint`, [item, questionId])
-    if (opts.duplicate) await t.db.query(`insert into duplicate_links (item_id, matched_question_id, kind, decision) values ($1::bigint, (select min(id) from questions where id <> $3::bigint), 'near', $2)`, [item, opts.duplicate, questionId])
+    if (opts.duplicate) await t.db.query(`insert into duplicate_links (item_id, matched_question_id, kind, decision) values ($1::bigint, (select min(id) from questions where id <> $3::bigint), $4, $2)`, [item, opts.duplicate, questionId, opts.kind ?? 'near'])
     return item
   }
 
@@ -84,6 +84,29 @@ describe('gate facts (real bank): duplicate, low confidence, media, AI editor, d
       expect((await check(id)).ok, decision).toBe(true)
     }
     expect((await move(id, 'approved')).status).toBe(200)
+  })
+
+  it('1b. REQ-B-057: only an open exact or near link counts; a pending VARIANT link (informational) never blocks Semakan or Terbit, single or bulk', async () => {
+    for (const kind of ['exact', 'near'] as const) {
+      const blocked = await make('draft')
+      await intakeItem(blocked, { duplicate: 'pending', kind })
+      const refused = await move(blocked, 'review')
+      expect(refused.status, `${kind}: ${JSON.stringify(refused.body)}`).toBe(422)
+      expect(fieldsOf(refused).duplicate, kind).toBe(GATE_MESSAGES.duplicate)
+      expect((await check(blocked, 'submit')).ok, kind).toBe(false)
+    }
+    const id = await make('draft')
+    await intakeItem(id, { duplicate: 'pending', kind: 'variant' })
+    expect((await check(id, 'submit')).ok).toBe(true)
+    expect((await move(id, 'review')).status).toBe(200)
+    expect((await check(id)).ok).toBe(true)
+    expect((await move(id, 'approved')).status).toBe(200)
+
+    const viaBulk = await make('draft')
+    await intakeItem(viaBulk, { duplicate: 'pending', kind: 'variant' })
+    const bulk = (await admin.post('/api/questions/bulk-action', { action: 'review', ids: [viaBulk] })).body.data
+    expect(bulk.failed, JSON.stringify(bulk)).toEqual([])
+    expect(await statusOf(viaBulk)).toBe('review')
   })
 
   it('2. an unconfirmed low-confidence field blocks Semakan (the submit gate); a confirmed one does not', async () => {

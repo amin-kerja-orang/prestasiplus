@@ -596,14 +596,18 @@ export class QuestionsRepository {
     const below = filter.idBelow === undefined ? null : bi(filter.idBelow)
     const pageWhere = filter.idBelow === undefined ? whereAll : Prisma.sql`${whereAll} AND ${below === null ? Prisma.sql`FALSE` : Prisma.sql`q.id < ${below}`}`
     const offset = filter.idBelow === undefined ? (filter.page - 1) * filter.pageSize : 0
-    const [rows, totals, counted] = await Promise.all([
+    // ONE aggregate for the totals (R1 perf, T54 F4): the per-status counts of the filter WITHOUT its status, which the list returns in
+    // `meta.counts`, also give the total: all of them, or the one of the chosen status. It used to be a second full scan with the same
+    // joins and conditions (`count(*)` over `whereAll`). The numbers are the same, so the answer stays exact; no cache, nothing to invalidate.
+    const [rows, counted] = await Promise.all([
       this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${pageWhere} ORDER BY q.id DESC LIMIT ${filter.pageSize} OFFSET ${offset}`,
-      this.db.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n ${from} WHERE ${whereAll}`,
       this.db.$queryRaw<{ status: string; n: number }[]>`SELECT v.status AS status, count(*)::int AS n ${from} WHERE ${whereBase} GROUP BY 1`,
     ])
     const counts = NO_STATUS_COUNTS()
     for (const c of counted) if (isQuestionStatus(c.status)) counts[c.status] = c.n
-    return { ids: rows.map((r) => idToString(r.id)), total: totals[0]?.n ?? 0, counts }
+    // Sum over every group the database returned (not only the known statuses), so a row with an unexpected status still counts as it did.
+    const total = filter.status ? (counts[filter.status] ?? 0) : counted.reduce((n, c) => n + c.n, 0)
+    return { ids: rows.map((r) => idToString(r.id)), total, counts }
   }
 
   private adminConds(f: AdminListFilter): Prisma.Sql[] {
@@ -648,9 +652,9 @@ export class QuestionsRepository {
     // V2 Studio filters (D79). Tahun, Negeri and Jenis read the source paper of the version; Kertas is the trailing digit of the
     // version's paper code (how the paper builder reads it). A question without the value never matches.
     if (f.tahun !== undefined) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND sp.year = ${Number(f.tahun)})`)
-    if (f.negeri !== undefined) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND lower(sp.exam_board) = lower(${f.negeri}))`)
+    if (f.negeri !== undefined && f.negeri.trim() !== '') conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND lower(btrim(sp.exam_board)) = lower(btrim(${f.negeri})))`)
     if (f.jenis !== undefined) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND sp.exam_type = ${f.jenis})`)
-    if (f.kertas !== undefined) conds.push(Prisma.sql`substring(v.paper_code from '([0-9])\s*$') = ${f.kertas}`)
+    if (f.kertas !== undefined) conds.push(Prisma.sql`substring(v.paper_code from '/([1-3])[[:space:]]*$') = ${f.kertas}`)
     if (f.search !== undefined && f.search.trim() !== '') {
       const like = likePattern(f.search.trim())
       conds.push(Prisma.sql`(v.stem_ms ILIKE ${like} ESCAPE '\\' OR v.stem_en ILIKE ${like} ESCAPE '\\')`)
@@ -868,7 +872,8 @@ export class QuestionsRepository {
 
   /**
    * The facts the gates read that are not on the version row (R1-H-A18): ONE loader for the lifecycle transition, `gate-check`, the bulk
-   * action and the workflow bank adapter. Read inside the caller's transaction when there is one.
+   * action and the workflow bank adapter. Read inside the caller's transaction when there is one. The duplicate flag counts open `exact` and `near`
+   * links only: a pending `variant` link is informational (intake `duplicates.ts`) and never blocks Semakan or Terbit (REQ-B-057).
    */
   async gateFacts(questionId: string, versionNo: number): Promise<GateFacts> {
     const key = bi(questionId)
@@ -886,7 +891,7 @@ export class QuestionsRepository {
     >`
       SELECT v.last_editor, v.declared_marks,
              EXISTS (SELECT 1 FROM intake_items di JOIN duplicate_links dl ON dl.item_id = di.id
-                      WHERE di.question_id = q.id AND dl.decision = 'pending') AS duplicate_open,
+                      WHERE di.question_id = q.id AND dl.decision = 'pending' AND dl.kind IN ('exact', 'near')) AS duplicate_open,
              ii.low_fields, ii.confirmed_fields,
              ${mediaResolvedSql(Prisma.sql`SELECT vs.stimulus_id AS sid FROM question_version_stimuli vs WHERE vs.question_version_id = v.id
                UNION SELECT p.stimulus_id FROM question_parts p WHERE p.question_version_id = v.id AND p.stimulus_id IS NOT NULL
@@ -938,6 +943,22 @@ export class QuestionsRepository {
       SELECT 1 AS one FROM spm_subject_configs c JOIN education_levels l ON l.id = ${level} AND l.code IN ('T4', 'T5')
        WHERE c.subject_id = ${subject} LIMIT 1`
     return rows.length > 0
+  }
+
+  /**
+   * The distinct exam boards ("negeri atau badan peperiksaan") of the source papers, for the Studio Negeri select (REQ-C-019). Distinct
+   * case-insensitively on the trimmed text (the Negeri filter matches that way, so two spellings would be one choice); the display form is the
+   * most used spelling, then the first in byte order, so the answer is deterministic. Sorted by the lower-case form.
+   */
+  async examBoards(): Promise<string[]> {
+    const rows = await this.db.$queryRaw<{ board: string }[]>`
+      SELECT board FROM (
+        SELECT DISTINCT ON (k) board, k FROM (
+          SELECT btrim(exam_board) AS board, lower(btrim(exam_board)) AS k, count(*) AS n
+            FROM source_papers WHERE exam_board IS NOT NULL AND btrim(exam_board) <> '' GROUP BY 1, 2
+        ) g ORDER BY k, n DESC, board ASC
+      ) d ORDER BY k`
+    return rows.map((r) => r.board)
   }
 
   async groupExists(id: string): Promise<boolean> {

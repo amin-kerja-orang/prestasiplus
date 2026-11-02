@@ -1,8 +1,9 @@
-import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Post, Put, Query, UseGuards } from '@nestjs/common'
+import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Post, Put, Query, UseGuards, UseInterceptors } from '@nestjs/common'
 import { QUESTION_MESSAGES, QuestionCreateRequestSchema, QuestionUpdateRequestSchema } from '@pp/contract'
 
 import { AuditService } from '../../../common/audit'
 import { Roles } from '../../../common/guards'
+import { NoStoreInterceptor } from '../../../common/http'
 import { ok } from '../../../common/http/respond'
 import { RateLimit, RateLimitGuard, type RateLimitSpec } from '../../../common/throttle'
 import { QuestionsService } from '../questions.service'
@@ -16,6 +17,20 @@ export const QUESTIONS_WRITE_LIMIT = {
   bucket: 'questions-write',
   env: 'THROTTLE_QUESTIONS_WRITE_PER_MINUTE',
   default: 60,
+  per: 'user',
+} as const satisfies RateLimitSpec
+
+/**
+ * The admin list takes a free-text `search`. A 1 to 2 character or punctuation-only term cannot use the trigram index (migration 0106)
+ * and scans the bank (about 1.8 s at 408k rows), so the route has its OWN per-user bucket instead of refusing short terms (V2 accepts
+ * them). Env `THROTTLE_QUESTIONS_LIST_PER_MINUTE`, else 240 (REQ-B-061: 60 was reached by normal use, since the admin screens call
+ * the list on every filter change and the Bank calls it several times per view). 240 matches the other per-user read ceilings
+ * (notification inbox, wallet) and still caps a script's worst case at about 240 x 1.8 s of database time a minute per account.
+ */
+export const QUESTIONS_LIST_LIMIT = {
+  bucket: 'questions-list',
+  env: 'THROTTLE_QUESTIONS_LIST_PER_MINUTE',
+  default: 240,
   per: 'user',
 } as const satisfies RateLimitSpec
 
@@ -38,10 +53,18 @@ export class AdminQuestionsController {
   private readonly audit: QuestionAudit
 
   @Get()
+  @RateLimit(QUESTIONS_LIST_LIMIT)
   async list(@Query() query: unknown) {
     const filter = parseAdminList(query)
     const res = await this.questions.list(filter)
     return { data: res.rows.map(rowView), meta: adminMeta(res.page, res.pageSize, res.total, res.counts) }
+  }
+
+  /** REQ-C-019: the Negeri options of the Studio filter, read from the source papers. Declared before `:id`. */
+  @Get('filter-options')
+  @UseInterceptors(NoStoreInterceptor)
+  async filterOptions() {
+    return ok(await this.questions.filterOptions())
   }
 
   @Get('summary')
@@ -105,6 +128,15 @@ export class AdminQuestionsController {
     const updated = await this.questions.update(id, input, actor)
     await this.audit.updated(actor, updated.id)
     return flash(questionView(updated), QUESTION_MESSAGES.updated)
+  }
+
+  /** V2 "Edit sebagai draf" (REQ-C-012): version n+1 as a draft, copied unchanged from the live version. Admin Pusat only. */
+  @Post(':id/edit-as-draft')
+  @RateLimit(QUESTIONS_WRITE_LIMIT)
+  async editAsDraft(@Actor() actor: HttpActor, @Param('id') id: string) {
+    const out = await this.questions.editAsDraft(id, actor)
+    await this.audit.editedAsDraft(actor, out.id, out.versionNo)
+    return flash(out, QUESTION_MESSAGES.editAsDraft(out.id))
   }
 
   @Delete(':id')

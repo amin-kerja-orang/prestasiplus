@@ -267,6 +267,20 @@ describe('stimulus group rules (admin, real database)', () => {
       expect(lone.status, JSON.stringify(lone.body)).toBe(200)
     })
 
+    it('REQ-B-025b: the body repeating the CURRENT group id does not skip the subject / kertas check', async () => {
+      const [a, b] = [await question({ kertas: '1' }), await question({ kertas: '1' })] as [string, string]
+      const g = await group([a, b])
+      const subject = await admin.put(`/api/questions/${a}`, mcqBody(refs, { subjectId: refs.sciId, stimulusGroupId: g.id }))
+      expect(subject.status, JSON.stringify(subject.body)).toBe(422)
+      expect(subject.body.error.fields.subjectId).toBe(STIMULUS_MESSAGES.memberMixed)
+      const kertas = await admin.put(`/api/questions/${a}`, mcqBody(refs, { kertas: '2', stimulusGroupId: g.id }))
+      expect(kertas.status, JSON.stringify(kertas.body)).toBe(422)
+      expect(kertas.body.error.fields.kertas).toBe(STIMULUS_MESSAGES.memberKertas)
+      expect(await members(g.id)).toEqual([a, b])
+      // sending the own group id with no change is still fine
+      expect((await admin.put(`/api/questions/${a}`, mcqBody(refs, { kertas: '1', stimulusGroupId: g.id }))).status).toBe(200)
+    })
+
     it('minor 3: members of one group share the kertas when it is set (no kertas fits any)', async () => {
       const [k1, k2, none] = [await question({ kertas: '1' }), await question({ kertas: '2' }), await question()] as [string, string, string]
       const bad = await admin.post('/api/stimulus-groups', { stimulusIds: [await stimulus()], questionIds: [k1, k2] })
