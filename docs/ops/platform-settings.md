@@ -65,7 +65,7 @@ Defined in `render.yaml` (free plan, Singapore, Docker). Every `sync: false` val
 | `PUBLIC_BASE_URL` | Dashboard | Valid URL of the Pages origin, `https://<project>.pages.dev` (class QR join links). An empty value fails the boot. | LEAD | Boot succeeds; a class QR link opens the app. | Boot failure, or QR links point to the wrong host. |
 | `PUBLIC_ORIGINS` | Dashboard | Comma-separated web origins allowed in article and banner image URLs (the API origin is always allowed): the Pages origin. | LEAD | An article with an image from the Pages origin saves. | Image URL validation rejects valid images. |
 | `ALLOW_DEMO_SEED` | `render.yaml` | `false` on the running API (the seed is a one-off from a laptop; the running API never seeds). Only the laptop shell runs the seed with `true`, never saved on Render. | LEAD | Dashboard shows `false`. | `true` on a public service invites a re-seed with published demo credentials. |
-| `BIJAK_POC_QUESTIONS` | `render.yaml` | `true` for the demo (the demo papers place PoC questions). `false` in production. | LEAD | A demo Bijak paper shows its questions. | `false` on the demo: PoC ids are refused, papers look empty. `true` in production serves PoC questions to real pupils. |
+| `BIJAK_POC_QUESTIONS` | `render.yaml` | **Deprecated no-op since R1-B07 / T36** (`apps/api/src/common/config/env.schema.ts`): Bijak serves the question bank only. `false` or removed on the demo and in production; `true` only logs one warning at start. | LEAD | The demo shows its bank-paper questions with the flag `false`. | A deployment that still sets `true` logs a warning at start (nothing else changes). |
 | `SEED_DEMO_PASSWORD_HASH` | Laptop shell only, at seed time (not a Render variable) | An argon2id PHC string used as the password hash of every demo account. Set it before the first seed on any public environment; unset hashes the published dev password (named in demo-reseed.md). An invalid value fails the seed without printing it. Existing accounts keep their hash. | LEAD | Log in as a demo account with the published dev password: it must FAIL. | Anyone can log in as the demo admin. |
 | Throttles `THROTTLE_*` | Dashboard (plain) | See 2.5 below. | LEAD | See 2.5. | See 2.5. |
 | `METRICS_ENABLED` | Dashboard (optional) | `true` (default) is fine: in production `/api/metrics` needs an admin session unless the caller's peer is in `METRICS_INTERNAL_CIDRS`. `false` makes it answer 404. | LEAD | Anonymous `curl -s -o /dev/null -w '%{http_code}' https://<project>.pages.dev/api/metrics` is not 200. | Metrics readable by anyone (only if a CIDR is too wide). |
@@ -192,7 +192,7 @@ Who sends it today:
 
 - [ ] Supabase project active; lockdown SQL applied after the last migration (2.3).
 - [ ] Render service Live, one instance, auto-deploy off, `/api/ready` is 200 (2.2).
-- [ ] `ALLOW_DEMO_SEED=false` and `BIJAK_POC_QUESTIONS=true` on Render; demo accounts do not accept the published dev password (`SEED_DEMO_PASSWORD_HASH` was set at seeding).
+- [ ] `ALLOW_DEMO_SEED=false` on Render, and `BIJAK_POC_QUESTIONS` `false` or removed (deprecated no-op since R1-B07 / T36); demo accounts do not accept the published dev password (`SEED_DEMO_PASSWORD_HASH` was set at seeding).
 - [ ] Edge secret pair equal; no `ClientIp` warning; two-network check done (2.1, 3).
 - [ ] Raised per-address throttles decided and applied, or deliberately left at default (2.5).
 - [ ] Wake-up request sent 2 to 3 minutes before the start; `scripts/demo-smoke.sh` passes.
