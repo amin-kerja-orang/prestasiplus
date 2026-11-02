@@ -1843,16 +1843,51 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
     await page.getByTestId('add-0').click()
     const search = page.getByRole('textbox', { name: 'Cari soalan' })
     await expect(search, 'question picker').toBeVisible()
-    await search.fill(term)
     const picks = page.locator('[data-testid^=pick-add-]')
-    await page.waitForTimeout(1000)
-    const offered = await picks.count()
+    const added = new Set<string>()
+    // Searches the picker and returns once its list shows THIS search's answer: the rows the API offered, less the
+    // units already added here. The old list stays on screen until the answer arrives, so a fixed wait can read it
+    // (S3d at 1280: count read 0.5 s before a 1.56 s answer).
+    const searchPicker = async (q: string): Promise<number> => {
+      const answered = page.waitForResponse(
+        (r) => {
+          const u = new URL(r.url())
+          return (
+            r.request().method() === 'GET' &&
+            /\/sections\/[^/]+\/pool$/.test(u.pathname) &&
+            (u.searchParams.get('q') ?? '') === q
+          )
+        },
+        { timeout: 30_000 },
+      )
+      await search.fill(q)
+      const res = await answered
+      expect(res.status(), `picker search "${q}"`).toBe(200)
+      const units =
+        ((await res.json()) as {
+          data?: { groupId?: string; questionIds: string[]; eligible: boolean }[]
+        }).data ?? []
+      const shown = units.filter(
+        (u) => u.eligible && !added.has(u.groupId ?? u.questionIds[0] ?? ''),
+      ).length
+      await expect
+        .poll(() => picks.count(), {
+          message: `the picker shows the answer to the search "${q}"`,
+          timeout: 15_000,
+        })
+        .toBe(shown)
+      return shown
+    }
+    const offered = await searchPicker(term)
     observe(info, `picker candidates for "${term}": ${offered}`)
+    for (const testId of await picks.evaluateAll((els) =>
+      els.map((e) => e.getAttribute('data-testid') ?? ''),
+    ))
+      added.add(testId.replace('pick-add-', ''))
     for (let i = 0; i < offered; i++) await picks.first().click()
     // Fill the rest of the blueprint from the bank so the paper can be published.
-    await search.fill('')
-    await page.waitForTimeout(1000)
-    observe(info, `bank candidates left in the picker (empty search): ${await picks.count()}`)
+    const left = await searchPicker('')
+    observe(info, `bank candidates left in the picker (empty search): ${left}`)
     const issues = page.getByTestId('budget-issues')
     // REQ-B-042: the picker pages its candidates ("Muat lagi", `picker-more`). When the visible page has no addable row,
     // press it (while present) and wait for the list to grow; stop when the quota is met or there are no more pages.
