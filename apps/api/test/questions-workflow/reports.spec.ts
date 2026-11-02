@@ -232,13 +232,46 @@ describe('question reports (BE-10 AC 3, 4, 9, 11)', () => {
         expect(res.status, id).toBe(422)
         expect(fields(res), id).toEqual(ctx)
       }
-      const structured = seed({ brief: { type: 'structured' } })
       // a mismatching questionType on a question the pupil has no proof for reveals neither the type nor the existence
       expect(fields(await plain.post('/api/question-reports', body(live, { questionType: 'structured' })))).toEqual(ctx)
       expect(fields(await plain.post('/api/question-reports', body(hidden, { questionType: 'mcq' })))).toEqual(ctx)
       // a Guru still gets 404 for an unknown question
       expect((await c.teacher.post('/api/question-reports', body('99999991'))).status).toBe(404)
-      expect(structured).toBeTruthy()
+    })
+
+    it('REQ-B-049: a live structured question at a level outside T4/T5 gets the same uniform 422 as a question without proof; T5 is reported', async () => {
+      const plain = await loginAs(t, 'pelajar@demo.test')
+      const ctx = { context: 'Anda hanya boleh melapor soalan yang dipaparkan kepada anda.' }
+      const t5 = seed({ brief: { type: 'structured', educationLevelId: '2' } })
+      expect((await plain.post('/api/question-reports', body(t5, { questionType: 'structured' }))).status).toBe(201)
+      await t.db.query(`delete from question_reports where question_id = $1::bigint`, [t5]) // keep the daily cap of the later specs
+      const hiddenLevel = seed({ brief: { type: 'structured', educationLevelId: '9' } }) // e.g. a T1 to T3 set: not in the structured practice
+      const res = await plain.post('/api/question-reports', body(hiddenLevel, { questionType: 'structured' }))
+      expect(res.status).toBe(422)
+      expect(fields(res)).toEqual(ctx)
+      expect(await count(t.db, `select count(*) n from question_reports where question_id = $1::bigint`, [hiddenLevel])).toBe(0)
+    })
+
+    it('REQ-B-049: a structured question that is not live (inactive, unpublished, unknown) gets the same uniform 422 (the live check, before the structured one)', async () => {
+      const plain = await loginAs(t, 'pelajar@demo.test')
+      const ctx = { context: 'Anda hanya boleh melapor soalan yang dipaparkan kepada anda.' }
+      const inactive = seed({ isActive: false, brief: { type: 'structured' } })
+      const unpublished = seed({ status: 'draft', brief: { type: 'structured' } })
+      for (const id of [inactive, unpublished, '99999992']) {
+        const res = await plain.post('/api/question-reports', body(id, { questionType: 'structured' }))
+        expect(res.status, id).toBe(422)
+        expect(fields(res), id).toEqual(ctx)
+      }
+      expect(await count(t.db, `select count(*) n from question_reports where question_id = any($1::bigint[])`, [[inactive, unpublished]])).toBe(0)
+    })
+
+    it('REQ-B-049: the type and the visibility come from the LIVE version: a live structured question with a newer MCQ draft is reported without proof (201, stored as structured)', async () => {
+      const plain = await loginAs(t, 'pelajar@demo.test')
+      const id = seed({ latestVersionNo: 2, liveVersionNo: 1, liveType: 'structured', brief: { type: 'mcq' } })
+      const res = await plain.post('/api/question-reports', body(id, { questionType: 'structured' }))
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      expect((await t.db.query<{ question_type: string }>(`select question_type from question_reports where question_id = $1::bigint`, [id]))[0]?.question_type).toBe('structured')
+      await t.db.query(`delete from question_reports where question_id = $1::bigint`, [id]) // keep the daily cap of the later specs
     })
 
     it('REP-N2: at most 8 reasons; duplicates are stored once', async () => {

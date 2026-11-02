@@ -52,7 +52,7 @@ import type { BijakQuestionBundle } from '../attempts/ports'
 import type { BijakQuestionInfo } from '../papers/ports'
 import type { QuestionRecord, StimulusGroupRecord, StimulusRecord } from '../../questions/types'
 import { STIMULUS_KINDS, type StimulusKind } from '@pp/exam-core/types'
-import { stimulusTableOf } from '../../questions/stimulus-table'
+import { stimulusTableParts } from '../../questions/stimulus-table'
 import { BRIDGE_REFUSAL_REASONS_MS, type BridgeRefusalCode } from './refusals'
 
 type Leaf = Extract<QuestionPart, { mode: string }>
@@ -302,7 +302,9 @@ export function infoOf(bundle: Be09QuestionBundle, groupId: string | null): Bija
   const marks = q.mcq
     ? (bundle.schemes[q.id]?.marks ?? 0)
     : Object.values(bundle.schemes).reduce((n, s) => n + s.marks, 0)
-  return { id: q.id, marks, groupId, versionNo: bundle.versionNo }
+  // The same scheme kinds the marking and the self-mark use: option, mapping and accepted are automatic; points and rubric wait for a person.
+  const manual = Object.values(bundle.schemes).some((s) => s.kind === 'points' || s.kind === 'rubric')
+  return { id: q.id, marks, groupId, versionNo: bundle.versionNo, ...(manual ? { manual: true as const } : {}) }
 }
 
 /** At most three stimuli per group (ADR-0030 section 4); a group with none to show is refused. */
@@ -351,9 +353,9 @@ function stimulusDefOf(qid: string, s: WideStimulus, media: BridgeMedia): Stimul
       )
     image = { url: fileUrlOf(token) }
   }
-  const table = s.kind === 'table' ? stimulusTableOf(s.tableData, s.bodyMs) : undefined
-  // A table parsed from the body replaces the body text; any other body stays the text.
-  const text = table && !s.tableData ? undefined : s.bodyMs
+  // A table parsed from the body replaces the body text (also beside an unreadable grid); a stored grid never hides it (H-A16).
+  const { table, bodyIsTable } = stimulusTableParts(s.kind, s.tableData, s.bodyMs)
+  const text = bodyIsTable ? undefined : s.bodyMs
   if (!text && !table && !image)
     throw new UnsupportedQuestionError(
       qid,

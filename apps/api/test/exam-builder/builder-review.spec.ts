@@ -295,6 +295,51 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
       expect(own.status, JSON.stringify(own.body)).toBe(200)
     })
 
+    // B3 T34-L1-residual: a list that is left unchanged never fails; a legacy decimal id already on the paper is rewritten to its token.
+    it('Bahan rujukan: a legacy decimal id already on the paper is kept as the token on save; a decimal id that is not on the paper is still refused', async () => {
+      const paper = await newPaper()
+      const up = await admin.upload('/api/files?purpose=question_image', makePng())
+      const token = up.body.data.id as string
+      const internal = String((await q(`select id::text id from files where public_id = $1`, [token]))[0]!.id)
+      await q(`update papers set reference_sheets = $2::jsonb where id = $1`, [paper, JSON.stringify([{ title: 'Rajah', items: ['a'], imageFileId: internal }])])
+      const saved = await admin.put(`/api/admin/papers/${paper}`, { reference: [{ title: 'Rajah', items: ['a'], imageFileId: internal }] })
+      expect(saved.status, JSON.stringify(saved.body)).toBe(200)
+      expect((await q(`select reference_sheets->0->>'imageFileId' ref from papers where id = $1`, [paper]))[0]?.ref).toBe(token)
+      // a second paper that does not hold the id
+      const other = await newPaper()
+      const refused = await admin.put(`/api/admin/papers/${other}`, { reference: [{ title: 'Rajah', items: [], imageFileId: internal }] })
+      expect(refused.status).toBe(422)
+      expect(refused.body.error.fields.reference).toBe(MSG.referenceImageInvalid)
+    })
+
+    it('a sheet picture that a teacher uploaded (stored before the write rule) is a hard REFERENCE_IMAGE_INVALID at Terbit', async () => {
+      const { paper } = await fullPaper()
+      const teacher = await loginFull(t, ACCOUNTS.teacher)
+      const foreign = (await teacher.upload('/api/files?purpose=question_image', makePng())).body.data.id as string
+      await q(`update papers set reference_sheets = $2::jsonb where id = $1`, [paper, JSON.stringify([{ title: 'Rajah', items: [], imageFileId: foreign }])])
+      const review = (await admin.get(`/api/admin/papers/${paper}/review`)).body.data
+      expect(review.blockerDetails.find((b: { code: string }) => b.code === 'REFERENCE_IMAGE_INVALID')).toMatchObject({ overridable: false })
+      const forced = await admin.post(`/api/admin/papers/${paper}/publish`, { override: true, reason: 'sebab yang sah' })
+      expect(forced.body.data.ok).toBe(false)
+    })
+
+    it('migration 0110 rewrites a decimal imageFileId on papers and blueprints to the public token and leaves other panels alone', async () => {
+      const { readFileSync } = await import('node:fs')
+      const sql = readFileSync(new URL('../../prisma/migrations/0110_reference_image_tokens/migration.sql', import.meta.url), 'utf8')
+      const paper = await newPaper()
+      const up = await admin.upload('/api/files?purpose=question_image', makePng())
+      const token = up.body.data.id as string
+      const internal = String((await q(`select id::text id from files where public_id = $1`, [token]))[0]!.id)
+      await q(`update papers set reference_sheets = $2::jsonb where id = $1`, [
+        paper,
+        JSON.stringify([{ title: 'A', items: [] }, { title: 'B', items: ['x'], imageFileId: internal }, { title: 'C', items: [], imageFileId: '99999999999' }, { title: 'D', items: [], imageFileId: token }]),
+      ])
+      await q(sql)
+      const refs = (await q(`select jsonb_path_query_array(reference_sheets, '$[*].imageFileId') r from papers where id = $1`, [paper]))[0]?.r
+      expect(refs).toEqual([token, '99999999999', token])
+      expect((await q(`select reference_sheets->0 s from papers where id = $1`, [paper]))[0]?.s).toEqual({ title: 'A', items: [] })
+    })
+
     // B3 T34-L3: a panel is bounded (title 200, 20 items of 500 characters), so a reference sheet cannot be used to store a blob.
     it('Bahan rujukan: an over-long title, too many items or an over-long item are refused', async () => {
       const paper = await newPaper()
@@ -303,6 +348,69 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
       expect((await put({ title: 'T'.repeat(201), items: [] })).status).toBe(422)
       expect((await put({ title: 'T', items: Array.from({ length: 21 }, () => 'x') })).status).toBe(422)
       expect((await put({ title: 'T', items: ['x'.repeat(501)] })).status).toBe(422)
+    })
+
+    // B3 T34-L1-residual: a Kontrak reference sheet is copied to every paper made from it, so the Kontrak write follows the paper rule, and Terbit re-checks.
+    it('Kontrak reference sheet: a decimal id and another user\'s upload are refused at create and at a new version; the editor\'s own token is kept', async () => {
+      const own = await admin.upload('/api/files?purpose=question_image', makePng())
+      expect(own.status).toBe(201)
+      const token = own.body.data.id as string
+      const internal = String((await q(`select id::text id from files where public_id = $1`, [token]))[0]!.id)
+      const teacher = await loginFull(t, ACCOUNTS.teacher)
+      const foreignUp = await teacher.upload('/api/files?purpose=question_image', makePng())
+      expect(foreignUp.status, JSON.stringify(foreignUp.body)).toBe(201)
+      const foreign = foreignUp.body.data.id as string
+      const body = (reference: unknown[]) => ({
+        subject: 'MAT',
+        kertas: 7,
+        source: 'Spec',
+        code: 'MAT/REF7',
+        durationMin: 60,
+        instructions: ['Jawab semua.'],
+        sections: [{ label: 'Bahagian A', markBudget: 1, questionCount: 1, rule: { type: 'all' } }],
+        reference,
+      })
+      for (const imageFileId of [internal, foreign, 'bukan-fail-sebenar']) {
+        const res = await admin.post('/api/admin/blueprints', body([{ title: 'Rajah', items: [], imageFileId }]))
+        expect(res.status, `${imageFileId}: ${JSON.stringify(res.body)}`).toBe(422)
+        expect(res.body.error.fields.reference).toBe(MSG.referenceImageInvalid)
+      }
+      expect((await q(`select count(*)::int n from blueprints where code = 'MAT/REF7'`))[0]!.n).toBe(0)
+      const ok = await admin.post('/api/admin/blueprints', body([{ title: 'Rajah', items: [], imageFileId: token }]))
+      expect(ok.status, JSON.stringify(ok.body)).toBe(201)
+      // a new version: the foreign image and the decimal id are refused; the sheet already on the Kontrak keeps its own token
+      const { subject: _s, kertas: _k, ...version } = body([{ title: 'Rajah', items: [], imageFileId: foreign }])
+      void _s
+      void _k
+      const bad = await admin.post('/api/admin/blueprints/MAT/7/versions', version)
+      expect(bad.status, JSON.stringify(bad.body)).toBe(422)
+      expect(bad.body.error.fields.reference).toBe(MSG.referenceImageInvalid)
+      const again = await admin.post('/api/admin/blueprints/MAT/7/versions', { ...version, reference: [{ title: 'Rajah', items: [], imageFileId: token }] })
+      expect(again.status, JSON.stringify(again.body)).toBe(201)
+    })
+
+    it('a bad picture already on a paper (made from a legacy Kontrak, or copied by Salin set) is a hard REFERENCE_IMAGE_INVALID at Terbit that the override cannot lift', async () => {
+      const { paper } = await fullPaper()
+      // the legacy case: the sheet holds the internal decimal id of a stored image
+      const up = await admin.upload('/api/files?purpose=question_image', makePng())
+      const internal = String((await q(`select id::text id from files where public_id = $1`, [up.body.data.id as string]))[0]!.id)
+      await q(`update papers set reference_sheets = $2::jsonb where id = $1`, [paper, JSON.stringify([{ title: 'Rajah', items: [], imageFileId: internal }])])
+      const review = (await admin.get(`/api/admin/papers/${paper}/review`)).body.data
+      expect(review.blockerDetails.find((b: { code: string }) => b.code === 'REFERENCE_IMAGE_INVALID')).toMatchObject({ overridable: false, message: MSG.referenceImageInvalid })
+      expect(review.canOverride).toBe(false)
+      const forced = await admin.post(`/api/admin/papers/${paper}/publish`, { override: true, reason: 'sebab yang sah' })
+      expect(forced.body.data.ok).toBe(false)
+      expect((await q(`select status from papers where id = $1`, [paper]))[0]?.status).toBe('draft')
+      // Salin set carries the sheet as it is, and the copy is refused at Terbit in the same way
+      const copy = await admin.post(`/api/admin/papers/${paper}/copy`)
+      expect(copy.status).toBe(201)
+      const copied = (await admin.get(`/api/admin/papers/${copy.body.data.id as string}/review`)).body.data
+      expect(copied.blockerDetails.some((b: { code: string }) => b.code === 'REFERENCE_IMAGE_INVALID')).toBe(true)
+      // a stored image named by its token passes
+      const token = up.body.data.id as string
+      await q(`update papers set reference_sheets = $2::jsonb where id = $1`, [paper, JSON.stringify([{ title: 'Rajah', items: [], imageFileId: token }])])
+      const fixed = (await admin.get(`/api/admin/papers/${paper}/review`)).body.data
+      expect(fixed.blockerDetails.some((b: { code: string }) => b.code === 'REFERENCE_IMAGE_INVALID')).toBe(false)
     })
 
     it('Sunting petikan: renames the group title; the group must be on the paper', async () => {
@@ -502,8 +610,12 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
         parts: [{ label: 'a', mode: 'working', cognitiveLevel: 'mengaplikasi', prompt: { ms: 'Kira luas segi empat tepat itu.' }, marks: 2, reveal: 'never', key: { kind: 'points', marks: 2, points: [{ id: 'p1', code: 'M', label: 'Darabkan', marks: 2, text: { ms: 'panjang darab lebar' } }] } }],
       })
       expect(res.status, JSON.stringify(res.body)).toBe(201)
-      await approve([res.body.data.id as string])
-      return res.body.data.id as string
+      const id = res.body.data.id as string
+      // The T45 approve gate (AC-05.3) refuses an unservable question, but approved-but-unservable rows exist in real data (migrated, or
+      // unservable after approval). This test is about what the builder does with one, so the approved state is written directly.
+      await q(`update question_versions set status = 'approved', published_at = now() where question_id = $1`, [id])
+      await q(`update questions set live_version_no = 1 where id = $1`, [id])
+      return id
     }
 
     it('names the question and the bridge reason; the audited override cannot lift it; a paper of valid questions publishes', async () => {

@@ -41,6 +41,7 @@ import {
   QuestionStructuredRowSchema,
   QuestionStructuredStatsSchema,
   QuestionStructuredSubSchema,
+  QuestionFilterOptionsSchema,
   QuestionSummarySchema,
   QuestionTypeSchema,
   QuestionUpdateRequestSchema,
@@ -64,6 +65,7 @@ export const QUESTIONS_COMPONENT_SCHEMAS = {
   QuestionStimulusGroup: QuestionStimulusGroupSchema,
   QuestionRow: QuestionRowSchema,
   QuestionSummary: QuestionSummarySchema,
+  QuestionFilterOptions: QuestionFilterOptionsSchema,
   Question: QuestionSchema,
   QuestionDetail: QuestionDetailSchema,
   QuestionPlacement: QuestionPlacementSchema,
@@ -124,6 +126,14 @@ export function registerQuestionsPaths(registry: OpenAPIRegistry): void {
       403: forbidden,
       422: invalid,
     },
+  })
+  registry.registerPath({
+    method: 'get',
+    path: '/questions/filter-options',
+    tags: admin,
+    summary: 'The Negeri options of the Studio filter (exam boards of the source papers)',
+    description: 'Admin Pusat only, no-store. `negeri` lists the distinct, trimmed `exam_board` values of `source_papers`, sorted; the list filter `negeri` matches them case-insensitively.',
+    responses: { 200: json(envelopeOf(QuestionFilterOptionsSchema), 'The options.'), 401: unauthorized, 403: forbidden },
   })
   registry.registerPath({
     method: 'get',

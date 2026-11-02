@@ -5,7 +5,6 @@
  * answers the global 404 page for an unknown code or a chapter that is not the subject's), then starts
  * the session through `QuizRunner` (mode `chapter`) with the Q1/Q2 labels (§8.3 PROPOSED COPY):
  *
- * - 409 `CHAPTER_LOCKED` → `/practice/chapter/{code}?level={levelId}` without a message;
  * - 402 → `/pricing` (the runner); header card title "Bab {n}: {chapter}" (INFERRED);
  * - shell header "Soalan by Chapter" / "{subject}", tab title "Chapter {subject} - PRESTASIPLUS" (UNVERIFIED);
  * - results "Keputusan Latihan", "Ulang Lagi" (a new session with the same parameters) and "Kembali" → S5.
@@ -123,7 +122,6 @@ const headerTitle = (s: StartSessionResponse): string => chapterQuizTitle(s.chap
     :header-title="headerTitle"
     :back-url="listUrl"
     :labels="{ ...LATIH_TUBI_LABELS, back: 'Senarai Bab' }"
-    :locked-url="listUrl"
     retry="restart"
     :report="{ source: 'latihan' }"
   />

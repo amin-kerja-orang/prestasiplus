@@ -1,4 +1,4 @@
-import { QuestionSchema, mutationEnvelopeOf } from '@pp/contract'
+import { QUESTION_MESSAGES, QuestionSchema, mutationEnvelopeOf } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { bootQuestionsApp, expectError, loginAs, type Client, type QuestionsTestApp } from './helpers'
@@ -39,6 +39,8 @@ describe('admin question list: Tahun, Negeri, Kertas, Jenis', () => {
     await make('b', { kertas: '2' }, b)
     await make('c', { kertas: '2' }, c)
     await make('d', {}, null) // no source paper, no kertas
+    await make('e', {}, await paper(2022, '  Perak ', 'latihan')) // an exam board stored with spaces
+    await make('g', {}, await paper(2021, '   ', 'latihan')) // a blank exam board
   })
   afterAll(async () => {
     await t.close()
@@ -63,6 +65,22 @@ describe('admin question list: Tahun, Negeri, Kertas, Jenis', () => {
     expect(await listed('negeri=johor')).toEqual(keys('b'))
     expect(await listed('negeri=LPM')).toEqual(keys('c'))
     expect(await listed('negeri=Sela')).toEqual([]) // exact, not a prefix
+    // a board stored with spaces matches its trimmed option (filter-options lists the trimmed value), with or without spaces in the filter
+    expect(await listed('negeri=Perak')).toEqual(keys('e'))
+    expect(await listed('negeri=perak')).toEqual(keys('e'))
+    expect(await listed(`negeri=${encodeURIComponent(' PERAK ')}`)).toEqual(keys('e'))
+  })
+
+  it('a blank Negeri (spaces only) is no filter: it lists every row and never matches a blank exam board; the bulk body refuses it (Arkib Semua is the empty filter)', async () => {
+    for (const q of ['negeri=%20', 'negeri=%20%20%20', 'negeri=']) expect(await listed(q), q).toEqual(keys('a', 'b', 'c', 'd', 'e', 'g'))
+    expect(await listed('negeri=%20&tahun=2021')).toEqual(keys('g')) // only the other filter acts
+    // Luluskan Hasil Tapisan needs a real filter: a blank negeri is none (V2 guard text); on archive it is refused too.
+    const approve = await admin.post('/api/questions/bulk-action/filter', { action: 'approved', filter: { negeri: '   ' }, dryRun: true })
+    expect(approve.status, JSON.stringify(approve.body)).toBe(422)
+    expect(approve.body.error.fields.filter).toBe(QUESTION_MESSAGES.filterNeeded)
+    const archive = await admin.post('/api/questions/bulk-action/filter', { action: 'archived', filter: { negeri: '   ' }, dryRun: true })
+    expect(archive.status, JSON.stringify(archive.body)).toBe(422) // a sent-but-blank filter is not Arkib Semua (that is the empty filter)
+    expect(archive.body.error.fields.filter).toBe(QUESTION_MESSAGES.filterBlank)
   })
 
   it('Kertas: 1, 2 or 3 (the trailing digit of the paper code)', async () => {

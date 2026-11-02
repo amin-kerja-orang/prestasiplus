@@ -10419,6 +10419,10 @@
             },
             "description": "Reference-sheet panels; empty when the paper has none."
           },
+          "examinerGrid": {
+            "type": "boolean",
+            "description": "AC-20.3: true when any placed question has a part that is not marked automatically (mark-scheme points or rubric); the cover then shows the \"Untuk Kegunaan Pemeriksa\" grid. False for an all-objective paper."
+          },
           "sections": {
             "type": "array",
             "items": {
@@ -10442,6 +10446,7 @@
           "status",
           "instructions",
           "reference",
+          "examinerGrid",
           "sections"
         ],
         "additionalProperties": false
@@ -15166,7 +15171,8 @@
           "no_marks",
           "tag_review",
           "paper_empty",
-          "stimulus_shared_ungrouped"
+          "stimulus_shared_ungrouped",
+          "question_missing"
         ]
       },
       "ServabilityReason": {
@@ -39064,6 +39070,20 @@
           "subjects"
         ]
       },
+      "QuestionFilterOptions": {
+        "type": "object",
+        "properties": {
+          "negeri": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "negeri"
+        ]
+      },
       "Question": {
         "type": "object",
         "properties": {
@@ -40468,7 +40488,6 @@
           },
           "negeri": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 64
           },
           "kertas": {
@@ -64815,6 +64834,7 @@
               "NOT_PUBLISHED",
               "UNKNOWN_QUESTION",
               "NOT_SERVABLE",
+              "REFERENCE_IMAGE_INVALID",
               "NO_KEY",
               "NO_MARKS",
               "MODE_NOT_ALLOWED",
@@ -64822,7 +64842,7 @@
               "BLUEPRINT_NOT_VERIFIED",
               "INELIGIBLE"
             ],
-            "description": "Stable code. Hard (overridable false): DUPLICATE_QUESTION, GROUP_MIN_MEMBERS (D93), GROUP_SPLIT, COUNT_TOO_FEW, COUNT_TOO_MANY, MARKS_MISMATCH, GROUP_NOT_CONSECUTIVE, GROUP_INCOMPLETE, GROUP_OUT_OF_ORDER, NOT_PUBLISHED, UNKNOWN_QUESTION (placed question missing from the pool), NOT_SERVABLE (R1E2E-06, pupils cannot be served). Hard also: NO_KEY, NO_MARKS, MODE_NOT_ALLOWED (structural failures of a question) and GROUP_BROKEN. Overridable: BLUEPRINT_NOT_VERIFIED (Kontrak not Disahkan) and INELIGIBLE (a question without DSKP unit or TP, or with tags awaiting review)."
+            "description": "Stable code. Hard (overridable false): DUPLICATE_QUESTION, GROUP_MIN_MEMBERS (D93), GROUP_SPLIT, COUNT_TOO_FEW, COUNT_TOO_MANY, MARKS_MISMATCH, GROUP_NOT_CONSECUTIVE, GROUP_INCOMPLETE, GROUP_OUT_OF_ORDER, NOT_PUBLISHED, UNKNOWN_QUESTION (placed question missing from the pool), NOT_SERVABLE (R1E2E-06, pupils cannot be served). Hard also: REFERENCE_IMAGE_INVALID (a reference-sheet picture that is not a stored question image, re-checked at Terbit), NO_KEY, NO_MARKS, MODE_NOT_ALLOWED (structural failures of a question) and GROUP_BROKEN. Overridable: BLUEPRINT_NOT_VERIFIED (Kontrak not Disahkan) and INELIGIBLE (a question without DSKP unit or TP, or with tags awaiting review)."
           },
           "message": {
             "type": "string",
@@ -69561,6 +69581,41 @@
           "stimulusId": {
             "$ref": "#/components/schemas/Id"
           },
+          "group": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64,
+                "description": "Group key: the id of the shared intake stimulus. Items with the same key are one group.",
+                "example": "1042"
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 100,
+                "description": "Label of the shared stimulus, e.g. \"Rajah 1\"."
+              },
+              "size": {
+                "type": "integer",
+                "minimum": 2,
+                "description": "Items of the whole batch that share the stimulus (not only the ones on this page)."
+              },
+              "position": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "1-based place of this item among the members, in paper order."
+              }
+            },
+            "required": [
+              "key",
+              "label",
+              "size",
+              "position"
+            ],
+            "additionalProperties": false,
+            "description": "REQ-B-035 (D90): the group the item belongs to (2 or more items share its stimulus); absent otherwise."
+          },
           "lowCount": {
             "type": "integer",
             "minimum": 0,
@@ -71000,6 +71055,41 @@
               },
               "stimulusId": {
                 "$ref": "#/components/schemas/Id"
+              },
+              "group": {
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64,
+                    "description": "Group key: the id of the shared intake stimulus. Items with the same key are one group.",
+                    "example": "1042"
+                  },
+                  "label": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "description": "Label of the shared stimulus, e.g. \"Rajah 1\"."
+                  },
+                  "size": {
+                    "type": "integer",
+                    "minimum": 2,
+                    "description": "Items of the whole batch that share the stimulus (not only the ones on this page)."
+                  },
+                  "position": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "1-based place of this item among the members, in paper order."
+                  }
+                },
+                "required": [
+                  "key",
+                  "label",
+                  "size",
+                  "position"
+                ],
+                "additionalProperties": false,
+                "description": "REQ-B-035 (D90): the group the item belongs to (2 or more items share its stimulus); absent otherwise."
               },
               "lowCount": {
                 "type": "integer",
@@ -85192,7 +85282,7 @@
         ],
         "responses": {
           "200": {
-            "description": "A page of rows, newest first. `status` filters the lifecycle code.",
+            "description": "A page of rows, newest first, and `subjects` (the options of the Subjek filter). `status` filters the lifecycle code.",
             "content": {
               "application/json": {
                 "schema": {
@@ -85206,11 +85296,19 @@
                     },
                     "meta": {
                       "$ref": "#/components/schemas/ListMeta"
+                    },
+                    "subjects": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ServabilityLaneSubject"
+                      },
+                      "description": "The options of the `Subjek` filter of this lane."
                     }
                   },
                   "required": [
                     "data",
-                    "meta"
+                    "meta",
+                    "subjects"
                   ]
                 }
               }
@@ -85308,7 +85406,7 @@
         ],
         "responses": {
           "200": {
-            "description": "A page of papers, newest first. `status` is draft, ready, published or withdrawn.",
+            "description": "A page of papers, newest first, and `subjects` (the options of the Subjek filter). `status` is draft, ready, published or withdrawn.",
             "content": {
               "application/json": {
                 "schema": {
@@ -85322,11 +85420,19 @@
                     },
                     "meta": {
                       "$ref": "#/components/schemas/ListMeta"
+                    },
+                    "subjects": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ServabilityLaneSubject"
+                      },
+                      "description": "The options of the `Subjek` filter of this lane."
                     }
                   },
                   "required": [
                     "data",
-                    "meta"
+                    "meta",
+                    "subjects"
                   ]
                 }
               }
@@ -102967,7 +103073,6 @@
           {
             "schema": {
               "type": "string",
-              "minLength": 1,
               "maxLength": 64
             },
             "required": false,
@@ -103135,6 +103240,55 @@
           },
           "422": {
             "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages), `message` = first message plus the count of the others.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/questions/filter-options": {
+      "get": {
+        "tags": [
+          "questions"
+        ],
+        "summary": "The Negeri options of the Studio filter (exam boards of the source papers)",
+        "description": "Admin Pusat only, no-store. `negeri` lists the distinct, trimmed `exam_board` values of `source_papers`, sorted; the list filter `negeri` matches them case-insensitively.",
+        "responses": {
+          "200": {
+            "description": "The options.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/QuestionFilterOptions"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN, or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
             "content": {
               "application/json": {
                 "schema": {
@@ -104589,6 +104743,19 @@
             "required": false,
             "description": "Case-insensitive text in the label or body (a group: its own label or any of its stimuli). `%` and `_` are literal.",
             "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true"
+              ],
+              "description": "`true` keeps only groups with no member shown to pupils (REQ-C-019). A deliberate narrowing for the picker: a draft question may still join a group that has a served member through the members route (the served lock only protects the served members and their order), so a group missing from this list is not necessarily closed to a draft."
+            },
+            "required": false,
+            "description": "`true` keeps only groups with no member shown to pupils (REQ-C-019). A deliberate narrowing for the picker: a draft question may still join a group that has a served member through the members route (the served lock only protects the served members and their order), so a group missing from this list is not necessarily closed to a draft.",
+            "name": "joinable",
             "in": "query"
           }
         ],
@@ -121487,7 +121654,7 @@
           "intake"
         ],
         "summary": "Accept an item: create a Draf question",
-        "description": "Card BE-38 (AC1, AC3, AC4, AC9). Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403. Only an authenticated human reviewer can call it; the AI service cannot. Runs the quality gate for this item: every per-question rule of the prototype validateBatch (low fields confirmed, marks equal the sum of the part marks, ...), plus the unit being in the curriculum list and the item's stimulus having alt text and a stored figure (INTAKE_ACCEPT_BLOCKING_RULES). Batch-level rules (source, copyright, empty batch, group order) and an open exact or near duplicate entry do NOT block accept; BE-10 submit enforces them. On failure 422 VALIDATION_ERROR with `details.issues`. An item in state `duplicate` (a person linked it) is refused: 409 \"Item ini ditandakan sebagai pendua. Pilih Bukan pendua dahulu untuk menerimanya.\" [PROPOSED]; a rejected item: 409 \"Item ini sudah diterima atau ditolak dan tidak boleh disunting.\"; an accepted item: 409 \"Item ini sudah diterima.\". Only the first accepted item of a stimulus group snapshots the stimulus into the bank; later ones join that group. On success the server creates a question through QuestionsService with status `draft` (wire code, D54a) and provenance, and stores its id and version on the item (`question`). Submit, approve and publish are the BE-10 endpoints.",
+        "description": "Card BE-38 (AC1, AC3, AC4, AC9). Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403. Only an authenticated human reviewer can call it; the AI service cannot. Runs the quality gate for this item: every per-question rule of the prototype validateBatch (low fields confirmed, marks equal the sum of the part marks, ...), plus the unit being in the curriculum list, every SP code of the tag being an SP of the subject and level (`spNotInTaxonomy`: an unknown code is a field error naming the code, never dropped; a T4+T5 item without a decisive unit may take its SPs from either level) and the item's stimulus having alt text and a stored figure (INTAKE_ACCEPT_BLOCKING_RULES). Batch-level rules (source, copyright, empty batch, group order) and an open exact or near duplicate entry do NOT block accept; BE-10 submit enforces them. On failure 422 VALIDATION_ERROR with `details.issues`. An item in state `duplicate` (a person linked it) is refused: 409 \"Item ini ditandakan sebagai pendua. Pilih Bukan pendua dahulu untuk menerimanya.\" [PROPOSED]; a rejected item: 409 \"Item ini sudah diterima atau ditolak dan tidak boleh disunting.\"; an accepted item: 409 \"Item ini sudah diterima.\". Only the first accepted item of a stimulus group snapshots the stimulus into the bank; later ones join that group. On success the server creates a question through QuestionsService with status `draft` (wire code, D54a) and provenance, and stores its id and version on the item (`question`). Submit, approve and publish are the BE-10 endpoints.",
         "parameters": [
           {
             "schema": {

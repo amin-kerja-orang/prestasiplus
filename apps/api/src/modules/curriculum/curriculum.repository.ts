@@ -447,6 +447,18 @@ export class CurriculumRepository {
     })
   }
 
+  /**
+   * Every unit and SP node of one subject and level whose code is in `codes`, in the `nodes` order: ONE statement for a whole list
+   * (the intake review reads a page of items at once; REQ-B-034 review).
+   */
+  async nodesByCodes(codes: readonly string[], filter: { subjectId: bigint; educationLevelId: bigint }): Promise<CurriculumNode[]> {
+    if (codes.length === 0) return []
+    return this.db.curriculumNode.findMany({
+      where: { code: { in: [...codes] }, subjectId: filter.subjectId, educationLevelId: filter.educationLevelId, kind: { in: ['unit', 'sp'] } },
+      orderBy: [{ edition: 'asc' }, { kind: 'asc' }, { id: 'asc' }],
+    })
+  }
+
   /** The node with `code` (first match in the `nodes` order), or null. */
   async node(code: string, filter: NodeFilter): Promise<CurriculumNode | null> {
     return (await this.nodes(code, filter))[0] ?? null
