@@ -7,7 +7,11 @@ import type { CurriculumTestApp } from '../../curriculum/helpers'
 const LearningMap = envelopeOf(CurriculumLearningMapSchema)
 const TopicDetail = envelopeOf(CurriculumTopicDetailLearnerSchema)
 
-/** The mock formulas (src/modules/m03-curriculum/mock/repository/{rules,progress}.ts, SRS BR-14, BR-19), written out again. */
+/**
+ * The island-state and progress formulas written out again (SRS BR-14, BR-19). REQ-C-021 (D98): no island is locked, so `mockStates` has no
+ * 'locked' state. The frontend mock (src/modules/m03-curriculum/mock/repository/{rules,progress}.ts) still locks until team C's REQ-A-014, so the
+ * mock and the API differ on purpose until then.
+ */
 const mockProgress = (correct: number) => Math.min(100, Math.round((100 * correct) / 20))
 type State = 'mastered' | 'started' | 'unlocked'
 function mockStates(p: { progress: number; sessions: number; questionsAnswered: number }[]): State[] {

@@ -270,7 +270,7 @@ describe('#12 POST /api/admin/users/bulk-import (S4, BR-14)', () => {
     })
     const id = (email: string) => (users.findByEmail(email) as { id: number }).id
     expect(users.verifyPassword(id('ibu.satu@contoh.my'), 'Tersendiri9')).toBe(true)
-    expect(users.verifyPassword(id('ibu.dua@contoh.my'), 'Import2026')).toBe(true)
+    expect(users.verifyPassword(id('ibu.dua@contoh.my'), m02Config().bulkImportDefaultPassword)).toBe(true)
     expect(users.verifyPassword(id('ibu.tiga@contoh.my'), 'Lain12345')).toBe(true)
     // Parents are created without links and without a school when none is given.
     expect(users.findByEmail('ibu.satu@contoh.my')).toMatchObject({

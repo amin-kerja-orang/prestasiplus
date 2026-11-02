@@ -13,6 +13,8 @@ export interface Tag {
   levelId: string
   unitId: string
   spId: string
+  /** A chapter of the subject and level, so that Semakan (the submit gate) finds the Bab it asks for. */
+  chapterId?: string
 }
 
 /** Subject, level, unit and SP of a seeded question (by `number_label`). */
@@ -26,7 +28,8 @@ export async function tagOf(db: TestDatabase, ref: string): Promise<Tag> {
     )
   )[0]
   if (!row) throw new Error(`seeded question ${ref} not found`)
-  return { subjectId: row.s, levelId: row.l, unitId: row.u, spId: row.sp }
+  const chapterId = (await db.query<{ id: string }>(`select id::text id from chapters where subject_id = $1::bigint and education_level_id = $2::bigint order by id limit 1`, [row.s, row.l]))[0]?.id
+  return { subjectId: row.s, levelId: row.l, unitId: row.u, spId: row.sp, ...(chapterId === undefined ? {} : { chapterId }) }
 }
 
 export async function userIdOf(db: TestDatabase, email: string): Promise<string> {
@@ -51,6 +54,7 @@ export function mcqInput(tag: Tag, over: Partial<QuestionCreateInput> = {}): Que
     questionType: 'mcq',
     options: ['Satu', 'Dua', 'Tiga', 'Empat'],
     correctAnswer: 1,
+    ...(tag.chapterId === undefined || over.subjectId !== undefined || over.educationLevelId !== undefined ? {} : { curriculumChapterId: tag.chapterId }),
     ...over,
   } as QuestionCreateInput
 }

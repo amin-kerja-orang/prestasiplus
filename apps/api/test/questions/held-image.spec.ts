@@ -49,12 +49,18 @@ describe('a question held for a missing image is served again once its image is 
   const optionIssue = (label: string) => ({ code: 'legacy_image_unresolved', target: 'option', label, path: `pilihan/${label}.png` })
   const state = async (id: string) =>
     (await t.db.query<{ is_active: boolean; live: number | null; latest: number }>(`select is_active, live_version_no live, latest_version_no latest from questions where id = $1`, [id]))[0]!
-  async function publishEdit(id: string, over: Record<string, unknown>): Promise<void> {
+  /** Edit, send to Semakan, approve. With `refused` the approval must be refused by the media rule (a hold is still in force) and nothing changes. */
+  async function publishEdit(id: string, over: Record<string, unknown>, opts: { refused?: boolean } = {}): Promise<void> {
     const put = await admin.put(`/api/questions/${id}`, mcqBody(refs, over))
     expect(put.status, JSON.stringify(put.body)).toBe(200)
     for (const action of ['review', 'approved']) {
       const res = await admin.post('/api/questions/bulk-action', { action, ids: [id] })
       expect(res.status, JSON.stringify(res.body)).toBe(200)
+      if (action === 'approved' && opts.refused === true) {
+        // H-A18: the approve gate reads the hold the new version still carries, so it is refused as unresolved media, row by row
+        expect(res.body.data.failed[0]).toMatchObject({ id, code: 'VALIDATION_ERROR', fields: { media: expect.any(String) } })
+        return
+      }
       expect(res.body.data.failed, `${action} ${JSON.stringify(res.body)}`).toEqual([])
     }
   }
@@ -75,8 +81,8 @@ describe('a question held for a missing image is served again once its image is 
 
   it('an option image hold needs every missing option image; the right ones make it active', async () => {
     const id = await held([optionIssue('A'), optionIssue('C')])
-    await publishEdit(id, { optionImageFileIds: [await upload(), null, null, null] })
-    expect(await state(id)).toMatchObject({ is_active: false }) // C is still missing
+    await publishEdit(id, { optionImageFileIds: [await upload(), null, null, null] }, { refused: true })
+    expect(await state(id)).toMatchObject({ is_active: false, live: 1 }) // C is still missing: the approval is refused, the old version stays
     const fixed = await held([optionIssue('A'), optionIssue('C')])
     await publishEdit(fixed, { optionImageFileIds: [await upload(), null, await upload(), null] })
     expect(await state(fixed)).toMatchObject({ is_active: true, live: 2 })
@@ -84,8 +90,8 @@ describe('a question held for a missing image is served again once its image is 
 
   it('an edit that does not supply the image leaves it held', async () => {
     const id = await held([stemIssue])
-    await publishEdit(id, { questionText: 'Soalan yang disunting tanpa gambar?' })
-    expect(await state(id)).toMatchObject({ is_active: false, live: 2 })
+    await publishEdit(id, { questionText: 'Soalan yang disunting tanpa gambar?' }, { refused: true })
+    expect(await state(id)).toMatchObject({ is_active: false, live: 1 })
   })
 
   it('T45B-L1: a released hold is gone for good: an admin who switches the question off is not overridden by the next approval', async () => {
