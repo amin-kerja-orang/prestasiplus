@@ -1,5 +1,7 @@
 # R1 operator checklist (one page)
 
+Q36 (3 Nov): deploy sekarang UAT sahaja: ikut `docs/ops/r1-uat-deploy.md`. Calon = tip pada baris CI hijau di MERGE-LOG, bukan 79fbeea2.
+
 Senarai semak ini BUKAN laluan go-live penuh; ikut `docs/ops/r1-go-live-runsheet.md` pada tip akhir (79fbeea2; abaikan salinan cawangan lama `r1/b1-go-live-runsheet`) — freeze .cloud → dump → restore pre_etl → ETL imej cb7332d0 pada 0091 → semak → jadual B pada SHA akhir dengan skop on + --seed-reference → PP_DOMAIN + DNS. Jadual B tidak bermula terus selepas CI hijau: ia bermula hanya selepas go/no-go pemilik (runsheet 5.0), dengan CI akhir hijau pada 79fbeea2 sebagai salah satu syarat.
 
 ## Go-live timeline (Q33 + addendum, REQ-A-074; supersedes REQ-B-121 and the Q29 timing: the go-live WINDOW starts as soon as the final CI on 79fbeea2 is green (from ~04:00 MYT, 3 Nov 2026); the owner sets T0 ≤ 05:10 so that T0 + 4:20 ends by T_PUPIL 09:30 (REQ-A-074, K7a); pupils are read-only from T0 until DNS; pupils use the new system from DNS, no later than 09:30. It starts only after the final CI is green and all roles are present (REQ-B-120). The exact T0 is recorded before runsheet section 0; the real limit is the earlier of T0 + 5:30 and T_PUPIL. History, superseded: the Q23 daytime target, 22:00 MYT 2 Nov, Q29/REQ-B-121 "malam 3 Nov")

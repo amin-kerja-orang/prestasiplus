@@ -1,5 +1,7 @@
 # R1 ops runbook (Bijak SPM release)
 
+Q36 (3 Nov): deploy sekarang UAT sahaja: ikut `docs/ops/r1-uat-deploy.md`. Calon = tip pada baris CI hijau di MERGE-LOG, bukan 79fbeea2.
+
 One page for the operator (DevOps / lead) who applies the R1 release to UAT or production, in order. It merges, and links to, the per-topic notes: [r1-release-notes.md](r1-release-notes.md), [r1-b01-question-lifecycle.md](r1-b01-question-lifecycle.md), [dskp-loader.md](dskp-loader.md), [e2e-seed.md](e2e-seed.md) (the local/E2E seed, T26) and [r1-k1-blueprint-evidence.md](r1-k1-blueprint-evidence.md) (the blueprint evidence list, T39). Where this page and a topic note differ, the topic note is the detail and this page is the order.
 
 > One-page operator version: [r1-operator-checklist.md](r1-operator-checklist.md).
