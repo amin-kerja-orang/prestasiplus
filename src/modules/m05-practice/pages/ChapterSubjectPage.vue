@@ -5,10 +5,10 @@
  *
  * - Title block: "Semua Subjek" → S4, "Progressive Unlock", the subject and the level select; a change
  *   navigates to `?level={id}`. With no offered level the select is not rendered (DV-M05-07).
- * - One card per chapter of the level: open (count links to Q2) or locked, from the API (BR-16);
+ * - One card per chapter of the level: with its count links to Q2 (no chapter lock, D98);
  *   no chapter → `Tiada bab tersedia untuk tahap ini.`.
  * - The shell subtitle is the subject name (FR-M05-59). An unknown code is the global 404 page.
- *   The page reads the API on every visit, so the stats and unlock state are fresh after a session
+ *   The page reads the API on every visit, so the stats are fresh after a session
  *   (FR-M05-67).
  */
 import { computed, watch } from 'vue'
@@ -58,9 +58,6 @@ watch(
   { immediate: true },
 )
 
-// V2 has no progressive unlock (REQ-A-005, S-64): the rule is explained only while the server still locks a chapter.
-const anyLocked = computed(() => (data.value?.chapters ?? []).some((c) => c.state === 'locked'))
-
 const levelItems = computed(() =>
   (data.value?.levels ?? []).map((l) => ({
     label: `${l.name} — ${formatCount(l.count)} soalan`,
@@ -90,13 +87,9 @@ function onLevelChange(id: unknown): void {
         >
         <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div class="flex min-w-0 flex-col gap-1">
-            <p v-if="anyLocked" class="text-overline text-primary-t">Progressive Unlock</p>
             <h1 class="text-title text-highlighted" data-testid="chapter-subject-name">
               {{ data.subject.name }}
             </h1>
-            <p v-if="anyLocked" class="max-w-prose text-body text-muted" data-testid="chapter-unlock-rule">
-              Lengkapkan semua soalan bab semasa dan capai 70% untuk buka bab seterusnya.
-            </p>
           </div>
           <USelect
             v-if="data.levels.length > 0"

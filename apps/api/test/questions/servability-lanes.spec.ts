@@ -203,6 +203,26 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
     expect(row.subject).toEqual({ id: tag.subjectId, name: expect.any(String) })
   })
 
+  // --- REQ-C-020: the Subjek filter options travel with the lane ------------------------------------
+
+  it('REQ-C-020: each lane page carries `subjects` [{id, name}] for its Subjek filter, whatever the other filters are', async () => {
+    const subjectsOf = async (lane: string, query = '') => (await admin.get(`/api/admin/servability/lanes/${lane}?pageSize=5${query}`)).body.subjects as { id: string; name: string }[]
+    const names = new Map((await t.db.query<{ id: string; name: string }>(`select id::text id, name from subjects`)).map((r) => [r.id, r.name]))
+    // Databank: the subjects on the Databank list (MATH and SCI here), with their names.
+    const databank = await subjectsOf('databank')
+    expect(databank.map((s) => s.id).sort()).toEqual([tag.subjectId, sciId].sort())
+    for (const s of databank) expect(s.name).toBe(names.get(s.id))
+    // Bijak SPM: the subjects that have a curated paper (MATH and SCI).
+    const papers = await subjectsOf('bijak-spm')
+    expect(papers.map((s) => s.id).sort()).toEqual([tag.subjectId, sciId].sort())
+    // Filters narrow the rows, never the options.
+    expect(await subjectsOf('databank', `&subjectId=${sciId}&status=draft&search=zzz`)).toEqual(databank)
+    expect(await subjectsOf('bijak-spm', `&subjectId=${sciId}&status=ready`)).toEqual(papers)
+    // Every id the lane shows in a row is one of its options.
+    const rows = (await wholeLane<ServabilityPaperRow>('bijak-spm', ServabilityPaperRowSchema)).rows
+    for (const r of rows) expect(papers.map((s) => s.id)).toContain(r.subject?.id)
+  })
+
   // --- every BM string, pinned --------------------------------------------------------------------
 
   it('pins every servability sentence and where it comes from (V2 verbatim or [PROPOSED])', () => {
@@ -234,6 +254,7 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
       tag_review: 'Perlu semakan tag DSKP.',
       paper_empty: 'Disajikan tetapi tiada soalan',
       stimulus_shared_ungrouped: 'Rangsangan ini dikongsi oleh beberapa soalan tetapi bukan kumpulan rangsangan — jadikan soalan-soalan itu satu kumpulan rangsangan (D90).',
+      question_missing: 'Soalan pada kertas ini tiada dalam bank soalan — kertas tidak boleh dimulakan; gantikan atau buang soalan itu.',
     })
     const v2 = Object.entries(SERVABILITY_REASON_SOURCE).filter(([, src]) => src === 'V2').map(([code]) => code)
     expect(v2.sort()).toEqual(['bridge_refused', 'no_key', 'no_scheme', 'paper_empty'])

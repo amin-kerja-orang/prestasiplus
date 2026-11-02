@@ -51,7 +51,10 @@ describe('REQ-B-013a versionStimuli is a pinned read', () => {
     expect(source).toMatch(/getMany\(ids, 'live'\)/)
     expect(source).toMatch(/outsideStimuliOf\(this\.questions, records, groups\)/)
     const servability = readFileSync(join(SRC, 'modules/questions/serving/servability.service.ts'), 'utf8')
-    expect(servability).toMatch(/getMany\(\[\.\.\.latest\.keys\(\)\], 'live'\)/)
+    // REQ-B-022a: a question live at its latest version reuses the 'latest' record (same version row); only a question live at an older
+    // version is read again at 'live', so the records handed on are always live-version records.
+    expect(servability).toMatch(/getMany\(liveElsewhere, 'live'\)/)
+    expect(servability).toMatch(/const live = new Map\(\[\.\.\.liveAtLatest, \.\.\.liveOlder\]/)
     // `bridged` = the live record of a question, else (until r1/servability-archived lands) the archived version a paper published.
     expect(servability).toMatch(/const bridged = (records|\[\.\.\.latest\][\s\S]*?live\.get\(id\))/)
     expect(servability).toMatch(/outsideStimuliOf\(this\.questions, bridged, groups\)/)

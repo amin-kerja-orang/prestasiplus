@@ -522,6 +522,96 @@ export async function bulkQuestionAction(
   return { ...result, notUpdated }
 }
 
+/** The wire filter of `POST /api/questions/bulk-action/filter` (the list filter, no paging; strict keys). */
+export interface QuestionBulkFilter {
+  subjectId?: string
+  educationLevelId?: string
+  difficultyLevel?: string
+  status?: string
+  dskpFilter?: string
+  complianceFilter?: string
+  sourceFilter?: string
+  search?: string
+}
+export type QuestionFilterAction = 'approved' | 'archived'
+
+/** A row the run tried and the server refused (`failed[]`; `fields` = the exact gate messages). */
+export interface QuestionFilterFailure {
+  id: string
+  code: string
+  message: string
+  fields: Record<string, string>
+}
+export interface QuestionFilterBulkResult {
+  matched: number
+  eligible: number
+  skipped: number
+  cap: number
+  processed: number
+  affected: number
+  failed: QuestionFilterFailure[]
+  remaining: number
+  capped: boolean
+  dryRun: boolean
+}
+
+/** The applied list filter (URL keys, trimmed), keyed as the list filter keys. */
+export interface AppliedListFilter {
+  subject_id?: string
+  education_level_id?: string
+  difficulty_level?: string
+  status?: string
+  dskp_filter?: string
+  compliance_filter?: string
+  source_filter?: string
+  search?: string
+}
+
+/**
+ * REQ-A-021: the bulk-by-filter body keeps only the keys that carry a value. `''`, whitespace-only and
+ * empty arrays are dropped (the server answers 422 `fields.filter` for a filter whose values are all
+ * blank); `{}` when nothing is left (that is "Arkib Semua"). The status uses the wire code in both
+ * modes: this endpoint exists only in the v2 contract.
+ */
+export function buildBulkFilter(applied: AppliedListFilter): QuestionBulkFilter {
+  const text = (v: unknown): string | undefined => {
+    if (Array.isArray(v)) return undefined
+    if (typeof v !== 'string') return undefined
+    const t = v.trim()
+    return t === '' ? undefined : t
+  }
+  const out: QuestionBulkFilter = {}
+  const put = <K extends keyof QuestionBulkFilter>(key: K, value: string | undefined): void => {
+    if (value !== undefined) out[key] = value
+  }
+  put('subjectId', text(applied.subject_id))
+  put('educationLevelId', text(applied.education_level_id))
+  put('difficultyLevel', text(applied.difficulty_level))
+  const status = text(applied.status)
+  put('status', status === undefined ? undefined : wire(STATUS_FILTER_TO_WIRE, status))
+  put('dskpFilter', text(applied.dskp_filter))
+  put('complianceFilter', text(applied.compliance_filter))
+  put('sourceFilter', text(applied.source_filter))
+  put('search', text(applied.search))
+  return out
+}
+
+/**
+ * `POST /api/questions/bulk-action/filter` (AC-03.3; V2 "Luluskan Hasil Tapisan" / "Arkib Semua").
+ * `dryRun` only counts; the real call sends `expectedCount` (the dry-run `matched`): a changed count is
+ * 409 and nothing is applied. 422 carries `fields.filter` / `fields.expectedCount`.
+ */
+export function bulkQuestionsByFilter(
+  action: QuestionFilterAction,
+  filter: QuestionBulkFilter,
+  options: { dryRun: true } | { expectedCount: number },
+): Promise<QuestionMutation<QuestionFilterBulkResult>> {
+  return api.post<QuestionMutation<QuestionFilterBulkResult>>('/api/questions/bulk-action/filter', {
+    body: { action, filter, ...('dryRun' in options ? { dryRun: true } : { expectedCount: options.expectedCount }) },
+    raw: true,
+  })
+}
+
 /**
  * #8 `POST /api/questions/:id/ai-explanation`. Resolves for every HTTP status with
  * `{status, headers, body}` (`api.raw`), because the card reads the reply exactly as the live script

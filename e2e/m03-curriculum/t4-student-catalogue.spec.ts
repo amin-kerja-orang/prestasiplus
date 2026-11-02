@@ -499,7 +499,7 @@ test.describe('M03 S14 Peta Belajar', MODULE, () => {
     await expectNoHorizontalScroll(page)
   })
 
-  test('E2E-M03-46 islands without history: 2 open, 3 locked', async ({ page, loginAs, gotoApp }) => {
+  test('E2E-M03-46 islands without history: all open (D98, no lock)', async ({ page, loginAs, gotoApp }) => {
     await loginAs(PELAJAR)
     await openMap(page, gotoApp, '?subject=MATEMATIK&grade=DARJAH_1')
     const nodes = page.getByTestId('map-node')
@@ -507,9 +507,9 @@ test.describe('M03 S14 Peta Belajar', MODULE, () => {
     expect(await nodes.evaluateAll((els) => els.map((e) => e.getAttribute('data-state')))).toEqual([
       'unlocked',
       'unlocked',
-      'locked',
-      'locked',
-      'locked',
+      'unlocked',
+      'unlocked',
+      'unlocked',
     ])
     const islands = page.getByTestId('island')
     const first = islands.nth(0)
@@ -521,11 +521,9 @@ test.describe('M03 S14 Peta Belajar', MODULE, () => {
     await expect(first.getByTestId('island-progress')).toHaveText('0%')
     await expect(first.getByTestId('island-sessions')).toHaveText('0 sesi · 0 soalan dijawab')
     for (const i of [2, 3, 4]) {
-      const locked = islands.nth(i)
-      await expect(locked).not.toHaveAttribute('href', /.*/)
-      await expect(locked.getByTestId('island-label')).toHaveText('🔒 TERKUNCI')
-      await expect(locked).toContainText('Selesaikan topik sebelumnya dulu')
-      await expect(locked).toHaveCSS('cursor', 'not-allowed')
+      const island = islands.nth(i)
+      await expect(island).toHaveAttribute('href', /^\/practice\?topic_id=\d+$/)
+      await expect(island.getByTestId('island-label')).toHaveText('🎯 BUKA')
     }
     if (viewportWidth(page) >= 768) await expect(page.getByTestId('map-done')).toHaveText('0/5')
     await expectNoHorizontalScroll(page)
@@ -544,7 +542,7 @@ test.describe('M03 S14 Peta Belajar', MODULE, () => {
         'started',
         'started',
         'unlocked',
-        'locked',
+        'unlocked',
       ])
       const islands = page.getByTestId('island')
       await expect(islands.nth(0).getByTestId('island-label')).toHaveText('⭐ DIKUASAI')
@@ -554,7 +552,7 @@ test.describe('M03 S14 Peta Belajar', MODULE, () => {
       await expect(islands.nth(2).getByTestId('island-name')).toHaveText('Bentuk')
       await expect(islands.nth(3).getByTestId('island-name')).toHaveText('Operasi Tambah dan Tolak')
       await expect(islands.nth(3).getByTestId('island-label')).toHaveText('🎯 BUKA')
-      await expect(islands.nth(4).getByTestId('island-label')).toHaveText('🔒 TERKUNCI')
+      await expect(islands.nth(4).getByTestId('island-label')).toHaveText('🎯 BUKA')
       if (viewportWidth(page) >= 768) {
         await expect(page.getByTestId('map-done')).toHaveText('1/5')
         await expect(page.getByTestId('map-progress')).toHaveText('26%')
