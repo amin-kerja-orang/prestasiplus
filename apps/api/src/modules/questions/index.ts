@@ -10,6 +10,7 @@ export { TRANSITION_CONFLICT_MESSAGE, transitionConflict, PUBLISH_TAG_MESSAGES, 
 export { STRUCTURED_LEVEL_CODES, isStructuredVisible } from './structured-visibility'
 export { MOCK_STATUS_TO_V2, mockStatusToV2 } from './status'
 export * from './types'
+export { pinServableForNewSitting } from './pin-servable'
 export { gradeLeaf, gradeMcq, gradeShortText, gradeNumeric, gradeMapping, gradeCells, gradeQuestion } from './grading'
 export { checkTagGate, checkKeysGate } from './publish-gate'
 export { toPublic } from './projection'
