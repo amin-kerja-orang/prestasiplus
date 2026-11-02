@@ -199,6 +199,17 @@ export class BijakServer implements BijakApi {
     return leavesOf(q.parts ?? []).reduce((n, l) => n + l.marks, 0)
   }
 
+  /** A question a person marks: any of its schemes is `points` or `rubric` (API `infoOf`, be09-mapping). */
+  private isManual(qid: string): boolean {
+    const q = BANK.questions.get(qid)
+    if (!q) return false
+    const ids = q.mcq ? [q.id] : leavesOf(q.parts ?? []).map((l) => l.id)
+    return ids.some((id) => {
+      const k = BANK.schemes.get(id)?.kind
+      return k === 'points' || k === 'rubric'
+    })
+  }
+
   private paperMarks(sections: Pick<SectionSnapshot, 'rule' | 'questionIds'>[]): number {
     return sections.reduce(
       (n, s) =>
@@ -258,6 +269,8 @@ export class BijakServer implements BijakApi {
       ...this.summary(def, userId),
       instructions: def.instructions,
       reference: def.reference ?? [],
+      // AC-20.3, same rule as the API (papers.service.ts): any placed question with a points or rubric scheme.
+      examinerGrid: def.sections.some((s) => s.questionIds.some((id) => this.isManual(id))),
       sections: def.sections.map((s) => ({
         label: s.label,
         marks: effectiveMarks(

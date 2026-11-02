@@ -48,6 +48,26 @@ const modeItems = [
     description: 'Satu soalan pada satu masa dengan Semak dan maklum balas segera.',
   },
 ]
+// AC-20.3 grid: one row per Bahagian and a "Jumlah" row; "Diperoleh" stays blank for the examiner.
+const gridColumns = [
+  { accessorKey: 'bhg', header: 'Bhg' },
+  { accessorKey: 'soalan', header: 'Soalan' },
+  { accessorKey: 'penuh', header: 'Penuh' },
+  { accessorKey: 'diperoleh', header: 'Diperoleh' },
+]
+const gridRows = computed(() => {
+  const c = cover.value
+  if (!c) return []
+  return [
+    ...c.sections.map((s) => ({
+      bhg: s.label,
+      soalan: String(s.questionCount),
+      penuh: String(s.marks),
+      diperoleh: '',
+    })),
+    { bhg: 'Jumlah', soalan: '', penuh: String(c.marks), diperoleh: '' },
+  ]
+})
 const needsChoice = computed(() => !!open.value && !open.value.fresh)
 
 async function begin(restart: boolean): Promise<void> {
@@ -106,7 +126,14 @@ async function begin(restart: boolean): Promise<void> {
       <PastSittingsLink :paper-id="paperId" class="self-start" />
 
       <!-- Right under the hero and above the resume choice: the refusal of "Mula" / "Mula Semula" stays in view on a phone. -->
-      <UAlert v-if="failure" color="error" variant="soft" :title="failure" role="alert" data-testid="start-failure" />
+      <UAlert
+        v-if="failure"
+        color="error"
+        variant="soft"
+        :title="failure"
+        role="alert"
+        data-testid="start-failure"
+      />
 
       <UAlert
         v-if="needsChoice && open"
@@ -156,6 +183,23 @@ async function begin(restart: boolean): Promise<void> {
             {{ s.instruction }}<template v-if="s.compulsory"> (wajib)</template>
           </li>
         </ul>
+      </section>
+
+      <section
+        v-if="cover.examinerGrid === true"
+        class="flex flex-col gap-2"
+        aria-labelledby="h-pemeriksa"
+        data-testid="examiner-grid"
+      >
+        <h2 id="h-pemeriksa" class="text-heading text-highlighted">Untuk Kegunaan Pemeriksa</h2>
+        <div class="max-w-full overflow-x-auto">
+          <UTable
+            :data="gridRows"
+            :columns="gridColumns"
+            aria-label="Untuk Kegunaan Pemeriksa"
+            data-testid="examiner-grid-table"
+          />
+        </div>
       </section>
 
       <section

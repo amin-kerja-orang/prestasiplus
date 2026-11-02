@@ -556,6 +556,8 @@ export interface PaperSummary {
 export interface PaperCover extends PaperSummary {
   instructions: string[]
   reference: NonNullable<PaperDef['reference']>
+  /** AC-20.3: true when any placed question has a points or rubric part (a person marks it). */
+  examinerGrid: boolean
   sections: {
     label: string
     marks: number
