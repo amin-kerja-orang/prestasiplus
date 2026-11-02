@@ -15,6 +15,8 @@
  *
  * `hideRetry` removes the retry button of the results (Q4 and Q5, where a restart would be a 409).
  *
+ * A mid-quiz 402 `TRIAL_EXHAUSTED` on #5 shows a notice with a `/pricing` link (question stays unchecked, not scored).
+ *
  * A start failure is handled here (FR-M05-48, 51, 66, 75): 402 → `/pricing` (no message), 404 → the global 404 page, anything else `alert(message)`
  * and back to `backUrl`.
  */
@@ -27,7 +29,7 @@ import { ReportQuestionModal } from '@/modules/m04-question-bank'
 
 import { checkAnswer, startSession, submitSession } from '../../api/practice'
 import type { StartSessionRequest, StartSessionResponse } from '../../api/types'
-import { PRACTICE_LABELS } from './quiz-labels'
+import { PRACTICE_LABELS, SUBSCRIBE_LINK_TEXT, TRIAL_EXHAUSTED_TEXT } from './quiz-labels'
 import {
   comboOf,
   dsOptionState,
@@ -168,6 +170,7 @@ const {
   total,
   percent,
   isLast,
+  trialExhausted,
 } = run
 
 onMounted(() => void run.begin())
@@ -406,6 +409,23 @@ const feedbackExplanation = computed(() =>
                   >{{ option.text }}</DsQuizOption
                 >
               </div>
+
+              <UAlert
+                v-if="trialExhausted && !result"
+                color="warning"
+                variant="soft"
+                icon="i-ph-warning-circle-duotone"
+                :title="TRIAL_EXHAUSTED_TEXT"
+                data-testid="trial-exhausted"
+              >
+                <template #description>
+                  <ULink
+                    to="/pricing"
+                    class="inline-flex min-h-11 items-center text-highlighted underline"
+                    >{{ SUBSCRIBE_LINK_TEXT }}</ULink
+                  >
+                </template>
+              </UAlert>
 
               <UButton
                 v-if="!result && selected !== null"

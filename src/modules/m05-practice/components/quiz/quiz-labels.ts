@@ -55,3 +55,7 @@ export const PRACTICE_LABELS: QuizLabels = {
   startErrorFallback: 'Failed to load quiz',
   networkErrorFallback: 'Maaf, terdapat masalah memuatkan kuiz.',
 }
+
+/** Mid-quiz free-trial limit (402 `TRIAL_EXHAUSTED` on #5); the link text is the one of the config page notice. */
+export const TRIAL_EXHAUSTED_TEXT = 'Percubaan percuma anda telah habis.'
+export const SUBSCRIBE_LINK_TEXT = 'Langgan untuk akses tanpa had'

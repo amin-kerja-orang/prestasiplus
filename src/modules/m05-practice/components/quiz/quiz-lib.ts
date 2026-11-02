@@ -127,3 +127,8 @@ export function hasJsonBody(err: unknown): boolean {
     err instanceof ApiError && err.status > 0 && typeof err.body === 'object' && err.body !== null
   )
 }
+
+/** `true` when a failed check call is the free-trial limit (402 / `TRIAL_EXHAUSTED`): the answer is not checked. */
+export function isTrialExhausted(err: unknown): boolean {
+  return err instanceof ApiError && (err.status === 402 || err.code === 'TRIAL_EXHAUSTED')
+}
