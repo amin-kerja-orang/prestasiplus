@@ -42,6 +42,8 @@ const fieldConfig = {
     size: {
       md: { base: fieldSize },
       lg: { base: fieldSize },
+      // xl (auth and learner forms) = fieldSize, like md and lg: 44px floor, 52px on learner pages; stock xl is 40px.
+      xl: { base: fieldSize },
     },
   },
   // Error / highlight state: 2px inset ring (the theme default is 1px).
@@ -166,6 +168,10 @@ export const uiConfig = {
         },
         lg: {
           base: 'min-h-12 gap-2.5 px-5 text-label learner:min-h-14 learner:rounded-md learner:px-6 learner:text-base',
+        },
+        // xl: lg's floor (48px, 56px on learner pages) with a touch more padding; stock xl is 40px.
+        xl: {
+          base: 'min-h-12 gap-2.5 px-6 text-label learner:min-h-14 learner:rounded-md learner:px-7 learner:text-base',
         },
       },
     },
