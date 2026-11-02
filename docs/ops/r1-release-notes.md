@@ -537,6 +537,8 @@ Check scope ON before the frontend build (REQ-B-117): `grep '^VITE_PROTOTYPE_SCO
 - The copy "prototaip" is shown in the UI.
 - The pupil menu "Jemput Ibu Bapa" is a dead end: it leads an invited parent to the refusal "Peranan ini tidak termasuk dalam prototaip."
 - The role refusal is FRONTEND-only: the API still accepts those roles after login.
+- Trial used up at session START: the pupil is sent to `/pricing` (`QuizRunner.vue:136`), which under scope on shows "Belum tersedia dalam prototaip": a dead end (pre-existing; B2 Q26 review, KIV row 66).
+- Trial used up MID-quiz (Q26): the notice "Baki percubaan percuma anda telah habis." shows, but its subscribe link is hidden by the scope guard under scope on, and there is no route to the results after the notice (KIV rows 67, 68).
 
 Check (names and these non-secret values only; never print the file):
 

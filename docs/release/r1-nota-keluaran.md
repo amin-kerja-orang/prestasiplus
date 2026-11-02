@@ -80,6 +80,8 @@ Had yang diketahui, akan dibetulkan selepas live (REQ-B-118):
 - Menu murid **"Jemput Ibu Bapa"** masih kelihatan, tetapi ibu bapa yang dijemput akan menerima mesej di atas dan tidak dapat masuk.
 - Perkataan "prototaip" kelihatan dalam skrin.
 - Penolakan ini dibuat pada skrin sahaja; API masih menerima peranan ini selepas log masuk.
+- Murid yang percubaan percumanya sudah habis ketika memulakan latihan dibawa ke halaman harga, yang memaparkan "Belum tersedia dalam prototaip"; tiada langkah seterusnya.
+- Jika percubaan habis di tengah kuiz, murid melihat "Baki percubaan percuma anda telah habis." tetapi tanpa pautan langganan, dan tiada butang ke halaman keputusan.
 
 ---
 
