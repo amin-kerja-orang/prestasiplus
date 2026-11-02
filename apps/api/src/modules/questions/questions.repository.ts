@@ -5,7 +5,7 @@ import { Prisma } from '../../db/generated/client'
 import type { Prisma as PrismaTypes } from '../../db/generated/client'
 import { idFromString, idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
-import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, SPM_SERVABLE_SQL } from './learner-visibility'
+import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL, SPM_SERVABLE_SQL } from './learner-visibility'
 import type { Prng } from '../../db/prng'
 import { kbatOf, missingLeafSql } from './effective-leaf'
 import { paperHeld, QUESTION_SERVED_BY_PAPER } from './served-rule'
@@ -1483,7 +1483,7 @@ export class QuestionsRepository {
     const conds: Prisma.Sql[] = [NOT_PKSK]
     if (filter.status) conds.push(Prisma.sql`v.status = ${filter.status}`)
     conds.push(NOT_PRIMARY_LEVEL_SQL)
-    if (learnerVisible) conds.push(LEARNER_LEVEL_SQL)
+    if (learnerVisible) conds.push(LEARNER_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL)
     if (filter.active !== undefined) conds.push(filter.active ? Prisma.sql`q.is_active` : Prisma.sql`NOT q.is_active`)
     const eq = (text: string | undefined, column: Prisma.Sql): void => {
       if (text === undefined) return
