@@ -150,3 +150,13 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
 - **Lane A1 (team A lead) holds the B1 Integrator role** on the owner's instruction. Mandor only monitors. The procedure is docs/team/handover/team-b.md §1–2: merge only the exact reviewed SHA (a B2 verdict, or A4/A1b standing in for B2, recorded); merge --no-ff in an isolated worktree on the latest base; gate on the merge result with real output; push only if the base is unchanged; one BASE-n row in MERGE-LOG.md + status/B1.md.
 - **The owner freeze still applies:** until release, docs only + owner-approved items. Other code (REQ-A-051 approve-gate, REQ-A-040/041, …) is not merged without the owner's "ya".
 - After every code merge, B4/B run CI + E2E on the new candidate. No deploy, no server, no secrets.
+
+## Q21 (USER DECISION 2026-11-02 ~18:2x MYT, relayed by Mandor): G6 deploy confirmation
+- **User, exact words: "Proceed deploy".** This is the owner's G6 confirmation for R1.
+- **Conditions (owner-set, still binding):**
+  1. CI must be fully green first: e2e @api in run 41423614907 and the api verify re-run of 41417922017 (the solo.spec flake) are still running. Deploy only after both are green.
+  2. The deploy is done by a HUMAN operator following docs/ops/r1-operator-checklist.md + docs/ops/r1-runbook.md, on candidate **BASE-212 62872d96**. Teams A/B do not touch any server.
+  3. Before migrating, the operator confirms REQ-B-080 (THROTTLE_GLOBAL_PER_MINUTE, TRUST_PROXY_HOPS) and a full backup + restore test.
+- **The M02 default passwords** are rotated on live by the owner. Signoff 6.8 stays unticked until that rotation is explicitly confirmed.
+- **Pack items the user has not answered** (OCR AC-R1-14.2, limits 4.1–4.4, Q15/Q16 review, copy row 42) are marked **"deploy diteruskan atas arahan pemilik; penerimaan bertulis masih tertunggak"**, NOT accepted.
+- Pre-live production DB checks from B3 stand (demo.test users = 0; the IC-hash pattern → owner decides).
