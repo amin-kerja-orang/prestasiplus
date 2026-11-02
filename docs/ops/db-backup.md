@@ -60,13 +60,14 @@ This replaces production data. It needs the lead's explicit confirmation first.
 
 1. Stop writers: `docker compose stop api frontend` (keep `db` running).
 2. Take a fresh safety backup of the current state if the database is still readable (`npm run db:backup`).
-3. Run `npm run db:restore-check -- --file <the backup>` to prove the chosen file restores. Verify the sha256 against the value recorded when the backup was made.
-4. Recreate the main database from the file. Do not use `docker compose cp` when the `db` service is `read_only` (the production overlay): it fails with `container rootfs is marked read-only`. Feed the dump on standard input:
+3. Run `npm run db:restore-check -- --file <the backup>` to prove the chosen file restores. Verify the sha256 against the value recorded when the backup was made. If either check fails: stop, drop nothing.
+4. Recreate the main database from the file. On the VPS use [production-vps.md](production-vps.md) section 8 instead. Do not use `docker compose cp`: the `db` service is `read_only` (`compose.yaml:120`), so it fails with `container rootfs is marked read-only`. Feed the dump on standard input, with an absolute path:
    ```
    docker compose exec db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" psql -h 127.0.0.1 -U "$POSTGRES_USER" -d postgres -c "drop database \"$POSTGRES_DB\" with (force)" -c "create database \"$POSTGRES_DB\""'
-   docker compose exec -T db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" pg_restore -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --exit-on-error' < <file>
+   docker compose exec -T db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" pg_restore -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --exit-on-error' < /absolute/path/to/<file>; echo $?
    ```
-5. Start the stack again (`docker compose up -d`); the `migrate` job runs `prisma migrate deploy` and applies any migration newer than the backup. Check `GET /api/ready` and a login.
+   It must print `0`. Anything else: stop, leave the API down, and repeat this step from the drop with the verified file. Then check the counts, both above 0: `SELECT (SELECT count(*) FROM users) AS users, (SELECT count(*) FROM _prisma_migrations WHERE finished_at IS NOT NULL) AS migrations;`.
+5. Start the stack again (`docker compose up -d`; local stack only, on the VPS [production-vps.md](production-vps.md) section 8 step 4); the `migrate` job runs `prisma migrate deploy` and applies any migration newer than the backup. Check `GET /api/ready` and a login.
 6. Record the incident (what, when, which backup, data loss window) and tell the lead.
 
 Uploaded files live in the separate `apifiles` volume and are not part of this dump; back that volume up with the same storage rules if uploads matter.

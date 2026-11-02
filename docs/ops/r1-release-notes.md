@@ -27,6 +27,7 @@ Shell setup (once per operator shell, from the release checkout):
 # section 21 "Admin Pusat bootstrap/reset command").
 export PP_IMAGE_TAG="<IMAGE_TAG>"   # after a finished deploy: $(cat /var/lib/pretasiplus-deploy/current.tag)
 PC="docker compose -f compose.yaml -f deploy/vps/compose.prod.yaml --env-file /etc/pretasiplus/prod.env"
+PP_DOMAIN="$(grep '^PP_DOMAIN=' /etc/pretasiplus/prod.env | cut -d= -f2)"
 # If PP_PROFILES is set in prod.env (comma-separated), append one --profile per entry, as deploy/vps/lib.sh does:
 #   PC="$PC --profile tls --profile monitoring"
 # Read-only psql in the db container. PGPASSWORD is taken from the container's own environment (single quotes: the
@@ -56,7 +57,7 @@ items is in section 8.
 
 Related runbooks: [production-vps.md](production-vps.md) (sections 7 deploy, 8 rollback, 9 backups, 10 monitoring,
 11 logs), [api-runbook.md](api-runbook.md) (sections 4 health, 6 migrations, 13 secrets), [db-backup.md](db-backup.md),
-[dskp-loader.md](dskp-loader.md), and `docs/ops/r1-b01-question-lifecycle.md` (on branch `r1/b01-lifecycle` until it merges).
+[dskp-loader.md](dskp-loader.md), and `docs/ops/r1-b01-question-lifecycle.md`.
 
 ---
 
@@ -72,6 +73,8 @@ Related runbooks: [production-vps.md](production-vps.md) (sections 7 deploy, 8 r
 | Config | No new environment variable (B01 notes; verified for 0092/0093/0100). `BIJAK_POC_QUESTIONS` must stay `false`. |
 
 ### 0.1 Units merged so far and units still pending
+
+**History view, kept for the record: every unit below is in base (T06, T04 and T25 are merged), so nothing here holds back tagging.** The current state is the MERGE-LOG on branch `team/r1-board`.
 
 Checked against `origin` on 2026-10-31. `feature/v3-bijak-r1` is at **BASE-3 `285387a3`**: BASE-2 `5e856b5d` merged
 T01, BASE-3 merged T03. `git branch -r --merged origin/feature/v3-bijak-r1` lists `r1/t01-base-merge` and
@@ -98,11 +101,7 @@ Do not start the window until every box is ticked. Record each answer in the dep
 ### 1.1 Release gates
 
 - [ ] G3 to G5 passed for the release commit (lint, type-check, tests with real output; code-reviewer Approve; QA Ready).
-- [ ] `r1/b01-lifecycle` is finished, reviewed and merged into `feature/v3-bijak-r1`. At handoff it was **WIP** (`cf2aa784`):
-      tsc, eslint, the FE m04 tests and the last spec batch were not run, and 4 code spots still named `'published'` as
-      a question status. Now (T04) at `2f16c1fe`, READY-FOR-REVIEW with review "Changes requested"; its 0100 SQL is
-      unchanged since `cf2aa784` (`git diff` shows no change under `apps/api/prisma/migrations`), so section 2.4 still
-      applies. **0100 must ship in the same release as the B01 API and FE code** (an old API on the new CHECK
+- [x] `r1/b01-lifecycle` is merged (BASE-4), so section 2.4 applies. **0100 must ship in the same release as the B01 API and FE code** (an old API on the new CHECK
       fails to write `published`; a new API on old data serves nothing).
 - [ ] The DB-backed specs listed as never run in the handoff (B06 `SPM_SERVABLE_SQL`, the bijak integration specs, B08
       bridge if merged) have been run green on the release commit.
@@ -115,6 +114,7 @@ git fetch origin --tags
 git checkout <RELEASE_TAG>
 git rev-parse HEAD                                    # expect: <RELEASE_SHA>
 git status --porcelain --untracked-files=no           # expect: no output (deploy.sh refuses a dirty tree)
+git merge-base --is-ancestor 2fabf472 <RELEASE_SHA> && echo has-BASE-213   # expect: has-BASE-213 (the Kontrak form fix)
 ls apps/api/prisma/migrations | sed -n '/^009[2-9]_/p;/^01[0-9][0-9]_/p'   # 0092-0099 and 0100-0199 only
 ```
 
@@ -181,7 +181,7 @@ Then:
 
 ```
 (cd /var/backups/pretasiplus && sha256sum -c pp-backup-<UTC>-pre-deploy.dump.sha256)   # expect: OK
-$PC exec -T db pg_restore --list < /var/backups/pretasiplus/pp-backup-<UTC>-pre-deploy.dump | head   # expect: a table of contents
+$PC exec -T db pg_restore --list < /var/backups/pretasiplus/pp-backup-<UTC>-pre-deploy.dump > /dev/null; echo $?   # expect: 0 (no pipe: it hides the exit status)
 ```
 
 Write the dump file name into the deploy log: it is the **only** way back after 0100 (section 6).
@@ -373,7 +373,7 @@ Fill one row per migration added to the release after this file was written. Lea
 
 | Folder | Additive? | Data change | Pre-flight SELECT | Post SELECT | Reversible? | Runbook |
 |---|---|---|---|---|---|---|
-| `0101_essay_choice` (T25, **not merged**, section 0.1; read from the SQL on `r1/t25-essay-choice-store`) | yes: `question_parts.topics` JSONB nullable; `ck_question_parts_mode` dropped and re-added with `essay_choice`; new `ck_question_parts_topics` | none (every existing row has `topics` NULL and no `essay_choice` mode) | none needed | `SELECT count(*) FROM information_schema.columns WHERE table_name = 'question_parts' AND column_name = 'topics';` (expect 1) | yes, per the SQL header, after deleting `essay_choice` parts | this file |
+| `0101_essay_choice` (T25, in base since BASE-15) | yes: `question_parts.topics` JSONB nullable; `ck_question_parts_mode` dropped and re-added with `essay_choice`; new `ck_question_parts_topics` | none (every existing row has `topics` NULL and no `essay_choice` mode) | none needed | `SELECT count(*) FROM information_schema.columns WHERE table_name = 'question_parts' AND column_name = 'topics';` (expect 1) | yes, per the SQL header, after deleting `essay_choice` parts | this file |
 | `...` | | | | | | |
 | `0119_...` | | | | | | |
 
@@ -485,9 +485,9 @@ one blueprint. On UAT there are **0 blueprints** today, so a blueprint must firs
 
 ### 4.1 Get a blueprint (Spec) to verify
 
-**D95 (2026-10-31, PR amin-kerja-orang/prestasiplus#404, not merged; not yet a row of `docs/TRACKER.md` on this branch) supersedes the text that stood here ("Option A by hand" and "Option B seed").** On UAT an Admin Pusat creates each blueprint by hand in Kontrak, through the real flow, and presses Sahkan. There is **no seed on UAT**: the demo seeds, the launch-blueprint seed (`exam-launch-blueprints`) and the E2E seed are local / E2E only. The question Q1 of section 8 is answered by D95.
+**D95 (2026-10-31; `docs/TRACKER.md`, in base since BASE-210) supersedes the text that stood here ("Option A by hand" and "Option B seed").** On UAT an Admin Pusat creates each blueprint by hand in Kontrak, through the real flow, and presses Sahkan. There is **no seed on UAT**: the demo seeds, the launch-blueprint seed (`exam-launch-blueprints`) and the E2E seed are local / E2E only. The question Q1 of section 8 is answered by D95.
 
-- Pentadbiran -> `/admin/spm/kontrak` -> `Tambah Kontrak` -> fill the subject, kertas and sections until the panel shows `Tiada ralat. Kontrak boleh disimpan.` -> save. It is saved as Draf/Spec.
+- **Fixed by BASE-213 (`KontrakEditorPage.vue:87`); a build before BASE-213 has the bug:** any tab switch resets the form, so a new contract cannot be saved in the app (runbook 2.5). Guards: `src/modules/m28-bijak-spm/__tests__/kontrak-editor-tabs.test.ts` and `e2e/bijak/kontrak-http.spec.ts` (manual, not in CI; on `r1/b4-kontrak-http-spec`, not in base at BASE-214). Pentadbiran -> `/admin/spm/kontrak` -> `Baharu` -> `Teruskan` -> fill the subject, kertas and sections until the panel shows `Tiada ralat. Kontrak boleh disimpan.` -> save. It is saved as Draf/Spec.
 - Order and checks: 3472/2 first, then 1449/1, 1249/1, 4531/1 and Sains K1 once evidence from two or more bodies is ready. The steps, the read-only SELECTs for the blueprint state before and after Sahkan, and the "no seed ran" checks are in [r1-runbook.md](r1-runbook.md) section 5. The evidence per blueprint, with every check Sahkan runs and what is missing, is in [r1-k1-blueprint-evidence.md](r1-k1-blueprint-evidence.md) (T39; on branch `r1/t39-k1-evidence` until merged).
 
 ### 4.2 Verify (UI path, Admin Pusat)
@@ -583,9 +583,13 @@ Full rollback (LEAD confirmation and a maintenance notice required; production-v
 
 1. `$PC stop api frontend` (keep `db`). Take a safety dump of the current state:
    `deploy/vps/backup/backup.sh --tag drill --no-offsite --no-files`.
-2. Prove the pre-deploy dump from 1.4 reads (`sha256sum -c`, `pg_restore --list | head`).
-3. Drop and recreate the database, `pg_restore` the dump, then `deploy/vps/db-roles.sh apply` and
-   `deploy/vps/db-roles.sh check` (must end with `DB ROLES CHECK PASSED` before the api starts).
+2. Prove the pre-deploy dump from 1.4 reads, with the two checks of 1.4 (`<dump>: OK` and `0`). Either fails: drop nothing;
+   choose an earlier verified dump or stop and tell the LEAD (production-vps.md section 8 step 2).
+3. Drop and recreate the database and restore the dump on standard input, with the commands of production-vps.md section 8
+   step 3. **`pg_restore` must exit 0; otherwise stop, leave the API down, and repeat from the drop with the verified dump.**
+   Then `users` and finished `_prisma_migrations` rows must both count above 0 (same section). Then
+   `deploy/vps/db-roles.sh apply` and `deploy/vps/db-roles.sh check` (must end with `DB ROLES CHECK PASSED` before the api
+   starts; it proves the roles, not the restore: a dump cut at 99% passed it with 0 rows).
 4. `deploy/vps/rollback.sh --checkout <PREV_TAG>` (images and the compose/nginx files of the old release), then check
    `/api/ready` and a login.
 5. Check: `SELECT max(migration_name) FROM _prisma_migrations WHERE finished_at IS NOT NULL` = `0091_...`;
@@ -685,13 +689,13 @@ Unverified (nothing here was run against any server):
 6. Old API behaviour on the post-0092 schema (`topic_weights`) (6.2).
 7. How to stop a verified pair serving without a restore (6.2).
 8. How the UAT frontend build id is recorded (1.3).
-9. Section 0.1: T01 and T03 are merged (BASE-3 `285387a3`), but no release build of BASE-3 was run here. T06
-   (`502280f5`), T04 / 0100 (`2f16c1fe`) and T25 / 0101 (`be039a1b`) are not merged; their effects are described from
-   their branches and notes. The T04 pre-flight count (2.1) and the `VACUUM (ANALYZE)` (2.4) were not run or timed.
+9. Section 0.1 is a history view: T01, T03, T06, T04 / 0100 and T25 / 0101 are all in base. This page described T06, T04
+   and T25 from their branches and notes. The 0091 upgrade was rehearsed locally with 0100 at about 30 s at 409k rows, and
+   `VACUUM ANALYZE` at 36 s (runbook 2.5); neither is timed on production.
 
 Open questions for the team:
 
-- **Q1 (LEAD): answered by D95** (PR amin-kerja-orang/prestasiplus#404, not merged; 2026-10-31): on UAT the launch blueprints are created by hand in Kontrak by an Admin Pusat and verified with Sahkan; the demo-kind `exam-launch-blueprints` seed does not run there. Order: 3472/2 first, then 1449/1, 1249/1, 4531/1 and Sains K1 once evidence from two or more bodies is ready (see section 4.1).
+- **Q1 (LEAD): answered by D95** (`docs/TRACKER.md`, 2026-10-31): on UAT the launch blueprints are created by hand in Kontrak by an Admin Pusat and verified with Sahkan; the demo-kind `exam-launch-blueprints` seed does not run there. Order: 3472/2 first, then 1449/1, 1249/1, 4531/1 and Sains K1 once evidence from two or more bodies is ready (see section 4.1).
 - **Q2 (backend):** confirm 0100 timing on a restored UAT copy and whether it needs a longer window or batching.
 - **Q3 (backend):** answer items 6 and 7 above.
 - **Q4 (LEAD):** OCR/extraction provider for AC-R1-14.2 (D85 U1) is still open; R1 ships with `OCR_ENGINE=none`,
