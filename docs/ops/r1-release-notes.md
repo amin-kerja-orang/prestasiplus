@@ -639,6 +639,8 @@ Do not read the tag from the state directory here. Every step needs the LEAD's c
    **Partial changes found** (anything not "clean"): do **not** mark it rolled back. Restore the pre-deploy dump
    (section 6.2 "Full rollback", steps 1-3, then start the old images with `deploy/vps/rollback.sh --checkout <PREV_TAG>`)
    and report to the backend developer. For 0100 this is the only way back (not reversible).
+   **0105 when the migrate client died (any timeout):** do not mark it rolled back yet. Run the object check first and follow W1 in [r1-runbook.md](r1-runbook.md) 2.4 ("Client died while 0105 waited for a lock"): complete → `prisma migrate resolve --applied 0105_gate_facts`; absent → `--rolled-back`, then deploy.
+
 4. **Clean:** fix the cause first (for the 0092 guard: the `topic_weights` rows need a backup and a decision by the
    backend developer and the LEAD; never edit data ad hoc). Then mark the failed migration as rolled back (write; run
    inside `apps/api`, where `prisma.config.ts` is):
