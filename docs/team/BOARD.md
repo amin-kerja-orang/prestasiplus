@@ -530,13 +530,13 @@ The B4 pack chain was walked by HTTP on SN/2 (4541/2): **96 MATCH, 1 scanner fal
 - Low bug, fixed under D9: "(draf)" stays in published titles → r1/publish-title-draft (A2).
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 00:29 UTC, BASE 0f7269f0)
+### Team A open branches: heads from origin (auto, 2026-11-02 00:31 UTC, BASE 0f7269f0)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/a2-carried-minors | 45f152423 | READY (A2, @45f15242 = 6b9104d3 + A1b Minor JSDoc wording; comments/docs only): REQ-A-018 JSDoc, D9 row simulasi_kuiz limit, deviation row PKSK applyStatus no approve gate (LEAD, KIV R2); A1b Approve; C3 doc line deferred until c012 merges; B2 |
-| r1/ac-gaps-a1b | 3ea703331 | READY (multi, @3ea70333: row 39 per USER Q13; B4 pack fixes; runbook 0105 NOT online + caveats; consistency fixes B8–B12: T31/T43/T51 READY + merge order, Sembunyikan button, Terbitkan cite, THROTTLE default 240); B4 |
+| r1/ac-gaps-a1b | af116ae27 | READY (multi, @af116ae2: row 39 per USER Q13; B4 pack fixes; runbook 0105 NOT online + caveats; consistency fixes B8–B12: T31/T43/T51 READY + merge order, Sembunyikan button, Terbitkan cite, THROTTLE default 240; B4 pack tiers precondition "if it is not 4"); B4 |
 | r1/admin-list-perf | 69f465c89 | READY (A4, @69f465c8 = 6389cd54 + REQ-B-061 fix: list limit default 60→240/min, env override kept, spec 240→200/241st→429 bites, docs+deviation row); A1b pre-review Approve on delta (0 B/M; spec bites at 239 and 241; 32.5 s); B2 delta re-review; C side = REQ-A-027 |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
 | r1/builder-search-perf | 1216b736c | READY (A3, on T48 6c5ae3a8; restack only): 413 pass; alone = trial merge with H-A18 fc409ae1, 0 failures, tsc 0; merge after T48; B2 |
@@ -566,6 +566,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/req-c012-a2 | 47b854249 | READY (A2, @47b85424 = 9b1fd35e + new ha18): merge after ha18; B3 re-check |
 | r1/reqa018-mock-swap | 76511c9a8 | READY (A2, @76511c9a on route 9d6ef833): drops the 3 paper-servability known-mismatch entries (C mock now matches the contract; verified with C FE 3942f760: 160 scenarios, 0 failing); merge AFTER C reqa018-paper-servability-fe; B2 small | A1b pre-review: Approve; with C FE 8ad24143 + mock-known-mismatches: mock conformance 2/2, no stale |
 | r1/reqa018-paper-servability-route | 9d6ef833f | READY (A2, @9d6ef833, contains BASE-107): admin papers only, cap 200 + meta, batched read, contract exports; contract-tests scenario (4 cases; API conformance 413/413; mock: 3 assertion known-mismatches until C serves it → swap to 1 schema entry when C reqa018-fe lands); full B2 + B3; C reqa018-fe must re-merge | merge-tree vs BASE-109: clean |
+| r1/reqa030-mock-list-contract | 0a960eb4d | (no status — triage) |
 | r1/reqa035-rule-line-fe | 7cd7e3bdc | (no status — triage) |
 | r1/reqb052-archived-edit | f3a2448f9 | READY (A3, BASE-105; replaces 17196431): follow-ups done: P1 pinned-clause spec (bites), guard published OR (withdrawn AND EXISTS attempts), header; archived-edit 6/6, pinned-version-rule 6/6, workflow 296/296; tsc/eslint 0; B2 | merge AFTER ha18 a9ffe246 (merge-tree clean; fix not needed inside) |
 | r1/reqb058-dedupe-test-a3 | a5f4d3553 | READY (A3, @a5f4d355 on reqb058 b1e96566; test only): one question in two sections, getVersions dedupe + takedown paths, 5 tests, mutations red; closes A1b Minor 3; merge after reqb058; B2 |
@@ -590,8 +591,6 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t51-partial-acs-a3 | 61c1b077f | READY (A3, hold LIFTED; @61c1b077 on T43 238eb6eb + T31 eb0346d2 + T48): merge after T48, T31, REQ-A-008, T43; never old T31 6a27c8dd / T43 5ce5894f / T51 54f63116; Preview #3 (A4, 33 heads on BASE-105 @525f9ca1, local): ALL GREEN, vue-tsc 0 after REQ-A-008, 0 reds. B2 |
 
 **Merged content, origin head has only base-merge commits since (no new work):** r1/a4chain-minors 86dd7ad67, r1/ha15-blueprint-evidence 7e5d637e5, r1/overview-getmany-parallel 2809a87fe, r1/reqb032-pinned-rule 167986eff, r1/t44-blueprint-fields 072d8f4b4
-
-**New branches not yet triaged:** r1/reqa030-mock-list-contract 0a960eb4d
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
