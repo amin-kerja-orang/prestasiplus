@@ -368,7 +368,7 @@ function blueprintView(bp: Blueprint): BlueprintView {
       s.instruction ??
       (s.rule.type === 'all'
         ? 'Jawab semua soalan.'
-        : `Jawab ${s.rule.n} daripada ${s.take} soalan.`),
+        : `Jawab ${s.rule.n} soalan sahaja.`),
     rule: s.rule,
     pool: s.pool,
   }))
