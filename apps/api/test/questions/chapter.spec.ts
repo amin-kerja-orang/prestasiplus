@@ -30,11 +30,12 @@ describe('admin question Bab (curriculumChapterId)', () => {
   })
 
   const create = async (over: Record<string, unknown> = {}) => {
-    const res = await admin.post('/api/questions', mcqBody(refs, over))
+    const res = await admin.post('/api/questions', mcqBody(refs, { curriculumChapterId: undefined, ...over }))
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     return mutationEnvelopeOf(QuestionSchema).parse(res.body).data
   }
-  const put = (id: string, over: Record<string, unknown>) => admin.put(`/api/questions/${id}`, mcqBody(refs, over))
+  // These specs are about the Bab itself: no default chapter, so an omitted key means omitted.
+  const put = (id: string, over: Record<string, unknown>) => admin.put(`/api/questions/${id}`, mcqBody(refs, { curriculumChapterId: undefined, ...over }))
   const storedChapter = async (id: string, versionNo = 1): Promise<string | null> =>
     (await t.db.query<{ c: string | null }>(`select chapter_id::text c from question_versions where question_id = $1 and version_no = $2`, [id, versionNo]))[0]?.c ?? null
 

@@ -1,7 +1,7 @@
 # v2 Admin-to-Student Content Pipeline: architecture (slug `admin-student-pipeline`)
 
 Status: G2 approved as D85 (2026-10-30). Owner: solution-architect. Track: Full. Section 13 = R1 build plan, Bijak SPM first (D86); needs approval of 13.9 (R1-U1..U7).
-Inputs: `docs/requirements/v2-admin-student-pipeline.md` (US-01..20, A01-A23, FD-1..FD-10, 10.1), `docs/design/v2-admin-student-pipeline.md`, `docs/discovery/cloud-student-mechanism.md`, TRACKER D11/D12, D29, D46, D53h, D54a, D72, D75-D84, gap analyses (activities, formats-authoring, process-root-causes), code on `local/v2-full`.
+Inputs: `docs/requirements/v2-admin-student-pipeline.md` (US-01..20, A01-A23, FD-1..FD-11, 10.1), `docs/design/v2-admin-student-pipeline.md`, `docs/discovery/cloud-student-mechanism.md`, TRACKER D11/D12, D29, D46, D53h, D54a, D72, D75-D84, gap analyses (activities, formats-authoring, process-root-causes), code on `local/v2-full`.
 Build mode (D84): directly against the real v2 API (http mode). No mock fixtures. The tasks FE-P1, FE-P2, FE-P3, FE-P4 of the UX spec (mock data) are cancelled and replaced by the tasks in section 9; FE-P5 (display components) is kept.
 ADRs: 0027 lifecycle, 0028 servable service, 0029 single store, 0030 served-question model and bridges, 0031 DSKP tags and gate, 0032 Tracking A, 0033 Kertas Subjektif document, 0034 OCR engine (proposed), 0035 feature flags.
 
@@ -492,6 +492,7 @@ sequenceDiagram
 | AP-14 | Paper quiz non-MCQ textarea gets a helper line | FD-9 |
 | AP-15 | Practice random level limit T4/T5 removed | AC-12.2 |
 | AP-16 | Simulasi `/simulasi` subheading corrected | FD-3 |
+| AP-17 | "Soalan by Chapter" subject tile is the sum of the per-chapter counts (chaptered, ungrouped, approved), not the whole subject | FD-11; D9, D91, D80; described in `docs/ops/r1-b01-question-lifecycle.md` (D91 note) |
 
 ## 8. Risks
 | # | Risk | Impact | Mitigation |

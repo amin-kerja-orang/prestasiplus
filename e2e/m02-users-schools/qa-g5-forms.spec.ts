@@ -6,6 +6,7 @@
 
 import type { Page } from '@playwright/test'
 
+import { M02_CONFIG_DEFAULTS } from '../../src/modules/m02-users-schools/mock/m02-config'
 import { DEMO_PASSWORD, expect, gotoApp as gotoAppOn, test } from '../fixtures/test'
 import {
   acceptNextDialog,
@@ -223,7 +224,7 @@ test.describe('M02 QA S2 create gaps', { tag: [TAG.smoke, moduleTag(2)] }, () =>
     await expect(byId(page, 'gen-email')).toHaveAttribute('readonly', '')
     await expect(byId(page, 'gen-password')).toHaveAttribute('readonly', '')
     // SEC-M02-01: the configured school-admin default password (not the demo password).
-    await expect(byId(page, 'gen-password')).toHaveValue('Sekolah2026')
+    await expect(byId(page, 'gen-password')).toHaveValue(M02_CONFIG_DEFAULTS.schoolAdminDefaultPassword)
     await expect(byId(page, 'gen-email')).toHaveValue(/@prestasiplus\.my$/)
   })
 

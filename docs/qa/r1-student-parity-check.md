@@ -34,7 +34,7 @@ Stale rows in `docs/discovery/v2-parity/student.md` (dated 2026-10-30): B15 (sel
 | `r1/t14-student-bugs` | 1903b713 | no | Stem rows, Databank zero-count chip "Tiada soalan", feedback body de-duplicated |
 | `r1/t15-bm-copy` | 09eabe2e | no | Approved BM copy (Q1) on ResultPage and docs |
 | `r1/b16-kuiz` | 97e6c3df | no | API: Kuiz count rule and limits (team A) |
-| `r1/t38-selfmark-reward` | 270e5140 | no | API: D94 self-mark reward (team A) |
+| `r1/t38-selfmark-reward` | 13134ced | no | API: D94 self-mark reward (team A) |
 | `r1/t42-reports-intake-acs` | b3cddd1c | no | API: report carries attemptId / paperId (team A) |
 
 Already in base: T35 (Arkib on a report row, BASE-18), T28 (XP and streak at submit), self-mark, retry, past sittings, Kuiz API (`bijak/kuiz`), H-A2 reports Darjah, T08 secondary guard, T25, T32.
@@ -94,7 +94,7 @@ parity: same behaviour and copy. label differs: the exact BM on both sides is qu
 | S-33 | B15 / S3 | Per-Bahagian stepper for a document Bahagian (`semak-bahagian`) | n/a | Skipped by decision (OQ-2, T46): no R1 paper has such a Bahagian. | n/a | Not built; document Bahagian is KIV (B06). | Deferred R2. |
 | S-34 | B13 / S3 | Unmarked written parts: "Belum dimarkah" and count 0 until marked | parity | Waiting status proven; total-contribution-0 spec missing (AC-R1-06.5 partial). | parity | "Belum dimarkah — perlu semakan" (`PartResultCard.vue:22,119`), banner "{n} bahagian belum dimarkah — perlu semakan" and "Jumlah markah ialah sementara sehingga semakan selesai." | Team A: spec (T40). |
 | S-35 | B18 / S3 | Submit writes the practice record, Prestasi feed, kombo and Syiling (once) | parity | Aggregate row + wallet credit "Ganjaran kertas Bijak SPM" once per attempt (flow.spec); XP and streak (kombo) at submit are in base through T28; Cuba Lagi earns again, one award per attempt (D93, second part). V2 rates beyond 2 syiling + 10 XP per mark, and the kombo step: unconfirmed (verify-first notes, AC-R1-10.1/10.2 partial). | unconfirmed | Reward amounts are not shown on the Bijak result page (V2 shows none on Semakan; unconfirmed). | Team A: spec that Cuba Lagi does not re-pay attempt 1 (T40). |
-| S-36 | B18 / D94 | A self-mark that raises a part's mark credits 2 Syiling + 10 XP per mark gained, once per part, never above the part's marks | missing API | Not in base. `awardSelfMark` exists only on `r1/t38-selfmark-reward` (270e5140, unmerged). Base pays nothing for a later self-mark (ha17 AC-R1-10.2 note). | unconfirmed | No FE change in T38; whether the pupil should see the gain (toast or chip) is not decided. | Team A: merge T38. Team C: ask whether a reward chip is wanted. |
+| S-36 | B18 / D94 | A self-mark that raises a part's mark credits 2 Syiling + 10 XP per mark gained, once per level of the attempt total (the best-N total, never above the attempt's maximum) | missing API | Not in base. `awardSelfMark` exists only on `r1/t38-selfmark-reward` (13134ced, READY, unmerged). Base pays nothing for a later self-mark (ha17 AC-R1-10.2 note). | unconfirmed | No FE change in T38; whether the pupil should see the gain (toast or chip) is not decided. | Team A: merge T38. Team C: ask whether a reward chip is wanted. |
 | S-37 | B16 / S3 | "Cuba Lagi" button on Semakan starts a fresh sitting; old attempt untouched | parity | `POST attempts/:id/retry` (self-mark.spec, pipeline-chain.spec; AC-R1-08.1 proven). | parity | `ResultPage.vue` "Cuba Lagi" (also "Sejarah Bijak SPM"); shows the API's BM message on failure (lines 188-201). | - |
 | S-38 | B16 / S2 | "Lihat semakan lepas" link on a new sitting (attempt header) | parity | `GET papers/:paperId/attempts` newest first (AC-R1-08.2 proven). | step differs | `PastSittingsLink.vue` is on the cover (scope R1-08.2 says cover). V2 shows it in the attempt header of the new sitting; V3 does not. | Scope text wins (AC-R1-08.2); record. |
 | S-39 | B16 | Withdrawn paper: "Cuba Lagi" refused with a plain BM message | parity | Refused with BM text (AC-R1-08.3 proven). | parity | ResultPage shows `e.message` from the API. On the cover, `Mula` on a 403 shows the API reason only on `r1/hc5-mula-403` (fc54afc8, unmerged); base shows "Percubaan tidak dapat dimulakan. Cuba lagi." | Team C: merge H-C5. |
@@ -162,7 +162,7 @@ parity: same behaviour and copy. label differs: the exact BM on both sides is qu
 
 Class `missing API`:
 
-1. S-36 D94 self-mark reward: merge `r1/t38-selfmark-reward` (270e5140, T38 lane A1). Base pays nothing for a later self-mark.
+1. S-36 D94 self-mark reward: merge `r1/t38-selfmark-reward` (13134ced, READY, T38 lane A1). Base pays nothing for a later self-mark.
 2. S-69 Bijak report must store the paper: merge `r1/t42-reports-intake-acs` (b3cddd1c, T42 lane A2); then the FE control (team C list, item 6).
 
 Class `step differs` / `label differs` (decisions, not code):

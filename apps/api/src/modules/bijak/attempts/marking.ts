@@ -150,7 +150,7 @@ export function gradeQuestion(
     marks: parts.reduce((n, p) => n + p.marks, 0),
     awarded: parts.reduce((n, p) => n + p.awarded, 0),
     counted,
-    attempted: leavesOfBundle(b).some((l) => !isBlank(answers.get(l.id))),
+    attempted: leavesOfBundle(b).some((l) => !isBlank(answers.get(l.id), b.question.mcq ? 'mcq' : l.kind)),
     parts,
   }
 }
