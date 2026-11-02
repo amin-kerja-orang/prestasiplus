@@ -181,6 +181,10 @@ model QuestionVersion {
   sourceRegion  Json?   @map("source_region") @db.JsonB
   aiModel       String? @map("ai_model")
   importIssues  Json?   @map("import_issues") @db.JsonB
+  /// person, ai (check). `ai` = the last content on this version was written by the AI service and no person has acted since (approve gate, R1-H-A18).
+  lastEditor    String  @default("person") @map("last_editor")
+  /// Question total declared at intake accept; the approve gate compares it with the sum of the leaf marks. Null = not declared.
+  declaredMarks Int?    @map("declared_marks") @db.SmallInt
   // No FK yet (owning cards add it, G-12): BE-10 source_papers, BE-36/37/38 intake and AI run.
   sourcePaperId BigInt? @map("source_paper_id")
   intakeItemId  BigInt? @map("intake_item_id")

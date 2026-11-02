@@ -16,9 +16,9 @@
  */
 import type { BijakAttemptPartResult, BijakAttemptResult } from '@pp/contract'
 
-import { isBlank, type QuestionResult, type SchemeDef, type SectionSnapshot } from './exam-core.adapter'
+import { isBlank, type LeafKind, type QuestionResult, type SchemeDef, type SectionSnapshot } from './exam-core.adapter'
 import { answerTextOf, suggestFromPoints } from './keyword-suggest'
-import { assembleResult, type AnswerMap, type Bundles } from './marking'
+import { assembleResult, leavesOfBundle, type AnswerMap, type Bundles } from './marking'
 
 export interface SelfMarkEntry {
   /** Already clamped to 0..part marks (and to the band range). */
@@ -76,8 +76,11 @@ export function decorateResult(base: BijakAttemptResult, bundles: Bundles, answe
 }
 
 /** Overlays the pupil's marks and recomputes questions, choose-N ranking, totals, provisional and pending. */
-export function applySelfMarks(base: BijakAttemptResult, composition: readonly SectionSnapshot[], marks: SelfMarks): BijakAttemptResult {
+export function applySelfMarks(base: BijakAttemptResult, composition: readonly SectionSnapshot[], marks: SelfMarks, bundles?: Bundles): BijakAttemptResult {
   if (Object.keys(marks).length === 0) return base
+  // REQ-B-025(c): the leaf kind tells a choice-only essay_choice answer (blank, so 'kosong') from a real answer.
+  const kinds = new Map<string, LeafKind>()
+  for (const b of bundles?.values() ?? []) if (!b.question.mcq) for (const l of leavesOfBundle(b)) kinds.set(l.id, l.kind)
   const questions = structuredClone(base.questions)
   for (const q of questions) {
     let changed = false
@@ -85,7 +88,7 @@ export function applySelfMarks(base: BijakAttemptResult, composition: readonly S
       const m = marks[p.partId]
       if (!m) continue
       p.awarded = clamp(m.mark, 0, p.marks)
-      p.status = statusFor(p.awarded, p.marks, isBlank(p.answer))
+      p.status = statusFor(p.awarded, p.marks, isBlank(p.answer, kinds.get(p.partId)))
       p.selfMarked = true
       delete p.autoSuggested // the pupil's mark replaces the automatic suggestion
       if (m.band !== undefined) p.band = m.band
@@ -102,4 +105,12 @@ export function applySelfMarks(base: BijakAttemptResult, composition: readonly S
   const assembled = assembleResult(composition, questions as unknown as QuestionResult[])
   // Coins and points are what was CREDITED at submit (the wallet reward is never repeated), not a figure recomputed from the self-marked score.
   return { ...assembled, questions, coins: base.coins, points: base.points }
+}
+
+/**
+ * The best-N score of the AUTOMATIC grading, without any self-mark: what the submit reward paid for. The score column of a stored
+ * result carries the self-marks, so this re-ranks the stored graded rows (which keep the automatic marks) with best-N.
+ */
+export function automaticScore(stored: BijakAttemptResult, composition: readonly SectionSnapshot[]): number {
+  return assembleResult(composition, structuredClone(stored.questions) as unknown as QuestionResult[]).score
 }

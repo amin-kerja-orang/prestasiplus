@@ -19,6 +19,7 @@ import type {
 } from '../../api/comp-students'
 import type { ImportResponse } from '../../api/imports'
 import { complimentary, setCompWalletSource } from '../../mock'
+import { M02_CONFIG_DEFAULTS } from '../../mock/m02-config'
 import {
   MSG_COMP_ACTION_DONE,
   MSG_COMP_BAD_LINE,
@@ -285,7 +286,7 @@ describe('#17 POST /api/admin/comp-students (S7, BR-18)', () => {
     const res = await register(body({ students: 'PELAJAR DEMO A, 090505105555' }))
     expect((res.body as ImportResponse).data.created).toBe(1)
     const user = users.findByEmail('105555@prestasiplus.my')!
-    expect(users.verifyPassword(user.id, '20262026')).toBe(true)
+    expect(users.verifyPassword(user.id, M02_CONFIG_DEFAULTS.compStudentDefaultPassword)).toBe(true)
     expect(users.verifyPassword(user.id, 'salah')).toBe(false)
   })
 
@@ -296,7 +297,7 @@ describe('#17 POST /api/admin/comp-students (S7, BR-18)', () => {
     const user = users.findByEmail('107777@prestasiplus.my')!
     expect(users.verifyPassword(user.id, 'Konfig2026')).toBe(true)
     // The built-in default no longer applies while a configured value is set.
-    expect(users.verifyPassword(user.id, '20262026')).toBe(false)
+    expect(users.verifyPassword(user.id, M02_CONFIG_DEFAULTS.compStudentDefaultPassword)).toBe(false)
     await runtime.reset()
     await register(body({ students: 'PELAJAR DEMO D, 090808108888' }))
     const after = users.findByEmail('108888@prestasiplus.my')!

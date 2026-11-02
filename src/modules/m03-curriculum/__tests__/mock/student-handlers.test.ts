@@ -274,12 +274,12 @@ describe('GET /api/learning-map (#27, S14)', () => {
       'Sistem Persamaan',
       'Indeks, Surd dan Logaritma',
     ])
-    // No history: topics 1-2 unlocked, the rest locked (OBSERVED).
-    expect(d.topics.map((t) => t.state)).toEqual(['unlocked', 'unlocked', 'locked'])
+    // No history: every topic is unlocked (D98, follow V2: no lock).
+    expect(d.topics.map((t) => t.state)).toEqual(['unlocked', 'unlocked', 'unlocked'])
     expect(d.topics.map((t) => t.practiceUrl)).toEqual([
       '/practice?topic_id=86',
       '/practice?topic_id=87',
-      null,
+      '/practice?topic_id=88',
     ])
     expect(d.stats).toEqual({ done: 0, total: 3, progress: 0 })
     expect(d.topics[0]).toMatchObject({ progress: 0, sessions: 0, questionsAnswered: 0 })
@@ -342,7 +342,7 @@ describe('GET /api/learning-map (#27, S14)', () => {
     ).body.data
     expect(t4.stats.total).toBe(12)
     expect(t4.topics[0]?.name).toBe('Alat pemadam api')
-    expect(t4.topics.map((t) => t.state).slice(0, 3)).toEqual(['unlocked', 'unlocked', 'locked'])
+    expect(t4.topics.map((t) => t.state).slice(0, 3)).toEqual(['unlocked', 'unlocked', 'unlocked'])
     const t5 = (
       await get<{ data: LearningMap }>('/api/learning-map', 'student', {
         subject: 'SAINS',
@@ -403,11 +403,7 @@ describe('GET /api/learning-map (#27, S14)', () => {
         grade: 'TINGKATAN_4',
       })
     ).body.data
-    expect(d.topics.map((t) => t.state)).toEqual([
-      'unlocked',
-      'unlocked',
-      ...Array.from({ length: 10 }, () => 'locked'),
-    ])
+    expect(d.topics.map((t) => t.state)).toEqual(Array.from({ length: 12 }, () => 'unlocked'))
     expect(d.stats).toEqual({ done: 0, total: 12, progress: 0 })
   })
 })
@@ -432,18 +428,17 @@ describe('map rules (pure)', () => {
     correct: 0,
   })
 
-  it('BR-14: mastered ≥ 80, started on any history, unlocked after started/mastered, else locked', () => {
+  it('BR-14 (D98, no lock): mastered ≥ 80, started on any history, else unlocked; never locked', () => {
     expect(islandStates([p(80, 1, 20), p(79, 1, 5), p(0, 0, 0), p(0, 0, 0)])).toEqual([
       'mastered',
       'started',
       'unlocked',
-      'locked',
+      'unlocked',
     ])
-    // A started topic after a locked one is still started (history wins).
     expect(islandStates([p(0, 0, 0), p(0, 0, 0), p(0, 0, 0), p(10, 0, 3)])).toEqual([
       'unlocked',
       'unlocked',
-      'locked',
+      'unlocked',
       'started',
     ])
     expect(islandStates([])).toEqual([])

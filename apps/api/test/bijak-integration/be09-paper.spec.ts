@@ -4,7 +4,7 @@
  * submitted through the real `BijakIntegrationModule` wiring and the BE-09 -> exam-core bridge.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { BijakAttemptPaperViewSchema, BijakAttemptResultViewSchema } from '@pp/contract'
+import { BijakAttemptPaperViewSchema, BijakAttemptResultViewSchema, BijakPaperCoverSchema, envelopeOf } from '@pp/contract'
 
 import { Be09BijakQuestionSource } from '../../src/modules/bijak/question-bridge'
 import { QuestionsService } from '../../src/modules/questions'
@@ -261,5 +261,22 @@ describe('a paper built from BE-09 questions', () => {
     expect(BijakAttemptResultViewSchema.parse(r.body.data).result.score).toBe(9)
     const res = await student.post('/api/bijak/attempts', { paperId, mode: 'exam' })
     expect(res.status, JSON.stringify(res.body)).toBe(403)
+  })
+
+  it('8. AC-20.3 examinerGrid on the production path: false for an automatic paper, true for a points essay, and still true after that essay is archived (pinned version)', async () => {
+    const cover = async (paper: string) => {
+      const res = await student.get(`/api/bijak/papers/${paper}`)
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      return envelopeOf(BijakPaperCoverSchema).parse(res.body).data
+    }
+    const automatic = await createPaper('Kertas tanpa pemeriksa', [{ label: 'Bahagian A', questionIds: [id('SEED-GRP-AYAT-2')] }])
+    expect((await cover(automatic)).examinerGrid).toBe(false)
+    const essay = id('SEED-STR-ANYN') // points without accept: a person marks it
+    const marked = await createPaper('Kertas dengan esei', [{ label: 'Bahagian B', questionIds: [id('SEED-GRP-AYAT-2'), essay] }])
+    expect((await cover(marked)).examinerGrid).toBe(true)
+    // the essay is withdrawn after Terbit: the paper still places its pinned version, so the grid stays
+    await t.app.get(QuestionsService).setStatus(essay, 'archived', '1')
+    expect((await t.db.query('select live_version_no from questions where id = $1', [essay]))[0]).toEqual({ live_version_no: null })
+    expect((await cover(marked)).examinerGrid).toBe(true)
   })
 })
