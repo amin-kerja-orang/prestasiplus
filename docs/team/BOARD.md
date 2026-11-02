@@ -530,13 +530,14 @@ The B4 pack chain was walked by HTTP on SN/2 (4541/2): **96 MATCH, 1 scanner fal
 - Low bug, fixed under D9: "(draf)" stays in published titles → r1/publish-title-draft (A2).
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 00:15 UTC, BASE 4e3576de)
+### Team A open branches: heads from origin (auto, 2026-11-02 00:21 UTC, BASE 0ba520cc)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
-| r1/ac-gaps-a1b | 9821b2180 | READY (multi, @9821b218: row 39 per USER Q13; B4 pack fixes from A2 walk + ha18 head refs a9ffe246); B4 |
-| r1/admin-list-perf | 69f465c89 | READY (A4, @69f465c8 = 6389cd54 + REQ-B-061 fix: list limit default 60→240/min, env override kept, spec 240→200/241st→429 bites, docs+deviation row); B2 delta re-review; C side = REQ-A-027 |
+| r1/a2-carried-minors | 6b9104d32 | READY (A2, @6b9104d3 on BASE 99d2fab2; comments/docs only): REQ-A-018 JSDoc, D9 row simulasi_kuiz limit, deviation row PKSK applyStatus no approve gate (LEAD, KIV R2); C3 doc line deferred until c012 merges; B2 |
+| r1/ac-gaps-a1b | 3ea703331 | READY (multi, @9821b218: row 39 per USER Q13; B4 pack fixes; runbook 0105 NOT online + caveats); B4. Consistency fixes B8–B12 pending (A3 docs agent) |
+| r1/admin-list-perf | 69f465c89 | READY (A4, @69f465c8 = 6389cd54 + REQ-B-061 fix: list limit default 60→240/min, env override kept, spec 240→200/241st→429 bites, docs+deviation row); A1b pre-review Approve on delta (0 B/M; spec bites at 239 and 241; 32.5 s); B2 delta re-review; C side = REQ-A-027 |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
 | r1/builder-search-perf | 1216b736c | READY (A3, on T48 6c5ae3a8; restack only): 413 pass; alone = trial merge with H-A18 fc409ae1, 0 failures, tsc 0; merge after T48; B2 |
 | r1/chain-qa-bab-3a-a3 | 0efba36c4 | READY (A3, @0efba36c; contains chain-qa-selfmark + H-A18 + T38): Bab-refusal step 3a (bites); 642 pass; merge after H-A18 + chain-qa-selfmark; B2 | merge AFTER ha18 a9ffe246 (merge-tree clean; fix not needed inside) |
@@ -552,8 +553,9 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha26-team-a-state | 37c79de67 | READY (A3 docs, @37c79de6: merged list BASE-110..124, pending trimmed, KIV 36 @ha24 fdfaa810); B1 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-followup | 2fe252aba | READY (A2, @2fe252ab on intake-reqs 8c1964a6): unknownSp required, FACTS in unit.spec, deviations row 244 names spNotInTaxonomy; 43/43, tsc 0; merge AFTER intake-reqs (deviations conflict: keep both); B2 small | A1b pre-review: CLEAN (CurriculumFacts internal; both producers always set unknownSp; tsc 0; 43/43) |
-| r1/minors-kbat-chain-a3 | 295456912 | READY (A3, @29545691 on partial-acs-a3 01ab13f7; test only): pipeline-chain step 6b Jana Kertas with KBAT>0 (positive + SHORTAGE kbat), 48 pass, mutations red; closes B2 c17 Minor; merge after partial-acs-a3; B2 |
-| r1/minors-snapshot-versions-a3 | 1ef2eb2e5 | READY (A3, @1ef2eb2e on BASE-120; type only): AttemptSectionSnapshot.versions; attempt-source 4/4, tsc 0; closes B2 c20 Minor; B2 |
+| r1/minors-chain-tip-a3 | 666102d0c | READY (A3, @666102d0 on BASE-128): dead reasons.length guard removed in approval-check unservableEverywhere (no behaviour change), t45-approval-check 4/4 + mutations red; closes B2 c20 Minor; (b) limiter scope pending A4 reading; B2 |
+| r1/minors-kbat-chain-a3 | 295456912 | READY (A3, @29545691 on partial-acs-a3 01ab13f7; test only): pipeline-chain step 6b Jana Kertas with KBAT>0 (positive + SHORTAGE kbat), 48 pass, mutations red; closes B2 c17 Minor; merge after partial-acs-a3; B2 | A1b pre-review Approve (4 mutation sets red; D gives SHORTAGE combination/kbat, still red) |
+| r1/minors-snapshot-versions-a3 | 1ef2eb2e5 | READY (A3, @1ef2eb2e on BASE-120; type only): AttemptSectionSnapshot.versions; attempt-source 4/4, tsc 0; closes B2 c20 Minor; B2 | A1b pre-review Approve |
 | r1/partial-acs-a3 | 01ab13f70 | READY (A3, @01ab13f7 on T51; tests only): AC-18.1 5c via Studio path + real negative; R1-11.4/12.6 SELECT pins; robust in both orders with ha18 a9ffe246 (trial 52 pass); A1b pre-review Approve + Minors fixed; merge after T51; B2 |
 | r1/publish-lock-share | e223b433f | ON HOLD (dep: on delete-served-guard fe7ef537, which waits for ha18) — code done (A1b, @e223b433 = 49635ca6 + A4 pre-review minors M1–M3: reports read after FOR SHARE, PUBLISH_TX 20s/10s, spec gate timeout; 387 pass, mutation red). A4 AwM |
 | r1/publish-title-draft | 4e768673c | READY (A2, @4e768673 = 6e0684d2 + A3 review minors; D9: Terbit drops " (draf)" from an exact auto title only; publish-title 5/5, builder-api 38/38, tsc 0; A3 APPROVE on delta); merge-tree vs BASE-126: DEV doc keep-both only; B2 |
