@@ -538,7 +538,7 @@ A3 dev-1 rehearsed this locally. `prisma migrate deploy` does not run a migratio
 - ha18-minors must restore 0105 byte-for-byte (A2); it is IN-PROGRESS until then.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 02:22 UTC, BASE 4f1e0f2a)
+### Team A open branches: heads from origin (auto, 2026-11-02 02:31 UTC, BASE f29fa935)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -564,7 +564,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/partial-acs-a3 | e6ceece19 | READY-AFTER-FIX (A3, @e6ceece1 restacked on T48 10c62437): exam-builder 416/417 RED: builder-review "stays outside D93" (same as REQ-B-069; likely pool page cap ?pageSize=100 vs 106 units). Fixed by r1/t31-pool-lookup-fixture merged after T31 (no cascade needed); merge after t31-pool-lookup-fixture |
 | r1/publish-lock-share | 7ef73b79d | READY (A1b, @7ef73b79 = 225b6941 + BASE-148 merge; A4 APPROVE: the dropped early-read was T34's perf choice (5df0b2f1), fully replaced by post-lock reads + PUBLISH_TX; the in-lock-window test exists since 11c827b7; 418/418). DSG is merged (BASE-149), so it can merge now; B2 delta |
 | r1/publish-title-draft | 335e9cbb8 | READY (A2, @335e9cbb = 4e768673 + BASE-148 merge: title constants + T48 helpers; exam-builder 396/396, tsc 0; merge-tree vs BASE clean); A4 pre-review AwM (merge resolution exact; nit: DEV row line cite); B2 delta |
-| r1/r1e2e10-bulk-publish-noop | fe228f56f | CR (A2, @fe228f56 = 5990fb6b + A1b Minor 1/3: bulkByFilter folds race rows into the integer skipped, race test + mutation; filter-bulk 11, bulk 31, workflow 310); BASE-154 code conflict in questions.service → A2 BASE merge pending; A1b delta pre-review after |
+| r1/r1e2e10-bulk-publish-noop | fe228f56f | MERGED by B1 as BASE-155 6f007a70 @5990fb6b. Follow-up delta (fe228f56: bulkByFilter race + errors.ts) is NOT in base → A2 follow-up after a BASE merge |
 | r1/ready-tiers-check | 9c80f08c3 | ON HOLD (A2, @9c80f08c, contains BASE-107): code correct + Minors fixed (exact 503 body, WARN once per state change, INFO on recovery; mutations red); waits for B DevOps (REQ-A-028: CI seed step + first-install deploy ordering) |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
 | r1/reqa018-mock-swap | 0b774bd2f | READY (A4, @0b774bd2): clean vs BASE-148; mock conformance 2/2 STANDALONE on BASE-148 (C fe in base since BASE-146), contract-tests 22/22. Merge any time; B2 small |
@@ -574,17 +574,12 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/rule-line-v2 | a425206c6 | READY (A3, @a425206c = 89961f9f + BASE-148 merge (comment kept; base figures.questionCount kept, output identical); exam-builder + bijak-papers 507, exam-core 221, tsc/vue-tsc 0; merge-tree clean); A4 pre-review AwM (merge resolution exact; nit: T48 comment :780 still quotes old line); B2 delta |
 | r1/servability-stimuli-once | f76f729a8 | READY (A4, @f76f729a, contains chain tip + BASE-107): spy spec pins one stimulus read per chunk + 2 comments; optional; step 6b |
 | r1/t04-minors | 82828a68a | MERGED by B1 as BASE-119 e927c3ee @8ae70d6e (reviewed SHA; 82828a68 delta not merged: optional test-only, left) |
-| r1/t31-builder-wire | eb0346d25 | READY (A3, @eb0346d2): already an ancestor of C reqa008 f85db8ff (B2 c23 AwM) → merging reqa008 brings T31; A4 pair check on BASE-129 GREEN (exam-builder 438, m28 FE 650, vue-tsc 0); nothing needed from team A. B2 |
-| r1/t31-pool-lookup-fixture | 2046a330f | READY (A3, @2046a330, 2 test-only commits on T31 eb0346d2; REQ-B-069): every pool lookup in builder-review.spec uses poolUnits() (walks pages); alone 26/26, stack BASE-148 + reqa008 94880200 + fix 32/32; mutation 3 red. Merge right after T31 / REQ-A-008; DEV doc keep-both; B2 |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t37-r1-runbook | c9dcb5a08 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b (823bb4a1); head c9dcb5a0 |
 | r1/t38-cap-risk-row | ee421f520 | READY (A3 docs, @ee421f52 on BASE-120): T38 accepted-risk deviation row (USER Q14, REQ-B-059); docs only; B1 | A1a pre-review Approve (bindings.ts citations exact) |
 | r1/t39-k1-evidence | 669a11099 | READY (A3 docs, @669a1109: K1 blueprint evidence re-checked at BASE-148, time-bound facts marked; fixes the dead base links in runbook/release notes); merge-tree clean; B2 |
 | r1/t42b-intake-acs | 34d86311e | READY (A2, @34d86311 on 5318a971; test-only Minor): refused accept deletes the figure copy storage object (mutation: drop files.discard → red); 6/6; B2 small | A1b pre-review: Approve (mutation bites) |
-| r1/t43-chain-publish | 238eb6eb0 | IN-PROGRESS (REQ-B-068 restack by A3; current origin head is NOT for merge) | was: READY — B2 c23 APPROVED @238eb6eb (AwM); merge after T31 + REQ-A-008 f85db8ff |
-| r1/t43b-publish-acs | 457db6ae0 | READY (A3, @457db6ae = 7a14581a + T48 10c62437 merged: contract union 26 codes (+REFERENCE_IMAGE_INVALID), openapi regen, new NO_QUESTIONS + REFERENCE_IMAGE_INVALID test; API 441, contract 54, FE m28 642, tsc 0). Merge after T48; B2 delta |
-| r1/t51-partial-acs-a3 | 7cb8d814a | READY-AFTER-FIX (A3, @7cb8d814 restacked on T48 10c62437): exam-builder 416/417 RED: builder-review "stays outside D93" (same as REQ-B-069; likely pool page cap ?pageSize=100 vs 106 units). Fixed by r1/t31-pool-lookup-fixture merged after T31 (no cascade needed); merge after t31-pool-lookup-fixture | B2 c26 APPROVED @74242a28 (intermediate head); merge after REQ-A-008 + T43 + t31-pool-lookup-fixture |
 
 **Merged content, origin head has only base-merge commits since (no new work):** r1/a4chain-minors 86dd7ad67, r1/ha15-blueprint-evidence 7e5d637e5, r1/overview-getmany-parallel 2809a87fe, r1/reqb032-pinned-rule 167986eff, r1/t44-blueprint-fields 072d8f4b4, r1/t48-builder-parity 10c624376
 <!-- AUDIT:END -->
