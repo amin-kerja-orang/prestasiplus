@@ -19,6 +19,7 @@ import {
   fetchServability,
   moveQuestionStatus,
 } from '../../api/studio'
+import { studioFieldErrors } from '../../lib/studio/field-errors'
 import { errorLines } from '../../lib/ui-errors'
 import QuestionPaperServability from './QuestionPaperServability.vue'
 import {
@@ -53,7 +54,7 @@ const props = defineProps<{
   /** The editor cannot hold this question (a mode it does not know): no "Edit sebagai draf". */
   unsupported: boolean
 }>()
-const emit = defineEmits<{ changed: [] }>()
+const emit = defineEmits<{ changed: []; refused: [fields: Record<string, string>] }>()
 
 const flash = useFlash()
 const confirm = useConfirm()
@@ -104,6 +105,7 @@ async function explainRefusal(to: 'review' | 'approved', err: unknown): Promise<
     issues.length > 0
       ? gateLines(issues)
       : (isApiError(err) && err.fields ? [...new Set(Object.values(err.fields))] : errorLines(err)).map((text) => ({ text, step: '' }))
+  emit('refused', isApiError(err) ? studioFieldErrors(err.fields) : {})
   refusal.value = {
     heading: to === 'approved' ? GATE_HEADING : 'Soalan belum boleh dihantar untuk semakan — sila betulkan isu di bawah.',
     lines,
