@@ -78,7 +78,8 @@ jobs:
   e2e-api:
     name: e2e @api (http mode, 375/768/1280)
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # 498 tests on 1 worker: run 41407548286 reached 219 in 41 min, so 45 was too short for all three viewports.
+    timeout-minutes: 120
     # Throw-away Postgres for this job only. Throw-away credentials, CI-only (same pattern as api.yml).
     services:
       postgres:
