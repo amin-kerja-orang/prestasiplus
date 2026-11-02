@@ -16,6 +16,13 @@
  * 10. marking.ts `buildServedPaper`: group `to` is one too low                                              -> "a mixed paper ...", and the two "current behaviour (KIV R2)" tests
  * 11. be09-mapping.ts `stimulusDefOf`: the `stimulus_empty` refusal removed                                      -> "a group whose stimulus cannot be shown: the paper is refused ..."
  * 12. marking.ts `buildServedPaper`: the group stimulus also put on each member question                      -> "a mixed paper: one group entry ..."
+ * 13. marking.ts `buildServedPaper`: group from/to taken as the FIRST and LAST member number (A4 U2)           -> NOT killed, by design: member numbers ascend in composition order, so first/last = min/max for any
+ *     placement (an equivalent mutant). The out-of-order test pins the real difference, see 14.
+ * 14. marking.ts `buildServedPaper`: the members gathered in published (id) order, then first/last (A4 U2 as a  -> "current behaviour (KIV R2): members placed OUT of published order ([member 3, solo, member 1]) ..."
+ *     real behaviour change); also red with only the id sort (questionIds order)
+ * 15. spec allow-map: the `table` entry removed from SIM_STIM                                                  -> "a group of two stimuli (table, then passage): the whole Simulasi wire, including the table level ..."
+ *     ("$.groups[0].stimulus.table: key outside the allow-map")
+ * 16. marking.ts `stimulusView`: `answerKey` added inside the served table grid                                 -> the same test (the planted-key control and the allow-map both report it)
  * The allow-map helper has its own positive control: `plantedLeaksAreReported` plants a top-level key, an item/question key and a `parts[].answer` key and fails unless each is reported.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -161,6 +168,26 @@ function plantedLeaksAreReported(wire: unknown, sh: Shape): void {
   }
 }
 
+/** Every table grid ({ head, rows }) anywhere on a wire: the table level of the allow-map is only exercised when the wire carries one. */
+function tablesOf(v: unknown, out: Record<string, unknown>[] = []): Record<string, unknown>[] {
+  if (Array.isArray(v)) v.forEach((x) => tablesOf(x, out))
+  else if (v !== null && typeof v === 'object') {
+    const o = v as Record<string, unknown>
+    if (Array.isArray(o.head) && Array.isArray(o.rows)) out.push(o)
+    Object.values(o).forEach((x) => tablesOf(x, out))
+  }
+  return out
+}
+/** The positive control for the table level: a key planted INSIDE a table stimulus must be reported with its path. */
+function plantedTableLeakIsReported(wire: unknown, sh: Shape): void {
+  const clone = structuredClone(wire)
+  const tables = tablesOf(clone)
+  expect(tables.length, 'the wire must carry a table stimulus, or its allow-map level is never exercised').toBeGreaterThan(0)
+  for (const tb of tables) tb.answerKey = 'x'
+  const found = leaks(clone, sh, '$').filter((f) => f.includes('.table.answerKey'))
+  expect(found.length, 'a key planted inside a table must be reported').toBeGreaterThanOrEqual(tables.length)
+}
+
 describe('per-paper quiz: a mixed paper (a group, solo MCQs and a structured question)', () => {
   it('serves the group stimulus ONCE, its members contiguous in group order at the first member, solos with no stimulus, and the stimulus with no marks or number', async () => {
     // placed apart and out of group order on purpose: solo, member 3, solo, member 1, structured, member 2
@@ -214,18 +241,30 @@ describe('per-paper quiz: a group whose members span Bahagian (legacy / ETL data
   })
 })
 
+/** A group of two stimuli, the TABLE first and the passage second, over two approved questions; removed again when `run` ends. */
+async function withTwoStimulusGroup(members: string[], run: (groupId: string) => Promise<void>): Promise<void> {
+  const mk = async (kind: string, label: string, body: string | null, table: unknown): Promise<string> =>
+    (await t.db.query<{ id: string }>(`insert into stimuli (kind, label, body_ms, table_data) values ($1, $2, $3, $4::jsonb) returning id::text`, [kind, label, body, table === null ? null : JSON.stringify(table)]))[0]!.id
+  // group order is the TABLE first, then the passage: the reverse of the insertion order and of the alphabet of the kinds
+  const tableId = await mk('table', 'Jadual dua', null, { head: ['Bulan', 'Jumlah'], rows: [['Jan', '10']] })
+  const passageId = await mk('passage', 'Petikan dua', 'Petikan kedua untuk kumpulan dua rangsangan.', null)
+  const groupId = (await t.db.query<{ id: string }>(`insert into stimulus_groups (scope) values ('section') returning id::text`))[0]!.id
+  await t.db.query(`insert into stimulus_group_stimuli (group_id, stimulus_id, position) values ($1::bigint, $2::bigint, 1), ($1::bigint, $3::bigint, 2)`, [groupId, tableId, passageId])
+  await t.db.query(`update questions set group_id = $1::bigint, group_position = case id when $2::bigint then 1 else 2 end where id = any($3::bigint[])`, [groupId, members[0], members])
+  try {
+    await run(groupId)
+  } finally {
+    await t.db.query(`update questions set group_id = null, group_position = null where id = any($1::bigint[])`, [members])
+    await t.db.query(`delete from stimulus_group_stimuli where group_id = $1::bigint`, [groupId])
+    await t.db.query(`delete from stimulus_groups where id = $1::bigint`, [groupId])
+    await t.db.query(`delete from stimuli where id = any($1::bigint[])`, [[tableId, passageId]])
+  }
+}
+
 describe('a group with two stimuli (a passage and a table): D9 row "every stimulus of the group"', () => {
   it('the random Kuiz shows BOTH stimuli with each drawn member, in group order (not the first only); the paper page renders them once in the group entry', async () => {
-    const mk = async (kind: string, label: string, body: string | null, table: unknown): Promise<string> =>
-      (await t.db.query<{ id: string }>(`insert into stimuli (kind, label, body_ms, table_data) values ($1, $2, $3, $4::jsonb) returning id::text`, [kind, label, body, table === null ? null : JSON.stringify(table)]))[0]!.id
-    // group order is the TABLE first, then the passage: the reverse of the insertion order and of the alphabet of the kinds
-    const tableId = await mk('table', 'Jadual dua', null, { head: ['Bulan', 'Jumlah'], rows: [['Jan', '10']] })
-    const passageId = await mk('passage', 'Petikan dua', 'Petikan kedua untuk kumpulan dua rangsangan.', null)
-    const groupId = (await t.db.query<{ id: string }>(`insert into stimulus_groups (scope) values ('section') returning id::text`))[0]!.id
-    await t.db.query(`insert into stimulus_group_stimuli (group_id, stimulus_id, position) values ($1::bigint, $2::bigint, 1), ($1::bigint, $3::bigint, 2)`, [groupId, tableId, passageId])
     const members = [id('SEED-MCQ-SCI-T4'), id('SEED-MCQ-SCI-T5')]
-    await t.db.query(`update questions set group_id = $1::bigint, group_position = case id when $2::bigint then 1 else 2 end where id = any($3::bigint[])`, [groupId, members[0], members])
-    try {
+    await withTwoStimulusGroup(members, async (groupId) => {
       const random = await student.post('/api/bijak/kuiz/sessions', { subject: 'SCI', count: 5 })
       expect(random.status, JSON.stringify(random.body)).toBe(201)
       const drawn = (random.body.data.items as { id: string; groupId: string; stimuli: { kind: string; label: string }[] }[]).filter((i) => members.includes(i.id))
@@ -241,12 +280,13 @@ describe('a group with two stimuli (a passage and a table): D9 row "every stimul
       expect(p.groups).toHaveLength(1)
       expect(p.groups[0]!.stimuli.map((x) => [x.kind, x.label])).toEqual([['table', 'Jadual dua'], ['passage', 'Petikan dua']])
       expect(count(p, 'Petikan kedua untuk kumpulan dua rangsangan.')).toBe(1)
-    } finally {
-      await t.db.query(`update questions set group_id = null, group_position = null where id = any($1::bigint[])`, [members])
-      await t.db.query(`delete from stimulus_group_stimuli where group_id = $1::bigint`, [groupId])
-      await t.db.query(`delete from stimulus_groups where id = $1::bigint`, [groupId])
-      await t.db.query(`delete from stimuli where id = any($1::bigint[])`, [[tableId, passageId]])
-    }
+      // the table level of the allow-map is exercised on both Kuiz wires, and a key planted inside a table is reported
+      const pageRes = await student.get(`/api/bijak/kuiz/papers/${paper}`)
+      expect(leaks(random.body.data, KUIZ_SESSION, '$')).toEqual([])
+      expect(leaks(pageRes.body.data, KUIZ_PAGE, '$')).toEqual([])
+      plantedTableLeakIsReported(random.body.data, KUIZ_SESSION)
+      plantedTableLeakIsReported(pageRes.body.data, KUIZ_PAGE)
+    })
   })
 })
 
@@ -384,5 +424,37 @@ describe('Simulasi (the exam attempt) follows the same one-unit rule as the Kuiz
     expect(view.groups).toHaveLength(1)
     expect(view.groups[0]).toMatchObject({ questionIds: [id('SEED-GRP-PASAR-1'), id('SEED-GRP-PASAR-2'), id('SEED-GRP-PASAR-3')], from: 1, to: 4 })
     expect(count(view, PASSAGE)).toBe(2)
+  })
+
+  it('current behaviour (KIV R2): members placed OUT of published order ([member 3, solo, member 1]) are served in placement order; from..to is the lowest and highest number, not the first and last member', async () => {
+    const paper = await createPaper('Kertas simulasi susunan terbalik', [
+      { label: 'Bahagian A', questionIds: [id('SEED-GRP-PASAR-3'), id('SEED-MCQ-MATH-T4'), id('SEED-GRP-PASAR-1')] },
+    ])
+    const started = await startExam(paper)
+    expect(started.status, JSON.stringify(started.body)).toBe(201)
+    const view = (await student.get(`/api/bijak/attempts/${started.body.data.attemptId}`)).body.data as {
+      questions: { id: string; number: number }[]
+      groups: { questionIds: string[]; from: number; to: number }[]
+    }
+    expect(view.questions.map((q) => [q.id, q.number])).toEqual([[id('SEED-GRP-PASAR-3'), 1], [id('SEED-MCQ-MATH-T4'), 2], [id('SEED-GRP-PASAR-1'), 3]])
+    expect(view.groups).toHaveLength(1)
+    // placement order, NOT the published member order (member 1 would come first); the range covers the solo between them
+    expect(view.groups[0]).toMatchObject({ questionIds: [id('SEED-GRP-PASAR-3'), id('SEED-GRP-PASAR-1')], from: 1, to: 3 })
+  })
+
+  it('a group of two stimuli (table, then passage): the whole Simulasi wire, including the table level, is inside the allow-map; a key planted inside a table is reported', async () => {
+    const members = [id('SEED-MCQ-SCI-T4'), id('SEED-MCQ-SCI-T5')]
+    await withTwoStimulusGroup(members, async () => {
+      const paper = await createPaper('Kertas simulasi dua rangsangan', [{ label: 'Bahagian A', questionIds: members }])
+      const started = await startExam(paper)
+      expect(started.status, JSON.stringify(started.body)).toBe(201)
+      const res = await student.get(`/api/bijak/attempts/${started.body.data.attemptId}`)
+      const view = res.body.data as { groups: { stimulus: { kind: string }; stimuli: { kind: string; label: string }[] }[] }
+      expect(view.groups).toHaveLength(1)
+      expect(view.groups[0]!.stimuli.map((x) => [x.kind, x.label])).toEqual([['table', 'Jadual dua'], ['passage', 'Petikan dua']])
+      expect(leaks(res.body.data, SIM_VIEW, '$')).toEqual([])
+      expect(secretsIn(res.body.data)).toEqual([])
+      plantedTableLeakIsReported(res.body.data, SIM_VIEW)
+    })
   })
 })
