@@ -235,9 +235,9 @@
       "pp/ds-icon-names": 12,
       "pp/ds-page-template": 3,
       "pp/ds-copy-glossary": 1,
-      "pp/ds-no-class-attr": 18,
+      "pp/ds-no-class-attr": 19,
       "pp/ds-ui-allowlist": 6,
-      "pp/ds-no-raw-html": 12,
+      "pp/ds-no-raw-html": 13,
       "pp/ds-no-ui-duplicate": 2
     },
     "src/modules/m02-users-schools/pages/UserPackagesPage.vue": {
@@ -321,36 +321,36 @@
       "pp/ds-no-class-attr": 7
     },
     "src/modules/m03-curriculum/pages/LevelFormPage.vue": {
-      "pp/ds-page-template": 1,
-      "pp/ds-icon-names": 2,
+      "pp/ds-page-template": 3,
       "pp/ds-copy-glossary": 1,
       "pp/ds-no-raw-html": 2,
       "pp/ds-no-class-attr": 6,
       "pp/ds-no-ui-duplicate": 1,
+      "pp/ds-icon-names": 1,
       "pp/ds-ui-allowlist": 1
     },
     "src/modules/m03-curriculum/pages/LevelListPage.vue": {
       "pp/ds-icon-names": 3,
       "pp/ds-page-template": 1,
-      "pp/ds-no-raw-html": 6,
-      "pp/ds-no-class-attr": 5,
-      "pp/ds-no-ui-duplicate": 4
+      "pp/ds-no-ui-duplicate": 4,
+      "pp/ds-no-raw-html": 3,
+      "pp/ds-no-class-attr": 3
     },
     "src/modules/m03-curriculum/pages/SubjectFormPage.vue": {
-      "pp/ds-page-template": 1,
-      "pp/ds-icon-names": 3,
+      "pp/ds-page-template": 3,
       "pp/ds-copy-glossary": 1,
       "pp/ds-no-raw-html": 8,
       "pp/ds-no-class-attr": 17,
       "pp/ds-no-ui-duplicate": 1,
+      "pp/ds-icon-names": 2,
       "pp/ds-ui-allowlist": 1
     },
     "src/modules/m03-curriculum/pages/SubjectListPage.vue": {
-      "pp/ds-icon-names": 4,
+      "pp/ds-icon-names": 3,
       "pp/ds-page-template": 1,
-      "pp/ds-no-raw-html": 11,
-      "pp/ds-no-class-attr": 11,
       "pp/ds-copy-glossary": 1,
+      "pp/ds-no-raw-html": 8,
+      "pp/ds-no-class-attr": 9,
       "pp/ds-ui-allowlist": 1,
       "pp/ds-no-ui-duplicate": 4
     },
@@ -371,11 +371,11 @@
       "pp/ds-no-raw-html": 1
     },
     "src/modules/m04-question-bank/components/AiExplanationCard.vue": {
-      "pp/ds-no-ui-duplicate": 2,
-      "pp/ds-no-raw-html": 7,
-      "pp/ds-no-class-attr": 12,
+      "pp/ds-no-ui-duplicate": 3,
+      "pp/ds-no-raw-html": 8,
+      "pp/ds-no-class-attr": 15,
       "pp/ds-ui-allowlist": 2,
-      "pp/ds-icon-names": 3
+      "pp/ds-icon-names": 4
     },
     "src/modules/m04-question-bank/components/ArabicKeyboardPanel.vue": {
       "pp/ds-no-class-literal-in-script": 1,
@@ -383,6 +383,15 @@
       "pp/ds-no-class-attr": 21,
       "pp/ds-no-style": 1,
       "pp/ds-ui-allowlist": 3
+    },
+    "src/modules/m04-question-bank/components/BulkFilterResult.vue": {
+      "pp/ds-no-raw-html": 6,
+      "pp/ds-no-class-attr": 6,
+      "pp/ds-no-ui-duplicate": 2,
+      "pp/ds-icon-names": 2
+    },
+    "src/modules/m04-question-bank/components/ChapterSelect.vue": {
+      "pp/ds-ui-allowlist": 1
     },
     "src/modules/m04-question-bank/components/DiagramCard.vue": {
       "pp/ds-no-ui-duplicate": 1,
@@ -409,11 +418,11 @@
       "pp/ds-icon-names": 1
     },
     "src/modules/m04-question-bank/components/QuestionForm.vue": {
-      "pp/ds-icon-names": 5,
+      "pp/ds-icon-names": 6,
       "pp/ds-no-raw-html": 25,
       "pp/ds-no-class-attr": 36,
-      "pp/ds-no-ui-duplicate": 1,
-      "pp/ds-ui-allowlist": 8,
+      "pp/ds-no-ui-duplicate": 2,
+      "pp/ds-ui-allowlist": 9,
       "pp/ds-no-ui-prop": 3
     },
     "src/modules/m04-question-bank/components/QuestionImagePicker.vue": {
@@ -432,10 +441,10 @@
       "pp/ds-ui-allowlist": 1
     },
     "src/modules/m04-question-bank/components/report/ReportCard.vue": {
-      "pp/ds-icon-names": 14,
+      "pp/ds-icon-names": 15,
       "pp/ds-no-ui-duplicate": 9,
       "pp/ds-no-raw-html": 20,
-      "pp/ds-no-class-attr": 28,
+      "pp/ds-no-class-attr": 29,
       "pp/ds-ui-allowlist": 2
     },
     "src/modules/m04-question-bank/components/report/ReportQuestionModal.vue": {
@@ -446,6 +455,15 @@
     },
     "src/modules/m04-question-bank/components/report/tints.ts": {
       "pp/ds-no-class-literal-in-script": 9
+    },
+    "src/modules/m04-question-bank/components/studio/QuestionPaperServability.vue": {
+      "pp/ds-no-raw-html": 10,
+      "pp/ds-no-class-attr": 11,
+      "pp/ds-ui-allowlist": 1
+    },
+    "src/modules/m04-question-bank/components/studio/StudioStatusBar.vue": {
+      "pp/ds-no-class-attr": 11,
+      "pp/ds-no-raw-html": 11
     },
     "src/modules/m04-question-bank/components/SubmissionActions.vue": {
       "pp/ds-no-raw-html": 4,
@@ -490,10 +508,10 @@
     "src/modules/m04-question-bank/pages/QuestionDetailPage.vue": {
       "pp/ds-no-adhoc-format": 1,
       "pp/ds-page-template": 2,
-      "pp/ds-icon-names": 8,
-      "pp/ds-no-class-attr": 70,
-      "pp/ds-no-raw-html": 35,
-      "pp/ds-ui-allowlist": 12,
+      "pp/ds-icon-names": 10,
+      "pp/ds-no-class-attr": 73,
+      "pp/ds-no-raw-html": 38,
+      "pp/ds-ui-allowlist": 13,
       "pp/ds-no-ui-duplicate": 3,
       "pp/ds-no-ui-prop": 1
     },
@@ -514,21 +532,21 @@
     },
     "src/modules/m04-question-bank/pages/QuestionListPage.vue": {
       "pp/ds-no-class-literal-in-script": 1,
-      "pp/ds-icon-names": 8,
+      "pp/ds-icon-names": 15,
       "pp/ds-page-template": 1,
-      "pp/ds-no-class-attr": 26,
-      "pp/ds-no-raw-html": 22,
+      "pp/ds-no-raw-html": 28,
+      "pp/ds-no-class-attr": 33,
       "pp/ds-ui-allowlist": 6,
-      "pp/ds-no-ui-duplicate": 4
+      "pp/ds-no-ui-duplicate": 6
     },
     "src/modules/m04-question-bank/pages/QuestionQualityPage.vue": {
       "pp/ds-no-adhoc-format": 2,
       "pp/ds-page-template": 1,
-      "pp/ds-no-raw-html": 35,
-      "pp/ds-no-class-attr": 41,
+      "pp/ds-icon-names": 3,
+      "pp/ds-no-class-attr": 39,
+      "pp/ds-no-raw-html": 26,
       "pp/ds-ui-allowlist": 3,
-      "pp/ds-no-ui-duplicate": 4,
-      "pp/ds-icon-names": 3
+      "pp/ds-no-ui-duplicate": 4
     },
     "src/modules/m04-question-bank/pages/QuestionReportsPage.vue": {
       "pp/ds-icon-names": 5,
@@ -558,6 +576,16 @@
       "pp/ds-no-raw-html": 8,
       "pp/ds-no-ui-duplicate": 3,
       "pp/ds-ui-allowlist": 4
+    },
+    "src/modules/m04-question-bank/pages/StudioListPage.vue": {
+      "pp/ds-no-class-literal-in-script": 1,
+      "pp/ds-icon-names": 7,
+      "pp/ds-page-template": 1,
+      "pp/ds-copy-glossary": 3,
+      "pp/ds-no-class-attr": 16,
+      "pp/ds-no-raw-html": 14,
+      "pp/ds-ui-allowlist": 4,
+      "pp/ds-no-ui-duplicate": 1
     },
     "src/modules/m04-question-bank/pages/SubmissionListPage.vue": {
       "pp/ds-page-template": 1,
@@ -627,7 +655,7 @@
       "pp/ds-icon-names": 5,
       "pp/ds-page-template": 1,
       "pp/ds-copy-glossary": 1,
-      "pp/ds-no-class-attr": 11,
+      "pp/ds-no-class-attr": 12,
       "pp/ds-no-raw-html": 8,
       "pp/ds-ui-allowlist": 3,
       "pp/ds-no-ui-duplicate": 1
@@ -706,7 +734,7 @@
     "src/modules/m09-content/pages/ScreenshotsPage.vue": {
       "pp/ds-page-template": 1,
       "pp/ds-no-raw-html": 10,
-      "pp/ds-no-class-attr": 10,
+      "pp/ds-no-class-attr": 12,
       "pp/ds-copy-glossary": 1,
       "pp/ds-icon-names": 1,
       "pp/ds-ui-allowlist": 1
@@ -715,44 +743,34 @@
       "pp/ds-no-class-literal-in-script": 8
     },
     "src/modules/m11-teacher-analytics/components/monitoring/MonitoringEngagementTable.vue": {
-      "pp/ds-no-raw-html": 20,
-      "pp/ds-no-class-attr": 32,
-      "pp/ds-ui-allowlist": 1,
-      "pp/ds-no-ui-duplicate": 8,
-      "pp/ds-copy-glossary": 1,
-      "pp/ds-icon-names": 2
+      "pp/ds-no-raw-html": 16,
+      "pp/ds-no-class-attr": 24,
+      "pp/ds-copy-glossary": 1
     },
     "src/modules/m11-teacher-analytics/components/monitoring/MonitoringGuide.vue": {
-      "pp/ds-no-raw-html": 35,
-      "pp/ds-no-ui-duplicate": 1,
-      "pp/ds-no-class-attr": 40,
-      "pp/ds-ui-allowlist": 14,
-      "pp/ds-icon-names": 2
+      "pp/ds-no-raw-html": 33,
+      "pp/ds-icon-names": 2,
+      "pp/ds-no-class-attr": 37,
+      "pp/ds-ui-allowlist": 13
     },
     "src/modules/m11-teacher-analytics/components/monitoring/MonitoringKpis.vue": {
-      "pp/ds-icon-names": 9,
-      "pp/ds-no-raw-html": 1,
-      "pp/ds-no-class-attr": 1
+      "pp/ds-icon-names": 9
     },
     "src/modules/m11-teacher-analytics/components/monitoring/MonitoringSignals.vue": {
-      "pp/ds-no-class-literal-in-script": 1,
-      "pp/ds-no-raw-html": 18,
-      "pp/ds-no-ui-duplicate": 7,
-      "pp/ds-no-class-attr": 31,
-      "pp/ds-ui-allowlist": 6
+      "pp/ds-no-raw-html": 14,
+      "pp/ds-no-class-attr": 22,
+      "pp/ds-ui-allowlist": 3
     },
     "src/modules/m11-teacher-analytics/components/monitoring/MonitoringTools.vue": {
-      "pp/ds-no-raw-html": 4,
-      "pp/ds-no-class-attr": 4,
+      "pp/ds-no-raw-html": 3,
+      "pp/ds-no-class-attr": 3,
       "pp/ds-ui-allowlist": 1,
       "pp/ds-icon-names": 5
     },
     "src/modules/m11-teacher-analytics/components/monitoring/MonitoringWeekly.vue": {
-      "pp/ds-no-raw-html": 20,
-      "pp/ds-no-class-attr": 30,
-      "pp/ds-ui-allowlist": 7,
-      "pp/ds-no-ui-duplicate": 2,
-      "pp/ds-icon-names": 1
+      "pp/ds-no-raw-html": 17,
+      "pp/ds-no-class-attr": 26,
+      "pp/ds-ui-allowlist": 6
     },
     "src/modules/m11-teacher-analytics/components/monitoring/StudentGaps.vue": {
       "pp/ds-no-ui-duplicate": 6,
@@ -794,22 +812,19 @@
       "pp/ds-ui-allowlist": 3
     },
     "src/modules/m11-teacher-analytics/pages/MonitoringPage.vue": {
-      "pp/ds-icon-names": 5,
       "pp/ds-page-template": 1,
       "pp/ds-copy-glossary": 2,
       "pp/ds-no-class-attr": 6,
       "pp/ds-ui-allowlist": 4,
-      "pp/ds-no-raw-html": 1,
-      "pp/ds-no-ui-duplicate": 1,
-      "pp/ds-no-ui-prop": 1
+      "pp/ds-no-raw-html": 1
     },
     "src/modules/m11-teacher-analytics/pages/MonitoringSchoolPage.vue": {
-      "pp/ds-icon-names": 9,
+      "pp/ds-icon-names": 8,
       "pp/ds-page-template": 4,
       "pp/ds-no-raw-html": 44,
       "pp/ds-no-class-attr": 63,
       "pp/ds-ui-allowlist": 5,
-      "pp/ds-no-ui-duplicate": 11,
+      "pp/ds-no-ui-duplicate": 8,
       "pp/ds-no-ui-prop": 1
     },
     "src/modules/m11-teacher-analytics/pages/MonitoringStudentPage.vue": {
@@ -852,7 +867,6 @@
       "pp/ds-icon-names": 6
     },
     "src/modules/m12-kirkpatrick/components/kirkpatrick/behavior/BehaviorMood.vue": {
-      "pp/ds-no-ui-duplicate": 1,
       "pp/ds-no-class-attr": 1
     },
     "src/modules/m12-kirkpatrick/components/kirkpatrick/behavior/BehaviorSchoolTable.vue": {
@@ -868,9 +882,8 @@
       "pp/ds-ui-allowlist": 1
     },
     "src/modules/m12-kirkpatrick/components/kirkpatrick/chain/ChainConclusion.vue": {
-      "pp/ds-no-ui-duplicate": 1,
-      "pp/ds-no-class-attr": 3,
-      "pp/ds-no-raw-html": 6
+      "pp/ds-no-class-attr": 2,
+      "pp/ds-no-raw-html": 5
     },
     "src/modules/m12-kirkpatrick/components/kirkpatrick/chain/ChainCorrelation.vue": {
       "pp/ds-icon-names": 2,
@@ -898,12 +911,11 @@
     },
     "src/modules/m12-kirkpatrick/components/kirkpatrick/interventions/InterventionList.vue": {
       "pp/ds-icon-names": 2,
-      "pp/ds-no-ui-duplicate": 2,
       "pp/ds-no-raw-html": 7,
-      "pp/ds-no-class-attr": 4
+      "pp/ds-no-class-attr": 4,
+      "pp/ds-no-ui-duplicate": 1
     },
     "src/modules/m12-kirkpatrick/components/kirkpatrick/learning/LearningGainCard.vue": {
-      "pp/ds-no-ui-duplicate": 1,
       "pp/ds-no-class-attr": 2,
       "pp/ds-no-raw-html": 1
     },
@@ -929,8 +941,8 @@
     },
     "src/modules/m12-kirkpatrick/components/kirkpatrick/overview/OverviewComparison.vue": {
       "pp/ds-icon-names": 2,
-      "pp/ds-no-raw-html": 22,
-      "pp/ds-no-class-attr": 25,
+      "pp/ds-no-raw-html": 21,
+      "pp/ds-no-class-attr": 24,
       "pp/ds-no-ui-duplicate": 4,
       "pp/ds-ui-allowlist": 1
     },
@@ -942,8 +954,7 @@
       "pp/ds-no-ui-duplicate": 1,
       "pp/ds-ui-allowlist": 1
     },
-    "src/modules/m12-kirkpatrick/components/kirkpatrick/overview/OverviewInfo.vue": {
-      "pp/ds-no-ui-duplicate": 1,
+    "src/modules/m12-kirkpatrick/components/kirkpatrick/overview/OverviewInfoToggle.vue": {
       "pp/ds-icon-names": 1
     },
     "src/modules/m12-kirkpatrick/components/kirkpatrick/overview/OverviewKpis.vue": {
@@ -957,9 +968,9 @@
       "pp/ds-ui-allowlist": 1
     },
     "src/modules/m12-kirkpatrick/components/kirkpatrick/pelajar/PelajarAlesa.vue": {
-      "pp/ds-no-ui-duplicate": 6,
-      "pp/ds-no-class-attr": 18,
-      "pp/ds-no-raw-html": 15
+      "pp/ds-no-class-attr": 16,
+      "pp/ds-no-ui-duplicate": 5,
+      "pp/ds-no-raw-html": 13
     },
     "src/modules/m12-kirkpatrick/components/kirkpatrick/pelajar/PelajarHeadcount.vue": {
       "pp/ds-icon-names": 1,
@@ -982,7 +993,6 @@
       "pp/ds-no-ui-duplicate": 6
     },
     "src/modules/m12-kirkpatrick/components/kirkpatrick/results/ResultsGrades.vue": {
-      "pp/ds-no-ui-duplicate": 1,
       "pp/ds-no-class-attr": 3,
       "pp/ds-no-raw-html": 2
     },
@@ -1098,29 +1108,17 @@
       "pp/ds-no-raw-html": 1,
       "pp/ds-no-class-attr": 1
     },
-    "src/modules/m17-admin-dashboard/components/command-center-board/BoardKpis.vue": {
-      "pp/ds-no-adhoc-format": 1,
-      "pp/ds-icon-names": 4,
-      "pp/ds-no-raw-html": 6,
-      "pp/ds-no-class-attr": 7,
-      "pp/ds-no-ui-duplicate": 1
-    },
     "src/modules/m17-admin-dashboard/components/command-center-board/BoardPanel.vue": {
-      "pp/ds-no-local-kit": 1,
-      "pp/ds-no-ui-duplicate": 1,
-      "pp/ds-no-class-attr": 3,
-      "pp/ds-no-raw-html": 2
+      "pp/ds-no-local-kit": 1
     },
     "src/modules/m17-admin-dashboard/components/command-center-board/CorrectionPanel.vue": {
       "pp/ds-no-adhoc-format": 2,
-      "pp/ds-icon-names": 1,
-      "pp/ds-no-raw-html": 1,
-      "pp/ds-no-class-attr": 1
+      "pp/ds-icon-names": 1
     },
     "src/modules/m17-admin-dashboard/components/command-center-board/DailyFeedPanel.vue": {
       "pp/ds-icon-names": 1,
-      "pp/ds-no-raw-html": 6,
-      "pp/ds-no-class-attr": 7
+      "pp/ds-no-raw-html": 1,
+      "pp/ds-no-class-attr": 1
     },
     "src/modules/m17-admin-dashboard/components/command-center-board/DailyHeader.vue": {
       "pp/ds-no-raw-html": 2,
@@ -1129,45 +1127,37 @@
     },
     "src/modules/m17-admin-dashboard/components/command-center-board/DailyHeatmapPanel.vue": {
       "pp/ds-icon-names": 1,
-      "pp/ds-no-raw-html": 2,
-      "pp/ds-no-class-attr": 1
+      "pp/ds-no-raw-html": 1
     },
     "src/modules/m17-admin-dashboard/components/command-center-board/DailyLoginsPanel.vue": {
       "pp/ds-icon-names": 1,
-      "pp/ds-no-raw-html": 8,
-      "pp/ds-no-class-attr": 10,
-      "pp/ds-no-ui-duplicate": 1
+      "pp/ds-no-raw-html": 6,
+      "pp/ds-no-class-attr": 4
     },
     "src/modules/m17-admin-dashboard/components/command-center-board/DailyMoodBadgePanels.vue": {
-      "pp/ds-no-raw-html": 11,
-      "pp/ds-no-class-attr": 12,
       "pp/ds-icon-names": 2,
-      "pp/ds-ui-allowlist": 2
+      "pp/ds-no-raw-html": 1
     },
     "src/modules/m17-admin-dashboard/components/command-center-board/DailyPanel.vue": {
-      "pp/ds-no-ui-duplicate": 2,
-      "pp/ds-no-class-attr": 6,
-      "pp/ds-no-raw-html": 4
+      "pp/ds-no-raw-html": 1,
+      "pp/ds-no-class-attr": 2,
+      "pp/ds-no-ui-duplicate": 1
     },
     "src/modules/m17-admin-dashboard/components/command-center-board/DailySchoolsPanel.vue": {
-      "pp/ds-no-adhoc-format": 2,
       "pp/ds-no-class-literal-in-script": 3,
       "pp/ds-icon-names": 3,
-      "pp/ds-no-class-attr": 39,
-      "pp/ds-no-raw-html": 37,
-      "pp/ds-no-ui-duplicate": 2
+      "pp/ds-no-raw-html": 33,
+      "pp/ds-no-class-attr": 31,
+      "pp/ds-no-ui-duplicate": 1
     },
     "src/modules/m17-admin-dashboard/components/command-center-board/DailySubjectsPanel.vue": {
       "pp/ds-icon-names": 1,
-      "pp/ds-no-raw-html": 2,
-      "pp/ds-no-class-attr": 1
+      "pp/ds-no-raw-html": 1
     },
     "src/modules/m17-admin-dashboard/components/command-center-board/DailyTopPanel.vue": {
       "pp/ds-icon-names": 1,
-      "pp/ds-no-raw-html": 7,
-      "pp/ds-no-class-attr": 10,
-      "pp/ds-no-ui-duplicate": 1,
-      "pp/ds-no-adhoc-format": 1
+      "pp/ds-no-raw-html": 3,
+      "pp/ds-no-class-attr": 2
     },
     "src/modules/m17-admin-dashboard/components/command-center-board/EngagementPanel.vue": {
       "pp/ds-icon-names": 1,
@@ -1176,47 +1166,29 @@
     },
     "src/modules/m17-admin-dashboard/components/command-center-board/FeedPanel.vue": {
       "pp/ds-icon-names": 1,
-      "pp/ds-no-raw-html": 8,
-      "pp/ds-no-class-attr": 9
+      "pp/ds-no-raw-html": 3,
+      "pp/ds-no-class-attr": 4
     },
     "src/modules/m17-admin-dashboard/components/command-center-board/KirkpatrickPanel.vue": {
-      "pp/ds-no-adhoc-format": 1,
       "pp/ds-icon-names": 1,
-      "pp/ds-no-raw-html": 5,
-      "pp/ds-no-class-attr": 6,
-      "pp/ds-no-ui-duplicate": 1
+      "pp/ds-no-raw-html": 1
     },
     "src/modules/m17-admin-dashboard/components/command-center-board/MoodPanel.vue": {
       "pp/ds-icon-names": 1,
-      "pp/ds-no-raw-html": 5,
-      "pp/ds-no-class-attr": 5,
-      "pp/ds-ui-allowlist": 1
-    },
-    "src/modules/m17-admin-dashboard/components/command-center-board/PulseCards.vue": {
-      "pp/ds-icon-names": 12,
-      "pp/ds-no-raw-html": 6,
-      "pp/ds-no-class-attr": 8,
-      "pp/ds-no-ui-duplicate": 1
+      "pp/ds-no-raw-html": 1
     },
     "src/modules/m17-admin-dashboard/components/command-center-board/TodayPanel.vue": {
-      "pp/ds-no-class-literal-in-script": 3,
       "pp/ds-icon-names": 1,
-      "pp/ds-no-raw-html": 5,
-      "pp/ds-no-class-attr": 6,
-      "pp/ds-no-ui-duplicate": 1
+      "pp/ds-no-class-attr": 1
     },
     "src/modules/m17-admin-dashboard/components/command-center-board/TopPupilsPanel.vue": {
       "pp/ds-icon-names": 1,
-      "pp/ds-no-raw-html": 5,
-      "pp/ds-no-class-attr": 7,
-      "pp/ds-no-ui-duplicate": 1,
-      "pp/ds-no-adhoc-format": 1
+      "pp/ds-no-raw-html": 3,
+      "pp/ds-no-class-attr": 2
     },
     "src/modules/m17-admin-dashboard/components/command-center-board/TopSchoolsPanel.vue": {
       "pp/ds-icon-names": 1,
-      "pp/ds-no-raw-html": 6,
-      "pp/ds-no-class-attr": 8,
-      "pp/ds-no-ui-duplicate": 1
+      "pp/ds-no-raw-html": 1
     },
     "src/modules/m17-admin-dashboard/components/command-center/cc-format.ts": {
       "pp/ds-no-adhoc-format": 2,
@@ -1258,8 +1230,8 @@
     },
     "src/modules/m17-admin-dashboard/pages/CommandCenterBoardPage.vue": {
       "pp/ds-page-template": 1,
-      "pp/ds-no-raw-html": 6,
-      "pp/ds-no-class-attr": 6
+      "pp/ds-no-raw-html": 2,
+      "pp/ds-no-class-attr": 2
     },
     "src/modules/m17-admin-dashboard/pages/CommandCenterClassPage.vue": {
       "pp/ds-page-template": 1,
@@ -1272,8 +1244,8 @@
     },
     "src/modules/m17-admin-dashboard/pages/CommandCenterDailyPage.vue": {
       "pp/ds-page-template": 1,
-      "pp/ds-no-raw-html": 5,
-      "pp/ds-no-class-attr": 6
+      "pp/ds-no-raw-html": 2,
+      "pp/ds-no-class-attr": 2
     },
     "src/modules/m17-admin-dashboard/pages/CommandCenterSchoolPage.vue": {
       "pp/ds-icon-names": 6,
@@ -1307,13 +1279,77 @@
       "pp/ds-no-ui-duplicate": 2,
       "pp/ds-ui-allowlist": 1
     },
+    "src/modules/m28-bijak-spm/admin/builder/components/PaperEditBlocks.vue": {
+      "pp/ds-no-raw-html": 9,
+      "pp/ds-no-class-attr": 16,
+      "pp/ds-no-ui-duplicate": 4,
+      "pp/ds-icon-names": 2
+    },
+    "src/modules/m28-bijak-spm/admin/builder/components/PaperMetaForm.vue": {
+      "pp/ds-no-raw-html": 3,
+      "pp/ds-no-class-attr": 9,
+      "pp/ds-no-ui-duplicate": 5,
+      "pp/ds-icon-names": 1
+    },
+    "src/modules/m28-bijak-spm/admin/builder/components/PaperQuestionOps.vue": {
+      "pp/ds-no-raw-html": 20,
+      "pp/ds-no-class-attr": 25,
+      "pp/ds-icon-names": 4
+    },
+    "src/modules/m28-bijak-spm/admin/builder/components/PaperReferenceEditor.vue": {
+      "pp/ds-no-raw-html": 12,
+      "pp/ds-no-class-attr": 25,
+      "pp/ds-no-ui-duplicate": 1,
+      "pp/ds-icon-names": 7,
+      "pp/ds-ui-allowlist": 2
+    },
+    "src/modules/m28-bijak-spm/admin/builder/components/PoolPreviewCard.vue": {
+      "pp/ds-no-raw-html": 10,
+      "pp/ds-no-class-attr": 11,
+      "pp/ds-ui-allowlist": 3
+    },
+    "src/modules/m28-bijak-spm/admin/builder/components/PublishOverride.vue": {
+      "pp/ds-no-raw-html": 1,
+      "pp/ds-no-class-attr": 3,
+      "pp/ds-no-ui-duplicate": 1,
+      "pp/ds-icon-names": 1
+    },
+    "src/modules/m28-bijak-spm/admin/builder/components/ReviewBlock.vue": {
+      "pp/ds-imports": 1,
+      "pp/ds-no-raw-html": 15,
+      "pp/ds-no-class-attr": 13,
+      "pp/ds-ui-allowlist": 2,
+      "pp/ds-no-ui-duplicate": 1,
+      "pp/ds-icon-names": 1
+    },
+    "src/modules/m28-bijak-spm/admin/builder/components/StudentViewDrawer.vue": {
+      "pp/ds-no-ui-duplicate": 1,
+      "pp/ds-no-ui-prop": 1,
+      "pp/ds-no-raw-html": 15,
+      "pp/ds-no-class-attr": 12
+    },
+    "src/modules/m28-bijak-spm/admin/builder/pages/SetBuilderLandingPage.vue": {
+      "pp/ds-page-template": 1,
+      "pp/ds-no-raw-html": 36,
+      "pp/ds-no-class-attr": 42,
+      "pp/ds-no-ui-duplicate": 6,
+      "pp/ds-icon-names": 7
+    },
+    "src/modules/m28-bijak-spm/admin/builder/pages/SetBuilderPage.vue": {
+      "pp/ds-page-template": 2,
+      "pp/ds-no-raw-html": 57,
+      "pp/ds-no-class-attr": 74,
+      "pp/ds-icon-names": 12,
+      "pp/ds-ui-allowlist": 2,
+      "pp/ds-no-ui-duplicate": 3
+    },
     "src/modules/m28-bijak-spm/admin/intake/components/IntakeMetaFields.vue": {
       "pp/ds-no-class-attr": 4,
       "pp/ds-no-raw-html": 1
     },
     "src/modules/m28-bijak-spm/admin/intake/components/QuestionEditor.vue": {
-      "pp/ds-no-raw-html": 60,
-      "pp/ds-no-class-attr": 64,
+      "pp/ds-no-raw-html": 67,
+      "pp/ds-no-class-attr": 71,
       "pp/ds-no-ui-duplicate": 1,
       "pp/ds-icon-names": 6
     },
@@ -1330,10 +1366,10 @@
     },
     "src/modules/m28-bijak-spm/admin/intake/pages/IntakeListPage.vue": {
       "pp/ds-page-template": 2,
-      "pp/ds-icon-names": 3,
-      "pp/ds-no-class-attr": 3,
+      "pp/ds-icon-names": 4,
+      "pp/ds-no-class-attr": 5,
       "pp/ds-no-ui-duplicate": 1,
-      "pp/ds-no-raw-html": 2
+      "pp/ds-no-raw-html": 3
     },
     "src/modules/m28-bijak-spm/admin/intake/pages/IntakeManualPage.vue": {
       "pp/ds-page-template": 2,
@@ -1344,10 +1380,10 @@
     "src/modules/m28-bijak-spm/admin/intake/pages/IntakeReviewPage.vue": {
       "pp/ds-page-template": 2,
       "pp/ds-copy-glossary": 2,
-      "pp/ds-no-raw-html": 59,
-      "pp/ds-no-class-attr": 68,
-      "pp/ds-no-ui-duplicate": 10,
-      "pp/ds-icon-names": 14
+      "pp/ds-no-raw-html": 77,
+      "pp/ds-no-class-attr": 94,
+      "pp/ds-no-ui-duplicate": 13,
+      "pp/ds-icon-names": 21
     },
     "src/modules/m28-bijak-spm/admin/intake/pages/IntakeUploadPage.vue": {
       "pp/ds-page-template": 2,
@@ -1356,6 +1392,152 @@
       "pp/ds-no-class-attr": 6,
       "pp/ds-no-ui-duplicate": 3,
       "pp/ds-icon-names": 3
+    },
+    "src/modules/m28-bijak-spm/admin/kandungan/lanes.ts": {
+      "pp/ds-copy-glossary": 1
+    },
+    "src/modules/m28-bijak-spm/admin/kandungan/pages/KandunganHubPage.vue": {
+      "pp/ds-page-template": 1,
+      "pp/ds-no-raw-html": 8,
+      "pp/ds-no-class-attr": 11,
+      "pp/ds-ui-allowlist": 1,
+      "pp/ds-no-ui-duplicate": 3
+    },
+    "src/modules/m28-bijak-spm/admin/kandungan/pages/LaneDatabankPage.vue": {
+      "pp/ds-page-template": 1,
+      "pp/ds-no-raw-html": 10,
+      "pp/ds-no-class-attr": 12,
+      "pp/ds-icon-names": 2
+    },
+    "src/modules/m28-bijak-spm/admin/kandungan/pages/LaneShell.vue": {
+      "pp/ds-no-raw-html": 1,
+      "pp/ds-no-class-attr": 4,
+      "pp/ds-icon-names": 1
+    },
+    "src/modules/m28-bijak-spm/admin/kandungan/pages/LaneSimulasiPage.vue": {
+      "pp/ds-page-template": 1,
+      "pp/ds-no-raw-html": 10,
+      "pp/ds-no-class-attr": 12,
+      "pp/ds-icon-names": 2
+    },
+    "src/modules/m28-bijak-spm/admin/kontrak/components/ContractCheckPanel.vue": {
+      "pp/ds-no-class-literal-in-script": 4,
+      "pp/ds-no-class-attr": 23,
+      "pp/ds-icon-names": 5,
+      "pp/ds-no-raw-html": 26,
+      "pp/ds-ui-allowlist": 2,
+      "pp/ds-no-ui-duplicate": 1
+    },
+    "src/modules/m28-bijak-spm/admin/kontrak/components/EvidenceDrawer.vue": {
+      "pp/ds-no-raw-html": 10,
+      "pp/ds-no-class-attr": 22,
+      "pp/ds-no-ui-prop": 5,
+      "pp/ds-icon-names": 2,
+      "pp/ds-ui-allowlist": 1
+    },
+    "src/modules/m28-bijak-spm/admin/kontrak/components/GeneralTab.vue": {
+      "pp/ds-icon-names": 9,
+      "pp/ds-no-raw-html": 30,
+      "pp/ds-no-class-attr": 35,
+      "pp/ds-no-ui-prop": 1,
+      "pp/ds-no-ui-duplicate": 1,
+      "pp/ds-ui-allowlist": 1
+    },
+    "src/modules/m28-bijak-spm/admin/kontrak/components/NumField.vue": {
+      "pp/ds-no-ui-prop": 1,
+      "pp/ds-no-class-attr": 1
+    },
+    "src/modules/m28-bijak-spm/admin/kontrak/components/PoolFillTable.vue": {
+      "pp/ds-no-raw-html": 7,
+      "pp/ds-no-class-attr": 9,
+      "pp/ds-ui-allowlist": 1,
+      "pp/ds-no-ui-duplicate": 2,
+      "pp/ds-icon-names": 5
+    },
+    "src/modules/m28-bijak-spm/admin/kontrak/components/QuotaLinesEditor.vue": {
+      "pp/ds-no-raw-html": 18,
+      "pp/ds-no-class-attr": 23,
+      "pp/ds-no-ui-prop": 1,
+      "pp/ds-no-ui-duplicate": 2,
+      "pp/ds-icon-names": 4,
+      "pp/ds-ui-allowlist": 1
+    },
+    "src/modules/m28-bijak-spm/admin/kontrak/components/SectionEditor.vue": {
+      "pp/ds-no-raw-html": 17,
+      "pp/ds-no-class-attr": 25,
+      "pp/ds-icon-names": 2,
+      "pp/ds-no-ui-prop": 3,
+      "pp/ds-ui-allowlist": 2,
+      "pp/ds-no-ui-duplicate": 1
+    },
+    "src/modules/m28-bijak-spm/admin/kontrak/components/SharedBanner.vue": {
+      "pp/ds-no-ui-duplicate": 1,
+      "pp/ds-icon-names": 1,
+      "pp/ds-no-ui-prop": 1,
+      "pp/ds-no-raw-html": 3,
+      "pp/ds-no-class-attr": 1
+    },
+    "src/modules/m28-bijak-spm/admin/kontrak/components/SidePanel.vue": {
+      "pp/ds-no-class-literal-in-script": 1,
+      "pp/ds-no-ui-duplicate": 2,
+      "pp/ds-no-ui-prop": 1,
+      "pp/ds-no-raw-html": 2,
+      "pp/ds-no-class-attr": 2
+    },
+    "src/modules/m28-bijak-spm/admin/kontrak/components/SlotGroupsEditor.vue": {
+      "pp/ds-no-raw-html": 20,
+      "pp/ds-no-class-attr": 24,
+      "pp/ds-no-ui-prop": 1,
+      "pp/ds-icon-names": 2,
+      "pp/ds-ui-allowlist": 1
+    },
+    "src/modules/m28-bijak-spm/admin/kontrak/components/SourceBadge.vue": {
+      "pp/ds-icon-names": 3,
+      "pp/ds-no-ui-duplicate": 1
+    },
+    "src/modules/m28-bijak-spm/admin/kontrak/components/SumMeter.vue": {
+      "pp/ds-icon-names": 3,
+      "pp/ds-no-raw-html": 2,
+      "pp/ds-no-class-attr": 3,
+      "pp/ds-no-ui-duplicate": 1
+    },
+    "src/modules/m28-bijak-spm/admin/kontrak/components/UnitPickerDrawer.vue": {
+      "pp/ds-no-raw-html": 7,
+      "pp/ds-no-class-attr": 9,
+      "pp/ds-icon-names": 1
+    },
+    "src/modules/m28-bijak-spm/admin/kontrak/components/VerifyPanel.vue": {
+      "pp/ds-no-raw-html": 62,
+      "pp/ds-no-class-attr": 78,
+      "pp/ds-no-ui-duplicate": 5,
+      "pp/ds-icon-names": 6,
+      "pp/ds-ui-allowlist": 3
+    },
+    "src/modules/m28-bijak-spm/admin/kontrak/domain/verify.ts": {
+      "pp/ds-icon-names": 4
+    },
+    "src/modules/m28-bijak-spm/admin/kontrak/pages/KontrakEditorPage.vue": {
+      "pp/ds-page-template": 1,
+      "pp/ds-no-ui-duplicate": 9,
+      "pp/ds-icon-names": 9,
+      "pp/ds-no-raw-html": 15,
+      "pp/ds-no-class-attr": 20,
+      "pp/ds-ui-allowlist": 2
+    },
+    "src/modules/m28-bijak-spm/admin/kontrak/pages/KontrakListPage.vue": {
+      "pp/ds-icon-names": 8,
+      "pp/ds-copy-glossary": 1,
+      "pp/ds-no-class-attr": 31,
+      "pp/ds-no-raw-html": 16,
+      "pp/ds-no-ui-duplicate": 4
+    },
+    "src/modules/m28-bijak-spm/admin/kontrak/pages/KontrakPoolPage.vue": {
+      "pp/ds-page-template": 1,
+      "pp/ds-no-raw-html": 17,
+      "pp/ds-no-class-attr": 23,
+      "pp/ds-icon-names": 10,
+      "pp/ds-ui-allowlist": 3,
+      "pp/ds-no-ui-duplicate": 6
     },
     "src/modules/m28-bijak-spm/admin/papers/BankEditPage.vue": {
       "pp/ds-page-template": 2,
@@ -1375,18 +1557,18 @@
     "src/modules/m28-bijak-spm/admin/papers/PaperEditorPage.vue": {
       "pp/ds-page-template": 1,
       "pp/ds-no-ui-duplicate": 6,
-      "pp/ds-icon-names": 14,
-      "pp/ds-no-raw-html": 37,
-      "pp/ds-no-class-attr": 51,
+      "pp/ds-icon-names": 18,
+      "pp/ds-no-raw-html": 50,
+      "pp/ds-no-class-attr": 71,
       "pp/ds-ui-allowlist": 2,
       "pp/ds-no-ui-prop": 2,
       "pp/ds-copy-glossary": 1
     },
     "src/modules/m28-bijak-spm/admin/papers/PaperListPage.vue": {
-      "pp/ds-no-raw-html": 12,
-      "pp/ds-no-class-attr": 25,
+      "pp/ds-no-raw-html": 14,
+      "pp/ds-no-class-attr": 32,
+      "pp/ds-icon-names": 14,
       "pp/ds-copy-glossary": 3,
-      "pp/ds-icon-names": 9,
       "pp/ds-no-ui-duplicate": 2
     },
     "src/modules/m28-bijak-spm/admin/papers/PaperNewPage.vue": {
@@ -1398,7 +1580,7 @@
     },
     "src/modules/m28-bijak-spm/admin/papers/QuestionPreview.vue": {
       "pp/ds-no-raw-html": 29,
-      "pp/ds-no-class-attr": 28
+      "pp/ds-no-class-attr": 29
     },
     "src/modules/m28-bijak-spm/admin/papers/ReviewItemPage.vue": {
       "pp/ds-page-template": 1,
@@ -1418,8 +1600,8 @@
       "pp/ds-no-class-attr": 1
     },
     "src/modules/m28-bijak-spm/components/StimulusView.vue": {
-      "pp/ds-no-class-attr": 7,
-      "pp/ds-no-raw-html": 5,
+      "pp/ds-no-class-attr": 9,
+      "pp/ds-no-raw-html": 7,
       "pp/ds-no-ui-duplicate": 1
     },
     "src/shells/pentadbiran/menu.ts": {
