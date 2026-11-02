@@ -127,7 +127,7 @@ Edge client address (Cloudflare Pages to Render demo/go-live): when `CLIENT_IP_H
 | Login, failed attempts per address across identifiers | 20 | 60 s | address | fixed |
 | Login, failed attempts per identifier across addresses | 100 | 15 min | identifier | `LOGIN_IDENTIFIER_FAIL_LIMIT` |
 | Password reset link request (`/auth/password/email`) | 1 | 60 s | e-mail | fixed (`ACCOUNT_RESET_REQUEST_INTERVAL_SECONDS`) |
-| Password reset by IC (`/auth/password/reset-ic`) | 5 | 15 min | account and address, whichever first | fixed (`ACCOUNT_RESET_IC_MAX_ATTEMPTS`) |
+| Password reset by IC (`/auth/password/reset-ic`) | 5 | 24 hours per account, 15 min per address | whichever first; a locked pupil asks the school admin (Reset kata laluan) | fixed (`ACCOUNT_RESET_IC_MAX_ATTEMPTS`, `ACCOUNT_RESET_IC_ACCOUNT_WINDOW_MINUTES`) |
 | Reset token redemption, failed | 5 per e-mail + address; 20 per address | 60 s | e-mail + address; address | fixed (`ACCOUNT_THROTTLE`) |
 | Password change, wrong current password | 5 per min, 20 per 15 min | 60 s; 15 min | user | fixed |
 | Registration | 30 | 1 min | address | `THROTTLE_REGISTER_PER_MINUTE` |

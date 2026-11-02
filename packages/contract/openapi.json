@@ -99825,7 +99825,7 @@
             }
           },
           "429": {
-            "description": "RATE_LIMITED, with retryAfter seconds in the body and the Retry-After header. \"Terlalu banyak percubaan. Sila cuba lagi dalam 15 minit.\" (D55a: more than 5 attempts in 15 minutes for the same account or the same IP).",
+            "description": "RATE_LIMITED, with retryAfter seconds in the body and the Retry-After header. \"Terlalu banyak percubaan untuk e-mel ini. Sila cuba lagi dalam 24 jam, atau minta admin sekolah anda menetapkan semula kata laluan.\" (more than 5 attempts in 1440 minutes for the same account), or \"Terlalu banyak percubaan. Sila cuba lagi dalam 15 minit.\" (D55a: more than 5 attempts in 15 minutes from the same IP).",
             "headers": {
               "Retry-After": {
                 "description": "Seconds until a retry is allowed (same value as error.retryAfter).",

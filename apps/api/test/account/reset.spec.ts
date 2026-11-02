@@ -35,8 +35,8 @@ describe('password reset by e-mail link and by IC (AC2, AC3, D55a, D55b)', () =>
     await t.db.query(`update users set ic_hash = $1, ic_masked = $2 where email = $3`, [parts?.hash, parts?.masked, STUDENT])
   })
   beforeEach(() => {
-    // Every counter window (60 s, 15 min) is over before each test.
-    t.clock.advance(16 * 60_000)
+    // Every counter window (60 s, 15 min, 24 hours) is over before each test.
+    t.clock.advance(24 * 3600_000 + 60_000)
     t.mail.sent.length = 0
     t.notices.pushed.length = 0
     t.mail.fail = false
@@ -337,18 +337,23 @@ describe('password reset by e-mail link and by IC (AC2, AC3, D55a, D55b)', () =>
       expect(fieldsOf(long)).toEqual({ icNumber: 'The ic number field must not be greater than 14 characters.' })
     })
 
-    it('D55a: 5 attempts per 15 minutes per account (match or not), then 429 with the BM message, even for the right IC', async () => {
+    it('B3 N3: 5 attempts per 24 hours per account (match or not), then 429 with the BM message, even for the right IC', async () => {
       for (let i = 0; i < 5; i++) expect((await resetIc(STUDENT, '999999999999')).status).toBe(422)
       const blocked = await resetIc(STUDENT, IC)
       const err = errorOf(blocked, 429, 'RATE_LIMITED')
-      expect(err.message).toBe(ACCOUNT_AUTH_MESSAGES.resetIcRateLimited)
-      expect(err.retryAfter).toBeGreaterThan(0)
+      expect(err.message).toBe(ACCOUNT_AUTH_MESSAGES.resetIcAccountLimited)
+      // The real wait, not the 900 s cap of the other counters.
+      expect(err.retryAfter).toBeGreaterThan(900)
+      expect(err.retryAfter).toBeLessThanOrEqual(24 * 3600)
       expect(blocked.headers['retry-after']).toBe(String(err.retryAfter))
       // Unknown accounts are limited the same way (the limit does not reveal existence).
       t.clock.advance(16 * 60_000)
       for (let i = 0; i < 5; i++) await resetIc('tiada.siapa@ujian.test', IC)
-      errorOf(await resetIc('tiada.siapa@ujian.test', IC), 429, 'RATE_LIMITED')
+      expect(errorOf(await resetIc('tiada.siapa@ujian.test', IC), 429, 'RATE_LIMITED').message).toBe(ACCOUNT_AUTH_MESSAGES.resetIcAccountLimited)
+      // Still locked well past the 15-minute address window, free after the 24 hours.
       t.clock.advance(16 * 60_000)
+      errorOf(await resetIc(STUDENT, IC), 429, 'RATE_LIMITED')
+      t.clock.advance(24 * 3600_000)
       expect((await resetIc(STUDENT, IC)).status).toBe(200)
     })
 
@@ -357,6 +362,9 @@ describe('password reset by e-mail link and by IC (AC2, AC3, D55a, D55b)', () =>
       const blocked = await resetIc('orang-lain@ujian.test', IC)
       expect(ErrorBodySchema.parse(blocked.body).error.message).toBe(ACCOUNT_AUTH_MESSAGES.resetIcRateLimited)
       expect(blocked.status).toBe(429)
+      // A school shares one address: it is free again after 15 minutes, and these accounts are not locked for the day.
+      t.clock.advance(16 * 60_000)
+      expect((await resetIc('orang-lain@ujian.test', IC)).status).toBe(422)
     })
 
     it('every attempt, match or not, starts the 60 s link throttle for that e-mail (a 429 there is no match oracle)', async () => {

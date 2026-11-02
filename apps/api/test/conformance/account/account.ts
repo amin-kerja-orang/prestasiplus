@@ -110,7 +110,7 @@ export const accountScenarios: Scenario[] = [
     },
   },
   {
-    id: 'account-api/password/reset-ic: a mismatch is 422; the 6th attempt in 15 minutes is 429 with the BM message (D55a)',
+    id: 'account-api/password/reset-ic: a mismatch is 422; the 6th attempt for an account is 429 with the BM message (D55a, B3 N3)',
     domain: 'account',
     targets: API_ONLY,
     async run(ctx) {
@@ -123,7 +123,7 @@ export const accountScenarios: Scenario[] = [
       }
       const sixth = await anon.request('POST', '/auth/password/reset-ic', { body: { email, icNumber: '999999999999' } })
       expectError(ctx, sixth, 429, 'RATE_LIMITED')
-      ctx.check(errorOf(sixth).message === 'Terlalu banyak percubaan. Sila cuba lagi dalam 15 minit.', 'rate-limit message differs')
+      ctx.check(errorOf(sixth).message === 'Terlalu banyak percubaan untuk e-mel ini. Sila cuba lagi dalam 24 jam, atau minta admin sekolah anda menetapkan semula kata laluan.', 'rate-limit message differs')
     },
   },
   {

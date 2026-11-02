@@ -236,7 +236,7 @@ model AuditEvent {
 /// Password reset token (mock BR-10, BR-11; D55). Only the hash of the token is stored; the raw token is
 /// logged by the MailPort in dev and never persisted. Not migrated. The "one request per 60 s per e-mail"
 /// throttle reads the newest `created_at` of the user (ix_password_resets_user_id_created_at); the D55
-/// attempt limit (5 per 15 min per account and per IP) reuses `login_attempts` rows with a `reset:` key
+/// attempt limit (5 per 24 hours per account, 5 per 15 min per IP) reuses `login_attempts` rows with a `reset:` key
 /// prefix, so no counter column lives here.
 model PasswordReset {
   id        BigInt    @id @default(autoincrement())

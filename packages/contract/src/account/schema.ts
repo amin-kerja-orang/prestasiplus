@@ -63,6 +63,8 @@ export const ACCOUNT_AUTH_MESSAGES = {
   icMismatch: 'Email atau No Kad Pengenalan tidak sepadan.',
   /** D55a: BM message of the reset-ic attempt limit; copy approved by D58c (2026-10-19). */
   resetIcRateLimited: 'Terlalu banyak percubaan. Sila cuba lagi dalam 15 minit.',
+  /** [PROPOSED] B3 N3: the per-account limit of reset-ic, 24 hours. Same text for an unknown e-mail, so it reveals no account. */
+  resetIcAccountLimited: 'Terlalu banyak percubaan untuk e-mel ini. Sila cuba lagi dalam 24 jam, atau minta admin sekolah anda menetapkan semula kata laluan.',
   accountInactive: 'Akaun anda tidak aktif. Sila hubungi pentadbir.',
   currentPasswordWrong: 'The password is incorrect.',
   emailTaken: 'The email has already been taken.',
@@ -71,8 +73,13 @@ export const ACCOUNT_AUTH_MESSAGES = {
   gradeInvalid: 'The selected grade is invalid.',
 } as const
 
-/** D55a: `POST /auth/password/reset-ic` allows 5 attempts per 15 minutes, counted per account (e-mail) and per IP. */
+/**
+ * D55a, B3 N3: `POST /auth/password/reset-ic` allows 5 attempts per account (e-mail) per 24 hours and 5 attempts per IP per 15 minutes.
+ * The two windows differ on purpose: the account window slows a guess at one pupil's IC; a school shares one address, so a 24-hour
+ * address window would stop a whole school after five attempts.
+ */
 export const ACCOUNT_RESET_IC_MAX_ATTEMPTS = 5
+export const ACCOUNT_RESET_IC_ACCOUNT_WINDOW_MINUTES = 1440
 export const ACCOUNT_RESET_IC_WINDOW_MINUTES = 15
 
 /**

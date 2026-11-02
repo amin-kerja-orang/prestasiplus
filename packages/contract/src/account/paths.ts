@@ -7,6 +7,7 @@ import { envelopeOf } from '../common/envelope'
 import {
   ACCOUNT_AUTH_MESSAGES,
   ACCOUNT_MESSAGES,
+  ACCOUNT_RESET_IC_ACCOUNT_WINDOW_MINUTES,
   ACCOUNT_RESET_IC_MAX_ATTEMPTS,
   ACCOUNT_RESET_IC_WINDOW_MINUTES,
   ACCOUNT_RESET_TOKEN_RULES,
@@ -161,7 +162,7 @@ export function registerAccountPaths(registry: OpenAPIRegistry): void {
       200: jsonNoStore(envelopeOf(AccountResetTokenSchema), 'Token issued.'),
       422: validation(`email required/valid; ic number required, max 14; mismatch "${ACCOUNT_AUTH_MESSAGES.icMismatch}" on fields.email.`),
       429: rateLimited(
-        `"${ACCOUNT_AUTH_MESSAGES.resetIcRateLimited}" (D55a: more than ${String(ACCOUNT_RESET_IC_MAX_ATTEMPTS)} attempts in ${String(ACCOUNT_RESET_IC_WINDOW_MINUTES)} minutes for the same account or the same IP).`,
+        `"${ACCOUNT_AUTH_MESSAGES.resetIcAccountLimited}" (more than ${String(ACCOUNT_RESET_IC_MAX_ATTEMPTS)} attempts in ${String(ACCOUNT_RESET_IC_ACCOUNT_WINDOW_MINUTES)} minutes for the same account), or "${ACCOUNT_AUTH_MESSAGES.resetIcRateLimited}" (D55a: more than ${String(ACCOUNT_RESET_IC_MAX_ATTEMPTS)} attempts in ${String(ACCOUNT_RESET_IC_WINDOW_MINUTES)} minutes from the same IP).`,
       ),
     },
   })

@@ -9,6 +9,7 @@ import {
   ACCOUNT_MESSAGES,
   ACCOUNT_PICTURE_MAX_KB,
   ACCOUNT_PICTURE_MESSAGES,
+  ACCOUNT_RESET_IC_ACCOUNT_WINDOW_MINUTES,
   ACCOUNT_RESET_IC_MAX_ATTEMPTS,
   ACCOUNT_RESET_IC_WINDOW_MINUTES,
   ACCOUNT_SETTINGS_DEFAULTS,
@@ -236,8 +237,9 @@ describe('password reset', () => {
 })
 
 describe('D55 decisions', () => {
-  it('exports the reset-ic attempt limit as 5 per 15 minutes', () => {
+  it('exports the reset-ic attempt limit as 5 per account per 24 hours and 5 per address per 15 minutes', () => {
     expect(ACCOUNT_RESET_IC_MAX_ATTEMPTS).toBe(5)
+    expect(ACCOUNT_RESET_IC_ACCOUNT_WINDOW_MINUTES).toBe(1440)
     expect(ACCOUNT_RESET_IC_WINDOW_MINUTES).toBe(15)
   })
 
@@ -249,6 +251,7 @@ describe('D55 decisions', () => {
     const res = op?.responses['429']
     expect(res?.description).toContain('RATE_LIMITED')
     expect(res?.description).toContain(ACCOUNT_AUTH_MESSAGES.resetIcRateLimited)
+    expect(res?.description).toContain(ACCOUNT_AUTH_MESSAGES.resetIcAccountLimited)
     expect(res?.content?.['application/json']).toBeDefined()
     expect(ACCOUNT_AUTH_MESSAGES.resetIcRateLimited).toBe('Terlalu banyak percubaan. Sila cuba lagi dalam 15 minit.')
     expect(op?.description).toContain('per account')

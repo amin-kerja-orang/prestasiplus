@@ -7,6 +7,7 @@ import { AuthConfig } from '../auth/auth.config'
 import { hmacHex } from '../auth/tokens'
 import {
   ANY,
+  IC_ACCOUNT_WINDOW_MS,
   IC_LIMIT,
   IC_WINDOW_MS,
   MAIL_INTERVAL_MS,
@@ -53,8 +54,8 @@ export class AccountThrottle {
     return hmacHex(this.config.secret, 'ip', ip)
   }
 
-  private retryAfter(counter: Counter, now: Date): number {
-    return Math.min(900, Math.max(1, Math.ceil((counter.expiresAt.getTime() - now.getTime()) / 1000)))
+  private retryAfter(counter: Counter, now: Date, maxSeconds = 900): number {
+    return Math.min(maxSeconds, Math.max(1, Math.ceil((counter.expiresAt.getTime() - now.getTime()) / 1000)))
   }
 
   /** Counts one hit in a fixed window (atomic upsert) and returns the counter after it. */
@@ -100,19 +101,17 @@ export class AccountThrottle {
   // --- POST /auth/password/reset-ic (D55a) ----------------------------------------------------------
 
   /**
-   * Counts the attempt against the account and the address (5 per 15 minutes each), whichever result.
+   * Counts the attempt against the account (5 per 24 hours, B3 N3) and the address (5 per 15 minutes), whichever result.
+   * The account limit answers first: its wait is the longer one. The text is the same for an unknown e-mail (D55b).
    * Every attempt, match or not, also starts the 60 s interval of the link request, so a 429 there is no match oracle.
    */
   async resetIcAttempt(email: string, ip: string): Promise<void> {
     const now = this.clock.now()
-    const account = await this.hit(this.id(RESET_KEYS.icAccount, normaliseEmail(email)), ANY, IC_WINDOW_MS, now)
+    const account = await this.hit(this.id(RESET_KEYS.icAccount, normaliseEmail(email)), ANY, IC_ACCOUNT_WINDOW_MS, now)
     const byIp = await this.hit(this.id(RESET_KEYS.icIp, ANY), this.ipOf(ip), IC_WINDOW_MS, now)
     await this.hit(this.id(RESET_KEYS.mailInterval, normaliseEmail(email)), ANY, MAIL_INTERVAL_MS, now)
-    const over = [account, byIp].filter((c) => c.attempts > IC_LIMIT)
-    if (over.length > 0) {
-      const wait = Math.max(...over.map((c) => this.retryAfter(c, now)))
-      throw tooMany(wait, ACCOUNT_AUTH_MESSAGES.resetIcRateLimited)
-    }
+    if (account.attempts > IC_LIMIT) throw tooMany(this.retryAfter(account, now, IC_ACCOUNT_WINDOW_MS / 1000), ACCOUNT_AUTH_MESSAGES.resetIcAccountLimited)
+    if (byIp.attempts > IC_LIMIT) throw tooMany(this.retryAfter(byIp, now), ACCOUNT_AUTH_MESSAGES.resetIcRateLimited)
   }
 
   // --- POST /auth/password/reset: failed redemptions -------------------------------------------------
