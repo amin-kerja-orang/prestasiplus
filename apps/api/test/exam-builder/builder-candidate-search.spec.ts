@@ -152,18 +152,25 @@ describe('R1-T45 builder AC proofs: Tambah soalan errors and the candidate searc
       expect(miss.body.meta.totalItems).toBe(0)
     })
 
-    it('the same search shows the question as placed with pinned false on a draf and true once Terbit (T48)', async () => {
-      const { paper, ids, sections } = await fullPaper()
+    it('the same search shows the question as placed with pinned false on a draf and pinned true once the paper is Terbit (T48)', async () => {
       const marker = 'Pecahan unik yy'
-      const extra = await approved({ questionText: `${marker} apakah hasilnya?` })
-      await setPool(extra, ['MAT2-A'])
-      expect((await place(paper, sections[0]!, extra)).status).toBe(201)
-      const find = async () => ((await pool(paper, sections[0]!, `?q=${encodeURIComponent(marker)}&pageSize=100`)).body.data as PoolUnit[])
+      // the searched question is the paper's last one (Bahagian C, 2 marks), so the paper stays a valid, publishable paper
+      const extra = await approved({ questionText: `${marker} apakah hasilnya?`, pointsValue: 2 })
+      const { paper, ids, sections } = await fullPaper({ last: extra })
+      expect(ids.at(-1)).toBe(extra)
+      const find = async () => (await pool(paper, sections[2]!, `?q=${encodeURIComponent(marker)}&pageSize=100`)).body.data as PoolUnit[]
       const draft = await find()
       expect(draft).toHaveLength(1)
       expect(draft[0]).toMatchObject({ placed: true })
       expect(draft[0]!.questions[0]).toMatchObject({ id: extra, pinned: false })
-      expect(ids).not.toContain(extra)
+
+      const published = await admin.post(`/api/admin/papers/${paper}/publish`)
+      expect(published.status, JSON.stringify(published.body)).toBe(200)
+      expect(published.body.data).toMatchObject({ ok: true })
+      const terbit = await find()
+      expect(terbit).toHaveLength(1)
+      expect(terbit[0]).toMatchObject({ placed: true })
+      expect(terbit[0]!.questions[0]).toMatchObject({ id: extra, pinned: true })
     })
 
     it('a Draf made by "Tambah soalan" is not a candidate: the search for the paper sees no new unit and the total does not grow', async () => {
