@@ -188,3 +188,7 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
 
 ## Q27 (USER DECISION 3 Nov ~00:3x MYT, asked by the team B lead; REQ-B-114): who fixes PKSK
 - Answer: **"Ya, Team B baiki"**. Team B fixes the REQ-A-064 PKSK id items on `r1/b1-id-class-pksk` in the same batch. This supersedes the builder in Q25 (A3); A3 stops `r1/pksk-id-types` and acts as tester. Team A (A2) reviews B's head statically on request.
+
+## Q28 (USER DECISION 3 Nov ~01:10 MYT, asked by Mandor): batch order and team C's unfinished work
+- (1) Merge order: **"Merge B dulu"**. Team B merges its own approved units now (`r1/b1-id-class-pupil` @ c4f59bc8, `r1/b1-id-class-pksk` @ fc05ab40, m15 bulkHadiah fixed or KIV). Team A add-ons go on top as each is READY: docs `r1/reqb112-docs` @ db2b8e8f, Q26 `r1/trial-exhausted-midquiz`, A4 chapter seed/spec. Then ONE frontend+api dispatch with api_ref = the final SHA.
+- (2) Team C (no R1 activity since 2 Nov 16:55 MYT): **"minta team A dan B ambil alih kerja2 yg belum selesai"**. Teams A and B take over team C's unfinished work. Mandor posts a triaged list (REQ-A-068) with owner per item: R1-blocking items now; the rest stays after release under the owner freeze. Team C: if you return, post at once what you hold so nothing is done twice.
