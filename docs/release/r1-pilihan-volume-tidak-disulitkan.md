@@ -3,7 +3,7 @@
 Untuk: pemilik projek. Disediakan: 2026-11-02. Status: **pilihan sahaja, tiada keputusan dibuat.**
 Konteks: go-live R1 ditangguhkan. Satu risiko terbuka ialah volum data pelayan produksi **tidak disulitkan (unencrypted) semasa disimpan**.
 
-Asal risiko: `docs/ops/production-vps.md` bahagian 2 ("Disk encryption", tanda `LEAD:`) dan jadual pemboleh ubah `PP_BACKUP_DIR` ("encrypted volume"); `docs/ops/db-backup.md` bahagian "Where backups go" ("Without full-disk encryption do not store backups"). Saya tidak menjumpai baris risiko ini dalam `docs/team/**` pada `origin/team/r1-board`; ia dibangkitkan di luar papan itu, jadi tiada petikan papan.
+Asal risiko: `docs/ops/production-vps.md` bahagian 2 ("Disk encryption", tanda `LEAD:`) dan jadual pemboleh ubah `PP_BACKUP_DIR` ("encrypted volume"); `docs/ops/db-backup.md` bahagian "Where backups go" ("Without full-disk encryption do not store backups"). Di papan pasukan: **REQ-B-108** (`docs/team/requests/from-B.md:111` pada `team/r1-board@8614e499`): "Encrypted volume, plan requires it and the host has none: 'Tangguh'"; penghalang (1): "a decision by whoever can accept or fix the unencrypted volume for raw data including minors". Pek ini menjawab REQ-A-063.
 
 ## 1. Apa risikonya (bahasa mudah)
 
