@@ -315,6 +315,7 @@ async function overridePublish(reason: string): Promise<void> {
   await actions.publish({ override: true, reason })
 }
 async function unpublish(): Promise<void> {
+  if (!(await confirm({ message: bt.withdrawConfirm, confirmLabel: bt.withdrawConfirmLabel, tone: 'error' }))) return
   busy.value = true
   try {
     await server.unpublishPaper(id.value)
