@@ -530,12 +530,12 @@ The B4 pack chain was walked by HTTP on SN/2 (4541/2): **96 MATCH, 1 scanner fal
 - Low bug, fixed under D9: "(draf)" stays in published titles → r1/publish-title-draft (A2).
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 00:21 UTC, BASE 0ba520cc)
+### Team A open branches: heads from origin (auto, 2026-11-02 00:23 UTC, BASE 482d33b9)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
-| r1/a2-carried-minors | 6b9104d32 | READY (A2, @6b9104d3 on BASE 99d2fab2; comments/docs only): REQ-A-018 JSDoc, D9 row simulasi_kuiz limit, deviation row PKSK applyStatus no approve gate (LEAD, KIV R2); C3 doc line deferred until c012 merges; B2 |
+| r1/a2-carried-minors | 45f152423 | READY (A2, @45f15242 = 6b9104d3 + A1b Minor JSDoc wording; comments/docs only): REQ-A-018 JSDoc, D9 row simulasi_kuiz limit, deviation row PKSK applyStatus no approve gate (LEAD, KIV R2); A1b Approve; C3 doc line deferred until c012 merges; B2 |
 | r1/ac-gaps-a1b | 3ea703331 | READY (multi, @9821b218: row 39 per USER Q13; B4 pack fixes; runbook 0105 NOT online + caveats); B4. Consistency fixes B8–B12 pending (A3 docs agent) |
 | r1/admin-list-perf | 69f465c89 | READY (A4, @69f465c8 = 6389cd54 + REQ-B-061 fix: list limit default 60→240/min, env override kept, spec 240→200/241st→429 bites, docs+deviation row); A1b pre-review Approve on delta (0 B/M; spec bites at 239 and 241; 32.5 s); B2 delta re-review; C side = REQ-A-027 |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
@@ -553,7 +553,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha26-team-a-state | 37c79de67 | READY (A3 docs, @37c79de6: merged list BASE-110..124, pending trimmed, KIV 36 @ha24 fdfaa810); B1 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-followup | 2fe252aba | READY (A2, @2fe252ab on intake-reqs 8c1964a6): unknownSp required, FACTS in unit.spec, deviations row 244 names spNotInTaxonomy; 43/43, tsc 0; merge AFTER intake-reqs (deviations conflict: keep both); B2 small | A1b pre-review: CLEAN (CurriculumFacts internal; both producers always set unknownSp; tsc 0; 43/43) |
-| r1/minors-chain-tip-a3 | 666102d0c | READY (A3, @666102d0 on BASE-128): dead reasons.length guard removed in approval-check unservableEverywhere (no behaviour change), t45-approval-check 4/4 + mutations red; closes B2 c20 Minor; (b) limiter scope pending A4 reading; B2 |
+| r1/minors-chain-tip-a3 | 666102d0c | READY (A3, @666102d0 on BASE-128): dead reasons.length guard removed in approval-check unservableEverywhere (no behaviour change), t45-approval-check 4/4 + mutations red; closes B2 c20 Minor; (b) limiter scope pending A4 reading; B2 | A1b pre-review Approve (3 mutation sets red) |
 | r1/minors-kbat-chain-a3 | 295456912 | READY (A3, @29545691 on partial-acs-a3 01ab13f7; test only): pipeline-chain step 6b Jana Kertas with KBAT>0 (positive + SHORTAGE kbat), 48 pass, mutations red; closes B2 c17 Minor; merge after partial-acs-a3; B2 | A1b pre-review Approve (4 mutation sets red; D gives SHORTAGE combination/kbat, still red) |
 | r1/minors-snapshot-versions-a3 | 1ef2eb2e5 | READY (A3, @1ef2eb2e on BASE-120; type only): AttemptSectionSnapshot.versions; attempt-source 4/4, tsc 0; closes B2 c20 Minor; B2 | A1b pre-review Approve |
 | r1/partial-acs-a3 | 01ab13f70 | READY (A3, @01ab13f7 on T51; tests only): AC-18.1 5c via Studio path + real negative; R1-11.4/12.6 SELECT pins; robust in both orders with ha18 a9ffe246 (trial 52 pass); A1b pre-review Approve + Minors fixed; merge after T51; B2 |
@@ -568,6 +568,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/reqa018-paper-servability-route | 9d6ef833f | READY (A2, @9d6ef833, contains BASE-107): admin papers only, cap 200 + meta, batched read, contract exports; contract-tests scenario (4 cases; API conformance 413/413; mock: 3 assertion known-mismatches until C serves it → swap to 1 schema entry when C reqa018-fe lands); full B2 + B3; C reqa018-fe must re-merge | merge-tree vs BASE-109: clean |
 | r1/reqa035-rule-line-fe | 7cd7e3bdc | (no status — triage) |
 | r1/reqb052-archived-edit | f3a2448f9 | READY (A3, BASE-105; replaces 17196431): follow-ups done: P1 pinned-clause spec (bites), guard published OR (withdrawn AND EXISTS attempts), header; archived-edit 6/6, pinned-version-rule 6/6, workflow 296/296; tsc/eslint 0; B2 | merge AFTER ha18 a9ffe246 (merge-tree clean; fix not needed inside) |
+| r1/reqb058-dedupe-test-a3 | a5f4d3553 | READY (A3, @a5f4d355 on reqb058 b1e96566; test only): one question in two sections, getVersions dedupe + takedown paths, 5 tests, mutations red; closes A1b Minor 3; merge after reqb058; B2 |
 | r1/reqb058-takedown-pin | b1e965665 | READY (A4, @b1e96566: list drops taken-down papers for a pupil with no sitting, batched pins; cover unchanged by lead decision). A1b pre-review Approve (0 B/M; 3 optional minors), bite 3 red; B2 |
 | r1/rule-line-v2 | 89961f9f2 | READY (A3, @89961f9f, BASE-109; USER Q13 2026-11-02 follow V2): rules.ts + exam-core paper-model.ts → "Jawab {N} soalan sahaja." ("Jawab semua soalan." unchanged); new exam-core test (bites); contract examples + openapi; AC-06.1/standards/catalogue aligned; PoC/golden authored "daripada" = accepted limit (deviation row); A2 pre-review Minors closed (eslint keeps _questionCount disable, stated); exam-core 219, bijak-papers 109, conformance 403; FE copies REQ-A-035 (C); B2 |
 | r1/servability-stimuli-once | f76f729a8 | READY (A4, @f76f729a, contains chain tip + BASE-107): spy spec pins one stimulus read per chunk + 2 comments; optional; step 6b |
