@@ -7,6 +7,7 @@ import DsPanel from '@/ds/DsPanel.vue'
 import RichText from '../../../components/RichText.vue'
 import StimulusView from '../../../components/StimulusView.vue'
 import type { StimulusDef } from '../../../domain/types'
+import { editorStimuliOf } from '../../../lib/stimulus-data'
 import { builderCopy as t } from '../domain/copy'
 
 defineProps<{ view: BijakBuilderStudentView | null; error?: boolean }>()
@@ -34,8 +35,8 @@ const open = defineModel<boolean>('open', { default: false })
             <p class="text-caption text-muted">{{ s.instruction }}</p>
           </header>
           <template v-for="(u, ui) in s.units" :key="ui">
-            <DsPanel v-if="u.stimulus" data-testid="student-stimulus">
-              <StimulusView :stimulus="u.stimulus as unknown as StimulusDef" />
+            <DsPanel v-for="(st, si) in editorStimuliOf(u as { stimulus?: StimulusDef; stimuli?: StimulusDef[] })" :key="si" data-testid="student-stimulus">
+              <StimulusView :stimulus="st" />
             </DsPanel>
             <DsPanel v-for="q in u.questions" :key="q.id" :data-testid="`student-q-${q.id}`">
               <div class="flex items-baseline justify-between gap-3">

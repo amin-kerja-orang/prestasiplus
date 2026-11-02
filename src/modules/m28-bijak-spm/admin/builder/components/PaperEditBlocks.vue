@@ -9,7 +9,7 @@ import { reactive, watch } from 'vue'
 
 import type { PaperEditorData } from '../../../domain/admin-types'
 import { builderCopy as t } from '../domain/copy'
-import { firstStimulusOf, groupLabelOf, hasStimulus } from '../domain/stimulus'
+import { firstStimulusOf, hasStimulus } from '../domain/stimulus'
 import type { SectionPatch } from '../server/api'
 
 const props = defineProps<{ editor: PaperEditorData; readonly?: boolean; busy?: boolean }>()
@@ -31,7 +31,7 @@ watch(
   (ed) => {
     for (const s of ed.paper.sections)
       sections[s.id] = { label: s.label, instruction: s.instruction ?? '', compulsory: !!s.compulsory }
-    for (const g of ed.groups) passages[g.id] = groupLabelOf(g)
+    for (const g of ed.groups) passages[g.id] = firstStimulusOf(g)?.label ?? '' // the title input renames the first stimulus
   },
   { immediate: true },
 )

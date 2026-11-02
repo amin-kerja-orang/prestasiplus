@@ -180,7 +180,7 @@ function unitsFor(sectionId: string) {
   return unitsOf(ids[sectionId] ?? [], groupOf)
 }
 /** Label of a group's stimuli; '' for a stimulus-less group, which stays a unit (D90, REQ-A-008). */
-const groupLabelOf = (gid: string): string => {
+const groupLabelById = (gid: string): string => {
   const g = gMap.value.get(gid)
   return g ? editorGroupLabel(g) : editorGroupLabel({ stimuli: extraStim.get(gid) ?? [] })
 }
@@ -378,7 +378,7 @@ function addOpsUnit(sectionId: string, u: BijakBuilderPoolUnit): void {
   }
   if (u.groupId) {
     extraG.set(u.groupId, [...u.questionIds])
-    if (u.stimulus) extraStim.set(u.groupId, u.stimulus)
+    extraStim.set(u.groupId, editorStimuliOf(u))
   }
   const all = new Set(Object.values(ids).flat())
   setIds(sectionId, [...(ids[sectionId] ?? []), ...u.questionIds.filter((q) => !all.has(q))])
@@ -753,7 +753,7 @@ const previewBlocks = computed(() => {
                   class="flex flex-wrap items-center gap-2 text-caption font-semibold text-info"
                 >
                   <UIcon name="i-ph-image" class="size-4" />
-                  Kumpulan rangsangan{{ groupLabelOf(u.groupId) ? ` ${groupLabelOf(u.groupId)}` : '' }} · {{ u.ids.length }} soalan
+                  Kumpulan rangsangan{{ groupLabelById(u.groupId) ? ` ${groupLabelById(u.groupId)}` : '' }} · {{ u.ids.length }} soalan
                   bergerak bersama
                 </p>
                 <div v-for="qid in u.ids" :key="qid" class="flex flex-col gap-1">
