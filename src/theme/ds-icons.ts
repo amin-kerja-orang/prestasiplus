@@ -103,6 +103,9 @@ export const dsIconBaseNames = [
   'arrow-clockwise',
   'file-pdf',
   'file-csv',
+  // m12 ChainCards (DsIconChip); m28 KuizPage and PaperQuizPage (DsEmptyState).
+  'footprints',
+  'file-x',
   'buildings',
   'target',
   'users-three',

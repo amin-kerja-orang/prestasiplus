@@ -9,6 +9,7 @@ import { ICON_NOT_BUNDLED, ICONIFY_API_HOSTS, KNOWN_ABSENT_ICONS } from '../../s
  * + the role's section B; the first path rule of each item). Literal, because the e2e project cannot
  * import code that uses the `@/` alias; a unit test (`src/theme/__tests__/icon-offline.test.ts`)
  * keeps these lists in step with the matrix. Admin Pusat: every built row of the Pentadbiran menu.
+ * The lists hold every matrix row; `visitAll` skips the rows hidden by a build flag (`FLAG_HIDDEN`).
  */
 const ACCOUNT = ['/profile', '/tetapan', '/panduan', '/pusat-tuisyen/tiket']
 
@@ -16,14 +17,12 @@ export const ICON_ROUTES = {
   student: [
     ...ACCOUNT,
     ...['/dashboard', '/headcount', '/prestasi', '/analitik', '/analisa-item', '/video', '/kelas-saya'],
-    ...['/practice/chapter', '/remedial', '/spm', '/buku-nota/heatmap', '/practice'],
+    ...['/practice/chapter', '/remedial', '/spm', '/buku-nota/heatmap', '/mohon-keluarga-angkat', '/practice'],
     ...['/latihan-berstruktur', '/ranking', '/pksk', '/artikel', '/permainan', '/cabutan', '/tournament'],
     ...['/topics', '/peta-belajar', '/set-soalan-saya', '/audio-kbat', '/gamification'],
     ...['/gamification/convert', '/gamification/challenges', '/gamification/rewards', '/marketplace'],
     ...['/gamification/leaderboard', '/gamification/achievements', '/gamification/mystery-box'],
-    ...['/gamification/referral', '/cikgu/hadiah', '/timeline', '/jemput-ibu-bapa'],
-    ...(process.env.VITE_ALESA_AI === 'on' ? ['/cikgu'] : []),
-    ...(process.env.VITE_KELUARGA_ANGKAT === 'on' ? ['/mohon-keluarga-angkat'] : []),
+    ...['/gamification/referral', '/cikgu', '/cikgu/hadiah', '/timeline', '/jemput-ibu-bapa'],
   ],
   teacher: [
     ...ACCOUNT,
@@ -41,6 +40,12 @@ export const ICON_ROUTES = {
   ],
   admin: ['/admin', ...PENTADBIRAN_MENU.flatMap((g) => g.items.map((i) => i.to))],
 } as const
+
+/** Matrix rows that 404 unless the app is built with their flag (TRACKER D73, D74). */
+const FLAG_HIDDEN: readonly string[] = [
+  ...(process.env.VITE_ALESA_AI === 'on' ? [] : ['/cikgu']),
+  ...(process.env.VITE_KELUARGA_ANGKAT === 'on' ? [] : ['/mohon-keluarga-angkat']),
+]
 
 /** Records icon-API requests and not-bundled warnings of a page (known-absent Phosphor names excluded). */
 export function watchIcons(page: Page): string[] {
@@ -86,10 +91,11 @@ export async function visit(page: Page, path: string): Promise<number> {
   return px
 }
 
-/** Visits every route; returns the paths that scroll horizontally. */
+/** Visits every route shown in this build; returns the paths that scroll horizontally. */
 export async function visitAll(page: Page, routes: readonly string[]): Promise<string[]> {
   const overflowing: string[] = []
   for (const path of new Set(routes)) {
+    if (FLAG_HIDDEN.includes(path)) continue
     const overflow = await visit(page, path)
     if (overflow > 0) overflowing.push(`${path} (+${String(overflow)}px)`)
   }
