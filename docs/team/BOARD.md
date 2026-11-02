@@ -560,10 +560,10 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/intake-reqs-followup | 2fe252aba | READY (A2, @2fe252ab on intake-reqs 8c1964a6): unknownSp required, FACTS in unit.spec, deviations row 244 names spNotInTaxonomy; 43/43, tsc 0; merge AFTER intake-reqs (deviations conflict: keep both); B2 small | A1b pre-review: CLEAN (CurriculumFacts internal; both producers always set unknownSp; tsc 0; 43/43) |
 | r1/minors-b025c-a3 | a4feeab01 | READY (A3, @a4feeab0 on BASE-131; test only): essay-choice-blank 9 tests on a choose-N Bahagian (best-N, V2 self-mark rule pinned), mutations red; closes A1b REQ-B-025c carried Minors; B2 |
 | r1/minors-chain-tip-a3 | 41c22c969 | READY (A3, @41c22c96 on BASE-128): (a) dead reasons.length guard removed in approval-check (A1b Approve on 666102d0); (b) every servability-overview read goes through the limiter (4), max-in-flight spy spec, per A4 reading; closes B2 c20 Minors; B2 |
-| r1/minors-kbat-chain-a3 | a253b3bf3 | IN-PROGRESS (A3, @a253b3bf restacked on T48 10c62437): exam-builder 416/417 RED: builder-review "stays outside D93" (same as REQ-B-069; likely pool page cap ?pageSize=100 vs 106 units). Test-only fix on T31 lineage, then cascade. NOT for merge |
+| r1/minors-kbat-chain-a3 | a253b3bf3 | IN-PROGRESS (A3, @a253b3bf restacked on T48 10c62437): exam-builder 416/417 RED: builder-review "stays outside D93" (same as REQ-B-069; likely pool page cap ?pageSize=100 vs 106 units). Fixed by r1/t31-pool-lookup-fixture merged after T31 (no cascade needed); READY once that fix is merged |
 | r1/minors-snapshot-versions-a3 | 1ef2eb2e5 | READY (A3, @1ef2eb2e on BASE-120; type only): AttemptSectionSnapshot.versions; attempt-source 4/4, tsc 0; closes B2 c20 Minor; B2 | A1b pre-review Approve |
 | r1/minors-t45-a3 | eb8165ed1 | READY (A3, @eb8165ed off T45; test only); clean; merge after T45 |
-| r1/partial-acs-a3 | e6ceece19 | IN-PROGRESS (A3, @e6ceece1 restacked on T48 10c62437): exam-builder 416/417 RED: builder-review "stays outside D93" (same as REQ-B-069; likely pool page cap ?pageSize=100 vs 106 units). Test-only fix on T31 lineage, then cascade. NOT for merge |
+| r1/partial-acs-a3 | e6ceece19 | IN-PROGRESS (A3, @e6ceece1 restacked on T48 10c62437): exam-builder 416/417 RED: builder-review "stays outside D93" (same as REQ-B-069; likely pool page cap ?pageSize=100 vs 106 units). Fixed by r1/t31-pool-lookup-fixture merged after T31 (no cascade needed); READY once that fix is merged |
 | r1/publish-lock-share | 225b69411 | READY (A1b, @225b6941 = 11c827b7 + delete-served-guard da7a12e7 merged in; diff vs DSG = its own 5 files; publish-lock-share 5 + DSG + builder-api 60 pass, tsc 0). A4 AwM (e223b433) + minors fixed. **Merge right AFTER delete-served-guard da7a12e7**; B2 |
 | r1/publish-title-draft | 4e768673c | READY (A2, @4e768673 = 6e0684d2 + A3 review minors; D9: Terbit drops " (draf)" from an exact auto title only; publish-title 5/5, builder-api 38/38, tsc 0; A3 APPROVE on delta); merge-tree vs BASE-126: DEV doc keep-both only; B2 |
 | r1/r1e2e10-bulk-publish-noop | 5990fb6b0 | CR (A2, @5990fb6b on BASE-135; Q16): bulk Terbitkan already-Diterbitkan rows → optional `skipped[]: {id, reason}` ("Soalan ini sudah diterbitkan."), not failed[], not affected, no audit/transition; contract QuestionBulkSkippedSchema + openapi; 5 specs, mutations red; questions 715, workflow 310, conformance 409, contract 95; A1b pre-review; C FE = REQ-A-040 |
@@ -577,6 +577,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/servability-stimuli-once | f76f729a8 | READY (A4, @f76f729a, contains chain tip + BASE-107): spy spec pins one stimulus read per chunk + 2 comments; optional; step 6b |
 | r1/t04-minors | 82828a68a | MERGED by B1 as BASE-119 e927c3ee @8ae70d6e (reviewed SHA; 82828a68 delta not merged: optional test-only, left) |
 | r1/t31-builder-wire | eb0346d25 | READY (A3, @eb0346d2): already an ancestor of C reqa008 f85db8ff (B2 c23 AwM) → merging reqa008 brings T31; A4 pair check on BASE-129 GREEN (exam-builder 438, m28 FE 650, vue-tsc 0); nothing needed from team A. B2 |
+| r1/t31-pool-lookup-fixture | 397200729 | IN-PROGRESS (A3, @39720072 on T31 eb0346d2; REQ-B-069 test-only fix: poolUnits() walks pages); one more commit moving all single-page lookups; merge right after T31/REQ-A-008 |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t37-r1-runbook | c9dcb5a08 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b (823bb4a1); head c9dcb5a0 |
@@ -588,13 +589,11 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t45-builder-acs | ee3a7d2ba | READY (A1b, @ee3a7d2b); clean on T48 10c62437; merge after T48 |
 | r1/t45-builder-acs-wip | 078204e1c | SUPERSEDED by r1/t45-builder-acs; do not merge |
 | r1/t48-label-move-fix | 9783849cf | READY — B2 c23 APPROVED @9783849c; clean on restacked T48 10c62437 (no merge needed); merge after T48 |
-| r1/t51-partial-acs-a3 | 7cb8d814a | IN-PROGRESS (A3, @7cb8d814 restacked on T48 10c62437): exam-builder 416/417 RED: builder-review "stays outside D93" (same as REQ-B-069; likely pool page cap ?pageSize=100 vs 106 units). Test-only fix on T31 lineage, then cascade. NOT for merge |
+| r1/t51-partial-acs-a3 | 7cb8d814a | IN-PROGRESS (A3, @7cb8d814 restacked on T48 10c62437): exam-builder 416/417 RED: builder-review "stays outside D93" (same as REQ-B-069; likely pool page cap ?pageSize=100 vs 106 units). Fixed by r1/t31-pool-lookup-fixture merged after T31 (no cascade needed); READY once that fix is merged |
 
 **Merged content, origin head has only base-merge commits since (no new work):** r1/a4chain-minors 86dd7ad67, r1/ha15-blueprint-evidence 7e5d637e5, r1/overview-getmany-parallel 2809a87fe, r1/reqb032-pinned-rule 167986eff, r1/t44-blueprint-fields 072d8f4b4, r1/t48-builder-parity 10c624376
 
 **Origin head moved since last record (re-triage):** r1/ac-gaps-a1b: status says @6e0d918f, origin is c2b937105; r1/ha24-release-input: status says @4335759e, origin is 8e6a30cc0; r1/ha26-team-a-state: status says @8caeb072, origin is 21360a867
-
-**New branches not yet triaged:** r1/t31-pool-lookup-fixture 397200729
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
