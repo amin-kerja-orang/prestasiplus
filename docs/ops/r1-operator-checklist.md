@@ -1,13 +1,44 @@
 # R1 operator checklist (one page)
 
+## Go-live timeline (target 22:00 MYT, 2026-11-02)
+
+**Candidate: the tip named in `docs/team/MERGE-LOG.md` on branch `team/r1-board` once the final CI is green; anything before BASE-213, BASE-212 `62872d96` included, has the Kontrak form bug and must not ship.** Last read, BASE-214 `61b788c5` (`feature/v3-bijak-r1` `61b788c55`) = BASE-205 product code + CI fixes BASE-206/207 + the frontend CI fix BASE-209 (including + 2 icons in `src/theme/ds-icons.ts`: `footprints`, `file-x`) + the REQ-B-090 Kontrak fix (BASE-213) + e2e @api (BASE-214, an e2e-only seed fixture behind `E2E_DEMO_SECONDARY` and stale @api specs; not product code) + docs. **CI on BASE-214:** API (api.yml) GREEN (run 41439390036), frontend verify GREEN (run 41439407511), **e2e@api PENDING** (sign-off 6.7: `[E2E@API BASE-214: ____ (run 41447417461)]`); no e2e result is claimed. Owner confirmation Q21 ("Proceed deploy") is conditional on CI green on BASE-214, a human operator running this page, and REQ-B-080 plus a full backup and a restore test before migrate. A person runs every command; teams A and B touch no server. No secrets, hosts or addresses are written here. Section numbers point at [r1-runbook.md](r1-runbook.md). Durations are estimates unless marked "rehearsal".
+
+### A. Can start now (before CI is green; nothing here deploys or migrates)
+
+| # | Step | Where | Duration |
+|---|---|---|---|
+| A1 | Early dump and a restore REHEARSAL: `deploy/vps/backup/backup.sh --tag pre-deploy --no-files`, then restore it into a scratch database (never the live one) to prove the restore works. This is a rehearsal, not the pre-migrate backup (that is B0) | section 1 below, first item; runbook section 0 item 1 | estimate: 20 to 40 min, depends on the database size |
+| A2 | REQ-B-080: confirm on the server `THROTTLE_GLOBAL_PER_MINUTE=3000` and `TRUST_PROXY_HOPS=1` (the VPS overlay forces 1) | section 1 below, the REQ-B-080 item; runbook section 6 | estimate: 5 min |
+| A3 | `pg_trgm` is available and the migrate role has the CREATE privilege (`pg_available_extensions`, `has_database_privilege`) | section 1 below; runbook 2.4 item 3 | estimate: 5 min |
+| A4 | Wallet tiers: `select count(*) from tiers;` must be 4, else `deploy.sh --seed-reference` | runbook section 0 item 6 | estimate: 5 min |
+| A5 | Stimulus group layout check (runbook 3.7 SELECT, expect 0 rows) and the other pre-live SELECTs of section 1 below (no demo accounts, six-digit accounts with an IC hash, null `blueprint_id` papers 3.7d) | runbook 3.7, 3.7d | estimate: 10 min |
+| A6 | Announce and fix the maintenance window; no blocking sessions | section 1 below; runbook 2.4 | estimate: 10 min (the window itself is B2) |
+| A7 | Prepare the build of the candidate tip (`export PP_IMAGE_TAG=$(git rev-parse --short=12 HEAD); $PC build api migrate frontend`); build only, no deploy | section 1 below | rehearsal: about 11 min |
+
+### B. Only after CI is green on the candidate tip (e2e@api and the frontend and API verify jobs)
+
+| # | Step | Where | Duration |
+|---|---|---|---|
+| B0 | **A fresh full backup `deploy/vps/backup/backup.sh --tag pre-deploy --no-files` inside the maintenance window, immediately before B1, and `$PC exec -T db pg_restore --list < "$D" > /dev/null; echo $?` on it (`D` = its absolute path): it must print `0`.** Also re-confirm REQ-B-080 now (`THROTTLE_GLOBAL_PER_MINUTE=3000`, `TRUST_PROXY_HOPS=1`), because the environment can change between A2 and 22:00. Reason: Q21 condition 3, and 0100 cannot be undone in place; the way back past 0100 is restoring this dump (runbook 2.2; [r1-release-notes.md](r1-release-notes.md) 6.2, commands in production-vps.md section 8) | section 1 below, first item; runbook 2.2; release notes 6.2 | estimate: 20 to 40 min plus 2 min for the list |
+| B1 | `deploy/vps/deploy.sh --dry-run`, then `deploy/vps/deploy.sh` (type the domain). **`deploy.sh` does the migrate AND the image rollout in one go** (it does not pause between migrations or before traffic): `migrate deploy` with `lock_timeout` 5 s via `options=-c%20lock_timeout%3D5s` in the migrate `DATABASE_URL` (removed afterwards), then the new api/frontend images | section 2 below; runbook 2.1, 2.4 | rehearsal: the write-blocking window is about 21 s at 408k rows (the whole `migrate deploy` 0104 to 0110: 21.3 s cold); production size not measured; the rollout adds estimate 5 min |
+| B2 | Right after `deploy.sh` ends: the failed-migration detection SELECT (0 rows expected; any row means stop and go to section 4 below) | section 3 below; runbook 2.4, 8 | estimate: 2 min |
+| B3 | Right after `deploy.sh` ends: `VACUUM ANALYZE question_versions` when 0100 is in this deploy, and `ANALYZE question_versions` after 0106/0107 | section 2 below; runbook 2.2, 2.4 item 4 | estimate: 1 to 5 min |
+| B4 | After `deploy.sh`: `GET /api/ready` 200 and `GET /api/health` 200 | section 6 below | estimate: 2 min |
+| B5 | DSKP load (dry run, real run, verify) and the blueprints (an Admin Pusat creates each Kontrak and presses Sahkan, runbook 5.2) if the runbook lists them post-migrate | runbook sections 4 and 5; section 6 below | estimate: 30 to 60 min for the load and blueprints; depends on the data |
+| B6 | Smoke: login count, one Jana Kertas, one Latih Tubi SPM draw | runbook section 1 step 7; 3.6, 5.5 | estimate: 10 min |
+| B7 | The owner rotates the M02 default passwords on live, then confirms; only then sign-off 6.8 is ticked | sign-off 6.8 | owner action |
+
+Still owed before the sign-off is complete: e2e@api green on the candidate tip, the M02 rotation (6.8), and the written acceptances of OCR AC-R1-14.2, limits 4.1 to 4.4, Q15/Q16 and copy row 42 (marked "deploy diteruskan atas arahan pemilik; penerimaan bertulis masih tertunggak"; not accepted).
+
 Short form of [r1-runbook.md](r1-runbook.md) (section numbers below point there). A human with deploy rights runs this, after the lead's explicit confirmation. Placeholders only: `<DATABASE_URL>`, `<migrate_role>` (the role `prisma migrate deploy` connects as), `<pid>`. No secrets on this page.
 
 **Rehearsed locally (runbook 2.4, 2.5):** `deploy.sh`, the compose path, the roles, the API as `pp_app`, every W1 case, and Kontrak plus Sahkan in the app for 3472/2 (local rehearsal 2026-11-02, Playwright against the production bundle of `881a0b06` with the real API, values of the worked example typed as evidence, no real papers). **Not exercised:** a real VPS, Let's Encrypt, `ppdeploy` permissions, `PP_PG_ARCHIVE_MODE=on`, an old API running during the migrate, real data, a Kontrak with real papers. Shell setup for `$PC` and `$PSQL`: [r1-release-notes.md](r1-release-notes.md), top. The migration rehearsal (REQ-B-083: local Postgres 16, 409k `question_versions`, base `87466acc`) covered the normal apply (20.3 s total, 0106 16.6 s), revert, re-apply, `/api/ready` and the reference seed.
 
 ## 1. Pre-deploy
 
-- [ ] Release checkout is the tip named in `docs/team/MERGE-LOG.md` on branch `team/r1-board` once the final CI is green. Anything before BASE-213, BASE-212 `62872d96` included, has the Kontrak form bug and must not ship: `git merge-base --is-ancestor 2fabf472 HEAD && echo has-BASE-213`.
-- [ ] Full dump: `deploy/vps/backup/backup.sh --tag pre-deploy --no-files` (`deploy.sh` step 2 takes another). Restore tested: `deploy/vps/backup/restore-drill.sh` (needs Node 22 on the host and stops the api) or a throwaway restore. 0100 cannot be undone in place.
+- [ ] Release checkout is the tip named in `docs/team/MERGE-LOG.md` on branch `team/r1-board` once the final CI is green: `git merge-base --is-ancestor 2fabf472 HEAD && echo has-BASE-213`.
+- [ ] Early dump and restore rehearsal (timeline A1): `deploy/vps/backup/backup.sh --tag pre-deploy --no-files`; restore tested with `deploy/vps/backup/restore-drill.sh` or a scratch database. **The pre-migrate backup is a fresh one inside the window, right before `deploy.sh` (timeline B0), and the list check on it must print `0`.** (`deploy.sh` step 2 takes another.) Restore tested: `deploy/vps/backup/restore-drill.sh` (needs Node 22 on the host and stops the api) or a throwaway restore. 0100 cannot be undone in place.
 - [ ] Images built before the window: `export PP_IMAGE_TAG=$(git rev-parse --short=12 HEAD); $PC build api migrate frontend`. A network failure in `npm ci` changes nothing; run it again.
 - [ ] Maintenance window of **60 minutes** agreed (runbook 2.5); `options=-c%20lock_timeout%3D5s` added to `DATABASE_URL` in `migrate.env`, removed afterwards (runbook 2.4). **The role default does not survive `deploy.sh`** (step 4 resets it). The option makes the database cancel a waiting file whole; W1 below applies whenever the migrate client dies.
 - [ ] No blocking sessions, with `$PSQL` (a DDL holder also hangs the backup of step 2 with no message): `SELECT pid, usename, state, xact_start, left(query, 80) FROM pg_stat_activity WHERE state <> 'idle' AND pid <> pg_backend_pid() ORDER BY xact_start;`

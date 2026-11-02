@@ -74,6 +74,8 @@ Related runbooks: [production-vps.md](production-vps.md) (sections 7 deploy, 8 r
 
 ### 0.1 Units merged so far and units still pending
 
+**History view, kept for the record: every unit below is in base (T06, T04 and T25 are merged), so nothing here holds back tagging.** The current state is the MERGE-LOG on branch `team/r1-board`.
+
 Checked against `origin` on 2026-10-31. `feature/v3-bijak-r1` is at **BASE-3 `285387a3`**: BASE-2 `5e856b5d` merged
 T01, BASE-3 merged T03. `git branch -r --merged origin/feature/v3-bijak-r1` lists `r1/t01-base-merge` and
 `r1/b08-bridge` as the only merged `r1/` branches. Migration folders on `285387a3` after 0090:
