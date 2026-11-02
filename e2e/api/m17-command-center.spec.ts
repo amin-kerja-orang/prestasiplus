@@ -92,8 +92,9 @@ test.describe('M17 Command Center board (Admin Pusat) @api', () => {
     expect(data.scope).toBe('platform')
 
     await expect(page.getByTestId('cc-s2')).toBeVisible({ timeout: 20_000 })
-    await expect(page).toHaveTitle(/Command Center/i)
-    await expect(page.getByTestId('cc-s2-heading')).toBeVisible()
+    await expect(page).toHaveTitle(/Langsung/) // PM-01 "Langsung" (was Command Center), docs/requirements/v2-portals.md
+    // The staff shell prints the page title (DsPageHeader showTitle="auto"), so the board has no heading of its own.
+    await expect(page.locator('h1').first()).toHaveText('Langsung')
     // DV-M17-54: no LIVE pill, clock or header buttons
     await expect(page.getByTestId('cc-live-badge')).toHaveCount(0)
     await expect(page.getByTestId('cc-clock')).toHaveCount(0)
@@ -133,7 +134,7 @@ test.describe('M17 Command Center board (Admin Pusat) @api', () => {
     ]
     for (const [id, title] of panels) {
       await expect(page.getByTestId(id), title).toBeVisible()
-      await expect(page.getByTestId(id).getByTestId('board-panel-title')).toHaveText(title)
+      await expect(page.getByTestId(id).getByRole('heading', { level: 2 }).first()).toHaveText(title)
     }
 
     // Top Sekolah lists the API's schools in the API's order; the feed shows the API's latest answers.
@@ -148,7 +149,7 @@ test.describe('M17 Command Center board (Admin Pusat) @api', () => {
     const feed = page.getByTestId('cc-feed-row')
     if (data.recentFeed.length > 0) {
       await expect(feed.first()).toBeVisible()
-      await expect(feed.first().getByTestId('cc-feed-name')).toHaveText(data.recentFeed[0]!.student)
+      await expect(feed.first().locator('[data-ds="list-row-title"]')).toHaveText(data.recentFeed[0]!.student)
     }
     await expect(page.getByTestId('cc-unavailable')).toHaveCount(0)
     await expect(page.getByTestId('cc-footer')).toBeVisible()

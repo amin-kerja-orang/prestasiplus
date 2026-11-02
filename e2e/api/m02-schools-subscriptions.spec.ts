@@ -144,7 +144,7 @@ test.describe('M02 schools (Admin Pusat) @api', () => {
     await expect(page.getByTestId('school-form')).toBeVisible({ timeout: 20_000 })
     await page.getByTestId('school-name').fill(name)
     await page.getByTestId('school-code').fill(code)
-    await page.getByTestId('school-type').selectOption('SK')
+    await page.getByTestId('school-type').selectOption('SMK')
     await page.getByTestId('school-state').selectOption('Johor')
     await page.getByTestId('school-district').fill('Johor Bahru')
     await page.getByTestId('school-city').fill('Johor Bahru')
@@ -168,7 +168,7 @@ test.describe('M02 schools (Admin Pusat) @api', () => {
         },
         'GET school',
       )
-      expect(stored).toMatchObject({ name, code, type: 'SK', state: 'Johor', isActive: true })
+      expect(stored).toMatchObject({ name, code, type: 'SMK', state: 'Johor', isActive: true })
 
       // The new school is found by its code in the list.
       await expect(page.getByTestId('school-row').first()).toBeVisible({ timeout: 20_000 })
