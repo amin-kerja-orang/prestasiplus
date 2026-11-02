@@ -538,7 +538,7 @@ A3 dev-1 rehearsed this locally. `prisma migrate deploy` does not run a migratio
 - ha18-minors must restore 0105 byte-for-byte (A2); it is IN-PROGRESS until then.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 01:34 UTC, BASE 9b1d8b4c)
+### Team A open branches: heads from origin (auto, 2026-11-02 01:35 UTC, BASE 9b1d8b4c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -549,7 +549,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/builder-search-perf | 1216b736c | IN-PROGRESS (REQ-B-068 restack by A3; current origin head is NOT for merge) | was: READY — B2 c23 APPROVED @1216b736 (Approve); merge after T48 |
 | r1/c012-doc-followup | b71dc2add | READY (A2, @b71dc2ad on BASE-134; docs, 1 line): pipeline doc :297 edit-as-draft response (201 {id, versionNo}; 409 newer draft/review; 409 live not approved); B2 |
 | r1/d90-builder-sweep-a3 | da0bb7f35 | IN-PROGRESS (REQ-B-068 restack by A3; current origin head is NOT for merge) | was: READY — B2 c23 APPROVED @da0bb7f3 (AwM) | A4 delta re-check Approve (no findings; T48 dup-label D9 row accurate) |
-| r1/delete-served-guard | da7a12e7e | IN-PROGRESS (A2): B2 c23 approved @fe7ef537, but CODE conflicts with BASE-139 (question-image-access comment: keep BASE public-token-only wording; stimuli.repository served-rule vs D72 constants; contract paths stateConflict + deleteRefused) → A2 BASE merge + B2 delta. publish-lock-share restacks on it after |
+| r1/delete-served-guard | da7a12e7e | READY (A2, @da7a12e7 = B2-approved fe7ef537 + BASE-139 merge; code conflicts resolved: BASE public-token-only wording kept in question-image-access, served-rule import + D72 constants, both contract consts; 123/123 + security 185 + conformance 413, tsc 0; merge-tree vs BASE-142 clean). **B2 delta review: fe7ef537..da7a12e7 (merge resolution only)**; A1b pre-review; publish-lock-share restacks on it |
 | r1/drop-lock-enums | 4d1424c8b | READY (A1a + A2, @4d1424c8, BASE-105): contract drops dead CHAPTER_LOCKED + locked states; negative contract tests; row: no FE reader depends on them (dead local FE types = C follow-up); contract 1435/1435, emit no diff, check ok, api tsc 0; with C reqa014 merged: vue-tsc 0, m03/m05 659/659; merge after reqa014-no-chapter-lock-fe; B2 |
 | r1/ha17-ac-coverage | 157b371c3 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b; head 157b371c |
 | r1/ha18-gate-facts | f988b670f | MERGED by B1 as BASE-132 259f4616 @a9ffe246 (alone, not paired with reqb052; pinned-version-rule check by A4 running). Origin head f988b670 → follow-up r1/ha18-minors |
@@ -570,7 +570,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/r1e2e10-bulk-publish-noop | 1f9f26103 | CR (A2, @1f9f2610 on BASE-135): Q16 bulk Terbitkan no-op for already-Diterbitkan rows (not in affected, no audit/transition, batch continues; 4 specs, mutation red; questions 714, workflow 310, conformance 95); pending Mandor choice: report in failed[] (current) vs additive skipped[] |
 | r1/ready-tiers-check | 9c80f08c3 | ON HOLD (A2, @9c80f08c, contains BASE-107): code correct + Minors fixed (exact 503 body, WARN once per state change, INFO on recovery; mutations red); waits for B DevOps (REQ-A-028: CI seed step + first-install deploy ordering) |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
-| r1/reqa018-mock-swap | 76511c9a8 | IN-PROGRESS (A4, taken over from A2): known-mismatches.ts BASE merge; still merge AFTER C reqa018-fe |
+| r1/reqa018-mock-swap | 0b774bd2f | IN-PROGRESS (A4, taken over from A2): known-mismatches.ts BASE merge; still merge AFTER C reqa018-fe |
 | r1/reqb058-dedupe-test-a3 | a5f4d3553 | READY (A3, @a5f4d355 on reqb058 b1e96566; test only): one question in two sections, getVersions dedupe + takedown paths, 5 tests, mutations red; closes A1b Minor 3; merge after reqb058; B2 | A1a pre-review Approve (2 mutations red) |
 | r1/reqb058-takedown-pin | b1e965665 | READY (A4, @b1e96566: list drops taken-down papers for a pupil with no sitting, batched pins; cover unchanged by lead decision). A1b pre-review Approve (0 B/M; 3 optional minors), bite 3 red; B2 |
 | r1/reqb067-etl-guards | d402fdf2a | READY (A1a, @d402fdf2 off BASE-132): REQ-B-067 real (macOS-visible) defects fixed: files.ts realOf (realpath first, ancestor walk, dangling symlinks followed ≤40 hops) closes the "separate directories" guard bypass; .github/workflows/api.yml >1 MB guard portable + fail-closed (pipefail, || exit 1). A1b pre-review Approve (0 B/M); its 3 Minors fixed, each new test bites; security + files.db 41, staging 148, tsc/eslint 0. **Needs B security-engineer + DevOps (CI config)** |
@@ -594,7 +594,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 
 **Merged content, origin head has only base-merge commits since (no new work):** r1/a4chain-minors 86dd7ad67, r1/ha15-blueprint-evidence 7e5d637e5, r1/overview-getmany-parallel 2809a87fe, r1/reqb032-pinned-rule 167986eff, r1/t44-blueprint-fields 072d8f4b4
 
-**Origin head moved since last record (re-triage):** r1/delete-served-guard: status says @fe7ef537, origin is da7a12e7e; r1/partial-acs-a3: status says @01ab13f7, origin is 831aa8cec; r1/t51-partial-acs-a3: status says @61c1b077, origin is 071a19cce
+**Origin head moved since last record (re-triage):** r1/partial-acs-a3: status says @01ab13f7, origin is 831aa8cec; r1/t51-partial-acs-a3: status says @61c1b077, origin is 071a19cce
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
