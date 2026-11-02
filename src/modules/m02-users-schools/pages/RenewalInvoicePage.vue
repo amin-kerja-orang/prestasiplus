@@ -47,6 +47,9 @@ watch(
   { immediate: true },
 )
 
+/** The "ID Delima" column shows only when the API sends the key (mock, BE option B); option A has none (M02 BUG-01, DV-M02-30). */
+const students = computed(() => invoice.value?.students ?? [])
+const showIdDelima = computed(() => students.value.some((s) => 'idDelima' in s))
 const school = computed(() => invoice.value?.school ?? null)
 const place = computed(() =>
   school.value
@@ -185,20 +188,22 @@ const TD = 'px-3 py-2 text-sm text-slate-700'
                 <tr>
                   <th scope="col" :class="TH">No.</th>
                   <th scope="col" :class="TH">Nama Pelajar</th>
-                  <th scope="col" :class="TH">ID Delima</th>
+                  <th v-if="showIdDelima" scope="col" :class="TH">ID Delima</th>
                   <th scope="col" :class="TH">Tingkatan</th>
                 </tr>
               </thead>
               <tbody>
                 <tr
-                  v-for="student in invoice.students"
+                  v-for="student in students"
                   :key="student.no"
                   class="border-t border-slate-100"
                   data-testid="invoice-row"
                 >
                   <td :class="[TD, 'text-slate-400']">{{ student.no }}</td>
                   <td :class="TD">{{ student.name }}</td>
-                  <td :class="[TD, 'font-mono text-xs']">{{ student.idDelima }}</td>
+                  <td v-if="showIdDelima" :class="[TD, 'font-mono text-xs']">
+                    {{ student.idDelima }}
+                  </td>
                   <td :class="TD">{{ student.classLevel }}</td>
                 </tr>
               </tbody>
