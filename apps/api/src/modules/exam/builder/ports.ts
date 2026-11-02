@@ -87,6 +87,11 @@ export interface BuilderQuestionSource {
   candidates(scope: BuilderCandidateScope): Promise<string[]>
   /** Group id -> group (stimulus and members in published order); unknown or stimulus-less groups are absent. */
   groups(groupIds: readonly string[]): Promise<ReadonlyMap<string, BuilderGroupInfo>>
+  /**
+   * Optional. Of `ids`, those whose picker text (`preview`) or topic contains `needle` (a literal, case-insensitive match), decided by the
+   * store itself so a text search never has to describe the whole candidate set. A source without it is searched by describing the candidates.
+   */
+  matchText?(ids: readonly string[], needle: string): Promise<Set<string>>
   /** Admin review content (`previewQuestions`): carries the answer key and mark scheme. Unknown ids are left out. */
   review(ids: readonly string[]): Promise<BuilderPreview>
 }
