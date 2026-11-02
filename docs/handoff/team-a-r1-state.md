@@ -161,9 +161,9 @@ None: every unit is pushed.
 
 | Unit | Branch @ head | Output |
 |---|---|---|
-| R1 release notes (BM) | `r1/ha24-release-input` @ 3b9307aa | `docs/release/r1-nota-keluaran.md` (written by dev-1 on this release-input branch) |
-| R1 sign-off checklist (BM) | `r1/ha24-release-input` @ 3b9307aa | `docs/release/r1-signoff-checklist.md` (8 gates, Status column empty on purpose) |
-| R1 KIV for R2 (BM) | `r1/ha24-release-input` @ 3b9307aa | `docs/release/r1-kiv-r2.md` (37 rows on ha24 3b9307aa; rows 28 to 31 are the REQ-A-029 builder FE gaps, re-checked against BASE-109: Padam soalan and Semak partly done, Salin set done on the editor, the cross-Bahagian move still open; row 32 the FE-mock coverage scan; row 33 REQ-B-058; row 34 the accepted Q13 limit; row 35 no cross-attempt syiling/XP cap for T38 (Q14, REQ-B-059); row 36 the B3 Low on T48 setGroupLabel, no change in R1 by LEAD decision; row 37 PKSK applyStatus approves without the approve gate (B3 Info, KIV R2 by LEAD, deviation row on `r1/a2-carried-minors` @ 45f15242, `pksk.service.ts:232-237`)) |
+| R1 release notes (BM) | `r1/ha24-release-input` @ b1ab28af | `docs/release/r1-nota-keluaran.md` (written by dev-1 on this release-input branch) |
+| R1 sign-off checklist (BM) | `r1/ha24-release-input` @ b1ab28af | `docs/release/r1-signoff-checklist.md` (8 gates, Status column empty on purpose) |
+| R1 KIV for R2 (BM) | `r1/ha24-release-input` @ b1ab28af | `docs/release/r1-kiv-r2.md` (38 rows on ha24 b1ab28af; rows 28 to 31 are the REQ-A-029 builder FE gaps, re-checked against BASE-109: Padam soalan and Semak partly done, Salin set done on the editor, the cross-Bahagian move still open; row 32 the FE-mock coverage scan; row 33 REQ-B-058; row 34 the accepted Q13 limit; row 35 no cross-attempt syiling/XP cap for T38 (Q14, REQ-B-059); row 36 the B3 Low on T48 setGroupLabel, no change in R1 by LEAD decision; row 37 PKSK applyStatus approves without the approve gate (B3 Info, KIV R2 by LEAD, deviation row on `r1/a2-carried-minors` @ 45f15242, `pksk.service.ts:232-237`; row 38 the T48 number-clash check in createQuestion compares only the new body.number (`builder.service.ts:1390-1391` on T45 ee3a7d2b), no change in R1 by LEAD)) |
 | R1 proposed BM copy table | `r1/ac-gaps-a1b` @ 1fb68650 | `docs/qa/r1-proposed-copy.md` (38 [PROPOSED] strings for one-pass user approval; on ac-gaps) |
 | T37 runbook | `r1/t37-r1-runbook` @ c9dcb5a0 | FROZEN, contained in `r1/ac-gaps-a1b` (B1 merges that instead); `docs/ops/r1-runbook.md` is edited only there |
 | T39 K1 evidence | `r1/t39-k1-evidence` @ 1a26f7a6 | `docs/ops/r1-k1-blueprint-evidence.md` |
@@ -172,7 +172,7 @@ None: every unit is pushed.
 | H-A20 student parity | `r1/ha20-student-parity` @ 557e17c6 | `docs/qa/r1-student-parity-check.md` |
 | H-A22 parity docs | `r1/ha22-parity-docs` @ 4fb2a41b | both parity docs refreshed, deviation rows H22-D1/D2 in `v2-bijak-spm.md`, `student.md` rows marked |
 | H-A23 E2E readiness | `r1/ha23-e2e-readiness` @ 9a86b5bb | `docs/qa/r1-e2e-readiness.md` (merge order, minimal set) |
-| H-A24 release input | `r1/ha24-release-input` @ 3b9307aa | `docs/ops/r1-release-input-team-a.md` (+ scope AC-R1-18.2 and 18.4 text) |
+| H-A24 release input | `r1/ha24-release-input` @ b1ab28af | `docs/ops/r1-release-input-team-a.md` (+ scope AC-R1-18.2 and 18.4 text) |
 | H-A26 this sheet | `r1/ha26-team-a-state` @ this branch (head = tip of the branch) | `docs/handoff/team-a-r1-state.md` |
 
 ## 2. Decisions and answers
