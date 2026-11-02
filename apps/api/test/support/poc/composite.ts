@@ -76,12 +76,11 @@ export class CompositeBijakQuestionSource implements AttemptQuestionSource {
 export class CompositePaperQuestionSource implements PaperQuestionSource {
   constructor(
     private readonly poc: PaperQuestionSource | null,
-    private readonly bank: Pick<PaperQuestionSource, 'getMany'> & Partial<Pick<PaperQuestionSource, 'getPinned' | 'takenDownPins'>>,
+    private readonly bank: Pick<PaperQuestionSource, 'getMany' | 'takenDownPins'> & Partial<Pick<PaperQuestionSource, 'getPinned'>>,
   ) {}
 
   takenDownPins(pins: readonly PinRef[]): Promise<ReadonlySet<string>> {
-    const down = this.bank.takenDownPins
-    return pins.length === 0 || !down ? Promise.resolve(new Set()) : down.call(this.bank, pins)
+    return pins.length === 0 ? Promise.resolve(new Set()) : this.bank.takenDownPins(pins)
   }
 
   getMany(questionIds: readonly string[]): Promise<ReadonlyMap<string, BijakQuestionInfo>> {

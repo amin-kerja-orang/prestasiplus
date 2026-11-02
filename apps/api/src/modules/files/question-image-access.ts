@@ -18,8 +18,8 @@ import { paperHeld } from '../questions/served-rule'
  *      (a per-pupil `jana` paper only for the pupil it was generated for), or of a `withdrawn` paper this pupil has a sitting on (R1
  *      delete-served-guard: a withdrawal does not cut a running sitting, so it keeps its pictures; a pupil who never sat the withdrawn paper gets
  *      the uniform 404). The pinned version must be `approved` or `superseded` and its source not taken down; a taken-down pin (archived "withdrawn" /
- *      "source_takedown", or its source paper taken down) is readable only by a pupil who has a sitting on that paper (REQ-B-074: a running sitting keeps its
- *      version, REQ-B-058 d; nobody else can start it, so nobody else gets the picture). The paper is the authority here, so a superseded pinned version, a
+ *      "source_takedown", or its source paper taken down) is readable only by a pupil who has ANY sitting on that paper (REQ-B-074: open, submitted or
+ *      abandoned, as `paperHeld`; a sitting keeps its version, REQ-B-058 d, and result review needs the pictures; nobody else can start it, so nobody else gets the picture). The paper is the authority here, so a superseded pinned version, a
  *      later-withdrawn question or a hidden level do not hide it from a paper that is still held.
  *   C. REFERENCE: a sittable paper (as in B) whose `reference_sheets` has a panel carrying the file as `imageFileId`
  *      (the PUBLIC token only: the internal decimal id never matches, so an unattached image cannot be read by guessing ids; B3 T34-L1-residual).

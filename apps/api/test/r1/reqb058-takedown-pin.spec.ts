@@ -218,7 +218,7 @@ describe('REQ-B-058 a taken-down pinned version is not served to new sittings', 
    * once a newer version was approved; the source paper's `takedown_at` is the authority and is checked with the pin.
    */
   const setReasonSql = (reason: string | null) => q(`update question_versions set archive_reason = ${reason === null ? 'null' : `'${reason}'`} where question_id = ${target} and version_no = 1`)
-  /** `fresh` has no sitting on the paper; `pupil` has (REQ-B-074: a running sitting keeps the picture of its pinned version). */
+  /** `fresh` has no sitting on the paper; `pupil` has (REQ-B-074: any sitting on the paper keeps the picture of its pinned version). */
   const readImage = (who: FullClient = fresh) => who.get(`/api/files/${v1Image}`)
 
   it('L1: the picture of the pinned version is readable only while the pin is superseded (withdrawn, source_takedown or no reason: 404)', async () => {
@@ -251,7 +251,7 @@ describe('REQ-B-058 a taken-down pinned version is not served to new sittings', 
     }
     expect(await listed(fresh)).toBe(false)
     expect((await readImage()).status).toBe(404)
-    expect((await readImage(pupil)).status, 'the running sitting keeps the picture').toBe(200)
+    expect((await readImage(pupil)).status, 'a sitting on the paper keeps the picture').toBe(200)
     expect((await q(`select status, archive_reason from question_versions where question_id = ${target} and version_no = 1`))[0]).toMatchObject({ status: 'archived', archive_reason: 'superseded' })
     // lifting it (not a product feature; shows the check reads the source row) restores the pin
     await q(`update source_papers set takedown_at = null where id = ${String(sp!.id)}`)
