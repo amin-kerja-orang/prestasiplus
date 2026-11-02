@@ -268,12 +268,13 @@ export function registerPerformancePaths(registry: OpenAPIRegistry): void {
     method: 'get',
     path: '/public/students/{id}',
     tags: ['performance'],
-    summary: 'Public student profile (S18), no session required',
+    summary: 'Student profile (S18), any signed-in role',
     description:
-      'Anonymous allowed (live parity). The mock does not check role or active state: see open question.',
+      'A session is required (B3 N5: ids are sequential and these are minors; the live site allowed anonymous reads). First name only, no school. The path keeps its old name.',
     request: { params: idParam('id') },
     responses: {
-      200: json(envelopeOf(PerformancePublicProfileSchema), 'Public profile.'),
+      200: json(envelopeOf(PerformancePublicProfileSchema), 'Student profile.'),
+      401: E401,
       404: E404('unknown user id'),
     },
   })

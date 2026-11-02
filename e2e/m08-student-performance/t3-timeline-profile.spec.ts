@@ -269,13 +269,19 @@ test.describe('M08 T3 S16 pelajar', { tag: [moduleTag(8)] }, () => {
   })
 })
 
-test.describe('M08 T3 S18 public profile', { tag: [moduleTag(8)] }, () => {
+test.describe('M08 T3 S18 student profile (signed in, B3 N5)', { tag: [moduleTag(8)] }, () => {
   test.use({
     mockInit: { latency: 0 },
     permissions: ['clipboard-read', 'clipboard-write'],
   })
 
-  test('guest sees the whole profile of the admin (no login)', async ({ page, gotoApp }) => {
+  test('a guest goes to /login (B3 N5)', async ({ page, gotoApp }) => {
+    await gotoApp('/pelajar/1')
+    await expect.poll(() => new URL(page.url()).pathname).toBe('/login')
+  })
+
+  test('a signed-in user sees the whole profile of the admin', async ({ page, gotoApp, loginAs }) => {
+    await loginAs('admin@demo.test')
     await gotoApp('/pelajar/1')
     await expect(page.getByTestId('name')).toHaveText('Admin Demo')
     await expect(page).toHaveURL(/\/pelajar\/1$/)
@@ -329,7 +335,9 @@ test.describe('M08 T3 S18 public profile', { tag: [moduleTag(8)] }, () => {
   test('responsive: chips from 1024px, "Utama" label from 640px, no horizontal scroll', async ({
     page,
     gotoApp,
+    loginAs,
   }) => {
+    await loginAs('admin@demo.test')
     await gotoApp('/pelajar/1')
     await expect(page.getByTestId('name')).toBeVisible()
     const w = viewportWidth(page)
@@ -355,10 +363,12 @@ test.describe('M08 T3 S18 public profile', { tag: [moduleTag(8)] }, () => {
   test('"Kongsi" without navigator.share copies the link and alerts "Link disalin!"', async ({
     page,
     gotoApp,
+    loginAs,
   }) => {
     await page.addInitScript(() => {
       Object.defineProperty(navigator, 'share', { value: undefined, configurable: true })
     })
+    await loginAs('admin@demo.test')
     await gotoApp('/pelajar/1')
     const dialogs: string[] = []
     page.on('dialog', (d) => {
@@ -375,6 +385,7 @@ test.describe('M08 T3 S18 public profile', { tag: [moduleTag(8)] }, () => {
   test('"Kongsi" with navigator.share calls it with {title, url} and shows no alert', async ({
     page,
     gotoApp,
+    loginAs,
   }) => {
     await page.addInitScript(() => {
       const w = window as unknown as { __shared: unknown[] }
@@ -387,6 +398,7 @@ test.describe('M08 T3 S18 public profile', { tag: [moduleTag(8)] }, () => {
         configurable: true,
       })
     })
+    await loginAs('admin@demo.test')
     await gotoApp('/pelajar/1')
     const dialogs: string[] = []
     page.on('dialog', (d) => {
@@ -405,12 +417,12 @@ test.describe('M08 T3 S18 public profile', { tag: [moduleTag(8)] }, () => {
     gotoApp,
     loginAs,
   }) => {
+    await loginAs('pelajar@demo.test')
     await gotoApp('/pelajar/99999999')
     await expectNotFound(page)
     await gotoApp('/pelajar/abc')
     await expectNotFound(page)
-    // Logged in: GET /timeline/{id} is the 404 page (DV-24; live answers 405).
-    await loginAs('pelajar@demo.test')
+    // GET /timeline/{id} is the 404 page (DV-24; live answers 405).
     await gotoApp('/timeline/5')
     await expectNotFound(page)
   })

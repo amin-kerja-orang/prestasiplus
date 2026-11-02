@@ -275,11 +275,11 @@ const timelineScenarios: Scenario[] = [
     },
   },
   {
-    id: 'performance-api/public profile of an unknown pupil is 404 for an anonymous caller',
+    id: 'performance-api/student profile needs a session: 401 for an anonymous caller (B3 N5)',
     domain: 'performance',
     targets: ['api'],
     async run(ctx) {
-      expectError(ctx, await ctx.anonymous().request('GET', `/public/students/${UNKNOWN_ID}`), 404, 'NOT_FOUND')
+      expectError(ctx, await ctx.anonymous().request('GET', `/public/students/${UNKNOWN_ID}`), 401, 'UNAUTHORIZED')
     },
   },
 ]

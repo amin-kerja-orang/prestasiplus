@@ -2,7 +2,6 @@ import { Controller, Get, Inject, Param, Query, Req, UseGuards, UseInterceptors 
 import { PerformanceLeaderboardQuerySchema, PerformanceRankingQuerySchema } from '@pp/contract'
 import type { Request } from 'express'
 
-import { Public } from '../../../../common/guards/decorators'
 import { NoStoreInterceptor, ok } from '../../../../common/http'
 import type { RequestWithAuth } from '../../../../common/scope'
 import { RateLimit, RateLimitGuard, type RateLimitSpec } from '../../../../common/throttle'
@@ -70,9 +69,11 @@ export class SocialController {
   }
 }
 
-/** Anonymous profile of a pupil (S18): first name only, uniform 404, rate limited per client address. */
+/**
+ * Profile of a pupil (S18): first name only, uniform 404, rate limited per client address. Any signed-in role (B3 N5: ids are
+ * sequential and these are minors, so no anonymous read). The path keeps its name: it is the wire contract.
+ */
 @Controller('public')
-@Public()
 @UseGuards(RateLimitGuard)
 @UseInterceptors(NoStoreInterceptor)
 export class PublicStudentController {

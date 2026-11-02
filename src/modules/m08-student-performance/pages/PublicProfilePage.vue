@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * S18 `/pelajar/{id}` public student profile (M08-T3; FR-M08-104..107, BR-M08-25, FN-M08-6.3.*), from
- * `GET /api/public/students/:id` (no session needed). A `bare` page: it draws its own top bar. An unknown id
+ * S18 `/pelajar/{id}` student profile, signed-in users only (B3 N5; M08-T3; FR-M08-104..107, BR-M08-25, FN-M08-6.3.*), from
+ * `GET /api/public/students/:id` (session required). A `bare` page: it draws its own top bar. An unknown id
  * is the standard 404 page. Tab title "{nama} — Pelajar PRESTASIPLUS". (The fade-in of the sections was dropped: style blocks are barred by the strict theme.)
  */
 import { computed, watch } from 'vue'

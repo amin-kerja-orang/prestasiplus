@@ -100,11 +100,16 @@ describe('weekly report', () => {
   })
 })
 
-describe('public student profile', () => {
-  it('answers without a session: first name only, no school, no-store, no Set-Cookie', async () => {
-    const res = await w.http().get(`/api/public/students/${w.ids['pelajar@demo.test']}`)
+describe('student profile (S18)', () => {
+  it('B3 N5: 401 without a session, for a real pupil and an unknown id alike', async () => {
+    for (const id of [w.ids['pelajar@demo.test'], '9999999']) {
+      expectError(await w.http().get(`/api/public/students/${id}`), 'UNAUTHORIZED')
+    }
+  })
+
+  it('answers any signed-in role: first name only, no school, no-store', async () => {
+    const res = await as.guru!.get(`/api/public/students/${w.ids['pelajar@demo.test']}`)
     expect(res.status).toBe(200)
-    expect(res.headers['set-cookie']).toBeUndefined()
     expect(String(res.headers['cache-control'])).toContain('no-store')
     const data = parseData(res, PerformancePublicProfileSchema)
     expect(data.schoolName).toBeNull()
@@ -115,7 +120,7 @@ describe('public student profile', () => {
   it('7. unknown, teacher and parent ids give a byte-identical 404', async () => {
     const bodies = new Set<string>()
     for (const id of ['9999999', w.ids['guru@demo.test'], w.ids['ibubapa@demo.test'], 'abc']) {
-      const res = await w.http().get(`/api/public/students/${id}`)
+      const res = await as.pelajar!.get(`/api/public/students/${id}`)
       expect(res.status).toBe(404)
       bodies.add(noReq(res.body))
     }
@@ -126,12 +131,12 @@ describe('public student profile', () => {
     // Users have no is_test column; Mod Pelajar data is excluded in the practice and gamification adapters.
     const inactive = w.ids['ujian5@demo.test'] as string
     const suspended = w.ids['ujian6@demo.test'] as string
-    const unknown = await w.http().get('/api/public/students/9999999')
+    const unknown = await as.pelajar!.get('/api/public/students/9999999')
     await w.db.query('update users set is_active = false where id = $1', [inactive])
     await w.db.query('update users set is_suspended = true where id = $1', [suspended])
     try {
       for (const id of [inactive, suspended]) {
-        const res = await w.http().get(`/api/public/students/${id}`)
+        const res = await as.pelajar!.get(`/api/public/students/${id}`)
         expect(res.status).toBe(404)
         expect(noReq(res.body)).toBe(noReq(unknown.body))
       }
@@ -143,7 +148,7 @@ describe('public student profile', () => {
 
   it('8. enumeration is rate limited per client address (429 with Retry-After)', async () => {
     let last = 0
-    for (let i = 0; i < 15; i++) last = (await w.http().get(`/api/public/students/${100000 + i}`)).status
+    for (let i = 0; i < 15; i++) last = (await as.pelajar!.get(`/api/public/students/${100000 + i}`)).status
     expect(last).toBe(429)
   })
 })

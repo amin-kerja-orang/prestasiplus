@@ -11,7 +11,7 @@ import type { PerformancePublicProfile, PerformanceTimelinePost } from './types'
 const DAY_MS = 86_400_000
 
 /**
- * Uniform response-time floor of the anonymous profile (security L5): an unknown id returns before any query
+ * Uniform response-time floor of the profile (security L5): an unknown id returns before any query
  * while a valid pupil runs 3, so every outcome (200 or the 404) is held until this many ms after the start,
  * with a timer (no CPU), the way the login failure floor is held. Not an env key: it only needs to exceed the
  * slowest normal answer.
@@ -35,9 +35,9 @@ export const toWirePost = (p: TimelinePostView): PerformanceTimelinePost => ({
 })
 
 /**
- * Public student profile (S18), no session required. Privacy (OQ-8): the name is the FIRST NAME only, the
+ * Student profile (S18), a session is required (B3 N5). Privacy (OQ-8): the name is the FIRST NAME only, the
  * school is null, and every refusal (unknown id, not a student, inactive, suspended) is the same 404, after
- * the same response-time floor as a found profile. The route is anonymous, so `posts` is always [] (OQ-5):
+ * the same response-time floor as a found profile. `posts` is always [] on this route (OQ-5):
  * timeline posts are read through the signed-in `GET /timeline` only. Mod Pelajar data is excluded in the
  * practice and gamification adapters (users have no `is_test` column).
  */

@@ -91,7 +91,7 @@ export function createTimelinePost(input: TimelineInput, o: Signal = {}): Promis
   return api.multipart<TimelinePost>('/api/timeline', form, withSignal(o))
 }
 
-/** #20 `GET /api/public/students/:id` (S18; no session needed); 404 unknown. */
+/** #20 `GET /api/public/students/:id` (S18; session required, B3 N5); 404 unknown. */
 export const fetchPublicProfile = (id: number | string, o: Signal = {}) =>
   api.get<PublicProfile>(`/api/public/students/${String(id)}`, withSignal(o))
 

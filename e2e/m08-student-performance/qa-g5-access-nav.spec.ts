@@ -321,7 +321,13 @@ test.describe('M08 G5 guest access (AC-02.1)', { tag: [moduleTag(8)] }, () => {
     })
   }
 
-  test('/pelajar/1 renders for a guest (public)', async ({ page, gotoApp }) => {
+  test('/pelajar/1 goes to /login for a guest (B3 N5)', async ({ page, gotoApp }) => {
+    await gotoApp('/pelajar/1')
+    await expect.poll(() => new URL(page.url()).pathname).toBe('/login')
+  })
+
+  test('/pelajar/1 renders for a signed-in user', async ({ page, gotoApp, loginAs }) => {
+    await loginAs('admin@demo.test')
     await gotoApp('/pelajar/1')
     await expect(page.locator('h1').first()).toHaveText('Admin Demo')
     expect(new URL(page.url()).pathname).toBe('/pelajar/1')
@@ -366,11 +372,6 @@ test.describe(
         await expectNotFound(page)
       })
     }
-
-    test('AC-02.3 /pelajar/99999999 is the 404 page for a guest too', async ({ page, gotoApp }) => {
-      await gotoApp('/pelajar/99999999')
-      await expectNotFound(page)
-    })
 
     test('AC-02.4 /analisa-item/kelas/99999999 is the 403 page', async ({
       page,

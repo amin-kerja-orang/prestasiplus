@@ -71,7 +71,8 @@ describe('authentication', () => {
     ]) {
       expect((await getAs(runtime, null, url)).status, url).toBe(401)
     }
-    expect((await getAs(runtime, null, '/api/public/students/1')).status).toBe(200)
+    expect((await getAs(runtime, null, '/api/public/students/1')).status).toBe(401) // B3 N5
+    expect((await getAs(runtime, ADMIN, '/api/public/students/1')).status).toBe(200)
   })
 })
 
@@ -89,7 +90,7 @@ describe('unknown ids are 404', () => {
     expect(unknown.body.data).toMatchObject({ variant: 'byId', students: 0, questions: [] })
     expect(unknown.body.data.school.name).toBe('')
     expect((await getAs(runtime, PELAJAR, '/api/item-analysis/school/99999999')).status).toBe(403)
-    expect((await getAs(runtime, null, '/api/public/students/99999999')).status).toBe(404)
+    expect((await getAs(runtime, ADMIN, '/api/public/students/99999999')).status).toBe(404)
     // A non-numeric id does not match the route at all.
     expect((await getAs(runtime, ADMIN, '/api/performance/students/abc')).status).toBe(404)
   })
@@ -186,8 +187,8 @@ describe('S17 create a timeline post (#19)', () => {
     expect(t.posts.map((p) => p.title)).toEqual(['Kejohanan Catur'])
     // Another user does not see it.
     expect((await dataAs<Timeline>(runtime, ADMIN, '/api/timeline')).posts).toEqual([])
-    // The public profile shows the posts.
-    const pub = await dataAs<{ posts: TimelinePost[] }>(runtime, null, '/api/public/students/3')
+    // The profile page shows the posts.
+    const pub = await dataAs<{ posts: TimelinePost[] }>(runtime, ADMIN, '/api/public/students/3')
     expect(pub.posts).toHaveLength(1)
   })
 

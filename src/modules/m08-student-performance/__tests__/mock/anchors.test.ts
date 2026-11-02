@@ -663,7 +663,7 @@ describe('S16 – S18 timeline and public profile', () => {
   })
 
   it('admin public profile: Admin Demo, no school or level (D72), 256 syiling, Kombo 1 / 5, no practice', async () => {
-    const p = await get<PublicProfile>(null, '/api/public/students/1')
+    const p = await get<PublicProfile>(ADMIN, '/api/public/students/1')
     expect(p).toMatchObject({
       id: 1,
       name: 'Admin Demo',
@@ -700,7 +700,7 @@ describe('S16 – S18 timeline and public profile', () => {
       }
     }
     expect(silver).toBeDefined()
-    const p = await get<PublicProfile>(null, `/api/public/students/${String(silver)}`)
+    const p = await get<PublicProfile>(ADMIN, `/api/public/students/${String(silver)}`)
     expect(p.tier).toMatchObject({ key: 'silver', ordinal: 2 })
   })
 })

@@ -178,12 +178,12 @@ describe('a student posts and reads the timeline', () => {
     expectError(await w.http().get(url), 'UNAUTHORIZED')
   })
 
-  it('never lists a test post (is_test), and a public profile of the pupil carries no posts for an anonymous caller', async () => {
+  it('never lists a test post (is_test), and the profile of the pupil carries no posts', async () => {
     const s = await login('ujian3@demo.test')
     await w.db.query(`insert into timeline_posts (user_id, title, category, is_test) values ($1, 'Ujian rahsia', 'lain', true), ($1, 'Biasa', 'lain', false)`, [s.userId])
     const posts = envelopeOf(PerformanceTimelineSchema).parse((await s.agent.get('/api/timeline')).body).data.posts
     expect(posts.map((p) => p.title)).toEqual(['Biasa'])
-    const pub = await w.http().get(`/api/public/students/${s.userId}`)
+    const pub = await s.agent.get(`/api/public/students/${s.userId}`)
     expect(pub.status).toBe(200)
     expect(pub.body.data.posts).toEqual([])
     await w.db.query(`delete from timeline_posts where user_id = $1`, [s.userId])

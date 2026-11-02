@@ -108410,8 +108410,8 @@
         "tags": [
           "performance"
         ],
-        "summary": "Public student profile (S18), no session required",
-        "description": "Anonymous allowed (live parity). The mock does not check role or active state: see open question.",
+        "summary": "Student profile (S18), any signed-in role",
+        "description": "A session is required (B3 N5: ids are sequential and these are minors; the live site allowed anonymous reads). First name only, no school. The path keeps its old name.",
         "parameters": [
           {
             "schema": {
@@ -108425,7 +108425,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Public profile.",
+            "description": "Student profile.",
             "content": {
               "application/json": {
                 "schema": {
@@ -108438,6 +108438,16 @@
                   "required": [
                     "data"
                   ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }

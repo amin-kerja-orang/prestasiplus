@@ -141,7 +141,7 @@ export const socialRoutes: RouteDef[] = [
   route(
     'GET',
     '/api/public/students/:id',
-    [],
+    [requireAuth()],
     (req, ctx) => {
       const user = users.get(req.params.id as number)
       if (!user) return notFound()
