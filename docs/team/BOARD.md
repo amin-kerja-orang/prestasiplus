@@ -550,7 +550,7 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 | 2 | REQ-B-071 / Q17 (S2a, S3e: Bab gate) | A2 4e38af8e + A3 chain specs d22af990 (contains both; B1 merges d22af990) | A4 pre-review running; then B2 |
 | 3 | R1E2E-10 (S2e): 5990fb6b (BASE-155) + delta fe228f56 (BASE-178) | B1/B2 | **MERGED** |
 | 4 | REQ-A-024f heads + ha18-minors | B1/B2 | **MERGED** (BASE-176..189: ha18-minors 179, publish-lock-share 177, and the rest); left: partial-acs, minors-kbat, ha24/ha26/ac-gaps docs deltas |
-| 5 | REQ-B-074 (takedown Lows) | A1b @45a75f68 | READY; A4 pre-review done; **B security-engineer owed** |
+| 5 | REQ-B-074 (takedown Lows) | A1b @45a75f68 | **IN-PROGRESS**: the A4 RC proof (BASE-189, 04:28 UTC) found the stale DSG spec :396 red with 45a75f68; A1b is fixing it. Then the B security-engineer (REQ-A-045 prep) |
 | 6 | REQ-B-067 (CI guard) | B | **MERGED** (BASE-176) |
 | 7 | UAT runbook SELECTs (R1-11.4, R1-12.6) on UAT/production | Ops (B DevOps) | OWED (deploy-time) |
 | 8 | OCR provider AC-R1-14.2 (ships OCR_ENGINE=none, AI_PROVIDER=mock) | **USER** (accept-as-mock or defer) | DECISION OWED (not decidable under delegation if it touches deploy/secrets) |
@@ -572,7 +572,7 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 - **Disk:** check `docker system df` and prune orphaned anonymous test volumes when there are 0 containers. A3 reclaimed 3.4 GB this way.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 04:20 UTC, BASE 1216dbe7)
+### Team A open branches: heads from origin (auto, 2026-11-02 04:29 UTC, BASE 1216dbe7)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -590,7 +590,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/reqb071-bab-submit | 4e38af8e6 | READY via r1/reqb071-chain-specs-a3 826403b2 (contains 4e38af8e; B2 c29 AwM). Do NOT merge alone |
 | r1/reqb071-chain-specs-a3 | 826403b2d | READY (A3, @826403b2 = chain specs + merge of reqb071-bab-submit 4e38af8e). Contained in reqb071-minors c38ee66c; B1 may merge c38ee66c alone. 4e38af8e alone = chain 3-9 red. B2 c29 Approve w/ Minors on 4e38af8e + ee9474e0; delta ee9474e0..826403b2 (13/13, 3b/3c fixture tightening, chain-step-map) for B2. A4 pre-review APPROVE w/ Minors (one verdict for the pair; BASE-186 + 826403b2: 146 files 1731 passed, 0 failed; derivation inert in R1 with seed dskp_code null, which the user accepted in Q17) |
 | r1/reqb071-minors | c38ee66c4 | READY (A2, @c38ee66c = pair 826403b2 + B2 c29 code minors; A4 pre-review APPROVE, 41/41, mutation red). **B1: merging c38ee66c alone brings the whole REQ-B-071 unit (4e38af8e + chain specs + minors)** |
-| r1/reqb074-takedown-lows | 45a75f68c | READY (A1b, @45a75f68 = ae78bf82 + A4 review fixes: deviation row matches code (any sitting keeps pictures, as paperHeld), comments, composite.ts required; 832 pass, tsc 0). A4 pre-review: code sound, 0 B; Major was doc-only (now fixed). **Needs B security-engineer** (image access); DEV doc keep-both; B2 |
+| r1/reqb074-takedown-lows | 45a75f68c | IN-PROGRESS (A1b, @45a75f68 NOT ready): A4 RC proof on BASE-189 shows delete-served-guard.spec test 5 :396 red (no-sitting pupil now 404 = REQ-B-074 intended; the stale DSG expectation and the question-image-access.ts comment are being fixed). Do not merge 45a75f68 |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 
