@@ -1,6 +1,6 @@
 # R1 board: Bijak SPM, admin → student question pipeline
 
-Writer: team A lead. Last refresh: 2026-11-02 09:14 UTC (A1 = B1 integrator). Current BASE: **BASE-210** = `feature/v3-bijak-r1` @ 141d5c46. Every open team A branch merges the latest BASE before re-marking READY.
+Writer: team A lead. Last refresh: 2026-11-02 10:20 UTC (A1 = B1 integrator). Current BASE: **BASE-212** = `feature/v3-bijak-r1` @ 62872d96. Every open team A branch merges the latest BASE before re-marking READY.
 Source of every task: `docs/handoff/CLOUD-HANDOFF.md` §7 on `feature/v3-bijak-r1`. Read the protocol in [README.md](README.md).
 > **Current state = the auto table at the end of this file (AUDIT:BEGIN/END).** History sections below are a log; a READY there is only valid if the auto table agrees.
 
@@ -572,7 +572,7 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 - **Disk:** check `docker system df` and prune orphaned anonymous test volumes when there are 0 containers. A3 reclaimed 3.4 GB this way.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 09:49 UTC, BASE 21d0586b)
+### Team A open branches: heads from origin (auto, 2026-11-02 10:18 UTC, BASE 62872d96)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
