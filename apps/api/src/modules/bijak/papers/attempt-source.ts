@@ -110,6 +110,8 @@ export class BijakPapersAttemptSource implements BijakPaperSource {
           ...(s.instruction ? { instruction: s.instruction } : {}),
           rule: ruleOf(s.ruleType, s.ruleN),
           questionIds: s.placements.map((p) => idToString(p.questionId)),
+          // REQ-B-032: the version each placement pinned; the attempt serves and grades exactly these.
+          versions: Object.fromEntries(s.placements.map((p) => [idToString(p.questionId), p.pinnedVersionNo])),
         })),
       },
     }

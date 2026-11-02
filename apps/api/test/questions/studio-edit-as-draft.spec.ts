@@ -59,10 +59,13 @@ describe('Studio edit-as-draft: version n+1 equals the live version', () => {
       numberLabel: '7',
       kertas: '2',
       explanation: 'Penjelasan asal.',
-      status: 'approved',
     })
     expect(created.status, JSON.stringify(created.body)).toBe(201)
     const id = created.body.data.id as string
+    // Approved state is written directly (as other specs do): this question has no image for the part that needs one, so the T45 approve gate
+    // (AC-05.3) would refuse it, and approved-but-unservable rows exist in real data. The test is about Edit sebagai draf, not about approval.
+    await t.db.query(`update question_versions set status = 'approved', published_at = now() where question_id = $1`, [id])
+    await t.db.query(`update questions set live_version_no = 1 where id = $1`, [id])
     const live = (await admin.get(`/api/questions/${id}`)).body.data as Record<string, unknown>
     expect(live.status).toBe('approved')
 

@@ -9,6 +9,7 @@ import { RateLimit, RateLimitGuard, type RateLimitSpec } from '../../../common/t
 import { isIdString } from '../../../db/ids'
 import { toMytTimestamp } from '../../../common/time/myt'
 import { OverviewCache } from '../serving/overview-cache'
+import { PaperServabilityService } from '../serving/paper-servability.service'
 import { ServabilityReadsService } from '../serving/servability-reads.service'
 import { ServabilityService } from '../serving/servability.service'
 import { BODY_MESSAGE, fieldsOf, invalid, parseBody } from './parse'
@@ -36,7 +37,7 @@ export const SERVABILITY_OVERVIEW_LIMIT = {
 /**
  * R1-B11 "Dilihat murid di": where a question is served to pupils and why not, for the Studio status bar, the question list, the
  * SPM hub cards and the two lanes. Admin Pusat only (the `admin` role), read-only; the batch is a POST because it carries ids and
- * so needs the CSRF header. Not under `/questions/...`, so `questions/:id` of the admin controller never swallows these paths.
+ * so needs the CSRF header. Admin Pusat only is a decision (REQ-B-022(c), D86: teacher and school-admin views are KIV). Not under `/questions/...`, so `questions/:id` of the admin controller never swallows these paths.
  * Input is validated at the boundary: ids are decimal ids, at most 100 per batch, lane filters are bounded strings.
  */
 @Roles('admin')
@@ -78,15 +79,15 @@ export class ServabilityController {
   @Get('lanes/databank')
   @RateLimit(SERVABILITY_READ_LIMIT)
   async databank(@Query() query: unknown) {
-    const res = await this.reads.databankLane(this.laneQuery(query))
-    return { data: res.rows, meta: listMeta(res.page, res.pageSize, res.total) }
+    const [res, subjects] = await Promise.all([this.reads.databankLane(this.laneQuery(query)), this.reads.databankSubjects()])
+    return { data: res.rows, meta: listMeta(res.page, res.pageSize, res.total), subjects }
   }
 
   @Get('lanes/bijak-spm')
   @RateLimit(SERVABILITY_READ_LIMIT)
   async papers(@Query() query: unknown) {
-    const res = await this.reads.paperLane(this.laneQuery(query))
-    return { data: res.rows, meta: listMeta(res.page, res.pageSize, res.total) }
+    const [res, subjects] = await Promise.all([this.reads.paperLane(this.laneQuery(query)), this.reads.paperSubjects()])
+    return { data: res.rows, meta: listMeta(res.page, res.pageSize, res.total), subjects }
   }
 
   private laneQuery(raw: unknown) {
@@ -96,5 +97,26 @@ export class ServabilityController {
     const res = ServabilityLaneQuerySchema.safeParse(clean)
     if (!res.success) throw invalid(fieldsOf(res.error))
     return res.data
+  }
+}
+
+/**
+ * REQ-A-018 (AC-04.3, AC-04.4): "Dilihat murid di" at paper level on the question detail. Admin Pusat only, read-only, the same bucket as the
+ * other servability reads. A separate controller because the path is under `admin/questions`, not `admin/servability`.
+ */
+@Roles('admin')
+@Controller('admin/questions')
+@UseGuards(RateLimitGuard)
+@UseInterceptors(NoStoreInterceptor)
+export class QuestionPaperServabilityController {
+  constructor(@Inject(PaperServabilityService) private readonly papers: PaperServabilityService) {}
+
+  @Get(':id/paper-servability')
+  @RateLimit(SERVABILITY_READ_LIMIT)
+  async paperServability(@Param('id') id: string) {
+    if (!isIdString(id)) throw ApiError.of('NOT_FOUND')
+    const out = await this.papers.forQuestion(id)
+    if (out === null) throw ApiError.of('NOT_FOUND')
+    return { data: out.rows, meta: { total: out.total, truncated: out.total > out.rows.length } }
   }
 }

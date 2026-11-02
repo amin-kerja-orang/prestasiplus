@@ -7,6 +7,7 @@ import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 import { ApiError } from '@/api'
 import { useFlashStore } from '@/stores/flash'
 
+import { M02_CONFIG_DEFAULTS } from '../../mock/m02-config'
 import CompStudentCreatePage from '../../pages/CompStudentCreatePage.vue'
 
 const api = vi.hoisted(() => ({
@@ -56,7 +57,7 @@ beforeEach(() => {
   users.fetchAdminDefaults.mockReset().mockResolvedValue({
     schoolAdminDefaultPassword: 'a',
     bulkImportDefaultPassword: 'b',
-    compStudentDefaultPassword: '20262026',
+    compStudentDefaultPassword: M02_CONFIG_DEFAULTS.compStudentDefaultPassword,
   })
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(new Date('2026-09-25T12:00:00+08:00'))
@@ -72,7 +73,7 @@ describe('CompStudentCreatePage (M02 S7) content', () => {
   it('shows the info alert with the configured password, the fields, help, placeholder, link and submit', async () => {
     const w = await render()
     expect(t(w, 'comp-info').text().replace(/\s+/g, ' ')).toBe(
-      'Setiap pelajar dapat: username 6 digit akhir IC@prestasiplus.my, kata laluan 20262026, pakej penuh percuma, dan syiling dimatikan (tak boleh kumpul/claim walaupun jawab soalan / main game).',
+      `Setiap pelajar dapat: username 6 digit akhir IC@prestasiplus.my, kata laluan ${M02_CONFIG_DEFAULTS.compStudentDefaultPassword}, pakej penuh percuma, dan syiling dimatikan (tak boleh kumpul/claim walaupun jawab soalan / main game).`,
     )
     expect(w.findAll('label').map((l) => l.text())).toEqual([
       'Guru',

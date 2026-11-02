@@ -37,6 +37,16 @@ describe('gate (prototype validateBatch rules)', () => {
     expect(itemIssues(question(), undefined, FACTS)).toEqual([])
   })
 
+  it('REQ-B-034: every unknown SP code is its own field error naming the code; a known SP is fine', () => {
+    const q = question({ tag: { subject: 'MATH', level: 'T4', unit: '1.0', unitLabel: 'Unit', sp: ['1.1', '1.1.1', '9.9'], tp: 3, formOrigin: 'T4' } })
+    const messages = itemIssues(q, undefined, { ...FACTS, unknownSp: ['1.1', '9.9'] }).map((i) => i.message)
+    expect(messages).toContain(G.spNotInTaxonomy('1.1'))
+    expect(messages).toContain(G.spNotInTaxonomy('9.9'))
+    expect(messages).toContain('SP "1.1" tiada dalam senarai kurikulum. Pilih SP daripada senarai DSKP.')
+    expect(itemIssues(question(), undefined, { ...FACTS, unknownSp: [] })).toEqual([])
+    expect(itemIssues(question(), undefined, FACTS)).toEqual([]) // older callers without the field
+  })
+
   it('reports every broken rule with the contract copy', () => {
     const issues = itemIssues(
       question({ stem: ' ', marks: 0, scheme: undefined, tag: { subject: 'MATH', level: 'T4', unit: null, unitLabel: '', sp: [], tp: 9, formOrigin: 'T4' } }),

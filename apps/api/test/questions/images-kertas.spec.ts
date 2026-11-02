@@ -45,6 +45,7 @@ describe('question images and kertas (real database)', () => {
     questionText: 'Berapakah hasil tambah 2 dan 3?',
     options: ['4', '5', '6', '7'],
     correctAnswer: 1,
+    ...(tag.chapterId === undefined ? {} : { curriculumChapterId: tag.chapterId }),
   })
 
   async function uploadAs(who: Client): Promise<{ id: string; url: string }> {

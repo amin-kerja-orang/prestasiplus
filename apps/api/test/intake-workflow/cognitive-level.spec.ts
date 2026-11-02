@@ -114,4 +114,35 @@ describe('intake item cognitive level', () => {
     await expect(approve(q)).rejects.toMatchObject({ fields: { 'parts.(b).cognitiveLevel': 'Bahagian (b) belum ada aras pemikiran.' } })
     expect(stored).toHaveLength(2)
   })
+
+  it('H-A18 MAJOR: a structured intake question (total 0 in the payload, marks on the parts) declares nothing and passes Terbitkan; a no-parts total is still compared', async () => {
+    const structured = draft(t.codes, '3', {
+      type: 'structured',
+      stem: uniqueStem(),
+      options: [],
+      marks: 3,
+      scheme: undefined,
+      parts: [part('a', { marks: 1 }), part('b', { marks: 2, scheme: { kind: 'accepted', marks: 2, values: [{ v: '4' }] } })] as never,
+    })
+    const mcq = draft(t.codes, '4', { stem: uniqueStem() })
+    const { ids } = await batchWith([structured, mcq])
+    expect(ids).toHaveLength(2)
+    // the mock parser stores a total of 0 on an item with parts
+    await t.db.query(`update intake_items set payload = jsonb_set(payload, '{marks}', '0') where id = $1::bigint`, [ids[0]!])
+    const declared = async (itemId: string) =>
+      (await t.db.query<{ d: number | null }>(`select v.declared_marks d from question_versions v where v.question_id = $1::bigint and v.version_no = 1`, [await questionOf(itemId)]))[0]!.d
+    for (const id of ids) {
+      await patch(admin, `/intake/items/${id}`, { cognitiveLevel: 'mengaplikasi' })
+    }
+    await patch(admin, `/intake/items/${ids[0]!}`, { parts: [part('a', { cognitiveLevel: 'mengingat', marks: 1 }), part('b', { cognitiveLevel: 'memahami', marks: 2, scheme: { kind: 'accepted', marks: 2, values: [{ v: '4' }] } })] })
+    for (const id of ids) expect((await post(admin, `/intake/items/${id}/accept`)).status, id).toBe(200)
+    expect(await declared(ids[0]!)).toBeNull() // parted: nothing declared (never 0)
+    expect(await declared(ids[1]!)).toBe(1) // no parts: the declared total
+    // the parted question goes through Terbitkan on the sum of its parts
+    expect((await approve(await questionOf(ids[0]!))).version.status).toBe('approved')
+    // the no-parts question: a leaf mark that no longer matches the declared total is refused
+    const q = await questionOf(ids[1]!)
+    await t.db.query(`update question_parts set marks = 3 where question_version_id = (select id from question_versions where question_id = $1::bigint and version_no = 1) and mode is not null`, [q])
+    await expect(approve(q)).rejects.toMatchObject({ fields: { marks: 'Jumlah markah soalan tidak sama dengan jumlah markah bahagian.' } })
+  })
 })

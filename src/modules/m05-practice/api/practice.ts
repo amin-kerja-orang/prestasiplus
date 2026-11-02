@@ -90,7 +90,7 @@ export function fetchSubjectConfig(code: string, options: Signal = {}): Promise<
   )
 }
 
-/** #4 `POST /api/practice/sessions` (402 `TRIAL_EXHAUSTED`, 409 `CHAPTER_LOCKED`, 404, 422). */
+/** #4 `POST /api/practice/sessions` (402 `TRIAL_EXHAUSTED`, 404, 422; no chapter lock, D98). */
 export function startSession(body: StartSessionRequest): Promise<StartSessionResponse> {
   return api.post<StartSessionResponse>('/api/practice/sessions', { body: startWireBody(body) })
 }

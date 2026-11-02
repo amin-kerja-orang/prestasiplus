@@ -41,6 +41,7 @@ describe('Pentadbiran menu data', () => {
     expect(PENTADBIRAN_MENU.every((g) => g.items.length > 0)).toBe(true)
     expect(PENTADBIRAN_MENU.map((g) => g.label)).toContain('Kertas & SPM')
     expect(itemsOf('Kertas & SPM')).toEqual([
+      'KS-01',
       'KS-13',
       'KS-16',
       'KS-14',
@@ -52,8 +53,9 @@ describe('Pentadbiran menu data', () => {
     ])
   })
 
-  it('V2 labels (D79): Kontrak Simulasi, Studio list', () => {
+  it('V2 labels (D79): SPM hub, Kontrak Simulasi, Studio list', () => {
     const byId = new Map(ALL_ITEMS.map((i) => [i.id, i]))
+    expect(byId.get('KS-01')).toMatchObject({ label: 'SPM', to: '/admin/spm' })
     expect(byId.get('KS-08')?.label).toBe('Kontrak Simulasi')
     expect(byId.get('BS-08')).toMatchObject({ label: 'Bank Soalan (Studio)', to: '/admin/studio' })
   })
