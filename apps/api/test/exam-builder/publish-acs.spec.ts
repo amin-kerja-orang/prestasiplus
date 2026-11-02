@@ -134,6 +134,22 @@ describe('R1 T43b publish ACs (PIPE AC-07.4 to AC-07.9)', () => {
       expect(forced.overridden).toBeUndefined()
     })
 
+    // REQ-B-068: T43b's paper checks and REQ-A-013's reference-picture blocker are separate hard blockers; both show, once each, in the code order of collectBlockers.
+    it('an empty paper whose reference sheet holds a picture that is not a stored image lists NO_QUESTIONS and ONE REFERENCE_IMAGE_INVALID; neither is doubled and neither can be overridden', async () => {
+      const paper = await newPaper()
+      const panel = (title: string) => ({ title, items: [], imageFileId: 'bukan-fail-sebenar' })
+      await q(`update papers set reference_sheets = $2::jsonb where id = $1`, [paper, JSON.stringify([panel('Rajah 1'), panel('Rajah 2')])])
+      const res = await publish(paper)
+      expect(res.ok).toBe(false)
+      const got = codes(res)
+      expect(got.filter((c) => c === 'NO_QUESTIONS')).toHaveLength(1)
+      expect(got.filter((c) => c === 'REFERENCE_IMAGE_INVALID')).toHaveLength(1)
+      expect(res.blockerDetails!.filter((b) => b.code === 'NO_QUESTIONS' || b.code === 'REFERENCE_IMAGE_INVALID').every((b) => b.overridable === false)).toBe(true)
+      expect(res.errors.filter((e) => e === MSG_ALL.referenceImageInvalid)).toHaveLength(1)
+      expect(res.canOverride).toBe(false)
+      expect(await status(paper)).toBe('draft')
+    })
+
     it('choose-N count: a "Pilih N daripada M" section with fewer questions than it needs is COUNT_TOO_FEW (hard), and a Kontrak with N above M is refused on save', async () => {
       const { paper, ids, sections } = await fullPaper()
       expect((await admin.del(`/api/admin/papers/${paper}/placements/${ids[5]}`)).status).toBe(200)
