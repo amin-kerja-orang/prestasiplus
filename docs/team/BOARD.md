@@ -572,13 +572,13 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 - **Disk:** check `docker system df` and prune orphaned anonymous test volumes when there are 0 containers. A3 reclaimed 3.4 GB this way.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 04:39 UTC, BASE e3dfff7c)
+### Team A open branches: heads from origin (auto, 2026-11-02 04:42 UTC, BASE e3dfff7c)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/ac-gaps-a1b | c1d186610 | READY (multi, @c1d18661: AC coverage refreshed to BASE-189 (AC-R1 71/81 proven, PIPE 58/92; 7 open rows unchanged), B4 pack/runbook; merge-tree clean); B delta over BASE-163; merge after ha26 | Q17 user decision wording; imported-without-Bab note |
-| r1/bulk-publish-allskipped | 52661b7dd | IN-PROGRESS (A3, @52661b7d: r2-prep minor #11 (r1e2e10): all-skipped bulk publish no longer flashes '0 soalan berjaya dikemaskini.'; 409 test over HTTP; 133/133). Lead asked: apply only when failed=0, plus a mixed-batch test; new head to follow |
+| r1/bulk-publish-allskipped | 9b8b39409 | READY (A3, @9b8b3940 on BASE-189: r2-prep minor #11 (r1e2e10). An all-skipped bulk publish (affected 0, failed 0, skipped>0) now shows 'Soalan ini sudah diterbitkan.' instead of '0 soalan berjaya dikemaskini.'; any failed row keeps the old text. The 409 test now goes over HTTP. Group 133/133, mutation red, contract:check ok, DEV row (no V2 wording). Merge-tree clean on BASE-192). Needs B2 review |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
 | r1/ha24-kiv-49-52 | d9adac614 | READY (A3, @d9adac61 = 2 docs commits on ha24 7b6304c8: KIV row 49 CLOSED, row 52 cite, row 33 reqb074 in progress; decision pack §(c) adds Q18 for user review). Merge after ha24; merge-tree clean |
 | r1/ha24-release-input | 7b6304c86 | READY (A3 docs, @7b6304c8: BASE-155..189 pass; Q17 real behaviour cited @4e38af8e "pending merge"; KIV 41; copy table 41 rows); B delta over BASE-145 c0f7a45d | Q17 user decision wording; imported-without-Bab note + user decision pack docs/release/r1-pek-keputusan-pengguna.md (BM) + KIV 52 rows (42-48 B3 Lows, LEAD no R1 change) |
@@ -591,13 +591,11 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/reqb071-bab-submit | 4e38af8e6 | READY via r1/reqb071-chain-specs-a3 826403b2 (contains 4e38af8e; B2 c29 AwM). Do NOT merge alone |
 | r1/reqb071-chain-specs-a3 | 826403b2d | READY (A3, @826403b2 = chain specs + merge of reqb071-bab-submit 4e38af8e). Contained in reqb071-minors c38ee66c; B1 may merge c38ee66c alone. 4e38af8e alone = chain 3-9 red. B2 c29 Approve w/ Minors on 4e38af8e + ee9474e0; delta ee9474e0..826403b2 (13/13, 3b/3c fixture tightening, chain-step-map) for B2. A4 pre-review APPROVE w/ Minors (one verdict for the pair; BASE-186 + 826403b2: 146 files 1731 passed, 0 failed; derivation inert in R1 with seed dskp_code null, which the user accepted in Q17) |
 | r1/reqb071-minors | c38ee66c4 | READY (A2, @c38ee66c = pair 826403b2 + B2 c29 code minors; A4 pre-review APPROVE, 41/41, mutation red). **B1: merging c38ee66c alone brings the whole REQ-B-071 unit (4e38af8e + chain specs + minors)** |
-| r1/reqb074-takedown-lows | 33b0a0b1c | IN-PROGRESS (A1b, @45a75f68 NOT ready): A4 RC proof on BASE-189 shows delete-served-guard.spec test 5 :396 red (no-sitting pupil now 404 = REQ-B-074 intended; the stale DSG expectation and the question-image-access.ts comment are being fixed). Do not merge 45a75f68 |
+| r1/reqb074-takedown-lows | 33b0a0b1c | IN-PROGRESS (A1b): @33b0a0b1 = stale DSG spec fix + Q18 rule (A4 RC re-run GREEN: r1+files 368/0, Q18 tests a/b/c). Still adding REQ-B-076 (B074-L2 live-path takedown check). Final head to follow; do not review yet |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 
 **Merged content, origin head has only base-merge commits since (no new work):** r1/a4chain-minors 86dd7ad67, r1/ha15-blueprint-evidence 7e5d637e5, r1/reqb032-pinned-rule 167986eff, r1/t44-blueprint-fields 072d8f4b4, r1/t48-builder-parity 10c624376
-
-**Origin head moved since last record (re-triage):** r1/reqb074-takedown-lows: status says @45a75f68, origin is 33b0a0b1c
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
