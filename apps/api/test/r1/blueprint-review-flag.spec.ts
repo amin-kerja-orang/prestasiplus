@@ -134,7 +134,7 @@ beforeAll(async () => {
   for (const [ids, pool] of [[fx.a, 'MAT2-A'], [[fx.b], 'MAT2-B'], [fx.c, 'MAT2-C']] as const)
     for (const id of ids) await db.query(`insert into question_tags (question_id, kind, code) values ($1, 'pool', $2)`, [id, pool])
   const all = [...fx.a, fx.b, ...fx.c]
-  await giveBab(db, all)
+  await giveBab(db, all) // REQ-B-071: not needed for Semakan or Terbitkan any more; kept so the fixtures carry a Bab
   for (const action of ['review', 'approved']) {
     const r = await admin.post('/api/questions/bulk-action', { action, ids: all })
     expect(r.status, JSON.stringify(r.body)).toBe(200)

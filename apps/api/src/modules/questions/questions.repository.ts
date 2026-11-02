@@ -934,6 +934,32 @@ export class QuestionsRepository {
     await this.db.questionVersion.updateMany({ where: { questionId: key, versionNo, lastEditor: { not: editor } }, data: { lastEditor: editor } })
   }
 
+  /**
+   * REQ-B-071 (Q17, option a): the Bab of a question, derived from its DSKP unit when the admin gave none. The curriculum tree has no
+   * node to chapter link; the only bridge is the printed code: `chapters.dskp_code` equal to the code of the question's UNIT node, same
+   * subject and level, active chapter that is in the tree (`in_tree`; the curriculum node has no such flag). Returns the id when EXACTLY ONE chapter matches, `null` for none or several. No other heuristic.
+   */
+  async chapterOfUnit(subjectId: string | null, levelId: string | null, unitId: string | null): Promise<string | null> {
+    const subject = subjectId === null ? null : bi(subjectId)
+    const level = levelId === null ? null : bi(levelId)
+    const unit = unitId === null ? null : bi(unitId)
+    if (subject === null || level === null || unit === null) return null
+    const rows = await this.db.$queryRaw<{ id: bigint }[]>`
+      SELECT c.id FROM chapters c
+        JOIN curriculum_nodes n ON n.id = ${unit} AND n.kind = 'unit' AND n.subject_id = c.subject_id AND n.education_level_id = c.education_level_id AND n.code = c.dskp_code
+       WHERE c.subject_id = ${subject} AND c.education_level_id = ${level} AND c.is_active AND c.in_tree AND c.dskp_code IS NOT NULL
+       LIMIT 2`
+    return rows.length === 1 ? idToString(rows[0]!.id) : null
+  }
+
+  /** Sets the Bab of a version that has none (never overwrites an admin's choice). */
+  async fillChapter(questionId: string, versionNo: number, chapterId: string): Promise<void> {
+    const key = bi(questionId)
+    const chapter = bi(chapterId)
+    if (key === null || chapter === null) return
+    await this.db.questionVersion.updateMany({ where: { questionId: key, versionNo, chapterId: null }, data: { chapterId: chapter } })
+  }
+
   /** R1-B05: the subject is in the SPM catalogue (`spm_subject_configs`) and the level is Tingkatan 4 or 5. */
   async isSpmBound(subjectId: string | null, levelId: string | null): Promise<boolean> {
     const subject = subjectId === null ? null : bi(subjectId)

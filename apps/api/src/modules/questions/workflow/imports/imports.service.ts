@@ -58,9 +58,9 @@ function gateInputOf(row: ImportedQuestionInput, status: QuestionWorkflowStatus)
 
 /**
  * Working assumption (BE-10): the create gate is asked for permission as `draft`, whatever the status
- * saved. A CSV row has no chapter (submit gate: `chapterId`), so asking as `review` would refuse every
- * Guru row, which contradicts the mock and the contract (Guru import saves `review`). The status event
- * still records the real status.
+ * saved. Historical note: a CSV row has no chapter and the H-A18 submit gate once refused that (`chapterId`); since REQ-B-071
+ * (Q17) the Bab is optional at Semakan and Terbitkan, so the submit gate would let it through. The `draft` ask is kept: the Guru
+ * import saves `review` by contract and this stays the one place that decides the gate. The status event still records the real status.
  */
 const GATE_STATUS: QuestionWorkflowStatus = 'draft'
 

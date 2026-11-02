@@ -578,6 +578,12 @@ export class QuestionsService {
         if (record.liveVersionNo !== null && record.liveVersionNo !== v.versionNo) {
           await this.repo.setVersionStatus(id, record.liveVersionNo, 'archived', { archiveReason: 'superseded' })
         }
+        // REQ-B-071 (Q17): the Bab is not required to approve; when the admin gave none, fill it from the DSKP unit (one chapter whose dskp_code is the unit code), so
+        // Soalan by Chapter, Peta Belajar and Latihan Bab still count the question. No match, or several: it stays chapterless.
+        if (v.chapterId === null) {
+          const derived = await this.repo.chapterOfUnit(v.subjectId, v.educationLevelId, v.unitId)
+          if (derived !== null) await this.repo.fillChapter(id, v.versionNo, derived)
+        }
         await this.repo.setVersionStatus(id, v.versionNo, 'approved', { publishedAt: this.clock.now() })
         await this.repo.setLiveVersion(id, v.versionNo)
         await this.repo.setLastEditor(id, v.versionNo, 'person') // a person approved it
@@ -877,6 +883,11 @@ export class QuestionsService {
     // R1-H-A18: who wrote this content and what total the intake declared. An AI variant is the AI's until a person acts on it.
     draft.lastEditor = provenance?.sourceType === 'ai_variant' ? 'ai' : 'person'
     draft.declaredMarks = provenance?.declaredMarks ?? null
+    if (status === 'approved' && draft.chapterId === null) {
+      // REQ-B-071 (Q17): created already approved without a Bab: derive it from the DSKP node, as the transition does.
+      const derived = await this.repo.chapterOfUnit(draft.subjectId === null ? null : idToString(draft.subjectId), draft.educationLevelId === null ? null : idToString(draft.educationLevelId), draft.unitNodeId === null ? null : idToString(draft.unitNodeId))
+      if (derived !== null) draft.chapterId = BigInt(derived)
+    }
     if (status === 'approved') {
       // Created already approved (an Admin Pusat shortcut that skips the Semakan step): the same merged approve gate as the transition,
       // on the same builder. The question is not stored yet, so the facts that need a stored row are the new-question ones.

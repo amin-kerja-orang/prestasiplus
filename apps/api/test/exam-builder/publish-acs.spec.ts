@@ -58,7 +58,7 @@ describe('R1 T43b publish ACs (PIPE AC-07.4 to AC-07.9)', () => {
     return res.body.data.id as string
   }
   async function approve(ids: string[]): Promise<void> {
-    await giveBab(t.db, ids) // H-A18: the submit gate (Semakan) asks for a Bab
+    await giveBab(t.db, ids) // REQ-B-071: no Bab rule at Semakan any more; kept so the fixtures keep a chapter (harmless)
     for (const action of ['review', 'approved']) {
       const res = await admin.post('/api/questions/bulk-action', { action, ids })
       expect(res.status, JSON.stringify(res.body)).toBe(200)
