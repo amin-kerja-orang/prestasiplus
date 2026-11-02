@@ -562,7 +562,8 @@ export interface RemedialTestItem {
 }
 
 export interface MissionItem {
-  id: number
+  /** A number in the mock; a string on the real API (contract `IdSchema`). */
+  id: EntityId
   title: string
   /** "Latih Tubi SPM" / "Tracking A" / "Soalan & Rujukan". */
   typeLabel: string
