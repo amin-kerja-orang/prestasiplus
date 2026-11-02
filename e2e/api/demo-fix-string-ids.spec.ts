@@ -98,12 +98,12 @@ test.describe('DEMO-FIX-1 string ids @api', () => {
 
     await page.goto('/practice/MATH')
     await expect(page.getByTestId('practice-config-page')).toBeVisible()
-    // Darjah 4 (D4 pool): the level id comes from the API as a string.
+    // Tingkatan 4 (D72: no Darjah): the level id comes from the API as a string.
     await page
       .getByTestId('config-levels')
-      .getByRole('button', { name: /Darjah 4/ })
+      .getByRole('button', { name: /Tingkatan 4/ })
       .click()
-    await expect(page.getByTestId('summary-level')).toHaveText('Darjah 4')
+    await expect(page.getByTestId('summary-level')).toHaveText('Tingkatan 4')
     await page.getByTestId('count-5').click()
     await expectNoHScroll(page)
 

@@ -295,7 +295,7 @@ test.describe('M02 bulk user import (Admin Pusat) @api', () => {
       // 1. No subscription: the quota panel says so and the import is refused.
       await pickSchool()
       await expect(page.getByTestId('quota-none')).toBeVisible({ timeout: 15_000 })
-      await page.locator('label', { hasText: 'Darjah 3' }).click()
+      await page.locator('label', { hasText: 'Tingkatan 3' }).click() // D72: no Darjah
       await page.getByTestId('import-paste').fill(block(1))
       const noSub = page.waitForResponse(
         (r) =>
@@ -315,12 +315,12 @@ test.describe('M02 bulk user import (Admin Pusat) @api', () => {
         await admin.get('/api/admin/school-packages'),
         'GET school-packages',
       )
-      const primary = packages.find((p) => p.formLevel === 'd1_d6') ?? packages[0]!
+      const lowerSecondary = packages.find((p) => p.formLevel === 't1_t3') ?? packages[0]!
       const probe = dataOf<{ id: string; used: number }>(
         await admin.send('POST', '/api/admin/school-subscriptions', {
           schoolId,
           packageTier: 'basic',
-          schoolPackageId: primary.id,
+          schoolPackageId: lowerSecondary.id,
           studentQuota: 1,
         }),
         'POST school-subscriptions',
@@ -331,7 +331,7 @@ test.describe('M02 bulk user import (Admin Pusat) @api', () => {
         await admin.send('POST', '/api/admin/school-subscriptions', {
           schoolId,
           packageTier: 'basic',
-          schoolPackageId: primary.id,
+          schoolPackageId: lowerSecondary.id,
           studentQuota: probe.used + 2,
         }),
         'POST school-subscriptions (quota)',
@@ -342,7 +342,7 @@ test.describe('M02 bulk user import (Admin Pusat) @api', () => {
       await pickSchool()
       await expect(page.getByTestId('quota-summary')).toBeVisible({ timeout: 15_000 })
       await expect(page.getByTestId('quota-none')).toHaveCount(0)
-      await page.locator('label', { hasText: 'Darjah 3' }).click()
+      await page.locator('label', { hasText: 'Tingkatan 3' }).click() // D72: no Darjah
       await page.getByTestId('import-paste').fill(`${block(1)}\n\n${block(2)}`)
       const two = page.waitForResponse(
         (r) =>
@@ -366,7 +366,7 @@ test.describe('M02 bulk user import (Admin Pusat) @api', () => {
 
       // 3. The third pupil does not fit.
       await pickSchool()
-      await page.locator('label', { hasText: 'Darjah 3' }).click()
+      await page.locator('label', { hasText: 'Tingkatan 3' }).click() // D72: no Darjah
       await page.getByTestId('import-paste').fill(block(3))
       const three = page.waitForResponse(
         (r) =>
