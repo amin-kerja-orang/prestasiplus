@@ -58,7 +58,7 @@ function statusOf(i: number): { text: string; color: 'success' | 'warning' | 'er
 
 function summary(i: number): string {
   const s = form.value.sections[i]!
-  const rule = s.ruleType === 'all' ? 'Jawab semua' : `Jawab ${s.chooseN ?? '?'} daripada ${s.questionCount ?? '?'}`
+  const rule = s.ruleType === 'all' ? 'Jawab semua' : `Jawab ${s.chooseN ?? '?'} soalan sahaja`
   return `${questionRange(form.value.sections, i)} - ${s.markBudget ?? 0} markah - ${rule}`
 }
 

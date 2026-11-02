@@ -419,7 +419,7 @@ const previewBlocks = computed(() => {
       s.instruction ??
       (s.rule.type === 'all'
         ? 'Jawab semua soalan.'
-        : `Jawab ${s.rule.n} daripada ${s.questionCount} soalan.`),
+        : `Jawab ${s.rule.n} soalan sahaja.`),
     marks: check.value.sections.find((c) => c.label === s.label)?.marks ?? 0,
     units: unitsFor(s.id).map((u) => {
       const start = n
@@ -723,7 +723,7 @@ const previewBlocks = computed(() => {
                   s.instruction ??
                   (s.rule.type === 'all'
                     ? 'Jawab semua soalan.'
-                    : `Jawab ${s.rule.n} daripada ${s.questionCount} soalan.`)
+                    : `Jawab ${s.rule.n} soalan sahaja.`)
                 }}
               </p>
             </div>

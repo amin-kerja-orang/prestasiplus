@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Attempt screen (US-04..US-13). Exam mode: timer, sections ("Jawab N daripada M"), question map,
+ * Attempt screen (US-04..US-13). Exam mode: timer, sections ("Jawab N soalan sahaja"), question map,
  * flag for review, one Hantar. Latihan mode: untimed, "Semak" per question with instant feedback.
  * One question per screen; a shared Rajah stays pinned (left panel from `lg`, sticky chip + bottom
  * sheet below). Answers autosave (device first, then the mock server) and submit flushes them.

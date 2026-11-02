@@ -474,7 +474,7 @@ const dskpItems = computed(() => [
                         s.instruction ??
                         (s.rule.type === 'all'
                           ? 'Jawab semua soalan.'
-                          : `Jawab ${s.rule.n} daripada ${s.questionCount} soalan.`)
+                          : `Jawab ${s.rule.n} soalan sahaja.`)
                       }}
                     </p>
                   </div>
