@@ -572,7 +572,7 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 - **Disk:** check `docker system df` and prune orphaned anonymous test volumes when there are 0 containers. A3 reclaimed 3.4 GB this way.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 05:48 UTC, BASE 550b8819)
+### Team A open branches: heads from origin (auto, 2026-11-02 05:49 UTC, BASE 550b8819)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -587,7 +587,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/reqb074-takedown-lows | 33b0a0b1c | SUPERSEDED: 45a75f68 merged as BASE-195; the later commit 33b0a0b1 carried the Q18 rule, which the user overrode (REQ-B-077). Do not merge 33b0a0b1. Follow-ups: r1/reqb074-dsg-spec-fix, then r1/reqb076-live-takedown (A1b) |
 | r1/reqb076-approve-gate | 875ef5f83 | IN-REVIEW-A (A1b, @875ef5f8 = 1 commit on BASE-197; REQ-B-076 redesign: GATES.approve refuses a version whose source has takedown_at (single, bulk/filter failed[], create-as-approved, gate-check); [PROPOSED] BM 'Sumber soalan ini telah ditarik balik, jadi soalan tidak boleh diterbitkan.' (copy table row 41); no override in R1; no contract change). Spec 4/4 over HTTP; questions + questions-workflow + intake-workflow 1244/0; mutation red; tsc/eslint/contract ok. A4 pre-review pending |
 | r1/reqb076-live-takedown | c8965bb89 | SUPERSEDED by r1/reqb076-approve-gate (A4 request changes on c8965bb8). Do not merge |
-| r1/reqb079-t34-t36-minors | 52345db7c | IN-PROGRESS (A3): A4 pre-review on 52345db7 = APPROVE WITH MINORS (0 B/M; exam-builder 461, bijak-attempts 204, bijak-papers 116; mutations red; clean on BASE-197). The minor is being fixed now: sweepUser has no try/catch, so one dead sitting makes the pupil's whole history 404; plus the test nits. New head to follow |
+| r1/reqb079-t34-t36-minors | 52345db7c | READY @52345db7 (A3; REQ-B-079 items 1–4; A4 pre-review AwM, B2 AwM; clean on BASE-200). HELD by B1 pending the user's code-freeze decision. The sweepUser minor + test nits → KIV R2 (no new work on held units, per Mandor) |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 
