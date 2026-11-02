@@ -79,9 +79,10 @@ export class AdminQuestionsController {
     const input = parseBulk(body)
     const { affected, ids, failed, skipped } = await this.questions.bulkAction(input.action, input.ids, actor, { submitGate: true })
     await this.audit.bulk(actor, input.action, new Set(input.ids).size, affected, ids)
-    // R1E2E-10 minor 11 (Q16: skipped is information, not an error): a batch where every changed row was already Diterbitkan (nothing affected, at least
-    // one skipped) must not flash "0 soalan berjaya dikemaskini."; it says why instead. A mixed batch keeps the count (V2 has no wording for either case).
-    const message = affected === 0 && skipped !== undefined && skipped.length > 0 ? QUESTION_MESSAGES.bulkAlreadyApproved : QUESTION_MESSAGES.bulkUpdated(affected)
+    // R1E2E-10 minor 11 (Q16: skipped is information, not an error): a batch where every row was already Diterbitkan (nothing affected, at least one
+    // skipped, NOTHING refused) must not flash "0 soalan berjaya dikemaskini."; it says why instead. Any refused row (`failed`) or any published row keeps
+    // the count (lead decision; V2 has no wording for either case).
+    const message = affected === 0 && failed.length === 0 && skipped !== undefined && skipped.length > 0 ? QUESTION_MESSAGES.bulkAlreadyApproved : QUESTION_MESSAGES.bulkUpdated(affected)
     return flash({ affected, failed, ...(skipped ? { skipped } : {}) }, message)
   }
 

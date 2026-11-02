@@ -4,7 +4,8 @@
  * `affected`, it is listed in `skipped[]` as { id, reason: "Soalan ini sudah diterbitkan." } (never in `failed[]`, which keeps the real refusals), it
  * writes no status event and it is not in the audit ids; the other rows of the batch are still published. The single route keeps its 409.
  * Minor 11 (r1e2e10): when NOTHING was affected and at least one row was skipped, the flash (`status`) is "Soalan ini sudah diterbitkan." and not
- * "0 soalan berjaya dikemaskini." (Q16: skipped is information, not an error); a batch with a published row keeps "<n> soalan berjaya dikemaskini.".
+ * "0 soalan berjaya dikemaskini." (Q16: skipped is information, not an error). A batch with a published row, or with a refused row (failed > 0),
+ * keeps "<n> soalan berjaya dikemaskini." (lead decision).
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
@@ -110,14 +111,15 @@ describe('R1E2E-10: bulk Terbitkan of an already Diterbitkan row is a no-op', ()
     expect((await status(id)).status).toBe('approved') // untouched
   })
 
-  it('other refusals are unchanged: a Draf row in a Terbitkan batch is still the transition conflict, a Diterbitkan row beside it is skipped, not failed', async () => {
+  it('other refusals are unchanged: a Draf row in a Terbitkan batch is still the transition conflict, a Diterbitkan row beside it is skipped, not failed (affected 0, failed 1, skipped 1: the old "0 soalan…" flash)', async () => {
     const draft = (await admin.post('/api/questions', mcqBody(refs, { tag }))).body.data.id as string
     const p = await published()
     const out = await bulk([draft, p])
     expect(out.data.affected).toBe(0)
     expect(out.data.failed.map((f) => [f.id, f.code, f.message])).toEqual([[draft, 'CONFLICT', "Peralihan 'Draf' -> 'Diterbitkan' tidak dibenarkan."]])
     expect(out.data.skipped).toEqual([{ id: p, reason: ALREADY }])
-    expect(out.status).toBe(ALREADY) // nothing affected, one skipped (the failed row is listed in failed[], which the screen shows)
+    expect(out.status).toBe(ZERO_FLASH) // a refused row is in the batch (failed 1): the count is kept, "0 soalan berjaya dikemaskini." (lead decision)
+    expect(out.status).not.toBe(ALREADY)
   })
 
   it('`skipped` is absent when no row is skipped (additive field), and for other actions', async () => {
