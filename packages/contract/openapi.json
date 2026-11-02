@@ -40554,7 +40554,7 @@
           "skipped": {
             "type": "integer",
             "minimum": 0,
-            "description": "matched - eligible: rows already in, or not allowed to move to, the target status. Left untouched, not failures."
+            "description": "matched - eligible (rows already in, or not allowed to move to, the target status), plus the rows another request approved after the count was taken and before this run reached them (bulk Terbitkan only; counted in `processed` but not in `affected` or `failed`). Left untouched, not failures."
           },
           "cap": {
             "type": "integer",
@@ -40564,7 +40564,7 @@
           "processed": {
             "type": "integer",
             "minimum": 0,
-            "description": "Rows tried in this run: min(eligible, cap); 0 on a dry run."
+            "description": "Rows tried in this run: min(eligible, cap); 0 on a dry run. Includes the rows that were then skipped because they were already Diterbitkan."
           },
           "affected": {
             "type": "integer",

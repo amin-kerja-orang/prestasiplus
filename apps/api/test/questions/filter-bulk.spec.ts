@@ -1,7 +1,7 @@
 import { QUESTION_MESSAGES, QuestionSchema, mutationEnvelopeOf } from '@pp/contract'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
-import { QuestionsService } from '../../src/modules/questions'
+import { QuestionsRepository, QuestionsService } from '../../src/modules/questions'
 import { FILTER_ACTION_CAP } from '../../src/modules/questions/questions.service'
 import { bootQuestionsApp, expectError, loginAs, type Client, type QuestionsTestApp } from './helpers'
 import { countOf, mcqBody, refsOf, tagOf, type Refs } from './http-helpers'
@@ -116,6 +116,30 @@ describe('filter-based bulk action (Luluskan Hasil Tapisan, Arkib Semua)', () =>
     expect(third).toMatchObject({ processed: 1, affected: 1, remaining: 0, capped: false })
     for (const id of b.review) expect(await statusOf(id)).toBe('approved')
     expect(FILTER_ACTION_CAP).toBe(500)
+  })
+
+  it('R1E2E-10 race: a row approved after the targets were read is skipped (counted in `skipped` and `processed`, not in `affected` or `failed`)', async () => {
+    const b = await batch({ review: 3 })
+    const svc = t.app.get(QuestionsService)
+    const repo = t.app.get(QuestionsRepository)
+    const actor = { userId: admin.userId, role: 'admin' as const }
+    const [raced, ...rest] = b.review as [string, string, string]
+    // Another request publishes `raced` right after the targets are read and before the bulk action reaches it.
+    const real = repo.filterTargets.bind(repo)
+    const spy = vi.spyOn(repo, 'filterTargets').mockImplementation(async (...args) => {
+      const out = await real(...args)
+      const r = await admin.post('/api/questions/bulk-action', { action: 'approved', ids: [raced] })
+      expect(r.status, JSON.stringify(r.body)).toBe(200)
+      return out
+    })
+    try {
+      const out = await svc.bulkByFilter({ action: 'approved', filter: { tahun: b.year }, expectedCount: 3 }, actor)
+      expect(out).toMatchObject({ matched: 3, eligible: 3, skipped: 1, processed: 3, affected: 2, failed: [], remaining: 0, capped: false })
+      expect([...out.ids].sort()).toEqual([...rest].sort())
+    } finally {
+      spy.mockRestore()
+    }
+    for (const id of b.review) expect(await statusOf(id)).toBe('approved')
   })
 
   it('Arkib Semua: archives Draf, Semakan and Diterbitkan rows of the filter; the V2 text when the filter is empty', async () => {

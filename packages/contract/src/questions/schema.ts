@@ -485,9 +485,9 @@ export const QuestionFilterBulkResultSchema = z
   .object({
     matched: z.number().int().min(0).meta({ description: 'Rows of the filter (the total the list shows); compared with `expectedCount`.' }),
     eligible: z.number().int().min(0).meta({ description: 'Matched rows whose status allows the action (approved: Semakan; archived: Draf, Semakan, Diterbitkan).' }),
-    skipped: z.number().int().min(0).meta({ description: 'matched - eligible: rows already in, or not allowed to move to, the target status. Left untouched, not failures.' }),
+    skipped: z.number().int().min(0).meta({ description: 'matched - eligible (rows already in, or not allowed to move to, the target status), plus the rows another request approved after the count was taken and before this run reached them (bulk Terbitkan only; counted in `processed` but not in `affected` or `failed`). Left untouched, not failures.' }),
     cap: z.number().int().min(1).meta({ description: 'Rows one run applies at most.' }),
-    processed: z.number().int().min(0).meta({ description: 'Rows tried in this run: min(eligible, cap); 0 on a dry run.' }),
+    processed: z.number().int().min(0).meta({ description: 'Rows tried in this run: min(eligible, cap); 0 on a dry run. Includes the rows that were then skipped because they were already Diterbitkan.' }),
     affected: z.number().int().min(0),
     failed: z.array(QuestionBulkFailureSchema).meta({ description: 'Rows tried and refused (the full approve gate: VALIDATION_ERROR with the gate `fields`), same shape as bulk-action.' }),
     remaining: z.number().int().min(0).meta({ description: 'eligible - processed: rows a further run would still try.' }),
