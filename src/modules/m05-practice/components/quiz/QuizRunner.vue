@@ -17,7 +17,7 @@
  *
  * A mid-quiz 402 `TRIAL_EXHAUSTED` on #5 shows a notice with a `/pricing` link (question stays unchecked, not scored).
  *
- * A start failure is handled here (FR-M05-48, 51, 66, 75): 402 → `/pricing` (no message), 404 → the global 404 page, anything else `alert(message)`
+ * A start failure is handled here (FR-M05-48, 51, 66, 75): 402 → `/pricing` when that route is in scope and routed, else the contract message in place (no redirect), 404 → the global 404 page, anything else `alert(message)`
  * and back to `backUrl`.
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -119,6 +119,8 @@ const router = useRouter()
 // The subscribe link follows the config page notice: no link to /pricing while it is out of the prototype scope or not routed (D9 dead link).
 const { allows } = usePrototypeScope()
 const { routeExists } = useRouteExists()
+/** The session start answered 402 TRIAL_EXHAUSTED and `/pricing` is not linkable: show the message instead of the loading state. */
+const startTrialExhausted = ref(false)
 const labels = computed<QuizLabels>(() => ({ ...PRACTICE_LABELS, ...props.labels }))
 
 function scrollTop(): void {
@@ -129,6 +131,11 @@ function scrollTop(): void {
   }
 }
 
+/** `/pricing` is in the prototype scope and routed. */
+function canLinkPricing(): boolean {
+  return allows('/pricing') && routeExists('/pricing')
+}
+
 function onStartError(err: unknown): void {
   const e = err as { status?: number; code?: string; message?: string }
   emit('start-error', {
@@ -137,8 +144,12 @@ function onStartError(err: unknown): void {
     message: typeof e.message === 'string' ? e.message : '',
   })
   const plan = planStartError(err, labels.value)
-  if (plan.kind === 'pricing') void router.replace('/pricing')
-  else if (plan.kind === 'not-found') setRouteOutcome(404)
+  if (plan.kind === 'pricing') {
+    // Scope off and /pricing routed: the redirect of old. Otherwise (prototype scope ON, or no such route) /pricing is a dead link:
+    // stay here and show the contract message (REQ-B-122, same guard as the config page notice).
+    if (canLinkPricing()) void router.replace('/pricing')
+    else startTrialExhausted.value = true
+  } else if (plan.kind === 'not-found') setRouteOutcome(404)
   else {
     window.alert(plan.message)
     void router.replace(props.backUrl)
@@ -181,8 +192,10 @@ onMounted(() => void run.begin())
 
 function onRetry(): void {
   if (!props.start && !props.session) return
-  if (props.start) void run.begin()
-  else emit('retry')
+  if (props.start) {
+    startTrialExhausted.value = false
+    void run.begin()
+  } else emit('retry')
 }
 
 const title = computed(() =>
@@ -277,9 +290,32 @@ const feedbackExplanation = computed(() =>
       :data-phase="phase"
     >
       <div class="mx-auto flex min-h-full w-full max-w-xl flex-col gap-4 px-4 py-4 sm:px-6 sm:py-6">
+        <!-- Trial used up at the session start (no redirect to a dead /pricing) -->
+        <template v-if="phase === 'loading' && startTrialExhausted">
+          <UAlert
+            color="warning"
+            variant="soft"
+            icon="i-ph-warning-circle-duotone"
+            :title="TRIAL_EXHAUSTED_TEXT"
+            data-testid="trial-exhausted-start"
+          >
+            <template #description>
+              <ULink v-if="canLinkPricing()" to="/pricing">{{ SUBSCRIBE_LINK_TEXT }}</ULink>
+            </template>
+          </UAlert>
+          <UButton
+            :to="backUrl"
+            color="neutral"
+            variant="outline"
+            block
+            data-testid="trial-exhausted-back"
+            >{{ labels.back }}</UButton
+          >
+        </template>
+
         <!-- Loading -->
         <QuizLoading
-          v-if="phase === 'loading'"
+          v-else-if="phase === 'loading'"
           :title="labels.loadingTitle"
           :text="labels.loadingText"
           data-testid="quiz-loading"
@@ -423,12 +459,7 @@ const feedbackExplanation = computed(() =>
                 data-testid="trial-exhausted"
               >
                 <template #description>
-                  <ULink
-                    v-if="allows('/pricing') && routeExists('/pricing')"
-                    to="/pricing"
-                    class="inline-flex min-h-11 items-center text-highlighted underline"
-                    >{{ SUBSCRIBE_LINK_TEXT }}</ULink
-                  >
+                  <ULink v-if="canLinkPricing()" to="/pricing">{{ SUBSCRIBE_LINK_TEXT }}</ULink>
                 </template>
               </UAlert>
 

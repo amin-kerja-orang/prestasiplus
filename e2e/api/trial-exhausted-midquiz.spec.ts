@@ -36,14 +36,16 @@ const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1'])
 const TRIAL_EMAIL = /^murid\.trial[0-9]*\.e2e@example\.test$/
 
 /**
- * Sets `users.trial_questions_used = 49` for one fixture pupil and deletes that pupil's own practice sessions, checks and answers, on the TEST database `E2E_DATABASE_URL` only (no `DATABASE_URL` fallback).
+ * Sets `users.trial_questions_used` (default 49: one answer left) for one fixture pupil and deletes that pupil's own practice sessions, checks and answers, on the TEST database `E2E_DATABASE_URL` only (no `DATABASE_URL` fallback).
  * Without `E2E_DATABASE_URL` it does nothing. The host must be localhost / 127.0.0.1 / ::1, or `E2E_DB_IS_TEST=1` must say that it is a
  * throw-away database. The connection goes to `psql` through the PG* environment variables only (no URL or password in argv or an error).
  * A failure throws a fixed message.
  */
-function resetTrial(email: string): void {
+function resetTrial(email: string, used = 49): void {
   const raw = process.env.E2E_DATABASE_URL
   if (!raw) return
+  if (!Number.isInteger(used) || used < 0 || used > 50)
+    throw new Error('reset refused: unexpected trial count')
   if (!TRIAL_EMAIL.test(email)) throw new Error('reset refused: not a trial fixture pupil e-mail')
   let url: URL
   try {
@@ -69,7 +71,20 @@ function resetTrial(email: string): void {
   try {
     out = execFileSync(
       'psql',
-      ['-X', '-q', '-t', '-A', '-v', 'ON_ERROR_STOP=1', '-v', `email=${email}`, '-f', '-'],
+      [
+        '-X',
+        '-q',
+        '-t',
+        '-A',
+        '-v',
+        'ON_ERROR_STOP=1',
+        '-v',
+        `email=${email}`,
+        '-v',
+        `used=${String(used)}`,
+        '-f',
+        '-',
+      ],
       {
         env,
         encoding: 'utf8',
@@ -79,7 +94,7 @@ function resetTrial(email: string): void {
           "delete from practice_answers where session_id in (select s.id from practice_sessions s join users u on u.id = s.user_id where u.email = :'email');",
           "delete from practice_session_questions where session_id in (select s.id from practice_sessions s join users u on u.id = s.user_id where u.email = :'email');",
           "delete from practice_sessions where user_id in (select id from users where email = :'email');",
-          "update users set trial_questions_used = 49 where email = :'email' returning id;",
+          "update users set trial_questions_used = :used where email = :'email' returning id;",
           '',
         ].join('\n'),
       },
@@ -185,6 +200,57 @@ test.describe('trial exhausted mid-quiz @api', () => {
     await expect(page.getByTestId('feedback-title')).toHaveCount(0)
     await expect(page.getByTestId('quiz-body')).not.toContainText('Salah')
     await expect(page.getByTestId('btn-check')).toBeVisible()
+    await expectNoHScroll(page)
+  })
+
+  test('murid: a start 402 (trial used up) shows the contract message in place: no redirect to /pricing or /dashboard, no link @api', async ({
+    page,
+  }) => {
+    // No skip (the user's rule): this case needs the test database to set the pupil to 50 of 50 trial answers.
+    if (!process.env.E2E_DATABASE_URL)
+      throw new Error(
+        'E2E_DATABASE_URL is required for this spec (the test database, to set the pupil to 50 of 50)',
+      )
+    const email = pupilEmail(page)
+    resetTrial(email, 50)
+    await loginViaUi(page, email, process.env.E2E_DEMO_PASSWORD || API_PASSWORD)
+
+    const listWait = page.waitForResponse((r) => isPath(r, /^\/api\/spm\/latih-tubi$/, 'GET'), {
+      timeout: 30_000,
+    })
+    await page.goto('/spm/latih-tubi')
+    const list = (
+      (await (await listWait).json()) as {
+        data: {
+          teras: { code: string; total: number; locked: boolean }[]
+          elektif: { code: string; total: number; locked: boolean }[]
+        }
+      }
+    ).data
+    const open = [...list.teras, ...list.elektif].find((c) => !c.locked && c.total > 0)
+    expect(open, 'an unlocked Latih Tubi SPM subject with questions').toBeDefined()
+    await page.goto(`/spm/latih-tubi/${open!.code}`)
+    await expect(page.getByTestId('spm-config-page')).toBeVisible({ timeout: 20_000 })
+
+    const started = page.waitForResponse((r) => isPath(r, /^\/api\/practice\/sessions$/, 'POST'), {
+      timeout: 30_000,
+    })
+    await page.getByTestId('config-start').click()
+    const res = await started
+    expect(res.status(), 'POST /api/practice/sessions (50 of 50 used)').toBe(402)
+    expect(
+      ((await res.json()) as { error: { code: string; message: string } }).error,
+    ).toMatchObject({ code: 'TRIAL_EXHAUSTED', message: EXHAUSTED })
+
+    const notice = page.getByTestId('trial-exhausted-start')
+    await expect(notice).toBeVisible({ timeout: 20_000 })
+    await expect(notice).toContainText(EXHAUSTED)
+    // Prototype scope ON (the CI build): no link to /pricing; the pupil stays on the quiz page.
+    await expect(page.locator('a[href="/pricing"]')).toHaveCount(0)
+    await expect(page.getByText('Langgan untuk akses tanpa had')).toHaveCount(0)
+    await page.waitForTimeout(500)
+    expect(new URL(page.url()).pathname).not.toMatch(/^\/(pricing|dashboard)(\/|$)/)
+    await expect(page.getByTestId('trial-exhausted-back')).toBeVisible()
     await expectNoHScroll(page)
   })
 })
