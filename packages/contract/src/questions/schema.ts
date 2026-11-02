@@ -30,6 +30,10 @@ export const QUESTION_MESSAGES = {
   updated: 'Soalan berjaya dikemaskini.',
   deleted: 'Soalan berjaya dipadam.',
   bulkUpdated: (n: number): string => `${String(n)} soalan berjaya dikemaskini.`,
+  /** `POST /questions/:id/edit-as-draft` (REQ-C-012; V2 flash "Draf baharu #{id} dicipta. ..."). */
+  editAsDraft: (id: string): string => `Draf baharu #${id} dicipta. Soalan asal kekal diterbitkan sehingga draf ini diterbitkan.`,
+  editAsDraftExists: 'Soalan ini sudah mempunyai draf atau semakan yang belum diterbitkan. Sunting draf itu.',
+  editAsDraftNotApproved: 'Hanya soalan yang diterbitkan boleh disunting sebagai draf.',
   bulkNoAction: 'Sila pilih tindakan terlebih dahulu.',
   bulkBadAction: 'Tindakan tidak sah.',
   bulkNoIds: 'Sila pilih sekurang-kurangnya satu soalan.',
@@ -410,6 +414,9 @@ export const QuestionBulkRequestSchema = z
       .min(1, QUESTION_MESSAGES.bulkNoIds),
   })
   .meta({ id: 'QuestionBulkRequest' })
+
+/** `POST /questions/:id/edit-as-draft`: the new draft is version `versionNo` of the same question; the live version keeps serving. */
+export const QuestionEditAsDraftResultSchema = z.object({ id: IdSchema, versionNo: z.number().int().min(2) }).meta({ id: 'QuestionEditAsDraftResult' })
 
 export const QuestionDeleteResultSchema = z.object({ deleted: z.literal(1) }).meta({ id: 'QuestionDeleteResult' })
 /** Why one requested id of a bulk action was not applied. */

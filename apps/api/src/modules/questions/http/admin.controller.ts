@@ -115,6 +115,15 @@ export class AdminQuestionsController {
     return flash(questionView(updated), QUESTION_MESSAGES.updated)
   }
 
+  /** V2 "Edit sebagai draf" (REQ-C-012): version n+1 as a draft, copied unchanged from the live version. Admin Pusat only. */
+  @Post(':id/edit-as-draft')
+  @RateLimit(QUESTIONS_WRITE_LIMIT)
+  async editAsDraft(@Actor() actor: HttpActor, @Param('id') id: string) {
+    const out = await this.questions.editAsDraft(id, actor)
+    await this.audit.editedAsDraft(actor, out.id, out.versionNo)
+    return flash(out, QUESTION_MESSAGES.editAsDraft(out.id))
+  }
+
   @Delete(':id')
   @RateLimit(QUESTIONS_WRITE_LIMIT)
   async remove(@Actor() actor: HttpActor, @Param('id') id: string) {

@@ -326,6 +326,62 @@ export class QuestionsService {
     return this.viewOf(await this.applyUpdate(record, input, actor))
   }
 
+  /**
+   * V2 "Edit sebagai draf" (REQ-C-012): copies the live approved version, unchanged, into version n+1 as a `draft`. The live version
+   * keeps serving until n+1 is approved (then n is superseded). Refused with 409 when the latest version is already a draft or review
+   * (details name it), or when the question has no live version (archived or never approved). Inside one transaction, under the
+   * question row lock, so two clicks make one draft.
+   */
+  async editAsDraft(id: string, actor: QuestionActor): Promise<{ id: string; versionNo: number }> {
+    void actor
+    const now = this.clock.now()
+    let versionNo = 0
+    await this.prisma.transaction(async () => {
+      if (!(await this.repo.lock(id))) throw questionNotFound()
+      const record = await this.repo.get(id, 'latest')
+      if (!record) throw questionNotFound()
+      const v = record.version
+      if (v.status === 'draft' || v.status === 'review') {
+        throw ApiError.of('CONFLICT', { message: QUESTION_MESSAGES.editAsDraftExists, details: { id, versionNo: v.versionNo } })
+      }
+      if (v.status !== 'approved' || record.liveVersionNo !== v.versionNo) throw ApiError.of('CONFLICT', { message: QUESTION_MESSAGES.editAsDraftNotApproved })
+      const big = (x: string | null): bigint | null => (x === null ? null : BigInt(x))
+      const held = await this.repo.importIssuesOf(id, v.versionNo)
+      const draft: VersionDraft = {
+        status: 'draft',
+        type: v.type,
+        stemMs: v.stemMs,
+        stemEn: v.stemEn,
+        numberLabel: v.numberLabel,
+        language: v.language,
+        explanationMs: v.explanationMs,
+        explanationEn: v.explanationEn,
+        subjectId: big(v.subjectId),
+        educationLevelId: big(v.educationLevelId),
+        unitNodeId: big(v.unitId),
+        chapterId: big(v.chapterId),
+        topicId: big(v.topicId),
+        formOrigin: v.formOrigin,
+        cognitiveLevel: v.cognitiveLevel,
+        kbat: v.kbat,
+        tagReview: v.tagReview,
+        catalogueVersion: v.catalogueVersion,
+        difficultyTp: v.difficultyTp,
+        sourcePage: v.sourcePage,
+        setLabel: v.setLabel,
+        paperCode: v.paperCode ?? null,
+        spNodeIds: v.spIds.map((x) => BigInt(x)),
+        stimulusIds: v.stimulusIds.map((x) => BigInt(x)),
+        parts: draftsFromParts(v.parts),
+        // The copy is unchanged, so an import hold (a legacy image that was not copied) goes on with it; without it Terbit would pass on v(n+1).
+        importIssues: held.length === 0 ? null : held,
+      }
+      versionNo = record.latestVersionNo + 1
+      await this.repo.addVersion(id, versionNo, draft, now)
+    }, TX)
+    return { id, versionNo }
+  }
+
   async remove(id: string, actor: QuestionActor): Promise<void> {
     void actor
     if (!(await this.repo.remove(id))) throw questionNotFound()
