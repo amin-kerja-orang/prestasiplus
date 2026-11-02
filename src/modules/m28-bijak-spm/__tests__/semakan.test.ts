@@ -4,7 +4,7 @@
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createMemoryHistory, createRouter } from 'vue-router'
+import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
 import KeywordSuggestion from '../components/KeywordSuggestion.vue'
 import PastSittingsLink from '../components/PastSittingsLink.vue'
@@ -323,6 +323,37 @@ describe('SelfMarkControl: a new part object from a refreshed result', () => {
     expect(state()).toBe('Markah kendiri disimpan')
   })
 
+  it('reapplies the part when a save returns the same values', async () => {
+    const save = vi.fn().mockResolvedValue(undefined)
+    wrapper = mount(SelfMarkControl, {
+      props: { part: part({ awarded: 2, selfMarked: true, status: 'separa' }), save },
+      attachTo: document.body,
+    })
+    ;(q('[data-testid="selfmark-inc"]') as HTMLButtonElement).click()
+    await flushPromises()
+    expect(value()).toBe('3 / 4')
+
+    ;(q('[data-testid="selfmark-save"]') as HTMLButtonElement).click()
+    await flushPromises()
+
+    expect(save).toHaveBeenCalledWith({ partId: 'p1', mark: 3 })
+    expect(value()).toBe('2 / 4')
+    expect(state()).toBe('Markah kendiri disimpan')
+  })
+
+  it('keeps the draft when a save fails', async () => {
+    const save = vi.fn().mockRejectedValue(new Error('Gagal'))
+    wrapper = mount(SelfMarkControl, { props: { part: part(), save }, attachTo: document.body })
+    ;(q('[data-testid="selfmark-inc"]') as HTMLButtonElement).click()
+    await flushPromises()
+
+    ;(q('[data-testid="selfmark-save"]') as HTMLButtonElement).click()
+    await flushPromises()
+
+    expect(value()).toBe('1 / 4')
+    expect(text('[data-testid="selfmark-error"]')).toBe('Gagal')
+  })
+
   it('applies a band the server changed', async () => {
     const w = mountControl(rubric())
     await w.setProps({ part: part({ scheme: { marks: 4, rubric: RUBRIC as never }, awarded: 4, band: '3', selfMarked: true }) })
@@ -469,9 +500,11 @@ describe('ResultPage Semakan', () => {
     result,
   })
 
+  let router: Router
+
   async function render() {
     const stub = { template: '<i/>' }
-    const router = createRouter({
+    router = createRouter({
       history: createMemoryHistory(),
       routes: [
         { path: '/r/:attemptId', name: 'm28.bijak.result', component: ResultPage },
@@ -563,6 +596,33 @@ describe('ResultPage Semakan', () => {
     await render()
     expect(q('[data-testid="past-sittings"]')?.getAttribute('href')).toBe('/r/a0')
   })
+  it('moving to another sitting of the same paper resets an unsaved draft, even when the values are equal', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    server.getResult.mockResolvedValue(view(resultOf(part(), 0)))
+    await render()
+    ;(q('[data-testid="selfmark-inc"]') as HTMLButtonElement).click()
+    ;(q('[data-testid="selfmark-inc"]') as HTMLButtonElement).click()
+    ;(q('[data-testid="selfmark-inc"]') as HTMLButtonElement).click()
+    await flushPromises()
+    expect(text('[data-testid="selfmark-value"]')).toBe('3 / 4')
+
+    await router.push('/r/a0')
+    await flushPromises()
+
+    expect(server.getResult).toHaveBeenLastCalledWith(7, 'a0')
+    expect(text('[data-testid="selfmark-value"]')).toBe('0 / 4')
+    expect(text('[data-testid="selfmark-state"]')).toBe('Belum dimarkah')
+    ;(q('[data-testid="selfmark-save"]') as HTMLButtonElement).click()
+    await flushPromises()
+    expect(server.selfMark).toHaveBeenCalledWith(7, 'a0', { partId: 'p1', mark: 0 })
+    server.selfMark.mockClear()
+
+    await router.push('/spm/bijak')
+    await flushPromises()
+    expect(confirm).not.toHaveBeenCalled()
+    confirm.mockRestore()
+  })
+
   it('saving one part keeps the unsaved draft of another part', async () => {
     const a = part({ partId: 'pa' })
     const b = part({ partId: 'pb' })

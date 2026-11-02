@@ -6,7 +6,7 @@
  * stays "Belum disahkan" until the pupil saves; a saved self-mark shows as confirmed. The server
  * clamps the mark again, so this only guides.
  */
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
 import {
   bandMidpoint,
@@ -99,6 +99,10 @@ async function commit(): Promise<void> {
       mark: clampMark(draft.value, hi.value, lo.value),
       ...(bands.value.length && band.value ? { band: band.value } : {}),
     })
+    // A save can answer with the same values, so the watcher above stays quiet: show what the server holds.
+    await nextTick()
+    draft.value = props.part.awarded
+    band.value = initialBand()
   } catch (e) {
     error.value =
       e instanceof Error && e.message ? e.message : 'Markah tidak dapat disimpan. Cuba lagi.'
