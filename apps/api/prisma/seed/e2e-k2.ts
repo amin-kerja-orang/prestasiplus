@@ -202,7 +202,7 @@ async function seedQuestions(prisma: PrismaClient, adminId: bigint, now: Date): 
         // The real approve gate (tag, keys, marks, DSKP leaf rules of R1-B05) on the exact data that is written.
         const failed = GATES.approve({
           id: label, parts, marks: totalMarks(spec), subjectId: subject.id.toString(), educationLevelId: levelId.toString(), chapterId: '1',
-          unitId: tag.unitNodeId.toString(), spIds: [tag.spNodeId.toString()], tp, rightsStatus: 'own', hasSourceDeclaration: true,
+          unitId: tag.unitNodeId.toString(), spIds: [tag.spNodeId.toString()], tp,
           unconfirmedLowConfidenceFields: [], hasOpenDuplicateFlag: false, mediaResolved: true, missingRequiredFields: [], lastEditedByAi: false,
           paperCode: E2E_K2_BLUEPRINT, spmBound: true,
         })

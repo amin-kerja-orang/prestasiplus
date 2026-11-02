@@ -103235,7 +103235,7 @@
           "questions"
         ],
         "summary": "Apply one lifecycle action to many questions",
-        "description": "Unknown ids are skipped silently; duplicates count once. Flash: \"<n> soalan berjaya dikemaskini.\" Transition rules and \"only Admin Pusat publishes\" belong to BE-10; forbidden transitions and their error are BE-10 to define. `approved` runs the merged approve gate (ADR-0027: tag, keys, rights not \"belum jelas\", duplicates, DSKP-complete for an SPM-bound question) per id, the same as `POST /questions/{id}/status`: a refused id is a `failed[]` entry (VALIDATION_ERROR with the gate `fields`), the others are applied. `POST /questions` with `status: approved` runs the same gate (422, nothing stored).",
+        "description": "Unknown ids are skipped silently; duplicates count once. Flash: \"<n> soalan berjaya dikemaskini.\" Transition rules and \"only Admin Pusat publishes\" belong to BE-10; forbidden transitions and their error are BE-10 to define. `approved` runs the merged approve gate (ADR-0027: tag, keys, open duplicate, marks, media, AI as last editor, DSKP-complete for an SPM-bound question; no per-question source or rights rule, D99) per id, the same as `POST /questions/{id}/status`: a refused id is a `failed[]` entry (VALIDATION_ERROR with the gate `fields`), the others are applied. `POST /questions` with `status: approved` runs the same gate (422, nothing stored).",
         "parameters": [
           {
             "schema": {
@@ -106072,7 +106072,7 @@
           "questions"
         ],
         "summary": "Check a gate without changing the question",
-        "description": "`gate=approve` (default) is the merged approve gate (\"Terbitkan\"): marks, one key per MCQ, a key for every other mode, images resolved, unit, SP and TP chosen, copyright, no open duplicate; and for an SPM-bound question (a subject of the SPM catalogue at Tingkatan 4 or 5) a cognitive level on every leaf (\"Bahagian (b) belum ada aras pemikiran.\") and the kertas. `gate=submit` is the draft-to-review gate. Legacy questions already approved are never re-checked (D80 DEC-2): the gate runs only on a new approval.",
+        "description": "`gate=approve` (default) is the merged approve gate (\"Terbitkan\"): marks, one key per MCQ, a key for every other mode, images resolved, unit, SP and TP chosen, no open duplicate (no per-question source or rights rule: V2 asks for them once, at the intake batch, D99); and for an SPM-bound question (a subject of the SPM catalogue at Tingkatan 4 or 5) a cognitive level on every leaf (\"Bahagian (b) belum ada aras pemikiran.\") and the kertas. `gate=submit` is the draft-to-review gate. Legacy questions already approved are never re-checked (D80 DEC-2): the gate runs only on a new approval.",
         "parameters": [
           {
             "schema": {
@@ -121786,7 +121786,7 @@
           "intake"
         ],
         "summary": "Link an item to the question or item it duplicates, or dismiss the flag",
-        "description": "Card BE-38, v2-question-bank US-06. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403. Only a human decision sets the state `duplicate`; the automatic check adds `open` entries and leaves the item generated or needs_review. `duplicate` (also \"Gabung\") links exactly one of matchedQuestionId (bank) or matchedItemId (SAME batch) and sets the state `duplicate`; `variant` [PROPOSED] links as an informational variant without changing the state; `not_duplicate` (\"Bukan pendua\") dismisses the entry named by duplicateId for that pair only. A target that does not exist, is in another batch, or is not readable by the caller (BE-09 scope) gets the identical 422 \"Padanan pendua tidak ditemui\" on the field, so ids cannot be probed.",
+        "description": "Card BE-38, v2-question-bank US-06. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403. Only a human decision sets the state `duplicate`; the automatic check adds `open` entries and leaves the item generated or needs_review. `duplicate` (also \"Gabung\") links exactly one of matchedQuestionId (bank) or matchedItemId (SAME batch) and sets the state `duplicate`; `variant` [PROPOSED] links as an informational variant without changing the state; `not_duplicate` (\"Bukan pendua\") dismisses the entry named by duplicateId for that pair only; it is also allowed on an ACCEPTED item (the open entries do not block accept, so the reviewer must be able to clear them before Semakan), and leaves the state `accepted`: every other decision on an accepted or rejected item is 409. A target that does not exist, is in another batch, or is not readable by the caller (BE-09 scope) gets the identical 422 \"Padanan pendua tidak ditemui\" on the field, so ids cannot be probed.",
         "parameters": [
           {
             "schema": {
