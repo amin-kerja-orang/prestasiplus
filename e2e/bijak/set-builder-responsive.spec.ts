@@ -74,13 +74,13 @@ test.describe('Set Builder responsive @bijak', () => {
     // Wait for each add to land ("Dalam set" on its bank row) before the next click. The real API locks the paper, so
     // two quick adds both stay; the mock (`admin/builder/server/memory.ts`, team C) reads, changes and saves without a
     // lock across its latency, so an add 47 ms after another overwrites it.
-    await expect(page.getByTestId(`pool-group-${gid}`).getByText('Dalam set'), 'the group is in the set').toBeVisible()
+    await expect(page.getByTestId(`pool-group-${gid}`).getByText('Dalam set', { exact: true }), 'the group is in the set').toBeVisible()
     await expect(page.locator('[data-testid^=pool-add-]').first()).toBeVisible()
     const single = page.locator('[data-testid^=pool-]:not([data-testid^=pool-group-]):not([data-testid=pool-stimulus]):not([data-testid=pool-reasons])').filter({ has: page.locator('[data-testid^=pool-add-]') }).first()
     if (await single.count()) {
       const singleRow = page.getByTestId((await single.getAttribute('data-testid'))!)
       await singleRow.locator('[data-testid^=pool-add-]').click()
-      await expect(singleRow.getByText('Dalam set'), 'the single question is in the set').toBeVisible()
+      await expect(singleRow.getByText('Dalam set', { exact: true }), 'the single question is in the set').toBeVisible()
     }
 
     if (narrow(page)) await page.getByTestId('builder-pane-set').click()

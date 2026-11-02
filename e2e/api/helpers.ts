@@ -121,7 +121,6 @@ export const BLUEPRINT_OVERRIDE_REASON = 'E2E: Kontrak 1449/1 belum Disahkan (uj
 
 /**
  * T34 override path, API-assisted from the page context (same session cookie + CSRF header the app sends).
- * TODO(T10): replace with the UI tick "Terbitkan walaupun tidak memenuhi kontrak blueprint" once T10 is in base.
  * Returns the HTTP status and the parsed `data` of `POST /api/admin/papers/:id/publish {override: true, reason}`.
  */
 export async function publishPaperWithOverride(

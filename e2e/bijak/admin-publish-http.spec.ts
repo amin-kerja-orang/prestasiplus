@@ -272,11 +272,15 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () =
       await expect(page.getByTestId('paper-save')).toBeDisabled()
 
       // T34 (AC-R1-16.2) + T10: a blueprint whose contract is not Disahkan disables the plain Terbitkan, shows the
-      // reason and offers the audited override tick (UI path, the TODO(T10) from the pre-T10 spec). A Disahkan
-      // blueprint keeps the plain Terbitkan + confirm.
-      if (await page.getByTestId('paper-publish').isDisabled()) {
+      // reason and offers the audited override tick. A Disahkan blueprint keeps the plain Terbitkan + confirm. Wait for
+      // one of the two before branching: the button is also disabled while the check after Simpan is still running.
+      const override = page.getByTestId('publish-override')
+      await expect(
+        page.locator('[data-testid=paper-publish]:enabled').or(override).first(),
+        'the publish check has settled',
+      ).toBeVisible()
+      if (await override.isVisible()) {
         await expect(page.getByTestId('publish-errors')).toContainText('belum Disahkan')
-        await expect(page.getByTestId('publish-override')).toBeVisible()
         await page.getByTestId('override-tick').click()
         await page.getByTestId('override-reason').fill('Kontrak masih Spec, kertas ujian dalaman')
         await page.getByTestId('override-publish').click()
