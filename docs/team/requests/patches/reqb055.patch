@@ -1,0 +1,251 @@
+REQ-B-055 ready patch for team C (prepared by A3; not committed to any branch).
+Apply on C's r1/reqa008-group-stimulus after its restack onto BASE >= 117 (needs T10 addOpsUnit). Will NOT apply on 29d24be9.
+Built and checked on: base e927c3ee (BASE-119) + reqa008 29d24be9 + T31 eb0346d2 (already in 29d24be9).
+Check: git apply --check OK; vue-tsc -b 1 -> 0 (PaperEditorPage.vue(381,46) TS2345 fixed); eslint 0.
+Tests: m28 + m04 FE, 101 files, 100 passed. 1 failed: m04 questions-store.perf.test.ts (35 timing asserts <=50 ms), load-sensitive and unrelated to this patch.
+Out of scope (lead): m04 StudioGroupEditor groupTitle and intake grouping.ts groupLabel are left unchanged.
+Behaviour note: groupLabel now also skips whitespace-only labels (it used to skip only exact ''), via the shared trim rule.
+
+diff --git a/src/modules/m28-bijak-spm/__tests__/builder-edit-blocks.test.ts b/src/modules/m28-bijak-spm/__tests__/builder-edit-blocks.test.ts
+index 92f89c1f2..0b3474dce 100644
+--- a/src/modules/m28-bijak-spm/__tests__/builder-edit-blocks.test.ts
++++ b/src/modules/m28-bijak-spm/__tests__/builder-edit-blocks.test.ts
+@@ -202,7 +202,7 @@ describe('Empty-group placeholder (T07) and title rules', () => {
+     const w = mount(PaperEditBlocks, { props: { editor } })
+     expect(w.find('[data-testid="edit-passages"]').exists()).toBe(false)
+     expect(groupLabelOf({ stimuli: [] })).toBe('')
+-    expect(groupLabelOf({ stimuli: [{ label: 'Rajah 1' }, { label: 'B' }] })).toBe('Rajah 1')
++    expect(groupLabelOf({ stimuli: [{ label: 'Rajah 1' }, { label: 'B' }] })).toBe('Rajah 1 dan B') // REQ-B-055: all labels, as editorGroupLabel
+     // a group of three with no `stimulus` still shows its first label for editing
+     const three = { ...ed, groups: [{ id: 'g', stimuli: [{ id: 's', kind: 'diagram', label: 'Rajah 1', alt: '' }], questionIds: ['q1'] }] as never }
+     const w3 = mount(PaperEditBlocks, { props: { editor: three } })
+diff --git a/src/modules/m28-bijak-spm/__tests__/reqb055-stimuli.test.ts b/src/modules/m28-bijak-spm/__tests__/reqb055-stimuli.test.ts
+new file mode 100644
+index 000000000..2084f0947
+--- /dev/null
++++ b/src/modules/m28-bijak-spm/__tests__/reqb055-stimuli.test.ts
+@@ -0,0 +1,126 @@
++// @vitest-environment jsdom
++// REQ-B-055: every stimulus of a group reaches the builder (Tambah soalan unit, Paparan murid drawer) and one rule names a group.
++import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
++import { createPinia, setActivePinia } from 'pinia'
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++import { createMemoryHistory, createRouter } from 'vue-router'
++
++import PaperQuestionOps from '../admin/builder/components/PaperQuestionOps.vue'
++import StudentViewDrawer from '../admin/builder/components/StudentViewDrawer.vue'
++import { groupLabelOf } from '../admin/builder/domain/stimulus'
++import PaperEditorPage from '../admin/papers/PaperEditorPage.vue'
++import type { AdminPaper, PaperEditorData } from '../domain/admin-types'
++import { editorGroupLabel, groupLabel, joinStimulusLabels } from '../lib/stimulus-data'
++
++const h = vi.hoisted((): { server: unknown } => ({ server: undefined }))
++vi.mock('../server/client', () => ({
++  bijakServer: () => h.server,
++  bijakAdminServer: () => h.server,
++}))
++
++const st = (id: string, label: string, extra: object = {}) => ({ id, kind: 'diagram', label, alt: label, ...extra })
++
++describe('one group-label rule (three helpers used to disagree)', () => {
++  const two = [st('a', 'Rajah 1'), st('b', 'Petikan A', { kind: 'passage', text: 'x' })]
++  it('editorGroupLabel, groupLabel and the builder groupLabelOf give the same label for the same stimuli', () => {
++    expect(joinStimulusLabels(two)).toBe('Rajah 1 dan Petikan A')
++    expect(editorGroupLabel({ stimuli: two as never })).toBe('Rajah 1 dan Petikan A')
++    expect(groupLabel(two as never)).toBe('Rajah 1 dan Petikan A')
++    expect(groupLabelOf({ stimuli: two })).toBe('Rajah 1 dan Petikan A')
++    // blank labels are skipped by all of them; an older server sends only `stimulus`
++    const blank = [st('a', ' '), st('b', 'Jadual 1')]
++    expect(editorGroupLabel({ stimuli: blank as never })).toBe('Jadual 1')
++    expect(groupLabelOf({ stimuli: blank })).toBe('Jadual 1')
++    expect(groupLabelOf({ stimulus: st('s', 'Rajah 9') })).toBe('Rajah 9')
++  })
++  it('only the chip fallback differs, on purpose: no label at all is "" in the editor and "Rajah" on the pupil chip', () => {
++    expect(editorGroupLabel({})).toBe('')
++    expect(groupLabelOf({ stimuli: [] })).toBe('')
++    expect(groupLabel([st('a', '')] as never)).toBe('Rajah')
++  })
++})
++
++describe('Paparan murid drawer shows EVERY stimulus of a group, in order', () => {
++  const q = (id: string, n: number) => ({ id, number: n, marks: 1, preview: `Soalan ${id}` })
++  const view = (units: unknown[]) =>
++    ({ title: 'Set', subject: 'MAT', subjectName: 'Matematik', kertas: 2, year: 2026, code: '1449/2', durationMin: 150, instructions: [], reference: [], questionCount: 3, marks: 3, sections: [{ label: 'Bahagian A', instruction: '', marks: 3, units }] }) as never
++  let w: VueWrapper | null = null
++  afterEach(() => {
++    w?.unmount()
++    w = null
++    document.body.innerHTML = ''
++  })
++  async function open(units: unknown[]): Promise<void> {
++    w = mount(StudentViewDrawer, { props: { view: view(units), open: true }, attachTo: document.body })
++    await flushPromises()
++  }
++  const panels = () => [...document.querySelectorAll('[data-testid="student-stimulus"]')]
++  it('three stimuli give three panels in group order; an older server (only `stimulus`) gives one; a solo question none', async () => {
++    const three = [st('s1', 'Rajah 1'), st('s2', 'Petikan A', { kind: 'passage', text: 'bb' }), st('s3', 'Jadual 1')]
++    await open([
++      { groupId: 'g3', stimulus: three[0], stimuli: three, questions: [q('a', 1), q('b', 2)] },
++      { groupId: 'g1', stimulus: st('s9', 'Rajah 9'), questions: [q('c', 3)] },
++      { questions: [q('d', 4)] },
++    ])
++    expect(panels()).toHaveLength(4) // 3 + 1 + 0
++    expect(panels().map((p) => ['Rajah 1', 'Petikan A', 'Jadual 1', 'Rajah 9'].filter((l) => p.textContent?.includes(l)).join('|'))).toEqual(['Rajah 1', 'Petikan A', 'Jadual 1', 'Rajah 9'])
++    // every question is still shown once
++    expect(document.querySelectorAll('[data-testid^="student-q-"]')).toHaveLength(4)
++  })
++})
++
++describe('Tambah soalan (T10 addOpsUnit) keeps every stimulus of the added group', () => {
++  let wrapper: VueWrapper | null = null
++  beforeEach(() => {
++    setActivePinia(createPinia())
++    vi.stubGlobal('matchMedia', (query: string) => ({ matches: false, media: query, addEventListener() {}, removeEventListener() {} }))
++    const paper = {
++      id: 'p1', title: 'K2', subject: 'MAT', kertas: 2, year: 2026, code: '1449/2', durationMin: 90, instructions: [], status: 'draf', createdAt: 1, updatedAt: 1,
++      sections: [{ id: 's1', label: 'Bahagian A', markBudget: 2, questionCount: 2, rule: { type: 'all' }, questionIds: [] }],
++    } as unknown as AdminPaper
++    h.server = { getPaperEditor: vi.fn().mockResolvedValue({ paper, blueprint: null, questions: [], groups: [] } satisfies PaperEditorData) }
++  })
++  afterEach(() => {
++    wrapper?.unmount()
++    wrapper = null
++    document.body.innerHTML = ''
++    vi.unstubAllGlobals()
++  })
++  async function render(): Promise<VueWrapper> {
++    const stub = { template: '<i/>' }
++    const router = createRouter({
++      history: createMemoryHistory(),
++      routes: [
++        { path: '/admin/spm/kertas/:id', name: 'm28.admin.papers.edit', component: PaperEditorPage },
++        { path: '/admin/spm/kertas', name: 'm28.admin.papers', component: stub },
++        { path: '/admin/spm/semakan', name: 'm28.admin.review', component: stub },
++        { path: '/admin/spm/kontrak/:subjek/:kertas', name: 'm28.admin.kontrak.edit', component: stub },
++        { path: '/:p(.*)*', component: stub },
++      ],
++    })
++    await router.push('/admin/spm/kertas/p1')
++    wrapper = mount(PaperEditorPage, { global: { plugins: [router] }, attachTo: document.body })
++    await flushPromises()
++    return wrapper
++  }
++  const unit = (gid: string, stimuli: unknown[], extra: object = {}) => ({
++    groupId: gid,
++    questionIds: [`${gid}a`, `${gid}b`],
++    questions: [`${gid}a`, `${gid}b`].map((id) => ({ id, groupId: gid, preview: `Soalan ${id}`, marks: 1, kind: 'objektif', topic: 'T', status: 'approved', kertas: 2, subject: 'MAT' })),
++    marks: 2, eligible: true, reasons: [], placed: false,
++    ...(stimuli.length ? { stimulus: stimuli[0] } : {}),
++    stimuli,
++    ...extra,
++  })
++  it.each([
++    [0, [], 'Kumpulan rangsangan · 2 soalan'],
++    [1, [st('a', 'Rajah 1')], 'Kumpulan rangsangan Rajah 1 · 2 soalan'],
++    [3, [st('a', 'Rajah 1'), st('b', 'Petikan A'), st('c', 'Jadual 1')], 'Kumpulan rangsangan Rajah 1 dan Petikan A dan Jadual 1 · 2 soalan'],
++  ])('a group with %i stimuli added through the Tambah soalan block is one labelled unit', async (_n, stimuli, text) => {
++    const w = await render()
++    w.findComponent(PaperQuestionOps).vm.$emit('add', 's1', unit('gx', stimuli))
++    await flushPromises()
++    expect(w.get('[data-testid="unit-group-gx"]').text()).toContain(text)
++    expect(w.findAll('[data-testid^="unit-group-"]')).toHaveLength(1)
++  })
++})
+diff --git a/src/modules/m28-bijak-spm/admin/builder/components/StudentViewDrawer.vue b/src/modules/m28-bijak-spm/admin/builder/components/StudentViewDrawer.vue
+index 73c1e544d..d0d41ace4 100644
+--- a/src/modules/m28-bijak-spm/admin/builder/components/StudentViewDrawer.vue
++++ b/src/modules/m28-bijak-spm/admin/builder/components/StudentViewDrawer.vue
+@@ -7,9 +7,12 @@ import DsPanel from '@/ds/DsPanel.vue'
+ import RichText from '../../../components/RichText.vue'
+ import StimulusView from '../../../components/StimulusView.vue'
+ import type { StimulusDef } from '../../../domain/types'
++import { editorStimuliOf } from '../../../lib/stimulus-data'
+ import { builderCopy as t } from '../domain/copy'
+
+ defineProps<{ view: BijakBuilderStudentView | null; error?: boolean }>()
++/** Every stimulus of a unit in order (REQ-B-055: not the first only); an older server sends only `stimulus`; none for a solo question. */
++const stimuliOfUnit = (u: { stimulus?: unknown; stimuli?: unknown[] }): StimulusDef[] => editorStimuliOf(u as { stimulus?: StimulusDef; stimuli?: StimulusDef[] })
+ const open = defineModel<boolean>('open', { default: false })
+ </script>
+
+@@ -34,8 +37,8 @@ const open = defineModel<boolean>('open', { default: false })
+             <p class="text-caption text-muted">{{ s.instruction }}</p>
+           </header>
+           <template v-for="(u, ui) in s.units" :key="ui">
+-            <DsPanel v-if="u.stimulus" data-testid="student-stimulus">
+-              <StimulusView :stimulus="u.stimulus as unknown as StimulusDef" />
++            <DsPanel v-for="(st, si) in stimuliOfUnit(u)" :key="`${ui}-${si}`" data-testid="student-stimulus">
++              <StimulusView :stimulus="st" />
+             </DsPanel>
+             <DsPanel v-for="q in u.questions" :key="q.id" :data-testid="`student-q-${q.id}`">
+               <div class="flex items-baseline justify-between gap-3">
+diff --git a/src/modules/m28-bijak-spm/admin/builder/domain/stimulus.ts b/src/modules/m28-bijak-spm/admin/builder/domain/stimulus.ts
+index 54d9d99e7..6a14c1112 100644
+--- a/src/modules/m28-bijak-spm/admin/builder/domain/stimulus.ts
++++ b/src/modules/m28-bijak-spm/admin/builder/domain/stimulus.ts
+@@ -3,6 +3,8 @@
+  * `{kind: 'passage', label: ''}`) must not render an empty box, a blank label or a blank
+  * "Sunting petikan" row.
+  */
++import { joinStimulusLabels } from '../../../lib/stimulus-data'
++
+ export interface StimulusLike {
+   label?: string
+   title?: string
+@@ -21,9 +23,9 @@ export function hasStimulus(s: StimulusLike | null | undefined): boolean {
+ export const firstStimulusOf = (g: { stimulus?: StimulusLike | null; stimuli?: StimulusLike[] | null }): StimulusLike | undefined =>
+   g.stimulus ?? g.stimuli?.[0] ?? undefined
+
+-/** First label of a group's stimuli ('' for a group with none: `stimuli: []`, REQ-A-008 / T07). */
++/** Label of a group: every non-blank stimulus label joined (REQ-B-055: the same rule as `editorGroupLabel`); '' for a group with none (`stimuli: []`, REQ-A-008 / T07). */
+ export function groupLabelOf(g: { stimulus?: StimulusLike | null; stimuli?: StimulusLike[] | null }): string {
+-  return firstStimulusOf(g)?.label ?? ''
++  return joinStimulusLabels(g.stimuli && g.stimuli.length > 0 ? g.stimuli : g.stimulus ? [g.stimulus] : [])
+ }
+
+ /** The same check for a pool unit's stimulus (contract shape). */
+diff --git a/src/modules/m28-bijak-spm/admin/papers/PaperEditorPage.vue b/src/modules/m28-bijak-spm/admin/papers/PaperEditorPage.vue
+index 616efa791..8f2f77c36 100644
+--- a/src/modules/m28-bijak-spm/admin/papers/PaperEditorPage.vue
++++ b/src/modules/m28-bijak-spm/admin/papers/PaperEditorPage.vue
+@@ -378,7 +378,7 @@ function addOpsUnit(sectionId: string, u: BijakBuilderPoolUnit): void {
+   }
+   if (u.groupId) {
+     extraG.set(u.groupId, [...u.questionIds])
+-    if (u.stimulus) extraStim.set(u.groupId, u.stimulus)
++    extraStim.set(u.groupId, editorStimuliOf(u)) // all stimuli of the group (REQ-B-055), as addPoolUnit; [] when it has none
+   }
+   const all = new Set(Object.values(ids).flat())
+   setIds(sectionId, [...(ids[sectionId] ?? []), ...u.questionIds.filter((q) => !all.has(q))])
+diff --git a/src/modules/m28-bijak-spm/lib/stimulus-data.ts b/src/modules/m28-bijak-spm/lib/stimulus-data.ts
+index aadf4d25b..add25d24e 100644
+--- a/src/modules/m28-bijak-spm/lib/stimulus-data.ts
++++ b/src/modules/m28-bijak-spm/lib/stimulus-data.ts
+@@ -45,15 +45,20 @@ export const stimuliOf = (g: Pick<GroupView, 'stimulus' | 'stimuli'>): StimulusD
+ export const editorStimuliOf = (g: { stimulus?: StimulusDef; stimuli?: StimulusDef[] }): StimulusDef[] =>
+   g.stimuli && g.stimuli.length > 0 ? g.stimuli : g.stimulus ? [g.stimulus] : []
+
+-/** Label of an editor group: the stimulus labels joined, '' when it has none (the unit is still shown). */
+-export const editorGroupLabel = (g: { stimulus?: StimulusDef; stimuli?: StimulusDef[] }): string =>
+-  editorStimuliOf(g)
+-    .map((s) => s.label)
++/**
++ * THE one group-label rule (REQ-B-055: three helpers disagreed): the non-blank stimulus labels, in order, joined with " dan "; '' when there is none.
++ * `editorGroupLabel`, `groupLabel` and the builder's `groupLabelOf` all call it.
++ */
++export const joinStimulusLabels = (stimuli: readonly { label?: string | null }[]): string =>
++  stimuli
++    .map((s) => s.label ?? '')
+     .filter((l) => l.trim() !== '')
+     .join(' dan ')
+
+-/** "Rajah 1" or "Rajah 1 dan Petikan A" (chip text and sheet title of a multi-stimulus group). */
++/** Label of an editor group: the stimulus labels joined, '' when it has none (the unit is still shown). */
++export const editorGroupLabel = (g: { stimulus?: StimulusDef; stimuli?: StimulusDef[] }): string => joinStimulusLabels(editorStimuliOf(g))
++
++/** "Rajah 1" or "Rajah 1 dan Petikan A" (chip text and sheet title of a multi-stimulus group); "Rajah" when no stimulus has a label. */
+ export function groupLabel(stimuli: readonly StimulusDef[]): string {
+-  const labels = stimuli.map((s) => s.label).filter((l) => l !== '')
+-  return labels.length > 0 ? labels.join(' dan ') : 'Rajah'
++  return joinStimulusLabels(stimuli) || 'Rajah'
+ }
