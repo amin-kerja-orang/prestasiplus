@@ -173,13 +173,6 @@ describe('QuizRunner start errors', () => {
     expect(wrapper?.emitted('start-error')?.[0]?.[0]).toMatchObject({ status: 402 })
   })
 
-  it('goes to the locked URL on 409 CHAPTER_LOCKED', async () => {
-    api.start.mockRejectedValue(new ApiError({ status: 409, code: 'CHAPTER_LOCKED', message: 'x' }))
-    await render({ lockedUrl: '/practice/chapter/MATH?level=1' })
-    expect(router.currentRoute.value.fullPath).toBe('/practice/chapter/MATH?level=1')
-    expect(native.alertNative).not.toHaveBeenCalled()
-  })
-
   it('shows the global 404 page for an unknown code', async () => {
     api.start.mockRejectedValue(new ApiError({ status: 404, code: 'NOT_FOUND', message: 'x' }))
     await render()

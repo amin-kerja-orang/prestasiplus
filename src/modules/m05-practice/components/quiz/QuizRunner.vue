@@ -15,8 +15,7 @@
  *
  * `hideRetry` removes the retry button of the results (Q4 and Q5, where a restart would be a 409).
  *
- * A start failure is handled here (FR-M05-48, 51, 66, 75): 402 → `/pricing` and 409 `CHAPTER_LOCKED`
- * → `lockedUrl` (both without a message), 404 → the global 404 page, anything else `alert(message)`
+ * A start failure is handled here (FR-M05-48, 51, 66, 75): 402 → `/pricing` (no message), 404 → the global 404 page, anything else `alert(message)`
  * and back to `backUrl`.
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -82,8 +81,6 @@ const props = withDefaults(
     backUrl: string
     /** Target of the result link when it differs from `backUrl` (Latih Tubi: results go to the subject list). */
     resultUrl?: string
-    /** Target of 409 `CHAPTER_LOCKED` (default `backUrl`). */
-    lockedUrl?: string
     /** `reload` (S7) and `restart` (Q1/Q2) both start a new session in place; `restart` needs `start`. */
     retry?: 'reload' | 'restart'
     report: QuizReportConfig
@@ -99,7 +96,6 @@ const props = withDefaults(
     labels: undefined,
     revisionChips: false,
     correctedLine: false,
-    lockedUrl: undefined,
     resultUrl: undefined,
     retry: 'restart',
     api: undefined,
@@ -136,7 +132,6 @@ function onStartError(err: unknown): void {
   })
   const plan = planStartError(err, labels.value)
   if (plan.kind === 'pricing') void router.replace('/pricing')
-  else if (plan.kind === 'locked') void router.replace(props.lockedUrl ?? props.backUrl)
   else if (plan.kind === 'not-found') setRouteOutcome(404)
   else {
     window.alert(plan.message)

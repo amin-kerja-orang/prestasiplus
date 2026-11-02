@@ -6,7 +6,7 @@ import { PrismaService } from '../../../db/prisma.service'
 import { GamificationService } from '../../gamification'
 import { practiceRewardSource, type PracticeRewardPort, type PracticeRewardResult, type PracticeSessionCompleted } from '../../practice/ports'
 import { StreakService, WalletService } from '../../wallet'
-import type { BijakRewardInput, BijakRewardPort } from '../attempts/ports'
+import type { BijakRewardInput, BijakRewardPort, BijakSelfMarkRewardInput } from '../attempts/ports'
 import { ACHIEVEMENT_PRACTICE_MODES } from './practice-facts'
 
 /**
@@ -18,6 +18,10 @@ export const BIJAK_REWARD_SOURCE = 'quiz_spm'
 
 /** Static BM ledger text of a practice session credit (BE-12 `ports.ts`; PDPA: no name, no identifier). */
 export const PRACTICE_REWARD_DESCRIPTION = 'Latihan: jawapan betul'
+
+/** V2 `PracticeRecorder` (`docs/discovery/BIJAK-SPM-cloud.md` 4.5): 2 syiling and 10 XP per mark. */
+export const SYILING_PER_MARK = 2
+export const XP_PER_MARK = 10
 
 /** A non-negative whole number of coins or points; anything not finite counts as 0 (never NaN into the wallet). */
 export const wholeCount = (v: number): number => (Number.isFinite(v) && v > 0 ? Math.floor(v) : 0)
@@ -72,6 +76,47 @@ export class WalletBijakReward implements BijakRewardPort {
         { tx },
       )
       if (!credited.replayed && xp > 0) await this.wallet.addXp({ userId: input.userId, amount: xp, isTest: input.isTest }, { tx })
+    })
+  }
+
+  /**
+   * D94: the gain of a self-mark, computed at ATTEMPT level on the best-N total (V2 `syncAnalytics`/`recomputeScore`,
+   * BIJAK-SPM-cloud.md 4.5). `score` is the best-N score of the attempt now (counted questions only, so a choose-N paper never pays
+   * both alternatives and a raise that displaces a counted question pays only the net change); `base` is the best-N score of the
+   * automatic grading (paid at submit). `reached` is the higher of `base` and the highest level already paid by an earlier self-mark,
+   * read from the ledger (`quiz_spm`, `sourceId = <attemptId>:score:<level>`). Only `score - reached` marks are paid, at 2 syiling
+   * and 10 XP per mark; a lower or equal total pays nothing and takes nothing back. The key per level makes a replay or a repeated
+   * self-mark a no-op, and the advisory lock serialises two self-marks of one attempt. Mod Pelajar: nothing (AC-20.3).
+   *
+   * A post-commit port failure is only logged by the caller (the attempt is already saved); re-sending the same mark pays nothing
+   * because the unchanged mark is not handed to this port again, so a failed payment is recovered by the next raise, which pays
+   * the whole gain over the highest paid level.
+   */
+  async awardSelfMark(input: BijakSelfMarkRewardInput): Promise<void> {
+    if (input.isTest) return
+    const level = Math.min(input.score, input.max)
+    if (!(level > 0)) return
+    const prefix = `${input.attemptId}:score:`
+    await this.prisma.transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`bijak-selfmark:${input.attemptId}`}, 0))`
+      const rows = await tx.coinLedger.findMany({
+        where: { userId: BigInt(input.userId), source: BIJAK_REWARD_SOURCE, sourceId: { startsWith: prefix } },
+        select: { sourceId: true },
+      })
+      const paid = rows.map((r) => Number((r.sourceId ?? '').slice(prefix.length))).filter((n) => Number.isFinite(n))
+      const reached = Math.max(input.base, ...paid)
+      const gain = level - reached
+      if (!(gain > 0)) return
+      const coins = wholeCount(gain * SYILING_PER_MARK)
+      // Marks are whole or half marks, so `gain * 2` and `gain * 10` are whole numbers and nothing is ever floored away. Should a gain
+      // still be too small for one syiling, nothing is written here (no ledger key), so `reached` does not move and a later level pays it.
+      if (!(coins >= 1)) return
+      const credited = await this.wallet.credit(
+        { userId: input.userId, amount: coins, isTest: false, source: BIJAK_REWARD_SOURCE, sourceId: `${prefix}${String(level)}`, description: input.description },
+        { tx },
+      )
+      const xp = wholeCount(gain * XP_PER_MARK)
+      if (!credited.replayed && xp > 0) await this.wallet.addXp({ userId: input.userId, amount: xp, isTest: false }, { tx })
     })
   }
 }

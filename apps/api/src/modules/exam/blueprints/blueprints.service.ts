@@ -20,6 +20,7 @@ import { idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { bijakCodeOf, curriculumCodeOf } from '../../bijak/papers'
 import { BIJAK_BUILDER_PAGE_SIZE } from '../builder/builder.constants'
+import { imageRefsOf, writableReferenceSheet } from '../reference-images'
 import type { AuditActor } from './actor'
 import type { BlueprintWithSections } from './blueprint-view'
 import { profileToDoc, quotaToDoc, reviewedQuotaDoc, structureHashOf, toStandard, unitLevelsOf, unreviewedLines } from './blueprint-standard'
@@ -165,6 +166,18 @@ export class BlueprintsService {
     return ok(await this.views.history(rows, s))
   }
 
+  /**
+   * B3 T34-L1-residual: a Kontrak reference sheet is copied to every paper made from it, so its pictures follow the paper rule (see
+   * `exam/reference-images`): the public token of a stored question image that the editing admin uploaded or that is already on the sheet being
+   * replaced; a legacy decimal id already on that sheet is rewritten to its token. Anything else is 422 `fields.reference`. Returns the sheet to store.
+   */
+  private async checkedReference(actor: AuditActor, sheet: readonly { imageFileId?: string | undefined }[] | undefined, onSheet: readonly string[]): Promise<unknown[] | undefined> {
+    if (sheet === undefined) return undefined
+    const out = await writableReferenceSheet(this.prisma.client, sheet, BigInt(actor.userId), onSheet)
+    if (out === null) throw ApiError.of('VALIDATION_ERROR', { message: MSG.referenceImageInvalid, fields: { reference: MSG.referenceImageInvalid } })
+    return out
+  }
+
   async create(actor: AuditActor, rawBody: unknown) {
     const body = new ZodValidationPipe(BijakBlueprintAdminCreateSchema).transform(rawBody)
     assertRuleBounds(body.sections)
@@ -172,6 +185,7 @@ export class BlueprintsService {
     if (!subject) throw ApiError.of('VALIDATION_ERROR', { fields: { subject: INVALID_FIELD_MESSAGE } })
     if (body.kertas > KERTAS_MAX) throw ApiError.of('VALIDATION_ERROR', { fields: { kertas: INVALID_FIELD_MESSAGE } })
     const exists = () => ApiError.of('CONFLICT', { message: MSG.blueprintExists })
+    const reference = await this.checkedReference(actor, body.reference, [])
     try {
       const row = await this.prisma.transaction(async () => {
         if (await this.repo.active(subject.id, body.kertas)) throw exists()
@@ -181,7 +195,7 @@ export class BlueprintsService {
           this.input(subject.id, body.kertas, version, body, {
             source: body.source === 'Draf' ? 'draft' : 'spec',
             structureHash: structureHashOf(bp),
-            referenceSheets: (body.reference ?? []) as Prisma.InputJsonValue,
+            referenceSheets: (reference ?? []) as Prisma.InputJsonValue,
           }),
           this.clock.now(),
         )
@@ -220,6 +234,7 @@ export class BlueprintsService {
       const row = await this.prisma.transaction(async () => {
         const current = await this.repo.lockActive(subject.id, kertas)
         if (!current) throw gone()
+        const reference = await this.checkedReference(actor, body.reference, imageRefsOf(current.referenceSheets))
         const version = (await this.repo.maxVersion(subject.id, kertas)) + 1
         const bp = await this.validated(subject, kertas, version, body)
         const hash = structureHashOf(bp)
@@ -236,7 +251,7 @@ export class BlueprintsService {
             ...this.input(subject.id, kertas, version, body, {
               source,
               structureHash: hash,
-              referenceSheets: (body.reference ?? current.referenceSheets) as Prisma.InputJsonValue,
+              referenceSheets: (reference ?? current.referenceSheets) as Prisma.InputJsonValue,
             }, current),
             ...(carried ? { verificationId: current.verificationId, servesStudents: true } : {}),
           },

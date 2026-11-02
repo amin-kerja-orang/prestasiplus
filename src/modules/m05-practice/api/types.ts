@@ -195,6 +195,7 @@ export interface ChapterCard {
   /** 0–100, 1 decimal (BR-16). */
   scorePct: number
   remaining: number
+  /** Always `open` (D98, no chapter lock); `locked` is kept for wire compatibility and never produced. */
   state: 'open' | 'locked'
   complete: boolean
 }

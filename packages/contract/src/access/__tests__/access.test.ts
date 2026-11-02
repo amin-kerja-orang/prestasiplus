@@ -23,7 +23,7 @@ const EXPECTED_COUNTS: Record<string, number> = {
   'papan-pemuka': 2,
   pemantauan: 28,
   'bank-soalan': 7,
-  'kertas-spm': 12,
+  'kertas-spm': 13,
   'kurikulum-kandungan': 12,
   'pengguna-sekolah': 6,
   penglibatan: 22,
@@ -36,8 +36,8 @@ const ids = (role: (typeof ROLE_CODES)[number], scope?: { level: 'state' | 'dist
 const groupIds = (role: (typeof ROLE_CODES)[number]) => visibleGroups(role).map((g) => g.id)
 
 describe('access matrix structure', () => {
-  it('has exactly 100 items in 9 groups', () => {
-    expect(ACCESS_MATRIX).toHaveLength(100)
+  it('has exactly 101 items in 9 groups', () => {
+    expect(ACCESS_MATRIX).toHaveLength(101)
     expect(ACCESS_GROUPS).toHaveLength(9)
   })
 
@@ -74,9 +74,9 @@ describe('access matrix structure', () => {
   })
 
   it('has unique ids, routes and capability keys', () => {
-    expect(new Set(ACCESS_MATRIX.map((i) => i.id)).size).toBe(100)
-    expect(new Set(ACCESS_MATRIX.map((i) => i.route)).size).toBe(100)
-    expect(new Set(ACCESS_MATRIX.map((i) => i.capability)).size).toBe(100)
+    expect(new Set(ACCESS_MATRIX.map((i) => i.id)).size).toBe(101)
+    expect(new Set(ACCESS_MATRIX.map((i) => i.route)).size).toBe(101)
+    expect(new Set(ACCESS_MATRIX.map((i) => i.capability)).size).toBe(101)
     const all = ROLE_CODES.flatMap((r) => capabilitiesFor(r).map((c) => `${r}:${c.key}`))
     expect(new Set(all).size).toBe(all.length)
     for (const role of ROLE_CODES) {
@@ -105,9 +105,9 @@ describe('access matrix structure', () => {
 })
 
 describe('per-role visibility (D30, US-03, US-11 to US-13)', () => {
-  it('admin sees all nine groups and all 100 items', () => {
+  it('admin sees all nine groups and all 101 items', () => {
     expect(groupIds('admin')).toHaveLength(9)
-    expect(ids('admin')).toHaveLength(100)
+    expect(ids('admin')).toHaveLength(101)
   })
 
   it('ppd_officer sees only Pemantauan and Pengguna & Sekolah, read-only', () => {
@@ -162,9 +162,9 @@ describe('per-role visibility (D30, US-03, US-11 to US-13)', () => {
 
   it('gives write capabilities only to F and S modes', () => {
     const caps = capabilitiesFor('admin')
-    expect(caps.filter((c) => c.kind === 'read')).toHaveLength(100)
+    expect(caps.filter((c) => c.kind === 'read')).toHaveLength(101)
     // PG-12 and PG-13 are read-only for Pusat.
-    expect(caps.filter((c) => c.kind === 'write')).toHaveLength(98)
+    expect(caps.filter((c) => c.kind === 'write')).toHaveLength(99)
     expect(capabilitiesFor('school_admin').filter((c) => c.kind === 'write')).toHaveLength(35)
   })
 })

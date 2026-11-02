@@ -54,7 +54,7 @@ export function reasonQuery(
   base: Record<string, string> | undefined,
 ): Record<string, string> {
   if (server && Object.keys(server).length) return server
-  return { ...(base ?? {}), status: 'published', ...(REASON_BANK_QUERY[reason] ?? {}) }
+  return { ...(base ?? {}), status: 'approved', ...(REASON_BANK_QUERY[reason] ?? {}) }
 }
 
 export function bankHref(query: Record<string, string> | undefined, extra: Record<string, string> = {}): string {

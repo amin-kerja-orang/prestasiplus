@@ -96,7 +96,8 @@
           "questionCount": 10,
           "compulsory": false
         }
-      ]
+      ],
+      "examinerGrid": false
     },
     {
       "id": "mat-k2-2025-a",
@@ -151,7 +152,8 @@
           "compulsory": false,
           "chooseN": 1
         }
-      ]
+      ],
+      "examinerGrid": true
     },
     {
       "id": "sn-k2-2025-a",
@@ -187,7 +189,8 @@
           "compulsory": false,
           "chooseN": 1
         }
-      ]
+      ],
+      "examinerGrid": true
     },
     {
       "id": "sej-k2-2025-a",
@@ -224,7 +227,8 @@
           "compulsory": false,
           "chooseN": 1
         }
-      ]
+      ],
+      "examinerGrid": true
     }
   ],
   "contracts": [
