@@ -10,6 +10,11 @@ vi.setConfig({ testTimeout: 120_000, hookTimeout: 300_000 })
 /**
  * R1-T45 part 3 (proof specs only): AC-R1-21.3 (the two V2 errors of "Tambah soalan") and AC-R1-21.6 (the section-pool candidate search
  * of the Set Builder, on the real BE-09 bank rather than the fakes of pool-window-shortfall.spec.ts). HTTP only.
+ *
+ * "Nombor soalan {x} sudah digunakan dalam kertas ini." (createQuestion) compares the typed number, lowercased and trimmed, ONLY with the
+ * `numberLabel` of questions already added to the paper through "Tambah soalan". The negative side of that policy is pinned below (a number equal to
+ * a positional number or to a bank question's printed number is NOT refused). Widening the check to positional or printed numbers is
+ * [PROPOSED] / KIV R2 (ha24 KIV row 38, LEAD 2026-11-02): unconfirmed V2 behaviour, so it is not built and not asserted here.
  */
 describe('R1-T45 builder AC proofs: Tambah soalan errors and the candidate search (real bank)', () => {
   let t: FullApp
@@ -131,6 +136,23 @@ describe('R1-T45 builder AC proofs: Tambah soalan errors and the candidate searc
       const after = Number((await q(`select count(*)::int n from questions`))[0]!.n)
       expect(after).toBe(before)
     })
+
+    it('the clash is against the Nombor soalan of ADDED questions only: a positional number or a bank question\'s printed number is not refused (current policy, [PROPOSED] KIV R2 to widen)', async () => {
+      const printed = await approved({ numberLabel: 'P88', pointsValue: 2 })
+      const { paper, ids } = await fullPaper({ last: printed })
+      expect(ids.at(-1)).toBe(printed)
+      expect(((await admin.get(`/api/questions/${printed}`)).body.data as { numberLabel: string | null }).numberLabel).toBe('P88') // the bank really carries it
+      const d = ((await addSection(paper, 'Bahagian D')).body.data.paper.sections as { id: string }[]).at(-1)!.id
+      // '1' is the position of the first question of Bahagian A, '6' the overall position of the last one, 'p88' (any case) the printed number of that bank question
+      for (const number of ['1', '6', 'p88']) {
+        const res = await addQuestion(paper, d, { number, mode: 'mcq', marks: 1 })
+        expect(res.status, `${number}: ${JSON.stringify(res.body)}`).toBe(201)
+      }
+      const labels = (await editorOf(paper)).paper.sections.find((x: { id: string }) => x.id === d).numberLabels as Record<string, string>
+      expect(Object.values(labels).sort()).toEqual(['1', '6', 'p88'])
+      // and only now do these three exist as labels on the paper, so a repeat IS refused
+      expect((await addQuestion(paper, d, { number: 'P88', mode: 'mcq', marks: 1 })).status).toBe(422)
+    })
   })
 
   describe('AC-R1-21.6: the candidate search ("Cari soalan") of the Set Builder on the real bank', () => {
@@ -152,18 +174,25 @@ describe('R1-T45 builder AC proofs: Tambah soalan errors and the candidate searc
       expect(miss.body.meta.totalItems).toBe(0)
     })
 
-    it('the same search shows the question as placed with pinned false on a draf and true once Terbit (T48)', async () => {
-      const { paper, ids, sections } = await fullPaper()
+    it('the same search shows the question as placed with pinned false on a draf and pinned true once the paper is Terbit (T48)', async () => {
       const marker = 'Pecahan unik yy'
-      const extra = await approved({ questionText: `${marker} apakah hasilnya?` })
-      await setPool(extra, ['MAT2-A'])
-      expect((await place(paper, sections[0]!, extra)).status).toBe(201)
-      const find = async () => ((await pool(paper, sections[0]!, `?q=${encodeURIComponent(marker)}&pageSize=100`)).body.data as PoolUnit[])
+      // the searched question is the paper's last one (Bahagian C, 2 marks), so the paper stays a valid, publishable paper
+      const extra = await approved({ questionText: `${marker} apakah hasilnya?`, pointsValue: 2 })
+      const { paper, ids, sections } = await fullPaper({ last: extra })
+      expect(ids.at(-1)).toBe(extra)
+      const find = async () => (await pool(paper, sections[2]!, `?q=${encodeURIComponent(marker)}&pageSize=100`)).body.data as PoolUnit[]
       const draft = await find()
       expect(draft).toHaveLength(1)
       expect(draft[0]).toMatchObject({ placed: true })
       expect(draft[0]!.questions[0]).toMatchObject({ id: extra, pinned: false })
-      expect(ids).not.toContain(extra)
+
+      const published = await admin.post(`/api/admin/papers/${paper}/publish`)
+      expect(published.status, JSON.stringify(published.body)).toBe(200)
+      expect(published.body.data).toMatchObject({ ok: true })
+      const terbit = await find()
+      expect(terbit).toHaveLength(1)
+      expect(terbit[0]).toMatchObject({ placed: true })
+      expect(terbit[0]!.questions[0]).toMatchObject({ id: extra, pinned: true })
     })
 
     it('a Draf made by "Tambah soalan" is not a candidate: the search for the paper sees no new unit and the total does not grow', async () => {
