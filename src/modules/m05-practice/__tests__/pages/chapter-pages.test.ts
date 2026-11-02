@@ -56,7 +56,6 @@ vi.mock('../../components/quiz/QuizRunner.vue', () => ({
       revisionChips: Boolean,
       correctedLine: Boolean,
       backUrl: { type: null, default: null },
-      lockedUrl: { type: null, default: null },
       retry: { type: null, default: null },
       report: { type: null, default: null },
       accentColor: { type: null, default: null },
@@ -97,7 +96,7 @@ const MATH: ChapterSubjectDetail = {
       name: 'Sukatan dan Geometri',
       total: 302,
       remaining: 302,
-      state: 'locked',
+      state: 'open',
     }),
   ],
 }
@@ -276,7 +275,7 @@ describe('S4 ChapterIndexPage', () => {
 })
 
 describe('S5 ChapterSubjectPage', () => {
-  it('renders the hero, the level select and the open and locked cards (FR-M05-59…64)', async () => {
+  it('renders the hero, the level select and the open cards (FR-M05-59…64)', async () => {
     const w = await render(ChapterSubjectPage, '/practice/chapter/MATH')
     expect(api.fetchChapterSubject).toHaveBeenCalledWith(
       'MATH',
@@ -284,11 +283,10 @@ describe('S5 ChapterSubjectPage', () => {
       expect.anything(),
     )
     expect(t(w, 'chapter-all-subjects').attributes('href')).toBe('/practice/chapter')
-    expect(w.text()).toContain('Progressive Unlock')
+    expect(w.text()).not.toContain('Progressive Unlock')
     expect(t(w, 'chapter-subject-name').text()).toBe('Matematik')
-    expect(w.text()).toContain(
-      'Lengkapkan semua soalan bab semasa dan capai 70% untuk buka bab seterusnya.',
-    )
+    expect(w.find('[data-testid=chapter-unlock-rule]').exists()).toBe(false)
+    expect(w.text()).not.toContain('70%')
     const select = w.findComponent({ name: 'Select' })
     expect((select.props('items') as { label: string }[]).map((o) => o.label)).toEqual([
       'Darjah 1 — 2,734 soalan',
@@ -310,12 +308,11 @@ describe('S5 ChapterSubjectPage', () => {
       Number(t(w, 'chapter-bar-1').get('[role=progressbar]').attributes('aria-valuenow')),
     ).toBeCloseTo(3.879, 2)
 
-    const locked = t(w, 'chapter-card-2')
-    expect(locked.attributes('data-state')).toBe('locked')
-    expect(locked.find('svg').exists()).toBe(true)
-    expect(t(w, 'chapter-locked-2').text()).toBe('Kunci bab sebelumnya')
-    expect(locked.findAll('a')).toHaveLength(0)
-    // Locked chapters still show their stats (D-7).
+    // D98: no chapter lock, the second chapter is open with its start links too.
+    const second = t(w, 'chapter-card-2')
+    expect(second.attributes('data-state')).toBe('open')
+    expect(w.find('[data-testid=chapter-locked-2]').exists()).toBe(false)
+    expect(second.findAll('a')).toHaveLength(4)
     expect(t(w, 'chapter-stats-2').text()).toBe('0/302 soalan unik · Skor 0% · 302 baki')
   })
 
@@ -349,7 +346,7 @@ describe('S5 ChapterSubjectPage', () => {
     expect(t(w, 'chapter-empty').text()).toBe('Tiada bab tersedia untuk tahap ini.')
   })
 
-  it('V2 (REQ-A-005): a chapter with no question is the chip "Tiada soalan", and the unlock rule shows only while a chapter is locked', async () => {
+  it('V2 (REQ-A-005): a chapter with no question is the chip "Tiada soalan", and no unlock rule is shown (D98)', async () => {
     api.fetchChapterSubject.mockResolvedValue({
       ...MATH_D2,
       chapters: [card({ id: 3, number: 1, name: 'Nombor hingga 1000', total: 0, remaining: 0 })],
@@ -379,7 +376,6 @@ describe('Q2 ChapterQuizPage', () => {
     const p = runnerProps(w)
     expect(p.start).toEqual({ mode: 'chapter', chapterId: 1, count: 15 })
     expect(p.backUrl).toBe('/practice/chapter/MATH?level=1')
-    expect(p.lockedUrl).toBe('/practice/chapter/MATH?level=1')
     expect(p.retry).toBe('restart')
     expect(p.report).toEqual({ source: 'latihan' })
     expect(outcome.setRouteOutcome).not.toHaveBeenCalled()

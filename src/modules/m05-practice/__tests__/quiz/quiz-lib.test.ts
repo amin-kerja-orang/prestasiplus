@@ -120,11 +120,10 @@ describe('planStartError', () => {
   const err = (status: number, code: string, message = 'm') =>
     new ApiError({ status, code, message })
 
-  it('sends a trial-exhausted start to the pricing page and a locked chapter back', () => {
+  it('sends a trial-exhausted start to the pricing page and an unknown code to the 404 page (no chapter lock, D98)', () => {
     expect(planStartError(err(402, 'TRIAL_EXHAUSTED'), PRACTICE_LABELS)).toEqual({
       kind: 'pricing',
     })
-    expect(planStartError(err(409, 'CHAPTER_LOCKED'), PRACTICE_LABELS)).toEqual({ kind: 'locked' })
     expect(planStartError(err(404, 'NOT_FOUND'), PRACTICE_LABELS)).toEqual({ kind: 'not-found' })
   })
 
