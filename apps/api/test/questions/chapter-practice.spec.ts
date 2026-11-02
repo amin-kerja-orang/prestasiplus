@@ -100,7 +100,7 @@ describe('Bab set by the admin feeds GET /api/practice/chapter-subjects', () => 
       PracticeReadChapterSubjectListResponseSchema.parse((await student.get('/api/practice/chapter-subjects')).body).data.find((x) => x.code === 'MATH')?.chapterCount ?? 0
 
     const before = await inChapterList()
-    // `mcqBody` gives a question a Bab by default (the H-A18 submit gate asks for one), so the "without a Bab" case says so explicitly.
+    // `mcqBody` gives a question a Bab by default, so the "without a Bab" case says so explicitly (REQ-B-071: a Bab is not required at submit or approve; without one the question is approvable but not served in Latihan Bab).
     const created = await admin.post('/api/questions', mcqBody(refs, { status: 'approved', tag, curriculumChapterId: null }))
     expect(created.status, JSON.stringify(created.body)).toBe(201)
     const withoutBab = await bab(created.body.data.id as string)
