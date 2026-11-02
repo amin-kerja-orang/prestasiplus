@@ -1,6 +1,6 @@
 # R1 board: Bijak SPM, admin → student question pipeline
 
-Writer: team A lead. Last refresh: 2026-11-02 05:20 UTC (cycle 43). Current BASE: **BASE-197** = `feature/v3-bijak-r1` @ 404e2e7a. Every open team A branch merges the latest BASE before re-marking READY.
+Writer: team A lead. Last refresh: 2026-11-02 05:50 UTC (cycle 44). Current BASE: **BASE-200** = `feature/v3-bijak-r1` @ 550b8819. Every open team A branch merges the latest BASE before re-marking READY.
 Source of every task: `docs/handoff/CLOUD-HANDOFF.md` §7 on `feature/v3-bijak-r1`. Read the protocol in [README.md](README.md).
 > **Current state = the auto table at the end of this file (AUDIT:BEGIN/END).** History sections below are a log; a READY there is only valid if the auto table agrees.
 
@@ -572,14 +572,14 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 - **Disk:** check `docker system df` and prune orphaned anonymous test volumes when there are 0 containers. A3 reclaimed 3.4 GB this way.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 05:47 UTC, BASE 550b8819)
+### Team A open branches: heads from origin (auto, 2026-11-02 05:48 UTC, BASE 550b8819)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
-| r1/builder-publish-p2028-test | 645744daf | READY (A3, @645744da, merges BASE-195; r2-prep minor #12): builder publish now maps P2028/overload → 429 RATE_LIMITED + Retry-After 5 (was 500), like the other paths; the new spec proves a full Terbit rollback + retry; mutation red; DEV row (keep-both); exam-builder + publish-lock-share + spec 465/465; tsc 0; contract:check ok. Needs B2 review |
-| r1/bulk-publish-allskipped | 9b8b39409 | READY (A3, @9b8b3940 on BASE-189: r2-prep minor #11 (r1e2e10). An all-skipped bulk publish (affected 0, failed 0, skipped>0) now shows 'Soalan ini sudah diterbitkan.' instead of '0 soalan berjaya dikemaskini.'; any failed row keeps the old text. The 409 test now goes over HTTP. Group 133/133, mutation red, contract:check ok, DEV row (no V2 wording). Merge-tree clean on BASE-192). Needs B2 review |
-| r1/e05b-l1-split-control | c4153ed75 | READY (A3, @c4153ed7 on BASE-192, test-only: r2-prep minor #5. The E05B-L1 negative control is split into pin-only / sitting-only / withdrawn paper with and without a sitting / neither; 5/5; 4 mutations each red; tsc/eslint 0). Needs B2 review |
+| r1/builder-publish-p2028-test | 645744daf | READY (A3, @645744da, merges BASE-195; r2-prep minor #12): builder publish now maps P2028/overload → 429 RATE_LIMITED + Retry-After 5 (was 500), like the other paths; the new spec proves a full Terbit rollback + retry; mutation red; DEV row (keep-both); exam-builder + publish-lock-share + spec 465/465; tsc 0; contract:check ok. Needs B2 review | B2 Approve (cycle 32); HELD by B1 pending the owner's code-freeze decision (R1 vs R2) |
+| r1/bulk-publish-allskipped | 9b8b39409 | READY (A3, @9b8b3940 on BASE-189: r2-prep minor #11 (r1e2e10). An all-skipped bulk publish (affected 0, failed 0, skipped>0) now shows 'Soalan ini sudah diterbitkan.' instead of '0 soalan berjaya dikemaskini.'; any failed row keeps the old text. The 409 test now goes over HTTP. Group 133/133, mutation red, contract:check ok, DEV row (no V2 wording). Merge-tree clean on BASE-192). Needs B2 review | B2 Approve (cycle 32); HELD by B1 pending the owner's code-freeze decision (R1 vs R2) |
+| r1/e05b-l1-split-control | c4153ed75 | READY (A3, @c4153ed7 on BASE-192, test-only: r2-prep minor #5. The E05B-L1 negative control is split into pin-only / sitting-only / withdrawn paper with and without a sitting / neither; 5/5; 4 mutations each red; tsc/eslint 0). Needs B2 review | B2 Approve (cycle 32); HELD by B1 pending the owner's code-freeze decision (R1 vs R2) |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/ready-tiers-check | 9c80f08c3 | KIV R2 (B1 answer to REQ-A-028, 2026-11-02 13:15 MYT: kept on hold for R1; rely on runbook section 0; revisit in R2). Do not merge |
