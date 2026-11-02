@@ -46,3 +46,15 @@ export const bulkFailureOf = (id: string, e: unknown): BulkFailure | null => {
   }
   return null
 }
+
+/**
+ * A delete that a foreign key refuses (Postgres 23503; Prisma P2003): a question used by a teacher's set, a remedial test or a battle keeps its row. Looks through the driver-adapter wrapping.
+ */
+export const isForeignKeyViolation = (e: unknown, depth = 0): boolean => {
+  if (typeof e !== 'object' || e === null || depth > 4) return false
+  const x = e as { code?: unknown; originalCode?: unknown; message?: unknown; cause?: unknown; meta?: unknown; driverAdapterError?: unknown }
+  if (x.code === 'P2003' || x.code === '23503' || x.originalCode === '23503') return true
+  if (typeof x.message === 'string' && /foreign key constraint/i.test(x.message)) return true
+  // Prisma wraps the driver error: `cause`, `meta` (a raw query: P2010 with `meta.code` 23503) and `meta.driverAdapterError` (with its own `cause`).
+  return isForeignKeyViolation(x.cause, depth + 1) || isForeignKeyViolation(x.meta, depth + 1) || isForeignKeyViolation(x.driverAdapterError, depth + 1)
+}

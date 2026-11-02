@@ -103889,7 +103889,7 @@
           "questions"
         ],
         "summary": "Delete a question permanently",
-        "description": "Answers 200 with a flash (\"Soalan berjaya dipadam.\"), not 204, as the mock does.",
+        "description": "Answers 200 with a flash (\"Soalan berjaya dipadam.\"), not 204, as the mock does. Refused with 409 only while a paper that is still held (Terbit, or withdrawn with sittings) places the question (D9 fix of the live hard delete: it would break a sitting); every other state is deleted as on the live site.",
         "parameters": [
           {
             "schema": {
@@ -103957,6 +103957,16 @@
           },
           "404": {
             "description": "NOT_FOUND: unknown id (for Guru routes also another teacher's question; ids cannot be probed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: a paper that is still held (Terbit, or withdrawn with sittings) places the question; nothing is deleted (details.reason: served or pinned); also 409 details.reason in_use when a set, remedial test or battle still uses it.",
             "content": {
               "application/json": {
                 "schema": {
@@ -104695,6 +104705,16 @@
           },
           "404": {
             "description": "NOT_FOUND: unknown id (for Guru routes also another teacher's question; ids cannot be probed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: a paper that is still held (Terbit, or withdrawn with sittings) places the question; nothing is deleted (details.reason: served or pinned); also 409 details.reason in_use when a set, remedial test or battle still uses it.",
             "content": {
               "application/json": {
                 "schema": {
