@@ -203,21 +203,28 @@ let xpBefore = 0 // the seeded pupil already has XP: the reward is checked as a 
     expect((await q(`select distinct v.chapter_id from question_versions v where v.question_id = any($1::bigint[])`, [questionIds])).map((r) => r.chapter_id)).toEqual([null]) // still no Bab
   })
 
-  it('3b. REQ-B-071: Terbitkan without a curriculum node is refused with the DSKP issue list (no Bab rule among them), and nothing moves', async () => {
+  it('3b. REQ-B-071: Terbitkan without a curriculum node (no unit, no SP) is refused with the DSKP unit and SP issues and no Bab issue, and nothing moves', async () => {
     const solo = questionIds[5]!
-    const [before] = await q(`select v.unit_node_id::text unit from question_versions v where v.question_id = $1::bigint`, [solo])
+    const [before] = await q(`select v.id::text version, v.unit_node_id::text unit from question_versions v where v.question_id = $1::bigint`, [solo])
     expect(before!.unit).not.toBeNull()
-    await q(`update question_versions set unit_node_id = null where question_id = $1::bigint`, [solo])
-    const res = await admin.post('/api/questions/bulk-action', { action: 'approved', ids: [solo] })
-    expect(res.status, JSON.stringify(res.body)).toBe(200)
-    expect(res.body.data.affected, JSON.stringify(res.body.data)).toBe(0)
-    const failed = res.body.data.failed as { id: string; code: string; fields: Record<string, string> }[]
-    expect(failed).toHaveLength(1)
-    expect(failed[0]).toMatchObject({ id: solo, code: 'VALIDATION_ERROR' })
-    // EXACTLY the DSKP unit and SP issues (UNIT_MISSING + SP_MISSING); no chapterId: a missing Bab is not an issue
-    expect(failed[0]!.fields).toEqual({ unitId: 'Sila pilih unit DSKP.', spIds: 'Sila pilih sekurang-kurangnya satu SP DSKP.' })
-    expect((await q(`select v.status from question_versions v where v.question_id = $1::bigint`, [solo])).map((r) => r.status)).toEqual(['review'])
-    await q(`update question_versions set unit_node_id = $2::bigint where question_id = $1::bigint`, [solo, before!.unit])
+    const sps = await q(`select node_id::text node from question_version_sp_nodes where question_version_id = $1::bigint`, [before!.version])
+    expect(sps.length).toBeGreaterThan(0)
+    await q(`update question_versions set unit_node_id = null where id = $1::bigint`, [before!.version])
+    await q(`delete from question_version_sp_nodes where question_version_id = $1::bigint`, [before!.version])
+    try {
+      const res = await admin.post('/api/questions/bulk-action', { action: 'approved', ids: [solo] })
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(res.body.data.affected, JSON.stringify(res.body.data)).toBe(0)
+      const failed = res.body.data.failed as { id: string; code: string; fields: Record<string, string> }[]
+      expect(failed).toHaveLength(1)
+      expect(failed[0]).toMatchObject({ id: solo, code: 'VALIDATION_ERROR' })
+      // EXACTLY the DSKP unit and SP issues (UNIT_MISSING + SP_MISSING); no chapterId: a missing Bab is not an issue
+      expect(failed[0]!.fields).toEqual({ unitId: 'Sila pilih unit DSKP.', spIds: 'Sila pilih sekurang-kurangnya satu SP DSKP.' })
+      expect((await q(`select v.status from question_versions v where v.question_id = $1::bigint`, [solo])).map((r) => r.status)).toEqual(['review'])
+    } finally {
+      await q(`update question_versions set unit_node_id = $2::bigint where id = $1::bigint`, [before!.version, before!.unit])
+      for (const sp of sps) await q(`insert into question_version_sp_nodes (question_version_id, node_id) values ($1::bigint, $2::bigint)`, [before!.version, sp.node])
+    }
   })
 
   it('3. REQ-B-071 (A): Terbitkan with a curriculum node and no manual Bab passes (T33 cognitive level + kertas); with no chapters.dskp_code link the Bab stays empty and Latihan Bab does not serve them (no_chapter)', async () => {
