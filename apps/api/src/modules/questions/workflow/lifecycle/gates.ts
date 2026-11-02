@@ -18,7 +18,6 @@ export const GATE_MESSAGES = {
   lowConfidence: 'Sila sahkan atau sunting medan ini.',
   subjectId: 'Sila pilih subjek.',
   educationLevelId: 'Sila pilih tahap pendidikan.',
-  chapterId: 'Sila pilih bab.',
   duplicate: 'Soalan ini ditandakan pendua. Selesaikan atau tandakan "Bukan pendua".',
   reviewerAi: 'Penyemak tidak boleh perkhidmatan AI.',
   marksTotal: 'Jumlah markah soalan tidak sama dengan jumlah markah bahagian.',
@@ -35,9 +34,10 @@ export function submitGate(d: QuestionGateData): GateFields {
   const f: GateFields = {}
   for (const name of d.missingRequiredFields) f[name] = GATE_MESSAGES.requiredField // required fields of the type
   for (const name of d.unconfirmedLowConfidenceFields) f[name] ??= GATE_MESSAGES.lowConfidence // low-confidence confirmed
-  if (d.subjectId === null) f.subjectId = GATE_MESSAGES.subjectId // subject, level, chapter set
+  // Subject and level set. The Bab is NOT asked here (R1 REQ-B-071, Q17): in V2 it is only a filter and report tag, AC-03.2 checks the DSKP
+  // nodes at Terbitkan; a chapterless question is just not counted in "Soalan by Chapter".
+  if (d.subjectId === null) f.subjectId = GATE_MESSAGES.subjectId
   if (d.educationLevelId === null) f.educationLevelId = GATE_MESSAGES.educationLevelId
-  if (d.chapterId === null) f.chapterId = GATE_MESSAGES.chapterId
   if (d.hasOpenDuplicateFlag) f.duplicate = GATE_MESSAGES.duplicate // duplicate resolved
   return f
 }
