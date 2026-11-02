@@ -534,7 +534,7 @@ The B4 pack chain was walked by HTTP on SN/2 (4541/2): **96 MATCH, 1 scanner fal
 A3 dev-1 rehearsed this locally. `prisma migrate deploy` does not run a migration file in one transaction. A failed statement leaves the earlier statements of the same file applied. Seen: CREATE EXTENSION pg_trgm survived a failed 0106 CREATE INDEX; a probe left a table and an extension.
 **Risk for deploy (B4/runbook):** after a lock timeout or a failure mid-file, `resolve --rolled-back` followed by a redeploy fails with "already exists" until stray objects are dropped. The runbook §2.4/§8 on ac-gaps gets an object check (pg_index plus \dx) before resolve (A3 docs).
 - The 0106/0107 header comments ("one transaction") are inaccurate. They are corrected in the runbook plus a deviations row; migration files are not edited (checksums).
-- 0105 atomicity and lock hold are being re-checked under real Prisma (A4).
+- **Update 01:23 UTC (A4, server logs):** Prisma 7.10.1 sends a file that contains a DO block as ONE implicit transaction, so it is atomic; a file without a DO block runs statement by statement and is not atomic. **0105 has a DO block, so it is atomic:** ACCESS EXCLUSIVE is held for the whole file (about 0.3–0.43 s stall at 408k), and a mid-file failure leaves only a failed history row; resolve --rolled-back + deploy is verified. A lock timeout inside the DO block holds the lock for up to lock_timeout (5 s) before rollback; this is bounded and accepted by the lead. A separate VALIDATE file (stall ~0.04 s) goes to KIV R2, because 0105 is frozen at BASE-132.
 - ha18-minors must restore 0105 byte-for-byte (A2); it is IN-PROGRESS until then.
 
 <!-- AUDIT:BEGIN -->
