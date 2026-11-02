@@ -1,6 +1,6 @@
 # R1 board: Bijak SPM, admin → student question pipeline
 
-Writer: team A lead. Last refresh: 2026-11-02 05:50 UTC (cycle 44). Current BASE: **BASE-200** = `feature/v3-bijak-r1` @ 550b8819. Every open team A branch merges the latest BASE before re-marking READY.
+Writer: team A lead. Last refresh: 2026-11-02 06:12 UTC (cycle 44). Current BASE: **BASE-202** = `feature/v3-bijak-r1` @ 1045e798. Every open team A branch merges the latest BASE before re-marking READY.
 Source of every task: `docs/handoff/CLOUD-HANDOFF.md` §7 on `feature/v3-bijak-r1`. Read the protocol in [README.md](README.md).
 > **Current state = the auto table at the end of this file (AUDIT:BEGIN/END).** History sections below are a log; a READY there is only valid if the auto table agrees.
 
@@ -572,21 +572,17 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 - **Disk:** check `docker system df` and prune orphaned anonymous test volumes when there are 0 containers. A3 reclaimed 3.4 GB this way.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 06:00 UTC, BASE 6aee8f4f)
+### Team A open branches: heads from origin (auto, 2026-11-02 06:10 UTC, BASE 87466acc)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
-| r1/builder-publish-p2028-test | 645744daf | READY (A3, @645744da, merges BASE-195; r2-prep minor #12): builder publish now maps P2028/overload → 429 RATE_LIMITED + Retry-After 5 (was 500), like the other paths; the new spec proves a full Terbit rollback + retry; mutation red; DEV row (keep-both); exam-builder + publish-lock-share + spec 465/465; tsc 0; contract:check ok. Needs B2 review | B2 Approve (cycle 32); HELD by B1 pending the owner's code-freeze decision (R1 vs R2) |
-| r1/bulk-publish-allskipped | 9b8b39409 | READY (A3, @9b8b3940 on BASE-189: r2-prep minor #11 (r1e2e10). An all-skipped bulk publish (affected 0, failed 0, skipped>0) now shows 'Soalan ini sudah diterbitkan.' instead of '0 soalan berjaya dikemaskini.'; any failed row keeps the old text. The 409 test now goes over HTTP. Group 133/133, mutation red, contract:check ok, DEV row (no V2 wording). Merge-tree clean on BASE-192). Needs B2 review | B2 Approve (cycle 32); HELD by B1 pending the owner's code-freeze decision (R1 vs R2) |
-| r1/e05b-l1-split-control | c4153ed75 | READY (A3, @c4153ed7 on BASE-192, test-only: r2-prep minor #5. The E05B-L1 negative control is split into pin-only / sitting-only / withdrawn paper with and without a sitting / neither; 5/5; 4 mutations each red; tsc/eslint 0). Needs B2 review | B2 Approve (cycle 32); HELD by B1 pending the owner's code-freeze decision (R1 vs R2) |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/ready-tiers-check | 9c80f08c3 | KIV R2 (B1 answer to REQ-A-028, 2026-11-02 13:15 MYT: kept on hold for R1; rely on runbook section 0; revisit in R2). Do not merge |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
 | r1/reqb074-takedown-lows | 33b0a0b1c | SUPERSEDED: 45a75f68 merged as BASE-195; the later commit 33b0a0b1 carried the Q18 rule, which the user overrode (REQ-B-077). Do not merge 33b0a0b1. Follow-ups: r1/reqb074-dsg-spec-fix, then r1/reqb076-live-takedown (A1b) |
-| r1/reqb076-approve-gate | c3557c608 | IN-REVIEW-A (A1b, @c3557c60 = 875ef5f8 + a --no-ff BASE-200 merge (copy row renumbered to 42); REQ-B-076 approve gate; spec 4/4; questions + workflows 1244/0; tsc 0; clean on BASE-200). A4 pre-review pending. Held under the code freeze (user decision) |
-| r1/reqb079-t34-t36-minors | 52345db7c | READY @52345db7 (A3; REQ-B-079 items 1–4; A4 pre-review AwM, B2 AwM; clean on BASE-200). HELD by B1 pending the user's code-freeze decision. The sweepUser minor + test nits → KIV R2 (no new work on held units, per Mandor) |
+| r1/reqb076-approve-gate | c3557c608 | IN-PROGRESS (A1b): A4 pre-review on c3557c60 = Approve w/ minors (every app writer gated). But BASE-202 (which contains c8965bb8 as BASE-201) + this branch = r1 2 red (the old live-takedown spec re-approves via the API, which the gate now refuses). Fix in progress: merge BASE-202, rewrite that spec setup via SQL, reconcile the DEV rows (predicates kept as defence in depth), cite :26, filter/gate-check tests |
 | r1/reqb082-docs | 0fcac9901 | READY (A3, @0fcac990 = 2 docs commits on BASE-200; answers REQ-B-082: runbook §6 throttle/proxy (REQ-B-080), §3.7d read-only null-blueprint SELECT, release-input admin-list-perf, decision pack section e (R1 freeze on BASE-200 + 5 held units + REQ-B-080 + copy row 42 + B4 E2E), signoff, 3 ops docs, KIV 56 rows / 51 open). Merge after B1 confirms the R1 scope |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
