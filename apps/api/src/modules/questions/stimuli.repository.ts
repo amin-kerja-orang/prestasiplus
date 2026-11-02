@@ -109,14 +109,14 @@ export function plainExcerpt(text: string | null, max: number): string {
 
 
 /**
- * Shown to pupils NOW, as the served lock has it today: the question is active and its live version is approved. Alias `q` is `questions`.
- * (REQ-B-012 widens the lock to versions pinned by published papers; the list `status` and the member `servable` flag must follow it:
- * replace this one constant with that predicate.)
+ * REQ-B-032: the list `status` and the member `servable` flag follow the SAME served rule as the lock (`QUESTION_SERVED` / `VERSION_SERVED`
+ * above): a question is shown when it is active with an approved live version, or a published paper pins one of its versions. They used to
+ * look at the live version only, so a stimulus kept by the lock showed as "not served" in the list.
  */
-const SERVED_NOW = Prisma.sql`(q.is_active AND EXISTS (SELECT 1 FROM question_versions sv WHERE sv.question_id = q.id AND sv.version_no = q.live_version_no AND sv.status = 'approved'))`
+const SERVED_NOW = QUESTION_SERVED
 
 /** The same rule for one version `v` of question `q`. */
-const VERSION_SERVED_NOW = Prisma.sql`(q.live_version_no = v.version_no AND q.is_active AND v.status = 'approved')`
+const VERSION_SERVED_NOW = VERSION_SERVED
 
 /** `EXISTS` over the three ways a stimulus reaches pupils (a group with a shown member, a shown version link, a shown part link). */
 const stimulusServedSql = (stimulusId: Prisma.Sql): Prisma.Sql => Prisma.sql`EXISTS (

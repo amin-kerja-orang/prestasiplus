@@ -140,7 +140,9 @@ export class BijakAttemptsService {
 
   private async loadBundles(composition: readonly SectionSnapshot[], onMissing: () => ApiError = () => ApiError.of('SERVER_ERROR')): Promise<Bundles> {
     const ids = [...new Set(questionIdsOf(composition))]
-    const bundles = await this.ports.questionSource.loadQuestions(ids)
+    const pins = new Map<string, number>()
+    for (const section of composition) for (const [qid, versionNo] of Object.entries(section.versions ?? {})) pins.set(qid, versionNo)
+    const bundles = await this.ports.questionSource.loadQuestions(ids, pins)
     const missing = ids.filter((id) => !bundles.has(id))
     if (missing.length) {
       this.logger.error(`Question bundles missing for ${String(missing.length)} question(s) of an attempt`)
@@ -820,6 +822,7 @@ function freezeComposition(sections: readonly SectionSnapshot[]): SectionSnapsho
     ...(s.instruction ? { instruction: s.instruction } : {}),
     rule: s.rule.type === 'all' ? { type: 'all' as const } : { type: 'choose' as const, n: s.rule.n },
     questionIds: [...s.questionIds],
+    ...(s.versions ? { versions: { ...s.versions } } : {}),
   }))
 }
 
