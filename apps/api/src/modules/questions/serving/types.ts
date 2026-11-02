@@ -50,4 +50,6 @@ export interface ServabilityFacts {
   onPublishedPaper: boolean
   /** Jana Kertas pool facts of the live version, or null when the pool does not hold it. */
   janaFacts: QuestionFacts | null
+  /** Set by `factsOf(ids, { jana: false })`: the Jana facts were not loaded, so `janaFacts: null` here does NOT mean "not in the pool". */
+  janaSkipped?: true
 }

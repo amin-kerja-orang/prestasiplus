@@ -11,7 +11,7 @@
  */
 import { gradePart as engineGradePart, isBlank as engineIsBlank } from '@pp/exam-core/grading'
 import { numericValue as engineNumericValue } from '@pp/exam-core/math-expr'
-import type { PartAnswer } from '@pp/exam-core/types'
+import type { LeafKind, PartAnswer } from '@pp/exam-core/types'
 
 /**
  * Student text reaches the engine's LaTeX reader. Its `\sqrt[...]` branch never terminates on an
@@ -46,8 +46,9 @@ export function defuseAnswer(a: PartAnswer): PartAnswer {
 export function gradePart(input: Parameters<typeof engineGradePart>[0]): ReturnType<typeof engineGradePart> {
   return engineGradePart({ ...input, answer: input.answer ? defuseAnswer(input.answer) : input.answer })
 }
-export function isBlank(a: PartAnswer | undefined): boolean {
-  return engineIsBlank(a ? defuseAnswer(a) : a)
+/** REQ-B-025(c): `kind` matters for `essay_choice`, where the topic picked is not an answer without essay text (REQ-B-021b). */
+export function isBlank(a: PartAnswer | undefined, kind?: LeafKind | 'mcq'): boolean {
+  return engineIsBlank(a ? defuseAnswer(a) : a, kind)
 }
 export function numericValue(raw: string): number | null {
   return engineNumericValue(defuseRootIndex(raw))

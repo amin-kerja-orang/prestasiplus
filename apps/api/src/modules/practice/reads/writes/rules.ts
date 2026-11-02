@@ -47,7 +47,7 @@ export const SUBJEKTIF_SUBJECT_CODES: readonly string[] = [
 export const BAHASA_SUBJECT_CODES: readonly string[] = ['BM', 'BI']
 
 /** The two levels a student may see structured sets for (BR-M04-03). */
-export const STRUCTURED_LEVEL_CODES: readonly string[] = ['T4', 'T5']
+export { STRUCTURED_LEVEL_CODES } from '../../../questions'
 
 const GRADES: readonly string[] = PRACTICE_READS_SPM_GRADES
 export const isSpmGrade = (v: unknown): v is string =>

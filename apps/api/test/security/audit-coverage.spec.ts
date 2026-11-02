@@ -215,6 +215,9 @@ describe('BE-33 AC4: audit coverage, one test per audited action', () => {
       difficultyLevel: 2,
       options: ['4', '5', '6', '7'],
       correctAnswer: 1,
+      // a new approval of an SPM question needs a cognitive level on the leaf and the kertas (R1-B05)
+      cognitiveLevel: 'mengingat',
+      kertas: '1',
       tag: { unitId: seed!.unit_node_id, spIds: [seed!.sp], tp: 3 },
     } as unknown as QuestionCreateInput
     const view = await questions.create(body, { userId: adminId, role: 'admin' })
