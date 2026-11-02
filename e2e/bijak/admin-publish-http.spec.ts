@@ -254,6 +254,8 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () =
       // Cleanup so staging is not polluted: Tarik balik, then delete the draft.
       if (await page.getByTestId('paper-unpublish').isVisible()) {
         await page.getByTestId('paper-unpublish').click()
+        await expect(page.locator('[data-ds=confirm-message]').filter({ hasText: 'Tarik balik kertas ini ke draf?' })).toBeVisible()
+        await page.locator('[data-ds=confirm-ok]').click()
         await expect(page.getByTestId('paper-publish')).toBeVisible()
       }
       await deleteDraft(page, id, title)
