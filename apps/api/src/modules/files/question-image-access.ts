@@ -17,10 +17,14 @@ import { paperHeld } from '../questions/served-rule'
  *   B. PAPER: the version is the version PINNED by a placement of a `published` paper the pupil can sit
  *      (a per-pupil `jana` paper only for the pupil it was generated for), or of a `withdrawn` paper this pupil has a sitting on (R1
  *      delete-served-guard: a withdrawal does not cut a running sitting, so it keeps its pictures; a pupil who never sat the withdrawn paper gets
- *      the uniform 404). The pinned version must be `approved` or `superseded` and its source not taken down; a taken-down pin (archived "withdrawn" /
- *      "source_takedown", or its source paper taken down) is readable only by a pupil who has ANY sitting on that paper (REQ-B-074: open, submitted or
- *      abandoned, as `paperHeld`; a sitting keeps its version, REQ-B-058 d, and result review needs the pictures; nobody else can start it, so nobody else gets the picture). The paper is the authority here, so a superseded pinned version, a
- *      later-withdrawn question or a hidden level do not hide it from a paper that is still held.
+ *      the uniform 404). The pinned version must be `approved` or `superseded` and its source not taken down. A TAKEN-DOWN pin:
+ *        - ordinary takedown (archived "withdrawn", or no reason recorded): readable only by a pupil with ANY sitting on that paper (open, submitted or
+ *          abandoned, as `paperHeld`; a sitting keeps its version, REQ-B-058 d, and result review needs the pictures);
+ *        - RIGHTS takedown (Q18, AC-17.3: archived `source_takedown`, or the source paper has `takedown_at`, which also covers its older superseded
+ *          versions): readable only by a pupil whose attempt on that paper is still IN PROGRESS (known limit: a takedown does not cut a running attempt);
+ *          once it is submitted or abandoned the answer is the uniform 404. The question text and the marks of a finished attempt are not touched here.
+ *      Nobody else can start such a paper, so nobody else gets the picture. A later-withdrawn question is a taken-down pin (REQ-B-074); a superseded pinned
+ *      version or a hidden level does not hide the picture from a paper that is still held.
  *   C. REFERENCE: a sittable paper (as in B) whose `reference_sheets` has a panel carrying the file as `imageFileId`
  *      (the PUBLIC token only: the internal decimal id never matches, so an unattached image cannot be read by guessing ids; B3 T34-L1-residual).
  */
@@ -33,10 +37,16 @@ export const SERVABLE_VERSION_STATUSES = [SERVABLE_STATUS] as const
  * replaced it (`superseded`), and its source paper not taken down (`source_papers.takedown_at`: a takedown archives the latest and the live version of
  * each question, not the older ones). Any other archive reason (or none) is a takedown.
  */
+const SOURCE_TAKEN_DOWN = Prisma.sql`EXISTS (SELECT 1 FROM source_papers tsp WHERE tsp.id = v.source_paper_id AND tsp.takedown_at IS NOT NULL)`
 const PINNED_SERVABLE = Prisma.sql`(
   (v.status = 'approved' OR (v.status = 'archived' AND v.archive_reason = 'superseded'))
-  AND NOT EXISTS (SELECT 1 FROM source_papers tsp WHERE tsp.id = v.source_paper_id AND tsp.takedown_at IS NOT NULL)
+  AND NOT ${SOURCE_TAKEN_DOWN}
 )`
+/**
+ * Q18 (REQ-B-074): a RIGHTS takedown is the AC-17.3 path: the version was archived `source_takedown`, or its source paper has `takedown_at` (this also
+ * covers the older `superseded` versions of that source). Any other taken-down pin (archived "withdrawn", or none recorded) is an ordinary takedown.
+ */
+const RIGHTS_TAKEDOWN = Prisma.sql`(v.archive_reason = 'source_takedown' OR ${SOURCE_TAKEN_DOWN})`
 
 const inList = (values: readonly string[]): Prisma.Sql => Prisma.join(values.map((v) => Prisma.sql`${v}`))
 
@@ -101,7 +111,11 @@ export function pupilMayReadQuestionImageSql(fileId: bigint, userId: bigint, pub
                           JOIN sittable s ON s.id = ps.paper_id
                          WHERE pl.question_id = q.id AND pl.pinned_version_no = v.version_no
                            AND (${PINNED_SERVABLE}
-                                OR EXISTS (SELECT 1 FROM exam_attempts sat WHERE sat.paper_id = s.id AND sat.user_id = ${userId}))))
+                                -- an attempt still in progress keeps the picture until it ends (known limit: a takedown does not cut a running attempt)
+                                OR EXISTS (SELECT 1 FROM exam_attempts sat WHERE sat.paper_id = s.id AND sat.user_id = ${userId} AND sat.status = 'in_progress')
+                                -- an ordinary takedown keeps it for a submitted or abandoned sitting too (result review); a rights takedown does not
+                                OR (NOT ${RIGHTS_TAKEDOWN}
+                                    AND EXISTS (SELECT 1 FROM exam_attempts sat WHERE sat.paper_id = s.id AND sat.user_id = ${userId})))))
     UNION ALL
     SELECT 1 AS one
       FROM sittable s

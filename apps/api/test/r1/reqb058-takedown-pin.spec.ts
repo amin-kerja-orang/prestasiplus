@@ -258,4 +258,49 @@ describe('REQ-B-058 a taken-down pinned version is not served to new sittings', 
     expect((await newSitting()).status).toBe(201)
     expect((await readImage()).status).toBe(200)
   })
+
+  /*
+   * Q18 (REQ-B-074): a RIGHTS takedown (archived `source_takedown`, or the source paper's `takedown_at`) refuses the picture to a pupil whose attempt is
+   * submitted (history review); an attempt still in progress keeps it until it ends; an ORDINARY takedown (withdrawn) keeps it for a submitted sitting too.
+   */
+  it('Q18 (a)(b)(c): rights takedown: submitted attempt 404, in-progress attempt 200 until it is submitted; ordinary takedown: submitted attempt 200', async () => {
+    const other = await loginFull(t, 'pelajarmaju@demo.test')
+    await q(`update source_papers set takedown_at = null where id in (select source_paper_id from question_versions where question_id = ${target} and version_no = 1)`)
+    await setReasonSql('superseded')
+    const start = async (c: FullClient): Promise<string> => {
+      const res = await c.post('/api/bijak/attempts', { paperId: paper, mode: 'exam', restart: true })
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      return res.body.data.attemptId as string
+    }
+    const submit = async (c: FullClient, attempt: string, key: string) => {
+      const res = await c.post(`/api/bijak/attempts/${attempt}/submit`, { idempotencyKey: key, changes: [] })
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+    }
+    const submitted = await start(fresh)
+    const inProgress = await start(other)
+    await submit(fresh, submitted, 'q18-fresh')
+    expect((await readImage(fresh)).status, 'control: the pin is servable').toBe(200)
+
+    // (c) ordinary takedown: the submitted sitting still sees the picture (result review)
+    await setReasonSql('withdrawn')
+    expect((await readImage(fresh)).status, '(c) withdrawn, submitted').toBe(200)
+    expect((await readImage(other)).status, 'withdrawn, in progress').toBe(200)
+
+    // (a) rights takedown by the archive reason: submitted attempt -> 404
+    await setReasonSql('source_takedown')
+    expect((await readImage(fresh)).status, '(a) source_takedown, submitted').toBe(404)
+    // (b) the attempt still in progress keeps it, then loses it once submitted
+    expect((await readImage(other)).status, '(b) source_takedown, in progress').toBe(200)
+    await submit(other, inProgress, 'q18-other')
+    expect((await readImage(other)).status, '(b) source_takedown, after submit').toBe(404)
+
+    // (a) again for the source paper's takedown_at (the older superseded versions of a taken-down source)
+    await setReasonSql('superseded')
+    const [sp] = await q(`insert into source_papers (rights_status) values ('own') returning id::text id`)
+    await q(`update question_versions set source_paper_id = ${String(sp!.id)} where question_id = ${target} and version_no = 1`)
+    expect((await readImage(fresh)).status, 'control: source not taken down').toBe(200)
+    await q(`update source_papers set takedown_at = now() where id = ${String(sp!.id)}`)
+    expect((await readImage(fresh)).status, '(a) takedown_at, submitted').toBe(404)
+    expect((await readImage(other)).status, '(a) takedown_at, submitted').toBe(404)
+  })
 })
