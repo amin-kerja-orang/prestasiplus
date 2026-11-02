@@ -1,4 +1,4 @@
-import { QUESTION_MESSAGES, QUESTION_WORKFLOW_STATUS_LABELS, type QuestionBulkFailure, type QuestionStatus } from '@pp/contract'
+import { QUESTION_MESSAGES, QUESTION_WORKFLOW_STATUS_LABELS, type QuestionBulkFailure, type QuestionBulkSkipped, type QuestionStatus } from '@pp/contract'
 
 import { ApiError } from '../../common/errors/api-error'
 
@@ -15,7 +15,7 @@ export const TRANSITION_CONFLICT_MESSAGE = (from: QuestionStatus, to: QuestionSt
 
 /**
  * Signal (not an HTTP error) from `setStatus` under `skipIfAlready`: the question is already in the target status. The bulk action turns it
- * into the `failed[]` no-op entry of R1E2E-10; nothing was written (the transaction is rolled back).
+ * into the `skipped[]` no-op entry of R1E2E-10; nothing was written (the transaction is rolled back).
  */
 export class AlreadyInStatusError extends Error {
   constructor(readonly status: QuestionStatus) {
@@ -41,15 +41,16 @@ export const QUESTION_NOT_FOUND_MESSAGE = QUESTION_MESSAGES.notFound
 /** One question the bulk action did not apply, with the text the admin sees for it (contract `QuestionBulkFailure`). */
 export type BulkFailure = QuestionBulkFailure
 
+/** One row a bulk Terbitkan left as it was because it is already Diterbitkan (contract `QuestionBulkSkipped`). */
+export type BulkSkipped = QuestionBulkSkipped
+export const alreadyApprovedSkip = (id: string): BulkSkipped => ({ id, reason: QUESTION_MESSAGES.bulkAlreadyApproved })
+
 /** The `failed` entry of an id that does not exist. */
 export const notFoundFailure = (id: string): BulkFailure => ({ id, code: 'NOT_FOUND', message: QUESTION_NOT_FOUND_MESSAGE, fields: {} })
 
-/** The `failed` entry of a bulk Terbitkan row that is already Diterbitkan: a no-op with its reason, CONFLICT so the shape is unchanged. */
-export const alreadyApprovedFailure = (id: string): BulkFailure => ({ id, code: 'CONFLICT', message: QUESTION_MESSAGES.bulkAlreadyApproved, fields: {} })
 
 /** Maps a per-id error of the bulk action to its `failed` entry; `null` means the error is not a skip (re-throw it). */
 export const bulkFailureOf = (id: string, e: unknown): BulkFailure | null => {
-  if (e instanceof AlreadyInStatusError) return alreadyApprovedFailure(id)
   if (!(e instanceof ApiError)) return null
   if (e.code === 'NOT_FOUND') return notFoundFailure(id)
   if (e.code === 'CONFLICT') return { id, code: 'CONFLICT', message: e.message, fields: {} }

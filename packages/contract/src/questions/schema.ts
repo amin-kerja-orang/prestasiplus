@@ -30,7 +30,7 @@ export const QUESTION_MESSAGES = {
   updated: 'Soalan berjaya dikemaskini.',
   deleted: 'Soalan berjaya dipadam.',
   bulkUpdated: (n: number): string => `${String(n)} soalan berjaya dikemaskini.`,
-  /** Bulk Terbitkan on a row that is already Diterbitkan (R1E2E-10, Mandor Q16): the row is left as it is, with this reason [PROPOSED]. */
+  /** Bulk Terbitkan on a row that is already Diterbitkan (R1E2E-10, Mandor Q16): the row is left as it is and listed in `skipped` with this reason [PROPOSED]. */
   bulkAlreadyApproved: 'Soalan ini sudah diterbitkan.',
   /** `POST /questions/:id/edit-as-draft` (REQ-C-012; V2 flash "Draf baharu #{id} dicipta. ..."). */
   editAsDraft: (id: string): string => `Draf baharu #${id} dicipta. Soalan asal kekal diterbitkan sehingga draf ini diterbitkan.`,
@@ -429,19 +429,31 @@ export const QuestionBulkFailureSchema = z
     code: z.enum(QUESTION_BULK_FAILURE_CODES),
     message: z.string().meta({
       description:
-        'The BM text for this id. NOT_FOUND: "Soalan tidak dijumpai." [PROPOSED]; CONFLICT: the transition text, or "Soalan ini sudah diterbitkan." [PROPOSED] for a bulk Terbitkan of a question that is already Diterbitkan (an idempotent no-op: nothing is written, it is not counted in `affected`); VALIDATION_ERROR: the distinct `fields` values in field order, joined by one space (render `fields` for a per-field view).',
+        'The BM text for this id. NOT_FOUND: "Soalan tidak dijumpai." [PROPOSED]; CONFLICT: the transition text; VALIDATION_ERROR: the distinct `fields` values in field order, joined by one space (render `fields` for a per-field view).',
     }),
     fields: z.record(z.string(), z.string()).meta({ description: 'The exact gate field messages (VALIDATION_ERROR); `{}` otherwise.' }),
   })
   .meta({ id: 'QuestionBulkFailure' })
 export type QuestionBulkFailure = z.infer<typeof QuestionBulkFailureSchema>
+/** A row a bulk action left as it was because it is already in the target status (R1E2E-10): not a refusal, not an error. */
+export const QuestionBulkSkippedSchema = z
+  .object({
+    id: IdSchema,
+    reason: z.string().meta({ description: 'The BM text for this id: "Soalan ini sudah diterbitkan." [PROPOSED].' }),
+  })
+  .meta({ id: 'QuestionBulkSkipped' })
+export type QuestionBulkSkipped = z.infer<typeof QuestionBulkSkippedSchema>
 export const QuestionBulkResultSchema = z
   .object({
     affected: z.number().int().min(0),
     failed: z
       .array(QuestionBulkFailureSchema)
       .default([])
-      .meta({ description: 'One entry per unique requested id that was not applied, in request order; `[]` when all were applied.' }),
+      .meta({ description: 'One entry per unique requested id that was refused, in request order; `[]` when none was. Real refusals only (not found, a transition not allowed, a gate); rows already in the target status are in `skipped`.' }),
+    skipped: z
+      .array(QuestionBulkSkippedSchema)
+      .optional()
+      .meta({ description: 'Rows already in the target status (bulk Terbitkan only); not applied, not counted in affected. Present only when there is at least one such row.' }),
   })
   .meta({ id: 'QuestionBulkResult' })
 

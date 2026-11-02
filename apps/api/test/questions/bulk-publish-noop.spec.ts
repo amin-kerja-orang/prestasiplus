@@ -1,8 +1,8 @@
 /**
  * R1E2E-10 (Mandor Q16): a bulk Terbitkan (`POST /questions/bulk-action` `approved`) on a question that is already Diterbitkan is an
  * idempotent no-op. It is not an error ("Peralihan 'Diterbitkan' -> 'Diterbitkan' tidak dibenarkan." was the old answer), it is not counted in
- * `affected`, it gets the reason "Soalan ini sudah diterbitkan." in `failed[]` (CONFLICT, shape unchanged), it writes no status event and it is
- * not in the audit ids; the other rows of the batch are still published. The single `POST /questions/:id/status` keeps its 409.
+ * `affected`, it is listed in `skipped[]` as { id, reason: "Soalan ini sudah diterbitkan." } (never in `failed[]`, which keeps the real refusals), it
+ * writes no status event and it is not in the audit ids; the other rows of the batch are still published. The single route keeps its 409.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
@@ -45,7 +45,7 @@ describe('R1E2E-10: bulk Terbitkan of an already Diterbitkan row is a no-op', ()
   const bulk = async (ids: string[]) => {
     const res = await admin.post('/api/questions/bulk-action', { action: 'approved', ids })
     expect(res.status, JSON.stringify(res.body)).toBe(200)
-    return res.body as { data: { affected: number; failed: { id: string; code: string; message: string; fields: Record<string, string> }[] }; status?: string }
+    return res.body as { data: { affected: number; failed: { id: string; code: string; message: string; fields: Record<string, string> }[]; skipped?: { id: string; reason: string }[] }; status?: string }
   }
   const events = async (ids: string[]) =>
     Number((await t.db.query<{ n: string }>(`select count(*)::text n from question_status_events where question_id = any($1::bigint[])`, [ids]))[0]?.n)
@@ -62,10 +62,11 @@ describe('R1E2E-10: bulk Terbitkan of an already Diterbitkan row is a no-op', ()
 
     const out = await bulk([p1, r1, p2, r2])
     expect(out.data.affected).toBe(2)
-    expect(out.data.failed).toEqual([
-      { id: p1, code: 'CONFLICT', message: ALREADY, fields: {} },
-      { id: p2, code: 'CONFLICT', message: ALREADY, fields: {} },
+    expect(out.data.skipped).toEqual([
+      { id: p1, reason: ALREADY },
+      { id: p2, reason: ALREADY },
     ])
+    expect(out.data.failed).toEqual([])
     expect(JSON.stringify(out)).not.toContain('Peralihan')
     expect((await status(r1)).status).toBe('approved')
     expect((await status(r2)).status).toBe('approved')
@@ -83,11 +84,13 @@ describe('R1E2E-10: bulk Terbitkan of an already Diterbitkan row is a no-op', ()
     const out = await bulk([p1, p2])
     expect(out.data).toEqual({
       affected: 0,
-      failed: [
-        { id: p1, code: 'CONFLICT', message: ALREADY, fields: {} },
-        { id: p2, code: 'CONFLICT', message: ALREADY, fields: {} },
+      failed: [],
+      skipped: [
+        { id: p1, reason: ALREADY },
+        { id: p2, reason: ALREADY },
       ],
     })
+    expect(out.data.skipped).toHaveLength(2)
     expect(await events([p1, p2])).toBe(before)
     expect((await auditIds()).at(-1)).toEqual([])
     expect(JSON.stringify(out)).not.toContain(OLD_CONFLICT)
@@ -99,11 +102,22 @@ describe('R1E2E-10: bulk Terbitkan of an already Diterbitkan row is a no-op', ()
     await expect(svc.setStatus(id, 'approved', admin.userId)).rejects.toMatchObject({ code: 'CONFLICT', message: OLD_CONFLICT })
   })
 
-  it('other refusals are unchanged: a Draf row in a Terbitkan batch is still the transition conflict, a Diterbitkan row beside it is the no-op', async () => {
+  it('other refusals are unchanged: a Draf row in a Terbitkan batch is still the transition conflict, a Diterbitkan row beside it is skipped, not failed', async () => {
     const draft = (await admin.post('/api/questions', mcqBody(refs, { tag }))).body.data.id as string
     const p = await published()
     const out = await bulk([draft, p])
     expect(out.data.affected).toBe(0)
-    expect(out.data.failed.map((f) => [f.id, f.message])).toEqual([[draft, "Peralihan 'Draf' -> 'Diterbitkan' tidak dibenarkan."], [p, ALREADY]])
+    expect(out.data.failed.map((f) => [f.id, f.code, f.message])).toEqual([[draft, 'CONFLICT', "Peralihan 'Draf' -> 'Diterbitkan' tidak dibenarkan."]])
+    expect(out.data.skipped).toEqual([{ id: p, reason: ALREADY }])
+  })
+
+  it('`skipped` is absent when no row is skipped (additive field), and for other actions', async () => {
+    const r = await review()
+    const out = await bulk([r])
+    expect(out.data).toEqual({ affected: 1, failed: [] })
+    expect('skipped' in out.data).toBe(false)
+    const res = await admin.post('/api/questions/bulk-action', { action: 'archived', ids: [r] })
+    expect(res.status, JSON.stringify(res.body)).toBe(200)
+    expect(res.body.data).toEqual({ affected: 1, failed: [] })
   })
 })

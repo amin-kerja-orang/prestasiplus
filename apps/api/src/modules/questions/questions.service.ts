@@ -15,7 +15,7 @@ import { OverviewCache } from './serving/overview-cache'
 import { CurriculumRepository } from '../curriculum'
 import { FilesService } from '../files'
 import { UsersRepository } from '../users'
-import { AlreadyInStatusError, bulkFailureOf, notFoundFailure, questionNotFound, transitionConflict, type BulkFailure } from './errors'
+import { alreadyApprovedSkip, AlreadyInStatusError, bulkFailureOf, notFoundFailure, questionNotFound, transitionConflict, type BulkFailure, type BulkSkipped } from './errors'
 import { gradeQuestion } from './grading'
 import {
   difficultyOf,
@@ -396,10 +396,11 @@ export class QuestionsService {
     ids: readonly string[],
     actor: QuestionActor,
     opts: { submitGate?: boolean } = {},
-  ): Promise<{ affected: number; ids: string[]; failed: BulkFailure[] }> {
+  ): Promise<{ affected: number; ids: string[]; failed: BulkFailure[]; skipped?: BulkSkipped[] }> {
     let affected = 0
     const done: string[] = []
     const failed: BulkFailure[] = []
+    const skipped: BulkSkipped[] = []
     for (const id of new Set(ids)) {
       try {
         if (action === 'delete') {
@@ -416,13 +417,19 @@ export class QuestionsService {
           done.push(id)
         }
       } catch (e) {
+        // A row already Diterbitkan is a no-op (R1E2E-10): listed in `skipped`, not a refusal.
+        if (e instanceof AlreadyInStatusError) {
+          skipped.push(alreadyApprovedSkip(id))
+          continue
+        }
         // An unknown id, a refused transition and a failed publish gate leave that id untouched.
         const failure = bulkFailureOf(id, e)
         if (!failure) throw e
         failed.push(failure)
       }
     }
-    return { affected, ids: done, failed }
+    // `skipped` is present only when a row was skipped (additive on the wire).
+    return { affected, ids: done, failed, ...(skipped.length > 0 ? { skipped } : {}) }
   }
 
   /**
