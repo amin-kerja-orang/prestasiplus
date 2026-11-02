@@ -10,15 +10,22 @@ import LaneSimulasiPage from '../admin/kandungan/pages/LaneSimulasiPage.vue'
 
 const server = vi.hoisted(() => ({
   overview: vi.fn(),
-  subjects: vi.fn(),
   databankLane: vi.fn(),
   paperLane: vi.fn(),
 }))
 vi.mock('../admin/kandungan/client', () => ({ kandunganServer: () => server }))
 
 const act = (activity: string, label: string, attention: number) => ({ activity, label, served: 10 - attention, total: 10, attention, basis: 'sql' })
+const card = (lane: string, title: string, description: string, attention: number, attentionLabel: string) => ({
+  lane, title, description, total: 10, attention, attentionLabel,
+})
+const SUBJECTS = [{ id: 'MAT', name: 'Matematik' }]
 const OVERVIEW = {
   bank: 10,
+  cards: [
+    card('databank', 'Databank Soalan', 'Bank soalan objektif SPM mengikut subjek.', 3, 'tidak boleh ditanda'),
+    card('bijak-spm', 'Bijak SPM', 'Kertas SPM penuh dalam format sebenar.', 0, 'tiada kunci jawapan'),
+  ],
   activities: [
     act('databank', 'Databank Soalan', 3),
     act('latih_tubi_spm', 'Latih Tubi SPM', 0),
@@ -41,7 +48,6 @@ beforeEach(() => {
   media(true)
   for (const f of Object.values(server)) f.mockReset()
   server.overview.mockResolvedValue(OVERVIEW)
-  server.subjects.mockResolvedValue([{ id: 'MAT', name: 'Matematik' }])
 })
 afterEach(() => {
   wrapper?.unmount()
@@ -80,7 +86,7 @@ describe('Kandungan SPM hub (AC-R1-21.1)', () => {
 
   it('shows the attention count or "Semua elok", and "Buka senarai" on each card', async () => {
     await mountAt(KandunganHubPage, '/admin/spm')
-    expect(text('[data-testid=kandungan-attention-databank]')).toContain('3')
+    expect(text('[data-testid=kandungan-attention-databank]')).toBe('3 tidak boleh ditanda') // the V2 label, from the API card
     expect(text('[data-testid=kandungan-attention-simulasi]')).toBe('Semua elok')
     expect(text('[data-testid=kandungan-open-databank]')).toBe('Buka senarai')
     expect(text('[data-testid=kandungan-open-simulasi]')).toBe('Buka senarai')
@@ -100,7 +106,7 @@ describe('lane Databank Soalan (AC-R1-21.2)', () => {
   beforeEach(() => {
     server.databankLane.mockResolvedValue({
       rows: [row('1', 'approved'), row('2', 'draft', [{ code: 'not_approved', message: 'Belum diluluskan — tekan Terbitkan untuk memaparkannya.' }])],
-      page: 1, pageSize: 25, total: 2,
+      page: 1, pageSize: 25, total: 2, subjects: SUBJECTS,
     })
   })
 
@@ -117,6 +123,9 @@ describe('lane Databank Soalan (AC-R1-21.2)', () => {
   it('applies Subjek, Status and Cari with Tapis and clears them with Set Semula', async () => {
     await mountAt(LaneDatabankPage, '/admin/spm/databank')
     expect(server.databankLane).toHaveBeenLastCalledWith({ page: 1, pageSize: 25 })
+    // The Subjek options come from the lane response, not from a separate subjects read (REQ-A-016).
+    const options = [...document.body.querySelectorAll('[data-testid=lane-subject] option')].map((o) => o.textContent?.trim())
+    expect(options).toContain('Matematik')
     const set = async (sel: string, v: string): Promise<void> => {
       const el = q(sel) as HTMLInputElement
       el.value = v
@@ -140,14 +149,14 @@ describe('lane Databank Soalan (AC-R1-21.2)', () => {
 })
 
 describe('lane Bijak SPM (AC-R1-21.2)', () => {
-  const paper = (id: string, status: 'draft' | 'published', questionCount: number, attention: { code: string; message: string; count: number }[] = []) => ({
+  const paper = (id: string, status: 'draft' | 'ready' | 'published' | 'withdrawn', questionCount: number, attention: { code: string; message: string; count: number }[] = []) => ({
     paperId: id, title: `Kertas ${id}`, subject: { id: 'MAT', name: 'Matematik' }, status, questionCount, attentionCount: attention.length, attention,
   })
   it('on a narrow screen the card list carries the same Perhatian text and Sunting', async () => {
     media(false)
     server.paperLane.mockResolvedValue({
       rows: [paper('p1', 'published', 0)],
-      page: 1, pageSize: 25, total: 1,
+      page: 1, pageSize: 25, total: 1, subjects: SUBJECTS,
     })
     await mountAt(LaneSimulasiPage, '/admin/spm/simulasi')
     expect(document.body.textContent).toContain('Disajikan tetapi tiada soalan')
@@ -161,7 +170,7 @@ describe('lane Bijak SPM (AC-R1-21.2)', () => {
         paper('p2', 'published', 5, [{ code: 'no_scheme', message: 'Tiada skema — tidak disajikan.', count: 2 }]),
         paper('p3', 'draft', 4),
       ],
-      page: 1, pageSize: 25, total: 3,
+      page: 1, pageSize: 25, total: 3, subjects: SUBJECTS,
     })
     await mountAt(LaneSimulasiPage, '/admin/spm/simulasi')
     expect(text('[data-testid=attention-p1]')).toBe('Disajikan tetapi tiada soalan')
@@ -172,5 +181,29 @@ describe('lane Bijak SPM (AC-R1-21.2)', () => {
     expect(body).toContain('Terbit')
     expect(body).toContain('Draf')
     expect(q('[data-testid=lane-edit-p2]')).not.toBeNull()
+  })
+
+  it('labels ready and withdrawn papers and offers all four statuses in the filter (REQ-A-022)', async () => {
+    server.paperLane.mockResolvedValue({
+      rows: [paper('p1', 'ready', 3), paper('p2', 'withdrawn', 2), paper('p3', 'published', 1), paper('p4', 'draft', 0)],
+      page: 1, pageSize: 25, total: 4, subjects: SUBJECTS,
+    })
+    await mountAt(LaneSimulasiPage, '/admin/spm/simulasi')
+    const body = document.body.textContent ?? ''
+    expect(body).toContain('Sedia')
+    expect(body).toContain('Ditarik balik')
+    expect(body).not.toMatch(/\b(ready|withdrawn)\b/)
+    expect(q('[data-testid=attention-p1]')).toBeNull()
+    expect(q('[data-testid=attention-p2]')).toBeNull()
+  })
+
+  it('shows the question_missing reason sentence from the API (REQ-A-016)', async () => {
+    const message = 'Soalan pada kertas ini tiada dalam bank soalan — kertas tidak boleh dimulakan; gantikan atau buang soalan itu.'
+    server.paperLane.mockResolvedValue({
+      rows: [paper('p9', 'published', 3, [{ code: 'question_missing', message, count: 1 }])],
+      page: 1, pageSize: 25, total: 1, subjects: SUBJECTS,
+    })
+    await mountAt(LaneSimulasiPage, '/admin/spm/simulasi')
+    expect(text('[data-testid=attention-p9]')).toBe(`1 soalan: ${message}`)
   })
 })

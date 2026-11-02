@@ -108,6 +108,27 @@ export class BuilderController {
     return ok(await this.builder.removePlacement(actor, id, questionId))
   }
 
+  /** R1-T48 "Tambah bahagian". */
+  @Post(':id/sections')
+  @RateLimit(BIJAK_BUILDER_LIMITS.write)
+  async addSection(@Actor() actor: AuditActor, @Param('id') id: string, @Body() body: unknown) {
+    return ok(await this.builder.addSection(actor, id, body))
+  }
+
+  /** R1-T48 "Tambah soalan": creates a blank Draf question in the paper and places it in an admin-added Bahagian. */
+  @Post(':id/sections/:sid/questions')
+  @RateLimit(BIJAK_BUILDER_LIMITS.write)
+  async createQuestion(@Actor() actor: AuditActor, @Param('id') id: string, @Param('sid') sid: string, @Body() body: unknown) {
+    return ok(await this.builder.createQuestion(actor, id, sid, body))
+  }
+
+  /** R1-T48 "Padam soalan": removes a question added through "Tambah soalan". */
+  @Delete(':id/questions/:questionId')
+  @RateLimit(BIJAK_BUILDER_LIMITS.write)
+  async deleteAddedQuestion(@Actor() actor: AuditActor, @Param('id') id: string, @Param('questionId') questionId: string) {
+    return ok(await this.builder.deleteAddedQuestion(actor, id, questionId))
+  }
+
   @Put(':id/sections/:sid/order')
   @RateLimit(BIJAK_BUILDER_LIMITS.write)
   async reorder(@Actor() actor: AuditActor, @Param('id') id: string, @Param('sid') sid: string, @Body() body: unknown) {

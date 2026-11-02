@@ -1,36 +1,4 @@
-/**
- * The six lane cards of the V2 hub "Kandungan SPM", in V2 order, with the V2 names and descriptions verbatim
- * (docs/discovery/cloud-student-mechanism.md line 324; AC-R1-21.1). `inR1` lanes have a screen here. The others are R2
- * (D86: "lain2 features KIV") or flag OFF (D80 item 2, Kertas Subjektif): AC-R1-21.1 says their cards are hidden until
- * their screen exists, so `HUB_CARDS` leaves them out (UX-20). They stay in `LANE_CARDS` so the V2 order is on record.
- */
-import type { ServabilityActivity } from '@pp/contract'
-
-export type LaneKey = 'databank' | 'tracking-a' | 'subjektif' | 'simulasi' | 'kertas' | 'latih-tubi'
-
-export interface LaneCard {
-  key: LaneKey
-  name: string
-  desc: string
-  /** The overview activity whose attention count the card shows (null = no servability data for this lane yet). */
-  activity: ServabilityActivity | null
-  /** A screen exists in R1. */
-  inR1: boolean
-  /** V2 "Flag OFF" badge (the lane is switched off in V2). */
-  flagOff?: boolean
-}
-
-export const LANE_CARDS: readonly LaneCard[] = [
-  { key: 'databank', name: 'Databank Soalan', desc: 'Bank soalan objektif SPM mengikut subjek.', activity: 'databank', inR1: true },
-  { key: 'tracking-a', name: 'Tracking A', desc: 'Set objektif penuh dan lane bahasa.', activity: null, inR1: false },
-  { key: 'subjektif', name: 'Subjektif', desc: 'Soalan berstruktur dan esei.', activity: null, inR1: false },
-  { key: 'simulasi', name: 'Bijak SPM', desc: 'Kertas SPM penuh dalam format sebenar.', activity: 'simulasi_paper', inR1: true },
-  { key: 'kertas', name: 'Kertas Subjektif', desc: 'Kertas 2, 3 & 4 percubaan negeri.', activity: null, inR1: false, flagOff: true },
-  { key: 'latih-tubi', name: 'Latih Tubi', desc: 'Latihan ikut topik dan bab.', activity: 'latih_tubi_spm', inR1: false },
-]
-
-/** The cards the hub shows in R1: only lanes that have a screen (no link to a missing screen, AC-R1-21.1). */
-export const HUB_CARDS: readonly LaneCard[] = LANE_CARDS.filter((c) => c.inR1)
+/** Hub and lane copy (V2 DISC 3.10 P1/P2). The cards themselves come from the API (`overview.cards`, T45). */
 
 /** V2 strings of the hub (DISC 3.10 P1/A1). */
 export const hubCopy = {
@@ -38,8 +6,6 @@ export const hubCopy = {
   intro: 'Setiap kad ialah satu laluan yang pelajar boleh buka. Nombor merah menunjukkan berapa banyak item yang perlu diperiksa.',
   allGood: 'Semua elok',
   open: 'Buka senarai',
-  /** [PROPOSED] UX-21: the word after the count; D94 reasons are the servability copy, not the V2 phrases (H2). */
-  attention: 'perlu perhatian',
 } as const
 
 /** V2 strings of a lane list (DISC 3.10 P2/A2). */
@@ -63,3 +29,19 @@ export const laneCopy = {
   noQuestions: 'Disajikan tetapi tiada soalan',
   empty: 'Tiada rekod dijumpai.',
 } as const
+
+/**
+ * Status of a paper in the "Bijak SPM" lane (`SERVABILITY_PAPER_STATUSES`). "Terbit" / "Draf" are V2 `paper_statuses.label`;
+ * "Sedia" / "Ditarik balik" are [PROPOSED] (UX-79).
+ */
+export const PAPER_STATUS_OPTIONS = [
+  { value: 'draft', label: 'Draf' },
+  { value: 'ready', label: 'Sedia' },
+  { value: 'published', label: 'Terbit' },
+  { value: 'withdrawn', label: 'Ditarik balik' },
+]
+export const paperStatusLabel = (code: string): string => PAPER_STATUS_OPTIONS.find((s) => s.value === code)?.label ?? code
+
+/** Badge look of a paper status (the label always comes from `paperStatusLabel`). */
+export const paperStatusBadge = (code: string): 'draft' | 'awaiting-review' | 'published' | 'inactive' =>
+  code === 'published' ? 'published' : code === 'ready' ? 'awaiting-review' : code === 'withdrawn' ? 'inactive' : 'draft'

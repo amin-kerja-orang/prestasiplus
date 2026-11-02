@@ -50,7 +50,6 @@ export const PRACTICE_TRIAL_LIMIT = 50
 /** Error codes of the practice endpoints (module codes; generic ones are in `ErrorCode`). */
 export const PRACTICE_ERROR_CODES = [
   'TRIAL_EXHAUSTED',
-  'CHAPTER_LOCKED',
   'NOT_ENOUGH_QUESTIONS',
   'SET_NOT_READY',
   'NO_WRONG_QUESTIONS',
@@ -64,8 +63,6 @@ export type PracticeErrorCode = z.infer<typeof PracticeErrorCodeSchema>
 /** Exact status and BM message the mock produces for each module code (`ALREADY_COMPLETED` has two). */
 export const PRACTICE_ERRORS = {
   TRIAL_EXHAUSTED: { status: 402, messages: ['Baki percubaan percuma anda telah habis.'] },
-  /** No longer produced by the API (REQ-C-021, D98: no chapter lock); kept so old clients still parse it. */
-  CHAPTER_LOCKED: { status: 409, messages: ['Bab ini masih dikunci.'] },
   NOT_ENOUGH_QUESTIONS: { status: 422, messages: ['Soalan tidak mencukupi.'] },
   SET_NOT_READY: { status: 422, messages: ['Soalan tidak mencukupi.'] },
   NO_WRONG_QUESTIONS: { status: 422, messages: ['Maaf, terdapat masalah memuatkan kuiz ulang kaji.'] },
