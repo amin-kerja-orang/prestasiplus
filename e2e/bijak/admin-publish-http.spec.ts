@@ -166,10 +166,22 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () =
   // Real, read-only: opens the first existing paper (no edit, no publish, no write).
   test('opening an existing paper renders the editor read-only path @bijak', async ({ page }) => {
     await login(page, ADMIN_USER ?? '', ADMIN_PASS ?? '')
+    // The list loads after `papers-page` mounts, and the wide table shows its empty state ("Belum ada
+    // kertas") while it loads, so neither the page nor that text says the list is ready: read the list response.
+    const listed = page.waitForResponse(
+      (r) => new URL(r.url()).pathname === '/api/admin/papers' && r.request().method() === 'GET',
+    )
     await page.goto('/admin/spm/kertas')
     await expect(page.getByTestId('papers-page')).toBeVisible()
+    const res = await listed
+    expect(res.status(), 'GET /api/admin/papers').toBe(200)
+    const body = (await res.json()) as { data?: unknown }
+    test.skip(
+      Array.isArray(body.data) && body.data.length === 0,
+      'no existing paper in this environment',
+    )
     const open = page.locator('a[href^="/admin/spm/kertas/"]:not([href$="/baharu"])').first()
-    test.skip((await open.count()) === 0, 'no existing paper in this environment')
+    await expect(open, 'the loaded list shows a paper link').toBeVisible()
     await open.click()
     await expect(page.getByTestId('paper-editor-page')).toBeVisible()
     await expect(page.getByTestId('budget-check')).toBeVisible()

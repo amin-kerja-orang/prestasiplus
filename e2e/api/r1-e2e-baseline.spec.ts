@@ -108,6 +108,33 @@ function observe(info: TestInfo, text: string): void {
   info.annotations.push({ type: 'observed', description: text })
 }
 
+/**
+ * Waits for the quiz to move on after a "next" click: the result block (`doneId`) is on screen, or the
+ * `watchId` element (question counter / question text) reads differently from `before`.
+ * Both are read in ONE `page.evaluate`, so the DOM is sampled at a single instant. Do not split this into
+ * `isVisible()` then `innerText()`: when the result replaces the question between the two calls,
+ * `innerText()` auto-waits for an element that no longer exists and the poll times out (the B-04 flake at 375).
+ */
+async function waitForNextOrDone(
+  page: Page,
+  opts: { doneId: string; watchId: string; before: string; message: string },
+): Promise<void> {
+  await expect
+    .poll(
+      () =>
+        page
+          .evaluate(({ doneId, watchId, before }) => {
+            const done = document.querySelector<HTMLElement>(`[data-testid="${doneId}"]`)
+            if (done && done.getClientRects().length > 0) return true
+            const watched = document.querySelector<HTMLElement>(`[data-testid="${watchId}"]`)
+            return watched !== null && watched.innerText !== before
+          }, opts)
+          .catch(() => false),
+      { message: opts.message, timeout: 15_000 },
+    )
+    .toBe(true)
+}
+
 // ---------------------------------------------------------------- generic helpers
 
 async function login(page: Page, user: string): Promise<void> {
@@ -1669,16 +1696,12 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
       await page.getByTestId('btn-check').click()
       await page.getByTestId('btn-next').click()
       answered++
-      await expect
-        .poll(
-          async () =>
-            (await page
-              .getByTestId('quiz-results')
-              .isVisible()
-              .catch(() => false)) || (await q.innerText().catch(() => before)) !== before,
-          { timeout: 15_000 },
-        )
-        .toBe(true)
+      await waitForNextOrDone(page, {
+        doneId: 'quiz-results',
+        watchId: 'question-text',
+        before,
+        message: 'the next question or the result after "next"',
+      })
     }
     await expect(page.getByTestId('quiz-results'), 'the result').toBeVisible({ timeout: 20_000 })
     observe(
@@ -2877,20 +2900,12 @@ test.describe('R1 E2E baseline @api @r1e2e', () => {
       const before = await page.getByTestId('kuiz-counter').innerText()
       await page.getByTestId('kuiz-next').click()
       // Wait for the next question (or the result) before picking an option again.
-      await expect
-        .poll(
-          async () =>
-            (await page
-              .getByTestId('kuiz-done')
-              .isVisible()
-              .catch(() => false)) ||
-            (await page
-              .getByTestId('kuiz-counter')
-              .innerText()
-              .catch(() => before)) !== before,
-          { timeout: 15_000 },
-        )
-        .toBe(true)
+      await waitForNextOrDone(page, {
+        doneId: 'kuiz-done',
+        watchId: 'kuiz-counter',
+        before,
+        message: 'the next question or the result after "next"',
+      })
     }
     await expect(page.getByTestId('kuiz-done'), 'the result after the last question').toBeVisible({
       timeout: 20_000,
