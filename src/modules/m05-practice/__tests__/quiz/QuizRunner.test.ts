@@ -309,6 +309,29 @@ describe('QuizRunner question', () => {
     expect(w.find('[data-testid=btn-check]').exists()).toBe(true)
   })
 
+  it('keeps the trial text but hides the /pricing link while the prototype scope is on (dead link)', async () => {
+    vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')
+    try {
+      api.check.mockRejectedValueOnce(
+        new ApiError({
+          status: 402,
+          code: 'TRIAL_EXHAUSTED',
+          message: 'Baki percubaan percuma anda telah habis.',
+          body: { error: { code: 'TRIAL_EXHAUSTED', message: 'Baki percubaan percuma anda telah habis.' } },
+        }),
+      )
+      const w = await render()
+      await t(w, 'option-A').trigger('click')
+      await t(w, 'btn-check').trigger('click')
+      await flushPromises()
+      const notice = t(w, 'trial-exhausted')
+      expect(notice.text()).toContain('Baki percubaan percuma anda telah habis.')
+      expect(notice.find('a').exists()).toBe(false)
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
   it('a non-402 network failure shows no trial notice', async () => {
     api.check.mockRejectedValueOnce(
       new ApiError({ status: 0, code: 'NETWORK_ERROR', message: 'x' }),

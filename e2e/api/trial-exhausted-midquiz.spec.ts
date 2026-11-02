@@ -10,7 +10,8 @@
  *
  * Flow: log in as the pupil, open Latih Tubi SPM (S3/S4), start a session (the 50th answer is still free, so start is 201),
  * check #1 -> 200, "Soalan Seterusnya", check #2 -> 402. Expected UI: the notice `trial-exhausted` "Baki percubaan percuma anda telah habis."
- * with the link "Langgan untuk akses tanpa had" -> /pricing, the question stays unchecked (no `quiz-feedback`, no "Salah"), no horizontal scroll.
+ * with NO link (the `@api` build has the prototype scope ON, where /pricing is out of scope and would be a dead link: the link is shown only when
+ * `allows('/pricing')`, as on the config page notice), the question stays unchecked (no `quiz-feedback`, no "Salah"), no horizontal scroll.
  * Before the fix the 402 body marked the question checked as "Salah" and showed no message.
  *
  * Env: E2E_DEMO_PASSWORD (the shared demo password; default Demo1234).
@@ -111,7 +112,7 @@ test.describe('trial exhausted mid-quiz @api', () => {
     resetTrial(pupilEmail(page))
   })
 
-  test('murid: the 402 on the second answer shows the trial notice with a /pricing link and no wrong answer @api', async ({
+  test('murid: the 402 on the second answer shows the trial notice (no dead /pricing link under the prototype scope) and no wrong answer @api', async ({
     page,
   }) => {
     const email = pupilEmail(page)
@@ -175,9 +176,10 @@ test.describe('trial exhausted mid-quiz @api', () => {
     const notice = page.getByTestId('trial-exhausted')
     await expect(notice).toBeVisible()
     await expect(notice).toContainText(EXHAUSTED)
-    const link = notice.getByRole('link', { name: 'Langgan untuk akses tanpa had' })
-    await expect(link).toBeVisible()
-    await expect(link).toHaveAttribute('href', '/pricing')
+    // Prototype scope ON (the CI build): no link to /pricing, in the notice or anywhere on the page.
+    await expect(notice.locator('a')).toHaveCount(0)
+    await expect(page.locator('a[href="/pricing"]')).toHaveCount(0)
+    await expect(page.getByText('Langgan untuk akses tanpa had')).toHaveCount(0)
     // The question is not checked and not marked wrong.
     await expect(page.getByTestId('quiz-feedback')).toHaveCount(0)
     await expect(page.getByTestId('feedback-title')).toHaveCount(0)

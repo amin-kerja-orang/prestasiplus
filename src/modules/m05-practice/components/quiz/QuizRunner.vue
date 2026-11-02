@@ -24,6 +24,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { setRouteOutcome } from '@/app/router/outcome'
+import { usePrototypeScope, useRouteExists } from '@/composables'
 import { DsFeedbackSheet, DsFloatScore, DsQuizHeader, DsQuizOption } from '@/ds'
 import { ReportQuestionModal } from '@/modules/m04-question-bank'
 
@@ -115,6 +116,9 @@ const emit = defineEmits<{
 }>()
 
 const router = useRouter()
+// The subscribe link follows the config page notice: no link to /pricing while it is out of the prototype scope or not routed (D9 dead link).
+const { allows } = usePrototypeScope()
+const { routeExists } = useRouteExists()
 const labels = computed<QuizLabels>(() => ({ ...PRACTICE_LABELS, ...props.labels }))
 
 function scrollTop(): void {
@@ -420,6 +424,7 @@ const feedbackExplanation = computed(() =>
               >
                 <template #description>
                   <ULink
+                    v-if="allows('/pricing') && routeExists('/pricing')"
                     to="/pricing"
                     class="inline-flex min-h-11 items-center text-highlighted underline"
                     >{{ SUBSCRIBE_LINK_TEXT }}</ULink
