@@ -160,3 +160,8 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
 - **The M02 default passwords** are rotated on live by the owner. Signoff 6.8 stays unticked until that rotation is explicitly confirmed.
 - **Pack items the user has not answered** (OCR AC-R1-14.2, limits 4.1–4.4, Q15/Q16 review, copy row 42) are marked **"deploy diteruskan atas arahan pemilik; penerimaan bertulis masih tertunggak"**, NOT accepted.
 - Pre-live production DB checks from B3 stand (demo.test users = 0; the IC-hash pattern → owner decides).
+
+## Q22 (USER DECISION 2026-11-02 ~19:3x MYT, relayed by Mandor): CI e2e@api failures (REQ-A-057)
+- **The user chose (a): FIX ALL.** This covers the fix units needed for a fully green CI under the freeze: (1) the A3 e2e-profile seed step (D72 demo schools; groups 1–3); (2) the stale specs spm-hub "Semua Tahap" + CC-01 "Langsung" (design cites); (3) D-02 (Darjah 4 → Tingkatan 4, per A4's classification); (4) B4's fix for the 2 bijak specs (A1b reviews).
+- The Kontrak fix REQ-B-090 was approved under the freeze and merged as **BASE-213 2fabf472** (r1/b1-kontrak-tabs-fix @881a0b06).
+- Each unit: reviewer + A1 gate → Mandor pushes. Mandor dispatches frontend CI (verify + e2e@api) once, on the final candidate (no mid-way CI except to prove the bijak root cause). The deploy stays blocked until that CI is green (Q21).
