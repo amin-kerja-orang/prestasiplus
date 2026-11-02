@@ -157,6 +157,9 @@ export const DEACTIVATE_NOTE = 'Dinyahaktifkan segera oleh admin'
 export const ARCHIVE_NOTE = 'Diarkibkan oleh admin'
 
 export const REPORT_COMMENT_MAX = 500
+
+/** REQ-B-046 REP-N2: at most this many reasons per report (contract `QUESTION_REPORT_REASONS_MAX`). */
+export const REPORT_REASONS_MAX = 8
 export const REPORT_NOTES_MAX = 1000
 
 /** S14 network-failure text (FR-M04-69; the `failureText` prop default). */

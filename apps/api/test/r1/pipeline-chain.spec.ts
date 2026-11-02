@@ -25,6 +25,7 @@ import type TestAgent from 'supertest/lib/agent'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { runSeeds } from '../../prisma/seed'
+import { ServabilityService } from '../../src/modules/questions'
 import { identitySeed } from '../../prisma/seed/core/identity'
 import { walletTiersSeed } from '../../prisma/seed/core/wallet-tiers'
 import { curriculumSeed } from '../../prisma/seed/curriculum'
@@ -36,6 +37,7 @@ import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { featureModules } from '../../src/modules'
 import { makePng } from '../files/fixtures'
+import { giveBab } from '../support/bab'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
 vi.setConfig({ testTimeout: 120_000, hookTimeout: 300_000 })
@@ -61,6 +63,7 @@ let db: TestDatabase
 let clock: FixedClock
 let admin: Client
 let pupil: Client
+let pupil5: Client
 
 async function boot(): Promise<void> {
   db = await createTestDatabase()
@@ -147,8 +150,8 @@ const mcqBody = (text: string, extra: Record<string, unknown> = {}) => ({
   options: ['3', '4', '5', '6'],
   correctAnswer: 1,
   explanation: 'Penjelasan ujian rantaian R1.',
-  cognitiveLevel: 'mengaplikasi', // the T33 approve gate: a level per leaf
-  kertas: '2',
+  cognitiveLevel: 'memahami', // the T33 approve gate: a level per leaf (not KBAT, so the Kontrak's KBAT quota of 0 holds for Jana Kertas)
+  kertas: '3',
   tag: { unitId: fx.unit, spIds: [fx.sp], tp: 3 },
   ...extra,
 })
@@ -161,6 +164,7 @@ async function createQuestion(body: Record<string, unknown>): Promise<string> {
 }
 
 async function advance(ids: string[]): Promise<void> {
+  await giveBab(db, ids)
   for (const action of SERVE_STEPS) {
     const res = await admin.post('/api/questions/bulk-action', { action, ids })
     expect(res.status, `${action}: ${JSON.stringify(res.body)}`).toBe(200)
@@ -172,6 +176,7 @@ beforeAll(async () => {
   await boot()
   admin = await login('admin@demo.test')
   pupil = await login('pelajar@demo.test')
+  pupil5 = await login('pelajarmaju@demo.test')
   fx.subject = await one(`select id::text id from subjects where code = 'MATH'`)
   fx.level = await one(`select id::text id from education_levels where code = 'T4'`)
   fx.unit = await one(`select id::text id from curriculum_nodes where kind = 'unit' and subject_id = $1 and education_level_id = $2 order by sort_order, id limit 1`, [fx.subject, fx.level])
@@ -241,13 +246,13 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
         difficultyLevel: 3,
         questionType: 'essay',
         questionText: 'Terangkan cara mengira luas segi empat tepat dan tunjukkan langkah kerja anda.',
-        kertas: '2',
+        kertas: '3',
         tag: { unitId: fx.unit, spIds: [fx.sp], tp: 3 },
         parts: [
           {
             label: 'a',
+            cognitiveLevel: 'memahami', // per leaf (T33 gate)
             mode: 'working',
-            cognitiveLevel: 'menganalisis',
             prompt: { ms: 'Kira luas segi empat tepat itu.' },
             marks: 2,
             key: {
@@ -279,9 +284,52 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     })
   })
 
+  // R1-20.1 / AC-R1-16.2 (T43): the Kontrak is created, given evidence and made Disahkan over the real API; nothing is seeded Disahkan by SQL.
+  describe('2b. the admin makes a Kontrak Disahkan (create, evidence, verify)', () => {
+    // Each section carries the full standard (pool tag, TP profile, unit quota, KBAT) so the Kontrak can be verified (AC-R1-15.2).
+    const section = (label: string, pool: string, markBudget: number, questionCount: number, rule: { type: 'all' } | { type: 'choose'; n: number }) => ({
+      label,
+      pool,
+      markBudget,
+      questionCount,
+      rule,
+      profile: { kind: 'bahagian', groups: [{ from: 1, to: questionCount, tpMin: 1, tpMax: 6 }] },
+      quota: { basis: 'questions', lines: [{ unit: { kind: 'unit', nodeId: fx.unit }, value: questionCount }] },
+      kbatMarks: 0,
+    })
+    const sections = () => [
+      section('Bahagian A', 'MAT3-A', 3, 3, { type: 'all' }),
+      section('Bahagian B', 'MAT3-B', 1, 1, { type: 'all' }),
+      section('Bahagian C', 'MAT3-C', 2, 2, { type: 'choose', n: 1 }),
+    ]
+
+    it('creates the Kontrak MAT kertas 3 as Spec; a Spec Kontrak does not serve pupils yet', async () => {
+      const res = await admin.post('/api/admin/blueprints', { subject: 'MAT', kertas: 3, source: 'Spec', code: 'MAT/E2E', durationMin: 90, instructions: ['Jawab semua soalan.'], sections: sections() })
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      expect(res.body.data).toMatchObject({ source: 'Spec', servesStudents: false, code: 'MAT/E2E' })
+    })
+
+    it('verify is refused without evidence, then Disahkan with a body-format (LPM) evidence item that states every compared value', async () => {
+      const refused = await admin.post('/api/admin/blueprints/MAT/3/verify', { note: 'Semakan awal tanpa bukti.' })
+      expect(refused.status, JSON.stringify(refused.body)).toBeGreaterThanOrEqual(400)
+      const evidence = await admin.post('/api/admin/blueprints/MAT/3/evidence', {
+        kind: 'lpm_format',
+        body: 'lpm',
+        year: 2025,
+        paperCode: '1449/2',
+        values: { durationMin: 90, totalMarks: 6, sections: sections().map((x, i) => ({ position: i + 1, markBudget: x.markBudget, rule: x.rule, questionCount: x.questionCount })) },
+      })
+      expect(evidence.status, JSON.stringify(evidence.body)).toBe(201)
+      const verified = await admin.post('/api/admin/blueprints/MAT/3/verify', { note: 'Struktur disemak dengan dokumen format LPM.' })
+      expect(verified.status, JSON.stringify(verified.body)).toBe(200)
+      expect(verified.body.data).toMatchObject({ source: 'Disahkan', servesStudents: true })
+      expect((await db.query<{ source: string; serves_students: boolean }>(`select source, serves_students from blueprints where code = 'MAT/E2E'`))[0]).toMatchObject({ source: 'verified', serves_students: true })
+    })
+  })
+
   describe('3. the admin builds the paper (b09a routes)', () => {
-    it('creates a MAT kertas 2 paper from the active blueprint', async () => {
-      const res = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
+    it('creates a MAT kertas 3 paper from the Disahkan Kontrak made in step 2b', async () => {
+      const res = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 3 })
       expect(res.status, JSON.stringify(res.body)).toBe(201)
       fx.paper = res.body.data.id as string
       const e = await admin.get(`/api/admin/papers/${fx.paper}`)
@@ -293,12 +341,12 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     // G3 (closed by T34): the admin gives each question its section pool (Bahagian A/B/C of the Kontrak) over HTTP.
     it('tags the section pools of the questions (PUT /api/admin/section-pools/:id)', async () => {
       const plan: [string, string][] = [
-        ...fx.passageMembers.map((id): [string, string] => [id, 'MAT2-A']),
-        ...fx.imageMembers.map((id): [string, string] => [id, 'MAT2-A']),
-        [fx.soloA, 'MAT2-A'],
-        [fx.soloB, 'MAT2-B'],
-        [fx.soloC, 'MAT2-C'],
-        [fx.essay, 'MAT2-C'],
+        ...fx.passageMembers.map((id): [string, string] => [id, 'MAT3-A']),
+        ...fx.imageMembers.map((id): [string, string] => [id, 'MAT3-A']),
+        [fx.soloA, 'MAT3-A'],
+        [fx.soloB, 'MAT3-B'],
+        [fx.soloC, 'MAT3-C'],
+        [fx.essay, 'MAT3-C'],
       ]
       for (const [id, pool] of plan) {
         const res = await admin.put(`/api/admin/section-pools/${id}`, { pools: [pool] })
@@ -336,9 +384,7 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     it('the review (structural tier) has no blocker, shows every row ok and the paper is not visible yet', async () => {
       const res = await admin.get(`/api/admin/papers/${fx.paper}/review`)
       expect(res.status, JSON.stringify(res.body)).toBe(200)
-      // The only blocker is the Spec contract (AC-R1-16.2); the paper itself is complete.
-      expect(res.body.data).toMatchObject({ ok: false, status: 'draf', visibleToStudents: false })
-      expect(res.body.data.blockers).toEqual([expect.stringMatching(/^Kontrak Simulasi 1449\/2 .* belum Disahkan/)])
+      expect(res.body.data).toMatchObject({ ok: true, blockers: [], status: 'draf', visibleToStudents: false })
       expect((res.body.data.rows as { ok: boolean }[]).every((r) => r.ok)).toBe(true)
       expect((res.body.data.rows as unknown[]).length).toBe(6)
       const list = await pupil.get('/api/bijak/papers')
@@ -355,15 +401,11 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     })
 
     it('Terbit: the publish answers ok and the paper is Terbit', async () => {
-      // AC-R1-16.2: the PoC contract 1449/2 is Spec. A plain Terbit is refused with a line naming the contract; the audited override (PIPE AC-07.5,
-      // reason >= 5 characters) publishes. (T43 upgrades this step to a Kontrak made Disahkan over the API.)
-      const plain = await admin.post(`/api/admin/papers/${fx.paper}/publish`)
-      expect(plain.body.data.ok).toBe(false)
-      expect((plain.body.data.errors as string[]).some((e) => e.startsWith('Kontrak Simulasi 1449/2'))).toBe(true)
-      const res = await admin.post(`/api/admin/papers/${fx.paper}/publish`, { override: true, reason: 'Kontrak 1449/2 belum disahkan' })
+      // AC-R1-16.2: the Kontrak is Disahkan (step 2b), so a plain Terbit works: no override.
+      const res = await admin.post(`/api/admin/papers/${fx.paper}/publish`)
       expect(res.status, JSON.stringify(res.body)).toBe(200)
       expect(res.body.data).toMatchObject({ ok: true, errors: [] })
-      expect((res.body.data.overridden as string[]).some((e) => e.startsWith('Kontrak Simulasi 1449/2'))).toBe(true)
+      expect(res.body.data.overridden).toBeUndefined()
       // Structural tier. With the section pools tagged (previous step) there is no "bukan dalam kolam bahagian ini" note any more.
       expect((res.body.data.notes ?? []).some((n: string) => n.includes('bukan dalam kolam bahagian ini'))).toBe(false)
       expect((await db.query<{ status: string }>(`select status from papers where id = $1`, [fx.paper]))[0]?.status).toBe('published')
@@ -378,7 +420,7 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     // it is closed by b08 (merged with T04). Kept as a plain test so it cannot regress.
     let imagePaper = ''
     it('the builder places the image group as one unit and Terbit works (structural tier)', async () => {
-      const created = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
+      const created = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 3 })
       expect(created.status).toBe(201)
       imagePaper = created.body.data.id as string
       const sections = ((await admin.get(`/api/admin/papers/${imagePaper}`)).body.data.paper.sections as { id: string }[]).map((x) => x.id)
@@ -387,9 +429,40 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       expect(g.status, JSON.stringify(g.body)).toBe(201)
       expect(g.body.data.added).toEqual(fx.imageMembers)
       for (const [sec, q] of [[0, fx.soloA], [1, fx.soloB], [2, fx.soloC], [2, fx.essay]] as const) expect((await place(sections[sec]!, q)).status).toBe(201)
-      const pub = await admin.post(`/api/admin/papers/${imagePaper}/publish`, { override: true, reason: 'Kontrak 1449/2 belum disahkan' })
+      const pub = await admin.post(`/api/admin/papers/${imagePaper}/publish`)
       expect(pub.status, JSON.stringify(pub.body)).toBe(200)
       expect(pub.body.data.ok).toBe(true)
+    })
+
+    // R1-T31: the builder wire carries `stimuli[]` (1 to 3, D90) with the public file URL of a picture, so the admin preview shows it.
+    it('the admin student view (pupil preview) of the published image paper shows the image stimulus once, with a readable /api/files/<token> URL', async () => {
+      const res = await admin.get(`/api/admin/papers/${imagePaper}/student-view`)
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      const units = res.body.data.sections[0].units as { groupId?: string; stimulus?: { kind: string }; stimuli?: { kind: string; label: string; image?: { url: string } }[]; questions: { id: string }[] }[]
+      const grouped = units.filter((u) => u.groupId !== undefined)
+      expect(grouped).toHaveLength(1)
+      const unit = grouped[0]!
+      expect(unit.groupId).toBe(fx.imageGroup)
+      expect(unit.questions.map((q) => q.id)).toEqual(fx.imageMembers)
+      expect(unit.stimuli).toHaveLength(1)
+      expect(unit.stimuli![0]).toMatchObject({ kind: 'image', label: 'Rajah 1', caption: 'Segi empat tepat', image: { url: `/api/files/${fx.imageToken}` } })
+      expect(unit.stimulus).toEqual(unit.stimuli![0]) // `stimulus` is the first of `stimuli`
+      const url = unit.stimuli![0]!.image!.url
+      expect(url).toMatch(/^\/api\/files\/[^/]+$/)
+      expect(url).toBe(fx.imageUrl)
+      expect((await admin.get(url)).status).toBe(200)
+      expect((await request(app.getHttpServer()).get(url)).status).toBe(401)
+    })
+
+    it('the admin editor data and the picker carry the same image stimulus on the group (stimuli[])', async () => {
+      const e = await admin.get(`/api/admin/papers/${imagePaper}`)
+      expect(e.status, JSON.stringify(e.body)).toBe(200)
+      const group = (e.body.data.groups as { id: string; stimulus: { kind: string }; stimuli?: { kind: string; image?: { url: string } }[]; questionIds: string[] }[]).find((g) => g.id === fx.imageGroup)
+      expect(group, JSON.stringify(e.body.data.groups)).toBeDefined()
+      expect(group!.questionIds).toEqual(fx.imageMembers)
+      expect(group!.stimuli).toHaveLength(1)
+      expect(group!.stimuli![0]).toMatchObject({ kind: 'image', image: { url: fx.imageUrl } })
+      expect(group!.stimulus).toMatchObject({ kind: 'image' })
     })
 
     it('the pupil starts the image-group paper and is served the image stimulus ONCE with both members, with a readable URL', async () => {
@@ -413,7 +486,7 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     it('sees the paper in the Bijak SPM list and on its cover', async () => {
       const list = await pupil.get('/api/bijak/papers')
       expect(list.status, JSON.stringify(list.body)).toBe(200)
-      expect((list.body.data as { id: string; code: string; questionCount: number }[]).find((p) => p.id === fx.paper)).toMatchObject({ code: '1449/2', questionCount: 6 })
+      expect((list.body.data as { id: string; code: string; questionCount: number }[]).find((p) => p.id === fx.paper)).toMatchObject({ code: 'MAT/E2E', questionCount: 6 })
       const cover = await pupil.get(`/api/bijak/papers/${fx.paper}`)
       expect(cover.status, JSON.stringify(cover.body)).toBe(200)
     })
@@ -495,6 +568,88 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       expect(past.status, JSON.stringify(past.body)).toBe(200)
       expect((past.body.data.sittings as { attemptId: string }[]).map((s) => s.attemptId)).toContain(fx.attempt)
     })
+
+    it('T38: a self-marked structured question earns the self-mark reward once per level; a replayed or lower self-mark adds nothing', async () => {
+      // The retry sitting answers the structured question WITHOUT the keywords, so the automatic grading (paid at submit) is 3 + 1 = 4 and the
+      // self-mark has room to raise it. (The first sitting answered with the keywords: the suggestion was already paid at submit, nothing to gain.)
+      const retry = fx.retryAttempt
+      const res = await pupil.get(`/api/bijak/attempts/${retry}`)
+      const rview = res.body.data as typeof view
+      const part = (q: { id: string; parts?: { id: string }[] }) => q.parts?.[0]?.id ?? q.id
+      const changes = rview.questions.filter((q) => q.id !== fx.soloC).map((q) =>
+        q.mcq !== undefined ? { partId: part(q), answer: { choice: 'B' }, rev: 1, savedAt: START } : { partId: part(q), answer: { steps: ['x'], final: 'x', text: 'x' }, rev: 1, savedAt: START },
+      )
+      expect((await pupil.put(`/api/bijak/attempts/${retry}/answers`, { changes })).status).toBe(200)
+      expect((await pupil.post(`/api/bijak/attempts/${retry}/submit`, { idempotencyKey: 'chain-retry-1', changes: [] })).status).toBe(200)
+      const ledger = async () =>
+        (await db.query<{ source_id: string; amount: number; user_id: string }>(`select source_id, amount, user_id::text from coin_ledger where source = 'quiz_spm' and source_id like $1 order by source_id`, [`${retry}%`]))
+          .map((r) => [r.source_id, Number(r.amount), r.user_id] as const)
+      const xp = async () => Number((await db.query<{ xp: number }>(`select xp from wallets where user_id = $1`, [pupil.userId]))[0]?.xp ?? 0)
+      const result = (await pupil.get(`/api/bijak/attempts/${retry}/result`)).body.data.result as { score: number; questions: { questionId: string; parts: { partId: string }[] }[] }
+      expect(result.score).toBe(4)
+      const essayPartId = result.questions.find((q) => q.questionId === fx.essay)!.parts[0]!.partId
+      // the submit paid the automatic score under the bare attempt id: 4 marks = 8 syiling
+      expect(await ledger()).toEqual([[retry, 8, pupil.userId]])
+      const xpAtSubmit = await xp()
+      const mark = async (n: number) => expect((await pupil.post(`/api/bijak/attempts/${retry}/self-mark`, { partId: essayPartId, mark: n })).status).toBe(200)
+      // 1 mark: level 5, a gain of 1 over the automatic 4 -> 2 syiling, 10 XP, one row keyed <attempt>:score:5
+      await mark(1)
+      expect(await ledger()).toEqual([[retry, 8, pupil.userId], [`${retry}:score:5`, 2, pupil.userId]])
+      expect(await xp()).toBe(xpAtSubmit + 10)
+      // 2 marks: level 6, a gain of 1 over the highest paid level (5) -> one more row, keyed :score:6
+      await mark(2)
+      expect(await ledger()).toEqual([[retry, 8, pupil.userId], [`${retry}:score:5`, 2, pupil.userId], [`${retry}:score:6`, 2, pupil.userId]])
+      expect(await xp()).toBe(xpAtSubmit + 20)
+      // a replay of the same mark, and a lower one: no row, no XP, nothing taken back
+      await mark(2)
+      await mark(1)
+      await mark(2)
+      expect(await ledger()).toEqual([[retry, 8, pupil.userId], [`${retry}:score:5`, 2, pupil.userId], [`${retry}:score:6`, 2, pupil.userId]])
+      expect(await xp()).toBe(xpAtSubmit + 20)
+    })
+  })
+
+  // R1-20.1: a Tingkatan 4 AND a Tingkatan 5 pupil each sit the paper (objective and written parts), submit, self-mark and see the result.
+  describe('4b. a Tingkatan 5 pupil sits the same paper', () => {
+    let attempt = ''
+    let essayPart = ''
+
+    it('is a Tingkatan 5 pupil (grade 11) who sees the paper in the list', async () => {
+      expect((await db.query<{ grade: number }>(`select grade from users where id = $1`, [pupil5.userId]))[0]?.grade).toBe(11)
+      const list = await pupil5.get('/api/bijak/papers')
+      expect(list.status, JSON.stringify(list.body)).toBe(200)
+      expect((list.body.data as { id: string }[]).some((p) => p.id === fx.paper)).toBe(true)
+    })
+
+    it('answers every question (the structured part with working) and submits', async () => {
+      const start = await pupil5.post('/api/bijak/attempts', { paperId: fx.paper, mode: 'exam' })
+      expect(start.status, JSON.stringify(start.body)).toBe(201)
+      attempt = start.body.data.attemptId as string
+      const view = (await pupil5.get(`/api/bijak/attempts/${attempt}`)).body.data as { questions: { id: string; mcq?: unknown; parts?: { id: string }[] }[] }
+      const changes = view.questions.filter((q) => q.id !== fx.soloC).map((q) =>
+        q.mcq !== undefined
+          ? { partId: q.parts?.[0]?.id ?? q.id, answer: { choice: 'B' }, rev: 1, savedAt: START }
+          : { partId: q.parts?.[0]?.id ?? q.id, answer: { steps: ['3 x 4'], final: '12 cm persegi', text: 'panjang darab lebar ialah 12 cm persegi' }, rev: 1, savedAt: START },
+      )
+      expect((await pupil5.put(`/api/bijak/attempts/${attempt}/answers`, { changes })).status).toBe(200)
+      const sub = await pupil5.post(`/api/bijak/attempts/${attempt}/submit`, { idempotencyKey: 'chain-t5', changes: [] })
+      expect(sub.status, JSON.stringify(sub.body)).toBe(200)
+    })
+
+    it('sees the result, self-marks the written part and presses "Cuba Lagi"', async () => {
+      const res = await pupil5.get(`/api/bijak/attempts/${attempt}/result`)
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      const r = res.body.data.result as { max: number; score: number; provisional: boolean; questions: { questionId: string; parts: { partId: string }[] }[] }
+      expect(r.max).toBe(6)
+      expect(r.provisional).toBe(true)
+      essayPart = r.questions.find((q) => q.questionId === fx.essay)!.parts[0]!.partId
+      const mark = await pupil5.post(`/api/bijak/attempts/${attempt}/self-mark`, { partId: essayPart, mark: 2 })
+      expect(mark.status, JSON.stringify(mark.body)).toBe(200)
+      expect(mark.body.data).toMatchObject({ awarded: 2, provisional: false })
+      const retry = await pupil5.post(`/api/bijak/attempts/${attempt}/retry`)
+      expect(retry.status, JSON.stringify(retry.body)).toBe(201)
+      expect(retry.body.data.attemptId).not.toBe(attempt)
+    })
   })
 
   describe('5. the approved MCQs reach Databank and Latih Tubi SPM; grouped members do not (R1 U2)', () => {
@@ -534,5 +689,172 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
 
     // R1 U2 / R2: serving group members together with their stimulus in Databank / Latih Tubi is R2 (D90 in the practice family).
     it.todo('R2: grouped members appear in Databank / Latih Tubi SPM WITH their stimulus (today they are refused: ungrouped filter)')
+  })
+
+  // R1-20.4 / AC-18.1 / AC-18.3 / AC-18.4 (T51): each applicable activity serves exactly what its rule says, and the admin reason for an exclusion
+  // comes from the SAME rule code (ServabilityService). The paper is Terbit here, so Simulasi (kertas) is served.
+  describe('5b. every activity: where each chain question is served, and why not', () => {
+    type Verdict = { served: boolean; reasons: { code: string; message: string }[] }
+    const activities = async (id: string): Promise<Record<string, Verdict>> => {
+      const report = (await app.get(ServabilityService).reports([id])).get(id)!
+      return Object.fromEntries(report.activities.map((a) => [a.activity, { served: a.served, reasons: a.reasons }]))
+    }
+
+    it('a solo approved MCQ is served in Databank, Latih Tubi SPM, Simulasi Kuiz and Simulasi (kertas)', async () => {
+      const v = await activities(fx.soloA)
+      for (const a of ['databank', 'latih_tubi_spm', 'simulasi_kuiz', 'simulasi_paper']) expect(v[a], a).toMatchObject({ served: true, reasons: [] })
+    })
+
+    it('a stimulus-group member is served in Simulasi only: Databank / Latih Tubi SPM refuse it with the reason has_stimulus (AC-18.3, D87 U2)', async () => {
+      const v = await activities(fx.passageMembers[0]!)
+      expect(v.simulasi_paper).toMatchObject({ served: true })
+      for (const a of ['databank', 'latih_tubi_spm']) {
+        expect(v[a]!.served, a).toBe(false)
+        expect(v[a]!.reasons.map((r) => r.code), a).toContain('has_stimulus')
+        expect(v[a]!.reasons[0]!.message.length, a).toBeGreaterThan(10)
+      }
+    })
+
+    it('the structured essay is served in Simulasi (kertas) only; every other activity says why in BM (AC-18.4)', async () => {
+      const v = await activities(fx.essay)
+      expect(v.simulasi_paper).toMatchObject({ served: true })
+      for (const a of ['databank', 'latih_tubi_spm', 'simulasi_kuiz']) {
+        expect(v[a]!.served, a).toBe(false)
+        expect(v[a]!.reasons.length, a).toBeGreaterThan(0)
+      }
+    })
+
+    it('A11: the paper quiz view of the Terbit paper lists its questions page by page for the pupil (PIPE A11)', async () => {
+      const res = await pupil.get(`/api/bijak/kuiz/papers/${fx.paper}`)
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      const items = res.body.data.items as { id: string }[]
+      // page 1 is Bahagian A: the two members of the passage group, then soloA, in paper order; one page per Bahagian (A, B, C)
+      expect(items.map((i) => i.id.split(':')[0])).toEqual([...fx.passageMembers, fx.soloA])
+      expect(res.body.data.pageCount).toBe(3)
+      expect(JSON.stringify(res.body)).not.toMatch(/"(correct|correctOptionId|scheme)"/)
+    })
+
+    it('the pupil\'s Simulasi Kuiz can draw every admin-approved solo MCQ (Databank and Kuiz show an approved MCQ, R1-20.4)', async () => {
+      const res = await pupil.post('/api/bijak/kuiz/sessions', { subject: 'MATH', count: 40 })
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      const ids = (res.body.data.items as { id: string }[]).map((i) => i.id.split(':')[0]!)
+      for (const id of [fx.soloA, fx.soloB, fx.soloC]) expect(ids, id).toContain(id)
+      // no answer key leaks into the quiz item
+      expect(JSON.stringify(res.body)).not.toMatch(/"(correct|correctOptionId|scheme)"/)
+    })
+  })
+
+  // R1-20.2: the same with Jana Kertas under the Disahkan Kontrak (exact-or-refuse).
+  describe('6. Jana Kertas under the Disahkan Kontrak (pupil)', () => {
+    it('a Tingkatan 4 and a Tingkatan 5 pupil each generate a private paper from the approved pool and start it', async () => {
+      const made: string[] = []
+      for (const who of [pupil, pupil5]) {
+        const res = await who.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 3 })
+        expect(res.status, JSON.stringify(res.body)).toBe(201)
+        const id = res.body.data.paperId as string
+        made.push(id)
+        const start = await who.post('/api/bijak/attempts', { paperId: id, mode: 'exam' })
+        expect(start.status, JSON.stringify(start.body)).toBe(201)
+      }
+      expect(new Set(made).size).toBe(2)
+      // a generated paper is private: not in the Kertas Pilihan list, and another pupil gets 404
+      expect(((await pupil.get('/api/bijak/papers')).body.data as { id: string }[]).some((p) => made.includes(p.id))).toBe(false)
+      expect((await pupil5.get(`/api/bijak/papers/${made[0]}`)).status).toBe(404)
+    })
+
+    // R1-20.2 (exact-or-refuse): a Disahkan Kontrak whose pool cannot fill a section gives 422 SHORTAGE with the shortage list in BM, never a
+    // short paper and no paper row; the admin sees the same shortfall in "Pratonton kolam".
+    it('a short pool is refused with SHORTAGE and the shortfall (no paper is made); the admin preview names it', async () => {
+      const need = 5
+      const create = await admin.post('/api/admin/blueprints', {
+        subject: 'MAT',
+        kertas: 4,
+        source: 'Spec',
+        code: 'MAT/E2E-S',
+        durationMin: 30,
+        instructions: ['Jawab semua soalan.'],
+        sections: [
+          {
+            label: 'Bahagian A',
+            pool: 'MAT4-A',
+            markBudget: need,
+            questionCount: need,
+            rule: { type: 'all' },
+            profile: { kind: 'bahagian', groups: [{ from: 1, to: need, tpMin: 1, tpMax: 6 }] },
+            quota: { basis: 'questions', lines: [{ unit: { kind: 'unit', nodeId: fx.unit }, value: need }] },
+            kbatMarks: 0,
+          },
+        ],
+      })
+      expect(create.status, JSON.stringify(create.body)).toBe(201)
+      const ev = await admin.post('/api/admin/blueprints/MAT/4/evidence', {
+        kind: 'lpm_format',
+        body: 'lpm',
+        year: 2025,
+        paperCode: '1449/4',
+        values: { durationMin: 30, totalMarks: need, sections: [{ position: 1, markBudget: need, rule: { type: 'all' }, questionCount: need }] },
+      })
+      expect(ev.status, JSON.stringify(ev.body)).toBe(201)
+      const ok = await admin.post('/api/admin/blueprints/MAT/4/verify', { note: 'Struktur disemak dengan dokumen format LPM.' })
+      expect(ok.status, JSON.stringify(ok.body)).toBe(200)
+
+      const before = Number((await db.query<{ n: string }>(`select count(*) n from papers where kind = 'jana'`))[0]!.n)
+      for (const who of [pupil, pupil5]) {
+        const res = await who.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 4 })
+        expect(res.status, JSON.stringify(res.body)).toBe(422)
+        expect(res.body.error).toMatchObject({ code: 'SHORTAGE', message: 'Kertas tidak dapat dijana kerana soalan tidak mencukupi.' })
+        expect(res.body.error.details.shortages).toEqual([expect.objectContaining({ section: 'Bahagian A', kind: 'count', need, have: 0 })])
+      }
+      expect(Number((await db.query<{ n: string }>(`select count(*) n from papers where kind = 'jana'`))[0]!.n)).toBe(before)
+
+      const preview = await admin.get('/api/admin/papers/pool-preview?subject=MAT&kertas=4')
+      expect(preview.status, JSON.stringify(preview.body)).toBe(200)
+      expect(preview.body.data.verdict).not.toBe('boleh')
+      expect(preview.body.data.firstFailure).toMatchObject({ section: 'Bahagian A', need })
+    })
+
+    it('only a Disahkan Kontrak is offered: a Spec Kontrak (the seeded MAT kertas 1) is refused with NO_BLUEPRINT', async () => {
+      const res = await pupil.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 1 })
+      expect(res.status, JSON.stringify(res.body)).toBe(422)
+      expect(res.body.error.code).toBe('NO_BLUEPRINT')
+    })
+  })
+
+  // R1-20.3 negatives.
+  describe('7. negatives: the T33 gate, a draft is invisible, a withdrawn paper', () => {
+    // R1-20.3 / PIPE AC-18.1 (T33 gate, merged at BASE-60): approving an SPM-bound question needs a cognitive level per leaf and the kertas.
+    it('a question without the DSKP-complete data cannot be approved: it stays in review with the BM reasons, and is not served anywhere', async () => {
+      const incomplete = await createQuestion(mcqBody('Berapakah 10 tolak 4?', { cognitiveLevel: undefined, kertas: undefined }))
+      await giveBab(db, [incomplete]) // H-A18: the submit gate asks for a Bab; this test is about the approve gate (cognitive level, kertas)
+      const toReview = await admin.post('/api/questions/bulk-action', { action: 'review', ids: [incomplete] })
+      expect(toReview.status, JSON.stringify(toReview.body)).toBe(200)
+      expect(toReview.body.data.failed, JSON.stringify(toReview.body)).toEqual([]) // it really reached Semakan: the refusal below is the approve gate's
+      const res = await admin.post('/api/questions/bulk-action', { action: 'approved', ids: [incomplete] })
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(res.body.data.affected).toBe(0)
+      expect(res.body.data.failed).toHaveLength(1)
+      expect(res.body.data.failed[0]).toMatchObject({
+        id: incomplete,
+        code: 'VALIDATION_ERROR',
+        fields: { 'parts.1.cognitiveLevel': 'Bahagian (1) belum ada aras pemikiran.', kertas: 'Sila pilih kertas untuk soalan SPM.' },
+      })
+      expect((await db.query<{ status: string }>(`select v.status from question_versions v join questions q on q.id = v.question_id and q.latest_version_no = v.version_no where q.id = $1`, [incomplete]))[0]?.status).toBe('review')
+      // not in the pupil's Kuiz either
+      const kuiz = await pupil.post('/api/bijak/kuiz/sessions', { subject: 'MATH', count: 40 })
+      expect((kuiz.body.data.items as { id: string }[]).map((i) => i.id.split(':')[0])).not.toContain(incomplete)
+    })
+
+    it('a draft paper is not visible to a pupil; a withdrawn paper is gone for the pupil and cannot be retried, but the past attempt and its result stay (R1-20.3)', async () => {
+      const draft = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 3 })
+      expect(draft.status).toBe(201)
+      expect((await pupil.get(`/api/bijak/papers/${draft.body.data.id as string}`)).status).toBe(404)
+
+      expect((await admin.post(`/api/admin/papers/${fx.paper}/withdraw`)).status).toBe(200)
+      expect((await pupil.get(`/api/bijak/papers/${fx.paper}`)).status).toBe(404)
+      const retry = await pupil.post(`/api/bijak/attempts/${fx.attempt}/retry`)
+      expect(retry.status, JSON.stringify(retry.body)).toBeGreaterThanOrEqual(400)
+      const result = await pupil.get(`/api/bijak/attempts/${fx.attempt}/result`)
+      expect(result.status, JSON.stringify(result.body)).toBe(200)
+    })
   })
 })

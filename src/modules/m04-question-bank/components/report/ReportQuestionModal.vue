@@ -15,12 +15,14 @@
 import { Check, Flag, LoaderCircle, Send, X } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
 
+import { ApiError } from '@/api'
 import { BaseModal } from '@/components/overlay'
 
 import { createQuestionReport, type ReportSource } from '../../api/reports'
 import {
   REPORT_COMMENT_MAX,
   REPORT_FAILURE_TEXT,
+  REPORT_REASONS_MAX,
   reasonSet,
   type ReportTint,
   type ReportVariant,
@@ -35,6 +37,8 @@ const props = withDefaults(
     questionId: number
     variant?: ReportVariant
     quizSessionId?: string | null
+    /** R1-T42: a Bijak attempt (uuid): the report then stores the paper. */
+    attemptId?: string | null
     source?: ReportSource
     failureText?: string
     tints?: Readonly<Record<string, ReportTint>>
@@ -44,6 +48,7 @@ const props = withDefaults(
   {
     variant: 'mcq',
     quizSessionId: null,
+    attemptId: null,
     source: undefined,
     failureText: REPORT_FAILURE_TEXT,
     tints: undefined,
@@ -63,6 +68,9 @@ const comment = ref('')
 const loading = ref(false)
 const submitted = ref(false)
 const message = ref('')
+/** The server's 422 `fields.reasons` text (REQ-B-046); the form stays open. */
+const reasonsError = ref('')
+const atMax = computed(() => selected.value.length >= REPORT_REASONS_MAX)
 
 /** Bumped on every reopen and submit; a response of an older request is ignored. */
 let requestSeq = 0
@@ -74,6 +82,7 @@ function reset(): void {
   loading.value = false
   submitted.value = false
   message.value = ''
+  reasonsError.value = ''
 }
 
 watch(
@@ -101,6 +110,7 @@ const sourceValue = computed<ReportSource>(
 async function submit(): Promise<void> {
   if (selected.value.length === 0 || loading.value) return
   loading.value = true
+  reasonsError.value = ''
   const mine = ++requestSeq
   try {
     const res = await createQuestionReport({
@@ -109,28 +119,28 @@ async function submit(): Promise<void> {
       reasons: [...selected.value],
       comment: comment.value,
       ...(props.quizSessionId ? { quizSessionId: props.quizSessionId } : {}),
+      ...(props.attemptId ? { attemptId: props.attemptId } : {}),
       source: sourceValue.value,
     })
     if (mine !== requestSeq) return
     message.value = res.message || DEFAULT_SUCCESS
     emit('reported', { ok: true, message: message.value })
-  } catch {
+  } catch (err) {
     if (mine !== requestSeq) return
+    if (err instanceof ApiError && err.status === 422 && err.fields?.reasons) {
+      reasonsError.value = err.fields.reasons
+      loading.value = false
+      return
+    }
     message.value = props.failureText
     emit('reported', { ok: false, message: message.value })
   } finally {
     if (mine === requestSeq) {
       loading.value = false
-      submitted.value = true
+      if (!reasonsError.value) submitted.value = true
     }
   }
 }
-
-const SUBTITLE = computed(() =>
-  props.variant === 'mcq'
-    ? 'Soalan ini akan dinyahaktifkan sementara'
-    : 'Soalan ini akan dinyahaktifkan selepas 3 laporan',
-)
 
 const BUTTON =
   'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold transition focus:outline-none focus-visible:ring-2'
@@ -150,7 +160,6 @@ const BUTTON =
             <h3 class="font-heading text-lg font-bold text-slate-800" data-testid="report-title">
               Lapor Soalan
             </h3>
-            <p class="text-xs text-slate-500" data-testid="report-subtitle">{{ SUBTITLE }}</p>
           </div>
         </div>
         <button
@@ -203,6 +212,7 @@ const BUTTON =
                 v-model="selected"
                 type="checkbox"
                 :value="r.value"
+                :disabled="atMax && !selected.includes(r.value)"
                 class="mt-1 h-4 w-4 shrink-0 rounded border-slate-300"
               />
               <span class="min-w-0">
@@ -211,6 +221,14 @@ const BUTTON =
               </span>
             </label>
           </div>
+          <p
+            v-if="reasonsError"
+            class="mt-2 text-sm text-red-600"
+            role="alert"
+            data-testid="report-reasons-error"
+          >
+            {{ reasonsError }}
+          </p>
         </div>
 
         <div>

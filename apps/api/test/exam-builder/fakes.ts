@@ -101,6 +101,13 @@ export class FakeBank implements BuilderQuestionSource, BijakQuestionSource {
     return out
   }
 
+  /** The text match of the port (R1 perf): the preview or the topic of the version in force contains the needle, case-insensitively. */
+  async matchText(ids: readonly string[], needle: string): Promise<Set<string>> {
+    const low = needle.toLowerCase()
+    const infos = await this.describe(ids.map((id) => ({ id })))
+    return new Set([...infos].filter(([, i]) => i.preview.toLowerCase().includes(low) || i.topic.toLowerCase().includes(low)).map(([id]) => id))
+  }
+
   async candidates(scope: BuilderCandidateScope): Promise<string[]> {
     return [...this.questions.values()]
       .filter((q) => q.subject === scope.subject && q.kertas === scope.kertas && q.status === 'approved')

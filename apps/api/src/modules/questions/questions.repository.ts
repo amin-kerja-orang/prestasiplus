@@ -8,6 +8,7 @@ import { PrismaService } from '../../db/prisma.service'
 import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, SPM_SERVABLE_SQL } from './learner-visibility'
 import type { Prng } from '../../db/prng'
 import { kbatOf, missingLeafSql } from './effective-leaf'
+import { paperHeld, QUESTION_SERVED_BY_PAPER } from './served-rule'
 import { isQuestionStatus } from './status'
 import { partsFromRows, type PartDraft, StoredKeyError } from './tree'
 import type {
@@ -17,6 +18,7 @@ import type {
   Page,
   QuestionFilter,
   QuestionRecord,
+  GateFacts,
   QuestionPlacementRecord,
   QuestionStatus,
   QuestionVersionRecord,
@@ -59,6 +61,15 @@ export interface VersionDraft {
    * `undefined` leaves the stored value untouched on a rewrite and stores null on a new version.
    */
   paperCode?: string | null
+  /**
+   * Import holds carried to a NEW version (REQ H-A18 minor): the loader's `import_issues` that still apply to the edited content.
+   * `undefined` leaves the column untouched on a rewrite and stores null on a new version; `null` clears.
+   */
+  importIssues?: { code: string; target?: string; label?: string; path?: string }[] | null
+  /** R1-H-A18: who wrote the content last. A person's edit is `person`; the AI service marks its own writes `ai`. */
+  lastEditor?: 'person' | 'ai'
+  /** R1-H-A18: question total declared at intake accept (null = none). A person's edit stores null. */
+  declaredMarks?: number | null
   spNodeIds: bigint[]
   stimulusIds: bigint[]
   parts: PartDraft[]
@@ -144,6 +155,20 @@ type VersionRow = PrismaTypes.QuestionVersionGetPayload<{
 const PKSK_TAG = 'pksk_domain'
 const NOT_PKSK = NOT_PKSK_SQL
 const IS_PKSK = Prisma.sql`EXISTS (SELECT 1 FROM question_tags pt WHERE pt.question_id = q.id AND pt.kind = 'pksk_domain')`
+
+/**
+ * `true` when every stimulus the question shows can be shown: a picture kind has its file, a table has a grid, a file or a pipe table in the
+ * body, a passage has text, and the version carries no `legacy_image_unresolved` import hold. `stimuli` is a statement selecting `sid`.
+ */
+const mediaResolvedSql = (stimuli: Prisma.Sql, importIssues: Prisma.Sql): Prisma.Sql => Prisma.sql`(
+  NOT EXISTS (
+    SELECT 1 FROM (${stimuli}) l JOIN stimuli s ON s.id = l.sid
+     WHERE (s.kind IN ('image', 'diagram', 'map', 'infographic', 'graph') AND s.asset_file_id IS NULL)
+        OR (s.kind = 'table' AND s.table_data IS NULL AND s.asset_file_id IS NULL AND (s.body_ms IS NULL OR s.body_ms NOT LIKE '%|%'))
+        OR (s.kind = 'passage' AND btrim(coalesce(s.body_ms, '')) = '' AND btrim(coalesce(s.body_en, '')) = '')
+  )
+  AND NOT (coalesce(${importIssues}, '[]'::jsonb) @> '[{"code": "legacy_image_unresolved"}]'::jsonb)
+)`
 
 /** Most ids `eligibleIds` returns (it throws beyond it) and the cap of one keyset page. */
 export const ELIGIBLE_IDS_MAX = 5000
@@ -571,14 +596,18 @@ export class QuestionsRepository {
     const below = filter.idBelow === undefined ? null : bi(filter.idBelow)
     const pageWhere = filter.idBelow === undefined ? whereAll : Prisma.sql`${whereAll} AND ${below === null ? Prisma.sql`FALSE` : Prisma.sql`q.id < ${below}`}`
     const offset = filter.idBelow === undefined ? (filter.page - 1) * filter.pageSize : 0
-    const [rows, totals, counted] = await Promise.all([
+    // ONE aggregate for the totals (R1 perf, T54 F4): the per-status counts of the filter WITHOUT its status, which the list returns in
+    // `meta.counts`, also give the total: all of them, or the one of the chosen status. It used to be a second full scan with the same
+    // joins and conditions (`count(*)` over `whereAll`). The numbers are the same, so the answer stays exact; no cache, nothing to invalidate.
+    const [rows, counted] = await Promise.all([
       this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${pageWhere} ORDER BY q.id DESC LIMIT ${filter.pageSize} OFFSET ${offset}`,
-      this.db.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n ${from} WHERE ${whereAll}`,
       this.db.$queryRaw<{ status: string; n: number }[]>`SELECT v.status AS status, count(*)::int AS n ${from} WHERE ${whereBase} GROUP BY 1`,
     ])
     const counts = NO_STATUS_COUNTS()
     for (const c of counted) if (isQuestionStatus(c.status)) counts[c.status] = c.n
-    return { ids: rows.map((r) => idToString(r.id)), total: totals[0]?.n ?? 0, counts }
+    // Sum over every group the database returned (not only the known statuses), so a row with an unexpected status still counts as it did.
+    const total = filter.status ? (counts[filter.status] ?? 0) : counted.reduce((n, c) => n + c.n, 0)
+    return { ids: rows.map((r) => idToString(r.id)), total, counts }
   }
 
   private adminConds(f: AdminListFilter): Prisma.Sql[] {
@@ -623,9 +652,9 @@ export class QuestionsRepository {
     // V2 Studio filters (D79). Tahun, Negeri and Jenis read the source paper of the version; Kertas is the trailing digit of the
     // version's paper code (how the paper builder reads it). A question without the value never matches.
     if (f.tahun !== undefined) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND sp.year = ${Number(f.tahun)})`)
-    if (f.negeri !== undefined) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND lower(sp.exam_board) = lower(${f.negeri}))`)
+    if (f.negeri !== undefined && f.negeri.trim() !== '') conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND lower(btrim(sp.exam_board)) = lower(btrim(${f.negeri})))`)
     if (f.jenis !== undefined) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND sp.exam_type = ${f.jenis})`)
-    if (f.kertas !== undefined) conds.push(Prisma.sql`substring(v.paper_code from '([0-9])\s*$') = ${f.kertas}`)
+    if (f.kertas !== undefined) conds.push(Prisma.sql`substring(v.paper_code from '/([1-3])[[:space:]]*$') = ${f.kertas}`)
     if (f.search !== undefined && f.search.trim() !== '') {
       const like = likePattern(f.search.trim())
       conds.push(Prisma.sql`(v.stem_ms ILIKE ${like} ESCAPE '\\' OR v.stem_en ILIKE ${like} ESCAPE '\\')`)
@@ -841,12 +870,68 @@ export class QuestionsRepository {
     return out
   }
 
-  /** `rights_status` of one version: null when no declaration was made (or the version is unknown). */
-  async rightsStatusOf(questionId: string, versionNo: number): Promise<string | null> {
+  /**
+   * The facts the gates read that are not on the version row (R1-H-A18): ONE loader for the lifecycle transition, `gate-check`, the bulk
+   * action and the workflow bank adapter. Read inside the caller's transaction when there is one. The duplicate flag counts open `exact` and `near`
+   * links only: a pending `variant` link is informational (intake `duplicates.ts`) and never blocks Semakan or Terbit (REQ-B-057).
+   */
+  async gateFacts(questionId: string, versionNo: number): Promise<GateFacts> {
     const key = bi(questionId)
-    if (key === null) return null
-    const row = await this.db.questionVersion.findUnique({ where: { questionId_versionNo: { questionId: key, versionNo } }, select: { rightsStatus: true } })
-    return row?.rightsStatus ?? null
+    const none: GateFacts = { unconfirmedLowConfidenceFields: [], hasOpenDuplicateFlag: false, mediaResolved: true, lastEditedByAi: false, declaredMarks: null }
+    if (key === null) return none
+    const rows = await this.db.$queryRaw<
+      {
+        last_editor: string
+        declared_marks: number | null
+        duplicate_open: boolean
+        low_fields: string[] | null
+        confirmed_fields: string[] | null
+        media_ok: boolean
+      }[]
+    >`
+      SELECT v.last_editor, v.declared_marks,
+             EXISTS (SELECT 1 FROM intake_items di JOIN duplicate_links dl ON dl.item_id = di.id
+                      WHERE di.question_id = q.id AND dl.decision = 'pending' AND dl.kind IN ('exact', 'near')) AS duplicate_open,
+             ii.low_fields, ii.confirmed_fields,
+             ${mediaResolvedSql(Prisma.sql`SELECT vs.stimulus_id AS sid FROM question_version_stimuli vs WHERE vs.question_version_id = v.id
+               UNION SELECT p.stimulus_id FROM question_parts p WHERE p.question_version_id = v.id AND p.stimulus_id IS NOT NULL
+               UNION SELECT gs.stimulus_id FROM stimulus_group_stimuli gs WHERE gs.group_id = q.group_id`, Prisma.sql`v.import_issues`)} AS media_ok
+        FROM question_versions v
+        JOIN questions q ON q.id = v.question_id
+        LEFT JOIN intake_items ii ON ii.id = v.intake_item_id
+       WHERE v.question_id = ${key} AND v.version_no = ${versionNo}`
+    const r = rows[0]
+    if (!r) return none
+    const confirmed = new Set(r.confirmed_fields ?? [])
+    return {
+      unconfirmedLowConfidenceFields: (r.low_fields ?? []).filter((f) => !confirmed.has(f)),
+      hasOpenDuplicateFlag: r.duplicate_open,
+      mediaResolved: r.media_ok,
+      lastEditedByAi: r.last_editor === 'ai',
+      declaredMarks: r.declared_marks,
+    }
+  }
+
+  /** The AI service's write of `explanation_ms` on a version nobody is served (a draft or a review version): in place, marked as the AI's. */
+  async setExplanationInPlace(questionId: string, versionNo: number, text: string): Promise<void> {
+    const key = bi(questionId)
+    if (key === null) return
+    await this.db.questionVersion.update({ where: { questionId_versionNo: { questionId: key, versionNo } }, data: { explanationMs: text, lastEditor: 'ai' } })
+  }
+
+  /** Media check for a question that is not stored yet (the create-as-approved shortcut): its stimulus links and its group. */
+  async mediaResolvedFor(stimulusIds: readonly bigint[], groupId: bigint | null): Promise<boolean> {
+    const ids = stimulusIds.length === 0 ? Prisma.sql`SELECT NULL::bigint AS sid WHERE false` : Prisma.sql`SELECT x.sid FROM unnest(${[...stimulusIds]}::bigint[]) AS x(sid)`
+    const group = groupId === null ? Prisma.empty : Prisma.sql`UNION SELECT gs.stimulus_id FROM stimulus_group_stimuli gs WHERE gs.group_id = ${groupId}`
+    const rows = await this.db.$queryRaw<{ ok: boolean }[]>`SELECT ${mediaResolvedSql(Prisma.sql`${ids} ${group}`, Prisma.sql`NULL::jsonb`)} AS ok`
+    return rows[0]?.ok === true
+  }
+
+  /** Sets who wrote the version last (a person's action clears the AI flag; the AI service sets it on its own writes). */
+  async setLastEditor(questionId: string, versionNo: number, editor: 'person' | 'ai'): Promise<void> {
+    const key = bi(questionId)
+    if (key === null) return
+    await this.db.questionVersion.updateMany({ where: { questionId: key, versionNo, lastEditor: { not: editor } }, data: { lastEditor: editor } })
   }
 
   /** R1-B05: the subject is in the SPM catalogue (`spm_subject_configs`) and the level is Tingkatan 4 or 5. */
@@ -858,6 +943,22 @@ export class QuestionsRepository {
       SELECT 1 AS one FROM spm_subject_configs c JOIN education_levels l ON l.id = ${level} AND l.code IN ('T4', 'T5')
        WHERE c.subject_id = ${subject} LIMIT 1`
     return rows.length > 0
+  }
+
+  /**
+   * The distinct exam boards ("negeri atau badan peperiksaan") of the source papers, for the Studio Negeri select (REQ-C-019). Distinct
+   * case-insensitively on the trimmed text (the Negeri filter matches that way, so two spellings would be one choice); the display form is the
+   * most used spelling, then the first in byte order, so the answer is deterministic. Sorted by the lower-case form.
+   */
+  async examBoards(): Promise<string[]> {
+    const rows = await this.db.$queryRaw<{ board: string }[]>`
+      SELECT board FROM (
+        SELECT DISTINCT ON (k) board, k FROM (
+          SELECT btrim(exam_board) AS board, lower(btrim(exam_board)) AS k, count(*) AS n
+            FROM source_papers WHERE exam_board IS NOT NULL AND btrim(exam_board) <> '' GROUP BY 1, 2
+        ) g ORDER BY k, n DESC, board ASC
+      ) d ORDER BY k`
+    return rows.map((r) => r.board)
   }
 
   async groupExists(id: string): Promise<boolean> {
@@ -905,8 +1006,92 @@ export class QuestionsRepository {
   async addVersion(questionId: string, versionNo: number, draft: VersionDraft, now: Date): Promise<void> {
     const id = bi(questionId)
     if (id === null) return
-    await this.insertVersion(id, versionNo, draft, now, null)
+    // REQ-B-017: the declaration and provenance of the version being edited carry over. Without this a new version had rights_status NULL,
+    // which the approve gate reads as `own`, so one edit of a question declared `unclear` skipped the rights rule.
+    const prev = await this.db.questionVersion.findUnique({
+      where: { questionId_versionNo: { questionId: id, versionNo: versionNo - 1 } },
+      select: {
+        rightsStatus: true,
+        sourceKind: true,
+        contributorId: true,
+        year: true,
+        examType: true,
+        examBoard: true,
+        textbookBab: true,
+        textbookTingkatan: true,
+        textbookPage: true,
+        sourcePaperId: true,
+        sourceFileId: true,
+        sourceRegion: true,
+        aiRunId: true,
+        aiModel: true,
+        intakeItemId: true,
+      },
+    })
+    await this.insertVersion(id, versionNo, draft, now, null, undefined, prev ?? undefined)
     await this.db.question.update({ where: { id }, data: { latestVersionNo: versionNo, updatedAt: now } })
+  }
+
+  /**
+   * REQ-B-052: is this version the one a paper pins (`paper_placements.pinned_version_no`) on a paper that is still held (`paperHeld`, served-rule.ts: Terbit,
+   * or withdrawn with sittings, AC-07.7)? Such a version is what pupils are served and marked against, so it must never be rewritten. Draft papers
+   * that were never sat do not count: they follow the question in force.
+   *
+   * The attempts probe runs only for a withdrawn paper: an attempt needs a published paper at start (`BijakPapersAttemptSource.resolveForAttempt`), a paper
+   * never goes back to `draft` or `ready` (draft -> published -> withdrawn -> published), and the migrated attempts have `paper_id` NULL, so no
+   * other status can hold attempts.
+   */
+  async versionIsPinned(questionId: string, versionNo: number): Promise<boolean> {
+    const key = bi(questionId)
+    if (key === null) return false
+    const rows = await this.db.$queryRaw<{ one: number }[]>`
+      SELECT 1 AS one
+        FROM paper_placements pl
+        JOIN paper_sections s ON s.id = pl.paper_section_id
+        JOIN papers p ON p.id = s.paper_id
+       WHERE pl.question_id = ${key} AND pl.pinned_version_no = ${versionNo} AND ${paperHeld('p')}
+       LIMIT 1`
+    return rows.length > 0
+  }
+
+  /**
+   * Why a question may not be deleted for good (R1-delete-served-guard; lead decision: follow V2 except where the delete breaks a pupil): a paper that
+   * is still held (`paperHeld`: Terbit, or withdrawn with sittings) places it. `served`: the version that paper pins is approved or archived, so the
+   * paper serves it (`QUESTION_SERVED_BY_PAPER`); `pinned`: the paper places it with a version that is neither (a restored draft), so the pin alone holds
+   * it. Any other state is deletable, a live approved question that no held paper places included. `null` = it may go; `undefined` = no such question
+   * (a PKSK question counts as unknown here, as everywhere in M04). The caller holds the question lock.
+   */
+  async deletionBlock(questionId: string): Promise<'served' | 'pinned' | null | undefined> {
+    const key = bi(questionId)
+    if (key === null) return undefined
+    const rows = await this.db.$queryRaw<{ served: boolean; pinned: boolean }[]>`
+      SELECT ${QUESTION_SERVED_BY_PAPER} AS served,
+             EXISTS (SELECT 1 FROM paper_placements pl
+                       JOIN paper_sections s ON s.id = pl.paper_section_id
+                       JOIN papers p ON p.id = s.paper_id
+                      WHERE pl.question_id = q.id AND ${paperHeld('p')}) AS pinned
+        FROM questions q
+       WHERE q.id = ${key} AND NOT ${IS_PKSK}`
+    const r = rows[0]
+    if (!r) return undefined
+    if (r.served) return 'served'
+    return r.pinned ? 'pinned' : null
+  }
+
+  /**
+   * REQ-B-052: of the given questions, the version a withdrawn question was last served from: the newest version that is archived and was
+   * published. A question archived and then edited has a newer draft on top (the edit branches, it never rewrites the archived version), so the
+   * sittings that hold it must read this version, not the latest one.
+   */
+  async withdrawnVersionNos(ids: readonly string[]): Promise<Map<string, number>> {
+    const keys = [...new Set(ids)].map(bi).filter((v): v is bigint => v !== null)
+    if (keys.length === 0) return new Map()
+    const rows = await this.db.$queryRaw<{ question_id: bigint; version_no: number }[]>`
+      SELECT DISTINCT ON (v.question_id) v.question_id, v.version_no
+        FROM question_versions v
+       WHERE v.question_id = ANY(${keys}::bigint[]) AND v.status = 'archived' AND v.published_at IS NOT NULL
+       ORDER BY v.question_id, v.version_no DESC`
+    return new Map(rows.map((r) => [idToString(r.question_id), r.version_no]))
   }
 
   /** Replaces the content of an existing (non-live) version: fields, SP nodes, stimuli and the whole part tree. */
@@ -1119,6 +1304,9 @@ export class QuestionsRepository {
       sourcePage: c.sourcePage,
       setLabel: c.setLabel,
       ...(c.paperCode === undefined ? {} : { paperCode: c.paperCode }),
+      ...(c.importIssues === undefined ? {} : { importIssues: c.importIssues === null || c.importIssues.length === 0 ? Prisma.DbNull : (c.importIssues as unknown as Prisma.InputJsonValue) }),
+      lastEditor: c.lastEditor ?? 'person',
+      declaredMarks: c.declaredMarks ?? null,
     }
   }
 
@@ -1129,6 +1317,23 @@ export class QuestionsRepository {
     now: Date,
     publishedAt: Date | null,
     provenance?: VersionProvenance,
+    inherited?: {
+      rightsStatus: string | null
+      sourceKind: string | null
+      contributorId: bigint | null
+      year: number | null
+      examType: string | null
+      examBoard: string | null
+      textbookBab: number | null
+      textbookTingkatan: number | null
+      textbookPage: number | null
+      sourcePaperId: bigint | null
+      sourceFileId: bigint | null
+      sourceRegion: unknown
+      aiRunId: bigint | null
+      aiModel: string | null
+      intakeItemId: bigint | null
+    },
   ): Promise<void> {
     const { parts, spNodeIds, stimulusIds, ...columns } = draft
     const version = await this.db.questionVersion.create({
@@ -1139,6 +1344,9 @@ export class QuestionsRepository {
         createdAt: now,
         updatedAt: now,
         ...this.versionColumns(columns),
+        ...(inherited === undefined
+          ? {}
+          : { ...inherited, sourceRegion: inherited.sourceRegion === null || inherited.sourceRegion === undefined ? undefined : (inherited.sourceRegion as object) }),
         ...(provenance === undefined
           ? {}
           : {

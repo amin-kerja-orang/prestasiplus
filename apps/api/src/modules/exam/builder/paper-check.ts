@@ -162,8 +162,8 @@ export function checkPaper(input: CheckInput): PaperCheck {
 }
 
 /**
- * `checkPaper` plus the same blocking lines as coded issues, in the order of `publishErrors` (paper-wide first, then each section).
- * `issues.map(i => i.message)` equals `publishErrors(check)`.
+ * `checkPaper` plus the blocking lines as coded issues, in the order of `publishErrors` (paper-wide first, then each section), plus the
+ * three AC-07.4 checks of T43b that `check` does not carry (NO_QUESTIONS, ZERO_MARK_SECTION, TOTAL_MARKS_BELOW_ONE).
  */
 export function checkPaperDetailed(input: CheckInput): { check: PaperCheck; issues: CheckIssue[] } {
   const { specs, sections, marksOf, groupOf, membersOf, isLive } = input
@@ -254,9 +254,19 @@ export function checkPaperDetailed(input: CheckInput): { check: PaperCheck; issu
     totalBudget,
     ok: errors.length === 0 && out.every((s) => s.ok),
   }
+  // PIPE AC-07.4 (T43b): three Terbit checks the V2 publish has and the prototype `checkPaper` does not (so `check` and its parity with the
+  // prototype stay as they were): no question at all, no zero-mark Bahagian with questions, total marks at least 1. All three are hard.
+  const anyQuestion = sections.some((s) => s.questionIds.length > 0)
+  const noQuestions: CheckIssue[] = anyQuestion ? [] : [{ code: 'NO_QUESTIONS', message: LINES.noQuestions }]
+  const totalBelowOne: CheckIssue[] = anyQuestion && totalMarks < 1 ? [{ code: 'TOTAL_MARKS_BELOW_ONE', message: LINES.totalMarksBelowOne }] : []
   const issues: CheckIssue[] = [
+    ...noQuestions,
     ...errors.map((message, i): CheckIssue => ({ code: paperCodes[i]!, message })),
-    ...out.flatMap((s, si) => s.errors.map((e, i): CheckIssue => ({ code: sectionCodes[si]![i]!, message: LINES.sectionLine(s.label, e), section: s.label }))),
+    ...totalBelowOne,
+    ...out.flatMap((s, si): CheckIssue[] => [
+      ...(s.count > 0 && s.marks === 0 ? [{ code: 'ZERO_MARK_SECTION' as const, message: LINES.sectionLine(s.label, LINES.zeroMarkSection), section: s.label }] : []),
+      ...s.errors.map((e, i): CheckIssue => ({ code: sectionCodes[si]![i]!, message: LINES.sectionLine(s.label, e), section: s.label })),
+    ]),
   ]
   return { check, issues }
 }

@@ -777,15 +777,19 @@ describe('writes', () => {
     ).toBe('CONTRACT')
   }, 60_000)
 
-  it('a report deactivates an MCQ at once (BR-M04-12) and a 3rd open report deactivates a structured question', async () => {
+  it('a report no longer deactivates (D98); an admin forceDeactivate takes an MCQ and a structured question out of practice', async () => {
     await runtime.reset()
     const res = reports.create({ questionId: 564161, reasons: ['typo'], source: 'spm' }, 2, NOW_MS)
     expect(res).toMatchObject({ success: true, message: 'Laporan berjaya dihantar.' })
+    expect(questions.get(564161)?.isActive).toBe(true)
+    expect(questions.eligibleForPractice(564161)).toBe(true)
+    expect(reports.count('R-STATUS', 'pending')).toBe(3)
+    const mcqReport = reports.list('pending').find((r) => r.questionId === 564161)
+    reports.update(mcqReport?.id ?? 0, { status: 'reviewed', forceDeactivate: true }, NOW_MS)
     expect(questions.get(564161)?.isActive).toBe(false)
     expect(questions.count('Q-ELIGIBLE')).toBe(128_988)
     expect(questions.count('Q-SPM-POOL', 4)).toBe(2_075)
     expect(questions.eligibleForPractice(564161)).toBe(false)
-    expect(reports.count('R-STATUS', 'pending')).toBe(3)
 
     for (let i = 0; i < 2; i++) {
       reports.create(
@@ -800,7 +804,7 @@ describe('writes', () => {
       )
     }
     expect(structured.get(3704)?.isActive).toBe(true)
-    reports.create(
+    const third = reports.create(
       {
         questionId: 3704,
         questionType: 'structured',
@@ -810,11 +814,12 @@ describe('writes', () => {
       3,
       NOW_MS,
     )
+    expect(structured.get(3704)?.isActive).toBe(true)
+    reports.update(third.id, { status: 'reviewed', forceDeactivate: true }, NOW_MS)
     expect(structured.get(3704)?.isActive).toBe(false)
     expect(structured.count('Q-STRUCT-VISIBLE')).toBe(4_058)
 
-    const report = reports.list('pending').find((r) => r.questionId === 564161)
-    reports.update(report?.id ?? 0, { status: 'dismissed', reactivate: true }, NOW_MS)
+    reports.update(mcqReport?.id ?? 0, { status: 'dismissed', reactivate: true }, NOW_MS)
     expect(questions.get(564161)?.isActive).toBe(true)
     expect(
       repoError(() => reports.create({ questionId: 1, reasons: [], source: 'spm' }, 2, NOW_MS))

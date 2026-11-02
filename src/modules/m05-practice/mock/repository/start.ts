@@ -12,7 +12,7 @@ import { questions } from '@/modules/m04-question-bank/mock'
 
 import { mytDateKey } from '../datasets/calendar'
 import type { PracticeMode, SessionRow } from '../datasets/types'
-import { chapterStats, scanSessions, userAnswers, userQueue, type QueueItem } from './reads'
+import { scanSessions, userAnswers, userQueue, type QueueItem } from './reads'
 import {
   COUNT_OPTIONS,
   LATIH_TUBI_COUNTS,
@@ -24,7 +24,6 @@ import {
   PracticeError,
   REVISION_LENGTH,
   SPM_LEVEL_IDS,
-  UNLOCK_SCORE,
   isMode,
 } from './rules'
 import { seams } from './seams'
@@ -112,24 +111,6 @@ const blank = (mode: PracticeMode): StartPlan => ({
   resume: null,
 })
 
-/** BR-15: the chapters of a pair that have ≥ 1 chapter question, in `chapterNumber` order. */
-function practiceChapters(subjectId: number, levelId: number) {
-  return curriculum
-    .chapters(subjectId, levelId)
-    .filter((c) => c.isActive && questions.count('Q-CHAPTER', c.id) > 0)
-}
-
-/** BR-16: chapter 1 is open; chapter k needs chapter k − 1 complete with a score ≥ 70. */
-export function chapterOpen(userId: number, chapterId: number): boolean {
-  const ch = curriculum.chapter(chapterId)
-  if (!ch || ch.educationLevelId === null) return false
-  const list = practiceChapters(ch.subjectId, ch.educationLevelId)
-  const i = list.findIndex((c) => c.id === chapterId)
-  if (i <= 0) return i === 0
-  const prev = chapterStats(userId, (list[i - 1] as { id: number }).id)
-  return prev.complete && prev.scorePct >= UNLOCK_SCORE
-}
-
 /** BR-17: unanswered questions first (stored order), then the answered ones by oldest last answer. */
 function chapterQuestions(userId: number, chapterId: number, count: number): number[] {
   const all = questions.query('Q-CHAPTER', { sort: 'id' }, chapterId).rows.map((q) => q.id)
@@ -204,9 +185,6 @@ export function planStart(
       if (!offeredPracticeLevelIds().includes(ch.educationLevelId)) throw notFound()
       const count = countIn(req.count, COUNT_OPTIONS)
       if (questions.count('Q-CHAPTER', ch.id) === 0) throw notEnough()
-      if (!chapterOpen(userId, ch.id)) {
-        throw new PracticeError(409, 'CHAPTER_LOCKED', MESSAGES.chapterLocked)
-      }
       Object.assign(plan, {
         subjectId: ch.subjectId,
         levelId: ch.educationLevelId,

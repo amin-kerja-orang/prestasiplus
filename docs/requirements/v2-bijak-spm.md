@@ -156,7 +156,7 @@ Priority: M Must, S Should, C Could, W Won't (v2.0).
 - AC-05.7 Given Mod Latihan, then there is no deadline.
 
 **US-06 Sections and choose-N**
-- AC-06.1 Given a section, then its header shows its label, "[{n} markah]" (effective marks) and its rule line: the authored instruction, else "Jawab semua soalan." or "Jawab {N} daripada {M} soalan" [PROPOSED; .cloud: "Jawab {n} soalan sahaja."].
+- AC-06.1 Given a section, then its header shows its label, "[{n} markah]" (effective marks) and its rule line: the authored instruction, else "Jawab semua soalan." or "Jawab {N} soalan sahaja." (the V2/.cloud text, USER Q13 2026-11-02: follow V2; the earlier wording "Jawab {N} daripada {M} soalan" is dropped).
 - AC-06.2 Given a choose-N section, then a counter "{c} / {N} soalan dipilih" is shown; I can mark a question as chosen; when N are chosen the remaining questions are visibly dimmed but not hidden.
 - AC-06.3 Given I answer more than N questions in a choose-N section, then scoring uses the best N attempted by marks (ties: lower question position) and the Semakan states which questions counted. The tick state never changes the score.
 - AC-06.4 Given a section transition, then the next section's header and instruction are shown before its first question.
@@ -561,7 +561,7 @@ All durations in the table are printed on the papers read (SPP section 4), inclu
 | R18 | Question map, flags, choose-N picks | Map dots, flag, pick checkbox (advisory) | **Keep** (advisory only; scoring ignores) | Fidelity, D29(b) |
 | R19 | Reference sheet | Foldable panels on the cover, open by default | **Keep** | D29(b) |
 | R20 | Resume choice | "Sambung" / "Mula Semula" after > 60 s | **Keep** copy and 60 s rule; **add** closing of discarded attempt | N-08 |
-| R21 | Semakan | Scheme per part, verdict, self-mark; cover grid never filled | **Keep** scheme + verdict + self-mark; **drop** "Untuk Kegunaan Pemeriksa" grid and raw JSON mapping | N-14 |
+| R21 | Semakan | Scheme per part, verdict, self-mark; cover grid never filled | **Keep** scheme + verdict + self-mark; **drop** "Untuk Kegunaan Pemeriksa" grid and raw JSON mapping | N-14 (superseded by AC-20.3 of `v2-admin-student-pipeline.md`: the "Untuk Kegunaan Pemeriksa" grid is kept, shown only when the paper has a part a person marks) |
 | R22 | History | Only `/spm/history` aggregate; non-native composites missing; label "Tahun Lepas" (N-10) | **Change**: dedicated history, all kinds, label "Bijak SPM" | N-10, AC-33.4 |
 | R23 | Rewards | Syiling 2 and XP 10 per marks earned, delta, no clawback | **Keep** | D29(b) |
 | R24 | Document Bahagian (page-image K2) | Hybrid Bahagian B with self-toggle scheme (N-12) | **Drop** from v2.0 | Scope; N-12 |

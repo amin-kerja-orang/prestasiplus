@@ -236,6 +236,11 @@ export function parseFilterBulk(raw: unknown): {
     ...(d.missing === undefined ? {} : { missing: d.missing }),
     ...filterV2Fields(d),
   }
+  // A filter the client SENT but that is blank after normalisation (`{ negeri: '' }`, `{ search: '  ' }`) is not "Arkib Semua": it would match the whole
+  // bank by accident. Only a truly empty filter `{}` is the V2 "Arkib Semua".
+  const sent = Object.values((raw as { filter?: Record<string, unknown> }).filter ?? {}).some((v) => v !== undefined)
+  const effective = Object.values(filter).some((v) => !(typeof v === 'string' && v.trim() === ''))
+  if (sent && !effective) throw invalid({ filter: QUESTION_MESSAGES.filterBlank })
   return { action: res.data.action, filter, expectedCount: res.data.expectedCount, dryRun: res.data.dryRun === true, filterEmpty: Object.keys(filter).length === 0 }
 }
 

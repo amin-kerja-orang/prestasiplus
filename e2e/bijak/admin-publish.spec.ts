@@ -35,11 +35,27 @@ async function openPaperBuilder(page: Page, gotoApp: (p: string) => Promise<void
 const openBtn = (page: Page, row: Locator, id: string): Locator =>
   isMobileWidth(page)
     ? page.getByTestId(`paper-open-${id}`)
-    : row.getByRole('link', { name: 'Buka' })
+    : row.getByRole('link', { name: 'Sunting' })
 const delBtn = (page: Page, row: Locator, id: string): Locator =>
   isMobileWidth(page)
     ? page.getByTestId(`paper-delete-${id}`)
     : row.getByRole('button', { name: 'Padam kertas' })
+
+/**
+ * Terbitkan for a saved, complete draft whose Kontrak is not Disahkan (the mock follows R1-T34): the plain button is
+ * disabled with the reason and the audited override ("Terbitkan walaupun tidak memenuhi kontrak blueprint") publishes it.
+ */
+async function publishWithOverride(page: Page): Promise<void> {
+  await expect(page.getByTestId('paper-publish')).toBeDisabled()
+  await expect(page.getByTestId('publish-errors')).toBeVisible()
+  // REQ-B-054: the server's reason is shown, not only a count, and the override sits right under it.
+  await expect(page.getByTestId('publish-errors')).toContainText('belum Disahkan')
+  await expect(page.getByTestId('publish-override')).toBeVisible()
+  await page.getByTestId('override-tick').click()
+  await page.getByTestId('override-reason').fill('Kontrak masih Spec, kertas ujian dalaman')
+  await page.getByTestId('override-publish').click()
+  await page.locator('[data-ds=confirm-ok]').click()
+}
 
 /** The draft id from the editor URL `/admin/spm/kertas/:id`. */
 function paperIdOf(page: Page): string {
@@ -104,7 +120,7 @@ test.describe('Bijak SPM Admin Pusat terbit kertas @bijak', () => {
     await expectNoHorizontalScroll(page)
     await page.keyboard.press('Escape')
 
-    await page.getByTestId('paper-publish').click()
+    await publishWithOverride(page) // confirm = V2 native-paper confirm (R8)
     // Published: editing controls give way to the student link and "Tarik balik".
     await expect(page.getByTestId('paper-unpublish')).toBeVisible()
     await expect(page.getByTestId('paper-view-student')).toBeVisible()
@@ -121,6 +137,10 @@ test.describe('Bijak SPM Admin Pusat terbit kertas @bijak', () => {
 
     // Tarik balik: back to Draf, gone from the student hub.
     await page.getByTestId('paper-unpublish').click()
+    // AC-07.7: the V2 confirm comes first.
+    await expect(page.locator('[data-ds=confirm-ok]')).toBeVisible()
+    await expect(page.locator('[data-ds=confirm-message]').filter({ hasText: 'Tarik balik kertas ini ke draf? Pelajar tidak lagi dapat mengaksesnya.' })).toBeVisible()
+    await page.locator('[data-ds=confirm-ok]').click()
     await expect(page.getByTestId('paper-publish')).toBeVisible()
     await page.evaluate(() => {
       window.history.pushState({}, '', '/spm/bijak')
@@ -138,7 +158,8 @@ test.describe('Bijak SPM Admin Pusat terbit kertas @bijak', () => {
     await loginAs('admin@demo.test')
     await openPaperBuilder(page, gotoApp)
     await createDraft(page)
-    await page.getByTestId('paper-publish').click()
+    // R1-F09: Terbitkan is disabled while the check fails, and the reason is shown as text.
+    await expect(page.getByTestId('paper-publish')).toBeDisabled()
     await expect(page.getByTestId('publish-errors')).toContainText(
       'Kertas belum boleh diterbitkan: selesaikan',
     )
@@ -207,7 +228,9 @@ test.describe('Bijak SPM Admin Pusat terbit kertas @bijak', () => {
     // Publish it from the editor, then look at the list again.
     await openBtn(page, row, id).click()
     await fillObjektif(page)
-    await page.getByTestId('paper-publish').click()
+    await page.getByTestId('paper-save').click()
+    await expect(page.getByTestId('paper-save')).toBeDisabled()
+    await publishWithOverride(page)
     await expect(page.getByTestId('paper-unpublish')).toBeVisible()
     await openListFromEditor(page)
     await expectNoHorizontalScroll(page)

@@ -37,6 +37,13 @@ const tableRows = computed(() =>
 )
 /** A stored picture that is not hidden behind a real table. */
 const picture = computed(() => !!props.stimulus.image && !props.stimulus.table)
+/** A caption that only repeats the passage body (the extractor fills both) is not shown twice. */
+const showCaption = computed(() => {
+  const c = props.stimulus.caption?.trim()
+  if (!c) return false
+  const body = props.stimulus.text?.trim()
+  return !(body && c.replace(/\s+/g, ' ') === body.replace(/\s+/g, ' '))
+})
 const figure = computed(() => toStimulusData(props.stimulus))
 </script>
 
@@ -88,7 +95,7 @@ const figure = computed(() => toStimulusData(props.stimulus))
     </div>
     <figcaption class="text-center text-caption text-muted">
       <span class="font-semibold text-toned">{{ stimulus.label }}</span>
-      <template v-if="stimulus.caption"> · {{ stimulus.caption }}</template>
+      <template v-if="showCaption"> · {{ stimulus.caption }}</template>
     </figcaption>
   </figure>
 </template>

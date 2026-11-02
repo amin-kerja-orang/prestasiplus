@@ -147,6 +147,7 @@ describe('subjects and chapters', () => {
     expect(PracticeReadChapterSubjectDetailSchema.safeParse(detail).success).toBe(true)
     expect(PracticeReadChapterSubjectDetailSchema.safeParse({ ...detail, levels: [], levelId: null, chapters: [] }).success).toBe(true)
     expect(PracticeReadChapterSubjectDetailSchema.safeParse({ ...detail, chapters: [{ ...chapter, state: 'done' }] }).success).toBe(false)
+    expect(PracticeReadChapterSubjectDetailSchema.safeParse({ ...detail, chapters: [{ ...chapter, state: 'locked' }] }).success).toBe(false) // REQ-C-021: a chapter card is always open
   })
 })
 

@@ -24,6 +24,7 @@ const ALLOWED_ROLE: Record<string, ActorRole> = {
   'GET /kirkpatrick/reaction': 'teacher',
   'GET /cikgu/rph': 'teacher', // teacher or admin
   'GET /questions/summary': 'admin', // role list not stated in the contract: best guess
+  'GET /questions/filter-options': 'admin', // Admin Pusat only (Studio list filters); registered before /questions/summary, so the smoke picks it for the tag
   'GET /ai/status': 'admin', // Admin Pusat only; BE-36 (smoke picks this one op for the ai tag)
   'GET /intake/dashboard': 'admin', // Admin Pusat only; BE-40 (smoke picks this one op for the intake-dashboard tag)
   'GET /intake/items': 'teacher', // Guru (own batches) and Admin Pusat (all); BE-38

@@ -24,6 +24,13 @@ import { Injectable } from '@nestjs/common'
 
 import type { BijakPoolSource } from './pool-source'
 
+export interface PinRef {
+  questionId: string
+  versionNo: number
+}
+/** Key of a pin in the set `takenDownPins` returns. */
+export const pinKey = (r: PinRef): string => `${r.questionId}@${String(r.versionNo)}`
+
 export interface BijakQuestionInfo {
   /** Decimal-string question id. */
   id: string
@@ -33,6 +40,11 @@ export interface BijakQuestionInfo {
   groupId: string | null
   /** The published version number (printed on the paper, `paper_placements.pinned_version_no`). */
   versionNo: number
+  /**
+   * True when the question has a part that is not marked automatically (a mark-scheme-points or rubric part: a person
+   * marks it). Absent means false. Feeds the cover's examiner grid (AC-20.3).
+   */
+  manual?: boolean
 }
 
 export interface BijakPoolScope {
@@ -58,6 +70,12 @@ export interface BijakQuestionSource {
    * marks after "Arkib" (H-A13). Optional: a source without it leaves the marks of a withdrawn question at 0.
    */
   getPinned?(ids: readonly string[]): Promise<ReadonlyMap<string, BijakQuestionInfo>>
+  /**
+   * REQ-B-058: of these (question, pinned version) pairs, the `pinKey`s of those taken down (archived with a reason other than
+   * `superseded`, or not approved): a NEW sitting of a paper that places one is refused and the list does not offer it. A running sitting
+   * does not ask. One read per call. Optional: a source without it refuses nothing here.
+   */
+  takenDownPins?(pins: readonly PinRef[]): Promise<ReadonlySet<string>>
   /** The eligible pool a blueprint section draws from (`blueprint_sections.pool`). */
   pool(pool: string, scope: BijakPoolScope): Promise<BijakPool>
 }

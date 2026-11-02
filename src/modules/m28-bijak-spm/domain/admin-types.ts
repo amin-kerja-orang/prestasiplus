@@ -259,11 +259,22 @@ export interface BuilderQuestion {
   status: QuestionStatus
   kertas: number
   subject: SubjectCode
+  /**
+   * V2 chip "Disematkan" (P5): the question version pinned when the paper was published. Absent until the
+   * builder answer carries it (request to team A: `pinned` per placed question).
+   */
+  pinned?: boolean
 }
 
 export interface BuilderGroup {
   id: string
-  stimulus: StimulusDef
+  /**
+   * The first stimulus. Absent when the group has nothing displayable (audio only, or empty): the group
+   * is still a unit (D90), shown with a label and its member questions, never filtered out (REQ-A-008).
+   */
+  stimulus?: StimulusDef
+  /** Every stimulus of the group in order (0 to 3). */
+  stimuli?: StimulusDef[]
   questionIds: string[]
 }
 
@@ -272,8 +283,10 @@ export interface SectionPoolPage {
   /** A question, or a whole stimulus group (D90), eligible for this Bahagian. */
   units: {
     groupId?: string
-    /** The group's shared stimulus (groups only). */
+    /** The group's first stimulus (groups only); absent for a stimulus-less group (D90). */
     stimulus?: StimulusDef
+    /** Every stimulus of the group in order (0 to 3). */
+    stimuli?: StimulusDef[]
     questionIds: string[]
     questions: BuilderQuestion[]
     marks: number

@@ -4,6 +4,7 @@
  * such as M10 #39–#41 against the M04 DSKP routes would stop the boot) and never mutates or resets.
  */
 
+import { QuestionRowSchema } from '@pp/contract'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import type { MockRuntime } from '@/mock/index'
@@ -127,7 +128,25 @@ describe('#1 GET /api/questions (S1)', () => {
       dskpTagged: true,
       sourceType: 'textbook',
       sourceFile: 'DSKP KSSM Science Form 4 and 5.pdf',
+      kertas: null,
+      numberLabel: null,
     })
+  })
+
+  it('every row of a page matches the contract QuestionRow schema (REQ-A-030)', async () => {
+    const res = await list('')
+    expect(res.body.data.length).toBeGreaterThan(0)
+    for (const row of res.body.data) {
+      // The mock keeps numeric ids; the conformance harness reads ids as strings, so compare on that basis.
+      const asWire = {
+        ...row,
+        id: String(row.id),
+        subject: row.subject && { ...row.subject, id: String(row.subject.id) },
+        level: row.level && { ...row.level, id: String(row.level.id) },
+      }
+      const parsed = QuestionRowSchema.safeParse(asWire)
+      expect(parsed.success, JSON.stringify(parsed.error?.issues)).toBe(true)
+    }
   })
 
   it('never lists a PKSK row', async () => {

@@ -215,6 +215,7 @@ describe('paper builder API', () => {
       const id = await newPaper()
       const res = await admin.post(`/api/admin/papers/${id}/publish`)
       expect(Publish.parse(res.body).data.errors).toEqual([
+        LINES.noQuestions,
         LINES.sectionLine('Bahagian A', LINES.tooFew(3, 0)),
         LINES.sectionLine('Bahagian A', LINES.marksMismatch(0, 3)),
         LINES.sectionLine('Bahagian B', LINES.tooFew(1, 0)),

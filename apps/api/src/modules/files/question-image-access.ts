@@ -1,5 +1,6 @@
 import { Prisma } from '../../db/generated/client'
 import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL, SERVABLE_STATUS } from '../questions/learner-visibility'
+import { paperHeld } from '../questions/served-rule'
 
 /**
  * Pupil read rule for `question_image` files (R1-B20, pipeline R11). One SQL statement, driven from the FILE (so it uses
@@ -14,11 +15,12 @@ import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL, SERVABLE_STATUS } from '../questions/l
  * A pupil may read it only while one of these holds (everything else is a uniform 404, decided by the caller):
  *   A. LIVE: the version is the live version of an active question whose status is servable (`approved` only, ADR-0027), and the question passes the learner filters (not PKSK, level visible).
  *   B. PAPER: the version is the version PINNED by a placement of a `published` paper the pupil can sit
- *      (a per-pupil `jana` paper only for the pupil it was generated for). The pinned version must have left draft/review.
- *      The paper is the authority here, so an archived (superseded) pinned version, a later-withdrawn question or a hidden
- *      level do not hide it from a paper that is still published.
- *   C. REFERENCE: a published, sittable paper whose `reference_sheets` has a panel carrying the file as `imageFileId`
- *      (the public token or the internal decimal id).
+ *      (a per-pupil `jana` paper only for the pupil it was generated for), or of a `withdrawn` paper this pupil has a sitting on (R1
+ *      delete-served-guard: a withdrawal does not cut a running sitting, so it keeps its pictures; a pupil who never sat the withdrawn paper gets
+ *      the uniform 404). The pinned version must have left draft/review. The paper is the authority here, so an archived (superseded) pinned
+ *      version, a later-withdrawn question or a hidden level do not hide it from a paper that is still held.
+ *   C. REFERENCE: a sittable paper (as in B) whose `reference_sheets` has a panel carrying the file as `imageFileId`
+ *      (the PUBLIC token only: the internal decimal id never matches, so an unattached image cannot be read by guessing ids; B3 T34-L1-residual).
  */
 
 /** Statuses of a question version a pupil can be served from (ADR-0027): `approved` only; `published` no longer exists for questions. */
@@ -74,7 +76,7 @@ export function pupilMayReadQuestionImageSql(fileId: bigint, userId: bigint, pub
     sittable AS (
       SELECT pp.id, pp.reference_sheets
         FROM papers pp
-       WHERE pp.status = 'published' AND (pp.kind <> 'jana' OR pp.generated_for_user_id = ${userId})
+       WHERE ${paperHeld('pp', userId)} AND (pp.kind <> 'jana' OR pp.generated_for_user_id = ${userId})
     )
     SELECT 1 AS one
       FROM cand c
@@ -95,7 +97,7 @@ export function pupilMayReadQuestionImageSql(fileId: bigint, userId: bigint, pub
      WHERE jsonb_typeof(s.reference_sheets) = 'array'
        AND jsonb_path_exists(
              s.reference_sheets,
-             '$[*] ? (@.imageFileId == $pub || @.imageFileId == $dec)',
-             jsonb_build_object('pub', ${publicToken}::text, 'dec', ${fileId.toString()}::text))
+             '$[*] ? (@.imageFileId == $pub)',
+             jsonb_build_object('pub', ${publicToken}::text))
     LIMIT 1`
 }

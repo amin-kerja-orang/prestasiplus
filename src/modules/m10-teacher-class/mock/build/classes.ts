@@ -351,7 +351,8 @@ export function buildClasses(people: People): BuildResult {
   const forced = new Set<number>([...M19_PAYER_IDS, ...uncovered82, ...uncovered88])
 
   // ---- The rest of the grade-11 pupils: members of generated classes, or non-members -------------
-  const U = people.pupils.filter((p) => p.grade === 11 && p.schoolId !== null)
+  // ids 1..11 are the canonical accounts (CANONICAL_MAX); pupil 4 is grade 11 since D72 but never joins the pool
+  const U = people.pupils.filter((p) => p.grade === 11 && p.schoolId !== null && p.id > 11)
   const uRest = U.filter(
     (p) => !t5Members.has(p.id) && !forced.has(p.id) && !t4.schoolPupils.has(p.id),
   )
@@ -979,7 +980,7 @@ function planOwners(people: People, generic: readonly Pupil[]): OwnerPlan {
     pool.set(s, [...(pool.get(s) ?? []), t.id])
   }
   const pupilsAt = new Map<number, number>()
-  const allU = people.pupils.filter((p) => p.grade === 11 && p.schoolId !== null)
+  const allU = people.pupils.filter((p) => p.grade === 11 && p.schoolId !== null && p.id > 11)
   for (const p of allU)
     pupilsAt.set(p.schoolId as number, (pupilsAt.get(p.schoolId as number) ?? 0) + 1)
   const cand = [...pool.keys()].sort((a, b) => a - b)

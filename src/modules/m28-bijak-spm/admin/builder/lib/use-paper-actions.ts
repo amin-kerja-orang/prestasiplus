@@ -1,0 +1,184 @@
+/**
+ * Review, student view, Terbitkan, Tarik balik and Salin set of one paper, shared by the Set Builder
+ * page (S4.2) and the Semak Kertas page (S4.4). The server's BM lines are shown as they arrive
+ * (V2: docs/discovery/cloud-student-mechanism.md 3.4 publish / withdraw / copy flashes).
+ */
+import type { BijakBuilderReview, BijakBuilderStudentView } from '@pp/contract'
+import { computed, ref, type Ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+import { useConfirm } from '@/ds'
+import { useFlash } from '@/composables/useFlash'
+
+import { builderCopy as t } from '../domain/copy'
+import { blockersOf, overrideOffered, type BlockerInfo } from '../domain/blockers'
+import { publishGate } from '../domain/publish-gate'
+import { builderMessage, builderPath, type BuilderApi, type PublishOptions } from '../server/api'
+
+/** The review with plain blocker lines for display and the flags for the override offer. */
+export type BuilderReviewView = BijakBuilderReview & { blockerInfo: BlockerInfo[] }
+
+export interface PaperActionsOptions {
+  api: BuilderApi
+  id: Ref<string>
+  /** The current title, for the flash lines. */
+  title: () => string
+  /** Success line of Terbitkan; default the Semak Kertas line, the Set Builder passes "Set ini telah diterbitkan." (V2). */
+  publishedMessage?: (title: string, overridden: number) => string
+  /**
+   * Saves unsaved edits before an override publish. Returns false when saving failed. The override must
+   * act on what is on screen, so the review is reloaded after the save (the offer may change).
+   */
+  ensureSaved?: () => Promise<boolean>
+  /** Called after Terbitkan or Tarik balik succeeded (reload the editor). */
+  onChanged: () => Promise<void> | void
+  /** Where Salin set goes; default the Set Builder page of the copy. */
+  copyTarget?: (newId: string) => string
+}
+
+export function usePaperActions(o: PaperActionsOptions) {
+  const flash = useFlash()
+  const confirm = useConfirm()
+  const router = useRouter()
+
+  const review = ref<BuilderReviewView | null>(null)
+  const reviewError = ref(false)
+  const busy = ref(false)
+  const view = ref<BijakBuilderStudentView | null>(null)
+  const viewError = ref(false)
+  const viewOpen = ref(false)
+  let seq = 0
+
+  async function loadReview(): Promise<void> {
+    const mine = ++seq
+    try {
+      const r = await o.api.review(o.id.value)
+      const infos = blockersOf(r)
+      if (mine === seq) {
+        review.value = { ...r, blockers: infos.map((b) => b.message), blockerInfo: infos }
+        reviewError.value = false
+      }
+    } catch {
+      if (mine === seq) reviewError.value = true
+    }
+  }
+
+  const blockers = computed(() => review.value?.blockers ?? [])
+  /** The blockers with the server's reason lines (the review's, or the latest publish refusal's). */
+  const blockerInfo = computed(() => review.value?.blockerInfo ?? [])
+  /** Terbitkan is off while the server still lists a blocker; the reason is shown next to it. */
+  const gate = computed(() =>
+    publishGate({ localIssues: 0, dirty: false, reviewFailed: reviewError.value, blockers: blockers.value.length }),
+  )
+  const overrideAvailable = computed(() => overrideOffered(review.value?.blockerInfo ?? [], review.value?.canOverride))
+  const publishBlocked = computed(() => gate.value.blocked)
+  const publishReason = computed(() => gate.value.reason)
+
+  async function publish(options?: PublishOptions): Promise<boolean> {
+    if (busy.value || (publishBlocked.value && !options?.override)) return false
+    busy.value = true
+    try {
+      if (options?.override && o.ensureSaved) {
+        if (!(await o.ensureSaved())) return false
+        await loadReview()
+        if (!overrideAvailable.value) {
+          flash.show({ type: 'error', message: t.overrideGone })
+          return false
+        }
+      }
+      const r = options ? await o.api.publish(o.id.value, options) : await o.api.publish(o.id.value)
+      if (!r.ok) {
+        flash.show({ type: 'error', message: t.notPublishable(r.errors.length) })
+        // The refusal carries the same blockers and `canOverride` as the review: show them at once (the
+        // reload below only confirms), so the reason and the audited override never depend on a second call.
+        if (review.value) {
+          const details = r.blockerDetails ?? []
+          const infos = details.length ? blockersOf({ blockerDetails: details }) : r.errors.map((m) => ({ message: m, overridable: false }))
+          review.value = {
+            ...review.value,
+            ok: false,
+            blockers: infos.map((b) => b.message),
+            blockerDetails: details,
+            canOverride: r.canOverride ?? false,
+            blockerInfo: infos,
+          }
+        }
+        await loadReview()
+        return false
+      }
+      const n = r.overridden?.length ?? 0
+      flash.show({
+        type: 'success',
+        message: o.publishedMessage ? o.publishedMessage(o.title(), n) : n ? t.overriddenFlash(n) : t.publishedFlash(o.title()),
+      })
+      await o.onChanged()
+      await loadReview()
+      return true
+    } catch (e) {
+      flash.show({ type: 'error', message: builderMessage(e, t.errPublish) })
+      return false
+    } finally {
+      busy.value = false
+    }
+  }
+
+  async function withdraw(): Promise<void> {
+    if (busy.value) return
+    if (!(await confirm({ message: t.withdrawConfirm, confirmLabel: t.withdrawConfirmLabel, tone: 'error' }))) return
+    busy.value = true
+    try {
+      await o.api.withdraw(o.id.value)
+      flash.show({ type: 'success', message: t.withdrawnFlash(o.title()) })
+      await o.onChanged()
+      await loadReview()
+    } catch (e) {
+      flash.show({ type: 'error', message: builderMessage(e, t.errPublish) })
+    } finally {
+      busy.value = false
+    }
+  }
+
+  async function copy(): Promise<void> {
+    if (busy.value) return
+    busy.value = true
+    try {
+      const nid = await o.api.copy(o.id.value)
+      flash.show({ type: 'success', message: t.copied })
+      await router.push((o.copyTarget ?? builderPath)(nid))
+    } catch (e) {
+      flash.show({ type: 'error', message: builderMessage(e, t.errGenerate) })
+    } finally {
+      busy.value = false
+    }
+  }
+
+  async function openStudentView(): Promise<void> {
+    viewOpen.value = true
+    view.value = null
+    viewError.value = false
+    try {
+      view.value = await o.api.studentView(o.id.value)
+    } catch {
+      viewError.value = true
+    }
+  }
+
+  return {
+    review,
+    reviewError,
+    loadReview,
+    blockers,
+    blockerInfo,
+    overrideAvailable,
+    publishBlocked,
+    publishReason,
+    busy,
+    publish,
+    withdraw,
+    copy,
+    view,
+    viewError,
+    viewOpen,
+    openStudentView,
+  }
+}

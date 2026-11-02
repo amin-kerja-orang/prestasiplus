@@ -384,10 +384,11 @@ describe('ReportQuestionModal (M04 S14)', () => {
     return wrapper
   }
 
-  it('MCQ: title, subtitle, the seven reasons, counter and a disabled submit', async () => {
+  it('MCQ: title, no deactivation subtitle (D98), the seven reasons, counter and a disabled submit', async () => {
     await open()
     expect(q('report-title')?.textContent?.trim()).toBe('Lapor Soalan')
-    expect(q('report-subtitle')?.textContent).toBe('Soalan ini akan dinyahaktifkan sementara')
+    expect(q('report-subtitle')).toBeNull()
+    expect(doc().textContent).not.toContain('dinyahaktifkan')
     expect(doc().querySelectorAll('[data-testid^=report-reason-]')).toHaveLength(7)
     expect(q('report-counter')?.textContent?.trim()).toBe('0/500')
     expect((q('report-submit') as HTMLButtonElement).disabled).toBe(true)
@@ -395,11 +396,10 @@ describe('ReportQuestionModal (M04 S14)', () => {
     expect(q('report-comment')?.getAttribute('placeholder')).toBe('Terangkan masalah soalan ini...')
   })
 
-  it('structured: its subtitle and the five structured reasons', async () => {
+  it('structured: no deactivation subtitle (D98) and the five structured reasons', async () => {
     await open({ variant: 'structured' })
-    expect(q('report-subtitle')?.textContent).toBe(
-      'Soalan ini akan dinyahaktifkan selepas 3 laporan',
-    )
+    expect(q('report-subtitle')).toBeNull()
+    expect(doc().textContent).not.toContain('dinyahaktifkan')
     expect(doc().querySelectorAll('[data-testid^=report-reason-]')).toHaveLength(5)
     expect(q('report-reason-wrong_answer')?.textContent).toContain('Skema jawapan tidak tepat')
     expect(q('report-reason-wrong_options')?.textContent).toContain('Markah tidak adil')
@@ -482,7 +482,7 @@ describe('ReportQuestionModal (M04 S14)', () => {
 
   it('structured sends questionType and the structured_attempt source by default', async () => {
     api.createQuestionReport.mockResolvedValue({ success: true, message: 'ok' })
-    await open({ variant: 'structured', questionId: 3698 })
+    await open({ variant: 'structured', questionId: 3698, attemptId: 'att-1' })
     await tick('other')
     await click('report-submit')
     expect(api.createQuestionReport).toHaveBeenCalledWith(
@@ -490,6 +490,7 @@ describe('ReportQuestionModal (M04 S14)', () => {
         questionId: 3698,
         questionType: 'structured',
         source: 'structured_attempt',
+        attemptId: 'att-1',
         reasons: ['other'],
       }),
     )
@@ -520,6 +521,25 @@ describe('ReportQuestionModal (M04 S14)', () => {
     await tick('typo')
     await click('report-submit')
     expect(q('report-message')?.textContent).toBe('Gagal menghantar laporan. Sila cuba lagi.')
+  })
+
+  it('a 422 fields.reasons shows the server message and keeps the form open (REQ-B-046)', async () => {
+    api.createQuestionReport.mockRejectedValue(
+      new ApiError({
+        status: 422,
+        code: 'VALIDATION_ERROR',
+        message: 'x',
+        fields: { reasons: 'Terlalu banyak sebab laporan dipilih.' },
+      }),
+    )
+    await open()
+    await tick('typo')
+    await click('report-submit')
+    expect(q('report-reasons-error')?.textContent?.trim()).toBe(
+      'Terlalu banyak sebab laporan dipilih.',
+    )
+    expect(q('report-done')).toBeNull()
+    expect((q('report-submit') as HTMLButtonElement).disabled).toBe(false)
   })
 
   it('shows "Menghantar..." and disables submit while the request runs', async () => {

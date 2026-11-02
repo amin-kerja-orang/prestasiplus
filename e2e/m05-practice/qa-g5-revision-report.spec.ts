@@ -69,7 +69,7 @@ test.describe('QA-G5 S7 question card, feedback and report modal', { tag: [modul
     await tid(page, 'btn-report').click()
     const modal = tid(page, 'report-modal')
     await expect(tid(page, 'report-title')).toHaveText('Lapor Soalan')
-    await expect(tid(page, 'report-subtitle')).toHaveText('Soalan ini akan dinyahaktifkan sementara')
+    await expect(tid(page, 'report-subtitle')).toHaveCount(0)
     await expect(modal.locator('[data-testid^=report-reason-]')).toHaveCount(7)
     await expect(tid(page, 'report-counter')).toHaveText('0/500')
     await expect(tid(page, 'report-submit')).toBeDisabled()
