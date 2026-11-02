@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { ApiError } from '../../src/common/errors/api-error'
+import { FILE_STORAGE, type FileStorage } from '../../src/modules/files'
 import { QuestionsService } from '../../src/modules/questions'
 
 import { binary } from '../intake-files/helpers'
@@ -141,11 +142,17 @@ describe('a refused accept leaves no figure copy, stimulus or group behind (T42b
 
     const svc = t.app.get(QuestionsService)
     const spy = vi.spyOn(svc, 'createFromIntake').mockRejectedValue(ApiError.of('VALIDATION_ERROR', { fields: { stem: 'Teks soalan tidak sah.' } }))
+    // The figure copy is written outside the accept transaction, so the row counts below are rolled back by the transaction anyway: the
+    // storage object itself must be deleted (one `delete` per refused accept), or every retry leaves one orphan object on the volume.
+    const storage = t.app.get<FileStorage>(FILE_STORAGE, { strict: false })
+    const del = vi.spyOn(storage, 'delete')
     for (let i = 0; i < 3; i++) {
       const res = await post(teacher, `/intake/items/${item!.id}/accept`)
       expect(res.status, JSON.stringify(res.body)).toBe(422)
       expect(await counts(), `retry ${String(i + 1)}`).toEqual(before) // no orphan per retry
+      expect(del, `retry ${String(i + 1)}: the figure copy's storage object is deleted`).toHaveBeenCalledTimes(i + 1)
     }
+    del.mockRestore()
     spy.mockRestore()
 
     const ok = await post(teacher, `/intake/items/${item!.id}/accept`)
