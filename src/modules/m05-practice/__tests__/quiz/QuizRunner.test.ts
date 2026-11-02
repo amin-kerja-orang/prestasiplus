@@ -173,6 +173,39 @@ describe('QuizRunner start errors', () => {
     expect(wrapper?.emitted('start-error')?.[0]?.[0]).toMatchObject({ status: 402 })
   })
 
+  it('with the prototype scope ON a start 402 shows the contract message, no redirect and no /pricing link (REQ-B-122)', async () => {
+    vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')
+    try {
+      api.start.mockRejectedValue(
+        new ApiError({
+          status: 402,
+          code: 'TRIAL_EXHAUSTED',
+          message: 'Baki percubaan percuma anda telah habis.',
+        }),
+      )
+      const w = await render()
+      expect(router.currentRoute.value.fullPath).toBe('/practice/BM/quiz')
+      expect(native.alertNative).not.toHaveBeenCalled()
+      expect(w.emitted('start-error')?.[0]?.[0]).toMatchObject({ status: 402 })
+      const notice = t(w, 'trial-exhausted-start')
+      expect(notice.text()).toContain('Baki percubaan percuma anda telah habis.')
+      expect(notice.find('a[href="/pricing"]').exists()).toBe(false)
+      expect(w.find('[data-testid=quiz-loading]').exists()).toBe(false)
+      expect(t(w, 'trial-exhausted-back').attributes('href')).toBe('/practice/BM')
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
+  it('with the scope OFF and /pricing routed a start 402 still goes to /pricing (no notice)', async () => {
+    api.start.mockRejectedValue(
+      new ApiError({ status: 402, code: 'TRIAL_EXHAUSTED', message: 'x' }),
+    )
+    const w = await render()
+    expect(router.currentRoute.value.fullPath).toBe('/pricing')
+    expect(w.find('[data-testid=trial-exhausted-start]').exists()).toBe(false)
+  })
+
   it('shows the global 404 page for an unknown code', async () => {
     api.start.mockRejectedValue(new ApiError({ status: 404, code: 'NOT_FOUND', message: 'x' }))
     await render()
@@ -242,7 +275,12 @@ describe('QuizRunner question', () => {
   })
 
   it('T14 B-09: a server feedback that repeats the title is not shown twice', async () => {
-    api.check.mockResolvedValue({ isCorrect: false, correctOptionId: 1, feedback: 'Salah', explanation: null })
+    api.check.mockResolvedValue({
+      isCorrect: false,
+      correctOptionId: 1,
+      feedback: 'Salah',
+      explanation: null,
+    })
     const w = await render()
     await t(w, 'option-A').trigger('click')
     await t(w, 'btn-check').trigger('click')
@@ -292,7 +330,9 @@ describe('QuizRunner question', () => {
         status: 402,
         code: 'TRIAL_EXHAUSTED',
         message: 'Baki percubaan percuma anda telah habis.',
-        body: { error: { code: 'TRIAL_EXHAUSTED', message: 'Baki percubaan percuma anda telah habis.' } },
+        body: {
+          error: { code: 'TRIAL_EXHAUSTED', message: 'Baki percubaan percuma anda telah habis.' },
+        },
       }),
     )
     const w = await render()
@@ -317,7 +357,9 @@ describe('QuizRunner question', () => {
           status: 402,
           code: 'TRIAL_EXHAUSTED',
           message: 'Baki percubaan percuma anda telah habis.',
-          body: { error: { code: 'TRIAL_EXHAUSTED', message: 'Baki percubaan percuma anda telah habis.' } },
+          body: {
+            error: { code: 'TRIAL_EXHAUSTED', message: 'Baki percubaan percuma anda telah habis.' },
+          },
         }),
       )
       const w = await render()
@@ -368,7 +410,12 @@ describe('QuizRunner question', () => {
   })
 
   it('keeps the Arabic-script font on Jawi (rtl) text and its options, not on Latin text', async () => {
-    api.check.mockResolvedValue({ isCorrect: true, correctOptionId: 0, feedback: '', explanation: null })
+    api.check.mockResolvedValue({
+      isCorrect: true,
+      correctOptionId: 0,
+      feedback: '',
+      explanation: null,
+    })
     const w = await render()
     expect(t(w, 'question-text').classes()).not.toContain('font-jawi')
     await t(w, 'option-A').trigger('click')
@@ -401,7 +448,11 @@ describe('QuizRunner results', () => {
 
   it('Latih Tubi / Databank results follow the V2 view (REQ-A-005, S-53 / S-62)', async () => {
     api.submit.mockResolvedValue({
-      results: { score: 2, total: 2, gamification: { coinsEarned: 4, streakCount: 1, pointsEarned: 20, totalBalance: 10 } },
+      results: {
+        score: 2,
+        total: 2,
+        gamification: { coinsEarned: 4, streakCount: 1, pointsEarned: 20, totalBalance: 10 },
+      },
     })
     const w = await render({ labels: LATIH_TUBI_LABELS })
     await finish(w)
