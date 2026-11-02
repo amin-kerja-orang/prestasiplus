@@ -87,7 +87,7 @@ Why first: both layer-1 and layer-2 values exist, all four sections of the check
 
 ### 2.2 Steps in Kontrak Blueprint
 
-**Blocked until `KontrakEditorPage.vue:87` is fixed (`r1/b1-kontrak-tabs-fix`, pending owner approval):** any tab switch resets the form, so a new contract cannot be saved in the app (runbook 2.5).
+**Fixed by BASE-213 (`KontrakEditorPage.vue:87`); a build before BASE-213 has the bug:** any tab switch resets the form, so a new contract cannot be saved in the app (runbook 2.5). Guards: `src/modules/m28-bijak-spm/__tests__/kontrak-editor-tabs.test.ts` and `kontrak-http.spec.ts` (`r1/b4-kontrak-http-spec`, not in base at BASE-214).
 
 1. Open Kontrak Blueprint, press **Baharu** (dialog "Kontrak Baharu", `KontrakListPage.vue:202`; the button was **Tambah Kontrak** as of BASE-6, re-checked at BASE-148 (`c3098c9a`)). Subjek: Matematik Tambahan. Kertas: Kertas 2. Press **Teruskan** (opens an empty Draf).
 2. **Maklumat Kertas:** Kod kertas `3472/2`; Tempoh (minit) `150`; Jumlah markah `100`; Sumber stays `Draf` (Sahkan passed from Draf on 2026-11-02; Disahkan is set only by Sahkan).
