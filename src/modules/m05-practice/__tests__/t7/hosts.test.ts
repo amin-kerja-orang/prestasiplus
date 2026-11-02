@@ -106,6 +106,13 @@ describe('Q5 MissionQuizPage', () => {
     expect(title({ subject: { name: 'Matematik' } })).toBe('Misi A')
   })
 
+  it('REQ-B-109: the mission title is found when the real API sends string ids', async () => {
+    api.fetchTodayMissions.mockResolvedValue({ data: [{ id: '7101', title: 'Misi A' }], meta: {} })
+    const w = await mountAt(MissionQuizPage, '/misi-harian/:id', '/misi-harian/7101')
+    const title = w.getComponent(RUNNER).props('headerTitle') as (s: unknown) => string
+    expect(title({ subject: { name: 'Matematik' } })).toBe('Misi A')
+  })
+
   it('falls back to the subject name when the mission is not in the list', async () => {
     api.fetchTodayMissions.mockResolvedValue({ data: [], meta: {} })
     const w = await mountAt(MissionQuizPage, '/misi-harian/:id', '/misi-harian/7101')

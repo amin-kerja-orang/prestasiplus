@@ -26,7 +26,7 @@ onMounted(() => {
   }
   fetchTodayMissions()
     .then((r) => {
-      missionTitle.value = r.data.find((m) => m.id === id.value)?.title ?? null
+      missionTitle.value = r.data.find((m) => String(m.id) === String(id.value))?.title ?? null
     })
     .catch(() => {
       /* the title falls back to the subject name */

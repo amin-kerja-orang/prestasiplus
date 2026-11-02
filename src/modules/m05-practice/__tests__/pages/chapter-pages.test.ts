@@ -388,6 +388,21 @@ describe('Q2 ChapterQuizPage', () => {
     expect(api.fetchChapterSubject.mock.calls.map((c) => c[1])).toEqual([{}, { levelId: 2 }])
   })
 
+  it('REQ-B-109: finds the chapter when the real API sends string ids (no 404)', async () => {
+    // The http API answers every chapter id (and the level ids) as a string; the route param is digits.
+    const asWire = (d: typeof MATH) => ({
+      ...d,
+      chapters: d.chapters.map((c) => ({ ...c, id: String(c.id) })),
+    })
+    api.fetchChapterSubject.mockImplementation((_code: string, q?: { levelId?: number | null }) =>
+      Promise.resolve(asWire(q?.levelId === 2 ? MATH_D2 : MATH)),
+    )
+    const w = await render(ChapterQuizPage, '/practice/chapter/MATH/3/quiz?count=5')
+    expect(outcome.setRouteOutcome).not.toHaveBeenCalled()
+    expect(runnerProps(w).backUrl).toBe('/practice/chapter/MATH?level=2')
+    expect(runnerProps(w).start).toEqual({ mode: 'chapter', chapterId: 3, count: 5 })
+  })
+
   it('does not touch the next page when it is unmounted while the level is being resolved', async () => {
     usePageMeta().reset()
     let release: (d: ChapterSubjectDetail) => void = () => {}
