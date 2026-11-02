@@ -219,28 +219,48 @@ let xpBefore = 0 // the seeded pupil already has XP: the reward is checked as a 
     await q(`update question_versions set unit_node_id = $2::bigint where question_id = $1::bigint`, [solo, before!.unit])
   })
 
-  it('3. REQ-B-071: Terbitkan with a curriculum node and no manual Bab passes (T33 cognitive level + kertas), and the Bab is derived from the node', async () => {
-    const res = await admin.post('/api/questions/bulk-action', { action: 'approved', ids: questionIds })
+  it('3. REQ-B-071 (A): Terbitkan with a curriculum node and no manual Bab passes (T33 cognitive level + kertas); with no chapters.dskp_code link the Bab stays empty and Latihan Bab does not serve them (no_chapter)', async () => {
+    const five = questionIds.slice(0, 5) // the sixth is approved in 3c, with a seeded dskp_code link
+    const res = await admin.post('/api/questions/bulk-action', { action: 'approved', ids: five })
     expect(res.status, JSON.stringify(res.body)).toBe(200)
-    expect(res.body.data, JSON.stringify(res.body.data)).toMatchObject({ affected: 6, failed: [] })
+    expect(res.body.data, JSON.stringify(res.body.data)).toMatchObject({ affected: 5, failed: [] })
+    const live = await q(`select v.status, v.chapter_id from questions qq join question_versions v on v.question_id = qq.id and v.version_no = qq.live_version_no where qq.id = any($1::bigint[])`, [five])
+    expect(live.map((r) => r.status)).toEqual(Array(5).fill('approved'))
+    // Q17: the Bab is derived ONLY through chapters.dskp_code = the unit code, and that column is null in the seed, so nothing is derived here.
+    expect(live.map((r) => r.chapter_id)).toEqual(Array(5).fill(null))
+    // nothing in steps 4 to 9 needs a Bab, so none is given by hand; the admin report says why Latihan Bab does not serve them
+    for (const id of five) {
+      const report = await admin.get(`/api/admin/servability/questions/${id}`)
+      expect(report.status, JSON.stringify(report.body)).toBe(200)
+      const bab = (report.body.data.activities as { activity: string; served: boolean; reasons: { code: string }[] }[]).find((a) => a.activity === 'bab')!
+      expect(bab, id).toMatchObject({ served: false })
+      expect(bab.reasons.map((r) => r.code), id).toContain('no_chapter') // a figure-group member also carries has_stimulus
+    }
+  })
+
+  it('3c. REQ-B-071 (B): with ONE chapters.dskp_code equal to the unit code (same subject and level) and no manual Bab, Terbitkan derives chapter_id from that chapter', async () => {
+    const solo = questionIds[5]!
+    const [row] = await q(
+      `select v.subject_id::text subject, v.education_level_id::text level, n.code unit_code, v.chapter_id::text chapter
+         from question_versions v join curriculum_nodes n on n.id = v.unit_node_id where v.question_id = $1::bigint`,
+      [solo],
+    )
+    expect(row!.chapter).toBeNull() // no manual Bab
+    const [target] = await q(`select c.id::text id from chapters c where c.subject_id = $1::bigint and c.education_level_id = $2::bigint and c.dskp_code is null order by c.id limit 1`, [row!.subject, row!.level])
+    expect(target, 'the fixture needs a chapter of the unit subject and level').toBeDefined()
+    await q(`update chapters set dskp_code = $2 where id = $1::bigint`, [target!.id, row!.unit_code])
+    try {
+      expect(await q(`select 1 from chapters where subject_id = $1::bigint and education_level_id = $2::bigint and dskp_code = $3`, [row!.subject, row!.level, row!.unit_code])).toHaveLength(1) // a UNIQUE match
+      const res = await admin.post('/api/questions/bulk-action', { action: 'approved', ids: [solo] })
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(res.body.data, JSON.stringify(res.body.data)).toMatchObject({ affected: 1, failed: [] })
+      const [after] = await q(`select v.status, v.chapter_id::text chapter from questions qq join question_versions v on v.question_id = qq.id and v.version_no = qq.live_version_no where qq.id = $1::bigint`, [solo])
+      expect(after).toMatchObject({ status: 'approved', chapter: target!.id })
+    } finally {
+      await q(`update chapters set dskp_code = null where id = $1::bigint`, [target!.id]) // scope: nothing after this step depends on the link
+    }
     const live = await q(`select v.status from questions qq join question_versions v on v.question_id = qq.id and v.version_no = qq.live_version_no where qq.id = any($1::bigint[])`, [questionIds])
     expect(live.map((r) => r.status)).toEqual(Array(6).fill('approved'))
-    // [PROPOSED] node -> Bab rule (to be replaced by the exact rule of REQ-B-071 once A2's gate change is in): the unit's leading number is the chapter number of
-    // its subject and level. The unit sits under exactly one Bab, so the Bab is derived at approve with nobody setting it.
-    const rows = await q(
-      `select v.chapter_id::text actual,
-              (select c.id::text from chapters c where c.subject_id = v.subject_id and c.education_level_id = v.education_level_id and c.in_tree
-                 and c.chapter_number = split_part(n.code, '.', 1)::int) expected
-         from questions qq join question_versions v on v.question_id = qq.id and v.version_no = qq.live_version_no
-         join curriculum_nodes n on n.id = v.unit_node_id
-        where qq.id = any($1::bigint[]) order by qq.id`,
-      [questionIds],
-    )
-    expect(rows).toHaveLength(6)
-    for (const r of rows) {
-      expect(r.expected, 'the fixture unit must sit under exactly one Bab').not.toBeNull()
-      expect(r.actual).toBe(r.expected)
-    }
   })
 
   it('4. once the questions are approved the pupil reads the group image; an anonymous caller does not', async () => {
