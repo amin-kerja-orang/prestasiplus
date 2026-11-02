@@ -331,11 +331,20 @@ export function gateErrors(
   return out
 }
 
+const DRAFT_SUFFIX = ' (draf)'
+const autoTitle = (subject: string, kertas: number) => `Percubaan SPM ${subjectName(subject)} Kertas ${kertas}`
+
+/** REQ-A-036 (mirrors the API): Terbit drops " (draf)" from the EXACT auto title of the paper's subject and kertas; any other title is untouched. */
+export function publishedTitle(paper: { title: string; subject: string; kertas: number }): string {
+  const base = autoTitle(paper.subject, paper.kertas)
+  return paper.title === `${base}${DRAFT_SUFFIX}` ? base : paper.title
+}
+
 function newPaper(id: string, bp: Blueprint, now: number): AdminPaper {
   return {
     id,
     status: 'draf',
-    title: `Percubaan SPM ${subjectName(bp.subject)} Kertas ${bp.kertas} (draf)`,
+    title: `${autoTitle(bp.subject, bp.kertas)}${DRAFT_SUFFIX}`,
     subject: bp.subject,
     kertas: bp.kertas,
     year: new Date(now).getFullYear(),
@@ -1051,6 +1060,7 @@ export class AdminOps {
     ]
     if (errors.length) return { ok: false, errors }
     paper.status = 'terbit'
+    paper.title = publishedTitle(paper)
     paper.publishedAt = this.host.now()
     paper.updatedAt = paper.publishedAt
     this.host.persist()
