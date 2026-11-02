@@ -20,6 +20,7 @@ import {
   BijakBuilderSectionOrderSchema,
   BijakBuilderSectionPoolQuerySchema,
   BijakBuilderPoolPreviewQuerySchema,
+  BijakPoolPreviewQuerySchema,
   BijakDraftGenerateRequestSchema,
   type BijakBuilderPlacementResult,
   type BijakBuilderPoolUnit,
@@ -1231,8 +1232,36 @@ export class BuilderService {
     const query = parseWith(BijakBuilderPoolPreviewQuerySchema, rawQuery)
     const { subject, blueprint } = await this.generationBlueprint(query.subject, query.kertas)
     if (!subject || !blueprint) throw ApiError.of('NOT_FOUND', { message: MESSAGES.blueprintNotFound })
+    return this.previewOf(subject, blueprint, query.kertas)
+  }
+
+  /**
+   * `GET /admin/blueprints/:subject/:kertas/pool[?version=]` (contract standards): the same preview for the head of the Kontrak, or for the
+   * version asked. 404 (an unknown subject, a kertas that is not a positive integer, no head, no such version) comes before 422 (a bad
+   * `version`), as the sibling blueprint routes do.
+   */
+  async blueprintPoolPreview(subjectCode: string, kertasText: string, rawQuery: unknown): Promise<BijakPoolPreview> {
+    const notFound = () => ApiError.of('NOT_FOUND', { message: MESSAGES.blueprintNotFound })
+    if (subjectCode.length < 1 || subjectCode.length > 32 || !/^[1-9]\d{0,8}$/.test(kertasText)) throw notFound()
+    const kertas = Number(kertasText)
+    const subject = kertas > MAX_KERTAS ? null : await this.repo.subjectByCode(curriculumCodeOf(subjectCode))
+    if (!subject) throw notFound()
+    const query = parseWith(BijakPoolPreviewQuerySchema, rawQuery)
+    const blueprint =
+      query.version === undefined
+        ? (await this.generationBlueprint(subjectCode, kertas)).blueprint
+        : await this.repo.blueprintVersion(subject.id, kertas, query.version)
+    if (!blueprint) throw notFound()
+    return this.previewOf(subject, blueprint, kertas)
+  }
+
+  private async previewOf(
+    subject: NonNullable<Awaited<ReturnType<BuilderRepository['subjectByCode']>>>,
+    blueprint: NonNullable<Awaited<ReturnType<BuilderRepository['activeBlueprint']>>>,
+    kertas: number,
+  ): Promise<BijakPoolPreview> {
     const std = toStandard(blueprint, bijakCodeOf(subject.code))
-    const candidates = [...(await this.factsFor(subject, query.kertas)).values()]
+    const candidates = [...(await this.factsFor(subject, kertas)).values()]
     const preview = previewStandard(std, candidates)
     const published = candidates.length
     return {

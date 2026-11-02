@@ -21,7 +21,7 @@ import { QuestionBankBuilderSource } from './question-bank.source'
   imports: [AuditModule, ThrottleModule, QuestionsModule, BijakPapersModule],
   controllers: [BuilderController, SectionPoolsController],
   providers: [BijakBuilderPorts, BuilderRepository, BuilderService, SectionPoolService, QuestionBankBuilderSource],
-  exports: [BijakBuilderPorts, BuilderRepository],
+  exports: [BijakBuilderPorts, BuilderRepository, BuilderService],
 })
 export class ExamBuilderModule implements OnModuleInit {
   constructor(

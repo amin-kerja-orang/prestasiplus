@@ -1,8 +1,10 @@
 import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Post, Query, UseGuards } from '@nestjs/common'
 
 import { Roles } from '../../../common/guards'
+import { ok } from '../../../common/http/respond'
 import { RateLimit, RateLimitGuard } from '../../../common/throttle'
 import { BIJAK_BUILDER_LIMITS } from '../builder/builder.constants'
+import { BuilderService } from '../builder/builder.service'
 import { Actor, type AuditActor } from './actor'
 import { BlueprintVerificationService } from './blueprint-verification.service'
 import { BlueprintsService } from './blueprints.service'
@@ -19,6 +21,7 @@ export class BlueprintsController {
   constructor(
     @Inject(BlueprintsService) private readonly blueprints: BlueprintsService,
     @Inject(BlueprintVerificationService) private readonly verification: BlueprintVerificationService,
+    @Inject(BuilderService) private readonly builder: BuilderService,
   ) {}
 
   @Get()
@@ -69,6 +72,13 @@ export class BlueprintsController {
   @RateLimit(BIJAK_BUILDER_LIMITS.read)
   versions(@Param('subject') subject: string, @Param('kertas') kertas: string) {
     return this.blueprints.history(subject, kertas)
+  }
+
+  /** "Pratonton kolam" of the Kontrak (head, or `?version=`): the same preview as `GET /admin/papers/pool-preview`. */
+  @Get(':subject/:kertas/pool')
+  @RateLimit(BIJAK_BUILDER_LIMITS.read)
+  async pool(@Param('subject') subject: string, @Param('kertas') kertas: string, @Query() query: unknown) {
+    return ok(await this.builder.blueprintPoolPreview(subject, kertas, query))
   }
 
   @Get(':subject/:kertas/evidence')

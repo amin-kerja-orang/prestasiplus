@@ -130,6 +130,14 @@ export class BuilderRepository {
     })
   }
 
+  /** One version of a Kontrak (any status), or null. */
+  blueprintVersion(subjectId: bigint, kertas: number, version: number): Promise<BlueprintWithSections | null> {
+    return this.prisma.client.blueprint.findFirst({
+      where: { subjectId, kertas, version },
+      include: { sections: { orderBy: { position: 'asc' } } },
+    })
+  }
+
   /** A blueprint row (any status) by id: the version a paper conforms to. */
   blueprintById(id: bigint): Promise<BlueprintWithSections | null> {
     return this.prisma.client.blueprint.findUnique({ where: { id }, include: { sections: { orderBy: { position: 'asc' } } } })
