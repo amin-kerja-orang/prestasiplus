@@ -14,6 +14,7 @@ import { CLOCK, FixedClock } from '../../src/db/clock'
 import { AuthModule } from '../../src/modules/auth'
 import { CurriculumModule } from '../../src/modules/curriculum'
 import { QuestionsModule } from '../../src/modules/questions'
+import { QuestionWorkflowModule } from '../../src/modules/questions/workflow'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 import { dropDatabase, loginAs as loginWithIdentifier, type Client } from '../curriculum/helpers'
 
@@ -44,9 +45,10 @@ export interface QuestionsTestApp {
 
 /**
  * Nest app with the auth, curriculum and questions modules on a private migrated database seeded with
- * identity, curriculum and questions. Pass `db` to share a database; the caller then drops it.
+ * identity, curriculum and questions. Pass `db` to share a database; the caller then drops it. `withWorkflow` also mounts the question workflow module
+ * (`POST /questions/:id/status`, listed before the bank as in `featureModules`).
  */
-export async function bootQuestionsApp(opts: { db?: TestDatabase } = {}): Promise<QuestionsTestApp> {
+export async function bootQuestionsApp(opts: { db?: TestDatabase; withWorkflow?: boolean } = {}): Promise<QuestionsTestApp> {
   const db = opts.db ?? (await createTestDatabase())
   if (!opts.db) await runSeeds([identitySeed, curriculumSeed, questionsSeed], { prisma: db.prisma })
   Object.assign(process.env, {
@@ -57,7 +59,7 @@ export async function bootQuestionsApp(opts: { db?: TestDatabase } = {}): Promis
     LOGIN_FAILURE_FLOOR_MS: '0',
   })
   const clock = new FixedClock('2026-10-19T09:00:00+08:00')
-  const moduleRef = await Test.createTestingModule({ imports: [defineAppModule([AuthModule, CurriculumModule, QuestionsModule])] })
+  const moduleRef = await Test.createTestingModule({ imports: [defineAppModule(opts.withWorkflow ? [AuthModule, CurriculumModule, QuestionWorkflowModule, QuestionsModule] : [AuthModule, CurriculumModule, QuestionsModule])] })
     .overrideProvider(CLOCK)
     .useValue(clock)
     .compile()
