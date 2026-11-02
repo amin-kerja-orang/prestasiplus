@@ -572,7 +572,7 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 - **Disk:** check `docker system df` and prune orphaned anonymous test volumes when there are 0 containers. A3 reclaimed 3.4 GB this way.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 03:59 UTC, BASE 1216dbe7)
+### Team A open branches: heads from origin (auto, 2026-11-02 04:02 UTC, BASE 1216dbe7)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -587,8 +587,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ready-tiers-check | 9c80f08c3 | ON HOLD (A2, @9c80f08c, contains BASE-107): code correct + Minors fixed (exact 503 body, WARN once per state change, INFO on recovery; mutations red); waits for B DevOps (REQ-A-028: CI seed step + first-install deploy ordering) |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
 | r1/reqb071-bab-submit | 4e38af8e6 | READY via r1/reqb071-chain-specs-a3 826403b2 (contains 4e38af8e; B2 c29 AwM). Do NOT merge alone |
-| r1/reqb071-chain-specs-a3 | 826403b2d | READY (A3, @826403b2 = chain specs + merge of reqb071-bab-submit 4e38af8e). **B1: merge THIS ONE head (it brings A2 4e38af8e); 4e38af8e alone = chain 3-9 red.** B2 c29 Approve w/ Minors on 4e38af8e + ee9474e0; delta ee9474e0..826403b2 (13/13, 3b/3c fixture tightening, chain-step-map) for B2. A4 pre-review APPROVE w/ Minors (one verdict for the pair; BASE-186 + 826403b2: 146 files 1731 passed, 0 failed; derivation inert in R1 with seed dskp_code null, which the user accepted in Q17) |
-| r1/reqb071-minors | c38ee66c4 | IN-REVIEW-A (A2, @c38ee66c, 1 commit on the pair 826403b2; B2 c29 minors: imports.service comment + chapterOfUnit c.in_tree filter, test + mutation; bab-optional 10, workflow 320, tsc 0). Merge AFTER the pair 826403b2; A4 pre-review |
+| r1/reqb071-chain-specs-a3 | 826403b2d | READY (A3, @826403b2 = chain specs + merge of reqb071-bab-submit 4e38af8e). Contained in reqb071-minors c38ee66c; B1 may merge c38ee66c alone. 4e38af8e alone = chain 3-9 red. B2 c29 Approve w/ Minors on 4e38af8e + ee9474e0; delta ee9474e0..826403b2 (13/13, 3b/3c fixture tightening, chain-step-map) for B2. A4 pre-review APPROVE w/ Minors (one verdict for the pair; BASE-186 + 826403b2: 146 files 1731 passed, 0 failed; derivation inert in R1 with seed dskp_code null, which the user accepted in Q17) |
+| r1/reqb071-minors | c38ee66c4 | READY (A2, @c38ee66c = pair 826403b2 + B2 c29 code minors; A4 pre-review APPROVE, 41/41, mutation red). **B1: merging c38ee66c alone brings the whole REQ-B-071 unit (4e38af8e + chain specs + minors)** |
 | r1/reqb074-takedown-lows | 45a75f68c | READY (A1b, @45a75f68 = ae78bf82 + A4 review fixes: deviation row matches code (any sitting keeps pictures, as paperHeld), comments, composite.ts required; 832 pass, tsc 0). A4 pre-review: code sound, 0 B; Major was doc-only (now fixed). **Needs B security-engineer** (image access); DEV doc keep-both; B2 |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
