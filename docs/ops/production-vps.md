@@ -442,7 +442,7 @@ Use `--checkout` when `compose.prod.yaml` or the nginx files changed in the bad 
      `$PC exec db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" psql -h 127.0.0.1 -U "$POSTGRES_USER" -d postgres -c "drop database \"$POSTGRES_DB\" with (force)" -c "create database \"$POSTGRES_DB\""'`, then
      `$PC exec -T db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" pg_restore -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --exit-on-error' < <dump>` (reads the dump from standard input; verified, 60,000 versions, 44/44 role probes after `apply`),
      then **`deploy/vps/db-roles.sh apply` and `deploy/vps/db-roles.sh check`** (the new database and the restored objects belong to the superuser, and `pp_app` has no `CONNECT` until `apply`; section 3.1). **Do not start the api (step 4) before `check` ends with `DB ROLES CHECK PASSED`.**
-  4. Roll the images back (`rollback.sh --checkout <tag>`; this also works right after a failed deploy, see section 7), then `$PC up -d --wait --no-deps api frontend`. Check `/api/ready` and a login.
+  4. Roll the images back (`rollback.sh --checkout <tag>`; this also works right after a failed deploy, see section 7). It starts `api` and `frontend` and runs the health checks itself. Check `/api/ready` and a login. The checkout is now the old release: `git checkout <release tag>` before the next `deploy.sh`.
   5. Uploads: restore from the newest `pp-files-*.tar.gz` only if the files volume was damaged (`$PC exec -T api tar -xzf - -C /var/lib/pretasiplus/files < archive`; the api rootfs is read-only but the volume is writable).
   6. Record the incident (what, when, which dump, data-loss window) and tell the LEAD.
 - Rollback triggers and go/no-go rules for the cutover: section 16.

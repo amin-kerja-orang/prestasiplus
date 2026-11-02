@@ -326,6 +326,22 @@ SELECT has_database_privilege('pp_owner', current_database(), 'CREATE');
 
 Real scripts and images of BASE-207 `7db748ac` (product code = BASE-205) in a Linux runner on Docker Desktop: `db-roles.sh secrets`, `apply`, `check`, the full `deploy.sh`, `--seed-reference`, `rollback.sh`, `admin:bootstrap`. Passed: first install to `deploy complete`, 44/44 role probes after 0106, API as `pp_app` with `NODE_ENV=production`, login cookie `HttpOnly; Secure; SameSite=Lax`, the admin list search and Kertas filter 200, `/api/metrics` 404 at the edge. **Not exercised:** a real VPS, Let's Encrypt (a local CA), `ppdeploy` permissions, `PP_PG_ARCHIVE_MODE=on`, timers, real data, an old API running during the migrate. An upgrade from 0091 passed on a 60,000-version copy (11 folders, `--seed-reference` before it, then DSKP load, 2,844 nodes).
 
+**Timing, full path (2026-11-02, BASE-211 product code; old release at 0091 running, 408,000 + versions, `compose.prod.yaml` limits: db 2 CPUs, `maintenance_work_mem` 128 MB; local Docker Desktop, not the production box):**
+
+| Part | Measured |
+|---|---|
+| Before the window: `$PC build api migrate frontend` | 5.6 min `--no-cache` with the npm cache mount; 8 to 11 min on first builds; 15 s when cached |
+| `deploy.sh`, 0091 to R1 | **3 min 58 s** first run, 2 min 21 s re-run |
+| Inside it: backup, migrate | 8 s (36 MB); 2 min 42 s, 1 min 37 s |
+| Migrations | 0092 1 to 4 s; 0100 31 to 33 s; 0105 1 to 6 s; **0106 47 to 96 s**; 0107 1 to 7 s |
+| What users see | `/api/ready` 503 for the whole migrate; old API and `/` answer 502 for 5 to 18 s at step 6; connection refused for up to 8 s at step 7 |
+| After it | `VACUUM ANALYZE` 36 s, `ANALYZE` 6 s, reference seed 58 s, DSKP dry + real + dry 44 s |
+| Way back: stop, safety dump, restore, roles, `rollback.sh --checkout` | **61 s**; `rollback.sh` images only 19 s |
+
+Plan: build first; window of 60 minutes (checks 10, deploy 4 at this size, after-steps 3, smoke 15, the rest reserve, more for each Kontrak with its evidence). Multiply the migrate time by at least 3 for a smaller box or a larger table: **no figure here is from production.** The 17 to 20 s of 0106 elsewhere on this page has no `compose.prod.yaml` limits.
+
+**Kontrak in the app (`KontrakEditorPage.vue:87`, also at `87466acc`).** `watch(() => [route.params.subjek, route.params.kertas, route.query.baharu], load)` returns a new array on every route change, so each tab click runs `load()` and resets the form. Simpan refuses while any tab has a problem, so a new contract cannot be saved, and unsaved edits on an existing one are lost. With `watch([() => route.params.subjek, () => route.params.kertas, () => route.query.baharu], load)` in a local frontend build, 3472/2 was created, 4 evidence rows added, every line Sepadan, and Sahkan gave "Kontrak berjaya disahkan." The specs do not catch it: `e2e/bijak/kontrak.spec.ts` is skipped in http mode and fills no second tab.
+
 Where a human gets stuck:
 
 - **`deploy.sh` has no pause before traffic.** Step 8 passes and the release is recorded with `tiers` = 0, and `/api/ready` is 200 (verified). On a first install run `deploy.sh --seed-reference` right after, then check `tiers` = 4. It cannot go first: there is no schema yet.
@@ -333,6 +349,7 @@ Where a human gets stuck:
 - **Build.** Step 3 runs after the backup, inside the window; here 11 minutes, and one `npm ci` failed with `ECONNRESET` (`DEPLOY FAILED`, nothing changed; a re-run is safe and a cached build took 15 s). Build before the window: `export PP_IMAGE_TAG=$(git rev-parse --short=12 HEAD); $PC build api migrate frontend`.
 - **Step 2 can hang silently.** `pg_dump` waits with no timeout behind an ACCESS EXCLUSIVE holder; the last line is `backup start`. Run the activity check first. A row lock does not block it.
 - **Health step with an untrusted certificate** repeats curl errors for 2 minutes and fails while all containers are healthy: read the curl line. A re-run recovers; `current.tag` is only written at step 9.
+- **After `rollback.sh --checkout` the checkout is the old release.** `git checkout <release tag>` before the next `deploy.sh`, or it builds and deploys the old commit.
 - **After a step 5 failure** the old API keeps serving, `/api/ready` is 503, `deploying.tag` is removed, the next `deploy.sh` answers P3009 until `resolve` (all verified). `--seed-reference` with a tag whose image is absent builds it first and needs the db running.
 
 ## 3. Verification SQL (read-only SELECTs, with the write exceptions named below)
@@ -861,7 +878,7 @@ Do 2 to 5 only when the evidence list shows the evidence from two or more bodies
 ### 5.3 Steps (Admin Pusat, in Pentadbiran)
 
 1. Prerequisite: the DSKP load (section 4) has run, so "Tambah unit" lists the subject's units. Without units the quota cannot be filled.
-2. Kontrak (`/admin/spm/kontrak`) > `Tambah Kontrak` > subject and kertas > fill the paper, the sections, the difficulty profile, the topic quota and the KBAT marks until the panel shows no problem > `Simpan`. If the contract already exists (for example a PoC contract on a database that ran the old seeds), open it and edit; each save is a new version.
+2. **Blocked on BASE-211 until `KontrakEditorPage.vue:87` is fixed:** any tab switch resets the form, so a new contract cannot be saved in the app (section 2.5). Kontrak (`/admin/spm/kontrak`) > `Baharu` > subject and kertas > `Teruskan` > fill the paper, the sections, the difficulty profile, the topic quota and the KBAT marks until the panel shows no problem > `Simpan`. If the contract already exists (for example a PoC contract on a database that ran the old seeds), open it and edit; each save is a new version.
 3. Tab **Pengesahan** > `Tambah Bukti` for each trial paper and skema > `Semak Bukti` until every line reads "Sepadan".
 4. Fill `Nota pengesahan` (required by the screen), press `Sahkan`, confirm. Success message: "Kontrak berjaya disahkan."
 

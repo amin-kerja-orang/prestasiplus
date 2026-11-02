@@ -88,9 +88,9 @@ Why first: both layer-1 and layer-2 values exist, all four sections of the check
 ### 2.2 Steps in Kontrak Blueprint
 
 1. Open Kontrak Blueprint, press **Baharu** (dialog "Kontrak Baharu", `KontrakListPage.vue:202`; the button was **Tambah Kontrak** as of BASE-6, re-checked at BASE-148 (`c3098c9a`)). Subjek: Matematik Tambahan. Kertas: Kertas 2. Press **Teruskan** (opens an empty Draf).
-2. **Maklumat Kertas:** Kod kertas `3472/2`; Tempoh (minit) `150`; Jumlah markah `100`; Status `Spec` (Draf is allowed; Disahkan is set only by Sahkan).
+2. **Maklumat Kertas:** Kod kertas `3472/2`; Tempoh (minit) `150`; Jumlah markah `100`; Sumber stays `Draf` (Sahkan passed from Draf on 2026-11-02; Disahkan is set only by Sahkan).
 3. **Piawaian Peringkat Kertas (optional):** Sub-bahagian menaik off. Nisbah Tingkatan 4 / 5 may stay empty (each section carries its own). Kuota KBAT kertas: `130` is allowed; if filled it must equal the sum of the section values (`KBAT_TOTAL`).
-4. **Tambah Bahagian** three times and fill:
+4. The form opens with Bahagian A; **Tambah Bahagian** twice and fill:
 
 | Field | Bahagian A | Bahagian B | Bahagian C |
 |---|---|---|---|
@@ -99,7 +99,7 @@ Why first: both layer-1 and layer-2 values exist, all four sections of the check
 | Jawab | semua | pilih N = 3 | pilih N = 2 |
 | Belanjawan markah (selepas pilih N) | 50 | 30 | 20 |
 | Mod Jawapan Dijangka (the legend read "Mod jawapan dibenarkan" at BASE-6; `SectionEditor.vue:182`, re-checked at BASE-148 (`c3098c9a`)) | none (any) | none | none |
-| Profil Kesukaran | `bahagian`, one group slot 1-7, TP 3-5, markah setiap soalan 5-9 | `bahagian`, one group slot 1-4, TP 4-5, markah 10-10 | `bahagian`, one group slot 1-4, TP 4-6, markah 10-10 |
+| Profil Kesukaran | `bahagian` (the slots are filled in and read-only), TP 3-5; the marks band 5-9 is not a field, leave `Tetapkan markah mengikut slot` off | `bahagian`, one group slot 1-4, TP 4-5, markah 10-10 | `bahagian`, one group slot 1-4, TP 4-6, markah 10-10 |
 | Kuota Topik, basis | markah | markah | markah |
 | Kuota Topik, lines (T4/T5 unit = value) | T4 1.0 = 7; T4 2.0 = 8; T4 4.0 = 8; T4 8.0 = 6; T5 1.0 = 6; T5 2.0 = 7; T5 6.0 = 8 (sum 50) | T4 6.0 = 10; T4 7.0 = 10; T5 3.0 = 10; T5 5.0 = 10 (sum 40) | T4 9.0 = 10; T4 10.0 = 10; T5 7.0 = 10; T5 8.0 = 10 (sum 40) |
 | Nisbah (optional) | T4 29 : T5 21 | 20 : 20 | 20 : 20 |

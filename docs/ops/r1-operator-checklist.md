@@ -23,7 +23,7 @@ Short form of [r1-runbook.md](r1-runbook.md) (section numbers below point there)
 
 ## 2. Deploy
 
-- [ ] `deploy/vps/deploy.sh --dry-run`, then `deploy/vps/deploy.sh` (type the domain). Order and list: runbook 2.1. Expect 0105 to hold a lock on `question_versions` for under a second; 0106 about 17 to 20 s at 409k rows (writes wait, reads do not).
+- [ ] `deploy/vps/deploy.sh --dry-run`, then `deploy/vps/deploy.sh` (type the domain). Order and list: runbook 2.1. Expect 0105 to hold a lock on `question_versions` for under a second; 0106 47 to 96 s and 0100 about 30 s at 409k rows under the production limits (writes wait; `/api/ready` is 503 for the whole migrate). `deploy.sh` about 4 minutes at that size; plan a 60 minute window (runbook 2.5).
 - [ ] Right after `deploy.sh` ends (it does not pause between migrations), with `$PSQL`: `VACUUM ANALYZE question_versions;` when 0100 was in this deploy (runbook 2.2), and `ANALYZE question_versions;` (runbook 2.4 item 4).
 
 ## Where a deployer gets stuck (detail: runbook 2.5)
@@ -68,6 +68,7 @@ For a lock timeout while the client is still connected, the database cancels 010
 ## 5. Rollback
 
 - Past 0100: restore the pre-deploy dump with the previous API/FE build ([r1-release-notes.md](r1-release-notes.md) 6.2; commands: production-vps.md section 8). After a dump restore do **not** run `prisma migrate resolve` (P3011).
+- After `rollback.sh --checkout`, `git checkout <release tag>` before the next `deploy.sh`.
 - Reverting only 0104 to 0107 by hand (runbook 2.3): reverse SQL plus `DELETE FROM _prisma_migrations ...`, with the old API/FE build back. **0110 stays applied by design** (no reverse).
 
 ## 6. Post-deploy
@@ -76,6 +77,6 @@ For a lock timeout while the client is still connected, the database cancels 010
 - [ ] Detection query of section 3 returns 0 rows.
 - [ ] Schema checks 3.5d and 3.5e; servable counts 3.6.
 - [ ] DSKP load (runbook section 4). First: `education_levels` has T4, T5 and `subjects` has at least the 11 base codes (release notes 3.1); the loader cannot create levels or those subjects. `$PC run --rm --no-deps migrate npm run dskp:load -w @pp/api -- --dry-run --create-missing-subjects`, the same without `--dry-run`, then the dry run again: every insert column 0.
-- [ ] Blueprints (needs an Admin Pusat account: from the data, or `admin:bootstrap`, production-vps.md section 21; and the real trial papers and skema): an Admin Pusat creates each in Kontrak and presses Sahkan, in the order of runbook 5.2 (section 5; order of work step 6).
+- [ ] **Blocked on BASE-211 until `KontrakEditorPage.vue:87` is fixed: a tab switch resets the Kontrak form (runbook 2.5).** Blueprints (needs an Admin Pusat account: from the data, or `admin:bootstrap`, production-vps.md section 21; and the real trial papers and skema): an Admin Pusat creates each in Kontrak and presses Sahkan, in the order of runbook 5.2 (section 5; order of work step 6).
 - [ ] Smoke (runbook section 1 step 7; sections 3.6 and 5.5; release notes 6.1): login count, one Jana Kertas, one Latih Tubi SPM draw.
 - [ ] Record the date, the build, the migration list applied and who ran it.
