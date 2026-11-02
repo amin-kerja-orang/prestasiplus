@@ -2,6 +2,9 @@
  * Gamification and rewards-shop seed (BE-23 data layer, M14 beyond the wallet core and M15). Demo kind: refused
  * in production unless ALLOW_DEMO_SEED (the reference set is pinned and needs LEAD approval). Fictitious data only.
  *
+ * The achievements, the daily challenges and the 10 settings are ALSO reference data (`core/gamification-catalogue.ts`, GAMIF-REF), which runs earlier
+ * in every environment; the by-key / by-name / by-title lookups below then find those rows and add nothing, and this module still seeds them when run alone.
+ *
  * Source of every value: the mock (`src/modules/m14-gamification/mock/data/catalogue.ts`,
  * `src/modules/m15-rewards-shop/mock/data/rewards-seed.ts`), copied into `gamification-data.ts`; nothing is
  * invented and no total is tuned:

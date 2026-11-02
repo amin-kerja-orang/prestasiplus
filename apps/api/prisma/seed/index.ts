@@ -17,6 +17,7 @@ import { populationSeed } from './core/population'
 import { schoolPackagesSeed } from './core/school-packages'
 import { walletTiersSeed } from './core/wallet-tiers'
 import { marketplaceCategoriesSeed } from './core/marketplace-categories'
+import { gamificationCatalogueSeed } from './core/gamification-catalogue'
 import { schoolsSeed } from './core/schools'
 import { curriculumSeed } from './curriculum'
 import { examSeed } from './exam'
@@ -72,7 +73,8 @@ export interface SeedModule {
  * THE REFERENCE SET. Modules with `kind: 'reference'` run in EVERY environment, production included.
  * The set is minimal and explicit: today it contains the school_packages catalogue (`core-school-packages`), the 4 wallet tiers
  * (`core-wallet-tiers`, P11-B1: without them every student dashboard and wallet read answers 500 in production;
- * LEAD approval: pending (P11-B1, #113)), the marketplace categories
+ * LEAD approval: pending (P11-B1, #113)), the achievement catalogue,
+ * the 10 daily challenges and the 10 gamification settings (`core-gamification-catalogue`, GAMIF-REF: the ETL adopts them by name/title/key; LEAD approval: pending), the marketplace categories
  * (`core-marketplace-categories`, BE-46) and the
  * 19 SPM subject configuration rows (`spm-subject-configs`, BE-41; LEAD to confirm, it extends the BE-25 set),
  * pinned by test/subscriptions/seed-production.spec.ts.
@@ -80,9 +82,9 @@ export interface SeedModule {
  * A reference seed must be idempotent and deterministic, carry no `legacy_*` values and contain no
  * personal data. Everything else is demo (the default kind) and is refused in production unless
  * ALLOW_DEMO_SEED.
- * ORDER NOTE: `core-wallet-tiers` sits right after `core-school-packages`, BEFORE `wallet` and `gamification` (the modules that read tiers); `questions-pool` sits BEFORE `spm-subject-configs` and `spm` (the SPM seed reads the SPM pool; test/seed/question-pool.spec.ts); the marketplace seeds sit BEFORE `gamification`; `gamification` then `poc-profile` stay at the END (test/gamification/seed.spec.ts, test/seed/poc.spec.ts).
+ * ORDER NOTE: `core-wallet-tiers` sits right after `core-school-packages`, BEFORE `wallet` and `gamification` (the modules that read tiers); `questions-pool` sits BEFORE `spm-subject-configs` and `spm` (the SPM seed reads the SPM pool; test/seed/question-pool.spec.ts); the marketplace seeds and `core-gamification-catalogue` sit BEFORE `gamification`; `gamification` then `poc-profile` stay at the END (test/gamification/seed.spec.ts, test/seed/poc.spec.ts).
  */
-export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, walletTiersSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, classesSeed, bijakSittingsSeed, battleSeed, gamesSeed, cikguSeed, pkskSeed, performanceSeed, questionPoolSeed, spmSubjectConfigsSeed, spmSeed, practiceSeed, marketplaceCategoriesSeed, marketplaceSeed, gamificationSeed, pocProfileSeed]
+export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, walletTiersSeed, populationSeed, curriculumSeed, questionsSeed, walletSeed, contentSeed, examSeed, examDemoBlueprintsSeed, classesSeed, bijakSittingsSeed, battleSeed, gamesSeed, cikguSeed, pkskSeed, performanceSeed, questionPoolSeed, spmSubjectConfigsSeed, spmSeed, practiceSeed, marketplaceCategoriesSeed, marketplaceSeed, gamificationCatalogueSeed, gamificationSeed, pocProfileSeed]
 
 export interface RunSeedsOptions {
   /** Environment read by the demo guard (default `process.env`). */
