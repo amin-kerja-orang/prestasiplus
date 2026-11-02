@@ -108,5 +108,6 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
   - no audit or transition entry for no-op rows.
 - **Rationale:** the action is idempotent. Mandor checked docs/discovery and v2-*; V2 has no reference for this bulk flow.
 - **Tests:** a mixed batch (Lulus + Diterbitkan) publishes the Lulus rows and skips the Diterbitkan rows with the reason; an all-Diterbitkan batch gives affected 0 and no error.
-- **Owner:** A2 (r1/r1e2e10-bulk-publish-noop). B4 re-runs S2e after the merge.
+- **Response shape (Mandor, under delegation, 09:28 MYT; option 2):** a new optional `skipped[]: {id, reason}` field in the bulk-action response. No-op rows go in `skipped[]`, **not** `failed[]`, so there is no error. Old clients ignore the new field.
+- **Owner:** A2 (r1/r1e2e10-bulk-publish-noop). The C FE shows skipped[] as info (REQ-A-040). B4 re-runs S2e after the merge.
 - *Decided under delegation; for user review.*
