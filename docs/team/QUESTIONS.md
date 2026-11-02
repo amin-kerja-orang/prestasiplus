@@ -185,3 +185,6 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
 
 ## Q26 (USER DECISION 3 Nov ~00:4x MYT, asked by Mandor): Latih Tubi SPM trial exhausted mid-quiz
 - Finding (A3 production-bundle hunt): a 402 TRIAL_EXHAUSTED mid-quiz shows no message; the question stays unmarked. Answer: **"Papar mesej + pautan langgan"**. On 402 TRIAL_EXHAUSTED mid-quiz show that the free trial is used up plus "Langgan untuk akses tanpa had" → /pricing (existing V2 M05 copy, docs/discovery/M05-practice.md:132); the current question is not scored wrong. Enters R1; built by A3 with tests; team B merges + CI.
+
+## Q27 (USER DECISION 3 Nov ~00:3x MYT, asked by the team B lead; REQ-B-114): who fixes PKSK
+- Answer: **"Ya, Team B baiki"**. Team B fixes the REQ-A-064 PKSK id items on `r1/b1-id-class-pksk` in the same batch. This supersedes the builder in Q25 (A3); A3 stops `r1/pksk-id-types` and acts as tester. Team A (A2) reviews B's head statically on request.
