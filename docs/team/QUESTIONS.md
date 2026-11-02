@@ -176,3 +176,12 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
 3. **REQ-B-109: "fix sekarang utk go live!"** = the owner APPROVES the fix entering R1 under the freeze. A4 is priority #1 (red-first + 3 widths on the CI config); A1b reviews; then team B merges (B1) + a full CI with api_ref = the new SHA. The same pattern on other PUPIL pages (A2 sweep: MissionQuizPage) is fixed in the same unit.
 4. **OCR: "Setuju mock, uji OCR kemudian"** = written acceptance of AC-R1-14.2 with mock OCR (an exception to D87 U5), recorded as a user decision.
 - **Still pending from the user:** limits 4.1–4.4, the Q15/Q16 review, copy row 42, M02 after deploy.
+
+## Q24 (USER DECISION 3 Nov ~00:3x MYT, asked by Mandor): REQ-B-109 coverage
+- The chapter-quiz fix (r1/a4-chapter-quiz-id-fix @fd073ecd, A2 Approve) enters R1 **with** an e2e-profile-only seed that links existing approved questions to chapters, plus the e2e spec, in the same unit, so CI covers the chapter quiz. Built tonight by A4 (isolated worktree; registry-boot + seed owner tests green). Not poc/prod seeds.
+
+## Q25 (USER DECISION 3 Nov ~00:3x MYT, asked by Mandor): PKSK admin id types (REQ-A-064)
+- Question asked: "cipta/sunting soalan PKSK dan pemberian akses PKSK gagal (422) ... Perlu dibaiki sebelum go-live esok?" Answer: **"Ya, baiki sebelum go-live"**. PkskQuestionFormPage.vue:198/208 pkskDomainId, PkskAccessPage.vue:140-141 userId/packageId → string (wireId); bulk ids string[]. Enters R1 under the freeze although PKSK is KIV in the R1 scope doc, because the admin menu is live. Built by A3 (r1/pksk-id-types), reviewed by A1b/A2, merged by team B (B1) + a new CI.
+
+## Q26 (USER DECISION 3 Nov ~00:4x MYT, asked by Mandor): Latih Tubi SPM trial exhausted mid-quiz
+- Finding (A3 production-bundle hunt): a 402 TRIAL_EXHAUSTED mid-quiz shows no message; the question stays unmarked. Answer: **"Papar mesej + pautan langgan"**. On 402 TRIAL_EXHAUSTED mid-quiz show that the free trial is used up plus "Langgan untuk akses tanpa had" → /pricing (existing V2 M05 copy, docs/discovery/M05-practice.md:132); the current question is not scored wrong. Enters R1; built by A3 with tests; team B merges + CI.
