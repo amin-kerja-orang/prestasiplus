@@ -88,3 +88,14 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
   - any action on live;
   - secrets;
   - deleting data or branches.
+
+## Q15 (DECIDED UNDER DELEGATION 2026-11-02 09:10 MYT by Mandor, V2 reference): REQ-C-027 Portal Pentadbiran menu entries
+- **Decision, follow V2 (.cloud):**
+  - (a) Add a sub-group **"Bank Lama (Legasi)"** under Bank Soalan, containing:
+    - Senarai Soalan → /admin/questions;
+    - Soalan Berstruktur → /admin/structured-questions;
+    - Import CSV → /admin/questions/import (this also answers REQ-B-063).
+  - (b) **Kertas Soalan Guru is NOT its own sidebar item.** In V2 it is the "Kiriman Guru" tab/link inside Import & Semakan → /admin/question-submissions. If the current BS-02 screen (V2 I1 batch list) lacks that link, add a "Kiriman Guru" link there.
+- **V2 evidence:** docs/discovery/cloud-student-mechanism.md:318,360,366; docs/discovery/v2-parity/admin.md:46; docs/design/v2-admin-student-pipeline.md §2.1–2.2.
+- **Owner:** C1 (menu.ts + menu.test.ts). E2E-M04-54 is re-opened (test.fixme removed), and both routes are tested through the menu/link at 375/768/1280.
+- *Decided under delegation; for user review.*
