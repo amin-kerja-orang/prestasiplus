@@ -104,9 +104,10 @@ Decisions and why:
 - **Packages:** `git curl openssl ca-certificates logrotate`; for the restore drill **Node 22** (the drill wraps
   `scripts/db-restore-check.mjs`; use NodeSource or `nvm` for the deploy user); for off-site copies `awscli` (S3-compatible) or `rsync`;
   optional `gnupg` (encrypt copies that leave the server).
-- **Disk encryption:** backups hold personal data of minors. `LEAD:` confirm the VPS disk or the backup volume is encrypted
-  (LUKS on a data volume if the provider does not encrypt at rest). Without encryption at rest do not store backups there
-  ([db-backup.md](db-backup.md)).
+- **Disk encryption:** backups hold personal data of minors. For R1 the production data volume is **not encrypted**: the
+  owner accepted this residual risk with mitigations (Q23 item 1, REQ-B-108, REQ-B-113; [r1-runbook.md](r1-runbook.md) section
+  "Q23 disk mitigation"). Encryption at rest (LUKS on a data volume if the provider does not encrypt at rest) remains the
+  target; until then follow the Q23 mitigations, and see [db-backup.md](db-backup.md).
 
 - **Image pinning.** Tags in the pack: `nginx:1.28-alpine` (edge), `postgres:16-alpine`, `certbot/certbot:v3.0.1`, `clamav/clamav:1.4`, `louislam/uptime-kuma:1.23.16`.
   The build environment had no network to resolve digests, and those tags were not checked against the registries. `LEAD:` at install, confirm each tag is a currently supported release (for nginx the
@@ -140,7 +141,7 @@ Who sets what: **LEAD** = the LEAD supplies or approves the value; **OPS** = the
 | `PP_LETSENCRYPT_EMAIL` | none | LEAD | Let's Encrypt expiry notices |
 | `PP_ENV_DIR` | `/etc/pretasiplus` | OPS | Folder of the three files |
 | `PP_LE_DIR`, `PP_LE_LOG_DIR`, `PP_WEBROOT_DIR` | `/srv/pretasiplus/letsencrypt`, `-log`, `certbot-webroot` | OPS | Certificates (certbot writes, edge reads), its log, the ACME webroot |
-| `PP_BACKUP_DIR` | `/var/backups/pretasiplus` | OPS | Dumps. Must be outside the repo; encrypted volume |
+| `PP_BACKUP_DIR` | `/var/backups/pretasiplus` | OPS | Dumps. Must be outside the repo. For R1 the volume is not encrypted (owner acceptance Q23 item 1, REQ-B-113; mitigations in [r1-runbook.md](r1-runbook.md) "Q23 disk mitigation") |
 | `PP_STATE_DIR` | `/var/lib/pretasiplus-deploy` | OPS | `current.tag`, `previous.tag`, `history.log`, probe state |
 | `PP_IMAGE_TAG` | `prod` (scripts set the git sha) | script | Image tag |
 | `PP_SCRATCH_HOST` | unset | OPS | **A4 scratch host only, never on production.** `yes` allows `slot.sh load --synthetic-scratch` (a synthetic fixture, with `PP_OFFSITE_KIND=none` and the host name typed). Read from this file only, never from the environment. With it set, or after a synthetic load, `slot.sh gonogo` prints `NO-GO` and exits 3, and `copy` / `etl --apply` refuse synthetic stage data on a host without it |
@@ -183,7 +184,7 @@ Who sets what: **LEAD** = the LEAD supplies or approves the value; **OPS** = the
 | `PP_ALERT_DISK_PCT`, `PP_ALERT_CERT_DAYS`, `PP_ALERT_BACKUP_MAX_AGE_H`, `PP_ALERT_API_ERRORS_5M` | `85`, `21`, `30`, `25` | OPS | Alert thresholds |
 | `PP_CERTBOT_IMAGE`, `PP_CLAMAV_IMAGE`, `PP_KUMA_IMAGE` | see compose | OPS | Image pins |
 | `PP_OPERATOR`, `PP_PROBE_BASE_URL`, `PP_PROD_ENV` | unset | OPS | Per-run: operator name for the drill evidence; probe base URL for tests; alternate `prod.env` path |
-| `VITE_PROTOTYPE_SCOPE` | `on` (base compose default) | LEAD | Build arg. Open question carried from the go-live checklist: confirm it does not hide the Admin Pusat publish screen; set `off` here if it does |
+| `VITE_PROTOTYPE_SCOPE` | `on` (base compose default) | LEAD | Build arg, baked in at image build time. **`on` is REQUIRED for R1 (REQ-B-117, user decision); `off` is NOT allowed.** `/etc/pretasiplus/prod.env` must be changed from `off` to `on` before the build. CI builds with `on` (`frontend.yml:216`), so the CI evidence matches what ships. Under `on`, parent, sponsor and PPD accounts are refused at login (on UAT they are active: 37/6/6) |
 
 ### api.env (secrets; the full key list is `.env.api.example` and [api-runbook.md](api-runbook.md) section 2)
 
@@ -308,7 +309,7 @@ Every step that touches the server is the operator's, after the LEAD's go. `LEAD
 2. As `ppdeploy`: `sudo mkdir -p /opt/pretasiplus && sudo chown ppdeploy: /opt/pretasiplus && git clone <repo url> /opt/pretasiplus && cd /opt/pretasiplus && git checkout <release tag>`.
    `LEAD:` the repo URL/deploy key and the release tag.
 3. Folders: `sudo install -d -m 750 -o root -g ppdeploy /etc/pretasiplus && sudo install -d -o ppdeploy -g ppdeploy -m 700 /var/backups/pretasiplus /var/lib/pretasiplus-deploy /var/log/pretasiplus /srv/pretasiplus/letsencrypt /srv/pretasiplus/letsencrypt-log /srv/pretasiplus/certbot-webroot`
-   (a separate encrypted volume mounted at `/var/backups/pretasiplus` is better).
+   (a separate encrypted volume mounted at `/var/backups/pretasiplus` is better; for R1 the owner accepted an unencrypted volume with mitigations, Q23 item 1, REQ-B-113, see [db-backup.md](db-backup.md) and [r1-runbook.md](r1-runbook.md) "Q23 disk mitigation").
 4. Env files: `sudo install -m 640 -o root -g ppdeploy deploy/vps/.env.prod.example /etc/pretasiplus/prod.env`, same for `api.env.example` -> `api.env`
    and `db.env.example` -> `db.env`; edit all three with `sudoedit` (`LEAD:` values; leave the `api.env` `DATABASE_URL` line as it is). Choose the size profile of section 13.
    Then `sudo deploy/vps/db-roles.sh secrets`: it writes the `api.env` `DATABASE_URL` (`pp_app`) and creates `migrate.env` and `etl.env` (section 3.1).

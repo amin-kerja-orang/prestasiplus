@@ -40,7 +40,7 @@ All as `ppdeploy` unless `sudo` is shown. The values go in `/etc/pretasiplus/pro
 "PITR and the migration slot").
 
 ```
-# folders: encrypted volume for all of them
+# folders: an encrypted volume is preferred; on the production server an unencrypted volume is allowed under the owner decision Q23 item 1 (3 Nov 2026) with the mitigations in docs/ops/r1-runbook.md ("Q23 disk mitigation"); the dump PC encryption stays required
 sudo install -d -o 70 -g 70 -m 700 /var/backups/pretasiplus/wal /var/backups/pretasiplus/wal/wal /var/backups/pretasiplus/wal/base
 sudo install -d -o ppdeploy -g ppdeploy -m 700 /srv/pretasiplus/stage
 sudo install -d -o 1000 -g 1000 -m 700 /srv/pretasiplus/migration-out    # uid 1000 = node in the migrate image (PP_MIGRATE_UID)
@@ -87,7 +87,7 @@ The rehearsal "stage" pattern, with production rules:
 
 - **Throwaway cluster.** A `postgres:16-alpine` container (`PP_STAGE_CONTAINER`, default `pp-stage-throwaway`):
   - on the compose network, so the `migrate` image reaches it by name;
-  - data dir `PP_STAGE_DIR/pgdata` (encrypted volume);
+  - data dir `PP_STAGE_DIR/pgdata` (encrypted volume preferred; allowed unencrypted on the production server under the owner decision Q23 item 1, 3 Nov 2026: `staging_cloud` then stays unencrypted until its set clean-up date);
   - `archive_mode=off`, `wal_level=minimal`;
   - no backups, no replica, never reached by the API;
   - database `<POSTGRES_DB>_staging`, because the loader refuses any other name;

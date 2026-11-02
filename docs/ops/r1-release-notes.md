@@ -517,13 +517,28 @@ Announce Jana Kertas to pupils only for the pairs counted here.
 
 ## 5. Configuration
 
+**Go-live order (REQ-B-119):** `docs/ops/r1-go-live-runsheet.md` (oleh Team B; cawangan `r1/b1-go-live-runsheet` @ f7b3c4cb, kelompok yang sama). Not the checklist alone; no deploy straight after CI green. Timing: malam 3 Nov; T0 ditetapkan pemilik; tetingkap dianggar T0 + 4:20, mesti tamat sebelum murid perlukan sistem (REQ-B-121; bermula hanya selepas CI akhir hijau dan semua peranan hadir, REQ-B-120) (Q29 butir 2 digantikan).
+
 | Key | Value for R1 | Why / where |
 |---|---|---|
 | `BIJAK_POC_QUESTIONS` | **`false`** (or unset) | PoC questions are staging/dev/e2e only. `compose.prod.yaml` forces `'false'` on `api` and `migrate`; `deploy.sh` refuses `true`/`1`. Note: `render.yaml` (the old demo API) sets `true`: never use that blueprint for UAT or production. There is no FE flag for it (`src/app/features.ts` has only `VITE_ALESA_AI` and `VITE_KELUARGA_ANGKAT`). |
 | `ALLOW_DEMO_SEED` | `false` | unchanged; forced by `compose.prod.yaml` |
 | `OCR_ENGINE` | `none` for this release | `api.env.example`: OFF at go-live (AZ-29 item 4). A real PDF intake (AC-R1-14.2 sign-off) needs `OCR_ENGINE=tesseract` **plus** `OCR_LANG_DIR` with `msa.traineddata` and `eng.traineddata`, a timed run of 20 real scans on the server, and a new LEAD decision. |
 | `AI_PROVIDER` (extraction provider) | `mock` | Decided mock at go-live (AZ-29 item 1). A real provider (`anthropic`, `openai`, `gemini`, `openai-compatible`) needs a LEAD decision (D85 U1, undecided), `AI_MODEL`, `AI_API_KEY` **in the server env file only**, `AI_MONTHLY_BUDGET_SEN` and `AI_PRICE_TABLE_JSON`; see ai-intake-production-decisions.md. |
+| `VITE_PROTOTYPE_SCOPE` | **`on`** (REQUIRED; `off` not allowed; REQ-B-117) | Build arg, baked in at image build time. Set it in `/etc/pretasiplus/prod.env` (it was `off`) BEFORE the frontend image build. CI builds with `on`, so CI evidence matches live. |
 | New keys | none | B01 notes; no new key found in 0092/0093/0100 or the loader (verified by reading). |
+
+Check scope ON before the frontend build (REQ-B-117): `grep '^VITE_PROTOTYPE_SCOPE=on$' /etc/pretasiplus/prod.env` must print the line.
+
+**Refused roles in R1.** With scope `on`, the parent (ibu bapa), sponsor (penaja) and PPD roles are refused at login with "Peranan ini tidak termasuk dalam prototaip." On UAT the active accounts are 37 parents, 6 sponsors and 6 PPD (37/6/6).
+
+**Known limits (REQ-B-118; post-live, owner answer "Selepas live"):**
+
+- The copy "prototaip" is shown in the UI.
+- The pupil menu "Jemput Ibu Bapa" is a dead end: it leads an invited parent to the refusal "Peranan ini tidak termasuk dalam prototaip."
+- The role refusal is FRONTEND-only: the API still accepts those roles after login.
+- Trial used up at session START: the pupil is sent to `/pricing` (`QuizRunner.vue:136`), which under scope on shows "Belum tersedia dalam prototaip": a dead end (pre-existing; B2 Q26 review, KIV row 66).
+- Trial used up MID-quiz (Q26): the notice "Baki percubaan percuma anda telah habis." shows, but its subscribe link is hidden under scope on (owner decision REQ-B-122, "Sembunyikan pautan"), and there is no route to the results after the notice; the answers already checked in that session are not credited (KIV rows 67, 68).
 
 Check (names and these non-secret values only; never print the file):
 

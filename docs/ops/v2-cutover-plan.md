@@ -108,7 +108,7 @@ Points **not** covered by the rehearsal script that need half AZ (who own deploy
 
 - The script is built for anonymised data: `load-dump` refuses a dump without an anonymisation attestation, scans for personal data and drops a hit. The cutover loads **real** data from a raw `pp-staging-dump/1` directory (section 3.3) through `slot.sh`.
 - The production database platform is the VPS (go-live checklist D-2; decision 10, **Decided: LEAD, 22 Oct**). The restore-point and backup-deletion mechanics in sections 4 and 7 depend on it.
-- Role and server hardening for servers that hold real personal data of minors for the migration period (no superuser role, encrypted disk, WAL and backup handling in runbook 5).
+- Role and server hardening for servers that hold real personal data of minors for the migration period (no superuser role, WAL and backup handling in runbook 5; for R1 the disk is not encrypted, accepted by the owner with mitigations: Q23 item 1, REQ-B-113, [r1-runbook.md](r1-runbook.md) "Q23 disk mitigation").
 
 ### 3.2 Input format and the dump tools (AM-10, PR #125)
 
