@@ -3,14 +3,16 @@
  * idempotent no-op. It is not an error ("Peralihan 'Diterbitkan' -> 'Diterbitkan' tidak dibenarkan." was the old answer), it is not counted in
  * `affected`, it is listed in `skipped[]` as { id, reason: "Soalan ini sudah diterbitkan." } (never in `failed[]`, which keeps the real refusals), it
  * writes no status event and it is not in the audit ids; the other rows of the batch are still published. The single route keeps its 409.
+ * Minor 11 (r1e2e10): when NOTHING was affected and at least one row was skipped, the flash (`status`) is "Soalan ini sudah diterbitkan." and not
+ * "0 soalan berjaya dikemaskini." (Q16: skipped is information, not an error); a batch with a published row keeps "<n> soalan berjaya dikemaskini.".
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { QuestionsService } from '../../src/modules/questions'
 import { bootQuestionsApp, loginAs, type Client, type QuestionsTestApp } from './helpers'
 import { mcqBody, refsOf, tagOf, type Refs } from './http-helpers'
 
 const ALREADY = 'Soalan ini sudah diterbitkan.'
+const ZERO_FLASH = '0 soalan berjaya dikemaskini.'
 const OLD_CONFLICT = "Peralihan 'Diterbitkan' -> 'Diterbitkan' tidak dibenarkan."
 
 describe('R1E2E-10: bulk Terbitkan of an already Diterbitkan row is a no-op', () => {
@@ -20,7 +22,7 @@ describe('R1E2E-10: bulk Terbitkan of an already Diterbitkan row is a no-op', ()
   let tag: Awaited<ReturnType<typeof tagOf>>
 
   beforeAll(async () => {
-    t = await bootQuestionsApp()
+    t = await bootQuestionsApp({ withWorkflow: true })
     admin = await loginAs(t, 'admin')
     refs = await refsOf(t.db)
     tag = await tagOf(t.db, refs.mathId, refs.t4Id)
@@ -62,6 +64,7 @@ describe('R1E2E-10: bulk Terbitkan of an already Diterbitkan row is a no-op', ()
 
     const out = await bulk([p1, r1, p2, r2])
     expect(out.data.affected).toBe(2)
+    expect(out.status).toBe('2 soalan berjaya dikemaskini.') // a mixed batch keeps the count
     expect(out.data.skipped).toEqual([
       { id: p1, reason: ALREADY },
       { id: p2, reason: ALREADY },
@@ -91,15 +94,20 @@ describe('R1E2E-10: bulk Terbitkan of an already Diterbitkan row is a no-op', ()
       ],
     })
     expect(out.data.skipped).toHaveLength(2)
+    // minor 11: nothing affected + skipped -> the reason, never the "0 berjaya" flash
+    expect(out.status).toBe(ALREADY)
+    expect(out.status).not.toBe(ZERO_FLASH)
     expect(await events([p1, p2])).toBe(before)
     expect((await auditIds()).at(-1)).toEqual([])
     expect(JSON.stringify(out)).not.toContain(OLD_CONFLICT)
   })
 
-  it('the service call behind the single status route still refuses Diterbitkan -> Diterbitkan with the transition text (409), without the bulk option', async () => {
+  it('the single status route (POST /questions/:id/status) still refuses Diterbitkan -> Diterbitkan with the transition text: HTTP 409 CONFLICT, over HTTP', async () => {
     const id = await published()
-    const svc = t.app.get(QuestionsService)
-    await expect(svc.setStatus(id, 'approved', admin.userId)).rejects.toMatchObject({ code: 'CONFLICT', message: OLD_CONFLICT })
+    const res = await admin.post(`/api/questions/${id}/status`, { to: 'approved' })
+    expect(res.status, JSON.stringify(res.body)).toBe(409)
+    expect(res.body.error).toMatchObject({ code: 'CONFLICT', message: OLD_CONFLICT })
+    expect((await status(id)).status).toBe('approved') // untouched
   })
 
   it('other refusals are unchanged: a Draf row in a Terbitkan batch is still the transition conflict, a Diterbitkan row beside it is skipped, not failed', async () => {
@@ -109,12 +117,14 @@ describe('R1E2E-10: bulk Terbitkan of an already Diterbitkan row is a no-op', ()
     expect(out.data.affected).toBe(0)
     expect(out.data.failed.map((f) => [f.id, f.code, f.message])).toEqual([[draft, 'CONFLICT', "Peralihan 'Draf' -> 'Diterbitkan' tidak dibenarkan."]])
     expect(out.data.skipped).toEqual([{ id: p, reason: ALREADY }])
+    expect(out.status).toBe(ALREADY) // nothing affected, one skipped (the failed row is listed in failed[], which the screen shows)
   })
 
   it('`skipped` is absent when no row is skipped (additive field), and for other actions', async () => {
     const r = await review()
     const out = await bulk([r])
     expect(out.data).toEqual({ affected: 1, failed: [] })
+    expect(out.status).toBe('1 soalan berjaya dikemaskini.')
     expect('skipped' in out.data).toBe(false)
     const res = await admin.post('/api/questions/bulk-action', { action: 'archived', ids: [r] })
     expect(res.status, JSON.stringify(res.body)).toBe(200)
