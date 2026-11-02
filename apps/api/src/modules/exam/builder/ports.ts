@@ -55,11 +55,11 @@ export interface BuilderQuestionInfo {
 
 export interface BuilderGroupInfo {
   id: string
-  /** The first group stimulus. A group with nothing to display still appears in `groups(...)` (D90), carrying an empty stimulus and `stimuli: []`. */
-  stimulus: BijakAttemptStimulus
+  /** The first group stimulus. A group with nothing to display still appears in `groups(...)` (D90), with no `stimulus` and `stimuli: []`. */
+  stimulus?: BijakAttemptStimulus
   /**
    * D90 (R1-T07): every displayable stimulus of the group in order, 0 to 3, the first being `stimulus` when there is one. The group is ONE unit: the stimuli
-   * are shown once above all member questions and carry no marks. Absent = `[stimulus]` (PoC fixture).
+   * are shown once above all member questions and carry no marks. Absent = `[stimulus]` when there is one, else `[]` (PoC fixture).
    */
   stimuli?: BijakAttemptStimulus[]
   /** Member question ids in published order. */
@@ -85,7 +85,7 @@ export interface BuilderQuestionSource {
   describe(refs: readonly BuilderQuestionRef[]): Promise<ReadonlyMap<string, BuilderQuestionInfo>>
   /** Picker candidates: ids of the PUBLISHED questions of the subject and kertas, in bank order. */
   candidates(scope: BuilderCandidateScope): Promise<string[]>
-  /** Group id -> group (stimulus and members in published order); unknown or stimulus-less groups are absent. */
+  /** Group id -> group (stimulus and members in published order); an unknown group is absent; a group with no displayable stimulus is present without `stimulus` (D90). */
   groups(groupIds: readonly string[]): Promise<ReadonlyMap<string, BuilderGroupInfo>>
   /**
    * Optional. Of `ids`, those whose picker text (`preview`) or topic contains `needle` (a literal, case-insensitive match), decided by the

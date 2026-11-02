@@ -15,6 +15,7 @@ import RichText from '../../components/RichText.vue'
 import type { BuilderGroup, BuilderQuestion, SectionPoolPage } from '../../domain/admin-types'
 import type { StimulusDef } from '../../domain/types'
 import { checkPaper, moveUnit, removeUnit, unitsOf } from '../../domain/paper-builder'
+import { editorGroupLabel, editorStimuliOf } from '../../lib/stimulus-data'
 import { INTAKE_MANUAL_PATH } from '../intake/lib/intake-routes'
 import { bijakAdminServer } from '../../server/client'
 import PaperReferenceEditor from '../builder/components/PaperReferenceEditor.vue'
@@ -76,7 +77,7 @@ const publishErrors = ref<string[]>([])
 /** Pool units added through the picker that the editor data does not carry yet. */
 const extraQ = reactive(new Map<string, BuilderQuestion>())
 const extraG = reactive(new Map<string, string[]>())
-const extraStim = reactive(new Map<string, StimulusDef>())
+const extraStim = reactive(new Map<string, StimulusDef[]>())
 
 watch(
   data,
@@ -178,7 +179,11 @@ function move(sectionId: string, index: number, delta: -1 | 1): void {
 function unitsFor(sectionId: string) {
   return unitsOf(ids[sectionId] ?? [], groupOf)
 }
-const stimulusOf = (gid: string) => gMap.value.get(gid)?.stimulus ?? extraStim.get(gid)
+/** Label of a group's stimuli; '' for a stimulus-less group, which stays a unit (D90, REQ-A-008). */
+const groupLabelById = (gid: string): string => {
+  const g = gMap.value.get(gid)
+  return g ? editorGroupLabel(g) : editorGroupLabel({ stimuli: extraStim.get(gid) ?? [] })
+}
 
 /* ---------------------------------------------------------------------------- picker */
 const pickerSection = ref<string | null>(null)
@@ -249,7 +254,7 @@ const candidates = computed(() =>
       unit: u,
       ids: u.questionIds,
       ...(u.groupId ? { groupId: u.groupId } : {}),
-      stimulusLabel: u.stimulus?.label,
+      stimulusLabel: editorGroupLabel(u),
       label: u.questions[0]?.preview ?? u.questionIds[0]!,
     })),
 )
@@ -260,7 +265,7 @@ function addPoolUnit(sectionId: string, u: SectionPoolPage['units'][number]): vo
   for (const q of u.questions) extraQ.set(q.id, q)
   if (u.groupId) {
     extraG.set(u.groupId, [...u.questionIds])
-    if (u.stimulus) extraStim.set(u.groupId, u.stimulus)
+    extraStim.set(u.groupId, editorStimuliOf(u))
   }
   const all = new Set(Object.values(ids).flat())
   setIds(sectionId, [...(ids[sectionId] ?? []), ...u.questionIds.filter((x) => !all.has(x))])
@@ -374,7 +379,7 @@ function addOpsUnit(sectionId: string, u: BijakBuilderPoolUnit): void {
   }
   if (u.groupId) {
     extraG.set(u.groupId, [...u.questionIds])
-    if (u.stimulus) extraStim.set(u.groupId, u.stimulus)
+    extraStim.set(u.groupId, editorStimuliOf(u))
   }
   const all = new Set(Object.values(ids).flat())
   setIds(sectionId, [...(ids[sectionId] ?? []), ...u.questionIds.filter((q) => !all.has(q))])
@@ -422,7 +427,7 @@ const previewBlocks = computed(() => {
       return {
         start,
         questions: u.ids.map((q) => byId.get(q)!).filter(Boolean),
-        stimulus: u.groupId ? p.stimuli[u.groupId] : undefined,
+        stimuli: u.groupId ? (p.groupStimuli[u.groupId] ?? (p.stimuli[u.groupId] ? [p.stimuli[u.groupId]!] : [])) : [],
         optionBank: u.groupId ? p.optionBanks[u.groupId] : undefined,
       }
     }),
@@ -749,7 +754,7 @@ const previewBlocks = computed(() => {
                   class="flex flex-wrap items-center gap-2 text-caption font-semibold text-info"
                 >
                   <UIcon name="i-ph-image" class="size-4" />
-                  Kumpulan rangsangan {{ stimulusOf(u.groupId)?.label }} · {{ u.ids.length }} soalan
+                  Kumpulan rangsangan{{ groupLabelById(u.groupId) ? ` ${groupLabelById(u.groupId)}` : '' }} · {{ u.ids.length }} soalan
                   bergerak bersama
                 </p>
                 <div v-for="qid in u.ids" :key="qid" class="flex flex-col gap-1">
@@ -914,7 +919,7 @@ const previewBlocks = computed(() => {
               <template v-for="u in b.units" :key="u.start">
                 <QuestionPreview
                   :questions="u.questions"
-                  :stimulus="u.stimulus"
+                  :stimuli="u.stimuli"
                   :option-bank="u.optionBank"
                   :start="u.start"
                   hide-scheme

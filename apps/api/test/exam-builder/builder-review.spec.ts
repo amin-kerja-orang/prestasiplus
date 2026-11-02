@@ -505,6 +505,105 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
     })
   })
 
+  describe('R1-T31: the builder wire carries the whole stimulus group (D90)', () => {
+    interface Wire {
+      id: string
+      kind: string
+      label: string
+      caption?: string
+      source?: string
+      text?: string
+      table?: { head: string[]; rows: string[][] }
+      image?: { url: string }
+    }
+    const stim = async (body: Record<string, unknown>): Promise<string> => {
+      const res = await admin.post('/api/stimuli', body)
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      return res.body.data.id as string
+    }
+    const picture = async (): Promise<string> => {
+      const up = await admin.upload('/api/files?purpose=question_image', makePng())
+      expect(up.status, JSON.stringify(up.body)).toBe(201)
+      return up.body.data.id as string
+    }
+    async function group(label: string, stimulusIds: string[]): Promise<{ id: string; members: string[] }> {
+      const members = [await mk({ questionText: `Merujuk ${label}, berapakah nilai soalan satu?` }), await mk({ questionText: `Merujuk ${label}, berapakah nilai soalan dua?` })]
+      const res = await admin.post('/api/stimulus-groups', { label, stimulusIds, questionIds: members })
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      await approve(members)
+      for (const id of members) expect((await setPool(id, ['MAT2-A'])).status).toBe(200)
+      return { id: res.body.data.id as string, members }
+    }
+
+    it('editor groups, pool units, student view and the preview send stimuli[] (1 to 3, once per group) with kind, caption, source, table and a file token URL', async () => {
+      const token = await picture()
+      const image = await stim({ kind: 'image', label: 'Rajah 1', caption: 'Segi empat tepat', alt: 'Rajah segi empat tepat', sourceCitation: 'Sumber: buku teks', imageFileId: token })
+      const table = await stim({ kind: 'table', label: 'Jadual 1', caption: 'Jualan', tableData: { head: ['Bulan', 'Jumlah'], rows: [['Jan', '10'], ['Feb', '12']] } })
+      const passage = await stim({ kind: 'passage', label: 'Petikan 1', body: { ms: 'Sebuah kebun berbentuk segi empat tepat.' } })
+      const g = await group('Rajah 1', [image, table, passage])
+
+      const paper = await newPaper()
+      const [a] = await sectionsOf(paper)
+      expect((await place(paper, a!, g.members[1]!)).status).toBe(201)
+
+      const check = (list: Wire[]) => {
+        expect(list.map((x) => x.kind)).toEqual(['image', 'table', 'passage'])
+        expect(list[0]).toMatchObject({ label: 'Rajah 1', caption: 'Segi empat tepat', source: 'Sumber: buku teks', image: { url: `/api/files/${token}` } })
+        expect(list[1]).toMatchObject({ kind: 'table', caption: 'Jualan', table: { head: ['Bulan', 'Jumlah'], rows: [['Jan', '10'], ['Feb', '12']] } })
+        expect(list[1]!.text).toBeUndefined()
+        expect(list[2]).toMatchObject({ text: 'Sebuah kebun berbentuk segi empat tepat.' })
+        expect(JSON.stringify(list)).not.toMatch(/asset|fileId/i)
+      }
+
+      // editor (paper view): groups
+      const editor = (await admin.get(`/api/admin/papers/${paper}`)).body.data
+      const grp = (editor.groups as { id: string; stimulus: Wire; stimuli?: Wire[]; questionIds: string[] }[]).find((x) => x.id === g.id)!
+      expect(grp.questionIds).toEqual(g.members)
+      check(grp.stimuli!)
+      expect(grp.stimulus).toEqual(grp.stimuli![0])
+
+      // student view: the stimuli once per group, both members under it
+      const view = (await admin.get(`/api/admin/papers/${paper}/student-view`)).body.data
+      const units = view.sections[0].units as { groupId?: string; stimulus?: Wire; stimuli?: Wire[]; questions: { id: string }[] }[]
+      const unit = units.find((u) => u.groupId === g.id)!
+      check(unit.stimuli!)
+      expect(unit.stimulus).toEqual(unit.stimuli![0])
+      expect(unit.questions.map((x) => x.id)).toEqual(g.members)
+      expect(units.filter((u) => u.groupId === g.id)).toHaveLength(1)
+
+      // the picture is readable by the admin through the token URL (and by no anonymous caller)
+      expect((await admin.get(unit.stimuli![0]!.image!.url)).status).toBe(200)
+
+      // section pool (another paper, nothing placed yet): the group is ONE unit with its stimuli
+      const fresh = await newPaper()
+      const [fa] = await sectionsOf(fresh)
+      const pool = await admin.get(`/api/admin/papers/${fresh}/sections/${fa!}/pool?pageSize=100`)
+      expect(pool.status, JSON.stringify(pool.body)).toBe(200)
+      const poolUnit = (pool.body.data as { groupId?: string; stimuli?: Wire[]; questionIds: string[] }[]).find((u) => u.groupId === g.id)!
+      expect(poolUnit.questionIds).toEqual(g.members)
+      check(poolUnit.stimuli!)
+
+      // admin preview (review content): all stimuli of the group, keyed by group id
+      const preview = await admin.post('/api/admin/papers/preview', { ids: g.members })
+      expect(preview.status, JSON.stringify(preview.body)).toBe(200)
+      check(preview.body.data.groupStimuli[g.id])
+      expect(preview.body.data.stimuli[g.id]).toEqual(preview.body.data.groupStimuli[g.id][0])
+    })
+
+    it('carries all seven kinds unchanged: image, diagram, map, infographic, graph with their pictures, table and passage', async () => {
+      const kinds: [string, Record<string, unknown>][] = []
+      for (const kind of ['diagram', 'map', 'graph']) kinds.push([kind, { kind, label: `Gambar ${kind}`, alt: `Huraian ${kind}`, imageFileId: await picture() }])
+      const ids = await Promise.all(kinds.map(([, body]) => stim(body)))
+      const g = await group('Kumpulan gambar', ids)
+      const infographic = await group('Infografik', [await stim({ kind: 'infographic', label: 'Infografik 1', alt: 'Huraian infografik', imageFileId: await picture() })])
+      const preview = await admin.post('/api/admin/papers/preview', { ids: [...g.members, ...infographic.members] })
+      const list = preview.body.data.groupStimuli[g.id] as Wire[]
+      expect(list.map((x) => x.kind)).toEqual(['diagram', 'map', 'graph'])
+      expect(list.every((x) => x.image?.url.startsWith('/api/files/'))).toBe(true)
+      expect(preview.body.data.groupStimuli[infographic.id][0]).toMatchObject({ kind: 'infographic', label: 'Infografik 1' })
+    })
+  })
+
   describe('B2 review findings: a missing question does not switch the other blockers off', () => {
     it('one blocker per missing question (with its id); the structural blockers of the others still fire', async () => {
       const { paper, ids } = await fullPaper()
@@ -600,9 +699,9 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
       const other = await mk()
       const group = await admin.post('/api/stimulus-groups', { label: 'Petikan satu', stimulusIds: [stim.body.data.id], questionIds: [lone, other] })
       expect(group.status, JSON.stringify(group.body)).toBe(201)
+      const groupId = group.body.data.id as string
       await approve([lone, other])
       expect((await setPool(lone, ['MAT2-A'])).status).toBe(200)
-      const groupId = group.body.data.id as string
       await q(`update questions set group_id = null, group_position = null where id = $1`, [other])
 
       const paper = await newPaper()
@@ -620,6 +719,66 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
       expect(pub.body.data.ok).toBe(false)
       expect(pub.body.data.errors).toContain('Kumpulan perlu sekurang-kurangnya 2 soalan.')
       expect(pub.body.data.overridden).toBeUndefined()
+    })
+  })
+
+  describe('D90: a group with no displayable stimulus is still a group', () => {
+    /** A two-member group whose only stimulus is unlinked by SQL (a legacy group with nothing to display). */
+    async function stimulusLessGroup(): Promise<{ groupId: string; members: string[] }> {
+      const stim = await admin.post('/api/stimuli', { kind: 'passage', label: 'Petikan hilang', body: { ms: 'Petikan yang akan dibuang.' } })
+      expect(stim.status, JSON.stringify(stim.body)).toBe(201)
+      const members = [await mk(), await mk()]
+      const group = await admin.post('/api/stimulus-groups', { label: 'Petikan hilang', stimulusIds: [stim.body.data.id], questionIds: members })
+      expect(group.status, JSON.stringify(group.body)).toBe(201)
+      const groupId = group.body.data.id as string
+      await approve(members)
+      await q(`delete from stimulus_group_stimuli where group_id = $1`, [groupId])
+      return { groupId, members }
+    }
+
+    it('is emitted as a group (groupId, members, stimuli []), placed and moved as ONE unit', async () => {
+      const { groupId, members } = await stimulusLessGroup()
+      const solo = await approved()
+      const paper = await newPaper()
+      const [a] = await sectionsOf(paper)
+      const added = await place(paper, a!, members[1]!)
+      expect(added.status, JSON.stringify(added.body)).toBe(201)
+      // a lone member brings the whole group, in published order
+      expect(added.body.data.added).toEqual(members)
+      expect((await place(paper, a!, solo)).status).toBe(201)
+      const editor = (await admin.get(`/api/admin/papers/${paper}`)).body.data
+      const group = (editor.groups as { id: string; stimulus?: unknown; stimuli?: unknown[]; questionIds: string[] }[]).find((g) => g.id === groupId)!
+      expect(group).toBeDefined()
+      expect(group.questionIds).toEqual(members)
+      expect(group.stimuli).toEqual([])
+      expect(group.stimulus).toBeUndefined()
+      // the group moves as a unit: ordering by one member moves both
+      const order = await admin.put(`/api/admin/papers/${paper}/sections/${a}/order`, { order: [solo, members[0]!] })
+      expect(order.status, JSON.stringify(order.body)).toBe(200)
+      expect((await admin.get(`/api/admin/papers/${paper}`)).body.data.paper.sections[0].questionIds).toEqual([solo, ...members])
+      // the student view shows it as one unit with no stimulus
+      const view = (await admin.get(`/api/admin/papers/${paper}/student-view`)).body.data
+      const unit = (view.sections[0].units as { groupId?: string; stimulus?: unknown; stimuli?: unknown[]; questions: { id: string }[] }[]).find((u) => u.groupId === groupId)!
+      expect(unit.questions.map((x) => x.id)).toEqual(members)
+      expect(unit.stimulus).toBeUndefined()
+      // removing one member removes the whole group
+      const removed = await admin.del(`/api/admin/papers/${paper}/placements/${members[0]}`)
+      expect(removed.body.data.removed).toEqual(members)
+    })
+
+    it('stays outside D93: a one-member group without a stimulus is not blocked by the group minimum', async () => {
+      const { groupId, members } = await stimulusLessGroup()
+      await q(`update questions set group_id = null, group_position = null where id = $1`, [members[1]])
+      const paper = await newPaper()
+      const [a] = await sectionsOf(paper)
+      expect((await place(paper, a!, members[0]!)).status).toBe(201)
+      const review = (await admin.get(`/api/admin/papers/${paper}/review`)).body.data
+      expect(review.blockers).not.toContain('Kumpulan perlu sekurang-kurangnya 2 soalan.')
+      const pool = (await admin.get(`/api/admin/papers/${paper}/sections/${a}/pool?pageSize=100`)).body.data as { groupId?: string; stimulus?: unknown; questionIds: string[]; reasons: string[] }[]
+      const unit = pool.find((u) => u.questionIds.includes(members[0]!))!
+      expect(unit.groupId).toBe(groupId)
+      expect(unit.stimulus).toBeUndefined()
+      expect(unit.reasons).not.toContain('Kumpulan perlu sekurang-kurangnya 2 soalan.')
     })
   })
 })

@@ -208,6 +208,39 @@ describe('PaperEditorPage picker', () => {
     expect(w.get('[data-testid="section-0-badges"]').text()).toContain('Markah 4 / 2')
   })
 
+  // REQ-A-008 (D90): a pool group carries 0 to 3 stimuli; one without any is still a labelled unit.
+  const stim = (id: string, label: string) => ({ id, kind: 'diagram', label, alt: label })
+  const withStimuli = (gid: string, stimuli: ReturnType<typeof stim>[]) => ({
+    marks: grp.marks,
+    eligible: true,
+    reasons: [],
+    placed: false,
+    groupId: gid,
+    questionIds: [`${gid}a`, `${gid}b`],
+    questions: [`${gid}a`, `${gid}b`].map((id) => ({ ...grp.questions[0]!, id, groupId: gid, preview: `Soalan ${id}` })),
+    ...(stimuli.length ? { stimulus: stimuli[0], stimuli } : { stimuli }),
+  })
+  it.each([
+    [0, [], 'Kumpulan · 2 soalan', 'Kumpulan rangsangan · 2 soalan'],
+    [1, [stim('a', 'Rajah 1')], 'Kumpulan Rajah 1 · 2 soalan', 'Kumpulan rangsangan Rajah 1 · 2 soalan'],
+    [
+      3,
+      [stim('a', 'Rajah 1'), stim('b', 'Petikan A'), stim('c', 'Jadual 1')],
+      'Kumpulan Rajah 1 dan Petikan A dan Jadual 1 · 2 soalan',
+      'Kumpulan rangsangan Rajah 1 dan Petikan A dan Jadual 1 · 2 soalan',
+    ],
+  ])('a pool group with %i stimuli is offered and added as one labelled unit', async (_n, stimuli, pickText, unitText) => {
+    sectionPool.mockResolvedValue({ units: [withStimuli('gx', stimuli)], total: 1, totalPages: 1 })
+    const w = await render()
+    await w.get('[data-testid="add-0"]').trigger('click')
+    await flushPromises()
+    expect(document.querySelector('[data-testid="pick-gx"]')!.textContent).toContain(pickText)
+    ;(document.querySelector('[data-testid="pick-add-gx"]') as HTMLElement).click()
+    await flushPromises()
+    expect(w.get('[data-testid="unit-group-gx"]').text()).toContain(unitText)
+    expect(w.findAll('[data-testid^="unit-group-"]')).toHaveLength(1)
+  })
+
   it('"Muat lagi" appends the next page rows; a fully filtered page shows no empty text next to it', async () => {
     sectionPool.mockResolvedValueOnce({ units: [mk('m1')], total: 2, totalPages: 2 })
     const w = await render()

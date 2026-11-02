@@ -11,7 +11,8 @@ import PaperMetaForm from '../admin/builder/components/PaperMetaForm.vue'
 import PaperReferenceEditor from '../admin/builder/components/PaperReferenceEditor.vue'
 import PaperQuestionOps from '../admin/builder/components/PaperQuestionOps.vue'
 import { builderCopy as t } from '../admin/builder/domain/copy'
-import { groupLabelOf, hasStimulus, validTitle } from '../admin/builder/domain/stimulus'
+import { editorGroupLabel } from '../lib/stimulus-data'
+import { hasStimulus, validTitle } from '../admin/builder/domain/stimulus'
 import { usePaperActions } from '../admin/builder/lib/use-paper-actions'
 import type { BuilderApi, SectionPool } from '../admin/builder/server/api'
 import PublishOverride from '../admin/builder/components/PublishOverride.vue'
@@ -201,8 +202,8 @@ describe('Empty-group placeholder (T07) and title rules', () => {
     const editor = { ...ed, groups: [{ id: 'g', stimuli: [], questionIds: ['q1'] }] as never }
     const w = mount(PaperEditBlocks, { props: { editor } })
     expect(w.find('[data-testid="edit-passages"]').exists()).toBe(false)
-    expect(groupLabelOf({ stimuli: [] })).toBe('')
-    expect(groupLabelOf({ stimuli: [{ label: 'Rajah 1' }, { label: 'B' }] })).toBe('Rajah 1')
+    expect(editorGroupLabel({ stimuli: [] })).toBe('')
+    expect(editorGroupLabel({ stimuli: [{ label: 'Rajah 1' }, { label: 'B' }] as never })).toBe('Rajah 1 dan B')
     // a group of three with no `stimulus` still shows its first label for editing
     const three = { ...ed, groups: [{ id: 'g', stimuli: [{ id: 's', kind: 'diagram', label: 'Rajah 1', alt: '' }], questionIds: ['q1'] }] as never }
     const w3 = mount(PaperEditBlocks, { props: { editor: three } })
@@ -364,5 +365,26 @@ describe('Bahan rujukan editor (R4)', () => {
     const ed = await api.updateReference(id, [{ title: 'Rumus', items: ['a'] }])
     expect((ed.paper as unknown as { reference: unknown[] }).reference).toHaveLength(1)
     await expect(api.updateReference(id, [{ title: ' ', items: [] }])).rejects.toThrow()
+  })
+})
+
+describe('StudentViewDrawer stimuli (REQ-A-008)', () => {
+  it('shows every stimulus of a group (0 to 3), and none for a plain unit', async () => {
+    const { default: StudentViewDrawer } = await import('../admin/builder/components/StudentViewDrawer.vue')
+    const st = (n: number) => ({ id: `s${n}`, kind: 'diagram', label: `Rajah ${n}`, alt: '' })
+    const unit = (stimuli: unknown[]) => ({ stimuli, questions: [{ id: 'q', number: 1, marks: 1, preview: 'x' }] })
+    const view = {
+      title: 'T', subject: 'MAT', subjectName: 'Matematik', kertas: 2, year: 2026, code: '1449/2', durationMin: 60,
+      instructions: [], reference: [], questionCount: 2, marks: 2,
+      sections: [{ label: 'A', instruction: '', compulsory: true, marks: 2, units: [unit([st(1), st(2), st(3)]), unit([])] }],
+    }
+    const w = mount(StudentViewDrawer, {
+      props: { view: view as never, open: true },
+      attachTo: document.body,
+      global: { stubs: { StimulusView: { template: '<i class="stim" />' } } },
+    })
+    await flushPromises()
+    expect(document.body.querySelectorAll('[data-testid="student-stimulus"]')).toHaveLength(3)
+    w.unmount()
   })
 })
