@@ -538,24 +538,23 @@ A3 dev-1 rehearsed this locally. `prisma migrate deploy` does not run a migratio
 - ha18-minors must restore 0105 byte-for-byte (A2); it is IN-PROGRESS until then.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 02:02 UTC, BASE c3098c9a)
+### Team A open branches: heads from origin (auto, 2026-11-02 02:03 UTC, BASE 985012dd)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/a2-carried-minors | 45f152423 | READY (A2, @45f15242 = 6b9104d3 + A1b Minor JSDoc wording; comments/docs only): REQ-A-018 JSDoc, D9 row simulasi_kuiz limit, deviation row PKSK applyStatus no approve gate (LEAD, KIV R2); A1b Approve; C3 doc line deferred until c012 merges; B2 |
-| r1/ac-gaps-a1b | c2b937105 | READY (multi, @6e0d918f; handoff-doc conflict with ha26 being removed by A3, merge after ha26: runbook §2.4/§8 final: DO-block files (0100, 0105) atomic, non-DO (0106/0107/0110) autocommit + object check before resolve; 2 deviations rows (0105 header sentence wrong, 0106/0107 one-tx claim wrong; files not edited); merge-tree vs BASE clean); B4/B2 |
+| r1/ac-gaps-a1b | c2b937105 | READY (multi, @c2b93710: runbook final (DO/non-DO, 0106/0107 in base since BASE-137); handoff file byte-identical to ha26 21360a86 (no conflict); merge-tree clean); merge AFTER ha26; B4/B2 |
 | r1/alp-comment-240 | 84b0c3a99 | READY (A4, @84b0c3a9 on approved admin-list-perf 69f465c8; comment only): env.schema.ts:148 says 240 (REQ-B-066 part); merge after admin-list-perf; B2 | A1b Approve (comment only) |
 | r1/builder-search-perf | 1216b736c | READY — B2 c23 APPROVED @1216b736; clean on T48 10c62437; merge after T48 |
 | r1/c012-doc-followup | b71dc2add | READY (A2, @b71dc2ad on BASE-134; docs, 1 line): pipeline doc :297 edit-as-draft response (201 {id, versionNo}; 409 newer draft/review; 409 live not approved); B2 |
 | r1/d90-builder-sweep-a3 | eeebce89a | READY (A3, @eeebce89 = B2-approved da0bb7f3 + T48 10c62437 merged (deviations keep-both); exam-builder 400/400). Merge after T48; B2 delta |
-| r1/delete-served-guard | da7a12e7e | READY (A2, @da7a12e7 = B2-approved fe7ef537 + BASE-139 merge; code conflicts resolved: BASE public-token-only wording kept in question-image-access, served-rule import + D72 constants, both contract consts; 123/123 + security 185 + conformance 413, tsc 0; merge-tree vs BASE-142 clean). **B2 delta review: fe7ef537..da7a12e7 (merge resolution only)**; A1b pre-review APPROVE on the merge resolution (per-file patches identical to the branch's own; 157 pass); publish-lock-share restacks on it |
 | r1/ha17-ac-coverage | 157b371c3 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b; head 157b371c |
 | r1/ha18-gate-facts | f988b670f | MERGED by B1 as BASE-132 259f4616 @a9ffe246 (alone, not paired with reqb052; pinned-version-rule check by A4 running). Origin head f988b670 → follow-up r1/ha18-minors |
 | r1/ha18-minors | 17450966c | READY (A2, @17450966; B2 delta vs BASE: 5 files, review.service not_duplicate idempotent / 409 itemLocked + duplicateId audit, accepted-duplicates e2e gate-dismiss test, helpers withQuestionWorkflow opt-in, contract description + openapi 1 line; **no migration change** (0105 restored byte-for-byte, lead verified the 3-dot diff)). A1b Approve on content; A4 proof green; re-run 22/22, contract:check ok. B: run npm run check -w @pp/contract |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
-| r1/ha24-release-input | 8e6a30cc0 | READY (A3 docs, @4335759e; c0f7a45d MERGED as BASE-145 76d65694): **B delta c0f7a45d..4335759e** = DO/non-DO migration model in ri/nota/sign-off + KIV 39 rows (split VALIDATE); B1/B2 |
-| r1/ha26-team-a-state | 21360a867 | READY (A3 docs, @8caeb072: REQ-B-070 fixed; written off BASE-145, merged rows 136-145, current heads, H-A18 alone; merge-tree clean). **Merge before ac-gaps** (B2); B1/B2 |
+| r1/ha24-release-input | 8e6a30cc0 | READY (A3 docs, @8e6a30cc; c0f7a45d in BASE-145 → B delta c0f7a45d..8e6a30cc: DO/non-DO model, KIV 39, 0106/0107 in base); B1/B2 |
+| r1/ha26-team-a-state | 21360a867 | READY (A3 docs, @21360a86: REQ-B-070 fixed; to BASE-146; owns the handoff file); merge BEFORE ac-gaps; B1/B2 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-followup | 2fe252aba | READY (A2, @2fe252ab on intake-reqs 8c1964a6): unknownSp required, FACTS in unit.spec, deviations row 244 names spNotInTaxonomy; 43/43, tsc 0; merge AFTER intake-reqs (deviations conflict: keep both); B2 small | A1b pre-review: CLEAN (CurriculumFacts internal; both producers always set unknownSp; tsc 0; 43/43) |
 | r1/minors-b025c-a3 | a4feeab01 | READY (A3, @a4feeab0 on BASE-131; test only): essay-choice-blank 9 tests on a choose-N Bahagian (best-N, V2 self-mark rule pinned), mutations red; closes A1b REQ-B-025c carried Minors; B2 |
@@ -582,7 +581,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t37-r1-runbook | c9dcb5a08 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b (823bb4a1); head c9dcb5a0 |
 | r1/t38-cap-risk-row | ee421f520 | READY (A3 docs, @ee421f52 on BASE-120): T38 accepted-risk deviation row (USER Q14, REQ-B-059); docs only; B1 | A1a pre-review Approve (bindings.ts citations exact) |
-| r1/t39-k1-evidence | 669a11099 | IN-PROGRESS (A3 docs, @1a26f7a6, docs only on BASE-6; merge-tree clean; base already links to it (dead link until merged)): fact re-check vs the current base pending, then READY for B2 |
+| r1/t39-k1-evidence | 669a11099 | READY (A3 docs, @669a1109: K1 blueprint evidence re-checked at BASE-148, time-bound facts marked; fixes the dead base links in runbook/release notes); merge-tree clean; B2 |
 | r1/t42b-intake-acs | 34d86311e | READY (A2, @34d86311 on 5318a971; test-only Minor): refused accept deletes the figure copy storage object (mutation: drop files.discard → red); 6/6; B2 small | A1b pre-review: Approve (mutation bites) |
 | r1/t43-chain-publish | 238eb6eb0 | IN-PROGRESS (REQ-B-068 restack by A3; current origin head is NOT for merge) | was: READY — B2 c23 APPROVED @238eb6eb (AwM); merge after T31 + REQ-A-008 f85db8ff |
 | r1/t43b-publish-acs | 457db6ae0 | READY (A3, @457db6ae = 7a14581a + T48 10c62437 merged: contract union 26 codes (+REFERENCE_IMAGE_INVALID), openapi regen, new NO_QUESTIONS + REFERENCE_IMAGE_INVALID test; API 441, contract 54, FE m28 642, tsc 0). Merge after T48; B2 delta |
@@ -592,8 +591,6 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t51-partial-acs-a3 | 7cb8d814a | IN-PROGRESS (A3, @7cb8d814 restacked on T48 10c62437): exam-builder 416/417 RED: builder-review "stays outside D93" (same as REQ-B-069; likely pool page cap ?pageSize=100 vs 106 units). Fixed by r1/t31-pool-lookup-fixture merged after T31 (no cascade needed); READY once that fix is merged |
 
 **Merged content, origin head has only base-merge commits since (no new work):** r1/a4chain-minors 86dd7ad67, r1/ha15-blueprint-evidence 7e5d637e5, r1/overview-getmany-parallel 2809a87fe, r1/reqb032-pinned-rule 167986eff, r1/t44-blueprint-fields 072d8f4b4, r1/t48-builder-parity 10c624376
-
-**Origin head moved since last record (re-triage):** r1/ac-gaps-a1b: status says @6e0d918f, origin is c2b937105; r1/ha24-release-input: status says @4335759e, origin is 8e6a30cc0; r1/ha26-team-a-state: status says @8caeb072, origin is 21360a867; r1/t39-k1-evidence: status says @1a26f7a6, origin is 669a11099
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
