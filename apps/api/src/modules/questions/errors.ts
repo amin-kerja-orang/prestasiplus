@@ -48,7 +48,6 @@ export const alreadyApprovedSkip = (id: string): BulkSkipped => ({ id, reason: Q
 /** The `failed` entry of an id that does not exist. */
 export const notFoundFailure = (id: string): BulkFailure => ({ id, code: 'NOT_FOUND', message: QUESTION_NOT_FOUND_MESSAGE, fields: {} })
 
-
 /** Maps a per-id error of the bulk action to its `failed` entry; `null` means the error is not a skip (re-throw it). */
 export const bulkFailureOf = (id: string, e: unknown): BulkFailure | null => {
   if (!(e instanceof ApiError)) return null
