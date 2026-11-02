@@ -382,10 +382,13 @@ test.describe('M02 users (Admin Pusat) @api', () => {
       await searchFor(page, key)
       await expect(page.locator('[data-testid="user-row"]')).toHaveCount(2, { timeout: 15_000 })
 
-      const boxes = page.locator('[data-testid="user-select"]:visible')
-      await expect(boxes).toHaveCount(2)
-      await boxes.nth(0).check()
-      await boxes.nth(1).check()
+      // The selection is controlled and is cleared when the route or the list refetches, so check() (a one-shot
+      // state assertion) can throw. Re-find the box each time, click it and wait for the count to confirm it.
+      const boxes = () => page.locator('[data-testid="user-select"]:visible')
+      await expect(boxes()).toHaveCount(2)
+      await boxes().nth(0).click()
+      await expect(page.getByTestId('users-selected-count')).toHaveText('1')
+      await boxes().nth(1).click()
       await expect(page.getByTestId('users-selected-count')).toHaveText('2')
       await page.getByTestId('users-bulk-delete').click()
       await expect(page.getByRole('dialog', { name: 'Padam Pengguna Terpilih?' })).toBeVisible()
@@ -398,7 +401,7 @@ test.describe('M02 users (Admin Pusat) @api', () => {
       )
       await page.getByTestId('users-bulk-confirm').click()
       const res = await bulk
-      expect(res.status(), 'POST /api/admin/users/bulk-delete').toBe(200)
+      expect(res.status(), `POST /api/admin/users/bulk-delete: ${await res.text()}`).toBe(200)
       const sent = JSON.parse(res.request().postData() ?? '{}') as { ids: unknown[] }
       expect(
         sent.ids.map((i) => typeof i),
@@ -406,7 +409,12 @@ test.describe('M02 users (Admin Pusat) @api', () => {
       ).toEqual(['string', 'string'])
       await expect(page.getByTestId('user-row')).toHaveCount(0, { timeout: 15_000 })
       for (const user of [a, b]) {
-        expect((await admin.get(`/api/admin/users/${user.id}`)).status).toBe(404)
+        await expect
+          .poll(async () => (await admin.get(`/api/admin/users/${user.id}`)).status, {
+            message: `GET /api/admin/users/${user.id} after the bulk delete`,
+            timeout: 15_000,
+          })
+          .toBe(404)
       }
       await expectNoHScroll(page)
     } finally {

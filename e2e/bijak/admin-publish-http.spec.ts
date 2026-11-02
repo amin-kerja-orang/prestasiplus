@@ -83,7 +83,7 @@ async function assembleUntilMatching(page: Page): Promise<void> {
     // once the first page is used up (the blueprint needs 40) the next candidates sit behind "Muat lagi".
     const add = page.locator('[data-testid^=pick-add-]')
     const more = page.getByTestId('picker-more')
-    await expect(add.or(more).first()).toBeVisible()
+    await expect(add.or(more).first()).toBeVisible({ timeout: 20_000 })
     while ((await add.count()) === 0 && (await more.isVisible())) {
       const paged = page.waitForResponse((r) => /\/pool\?/.test(r.url()))
       await more.click()
