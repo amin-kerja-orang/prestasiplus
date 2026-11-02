@@ -24,6 +24,7 @@ export const WIPE_NOTE =
 
 const CHUNK = 1024 * 1024
 
+// The resolve() fallback is safe here (REQ-B-067): it only runs on the existing target (lstat'd above) and on the allowed roots (the cwd and the repo root); a missing root fails closed (refused).
 const real = (p: string): string => {
   try {
     return realpathSync.native(p)
