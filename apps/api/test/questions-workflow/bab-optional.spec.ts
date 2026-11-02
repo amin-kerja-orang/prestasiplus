@@ -1,6 +1,7 @@
 import { QuestionGateCheckSchema, envelopeOf } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { OverviewRepository } from '../../src/modules/practice/reads/overview/overview.repository'
 import { bootWorkflowApp, loginAll, type Client, type WorkflowTestApp } from './helpers'
 
 /**
@@ -9,7 +10,7 @@ import { bootWorkflowApp, loginAll, type Client, type WorkflowTestApp } from './
  * without a Bab and its DSKP unit maps to exactly one active Bab (`chapters.dskp_code` = the unit's printed code), the Bab is
  * filled so Soalan by Chapter, Peta Belajar and Latihan Bab still count it. Real bank, real routes.
  */
-describe('REQ-B-071: the Bab is optional at Semakan and Terbitkan', () => {
+describe('REQ-B-071: the Bab is optional at Semakan and Terbitkan; it is derived from the DSKP node at Terbitkan', () => {
   let t: WorkflowTestApp
   let c: Record<'admin' | 'teacher' | 'otherTeacher' | 'schoolAdmin' | 'student', Client>
   let tag: { subjectId: string; levelId: string; unitId: string; spId: string; unitCode: string; spCode: string }
@@ -53,6 +54,16 @@ describe('REQ-B-071: the Bab is optional at Semakan and Terbitkan', () => {
   const statusOf = async (id: string) => (await t.db.query<{ status: string }>(`select status from question_versions where question_id = $1::bigint order by version_no desc limit 1`, [id]))[0]!.status
   const move = (id: string, to: string) => c.admin.post(`/api/questions/${id}/status`, { to })
   const gate = async (id: string, which: 'submit' | 'approve') => envelopeOf(QuestionGateCheckSchema).parse((await c.admin.get(`/api/questions/${id}/gate-check?gate=${which}`)).body).data
+  let counter = 0
+  const newChapter = async (dskpCode: string | null): Promise<string> =>
+    (
+      await t.db.query<{ id: string }>(
+        `insert into chapters (subject_id, education_level_id, name, chapter_number, dskp_code, is_active) values ($1::bigint, $2::bigint, $3, $4, $5, true) returning id::text`,
+        [tag.subjectId, tag.levelId, `Bab REQ-B-071 ${String(++counter)}`, 900 + counter, dskpCode],
+      )
+    )[0]!.id
+  const practiceCount = async (chapterId: string) => (await new OverviewRepository({ client: t.db.prisma } as never).chapterQuestionCounts([chapterId])).get(chapterId) ?? 0
+
   describe('Semakan (submit) without a Bab', () => {
     it('single and bulk: chapterless drafts (CSV rows, accepted intake items) enter Semakan, N of N, and gate-check submit is ok', async () => {
       const one = await chapterless()
@@ -105,6 +116,60 @@ describe('REQ-B-071: the Bab is optional at Semakan and Terbitkan', () => {
       expect(res.body.error.fields).toMatchObject({ unitId: 'Sila pilih unit DSKP.', spIds: 'Sila pilih sekurang-kurangnya satu SP DSKP.' })
       expect(JSON.stringify(res.body)).not.toContain('Sila pilih bab')
       expect(await statusOf(id)).toBe('review')
+    })
+  })
+
+  describe('the Bab is derived at Terbitkan from the DSKP unit (chapters.dskp_code = the unit printed code, exactly one)', () => {
+    it('exactly one Bab matches: filled on single approve, bulk approve and create-as-approved; the question is then counted by the chapter read', async () => {
+      const chapter = await newChapter(tag.unitCode)
+      expect(await practiceCount(chapter)).toBe(0)
+      const single = await chapterless({}, 'review')
+      expect((await move(single, 'approved')).status).toBe(200)
+      expect(await chapterOf(single)).toBe(chapter)
+      const viaBulk = await chapterless({}, 'review')
+      expect((await c.admin.post('/api/questions/bulk-action', { action: 'approved', ids: [viaBulk] })).body.data.affected).toBe(1)
+      expect(await chapterOf(viaBulk)).toBe(chapter)
+      const created = await c.admin.post('/api/questions', body({ status: 'approved' }))
+      expect(created.status, JSON.stringify(created.body)).toBe(201)
+      expect(await chapterOf(created.body.data.id as string)).toBe(chapter)
+      // Soalan by Chapter / Latihan Bab: the three approved MCQs are counted for that Bab
+      expect(await practiceCount(chapter)).toBe(3)
+      await t.db.query(`update chapters set dskp_code = null where id = $1::bigint`, [chapter]) // isolate the next cases
+    })
+
+    it('an admin-chosen Bab is never overwritten, even when a different Bab matches the unit code', async () => {
+      const matching = await newChapter(tag.unitCode)
+      const chosen = await newChapter(null)
+      const own = await chapterless({}, 'review')
+      await t.db.query(`update question_versions set chapter_id = $2::bigint where question_id = $1::bigint`, [own, chosen])
+      expect((await move(own, 'approved')).status).toBe(200)
+      expect(await chapterOf(own)).toBe(chosen)
+      await t.db.query(`update chapters set dskp_code = null where id = $1::bigint`, [matching])
+    })
+
+    it('an SP code is not a bridge (no other heuristic): a Bab carrying only the SP code is not derived', async () => {
+      const bySp = await newChapter(tag.spCode)
+      const q = await chapterless({}, 'review')
+      expect((await move(q, 'approved')).status).toBe(200)
+      expect(await chapterOf(q)).toBeNull()
+      await t.db.query(`update chapters set dskp_code = null where id = $1::bigint`, [bySp])
+    })
+
+    it('no Bab matches (today seed: dskp_code is null everywhere): approved chapterless, and it is not in the chapter read of any Bab', async () => {
+      const none = await chapterless({}, 'review')
+      expect((await move(none, 'approved')).status).toBe(200)
+      expect(await chapterOf(none)).toBeNull()
+      const [{ n }] = await t.db.query<{ n: string }>(`select count(*)::text n from chapters where dskp_code is not null`) as [{ n: string }]
+      expect(n).toBe('0')
+    })
+
+    it('several Babs match the unit code: the question is approved chapterless (never a guess)', async () => {
+      const x = await newChapter(tag.unitCode)
+      const y = await newChapter(tag.unitCode)
+      const several = await chapterless({}, 'review')
+      expect((await move(several, 'approved')).status).toBe(200)
+      expect(await chapterOf(several)).toBeNull()
+      await t.db.query(`update chapters set dskp_code = null where id = any($1::bigint[])`, [[x, y]])
     })
   })
 })
