@@ -65,7 +65,7 @@ function concurrencyLimit(max: number): <T>(fn: () => Promise<T>) => Promise<T> 
 }
 
 /** Overview reads running at once (the pool is 10; a paper evaluation uses several connections itself). */
-const OVERVIEW_PARALLEL = 4
+export const OVERVIEW_PARALLEL = 4
 
 type PaperEvaluation = ReturnType<typeof evaluate>
 
@@ -120,7 +120,8 @@ export class ServabilityReadsService {
     // the other. The questions on published papers are evaluated ONCE: the Bijak SPM card and the Simulasi (kertas) row both use it.
     const run = concurrencyLimit(OVERVIEW_PARALLEL)
     const paperQuestions = run(() => this.evaluatePublishedPaperQuestions())
-    const paperCardP = paperQuestions.then((evaluated) => this.paperLaneCard(evaluated.results))
+    // Every read of the overview goes through `run`, the card and the subject list included, so no more than OVERVIEW_PARALLEL hold pool connections at once.
+    const paperCardP = paperQuestions.then((evaluated) => run(() => this.paperLaneCard(evaluated.results)))
     const [onPapers, drawn, bab, kuiz, jana, databankTotal, bank, spmSubjects, paperCard] = await Promise.all([
       paperQuestions,
       run(() => this.spmDraw()),
@@ -129,7 +130,7 @@ export class ServabilityReadsService {
       run(() => this.janaEligible()),
       run(() => this.databankLaneTotal()),
       run(() => this.questions.count(live)),
-      this.subjectsListed(),
+      run(() => this.subjectsListed()),
       paperCardP,
     ])
     const sumOver = (by: ReadonlyMap<string, number>, only?: ReadonlySet<string>) => [...by].reduce((n, [k, v]) => n + (only === undefined || only.has(k) ? v : 0), 0)
