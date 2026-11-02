@@ -129,3 +129,13 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
   - **Derivation rule (lead, 10:46 MYT, implementation detail of the above):** chapterId is derived ONLY via `chapters.dskp_code = <unit code>` (same subject + level), only on a unique match, and never overwriting a manual Bab. There is no FK from a curriculum node to a chapter (curriculum.prisma:159-161; dskp_code :99 is the intended hook). With today's seed dskp_code is null, so nothing is derived: a chapterless approved question is simply not in Latihan Bab (V2 :224). No heuristics.
 - **FE:** the bulk UI must show the per-row refusal reason from failed[]. A bulk 200 with affected 0 and no reason is not acceptable (REQ-A-041 to C).
 - *Decided under delegation; for user review.*
+
+## Q18 (DECIDED UNDER DELEGATION 2026-11-02 12:28 MYT by Mandor; for user review): REQ-B-074, does a pupil's past sitting keep a taken-down question image?
+- **Context:** REQ-B-074 (45a75f68) keeps taken-down images for ANY exam_attempts row on the paper (question-image-access.ts:104), as paperHeld, including submitted or abandoned ones and rights takedowns. No V2 reference exists for this behaviour, so it was decided on the best approach. Evidence: AC-17.3 (a rights complaint pulls every question from the source; "US-14 rules apply"), AC-14.1 (no longer served within 60 s), NFR-05 (copyright policy).
+- **Decision (option B, refined):**
+  1. **Rights takedown** (source_takedown / takedown_at): the image is NOT served in a submitted or abandoned attempt (history review). The UI shows a neutral placeholder; question text and historical marks remain.
+  2. **An attempt in progress** keeps the image until it ends (consistent with known limit 4.1: a takedown does not cut a running attempt). After it ends, rule 1 applies.
+  3. **Ordinary takedown** (not rights): the existing sitting exception stays (option A); history review keeps the image.
+- **Mandatory tests:** (a) rights takedown + submitted → no image; (b) rights takedown + in progress → image, gone after submit; (c) ordinary takedown + submitted → image.
+- **Owner:** A1b on r1/reqb074-takedown-lows (with the stale DSG spec fix). FE placeholder → team C (REQ-A-046).
+- *Decided under delegation; for user review. To be added to the user decision pack.*
