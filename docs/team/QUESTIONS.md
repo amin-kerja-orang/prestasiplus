@@ -111,3 +111,16 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
 - **Response shape (Mandor, under delegation, 09:28 MYT; option 2):** a new optional `skipped[]: {id, reason}` field in the bulk-action response. No-op rows go in `skipped[]`, **not** `failed[]`, so there is no error. Old clients ignore the new field.
 - **Owner:** A2 (r1/r1e2e10-bulk-publish-noop). The C FE shows skipped[] as info (REQ-A-040). B4 re-runs S2e after the merge.
 - *Decided under delegation; for user review.*
+
+## Q17 (DECIDED UNDER DELEGATION 2026-11-02 10:10 MYT by Mandor, V2 reference): REQ-B-071, is a Bab required at "Hantar untuk Semakan"?
+- **Decision: NO.** A Bab (chapter) is not required when submitting to review.
+- **V2 evidence:**
+  - In .cloud the Bab is only a tag "untuk penapisan dan pelaporan" (docs/discovery/cloud-student-mechanism.md:338).
+  - Chapterless questions exist and are just not counted in Soalan by Chapter (:224).
+  - AC-03.2 (docs/design/v2-admin-student-pipeline.md:153): DSKP completeness (curriculum nodes) is checked **at Terbitkan/approval** with a .cloud-style issue list, not at submit to review.
+- **Fix:**
+  - A2 removes the chapterId condition from the H-A18 submit-to-review gate, and keeps the DSKP refusal at Terbitkan per AC-03.2. Branch r1/reqb071-bab-submit.
+  - Spec updates: lifecycle-bulk and gate-facts (A2); chain-intake-to-pupil 3a (A3); release notes r1-nota-keluaran.md:20/72 (A3).
+  - New tests: CSV/PDF rows without a Bab enter Semakan; Terbitkan without a curriculum node is refused with the issue list.
+- **FE:** the bulk UI must show the per-row refusal reason from failed[]. A bulk 200 with affected 0 and no reason is not acceptable (REQ-A-041 to C).
+- *Decided under delegation; for user review.*
