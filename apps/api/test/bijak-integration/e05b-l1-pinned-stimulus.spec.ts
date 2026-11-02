@@ -94,7 +94,6 @@ async function paperPinningLiveVersion(qid: string): Promise<string> {
   return paper.id.toString()
 }
 
-
 describe('E05B-L1 the served lock of a question\'s OWN stimulus after its version is archived', () => {
   it('pinned on a published paper with a sitting open: PUT /api/stimuli/:id is refused with 409 and the pupil still reads the original text', async () => {
     const { qid, vid } = await approvedBankMcq()
@@ -120,14 +119,74 @@ describe('E05B-L1 the served lock of a question\'s OWN stimulus after its versio
     expect(v.questions.find((x) => x.id === qid)?.stimuli?.[0]).toMatchObject({ kind: 'passage', text: 'Petikan asal untuk soalan ini.' })
   })
 
-  it('negative control: the same archived own stimulus on NO published paper is not locked, the edit is 200', async () => {
+  // The served lock of an own stimulus (stimulus.repository `stimulusServed` -> served-rule `VERSION_SERVED` / `paperHeld`) is held by a PIN: a paper
+  // placement that pins the archived version, on a paper that is still held. A published paper is held by itself; a withdrawn paper only while
+  // sittings exist. The positive test above has pin + published paper + sitting together; the controls below take them apart.
+  const archive = async (qid: string): Promise<void> => {
+    const arch = await admin.post('/api/questions/bulk-action').set('X-CSRF-Token', adminCsrf).send({ action: 'archived', ids: [qid] })
+    expect(arch.status, JSON.stringify(arch.body)).toBe(200)
+    expect(arch.body.data.affected).toBe(1)
+  }
+  const editStimulus = (sid: string, ms: string) => admin.put(`/api/stimuli/${sid}`).set('X-CSRF-Token', adminCsrf).send({ body: { ms } })
+  const bodyOf = async (sid: string): Promise<string> => (await one(`select body_ms from stimuli where id = $1`, [sid])).body_ms!
+  /** An approved question with an own passage stimulus, not yet on any paper. */
+  async function questionWithStimulus(body: string): Promise<{ qid: string; sid: string }> {
+    const { qid, vid } = await approvedBankMcq()
+    const sid = await insertOwnStimulus('passage', { body, label: 'Petikan' })
+    await linkToVersion(vid, sid)
+    return { qid, sid }
+  }
+  const startSitting = async (paperId: string): Promise<void> => {
+    const started = await pupil.post('/api/bijak/attempts', { paperId, mode: 'exam' })
+    expect(started.status, JSON.stringify(started.body)).toBe(201)
+  }
+
+  it('negative control (a): a sitting WITHOUT the pin does not lock: the published paper with an open sitting does not place this question, so the edit is 200', async () => {
+    const { qid, sid } = await questionWithStimulus('Petikan tanpa pin.')
+    const other = await approvedBankMcq() // the published paper places THIS question instead; pupils sit it
+    await startSitting(await paperPinningLiveVersion(other.qid))
+    await archive(qid)
+    const put = await editStimulus(sid, 'Teks diubah.')
+    expect(put.status, JSON.stringify(put.body)).toBe(200)
+    expect(await bodyOf(sid)).toBe('Teks diubah.')
+  })
+
+  it('negative control (b): the pin WITHOUT a sitting still locks while the paper is published: the sitting is not a guard on its own there, the edit is 409', async () => {
+    const { qid, sid } = await questionWithStimulus('Petikan dengan pin sahaja.')
+    await paperPinningLiveVersion(qid) // published, pins version 1, nobody has started it
+    await archive(qid)
+    const put = await editStimulus(sid, 'Teks yang diubah.')
+    expect(put.status, JSON.stringify(put.body)).toBe(409)
+    expect(await bodyOf(sid)).toBe('Petikan dengan pin sahaja.')
+  })
+
+  it('the sitting is a guard where the paper is withdrawn: the pin keeps the stimulus locked only while a sitting exists (409), and not without one (200)', async () => {
+    const withdraw = (paperId: string) => t.db.prisma.paper.update({ where: { id: BigInt(paperId) }, data: { status: 'withdrawn' } })
+    // withdrawn + pin + sitting: still held (the pupil keeps reading the pinned version)
+    const sat = await questionWithStimulus('Petikan kertas ditarik balik, ada sesi.')
+    const satPaper = await paperPinningLiveVersion(sat.qid)
+    await startSitting(satPaper)
+    await withdraw(satPaper)
+    await archive(sat.qid)
+    const locked = await editStimulus(sat.sid, 'Teks diubah.')
+    expect(locked.status, JSON.stringify(locked.body)).toBe(409)
+    expect(await bodyOf(sat.sid)).toBe('Petikan kertas ditarik balik, ada sesi.')
+    // withdrawn + pin, no sitting: nothing holds the version any more
+    const empty = await questionWithStimulus('Petikan kertas ditarik balik, tiada sesi.')
+    await withdraw(await paperPinningLiveVersion(empty.qid))
+    await archive(empty.qid)
+    const free = await editStimulus(empty.sid, 'Teks diubah.')
+    expect(free.status, JSON.stringify(free.body)).toBe(200)
+    expect(await bodyOf(empty.sid)).toBe('Teks diubah.')
+  })
+
+  it('negative control (c): neither pin nor sitting (the archived own stimulus on NO published paper) is not locked, the edit is 200', async () => {
     const { qid, vid } = await approvedBankMcq()
     const sid = await insertOwnStimulus('passage', { body: 'Petikan tanpa kertas.', label: 'Petikan' })
     await linkToVersion(vid, sid)
-    const arch = await admin.post('/api/questions/bulk-action').set('X-CSRF-Token', adminCsrf).send({ action: 'archived', ids: [qid] })
-    expect(arch.status, JSON.stringify(arch.body)).toBe(200)
-    const put = await admin.put(`/api/stimuli/${sid}`).set('X-CSRF-Token', adminCsrf).send({ body: { ms: 'Teks diubah.' } })
+    await archive(qid)
+    const put = await editStimulus(sid, 'Teks diubah.')
     expect(put.status, JSON.stringify(put.body)).toBe(200)
-    expect((await one(`select body_ms from stimuli where id = $1`, [sid])).body_ms).toBe('Teks diubah.')
+    expect(await bodyOf(sid)).toBe('Teks diubah.')
   })
 })
