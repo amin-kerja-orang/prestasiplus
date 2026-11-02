@@ -54,9 +54,13 @@ if (hits.length > 0) {
 // limits = measured + 10 % (entry js raw 340,000 for headroom). Growth is from legitimate m28 and DS features;
 // pdfjs-dist and KaTeX are already lazy chunks, so they are not part of first load; first-load cost is
 // guarded by the entry js budget, which is stable.
+// Budget review 2026-11-02 (REQ-B-081, REQ-B-086; first frontend CI run on the R1 branch): measured all js raw 10,525,497 /
+// gzip 3,034,689, entry js raw 348,525; limits = measured + 10 %. All js crossed at BASE-45 (R1-21 Kandungan hub, +824 kB raw): its
+// first value import of `@pp/contract` pulled in the whole zod contract, a lazy chunk not on first load. Entry js crossed at the R1
+// base snapshot 6f92e350a (341,649). Next step: make the contract tree-shakable (`sideEffects: false` measured all js raw 9,826,721).
 const BUDGET = {
   // V2-T05 (G4 round): 310_300 (= 282,101 + 10 %), same chunk-inlining reason as the gzip limit below.
-  'entry js raw': { max: 340_000, get: (m) => m.entryJs.raw },
+  'entry js raw': { max: 383_000, get: (m) => m.entryJs.raw },
   // V2-T05: 83_800 (= 76,148 measured + 10 %). The old budget measured the entry file only; once the
   // gallery stopped being the sole consumer of Nuxt UI's app-config chunk, rolldown inlined that
   // 14,751 B gzip chunk into the entry. Entry + that chunk was 82,606 B before, 76,148 B now.
@@ -65,8 +69,8 @@ const BUDGET = {
   'entry js gzip': { max: 83_800, get: (m) => m.entryJs.gzip },
   'entry css raw': { max: 504_600, get: (m) => m.entryCss.raw },
   'entry css gzip': { max: 73_100, get: (m) => m.entryCss.gzip },
-  'all js raw': { max: 10_000_000, get: (m) => m.allJs.raw },
-  'all js gzip': { max: 2_846_000, get: (m) => m.allJs.gzip },
+  'all js raw': { max: 11_578_000, get: (m) => m.allJs.raw },
+  'all js gzip': { max: 3_338_000, get: (m) => m.allJs.gzip },
   'all css raw': { max: 530_200, get: (m) => m.allCss.raw },
   'all css gzip': { max: 80_500, get: (m) => m.allCss.gzip },
 }
