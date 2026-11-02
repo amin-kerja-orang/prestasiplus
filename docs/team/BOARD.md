@@ -572,7 +572,7 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 - **Disk:** check `docker system df` and prune orphaned anonymous test volumes when there are 0 containers. A3 reclaimed 3.4 GB this way.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 05:29 UTC, BASE 404e2e7a)
+### Team A open branches: heads from origin (auto, 2026-11-02 05:30 UTC, BASE 404e2e7a)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -590,7 +590,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
 | r1/reqb074-takedown-lows | 33b0a0b1c | SUPERSEDED: 45a75f68 merged as BASE-195; the later commit 33b0a0b1 carried the Q18 rule, which the user overrode (REQ-B-077). Do not merge 33b0a0b1. Follow-ups: r1/reqb074-dsg-spec-fix, then r1/reqb076-live-takedown (A1b) |
 | r1/reqb076-live-takedown | c8965bb89 | IN-PROGRESS (A1b): A4 pre-review on c8965bb8 = REQUEST CHANGES (read-path predicate half applied: overview card ≠ lane ≠ report; live hydrate paths (revision, chapter repeat, listing, visibleSets, games/missions…) still serve). Lead redesign: an approve gate refuses approving a version whose source has takedown_at (single/bulk/filter/create-as-approved/import; no override in R1); read-path predicates reverted. New head to follow; do not review c8965bb8 |
-| r1/reqb079-t34-t36-minors | 52345db7c | (no status — triage) |
+| r1/reqb079-t34-t36-minors | 52345db7c | IN-REVIEW-A (A3, @52345db7 = 5 commits on BASE-195; REQ-B-079: (2) a null/missing blueprint → overridable BLUEPRINT_NOT_VERIFIED blocker with the existing 'Tiada blueprint…' copy, skipped once Terbit; (1) a missing bundle → 404 'Kertas tidak ditemui' instead of 500; (3) stale BIJAK_POC_QUESTIONS ops docs; (4) dead overrideNotAllowed removed; exam-builder + bijak-attempts 665/665, mutations red, tsc 0, contract:check ok). A4 pre-review pending |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 
