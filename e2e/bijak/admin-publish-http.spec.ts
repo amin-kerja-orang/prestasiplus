@@ -75,11 +75,27 @@ async function createDraft(page: Page, title: string): Promise<string> {
 /** Adds the first picker candidate to section 0 until the blueprint matches. */
 async function assembleUntilMatching(page: Page): Promise<void> {
   const check = page.getByTestId('budget-check')
-  for (let i = 0; i < 40; i++) {
+  const picks = page.locator('[data-testid^=pick-add-]')
+  const more = page.getByTestId('picker-more')
+  for (let i = 0; i < 80; i++) {
     if ((await check.innerText()).includes('Sepadan dengan blueprint')) return
     await page.getByTestId('add-0').click()
     await expect(page.getByTestId('picker')).toBeVisible()
-    await page.locator('[data-testid^=pick-add-]').first().click()
+    // REQ-B-042: the picker pages its candidates by 20 ("Muat lagi", `picker-more`). Wait for the page to load; when it has no
+    // addable row, press "Muat lagi" and wait again. No addable row and no more pages is a real shortage: the poll times out.
+    for (let guard = 0; guard < 20; guard++) {
+      await expect
+        .poll(async () => (await picks.count()) > 0 || (await more.isVisible().catch(() => false)), {
+          message: 'the picker offers an addable question or another page',
+          timeout: 15_000,
+        })
+        .toBe(true)
+      if ((await picks.count()) > 0) break
+      // The next page may land (and the button go) between the poll and the click: a short click that gives up is fine,
+      // the next round of the loop looks again; a real shortage still fails in the poll above.
+      await more.click({ timeout: 3_000 }).catch(() => undefined)
+    }
+    await picks.first().click()
     await page.keyboard.press('Escape')
     await expect(page.getByTestId('picker')).toBeHidden()
   }
@@ -150,10 +166,22 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () =
   // Real, read-only: opens the first existing paper (no edit, no publish, no write).
   test('opening an existing paper renders the editor read-only path @bijak', async ({ page }) => {
     await login(page, ADMIN_USER ?? '', ADMIN_PASS ?? '')
+    // The list loads after `papers-page` mounts, and the wide table shows its empty state ("Belum ada
+    // kertas") while it loads, so neither the page nor that text says the list is ready: read the list response.
+    const listed = page.waitForResponse(
+      (r) => new URL(r.url()).pathname === '/api/admin/papers' && r.request().method() === 'GET',
+    )
     await page.goto('/admin/spm/kertas')
     await expect(page.getByTestId('papers-page')).toBeVisible()
+    const res = await listed
+    expect(res.status(), 'GET /api/admin/papers').toBe(200)
+    const body = (await res.json()) as { data?: unknown }
+    test.skip(
+      Array.isArray(body.data) && body.data.length === 0,
+      'no existing paper in this environment',
+    )
     const open = page.locator('a[href^="/admin/spm/kertas/"]:not([href$="/baharu"])').first()
-    test.skip((await open.count()) === 0, 'no existing paper in this environment')
+    await expect(open, 'the loaded list shows a paper link').toBeVisible()
     await open.click()
     await expect(page.getByTestId('paper-editor-page')).toBeVisible()
     await expect(page.getByTestId('budget-check')).toBeVisible()
@@ -229,6 +257,8 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () =
     browser,
   }, testInfo) => {
     test.skip(!STUDENT_USER || !STUDENT_PASS, NEEDS_PASSWORD)
+    // 40 picks (one per question, picker reopened each time), Simpan, Terbitkan, a second browser context: over the 30 s default.
+    test.setTimeout(150_000)
     const title = `E2E-http publish ${Date.now()}`
     await login(page, ADMIN_USER ?? '', ADMIN_PASS ?? '')
     await page.goto('/admin/command-center')
@@ -241,7 +271,18 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () =
       await page.getByTestId('paper-save').click()
       await expect(page.getByTestId('paper-save')).toBeDisabled()
 
-      await page.getByTestId('paper-publish').click()
+      // T34 (AC-R1-16.2) + T10: a blueprint whose contract is not Disahkan disables the plain Terbitkan, shows the
+      // reason and offers the audited override tick (UI path, the TODO(T10) from the pre-T10 spec). A Disahkan
+      // blueprint keeps the plain Terbitkan + confirm.
+      if (await page.getByTestId('paper-publish').isDisabled()) {
+        await expect(page.getByTestId('publish-errors')).toContainText('belum Disahkan')
+        await expect(page.getByTestId('publish-override')).toBeVisible()
+        await page.getByTestId('override-tick').click()
+        await page.getByTestId('override-reason').fill('Kontrak masih Spec, kertas ujian dalaman')
+        await page.getByTestId('override-publish').click()
+      } else {
+        await page.getByTestId('paper-publish').click()
+      }
       await page.locator('[data-ds=confirm-ok]').click()
       await expect(page.getByTestId('paper-unpublish')).toBeVisible()
       await expect(page.getByTestId('paper-view-student')).toBeVisible()

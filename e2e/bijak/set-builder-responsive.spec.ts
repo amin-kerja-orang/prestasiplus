@@ -71,9 +71,17 @@ test.describe('Set Builder responsive @bijak', () => {
     const group = page.locator('[data-testid^=pool-group-]').first()
     const gid = (await group.getAttribute('data-testid'))!.replace('pool-group-', '')
     await group.locator('[data-testid^=pool-add-]').click()
+    // Wait for each add to land ("Dalam set" on its bank row) before the next click. The real API locks the paper, so
+    // two quick adds both stay; the mock (`admin/builder/server/memory.ts`, team C) reads, changes and saves without a
+    // lock across its latency, so an add 47 ms after another overwrites it.
+    await expect(page.getByTestId(`pool-group-${gid}`).getByText('Dalam set'), 'the group is in the set').toBeVisible()
     await expect(page.locator('[data-testid^=pool-add-]').first()).toBeVisible()
     const single = page.locator('[data-testid^=pool-]:not([data-testid^=pool-group-]):not([data-testid=pool-stimulus]):not([data-testid=pool-reasons])').filter({ has: page.locator('[data-testid^=pool-add-]') }).first()
-    if (await single.count()) await single.locator('[data-testid^=pool-add-]').click()
+    if (await single.count()) {
+      const singleRow = page.getByTestId((await single.getAttribute('data-testid'))!)
+      await singleRow.locator('[data-testid^=pool-add-]').click()
+      await expect(singleRow.getByText('Dalam set'), 'the single question is in the set').toBeVisible()
+    }
 
     if (narrow(page)) await page.getByTestId('builder-pane-set').click()
     const unit = page.getByTestId(`unit-group-${gid}`)
@@ -85,8 +93,15 @@ test.describe('Set Builder responsive @bijak', () => {
     // Naik / Turun move the whole unit, Buang removes it whole.
     const firstId = (await unit.locator('[data-testid^=remove-]').getAttribute('data-testid'))!.replace('remove-', '')
     const down = page.getByTestId(`down-${firstId}`)
-    if (await down.isEnabled()) await down.click()
-    else await page.getByTestId(`up-${firstId}`).click()
+    const up = page.getByTestId(`up-${firstId}`)
+    // Both units are on the list here, so the unit can move one way; the other arrow opens once the move has landed.
+    if (await down.isEnabled()) {
+      await down.click()
+      await expect(up, 'moved down: Naik opens').toBeEnabled()
+    } else {
+      await up.click()
+      await expect(down, 'moved up: Turun opens').toBeEnabled()
+    }
     await expect(page.getByTestId(`unit-group-${gid}`)).toHaveCount(1)
     await expect(page.getByTestId('builder-publish')).toBeDisabled()
     await expect(page.getByTestId('builder-publish-reason')).toContainText('masalah')
