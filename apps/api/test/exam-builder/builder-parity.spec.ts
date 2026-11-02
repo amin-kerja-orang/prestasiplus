@@ -461,6 +461,33 @@ describe('R1-T48 builder parity: cover code, rule, sections, added questions, pi
       await kept(withdrawn)
     })
 
+    it('the Nombor soalan follows an added question that a PUT moves to another Bahagian: Padam soalan still deletes it, and the number stays used', async () => {
+      const { paper, d } = await withBahagianD()
+      const e = ((await addSection(paper, 'Bahagian E')).body.data.paper.sections as { id: string }[]).slice(-1)[0]!.id
+      const x = (await addQuestion(paper, d, { number: '21', mode: 'mcq', marks: 2 })).body.data.added[0] as string
+      const control = (await addQuestion(paper, d, { number: '22', mode: 'mcq', marks: 2 })).body.data.added[0] as string
+      // control: a PUT that keeps the question in its own Bahagian keeps its number
+      const same = await admin.put(`/api/admin/papers/${paper}`, { sections: [{ id: d, questionIds: [control, x] }] })
+      expect(same.status, JSON.stringify(same.body)).toBe(200)
+      const kept = same.body.data.paper.sections.find((s: { id: string }) => s.id === d)
+      expect(kept).toMatchObject({ questionIds: [control, x], numberLabels: { [x]: '21', [control]: '22' } })
+      // move X to another admin-added Bahagian
+      const moved = await admin.put(`/api/admin/papers/${paper}`, { sections: [{ id: d, questionIds: [control] }, { id: e, questionIds: [x] }] })
+      expect(moved.status, JSON.stringify(moved.body)).toBe(200)
+      const sections = moved.body.data.paper.sections as { id: string; questionIds: string[]; numberLabels?: Record<string, string> }[]
+      expect(sections.find((s) => s.id === e)).toMatchObject({ questionIds: [x], numberLabels: { [x]: '21' } })
+      expect(sections.find((s) => s.id === d)).toMatchObject({ questionIds: [control], numberLabels: { [control]: '22' } })
+      // the number is still used on the paper
+      const again = await addQuestion(paper, e, { number: '21', mode: 'mcq', marks: 1 })
+      expect(again.status).toBe(422)
+      expect(again.body.error.fields.number).toBe('Nombor soalan 21 sudah digunakan dalam kertas ini.')
+      // Padam soalan still treats it as an added question: removed from the paper and (a Draf on no other paper) from the bank
+      const del = await admin.del(`/api/admin/papers/${paper}/questions/${x}`)
+      expect(del.status, JSON.stringify(del.body)).toBe(200)
+      expect(del.body.data.removed).toEqual([x])
+      expect((await admin.get(`/api/questions/${x}`)).status).toBe(404)
+    })
+
     it('a Terbit paper is read-only', async () => {
       const made = await withBahagianD()
       const id = (await addQuestion(made.paper, made.d, { number: '1', mode: 'mcq', marks: 1 })).body.data.added[0] as string
