@@ -286,6 +286,63 @@ describe('QuizRunner question', () => {
     expect(t(w, 'option-A').attributes('data-state')).toBe('wrong')
   })
 
+  it('a mid-quiz 402 TRIAL_EXHAUSTED shows the trial message and a /pricing link, not a wrong answer', async () => {
+    api.check.mockRejectedValueOnce(
+      new ApiError({
+        status: 402,
+        code: 'TRIAL_EXHAUSTED',
+        message: 'Baki percubaan percuma anda telah habis.',
+        body: { error: { code: 'TRIAL_EXHAUSTED', message: 'Baki percubaan percuma anda telah habis.' } },
+      }),
+    )
+    const w = await render()
+    await t(w, 'option-A').trigger('click')
+    await t(w, 'btn-check').trigger('click')
+    await flushPromises()
+    const notice = t(w, 'trial-exhausted')
+    expect(notice.text()).toContain('Baki percubaan percuma anda telah habis.')
+    const link = notice.get('a')
+    expect(link.text()).toBe('Langgan untuk akses tanpa had')
+    expect(link.attributes('href')).toBe('/pricing')
+    expect(w.find('[data-testid=quiz-feedback]').exists()).toBe(false)
+    expect(w.text()).not.toContain('Salah')
+    expect(w.find('[data-testid=btn-check]').exists()).toBe(true)
+  })
+
+  it('keeps the trial text but hides the /pricing link while the prototype scope is on (dead link)', async () => {
+    vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')
+    try {
+      api.check.mockRejectedValueOnce(
+        new ApiError({
+          status: 402,
+          code: 'TRIAL_EXHAUSTED',
+          message: 'Baki percubaan percuma anda telah habis.',
+          body: { error: { code: 'TRIAL_EXHAUSTED', message: 'Baki percubaan percuma anda telah habis.' } },
+        }),
+      )
+      const w = await render()
+      await t(w, 'option-A').trigger('click')
+      await t(w, 'btn-check').trigger('click')
+      await flushPromises()
+      const notice = t(w, 'trial-exhausted')
+      expect(notice.text()).toContain('Baki percubaan percuma anda telah habis.')
+      expect(notice.find('a').exists()).toBe(false)
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
+  it('a non-402 network failure shows no trial notice', async () => {
+    api.check.mockRejectedValueOnce(
+      new ApiError({ status: 0, code: 'NETWORK_ERROR', message: 'x' }),
+    )
+    const w = await render()
+    await t(w, 'option-A').trigger('click')
+    await t(w, 'btn-check').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-testid=trial-exhausted]').exists()).toBe(false)
+  })
+
   it('opens the M04 report modal for the question with the S7 tints', async () => {
     api.check.mockResolvedValue({
       isCorrect: true,

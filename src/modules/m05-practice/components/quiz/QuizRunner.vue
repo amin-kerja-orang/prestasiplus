@@ -15,6 +15,8 @@
  *
  * `hideRetry` removes the retry button of the results (Q4 and Q5, where a restart would be a 409).
  *
+ * A mid-quiz 402 `TRIAL_EXHAUSTED` on #5 shows a notice with a `/pricing` link (question stays unchecked, not scored).
+ *
  * A start failure is handled here (FR-M05-48, 51, 66, 75): 402 → `/pricing` (no message), 404 → the global 404 page, anything else `alert(message)`
  * and back to `backUrl`.
  */
@@ -22,12 +24,13 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { setRouteOutcome } from '@/app/router/outcome'
+import { usePrototypeScope, useRouteExists } from '@/composables'
 import { DsFeedbackSheet, DsFloatScore, DsQuizHeader, DsQuizOption } from '@/ds'
 import { ReportQuestionModal } from '@/modules/m04-question-bank'
 
 import { checkAnswer, startSession, submitSession } from '../../api/practice'
 import type { StartSessionRequest, StartSessionResponse } from '../../api/types'
-import { PRACTICE_LABELS } from './quiz-labels'
+import { PRACTICE_LABELS, SUBSCRIBE_LINK_TEXT, TRIAL_EXHAUSTED_TEXT } from './quiz-labels'
 import {
   comboOf,
   dsOptionState,
@@ -113,6 +116,9 @@ const emit = defineEmits<{
 }>()
 
 const router = useRouter()
+// The subscribe link follows the config page notice: no link to /pricing while it is out of the prototype scope or not routed (D9 dead link).
+const { allows } = usePrototypeScope()
+const { routeExists } = useRouteExists()
 const labels = computed<QuizLabels>(() => ({ ...PRACTICE_LABELS, ...props.labels }))
 
 function scrollTop(): void {
@@ -168,6 +174,7 @@ const {
   total,
   percent,
   isLast,
+  trialExhausted,
 } = run
 
 onMounted(() => void run.begin())
@@ -406,6 +413,24 @@ const feedbackExplanation = computed(() =>
                   >{{ option.text }}</DsQuizOption
                 >
               </div>
+
+              <UAlert
+                v-if="trialExhausted && !result"
+                color="warning"
+                variant="soft"
+                icon="i-ph-warning-circle-duotone"
+                :title="TRIAL_EXHAUSTED_TEXT"
+                data-testid="trial-exhausted"
+              >
+                <template #description>
+                  <ULink
+                    v-if="allows('/pricing') && routeExists('/pricing')"
+                    to="/pricing"
+                    class="inline-flex min-h-11 items-center text-highlighted underline"
+                    >{{ SUBSCRIBE_LINK_TEXT }}</ULink
+                  >
+                </template>
+              </UAlert>
 
               <UButton
                 v-if="!result && selected !== null"

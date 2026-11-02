@@ -147,6 +147,27 @@ describe('useQuizRun', () => {
     expect(run.score.value).toBe(0)
   })
 
+  it('a mid-quiz 402 TRIAL_EXHAUSTED leaves the question unchecked, unscored and flags the trial', async () => {
+    const run = makeRun()
+    await run.begin()
+    run.select(0)
+    api.check.mockRejectedValue(
+      new ApiError({
+        status: 402,
+        code: 'TRIAL_EXHAUSTED',
+        message: 'Baki percubaan percuma anda telah habis.',
+        body: {
+          error: { code: 'TRIAL_EXHAUSTED', message: 'Baki percubaan percuma anda telah habis.' },
+        },
+      }),
+    )
+    await run.check()
+    expect(run.trialExhausted.value).toBe(true)
+    expect(run.result.value).toBeNull()
+    expect(run.answers.value).toEqual([])
+    expect(run.score.value).toBe(0)
+  })
+
   it('changes nothing on a network failure (FR-M05-79)', async () => {
     const run = makeRun()
     await run.begin()

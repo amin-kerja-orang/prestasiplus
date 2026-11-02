@@ -7,6 +7,8 @@
  * - the timer counts up from the moment the quiz shows, +1 per second, and stops on the results;
  * - a check response of any JSON shape (an error body too) marks the question checked; a network
  *   failure changes nothing (FR-M05-79);
+ * - exception: a 402 `TRIAL_EXHAUSTED` (the only 402 in the API/contract is TRIAL_EXHAUSTED, start + check,
+ *   packages/contract practice/paths.ts:82 and :106) leaves the question unchecked and unscored and sets `trialExhausted`;
  * - only checked answers are kept and submitted; the score shown is the client's own count;
  * - a failed submit leaves the results without the rewards card.
  * With `timeLimitSec` (Q6, PROPOSED) the timer counts down and the run finishes at 0.
@@ -15,7 +17,7 @@
 import { computed, onScopeDispose, ref, shallowRef } from 'vue'
 
 import type { StartSessionRequest, StartSessionResponse } from '../../api/types'
-import { buildAnswerRecord, hasJsonBody, scorePercent } from './quiz-lib'
+import { buildAnswerRecord, hasJsonBody, isTrialExhausted, scorePercent } from './quiz-lib'
 import type {
   QuizAnswerRecord,
   QuizApi,
@@ -50,6 +52,8 @@ export function useQuizRun(hooks: QuizRunHooks) {
   const gamification = shallowRef<QuizCompletedEvent['gamification']>(null)
   const submitting = ref(false)
   const checking = ref(false)
+  /** The free trial ran out while checking an answer (402): the host shows the subscribe notice. */
+  const trialExhausted = ref(false)
   /** Syiling / mata the per-question animation already showed (bonus = server total − these). */
   const coinsCollected = ref(0)
   const pointsCollected = ref(0)
@@ -96,6 +100,7 @@ export function useQuizRun(hooks: QuizRunHooks) {
     gamification.value = null
     submitting.value = false
     checking.value = false
+    trialExhausted.value = false
     coinsCollected.value = 0
     pointsCollected.value = 0
   }
@@ -151,6 +156,10 @@ export function useQuizRun(hooks: QuizRunHooks) {
       }
     } catch (err) {
       checking.value = false
+      if (isTrialExhausted(err)) {
+        if (mine === runSeq) trialExhausted.value = true
+        return
+      }
       // A JSON error body marks the question checked as "not correct"; a network failure changes nothing.
       if (!hasJsonBody(err)) return
       res = { isCorrect: false, correctOptionId: null, feedback: '', explanation: null }
@@ -159,6 +168,7 @@ export function useQuizRun(hooks: QuizRunHooks) {
     // The run may have finished (time limit) or restarted while #5 was in flight.
     if (mine !== runSeq || phase.value !== 'quiz' || current.value?.id !== q.id) return
     result.value = res
+    trialExhausted.value = false
     if (res.isCorrect) {
       score.value += 1
       coinsCollected.value += 1
@@ -232,6 +242,7 @@ export function useQuizRun(hooks: QuizRunHooks) {
     clock,
     gamification,
     submitting,
+    trialExhausted,
     coinsCollected,
     pointsCollected,
     questions,
