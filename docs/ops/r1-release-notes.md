@@ -373,7 +373,7 @@ Fill one row per migration added to the release after this file was written. Lea
 
 | Folder | Additive? | Data change | Pre-flight SELECT | Post SELECT | Reversible? | Runbook |
 |---|---|---|---|---|---|---|
-| `0101_essay_choice` (T25, **not merged**, section 0.1; read from the SQL on `r1/t25-essay-choice-store`) | yes: `question_parts.topics` JSONB nullable; `ck_question_parts_mode` dropped and re-added with `essay_choice`; new `ck_question_parts_topics` | none (every existing row has `topics` NULL and no `essay_choice` mode) | none needed | `SELECT count(*) FROM information_schema.columns WHERE table_name = 'question_parts' AND column_name = 'topics';` (expect 1) | yes, per the SQL header, after deleting `essay_choice` parts | this file |
+| `0101_essay_choice` (T25, in base since BASE-15) | yes: `question_parts.topics` JSONB nullable; `ck_question_parts_mode` dropped and re-added with `essay_choice`; new `ck_question_parts_topics` | none (every existing row has `topics` NULL and no `essay_choice` mode) | none needed | `SELECT count(*) FROM information_schema.columns WHERE table_name = 'question_parts' AND column_name = 'topics';` (expect 1) | yes, per the SQL header, after deleting `essay_choice` parts | this file |
 | `...` | | | | | | |
 | `0119_...` | | | | | | |
 
@@ -689,9 +689,9 @@ Unverified (nothing here was run against any server):
 6. Old API behaviour on the post-0092 schema (`topic_weights`) (6.2).
 7. How to stop a verified pair serving without a restore (6.2).
 8. How the UAT frontend build id is recorded (1.3).
-9. Section 0.1: T01 and T03 are merged (BASE-3 `285387a3`), but no release build of BASE-3 was run here. T06
-   (`502280f5`), T04 / 0100 (`2f16c1fe`) and T25 / 0101 (`be039a1b`) are not merged; their effects are described from
-   their branches and notes. The T04 pre-flight count (2.1) and the `VACUUM (ANALYZE)` (2.4) were not run or timed.
+9. Section 0.1 is a history view: T01, T03, T06, T04 / 0100 and T25 / 0101 are all in base. This page described T06, T04
+   and T25 from their branches and notes. The 0091 upgrade was rehearsed locally with 0100 at about 30 s at 409k rows, and
+   `VACUUM ANALYZE` at 36 s (runbook 2.5); neither is timed on production.
 
 Open questions for the team:
 
