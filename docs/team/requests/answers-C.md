@@ -79,3 +79,6 @@
 | REQ-A-030 (update 2026-11-02 08:36) | Mock list rows match QuestionRow (kertas/numberLabel null; schema-parse test). Team A: run the paper-servability scenario against this branch | C3 | r1/reqa030-mock-list-contract @ 0a960eb4d | DELIVERED (READY-FOR-REVIEW) |
 | REQ-A-031 (update 2026-11-02 08:36) | Unit test for the Studio draft-saved flash added | C3 | r1/reqa031-studio-draft-flash-test @ 0c515ad23 | DELIVERED (READY-FOR-REVIEW) |
 | REQ-A-018 (update 2026-11-02 08:36) | FE re-merged route 9d6ef833 | C3 | r1/reqa018-paper-servability-fe @ 8ad241439 | DELIVERED (READY-FOR-REVIEW; after route) |
+| REQ-B-064 (2026-11-02 08:37) | Accepted: qa-g5-reports E2E-M04-37/38 assert no "Dinyahaktif" badge after a pupil report (D98); same Lapor branch | C4 | r1/reqa005-bijak-lapor | IN-PROGRESS |
+| REQ-B-065 (2026-11-02 08:37) | Accepted: admin-publish-http cleanup confirms the DS dialog before deleteDraft; any other unpublish/withdraw click in e2e too | C1 | r1/reqa025-tarik-balik-confirm | IN-PROGRESS |
+| REQ-A-038 (2026-11-02 08:37) | Accepted: Studio "Edit sebagai draf" switches from the PUT workaround to POST /questions/{id}/edit-as-draft (201 {id, versionNo}; 409 → open the existing draft) | C4 (next slot) | — | ACCEPTED |
