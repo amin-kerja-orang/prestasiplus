@@ -596,7 +596,8 @@ test.describe('M02 user management role guards @api', () => {
       ).toEqual([own!.id])
 
       // A user of another school is hidden as 404, never data.
-      const all = (await central.get('/api/admin/users?perPage=100')).body as UserList
+      // The list is newest first, one page: by the last width the accounts other specs left behind push the seed users off it.
+      const all = (await central.get('/api/admin/users?search=adminsekolah.demo004%40example.test')).body as UserList
       const foreign = all.data.find((u) => u.school && u.school.id !== own!.id)
       expect(foreign, 'the seed has users of other schools').toBeTruthy()
       expect((await school.get(`/api/admin/users/${foreign!.id}`)).status).toBe(404)
