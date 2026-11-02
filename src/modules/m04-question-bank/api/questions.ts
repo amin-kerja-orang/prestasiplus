@@ -497,6 +497,25 @@ export interface BulkFailedRow {
   message: string
 }
 
+/** REQ-A-040: one `skipped[]` entry of the bulk action: a row left as it was (already Diterbitkan), with the server's BM reason. Information, not an error. */
+export interface BulkSkippedRow {
+  id: number
+  reason: string
+}
+
+function skippedRowsOf(value: unknown): BulkSkippedRow[] {
+  if (!Array.isArray(value)) return []
+  const rows: BulkSkippedRow[] = []
+  for (const entry of value as unknown[]) {
+    if (typeof entry !== 'object' || entry === null) continue
+    const e = entry as { id?: unknown; reason?: unknown }
+    const id = Number(e.id)
+    if (!Number.isSafeInteger(id)) continue
+    rows.push({ id, reason: typeof e.reason === 'string' ? e.reason : '' })
+  }
+  return rows
+}
+
 function failedRowsOf(value: unknown): BulkFailedRow[] {
   if (!Array.isArray(value)) return []
   const rows: BulkFailedRow[] = []
@@ -517,16 +536,21 @@ function failedRowsOf(value: unknown): BulkFailedRow[] {
 /**
  * #7 `POST /api/questions/bulk-action` (422 when no action or no ids).
  *
- * http mode: the API answers only `{affected}` and silently leaves an id untouched when its transition
- * is refused or the publish/approve gate fails (BE-09 `bulkAction`, 2f3b8311); it returns no per-id
- * reason. So when `affected` is below the number of distinct ids, each id is re-read and the ones not in
- * the target status come back in `notUpdated` for the screen to list one by one. Mock mode: never set.
+ * The API answers `{affected, failed[], skipped?[]}` (REQ-A-023, REQ-A-040): `failed[]` is one `{id, code, message}`
+ * per refused id, `skipped[]` (only when non-empty) one `{id, reason}` per row left as it was. Both come back
+ * here and the screen shows them. Only an older API that sends no `failed` array at all is read back:
+ * when `affected` is below the number of distinct ids, each id is re-read and the ones not in the target
+ * status come back in `notUpdated`.
  */
 export async function bulkQuestionAction(
   action: BulkAction,
   ids: readonly number[],
 ): Promise<
-  QuestionMutation<{ affected: number }> & { notUpdated?: number[]; failed?: BulkFailedRow[] }
+  QuestionMutation<{ affected: number }> & {
+    notUpdated?: number[]
+    failed?: BulkFailedRow[]
+    skipped?: BulkSkippedRow[]
+  }
 > {
   const http = isHttpMode()
   const result = await api.post<QuestionMutation<{ affected: number }>>(
@@ -538,8 +562,15 @@ export async function bulkQuestionAction(
     },
   )
   // REQ-A-023: the API reports a refused id in `data.failed[]` (code + BM message); show that, not a guessed reason.
-  const failed = failedRowsOf((result.data as { failed?: unknown }).failed)
-  if (failed.length > 0) return { ...result, failed }
+  const raw = result.data as { failed?: unknown; skipped?: unknown }
+  const failed = failedRowsOf(raw.failed)
+  const skipped = skippedRowsOf(raw.skipped)
+  const reported = {
+    ...(failed.length > 0 ? { failed } : {}),
+    ...(skipped.length > 0 ? { skipped } : {}),
+  }
+  // The API answered with reasons (or with an empty `failed[]`): nothing to guess, no re-read.
+  if (failed.length > 0 || skipped.length > 0 || Array.isArray(raw.failed)) return { ...result, ...reported }
   const target = BULK_TARGET_STATUS[action]
   const distinct = [...new Set(ids)]
   if (!http || target === undefined || result.data.affected >= distinct.length) return result

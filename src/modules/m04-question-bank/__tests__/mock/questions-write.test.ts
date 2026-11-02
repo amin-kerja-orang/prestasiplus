@@ -597,6 +597,38 @@ describe('#7 POST /api/questions/bulk-action', () => {
     expect(questions.get(129216)).not.toBeNull()
   })
 
+  it('REQ-A-047: approve of an already approved row is skipped[] with the contract reason, not affected, not failed', async () => {
+    const a = (await createMcq()).body.data.id
+    const b = (await createMcq()).body.data.id
+    await bulk({ action: 'pending_review', ids: [a, b] })
+    await bulk({ action: 'approve', ids: [a] })
+    const mixed = await bulk({ action: 'approve', ids: [a, b] })
+    expect(mixed.body.data).toEqual({
+      affected: 1,
+      skipped: [{ id: String(a), reason: QUESTION_MESSAGES.bulkAlreadyApproved }],
+    })
+    expect(mixed.body.status).toBe('1 soalan berjaya dikemaskini.')
+  })
+
+  it('REQ-A-047: nothing affected, a row skipped, none refused -> the status is the reason', async () => {
+    const a = (await createMcq()).body.data.id
+    await bulk({ action: 'approve', ids: [a] })
+    const res = await bulk({ action: 'approve', ids: [a] })
+    expect(res.body.data).toEqual({
+      affected: 0,
+      skipped: [{ id: String(a), reason: 'Soalan ini sudah diterbitkan.' }],
+    })
+    expect(res.body.status).toBe(QUESTION_MESSAGES.bulkAlreadyApproved)
+    expect(res.body.status).toBe('Soalan ini sudah diterbitkan.')
+  })
+
+  it('REQ-A-047: skipped is absent for other actions and when no row is skipped', async () => {
+    const a = (await createMcq()).body.data.id
+    await bulk({ action: 'approve', ids: [a] })
+    const archive = await bulk({ action: 'archive', ids: [a] })
+    expect('skipped' in archive.body.data).toBe(false)
+  })
+
   it('422 without an action, without ids, with a bad action or bad ids', async () => {
     const noAction = await bulk({ ids: [1] })
     expect(noAction.status).toBe(422)

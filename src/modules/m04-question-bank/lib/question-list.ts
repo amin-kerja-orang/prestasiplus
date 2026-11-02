@@ -229,8 +229,8 @@ export function errorTextOf(reply: { status: number; body: unknown }): string {
 }
 
 /**
- * http mode: the lines for questions the API left untouched (it gives no per-question reason, see
- * `bulkQuestionAction`). One line per question; `updated` is the affected count.
+ * Fallback only (an API that sends no `failed[]`, see `bulkQuestionAction`): the lines for questions left
+ * untouched, with a generic reason. One line per question; `updated` is the affected count.
  */
 export function notUpdatedLines(updated: number, ids: readonly number[], verb: string): string[] {
   return [
@@ -263,3 +263,40 @@ export function failedLines(
 
 /** [PROPOSED] UX-80: shown after "Jana Penjelasan AI" on an approved or archived question; the AI text went to a new draft version. */
 export const AI_DRAFT_NOTICE = 'Penjelasan AI disimpan sebagai draf baharu. Semak dan terbitkan draf itu.'
+
+/** REQ-A-040 [PROPOSED]: the info line for rows a bulk Terbitkan left as they were (`skipped[]`). */
+export function skippedLine(n: number): string {
+  return `${String(n)} soalan dilangkau \u2014 sudah diterbitkan.`
+}
+
+/** Shown when a bulk call changed nothing and the server named no reason (never a bare "0 ..." count). */
+export const BULK_NOTHING_UPDATED =
+  'Tiada soalan dikemaskini dan pelayan tidak memberi sebab. Muat semula senarai dan cuba lagi.'
+
+/**
+ * REQ-A-040/041: the flash of a selected-row bulk action. A refused row (`failed[]`) makes it an error with the
+ * server's own text per row; `skipped[]` is information (a success flash, or one extra line under the errors). An
+ * `affected` of 0 always carries a visible reason.
+ */
+export function bulkResultFlash(
+  result: {
+    data: { affected: number }
+    status: string
+    failed?: readonly { id: number; message: string }[]
+    skipped?: readonly { id: number; reason: string }[]
+    notUpdated?: readonly number[]
+  },
+  verb: string,
+): { type: 'success' | 'error'; message: string | string[] } {
+  const skipped = result.skipped && result.skipped.length > 0 ? [skippedLine(result.skipped.length)] : []
+  const affected = result.data.affected
+  if (result.failed && result.failed.length > 0) {
+    return { type: 'error', message: [...failedLines(affected, result.failed, verb), ...skipped] }
+  }
+  if (result.notUpdated && result.notUpdated.length > 0) {
+    return { type: 'error', message: [...notUpdatedLines(affected, result.notUpdated, verb), ...skipped] }
+  }
+  if (skipped.length > 0) return { type: 'success', message: [result.status, ...skipped] }
+  if (affected === 0) return { type: 'error', message: [result.status, BULK_NOTHING_UPDATED] }
+  return { type: 'success', message: result.status }
+}

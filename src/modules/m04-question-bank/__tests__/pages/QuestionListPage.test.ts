@@ -320,6 +320,24 @@ describe('QuestionListPage (M04 S1)', () => {
     })
   })
 
+  it('REQ-A-040: a bulk Terbitkan with skipped[] shows the info line, not an error', async () => {
+    questions.bulkQuestionAction.mockResolvedValue({
+      data: { affected: 0 },
+      status: 'Soalan ini sudah diterbitkan.',
+      skipped: [{ id: 564159, reason: 'Soalan ini sudah diterbitkan.' }],
+    })
+    const w = await render()
+    await w.findAll('tbody [role="checkbox"]')[0]?.trigger('click')
+    await flushPromises()
+    await t(w, 'questions-bulk-action').setValue('archive')
+    await w.get('[data-testid="questions-bulk-bar"]').trigger('submit')
+    await flushPromises()
+    expect(useFlashStore().current).toEqual({
+      type: 'success',
+      message: ['Soalan ini sudah diterbitkan.', '1 soalan dilangkau \u2014 sudah diterbitkan.'],
+    })
+  })
+
   it('sends nothing when the bulk confirm is dismissed', async () => {
     dialogs.confirmNative.mockReturnValue(false)
     const w = await render()

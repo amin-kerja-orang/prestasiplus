@@ -58,6 +58,28 @@ describe('request building by transport mode', () => {
     expect((await bulkQuestionAction('publish', [11, 12, 13])).notUpdated).toBeUndefined()
   })
 
+  it('http mode: failed[] and skipped[] come back as numbers with the server text, and nothing is re-read', async () => {
+    h.http = true
+    h.get.mockReset()
+    h.post.mockResolvedValue({
+      data: {
+        affected: 1,
+        failed: [{ id: '12', code: 'VALIDATION_ERROR', message: 'Tag DSKP belum lengkap.', fields: {} }],
+        skipped: [{ id: '11', reason: 'Soalan ini sudah diterbitkan.' }],
+      },
+      status: '1 soalan berjaya dikemaskini.',
+    })
+    const r = await bulkQuestionAction('publish', [10, 11, 12])
+    expect(r.failed).toEqual([{ id: 12, code: 'VALIDATION_ERROR', message: 'Tag DSKP belum lengkap.' }])
+    expect(r.skipped).toEqual([{ id: 11, reason: 'Soalan ini sudah diterbitkan.' }])
+    expect(r.notUpdated).toBeUndefined()
+    expect(h.get).not.toHaveBeenCalled()
+    // an empty failed[] (the API always sends it) is an answer too: no per-id re-read
+    h.post.mockResolvedValue({ data: { affected: 1, failed: [] }, status: 'ok' })
+    expect((await bulkQuestionAction('publish', [10, 11])).notUpdated).toBeUndefined()
+    expect(h.get).not.toHaveBeenCalled()
+  })
+
   it('mock mode: values are sent unchanged', async () => {
     h.http = false
     await fetchQuestions({ status: 'pending_review' })

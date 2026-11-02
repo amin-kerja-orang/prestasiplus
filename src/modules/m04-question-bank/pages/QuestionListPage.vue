@@ -58,8 +58,7 @@ import {
 } from '../lib/bulk-filter'
 import {
   bulkOptionsFor,
-  failedLines,
-  notUpdatedLines,
+  bulkResultFlash,
   bulkConfirmText,
   COMPLIANCE_OPTIONS,
   complianceColor,
@@ -355,16 +354,7 @@ async function submitBulk(): Promise<void> {
     selected.value = []
     bulkAction.value = ''
     await reloadAfterMutation()
-    if (result.failed && result.failed.length > 0) {
-      flash.show({ type: 'error', message: failedLines(result.data.affected, result.failed, option.verb) })
-    } else if (result.notUpdated && result.notUpdated.length > 0) {
-      flash.show({
-        type: 'error',
-        message: notUpdatedLines(result.data.affected, result.notUpdated, option.verb),
-      })
-    } else {
-      flash.show({ type: 'success', message: result.status })
-    }
+    flash.show(bulkResultFlash(result, option.verb))
   } catch (err) {
     flash.show({ type: 'error', message: errorLines(err) })
   } finally {

@@ -10,7 +10,7 @@
  * | 4 | `GET /api/questions/:id` | PKSK rows included; 404 |
  * | 5 | `PUT /api/questions/:id` | 200 `{data, status}`; 404 (also a PKSK row); 422 |
  * | 6 | `DELETE /api/questions/:id` | permanent; 200 `{data: {deleted}, status}`; 404 (also a PKSK row) |
- * | 7 | `POST /api/questions/bulk-action` | `{data: {affected}, status}`; 422 |
+ * | 7 | `POST /api/questions/bulk-action` | `{data: {affected, failed? (delete), skipped? (approve of an approved row)}, status}`; 422 |
  * | 8 | `POST /api/questions/:id/ai-explanation` | live-shaped `{ok, message}` (`ai-explanation.ts`) |
  * | 9 | `POST /api/questions/bulk-action/filter` | v2 contract (AC-03.3): dry run, `expectedCount`, cap 500; same filter as #1 |
  *
@@ -216,9 +216,18 @@ function bulk(req: MockRequest, ctx: MockContext): MockResponse {
           return row && row.pkskDomainId === null && questions.deletionBlock(id) !== null
         })
       : []
+  // REQ-A-047 (REQ-A-040): a bulk Terbitkan ("approve", the one servable status) leaves a row that is already approved as it is:
+  // not applied, not in `affected`, listed in `skipped[]` (present only when there is such a row), never in `failed[]`.
+  const skipped =
+    action === 'approve'
+      ? [...new Set(ids)].filter((id) => {
+          const row = questions.get(id)
+          return row && row.pkskDomainId === null && row.status === 'approved'
+        })
+      : []
   const affected = questions.bulkAction(
     action as BulkAction,
-    ids.filter((id) => !refused.includes(id)),
+    ids.filter((id) => !refused.includes(id) && !skipped.includes(id)),
     ctx.clock.now(),
   )
   // REQ-A-023: a refused delete is a `failed[]` entry (id as a string, code CONFLICT), as the server reports it.
@@ -228,8 +237,16 @@ function bulk(req: MockRequest, ctx: MockContext): MockResponse {
     message: deleteRefusedMessage(questions.deletionBlock(id) ?? 'served'),
     fields: {},
   }))
-  return ok(action === 'delete' ? { affected, failed } : { affected }, {
-    status: bulkUpdated(affected),
+  const skippedRows = skipped.map((id) => ({ id: String(id), reason: QUESTION_MESSAGES.bulkAlreadyApproved }))
+  const data = {
+    affected,
+    ...(action === 'delete' ? { failed } : {}),
+    ...(skippedRows.length > 0 ? { skipped: skippedRows } : {}),
+  }
+  // The API's flash (admin.controller bulk): nothing affected, a row skipped, none refused -> the reason, not "0 soalan berjaya dikemaskini."
+  const allSkipped = affected === 0 && failed.length === 0 && skippedRows.length > 0
+  return ok(data, {
+    status: allSkipped ? QUESTION_MESSAGES.bulkAlreadyApproved : bulkUpdated(affected),
   })
 }
 

@@ -6,6 +6,9 @@ import {
   complianceColor,
   bulkOptionsFor,
   notUpdatedLines,
+  bulkResultFlash,
+  skippedLine,
+  BULK_NOTHING_UPDATED,
   cut,
   statusOptionsFor,
   errorTextOf,
@@ -157,5 +160,66 @@ describe('notUpdatedLines', () => {
     expect(lines).toHaveLength(3)
     expect(lines[1]).toContain('#8')
     expect(lines[2]).toContain('#9')
+  })
+})
+
+describe('bulkResultFlash (REQ-A-040/041)', () => {
+  it('failed[]: an error with the server message per row, no generic sentence', () => {
+    const f = bulkResultFlash(
+      {
+        data: { affected: 1 },
+        status: '1 soalan berjaya dikemaskini.',
+        failed: [{ id: 8, message: 'Tag DSKP belum lengkap.' }],
+      },
+      'menerbitkan',
+    )
+    expect(f).toEqual({
+      type: 'error',
+      message: ['1 soalan berjaya dikemaskini, 1 tidak dikemaskini.', 'Soalan #8: Tag DSKP belum lengkap.'],
+    })
+  })
+
+  it('skipped[] only: an info success line, not an error', () => {
+    const f = bulkResultFlash(
+      {
+        data: { affected: 0 },
+        status: 'Soalan ini sudah diterbitkan.',
+        skipped: [{ id: 8, reason: 'Soalan ini sudah diterbitkan.' }],
+      },
+      'menerbitkan',
+    )
+    expect(f.type).toBe('success')
+    expect(f.message).toEqual(['Soalan ini sudah diterbitkan.', '1 soalan dilangkau \u2014 sudah diterbitkan.'])
+    expect(skippedLine(2)).toBe('2 soalan dilangkau \u2014 sudah diterbitkan.')
+  })
+
+  it('failed[] with skipped[]: the skipped line is added under the errors', () => {
+    const f = bulkResultFlash(
+      {
+        data: { affected: 0 },
+        status: '0 soalan berjaya dikemaskini.',
+        failed: [{ id: 3, message: 'Peralihan status tidak dibenarkan.' }],
+        skipped: [{ id: 4, reason: 'x' }],
+      },
+      'menerbitkan',
+    )
+    expect(f.type).toBe('error')
+    expect(f.message).toEqual([
+      '0 soalan berjaya dikemaskini, 1 tidak dikemaskini.',
+      'Soalan #3: Peralihan status tidak dibenarkan.',
+      '1 soalan dilangkau \u2014 sudah diterbitkan.',
+    ])
+  })
+
+  it('affected 0 with no failed and no skipped always carries a visible reason', () => {
+    const f = bulkResultFlash({ data: { affected: 0 }, status: '0 soalan berjaya dikemaskini.' }, 'menerbitkan')
+    expect(f).toEqual({ type: 'error', message: ['0 soalan berjaya dikemaskini.', BULK_NOTHING_UPDATED] })
+  })
+
+  it('a plain success keeps the status text', () => {
+    expect(bulkResultFlash({ data: { affected: 2 }, status: '2 soalan berjaya dikemaskini.' }, 'x')).toEqual({
+      type: 'success',
+      message: '2 soalan berjaya dikemaskini.',
+    })
   })
 })
