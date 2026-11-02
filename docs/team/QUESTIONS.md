@@ -125,5 +125,6 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
 - **Follow-up (Mandor, 10:13 MYT, under delegation):** drop the Bab requirement at **Terbitkan/approve** too. Keep ONLY the AC-03.2 DSKP check: curriculum node + TP/cognitive level per leaf part (+ kertas for SPM), with the .cloud-style issue list.
   - If the node sits under a Bab in the curriculum tree, chapterId is derived/filled from the node (or read through it), so Soalan by Chapter / Peta Belajar still count the question.
   - Tests: with a node but no manual chapterId → passes; with no node → refused with the issue list.
+  - **Derivation rule (lead, 10:46 MYT, implementation detail of the above):** chapterId is derived ONLY via `chapters.dskp_code = <unit code>` (same subject + level), only on a unique match, and never overwriting a manual Bab. There is no FK from a curriculum node to a chapter (curriculum.prisma:159-161; dskp_code :99 is the intended hook). With today's seed dskp_code is null, so nothing is derived: a chapterless approved question is simply not in Latihan Bab (V2 :224). No heuristics.
 - **FE:** the bulk UI must show the per-row refusal reason from failed[]. A bulk 200 with affected 0 and no reason is not acceptable (REQ-A-041 to C).
 - *Decided under delegation; for user review.*
