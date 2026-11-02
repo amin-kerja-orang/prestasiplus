@@ -538,20 +538,20 @@ A3 dev-1 rehearsed this locally. `prisma migrate deploy` does not run a migratio
 - ha18-minors must restore 0105 byte-for-byte (A2); it is IN-PROGRESS until then.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 02:38 UTC, BASE a31b9e0a)
+### Team A open branches: heads from origin (auto, 2026-11-02 02:42 UTC, BASE a31b9e0a)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/a2-carried-minors | 45f152423 | READY (A2, @45f15242 = 6b9104d3 + A1b Minor JSDoc wording; comments/docs only): REQ-A-018 JSDoc, D9 row simulasi_kuiz limit, deviation row PKSK applyStatus no approve gate (LEAD, KIV R2); A1b Approve; C3 doc line deferred until c012 merges; B2 |
-| r1/ac-gaps-a1b | 3f9072c29 | READY (multi, @3f9072c2: runbook at BASE-154; coverage doc cites BASE numbers; Q17 notes in the B4 pack ([PENDING A2] Terbitkan copy); handoff byte-identical to ha26); merge AFTER ha26; B4/B2 |
+| r1/ac-gaps-a1b | 3f9072c29 | READY (multi, @3f9072c2; c2b93710 MERGED as BASE-163 4218bee3) → B delta c2b93710..3f9072c2 (+4a3474f9 Q17 comment, runbook BASE-154, Q17 notes); B4/B2 |
 | r1/alp-comment-240 | 84b0c3a99 | READY (A4, @84b0c3a9 on approved admin-list-perf 69f465c8; comment only): env.schema.ts:148 says 240 (REQ-B-066 part); merge after admin-list-perf; B2 | A1b Approve (comment only) |
 | r1/c012-doc-followup | b71dc2add | READY (A2, @b71dc2ad on BASE-134; docs, 1 line): pipeline doc :297 edit-as-draft response (201 {id, versionNo}; 409 newer draft/review; 409 live not approved); B2 |
 | r1/ha18-gate-facts | f988b670f | MERGED by B1 as BASE-132 259f4616 @a9ffe246 (alone, not paired with reqb052; pinned-version-rule check by A4 running). Origin head f988b670 → follow-up r1/ha18-minors |
 | r1/ha18-minors | 17450966c | READY (A2, @17450966; B2 delta vs BASE: 5 files, review.service not_duplicate idempotent / 409 itemLocked + duplicateId audit, accepted-duplicates e2e gate-dismiss test, helpers withQuestionWorkflow opt-in, contract description + openapi 1 line; **no migration change** (0105 restored byte-for-byte, lead verified the 3-dot diff)). A1b Approve on content; A4 proof green; re-run 22/22, contract:check ok. B: run npm run check -w @pp/contract |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
 | r1/ha24-release-input | 55227da7e | READY (A3 docs, @55227da7; c0f7a45d in BASE-145 → B delta c0f7a45d..55227da7: DO/non-DO, KIV 39, Q17 Semakan/Terbitkan notes (Terbitkan copy [PENDING A2]), BASE-148..154 merged); B1/B2 |
-| r1/ha26-team-a-state | 84501e1ac | READY (A3 docs, @84501e1a: written off BASE-154; owns the handoff file); merge BEFORE ac-gaps; B1/B2 |
+| r1/ha26-team-a-state | 84501e1ac | READY (A3 docs, @84501e1a; 21360a86 MERGED as BASE-162 b2251dc4) → B delta 21360a86..84501e1a (BASE-154 refresh); B1/B2 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-followup | 2fe252aba | READY (A2, @2fe252ab on intake-reqs 8c1964a6): unknownSp required, FACTS in unit.spec, deviations row 244 names spNotInTaxonomy; 43/43, tsc 0; merge AFTER intake-reqs (deviations conflict: keep both); B2 small | A1b pre-review: CLEAN (CurriculumFacts internal; both producers always set unknownSp; tsc 0; 43/43) |
 | r1/minors-b025c-a3 | a4feeab01 | READY (A3, @a4feeab0 on BASE-131; test only): essay-choice-blank 9 tests on a choose-N Bahagian (best-N, V2 self-mark rule pinned), mutations red; closes A1b REQ-B-025c carried Minors; B2 |
@@ -577,6 +577,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t42b-intake-acs | 34d86311e | READY (A2, @34d86311 on 5318a971; test-only Minor): refused accept deletes the figure copy storage object (mutation: drop files.discard → red); 6/6; B2 small | A1b pre-review: Approve (mutation bites) |
 
 **Merged content, origin head has only base-merge commits since (no new work):** r1/a4chain-minors 86dd7ad67, r1/ha15-blueprint-evidence 7e5d637e5, r1/overview-getmany-parallel 2809a87fe, r1/reqb032-pinned-rule 167986eff, r1/t44-blueprint-fields 072d8f4b4, r1/t48-builder-parity 10c624376
+
+**New branches not yet triaged:** r1/reqb071-chain-specs-a3 f11f37f34
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
