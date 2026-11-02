@@ -61,11 +61,10 @@ This replaces production data. It needs the lead's explicit confirmation first.
 1. Stop writers: `docker compose stop api frontend` (keep `db` running).
 2. Take a fresh safety backup of the current state if the database is still readable (`npm run db:backup`).
 3. Run `npm run db:restore-check -- --file <the backup>` to prove the chosen file restores. Verify the sha256 against the value recorded when the backup was made.
-4. Recreate the main database from the file. Copy the file to a temporary location the container can read (for example `docker compose cp <file> db:/tmp/restore.dump`; `/tmp` is a tmpfs), then:
+4. Recreate the main database from the file. Do not use `docker compose cp` when the `db` service is `read_only` (the production overlay): it fails with `container rootfs is marked read-only`. Feed the dump on standard input:
    ```
    docker compose exec db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" psql -h 127.0.0.1 -U "$POSTGRES_USER" -d postgres -c "drop database \"$POSTGRES_DB\" with (force)" -c "create database \"$POSTGRES_DB\""'
-   docker compose exec db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" pg_restore -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --exit-on-error /tmp/restore.dump'
-   docker compose exec db rm /tmp/restore.dump
+   docker compose exec -T db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" pg_restore -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --exit-on-error' < <file>
    ```
 5. Start the stack again (`docker compose up -d`); the `migrate` job runs `prisma migrate deploy` and applies any migration newer than the backup. Check `GET /api/ready` and a login.
 6. Record the incident (what, when, which backup, data loss window) and tell the lead.

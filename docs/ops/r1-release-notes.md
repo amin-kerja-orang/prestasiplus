@@ -659,9 +659,8 @@ Do not read the tag from the state directory here. Every step needs the LEAD's c
    from the start.
 
 **Unverified:** whether Prisma 7 undoes the statements of a failed PostgreSQL migration (the 0100 SQL comment says it
-"runs in the migration transaction"; 0092 has no explicit `BEGIN`/`COMMIT`), hence the check in step 3; the exact
-`migrate resolve` output; and that `npx prisma` resolves in the migrate image from `/app/apps/api` (`be:db:migrate`
-runs `node scripts/db.mjs migrate` from that workspace).
+"runs in the migration transaction"; 0092 has no explicit `BEGIN`/`COMMIT`), hence the check in step 3. Verified 2026-11-02 (runbook 2.4 and 2.5): `npx prisma` resolves in the migrate image from
+`/app/apps/api`; `migrate resolve` prints `Migration <name> marked as rolled back.` or `marked as applied.`
 
 ---
 
