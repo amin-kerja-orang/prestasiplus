@@ -571,6 +571,12 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 - **Rule for every lane:** before each test unit, run `pgrep -x dockerd >/dev/null || { setsid nohup dockerd >> $SCRATCH/dockerd.log 2>&1 & until docker info >/dev/null 2>&1; do sleep 1; done; }`. Re-run it after any "Test database unavailable" error. Start it only when none is running.
 - **Disk:** check `docker system df` and prune orphaned anonymous test volumes when there are 0 containers. A3 reclaimed 3.4 GB this way.
 
+### Process lessons (2026-11-02, live day; process, not blame)
+- **CI dispatch must pin `api_ref`.** frontend.yml's default API ref is the old `feature/v2-backend`. A dispatch without `api_ref` tests the R1 frontend against the V2 API (run 41439407511: invalid as R1 evidence). Every dispatch states `api_ref=<candidate SHA>`, and step 4 ("Checkout the API (<sha>)") is checked before the run counts.
+- **A head is READY only with local proof at ALL 3 widths (375/768/1280) on the exact CI config** (http-mode build, seed poc → e2e with E2E_SEED=1 E2E_DEMO_SECONDARY=1, THROTTLE 3000, retries 0). Today's reds were width-specific (intake-review-http failed only at 375), and desktop was never covered by a full run.
+- **Don't trust a local green on a different config:** B4's local e2e passed while the CI e2e failed (seed, timeouts, picker paging). The CI config is the reference.
+- **Logs of a running Actions job are not readable** (404 until the job ends); early signal comes from local runs on the CI config, not from the live CI.
+
 <!-- AUDIT:BEGIN -->
 ### Team A open branches: heads from origin (auto, 2026-11-02 13:40 UTC, BASE 38372236)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
