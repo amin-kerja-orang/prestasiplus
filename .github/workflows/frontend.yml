@@ -108,6 +108,8 @@ jobs:
       COOKIE_SECURE: 'false'
       THROTTLE_LOGIN_PER_MINUTE: '200'
       THROTTLE_GLOBAL_PER_MINUTE: '3000'
+      # One admin account writes through the whole suite (30 a minute by default): USR-05 got a 429 on a fast run.
+      THROTTLE_ADMIN_WRITE_PER_MINUTE: '300'
       # Run the job worker in this API process so queued intake jobs (extract-start) complete; AI_PROVIDER defaults to mock.
       JOBS_WORKER_ENABLED: 'true'
       FRONTEND_PORT: '5192'
