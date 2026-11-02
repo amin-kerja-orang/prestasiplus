@@ -135,7 +135,8 @@ async function filterBank(page: Page, status: string, search: string): Promise<v
   if (await open.isVisible()) {
     await open.click()
     await page.getByTestId('bank-status').selectOption(status)
-    await page.locator('[data-ds=filter-sheet] button').first().click() // "Gunakan"
+    // "Guna" (apply): the sheet's first button is the subject select, so match the label.
+    await page.locator('[data-ds=filter-sheet] button').filter({ hasText: /^Guna/ }).first().click()
   } else {
     await page.getByTestId('bank-status').selectOption(status)
     await page.getByTestId('bank-search').press('Enter')
