@@ -27,10 +27,11 @@ export interface PaperAttention {
  * R1-T45 / AC-04.3 (v2-admin-student-pipeline US-04): the paper-level line of "Dilihat murid di". For any paper (draft, ready, published,
  * withdrawn) it says whether pupils can open it and where, and for a paper that is not yet open what stands in the way.
  *
- * INTENT (reported to the lead): this is the AC-04.3 read ("where pupils open it" at paper level) and is deliberately without a route or
- * consumer yet. The frontend consumer (the Pembina Kertas paper header / "Dilihat murid di" strip) is pending, and the draft-blockers banner
- * with it; `ServabilityReadsService` carries the lane and overview reads, this one the single-paper read. When the consumer lands, expose
- * it through `ServabilityController` (admin) rather than adding a second reader.
+ * This is the AC-04.3 read ("where pupils open it" at paper level). It has no route of its own in this module's `ServabilityController`:
+ * it is exposed by REQ-A-018 (r1/reqa018-paper-servability-route) once merged, on a separate admin controller, because that path sits under
+ * `admin/questions` (`GET /api/admin/questions/{id}/paper-servability`,
+ * `pilihan` papers only), and the frontend consumer (the "Dilihat murid di" panel) is its own branch. `ServabilityReadsService` carries the lane and
+ * overview reads, this one the single-paper read; expose it through that route rather than adding a second reader.
  *
  * Tracking A is not a line: in R1 Tracking A is served from its own sets (`spm_tracking_sets`), not from papers, and the servability
  * contract has six activities (D92: "total" is the number of rows, never a literal).
