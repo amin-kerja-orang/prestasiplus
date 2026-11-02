@@ -1,4 +1,5 @@
-import { BijakPoolPreviewSchema, envelopeOf } from '@pp/contract'
+import { BijakDskpUnitSchema, BijakPoolPreviewSchema, envelopeOf } from '@pp/contract'
+import { z } from 'zod'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { ACCOUNTS, bootBuilderApp, expectError, loginAs, type BuilderTestApp, type Client } from './helpers'
@@ -16,9 +17,12 @@ const Preview = envelopeOf(BijakPoolPreviewSchema)
 let t: BuilderTestApp
 let admin: Client
 
+let units: { nodeId: string }[] = []
+
 beforeAll(async () => {
   t = await bootBuilderApp()
   admin = await loginAs(t, ACCOUNTS.admin)
+  units = z.array(BijakDskpUnitSchema).parse((await admin.get('/api/admin/bijak/dskp/units?subject=MAT')).body.data)
 })
 afterAll(async () => {
   await t.close()
@@ -66,5 +70,29 @@ describe('GET /api/admin/blueprints/:subject/:kertas/pool', () => {
     const inMod = await loginAs(t, ACCOUNTS.admin)
     await inMod.enterMod()
     expectError(await inMod.get('/api/admin/blueprints/MAT/2/pool'), 'FORBIDDEN', 403)
+  })
+
+  it('a Draf head without ?version= previews the draft (the head, whatever its status); the sibling Spec head is unchanged', async () => {
+    const section = {
+      label: 'Bahagian A',
+      markBudget: 4,
+      questionCount: 4,
+      rule: { type: 'all' },
+      profile: { kind: 'bahagian', groups: [{ from: 1, to: 4, tpMin: 1, tpMax: 4 }] },
+      quota: { basis: 'questions', lines: [{ unit: { kind: 'unit', nodeId: units[0]?.nodeId }, value: 4 }] },
+      kbatMarks: 1,
+    }
+    const base = { subject: 'MAT', durationMin: 60, instructions: ['Jawab semua.'], sections: [section] }
+    expect((await admin.post('/api/admin/blueprints', { ...base, kertas: 17, source: 'Draf', code: 'MAT/POOL17' })).status).toBe(201)
+    expect((await admin.post('/api/admin/blueprints', { ...base, kertas: 18, source: 'Spec', code: 'MAT/POOL18' })).status).toBe(201)
+
+    const draft = await admin.get('/api/admin/blueprints/MAT/17/pool')
+    expect(draft.status, JSON.stringify(draft.body)).toBe(200)
+    expect(Preview.parse(draft.body).data.blueprint).toMatchObject({ version: 1, source: 'Draf' })
+    const spec = await admin.get('/api/admin/blueprints/MAT/18/pool')
+    expect(spec.status, JSON.stringify(spec.body)).toBe(200)
+    expect(Preview.parse(spec.body).data.blueprint).toMatchObject({ version: 1, source: 'Spec' })
+    // The paper builder keeps refusing a draft head (unchanged).
+    expectError(await admin.get('/api/admin/papers/pool-preview?subject=MAT&kertas=17'), 'NOT_FOUND', 404)
   })
 })

@@ -1247,10 +1247,9 @@ export class BuilderService {
     const subject = kertas > MAX_KERTAS ? null : await this.repo.subjectByCode(curriculumCodeOf(subjectCode))
     if (!subject) throw notFound()
     const query = parseWith(BijakPoolPreviewQuerySchema, rawQuery)
+    // Default: the head (the active row, Draf included: the admin previews the pool while editing a draft, as the mock does).
     const blueprint =
-      query.version === undefined
-        ? (await this.generationBlueprint(subjectCode, kertas)).blueprint
-        : await this.repo.blueprintVersion(subject.id, kertas, query.version)
+      query.version === undefined ? await this.repo.activeBlueprint(subject.id, kertas) : await this.repo.blueprintVersion(subject.id, kertas, query.version)
     if (!blueprint) throw notFound()
     return this.previewOf(subject, blueprint, kertas)
   }
