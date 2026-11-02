@@ -268,7 +268,7 @@ export class BijakServer implements BijakApi {
           s.instruction ??
           (s.rule.type === 'all'
             ? 'Jawab semua soalan.'
-            : `Jawab ${s.rule.n} daripada ${s.questionIds.length} soalan.`),
+            : `Jawab ${s.rule.n} soalan sahaja.`),
         questionCount: s.questionIds.length,
         compulsory: !!s.compulsory,
         ...(s.rule.type === 'choose' ? { chooseN: s.rule.n } : {}),

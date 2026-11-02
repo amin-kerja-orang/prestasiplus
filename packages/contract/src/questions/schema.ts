@@ -29,7 +29,17 @@ export const QUESTION_MESSAGES = {
   added: 'Soalan berjaya ditambah.',
   updated: 'Soalan berjaya dikemaskini.',
   deleted: 'Soalan berjaya dipadam.',
+  /** [PROPOSED] 409 of every hard delete (admin route, bulk `delete`, Guru route): a paper that is still shown to pupils, or still has sittings, places the question (R1-delete-served-guard). */
+  deleteRefused: 'Soalan ini tidak boleh dipadam kerana ia terdapat pada kertas yang masih dipaparkan kepada murid atau yang sedang diduduki.',
+  /** [PROPOSED] 409 `in_use` of every hard delete: a teacher's set, a remedial test or a battle still uses the question (a foreign key refuses the delete). */
+  deleteInUse: 'Soalan ini sedang digunakan dalam set, ujian pemulihan atau pertandingan dan tidak boleh dipadam.',
   bulkUpdated: (n: number): string => `${String(n)} soalan berjaya dikemaskini.`,
+  /** Bulk Terbitkan on a row that is already Diterbitkan (R1E2E-10, Mandor Q16): the row is left as it is and listed in `skipped` with this reason [PROPOSED]. */
+  bulkAlreadyApproved: 'Soalan ini sudah diterbitkan.',
+  /** `POST /questions/:id/edit-as-draft` (REQ-C-012; V2 flash "Draf baharu #{id} dicipta. ..."). */
+  editAsDraft: (id: string): string => `Draf baharu #${id} dicipta. Soalan asal kekal diterbitkan sehingga draf ini diterbitkan.`,
+  editAsDraftExists: 'Soalan ini sudah mempunyai draf atau semakan yang belum diterbitkan. Sunting draf itu.',
+  editAsDraftNotApproved: 'Hanya soalan yang diterbitkan boleh disunting sebagai draf.',
   bulkNoAction: 'Sila pilih tindakan terlebih dahulu.',
   bulkBadAction: 'Tindakan tidak sah.',
   bulkNoIds: 'Sila pilih sekurang-kurangnya satu soalan.',
@@ -411,6 +421,9 @@ export const QuestionBulkRequestSchema = z
   })
   .meta({ id: 'QuestionBulkRequest' })
 
+/** `POST /questions/:id/edit-as-draft`: the new draft is version `versionNo` of the same question; the live version keeps serving. */
+export const QuestionEditAsDraftResultSchema = z.object({ id: IdSchema, versionNo: z.number().int().min(2) }).meta({ id: 'QuestionEditAsDraftResult' })
+
 export const QuestionDeleteResultSchema = z.object({ deleted: z.literal(1) }).meta({ id: 'QuestionDeleteResult' })
 /** Why one requested id of a bulk action was not applied. */
 export const QUESTION_BULK_FAILURE_CODES = ['NOT_FOUND', 'CONFLICT', 'VALIDATION_ERROR'] as const
@@ -426,13 +439,25 @@ export const QuestionBulkFailureSchema = z
   })
   .meta({ id: 'QuestionBulkFailure' })
 export type QuestionBulkFailure = z.infer<typeof QuestionBulkFailureSchema>
+/** A row a bulk action left as it was because it is already in the target status (R1E2E-10): not a refusal, not an error. */
+export const QuestionBulkSkippedSchema = z
+  .object({
+    id: IdSchema,
+    reason: z.string().meta({ description: 'The BM text for this id: "Soalan ini sudah diterbitkan." [PROPOSED].' }),
+  })
+  .meta({ id: 'QuestionBulkSkipped' })
+export type QuestionBulkSkipped = z.infer<typeof QuestionBulkSkippedSchema>
 export const QuestionBulkResultSchema = z
   .object({
     affected: z.number().int().min(0),
     failed: z
       .array(QuestionBulkFailureSchema)
       .default([])
-      .meta({ description: 'One entry per unique requested id that was not applied, in request order; `[]` when all were applied.' }),
+      .meta({ description: 'One entry per unique requested id that was refused, in request order; `[]` when none was. Real refusals only (not found, a transition not allowed, a gate); rows already in the target status are in `skipped`.' }),
+    skipped: z
+      .array(QuestionBulkSkippedSchema)
+      .optional()
+      .meta({ description: 'Rows already in the target status (bulk Terbitkan only); not applied, not counted in affected. Present only when there is at least one such row.' }),
   })
   .meta({ id: 'QuestionBulkResult' })
 

@@ -18,7 +18,6 @@ const RULES: [Gate, string, Partial<QuestionGateData>, string][] = [
   ['submit', 'level set', { educationLevelId: null }, 'educationLevelId'],
   ['submit', 'chapter set', { chapterId: null }, 'chapterId'],
   ['submit', 'duplicate resolved', { hasOpenDuplicateFlag: true }, 'duplicate'],
-  ['submit', 'source declaration', { hasSourceDeclaration: false }, 'source'],
   ['approve', 'reviewer is not the AI service', { lastEditedByAi: true }, 'reviewer'],
   ['approve', 'tags valid (unit)', { unitId: null }, 'unitId'],
   ['approve', 'tags valid (SP)', { spIds: [] }, 'spIds'],
@@ -27,8 +26,6 @@ const RULES: [Gate, string, Partial<QuestionGateData>, string][] = [
   ['publish', 'answer key matches marks', { parts: [workingPart(3, 2)], marks: 3 }, 'parts.a.key'],
   ['publish', 'difficulty set', { tp: null }, 'tp'],
   ['publish', 'DSKP unit chosen', { unitId: null }, 'unitId'],
-  ['publish', 'copyright not "belum jelas"', { rightsStatus: 'unclear' }, 'rightsStatus'],
-  ['publish', 'no copyright declaration', { rightsStatus: null }, 'rightsStatus'],
   ['publish', 'no open duplicate flag', { hasOpenDuplicateFlag: true }, 'duplicate'],
 ]
 
@@ -76,7 +73,7 @@ describe('lifecycle gates (BE-10 AC 1, 12)', () => {
   it('gate functions are pure and name each failing rule (AI reviewer flag, multiple fields at once)', () => {
     const base = t.fake.seed({ id: '3902' }).gate
     expect(approveGate(base, true)).toHaveProperty('reviewer')
-    const f = submitGate({ ...base, subjectId: null, hasSourceDeclaration: false })
-    expect(Object.keys(f).sort()).toEqual(['source', 'subjectId'])
+    const f = submitGate({ ...base, subjectId: null, chapterId: null })
+    expect(Object.keys(f).sort()).toEqual(['chapterId', 'subjectId'])
   })
 })

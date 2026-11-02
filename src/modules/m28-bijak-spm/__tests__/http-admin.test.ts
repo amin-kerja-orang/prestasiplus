@@ -304,6 +304,13 @@ describe('admin pages in http mode do not crash', () => {
     return html
   }
 
+  it('IntakeListPage links to the CSV import page (REQ-B-063)', async () => {
+    const { server } = setup()
+    const html = await renderPage(IntakeListPage, {}, server)
+    expect(html).toContain('data-testid="intake-csv"')
+    expect(html).toContain('href="/admin/questions/import"')
+  })
+
   it.each([
     ['BankPage', BankPage, {}, 'listBank'],
     ['ReviewQueuePage', ReviewQueuePage, {}, 'listReviewQueue'],

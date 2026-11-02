@@ -300,7 +300,7 @@ export const PracticeReadChapterCardSchema = z
     correct: count(),
     scorePct: percent().meta({ description: '1 decimal (BR-16).' }),
     remaining: count(),
-    state: z.enum(['open', 'locked']),
+    state: z.enum(['open']).meta({ description: 'Always `open` (REQ-C-021, D98: no chapter lock).' }),
     complete: z.boolean(),
   })
   .meta({ id: 'PracticeReadChapterCard' })

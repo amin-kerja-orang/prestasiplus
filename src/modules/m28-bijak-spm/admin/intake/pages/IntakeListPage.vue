@@ -9,7 +9,7 @@ import { DsDataTable, DsEmptyState, DsFilterBar, DsNativeSelect, DsPage, DsStatu
 import { bijakAdminServer } from '../../../server/client'
 import { isUnavailable, UNAVAILABLE_TITLE } from '../../../server/errors'
 import { intakeBadge } from '../lib/intake-badge'
-import { INTAKE_MANUAL_PATH, INTAKE_UPLOAD_PATH, intakeReviewPath } from '../lib/intake-routes'
+import { INTAKE_CSV_IMPORT_PATH, INTAKE_MANUAL_PATH, INTAKE_UPLOAD_PATH, intakeReviewPath } from '../lib/intake-routes'
 import type { IntakeStatus, IntakeSummary } from '../types'
 
 const server = bijakAdminServer()
@@ -78,6 +78,16 @@ const COLUMNS: TableColumn<Row>[] = [
     data-testid="intake-list-page"
   >
     <template #actions>
+      <UButton
+        :to="INTAKE_CSV_IMPORT_PATH"
+        icon="i-ph-file-csv"
+        size="lg"
+        variant="outline"
+        color="neutral"
+        data-testid="intake-csv"
+      >
+        Import CSV
+      </UButton>
       <UButton
         :to="INTAKE_MANUAL_PATH"
         icon="i-ph-pencil-simple-line"

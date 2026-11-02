@@ -21,11 +21,6 @@ export function hasStimulus(s: StimulusLike | null | undefined): boolean {
 export const firstStimulusOf = (g: { stimulus?: StimulusLike | null; stimuli?: StimulusLike[] | null }): StimulusLike | undefined =>
   g.stimulus ?? g.stimuli?.[0] ?? undefined
 
-/** First label of a group's stimuli ('' for a group with none: `stimuli: []`, REQ-A-008 / T07). */
-export function groupLabelOf(g: { stimulus?: StimulusLike | null; stimuli?: StimulusLike[] | null }): string {
-  return firstStimulusOf(g)?.label ?? ''
-}
-
 /** The same check for a pool unit's stimulus (contract shape). */
 export const hasStimulusOf = (s: unknown): boolean => hasStimulus(s as StimulusLike | null | undefined)
 

@@ -7,9 +7,9 @@
  *
  * Backed by BE-09: getStatus, getForGates (parts, tags, chapter), setStatus, deactivate, reactivate,
  * create (admin and Guru imports), describe, listForQuality, getExplanationSource.
- * Defaulted (BE-09 holds no such field): the gate facts "duplicate flag", "low-confidence fields",
- * "media resolved", "AI editor", "required fields" and "marks"; `listDiagramCandidates` (no needs-diagram
- * flag in the bank) and `attachDiagram` (no method to attach a figure).
+ * The gate facts (rights, open duplicate, low-confidence fields, media, AI editor, declared marks) come from
+ * `QuestionsRepository.gateFacts` through `gateDataOf` (R1-H-A18). Defaulted (BE-09 holds no such field):
+ * `listDiagramCandidates` (no needs-diagram flag in the bank) and `attachDiagram` (no method to attach a figure).
  */
 import { Inject, Injectable } from '@nestjs/common'
 import type { QuestionPart, QuestionWorkflowStatus } from '@pp/contract'
@@ -25,6 +25,7 @@ import {
   type QuestionCreateInput,
   type QuestionRecord,
 } from '../index'
+import { gateDataOf } from '../gate-data'
 import type {
   DiagramCandidate,
   ExplanationSource,
@@ -80,47 +81,12 @@ export class QuestionBankAdapter implements QuestionBankPort {
     return r ? this.infoOf(r) : null
   }
 
-  /**
-   * GAP (BE-09 method wanted: `rightsOf(id, versionNo)`): reads `rights_status` of one version
-   * through Prisma, read only. A version with no declaration (null) counts as satisfied (`own`),
-   * the documented default; an explicit `unclear` still fails the publish gate.
-   */
-  private async rightsStatusOf(id: string, versionNo: number): Promise<string> {
-    const key = bi(id)
-    if (key === null) return 'own'
-    const row = await this.prisma.client.questionVersion.findUnique({
-      where: { questionId_versionNo: { questionId: key, versionNo } },
-      select: { rightsStatus: true },
-    })
-    return row?.rightsStatus ?? 'own'
-  }
-
+  /** The same facts and the same builder as `QuestionsService.setStatus` (R1-H-A18): no path has its own defaults. */
   async getForGates(id: string): Promise<QuestionGateData | null> {
     const r = await this.repo.get(id, 'latest')
     if (!r) return null
-    const v = r.version
-    return {
-      id: r.id,
-      parts: v.parts,
-      // BE-09 has no question-level marks column (only part marks): the marks-total rule has nothing to compare.
-      marks: null,
-      subjectId: v.subjectId,
-      educationLevelId: v.educationLevelId,
-      chapterId: v.chapterId,
-      unitId: v.unitId,
-      spIds: v.spIds,
-      tp: v.difficultyTp,
-      rightsStatus: await this.rightsStatusOf(r.id, v.versionNo),
-      // Satisfied defaults: BE-09 stores no duplicate flag, low-confidence fields, media check or AI editor.
-      hasSourceDeclaration: true,
-      unconfirmedLowConfidenceFields: [],
-      hasOpenDuplicateFlag: false,
-      mediaResolved: true,
-      missingRequiredFields: [],
-      lastEditedByAi: false,
-      paperCode: v.paperCode ?? null,
-      spmBound: await this.repo.isSpmBound(v.subjectId, v.educationLevelId),
-    }
+    const facts = await this.repo.gateFacts(r.id, r.version.versionNo)
+    return gateDataOf(r, facts, await this.repo.isSpmBound(r.version.subjectId, r.version.educationLevelId))
   }
 
   /**
@@ -340,18 +306,10 @@ export class QuestionBankAdapter implements QuestionBankPort {
   }
 
   /**
-   * GAP (BE-09 method wanted: `setExplanation(id, versionNo, text)`): the stub's canned text is stored by
-   * a narrow Prisma write of `explanation_ms` on the latest version (no new version, no status change).
+   * The AI explanation write goes through the question service, which applies the one edit rule (REQ-B-052): an approved, archived or pinned
+   * version is never rewritten in place; the text goes to a new draft version marked as the AI's (see `QuestionsService.setExplanation`).
    */
-  async setExplanation(id: string, text: string): Promise<boolean> {
-    const r = await this.repo.get(id, 'latest')
-    const key = bi(id)
-    if (!r || key === null) return false
-    await this.prisma.client.questionVersion.update({
-      where: { questionId_versionNo: { questionId: key, versionNo: r.version.versionNo } },
-      data: { explanationMs: text },
-    })
-    return true
+  setExplanation(id: string, text: string): Promise<boolean> {
+    return this.service.setExplanation(id, text)
   }
 }
-

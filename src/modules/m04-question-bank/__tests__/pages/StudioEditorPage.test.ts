@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
 import { ApiError } from '@/api'
+import { useFlashStore } from '@/stores/flash'
 
 import StudioEditorPage from '../../pages/StudioEditorPage.vue'
 
@@ -146,6 +147,25 @@ describe('StudioEditorPage (R1-F03b)', () => {
     expect('stimulusGroupId' in body).toBe(false)
     expect((body.parts as Array<Record<string, unknown>>)[0]).toMatchObject({ label: 'a', mode: 'mcq', difficultyTp: 3, cognitiveLevel: 'menganalisis', kbat: 'menganalisis', key: { kind: 'option', correct: 'B' } })
     expect(router.currentRoute.value.fullPath).toBe('/admin/studio/questions/77/sunting')
+  })
+
+  it('REQ-A-031: saving a new draft queues the flash "Soalan draf disimpan..." for the edit page', async () => {
+    studio.createStudioQuestion.mockResolvedValue({ data: { id: '78', status: 'draft' }, status: 'Soalan berjaya ditambah.' })
+    const w = await render('/admin/studio/questions/create')
+    await t(w, 'studio-subject').setValue('3')
+    await t(w, 'studio-level').setValue('7')
+    await t(w, 'studio-kertas').setValue('1')
+    await t(w, 'studio-number').setValue('1')
+    await t(w, 'studio-stem').setValue('Berdasarkan Rajah 1, apakah jenis segi tiga itu?')
+    await flushPromises()
+    expect(useFlashStore().pending).toBeNull()
+
+    await t(w, 'studio-form').trigger('submit')
+    await flushPromises()
+
+    expect(studio.createStudioQuestion).toHaveBeenCalledTimes(1)
+    expect(useFlashStore().pending).toEqual({ type: 'success', message: 'Soalan draf disimpan. Terbitkan melalui semakan apabila sedia.' })
+    expect(router.currentRoute.value.fullPath).toBe('/admin/studio/questions/78/sunting')
   })
 
   it('opens a saved question, shows its group read through the stimulus API, and saves without sending the group', async () => {

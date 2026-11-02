@@ -10253,8 +10253,8 @@
           "instruction": {
             "type": "string",
             "minLength": 1,
-            "description": "Authored instruction, else \"Jawab semua soalan.\" (rule all) or \"Jawab {n} daripada {count} soalan.\" (rule choose).",
-            "example": "Jawab 1 daripada 2 soalan."
+            "description": "Authored instruction, else \"Jawab semua soalan.\" (rule all) or \"Jawab {n} soalan sahaja.\" (rule choose).",
+            "example": "Jawab 1 soalan sahaja."
           },
           "questionCount": {
             "type": "integer",
@@ -15592,6 +15592,54 @@
           "questionCount",
           "attentionCount",
           "attention"
+        ],
+        "additionalProperties": false
+      },
+      "QuestionPaperServabilityRow": {
+        "type": "object",
+        "properties": {
+          "paperId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "served": {
+            "type": "boolean",
+            "description": "Pupils can open the paper in Simulasi (published and every placed question servable)."
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ServabilityReason"
+            },
+            "description": "Empty when `served`. `detail` starts with the id of the placed question that stops the paper."
+          }
+        },
+        "required": [
+          "paperId",
+          "title",
+          "served",
+          "reasons"
+        ],
+        "additionalProperties": false
+      },
+      "QuestionPaperServabilityMeta": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Published admin papers (kind pilihan) that place the question; a pupil's generated paper is never counted."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "True when `total` is more than the rows returned (the first 200 by paper id)."
+          }
+        },
+        "required": [
+          "total",
+          "truncated"
         ],
         "additionalProperties": false
       },
@@ -55122,8 +55170,7 @@
         "enum": [
           "mastered",
           "started",
-          "unlocked",
-          "locked"
+          "unlocked"
         ]
       },
       "CurriculumTopicsQuery": {
@@ -55549,7 +55596,6 @@
         "type": "string",
         "enum": [
           "TRIAL_EXHAUSTED",
-          "CHAPTER_LOCKED",
           "NOT_ENOUGH_QUESTIONS",
           "SET_NOT_READY",
           "NO_WRONG_QUESTIONS",
@@ -58260,9 +58306,9 @@
           "state": {
             "type": "string",
             "enum": [
-              "open",
-              "locked"
-            ]
+              "open"
+            ],
+            "description": "Always `open` (REQ-C-021, D98: no chapter lock)."
           },
           "complete": {
             "type": "boolean"
@@ -63656,6 +63702,20 @@
               "$ref": "#/components/schemas/Id"
             },
             "description": "Placed question ids, in order."
+          },
+          "numberLabels": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "R1-T48 V2 `Nombor soalan`: question id -> the number label of a question added through \"Tambah soalan\"; absent when none of the section has one."
+          },
+          "adminCreated": {
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "description": "R1-T48: present (true) on a Bahagian the admin added (\"Tambah bahagian\"); only such a Bahagian takes \"Tambah soalan\". Its `questionCount` and `markBudget` follow its placements (the Kontrak has no value for it)."
           }
         },
         "required": [
@@ -63878,6 +63938,10 @@
             "type": "string",
             "minLength": 1,
             "example": "MAT"
+          },
+          "pinned": {
+            "type": "boolean",
+            "description": "R1-T48 / REQ-C-017 (V2 \"Disematkan\"): on a question PLACED on this paper (editor `questions[]`, the questions of a section pool unit and the review rows), true when its version and marks are frozen (the paper is Terbit); false while the paper is a draf (the placement follows the question in force). Absent on a candidate that is not placed."
           }
         },
         "required": [
@@ -63899,7 +63963,111 @@
             "$ref": "#/components/schemas/Id"
           },
           "stimulus": {
-            "$ref": "#/components/schemas/BijakAttemptStimulus"
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "passage",
+                  "image",
+                  "diagram",
+                  "table",
+                  "map",
+                  "infographic",
+                  "graph"
+                ]
+              },
+              "label": {
+                "type": "string",
+                "example": "Rajah 2"
+              },
+              "title": {
+                "type": "string",
+                "description": "Bold title of a passage or picture."
+              },
+              "caption": {
+                "type": "string"
+              },
+              "alt": {
+                "type": "string",
+                "description": "Accessible description of the diagram."
+              },
+              "text": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string",
+                "description": "Source line of a passage."
+              },
+              "table": {
+                "type": "object",
+                "properties": {
+                  "head": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "rows": {
+                    "type": "array",
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "head",
+                  "rows"
+                ],
+                "additionalProperties": false
+              },
+              "image": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "maxLength": 300,
+                    "pattern": "^\\/api\\/files\\/[A-Za-z0-9_-]+$",
+                    "example": "/api/files/Zk3x9QmT1bVnR0aYc7LpDw"
+                  },
+                  "width": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "height": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "url"
+                ],
+                "additionalProperties": false,
+                "description": "The stored picture (image, diagram, map, infographic, graph); loaded from the file token URL."
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "label",
+              "alt"
+            ],
+            "additionalProperties": false,
+            "description": "The first stimulus of the group. Absent when the group has nothing displayable (audio only, or empty): the group is still emitted (D90) with `stimuli: []`."
+          },
+          "stimuli": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakAttemptStimulus"
+            },
+            "maxItems": 3,
+            "description": "Every stimulus of the group in order (0 to 3), shown once per group (D90). `stimulus` is the first of them; empty when the group has nothing displayable. The API sends it for every group; optional in the schema only so older payloads still parse (then use `[stimulus]`)."
           },
           "questionIds": {
             "type": "array",
@@ -63911,7 +64079,6 @@
         },
         "required": [
           "id",
-          "stimulus",
           "questionIds"
         ],
         "additionalProperties": false
@@ -64191,7 +64358,7 @@
           },
           "instruction": {
             "type": "string",
-            "description": "Authored instruction, else the derived line (\"Jawab semua soalan.\" or \"Jawab N daripada M soalan.\"); never empty in the mock view."
+            "description": "Authored instruction, else the derived line (\"Jawab semua soalan.\" or \"Jawab N soalan sahaja.\"); never empty in the mock view."
           },
           "rule": {
             "$ref": "#/components/schemas/BijakBuilderSectionRule"
@@ -64659,6 +64826,46 @@
           "compulsory": {
             "type": "boolean",
             "description": "R1-T34: \"Soalan ini mesti dijawab\"."
+          },
+          "rule": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "all"
+                    ]
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "choose"
+                    ]
+                  },
+                  "n": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "type",
+                  "n"
+                ],
+                "additionalProperties": false
+              }
+            ],
+            "description": "R1-T48 \"Peraturan menjawab\" / \"Bilangan soalan dipilih\" (V2 let the admin change them per paper): { type: all } or { type: choose, n } with 1 <= n <= the number of questions printed in the Bahagian. The mark budget stays the Kontrak's; a rule that differs from the Kontrak shows as the overridable blocker RULE_NOT_IN_CONTRACT and, when the marks no longer match the budget, as MARKS_MISMATCH."
           }
         },
         "required": [
@@ -64684,6 +64891,12 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 600
+          },
+          "code": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "R1-T48 \"Kod kertas (kulit)\": the printed paper code (V2: at most 32 characters), editable while the paper is a draf. Blank = the subject code (V2: the cover falls back to it).",
+            "example": "1449/2"
           },
           "instructions": {
             "type": "array",
@@ -64719,6 +64932,9 @@
           "code": {
             "type": "string",
             "enum": [
+              "NO_QUESTIONS",
+              "ZERO_MARK_SECTION",
+              "TOTAL_MARKS_BELOW_ONE",
               "DUPLICATE_QUESTION",
               "GROUP_MIN_MEMBERS",
               "GROUP_SPLIT",
@@ -64737,9 +64953,13 @@
               "MODE_NOT_ALLOWED",
               "GROUP_BROKEN",
               "BLUEPRINT_NOT_VERIFIED",
-              "INELIGIBLE"
+              "INELIGIBLE",
+              "RULE_NOT_IN_CONTRACT",
+              "RULE_N_EXCEEDS_QUESTIONS",
+              "SECTION_NOT_IN_CONTRACT",
+              "SECTION_EMPTY"
             ],
-            "description": "Stable code. Hard (overridable false): DUPLICATE_QUESTION, GROUP_MIN_MEMBERS (D93), GROUP_SPLIT, COUNT_TOO_FEW, COUNT_TOO_MANY, MARKS_MISMATCH, GROUP_NOT_CONSECUTIVE, GROUP_INCOMPLETE, GROUP_OUT_OF_ORDER, NOT_PUBLISHED, UNKNOWN_QUESTION (placed question missing from the pool), NOT_SERVABLE (R1E2E-06, pupils cannot be served). Hard also: REFERENCE_IMAGE_INVALID (a reference-sheet picture that is not a stored question image, re-checked at Terbit), NO_KEY, NO_MARKS, MODE_NOT_ALLOWED (structural failures of a question) and GROUP_BROKEN. Overridable: BLUEPRINT_NOT_VERIFIED (Kontrak not Disahkan) and INELIGIBLE (a question without DSKP unit or TP, or with tags awaiting review)."
+            "description": "Stable code. Hard (overridable false): NO_QUESTIONS, ZERO_MARK_SECTION, TOTAL_MARKS_BELOW_ONE (PIPE AC-07.4: no question, a Bahagian with questions but 0 marks, a total under 1), DUPLICATE_QUESTION, GROUP_MIN_MEMBERS (D93), GROUP_SPLIT, COUNT_TOO_FEW, COUNT_TOO_MANY, MARKS_MISMATCH, GROUP_NOT_CONSECUTIVE, GROUP_INCOMPLETE, GROUP_OUT_OF_ORDER, NOT_PUBLISHED, UNKNOWN_QUESTION (placed question missing from the pool), NOT_SERVABLE (R1E2E-06, pupils cannot be served). Hard also: REFERENCE_IMAGE_INVALID (a reference-sheet picture that is not a stored question image, re-checked at Terbit), NO_KEY, NO_MARKS, MODE_NOT_ALLOWED (structural failures of a question) and GROUP_BROKEN. Overridable: BLUEPRINT_NOT_VERIFIED (Kontrak not Disahkan) and INELIGIBLE (a question without DSKP unit or TP, or with tags awaiting review). Overridable also (R1-T48): RULE_NOT_IN_CONTRACT (the rule of a Bahagian differs from the Kontrak) and SECTION_NOT_IN_CONTRACT (admin-added Bahagian). Hard also (R1-T48): RULE_N_EXCEEDS_QUESTIONS (Pilih N with fewer than N questions in the Bahagian) and SECTION_EMPTY (an admin-added Bahagian without a question)."
           },
           "message": {
             "type": "string",
@@ -65290,7 +65510,7 @@
           "instruction": {
             "type": "string",
             "maxLength": 500,
-            "description": "Authored instruction. Default: absent, and the view derives \"Jawab semua soalan.\" or \"Jawab N daripada M soalan.\"."
+            "description": "Authored instruction. Default: absent, and the view derives \"Jawab semua soalan.\" or \"Jawab N soalan sahaja.\"."
           },
           "rule": {
             "$ref": "#/components/schemas/BijakBuilderSectionRule"
@@ -65889,6 +66109,10 @@
             },
             "description": "R1-T34 (ServabilityService, \"Dilihat murid di\"): every reason the question is not served in Simulasi (kertas), cause and fix in BM. The \"not on a published paper\" reason is left out: this IS the paper."
           },
+          "pinned": {
+            "type": "boolean",
+            "description": "R1-T48 (V2 \"Disematkan\"): the placement is frozen (the paper is Terbit); false while it is a draf."
+          },
           "seenIn": {
             "type": "object",
             "properties": {
@@ -66121,7 +66345,15 @@
               "alt"
             ],
             "additionalProperties": false,
-            "description": "Shown ONCE for the group (D90)."
+            "description": "Shown ONCE for the group (D90): the first stimulus."
+          },
+          "stimuli": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakAttemptStimulus"
+            },
+            "maxItems": 3,
+            "description": "Every stimulus of the group in order (0 to 3), shown once per group (D90). `stimulus` is the first of them; empty when the group has nothing displayable. The API sends it for every group; optional in the schema only so older payloads still parse (then use `[stimulus]`)."
           },
           "questions": {
             "type": "array",
@@ -66275,6 +66507,14 @@
           "stimulus": {
             "$ref": "#/components/schemas/BijakAttemptStimulus"
           },
+          "stimuli": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakAttemptStimulus"
+            },
+            "maxItems": 3,
+            "description": "Every stimulus of the group in order (0 to 3), shown once per group (D90). `stimulus` is the first of them; empty when the group has nothing displayable. The API sends it for every group; optional in the schema only so older payloads still parse (then use `[stimulus]`)."
+          },
           "questionIds": {
             "type": "array",
             "items": {
@@ -66342,12 +66582,94 @@
             "minLength": 1,
             "maxLength": 100,
             "example": "Petikan 1"
+          },
+          "stimulusId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The stimulus of the group to edit; omitted = the first stimulus of the group. Used with `caption` or `body`.",
+            "example": "1042"
+          },
+          "caption": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 300,
+            "description": "R1-T48 caption of the stimulus (V2 caps it at 240; the shared bank allows 300); null clears it."
+          },
+          "body": {
+            "type": "object",
+            "properties": {
+              "ms": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 20000
+              },
+              "en": {
+                "type": "string",
+                "maxLength": 20000
+              }
+            },
+            "required": [
+              "ms"
+            ],
+            "additionalProperties": false,
+            "description": "R1-T48 the text of the stimulus; replaces the whole text (ms and en), as `PUT /stimuli/{id}` does."
+          }
+        },
+        "additionalProperties": false
+      },
+      "BijakBuilderSectionAdd": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "example": "Bahagian D"
           }
         },
         "required": [
           "label"
         ],
         "additionalProperties": false
+      },
+      "BijakBuilderQuestionCreate": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20,
+            "description": "V2 `Nombor soalan`: the label printed with the question; unique on the paper (case-insensitive).",
+            "example": "21"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/BijakBuilderNewQuestionMode"
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "number",
+          "mode",
+          "marks"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderNewQuestionMode": {
+        "type": "string",
+        "enum": [
+          "mcq",
+          "short_text",
+          "numeric",
+          "working",
+          "essay"
+        ]
       },
       "BijakBuilderPublishRequest": {
         "type": "object",
@@ -73075,11 +73397,50 @@
               "$ref": "#/components/schemas/QuestionBulkFailure"
             },
             "default": [],
-            "description": "One entry per unique requested id that was not applied, in request order; `[]` when all were applied."
+            "description": "One entry per unique requested id that was refused, in request order; `[]` when none was. Real refusals only (not found, a transition not allowed, a gate); rows already in the target status are in `skipped`."
+          },
+          "skipped": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionBulkSkipped"
+            },
+            "description": "Rows already in the target status (bulk Terbitkan only); not applied, not counted in affected. Present only when there is at least one such row."
           }
         },
         "required": [
           "affected"
+        ]
+      },
+      "QuestionBulkSkipped": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "reason": {
+            "type": "string",
+            "description": "The BM text for this id: \"Soalan ini sudah diterbitkan.\" [PROPOSED]."
+          }
+        },
+        "required": [
+          "id",
+          "reason"
+        ]
+      },
+      "QuestionEditAsDraftResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "versionNo": {
+            "type": "integer",
+            "minimum": 2
+          }
+        },
+        "required": [
+          "id",
+          "versionNo"
         ]
       },
       "QuestionDeleteResult": {
@@ -81902,7 +82263,7 @@
           "bijak-papers"
         ],
         "summary": "Paper cover: instructions, reference sheet, sections, marks and duration",
-        "description": "Mock method getCover(userId, paperId). A curated paper resolves for any permitted caller; a generated paper (kind jana) only for its creator. Section instruction defaults to \"Jawab semua soalan.\" or \"Jawab {n} daripada {count} soalan.\". Student role (admin and school_admin only inside Mod Pelajar, where the session acts as a student). No answer key, mark scheme, accepted equivalent, explanation or question id is ever returned (US-15).",
+        "description": "Mock method getCover(userId, paperId). A curated paper resolves for any permitted caller; a generated paper (kind jana) only for its creator. Section instruction defaults to \"Jawab semua soalan.\" or \"Jawab {n} soalan sahaja.\". Student role (admin and school_admin only inside Mod Pelajar, where the session acts as a student). No answer key, mark scheme, accepted equivalent, explanation or question id is ever returned (US-15).",
         "parameters": [
           {
             "schema": {
@@ -84927,6 +85288,82 @@
                   },
                   "required": [
                     "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (not Admin Pusat), or CSRF_INVALID on the batch POST.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id, a PKSK question or a Darjah question.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/questions/{id}/paper-servability": {
+      "get": {
+        "tags": [
+          "servability"
+        ],
+        "summary": "The published papers that carry a question, and whether pupils can open each (AC-04.3 / AC-04.4)",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One row per published admin paper (kind pilihan; a pupil's generated paper is never listed) that places the question, by paper id, at most the first 200; `meta.total` counts all of them and `meta.truncated` says the list is cut. `[]` when it is on none.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/QuestionPaperServabilityRow"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/QuestionPaperServabilityMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
                   ]
                 }
               }
@@ -89843,7 +90280,7 @@
           "practice-reads"
         ],
         "summary": "Chapters of a subject with the caller progress (S5)",
-        "description": "Mock GET /api/practice/chapter-subjects/:code?levelId=. Every chapter is open (REQ-C-021, D98: V2 has no progressive lock; the 70 percent rule of BR-16 is dropped), so \"state\" is always \"open\". \"locked\" stays in the enum for old clients. Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
+        "description": "Mock GET /api/practice/chapter-subjects/:code?levelId=. Every chapter is open (REQ-C-021, D98: V2 has no progressive lock; the 70 percent rule of BR-16 is dropped), so \"state\" is always \"open\". Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
         "parameters": [
           {
             "schema": {
@@ -102822,7 +103259,7 @@
           "questions"
         ],
         "summary": "Admin question list (newest first)",
-        "description": "Page size 20 (max 100). Unknown filter values match nothing, except `status`, which must be one of the v2 codes (422 otherwise, D54a). Legacy PKSK rows are never listed.",
+        "description": "Page size 20 (max 100). Unknown filter values match nothing, except `status`, which must be one of the v2 codes (422 otherwise, D54a). Legacy PKSK rows are never listed. Rate limited per user (`THROTTLE_QUESTIONS_LIST_PER_MINUTE`, default 60): a 1 to 2 character or punctuation-only `search` cannot use the trigram index and scans the bank, and it is still accepted (no 422).",
         "parameters": [
           {
             "schema": {
@@ -103044,6 +103481,16 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED: more than the list limit per minute for this user (Retry-After header, seconds).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       },
@@ -103235,7 +103682,7 @@
           "questions"
         ],
         "summary": "Apply one lifecycle action to many questions",
-        "description": "Unknown ids are skipped silently; duplicates count once. Flash: \"<n> soalan berjaya dikemaskini.\" Transition rules and \"only Admin Pusat publishes\" belong to BE-10; forbidden transitions and their error are BE-10 to define. `approved` runs the merged approve gate (ADR-0027: tag, keys, rights not \"belum jelas\", duplicates, DSKP-complete for an SPM-bound question) per id, the same as `POST /questions/{id}/status`: a refused id is a `failed[]` entry (VALIDATION_ERROR with the gate `fields`), the others are applied. `POST /questions` with `status: approved` runs the same gate (422, nothing stored).",
+        "description": "Unknown ids are skipped silently; duplicates count once. Flash: \"<n> soalan berjaya dikemaskini.\" Transition rules and \"only Admin Pusat publishes\" belong to BE-10; forbidden transitions and their error are BE-10 to define. `approved` runs the merged approve gate (ADR-0027: tag, keys, open duplicate, marks, media, AI as last editor, DSKP-complete for an SPM-bound question; no per-question source or rights rule, D99) per id, the same as `POST /questions/{id}/status`: a refused id is a `failed[]` entry (VALIDATION_ERROR with the gate `fields`), the others are applied. A bulk `approved` of a question that is already Diterbitkan is an idempotent no-op (R1E2E-10): no transition, no status event, not counted in `affected`, not in the audit `ids`, and not an error; it is listed in `skipped[]` as `{ id, reason }` with reason \"Soalan ini sudah diterbitkan.\" (`skipped` is present only when there is such a row), `failed[]` keeps the real refusals only, and the other ids of the batch are still applied (the single `POST /questions/{id}/status` still answers 409 for it). `POST /questions` with `status: approved` runs the same gate (422, nothing stored).",
         "parameters": [
           {
             "schema": {
@@ -103587,7 +104034,7 @@
           "questions"
         ],
         "summary": "Delete a question permanently",
-        "description": "Answers 200 with a flash (\"Soalan berjaya dipadam.\"), not 204, as the mock does.",
+        "description": "Answers 200 with a flash (\"Soalan berjaya dipadam.\"), not 204, as the mock does. Refused with 409 only while a paper that is still held (Terbit, or withdrawn with sittings) places the question (D9 fix of the live hard delete: it would break a sitting); every other state is deleted as on the live site.",
         "parameters": [
           {
             "schema": {
@@ -103655,6 +104102,111 @@
           },
           "404": {
             "description": "NOT_FOUND: unknown id (for Guru routes also another teacher's question; ids cannot be probed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: a paper that is still held (Terbit, or withdrawn with sittings) places the question; nothing is deleted (details.reason: served or pinned); also 409 details.reason in_use when a set, remedial test or battle still uses it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/questions/{id}/edit-as-draft": {
+      "post": {
+        "tags": [
+          "questions"
+        ],
+        "summary": "Edit an approved question as a draft (V2 \"Edit sebagai draf\")",
+        "description": "Admin Pusat only. Copies the live (approved) version unchanged into version n+1 with status `draft`; the live version keeps serving until n+1 is approved. Replaces a PUT with unchanged content. 409 CONFLICT (`details.id`, `details.versionNo` of the newer version) when the latest version is already a draft or review; 409 when the question is not live (archived). Flash: \"Draf baharu #{id} dicipta. Soalan asal kekal diterbitkan sehingga draf ini diterbitkan.\"",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The new draft version, with the flash text.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/QuestionEditAsDraftResult"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN, or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id (for Guru routes also another teacher's question; ids cannot be probed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the request does not fit the current state of the question (details when it names another version).",
             "content": {
               "application/json": {
                 "schema": {
@@ -104298,6 +104850,16 @@
           },
           "404": {
             "description": "NOT_FOUND: unknown id (for Guru routes also another teacher's question; ids cannot be probed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: a paper that is still held (Terbit, or withdrawn with sittings) places the question; nothing is deleted (details.reason: served or pinned); also 409 details.reason in_use when a set, remedial test or battle still uses it.",
             "content": {
               "application/json": {
                 "schema": {
@@ -106072,7 +106634,7 @@
           "questions"
         ],
         "summary": "Check a gate without changing the question",
-        "description": "`gate=approve` (default) is the merged approve gate (\"Terbitkan\"): marks, one key per MCQ, a key for every other mode, images resolved, unit, SP and TP chosen, copyright, no open duplicate; and for an SPM-bound question (a subject of the SPM catalogue at Tingkatan 4 or 5) a cognitive level on every leaf (\"Bahagian (b) belum ada aras pemikiran.\") and the kertas. `gate=submit` is the draft-to-review gate. Legacy questions already approved are never re-checked (D80 DEC-2): the gate runs only on a new approval.",
+        "description": "`gate=approve` (default) is the merged approve gate (\"Terbitkan\"): marks, one key per MCQ, a key for every other mode, images resolved, unit, SP and TP chosen, no open duplicate (no per-question source or rights rule: V2 asks for them once, at the intake batch, D99); and for an SPM-bound question (a subject of the SPM catalogue at Tingkatan 4 or 5) a cognitive level on every leaf (\"Bahagian (b) belum ada aras pemikiran.\") and the kertas. `gate=submit` is the draft-to-review gate. Legacy questions already approved are never re-checked (D80 DEC-2): the gate runs only on a new approval.",
         "parameters": [
           {
             "schema": {
@@ -112588,7 +113150,7 @@
           "bijak-builder"
         ],
         "summary": "Paper builder: edit a paper (single PUT, PaperPatch)",
-        "description": "Body { title?, year?, durationMin?, reference?, sections?: [{ id, questionIds?, label?, instruction?, compulsory? }] }; only the keys sent change (R1-T34: `reference` replaces the whole list of reference panels, max 10, a panel image must be a stored question image; a section can be renamed, get an instruction (null clears it) or be marked compulsory; the rule and the mark budget stay the Kontrak's). This one route carries every edit (the mock savePaper). Checks run in the mock order: 1. the paper exists (404 NOT_FOUND), 2. the paper is not terbit, 3. the title is not blank, 4. year and durationMin apply, 5. each section id and its questions, in the order sent. A terbit paper is refused: 422 VALIDATION_ERROR \"Kertas Terbit tidak boleh disunting. Tarik balik dahulu.\" (no field). Other refusals: title \"Tajuk kertas diperlukan\"; a section id that is not a section of the paper \"Bahagian tidak sah\"; a question id that does not exist, or whose curriculum subject differs from the paper subject, \"Soalan tidak sah untuk kertas ini\" (an existence and subject check only, not a kertas or status check). R1-B09a / D90: a stimulus group is one unit, so a list that holds a member of a group is stored with the WHOLE group (all members, contiguous, in the group's published order); a question twice on the paper is refused with \"Soalan berulang dalam kertas: {ids}\". Status is not checked here (publish reports \"{N} soalan belum Terbit\"); POST /placements is the servable-checked way to add. Answers the editor data (PaperEditorData), as the mock does. The mock throws error kind bad_request for these refusals (not_found for a missing paper); ErrorCode has no BAD_REQUEST, so the refusal is 422 VALIDATION_ERROR (mapping awaits the LEAD decision, deviations log). Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "Body { title?, year?, durationMin?, code?, reference?, sections?: [{ id, questionIds?, label?, instruction?, compulsory?, rule? }] }; only the keys sent change (R1-T34: `reference` replaces the whole list of reference panels, max 10, a panel image must be a stored question image; a section can be renamed, get an instruction (null clears it) or be marked compulsory; R1-T48 below adds the answering rule; the mark budget stays the Kontrak's). This one route carries every edit (the mock savePaper). Checks run in the mock order: 1. the paper exists (404 NOT_FOUND), 2. the paper is not terbit, 3. the title is not blank, 4. year and durationMin apply, 5. each section id and its questions, in the order sent. A terbit paper is refused: 422 VALIDATION_ERROR \"Kertas Terbit tidak boleh disunting. Tarik balik dahulu.\" (no field). Other refusals: title \"Tajuk kertas diperlukan\"; a section id that is not a section of the paper \"Bahagian tidak sah\"; a question id that does not exist, or whose curriculum subject differs from the paper subject, \"Soalan tidak sah untuk kertas ini\" (an existence and subject check only, not a kertas or status check). R1-B09a / D90: a stimulus group is one unit, so a list that holds a member of a group is stored with the WHOLE group (all members, contiguous, in the group's published order); a question twice on the paper is refused with \"Soalan berulang dalam kertas: {ids}\". Status is not checked here (publish reports \"{N} soalan belum Terbit\"); POST /placements is the servable-checked way to add. R1-T48: `code` (V2 \"Kod kertas (kulit)\", the printed paper code, trimmed, at most 32 characters, else 422 \"Kod kertas terlalu panjang (paling banyak 32 aksara)\"; blank = the subject code, as the V2 cover) and, per section, `rule` ({ type: all } or { type: choose, n }, V2 \"Peraturan menjawab\" / \"Bilangan soalan dipilih\"; n from 1 to the printed question count (an admin-added Bahagian: the questions placed in it), else 422 \"Bilangan soalan dipilih mesti antara 1 dan {count}\"; a Pilih N on a Bahagian without a question: 422 \"Letakkan soalan dalam bahagian ini dahulu sebelum memilih bilangan soalan\"; a Pilih N that later exceeds the questions in the Bahagian is the hard blocker RULE_N_EXCEEDS_QUESTIONS) are editable on a draf. The Kontrak keeps the final say: a rule that differs shows at Terbit as the overridable blocker RULE_NOT_IN_CONTRACT, and a mark total that no longer matches the budget as MARKS_MISMATCH. Answers the editor data (PaperEditorData), as the mock does. The mock throws error kind bad_request for these refusals (not_found for a missing paper); ErrorCode has no BAD_REQUEST, so the refusal is 422 VALIDATION_ERROR (mapping awaits the LEAD decision, deviations log). Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -112828,7 +113390,7 @@
           "bijak-builder"
         ],
         "summary": "Paper builder: publish (draf to terbit)",
-        "description": "Optional body { override?: boolean, reason?: string } (R1-T34, V2 Panel tick \"Terbitkan walaupun tidak memenuhi kontrak blueprint\"): with override true and a reason of at least 5 characters the blueprint-conformance blockers (the Kontrak is not Disahkan: \"Kontrak Simulasi {code} (versi {n}) belum Disahkan (status: {status}); Terbit memerlukan kontrak Disahkan.\", and \"Soalan {id} tidak layak: ...\") are overridden and the paper is published; the reason and the overridden lines go to the audit row bijak.paper.published_override and the answer lists them in `overridden`. Override without a reason: 422 \"Sebab diperlukan untuk menerbitkan walaupun tidak memenuhi kontrak blueprint\" on fields.reason. Blockers about the questions or the printed structure (not Terbit, duplicates, split or incomplete groups, counts, marks) are never overridable: the answer stays ok false. A normal 200 result (not an error): { ok: true, errors: [] }, or { ok: false, errors: string[] } with the BM lines of checkPaper. Paper-wide lines come first: \"Soalan berulang dalam kertas: {ids}\" and \"Kumpulan rangsangan {group} dipecahkan antara dua bahagian\". Each section line follows, prefixed with the section label (\"{label}: \"): \"Kurang N soalan (perlu X, ada Y)\" or \"Lebih N soalan (perlu X, ada Y)\", \"Markah M tidak sama dengan bajet B\", \"Kumpulan rangsangan G tidak berturutan\", \"Kumpulan rangsangan G tidak lengkap (N soalan tiada)\" and \"{N} soalan belum Terbit\". Nothing changes on ok: false. A refusal (ok false) also carries `blockerDetails` (the same blockers as `errors`, structured: { code, message, overridable, section?, questionId? }) and `canOverride`, computed by the same rule as GET /admin/papers/{id}/review (one source of truth; codes in BIJAK_BUILDER_BLOCKER_OVERRIDABLE). On ok: true the status becomes terbit, publishedAt is set and the paper appears in GET /bijak/papers; implementations pin the question versions in force (a later edit, version n+1, does not change the paper). A paper that is already terbit is checked again and stays terbit. Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "Optional body { override?: boolean, reason?: string } (R1-T34, V2 Panel tick \"Terbitkan walaupun tidak memenuhi kontrak blueprint\"): with override true and a reason of at least 5 characters the blueprint-conformance blockers are overridden and the paper is published. Exactly four codes are overridable: BLUEPRINT_NOT_VERIFIED (\"Kontrak Simulasi {code} (versi {n}) belum Disahkan (status: {status}); Terbit memerlukan kontrak Disahkan.\"), INELIGIBLE (\"Soalan {id} tidak layak: ...\" for a missing DSKP unit or TP, or tags awaiting review), RULE_NOT_IN_CONTRACT (the answering rule of a Bahagian differs from the Kontrak) and SECTION_NOT_IN_CONTRACT (an admin-added Bahagian); the reason and the overridden lines go to the audit row bijak.paper.published_override and the answer lists them in `overridden`. Override without a reason: 422 \"Sebab diperlukan untuk menerbitkan walaupun tidak memenuhi kontrak blueprint\" on fields.reason. Every other blocker is hard and is never overridable, alone or mixed with an overridable one: the answer stays ok false and `canOverride` false. They are the printed structure and the questions (not Terbit, duplicates, split, incomplete or small groups, counts, marks), a question missing from the pool or that pupils cannot be served, NO_KEY, NO_MARKS, MODE_NOT_ALLOWED, GROUP_BROKEN, a Pilih N with fewer questions than N (RULE_N_EXCEEDS_QUESTIONS) and an admin-added Bahagian without a question (SECTION_EMPTY). A normal 200 result (not an error): { ok: true, errors: [] }, or { ok: false, errors: string[] } with the BM lines of checkPaper. Paper-wide lines come first: \"Soalan berulang dalam kertas: {ids}\" and \"Kumpulan rangsangan {group} dipecahkan antara dua bahagian\". Each section line follows, prefixed with the section label (\"{label}: \"): \"Kurang N soalan (perlu X, ada Y)\" or \"Lebih N soalan (perlu X, ada Y)\", \"Markah M tidak sama dengan bajet B\", \"Kumpulan rangsangan G tidak berturutan\", \"Kumpulan rangsangan G tidak lengkap (N soalan tiada)\" and \"{N} soalan belum Terbit\". Nothing changes on ok: false. A refusal (ok false) also carries `blockerDetails` (the same blockers as `errors`, structured: { code, message, overridable, section?, questionId? }) and `canOverride`, computed by the same rule as GET /admin/papers/{id}/review (one source of truth; codes in BIJAK_BUILDER_BLOCKER_OVERRIDABLE). On ok: true the status becomes terbit, publishedAt is set and the paper appears in GET /bijak/papers; implementations pin the question versions in force (a later edit, version n+1, does not change the paper). A paper that is already terbit is checked again and stays terbit. Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -113967,8 +114529,8 @@
         "tags": [
           "bijak-builder"
         ],
-        "summary": "Paper builder: Sunting petikan (title of a stimulus group on the paper)",
-        "description": "V2 Panel \"Sunting petikan\". Body { label }. The group must be placed on the paper (otherwise 422 \"Kumpulan rangsangan ini tiada dalam kertas ini\"). The title belongs to the shared stimulus group of the question bank (D90), so the new title shows wherever the group is placed (deviation from V2, where a native paper owned its passage). Terbit paper: 422 paperLocked. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "summary": "Paper builder: Sunting petikan (title, caption and body of a stimulus group on the paper)",
+        "description": "V2 Panel \"Sunting petikan\" (\"Tajuk petikan\" + caption + body editor). Body { label?, stimulusId?, caption?, body? }, at least one of label, caption, body (R1-T48 added the caption and the body of one stimulus of the group; `stimulusId` defaults to the first stimulus, a stimulus that is not in the group: 422 \"Petikan ini bukan sebahagian daripada kumpulan rangsangan ini\", a group without a stimulus: 422 \"Kumpulan rangsangan ini tiada petikan untuk disunting\"). The stimulus is edited through the bank, so its rules apply (a passage needs a body; 409 once the stimulus is served to pupils). The group must be placed on the paper (otherwise 422 \"Kumpulan rangsangan ini tiada dalam kertas ini\"). The title belongs to the shared stimulus group of the question bank (D90), so the new title shows wherever the group is placed (deviation from V2, where a native paper owned its passage). Terbit paper: 422 paperLocked. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -114020,6 +114582,403 @@
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/BijakBuilderEditor"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID \"Sesi tidak sah. Sila muat semula halaman dan cuba lagi.\" (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakBuilderCsrfError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kertas tidak ditemui\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Kertas Terbit tidak boleh disunting. Tarik balik dahulu.\", or a placement refusal (BM reason).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/papers/{id}/sections": {
+      "post": {
+        "tags": [
+          "bijak-builder"
+        ],
+        "summary": "Paper builder: Tambah bahagian (a Bahagian the Kontrak does not have)",
+        "description": "V2 Panel \"Semak Kertas Simulasi\" \"Tambah bahagian\". Body { label }. The new Bahagian goes last with the rule Jawab Semua and `adminCreated: true`; its question count and mark budget follow its placements. A paper has at most 20 Bahagian (422 \"Bilangan bahagian sudah mencapai had (20).\"). A label already on the paper (trimmed, case-insensitive) is refused (422, fields.label \"Label bahagian ini sudah digunakan dalam kertas ini.\"); the same holds for renaming a Bahagian through the paper patch. Because the Kontrak has no such Bahagian, Terbit reports the overridable blocker SECTION_NOT_IN_CONTRACT. Terbit paper: 422 paperLocked. Answers the editor data (201). Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Paper id.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Paper id.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BijakBuilderSectionAdd"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The editor data with the new Bahagian.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBuilderEditor"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID \"Sesi tidak sah. Sila muat semula halaman dan cuba lagi.\" (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakBuilderCsrfError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kertas tidak ditemui\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Kertas Terbit tidak boleh disunting. Tarik balik dahulu.\", or a placement refusal (BM reason).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/papers/{id}/sections/{sid}/questions": {
+      "post": {
+        "tags": [
+          "bijak-builder"
+        ],
+        "summary": "Paper builder: Tambah soalan (create a blank question inside the paper and place it)",
+        "description": "V2 Panel \"Tambah soalan\" (`Nombor soalan`, `Jenis jawapan`, `Markah`). Body { number, mode, marks }. Only a Bahagian added by the admin takes it: otherwise 422 \"Soalan hanya boleh ditambah ke bahagian yang dicipta oleh admin.\". A number already used on the paper: 422 \"Nombor soalan {x} sudah digunakan dalam kertas ini.\" (also on fields.number). The question is created as a Draf in the one question bank (placeholder text and key, the paper subject and kertas, the highest active secondary level, no DSKP tag or cognitive level: the T33 approve gate asks for the unit, SP, TP and a cognitive level per leaf when the question is approved, so they are set in the question editor) and placed at the end of the Bahagian; the answer lists its id in `added`. The admin edits it in the question editor (\"Tambah & sunting\"); until it is approved Terbit reports \"1 soalan belum Terbit\". Terbit paper: 422 paperLocked. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Section id.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Section id.",
+            "name": "sid",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BijakBuilderQuestionCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The editor data and the added question id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBuilderPlacementResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID \"Sesi tidak sah. Sila muat semula halaman dan cuba lagi.\" (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakBuilderCsrfError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kertas tidak ditemui\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Kertas Terbit tidak boleh disunting. Tarik balik dahulu.\", or a placement refusal (BM reason).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/papers/{id}/questions/{questionId}": {
+      "delete": {
+        "tags": [
+          "bijak-builder"
+        ],
+        "summary": "Paper builder: Padam soalan (remove a question added through Tambah soalan)",
+        "description": "V2 Panel \"Padam soalan\" removes an extra question from the paper for good. Only a question added through \"Tambah soalan\" qualifies: in a Kontrak Bahagian 422 \"Soalan asal kertas tidak boleh dipadam.\" (V2), in an admin-added Bahagian a bank question 422 \"Soalan {id} bukan soalan tambahan kertas ini\" (use DELETE /placements/{questionId} to take a bank question off the paper). The placement is removed; when the question is still a Draf and sits on no other paper it is deleted from the bank too, otherwise (approved, edited into use, placed elsewhere) it only leaves the paper and stays in the bank. Answers the editor data and the removed ids (200). Terbit paper: 422 paperLocked. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "questionId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The editor data and the removed question id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBuilderPlacementResult"
                     }
                   },
                   "required": [
@@ -121786,7 +122745,7 @@
           "intake"
         ],
         "summary": "Link an item to the question or item it duplicates, or dismiss the flag",
-        "description": "Card BE-38, v2-question-bank US-06. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403. Only a human decision sets the state `duplicate`; the automatic check adds `open` entries and leaves the item generated or needs_review. `duplicate` (also \"Gabung\") links exactly one of matchedQuestionId (bank) or matchedItemId (SAME batch) and sets the state `duplicate`; `variant` [PROPOSED] links as an informational variant without changing the state; `not_duplicate` (\"Bukan pendua\") dismisses the entry named by duplicateId for that pair only. A target that does not exist, is in another batch, or is not readable by the caller (BE-09 scope) gets the identical 422 \"Padanan pendua tidak ditemui\" on the field, so ids cannot be probed.",
+        "description": "Card BE-38, v2-question-bank US-06. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403. Only a human decision sets the state `duplicate`; the automatic check adds `open` entries and leaves the item generated or needs_review. `duplicate` (also \"Gabung\") links exactly one of matchedQuestionId (bank) or matchedItemId (SAME batch) and sets the state `duplicate`; `variant` [PROPOSED] links as an informational variant without changing the state; `not_duplicate` (\"Bukan pendua\") dismisses the entry named by duplicateId for that pair only; it is also allowed on an ACCEPTED item (the open entries do not block accept, so the reviewer must be able to clear them before Semakan), and leaves the state `accepted`: every other decision on an accepted or rejected item is 409. A target that does not exist, is in another batch, or is not readable by the caller (BE-09 scope) gets the identical 422 \"Padanan pendua tidak ditemui\" on the field, so ids cannot be probed.",
         "parameters": [
           {
             "schema": {

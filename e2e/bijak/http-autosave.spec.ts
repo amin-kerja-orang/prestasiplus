@@ -54,7 +54,7 @@ test.describe('Bijak SPM autosave over HTTP @bijak @api', () => {
     const res = await saved
     expect(res.status()).toBeGreaterThanOrEqual(200)
     expect(res.status()).toBeLessThan(300)
-    await expect(page.getByTestId('save-status')).toHaveText('Disimpan')
+    await expect(page.getByTestId('save-status')).toHaveText('disimpan')
     const before = await pressedOptions(page)
     expect(before).toContain('true')
 

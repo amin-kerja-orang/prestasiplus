@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { NOT_SERVING, serveSeededBlueprints } from '../support/serve-blueprints'
 import { bootFullApp, loginFull, type FullApp, type FullClient } from '../r1/full-app'
+import { giveBab } from '../support/bab'
 import { ACCOUNTS, auditRows } from './helpers'
 
 vi.setConfig({ testTimeout: 120_000, hookTimeout: 300_000 })
@@ -39,6 +40,7 @@ describe('R1-T34 structured blockers: review and publish agree', () => {
     return res.body.data.id as string
   }
   async function approve(ids: string[]): Promise<void> {
+    await giveBab(t.db, ids)
     for (const action of ['review', 'approved']) {
       const res = await admin.post('/api/questions/bulk-action', { action, ids })
       expect(res.status, JSON.stringify(res.body)).toBe(200)
@@ -314,10 +316,10 @@ describe('R1-T34 structured blockers: review and publish agree', () => {
     })
   })
 
-  it('every code of the contract has an overridable flag; only the two blueprint-conformance codes are overridable (PIPE AC-07.5)', () => {
+  it('every code of the contract has an overridable flag; only the four blueprint-conformance codes are overridable (PIPE AC-07.5)', () => {
     const overridable = Object.entries(BIJAK_BUILDER_BLOCKER_OVERRIDABLE).filter(([, v]) => v).map(([k]) => k).sort()
-    expect(overridable).toEqual(['BLUEPRINT_NOT_VERIFIED', 'INELIGIBLE'])
-    for (const hard of ['NO_KEY', 'NO_MARKS', 'MODE_NOT_ALLOWED', 'GROUP_BROKEN'] as const) expect(BIJAK_BUILDER_BLOCKER_OVERRIDABLE[hard], hard).toBe(false)
+    expect(overridable).toEqual(['BLUEPRINT_NOT_VERIFIED', 'INELIGIBLE', 'RULE_NOT_IN_CONTRACT', 'SECTION_NOT_IN_CONTRACT'])
+    for (const hard of ['NO_KEY', 'NO_MARKS', 'MODE_NOT_ALLOWED', 'GROUP_BROKEN', 'RULE_N_EXCEEDS_QUESTIONS', 'SECTION_EMPTY'] as const) expect(BIJAK_BUILDER_BLOCKER_OVERRIDABLE[hard], hard).toBe(false)
     const sample: BijakBuilderBlocker = { code: 'NOT_SERVABLE', message: 'x', overridable: false }
     expect(sample.overridable).toBe(false)
   })
