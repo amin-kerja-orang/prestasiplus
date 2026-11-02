@@ -566,7 +566,7 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 **Status legend (team A records):** READY = pushed and evidenced, ready for B; IN-REVIEW-A = in team A pre-review (A4/A1b), **not** a B "Changes requested"; IN-PROGRESS = being changed, not for merge; ON HOLD = waits on a dependency; MERGED = in base.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 03:32 UTC, BASE 1216dbe7)
+### Team A open branches: heads from origin (auto, 2026-11-02 03:33 UTC, BASE 1216dbe7)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -580,8 +580,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/partial-acs-a3 | e6ceece19 | READY-AFTER-FIX (A3, @e6ceece1 restacked on T48 10c62437): exam-builder 416/417 RED: builder-review "stays outside D93" (same as REQ-B-069; likely pool page cap ?pageSize=100 vs 106 units). Fixed by r1/t31-pool-lookup-fixture merged after T31 (no cascade needed); merge after t31-pool-lookup-fixture |
 | r1/ready-tiers-check | 9c80f08c3 | ON HOLD (A2, @9c80f08c, contains BASE-107): code correct + Minors fixed (exact 503 body, WARN once per state change, INFO on recovery; mutations red); waits for B DevOps (REQ-A-028: CI seed step + first-install deploy ordering) |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
-| r1/reqb071-bab-submit | 4e38af8e6 | READY-PENDING-PREREVIEW (A2, @4e38af8e; "CR" = in team A code review by A4, NOT changes requested). Clean vs BASE-189 except DEV doc keep-both. Contained in r1/reqb071-chain-specs-a3 d22af990 |
-| r1/reqb071-chain-specs-a3 | 826403b2d | READY-PENDING (A3, @d22af990 = chain specs + merge of reqb071-bab-submit 4e38af8e: **B1 merges THIS head, which brings both**; clean vs BASE-189 except DEV doc; A3 counts + A4 pre-review pending) |
+| r1/reqb071-bab-submit | 4e38af8e6 | IN-REVIEW-A (A2, @4e38af8e; A4 pre-review running; not a B "Changes requested"). Clean vs BASE-189 except DEV doc keep-both. **Do NOT merge alone (chain 3-9 red): B1 merges r1/reqb071-chain-specs-a3 d22af990, which contains it** |
+| r1/reqb071-chain-specs-a3 | 826403b2d | IN-REVIEW-A (A3, @d22af990 = chain specs + merge of reqb071-bab-submit 4e38af8e; B1 merges THIS one head to bring both; A3 counts + A4 pre-review pending) |
 | r1/reqb074-takedown-lows | 45a75f68c | READY (A1b, @45a75f68 = ae78bf82 + A4 review fixes: deviation row matches code (any sitting keeps pictures, as paperHeld), comments, composite.ts required; 832 pass, tsc 0). A4 pre-review: code sound, 0 B; Major was doc-only (now fixed). **Needs B security-engineer** (image access); DEV doc keep-both; B2 |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
