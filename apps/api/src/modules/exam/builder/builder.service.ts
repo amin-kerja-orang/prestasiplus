@@ -570,6 +570,8 @@ export class BuilderService {
       // The FOR SHARE lock makes it wait for this Terbit and then refuse (409 served). A delete that committed first leaves the question out of
       // the pool, which `evaluate` reports as UNKNOWN_QUESTION (the paper is refused). The servability reads are taken AFTER the lock, so an image
       // or rights hold that changed while the lock was awaited is seen (the transaction has the 20 s TX budget for that read).
+      // The bank and servability reads below now run while this transaction holds the paper FOR UPDATE and the placed questions FOR SHARE, so an edit
+      // of a placed question waits for them (bounded by PUBLISH_TX).
       const placedNow = this.placedIdsOf(paper)
       await this.repo.lockQuestionsShared(placedNow.map((x) => BigInt(x)))
       const ev = await this.evaluate(paper)

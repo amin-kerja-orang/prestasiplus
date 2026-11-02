@@ -206,4 +206,25 @@ describe('R1 publish-lock-share', () => {
     expect(await statusOf(paper)).not.toBe('published')
     expect(await count(victim)).toBe(0)
   })
+
+  it('a servability-only change committed while Terbit waits for its lock is seen: the reads are taken after the lock, so the paper is refused NOT_SERVABLE', async () => {
+    const { paper, ids } = await draftPaper()
+    const victim = ids[4]!
+    const g = gate('lockQuestionsShared')
+    const pub = Promise.resolve(publish(paper))
+    await g.parked() // Terbit is inside its transaction before any servability read of the question
+    // a change only the servability reads see (the pool facts and the placement do not): the live version's scheme is no longer revealed after submit,
+    // which the Bijak bridge refuses (reveal_never), so no pupil can be served the question
+    await q(
+      `update question_parts p set reveal = 'never' from question_versions v, questions qu
+        where p.question_version_id = v.id and v.question_id = qu.id and v.version_no = qu.live_version_no and qu.id = $1`,
+      [victim],
+    )
+    g.open()
+    const res = await pub
+    expect(res.body.data.ok, JSON.stringify(res.body)).toBe(false)
+    expect((res.body.data.errors as string[]).some((e) => e.includes(victim)), JSON.stringify(res.body.data.errors)).toBe(true)
+    expect(await statusOf(paper)).not.toBe('published')
+    expect(await count(victim)).toBe(1)
+  })
 })
