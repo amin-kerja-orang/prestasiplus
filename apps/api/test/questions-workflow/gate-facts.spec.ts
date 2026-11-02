@@ -42,7 +42,7 @@ describe('gate facts (real bank): duplicate, low confidence, media, AI editor, d
     tag: { unitId: tag.unitId, spIds: [tag.spId], tp: 3 },
     ...over,
   })
-  /** A question in `status` (draft or review) with the chapter the submit gate asks for. */
+  /** A question in `status` (draft or review) with a chapter (not required by any gate since REQ-B-071; the practice reads count only chaptered questions). */
   async function make(status: 'draft' | 'review' = 'review', over: Record<string, unknown> = {}): Promise<string> {
     const res = await admin.post('/api/questions', body({ status, ...over }))
     expect(res.status, JSON.stringify(res.body)).toBe(201)
@@ -222,14 +222,14 @@ describe('gate facts (real bank): duplicate, low confidence, media, AI editor, d
     await t.db.query('update question_versions set chapter_id = null where question_id = $1::bigint', [noChapter])
     const res = await admin.post('/api/questions/bulk-action', { action: 'review', ids: [clean, lowField, noChapter] })
     expect(res.status, JSON.stringify(res.body)).toBe(200)
-    expect(res.body.data.affected).toBe(1)
+    expect(res.body.data.affected).toBe(2)
     const failed = res.body.data.failed as { id: string; code: string; fields: Record<string, string> }[]
-    expect(failed.map((f) => f.id).sort()).toEqual([lowField, noChapter].sort())
+    // REQ-B-071 (Q17): the Bab is not asked at Semakan, so the chapterless draft moves with the clean one.
+    expect(failed.map((f) => f.id)).toEqual([lowField])
     expect(failed.find((f) => f.id === lowField)).toMatchObject({ code: 'VALIDATION_ERROR', fields: { stem: GATE_MESSAGES.lowConfidence } })
-    expect(failed.find((f) => f.id === noChapter)!.fields.chapterId).toBe(GATE_MESSAGES.chapterId)
     expect(await statusOf(clean)).toBe('review')
     expect(await statusOf(lowField)).toBe('draft')
-    expect(await statusOf(noChapter)).toBe('draft')
+    expect(await statusOf(noChapter)).toBe('review')
   })
 
   it('10. an edit that does not supply the legacy image keeps the import hold on the new version; one that supplies it drops that issue', async () => {
