@@ -31,6 +31,7 @@ import { reviewedQuotaDoc, structureHashOf, toStandard, unitLevelsOf } from '../
 import { BlueprintsRepository } from '../../src/modules/exam/blueprints/blueprints.repository'
 import { checkEvidence, validateForVerification, type EvidenceItem } from '../../src/modules/exam/blueprints/exam-core.adapter'
 import { demoPasswordHash } from './core/demo-password'
+import { linkPracticeChapters } from './e2e-chapter'
 import { E2E_K2_BLUEPRINT, seedE2eK2 } from './e2e-k2'
 import { seedE2eTrial } from './e2e-trial'
 import { countsAsProduction } from './guard'
@@ -190,7 +191,8 @@ export const e2eSeed: SeedModule = {
     await verifyBlueprint(prisma, code, adminId, ctx.clock.now())
     // E2E fixture (T26c): the structured Kertas 2 pool and its published paper, only for the default 3472/2 blueprint (the one that is Disahkan above).
     if (code === E2E_K2_BLUEPRINT) await seedE2eK2(ctx, adminId)
-    await seedE2eTrial(ctx) // E2E fixture: an unsubscribed pupil with one trial answer left (e2e-trial.ts)
+    await linkPracticeChapters(prisma)
+    await seedE2eTrial(ctx) // E2E fixture: unsubscribed pupils with one trial answer left (e2e-trial.ts)
     if (ctx.env[E2E_DEMO_SECONDARY_FLAG] === '1') await treatDemoAsSecondary(prisma)
   },
 }
