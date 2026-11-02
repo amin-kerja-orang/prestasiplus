@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { UsersRepository } from '../../src/modules/users'
 import { ADMIN, apiOf, bootUsersApp, detailOf, fieldsOf, login, SCHOOL_ADMIN, schoolIdOf, type Api, type UsersTestApp } from './helpers'
+import { treatDemoAsSecondary } from '../support/secondary'
 
 const INVALID = 'The selected linked student ids is invalid.'
 const byNumber = (a: string, b: string): number => Number(a) - Number(b)
@@ -19,7 +20,7 @@ describe('admin users: parent links (SW2-08)', () => {
   let counter = 0
 
   const student = async (schoolId: string, name: string): Promise<string> => {
-    const res = await admin.post('/admin/users', { roles: ['student'], name, email: `anak.${++counter}@ujian.test`, schoolId, grade: 3 })
+    const res = await admin.post('/admin/users', { roles: ['student'], name, email: `anak.${++counter}@ujian.test`, schoolId, grade: 10 })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     return CreatedUserSchema.parse(res.body.data).id
   }
@@ -43,6 +44,8 @@ describe('admin users: parent links (SW2-08)', () => {
 
   beforeAll(async () => {
     t = await bootUsersApp({ env: { THROTTLE_ADMIN_WRITE_PER_MINUTE: '100000', THROTTLE_ADMIN_READ_PER_MINUTE: '100000' } })
+    // Secondary-only (D72): DEMO002 is seeded as SK, and the service refuses a secondary-grade student in a primary school (grade 10 here).
+    await treatDemoAsSecondary(t.db, false)
     admin = apiOf(await login(t, ADMIN))
     sa = apiOf(await login(t, SCHOOL_ADMIN))
     s1 = await schoolIdOf(t.db, 'DEMO001')

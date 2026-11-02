@@ -17,6 +17,7 @@ import {
   type Api,
   type UsersTestApp,
 } from './parents-helpers'
+import { treatDemoAsSecondary } from '../support/secondary'
 
 /** Parent-child link routes of the contract: /me/parent-links and /admin/parent-links. */
 describe('parent links (BE-25 part B)', () => {
@@ -47,6 +48,8 @@ describe('parent links (BE-25 part B)', () => {
 
   beforeAll(async () => {
     t = await bootParentsApp()
+    // Secondary-only (D72): DEMO002 is seeded as SK, and the service refuses a secondary-grade student in a primary school (grade 10 here).
+    await treatDemoAsSecondary(t.db, false)
     admin = apiOf(await login(t, ADMIN))
     sa = apiOf(await login(t, SCHOOL_ADMIN))
     student = apiOf(await login(t, STUDENT))

@@ -441,7 +441,7 @@ describe('large bodies (JSON limit of the content write routes)', () => {
     expect(a.status, JSON.stringify(a.body).slice(0, 200)).toBe(201)
     expect(a.body.data.content).toHaveLength(190_000)
     expect((await admin.put('/admin/articles/' + (a.body.data.id as string), { content: big + 'y' })).status).toBe(200)
-    const n = await admin.post('/admin/notes', { title: 'Nota Besar', content: big, subject: 'sains', noteType: 'RINGKASAN', grade: 'DARJAH_1' })
+    const n = await admin.post('/admin/notes', { title: 'Nota Besar', content: big, subject: 'sains', noteType: 'RINGKASAN', grade: 'TINGKATAN_4' })
     expect(n.status).toBe(201)
   })
 
@@ -449,7 +449,7 @@ describe('large bodies (JSON limit of the content write routes)', () => {
     const over = 'x'.repeat(200_001)
     expect(fieldsOf(await admin.post('/admin/articles', articleBody({ content: over })))).toHaveProperty('content')
     expect(fieldsOf(await admin.put('/admin/articles/1', { content: over }).then((r) => (r.status === 404 ? admin.post('/admin/articles', articleBody({ content: over })) : r)))).toHaveProperty('content')
-    expect(fieldsOf(await admin.post('/admin/notes', { title: 'T', content: over, subject: 'sains', noteType: 'RINGKASAN', grade: 'DARJAH_1' }))).toHaveProperty('content')
+    expect(fieldsOf(await admin.post('/admin/notes', { title: 'T', content: over, subject: 'sains', noteType: 'RINGKASAN', grade: 'TINGKATAN_4' }))).toHaveProperty('content')
   })
 
   it('an anonymous or cookie-less 1.2 MB body is refused cheaply by the default parser (413), never parsed by the large one', async () => {
