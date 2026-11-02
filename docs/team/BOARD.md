@@ -577,14 +577,14 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
-| r1/ac-gaps-a1b | c1d186610 | READY (multi, @c1d18661: AC coverage refreshed to BASE-189 (AC-R1 71/81 proven, PIPE 58/92; 7 open rows unchanged), B4 pack/runbook; merge-tree clean); B delta over BASE-163; merge after ha26 | Q17 user decision wording; imported-without-Bab note |
+| r1/ac-gaps-a1b | c1d186610 | IN-PROGRESS (A3, REQ-B-078: refresh on BASE-195; ha24 folds in ha24-kiv-49-52; one merge order ha24 → ha26 → ac-gaps with exact SHAs to follow). Do not merge the current head |
 | r1/builder-publish-p2028-test | 31c9baaa0 | IN-PROGRESS (A3, @31c9baaa: r2-prep minor #12; the P2028 spec proves a full Terbit rollback, but found that builder publish maps P2028 to 500. Lead OK'd the fix (429 RATE_LIMITED + Retry-After, as the other paths); new head to follow) |
 | r1/bulk-publish-allskipped | 9b8b39409 | READY (A3, @9b8b3940 on BASE-189: r2-prep minor #11 (r1e2e10). An all-skipped bulk publish (affected 0, failed 0, skipped>0) now shows 'Soalan ini sudah diterbitkan.' instead of '0 soalan berjaya dikemaskini.'; any failed row keeps the old text. The 409 test now goes over HTTP. Group 133/133, mutation red, contract:check ok, DEV row (no V2 wording). Merge-tree clean on BASE-192). Needs B2 review |
 | r1/e05b-l1-split-control | c4153ed75 | READY (A3, @c4153ed7 on BASE-192, test-only: r2-prep minor #5. The E05B-L1 negative control is split into pin-only / sitting-only / withdrawn paper with and without a sitting / neither; 5/5; 4 mutations each red; tsc/eslint 0). Needs B2 review |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
-| r1/ha24-kiv-49-52 | d9adac614 | READY (A3, @d9adac61 = 2 docs commits on ha24 7b6304c8: KIV row 49 CLOSED, row 52 cite, row 33 reqb074 in progress; decision pack §(c) adds Q18 for user review). Merge after ha24; merge-tree clean |
-| r1/ha24-release-input | 7b6304c86 | READY (A3 docs, @7b6304c8: BASE-155..189 pass; Q17 real behaviour cited @4e38af8e "pending merge"; KIV 41; copy table 41 rows); B delta over BASE-145 c0f7a45d | Q17 user decision wording; imported-without-Bab note + user decision pack docs/release/r1-pek-keputusan-pengguna.md (BM) + KIV 52 rows (42-48 B3 Lows, LEAD no R1 change) |
-| r1/ha26-team-a-state | 9473b2f7a | READY (A3 docs, @9473b2f7: written off BASE-189); B delta over BASE-162 21360a86; merge before ac-gaps | Q17 user decision wording; imported-without-Bab note |
+| r1/ha24-kiv-49-52 | d9adac614 | IN-PROGRESS (A3, REQ-B-078: refresh on BASE-195; ha24 folds in ha24-kiv-49-52; one merge order ha24 → ha26 → ac-gaps with exact SHAs to follow). Do not merge the current head |
+| r1/ha24-release-input | 7b6304c86 | IN-PROGRESS (A3, REQ-B-078: refresh on BASE-195; ha24 folds in ha24-kiv-49-52; one merge order ha24 → ha26 → ac-gaps with exact SHAs to follow). Do not merge the current head |
+| r1/ha26-team-a-state | 9473b2f7a | IN-PROGRESS (A3, REQ-B-078: refresh on BASE-195; ha24 folds in ha24-kiv-49-52; one merge order ha24 → ha26 → ac-gaps with exact SHAs to follow). Do not merge the current head |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/ready-tiers-check | 9c80f08c3 | ON HOLD (A2, @9c80f08c, contains BASE-107): code correct + Minors fixed (exact 503 body, WARN once per state change, INFO on recovery; mutations red); waits for B DevOps (REQ-A-028: CI seed step + first-install deploy ordering) |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
