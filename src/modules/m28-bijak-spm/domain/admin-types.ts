@@ -173,8 +173,9 @@ export interface BankStats {
     name: string
     terbit: number
     semakan: number
-    draf: number
-    ditolak: number
+    /** The HTTP server does not read Draf and Ditolak (no screen shows them; REQ-B-061). */
+    draf?: number
+    ditolak?: number
   }[]
 }
 
