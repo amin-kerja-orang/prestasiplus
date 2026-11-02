@@ -572,7 +572,7 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 - **Disk:** check `docker system df` and prune orphaned anonymous test volumes when there are 0 containers. A3 reclaimed 3.4 GB this way.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 03:39 UTC, BASE 1216dbe7)
+### Team A open branches: heads from origin (auto, 2026-11-02 03:47 UTC, BASE 1216dbe7)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -586,8 +586,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/partial-acs-a3 | e6ceece19 | READY-AFTER-FIX (A3, @e6ceece1 restacked on T48 10c62437): exam-builder 416/417 RED: builder-review "stays outside D93" (same as REQ-B-069; likely pool page cap ?pageSize=100 vs 106 units). Fixed by r1/t31-pool-lookup-fixture merged after T31 (no cascade needed); merge after t31-pool-lookup-fixture |
 | r1/ready-tiers-check | 9c80f08c3 | ON HOLD (A2, @9c80f08c, contains BASE-107): code correct + Minors fixed (exact 503 body, WARN once per state change, INFO on recovery; mutations red); waits for B DevOps (REQ-A-028: CI seed step + first-install deploy ordering) |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
-| r1/reqb071-bab-submit | 4e38af8e6 | IN-REVIEW-A (A2, @4e38af8e; A4 pre-review running; not a B "Changes requested"). Clean vs BASE-189 except DEV doc keep-both. **Do NOT merge alone (chain 3-9 red): B1 merges r1/reqb071-chain-specs-a3 d22af990, which contains it** |
-| r1/reqb071-chain-specs-a3 | 826403b2d | IN-REVIEW-A (A3, @826403b2 = chain specs + merge of reqb071-bab-submit 4e38af8e; chain-intake 13/13, +pipeline/blueprint/pinned 70; 3 mutations red; clean vs BASE-189 except DEV doc). **B1 merges THIS head (it brings A2 4e38af8e)**; A4 pre-review of 4e38af8e running |
+| r1/reqb071-bab-submit | 4e38af8e6 | READY via r1/reqb071-chain-specs-a3 826403b2 (contains 4e38af8e; B2 c29 AwM). Do NOT merge alone |
+| r1/reqb071-chain-specs-a3 | 826403b2d | READY (A3, @826403b2 = chain specs + merge of reqb071-bab-submit 4e38af8e). **B1: merge THIS ONE head (it brings A2 4e38af8e); 4e38af8e alone = chain 3-9 red.** B2 c29 Approve w/ Minors on 4e38af8e + ee9474e0; delta ee9474e0..826403b2 (13/13, 3b/3c fixture tightening, chain-step-map) for B2. A4 pre-review in progress |
 | r1/reqb074-takedown-lows | 45a75f68c | READY (A1b, @45a75f68 = ae78bf82 + A4 review fixes: deviation row matches code (any sitting keeps pictures, as paperHeld), comments, composite.ts required; 832 pass, tsc 0). A4 pre-review: code sound, 0 B; Major was doc-only (now fixed). **Needs B security-engineer** (image access); DEV doc keep-both; B2 |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |

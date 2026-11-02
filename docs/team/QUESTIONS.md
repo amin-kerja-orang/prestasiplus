@@ -98,7 +98,8 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
   - (b) **Kertas Soalan Guru is NOT its own sidebar item.** In V2 it is the "Kiriman Guru" tab/link inside Import & Semakan → /admin/question-submissions. If the current BS-02 screen (V2 I1 batch list) lacks that link, add a "Kiriman Guru" link there.
 - **V2 evidence:** docs/discovery/cloud-student-mechanism.md:318,360,366; docs/discovery/v2-parity/admin.md:46; docs/design/v2-admin-student-pipeline.md §2.1–2.2.
 - **Owner:** C1 (menu.ts + menu.test.ts). E2E-M04-54 is re-opened (test.fixme removed), and both routes are tested through the menu/link at 375/768/1280.
-- *Decided under delegation; for user review.*
+- **User acceptance (11:31 MYT):** a Bab is not required at Semakan or Terbitkan; a question without a Bab is not served in Latihan Bab. Admin-facing notes must say that imported questions without a Bab do not appear in Latihan Bab.
+- *Decided under delegation; accepted by the user.*
 
 ## Q16 (DECIDED UNDER DELEGATION 2026-11-02 09:12 MYT by Mandor, best approach; no V2 reference): R1E2E-10, bulk Terbitkan on already-Diterbitkan rows
 - **Decision:** already-Diterbitkan rows in a bulk Terbitkan are an idempotent no-op:
@@ -112,7 +113,7 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
 - **Owner:** A2 (r1/r1e2e10-bulk-publish-noop). The C FE shows skipped[] as info (REQ-A-040). B4 re-runs S2e after the merge.
 - *Decided under delegation; for user review.*
 
-## Q17 (DECIDED UNDER DELEGATION 2026-11-02 10:10 MYT by Mandor, V2 reference): REQ-B-071, is a Bab required at "Hantar untuk Semakan"?
+## Q17 (DECIDED UNDER DELEGATION 2026-11-02 10:10 MYT by Mandor; **ACCEPTED BY THE USER 2026-11-02 11:31 MYT**, relayed by the team B lead, REQ-B-075): REQ-B-071, is a Bab required at "Hantar untuk Semakan"?
 - **Decision: NO.** A Bab (chapter) is not required when submitting to review.
 - **V2 evidence:**
   - In .cloud the Bab is only a tag "untuk penapisan dan pelaporan" (docs/discovery/cloud-student-mechanism.md:338).
