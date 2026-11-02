@@ -572,7 +572,7 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 - **Disk:** check `docker system df` and prune orphaned anonymous test volumes when there are 0 containers. A3 reclaimed 3.4 GB this way.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 08:31 UTC, BASE 7db748ac)
+### Team A open branches: heads from origin (auto, 2026-11-02 08:42 UTC, BASE 7db748ac)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -584,7 +584,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/reqb074-takedown-lows | 33b0a0b1c | SUPERSEDED: 45a75f68 merged as BASE-195; the later commit 33b0a0b1 carried the Q18 rule, which the user overrode (REQ-B-077). Do not merge 33b0a0b1. Follow-ups: r1/reqb074-dsg-spec-fix, then r1/reqb076-live-takedown (A1b) |
 | r1/reqb076-approve-gate | d23b43f3b | AFTER RELEASE (owner decision B1 cycle 63: R1 code = BASE-205; docs only until release). @d23b43f3, A4 Approve, clean on BASE-205; REQ-A-051. R1 known limit: re-approve of a taken-down source |
 | r1/reqb079-sweepuser-followup | 0964edaee | R2 CANDIDATE, not for R1 (A3, @0964edae from BASE-205: sweepUser try/catch + logger.warn so one dead sitting no longer 404s the pupil's whole history; override audit-detail asserts; a Terbit null-blueprint /review test; exam-builder + bijak-attempts 667/667; tsc 0). KIV 55 |
-| r1/reqb082-docs | 996f77a5b | READY (A3, @996f77a5 = docs only, a fast-forward on BASE-207; answers REQ-B-082/083/085/087: 0105 check-first everywhere; owner decision block REQ-B-086; G6 sign-off row 6.7; checklist = runbook; W1 lookup on the migrate role) |
+| r1/reqb082-docs | 996f77a5b | IN-PROGRESS (A3): B2 REQ-B-088 on 996f77a5 = 6/8 closed, Changes requested (M02 rotation NOT yet confirmed → pending owner action + an unchecked sign-off item; frontend CI red = demo bundle check + cancelled E2E (B session), not '6 unit Team C'; checklist order; nota:5; runbook:256). Fix commit to follow |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 
