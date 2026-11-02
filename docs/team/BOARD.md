@@ -572,7 +572,7 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 - **Disk:** check `docker system df` and prune orphaned anonymous test volumes when there are 0 containers. A3 reclaimed 3.4 GB this way.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 05:44 UTC, BASE 550b8819)
+### Team A open branches: heads from origin (auto, 2026-11-02 05:47 UTC, BASE 550b8819)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -585,7 +585,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ready-tiers-check | 9c80f08c3 | KIV R2 (B1 answer to REQ-A-028, 2026-11-02 13:15 MYT: kept on hold for R1; rely on runbook section 0; revisit in R2). Do not merge |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
 | r1/reqb074-takedown-lows | 33b0a0b1c | SUPERSEDED: 45a75f68 merged as BASE-195; the later commit 33b0a0b1 carried the Q18 rule, which the user overrode (REQ-B-077). Do not merge 33b0a0b1. Follow-ups: r1/reqb074-dsg-spec-fix, then r1/reqb076-live-takedown (A1b) |
-| r1/reqb076-live-takedown | c8965bb89 | IN-PROGRESS (A1b): A4 pre-review on c8965bb8 = REQUEST CHANGES (read-path predicate half applied: overview card ≠ lane ≠ report; live hydrate paths (revision, chapter repeat, listing, visibleSets, games/missions…) still serve). Lead redesign: an approve gate refuses approving a version whose source has takedown_at (single/bulk/filter/create-as-approved/import; no override in R1); read-path predicates reverted. New head to follow; do not review c8965bb8 |
+| r1/reqb076-approve-gate | 875ef5f83 | IN-REVIEW-A (A1b, @875ef5f8 = 1 commit on BASE-197; REQ-B-076 redesign: GATES.approve refuses a version whose source has takedown_at (single, bulk/filter failed[], create-as-approved, gate-check); [PROPOSED] BM 'Sumber soalan ini telah ditarik balik, jadi soalan tidak boleh diterbitkan.' (copy table row 41); no override in R1; no contract change). Spec 4/4 over HTTP; questions + questions-workflow + intake-workflow 1244/0; mutation red; tsc/eslint/contract ok. A4 pre-review pending |
+| r1/reqb076-live-takedown | c8965bb89 | SUPERSEDED by r1/reqb076-approve-gate (A4 request changes on c8965bb8). Do not merge |
 | r1/reqb079-t34-t36-minors | 52345db7c | IN-PROGRESS (A3): A4 pre-review on 52345db7 = APPROVE WITH MINORS (0 B/M; exam-builder 461, bijak-attempts 204, bijak-papers 116; mutations red; clean on BASE-197). The minor is being fixed now: sweepUser has no try/catch, so one dead sitting makes the pupil's whole history 404; plus the test nits. New head to follow |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
