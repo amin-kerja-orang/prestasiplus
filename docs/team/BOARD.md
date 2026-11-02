@@ -547,11 +547,11 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 | # | Item | Owner | Status |
 |---|---|---|---|
 | 1 | G5: B4 E2E re-run on the final base (last graded BASE-137: S2a, S2e, S3e failed) | B4 | OPEN: re-run after REQ-B-071 lands |
-| 2 | REQ-B-071 / Q17 (S2a, S3e: Bab gate) | A2 (r1/reqb071-bab-submit), A3 (chain specs ee9474e0) | IN PROGRESS |
-| 3 | R1E2E-10 (S2e): 5990fb6b in base (BASE-155); delta fe228f56 READY | B1/B2 | MERGE OWED |
-| 4 | REQ-A-024f remaining heads (18, all clean on BASE-175) + ha18-minors (REQ-A-042 URGENT) | B1/B2 | MERGE OWED |
-| 5 | REQ-B-074 (takedown Lows) | A1b, then A4 pre-review + B security | IN PROGRESS |
-| 6 | REQ-B-067 (CI guard) security-engineer + DevOps review | B | REVIEW OWED |
+| 2 | REQ-B-071 / Q17 (S2a, S3e: Bab gate) | A2 4e38af8e + A3 chain specs d22af990 (contains both; B1 merges d22af990) | A4 pre-review running; then B2 |
+| 3 | R1E2E-10 (S2e): 5990fb6b (BASE-155) + delta fe228f56 (BASE-178) | B1/B2 | **MERGED** |
+| 4 | REQ-A-024f heads + ha18-minors | B1/B2 | **MERGED** (BASE-176..189: ha18-minors 179, publish-lock-share 177, and the rest); left: partial-acs, minors-kbat, ha24/ha26/ac-gaps docs deltas |
+| 5 | REQ-B-074 (takedown Lows) | A1b @45a75f68 | READY; A4 pre-review done; **B security-engineer owed** |
+| 6 | REQ-B-067 (CI guard) | B | **MERGED** (BASE-176) |
 | 7 | UAT runbook SELECTs (R1-11.4, R1-12.6) on UAT/production | Ops (B DevOps) | OWED (deploy-time) |
 | 8 | OCR provider AC-R1-14.2 (ships OCR_ENGINE=none, AI_PROVIDER=mock) | **USER** (accept-as-mock or defer) | DECISION OWED (not decidable under delegation if it touches deploy/secrets) |
 | 9 | User acceptance of the 5 known limits (checklist gate 4.6) | **USER** | OWED |
@@ -563,27 +563,29 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 **Done:** final R1 QA chain run all green (answers-A, A4, 10:52 MYT); 0 code conflicts across all READY heads on BASE-175; Q12a/Q13/Q14 decided by the user.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 03:29 UTC, BASE 1216dbe7)
+### Team A open branches: heads from origin (auto, 2026-11-02 03:32 UTC, BASE 1216dbe7)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
-| r1/ac-gaps-a1b | 3f9072c29 | READY (multi, @3f9072c2; c2b93710 MERGED as BASE-163 4218bee3) → B delta c2b93710..3f9072c2 (+4a3474f9 Q17 comment, runbook BASE-154, Q17 notes); B4/B2 |
+| r1/ac-gaps-a1b | 991879caf | READY (multi, @3f9072c2; c2b93710 MERGED as BASE-163 4218bee3) → B delta c2b93710..3f9072c2 (+4a3474f9 Q17 comment, runbook BASE-154, Q17 notes); B4/B2 |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
-| r1/ha24-release-input | 55227da7e | READY (A3 docs, @55227da7; c0f7a45d in BASE-145 → B delta c0f7a45d..55227da7: DO/non-DO, KIV 39, Q17 Semakan/Terbitkan notes (Terbitkan copy [PENDING A2]), BASE-148..154 merged); B1/B2 |
-| r1/ha26-team-a-state | 84501e1ac | READY (A3 docs, @84501e1a; 21360a86 MERGED as BASE-162 b2251dc4) → B delta 21360a86..84501e1a (BASE-154 refresh); B1/B2 |
+| r1/ha24-release-input | 322b9a61e | READY (A3 docs, @322b9a61; A3 report pending); B delta over BASE-145 |
+| r1/ha26-team-a-state | 9027ff7a0 | READY (A3 docs, @9027ff7a; A3 report pending); B delta over BASE-162 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/minors-kbat-chain-a3 | a253b3bf3 | READY-AFTER-FIX (A3, @a253b3bf restacked on T48 10c62437): exam-builder 416/417 RED: builder-review "stays outside D93" (same as REQ-B-069; likely pool page cap ?pageSize=100 vs 106 units). Fixed by r1/t31-pool-lookup-fixture merged after T31 (no cascade needed); merge after t31-pool-lookup-fixture |
 | r1/partial-acs-a3 | e6ceece19 | READY-AFTER-FIX (A3, @e6ceece1 restacked on T48 10c62437): exam-builder 416/417 RED: builder-review "stays outside D93" (same as REQ-B-069; likely pool page cap ?pageSize=100 vs 106 units). Fixed by r1/t31-pool-lookup-fixture merged after T31 (no cascade needed); merge after t31-pool-lookup-fixture |
 | r1/ready-tiers-check | 9c80f08c3 | ON HOLD (A2, @9c80f08c, contains BASE-107): code correct + Minors fixed (exact 503 body, WARN once per state change, INFO on recovery; mutations red); waits for B DevOps (REQ-A-028: CI seed step + first-install deploy ordering) |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
-| r1/reqb071-bab-submit | 4e38af8e6 | CR (A2, @4e38af8e, 2 commits on BASE-151; REQ-B-071 / Q17): no Bab at submit/approve/Terbitkan/create-as-approved; DSKP (AC-03.2) kept; dskp_code-only Bab derivation; A4 pre-review running; A3 chain specs to merge |
-| r1/reqb071-chain-specs-a3 | ee9474e09 | WIP (A3, @ee9474e0; test only; red until A2 r1/reqb071-bab-submit): chain 3a Semakan without a Bab, 3b no node refused, 3 approved chapter null + Latihan Bab no_chapter, 3c dskp_code-derived Bab; target 13/13 + 3 mutations; NOT for merge |
+| r1/reqb071-bab-submit | 4e38af8e6 | READY-PENDING-PREREVIEW (A2, @4e38af8e; "CR" = in team A code review by A4, NOT changes requested). Clean vs BASE-189 except DEV doc keep-both. Contained in r1/reqb071-chain-specs-a3 d22af990 |
+| r1/reqb071-chain-specs-a3 | d22af9904 | READY-PENDING (A3, @d22af990 = chain specs + merge of reqb071-bab-submit 4e38af8e: **B1 merges THIS head, which brings both**; clean vs BASE-189 except DEV doc; A3 counts + A4 pre-review pending) |
 | r1/reqb074-takedown-lows | 45a75f68c | READY (A1b, @45a75f68 = ae78bf82 + A4 review fixes: deviation row matches code (any sitting keeps pictures, as paperHeld), comments, composite.ts required; 832 pass, tsc 0). A4 pre-review: code sound, 0 B; Major was doc-only (now fixed). **Needs B security-engineer** (image access); DEV doc keep-both; B2 |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 
 **Merged content, origin head has only base-merge commits since (no new work):** r1/a4chain-minors 86dd7ad67, r1/ha15-blueprint-evidence 7e5d637e5, r1/reqb032-pinned-rule 167986eff, r1/t44-blueprint-fields 072d8f4b4, r1/t48-builder-parity 10c624376
+
+**Origin head moved since last record (re-triage):** r1/ac-gaps-a1b: status says @3f9072c2, origin is 991879caf
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
