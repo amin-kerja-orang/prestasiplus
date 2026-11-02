@@ -92,6 +92,8 @@ import { BijakBuilderPorts, type BuilderGroupInfo, type BuilderQuestionInfo, typ
 
 type Info = ReadonlyMap<string, BuilderQuestionInfo>
 
+/** Terbit waits on the question rows of a concurrent edit or delete (FOR SHARE) and reads the bank inside: more than Prisma's 5 s default (else a P2028 is a 500). */
+const PUBLISH_TX = { timeout: 20_000, maxWait: 10_000 } as const
 const MAX_KERTAS = 32767
 
 /** The suffix the auto title carries while the paper is a Draf. Terbit drops it from an auto title and from nothing else. */
@@ -667,19 +669,21 @@ export class BuilderService {
     } catch (e) {
       bodyError = e
     }
-    // The servability batch reads the whole bank for the placed questions: it is done BEFORE the transaction takes the paper lock (a slow read must
-    // not hold the lock of the 5 s transaction). Inside, the placed set is compared with the locked paper and re-read only if it moved.
-    const early = id === null ? null : await this.repo.findPilihan(id)
-    const earlyIds = this.placedIdsOf(early)
-    const earlyReads = bodyError === undefined ? await this.safeReports(earlyIds) : { reports: new Map<string, ServabilityReport>(), unreadable: [] as string[] }
     return this.prisma.transaction(async () => {
       const paper = await this.lockedPaper(id)
       // The body is optional (no body = the plain Terbit); a bad body is 422 only after the paper is known to exist.
       if (bodyError !== undefined || request === undefined) throw bodyError
+      // R1 publish-lock-share: a hard delete of a placed question takes the question row FOR UPDATE and then asks whether a held paper places it.
+      // The FOR SHARE lock makes it wait for this Terbit and then refuse (409 served). A delete that committed first leaves the question out of
+      // the pool, which `evaluate` reports as UNKNOWN_QUESTION (the paper is refused). The servability reads are taken AFTER the lock, so an image
+      // or rights hold that changed while the lock was awaited is seen (the transaction has the 20 s TX budget for that read).
+      // The bank and servability reads below now run while this transaction holds the paper FOR UPDATE and the placed questions FOR SHARE, so an edit
+      // of a placed question waits for them (bounded by PUBLISH_TX).
+      const placedNow = this.placedIdsOf(paper)
+      await this.repo.lockQuestionsShared(placedNow.map((x) => BigInt(x)))
       const ev = await this.evaluate(paper)
       const structural = await this.structuralCheck(paper, ev)
-      const placedNow = this.placedIdsOf(paper)
-      const { reports, unreadable } = placedNow.length === earlyIds.length && placedNow.every((x, i) => x === earlyIds[i]) ? earlyReads : await this.safeReports(placedNow)
+      const { reports, unreadable } = await this.safeReports(placedNow)
       // ONE rule for the review and for publish: `collectBlockers` (hard = the paper's own checks incl. D93 groups, a question missing from the
       // pool, a question pupils cannot be served; overridable = the Kontrak line, which a paper that is already Terbit keeps (overridden), plus the structural blueprint lines).
       const blockers = this.collectBlockers(paper, ev, structural, reports, unreadable, await this.referenceImageBlockers(paper))
@@ -732,7 +736,7 @@ export class BuilderService {
         return { ok: true, errors: [], overridden: overridable, ...review }
       }
       return { ok: true, errors: [], ...review }
-    })
+    }, PUBLISH_TX)
   }
 
   // --- R1-B09a: structure, standard check ---------------------------------------------------------
