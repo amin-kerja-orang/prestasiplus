@@ -10253,8 +10253,8 @@
           "instruction": {
             "type": "string",
             "minLength": 1,
-            "description": "Authored instruction, else \"Jawab semua soalan.\" (rule all) or \"Jawab {n} daripada {count} soalan.\" (rule choose).",
-            "example": "Jawab 1 daripada 2 soalan."
+            "description": "Authored instruction, else \"Jawab semua soalan.\" (rule all) or \"Jawab {n} soalan sahaja.\" (rule choose).",
+            "example": "Jawab 1 soalan sahaja."
           },
           "questionCount": {
             "type": "integer",
@@ -64358,7 +64358,7 @@
           },
           "instruction": {
             "type": "string",
-            "description": "Authored instruction, else the derived line (\"Jawab semua soalan.\" or \"Jawab N daripada M soalan.\"); never empty in the mock view."
+            "description": "Authored instruction, else the derived line (\"Jawab semua soalan.\" or \"Jawab N soalan sahaja.\"); never empty in the mock view."
           },
           "rule": {
             "$ref": "#/components/schemas/BijakBuilderSectionRule"
@@ -65510,7 +65510,7 @@
           "instruction": {
             "type": "string",
             "maxLength": 500,
-            "description": "Authored instruction. Default: absent, and the view derives \"Jawab semua soalan.\" or \"Jawab N daripada M soalan.\"."
+            "description": "Authored instruction. Default: absent, and the view derives \"Jawab semua soalan.\" or \"Jawab N soalan sahaja.\"."
           },
           "rule": {
             "$ref": "#/components/schemas/BijakBuilderSectionRule"
@@ -82263,7 +82263,7 @@
           "bijak-papers"
         ],
         "summary": "Paper cover: instructions, reference sheet, sections, marks and duration",
-        "description": "Mock method getCover(userId, paperId). A curated paper resolves for any permitted caller; a generated paper (kind jana) only for its creator. Section instruction defaults to \"Jawab semua soalan.\" or \"Jawab {n} daripada {count} soalan.\". Student role (admin and school_admin only inside Mod Pelajar, where the session acts as a student). No answer key, mark scheme, accepted equivalent, explanation or question id is ever returned (US-15).",
+        "description": "Mock method getCover(userId, paperId). A curated paper resolves for any permitted caller; a generated paper (kind jana) only for its creator. Section instruction defaults to \"Jawab semua soalan.\" or \"Jawab {n} soalan sahaja.\". Student role (admin and school_admin only inside Mod Pelajar, where the session acts as a student). No answer key, mark scheme, accepted equivalent, explanation or question id is ever returned (US-15).",
         "parameters": [
           {
             "schema": {
