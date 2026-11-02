@@ -530,7 +530,7 @@ The B4 pack chain was walked by HTTP on SN/2 (4541/2): **96 MATCH, 1 scanner fal
 - Low bug, fixed under D9: "(draf)" stays in published titles → r1/publish-title-draft (A2).
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 00:38 UTC, BASE 0f7269f0)
+### Team A open branches: heads from origin (auto, 2026-11-02 00:40 UTC, BASE 0f7269f0)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
@@ -550,8 +550,8 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha17-ac-coverage | 157b371c3 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b; head 157b371c |
 | r1/ha18-gate-facts | f988b670f | READY — B2 c23 APPROVED @a9ffe246 (AwM; B3 c45 Pass). **B1: merge a9ffe246 as a PAIR with reqb052 f3a2448f** (reqb052 carries the pinned-version-rule chapter fix; a9ffe246 alone turns BASE test/r1 red). Origin head f988b670 = + minors (0105 comment, not_duplicate idempotent, duplicateId) → follow-up r1/ha18-minors for B2 delta |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
-| r1/ha24-release-input | 33739c36a | READY (A3 docs, @91e3de0e: checklist to BASE-120+, KIV 36 rows incl. REQ-B-059 cap and setGroupLabel label-only; REQ-B-066 release-input:27 + A5 PKSK KIV row pending in docs agent); A1a pre-review Approve on KIV rows 35/36 (note: row 36 cites T48 6c5ae3a8 lines not in BASE); B1/B2 |
-| r1/ha26-team-a-state | 37c79de67 | READY (A3 docs, @37c79de6: merged list BASE-110..124, pending trimmed, KIV 36 @ha24 fdfaa810); B1 |
+| r1/ha24-release-input | 33739c36a | READY (A3 docs, @33739c36: on BASE-131; release-input 0104–0110 reservations (REQ-B-066); KIV 37 rows incl. PKSK; checklist to BASE-120+, KIV 36 rows incl. REQ-B-059 cap and setGroupLabel label-only; ); A1a pre-review Approve on KIV rows 35/36 (note: row 36 cites T48 6c5ae3a8 lines not in BASE); B1/B2 |
+| r1/ha26-team-a-state | d1a639c97 | READY (A3 docs, @d1a639c9: merged to BASE-131, coverage 132, d90 text); refresh with new heads + §4 pending; B1 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-followup | 2fe252aba | READY (A2, @2fe252ab on intake-reqs 8c1964a6): unknownSp required, FACTS in unit.spec, deviations row 244 names spNotInTaxonomy; 43/43, tsc 0; merge AFTER intake-reqs (deviations conflict: keep both); B2 small | A1b pre-review: CLEAN (CurriculumFacts internal; both producers always set unknownSp; tsc 0; 43/43) |
 | r1/minors-chain-tip-a3 | 41c22c969 | READY (A3, @41c22c96 on BASE-128): (a) dead reasons.length guard removed in approval-check (A1b Approve on 666102d0); (b) every servability-overview read goes through the limiter (4), max-in-flight spy spec, per A4 reading; closes B2 c20 Minors; B2 |
@@ -595,8 +595,6 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t51-partial-acs-a3 | 61c1b077f | READY — B2 c23 APPROVED @61c1b077 (AwM); merge after T48, T31, REQ-A-008, T43 |
 
 **Merged content, origin head has only base-merge commits since (no new work):** r1/a4chain-minors 86dd7ad67, r1/ha15-blueprint-evidence 7e5d637e5, r1/overview-getmany-parallel 2809a87fe, r1/reqb032-pinned-rule 167986eff, r1/t44-blueprint-fields 072d8f4b4
-
-**Origin head moved since last record (re-triage):** r1/ha24-release-input: status says @91e3de0e, origin is 33739c36a
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
