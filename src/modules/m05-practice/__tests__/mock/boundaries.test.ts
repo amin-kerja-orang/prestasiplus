@@ -1,5 +1,5 @@
 /**
- * M05-T1 boundary cases (G4 follow-up): BR-16 unlock at the 70 % bar, BR-14 / XL-19 eligibility,
+ * M05-T1 boundary cases (G4 follow-up): no chapter lock (D98), BR-14 / XL-19 eligibility,
  * BR-18 "Selepas", BR-19 window edge, the Monday–Sunday week (MYT) and BR-29 recent questions.
  * These tests write (hooks, `questions.deactivate`), so they own a runtime and use accounts the
  * other test files do not touch (3, 5, 6, 7, 9 and 10).
@@ -49,9 +49,9 @@ const pick = (n: number) =>
     .practiceQuery({ subjectId: 3, educationLevelIds: [1], limit: n, seed: 'boundaries' })
     .map((q) => q.id)
 
-describe('BR-16: the chapter unlock bar is a score of 70 %', () => {
+describe('D98: no chapter lock whatever the score of the previous chapter', () => {
   // D72: practice offers T4 / T5, but every chapter question of the dataset is Darjah (stored, hidden): the
-  // unlock engine is exercised on that data with the Darjah levels offered.
+  // chapter list is exercised on that data with the Darjah levels offered.
   beforeEach(() => {
     useOfferedLevels([1, 2, 3, 4])
   })
@@ -60,21 +60,21 @@ describe('BR-16: the chapter unlock bar is a score of 70 %', () => {
   })
 
   // BM D1 Bab 1 (chapter 35) has 320 questions: 224 correct is exactly 70.0 %, 223 is 69.7 %.
-  it('exactly 70.0 % (224 of 320) opens the next chapter', async () => {
+  it('exactly 70.0 % (224 of 320) leaves the next chapter open', async () => {
     expect(answerChapter(PELAJAR2, 35, { correctPct: 70 })).toEqual({ answered: 320, correct: 224 })
     const c = await data<ChapterSubjectDetail>(PELAJAR2, '/api/practice/chapter-subjects/BM')
     expect(c.chapters[0]).toMatchObject({ complete: true, scorePct: 70, state: 'open' })
     expect(c.chapters[1]?.state).toBe('open')
   }, 60_000)
 
-  it('69.7 % (223 of 320) keeps it locked', async () => {
+  it('69.7 % (223 of 320) leaves the next chapter open too', async () => {
     expect(answerChapter(GURU, 35, { correctPct: 69.6875 })).toEqual({
       answered: 320,
       correct: 223,
     })
     const c = await data<ChapterSubjectDetail>(GURU, '/api/practice/chapter-subjects/BM')
     expect(c.chapters[0]).toMatchObject({ complete: true, scorePct: 69.7 })
-    expect(c.chapters[1]?.state).toBe('locked')
+    expect(c.chapters[1]?.state).toBe('open')
   }, 60_000)
 })
 

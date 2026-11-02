@@ -158,6 +158,7 @@ describe('an admin-created approved T4 MCQ appears in Databank, Latih Tubi SPM a
         explanation: 'Penjelasan ujian T05.',
         cognitiveLevel: 'mengaplikasi', // R1-B05: a NEW approval of an SPM-bound question needs a level per leaf and the kertas
         kertas: '1',
+        curriculumChapterId: (await t.db.query<{ id: string }>(`select id::text id from chapters where subject_id = $1::bigint and education_level_id = $2::bigint order by id limit 1`, [id, t4]))[0]?.id,
         tag: { ...(seeded?.unit_node_id ? { unitId: seeded.unit_node_id } : {}), spIds: sp ? [sp] : [], tp: 3 },
       } as never,
       actor,
@@ -221,6 +222,7 @@ describe('one admin-created approved T4 MCQ is served by all five SPM_SERVABLE_S
         explanation: 'Penjelasan ujian T05.',
         cognitiveLevel: 'mengaplikasi',
         kertas: '1',
+        curriculumChapterId: (await m.db.query<{ id: string }>(`select id::text id from chapters where subject_id = $1::bigint and education_level_id = $2::bigint order by id limit 1`, [subject, t4]))[0]?.id,
         tag: { unitId: w.tag.unitId, spIds: [w.tag.spId], tp: 3 },
       } as never,
       actor,

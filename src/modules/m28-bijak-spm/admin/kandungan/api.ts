@@ -19,6 +19,8 @@ export interface LanePage<T> {
   page: number
   pageSize: number
   total: number
+  /** The options of the lane's Subjek filter, from the lane response itself (REQ-C-020 `servabilityLaneListOf`). */
+  subjects: LaneSubject[]
 }
 
 export interface LaneSubject {
@@ -28,7 +30,6 @@ export interface LaneSubject {
 
 export interface KandunganApi {
   overview(): Promise<ServabilityOverview>
-  subjects(): Promise<LaneSubject[]>
   databankLane(q: LaneQuery): Promise<LanePage<ServabilityDatabankRow>>
   paperLane(q: LaneQuery): Promise<LanePage<ServabilityPaperRow>>
 }

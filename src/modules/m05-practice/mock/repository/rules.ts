@@ -72,13 +72,10 @@ export const MAX_SECONDS_PER_QUESTION = 180
 /** BR-09. */
 export const POINTS_PER_CORRECT = 10
 export { MISSION_COINS_PER_CORRECT, sessionCoins } from '../datasets/pins'
-/** BR-16: chapter unlock score. */
-export const UNLOCK_SCORE = 70
 
 /** §8.3 PROPOSED mock messages of the session calls (and the observed S7 fallback). */
 export const MESSAGES = {
   trialExhausted: 'Baki percubaan percuma anda telah habis.',
-  chapterLocked: 'Bab ini masih dikunci.',
   notEnough: 'Soalan tidak mencukupi.',
   revisionFailed: 'Maaf, terdapat masalah memuatkan kuiz ulang kaji.',
   invalidAnswer: 'Jawapan tidak sah.',

@@ -15,11 +15,11 @@ const GURU = 'guru@demo.test'
 
 const tid = (page: Page, id: string) => page.getByTestId(id)
 
-/** Ids of the locked chapter cards on S5. */
-async function lockedChapterIds(page: Page): Promise<string[]> {
+/** Ids of the open chapter cards on S5 (D98: no chapter is locked). */
+async function openChapterIds(page: Page): Promise<string[]> {
   await expect(page.locator('[data-testid^=chapter-card-][data-state=open]').first()).toBeVisible()
   const ids = await page
-    .locator('[data-testid^=chapter-card-][data-state=locked]')
+    .locator('[data-testid^=chapter-card-][data-state=open]')
     .evaluateAll((els) => els.map((e) => e.getAttribute('data-testid') ?? ''))
   return ids.map((x) => x.replace('chapter-card-', ''))
 }
@@ -57,8 +57,8 @@ test.describe('M05 S4 / S5 / Q2 / S6 / S7 smoke', { tag: [TAG.smoke, moduleTag(5
       await expect(tid(page, 'shell-user-subtitle')).toHaveText('Matematik')
       await expect(tid(page, 'chapter-subject-name')).toHaveText('Matematik')
       await expect(tid(page, 'chapter-level-select').locator('option')).toHaveCount(4)
-      await expect(tid(page, 'chapter-list').locator('[data-state=open]')).toHaveCount(1)
-      await expect(tid(page, 'chapter-list').locator('[data-state=locked]').first()).toBeVisible()
+      await expect(tid(page, 'chapter-list').locator('[data-state=locked]')).toHaveCount(0)
+      await expect(tid(page, 'chapter-list').locator('[data-state=open]').first()).toBeVisible()
       await expectNoHorizontalScroll(page)
     })
   }
@@ -74,14 +74,14 @@ test.describe('M05 S4 / S5 / Q2 / S6 / S7 smoke', { tag: [TAG.smoke, moduleTag(5
     await expectNoHorizontalScroll(page)
   })
 
-  test('a locked chapter answers 409 and returns to S5 of its level without a message', async ({
+  test('the second chapter starts a session without completing the first (D98, no chapter lock)', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
     await loginAs(PELAJAR)
     await gotoApp('/practice/chapter/MATH')
-    const lockedId = (await lockedChapterIds(page))[0] ?? ''
+    const secondId = (await openChapterIds(page))[1] ?? ''
     // In-app navigation (no second boot): the router is the app's own.
     await page.evaluate((path) => {
       const el = document.querySelector('#app') as Element & {
@@ -90,10 +90,9 @@ test.describe('M05 S4 / S5 / Q2 / S6 / S7 smoke', { tag: [TAG.smoke, moduleTag(5
         }
       }
       void el.__vue_app__.config.globalProperties.$router.push(path)
-    }, `/practice/chapter/MATH/${lockedId}/quiz?count=5`)
-    await expect(page).toHaveURL(/\/practice\/chapter\/MATH\?level=1$/)
-    await expect(tid(page, 'chapter-list')).toBeVisible()
-    await expect(page.getByTestId('quiz-runner')).toHaveCount(0)
+    }, `/practice/chapter/MATH/${secondId}/quiz?count=5`)
+    await expect(page).toHaveURL(/\/practice\/chapter\/MATH\/\d+\/quiz\?count=5$/)
+    await expect(page.getByTestId('quiz-runner')).toBeVisible()
   })
 
   test('S6 lists the wrong-answer subjects and S7 opens from a card', async ({

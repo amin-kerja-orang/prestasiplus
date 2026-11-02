@@ -3,11 +3,10 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { bootWorkflowApp, expectError, loginAll, type Client, type WorkflowTestApp } from './helpers'
 
-const GATE_RIGHTS = 'Sila isi pengisytiharan hak cipta (bukan "belum jelas").'
 
 /**
  * R1-T33 / B3 (BE-09 bulk approve): `POST /questions/bulk-action` with `approved`, and a question created already approved, run the SAME
- * merged approve gate as `POST /questions/:id/status` (rights, DSKP-complete, tag, keys). Failures are per-row `failed` entries; the rest go through.
+ * merged approve gate as `POST /questions/:id/status` (DSKP-complete, tag, keys). Failures are per-row `failed` entries; the rest go through.
  */
 describe('bulk approve and create-as-approved run the merged approve gate (real bank)', () => {
   let t: WorkflowTestApp
@@ -52,15 +51,13 @@ describe('bulk approve and create-as-approved run the merged approve gate (real 
   }
   const statusOf = async (id: string) => (await t.db.query<{ status: string }>(`select status from question_versions where question_id = $1::bigint`, [id]))[0]!.status
 
-  it('an unclear-rights question is refused with the BM rights message; a valid one in the same batch passes', async () => {
-    const [bad, good] = [await review(), await review()] as [string, string]
-    await t.db.query(`update question_versions set rights_status = 'unclear' where question_id = $1::bigint`, [bad])
-    const out = await bulk([bad, good])
-    expect(out.affected).toBe(1)
-    expect(out.failed).toHaveLength(1)
-    expect(out.failed[0]).toMatchObject({ id: bad, code: 'VALIDATION_ERROR', fields: { rightsStatus: GATE_RIGHTS } })
-    expect(out.failed[0]!.message).toContain(GATE_RIGHTS)
-    expect(await statusOf(bad)).toBe('review')
+  it('D99: an unclear-rights question is NOT held back (V2 has no per-question rights gate); a DSKP-incomplete one in the same batch still is, per row', async () => {
+    const [unclear, good] = [await review(), await review()] as [string, string]
+    await t.db.query(`update question_versions set rights_status = 'unclear' where question_id = $1::bigint`, [unclear])
+    const out = await bulk([unclear, good])
+    expect(out.affected).toBe(2)
+    expect(out.failed).toEqual([])
+    expect(await statusOf(unclear)).toBe('approved')
     expect(await statusOf(good)).toBe('approved')
   })
 

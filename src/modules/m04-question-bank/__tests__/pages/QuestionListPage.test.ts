@@ -15,8 +15,13 @@ const questions = vi.hoisted(() => ({
   fetchQuestionSummary: vi.fn(),
   deleteQuestion: vi.fn(),
   bulkQuestionAction: vi.fn(),
+  bulkQuestionsByFilter: vi.fn(),
 }))
-vi.mock('../../api/questions', () => questions)
+// `buildBulkFilter` and the types stay real.
+vi.mock('../../api/questions', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../api/questions')>()),
+  ...questions,
+}))
 const lookups = vi.hoisted(() => ({ fetchSubjects: vi.fn(), fetchEducationLevels: vi.fn() }))
 vi.mock('../../api/lookups', () => lookups)
 
@@ -350,5 +355,144 @@ describe('QuestionListPage (M04 S1)', () => {
     const w = await render()
     const badges = w.findAll("[data-testid=\"question-status\"]").map((b) => b.text())
     expect(badges).toEqual(["Diluluskan", "Menunggu Semakan", "Arkib", "Tidak diketahui"])
+  })
+})
+
+describe('QuestionListPage: Luluskan Hasil Tapisan / Arkib Semua (REQ-A-021)', () => {
+  const RESULT = {
+    matched: 12,
+    eligible: 10,
+    skipped: 2,
+    cap: 500,
+    processed: 0,
+    affected: 0,
+    failed: [],
+    remaining: 10,
+    capped: false,
+    dryRun: true,
+  }
+  const done = (extra: Record<string, unknown> = {}) => ({
+    data: { ...RESULT, processed: 10, affected: 10, remaining: 0, dryRun: false, ...extra },
+    status: 'x',
+  })
+
+  it('"Luluskan Hasil Tapisan" is disabled with the reason when no filter is set; "Arkib Semua" is not', async () => {
+    const w = await render()
+    expect(t(w, 'questions-approve-filter').attributes('disabled')).toBeDefined()
+    expect(t(w, 'questions-approve-filter-hint').text()).toContain('Sila pilih sekurang-kurangnya satu penapis')
+    expect(t(w, 'questions-archive-all').attributes('disabled')).toBeUndefined()
+  })
+
+  it('a whitespace-only search is no filter', async () => {
+    const w = await render('/admin/questions?search=%20%20')
+    expect(t(w, 'questions-approve-filter').attributes('disabled')).toBeDefined()
+  })
+
+  it('dry run, confirm with the count, real call with expectedCount; sends only the non-blank keys', async () => {
+    questions.bulkQuestionsByFilter
+      .mockResolvedValueOnce({ data: RESULT, status: '' })
+      .mockResolvedValueOnce(done())
+    const w = await render('/admin/questions?status=approved&subject_id=1&search=%20&difficulty_level=')
+    await t(w, 'questions-approve-filter').trigger('click')
+    await flushPromises()
+    expect(questions.bulkQuestionsByFilter).toHaveBeenNthCalledWith(
+      1,
+      'approved',
+      { subjectId: '1', status: 'approved' },
+      { dryRun: true },
+    )
+    const message = dialogs.confirmNative.mock.calls[0]?.[0] as string
+    expect(message).toContain('Luluskan SEMUA soalan hasil tapisan ini? Ia akan kelihatan kepada pelajar.')
+    expect(message).toContain('10 daripada 12 soalan sepadan akan diluluskan.')
+    expect(questions.bulkQuestionsByFilter).toHaveBeenNthCalledWith(
+      2,
+      'approved',
+      { subjectId: '1', status: 'approved' },
+      { expectedCount: 12 },
+    )
+    expect(t(w, 'bulk-filter-success').text()).toContain(
+      'Berjaya luluskan 10 soalan (hasil tapisan) — kini kelihatan kepada pelajar.',
+    )
+  })
+
+  it('cancelling the confirm makes no real call', async () => {
+    questions.bulkQuestionsByFilter.mockResolvedValueOnce({ data: RESULT, status: '' })
+    dialogs.confirmNative.mockReturnValue(false)
+    const w = await render('/admin/questions?status=draft')
+    await t(w, 'questions-approve-filter').trigger('click')
+    await flushPromises()
+    expect(questions.bulkQuestionsByFilter).toHaveBeenCalledTimes(1)
+    expect(w.find('[data-testid="bulk-filter-result"]').exists()).toBe(false)
+  })
+
+  it('"Arkib Semua" sends an empty filter whatever the list filter is, and shows the V2 result', async () => {
+    questions.bulkQuestionsByFilter
+      .mockResolvedValueOnce({ data: RESULT, status: '' })
+      .mockResolvedValueOnce(done())
+    const w = await render('/admin/questions?status=draft')
+    await t(w, 'questions-archive-all').trigger('click')
+    await flushPromises()
+    expect(questions.bulkQuestionsByFilter).toHaveBeenNthCalledWith(1, 'archived', {}, { dryRun: true })
+    expect(questions.bulkQuestionsByFilter).toHaveBeenNthCalledWith(2, 'archived', {}, { expectedCount: 12 })
+    expect(dialogs.confirmNative.mock.calls[0]?.[0]).toContain('ARKIB SEMUA soalan?')
+    expect(t(w, 'bulk-filter-success').text()).toContain('Berjaya arkib 10 soalan. Bank pelajar kini kosong')
+  })
+
+  it('lists the refused rows (10 shown, the rest behind "Lihat n lagi") and the notes', async () => {
+    const failed = Array.from({ length: 12 }, (_, i) => ({
+      id: String(100 + i),
+      code: 'VALIDATION_ERROR',
+      message: 'Tag DSKP belum lengkap.',
+      fields: {},
+    }))
+    questions.bulkQuestionsByFilter
+      .mockResolvedValueOnce({ data: RESULT, status: '' })
+      .mockResolvedValueOnce(done({ affected: 8, failed, skipped: 2, remaining: 3 }))
+    const w = await render('/admin/questions?status=pending_review')
+    await t(w, 'questions-approve-filter').trigger('click')
+    await flushPromises()
+    expect(t(w, 'bulk-filter-failed').text()).toContain('12 soalan tidak diluluskan kerana DSKP belum lengkap:')
+    expect(w.findAll('[data-testid="bulk-filter-failed-row"]')).toHaveLength(10)
+    expect(w.text()).toContain('Soalan #100')
+    expect(w.text()).toContain('2 soalan dilangkau')
+    expect(w.text()).toContain('Baki 3 soalan belum diproses')
+    await t(w, 'bulk-filter-failed-more').trigger('click')
+    expect(w.findAll('[data-testid="bulk-filter-failed-row"]')).toHaveLength(12)
+  })
+
+  it('shows the server 422 fields.filter message inline in a role=alert and does not confirm', async () => {
+    const message = 'Penapis yang dipilih tidak mempunyai nilai. Isi nilai penapis, atau buang penapis itu.'
+    questions.bulkQuestionsByFilter.mockRejectedValueOnce(
+      new ApiError({ status: 422, code: 'VALIDATION_ERROR', message, fields: { filter: message } }),
+    )
+    const w = await render('/admin/questions?status=approved')
+    await t(w, 'questions-approve-filter').trigger('click')
+    await flushPromises()
+    const alert = t(w, 'questions-filter-bulk-error')
+    expect(alert.attributes('role')).toBe('alert')
+    expect(alert.text()).toContain(message)
+    expect(dialogs.confirmNative).not.toHaveBeenCalled()
+  })
+
+  it('shows a 422 fields.expectedCount / a 409 message and reloads the list', async () => {
+    const stale = 'Bilangan soalan hasil tapisan telah berubah (dijangka 12, kini 11). Muat semula senarai dan semak semula sebelum meneruskan.'
+    questions.bulkQuestionsByFilter
+      .mockResolvedValueOnce({ data: RESULT, status: '' })
+      .mockRejectedValueOnce(new ApiError({ status: 409, code: 'CONFLICT', message: stale }))
+    const w = await render('/admin/questions?status=approved')
+    const before = questions.fetchQuestions.mock.calls.length
+    await t(w, 'questions-approve-filter').trigger('click')
+    await flushPromises()
+    expect(t(w, 'questions-filter-bulk-error').text()).toContain(stale)
+    expect(questions.fetchQuestions.mock.calls.length).toBeGreaterThan(before)
+  })
+
+  it('says so when nothing is eligible, without a confirm', async () => {
+    questions.bulkQuestionsByFilter.mockResolvedValueOnce({ data: { ...RESULT, eligible: 0 }, status: '' })
+    const w = await render('/admin/questions?status=approved')
+    await t(w, 'questions-approve-filter').trigger('click')
+    await flushPromises()
+    expect(t(w, 'questions-filter-bulk-error').text()).toContain('Tiada soalan hasil tapisan ini yang boleh diluluskan')
+    expect(dialogs.confirmNative).not.toHaveBeenCalled()
   })
 })

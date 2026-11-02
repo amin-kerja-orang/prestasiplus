@@ -52,7 +52,7 @@ import type { BijakQuestionBundle } from '../attempts/ports'
 import type { BijakQuestionInfo } from '../papers/ports'
 import type { QuestionRecord, StimulusGroupRecord, StimulusRecord } from '../../questions/types'
 import { STIMULUS_KINDS, type StimulusKind } from '@pp/exam-core/types'
-import { stimulusTableOf } from '../../questions/stimulus-table'
+import { stimulusTableParts } from '../../questions/stimulus-table'
 import { BRIDGE_REFUSAL_REASONS_MS, type BridgeRefusalCode } from './refusals'
 
 type Leaf = Extract<QuestionPart, { mode: string }>
@@ -353,9 +353,9 @@ function stimulusDefOf(qid: string, s: WideStimulus, media: BridgeMedia): Stimul
       )
     image = { url: fileUrlOf(token) }
   }
-  const table = s.kind === 'table' ? stimulusTableOf(s.tableData, s.bodyMs) : undefined
-  // A table parsed from the body replaces the body text; any other body stays the text.
-  const text = table && !s.tableData ? undefined : s.bodyMs
+  // A table parsed from the body replaces the body text (also beside an unreadable grid); a stored grid never hides it (H-A16).
+  const { table, bodyIsTable } = stimulusTableParts(s.kind, s.tableData, s.bodyMs)
+  const text = bodyIsTable ? undefined : s.bodyMs
   if (!text && !table && !image)
     throw new UnsupportedQuestionError(
       qid,

@@ -10,7 +10,7 @@
  * pupils; tab titles end "| PRESTASIPLUS". R1 is secondary only (D72, D86, Q4: Darjah hidden), so S5
  * offers Tingkatan 4 / 5 only. REQ-B-040 (DV-M04-19): the mock links fictitious Tingkatan 4 / 5 SPM-pool
  * questions to chapters (Matematik 91, 92, 220 at T4 and 228 at T5; Sains 322, 323, 324 at T4 and 362,
- * 363 at T5), so S4 lists Matematik and Sains, S5 lists those chapters (Bab 1 open, the rest locked) and
+ * 363 at T5), so S4 lists Matematik and Sains, S5 lists those chapters (all open, D98 no chapter lock) and
  * Q2 runs on them. The e2e build uses the full data profile, so every chapter has far more than 5 questions.
  */
 
@@ -52,11 +52,11 @@ const columnsOf = (page: Page, testId: string) =>
     (el) => getComputedStyle(el).gridTemplateColumns.split(' ').filter(Boolean).length,
   )
 
-/** Ids of the locked chapter cards on S5, in order. */
-async function lockedIds(page: Page): Promise<string[]> {
+/** Ids of the open chapter cards on S5, in order (D98: there is no locked card). */
+async function openIds(page: Page): Promise<string[]> {
   await expect(page.locator('[data-testid^=chapter-card-][data-state=open]').first()).toBeVisible()
   const ids = await page
-    .locator('[data-testid^=chapter-card-][data-state=locked]')
+    .locator('[data-testid^=chapter-card-][data-state=open]')
     .evaluateAll((els) => els.map((e) => e.getAttribute('data-testid') ?? ''))
   return ids.map((x) => x.replace('chapter-card-', ''))
 }
@@ -151,7 +151,7 @@ test.describe('M05 S4 chapter subjects', { tag: [moduleTag(5)] }, () => {
 test.describe('M05 S5 chapter list', { tag: [moduleTag(5)] }, () => {
   test.use({ mockInit: { latency: 0 } })
 
-  test('Matematik as pelajar2: hero, Tingkatan 4/5 level options, Bab 1 open and the others locked', async ({
+  test('Matematik as pelajar2: hero, Tingkatan 4/5 level options, every chapter open (D98)', async ({
     page,
     loginAs,
     gotoApp,
@@ -175,29 +175,29 @@ test.describe('M05 S5 chapter list', { tag: [moduleTag(5)] }, () => {
     ])
     await page.keyboard.press('Escape')
 
-    // REQ-B-040: three linked chapters at T4; Bab 1 is open, the next two are locked (BR-16).
+    // REQ-B-040: three linked chapters at T4; D98 (follow V2): no chapter lock, all three are open.
     await expect(page.locator('[data-testid^=chapter-card-]')).toHaveCount(3)
     await expect(tid(page, 'chapter-card-91')).toHaveAttribute('data-state', 'open')
-    await expect(tid(page, 'chapter-card-92')).toHaveAttribute('data-state', 'locked')
-    await expect(tid(page, 'chapter-card-220')).toHaveAttribute('data-state', 'locked')
+    await expect(tid(page, 'chapter-card-92')).toHaveAttribute('data-state', 'open')
+    await expect(tid(page, 'chapter-card-220')).toHaveAttribute('data-state', 'open')
     await expect(tid(page, 'chapter-empty')).toHaveCount(0)
-    // UX-67: "Progressive Unlock" and the 70% rule show while a chapter is locked.
-    await expect(tid(page, 'chapter-subject-hero')).toContainText('Progressive Unlock')
-    await expect(tid(page, 'chapter-unlock-rule')).toBeVisible()
+    // D98: V2 has no "Progressive Unlock" heading and no 70% rule.
+    await expect(tid(page, 'chapter-subject-hero')).not.toContainText('Progressive Unlock')
+    await expect(tid(page, 'chapter-unlock-rule')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
 
     await select.click()
     await page.getByRole('option', { name: /^Tingkatan 5 — \d+ soalan$/ }).click()
     await expect(page).toHaveURL(/\/practice\/chapter\/MATH\?level=11$/)
     await expect(select).toHaveText(/^Tingkatan 5 — \d+ soalan$/)
-    // One linked chapter at T5: open, nothing locked, so no unlock rule.
+    // One linked chapter at T5: open, no unlock rule.
     await expect(page.locator('[data-testid^=chapter-card-]')).toHaveCount(1)
     await expect(tid(page, 'chapter-card-228')).toHaveAttribute('data-state', 'open')
     await expect(tid(page, 'chapter-unlock-rule')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
   })
 
-  test('a pupil with no answers sees 0 answered on the open and locked cards (pelajar2 Matematik)', async ({
+  test('a pupil with no answers sees 0 answered on every chapter card (pelajar2 Matematik)', async ({
     page,
     loginAs,
     gotoApp,
@@ -210,21 +210,21 @@ test.describe('M05 S5 chapter list', { tag: [moduleTag(5)] }, () => {
       await expect(tid(page, `chapter-stats-${id}`)).toHaveText(stats)
     }
     await expect(tid(page, 'chapter-bar-91')).toHaveAttribute('aria-label', 'Kemajuan bab 0%')
-    expect(await lockedIds(page)).toEqual(['92', '220'])
+    expect(await openIds(page)).toEqual(['91', '92', '220'])
   })
 
-  test('admin Sains: Bab 1 open, Bab 2 and 3 locked; Bahasa Melayu has no chapter question', async ({
+  test('admin Sains: Bab 1 to 3 all open; Bahasa Melayu has no chapter question', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/practice/chapter/SCI')
-    await expect(page.locator('[data-testid^=chapter-card-][data-state=open]')).toHaveCount(1)
+    await expect(page.locator('[data-testid^=chapter-card-][data-state=open]')).toHaveCount(3)
     await expect(tid(page, 'chapter-card-322')).toHaveAttribute('data-state', 'open')
     await expect(tid(page, 'chapter-card-322').getByRole('heading')).toContainText('Bab 1:')
-    await expect(tid(page, 'chapter-card-323')).toHaveAttribute('data-state', 'locked')
-    await expect(tid(page, 'chapter-card-324')).toHaveAttribute('data-state', 'locked')
+    await expect(tid(page, 'chapter-card-323')).toHaveAttribute('data-state', 'open')
+    await expect(tid(page, 'chapter-card-324')).toHaveAttribute('data-state', 'open')
     await gotoApp('/practice/chapter/BM')
     await expect(tid(page, 'chapter-empty')).toHaveText(NO_CHAPTER)
   })
@@ -314,35 +314,31 @@ test.describe('M05 Q2 chapter quiz', { tag: [moduleTag(5)] }, () => {
   )
 
   test(
-    'a locked chapter goes back to S5 without a session',
-    provisional('LS-3: the unlock after a completed chapter was never observed on live'),
+    'Bab 2 starts a session without completing Bab 1 (D98, no chapter lock)',
     async ({ page, loginAs, gotoApp, mock }) => {
       await loginAs(PELAJAR2)
-      // A locked chapter (Bab 2): no session, back to S5 of its level (FR-M05-66).
       await gotoApp('/practice/chapter/MATH/92/quiz?count=5')
-      await expect(page).toHaveURL(/\/practice\/chapter\/MATH\?level=10$/)
+      await expect(page.getByTestId('quiz-runner')).toBeVisible()
       const posts = (await mock.requests('/api/practice/sessions')).filter(
         (r) => r.method === 'POST',
       )
-      expect(posts.map((p) => p.status)).toEqual([409])
-      await expect(page.getByTestId('quiz-runner')).toHaveCount(0)
-      await expect(tid(page, 'chapter-card-92')).toHaveAttribute('data-state', 'locked')
+      expect(posts.map((p) => p.status)).toEqual([201])
+      await expect(page).toHaveURL(/\/practice\/chapter\/MATH\/92\/quiz/)
     },
   )
 
   test(
-    'completing a chapter with 90 % opens the next one',
-    provisional('LS-3: the unlock after a completed chapter was never observed on live'),
+    'completing a chapter with 90 % leaves every chapter open (D98)',
     async ({ page, loginAs, gotoApp, mock }) => {
       await loginAs(PELAJAR2)
       await gotoApp('/practice/chapter/MATH')
-      await expect(tid(page, 'chapter-card-92')).toHaveAttribute('data-state', 'locked')
+      await expect(tid(page, 'chapter-card-92')).toHaveAttribute('data-state', 'open')
       // pelajar2 is user 3; MATH chapter 91 is Bab 1.
       await mock.hook('answerChapter', 3, 91, { correctPct: 90 })
       await gotoApp('/practice/chapter/MATH')
       await expect(tid(page, 'chapter-card-91')).toHaveAttribute('data-state', 'open')
       await expect(tid(page, 'chapter-card-92')).toHaveAttribute('data-state', 'open')
-      await expect(tid(page, 'chapter-card-220')).toHaveAttribute('data-state', 'locked')
+      await expect(tid(page, 'chapter-card-220')).toHaveAttribute('data-state', 'open')
     },
   )
 

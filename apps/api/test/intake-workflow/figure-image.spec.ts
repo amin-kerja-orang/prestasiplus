@@ -102,7 +102,8 @@ describe('a cropped figure becomes a question_image on the accepted stimulus (AC
   })
 
   it('the reviewer-only crop is never readable by a pupil, even after the question is approved', async () => {
-    // Draf -> Semakan -> Terbit (ADR-0027: approved = servable).
+    // Draf -> Semakan -> Terbit (ADR-0027: approved = servable). Semakan asks for the Bab, which the reviewer picks after accept.
+    await t.db.query(`update question_versions set chapter_id = (select id from chapters limit 1) where question_id = any($1::bigint[])`, [questionIds])
     for (const action of ['review', 'approved']) {
       const res = await admin.agent.post('/api/questions/bulk-action').set('X-CSRF-Token', admin.csrf).send({ action, ids: questionIds })
       expect(res.status, JSON.stringify(res.body)).toBe(200)

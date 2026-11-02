@@ -15,6 +15,9 @@ import {
   ServabilityOverviewActivitySchema,
   ServabilityOverviewSchema,
   ServabilityPaperRowSchema,
+  QuestionPaperServabilityMetaSchema,
+  QuestionPaperServabilityResponseSchema,
+  QuestionPaperServabilityRowSchema,
 } from './reads'
 import {
   ServabilityActivityResultSchema,
@@ -40,6 +43,8 @@ export const SERVABILITY_COMPONENT_SCHEMAS = {
   ServabilityDatabankRow: ServabilityDatabankRowSchema,
   ServabilityAttentionCount: ServabilityAttentionCountSchema,
   ServabilityPaperRow: ServabilityPaperRowSchema,
+  QuestionPaperServabilityRow: QuestionPaperServabilityRowSchema,
+  QuestionPaperServabilityMeta: QuestionPaperServabilityMetaSchema,
 } as const
 
 const json = (schema: z.ZodType, description: string) => ({ description, content: { 'application/json': { schema } } })
@@ -63,6 +68,22 @@ export function registerServabilityPaths(registry: OpenAPIRegistry): void {
     request: { params: z.object({ id: IdSchema }) },
     responses: {
       200: json(envelopeOf(ServabilityReportSchema), 'The report; `versionNo` is the live version evaluated.'),
+      401: unauthorized,
+      403: forbidden,
+      404: err('NOT_FOUND: unknown id, a PKSK question or a Darjah question.'),
+    },
+  })
+  registry.registerPath({
+    method: 'get',
+    path: '/admin/questions/{id}/paper-servability',
+    tags,
+    summary: 'The published papers that carry a question, and whether pupils can open each (AC-04.3 / AC-04.4)',
+    request: { params: z.object({ id: IdSchema }) },
+    responses: {
+      200: json(
+        QuestionPaperServabilityResponseSchema,
+        'One row per published admin paper (kind pilihan; a pupil\'s generated paper is never listed) that places the question, by paper id, at most the first 200; `meta.total` counts all of them and `meta.truncated` says the list is cut. `[]` when it is on none.',
+      ),
       401: unauthorized,
       403: forbidden,
       404: err('NOT_FOUND: unknown id, a PKSK question or a Darjah question.'),

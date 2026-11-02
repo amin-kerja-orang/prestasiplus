@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common'
 
 import type { Blueprint, BlueprintSection, Paper, PaperPlacement, PaperSection, Prisma } from '../../../db/generated/client'
 import { PrismaService } from '../../../db/prisma.service'
+import { storedReferenceImages, writableReferenceSheet } from '../reference-images'
 
 export type PaperTree = Paper & { sections: (PaperSection & { placements: PaperPlacement[] })[] }
 export type BlueprintWithSections = Blueprint & { sections: BlueprintSection[] }
@@ -26,6 +27,8 @@ export interface NewPaperSection {
   questionCount: number
   markBudget: number
   compulsory: boolean
+  /** R1-T48: copied as is when a paper is cloned; false otherwise. */
+  adminCreated?: boolean
 }
 
 export interface NewPaper {
@@ -148,6 +151,7 @@ export class BuilderRepository {
             questionCount: s.questionCount,
             markBudget: s.markBudget,
             compulsory: s.compulsory,
+            adminCreated: s.adminCreated ?? false,
           })),
         },
       },
@@ -160,8 +164,14 @@ export class BuilderRepository {
     await this.prisma.client.paper.update({ where: { id }, data })
   }
 
-  /** Replaces the placements of one section (positions 1..n). */
-  async replacePlacements(sectionId: bigint, placements: readonly { questionId: bigint; pinnedVersionNo: number }[]): Promise<void> {
+  /**
+   * Replaces the placements of one section (positions 1..n). The Nombor soalan of R1-T48 survives a replace: `numberLabel` is the given one,
+   * else the one the question already had in this section.
+   */
+  async replacePlacements(sectionId: bigint, placements: readonly { questionId: bigint; pinnedVersionNo: number; numberLabel?: string | null }[]): Promise<void> {
+    const kept = new Map(
+      (await this.prisma.client.paperPlacement.findMany({ where: { paperSectionId: sectionId }, select: { questionId: true, numberLabel: true } })).map((r) => [r.questionId.toString(), r.numberLabel]),
+    )
     await this.prisma.client.paperPlacement.deleteMany({ where: { paperSectionId: sectionId } })
     if (placements.length === 0) return
     await this.prisma.client.paperPlacement.createMany({
@@ -170,9 +180,46 @@ export class BuilderRepository {
         questionId: p.questionId,
         pinnedVersionNo: p.pinnedVersionNo,
         position: i + 1,
+        numberLabel: p.numberLabel === undefined ? (kept.get(p.questionId.toString()) ?? null) : p.numberLabel,
         marksOverride: null,
       })),
     })
+  }
+
+  /** R1-T48 "Tambah bahagian": appends an admin-added Bahagian (rule Jawab Semua; its counts follow its placements). */
+  async addSection(paperId: bigint, position: number, label: string): Promise<void> {
+    await this.prisma.client.paperSection.create({
+      data: { paperId, position, label, ruleType: 'all', ruleN: null, questionCount: 0, markBudget: 0, compulsory: false, adminCreated: true },
+    })
+  }
+
+  /** Placements of a question on any paper (the "Padam soalan" check before a question is deleted from the bank). */
+  placementCount(questionId: bigint): Promise<number> {
+    return this.prisma.client.paperPlacement.count({ where: { questionId } })
+  }
+
+  /**
+   * True when the question has ever been served: it has a live version, or any version that is, or was, approved (an archived one was approved before).
+   * "Padam soalan" never deletes such a question from the bank, whatever its newest version reads (R1-T48 pre-review: approve, then a new Draf v2).
+   */
+  async hasBeenApproved(questionId: bigint): Promise<boolean> {
+    const q = await this.prisma.client.question.findUnique({ where: { id: questionId }, select: { liveVersionNo: true } })
+    if (q?.liveVersionNo != null) return true
+    const n = await this.prisma.client.questionVersion.count({ where: { questionId, status: { in: ['approved', 'archived'] } } })
+    return n > 0
+  }
+
+  /** The level of a question created inside a paper: the highest active upper-secondary level (SPM, Tingkatan 5), else the highest active secondary one. */
+  async defaultQuestionLevelId(): Promise<bigint | null> {
+    const upper = await this.prisma.client.educationLevel.findFirst({ where: { isActive: true, stage: 'upper_secondary' }, orderBy: [{ sortOrder: 'desc' }, { id: 'desc' }], select: { id: true } })
+    if (upper) return upper.id
+    const secondary = await this.prisma.client.educationLevel.findFirst({ where: { isActive: true, stage: { not: 'primary' } }, orderBy: [{ sortOrder: 'desc' }, { id: 'desc' }], select: { id: true } })
+    return secondary?.id ?? null
+  }
+
+  /** Freezes the counts of an admin-added Bahagian at Terbit (the student side reads the stored values). */
+  async setSectionFigures(id: bigint, questionCount: number, markBudget: number): Promise<void> {
+    await this.prisma.client.paperSection.update({ where: { id }, data: { questionCount, markBudget } })
   }
 
   /** R1-T34: edits the label, instruction or compulsory flag of one section. */
@@ -180,23 +227,14 @@ export class BuilderRepository {
     await this.prisma.client.paperSection.update({ where: { id }, data })
   }
 
-  /**
-   * The given references that may be used as a reference-sheet picture: a stored `question_image` file named by its PUBLIC TOKEN (never the
-   * internal id, which would leak it and lets any caller probe ids) AND either uploaded by the editing admin or already on this paper's sheet.
-   * Another user's unattached upload is therefore refused (B3 T34-L1).
-   */
-  async existingImages(refs: readonly string[], ownerUserId: bigint, onPaper: readonly string[]): Promise<Set<string>> {
-    const unique = [...new Set(refs)].filter((r) => /^[A-Za-z0-9_-]{8,64}$/.test(r))
-    if (unique.length === 0) return new Set()
-    const rows = await this.prisma.client.file.findMany({
-      where: {
-        purpose: 'question_image',
-        publicId: { in: unique },
-        OR: [{ ownerUserId }, { publicId: { in: [...onPaper] } }],
-      },
-      select: { publicId: true },
-    })
-    return new Set(rows.map((r) => r.publicId))
+  /** See `exam/reference-images`: the sheet to store for a write by this admin, or null when a picture is refused. */
+  writableSheet<P extends { imageFileId?: string | undefined }>(sheet: readonly P[], ownerUserId: bigint, onPaper: readonly string[]): Promise<P[] | null> {
+    return writableReferenceSheet(this.prisma.client, sheet, ownerUserId, onPaper)
+  }
+
+  /** The refs that are a token naming a stored question image uploaded by an admin: the re-check at Terbit. */
+  storedImages(refs: readonly string[]): Promise<Set<string>> {
+    return storedReferenceImages(this.prisma.client, refs)
   }
 
   async pinPlacement(id: bigint, pinnedVersionNo: number, marksOverride: number): Promise<void> {

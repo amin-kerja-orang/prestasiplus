@@ -36,6 +36,7 @@ import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { featureModules } from '../../src/modules'
 import { makePng } from '../files/fixtures'
+import { giveBab } from '../support/bab'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
 vi.setConfig({ testTimeout: 120_000, hookTimeout: 300_000 })
@@ -161,6 +162,7 @@ async function createQuestion(body: Record<string, unknown>): Promise<string> {
 }
 
 async function advance(ids: string[]): Promise<void> {
+  await giveBab(db, ids)
   for (const action of SERVE_STEPS) {
     const res = await admin.post('/api/questions/bulk-action', { action, ids })
     expect(res.status, `${action}: ${JSON.stringify(res.body)}`).toBe(200)
@@ -494,6 +496,45 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       const past = await pupil.get(`/api/bijak/papers/${fx.paper}/attempts`)
       expect(past.status, JSON.stringify(past.body)).toBe(200)
       expect((past.body.data.sittings as { attemptId: string }[]).map((s) => s.attemptId)).toContain(fx.attempt)
+    })
+
+    it('T38: a self-marked structured question earns the self-mark reward once per level; a replayed or lower self-mark adds nothing', async () => {
+      // The retry sitting answers the structured question WITHOUT the keywords, so the automatic grading (paid at submit) is 3 + 1 = 4 and the
+      // self-mark has room to raise it. (The first sitting answered with the keywords: the suggestion was already paid at submit, nothing to gain.)
+      const retry = fx.retryAttempt
+      const res = await pupil.get(`/api/bijak/attempts/${retry}`)
+      const rview = res.body.data as typeof view
+      const part = (q: { id: string; parts?: { id: string }[] }) => q.parts?.[0]?.id ?? q.id
+      const changes = rview.questions.filter((q) => q.id !== fx.soloC).map((q) =>
+        q.mcq !== undefined ? { partId: part(q), answer: { choice: 'B' }, rev: 1, savedAt: START } : { partId: part(q), answer: { steps: ['x'], final: 'x', text: 'x' }, rev: 1, savedAt: START },
+      )
+      expect((await pupil.put(`/api/bijak/attempts/${retry}/answers`, { changes })).status).toBe(200)
+      expect((await pupil.post(`/api/bijak/attempts/${retry}/submit`, { idempotencyKey: 'chain-retry-1', changes: [] })).status).toBe(200)
+      const ledger = async () =>
+        (await db.query<{ source_id: string; amount: number; user_id: string }>(`select source_id, amount, user_id::text from coin_ledger where source = 'quiz_spm' and source_id like $1 order by source_id`, [`${retry}%`]))
+          .map((r) => [r.source_id, Number(r.amount), r.user_id] as const)
+      const xp = async () => Number((await db.query<{ xp: number }>(`select xp from wallets where user_id = $1`, [pupil.userId]))[0]?.xp ?? 0)
+      const result = (await pupil.get(`/api/bijak/attempts/${retry}/result`)).body.data.result as { score: number; questions: { questionId: string; parts: { partId: string }[] }[] }
+      expect(result.score).toBe(4)
+      const essayPartId = result.questions.find((q) => q.questionId === fx.essay)!.parts[0]!.partId
+      // the submit paid the automatic score under the bare attempt id: 4 marks = 8 syiling
+      expect(await ledger()).toEqual([[retry, 8, pupil.userId]])
+      const xpAtSubmit = await xp()
+      const mark = async (n: number) => expect((await pupil.post(`/api/bijak/attempts/${retry}/self-mark`, { partId: essayPartId, mark: n })).status).toBe(200)
+      // 1 mark: level 5, a gain of 1 over the automatic 4 -> 2 syiling, 10 XP, one row keyed <attempt>:score:5
+      await mark(1)
+      expect(await ledger()).toEqual([[retry, 8, pupil.userId], [`${retry}:score:5`, 2, pupil.userId]])
+      expect(await xp()).toBe(xpAtSubmit + 10)
+      // 2 marks: level 6, a gain of 1 over the highest paid level (5) -> one more row, keyed :score:6
+      await mark(2)
+      expect(await ledger()).toEqual([[retry, 8, pupil.userId], [`${retry}:score:5`, 2, pupil.userId], [`${retry}:score:6`, 2, pupil.userId]])
+      expect(await xp()).toBe(xpAtSubmit + 20)
+      // a replay of the same mark, and a lower one: no row, no XP, nothing taken back
+      await mark(2)
+      await mark(1)
+      await mark(2)
+      expect(await ledger()).toEqual([[retry, 8, pupil.userId], [`${retry}:score:5`, 2, pupil.userId], [`${retry}:score:6`, 2, pupil.userId]])
+      expect(await xp()).toBe(xpAtSubmit + 20)
     })
   })
 
