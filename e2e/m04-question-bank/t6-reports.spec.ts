@@ -45,7 +45,9 @@ async function modalSettled(page: Page) {
 
 async function openS7(page: Page, gotoApp: (path: string) => Promise<void>, query = '') {
   await gotoApp(`${S7}${query}`)
-  await expect(page.getByTestId('reports-title')).toBeVisible()
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Laporan Soalan', exact: true }),
+  ).toBeVisible()
   await expect(tab(page, 'pending')).toContainText('(')
 }
 
@@ -59,10 +61,9 @@ test.describe('M04 S7 admin report triage', { tag: [TAG.smoke, moduleTag(4)] }, 
   }) => {
     await loginAs(ADMIN)
     await openS7(page, gotoApp)
-    await expectTabTitle(page, 'Laporan Soalan — Admin Panel')
-    await expect(page.getByTestId('shell-admin-title')).toHaveText('Laporan Soalan')
+    await expectTabTitle(page, 'Laporan Soalan | PRESTASIPLUS')
     await expect(page.getByTestId('shell-admin-subtitle')).toHaveCount(0)
-    await expect(page.getByTestId('reports-title')).toHaveText('Laporan Soalan')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Laporan Soalan')
     await expect(page.getByTestId('reports-subtitle')).toHaveText(
       'Soalan yang dilaporkan oleh pelajar dari kuiz, latihan & Papan Bijak',
     )
@@ -209,7 +210,9 @@ test.describe('M04 S7 admin report triage', { tag: [TAG.smoke, moduleTag(4)] }, 
   test('a student is refused S7', async ({ page, loginAs, gotoApp }) => {
     await loginAs(PELAJAR)
     await gotoApp(S7)
-    await expect(page.getByTestId('reports-title')).toHaveCount(0)
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Laporan Soalan', exact: true }),
+    ).toHaveCount(0)
   })
 })
 
@@ -223,11 +226,9 @@ test.describe('M04 S13 and S14 as the pelajar', { tag: [TAG.smoke, moduleTag(4)]
   }) => {
     await loginAs(PELAJAR)
     await gotoApp(S13)
-    await expectTabTitle(page, 'Laporan Soalan Saya')
-    await expect(page.getByTestId('shell-user-title')).toHaveText('Laporan Soalan Saya')
-    await expect(page.getByTestId('shell-user-subtitle')).toHaveText(
-      'Jejak status laporan soalan yang anda hantar',
-    )
+    await expectTabTitle(page, 'Laporan Soalan Saya | PRESTASIPLUS')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Laporan Soalan Saya')
+    await expect(page.getByTestId('shell-user-subtitle')).toHaveCount(0)
     await expect(page.locator('[data-testid^=my-reports-count-]')).toHaveText([
       '0Jumlah',
       '0Menunggu',
