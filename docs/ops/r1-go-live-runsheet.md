@@ -2,7 +2,7 @@
 
 ## Open K items (English note for the owner and Team B)
 
-**Status: not started.** Q29: deploy as soon as the final CI is green, 3 Nov MYT. The owner has not yet set T0 (the moment `.cloud` freezes). `<R1_SHA>` is not final: it waits for the REQ-B-109 fix and a green full CI.
+**Status: not started.** REQ-B-121: go-live is the night of 3 Nov MYT. The owner has not yet set T0 (the moment `.cloud` freezes). `<R1_SHA>` is not final: it waits for the remaining units and a green full CI.
 
 Decided: K1 restore `pre_etl`; K6 accept `https://www` failing and fix after live; K9 unencrypted disk accepted with mitigations (Q23 item 1, REQ-B-113); `REGISTRATION_OPEN` stays `true`; OCR mock accepted for AC-R1-14.2 (Q23); `--as-of` 2026-11-03; `VITE_PROTOTYPE_SCOPE=on` for live.
 
@@ -19,7 +19,7 @@ Open:
 
 ---
 
-**Status: belum bermula.** Q29: sebaik CI akhir hijau, 3 Nov. Pemilik menetapkan masa tepat (T0). Pemilik .cloud dan operator dump hadir bersama. `<R1_SHA>` belum muktamad.
+**Status: belum bermula.** REQ-B-121: malam 3 Nov. Pemilik menetapkan masa tepat (T0). Pemilik .cloud dan operator dump hadir bersama. `<R1_SHA>` belum muktamad.
 
 **Susunan B (pilihan pengguna):** ETL dari imej migrate `cb7332d0b` pada DB UAT di 0091 → semak semula → deploy R1 `<R1_SHA>` → `--seed-reference` → `PP_DOMAIN` dan DNS ke 187.52.120.11.
 
@@ -279,7 +279,7 @@ $R raw-check
   6. Masa: T0 + 4:20 tidak melebihi `T_PUPIL`.
   7. Team B mengesahkan `<R1_SHA>` dengan CI akhir hijau. Tanpanya jangan beku: selepas 3.2 API turun sehingga deploy R1. Bandingkan dengan pokok yang dilatih (**BELUM DISAHKAN**, git am, baca sahaja):
      `git diff --stat 43fef0510 <R1_SHA> -- deploy/vps compose.yaml apps/api/prisma/migrations docs/ops/sql src/app/prototype-scope.ts` → **kosong**.
-     `git diff --name-only 43fef0510 <R1_SHA> -- apps/api/prisma/seed` → kosong, atau hanya fail profil e2e dari `r1/a4-e2e-chapter-seed`. Selain itu: HENTI, Team B nilai semula.
+     `git diff --name-only 43fef0510 <R1_SHA> -- apps/api/prisma/seed` → kosong, atau hanya fail profil e2e dari `r1/a4-e2e-chapter-seed` dan `r1/trial-exhausted-midquiz` (`e2e.ts`, `e2e-chapter.ts`, `e2e-trial.ts`). Selain itu: HENTI, Team B nilai semula.
   8. Pemilik .cloud dan operator dump hadir; akaun `pp_dump_ro` boleh dibuka. **Pemilik boleh dihubungi hingga T0 + 5:30 dan sepanjang tempoh rollback (switch + 4 jam).**
 - Henti jika: mana-mana tidak
 - Bila henti: tiada apa berubah. `sudo systemctl start pp-backup.timer pp-cert-renew.timer`, `$S throwaway-down`. Tangguh.
@@ -496,7 +496,7 @@ Bila henti: henti dan lapor kepada pengguna; ke go/no-go 5.0 dengan keputusan. M
 
 **4.2 Sesi menyekat** Siapa: operator di UAT. `$PSQL -c "SELECT pid, usename, state, xact_start, left(query, 80) FROM pg_stat_activity WHERE state <> 'idle' AND pid <> pg_backend_pid() ORDER BY xact_start;"` Jangkaan: tiada sesi menyekat. Minit: 1.
 
-**4.3 `pg_trgm`, hak** (checklist :45-47). `$PSQL -c "SELECT name, default_version, installed_version FROM pg_available_extensions WHERE name = 'pg_trgm';"` → 1 baris. `$PSQL -c "SELECT has_database_privilege('pp_owner', current_database(), 'CREATE');"` → `t`. Henti jika: selain itu. Selepas restore ini mesti disemak semula. Minit: 2.
+**4.3 `pg_trgm`, hak** (checklist :50-52). `$PSQL -c "SELECT name, default_version, installed_version FROM pg_available_extensions WHERE name = 'pg_trgm';"` → 1 baris. `$PSQL -c "SELECT has_database_privilege('pp_owner', current_database(), 'CREATE');"` → `t`. Henti jika: selain itu. Selepas restore ini mesti disemak semula. Minit: 2.
 
 **4.4 Stimulus 3.7 dan 3.7d** Jalankan selepas deploy (5.9), kerana SELECT merujuk skema R1 (inferens; `papers` kosong selepas restore dijangka).
 
@@ -567,7 +567,7 @@ $PSQL -c "SELECT migration_name, started_at, finished_at, rolled_back_at, logs F
 ```
  `$PC exec -T db sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" exec psql -X -v ON_ERROR_STOP=1 -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "VACUUM (ANALYZE) question_versions"'` (`r1-release-notes.md`:343; tulisan, bukan `$PSQL`; jangkaan `VACUUM`). Ia meliputi ANALYZE runbook 2.4 item 4. `GET /api/ready`, `/api/health` melalui domain UAT.
 - `$PC exec -T api sh -c 'echo "$THROTTLE_GLOBAL_PER_MINUTE $TRUST_PROXY_HOPS"'` → `3000 1`
-- **Seed rujukan segera, sebelum domain dibuka (checklist :54, runbook 0 item 6; rehearsal):** `deploy/vps/deploy.sh --seed-reference`, kemudian `$PSQL -c "select count(*) from spm_subject_configs;"` dan `$PSQL -c "select count(*) from tiers;"`. Ia mesti mengikuti ETL kerana `subjects` datang dari ETL. Jangkaan: `demo modules skipped`; bilangan baris = berapa daripada 19 kod wujud dalam `subjects` (nombor sebenar dari kod sebenar, bukan fixture); `tiers` 4. Rehearsal: selagi `tiers` 0, `GET /api/dashboard` setiap murid 500 (`M14: no tier is defined`) sementara `/api/ready` 200.
+- **Seed rujukan segera, sebelum domain dibuka (checklist :65, runbook 0 item 6; rehearsal):** `deploy/vps/deploy.sh --seed-reference`, kemudian `$PSQL -c "select count(*) from spm_subject_configs;"` dan `$PSQL -c "select count(*) from tiers;"`. Ia mesti mengikuti ETL kerana `subjects` datang dari ETL. Jangkaan: `demo modules skipped`; bilangan baris = berapa daripada 19 kod wujud dalam `subjects` (nombor sebenar dari kod sebenar, bukan fixture); `tiers` 4. Rehearsal: selagi `tiers` 0, `GET /api/dashboard` setiap murid 500 (`M14: no tier is defined`) sementara `/api/ready` 200.
 - Henti jika: detection ada baris; ready bukan 200; seed mengisi modul demo. Bila henti: checklist 3 atau 4.
 - Minit: 10
 
@@ -641,7 +641,7 @@ Jangkaan: `200`, `200`, sijil sah (tiada `-k`). Henti jika selain itu: S6. Minit
 
 ## 7. Smoke
 
-**7.1** Semak dari luar (**BELUM DISAHKAN**, arahan am selain checklist :51):
+**7.1** Semak dari luar (**BELUM DISAHKAN**, arahan am selain checklist :56):
 ```
 PP_DOMAIN=prestasiplus.cloud
 dig +short "$PP_DOMAIN"
