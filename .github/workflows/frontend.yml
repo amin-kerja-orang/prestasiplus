@@ -23,7 +23,7 @@ on:
   pull_request:
     branches: [be/integration-frontend]
   push:
-    branches: [be/integration-frontend]
+    branches: [be/integration-frontend, feature/v3-bijak-r1]
   workflow_dispatch:
     inputs:
       api_ref:
