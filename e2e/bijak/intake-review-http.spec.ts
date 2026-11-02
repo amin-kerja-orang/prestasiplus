@@ -135,7 +135,7 @@ async function filterBank(page: Page, status: string, search: string): Promise<v
   if (await open.isVisible()) {
     await open.click()
     await page.getByTestId('bank-status').selectOption(status)
-    await page.locator('[data-ds=filter-sheet] button').first().click() // "Gunakan"
+    await page.locator('[data-ds=filter-sheet]').getByRole('button', { name: 'Guna', exact: true }).click()
   } else {
     await page.getByTestId('bank-status').selectOption(status)
     await page.getByTestId('bank-search').press('Enter')
