@@ -426,7 +426,6 @@ const feedbackExplanation = computed(() =>
                   <ULink
                     v-if="allows('/pricing') && routeExists('/pricing')"
                     to="/pricing"
-                    class="inline-flex min-h-11 items-center text-highlighted underline"
                     >{{ SUBSCRIBE_LINK_TEXT }}</ULink
                   >
                 </template>
