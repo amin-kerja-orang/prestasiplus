@@ -207,3 +207,6 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
 - (2) Pupil with trial used gets no message at session start (402 → /pricing → /dashboard under scope on). Fix: show the same contract message as Q26 ("Baki percubaan percuma anda telah habis.", schema.ts:65) at session start, no dead link under scope on (REQ-B-122 guard). Owner: team A (A3, on top of the ratchet fix).
 - Ratchet fix (REQ-B-123): drop the extra link classes (team B's preferred option), no baseline raise. `r1/b1-ds-debt-quizrunner` 804d9cb6 (baseline raise) is NOT used.
 - Then one batch merged by team A (Q30), full gate including eslint/scripts/packages __tests__, one CI.
+
+## Q32 (USER DECISION 3 Nov ~03:05 MYT, asked by Mandor): approve batch 2 without B2
+- Answer: **"Saya luluskan, push sekarang"**. The owner approves batch 2 tip `79fbeea2` (BASE-227..230: fb1938c8, cfc55d40, cbaba4be, 295d0ea6) in place of B2, who had given no verdict since 01:34 MYT. A2 Approved all four; A1b full gate green (unit 4786 pass, API DB 1069 pass). Pushed by Mandor (FF from a5d618b4); api.yml 41506569465 (push) and frontend.yml 41506584611 (api_ref = 79fbeea23f4ab2d72732ef012cb6bfafea10d298). B2 may still review after the fact; any finding comes back as a REQ.
