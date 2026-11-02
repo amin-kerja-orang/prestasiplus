@@ -722,7 +722,19 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
       const ok = await admin.post(`/api/admin/papers/${paper}/publish`, { override: true, reason: 'Kertas contoh tanpa kontrak' })
       expect(ok.body.data, JSON.stringify(ok.body.data)).toMatchObject({ ok: true, errors: [], overridden: [NO_CONTRACT_LINE] })
       expect((await q(`select status from papers where id = $1`, [paper]))[0]?.status).toBe('published')
-      expect((await auditRows(t.db, 'bijak.paper.published_override')).filter((r) => r.target_id === paper)).toHaveLength(1)
+      const audit = (await auditRows(t.db, 'bijak.paper.published_override')).filter((r) => r.target_id === paper)
+      expect(audit).toHaveLength(1)
+      expect(audit[0]!.detail).toMatchObject({ reason: 'Kertas contoh tanpa kontrak', overridden: [NO_CONTRACT_LINE], count: 1 })
+    })
+
+    it('REQ-B-079: the review of a paper that is already Terbit lists no contract blocker, even with no Kontrak (the line is skipped once Terbit)', async () => {
+      await q(`update blueprints set ${SERVING} where status = 'active' and kertas = 2 and subject_id = $1`, [subject])
+      const { paper } = await fullPaper()
+      expect((await admin.post(`/api/admin/papers/${paper}/publish`)).body.data).toMatchObject({ ok: true })
+      await withoutKontrak(paper)
+      const review = (await admin.get(`/api/admin/papers/${paper}/review`)).body.data
+      expect(review.blockers).not.toContain(NO_CONTRACT_LINE)
+      expect(review.blockers).toEqual([])
     })
 
     it('REQ-B-079: a re-publish after withdraw is refused for a paper with no Kontrak, while a paper that is already Terbit is not newly blocked', async () => {
