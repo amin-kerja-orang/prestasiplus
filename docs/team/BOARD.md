@@ -530,16 +530,15 @@ The B4 pack chain was walked by HTTP on SN/2 (4541/2): **96 MATCH, 1 scanner fal
 - Low bug, fixed under D9: "(draf)" stays in published titles → r1/publish-title-draft (A2).
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-01 23:56 UTC, BASE 1a861ff8)
+### Team A open branches: heads from origin (auto, 2026-11-02 00:05 UTC, BASE 70229637)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
 | r1/a3-qa-doc-nits | e4d4dd322 | READY (A3, BASE-105, docs only): stale QA notes on T38 self-mark reward fixed (2 files); B2 |
-| r1/ac-gaps-a1b | ed04253b9 | READY (multi, @ed04253b: row 39 "Lulus: Ikut V2" per USER Q13 + B4 pack fixes from A2 walk: SN/2 recipe, INTAKE_TEACHER_ENABLED, step 8 wording, Bab field note); B4 |
+| r1/ac-gaps-a1b | 1f922ddd7 | READY (multi, @1f922ddd: row 39 per USER Q13; B4 pack fixes from A2 walk + ha18 head refs a9ffe246); B4 |
 | r1/admin-list-perf | 6389cd541 | READY (A4, @6389cd54, BASE-105): REQ-B-050 + 0106 pg_trgm + 0107 kertas index; per-user @RateLimit GET /api/questions (THROTTLE_QUESTIONS_LIST_PER_MINUTE=60); docs: feature_flags 0108, drop_pool_tag 0109, optional B12 0122 / B20 0123 (lead-confirmed); 0107 header gives 0.9 s bare / ~2 s via migrate deploy; B2 + B3 + DevOps (maintenance window, new env) |
 | r1/admin-list-perf-wip | 9cc78c4db | SUPERSEDED by r1/admin-list-perf (A4); do not merge |
-| r1/bridge-table-parts | c805ecc7c | READY (A4, BASE-105): the bridge uses stimulusTableParts (an invalid grid + pipe body shows the table only, as in builder/Studio); bridge 118/118, attempts 180/180, kuiz 39/39; B2. Follow-up after T31 + this merge: drop PENDING_BRIDGE_TEXT in the parity spec (A4) |
 | r1/builder-search-perf | 1216b736c | READY (A3, on T48 6c5ae3a8; restack only): 413 pass; alone = trial merge with H-A18 fc409ae1, 0 failures, tsc 0; merge after T48; B2 |
 | r1/chain-qa-bab-3a-a3 | 0efba36c4 | READY (A3, @0efba36c; contains chain-qa-selfmark + H-A18 + T38): Bab-refusal step 3a (bites); 642 pass; merge after H-A18 + chain-qa-selfmark; B2 | merge AFTER ha18 a9ffe246 (merge-tree clean; fix not needed inside) |
 | r1/chain-qa-selfmark-a3 | 5b93da43f | READY (A3, @5b93da43 = T38 13134ced + chain-qa 9b70ae39 + self-mark reward join, bites); merge after T38 + r1-chain-qa-a3; B2 |
@@ -551,12 +550,13 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/ha17-ac-coverage | 157b371c3 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b; head 157b371c |
 | r1/ha18-gate-facts | a9ffe246f | READY (A2, @a9ffe246; REQ-B-057 MAJOR fixed): gate counts only pending exact/near duplicate links; accepted items may dismiss links (not_duplicate, cleared_duplicate event; V2 rows 252/254); 0105 CHECKs NOT VALID → VALIDATE; gate-facts 1b + accepted-duplicates.spec, mutations red; 70/70 + 8/8. B delta: ba5bdd6c → 629ea0d3 (BASE-108 only) → a9ffe246 (fix). A4 pre-review queued; B2 delta re-review; merge before delete-served-guard / reqb052 / chain-qa-bab-3a |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
-| r1/ha24-release-input | 9a66389a7 | READY (A3 docs, @9a66389a): checklist rows 1.5–1.14 BASE-108..117, Q12a/Q13 decided, KIV 34 rows (publish race→publish-lock-share, REQ-B-058, Q13); B1/B2 |
+| r1/ha24-release-input | fdfaa8102 | READY (A3 docs, @fdfaa810: checklist rows to BASE-120; KIV 36 rows incl. REQ-B-059 cap (row 35) and setGroupLabel label-only (row 36)); B1/B2 |
 | r1/ha26-team-a-state | cddc11cb5 | READY (A3 docs, @cddc11cb): team-a-r1-state.md; clean vs BASE-115; B2 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/intake-reqs-followup | 2fe252aba | READY (A2, @2fe252ab on intake-reqs 8c1964a6): unknownSp required, FACTS in unit.spec, deviations row 244 names spNotInTaxonomy; 43/43, tsc 0; merge AFTER intake-reqs (deviations conflict: keep both); B2 small | A1b pre-review: CLEAN (CurriculumFacts internal; both producers always set unknownSp; tsc 0; 43/43) |
 | r1/partial-acs-a3 | 01ab13f70 | READY (A3, @01ab13f7 on T51; tests only): AC-18.1 5c via Studio path + real negative; R1-11.4/12.6 SELECT pins; robust in both orders with ha18 a9ffe246 (trial 52 pass); A1b pre-review Approve + Minors fixed; merge after T51; B2 |
-| r1/publish-lock-share | 49635ca65 | ON HOLD (dep: on delete-served-guard fe7ef537, which waits for ha18 REQ-B-057) — code done (A1b, @49635ca6): Terbit takes FOR SHARE locks on placed questions (sorted ids) before evaluate; a delete that committed first makes publish refuse; 4-test race spec (bites: FOR SHARE removed → 2 red); 314 targeted pass; closes KIV publish race; pre-review queued (A4 slot 3); merge right after delete-served-guard; B2 + B3 |
+| r1/publish-lock-share | 49635ca65 | ON HOLD (dep: on delete-served-guard fe7ef537, which waits for ha18 REQ-B-057) — code done (A1b, @49635ca6): Terbit takes FOR SHARE locks on placed questions (sorted ids) before evaluate; a delete that committed first makes publish refuse; 4-test race spec (bites: FOR SHARE removed → 2 red); 314 targeted pass; closes KIV publish race; pre-review queued (A4 slot 3); merge right after delete-served-guard; B2 + B3 | A4 pre-review 00:00 UTC: AwM, 0 B/M (lock order proven, tests 4/4x3); M1 re-read branch, M2 tx timeout/P2028, M3 spec timeout → A1b fix commit |
+| r1/publish-title-draft | 6e0684d21 | CR (A2, @6e0684d2 on BASE-120): D9 — Terbit drops " (draf)" from an exact auto title only, same tx; spec 4/4 + mutations, builder+pipeline-chain 96, tsc 0; A3 T48-dev review |
 | r1/r1-10-1-practice-spec | cfd6b6f7b | READY (A1b + A2 + A3, @cfd6b6f7, BASE-105; specs + docs): pins practice rewards (19 tests, 11/11 mutations); R1-10.1 row: USER Q12a (2026-11-02) keep 1 syiling, V2 rate unverified, .cloud check R2; B2 |
 | r1/r1-chain-qa-a3 | 9b70ae395 | READY (A3, @9b70ae39, BASE-105; spec + step map): A2 MAJOR fixed (key allow-list on the served pupil shape + recursive forbidden-key walk + reason text absent) + Minors (stimulus once exact, same-key replay, exact 12 syiling / 60 XP, Cuba Lagi 2 attempts); mutations red; ignore the unverified REQ ids in the commit message; B2 |
 | r1/ready-tiers-check | 9c80f08c3 | ON HOLD (A2, @9c80f08c, contains BASE-107): code correct + Minors fixed (exact 503 body, WARN once per state change, INFO on recovery; mutations red); waits for B DevOps (REQ-A-028: CI seed step + first-install deploy ordering) |
@@ -568,7 +568,6 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/reqb052-archived-edit | f3a2448f9 | READY (A3, BASE-105; replaces 17196431): follow-ups done: P1 pinned-clause spec (bites), guard published OR (withdrawn AND EXISTS attempts), header; archived-edit 6/6, pinned-version-rule 6/6, workflow 296/296; tsc/eslint 0; B2 | merge AFTER ha18 a9ffe246 (merge-tree clean; fix not needed inside) |
 | r1/reqb058-takedown-pin | b1e965665 | CR (A4 @b1e96566 follow-up: list drops taken-down papers for a pupil with no sitting, batched pins; cover unchanged by lead decision): A1b delta pre-review from c8515988 |
 | r1/rule-line-v2 | 89961f9f2 | READY (A3, @89961f9f, BASE-109; USER Q13 2026-11-02 follow V2): rules.ts + exam-core paper-model.ts → "Jawab {N} soalan sahaja." ("Jawab semua soalan." unchanged); new exam-core test (bites); contract examples + openapi; AC-06.1/standards/catalogue aligned; PoC/golden authored "daripada" = accepted limit (deviation row); A2 pre-review Minors closed (eslint keeps _questionCount disable, stated); exam-core 219, bijak-papers 109, conformance 403; FE copies REQ-A-035 (C); B2 |
-| r1/seed-dangling-placements | 11cbcf458 | READY (A1b, BASE-105): asserts paper titles + counts = POC_BANK; seed 155 + 1 skip; B2 |
 | r1/servability-stimuli-once | f76f729a8 | READY (A4, @f76f729a, contains chain tip + BASE-107): spy spec pins one stimulus read per chunk + 2 comments; optional; step 6b |
 | r1/stimulus-list-d72 | b45ce5197 | READY (A2, @b45ce519; contains t49 b99068a6): one where for page+count; part-linked Darjah/PKSK hiding spec (bites); A4 + A3 pre-reviews Approve; merge AFTER t49; B2 |
 | r1/t04-minors | 82828a68a | MERGED by B1 as BASE-119 e927c3ee @8ae70d6e (reviewed SHA; 82828a68 delta not merged: optional test-only, left) |
@@ -576,6 +575,7 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t37-r1-runbook | c9dcb5a08 | SUPERSEDED for B1: contained in r1/ac-gaps-a1b (823bb4a1); head c9dcb5a0 |
+| r1/t38-cap-risk-row | ee421f520 | READY (A3 docs, @ee421f52 on BASE-120): T38 accepted-risk deviation row (USER Q14, REQ-B-059); docs only; B1 |
 | r1/t39-k1-evidence | 1a26f7a60 | check: A3 to confirm state |
 | r1/t42b-intake-acs | 34d86311e | READY (A2, @34d86311 on 5318a971; test-only Minor): refused accept deletes the figure copy storage object (mutation: drop files.discard → red); 6/6; B2 small | A1b pre-review: Approve (mutation bites) |
 | r1/t43-chain-publish | 238eb6eb0 | READY (A3, hold LIFTED): spec-only on T31 eb0346d2; merge after T31 + REQ-A-008; Preview #3 (A4, 33 heads on BASE-105 @525f9ca1, local): ALL GREEN, vue-tsc 0 after REQ-A-008, 0 reds. B2 |
@@ -584,8 +584,9 @@ This table is regenerated from `git ls-remote` every cycle and replaces every he
 | r1/t45-builder-acs-wip | 078204e1c | SUPERSEDED by r1/t45-builder-acs; do not merge |
 | r1/t48-builder-parity | 5d3e56fd5 | READY — B2 APPROVE w/ Minors @6c5ae3a8 (merge THIS SHA; origin 5d3e56fd = + BASE-107/108 merges only); Minor (dup-label D9 row) closed on d90-builder-sweep da0bb7f3; merge after H-A18 |
 | r1/t48-label-move-fix | 9783849cf | READY (A3, @9783849c, leaf on T48 6c5ae3a8): PUT moving an added question across Bahagian keeps its Nombor soalan (4-line fix in update()); biting spec + same-section control; 410 alone = trial with H-A18; no D9 row (label belongs to the question, as in V2); merge right after T48; pre-review by A2; B2 | A2 delta pre-review: no findings (mutation red) |
-| r1/t49-served-now | 8cb9fa5f1 | READY — B2 APPROVE @8cb9fa5f (cycle 21, 07:25 MYT); awaiting B1 merge | READY (A2 + A1a, @8cb9fa5f): blank-filter 422 + filter-options notServed entry in known-mismatches (route ships here); A4 pre-review Approve + B3 checklist Pass; merge BEFORE d72 (clean, A3 merge-tree |
 | r1/t51-partial-acs-a3 | 61c1b077f | READY (A3, hold LIFTED; @61c1b077 on T43 238eb6eb + T31 eb0346d2 + T48): merge after T48, T31, REQ-A-008, T43; never old T31 6a27c8dd / T43 5ce5894f / T51 54f63116; Preview #3 (A4, 33 heads on BASE-105 @525f9ca1, local): ALL GREEN, vue-tsc 0 after REQ-A-008, 0 reds. B2 |
+
+**New branches not yet triaged:** r1/reqa035-rule-line-fe 7cd7e3bdc
 <!-- AUDIT:END -->
 - **Lapor:** REQ-B-031 @ 9cd9a1eda merged at BASE-105. Next for B1: **Lapor FE (team C) r1/reqa005-bijak-lapor @ d905ccac7** (contains 9cd9a1eda; REQ-A-015 DONE).
 - T44: the tip 072d8f4b is only a BASE-63 merge on top of 77984abc (no non-merge commits outside base) → **MERGED BASE-67**. The audit script now skips such branches.
