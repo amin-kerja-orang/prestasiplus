@@ -39,6 +39,7 @@ Build cost of the indexes on 408k questions (local): 0106 about 20 s (`stem_ms` 
 - Migrations 0106 and 0107 use a plain `CREATE INDEX` (Prisma runs each migration file in one transaction, `CONCURRENTLY` cannot run there). **Maintenance window needed**: writes to `question_versions` wait about 20 s at 400k rows (0106) and about 1 s (0107).
 - `pg_trgm` must be allowed on the production Postgres (trusted extension: the database owner can create it; managed hosts must have it enabled). If `CREATE EXTENSION` is refused the deploy stops at 0106 and nothing else has changed.
 - Ops recommendation: `jit = off` on the database (not in code or migrations).
+- Per-user list limit on `GET /api/questions`: default **240 per minute** (REQ-B-061, lead decision; was 60, which normal admin use reached). Override with `THROTTLE_QUESTIONS_LIST_PER_MINUTE`. Above it: 429 `RATE_LIMITED` with `Retry-After`. Worst case per account: about 240 x 1.8 s of database time a minute (short or punctuation-only search). The client side (debounce, 429 handling, fewer Bank calls) is team C, REQ-A-027.
 - Revert SQL is in each migration header.
 - Run `ANALYZE question_versions` after the migrations (the planner then knows the new expression index).
 - Order: `prisma migrate deploy` applies all pending migrations in number order. 0106/0107 only add an extension and indexes and depend on no other team A migration, so it is harmless if they land in the same deploy as 0104/0105 or merge before them.

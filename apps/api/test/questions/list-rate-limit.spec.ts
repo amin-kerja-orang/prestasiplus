@@ -6,7 +6,7 @@ import { bootQuestionsApp, expectError, loginAs, type Client, type QuestionsTest
 /**
  * admin-list-perf (A2 pre-scan Minor): a 1 to 2 character or punctuation-only search term cannot use the trigram index (migration 0106)
  * and scans the bank, and V2 accepts such terms (no 422). The list route therefore has a per-user bucket
- * (`THROTTLE_QUESTIONS_LIST_PER_MINUTE`, default 60). A small limit makes it visible; the test clock never advances inside the spec.
+ * (`THROTTLE_QUESTIONS_LIST_PER_MINUTE`, default 240 since REQ-B-061). A small limit makes it visible; the test clock never advances inside the spec.
  */
 describe('GET /api/questions: per-user rate limit for the list (admin-list-perf)', () => {
   let t: QuestionsTestApp
@@ -46,5 +46,30 @@ describe('GET /api/questions: per-user rate limit for the list (admin-list-perf)
   it('another user is not affected, and a normal search works', async () => {
     const res = await other.get('/api/questions?search=Matematik')
     expect(res.status, JSON.stringify(res.body)).toBe(200)
+  })
+})
+
+describe('GET /api/questions: the default list limit is 240 per user per minute (REQ-B-061)', () => {
+  let t: QuestionsTestApp
+  let admin: Client
+
+  beforeAll(async () => {
+    delete process.env.THROTTLE_QUESTIONS_LIST_PER_MINUTE
+    t = await bootQuestionsApp()
+    admin = await loginAs(t, 'admin')
+  })
+  afterAll(async () => {
+    await t.close()
+  })
+
+  it('240 list calls in one minute pass, the 241st is 429 RATE_LIMITED with Retry-After', async () => {
+    for (let i = 1; i <= 240; i++) {
+      const res = await admin.get('/api/questions?pageSize=1')
+      if (res.status !== 200) throw new Error(`call ${i}: ${res.status} ${JSON.stringify(res.body)}`)
+    }
+    const limited = await admin.get('/api/questions?pageSize=1')
+    expectError(limited, 'RATE_LIMITED')
+    expect(limited.status).toBe(429)
+    expect(Number(limited.headers['retry-after'])).toBeGreaterThanOrEqual(1)
   })
 })

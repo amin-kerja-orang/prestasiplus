@@ -22,13 +22,14 @@ export const QUESTIONS_WRITE_LIMIT = {
 /**
  * The admin list takes a free-text `search`. A 1 to 2 character or punctuation-only term cannot use the trigram index (migration 0106)
  * and scans the bank (about 1.8 s at 408k rows), so the route has its OWN per-user bucket instead of refusing short terms (V2 accepts
- * them). Env `THROTTLE_QUESTIONS_LIST_PER_MINUTE`, else 60: one list call a second is more than a person filtering and paging uses,
- * and it caps a script's worst case at about 60 x 1.8 s of database time a minute per account.
+ * them). Env `THROTTLE_QUESTIONS_LIST_PER_MINUTE`, else 240 (REQ-B-061: 60 was reached by normal use, since the admin screens call
+ * the list on every filter change and the Bank calls it several times per view). 240 matches the other per-user read ceilings
+ * (notification inbox, wallet) and still caps a script's worst case at about 240 x 1.8 s of database time a minute per account.
  */
 export const QUESTIONS_LIST_LIMIT = {
   bucket: 'questions-list',
   env: 'THROTTLE_QUESTIONS_LIST_PER_MINUTE',
-  default: 60,
+  default: 240,
   per: 'user',
 } as const satisfies RateLimitSpec
 
