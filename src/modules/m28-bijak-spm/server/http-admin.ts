@@ -95,7 +95,7 @@ import {
   type QueueContext,
 } from './review-wire'
 import type { IntakeItemRow, IntakeItemStateCounts, StudioDskp } from '@pp/contract'
-import { ApiError } from '@/api'
+import { ApiError, type HttpMethod } from '@/api'
 import { HttpBijakServer, toBijakError, type HttpBijakOptions } from './http'
 import type { BijakServer } from './store'
 
@@ -206,6 +206,7 @@ export function editorFromWire(e: BijakBuilderEditor): PaperEditorData {
 export function previewFromWire(p: BijakBuilderPreview): {
   questions: ReviewQuestion[]
   stimuli: Record<string, StimulusDef>
+  groupStimuli: Record<string, StimulusDef[]>
   optionBanks: Record<string, { id: string; text: string }[]>
 } {
   return {
@@ -214,6 +215,8 @@ export function previewFromWire(p: BijakBuilderPreview): {
       curriculum: { ...q.curriculum, subject: q.curriculum.subject },
     })),
     stimuli: p.stimuli,
+    // D90: up to 3 stimuli per group; an older server sends only the first in `stimuli`.
+    groupStimuli: p.groupStimuli ?? Object.fromEntries(Object.entries(p.stimuli).map(([gid, st]) => [gid, [st]])),
     optionBanks: p.optionBanks,
   }
 }
@@ -225,6 +228,14 @@ const PAGE_SIZE = 100
 const MAX_PAGES = 50
 
 const BANK_PAGE = 50
+/** Largest page of `GET /api/questions` (contract: max 100). */
+const LIST_PAGE_MAX = 100
+/** How long an answer of the question list is reused (REQ-B-061). */
+const LIST_TTL_MS = 15_000
+interface QuestionListAnswer<T> {
+  data: T[]
+  meta: { totalItems?: number } | undefined
+}
 const EMPTY_COUNTS: IntakeItemStateCounts = { generated: 0, needs_review: 0, accepted: 0, rejected: 0, duplicate: 0 }
 const REMOVED_REASON = 'Dibuang oleh penyemak.'
 const REJECT_REASON_REQUIRED = 'Sebab penolakan diperlukan.'
@@ -305,9 +316,17 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
   private readonly batchInfo = new Map<string, WireBatchDetail>()
   private subjectsReady: Promise<readonly Subject[]> | null = null
   private levelIds: Promise<Map<string, string>> | null = null
+  /** Recent `GET /api/questions` answers by query (REQ-B-061): the list has a per-user limit. */
+  private readonly listCache = new Map<string, { at: number; hit: Promise<QuestionListAnswer<unknown>> }>()
 
   constructor(options: HttpBijakOptions = {}) {
     super(options)
+  }
+
+  /** A write may change what the question lists return: drop the cached answers. */
+  protected override async send<T>(method: HttpMethod, url: string, body?: Record<string, unknown>): Promise<T> {
+    if (method !== 'GET') this.listCache.clear()
+    return super.send<T>(method, url, body)
   }
 
   /** Reads every page of a paged admin list (page size 100). */
@@ -409,6 +428,7 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
       const units = (res?.data ?? []).map((u) => ({
         ...(u.groupId ? { groupId: u.groupId } : {}),
         ...(u.stimulus ? { stimulus: u.stimulus } : {}),
+        ...(u.stimuli ? { stimuli: u.stimuli } : {}),
         questionIds: u.questionIds,
         questions: u.questions.map(questionFromWire),
         marks: u.marks,
@@ -900,35 +920,74 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
     return out
   }
 
-  private async questionList<T>(
-    params: Record<string, string>,
-  ): Promise<{ data: T[]; meta: { totalItems?: number } | undefined }> {
-    try {
-      const body = await this.client.request<{ data: T[]; meta?: { totalItems?: number } }>(
-        'GET',
-        `/api/questions?${new URLSearchParams(params)}`,
-        { raw: true },
-      )
-      return { data: body?.data ?? [], meta: body?.meta }
-    } catch (e) {
-      throw toBijakError(e)
+  /**
+   * One `GET /api/questions`. The answer is kept for `LIST_TTL_MS` per query and a call already in flight is
+   * shared, so a filter that comes back (or two screens asking the same) costs no second read (REQ-B-061).
+   * A failed read (for example 429) is not kept.
+   */
+  private questionList<T>(params: Record<string, string>): Promise<QuestionListAnswer<T>> {
+    const key = new URLSearchParams(Object.entries(params).sort(([a], [b]) => a.localeCompare(b))).toString()
+    const now = Date.now()
+    const cached = this.listCache.get(key)
+    if (cached && now - cached.at < LIST_TTL_MS) return cached.hit as Promise<QuestionListAnswer<T>>
+    const hit = (async (): Promise<QuestionListAnswer<T>> => {
+      try {
+        const body = await this.client.request<{ data: T[]; meta?: { totalItems?: number } }>(
+          'GET',
+          `/api/questions?${new URLSearchParams(params)}`,
+          { raw: true },
+        )
+        return { data: body?.data ?? [], meta: body?.meta }
+      } catch (e) {
+        throw toBijakError(e)
+      }
+    })()
+    this.listCache.set(key, { at: now, hit })
+    hit.catch(() => {
+      if (this.listCache.get(key)?.hit === hit) this.listCache.delete(key)
+    })
+    return hit
+  }
+
+  /**
+   * Rows of one status (or all) for every Bijak subject, as `{ row, subject }`. Fast path: ONE list call with
+   * no subject filter, split by the subject name of each row, when the whole answer fits in one page.
+   * Otherwise (a big bank) one call per subject, as the list contract has no combined subject filter.
+   */
+  private async bankRowsOf(
+    subjects: { code: string; name: string; id: string }[],
+    wireStatus: string | undefined,
+    search: string | undefined,
+    whole: boolean,
+  ): Promise<{ r: WireBankRow; s: { code: string; name: string; id: string } }[]> {
+    const common = { ...(wireStatus ? { status: wireStatus } : {}), ...(search ? { search } : {}) }
+    if (whole && subjects.length > 1) {
+      const all = await this.questionList<WireBankRow>({ ...common, pageSize: String(LIST_PAGE_MAX) })
+      if ((all.meta?.totalItems ?? all.data.length) <= all.data.length) {
+        const byName = new Map(subjects.map((s) => [s.name.trim().toLowerCase(), s]))
+        return all.data.flatMap((r) => {
+          const s = byName.get(r.subject?.name.trim().toLowerCase() ?? '')
+          return s ? [{ r, s }] : []
+        })
+      }
     }
+    const lists = await mapLimit(subjects, 4, async (s) => {
+      const res = await this.questionList<WireBankRow>({ ...common, subjectId: s.id, pageSize: String(BANK_PAGE) })
+      return res.data.map((r) => ({ r, s }))
+    })
+    return lists.flat()
   }
 
   async listBank(f: BankFilter = {}): Promise<BankRow[]> {
-    const subjects = (await this.bankSubjects()).filter((s) => !f.subject || s.code === f.subject)
+    const all = await this.bankSubjects()
+    const subjects = all.filter((s) => !f.subject || s.code === f.subject)
     const wire = wireStatusesOf(f.status ?? 'terbit')
-    const combos = subjects.flatMap((s) => (wire ?? [undefined]).map((st) => ({ s, st })))
-    const lists = await mapLimit(combos, 4, async ({ s, st }) => {
-      const res = await this.questionList<WireBankRow>({
-        subjectId: s.id,
-        pageSize: String(BANK_PAGE),
-        ...(st ? { status: st } : {}),
-        ...(f.q?.trim() ? { search: f.q.trim() } : {}),
-      })
-      return res.data.map((r) => ({ r, s }))
-    })
-    const found = lists.flat()
+    const search = f.q?.trim() || undefined
+    const found = (
+      await Promise.all(
+        (wire ?? [undefined]).map((st) => this.bankRowsOf(subjects, st, search, !f.subject)),
+      )
+    ).flat()
     // The row has no question type or marks: one read per row (at most BANK_PAGE per subject).
     const rows = await mapLimit(found, 6, async ({ r, s }) => {
       const d = await this.send<WireBankDetail>('GET', `/api/questions/${enc(r.id)}`)
@@ -941,23 +1000,38 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
 
   async bankStats(): Promise<BankStats> {
     const subjects = await this.bankSubjects()
-    const count = async (id: string, status: string): Promise<number> =>
-      (await this.questionList({ subjectId: id, status, pageSize: '1' })).meta?.totalItems ?? 0
-    const by = await mapLimit(subjects, 2, async (s) => {
-      const [review, draft, archived] = await Promise.all(['review', 'draft', 'archived'].map((st) => count(s.id, st)))
-      return {
-        code: s.code,
-        name: s.name,
-        terbit: s.published,
-        semakan: review ?? 0, // ADR-0027: `approved` is Terbit (`s.published`), not Semakan
-        draf: draft ?? 0,
-        ditolak: archived ?? 0,
-      }
-    })
+    // Only the Semakan count is read: the Bank Soalan strip shows Terbit (from the summary) and Semakan.
+    // One list call with no subject filter when it fits one page, else one count call per subject.
+    const review = await this.reviewCounts(subjects)
     return {
       total: subjects.reduce((n, s) => n + s.total, 0),
-      bySubject: by,
+      bySubject: subjects.map((s) => ({
+        code: s.code,
+        name: s.name,
+        terbit: s.published, // ADR-0027: `approved` is Terbit
+        semakan: review.get(s.id) ?? 0,
+      })),
     }
+  }
+
+  private async reviewCounts(subjects: { name: string; id: string }[]): Promise<Map<string, number>> {
+    const out = new Map<string, number>()
+    if (subjects.length > 1) {
+      const all = await this.questionList<WireBankRow>({ status: 'review', pageSize: String(LIST_PAGE_MAX) })
+      if ((all.meta?.totalItems ?? all.data.length) <= all.data.length) {
+        const byName = new Map(subjects.map((s) => [s.name.trim().toLowerCase(), s.id]))
+        for (const r of all.data) {
+          const id = byName.get(r.subject?.name.trim().toLowerCase() ?? '')
+          if (id) out.set(id, (out.get(id) ?? 0) + 1)
+        }
+        return out
+      }
+    }
+    await mapLimit(subjects, 2, async (s) => {
+      const res = await this.questionList({ subjectId: s.id, status: 'review', pageSize: '1' })
+      out.set(s.id, res.meta?.totalItems ?? 0)
+    })
+    return out
   }
 
   async getBankDetail(qid: string): Promise<BankDetail> {

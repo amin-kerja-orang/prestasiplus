@@ -13,20 +13,27 @@ import { isApiError } from '@/api'
 import { useConfirm } from '@/ds'
 
 import { generateAiExplanation, type AiExplanation } from '../api/questions'
-import { errorTextOf, REGENERATE_CONFIRM } from '../lib/question-list'
+import { AI_DRAFT_NOTICE, errorTextOf, REGENERATE_CONFIRM } from '../lib/question-list'
 import MarkdownView from './MarkdownView.vue'
 
-const props = defineProps<{ questionId: number; explanation: AiExplanation | null }>()
+const props = defineProps<{
+  questionId: number
+  explanation: AiExplanation | null
+  /** Status of the question when the page was read: an approved or archived one is not rewritten, the text becomes a new draft (REQ-A-023). */
+  status?: string
+}>()
 const emit = defineEmits<{ generated: [] }>()
 
 const confirm = useConfirm()
 const loading = ref(false)
 const errorText = ref<string | null>(null)
+const draftNotice = ref(false)
 
 async function run(force: boolean): Promise<void> {
   if (loading.value) return
   loading.value = true
   errorText.value = null
+  draftNotice.value = false
   try {
     const reply = await generateAiExplanation(props.questionId, { force })
     const body = reply.body as { ok?: unknown } | null
@@ -36,6 +43,7 @@ async function run(force: boolean): Promise<void> {
       typeof body === 'object' &&
       body?.ok === true
     ) {
+      draftNotice.value = props.status === 'approved' || props.status === 'archived'
       emit('generated')
     } else {
       errorText.value = errorTextOf(reply)
@@ -79,6 +87,26 @@ async function regenerate(): Promise<void> {
       <UIcon name="i-ph-spinner" class="size-4" />
       Sedang menjana penjelasan... (anggaran 5-15 saat)
     </p>
+
+    <UAlert
+      v-if="draftNotice"
+      color="info"
+      variant="subtle"
+      icon="i-ph-info"
+      class="mt-3"
+      role="status"
+      data-testid="ai-draft-notice"
+    >
+      <template #description>
+        <span class="min-w-0 break-words">{{ AI_DRAFT_NOTICE }}</span>
+        <RouterLink
+          :to="`/admin/studio/questions/${String(questionId)}/sunting`"
+          class="ms-1 inline-flex min-h-11 items-center text-primary-t"
+          data-testid="ai-draft-link"
+          >Buka draf</RouterLink
+        >
+      </template>
+    </UAlert>
 
     <UAlert
       v-if="errorText !== null"

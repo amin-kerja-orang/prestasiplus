@@ -41,6 +41,7 @@ import {
   type PendingGroup,
   type StimulusForm,
 } from '../../lib/studio/stimulus'
+import { FILTER_DEBOUNCE_MS, listLoadMessage } from '../../lib/list-load'
 import { errorLines, LOAD_ERROR } from '../../lib/ui-errors'
 import StudioStimulusEditor from './StudioStimulusEditor.vue'
 
@@ -314,20 +315,35 @@ function discard(): void {
 }
 
 let searchSeq = 0
-async function doSearch(): Promise<void> {
+let searchTimer: ReturnType<typeof setTimeout> | undefined
+/** Answers of this editor's searches by term (REQ-B-061: `GET /api/questions` has a per-user limit); a failed read is not kept. */
+const searchCache = new Map<string, QuestionPick[]>()
+onBeforeUnmount(() => clearTimeout(searchTimer))
+/** Called on every keystroke: a term shorter than 2 letters clears at once, else the read waits for 300 ms of quiet. */
+function doSearch(): void {
+  clearTimeout(searchTimer)
   const q = search.value.trim()
-  const token = ++searchSeq
   if (q.length < 2) {
+    searchSeq += 1
+    searching.value = false
     found.value = []
     return
   }
+  searchTimer = setTimeout(() => void runSearch(q), FILTER_DEBOUNCE_MS)
+}
+async function runSearch(q: string): Promise<void> {
+  const token = ++searchSeq
   searching.value = true
   try {
-    const res = await searchQuestions(q)
+    let rows = searchCache.get(q)
+    if (!rows) {
+      rows = (await searchQuestions(q)).data
+      searchCache.set(q, rows)
+    }
     const taken = new Set([...members.value.map((m) => m.id), ...picks.value.map((m) => m.id), props.currentQuestionId ?? ''])
-    if (token === searchSeq) found.value = res.data.filter((r) => !taken.has(r.id))
-  } catch {
-    if (token === searchSeq) problems.value = [LOAD_ERROR]
+    if (token === searchSeq) found.value = rows.filter((r) => !taken.has(r.id))
+  } catch (err) {
+    if (token === searchSeq) problems.value = [listLoadMessage(err)]
   } finally {
     if (token === searchSeq) searching.value = false
   }

@@ -8,6 +8,7 @@ import type {
   BijakPoolScope,
   BijakQuestionInfo,
   BijakQuestionSource as PaperQuestionSource,
+  PinRef,
 } from '../../../src/modules/bijak/papers/ports'
 
 /**
@@ -75,8 +76,12 @@ export class CompositeBijakQuestionSource implements AttemptQuestionSource {
 export class CompositePaperQuestionSource implements PaperQuestionSource {
   constructor(
     private readonly poc: PaperQuestionSource | null,
-    private readonly bank: Pick<PaperQuestionSource, 'getMany'> & Partial<Pick<PaperQuestionSource, 'getPinned'>>,
+    private readonly bank: Pick<PaperQuestionSource, 'getMany' | 'takenDownPins'> & Partial<Pick<PaperQuestionSource, 'getPinned'>>,
   ) {}
+
+  takenDownPins(pins: readonly PinRef[]): Promise<ReadonlySet<string>> {
+    return pins.length === 0 ? Promise.resolve(new Set()) : this.bank.takenDownPins(pins)
+  }
 
   getMany(questionIds: readonly string[]): Promise<ReadonlyMap<string, BijakQuestionInfo>> {
     const { poc, bank } = split(questionIds)

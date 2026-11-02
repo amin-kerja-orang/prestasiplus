@@ -145,10 +145,15 @@ export const EnvSchema = z.object({
   THROTTLE_STRUCTURED_ATTEMPT_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   // BE-09 (question bank). Optional: the code applies 60 writes per minute per user when unset.
   THROTTLE_QUESTIONS_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  // R1 admin-list-perf (GET /questions, Admin Pusat). Optional: the code applies 240 list reads per minute per user when unset (REQ-B-061; a short search term scans the bank).
+  THROTTLE_QUESTIONS_LIST_PER_MINUTE: aiInt(1, 1_000_000),
   // R1-B11 (servability reads, Admin Pusat). Optional: the code applies 120 reads per minute per user when unset.
   THROTTLE_SERVABILITY_READ_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   // The overview counts the whole bank, so it has its own bucket. Optional: the code applies 6 per minute per user when unset.
   THROTTLE_SERVABILITY_OVERVIEW_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  // REQ-B-022(a): compute the admin servability overview once at start (not awaited; a failure only logs). Unset: on in production, off elsewhere.
+  // Empty = unset (the shipped .env.api.example carries `SERVABILITY_OVERVIEW_WARM=`; a copied example must boot): same rule as CLIENT_IP_HEADER (REQ-B-053).
+  SERVABILITY_OVERVIEW_WARM: z.preprocess((v) => (v === '' ? undefined : v), z.enum(['true', 'false']).optional()),
   // BE-06: development only. true lets the logging MailPort print the password reset link (a secret) to the log. Ignored outside NODE_ENV=development; refused at start in production.
   MAIL_LOG_RESET_LINKS: z.enum(['true', 'false']).optional(),
   // BE-17 (classes). Throttles per user and the public origin of the join link (QR payload); the code applies the defaults when unset.

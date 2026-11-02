@@ -6,6 +6,7 @@
 
 import type { Page } from '@playwright/test'
 
+import { M02_CONFIG_DEFAULTS } from '../../src/modules/m02-users-schools/mock/m02-config'
 import { expect, gotoApp as gotoAppOn, test } from '../fixtures/test'
 import { acceptNextDialog, expectNoHorizontalScroll, moduleTag, TAG } from '../support'
 
@@ -63,7 +64,7 @@ test.describe('M02 QA S4 bulk import gaps', { tag: [TAG.smoke, moduleTag(2)] }, 
     page,
   }) => {
     // SEC-M02-01 fixture default (config importDefaultPassword), not the demo password.
-    await expect(byId(page, 'bulk-default-password')).toHaveValue('Import2026')
+    await expect(byId(page, 'bulk-default-password')).toHaveValue(M02_CONFIG_DEFAULTS.bulkImportDefaultPassword)
     await expect(byId(page, 'bulk-default-password')).not.toHaveAttribute('required', '')
     await expect(byId(page, 'import-paste')).toBeVisible()
     await byId(page, 'import-mode-csv').click()
@@ -105,7 +106,7 @@ test.describe('M02 QA S4 bulk import gaps', { tag: [TAG.smoke, moduleTag(2)] }, 
       expect(chosen.startsWith(cell.trim())).toBe(true)
     }
     const tab = await newTab()
-    await loginUi(tab, 'guru.qa2@contoh.test', 'Import2026')
+    await loginUi(tab, 'guru.qa2@contoh.test', M02_CONFIG_DEFAULTS.bulkImportDefaultPassword)
     await expect(tab).not.toHaveURL(/\/login/)
     const tab2 = await newTab()
     await loginUi(tab2, 'guru.qa1@contoh.test', 'KataQa123')
@@ -239,7 +240,7 @@ test.describe('M02 QA S6-S8 gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     gotoApp,
   }) => {
     await gotoApp('/admin/comp-students/create')
-    await expect(byId(page, 'comp-info')).toContainText('kata laluan 20262026')
+    await expect(byId(page, 'comp-info')).toContainText(`kata laluan ${M02_CONFIG_DEFAULTS.compStudentDefaultPassword}`)
     await expect(byId(page, 'comp-teacher').locator('option').nth(1)).toContainText(/\(.+@.+\)/)
     await mock.setLatency(1200)
     await byId(page, 'comp-teacher').selectOption('5')

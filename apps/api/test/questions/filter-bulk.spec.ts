@@ -1,7 +1,7 @@
 import { QUESTION_MESSAGES, QuestionSchema, mutationEnvelopeOf } from '@pp/contract'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
-import { QuestionsService } from '../../src/modules/questions'
+import { QuestionsRepository, QuestionsService } from '../../src/modules/questions'
 import { FILTER_ACTION_CAP } from '../../src/modules/questions/questions.service'
 import { bootQuestionsApp, expectError, loginAs, type Client, type QuestionsTestApp } from './helpers'
 import { countOf, mcqBody, refsOf, tagOf, type Refs } from './http-helpers'
@@ -118,6 +118,30 @@ describe('filter-based bulk action (Luluskan Hasil Tapisan, Arkib Semua)', () =>
     expect(FILTER_ACTION_CAP).toBe(500)
   })
 
+  it('R1E2E-10 race: a row approved after the targets were read is skipped (counted in `skipped` and `processed`, not in `affected` or `failed`)', async () => {
+    const b = await batch({ review: 3 })
+    const svc = t.app.get(QuestionsService)
+    const repo = t.app.get(QuestionsRepository)
+    const actor = { userId: admin.userId, role: 'admin' as const }
+    const [raced, ...rest] = b.review as [string, string, string]
+    // Another request publishes `raced` right after the targets are read and before the bulk action reaches it.
+    const real = repo.filterTargets.bind(repo)
+    const spy = vi.spyOn(repo, 'filterTargets').mockImplementation(async (...args) => {
+      const out = await real(...args)
+      const r = await admin.post('/api/questions/bulk-action', { action: 'approved', ids: [raced] })
+      expect(r.status, JSON.stringify(r.body)).toBe(200)
+      return out
+    })
+    try {
+      const out = await svc.bulkByFilter({ action: 'approved', filter: { tahun: b.year }, expectedCount: 3 }, actor)
+      expect(out).toMatchObject({ matched: 3, eligible: 3, skipped: 1, processed: 3, affected: 2, failed: [], remaining: 0, capped: false })
+      expect([...out.ids].sort()).toEqual([...rest].sort())
+    } finally {
+      spy.mockRestore()
+    }
+    for (const id of b.review) expect(await statusOf(id)).toBe('approved')
+  })
+
   it('Arkib Semua: archives Draf, Semakan and Diterbitkan rows of the filter; the V2 text when the filter is empty', async () => {
     const b = await batch({ review: 2, draft: 1 })
     expect((await post(admin, { action: 'approved', filter: { tahun: b.year }, expectedCount: 3 })).body.data.affected).toBe(2)
@@ -170,10 +194,34 @@ describe('filter-based bulk action (Luluskan Hasil Tapisan, Arkib Semua)', () =>
     const svc = t.app.get(QuestionsService)
     await expect(svc.bulkByFilter({ action: 'approved', filter: {}, expectedCount: total }, { userId: admin.userId, role: 'admin' })).rejects.toMatchObject({ code: 'VALIDATION_ERROR' })
     for (const id of b.review) expect(await statusOf(id)).toBe('review')
-    // A blank search on archive is the same as no filter: Arkib Semua is allowed (dry run only here, so the bank stays for the next tests).
-    const dry = await post(admin, { action: 'archived', filter: { search: '   ' }, dryRun: true })
+    // Arkib Semua is the truly EMPTY filter. A blank search sent on archive is refused (it would archive the whole bank by accident).
+    const dry = await post(admin, { action: 'archived', filter: {}, dryRun: true })
     expect(dry.status, JSON.stringify(dry.body)).toBe(200)
     expect(dry.body.data.matched).toBe(total)
+  })
+
+  it('REQ-C-019 follow-up: archived with a filter that only has blank values is 422 (BM), applying nothing; an empty filter {} is still Arkib Semua', async () => {
+    const b = await batch({ review: 1 })
+    const total = (await admin.get('/api/questions?pageSize=1')).body.meta.totalItems as number
+    const liveRows = async () => ((await admin.get('/api/questions?pageSize=1&status=archived')).body.meta.totalItems as number)
+    const archivedBefore = await liveRows()
+    for (const filter of [{ negeri: '' }, { negeri: '  ' }, { negeri: '  ', search: '' }, { search: '   ' }, { search: '\t\n ' }]) {
+      for (const extra of [{ dryRun: true }, { expectedCount: total }]) {
+        const res = await post(admin, { action: 'archived', filter, ...extra })
+        const error = expectError(res, 'VALIDATION_ERROR')
+        expect(error.fields?.filter, JSON.stringify(filter)).toBe(QUESTION_MESSAGES.filterBlank)
+      }
+    }
+    expect(await liveRows()).toBe(archivedBefore)
+    expect(await statusOf(b.review[0]!)).toBe('review')
+    // a real filter next to a blank one still acts on the real one only
+    const mixed = await post(admin, { action: 'archived', filter: { tahun: b.year, negeri: '  ' }, dryRun: true })
+    expect(mixed.status, JSON.stringify(mixed.body)).toBe(200)
+    expect(mixed.body.data.matched).toBeLessThan(total)
+    // {} is Arkib Semua (dry run here)
+    const all = await post(admin, { action: 'archived', filter: {}, dryRun: true })
+    expect(all.status, JSON.stringify(all.body)).toBe(200)
+    expect(all.body.data.matched).toBe(total)
   })
 
   it('Admin Pusat only, with a session and a CSRF token', async () => {

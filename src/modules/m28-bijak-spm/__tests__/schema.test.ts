@@ -60,7 +60,7 @@ describe('paper sections follow the approved blueprint model', () => {
     const c = cover.sections[2]!
     expect(c).toMatchObject({
       label: 'Bahagian C',
-      instruction: 'Jawab 1 daripada 2 soalan.',
+      instruction: 'Jawab 1 soalan sahaja.',
       questionCount: 2,
       chooseN: 1,
       compulsory: false,

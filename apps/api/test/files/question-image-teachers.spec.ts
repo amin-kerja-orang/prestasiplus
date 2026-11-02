@@ -117,7 +117,7 @@ describe('question images: teacher A / teacher B / admin / pupil matrix (real da
     const { qid, vid } = await draft(adminId, 'admin')
     const img = await upload(admin)
     await onOption(vid, img)
-    await t.db.query(`update question_versions set status = 'archived', published_at = now() where question_id = $1`, [qid]) // pinned version of a paper, no longer live
+    await t.db.query(`update question_versions set status = 'archived', archive_reason = 'superseded', published_at = now() where question_id = $1`, [qid]) // pinned version of a paper, no longer live
     const paper = (await one(
       `insert into papers (kind, title, subject_id, kertas, printed_duration_min, status, generated_for_user_id) values ('jana', 'Jana', $1, 1, 60, 'published', $2) returning id::text`,
       [tag.subjectId, pupilId],

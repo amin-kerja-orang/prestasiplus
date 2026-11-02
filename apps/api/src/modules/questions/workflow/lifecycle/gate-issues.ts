@@ -1,6 +1,6 @@
 import type { QuestionGateIssue } from '@pp/contract'
 
-import type { GateFields } from './gates'
+import { GATE_MESSAGES, type GateFields } from './gates'
 
 /**
  * `{ path, code, message, step }` of a gate failure (R1-B05). The gates return a `fields` map (path -> BM message, the 422 shape);
@@ -8,18 +8,19 @@ import type { GateFields } from './gates'
  */
 const BY_KEY: Readonly<Record<string, { code: string; step: 1 | 2 | 3 | 4 }>> = {
   kertas: { code: 'KERTAS_MISSING', step: 1 },
-  stem: { code: 'REQUIRED_FIELD', step: 1 },
+  questionText: { code: 'REQUIRED_FIELD', step: 1 },
+  parts: { code: 'REQUIRED_FIELD', step: 3 },
+  // The low-confidence fields use the intake names; `gateIssuesOf` gives them the LOW_CONFIDENCE code, this only places them on a step.
+  stem: { code: 'LOW_CONFIDENCE', step: 1 },
+  options: { code: 'LOW_CONFIDENCE', step: 3 },
   media: { code: 'MEDIA_UNRESOLVED', step: 2 },
   marks: { code: 'MARKS_MISMATCH', step: 3 },
   subjectId: { code: 'SUBJECT_MISSING', step: 4 },
   educationLevelId: { code: 'LEVEL_MISSING', step: 4 },
-  chapterId: { code: 'CHAPTER_MISSING', step: 4 },
   unitId: { code: 'UNIT_MISSING', step: 4 },
   spIds: { code: 'SP_MISSING', step: 4 },
   tp: { code: 'TP_MISSING', step: 4 },
-  rightsStatus: { code: 'RIGHTS_MISSING', step: 4 },
   duplicate: { code: 'DUPLICATE_OPEN', step: 4 },
-  source: { code: 'SOURCE_MISSING', step: 4 },
   reviewer: { code: 'REVIEWER_IS_AI', step: 4 },
   year: { code: 'LOW_CONFIDENCE', step: 4 },
 }
@@ -35,5 +36,9 @@ function describe(path: string): { code: string; step: 1 | 2 | 3 | 4 } {
 }
 
 export function gateIssuesOf(fields: GateFields): QuestionGateIssue[] {
-  return Object.entries(fields).map(([path, message]) => ({ path, message, ...describe(path) }))
+  return Object.entries(fields).map(([path, message]) => {
+    const found = describe(path)
+    // A low-confidence field the reviewer has not confirmed (the submit gate) is its own kind of issue, on whatever step the field belongs to.
+    return { path, message, ...(message === GATE_MESSAGES.lowConfidence ? { code: 'LOW_CONFIDENCE', step: found.step } : found) }
+  })
 }

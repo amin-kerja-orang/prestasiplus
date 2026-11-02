@@ -367,6 +367,31 @@ describe('paper builder R1-B09a: placements, D90 groups, review, publish, copy, 
       }
     })
 
+    it('the text search covers the whole candidate set, not only the first 1500 candidates (a source without matchText: the describe-based filter)', async () => {
+      const filler = Array.from({ length: 1700 }, (_, i) => String(720000 + i))
+      for (const fid of filler) {
+        bank.add({ id: fid, marks: 1 })
+        ;(FACTS as Record<string, { marks: number }>)[fid] = { marks: 1 }
+      }
+      const matchText = bank.matchText
+      ;(bank as { matchText?: unknown }).matchText = undefined
+      try {
+        pool.ids = new Set(Object.keys(FACTS))
+        pool.tags = {}
+        const id = await newPaper()
+        const [a] = await sections(id)
+        const res = await admin.get(`/api/admin/papers/${id}/sections/${a}/pool?q=${encodeURIComponent('Soalan 721650 v1')}&pageSize=100`)
+        expect(res.status, JSON.stringify(res.body)).toBe(200)
+        const units = Pool.parse(res.body)
+        expect(units.meta.totalItems).toBe(1)
+        expect(units.data[0]!.questionIds).toEqual(['721650'])
+      } finally {
+        ;(bank as { matchText?: unknown }).matchText = matchText
+        for (const fid of filler) delete (FACTS as Record<string, unknown>)[fid]
+        pool.ids = new Set(Object.keys(FACTS))
+      }
+    })
+
     it('D90/D93: a one-member group stays a group (groupId + stimulus) in the pool and is not placeable', async () => {
       bank.add({ id: '700041', marks: 1, groupId: '800009' }).addGroup('800009', ['700041'])
       ;(FACTS as Record<string, unknown>)['700041'] = { marks: 1, group: '800009', position: 1, size: 1 }

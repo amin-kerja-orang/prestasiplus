@@ -100,19 +100,17 @@ export function safeHref(url: string | null | undefined): string | null {
 
 export type StartErrorPlan =
   | { kind: 'pricing' }
-  | { kind: 'locked' }
   | { kind: 'not-found' }
   | { kind: 'alert'; message: string }
 
 /**
  * What the host does when #4 fails (FR-M05-48, 51, 66, 75): 402 `TRIAL_EXHAUSTED` → `/pricing`,
- * 409 `CHAPTER_LOCKED` → the host's locked URL (both without a message), 404 → the global 404 page,
+ * 404 → the global 404 page,
  * anything else → `alert(message)` and back to the list.
  */
 export function planStartError(err: unknown, labels: QuizLabels): StartErrorPlan {
   if (err instanceof ApiError) {
     if (err.status === 402 || err.code === 'TRIAL_EXHAUSTED') return { kind: 'pricing' }
-    if (err.status === 409 && err.code === 'CHAPTER_LOCKED') return { kind: 'locked' }
     if (err.status === 404) return { kind: 'not-found' }
     if (err.code === API_ERROR_CODES.NETWORK_ERROR || err.status === 0) {
       return { kind: 'alert', message: err.message || labels.networkErrorFallback }

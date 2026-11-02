@@ -419,7 +419,11 @@ export class IntakeReviewService {
     await this.prisma.transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM intake_items WHERE id = ${first.id} FOR UPDATE`
       const row = await this.loadVisible(auth, idText, tx)
-      if (!OPEN.includes(row.reviewState as IntakeItemState)) throw conflict(INTAKE_MESSAGES.itemLocked)
+      // REQ-B-057: accept does not wait for the duplicate entries (they stay open, BE-10 Semakan enforces them), so an ACCEPTED item must still be
+      // able to dismiss them ("Bukan pendua", v2-question-bank "duplicate flag resolved or marked Bukan pendua"), or the question could never
+      // leave Draf. Nothing else is decided after accept (no Gabung, no variant link) and the state stays `accepted`.
+      const accepted = row.reviewState === 'accepted'
+      if (accepted ? body.decision !== 'not_duplicate' : !OPEN.includes(row.reviewState as IntakeItemState)) throw conflict(INTAKE_MESSAGES.itemLocked)
       const from = row.reviewState as IntakeItemState
       const now = new Date()
       const decidedBy = idFromString(auth.userId)
@@ -429,6 +433,13 @@ export class IntakeReviewService {
       if (body.decision === 'not_duplicate') {
         const entry = body.duplicateId === undefined ? undefined : row.duplicates.find((d) => idToString(d.id) === body.duplicateId)
         if (!entry) throw invalid('duplicateId', INTAKE_MESSAGES.duplicateTargetNotFound)
+        // Idempotent (AC-06.5: the decision and its reviewer are logged): a link that is already "Bukan pendua" keeps its first reviewer and time, and a
+        // repeat writes no new event and no audit row; the answer is the same item view (200).
+        if (entry.decision === 'not_duplicate') {
+          return
+        }
+        // After accept only an OPEN entry can be dismissed; an entry decided earlier (Gabung, variant link) is not re-decided on an accepted item.
+        if (accepted && entry.decision !== 'pending') throw conflict(INTAKE_MESSAGES.itemLocked)
         await tx.duplicateLink.update({ where: { id: entry.id }, data: { decision: 'not_duplicate', ...who_ } })
         event = 'cleared_duplicate'
       } else {
@@ -471,12 +482,14 @@ export class IntakeReviewService {
       }
 
       const dups = await tx.duplicateLink.findMany({ where: { itemId: row.id } })
-      const to = intakeOpenState({ lowFields: row.lowFields, confirmed: row.confirmedFields, needsManual: row.needsManual, duplicates: stateDuplicates(dups) })
-      await tx.intakeItem.update({ where: { id: row.id }, data: { reviewState: to } })
+      const to = accepted
+        ? from
+        : intakeOpenState({ lowFields: row.lowFields, confirmed: row.confirmedFields, needsManual: row.needsManual, duplicates: stateDuplicates(dups) })
+      if (!accepted) await tx.intakeItem.update({ where: { id: row.id }, data: { reviewState: to } })
       await tx.intakeItemEvent.create({
         data: { itemId: row.id, event, fromState: from, toState: to, reason: body.note ?? null, actorUserId: decidedBy, actorRole: auth.active.role },
       })
-      await this.record(INTAKE_AUDIT.itemDuplicate, auth, row, who, { from, to, decision: body.decision, ...(body.note ? { reason: body.note } : {}) }, tx)
+      await this.record(INTAKE_AUDIT.itemDuplicate, auth, row, who, { from, to, decision: body.decision, ...(body.duplicateId ? { duplicateId: body.duplicateId } : {}), ...(body.note ? { reason: body.note } : {}) }, tx)
     }, TX)
     return this.views.detail(auth, await this.loadVisible(auth, idText))
   }
@@ -530,6 +543,10 @@ export class IntakeReviewService {
         sourceFileId: file === null || file === undefined ? null : idToString(file.fileId),
         aiRunId: row.aiRunId === null ? null : idToString(row.aiRunId),
         aiModel: row.run?.model ?? null,
+        // R1-H-A18: the question total the item declared; the approve gate compares it with the sum of the leaf marks.
+        // Only a question with NO parts declares a total: for a parted question the intake total is 0 (its marks are the parts'), and the
+        // gate would compare that 0 with the sum of the parts.
+        declaredMarks: q.parts.length === 0 && Number.isInteger(q.marks) && q.marks > 0 && q.marks <= 999 ? q.marks : null,
         paperCode: paper?.paperCode && /\/[0-9]\s*$/.test(paper.paperCode) ? paper.paperCode : null,
       })
     } catch (err) {

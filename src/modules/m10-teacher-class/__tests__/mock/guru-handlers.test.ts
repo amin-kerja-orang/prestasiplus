@@ -662,15 +662,15 @@ describe('#51–#52 contributions (S21; BR-M10-21, BR-M10-23)', () => {
     expect(a.body.breakdown).toEqual([{ label: 'Bahasa Melayu', count: 1 }])
   })
 
-  it('#51 the admin: 16,817 contributions, seven tiers reached, next = Legenda Terulung', async () => {
+  it('#51 the admin: 9,531 contributions, six tiers reached, next = Guru Maestro', async () => {
     const a = await call<Contrib>('GET', '/api/guru/contributions', { as: ADMIN })
-    expect(a.body.stats).toEqual({ total: 16817, approved: 16817, pending: 0, used: 0 })
-    expect(a.body.tiers.filter((t) => t.reached)).toHaveLength(7)
-    expect(a.body.nextTier).toEqual({ name: 'Legenda Terulung', threshold: 50000 })
+    expect(a.body.stats).toEqual({ total: 9531, approved: 9531, pending: 0, used: 0 })
+    expect(a.body.tiers.filter((t) => t.reached)).toHaveLength(6)
+    expect(a.body.nextTier).toEqual({ name: 'Guru Maestro', threshold: 10000 })
     expect(a.body.breakdown.length).toBeLessThanOrEqual(11)
     const counts = a.body.breakdown.map((b) => b.count)
     expect(counts.slice(0, 10)).toEqual([...counts.slice(0, 10)].sort((x, y) => y - x))
-    expect(a.body.breakdown.reduce((n, b) => n + b.count, 0)).toBe(16817)
+    expect(a.body.breakdown.reduce((n, b) => n + b.count, 0)).toBe(9531)
   })
 
   it('#52 pages the own questions, ids ascending, 20 per page', async () => {
@@ -697,7 +697,7 @@ describe('#51–#52 contributions (S21; BR-M10-21, BR-M10-23)', () => {
       meta: { totalItems: number; totalPages: number; page: number }
     }>('GET', '/api/guru/questions?page=2', { as: ADMIN })
     expect(admin.body.data).toHaveLength(20)
-    expect(admin.body.meta).toMatchObject({ totalItems: 16817, totalPages: 841, page: 2 })
+    expect(admin.body.meta).toMatchObject({ totalItems: 9531, totalPages: 477, page: 2 })
     const ids = admin.body.data.map((q) => q.id)
     expect(ids).toEqual([...ids].sort((x, y) => x - y))
   })
@@ -1039,17 +1039,17 @@ describe('#57–#58 CSV template and import (S21; BR-M10-24, DV-M10-08)', () => 
     ).body.data.stats.questions as number
     const csv = [
       header,
-      '"Apakah ibu negara Malaysia?",Kuala Lumpur,Putrajaya,Johor Bahru,Ipoh,A,1,4,1,1,"Kuala Lumpur."',
-      '"2 + 3 = ?",4,5,6,7,B,3,1,2,1,',
-      ',A,B,C,D,A,1,4,1,1,',
-      '"Soalan jawapan salah",A,B,C,D,E,1,4,1,1,',
-      '"Soalan subjek salah",A,B,C,D,A,9999,4,1,1,',
+      '"Apakah ibu negara Malaysia?",Kuala Lumpur,Putrajaya,Johor Bahru,Ipoh,A,1,10,1,1,"Kuala Lumpur."',
+      '"2 + 3 = ?",4,5,6,7,B,3,10,2,1,',
+      ',A,B,C,D,A,1,10,1,1,',
+      '"Soalan jawapan salah",A,B,C,D,E,1,10,1,1,',
+      '"Soalan subjek salah",A,B,C,D,A,9999,10,1,1,',
       '"Soalan tahap salah",A,B,C,D,A,1,9999,1,1,',
-      '"Soalan kesukaran salah",A,B,C,D,A,1,4,9,1,',
-      '"Soalan markah salah",A,B,C,D,A,1,4,1,0,',
-      '"Pilihan kosong",A,B,,,C,1,4,1,1,',
+      '"Soalan kesukaran salah",A,B,C,D,A,1,10,9,1,',
+      '"Soalan markah salah",A,B,C,D,A,1,10,1,0,',
+      '"Pilihan kosong",A,B,,,C,1,10,1,1,',
       '"Soalan berbaris',
-      'baru",A,B,,,B,1,4,3,2,penjelasan',
+      'baru",A,B,,,B,1,10,3,2,penjelasan',
       '',
     ].join('\n')
     const a = await upload(csv)

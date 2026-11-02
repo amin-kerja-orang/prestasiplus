@@ -146,13 +146,21 @@ describe('Laporan Soalan: archive from the report row (R1-B17)', () => {
     expect(await kuizDraws()).not.toContain(qid)
   })
 
-  // R1-18.4 (lead decision, option b): "Arkib" also hides the question from the per-paper Kuiz of a Terbit paper, like a NEW sitting (8);
-  // a sitting already started keeps its pinned version (7). Today `GET /bijak/kuiz/papers/:id` still reads the pinned version of an archived
-  // question, so the body is kept here as the assertion to enable once C2's live check lands:
-  //   const page = await (await loginAs(t, STUDENT)).get(`/api/bijak/kuiz/papers/${paperId}`)
-  //   expect(page.status).toBe(200)
-  //   expect(page.body.data.items.map((i) => i.id)).not.toContain(qid)   // and POST .../check on it is refused
-  it.todo('5c. archived is not shown by the per-paper Kuiz of the Terbit paper (paperPage and paperCheck) - pending REQ-A-003 (C2 kuiz.service paperPage/paperCheck live check)')
+  // R1-18.4 (lead decision, option b, H-A13 / REQ-A-003): "Arkib" also hides the question from the per-paper Kuiz of a Terbit paper, like a NEW
+  // sitting (8). The implemented rule refuses the WHOLE paper (403, BM line) for both the page and the check, never a page with a hole; a
+  // sitting already started keeps its pinned version (7).
+  it('5c. archived: the per-paper Kuiz of the Terbit paper is refused for the page and the check (403, BM line); a sitting started before still reads', async () => {
+    const pupil = await loginAs(t, STUDENT)
+    const msg = 'Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini.'
+    const page = await pupil.get(`/api/bijak/kuiz/papers/${paperId}`)
+    expect(page.status, JSON.stringify(page.body)).toBe(403)
+    expect(page.body.error.message).toBe(msg)
+    const check = await pupil.post(`/api/bijak/kuiz/papers/${paperId}/check`, { itemId: qid, optionId: 'A' })
+    expect(check.status, JSON.stringify(check.body)).toBe(403)
+    expect(check.body.error.message).toBe(msg)
+    // the question itself is still readable from the sitting started before the Arkib (7 asserts the content)
+    expect((await pupil.get(`/api/bijak/attempts/${attemptId}`)).status).toBe(200)
+  })
 
   it('6. a second Arkib is a no-op (idempotent), not a 409', async () => {
     const res = await adminPatch(`/api/question-reports/${reportId}`, { status: 'fixed', archive: true })

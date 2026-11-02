@@ -107,7 +107,7 @@ function unitView(subject: string, ref: { kind: 'unit'; nodeId: string } | { kin
 
 function instructionOf(s: SectionInput): string {
   if (s.instruction) return s.instruction
-  return s.rule.type === 'all' ? 'Jawab semua soalan.' : `Jawab ${s.rule.n} daripada ${s.questionCount} soalan.`
+  return s.rule.type === 'all' ? 'Jawab semua soalan.' : `Jawab ${s.rule.n} soalan sahaja.`
 }
 
 function sectionView(subject: string, s: SectionInput, position: number, seededUnreviewed: boolean): BijakBlueprintView['sections'][number] {
@@ -519,7 +519,7 @@ export class MockKontrakServer implements KontrakApi {
     await tick()
     const h = this.head(subject, kertas)
     const v = h.view
-    const q = { subject, kertas: String(kertas), status: 'published' }
+    const q = { subject, kertas: String(kertas), status: 'approved' }
     const sections: BijakPoolPreview['sections'] = v.sections.map((s) => {
       const base = `${subject}${kertas}${s.label}`
       const sh = (needed: number, available: number) => ({ needed, available, short: Math.max(0, needed - available) })

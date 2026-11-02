@@ -14,8 +14,6 @@ const passing = (status: CreateGateInput['status'], over: Partial<CreateGateInpu
   unitId: '1',
   spIds: ['1'],
   tp: 3,
-  rightsStatus: 'own',
-  hasSourceDeclaration: true,
   unconfirmedLowConfidenceFields: [],
   hasOpenDuplicateFlag: false,
   mediaResolved: true,
@@ -38,17 +36,20 @@ describe('create gate hook (BE-10 AC 1 "no bypass", LEAD note)', () => {
   })
 
   it('draft needs no gate for admin or Guru, even when incomplete', () => {
-    const bare = passing('draft', { subjectId: null, hasSourceDeclaration: false })
+    const bare = passing('draft', { subjectId: null })
     expect(() => svc.assertCreateAllowed(bare, actorOf(c.admin))).not.toThrow()
     expect(() => svc.assertCreateAllowed(bare, actorOf(c.teacher))).not.toThrow()
   })
 
   it('created as review runs the submit gate', async () => {
     expect(() => svc.assertCreateAllowed(passing('review'), actorOf(c.teacher))).not.toThrow()
-    const e = await failure(() => svc.assertCreateAllowed(passing('review', { chapterId: null }), actorOf(c.teacher)))
+    // REQ-B-071 (Q17): no Bab is not a submit rule
+    expect(() => svc.assertCreateAllowed(passing('review', { chapterId: null }), actorOf(c.teacher))).not.toThrow()
+    const e = await failure(() => svc.assertCreateAllowed(passing('review', { subjectId: null }), actorOf(c.teacher)))
     expect(e.getStatus()).toBe(422)
     expect(e.details).toEqual({ gate: 'submit' })
-    expect(e.fields).toHaveProperty('chapterId')
+    expect(e.fields).toHaveProperty('subjectId')
+    expect(e.fields).not.toHaveProperty('chapterId')
   })
 
   it('created as approved runs submit and the merged approve gate, including the key marks check', async () => {
@@ -57,7 +58,8 @@ describe('create gate hook (BE-10 AC 1 "no bypass", LEAD note)', () => {
     expect(keys.getStatus()).toBe(422)
     expect(keys.details).toEqual({ gate: 'approve' }) // the former publish rules run in the merged approve gate
     expect(keys.fields?.['parts.a.key']).toBe('Jumlah markah tidak sepadan dengan skema.')
-    const submit = await failure(() => svc.assertCreateAllowed(passing('approved', { hasSourceDeclaration: false }), actorOf(c.admin)))
+    expect(() => svc.assertCreateAllowed(passing('approved', { chapterId: null }), actorOf(c.admin))).not.toThrow() // REQ-B-071 (Q17): created as approved needs no Bab
+    const submit = await failure(() => svc.assertCreateAllowed(passing('approved', { subjectId: null }), actorOf(c.admin)))
     expect(submit.details).toEqual({ gate: 'submit' })
     const approve = await failure(() => svc.assertCreateAllowed(passing('approved', { marks: 9 }), actorOf(c.admin)))
     expect(approve.details).toEqual({ gate: 'approve' })

@@ -83,6 +83,7 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     await publish('plain', 'Soalan biasa teks sahaja untuk kesamaan kebolehhidangan.', { tag: tagBody(tag, 4) })
     if (chapter) await q(`update question_versions set chapter_id = $2 where question_id = $1`, [made.plain, chapter.id])
     await publish('noChapter', 'Soalan teks tanpa bab untuk kesamaan kebolehhidangan.')
+    await q(`update question_versions set chapter_id = null where question_id = $1`, [made.noChapter]) // Semakan asked for a Bab; the point here is a served question without one
 
     // Stem picture: an image stimulus linked straight to the version.
     await publish('stemImage', 'Soalan dengan gambar soalan sendiri untuk kesamaan kebolehhidangan.')

@@ -281,7 +281,7 @@ export class MockBuilderServer implements BuilderApi {
       sections: ed.paper.sections.map((s) => ({
         label: s.label,
         instruction:
-          s.instruction ?? (s.rule.type === 'all' ? 'Jawab semua soalan.' : `Jawab ${s.rule.n} daripada ${s.questionCount} soalan.`),
+          s.instruction ?? (s.rule.type === 'all' ? 'Jawab semua soalan.' : `Jawab ${s.rule.n} soalan sahaja.`),
         compulsory: !!s.compulsory,
         marks: 0,
         units: unitsOf(s.questionIds, h.groupOf).map((u) => ({

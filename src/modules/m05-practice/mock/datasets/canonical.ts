@@ -195,7 +195,9 @@ export const DESIGNED_SESSIONS: readonly DesignedSession[] = [
     setNo: null,
     completedAt: '2026-09-22T19:00:00+08:00',
     timeSpent: 300,
-    answers: drawn(-SUBJECT.MATH, 0, 10, 4),
+    // REQ-B-048: M04 step 3b links some MATH pool rows to T4 chapters; pinned to no chapter so this past-year
+    // session does not give the pupil a learning-map history (the pool carried no chapter before 3b).
+    answers: inChapter(drawn(-SUBJECT.MATH, 0, 10, 4), null),
   },
   {
     id: 'P2',

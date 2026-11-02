@@ -34,6 +34,7 @@ import StudioImageField from '../components/studio/StudioImageField.vue'
 import StudioLeafEditor from '../components/studio/StudioLeafEditor.vue'
 import StudioPreview from '../components/studio/StudioPreview.vue'
 import StudioStatusBar from '../components/studio/StudioStatusBar.vue'
+import { studioFieldErrors } from '../lib/studio/field-errors'
 import type { GroupView } from '../lib/studio/group-members'
 import { stimulusIssue, toCreateBody, type PendingGroup } from '../lib/studio/stimulus'
 import {
@@ -210,7 +211,7 @@ async function save(): Promise<void> {
       await router.replace(`/admin/studio/questions/${res.data.id}/sunting`)
     }
   } catch (err) {
-    fieldProblems.value = isApiError(err) ? { ...(err.fields ?? {}) } : {}
+    fieldProblems.value = isApiError(err) ? studioFieldErrors(err.fields) : {}
     problems.value = errorLines(err)
     if (problems.value.length === 0) problems.value = [GENERIC_ERROR]
   } finally {
@@ -247,6 +248,7 @@ async function save(): Promise<void> {
         :dirty="dirty"
         :unsupported="unsupported.length > 0"
         @changed="load"
+        @refused="fieldProblems = $event"
       />
       <DsCallout v-if="unsupported.length > 0" tone="warning" title="Soalan ini belum boleh disunting di Studio" data-testid="studio-unsupported">
         <DsText v-for="u in unsupported" :key="u" variant="body">{{ u }}</DsText>

@@ -21,6 +21,12 @@ export interface AttemptSectionSnapshot {
   instruction?: string
   rule: { type: 'all' } | { type: 'choose'; n: number }
   questionIds: string[]
+  /**
+   * REQ-B-032: the version of each question the paper PINNED (`paper_placements.pinned_version_no`), by question id, frozen into the
+   * attempt when it starts. The sitting is served and graded from exactly these versions. Mirrors `SectionSnapshot.versions` of
+   * `@pp/exam-core` (`types.ts`). Absent on attempts started before it existed (served from the live version, as before).
+   */
+  versions?: Record<string, number>
 }
 
 export interface AttemptPaper {
@@ -56,7 +62,8 @@ export interface BijakPaperSource {
  *   paper of another user. No hint which of the three (the same 404 as the cover).
  * - `not_eligible`: the paper exists for this user but cannot be sat now: it has no placed question,
  *   or a placed question is not (or no longer) published in the question bank (checked through the
- *   `BijakQuestionSource` port; a question the source does not return is not eligible).
+ *   `BijakQuestionSource` port; a question the source does not return is not eligible), or (REQ-B-058) the version a placement
+ *   pinned is taken down (archived with a reason other than `superseded`).
  *
  * `isTest` is the caller's Mod Pelajar flag. It does not widen access: test data is flagged on the
  * rows the caller writes, never used to see another user's paper. No answer key is read here.
@@ -89,6 +96,11 @@ export class BijakPapersAttemptSource implements BijakPaperSource {
     if (questionIds.length === 0) return { ok: false, reason: 'not_eligible' }
     const info = await this.ports.questionSource.getMany([...new Set(questionIds)])
     if (questionIds.some((q) => !info.has(q))) return { ok: false, reason: 'not_eligible' }
+    // REQ-B-058: the check above only looks at the LIVE version. A NEW sitting is also refused when the version a placement PINNED has been
+    // taken down (archived "withdrawn" / "source_takedown") while a later version is live; a `superseded` pin is still served. A sitting
+    // already open is not affected: `start` resumes it on `not_eligible` and its pinned version is read as before.
+    const pins = paper.sections.flatMap((s) => s.placements.map((p) => ({ questionId: idToString(p.questionId), versionNo: p.pinnedVersionNo })))
+    if ((await this.ports.questionSource.takenDownPins(pins)).size > 0) return { ok: false, reason: 'not_eligible' }
 
     const subject = (await this.repo.subjectsByIds([paper.subjectId])).get(paper.subjectId.toString())
     const code = subject ? bijakCodeOf(subject.code) : ''
@@ -110,6 +122,8 @@ export class BijakPapersAttemptSource implements BijakPaperSource {
           ...(s.instruction ? { instruction: s.instruction } : {}),
           rule: ruleOf(s.ruleType, s.ruleN),
           questionIds: s.placements.map((p) => idToString(p.questionId)),
+          // REQ-B-032: the version each placement pinned; the attempt serves and grades exactly these.
+          versions: Object.fromEntries(s.placements.map((p) => [idToString(p.questionId), p.pinnedVersionNo])),
         })),
       },
     }

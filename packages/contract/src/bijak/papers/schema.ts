@@ -112,8 +112,8 @@ export const BijakPaperCoverSectionSchema = z
     marks: z.number().int().min(0).meta({ description: 'Effective marks after choose-N.' }),
     instruction: z.string().min(1).meta({
       description:
-        'Authored instruction, else "Jawab semua soalan." (rule all) or "Jawab {n} daripada {count} soalan." (rule choose).',
-      example: 'Jawab 1 daripada 2 soalan.',
+        'Authored instruction, else "Jawab semua soalan." (rule all) or "Jawab {n} soalan sahaja." (rule choose).',
+      example: 'Jawab 1 soalan sahaja.',
     }),
     questionCount: z.number().int().min(0),
     compulsory: z.boolean().meta({ description: '"Soalan ini mesti dijawab".' }),
@@ -147,6 +147,10 @@ export const BijakPaperCoverSchema = z
     reference: z
       .array(BijakPaperReferencePanelSchema)
       .meta({ description: 'Reference-sheet panels; empty when the paper has none.' }),
+    examinerGrid: z.boolean().meta({
+      description:
+        'AC-20.3: true when any placed question has a part that is not marked automatically (mark-scheme points or rubric); the cover then shows the "Untuk Kegunaan Pemeriksa" grid. False for an all-objective paper.',
+    }),
     sections: z.array(BijakPaperCoverSectionSchema).min(1),
   })
   .meta({ id: 'BijakPaperCover' })

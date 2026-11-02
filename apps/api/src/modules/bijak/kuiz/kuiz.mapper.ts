@@ -9,7 +9,7 @@
 import type { BijakKuizItem } from '@pp/contract'
 import type { QuestionPart } from '@pp/contract'
 
-import { stimulusTableOf } from '../../questions/stimulus-table'
+import { stimulusTableParts } from '../../questions/stimulus-table'
 import type { OutsideStimulus } from '../question-bridge/be09-mapping'
 import type { QuestionRecord, StimulusGroupRecord } from '../../questions/types'
 
@@ -167,11 +167,12 @@ const KUIZ_KINDS: ReadonlySet<string> = new Set(['passage', 'table', 'diagram', 
  */
 export function toKuizStimulus(s: StimulusLike): KuizStimulus | null {
   if (!KUIZ_KINDS.has(s.kind)) return null
-  const table = s.kind === 'table' ? (stimulusTableOf(s.tableData, s.bodyMs ?? null) ?? null) : null
-  // A table parsed from the body replaces the body text; any other body stays the text.
+  // Same reader as the Studio, the builder and the attempt bridge (H-A16): a table read from the body replaces the body text.
+  const { table: grid, bodyIsTable } = stimulusTableParts(s.kind, s.tableData, s.bodyMs ?? null)
+  const table = grid ?? null
   const text = s.bodyMs?.trim() ? s.bodyMs : null
   const label = s.label ?? ''
-  const body = table && !s.tableData ? null : text
+  const body = bodyIsTable ? null : text
   if (!body && !table && !s.assetFileId) return null
   return {
     kind: s.kind as KuizStimulus['kind'],

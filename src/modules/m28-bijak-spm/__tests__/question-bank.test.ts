@@ -180,9 +180,9 @@ describe('versioning after publish', () => {
 
 /* ------------------------------------------------------------------ paper builder */
 
-async function validMatK2(server: BijakServer) {
+async function validMatK2(server: BijakServer, title: string | null = 'Set Ujian Ketiga') {
   await server.reviewDecision(GROUP, { action: 'terbit' })
-  const id = await server.createPaper({ subject: 'MAT', kertas: 2, title: 'Set Ujian Ketiga' })
+  const id = await server.createPaper({ subject: 'MAT', kertas: 2, ...(title === null ? {} : { title }) })
   const ed = await server.getPaperEditor(id)
   const [a, b, c] = ed.paper.sections
   await server.savePaper(id, {
@@ -196,6 +196,17 @@ async function validMatK2(server: BijakServer) {
 }
 
 describe('paper builder', () => {
+  it('Terbit drops " (draf)" from the auto title only (REQ-A-036)', async () => {
+    const { server } = make()
+    const auto = await validMatK2(server, null)
+    expect((await server.getPaperEditor(auto)).paper.title).toBe('Percubaan SPM Matematik Kertas 2 (draf)')
+    expect((await server.publishPaper(auto)).ok).toBe(true)
+    expect((await server.getPaperEditor(auto)).paper.title).toBe('Percubaan SPM Matematik Kertas 2')
+    const custom = await validMatK2(server, 'Set Pantas (draf)')
+    expect((await server.publishPaper(custom)).ok).toBe(true)
+    expect((await server.getPaperEditor(custom)).paper.title).toBe('Set Pantas (draf)')
+  })
+
   it('loads the blueprint when a paper is created', async () => {
     const { server } = make()
     const id = await server.createPaper({ subject: 'MAT', kertas: 2 })

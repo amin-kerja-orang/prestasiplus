@@ -15,9 +15,9 @@ const STATUS: Record<
   PartStatus,
   { text: string; color: 'success' | 'warning' | 'error' | 'neutral' | 'info' }
 > = {
-  betul: { text: 'Betul', color: 'success' },
+  betul: { text: '✓ Betul', color: 'success' },
   separa: { text: 'Separa', color: 'warning' },
-  salah: { text: 'Salah', color: 'error' },
+  salah: { text: '✗ Salah', color: 'error' },
   kosong: { text: 'Tiada jawapan', color: 'neutral' },
   belum_dimarkah: { text: 'Belum dimarkah — perlu semakan', color: 'info' },
 }

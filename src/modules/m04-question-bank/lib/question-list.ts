@@ -241,3 +241,25 @@ export function notUpdatedLines(updated: number, ids: readonly number[], verb: s
     ),
   ]
 }
+
+/**
+ * REQ-A-023: the lines for the questions the API refused (`failed[]`): the count line, then one line per question with the server's own
+ * text (no local copy of it). A row without a message falls back to the generic notUpdated wording.
+ */
+export function failedLines(
+  updated: number,
+  rows: readonly { id: number; message: string }[],
+  verb: string,
+): string[] {
+  return [
+    `${String(updated)} soalan berjaya dikemaskini, ${String(rows.length)} tidak dikemaskini.`,
+    ...rows.map((r) =>
+      r.message !== ''
+        ? `Soalan #${String(r.id)}: ${r.message}`
+        : `Soalan #${String(r.id)} tidak dapat ${verb}: syarat belum dipenuhi atau peralihan status tidak dibenarkan.`,
+    ),
+  ]
+}
+
+/** [PROPOSED] UX-80: shown after "Jana Penjelasan AI" on an approved or archived question; the AI text went to a new draft version. */
+export const AI_DRAFT_NOTICE = 'Penjelasan AI disimpan sebagai draf baharu. Semak dan terbitkan draf itu.'

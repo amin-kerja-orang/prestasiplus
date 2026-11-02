@@ -74,6 +74,7 @@ export const practiceReadsOverviewScenarios: Scenario[] = [
       ctx.check(Array.isArray(d.levels) && Array.isArray(d.chapters), 'levels and chapters must be lists')
       const chapters = d.chapters as { state?: string }[]
       ctx.check(chapters.length === 0 || chapters[0]?.state === 'open', 'chapter 1 is always open')
+      ctx.check(chapters.every((c) => c.state !== 'locked'), 'no chapter is locked (REQ-C-021, D98)')
       const missing = await student.request('GET', '/practice/chapter-subjects/TIADA')
       expectError(ctx, missing, 404, 'NOT_FOUND')
       ctx.check(errorOf(missing).message === 'Rekod tidak dijumpai.', 'not-found message differs')

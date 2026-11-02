@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Attempt screen (US-04..US-13). Exam mode: timer, sections ("Jawab N daripada M"), question map,
+ * Attempt screen (US-04..US-13). Exam mode: timer, sections ("Jawab N soalan sahaja"), question map,
  * flag for review, one Hantar. Latihan mode: untimed, "Semak" per question with instant feedback.
  * One question per screen; a shared Rajah stays pinned (left panel from `lg`, sticky chip + bottom
  * sheet below). Answers autosave (device first, then the mock server) and submit flushes them.
@@ -405,10 +405,11 @@ const saveText = computed(
   () =>
     ({
       idle: '',
-      saving: 'Menyimpan…',
-      saved: 'Disimpan',
-      offline: 'Luar talian — jawapan disimpan pada peranti ini',
-      error: 'Gagal simpan — cuba lagi',
+      // V2 words verbatim (AC-R1-05.1, D79; parity S-13).
+      saving: 'menyimpan…',
+      saved: 'disimpan',
+      offline: 'luar talian',
+      error: 'gagal simpan',
       closed: 'Masa tamat. Jawapan yang disimpan sebelum masa tamat telah dihantar.',
     })[saveStatus.value],
 )

@@ -27,7 +27,6 @@ import {
   GURU,
   MemoryStorage,
   PELAJAR2,
-  type ErrorBody,
   type ListBody,
   bootAll,
   getAs,
@@ -272,9 +271,9 @@ describe('setSpmProgress(userId, subjectId, {answered, correct})  (BR-27)', () =
   })
 })
 
-describe('answerChapter(userId, chapterId, {correctPct})  (BR-16 unlock)', () => {
+describe('answerChapter(userId, chapterId, {correctPct})  (no chapter lock, D98)', () => {
   // D72: practice offers T4 / T5, but every chapter question of the dataset is Darjah (stored, hidden): the
-  // unlock engine is exercised on that data with the Darjah levels offered.
+  // chapter list is exercised on that data with the Darjah levels offered.
   beforeEach(() => {
     useOfferedLevels([1, 2, 3, 4])
   })
@@ -282,7 +281,7 @@ describe('answerChapter(userId, chapterId, {correctPct})  (BR-16 unlock)', () =>
     useOfferedLevels()
   })
 
-  it('100 % of MATH D1 Bab 1 completes it at 100 % and opens Bab 2 (#8); a start of Bab 2 then succeeds', async () => {
+  it('100 % of MATH D1 Bab 1 completes it at 100 % (#8); a start of Bab 2 then succeeds', async () => {
     const r = await call('answerChapter', ADMIN_SEKOLAH, 1, { correctPct: 100 })
     expect(r).toEqual({ answered: 464, correct: 464 })
     const c = await data<ChapterSubjectDetail>(ADMIN_SEKOLAH, '/api/practice/chapter-subjects/MATH')
@@ -296,7 +295,7 @@ describe('answerChapter(userId, chapterId, {correctPct})  (BR-16 unlock)', () =>
       state: 'open',
     })
     expect(c.chapters[1]).toMatchObject({ number: 2, state: 'open' })
-    expect(c.chapters[2]).toMatchObject({ number: 3, state: 'locked' })
+    expect(c.chapters[2]).toMatchObject({ number: 3, state: 'open' })
     const start = await request(
       runtime,
       'POST',
@@ -311,12 +310,12 @@ describe('answerChapter(userId, chapterId, {correctPct})  (BR-16 unlock)', () =>
     expect(start.status).toBe(201)
   }, 60_000)
 
-  it('60 % completes the chapter below the 70 % bar: Bab 2 stays locked and a start answers 409 CHAPTER_LOCKED', async () => {
+  it('60 % completes the chapter below the old 70 % bar: Bab 2 stays open and a start succeeds (D98)', async () => {
     const r = await call('answerChapter', PELAJAR2, 1, { correctPct: 60 })
     expect(r).toEqual({ answered: 464, correct: 278 })
     const c = await data<ChapterSubjectDetail>(PELAJAR2, '/api/practice/chapter-subjects/MATH')
     expect(c.chapters[0]).toMatchObject({ complete: true, scorePct: 59.9 })
-    expect(c.chapters[1]?.state).toBe('locked')
+    expect(c.chapters[1]?.state).toBe('open')
     const start = await request(
       runtime,
       'POST',
@@ -328,8 +327,7 @@ describe('answerChapter(userId, chapterId, {correctPct})  (BR-16 unlock)', () =>
         count: 5,
       },
     )
-    expect(start.status).toBe(409)
-    expect((start.body as ErrorBody).error.code).toBe('CHAPTER_LOCKED')
+    expect(start.status).toBe(201)
   }, 60_000)
 
   it('rejects an unknown chapter and a bad percentage', async () => {
