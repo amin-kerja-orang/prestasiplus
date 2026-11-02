@@ -206,10 +206,11 @@ test.describe('trial exhausted mid-quiz @api', () => {
   test('murid: a start 402 (trial used up) shows the contract message in place: no redirect to /pricing or /dashboard, no link @api', async ({
     page,
   }) => {
-    test.skip(
-      !process.env.E2E_DATABASE_URL,
-      'needs E2E_DATABASE_URL to set the pupil to 50 of 50 trial answers',
-    )
+    // No skip (the user's rule): this case needs the test database to set the pupil to 50 of 50 trial answers.
+    if (!process.env.E2E_DATABASE_URL)
+      throw new Error(
+        'E2E_DATABASE_URL is required for this spec (the test database, to set the pupil to 50 of 50)',
+      )
     const email = pupilEmail(page)
     resetTrial(email, 50)
     await loginViaUi(page, email, process.env.E2E_DEMO_PASSWORD || API_PASSWORD)
