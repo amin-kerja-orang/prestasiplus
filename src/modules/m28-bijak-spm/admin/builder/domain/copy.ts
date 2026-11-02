@@ -149,6 +149,8 @@ export const builderCopy = {
   pinned: 'Disematkan', // V2 chip (P5): the question version pinned at Terbit
   poolCap: 'Menunjukkan 150 teratas — tapis lagi untuk menyempitkan.', // V2 (P4)
   copyForEdit: 'Salin untuk sunting', // V2 live banner button (R6)
+  withdrawConfirm: 'Tarik balik kertas ini ke draf? Pelajar tidak lagi dapat mengaksesnya.', // V2 (AC-07.7)
+  withdrawConfirmLabel: 'Tarik balik',
   publishConfirm: 'Terbitkan kertas ini? Ia akan terus boleh diakses pelajar di Simulasi.', // V2 native paper (R8)
   refTitle: 'Bahan rujukan (kulit kertas)', // V2 (R4)
   refAddPanel: 'Tambah panel', // V2

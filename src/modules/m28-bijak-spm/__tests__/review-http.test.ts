@@ -632,18 +632,89 @@ describe('bank client', () => {
     expect(await server.listBank({ status: 'draf', kind: 'esei' })).toEqual([])
   })
 
-  it('computes the stats per Bijak subject from counts', async () => {
+  it('computes the stats per Bijak subject from counts (Semakan only, Draf and Ditolak are not read)', async () => {
     const { server } = setup({
       'GET /api/admin/blueprints': blueprints,
       'GET /api/questions/summary': summary,
-      'GET /api/questions': (r) =>
-        ok([], { meta: { totalItems: r.query?.status === 'draft' ? 3 : r.query?.status === 'review' ? 1 : 0 } }),
+      'GET /api/questions': (r) => ok([], { meta: { totalItems: r.query?.status === 'review' ? 1 : 0 } }),
     })
     const s = await server.bankStats()
     expect(s.total).toBe(5)
-    expect(s.bySubject).toEqual([
-      { code: 'MAT', name: 'Matematik', terbit: 2, semakan: 1, draf: 3, ditolak: 0 },
-    ])
+    expect(s.bySubject).toEqual([{ code: 'MAT', name: 'Matematik', terbit: 2, semakan: 1 }])
+  })
+
+  describe('list calls (REQ-B-061)', () => {
+    const twoBlueprints = ok(
+      [
+        { subject: 'MAT', subjectName: 'Matematik', kertas: 2 },
+        { subject: 'SEJ', subjectName: 'Sejarah', kertas: 1 },
+      ],
+      { meta: { totalPages: 1 } },
+    )
+    const rowOf = (id: string, subject: string, status: string) => ({
+      ...wireDetail,
+      id,
+      status,
+      subject: { id: subject === 'Matematik' ? '1' : '2', name: subject },
+    })
+    const lists = (requests: TransportRequest[]) => requests.filter((r) => r.url === '/api/questions')
+
+    function bankSetup(listRoute: TransportResponse | ((r: TransportRequest) => TransportResponse)) {
+      return setup({
+        'GET /api/admin/blueprints': twoBlueprints,
+        'GET /api/questions/summary': summary,
+        'GET /api/questions': listRoute,
+        'GET /api/questions/90': ok(wireDetail),
+        'GET /api/questions/91': ok({ ...wireDetail, id: '91' }),
+        'GET /api/questions/92': ok({ ...wireDetail, id: '92' }),
+      })
+    }
+    const small = (r: TransportRequest) =>
+      r.query?.status === 'review'
+        ? ok([rowOf('92', 'Sejarah', 'review')], { meta: { totalItems: 1 } })
+        : ok([rowOf('90', 'Matematik', 'approved'), rowOf('91', 'Sejarah', 'approved')], { meta: { totalItems: 2 } })
+
+    it('a Bank Soalan load (list + KPI strip) is 2 list calls for 2 subjects, not one per subject and status', async () => {
+      const { server, requests } = bankSetup(small)
+      const [rows, stats] = await Promise.all([server.listBank({ status: 'terbit' }), server.bankStats()])
+      expect(rows.map((r) => [r.id, r.subject])).toEqual([['90', 'MAT'], ['91', 'SEJ']])
+      expect(stats.bySubject).toEqual([
+        { code: 'MAT', name: 'Matematik', terbit: 2, semakan: 0 },
+        { code: 'SEJ', name: 'Sejarah', terbit: 4, semakan: 1 },
+      ])
+      expect(lists(requests)).toHaveLength(2)
+      expect(lists(requests).some((r) => r.query?.subjectId !== undefined)).toBe(false)
+    })
+
+    it('a subject filter is one call; a repeated filter inside 15 s reuses the answer', async () => {
+      const { server, requests } = bankSetup(small)
+      await server.listBank({ subject: 'MAT', status: 'terbit' })
+      expect(lists(requests)).toHaveLength(1)
+      expect(lists(requests)[0]!.query).toMatchObject({ subjectId: '1', status: 'approved' })
+      await server.listBank({ subject: 'MAT', status: 'terbit' })
+      expect(lists(requests)).toHaveLength(1)
+    })
+
+    it('an answer too big for one page falls back to one call per subject (never fewer rows)', async () => {
+      const { server, requests } = bankSetup((r) =>
+        r.query?.subjectId === undefined
+          ? ok([rowOf('90', 'Matematik', 'approved')], { meta: { totalItems: 250 } })
+          : ok([rowOf(r.query.subjectId === '1' ? '90' : '91', r.query.subjectId === '1' ? 'Matematik' : 'Sejarah', 'approved')], {
+              meta: { totalItems: 1 },
+            }),
+      )
+      const rows = await server.listBank({ status: 'terbit' })
+      expect(rows.map((r) => r.id)).toEqual(['90', '91'])
+      expect(lists(requests)).toHaveLength(3) // 1 combined try + 2 subjects
+    })
+
+    it('a failed (429) list is not kept: the next call reads again', async () => {
+      let n = 0
+      const { server, requests } = bankSetup((r) => (n++ === 0 ? fail(429, 'RATE_LIMITED', 'Terlalu banyak permintaan.') : small(r)))
+      await expect(server.listBank({ subject: 'MAT', status: 'terbit' })).rejects.toMatchObject({ status: 429 })
+      await server.listBank({ subject: 'MAT', status: 'terbit' })
+      expect(lists(requests)).toHaveLength(2)
+    })
   })
 
   it('opens the preview of a question', async () => {

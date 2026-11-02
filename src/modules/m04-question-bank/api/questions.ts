@@ -83,6 +83,9 @@ export interface QuestionRow {
   dskpTagged: boolean
   sourceType: SourceType | null
   sourceFile: string | null
+  /** REQ-C-010: kertas ('1' to '3') and printed number label of the Studio list columns. */
+  kertas: '1' | '2' | '3' | null
+  numberLabel: string | null
   /** R1-H-A7: only on an `essay_choice` (esei pilihan) question: its topics. */
   essayTopics?: EssayTopic[]
 }
@@ -487,6 +490,30 @@ export function deleteQuestion(id: number): Promise<QuestionMutation<{ deleted: 
   })
 }
 
+/** One `failed[]` entry of the bulk action: the id the action did not apply to, the error code and the server's BM text. */
+export interface BulkFailedRow {
+  id: number
+  code: string
+  message: string
+}
+
+function failedRowsOf(value: unknown): BulkFailedRow[] {
+  if (!Array.isArray(value)) return []
+  const rows: BulkFailedRow[] = []
+  for (const entry of value as unknown[]) {
+    if (typeof entry !== 'object' || entry === null) continue
+    const e = entry as { id?: unknown; code?: unknown; message?: unknown }
+    const id = Number(e.id)
+    if (!Number.isSafeInteger(id)) continue
+    rows.push({
+      id,
+      code: typeof e.code === 'string' ? e.code : '',
+      message: typeof e.message === 'string' ? e.message : '',
+    })
+  }
+  return rows
+}
+
 /**
  * #7 `POST /api/questions/bulk-action` (422 when no action or no ids).
  *
@@ -498,7 +525,9 @@ export function deleteQuestion(id: number): Promise<QuestionMutation<{ deleted: 
 export async function bulkQuestionAction(
   action: BulkAction,
   ids: readonly number[],
-): Promise<QuestionMutation<{ affected: number }> & { notUpdated?: number[] }> {
+): Promise<
+  QuestionMutation<{ affected: number }> & { notUpdated?: number[]; failed?: BulkFailedRow[] }
+> {
   const http = isHttpMode()
   const result = await api.post<QuestionMutation<{ affected: number }>>(
     '/api/questions/bulk-action',
@@ -508,6 +537,9 @@ export async function bulkQuestionAction(
       raw: true,
     },
   )
+  // REQ-A-023: the API reports a refused id in `data.failed[]` (code + BM message); show that, not a guessed reason.
+  const failed = failedRowsOf((result.data as { failed?: unknown }).failed)
+  if (failed.length > 0) return { ...result, failed }
   const target = BULK_TARGET_STATUS[action]
   const distinct = [...new Set(ids)]
   if (!http || target === undefined || result.data.affected >= distinct.length) return result
@@ -520,6 +552,96 @@ export async function bulkQuestionAction(
     }
   }
   return { ...result, notUpdated }
+}
+
+/** The wire filter of `POST /api/questions/bulk-action/filter` (the list filter, no paging; strict keys). */
+export interface QuestionBulkFilter {
+  subjectId?: string
+  educationLevelId?: string
+  difficultyLevel?: string
+  status?: string
+  dskpFilter?: string
+  complianceFilter?: string
+  sourceFilter?: string
+  search?: string
+}
+export type QuestionFilterAction = 'approved' | 'archived'
+
+/** A row the run tried and the server refused (`failed[]`; `fields` = the exact gate messages). */
+export interface QuestionFilterFailure {
+  id: string
+  code: string
+  message: string
+  fields: Record<string, string>
+}
+export interface QuestionFilterBulkResult {
+  matched: number
+  eligible: number
+  skipped: number
+  cap: number
+  processed: number
+  affected: number
+  failed: QuestionFilterFailure[]
+  remaining: number
+  capped: boolean
+  dryRun: boolean
+}
+
+/** The applied list filter (URL keys, trimmed), keyed as the list filter keys. */
+export interface AppliedListFilter {
+  subject_id?: string
+  education_level_id?: string
+  difficulty_level?: string
+  status?: string
+  dskp_filter?: string
+  compliance_filter?: string
+  source_filter?: string
+  search?: string
+}
+
+/**
+ * REQ-A-021: the bulk-by-filter body keeps only the keys that carry a value. `''`, whitespace-only and
+ * empty arrays are dropped (the server answers 422 `fields.filter` for a filter whose values are all
+ * blank); `{}` when nothing is left (that is "Arkib Semua"). The status uses the wire code in both
+ * modes: this endpoint exists only in the v2 contract.
+ */
+export function buildBulkFilter(applied: AppliedListFilter): QuestionBulkFilter {
+  const text = (v: unknown): string | undefined => {
+    if (Array.isArray(v)) return undefined
+    if (typeof v !== 'string') return undefined
+    const t = v.trim()
+    return t === '' ? undefined : t
+  }
+  const out: QuestionBulkFilter = {}
+  const put = <K extends keyof QuestionBulkFilter>(key: K, value: string | undefined): void => {
+    if (value !== undefined) out[key] = value
+  }
+  put('subjectId', text(applied.subject_id))
+  put('educationLevelId', text(applied.education_level_id))
+  put('difficultyLevel', text(applied.difficulty_level))
+  const status = text(applied.status)
+  put('status', status === undefined ? undefined : wire(STATUS_FILTER_TO_WIRE, status))
+  put('dskpFilter', text(applied.dskp_filter))
+  put('complianceFilter', text(applied.compliance_filter))
+  put('sourceFilter', text(applied.source_filter))
+  put('search', text(applied.search))
+  return out
+}
+
+/**
+ * `POST /api/questions/bulk-action/filter` (AC-03.3; V2 "Luluskan Hasil Tapisan" / "Arkib Semua").
+ * `dryRun` only counts; the real call sends `expectedCount` (the dry-run `matched`): a changed count is
+ * 409 and nothing is applied. 422 carries `fields.filter` / `fields.expectedCount`.
+ */
+export function bulkQuestionsByFilter(
+  action: QuestionFilterAction,
+  filter: QuestionBulkFilter,
+  options: { dryRun: true } | { expectedCount: number },
+): Promise<QuestionMutation<QuestionFilterBulkResult>> {
+  return api.post<QuestionMutation<QuestionFilterBulkResult>>('/api/questions/bulk-action/filter', {
+    body: { action, filter, ...('dryRun' in options ? { dryRun: true } : { expectedCount: options.expectedCount }) },
+    raw: true,
+  })
 }
 
 /**

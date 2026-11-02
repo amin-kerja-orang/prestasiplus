@@ -16,9 +16,13 @@ export const APPROVAL_UNSERVABLE_MESSAGE = 'Soalan ini tidak boleh dipaparkan di
 
 const placementOnly = (activity: string, code: string): boolean => activity === 'simulasi_paper' && code === 'not_on_published_paper'
 
-/** True when no activity serves the question and none would once the question is placed on a published paper. */
+/**
+ * True when no activity serves the question and none would once the question is placed on a published paper. An unserved activity always carries a
+ * reason; if one ever came with none, `[].every(...)` is true, so the second clause is false and the activity does not count as refusing (no separate
+ * `reasons.length` test is needed).
+ */
 export function unservableEverywhere(report: ServabilityReport): boolean {
-  return report.activities.every((a) => !a.served && a.reasons.length > 0 && !a.reasons.every((r) => placementOnly(a.activity, r.code)))
+  return report.activities.every((a) => !a.served && !a.reasons.every((r) => placementOnly(a.activity, r.code)))
 }
 
 /** The `fields` of the 422: one BM sentence per activity (its first reason), keyed `servability.<activity>`, in the contract order. */

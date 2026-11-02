@@ -114,7 +114,7 @@ function setPerSlot(on: boolean): void {
           native
           :for="fieldId(index, 'instruction')"
           label="Arahan (opsyenal)"
-          hint="Jika kosong, murid melihat arahan sistem: Jawab semua soalan. atau Jawab N daripada M soalan."
+          hint="Jika kosong, murid melihat arahan sistem: Jawab semua soalan. atau Jawab N soalan sahaja."
         >
           <template #default="f">
             <UTextarea :id="f.id" v-model="s.instruction" :rows="2" class="w-full" />

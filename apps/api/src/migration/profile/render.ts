@@ -73,6 +73,7 @@ export function defaultOutputRoots(): string[] {
   return [process.cwd(), repoRoot]
 }
 
+// The resolve() fallback is safe here (REQ-B-067): `real` is applied to the allowed roots (they exist) and to the output dir after mkdir; the not-yet-created path is resolved through its nearest existing ancestor in prepareOutputDir (probe).
 const real = (p: string): string => {
   try {
     return realpathSync.native(p)

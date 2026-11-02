@@ -28,7 +28,7 @@ const STATUSES = [
 const statusText = (code: string): string => STATUSES.find((s) => s.value === code)?.label ?? code
 
 const server = kandunganServer()
-const { filters, page, subjects, list, chips, removeChip } = useLane(server, (q) => server.databankLane(q), statusText)
+const { filters, page, subjects, list, chips, removeChip } = useLane((q) => server.databankLane(q), statusText)
 
 const rows = computed<Row[]>(() =>
   (list.data.value?.rows ?? []).map((r, i) => ({ ...r, no: (page.value - 1) * PAGE_SIZE + i + 1 })),

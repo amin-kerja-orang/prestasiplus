@@ -12,6 +12,7 @@
  * | 6 | `DELETE /api/questions/:id` | permanent; 200 `{data: {deleted}, status}`; 404 (also a PKSK row) |
  * | 7 | `POST /api/questions/bulk-action` | `{data: {affected}, status}`; 422 |
  * | 8 | `POST /api/questions/:id/ai-explanation` | live-shaped `{ok, message}` (`ai-explanation.ts`) |
+ * | 9 | `POST /api/questions/bulk-action/filter` | v2 contract (AC-03.3): dry run, `expectedCount`, cap 500; same filter as #1 |
  *
  * Module-wide rules for the admin screens: an unknown id answers `404`; validation errors come in one
  * `422` (`fields` + a summary `message`); flashes are the API `status` only. INFERRED (SRS §7 says
@@ -20,8 +21,10 @@
  * repository (`questions`) and `question-input.ts`.
  */
 
+import { QUESTION_MESSAGES } from '@pp/contract'
 import { curriculum } from '@/modules/m03-curriculum/mock'
 import {
+  conflict,
   created,
   int,
   notFound,
@@ -63,6 +66,9 @@ export const QUESTIONS_PAGE_SIZE = 20
 export const QUESTION_ADDED = 'Soalan berjaya ditambah.'
 export const QUESTION_UPDATED = 'Soalan berjaya dikemaskini.'
 export const QUESTION_DELETED = 'Soalan berjaya dipadam.'
+/** The 409 text of a refused hard delete, as the server (REQ-A-023b): `in_use` has its own sentence. */
+export const deleteRefusedMessage = (reason: 'served' | 'pinned' | 'in_use'): string =>
+  reason === 'in_use' ? QUESTION_MESSAGES.deleteInUse : QUESTION_MESSAGES.deleteRefused
 export const bulkUpdated = (n: number): string => `${String(n)} soalan berjaya dikemaskini.`
 /** The live script alert text, reused as the server message for a missing action. */
 export const BULK_NO_ACTION = 'Sila pilih tindakan terlebih dahulu.'
@@ -175,6 +181,8 @@ function remove(req: MockRequest): MockResponse {
   const id = idOf(req)
   const current = questions.get(id)
   if (!current || current.pkskDomainId !== null) return notFound()
+  const block = questions.deletionBlock(id)
+  if (block !== null) return conflict(deleteRefusedMessage(block))
   questions.remove(id)
   return ok({ deleted: 1 }, { status: QUESTION_DELETED })
 }
@@ -200,8 +208,148 @@ function bulk(req: MockRequest, ctx: MockContext): MockResponse {
     ids = body.ids as number[]
   }
   if (Object.keys(fields).length > 0) return validationError(fields)
-  const affected = questions.bulkAction(action as BulkAction, ids, ctx.clock.now())
-  return ok({ affected }, { status: bulkUpdated(affected) })
+  // REQ-A-023: a delete skips (and reports) the questions the single delete refuses.
+  const refused =
+    action === 'delete'
+      ? [...new Set(ids)].filter((id) => {
+          const row = questions.get(id)
+          return row && row.pkskDomainId === null && questions.deletionBlock(id) !== null
+        })
+      : []
+  const affected = questions.bulkAction(
+    action as BulkAction,
+    ids.filter((id) => !refused.includes(id)),
+    ctx.clock.now(),
+  )
+  // REQ-A-023: a refused delete is a `failed[]` entry (id as a string, code CONFLICT), as the server reports it.
+  const failed = refused.map((id) => ({
+    id: String(id),
+    code: 'CONFLICT',
+    message: deleteRefusedMessage(questions.deletionBlock(id) ?? 'served'),
+    fields: {},
+  }))
+  return ok(action === 'delete' ? { affected, failed } : { affected }, {
+    status: bulkUpdated(affected),
+  })
+}
+
+/** Contract copy of `POST /questions/bulk-action/filter` (packages/contract QUESTION_MESSAGES). */
+const FILTER_INVALID = 'Nilai penapis tidak sah.'
+const FILTER_NEEDED =
+  'Sila pilih sekurang-kurangnya satu penapis (subjek/aras/status/carian) sebelum meluluskan secara pukal.'
+/** [PROPOSED] A2 b99068a6 (REQ-A-021): a filter whose values are all blank. */
+const FILTER_BLANK =
+  'Penapis yang dipilih tidak mempunyai nilai. Isi nilai penapis, atau buang penapis itu.'
+const FILTER_COUNT_NEEDED =
+  'Sila hantar bilangan soalan hasil tapisan yang dipaparkan (expectedCount).'
+const FILTER_COUNT_CHANGED = (expected: number, actual: number): string =>
+  `Bilangan soalan hasil tapisan telah berubah (dijangka ${String(expected)}, kini ${String(actual)}). Muat semula senarai dan semak semula sebelum meneruskan.`
+export const FILTER_BULK_CAP = 500
+const FILTER_KEYS_ALL = [
+  'subjectId',
+  'educationLevelId',
+  'difficultyLevel',
+  'status',
+  'dskpFilter',
+  'complianceFilter',
+  'sourceFilter',
+  'search',
+  'tagReview',
+  'missing',
+  'tahun',
+  'negeri',
+  'kertas',
+  'jenis',
+]
+const WIRE_TO_MOCK_STATUS: Readonly<Record<string, string>> = { review: 'pending_review' }
+
+/** #9 (AC-03.3): the rows of the list filter; strict body; `approved` needs a filter; 409 on a stale count. */
+function bulkByFilter(req: MockRequest, ctx: MockContext): MockResponse {
+  const body =
+    typeof req.body === 'object' && req.body !== null && !Array.isArray(req.body)
+      ? (req.body as Record<string, unknown>)
+      : {}
+  const fields: Record<string, string> = {}
+  for (const key of Object.keys(body)) {
+    if (!['action', 'filter', 'expectedCount', 'dryRun'].includes(key)) fields[key] = FILTER_INVALID
+  }
+  const action = body.action
+  if (action !== 'approved' && action !== 'archived') fields.action = BULK_BAD_ACTION
+  const rawFilter =
+    typeof body.filter === 'object' && body.filter !== null && !Array.isArray(body.filter)
+      ? (body.filter as Record<string, unknown>)
+      : null
+  if (rawFilter === null) fields.filter = FILTER_INVALID
+  const dryRun = body.dryRun === true
+  const expected = body.expectedCount
+  if (expected === undefined) {
+    if (!dryRun) fields.expectedCount = FILTER_COUNT_NEEDED
+  } else if (typeof expected !== 'number' || !Number.isSafeInteger(expected) || expected < 0) {
+    fields.expectedCount = FILTER_COUNT_NEEDED
+  }
+  const values: Record<string, string> = {}
+  if (rawFilter !== null) {
+    for (const [key, v] of Object.entries(rawFilter)) {
+      if (!FILTER_KEYS_ALL.includes(key) || (v !== undefined && typeof v !== 'string')) {
+        fields.filter = FILTER_INVALID
+      } else if (typeof v === 'string') {
+        values[key] = v
+      }
+    }
+    if (fields.filter === undefined) {
+      const keys = Object.keys(values)
+      const allBlank = keys.every((k) => (values[k] ?? '').trim() === '')
+      if (keys.length === 0) {
+        if (action === 'approved') fields.filter = FILTER_NEEDED
+      } else if (allBlank) {
+        fields.filter = FILTER_BLANK
+      }
+    }
+  }
+  if (Object.keys(fields).length > 0) return validationError(fields)
+
+  const num = (key: string): number | undefined | 'invalid' => {
+    const v = values[key]?.trim()
+    if (v === undefined || v === '') return undefined
+    return /^\d+$/.test(v) && Number.isSafeInteger(Number(v)) ? Number(v) : 'invalid'
+  }
+  const text = (key: string): string | undefined => {
+    const v = values[key]?.trim()
+    return v === undefined || v === '' ? undefined : v
+  }
+  const subjectId = num('subjectId')
+  const educationLevelId = num('educationLevelId')
+  const difficultyLevel = num('difficultyLevel')
+  const statusWire = text('status')
+  const status = statusWire === undefined ? undefined : (WIRE_TO_MOCK_STATUS[statusWire] ?? statusWire)
+  const filter: AdminListFilter = {
+    ...(typeof subjectId === 'number' ? { subjectId } : {}),
+    ...(typeof educationLevelId === 'number' ? { educationLevelId } : {}),
+    ...(typeof difficultyLevel === 'number' ? { difficultyLevel } : {}),
+    ...(status === undefined ? {} : { status }),
+    ...(text('dskpFilter') === undefined ? {} : { dskpFilter: text('dskpFilter') }),
+    ...(text('complianceFilter') === undefined ? {} : { complianceFilter: text('complianceFilter') }),
+    ...(text('sourceFilter') === undefined ? {} : { sourceFilter: text('sourceFilter') }),
+    ...(text('search') === undefined ? {} : { search: text('search') }),
+  }
+  const act = action as 'approved' | 'archived'
+  // A malformed id matches nothing, as in #1.
+  if (subjectId === 'invalid' || educationLevelId === 'invalid' || difficultyLevel === 'invalid') {
+    const empty = { matched: 0, eligible: 0, skipped: 0, cap: FILTER_BULK_CAP, processed: 0, affected: 0, failed: [], remaining: 0, capped: false, dryRun }
+    if (!dryRun && expected !== 0) return conflict(FILTER_COUNT_CHANGED(expected as number, 0))
+    return ok(empty, { status: dryRun ? '' : bulkFilterFlash(act, 0) })
+  }
+  const probe = questions.bulkByFilter(act, filter, { dryRun: true, now: ctx.clock.now(), cap: FILTER_BULK_CAP })
+  if (dryRun) return ok(probe, { status: '' })
+  if (probe.matched !== expected) return conflict(FILTER_COUNT_CHANGED(expected as number, probe.matched))
+  const result = questions.bulkByFilter(act, filter, { dryRun: false, now: ctx.clock.now(), cap: FILTER_BULK_CAP })
+  return ok(result, { status: bulkFilterFlash(act, result.affected) })
+}
+
+function bulkFilterFlash(action: 'approved' | 'archived', n: number): string {
+  return action === 'approved'
+    ? `Berjaya luluskan ${String(n)} soalan (hasil tapisan) — kini kelihatan kepada pelajar.`
+    : `Berjaya arkib ${String(n)} soalan. Bank pelajar kini kosong — luluskan soalan secara manual untuk memaparkannya semula.`
 }
 
 function sleep(ms: number): Promise<void> {
@@ -249,6 +397,7 @@ export const questionRoutes: RouteDef[] = [
   // Static segments first: `summary` and `bulk-action` are not ids.
   route('GET', '/api/questions/summary', [adminOnly], summary),
   route('POST', '/api/questions/bulk-action', [adminOnly], bulk),
+  route('POST', '/api/questions/bulk-action/filter', [adminOnly], bulkByFilter),
   route('POST', '/api/questions', [adminOnly], create),
   route('GET', '/api/questions/:id', [adminOnly], detail, { params: { id: int() } }),
   route('PUT', '/api/questions/:id', [adminOnly], update, { params: { id: int() } }),

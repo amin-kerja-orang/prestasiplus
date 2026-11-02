@@ -17,8 +17,8 @@ import { mcqBody, refsOf, type Refs } from './http-helpers'
  * the stimulus API, the stimulus group read, the question detail, the paper builder (`stimulusOf`) and the Bijak bridge (`mapBe09Question`).
  * A table read from the body replaces the body text on the Studio paths (`body: null`), so the grid is not shown twice.
  *
- * Pending (marked `it.todo`, nothing faked): the builder's `stimulusOf` and the bridge keep two older rules in files that belong to
- * other lanes; see PENDING_* below and the report for the exact one-line changes.
+ * Pending (marked `it.todo`, nothing faked): the Bijak bridge keeps an older text rule in a file that belongs to another lane; see
+ * PENDING_BRIDGE_TEXT below. The paper builder (`stimulusOf`) uses the shared reader (R1-T31) and is checked on table AND text.
  */
 const GRID = { head: ['Tahun', 'Peristiwa'], rows: [['1957', 'Merdeka']] }
 interface Case {
@@ -44,8 +44,6 @@ const CASES: Case[] = [
   { name: 'an image-only table (picture, no table)', body: null, data: null, image: true, table: undefined, studioBody: null },
 ]
 
-/** The builder's `stimulusOf` (T07 file) reads `tableData` only, not the pipe table in the body: the cases whose table comes from the body wait for `stimulusTableOf(s.tableData, s.bodyMs)`. */
-const PENDING_BUILDER_TABLE = new Set([CASES[5]!.name, CASES[6]!.name])
 /** The bridge keeps the body text when a malformed `tableData` sits beside a pipe body (`text = table && !s.tableData ? ...`), so the grid is shown twice; it needs `!stimulusTableParts(...)`-style logic. */
 const PENDING_BRIDGE_TEXT = new Set([CASES[6]!.name])
 
@@ -112,14 +110,11 @@ describe('one table reader: stimulus API = group read = question detail = builde
         if (c.image) expect((await admin.get(`/api/stimuli/${ids.sid}`)).body.data.imageId).toBe(token)
       })
 
-      if (PENDING_BUILDER_TABLE.has(c.name)) {
-        it.todo(`builder stimulusOf shows the same table (pending A3: pass s.bodyMs to stimulusTableOf in exam/builder/question-bank.mapping.ts)`)
-      } else {
-        it('the paper builder shows the same table', () => {
-          const builder = stimulusOf({ id: BigInt(ids.sid), kind: 'table', label: 'Jadual 1', bodyMs: c.body, caption: 'Jualan', altText: null, tableData: c.data })
-          expect(builder?.table).toEqual(c.table)
-        })
-      }
+      it('the paper builder shows the same table and the same body text', () => {
+        const builder = stimulusOf({ id: BigInt(ids.sid), kind: 'table', label: 'Jadual 1', bodyMs: c.body, caption: 'Jualan', altText: null, tableData: c.data })
+        expect(builder?.table).toEqual(c.table)
+        expect(builder?.text ?? null).toEqual(c.studioBody)
+      })
 
       it('the Bijak bridge shows the same table', async () => {
         const record = (await repo.get(ids.member, 'latest'))!

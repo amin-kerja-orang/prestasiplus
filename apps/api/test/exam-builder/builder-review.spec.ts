@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { makePng } from '../files/fixtures'
 import { NOT_SERVING, serveSeededBlueprints } from '../support/serve-blueprints'
 import { bootFullApp, loginFull, type FullApp, type FullClient } from '../r1/full-app'
+import { giveBab } from '../support/bab'
 import { ACCOUNTS, auditRows, expectError } from './helpers'
 
 vi.setConfig({ testTimeout: 120_000, hookTimeout: 300_000 })
@@ -42,6 +43,7 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
     return res.body.data.id as string
   }
   async function approve(ids: string[]): Promise<void> {
+    await giveBab(t.db, ids)
     for (const action of ['review', 'approved']) {
       const res = await admin.post('/api/questions/bulk-action', { action, ids })
       expect(res.status, JSON.stringify(res.body)).toBe(200)
@@ -61,6 +63,19 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
     return res.body.data.id as string
   }
   const sectionsOf = async (id: string): Promise<string[]> => ((await admin.get(`/api/admin/papers/${id}`)).body.data.paper.sections as { id: string }[]).map((s) => s.id)
+  /**
+   * Every unit of a section pool, all pages. The bank grows with each test of this file (and every default question shares one stem), so a
+   * single page of 100 stops holding a late fixture once the file creates more than 100 pool units: walk `meta.totalPages` instead.
+   */
+  async function poolUnits<T>(paper: string, sectionId: string, query = ''): Promise<T[]> {
+    const units: T[] = []
+    for (let page = 1; ; page++) {
+      const res = await admin.get(`/api/admin/papers/${paper}/sections/${sectionId}/pool?${query}${query ? '&' : ''}pageSize=100&page=${page}`)
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      units.push(...(res.body.data as T[]))
+      if (page >= (res.body.meta.totalPages as number)) return units
+    }
+  }
   const place = (paper: string, sectionId: string, questionId: string) => admin.post(`/api/admin/papers/${paper}/placements`, { sectionId, questionId })
   /** A full MAT kertas 2 paper: A 3 questions, B 1, C 2 (as the PoC blueprint); every question is tagged with its section pool. */
   async function fullPaper(opts: { tagged?: boolean; last?: string } = {}): Promise<{ paper: string; ids: string[]; sections: string[] }> {
@@ -295,6 +310,51 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
       expect(own.status, JSON.stringify(own.body)).toBe(200)
     })
 
+    // B3 T34-L1-residual: a list that is left unchanged never fails; a legacy decimal id already on the paper is rewritten to its token.
+    it('Bahan rujukan: a legacy decimal id already on the paper is kept as the token on save; a decimal id that is not on the paper is still refused', async () => {
+      const paper = await newPaper()
+      const up = await admin.upload('/api/files?purpose=question_image', makePng())
+      const token = up.body.data.id as string
+      const internal = String((await q(`select id::text id from files where public_id = $1`, [token]))[0]!.id)
+      await q(`update papers set reference_sheets = $2::jsonb where id = $1`, [paper, JSON.stringify([{ title: 'Rajah', items: ['a'], imageFileId: internal }])])
+      const saved = await admin.put(`/api/admin/papers/${paper}`, { reference: [{ title: 'Rajah', items: ['a'], imageFileId: internal }] })
+      expect(saved.status, JSON.stringify(saved.body)).toBe(200)
+      expect((await q(`select reference_sheets->0->>'imageFileId' ref from papers where id = $1`, [paper]))[0]?.ref).toBe(token)
+      // a second paper that does not hold the id
+      const other = await newPaper()
+      const refused = await admin.put(`/api/admin/papers/${other}`, { reference: [{ title: 'Rajah', items: [], imageFileId: internal }] })
+      expect(refused.status).toBe(422)
+      expect(refused.body.error.fields.reference).toBe(MSG.referenceImageInvalid)
+    })
+
+    it('a sheet picture that a teacher uploaded (stored before the write rule) is a hard REFERENCE_IMAGE_INVALID at Terbit', async () => {
+      const { paper } = await fullPaper()
+      const teacher = await loginFull(t, ACCOUNTS.teacher)
+      const foreign = (await teacher.upload('/api/files?purpose=question_image', makePng())).body.data.id as string
+      await q(`update papers set reference_sheets = $2::jsonb where id = $1`, [paper, JSON.stringify([{ title: 'Rajah', items: [], imageFileId: foreign }])])
+      const review = (await admin.get(`/api/admin/papers/${paper}/review`)).body.data
+      expect(review.blockerDetails.find((b: { code: string }) => b.code === 'REFERENCE_IMAGE_INVALID')).toMatchObject({ overridable: false })
+      const forced = await admin.post(`/api/admin/papers/${paper}/publish`, { override: true, reason: 'sebab yang sah' })
+      expect(forced.body.data.ok).toBe(false)
+    })
+
+    it('migration 0110 rewrites a decimal imageFileId on papers and blueprints to the public token and leaves other panels alone', async () => {
+      const { readFileSync } = await import('node:fs')
+      const sql = readFileSync(new URL('../../prisma/migrations/0110_reference_image_tokens/migration.sql', import.meta.url), 'utf8')
+      const paper = await newPaper()
+      const up = await admin.upload('/api/files?purpose=question_image', makePng())
+      const token = up.body.data.id as string
+      const internal = String((await q(`select id::text id from files where public_id = $1`, [token]))[0]!.id)
+      await q(`update papers set reference_sheets = $2::jsonb where id = $1`, [
+        paper,
+        JSON.stringify([{ title: 'A', items: [] }, { title: 'B', items: ['x'], imageFileId: internal }, { title: 'C', items: [], imageFileId: '99999999999' }, { title: 'D', items: [], imageFileId: token }]),
+      ])
+      await q(sql)
+      const refs = (await q(`select jsonb_path_query_array(reference_sheets, '$[*].imageFileId') r from papers where id = $1`, [paper]))[0]?.r
+      expect(refs).toEqual([token, '99999999999', token])
+      expect((await q(`select reference_sheets->0 s from papers where id = $1`, [paper]))[0]?.s).toEqual({ title: 'A', items: [] })
+    })
+
     // B3 T34-L3: a panel is bounded (title 200, 20 items of 500 characters), so a reference sheet cannot be used to store a blob.
     it('Bahan rujukan: an over-long title, too many items or an over-long item are refused', async () => {
       const paper = await newPaper()
@@ -303,6 +363,96 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
       expect((await put({ title: 'T'.repeat(201), items: [] })).status).toBe(422)
       expect((await put({ title: 'T', items: Array.from({ length: 21 }, () => 'x') })).status).toBe(422)
       expect((await put({ title: 'T', items: ['x'.repeat(501)] })).status).toBe(422)
+    })
+
+    // B3 T34-L1-residual: a Kontrak reference sheet is copied to every paper made from it, so the Kontrak write follows the paper rule, and Terbit re-checks.
+    it('Kontrak reference sheet: a decimal id and another user\'s upload are refused at create and at a new version; the editor\'s own token is kept', async () => {
+      const own = await admin.upload('/api/files?purpose=question_image', makePng())
+      expect(own.status).toBe(201)
+      const token = own.body.data.id as string
+      const internal = String((await q(`select id::text id from files where public_id = $1`, [token]))[0]!.id)
+      const teacher = await loginFull(t, ACCOUNTS.teacher)
+      const foreignUp = await teacher.upload('/api/files?purpose=question_image', makePng())
+      expect(foreignUp.status, JSON.stringify(foreignUp.body)).toBe(201)
+      const foreign = foreignUp.body.data.id as string
+      const body = (reference: unknown[]) => ({
+        subject: 'MAT',
+        kertas: 7,
+        source: 'Spec',
+        code: 'MAT/REF7',
+        durationMin: 60,
+        instructions: ['Jawab semua.'],
+        sections: [{ label: 'Bahagian A', markBudget: 1, questionCount: 1, rule: { type: 'all' } }],
+        reference,
+      })
+      for (const imageFileId of [internal, foreign, 'bukan-fail-sebenar']) {
+        const res = await admin.post('/api/admin/blueprints', body([{ title: 'Rajah', items: [], imageFileId }]))
+        expect(res.status, `${imageFileId}: ${JSON.stringify(res.body)}`).toBe(422)
+        expect(res.body.error.fields.reference).toBe(MSG.referenceImageInvalid)
+      }
+      expect((await q(`select count(*)::int n from blueprints where code = 'MAT/REF7'`))[0]!.n).toBe(0)
+      const ok = await admin.post('/api/admin/blueprints', body([{ title: 'Rajah', items: [], imageFileId: token }]))
+      expect(ok.status, JSON.stringify(ok.body)).toBe(201)
+      // a new version: the foreign image and the decimal id are refused; the sheet already on the Kontrak keeps its own token
+      const { subject: _s, kertas: _k, ...version } = body([{ title: 'Rajah', items: [], imageFileId: foreign }])
+      void _s
+      void _k
+      const bad = await admin.post('/api/admin/blueprints/MAT/7/versions', version)
+      expect(bad.status, JSON.stringify(bad.body)).toBe(422)
+      expect(bad.body.error.fields.reference).toBe(MSG.referenceImageInvalid)
+      const again = await admin.post('/api/admin/blueprints/MAT/7/versions', { ...version, reference: [{ title: 'Rajah', items: [], imageFileId: token }] })
+      expect(again.status, JSON.stringify(again.body)).toBe(201)
+    })
+
+    it('a bad picture already on a paper (made from a legacy Kontrak, or copied by Salin set) is a hard REFERENCE_IMAGE_INVALID at Terbit that the override cannot lift', async () => {
+      const { paper } = await fullPaper()
+      // the legacy case: the sheet holds the internal decimal id of a stored image
+      const up = await admin.upload('/api/files?purpose=question_image', makePng())
+      const internal = String((await q(`select id::text id from files where public_id = $1`, [up.body.data.id as string]))[0]!.id)
+      await q(`update papers set reference_sheets = $2::jsonb where id = $1`, [paper, JSON.stringify([{ title: 'Rajah', items: [], imageFileId: internal }])])
+      const review = (await admin.get(`/api/admin/papers/${paper}/review`)).body.data
+      expect(review.blockerDetails.find((b: { code: string }) => b.code === 'REFERENCE_IMAGE_INVALID')).toMatchObject({ overridable: false, message: MSG.referenceImageInvalid })
+      expect(review.canOverride).toBe(false)
+      const forced = await admin.post(`/api/admin/papers/${paper}/publish`, { override: true, reason: 'sebab yang sah' })
+      expect(forced.body.data.ok).toBe(false)
+      expect((await q(`select status from papers where id = $1`, [paper]))[0]?.status).toBe('draft')
+      // Salin set carries the sheet as it is, and the copy is refused at Terbit in the same way
+      const copy = await admin.post(`/api/admin/papers/${paper}/copy`)
+      expect(copy.status).toBe(201)
+      const copied = (await admin.get(`/api/admin/papers/${copy.body.data.id as string}/review`)).body.data
+      expect(copied.blockerDetails.some((b: { code: string }) => b.code === 'REFERENCE_IMAGE_INVALID')).toBe(true)
+      // a stored image named by its token passes
+      const token = up.body.data.id as string
+      await q(`update papers set reference_sheets = $2::jsonb where id = $1`, [paper, JSON.stringify([{ title: 'Rajah', items: [], imageFileId: token }])])
+      const fixed = (await admin.get(`/api/admin/papers/${paper}/review`)).body.data
+      expect(fixed.blockerDetails.some((b: { code: string }) => b.code === 'REFERENCE_IMAGE_INVALID')).toBe(false)
+    })
+
+    // REQ-B-068: the reference-image check (REQ-A-013) and the Pilih N rule check (R1-T48) sit on one PUT; each runs once and neither hides the other.
+    it('a missing reference picture is exactly ONE blocker (the same picture on two panels, review and publish alike), and the picture check and the Pilih N check both still run on one PUT', async () => {
+      // an empty paper: no extra approved questions (the D93 pool search below pages 100 questions of the same text)
+      const paper = await newPaper()
+      const sections = await sectionsOf(paper)
+      const up = await admin.upload('/api/files?purpose=question_image', makePng())
+      const internal = String((await q(`select id::text id from files where public_id = $1`, [up.body.data.id as string]))[0]!.id)
+      const panel = (title: string) => ({ title, items: [], imageFileId: internal })
+      await q(`update papers set reference_sheets = $2::jsonb where id = $1`, [paper, JSON.stringify([panel('Rajah 1'), panel('Rajah 2')])])
+      const review = (await admin.get(`/api/admin/papers/${paper}/review`)).body.data
+      const mine = (review.blockerDetails as { code: string; message: string }[]).filter((b) => b.code === 'REFERENCE_IMAGE_INVALID')
+      expect(mine).toHaveLength(1)
+      expect((review.blockers as string[]).filter((e) => e === MSG.referenceImageInvalid)).toHaveLength(1)
+      const pub = await admin.post(`/api/admin/papers/${paper}/publish`, {})
+      expect((pub.body.data.errors as string[]).filter((e) => e === MSG.referenceImageInvalid)).toHaveLength(1)
+      // one PUT with a valid stored picture AND a Pilih N above the Bahagian's questions: the picture passes, the rule is refused (422 on `rule`, not on `reference`)
+      const token = up.body.data.id as string
+      const both = await admin.put(`/api/admin/papers/${paper}`, { reference: [{ title: 'Rajah', items: [], imageFileId: token }], sections: [{ id: sections[0], rule: { type: 'choose', n: 99 } }] })
+      expect(both.status, JSON.stringify(both.body)).toBe(422)
+      expect(both.body.error.fields.rule).toBeTruthy()
+      expect(both.body.error.fields.reference).toBeUndefined()
+      // and with a refused picture on the same PUT the picture is what is reported (it is checked first)
+      const bothBad = await admin.put(`/api/admin/papers/${paper}`, { reference: [{ title: 'X', items: [], imageFileId: 'bukan-fail-sebenar' }], sections: [{ id: sections[0], rule: { type: 'choose', n: 99 } }] })
+      expect(bothBad.status).toBe(422)
+      expect(bothBad.body.error.fields.reference).toBe(MSG.referenceImageInvalid)
     })
 
     it('Sunting petikan: renames the group title; the group must be on the paper', async () => {
@@ -365,6 +515,104 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
       expect((await admin.put(`/api/admin/papers/${copy.body.data.id as string}`, { title: 'Salinan disunting' })).status).toBe(200)
       expect((await admin.post(`/api/admin/papers/${paper}/withdraw`)).status).toBe(200)
       expect((await admin.put(`/api/admin/papers/${paper}`, { title: 'Disunting semula' })).status).toBe(200)
+    })
+  })
+
+  describe('R1-T31: the builder wire carries the whole stimulus group (D90)', () => {
+    interface Wire {
+      id: string
+      kind: string
+      label: string
+      caption?: string
+      source?: string
+      text?: string
+      table?: { head: string[]; rows: string[][] }
+      image?: { url: string }
+    }
+    const stim = async (body: Record<string, unknown>): Promise<string> => {
+      const res = await admin.post('/api/stimuli', body)
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      return res.body.data.id as string
+    }
+    const picture = async (): Promise<string> => {
+      const up = await admin.upload('/api/files?purpose=question_image', makePng())
+      expect(up.status, JSON.stringify(up.body)).toBe(201)
+      return up.body.data.id as string
+    }
+    async function group(label: string, stimulusIds: string[]): Promise<{ id: string; members: string[] }> {
+      const members = [await mk({ questionText: `Merujuk ${label}, berapakah nilai soalan satu?` }), await mk({ questionText: `Merujuk ${label}, berapakah nilai soalan dua?` })]
+      const res = await admin.post('/api/stimulus-groups', { label, stimulusIds, questionIds: members })
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      await approve(members)
+      for (const id of members) expect((await setPool(id, ['MAT2-A'])).status).toBe(200)
+      return { id: res.body.data.id as string, members }
+    }
+
+    it('editor groups, pool units, student view and the preview send stimuli[] (1 to 3, once per group) with kind, caption, source, table and a file token URL', async () => {
+      const token = await picture()
+      const image = await stim({ kind: 'image', label: 'Rajah 1', caption: 'Segi empat tepat', alt: 'Rajah segi empat tepat', sourceCitation: 'Sumber: buku teks', imageFileId: token })
+      const table = await stim({ kind: 'table', label: 'Jadual 1', caption: 'Jualan', tableData: { head: ['Bulan', 'Jumlah'], rows: [['Jan', '10'], ['Feb', '12']] } })
+      const passage = await stim({ kind: 'passage', label: 'Petikan 1', body: { ms: 'Sebuah kebun berbentuk segi empat tepat.' } })
+      const g = await group('Rajah 1', [image, table, passage])
+
+      const paper = await newPaper()
+      const [a] = await sectionsOf(paper)
+      expect((await place(paper, a!, g.members[1]!)).status).toBe(201)
+
+      const check = (list: Wire[]) => {
+        expect(list.map((x) => x.kind)).toEqual(['image', 'table', 'passage'])
+        expect(list[0]).toMatchObject({ label: 'Rajah 1', caption: 'Segi empat tepat', source: 'Sumber: buku teks', image: { url: `/api/files/${token}` } })
+        expect(list[1]).toMatchObject({ kind: 'table', caption: 'Jualan', table: { head: ['Bulan', 'Jumlah'], rows: [['Jan', '10'], ['Feb', '12']] } })
+        expect(list[1]!.text).toBeUndefined()
+        expect(list[2]).toMatchObject({ text: 'Sebuah kebun berbentuk segi empat tepat.' })
+        expect(JSON.stringify(list)).not.toMatch(/asset|fileId/i)
+      }
+
+      // editor (paper view): groups
+      const editor = (await admin.get(`/api/admin/papers/${paper}`)).body.data
+      const grp = (editor.groups as { id: string; stimulus: Wire; stimuli?: Wire[]; questionIds: string[] }[]).find((x) => x.id === g.id)!
+      expect(grp.questionIds).toEqual(g.members)
+      check(grp.stimuli!)
+      expect(grp.stimulus).toEqual(grp.stimuli![0])
+
+      // student view: the stimuli once per group, both members under it
+      const view = (await admin.get(`/api/admin/papers/${paper}/student-view`)).body.data
+      const units = view.sections[0].units as { groupId?: string; stimulus?: Wire; stimuli?: Wire[]; questions: { id: string }[] }[]
+      const unit = units.find((u) => u.groupId === g.id)!
+      check(unit.stimuli!)
+      expect(unit.stimulus).toEqual(unit.stimuli![0])
+      expect(unit.questions.map((x) => x.id)).toEqual(g.members)
+      expect(units.filter((u) => u.groupId === g.id)).toHaveLength(1)
+
+      // the picture is readable by the admin through the token URL (and by no anonymous caller)
+      expect((await admin.get(unit.stimuli![0]!.image!.url)).status).toBe(200)
+
+      // section pool (another paper, nothing placed yet): the group is ONE unit with its stimuli
+      const fresh = await newPaper()
+      const [fa] = await sectionsOf(fresh)
+      const pool = await poolUnits<{ groupId?: string; stimuli?: Wire[]; questionIds: string[] }>(fresh, fa!)
+      const poolUnit = pool.find((u) => u.groupId === g.id)!
+      expect(poolUnit.questionIds).toEqual(g.members)
+      check(poolUnit.stimuli!)
+
+      // admin preview (review content): all stimuli of the group, keyed by group id
+      const preview = await admin.post('/api/admin/papers/preview', { ids: g.members })
+      expect(preview.status, JSON.stringify(preview.body)).toBe(200)
+      check(preview.body.data.groupStimuli[g.id])
+      expect(preview.body.data.stimuli[g.id]).toEqual(preview.body.data.groupStimuli[g.id][0])
+    })
+
+    it('carries all seven kinds unchanged: image, diagram, map, infographic, graph with their pictures, table and passage', async () => {
+      const kinds: [string, Record<string, unknown>][] = []
+      for (const kind of ['diagram', 'map', 'graph']) kinds.push([kind, { kind, label: `Gambar ${kind}`, alt: `Huraian ${kind}`, imageFileId: await picture() }])
+      const ids = await Promise.all(kinds.map(([, body]) => stim(body)))
+      const g = await group('Kumpulan gambar', ids)
+      const infographic = await group('Infografik', [await stim({ kind: 'infographic', label: 'Infografik 1', alt: 'Huraian infografik', imageFileId: await picture() })])
+      const preview = await admin.post('/api/admin/papers/preview', { ids: [...g.members, ...infographic.members] })
+      const list = preview.body.data.groupStimuli[g.id] as Wire[]
+      expect(list.map((x) => x.kind)).toEqual(['diagram', 'map', 'graph'])
+      expect(list.every((x) => x.image?.url.startsWith('/api/files/'))).toBe(true)
+      expect(preview.body.data.groupStimuli[infographic.id][0]).toMatchObject({ kind: 'infographic', label: 'Infografik 1' })
     })
   })
 
@@ -463,14 +711,14 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
       const other = await mk()
       const group = await admin.post('/api/stimulus-groups', { label: 'Petikan satu', stimulusIds: [stim.body.data.id], questionIds: [lone, other] })
       expect(group.status, JSON.stringify(group.body)).toBe(201)
+      const groupId = group.body.data.id as string
       await approve([lone, other])
       expect((await setPool(lone, ['MAT2-A'])).status).toBe(200)
-      const groupId = group.body.data.id as string
       await q(`update questions set group_id = null, group_position = null where id = $1`, [other])
 
       const paper = await newPaper()
       const sections = await sectionsOf(paper)
-      const pool = (await admin.get(`/api/admin/papers/${paper}/sections/${sections[0]}/pool?q=${encodeURIComponent('hasil tambah')}&pageSize=100`)).body.data as { groupId?: string; stimulus?: unknown; questionIds: string[]; eligible: boolean; reasons: string[] }[]
+      const pool = await poolUnits<{ groupId?: string; stimulus?: unknown; questionIds: string[]; eligible: boolean; reasons: string[] }>(paper, sections[0]!, `q=${encodeURIComponent('hasil tambah')}`)
       const unit = pool.find((u) => u.questionIds.includes(lone))!
       expect(unit).toMatchObject({ groupId, questionIds: [lone], eligible: false })
       expect(unit.stimulus).toBeDefined()
@@ -483,6 +731,66 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
       expect(pub.body.data.ok).toBe(false)
       expect(pub.body.data.errors).toContain('Kumpulan perlu sekurang-kurangnya 2 soalan.')
       expect(pub.body.data.overridden).toBeUndefined()
+    })
+  })
+
+  describe('D90: a group with no displayable stimulus is still a group', () => {
+    /** A two-member group whose only stimulus is unlinked by SQL (a legacy group with nothing to display). */
+    async function stimulusLessGroup(): Promise<{ groupId: string; members: string[] }> {
+      const stim = await admin.post('/api/stimuli', { kind: 'passage', label: 'Petikan hilang', body: { ms: 'Petikan yang akan dibuang.' } })
+      expect(stim.status, JSON.stringify(stim.body)).toBe(201)
+      const members = [await mk(), await mk()]
+      const group = await admin.post('/api/stimulus-groups', { label: 'Petikan hilang', stimulusIds: [stim.body.data.id], questionIds: members })
+      expect(group.status, JSON.stringify(group.body)).toBe(201)
+      const groupId = group.body.data.id as string
+      await approve(members)
+      await q(`delete from stimulus_group_stimuli where group_id = $1`, [groupId])
+      return { groupId, members }
+    }
+
+    it('is emitted as a group (groupId, members, stimuli []), placed and moved as ONE unit', async () => {
+      const { groupId, members } = await stimulusLessGroup()
+      const solo = await approved()
+      const paper = await newPaper()
+      const [a] = await sectionsOf(paper)
+      const added = await place(paper, a!, members[1]!)
+      expect(added.status, JSON.stringify(added.body)).toBe(201)
+      // a lone member brings the whole group, in published order
+      expect(added.body.data.added).toEqual(members)
+      expect((await place(paper, a!, solo)).status).toBe(201)
+      const editor = (await admin.get(`/api/admin/papers/${paper}`)).body.data
+      const group = (editor.groups as { id: string; stimulus?: unknown; stimuli?: unknown[]; questionIds: string[] }[]).find((g) => g.id === groupId)!
+      expect(group).toBeDefined()
+      expect(group.questionIds).toEqual(members)
+      expect(group.stimuli).toEqual([])
+      expect(group.stimulus).toBeUndefined()
+      // the group moves as a unit: ordering by one member moves both
+      const order = await admin.put(`/api/admin/papers/${paper}/sections/${a}/order`, { order: [solo, members[0]!] })
+      expect(order.status, JSON.stringify(order.body)).toBe(200)
+      expect((await admin.get(`/api/admin/papers/${paper}`)).body.data.paper.sections[0].questionIds).toEqual([solo, ...members])
+      // the student view shows it as one unit with no stimulus
+      const view = (await admin.get(`/api/admin/papers/${paper}/student-view`)).body.data
+      const unit = (view.sections[0].units as { groupId?: string; stimulus?: unknown; stimuli?: unknown[]; questions: { id: string }[] }[]).find((u) => u.groupId === groupId)!
+      expect(unit.questions.map((x) => x.id)).toEqual(members)
+      expect(unit.stimulus).toBeUndefined()
+      // removing one member removes the whole group
+      const removed = await admin.del(`/api/admin/papers/${paper}/placements/${members[0]}`)
+      expect(removed.body.data.removed).toEqual(members)
+    })
+
+    it('stays outside D93: a one-member group without a stimulus is not blocked by the group minimum', async () => {
+      const { groupId, members } = await stimulusLessGroup()
+      await q(`update questions set group_id = null, group_position = null where id = $1`, [members[1]])
+      const paper = await newPaper()
+      const [a] = await sectionsOf(paper)
+      expect((await place(paper, a!, members[0]!)).status).toBe(201)
+      const review = (await admin.get(`/api/admin/papers/${paper}/review`)).body.data
+      expect(review.blockers).not.toContain('Kumpulan perlu sekurang-kurangnya 2 soalan.')
+      const pool = await poolUnits<{ groupId?: string; stimulus?: unknown; questionIds: string[]; reasons: string[] }>(paper, a!)
+      const unit = pool.find((u) => u.questionIds.includes(members[0]!))!
+      expect(unit.groupId).toBe(groupId)
+      expect(unit.stimulus).toBeUndefined()
+      expect(unit.reasons).not.toContain('Kumpulan perlu sekurang-kurangnya 2 soalan.')
     })
   })
 })

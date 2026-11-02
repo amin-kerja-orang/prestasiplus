@@ -5,7 +5,9 @@ import { Prisma } from '../../db/generated/client'
 import { idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { stimulusTableOf, stimulusTableParts, type StimulusTable } from './stimulus-table'
+import { NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL } from './learner-visibility'
 import { kertasOfPaperCode } from './projection'
+import { QUESTION_SERVED, VERSION_SERVED } from './served-rule'
 import type { StimulusKind } from './types'
 
 /** The five columns a stimulus write may set. `null` clears. */
@@ -42,27 +44,35 @@ export interface GroupRow {
 const PKSK_TAG = 'pksk_domain'
 
 /**
- * A question is SHOWN TO PUPILS when (A) it is active and its live version is approved, or (B) a placement of a published paper pins one of
- * its versions (approved or archived): the paper serves that version whether the question is active or not, as the attempt bridge and the
- * `question_image` read rule do (`files/question-image-access.ts`). Alias `q` is `questions`. This is the "served lock" predicate.
+ * Secondary only (D72, OQ-06), for the Studio lists of groups and stimuli: a question of a primary-stage level (Darjah) or a PKSK question is
+ * hidden from everyone, admin included, so a group with such a member, and a stimulus used by such a question, are not listed (a mixed group
+ * cannot be shown without a Darjah row). The question predicates are the ones of the question list (`learner-visibility`), on the LATEST
+ * version, as the subject and level filters here. A group without members, and a stimulus nobody uses, have nothing to hide.
  */
-const QUESTION_SERVED = Prisma.sql`(
-  (q.is_active AND EXISTS (SELECT 1 FROM question_versions sv WHERE sv.question_id = q.id AND sv.version_no = q.live_version_no AND sv.status = 'approved'))
-  OR EXISTS (SELECT 1 FROM paper_placements spl
-               JOIN paper_sections sps ON sps.id = spl.paper_section_id
-               JOIN papers spp ON spp.id = sps.paper_id AND spp.status = 'published'
-               JOIN question_versions spv ON spv.question_id = q.id AND spv.version_no = spl.pinned_version_no AND spv.status IN ('approved', 'archived')
-              WHERE spl.question_id = q.id)
-)`
+const GROUP_SECONDARY_ONLY = Prisma.sql`NOT EXISTS (
+  SELECT 1 FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
+   WHERE q.group_id = g.id AND NOT (${NOT_PKSK_SQL} AND ${NOT_PRIMARY_LEVEL_SQL}))`
+const STIMULUS_SECONDARY_ONLY = Prisma.sql`NOT EXISTS (
+  SELECT 1 FROM (
+    SELECT gq.id AS qid FROM stimulus_group_stimuli gs JOIN questions gq ON gq.group_id = gs.group_id WHERE gs.stimulus_id = s.id
+    UNION ALL
+    SELECT lq.id FROM question_version_stimuli vs JOIN question_versions lv ON lv.id = vs.question_version_id JOIN questions lq ON lq.id = lv.question_id WHERE vs.stimulus_id = s.id
+    UNION ALL
+    SELECT pq.id FROM question_parts pp JOIN question_versions pv ON pv.id = pp.question_version_id JOIN questions pq ON pq.id = pv.question_id WHERE pp.stimulus_id = s.id
+  ) u JOIN questions q ON q.id = u.qid JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
+  WHERE NOT (${NOT_PKSK_SQL} AND ${NOT_PRIMARY_LEVEL_SQL}))`
 
-/** The same rule for one version `v` of question `q`: it is the live approved version of an active question, or a published paper pins it. */
-const VERSION_SERVED = Prisma.sql`(
-  (q.live_version_no = v.version_no AND q.is_active AND v.status = 'approved')
-  OR (v.status IN ('approved', 'archived') AND EXISTS (SELECT 1 FROM paper_placements spl
-               JOIN paper_sections sps ON sps.id = spl.paper_section_id
-               JOIN papers spp ON spp.id = sps.paper_id AND spp.status = 'published'
-              WHERE spl.question_id = q.id AND spl.pinned_version_no = v.version_no))
-)`
+/**
+ * A group with no member yet fits any EXISTING subject or level (the first question decides, and a group is made before its first
+ * question: the Studio picker for a subject must offer it); otherwise a member must match. An id that is not a subject / level matches nothing.
+ */
+const groupFits = (column: 'subject_id' | 'education_level_id', value: bigint | null): Prisma.Sql => {
+  const col = Prisma.raw(`lv.${column}`)
+  const table = Prisma.raw(column === 'subject_id' ? 'subjects' : 'education_levels')
+  return Prisma.sql`(${value}::bigint IS NULL
+    OR (NOT EXISTS (SELECT 1 FROM questions q WHERE q.group_id = g.id) AND EXISTS (SELECT 1 FROM ${table} x WHERE x.id = ${value}::bigint))
+    OR EXISTS (SELECT 1 FROM questions q JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no WHERE q.group_id = g.id AND ${col} = ${value}::bigint))`
+}
 
 /** What the member rules need to know about a question. */
 export interface QuestionFacts {
@@ -93,6 +103,8 @@ export interface ListFilter {
   subjectId?: string | undefined
   educationLevelId?: string | undefined
   status?: 'draft' | 'served' | undefined
+  /** Groups a question can still join: no member is shown to pupils (the served lock would refuse a change otherwise). */
+  joinable?: boolean | undefined
   q?: string | undefined
   kind?: string | undefined
 }
@@ -107,26 +119,15 @@ export function plainExcerpt(text: string | null, max: number): string {
   return plain.length <= max ? plain : `${plain.slice(0, max).trimEnd()}\u2026`
 }
 
-
-/**
- * REQ-B-032: the list `status` and the member `servable` flag follow the SAME served rule as the lock (`QUESTION_SERVED` / `VERSION_SERVED`
- * above): a question is shown when it is active with an approved live version, or a published paper pins one of its versions. They used to
- * look at the live version only, so a stimulus kept by the lock showed as "not served" in the list.
- */
-const SERVED_NOW = QUESTION_SERVED
-
-/** The same rule for one version `v` of question `q`. */
-const VERSION_SERVED_NOW = VERSION_SERVED
-
 /** `EXISTS` over the three ways a stimulus reaches pupils (a group with a shown member, a shown version link, a shown part link). */
 const stimulusServedSql = (stimulusId: Prisma.Sql): Prisma.Sql => Prisma.sql`EXISTS (
-  SELECT 1 FROM stimulus_group_stimuli gs JOIN questions q ON q.group_id = gs.group_id WHERE gs.stimulus_id = ${stimulusId} AND ${SERVED_NOW}
+  SELECT 1 FROM stimulus_group_stimuli gs JOIN questions q ON q.group_id = gs.group_id WHERE gs.stimulus_id = ${stimulusId} AND ${QUESTION_SERVED}
   UNION ALL
   SELECT 1 FROM question_version_stimuli vs JOIN question_versions v ON v.id = vs.question_version_id JOIN questions q ON q.id = v.question_id
-   WHERE vs.stimulus_id = ${stimulusId} AND ${VERSION_SERVED_NOW}
+   WHERE vs.stimulus_id = ${stimulusId} AND ${VERSION_SERVED}
   UNION ALL
   SELECT 1 FROM question_parts p JOIN question_versions v ON v.id = p.question_version_id JOIN questions q ON q.id = v.question_id
-   WHERE p.stimulus_id = ${stimulusId} AND ${VERSION_SERVED_NOW}
+   WHERE p.stimulus_id = ${stimulusId} AND ${VERSION_SERVED}
 )`
 
 const bi = (text: string): bigint | null => (/^[1-9]\d{0,18}$/.test(text) ? BigInt(text) : null)
@@ -228,38 +229,24 @@ export class StimuliRepository {
     const level = f.educationLevelId === undefined ? null : bi(f.educationLevelId)
     if ((f.subjectId !== undefined && subject === null) || (f.educationLevelId !== undefined && level === null)) return { ids: [], total: 0 }
     const pattern = f.q === undefined || f.q === '' ? null : likePattern(f.q)
+    const where = Prisma.sql`
+      ${GROUP_SECONDARY_ONLY}
+      AND ${groupFits('subject_id', subject)}
+      AND ${groupFits('education_level_id', level)}
+      AND (${f.status ?? null}::text IS NULL OR (EXISTS (SELECT 1 FROM questions q WHERE q.group_id = g.id AND ${QUESTION_SERVED})) = (${f.status ?? null}::text = 'served'))
+      AND (${f.joinable === true}::boolean IS NOT TRUE OR NOT EXISTS (SELECT 1 FROM questions q WHERE q.group_id = g.id AND ${QUESTION_SERVED}))
+      AND (${pattern}::text IS NULL OR g.label ILIKE ${pattern}::text ESCAPE '\\'
+           OR EXISTS (SELECT 1 FROM stimulus_group_stimuli gs JOIN stimuli s ON s.id = gs.stimulus_id
+                       WHERE gs.group_id = g.id AND (s.label ILIKE ${pattern}::text ESCAPE '\\' OR s.body_ms ILIKE ${pattern}::text ESCAPE '\\' OR s.body_en ILIKE ${pattern}::text ESCAPE '\\')))`
     const rows = await this.db.$queryRaw<{ id: bigint; total: bigint }[]>`
-      SELECT g.id, count(*) OVER () AS total
-        FROM stimulus_groups g
-       WHERE (${subject}::bigint IS NULL OR EXISTS (SELECT 1 FROM questions q JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
-                                                      WHERE q.group_id = g.id AND lv.subject_id = ${subject}::bigint))
-         AND (${level}::bigint IS NULL OR EXISTS (SELECT 1 FROM questions q JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
-                                                    WHERE q.group_id = g.id AND lv.education_level_id = ${level}::bigint))
-         AND (${f.status ?? null}::text IS NULL OR (EXISTS (SELECT 1 FROM questions q WHERE q.group_id = g.id AND ${SERVED_NOW})) = (${f.status ?? null}::text = 'served'))
-         AND (${pattern}::text IS NULL OR g.label ILIKE ${pattern}::text ESCAPE '\\'
-              OR EXISTS (SELECT 1 FROM stimulus_group_stimuli gs JOIN stimuli s ON s.id = gs.stimulus_id
-                          WHERE gs.group_id = g.id AND (s.label ILIKE ${pattern}::text ESCAPE '\\' OR s.body_ms ILIKE ${pattern}::text ESCAPE '\\' OR s.body_en ILIKE ${pattern}::text ESCAPE '\\')))
+      SELECT g.id, count(*) OVER () AS total FROM stimulus_groups g WHERE ${where}
        ORDER BY g.updated_at DESC, g.id DESC
        LIMIT ${f.pageSize} OFFSET ${(f.page - 1) * f.pageSize}`
     if (rows.length > 0) return { ids: rows.map((r) => idToString(r.id)), total: Number(rows[0]?.total ?? 0) }
     // An empty page past the end still reports the real total.
-    const total = f.page === 1 ? 0 : await this.countGroups(f, subject, level, pattern)
-    return { ids: [], total }
-  }
-
-  private async countGroups(f: ListFilter, subject: bigint | null, level: bigint | null, pattern: string | null): Promise<number> {
-    const rows = await this.db.$queryRaw<{ n: bigint }[]>`
-      SELECT count(*) AS n
-        FROM stimulus_groups g
-       WHERE (${subject}::bigint IS NULL OR EXISTS (SELECT 1 FROM questions q JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
-                                                      WHERE q.group_id = g.id AND lv.subject_id = ${subject}::bigint))
-         AND (${level}::bigint IS NULL OR EXISTS (SELECT 1 FROM questions q JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
-                                                    WHERE q.group_id = g.id AND lv.education_level_id = ${level}::bigint))
-         AND (${f.status ?? null}::text IS NULL OR (EXISTS (SELECT 1 FROM questions q WHERE q.group_id = g.id AND ${SERVED_NOW})) = (${f.status ?? null}::text = 'served'))
-         AND (${pattern}::text IS NULL OR g.label ILIKE ${pattern}::text ESCAPE '\\'
-              OR EXISTS (SELECT 1 FROM stimulus_group_stimuli gs JOIN stimuli s ON s.id = gs.stimulus_id
-                          WHERE gs.group_id = g.id AND (s.label ILIKE ${pattern}::text ESCAPE '\\' OR s.body_ms ILIKE ${pattern}::text ESCAPE '\\' OR s.body_en ILIKE ${pattern}::text ESCAPE '\\')))`
-    return Number(rows[0]?.n ?? 0)
+    if (f.page === 1) return { ids: [], total: 0 }
+    const count = await this.db.$queryRaw<{ n: bigint }[]>`SELECT count(*) AS n FROM stimulus_groups g WHERE ${where}`
+    return { ids: [], total: Number(count[0]?.n ?? 0) }
   }
 
   /** The groups of a page in the order of `ids`, in one query (no N+1). */
@@ -298,7 +285,7 @@ export class StimuliRepository {
     const out = new Map<string, MemberBrief[]>(groupIds.map((g) => [g, []]))
     if (keys.length === 0) return out
     const rows = await this.db.$queryRaw<{ group_id: bigint; id: bigint; number_label: string | null; stem_ms: string | null; status: string; served: boolean }[]>`
-      SELECT q.group_id, q.id, lv.number_label, lv.stem_ms, lv.status, ${SERVED_NOW} AS served
+      SELECT q.group_id, q.id, lv.number_label, lv.stem_ms, lv.status, ${QUESTION_SERVED} AS served
         FROM questions q JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
        WHERE q.group_id IN (${Prisma.join(keys)})
        ORDER BY q.group_id, q.group_position, q.id`
@@ -319,7 +306,7 @@ export class StimuliRepository {
   async servedGroupIds(groupIds: readonly string[]): Promise<Set<string>> {
     const keys = groupIds.map(bi).filter((k): k is bigint => k !== null)
     if (keys.length === 0) return new Set()
-    const rows = await this.db.$queryRaw<{ group_id: bigint }[]>`SELECT DISTINCT q.group_id FROM questions q WHERE q.group_id IN (${Prisma.join(keys)}) AND ${SERVED_NOW}`
+    const rows = await this.db.$queryRaw<{ group_id: bigint }[]>`SELECT DISTINCT q.group_id FROM questions q WHERE q.group_id IN (${Prisma.join(keys)}) AND ${QUESTION_SERVED}`
     return new Set(rows.map((r) => idToString(r.group_id)))
   }
 
@@ -338,9 +325,15 @@ export class StimuliRepository {
         FROM question_version_stimuli vs JOIN question_versions v ON v.id = vs.question_version_id JOIN questions q ON q.id = v.question_id
         JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
        WHERE vs.stimulus_id = s.id
+      UNION ALL
+      SELECT lv.subject_id, lv.education_level_id
+        FROM question_parts p JOIN question_versions v ON v.id = p.question_version_id JOIN questions q ON q.id = v.question_id
+        JOIN question_versions lv ON lv.question_id = q.id AND lv.version_no = q.latest_version_no
+       WHERE p.stimulus_id = s.id
     )`
     const where = Prisma.sql`
       s.kind <> 'audio'
+      AND ${STIMULUS_SECONDARY_ONLY}
       AND (${f.kind ?? null}::text IS NULL OR s.kind = ${f.kind ?? null}::text)
       AND (${subject}::bigint IS NULL OR EXISTS (SELECT 1 FROM ${users} u WHERE u.subject_id = ${subject}::bigint))
       AND (${level}::bigint IS NULL OR EXISTS (SELECT 1 FROM ${users} u WHERE u.education_level_id = ${level}::bigint))

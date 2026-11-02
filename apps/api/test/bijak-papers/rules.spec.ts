@@ -15,7 +15,7 @@ describe('papers rules', () => {
 
   it('derives the default section instruction (mock getCover)', () => {
     expect(sectionInstruction(null, { type: 'all' }, 4)).toBe('Jawab semua soalan.')
-    expect(sectionInstruction(null, { type: 'choose', n: 1 }, 2)).toBe('Jawab 1 daripada 2 soalan.')
+    expect(sectionInstruction(null, { type: 'choose', n: 1 }, 2)).toBe('Jawab 1 soalan sahaja.')
     expect(sectionInstruction('Jawab satu.', { type: 'choose', n: 1 }, 2)).toBe('Jawab satu.')
     expect(ruleOf('choose', null)).toEqual({ type: 'all' })
   })

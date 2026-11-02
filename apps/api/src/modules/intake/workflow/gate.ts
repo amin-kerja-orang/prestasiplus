@@ -19,6 +19,8 @@ export interface CurriculumFacts {
   levelKnown: boolean
   /** Is `tag.unit` a unit of the curriculum list for the subject and level; null when the item has no unit. */
   unitKnown: boolean | null
+  /** The codes of `tag.sp` that are not an SP of the subject and level (REQ-B-034); empty when all are known or the subject/level is not. */
+  unknownSp: readonly string[]
 }
 
 /** Marks a scheme can award, counting "any N of M" groups as N points (prototype `schemeTotal`). */
@@ -80,6 +82,7 @@ export function itemIssues(q: IntakeQuestion, stimulus: IntakeStimulus | undefin
   if (t.unit === null && t.formOrigin !== 'T1-T3') add(where, G.unitMissing)
   if (t.unit !== null && facts.unitKnown === false) add(where, G.unitNotInTaxonomy)
   if (t.sp.length === 0) add(where, G.spMissing)
+  for (const code of facts.unknownSp) add(where, G.spNotInTaxonomy(code))
   if (!(t.tp >= 1 && t.tp <= 6)) add(where, G.tpRange)
   for (const f of q.lowFields) if (!q.confirmed.includes(f)) add(where, G.lowFieldUnconfirmed(f))
 

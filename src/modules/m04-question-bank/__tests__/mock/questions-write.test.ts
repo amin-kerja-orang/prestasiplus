@@ -4,6 +4,7 @@
  * only tests that edit observed rows set \, which resets the mock afterwards.
  */
 
+import { QUESTION_MESSAGES } from '@pp/contract'
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import type { MockRuntime } from '@/mock/index'
@@ -479,6 +480,7 @@ describe('#6 DELETE /api/questions/:id', () => {
   it('deletes permanently and answers the flash; the second call is 404', async () => {
     const created = await createMcq()
     const id = created.body.data.id
+    questions.bulkAction('pending_review', [id], 0) // REQ-A-023: only a draft or a question in review may go
     const res = await call<QuestionMutation<{ deleted: number }>>(
       'DELETE',
       `/api/questions/${String(id)}`,
@@ -494,10 +496,33 @@ describe('#6 DELETE /api/questions/:id', () => {
 
   it('deletes an observed question and moves the counts', async () => {
     dirty = true
+    // REQ-A-023b: an archived question is deletable (only a served / in_use seed id is refused)
     const res = await call('DELETE', '/api/questions/129114', ADMIN)
     expect(res.status).toBe(200)
     expect(questions.count('Q-ALL')).toBe(all0 - 1)
     expect((await call('GET', '/api/questions/129114', ADMIN)).status).toBe(404)
+  })
+
+  it('REQ-A-023b: a served or in_use seed id is refused with 409 CONFLICT and the contract text; any other state is deletable', async () => {
+    for (const [id, text] of [
+      [136891, QUESTION_MESSAGES.deleteRefused],
+      [124733, QUESTION_MESSAGES.deleteRefused],
+      [129216, QUESTION_MESSAGES.deleteInUse],
+    ] as const) {
+      const res = await call<ErrorBody>('DELETE', `/api/questions/${String(id)}`, ADMIN)
+      expect(res.status).toBe(409)
+      expect(res.body.error.code).toBe('CONFLICT')
+      expect(res.body.error.message).toBe(text)
+      expect(questions.deletionBlock(id)).not.toBeNull()
+      expect(questions.get(id)).not.toBeNull()
+    }
+    const a = (await createMcq()).body.data.id
+    for (const action of ['approve', 'archive'] as const) {
+      await call('POST', '/api/questions/bulk-action', ADMIN, { action, ids: [a] })
+      expect(questions.deletionBlock(a)).toBeNull()
+    }
+    expect((await call('DELETE', `/api/questions/${String(a)}`, ADMIN)).status).toBe(200)
+    expect(questions.get(a)).toBeNull()
   })
 
   it('an unknown id and a PKSK row are 404 and nothing is removed', async () => {
@@ -546,12 +571,30 @@ describe('#7 POST /api/questions/bulk-action', () => {
 
   it('delete removes the rows; unknown ids and PKSK ids are not counted', async () => {
     const a = (await createMcq()).body.data.id
+    questions.bulkAction('pending_review', [a], 0)
     const res = await bulk({ action: 'delete', ids: [a, 999_999_999, 177_698, a] })
     expect(res.status).toBe(200)
     expect(res.body.data.affected).toBe(1)
     expect(res.body.status).toBe('1 soalan berjaya dikemaskini.')
     expect(questions.get(a)).toBeNull()
     expect(questions.get(177_698)).not.toBeNull()
+  })
+
+  it('REQ-A-023b: delete reports a served and an in_use seed id in failed[] with code CONFLICT and its own text, and removes the rest', async () => {
+    const approved = (await createMcq()).body.data.id
+    await bulk({ action: 'approve', ids: [approved] })
+    const res = await bulk({ action: 'delete', ids: [approved, 136891, 129216] })
+    expect(res.status).toBe(200)
+    expect(res.body.data).toMatchObject({
+      affected: 1,
+      failed: [
+        { id: '136891', code: 'CONFLICT', message: QUESTION_MESSAGES.deleteRefused, fields: {} },
+        { id: '129216', code: 'CONFLICT', message: QUESTION_MESSAGES.deleteInUse, fields: {} },
+      ],
+    })
+    expect(questions.get(approved)).toBeNull()
+    expect(questions.get(136891)).not.toBeNull()
+    expect(questions.get(129216)).not.toBeNull()
   })
 
   it('422 without an action, without ids, with a bad action or bad ids', async () => {

@@ -141,9 +141,9 @@ test.describe('QA-G5 L14 chapter flow', { tag: [moduleTag(5)] }, () => {
       await tid(page, 'result-back').click()
       await expect(page).toHaveURL(/\/practice\/chapter\/MATH\?level=1$/)
       await expect(tid(page, 'chapter-stats-1')).toContainText('5/464 soalan unik')
-      // 5 of 464 answered: Bab 2 stays locked.
+      // 5 of 464 answered: every chapter stays open (D98).
       await expect(tid(page, 'chapter-card-1')).toHaveAttribute('data-state', 'open')
-      await expect(page.locator('[data-testid^=chapter-card-][data-state=locked]').first()).toBeVisible()
+      await expect(page.locator('[data-testid^=chapter-card-][data-state=locked]')).toHaveCount(0)
 
       // S6: every wrong answer is queued (BR-14); S7 serves them.
       await gotoApp('/practice/revision')
@@ -157,46 +157,30 @@ test.describe('QA-G5 L14 chapter flow', { tag: [moduleTag(5)] }, () => {
     },
   )
 
-  test(
-    'E2E-M05-28 the 70 % unlock boundary: 69 % keeps Bab 2 locked, 70 % opens it',
-    provisional('LS-3: the unlock after a completed chapter was never observed on live'),
-    async ({ page, loginAs, gotoApp, mock }) => {
-      await loginAs('pelajar2@demo.test')
-      await gotoApp('/practice/chapter/MATH')
-      await expect(page.locator('[data-testid^=chapter-card-][data-state=locked]').first()).toBeVisible()
-      const locked = await page
-        .locator('[data-testid^=chapter-card-][data-state=locked]')
-        .evaluateAll((els) => els.map((e) => (e.getAttribute('data-testid') ?? '').replace('chapter-card-', '')))
-      const second = locked[0]!
+  test('E2E-M05-28 no chapter lock (D98): Bab 2 stays open after Bab 1 is completed at 69 %', async ({
+    page,
+    loginAs,
+    gotoApp,
+    mock,
+  }) => {
+    await loginAs('pelajar2@demo.test')
+    await gotoApp('/practice/chapter/MATH')
+    const cards = page.locator('[data-testid^=chapter-card-]')
+    await expect(cards.first()).toBeVisible()
+    await expect(page.locator('[data-testid^=chapter-card-][data-state=locked]')).toHaveCount(0)
+    const ids = await cards.evaluateAll((els) =>
+      els.map((e) => (e.getAttribute('data-testid') ?? '').replace('chapter-card-', '')),
+    )
+    const second = ids[1]!
 
-      await mock.hook('answerChapter', 3, 1, { correctPct: 69 })
-      await gotoApp('/practice/chapter/MATH')
-      await expect(tid(page, 'chapter-stats-1')).toContainText('464/464 soalan unik')
-      await expect(tid(page, 'chapter-stats-1')).toContainText('0 baki')
-      await expect(tid(page, `chapter-card-${second}`)).toHaveAttribute('data-state', 'locked')
-      await expect(tid(page, `chapter-card-${second}`).locator('a')).toHaveCount(0)
-    },
-  )
-
-  test(
-    'E2E-M05-28 at 70 % exactly (325 of 464) Bab 2 opens with 4 buttons; Bab 3 stays locked',
-    provisional('LS-3: the unlock after a completed chapter was never observed on live'),
-    async ({ page, loginAs, gotoApp, mock }) => {
-      await loginAs('pelajar2@demo.test')
-      await gotoApp('/practice/chapter/MATH')
-      await expect(page.locator('[data-testid^=chapter-card-][data-state=locked]').first()).toBeVisible()
-      const locked = await page
-        .locator('[data-testid^=chapter-card-][data-state=locked]')
-        .evaluateAll((els) => els.map((e) => (e.getAttribute('data-testid') ?? '').replace('chapter-card-', '')))
-      await mock.hook('answerChapter', 3, 1, { correctPct: 70 })
-      await gotoApp('/practice/chapter/MATH')
-      await expect(tid(page, 'chapter-card-1')).toBeVisible()
-      await expect(tid(page, `chapter-card-${locked[0]!}`)).toHaveAttribute('data-state', 'open')
-      await expect(tid(page, `chapter-card-${locked[0]!}`).locator('a')).toHaveCount(4)
-      await expect(tid(page, `chapter-card-${locked[1]!}`)).toHaveAttribute('data-state', 'locked')
-      await expectNoHorizontalScroll(page)
-    },
-  )
+    await mock.hook('answerChapter', 3, 1, { correctPct: 69 })
+    await gotoApp('/practice/chapter/MATH')
+    await expect(tid(page, 'chapter-stats-1')).toContainText('464/464 soalan unik')
+    await expect(tid(page, `chapter-card-${second}`)).toHaveAttribute('data-state', 'open')
+    await expect(tid(page, `chapter-card-${second}`).locator('a')).toHaveCount(4)
+    await expect(page.locator('[data-testid^=chapter-card-][data-state=locked]')).toHaveCount(0)
+    await expectNoHorizontalScroll(page)
+  })
 
   test('E2E-M05-36 S4 "{n} soalan chapter" equals the sum of the S5 level options for every subject', async ({
     page,

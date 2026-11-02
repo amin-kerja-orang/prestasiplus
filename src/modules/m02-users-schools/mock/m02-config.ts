@@ -1,6 +1,8 @@
 /**
  * M02 fixture config (SRS v1.28 §6.12 DATA-M02-13; SEC-M02-01…03). The default passwords the admin
- * screens use. **Dummy values defined here for the prototype, never the live values.** Not exposed
+ * screens use. **Dummy values defined here for the prototype, never the live values** (privacy-override deviation row
+ * "live default password values replaced by fictitious ones"; same shapes: 11 characters with letters and digits, and 8
+ * digits for the complimentary student). Tests and e2e read these constants and never repeat the literals. Not exposed
  * by any list endpoint; a mock-only helper (`mock.config(key, value)`, §7 notes) changes them.
  *
  * These are only the built-in defaults: the M02 seed copies them into `ctx.config`, and handlers read
@@ -19,9 +21,9 @@ export interface M02Config {
 }
 
 export const M02_CONFIG_DEFAULTS: Readonly<M02Config> = Object.freeze({
-  schoolAdminDefaultPassword: 'Sekolah2026',
-  bulkImportDefaultPassword: 'Import2026',
-  compStudentDefaultPassword: '20262026',
+  schoolAdminDefaultPassword: 'ContohAdm01',
+  bulkImportDefaultPassword: 'ContohImp01',
+  compStudentDefaultPassword: '00000001',
 })
 
 let current: M02Config = { ...M02_CONFIG_DEFAULTS }

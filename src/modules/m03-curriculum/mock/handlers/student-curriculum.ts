@@ -52,8 +52,6 @@ export const DEFAULT_MAP_GRADE = 'TINGKATAN_4'
 
 /** BR-14: `mastered` from this progress % (INFERRED threshold). */
 export const MASTERED_FROM = 80
-/** BR-14: the first two topics are open with no history. */
-const OPEN_FROM_START = 2
 const PREVIEW_MAX = 3
 
 /** Code with "_" → " " (S12/S13). */
@@ -67,19 +65,13 @@ export function mapSubjectLabel(code: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase()
 }
 
-/** BR-14: the island state of every topic, in `sequence` order (input order). */
+/** The island state of every topic, in `sequence` order. D98 (follow V2): no lock, never `locked`. */
 export function islandStates(progress: readonly LearnerTopicProgress[]): TopicState[] {
-  const states: TopicState[] = []
-  progress.forEach((p, i) => {
-    const prev = states[i - 1]
-    let state: TopicState
-    if (p.progress >= MASTERED_FROM) state = 'mastered'
-    else if (p.sessions >= 1 || p.questionsAnswered >= 1) state = 'started'
-    else if (i < OPEN_FROM_START || prev === 'started' || prev === 'mastered') state = 'unlocked'
-    else state = 'locked'
-    states.push(state)
+  return progress.map((p): TopicState => {
+    if (p.progress >= MASTERED_FROM) return 'mastered'
+    if (p.sessions >= 1 || p.questionsAnswered >= 1) return 'started'
+    return 'unlocked'
   })
-  return states
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -191,7 +183,7 @@ export const studentCurriculumRoutes: RouteDef[] = [
         progress: p.progress,
         sessions: p.sessions,
         questionsAnswered: p.questionsAnswered,
-        practiceUrl: state === 'locked' ? null : `/practice?topic_id=${String(t.id)}`,
+        practiceUrl: `/practice?topic_id=${String(t.id)}`,
       }
     })
     const done = states.filter((s) => s === 'mastered').length

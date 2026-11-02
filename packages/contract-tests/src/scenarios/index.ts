@@ -1,6 +1,7 @@
 import type { ContractIndex } from '../contract-index'
 import type { Scenario } from '../runner'
 import { authScenarios } from './auth'
+import { paperServabilityScenarios } from './paper-servability'
 import { smokeScenarios } from './smoke'
 
 /**
@@ -8,7 +9,7 @@ import { smokeScenarios } from './smoke'
  * domain next to this one, spread into the array below).
  */
 export function allScenarios(contract: ContractIndex): Scenario[] {
-  return [...authScenarios, ...smokeScenarios(contract)]
+  return [...authScenarios, ...smokeScenarios(contract), ...paperServabilityScenarios]
 }
 
-export { authScenarios, smokeScenarios }
+export { authScenarios, paperServabilityScenarios, smokeScenarios }

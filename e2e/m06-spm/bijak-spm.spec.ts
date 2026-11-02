@@ -39,7 +39,7 @@ async function startPaper(
   await page.getByTestId(`open-${paperId}`).click()
   await expect(page.getByTestId('bijak-cover')).toBeVisible()
   await expect(page.locator('[data-ds=hero-cta]')).toBeVisible()
-  // the section rules ("Jawab 1 daripada 2 soalan.") are part of the cover screenshot
+  // the section rules ("Jawab 1 soalan sahaja.") are part of the cover screenshot
   await page.getByTestId('cover-sections').evaluate((el) => el.scrollIntoView({ block: 'center' }))
   await shot(page, `cover-${paperId}`)
   if (mode === 'latihan') await page.getByText('Mod Latihan', { exact: true }).click()
@@ -88,7 +88,7 @@ test.describe('Bijak SPM @bijak', () => {
     await page.locator('[data-testid^=option-]').nth(1).click()
 
     // Autosave status settles.
-    await expect(page.getByTestId('save-status')).toHaveText('Disimpan')
+    await expect(page.getByTestId('save-status')).toHaveText('disimpan')
 
     while (await page.getByTestId('next').isVisible()) await page.getByTestId('next').click()
     await page.getByTestId('submit').click()

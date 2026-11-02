@@ -70,6 +70,7 @@ describe('StudioGroupEditor on the stimulus API (T32, D90)', () => {
     expect(order(w)).toEqual(['13', '11', '12'])
     await t(w, 'member-12-remove').trigger('click')
     await w.get('[data-testid="studio-group-search"]').setValue('Rajah')
+    await new Promise((r) => setTimeout(r, 350)) // the search waits 300 ms after the last key (REQ-B-061)
     await flushPromises()
     expect(w.findAll('[data-testid^="studio-group-found-"][data-testid$="-add"]').map((b) => b.attributes('data-testid'))).toEqual(['studio-group-found-14-add'])
     await t(w, 'found-14-add').trigger('click')
@@ -230,5 +231,70 @@ describe('StudioGroupEditor on the stimulus API (T32, D90)', () => {
     await flushPromises()
     expect(api.addGroupMember).not.toHaveBeenCalled()
     expect(w.emitted('update:groupId')?.[0]).toEqual(['8'])
+  })
+})
+
+describe('StudioGroupEditor question search and the read limit (REQ-B-061)', () => {
+  const type = async (w: VueWrapper, text: string): Promise<void> => {
+    await w.get('[data-testid="studio-group-search"]').setValue(text)
+  }
+
+  it('reads once per pause of 300 ms, not per keystroke, and keeps the answer of a term', async () => {
+    api.searchQuestions.mockResolvedValue({ data: [{ id: '14', questionText: 'Rajah' }], meta: {} })
+    const w = await render()
+    vi.useFakeTimers()
+    for (const text of ['Ra', 'Raj', 'Raja', 'Rajah']) {
+      await type(w, text)
+      await vi.advanceTimersByTimeAsync(100)
+    }
+    expect(api.searchQuestions).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(300)
+    expect(api.searchQuestions).toHaveBeenCalledTimes(1)
+    expect(api.searchQuestions).toHaveBeenCalledWith('Rajah')
+    // Back to a term already answered: no second read.
+    await type(w, 'Raja')
+    await type(w, 'Rajah')
+    await vi.advanceTimersByTimeAsync(350)
+    expect(api.searchQuestions).toHaveBeenCalledTimes(1)
+    vi.useRealTimers()
+  })
+
+  it('drops a late answer of an older term', async () => {
+    let first: (v: unknown) => void = () => {}
+    api.searchQuestions
+      .mockImplementationOnce(() => new Promise((r) => { first = r }))
+      .mockResolvedValueOnce({ data: [{ id: '15', questionText: 'baru' }], meta: {} })
+    const w = await render()
+    vi.useFakeTimers()
+    await type(w, 'lama')
+    await vi.advanceTimersByTimeAsync(350)
+    await type(w, 'baru')
+    await vi.advanceTimersByTimeAsync(350)
+    first({ data: [{ id: '14', questionText: 'lama' }], meta: {} })
+    await vi.advanceTimersByTimeAsync(0)
+    vi.useRealTimers()
+    await flushPromises()
+    expect(has(w, 'found-15-add')).toBe(true)
+    expect(has(w, 'found-14-add')).toBe(false)
+  })
+
+  it('shows the 429 message, not the generic load error, and does not keep the failed term', async () => {
+    api.searchQuestions
+      .mockRejectedValueOnce(new ApiError({ status: 429, code: 'RATE_LIMITED', message: 'Terlalu banyak permintaan. Cuba lagi sebentar.' }))
+      .mockResolvedValueOnce({ data: [], meta: {} })
+    const w = await render()
+    vi.useFakeTimers()
+    await type(w, 'Rajah')
+    await vi.advanceTimersByTimeAsync(350)
+    vi.useRealTimers()
+    await flushPromises()
+    expect(w.text()).toContain('Terlalu banyak permintaan. Cuba lagi sebentar.')
+    expect(w.text()).not.toContain('Tidak dapat memuatkan')
+    vi.useFakeTimers()
+    await type(w, 'Rajah ')
+    await type(w, 'Rajah')
+    await vi.advanceTimersByTimeAsync(350)
+    vi.useRealTimers()
+    expect(api.searchQuestions).toHaveBeenCalledTimes(2)
   })
 })

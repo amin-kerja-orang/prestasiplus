@@ -29,7 +29,17 @@ export const QUESTION_MESSAGES = {
   added: 'Soalan berjaya ditambah.',
   updated: 'Soalan berjaya dikemaskini.',
   deleted: 'Soalan berjaya dipadam.',
+  /** [PROPOSED] 409 of every hard delete (admin route, bulk `delete`, Guru route): a paper that is still shown to pupils, or still has sittings, places the question (R1-delete-served-guard). */
+  deleteRefused: 'Soalan ini tidak boleh dipadam kerana ia terdapat pada kertas yang masih dipaparkan kepada murid atau yang sedang diduduki.',
+  /** [PROPOSED] 409 `in_use` of every hard delete: a teacher's set, a remedial test or a battle still uses the question (a foreign key refuses the delete). */
+  deleteInUse: 'Soalan ini sedang digunakan dalam set, ujian pemulihan atau pertandingan dan tidak boleh dipadam.',
   bulkUpdated: (n: number): string => `${String(n)} soalan berjaya dikemaskini.`,
+  /** Bulk Terbitkan on a row that is already Diterbitkan (R1E2E-10, Mandor Q16): the row is left as it is and listed in `skipped` with this reason [PROPOSED]. */
+  bulkAlreadyApproved: 'Soalan ini sudah diterbitkan.',
+  /** `POST /questions/:id/edit-as-draft` (REQ-C-012; V2 flash "Draf baharu #{id} dicipta. ..."). */
+  editAsDraft: (id: string): string => `Draf baharu #${id} dicipta. Soalan asal kekal diterbitkan sehingga draf ini diterbitkan.`,
+  editAsDraftExists: 'Soalan ini sudah mempunyai draf atau semakan yang belum diterbitkan. Sunting draf itu.',
+  editAsDraftNotApproved: 'Hanya soalan yang diterbitkan boleh disunting sebagai draf.',
   bulkNoAction: 'Sila pilih tindakan terlebih dahulu.',
   bulkBadAction: 'Tindakan tidak sah.',
   bulkNoIds: 'Sila pilih sekurang-kurangnya satu soalan.',
@@ -37,6 +47,7 @@ export const QUESTION_MESSAGES = {
   /** Filter-based actions (AC-03.3; V2 A11 "Luluskan Hasil Tapisan" / "Arkib Semua"). */
   filterInvalid: 'Nilai penapis tidak sah.',
   filterNeeded: 'Sila pilih sekurang-kurangnya satu penapis (subjek/aras/status/carian) sebelum meluluskan secara pukal.',
+  filterBlank: 'Penapis yang dipilih tidak mempunyai nilai. Isi nilai penapis, atau buang penapis itu.',
   filterCountNeeded: 'Sila hantar bilangan soalan hasil tapisan yang dipaparkan (expectedCount).',
   filterCountChanged: (expected: number, actual: number): string =>
     `Bilangan soalan hasil tapisan telah berubah (dijangka ${String(expected)}, kini ${String(actual)}). Muat semula senarai dan semak semula sebelum meneruskan.`,
@@ -147,7 +158,13 @@ export const questionFilterShape = {
   /** V2 "Tahun": exam year of the source paper, four digits. */
   tahun: z.string({ error: QUESTION_MESSAGES.filterInvalid }).regex(/^\d{4}$/, QUESTION_MESSAGES.filterInvalid).optional(),
   /** V2 "Negeri" ("negeri atau badan peperiksaan"): `source_papers.exam_board`, matched case-insensitively. */
-  negeri: z.string({ error: QUESTION_MESSAGES.filterInvalid }).min(1, QUESTION_MESSAGES.filterInvalid).max(64, QUESTION_MESSAGES.filterInvalid).optional(),
+  // A blank value (spaces only, `negeri=%20`) is no filter, like a blank search (T47-L1): it is dropped before the value rules run.
+  negeri: z
+    .preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.string({ error: QUESTION_MESSAGES.filterInvalid }).max(64, QUESTION_MESSAGES.filterInvalid).optional(),
+    )
+    .optional(),
   /** V2 "Kertas" (Kertas 1-3). */
   kertas: z.enum(['1', '2', '3'], QUESTION_MESSAGES.filterInvalid).optional(),
   /** V2 "Jenis" ("jenis peperiksaan"). */
@@ -155,6 +172,9 @@ export const questionFilterShape = {
 } as const
 
 export const QuestionListQuerySchema = PageQuerySchema.extend(questionFilterShape).meta({ id: 'QuestionListQuery' })
+
+/** REQ-C-019: the values of the Studio selects that come from data. `negeri` = the distinct `exam_board` of the source papers, sorted. */
+export const QuestionFilterOptionsSchema = z.object({ negeri: z.array(z.string()) }).meta({ id: 'QuestionFilterOptions' })
 
 export const QuestionSummarySchema = z
   .object({
@@ -401,6 +421,9 @@ export const QuestionBulkRequestSchema = z
   })
   .meta({ id: 'QuestionBulkRequest' })
 
+/** `POST /questions/:id/edit-as-draft`: the new draft is version `versionNo` of the same question; the live version keeps serving. */
+export const QuestionEditAsDraftResultSchema = z.object({ id: IdSchema, versionNo: z.number().int().min(2) }).meta({ id: 'QuestionEditAsDraftResult' })
+
 export const QuestionDeleteResultSchema = z.object({ deleted: z.literal(1) }).meta({ id: 'QuestionDeleteResult' })
 /** Why one requested id of a bulk action was not applied. */
 export const QUESTION_BULK_FAILURE_CODES = ['NOT_FOUND', 'CONFLICT', 'VALIDATION_ERROR'] as const
@@ -416,13 +439,25 @@ export const QuestionBulkFailureSchema = z
   })
   .meta({ id: 'QuestionBulkFailure' })
 export type QuestionBulkFailure = z.infer<typeof QuestionBulkFailureSchema>
+/** A row a bulk action left as it was because it is already in the target status (R1E2E-10): not a refusal, not an error. */
+export const QuestionBulkSkippedSchema = z
+  .object({
+    id: IdSchema,
+    reason: z.string().meta({ description: 'The BM text for this id: "Soalan ini sudah diterbitkan." [PROPOSED].' }),
+  })
+  .meta({ id: 'QuestionBulkSkipped' })
+export type QuestionBulkSkipped = z.infer<typeof QuestionBulkSkippedSchema>
 export const QuestionBulkResultSchema = z
   .object({
     affected: z.number().int().min(0),
     failed: z
       .array(QuestionBulkFailureSchema)
       .default([])
-      .meta({ description: 'One entry per unique requested id that was not applied, in request order; `[]` when all were applied.' }),
+      .meta({ description: 'One entry per unique requested id that was refused, in request order; `[]` when none was. Real refusals only (not found, a transition not allowed, a gate); rows already in the target status are in `skipped`.' }),
+    skipped: z
+      .array(QuestionBulkSkippedSchema)
+      .optional()
+      .meta({ description: 'Rows already in the target status (bulk Terbitkan only); not applied, not counted in affected. Present only when there is at least one such row.' }),
   })
   .meta({ id: 'QuestionBulkResult' })
 
@@ -454,9 +489,9 @@ export const QuestionFilterBulkResultSchema = z
   .object({
     matched: z.number().int().min(0).meta({ description: 'Rows of the filter (the total the list shows); compared with `expectedCount`.' }),
     eligible: z.number().int().min(0).meta({ description: 'Matched rows whose status allows the action (approved: Semakan; archived: Draf, Semakan, Diterbitkan).' }),
-    skipped: z.number().int().min(0).meta({ description: 'matched - eligible: rows already in, or not allowed to move to, the target status. Left untouched, not failures.' }),
+    skipped: z.number().int().min(0).meta({ description: 'matched - eligible (rows already in, or not allowed to move to, the target status), plus the rows another request approved after the count was taken and before this run reached them (bulk Terbitkan only; counted in `processed` but not in `affected` or `failed`). Left untouched, not failures.' }),
     cap: z.number().int().min(1).meta({ description: 'Rows one run applies at most.' }),
-    processed: z.number().int().min(0).meta({ description: 'Rows tried in this run: min(eligible, cap); 0 on a dry run.' }),
+    processed: z.number().int().min(0).meta({ description: 'Rows tried in this run: min(eligible, cap); 0 on a dry run. Includes the rows that were then skipped because they were already Diterbitkan.' }),
     affected: z.number().int().min(0),
     failed: z.array(QuestionBulkFailureSchema).meta({ description: 'Rows tried and refused (the full approve gate: VALIDATION_ERROR with the gate `fields`), same shape as bulk-action.' }),
     remaining: z.number().int().min(0).meta({ description: 'eligible - processed: rows a further run would still try.' }),

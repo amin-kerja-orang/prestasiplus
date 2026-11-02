@@ -73,8 +73,9 @@ export class QuestionReportsService {
       // Only a question served to learners (live version, active) can be reported; else as unknown. REP-N1: a pupil without a proof gets
       // the proof answer (422 context) for a question that is not live, as for a live MCQ, so the answer does not reveal existence.
       if (!live && !student) throw ApiError.of('NOT_FOUND')
-      // The stored type decides the reason set and the deactivation threshold, never the client.
-      const stored: 'mcq' | 'structured' = live && (await this.bank.describe([id])).get(id)?.type === 'structured' ? 'structured' : 'mcq'
+      // The stored type decides the reason set and the deactivation threshold, never the client. It is the type of the LIVE version (what the
+      // pupil was served and what `structuredVisible` checks), not of a newer draft (`describe` reads the latest version).
+      const stored: 'mcq' | 'structured' = live && (await this.bank.liveType(id)) === 'structured' ? 'structured' : 'mcq'
       // A type mismatch is told only to a caller that has passed the proof (REP-N1); a Guru has no proof to pass.
       if (!student && raw.questionType !== undefined && raw.questionType !== stored) {
         throw ApiError.of('VALIDATION_ERROR', { fields: { questionType: M.type } })
@@ -144,7 +145,8 @@ export class QuestionReportsService {
       if (!live) throw ApiError.of('NOT_FOUND')
       return
     }
-    if (live && type === 'structured') return
+    // REQ-B-049: only what the structured practice would show this pupil (approved live version, active, structured, level T4/T5).
+    if (live && type === 'structured' && (await this.bank.structuredVisible(String(questionId)))) return
     throw ApiError.of('VALIDATION_ERROR', { fields: { context: M.contextRequired } })
   }
 

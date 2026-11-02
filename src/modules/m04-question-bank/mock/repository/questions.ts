@@ -86,6 +86,20 @@ import type {
 // ---------------------------------------------------------------------------------------------
 
 /** Fields of a created/edited objective question (SRS §5, #3/#5; M10 #53–#58). */
+/** Result of `bulkByFilter` (contract `QuestionFilterBulkResult`). */
+export interface FilterBulkOutcome {
+  matched: number
+  eligible: number
+  skipped: number
+  cap: number
+  processed: number
+  affected: number
+  failed: { id: string; code: string; message: string; fields: Record<string, string> }[]
+  remaining: number
+  capped: boolean
+  dryRun: boolean
+}
+
 export interface QuestionInput {
   subjectId: number
   educationLevelId: number
@@ -202,6 +216,19 @@ export interface JutawanFilter {
 }
 
 export type BulkAction = 'approve' | 'reject' | 'archive' | 'delete' | 'pending_review'
+
+/** Why a hard delete is refused (REQ-A-023b); the server's `details.reason` less `pinned`, which the mock never answers. */
+export type DeletionBlock = 'served' | 'pinned' | 'in_use'
+
+/**
+ * Fixed observed seed ids standing for "a held paper places it" and "a set, remedial test or battle uses it" (the mock has no paper store).
+ * Every other question, in any status, is deletable, as `removeGuarded` of the real API.
+ */
+export const MOCK_SERVED_IDS: ReadonlySet<number> = new Set([136891, 124733])
+export const MOCK_IN_USE_IDS: ReadonlySet<number> = new Set([129216])
+
+const deletionBlockOf = (id: number): DeletionBlock | null =>
+  MOCK_SERVED_IDS.has(id) ? 'served' : MOCK_IN_USE_IDS.has(id) ? 'in_use' : null
 
 // ---------------------------------------------------------------------------------------------
 // Helpers
@@ -435,6 +462,18 @@ export const questionsRepo = defineRepository({
   methods: ({ store, stores, transaction, phase }) => {
     const get = (id: number): Question | null => store.get(id) ?? null
 
+    const adminListImpl = (filter: AdminListFilter & { page?: number; pageSize?: number } = {}) => {
+      const term = filter.search?.trim() ?? ''
+      return store.query({
+        // Secondary-only (D72): the questions of a hidden Darjah level are never listed or counted.
+        where: { ...adminWhere(filter), educationLevelId: levelScope(filter.educationLevelId) },
+        sort: NEWEST_FIRST,
+        page: filter.page ?? 1,
+        pageSize: filter.pageSize ?? 20,
+        search: term !== '' ? { term, fields: ['questionText'] } : undefined,
+      })
+    }
+
     const requireRow = (id: number): Question => {
       const row = get(id)
       if (!row) throw new RepositoryError('CONTRACT', `questions: id ${String(id)} not found`)
@@ -596,17 +635,7 @@ export const questionsRepo = defineRepository({
         }
       },
       /** S1 list (§7 #1): filters BR-M04-04…07, newest first (BR-M04-31), 20 per page. */
-      adminList: (filter: AdminListFilter & { page?: number; pageSize?: number } = {}) => {
-        const term = filter.search?.trim() ?? ''
-        return store.query({
-          // Secondary-only (D72): the questions of a hidden Darjah level are never listed or counted.
-          where: { ...adminWhere(filter), educationLevelId: levelScope(filter.educationLevelId) },
-          sort: NEWEST_FIRST,
-          page: filter.page ?? 1,
-          pageSize: filter.pageSize ?? 20,
-          search: term !== '' ? { term, fields: ['questionText'] } : undefined,
-        })
-      },
+      adminList: adminListImpl,
       /** S11 MCQ list: `needsDiagram` rows, id desc, 20 per page (BR-M04-19). */
       flagged: (
         filter: { subjectId?: number; creatorIds?: readonly number[]; page?: number } = {},
@@ -803,6 +832,12 @@ export const questionsRepo = defineRepository({
         const current = requireRow(id)
         return transaction(() => setFields(id, patchFromInput(current, patch), now))
       },
+      /**
+       * REQ-A-023 / REQ-A-023b: why a question may not be deleted for good, or `null`. As the server's `removeGuarded`, only a placement in a
+       * held paper (`served`, `pinned`) or a set, remedial test or battle that uses it (`in_use`) refuses; every state is deletable otherwise.
+       * The mock has no paper store, so two fixed observed seed ids stand for `served` and one for `in_use`; it never answers `pinned`.
+       */
+      deletionBlock: (id: number): DeletionBlock | null => deletionBlockOf(id),
       /** Permanent delete (BR-M04-01). */
       remove: (id: number): void => {
         requireRow(id)
@@ -827,6 +862,63 @@ export const questionsRepo = defineRepository({
           }
           return n
         }),
+      /**
+       * `POST /questions/bulk-action/filter` (AC-03.3). The rows are those of the list filter (`adminList`);
+       * `eligible` = matched rows whose status can move to the target (approved: pending_review; archived:
+       * draft, pending_review, approved). One run applies at most `cap` rows. Mock gate for `approved`: a row
+       * with an incomplete DSKP mapping (`pending_mapping`, not tagged) is refused, the others pass.
+       */
+      bulkByFilter: (
+        action: 'approved' | 'archived',
+        filter: AdminListFilter,
+        opts: { dryRun: boolean; now: number; cap: number },
+      ): FilterBulkOutcome => {
+        const from: readonly QuestionStatus[] =
+          action === 'approved' ? ['pending_review'] : ['draft', 'pending_review', 'approved']
+        const statuses = filter.status ? from.filter((s) => s === filter.status) : from
+        const matched = adminListImpl({ ...filter, page: 1, pageSize: 1 }).total
+        const counts = statuses.map((s) => adminListImpl({ ...filter, status: s, page: 1, pageSize: 1 }).total)
+        const eligible = counts.reduce((a, b) => a + b, 0)
+        const processed = opts.dryRun ? 0 : Math.min(eligible, opts.cap)
+        const failed: FilterBulkOutcome['failed'] = []
+        let affected = 0
+        if (processed > 0) {
+          const picked: Question[] = []
+          for (const s of statuses) {
+            if (picked.length >= processed) break
+            picked.push(
+              ...adminListImpl({ ...filter, status: s, page: 1, pageSize: processed - picked.length }).rows,
+            )
+          }
+          transaction(() => {
+            for (const row of picked) {
+              if (action === 'approved' && !row.dskpTagged && row.complianceStatus === 'pending_mapping') {
+                failed.push({
+                  id: String(row.id),
+                  code: 'VALIDATION_ERROR',
+                  message: 'Tag DSKP belum lengkap.',
+                  fields: { dskp: 'Tag DSKP belum lengkap.' },
+                })
+                continue
+              }
+              setFields(row.id, { status: action }, opts.now)
+              affected++
+            }
+          })
+        }
+        return {
+          matched,
+          eligible,
+          skipped: matched - eligible,
+          cap: opts.cap,
+          processed,
+          affected,
+          failed,
+          remaining: eligible - processed,
+          capped: eligible - processed > 0 && !opts.dryRun,
+          dryRun: opts.dryRun,
+        }
+      },
       /** BR-M04-12: a report (or an admin) takes the question out of practice. */
       deactivate: (id: number, now?: number): Question =>
         transaction(() => {
@@ -880,9 +972,12 @@ export const questionsRepo = defineRepository({
         void _n
         return transaction(() => setFields(id, patchFromInput(row, allowed), now))
       },
-      deleteOwn: (viewer: Viewer, id: number): boolean => {
+      /** `false` = not found / not own (404); `'served'` / `'in_use'` = refused with 409, as `deletionBlock` (REQ-A-023b); `true` = removed. */
+      deleteOwn: (viewer: Viewer, id: number): boolean | DeletionBlock => {
         const row = get(id)
         if (!row || row.createdBy !== viewer.id || row.pkskDomainId !== null) return false
+        const block = deletionBlockOf(id)
+        if (block !== null) return block
         transaction(() => store.remove(id))
         return true
       },

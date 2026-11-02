@@ -15,7 +15,7 @@ import { OverviewCache } from './serving/overview-cache'
 import { CurriculumRepository } from '../curriculum'
 import { FilesService } from '../files'
 import { UsersRepository } from '../users'
-import { bulkFailureOf, notFoundFailure, questionNotFound, transitionConflict, type BulkFailure } from './errors'
+import { bulkFailureOf, isForeignKeyViolation, notFoundFailure, questionNotFound, transitionConflict, type BulkFailure, alreadyApprovedSkip, AlreadyInStatusError, type BulkSkipped } from './errors'
 import { gradeQuestion } from './grading'
 import {
   difficultyOf,
@@ -30,8 +30,8 @@ import {
   type FlatType,
 } from './projection'
 import { MAX_SP_NODES } from './publish-gate'
+import { gateDataOf } from './gate-data'
 import { GATES } from './workflow/lifecycle/gates'
-import type { QuestionGateData } from './workflow/ports'
 import { GroupMembers } from './group-members'
 import { assertServableSomewhere } from './serving/approval-guard'
 import { ServabilityService } from './serving/servability.service'
@@ -71,7 +71,7 @@ import type {
 const TX = { timeout: 20_000, maxWait: 10_000 } as const
 
 /**
- * Rows one filter-based bulk run applies at most. Each row is its own transaction with the full approve gate (tag, keys, rights, duplicates,
+ * Rows one filter-based bulk run applies at most. Each row is its own transaction with the full approve gate (tag, keys, duplicates,
  * marks, media, DSKP: several reads and writes, tens of ms), so 500 rows stay well inside one HTTP request and one 20 s transaction budget each,
  * while still covering a normal Studio filter in one or two runs. A larger filter reports `remaining`/`capped` and is run again.
  */
@@ -163,9 +163,12 @@ function treeDepth(parts: unknown, depth = 1): number {
   return max
 }
 
-/** The status an edit leaves behind: it never keeps an approval (the live `approved` version keeps serving; the edit is version n+1 as a draft, Q-5, ADR-0027). */
+/**
+ * The status an edit leaves behind: it never keeps an approval (the live `approved` version keeps serving; the edit is version n+1 as a draft, Q-5,
+ * ADR-0027) and it never keeps an archival (REQ-B-052: an archived version is history, the edit is version n+1 as a draft).
+ */
 function statusAfterEdit(current: QuestionStatus): QuestionStatus {
-  return current === 'approved' ? 'draft' : current
+  return current === 'approved' || current === 'archived' ? 'draft' : current
 }
 
 /** What create, update and the Guru routes all reduce to before touching the database. */
@@ -254,6 +257,11 @@ export class QuestionsService {
     }
   }
 
+  /** The values of the Studio selects that come from data (REQ-C-019): the Negeri / exam board options of the source papers. */
+  async filterOptions(): Promise<{ negeri: string[] }> {
+    return { negeri: await this.repo.examBoards() }
+  }
+
   async getAdmin(id: string): Promise<QuestionDetailView> {
     const record = await this.repo.get(id, 'latest')
     if (!record) throw questionNotFound()
@@ -321,20 +329,164 @@ export class QuestionsService {
     return this.viewOf(await this.applyUpdate(record, input, actor))
   }
 
+  /**
+   * V2 "Edit sebagai draf" (REQ-C-012): copies the live approved version, unchanged, into version n+1 as a `draft`. The live version
+   * keeps serving until n+1 is approved (then n is superseded). Refused with 409 when the latest version is already a draft or review
+   * (details name it), or when the question has no live version (archived or never approved). Inside one transaction, under the
+   * question row lock, so two clicks make one draft.
+   */
+  async editAsDraft(id: string, actor: QuestionActor): Promise<{ id: string; versionNo: number }> {
+    void actor
+    const now = this.clock.now()
+    let versionNo = 0
+    await this.prisma.transaction(async () => {
+      if (!(await this.repo.lock(id))) throw questionNotFound()
+      const record = await this.repo.get(id, 'latest')
+      if (!record) throw questionNotFound()
+      const v = record.version
+      if (v.status === 'draft' || v.status === 'review') {
+        throw ApiError.of('CONFLICT', { message: QUESTION_MESSAGES.editAsDraftExists, details: { id, versionNo: v.versionNo } })
+      }
+      if (v.status !== 'approved' || record.liveVersionNo !== v.versionNo) throw ApiError.of('CONFLICT', { message: QUESTION_MESSAGES.editAsDraftNotApproved })
+      const big = (x: string | null): bigint | null => (x === null ? null : BigInt(x))
+      const held = await this.repo.importIssuesOf(id, v.versionNo)
+      const draft: VersionDraft = {
+        status: 'draft',
+        type: v.type,
+        stemMs: v.stemMs,
+        stemEn: v.stemEn,
+        numberLabel: v.numberLabel,
+        language: v.language,
+        explanationMs: v.explanationMs,
+        explanationEn: v.explanationEn,
+        subjectId: big(v.subjectId),
+        educationLevelId: big(v.educationLevelId),
+        unitNodeId: big(v.unitId),
+        chapterId: big(v.chapterId),
+        topicId: big(v.topicId),
+        formOrigin: v.formOrigin,
+        cognitiveLevel: v.cognitiveLevel,
+        kbat: v.kbat,
+        tagReview: v.tagReview,
+        catalogueVersion: v.catalogueVersion,
+        difficultyTp: v.difficultyTp,
+        sourcePage: v.sourcePage,
+        setLabel: v.setLabel,
+        paperCode: v.paperCode ?? null,
+        spNodeIds: v.spIds.map((x) => BigInt(x)),
+        stimulusIds: v.stimulusIds.map((x) => BigInt(x)),
+        parts: draftsFromParts(v.parts),
+        // The copy is unchanged, so an import hold (a legacy image that was not copied) goes on with it; without it Terbit would pass on v(n+1).
+        importIssues: held.length === 0 ? null : held,
+      }
+      versionNo = record.latestVersionNo + 1
+      await this.repo.addVersion(id, versionNo, draft, now)
+    }, TX)
+    return { id, versionNo }
+  }
+
   async remove(id: string, actor: QuestionActor): Promise<void> {
     void actor
-    if (!(await this.repo.remove(id))) throw questionNotFound()
+    if (!(await this.removeGuarded(id))) throw questionNotFound()
     this.overview?.invalidate()
   }
 
-  async bulkAction(action: QuestionBulkAction, ids: readonly string[], actor: QuestionActor): Promise<{ affected: number; ids: string[]; failed: BulkFailure[] }> {
+  /**
+   * The ONE hard delete of a question (admin route, bulk `delete`, Guru `removeOwn`). R1-delete-served-guard (B3 review of REQ-B-052): a question
+   * that a paper which is still held (Terbit, or withdrawn with sittings) places is refused with 409 and kept. `paper_placements.question_id` has no
+   * foreign key, so without this a delete leaves a placement on nothing and a running sitting answers 500. Every other state is deletable, as on the
+   * live site. The question lock serialises it against an edit or a publish of the same question; Terbit takes FOR SHARE on the placed question
+   * rows (r1/publish-lock-share), so a delete that races a publish waits for it and then refuses.
+   */
+  private async removeGuarded(id: string): Promise<boolean> {
+    return this.prisma.transaction(async () => {
+      if (!(await this.repo.lock(id))) return false
+      const block = await this.repo.deletionBlock(id)
+      if (block === undefined) return false
+      if (block !== null) throw ApiError.of('CONFLICT', { message: QUESTION_MESSAGES.deleteRefused, details: { reason: block } })
+      try {
+        return await this.repo.remove(id)
+      } catch (e) {
+        // A teacher's set, a remedial test or a battle still uses it (ON DELETE RESTRICT): refuse, never a 500.
+        if (isForeignKeyViolation(e)) throw ApiError.of('CONFLICT', { message: QUESTION_MESSAGES.deleteInUse, details: { reason: 'in_use' } })
+        throw e
+      }
+    }, TX)
+  }
+
+  /**
+   * The AI service's explanation write (the workflow stub, `POST /questions/:id/ai-explanation`). It follows the same rule as every other edit
+   * (REQ-B-052, Q-5): an `approved` or `archived` version, or one that a paper which is still held pins, is never rewritten in place, because
+   * pupils are served and marked against it and read its explanation in their results. The text goes to version n+1 as a DRAFT marked as the
+   * AI's write (`last_editor = 'ai'`, H-A18), so a person has to review it before Terbit; the live version keeps serving. A draft or review
+   * version nobody is served is updated in place. Refusing was the alternative; branching keeps the admin's action useful and uses the one edit
+   * path. The copy carries the import hold, the declared marks and (through `addVersion`) the rights and provenance columns.
+   */
+  async setExplanation(id: string, text: string): Promise<boolean> {
+    const now = this.clock.now()
+    let done = false
+    await this.prisma.transaction(async () => {
+      if (!(await this.repo.lock(id))) return
+      const record = await this.repo.get(id, 'latest')
+      if (!record) return
+      const v = record.version
+      if (v.status === 'approved' || v.status === 'archived' || (await this.repo.versionIsPinned(id, v.versionNo))) {
+        const big = (x: string | null): bigint | null => (x === null ? null : BigInt(x))
+        const held = await this.repo.importIssuesOf(id, v.versionNo)
+        const facts = await this.repo.gateFacts(id, v.versionNo)
+        const draft: VersionDraft = {
+          status: 'draft',
+          type: v.type,
+          stemMs: v.stemMs,
+          stemEn: v.stemEn,
+          numberLabel: v.numberLabel,
+          language: v.language,
+          explanationMs: text,
+          explanationEn: v.explanationEn,
+          subjectId: big(v.subjectId),
+          educationLevelId: big(v.educationLevelId),
+          unitNodeId: big(v.unitId),
+          chapterId: big(v.chapterId),
+          topicId: big(v.topicId),
+          formOrigin: v.formOrigin,
+          cognitiveLevel: v.cognitiveLevel,
+          kbat: v.kbat,
+          tagReview: v.tagReview,
+          catalogueVersion: v.catalogueVersion,
+          difficultyTp: v.difficultyTp,
+          sourcePage: v.sourcePage,
+          setLabel: v.setLabel,
+          paperCode: v.paperCode ?? null,
+          importIssues: held.length === 0 ? null : held,
+          lastEditor: 'ai',
+          declaredMarks: facts.declaredMarks,
+          spNodeIds: v.spIds.map((x) => BigInt(x)),
+          stimulusIds: v.stimulusIds.map((x) => BigInt(x)),
+          parts: draftsFromParts(v.parts),
+        }
+        await this.repo.addVersion(id, record.latestVersionNo + 1, draft, now)
+      } else {
+        await this.repo.setExplanationInPlace(id, v.versionNo, text)
+      }
+      done = true
+    }, TX)
+    return done
+  }
+
+  async bulkAction(
+    action: QuestionBulkAction,
+    ids: readonly string[],
+    actor: QuestionActor,
+    opts: { submitGate?: boolean } = {},
+  ): Promise<{ affected: number; ids: string[]; failed: BulkFailure[]; skipped?: BulkSkipped[] }> {
     let affected = 0
     const done: string[] = []
     const failed: BulkFailure[] = []
+    const skipped: BulkSkipped[] = []
     for (const id of new Set(ids)) {
       try {
         if (action === 'delete') {
-          if (await this.repo.remove(id)) {
+          if (await this.removeGuarded(id)) {
             affected += 1
             done.push(id)
           } else {
@@ -342,18 +494,24 @@ export class QuestionsService {
           }
         } else {
           const a = actor as QuestionActor & { roleCode?: string; requestId?: string | null }
-          await this.setStatus(id, action, actor.userId, { event: { actorUserId: actor.userId, actorRole: a.roleCode ?? actor.role, requestId: a.requestId ?? null } })
+          await this.setStatus(id, action, actor.userId, { ...(opts.submitGate === true ? { submitGate: true } : {}), ...(action === 'approved' ? { skipIfAlready: true } : {}), event: { actorUserId: actor.userId, actorRole: a.roleCode ?? actor.role, requestId: a.requestId ?? null } })
           affected += 1
           done.push(id)
         }
       } catch (e) {
+        // A row already Diterbitkan is a no-op (R1E2E-10): listed in `skipped`, not a refusal.
+        if (e instanceof AlreadyInStatusError) {
+          skipped.push(alreadyApprovedSkip(id))
+          continue
+        }
         // An unknown id, a refused transition and a failed publish gate leave that id untouched.
         const failure = bulkFailureOf(id, e)
         if (!failure) throw e
         failed.push(failure)
       }
     }
-    return { affected, ids: done, failed }
+    // `skipped` is present only when a row was skipped (additive on the wire).
+    return { affected, ids: done, failed, ...(skipped.length > 0 ? { skipped } : {}) }
   }
 
   /**
@@ -384,7 +542,10 @@ export class QuestionsService {
     }
     const done = await this.bulkAction(input.action, targets.ids, actor)
     const remaining = targets.eligible - targets.ids.length
-    return { ...base, processed: targets.ids.length, affected: done.affected, ids: done.ids, failed: done.failed, remaining, capped: remaining > 0 }
+    // A row another request approved between `filterTargets` and `bulkAction` is left as it is (R1E2E-10): it is not applied and not a refusal,
+    // so it counts in `skipped` (and still in `processed`, which counts rows tried), never in `affected` or `failed`.
+    const raced = done.skipped?.length ?? 0
+    return { ...base, skipped: base.skipped + raced, processed: targets.ids.length, affected: done.affected, ids: done.ids, failed: done.failed, remaining, capped: remaining > 0 }
   }
 
   // --- lifecycle (BE-10 calls these) ------------------------------------------------------------
@@ -396,34 +557,36 @@ export class QuestionsService {
       const record = await this.repo.get(id, 'latest')
       if (!record) throw questionNotFound()
       const v = record.version
+      if (options.skipIfAlready === true && v.status === status) throw new AlreadyInStatusError(status)
       if (!isQuestionWorkflowTransitionAllowed(v.status, status, actor)) throw transitionConflict(v.status, status)
+      // Semakan (draft to review) through the bulk route runs the submit gate per row: a refused row is a `failed[]` entry like Terbit.
+      if (options.submitGate === true && status === 'review' && v.status === 'draft') {
+        const refused = await this.gateFields('submit', record, v)
+        if (Object.keys(refused).length > 0) throw fail(refused)
+      }
       if (options.event) {
         await this.prisma.client.questionStatusEvent.create({
           data: { questionId: BigInt(id), versionNo: v.versionNo, fromStatus: v.status, toStatus: status, actorUserId: BigInt(options.event.actorUserId), actorRole: options.event.actorRole, reason: options.reason ?? null, requestId: options.event.requestId },
         })
       }
       if (status === 'approved') {
-        // "No bypass" (ADR-0027, B3): the one merged approve gate, the same function the lifecycle routes run (tag, keys, rights, duplicates,
-        // marks, media, reviewer, DSKP). `lastEditedByAi` is false here: this path is only ever driven by a person.
-        const fields = await this.approveFields({
-          id,
-          parts: v.parts,
-          subjectId: v.subjectId,
-          educationLevelId: v.educationLevelId,
-          chapterId: v.chapterId,
-          unitId: v.unitId,
-          spIds: v.spIds,
-          tp: v.difficultyTp,
-          paperCode: v.paperCode ?? null,
-          rightsStatus: (await this.repo.rightsStatusOf(id, v.versionNo)) ?? 'own',
-        })
+        // "No bypass" (ADR-0027, B3): the one merged approve gate, the same function the lifecycle routes run, on the same facts
+        // (`gateFacts` + `gateDataOf`: tag, keys, open duplicate, marks, media, who edited last, DSKP).
+        const fields = await this.approveFields(record, v)
         if (Object.keys(fields).length > 0) throw fail(fields)
         // The version that served until now is superseded in the same transaction.
         if (record.liveVersionNo !== null && record.liveVersionNo !== v.versionNo) {
           await this.repo.setVersionStatus(id, record.liveVersionNo, 'archived', { archiveReason: 'superseded' })
         }
+        // REQ-B-071 (Q17): the Bab is not required to approve; when the admin gave none, fill it from the DSKP unit (one chapter whose dskp_code is the unit code), so
+        // Soalan by Chapter, Peta Belajar and Latihan Bab still count the question. No match, or several: it stays chapterless.
+        if (v.chapterId === null) {
+          const derived = await this.repo.chapterOfUnit(v.subjectId, v.educationLevelId, v.unitId)
+          if (derived !== null) await this.repo.fillChapter(id, v.versionNo, derived)
+        }
         await this.repo.setVersionStatus(id, v.versionNo, 'approved', { publishedAt: this.clock.now() })
         await this.repo.setLiveVersion(id, v.versionNo)
+        await this.repo.setLastEditor(id, v.versionNo, 'person') // a person approved it
         if (!record.isActive) await this.releaseImageHold(id, v, record.liveVersionNo)
         // AC-05.3 (T45-L1): the shared approve point; a question no activity can serve rolls the transition back.
         await assertServableSomewhere(this.servability, id)
@@ -433,6 +596,8 @@ export class QuestionsService {
         await this.repo.setLiveVersion(id, null)
       } else {
         await this.repo.setVersionStatus(id, v.versionNo, status)
+        // R1-H-A18: a person's status transition on the version (for example draft to review) is the person having seen it.
+        await this.repo.setLastEditor(id, v.versionNo, 'person')
         if (status === 'archived' && record.liveVersionNo !== null && record.liveVersionNo !== v.versionNo) {
           // Withdrawing a question whose latest edit is still a draft also ends the live version.
           await this.repo.setVersionStatus(id, record.liveVersionNo, 'archived', { archiveReason: 'withdrawn' })
@@ -573,7 +738,9 @@ export class QuestionsService {
 
   async removeOwn(id: string, userId: string): Promise<void> {
     await this.owned(id, userId)
-    await this.repo.remove(id)
+    // A teacher's own approved question may be on a Terbit paper with a running sitting: the same guard as the admin delete.
+    if (!(await this.removeGuarded(id))) throw questionNotFound()
+    this.overview?.invalidate()
   }
 
   async contributionCountsFor(userId: string): Promise<ContributionCounts> {
@@ -691,43 +858,20 @@ export class QuestionsService {
   }
 
   /**
-   * The approve gate (`GATES.approve`, ADR-0027) over the facts this module holds. The facts BE-09 does not store (open duplicate flag,
-   * unconfirmed low-confidence fields, media check, question-level marks) take the same satisfied defaults as the workflow's bank adapter,
-   * so the lifecycle route, the bulk action and the create path can never disagree. A version with no rights declaration counts as `own`
-   * (the documented default); an explicit `unclear` is refused. R1-B05: the DSKP rules bind only an SPM-bound question, on a NEW approval.
+   * The approve gate (`GATES.approve`, ADR-0027) on the real facts of a stored version: ONE loader (`gateFacts`) and ONE builder
+   * (`gateDataOf`) that the workflow bank adapter uses too, so the lifecycle route, `gate-check`, the bulk action and this path cannot
+   * disagree. D99: no per-question source or rights rule (V2 asks for them once, at the intake batch).
+   * R1-B05: the DSKP rules bind only an SPM-bound question, on a NEW approval.
    */
-  private async approveFields(input: {
-    id: string
-    parts: QuestionGateData['parts']
-    subjectId: string | null
-    educationLevelId: string | null
-    chapterId: string | null
-    unitId: string | null
-    spIds: string[]
-    tp: number | null
-    paperCode: string | null
-    rightsStatus: string
-  }): Promise<Record<string, string>> {
-    return GATES.approve({
-      id: input.id,
-      parts: input.parts,
-      marks: null,
-      subjectId: input.subjectId,
-      educationLevelId: input.educationLevelId,
-      chapterId: input.chapterId,
-      unitId: input.unitId,
-      spIds: input.spIds,
-      tp: input.tp,
-      rightsStatus: input.rightsStatus,
-      hasSourceDeclaration: true,
-      unconfirmedLowConfidenceFields: [],
-      hasOpenDuplicateFlag: false,
-      mediaResolved: true,
-      missingRequiredFields: [],
-      lastEditedByAi: false,
-      paperCode: input.paperCode,
-      spmBound: await this.repo.isSpmBound(input.subjectId, input.educationLevelId),
-    })
+  private async approveFields(record: QuestionRecord, version: QuestionVersionRecord): Promise<Record<string, string>> {
+    return this.gateFields('approve', record, version)
+  }
+
+  /** The failures of `gate` on a stored version, on the same facts and builder as the lifecycle routes (empty = the gate holds). */
+  private async gateFields(gate: 'submit' | 'approve', record: QuestionRecord, version: QuestionVersionRecord): Promise<Record<string, string>> {
+    const facts = await this.repo.gateFacts(record.id, version.versionNo)
+    const spmBound = await this.repo.isSpmBound(version.subjectId, version.educationLevelId)
+    return GATES[gate](gateDataOf({ id: record.id, version }, facts, spmBound))
   }
 
   private async createFrom(n: Normalized, status: QuestionStatus, actor: QuestionActor, provenance?: QuestionProvenance): Promise<QuestionView> {
@@ -736,20 +880,44 @@ export class QuestionsService {
       draft.numberLabel = provenance.numberLabel
       draft.sourcePage = provenance.sourcePage
     }
+    // R1-H-A18: who wrote this content and what total the intake declared. An AI variant is the AI's until a person acts on it.
+    draft.lastEditor = provenance?.sourceType === 'ai_variant' ? 'ai' : 'person'
+    draft.declaredMarks = provenance?.declaredMarks ?? null
+    if (status === 'approved' && draft.chapterId === null) {
+      // REQ-B-071 (Q17): created already approved without a Bab: derive it from the DSKP node, as the transition does.
+      const derived = await this.repo.chapterOfUnit(draft.subjectId === null ? null : idToString(draft.subjectId), draft.educationLevelId === null ? null : idToString(draft.educationLevelId), draft.unitNodeId === null ? null : idToString(draft.unitNodeId))
+      if (derived !== null) draft.chapterId = BigInt(derived)
+    }
     if (status === 'approved') {
-      // Created already approved (an Admin Pusat shortcut that skips the Semakan step): the same merged approve gate as the transition.
-      const fields = await this.approveFields({
-        id: '0',
-        parts: n.parts,
-        subjectId: draft.subjectId === null ? null : idToString(draft.subjectId),
-        educationLevelId: draft.educationLevelId === null ? null : idToString(draft.educationLevelId),
-        chapterId: null,
-        unitId: draft.unitNodeId === null ? null : idToString(draft.unitNodeId),
-        spIds: draft.spNodeIds.map(idToString),
-        tp: draft.difficultyTp,
-        paperCode: draft.paperCode ?? null,
-        rightsStatus: 'own',
-      })
+      // Created already approved (an Admin Pusat shortcut that skips the Semakan step): the same merged approve gate as the transition,
+      // on the same builder. The question is not stored yet, so the facts that need a stored row are the new-question ones.
+      const subjectId = draft.subjectId === null ? null : idToString(draft.subjectId)
+      const levelId = draft.educationLevelId === null ? null : idToString(draft.educationLevelId)
+      const data = gateDataOf(
+        {
+          id: '0',
+          version: {
+            stemMs: draft.stemMs,
+            parts: n.parts,
+            subjectId,
+            educationLevelId: levelId,
+            chapterId: null,
+            unitId: draft.unitNodeId === null ? null : idToString(draft.unitNodeId),
+            spIds: draft.spNodeIds.map(idToString),
+            difficultyTp: draft.difficultyTp,
+            paperCode: draft.paperCode ?? null,
+          },
+        },
+        {
+          unconfirmedLowConfidenceFields: [],
+          hasOpenDuplicateFlag: false,
+          mediaResolved: await this.repo.mediaResolvedFor(draft.stimulusIds, n.stimulusGroupId ? BigInt(n.stimulusGroupId) : null),
+          lastEditedByAi: draft.lastEditor === 'ai',
+          declaredMarks: draft.declaredMarks ?? null,
+        },
+        await this.repo.isSpmBound(subjectId, levelId),
+      )
+      const fields = GATES.approve(data)
       if (Object.keys(fields).length > 0) throw fail(fields)
     }
     const creator = parse(actor.userId)
@@ -1065,14 +1233,19 @@ export class QuestionsService {
       }
       await this.attachStem(draft, newStemFileId)
       const next = { ...draft, status: statusAfterEdit(fresh.version.status) }
-      if (fresh.version.status === 'approved') {
-        // Q-5: the live version keeps serving; the edit is version n+1 as a draft.
-        await this.repo.addVersion(record.id, fresh.latestVersionNo + 1, next, now)
+      // An import hold goes on with the edit, whichever way the edit is stored (a new version or the draft rewritten in place).
+      const importIssues = await this.heldIssuesAfter(record.id, fresh.version, normalized)
+      // REQ-B-052: a version is never rewritten in place when it is history that a paper or a sitting still points at: an approved one (Q-5), an
+      // archived one, or any version pinned on a Terbit paper or on a paper that has been sat (a withdrawn paper keeps its sittings, AC-07.7).
+      if (fresh.version.status === 'approved' || fresh.version.status === 'archived' || (await this.repo.versionIsPinned(record.id, fresh.version.versionNo))) {
+        // The live version keeps serving; the edit is version n+1 (as a draft) and version n stays byte-identical.
+        await this.repo.addVersion(record.id, fresh.latestVersionNo + 1, { ...next, importIssues }, now)
       } else {
-        await this.repo.rewriteVersion(record.id, fresh.version.versionNo, next, now)
+        await this.repo.rewriteVersion(record.id, fresh.version.versionNo, { ...next, importIssues }, now)
       }
       // R1-T49: a grouped question that changes subject or kertas must still fit the other members (the only member may change freely).
-      if (fresh.groupId !== null && input.stimulusGroupId === undefined) {
+      // The body may repeat the CURRENT group id (the Studio sends it with every save): that is no move, so the check still runs (REQ-B-025b).
+      if (fresh.groupId !== null && (input.stimulusGroupId === undefined || input.stimulusGroupId === fresh.groupId)) {
         const after = { subject: draft.subjectId === null ? null : idToString(draft.subjectId), kertas: kertasOfPaperCode(draft.paperCode ?? null) }
         const before = { subject: fresh.version.subjectId, kertas: kertasOfPaperCode(fresh.version.paperCode) }
         if (after.subject !== before.subject || after.kertas !== before.kertas) await this.groupMembers.assertTraitChange(fresh.groupId, record.id, after.subject, after.kertas)
@@ -1085,6 +1258,26 @@ export class QuestionsService {
     const after = await this.repo.get(record.id, 'latest')
     if (!after) throw questionNotFound()
     return after
+  }
+
+  /**
+   * The import issues a version keeps after an edit (R1-H-A18): a hold (a legacy image that was not copied) goes on with the content it still
+   * applies to. An edit that does not supply the image keeps the hold; one that supplies it drops that issue, so the gate does not refuse the
+   * picture it now has. `null` when nothing is left (the column is cleared), so the rewrite of a draft releases the hold too.
+   */
+  private async heldIssuesAfter(
+    questionId: string,
+    version: QuestionVersionRecord,
+    normalized: Pick<Normalized, 'parts' | 'stemImage'>,
+  ): Promise<{ code: string; target?: string; label?: string }[] | null> {
+    const optionImages = flatFromVersion({ ...version, parts: normalized.parts }).optionImageIds
+    const stemImage = normalized.stemImage !== undefined ? normalized.stemImage : version.stemImageId
+    const held = (await this.repo.importIssuesOf(questionId, version.versionNo)).filter((i) => {
+      if (i.code !== 'legacy_image_unresolved') return true
+      if (i.target === 'question') return stemImage == null
+      return !(i.target === 'option' && typeof i.label === 'string' && i.label.length === 1 && optionImages[i.label.charCodeAt(0) - 65] != null)
+    })
+    return held.length === 0 ? null : held
   }
 
   // --- views --------------------------------------------------------------------------------------
