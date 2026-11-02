@@ -66,16 +66,75 @@ index e5d4722b8..928f9a372 100644
 +  const res = await admin.post('/admin/users', { roles: ['student'], name, email, schoolId, grade: 10 })
    return CreatedUserSchema.parse(res.body.data).id
  }
+diff --git a/apps/api/test/subscriptions/parents-links.spec.ts b/apps/api/test/subscriptions/parents-links.spec.ts
+index 060a00853..51ecbf99e 100644
+--- a/apps/api/test/subscriptions/parents-links.spec.ts
++++ b/apps/api/test/subscriptions/parents-links.spec.ts
+@@ -17,6 +17,7 @@ import {
+   type Api,
+   type UsersTestApp,
+ } from './parents-helpers'
++import { treatDemoAsSecondary } from '../support/secondary'
+ 
+ /** Parent-child link routes of the contract: /me/parent-links and /admin/parent-links. */
+ describe('parent links (BE-25 part B)', () => {
+@@ -47,6 +48,8 @@ describe('parent links (BE-25 part B)', () => {
+ 
+   beforeAll(async () => {
+     t = await bootParentsApp()
++    // Secondary-only (D72): DEMO002 is seeded as SK, and the service refuses a secondary-grade student in a primary school (grade 10 here).
++    await treatDemoAsSecondary(t.db, false)
+     admin = apiOf(await login(t, ADMIN))
+     sa = apiOf(await login(t, SCHOOL_ADMIN))
+     student = apiOf(await login(t, STUDENT))
+diff --git a/apps/api/test/subscriptions/parents-visibility.spec.ts b/apps/api/test/subscriptions/parents-visibility.spec.ts
+index 25fde411d..d140cb689 100644
+--- a/apps/api/test/subscriptions/parents-visibility.spec.ts
++++ b/apps/api/test/subscriptions/parents-visibility.spec.ts
+@@ -13,6 +13,7 @@ import {
+   type Api,
+   type UsersTestApp,
+ } from './parents-helpers'
++import { treatDemoAsSecondary } from '../support/secondary'
+ 
+ /** BE-25 AC 7 (LEAD decision 2026-10-19): a school_admin sees a parent only with >= 1 child and ALL children in its school. */
+ describe('parent visibility for a school_admin (AC 7)', () => {
+@@ -46,6 +47,8 @@ describe('parent visibility for a school_admin (AC 7)', () => {
+ 
+   beforeAll(async () => {
+     t = await bootParentsApp()
++    // Secondary-only (D72): DEMO002 is seeded as SK, and the service refuses a secondary-grade student in a primary school (grade 10 here).
++    await treatDemoAsSecondary(t.db, false)
+     admin = apiOf(await login(t, ADMIN))
+     sa = apiOf(await login(t, SCHOOL_ADMIN))
+     s1 = await schoolIdOf(t.db, 'DEMO001')
 diff --git a/apps/api/test/users/parent-links.spec.ts b/apps/api/test/users/parent-links.spec.ts
-index 20e7f1850..ab9069986 100644
+index 20e7f1850..16e30eacb 100644
 --- a/apps/api/test/users/parent-links.spec.ts
 +++ b/apps/api/test/users/parent-links.spec.ts
-@@ -19,7 +19,7 @@ describe('admin users: parent links (SW2-08)', () => {
+@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+ 
+ import { UsersRepository } from '../../src/modules/users'
+ import { ADMIN, apiOf, bootUsersApp, detailOf, fieldsOf, login, SCHOOL_ADMIN, schoolIdOf, type Api, type UsersTestApp } from './helpers'
++import { treatDemoAsSecondary } from '../support/secondary'
+ 
+ const INVALID = 'The selected linked student ids is invalid.'
+ const byNumber = (a: string, b: string): number => Number(a) - Number(b)
+@@ -19,7 +20,7 @@ describe('admin users: parent links (SW2-08)', () => {
    let counter = 0
-
+ 
    const student = async (schoolId: string, name: string): Promise<string> => {
 -    const res = await admin.post('/admin/users', { roles: ['student'], name, email: `anak.${++counter}@ujian.test`, schoolId, grade: 3 })
 +    const res = await admin.post('/admin/users', { roles: ['student'], name, email: `anak.${++counter}@ujian.test`, schoolId, grade: 10 })
      expect(res.status, JSON.stringify(res.body)).toBe(201)
      return CreatedUserSchema.parse(res.body.data).id
    }
+@@ -43,6 +44,8 @@ describe('admin users: parent links (SW2-08)', () => {
+ 
+   beforeAll(async () => {
+     t = await bootUsersApp({ env: { THROTTLE_ADMIN_WRITE_PER_MINUTE: '100000', THROTTLE_ADMIN_READ_PER_MINUTE: '100000' } })
++    // Secondary-only (D72): DEMO002 is seeded as SK, and the service refuses a secondary-grade student in a primary school (grade 10 here).
++    await treatDemoAsSecondary(t.db, false)
+     admin = apiOf(await login(t, ADMIN))
+     sa = apiOf(await login(t, SCHOOL_ADMIN))
+     s1 = await schoolIdOf(t.db, 'DEMO001')
