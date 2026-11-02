@@ -572,25 +572,21 @@ BASE-165 + every remaining READY team A head (28 steps): 0 code conflicts. tsc, 
 - **Disk:** check `docker system df` and prune orphaned anonymous test volumes when there are 0 containers. A3 reclaimed 3.4 GB this way.
 
 <!-- AUDIT:BEGIN -->
-### Team A open branches: heads from origin (auto, 2026-11-02 05:30 UTC, BASE 404e2e7a)
+### Team A open branches: heads from origin (auto, 2026-11-02 05:44 UTC, BASE 550b8819)
 This table is regenerated from `git ls-remote` every cycle and replaces every head mentioned earlier. Branches already in base are left out.
 | Branch | Origin head | State |
 |---|---|---|
 | r1/a-integration-preview | 6e5ae945b | STALE/CLOSED (H-A14 stopped; superseded by A1a's local preview); do not merge |
-| r1/ac-gaps-a1b | 55041db3d | READY (A3, @55041db3 on BASE-195; handoff byte-identical to ha26; coverage recount: PIPE AC-18.1 → proven 133 (lead: keep, per the doc rule and evidence merged in BASE-193/194)). Merge order 3 of 3 |
 | r1/builder-publish-p2028-test | 645744daf | READY (A3, @645744da, merges BASE-195; r2-prep minor #12): builder publish now maps P2028/overload → 429 RATE_LIMITED + Retry-After 5 (was 500), like the other paths; the new spec proves a full Terbit rollback + retry; mutation red; DEV row (keep-both); exam-builder + publish-lock-share + spec 465/465; tsc 0; contract:check ok. Needs B2 review |
 | r1/bulk-publish-allskipped | 9b8b39409 | READY (A3, @9b8b3940 on BASE-189: r2-prep minor #11 (r1e2e10). An all-skipped bulk publish (affected 0, failed 0, skipped>0) now shows 'Soalan ini sudah diterbitkan.' instead of '0 soalan berjaya dikemaskini.'; any failed row keeps the old text. The 409 test now goes over HTTP. Group 133/133, mutation red, contract:check ok, DEV row (no V2 wording). Merge-tree clean on BASE-192). Needs B2 review |
 | r1/e05b-l1-split-control | c4153ed75 | READY (A3, @c4153ed7 on BASE-192, test-only: r2-prep minor #5. The E05B-L1 negative control is split into pin-only / sitting-only / withdrawn paper with and without a sitting / neither; 5/5; 4 mutations each red; tsc/eslint 0). Needs B2 review |
 | r1/ha23-e2e-readiness | 9a86b5bb6 | historical (superseded header), docs |
-| r1/ha24-kiv-49-52 | d9adac614 | SUPERSEDED: folded into ha24-release-input 1253c113 (contains d9adac61); do not merge separately |
-| r1/ha24-release-input | 1253c1132 | READY (A3, @1253c113 = REQ-B-078 refresh on BASE-195 and the ONE ha24 head; contains ha24-kiv-49-52 d9adac61; KIV 53 rows / 48 open; Q18 recorded as the user decision REQ-B-077). Merge order 1 of 3 |
-| r1/ha26-team-a-state | 553793a86 | READY (A3, @553793a8 on BASE-195; handoff at ha24 1253c113). Merge order 2 of 3 |
 | r1/ha8-stale-specs | 56b1b6cc6 | STALE (never merged; REQ-B-026 ported its fix, merged BASE-91); do not merge |
 | r1/ready-tiers-check | 9c80f08c3 | KIV R2 (B1 answer to REQ-A-028, 2026-11-02 13:15 MYT: kept on hold for R1; rely on runbook section 0; revisit in R2). Do not merge |
 | r1/req-b-022a | 688529b77 | SUPERSEDED by r1/req-b-022a-a4; do not merge |
 | r1/reqb074-takedown-lows | 33b0a0b1c | SUPERSEDED: 45a75f68 merged as BASE-195; the later commit 33b0a0b1 carried the Q18 rule, which the user overrode (REQ-B-077). Do not merge 33b0a0b1. Follow-ups: r1/reqb074-dsg-spec-fix, then r1/reqb076-live-takedown (A1b) |
 | r1/reqb076-live-takedown | c8965bb89 | IN-PROGRESS (A1b): A4 pre-review on c8965bb8 = REQUEST CHANGES (read-path predicate half applied: overview card ≠ lane ≠ report; live hydrate paths (revision, chapter repeat, listing, visibleSets, games/missions…) still serve). Lead redesign: an approve gate refuses approving a version whose source has takedown_at (single/bulk/filter/create-as-approved/import; no override in R1); read-path predicates reverted. New head to follow; do not review c8965bb8 |
-| r1/reqb079-t34-t36-minors | 52345db7c | IN-REVIEW-A (A3, @52345db7 = 5 commits on BASE-195; REQ-B-079: (2) a null/missing blueprint → overridable BLUEPRINT_NOT_VERIFIED blocker with the existing 'Tiada blueprint…' copy, skipped once Terbit; (1) a missing bundle → 404 'Kertas tidak ditemui' instead of 500; (3) stale BIJAK_POC_QUESTIONS ops docs; (4) dead overrideNotAllowed removed; exam-builder + bijak-attempts 665/665, mutations red, tsc 0, contract:check ok). A4 pre-review pending |
+| r1/reqb079-t34-t36-minors | 52345db7c | IN-PROGRESS (A3): A4 pre-review on 52345db7 = APPROVE WITH MINORS (0 B/M; exam-builder 461, bijak-attempts 204, bijak-papers 116; mutations red; clean on BASE-197). The minor is being fixed now: sweepUser has no try/catch, so one dead sitting makes the pupil's whole history 404; plus the test nits. New head to follow |
 | r1/t34-l1-residual | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 | r1/t34-l1-residual-a3 | e4bb72eb6 | SUPERSEDED: team C took REQ-A-013 on r1/t34-l1-residual-c; do not merge |
 
