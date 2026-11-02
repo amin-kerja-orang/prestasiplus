@@ -73275,11 +73275,34 @@
               "$ref": "#/components/schemas/QuestionBulkFailure"
             },
             "default": [],
-            "description": "One entry per unique requested id that was not applied, in request order; `[]` when all were applied."
+            "description": "One entry per unique requested id that was refused, in request order; `[]` when none was. Real refusals only (not found, a transition not allowed, a gate); rows already in the target status are in `skipped`."
+          },
+          "skipped": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionBulkSkipped"
+            },
+            "description": "Rows already in the target status (bulk Terbitkan only); not applied, not counted in affected. Present only when there is at least one such row."
           }
         },
         "required": [
           "affected"
+        ]
+      },
+      "QuestionBulkSkipped": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "reason": {
+            "type": "string",
+            "description": "The BM text for this id: \"Soalan ini sudah diterbitkan.\" [PROPOSED]."
+          }
+        },
+        "required": [
+          "id",
+          "reason"
         ]
       },
       "QuestionEditAsDraftResult": {
@@ -103537,7 +103560,7 @@
           "questions"
         ],
         "summary": "Apply one lifecycle action to many questions",
-        "description": "Unknown ids are skipped silently; duplicates count once. Flash: \"<n> soalan berjaya dikemaskini.\" Transition rules and \"only Admin Pusat publishes\" belong to BE-10; forbidden transitions and their error are BE-10 to define. `approved` runs the merged approve gate (ADR-0027: tag, keys, open duplicate, marks, media, AI as last editor, DSKP-complete for an SPM-bound question; no per-question source or rights rule, D99) per id, the same as `POST /questions/{id}/status`: a refused id is a `failed[]` entry (VALIDATION_ERROR with the gate `fields`), the others are applied. `POST /questions` with `status: approved` runs the same gate (422, nothing stored).",
+        "description": "Unknown ids are skipped silently; duplicates count once. Flash: \"<n> soalan berjaya dikemaskini.\" Transition rules and \"only Admin Pusat publishes\" belong to BE-10; forbidden transitions and their error are BE-10 to define. `approved` runs the merged approve gate (ADR-0027: tag, keys, open duplicate, marks, media, AI as last editor, DSKP-complete for an SPM-bound question; no per-question source or rights rule, D99) per id, the same as `POST /questions/{id}/status`: a refused id is a `failed[]` entry (VALIDATION_ERROR with the gate `fields`), the others are applied. A bulk `approved` of a question that is already Diterbitkan is an idempotent no-op (R1E2E-10): no transition, no status event, not counted in `affected`, not in the audit `ids`, and not an error; it is listed in `skipped[]` as `{ id, reason }` with reason \"Soalan ini sudah diterbitkan.\" (`skipped` is present only when there is such a row), `failed[]` keeps the real refusals only, and the other ids of the batch are still applied (the single `POST /questions/{id}/status` still answers 409 for it). `POST /questions` with `status: approved` runs the same gate (422, nothing stored).",
         "parameters": [
           {
             "schema": {

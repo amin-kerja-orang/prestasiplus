@@ -15,7 +15,7 @@ import { OverviewCache } from './serving/overview-cache'
 import { CurriculumRepository } from '../curriculum'
 import { FilesService } from '../files'
 import { UsersRepository } from '../users'
-import { bulkFailureOf, isForeignKeyViolation, notFoundFailure, questionNotFound, transitionConflict, type BulkFailure } from './errors'
+import { bulkFailureOf, isForeignKeyViolation, notFoundFailure, questionNotFound, transitionConflict, type BulkFailure, alreadyApprovedSkip, AlreadyInStatusError, type BulkSkipped } from './errors'
 import { gradeQuestion } from './grading'
 import {
   difficultyOf,
@@ -478,10 +478,11 @@ export class QuestionsService {
     ids: readonly string[],
     actor: QuestionActor,
     opts: { submitGate?: boolean } = {},
-  ): Promise<{ affected: number; ids: string[]; failed: BulkFailure[] }> {
+  ): Promise<{ affected: number; ids: string[]; failed: BulkFailure[]; skipped?: BulkSkipped[] }> {
     let affected = 0
     const done: string[] = []
     const failed: BulkFailure[] = []
+    const skipped: BulkSkipped[] = []
     for (const id of new Set(ids)) {
       try {
         if (action === 'delete') {
@@ -493,18 +494,24 @@ export class QuestionsService {
           }
         } else {
           const a = actor as QuestionActor & { roleCode?: string; requestId?: string | null }
-          await this.setStatus(id, action, actor.userId, { ...(opts.submitGate === true ? { submitGate: true } : {}), event: { actorUserId: actor.userId, actorRole: a.roleCode ?? actor.role, requestId: a.requestId ?? null } })
+          await this.setStatus(id, action, actor.userId, { ...(opts.submitGate === true ? { submitGate: true } : {}), ...(action === 'approved' ? { skipIfAlready: true } : {}), event: { actorUserId: actor.userId, actorRole: a.roleCode ?? actor.role, requestId: a.requestId ?? null } })
           affected += 1
           done.push(id)
         }
       } catch (e) {
+        // A row already Diterbitkan is a no-op (R1E2E-10): listed in `skipped`, not a refusal.
+        if (e instanceof AlreadyInStatusError) {
+          skipped.push(alreadyApprovedSkip(id))
+          continue
+        }
         // An unknown id, a refused transition and a failed publish gate leave that id untouched.
         const failure = bulkFailureOf(id, e)
         if (!failure) throw e
         failed.push(failure)
       }
     }
-    return { affected, ids: done, failed }
+    // `skipped` is present only when a row was skipped (additive on the wire).
+    return { affected, ids: done, failed, ...(skipped.length > 0 ? { skipped } : {}) }
   }
 
   /**
@@ -547,6 +554,7 @@ export class QuestionsService {
       const record = await this.repo.get(id, 'latest')
       if (!record) throw questionNotFound()
       const v = record.version
+      if (options.skipIfAlready === true && v.status === status) throw new AlreadyInStatusError(status)
       if (!isQuestionWorkflowTransitionAllowed(v.status, status, actor)) throw transitionConflict(v.status, status)
       // Semakan (draft to review) through the bulk route runs the submit gate per row: a refused row is a `failed[]` entry like Terbit.
       if (options.submitGate === true && status === 'review' && v.status === 'draft') {

@@ -332,6 +332,11 @@ export interface SetStatusOptions {
    * bank, so only the BE-09 bulk route sets this: a refused row is a `failed[]` entry like Terbit. Default off.
    */
   submitGate?: boolean
+  /**
+   * A question that is already in the target status is an idempotent no-op: `setStatus` throws `AlreadyInStatusError` (before any write) instead
+   * of the 409 transition conflict. Only the bulk route sets this, for Terbitkan (R1E2E-10); the single route keeps its 409.
+   */
+  skipIfAlready?: boolean
 }
 
 /** One answer of a learner, addressed by the part path (labels joined with `.`, e.g. `a.i`). */
