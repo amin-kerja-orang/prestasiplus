@@ -231,6 +231,15 @@ describe('git guards for dumps and reports (AC4, BE-NFR-13)', () => {
       expect(runGuard(bsdStatEnv()).status).toBe(1)
     })
 
+    it.runIf(hasBash)('fails closed: when wc fails, the step fails instead of reading as "nothing big" (REQ-B-067 review)', () => {
+      stage('apps/api/test/migration/fixtures/small.ndjson', '{"id":1}\n')
+      const bin = join(repo.path, '.failbin')
+      mkdirSync(bin, { recursive: true })
+      writeFileSync(join(bin, 'wc'), '#!/bin/sh\necho "wc: broken" >&2\nexit 1\n', { mode: 0o755 })
+      const res = runGuard({ ...process.env, PATH: `${bin}:${process.env.PATH ?? ''}` })
+      expect(res.status).not.toBe(0)
+    })
+
     it.runIf(hasBash)('a large file elsewhere is not this guard\'s business', () => {
       stage('docs/large.bin', Buffer.alloc(1024 * 1024 + 1, 97))
       expect(runGuard(bsdStatEnv()).status).toBe(0)

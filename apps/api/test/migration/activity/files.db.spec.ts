@@ -134,6 +134,41 @@ describe('refusals before any work', () => {
     await expect(h.run('dry-run', opts({ env: { ...h.runEnv, FILE_STORAGE_DIR: 'relative/dir' } }))).rejects.toThrow(/absolute/)
   })
 
+  it('an existing path keeps its OS meaning: link/../x resolves through the link, not lexically (REQ-B-067 review)', async () => {
+    const aliasHome = mkdtempSync(join(tmpdir(), 'pp-ac9-dotdot-'))
+    mkdirSync(join(exportDir, 'deep'), { recursive: true })
+    mkdirSync(join(exportDir, 'x'), { recursive: true })
+    try {
+      symlinkSync(join(exportDir, 'deep'), join(aliasHome, 'link'))
+      // lexically this is <aliasHome>/x (outside the export); through the link it is <export>/x (inside)
+      await expect(h.run('dry-run', opts({ env: { ...h.runEnv, FILE_STORAGE_DIR: `${aliasHome}/link/../x` } }))).rejects.toThrow(/separate directories/)
+    } finally {
+      rmSync(aliasHome, { recursive: true, force: true })
+      rmSync(join(exportDir, 'deep'), { recursive: true, force: true })
+      rmSync(join(exportDir, 'x'), { recursive: true, force: true })
+    }
+  })
+
+  it('a dangling symlink into the export cannot hide the storage folder behind it (REQ-B-067 review)', async () => {
+    const aliasHome = mkdtempSync(join(tmpdir(), 'pp-ac9-dangle-'))
+    try {
+      symlinkSync(join(exportDir, 'not-created-yet'), join(aliasHome, 'dangling'))
+      for (const sub of ['', join('a', 'b')]) {
+        const dir = join(aliasHome, 'dangling', sub)
+        await expect(h.run('dry-run', opts({ env: { ...h.runEnv, FILE_STORAGE_DIR: dir } })), sub).rejects.toThrow(/separate directories/)
+      }
+      // a dangling link that points OUT of the export is fine
+      symlinkSync(join(root, 'elsewhere-new'), join(aliasHome, 'away'))
+      await expect(h.run('dry-run', opts({ env: { ...h.runEnv, FILE_STORAGE_DIR: join(aliasHome, 'away') } }))).resolves.toBeDefined()
+      // a link loop does not hang
+      symlinkSync(join(aliasHome, 'loop2'), join(aliasHome, 'loop1'))
+      symlinkSync(join(aliasHome, 'loop1'), join(aliasHome, 'loop2'))
+      await expect(h.run('dry-run', opts({ env: { ...h.runEnv, FILE_STORAGE_DIR: join(aliasHome, 'loop1', 'x') } }))).resolves.toBeDefined()
+    } finally {
+      rmSync(aliasHome, { recursive: true, force: true })
+    }
+  })
+
   it('a storage folder that does not exist yet is still compared through the symlinks of its ancestors (REQ-B-067: macOS /var -> /private/var)', async () => {
     // The export is opened through its real path; a not-yet-created storage folder reached through a symlinked ancestor used to stay unresolved
     // and so never counted as "inside" the export. Here the alias plays the part of macOS /var.
