@@ -21,6 +21,12 @@ export interface AttemptSectionSnapshot {
   instruction?: string
   rule: { type: 'all' } | { type: 'choose'; n: number }
   questionIds: string[]
+  /**
+   * REQ-B-032: the version of each question the paper PINNED (`paper_placements.pinned_version_no`), by question id, frozen into the
+   * attempt when it starts. The sitting is served and graded from exactly these versions. Mirrors `SectionSnapshot.versions` of
+   * `@pp/exam-core` (`types.ts`). Absent on attempts started before it existed (served from the live version, as before).
+   */
+  versions?: Record<string, number>
 }
 
 export interface AttemptPaper {
