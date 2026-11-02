@@ -167,6 +167,7 @@ async function createQuestion(body: Record<string, unknown>): Promise<string> {
 }
 
 async function advance(ids: string[]): Promise<void> {
+  await giveBab(db, ids)
   for (const action of SERVE_STEPS) {
     const res = await admin.post('/api/questions/bulk-action', { action, ids })
     expect(res.status, `${action}: ${JSON.stringify(res.body)}`).toBe(200)

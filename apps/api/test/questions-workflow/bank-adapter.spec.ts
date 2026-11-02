@@ -154,6 +154,23 @@ describe('question bank adapter (real BE-09 bank)', () => {
     expect(await eligible(id)).toBe(false)
   })
 
+  it('REQ-B-049: structuredVisible follows the practice predicate on the live version: structured type, level T4/T5, active', async () => {
+    const id = await draft()
+    const admin = actorOf(c.admin)
+    for (const to of ['review', 'approved'] as const) await svc.transition(id, to, admin)
+    expect(await t.bank.structuredVisible(id)).toBe(false) // an MCQ
+    await t.db.query(`update question_versions set type = 'structured' where question_id = $1::bigint`, [id])
+    expect(await t.bank.structuredVisible(id)).toBe(true) // the seed tag is T4
+    const [other] = await t.db.query<{ id: string }>(`select id::text from education_levels where code not in ('T4', 'T5') limit 1`)
+    await t.db.query(`update question_versions set education_level_id = $2::bigint where question_id = $1::bigint`, [id, other!.id])
+    expect(await t.bank.structuredVisible(id)).toBe(false) // a level outside the structured practice
+    await t.db.query(`update question_versions set education_level_id = $2::bigint where question_id = $1::bigint`, [id, tag.educationLevelId])
+    expect(await t.bank.structuredVisible(id)).toBe(true)
+    await t.bank.deactivate(id)
+    expect(await t.bank.structuredVisible(id)).toBe(false) // inactive
+    expect(await t.bank.structuredVisible('999999999')).toBe(false)
+  })
+
   it('describe gives names and the wire type', async () => {
     const [seed] = await t.db.query<{ question_id: string }>("select question_id::text from question_versions where number_label = 'SEED-MCQ-MATH-T4'")
     const [str] = await t.db.query<{ question_id: string }>("select question_id::text from question_versions where number_label = 'SEED-STR-TREE'")

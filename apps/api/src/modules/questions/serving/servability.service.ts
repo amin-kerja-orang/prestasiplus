@@ -45,13 +45,24 @@ export class ServabilityService {
     return new Map([...facts].map(([id, f]) => [id, evaluateAll(f)]))
   }
 
-  /** The loaded facts (exported for the specs and for T30 reads that need the same data). */
-  async factsOf(ids: readonly string[]): Promise<ReadonlyMap<string, ServabilityFacts>> {
+  /**
+   * The loaded facts (exported for the specs and for T30 reads that need the same data). `jana: false` skips the Jana pool facts
+   * (`janaFacts` stays null): only the Jana verdict reads them, and loading them is about half the cost on a large paper pass
+   * (REQ-B-022a: 6.4 s of 14.4 s for the 12,438 questions on published papers).
+   */
+  async factsOf(ids: readonly string[], opts: { jana?: boolean } = {}): Promise<ReadonlyMap<string, ServabilityFacts>> {
     const wanted = [...new Set(ids)].filter(isIdString)
     if (wanted.length === 0) return new Map()
-    const latest = new Map((await this.questions.getMany(wanted, 'latest')).map((r) => [r.id, r]))
+    const latestRecords = await this.questions.getMany(wanted, 'latest')
+    const latest = new Map(latestRecords.map((r) => [r.id, r]))
     if (latest.size === 0) return new Map()
-    const live = new Map((await this.questions.getMany([...latest.keys()], 'live')).map((r) => [r.id, r]))
+    // REQ-B-022a: a question whose live version IS its latest version has one record, not two: the 'latest' read already returned the
+    // live one (same version row, same tags), so only the questions that are live at an older version, or not live at all, need the
+    // second read (which still returns nothing for a question without a live version). Half the hydration on a paper pass.
+    const liveAtLatest = latestRecords.filter((r) => r.liveVersionNo !== null && r.liveVersionNo === r.version.versionNo)
+    const liveElsewhere = latestRecords.filter((r) => r.liveVersionNo !== null && r.liveVersionNo !== r.version.versionNo).map((r) => r.id)
+    const liveOlder = liveElsewhere.length === 0 ? [] : await this.questions.getMany(liveElsewhere, 'live')
+    const live = new Map([...liveAtLatest, ...liveOlder].map((r) => [r.id, r]))
     const records = [...live.values()]
     // The bridge reads the live version for a NEW sitting (H-A13): a question without one is reported `archived` or `not_approved`,
     // and its running sittings are readability, not servability, so no other version needs its stimuli or group here.
@@ -65,7 +76,7 @@ export class ServabilityService {
       this.subjectsOf(effective),
       this.groupsOf(bridged),
       this.onPublishedPaper([...live.keys()]),
-      this.janaFactsOf(records),
+      opts.jana === false ? Promise.resolve(new Map<string, QuestionFacts>()) : this.janaFactsOf(records),
     ])
     // ONE read of the own stimuli (versionStimuli + stimulusUseCounts): the bridge's `outside` and the kuiz's `linkedAssets` are both
     // built from it, so the facts cannot disagree and the pinned read runs once.
@@ -91,6 +102,7 @@ export class ServabilityService {
         fileTokens: tokens,
         onPublishedPaper: onPaper.has(id),
         janaFacts: jana.get(id) ?? null,
+        ...(opts.jana === false ? { janaSkipped: true as const } : {}),
       })
     }
     return out

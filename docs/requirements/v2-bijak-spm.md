@@ -561,7 +561,7 @@ All durations in the table are printed on the papers read (SPP section 4), inclu
 | R18 | Question map, flags, choose-N picks | Map dots, flag, pick checkbox (advisory) | **Keep** (advisory only; scoring ignores) | Fidelity, D29(b) |
 | R19 | Reference sheet | Foldable panels on the cover, open by default | **Keep** | D29(b) |
 | R20 | Resume choice | "Sambung" / "Mula Semula" after > 60 s | **Keep** copy and 60 s rule; **add** closing of discarded attempt | N-08 |
-| R21 | Semakan | Scheme per part, verdict, self-mark; cover grid never filled | **Keep** scheme + verdict + self-mark; **drop** "Untuk Kegunaan Pemeriksa" grid and raw JSON mapping | N-14 |
+| R21 | Semakan | Scheme per part, verdict, self-mark; cover grid never filled | **Keep** scheme + verdict + self-mark; **drop** "Untuk Kegunaan Pemeriksa" grid and raw JSON mapping | N-14 (superseded by AC-20.3 of `v2-admin-student-pipeline.md`: the "Untuk Kegunaan Pemeriksa" grid is kept, shown only when the paper has a part a person marks) |
 | R22 | History | Only `/spm/history` aggregate; non-native composites missing; label "Tahun Lepas" (N-10) | **Change**: dedicated history, all kinds, label "Bijak SPM" | N-10, AC-33.4 |
 | R23 | Rewards | Syiling 2 and XP 10 per marks earned, delta, no clawback | **Keep** | D29(b) |
 | R24 | Document Bahagian (page-image K2) | Hybrid Bahagian B with self-toggle scheme (N-12) | **Drop** from v2.0 | Scope; N-12 |

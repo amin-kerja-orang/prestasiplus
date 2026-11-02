@@ -94,10 +94,10 @@ describe('lifecycle transition (BE-10 AC 1, 2, 12)', () => {
   })
 
   it('review to approved (Terbitkan) is one step: one merged gate, one event, no approved-to-published hop (ADR-0027)', async () => {
-    t.fake.seed({ id: '2003', status: 'review', gate: { rightsStatus: 'unclear' } })
+    t.fake.seed({ id: '2003', status: 'review', gate: { unitId: null } })
     const e = await failure(svc.transition('2003', 'approved', actorOf(c.admin)))
     expect(e.details).toEqual({ gate: 'approve' })
-    expect(e.fields).toHaveProperty('rightsStatus') // a former publish-gate rule now runs in the approve gate
+    expect(e.fields).toHaveProperty('unitId') // a former publish-gate rule now runs in the approve gate
     expect(await events(t, '2003')).toHaveLength(0)
     t.fake.seed({ id: '2004', status: 'review' })
     const res = await svc.transition('2004', 'approved', actorOf(c.admin))
