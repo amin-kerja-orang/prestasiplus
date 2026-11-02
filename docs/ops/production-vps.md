@@ -184,7 +184,7 @@ Who sets what: **LEAD** = the LEAD supplies or approves the value; **OPS** = the
 | `PP_ALERT_DISK_PCT`, `PP_ALERT_CERT_DAYS`, `PP_ALERT_BACKUP_MAX_AGE_H`, `PP_ALERT_API_ERRORS_5M` | `85`, `21`, `30`, `25` | OPS | Alert thresholds |
 | `PP_CERTBOT_IMAGE`, `PP_CLAMAV_IMAGE`, `PP_KUMA_IMAGE` | see compose | OPS | Image pins |
 | `PP_OPERATOR`, `PP_PROBE_BASE_URL`, `PP_PROD_ENV` | unset | OPS | Per-run: operator name for the drill evidence; probe base URL for tests; alternate `prod.env` path |
-| `VITE_PROTOTYPE_SCOPE` | `on` (base compose default) | LEAD | Build arg. Open question carried from the go-live checklist: confirm it does not hide the Admin Pusat publish screen; set `off` here if it does |
+| `VITE_PROTOTYPE_SCOPE` | `on` (base compose default) | LEAD | Build arg, baked in at image build time. **`on` is REQUIRED for R1 (REQ-B-117, user decision); `off` is NOT allowed.** `/etc/pretasiplus/prod.env` must be changed from `off` to `on` before the build. CI builds with `on` (`frontend.yml:216`), so the CI evidence matches what ships. Under `on`, parent, sponsor and PPD accounts are refused at login (on UAT they are active: 37/6/6) |
 
 ### api.env (secrets; the full key list is `.env.api.example` and [api-runbook.md](api-runbook.md) section 2)
 
