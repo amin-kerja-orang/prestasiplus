@@ -837,7 +837,7 @@ The ONE header set for every question type (one row = one leaf; rows with the sa
 | `accepted_answers` | short_answer, fill_blank, working | up to 10 with `|`, each <= 200 | "Sila masukkan jawapan betul." |
 | `numeric_value`, `numeric_unit`, `tolerance_kind`, `tolerance_value` | numeric leaf | number; unit <= 20; `abs` or `rel`; >= 0 | "Toleransi tidak boleh negatif." |
 | `word_min`, `word_max` | optional, essay | 0 to 5000, min <= max | "Julat perkataan tidak sah." |
-| `marks` | every leaf | integer 1 to 100 | "Nilai mata mesti sekurang-kurangnya 1."; "Markah bahagian tidak boleh melebihi 100." |
+| `marks` | every leaf | integer 1 to 100; 0 only for a leaf with `Contoh (tidak dimarkah)` (FR-ADM-QE3.25, `mode_config.example`) | "Nilai mata mesti sekurang-kurangnya 1."; "Markah bahagian tidak boleh melebihi 100." |
 | `scheme` | non-MCQ leaves | points with `|`, each `KOD:markah:teks`, code K N P B M F C, sum = `marks` | "Jumlah markah skema ({a}) mesti sama dengan markah bahagian ({b})."; "Kod markah tidak sah." |
 | `bahasa`, `jenis_tulisan` | optional | `bm`, `en`, `ms+en`; `rumi`, `arab`, `jawi`, `mixed` | "Bahasa tidak sah."; "Jenis tulisan tidak sah." |
 The group, `mode`, `intro_*` and `_en` columns of 45 §3.2 are added by FR-ADM-QE6.4. Outcome and the error CSV: FR-ADM-QE6.2 and SR-7; re-upload warns "{n} soalan sama dengan soalan sedia ada." `Sejarah Import` list: columns `Fail`, `Tarikh`, `Diimport`, `Gagal`, `Oleh`; 20 per page; empty "Tiada sejarah import.".

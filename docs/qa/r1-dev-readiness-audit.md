@@ -738,6 +738,8 @@ Closed since run 1 in the subject tables: BM K1 Bahagian B Sumber and counter, K
 
 ### Verdicts
 
+Superseded by run 3 below.
+
 - **V2 parity: NO** (V22 via N-1, V23 via N-4; 53 of 55 V2 rows PASS; m8 via N-4).
 - **BM: YES**
 - **BI: NO** (N-1)
@@ -763,3 +765,69 @@ Each verdict turns YES when the fixes below are applied; no new design is needed
 **N-4 (V23, m8).** In 45 section 10 conflict row C-2, replace "**Applied in 30 (T3: QE3.2 has 11 types, QE3.24 has 14 modes) and in 50 (T5: DM-69).**" with "**Applied in 30 (QE3.2 has 11 types; QE3.24 lists the 9 stored modes and the 14 V2 modes are migrated, never offered) and in 50 (DM-69).**"
 
 **N-5 (G-14, Matematik).** The key is the single store. Remove `acceptedOptions` from: 50 DM-55 key list; 45 section 3.1.6 line "Per-mode extras are stored in `question_parts.mode_config` (DM-55): ..." and the DM-55 row of 45 section 10; 60 `modeConfig` comment in section 4.1; 30 A2 item 13. In 45 mode 1, after the key example, add "The accepted options live only in the answer key (`accepted`, `note`); `mode_config` has no copy."
+
+## Wizard re-verification 2026-11-04 (run 3)
+
+Task T9 re-run 3 after commit b313db7 (fixes N-1..N-5 and the plan citations). Independent re-check of the 6 GAP rows of run 2 and a grep-based check that the fixes introduced no contradiction across 30, 45, 46, 50, 60 and the plan. No file other than this one was changed; the only edit outside this section is the line "Superseded by run 3 below." under the run-2 "Verdicts" heading.
+
+### What changed since run 2
+
+- N-1 closed in text: 45 L-13 (`Jawapan contoh`, `mode_config.example = { "answer": ... }`, "Jawapan contoh diperlukan."), 45 section 3.1.6 extras list and DM-55 row, 50 DM-55 (`example`, marks 0 exactly when present), 60 API-Q-03 (422 rule) and 4.1 `modeConfig` comment, 46 cloze row ("filled with `mode_config.example.answer`"), 30 AC-ADM-QE3.18 and A2 item 13.
+- N-2 closed: 45 section 3.1.5 bilingual paragraph now equals 30 FR-ADM-QE3.11 (refusal for stem, leaf prompt, option, stimulus body, bank text, alternative prompt; caption, instruction and scheme text may stay BM); plan S1-T09b has the same list.
+- N-3 closed: 46 section 3.4 item 4a, FR-PA-40, AC-PA-43 (all grep-confirmed, with cards S3-T06, S8-T05).
+- N-4 closed: 45 C-2 row says QE3.24 lists the 9 stored modes.
+- N-5 closed: `acceptedOptions` no longer appears in any of 30, 40, 45, 46, 50, 60 or the plan; 45 mode 1 states that accepted options live only in the answer key; 46 M-MCQ and AC-QA-27 use the key `accepted` list.
+- Plan citations verified on the cards: S1-T09a (FR-QA-48, 49, FR-PA-39), S2-T10 (AC-ADM-QE3.13..3.18, FR-ADM-QE3.25), S3-T04 (FR-PA-39, AC-PA-41), S3-T06 (FR-PA-40, AC-PA-43), S8-T02 (FR-PA-36, 37, AC-PA-39), S8-T03 (FR-PA-35, 36, 38, AC-PA-37, 38, 40, 42), S8-T05 (FR-PA-40, FR-QA-48, 49).
+
+### Consistency spot-check
+
+- `acceptedOptions`: 0 hits in the PRD and plan. One store (the key). OK.
+- `mode_config.example`: stated the same way in 45 (L-13, extras, DM-55 table), 50 DM-55, 60 (API-Q-03, 4.1), 46 (cloze row), 30 (AC-ADM-QE3.18, A2 item 13). Key lists in 45, 50, 60 and 30 A2 item 13 are identical (`maxWords` .. `drawingKind`, `example`). OK.
+- Bilingual field lists: 30 QE3.11, 45 3.1.5, plan S1-T09b agree. 45 section 2.7 line 245 names only "prompt, option and stimulus text" for the refusal, which is a subset and does not conflict.
+- One new defect found:
+  - **N-6 (V22; BI P1 Part 2)** 30 section 4.V field table row `marks | every leaf | integer 1 to 100` has no exception for a `Contoh (tidak dimarkah)` leaf, while 30 row 04-26, 45 L-04, 50 DM-55, 60 API-Q-03 and AC-ADM-QE3.18 say marks 0 is valid for it. This is a one-cell text contradiction on the V22 part-tree row.
+
+### Per-item table (rows that are still GAP; all other rows PASS)
+
+| ID | Requirement | Run 2 | Run 3 | Gap |
+|---|---|---|---|---|
+| V22 | Part tree Label, Jenis, Markah, Arahan (incl. 0-mark worked example) | GAP (N-1) | GAP | N-6 (30 field table `marks` row lacks the 0-mark exception) |
+| V23 | 14 V2 modes to 11 types / 9 modes | GAP (N-4) | PASS | closed |
+| m8 | 13 vs 14 modes typo; delete-guard text | GAP (N-4) | PASS | closed |
+| G-01 | Marking-scheme editor | GAP (N-3) | PASS | closed (FR-PA-40, AC-PA-43) |
+| G-07 | Bilingual BM+EN | GAP (N-2) | PASS | closed |
+| G-14 | MCQ second accepted option + Nota kunci | GAP (N-5) | PASS | closed |
+
+### Per-subject paper structure
+
+| Subject | Elements | PASS | GAP elements | Verdict |
+|---|---|---|---|---|
+| Bahasa Melayu | 8 | 8 | none | YES |
+| Bahasa Inggeris | 8 | 7 | P1 Part 2 worked example (N-6, one-cell contradiction) | NO |
+| Fizik | 7 | 7 | none | YES |
+| Matematik | 7 | 7 | none | YES |
+| Matematik Tambahan | 5 | 5 | none | YES |
+| Sejarah | 6 | 6 | none | YES |
+
+### Counts
+
+- V2 functions: 54 PASS, 1 GAP of 55 (V22).
+- Split paths B/M/m: 19 PASS, 0 GAP of 19.
+- G items: 19 PASS, 0 GAP of 19.
+- Total: **92 PASS, 1 GAP of 93** (run 2: 87 / 6; run 1: 64 / 29).
+
+### Verdicts
+
+- **V2 parity: NO** (only V22, via N-6; 54 of 55 V2 rows PASS)
+- **BM: YES**
+- **BI: NO** (N-6)
+- **Fizik: YES**
+- **Matematik: YES**
+- **Matematik Tambahan: YES**
+- **Sejarah: YES**
+
+All verdicts become YES when N-6 is applied; this is a one-cell edit.
+
+### Fix for the remaining GAP
+
+**N-6 (V22, BI).** Target: `docs/prd/r1/30-admin-pusat.md`, the field table that holds the row `| marks | every leaf | integer 1 to 100 | "Nilai mata mesti sekurang-kurangnya 1."; "Markah bahagian tidak boleh melebihi 100." |` (about line 840). Replace the validation cell `integer 1 to 100` with `integer 1 to 100; 0 only for a leaf with `Contoh (tidak dimarkah)` (FR-ADM-QE3.25, `mode_config.example`)`. No new ID is needed; next free IDs are unchanged (AC-ADM-QE3.19, FR-ADM-QE3.26, FR-PA-41, AC-PA-44).
