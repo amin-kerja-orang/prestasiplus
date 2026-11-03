@@ -877,14 +877,14 @@ Existing IDs (FR-MUR-*, AC-MUR-*, FR-X4-*, AC-CHAIN-*, DM-44..49, API-PRAC-*, AP
 | ID | Requirement | Section | Card |
 |---|---|---|---|
 | FR-PA-01 | There are exactly three answering engines (drill, sitting, room and battle). No activity creates another answering page, grader or answer table. | 1.1, 8 | S5-T03, S3-T04, S7-T01 |
-| FR-PA-02 | `true_false` and `mcq_multi` are explicit kinds. `mcq_multi` is served only where the answer is `choices[]` (sitting, Kuiz, Set Soalan, Subjektif, Kertas Subjektif), never in single-option drills or games. | 2.2 | S1-T09, S8-T03 |
+| FR-PA-02 | `true_false` and `mcq_multi` are explicit kinds. `mcq_multi` is served only where the answer is `choices[]` (sitting, Kuiz, Set Soalan, Subjektif, Kertas Subjektif), never in single-option drills or games. | 2.2 | S1-T09a, S8-T03 |
 | FR-PA-03 | A stimulus group is shown once and kept in view across all its members at 375 / 768 / 1280 px; sitting = one group screen; drill = one member per screen with a persistent panel; games never draw a group. | 2.4 | S8-T02, S5-T03 |
 | FR-PA-04 | Bilingual (`ms+en`) content shows stacked BM and English with a three-way toggle remembered on the device; chrome stays BM. | 2.3 | S8-T03 (data: 45 / G-07) |
 | FR-PA-05 | Inline gaps `{{gap:N}}` render as inputs or selects in place; each gap is a leaf; optional word cap; no new mode. | 2.2 | S8-T03 |
 | FR-PA-06 | Essay shows a live word count and range hints; submit is never blocked. | 2.2.1 | S8-T03 |
-| FR-PA-07 | `essay_choice` is served: pick one prompt, write, only the chosen text is submitted, marks counted once. | 2.2, 3.2 | S8-T03, S1-T09 |
+| FR-PA-07 | `essay_choice` is served: pick one prompt, write, only the chosen text is submitted, marks counted once. | 2.2, 3.2 | S8-T03, S1-T09a |
 | FR-PA-08 | `drawing` is answered on screen (Papan Lukisan over the template, or a photo), then self-marked. | 2.2.2 | S8-T03, S3-T04 |
-| FR-PA-09 | `table_fill` is answered in an on-screen grid, then self-marked with a cell-match suggestion. | 2.2.3 | S8-T03, S1-T09 |
+| FR-PA-09 | `table_fill` is answered in an on-screen grid, then self-marked with a cell-match suggestion. | 2.2.3 | S8-T03, S1-T09b |
 | FR-PA-10 | The matching bank is shown once in the stimulus panel and stays visible. | 2.2 | S8-T03 |
 | FR-PA-11 | A drill resumes after refresh with the same `clientUuid`, returns `answered[]` and `resumed`, and shows `Anda menyambung kuiz yang belum selesai.` | 2.6 | S5-T03 |
 | FR-PA-12 | Drills are online-only: "Semak Jawapan" disabled offline; 3 retries then "Cuba Semula" / "Langkau". | 2.6 | S5-T03 |
@@ -896,7 +896,7 @@ Existing IDs (FR-MUR-*, AC-MUR-*, FR-X4-*, AC-CHAIN-*, DM-44..49, API-PRAC-*, AP
 | FR-PA-18 | Self-mark by scheme points (ticks with caps, groups, pairs, dependencies, bonus, alternative methods) and by band. | 3.4 | S3-T06, S8-T05 |
 | FR-PA-19 | Self-mark per criterion (BI C, CA, O, L). | 3.4 | S3-T06 |
 | FR-PA-20 | Scheme reveal rules per surface and per kind; B6 reveals only after "Hantar & Semak" and on "Tunjuk Skema Pemarkahan". | 3.5 | S3-T06, S8-T05 |
-| FR-PA-21 | `belum_dimarkah` is never shown as "Salah" and never says "Guru akan menilai"; short text of 3 or more wrong words and unparseable numbers become `belum_dimarkah` and are self-markable. | 3.1, 3.2 | S3-T04, S1-T09 |
+| FR-PA-21 | `belum_dimarkah` is never shown as "Salah" and never says "Guru akan menilai"; short text of 3 or more wrong words and unparseable numbers become `belum_dimarkah` and are self-markable. | 3.1, 3.2 | S3-T04, S1-T09a |
 | FR-PA-22 | Tracking A objective uses the drill engine (session `ramalan`, rows `tracking_a`); Tracking A Bahasa uses the Subjektif sitting. | 4.5 | S3-T05 |
 | FR-PA-23 | The answer-log port maps session `past_year` to row `databank`, `ramalan` to `tracking_a`; reports treat the old values as the same lanes. | 4.4, 4.5 | S5-T15 |
 | FR-PA-24 | Kertas Subjektif: route, list, reflowing viewer, "Hantar & Semak", then "Tunjuk Skema Pemarkahan", self-mark per Bahagian. | 4.7 | S3-T06 |
@@ -954,7 +954,7 @@ Existing IDs (FR-MUR-*, AC-MUR-*, FR-X4-*, AC-CHAIN-*, DM-44..49, API-PRAC-*, AP
 | AC-PA-32 | Given a pupil, then `/spm/bijak` has no "Jana Kertas" tab and the generate call answers 404. | S3-T07 |
 | AC-PA-33 | Given the hub, then the card "Kertas Subjektif" is present and working, "Tahun Tersedia" is computed or hidden (never 0 by constant), and each card chip equals its details view. | S3-T07 |
 | AC-PA-34 | Given Tracking A Bahasa for BM, then "Buka Tracking A Bahasa" opens the structured sitting and the rows carry `mode = tracking_a` with `part_ref`. | S3-T05 |
-| AC-PA-35 | Given an `mcq_multi` question, then it is excluded (with the admin reason) from Latih Tubi, Chapter, Databank, Tracking A objective, Remedial, Misi, PKSK and games, and served in a Bijak sitting and Set Soalan Guru. | S1-T09 |
+| AC-PA-35 | Given an `mcq_multi` question, then it is excluded (with the admin reason) from Latih Tubi, Chapter, Databank, Tracking A objective, Remedial, Misi, PKSK and games, and served in a Bijak sitting and Set Soalan Guru. | S1-T09a |
 | AC-PA-36 | Given a T1 pupil with servable content, then Latih Tubi (own form), Soalan by Chapter, Databank, Bijak list and Set Soalan work end to end exactly as for T5 with no "akan datang" text, and an empty level shows a data-empty state. | S5-T01 |
 | AC-PA-37 | Given an essay with range 1 to 120 words and `Had keras` on, when the pupil types 125 words, then the text holds 120 words and the hint "Had 120 patah perkataan dicapai." shows; given a paste of 300 words, then 120 are kept; given `Had keras` off, 125 words are kept with "Jawapan melebihi 120 patah perkataan."; Hantar works in every case. | S8-T03 |
 | AC-PA-38 | Given a BM passage with underline, strike-through, a two-column poem and a boxed source, then at 1280 px the pupil view equals the admin preview, at 375 px the poem is one column with its line breaks kept, and the page has no horizontal scroll. | S8-T03 |
@@ -1012,8 +1012,8 @@ Bilingual twins (`_en` columns and `language`) are defined by 45 / G-07 and only
 
 ### 9.2 Every NEW ID with its owning card
 
-- **FR-PA (39):** 01 S5-T03/S3-T04/S7-T01; 02 S1-T09; 03 S8-T02; 04 S8-T03; 05 S8-T03; 06 S8-T03; 07 S8-T03; 08 S8-T03; 09 S8-T03; 10 S8-T03; 11 S5-T03; 12 S5-T03; 13 S5-T03; 14 S8-T04; 15 S8-T04; 16 S3-T04; 17 S3-T04; 18 S3-T06; 19 S3-T06; 20 S3-T06; 21 S3-T04; 22 S3-T05; 23 S5-T15; 24 S3-T06; 25 S5-T11; 26 S5-T03; 27 S10-T01; 28 S7-T01; 29 S7-T01; 30 S7-T03; 31 S7-T01; 32 S7-T01; 33 S7-T01; 34 S3-T07; 35 S8-T03; 36 S8-T03/S8-T02; 37 S8-T02; 38 S8-T03; 39 S3-T04/S1-T09a.
-- **AC-PA (42):** 01 S5-T15; 02 S5-T03; 03 S8-T02; 04 S8-T03; 05 S8-T03; 06 S8-T03; 07 S3-T04; 08 S3-T04; 09 S3-T05; 10 S3-T06; 11 S3-T04; 12 S5-T03; 13 S5-T03; 14 S5-T11; 15 S5-T03; 16 S8-T03; 17 S8-T03; 18 S3-T06; 19 S3-T06; 20 S3-T04; 21 S8-T04; 22 S8-T04; 23 S5-T15; 24 S5-T03; 25 S10-T01; 26 S7-T01; 27 S7-T01; 28 S7-T03; 29 S7-T01; 30 S7-T01; 31 S7-T01; 32 S3-T07; 33 S3-T07; 34 S3-T05; 35 S1-T09; 36 S5-T01; 37 S8-T03; 38 S8-T03; 39 S8-T02; 40 S8-T03; 41 S3-T04; 42 S8-T03.
+- **FR-PA (39):** 01 S5-T03/S3-T04/S7-T01; 02 S1-T09a; 03 S8-T02; 04 S8-T03; 05 S8-T03; 06 S8-T03; 07 S8-T03; 08 S8-T03; 09 S8-T03; 10 S8-T03; 11 S5-T03; 12 S5-T03; 13 S5-T03; 14 S8-T04; 15 S8-T04; 16 S3-T04; 17 S3-T04; 18 S3-T06; 19 S3-T06; 20 S3-T06; 21 S3-T04; 22 S3-T05; 23 S5-T15; 24 S3-T06; 25 S5-T11; 26 S5-T03; 27 S10-T01; 28 S7-T01; 29 S7-T01; 30 S7-T03; 31 S7-T01; 32 S7-T01; 33 S7-T01; 34 S3-T07; 35 S8-T03; 36 S8-T03/S8-T02; 37 S8-T02; 38 S8-T03; 39 S3-T04/S1-T09a.
+- **AC-PA (42):** 01 S5-T15; 02 S5-T03; 03 S8-T02; 04 S8-T03; 05 S8-T03; 06 S8-T03; 07 S3-T04; 08 S3-T04; 09 S3-T05; 10 S3-T06; 11 S3-T04; 12 S5-T03; 13 S5-T03; 14 S5-T11; 15 S5-T03; 16 S8-T03; 17 S8-T03; 18 S3-T06; 19 S3-T06; 20 S3-T04; 21 S8-T04; 22 S8-T04; 23 S5-T15; 24 S5-T03; 25 S10-T01; 26 S7-T01; 27 S7-T01; 28 S7-T03; 29 S7-T01; 30 S7-T01; 31 S7-T01; 32 S3-T07; 33 S3-T07; 34 S3-T05; 35 S1-T09a; 36 S5-T01; 37 S8-T03; 38 S8-T03; 39 S8-T02; 40 S8-T03; 41 S3-T04; 42 S8-T03.
 - **DM in this file:** DM-66 S5-T15; DM-67 S7-T01; DM-68 S3-T04; DM-60 shared with 48 (S7-T01). Extended rows keep their owners: DM-44 S5-T15, DM-38 S7-T04 (rows inserted by S7-T01), DM-25 S3-T06.
 - **API:** no new IDs; the changes extend API-PRAC-01 (S5-T03), API-PRAC-02 and API-BIJAK-06 (S5-T11), API-BIJAK-04 (S3-T04, S3-T06), API-BIJAK-05 (S3-T06), API-PRAC-03 (S5-T03), API-GAME-01..03 (S7-T01) and API-BIJAK-03 (S3-T07).
 
@@ -1067,7 +1067,7 @@ Source: `PR522-aliran.md`, 29 processes and 114 steps. Bahagian A to E (A1, B1 t
 | F2.3 Sambung, Mula Semula | Jalan | 4.2 step 3, 2.6 | AC-MUR-A5-3, AC-PA-12 | S3-T04 | Kept; resume rules and dialog copy fixed. |
 | F2.4 Question or group screen, map, flag | Jalan | 2.4, 2.5 | FR-MUR-13-7, 13-9, FR-PA-03; AC-MUR-13-4, AC-PA-03 | S3-T04, S8-T02 | Group screen layout at 3 widths. |
 | F2.5 Stimulus once, "Lihat Rajah", pinned | Jalan | 2.4 | AC-MUR-QP-1, QP-2, AC-PA-03 | S8-T02 | All seven stimulus kinds; missing kinds exclude the question, never partial. |
-| F2.6 Answer by mode | Separuh | 2.2, 3.2 | FR-PA-02, 05..10; AC-PA-05, 06, 16, 17, 35 | S8-T03, S1-T09 | Drawing: pad or photo; match_letter bank; table_fill grid; the two cannot yet be authored (45, S2-T01). |
+| F2.6 Answer by mode | Separuh | 2.2, 3.2 | FR-PA-02, 05..10; AC-PA-05, 06, 16, 17, 35 | S8-T03, S1-T09a, S1-T09b | Drawing: pad or photo; match_letter bank; table_fill grid; the two cannot yet be authored (45, S2-T01). |
 | F2.7 Autosave, restore | Jalan | 2.6 | FR-MUR-13-10; AC-MUR-13-5 | S3-T04 | 800 ms, 15 s, blur, beacon, 5 s retry. |
 | F2.8 Pilih N | Belum diuji | 2.5 | FR-MUR-13-8; AC-MUR-13-3 | S3-T04 | Rule of `choose-n.ts` stated; unit test required. |
 | F2.9 Hantar, server marking, auto-timeout | Jalan; timeout untested | 2.7, 2.8, 3.1 | FR-PA-14, 15; AC-MUR-13-15, AC-PA-21, 22 | S8-T04, S3-T04 | Auto-submit at 0, offline-at-zero queue, 24 h late sync, "Hantar" at 375 px. |

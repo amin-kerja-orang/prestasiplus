@@ -244,7 +244,7 @@ Scheme v2 (section 3.1.7) widens `points` and `rubric` and adds question-level r
 - On the wire every rich text is `QuestionRichText = { ms, en? }` (already in `packages/contract/src/questions/parts.ts`): prompts, options, stimulus body, option-bank body, scheme point text. For `ms+en` both keys are filled. Where the ERD stores plain text columns (`stem_ms`, stimulus `body_ms`, `caption`) the `_en` twin is added (DM-50).
 - In the editors, `ms+en` shows two stacked editors per text field, labelled `BM` and `English`. Validation: "Teks English diperlukan untuk soalan dwibahasa." for prompt, option and stimulus text; scheme text may stay BM only.
 - Table cells stay single strings; a bilingual header is typed in the one cell as `BM / English`.
-- The pupil sees BM above English as printed. No language toggle in R1.
+- The pupil sees BM above English as printed by default; the three-way control of 46 2.3 (FR-PA-04) can show one language only.
 
 ### 2.8 Status machine
 
@@ -443,7 +443,7 @@ Top of the step: `Jenis soalan` (OPT-JENIS-SOALAN, required, "Jenis soalan tidak
 | L-01 | `Label` | text <=10 | required, auto `(a)`, `(b)`, `(i)` | "Label bahagian diperlukan." (R1 copy, D113) |
 | L-02 | `Jenis jawapan` | select | limited by `Jenis soalan` (2.3) | "Jenis jawapan tidak sah." (R1 copy, D113) |
 | L-03 | prompt | rich text, bilingual per T-13 | required; MCQ stem >=10 chars | "Teks soalan mesti sekurang-kurangnya 10 aksara." |
-| L-04 | `Markah` | integer 1..100 | required per leaf; parents none | "Nilai mata mesti sekurang-kurangnya 1."; "Markah bahagian tidak boleh melebihi 100." (R1 copy, D113) |
+| L-04 | `Markah` | integer 1..100; 0 only when L-13 is ticked | required per leaf; parents none | "Nilai mata mesti sekurang-kurangnya 1."; "Markah bahagian tidak boleh melebihi 100." (R1 copy, D113) |
 | L-05 | `Arahan sub-bahagian` | textarea <=500 | optional | "Arahan tidak boleh melebihi 500 aksara." (R1 copy, D113) |
 | L-06 | `TP` (bahagian) | select OPT-TP | default is the question TP | "Bahagian ({label}) belum ada TP." |
 | L-07 | `Aras pemikiran` (bahagian) | select OPT-ARAS | default is the question aras; required SPM-bound T4/T5 | "Bahagian ({label}) belum ada aras pemikiran." |
@@ -452,6 +452,7 @@ Top of the step: `Jenis soalan` (OPT-JENIS-SOALAN, required, "Jenis soalan tidak
 | L-10 | `Rangsangan bahagian` | select | see 3.1.4 | see 3.1.4 |
 | L-11 | `Bergantung pada jawapan bahagian` | select of earlier leaves | optional; for "read from your own graph" parts: checklist marking with carried values (`ecf`), no auto-mark (FR-QA-30) | "Bahagian bergantung mesti selepas bahagian sumber." (R1 copy, D113) |
 | L-12 | `Templat jawapan (pra-isi)` | rich text | optional pre-printed frame (e-mail To/Subject); shown to the pupil, never marked (FR-QA-28) | none |
+| L-13 | `Contoh (tidak dimarkah)` | checkbox | optional; the leaf has marks 0, no scheme and no key, is shown to the pupil filled and read-only (46 2.2 cloze row), adds nothing to the part total, and is exempt from the scheme-sum check | none |
 
 **Mode 1 `mcq` (Aneka Pilihan, Pelbagai Jawapan, Betul / Salah).** Rows `Pilihan A`..`Pilihan H`: text (<=500, bilingual) and an optional image (JPG/PNG/WebP <=2 MB). 2 to 8 rows, default 4 (A-D); `+ Pilihan` adds the next letter, `Buang pilihan` removes the last and renumbers; a radio (checkboxes for `mcq_multi`) marks the correct one. `Betul / Salah`: two fixed rows `Betul`, `Salah`, text not editable. Two accepted options (G-14): checkbox `Terima pilihan lain` opens a tick list of extra accepted labels and the text `Nota kunci`; key `{kind:'option', correct:'A', accepted:['A','D'], note}`. Messages: "Soalan aneka pilihan mesti ada 2 hingga 8 pilihan.", "Sila isi semua pilihan jawapan.", "Sila pilih jawapan betul.", "{n} jawapan betul dipilih. Soalan objektif hanya boleh ada satu.", `mcq_multi`: "Pilih sekurang-kurangnya satu jawapan betul dan sekurang-kurangnya satu jawapan salah.", "Label pilihan mesti A hingga H.". Contract change: `McqLeaf.options` minimum 3 becomes 2, and `mcq_multi` uses the key kind `options` (today PKSK-only); both are accepted contract widenings owned by S1-T09a (the S1 contract card).
 
@@ -467,9 +468,9 @@ Top of the step: `Jenis soalan` (OPT-JENIS-SOALAN, required, "Jenis soalan tidak
 
 **Mode 7 `essay_choice` (Esei Pilihan, "jawab satu daripada dua gesaan").** Everything in mode 6 plus rows `+ Gesaan alternatif` (2 to 6, "Esei pilihan mesti mempunyai 2 hingga 6 topik." (R1 copy, D113)): `Tajuk` (<=200), `Teks gesaan` (bilingual), `Rangsangan gesaan` (select: one of the group's stimuli; the BM K1 Bahagian A case of two e-mails). The rubric or points are shared by all alternatives; marks are counted once; the pupil picks one, then writes. Contract: `QuestionEssayTopic` gains optional `prompt` and `stimulusId`.
 
-**Mode 8 `drawing` (Lukisan / Graf).** `Jenis` (`Graf`, `Rajah`, `Lakaran`); `Templat jawapan`: an uploaded image (a printed grid or a figure to draw on) or the graph-paper generator (`x min`, `x maks`, `y min`, `y maks`, `Langkah`, `Skala dinyatakan` text); `Senarai semak markah` = `points` (K/N/P rows written by the admin). Gate: a template (image or grid) and >=1 point. Pupil (D-QA-2): the attempt screen shows the template; the pupil draws on paper or the device and presses `Ambil gambar jawapan` / `Muat naik gambar` (<=5 MB; the existing `POST /api/bijak/attempts/:id/photos`), then `Tunjuk Skema Pemarkahan` and self-marks each point. There is no freehand canvas in R1.
+**Mode 8 `drawing` (Lukisan / Graf).** `Jenis` (`Graf`, `Rajah`, `Lakaran`); `Templat jawapan`: an uploaded image (a printed grid or a figure to draw on) or the graph-paper generator (`x min`, `x maks`, `y min`, `y maks`, `Langkah`, `Skala dinyatakan` text); `Senarai semak markah` = `points` (K/N/P rows written by the admin). Gate: a template (image or grid) and >=1 point. Pupil: as 46 2.2.2 (FR-PA-08): the template with the Papan Lukisan, or `Ambil gambar jawapan` / `Muat naik gambar` (<= 5 MB, up to 3 files, the existing `POST /api/bijak/attempts/:id/photos`); after Hantar `Tunjuk Skema Pemarkahan` and the pupil self-marks each point.
 
-**Mode 9 `table_fill` (Isi Jadual).** `Baris`, `Lajur`, a grid editor; each cell is `Tajuk`, `Diberi` or `Kosong`; for each `Kosong` cell the accepted values and tolerance; gate "Sekurang-kurangnya satu sel kosong diperlukan." (R1 copy, D113). Pupil: inputs appear in the blank cells on screen; after submit the scheme shows and the cells that match the accepted values are pre-ticked as a suggestion; the pupil confirms or changes each tick (a change replaces the row).
+**Mode 9 `table_fill` (Isi Jadual).** `Baris`, `Lajur`, a grid editor; each cell is `Tajuk`, `Diberi` or `Kosong`; for each `Kosong` cell the accepted values and tolerance; gate "Sekurang-kurangnya satu sel kosong diperlukan." (R1 copy, D113). Pupil: inputs appear in the blank cells on screen; after submit the scheme shows and the scheme shows the filled grid and the suggestion 'Cadangan automatik: {k} daripada {n} sel sepadan' (46 2.2.3); the leaf stays `belum_dimarkah` until the pupil self-marks with the stepper.
 
 Per-mode extras are stored in `question_parts.mode_config` (DM-55): `maxWords`, `wordRange`, `hardLimit`, `answerSpace`, `alternatives`, `answerTemplate`, `dependsOnPart`, `preFill`, `multi`, `acceptedOptions`.
 
@@ -497,9 +498,9 @@ Location: step 4, per leaf, tabs `Jawapan` | `Skema pemarkahan`. Chip "{n} marka
 
 Group rules (`+ Kumpulan`): `Mana-mana N daripada M` with `Markah setiap satu`; `Markah maksimum kumpulan` (cap, "Maks 4"); `Bonus jika semua betul` (checkbox + marks, e.g. "[Semua ciri dinyatakan betul]"); type `Pasangan (Ciri / Sebab)` where point B counts only if point A is hit. `+ Kaedah alternatif` (ATAU / Alternatif A, B): the marker takes the best path, never adds paths. `Jawapan akhir` box (display, accepted values, tolerance, unit) for working. `Mata mengikut bilangan betul`: `Bilangan item`, `Markah bagi n, n-1 ... 0 betul` (covers "P2,1,0"). `Jawapan model` (rich text with images) and `Panduan pemarkah / Kesilapan lazim` (staff only, never shown to pupils). Carried values (`ecf`) per point for dependent parts.
 
-**Deductions and zero rules** (`+ Potongan`): rows of `spelling`, `unit`, `sf`, `dp`, `copy` with `Jumlah` and an optional `Had`; `Sifar markah jika` rows (e.g. copying the passage). Allowed on the leaf AND on the question (BM K2 "Perhatian bagi Soalan 1"); question-level rules are stored in `question_versions.scheme_rules` (DM-54). Message: "Jumlah penalti melebihi markah bahagian." (R1 copy, D113).
+**Deductions and zero rules** (`+ Potongan`): rows whose `Kod` is one of OPT-KOD-POTONGAN (40 X11): `spelling`, `punctuation`, `grammar`, `unit`, `sf`, `dp`, `copy`, `other` (`other` needs a free `Label`), each with `Jumlah` and an optional `Had` (FR-QA-49); `Sifar markah jika` rows (e.g. copying the passage). Allowed on the leaf AND on the question (BM K2 "Perhatian bagi Soalan 1"); question-level rules are stored in `question_versions.scheme_rules` (DM-54). Message: "Jumlah penalti melebihi markah bahagian." (R1 copy, D113).
 
-**Key kind `rubric`** (essay, essay_choice). `Mod pemarkahan`: `Band keseluruhan` (default) or `Markah setiap kriteria` (FR-QA-20). Criteria rows (name, `Markah maksimum`); band rows (`Nama`, `Julat`, optional sub-bands, `Deskriptor` per criterion); `Band minimum` (floor); optional content points C1..Cn. In per-criterion mode (BI P2: Content, Communicative Achievement, Organisation, Language, 5 each, descriptors 0-5) the total equals the leaf marks and the pupil self-mark shows one stepper per criterion (`criteria: [{id, mark}]` on `BijakAttemptSelfMarkRequest`).
+**Key kind `rubric`** (essay, essay_choice). `Mod pemarkahan`: `Band keseluruhan` (default) or `Markah setiap kriteria` (FR-QA-20). Criteria rows (name, `Markah maksimum`); band rows (`Nama`, `Julat`, optional sub-bands, `Deskriptor` per criterion); `Band minimum` (floor); optional content points C1..Cn (these accept the same group rules as `points`: `Mana-mana N daripada M` and `Markah maksimum kumpulan`; the pupil self-mark applies the cap and the reveal shows 'Maks {N}', FR-QA-48). In per-criterion mode (BI P2: Content, Communicative Achievement, Organisation, Language, 5 each, descriptors 0-5) the total equals the leaf marks and the pupil self-mark shows one stepper per criterion (`criteria: [{id, mark}]` on `BijakAttemptSelfMarkRequest`).
 
 **Scheme gate (FR-QA-19):** best-path reachable marks with caps equal the leaf marks; every `Bergantung pada` id exists; band ranges cover 0..marks; accepted lists are non-empty; the sum of scheme marks equals the leaf marks. Storage: `answer_keys.content` with `scheme_v: 2`; the zod `QuestionPart.key` union is extended; content without `scheme_v` still parses.
 
@@ -1065,7 +1066,7 @@ Structure: a printed graph (Rajah) shared by (a) and (b); (a) complete a printed
 }
 ```
 
-Pupil: the grid inputs and the printed graph appear on the attempt screen; after submit the scheme shows and the pupil ticks K1 and N1 (the cells that match the accepted values are pre-ticked as a suggestion).
+Pupil: the grid inputs and the printed graph appear on the attempt screen; after submit the scheme shows and the pupil ticks K1 and N1 (the scheme shows the suggestion 'Cadangan automatik: {k} daripada {n} sel sepadan' and the leaf stays `belum_dimarkah` until the pupil self-marks).
 
 ### 7.3 Fizik Kertas 2: a bilingual structured item with a table (Bahagian A)
 
@@ -1107,7 +1108,7 @@ Structure: one prompt, maximum 120 words; question-level rules (copying the pass
 ```json
 {
   "questionType": "essay", "language": "bm", "kertas": "2", "numberLabel": "9", "schemeRules": {
-    "deductions": [ { "code": "spelling", "amount": 1, "cap": 5, "scope": "question" } ],
+    "deductions": [ { "code": "spelling", "amount": 1, "cap": 5, "scope": "question" }, { "code": "punctuation", "amount": 1, "cap": 5, "scope": "question" } ],
     "zeroIf": [ { "code": "copy", "label": "[menyalin teks petikan]" } ] },
   "parts": [ { "label": "(a)", "mode": "essay", "marks": 15, "prompt": { "ms": "[arahan rumusan]" },
     "modeConfig": { "wordRange": { "min": 1, "max": 120 }, "hardLimit": true, "answerSpace": "medium" },
@@ -1232,7 +1233,7 @@ Each FR names the DM / API change (new IDs are in 8.4 and 8.5; "rule" = no schem
 | FR-QA-14 | The work-list shows `Rujukan` (numbered or "tanpa nombor"), `Cadangan` (neighbour questions and suggested group), `Sebab`, counts per Subjek and Tingkatan, row actions `Lampirkan rangsangan`, `Kumpulkan`, `Gabungkan kumpulan`, `Muat naik gambar`, `Bukan masalah`, `Buat asal`. | API-Q-13 change | S2-T04 |
 | FR-QA-15 | `Audit Rajah` is a menu item in group `Soalan` (`/admin/soalan-gambar`) and the work-list row action `Muat naik gambar` uses it. V2 has this screen (Missing in V3), so adding it satisfies FR-X1-2. | API-Q-21 (existing) | S2-T03, S0-T07 |
 | FR-QA-16 | Wizard tab order is `Tag`, `Kertas`, `Rangsangan`, `Sub-bahagian`; a single-leaf question has one `Teks soalan` stored once; `Pengenalan soalan` for structured. | rule | S2-T01 |
-| FR-QA-17 | Bilingual: `Bahasa soalan` `BM + English (dwibahasa)`; stacked editors on every text field; "Teks English diperlukan untuk soalan dwibahasa."; pupil sees BM above English, no toggle. | DM-50 | S1-T09b, S2-T01, S8-T03 |
+| FR-QA-17 | Bilingual: `Bahasa soalan` `BM + English (dwibahasa)`; stacked editors on every text field; "Teks English diperlukan untuk soalan dwibahasa."; pupil sees BM above English, stacked by default, with the pupil control of FR-PA-04. | DM-50 | S1-T09b, S2-T01, S8-T03 |
 | FR-QA-18 | Rich-text toolbar adds `U`, `S`, `Baris puisi`, `Dua lajur`, `Kotak teks`, `Penanda ruang kosong`; the sanitiser allow-list is widened; preview equals pupil view. | rule (sanitiser) | S2-T01, S8-T03 |
 | FR-QA-19 | The full scheme editor of 3.1.7 (points, groups with caps and bonus, pairs, paths, final answer, count-based marks, deductions and zero rules on part and question, model answer, marker guidance) with live validation. | DM-54; API-Q-30 | S1-T09a, S2-T01 |
 | FR-QA-20 | Rubric mode `Markah setiap kriteria` (C/CA/O/L); pupil self-mark has one stepper per criterion. | `BijakAttemptSelfMarkRequest.criteria` (API-BIJAK-05 change) | S1-T09b, S3-T06, S8-T03 |
@@ -1263,6 +1264,8 @@ Each FR names the DM / API change (new IDs are in 8.4 and 8.5; "rule" = no schem
 | FR-QA-45 | `jana_kertas` is not served or counted in R1; the indicator reads "n daripada 6". | API-Q-11 | S1-T07 |
 | FR-QA-46 | A structured question with marks, from any path, opens and saves in the wizard. | none | S2-T01 |
 | FR-QA-47 | Studio list: search by question id, a notice or pager when a list is capped, working `Source` and `Compliance` filters, a warning on bulk archive of questions in Terbit papers, `Mula` disabled on an affected paper. | API-Q-01 change | S2-T03, S2-T06 |
+| FR-QA-48 | In key kind `rubric`, the optional content points C1..Cn accept the same group rules as `points` (`Mana-mana N daripada M`, `Markah maksimum kumpulan`); the pupil self-mark applies the cap, and the reveal shows 'Maks {N}'. | none (DM-54 carries it) | S1-T09a, S3-T06, S8-T05 |
+| FR-QA-49 | Deduction codes are `spelling`, `punctuation`, `grammar`, `unit`, `sf`, `dp`, `copy` and `other` (with a required free `Label`); each has `Jumlah` and an optional `Had`; the option set is OPT-KOD-POTONGAN (40 X11). | none (DM-54 carries it) | S1-T09a, S3-T06, S8-T05 |
 
 ### 8.3 NEW acceptance criteria
 
@@ -1288,7 +1291,7 @@ Each FR names the DM / API change (new IDs are in 8.4 and 8.5; "rule" = no schem
 | AC-QA-18 | Given a BM passage with underline, strike-through and a two-line poem, then the preview and the pupil view are identical. | FR-QA-18 |
 | AC-QA-19 | Given Fizik 9(d) entered as 4 pairs, a stop at "Maks 8" and a bonus of 2, then the scheme totals 10; given a point depending on a deleted point, then "Mata {label} bergantung pada mata yang tiada." | FR-QA-19 |
 | AC-QA-20 | Given a BI P2 rubric with 4 criteria of 5, then the pupil sees 4 steppers and the total 20; a band set not covering 0..marks is refused. | FR-QA-20 |
-| AC-QA-21 | Given an essay with 1 to 120 words and `Had keras`, then the pupil counter reads "{n} / 1-120 patah perkataan"; a `short_text` with `Had perkataan` 1 refuses 2 words. | FR-QA-21 |
+| AC-QA-21 | Given an essay with 1 to 120 words and `Had keras`, then the pupil counter reads "{n} / 1-120 patah perkataan"; a `short_text` with `Had perkataan` 1 and two words typed shows 'Maksimum 1 patah perkataan.' and keeps the text. | FR-QA-21 |
 | AC-QA-22 | Given `essay_choice` with two e-mail prompts, each with its own stimulus, then the pupil picks one and the marks count once. | FR-QA-22 |
 | AC-QA-23 | Given a Matematik K2 `drawing` leaf and a `table_fill` leaf, then both publish, the pupil answers on screen and self-marks, and a `drawing` photo is accepted up to 5 MB. | FR-QA-23 |
 | AC-QA-24 | Given `{{gap:3}}` with no leaf labelled 3, when saved, then "Ruang kosong 3 belum dipautkan kepada bahagian."; a linked gap renders an input in place. | FR-QA-24 |
@@ -1315,6 +1318,8 @@ Each FR names the DM / API change (new IDs are in 8.4 and 8.5; "rule" = no schem
 | AC-QA-45 | Given any question, then the indicator reads "Dilihat murid di {n} daripada 6" and no pupil surface offers Jana Kertas. | FR-QA-45 |
 | AC-QA-46 | Given an accepted structured question with marks, then it opens in the wizard, can be edited and sent. | FR-QA-46 |
 | AC-QA-47 | Given a search by question id, then the row is found; a capped list shows a pager or notice; archiving questions in Terbit papers warns. | FR-QA-47 |
+| AC-QA-48 | Given a rubric essay with content points Maklumat (6) and Kebaikan (6) and a group cap 'Maks 4' on Kebaikan, then a pupil who ticks 6 Kebaikan points is credited 4 and the reveal shows 'Maks 4'. | FR-QA-48 |
+| AC-QA-49 | Given a question-level deduction `punctuation` of 1 per error with a cap of 5, then 7 errors deduct 5, never below 0, and the reveal lists the rule. | FR-QA-49 |
 
 ### 8.4 NEW data-model rows (DM-50..DM-59, consistent with 50)
 
@@ -1381,8 +1386,8 @@ Before coding a card: run the code gap check against the FR/AC and post it on th
 
 ### 10.1 NEW IDs and owning cards (to wire into 50, 60, the plan and the trace check)
 
-- **FR-QA-01..47 (47):** card per 8.2.
-- **AC-QA-01..47 (47):** one per FR, same number.
+- **FR-QA-01..49 (49):** card per 8.2 (FR-QA-48, 49: S1-T09a, S3-T06, S8-T05).
+- **AC-QA-01..49 (49):** one per FR, same number.
 - **DM-50..DM-59 (10):** DM-50 S1-T09b; DM-51 S1-T01; DM-52 S1-T01; DM-53 S1-T07; DM-54 S1-T09a; DM-55 S1-T09a; DM-56 S1-T02; DM-57 S3-T01; DM-58 S1-T02; DM-59 S1-T07 and S4-T04.
 - **Other new IDs used here (registered in 50 and 60 by T5):** DM-69 (question types, S1-T09a), DM-70 (stimulus kinds, S1-T01), DM-71 (intake retry, S1-T04), DM-72 (teacher intake, S1-T08), API-Q-26 (intake retry, S1-T04).
 - **API-Q-30..API-Q-39 (10):** API-Q-30 S1-T09a; API-Q-31, 32, 33, 34, 35 S1-T01; API-Q-36 S1-T07; API-Q-37, 38 S1-T03; API-Q-39 S3-T02.
@@ -1425,7 +1430,7 @@ Decided items (Delivery Lead, D113, 2026-11-04). None is open.
 1. **Slice 0** is defined in `docs/plan/r1-development-plan.md` §5A "Slice 0: one end-to-end chain first". In this flow it uses: 2 (group model), 3.1 (wizard, group creation), 4 (gate incl. conditional Bab/SP, group publish as one unit), 5 (Kontrak → Set Builder → Semak & Terbit for one Sejarah Kertas 1 paper); and optionally 3.3 + 3.5 (PDF upload → paper) when the team has time.
 2. **Pinned stimulus content.** A Terbit paper and a sitting reference `question_version` ids AND stimulus row ids. A stimulus row referenced by any published version or paper is immutable; "replace" creates a new row and keeps the old one. DM-51 is built this way; the S3-T02 gap check verifies the current code against it.
 3. **`Audit Rajah`** is a V2 function, so it is an item in the "Soalan" menu group (replicate, FR-X1-2 satisfied). All "(R1 copy, D113)" BM copy is final R1 copy; there is no approval step.
-4. **`table_fill` self-mark:** cells whose answer matches an accepted value are pre-ticked as a suggestion; the pupil confirms or changes every tick before the total is saved.
+4. **`table_fill` self-mark:** the scheme shows the filled grid and the suggestion 'Cadangan automatik: {k} daripada {n} sel sepadan'; the leaf stays `belum_dimarkah` until the pupil self-marks with the stepper (46 2.2.3).
 5. **`mcq_multi`** uses the key kind `options` in Studio as well as PKSK. This contract widening is owned by S1-T09a (contract card) and is part of the R1 scope.
 6. **JSU** is shown on screen only (`Jadual JSU`), as on V2's Kontrak screen. There is no JSU CSV/PDF export in R1.
 7. **S1-T09** is P0/L and is split into **S1-T09a** (scheme editor backend + `mode_config` + `options` key kind) and **S1-T09b** (bilingual `ms+en` contract + `drawing` / `table_fill`). The plan is updated accordingly.
@@ -1446,7 +1451,7 @@ Every process (A1..E6) and step; F1..G1 are the pupil and report side and are co
 | B1.1 Cipta baharu, Soalan tunggal / Kumpulan | Separuh | two-way start | 3.1.1 | FR-ADM-QE2.1; FR-QA-16; AC-QA-16 | S2-T01 |
 | B1.2 tag first | Separuh | TP and Kesukaran separate, order fixed | 3.1.2 | FR-ADM-QE3.1, QE3.7; FR-QA-31; AC-QA-31 | S2-T01, S1-T02 |
 | B1.3 Kertas and Bahagian | Jalan | 3.1.3 | 3.1.3 | FR-ADM-G5; AC-ADM-G5.3 | S2-T01 |
-| B1.4 sub-bahagian, types, scheme sum | Separuh | 11 types, nine mode forms, scheme editor, sum check | 3.1.6, 3.1.7 | FR-QA-19, 26; AC-QA-19, 26 | S2-T01, S1-T09 |
+| B1.4 sub-bahagian, types, scheme sum | Separuh | 11 types, nine mode forms, scheme editor, sum check | 3.1.6, 3.1.7 | FR-QA-19, 26; AC-QA-19, 26 | S2-T01, S1-T09a |
 | B1.5 panel naming each field | Separuh | panel renders `issues[]` | 3.1.1, 4.1 | FR-ADM-QE4.1; AC-ADM-QE4.1 | S2-T01, S1-T02 |
 | B1.6 Simpan draf | Jalan | unchanged | 3.1.1 | AC-ADM-Q04.1 | S2-T01 |
 | B2.1 create group, upload once | Separuh | group screen linked from the question (`Buka kumpulan`), editor read-only in members | 3.1.4 | FR-QA-10; AC-ADM-QE2.1 | S2-T01 |
