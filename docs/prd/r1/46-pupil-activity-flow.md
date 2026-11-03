@@ -114,7 +114,7 @@ Not an answer source: reading, videos, notes, Peta Belajar, Topik, Timeline, and
 - A Murid answers B4 sets that are complete.
 
 #### ⚠️ TERHAD
-- **Guru, Admin Sekolah, Admin Pusat in "Mod Pelajar":** can open and answer drills and sittings to test them. Everything they write is flagged `is_test` and is excluded from every count (XS-1 to XS-7), wallet, XP, standings and badges. Games write no rows for them. They never appear in a leaderboard.
+- **Admin Sekolah and Admin Pusat in "Mod Pelajar"** (API-AUTH-05; teachers have no Mod Pelajar in R1, D113-continued): can open and answer drills and sittings to test them. Everything they write is flagged `is_test` and is excluded from every count (XS-1 to XS-7), wallet, XP, standings and badges. Games write no rows for them. They never appear in a leaderboard.
 - **D4 Set Soalan Guru:** only a Murid enrolled in a class to which the teacher assigned the set. Another class: 404 (ERR-ACC-02).
 - **D5 Misi Harian:** only a Murid in a class to which the mission is assigned, on the mission date.
 - **D6 PKSK:** only with an active grant; an expired grant blocks answering at once.
