@@ -11,7 +11,7 @@ These are binding for this file. Each is applied in the sections named in bracke
 
 | # | Decision | Applied in |
 |---|---|---|
-| D-PA-1 | **One answer store.** Every activity writes its answers to `practice_answers` with its `mode`, through the one `AnswerLogPort`. Every report reads that store and no other table for answers. | 1.1, 3.7, 4, 5, 6 |
+| D-PA-1 | **One answer store.** Every activity writes its answers to `practice_answers` with its `mode`, through the one `AnswerLogPort`: `record(entry)` takes ONE entry object whose fields are the DM-44 columns of that activity and returns the stored row id; it is idempotent on the DM-44 unique key (the exact field list and type belong to 50 DM-44 and card S5-T15, D-40). Every report reads that store and no other table for answers. | 1.1, 3.7, 4, 5, 6 |
 | D-PA-2 | **Stimulus groups are always shown together.** The figure or passage is shown once, above or beside all of its questions, never split and never partial. A draw, a set, a paper and a game take a whole group or nothing. | 1.5, 2.4, 4, 5 |
 | D-PA-3 | **Bilingual display.** Where a paper or question is bilingual (`ms+en`), the pupil sees BM and English together as printed and has a language toggle. | 2.3 |
 | D-PA-4 | **`drawing` and `table_fill` are answered on screen**, then self-marked against the scheme (the pupil ticks the scheme points). | 2.2, 3.4 |
@@ -231,7 +231,7 @@ A question reaches a pupil only when all of these hold (the S1-T07 servability r
 3. Its item kind is built for that surface (2.2). A group with one member that a surface cannot render is excluded whole (FR-MUR-QP-7).
 4. A stem is never shown twice. Data with a duplicated stem is flagged `stem_duplicated` and shown once; it is not excluded. Only `stimulus_missing` and `figure_only` exclude a question (FR-MUR-QP-5, 45 section 6.6.1).
 5. Counts: the number on a card, in the details view and in the draw are the same (D91).
-6. A game additionally needs a text-only approved MCQ (no figure, no group), reason `image_games` (5.1).
+6. A game additionally needs a standalone text-only approved MCQ (servability activity `permainan`: no stimulus group, no figure, no option image), reason `image_games` (5.1).
 
 ## 2. The shared answering engine
 
@@ -255,7 +255,7 @@ A very long stem or option scrolls inside the question area; the action bar stay
 
 ### 2.2 Item kinds: what the pupil sees, how input is taken, what is stored
 
-The authoring side of each kind is in 45 (per-mode leaf form, G-18). The pupil side is here. "Served in" lists the surfaces; a kind that a surface does not serve is excluded from that surface with the admin reason "Jenis jawapan ini belum dibina untuk paparan ini".
+The authoring side of each kind is in 45 (per-mode leaf form, G-18). The pupil side is here. The 11 "kinds" below are the 9 leaf answer modes (OPT-MOD-JAWAPAN) plus the 2 `mcq` views `true_false` and `mcq_multi`; they are not the 11 question types (`questionType`, OPT-JENIS-SOALAN in 40: `short_text` and `numeric` are leaf modes of `short_answer`, L-1). "Served in" lists the surfaces; a kind that a surface does not serve is excluded from that surface with the admin reason "Jenis jawapan ini belum dibina untuk paparan ini".
 
 | Kind (stored value) | Display name (OPT-QTYPE) | Served in | Widget and input rules | Blank means | Stored in `practice_answers` / attempt |
 |---|---|---|---|---|---|
@@ -312,7 +312,7 @@ One rule: the stimulus exists **once** and stays one action away while any membe
 
 | Width | Layout |
 |---|---|
-| **375 px (phone)** | A **sticky panel** under the top bar. Collapsed: the header "Lihat {label}" (for example "Lihat Rajah 1") and a chevron. Open: up to **42% of the viewport height**, internal scroll, never pushes the answer area off screen. It is open the first time the group appears and collapsed afterwards; its state is kept while moving between members and on rotation. Below the on-screen keyboard it never sits behind the keyboard. |
+| **375 px (phone)** | A **sticky panel** under the top bar. Collapsed: the header "Lihat {label}" (for example "Lihat Rajah 1") and a chevron. Open: up to **42% of the viewport height**, internal scroll, never pushes the answer area off screen. Initial state: open on the first member screen of each stimulus group in a session and collapsed on that group's later member screens (the pupil can open it with one tap); whatever state the pupil leaves is kept while moving between members of that group and on rotation. Below the on-screen keyboard it never sits behind the keyboard. |
 | **768 px (tablet)** | Same sticky collapsible panel as the phone, with the figure at full content width. Question and options use one column; the action bar is full width. |
 | **1280 px (desktop, from 1024 px)** | **Two panes:** the stimulus pinned on the left (about 40% of the width, internal scroll, stays while any member shows), the member questions on the right. The navigator is a side rail. |
 
@@ -679,7 +679,7 @@ Cards: S5-T03 (+ S5-T01 T1 to T3, S4-T06 BE, S1-T06/T07, S8-T02). Requirements: 
 | 3 | `/practice/:code/quiz` | Drill screen 2.1; draw rule 2.4 (whole groups); `POST /practice/sessions {mode:'latih_tubi', subjectCode, levelId, difficulty, count, clientUuid}`; per question "✓ Semak Jawapan" → `POST .../check-answer`. A question without its figure is never drawn. | Resume 2.6; offline 2.6; ERR-SAVE-06. |
 | 4 | Result | 3.7: Markah, Ketepatan, Masa, Syiling, Mata; "↻ Cuba Lagi", "Senarai Subjek". Example AC-MUR-16-4: 7 of 10 → 7 Syiling and 70 mata at rate 1; rate 3 → 21. | |
 
-**Stored:** session (`latih_tubi`, `random` for the random entry) and one row per check. **Reports:** each check counts at once; "Sesi Kuiz" +1 at Tamat. **Workflow defects closed:** F7 step 2 (T1 to T3), step 4 (figure-less Rajah served), step 5 (lock sentence); step 3 (rate from the admin setting, not a constant). **Acceptance:** AC-MUR-16-1..8, AC-PA-02, 12, 13. **Reuse:** `m05-practice/pages/{PracticeListPage,PracticeConfigPage,PracticeQuizPage}.vue`, `components/quiz/*`, `apps/api/src/modules/practice/{rules.ts,start.planner.ts,practice.service.ts}`.
+**Stored:** session with `mode` = `latih_tubi` for every session started from the screens above (the Soalan by Chapter button "Latih Tubi Rawak" leads to `/practice`, so it also starts `latih_tubi`); `random` ("Latih Tubi Rawak" in OPT-MODE-SESI) is a valid stored value for old rows and for an API start with `mode:"random"` (same draw rules, no setup screen), and the R1 screens never send it (D113-continued, D-35); and one row per check. **Reports:** each check counts at once; "Sesi Kuiz" +1 at Tamat. **Workflow defects closed:** F7 step 2 (T1 to T3), step 4 (figure-less Rajah served), step 5 (lock sentence); step 3 (rate from the admin setting, not a constant). **Acceptance:** AC-MUR-16-1..8, AC-PA-02, 12, 13. **Reuse:** `m05-practice/pages/{PracticeListPage,PracticeConfigPage,PracticeQuizPage}.vue`, `components/quiz/*`, `apps/api/src/modules/practice/{rules.ts,start.planner.ts,practice.service.ts}`.
 
 ### 4.9 D2 Soalan by Chapter
 
@@ -739,7 +739,7 @@ Full mechanics of each game are the specs GAME-00 to GAME-25 of the games audit 
 ### 5.1 Who plays and which questions
 
 - Role student, active, Tingkatan 1 to 5 (GAME-00). A teacher or admin in "Mod Pelajar" may play but gets no reward, no standing and **no `practice_answers` row**.
-- Questions: approved, servable, **text-only MCQ** (no figure, no stimulus group; the admin sees the reason `image_games`). A game never draws part of a group (D-PA-2). Bilingual MCQ text follows the pupil's language toggle (2.3).
+- Questions: approved, servable for the servability activity `permainan` (45 OPT-SERVABILITY), **standalone text-only MCQ**: a single-leaf MCQ with no stimulus group, no figure and no option image (L-12, D113); the admin sees the reason `image_games` ("Soalan bergambar tidak digunakan dalam permainan."). A game never draws part of a group (D-PA-2). Bilingual MCQ text follows the pupil's language toggle (2.3).
 - A game with fewer playable questions than its draw size is **hidden** from the hub (FR-MUR-21-1). Switch `permainan` off: the game routes answer 404. The unspecified routes "Pertandingan" and "Uji Minda" are not shown in R1 and answer 404.
 - Within one session no question repeats. Across sessions, questions the pupil has not answered in a game in the last 14 days are preferred when the pool is at least 3 times the draw size.
 - Level pickers list Tingkatan 1 to 5 only. The Battle "SPM" tab is T4 and T5 only (`Khas untuk pelajar Tingkatan 4 & 5 sahaja.`).
