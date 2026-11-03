@@ -144,13 +144,13 @@ These differ on purpose because each follows its V2 screen; a developer does not
 
 | Environment | Purpose | Data |
 |---|---|---|
-| Local stack (`npm run stack:up`, port 5192/5193) | Development and first verification | Demo seed. Small, so not proof of behaviour at scale. |
-| UAT (uat.prestasiplus.cloud) | Acceptance | V2 data migrated (±339k questions, 24,163 publicly counted). This is where 1.0 is accepted. |
+| Local stack (`npm run stack:up`, port 5192/5193) and CI | Development and automated tests (unit, integration, e2e in CI). **Not an acceptance environment (D110).** | Demo/e2e seed, for automated tests only. |
+| UAT (uat.prestasiplus.cloud) | **The only acceptance environment** (D110) | A clone of V2 production data (±339k questions, 24,163 publicly counted), with real pupil data. This is where 1.0 is accepted. Evidence stays in the gitignored `.evidence/`; never committed; issues and PRs carry only pass/fail and IDs, never names. |
 | V2 / V1 production | Reference only | Read-only. Never written to. |
 
-- **FR-X5-1** Every P0/P1 acceptance criterion is verified on **UAT data** (or on a local stack loaded with a UAT-equivalent dump), not only on the demo seed.
+- **FR-X5-1** Every P0/P1 acceptance criterion is verified on **UAT** (a clone of V2 production data) in a visible browser at 375/768/1280. There is no local acceptance environment, no UAT dump, no anonymised local restore and no synthetic acceptance profile (D110); the demo/e2e seed is for automated tests in CI only.
 - **FR-X5-2** The local stack builds and starts with **no manual step**. Today the e2e seed step fails (`blueprint 3472/2 does not pass the Sahkan checks (NO_QUOTA, NO_KBAT)`) and the API does not start on its own. P0 for the development plan.
-- **FR-X5-3** One-off data operations on UAT (Disahkan contracts, papers, Bab/SP mapping, Darjah deactivation) are delivered as reviewed scripts or admin-UI runbooks. They are executed only with the user's explicit approval. D95: blueprints on UAT are created by an admin in Kontrak, not seeded.
+- **FR-X5-3** One-off data operations on UAT (Disahkan contracts, papers, Bab/SP mapping, Darjah deactivation) are delivered as reviewed scripts or admin-UI runbooks. Script operations are run only by the designated UAT developer (D95, D110: no AI session acts on a server): dry-run, report, the user's explicit approval, then the real run. Content work (Bab mapping, figure images, regrouping) is done by ADMIN users in the Portal Pentadbiran; scripts may only produce dry-run reports or assist bulk actions an admin confirms in the UI. D95: blueprints on UAT are created by an admin in Kontrak, not seeded.
 
 ## X6. Non-functional requirements
 
@@ -189,7 +189,7 @@ Target devices: phone **375×667** (and 360 wide), tablet **768×1024** portrait
 
 A module or task is **done** only when all of these hold:
 
-1. **Functional test:** every AC for the module passes on the local stack and then on UAT data. The evidence is a test run plus screenshots.
+1. **Functional test (D110):** unit/integration tests and CI (lint, typecheck, test) are green; then every AC for the module passes **on UAT** (a clone of V2 production data) in a visible browser at 375/768/1280. There is no local acceptance step. The evidence is the CI run plus UAT screenshots kept in the gitignored `.evidence/` (UAT holds real pupil data: never committed; issues and PRs carry only pass/fail and IDs, never names).
 2. **Side-by-side with the reference:** the V3 screen and the V2 (or V1) screen are captured at the same width and compared by the Delivery Lead. Every difference is either fixed or listed as a fidelity deviation.
 3. **No regressions:** type-check, lint and the targeted unit tests are green. Every 1.0 sidebar item still opens (AC-X2-1).
 4. **User review:** the user sees the result of the phase before the next phase starts.
@@ -198,7 +198,7 @@ Evidence capture rules: V1/V2 are read-only, one browser at a time, at least 3 s
 
 ## X9. End-to-end data chains
 
-Each chain follows **one data record** from the place it is entered to every screen and process that must show or use it, across portals. Each is one Playwright spec on the UAT-like dataset (plan card S9-T06), runs at 1280 px with a 375 px pass of the pupil steps, and must pass before the modules it crosses are Done (FR-X1-5). Unless stated, the pupil is new (no earlier answers), the Syiling rate is the default 1, and the school, class and pupil are the seeded demo ones. Values are exact; "same number" means identical under the FR-X4 precision list.
+Each chain follows **one data record** from the place it is entered to every screen and process that must show or use it, across portals. Each is one Playwright spec (plan card S9-T06) that CI runs on the CI seed as an automated check, and whose **acceptance run is on UAT** (a clone of V2 production data, D110) in a visible browser at 1280 px with a 375 px pass of the pupil steps; it must pass before the modules it crosses are Done (FR-X1-5). Unless stated, the pupil is a new test pupil (no earlier answers) created for acceptance (U-OP-12), the Syiling rate is the default 1, and the school, class and pupil are the acceptance accounts; test records are removed afterwards (U-OP-14). Evidence stays in the gitignored `.evidence/`; reports carry only pass/fail and IDs, never names. Values are exact; "same number" means identical under the FR-X4 precision list.
 
 **AC-CHAIN-1 Question group to every report.** Given the admin creates in the Studio wizard the stimulus group "Rajah 3" with 3 MCQ (Sains, Tingkatan 4, Bab 2, one SP, TP 3, difficulty 3), approves and publishes them, then: (a) a publish attempt of a fourth question with no Bab, in a subject and Tingkatan that have chapters (Sains T4 does), is refused with the gate list naming Bab (a subject and Tingkatan without chapters does not list the Bab item; SP and TP / aras stay required); (b) the T4 pupil's Latih Tubi Sains with 10 questions serves the 3 together with "Rajah 3" shown once; (c) Soalan by Chapter shows Bab 2 with "3 soalan"; (d) the pupil answers 2 right and 1 wrong. Then: pupil Prestasi tile "Sesi Kuiz" (sessions) = 1, "Soalan Dijawab" 3, "Ketepatan" 67; Analisa Item lists the wrong one under "Isyarat Awal" and "Soalan Dijawab" 3; the Heatmap Bab 2 tile reads "3 cuba · 67% betul" (amber); the teacher's Prestasi Kelas for the class of that pupil shows "Soalan Dijawab" +3 and XS-7 +3; the school-admin Prestasi shows the same +3; Admin Pusat Laporan shows +3 answers and +1 session for the window; the wallet is +2 Syiling and +20 XP (2 correct x rate 1; 10 XP each).
 

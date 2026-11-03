@@ -1,6 +1,6 @@
 # PrestasiPlus V3 — Release 1 development plan
 
-**Status:** DRAFT for user approval. **Date:** 2026-11-04. **Owner:** Delivery Lead. **Language:** English (UI copy quoted in BM).
+**Status:** APPROVED by the user on 2026-11-04 (D111) — development may start; working model decided by the user (D110, 2026-11-04): (1) the UAT operator is a designated developer with server access and the user approves every write; (2) acceptance runs on UAT (a clone of V2 production data), there is no local acceptance environment; (3) content work (Bab mapping, figure images, regrouping) is done by ADMIN users in the Portal Pentadbiran. **Date:** 2026-11-04. **Owner:** Delivery Lead. **Language:** English (UI copy quoted in BM).
 **Document set:** `docs/prd/r1/00-index.md` (entry) → `01-product-overview.md` (PRD/BRD) → `02-urs.md` (user requirements) → SRS per portal `10-murid.md`, `20-guru-admin-sekolah.md`, `30-admin-pusat.md` → `40-cross-cutting.md` (cross-cutting and NFR) → `50-data-model-erd.md` (DM) → `60-api-contract.md` (API) → this plan → `docs/plan/r1-traceability.md`. ID chain: URS → FR/AC → DM/API → plan card → AC ledger (`docs/plan/r1-ac-ledger.md`).
 **Governing rule (user):** "berdasarkan V2+V1 untuk betulkan V3". V2 is the reference, V1 the fallback. Exception: question STRUCTURE follows D90/D41 and the DSKP (PRD 40 §X1, FR-X1-4).
 **Inputs:** PRD `docs/prd/r1/` (00-index, 10-murid, 20-guru-admin-sekolah, 30-admin-pusat, 40-cross-cutting, **all FINAL**). Task cards use the real PRD IDs: `R1-MUR-<row>`, `FR-MUR-QP-n`, `R1-GUR-n`, `R1-AS-n`, `XS-n`, `R1-ADM-Q/C/N/U/M/P2-nn`, `QE-nn`, `U-OP-nn`; §4.0 reconciles them. Gap evidence: `D:\pp-v2-v3-compare\gap\*.md` (outside the repo; copy what is needed into the gitignored `.evidence/`).
@@ -10,10 +10,12 @@
 1. The work is cut into **11 non-overlapping sectors** (S0–S10, §2). Every path in the repo has exactly one sector owner (CODEOWNERS, App. C).
 2. Each sector has **task cards** (§4), 113 (Delivery A and B), each with PRD refs, root cause, files, tests, verification and Definition of Done.
 3. A developer **declares a sector** (a line in `docs/plan/r1-board.md`) and **claims a task** (GitHub Issue, §6). One claimant per task, one lead per sector.
-4. Work is delivered in **2-week sprints** (§5A) whose exit is measured by **PRD acceptance criteria passing in a visible browser, side by side with V2, on UAT data**, not by tasks closed.
-5. Nothing on V1, V2 or UAT is changed without the user's explicit approval (§7).
+4. Work is delivered in **2-week sprints** (§5A) whose exit is measured by **PRD acceptance criteria passing in a visible browser, side by side with V2, on UAT (a clone of V2 production data)**, not by tasks closed.
+5. Nothing on V1, V2 or UAT is changed without the user's explicit approval (§7). UAT writes are run only by the designated UAT developer (D95 and D110: no AI session acts on a server).
+6. **Acceptance is on UAT only (D110).** There is no local acceptance environment. Developers run unit/integration tests and CI (lint, typecheck, test) locally and in CI; functional acceptance evidence (card ACs, AC proofs, AC-CHAIN-1..9) comes from UAT (`uat.prestasiplus.cloud`, a clone of V2 production data) in a visible browser at 375/768/1280.
+7. **Content work belongs to ADMIN users (D110).** Mapping questions to the right Bab, supplying missing figure images for "Rajah n" questions and regrouping stimulus groups are done by Admin users through the Portal Pentadbiran (improved question entry, "Soalan tanpa Bab" work-list, diagram audit, regroup work-list). Developers build and fix those screens; they do not do the content work.
 
-**Where work happens (user rule 2026-11-04).** Everything stays inside the project folder `D:\Dev Projects\prestasiplus` (one normal clone per developer). No git worktrees, no sibling folders. V3 test screenshots, logs and dumps go in `.evidence/<task-id>/` (already gitignored; they may contain real names, so they never leave the PC and are never committed). V2/V1 captures are never committed anywhere; they exist only on the Delivery Lead's PC. If several agent sessions share the one folder on one PC, they share one checked-out branch; so on that PC tasks are claimed one at a time.
+**Where work happens (user rule 2026-11-04).** Everything stays inside the project folder `D:\Dev Projects\prestasiplus` (one normal clone per developer). No git worktrees, no sibling folders. V3 test screenshots and logs go in `.evidence/<task-id>/` (already gitignored). UAT holds real pupil data (clone of V2 production), so screenshots and evidence taken on UAT stay only in `.evidence/`, never leave the PC and are never committed; issues and PRs carry only pass/fail and IDs, never names. V2/V1 captures are never committed anywhere; they exist only on the Delivery Lead's PC. If several agent sessions share the one folder on one PC, they share one checked-out branch; so on that PC tasks are claimed one at a time.
 
 ---
 
@@ -53,7 +55,7 @@ Only **Build** is new code; Fix, Complete and Verify reuse what exists. (Estimat
 1. **Code gap check before any code.** For every FR and AC on the card, record in the existing V3 code whether it **works / is broken / is missing**, with `file:line` evidence, and post it as the issue's **"Gap check"** section (table: FR/AC, status, evidence, planned change). **A card cannot move to In progress without it.** The "Gap:" line on the card is a starting hypothesis, not the evidence.
 2. **Confirm scope.** If the code has changed since the PRD's "Current gap" was written, update the Gap check, not the PRD intent. The intent (FR/AC) never changes in a card.
 3. **Close the gaps only**, in the existing files named under "Starts from (existing)".
-4. **Prove.** Run the card's ACs, and every AC-CHAIN-n that passes through the card (40 section X9, card S9-T06), in a **visible browser at 375, 768 and 1280 px**, on seeded data. Evidence in `.evidence/<card>/`.
+4. **Prove.** Run the card's ACs, and every AC-CHAIN-n that passes through the card (40 section X9, card S9-T06), in a **visible browser at 375, 768 and 1280 px**, on UAT (D110: no local acceptance). Evidence in `.evidence/<card>/` (gitignored, never committed; only pass/fail and IDs go into issues and PRs).
 
 **2. Change budget by card Type.**
 
@@ -99,7 +101,7 @@ The system is built by **cloud agents** (one session per card). They have **no a
 - **One card per session.** Stay inside the sector's owned paths (§2); a change elsewhere is a small PR to its owner (§3). Do not start a second card in the same session.
 - **FR-X1-5, close the gaps only (user directive: "close, fix and improve the gaps only; never rebuild from scratch").** Change only what the card's gap lists. Reuse the existing routes, components, APIs and data. Never rewrite, restyle or restructure a working screen or module. A **Verify** card changes no code unless one of its ACs fails, and then fixes only that failure. Replacing a working screen, component or API needs the Delivery Lead's **written approval in the issue** before the work starts; without it the PR is rejected.
 - **Banned patterns** (a PR containing any of them is rejected): placeholder strings ("akan datang", "belum tersedia", "Pratonton", prototype notices), mock or demo data in a matrix module, a new menu item or page that the PRD does not list, a renamed label, an extra feature, a feature flag that hides a matrix module (except those named in the PRD), copy in English where the PRD gives BM, a real person's name anywhere.
-- **Evidence the PR must carry:** real test output (`typecheck`, `lint`, `npm test`, `be:verify`); the card's **AC list with each AC ticked and its result**; screenshots at **375 / 768 / 1280** from a local **visible** browser where the agent environment can run one (otherwise say so, and the Delivery Lead produces them); the deviations from the PRD, if any, as a numbered list.
+- **Evidence the PR must carry:** real test output (`typecheck`, `lint`, `npm test`, `be:verify`); the card's **AC list with each AC ticked and its result**; for UI changes, the AC result and screenshots at **375 / 768 / 1280** from a **visible** browser **on UAT** once the change is deployed there (D110; produced by the Delivery Lead or the card's developer, kept in `.evidence/`, never attached to the PR; the PR carries only pass/fail and IDs, never names); the deviations from the PRD, if any, as a numbered list.
 - **Verification is the lead's.** The Delivery Lead verifies against V2 and UAT data (§6.5) before an issue becomes Done. An agent never moves its own issue to Done and never claims a gate.
 
 **Using the traceability report.** `node scripts/r1-trace-check.mjs` (from the repo root) reads the PRD IDs and this plan's cards and writes `docs/plan/r1-traceability.md`: every PRD module with its FR/AC counts and the cards that cover it, and every card with the PRD modules it cites. Before starting, open that file, find your card, and read **every** PRD module listed against it. When you add or split a card, re-run the script: it must exit 0 (first line `uncovered: 0 | dangling: 0`, second line with `unknown URS: 0`, `unknown DM/API: 0` and `ownership defects: 0`). **Every card carries a line `- Data/API: DM-xx, …; API-…` (or `none`)**: the DM rows of `50-data-model-erd.md` and the `Exists-Fix`/`Missing-Build` API rows of `60-api-contract.md` that the card implements (the `Exists-OK` routes it verifies may be listed too). Each DM and each `Exists-Fix`/`Missing-Build` API is owned by **exactly one** card; a card that only reads an owned item names it in `- Also uses:`. If a DM or API has no card, add it to the most fitting card of the same sector (a new card only when nothing fits, with the card format, sector and CODEOWNERS rules, the sprint table and the totals updated). A card must name every PRD module it implements in its "PRD:" line as full IDs (`R1-MUR-17, R1-MUR-26`, `FR-MUR-QP-6`, `R1-ADM-Q-16`, `NFR-1`). CI runs the same script (S0-T04) and fails when a PRD module has no card or a card cites an unknown ID.
@@ -188,7 +190,7 @@ Shorthand: `FE` = `src/`; `BE` = `apps/api/src/modules/`; `SCH` = `apps/api/pris
 - **Skills:** FE (CSS, a11y, maths). **Deps:** none to start. **Start now: yes.** S8 is the *only* writer of these files; the "move" PR lands first (S8-T01, day 1–2 of Sprint 0) and other sectors rebase on it.
 
 ### S9 Verification and UAT acceptance (Delivery Lead)
-Owns no product code. Owns: `.evidence/**` (local), `docs/plan/r1-board.md` status columns, `docs/plan/r1-ac-ledger.md` (§6.9), `docs/qa/r1/**`, the Project board. Runs §5A ceremonies, local side-by-side V2 checks (never committed), UAT walks, XL integration pass, release checklist. **Only S9 moves an issue to Done.**
+Owns no product code. Owns: `.evidence/**` (local), `docs/plan/r1-board.md` status columns, `docs/plan/r1-ac-ledger.md` (§6.9), `docs/qa/r1/**`, the Project board. Runs §5A ceremonies, side-by-side V2 checks (evidence never committed), UAT acceptance walks (all functional acceptance evidence is taken on UAT, D110), XL integration pass, release checklist. **Only S9 moves an issue to Done.**
 
 ---
 
@@ -344,13 +346,13 @@ P1 screens not named above are covered by: Q-10/11/24 S2-T05; Q-12 S1-T08 + S2-T
 **Common blocks (referenced by every card).**
 
 **V-STD (verification, all cards unless the card says otherwise).**
-1. Local: `npm run stack:up` (ports 5192/5193), seed per §7, log in as the role(s) named on the card.
-2. Run the card's ACs in a **visible (headed) browser** (Playwright MCP or manual; never headless) at **375, 768 and 1280 px**; check `document.documentElement.scrollWidth <= window.innerWidth` (AC-X6-1); save screenshots to `.evidence/<task-id>/<width>-<screen>.png`.
+1. Before merge (developer): unit/integration tests and CI (`typecheck`, `lint`, `npm test`, `be:verify`) locally and in CI. The local stack and the demo/e2e seed are for these automated tests only; they are not acceptance evidence (D110).
+2. After the change is deployed to UAT (`uat.prestasiplus.cloud`, a clone of V2 production data): run the card's ACs in a **visible (headed) browser** (Playwright MCP or manual; never headless) at **375, 768 and 1280 px**, logged in as the role(s) named on the card; check `document.documentElement.scrollWidth <= window.innerWidth` (AC-X6-1); save screenshots to `.evidence/<task-id>/<width>-<screen>.png` (gitignored; UAT holds real pupil data, so they are never committed and issues/PRs carry only pass/fail and IDs, never names).
 3. **Side by side with V2** (or V1 where the PRD says): open the same screen in V2 at the same width, 3 s between pages, read-only; list every difference as fixed or as a numbered fidelity deviation in the PR. (Delivery Lead repeats this at verification.)
-4. **UAT data:** repeat the key ACs against the UAT-like dataset (S4-T01) or UAT itself once deployed; state which.
+4. **Data:** step 2 already runs on UAT data; if a data operation (U-OP-nn, §7) the card depends on is not yet done on UAT, say so in the issue and re-run the AC after that step.
 5. No text from the placeholder list (§8, AC-X2-3) on any screen touched.
 
-**DoD-T (task Definition of Done).** (a) every AC on the card passes with evidence; (b) `npm run typecheck`, `npm run lint`, `npm test`, and for BE `npm run be:verify` green (real output pasted); (c) tests added as listed; (d) V-STD evidence attached to the PR; (e) no new placeholder string, no new mock path in the http build; (f) PRD/doc updated if behaviour diverges; (f2) **FR-X1-5:** no rewrite of working code; only the gaps listed on the card changed, existing files reused (listed in the PR), and any replacement of a working screen, component or API has the Delivery Lead's written approval in the issue; (f3) the issue carries the Gap check section, the PR names exactly one card and lists its DM/API IDs, and `scripts/r1-scope-guard.mjs` has no FAIL (§0B); (g) PR reviewed by sector lead and by owners of any other-sector paths touched; (h) S9 verified and moved the issue to Done.
+**DoD-T (task Definition of Done).** (a) every AC on the card passes with evidence; (b) `npm run typecheck`, `npm run lint`, `npm test`, and for BE `npm run be:verify` green (real output pasted); (c) tests added as listed; (d) V-STD result on UAT recorded as pass/fail and AC IDs in the PR (screenshots stay in the gitignored `.evidence/`; no names; D110); (e) no new placeholder string, no new mock path in the http build; (f) PRD/doc updated if behaviour diverges; (f2) **FR-X1-5:** no rewrite of working code; only the gaps listed on the card changed, existing files reused (listed in the PR), and any replacement of a working screen, component or API has the Delivery Lead's written approval in the issue; (f3) the issue carries the Gap check section, the PR names exactly one card and lists its DM/API IDs, and `scripts/r1-scope-guard.mjs` has no FAIL (§0B); (g) PR reviewed by sector lead and by owners of any other-sector paths touched; (h) S9 verified and moved the issue to Done.
 
 **Sizes** (ideal focused days for one developer): S = 1, M = 3, L = 6. Anything >6 must be split before it is claimed.
 
@@ -362,7 +364,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - Starts from (existing): `.github/pull_request_template.md`.
 - PRD: NFR-5 (privacy: no real name in repo, `.evidence/` stays gitignored); plan §6. Do: add CODEOWNERS (App. C), PR template (App. B), issue template (App. A), labels, Project fields, `docs/plan/r1-board.md`; create issues for all cards after the user approves this plan.
 - Data/API: none
-- Files: `.github/CODEOWNERS`, `.github/pull_request_template.md` (replaces the old BE-card template), `.github/ISSUE_TEMPLATE/task.yml`, `docs/plan/r1-board.md`, `scripts/gh-labels.sh` (exists; extend).
+- Files: `.github/CODEOWNERS`, `.github/pull_request_template.md` (replaces the old BE-card template), `.github/ISSUE_TEMPLATE/r1-card.yml`, `docs/plan/r1-board.md`, `scripts/gh-labels.sh` (exists; extend).
 - Tests: none. Verify: open a test PR touching two sectors and see both owners requested.
 - DoD: DoD-T (a), (g), (h) only.
 
@@ -489,7 +491,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - Approach: extraction output = groups ("Rajah 3 → soalan 5–8") with members; reviewer edits the range; accept creates one group + members; the upload's subject/level/paper/year carried to every accepted question; free-text SP checked at entry (not at Terima).
 - Files: `BE/intake/workflow/**`, `BE/ai-extraction/**`, `BE/intake/files/**`, `CT/intake`, `apps/api/test/intake-workflow/**`.
 - Tests: golden test with a fixture paper (Rajah 3 → Q5–8, Rajah 4 → Q9): 2 groups, 5 members, no duplicate figure, paper carried.
-- Verify: V-STD at 1280/768/375 on upload → review (S2-T02), plus one real UAT-like PDF.
+- Verify: V-STD at 1280/768/375 on upload → review (S2-T02), plus one real PDF on UAT (the admin uploads it).
 - DoD: DoD-T + AC-ADM-QE5.*, AC-ADM-Q07.*, Q09.*.
 
 **S1-T04 Intake timeout, error state, manual Terima** · P0 · S · Type: Fix · deps: S0-T03
@@ -521,7 +523,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - Approach: the indicator is computed by the **same** function that pupil draws use (`served-rule.ts`, `learner-visibility.ts`); detectors `stimulus_missing` (keywords Rajah/Jadual/Graf/Petikan/Peta/Carta, no group/stimulus/image) and `stem_duplicated`; questions flagged `stimulus_missing` or `figure_only` get a servability reason and are excluded from every pupil surface, while `stem_duplicated` is shown once and cleaned by DM-40 (not excluded; OD-3); the flag clears when a group is attached or "Bukan masalah" is set. Reuse `intake/workflow/figure-links.ts` keyword code.
 - Files: `BE/questions/{served-rule.ts,learner-visibility.ts,effective-leaf.ts,studio/**}`, `CT/servability`; migration `0121_s1_servability_flags` (the flag is stored, DM-05, OD-1).
 - Tests: detector unit tests with real stems; indicator equals draw outcome on 50 sampled questions.
-- Verify: V-STD; T4 pupil Latih Tubi Sains never draws id 812791-like questions (UAT-like data, S4-T01).
+- Verify: V-STD; T4 pupil Latih Tubi Sains never draws id 812791-like questions (on UAT data).
 - DoD: DoD-T.
 
 **S1-T08 Kiriman Guru backend** · P1 · M · Type: Complete · deps: none (stack)
@@ -577,7 +579,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S2-T04 Regroup work-list** · P0 · M · Type: Build · deps: S1-T07, S4-T04
 - Starts from (existing): `src/modules/m04-question-bank/pages/StudioListPage.vue` (nothing exists for the new part; it is added beside these files).
-- PRD: QE-08, FR-ADM-G7.4/G7.5, AC-ADM-G7.2. Approach: filtered Studio view of flagged questions with counts per subject × Tingkatan; attach existing figure (upload/pick) or form a group; "Bukan masalah"; same count on the SPM hub lane Latih Tubi ("Perhatian"). Files: `m04-question-bank/pages/**` (new `RegroupPage.vue`), `components/**`. Tests: spec attaches a figure → flag clears. Verify: V-STD on UAT-like data with id 812791-like items. DoD: DoD-T.
+- PRD: QE-08, FR-ADM-G7.4/G7.5, AC-ADM-G7.2. Approach: filtered Studio view of flagged questions with counts per subject × Tingkatan; attach existing figure (upload/pick) or form a group; "Bukan masalah"; same count on the SPM hub lane Latih Tubi ("Perhatian"). Files: `m04-question-bank/pages/**` (new `RegroupPage.vue`), `components/**`. Tests: spec attaches a figure → flag clears. Content work (attach figures, regroup) is done by ADMIN users in this screen (D110); developers only build and fix it. Verify: V-STD on UAT data with id 812791-like items. DoD: DoD-T.
 - Data/API: none
 - Also uses: API-Q-13, API-Q-24, DM-04, DM-05, DM-06 (owned by another card; read or verified here, not an ownership claim)
 
@@ -600,7 +602,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S2-T08 Bulk "Tetapkan Bab" UI** · P1 · S · Type: Build · deps: S4-T03
 - Starts from (existing): `src/modules/m04-question-bank/pages/StudioListPage.vue` (nothing exists for the new part; it is added beside these files).
-- PRD: C-05. Approach: filter by subject+level, select rows, choose Bab; shows result counts. Also the admin work-list **"Soalan tanpa Bab"**: the Studio list filter `chapter=none` (API-Q-01) with per-subject counts from API-DSKP-10 and the bulk apply of API-DSKP-09 (D-A5). Files: `m04-question-bank/pages/StudioListPage.vue`, `components/**`. Tests: component. Verify: V-STD on UAT-like data. DoD: DoD-T + AC-ADM-C05.*.
+- PRD: C-05. Approach: filter by subject+level, select rows, choose Bab; shows result counts. Also the admin work-list **"Soalan tanpa Bab"**: the Studio list filter `chapter=none` (API-Q-01) with per-subject counts from API-DSKP-10 and the bulk apply of API-DSKP-09 (D-A5). The mapping itself is ADMIN work in this screen (D110). Files: `m04-question-bank/pages/StudioListPage.vue`, `components/**`. Tests: component. Verify: V-STD on UAT data. DoD: DoD-T + AC-ADM-C05.*.
 - Data/API: none
 - Also uses: API-DSKP-09, API-Q-01, DM-17 (owned by another card; read or verified here, not an ownership claim)
 
@@ -635,7 +637,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - PRD: R1-MUR-13 (all Bijak ACs), AC-X6-2, QP contract 10-murid §4.8. Gap: F8 passes functionally; UAT 0 papers; 375 px gaps (gap §2.2 row 13); structured item "Tidak disajikan: jenis jawapan tidak dibenarkan dalam bahagian ini".
 - Data/API: API-BIJAK-04, API-BIJAK-06
 - Answer store (D-A1, DM-44, owned by S5-T15): `POST /bijak/attempts/:id/submit` writes one answer row per answered leaf with `mode` `simulasi` or `kuiz` (by paper kind) and the `attempt_id`, then upserts the `practice_attempt_aggregates` summary; a regrade updates the rows (idempotent per `(attempt_id, question_id, part_ref)`). Tracking A and Databank sittings use the same submit (S3-T05, S3-T07). Writes go through the one `AnswerLogPort` of `practice/`; no second answer table, no report reads anything else.
-- Approach: compose S8 components in `AttemptPage`, `PaperQuizPage`, `ResultPage`; remove "not served" for allowed modes; remove the demo message "Fungsi ini belum tersedia dalam demo" from the real path (`m28-bijak-spm/server/errors.ts:14`, `server/http-admin.ts:153`, register 10-murid 4.11 #12); stimulus group once, sticky; self-mark flow for structured answers (S3-T06 for subjective). Files: `m28-bijak-spm/pages/**`, `lib/**`, `domain/**`. Tests: spec with a group-of-3 paper at 375. Verify: V-STD on a phone-size headed browser; UAT-like data. DoD: DoD-T + AC-MUR-13-*, AC-X6-2.
+- Approach: compose S8 components in `AttemptPage`, `PaperQuizPage`, `ResultPage`; remove "not served" for allowed modes; remove the demo message "Fungsi ini belum tersedia dalam demo" from the real path (`m28-bijak-spm/server/errors.ts:14`, `server/http-admin.ts:153`, register 10-murid 4.11 #12); stimulus group once, sticky; self-mark flow for structured answers (S3-T06 for subjective). Files: `m28-bijak-spm/pages/**`, `lib/**`, `domain/**`. Tests: spec with a group-of-3 paper at 375. Verify: V-STD on a phone-size headed browser on UAT data. DoD: DoD-T + AC-MUR-13-*, AC-X6-2.
 
 **S3-T05 Tracking A** · P0 (Q-17; pupil Tracking A part P1) · M · Type: Complete · deps: S3-T03
 - Starts from (existing): `apps/api/src/modules/spm/tracking.service.ts`.
@@ -657,33 +659,33 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - Data/API: API-BIJAK-03, API-BIJAK-07, API-BIJAK-08
 - Answer store (D-A1, DM-44, owned by S5-T15): a Databank drill answer writes `mode = databank` (the session mode `past_year` stays for old rows). Writes go through the one `AnswerLogPort` of `practice/`; no second answer table, no report reads anything else.
 
-**S3-T08 Terbit pipeline on local and UAT-like** · P0 · M · Type: Ops · deps: S3-T01, S3-T02, S4-T03
+**S3-T08 Terbit pipeline (dry-run tooling for UAT)** · P0 · M · Type: Ops · deps: S3-T01, S3-T02, S4-T03
 - Starts from (existing): `apps/api/src/modules/exam/builder`.
-- PRD: gap §7 P0-1. Approach: script `apps/api/scripts/uat-ops/terbit-papers.ts` (dry-run default) that builds papers through the admin API from approved contracts; documents U-OP-04/08/09; verified locally on the UAT-like dataset. Files: `apps/api/scripts/uat-ops/**` (S4 dir; S4 reviews), `docs/ops/`. Tests: dry-run report test. Verify: run on local; pupil sees papers in Bijak SPM. DoD: DoD-T + AC-MUR-13 "paper list non-empty".
+- PRD: gap §7 P0-1. Approach: script `apps/api/scripts/uat-ops/terbit-papers.ts` (dry-run default) that builds papers through the admin API from approved contracts; documents U-OP-04/08/09; the script only produces the dry-run report; the real publish is confirmed by the user and run by the designated UAT developer or done by an admin in Set Builder (D110). Files: `apps/api/scripts/uat-ops/**` (S4 dir; S4 reviews), `docs/ops/`. Tests: dry-run report test (CI). Verify: on UAT, after the approved run, a T5 pupil sees papers in Bijak SPM. DoD: DoD-T + AC-MUR-13 "paper list non-empty".
 - Data/API: DM-22; API-BIJAK-01, API-BIJAK-02
 
 ### 4.S4 Curriculum / DSKP and UAT data
 
-**S4-T01 UAT-like local dataset** · P0 · M · Type: Ops · deps: S0-T02
-- Starts from (existing): `docs/ops/cloud-dump-procedure.md`, `apps/api/prisma/seed/index.ts`.
-- PRD: 40 §X5 FR-X5-1. Approach: preferred: an anonymised sample restore of UAT per `docs/ops/cloud-dump-procedure.md` (needs user approval to take the dump; kept under `.evidence/`, never committed); fallback: seed profile `uat-like` (synthetic) reproducing the **defects**: ≥11 education levels active, questions without Bab/SP, stimulus-less "Rajah n" stems, duplicated stems, 0 contracts, 0 papers, T1–T5 pupils, school admin account, ≥3 schools. Files: `SEED/uat-like/**` (new), `SEED/index.ts` (S0 one-line), `docs/ops/uat-like-data.md`. Tests: seed idempotence. Verify: stack up with the profile; counts shown on Studio match the table in the doc. DoD: DoD-T.
+**S4-T01 CI test seed profile (not acceptance data)** · P0 · M · Type: Ops · deps: S0-T02
+- Starts from (existing): `apps/api/prisma/seed/index.ts`.
+- PRD: 40 §X5 FR-X5-1. Decision D110: acceptance data is **UAT, a clone of V2 production data**; no UAT dump, no anonymised local restore and no synthetic acceptance profile is made. This card keeps only a small deterministic seed profile `uat-like` used by **automated tests in CI** (it may reproduce the defect shapes for test fixtures: ≥11 education levels active, questions without Bab/SP, stimulus-less "Rajah n" stems, duplicated stems, 0 contracts, 0 papers, T1–T5 pupils, school admin account, ≥3 schools, all fictitious). Files: `SEED/uat-like/**` (new), `SEED/index.ts` (S0 one-line), `docs/ops/uat-like-data.md` (states "CI fixtures only, not acceptance evidence"). Tests: seed idempotence. Verify: CI green with the profile. DoD: DoD-T.
 - Data/API: DM-39
 
 **S4-T02 DSKP loader verified; T1–T5 content** · P0 · S · Type: Verify · deps: S0-T02
 - Starts from (existing): `docs/ops/dskp-loader.md`, `apps/api/src/modules/curriculum/dskp`.
-- PRD: R1-ADM-C-04, FR-X3-3. Approach: dry-run then real run locally; confirm 13 subjects × T4/T5 load (`dskp-loader.md`); add T1–T3 drop-in if the user provides data (open question); report visible in Kurikulum "DSKP" tab. Files: `BE/curriculum/dskp/**`, `docs/ops/dskp-loader.md`. Tests: loader idempotence (exists). Verify: counts of nodes per subject. UAT run = U-OP-02. DoD: DoD-T.
+- PRD: R1-ADM-C-04, FR-X3-3. Approach: loader tests and dry-run in CI; the real run on UAT is U-OP-01, run by the designated UAT developer after the user approves the dry-run report (D110); confirm 13 subjects × T4/T5 load (`dskp-loader.md`); add T1–T3 drop-in if the user provides data (open question); report visible in Kurikulum "DSKP" tab. Files: `BE/curriculum/dskp/**`, `docs/ops/dskp-loader.md`. Tests: loader idempotence (exists). Verify: counts of nodes per subject. UAT run = U-OP-01. DoD: DoD-T.
 - Data/API: DM-14; API-DSKP-05
 
 **S4-T03 Bab/Topik/SP mapping tool and bulk API** · P0 · L · Type: Build · deps: S4-T02
 - Starts from (existing): `apps/api/src/modules/curriculum/admin.service.ts` (nothing exists for the new part; it is added beside these files).
-- PRD: R1-ADM-C-05, FR-ADM-C05.*, OQ-MUR-6. Gap: UAT 686 chapters, 0 of 339,112 questions linked (gap §5.3). Approach: **bulk by filter only, no auto-mapping** (D89 forbids derived data; PRD 30 OQ-03): `POST /api/admin/curriculum/questions/bulk-chapter` (filter subject+level+optional unit, dry-run count, apply, audit trail), used by the admin through the Studio UI (S2-T08) for U-OP-07, starting with the T4-T5 subjects pupils use (Matematik, Sains, Sejarah, BI, BM). A Bab-to-Unit lookup to pre-filter the Tag step is a suggestion only (OQ-C1). No script that guesses chapters. Files: `BE/curriculum/**`, `apps/api/scripts/uat-ops/**`, `CT/curriculum`; no migration for the bulk update (DM-17: in-place update of `curriculumChapterId`; `0140_s4_question_chapter_link` is not needed). The chapter-delete guard is migration `0126_s1_chapter_fk_restrict` (DM-18, S1 range, `needs:schema`). Tests: bulk API + script dry-run. Verify: UAT-like data: Soalan by Chapter fills for T4/T5. DoD: DoD-T + AC-ADM-C05.*.
+- PRD: R1-ADM-C-05, FR-ADM-C05.*, OQ-MUR-6. Gap: UAT 686 chapters, 0 of 339,112 questions linked (gap §5.3). Approach: **bulk by filter only, no auto-mapping** (D89 forbids derived data; PRD 30 OQ-03): `POST /api/admin/curriculum/questions/bulk-chapter` (filter subject+level+optional unit, dry-run count, apply, audit trail), used by ADMIN users through the Studio UI (S2-T08) for U-OP-07 (content work is the admin's, D110; a script may only produce a dry-run report or assist a bulk action the admin confirms in the UI), starting with the T4-T5 subjects pupils use (Matematik, Sains, Sejarah, BI, BM). A Bab-to-Unit lookup to pre-filter the Tag step is a suggestion only (OQ-C1). No script that guesses chapters. Files: `BE/curriculum/**`, `apps/api/scripts/uat-ops/**`, `CT/curriculum`; no migration for the bulk update (DM-17: in-place update of `curriculumChapterId`; `0140_s4_question_chapter_link` is not needed). The chapter-delete guard is migration `0126_s1_chapter_fk_restrict` (DM-18, S1 range, `needs:schema`). Tests: bulk API + script dry-run (CI). Verify: on UAT: Soalan by Chapter fills for T4/T5 after the admin's mapping. DoD: DoD-T + AC-ADM-C05.*.
 - Data/API: DM-17; API-DSKP-09, API-DSKP-10
 - Also uses: API-AS-11, DM-18, DM-41 (owned by another card; read or verified here, not an ownership claim)
 - Work-list (D-A5): `GET /api/admin/curriculum/chapter-coverage` (API-DSKP-10) gives the counts behind "Soalan tanpa Bab"; the list is API-Q-01 `chapter=none` (S2-T08 UI).
 
 **S4-T04 Regroup data operations and duplicate-stem cleanup** · P0 · M · Type: Ops · deps: S1-T07
 - Starts from (existing): `apps/api/src/modules/intake/workflow/figure-links.ts`.
-- PRD: QE-08, G7.6, FR-X1-4f. Approach: report script listing flagged questions per subject/level; one-off trim of duplicated leaf prompt equal to stem (dry-run, reversible via a backup table); no content invented. Figures themselves cannot be recovered by code: see open question Q3. Files: `apps/api/scripts/uat-ops/regroup-report.ts`, `trim-duplicate-stem.ts`. Tests: script unit tests. Verify: UAT-like data counts match S2-T04. DoD: DoD-T.
+- PRD: QE-08, G7.6, FR-X1-4f. Approach: dry-run report script listing flagged questions per subject/level; one-off trim of duplicated leaf prompt equal to stem (dry-run first; the real run only by the designated UAT developer after the user approves the report; reversible via a backup table); no content invented. Figures cannot be recovered by code: ADMIN users supply the missing figure images and regroup stimulus groups in the regroup work-list and diagram audit (D110); scripts only report or assist bulk actions an admin confirms in the UI. Files: `apps/api/scripts/uat-ops/regroup-report.ts`, `trim-duplicate-stem.ts`. Tests: script unit tests (CI). Verify: on UAT, report counts match S2-T04. DoD: DoD-T.
 - Data/API: DM-40
 - Also uses: API-Q-13, API-Q-21, API-Q-24, DM-05, DM-06 (owned by another card; read or verified here, not an ownership claim)
 
@@ -709,7 +711,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - Starts from (existing): `docs/ops/dskp-loader.md`, `docs/ops/r1-operator-checklist.md`.
 - Data/API: DM-41
 - Also uses: DM-12, DM-17, DM-19, DM-22 (owned by another card; read or verified here, not an ownership claim)
-- Verification and report scripts (DEV tools; OPS/ADM run the operations) for U-OP-01..U-OP-14 under `apps/api/scripts/uat-ops/` each with `--dry-run` default, a report file, idempotence; the runbook in §7 is the human side. Tests: dry-run on local. Verify: run all on the UAT-like dataset in order. DoD: DoD-T.
+- Verification and report scripts for U-OP-01..U-OP-17 under `apps/api/scripts/uat-ops/` each with `--dry-run` default, a report file, idempotence. The operations are run by the designated UAT developer (OPS) or by ADMIN users in the UI (ADM), never by an AI session (D95, D110); the runbook in §7 is the human side. Tests: dry-run unit tests in CI. Verify: on UAT, dry-run then (after the user's approval) real run, in order. DoD: DoD-T.
 
 **S4-T09 T1-T3 DSKP structure from existing chapter data** · P1 · M · Type: Ops · deps: S4-T07 (user decision D109; not blocked)
 - Starts from (existing): `docs/reference/dskp`, `docs/ops/dskp-loader.md`.
@@ -728,13 +730,13 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S5-T02 Soalan by Chapter** · P0 · M · Type: Complete · deps: S4-T03, S8-T02
 - Starts from (existing): `src/modules/m05-practice/pages/ChapterIndexPage.vue`, `src/modules/m05-practice/pages/ChapterSubjectPage.vue`.
-- PRD: R1-MUR-9 (all ACs), R1-GUR-9 (teacher view of the same screens), FR-MUR-QP-13. Gap: UAT "Tiada subjek bab tersedia untuk tahap ini"; V2 prints a 70% unlock sentence under 14 subject cards with chapter counts; D98 and the SRS remove the rule and the sentence (every chapter is open, no lock, no 70% copy; FD-MUR-15, OQ-API-11). Approach: subjects/chapters from Bab mapping, every chapter open, no 70% rule or copy; groups shown once. Files: `m05-practice/pages/Chapter*.vue`, `BE/practice/**`. Tests: spec that Bab 2 opens with Bab 1 unanswered and no text mentions 70%. Verify: V-STD vs V2 `/soalan-by-chapter`, UAT-like data. DoD: DoD-T.
+- PRD: R1-MUR-9 (all ACs), R1-GUR-9 (teacher view of the same screens), FR-MUR-QP-13. Gap: UAT "Tiada subjek bab tersedia untuk tahap ini"; V2 prints a 70% unlock sentence under 14 subject cards with chapter counts; D98 and the SRS remove the rule and the sentence (every chapter is open, no lock, no 70% copy; FD-MUR-15, OQ-API-11). Approach: subjects/chapters from Bab mapping, every chapter open, no 70% rule or copy; groups shown once. Files: `m05-practice/pages/Chapter*.vue`, `BE/practice/**`. Tests: spec that Bab 2 opens with Bab 1 unanswered and no text mentions 70%. Verify: V-STD vs V2 `/soalan-by-chapter`, on UAT data. DoD: DoD-T.
 - Data/API: API-GUR-08, API-PRAC-05
 - New requirements from the audit (this card owns them): AC-MUR-9-9 (a question approved through the Studio wizard with a Bab appears in Soalan by Chapter on the next load).
 
 **S5-T03 Latih Tubi** · P0 · M · Type: Fix · deps: S1-T06, S1-T07, S8-T02
 - Starts from (existing): `src/modules/m05-practice/pages/PracticeConfigPage.vue`, `apps/api/src/modules/practice/start.planner.ts`.
-- PRD: R1-MUR-16, FR-MUR-QP-6, FR-MUR-QP-7, FR-MUR-QP-13. Gap: figure-less items served on UAT; figures and whole groups served (D105). Approach: use S1 servability; counts per D91; config page copy exact. Files: `m05-practice/pages/{PracticeConfigPage,PracticeListPage,PracticeQuizPage}.vue`, `BE/practice/{start.planner.ts,rules.ts}`. Tests: no stimulus-less item in 200 draws. Verify: V-STD, T5 on UAT-like data. DoD: DoD-T + AC-MUR-16-*.
+- PRD: R1-MUR-16, FR-MUR-QP-6, FR-MUR-QP-7, FR-MUR-QP-13. Gap: figure-less items served on UAT; figures and whole groups served (D105). Approach: use S1 servability; counts per D91; config page copy exact. Files: `m05-practice/pages/{PracticeConfigPage,PracticeListPage,PracticeQuizPage}.vue`, `BE/practice/{start.planner.ts,rules.ts}`. Tests: no stimulus-less item in 200 draws. Verify: V-STD, T5 on UAT data. DoD: DoD-T + AC-MUR-16-*.
 - Data/API: API-PRAC-01, API-PRAC-02, API-PRAC-04
 - Also uses: DM-27 (owned by another card; read or verified here, not an ownership claim)
 - Answer store (D-A1, DM-44, owned by S5-T15): check-answer writes `mode` of the session (existing path, moved behind the port). The Syiling credit reads `reward_settings.coins_per_correct` (DM-48, default 1; S7-T05 owns it); the PRD constant 2 is dropped. Writes go through the one `AnswerLogPort` of `practice/`; no second answer table, no report reads anything else.
@@ -942,7 +944,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - PRD: R1-ADM-U-01 Pengguna, U-02 Tambah Pengguna, U-03 Edit (+ reset kata laluan), U-04 Sekolah (all P0); AC-ADM-U01.*..U04.*; OQ-U1 (hide SK/SJK rows by default, D72). The U-OP-12 accounts depend on these screens working.
 - Data/API: DM-35; API-ADM-01, API-ADM-03
 - New requirements from the audit (this card owns them): FR-ADM-U03.4 (grade, school and role changed only by admin edit), FR-ADM-U05.5, FR-ADM-U06.2 (password minimum 8, teacher bulk path is U-06).
-- Gap: built on GH and UAT but no AC executed on UAT data; no Darjah or primary school may be offered (FD-U02). Approach: run every AC on UAT-like data, fix what fails (filters, role scoping, pupil level picker T1-T5 only, school type); tables to cards at 375.
+- Gap: built on GH and UAT but no AC executed on UAT data; no Darjah or primary school may be offered (FD-U02). Approach: run every AC on UAT data, fix what fails (filters, role scoping, pupil level picker T1-T5 only, school type); tables to cards at 375.
 - Files: `src/modules/m02-users-schools/**`, `BE/users/**`, `BE/schools/**`. Tests: specs per AC. Verify: V-STD vs V2 `/admin/users`, `/admin/schools`. DoD: DoD-T + AC-ADM-U01.*..U04.*.
 
 **S6-T14 Teacher Set Soalan and Kelas Saya (guru)** · P1 · L · Type: Build · deps: S1-T06 · Delivery A (D106, D108(3))
@@ -1115,7 +1117,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - Data/API: none
 - Run every AC in the sprint's exit list in a visible browser on UAT (T5 pupil first) and update the AC ledger.
 
-**S9-T02 V2 side-by-side check, local evidence only** · P0 · M · Type: Ops · deps: none
+**S9-T02 V2 side-by-side check, evidence kept private** · P0 · M · Type: Ops · deps: none
 - Starts from (existing): `docs/prd/r1/10-murid.md`, `docs/prd/r1/20-guru-admin-sekolah.md`, `docs/prd/r1/30-admin-pusat.md` (the SRS parts that describe every V2 screen in words).
 - Data/API: none
 - The Delivery Lead captures V2 at 375/768/1280 into the local, gitignored `.evidence/sprint-N/` only to compare with V3 and to find anything the SRS text misses. V2 captures are never committed (the repo is public) and never given to cloud agents. Every difference found is written into the SRS text of the module (a small PR to the PRD), so that agents keep building from the text alone.
@@ -1139,8 +1141,8 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - Starts from (existing): `docs/prd/r1/40-cross-cutting.md`, `e2e/`
 - PRD: 40 section X9, AC-CHAIN-1..9 (one chain per audited flow: 1 admin question to every report, 2 paper PDF to pupil paper, 3 Bijak lanes, 4 class and Set Soalan, 5 Headcount, 6 Sumbang Soalan to admin, 7 Tiket Bantuan, 8 school-user lifecycle, 9 gamification and redemption). This card **owns all nine**.
 - Data/API: none
-- Approach: implement each chain as one Playwright spec per chain (`e2e/r1/chain-n.http.spec.ts`) that enters ONE record on the first side and asserts the same figure on every other side, on the seeded UAT-like dataset; run it in a **headed** browser at 375, 768 and 1280. The chain fails on the first screen that shows a different number or name. Chains land with their cards: 1 (S1-T01, T02, T07, S2-T01, S4-T03, S5-T02, T03, T15, S10-T01, T03, T05, S6-T03) and 2 (S1-T03, T10, S2-T02, S3-T02, T04, S5-T15) and 5 (S10-T02, S6-T03, S5-T15) in Sprint 3; 3 (S3-T05, T06, T07), 4 (S6-T10, T14, S5-T08, T11), 6 (S6-T06, S1-T08), 8 (S6-T09, T12) in Sprint 4; 9 (S5-T03, S7-T04, T05, T06) in Sprint 5; 7 (S7-T09, T10) in Sprint 8.
-- **Exit gate:** every chain passes on seeded data in a headed browser at 375/768/1280, evidence in `.evidence/S9-T06/`; a chain that fails returns the failing step to the owning card (the chain's card list above), it is never patched here. No product code in this card.
+- Approach: implement each chain as one Playwright spec per chain (`e2e/r1/chain-n.http.spec.ts`) that enters ONE record on the first side and asserts the same figure on every other side; CI runs it on the CI seed (automated check only), and the **acceptance run is on UAT** (D110) in a **headed** browser at 375, 768 and 1280, with test records created on UAT and removed afterwards (U-OP-14). The chain fails on the first screen that shows a different number or name. Chains land with their cards: 1 (S1-T01, T02, T07, S2-T01, S4-T03, S5-T02, T03, T15, S10-T01, T03, T05, S6-T03) and 2 (S1-T03, T10, S2-T02, S3-T02, T04, S5-T15) and 5 (S10-T02, S6-T03, S5-T15) in Sprint 3; 3 (S3-T05, T06, T07), 4 (S6-T10, T14, S5-T08, T11), 6 (S6-T06, S1-T08), 8 (S6-T09, T12) in Sprint 4; 9 (S5-T03, S7-T04, T05, T06) in Sprint 5; 7 (S7-T09, T10) in Sprint 8.
+- **Exit gate:** every chain passes **on UAT** (clone of V2 production data) in a headed browser at 375/768/1280, evidence in `.evidence/S9-T06/` (gitignored, never committed; only pass/fail and IDs are reported); a chain that fails returns the failing step to the owning card (the chain's card list above), it is never patched here. No product code in this card.
 - Tests: the nine specs. DoD: DoD-T (a), (d), (h) only.
 
 **Card count:** S0 11, S1 10, S2 9, S3 8, S4 9, S5 15, S10 8, S6 20, S7 10, S8 7, S9 6 = **113 cards** (Delivery A and Delivery B, marked per card; the generated `docs/plan/r1-traceability.md` lists every card with its PRD modules).
@@ -1151,7 +1153,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 ### 5.1 What can run at the same time
 - **Day 1, no dependencies:** S0 (T01–T04, T08), S1 (T01, T08), S2 (T03, T07 UI work), S3 (T01, T03), S4 (T02, T05), S5 (T05, T08), S6 (T04, T05, T07), S7 (T02), S8 (T01, T06).
-- **After S0-T02 (stack):** S4-T01 dataset; S1/S3/S5/S10 integration tests.
+- **After S0-T02 (stack):** S4-T01 CI seed; S1/S3/S5/S10 integration tests (CI).
 - **After S8-T01:** S8-T02/T03/T04 in parallel with S3 admin cards (S3-T01..T03) and S2 cards.
 - Sectors never write the same file (§2); shared files go through S0 (§3).
 
@@ -1187,7 +1189,7 @@ Inside every sprint each developer works only in their own sectors' paths; a tas
 Exit-criteria notation: `AC-MUR-3-*` means all acceptance criteria of that module in the PRD; the PRD files are authoritative for the IDs.
 
 **Sprint 0 (1 week) — Foundation.**
-- *Goal (user-visible):* "Any developer can clone the project, run one command, log in as pupil T1/T4, teacher, school admin and admin on a stack with data; the board exists; UAT has the DSKP loaded and a school-admin account."
+- *Goal (user-visible):* "Any developer can clone the project, run one command, log in as pupil T1/T4, teacher, school admin and admin on a stack with data (CI/test use) and on UAT; the board exists; UAT has the DSKP loaded and a school-admin account."
 - *Cards:* S0-T01, T02, T03, T04, T08 · S8-T01, T06 · S4-T01, T02 (dry-run + local; UAT run is a ops step), T05 · S1-T01 (start) · S6-T05 (ops) · S2-T03 · S5-T08 (start). ≈ 36 days of 40.
 - *Entry:* plan approved by the user; GitHub Project/labels/CODEOWNERS created by the Delivery Lead (S0-T01); each developer declared a sector in `r1-board.md`.
 - *Exit (ACs):* FR-X5-2 (stack boots untouched, CI `stack-smoke` green); AC-X2-3 check runs (report mode); U-OP-01 (DSKP loader), U-OP-02 (intake env), U-OP-03 (Darjah) and U-OP-12 (accounts) done on UAT with the user's approval: UAT "Tahap" = 5 (FR-X3-2) and a school-admin account can log in; S8-T01 merged.
@@ -1198,7 +1200,7 @@ Exit-criteria notation: `AC-MUR-3-*` means all acceptance criteria of that modul
 - *Cards:* S0-T05, T06 · S10-T01, T02, T03, T04 · S5-T06, T05 (start) · S6-T01, T02, T03 (start), T04 · S7-T02 · S3-T01, T03 · S1-T01 (finish), T02 · S4-T03 (investigate + bulk API start), T04 (script) · S8-T02 (start).
 - *Entry:* Sprint 0 exit.
 - *Exit (ACs):* AC-X2-1 for pupil, teacher, school admin (sidebar-walk green for these rows); AC-X2-2 for the modules fixed; `AC-MUR-4-*`, `AC-MUR-3-*`, `AC-MUR-6-*`, `AC-MUR-54-*`; `AC-GUR-43-*`, `AC-GUR-5-*`, `AC-AS-5-*`, `AC-AS-11-*`, `AC-AS-3-*`, `AC-AS-45-*`, `AC-AS-49-*`; XS-1..3 on the fixture school; FR-X4-4 (pupil cannot see school data).
-- *Demo:* (1) pupil T5 on UAT-like data: open every sidebar item at 375 and 1280 (sidebar-walk spec shown green); (2) Prestasi → own 360, then show school endpoint returns 403 for the pupil; (3) guru → Laporan Mingguan prints a class report; (4) school admin → Kirkpatrick all 7 screens, Sekolah Bersaing board, same pupil count on three screens; (5) side by side with V2 Laporan Mingguan.
+- *Demo:* (1) pupil T5 on UAT: open every sidebar item at 375 and 1280 (sidebar-walk spec shown green); (2) Prestasi → own 360, then show school endpoint returns 403 for the pupil; (3) guru → Laporan Mingguan prints a class report; (4) school admin → Kirkpatrick all 7 screens, Sekolah Bersaing board, same pupil count on three screens; (5) side by side with V2 Laporan Mingguan.
 
 **Sprint 2 — "DSKP-correct question entry and import".**
 - *Goal:* "An admin enters a question group (one figure, three questions) and imports a PDF paper whose Rajah 3 stays with questions 5–8; completeness is explained at entry; the admin menu has one bank and one review queue."
@@ -1210,7 +1212,7 @@ Exit-criteria notation: `AC-MUR-3-*` means all acceptance criteria of that modul
 **Sprint 3 — "T5 pupil on UAT sits a published Bijak SPM paper with stimulus groups on a phone".**
 - *Cards:* S3-T02, T04, T08 · S8-T03, T04, T05 · S1-T06, T10 · S9-T06 (chains 1, 2, 5) · S2-T04, T08, T09(P2 optional) · S5-T02, T03, T07 · S4-T08, T04 (apply) · S3-T05 · S10-T05 · S6-T07, T08.
 - *Entry:* Sprint 2 exit; S4 Bab mapping tool ready.
-- *Exit (ACs):* `AC-MUR-13-*` (Bijak part), `AC-MUR-QP-1..17`, `AC-ADM-Q17.*`, `AC-ADM-C01.*`, `AC-ADM-U01..U04.*`, AC-X6-2, AC-X6-1 for every question-paper screen; `AC-MUR-9-*`, `AC-MUR-16-*`, `AC-ADM-Q13.*, AC-ADM-Q14.*, AC-ADM-Q15.*, AC-ADM-Q16.*`, `AC-ADM-QE7.*`, `AC-ADM-G7.2`, AC-X3-1, **AC-CHAIN-1, AC-CHAIN-2, AC-CHAIN-5** (S9-T06, headed browser). UAT ops: U-OP-07 (Bab mapping, T4-T5 core subjects), U-OP-05/06 (quarantine and stem clean-up), U-OP-04 (Kontrak Disahkan), U-OP-08 (pool seed), U-OP-09 (Terbit) executed with the user's approval after local rehearsal.
+- *Exit (ACs):* `AC-MUR-13-*` (Bijak part), `AC-MUR-QP-1..17`, `AC-ADM-Q17.*`, `AC-ADM-C01.*`, `AC-ADM-U01..U04.*`, AC-X6-2, AC-X6-1 for every question-paper screen; `AC-MUR-9-*`, `AC-MUR-16-*`, `AC-ADM-Q13.*, AC-ADM-Q14.*, AC-ADM-Q15.*, AC-ADM-Q16.*`, `AC-ADM-QE7.*`, `AC-ADM-G7.2`, AC-X3-1, **AC-CHAIN-1, AC-CHAIN-2, AC-CHAIN-5** (S9-T06, headed browser). UAT ops: U-OP-07 (Bab mapping, T4-T5 core subjects), U-OP-05/06 (quarantine and stem clean-up), U-OP-04 (Kontrak Disahkan), U-OP-08 (pool seed), U-OP-09 (Terbit): script-run steps executed by the designated UAT developer (dry-run, report, user approval, real run); content steps (Bab mapping, figures, regroup) done by ADMIN users in the Portal Pentadbiran (D110).
 - *Demo:* (1) admin builds a paper in the single Set Builder from groups, publishes with a Disahkan contract; (2) on **UAT** the T5 pupil on a 375 px headed browser sits it: figure shown once, zoomable, navigator, Hantar, result; (3) Soalan by Chapter lists the chapters, all open (no 70% rule); (4) regroup work-list shows counts; id 812791-like items are no longer served.
 
 **Sprint 4 — Delivery A: remaining P0 and P1 part A.**
@@ -1272,7 +1274,7 @@ A developer (or an AI agent session acting for one) adds a row to the "Sector le
 
 ### 6.4 Branches, PRs
 - Branch `r1/S<n>-T<nn>-<slug>`; commits `S3-T04: …`; squash merge title `S3-T04 …`.
-- PR template (App. B) fields: **card ID (exactly one)**, Gap-check link, existing files changed, the reason for each new file, DM/API IDs, ACs and AC-CHAIN-n proven, issue link, PRD refs (module / FR / AC), sector, paths from other sectors touched (and their owners requested), migration number from your range, contract change (yes/no, contract PR link), real test output, **screenshots at 375/768/1280 from a visible browser**, V2 comparison (what differs, deviation numbers), UAT-data check (dataset used), placeholder-string check, DoD ticks.
+- PR template (App. B) fields: **card ID (exactly one)**, Gap-check link, existing files changed, the reason for each new file, DM/API IDs, ACs and AC-CHAIN-n proven, issue link, PRD refs (module / FR / AC), sector, paths from other sectors touched (and their owners requested), migration number from your range, contract change (yes/no, contract PR link), real test output, **screenshots at 375/768/1280 from a visible browser**, V2 comparison (what differs, deviation numbers), UAT check (pass/fail and IDs only, no names or screenshots in the PR), placeholder-string check, DoD ticks.
 - **CODEOWNERS** (App. C) requests the sector lead for every owned path; a PR touching another sector's paths needs that owner's approval; branch protection requires CODEOWNERS review + green CI.
 
 ### 6.4a Board rules from the improve-not-rebuild guardrails (§0B)
@@ -1282,7 +1284,7 @@ A developer (or an AI agent session acting for one) adds a row to the "Sector le
 - The Delivery Lead moves an issue to Done only after the card's ACs and every AC-CHAIN-n through it were run in a visible browser at 375/768/1280.
 
 ### 6.5 Moving to Done (Delivery Lead)
-Merged PR → issue moves to **Verifying**. The Delivery Lead (S9) then: reads the PR evidence; reruns the card's ACs in a visible browser at 375/768/1280, side by side with V2 (§X7); checks UAT data or UAT-like data; updates the AC ledger; if everything holds, moves to **Done** and closes the issue; otherwise comments the failed AC, moves it back to **In progress** (the claimant keeps the claim for 2 days to fix). Only S9 moves an issue to Done.
+Merged PR → issue moves to **Verifying**. The Delivery Lead (S9) then: reads the PR evidence; reruns the card's ACs in a visible browser at 375/768/1280, side by side with V2 (§X7); checks the result on UAT (D110; no local acceptance); updates the AC ledger; if everything holds, moves to **Done** and closes the issue; otherwise comments the failed AC, moves it back to **In progress** (the claimant keeps the claim for 2 days to fix). Only S9 moves an issue to Done.
 
 ### 6.6 `docs/plan/r1-board.md` format (single table)
 ```
@@ -1300,23 +1302,37 @@ Blocked: <none | card id waiting for what from whom>.
 ```
 
 ### 6.8 Anti-bureaucracy limits
-No separate boards per team; no merge log file; no per-agent handoff documents; no extra status words; no new documents unless a PRD/ADR must change. Evidence stays local in `.evidence/`.
+No separate boards per team; no merge log file; no per-agent handoff documents; no extra status words; no new documents unless a PRD/ADR must change. Evidence stays in the gitignored `.evidence/` (UAT holds real pupil data: never committed, no names in issues or PRs).
 
 ### 6.9 AC ledger
-`docs/plan/r1-ac-ledger.md`: table `AC ID | Module | Priority | Sprint | Local | UAT-like | UAT | V2 compared | 375 | 768 | 1280 | Evidence path | Date`. Cell values `-`, `FAIL`, `PASS`. Seeded from the PRD AC lists by a script `scripts/ac-ledger.mjs` (S0, S size, optional). Sprint review reports passing/planned from this file.
+`docs/plan/r1-ac-ledger.md`: table `AC ID | Module | Priority | Sprint | CI | UAT | V2 compared | 375 | 768 | 1280 | Evidence path | Date`. Cell values `-`, `FAIL`, `PASS`. Seeded from the PRD AC lists by a script `scripts/ac-ledger.mjs` (S0, S size, optional). Sprint review reports passing/planned from this file.
 
 ---
 
 ## 7. Environments and data
 
 **Run the stack.** `npm ci` → `npm run stack:up` (compose.yaml + compose.http.yaml; builds the SPA in `VITE_API_MODE=http`, migrates and seeds the demo data). Ports 5192/5193 (UI) as in the stack docs; `npm run stack:down`. Dev loop without Docker: `npm run be:dev` (API :3000) and `VITE_API_MODE=http npm run dev` with `COOKIE_SECURE=false` in `.env.api` (`docs/plan/http-switch-checklist.md`). Checks: `npm run typecheck`, `npm run lint`, `npm test`, `npm run be:verify`, `npm run contract:check`, `npm run test:e2e:http -- --grep @api`.
-**Seeds.** Demo seed (small). E2E profile: `E2E_SEED=1 npm run be:db:seed -- --profile=e2e` (`docs/ops/e2e-seed.md`; needs S0-T02 first). UAT-like profile or sample dump: S4-T01.
-**UAT-like data locally.** Preferred: anonymised dump of UAT per `docs/ops/cloud-dump-procedure.md` (needs the user's approval; kept in `.evidence/`, never committed; no real names in anything committed). Fallback: synthetic profile that reproduces the defects (11 levels, unmapped questions, stimulus-less "Rajah n", 0 contracts/papers).
-**Accounts.** Demo accounts for local. UAT accounts (pupil T1, T5, teacher, admin, school admin) are in the credentials file outside the repo (CLAUDE.md "Credentials"); never copied into docs or issues.
+**Seeds (CI tests only, D110).** Demo seed (small). E2E profile: `E2E_SEED=1 npm run be:db:seed -- --profile=e2e` (`docs/ops/e2e-seed.md`; needs S0-T02 first). `uat-like` fixture profile: S4-T01. These feed automated tests in CI; they are not acceptance data.
+**Acceptance environment (D110).** Acceptance, AC proofs and AC-CHAIN-1..9 run on **UAT (`uat.prestasiplus.cloud`), a clone of V2 production data**. There is no local acceptance environment, no UAT dump, no anonymised local restore and no synthetic acceptance profile. UAT holds real pupil data: screenshots and evidence stay in the gitignored `.evidence/`, are never committed, and issues/PRs carry only pass/fail and IDs, never names.
+**Accounts.** Demo accounts for local tests only. UAT accounts (pupil T1, T5, teacher, admin, school admin) are in the credentials file outside the repo (CLAUDE.md "Credentials"); never copied into docs or issues.
+
+### Who does what (RACI, D110)
+
+R = does it, A = accountable, C = consulted, I = informed.
+
+| Activity | Designated UAT developer | Other developers | Admin users (ADM) | Delivery Lead | User |
+|---|---|---|---|---|---|
+| Build and fix the Portal Pentadbiran screens (question entry, "Soalan tanpa Bab", diagram audit, regroup work-list) | C | R | I | A | I |
+| Content work: Bab mapping, figure images, regroup | I | not allowed (build tools only) | R | A (checks results on UAT) | I |
+| Script data operation on UAT (dry-run, report, real run) | R | C (tool author) | I | A | approves every write |
+| Unit/integration tests, CI (lint, typecheck, test) | C | R | n/a | I | n/a |
+| Acceptance, AC proofs, AC-CHAIN-1..9 on UAT | R/C (deploys, restores state) | C | C | R, A (moves Done) | I (demo) |
+| Server or environment change on UAT | R | not allowed | n/a | A | approves |
+| Any action on V1, V2 or a server by an AI session | not allowed | not allowed | not allowed | not allowed | not allowed (D95) |
 
 ### UAT data operations runbook
 
-The IDs are the 14 UAT data tasks of PRD 30 §5 (U-OP-01..14). Owner key from the PRD: **OPS** = a human operator with server access (D95: **no AI session acts on a server**); **ADM** = Admin Pusat using the UI; **DEV** = a developer builds the tool, then ADM runs it. Nothing runs without the user's explicit approval in the conversation ("approve U-OP-nn"). Every script has `--dry-run` as default and writes a report to `.evidence/uat-ops/`; a backup (`docs/ops/db-backup.md`) comes first. V1, V2 and UAT are never modified outside this list.
+The IDs are the 17 UAT data tasks of PRD 30 §5 (U-OP-01..17). Owner key (D110): **OPS** = **the designated UAT developer** who has server access (name given by the user; D95 still holds: **no AI session acts on a server**); **ADM** = Admin Pusat users working in the Portal Pentadbiran; **DEV** = a developer builds the tool or screen, then OPS or ADM uses it. **The user approves every write operation.** Every script operation is run by the designated UAT developer in this order: dry-run (default), report written to `.evidence/uat-ops/`, the user's explicit approval in the conversation ("approve U-OP-nn"), then the real run; a backup (`docs/ops/db-backup.md`) comes first. **Content work (Bab mapping, figure images, regrouping) is ADM work in the UI; developers never do it**, and scripts only produce dry-run reports or assist a bulk action an admin confirms in the UI. V1, V2 and UAT are never modified outside this list.
 
 | Order | ID | Operation (PRD 30 §5) | Owner | Approval | Needs first | Tool card |
 |---|---|---|---|---|---|---|
@@ -1326,8 +1342,8 @@ The IDs are the 14 UAT data tasks of PRD 30 §5 (U-OP-01..14). Owner key from th
 | 4 | U-OP-01 | **DSKP loader** (`npm run dskp:load -w @pp/api -- --dry-run`, then real; T4-T5, T1-T3 when extracts exist) | OPS | user | backup; dry-run report reviewed | S4-T02 |
 | 5 | U-OP-12 | Acceptance accounts: T5, T4, T2 pupils, teacher, a school and its Admin Sekolah ("Janakan Akaun") | ADM | user | S6-T12 | S6-T05 |
 | 6 | U-OP-07 | **Bab mapping** in bulk by filter, T4-T5 core subjects first (no auto-mapping, D89) | ADM | user, after dry-run counts | 01, S4-T03, S2-T08 | S4-T03 |
-| 7 | U-OP-05 | **Regroup**: detect and quarantine stimulus-less and duplicated-stem questions (server rule, servability reason) | DEV tool, ADM works the list | user | 01, S1-T07, S2-T04 | S1-T07, S4-T04 |
-| 8 | U-OP-06 | Clean-up of duplicated stem/prompt on migrated questions (FR-ADM-G7.6) | DEV tool, OPS runs | user | 05 | S4-T04 |
+| 7 | U-OP-05 | **Regroup**: detect and quarantine stimulus-less and duplicated-stem questions (server rule, servability reason) | DEV tool, OPS runs the detector, ADM regroups and supplies figure images in the work-list | user | 01, S1-T07, S2-T04 | S1-T07, S4-T04 |
+| 8 | U-OP-06 | Clean-up of duplicated stem/prompt on migrated questions (FR-ADM-G7.6) | DEV tool, OPS runs (dry-run, report, approval, real) | user | 05 | S4-T04 |
 | 9 | U-OP-04 | **Kontrak Disahkan** in Kontrak (D95: created by an admin, not seeded), Mat Tambahan K2 3472/2 first | ADM | user | 01, 07, S3-T01 | S3-T01 |
 | 10 | U-OP-08 | Seed the pool for blueprint papers: one real trial paper per launch paper via Import & Semakan | ADM | user | 02, S1-T03, S2-T02 | S3-T08 |
 | 11 | U-OP-09 | **Terbit papers** in Set Builder under Disahkan contracts, verified as a T5 pupil | ADM | user | 04, 08 | S3-T08 |
@@ -1335,9 +1351,11 @@ The IDs are the 14 UAT data tasks of PRD 30 §5 (U-OP-01..14). Owner key from th
 | 12b | U-OP-15 | Tingkatan 1-3 chapters/topics created by the admin in Kurikulum when the migrated data has none (FR-ADM-C01.6), then bulk-map (U-OP-07) | ADM | user | E-03, S4-T07 | S4-T07 |
 | 13 | U-OP-11 | Flags: `latih-tubi` ON, `permainan` ON, `kertas-subjektif` ON (D104); Delivery B modules ON as built | ADM | user | S0-T10 / S0-T11 | S0-T10 |
 | 14 | U-OP-14 | Remove QA test data (questions 1272-1276, batches 1-2, papers 6-8) if present | ADM | user | none | n/a |
+| 15 | U-OP-16 | Set the support contact in `Tetapan` (N-07) | ADM | user | N-07 built | S7-T09 |
+| 16 | U-OP-17 | **Regroup work-list** (QE-08): regroup per subject and Tingkatan (Sains T4 first), attach the real figures, re-run the detector report | ADM | user | 05, QE-08 built | S2-T04 |
 | Delivery B | U-OP-13 | Activate digital rewards, tier values, challenges, reward budgets | ADM | user | P2-02, 03, 07, 09 | S7-T05 |
 
-Each step is rehearsed first on the UAT-like local dataset (S4-T08) and the rehearsal report is attached to the approval request. Rollback = restore from the backup; scripts are insert-only and idempotent where possible (as `dskp:load`). After each step the Delivery Lead re-runs the affected ACs on UAT in a visible browser (T5 pupil first).
+There is no local rehearsal dataset (D110): each script step runs as a dry-run on UAT and the dry-run report is attached to the approval request. Rollback = restore from the backup; scripts are insert-only and idempotent where possible (as `dskp:load`). After each step the Delivery Lead re-runs the affected ACs on UAT in a visible browser (T5 pupil first).
 
 ---
 
@@ -1350,7 +1368,7 @@ Each step is rehearsed first on the UAT-like local dataset (S4-T08) and the rehe
 2. **Sidebar:** for each role (Murid, Guru, Admin Sekolah, Admin) every item opens a screen with the PRD title and no 403/404/"Akses Ditolak" or another role's screen (AC-X2-1), and every button/link in every matrix module completes against the real API with no mock data (AC-X2-2) — done in a visible browser, recorded in the ledger.
 3. **Responsive:** every 1.0 screen at 375/768/1280 has no horizontal scroll and nothing clipped (AC-X6-1); a screenshot per width per screen in `.evidence/`; the question-paper screens including AC-X6-2 re-checked on a 375 px headed browser.
 4. **Side by side:** each module compared with V2 (V1 for the school-admin rows without V2) at the same width; every difference fixed or a numbered fidelity deviation.
-5. **UAT data:** all P0/P1 ACs run on UAT; §7 U-OP-01..U-OP-12 done; UAT "Tahap" = 5; Bab mapping coverage reported; counts agree across screens (XS-1..5, FR-X4-1/2).
+5. **UAT data (acceptance environment, D110):** all P0/P1 ACs and AC-CHAIN-1..9 run on UAT (clone of V2 production data); evidence only in `.evidence/`; §7 U-OP-01..U-OP-12 done; UAT "Tahap" = 5; Bab mapping coverage reported; counts agree across screens (XS-1..5, FR-X4-1/2).
 6. **Pupil flows:** T1 and T5 can practise (AC-X3-1); no Darjah anywhere (FR-X3-1); a pupil sees only own data (FR-X4-4).
 7. **Quality gates:** `typecheck`, `lint`, `lint:ds`, `npm test`, `be:verify`, `contract:check`, `test:e2e:http`, sidebar-walk, gitleaks, no-dumps all green on the release commit; ADR-0027..0036 not contradicted.
 8. **Hidden by decision:** Cikgu Alesa and Keluarga Angkat unreachable by menu and URL (D102/FR-X2-2).
@@ -1369,7 +1387,7 @@ Each step is rehearsed first on the UAT-like local dataset (S4-T08) and the rehe
 | R5 | **Mock data and prototype pages shipped as features** | AC-X2-3 CI check, S0-T09 mock audit, S0-T05 scope retirement, register 6.2b mapped to cards (rows 1–20 → S0-T05, S0-T06, S5-T05, S6-T01..T09, S7-T02, S10-T02, S1-T08) |
 | R6 | **Merge conflicts on shared files** (menu, nav, schema, contract, seeds) | Single owner per shared file, delete-only regions, migration ranges, contract-first PRs, CODEOWNERS (§3) |
 | R7 | **Questions still structurally wrong** (figure = question, groups split) | S1-T01 as first S1 card; FR-X1-4 tests in S1-T06; exit criteria Sprint 2/3; AC-X6-2 in a phone demo |
-| R8 | **UAT data wrong, so correct code looks broken** (no Bab, 0 contracts/papers, 11 levels) | §7 runbook with fixed order; S4-T01 local rehearsal; operations only with user approval |
+| R8 | **UAT data wrong, so correct code looks broken** (no Bab, 0 contracts/papers, 11 levels) | §7 runbook with fixed order; dry-run reports on UAT; operations run only by the designated UAT developer with the user's approval |
 | R9 | **Estimates too optimistic; 1 developer cannot finish** | Stated openly (§5.3); re-base after Sprint 1; scope cut proposals go to the user, not silently |
 | R10 | **Sector bottleneck: S0 owns shared files** | 24 h review SLA; delete-only markers; S0 cards front-loaded in Sprint 0–1; Delivery Lead can reassign reviews |
 | R11 | **Cross-sector edits by agreement drift** (e.g. S4-T06 edits `BE/practice/rules.ts`) | Every such case is named on the card, with the owner as required reviewer |
@@ -1377,25 +1395,27 @@ Each step is rehearsed first on the UAT-like local dataset (S4-T08) and the rehe
 | R13 | **UI changes beyond the request** (user standing rule) | PRD copy is exact BM; any new copy needs approval (D94); menu changes only per PRD 30 §3 after approval |
 | R14 | **Privacy**: real names in screenshots/seeds | `.evidence/` is gitignored; fictitious names in seeds; V2 captures are never committed (screens are described in words in the SRS) |
 | R15 | **V2 IP block** from rapid access | 3 s between pages, one browser, only the Delivery Lead captures V2 |
-| R16 | **339k questions have no Bab and the mapping is human work** (D89: no derived data) | Bulk-by-filter tool (S4-T03, S2-T08), start with T4-T5 core subjects, coverage reported per sprint; the user decides who does the data entry (open question 3) |
+| R16 | **339k questions have no Bab and the mapping is human work** (D89: no derived data) | Bulk-by-filter tool (S4-T03, S2-T08), start with T4-T5 core subjects, coverage reported per sprint; the mapping is ADMIN work in the Portal Pentadbiran (D110) |
 | R17 | **Delivery B starves Delivery A** | Delivery B cards stay stubs until Sprint 5; flags keep Delivery B modules hidden |
 
 ---
 
 ## 10. Open questions for the user
 
+**Decisions recorded (D110, user, 2026-11-04):** (a) UAT operator = a designated developer with server access, the user approves every write, D95 holds; (b) no local acceptance environment, acceptance on UAT (clone of V2 production data), evidence only in gitignored `.evidence/`, only pass/fail and IDs in issues/PRs; (c) content work is owned by ADMIN users via the Portal Pentadbiran. **Still awaiting the user:** plan approval (sign-off) and the name of the designated UAT developer.
+
 1. **Approve this plan, the sector split and the 2-week sprint.** Which people take which sectors (or should the Delivery Lead assign)?
 2. ~~Admin menu approval~~ closed: D107 made the menu FINAL (follows the V2 sidebar).
-3. **Who does the Bab mapping of ~339k questions** (PRD 30 OQ-03 recommends bulk by filter, no auto-mapping), and **who supplies figure images** for stimulus-less questions (images were not migrated, D80 Q-03)? Without images the regroup list (U-OP-05/06) can only hide the questions, not repair them.
+3. ~~Who does the Bab mapping of ~339k questions and who supplies figure images~~ closed (D110): **ADMIN users** do the content work (Bab mapping, figure images, regrouping) in the Portal Pentadbiran (improved question entry, "Soalan tanpa Bab" work-list, diagram audit, regroup work-list); developers build and fix those screens only. Bulk by filter, no auto-mapping (PRD 30 OQ-03).
 4. **T1-T3 DSKP (decided, D109):** T1-T3 use the same DSKP structure as T4-T5, built from the existing chapter and topic data (and any T1-T3 PDF in `d:\prestasiplus-dskp`); the official PDFs are not required. S4-T09 is not blocked.
-5. **UAT dump for local use** (S4-T01): approve an anonymised dump, or accept the synthetic profile.
-6. **UAT operations** (§7): confirm the operator who can run scripts/restart on UAT and the approval phrase.
+5. ~~UAT dump for local use~~ closed (D110): no dump, no anonymised restore, no synthetic acceptance profile; acceptance runs on UAT (a clone of V2 production data). S4-T01 is a CI-only seed.
+6. **UAT operations** (§7): the operator is **a designated developer with server access** (decided, D110); the user approves every write ("approve U-OP-nn"). Still open: **the name of the designated UAT developer**.
 7. **Work location:** the code and PRD currently live in `D:\pp-cloud-review` (branch `feature/v3-bijak-r1`); the rule says everything stays in `D:\Dev Projects\prestasiplus`. The PRD and this plan must be copied there (or the branch merged into that checkout) before issues are created.
 8. PRD open questions that change tasks (decisions needed before the named card starts): PRD 30 OQ-01, OQ-QE1 and OQ-QE2 are closed by D107/D108; still open: OQ-06 server flags (S0-T10), OQ-Q12 Kiriman Guru reuse of intake batches (S1-T08), OQ-07 Subjektif meaning (S3-T06). Others: OQ-AS-1 (AS dashboard scope), OQ-MUR-1 (**superseded by D101**, so S5-T01 opens T1–T3), OQ-MUR-7 (Jana Kertas), OQ-G-6 (Headcount key-in design, needed by S10-T02).
 
 ---
 
-## Appendix A — GitHub issue template (`.github/ISSUE_TEMPLATE/task.yml`)
+## Appendix A — GitHub issue template (`.github/ISSUE_TEMPLATE/r1-card.yml`)
 
 ```yaml
 name: R1 task card
@@ -1454,7 +1474,7 @@ body:
   - type: textarea
     id: verify
     attributes:
-      label: "Verification (V-STD: local stack -> visible browser 375/768/1280 side by side with V2 -> UAT data) plus card specifics"
+      label: "Verification (V-STD: CI green -> on UAT in a visible browser 375/768/1280 side by side with V2) plus card specifics"
   - type: input
     id: deps
     attributes: {label: Depends on, placeholder: "S1-T01, S8-T02"}
@@ -1502,10 +1522,10 @@ typecheck / lint / test / be:verify tails
 ```
 
 ## Verification evidence (visible browser, not headless)
-- Screenshots at 375 / 768 / 1280 (attach or list `.evidence/<card>/...`):
+- Screenshots at 375 / 768 / 1280 taken on UAT, listed by path in `.evidence/<card>/...` (never attached or committed; UAT has real pupil data):
 - `scrollWidth <= innerWidth` at each width: yes / no
 - V2 comparison (same width): differences fixed / deviations numbered:
-- UAT data checked on: UAT | UAT-like dataset | demo only (explain)
+- Acceptance checked on UAT (D110): pass / fail and AC IDs only. No names, no screenshots attached (evidence stays in the gitignored `.evidence/`); CI-only changes: say "no UI"
 - AC IDs run and result (and every AC-CHAIN-n through this card):
 
 ## Checks

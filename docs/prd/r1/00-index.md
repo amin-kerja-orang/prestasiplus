@@ -5,11 +5,17 @@
 **Scope source:** `docs/Matriks-Akses-Peranan .xlsx`. **Every ticked module must be fully working** (D100): no "Pratonton" placeholder pages, no "akan datang", no "belum tersedia", no mock data.
 
 ## Awaiting user decision
-Everything else in this set is decided (by the user's standing principles and, for OD-6 and OD-12, by the user on 2026-11-04, D109). Only the standing approvals below remain.
+Everything else in this set is decided (by the user's standing principles and, for OD-6 and OD-12, by the user on 2026-11-04, D109; and for the working model below, by the user on 2026-11-04, D110). Only the item below remains.
 
 | # | Item | Why it needs the user | Where | Blocks |
 |---|---|---|---|---|
-| 1 | Plan approval, sector owners, UAT operator, UAT dump (or the synthetic profile), the Bab-mapping and figure-image owner. | Approvals and production-data writes (every U-OP step on UAT needs the user's explicit approval first). | plan §10 items 1, 3, 5, 6, 7 | Sprint 0 start, S4-T01, U-OP-xx |
+| 1 | ~~Plan approval (sign-off)~~ — **APPROVED 2026-11-04 (D111).** | — | plan §10 item 1 | — |
+| 2 | Name of the designated UAT developer. | The UAT operator is a developer with server access; the user names who. | plan §10 item 6 | U-OP-xx run by OPS |
+
+**Decided, D110 (user, 2026-11-04):**
+- The UAT operator is a designated developer with server access. The user approves every write operation. D95 still holds: no AI session acts on a server. Every UAT data operation is run by that developer: dry-run first, then a report, then the user's approval, then the real run.
+- There is no local acceptance environment. Acceptance, AC proofs and AC-CHAIN-1..9 run on UAT (`uat.prestasiplus.cloud`), a clone of V2 production data, in a visible browser at 375/768/1280. Developers still run unit/integration tests and CI locally and in CI. No UAT dump, anonymised restore or synthetic acceptance profile is made; the demo/e2e seed is only for automated tests in CI. UAT holds real pupil data: evidence stays in the gitignored `.evidence/`, and issues/PRs carry only pass/fail and IDs, never names.
+- Content work (mapping questions to the right Bab, supplying missing figure images, regrouping stimulus groups) is owned by ADMIN users in the Portal Pentadbiran (improved question entry, "Soalan tanpa Bab" work-list, diagram audit, regroup work-list). Developers build and fix those screens; they do not do the content work. Scripts may only produce dry-run reports or assist bulk actions an admin confirms in the UI.
 
 Already closed on 2026-11-04 and not to be reopened: all other OD-* (50 §7) and all OQ-API-* (60 §6.2), for example the public pupil profile (first name only, no school: OQ-API-04), the daily report cap (20), no 70% chapter unlock, Sekolah Bersaing computed on request, teacher submissions as intake batches (`source=guru`), no `/completeness` route, and `stem_duplicated` shown once instead of excluded.
 

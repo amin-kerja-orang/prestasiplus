@@ -267,7 +267,7 @@ The central admin is not a matrix column: these requirements are the admin capab
 | URS-ALL-05 | As a pupil I see only my own data, and no real person's data is exposed to another user or written in documents, seeds or code. | 1.0 P0 | FR-X4-4, NFR-5, FR-MUR-A1-5 |
 | URS-ALL-06 | As any user I read all UI in exact Bahasa Melayu, get defined loading, empty and error states, and am not blocked by rate limits during normal use. | 1.0 P1 | NFR-2, NFR-3, NFR-4, NFR-7 |
 | URS-ALL-07 | As the product owner I want the existing V3 improved, never rebuilt, with replicate-what-works behaviour (V2 first, V1 second) except question structure, which follows the DSKP, so that effort goes to the gaps. | 1.0 P0 | FR-X1-1..5, FR-X1-4a..f |
-| URS-ALL-08 | As the product owner I want delivery verified on UAT-like data with the AC ledger at 100% Pass and the local stack starting without manual steps. | 1.0 P0 | FR-X5-1..3, X7 (SRS 40) |
+| URS-ALL-08 | As the product owner I want delivery verified on UAT (a clone of V2 production data, D110) with the AC ledger at 100% Pass, and the local stack and CI starting without manual steps. | 1.0 P0 | FR-X5-1..3, X7 (SRS 40) |
 
 ---
 

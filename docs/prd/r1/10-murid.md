@@ -167,7 +167,7 @@ All screens, dialogs and the quiz/attempt screens pass these three widths (proje
 - AC-MUR-SH-1 Given a T5 pupil on UAT, when the app opens at 375, 768 and 1280 px, then the menu lists exactly the 18 items of 2.1 (Log Keluar in the account menu) in that order.
 - AC-MUR-SH-2 Given a pupil, when each sidebar item is opened, then the page loads with its own title and no console or API error.
 - AC-MUR-SH-3 Given a pupil opens `/mohon-keluarga-angkat` or `/cikgu` (D102), then the standard 404 shows and nothing is revealed; given `/marketplace` or `/leaderboard` (rest of the matrix), then the real page opens.
-- AC-MUR-SH-4 Given a 320x568 viewport, when each screen of this PRD is loaded with seeded data, then `scrollWidth <= innerWidth` on every screen.
+- AC-MUR-SH-4 Given a 320x568 viewport, when each screen of this PRD is loaded on UAT data, then `scrollWidth <= innerWidth` on every screen.
 - FR-MUR-SH-10 Body text is at least 14 px on phone (FR-X6-2); captions, badges and chart labels are at least 12 px; no text is truncated without a way to read it in full.
 - FR-MUR-SH-11 The header coin pill "{n} Koin" links to Syiling & Token (R1-MUR-28) and the streak pill to Profil Saya "Kalendar Kombo"; both links work.
 - FR-MUR-SH-12 When a tournament is active, a banner links to Tournament (R1-MUR-23); with none, no banner is rendered.

@@ -104,7 +104,9 @@ Earlier decisions D28–D99 still apply where not superseded.
 - A1. One question store; the admin "legacy bank" is only a list style, not a second database.
 - A2. Only Admin Pusat writes in the question and curriculum screens.
 - A3. A question is servable when it is approved and passes the surface's own rules; papers need Terbit and a verified contract.
-- A4. The acceptance site holds migrated data, so ACs are proven on that data, not only on demo seed data (FR-X5-1).
+- A4. The acceptance site is UAT (`uat.prestasiplus.cloud`), a clone of V2 production data, so ACs are proven on that data (FR-X5-1). There is no local acceptance environment; the demo/e2e seed is for automated tests in CI only (D110). UAT holds real pupil data: evidence stays in the gitignored `.evidence/` and issues/PRs carry only pass/fail and IDs, never names.
+- A6. The UAT operator is a designated developer with server access; the user approves every write; no AI session acts on a server (D95, D110). Every script operation runs as dry-run, report, user approval, real run.
+- A7. Content work (Bab mapping, figure images for "Rajah n" questions, regrouping stimulus groups) is done by ADMIN users in the Portal Pentadbiran. Developers build and fix those screens and do not do the content work (D110).
 - A5. The build is done by cloud agents that see only this repository; they never open V1, V2 or the acceptance site. **Every V2/V1 screen is therefore described in words inside the SRS** (layout, blocks in order, exact BM copy, states). If the text lacks a detail, the agent asks the Delivery Lead; it does not guess.
 
 ### 7.2 Dependencies
@@ -112,20 +114,21 @@ Earlier decisions D28–D99 still apply where not superseded.
 |---|---|---|---|
 | DEP-1 | **DSKP Tingkatan 1–3 source PDFs** (official curriculum documents for Matematik, Sains, Bahasa Melayu, Bahasa Inggeris, Sejarah, Pendidikan Islam, Pendidikan Moral, Pendidikan Seni Visual) | Task S4-T09: extraction of the Tingkatan 1–3 DSKP, so T1–T3 questions can carry SP/TP | **Decided (user, 2026-11-04, D109):** not a prerequisite. T1–T3 use the same DSKP structure as T4–T5, built from the existing T1–T3 chapter and topic data (V3/UAT, V2) plus any T1–T3 PDF in `d:\prestasiplus-dskp`. Where no SP/TP is loaded, screens show Bab only, with no invented SP/TP labels (FR-MUR-DK-5). |
 | DEP-2 | Evidence for exam-paper blueprints (at least two bodies of evidence per paper) | Verified contracts (Q-16, U-OP-04) | Prepared per paper; Matematik Tambahan paper 2 is sufficient first |
-| DEP-3 | Extraction worker, OCR and an extraction provider on the acceptance site | Paper upload (Q-07, U-OP-02) | Operator task |
-| DEP-4 | User approval for each one-off data operation on the acceptance site | U-OP-01..17 | Per operation |
+| DEP-3 | Extraction worker, OCR and an extraction provider on the acceptance site | Paper upload (Q-07, U-OP-02) | Operator task, done by the designated UAT developer (D110) |
+| DEP-4 | User approval for each one-off data operation on the acceptance site, run by the designated UAT developer (dry-run, report, approval, real run) | U-OP-01..17 | Per operation; the developer's name is awaiting the user |
+| DEP-6 | ADMIN users available to do the content work (Bab mapping, figure images, regroup) in the Portal Pentadbiran | U-OP-05, 07, 15, 17; AC-ADM-C05.3, AC-ADM-G7.2 | Decided owner (D110) |
 | DEP-5 | A real AI provider | Only to un-hide Cikgu Alesa (out of scope) | Not planned |
 
 ### 7.3 Risks
 | # | Risk | Mitigation |
 |---|---|---|
 | RK-1 | Questions stay structurally wrong because migrated data is split | Regroup work-list and detector (QE-08, G7); flagged questions are never served |
-| RK-2 | Acceptance-site data wrong, so correct code looks broken | Fixed order of data operations (PRD 30 §5); rehearsal on a local stack |
+| RK-2 | Acceptance-site data wrong, so correct code looks broken | Fixed order of data operations (PRD 30 §5); dry-run reports on UAT before each approved write (no local rehearsal, D110) |
 | RK-3 | "Done" declared without proof | AC ledger; only the Delivery Lead moves a card to Done after a visible-browser check at three widths |
 | RK-4 | Merge conflicts on shared files | Single owner per shared file; sector rules in the plan |
 | RK-5 | Estimates too optimistic for one developer | Stated openly in the plan; scope cuts go to the user |
-| RK-6 | Chapter mapping of hundreds of thousands of questions is human work | Bulk-by-filter tool; start with the core Tingkatan 4–5 subjects; coverage reported per sprint |
-| RK-7 | Real names leak through copied data | Fictitious names only; V2 captures never committed |
+| RK-6 | Chapter mapping of hundreds of thousands of questions is human work | Bulk-by-filter tool built by developers; ADMIN users do the mapping (D110), starting with the core Tingkatan 4–5 subjects; coverage reported per sprint |
+| RK-7 | Real names leak through copied data | Fictitious names only; V2 captures never committed; UAT evidence only in the gitignored `.evidence/`, issues/PRs carry pass/fail and IDs only |
 
 ## 8. Release and delivery order
 
