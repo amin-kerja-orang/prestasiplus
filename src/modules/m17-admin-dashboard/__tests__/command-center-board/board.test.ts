@@ -111,7 +111,7 @@ describe('S2 admin board', () => {
     expect(text(w, 'cc-today-bar')).toBe('340 soalan')
     expect(text(w, 'cc-week')).toBe('Minggu ini: 2,508')
     expect(text(w, 'cc-change')).toBe('▼ -67% vs minggu lepas')
-    expect(w.get('[data-testid="cc-change"]').classes()).toContain('text-error')
+    expect(w.get('[data-testid="cc-change"]').classes()).toContain('text-error-t')
     expect(
       w.findAll('[data-testid="cc-panel-top-pupils"] [data-ds="list-row-rank"]').map((e) => e.text()),
     ).toEqual(['1', '2', '3', '4', '5'])
@@ -277,7 +277,7 @@ describe('S2 admin board', () => {
     api.fetchCcLiveData.mockResolvedValue(platformLive({ weekChange: 12 }))
     let w = await mountBoard(false)
     expect(text(w, 'cc-change')).toBe('▲ +12% vs minggu lepas')
-    expect(w.get('[data-testid="cc-change"]').classes()).toContain('text-success')
+    expect(w.get('[data-testid="cc-change"]').classes()).toContain('text-success-t')
     expect(text(w, 'cc-alesa')).toContain('peningkatan 12%')
     w.unmount()
 

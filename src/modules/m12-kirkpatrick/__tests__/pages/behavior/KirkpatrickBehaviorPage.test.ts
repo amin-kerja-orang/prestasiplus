@@ -238,7 +238,7 @@ describe('S4 school table (AC-M12-16.1)', () => {
     expect(r940.get('[data-testid="cell-active"]').classes()).toContain('text-dimmed')
     expect(r940.get('[data-testid="cell-active"]').text()).toBe('0')
     const pill = r940.get('[data-testid="cell-tahap"]')
-    expect(pill.classes()).toContain('text-error')
+    expect(pill.classes()).toContain('text-error-t')
     expect(r940.get('[data-testid="cell-per-active"]').text()).toBe('0')
   })
 
@@ -314,13 +314,13 @@ describe('S4 alerts and mood (AC-M12-18.1 ... 18.4)', () => {
       'good',
       'good',
     ])
-    expect(items.map((i) => i.classes().includes('text-success'))).toEqual([
+    expect(items.map((i) => i.classes().includes('text-success-t'))).toEqual([
       false,
       false,
       true,
       true,
     ])
-    expect(items[0]?.classes()).toContain('text-error')
+    expect(items[0]?.classes()).toContain('text-error-t')
   })
 
   it('has no button in any item', async () => {

@@ -338,16 +338,16 @@ describe('S5 prediction table (AC-M12-22.2, NFR-M12-01)', () => {
     const { wrapper: w } = await open()
     const grades = all(w, 'pred-grade')
     expect(grades[0]?.text()).toBe('A+')
-    expect(grades[0]?.classes()).toContain('text-success')
+    expect(grades[0]?.classes()).toContain('text-success-t')
     for (const pill of grades) {
       const grade = pill.text()
       const token = grade.startsWith('A')
-        ? 'text-success'
+        ? 'text-success-t'
         : grade.startsWith('B')
-          ? 'text-info'
+          ? 'text-info-t'
           : grade === 'G'
-            ? 'text-error'
-            : 'text-warning'
+            ? 'text-error-t'
+            : 'text-warning-t'
       expect(pill.classes()).toContain(token)
     }
     expect(t(w, 'res-predictions').text()).toContain(
@@ -383,8 +383,8 @@ describe('S5 ALESA (AC-M12-23.1 ... 23.4)', () => {
       'Rendah',
       'Rendah',
     ])
-    expect(all(w, 'alesa-confidence')[1]?.classes()).toContain('text-warning')
-    expect(all(w, 'alesa-confidence')[2]?.classes()).toContain('text-success')
+    expect(all(w, 'alesa-confidence')[1]?.classes()).toContain('text-warning-t')
+    expect(all(w, 'alesa-confidence')[2]?.classes()).toContain('text-success-t')
     expect(all(w, 'alesa-cadangan').map((e) => squash(e.text()))).toEqual([
       'Teruskan konsistensi latihan. Fokus pada topik yang masih lemah untuk capai kecemerlangan.',
       'Teruskan konsistensi latihan. Fokus pada topik yang masih lemah untuk capai kecemerlangan.',
