@@ -37,6 +37,13 @@ export const CURATED = {
     'seg-active',
     'primary-on',
     'primary-t',
+    // Text-safe semantic colours and the off state of checkbox / switch (contrast audit).
+    'secondary-t',
+    'success-t',
+    'warning-t',
+    'error-t',
+    'info-t',
+    'control-off',
     'on-sem',
     'on-secondary',
     'heat',

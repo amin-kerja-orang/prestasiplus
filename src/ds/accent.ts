@@ -10,7 +10,7 @@ import type { DsAccent } from './types'
 export const accentSolid: Record<DsAccent, string> = {
   action: 'bg-primary text-primary-on',
   win: 'bg-highlight text-on-highlight',
-  heat: 'bg-heat text-on-highlight',
+  heat: 'bg-heat text-on-highlight staff:text-primary-on',
   friend: 'bg-friend text-primary-on',
   trial: 'bg-trial text-on-highlight',
 }

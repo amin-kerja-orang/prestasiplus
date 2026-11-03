@@ -53,7 +53,7 @@ export const selectSlots = {
   leadingIcon: 'text-muted',
 }
 
-const soft = (c: string) => ({ root: `bg-${c}-soft text-${c}` })
+const soft = (c: string) => ({ root: `bg-${c}-soft text-${c}-t` })
 const tinted = ['soft', 'subtle', 'outline']
 
 export const componentDefaults = {

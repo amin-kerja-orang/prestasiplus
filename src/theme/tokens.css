@@ -295,6 +295,13 @@
   --color-soft: var(--ds-bg-soft);
   --color-primary-on: var(--ds-primary-on);
   --color-primary-t: var(--ds-primary-t);
+  /* Text-safe semantic colours (>= 4.5:1 on their own 12% tint) and the off state of checkbox / switch. */
+  --color-secondary-t: var(--ds-secondary-t);
+  --color-success-t: var(--ds-success-t);
+  --color-warning-t: var(--ds-warning-t);
+  --color-error-t: var(--ds-error-t);
+  --color-info-t: var(--ds-info-t);
+  --color-control-off: var(--ds-control-off);
   --color-on-sem: var(--ds-on-sem);
   --color-on-secondary: var(--ds-on-secondary);
   --color-heat: var(--ds-c3);
@@ -389,6 +396,12 @@
   /* One disabled look for every control and tile. */
   --ds-disabled-opacity: 0.4;
   --ds-track: color-mix(in oklab, var(--ui-text-muted) 22%, transparent);
+  /* Text on a semantic tint: the colour pulled toward the strongest text colour (darker in light,
+     lighter in dark), so soft badges and alerts hold 4.5:1 on their own 12% tint. */
+  --ds-success-t: color-mix(in oklab, var(--ui-success) 72%, var(--ui-text-highlighted));
+  --ds-warning-t: color-mix(in oklab, var(--ui-warning) 72%, var(--ui-text-highlighted));
+  --ds-error-t: color-mix(in oklab, var(--ui-error) 72%, var(--ui-text-highlighted));
+  --ds-info-t: color-mix(in oklab, var(--ui-info) 72%, var(--ui-text-highlighted));
   /* Tints and ramp (see the bridge): color-mix on the live colour. */
   --ds-tint-primary-soft: color-mix(in oklab, var(--ui-primary) 12%, transparent);
   --ds-tint-primary-strong: color-mix(in oklab, var(--ui-primary) 20%, transparent);
@@ -484,12 +497,15 @@
   --ui-border-muted: transparent;
   --ui-border-accented: transparent;
   --ui-border-inverted: transparent;
+  /* Off state of checkbox ring and switch track: >= 3:1 on white, elevated and accented. */
+  --ds-control-off: #6f7a93;
 
   --ui-primary: #2440f0;
   --ds-primary-t: #2440f0;
   --ds-primary-on: #ffffff;
   --ds-on-sem: #ffffff;
   --ds-on-secondary: #ffffff;
+  --ds-secondary-t: #4b6112;
   --ui-secondary: #4b6112;
   --ui-success: #116e42;
   --ui-info: #0e6a85;
@@ -561,18 +577,20 @@
   --ui-bg: #171c2d;
   --ui-bg-elevated: #262d40;
   --ui-bg-accented: #3a4258;
-  --ui-bg-inverted: #262d40;
+  --ui-bg-inverted: #e6eaf5;
   --ds-bg-soft: #1e2437;
   --ds-seg-active: #3a4258;
   --ui-text-highlighted: #ffffff;
   --ui-text: #ebeef5;
   --ui-text-toned: #d5dbe8;
   --ui-text-muted: #a9b3c8;
-  --ui-text-dimmed: #7d88a0;
+  --ui-text-dimmed: #94a0b8;
   --ui-text-inverted: #0d1120;
+  --ds-control-off: #7d88a0;
+  --ds-secondary-t: #bceb27;
 
   --ui-primary: #6283ff;
-  --ds-primary-t: #6283ff;
+  --ds-primary-t: #8ea5ff;
   --ds-primary-on: #0d1120;
   --ds-on-sem: #0d1120;
   --ds-on-secondary: #0d1120;
@@ -619,15 +637,17 @@
   --ui-text: #1e222b;
   --ui-text-toned: #363b47;
   --ui-text-muted: #565c6b;
-  --ui-text-dimmed: #6f7585;
+  --ui-text-dimmed: #5a606f;
   --ui-text-inverted: #ffffff;
   --ui-border: transparent;
   --ui-border-muted: transparent;
   --ui-border-accented: transparent;
   --ui-border-inverted: transparent;
+  --ds-control-off: #727889;
+  --ds-secondary-t: #4d6b00;
 
-  --ui-primary: #2f5bff;
-  --ds-primary-t: #2f5bff;
+  --ui-primary: #2c53f5;
+  --ds-primary-t: #2342d6;
   --ds-primary-on: #ffffff;
   --ds-on-sem: #ffffff;
   --ds-on-secondary: #0b0d12;
@@ -639,10 +659,10 @@
   --ds-highlight: #c6f432;
   --ds-on-highlight: #0b0d12;
   --ds-win-ring: #6fa300;
-  --ds-ic-theme: #2f5bff;
+  --ds-ic-theme: #2c53f5;
   --ds-overlay: rgb(5 7 10 / 0.62);
 
-  --ds-c1: #2f5bff;
+  --ds-c1: #2c53f5;
   --ds-primary-2: #6a4dff;
   --ds-c2: #c6f432;
   --ds-c3: #ff7a1a;
@@ -677,13 +697,20 @@
   --ui-text: #e6e8ee;
   --ui-text-toned: #c9cdd6;
   --ui-text-muted: #a3a9b7;
-  --ui-text-dimmed: #7e8594;
+  --ui-text-dimmed: #939aa9;
   --ui-text-inverted: #0b0d12;
+  --ds-control-off: #7e8594;
+  --ds-secondary-t: #c6f432;
 
   /* AA fix: stock #2f5bff is 3.4:1 on the dark surfaces. #5b86ff is 5.8:1 on the page and 4.8:1 on
      elevated fields. Solid fills keep the gradient from --ds-c1 (white label 5.2:1). */
   --ui-primary: #5b86ff;
-  --ds-primary-t: #5b86ff;
+  --ds-primary-t: #7a9cff;
+  /* Ink label on the lighter primary (white was 3.3:1); the gradient is lifted to match (ink >= 5.8:1). */
+  --ds-primary-on: #0b0d12;
+  --ds-c1: #5b86ff;
+  --ds-primary-2: #8f7bff;
+  --ds-c4: #a98bff;
   --ui-info: #a98bff;
   --ds-on-sem: #0b0d12;
   --ui-success: #34d17f;
