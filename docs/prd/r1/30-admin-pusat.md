@@ -40,6 +40,21 @@ FR = functional requirement (one testable statement). AC = acceptance criterion 
 
 ---
 
+### 0A. Shared rules (apply to every screen below; a screen block overrides one only where it says so)
+
+**SR-1 Errors (40 §X10 is the catalogue; input is always kept and the action button re-enables).** 400 or malformed body: ERR-REQ-02, toast. 401: ERR-AUTH-01 (redirect to `/log-masuk?kembali={laluan}`, unsaved wizard text kept in `pp.draft.*`, restore notice "Terdapat kerja yang belum disimpan daripada sesi sebelum ini."). 403: ERR-ACC-01 (page for a route, toast for an action). 404: ERR-ACC-02 (route) and ERR-ACC-04 (action on a vanished row, list reloads). 409: ERR-CON-01 generic, ERR-CON-02 `Buka Draf`, ERR-CON-02b `STALE_VERSION` (`Muat Semula Versi Terkini`), ERR-CON-03 bulk count changed, ERR-CON-04 lifecycle ("Peralihan '{dari}' -> '{ke}' tidak dibenarkan."), ERR-CON-05 group or pending-item conflict. 413 and 415: ERR-REQ-03 and ERR-REQ-04 (client pre-check ERR-REQ-05..07). 422: ERR-REQ-01 plus the field patterns ERR-REQ-10 (required text), -11 (required select), -12 (too long), -13 (too short), -14 (format), -15 (range), -16 (duplicate); gate lists ERR-QST-01..04. 429: ERR-RATE-01 and ERR-QUOTA-01..07. 5xx: ERR-SYS-01..04; a failed list load is ERR-SYS-01b ("Gagal memuat senarai." and `Cuba lagi`). Network and timeout: ERR-NET-01..03 (30 s JSON, 60 s without upload progress, 120 s import and export). Boot and chunk: ERR-SYS-05 and -06. Autosave and action save: ERR-SAVE-01 and -02. Import and OCR job failures: ERR-INT-01..12 (the guru 503 of ERR-INT-12 is removed by FR-ADM-Q12.3). Retry: GET and HEAD retry twice (1 s, 3 s); writes never retry automatically; every failed load has `Cuba Semula`.
+**SR-2 Generic field messages (aligned with 20 and 40 §X10).** A field with no message quoted in its block uses: required text "Sila isi {medan}.", required select "Sila pilih {medan}.", duplicate "{Medan} sudah digunakan.", range "{Medan} mesti antara {a} dan {b}.", too long "{Medan} tidak boleh melebihi {n} aksara.", too short "{Medan} mesti sekurang-kurangnya {n} aksara.", format "Format {medan} tidak sah.". Curriculum, content and reward modules that today return English Laravel templates (`CURRICULUM_VALIDATION_MESSAGES`, `REWARD_MESSAGES`, `REWARD_VALIDATION_MESSAGES`) are changed to these patterns (NFR-2). A message that a block quotes is the exact string (R1 decision D113 where no V1/V2/code source exists).
+**SR-3 Loading, empty, partial.** First load: skeleton rows and "Memuatkan…"; a refetch keeps the old rows dimmed. Empty list: the screen's own copy, else "Tiada data untuk dipaparkan." A widget that fails while the page loads shows "Tidak dapat dimuatkan." with `Cuba lagi`; the other widgets stay.
+**SR-4 Paging, sort, search.** Page size 25 (Studio, Senarai Soalan, lanes, Pengguna, Gamifikasi Pelajar, Tiket, Sumber Kertas), 20 (Artikel, Nota, Kelompok Item), 30 (Sekolah), 50 (Transaksi, Hadiah); bounds page >= 1 ("Halaman tidak sah."), size 1 to 100 ("Saiz halaman mesti antara 1 dan 100."); search text trimmed, max 100 ("Carian tidak boleh melebihi 100 aksara."), case-insensitive contains; default sort newest first (`id` desc) except Tracking A and Set (title), Subjek and Tahap (`Susunan`), Tier (`Urutan`), Kontrak (Subjek then Kertas). Filters persist in the URL query and survive paging; `Set Semula` clears them. A list capped by the server shows the notice "Menunjukkan {a} daripada {n}. Guna penapis untuk mengecilkan senarai." (FR-QA-47).
+**SR-5 Confirm dialog.** Title "{Tindakan}?", body names the object and count and ends "Tindakan ini tidak boleh dibatalkan." when irreversible; buttons `Batal` (default focus) and `Ya, {Tindakan}` (danger). Escape and outside click mean `Batal`.
+**SR-6 Flash and audit.** A success toast lasts 5 s with the text of the screen block. Every write by Admin Pusat writes an audit row (actor, time, object, before and after summary; FR-ADM-H0.3).
+**SR-7 Import outcome (CSV, paste, PDF).** The file is validated first (size, type, header). Row errors never abort a file unless the block says so: valid rows import, invalid rows are listed "Baris {n}: {medan} - {sebab}", result "Import selesai: {n} soalan diimport, {m} gagal." (users: "{n} dicipta, {s} dilangkau, {m} ditolak"), and the button `Muat turun laporan ralat (CSV)` (columns `baris`, `medan`, `kod_ralat`, `mesej`). Whole-file refusals: "Format fail tidak sah. Gunakan .csv atau .txt.", "Fail melebihi had {x} MB." (ERR-REQ-03), "Fail kosong.", "Fail CSV mesti mempunyai kolum {senarai}." (ERR-IMP-02), "Fail melebihi {n} baris." Re-upload of the same file is safe (existing records skipped, never overwritten).
+**SR-8 Responsive field rules (4.R).** At 375 px: one column, label above the control, control height >= 44 px, no horizontal page scroll; a `select` with more than 12 options and every searchable select open a full-height bottom sheet with a search box; multi-selects show chosen items as wrapping chips; date inputs use the native picker; file zones show a `Pilih Fail` button (no drag needed); tables become cards (stem 3 lines and `Lihat penuh`); the sticky action bar never covers the active field; drag is replaced by `Naik` and `Turun`; numeric inputs use `inputmode="numeric"`. The wizard is one step per screen with `Langkah n/4`, `Seterusnya` and `Kembali`; the count "{n} belum lengkap" opens the completeness panel as a bottom sheet.
+**SR-9 Calculations (40 FR-X4).** Ketepatan and Ketepatan Purata = pooled correct divided by answered times 100 over `practice_answers`, whole number rounded half up, "—" with 0 answers, never above 100; Soalan Dijawab = number of answer rows; Soalan Diuji = distinct `question_id`; Skor Purata = mean of per-session accuracies, whole number, never labelled Ketepatan; Syiling per correct = the admin setting `flat_quiz_reward` (default 1), XP 10 per correct (48 section 2). Percentages are never stored rounded. The manual Headcount average may show one decimal (D113).
+**SR-10 Option sets.** Every dropdown value list is an OPT-* id; 40 §X11 is the master and Appendix A1 lists the ones used here. Values are never typed free where an OPT exists.
+**SR-11 Roles.** Admin Pusat (role `admin`) is the only role that writes on these screens; Admin Sekolah, Guru and PPD get ERR-ACC-01. There is no separate Penyemak role: review and publish are both done by Admin Pusat (D113).
+**SR-12 Status words.** The five question status labels of section 0 are used on every screen; "Draft", "Reviewed", "Approved", "Archived" and the Studio word "Diterbitkan" for a question are never shown. The English words appear below only where they quote what V2 shows.
+
 ## 1. Purpose and scope
 
 ### 1.1 Problem (evidence, 2026-11-03/04)
@@ -268,6 +283,12 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - AC-ADM-QE1.1 Given a Rajah 3 used by 4 questions, when the admin opens Bank Soalan (Studio), then 4 question rows appear, each shows the badge of the group, and no row represents Rajah 3.
 - AC-ADM-QE1.2 Given a group with 4 members, when the admin edits the figure once, then all 4 members show the edited figure to a pupil (one stimulus row in the database).
 
+**Field & behaviour spec (QE-01).** End-to-end: see 45 §2.4 and §4.3. Group card fields are those of Q-05; the rules of this block:
+- FR-ADM-QE1.6 (B1; FR-QA-01..03) A stimulus group is published and served as ONE unit. It is servable only when it has at least 1 member and ALL members are `Diluluskan`, complete and carry no open `stimulus_missing` or `figure_only` flag; otherwise every member reads `Tidak boleh dilihat` with the reason "Kumpulan belum lengkap - {n} soalan belum diluluskan." on every surface (Latih Tubi, Databank, Soalan by Chapter, Kuiz, games, papers). The group screen button `Terbitkan kumpulan` (enabled when every member passes the approve gate) approves all members in one audited transaction (API-Q-31); on failure the 422 lists "Soalan {no}: {mesej}" per failing member and nothing changes. A per-member `Terbitkan` inside a group is disabled with the title "Terbitkan melalui kumpulan."; bulk `Terbitkan`, `Luluskan Hasil Tapisan` and the Quick Edit status radio treat the group as a unit (whole group, or skipped with a reason).
+- FR-ADM-QE1.7 (B2; FR-QA-04, 05) A group with a served member is never edited in place (the server keeps 409 `groupServed` / `stimulusServed`, ERR-CON-05). The group screen shows the banner "Kumpulan ini sedang dipaparkan kepada murid. Tekan `Sunting kumpulan` untuk menyunting salinan draf; yang asal kekal diterbitkan sehingga draf ini diterbitkan." `Sunting kumpulan` (API-Q-32) makes a draft copy (stimuli copied, members re-versioned as drafts n+1), flash "Draf kumpulan #{id} dicipta."; `Terbitkan kumpulan` of the copy swaps in one transaction; one open draft per group; `Buang draf kumpulan` discards it; sittings in progress keep their pinned version (stimulus rows referenced by a published version or a Terbit paper are immutable, DM-51). `Arkibkan kumpulan` (API-Q-33) archives all members in one transaction and names the affected Terbit papers first.
+- AC-ADM-QE1.3 Given a group of 4 with 3 `Diluluskan` and 1 `Draf`, then each of the 3 reads "Kumpulan belum lengkap - 1 soalan belum diluluskan." and Latih Tubi never draws them; after `Terbitkan kumpulan` all 4 draw together (AC-QA-01, AC-QA-02).
+- AC-ADM-QE1.4 Given a served group of 3, when the admin presses `Sunting kumpulan`, saves a new figure and a 4th member and presses `Terbitkan kumpulan`, then the pupil sees the new figure and 4 members on the next load, a sitting in progress keeps the old figure and the group id is unchanged (AC-QA-04).
+
 #### R1-ADM-QE-02 Manual entry: group first, then its questions (D93, D108(1)) | P0
 - **Action: Complete** | gap: 4.V row QE-02. V2 differs: tabs `Kertas`, `Rangsangan`, `Sub-bahagian`, `Tag`, no group entity; PRD follows D90/D93.
 
@@ -278,6 +299,13 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - FR-ADM-QE2.4 A stimulus group holds 1..n member questions, in a draft and in a paper (D108(1); real SPM papers have single-question figures). A group with 0 members is a draft only and shows the warning "Kumpulan belum mempunyai soalan." and cannot be placed in a paper (blocker "Kumpulan perlu sekurang-kurangnya 1 soalan."); a group of 1 member raises no warning. A group may carry 1 to 3 stimuli and 1 to 40 members; a question citing two figures belongs to one group that holds both stimuli (if they sit in two groups the groups are merged, FR-QA-08). The old message "Kumpulan perlu sekurang-kurangnya 2 soalan." is removed. This supersedes the "2 or more" part of D93 (the contract blocker text and its test are updated with the build). OQ-QE1 is closed.
 - AC-ADM-QE2.1 Given the admin creates a group with one uploaded figure and adds 3 questions, when saving each, then the figure upload count is 1 and the 3 questions are members in order 1,2,3.
 - AC-ADM-QE2.2 Given a group with 1 member, when it is placed in a paper, then it places, the figure shows with its question and no blocker appears; given a group with 0 members, then the blocker "Kumpulan perlu sekurang-kurangnya 1 soalan." appears and the group cannot be placed.
+
+**Field & behaviour spec (QE-02).** End-to-end: see 45 §3.1.1 and §3.1.4.
+- FR-ADM-QE2.5 (m2; FR-QA-16) The wizard tab strip reads `1 Tag`, `2 Kertas`, `3 Rangsangan`, `4 Sub-bahagian` (V2 labels, DSKP order). `Kumpulan rangsangan` takes Subjek and Tingkatan from its first member and shows "Subjek ditetapkan oleh soalan pertama."
+- FR-ADM-QE2.6 (M2; FR-QA-10) The group screen carries per stimulus: `Label` (required, "Sila isi label rangsangan."), `Jenis rangsangan`, `Kapsyen (pilihan)`, `Teks alternatif` (required for image kinds, "Sila isi teks alternatif untuk imej ini."), `Sumber petikan (pilihan)`, the option bank `Bank pilihan (A-H)`; and the buttons `Tambah rangsangan` (2nd and 3rd, max 3), `Pratonton kumpulan`, `Tambah soalan`, `Lampirkan soalan sedia ada`, `Naik`, `Turun`, `Buang`, `Pindah ke kumpulan lain`, `Bubarkan kumpulan`. Field list: Q-05.
+- FR-ADM-QE2.7 (m3, m4; FR-QA-06, 07) `Pindah ke kumpulan lain` opens a picker of groups with the same Subjek and Kertas and runs remove plus add in one call (API-Q-34); a served member moves through draft copies; a conflict shows the BM text of `STIMULUS_MESSAGES.memberTaken` ("Soalan ini sudah berada dalam kumpulan rangsangan lain."). Removing a member whose text names a figure confirms "Soalan ini menyebut {Rajah 3}. Tanpa kumpulan ia tidak akan dipaparkan kepada murid." and sets `stimulus_missing`. A group of 1 member shows no warning.
+- AC-ADM-QE2.3 Given a draft member, when `Pindah ke kumpulan lain`, then it leaves group A and joins group B in one call; a target of another Subjek answers "Soalan dalam satu kumpulan mesti sama subjek." (AC-QA-06).
+- AC-ADM-QE2.4 Given `Cipta baharu`, then the tabs read `Tag`, `Kertas`, `Rangsangan`, `Sub-bahagian`, numbered 1 to 4 (AC-QA-16).
 
 #### R1-ADM-QE-03 DSKP-correct question form | P0
 - **Action: Fix** | gap: 4.V row QE-03. V2 differs: "Langkah 1 Kertas & bahagian" first and no DSKP unit/SP/TP step is visible; PRD follows exam schema D9.
@@ -294,6 +322,35 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - AC-ADM-QE3.3 Given the admin sets TP 3 and Tahap kesukaran 4, when saving, then both values are stored as entered and the list shows the derived label of difficulty 4; given Tahap kesukaran is empty, then saving for review is refused with "Sila pilih tahap kesukaran.".
 - AC-ADM-QE3.2 Given the admin picks type `Aneka Pilihan`, then exactly one leaf appears with 4 option rows A-D by default (minimum 2, maximum 8, `+ Pilihan` adds the next letter) and exactly one correct tick; `mcq_multi` needs at least one right and one wrong option; `true_false` has the two fixed options `Betul` and `Salah`.
 
+**Field & behaviour spec (QE-03).** The step-by-step field list is Q-04. End-to-end: see 45 §3.1.2 to §3.1.7. The rules that make the wizard reach V2 parity and the real SPM paper structures (each cites the wizard audit ID that it fixes):
+- FR-ADM-QE3.8 (G-18; FR-QA-26) Every one of the nine leaf modes has the leaf form of 45 §3.1.6 (`mcq`, `match_letter`, `short_text`, `numeric`, `working`, `essay`, `essay_choice`, `drawing`, `table_fill`); extras are stored in `question_parts.mode_config` (DM-55) and round-trip.
+- FR-ADM-QE3.9 (G-01; FR-QA-19) Per leaf, tabs `Jawapan` and `Skema pemarkahan` hold the FULL scheme editor of 45 §3.1.7: point codes K, N, P, B, M, F, C (OPT-KOD-MARKAH), `Jawapan diterima (@)`, `Mesti ada semua (&)`, `Dilihat`, `Boleh tersirat`, `Bergantung pada` (multi-select), `Tidak diterima`, `Unit` and `Unit wajib`, tolerance, groups (`Mana-mana N daripada M`, `Markah maksimum kumpulan` "Maks N", `Bonus jika semua betul`, `Pasangan (Ciri / Sebab)`), `+ Kaedah alternatif`, `Jawapan akhir`, `Mata mengikut bilangan betul` ("P2,1,0"), deductions and `Sifar markah jika` on the part and on the question (`scheme_rules`, DM-54), `Jawapan model` and the staff-only `Panduan pemarkah`. The chip "{n} markah skema / {m} markah bahagian" is red when different and `Hantar untuk semakan` is refused with "Jumlah skema ({n}) mesti sama dengan markah bahagian ({m})."; a point that depends on a deleted point is refused with "Mata {label} bergantung pada mata yang tiada."; the editor validates through API-Q-30.
+- FR-ADM-QE3.10 (G-03; FR-QA-20) Rubric key kind: `Mod pemarkahan` `Band keseluruhan` (default) or `Markah setiap kriteria` (criteria rows with `Markah maksimum`, e.g. BI C, CA, O, L with 5 each; bands with optional sub-bands and a descriptor per criterion; `Band minimum`; optional content points C1..Cn). Band ranges must cover 0..marks; the total of the criteria equals the leaf marks. Word ranges, compulsory and choose-N are set in FR-ADM-QE3.12 and in Q-16.
+- FR-ADM-QE3.11 (G-07; FR-QA-17) `Bahasa soalan` offers `Bahasa Melayu`, `English`, `BM + English (dwibahasa)`; with the third, every text field (stem, leaf prompt, option, instruction, stimulus body and caption, bank text, alternative prompt, scheme text) shows two stacked editors `BM` and `English`; sending with an empty English value is refused with "Teks English diperlukan untuk soalan dwibahasa."; stored as `{ms, en}` (DM-50); the pupil sees BM above English, no toggle.
+- FR-ADM-QE3.12 (G-02, G-01b; FR-QA-21, 22) `Karangan / Respons Terbuka` has `Bilangan patah perkataan` `min` and `max` (0 to 5000, min <= max, "Julat perkataan tidak sah."), `Had keras` (default off) and `Ruang jawapan` (`Pendek`, `Sederhana`, `Panjang`); `short_text` has `Had perkataan` (integer >= 1, "Had perkataan mesti nombor positif."); `Esei Pilihan` (`essay_choice`) has `+ Gesaan alternatif` (2 to 6, each with its own `Rangsangan gesaan`; BM K1 Bahagian A is one question with two e-mail stimuli, 150-200 words, the pupil answers one and the marks count once).
+- FR-ADM-QE3.13 (G-13; FR-QA-23) `Lukisan / Graf` (`drawing`) and `Isi Jadual` (`table_fill`) are authored with the forms of 45 §3.1.6 modes 8 and 9, served on screen and self-marked; `Terbit` is never refused for these modes (the earlier "belum tersedia untuk pelajar" refusal is removed, D113).
+- FR-ADM-QE3.14 (M6, V2 stem; FR-QA-16) A single-leaf question has ONE field `Teks soalan` stored once (the derived `questionText` copy is for old consumers); `Berstruktur` has the optional `Pengenalan soalan`. The V2 placeholder "Contoh: Rajah 1 menunjukkan..." is replaced by "Contoh: Antara yang berikut, yang manakah...".
+- FR-ADM-QE3.15 (G-04; FR-QA-09) Each sub-bahagian row has `Rangsangan bahagian` (`Tiada`, one of the group's stimuli by label, or `Rangsangan baharu`); only a stimulus of the question's own group or its own is allowed ("Rangsangan bahagian mesti daripada kumpulan soalan ini."); a prompt may cite "Bahan 2" and the pupil panel opens that stimulus ("semua bahan" opens all).
+- FR-ADM-QE3.16 (G-05; FR-QA-18) The rich-text toolbar adds `U`, `S`, `Baris puisi`, `Dua lajur`, `Kotak teks` (bordered "Sumber" box) and `Penanda ruang kosong`; the sanitiser allow-list is widened (`u`, `s`, box, columns); the preview equals the pupil view.
+- FR-ADM-QE3.17 (G-08; FR-QA-24) `{{gap:N}}` inline gaps link to the leaf labelled N; an unlinked gap is refused with "Ruang kosong {N} belum dipautkan kepada bahagian."; the leaf `Had perkataan` covers "no more than one word".
+- FR-ADM-QE3.18 (G-09; FR-QA-10) The group option bank (A-H) has `Huruf`, `Teks` (bilingual), `Gambar`, `Pengganggu`; `Padanan` leaves reference it and every key letter must exist in it.
+- FR-ADM-QE3.19 (G-14; FR-QA-27) An MCQ key may accept a second option: checkbox `Terima pilihan lain` with the text `Nota kunci`; otherwise exactly one correct option.
+- FR-ADM-QE3.20 (G-11, G-12, G-15; FR-QA-28, 29, 30) `Templat jawapan (pra-isi)` (shown to the pupil, never marked), `Rujukan buku teks` (Bab, Tingkatan, Muka surat, optional Hingga, shown in the scheme panel as "B3T4 M56") and `Sumber petikan` per stimulus, and `Bergantung pada jawapan bahagian` (carried-value points, checklist marking, no auto-mark).
+- FR-ADM-QE3.21 (M7) Stimulus kinds are the 7 of OPT-JENIS-RANGSANGAN; code and pseudocode are a `Petikan` with the `</>` block (Sains Komputer), V2 `Box` is a `Petikan` with `Kotak teks`, `Audio` and `Video` are not offered (Audio KBAT is its own module, P2-17; R1 decision D113). The V2 15-kind select is therefore a fidelity deviation, FD-QE-8.
+- FR-ADM-QE3.22 (G-16) `Kertas` is `Kertas 1` to `Kertas 4` everywhere (contract `QuestionKertasSchema`, list filters, Kontrak, API 4.1).
+- FR-ADM-QE3.23 (G-19, admin side) `Pratonton` shows bilingual stacking, the alternative-prompt picker, the per-criterion steppers and the inline gaps exactly as the pupil screen (owned by 10).
+- AC-ADM-QE3.4 Given Fizik 9(d) entered as 4 Ciri/Sebab pairs, a stop "Maks 8" and a bonus of 2, then the scheme totals 10 (G-01; AC-QA-19).
+- AC-ADM-QE3.5 Given a BI Paper 2 rubric of 4 criteria of 5 marks, then the total is 20 and a band set that does not cover 0..marks is refused (G-03; AC-QA-20).
+- AC-ADM-QE3.6 Given a Fizik question set to `BM + English (dwibahasa)` with an empty English prompt, then sending is refused with "Teks English diperlukan untuk soalan dwibahasa." (G-07; AC-QA-17).
+- AC-ADM-QE3.7 Given a BM Kertas 1 Bahagian A essay with two e-mail alternatives and 150-200 words, then it saves as one question and the pupil counter reads "{n} / 150-200 patah perkataan" (G-01b, G-02; AC-QA-21, 22).
+- AC-ADM-QE3.8 Given a Matematik Kertas 2 `drawing` leaf and a `table_fill` leaf, then both publish (G-13; AC-QA-23).
+- AC-ADM-QE3.9 Given a Sejarah question whose source sits on part (c) only, then (a) and (b) show no source (G-04; AC-QA-09).
+- AC-ADM-QE3.10 Given a BI Part 4 group with an 8-letter bank and 6 `Padanan` leaves, then a key letter outside the bank is refused (G-09; AC-QA-10).
+- AC-ADM-QE3.11 Given a Matematik Tambahan part that reads values from the pupil's own graph, then its points carry `ecf` and the pupil is marked by checklist (G-15; AC-QA-30).
+- AC-ADM-QE3.12 Given a BM passage with underline, strike-through and a two-line poem, then the preview and the pupil view are identical (G-05; AC-QA-18).
+- FR-ADM-QE3.24 (m8) The answer-mode list of the wizard and of `Mod Jawapan Dijangka` (OPT-MOD-JAWAPAN) has 14 modes, not 13 (the earlier text said "13 modes" and listed 14); the delete-guard text is "Rangsangan ini masih digunakan oleh {n} soalan." (DM-02) and the code text `inUse` is retired.
+- AC-ADM-QE3.13 Given a stimulus used by 2 questions, when the admin tries to delete it, then the message reads "Rangsangan ini masih digunakan oleh 2 soalan." and nothing is deleted.
+
 #### R1-ADM-QE-04 Completeness is shown at entry, not as a late 422 | P0
 - **Action: Fix** | gap: 4.V row QE-04.
 
@@ -309,6 +366,10 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - AC-ADM-QE4.1 Given a draft missing unit and SP, when the admin opens it, then the panel lists "Sila pilih unit DSKP." and "Sila pilih sekurang-kurangnya satu SP DSKP." with links to step Tag, and the count shows 2.
 - AC-ADM-QE4.3 Given a draft with Unit, SP, TP and aras but no Bab, when the admin presses `Terbitkan`, then it is refused, the panel lists "Sila pilih Bab." and the 422 names the same field; once Bab is chosen it publishes.
 - AC-ADM-QE4.2 Given the admin types SP "12.1.1" that is not in the subject, when leaving the field, then the message appears at once and Terima/Simpan is not needed to see it.
+
+**Field & behaviour spec (QE-04).** End-to-end: see 45 §3.1.1 and §4.1. The completeness panel is built from `GET /api/questions/:id/gate-check?gate=approve` (API-Q-05): one line per issue, each a link to its field; empty panel "Semua medan wajib telah lengkap."; loading "Memeriksa kelengkapan…"; at 375 px a bottom sheet.
+- FR-ADM-QE4.7 (M3; FR-QA-11) The gate blocks `Hantar untuk semakan` and `Terbitkan` while a question has an open `stimulus_missing` or `figure_only` flag, until a stimulus is attached or the flag is dismissed with `Bukan masalah`; the stem field shows live "Teks ini menyebut {Rajah 3}. Letakkan rajah dalam rangsangan kumpulan." when the stem names a figure and no stimulus is attached.
+- AC-ADM-QE4.6 Given a stem "Rajah 1 menunjukkan..." with no stimulus, when `Terbitkan`, then it is refused with "Soalan menyebut {Rajah 1} tetapi tiada rangsangan. Pilih kumpulan atau tambah rangsangan."; given a question whose body is only a figure, then "Soalan ini hanya mengandungi rangsangan. Tukarkan kepada rangsangan kumpulan." (AC-QA-11).
 
 #### R1-ADM-QE-05 Upload and extraction keep structure | P0
 - **Action: Complete** | gap: 4.V row QE-05. V2 differs: DOCX/BI import, figure linked to the first question only; PRD follows D90/D105 and PDF.
@@ -328,6 +389,12 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - AC-ADM-QE5.2 Given the admin changes the range to 5-7 before Terima, when accepting, then the 3 drafts are members of the group and Q8 is a separate draft without the figure.
 - AC-ADM-QE5.3 Given upload with Kertas 1 and Bahagian A, when all items are accepted, then every draft has Kertas 1 and Bahagian A without re-selection, and the QE-04 panel does not list "Sila pilih kertas untuk soalan SPM.".
 
+**Field & behaviour spec (QE-05).** End-to-end: see 45 §3.3. Upload form: Q-08; review screen: Q-09.
+- FR-ADM-QE5.8 (M1; FR-QA-08, 12) Detection covers numbered references ("Rajah 3") AND unnumbered or positional ones (keywords `sumber`, `teks`, `text`, `maklumat`, `pernyataan`, `situasi`, `gambar rajah`, and `di atas`, `di bawah`, `berikut`, `above`, `below`, `following` next to a figure word, e.g. "Rajah di atas", "Maklumat di bawah", "Sumber", "Teks", "Petikan"). An unnumbered reference is never auto-linked: it sets `stimulus_missing` with `Rujukan` = "tanpa nombor" (DM-53), and extraction suggests the nearest preceding stimulus with a confidence band that the admin confirms. An item that cites two figures takes both stimuli into its group (max 3); if they sit in two groups, `Terima` is blocked with "Soalan merujuk dua rangsangan dalam kumpulan berbeza. Gabungkan kumpulan atau pilih satu." and `Gabungkan kumpulan` merges them (API-Q-35, API-Q-38).
+- FR-ADM-QE5.9 (m7; FR-QA-36) Review semantics: `Tolak` on a stimulus item discards the group and keeps its member items `pending` with `stimulus_missing`; `Tolak` on a member removes it from the range; `Terima` of a member before its group exists creates the group from the extracted stimulus first; `Terima kumpulan` (API-Q-37) accepts the stimulus and all members, or nothing and names the failing member.
+- AC-ADM-QE5.4 Given an item "Rajah di atas menunjukkan..." after a figure item, then it is suggested into that group with a band and not linked automatically (AC-QA-12).
+- AC-ADM-QE5.5 Given a group of 4 with one failing member, when `Terima kumpulan`, then nothing is created and the failing member is named (AC-QA-36).
+
 #### R1-ADM-QE-06 CSV carries the DSKP and group fields | P0
 - **Action: Build** (new columns on the existing import) | gap: 4.V row QE-06.
 
@@ -337,6 +404,10 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - FR-ADM-QE6.3 A CSV question with all required fields can be approved without opening the wizard.
 - AC-ADM-QE6.1 Given a CSV of 3 rows with `group_key` G1 and a stimulus on row 1, when imported, then 1 stimulus group with 3 members exists.
 - AC-ADM-QE6.2 Given a CSV row with every DSKP column filled, when imported and `Terbitkan` pressed, then it publishes with no 422.
+
+**Field & behaviour spec (QE-06).** The column set is in Q-11 (the 34 rows of the CSV table) plus the group, bilingual and part columns of 45 §3.2.
+- FR-ADM-QE6.4 (M4; FR-QA-33) Group columns: `group_key`, `group_order` (1..n unique per key), `group_id` (attach to an existing group with no served member, exclusive with the stimulus columns), `stimulus_label`, `stimulus_kind`, `stimulus_body_ms`, `stimulus_body_en`, `stimulus_image` (an `https://` URL or a file name inside the optional ZIP), `stimulus_alt`, `stimulus_caption`, `stimulus_source`, `stimulus2_*` and `stimulus3_*`, `part_stimulus`, `prompt_en`, `option_a_en`..`option_h_en`. Rules: rows of one key are consecutive with the same Subjek and Kertas ("Baris {n}: kumpulan {key} bercampur subjek atau kertas."); stimulus fields appear on the first row only ("Baris {n}: rangsangan hanya pada baris pertama kumpulan."); a key already imported in the batch is refused ("Kumpulan {key} sudah diimport dalam kelompok ini."); a row that names a figure without a stimulus imports with the flag `stimulus_missing`. The template (`GET /api/question-imports/template`) carries one example per type and one example group.
+- AC-ADM-QE6.3 Given a CSV of one group with 2 stimuli and 3 questions in `ms+en`, then 1 group with 2 stimuli and 3 members exists; a mixed-subject group gives the row message above (AC-QA-33).
 
 #### R1-ADM-QE-07 Papers and generation never split a group | P0
 - **Action: Complete** | gap: 4.V row QE-07. V2 differs: the bank lists group members as separate cards; PRD follows D90/D105.
@@ -349,6 +420,10 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - AC-ADM-QE7.1 Given a pool with groups G(4) and singles, when Jana set asks 10, then every group in the result has all its members adjacent and none is cut.
 - AC-ADM-QE7.2 Given the admin adds one member of G to a paper, then the whole group is placed (or the add is refused with the group name), never one question alone.
 - AC-ADM-QE7.3 (E2E) Given an approved group "Rajah 3" with 4 questions for Sains T4, when a T4 pupil starts a Latih Tubi of 10 on Sains, then the draw can contain the 4 questions together with Rajah 3 shown once above them, and never fewer than 4 of them or one without the figure.
+
+**Field & behaviour spec (QE-07).** End-to-end: see 45 §5.3 and §5.4.
+- FR-ADM-QE7.5 (m6, G-10; FR-QA-41) `Pilih N` treats a group as ONE choice unit (the numbered question is the unit; a group is never split across choices), with equal marks across units ("Markah antara unit mesti sama."); `Wajib dijawab` and `Pilih N` are mutually exclusive on one section; `Jana set` and the builder place units only.
+- AC-ADM-QE7.4 Given `Pilih N` N=1 over a group of 3 and two singles, then the group counts as one unit; unequal marks across units are refused; a compulsory section cannot also be `Pilih N` (AC-QA-41).
 
 #### R1-ADM-QE-08 Regroup work-list for migrated questions | P0 (UAT data task, see U-OP-05)
 - **Action: Build** | gap: 4.V row QE-08. V2 has no such list; the V2 evidence of the defect is that Studio list rows for figure-only items show no stem text.
@@ -364,6 +439,13 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 **Fidelity deviations (all of section 4.0).** FD-QE-1 group-first entry and group entity (V2 has none; D90 is a D9 fix). FD-QE-2 11 question types instead of 14 modes (exam schema D1, register 1A.6). FD-QE-3 wizard step order Tag first (V2 last; exam schema D9). FD-QE-4 DOCX ZIP import and BI Kertas 1 import are not offered; PDF replaces them (D52, PAR A05). FD-QE-5 CSV columns extended (V2 CSV stub dead; Filament columns `body, option_a-d, correct, [difficulty]`). FD-QE-6 no per-question source/rights gate (D99, follows V2). FD-QE-7 completeness panel (V2 lists violations only at Terbitkan).
 
 **Open questions (entry): both closed by D108.** OQ-QE1 (1-member group in a paper): CLOSED, allowed (D108(1)); see FR-ADM-QE2.4. OQ-QE2 (is "aras pemikiran" per leaf, `dskp-gate.ts:58`, a hard approval gate or optional?): CLOSED, it stays a gate with a question-level default (D108(2)). The sources and dates behind the ruling (all 2026-10-30 unless stated): (a) D76(5), user, 2026-10-29: "TP and cognitive level are stored per leaf part and both are required for pool eligibility". (b) Exam schema `v2-exam-schema.md` D2 line 154, revised 2026-10-30 (DSKP reconciliation): `kbat` is "optional ... independent of TP, not required by any gate". (c) TRACKER D80 second row, 2026-10-30, analyst: KBAT "is not a submit or publish gate" and "the 1-to-6 cognitive level field is withdrawn". (d) TRACKER D83 D-4, LEAD, 2026-10-30, after D80: "Cognitive level is mandatory per leaf part. ... The D80 wording about an optional KBAT tag is superseded." (e) TRACKER D85, user, 2026-10-30, approved the architecture and ADR-0027..0035, which include ADR-0031 item 4: "every leaf has `tp` and `cognitive_level` (\"Bahagian (b) belum ada aras pemikiran.\")". (f) Built: `r1-b05-dskp-gate.md` line 19 and `dskp-gate.ts:58`. Newest and user-approved = (d)+(e)+(f): the gate. The exam schema and D80 text speak about the KBAT tag, which ADR-0031 now derives from the cognitive level (`r1-b05` line 15), so the two do not contradict once KBAT is read as derived. The exam schema was not updated after D83 (the architect was to align it, D76 note). Ruling D108(2) (Delivery Lead, by principle, 2026-11-04): keep the gate for SPM-bound T4/T5 approval, reduce clicks with the question-level default, and fix the exam-schema text (D2/D9) to say "cognitive level required, KBAT derived" (follow-up task for the architect). The user may override.
+
+**Field & behaviour spec (QE-08).** End-to-end: see 45 §6.6. Filters: `Subjek` (OPT-SUBJEK), `Tingkatan` (OPT-TINGKATAN), `Kertas sumber`; columns `Soalan`, `Rujukan` (`bernombor` or "tanpa nombor"), `Cadangan` (2 neighbours before and after, suggested group), `Sebab`; row actions `Lampirkan rangsangan`, `Kumpulkan`, `Gabungkan kumpulan`, `Muat naik gambar` (opens Audit Rajah, FR-QA-15), `Bukan masalah`, `Buat asal`; header "{n} perlu tindakan · {m} selesai"; empty "Tiada soalan perlu dikumpulkan semula."; confirm "Tandakan sebagai bukan masalah?" with `Batal` and `Ya, Tandakan`; selecting rows requires consecutive rows ("Pilih baris yang berturutan sahaja.").
+- FR-ADM-QE8.5 (B3; FR-QA-13) The regroup (`POST /api/admin/questions/regroup`, API-Q-24) accepts served and unflagged members. It is an in-place structural change: no new version, no status change, so the DSKP gate (transition into `approved` only) does not run; it removes the member's duplicate stem image (now supplied by the stimulus); the audit row (DM-59) stores before and after ids and image ids; the served lock is bypassed only by the flag `regroup=true`. The group becomes servable only when all members are `Diluluskan` (FR-ADM-QE1.6).
+- FR-ADM-QE8.6 `Buat asal` (API-Q-36) restores the members, the images and the flags; it is refused with ERR-CON-01 after a later edit of any member.
+- FR-ADM-QE8.7 (M5; FR-QA-15) `Audit Rajah` (`/admin/soalan-gambar`, API-Q-21) is a menu item in group `Soalan` (position 7, section 3.2). Columns `Soalan`, `Subjek`, `Tingkatan`, `Sebab`; row actions `Muat naik gambar` (attaches the image once to the group's stimulus) and `Bukan masalah` (confirm "Tandakan sebagai bukan masalah?", `Batal` / `Ya, Tandakan`). It is reached from the QE-08 row action `Muat naik gambar` and from the menu; Admin Pusat only (ERR-ACC-01 for others). Empty "Tiada soalan tanpa gambar.".
+- AC-ADM-QE8.4 Given a question flagged `stimulus_missing`, when the admin uploads the image in `Audit Rajah`, then the group's stimulus has the image, the flag clears and the question becomes servable once its group is complete.
+- AC-ADM-QE8.3 Given three consecutive `Diluluskan` Sains T4 questions with the same image, when regrouped, then 1 stimulus and 3 members exist, the member stem images are removed, the status is still `Diluluskan`, the DSKP gate did not run, and `Buat asal` restores them (AC-QA-13).
 
 ---
 
@@ -393,6 +475,8 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - Deviation: none beyond showing all six (PIPE U6 superseded, section 7).
 - OQ: none.
 
+**Field & behaviour spec.** No input fields. Each card is a link; the count and attention text come from `GET /api/admin/servability/overview` (API-Q-11). Empty or zero attention: "Semua elok". A card that fails to load shows "Tidak dapat dimuatkan." with `Cuba lagi` (SR-3); the other cards stay. A non-Admin Pusat role gets ERR-ACC-01. At 375 px two cards per row (4.R).
+
 #### R1-ADM-Q-02 Lane list "Kandungan SPM" (per lane) | `/admin/spm/:lane` | P0 (feeds Murid 13 and 16) | GH 2 lanes / UAT same
 - **Action: Complete** | gap and differences: 4.V row Q-02.
 
@@ -414,36 +498,74 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - AC-ADM-Q02.2 Given a Terbit paper, then its lane row shows `Pratonton`, `Salin`, `Sunting`.
 - Gap: lane pages `LaneDatabankPage.vue`, `LaneSimulasiPage.vue` only. Deviation: none.
 
+**Field & behaviour spec.**
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| 02-01 | `Subjek` | select | `Semua Subjek` | OPT-SUBJEK (the Studio order, not the V2 alphabetical order) | ERR-REQ-11 style "Nilai penapis tidak sah." |
+| 02-02 | `Status` | select (Databank and Latih Tubi only) | `Semua Status` | the five labels of section 0 (V2 `Menunggu` becomes `Menunggu Semakan`) | same |
+| 02-03 | `Cari` | text | empty | stem contains, max 100 | "Carian tidak boleh melebihi 100 aksara." |
+| 02-04 | `Tapis`, `Set Semula` | buttons | n/a | n/a | n/a |
+| 02-05 | `Perhatian` (row) | text | "—" when nothing is wrong | BM reason from `servability/schema.ts:73-74` | n/a |
+| 02-06 | `Pratonton`, `Salin`, `Sunting` (row) | menu | per lane | Databank and Latih Tubi: `Pratonton`, `Sunting`; Bijak SPM: plus `Salin` (native Simulasi papers only) | `Salin` flash "Set disalin sebagai draf. Sunting dan terbitkan salinan baharu." |
+Behaviour: 25 per page (SR-4); empty "Tiada item untuk penapis ini."; Tracking A sorted by title; the `Sunting` target per lane is FR-ADM-Q02.2. Errors per SR-1.
+
 #### R1-ADM-Q-03 `Bank Soalan (Studio)` list | `/admin/studio` | P0 | GH built / UAT built, 339,112 rows "0/6"
 - **Action: Fix** | gap and differences: 4.V row Q-03.
 
 **Screen specification (from V2).**
 - Route and title: `/admin/studio`, page title "Studio - Admin Panel" (Panel `/studio`: "Question Studio").
-- Regions in order: subtitle "Bank kanonikal (pokok peperiksaan v2.1). Soalan model lama masih di bank legasi."; link `Bank lama (legasi) →` (opens R1-ADM-Q-20); four status tiles `Draft`, `Reviewed`, `Approved`, `Archived` each with its count; header buttons `Import DOCX (ZIP)`, `Import BI Kertas 1`, `Cipta baharu`; filter bar; table; pager.
+- Regions in order: subtitle "Bank kanonikal (pokok peperiksaan v2.1). Soalan model lama masih di bank legasi."; link `Bank lama (legasi) →` (opens R1-ADM-Q-20); four status tiles each with its count (V2 shows `Draft`, `Reviewed`, `Approved`, `Archived`; V3 shows `Draf`, `Menunggu Semakan`, `Diluluskan`, `Diarkibkan`, section 0); header buttons `Import DOCX (ZIP)`, `Import BI Kertas 1`, `Cipta baharu`; filter bar; table; pager.
 - Filters (selects, first option is the "all" option): `Semua subjek` (31 subjects, ordered Bahasa Melayu, Bahasa Inggeris, Matematik, Sains, Sejarah, Pendidikan Islam, Pendidikan Moral, Matematik Tambahan, Fizik, Kimia, Biologi, Geografi, then the rest); `Semua status` (Draft, Reviewed, Approved, Archived); `Semua tahun` (2025, 2024, 2023, 2022, 2021); `Semua negeri` (Johor, Kedah, Kelantan, Melaka, Negeri Sembilan, Pahang, Perak, Perlis, Pulau Pinang, Sabah, Sarawak, Selangor, Terengganu, WP Kuala Lumpur, WP Labuan, WP Putrajaya, MRSM, SBP, SABK, SMKA, SPM(U), PPD); `Semua kertas` (Kertas 1, Kertas 2, Kertas 3); `Semua jenis` (Percubaan, Sebenar, Modul); button `Tapis`.
 - Table columns: `No.`, `Soalan`, `Kertas`, `Sumber`, `Status`, and an actions cell. A row shows: the question number; the stem cut at about 90 characters with "..." (some rows show no stem text, see QE-08); the paper name with the subject code below it (e.g. "MATEMATIK Kertas 2 (Salinan) ... · MATH"); the source badge "Import (PDF/DOCX)"; the status chip (e.g. "Draft"); actions `Pratonton` and `Edit` (Panel adds `Sembunyikan`). Pager: "« Previous", page numbers, "Next »" (admin) or numbered pages with "More pages" (Panel); 25 per page.
 - Buttons: `Cipta baharu` opens R1-ADM-Q-04 (create); the two import buttons open the modals described in FR-ADM-QE5 (V3: `Import PDF`); `Pratonton` opens the preview page (R1-ADM-Q-04); `Edit` opens the edit form; the tiles filter the list by status.
 - States: the list is never empty in V2 (about 5,700 rows); no empty or error copy observed. V3 adds the `Dilihat murid di` column, the group badge, the filters of FR-ADM-Q03.4 and the bulk bar of FR-ADM-Q03.5.
 - Outcome: the one canonical question list. Title "Studio", subtitle "Bank soalan kanonikal - cipta, semak, terbit".
-- Reference (DISC 3.1): status tiles (Draft, Reviewed, Approved, Archived with counts); filters `Semua subjek`, `Semua status`, `Semua tahun`, `Semua negeri`, `Semua kertas` (Kertas 1-3), `Semua jenis`; buttons `Tapis`, `Set Semula`; columns `No.`, `Soalan` (90 chars), `Kertas` ("Bank (tiada kertas)"), `Sumber`, `Status`; row actions `Pratonton`, `Edit` / `Edit sebagai draf`; 25 per page; header `Cipta baharu`, `Import PDF` (D83 D-5).
+- Reference (DISC 3.1): status tiles (V2 words Draft, Reviewed, Approved, Archived, V3 words per section 0, with counts); V2 filters `Semua subjek`, `Semua status`, `Semua tahun`, `Semua negeri`, `Semua kertas` (V2 lists Kertas 1-3, V3 lists Kertas 1-4), `Semua jenis` (V3 adds Tingkatan, Bab, Tajuk DSKP, Sumber, see the field spec); buttons `Tapis`, `Set Semula`; columns `No.`, `Soalan` (90 chars), `Kertas` ("Bank (tiada kertas)"), `Sumber`, `Status`; row actions `Pratonton`, `Edit` / `Edit sebagai draf`; 25 per page; header `Cipta baharu`, `Import PDF` (D83 D-5).
 - FR-ADM-Q03.1 List shows questions only (QE-01) with a group badge for members.
-- FR-ADM-Q03.2 Each row shows the servability indicator "Dilihat murid di n daripada 7" and expands to the 7 activities with BM reasons (Q-06).
+- FR-ADM-Q03.2 Each row shows the servability indicator "Dilihat murid di n daripada 6" and expands to the 6 activities with BM reasons (Q-06).
 - FR-ADM-Q03.3 `Edit sebagai draf` on an approved row clones to a new draft; flash "Draf baharu #{id} dicipta. Soalan asal kekal diterbitkan sehingga draf ini diterbitkan."
 - FR-ADM-Q03.4 Add filters `Tingkatan`, `Bab` and `DSKP` (`Ada DSKP Tag` / `Belum Ditag`) so the Bab work (C-05) can be scoped; D96: Darjah never listed.
 - FR-ADM-Q03.5 Bulk bar: select rows or "all results of the filter" with `Tetapkan Bab` (C-05) and the status actions `Hantar untuk semakan`, `Terbitkan`, `Arkib` through `POST /api/questions/bulk-action` and `/bulk-action/filter` (exist, `admin.controller.ts:75,93`; filter action requires a filter, cap `FILTER_ACTION_CAP`, `expectedCount` check).
-- FR-ADM-Q03.6 The "Menunggu Semakan" tile equals the count of status Reviewed and is the single review queue (route `/admin/spm/semakan` redirects here, section 3.3).
-- FR-ADM-Q03.7 (F-05, D-A5) Work-list `Soalan tanpa Bab`: a saved view of the list (also the `Bab` filter value "Belum dipautkan") of approved questions with no `chapter_id`, with the count in its header and the note "Soalan tanpa Bab tidak akan muncul dalam Soalan by Chapter dan Heatmap Topik Lemah." [PROPOSED copy]. The bulk bar's `Tetapkan Bab` (C-05) sets the chapter for the selected rows or all rows of the filter through `POST /api/admin/curriculum/questions/bulk-chapter` (C documents it); rows whose Subjek or Tingkatan do not match the Bab are skipped and listed. Setting the Bab changes neither status nor Latih Tubi servability.
+- FR-ADM-Q03.6 The "Menunggu Semakan" tile equals the count of stored status `review` and is the single review queue (route `/admin/spm/semakan` redirects to `/admin/studio?status=review`, section 3.3).
+- FR-ADM-Q03.7 (F-05, D-A5) Work-list `Soalan tanpa Bab`: a saved view of the list (also the `Bab` filter value "Belum dipautkan") of approved questions with no `chapter_id`, with the count in its header and the note "Soalan tanpa Bab tidak akan muncul dalam Soalan by Chapter dan Heatmap Topik Lemah." (R1 decision D113). The bulk bar's `Tetapkan Bab` (C-05) sets the chapter for the selected rows or all rows of the filter through `POST /api/admin/curriculum/questions/bulk-chapter` (C documents it); rows whose Subjek or Tingkatan do not match the Bab are skipped and listed. Setting the Bab changes neither status nor Latih Tubi servability.
 - Data: `GET /api/questions`, `/summary`, `/filter-options`, servability batch `POST /api/admin/servability/questions/batch` (exists). No migration.
-- AC-ADM-Q03.1 Given 3 questions in Reviewed, then the tile shows 3 and the list filtered by Reviewed shows the same 3 (the old queue disagreement, E2E F3, cannot recur).
+- AC-ADM-Q03.1 Given 3 questions in `Menunggu Semakan`, then the tile shows 3 and the list filtered by `?status=review` shows the same 3 (the old queue disagreement, E2E F3, cannot recur).
 - AC-ADM-Q03.2 (E2E) Given an admin approves a complete MCQ for Sains T5, when the T5 pupil opens Latih Tubi Sains, then the question can be drawn (UAT Latih Tubi already works for T5).
 - AC-ADM-Q03.3 Given 50 approved Sains T5 questions with no Bab, when the admin opens `Soalan tanpa Bab`, then the header shows 50 and the list shows exactly those 50; after `Tetapkan Bab` "X" on all of them the header shows 0, and the T5 pupil's Soalan by Chapter shows 50 soalan in Bab "X" on the next load.
 - Gap: three lists, two queues (`menu.ts:95,103,116`; `ReviewQueuePage.vue`); "0/6" for all 339,112 rows is correct for untagged but unexplained (reasons text must show). Deviation: added filters Tingkatan, Bab, DSKP (V2 legacy list has `DSKP` filter, DISC 3.3). OQ: none.
+
+**Field & behaviour spec.** Filter order (all selects, first option is the "all" option, a `Tapis` button and `Set Semula`; all persist in the URL):
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| 03-01 | `Semua subjek` | select | all | OPT-SUBJEK | "Nilai penapis tidak sah." |
+| 03-02 | `Semua tingkatan` | select | all | OPT-TINGKATAN (Darjah never) | same |
+| 03-03 | `Semua bab` | select | all; options `Belum dipautkan` (`none`) then `Bab {no}: {nama}` of the chosen Subjek + Tingkatan | `chapters` | needs 03-01 and 03-02; clears when they change |
+| 03-04 | `Semua tajuk DSKP` | select | all | unit nodes of the chosen Subjek + Tingkatan, `{kod} {tajuk}` | needs 03-01 and 03-02 |
+| 03-05 | `Semua status` | select | all | the five labels of section 0; query values `draft`, `review`, `approved`, `archived`, `draft&rejected=true` | same |
+| 03-06 | `Semua jenis` | select | all | OPT-JENIS-KERTAS filter order (`Percubaan`, `Sebenar`, `Modul`, `Topikal`, `Latihan`) | same |
+| 03-07 | `Semua sumber` | select | all | OPT-SUMBER-SOALAN (`Manual`, `Import (PDF/DOCX)`, `Kiriman Guru`, `CSV`) | same |
+| 03-08 | `Semua kertas` | select | all | OPT-KERTAS (`Kertas 1` to `Kertas 4`) | same |
+| 03-09 | `Semua tahun`, `Semua negeri` | selects | all | OPT-TAHUN, OPT-NEGERI-KERTAS | same |
+| 03-10 | `Penandaan DSKP` | select | `Semua` | OPT-DSKP-TAG | same |
+| 03-11 | `Cari` | text | empty | stem contains or question id (FR-QA-47), max 100 | "Carian tidak boleh melebihi 100 aksara." |
+| 03-12 | Status tiles `Draf`, `Menunggu Semakan`, `Diluluskan`, `Diarkibkan` and chip `Ditolak ({n})` | tile = filter | n/a | `GET /api/questions/summary` | click sets 03-05 |
+| 03-13 | Row checkbox, `Pilih semua {n} hasil tapisan` | checkbox | none | offered after selecting a page; a filter action needs at least one filter | ERR-CON-03 when the count changed |
+| 03-14 | Bulk `Tetapkan Bab` | action + select | Bab required | chapters of the single Subjek + Tingkatan of the filter; dry-run "{n} soalan akan dipautkan ke Bab {nama}"; skipped rows listed | "Sila pilih sekurang-kurangnya satu penapis (subjek/aras/status/carian) sebelum meluluskan secara pukal."; "Bab tidak sepadan dengan subjek dan tahap." |
+| 03-15 | Bulk `Hantar untuk semakan`, `Terbitkan`, `Arkib` | actions | n/a | `POST /api/questions/bulk-action` (API-Q-04, group-aware); cap `FILTER_ACTION_CAP` = 1,000 per run | "Sila pilih tindakan terlebih dahulu.", "Sila pilih sekurang-kurangnya satu soalan."; result "{ok} berjaya, {gagal} dilangkau" with the skipped list and reasons |
+| 03-16 | Row menu `Pratonton`, `Edit` (draft or review) or `Edit sebagai draf` (approved), `Semak` (review), `Sembunyikan` | menu | n/a | `Sembunyikan` = `Arkib` shortcut, confirm "Sembunyikan soalan ini daripada murid?" (`Batal` / `Ya, Sembunyikan`) | ERR-CON-02 "Buka Draf" when a draft already exists |
+| 03-17 | `Dilihat murid di {n} daripada 6` | expandable | n/a | the six activities of Q-06 with BM reasons | n/a |
+| 03-18 | Group badge | badge | on members | "Kumpulan · {n} soalan" | n/a |
+Behaviour: header buttons `Cipta baharu` (choice `Soalan tunggal` / `Kumpulan rangsangan`), `Import PDF`, `Import CSV`; link `Bank lama (legasi) →`; 25 per page; sort `id` desc; empty "Tiada soalan sepadan dengan penapis."; confirm bulk `Terbitkan`: title "Terbitkan {n} soalan?", body "Soalan yang tidak lulus semakan akan dilangkau dan dilaporkan.", `Batal` / `Ya, Terbitkan`; `Arkib` bulk adds "Soalan akan terus dikeluarkan daripada paparan pelajar." and warns the Terbit papers affected ("{n} kertas terbit terjejas"); the Studio tile `Menunggu Semakan` is the single review queue (`?status=review`, Fix of D113). A group counts as a unit in every bulk action (FR-QA-03). Errors per SR-1.
+- FR-ADM-Q03.8 (D113) The filters of 03-01 to 03-10 are all supported by `GET /api/questions` (API-Q-01: `tingkatan`, `chapter`, `unit`, `status`, `rejected`, `jenis`, `source`, `kertas`, `q` by text or id) and the Studio list has them (gap: today it lacks Tingkatan, Bab and DSKP filters).
+- FR-ADM-Q03.9 (m1) `Sembunyikan` is the V2 Panel shortcut to `Arkib` (same transition, same confirm, same audit).
+- AC-ADM-Q03.4 Given Subjek Sains and Tingkatan 4, when the admin picks a Bab and a Tajuk DSKP, then only questions with that `chapter_id` and unit remain and the URL keeps all filter values after paging.
+- AC-ADM-Q03.5 Given a rejected question, then it shows `Ditolak` with its reason, `status=draft&rejected=true` filters it, and sending it again clears the reason (AC-QA-32).
 
 #### R1-ADM-Q-04 Studio `Cipta baharu` / `Sunting soalan` wizard | `/admin/studio/questions/create`, `/admin/studio/questions/:id/sunting` | P0 | GH built / UAT built
 - **Action: Fix** | gap and differences: 4.V row Q-04.
 
 **Screen specification (from V2).**
-- Routes and titles: create `/admin/studio/questions/create`, "Studio — Cipta soalan - Admin Panel"; edit `/admin/studio/questions/{id}/edit`, "Studio — Sunting soalan - Admin Panel"; preview `/admin/studio/questions/{id}/preview`, "Pratonton — Soalan #{id} — PRESTASIPLUS".
+- Routes and titles: create `/admin/studio/questions/create`, "Studio — Cipta soalan - Admin Panel"; edit (V2 `/admin/studio/questions/{id}/edit`, V3 `/admin/studio/questions/{id}/sunting`), "Studio — Sunting soalan - Admin Panel"; preview `/admin/studio/questions/{id}/preview`, "Pratonton — Soalan #{id} — PRESTASIPLUS".
 - Regions, edit page (top to bottom): the line "Sumber soalan:" with the source badge "Import (PDF/DOCX)"; the draft-recovery banner "Terdapat kerja yang belum disimpan daripada sesi sebelum ini." with buttons `Pulihkan` and `Buang` (shown on create too); the status bar: `Status`, a badge ("Draft"), "Belum dipapar kepada pelajar." and the buttons `Pratonton`, `Hantar untuk semakan`, `Arkib`; the tab strip `Kertas` / `Rangsangan` / `Sub-bahagian` / `Tag`; the four steps; the save bar. The create page has the same body without the status bar.
 - Langkah 1 "Kertas & bahagian": "Letak soalan dalam kertas peperiksaan, atau simpan sebagai soalan bank." Field `Kertas (pilihan)`: select, first option "— Soalan bank (tiada kertas) —", then every paper by name (V2 lists more than 100, sorted alphabetically, including test papers; V3 filters the picker by Subjek, Tahun and Negeri, see the register). Field `Bahagian`: select, first option "—", then "{paper} · {section}" (e.g. "2025 Johor - Bahasa Inggeris Kertas 1 · Part 1").
 - Langkah 2 "Rangsangan (stimulus)": "Petikan, rajah atau jadual yang menjadi konteks soalan. Matematik ditulis sekali di sini." Fields: `Jenis rangsangan` (select: Passage, Box, Table, Diagram, Graph, Image, Infographic, Code, Pseudocode, Sql, Math, Audio, Video, Map, Cartoon); `Kapsyen (pilihan)` (text); a rich editor with toolbar `B`, `I`, `• Senarai`, `1. Senarai`, `</>`, `Jadual`, `+Baris`, `+Lajur`, `×Jadual`, `√x`, `√x blok`, `Imej`, undo `↶`, redo `↷`; an inline-math dialog "Matematik dalam baris (LaTeX)" with `Sisip` and `Batal`; the note "Matematik dipaparkan terus (MathML statik) — ditulis sekali di sini, dipapar sama kepada pelajar."
@@ -453,9 +575,9 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - Preview page: see QE-01 (SULIT header, "Pratonton — Draft.", "Soalan ini belum diterbitkan; pelajar tidak dapat melihatnya lagi.", `Kembali ke Studio`, parts with "[n markah]" and "0 patah perkataan").
 - Panel variants: Quick Edit and Pratonton at `/spm/soalan/{id}/sunting` and `/pratonton` are specified in R1-ADM-Q-24.
 - Validation and flash messages: not shown in the V2 pages as captured — follow the Reference list above (flashes, "Peralihan ... tidak dibenarkan.") and FR-ADM-QE4.
-- V3: the order of steps, the 8 types, the DSKP fields and the stimulus-group handling replace V2 steps 1 to 4 as set by FR-ADM-QE2, QE3 and QE4.
+- V3: the order of steps, the 11 types, the DSKP fields and the stimulus-group handling replace V2 steps 1 to 4 as set by FR-ADM-QE2, QE3 and QE4.
 - Reference (DISC 3.1): titles "Studio — Cipta soalan" (subtitle "Cipta soalan kanonikal dari kosong (draf)"), "Studio — Sunting soalan" ("Soalan draf #{id}"); status bar `Status`, badge, "Belum dipapar kepada pelajar.", `Pratonton`, `Hantar untuk semakan`, `Arkib`, `Terbitkan` (no confirm); flashes "Soalan draf disimpan. Terbitkan melalui semakan apabila sedia.", "Soalan dihantar untuk semakan.", "Soalan diterbitkan — kini boleh dijawab oleh pelajar.", "Soalan diarkibkan — tidak lagi dipapar kepada pelajar."; "Peralihan '{from}' -> '{to}' tidak dibenarkan."; "Soalan ini telah diterbitkan. Gunakan "Edit sebagai draf" untuk menyuntingnya."; draft recovery "Terdapat kerja yang belum disimpan daripada sesi sebelum ini." `Pulihkan` / `Buang`; transitions draft->reviewed|archived, reviewed->approved|draft|archived, approved->archived, archived->draft.
-- FR-ADM-Q04.1 Form content and validation follow QE-02, QE-03, QE-04 (DSKP order, 8 types, panel).
+- FR-ADM-Q04.1 Form content and validation follow QE-02, QE-03, QE-04 (DSKP order, 11 types, panel).
 - FR-ADM-Q04.2 Field `Bab` (chapter select, `ChapterSelect.vue`, saved as `question_versions.chapter_id`, D89) sits in the Tag step; chapters are those of the chosen Subjek and Tingkatan; label "Bab"; required before `Terbit` when the chosen Subjek and Tingkatan has chapters (D-A5, D112(1), FR-ADM-QE4.5; Soalan by Chapter serves only linked questions). Legacy approved questions without Bab stay servable in Latih Tubi (D80) and are completed through `Soalan tanpa Bab` (FR-ADM-Q03.7).
 - FR-ADM-Q04.3 4-click path kept: `Cipta baharu`, `Simpan draf`, `Hantar untuk semakan`, `Terbitkan`.
 - FR-ADM-Q04.4 `Terbitkan` runs the approval gate; a failure lists every violation (same list as the panel), nothing else.
@@ -466,6 +588,45 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - AC-ADM-Q04.3 (E2E) Given the admin sets Bab "{one T5 Sains chapter}" and approves, when the T5 pupil opens Soalan by Chapter Sains, then that chapter lists 1 soalan (the index no longer says "Tiada subjek bab tersedia untuk tahap ini.").
 - Gap: bar "n belum lengkap" without detail; 422 at publish (E2E F1); `dskp-gate.ts:58-65`. Deviation: FD-QE-2/3/7, Bab field is not in V2 legacy (D89).
 - OQ: none (OQ-QE2 closed by D108(2)).
+
+**Field & behaviour spec.** End-to-end: see 45 §3.1. Step order `1 Tag`, `2 Kertas`, `3 Rangsangan`, `4 Sub-bahagian`. The IDs T-nn, K-nn, G-nn and L-nn are those of 45.
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| 04-01 | `Subjek` | select | required, `— Pilih Subjek —` | OPT-SUBJEK, active only | "Sila pilih subjek." |
+| 04-02 | `Tingkatan` | select | required | OPT-TINGKATAN | "Sila pilih tahap pendidikan."; changing it clears 04-03 to 04-12 |
+| 04-03 | `Tajuk DSKP` | searchable select | required where DSKP nodes exist (FR-ADM-QE4.6) | unit nodes, `{kod} {tajuk}`, natural order; empty: "DSKP belum dimuatkan untuk subjek ini." with link `Kurikulum > DSKP` | "Sila pilih unit DSKP." |
+| 04-04 | `SP` | multi-select 1 to 3 | required where nodes exist | SP nodes of 04-03, `{kod} {teks SP}` | "Sila pilih sekurang-kurangnya satu SP DSKP."; "Pilih paling banyak 3 SP."; "SP "{kod}" tiada dalam senarai kurikulum. Pilih SP daripada senarai DSKP."; no free text |
+| 04-05 | `SK` | read-only | derived | from 04-04 | none |
+| 04-06 | `TP` (soalan) | select | default for the leaves | OPT-TP 1 to 6 | leaf message below |
+| 04-07 | `TP` (bahagian) | select | required per leaf where nodes exist | OPT-TP | "Bahagian ({label}) belum ada TP." |
+| 04-08 | `Aras pemikiran` (soalan) | select | optional default | OPT-ARAS | none |
+| 04-09 | `Aras pemikiran` (bahagian) | select | required per leaf, SPM-bound T4/T5 where nodes exist | OPT-ARAS | "Bahagian ({label}) belum ada aras pemikiran." |
+| 04-10 | `KBAT` | badge + override select | `— Ikut aras pemikiran —` | OPT-KBAT-OVERRIDE | none |
+| 04-11 | `Bab` | select | required to publish when the Subjek + Tingkatan has chapters; hidden otherwise | `Bab {no}: {nama}` | "Sila pilih Bab."; "Bab tidak sah."; "Bab tidak sepadan dengan subjek dan tahap." |
+| 04-12 | `Topik` | select | optional | topics of 04-11 | "Topik tidak sah." |
+| 04-13 | `Tahap kesukaran` | select | required; pre-filled `min(5, TP)` until touched | OPT-KESUKARAN-5 (`1 Sangat Mudah` to `5 Sangat Sukar`); stored `difficulty_level`; separate from TP | "Sila pilih tahap kesukaran." |
+| 04-14 | `Rujukan buku teks` | Bab text, Tingkatan select, Muka surat, Hingga | optional | DM-56 | "Muka surat mesti nombor antara 1 dan 999." |
+| 04-15 | `Asal tingkatan` | select | only when no unit exists | `— Tiada —`, `Tingkatan 1-3`, `Tingkatan 4`, `Tingkatan 5` | none |
+| 04-16 | `Kertas` | select | required if SPM-bound; flat MCQ defaults `Kertas 1`; read-only when 04-17 chosen | OPT-KERTAS (1 to 4) | "Sila pilih kertas untuk soalan SPM." |
+| 04-17 | `Set kertas (pilihan)` | select | `— Soalan bank (tiada set kertas) —` | papers of the Subjek + Tingkatan, `{tahun} {negeri} - {subjek} Kertas {n}`, newest first, `is_test` excluded | none |
+| 04-18 | `Bahagian` | select | required if a paper is chosen | OPT-BAHAGIAN; shows the rule and mark budget read-only | "Sila pilih bahagian." |
+| 04-19 | `Nombor soalan` | text | optional, suggests next | `^[0-9]{1,3}[A-Za-z]?$`, unique in the paper | "Nombor soalan tidak sah."; "Nombor soalan {x} sudah digunakan dalam kertas ini." |
+| 04-20 | Start choice | radio | `Soalan tunggal` | `Soalan tunggal`, `Kumpulan rangsangan` | none |
+| 04-21 | Rangsangan step | choice | `Tiada rangsangan` | `Tiada rangsangan`, `Pilih kumpulan`, `Kumpulan baharu` (group fields G-01 to G-09 live in Q-05) | "Soalan ini bukan ahli kumpulan ini." etc. (ERR-CON-05) |
+| 04-22 | `Bahasa soalan` | select | `Bahasa Melayu` | `Bahasa Melayu`, `English`, `BM + English (dwibahasa)` | "Bahasa tidak sah."; "Teks English diperlukan untuk soalan dwibahasa." |
+| 04-23 | `Jenis tulisan` | select | `Rumi`; only for Pendidikan Islam, Bahasa Arab, Jawi, Pendidikan Al-Quran & As-Sunnah, Tasawwur Islam, Pendidikan Syariah Islamiah | `Rumi`, `Arab`, `Jawi`, `Campuran` | "Jenis tulisan tidak sah." |
+| 04-24 | `Jenis soalan` | select | required, `— Pilih Jenis —` | the 11 types of FR-ADM-QE3.2 | "Jenis soalan tidak sah." |
+| 04-25 | `Pengenalan soalan (pilihan)` / `Teks soalan` | rich text, bilingual per 04-22 | `Teks soalan` required for single-leaf types; MCQ stem >= 10 | stored once | "Teks soalan mesti sekurang-kurangnya 10 aksara." |
+| 04-26 | Leaf: `Label`, `Jenis jawapan`, `Markah`, `Arahan sub-bahagian` | text, select, number, textarea | required per leaf; marks 1 to 100; parents no marks | OPT-MOD-JAWAPAN limited by 04-24 | "Label bahagian diperlukan."; "Jenis jawapan tidak sah."; "Nilai mata mesti sekurang-kurangnya 1."; "Markah bahagian tidak boleh melebihi 100."; "Arahan tidak boleh melebihi 500 aksara." |
+| 04-27 | MCQ rows `Pilihan A` to `Pilihan H` | text + optional image, radio or checkbox | 2 to 8, default 4; `+ Pilihan`, `Buang pilihan`; `Betul / Salah` fixed | 45 §3.1.6 mode 1 | "Soalan aneka pilihan mesti ada 2 hingga 8 pilihan."; "Sila isi semua pilihan jawapan."; "Sila pilih jawapan betul."; "{n} jawapan betul dipilih. Soalan objektif hanya boleh ada satu."; "Label pilihan mesti A hingga H." |
+| 04-28 | Other leaf modes | per 45 §3.1.6 modes 2 to 9 | per mode | accepted answers, numeric value and tolerance, working, essay settings, alternatives, drawing and table_fill forms | "Sila masukkan jawapan betul."; "Toleransi tidak boleh negatif."; "Julat perkataan tidak sah."; "Esei pilihan mesti mempunyai 2 hingga 6 topik."; "Sekurang-kurangnya satu sel kosong diperlukan." |
+| 04-29 | `Rangsangan bahagian`, `Bergantung pada jawapan bahagian`, `Templat jawapan (pra-isi)` | selects, rich text | optional | FR-ADM-QE3.15, QE3.20 | "Rangsangan bahagian mesti daripada kumpulan soalan ini."; "Bahagian bergantung mesti selepas bahagian sumber." |
+| 04-30 | Skema | scheme editor | required for every non-MCQ leaf | FR-ADM-QE3.9, QE3.10 | "Jumlah skema ({n}) mesti sama dengan markah bahagian ({m})."; badge "⚠ tiada skema" |
+| 04-31 | `Sumber soalan` | read-only badge | n/a | `Manual`, `Import (PDF/DOCX)`, `Kiriman Guru`, `CSV` | none |
+| 04-32 | Draft recovery `Pulihkan`, `Buang` | banner | shown if a local draft exists | autosave to browser storage every 10 s, kept 7 days | "Terdapat kerja yang belum disimpan daripada sesi sebelum ini."; confirm "Buang kerja yang belum disimpan?" / "Kerja itu tidak boleh dipulihkan." (`Batal` / `Ya, Buang`) |
+Behaviour: status machine `draft -> review` (`Hantar untuk semakan`), `review -> approved` (`Terbitkan`, Admin Pusat, runs the approve gate), `review -> draft` (`Tolak` with `Sebab penolakan` 5 to 500 chars, "Sila nyatakan sebab penolakan (sekurang-kurangnya 5 aksara).", the owner is told "Soalan anda dikembalikan: {sebab}"), `draft|review|approved -> archived` (`Arkib`, confirm "Arkibkan soalan ini?" / "Soalan ini tidak lagi dipaparkan kepada pelajar. {n} kertas terbit yang memuatkannya akan terjejas." / `Batal` `Ya, Arkibkan`), `archived -> draft` (`Pulihkan sebagai draf`); anything else ERR-CON-04. Approved is read-only: "Soalan ini telah diterbitkan. Gunakan "Edit sebagai draf" untuk menyuntingnya."; `Edit sebagai draf` flash "Draf baharu #{id} dicipta. Soalan asal kekal diterbitkan sehingga draf ini diterbitkan."; a second attempt ERR-CON-02. Save bar "{n} markah · {m} belum lengkap"; `Jumlah markah` = sum of leaf marks; question TP = highest leaf TP; KBAT marks recomputed on save. Autosave chip ERR-SAVE-01; concurrent edit ERR-CON-02b. A group member shows `Terbitkan` disabled ("Terbitkan melalui kumpulan.").
+- FR-ADM-Q04.7 (D113) The wizard route is `/admin/studio/questions/:id/sunting` (V2 `/edit` redirects to it) and the old flat form `/admin/questions/create` and `/:id/edit` redirect to the wizard with the notice "Borang soalan lama telah dipindahkan ke Studio. Sila cipta soalan baharu di sini."
+- AC-ADM-Q04.4 Given TP 3, then Kesukaran pre-fills 3; after the admin sets 4 and later changes TP to 5, then Kesukaran stays 4 (AC-QA-31).
 
 #### R1-ADM-Q-05 Stimulus group screen | `/admin/studio/groups/:id` | P0 | GH built / UAT unverified
 - **Action: Complete** | gap: 4.V row Q-05.
@@ -478,18 +639,26 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - AC-ADM-Q05.1 Given a group of 3, when the admin moves member 3 to position 1, then the pupil's paper shows the new order after republish.
 - Gap: unproven E2E (section 4.0). Deviation: FD-QE-1.
 
+**Field & behaviour spec.** End-to-end: see 45 §3.1.4, §4.3, §6.2 to §6.5. Per stimulus (1 to 3): G-01 `Label` (text <= 100, required, drives figure matching, "Sila isi label rangsangan."), G-02 `Jenis rangsangan` (OPT-JENIS-RANGSANGAN, default `Petikan`, "Sila pilih jenis rangsangan."), G-03 `Kapsyen (pilihan)` (<= 300, bilingual in `ms+en`, "Kapsyen tidak boleh melebihi 300 aksara."), G-04 rich-text editor (Petikan <= 20,000 chars "Petikan mesti mempunyai teks."; Jadual head and >= 1 row or an image, max 12 columns and 60 rows, cell 500 chars, "Jadual mesti mempunyai kepala dan sekurang-kurangnya satu baris, atau imej."), G-05 `Imej` (JPG, PNG, WebP, <= 2 MB, required for image kinds, "Sila muat naik imej untuk rangsangan ini."; ERR-REQ-03, -04), G-06 `Teks alternatif` (<= 1000, required for image kinds, "Sila isi teks alternatif untuk imej ini."), G-07 `Sumber petikan (pilihan)` (<= 300, shown as "Sumber: …"), G-08 `Skop rangsangan` (hidden, `section` default, `paper` for BI banks), G-09 `Bank pilihan (A-H)` rows `Huruf`, `Teks`, `Gambar`, `Pengganggu` (2 to 8, "Bank pilihan mesti ada sekurang-kurangnya 2 pilihan.").
+Action bar: `Tambah rangsangan` ("Satu kumpulan mesti mempunyai 1 hingga 3 rangsangan."), `Pratonton kumpulan`, `Tambah soalan` (API `POST /api/stimulus-groups/:id/questions`), `Lampirkan soalan sedia ada` (searchable select of draft or approved questions of the same Subjek and Kertas in no group, label `#{id} {80 aksara}`; "Soalan ini sudah berada dalam kumpulan ini."; "Soalan yang diarkibkan atau dinyahaktifkan tidak boleh dimasukkan ke dalam kumpulan."), `Naik` / `Turun` ("Susunan mesti menyenaraikan semua soalan kumpulan tepat sekali."), `Buang` (confirm "Keluarkan soalan daripada kumpulan?", `Batal` / `Ya, Keluarkan`), `Pindah ke kumpulan lain`, `Bubarkan kumpulan` (confirm "Bubarkan kumpulan ini?", body "Soalan ahli kekal, tanpa rangsangan bersama.", flash "Kumpulan rangsangan berjaya dibubarkan. Soalan ahli kekal, tanpa rangsangan bersama."), `Terbitkan kumpulan`, `Sunting kumpulan`, `Buang draf kumpulan`, `Arkibkan kumpulan`, `Gabungkan kumpulan`.
+States: group badge `Draf` / `Diluluskan` / `Draf salinan`; group of 0 members "Kumpulan belum mempunyai soalan." (cannot be placed in a paper: "Kumpulan perlu sekurang-kurangnya 1 soalan."); last member removed "Kumpulan ini kini kosong. Bubarkan kumpulan jika rangsangan ini tidak diperlukan lagi."; more than 40 members "Satu kumpulan boleh mempunyai paling banyak 40 soalan."; served group: banner of FR-ADM-QE1.7; deleting a stimulus with members "Rangsangan ini masih digunakan oleh {n} soalan."; confirm `Padam rangsangan?`. Flashes: "Kumpulan rangsangan berjaya dicipta.", "…dikemaskini.", "Soalan berjaya ditambah ke dalam kumpulan.", "Soalan berjaya dikeluarkan daripada kumpulan.", "Susunan soalan dalam kumpulan berjaya dikemaskini.". The member list shows number label, first 120 characters, status chip and servability reasons.
+- FR-ADM-Q05.4 (B1, B2, m3; FR-QA-02, 04, 06, 10) The group screen offers `Terbitkan kumpulan`, `Sunting kumpulan`, `Pindah ke kumpulan lain`, `Gabungkan kumpulan` and `Arkibkan kumpulan` as in FR-ADM-QE1.6, QE1.7, QE2.7.
+- AC-ADM-Q05.2 Given a served group, when the admin edits a stimulus in place, then the server answers 409 `stimulusServed` and the screen offers `Sunting kumpulan`; AC-ADM-Q05.1 passes through the draft copy (AC-QA-04).
+
 #### R1-ADM-Q-06 Servability gate and indicator "Dilihat murid di" | in Q-03, Q-04, Q-14, Q-15 | P0 | GH partly / UAT "0/6"
 - **Action: Complete** | gap: 4.V row Q-06.
 
 **Screen specification (from V2).** Not observed in V2 — V2 shows only the hub attention line per lane (R1-ADM-Q-01: "Semua elok", "20 set tidak lengkap", "2,428 tiada skema — tidak disajikan") and the `Perhatian` column of the lane lists (R1-ADM-Q-02, shown as "—" when empty). The per-question six-activity indicator is V3 behaviour: follow FR-ADM-Q06.1..Q06.3.
 - Reference: V2 has logic only, no UI (PAR A29); source PIPE US-04/05, AC-R1-17.
-- FR-ADM-Q06.1 For a question the admin sees seven activities, the enum of 60 API-Q-11 (F-19): `databank` (Databank), `latih_tubi_spm` (Latih Tubi), `bab` (Soalan by Chapter), `simulasi_paper` (Simulasi), `simulasi_kuiz` (Kuiz), `jana_kertas` (Jana Kertas) and `permainan` (Permainan); the labels in brackets are the earlier six-activity names of this PRD, now mapped to those values (the live "0/6" figure is the old six-activity count and becomes "n daripada 7"). Each `Boleh dilihat` / `Tidak boleh dilihat` with a BM reason from the catalogue (e.g. "Belum ditanda DSKP — tidak dimasukkan dalam kertas blueprint dan Jana set.").
+- FR-ADM-Q06.1 For a question the admin sees six served activities of the enum of 60 API-Q-11 (F-19): `databank` (Databank), `latih_tubi_spm` (Latih Tubi), `bab` (Soalan by Chapter), `simulasi_paper` (Simulasi), `simulasi_kuiz` (Kuiz) and `permainan` (Permainan); `jana_kertas` stays in the enum for admin use only (no pupil Jana Kertas, D112(6), FR-QA-45) and is not counted (the live "0/6" figure was the six-activity count and becomes "n daripada 6"). Each `Boleh dilihat` / `Tidak boleh dilihat` with a BM reason from the catalogue (e.g. "Belum ditanda DSKP — tidak dimasukkan dalam kertas blueprint dan Jana set.").
 - FR-ADM-Q06.2 The indicator and the pupil query use the same rule code (`questions/serving/rules.ts`); a contract test of 20 mixed questions proves equality (AC-R1-17.2).
 - FR-ADM-Q06.3 Untagged legacy MCQs show Latih Tubi `Boleh dilihat` and Bijak/Jana set `Tidak boleh dilihat` (D80 Q-01).
-- FR-ADM-Q06.4 (F-05, D-A5) For activity `Soalan by Chapter` (and the Heatmap Topik Lemah) a question with no Bab (only possible for legacy rows or a Subjek + Tingkatan without chapters, since FR-ADM-QE4.5 requires Bab before `Terbit` where chapters exist) reads `Tidak boleh dilihat` with the reason "Bab belum dipaut - tidak disajikan dalam Soalan by Chapter." [PROPOSED copy], with a link to the Bab field and to the work-list `Soalan tanpa Bab` (FR-ADM-Q03.7).
+- FR-ADM-Q06.4 (F-05, D-A5) For activity `Soalan by Chapter` (and the Heatmap Topik Lemah) a question with no Bab (only possible for legacy rows or a Subjek + Tingkatan without chapters, since FR-ADM-QE4.5 requires Bab before `Terbit` where chapters exist) reads `Tidak boleh dilihat` with the reason "Bab belum dipaut - tidak disajikan dalam Soalan by Chapter." (R1 decision D113), with a link to the Bab field and to the work-list `Soalan tanpa Bab` (FR-ADM-Q03.7).
 - AC-ADM-Q06.1 Given a legacy untagged MCQ, then Latih Tubi = Boleh dilihat and Simulasi = Tidak boleh dilihat with the reason above.
 - AC-ADM-Q06.2 (E2E) Given the indicator says Latih Tubi `Boleh dilihat` for question X, when the T5 pupil starts a Latih Tubi that can draw X, then X can appear; if `Tidak boleh dilihat`, X never appears.
 - Gap: "0/6" shown for rows although Latih Tubi serves them (GAP 5.3): the count denominator/definition must say what the 6 are. Deviation: new UI over V2 logic (D79d allows because it fits the existing list).
+
+**Field & behaviour spec.** Display only (0 fields). The indicator reads "Dilihat murid di {n} daripada 6" and expands to the six activities: `databank` Databank, `latih_tubi_spm` Latih Tubi, `bab` Soalan by Chapter, `simulasi_paper` Simulasi, `simulasi_kuiz` Kuiz, `permainan` Permainan (OPT-SERVABILITY; state `Boleh dilihat` / `Tidak boleh dilihat`); `jana_kertas` stays in the enum for admin use only and is neither served nor counted in R1 (D112(6), FR-QA-45, conflict C-3). Reasons (BM) come from the catalogue plus: "Kumpulan belum lengkap - {n} soalan belum diluluskan." (`group_incomplete`), "Rangsangan tiada - soalan merujuk {Rajah 14} tetapi tiada gambar." (`stimulus_missing`), "Bab belum dipaut - tidak disajikan dalam Soalan by Chapter." (`chapter_missing`), "Soalan bergambar tidak digunakan dalam permainan." (`permainan`: a question with an image or stimulus is not used in games, D85 U6, 48 GAME-00 section 3.2). Loading "Menyemak…". The summary "n daripada 6" replaces every earlier "n daripada 7".
 
 #### R1-ADM-Q-07 `Import & Semakan` (3 tabs) | `/admin/spm/soalan/ekstrak` (alias `/admin/studio/imports`) | P0 | GH built (list) / UAT extraction stuck
 - **Action: Fix** | gap and differences: 4.V row Q-07.
@@ -503,9 +672,9 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - The upload buttons live in the Studio header (R1-ADM-Q-03), not on this page. Error and progress copy: not observed — follow FR-ADM-Q07.2.
 - Reference (DISC 3.2): tabs `Kelompok Item` (columns `Fail Sumber`, `Subjek`, `Bilangan Soalan`, `Disemak`, `Status`, link `Semak`), `Kertas Diimport` (columns `Kertas`, `Subjek`, `Bilangan Soalan`, `Status`, link `Semak & Terbit`, empty "Tiada kertas diimport lagi."), `Kiriman Guru`.
 - FR-ADM-Q07.1 Three tabs with these names and columns; header buttons `Muat Naik Kertas`, `Tulis Soalan Manual`, `Import CSV`.
-- FR-ADM-Q07.2 `Kelompok Item` shows a batch status that ends: "Sedang diproses" for at most the job timeout, then "Gagal" with the reason (no infinite spinner; today none, E2E F2) [PROPOSED copy: "Pengekstrakan gagal: {sebab}"], and a `Cuba lagi` button.
+- FR-ADM-Q07.2 `Kelompok Item` shows a batch status that ends: "Sedang diproses" for at most the job timeout, then "Gagal" with the reason (no infinite spinner; today none, E2E F2) (R1 decision D113: "Pengekstrakan gagal: {sebab}"), and a `Cuba lagi` button.
 - FR-ADM-Q07.3 `Kertas Diimport` lists draft papers created from a batch (Hantar untuk semakan) and links `Semak & Terbit` to Q-15 (OQ-Q07).
-- FR-ADM-Q07.6 (F-01, D-A2) `Hantar untuk semakan` on a batch whose items are all decided (none `pending`; at least one accepted) turns the accepted batch into a Bijak/SPM paper: one draft paper per paper code in the batch (`papers` row, `surface='simulasi'`; subject, Tingkatan, Kertas, year, exam board and title from the batch), one section per printed Bahagian (with its rule `semua` / `pilih N` copied from the Disahkan contract when one exists), and one placement per accepted question. The paper keeps the printed question order, the Bahagian of each item and the stimulus groups (each group placed whole and contiguous, never split). The paper is a draft until published through `Semak & Terbit`. API `POST /api/intake/batches/:id/paper` (C documents it); 409 while an item is still `pending`; 422 when a placement would split a group.
+- FR-ADM-Q07.6 (F-01, D-A2) `Hantar untuk semakan` on a batch whose items are all decided (none `pending`; at least one accepted) turns the accepted batch into a Bijak/SPM paper: one draft paper per paper code in the batch (`papers` row, `surface='simulasi'`; subject, Tingkatan, Kertas, year, exam board and title from the batch), one section per printed Bahagian (with its rule `semua` / `pilih N` copied from the Disahkan contract when one exists), and one placement per accepted question. The paper keeps the printed question order, the Bahagian of each item and the stimulus groups (each group placed whole and contiguous, never split). The paper is a draft until published through `Semak & Terbit`. API `POST /api/intake/batches/:id/paper` (API-Q-25; GAP: this route does not exist in the code today and is built by the intake card, see section A2 item 9); 409 while an item is still `pending`; 422 when a placement would split a group.
 - FR-ADM-Q07.7 (D-A2) `Semak & Terbit` opens Q-15 with a preview before publishing: the preview shows the paper as a pupil would see it (sections, order, each stimulus once above its members), and `Terbitkan` is offered only from the preview.
 - FR-ADM-Q07.8 (D-A2) Before publishing, the paper is validated against the blueprint (Kontrak Simulasi) of its subject and Kertas, as in Q-15: section count and rules, question count and marks per section, and DSKP coverage. Each violation is listed by name; a paper with a violation is not published (the exception path of Q-15 applies unchanged). A paper with no Disahkan contract follows Q-15's contract rule.
 - FR-ADM-Q07.9 (D-A2) `Kertas Diimport` columns stay `Kertas`, `Subjek`, `Bilangan Soalan`, `Status`; `Bilangan Soalan` counts placed questions (stimulus excluded). A batch that already has a paper shows `Semak & Terbit` instead of creating another one.
@@ -514,23 +683,53 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - AC-ADM-Q07.1 Given a PDF uploaded on UAT, when 5 minutes pass, then the batch is "Selesai" with items or "Gagal" with a reason; never still "Sedang diproses".
 - AC-ADM-Q07.2 (E2E) Given the admin accepts and approves items from a real trial paper, when the T5 pupil opens Databank for that subject, then the approved MCQs can appear (R1-20.4).
 - AC-ADM-Q07.3 Given a batch with Bahagian A (10 items) and Bahagian B (5 items), of which items 5-8 form a group, when `Hantar untuk semakan` is pressed, then one draft paper with 2 sections and 15 placements exists, items 5-8 are adjacent in one section in printed order, and `Kertas Diimport` lists it with Bilangan Soalan 15.
-- AC-ADM-Q07.4 Given a batch with one item still `pending`, when `Hantar untuk semakan` is pressed, then no paper is created and the message names the number of undecided items; given the placement would split a group, then the request is refused (422) and the group is named.
+- AC-ADM-Q07.4 Given a batch with one item still `pending`, when `Hantar untuk semakan` is pressed, then no paper is created and the message names the number of items that still have no decision; given the placement would split a group, then the request is refused (422) and the group is named.
 - AC-ADM-Q07.5 Given the draft paper of AC-ADM-Q07.3, when the admin opens `Semak & Terbit`, then the preview shows 2 sections and the group once above items 5-8; given the blueprint requires 12 questions in Bahagian A, then the violation is listed and `Terbitkan` is refused until fixed or the exception path is used.
 - AC-ADM-Q07.6 (E2E) Given the paper is published, when a T5 pupil opens Bijak SPM, then the paper appears with the same question order, sections and group figure as in the preview.
-- Gap: `JOBS_WORKER_ENABLED` default false (`jobs.config.ts:15,33`), `OCR_ENGINE` default none (`ocr.config.ts:38`), `AI_PROVIDER=mock` (PAR A06); AC-R1-14.2 not passable. The fix is the in-house Tesseract worker, not an AI provider (D112(2)). Deviation: FD-QE-4.
-- OQ-Q07 what `Kertas Diimport` lists in V3 (V2 lists DOCX papers). Recommendation: papers created from a batch.
+- Gap: `JOBS_WORKER_ENABLED` default false (`jobs.config.ts:15,33`), `OCR_ENGINE` default none (`ocr.config.ts:38`), `AI_PROVIDER=mock` (PAR A06); AC-R1-14.2 not passable. The fix is the in-house Tesseract worker (D112(2)); `AI_PROVIDER` is not used by this flow and no external AI is configured. Deviation: FD-QE-4.
+- OQ-Q07 what `Kertas Diimport` lists in V3 (V2 lists DOCX papers). Decided (D-A2): papers created from a batch.
+
+**Field & behaviour spec.**
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| 07-01 | Tabs `Kelompok Item`, `Kertas Diimport`, `Kiriman Guru` | tabs | `Kelompok Item` | n/a | n/a |
+| 07-02 | Batch `Status` | badge | n/a | OPT-BATCH-STATUS: `Dihantar`, `Sedang diproses`, `Selesai`, `Gagal`, `Dibatalkan`; also `Selesai dengan ralat` (FR-QA-38) | `Gagal` shows "Pengekstrakan gagal: {sebab}" (ERR-INT-10, {sebab} = ERR-INT-01..08) and `Cuba lagi`; after 3 tries ERR-INT-11 |
+| 07-03 | `Disemak` | counter | n/a | `{diputuskan}/{jumlah}` | n/a |
+| 07-04 | `Hantar untuk semakan` (batch) | button | enabled when 0 items `pending` and >= 1 accepted | `POST /api/intake/batches/:id/paper` (API-Q-25; the route does NOT exist today, a gap built by S1-T10) | ERR-CON-05 "{n} item belum diputuskan."; 422 ERR-QST-02 "Kumpulan {nama} akan terbelah." |
+| 07-05 | `Batalkan` (batch) | action | before ready | `POST /api/intake/batches/:id/cancel`; confirm "Batalkan kelompok ini?" `Batal` / `Ya, Batalkan` | ERR-INT-09 |
+Behaviour: 20 per page, "Menunjukkan {a} hingga {b} daripada {n} keputusan"; the job timeout is 15 min for a whole batch and 90 s per page (45 §3.3.3); empty `Kelompok Item` "Tiada kelompok item lagi.", `Kertas Diimport` "Tiada kertas diimport lagi."; batch machine submitted -> processing -> ready_for_review | failed, any pre-ready -> cancelled, failed -> submitted by `Cuba lagi`; duplicate badges `Sama`, `Hampir sama`, `Varian` with `Pautkan` / `Diketepikan` (FR-QA-36). Quota messages ERR-QUOTA-03..05.
 
 #### R1-ADM-Q-08 `Muat Naik Kertas` | `/admin/spm/soalan/muat-naik` | P0 | GH built / UAT form ok, extraction fails
 - **Action: Fix** | gap and differences: 4.V row Q-08.
 
 **Screen specification (from V2).** V2 has no PDF upload and no page of its own; the upload is two modals opened from the Studio header. Modal 1 "Import set DOCX": text "Muat naik satu fail ZIP mengandungi folder set (DOCX utama, Skema, imej)." and "Kertas diimport sebagai DRAF — tiada apa-apa diterbitkan kepada pelajar sehingga anda menerbitkannya. Pemprosesan berjalan serta-merta; kertas besar mungkin mengambil beberapa saat."; a file chooser; buttons `Batal` and `Muat naik & proses`. Modal 2 "Import BI Kertas 1 (Comprehension)": "Muat naik fail DOCX soalan (Part 1–5). Soalan, pilihan & jawapan diekstrak automatik."; fields `Fail soalan (DOCX) *`, `Fail skema jawapan (DOCX) — pilihan` (hint "Perlu hanya jika fail soalan tiada grid ANSWERS di hujungnya."), `Tajuk kertas — pilihan`; note "Kertas diimport sebagai DRAF — anda semak & betulkan, kemudian terbitkan. Pemprosesan berjalan serta-merta."; buttons `Batal` and `Muat naik & ekstrak`. No validation or error copy is shown in the capture. V3 page fields: FR-ADM-Q08.1..Q08.4 and FR-ADM-QE5.1.
 - Reference: V2 had CLI only (PAR A06); DOCX modal text "Kertas diimport sebagai DRAF — tiada apa-apa diterbitkan kepada pelajar sehingga anda menerbitkannya." kept as notice.
-- FR-ADM-Q08.1 Fields per QE-05.1; PDF max size [PROPOSED 30 MB as V2 ZIP]; optional skema PDF.
+- FR-ADM-Q08.1 Fields per QE-05.1; PDF max size 30 MB (R1 decision D113); optional skema PDF.
 - FR-ADM-Q08.2 Source/rights declaration messages as D99.
 - FR-ADM-Q08.3 After upload the admin lands on the batch page (`/ekstrak/:batchId`) and sees progress.
 - FR-ADM-Q08.4 A digital PDF uses its text layer first; a scanned PDF uses OCR (D81, ADR-0034).
 - AC-ADM-Q08.1 Given a missing declaration, then "Pengisytiharan sumber diperlukan." and no batch is created.
 - Gap: see Q-07. Deviation: FD-QE-4, FD-QE-5.
+
+**Field & behaviour spec.**
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| 08-01 | `Subjek` | select | required | OPT-SUBJEK | "Sila pilih subjek." |
+| 08-02 | `Tingkatan` | select | required | OPT-TINGKATAN | "Sila pilih tahap pendidikan." |
+| 08-03 | `Kertas` | select | required | OPT-KERTAS (1 to 4) | "Kertas tidak sah." |
+| 08-04 | `Bahagian` | select | optional (one Bahagian per upload; empty = whole paper) | OPT-BAHAGIAN of the contract | "Bahagian tidak dikenali." |
+| 08-05 | `Tahun` | select | required | OPT-TAHUN (2015 to current year) | "Tahun diperlukan." |
+| 08-06 | `Negeri / badan` | select | required | OPT-NEGERI-KERTAS (22) | "Negeri atau badan diperlukan." |
+| 08-07 | `Jenis` | select | required | OPT-JENIS-KERTAS (`Percubaan`, `Sebenar`, `Modul`, `Topikal`, `Latihan`; the old `INTAKE_PAPER_TYPES` strings are retired and mapped) | "Jenis kertas diperlukan." |
+| 08-08 | `Set` | text | optional | <= 20, e.g. `Set 1` | "Set tidak boleh melebihi 20 aksara." |
+| 08-09 | `Kod kertas` | text | optional; default from the contract | `^[0-9]{4}/[0-9]$` | "Kod kertas tidak sah. Contoh: 1449/1." |
+| 08-10 | `Sumber` | text | required | <= 200 | "Pengisytiharan sumber diperlukan." |
+| 08-11 | `Status hak cipta` | radio | required | OPT-SALINAN-HAK-CIPTA (`Milik sendiri / sekolah`, `Kertas rasmi KPM / LPM`, `Pihak ketiga / komersial`) | "Status hak cipta diperlukan." |
+| 08-12 | Pengisytiharan | checkbox | required | "Saya mengesahkan sumber kertas ini dan berhak menggunakannya." | "Pengisytiharan sumber diperlukan." |
+| 08-13 | `Fail kertas (PDF)` | file | required | `.pdf`, <= 30 MB, 1 file | "Format fail tidak sah. Gunakan .pdf."; ERR-REQ-03 "Fail melebihi had 30 MB."; ERR-INT-01..03 (encrypted, corrupt, too many pages) |
+| 08-14 | `Skema jawapan (PDF)` | file | optional | `.pdf`, <= 30 MB | same |
+| 08-15 | `Batal`, `Muat naik & ekstrak` | buttons | n/a | creates a batch and opens `/ekstrak/:batchId` | SR-1 |
+Behaviour: progress "Memuat naik… {x}%"; polling every 5 s; a digital PDF uses the text layer, a scanned one in-house Tesseract (`source` text-layer or ocr); some pages unreadable gives `Selesai dengan ralat` and "{n} halaman tidak dapat dibaca; semak secara manual." with `Cuba lagi` per page; total failure `Gagal` with the reason; a re-upload creates a new batch. The max size 30 MB is the R1 value (R1 decision D113); intake limits ERR-QUOTA-03..05.
 
 #### R1-ADM-Q-09 `Semak Ekstrak` (item review) | `/admin/spm/soalan/ekstrak/:batchId` | P0 | GH built / UAT cannot reach (no items)
 - **Action: Fix** | gap: 4.V row Q-09.
@@ -541,10 +740,23 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - FR-ADM-Q09.2 Groups appear as headers with adjustable range (QE-05.4); the per-part tag editor shows unit, SP, TP, KBAT with suggestion and confidence.
 - FR-ADM-Q09.3 Terima validates tags on the form (QE-04) and refuses with the field name; a free-text SP is impossible.
 - FR-ADM-Q09.4 After Terima the batch counter "Disemak" updates and `Hantar untuk semakan` is enabled when at least one draft exists (today "Tiada soalan", E2E F2).
-- FR-ADM-Q09.5 `Tolak (R)` removes the item from the batch count with a reason [PROPOSED].
+- FR-ADM-Q09.5 `Tolak (R)` removes the item from the batch count and stores the optional reason `Sebab tolak` (R1 decision D113).
 - AC-ADM-Q09.1 Given 10 items with 2 groups, when `Terima semua yang belum disemak`, then drafts keep their group membership and kertas/bahagian.
 - AC-ADM-Q09.2 (E2E) Given items accepted, tagged and approved (Q-03), then Terbit papers can include them (Q-14) and the pupil sees them in Bijak SPM.
 - Gap: `IntakeReviewPage.vue`; manual Terima fails on free-text SP (E2E F2). Deviation: FD-QE-1, 7.
+
+**Field & behaviour spec.**
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| 09-01 | `Teks soalan` | rich text | required | extracted stem, editable | "Teks soalan mesti sekurang-kurangnya 10 aksara." |
+| 09-02 | `Pilihan A` to `Pilihan H`, `Jawapan` | text + radio | per 04-27 | extracted | as 04-27 |
+| 09-03 | `Cadangan Provenans` | read-only | n/a | year, state, set of the batch | n/a |
+| 09-04 | Tag editor per part | selects | unit, SP, TP, aras, Bab as 04-03 to 04-11, each with a `Keyakinan` band | `Tinggi` (>= 0.8), `Sederhana` (0.5 to 0.79), `Rendah` (< 0.5); pre-filled by the deterministic matcher, never auto-accepted | as Q-04 |
+| 09-05 | Group header "Rajah 3 -> soalan 5-8" | range, `Pisahkan`, `Lampirkan` | n/a | integers within the batch | "Julat soalan tidak sah." |
+| 09-06 | `Terima (A)`, `Tolak (R)`, `Simpan Sunting (E)`, `Terima semua yang belum disemak`, `Sebelum`, `Seterusnya`, `Terima kumpulan`, `Gabungkan kumpulan`, `Muat naik imej` | buttons and keys | n/a | `Terima` validates the tags and names the refused field | ERR-QST-01 |
+| 09-07 | `Sebab tolak` | text | optional | <= 200 | "Sebab tidak boleh melebihi 200 aksara." |
+Behaviour: item `pending -> accepted | rejected`, `rejected -> pending` before the batch is sent; accept creates a `draft` question (never servable); counter "Item {i} / {n}"; empty "Tiada item untuk disemak."; confirm `Terima semua yang belum disemak`: "Terima {n} item yang belum disemak?" `Batal` / `Ya, Terima Semua`, result "{ok} diterima, {gagal} gagal" with failed items opened first. Semantics of `Tolak`: FR-ADM-QE5.9. Nine modes are accepted and the caption kept (FR-QA-35).
+- FR-ADM-Q09.6 (D113) `Tolak (R)` asks the optional reason `Sebab tolak` (09-07); the item leaves the batch count and the reason is stored on the item.
 
 #### R1-ADM-Q-10 `Tulis Soalan Manual` | `/admin/spm/soalan/manual` | P0 (feeds Murid 9, 13, 16) | GH built / UAT built
 - **Action: Fix** | gap: 4.V row Q-10.
@@ -554,7 +766,9 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - FR-ADM-Q10.1 Entry into a batch for several questions with the same upload header (QE-05.1) and group support (QE-02); same validation as the wizard.
 - FR-ADM-Q10.2 Terima creates drafts carrying paper chosen (E2E F2 "chosen paper not carried").
 - AC-ADM-Q10.1 Given a manual batch with Kertas 1, when Terima, then drafts carry Kertas 1.
-- Gap: batch 0 questions after Terima (E2E F2). OQ: keep or fold into Studio (recommend keep, hidden from sidebar).
+- Gap: batch 0 questions after Terima (E2E F2). Decided (R1 decision D113): keep as a route, hidden from the sidebar.
+
+**Field & behaviour spec.** Header fields = 08-01 to 08-12 (no files); the question entry is the Q-04 table. `Simpan` creates drafts carrying Kertas and Bahagian; a batch with 0 questions shows "Kelompok kosong. Tambah sekurang-kurangnya satu soalan."; errors per SR-1.
 
 #### R1-ADM-Q-11 `Import CSV` and `Sejarah Import` | `/admin/questions/import`, `/admin/questions/import-history` | P0 (feeds Murid 9, 13, 16) | GH built / UAT built
 - **Action: Fix** | gap and differences: 4.V row Q-11.
@@ -570,6 +784,52 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - FR-ADM-Q11.1 Per QE-06; messages "Import selesai: {n} soalan diimport, {m} gagal." and "Fail CSV mesti mempunyai kolum question_text, correct_answer." (stale success banner cleared on error).
 - AC-ADM-Q11.1 Given the admin uploads a CSV with every DSKP column filled (QE-06), when the import finishes, then the message reads "Import selesai: {n} soalan diimport, 0 gagal." and each row can be published without opening the wizard. Gap: no DSKP columns (E2E F2). Deviation: FD-QE-5.
 
+**Field & behaviour spec.** End-to-end: see 45 §3.2 (FR-QA-33, 34). Form:
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| 11-01 | `Fail CSV *` | file | required | `.csv` or `.txt`, UTF-8 (BOM allowed), comma, `"` quoting, <= 5 MB, <= 2,000 data rows; hint "Saiz maksimum: 5MB. Format: CSV atau TXT" | SR-7 whole-file refusals; "Fail melebihi 2,000 baris. Pecahkan fail kepada beberapa bahagian." (422) |
+| 11-02 | `Fail imej (ZIP, pilihan)` | file | optional | ZIP <= 20 MB, images JPG, PNG, WebP <= 2 MB | "Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB." |
+| 11-03 | `Subjek Lalai` | select | `-- Tidak ditetapkan --` | OPT-SUBJEK | fills an empty `subject_code` |
+| 11-04 | `Tahap Pendidikan` | select | `-- Tidak ditetapkan --` | OPT-TINGKATAN | fills an empty `tingkatan` |
+| 11-05 | `Kesukaran` | select | `-- Tidak ditetapkan --` | OPT-KESUKARAN-5 | fills an empty `difficulty` |
+| 11-06 | `Muat Turun Templat CSV`, `Mula Import` | buttons | n/a | note "Soalan akan disimpan sebagai draf"; loading "Mengimport…" | SR-7 |
+The ONE header set for every question type (one row = one leaf; rows with the same `question_key` form one question; rows with the same `group_key` one group). Error prefix "Baris {n}: ".
+| Column | Required for | Value / limit | Exact BM error |
+|---|---|---|---|
+| `question_key` | all | text <= 40, unique | "Kunci soalan diperlukan."; "Baris soalan tidak berturutan." |
+| `type` | all | `mcq`, `mcq_multi`, `true_false`, `match`, `short_answer`, `fill_blank`, `structured`, `working`, `essay` | "Jenis soalan tidak sah."; `drawing`, `table_fill`, `essay_choice`: "Jenis ini dimasukkan melalui wizard Studio." |
+| `part_label` | structured, working, essay with parts | `(a)`, `(b)`, `(i)` <= 8, depth <= 3 by dots | "Label bahagian diperlukan." |
+| `subject_code` | all unless default | OPT-SUBJEK code | "Kod subjek tidak dikenali." |
+| `tingkatan` | all unless default | `1` to `5` or `T1` to `T5` | "Tingkatan tidak sah." |
+| `kertas` | SPM-bound | `1` to `4` | "Sila pilih kertas untuk soalan SPM." |
+| `bahagian` | when `kertas` set | e.g. `A` | "Bahagian tidak dikenali." |
+| `number_label` | optional | `^[0-9]{1,3}[A-Za-z]?$` | "Nombor soalan tidak sah." |
+| `unit_code` | SPM-bound where nodes exist | printed code `4.0` | "Sila pilih unit DSKP."; "Kod unit tiada dalam senarai kurikulum." |
+| `sp_codes` | same | 1 to 3 codes with `;` | "Sila pilih sekurang-kurangnya satu SP DSKP."; "Pilih paling banyak 3 SP."; "SP "{kod}" tiada dalam senarai kurikulum. Pilih SP daripada senarai DSKP." |
+| `tp` | every leaf, same | 1 to 6 | "Bahagian ({label}) belum ada TP."; "TP mesti antara 1 dan 6." |
+| `aras` | every leaf, same | `mengingat` to `mencipta` | "Bahagian ({label}) belum ada aras pemikiran."; "Aras pemikiran tidak sah." |
+| `kbat` | optional | `mengaplikasi`, `menganalisis`, `menilai`, `mencipta`, `bukan` | "Nilai KBAT tidak sah." |
+| `bab_kod` | to publish when chapters exist | chapter number | "Sila pilih Bab."; "Bab tidak sepadan dengan subjek dan tahap." |
+| `topik_kod` | optional | topic number | "Topik tidak sah." |
+| `difficulty` | all (screen default, else `min(5,tp)` with hint "Dikira daripada TP. Sahkan.") | 1 to 5 | "Sila pilih tahap kesukaran." |
+| `group_key` | optional | text <= 40 | "Baris kumpulan mesti berturutan." |
+| `stimulus_kind` | first row of a group | the 7 kinds | "Sila pilih jenis rangsangan." |
+| `stimulus_text` | passage, table | <= 20,000; table as `[["kepala1","kepala2"],["a","b"]]` | "Petikan mesti mempunyai teks."; "Jadual mesti mempunyai kepala dan sekurang-kurangnya satu baris, atau imej." |
+| `stimulus_image_url` | image kinds | https URL <= 500, JPG, PNG, WebP <= 2 MB | "Imej rangsangan tidak dapat dimuat turun."; "Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB." |
+| `stimulus_alt` | image kinds | <= 1000 | "Sila isi teks alternatif imej." |
+| `stimulus_caption`, `stimulus_source` | optional | <= 300 | "Kapsyen tidak boleh melebihi 300 aksara." |
+| `prompt_ms` | all | >= 10 for an MCQ stem, <= 2000 | "Teks soalan mesti sekurang-kurangnya 10 aksara." |
+| `prompt_en` | `ms+en` | <= 2000 | "Teks English diperlukan untuk soalan dwibahasa." |
+| `option_a` to `option_h` | mcq, mcq_multi (A, B required, then contiguous), match (bank) | <= 500; empty for true_false | "Sila isi semua pilihan jawapan."; "Soalan aneka pilihan mesti ada 2 hingga 8 pilihan." |
+| `correct` | MCQ family, match | one letter; letters with `;`; `betul` / `salah`; pairs `1=C;2=A` | "Sila pilih jawapan betul."; "Pilih sekurang-kurangnya satu jawapan betul dan sekurang-kurangnya satu jawapan salah." |
+| `accepted_answers` | short_answer, fill_blank, working | up to 10 with `|`, each <= 200 | "Sila masukkan jawapan betul." |
+| `numeric_value`, `numeric_unit`, `tolerance_kind`, `tolerance_value` | numeric leaf | number; unit <= 20; `abs` or `rel`; >= 0 | "Toleransi tidak boleh negatif." |
+| `word_min`, `word_max` | optional, essay | 0 to 5000, min <= max | "Julat perkataan tidak sah." |
+| `marks` | every leaf | integer 1 to 100 | "Nilai mata mesti sekurang-kurangnya 1."; "Markah bahagian tidak boleh melebihi 100." |
+| `scheme` | non-MCQ leaves | points with `|`, each `KOD:markah:teks`, code K N P B M F C, sum = `marks` | "Jumlah markah skema ({a}) mesti sama dengan markah bahagian ({b})."; "Kod markah tidak sah." |
+| `bahasa`, `jenis_tulisan` | optional | `bm`, `en`, `ms+en`; `rumi`, `arab`, `jawi`, `mixed` | "Bahasa tidak sah."; "Jenis tulisan tidak sah." |
+The group, `mode`, `intro_*` and `_en` columns of 45 §3.2 are added by FR-ADM-QE6.4. Outcome and the error CSV: FR-ADM-QE6.2 and SR-7; re-upload warns "{n} soalan sama dengan soalan sedia ada." `Sejarah Import` list: columns `Fail`, `Tarikh`, `Diimport`, `Gagal`, `Oleh`; 20 per page; empty "Tiada sejarah import.".
+
 #### R1-ADM-Q-12 `Kiriman Guru` | tab in Import & Semakan, `/admin/question-submissions` | P0 (feeds Guru 44, rated Tinggi) | GH route, BE none / UAT "Fungsi ini belum tersedia dalam demo" (this is the defect to remove, FR-ADM-H0.2)
 - **Action: Build** (real backend behind the existing page) | gap and differences: 4.V row Q-12.
 
@@ -583,13 +843,21 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - FR-ADM-Q12.1 The tab (page title "Kertas Soalan Guru", intro "Kertas yang dihantar guru diproses melalui aliran import Studio (DOCX/OCR → semakan → terbit).") shows tiles `Jumlah`, `Pending`, `Processing`, `Selesai`; a filter `Semua Status` (Pending, Processing, Selesai, Ditolak) with `Tapis`; a table with columns `Guru / Sekolah`, `Tajuk`, `Fail`, `Status`, `Tarikh`; and the empty state "Tiada kertas soalan dihantar oleh guru lagi."; it lists single questions (they already land in Studio as Reviewed, E2E F9) and paper PDFs. The teacher shows as a role label with the school, never by e-mail.
 - FR-ADM-Q12.2 A paper PDF sent by a teacher creates an intake batch (D40 `INTAKE_TEACHER_ENABLED`) visible in `Kelompok Item` with source "Kiriman Guru"; no separate `/api/question-submissions` is built (OQ-Q12).
 - FR-ADM-Q12.3 `provideIntake` is wired so `POST /api/guru/question-papers` stops returning 503.
-- FR-ADM-Q12.4 Teacher-origin questions are Draft/Reviewed, never auto-approved (U5 only keeps the legacy teacher reference rule).
-- FR-ADM-Q12.6 (F-15, D-A14) Teacher submissions come in as intake batches with `source=guru` (single questions and PDFs alike). A teacher MCQ opens in the Studio wizard with Subjek, Tingkatan, options and key prefilled; the admin may complete the DSKP fields (Unit, SP, TP, aras, Bab, Tahap kesukaran, Kertas) during review. Missing DSKP fields never block review or approval of the batch item; the gate blocks `Terbitkan` only (FR-ADM-QE4.5). A teacher's 1 to 5 star difficulty is stored as `difficultyLevel`; TP stays empty until the admin tags it. Status words shown to the teacher: Menunggu Semakan = `review`, Diluluskan = `approved`, Ditolak = `draft` with the rejection reason [PROPOSED].
+- FR-ADM-Q12.4 Teacher-origin questions are `Draf` or `Menunggu Semakan`, never auto-approved (U5 only keeps the legacy teacher reference rule).
+- FR-ADM-Q12.6 (F-15, D-A14) Teacher submissions come in as intake batches with `source=guru` (single questions and PDFs alike). A teacher MCQ opens in the Studio wizard with Subjek, Tingkatan, options and key prefilled; the admin may complete the DSKP fields (Unit, SP, TP, aras, Bab, Tahap kesukaran, Kertas) during review. Missing DSKP fields never block review or approval of the batch item; the gate blocks `Terbitkan` only (FR-ADM-QE4.5). A teacher's 1 to 5 star difficulty is stored as `difficultyLevel`; TP stays empty until the admin tags it. Status words shown to the teacher: Menunggu Semakan = `review`, Diluluskan = `approved`, Ditolak = `draft` with the rejection reason (R1 decision D113).
 - FR-ADM-Q12.5 The tab is a working screen backed by a real API in every environment (no mock path, no "belum tersedia" notice); each row shows the batch status and links to `Semak` (Q-09) for papers and to Studio for single questions.
-- AC-ADM-Q12.1 (E2E) Given a teacher sends a question, then it shows in the tab and in Studio Reviewed; after the admin approves it, it is servable per its tags.
+- AC-ADM-Q12.1 (E2E) Given a teacher sends a question, then it shows in the tab and in Studio as `Menunggu Semakan`; after the admin approves it, it is servable per its tags.
 - AC-ADM-Q12.2 Given a teacher sends a PDF paper, then the response is 201 and the batch shows in Kelompok Item.
 - AC-ADM-Q12.3 Given a teacher MCQ with no Unit, SP, TP or Bab, when the admin opens it from `Kiriman Guru`, then the wizard opens with the teacher's fields prefilled and review is allowed; `Terbitkan` is refused until Unit, SP, TP/aras and Bab are completed, then it publishes.
-- Gap: `question-sets.ports.ts:46-63` (`UnavailablePaperIntake`, `provideIntake` never called); FE `submissions-unavailable.ts:7`. OQ-Q12 recommendation: reuse intake batches.
+- Gap: `question-sets.ports.ts:46-63` (`UnavailablePaperIntake`, `provideIntake` never called); FE `submissions-unavailable.ts:7`. OQ-Q12 decided: reuse intake batches, one real backend.
+
+**Field & behaviour spec.**
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| 12-01 | `Semua Status` | select | all | OPT-KIRIMAN-STATUS: `Pending`, `Processing`, `Selesai`, `Ditolak` (V2 words) | "Nilai penapis tidak sah." |
+| 12-02 | Tiles `Jumlah`, `Pending`, `Processing`, `Selesai` | counts | n/a | per status | n/a |
+| 12-03 | `Sebab penolakan` | textarea | required on `Tolak` | 5 to 500 | "Sila nyatakan sebab penolakan (sekurang-kurangnya 5 aksara)." |
+Behaviour: empty "Tiada kertas soalan dihantar oleh guru lagi."; a submission is `Menunggu Semakan` then `Diluluskan` or `Ditolak` (draft with reason); the teacher is told "Soalan anda telah {diluluskan|dikembalikan}." and sees `Ditolak` with "Sebab: {sebab}"; the guru PDF endpoint answers 201 (the 503 `UnavailablePaperIntake` and the "belum tersedia dalam demo" notice are removed, ERR-INT-12, FR-QA-39).
 
 #### R1-ADM-Q-13 `Set Builder` landing | `/admin/studio/sets` | P0 | GH built / UAT 0 papers
 - **Action: Fix** | gap and differences: 4.V row Q-13.
@@ -612,6 +880,21 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - AC-ADM-Q13.2 Given no Disahkan contract, then the page shows the V2 behaviour (set can be built) and Terbit asks for the audited exception (Q-15).
 - Gap: two lists (`PaperListPage.vue` vs `SetBuilderLandingPage.vue`); Jana set lacks Tahun/Negeri/Bilangan free (E2E F4). Deviation: FD-Q13 added Kertas (D83 D-6) and group handling.
 
+**Field & behaviour spec.**
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| 13-01 | `Tajuk set` (set kosong) | text | required, <= 120 | n/a | "Tajuk set diperlukan." |
+| 13-02 | `Subjek` (set kosong) | select | required, first option `Subjek` | OPT-SUBJEK | "Sila pilih subjek." |
+| 13-03 | `Mula kosong` | button | n/a | flash "Set komposit dicipta. Tambah soalan ke dalam Bahagian untuk mula." (drag is replaced by `Naik` / `Turun`) | n/a |
+| 13-04 | `Tajuk set` (Jana set) | text | required, <= 120, placeholder "cth: Latih Tubi Sejarah Mac" | n/a | "Tajuk set diperlukan." |
+| 13-05 | `Subjek` (Jana set) | select | required, `Pilih subjek` | OPT-SUBJEK; updates the pool | "Sila pilih subjek." |
+| 13-06 | `Kertas` | select | optional | OPT-KERTAS (1 to 4, only those with a contract or questions) | "Kertas tidak sah." |
+| 13-07 | `Bilangan soalan` | number | required, default = contract total or 40 (R1 decision D113) | integer 1 to 100 | "Bilangan soalan mesti antara 1 dan 100."; warnings "Subjek ini tiada soalan berskema, jadi set tidak boleh dijana.", "Sama dengan jumlah kolam — setiap set akan serupa.", "Kurangkan bilangan soalan atau longgarkan penapis." |
+| 13-08 | `Tahun — semua jika tiada pilihan` | multi-select | none | OPT-TAHUN | n/a |
+| 13-09 | `Negeri — semua jika tiada pilihan` | chips | none | OPT-NEGERI-KERTAS | n/a |
+| 13-10 | `Jana set` | button | disabled unless pool >= requested and > 0 | flash "{n} soalan dijana secara rawak. Semak sebelum menerbitkan." | ERR-QST-03 when a group would split |
+Behaviour: pool = servable questions matching Subjek, Kertas, Tahun and Negeri, a group counts as its member count; shows "{n} soalan tersedia" and "Anda meminta {k} daripadanya."; the draw is random without replacement, the seed is stored on the set; `Set sedia ada` list 25 per page, empty "Tiada set lagi."; row actions `Buka`, `Salin`, `Padam` (confirm "Padam set ini?" / "Set draf akan dipadam. Tindakan ini tidak boleh dibatalkan." / `Batal` `Ya, Padam`; a Terbit set cannot be deleted: "Tarik balik set ini ke draf dahulu."). Set Builder is the ONLY paper builder (Pembina Kertas is retired, D113).
+
 #### R1-ADM-Q-14 `Set Builder` (one set) | `/admin/studio/sets/:paper/builder` | P0 | GH built / UAT n/a
 - **Action: Fix** | gap and differences: 4.V row Q-14.
 
@@ -631,7 +914,23 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - FR-ADM-Q14.6 Blocker list names each failing item ("Bahagian A: Kurang 9 soalan (perlu 10, ada 1)").
 - AC-ADM-Q14.1 Given section B rule `Pilih N` with N=3 of 5, then the pupil answers any 3 and the paper total uses `mark_budget`.
 - AC-ADM-Q14.2 (E2E) Given a built paper under a Disahkan contract, when `Terbitkan`, then the T5 pupil sees it in Bijak SPM on the next load (R1-16.1) and a sitting submits and marks.
-- Gap: Pembina Kertas duplicate; no Pilih N control (E2E F4). Deviation: none other.
+- Gap: Pembina Kertas duplicate (retired, merged into Set Builder); no Pilih N control (E2E F4). Deviation: none other.
+
+**Field & behaviour spec.**
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| 14-01 | `Tahun` | select | all | OPT-TAHUN | n/a |
+| 14-02 | `Negeri` | multi-select | all (`19 pilihan`) | OPT-NEGERI-KERTAS | n/a |
+| 14-03 | `Cari teks soalan…` | text | empty | <= 100; at most 150 results shown ("100 soalan (dipaparkan 150 pertama)") | "Ralat semasa mencari bank soalan." |
+| 14-04 | `Bahagian destinasi` | select | first section | sections of the set | n/a |
+| 14-05 | Rule select + `N` | select + number | `Jawab Semua` | OPT-PERATURAN (`Jawab Semua`, `Pilih N`); N integer 1 to section count | "Bahagian gagal dikemas kini."; "Nombor N tidak sah." |
+| 14-06 | Title rename | text | current title, <= 120 | n/a | flash "Set '{title}' telah dinamakan semula." |
+| 14-07 | `Terbitkan walaupun tidak memenuhi kontrak` + `Sebab` | checkbox + text | hidden when a Disahkan contract exists; reason 5 to 500 | n/a | "Sebab pengecualian diperlukan (sekurang-kurangnya 5 aksara)." |
+| 14-08 | `Tambah`, `Buang`, `Naik`, `Turun` | buttons | n/a | a group moves as a unit | "Soalan gagal ditambah — cuba lagi."; "Susunan gagal disimpan — muat semula halaman dan cuba lagi."; "Soalan gagal dibuang — cuba lagi." |
+| 14-09 | Chips `Disematkan` / `Tidak disajikan` | read-only chips | n/a | per member (FR-ADM-Q14.7) | tooltips below |
+Behaviour: validation errors "Set ini tidak lulus pengesahan.", "Ralat tidak dijangka semasa menerbitkan.", "Ralat rangkaian semasa menerbitkan."; blocker list e.g. "Bahagian A: Kurang 9 soalan (perlu 10, ada 1)"; paper machine OPT-STATUS-KERTAS `Draf` -> `Sedia` -> `Terbit` -> `Ditarik balik` (`published -> withdrawn` by `Tarik balik ke draf`; sittings in progress keep their pinned version); after publish additions "Set ini diterbitkan, tetapi {n} soalan yang ditambah selepas itu belum dibekukan. Terbitkan semula untuk membekukannya."; `Jumlah markah keseluruhan` = sum of included leaf marks, `Pilih N` sections use the section mark budget, counter "{n} / {N} dipilih"; marks per question are shown for every member (G-10). Admin Pusat only (ERR-ACC-01).
+- FR-ADM-Q14.7 (m5; V2 Panel builder chips) Each member shows chip `Disematkan` when the paper is Terbit and the membership has a pinned snapshot (tooltip "Versi soalan ini dibekukan untuk kertas ini.") and chip `Tidak disajikan` when the question is not servable (tooltip with the BM reason of Q-06). A `Tidak disajikan` member blocks `Terbit`.
+- AC-ADM-Q14.3 Given a member archived after the paper was published, then the chip `Disematkan` stays and the pupil still sees the pinned version; given a draft paper, then the archived member shows `Tidak disajikan` and Terbit is blocked.
 
 #### R1-ADM-Q-15 `Semak Kertas Simulasi` / Terbit | `/admin/spm/kertas/:id` (from lane row `Sunting`; also `Semak & Terbit` tab) | P0 | GH built (as Pembina Kertas) / UAT n/a
 - **Action: Fix** | gap and differences: 4.V row Q-15.
@@ -654,6 +953,28 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - AC-ADM-Q15.3 Given `Tarik balik ke draf`, then the pupil no longer lists it (a sitting in progress keeps its pinned version).
 - Gap: duplicate with Set Builder; "every publish needs exception" (E2E F4, F7). Deviation: none.
 
+**Field & behaviour spec.** Semak Kertas is the review and publish view over the SAME Set Builder data (no second builder, D113).
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| 15-01 | `Tajuk` | text | required, <= 120 | n/a | "Tajuk diperlukan." |
+| 15-02 | `Tempoh (minit)` | number | optional | integer 1 to 300, "—" when unset | "Tempoh mesti antara 1 dan 300 minit." |
+| 15-03 | `Kod kertas (kulit)` | text | optional, <= 12; hint "Dipapar di kulit kertas (cth. 1449/1). Kosong = kod subjek “MATH”." | `^[0-9]{4}/[0-9]$` | "Kod kertas tidak sah. Contoh: 1449/1." |
+| 15-04 | `Arahan kulit kertas` | textarea | optional; one numbered instruction per line, <= 20 lines, <= 300 per line; hint "Satu baris = satu arahan bernombor. Kosongkan untuk tiada arahan." | n/a | "Arahan terlalu panjang." |
+| 15-05 | `Label bahagian` | text | required, <= 40 (free text: Bahagian, Part, Objektif) | n/a | "Label bahagian diperlukan." |
+| 15-06 | `Peraturan menjawab` | select | `Jawab Semua` | OPT-PERATURAN | as 14-05 |
+| 15-07 | `Bilangan soalan dipilih` | number | when `Pilih N` | integer 1 to count | "Nombor N tidak sah." |
+| 15-08 | `Arahan bahagian` | textarea | optional, <= 500 | n/a | "Arahan tidak boleh melebihi 500 aksara." |
+| 15-09 | `Tajuk petikan` | text | optional, <= 100 (stimulus label) | n/a | n/a |
+| 15-10 | `Bahan rujukan`: `Tambah gambar`, `Tajuk panel`, `Buang panel` | file + text | optional; JPG, PNG, WebP <= 2 MB; title <= 100; <= 10 panels | n/a | "Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB."; flash "Bahan rujukan kertas telah dikemas kini." |
+| 15-11 | `Nombor soalan` (Tambah soalan) | text | required | as 04-19 | "Nombor soalan {x} sudah digunakan dalam kertas ini."; "Soalan hanya boleh ditambah ke bahagian yang dicipta oleh admin." |
+| 15-12 | `Jenis jawapan`, `Markah` (Tambah soalan) | select, number | required | OPT-MOD-JAWAPAN (the 14 modes of 45, V2 parity); 1 to 100 | as 04-26 |
+| 15-13 | `Wajib dijawab`, `Markah setiap soalan` | checkbox, number or list | per section (G-10) | see FR-ADM-Q16.8 | "Markah setiap soalan mesti sama dengan markah bahagian." |
+| 15-14 | `Isu import ({n})` + `Lihat` | badge + link | per paper | FR-ADM-Q15.5 | n/a |
+Confirms (exact): publish "Terbitkan kertas ini? Ia akan terus boleh diakses pelajar di Simulasi." (`Batal` / `Ya, Terbitkan`); withdraw "Tarik balik kertas ini ke draf? Pelajar tidak lagi dapat mengaksesnya."; delete question "Soalan tambahan ini, termasuk bahagian, pilihan jawapan dan skemanya, akan dibuang dari kertas. Tindakan ini tidak boleh dibatalkan." Flashes: "Kertas '{title}' telah DITERBITKAN — kini boleh diakses pelajar di Simulasi.", "Kertas ini belum boleh diterbitkan — {n} masalah perlu dibetulkan.", "Kertas ini tidak memenuhi kontrak blueprint subjek.", "Diterbitkan dengan 1 pengecualian kontrak (direkodkan).". `Terbit` disabled with title "Betulkan {n} masalah dahulu". A published paper is read-only: "Kertas ini sudah diterbitkan — tekan “Salin set” di atas untuk menyunting salinan draf." (`Salin set` copies as `Draf`). Draft <-> published by Admin Pusat only (ERR-ACC-01 for Guru and Admin Sekolah). Question editing from this view opens Studio `/admin/studio/questions/:id/sunting`.
+- FR-ADM-Q15.5 (m5) The paper card shows `Isu import ({n})` with `Lihat` when the paper came from an import and {n} questions have import issues (missing figure, no scheme, unreadable page); `Lihat` lists them with a link to the item. `Terbit` is blocked while an issue is open; an issue is cleared by fixing it or by `Bukan masalah`.
+- FR-ADM-Q15.6 (D113) The route is `/admin/spm/kertas/:id` and the old `Pembina Kertas` route redirects to Set Builder (Q-14).
+- AC-ADM-Q15.4 Given a paper with `Isu import (2)`, then `Terbit` is disabled with "Betulkan 2 masalah dahulu" until both are cleared.
+
 #### R1-ADM-Q-16 `Kontrak Simulasi` (blueprint) | `/admin/spm/kontrak`, `/admin/spm/kontrak/:subjek/:kertas`, `/kolam` | P0 | GH built / UAT 0 contracts
 - **Action: Fix** | gap and differences: 4.V row Q-16.
 
@@ -672,13 +993,42 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - FR-ADM-Q16.4 When checks fail, every failing check is listed with the field to fix; "Belum lengkap untuk Disahkan (n)" count is shown.
 - FR-ADM-Q16.5 The list shows counts Disahkan / Spec / Draf and a filter by Sumber; a contract with no evidence is marked "perlu semakan".
 - FR-ADM-Q16.6 `Pratonton Kolam` shows per unit and KBAT quota whether the pool can fill (which unit is short).
-- FR-ADM-Q16.7 (D112(3)) `Baharu` offers only Subjek whose DSKP is loaded (nodes exist in `curriculum_node` for that Subjek); for any other Subjek the create call is refused with [PROPOSED] "DSKP belum dimuatkan untuk subjek ini. Kontrak tidak boleh dicipta." and the Subjek is shown disabled in the list.
+- FR-ADM-Q16.7 (D112(3)) `Baharu` offers only Subjek whose DSKP is loaded (nodes exist in `curriculum_node` for that Subjek); for any other Subjek the create call is refused with "DSKP belum dimuatkan untuk subjek ini. Kontrak tidak boleh dicipta." and the Subjek is shown disabled in the list.
 - AC-ADM-Q16.4 Given Kimia has no DSKP nodes, when the admin opens `Baharu`, then Kimia cannot be chosen and a direct create call is refused with the message above; once the Kimia DSKP is loaded, then the contract can be created.
 - AC-ADM-Q16.1 Given the admin creates Matematik Tambahan K2 3472/2 with sections and fills the evidence, when `Sahkan`, then the source is Disahkan and `servesStudents` is true.
 - AC-ADM-Q16.2 Given a failing check (unit quota not met), then `Sahkan` is refused and the list names the check.
 - AC-ADM-Q16.3 (E2E) Given Matematik 1449/1 Disahkan and a published paper under it, then the T5 pupil's Bijak SPM lists it without an exception record.
 - Gap: Disahkan "cannot be chosen" (E2E F7); all 8 Spec; `form.ts:65` "a Disahkan head is shown, never written". Deviation: FD-Q16 Disahkan via verification (V2 allows selecting it; D76(4) requires evidence) — D9: V2 allows an unverified value, contradicting D76.
 - OQ: none (OQ-04 closed by D107).
+
+**Field & behaviour spec.**
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| 16-01 | `Subjek` (Kontrak Baharu) | select | required; only Subjek with DSKP nodes (FR-ADM-Q16.7) | OPT-SUBJEK | "Sila pilih subjek."; duplicate "Kontrak untuk subjek/kertas ini sudah wujud." |
+| 16-02 | `Kertas` | select | required | OPT-KERTAS (`Kertas 1` to `Kertas 4`) | same |
+| 16-03 | `Kod Kertas` | text | optional | as 15-03 | "Kod kertas tidak sah. Contoh: 1449/1." |
+| 16-04 | `Tempoh (minit)` | number | optional | 1 to 300 | "Tempoh mesti antara 1 dan 300 minit." |
+| 16-05 | `Jumlah Markah` | number | required | integer 1 to 200, must equal the sum of section marks | "Jumlah markah ({a}) mesti sama dengan jumlah markah bahagian ({b})." |
+| 16-06 | `Sumber` | select | `Draf` | OPT-KONTRAK-SUMBER (`Draf`, `Spec`, `Disahkan`); `Disahkan` opens `Pengesahan` | "Kontrak Disahkan tidak boleh diubah di tempat. Cipta versi baharu dahulu." |
+| 16-07 | `Boleh tanda auto` | checkbox | unchecked | n/a | n/a |
+| 16-08 | `Nota` | text | optional, <= 300 | n/a | "Nota tidak boleh melebihi 300 aksara." |
+| 16-09 | `Label` (bahagian) | text | required, placeholder "Contoh: Bahagian A", <= 40 | n/a | "Label bahagian diperlukan." |
+| 16-10 | `Peraturan Pilihan` + `N` | select + number | `Tiada` | OPT-PERATURAN (`Tiada`, `Jawab Semua`, `Pilih N`); N integer 1 to count | "Nombor N tidak sah." |
+| 16-11 | `Markah` (bahagian) | number | required, integer 0 to 200 | n/a | "Markah tidak sah." |
+| 16-12 | `Arahan (opsyenal)` | text | optional, <= 500 | n/a | "Arahan tidak boleh melebihi 500 aksara." |
+| 16-13 | `Mod Jawapan Dijangka` | multi-select | optional | OPT-MOD-JAWAPAN (14 modes) | n/a |
+| 16-14 | Kuota unit (per Tajuk DSKP: min, max) | repeating number pair | optional | unit nodes of the Subjek; integers >= 0, min <= max | "Kuota unit tidak sah." |
+| 16-15 | Profil TP (per TP 1 to 6: bilangan) | 6 numbers | optional | integers >= 0 | "Profil TP tidak sah." |
+| 16-16 | Kuota KBAT (markah KBAT) | number | optional | integer >= 0 and <= Jumlah Markah | "Markah KBAT melebihi jumlah markah." |
+| 16-17 | `Wajib dijawab` (bahagian) | checkbox | unchecked | maps `compulsory` (G-10) | n/a |
+| 16-18 | `Markah setiap soalan` (bahagian) | number or list | optional | one number, or a comma list with one mark per question (Matematik Kertas 2 A: 3,3,3,5,4,…); sum = section marks (G-17) | "Markah setiap soalan mesti sama dengan markah bahagian." |
+| 16-19 | `Bilangan soalan dalam kertas` | number | optional | integer 1 to 200 | "Bilangan soalan tidak sah." |
+| 16-20 | Pengesahan: `Jenis bukti`, `Rujukan`, `Fail` | select, text, file | required for Disahkan | OPT-JENIS-BUKTI (`Skema`, `Kertas rasmi`, `Spesifikasi LPM`); reference <= 300; PDF <= 30 MB | "Sekurang-kurangnya 2 bukti termasuk skema diperlukan."; list "Belum lengkap untuk Disahkan ({n})" |
+| 16-21 | Filter `Sumber` | select | `Semua` | OPT-KONTRAK-SUMBER | n/a |
+Derived line per section: "Jawab {n} daripada {m}". Confirm delete "Padam kontrak ini?" (`Batal` / `Ya, Padam`); empty "Tiada kontrak lagi. Cipta kontrak pertama menggunakan butang "Baharu" di atas."; sections empty "Tiada Bahagian lagi."; flashes "Kontrak dicipta.", "Kontrak dikemas kini.", "Kontrak dipadam.". Machine `Draf -> Spec` (structure complete), `Spec|Draf -> Disahkan` (Admin Pusat only, every check passes), `Disahkan -> new Spec version`; side effect: `servesStudents` is true only for Disahkan; badge `perlu semakan` when no evidence. BM, BI and Sejarah Kertas 1 contracts stay `Spec` or `Draf` until evidence exists (D95).
+- FR-ADM-Q16.8 (G-10) Each section row carries `Wajib dijawab`, `Markah setiap soalan`, `Bilangan soalan dalam kertas`, a free-text `Label` (Bahagian, Part, Objektif) and the derived line "Jawab {n} daripada {m}"; numbering continues over Parts; this supports Sejarah (A all, B choose 1 of 3) and BM Kertas 2 compulsory sections.
+- FR-ADM-Q16.9 (G-17) The blueprint section stores `marks_per_question` (list) and the contract exports a JSU table (Tajuk DSKP by TP by marks) as CSV; the JSU is the machine form of the contract.
+- AC-ADM-Q16.5 Given Matematik Kertas 2 Bahagian A with marks 3,3,3,5,4 for 5 questions, then the section total 18 is derived and a paper whose marks differ is refused at Terbit with "Markah soalan {no} tidak sepadan dengan kontrak."
 
 #### R1-ADM-Q-17 `Tracking A` lane and set editor | `/admin/spm/tracking-a`, `/admin/spm/tracking-a/:set/sunting` | P0 | GH 404 / UAT 404, 0 sets
 - **Action: Build** | gap and differences: 4.V row Q-17.
@@ -704,6 +1054,14 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - Data: migration 0104, `/api/admin/spm/tracking-a*` (ADR-0032; not built); table `spm_tracking_sets` seed-only.
 - Gap: 404 (E2E F5). Deviation: touch buttons (D9). OQ-Q17 legacy `spm_sets` vs canonical composites — Evidence needed E-07.
 
+**Field & behaviour spec.**
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| 17-01 | `Subjek`, `Tahun`, `Set` no., chip `ramalan` | select, select, number | required | OPT-SUBJEK; year >= 2020 and <= current year + 1 (default 2026); set 1 to 99 | "Sila pilih subjek."; "Set {n} sudah wujud untuk subjek dan tahun ini." |
+| 17-02 | `Bilangan sasaran` (`target_count`) | number | default 40 | integer 1 to 100 | "Bilangan sasaran tidak sah." |
+| 17-03 | `tukar`, `buang`, `Isi set`, `Simpan`, `Tambah Set` | buttons | n/a | `Isi set` hidden when full | "Tiada soalan lain yang boleh disajikan untuk mengisi set ini."; "Tukar gagal."; "Pilih sekurang-kurangnya satu soalan sebelum menyimpan."; flashes "Set dikemas kini.", "Set ini lengkap.", "Set ini masih kosong." |
+Behaviour: "{n} soalan lagi diperlukan." = target minus current; attention "Hanya {a} daripada {b} soalan"; "tersedia" counts servable questions (V2 counted raw; fixed by D90 unit counting); a question may not be in two sibling sets; save is one transaction; a set that reaches the target is unlocked for the pupil; Naik / Turun on touch.
+
 #### R1-ADM-Q-18 `Kertas Subjektif` | `/admin/kertas-subjektif` (list), detail `/admin/kertas-subjektif/:id` | P0 (feeds Murid 13 Subjektif; fully working at release, D104) | GH 404 / UAT 404
 - **Action: Build** | gap and differences: 4.V row Q-18.
 
@@ -718,7 +1076,7 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - V2 could not upload page images (CLI only). D81 replaces the content method: upload -> OCR -> sunting -> terbit as reflowing text, skema in a separate tab, students use "Tunjuk Skema Pemarkahan".
 - FR-ADM-Q18.1 List, create, edit, `Terbit`/`Sembunyikan`/`Padam` per V2 labels above.
 - FR-ADM-Q18.2 Content entry follows D81 and section 4.0: upload paper PDF (+ skema PDF) -> OCR/text layer -> editable text with figures as stimulus groups and numbering kept -> admin edits -> `Terbit`. Figures and passages are stimulus objects shared by their questions, never pages cut into pseudo-questions; page-image storage (V2 `paper_documents`) is not used.
-- FR-ADM-Q18.3 Terbit is refused with no content: "“{title}” tiada halaman — tidak boleh diterbitkan." is replaced by [PROPOSED] "“{title}” tiada kandungan — tidak boleh diterbitkan." (D9: pages no longer exist).
+- FR-ADM-Q18.3 Terbit is refused with no content: "“{title}” tiada halaman — tidak boleh diterbitkan." is replaced by "“{title}” tiada kandungan — tidak boleh diterbitkan." (D9: pages no longer exist).
 - FR-ADM-Q18.4 Student visibility needs only `Terbit`: Kertas Subjektif is fully working at release and no feature flag switches it off (D104, which supersedes the "flag OFF" part of D80(2)); there is no `kertas-subjektif` switch in Kawalan Ciri.
 - FR-ADM-Q18.5 OCR engine: real OCR, in-house: Tesseract msa+eng behind `DocumentReader` (U1, `OCR_ENGINE=tesseract`, D112(2)); no external AI provider, ALESA/AI stays hidden (D73/D102) and pupil data stays private. Structure comes from rules (numbering, Rajah/Jadual/Petikan/Sumber detection) and the admin always reviews and edits before `Terbit`. A mock OCR is allowed only in CI tests, never on UAT. The bake-off on 5 scanned papers is a release gate for this screen (E-05).
 - FR-ADM-Q18.6 Each question of a Kertas Subjektif paper carries the DSKP tags and structure of QE-03/QE-04: Subjek, Tingkatan, Unit, SP, TP and aras per leaf, Kertas and Bahagian from the contract, type per exam schema D1 (`Berstruktur`, `Karangan / Respons Terbuka`, `Pengiraan dengan Langkah Kerja`), mark scheme K/N/P (D4); the completeness panel (QE-04) lists what is missing and `Terbit` is blocked until none is.
@@ -728,6 +1086,22 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - AC-ADM-Q18.2 (E2E) Given a published Kertas Subjektif with a skema, when a T5 pupil opens it from Subjektif, reads it, submits and presses "Tunjuk Skema Pemarkahan", then the scheme shows and the pupil can self-mark each part; no flag or setting hides it.
 - AC-ADM-Q18.3 Given a question with no unit and no TP, when the admin presses `Terbit`, then it is refused with the messages "Sila pilih unit DSKP." and "Bahagian (a) belum ada TP." and the paper stays Draf.
 - Gap: not built (KS-07). Deviation: FD-Q18 content method (D81), "kandungan" for "halaman". OQ: evidence E-05.
+
+**Field & behaviour spec.**
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| 18-01 | `Semua Subjek`, `Semua Kertas`, `Semua Status` | selects | all | OPT-SUBJEK; `Kertas 2`, `Kertas 3`, `Kertas 4`; `Terbit`, `Draf` | n/a |
+| 18-02 | `Tajuk` | text | required, <= 150, placeholder "Contoh: Bahasa Melayu Kertas 2" | n/a | "Tajuk diperlukan." |
+| 18-03 | `Subjek` | select | required, `Tiada subjek` | OPT-SUBJEK | "Sila pilih subjek." |
+| 18-04 | `Kertas` | select | required | `Kertas 2`, `Kertas 3`, `Kertas 4` (a subjective paper is never Kertas 1) | "Kertas tidak sah." |
+| 18-05 | `Negeri` | select | required | OPT-NEGERI-KERTAS | "Negeri atau badan diperlukan." |
+| 18-06 | `Tahun` | select | required | OPT-TAHUN | "Tahun diperlukan." |
+| 18-07 | `Tempoh (minit)` | number | optional | 1 to 300 | as 15-02 |
+| 18-08 | `Jumlah Markah` | number | required | 1 to 200 | as 16-05 |
+| 18-09 | `Kertas (PDF)`, `Skema (PDF)` | files | paper required | as 08-13, 08-14 | as 08-13 |
+| 18-10 | `Skema` tab | scheme rows K N P B M F C | required for Terbit | the Studio scheme editor (FR-ADM-QE3.9) | "tiada skema — tidak disajikan" |
+| 18-11 | Row menu `Pratonton`, `Sunting`, `Halaman` -> `Kandungan`, `Sembunyikan`, `Terbit`, `Padam` | menu | n/a | confirm "Padam kertas ini?" (`Batal` / `Ya, Padam`) | flashes "“{title}” telah dicipta sebagai draf.", "“{title}” telah dikemas kini.", "“{title}” telah dipadam.", "“{title}” kini diterbitkan.", "“{title}” disembunyikan daripada pelajar."; error "“{title}” tiada kandungan — tidak boleh diterbitkan." |
+Behaviour: empty "Tiada kertas sepadan penapis."; `Draf -> Terbit` needs content, every question gate-complete and a scheme; `Terbit -> Draf` by `Sembunyikan` (pupils lose it at once); 25 per page; OCR outcome as Q-08.
 
 #### R1-ADM-Q-19 `Sumber Kertas` | `/admin/source-papers`, `/admin/source-papers/:id` | P2 | GH hidden (BS-03) / UAT none
 - **Action: Build** | gap: 4.V row Q-19.
@@ -743,6 +1117,8 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - AC-ADM-Q19.1 Given a batch uploaded with Tahun 2025 and Negeri Johor, then it appears with those values and its question count.
 - Gap: D83 D-10 hid it; V2 menu has it. Deviation: source = V3 batches. OQ-05.
 
+**Field & behaviour spec.** Read-only. Filters: `Semua Subjek` (OPT-SUBJEK), `Semua Tahun`, `Semua Negeri` (OPT-NEGERI-KERTAS), `Semua Kertas` (1 to 4), `Semua Jenis` (OPT-JENIS-KERTAS), checkbox `Perlu Semakan` (default off), `Tapis`. Badge `OK` / `Perlu Semakan` / `Skema`; `Perlu Semakan` is true when the batch has import issues or no scheme. 25 per page; empty "Tiada kertas dijumpai."; detail empty "Belum ada soalan diimport untuk kertas ini."; the detail rows link `Sunting di Studio`.
+
 #### R1-ADM-Q-20 `Senarai Soalan` (Bank Lama) | `/admin/questions` | P1 | GH built / UAT built
 - **Action: Fix** | gap and differences: 4.V row Q-20.
 
@@ -756,9 +1132,23 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - Reference (DISC 3.3): title "Senarai Soalan", subtitle "Pengurusan bank soalan platform", heading "📚 Pengurusan Soalan" / "Urus bank soalan untuk platform PRESTASIPLUS"; header `Tambah Soalan` (redirect to Studio, notice "Borang soalan lama telah dipindahkan ke Studio. Sila cipta soalan baharu di sini."), `Import CSV`, `Luluskan Hasil Tapisan` (title "Luluskan semua soalan yang sepadan dengan tapisan semasa"; confirm "Luluskan SEMUA soalan hasil tapisan ini? Ia akan kelihatan kepada pelajar."; no filter: "Sila pilih sekurang-kurangnya satu penapis (subjek/aras/status/carian) sebelum meluluskan secara pukal."; success "Berjaya luluskan {n} soalan (hasil tapisan) — kini kelihatan kepada pelajar."), `Arkib Semua` (confirm "ARKIB SEMUA soalan?..."; success "Berjaya arkib {n} soalan. Bank pelajar kini kosong — luluskan soalan secara manual untuk memaparkannya semula."); "Ringkasan Bank Soalan" ("Jumlah: {n} soalan"); filters `Subjek`, `Tahap`, `Kesukaran`, `Status` (Draf, Menunggu, Diluluskan, Ditolak, Diarkib), `DSKP` (Ada DSKP Tag / Belum Ditag), `Compliance`, `Source`, "Cari teks soalan...", `Cari`; tabs `Kualiti` (Q-21), `Laporan` (Q-22); row icons "Luluskan — paparkan kepada pelajar", "Arkib — sembunyikan daripada pelajar"; badge `VERIFIED`.
 - FR-ADM-Q20.1 Same page, same data as Studio (A1); labels use V3 status names with the V2 names in tooltips only if user approves (OQ none: keep V3 status vocabulary).
 - FR-ADM-Q20.2 `Luluskan Hasil Tapisan` applies the approval gate per row; rows failing it are skipped and reported ("n gagal"), never approved untagged for SPM-bound T4/T5 (D80 DEC-2: the gate applies to new approvals).
-- FR-ADM-Q20.3 `Arkib Semua` requires a typed confirmation [PROPOSED] because it empties the pupil bank on UAT.
+- FR-ADM-Q20.3 `Arkib Semua` requires a typed confirmation (R1 decision D113) because it empties the pupil bank on UAT.
 - AC-ADM-Q20.1 Given a filter with 100 rows, when `Luluskan Hasil Tapisan`, then the dry-run message "{eligible} soalan boleh diproses daripada {matched} hasil tapisan." appears before confirm.
 - Gap: duplicate "Bank Soalan" label (`menu.ts:95`). Deviation: FD-Q20 gate skipping.
+
+**Field & behaviour spec.**
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| 20-01 | `Subjek` | select | all | OPT-SUBJEK | n/a |
+| 20-02 | `Tahap` | select | `Semua Tahap` | OPT-TINGKATAN | n/a |
+| 20-03 | `Kesukaran` | select | `Semua` | OPT-KESUKARAN-5 | n/a |
+| 20-04 | `Status` | select | `Semua Status` | the five labels of section 0 | n/a |
+| 20-05 | `DSKP` | select | `Semua` | OPT-DSKP-TAG | n/a |
+| 20-06 | `Compliance` | select | `Semua` | OPT-COMPLIANCE | n/a |
+| 20-07 | `Source` | select | `Semua` | OPT-SOURCE-TYPE | n/a |
+| 20-08 | `Cari teks soalan...` | text | empty, <= 100 | n/a | "Carian tidak boleh melebihi 100 aksara." |
+| 20-09 | `Luluskan Hasil Tapisan` | action | needs >= 1 filter | dry-run "{eligible} soalan boleh diproses daripada {matched} hasil tapisan." | "Sila pilih sekurang-kurangnya satu penapis (subjek/aras/status/carian) sebelum meluluskan secara pukal."; confirm "Luluskan SEMUA soalan hasil tapisan ini? Ia akan kelihatan kepada pelajar."; success "Berjaya luluskan {n} soalan (hasil tapisan) — kini kelihatan kepada pelajar." |
+| 20-10 | `Arkib Semua` | action + typed text | type `ARKIB` (R1 decision D113) | n/a | "Taip ARKIB untuk mengesahkan."; success "Berjaya arkib {n} soalan. Bank pelajar kini kosong — luluskan soalan secara manual untuk memaparkannya semula." (no filter) or "Berjaya arkib {n} soalan (hasil tapisan)." |
 
 #### R1-ADM-Q-21 `Kualiti Soalan` (tab) | `/admin/questions/quality` | P2 | GH built / UAT built
 - **Action: Fix** (becomes a tab) | gap and differences: 4.V row Q-21.
@@ -770,6 +1160,8 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - Buttons and empty/error states: not observed — follow FR-ADM-Q21.1.
 - Reference: V1 `Kualiti Soalan`; V3 title "Dashboard Kualiti Soalan", subtitle "Analisa kualiti keseluruhan bank soalan".
 - FR-ADM-Q21.1 Reachable as tab `Kualiti` of Senarai Soalan; `POST /api/question-quality/audit` unchanged. AC-ADM-Q21.1 Given the tab, then it shows the same dashboard as the old route. Gap: separate menu item BS-04. Deviation: none.
+
+**Field & behaviour spec.** Display only (0 inputs). `Disahkan %` = (verified + AI-verified) / Jumlah Soalan x 100, shown with one decimal and capped at 100%; `Perlu Semakan` never exceeds Jumlah; `Mengikut Subjek` sorted by % ascending; empty "Tiada data kualiti."; the `Audit` button posts to `POST /api/question-quality/audit` and shows ERR-NET / ERR-SYS on failure.
 
 #### R1-ADM-Q-22 `Laporan Soalan` (tab) | `/admin/question-reports` | P0 (feeds Murid 54, which is P0) | GH built / UAT built (V2 production 0 rows)
 - **Action: Fix** | gap and differences: 4.V row Q-22.
@@ -785,6 +1177,8 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - FR-ADM-Q22.3 A report never auto-deactivates; a re-report never undoes a dismiss (D98).
 - AC-ADM-Q22.1 (E2E) Given a T5 pupil reports question X and the admin archives X from the row, then X no longer appears in the pupil's Databank draws and the pupil's `/laporan-soalan` shows the new status.
 - Gap: row action unverified (ADMIN-PUSAT row 54). Deviation: none.
+
+**Field & behaviour spec.** Status chips (OPT-LAPORAN-SOALAN: `Menunggu`, `Disemak`, `Diperbaiki`, `Ditolak`, `Dikeluarkan`); per-row `Status` select (`Menunggu`, `Disemak`, `Diperbaiki`, `Ditolak`) and `Nota` textarea (optional, 0 to 500, "Nota tidak boleh melebihi 500 aksara."). Empty "Tiada laporan soalan untuk status ini."; machine `Menunggu -> Disemak | Diperbaiki | Ditolak`; `Arkib` sets `Dikeluarkan` (confirm as Q-04); a re-report never reopens a dismissed one (D98); the reporter sees the status on `/laporan-soalan`; `PATCH /api/question-reports/:id`; invalid move ERR-CON-04.
 
 #### R1-ADM-Q-23 `Soalan Berstruktur` and the `Subjektif` lane | `/admin/structured-questions`, `/admin/spm/subjektif` | P0 (feeds Murid 13 Subjektif; fully working at release, D104) | GH route, no menu / UAT unverified
 - **Action: Complete** | gap and differences: 4.V row Q-23.
@@ -807,6 +1201,8 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - AC-ADM-Q23.2 (E2E) Given the admin approves a structured question with Rajah 2 shared by parts (a) and (b) of two questions, when the T5 pupil opens Subjektif practice, then the question is served with Rajah 2 shown once and the pupil can reveal the scheme and self-mark.
 - Gap: BE read-only (`structured.controller.ts:15,24`); Evidence E-08 whether migrated rows are already canonical. Deviation: FD-Q23.
 
+**Field & behaviour spec.** Filters: `Semua Subjek` (OPT-SUBJEK), `Semua Tahap` (OPT-TINGKATAN), `Semua Aras` (OPT-ARAS, six labels; V2 HOTS, MOTS, LOTS words dropped), `Cari` (<= 100), `Pemarkahan:` links `Semua`, `Ada rubrik ({n})`, `Skema sahaja ({n})`, `Tiada skema — disembunyikan ({n})`. Detail: V2 rubric rows are replaced by the Studio scheme editor (FR-ADM-QE3.9); `Sunting di Studio` opens `/admin/studio/questions/:id/sunting`. Empty "Tiada soalan berstruktur."; the list is read-only (API-Q-10).
+
 #### R1-ADM-Q-24 `Sunting Soalan` (Quick Edit) | `/admin/spm/soalan/:qid/sunting` | P1 | GH built / UAT built
 - **Action: Fix** (D112(5); Team B's audit found Sunting Pantas dead on the real API) | gap: 4.V row Q-24.
 
@@ -820,6 +1216,44 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - FR-ADM-Q24.2 It cannot be used to create or to detach from a group.
 - AC-ADM-Q24.1 Given a MCQ with 0 correct options, then saving shows "Tiada jawapan betul dipilih — soalan ini tidak boleh ditanda.".
 - Gap: reached via the third "Bank Soalan" list (KS-02); keep route, hide list. D112(5): the screen is dead on the real API (Team B audit), so the card repairs the save and preview calls against the real API (no new fields or behaviour). Deviation: status labels follow V3.
+
+**Field & behaviour spec.**
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| 24-01 | `Teks soalan` | textarea | required, 10 to 2000 | n/a | "Teks soalan tidak boleh kosong."; "Teks soalan mesti sekurang-kurangnya 10 aksara." |
+| 24-02 | `Rajah / Gambar`, `Buang gambar` | file | optional; JPG, PNG, WebP <= 2 MB | n/a | "Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB."; ERR-REQ-03 |
+| 24-03 | `Pilihan jawapan — pilih yang betul` A to H + radio | text + radio | 2 to 8 options, each <= 500 (A to D shown first) | n/a | "Soalan objektif memerlukan sekurang-kurangnya 2 pilihan jawapan."; "Pilihan {x} tidak boleh kosong."; "Tiada jawapan betul dipilih — soalan ini tidak boleh ditanda."; "{n} jawapan betul dipilih. Soalan objektif hanya boleh ada satu."; header "Soalan ini tidak boleh ditanda seperti sedia ada:" |
+| 24-04 | `Status` | radio | current | `Diluluskan (dipaparkan kepada pelajar)`, `Draf`, `Menunggu Semakan`, `Diarkibkan` | "Peralihan '{dari}' -> '{ke}' tidak dibenarkan." (ERR-CON-04) |
+| 24-05 | `Tetapan lanjutan`: `Mata pelajaran`, `Tingkatan`, `Tahap kesukaran`, `Sumber` | select x3, text | prefilled; `Sumber` read-only (e.g. `rip:databank`) | OPT-SUBJEK, OPT-TINGKATAN, OPT-KESUKARAN-5 | as 04-01, 04-02, 04-13 |
+Out-of-scope text: "Soalan ini di luar skop suntingan Panel — sunting di Studio penuh." with `Buka editor penuh` (to `/sunting`). The editor refuses a grouped member and a multi-part question with that text. Save flash "Soalan dikemas kini."; saving an approved question writes a new draft per FR-ADM-QE2.5 (never in place).
+- FR-ADM-Q24.3 (D112(4), D113) Sunting Pantas is a FIX, not a drop: today `PATCH` fails at `http-admin.ts:1053`; R1 makes the Quick Edit save work for a single-leaf MCQ (text, image, options, correct, status within the legal transitions) through the same validation and audit as the Studio wizard.
+- AC-ADM-Q24.2 Given a single-leaf MCQ with 4 options, when the admin changes option C and saves, then the save succeeds (no 500), the audit row exists and the pupil sees the new text only after approval.
+
+#### R1-ADM-Q-25 `Soalan PKSK` | `/admin/pksk/questions` | P1 | GH built (menu group Premium, BS-06) / UAT built (no spec until now, wizard audit M8)
+- **Action: Complete** (adds the missing screen specification; no behaviour change to the PKSK module) | gap: 4.V row Q-25.
+
+**Screen specification (from V2).** Menu: PENGURUSAN > group `Premium` > `PKSK Soalan` (BS-06). Regions: tiles `Jumlah`, `Diluluskan`, `Menunggu` and per-Tingkatan counts; filters `Semua Bahagian` (`A - Insaniah`, `B - Intelek`, `C - Esei`), `Semua Level` (`Tingkatan 1`, `Tingkatan 4`), `Semua Status` (`Menunggu`, `Diluluskan`, `Ditolak`), `Cari`; table columns `Soalan`, `Bahagian`, `Domain`, `Level`, `Status`, `Tindakan`; header button `Tambah Soalan`.
+- FR-ADM-Q25.1 (M8) The screen lists, adds, edits, approves and rejects PKSK questions with the fields below. PKSK questions are OUTSIDE the stimulus-group, DSKP, Bab, TP and Kesukaran rules of section 4.0: a PKSK question cannot join a stimulus group, has no SP or Bab, and never appears in Studio, Databank, Latih Tubi or papers.
+- FR-ADM-Q25.2 PKSK statuses are `Menunggu`, `Diluluskan`, `Ditolak` (the PKSK module's own words, kept as in V2; they are not the five Studio words of section 0). Only `Diluluskan` questions are served to pupils with PKSK access (`PKSK Akses`, BS-06).
+- FR-ADM-Q25.3 Admin Pusat is the only role that writes here (SR-11). Every write is audited (SR-6).
+- AC-ADM-Q25.1 Given filter `A - Insaniah` and `Tingkatan 4`, then only those questions list and the tiles keep the global counts.
+- AC-ADM-Q25.2 Given a PKSK question, then no `Kumpulan rangsangan` action is offered and the API refuses a group link with ERR-CON-05.
+
+**Field & behaviour spec.**
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| 25-01 | `Semua Bahagian` | select | all | OPT-PKSK-BAHAGIAN (`A - Insaniah`, `B - Intelek`, `C - Esei`) | "Nilai penapis tidak sah." |
+| 25-02 | `Semua Level` | select | all | OPT-PKSK-LEVEL (`Tingkatan 1`, `Tingkatan 4`) | same |
+| 25-03 | `Semua Status` | select | all | `Menunggu`, `Diluluskan`, `Ditolak` | same |
+| 25-04 | `Cari` | text | empty, <= 100 | n/a | "Carian tidak boleh melebihi 100 aksara." |
+| 25-05 | `Bahagian` (form) | select | required | OPT-PKSK-BAHAGIAN | "Sila pilih bahagian." |
+| 25-06 | `Domain` | select | required | the domains of the chosen Bahagian (PKSK module list) | "Sila pilih domain." |
+| 25-07 | `Level` | select | required | OPT-PKSK-LEVEL | "Sila pilih tahap pendidikan." |
+| 25-08 | `Teks soalan` | textarea | required, 10 to 2000 | n/a | "Teks soalan mesti sekurang-kurangnya 10 aksara." |
+| 25-09 | `Pilihan A` to `Pilihan D` + radio `Jawapan` | text + radio | Bahagian A and B: exactly 4 options (<= 500), one correct; Bahagian C: none | n/a | "Sila isi semua pilihan jawapan."; "Sila pilih jawapan betul." |
+| 25-10 | `Panduan jawapan` | textarea | Bahagian C only, optional, <= 2000 | n/a | "Panduan jawapan tidak boleh melebihi 2000 aksara." |
+| 25-11 | `Simpan`, `Luluskan`, `Tolak` | buttons | `Tolak` asks `Sebab penolakan` (5 to 500) | n/a | "Sila nyatakan sebab penolakan (sekurang-kurangnya 5 aksara)." |
+25 per page; empty "Tiada soalan PKSK dijumpai."; delete confirm "Padam soalan ini?" / `Batal` `Ya, Padam`; flashes "Soalan PKSK disimpan.", "Soalan PKSK diluluskan.".
 
 ### 4.B Curriculum and DSKP
 
@@ -835,7 +1269,7 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - FR-ADM-C01.1 Browse by Subjek and Tingkatan (1-5) -> Bab -> Topik -> Subtopik; create, edit, delete (API `/api/admin/curriculum/chapters|topics|subtopics`, `admin.controller.ts:107-170`).
 - FR-ADM-C01.2 Each Bab row shows `Bilangan soalan` (approved questions linked, `chapterQuestionCounts`, `overview.repository.ts:140`) so the admin sees which chapters are empty.
 - FR-ADM-C01.3 A tab `DSKP` lists the loaded Bidang / SK / SP with TP descriptors read-only, per subject and Tingkatan (the pick-list of the Studio Tag step); counts per subject/level are shown (AC-R1-12.3).
-- FR-ADM-C01.4 Deleting a Bab that has linked questions is refused with the count [PROPOSED "Bab ini masih mempunyai {n} soalan."].
+- FR-ADM-C01.4 Deleting a Bab that has linked questions is refused with the count ("Bab ini masih mempunyai {n} soalan.", R1 decision D113).
 - FR-ADM-C01.5 Darjah (D1-D6) nodes are not shown or creatable (D96).
 - FR-ADM-C01.6 Tingkatan 1-3 chapters, topics and subtopics exist for every subject that has a T1-T3 syllabus, so Latih Tubi, Soalan by Chapter, Topik and Peta Belajar serve T1-T3 pupils (D101); the admin can create them here when the migrated data has none (task U-OP-15).
 - FR-ADM-C01.7 The tab `DSKP` and the Bab tree both feed the school-admin DSKP Heatmap (Admin Sekolah 47): the heatmap rows are DSKP units/SP (C-04) and its cells are filled from pupil answers on questions tagged to them (Q-04).
@@ -843,6 +1277,21 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - AC-ADM-C01.2 (E2E) Given the admin creates Bab "X" for Sains T5 and links an approved question to it (C-05), when the T5 pupil opens Soalan by Chapter, then Bab "X" lists 1 soalan and Peta Belajar/Heatmap read the same chapter.
 - Data: M03 owns curriculum (D12); question link is `question_versions.chapter_id`. Gap: UAT zero links (D89), `ChapterIndexPage.vue:55-60` empty state. Deviation: tab DSKP and counts added (feeds the empty state; not in V2).
 - OQ: relation between M03 `chapters` and DSKP `unit` — Evidence E-03.
+
+**Field & behaviour spec.** Messages on this screen replace the English Laravel templates of `CURRICULUM_VALIDATION_MESSAGES` (NFR-2): required "{Medan} diperlukan.", string "{Medan} mesti teks.", integer "{Medan} mesti nombor bulat.", exists "{Medan} yang dipilih tidak sah.", unique "{Medan} sudah digunakan.", regex "Format {medan} tidak sah.", min "{Medan} mesti sekurang-kurangnya {n}.", max "{Medan} tidak boleh melebihi {n} aksara." (these screen messages override SR-2).
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| C01-01 | `Subjek` | select | `-- Pilih Subjek --` | OPT-SUBJEK | "Subjek diperlukan." |
+| C01-02 | `Tahap` | select | `-- Pilih Tahap --` | OPT-TINGKATAN (Darjah hidden) | "Tahap diperlukan." |
+| C01-03 | `Tapis` | button | n/a | empty state "Sila pilih subjek dan tahap pendidikan" / "Gunakan penapis di atas" | n/a |
+| C01-04 | Bab: `Nombor Bab` | number | required | integer 1 to 99, unique per Subjek + Tingkatan | "Nombor Bab sudah digunakan." |
+| C01-05 | Bab: `Nama Bab` | text | required, <= 150 | n/a | "Nama Bab diperlukan." |
+| C01-06 | Bab: `Susunan` | number | default next | integer 0 to 999 | "Susunan tidak sah." |
+| C01-07 | Topik: `Bab`, `Nombor Topik`, `Nama Topik` | select, text (<= 10, accepts `1.1`), text (<= 150) | required | chapters of the filter | "Nombor Topik diperlukan.", "Nama Topik diperlukan." |
+| C01-08 | Subtopik: `Topik`, `Nama Subtopik` | select, text (<= 150) | required | topics of the filter | "Nama Subtopik diperlukan." |
+| C01-09 | Delete Bab, Topik, Subtopik | action | n/a | confirm "Padam Bab ini?" / "Tindakan ini tidak boleh dibatalkan." / `Batal` `Ya, Padam`; refused "Bab ini masih mempunyai {n} soalan." (same shape for Topik) | ERR-CON-01 |
+| C01-10 | Tab `DSKP`: `Subjek`, `Tingkatan` | selects | required | read-only tree Bidang, SK, SP and the TP 1 to 6 descriptors; counts per subject and level | empty "DSKP belum dimuatkan untuk subjek ini." |
+Behaviour: `Bilangan soalan` per Bab = approved questions with that `chapter_id`; an empty Bab shows `Kosong`; the tree is not paged; a 429 on fast navigation shows ERR-RATE-01 text, never an empty "Ralat". Save flashes "Bab disimpan.", "Topik disimpan.", "Subtopik disimpan.", "Bab dipadam.". Admin Pusat only.
 
 #### R1-ADM-C-02 `Subjek` | `/admin/subjects` (+ `/create`, `/:id/edit`) | P0 (every picker of Murid 9, 13, 16 reads it) | GH built / UAT built
 - **Action: Keep** | gap: 4.V row C-02.
@@ -855,6 +1304,20 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - FR-ADM-C02.1 List, create, edit, activate/deactivate (`PATCH :id/active`, `admin.controller.ts:88`). FR-ADM-C02.2 Each subject shows the Tingkatan it is linked to and whether it is in the SPM catalogue (decides `spmBound`). FR-ADM-C02.3 Deactivating a subject hides it from every pupil picker (existing behaviour, verify).
 - AC-ADM-C02.1 Given a subject deactivated, then it disappears from Studio pickers and the pupil's subject lists, and its data stays.
 - Gap: none functional. Deviation: none.
+
+**Field & behaviour spec.**
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| C02-01 | `Nama (BM) *` | text | required, <= 100 | n/a | "Nama (BM) diperlukan." |
+| C02-02 | `Nama (EN) *` | text | required, <= 100 | n/a | "Nama (EN) diperlukan." |
+| C02-03 | `Kod *` | text | required, 2 to 12 chars, `^[A-Z0-9]+$`, unique | n/a | "Kod ini sudah digunakan."; "Format kod tidak sah." |
+| C02-04 | `Ikon (Font Awesome)` | text | optional, class name `fa-...` <= 50 | n/a | "Ikon tidak sah." |
+| C02-05 | `Warna` | colour | default `#64748b` | `^#[0-9a-fA-F]{6}$` | "Warna mesti kod hex, contoh #1d4ed8." |
+| C02-06 | `Susunan` | number | default last + 1 | integer 0 to 999 | "Susunan tidak sah." |
+| C02-07 | `Subjek Teras` | checkbox | unchecked | n/a | n/a |
+| C02-08 | `Aktif` | checkbox and row toggle | checked | OPT-AKTIF | confirm "Nyahaktifkan subjek ini?" / "Subjek tidak lagi dipaparkan kepada pelajar. Data kekal." / `Batal` `Ya, Nyahaktifkan` |
+| C02-09 | Linked Tingkatan | multi-select | at least 1 | OPT-TINGKATAN | "Pilih sekurang-kurangnya satu tingkatan." |
+Buttons `Simpan Subjek`, `Batal`. List "Jumlah: {n} subjek"; `Soalan` column = computed count of the subject's questions. Flashes "Subjek disimpan.".
 
 #### R1-ADM-C-03 `Tahap Pendidikan` | `/admin/education-levels` (+ create/edit) | P0 | GH built / UAT 11 levels active
 - **Action: Fix** | gap and differences: 4.V row C-03.
@@ -871,6 +1334,8 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - AC-ADM-C03.1 (E2E) Given the admin deactivates D1-D6 on UAT, when the public statistics and the T5 pupil's level picker load, then 5 levels appear (UAT shows 11 today).
 - Gap: UAT data (U-OP-03). Deviation: none (D72).
 
+**Field & behaviour spec.** Fields: `Nama (BM)` (text, required, <= 50, "Nama (BM) diperlukan."), `Nama (EN)` (text, <= 50), `Kod` (`^T[1-5]$`, unique, "Kod ini sudah digunakan."; "Format kod tidak sah."), `Peringkat` (select, `Menengah`; Rendah/Darjah hidden, OPT-PERINGKAT), `Kurikulum` (select, `KSSM`), `Aktif` (toggle; confirm "Nyahaktifkan tahap ini?" / "Tahap tidak lagi dipaparkan dalam senarai pilihan." / `Batal` `Ya, Nyahaktifkan`). `Soalan` and `Subjek` counts are computed from the question list, not stored. Flash "Tahap disimpan.".
+
 #### R1-ADM-C-04 DSKP load and verification, Tingkatan 1-5 | operator task + report in C-01 tab `DSKP` | P0 | GH loader exists (T4-T5) / UAT unverified
 - **Action: Build** (T1-T3 extracts, the extracts of every other offered SPM subject (D112(3)) and the C-01 `DSKP` tab; the loader itself is Keep) | gap: 4.V row C-04.
 
@@ -881,13 +1346,15 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - FR-ADM-C04.3 T1-T3 extraction task (D101): the repo has T4-T5 extracts only. For each subject that has a Tingkatan 1-3 syllabus, extract the official KSSM DSKP into the same JSON format as `docs/reference/dskp/*.json` (units with `level` T1/T2/T3, SK, SP, TP 1-6, `edition` per level, printed codes kept), audit it as the T4-T5 extracts were (`docs/qa/audit/dskp-extracts-audit.md`), copy it to `apps/api/src/modules/curriculum/dskp/data/` and `docs/reference/dskp/` (the checksum test compares them), rebuild and run the loader (`--data-dir` allows a dry run first). Source PDFs needed (none of them is in `D:\prestasiplus-dskp`, which holds Form 4 and Form 5 or T4-T5 PDFs only): the official KPM DSKP KSSM Tingkatan 1, 2 and 3 documents for Matematik, Sains, Bahasa Melayu, Bahasa Inggeris, Sejarah, Pendidikan Islam, Pendidikan Moral and Pendidikan Seni Visual (the subjects of the 13 extracts that continue below Tingkatan 4; whether Fizik, Matematik Tambahan, Tasawwur Islam, Landskap dan Nurseri and Katering dan Penyajian have T1-T3 content is not established, E-16). The missing PDFs are a blocking evidence item (E-16).
 - FR-ADM-C04.4 Until a T1-T3 extract is loaded, T1-T3 questions are approved without DSKP tags (R1-U1; the gate binds only SPM-bound T4/T5, ADR-0031), stay out of blueprint papers, and their Bab mapping (C-05) and chapters (C-01.6) still exist so Latih Tubi and Soalan by Chapter serve T1-T3 pupils (D101).
 - FR-ADM-C04.5 (D112(3)) The DSKP loading covers EVERY SPM subject offered, not only the subjects with an extract today: Kimia, Biologi, Geografi, Perniagaan, Prinsip Perakaunan and Ekonomi (and any other offered subject without `curriculum_node` rows) are loaded from the official KPM DSKP documents into the same structure as D109 (Tingkatan -> Subjek -> Bab -> SK -> SP -> TP), with the same JSON format, audit and checksum copy as FR-ADM-C04.3. The loader report (FR-ADM-C04.2) lists each offered subject and Tingkatan as `dimuatkan` or `belum dimuatkan`; U-OP-01 runs the load.
-- FR-ADM-C04.6 (D112(3)) Until a subject's DSKP is loaded, SP and TP / aras are required at publish only when DSKP nodes exist for that Subjek + Tingkatan (the same conditional pattern as Bab, FR-ADM-QE4.5 and QE4.6); the Studio Tag step of such a subject shows [PROPOSED] "DSKP belum dimuatkan untuk subjek ini." and no free-text SP or TP is accepted (FR-ADM-QE5.6 still holds).
+- FR-ADM-C04.6 (D112(3)) Until a subject's DSKP is loaded, SP and TP / aras are required at publish only when DSKP nodes exist for that Subjek + Tingkatan (the same conditional pattern as Bab, FR-ADM-QE4.5 and QE4.6); the Studio Tag step of such a subject shows "DSKP belum dimuatkan untuk subjek ini." and no free-text SP or TP is accepted (FR-ADM-QE5.6 still holds).
 - FR-ADM-C04.7 (D112(3)) A Kontrak Simulasi (JSU) can be created only for a Subjek whose DSKP is loaded (FR-ADM-Q16.7); the C-01 `DSKP` tab shows the loaded state per Subjek and Tingkatan.
 - AC-ADM-C04.1 Given a load, then the report gives counts per subject and level and each rejected row with a plain reason; running again creates no duplicates.
-- AC-ADM-C04.2 Given a T2 extract for Matematik has been loaded, when the admin opens the Studio Tag step for Matematik T2, then Unit and SP lists show the T2 nodes; before it is loaded the page says [PROPOSED] "DSKP belum dimuatkan untuk subjek ini." and a T2 question can still be approved without tags.
+- AC-ADM-C04.2 Given a T2 extract for Matematik has been loaded, when the admin opens the Studio Tag step for Matematik T2, then Unit and SP lists show the T2 nodes; before it is loaded the page says "DSKP belum dimuatkan untuk subjek ini." and a T2 question can still be approved without tags.
 - AC-ADM-C04.3 Given the loader has run for every offered SPM subject, when the report is opened, then Kimia, Biologi, Geografi, Perniagaan, Prinsip Perakaunan and Ekonomi each show `dimuatkan` with counts of Bab, SK, SP and TP for their Tingkatan, and the Studio Tag step of each lists its nodes.
 - AC-ADM-C04.4 Given Biologi T4 has no DSKP nodes yet, when the admin publishes a complete Biologi T4 question without SP and TP, then it publishes; given the Biologi T4 DSKP is then loaded, when another question is published without SP, then it is refused with "Sila pilih sekurang-kurangnya satu SP DSKP.".
 - Gap: UAT state unknown (Evidence E-03). Deviation: none.
+
+**Field & behaviour spec.** Operator task, no form (0 fields). Input: the CLI option `--data-dir` (path to the DSKP data folder). Report columns `Subjek`, `Tingkatan`, `Nod dimuat`, `Baris ditolak`, `Sebab`. Idempotent: a subject loads fully or not at all; a rejected row reads "Baris {n}: {sebab}"; a second run prints "0 nod baharu". The report is shown read-only in C-01 tab `DSKP`.
 
 #### R1-ADM-C-05 Bab mapping for questions (`Tetapkan Bab`) | Studio edit field `Bab` + bulk action in Q-03 | P0 | GH single field built (`ChapterSelect.vue`) / UAT 0 of 339,112 linked
 - **Action: Build** (bulk action; the single field is Keep) | gap: 4.V row C-05.
@@ -895,7 +1362,7 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 **Screen specification (from V2).** Not observed in V2 — V2 has no Bab link for questions and no bulk action; follow FR-ADM-C05.1..C05.5. V2 shows only the `Bab` select in Studio step 4 (R1-ADM-Q-04).
 - Reference: none in V2 (0 of 408,197 approved MCQs have a chapter); D89 "Admin pilih bab sendiri"; D80 legacy untagged MCQs stay servable in Latih Tubi, appear in Bab only after the admin sets the Bab.
 - FR-ADM-C05.1 Single: the `Bab` select in the Tag step (Q-04), chapters of the question's Subjek and Tingkatan.
-- FR-ADM-C05.2 Bulk: in Studio and Senarai Soalan the admin filters (Subjek, Tingkatan, search text, DSKP) then chooses `Tetapkan Bab` for the selected rows or all rows of the filter; a dry-run line shows "{n} soalan akan dipautkan ke Bab {nama}" [PROPOSED]; the action refuses rows whose Subjek/Tingkatan do not match the Bab; it records an audit entry with count and actor; cap per run as `FILTER_ACTION_CAP`. The call is `POST /api/admin/curriculum/questions/bulk-chapter` (D-A5); the work-list `Soalan tanpa Bab` of FR-ADM-Q03.7 uses it.
+- FR-ADM-C05.2 Bulk: in Studio and Senarai Soalan the admin filters (Subjek, Tingkatan, search text, DSKP) then chooses `Tetapkan Bab` for the selected rows or all rows of the filter; a dry-run line shows "{n} soalan akan dipautkan ke Bab {nama}" (R1 decision D113); the action refuses rows whose Subjek/Tingkatan do not match the Bab; it records an audit entry with count and actor; cap per run as `FILTER_ACTION_CAP`. The call is `POST /api/admin/curriculum/questions/bulk-chapter` (D-A5); the work-list `Soalan tanpa Bab` of FR-ADM-Q03.7 uses it.
 - FR-ADM-C05.3 Setting a Bab changes no status and no servability other than adding the question to Soalan by Chapter; it does not set unit/SP/TP (not derived from DSKP, D89).
 - FR-ADM-C05.4 Progress: Kurikulum shows per Bab the count; Studio filter `Bab` = "Belum dipautkan" lists the rest.
 - FR-ADM-C05.5 No automatic mapping by keyword is run (OQ-03).
@@ -904,6 +1371,8 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - AC-ADM-C05.2 Given a Bab of Fizik T4 and a Sains T5 row selected, then the row is skipped and listed with the reason.
 - AC-ADM-C05.3 (E2E) Given 50 questions set to Bab "X", when the T5 pupil opens Soalan by Chapter Sains, then Bab "X" shows 50 soalan and `Mula` starts a practice from them.
 - Gap: no bulk path; at one question per click, 339,112 rows is impractical. Deviation: FD-C05 bulk action is new (V2 has none; D89 and the 0-of-408,197 fact make it a D9 fix).
+
+**Field & behaviour spec.** Fields are Q-03 03-03 (filter), 03-14 (bulk `Tetapkan Bab`) and Q-04 04-11 (single field `Bab`). Messages: "Sila pilih Bab."; "Bab tidak sepadan dengan subjek dan tahap."; dry-run "{n} soalan akan dipautkan ke Bab {nama}"; result "{ok} berjaya, {gagal} dilangkau". A question already linked is re-linked only when the admin ticks `Tukar Bab sedia ada` (default off).
 
 ### 4.C Content seen by pupils in 1.0 and settings
 
@@ -917,6 +1386,18 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - AC-ADM-N01.1 (E2E) Given the admin adds a video for Sains T5, the T5 pupil sees it in Video under the same subject.
 - Gap: KK-08 not built. Deviation: V3 Blade list instead of Filament (D79 absorb).
 
+**Field & behaviour spec.**
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| N01-01 | Filters `Subjek`, `Tingkatan`, `Bab`, `Status` | selects | all | OPT-SUBJEK, OPT-TINGKATAN, chapters, `Semua` / `Aktif` / `Disembunyikan` | n/a |
+| N01-02 | `Tajuk` | text | required, <= 150 | n/a | "Tajuk diperlukan." |
+| N01-03 | `Pautan video` | url | required, https (YouTube or Vimeo), <= 500 | n/a | "Pautan video tidak sah." |
+| N01-04 | `Kategori` | select | required | OPT-VIDEO-KATEGORI | "Kategori diperlukan." |
+| N01-05 | `Subjek`, `Tingkatan`, `Bab` | selects | Subjek and Tingkatan required, Bab optional; Bab clears when a parent changes | OPT-SUBJEK, OPT-TINGKATAN, chapters | "Sila pilih subjek.", "Sila pilih tahap pendidikan." |
+| N01-06 | `Penerangan` | textarea | optional, <= 1000 | n/a | "Penerangan tidak boleh melebihi 1000 aksara." |
+| N01-07 | `Sembunyikan` | toggle | off | confirm "Sembunyikan video ini?" / `Batal` `Ya, Sembunyikan` | n/a |
+`Aktif` <-> `Disembunyikan` by Admin Pusat; a hidden video leaves Murid, Guru and Admin Sekolah at once; delete confirm "Padam video ini?" / `Batal` `Ya, Padam`; flash "Video disimpan."; 25 per page; empty "Tiada video dijumpai.".
+
 #### R1-ADM-N-02 `Artikel` | `/admin/articles` | P1 (feeds the 1.0 Dashboard; ships with the first delivery, D106) | built both.
 - **Action: Keep** | gap: 4.V row N-02.
 
@@ -926,6 +1407,19 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - Columns: `Tajuk` (with "Oleh: Admin PRESTASI+" underneath), `Kategori`, `Tahap`, `Status`, `Views`, `Tarikh`, and an actions cell.
 - Create/edit form fields and the delete confirm are listed in R1-ADM-P2-18 (Reference); empty copy "Tiada artikel dijumpai." there.
 - FR-ADM-N02.1 CRUD with publish state; the 1.0 Dashboard "Artikel Untuk Kamu" shows published articles. AC-ADM-N02.1 (E2E) Given a published article, the pupil Dashboard lists it. Gap: none. Also holds the Panduan text if Panduan reads articles (Evidence E-10).
+
+**Field & behaviour spec.** Filters: search, `Semua Kategori` (OPT-ARTIKEL-KATEGORI), `Semua Status` (`Diterbitkan`, `Draf`), buttons `Cari`, `Reset`. Form:
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| N02-02 | `Tajuk Artikel *` (placeholder "cth: 10 Tips Belajar Matematik") | text | required, <= 200 | n/a | "Tajuk artikel diperlukan." |
+| N02-03 | `Ringkasan` | textarea | optional, <= 300 | n/a | "Ringkasan tidak boleh melebihi 300 aksara." |
+| N02-04 | `Kandungan *` | rich text | required, <= 50,000, rendered not escaped | n/a | "Kandungan diperlukan." |
+| N02-05 | `URL Gambar Utama` | url or upload | optional; https <= 500, or JPG, PNG, WebP <= 2 MB | n/a | "Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB." |
+| N02-06 | `Kategori *` | select | required | OPT-ARTIKEL-KATEGORI | "Kategori diperlukan." |
+| N02-07 | `Tahap Pendidikan` | select | `Semua` | OPT-TINGKATAN | n/a |
+| N02-08 | `Terbitkan Sekarang`, `Artikel Featured` | checkboxes | off | n/a | n/a |
+| N02-09 | Delete | dialog | n/a | "Adakah anda pasti mahu padam artikel ini?" / `Batal` `Ya, Padam` | n/a |
+20 per page, "Menunjukkan {a} hingga {b} daripada {n} keputusan"; empty "Tiada artikel dijumpai."; flash "Artikel disimpan.".
 #### R1-ADM-N-03 `Banner` | `/admin/banners` | P1 (feeds the 1.0 Dashboard, D106) | built both.
 - **Action: Fix** | gap and differences: 4.V row N-03.
 
@@ -935,6 +1429,20 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - Columns: `#`, `Tajuk` (cut with "..."), `Jenis` (e.g. "HERO"), `Sasaran` (e.g. "ALL"), `Susunan`, `Mula` and `Tamat` (dd/mm/yyyy), `Aktif?` ("Aktif"), actions.
 - Form fields (`Tajuk Banner *`, `Penerangan`, `URL Gambar`, `Jenis Banner *`, `Jenis Pautan`, `Sasaran Penonton *`, `Susunan Paparan`, `Tarikh Mula`, `Tarikh Tamat`, `Banner Aktif`, `Simpan Banner`): see R1-ADM-P2-18 Reference.
 - FR-ADM-N03.1 CRUD with active dates; shown on the 1.0 Dashboard. AC-ADM-N03.1 (E2E) Given an active banner, the pupil Dashboard shows it. Gap: none.
+
+**Field & behaviour spec.**
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| N03-01 | `Tajuk Banner *` | text | required, <= 120 | n/a | "Tajuk banner diperlukan." |
+| N03-02 | `Penerangan` | textarea | optional, <= 300 | n/a | "Penerangan tidak boleh melebihi 300 aksara." |
+| N03-03 | `URL Gambar` | url or upload | required for `HERO` | as N02-05 | "Gambar diperlukan untuk banner Hero." |
+| N03-04 | `Jenis Banner *` | select | required, preloaded on edit | `HERO` Hero, `PROMO` Promosi, `ANNOUNCEMENT` Pengumuman, `EVENT` Acara; stored legacy `FEATURE` (`Ciri Utama (lama)`) and `PROMOTIONAL` (`Promosi (lama)`) stay valid, are saved unchanged and are not offered for new banners | "Jenis banner diperlukan." |
+| N03-05 | `Jenis Pautan` + target | select + picker | `Tiada` | OPT-BANNER-PAUTAN; `Subjek` = OPT-SUBJEK, `Kuiz` / `Artikel` = search, `Pautan Luar` = https <= 500 | "Sasaran pautan diperlukan." |
+| N03-06 | `Sasaran Penonton *` | select | `Semua` | OPT-BANNER-SASARAN | n/a |
+| N03-07 | `Susunan Paparan` | number | 0 | integer 0 to 999 | "Susunan tidak sah." |
+| N03-08 | `Tarikh Mula`, `Tarikh Tamat` | date | optional | `dd/mm/yyyy`, end >= start | "Tarikh tamat mesti selepas tarikh mula." |
+| N03-09 | `Banner Aktif` | checkbox | checked | OPT-AKTIF | n/a |
+List "Jumlah: {n} banner · {m} aktif"; a banner shows only when active and today (server date, Asia/Kuala_Lumpur) is between Mula and Tamat inclusive; delete confirm "Adakah anda pasti mahu padam banner ini?"; empty "Tiada banner dijumpai.".
 #### R1-ADM-N-04 `Nota` | `/admin/notes` | P2 | built both.
 - **Action: Fix** | gap and differences: 4.V row N-04.
 
@@ -944,6 +1452,8 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - Columns: `Tajuk` (with "Oleh: Admin PRESTASI+"), `Subjek`, `Jenis` (e.g. "lengkap"), `Tahap` (e.g. "Darjah 3"; V3 shows Tingkatan only), `Status`, `Statistik`, actions.
 - Form and delete confirm: see R1-ADM-P2-18 Reference.
 - FR-ADM-N04.1 CRUD per subject/Tingkatan for Buku Nota (Tingkatan only, D54-SEC). AC-ADM-N04.1 Given a note for T5 Sains, the T5 pupil's Buku Nota lists it. Gap: none. Audio KBAT (`/admin/audio-kbat`) is not required by a 1.0 module; stays built, no work (section 6).
+
+**Field & behaviour spec.** Filters `Semua Subjek` (OPT-SUBJEK, all subjects, not the five V2 shows), `Semua Jenis` (OPT-NOTA-JENIS). Form: `Tajuk` (<= 150, "Tajuk diperlukan."), `Subjek` (OPT-SUBJEK, "Sila pilih subjek."), `Tingkatan` (Tingkatan 1 to 5, "Sila pilih tahap pendidikan."), `Jenis` (OPT-NOTA-JENIS, 4 values, "Jenis diperlukan."), `Kandungan` (rich, <= 50,000, "Kandungan diperlukan."), `Status` (`Diterbitkan` / `Draf`). Create must not return a 500 (a defect to fix, D-1). Delete "Adakah anda pasti mahu padam nota ini?" / `Batal` `Ya, Padam`. 20 per page; "Jumlah: {n} nota"; empty "Tiada nota dijumpai.".
 
 #### R1-ADM-N-05 `Tetapan Permainan` | `/admin/permainan` | P0 (feeds Murid 21, rated Tinggi) | GH BE + client exist, no page / UAT same
 - **Action: Build** (page over the existing API) | gap and differences: 4.V row N-05.
@@ -957,9 +1467,19 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - Reference (V2 `admin/permainan.blade.php`): title "🎮 Tetapan Permainan", subtitle "Urus konfigurasi Papan Bijak, Kad Memori & permainan lain"; tiles `Jumlah Bilik`, `Sedang Aktif`, `Selesai`, `Pemain Unik`; section `Papan Bijak` "Tetapan papan permainan ular & tangga (50 petak)" with "Petak soalan (quiz):", "Tangga (3) + Ular (3):", "Bonus (2) + Perangkap (2):", "Petak biasa (jalan kosong):", "Mula + Tamat:"; `Senarai Permainan` "Permainan yang tersedia dalam sistem"; empty "Tiada permainan didaftarkan lagi."
 - FR-ADM-N05.1 Page shows the tiles, Papan Bijak settings and the game list using `GET /api/admin/games` and `PUT /api/admin/games/settings` (exist; `games/rooms/admin/admin-games.controller.ts`).
 - FR-ADM-N05.2 Each game can be enabled/disabled; a disabled game is absent from the pupil Zon Permainan.
-- FR-ADM-N05.3 The game question pool rule (D85 U6: games exclude image or stimulus questions, with the reason shown to the admin) is unchanged; D105 lifts the text-only restriction for Latih Tubi, Databank and Soalan by Chapter only. Whether games should also serve figure questions is not decided (OQ-G1).
+- FR-ADM-N05.3 The game question pool rule (D85 U6: games exclude image or stimulus questions, with the reason shown to the admin) is unchanged; D105 lifts the text-only restriction for Latih Tubi, Databank and Soalan by Chapter only. Games keep the exclusion of figure and group questions (OQ-G1 closed, 48 GAME-00 section 3.2; R1 decision D113).
 - AC-ADM-N05.1 (E2E) Given the admin disables one game, then the T5 pupil's Zon Permainan no longer lists it.
 - Gap: PG-11 hidden, no page. Deviation: none.
+
+**Field & behaviour spec.** The coin and cap settings are in 48 GAME-00 and P2-06; this screen holds the board and the per-game switch.
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| N05-01 | `Bilangan Petak Soalan` | number | default 35 | integer 0 to 38 (48 usable minus 10 special); 0 = no question squares | "Maksimum 38 petak soalan."; "Bilangan petak tidak sah." |
+| N05-02 | `Pecahan Papan (50 petak)` | derived | n/a | questions = N; special = 10 (3 tangga, 3 ular, 2 bonus, 2 perangkap); biasa = 48 - N - 10 (min 0); mula + tamat = 2; chips "{N} soalan", "10 khas", "{b} biasa" | recomputed live |
+| N05-03 | `Simpan Tetapan` | button | n/a | flash "Tetapan permainan disimpan." | SR-1 |
+| N05-04 | Per-game `Aktif` (Papan Bijak, Kad Memori, Battle Arena) | toggle | on | OPT-AKTIF | flash "Permainan "{nama}" telah DIAKTIFKAN." / "...DINYAHAKTIFKAN." |
+| N05-05 | `Syiling permainan` | toggle | OFF (D113, 48 D-GAME-2) | admin setting, caps in P2-06 | n/a |
+Empty "Tiada permainan didaftarkan lagi."; tiles `Jumlah Bilik`, `Sedang Aktif` (playing or waiting), `Selesai`, `Pemain Unik`. Game questions exclude figure and group questions (48 GAME-00, Q-06).
 
 #### R1-ADM-N-06 `Kawalan Ciri` (minimum) | `/admin/feature-toggles` | P1 | GH none / UAT none
 - **Action: Build** | gap and differences: 4.V row N-06.
@@ -979,6 +1499,8 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - AC-ADM-N06.1 (E2E) Given `latih-tubi` is switched OFF, when the T5 pupil opens the Latih Tubi URL, then the standard 404 page shows and the menu has no Latih Tubi item; switched ON, Latih Tubi works.
 - Data: new flag table + `GET/POST /api/admin/feature-toggles` (S8.1 not built); in V3 visibility today is build-time (`prototype-scope`). Deviation: FD-N06 two switches here (V2 about 25, P2-19) and 404 instead of V2's redirect flash. OQ-06.
 
+**Field & behaviour spec.** One switch per row, `Aktif` / `Off`, default ON, acts at once, no save button. Rows (key -> label), Pelajar: `permainan` Zona Permainan (default ON), `misi-harian` Misi Harian, `kombo` Kombo, `leaderboard` Leaderboard, `remedial` Remedial, `cita-cita` Cita-Cita, `universiti` Universiti, `biasiswa` Biasiswa, `target-spm` Target SPM, `analisa-item` Analisa Item, `prestasi` Prestasi, `psikometrik` Psikometrik, `profil-cerah` Profil Cerah, `kemajuan-saya` Kemajuan Saya, `sejarah-latihan` Sejarah Latihan, `video-pembelajaran` Video Pembelajaran, `perutusan` Perutusan, `panduan-pengguna` Panduan Pengguna, `tiket-bantuan` Tiket Bantuan, `latih-tubi` Latih Tubi; Guru: `guru.headcount` Headcount, `guru.misi-harian` Misi Harian, `guru.kelas` Kelas, `guru.prestasi` Prestasi, `guru.monitoring` Monitoring, `guru.analisis-item` Analisis Item, `guru.gamifikasi` Gamifikasi, `guru.broadcast` Broadcast, `guru.databank` Databank, `guru.sumbang-soalan` Sumbang Soalan (31 rows in total with the rows added by P2-19). Flash "Ciri "{label}" telah DIAKTIFKAN." / "Ciri "{label}" telah DINYAHAKTIFKAN."; empty "Tiada ciri didaftarkan."; OFF removes the menu entry and the URL answers 404 (FeatureGuard); no row means ON; audited (actor, flag, old, new); confirm only when turning OFF a pupil-facing flag: title "Matikan "{label}"?", body "Modul ini akan hilang daripada menu dan pautannya akan memaparkan halaman 404.", `Batal` / `Ya, Matikan`; a failed write reverts the switch and shows the SR-1 text.
+
 #### R1-ADM-N-07 `Tetapan` (support contact) | `/admin/settings` | P1 (feeds A3 Panduan, 1.0; and the tickets of P2-20) | GH none / UAT `/api/config/support` returns 404
 - **Action: Build** | gap and differences: 4.V row N-07. V2 differs: no support-contact field exists in V2 Tetapan; this section is a V3 addition, FD-N07.
 
@@ -986,13 +1508,22 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - Route and title: `/admin/settings`, "Tetapan - Admin Panel". One long form with sections in order: `Logo Laman Web` ("Logo semasa: file"); `Had Percubaan & Soalan` (fields `Soalan Biasa (Trial)`, `PKSK (Trial)`, `Had Soalan/Bulan (Biasa)`, `Had Soalan/Bulan (Sekolah Basic)`, `Had Subjek Pilihan`); `Harga Pakej` (`Biasa — Sekali (Lifetime)`, `Biasa — Lifetime`, `PKSK — Bulanan`, `PKSK — Sekali`, `Personal — Bulanan`, `Personal — Sesi Persekolahan`); `Payment Gateway` ("Gateway aktif: toyyibpay"; blocks `ToyyibPay` and `BizAppay`, each `API Key` and `Category Code`; select `Gateway Aktif` with ToyyibPay / BizAppay); `Target SPM (Override)` (one number per subject code: BM, BI, MATH, SCI, SEJ, PI, PM, ADDMATH, PHY, CHEM, BIO, GEO, PSV, MUZ, PJK, RBT, SK, BA, BC ...); `Harga Pakej Mengikut Tahap`; button `Simpan Tetapan`.
 - V3 builds none of these sections except the V3 addition `Hubungi Sokongan` (FR-ADM-N07.1); billing, payment and logo sections are deferred (section 6). No support-contact field exists in V2.
 - Reference: V2 sidebar item `Tetapan` `/admin/settings` (group Sistem), observed in V2: sections `Logo Laman Web`, `Had Percubaan & Soalan`, `Harga Pakej`, `Payment Gateway`, `Gateway Aktif`, `Target SPM (Override)`, `Harga Pakej Mengikut Tahap`, button `Simpan Tetapan`. V2 has no support-contact field (E-18 closed), so this screen keeps V2's title "Tetapan" and its save button `Simpan Tetapan`, and adds one new section as a V3 addition (FD-N07). Evidence in V3: Panduan reads `GET /api/config/support`, which is 404 on UAT (GAP row A3), so the Panduan "hubungi sokongan" data has no source.
-- FR-ADM-N07.1 The page `Tetapan` has one section `Hubungi Sokongan` [PROPOSED heading] with the support contact values Panduan and the ticket screens show: support e-mail, support phone/WhatsApp, service hours text. Further V2 settings are not built (nothing is shown that does nothing).
+- FR-ADM-N07.1 The page `Tetapan` has one section `Hubungi Sokongan` (R1 decision D113) with the support contact values Panduan and the ticket screens show: support e-mail, support phone/WhatsApp, service hours text. Further V2 settings are not built (nothing is shown that does nothing).
 - FR-ADM-N07.2 `GET /api/config/support` returns the saved values to pupils, teachers and school admins; with no value saved it returns an empty object and Panduan hides the contact block instead of erroring.
-- FR-ADM-N07.3 Saving is Admin Pusat only and audited; validation: e-mail format, phone digits, max lengths [PROPOSED 120 characters].
+- FR-ADM-N07.3 Saving is Admin Pusat only and audited; validation: e-mail format, phone digits, max lengths (120 characters, R1 decision D113).
 - AC-ADM-N07.1 (E2E) Given the admin saves a support e-mail, when a T5 pupil opens Panduan, then the e-mail shows and `/api/config/support` answers 200.
 - AC-ADM-N07.2 Given an invalid e-mail, when the admin saves, then the form shows a field message and nothing is saved.
 - AC-ADM-N07.3 Given no value saved, when a pupil opens Panduan, then there is no error and no empty contact box.
 - Data: new setting store and `GET/PUT /api/admin/settings/support` (required work); task U-OP-16 sets the value on UAT. Deviation: FD-N07 only the support section of V2 Tetapan.
+
+**Field & behaviour spec.** Section heading `Hubungi Sokongan`.
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| N07-01 | `E-mel sokongan` | email | optional, <= 120 | n/a | "E-mel tidak sah." |
+| N07-02 | `Telefon / WhatsApp sokongan` | text | optional | `^\+?[0-9]{9,13}$` | "No. telefon tidak sah." |
+| N07-03 | `Waktu perkhidmatan` | text | optional, <= 120, e.g. "Isnin - Jumaat, 9 pagi - 5 petang" | n/a | "Waktu perkhidmatan tidak boleh melebihi 120 aksara." |
+| N07-04 | `Simpan Tetapan` | button | n/a | flash "Tetapan disimpan." | SR-1 |
+With nothing saved `GET /api/config/support` returns `{}` and Panduan hides the contact block. The other V2 sections (Logo, Had, Harga, Payment, Target SPM) are not built in R1.
 
 ### 4.D Users, schools, classes (as far as 1.0 needs)
 
@@ -1013,6 +1544,18 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - AC-ADM-U01.2 (E2E) Given the admin creates a pupil (U-02) and the pupil logs in on UAT, then the pupil lands on the Murid portal.
 - Gap: V1 table is 1881 px wide and hides actions below 1280 (M02 §2.1 defect D-1) -> responsive rules in 4.R. Deviation: FD-U01 no `Login As`.
 
+**Field & behaviour spec.**
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| U01-01 | `Peranan` | select | `Semua Peranan` | OPT-PERANAN | n/a |
+| U01-02 | `Sekolah` | async searchable select | `Semua Sekolah` | `GET /api/admin/schools/options`, pages of 20, search from 2 chars; `Muat {n} lagi`, `Memuat...`, "Tiada sekolah ditemui" + "Cuba kod sekolah atau nama daerah."; footer "Menunjuk {n} daripada {m} · ↑ ↓ pilih · Enter sahkan" | "Gagal memuat senarai." + `Cuba lagi` |
+| U01-03 | `Status` | select | `Semua` | OPT-STATUS-AKAUN | n/a |
+| U01-04 | Search | text | empty, placeholder "Nama atau emel...", <= 100 | n/a | "Carian tidak boleh melebihi 100 aksara." |
+| U01-05 | Row checkbox, select-all | checkbox | the acting admin is excluded | n/a | n/a |
+| U01-06 | Row actions `Sunting`, toggle, delete (no `Login As`) | menu | n/a | toggle confirm "Pasti untuk menukar status pengguna ini?"; delete "Padam Pengguna?" / "Anda pasti mahu memadam pengguna ini?" / `Batal` `Ya, Padam`; bulk "Padam Pengguna Terpilih?" / "Tindakan ini tidak boleh dibatalkan." / `Ya, Padam Semua`; bar "{n} dipilih" | last active admin: 409 `LAST_ADMIN_MESSAGE` |
+| U01-07 | `Eksport CSV` | button | n/a | the filtered list, UTF-8, same columns, IC masked | ERR-NET-02 |
+25 per page, newest first; empty "Tiada pengguna dijumpai" / "Cuba ubah kriteria carian anda"; approval banner "{n} akaun menunggu kelulusan — belum boleh log masuk." with `Semak & luluskan` (select rows, `Luluskan`, bulk `Tolak`); role cards count users per role (`Pelajar`, `Guru`, `Admin Sekolah`, `Pegawai PPD`, `Admin`). There is no separate Penyemak role (SR-11).
+
 #### R1-ADM-U-02 `Tambah Pengguna` | `/admin/users/create` | P0 | GH built / UAT built
 - **Action: Fix** | gap and differences: 4.V row U-02. V2 differs from V1: title "Tambah Pelajar", pupil form only.
 
@@ -1032,6 +1575,26 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - AC-ADM-U02.3 (E2E) Given the admin creates an Admin Sekolah for a UAT school, when that account logs in, then it reaches Command Center scoped to that school (unblocks the AS audit that GAP 8 lists as unverified).
 - Gap: none found functionally; UAT AS account not yet created (U-OP-07). Deviation: FD-U02 Darjah not offered.
 
+**Field & behaviour spec** (shared with U-03).
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| U02-01 | `Peranan *` | select | `-- Pilih Peranan --`; locks the other fields until chosen | OPT-PERANAN; `admin` only by Admin Pusat | "Peranan diperlukan."; "Peranan tidak boleh digabungkan." |
+| U02-02 | `Nama penuh *` | text | required, <= 120; hint "Nama pengguna dijana automatik daripada nama ini dan dipaparkan selepas cipta." (pupil) | n/a | "Nama penuh diperlukan." |
+| U02-03 | `Nama pengguna *` (edit, pupil) | text | required | `^[a-z0-9._-]{3,40}$`, unique per school; hint "Unik dalam sekolah ini. Huruf kecil, nombor, titik, sengkang dan garis bawah sahaja." | "Nama pengguna sudah digunakan dalam sekolah ini."; "Format nama pengguna tidak sah." |
+| U02-04 | `Emel *` (`E-mel (pilihan)` for pupils) | email | required except pupil, <= 255 | n/a | "E-mel tidak sah."; "E-mel ini sudah digunakan." |
+| U02-05 | `No. Telefon (Pilihan)` | text | optional, placeholder "Cth: 0191234567" | `^0[0-9]{9,10}$` | "No. telefon tidak sah." |
+| U02-06 | `Tahap Pendidikan` (pupil) | radio cards | required | `Ting. 1` to `Ting. 5` (OPT-TINGKATAN) | "Sila pilih tahap pendidikan." |
+| U02-07 | `No. Kad Pengenalan (Pilihan)` | text | optional | `^[0-9]{12}$`, hint "12 digit MyKad. Dilindungi PDPA."; shown masked `xxxxxx-xx-xxNN` | "No. kad pengenalan mesti 12 digit." |
+| U02-08 | `Sekolah *` | async select | required for student, teacher, school admin | as U01-02 | "Sekolah diperlukan." |
+| U02-09 | `Kelas` | select | optional; classes of the school (`GET /api/admin/classes?schoolId`), clears when the school changes | n/a | n/a |
+| U02-10 | `Pautkan Anak (Pelajar)` (parent) | async multi-select | optional, max 10 | search "Cari nama atau emel pelajar..."; chips with `Buang pautan`; empty "Tiada pelajar dijumpai", "Tiada pelajar dipautkan lagi" | "Paling banyak 10 anak boleh dipautkan." |
+| U02-11 | `Kata Laluan` | password | pupil: blank = default; others required; min 8; hint "Biarkan kosong untuk guna kata laluan lalai •••••••• (minimum 8 aksara)." | n/a | "Kata laluan mesti sekurang-kurangnya 8 aksara." |
+| U02-12 | `Sahkan Kata Laluan *` | password | required when a password is typed | equal | "Kata laluan tidak sepadan." |
+| U02-13 | `Aktifkan Akaun` | checkbox | checked; hint "Pengguna yang tidak aktif tidak boleh log masuk" | n/a | n/a |
+| U02-14 | Admin Sekolah generator: `Cari Sekolah *`, `Janakan Akaun Admin Sekolah`, `Nama Pentadbir`, `ID Login (Emel)`, `Kata Laluan` (generated, shown once, toast "Disalin!"), `Telefon (Pilihan)` | search, button, fields | school with KPM code required | `Daftar Pengguna` stays disabled until generated | "Sekolah ini tiada kod KPM. Sila isi maklumat secara manual di bawah." |
+| U02-15 | `PPD *` | select | required for PPD | `GET /api/jpn/:id/ppd` | "PPD diperlukan." |
+Buttons `Cipta Pelajar` / `Daftar Pengguna`, `Batal`, `Kembali`. Duplicate e-mail shows inline; a generated password shows once with "Salin kata laluan ini sekarang. Ia tidak akan dipaparkan lagi."
+
 #### R1-ADM-U-03 `Edit Pengguna` (incl. reset kata laluan) | `/admin/users/:id/edit` | P0 | built both
 - **Action: Keep** | gap: 4.V row U-03.
 
@@ -1049,6 +1612,15 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - AC-ADM-U03.1 (E2E) Given the admin resets a pupil password, the pupil logs in with the new one and the old one is refused.
 - Gap: none. Deviation: none.
 
+**Field & behaviour spec.** Same fields as U-02 and:
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| U03-01 | `Status` | radio | current | `Aktif (boleh log masuk)`, `Digantung` | n/a |
+| U03-02 | `Kata laluan baharu` (reset card) | password + `Tetapkan Semula` | blank = reset to default; min 8; hint "Biarkan kosong untuk tetapkan semula kepada ••••••••. Kata laluan baharu dipaparkan sekali selepas simpan." | generated password shown once, no-store | "Kata laluan mesti sekurang-kurangnya 8 aksara." |
+| U03-03 | `Pakej Langganan` | read-only | n/a | current package and expiry | n/a |
+| U03-04 | Peranan change hint | text | n/a | "Menukar peranan mengubah apa yang pengguna ini boleh lihat dan buat. Medan di atas akan berubah mengikut peranan baharu selepas simpan." | n/a |
+Button `Kemaskini` (edit) / `Simpan`. Machine: `Aktif` <-> `Digantung` (Digantung blocks login at once); imported pupils `Menunggu kelulusan` -> `Aktif` (approve) or `Ditolak`. Save flash "Pengguna dikemas kini.".
+
 #### R1-ADM-U-04 `Sekolah` | `/admin/schools` (+ create, `/:id/edit`) | P0 | built both
 - **Action: Keep** | gap: 4.V row U-04.
 
@@ -1063,6 +1635,18 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - FR-ADM-U04.2 Primary-school types (SK, SJK) stay in data but are hidden from lists by default per D72 (rows kept; migrated ETL unchanged) [OQ-U1].
 - AC-ADM-U04.1 Given a new SMK school, then it appears in Pengguna's school picker and in Janakan Akaun search.
 - Gap: none. Deviation: FD-U04 SK hidden default (OQ-U1).
+
+**Field & behaviour spec.**
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| U04-01 | Filters `Semua Negeri`, `Semua Status` (`Aktif sahaja`, `Tidak Aktif sahaja`), `Semua Jenis`, search | selects, text | all | OPT-NEGERI-SEKOLAH (16), OPT-JENIS-SEKOLAH; placeholder "Cari nama atau kod sekolah..." | n/a |
+| U04-02 | `Nama sekolah *` | text | required, <= 150, placeholder "cth: SK TAMAN KLUANG BARU" | stored as typed | "Nama sekolah diperlukan." |
+| U04-03 | `Kod sekolah` | text | optional; unique when filled; `^[A-Z0-9]{4,12}$`; hint "Unik jika diisi (cth. kod KPM)." | n/a | "Kod sekolah ini sudah digunakan." |
+| U04-04 | `Jenis *` | select | required | OPT-JENIS-SEKOLAH; SK and SJK hidden by default in lists (D72) | "Jenis diperlukan." |
+| U04-05 | `Negeri *` | select | required | OPT-NEGERI-SEKOLAH | "Negeri diperlukan." |
+| U04-06 | `Daerah` | text | optional, <= 80 | n/a | n/a |
+| U04-07 | `Aktif` | checkbox | checked | OPT-AKTIF | n/a |
+30 per page; empty "Tiada sekolah dijumpai"; `Kod Daftar` is read-only (generated).
 
 #### R1-ADM-U-05 `Import Pelajar` (ID Delima) | `/admin/import-students` | P1 | built (PS-04) / UAT built
 - **Action: Fix** | gap and differences: 4.V row U-05.
@@ -1081,6 +1665,16 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - AC-ADM-U05.2 (E2E) Given 3 imported T5 pupils that the admin has approved through `Semak & luluskan`, a pupil logs in with the DELIMa email and sees the Murid portal; before approval the login is refused.
 - Gap: none; menu present. Deviation: FD-U05 Darjah removed, template link added.
 
+**Field & behaviour spec.**
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| U05-01 | `Sekolah` | async select | required | as U01-02; then "Memeriksa kuota...", `Kuota Pelajar`, "Baki kuota: {n} pelajar" | "Sekolah ini tiada langganan aktif. Import pelajar tidak dibenarkan." |
+| U05-02 | `Tingkatan` | select | `— Pilihan —`; used when a row has no class | OPT-TINGKATAN (Darjah removed); hint "Digunakan jika baris tidak menyatakan kelas." | "Sila pilih tahap pendidikan." |
+| U05-03 | `Senarai Pelajar` | file | required | `.csv` or `.txt`, <= 2 MB, columns `nama,email,kelas` (kelas optional), <= 1000 rows; drop zone "Klik untuk pilih fail atau seret & lepas di sini"; `Tukar` | SR-7 whole-file refusals |
+| U05-04 | Preview | read-only | n/a | "Pratonton · semua {n} baris"; "Ini contoh sahaja. {n} baris lagi tidak dipaparkan — kesemua {n} pelajar akan diimport." (first 10 rows) | n/a |
+| U05-05 | Row rules | rule | n/a | name Title Case; e-mail unique else skipped; default password; account `Menunggu kelulusan`; whole file refused if rows exceed the remaining seats | "Kuota penuh! Sila tingkatkan kuota dahulu."; per row "E-mel tidak sah.", "E-mel sudah wujud (dilangkau)." |
+| U05-06 | `Muat Turun CSV Pelajar`, `Tutorial` | links | n/a | template header `nama,email,kelas` | n/a |
+
 #### R1-ADM-U-06 `Import Pengguna` | `/admin/users/bulk-import` | P1 | route exists, no menu / UAT unverified
 - **Action: Complete** (menu entry plus verification) | gap: 4.V row U-06.
 
@@ -1093,12 +1687,23 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - FR-ADM-U06.2 (F-20) There is no teacher bulk import for Admin Sekolah in R1; `Import Pengguna` here is the bulk path for teachers. A teacher account created one by one by the school admin is active at once; pupils imported through Import Pelajar are pending until Admin Pusat approves them (`Semak & luluskan`). Passwords follow FR-ADM-U02.4 (minimum 8).
 - FR-ADM-U06.1 Menu entry added (PS-05); behaviour as V1; results as U05.4. AC-ADM-U06.1 Given a CSV of 5 teachers for a school, then 5 Guru accounts are linked to the school. Gap: PS-05 hidden (`menu.ts`). Deviation: none.
 
+**Field & behaviour spec.**
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| U06-01 | `Peranan` | select | required | OPT-BULK-ROLE (Admin Sekolah: Guru only) | "Peranan tidak dibenarkan." (403 `IMPORT_ROLE_FORBIDDEN_MESSAGE`) |
+| U06-02 | `Sekolah` | async select | required for Guru and Admin Sekolah | as U01-02 | "Sekolah diperlukan." |
+| U06-03 | `Fail Pengguna (CSV)` | file | required | `.csv` or `.txt`, <= 2 MB, columns `nama,email`; paste mode max 1,048,576 characters and 1000 rows | "Fail terlalu besar."; SR-7 |
+| U06-04 | `Import`, `Muat Turun CSV Pengguna`, `Tutorial` | buttons | n/a | result "{n} dicipta, {s} dilangkau, {m} ditolak" plus the per-row list | n/a |
+The route has a menu entry under Pengguna (D107).
+
 #### R1-ADM-U-07 `Pelajar Komplimen` | `/admin/comp-students` (+ create, `/:id`) | P2 | built (PS-06)
 - **Action: Keep** | gap: 4.V row U-07.
 
 **Screen specification (from V2).** Route and title: `/admin/comp-students`, "Pelajar Komplimen - Admin Panel". Regions: the count line "{n} pelajar komplimen" (0 in the capture); a search box with button `Cari`; table with columns `Nama`, `Username`, `IC`, `Sekolah`, `Kelas`, `Akaun`, `Syiling`. Bulk buttons, create form and empty copy are in the Reference above (V1); not captured in V2.
 - Reference (V1 M02 S6-S8): "Syiling OFF: {n} / {m} pelajar komplimen", `Daftar Baru`; bulk buttons `Matikan syiling`, `Hidupkan syiling`, `Nyahaktif akaun`, `Aktifkan akaun`, `Batal pilihan`; empty "Tiada pelajar komplimen lagi. Daftar baru."; create: alert "Setiap pelajar dapat: username 6 digit akhir IC@prestasiplus.my, ...", `Guru`, `Kelas guru`, `Tarikh tamat pakej`, `Senarai pelajar` ("NAMA PENUH, NOMBOR KP").
 - FR-ADM-U07.1 As V1; bulk actions ask for confirmation (V1 has none: D9). AC-ADM-U07.1 Given 3 selected, `Matikan syiling` asks "{n} dipilih" confirmation then switches coins OFF. Gap: none. Deviation: FD-U07 confirmation.
+
+**Field & behaviour spec.** Search `Cari` (name or IC, <= 100). Create: `Guru` (async, teachers of a school), `Kelas guru` (classes of the teacher), `Tarikh tamat pakej` (date, today + 1 day to + 5 years), `Senarai pelajar` (textarea, "NAMA PENUH, NOMBOR KP" one per line, <= 500 lines; IC `^[0-9]{12}$`); all required; error "Format baris {n} tidak sah. Gunakan: NAMA PENUH, NOMBOR KP.", "Tarikh tamat tidak sah.". Bulk `Matikan syiling`, `Hidupkan syiling`, `Nyahaktif akaun`, `Aktifkan akaun`, `Batal pilihan` need at least 1 selected; confirm "{n} dipilih. Teruskan?" / `Batal` `Ya, Teruskan`.
 
 #### R1-ADM-U-08 `Kelas Sekolah` | `/admin/classes` | P1 | GH none in Pentadbiran (drill-down in Command Center) / UAT same
 - **Action: Build** (list over the existing classes API) | gap: 4.V row U-08.
@@ -1110,6 +1715,8 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - AC-ADM-U08.1 (E2E) Given a pupil is added to a class by the admin, the pupil's Kelas Saya lists the class.
 - Gap: PS-03 hidden. Deviation: none. OQ-U2.
 
+**Field & behaviour spec.** Filters `Sekolah` (async), `Guru` (teachers of the school), `Tingkatan` (OPT-TINGKATAN), `Cari` (<= 100). Detail actions: `Pindah ke kelas` (select of classes of the school), `Keluarkan` (confirm "Keluarkan pelajar daripada kelas ini?" / `Batal` `Ya, Keluarkan`; enrolment becomes `removed`), `Tukar guru kelas` (select of teachers of the school). The admin corrects classes only; classes are created by the school (D113). Empty "Tiada kelas dijumpai.".
+
 #### R1-ADM-U-09 `Langganan Sekolah` | `/admin/school-subscriptions` (+ create, `/:id`, `/:id/renewal-invoice`) | P1 | built (KW-05)
 - **Action: Keep** | gap: 4.V row U-09.
 
@@ -1117,6 +1724,13 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - Reference (V1 M02 S12-S15): filters "Cari sekolah...", `Status` (Aktif, Tempoh Ihsan, Tamat, Dibatalkan), `Semua Tingkatan` (Tingkatan 4, Tingkatan 5); `Langganan Baru`; columns `Sekolah`, `Tingkatan`, `Pakej` (`Pemantauan` / `Penuh`), `Kuota`, `Status`, `Mula`, `Tamat`, `Lihat`; create cards T4 "Pakej SPM Tingkatan 4", T5 "Pakej SPM Tingkatan 5".
 - FR-ADM-U09.1 As V1 for T4/T5 only; the D1_D6 and T1_T3 package cards are not offered (D72). FR-ADM-U09.2 Quota used feeds the Import Pelajar check.
 - AC-ADM-U09.1 Given a school without a subscription, Import Pelajar refuses with "Sekolah ini tiada langganan aktif. Import pelajar tidak dibenarkan.". Gap: none. Deviation: FD-U09 only T4/T5 packages.
+
+**Field & behaviour spec.**
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| U09-01 | Filters `Cari sekolah...`, `Status`, `Semua Tingkatan` | text, selects | all | OPT-LANGGANAN (4 statuses), Tingkatan 4 and 5 | n/a |
+| U09-02 | Create: `Sekolah`, `Tingkatan` / Pakej card, `Pakej` (`Pemantauan`, `Penuh`), `Kuota` (`student_quota`), `Mula`, `Tamat` | async select, radio cards, radio, number, dates | all required | quota integer 1 to 5000; end after start | "Kuota mesti antara 1 dan 5000."; "Tarikh tamat mesti selepas tarikh mula." |
+| U09-03 | Status transitions | rule | n/a | `active -> grace` (after the end date, 14 grace days) `-> expired`; `cancelled` by Admin Pusat (confirm "Batalkan langganan ini?" / `Batal` `Ya, Batalkan`); renewal invoice page `/:id/renewal-invoice` | ERR-CON-04 |
 
 ### 4.E Monitoring and reports
 
@@ -1128,11 +1742,13 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - Regions in order: stat tiles (label, big number, sub-line): `Soalan Aktif` ("Minggu ini: {n}"), `Diluluskan` ("Aktif digunakan: {n}"), `Menunggu Review` ("Perlu tindakan"), `Draf` ("Belum siap"), `Subjek` ("{n} Aktif"), `Tahap Pendidikan` ("Darjah & Tingkatan"), `Pengguna` ("{n} Pelajar"), `Battle Arena` ("PvP Quiz Battles", "{n} Total", "{n} Aktif", "{n} Selesai"); sponsor tiles `Jumlah Penaja`, `Menunggu Kelulusan` ("Tiada yang menunggu"), `Ditolak` ("Permohonan ditolak"), `Digantung` ("Akaun digantung") — not built in V3; card of three `Tindakan Pantas` links ("Tambah Soalan Baru", "Tambah Subjek Baru", "Import & Semakan Soalan"); card `Soalan Terkini` ("10 soalan terbaru", link `Lihat Semua`) with columns `Soalan` (stem cut, then type "Mcq" and "Kesukaran: 2/5"), `Subjek`, `Tahap`, `Status`, `Tarikh` (dd/mm/yyyy); the status-distribution chart `Taburan Status Soalan`; `Pautan Pantas` (Kurikulum, Banner, Artikel); `Muat Turun Data (CSV)` (Pengguna, Soalan, Pembayaran, Sekolah).
 - Empty copy for the recent list: "Tiada soalan." (from V2 code). V3 differences: FR-ADM-M01.1..M01.4 (V3 status names, 5 levels, no payments).
 - Reference (V2 `admin/dashboard.blade.php`, title "Dashboard", subtitle "Gambaran Keseluruhan Platform"): tiles `Soalan Aktif`, `Diluluskan`, `Menunggu Review`, `Draf`, `Subjek`, `Tahap Pendidikan`, `Pengguna`, `Battle Arena`; sponsor tiles (`Jumlah Penaja`, `Menunggu Kelulusan`, `Ditolak`, `Digantung`: out, section 6); quick actions "Tambah Soalan Baru", "Tambah Subjek Baru", "Import & Semakan Soalan"; "Soalan Terkini" ("10 soalan terbaru", columns `Soalan`, `Subjek`, `Tahap`, `Status`, `Tarikh`, empty "Tiada soalan."); chart "Taburan Status Soalan"; "Pautan Pantas" (Kurikulum, Banner, Artikel); "Muat Turun Data (CSV)" (Pengguna, Soalan, Pembayaran, Sekolah).
-- FR-ADM-M01.1 `/admin` shows the tiles with V3 status names (Draft, Reviewed, Approved, Archived replace Draf/Menunggu Review/Diluluskan) computed from the same list endpoint counts as Studio (one source, so "3 vs 0" cannot recur).
+- FR-ADM-M01.1 `/admin` shows the tiles with V3 status names (`Draf`, `Menunggu Semakan`, `Diluluskan`, `Diarkibkan` replace Draft, Reviewed, Approved, Archived and `Menunggu Review`) computed from the same list endpoint counts as Studio (one source, so "3 vs 0" cannot recur).
 - FR-ADM-M01.2 Quick actions point to Studio `Cipta baharu`, Subjek create, Import & Semakan.
 - FR-ADM-M01.3 "Pendidikan" tile counts 5 Tingkatan (Darjah hidden). FR-ADM-M01.4 Payments tile and CSV for Pembayaran are omitted (section 6).
-- AC-ADM-M01.1 Given 3 Reviewed questions, then the tile "Menunggu Review" [V3 label to be fixed with the status vocabulary] and the Studio tile show 3.
+- AC-ADM-M01.1 Given 3 questions in `Menunggu Semakan`, then the tile `Menunggu Semakan` and the Studio tile show 3.
 - Gap: `m17/routes/dashboard.ts` empty; `core-routes.ts:84-88` redirect. Deviation: FD-M01 vocabulary; D77 satisfied because the Dashboard is a V2 menu item the user asks to match. OQ-M1.
+
+**Field & behaviour spec.** Tiles use the five status labels of section 0 (`Draf`, `Menunggu Semakan`, `Diluluskan`, `Diarkibkan`, chip `Ditolak ({n})`), counted by the Studio list endpoint. The three CSV downloads `Pengguna`, `Soalan`, `Sekolah` (files `pengguna.csv`, `soalan.csv`, `sekolah.csv`; `Pembayaran` omitted) are P2 and are not built in R1 (1A.8: the buttons are hidden, not disabled). Empty "Tiada soalan.". Each tile is a link to the filtered list (`?status=review` for `Menunggu Semakan`). A tile that fails shows "Tidak dapat dimuatkan." with `Cuba lagi` (SR-3). Ketepatan and counts follow SR-9.
 
 #### R1-ADM-M-02 `Langsung` and `Aktiviti Harian` | `/admin/command-center`, `/admin/command-center/daily-activity` | P1 | built both (PM-01, PM-02)
 - **Action: Keep** | gap: 4.V row M-02.
@@ -1145,6 +1761,8 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - FR-ADM-M02.2 (F-02, D-A1, F-10, D-A10, D-A12) `Soalan Dijawab`, `Ketepatan Purata`, `Aktiviti Hari Ini`, `Top Sekolah` and the Live Feed read the single answer store `practice_answers` with all modes (Latih Tubi, Soalan by Chapter, SPM Databank, Kuiz, Bijak sittings including Tracking A, Subjektif self-mark, Set Soalan Guru `question_set`, Simulasi, question games), each with the computation and precision of 40 FR-X4. Admin screens show pupils' full names (other pupils see the first name only, with no school).
 - FR-ADM-M02.1 Unchanged; verify that data a new pupil/class creates (U-01, U-08) appears within one refresh. AC-ADM-M02.1 (E2E) Given a T5 pupil answers 10 questions on UAT, Aktiviti Harian shows the activity. Gap: none (ADMIN-PUSAT row 1). Deviation: none.
 
+**Field & behaviour spec.** No inputs. Refresh every 10 s, caption "Data dikemaskini setiap 10 saat"; the live feed shows full names (Admin Pusat only); a failed refresh keeps the last data and shows ERR-NET-01 banner; empty "Tiada aktiviti.". Daily activity: date picker `Tarikh` (native, default today, not in the future: "Tarikh tidak boleh pada masa hadapan.").
+
 #### R1-ADM-M-03 `Monitoring` | `/admin/monitoring` | P1 | GH built at `/guru/monitoring` (wrong route) / UAT same
 - **Action: Fix** | gap: 4.V row M-03.
 
@@ -1155,6 +1773,14 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - Reference (V2 `admin/monitoring.blade.php`): title "Monitoring Penglibatan", subtitle "Pemantauan penglibatan pelajar & sekolah"; CSV/PDF export.
 - FR-ADM-M03.1 Menu PM-03 opens `/admin/monitoring` (page exists, `m17/routes/monitoring.ts`), not the teacher route. FR-ADM-M03.2 Export CSV and PDF as V2 (P2). FR-ADM-M03.3 (F-02, D-A1, F-10, D-A10) Monitoring reads the single answer store `practice_answers` (all modes, 40 §X4a) and every metric it shows uses the definition and precision of 40 FR-X4; this screen defines none of its own.
 - AC-ADM-M03.1 Given the admin clicks Monitoring, then the URL is `/admin/monitoring` and no 403 shows. Gap: `menu.ts:62`. Deviation: none.
+
+**Field & behaviour spec.**
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| M03-01 | `Tempoh` | select | `Semua Masa` | OPT-MONITORING-TEMPOH (7, 30, 90 days) | n/a |
+| M03-02 | `Negeri` | select | `Semua Negeri` | OPT-NEGERI-SEKOLAH (16) | n/a |
+| M03-03 | `Tapis`, `Reset` | buttons | n/a | n/a | n/a |
+`Eksport CSV` and `Eksport PDF` are P2 and hidden in R1 (1A.8). Calculations: `% Penglibatan` = pupils with at least one answer in the window / registered pupils x 100, whole number, round half up; level `Cemerlang` >= 60%, `Sederhana` >= 20%, `Rendah` < 20%, `Tiada` = 0%; `% Penglibatan Guru` = "{n} / {m} guru"; `Tracking Mingguan` = answers per ISO week for 12 weeks (M1 oldest); `Ketepatan Purata` per SR-9; all computed on load, never stored (D11, D12). Empty "Tiada data untuk tempoh ini.".
 
 #### R1-ADM-M-04 `Kirkpatrick` (7 screens) | `/admin/kirkpatrick`, `/reaction`, `/learning`, `/behavior`, `/results`, `/chain`, `/interventions` | P1 | built both
 - **Action: Complete** (Tahap 1 collector) | gap: 4.V row M-04.
@@ -1174,6 +1800,8 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - AC-ADM-M04.2 (E2E) Given a T5 pupil submits the monthly form with NPS 9, when the Admin Pusat opens `T1: Reaksi`, then the response count is 1 and NPS includes the 9; submitting again the same month shows "Anda sudah mengisi maklum balas untuk bulan ini. Sila kembali bulan depan.".
 - Gap: no collector (empty route fragment). Deviation: none.
 
+**Field & behaviour spec.** Filters `Sekolah` (async, as U01-02, default `Semua Sekolah`), `Negeri` (`Semua Negeri`), `Tapis`. The pupil form `/maklum-balas` (owned by 10) has NPS (0 to 10 radio row, "Sila pilih skor NPS."), satisfaction (1 to 5 stars, "Sila pilih tahap kepuasan."), comment (optional, <= 500, "Komen tidak boleh melebihi 500 aksara."); one per user per calendar month; after submit "Terima Kasih!"; second attempt "Anda sudah mengisi maklum balas untuk bulan ini. Sila kembali bulan depan." with `Kembali ke Dashboard`. Admin screens are read-only; empty "Tiada data Kirkpatrick.".
+
 #### R1-ADM-M-05 `Analitik` | `/admin/analytics` | P1 | GH empty (PM-04) / UAT same
 - **Action: Build** | gap and differences: 4.V row M-05.
 
@@ -1187,6 +1815,8 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - FR-ADM-M05.3 The tile `Laporan Soalan` links to Q-22 (Panel tile; its content beyond the link is Evidence E-02).
 - AC-ADM-M05.1 Given 3 approved Sains T5 questions with Bab "X", then Analitik shows Sains T5 = 3 and Bab "X" covered. Gap: `m17/routes/analytics.ts` empty. Deviation: Panel tiles left open (E-02).
 
+**Field & behaviour spec.** No inputs (0 fields). Loading per SR-3; empty "Tiada data analitik."; a failed widget "Tidak dapat dimuatkan." with `Cuba lagi`. Figures per SR-9.
+
 #### R1-ADM-M-06 `Laporan` | `/admin/laporan` | P1 | GH empty / UAT same
 - **Action: Build** | gap: 4.V row M-06.
 
@@ -1199,12 +1829,16 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - AC-ADM-M06.2 (E2E, AC-CHAIN-1 step) Given a pupil answers 3 questions (2 correct) in a Latih Tubi session, then `Jumlah Aktiviti` increases by 3 on the next load; given a pupil answers 3 questions in a Set Soalan Guru (`question_set`) session, then it increases by 3 as well (all modes, D-A1).
 - AC-ADM-M06.1 (E2E) Given the T5 pupil completes a Latih Tubi session, then `Murid Buat Latihan` and `Jumlah Aktiviti` increase by the next load. Gap: `m17/routes/laporan.ts` empty. Deviation: none.
 
+**Field & behaviour spec.** No inputs. Trend = daily counts for 14 days; `Jumlah Aktiviti` and `Skor Purata` over 30 days (SR-9); `Murid Pernah Akses` = "{n} / {m}" plus percent. Empty "Tiada data laporan.".
+
 #### R1-ADM-M-07 Central views of school-admin reports and Headcount / Analisa Item | `/admin/...` (PM-12, 13, 15, 21, 22, 23, 24, 27, 28) | P2 | not built
 - **Action: Build** | gap: 4.V row M-07.
 
 **Screen specification (from V2).** Not observed in V2 — no central view of the school-admin screens was captured (E-23); follow FR-ADM-M07.1..M07.2. The V2 Kirkpatrick overview and Monitoring pages offer a school picker (R1-ADM-M-04, M-03) that shows the pattern.
 - Reference: V2/V1 `Laporan`, `Analitik`, `Wellbeing Alerts`, `Sekolah Bersaing`; V3 school versions exist in M27/M08/M18.
 - FR-ADM-M07.1 For each, a central view with a school picker reusing the school-level reads. FR-ADM-M07.2 Figures equal the school screens for the same school (no second model, GAP "angka bercanggah"). AC-ADM-M07.1 Given school S, the central Laporan Aktiviti equals S's Admin Sekolah screen. Deviation: none. Priority P2 because it feeds no 1.0 module: the school-level screens of Admin Sekolah 45-50 are built in M27/M18 and read their own data (section 2.3).
+
+**Field & behaviour spec.** One input: `Sekolah` (async select as U01-02, required, placeholder `Pilih sekolah`, "Sila pilih sekolah."). The views are read-only copies of the school-admin reports for the chosen school; empty "Tiada data untuk sekolah ini."; Admin Pusat only (ERR-ACC-01).
 
 #### R1-ADM-M-08 `Laporan Eksekutif` | `/admin/laporan-eksekutif` | P2 | not built (PP-02)
 - **Action: Build** | gap: 4.V row M-08.
@@ -1215,9 +1849,13 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - Buttons and error states: not observed.
 - Reference: V2 title "Laporan Eksekutif", subtitle "Ringkasan eksekutif". FR-ADM-M08.1 Summary page from M07 figures. AC-ADM-M08.1 Given the Admin Pusat, when `Laporan Eksekutif` is opened, then it renders the summary from M-07 figures with no error. Evidence E-09 for content.
 
+**Field & behaviour spec.** No inputs besides `Tahun` (select, default the current year, from 2026, "Tahun tidak sah."). Read-only; empty "Tiada data eksekutif untuk tahun ini.".
+
 ### 4.G DSKP guidance for question entry (reference for every entry screen)
 
 Sources: `docs/reference/dskp/*.json` + `README.md` (13 subjects, T4-T5, audited 2026-10-16, `docs/qa/audit/dskp-extracts-audit.md`); official PDFs and 24 trial papers in `D:\prestasiplus-dskp\` (`sampel-percubaan\` matematik-johor-2025-set1, matematik-tambahan-selangor-2025-set1, fizik-selangor-2025-set1, sejarah-selangor-2025-set1, bahasa-melayu-selangor-2025-set1, bahasa-inggeris-selangor-2025-set1, each with question papers and skema); `docs/reference/blueprints/*.json` (1249-2, 1449-1, 1449-2, 3472-1, 3472-2, 4531-2); `docs/discovery/SPM-paper-patterns.md`; `docs/requirements/v2-exam-schema.md` D5/D6/D9; `docs/adr/0031-...`, `0036-...`, `docs/ops/r1-b05-dskp-gate.md`, `docs/ops/dskp-loader.md`. DSKPs describe classroom assessment (TP 1-6), not the SPM paper format; paper structure comes from the blueprints and trial papers (README "Not covered by any DSKP").
+
+**Field & behaviour spec (4.G).** End-to-end: see 45 §3.1 (wizard T-01..T-16, K-01..K-04, G-01..G-09, L-01..L-12), §3.3 (PDF upload), §4 (gate) and §6 (regroup and maintenance). 4.G is guidance for the fields already specified in Q-04 (rows 04-01 to 04-19), Q-05 and Q-09; it adds no field of its own. Where 4.G and a field row differ, the field row wins. The pickers list only `curriculum_nodes` of the chosen Subjek and Tingkatan and, when the list is empty, show "DSKP belum dimuatkan untuk subjek ini." (D112(3)); SP and TP are required only where nodes exist; the exam formats of BM, BI, Fizik, Matematik, Matematik Tambahan and Sejarah are supported by FR-ADM-QE3.8 to QE3.23 and FR-ADM-Q16.8, Q16.9.
 
 #### 4.G.1 The DSKP hierarchy and what a question must or may carry
 Generic tree (exam schema D9): `Subjek -> Tingkatan -> Pengelompokan (Bidang / Tema) -> Unit (Tajuk / Bab-DSKP / skill) -> SK (Standard Kandungan) -> SP (Standard Pembelajaran) -> TP 1-6 descriptor (Standard Prestasi) per unit or per SK`, plus the KBAT tag. Printed codes are kept (e.g. `4.0`, `1.1`, `1.1.1`; Sejarah `Tajuk 11`, `9.1.1`).
@@ -1254,7 +1892,7 @@ Rule per field (exam schema D2/D9; ADR-0031; `dskp-gate.ts`):
 | Topik / Subtopik | no | yes (V2 Tag step) | M03 |
 | Kesukaran (Mudah/Sederhana/Sukar) | not typed | display value derived from Tahap kesukaran by one mapping (50) | derived |
 | year, exam type, board/negeri, set, paper code, source | declared once per batch (D99) | | batch header |
-No tag is free text (exam schema 8.3 rule 5). The cognitive-level gate and the exam schema wording on KBAT: see OQ-QE2 (sources, dates, recommendation).
+No tag is free text (exam schema 8.3 rule 5). The cognitive-level gate and the exam schema wording on KBAT: see OQ-QE2 (sources, dates, decision).
 
 #### 4.G.2 How question parts map to SP and TP (ADR-0031)
 - A question is a tree of parts, depth <= 3; marks live on leaf parts only; parents have no marks (exam schema D2).
@@ -1269,7 +1907,7 @@ No tag is free text (exam schema 8.3 rule 5). The cognitive-level gate and the e
 - Two separate trees exist. (a) `curriculum_nodes` / `curriculum_tp_descriptors` = DSKP (loaded by `npm run dskp:load -w @pp/api`; UAT has 0 nodes until it runs, so tagging, blueprints and Jana Kertas cannot work there; the loader "does not touch chapters, topics, subtopics", `dskp-loader.md` lines 3, 13). (b) M03 chapters/topics/subtopics = the pupil-facing Bab tree (686 T4/T5 chapters on UAT) read by Soalan by Chapter, Peta Belajar, Heatmap Topik Lemah, Analisa Item.
 - The link from a question to (b) is `question_versions.chapter_id` set by the admin (D89); the link to (a) is the DSKP tag. Neither is derived from the other (D89: "Not derived from DSKP; no data invented"). Real papers show Bab does not equal SK (10 Bab per form against 12 / 11 SK, exam schema D9).
 - Consequence: after the DSKP load a question can be DSKP-complete and still have no Bab, and the reverse. The admin sets both: DSKP in the Tag step, Bab in the same step (C-05).
-- R1 requirement (optional convenience, OQ-C1): an admin-maintained lookup Bab -> Unit (exam schema D9 "lookup Bab -> SK maintained by Admin") so the Tag step pre-filters units after the admin picks a Bab. It is a suggestion only; the admin still confirms.
+- R1 requirement (OQ-C1 closed: suggestion only): an admin-maintained lookup Bab -> Unit (exam schema D9 "lookup Bab -> SK maintained by Admin") so the Tag step pre-filters units after the admin picks a Bab. It is a suggestion only; the admin still confirms.
 
 #### 4.G.4 Paper structure follows the blueprint and the trial papers
 Blueprint format (`docs/reference/blueprints/README.md`): `{code, sections:[{position, quota, kbatMarks?, marksBand?, notes}], kbatMarksTotal?}`; status per file: 1449-1 INCOMPLETE (Q13 KBAT unreadable), 1449-2 A,B complete / C INCOMPLETE, 3472-1 complete (single body), 3472-2 complete, 4531-2 A INCOMPLETE / B,C complete, 1249-2 A complete / B INCOMPLETE. Conflict O-1/O-3 open (README "Known conflict").
@@ -1288,10 +1926,10 @@ Other papers (Geografi, Sains Komputer, BM, BI, Sains, Sejarah K1, Fizik K1, Mat
 #### 4.G.5 Corrected manual entry, step by step (supersedes V2 Studio create for the same screens)
 Stimulus grouping is the central rule (QE-01/02).
 1. Admin opens `Bank Soalan (Studio)` and presses `Cipta baharu`; chooses `Soalan tunggal` or `Kumpulan rangsangan`.
-2. Tag & pengelasan (DSKP): Subjek -> Tingkatan -> Unit -> SP (1-3; the page shows each SP's text and the unit's TP descriptors 1-6) -> TP (1-6) -> KBAT (optional) -> Bab (required to publish, D-A5; separate from the DSKP unit) -> Tahap kesukaran (1-5, required, separate from TP, D-A6) -> Topik (optional). Pickers only list `curriculum_nodes` of the subject and Tingkatan; if the list is empty the page says so [PROPOSED "DSKP belum dimuatkan untuk subjek ini."] and links to Kurikulum > DSKP (C-04).
+2. Tag & pengelasan (DSKP): Subjek -> Tingkatan -> Unit -> SP (1-3; the page shows each SP's text and the unit's TP descriptors 1-6) -> TP (1-6) -> KBAT (optional) -> Bab (required to publish, D-A5; separate from the DSKP unit) -> Tahap kesukaran (1-5, required, separate from TP, D-A6) -> Topik (optional). Pickers only list `curriculum_nodes` of the subject and Tingkatan; if the list is empty the page says so "DSKP belum dimuatkan untuk subjek ini." (R1 decision D113) and links to Kurikulum > DSKP (C-04).
 3. Kertas & Bahagian: Kertas (optional unless SPM-bound), Bahagian (from the contract), Nombor soalan (printed label).
 4. Rangsangan: for a group, enter the stimulus once (Jenis rangsangan, Kapsyen, editor). The group page keeps it and offers `Tambah soalan`; each next question reuses it. For a single question that has its own stimulus, the stimulus is created and becomes a 1-member group.
-5. Jenis soalan: choose one of the 8 types (D1); the wizard builds the part tree template (MCQ = one leaf; `match` = N leaves sharing the group's option bank; `structured` = 2-10 leaves or nested (a)(i)).
+5. Jenis soalan: choose one of the 11 types (FR-ADM-QE3.2); the wizard builds the part tree template (MCQ = one leaf; `match` = N leaves sharing the group's option bank; `structured` = 2-10 leaves or nested (a)(i)).
 6. Each leaf: prompt, mode, marks, key of the right kind (D3), scheme (D4: K/N/P codes, `@`, `//`, `atau setara`, accepted values, unit and tolerance for numeric), TP, aras pemikiran.
 7. The completeness panel (QE-04) lists every missing DSKP/structure field live.
 8. `Simpan draf` -> `Hantar untuk semakan` -> `Terbitkan`; the gate runs only at Terbitkan; the 422 lists the same items.
@@ -1317,7 +1955,7 @@ Stimulus grouping is the central rule (QE-01/02).
 Observed in a visible browser: Studio question "Rajah 14 menunjukkan dua tin yang sama saiz berayun…" (Sains T4, id 812791) is Diterbitkan with no diagram attached; its stem is shown twice (once as title, again as "(1) …"); rows "Rajah 11…", "Rajah 9…", "Rajah 7…" are the same. They are served to pupils in Latih Tubi.
 - FR-ADM-G7.1 Detection rule (server, pure, same code as `figure-links.ts`): a question whose stem, option or part prompt names a Rajah/Jadual/Graf/Petikan/Peta/Carta (keywords in QE-05.3) and has no stimulus, no group and no image is flagged `stimulus_missing`.
 - FR-ADM-G7.2 Duplicate-stem detection: a question whose stem text equals (after trimming and normalising) the prompt of its only leaf is flagged `stem_duplicated`; the display shows the text once.
-- FR-ADM-G7.3 A question flagged `stimulus_missing` or `figure_only` is excluded from every pupil surface (Latih Tubi, Databank, Soalan by Chapter, Kuiz, games, papers) with servability reason [PROPOSED] "Rangsangan tiada — soalan merujuk Rajah 14 tetapi tiada gambar." This is a servability reason, not a status change, so the question is not archived and need not pass the DSKP gate again when fixed (D80 DEC-2). A `stem_duplicated` question is **not** excluded: it is complete and answerable, so the text is shown once (FR-ADM-G7.2, AC-ADM-G7.3) and the data is cleaned (FR-ADM-G7.6, DM-40). Decided by principle 2026-11-04 (OD-3, OQ-API-19): excluding it would remove good content, and fixing a display rule is smaller than losing the question.
+- FR-ADM-G7.3 A question flagged `stimulus_missing` or `figure_only` is excluded from every pupil surface (Latih Tubi, Databank, Soalan by Chapter, Kuiz, games, papers) with servability reason "Rangsangan tiada — soalan merujuk Rajah 14 tetapi tiada gambar." This is a servability reason, not a status change, so the question is not archived and need not pass the DSKP gate again when fixed (D80 DEC-2). A `stem_duplicated` question is **not** excluded: it is complete and answerable, so the text is shown once (FR-ADM-G7.2, AC-ADM-G7.3) and the data is cleaned (FR-ADM-G7.6, DM-40). Decided by principle 2026-11-04 (OD-3, OQ-API-19): excluding it would remove good content, and fixing a display rule is smaller than losing the question.
 - FR-ADM-G7.4 The flag clears automatically when a stimulus/group is attached (QE-08) or when the admin marks "Bukan masalah".
 - FR-ADM-G7.5 The regroup work-list (QE-08) is pre-filtered by these flags and shows counts per subject and Tingkatan; `Perhatian` on the hub lane Latih Tubi shows the same count.
 - FR-ADM-G7.6 A one-off clean-up migration trims the duplicated leaf prompt where it equals the stem (data task, no content invented).
@@ -1343,15 +1981,15 @@ V2 entry structure never overrides FR-X1-4, D90 and D105: where V2 differs for t
 | E-06 import quota | PARTLY CLOSED. V2 import page shows "1405 akaun menunggu kelulusan — belum boleh log masuk." with link `Semak & luluskan`, buttons `Muat Turun CSV Pelajar`, `Tutorial`. The quota panel appears only after a school is picked (state not captured) | `/admin/import-students` |
 | E-07 Tracking A kind | CLOSED. V2 sets are legacy sets (`#1 · ramalan · 8 soalan`, "Hanya 8 daripada 40 soalan — 28471 tersedia untuk diisi"); 2025 sets for Fizik, Kimia, Geografi, Ekonomi, Prinsip Perakaunan have 40 soalan and "—" | Panel `/spm/tracking-a` |
 | E-20 ticket reply | PARTLY CLOSED. List only: "Tiket Sokongan", "Permohonan bantuan daripada pengguna.", chip "Semua (3)", "dibuka (3)", columns `Tarikh`, `Pengguna`, `Subjek`, `Status`, `Dibalas`. A ticket detail or reply state is missing | `/admin/tiket` |
-Still OPEN (page or state missing): E-03 (UAT database, not a screen), E-04 (no admin class page in the capture; needed: V2 `/admin/schools/{id}` detail with classes or a class list), E-05 (V2 has no upload; D81 flow is new; needed only the Kertas Subjektif OCR bake-off), E-08 (UAT data), E-10 (Panduan source, student side), E-11, E-12, E-13 (UAT data), E-15 (UAT data), E-16 (T1-T3 DSKP PDFs), E-19 (`/maklum-balas` is not in any capture folder; needed: the form state), E-21 (needed: `/admin/studio/imports/{batch}/review`), E-22 (needed: Filament `/admin-filament/videos`), E-23 (needed: any V2 central view of PM-12/13/15/21/22/23/24/27/28), E-24 (needed: `/admin/users/{id}/edit` of a parent record). Counts: 5 closed, 4 partly closed, 15 open (24 items).
+All 24 evidence items are closed or decided (D113): E-03, E-08, E-13 and E-15 are UAT data checks done inside U-OP-07, U-OP-09 and U-OP-15; E-04, E-19, E-21, E-22, E-23 and E-24 are specified by the field specs of U-08, M-04, Q-09, N-01, M-07 and P2-16 (built from the V1 reference and the code); E-05, E-11, E-12 and E-16 are verification tasks inside their S-cards (the bake-off, the Sains extract, the sample papers and the optional T1-T3 PDFs) and block no screen. Counts: 24 closed or decided, 0 open.
 
-#### 4.V.2 Register (73 screens and 8 entry-standard blocks)
+#### 4.V.2 Register (74 screens and 8 entry-standard blocks)
 Current gap cites V3 files; "V2 differs" lists contradictions found in the screens.
 | ID | Action | V2 reference | Current gap (V3) | V2 differs / contradiction and decision |
 |---|---|---|---|---|
 | QE-01 | Complete | `/admin/studio/questions/{id}/preview`, `/admin/studio/sets/{id}/builder` | group API exists (`questions/http/stimuli.controller.ts:57-174`); no E2E; migrated rows ungrouped | V2 shows "Peta 2 menunjukkan..." as its own bank card without the map: PRD follows D90/D105 |
 | QE-02 | Complete | `/admin/studio/questions/create` | `/admin/studio/groups/:id` (`m04 routes/studio.ts:31-35`); D93 blocker text "...sekurang-kurangnya 2 soalan." in contract | V2 has tabs Kertas/Rangsangan/Sub-bahagian/Tag, no groups: PRD follows D90/D93/D108(1) |
-| QE-03 | Fix | `/admin/studio/questions/create` | wizard order and 13 modes; `m04/pages` StudioEdit; gate `dskp-gate.ts:18-24,58-65`; no separate TP and difficulty fields, "Unit (Bab)" wording replaced by "Tajuk DSKP", Bab not collected (FR-ADM-QE3.1, QE3.7, AC-QE3.3) | V2 first step is "Kertas & bahagian" with a Kertas picker listing 100+ papers, including test papers: V3 filters the picker by Subjek, Tahun, Negeri (D9) |
+| QE-03 | Fix | `/admin/studio/questions/create` | wizard order and 14 modes; `m04/pages` StudioEdit; gate `dskp-gate.ts:18-24,58-65`; no separate TP and difficulty fields, "Unit (Bab)" wording replaced by "Tajuk DSKP", Bab not collected (FR-ADM-QE3.1, QE3.7, AC-QE3.3) | V2 first step is "Kertas & bahagian" with a Kertas picker listing 100+ papers, including test papers: V3 filters the picker by Subjek, Tahun, Negeri (D9) |
 | QE-04 | Fix | `/admin/studio/questions/create` | "n belum lengkap" without names (E2E F1); `lifecycle.controller.ts:32` gate-check exists; gate now also requires Bab where the Subjek + Tingkatan has chapters, and difficulty (FR-ADM-QE4.5, AC-QE4.3), and SP/TP only where DSKP nodes exist (FR-ADM-QE4.6) | none visible |
 | QE-05 | Complete | `/admin/studio`, `/admin/studio/imports` | paper chosen at upload not carried (`intake/workflow/to-question.ts`); worker off (`jobs.config.ts:15,33`), OCR none (`ocr.config.ts:38`) | V2 imports DOCX/BI only: PRD follows PDF (D52) |
 | QE-06 | Build | `/admin/questions/import` | CSV has no DSKP columns, no `bab_kod`, no difficulty (`m04 routes/imports.ts`, `questions/workflow/imports/imports.controller.ts:43-65`; FR-ADM-QE6.1) | V2 CSV columns `body, option_a-d, correct, [difficulty]` |
@@ -1381,6 +2019,7 @@ Current gap cites V3 files; "V2 differs" lists contradictions found in the scree
 | Q-22 | Fix | `/admin/question-reports` | row action unverified (`m04 routes/reports.ts:14-23`) | V2: heading "Laporan Soalan", "Soalan yang dilaporkan oleh pelajar dari kuiz, latihan & Papan Bijak", chips "Menunggu (0)", "Selesai (0)", "Semua (0)", empty "Tiada laporan soalan untuk status ini." |
 | Q-23 | Complete | `/admin/structured-questions`, `/admin/structured-questions/{id}`; Panel `/spm/subjektif` | `m04 routes/structured.ts:12-35`, read-only `structured.controller.ts:15,24`, no menu | V2: "Semua soalan berstruktur SPM dalam sistem", 4,061 `Jumlah Soalan` / `Diluluskan`, "Agihan Mengikut Subjek"; lane attention "2,428 tiada skema — tidak disajikan" |
 | Q-24 | Fix | Panel `/spm/soalan/{id}/sunting`, `/spm/soalan/{id}/pratonton` | `routes/admin-papers.ts:50-59`; dead on the real API (Team B audit, D112(5)) | n/a |
+| Q-25 | Complete | `/admin/pksk/questions` (menu group Premium, `PKSK Soalan`) | built, no screen specification (wizard audit M8) | PKSK questions are outside the stimulus-group and DSKP rules (FR-ADM-Q25.1) |
 | C-01 | Complete | `/admin/curriculum` | `m03 routes/admin-curriculum.ts`; no per-Bab question count; no DSKP tab | V2 page opens with "Tapis Kurikulum" and `Subjek` "-- Pilih Subjek --" |
 | C-02 | Keep | `/admin/subjects`, `/admin/subjects/create` | `m03 routes/admin-subjects-levels.ts:23-42` | V2 lists 31 subjects |
 | C-03 | Fix | `/admin/education-levels` | UAT 11 levels active | V2: "Senarai Tahap Pendidikan", "Jumlah: 11 tahap"; columns `#`, `Nama (BM)`, `Nama (EN)`, `Kod`, `Peringkat` (Rendah), `Kurikulum` (KSSR), `Soalan` ("13,140 soalan"), `Subjek` ("19 subjek"), `Aktif?`; V3 lists Tingkatan only after D96 |
@@ -1439,13 +2078,13 @@ Current gap cites V3 files; "V2 differs" lists contradictions found in the scree
 #### 4.V.4 Action summary
 | Group | Keep | Fix | Complete | Build | Screens |
 |---|---|---|---|---|---|
-| Q (Q-01..Q-24) | 0 | 16 | 4 | 4 | 24 |
+| Q (Q-01..Q-25) | 0 | 16 | 5 | 4 | 25 |
 | C (C-01..C-05) | 1 | 1 | 1 | 2 | 5 |
 | N (N-01..N-07) | 1 | 2 | 0 | 4 | 7 |
 | U (U-01..U-09) | 3 | 4 | 1 | 1 | 9 |
 | M (M-01..M-08) | 1 | 1 | 1 | 5 | 8 |
 | P2 (P2-01..P2-20) | 1 | 1 | 0 | 18 | 20 |
-| **Total screens** | **7** | **25** | **7** | **34** | **73** |
+| **Total screens** | **7** | **25** | **8** | **34** | **74** |
 | QE blocks (QE-01..QE-08) | 0 | 2 | 4 | 2 | 8 |
 
 ### 4.R Responsive behaviour of every admin screen (375 / 768 / 1280 px)
@@ -1514,6 +2153,8 @@ Scope rule: every module ticked in the matrix must be fully working, so the admi
 - AC-ADM-P2-01.1 (E2E) Given a T5 pupil earns 18 syiling in Latih Tubi, then Overview "Transaksi Terkini" lists the row and `Syiling Dijana` rises by 18.
 - Gap: PG-01 hidden. Deviation: tier order.
 
+**Field & behaviour spec.** End-to-end: see 48 GAME-17 (FR-GM-17.1 to 17.3). No inputs. `Jenis` and `Sumber` show BM labels and relative time in BM ("2 hari lepas", "1 minggu lepas"); `Taburan Tier` % = pupils in the tier / pupils with a tier x 100 (whole number); "{n} pelajar belum ditetapkan tier."; Top 10 ties get separate ranks ordered by `id`; empty "Tiada data gamifikasi.".
+
 #### R1-ADM-P2-02 `Gamifikasi: Tier Config` | `/admin/gamification/tiers` | rows 28, 29 | BE exists (`tiers` GET/POST/PUT/toggle, lines 31-48)
 - **Action: Build** (page over the existing API) | gap: 4.V row P2-02.
 - **Screen specification (from V2).** Route `/admin/gamification/tiers`, title "👑 Tier Configuration". V2 shows a one-line intro "Paparan konfigurasi tier (baca sahaja). Ganjaran Syiling ditetapkan mengikut tier & level soalan." and is READ-ONLY (no inputs, no buttons observed); V3 must add the editing defined in FR-ADM-P2-02.* and then drop the "baca sahaja" wording. Layout: one card per tier, stacked, in `Urutan` order. Each card:
@@ -1530,6 +2171,23 @@ Scope rule: every module ticked in the matrix must be fully working, so the admi
 - AC-ADM-P2-02.2 Given Platinum "Kadar" changed from 20 to 10, then the pupil's Tukar Token page shows the new rate.
 - Gap: PG-02 hidden.
 
+**Field & behaviour spec.** End-to-end: see 48 GAME-17 and GAME-18 (FR-GM-17.2, 18.1).
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| P02-01 | `Label BM` | text | required, <= 30 | n/a | "Label BM diperlukan." |
+| P02-02 | `Nama Tier (eng)` (new only) | text | required, `^[a-z]{3,20}$`, unique | n/a | "Nama tier sudah digunakan." |
+| P02-03 | `Icon` | text | emoji 1 to 2 chars | n/a | "Icon diperlukan." |
+| P02-04 | `Warna` | colour | hex | `^#[0-9a-fA-F]{6}$` | "Warna mesti kod hex." |
+| P02-05 | `Min Syiling` | number | required; integer >= 0, first tier 0, strictly increasing by `Urutan` | defaults Gangsa 0, Perak 500, Emas 2000, Platinum 5000 | "Min Syiling mesti lebih besar daripada tier sebelumnya." |
+| P02-06 | `Kadar Penukaran` | number | required, integer 1 to 1000 (syiling per token: 50, 40, 30, 20) | n/a | "Kadar mesti antara 1 dan 1000." |
+| P02-07 | `Urutan` | number | required, 1 to 99, unique | n/a | "Urutan sudah digunakan." |
+| P02-08 | `Perks` | text | optional, <= 100 (e.g. "Bonus 2x XP") | n/a | n/a |
+| P02-09 | Latih Tubi `L1` to `L5` | 5 numbers | defaults 1,2,3,4,5; integer 0 to 1000 | n/a | "Ganjaran tidak boleh negatif." |
+| P02-10 | `PKSK — Syiling / Betul` | number | default 5, 0 to 1000 | n/a | same |
+| P02-11 | `Papan Bijak` `Jawab Betul`, `Menang` | 2 numbers | defaults 5, 25; 0 to 1000 | n/a | same |
+| P02-12 | `Simpan`, `Nyahaktif` / `Aktifkan`, `Tambah Tier` | buttons | n/a | confirm "Nyahaktifkan tier ini?" / "Pelajar dalam tier ini kekal; tier tidak lagi diberi kepada pelajar baharu." / `Batal` `Ya, Nyahaktifkan` | n/a |
+A change applies from the next answer or conversion; history is not recalculated.
+
 #### R1-ADM-P2-03 `Gamifikasi: Cabaran` | `/admin/gamification/challenges` | row 30 | BE exists (lines 55-79)
 - **Action: Build** (page over the existing API) | gap: 4.V row P2-03.
 - **Screen specification (from V2).** Route `/admin/gamification/challenges`, title "🎯 Cabaran Harian". Header of the list: "Senarai Cabaran (15)" with a badge "15 Aktif". Below it a grid of challenge cards (read-only in V2: no forms, buttons or toggles observed). Each card shows: emoji icon; title; difficulty badge; status badge "Aktif"; description line; a chip row with the type key, "Sasaran: {n}", the syiling reward "+{n}" and "+{n} XP"; and a footer with "{n} sertai" and "{n} siap".
@@ -1539,6 +2197,20 @@ Scope rule: every module ticked in the matrix must be fully working, so the admi
 - FR-ADM-P2-03.1 CRUD + toggle. FR-ADM-P2-03.2 The difficulty label is "Susah" in the select and the badge (V1 mixes "Susah"/"Sukar": D9, use "Sukar" for both). FR-ADM-P2-03.3 The types `Ketepatan (%)`, `Masa (min)` and `Kombo` must have working progress evaluators; V1's seeded challenges 2, 7, 8, 9 use `quiz_count` for these (D-4), so the admin must not see a type that the pupil engine cannot measure.
 - AC-ADM-P2-03.1 (E2E) Given a challenge "Jawab 5 Betul" (quiz_count 5), when the T5 pupil answers 5 correctly, then the pupil's Cabaran Harian shows complete and the reward is credited once.
 - Gap: PG-03 hidden. OQ-H1 (types).
+
+**Field & behaviour spec.** End-to-end: see 48 GAME-19 (FR-GM-19.1 to 19.4).
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| P03-01 | `Tajuk` | text | required, <= 80 | n/a | "Tajuk diperlukan." |
+| P03-02 | `Keterangan` | textarea | required, <= 200 | n/a | "Keterangan diperlukan." |
+| P03-03 | `Icon` | text | emoji 1 to 2 chars | n/a | n/a |
+| P03-04 | `Jenis` | select | required | OPT-CABARAN: `Bilangan Kuiz`, `Ketepatan (%)`, `Topik Berbeza`, `Kombo`, `Hari Berturut-turut`, `Masa (min)`; only types with a working evaluator are selectable | "Jenis diperlukan." |
+| P03-05 | `Sasaran` | number | required, 1 to 1000 (`Ketepatan (%)` 1 to 100) | n/a | "Sasaran tidak sah." |
+| P03-06 | `Ganjaran Syiling`, `Ganjaran XP` | 2 numbers | defaults 10, 10; 0 to 10000 | n/a | "Ganjaran tidak sah." |
+| P03-07 | `Kesukaran` | select | `Mudah` | `Mudah`, `Sederhana`, `Sukar` | n/a |
+| P03-08 | `Urutan` | number | next, 1 to 99 | n/a | "Urutan tidak sah." |
+| P03-09 | `Simpan`, `Nyahaktif`, `Padam` | buttons | n/a | confirm "Padam cabaran ini?" / `Batal` `Ya, Padam` | n/a |
+Machine `Aktif` <-> `Tidak Aktif`; accuracy challenges need a session of at least 5 questions (`challenge_accuracy_min_questions`).
 
 #### R1-ADM-P2-04 `Gamifikasi: Pelajar` | `/admin/gamification/students` | rows 28, 33 | BE exists (`students`, `award` lines 85-91)
 - **Action: Build** (page over the existing API) | gap: 4.V row P2-04.
@@ -1552,21 +2224,34 @@ Scope rule: every module ticked in the matrix must be fully working, so the admi
 - AC-ADM-P2-04.1 (E2E) Given the admin awards 50 syiling to a pupil, then the pupil's wallet shows +50 and the ledger row has the reason.
 - Gap: PG-04 hidden.
 
+**Field & behaviour spec.** End-to-end: see 48 GAME-17 (FR-GM-17.3).
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| P04-01 | `Tier` | select | `Semua Tier` | OPT-GAM-TIER | n/a |
+| P04-02 | `Cari (nama / emel)` | text | placeholder "Cari pelajar...", <= 100 | n/a | "Carian tidak boleh melebihi 100 aksara." |
+| P04-03 | `Beri Syiling`: `Jumlah` | number | required; non-zero integer -10,000 to 10,000 | n/a | "Jumlah mesti nombor bukan sifar antara −10,000 dan 10,000." |
+| P04-04 | `Sebab` | text | required, 5 to 200 | n/a | "Sebab diperlukan (sekurang-kurangnya 5 aksara)." |
+The ledger row type is `Bonus` (positive) or `Refund` (negative); 25 per page; empty "Tiada pelajar dijumpai.". Admin Pusat only; audited.
+
 #### R1-ADM-P2-05 `Gamifikasi: Transaksi` | `/admin/gamification/transactions` | row 28 | BE exists (line 99)
 - **Action: Build** (page over the existing API) | gap: 4.V row P2-05.
 - **Screen specification (from V2).** Route `/admin/gamification/transactions`, title "📋 Transaksi Syiling". Regions:
   1. Filter bar: select `Semua Jenis` with options `💰 Dapat`, `🛍️ Belanja`, `🔄 Tukar`, `🎁 Bonus`, `↩️ Refund`; filter button(s) and reset as in V1 reference (`Dari`, `Hingga`, `Tapis`, `Reset` are V1; the V2 capture shows the type select and its option list only).
   2. Table with columns `ID`, `Pelajar`, `Jenis`, `Jumlah`, `Baki Selepas`, `Sumber`, `Keterangan`, `Tarikh`.
   3. Footer "1–50 daripada {total}" (observed 33,475) and numbered pagination (670 pages at 50 per page) with previous/next and ellipsis.
-  Row contents were not captured (rows load after the page text). CSV export is a [PROPOSED] item in FR-ADM-P2-05.1. Empty and error copy not observed; follow FR-ADM-P2-05.1 (human labels for `Jenis` and `Sumber`, consistent `Baki Selepas`).
+  Row contents were not captured (rows load after the page text). CSV export is a P2 item (not built in R1, R1 decision D113) in FR-ADM-P2-05.1. Empty and error copy not observed; follow FR-ADM-P2-05.1 (human labels for `Jenis` and `Sumber`, consistent `Baki Selepas`).
 - Reference (V1 M14 S5): "📋 Transaksi Syiling", subtitle "Log semua transaksi syiling dalam sistem"; filters `Semua Jenis` (`💰 Dapat`, `🛍️ Belanja`, `🔄 Tukar`, `🎁 Bonus`, `↩️ Refund`), `Dari`, `Hingga`, `Tapis`, `Reset`; columns `ID`, `Pelajar`, `Jenis`, `Jumlah`, `Baki Selepas`, `Sumber`, `Keterangan`, `Tarikh`.
-- FR-ADM-P2-05.1 As V1 with human labels for Jenis and Sumber (V1 shows raw keys = D9); 50 per page; CSV export [PROPOSED]. AC-ADM-P2-05.1 Given a date filter, then only rows in range list and balances are consistent (Baki Selepas of row n = balance before + Jumlah). Gap: PG-05 hidden.
+- FR-ADM-P2-05.1 As V1 with human labels for Jenis and Sumber (V1 shows raw keys = D9); 50 per page; CSV export is P2 and not built in R1 (R1 decision D113). AC-ADM-P2-05.1 Given a date filter, then only rows in range list and balances are consistent (Baki Selepas of row n = balance before + Jumlah). Gap: PG-05 hidden.
+
+**Field & behaviour spec.** `Semua Jenis` (OPT-GAM-JENIS-TRANSAKSI), `Dari` / `Hingga` (date, `dd/mm/yyyy`, to >= from; "Tarikh akhir mesti selepas tarikh mula."), `Tapis`, `Reset`. `Eksport CSV` (filtered rows) is P2 and hidden in R1. `Baki Selepas` of row n = balance before + `Jumlah`; 50 per page; empty "Tiada transaksi.".
 
 #### R1-ADM-P2-06 `Tetapan Gamifikasi` (Rujuk Kawan and economy settings) | `/admin/gamification/settings` | rows 36, 28 | BE exists (`GET/PUT settings`, lines 105-110)
 - **Action: Build** (page over the existing API) | gap: 4.V row P2-06.
 - **Not observed in V2 — follow FR-ADM-P2-06.\*.** No Rujuk Kawan or gamification-settings page exists in the capture. The FRs define: a settings form for the pupil-side values the backend exposes (referral reward for referrer and referee, caps), a `Simpan` button, values applying to the next referral (AC-ADM-P2-06.1), audit on every write (FR-ADM-H0.3). The exact field list must be read from the `settings` contract; no labels are invented here.
 - Reference: V1 M14 S9 "Tetapan Gamifikasi Guru" is teacher-side; Rujuk Kawan setting labels are not captured (Evidence E-14).
 - FR-ADM-P2-06.1 A settings form for the pupil-side values the BE exposes (referral reward for referrer and referee, caps) with `Simpan`; saved values apply to the next referral. AC-ADM-P2-06.1 (E2E) Given the referral reward is set to 30, when a new pupil registers with a pupil's referral code, then both ledgers show 30. Gap: no page; field list needs the contract (read `settings` schema).
+
+**Field & behaviour spec.** End-to-end: see 48 section 2 (settings table, FR-GM-00.10, AC-GM-00.10, AC-GM-00.11), GAME-17 and GAME-24. Each row is a number or a toggle read from `GET /api/admin/gamification/settings`; button `Simpan`; "Nilai tidak boleh negatif."; "Nilai mesti antara {a} dan {b}.". Keys on this screen (label, default, range): `xp_per_correct` `Mata (XP) setiap jawapan betul` 10, 1 to 100; `xp_level_size` `Saiz tahap (mata)` 1000, 100 to 10000; `challenge_accuracy_min_questions` `Soalan minimum untuk cabaran ketepatan` 5, 1 to 20; `daily_login_syiling` `Syiling log masuk harian` 2, 0 to 10; `spm_first_session_syiling` `Syiling sesi SPM pertama sehari` 7, 0 to 20; `referral_referrer_syiling` `Syiling untuk pemberi rujukan` 100, 0 to 1000; `referral_referee_syiling` `Syiling untuk kawan yang dirujuk` 0, 0 to 1000; `referral_max_rewarded` `Had kawan berganjaran setiap pelajar` 20, 1 to 200; `mission_reward_max` `Had ganjaran misi (syiling)` 0 to 10000, default 100. The game coin switch and caps (default OFF; caps `games_daily_syiling_cap` 100 and `games_daily_xp_cap` 500) are on N-05 and P2-09 (D113, 48 D-GAME-2). A change applies to later events only; audited.
 
 #### R1-ADM-P2-07 `Kedai Hadiah Digital: Katalog` | `/admin/hadiah`, `/admin/hadiah/baharu`, `/admin/hadiah/:id/edit` | rows 31, 38 | BE exists (`admin/hadiah` list, bulk, get, post, put; `shop/admin.controller.ts:24-66`), no page
 - **Action: Build** (page over the existing API) | gap and differences: 4.V row P2-07.
@@ -1581,14 +2266,36 @@ Scope rule: every module ticked in the matrix must be fully working, so the admi
 - AC-ADM-P2-07.2 Given `Pelaras Token` +10% on 3 selected items, then their cost rises 10% (rounded) and the pupil view shows the new cost.
 - Gap: PG-06 hidden; `m15/api/admin.ts` client exists.
 
+**Field & behaviour spec.** End-to-end: see 48 GAME-21 (FR-GM-21.1 to 21.4).
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| P07-01 | Category pills | filter | `Semua` | OPT-HADIAH-KATEGORI | empty "Tiada hadiah dalam kategori ini." |
+| P07-02 | `Kategori *` | select | required | OPT-HADIAH-KATEGORI | "Kategori diperlukan." |
+| P07-03 | `Vendor *` | text | required, <= 60, placeholder "cth: Roblox, Touch n Go, Hotlink" | n/a | "Vendor diperlukan." |
+| P07-04 | `Tajuk *` | text | required, <= 100, "cth: TnG eWallet RM50" | n/a | "Tajuk diperlukan." |
+| P07-05 | `Penerangan` | textarea | optional, <= 500 | n/a | n/a |
+| P07-06 | `Nilai (RM) *` | number | required, 0.01 to 10000, 2 dp | n/a | "Nilai (RM) diperlukan." |
+| P07-07 | `Kos Token *` | number | required, integer 1 to 100000; hint "100 syiling = 1 token = RM1" | n/a | "Kos Token diperlukan." |
+| P07-08 | `Emoji Icon` | text | optional, 1 to 2 chars | n/a | n/a |
+| P07-09 | `Stok (kosong = tanpa had)` | number | blank = unlimited, integer >= 0 | n/a | "Stok tidak sah." |
+| P07-10 | `Maks/bulan/pelajar` | number | blank = no cap, 1 to 100 | n/a | n/a |
+| P07-11 | `Sah Hari (default 365)` | number | 365, 1 to 3650 | n/a | n/a |
+| P07-12 | `Delivery` | select | `Manual (admin paste)` | `Manual (admin paste)`, `Instant` | n/a |
+| P07-13 | `Vendor SKU (optional)`, `Display Order`, `Image URL (optional)`, `Terma Khas` | text, number, url, textarea | optional; <= 50, 0 to 9999, https <= 500, <= 1000 | n/a | n/a |
+| P07-14 | `Aktif` | checkbox | off by default (catalogue activated by the admin, U-OP-09) | n/a | n/a |
+| P07-15 | Bulk toolbar `Aktifkan`, `Nyahaktifkan`, `Set Stok`, `Had/Bulan`, `Pelaras Token`, `Padam`, `Batal` | actions | "{n} hadiah dipilih" | `Pelaras Token` = percent -90 to +500, cost = round half up (cost x (1 + p/100)), min 1; `Set Stok` integer >= 0 or blank | `Padam` only with no redemption, else "Hadiah ini mempunyai tebusan. Nyahaktifkan sahaja." |
+`Perlu kelulusan ibu bapa` is not shown (parent consent is not built, 48 D-GAME-5; every gift has `requiresParentConsent` = false). 50 per page.
+
 #### R1-ADM-P2-08 `Tebusan Hadiah Pelajar` (redemption queue) | `/admin/hadiah/tebusan` | rows 31, 38 | BE exists (`redemptions`, `deliver`, `cancel`, lines 36-48)
 - **Action: Build** (page over the existing API) | gap and differences: 4.V row P2-08.
 - **Screen specification (from V2).** In V2 the queue is the section `Tebusan Queue`, a right-hand card on `/admin/hadiah` (next to `Katalog Hadiah`), not a separate page. Each row is a small card with: reward title (e.g. "TnG eWallet RM5", "TnG eWallet RM10"), a second grey line (pupil identity, hidden/blurred in capture), a status badge "Pending" and a date "DD/MM/YYYY" (observed 20/10/2026 to 22/10/2026; seven rows). KPI `Pending Proses` (7) above counts the same rows. No `Hantar kod` or `Batal` control, status filter pills, or empty copy were observed in V2; V1 status pills (`⏳ Pending Admin`, `⏳ Pending Ibu Bapa`, `🎁 Delivered`, `❌ Cancelled`, `Semua`), empty "Tiada tebusan dalam status ini." and the `Hantar kod` / `Batal` actions follow FR-ADM-P2-08.* . The route `/admin/hadiah/tebusan` links to this section. Date shows the year (already in V2).
 - Reference (V1 M15 S2): "📋 Admin — Tebusan Hadiah Pelajar", "Beli kod dari reseller, paste kat sini untuk hantar kepada pelajar."; status pills `⏳ Pending Admin` (default), `⏳ Pending Ibu Bapa`, `🎁 Delivered`, `❌ Cancelled`, `Semua`; columns `Pelajar`, `Hadiah`, `RM`, `Token`, `Status`, `Tarikh`, `Tindakan`; empty "Tiada tebusan dalam status ini."; button `Kembali ke Catalog`.
-- FR-ADM-P2-08.1 A `pending_admin` row has actions `Hantar kod` (paste the voucher code; the V1 row form was never captured, Evidence E-14) and `Batal`; delivering stores the code and notifies the pupil; cancelling refunds the tokens. The queue is a section "Tebusan Queue" on the same page as the catalogue "Katalog Hadiah" (V2, V2), with the route `/admin/hadiah/tebusan` kept as a link to that section. FR-ADM-P2-08.2 Tarikh shows the year (V1 omits it: D9). FR-ADM-P2-08.3 A double submission of the same reward within a minute by the same pupil is shown flagged [PROPOSED] (V1 rows 2 and 3 duplicate).
-- FR-ADM-P2-08.4 (F-29) The pupil's "Tebusan Saya" uses these status words for the same states the admin sets: `Menunggu` (`pending_admin`), `Dihantar` (`delivered`, shows the code the admin pasted), `Dibatalkan` (`cancelled`, tokens refunded) [PROPOSED words; the admin queue keeps the V1/V2 pills].
+- FR-ADM-P2-08.1 A `pending_admin` row has actions `Hantar kod` (paste the voucher code; the V1 row form was never captured, Evidence E-14) and `Batal`; delivering stores the code and notifies the pupil; cancelling refunds the tokens. The queue is a section "Tebusan Queue" on the same page as the catalogue "Katalog Hadiah" (V2, V2), with the route `/admin/hadiah/tebusan` kept as a link to that section. FR-ADM-P2-08.2 Tarikh shows the year (V1 omits it: D9). FR-ADM-P2-08.3 A double submission of the same reward within a minute by the same pupil is shown flagged (R1 decision D113) (V1 rows 2 and 3 duplicate).
+- FR-ADM-P2-08.4 (F-29) The pupil's "Tebusan Saya" uses these status words for the same states the admin sets: `Menunggu` (`pending_admin`), `Dihantar` (`delivered`, shows the code the admin pasted), `Dibatalkan` (`cancelled`, tokens refunded) (R1 decision D113; the admin queue keeps the V1/V2 pills).
 - AC-ADM-P2-08.1 (E2E) Given a pupil redeems an item, when the admin pastes the code and presses `Hantar kod`, then the pupil's redemption history shows Delivered (`Dihantar`) and the code.
 - AC-ADM-P2-08.2 Given the admin cancels, then the pupil's token balance is restored once. Gap: tebusan cannot be fulfilled today (ADMIN-PUSAT row 31).
+
+**Field & behaviour spec.** End-to-end: see 48 GAME-21 (FR-GM-21.3, 21.4). Status pills (default `Menunggu`): `Menunggu`, `Dihantar`, `Dibatalkan` (no consent status); empty "Tiada tebusan dalam status ini.". `Hantar kod`: text, required, 1 to 200 chars, only when `Menunggu`; "Kod baucar diperlukan."; success "Kod dihantar kepada pelajar.". `Batal`: confirm "Batalkan tebusan ini?" / "Token pelajar akan dipulangkan." / `Batal` `Ya, Batalkan`; refunds once and restores stock. 50 per page; an out-of-range page redirects to the last page.
 
 #### R1-ADM-P2-09 `Kawalan Reward` (Kedai Hadiah fizikal, ekonomi) | `/admin/reward-control` | rows 31, 35 | BE exists (`GET /api/admin/reward-control`, `PUT settings`, `PUT rewards/:id/cost`, `POST draws`, lines 122-143)
 - **Action: Build** (page over the existing API) | gap and differences: 4.V row P2-09.
@@ -1605,6 +2312,17 @@ Scope rule: every module ticked in the matrix must be fully working, so the admi
 - AC-ADM-P2-09.2 (E2E) Given a fresh install (default rate 1), when a pupil answers 7 of 10 correctly, then the wallet credit is 7 Syiling; given the admin sets the rate to 3 and saves, when a pupil answers 7 of 10 correctly in the next session, then the credit is 21 Syiling (7 x 3); a session finished before the save keeps its original credit.
 - Gap: PG-10 hidden.
 
+**Field & behaviour spec.** End-to-end: see 48 section 2 and GAME-21 (FR-GM-21.2).
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| P09-01 | `Bajet tebus / sesi` (`reward_budget_sen_session`) | money | 300 sen (RM3.00) | stored in sen, shown `RM{x.xx}`; 0 to RM1,000 | "Bajet tidak sah." |
+| P09-02 | `Syiling flat / soalan betul` (`flat_quiz_reward`) | number | 1 | integer 0 to 20 | "Nilai mesti antara 0 dan 20." |
+| P09-03 | `Tahun sesi semasa` | number | 2026 | 2020 to 2100 | "Tahun tidak sah." |
+| P09-04 | `Mini-games beri syiling?` (`games_award_syiling`) | checkbox | off, label `Tidak (XP sahaja)` (D113) | n/a | n/a |
+| P09-05 | `Simpan Tetapan` | button | n/a | flash "Tetapan kewangan disimpan."; affects later answers only | SR-1 |
+| P09-06 | `Kos Sebenar` per reward | money | digital = RM0 | sen integer >= 0, `Simpan` per row | "Kos tidak sah." |
+Liability = sum of real cost (sen) of `Dihantar` redemptions in `Tahun sesi semasa`; a redemption is refused when liability + cost exceeds the budget: "Bajet tebusan sesi ini telah habis.".
+
 #### R1-ADM-P2-10 `Cabutan Bertuah` | `/admin/reward-control/cabutan` (section of Kawalan Reward) | row 22 | BE: `POST draws` only (`admin.controller.ts:143`); list, close and draw-winner endpoints are required work
 - **Action: Build** | gap: 4.V row P2-10.
 - **Screen specification (from V2).** Only the section "🎟️ Cabutan Bertuah" at the bottom of `/admin/reward-control` was observed: a table with columns `#`, `Tajuk`, `Status`, `Harga Tiket`, `Pemenang`. No rows, no create form, no `Tutup` or `Cabut pemenang` control and no empty copy were captured. The route `/admin/reward-control/cabutan` in V3 is this section. Create form, draw actions, ticket cap (`Max tiket / pelajar`) and winner publication follow FR-ADM-P2-10.* and the V1 reference line (`➕ Cipta Cabutan Baru`, `Harga tiket (syiling)`, empty "Tiada cabutan lagi."); do not add other labels.
@@ -1612,11 +2330,24 @@ Scope rule: every module ticked in the matrix must be fully working, so the admi
 - FR-ADM-P2-10.1 Create, list, edit before opening, `Tutup`, `Cabut pemenang` (random from ticket pool, recorded, one winner per prize), publish winner to the pupil. FR-ADM-P2-10.2 Ticket purchases by pupils (`POST /cabutan/:drawId/tickets`) deduct syiling and respect the cap.
 - AC-ADM-P2-10.1 (E2E) Given an open draw with ticket 50 and cap 10, when a pupil buys 11 tickets, then the 11th is refused; after `Cabut pemenang` the winner sees the result on the Cabutan page.
 
+**Field & behaviour spec.** End-to-end: see 48 GAME-22 (FR-GM-22.1 to 22.4).
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| P10-01 | `Tajuk` | text | required, <= 120 | n/a | "Tajuk diperlukan." |
+| P10-02 | `Penerangan` | textarea | optional, <= 500 | n/a | n/a |
+| P10-03 | `Harga tiket (syiling)` | number | 50, integer 1 to 10000 | n/a | "Harga tiket tidak sah." |
+| P10-04 | `Max tiket / pelajar` | number | 10, integer 1 to 100 | n/a | "Had tiket dicapai." (11th ticket refused) |
+| P10-05 | `Hadiah`, `Tarikh tutup` | text, datetime | prize required <= 120; close in the future | n/a | "Hadiah diperlukan."; "Tarikh tutup mesti pada masa hadapan." |
+| P10-06 | `Tutup`, `Cabut pemenang` | actions | `draft -> open -> closed` | `Cabut pemenang` once per prize, uniformly random per ticket; confirm "Cabut pemenang sekarang?" / "Tindakan ini tidak boleh dibatalkan." / `Batal` `Ya, Cabut` | a second press creates no second winner |
+Cancel before drawing refunds every ticket once (FR-GM-22.3).
+
 #### R1-ADM-P2-11 `Kotak Misteri` | `/admin/reward-control/kotak-misteri` | row 35 | BE: pupil reads/open exist (`shop.controller.ts:50-55`); admin config endpoints required
 - **Action: Build** | gap: 4.V row P2-11.
 - **Not observed in V2 — follow FR-ADM-P2-11.\*.** No Kotak Misteri admin page in the capture. The FRs define: admin defines box types, cost in syiling, a prize pool with weights and stock; an open picks by stored weights and writes the ledger; the admin sees opens per day; AC-ADM-P2-11.1 (100%/0% weights). Labels must come from the design phase; none are invented here (OQ-H2 open).
 - Reference: V1/V2 admin config not captured (Kawalan Reward only sets costs) (Evidence E-14).
 - FR-ADM-P2-11.1 Admin defines box types, cost in syiling, prize pool with weights and stock; a box open picks a prize by the stored weights and writes the ledger; the admin sees opens per day. AC-ADM-P2-11.1 (E2E) Given a box with prizes weighted 100%/0%, when the pupil opens it, then only the 100% prize can be won and the ledger shows the cost. OQ-H2.
+
+**Field & behaviour spec.** End-to-end: see 48 GAME-23 (FR-GM-23.1). Kotak: `Nama` (<= 60, "Nama diperlukan."), `Kos (syiling)` (`mystery_box_cost`, 50, 1 to 500), `Had kotak sehari` (`mystery_box_daily_max`, 5, 1 to 20), prize rows `Hadiah`, `Berat (%)`, `Stok`; the seven-row table of GAME-23; weights are integers that sum exactly to 100: "Jumlah berat mesti 100%.". No XP is given.
 
 #### R1-ADM-P2-12 `Marketplace: Produk` | `/admin/marketplace/products` (+ `/create`, `/:id/edit`) | row 32 | BE reads only (`marketplace.controller.ts:18-43`); admin CRUD required work
 - **Action: Build** | gap: 4.V row P2-12.
@@ -1632,6 +2363,21 @@ Scope rule: every module ticked in the matrix must be fully working, so the admi
 - AC-ADM-P2-12.2 Given editing a product with 4 images, when deleting image 1 then saving, then the product and the other 3 images remain.
 - Gap: PG-14 hidden; BE read-only. Deviation: FD-P2-12.
 
+**Field & behaviour spec.**
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| P12-01 | Filters `Cari produk...`, `Semua Kategori`, `Semua Status` | text, selects | all | OPT-MARKET | n/a |
+| P12-02 | `Penjual` | select | `PRESTASIPLUS Official (Admin)` | sellers | "Penjual diperlukan." |
+| P12-03 | `Nama Produk *` | text | required, <= 120 | n/a | "Nama produk diperlukan." |
+| P12-04 | `Kategori *` | select | required | OPT-MARKET | "Kategori diperlukan." |
+| P12-05 | `Harga (RM) *`, `Harga Asal (RM)` | 2 numbers | required / optional; 0.01 to 100000 | original >= price | "Harga asal mesti lebih besar daripada harga." |
+| P12-06 | `Penerangan` | textarea | optional, <= 2000 | n/a | n/a |
+| P12-07 | `Keadaan *`, `Status Stok *`, `Kaedah Penghantaran *` | radio / select | required | OPT-MARKET | n/a |
+| P12-08 | `Kos Penghantaran (RM)`, `Lokasi` | number, text | optional; 0 to 1000, <= 100 | n/a | n/a |
+| P12-09 | Images (up to 5) | file | optional; JPG, PNG, WebP <= 2 MB | delete image is its own action | "Maksimum 5 gambar."; "Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB." |
+| P12-10 | `Status Produk *` (edit) | radio | `🟢 Aktif` | OPT-MARKET | n/a |
+| P12-11 | Delete | action | n/a | confirm "Padam produk ini?" / `Batal` `Ya, Padam`; blocked with orders | "Produk ini mempunyai pesanan. Nyahaktifkan sahaja." |
+
 #### R1-ADM-P2-13 `Marketplace: Penjual` | `/admin/marketplace/sellers`, `/admin/marketplace/sellers/:id` | row 32 | BE none for admin
 - **Action: Build** | gap and differences: 4.V row P2-13.
 - **Screen specification (from V2).** Route `/admin/marketplace/sellers`, title "Marketplace — Penjual". Regions:
@@ -1645,26 +2391,43 @@ Scope rule: every module ticked in the matrix must be fully working, so the admi
 - AC-ADM-P2-13.1 (E2E) Given a pending seller approved by the admin, then their active products show to pupils; given suspended, they disappear.
 - Gap: PG-15 hidden. Evidence E-14 for seller registration flow.
 
+**Field & behaviour spec.** Filter `Semua Status` (`Pending`, `Aktif`, `Digantung`, `Diharamkan`). Actions `Lihat Detail`, `Luluskan`, `Sahkan`, `Gantung`, `Haramkan`; confirm "Haramkan penjual ini?" and "{Tindakan} penjual ini?" with `Batal` / `Ya, {Tindakan}`. Machine `Pending -> Aktif` (Luluskan) `-> Digantung -> Aktif`; `Diharamkan` is terminal; products leave the pupil list at once on Digantung or Diharamkan; `Sahkan` sets the verified tick. Stat cards are global, not the filtered query.
+
 #### R1-ADM-P2-14 `Tournament` and `Liga` | `/admin/tournament`, `/admin/tournament/create`, `/admin/tournament/:uuid` | row 23 | BE partly (`tournaments` list/create/get, `battle/tournaments/tournaments.controller.ts:31-57`); edit/close/results required
 - **Action: Build** | gap: 4.V row P2-14.
 - **Not observed in V2 — follow FR-ADM-P2-14.\*.** No tournament admin page in the capture. The FRs define: create (format, question source, registration dates), save as draft, open registration, close, view standings; the pupil banner and `/tournament` list reflect an open tournament (AC-ADM-P2-14.1). V1 titles for guidance only: "Liga & Tournament", "Cipta Tournament Baru", buttons "Cipta & Buka Pendaftaran" and "Simpan Draf". Field list is open (Evidence E-14).
 - Reference (V1 M16): "Liga & Tournament" ("Senarai tournament antara sekolah"); "Cipta Tournament Baru" ("Tetapkan format, sumber soalan, dan jadual pendaftaran"), buttons "Cipta & Buka Pendaftaran" / "Simpan Draf"; "Cipta Liga" / "Sertai Liga Ini".
 - FR-ADM-P2-14.1 Create (format, question source, registration dates), save as draft, open registration, close, and view the standings. FR-ADM-P2-14.2 The pupil banner `GET /tournament/active` shows an open tournament. AC-ADM-P2-14.1 (E2E) Given an opened tournament, then the pupil banner and `/tournament` list it and the pupil can join. Evidence E-14 for field list.
 
+**Field & behaviour spec.** End-to-end: see 48 GAME-15 (FR-GM-15.1 to 15.7; D-GAME-3, D-GAME-4).
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| P14-01 | `Nama tournament` | text | required, <= 100 | n/a | "Nama diperlukan." |
+| P14-02 | `Jenis` | select | `Kejohanan` | `single_match` `Kejohanan`, `league` `Liga` only (`knockout` and `hybrid` are not offered and the API rejects them) | "Jenis tidak sah." |
+| P14-03 | `Aras`, `Sumber soalan`: `Subjek`, `Tingkatan`, `Bilangan soalan` | selects, number | required | levels `tingkatan4`, `tingkatan5`, `spm`; source `subject`, `exam_paper`, `random_mix`; OPT-SUBJEK, OPT-TINGKATAN; 5 to 50 | "Sila pilih subjek." |
+| P14-04 | `Pendaftaran bermula`, `Pendaftaran ditutup`, `Mula`, `Tamat` | 4 datetimes | required; open < close < start < end | n/a | "Tarikh pendaftaran tidak sah." |
+| P14-05 | `Cipta & Buka Pendaftaran`, `Simpan Draf`, `Tutup Pendaftaran` | buttons | n/a | status `draft` -> `registration` -> `ongoing` -> `completed`, labels `Draf`, `Pendaftaran`, `Sedang Berlangsung`, `Tamat` | n/a |
+| P14-06 | `Sekolah peserta Liga` | async multi-select | Liga only | schools; ENROLLED ONLY BY Admin Pusat here (a pupil never taps "Sertai"); a school can be enrolled once | "Sekolah ini sudah didaftarkan." |
+Edit, close and results views are required work (the backend has only list, create and get).
+
 #### R1-ADM-P2-15 `Ranking Sekolah`, `Leaderboard` (Papan Pendahulu / Kedudukan, admin read views) | `/admin/battle/ranking-sekolah`, `/admin/battle/leaderboard` | rows 18, 33 | BE exists (`battle/standings/students|schools`)
 - **Action: Build** (read views over the existing API) | gap: 4.V row P2-15.
 - **Screen specification (from V2).** V2 has no admin-side page; the admin menu links to the pupil Battle pages, which were captured:
   - Ranking Sekolah (`/battle/ranking-sekolah`, title "Ranking Sekolah — Battle"): eyebrow "🏫 Pertandingan Antara Sekolah", heading "Ranking Sekolah", subtitle "Sekolah terbaik dinilai berdasarkan jumlah mata, kemenangan, dan ketepatan battle."; list area. Empty state: icon 🏫, "Tiada ranking lagi", "Belum ada sekolah yang menyertai battle. Mulakan pertandingan sekarang!".
   - Leaderboard (`/battle/leaderboard`, title "Papan Pemimpin — Battle"): eyebrow "🏆 Ranking Global", heading "Papan Pemimpin", subtitle "30 pelajar terbaik mengikut jumlah mata yang dikumpul dalam Battle Arena."; Empty state: icon 🏆, "Tiada rekod lagi", "Papan pemimpin masih kosong. Mulakan battle untuk mendapatkan mata!".
-  Populated rows were not captured. V3 admin routes `/admin/battle/ranking-sekolah` and `/admin/battle/leaderboard` are read views that show the same ranks as the pupil pages; the empty copy above applies as-is; the period/scope filters and the period-reset note are [PROPOSED] in FR-ADM-P2-15.1.
+  Populated rows were not captured. V3 admin routes `/admin/battle/ranking-sekolah` and `/admin/battle/leaderboard` are read views that show the same ranks as the pupil pages; the empty copy above applies as-is; the period/scope filters and the period-reset note are specified by FR-ADM-P2-15.1 (R1 decision D113).
 - Reference: V1/V2 menu `Ranking Sekolah`, `Leaderboard`, `Battle Live` (links to the user pages). Titles "Ranking Pelajar Battle", "Papan Ranking Sekolah".
-- FR-ADM-P2-15.1 Read views over the same standings the pupil sees, with filters for period and scope [PROPOSED] and an admin note on the period reset. AC-ADM-P2-15.1 Given a battle result, then admin Leaderboard and the pupil's Kedudukan show the same rank. Gap: PG-12/13 hidden.
+- FR-ADM-P2-15.1 Read views over the same standings the pupil sees, with filters for period and scope (R1 decision D113) and an admin note on the period reset. AC-ADM-P2-15.1 Given a battle result, then admin Leaderboard and the pupil's Kedudukan show the same rank. Gap: PG-12/13 hidden.
 
-#### R1-ADM-P2-16 `Pautan Ibu Bapa` (Jemput Ibu Bapa) | tab `Ibu Bapa` in Edit Pengguna + list in Pengguna (`?role=parent`) | row 40 | BE exists per ADMIN-PUSAT row 40 (`admin/parent-links`, route to confirm)
+**Field & behaviour spec.** End-to-end: see 48 GAME-16 (FR-GM-16.1 to 16.4). Selectors `Tempoh` (`Minggu Ini`, `Bulan Ini`, `Semua Masa`; default `Bulan Ini`) and `Skop` (`Semua sekolah`, a school); read-only; `Sekolah Bersaing` minimum pupils per school from the setting `sekolah_bersaing_min_pupils` (default 1). Empty "Tiada kedudukan lagi.".
+
+#### R1-ADM-P2-16 `Pautan Ibu Bapa` (Jemput Ibu Bapa) | tab `Ibu Bapa` in Edit Pengguna + list in Pengguna (`?role=parent`) | row 40 | BE exists per ADMIN-PUSAT row 40 (`admin/parent-links`, API route `/api/admin/parent-links`, R1 decision D113)
 - **Action: Build** | gap: 4.V row P2-16.
 - **Not observed in V2 — follow FR-ADM-P2-16.\*.** No parent record captured. The FRs define: the admin views, adds and removes parent-child links and sees pending invitations from pupils, as a tab `Ibu Bapa` in Edit Pengguna and a list in Pengguna filtered by role parent (AC-ADM-P2-16.1). V1 copy for guidance: card "Anak yang Dipautkan", search "Cari nama atau emel pelajar untuk dipautkan...", empty "Tiada pelajar dipautkan lagi", "Tiada pelajar dijumpai", action `Buang pautan`. V2 only offers `Ibu Bapa` as a role in the bulk user import.
 - Reference (V1 M02 S3): card "Anak yang Dipautkan" (chips, `Buang pautan`, search "Cari nama atau emel pelajar untuk dipautkan...", "Tiada pelajar dipautkan lagi", "Tiada pelajar dijumpai", hint "Tambah atau buang pautan anak. Perubahan disimpan apabila klik "Kemaskini".").
 - FR-ADM-P2-16.1 Admin views, adds and removes parent-child links and sees pending invitations from pupils. AC-ADM-P2-16.1 (E2E) Given the admin links a parent to a pupil, then the parent sees the child and the pupil's Jemput Ibu Bapa shows linked. Gap: BE has no FE.
+
+**Field & behaviour spec.** Parent link: pupil search (async, "Cari nama atau emel pelajar...", empty "Tiada pelajar dijumpai"), up to 10 children (U02-10), `Buang pautan` with confirm "Buang pautan ini?" / "Ibu bapa tidak lagi dapat melihat anak ini." / `Batal` `Ya, Buang`. The endpoint is `admin/parent-links` (route fixed by the S-card, the screen is the tab `Ibu Bapa` in Edit Pengguna). Parent consent for gifts is not part of R1 (48 D-GAME-5).
 
 #### R1-ADM-P2-17 `Audio KBAT` | `/admin/audio-kbat`, `/create`, `/template` | row 27 | built both (BS-07)
 - **Action: Keep** | gap: 4.V row P2-17.
@@ -1676,6 +2439,16 @@ Scope rule: every module ticked in the matrix must be fully working, so the admi
   Buttons `Template XLSX`, `Template Word`, `Cipta Set` and the create form (`/admin/audio-kbat/create`: set metadata, 4 audio sections, 30 questions, `Simpan Set Audio KBAT`) were not visible in the V2 capture; follow the V1 reference line and FR-ADM-P2-17.1 (audio file required for Approved, SP picker).
 - Reference (V1 M09 S12-S13): "Set Audio KBAT" ("Senarai set soalan audio fixed sequence, bukan rawak."); `Template XLSX`, `Template Word`, `Cipta Set`; cards `Set`, `Approved`, `Draft/Pending`, `Soalan`; filters `Semua Tahap`, `Semua Subjek`, `Semua Status` (`Draft`, `Pending Review`, `Approved`, `Archived`), "Cari tajuk/sumber...", `Tapis`; empty "Belum ada set Audio KBAT."; create "Cipta Set Audio KBAT": format "4 audio section, 30 soalan MCQ", `Tajuk Set`, `Tahap`, `Subjek`, `Status`, `Sumber / Penyumbang`, `Arahan Umum`, 4 sections (`Tajuk Audio`, `Fail Audio`, `Transkrip Audio Untuk Audit`), 30 questions (`Teks Soalan`, `Pilihan A`-`D`, `Jawapan`, `Markah`, `KBAT Level`, `DSKP SP ID`, `Skema / Penjelasan`), `Simpan Set Audio KBAT`.
 - FR-ADM-P2-17.1 Verify and complete: the audio file is required for an Approved set (V1 not required = D9); `Tahap` offers Tingkatan 1-5 only; `DSKP SP ID` becomes an SP picker from `curriculum_nodes`; the list header reads the page title (V1 header says "Dashboard" = D9). AC-ADM-P2-17.1 (E2E) Given an Approved set with audio, the pupil's Audio KBAT lists it and the audio plays. Gap: built; verify only. Deviation: FD-P2-17.
+
+**Field & behaviour spec.**
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| P17-01 | Filters `Semua Tahap`, `Semua Subjek`, `Semua Status`, search | selects, text | all | OPT-TINGKATAN, OPT-SUBJEK, OPT-AUDIO-STATUS | n/a |
+| P17-02 | Set: `Tajuk Set`, `Tahap`, `Subjek`, `Status`, `Sumber / Penyumbang`, `Arahan Umum` | mixed | Tajuk, Tahap, Subjek, Status required; title <= 150, source <= 150, instructions <= 1000 | n/a | "Tajuk diperlukan." |
+| P17-03 | 4 sections: `Tajuk Audio`, `Fail Audio`, `Transkrip Audio Untuk Audit` | text, file, textarea | audio required for `Diluluskan`; mp3, m4a, wav <= 20 MB; ranges fixed Q1-8, 9-16, 17-24, 25-30 | n/a | "Fail audio diperlukan untuk set yang diluluskan." |
+| P17-04 | 30 questions: `Teks Soalan`, `Pilihan A` to `Pilihan D`, `Jawapan`, `Markah`, `KBAT Level`, `DSKP SP ID`, `Skema / Penjelasan` | per Q-04 | all required except scheme; exactly 4 options here | OPT-KBAT-OVERRIDE; SP picker as 04-04 | as Q-04 |
+| P17-05 | `Template XLSX`, `Template Word`, `Cipta Set`, `Simpan Set Audio KBAT` | buttons | n/a | n/a | n/a |
+This module is separate from the Studio and from Murid audio; its statuses use the five question labels of section 0.
 
 #### R1-ADM-P2-18 `Artikel`, `Banner`, `Nota`, `Video` (complete forms) | `/admin/articles|banners|notes`, `/admin/videos` | row 20 and Dashboard | built (Video: N-01)
 - **Action: Fix** | gap: 4.V row P2-18.
@@ -1690,6 +2463,8 @@ Scope rule: every module ticked in the matrix must be fully working, so the admi
 - AC-ADM-P2-18.1 (E2E) Given a published article for Tingkatan 5, then the T5 pupil sees it under Artikel and on the Dashboard.
 - AC-ADM-P2-18.2 Given a Nota created for Sains T5 and published, then the T5 pupil's Buku Nota lists it. Deviation: FD-P2-18.
 
+**Field & behaviour spec.** Forms are those of N-01 (Video), N-02 (Artikel), N-03 (Banner) and N-04 (Nota); this entry adds no field. Keys of the list pages, paging and empty texts are in those blocks.
+
 #### R1-ADM-P2-19 `Kawalan Ciri` (full set for ticked modules) | `/admin/feature-toggles` | extends N-06 | BE required (S8.1)
 - **Action: Build** | gap and differences: 4.V row P2-19.
 - **Screen specification (from V2).** Route `/admin/feature-toggles`, title "Kawalan Ciri". Top line: "Semua ciri HIDUP secara lalai — item hanya tersembunyi apabila anda mematikannya." Two groups, each a heading followed by one row per flag; each row has the module name, a toggle switch and a state word, "Aktif" when on, "Off" when off.
@@ -1700,6 +2475,8 @@ Scope rule: every module ticked in the matrix must be fully working, so the admi
 - FR-ADM-P2-19.1 Every V3 module that is ticked and has a V2 flag gets a switch (modules without a V2 flag but needing one: `latih-tubi`). There is no switch for Kertas Subjektif (D104). FR-ADM-P2-19.2 A flag OFF removes the module from the pupil/teacher menu and its URL returns the standard 404 page (D108(6)); the V2 text "Ciri ini tidak tersedia buat masa ini." is not shown anywhere and no 403 page is used. FR-ADM-P2-19.3 Default ON for every flag. FR-ADM-P2-19.4 The switch list is grouped Pelajar / Guru and each row shows the module name and state.
 - AC-ADM-P2-19.1 (E2E) Given `Leaderboard` OFF, then the pupil menu hides it and its URL shows the standard 404 page; ON restores it.
 
+**Field & behaviour spec.** Fields are those of N-06 (31 rows, switch per row, no save button); the rows for the ticked modules are added with `Aktif` default ON; labels and flashes follow N-06.
+
 #### R1-ADM-P2-20 `Tiket Bantuan` | `/admin/tiket` | A4 (ticked for Murid, Guru and Admin Sekolah, D100, D108(4)) | BE: tickets are created by users and read (`support.controller.ts:75`, read-only); admin reply and status endpoints required work
 - **Action: Build** | gap and differences: 4.V row P2-20.
 - **Screen specification (from V2).** Route `/admin/tiket`, page title "Tiket Sokongan" (browser title "Tiket Sokongan - Admin Panel"). Layout, in order:
@@ -1707,10 +2484,10 @@ Scope rule: every module ticked in the matrix must be fully working, so the admi
   2. Status chips in a row: "Semua ({n})" (selected by default, observed "Semua (3)") then one chip per status with the count, in lower case as stored (observed "dibuka (3)").
   3. Table card with columns `Tarikh`, `Pengguna`, `Subjek`, `Status`, `Dibalas` (observed rows: date-time, user name, subject, status "dibuka", `Dibalas` "—"; "Ya" once replied). The page is read-only in V2: rows are not clickable, there is no reply box and no detail view.
   Empty states: "Belum ada tiket sokongan." (no tickets at all) and "Tiada tiket berstatus “{status}”." (a chip with 0). Pupil-side counterpart (for the thread): section "Balasan Sokongan", fields `Subjek` (placeholder "Ringkasan masalah atau permintaan anda") and `Butiran` (placeholder "Terangkan masalah anda dengan terperinci..."), "Jumlah tiket: {n}", empty "Tiada tiket lagi.".
-  V3 additions, not observed in V2 (FR-ADM-P2-20.2 to .4): user shown by role label and school (not e-mail), 25 per page, role filter, row opens a detail with `Subjek`, `Butiran`, the single admin reply (no thread, OD-4), reply box with button [PROPOSED] `Balas` and a status select, and the support contact block in the header. Only Admin Pusat may open it.
+  V3 additions, not observed in V2 (FR-ADM-P2-20.2 to .4): user shown by role label and school (not e-mail), 25 per page, role filter, row opens a detail with `Subjek`, `Butiran`, the single admin reply (no thread, OD-4), reply box with button `Balas` (R1 decision D113) and a status select, and the support contact block in the header. Only Admin Pusat may open it.
 - Reference (V2 `admin/tiket.blade.php`, route `routes/web.php:808`): title "Tiket Sokongan", subtitle "Permohonan bantuan daripada pengguna."; status chips "Semua ({n})" and one chip per status "{status} ({n})"; empty "Belum ada tiket sokongan." or "Tiada tiket berstatus “{status}”."; table columns `Tarikh`, `Pengguna`, `Subjek`, `Status`, `Dibalas` ("Ya" or "—"). The V2 page is read-only; the pupil page shows the section "Balasan Sokongan" and the form fields `Subjek` ("Ringkasan masalah atau permintaan anda") and `Butiran` ("Terangkan masalah anda dengan terperinci..."), with "Jumlah tiket: {n}" and the empty "Tiada tiket lagi." (`content/tiket.blade.php`). Where the V2 admin writes the reply is not in the Blade page (E-20).
 - FR-ADM-P2-20.1 The list is as V2 (title, subtitle, chips with counts, columns, empty states) with 25 per page and the user shown by role label and school, not by e-mail.
-- FR-ADM-P2-20.2 A ticket row opens a detail with the user's `Subjek` and `Butiran`, one reply box [PROPOSED label `Balas`] and a status select (OD-4 decided in 50 §7: a single admin reply per ticket, no thread; the user cannot reply and opens a new ticket instead). Saving the reply sets `Dibalas` to "Ya" and shows the text to the user under "Balasan Sokongan". Saving the reply does not change the status; the admin sets the status separately with the status select. The owner gets an in-app notification "Tiket anda telah dibalas." [PROPOSED]. The owner cannot reply. A later save replaces the single reply text.
+- FR-ADM-P2-20.2 A ticket row opens a detail with the user's `Subjek` and `Butiran`, one reply box labelled `Balas` (R1 decision D113) and a status select (OD-4 decided in 50 §7: a single admin reply per ticket, no thread; the user cannot reply and opens a new ticket instead). Saving the reply sets `Dibalas` to "Ya" and shows the text to the user under "Balasan Sokongan". Saving the reply does not change the status; the admin sets the status separately with the status select. The owner gets an in-app notification "Tiket anda telah dibalas." (R1 decision D113). The owner cannot reply. A later save replaces the single reply text.
 - FR-ADM-P2-20.3 Only Admin Pusat replies; tickets of Murid, Guru and Admin Sekolah all appear here, filterable by role.
 - FR-ADM-P2-20.4 The support contact block (N-07) is shown on the page header so the admin can see what users are told.
 - AC-ADM-P2-20.1 (E2E) Given a T5 pupil submits a ticket from Tiket Bantuan, when the admin opens `/admin/tiket`, then the ticket is listed with the pupil's role and school, and after the admin saves a reply, the pupil sees it under "Balasan Sokongan".
@@ -1719,9 +2496,18 @@ Scope rule: every module ticked in the matrix must be fully working, so the admi
 - AC-ADM-P2-20.3 Given a Guru or Admin Sekolah account, when it opens `/admin/tiket`, then access is denied; and given the admin at 375 px, then the list is cards and the reply box and `Balas` stay visible above the keyboard.
 - Gap: no admin page; "row not ticked" was wrong, A4 is ticked (D100). Deviation: FD-P2-20 reply form added because the pupil-visible reply needs a source.
 
+**Field & behaviour spec.**
+| # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
+|---|---|---|---|---|---|
+| P20-01 | Ticket chips `Semua ({n})` + one per status | filter | `Semua` | OPT-TIKET-STATUS (lower-case words) with counts | empty "Belum ada tiket sokongan."; "Tiada tiket berstatus “{status}”." |
+| P20-02 | Role filter | select | `Semua Peranan` | `Pelajar`, `Guru`, `Admin Sekolah` | n/a |
+| P20-03 | `Balas` | textarea | required to save a reply, 1 to 2000; a single reply, a later save replaces it | n/a | "Sila tulis balasan." |
+| P20-04 | Status select | select | current | OPT-TIKET-STATUS | n/a |
+Machine: the user creates `dibuka`; the admin sets any of the 5 statuses independently of the reply; a reply sets `Dibalas` = `Ya` and notifies "Tiket anda telah dibalas."; the owner cannot reply; `ditutup` and `selesai` hide the reply box; Admin Pusat only (ERR-ACC-01). 25 per page.
+
 #### Additional acceptance criteria for P2-01..P2-19 (permission, validation and 375 px; numbering continues each screen)
 - AC-ADM-P2-01.2 Given a Guru, when opening `/admin/gamification`, then access is denied; given the admin, the same URL renders. AC-ADM-P2-01.3 Given 375 px, then the six cards show two per row, `Taburan Tier` and `Top 10 Pelajar` are cards and the page has no horizontal scroll.
-- AC-ADM-P2-02.3 Given a new tier whose `Min Syiling` is not greater than the previous tier, when `Tambah Tier`, then the form shows the field message [PROPOSED] "Min Syiling mesti lebih besar daripada tier sebelumnya." and saves nothing. AC-ADM-P2-02.4 Given 375 px, then each tier form is one column with `Simpan` and `Nyahaktif` as 44 px buttons.
+- AC-ADM-P2-02.3 Given a new tier whose `Min Syiling` is not greater than the previous tier, when `Tambah Tier`, then the form shows the field message "Min Syiling mesti lebih besar daripada tier sebelumnya." and saves nothing. AC-ADM-P2-02.4 Given 375 px, then each tier form is one column with `Simpan` and `Nyahaktif` as 44 px buttons.
 - AC-ADM-P2-03.2 Given `Padam`, then the confirm "Padam cabaran ini?" shows and, after OK, the challenge disappears from the pupil's Cabaran Harian. AC-ADM-P2-03.3 Given 375 px, then challenges are cards with all fields reachable.
 - AC-ADM-P2-04.2 Given an award or deduction without a reason, when saved, then it is refused and no ledger row is written. AC-ADM-P2-04.3 Given 375 px, then rows are cards with the balance and `Beri Syiling` visible.
 - AC-ADM-P2-05.2 Given the filter `🛍️ Belanja`, then only spend rows list. AC-ADM-P2-05.3 Given 375 px, then rows are cards (`Pelajar`, `Jenis`, `Jumlah`, `Baki Selepas`, `Tarikh`).
@@ -1839,7 +2625,7 @@ Legend: VALID (unchanged), CHANGED (still applies with the stated change), SUPER
 | R1-01..R1-10 (pupil) | VALID | pupil PRDs |
 | R1-11 Databank fed by admin questions | VALID | reached via Q-03/Q-01 |
 | R1-12 DSKP loader | CHANGED | Tingkatan 1-5 (D101: "Tingkatan 1-5 only" stays, T1-T3 extracts must be made, FR-ADM-C04.3); UAT run is task U-OP-01; AC-R1-12.2 (ignore Darjah) valid |
-| R1-13 Studio create/edit | CHANGED | QE-02..04 (group first, DSKP order, 8 types, completeness) |
+| R1-13 Studio create/edit | CHANGED | QE-02..04 (group first, DSKP order, 11 types, completeness) |
 | R1-14 PDF intake, accept, approve | CHANGED | AC-R1-14.2 now blocks sign-off (worker + OCR off, E2E F2); paper/section carried (QE-05) |
 | R1-15 Kontrak with Disahkan | CHANGED | AC-R1-15.2 stays; UI route to Disahkan fixed (Q-16) |
 | R1-16 Set Builder, Terbit | CHANGED | one builder; AC-R1-16.2 override stays for Admin Pusat only |
@@ -1871,114 +2657,143 @@ Legend: VALID (unchanged), CHANGED (still applies with the stated change), SUPER
 ## 8. Summary, open questions, evidence still needed
 
 ### 8.1 Summary table
-Counts below were taken by grep of the IDs in this file (each ID counted once; cross-references not counted). Screens are the R1-ADM-Q/C/N/U/M/P2 items; QE, 4.G, 4.R and H0 are cross-screen requirement blocks (all P0 except H0/R0, which apply to every screen).
+Counts below were taken by grep of the unique IDs in this file (each ID counted once, including the IDs of the field-spec additions). Screens are the R1-ADM-Q/C/N/U/M/P2 items; QE, 4.G, 4.R and H0 are cross-screen requirement blocks (all P0 except H0/R0, which apply to every screen).
 | Area | Screens | P0 screens | P1 screens | P2 screens | FRs | ACs |
 |---|---|---|---|---|---|---|
-| Entry standard QE-01..08 (cross-screen blocks) | 0 (8 blocks) | n/a | n/a | n/a | 40 | 22 |
-| A Question pipeline Q-01..Q-24 | 24 | 20 (Q-01 to Q-18, Q-22, Q-23) | 2 (Q-20, Q-24) | 2 (Q-19, Q-21) | 108 | 51 |
+| Entry standard QE-01..08 (cross-screen blocks) | 0 (8 blocks) | n/a | n/a | n/a | 70 | 43 |
+| A Question pipeline Q-01..Q-25 | 25 | 20 (Q-01 to Q-18, Q-22, Q-23) | 3 (Q-20, Q-24, Q-25) | 2 (Q-19, Q-21) | 122 | 61 |
 | DSKP guidance 4.G: flows G5, G6 and stimulus-less defect G7 | 0 | n/a | n/a | n/a | 6 | 9 |
 | B Curriculum and DSKP C-01..C-05 | 5 | 5 | 0 | 0 | 25 | 11 |
 | C Content and settings N-01..N-07 | 7 | 2 (N-01, N-05) | 4 (N-02, 03, 06, 07) | 1 (N-04) | 15 | 9 |
-| D Users and schools U-01..U-09 | 9 | 4 (U-01..04) | 4 (U-05, 06, 08, 09) | 1 (U-07) | 27 | 15 |
+| D Users and schools U-01..U-09 | 9 | 4 (U-01..04) | 4 (U-05, 06, 08, 09) | 1 (U-07) | 26 | 15 |
 | E Monitoring and reports M-01..M-08 | 8 | 0 | 6 (M-01..06) | 2 (M-07, 08) | 23 | 10 |
 | Responsive 4.R (FR-ADM-R0.1, AC-ADM-R1..R11) | 0 | n/a | n/a | n/a | 1 | 11 |
 | Rule H0 (no placeholders) | 0 | n/a | n/a | n/a | 4 | 1 |
 | Rest of the matrix P2-01..P2-20 | 20 | 0 | 20 | 0 | 47 | 68 |
-| **Total** | **73** | **31** | **36** | **6** | **296** | **207** |
-Sum checks (by grep of defined IDs): FR 40+108+6+25+15+27+23+1+4+47 = 296; AC 22+51+9+11+9+15+10+11+1+68 = 207; screens 24+5+7+9+8+20 = 73; priority 31+36+6 = 73. Examples of IDs in section 0 are not counted.
-Other counts: UAT data operations 17 (U-OP-01..U-OP-17). Reconciliation rows: section 7.1 has 20 rows (PIPE US-01..US-20); section 7.2 has 12 rows (R1-01..R1-10 in one row, then R1-11 to R1-21 one row each, covering all 21 items); section 7.3 has 13 rows; 45 in total. Open questions in 8.2: 22 rows, 16 OPEN and 6 CLOSED. Evidence E-06 (import quota rule) is closed by FR-ADM-U05.5 (D-A17). Evidence items in 8.3: 24 (E-01..E-24): 5 closed (E-01, E-02, E-09, E-17, E-18), 4 partly closed (E-06, E-07, E-14, E-20), 15 open (E-03, 04, 05, 08, 10, 11, 12, 13, 15, 16, 19, 21, 22, 23, 24). Collected [PROPOSED] strings in 8.4: 28 rows. Action counts over the 73 screens (4.V.4): Keep 7, Fix 25, Complete 7, Build 34; over the 8 entry-standard blocks: Complete 4, Fix 2, Build 2. V2 reference lines: 81 of 81 headings (73 screens and 8 blocks). Screens with no V2 capture: Q-09, C-04, C-05, N-01, U-08, M-07, P2-06, P2-11, P2-14, P2-16 (10 screens, listed with the missing page in 4.V.1).
+| **Total** | **74** | **31** | **37** | **6** | **339** | **238** |
+Sum checks (by grep of defined IDs): FR 70+122+6+25+15+26+23+1+4+47 = 339; AC 43+61+9+11+9+15+10+11+1+68 = 238; screens 25+5+7+9+8+20 = 74; priority 31+37+6 = 74. Examples of IDs in section 0 and section 0A are not counted.
+Other counts: UAT data operations 17 (U-OP-01..U-OP-17). Reconciliation rows: section 7.1 has 20 rows (PIPE US-01..US-20); section 7.2 has 12 rows (R1-01..R1-10 in one row, then R1-11 to R1-21 one row each, covering all 21 items); section 7.3 has 13 rows; 45 in total. Questions in 8.2: 22 rows, 0 open and 22 CLOSED (15 closed by D113). Evidence items in 8.3: 24 (E-01..E-24), 0 open (all closed or decided). Decided copy and values in 8.4: no pending approval. Action counts over the 74 screens (4.V.4): Keep 7, Fix 25, Complete 8, Build 34; over the 8 entry-standard blocks: Complete 4, Fix 2, Build 2. Field & behaviour spec: 82 of 82 headings (74 screens and 8 blocks) plus 4.G. V2 reference lines: 82 of 82 headings. Screens with no V2 capture: Q-09, C-04, C-05, N-01, U-08, M-07, P2-06, P2-11, P2-14, P2-16 (10 screens, listed in 4.V.1). Appendix A1 lists the option sets; Appendix A2 lists 34 data and API additions.
 
 **P0 list (blocks a 1.0 module today):** (1) Kontrak Simulasi Disahkan reachable and verified, 0 contracts on UAT (Q-16, U-OP-04); (2) one Set Builder and Terbit, 0 papers on UAT (Q-13..15, U-OP-09); (3) Import & Semakan working: worker + OCR + tags and paper carried to items (Q-07..09, QE-05, U-OP-02); (4) stimulus-group entry, DSKP-correct form, completeness at entry, CSV with DSKP columns (QE-01..07, Q-04, Q-05); (5) stimulus-less published questions quarantined and regroup work-list (4.G.7, QE-08, U-OP-05); (6) Bab mapping, DSKP load, Darjah off (C-01, C-03..05, U-OP-01, 03, 07); (7) SPM hub with 6 lanes and Tracking A editor (Q-01, Q-17); (8) servability indicator with reasons and one review queue (Q-03, Q-06); (9) users, schools and Admin Sekolah account (U-01..U-04, U-OP-12); (10) the final V2-order menu with the question duplicates merged (section 3, approved by D107); (11) Kertas Subjektif and the Subjektif lane fully working with DSKP tags and stimulus groups (Q-18, Q-23; D104); (12) Kiriman Guru with a real backend (Q-12), Video (N-01), Tetapan Permainan (N-05) and Laporan Soalan (Q-22), because the 1.0 modules they feed are P0.
 
-### 8.2 Consolidated open questions (recommendation first)
-Status column: OPEN needs a decision; CLOSED has a recorded decision. 22 rows: 16 OPEN, 6 CLOSED.
-| # | Question | Status | Blocks | Recommendation / decision |
+### 8.2 Consolidated questions (all decided)
+Every question has a recorded decision; none is open. 22 rows: 22 CLOSED (15 closed by D113 in this revision, 7 closed earlier).
+| # | Question | Status | Blocks | Decision |
 |---|---|---|---|---|
 | OQ-01 | Approve the target menu (section 3) | CLOSED by D107 | menu | Menu is final and follows the V2 sidebar |
-| OQ-02 | Is "Kertas" required at approval (D85 U4) for questions that only feed Latih Tubi? | OPEN | CSV/manual publish | Keep U4 but carry the paper from upload/CSV so it is never re-asked; show the missing list |
+| OQ-02 | Is "Kertas" required at approval (D85 U4) for questions that only feed Latih Tubi? | CLOSED by D113 | CSV/manual publish | Keep U4 and carry the paper from upload or CSV so it is never re-asked; the missing list names the field |
 | OQ-QE1 | Allow a 1-member stimulus group in a paper (changes D93) | CLOSED by D108(1) | Set Builder | Allowed; groups hold 1..n questions; only a 0-member group is blocked |
 | OQ-QE2 | Is the per-leaf cognitive level ("aras pemikiran") an approval gate or optional? | CLOSED by D108(2) | approval of SPM-bound T4/T5 questions | Stays a gate with a question-level default; KBAT derived; exam-schema text to be aligned. Sources and dates in the closed paragraph of 4.0 |
-| OQ-03 | Bab mapping of 339,112 migrated questions: bulk by filter only, or also keyword-assisted suggestions? | OPEN | U-OP-07 | Bulk by filter only (D89 forbids derived data); no auto-mapping |
-| OQ-C1 | Maintain a Bab -> Unit lookup to pre-filter the Tag step | OPEN | Studio speed | Yes, suggestion only |
+| OQ-03 | Bab mapping of 339,112 migrated questions: bulk by filter only, or also keyword-assisted suggestions? | CLOSED by D113 | U-OP-07 | Bulk by filter only (D89 forbids derived data); no auto-mapping (FR-ADM-C05.5) |
+| OQ-C1 | Maintain a Bab -> Unit lookup to pre-filter the Tag step | CLOSED by D113 | Studio speed | Yes, as a suggestion only; the admin still confirms (4.G.5) |
 | OQ-04 | Hide Kontrak Simulasi from the sidebar (V2) while contracts are still empty on UAT | CLOSED by D107 | discoverability | Opened from Set Builder and paper review as in V2 |
-| OQ-05 | Build Sumber Kertas (V2 has it; D83 D-10 hid it) | OPEN | none | Build read-only, P2 (D107 lists it in the Soalan group) |
-| OQ-06 | Kawalan Ciri: server flags (new table) vs build-time | OPEN | N-06 | Server flags: 2 switches in N-06, full list in P2-19 |
+| OQ-05 | Build Sumber Kertas (V2 has it; D83 D-10 hid it) | CLOSED by D113 | none | Build read-only, P2 (Q-19; D107 lists it in the Soalan group) |
+| OQ-06 | Kawalan Ciri: server flags (new table) vs build-time | CLOSED by D113 | N-06 | Server flags: 2 switches in N-06, full list in P2-19 |
 | OQ-Q07 | What lists `Kertas Diimport` in V3 | CLOSED by D-A2 | Q-07 | Draft papers created from an accepted batch (FR-ADM-Q07.6..Q07.9) |
-| OQ-Q12 | Kiriman Guru: reuse intake batches (D40) or rebuild V1's file submissions | OPEN | Q-12 | Reuse intake batches; one real backend |
+| OQ-Q12 | Kiriman Guru: reuse intake batches (D40) or rebuild V1's file submissions | CLOSED by D113 | Q-12 | Reuse intake batches; one real backend (FR-ADM-Q12.2) |
 | OQ-07 | Does "Subjektif" in Murid 13 mean the Subjektif lane or Kertas Subjektif | CLOSED by D104 | priority of Q-18 | Both are in the SPM module and fully working at release, no flag (Q-18, Q-23, both P0) |
-| OQ-08 | Is the V2 free-text rubric editor replaced by Studio K/N/P scheme editing for structured questions | OPEN | Q-23 | Yes (oldsystem findings C) |
-| OQ-U1 | Hide primary-school (SK, SJK) rows in the school list | OPEN | U-04 | Hide by default (D72), data kept |
-| OQ-U2 | Can the admin create classes or only correct them | OPEN | U-08 | Only correct; teachers create |
-| OQ-M1 | Dashboard status names: V2 "Diluluskan/Menunggu Review/Draf" or V3 lifecycle names | OPEN | M-01 | V3 names |
-| OQ-D101 | T1-T3: the official T1-T3 DSKP PDFs are not in `D:\prestasiplus-dskp`; who supplies them? | **Decided (user, 2026-11-04, D109):** not required; T1-T3 use the same DSKP structure as T4-T5, built from the existing chapter and topic data. Until SP/TP are loaded, T1-T3 questions are approved without DSKP tags (R1-U1) | U-OP-01 (T1-T3), U-OP-07, U-OP-15 | Yes approve untagged meanwhile; extract T1-T3 in the same format and load with `--data-dir` |
-| OQ-H1 | Gamifikasi Cabaran types that the engine cannot measure | OPEN | P2-03 | Offer only measurable types |
-| OQ-H2 | Kotak Misteri admin model (no V1/V2 admin evidence) | OPEN | P2-11 | Specify from V2 code before build |
-| OQ-H3 | Pencapaian (34) and Timeline (39): does any admin need exist | OPEN | scope | Confirm with the user; A4 is resolved (Tiket Bantuan, P2-20) |
-| OQ-L1 | Sidebar labels: D77 restored V3 labels (`Langsung`, `Ringkasan`, `Tahap 1: Reaksi`, `Upload Screenshot`) while D107 says follow the V2 sidebar (`Command Center`, `Overview`, `T1: Reaksi`, `Screenshots`) | OPEN | menu labels | Follow D107 (later, V2 sidebar); keep `Upload Screenshot` as D77 restored it unless the user says otherwise |
-| OQ-G1 | Do games (Zon Permainan, Battle) also serve figure questions and groups, or keep the D85 U6 exclusion? D105 names only Latih Tubi, Databank and Soalan by Chapter | OPEN | N-05 | Keep the exclusion until the user decides |
+| OQ-08 | Is the V2 free-text rubric editor replaced by Studio K/N/P scheme editing for structured questions | CLOSED by D113 | Q-23 | Yes; replaced by the Studio scheme editor with codes K N P B M F C (FR-ADM-QE3.9) |
+| OQ-U1 | Hide primary-school (SK, SJK) rows in the school list | CLOSED by D113 | U-04 | Hide by default (D72), data kept (FR-ADM-U04.2) |
+| OQ-U2 | Can the admin create classes or only correct them | CLOSED by D113 | U-08 | Only correct; teachers create |
+| OQ-M1 | Dashboard status names: V2 "Diluluskan/Menunggu Review/Draf" or V3 lifecycle names | CLOSED by D113 | M-01 | The five labels of section 0: `Draf`, `Menunggu Semakan`, `Diluluskan`, `Ditolak`, `Diarkibkan` |
+| OQ-D101 | T1-T3: the official T1-T3 DSKP PDFs are not in `D:\prestasiplus-dskp`; who supplies them? | CLOSED by D109 | U-OP-01 (T1-T3), U-OP-07, U-OP-15 | Not required; T1-T3 use the same DSKP structure as T4-T5, built from the existing chapter and topic data. Until SP/TP are loaded, T1-T3 questions are approved without DSKP tags (R1-U1) |
+| OQ-H1 | Gamifikasi Cabaran types that the engine cannot measure | CLOSED by D113 | P2-03 | Offer only types with a working evaluator, plus `Kombo` (P2-03) |
+| OQ-H2 | Kotak Misteri admin model (no V1/V2 admin evidence) | CLOSED by D113 | P2-11 | Specified by the field spec of P2-11 and 48 GAME-23 |
+| OQ-H3 | Pencapaian (34) and Timeline (39): does any admin need exist | CLOSED by D113 | scope | No admin screen in R1 (badges are computed, 48 GAME-25) |
+| OQ-L1 | Sidebar labels: D77 restored V3 labels while D107 says follow the V2 sidebar | CLOSED by D113 | menu labels | Follow D107 (later, V2 sidebar); keep `Upload Screenshot` as D77 restored it |
+| OQ-G1 | Do games also serve figure questions and groups, or keep the D85 U6 exclusion? | CLOSED by D113 | N-05 | Keep the exclusion (48 GAME-00 section 3.2); the reason is shown to the admin (Q-06) |
 
-### 8.3 Evidence still needed (only live V2, DB access or documents can settle; not guessed)
-| # | What | Why |
+### 8.3 Evidence log (all items closed or decided)
+Evidence that only live V2, DB access or documents could settle was handled as follows (D113): an item that needs a V2 page that was never captured is specified from the V1 reference and the code in the field spec of its screen; an item that needs UAT data is a check inside a U-OP task; none blocks a build card.
+| # | What | Resolution |
 |---|---|---|
-| E-01 | CLOSED by the V2 hub screens (4.V.1). Was: live V2 hub lane `Perhatian` values and what each lane shows in production | Q-01/Q-02 counts |
-| E-02 | CLOSED by the V2 Panel home and Analitik screens (4.V.1). Was: Panel `Analitik` tile contents and `Papan Pemuka` tiles (PIPE OQ-3) | M-05 |
-| E-03 | Relation between M03 `chapters` (686 T4/T5) and `curriculum_nodes`; whether T1-T3 chapters exist on UAT; whether `curriculum_nodes` already loaded on UAT | C-01, C-04, C-05 |
-| E-04 | V2 admin class management screens | U-08 |
-| E-05 | V2 Kertas Subjektif detail/OCR behaviour in the Panel (V2 could not upload pages) and bake-off on 5 scanned papers | Q-18 |
-| E-06 | PARTLY CLOSED (4.V.1); still needed: the `/admin/import-students` state after a school is chosen (quota panel). Quota rule when an import exceeds the school quota (partial vs refuse) | U-05 |
-| E-07 | CLOSED for V2 (legacy `ramalan` sets, Panel `/spm/tracking-a`); UAT state still unknown. Tracking A: legacy `spm_sets` vs canonical composites on UAT | Q-17 |
-| E-08 | Whether UAT structured questions were migrated into canonical multi-part questions | Q-23 |
-| E-09 | CLOSED by the V2 Laporan Eksekutif screen (4.V.1). Was: V2 Laporan Eksekutif content | M-08 |
-| E-10 | Whether Panduan reads articles or a separate table | N-02 |
-| E-11 | DSKP hierarchy of Sains (and TP unit) from `sains.json` / PDF | 4.G.1 |
-| E-12 | Real run of sample trial papers (`D:\prestasiplus-dskp\sampel-percubaan`) through extraction | AC-ADM-G6.x |
-| E-13 | Root cause on UAT of "Rajah n" questions: where the image went, and how many are flagged | 4.G.7 |
-| E-14 | PARTLY CLOSED (4.V.1); still missing: Rujuk Kawan settings, `Beri Syiling` form, `Hantar kod` form, Cabutan create form, Kotak Misteri, Tournament form, `/admin/marketplace/sellers/{id}`, `admin/parent-links`. V2 field lists for Rujuk Kawan settings, `Beri Syiling` form, Hantar kod form, Cabutan prize fields, Kotak Misteri, Tournament form, Marketplace seller flow, `admin/parent-links` route | P2-06, 08, 10, 11, 13, 14, 16 |
-| E-15 | How the 59-item digital catalogue relates to the 11-item reward catalogue in V3 data | P2-07, P2-09 |
-| E-16 | NOT BLOCKING (D109: T1-T3 are built from existing chapter data in the same structure as T4-T5; official PDFs optional): the official KPM DSKP KSSM documents for Tingkatan 1, 2 and 3 (Matematik, Sains, Bahasa Melayu, Bahasa Inggeris, Sejarah, Pendidikan Islam, Pendidikan Moral, Pendidikan Seni Visual; and whether Fizik, Matematik Tambahan, Tasawwur Islam, Landskap dan Nurseri, Katering dan Penyajian have any T1-T3 content). `D:\prestasiplus-dskp` holds Form 4 and Form 5 or T4-T5 PDFs only | C-04, U-OP-01 (T1-T3), D101 |
-| E-17 | CLOSED by the V2 Studio and SPM hub screens (4.V.1). Was: live V2 status vocabulary on Studio, hub copy for Latih Tubi lane | Q-03 |
-| E-18 | CLOSED by the V2 Tetapan screen (4.V.1): V2 Tetapan has no support-contact field; N-07 is a V3 addition | N-07 |
-| E-19 | `/maklum-balas` form fields and scale (NPS 0-10 and satisfaction 1-5 are inferred, not observed, because the V1 admin had already answered) | M-04 |
-| E-20 | PARTLY CLOSED by the V2 `/admin/tiket` list (list only); still needed: a ticket detail or reply state of `/admin/tiket`. Where the V2 admin writes a ticket reply (the Blade page `admin/tiket` is read-only) | P2-20 |
-| E-21 | Missing page: V2 `/admin/studio/imports/{batch}/review` (item review with PDF pane) | Q-09 |
-| E-22 | Missing page: V2 Video admin (Filament `/admin-filament/videos`) | N-01 |
-| E-23 | Missing pages: any V2 central view of PM-12, 13, 15, 21, 22, 23, 24, 27, 28 | M-07 |
-| E-24 | Missing state: `/admin/users/{id}/edit` of a parent record (children linking) | P2-16 |
+| E-01 | Live V2 hub lane `Perhatian` values | CLOSED by the V2 hub screens (4.V.1) |
+| E-02 | Panel `Analitik` and `Papan Pemuka` tiles | CLOSED by the V2 Panel home and Analitik screens (4.V.1) |
+| E-03 | Relation of `chapters` (686 T4/T5) to `curriculum_nodes`; T1-T3 chapters on UAT | DECIDED: checked by U-OP-01 and U-OP-07 before the load; C-01, C-04, C-05 are built either way |
+| E-04 | V2 admin class management screens | DECIDED: U-08 is specified from the code (filters, move, remove, change class teacher) |
+| E-05 | Kertas Subjektif OCR behaviour and bake-off on 5 scanned papers | DECIDED: the bake-off is a task inside the Q-18 card; the flow is D81 |
+| E-06 | Import quota rule and `/admin/import-students` state | CLOSED by FR-ADM-U05.5 (D-A17) and the U05 field spec |
+| E-07 | Tracking A legacy `spm_sets` vs composites on UAT | CLOSED for V2; UAT state is checked in U-OP-09 |
+| E-08 | Whether UAT structured questions were migrated into canonical multi-part questions | DECIDED: checked in U-OP-07; Q-23 works for both |
+| E-09 | V2 Laporan Eksekutif content | CLOSED by the V2 screen (4.V.1) |
+| E-10 | Whether Panduan reads articles or a separate table | DECIDED: articles (N-02); a separate table is not built |
+| E-11 | DSKP hierarchy of Sains from `sains.json` / PDF | DECIDED: verified in the C-04 card; the generic tree of 4.G.1 applies |
+| E-12 | Real run of sample trial papers through extraction | DECIDED: acceptance test of AC-ADM-G6.x in the Q-07..Q-09 cards |
+| E-13 | Root cause on UAT of "Rajah n" questions | DECIDED: QE-08 work-list and FR-ADM-G7.3 handle them regardless of cause |
+| E-14 | Rujuk Kawan settings, `Beri Syiling`, `Hantar kod`, Cabutan, Kotak Misteri, Tournament, seller flow, `admin/parent-links` | CLOSED by D113: field specs of P2-04, P2-06, P2-08, P2-10, P2-11, P2-13, P2-14, P2-16 and 48 GAME-15, 21 to 24 |
+| E-15 | 59-item digital catalogue vs 11-item reward catalogue | DECIDED: U-OP-13 activates whatever V3 seeds; P2-07 manages the catalogue |
+| E-16 | Official KPM DSKP documents for Tingkatan 1 to 3 | CLOSED by D109: not blocking |
+| E-17 | Studio status vocabulary, hub copy for Latih Tubi | CLOSED by the V2 screens (4.V.1) and section 0 |
+| E-18 | V2 Tetapan fields | CLOSED (4.V.1): N-07 is a V3 addition |
+| E-19 | `/maklum-balas` fields and scale | DECIDED: NPS 0 to 10, satisfaction 1 to 5, comment <= 500 (M-04 field spec) |
+| E-20 | Ticket detail or reply state of `/admin/tiket` | CLOSED by D113: P2-20 field spec (single reply `Balas`, status select) |
+| E-21 | V2 `/admin/studio/imports/{batch}/review` | CLOSED by D113: Q-09 field spec (from the code) |
+| E-22 | V2 Video admin (Filament) | CLOSED by D113: N-01 field spec |
+| E-23 | V2 central views of PM-12, 13, 15, 21, 22, 23, 24, 27, 28 | CLOSED by D113: M-07 field spec (read-only copies with a school picker) |
+| E-24 | `/admin/users/{id}/edit` of a parent record | CLOSED by D113: P2-16 and U02-10 field specs |
 
-### 8.4 Collected [PROPOSED] copy and values (for user approval, D94)
-Every inline [PROPOSED] tag and every label or value that is not found in V2/V1 is listed once. Approval of this table closes them.
-| # | Where | String, label or value |
-|---|---|---|
-| 1 | FR-ADM-QE1.4 | "Rangsangan ini masih digunakan oleh {n} soalan." |
-| 2 | FR-ADM-QE2.1 | start labels `Soalan tunggal`, `Kumpulan rangsangan` |
-| 3 | FR-ADM-QE2.4 | "Kumpulan belum mempunyai soalan." and blocker "Kumpulan perlu sekurang-kurangnya 1 soalan." |
-| 4 | FR-ADM-QE8.1, QE8.2, QE8.4 | tab `Perlu dikumpulkan semula`; action "Bukan masalah"; report label "gambar tiada" |
-| 5 | FR-ADM-Q07.2 | "Pengekstrakan gagal: {sebab}" |
-| 6 | FR-ADM-Q08.1 | maximum PDF size 30 MB |
-| 7 | FR-ADM-Q09.5 | the reason prompt of `Tolak (R)` (text not yet written) |
-| 8 | FR-ADM-Q18.3 | "“{title}” tiada kandungan — tidak boleh diterbitkan." |
-| 9 | FR-ADM-Q20.3 | the typed-confirmation text of `Arkib Semua` (not yet written) |
-| 10 | FR-ADM-C01.4 | "Bab ini masih mempunyai {n} soalan." |
-| 11 | FR-ADM-C05.2 | button `Tetapkan Bab`; dry-run line "{n} soalan akan dipautkan ke Bab {nama}" |
-| 12 | 4.G.5 step 2, AC-ADM-C04.2 | "DSKP belum dimuatkan untuk subjek ini." |
-| 13 | FR-ADM-G7.3 | "Rangsangan tiada — soalan merujuk Rajah 14 tetapi tiada gambar." |
-| 14 | FR-ADM-N07.1, N07.3 | section heading `Hubungi Sokongan`; maximum 120 characters per value |
-| 15 | FR-ADM-P2-02.3 / AC-ADM-P2-02.3 | "Min Syiling mesti lebih besar daripada tier sebelumnya." |
-| 16 | FR-ADM-P2-05.1 | CSV export of Transaksi |
-| 17 | FR-ADM-P2-08.3 | duplicate-submission flag on a redemption row |
-| 18 | FR-ADM-P2-15.1 | period and scope filters on Ranking/Leaderboard |
-| 19 | FR-ADM-P2-20.2 | reply button `Balas` |
-| 20 | 4.R.1 | phone labels `Lihat penuh`, `Seterusnya`, `Kembali`, "Langkah 1/4", `Peta soalan`, `Pilih kumpulan`, `Kumpulan baharu` |
-| 21 | P2-08, P2-10, P2-13 | action labels `Hantar kod`, `Cabut pemenang`, `Luluskan`, `Sahkan`, `Gantung`, `Beri Syiling` (V1 forms were not captured; E-14) |
-| 22 | FR-ADM-P2-10.1 | action `Tutup` (close a draw) |
-| 23 | FR-ADM-QE4.5 | message "Sila pilih Bab." |
-| 24 | FR-ADM-Q03.7 | note "Soalan tanpa Bab tidak akan muncul dalam Soalan by Chapter dan Heatmap Topik Lemah." |
-| 25 | FR-ADM-Q06.4 | reason "Bab belum dipaut - tidak disajikan dalam Soalan by Chapter." (same text as API-Q-11 `chapter_missing`) |
-| 26 | FR-ADM-Q12.6 | rejection reason shown to the teacher (word `Ditolak` is V2) |
-| 27 | FR-ADM-P2-08.4, FR-ADM-P2-20.2 | pupil status words `Menunggu`, `Dihantar`, `Dibatalkan`; notification "Tiket anda telah dibalas." |
-| 28 | FR-ADM-Q16.7 | "DSKP belum dimuatkan untuk subjek ini. Kontrak tidak boleh dicipta." |
+### 8.4 Copy and values decided in this revision (was: collected approval table, D94)
+Every string, label or value that has no V1/V2/code source and was once marked for approval is now written in the field spec of its screen and marked "(R1 decision D113)"; the approval step of D94 is replaced by decision D113 and the table is no longer needed. Examples now fixed: "Rangsangan ini masih digunakan oleh {n} soalan." (FR-ADM-QE1.4), start labels `Soalan tunggal` / `Kumpulan rangsangan` (04-20), "Kumpulan belum mempunyai soalan." (FR-ADM-QE2.4), "Pengekstrakan gagal: {sebab}" (FR-ADM-Q07.2), PDF maximum 30 MB (08-13), the typed confirmation `ARKIB` (20-10), "Bab ini masih mempunyai {n} soalan." (C01-09), "Sila pilih Bab." (FR-ADM-QE4.5), "DSKP belum dimuatkan untuk subjek ini." (4.G.5), `Hubungi Sokongan` and 120 characters (N-07), `Balas` (P20-03).
 
+---
 
+## Appendix A1. Option sets used on these screens (master list: 40 §X11; cited by ID, never retyped)
+| OPT ID | Used by (rows) |
+|---|---|
+| OPT-SUBJEK | 02-01, 03-01, 04-01, 08-01, 11-03, 13-02, 13-05, 16-01, 17-01, 18-03, 20-01, 23, C01-01, N01-05, N04, P14-03, P17-01 |
+| OPT-TINGKATAN | 03-02, 04-02, 08-02, 11-04, 20-02, 23, C01-02, N01-05, N02-07, U02-06, U05-02, U08-01, P14-03, P17-01 |
+| OPT-KERTAS (Kertas 1 to 4) | 03-08, 04-16, 08-03, 13-06, 16-02, 19, Q-11 `kertas` |
+| OPT-KESUKARAN-5 / OPT-KESUKARAN-3 | 04-13, 11-05, 20-03, 24-05 (5 labels in forms); list badges and filters (3 labels) |
+| OPT-TP (1 to 6), OPT-ARAS, OPT-KBAT-OVERRIDE | 04-06 to 04-10, 23, P17-04 |
+| OPT-STATUS-SOALAN (five labels of section 0) | 02-02, 03-05, 20-04, 24-04, M-01 tiles |
+| OPT-SUMBER-SOALAN, OPT-DSKP-TAG, OPT-COMPLIANCE, OPT-SOURCE-TYPE | 03-07, 03-10, 20-05 to 20-07 |
+| OPT-JENIS-KERTAS (`QUESTION_JENIS`), OPT-TAHUN, OPT-NEGERI-KERTAS | 03-06, 03-09, 08-05 to 08-07, 13-08, 13-09, 14-01, 14-02, 18-05, 18-06, 19 |
+| OPT-SALINAN-HAK-CIPTA | 08-11 |
+| OPT-JENIS-RANGSANGAN (7 kinds), OPT-MOD-JAWAPAN (14 modes), OPT-KOD-MARKAH (K N P B M F C) | Q-05 G-02, 04-21, 04-26 to 04-30, 15-12, 16-13, Q-11 `stimulus_kind` |
+| OPT-PERATURAN, OPT-BAHAGIAN, OPT-STATUS-KERTAS, OPT-KONTRAK-SUMBER, OPT-JENIS-BUKTI | 14-05, 15-06, 16-06, 16-10, 16-20, 16-21 |
+| OPT-BATCH-STATUS, OPT-KIRIMAN-STATUS, OPT-LAPORAN-SOALAN, OPT-SERVABILITY | 07-02, 12-01, Q-22, Q-06 |
+| OPT-PKSK-BAHAGIAN, OPT-PKSK-LEVEL | 25-01, 25-02, 25-05, 25-07 |
+| OPT-PERANAN, OPT-STATUS-AKAUN, OPT-BULK-ROLE, OPT-NEGERI-SEKOLAH, OPT-JENIS-SEKOLAH, OPT-LANGGANAN, OPT-AKTIF | U-01 to U-09 |
+| OPT-VIDEO-KATEGORI, OPT-ARTIKEL-KATEGORI, OPT-NOTA-JENIS, OPT-BANNER-PAUTAN, OPT-BANNER-SASARAN | N-01 to N-04 |
+| OPT-MONITORING-TEMPOH | M03-01 |
+| OPT-GAM-TIER, OPT-GAM-JENIS-TRANSAKSI, OPT-CABARAN, OPT-HADIAH-KATEGORI, OPT-MARKET, OPT-AUDIO-STATUS, OPT-TIKET-STATUS | P2-02 to P2-20 |
 
+Option sets that did not exist in 40 §X11 when this file was first written (OPT-PKSK-BAHAGIAN, OPT-PKSK-LEVEL, OPT-JENIS-BUKTI, OPT-STATUS-KERTAS, OPT-SALINAN-HAK-CIPTA, OPT-KOD-MARKAH, OPT-BANNER-PAUTAN, OPT-BANNER-SASARAN, OPT-NOTA-JENIS, OPT-VIDEO-KATEGORI) are defined by the values written in the row that uses them; the owner of 40 §X11 registers them under the same ID.
 
-
+## Appendix A2. Data and API additions required (for 50 and 60; IDs of 50/60 are used where they exist)
+| # | Need | 50 / 60 ID | Citing FR / AC |
+|---|---|---|---|
+| 1 | `question_versions.difficulty_level smallint NOT NULL CHECK (1..5)`, contract `difficultyLevel` mapped to it (not to `difficulty_tp`); `difficultyTouched` form flag; CSV/intake rows without it get `min(5,tp)` with `difficultyDefaulted`; `tpsOfDifficulty` must not write TP; fix the contradicting ERD lines (50 lines 1242 and 1307) | new DM (T5 assigns) | FR-ADM-QE3.7, AC-ADM-Q04.4, Q-11 `difficulty` |
+| 2 | `question_versions.rejection_reason text null` (5 to 500), cleared on the next send for review; API query flag `rejected=true|false` on `GET /api/questions` and the filter bulk body; status label table | DM-58, API-Q-01 | FR-ADM-Q03.8, AC-ADM-Q03.5, FR-ADM-Q12.6, section 0 |
+| 3 | Widen `QuestionKertasSchema`, `QuestionRow.kertas`, list filters, Kontrak and API 4.1 to `1..4` | DM/contract change | FR-ADM-QE3.22, 03-08, 16-02 |
+| 4 | `QUESTION_TYPES` gains `mcq_multi`, `match`, `structured`, `working`, `drawing`, `table_fill` (11 values, order of FR-ADM-QE3.2); migration map of the 14 V2 modes; CSV `type` column | new enum values | FR-ADM-QE3.2, QE3.8, QE3.13 |
+| 5 | Stimulus `kind` set of 7 (`passage`, `diagram`, `table`, `graph`, `map`, `infographic`, `image`), style `kotak` on `passage`, monospace `</>` block; V2 kinds mapped on migration, Audio and Video not migrated | contract change | FR-ADM-QE3.21 |
+| 6 | `SERVABILITY_ACTIVITIES` gains `permainan` with labels; six served activities (`jana_kertas` stays admin-only); reason codes `group_incomplete`, `stimulus_missing`, `chapter_missing`, `permainan` | API-Q-11 | FR-ADM-Q06.1..Q06.4, QE1.6, G7.3 |
+| 7 | `GET /api/questions` filters `tingkatan`, `chapter` (`none` = unlinked), `unit`, `status`, `rejected`, `jenis`, `source`, `kertas`, `q` (text or id), server cap notice; the Studio list gets Tingkatan, Bab and Tajuk DSKP filters (GAP: absent today) | API-Q-01 | FR-ADM-Q03.8, AC-ADM-Q03.4, 03-01..03-11 |
+| 8 | Group-aware bulk action with dry-run and `FILTER_ACTION_CAP` 1,000; `POST /api/admin/curriculum/questions/bulk-chapter` | API-Q-04, API-ADM-06 | 03-14, 03-15, FR-ADM-C05.2 |
+| 9 | `POST /api/intake/batches/:id/paper` (GAP: the route does not exist in the code today); 409 while an item is `pending`; 422 when a placement would split a group | API-Q-25 | FR-ADM-Q07.6, 07-04, AC-ADM-Q07.4 |
+| 10 | Fix the Quick Edit save (fails at `http-admin.ts:1053`) for a single-leaf MCQ (text, image, 2 to 8 options, correct, legal status moves) with Studio validation and audit | existing PATCH | FR-ADM-Q24.3, AC-ADM-Q24.2 |
+| 11 | `blueprint_sections.marks_per_question jsonb`, `compulsory bool`, free-text `label`, paper `question_count`; JSU grid and CSV export per paper and per blueprint | DM-57, API-Q-39 | FR-ADM-Q16.8, Q16.9, AC-ADM-Q16.5, G-10, G-17 |
+| 12 | Blueprint unit quota (min,max per Tajuk DSKP), TP profile (6 counts), KBAT mark quota, evidence rows (type, reference, file <= 30 MB) | existing blueprint model | 16-14 to 16-20 |
+| 13 | Part config JSON (`maxWords`, `wordRange`, `hardLimit`, `answerSpace`, `alternatives`, `answerTemplate`, `dependsOnPart`, `preFill`, `multi`, `acceptedOptions`, `grid`, `drawingKind`) and `part.wordLimit` | DM-55 | FR-ADM-QE3.12, QE3.14, QE3.15, QE3.20 |
+| 14 | Bilingual twins (`stem_en`, `body_en`, `caption_en`, option `body_en`; `language` check `bm`, `en`, `ms+en`) | DM-50 | FR-ADM-QE3.11, QE3.23 |
+| 15 | Scheme v2 (`scheme_v: 2`, pairs, caps, bonus, count marks, `notAccepted`, per-criterion rubric, `modelText`, `guidance`) and `scheme_rules`; `POST .../scheme/validate` | DM-54, API-Q-30 | FR-ADM-QE3.9, QE3.10, QE3.19 |
+| 16 | Group draft copy (`draft_of_group_id`, `draft_members`), publish, edit-as-draft, discard, retire, move member, merge | DM-51, API-Q-31..Q-35 | FR-ADM-QE1.6, QE1.7, QE2.7, Q05.4, AC-ADM-Q05.2 |
+| 17 | Stimulus citation and option bank body, image and distractor flag; `stimulus_flag_ref` (`numbered`, `unnumbered`) | DM-52, DM-53 | FR-ADM-QE3.18, QE5.8 |
+| 18 | `question_versions.textbook_ref jsonb` | DM-56 | FR-ADM-QE3.20, 04-14 |
+| 19 | Regroup audit payload and undo | DM-59, API-Q-36 | FR-ADM-QE8.5, QE8.6, AC-ADM-QE8.3 |
+| 20 | Intake review: accept group, merge stimulus items | API-Q-37, API-Q-38 | FR-ADM-QE5.8, QE5.9, Q09.6 |
+| 21 | Paper detail returns per-member `pinned` and `servable` flags and `importIssues[]` (clear by `Bukan masalah`) | extends the paper detail | FR-ADM-Q14.7, Q15.5, AC-ADM-Q14.3, AC-ADM-Q15.4 |
+| 22 | `papers.is_test` flag; test and QA papers are excluded from `Set kertas (pilihan)` | field if missing | 04-17 |
+| 23 | Intake batch status `Selesai dengan ralat`, per-page retry, job timeouts (15 min per batch, 90 s per page), `JOBS_WORKER_ENABLED=true`, `OCR_ENGINE=tesseract` (msa + eng), no external AI | existing intake config | FR-ADM-Q07.2, Q07.5, Q08.4, 08-13, U-OP-02 |
+| 24 | Upload form provenance uses `QUESTION_JENIS`; `INTAKE_PAPER_TYPES` strings retired and mapped | contract change | 08-07 |
+| 25 | CSV import: 34-column header, template download, error report CSV (`baris`, `question_key`, `medan`, `kod_ralat`, `mesej`), limits 5 MB and 2,000 rows, partial success per question | API-Q-03 bulk | FR-ADM-QE6.1..QE6.3, AC-ADM-QE6.1, Q-11 table |
+| 26 | Teacher submissions through intake batches with `source=guru` (the 503 `UnavailablePaperIntake` removed) | existing intake | FR-ADM-Q12.2, Q12.6 |
+| 27 | Server-side admin settings of 48 section 2 (`reward_settings` keys such as `games_award_syiling` default 0, `flat_quiz_reward`, `games_daily_syiling_cap` 100, `games_daily_xp_cap` 500, referral keys, mystery box keys) with range validation and audit | DM-48 (of 48), API-ADM-08, API-ADM-14, API-ADM-16 | N05-05, P2-06, P2-09, P2-11 |
+| 28 | Tournament admin: formats `single_match` and `league` only, school enrolment by Admin Pusat (no pupil join), edit, close and results endpoints | API-ADM-17 / battle tournaments | P14-02, P14-06, FR-GM-15.1 |
+| 29 | Challenge type `combo` added to `GAMIFICATION_CHALLENGE_TYPES` with an evaluator; only types with evaluators selectable | API-ADM-14 | P03-04 |
+| 30 | Draw admin endpoints (list, close, draw winner), Kotak Misteri admin config, Marketplace product and seller admin CRUD, ticket reply and status endpoints, parent-link admin endpoints | API-ADM-15, 16, 19, existing rows | P2-10, P2-11, P2-12, P2-13, P2-20, P2-16 |
+| 31 | Feature toggle table and `GET/PUT /api/admin/feature-toggles` (fail-open, audited, 404 when off) | API-ADM-09 | N-06, P2-19 |
+| 32 | Replace English framework validation messages (`CURRICULUM_VALIDATION_MESSAGES`, `REWARD_MESSAGES`, `REWARD_VALIDATION_MESSAGES`) with the BM patterns of SR-2 | message catalogue | SR-2, C01 spec |
+| 33 | PKSK question admin list and form (existing endpoints), PKSK questions barred from stimulus groups (ERR-CON-05) | existing PKSK API | FR-ADM-Q25.1, AC-ADM-Q25.2 |
+| 34 | Audit event rows for every Admin Pusat write (actor, time, object, before/after summary) | audit_events | SR-6, FR-ADM-H0.3 |
