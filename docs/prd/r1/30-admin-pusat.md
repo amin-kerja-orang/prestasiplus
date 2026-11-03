@@ -741,7 +741,7 @@ Behaviour: 20 per page, "Menunjukkan {a} hingga {b} daripada {n} keputusan"; the
 | 08-13 | `Fail kertas (PDF)` | file | required | `.pdf`, <= 30 MB, 1 file | "Format fail tidak sah. Gunakan .pdf."; ERR-REQ-03 "Fail melebihi had 30 MB."; ERR-INT-01..03 (encrypted, corrupt, too many pages) |
 | 08-14 | `Skema jawapan (PDF)` | file | optional | `.pdf`, <= 30 MB | same |
 | 08-15 | `Batal`, `Muat naik & ekstrak` | buttons | n/a | creates a batch and opens `/ekstrak/:batchId` | SR-1 |
-Behaviour: progress "Memuat naik… {x}%"; polling every 5 s; a digital PDF uses the text layer, a scanned one in-house Tesseract (`source` text-layer or ocr); some pages unreadable gives `Selesai dengan ralat` and "{n} halaman tidak dapat dibaca; semak secara manual." with `Cuba lagi` per page; total failure `Gagal` with the reason; a re-upload creates a new batch. The max size 30 MB is the R1 value (R1 decision D113); intake limits ERR-QUOTA-03..05.
+Behaviour: progress "Memuat naik… {x}%"; polling every 3 s for the first minute, then every 10 s (45 §3.3 batch states; D113-continued: 45 owns the intake flow); a digital PDF uses the text layer, a scanned one in-house Tesseract (`source` text-layer or ocr); some pages unreadable gives `Selesai dengan ralat` and "{n} halaman tidak dapat dibaca; semak secara manual." with `Cuba lagi` per page; total failure `Gagal` with the reason; a re-upload creates a new batch. The max size 30 MB is the R1 value (R1 decision D113); intake limits ERR-QUOTA-03..05.
 
 #### R1-ADM-Q-09 `Semak Ekstrak` (item review) | `/admin/spm/soalan/ekstrak/:batchId` | P0 | GH built / UAT cannot reach (no items)
 - **Action: Fix** | gap: 4.V row Q-09.

@@ -193,7 +193,7 @@ Shorthand: `FE` = `src/`; `BE` = `apps/api/src/modules/`; `SCH` = `apps/api/pris
 - **Skills:** FE (CSS, a11y, maths). **Deps:** none to start. **Start now: yes.** S8 is the *only* writer of these files; the "move" PR lands first (S8-T01, day 1–2 of Sprint 0) and other sectors rebase on it.
 
 ### S9 Verification and UAT acceptance (Delivery Lead)
-Owns no product code. Owns: `.evidence/**` (local), `docs/plan/r1-ac-ledger.md` (§6.9), `docs/qa/r1/**`. The S9 sector runs the §5A ceremonies, the V2 side-by-side checks at verification (evidence never committed), UAT acceptance walks of the sprint's exit list (all functional acceptance evidence is taken on UAT, D110), the XL integration pass and the release checklist, and samples the ledger. **A card's team lead sets `status:done` after the card's UAT Pass; the Delivery Lead samples and may re-open (§6.5).**
+Owns no product code. Owns: `.evidence/**` (local), `docs/plan/r1-ac-ledger.md` (§6.9), `docs/qa/r1/**`. The S9 sector runs the §5A ceremonies, the V2 side-by-side checks at verification (evidence never committed), UAT acceptance walks of the sprint's exit list (all functional acceptance evidence is taken on UAT, D110), the XL integration pass and the release checklist, and samples the ledger. **A card's team lead sets `status:done` after the card's UAT Pass; the Delivery Lead samples and may re-open (§6.5).** **S9 is the Delivery Lead's sector and cannot be claimed as a SECTOR (no team holds the lock `S9`), but its cards (S9-T01..S9-T06) are worked by the Delivery Lead session, S9-T06 included (D-T10-5).** The chain spec of AC-CHAIN-n is written by the LAST card of that chain (the card named for chain n in the card S9-T06) under `e2e/r1/chains/` (an S0-owned folder: that card's PR is a small cross-sector PR with the line `Cross-sector: S0 (chain spec)` and the label `needs:S0`); S9-T06 runs and maintains the full chain suite.
 
 ---
 
@@ -206,7 +206,7 @@ Owns no product code. Owns: `.evidence/**` (local), `docs/plan/r1-ac-ledger.md` 
 | `src/app/prototype-scope.ts`, `features.ts`, `modules.ts`, `router/**` | S0 | **Delete-only for sectors**: when a module passes its ACs, its sector opens a PR that removes its own entry from the scope list (lines between `// [S<n> begin]` / `// [S<n> end]` markers that S0-T05 inserts). Adding an entry (hiding something) is S0 only | after the module PR |
 | Route registries `src/modules/*/routes.ts`, `src/app/modules.ts` | the module's sector (routes.ts); S0 (modules.ts list) | A new module is registered by S0; routes inside a module by its sector | |
 | `apps/api/prisma/schema/*.prisma` | the sector that owns that file (§2). `base.prisma` S0 | A sector needing a table/column in another sector's file asks that sector (issue label `needs:schema`); the owner adds it in **their** migration range | schema PR before consumers |
-| Migrations `apps/api/prisma/migrations/` | S0 as gatekeeper of the numbering only | **Reserved ranges** below; name `0NNN_<sector>_<slug>`; one migration per PR; expand-then-contract only (no destructive change in the same release); `npm run be:lint:migration` must pass | by number |
+| Migrations `apps/api/prisma/migrations/` | S0 as gatekeeper of the numbering only | **Reserved ranges** below; name `0NNN_<sector>_<slug>`; one migration per PR (a card that owns several migrations, such as S7-T05 with `0223`, `0229`, `0230`, opens one PR per migration in number order; every PR body names the same card ID and the scope guard accepts that); expand-then-contract only (no destructive change in the same release); `npm run be:lint:migration` must pass | by number |
 | `packages/contract/src/**`, `openapi.json` | per folder (§2); `index.ts`, `openapi.ts`, `openapi.json` S0 | see contract rules | contract PR first |
 | Seeds `apps/api/prisma/seed/**` | per file (§2); `index.ts`, `guard.ts`, `e2e*.ts`, `core/**` S0 | A sector never edits another sector's seed; asks for a fixture by issue. New fixtures go in the sector's own file and are registered in `index.ts` by S0 in the same PR as a one-line change | seed owner first |
 | `package.json`, `package-lock.json` | S0 | New dependency = PR to S0 with reason (no new dependency without it) | |
@@ -222,7 +222,7 @@ Owns no product code. Owns: `.evidence/**` (local), `docs/plan/r1-ac-ledger.md` 
 | S5 | 0180–0189 | | S0 | 0250–0259 |
 | S10 | 0190–0199 | | Delivery Lead (data fixes) | 0260–0269 |
 
-**Migrations by card (numbering from `50-data-model-erd.md` §4.8; 49 migrations; these are the only ones R1 needs).**
+**Migrations by card (numbering from `50-data-model-erd.md` §4.8; 50 migrations; these are the only ones R1 needs).**
 
 | Migration | DM | Card |
 |---|---|---|
@@ -260,6 +260,7 @@ Owns no product code. Owns: `.evidence/**` (local), `docs/plan/r1-ac-ledger.md` 
 | `0183_s5_video_school_visibility` | DM-76 | S5-T08 |
 | `0184_s5_user_aspiration` (identity table, requested with `needs:schema`) | DM-80 | S5-T05 |
 | `0185_s5_report_source` | DM-82 | S5-T06 |
+| `0202_s6_intervention_review` | DM-30 | S6-T02 |
 | `0203_s6_classroom_unique_name` | DM-73 | S6-T14 |
 | `0204_s6_user_username_unique` (identity table, requested with `needs:schema`) | DM-74 | S6-T10 |
 | `0205_s6_mission_fields` | DM-75 | S6-T07 |
@@ -410,6 +411,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S0-T03 Jobs worker and OCR configured** · P0 · M · Type: Build · deps: none
 - Starts from (existing): `apps/api/src/modules/jobs/jobs.worker.ts`.
+- New files: `apps/api/src/modules/ocr/tesseract.engine.ts` (the Tesseract engine beside `ocr-engine.ts` and `pdfjs.engine.ts`), `apps/api/src/modules/jobs/jobs.health.ts` (the worker-alive check read by the health endpoint).
 - PRD: Q-07 FR-ADM-Q07.5, QE-05 FR-ADM-QE5.7, Q-18 FR-ADM-Q18.5; gap F2. D112(2): extraction is REAL OCR, in-house (Tesseract worker, `OCR_ENGINE=tesseract`); there is NO external AI provider in R1 (ALESA/AI stays hidden, D73/D102; pupil data stays private); extraction is rule-based and an admin always reviews before anything publishes; a mock OCR exists only in CI tests and is never configured on UAT. Gap: extraction stuck at "Sedang diproses" because `JOBS_WORKER_ENABLED=false`, `OCR_ENGINE=none` (`apps/api/src/common/config/env.schema.ts:169,175`; `jobs/jobs.worker.ts`, `intake/files/intake-processing.service.ts`).
 - Data/API: none
 - Approach: enable worker and `OCR_ENGINE=tesseract` (+ traineddata folder in the API image) in compose and in the UAT env template; health endpoint reports worker alive; document UAT enablement as U-OP-02 (OPS, user approval, §7). The in-service timeout/error state is S1-T04.
@@ -420,6 +422,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S0-T04 Repo checks in CI: placeholder strings and R1 traceability** · P0 · S · Type: Build · deps: none
 - Starts from (existing): `scripts/lint.mjs`, `scripts/r1-trace-check.mjs`, `scripts/r1-scope-guard.mjs`, `.github/workflows/` (the placeholder check is new and is added beside these files).
+- New files: `scripts/check-placeholders.mjs`, `scripts/placeholder-allowlist.json`, `.github/workflows/scope-guard.yml` (the scope-guard script `scripts/r1-scope-guard.mjs` already exists; this card adds the required CI job that runs it, so until this card merges every team runs the script locally, R1-START-HERE step 6).
 - PRD: AC-X2-3, FR-X2-0. **Also owns the traceability gate:** add `node scripts/r1-trace-check.mjs` (exists; the lead owns its logic, S0 only wires it) as a required CI step in `.github/workflows/frontend.yml`. It regenerates `docs/plan/r1-traceability.md` and fails unless it exits 0 (`uncovered: 0 | dangling: 0`, no unknown id, no DM/API ownership defect) (a PRD module without a card, or a card citing an unknown PRD ID). Approach for the placeholder check: `scripts/check-placeholders.mjs` fails the build if module code (`src/modules/**` and `src/shells/**`, excluding tests and an allow-list) contains `PrototypeUnavailablePage`, `akan datang`, `belum tersedia`, `Pratonton`, `prototaip`, `belum termasuk dalam skop`, `Fungsi ini belum tersedia`, `coming soon`. Allow-list `scripts/placeholder-allowlist.json`: entries must name the PRD exception (register 6.2b row 18 officers PPD/JPN is the only one at the start). Wire into `npm run lint`. **Also wires the scope guard (§0B, guardrail 5):** add a required CI job `scope-guard` in `.github/workflows/` that checks out with `fetch-depth: 0` and runs `node scripts/r1-scope-guard.mjs --base origin/<target branch> --head HEAD` with `env: PR_BODY: ${{ github.event.pull_request.body }}`; exit code 1 (FAIL) blocks the merge, 2 (setup error, e.g. no card ID in the PR body) also blocks, warnings are printed in the job summary. The script exists (`--self-test` runs its fixtures); S0 wires it and does not change its rules without the Delivery Lead.
 - Data/API: none
 - Files: `scripts/check-placeholders.mjs`, `scripts/placeholder-allowlist.json`, `scripts/lint.mjs`, `.github/workflows/frontend.yml`, `.github/workflows/scope-guard.yml`.
@@ -431,7 +434,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - Starts from (existing): `src/app/prototype-scope.ts`.
 - PRD: FR-X2-0/1/2; register 6.2b row 3 (`src/app/prototype-scope.ts:28-30,56-59`, `src/app/LayoutHost.vue:51,54`); OQ-MUR-5 copy.
 - Data/API: none
-- Approach: replace the "Belum tersedia dalam prototaip" page and the "Known gaps" note with the standard not-available page (copy per OQ-MUR-5 once approved); add `// [S<n> begin/end]` markers per sector in the scope lists; one scope flag per Delivery B module; a hidden module is unreachable by URL (FR-X2-2) and answers **404** with the standard not-available page (D108(7)), never 403; unhide, in this task, everything already built for a 1.0 row (Headcount, Analisa Item, Laporan Soalan, Import Pelajar items hidden by `STUDENT_HIDDEN_IDS` at `src/shells/nav/user-nav.ts:749`) so sectors only fix their own screens.
+- Approach: replace the "Belum tersedia dalam prototaip" page and the "Known gaps" note with the standard not-available page (copy per OQ-MUR-5, decided: the standard 404 page, D108(6); nothing awaits approval); add `// [S<n> begin/end]` markers per sector in the scope lists; one scope flag per Delivery B module; a hidden module is unreachable by URL (FR-X2-2) and answers **404** with the standard not-available page (D108(7)), never 403; unhide, in this task, everything already built for a 1.0 row (Headcount, Analisa Item, Laporan Soalan, Import Pelajar items hidden by `STUDENT_HIDDEN_IDS` at `src/shells/nav/user-nav.ts:749`) so sectors only fix their own screens.
 - Files: `src/app/prototype-scope.ts`, `src/app/LayoutHost.vue`, `src/app/router/guards.ts`, `src/shells/nav/user-nav.ts`, `src/app/features.ts`.
 - Note (OQ-G-15, closed): the `GURU_TOOLS` entry in `src/shells/nav/out-of-scope.ts` (routes `/guru/soalan-guru`, `/guru/databank`, `/guru/kertas-peperiksaan`, and the Gambar Rajah and Soalan Berstruktur tool routes) stays until S6-T16..T20 land; each of those cards then removes its own routes from `GURU_TOOLS` (delete-only, §3). S0 keeps the nav items.
 - Tests: router guard unit tests for hidden/visible module; update `src/app/__tests__`.
@@ -440,6 +443,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S0-T06 Nav integrity and sidebar walk** · P0 · M · Type: Fix · deps: S0-T05
 - Starts from (existing): `src/shells/nav/user-nav.ts`.
+- New files: `e2e/r1/sidebar-walk.http.spec.ts`.
 - PRD: AC-X2-1/2, FR-X2-3; 20 FR-SH, AC-SH-*; register rows 2, 8, 13. Gap: `user-nav.ts:284` Analitik Adaptif → `/analitik/pelajar` (should be `/analitik/kelas` for GUR-5/AS-5; `:398` for AS); `:287` Laporan Mingguan → `/laporan-mingguan` (403; should be `/guru/laporan-mingguan-kelas`); `:385` `sa-import-pelajar` hidden; Murid Prestasi → school dashboard; `/admin/monitoring` item points to `/guru/monitoring`.
 - Data/API: API-AUTH-03, API-AUTH-15
 - Approach: one PR fixing every 1.0 target for Murid, Guru, Admin Sekolah in the order given by each PRD part; new e2e `e2e/r1/sidebar-walk.http.spec.ts`: logs in as each role, opens each sidebar item, asserts title, no 403/404/"Akses Ditolak", no redirect to another role's screen, no placeholder string (AC-X2-1/2). Items whose screens are not yet built are listed as `expected-red` with the owning task ID so the spec doubles as a progress meter.
@@ -451,11 +455,11 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S0-T07 Target admin menu** · P0 · M · Type: Fix · deps: S2-T03 (the menu is FINAL, D107: no approval wait)
 - Starts from (existing): `src/shells/pentadbiran/menu.ts`.
-- PRD: 30 §3.1–3.4. Approach: implement the target groups and the exact "Soalan" group (SPM, Bank Soalan (Studio), Import & Semakan, Set Builder, Sumber Kertas, Kertas Subjektif, Bank Lama → Senarai Soalan, Soalan Berstruktur); HIDE/MERGE/REMOVE the mapped IDs; V2 paths stay as alias redirects (the redirects themselves are S2-T03).
+- PRD: 30 §3.1–3.4. Approach: implement the target groups and the exact "Soalan" group (SPM, Bank Soalan (Studio), Import & Semakan, Set Builder, Sumber Kertas, Kertas Subjektif, Audit Rajah, then the sub-group Bank Lama (Legasi) with Senarai Soalan and Soalan Berstruktur: nine entries, the order of 30 §3.2); HIDE/MERGE/REMOVE the mapped IDs; V2 paths stay as alias redirects (the redirects themselves are S2-T03).
 - Data/API: none
 - New requirements (45, 46, 48; D113): FR-QA-15; AC-QA-15.
 - Files: `src/shells/pentadbiran/menu.ts`, `src/shells/__tests__/**`.
-- Tests: menu snapshot test (no duplicate "Bank Soalan"; 8 items in Soalan). Verify: V-STD against V2 admin sidebar at 1280 and drawer at 375.
+- Tests: menu snapshot test (no duplicate "Bank Soalan"; 9 items in Soalan: SPM, Bank Soalan (Studio), Import & Semakan, Set Builder, Sumber Kertas, Kertas Subjektif, Audit Rajah, Senarai Soalan, Soalan Berstruktur). Verify: V-STD against V2 admin sidebar at 1280 and drawer at 375.
 - DoD: DoD-T.
 
 **S0-T08 Rate limits and 429 UX** · P1 · S · Type: Fix · deps: none
@@ -468,12 +472,14 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S0-T09 Mock-path audit** · P1 · S · Type: Build · deps: S0-T04
 - Starts from (existing): `scripts/check-demo-bundle.mjs` (nothing exists for the new part; it is added beside these files).
+- New files: `scripts/check-http-build.mjs` (and its self-test `scripts/check-http-build.test.mjs`).
 - PRD: FR-X2-0 (no mock data), register 6.2b row 17. Approach: `scripts/check-http-build.mjs` builds with `VITE_API_MODE=http` and fails if a matrix route's chunk imports a `*/mock/**` module (data), reporting module by module. Output goes to each sector's checklist; sectors delete their mock paths as part of their cards.
 - Data/API: none
 - Files: `scripts/check-http-build.mjs`, `scripts/check-demo-bundle.mjs`. Tests: script self-test. DoD: DoD-T.
 
 **S0-T10 Kawalan Ciri (minimum)** · P1 · M · Type: Build · deps: S0-T07
 - Starts from (existing): `src/app/features.ts` (nothing exists for the new part; it is added beside these files).
+- New files: `apps/api/prisma/schema/feature-flags.prisma`, `apps/api/prisma/migrations/0250_s0_feature_flags/migration.sql`, `packages/contract/src/common/feature-flags.ts`, `apps/api/src/common/feature-flags/{feature-flags.module.ts,feature-flags.controller.ts,feature-flags.service.ts}`, `src/modules/m17-admin-dashboard/pages/FeatureTogglesPage.vue` (route `/admin/feature-toggles` added in the existing `m17-admin-dashboard/routes.ts`).
 - PRD: R1-ADM-N-06 (`/admin/feature-toggles`), NFR-6; gap §5.5 (none in V3). Approach: a `feature_flags` table + admin list/toggle of the ~25 V2 toggles that exist in V3 (rest not shown), read by the FE `features.ts`; Cikgu Alesa and Keluarga Angkat locked OFF (D102).
 - Data/API: DM-34; API-ADM-09, API-AUTH-16, API-GAME-10, API-GUR-23
 - Files: new `SCH/feature-flags.prisma` (S0-owned, not `base.prisma`; DM-34), migration `0250_s0_feature_flags` (table + seed rows), new `CT/common/feature-flags.ts` (S6 owns `CT/admin`, so the contract does not go there), `BE/common` or new `BE/feature-flags/`, `src/app/features.ts`, a page under `src/modules/m17-admin-dashboard/pages/` (S6 reviews).
@@ -482,12 +488,14 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S0-T11 Kawalan Ciri full and go-live switch-over** · P1 · M · Type: Build · deps: S0-T10 · Delivery B
 - Starts from (existing): `src/app/features.ts`.
+- New files: none (this card extends the files of S0-T10: the same `features.ts`, flag table, admin page and flag seed rows; no new migration).
 - PRD: R1-ADM-P2-19 (all ticked modules toggleable), U-OP-11. Extends S0-T10 to every ticked module; Delivery B modules stay hidden (404, FR-X2-2) until their card passes, then the flag turns ON on UAT (U-OP-11). Files: `src/app/features.ts`, `BE/common`/feature-flags, admin page of S0-T10. Tests: toggle spec per module. Verify: V-STD per module against the SRS description of the PRD modules on this card's "PRD:" line (screen layout, exact BM copy and states are written in words there; §0A). DoD: DoD-T + every AC of the listed modules.
 - Data/API: none
 - Also uses: API-ADM-09, DM-34 (owned by another card; read or verified here, not an ownership claim)
 
 **S0-T12 Error handling: envelope, transport, global states and the ERR catalogue** · P1 · L · Type: Complete · deps: none
 - Starts from (existing): `apps/api/src/common/errors/all-exceptions.filter.ts`, `src/api/errors.ts`, `src/api/client.ts`.
+- New files: `e2e/r1/errors.http.spec.ts`.
 - PRD: 40 section X10 (FR-ERR-1..27, AC-ERR-1..12, the ERR catalogue X10.11 and the code changes X10.12). Gap: the API filter answers with Laravel-style English defaults and turns an unmapped 4xx into 5xx; the frontend `ApiError` has no `requestId`; no return-URL on 401, no global offline banner, no single timeout and retry policy, no double-submit lock.
 - Data/API: none
 - Approach: (1) envelope `{error: {code, message, fields?, details?, retryAfter?, requestId}}` with BM default messages, an unmapped 4xx kept as 4xx, and the codes `BAD_REQUEST`, `PAYLOAD_TOO_LARGE`, `UNSUPPORTED_MEDIA_TYPE`, `SERVICE_UNAVAILABLE`, `TIMEOUT`, `BAD_GATEWAY` added to the contract (X10.12 E-1, `CT/common`); (2) frontend core in `src/api/**` (E-2, E-3, E-8): `ApiError` gets `requestId` and `details`, 401 keeps the edited path and the draft (`/login?kembali=`, the banner "Sesi anda telah tamat. Sila log masuk semula.", the restore notice), a global offline banner, one client timeout and retry policy (a GET that fails with 503 is retried twice, a POST never), a double-submit lock, the toast rules, first-error focus, `Rujukan: {requestId}` with `Salin` on every 5xx; (3) error pages, the maintenance page and the chunk-load dialog use the copy of X10.3.8 (E-5, `DsErrorPage.vue`, `DsLoadError.vue`). The other X10.12 changes belong to the cards of the sector named there (E-4 and E-6 Bijak S3, E-7 and E-12 S7, E-9 S1 and S3, E-10 S1-T04, E-11 S6-T09, E-13 S2-T03). Every row of X10.11 is asserted by the card that owns the screen (AC-ERR-9); this card builds the five cross-cutting specs (AC-ERR-2..6) and the CI list of ERR ids that have no assertion.
@@ -519,7 +527,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - New requirements (45, 46, 48; D113): FR-QA-11, 29, 31, 32, 42; AC-QA-11, 29, 31, 32, 42.
 - New requirements from the audit (this card owns them): FR-ADM-QE4.5, FR-ADM-QE4.6 (D112(1), D112(3)); ACs AC-ADM-QE4.4, AC-ADM-QE4.5.
 - Data chain (D-A5, D-A6): `NO_CHAPTER` blocker and `difficulty_level` (DM-47); the write of `difficulty_level` happens in the same save as TP.
-- Approach: reuse `GET /api/questions/:id/gate-check` (API-Q-05), which already returns `issues[{path, code, message, step}]` in BM, and the same list in the `422 fields` of the save routes; **no new `/completeness` route** (D-API-2); the Studio completeness panel renders `issues` instead of ignoring them; validate SP/TP/level/part marks against DSKP when typed; paper optional for non-SPM bank questions as in V2; keep D80/D85 rules. **Publish gate (D-A5, D112(1)(3)):** Bab is REQUIRED before Terbit when the question's Subjek + Tingkatan has chapters (N-3; any older rule that Bab is not required is superseded), and SP + TP/aras (SPM-bound T4/T5) are required only when DSKP nodes exist for that Subjek + Tingkatan (the same conditional pattern as Bab; Kimia, Biologi, Geografi, Perniagaan, Prinsip Perakaunan and Ekonomi stay without those items until S4-T09 loads their DSKP): add the blocker `NO_CHAPTER` "Sila pilih Bab." to `gate-check` `issues[]` (absent for a Subjek + Tingkatan without chapters) and make the unit/SP/TP items conditional on one `curriculum_node` lookup; the wizard calls the DSKP unit "Unit DSKP" and the textbook chapter "Bab". **Difficulty (D-A6):** `difficultyLevel` becomes optional when `tag.tp` is present and the server writes `difficulty_level = min(5, TP)` (DM-47, migration `0128_s1_difficulty_level`, mapping cited in 50 section 4.2.1); the Tag step shows the derived label, it has no separate input.
+- Approach: reuse `GET /api/questions/:id/gate-check` (API-Q-05), which already returns `issues[{path, code, message, step}]` in BM, and the same list in the `422 fields` of the save routes; **no new `/completeness` route** (D-API-2); the Studio completeness panel renders `issues` instead of ignoring them; validate SP/TP/level/part marks against DSKP when typed; paper optional for non-SPM bank questions as in V2; keep D80/D85 rules. **Publish gate (D-A5, D112(1)(3)):** Bab is REQUIRED before Terbit when the question's Subjek + Tingkatan has chapters (N-3; any older rule that Bab is not required is superseded), and SP + TP/aras (SPM-bound T4/T5) are required only when DSKP nodes exist for that Subjek + Tingkatan (the same conditional pattern as Bab; Kimia, Biologi, Geografi, Perniagaan, Prinsip Perakaunan and Ekonomi stay without those items until S4-T09 loads their DSKP): add the blocker `NO_CHAPTER` "Sila pilih Bab." to `gate-check` `issues[]` (absent for a Subjek + Tingkatan without chapters) and make the unit/SP/TP items conditional on one `curriculum_node` lookup; the wizard calls the DSKP unit "Unit DSKP" and the textbook chapter "Bab". **Difficulty (D-A6, D-QA-9, 45 T-12, AC-QA-31):** Kesukaran (`difficultyLevel`, 1 to 5) is ALWAYS required, to send for review and to publish (blocker `NO_DIFFICULTY` "Sila pilih tahap kesukaran."), and is a typed field separate from TP (1 to 6, kept in `difficulty_tp`). The Tag step pre-fills it with `min(5, TP)` until the admin touches it (`difficultyTouched`); a later TP change never overwrites a touched value; the server stores the typed value in `difficulty_level` (DM-47, migration `0128_s1_difficulty_level`, mapping cited in 50 section 4.2.1) and never derives it.
 - Files: `BE/questions/{publish-gate.ts,dskp-gate.ts,gate-data.ts,status.ts}`, `CT/questions`, `CT/servability`; migration `0135_s1_textbook_ref_rejection` (DM-56 `textbook_ref`, DM-58 `rejection_reason`).
 - Tests: table-driven gate tests (every missing field named). Verify: V-STD; API response compared with V2 messages where V2 has them.
 - DoD: DoD-T + AC-ADM-QE3.*, QE4.*, Q06.*.
@@ -545,6 +553,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S1-T05 CSV with DSKP and group fields** · P0 · M · Type: Build · deps: S1-T02
 - Starts from (existing): `apps/api/src/modules/questions/questions.service.ts`.
+- New files: `apps/api/src/modules/questions/import/csv-import.service.ts`, `apps/api/src/modules/questions/import/csv-template.ts`, `apps/api/src/modules/questions/import/sample-template.csv`.
 - PRD: QE-06, Q-11. Gap: template has raw ids; no unit/SP/level/paper columns, so CSV questions can never publish (gap F2).
 - Data/API: DM-10; API-Q-17
 - Also uses: API-GUR-19, DM-07, DM-08 (owned by another card; read or verified here, not an ownership claim)
@@ -572,6 +581,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S1-T08 Kiriman Guru backend** · P0 · M · Type: Build · deps: none (stack)
 - Starts from (existing): `apps/api/src/modules/classes/question-sets/question-sets.ports.ts`.
+- New files: `apps/api/src/modules/classes/question-sets/guru-paper-intake.adapter.ts` (the real intake port bound in place of `UnavailablePaperIntake`), `apps/api/prisma/migrations/0137_s1_intake_guru_source/migration.sql`.
 - PRD: Q-12, GUR-44; register 6.2b row 5. Gap: `POST /api/guru/question-papers` = 503 because `question-sets.ports.ts:46,56` binds `UnavailablePaperIntake` and nothing calls `provideIntake`; admin "Kiriman Guru" says "Fungsi ini belum tersedia dalam demo".
 - Data/API: DM-15, DM-72; API-GUR-17
 - New requirements (45, 46, 48; D113): FR-QA-39; AC-QA-39.
@@ -604,6 +614,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S1-T10 Accepted batch becomes a draft paper (Semak & Terbit)** · P0 · M · Type: Build · deps: S1-T03, S1-T04
 - Starts from (existing): `apps/api/src/modules/intake/workflow/`, `apps/api/src/modules/exam/builder/`
+- New files: `apps/api/src/modules/intake/workflow/batch-to-paper.service.ts`, `apps/api/prisma/migrations/0163_s3_paper_source_batch/migration.sql` (S3 range, requested with `needs:schema`).
 - PRD: R1-ADM-Q-07 (FR-ADM-Q07.3 and the Semak & Terbit FR/AC of 30 section Q-07), R1-ADM-Q-15, R1-ADM-QE-05, FR-X1-4e. Gap: no FR, endpoint, table link or card turned an accepted intake batch into a paper: the intake controller has extract / review / items / stimuli / accept / reject / duplicate only, `Kertas Diimport` lists nothing and `Semak & Terbit` has nothing to open (audit F-01, D-A2).
 - Data/API: DM-45; API-Q-25
 - Also uses: API-Q-14, API-Q-15, API-BIJAK-10, DM-07, DM-11, DM-23 (owned by another card; read or verified here, not an ownership claim)
@@ -630,6 +641,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S2-T02 Import & Semakan (3 tabs) and Semak Ekstrak** · P0 · L · Type: Build · deps: S1-T03, S1-T04, S1-T10
 - Starts from (existing): `src/modules/m28-bijak-spm/admin/intake`.
+- New files: `src/modules/m28-bijak-spm/admin/intake/pages/IntakeReviewPage.vue` (Semak Ekstrak, 45 §1.6), `src/modules/m28-bijak-spm/admin/intake/pages/KertasDiimportTab.vue`, `src/modules/m28-bijak-spm/admin/intake/pages/KirimanGuruTab.vue`, `src/modules/m28-bijak-spm/admin/intake/components/GroupRangeEditor.vue`.
 - PRD: Q-07, Q-08, Q-09, Q-12 UI. Approach: tabs `Kelompok Item`, `Kertas Diimport` (lists the draft papers made by the batch-to-paper route from `Hantar untuk semakan`, with Bilangan Soalan and the link `Semak & Terbit` to `/admin/spm/kertas/:id`), `Kiriman Guru`; review screen lets the reviewer change the group range (add/remove member) before Terima; PDF pane + editor become tabs under 1024 px (FR-X6-11); busy/failed/timeout states. Files: `src/modules/m28-bijak-spm/admin/intake/**`, `m04-question-bank/pages/SubmissionListPage.vue`. Tests: spec for a 2-group fixture paper; intake-375 regression. Verify: V-STD; V2 `/admin/studio/imports`. DoD: DoD-T + AC-ADM-Q07.*, AC-ADM-Q08.*, AC-ADM-Q09.*, AC-ADM-Q12.*.
 - Data/API: none
 - Also uses: API-Q-14, API-Q-15, DM-09, API-Q-25 (owned by another card; read or verified here, not an ownership claim)
@@ -637,14 +649,15 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S2-T03 One bank, one queue, aliases** · P0 · M · Type: Fix · deps: none (S0-T07 consumes it)
 - Starts from (existing): `src/modules/m04-question-bank/routes.ts`.
-- PRD: 30 §3.3; gap §5.4. Approach: `/admin/spm/soalan` list redirects to `/admin/spm/databank`; `/admin/spm/semakan` redirects to `/admin/studio?status=reviewed`; "Menunggu Semakan" and the old queue show the **same** count (gap F3: 3 vs 0); V2 paths (`/admin/studio/imports`, `/admin/spm/kertas-subjektif`, …) redirect; Muat Naik/Tulis Manual/Import CSV become header buttons. Files: route files in `m04-question-bank/routes*`, `m28-bijak-spm/admin/intake/routes*`. Tests: route table test (every alias resolves, no 404). Verify: V-STD. DoD: DoD-T.
+- PRD: 30 §3.3; gap §5.4. Approach: `/admin/spm/soalan` list redirects to `/admin/spm/databank`; `/admin/spm/semakan` redirects to `/admin/studio?status=review` (the status value is `review`, 45 §1.6); "Menunggu Semakan" and the old queue show the **same** count (gap F3: 3 vs 0); V2 paths (`/admin/studio/imports`, `/admin/spm/kertas-subjektif`, …) redirect; Muat Naik/Tulis Manual/Import CSV become header buttons. Files: route files in `m04-question-bank/routes*`, `m28-bijak-spm/admin/intake/routes*`. Tests: route table test (every alias resolves, no 404). Verify: V-STD. DoD: DoD-T.
 - Data/API: none
 - Also uses: API-Q-01 (owned by another card; read or verified here, not an ownership claim)
 - New requirements (45, 46, 48; D113): FR-QA-15, 32, 47; AC-QA-15, 32, 47.
 
 **S2-T04 Regroup work-list** · P0 · M · Type: Build · deps: S1-T07, S4-T04
-- Starts from (existing): `src/modules/m04-question-bank/pages/StudioListPage.vue` (nothing exists for the new part; it is added beside these files).
-- PRD: QE-08, FR-ADM-G7.4/G7.5, AC-ADM-G7.2. Approach: filtered Studio view of flagged questions with counts per subject × Tingkatan; attach existing figure (upload/pick) or form a group; "Bukan masalah"; same count on the SPM hub lane Latih Tubi ("Perhatian"). Files: `m04-question-bank/pages/**` (new `RegroupPage.vue`), `components/**`. Tests: spec attaches a figure → flag clears. Content work (attach figures, regroup) is done by ADMIN users in this screen (D110); developers only build and fix it. Verify: V-STD on UAT data with id 812791-like items. DoD: DoD-T.
+- Starts from (existing): `src/modules/m04-question-bank/pages/QuestionListPage.vue` (the page of `Senarai Soalan`, `/admin/questions`; nothing exists for the new part; it is added beside this file).
+- New files: `src/modules/m04-question-bank/pages/RegroupPage.vue`, `src/modules/m04-question-bank/components/RegroupRow.vue`.
+- PRD: QE-08, FR-ADM-G7.4/G7.5, AC-ADM-G7.2. Location (45 §1.6, one canonical screen): the regroup work-list is the tab `Perlu dikumpulkan semula` of `Senarai Soalan` (45 §6.6): not a Studio filter, not a new route and not a new menu entry. Approach: the tab lists flagged questions with counts per subject × Tingkatan; attach existing figure (upload/pick) or form a group; "Bukan masalah"; same count on the SPM hub lane Latih Tubi ("Perhatian"). This card adds only its own tab entry to the tab strip of `QuestionListPage.vue` (S2-T06 adds the tabs `Kualiti` and `Laporan` to the same strip; neither card removes the other's entry). Files: `m04-question-bank/pages/QuestionListPage.vue` (tab entry), new `m04-question-bank/pages/RegroupPage.vue` (the tab body), `components/**`. Tests: spec attaches a figure → flag clears. Content work (attach figures, regroup) is done by ADMIN users in this screen (D110); developers only build and fix it. Verify: V-STD on UAT data with id 812791-like items. DoD: DoD-T.
 - Data/API: none
 - Also uses: API-Q-13, API-Q-24, DM-04, DM-05, DM-06 (owned by another card; read or verified here, not an ownership claim)
 - New requirements (45, 46, 48; D113): FR-QA-14; AC-QA-14.
@@ -670,12 +683,14 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S2-T08 Bulk "Tetapkan Bab" UI** · P1 · S · Type: Build · deps: S4-T03
 - Starts from (existing): `src/modules/m04-question-bank/pages/StudioListPage.vue` (nothing exists for the new part; it is added beside these files).
+- New files: `src/modules/m04-question-bank/components/BulkChapterPanel.vue` (beside `BulkFilterResult.vue`, mounted in `StudioListPage.vue`).
 - PRD: C-05. Approach: filter by subject+level, select rows, choose Bab; shows result counts. Also the admin work-list **"Soalan tanpa Bab"**: the Studio list filter `chapter=none` (API-Q-01) with per-subject counts from API-DSKP-10 and the bulk apply of API-DSKP-09 (D-A5). The mapping itself is ADMIN work in this screen (D110). Files: `m04-question-bank/pages/StudioListPage.vue`, `components/**`. Tests: component. Verify: V-STD on UAT data. DoD: DoD-T + AC-ADM-C05.*.
 - Data/API: none
 - Also uses: API-DSKP-09, API-Q-01, DM-17 (owned by another card; read or verified here, not an ownership claim)
 
 **S2-T09 Sumber Kertas** · P2 · M · Type: Build · deps: S1-T03 · PRD Q-19. List/detail of source papers. Files: `m04-question-bank/pages/**`. Tests/verify/DoD standard.
 - Starts from (existing): `src/modules/m04-question-bank/routes.ts` (nothing exists for the new part; it is added beside these files).
+- New files: `src/modules/m04-question-bank/pages/SourcePaperListPage.vue`, `src/modules/m04-question-bank/pages/SourcePaperDetailPage.vue` (routes `/admin/source-papers` and `/admin/source-papers/:id` added in the existing `routes.ts`).
 - Data/API: API-Q-18, API-Q-23
 
 **S2-T10 Leaf forms for every answer mode and the marking-scheme editor (UI)** · P0 · L · Type: Complete · deps: S2-T01, S1-T09a, S1-T09b
@@ -715,21 +730,25 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S3-T04 Pupil sitting and result (Bijak SPM)** · P0 · L · Type: Complete · deps: S8-T02, S8-T03, S8-T04, S3-T02, S5-T15, S7-T05
 - Starts from (existing): `src/modules/m28-bijak-spm/pages/AttemptPage.vue`, `src/modules/m28-bijak-spm/pages/ResultPage.vue`.
+- Chain spec (D-T10-5): this card is the last card of AC-CHAIN-2, so it also writes `e2e/r1/chains/chain-2.http.spec.ts` (an S0-owned folder: a small cross-sector PR with the line `Cross-sector: S0 (chain spec)` and the label `needs:S0`, S0 reviews within 1 working day); S9-T06 runs and maintains it.
 - PRD: R1-MUR-13 (all Bijak ACs), AC-X6-2, QP contract 10-murid §4.8. Gap: F8 passes functionally; UAT 0 papers; 375 px gaps (gap §2.2 row 13); structured item "Tidak disajikan: jenis jawapan tidak dibenarkan dalam bahagian ini".
 - Data/API: DM-68; API-BIJAK-04, API-BIJAK-06
+- Random Kuiz (Bijak SPM "Kuiz", D-T10-3): uses API-BIJAK-06 only (`POST /api/bijak/kuiz/sessions`, `.../:id/check`, `.../:id/finish`) and writes `practice_answers` with mode `kuiz` at `finish`; it does not call the Latih Tubi start API of S5-T03.
 - New requirements (45, 46, 48; D113): FR-PA-01, 08, 14, 16, 17, 21, 26, 39; AC-PA-07, 08, 11, 20, 41.
 - Answer store (D-A1, DM-44, owned by S5-T15): `POST /bijak/attempts/:id/submit` writes one answer row per answered leaf with `mode` `simulasi` or `kuiz` (by paper kind) and the `attempt_id`, then upserts the `practice_attempt_aggregates` summary; a regrade updates the rows (idempotent per `(attempt_id, question_id, part_ref)`). Tracking A and Databank sittings use the same submit (S3-T05, S3-T07). Writes go through the one `AnswerLogPort` of `practice/`; no second answer table, no report reads anything else.
 - Approach: compose S8 components in `AttemptPage`, `PaperQuizPage`, `ResultPage`; remove "not served" for allowed modes; remove the demo message "Fungsi ini belum tersedia dalam demo" from the real path (`m28-bijak-spm/server/errors.ts:14`, `server/http-admin.ts:153`, register 10-murid 4.11 #12); stimulus group once, sticky; self-mark flow for structured answers (S3-T06 for subjective). Files: `m28-bijak-spm/pages/**`, `lib/**`, `domain/**`. Tests: spec with a group-of-3 paper at 375. Verify: V-STD on a phone-size headed browser on UAT data. DoD: DoD-T + AC-MUR-13-*, AC-X6-2.
 
 **S3-T05 Tracking A** · P0 (Q-17; pupil Tracking A part P1) · M · Type: Build · deps: S3-T03, S5-T15
 - Starts from (existing): `apps/api/src/modules/spm/tracking.service.ts`.
+- New files: `src/modules/m28-bijak-spm/admin/kandungan/pages/TrackingAListPage.vue`, `src/modules/m28-bijak-spm/admin/kandungan/pages/TrackingASetEditorPage.vue` (route `/admin/spm/tracking-a`), `apps/api/prisma/migrations/0162_s3_tracking_sibling_unique/migration.sql`; the pupil subject page is the existing `src/modules/m06-spm/pages/TrackingASubjectPage.vue`.
 - PRD: Q-17, MUR-13 Tracking A. Gap: `/admin/spm/tracking-a` 404 (F5); `BE/spm/tracking.service.ts` exists. Approach: lane list + set editor + pupil subject page. Files: `m28-bijak-spm/admin/kandungan/**`, `m06-spm/pages/**`, `BE/spm/tracking.service.ts`. Tests: spec. Verify: V-STD vs V2 Tracking A. DoD: DoD-T + AC-ADM-Q17.*.
 - Data/API: DM-24; API-BIJAK-13
 - New requirements (45, 46, 48; D113): FR-PA-22; AC-PA-09, 34.
-- Answer store (D-A1, DM-44, owned by S5-T15): Tracking A objective uses the drill engine (session `ramalan`, answer rows `mode = tracking_a`; legacy `ramalan` rows count in the same lane, 46 §4.5); Tracking A Bahasa uses the Subjektif sitting of S3-T06 and its rows carry `mode = tracking_a` with `part_ref`. Writes go through the one `AnswerLogPort` of `practice/`; no second answer table, no report reads anything else.
+- Answer store (D-A1, DM-44, owned by S5-T15): Tracking A objective uses the drill engine (session mode `tracking_a` and answer rows `mode = tracking_a`; the legacy value `ramalan` is only read for old rows, in the same lane, and is never written by R1 code, D-T10-2, 46 §4.5); Tracking A Bahasa uses the Subjektif sitting of S3-T06 and its rows carry `mode = tracking_a` with `part_ref`. Writes go through the one `AnswerLogPort` of `practice/`; no second answer table, no report reads anything else.
 
 **S3-T06 Kertas Subjektif and self-mark** · P0 (D104, no flag) · L · Type: Build · deps: S3-T04, S1-T09a, S1-T09b, S5-T15
 - Starts from (existing): `src/modules/m28-bijak-spm/components/SelfMarkControl.vue`, `apps/api/src/modules/spm/spm.controller.ts` (nothing exists for the new part; it is added beside these files).
+- New files: `src/modules/m28-bijak-spm/admin/papers/SubjektifPaperListPage.vue`, `src/modules/m28-bijak-spm/admin/papers/SubjektifPaperDetailPage.vue`, `src/modules/m28-bijak-spm/pages/SubjektifAttemptPage.vue`, `src/modules/m28-bijak-spm/pages/SubjektifSemakanPage.vue`, `apps/api/src/modules/spm/subjektif.controller.ts` and `apps/api/src/modules/spm/subjektif.service.ts` (API-BIJAK-14), `apps/api/prisma/migrations/0161_s3_paper_surface/migration.sql`.
 - PRD: R1-ADM-Q-18, R1-MUR-13 (Subjektif lane), R1-MUR-17 (answer screen), E-10; D104 (fully working at release). Gap: 404 (F6); the self-mark route `POST /api/bijak/attempts/:id/self-mark` already exists (API-BIJAK-05), the Subjektif lane and its screens do not. Approach: admin list/detail/build on `papers` with `surface = 'subjektif'` (API-BIJAK-14, DM-23); pupil Subjektif answer and Semakan with scheme on the existing self-mark route (no new self-mark endpoint, no `0160_s3_self_mark`, DM-25); the pupil side is UI wiring on that existing endpoint: one stepper per scheme point or per criterion, "Hantar & Semak" before "Tunjuk Skema Pemarkahan" (FR-PA-18..20, FR-PA-24); fully working at release with **no feature flag** (D104 supersedes D80(2)). Files: `m28-bijak-spm/admin/**`, `components/SelfMarkControl.vue`, `BE/spm/**`, `BE/bijak/attempts/**`, `CT/bijak`; migration `0161_s3_paper_surface` (DM-23). Tests: BE + spec. Verify: V-STD vs V2 Subjektif. DoD: DoD-T.
 - Data/API: DM-23, DM-25; API-BIJAK-05, API-BIJAK-14
 - Also uses: DM-08 (owned by another card; read or verified here, not an ownership claim)
@@ -739,10 +758,11 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S3-T07 Pupil SPM hub, Databank** · P1 · M · Type: Complete · deps: S1-T06, S5-T15
 - Starts from (existing): `apps/api/src/modules/spm/hub.service.ts`, `src/modules/m06-spm/routes.ts`.
+- Chain spec (D-T10-5): this card is the last card of AC-CHAIN-3, so it also writes `e2e/r1/chains/chain-3.http.spec.ts` (an S0-owned folder: a small cross-sector PR with the line `Cross-sector: S0 (chain spec)` and the label `needs:S0`, S0 reviews within 1 working day); S9-T06 runs and maintains it.
 - PRD: MUR-13 hub/Databank, FR-MUR-13-20, AC-MUR-13-26 (OQ-MUR-7 closed by D112(6)). Approach: hub counts = what is servable (D91); the hub card `Kertas Subjektif` exists for every T1-T5 pupil at a fixed position (after `Bijak SPM`), shows "{n} kertas" and opens `/kertas-subjektif` (FR-MUR-13-34, AC-PA-33); "Tahun Tersedia" is computed or hidden, never a constant 0, and each card chip equals its details view; Databank draws units; the pupil "Jana Kertas" tab is hidden and its route returns 404 (FR-X2-2); no pupil path generates a paper; the generate route stays for the admin Jana Kertas only (FR-ADM-QE7.2). Files: `m06-spm/**`, `BE/spm/{hub,pool,mock}.service.ts`. Tests: counts spec. Verify: V-STD vs V2 `/spm`. DoD: DoD-T.
 - Data/API: API-BIJAK-03, API-BIJAK-07, API-BIJAK-08
 - New requirements (45, 46, 48; D113): FR-PA-34; AC-PA-32, 33.
-- Answer store (D-A1, DM-44, owned by S5-T15): a Databank drill answer writes `mode = databank` (the session mode `past_year` stays for old rows). Writes go through the one `AnswerLogPort` of `practice/`; no second answer table, no report reads anything else.
+- Answer store (D-A1, DM-44, owned by S5-T15): a Databank drill answer writes `mode = databank` (D-T10-2: the session mode is `databank` too; `past_year` is a legacy value, only read for old rows and never written by R1 code; the history chip "Tahun Lepas" filters `databank` and old `past_year` rows). Writes go through the one `AnswerLogPort` of `practice/`; no second answer table, no report reads anything else.
 
 **S3-T08 Terbit pipeline (dry-run tooling for UAT)** · P0 · M · Type: Ops · deps: S3-T01, S3-T02, S4-T03
 - Starts from (existing): `apps/api/src/modules/exam/builder`.
@@ -758,11 +778,13 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S4-T02 DSKP loader verified; T1–T5 content** · P0 · M · Type: Build · deps: S0-T02
 - Starts from (existing): `docs/ops/dskp-loader.md`, `apps/api/src/modules/curriculum/dskp`.
+- New files: `src/modules/m03-curriculum/pages/SubjectDskpReportTab.vue` (named in the approach); no other new file.
 - PRD: R1-ADM-C-04, FR-X3-3. Approach: loader tests and dry-run in CI; the real run on UAT is U-OP-01, run by the designated UAT developer after the user approves the dry-run report (D110); confirm 13 subjects × T4/T5 load (`dskp-loader.md`); T1–T3 drop-in follows the D109 rule (the same structure as T4–T5, built from the existing chapter and topic data, S4-T09); the loader report is shown in the Kurikulum `DSKP` tab (R1-ADM-C-04), a new tab component `src/modules/m03-curriculum/pages/SubjectDskpReportTab.vue` that S4-T07 mounts in the Kurikulum browser. Files: `BE/curriculum/dskp/**`, `docs/ops/dskp-loader.md`, new `src/modules/m03-curriculum/pages/SubjectDskpReportTab.vue`. Tests: loader idempotence (exists). Verify: counts of nodes per subject. UAT run = U-OP-01. DoD: DoD-T.
 - Data/API: DM-14; API-DSKP-05
 
 **S4-T03 Bab/Topik/SP mapping tool and bulk API** · P0 · L · Type: Build · deps: S4-T02
 - Starts from (existing): `apps/api/src/modules/curriculum/admin.service.ts` (nothing exists for the new part; it is added beside these files).
+- New files: `apps/api/src/modules/curriculum/bulk-chapter.service.ts` (the bulk apply and dry-run; the route `POST /api/admin/curriculum/questions/bulk-chapter` is added in the existing `admin.controller.ts`), `packages/contract/src/curriculum/bulk-chapter.ts`, `apps/api/scripts/uat-ops/bulk-chapter-dry-run.ts` (dry-run report only).
 - PRD: R1-ADM-C-05, FR-ADM-C05.*, OQ-MUR-6. Gap: UAT 686 chapters, 0 of 339,112 questions linked (gap §5.3). Approach: **bulk by filter only, no auto-mapping** (D89 forbids derived data; PRD 30 OQ-03): `POST /api/admin/curriculum/questions/bulk-chapter` (filter subject+level+optional unit, dry-run count, apply, audit trail), used by ADMIN users through the Studio UI (S2-T08) for U-OP-07 (content work is the admin's, D110; a script may only produce a dry-run report or assist a bulk action the admin confirms in the UI), starting with the T4-T5 subjects pupils use (Matematik, Sains, Sejarah, BI, BM). A Bab-to-Unit lookup to pre-filter the Tag step is a suggestion only (OQ-C1). No script that guesses chapters. Files: `BE/curriculum/**`, `apps/api/scripts/uat-ops/**`, `CT/curriculum`; no migration for the bulk update (DM-17: in-place update of `curriculumChapterId`; `0140_s4_question_chapter_link` is not needed). The chapter-delete guard is migration `0126_s1_chapter_fk_restrict` (DM-18, S1 range, `needs:schema`). Tests: bulk API + script dry-run (CI). Verify: on UAT: Soalan by Chapter fills for T4/T5 after the admin's mapping. DoD: DoD-T + AC-ADM-C05.*.
 - Data/API: DM-17; API-DSKP-09, API-DSKP-10
 - Also uses: API-AS-11, DM-18, DM-41 (owned by another card; read or verified here, not an ownership claim)
@@ -827,6 +849,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - Starts from (existing): `src/modules/m05-practice/pages/PracticeConfigPage.vue`, `apps/api/src/modules/practice/start.planner.ts`.
 - PRD: R1-MUR-16, FR-MUR-QP-6, FR-MUR-QP-7, FR-MUR-QP-13. Gap: figure-less items served on UAT; figures and whole groups served (D105). Approach: use S1 servability; counts per D91; config page copy exact. Files: `m05-practice/pages/{PracticeConfigPage,PracticeListPage,PracticeQuizPage}.vue`, `BE/practice/{start.planner.ts,rules.ts}`. Tests: no stimulus-less item in 200 draws. Verify: V-STD, T5 on UAT data. DoD: DoD-T + AC-MUR-16-*.
 - Data/API: API-PRAC-01, API-PRAC-02, API-PRAC-04, API-PRAC-03
+- Free-trial rule (existing, kept unchanged, no new card): the Latih Tubi start call `POST /api/practice/sessions` (API-PRAC-01, this card) keeps the free-trial limit of 10 R1-MUR-16 (50 checked answers, `TRIAL_LIMIT`, 402 ERR-PRAC-01 "Baki percubaan percuma anda telah habis."); this card verifies it and adds no new quota rule.
 - Also uses: DM-27 (owned by another card; read or verified here, not an ownership claim)
 - New requirements (45, 46, 48; D113): FR-PA-01, 03, 11..13, 15, 26, 31; AC-PA-02, 12, 13, 15, 24; FR-GM-20.1..3; AC-GM-20.1..5.
 - Answer store (D-A1, DM-44, owned by S5-T15): check-answer writes `mode` of the session (existing path, moved behind the port). The Syiling credit reads `reward_settings.coins_per_correct` (DM-48, default 1; S7-T05 owns it); the PRD constant 2 is dropped. Writes go through the one `AnswerLogPort` of `practice/`; no second answer table, no report reads anything else.
@@ -839,6 +862,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S5-T05 Profil, Tetapan, Panduan for all roles** · P1 · L · Type: Build · deps: none
 - Starts from (existing): `src/modules/m01-authentication/routes/profile.ts`, `src/modules/m09-content/pages/PanduanPage.vue`.
+- New files: `src/modules/m01-authentication/pages/ProfileAccountPanel.vue`, `src/modules/m01-authentication/pages/ProfileAspirationField.vue`, `apps/api/src/modules/account/config.controller.ts` (`GET /api/config/support`), `apps/api/prisma/migrations/0184_s5_user_aspiration/migration.sql` (requested with `needs:schema`; the table is S0's identity file).
 - PRD: R1-MUR-AUTH (shared login, register and reset screens; the screens are `src/modules/m01-authentication/pages/**`, an S0 folder, so those edits are small PRs to S0), R1-MUR-A1, R1-MUR-A2, R1-MUR-A3, R1-GUR-A1, R1-GUR-A2, R1-GUR-A3 (all roles), R1-AS-A5, R1-ADM-N-07 (support contact read by Panduan); register 6.2b rows 7, 19. Gap: `PUT /api/me` lets a pupil change `grade` and `schoolId` (`apps/api/src/modules/account/profile.service.ts:157-158`; fix per API-AUTH-09, AC-MUR-A2-6, FR-AS-51-9: delete both writes, ignore `grade`, `schoolId` and `role` for every role); pupil profile minimal; no public profile; `/guru/profil/edit` has no route (`m10-teacher-class/components/dashboard/copy.ts:91`); account block missing; `GET /api/config/support` 404 on UAT. Files: `m01-authentication/pages/Profile*`, `routes/{profile,tetapan}.ts`, `m09-content/pages/PanduanPage.vue`, `BE/account/**`, `BE/support/` config route (S7 review), `CT/account`. Tests: per-role specs. Verify: V-STD for pupil, guru. DoD: DoD-T.
 - Data/API: DM-33, DM-80; API-AUTH-08, API-AUTH-09, API-AUTH-10, API-AUTH-11, API-AUTH-12, API-GUR-22, API-MUR-02, API-MUR-03, API-SUP-04, API-AUTH-06, API-AUTH-07, API-ADM-04
 - New requirements from the audit (this card owns them): FR-MUR-A2-6, AC-MUR-A1-7, AC-MUR-A2-5, AC-MUR-A2-6 (`PUT /me` ignores grade, school and role), AC-MUR-A3-4.
@@ -856,6 +880,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S5-T08 Video and Kelas Saya (pupil) and Video admin list** · P1 · M · Type: Build · deps: none
 - Starts from (existing): `src/modules/m09-content/pages/VideoListPage.vue`, `src/modules/m10-teacher-class/pages/KelasSayaPelajarPage.vue`.
+- New files: `src/modules/m09-content/pages/AdminVideoListPage.vue`, `apps/api/prisma/migrations/0183_s5_video_school_visibility/migration.sql`.
 - PRD: R1-MUR-7, R1-MUR-8, R1-GUR-7, R1-AS-7, R1-ADM-N-01. Gap: no admin list for Video (BE ready); "Tambah Video" pupil rule OQ-MUR-11 (hide). Files: `m09-content/pages/Video*.vue`, new `AdminVideoListPage.vue`, `m10-teacher-class/pages/KelasSayaPelajarPage.vue`, `BE/content/videos/**`. Tests: spec. Verify: V-STD. DoD: DoD-T.
 - Data/API: DM-76; API-MUR-04, API-MUR-05
 - Follow V2 (OQ-X-3): remove the pupil "Sertai" box and `POST /kelas-saya/join` (API-MUR-04); classmates are shown by display name only (60 section 4.6).
@@ -873,6 +898,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S5-T11 Soalan Berstruktur and Set Soalan Guru (pupil)** · P1 · M · Type: Complete · deps: S3-T06, S6-T14 · Delivery A (linked from R1-MUR-13, R1-MUR-2, R1-MUR-8)
 - Starts from (existing): `src/modules/m05-practice/pages/StructuredListPage.vue`, `src/modules/m05-practice/pages/QuestionSetQuizPage.vue`.
+- Chain spec (D-T10-5): this card is the last card of AC-CHAIN-4, so it also writes `e2e/r1/chains/chain-4.http.spec.ts` (an S0-owned folder: a small cross-sector PR with the line `Cross-sector: S0 (chain spec)` and the label `needs:S0`, S0 reviews within 1 working day); S9-T06 runs and maintains it.
 - PRD: R1-MUR-17, R1-MUR-26 (D106). Gap: built with seed sets only; answer screen must follow 4.6 (parts tree, modes, autosave), scheme and self-mark. Files: `m05-practice/pages/{StructuredListPage,StructuredAnswerPage,QuestionSetQuizPage}.vue`, `BE/practice/**`. Tests: structured set end to end; teacher publishes a set (S6-T14), pupil of that class sees it, another class gets 404. Verify: V-STD per module against the SRS description of the PRD modules on this card's "PRD:" line (screen layout, exact BM copy and states are written in words there; §0A). DoD: DoD-T + every AC of the listed modules.
 - Data/API: API-GUR-15, API-PRAC-10
 - New requirements (45, 46, 48; D113): FR-PA-25; AC-PA-14.
@@ -897,6 +923,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S5-T15 Single answer store: mode column and write path** · P0 · M · Type: Complete · deps: S0-T02
 - Starts from (existing): `apps/api/src/modules/practice/practice.repository.ts`, `apps/api/src/modules/practice/practice.service.ts`, `apps/api/prisma/schema/practice.prisma`, `apps/api/src/modules/bijak/integration/`
+- New files: `apps/api/src/modules/practice/answer-log.port.ts`, `apps/api/prisma/migrations/0181_s5_answer_store_mode/migration.sql`, `apps/api/prisma/migrations/0182_s5_session_abandoned/migration.sql`.
 - PRD: FR-X4-1, XS-8. Gap: reports (`reports/analytics`, `reports/kirkpatrick`, `heatmap`, `command-center/board`) read only `practice_answers`, whose session modes are 10 values (`0014_practice_write`), while Bijak writes `exam_attempts`/`practice_attempt_aggregates` (`bijak/integration/performance-bijak-aggregate.ts`); Databank, Tracking A, Subjektif and Kuiz therefore never reach Prestasi, Headcount AR or Analisa Item (audit F-02, D-A1).
 - Data/API: DM-44, DM-66
 - Also uses: API-PRAC-01, API-PRAC-02, API-PRAC-10, API-BIJAK-04, API-BIJAK-05, API-GAME-01 (owned by another card; read or verified here, not an ownership claim); the readers of this store (R1-MUR-4 Prestasi, R1-MUR-6 Analisa Item, R1-GUR-3 Auto AR) are implemented by the S10 cards, not here.
@@ -914,7 +941,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - Data/API: API-RPT-01, API-RPT-02
 - New requirements (45, 46, 48; D113): FR-PA-27; AC-PA-25.
 - New requirements from the audit (this card owns them): FR-MUR-4-12, AC-MUR-4-8, AC-X4-1 (pupil side).
-- Metrics (D-A10): Ketepatan pooled with 1 decimal on the wire, XS-4/5/7 over `practice_answers` of all modes (60 section 4.6); Bijak sittings appear as one unit in the session list and in the counts via the single answer store.
+- Metrics (D-A10, D-T10-1): Ketepatan is pooled (correct ÷ answered × 100) over `practice_answers` of all modes, XS-4/5/7 (60 section 4.6); API-RPT-01 and API-RPT-02 return it as a number with ONE decimal and the screen shows the whole number rounded half up (40 XS-5), so an integer is never returned on the wire; Bijak sittings appear as one unit in the session list and in the counts via the single answer store.
 
 **S10-T02 Headcount (backend rules for all roles, teacher screens)** · P0 · L · Type: Complete · deps: S0-T05, S5-T15
 - Starts from (existing): `src/modules/m08-student-performance/pages/HeadcountShellPage.vue`, `src/modules/m08-student-performance/routes/headcount.ts`.
@@ -926,11 +953,12 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S10-T03 Analisa Item (pupil, guru, school admin)** · P0 · M · Type: Build · deps: S0-T05, S5-T15
 - Starts from (existing): `src/modules/m08-student-performance/routes/analisa-item.ts`.
-- PRD: R1-MUR-6, R1-GUR-6, R1-AS-6. Gap: pupil target missing in `analisa-item.ts:43` `analisaItemTarget`; guru band contradiction, unbound sort. Files: `m08-student-performance/routes/analisa-item.ts`, `pages/**`, `BE/reports/performance/**`. Tests: per role. Verify: V-STD, E-2 evidence. DoD: DoD-T.
+- New files: `src/modules/m08-student-performance/pages/AnalisaItemMuridPage.vue` (pupil own-scope screen, API-RPT-05), `apps/api/src/modules/reports/performance/services/item-analysis-me.service.ts`.
+- PRD: R1-MUR-6, R1-GUR-6, R1-AS-6. Gap: pupil target missing in `analisa-item.ts:43` `analisaItemTarget`; guru band contradiction, unbound sort. Why Build: the pupil own-scope screen and its endpoint API-RPT-05 do not exist (Missing-Build); the teacher and school-admin parts are fixes inside the existing files named below. Files: `m08-student-performance/routes/analisa-item.ts`, `pages/**`, `BE/reports/performance/**`. Tests: per role. Verify: V-STD, E-2 evidence. DoD: DoD-T.
 - Data/API: API-AS-17, API-RPT-05, API-RPT-06, API-RPT-07
 - New requirements from the audit (this card owns them): AC-MUR-6-7.
 - New requirements from the audit (this card owns them): FR-GUR-6-8 and FR-AS-6-5 ("Soalan Diuji" = XS-7, counters of all modes), AC-GUR-6-8, AC-GUR-6-9, AC-AS-6-5.
-- Metrics (D-A10): "Soalan Diuji" = distinct questions (XS-7), "Cubaan/Betul/Salah" count all modes (XS-8); discrimination index needs at least 10 pupils with answers (R1 decision D113).
+- Metrics (D-A10, D-T10-1): "Soalan Diuji" = distinct questions (XS-7), "Cubaan/Betul/Salah" count all modes (XS-8); every accuracy or percentage returned by API-RPT-05..07 and API-AS-17 is a number with ONE decimal and shown as a whole number rounded half up (40 XS-5, 60 section 4.6); discrimination index needs at least 10 pupils with answers (R1 decision D113).
 
 **S10-T04 Analitik Adaptif (guru, school admin) and SP data** · P0 · M · Type: Complete · deps: S4-T03, S0-T06, S5-T15
 - Starts from (existing): `src/modules/m08-student-performance/routes/class.ts`, `src/modules/m08-student-performance/pages/AnalitikKelasPage.vue`.
@@ -941,6 +969,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S10-T05 Heatmap Topik Lemah** · P1 · S · Type: Fix · deps: S4-T03
 - Starts from (existing): `apps/api/src/modules/heatmap/heatmap.service.ts`.
+- Chain spec (D-T10-5): this card is the last card of AC-CHAIN-1, so it also writes `e2e/r1/chains/chain-1.http.spec.ts` (an S0-owned folder: a small cross-sector PR with the line `Cross-sector: S0 (chain spec)` and the label `needs:S0`, S0 reviews within 1 working day); S9-T06 runs and maintains it.
 - PRD: R1-MUR-14, OQ-MUR-6. Gap: UAT empty. Approach: Bab first, SP tags second. Files: `BE/heatmap/**`, `CT/heatmap`. Tests: service. Verify: V-STD. DoD: DoD-T.
 - Data/API: API-DSKP-08
 
@@ -972,10 +1001,12 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S6-T01 Laporan Mingguan Guru** · P0 · L · Type: Build · deps: S0-T06, S5-T15
 - Starts from (existing): `src/modules/m11-teacher-analytics/routes/laporan-mingguan.ts`, `src/modules/m08-student-performance/pages/LaporanMingguanPage.vue` (nothing exists for the new part; it is added beside these files).
-- PRD: R1-GUR-43 (all ACs); register rows 1, 2. Gap: `m11-teacher-analytics/routes/laporan-mingguan.ts:12-27` renders `PrototypeUnavailablePage`; menu target wrong (`user-nav.ts:287`); `prestasi.ts:95-106` `roles: []`; `BE/reports/performance/services/weekly-report.service.ts:5-11` has no teacher API. Approach: new teacher API + screen per V2 `guru/laporan-mingguan.blade.php` (class picker, Cetak, Soalan Dijawab, Pelajar Aktif, Pelajar Meningkat, Subjek Perlu Perhatian, Pelajar Terbaik) at `/guru/laporan-mingguan-kelas`. Files: `m11-teacher-analytics/**`, `BE/reports/**` (weekly service is S10's folder: **S10 reviews**; endpoint under `BE/command-center/guru/` is the alternative if S10 objects), `CT/reports/*`. Tests: BE + spec. Verify: V-STD vs V2. DoD: DoD-T + AC-GUR-43-*.
+- New files: `src/modules/m11-teacher-analytics/pages/LaporanMingguanGuruPage.vue`, `src/modules/m11-teacher-analytics/api/weekly-report.ts`, `apps/api/src/modules/reports/performance/http/guru-weekly-report.controller.ts` (S10-owned folder: the cross-sector PR described in the approach), `packages/contract/src/reports/guru-weekly-report.ts`.
+- PRD: R1-GUR-43 (all ACs); register rows 1, 2. Gap: `m11-teacher-analytics/routes/laporan-mingguan.ts:12-27` renders `PrototypeUnavailablePage`; menu target wrong (`user-nav.ts:287`); `prestasi.ts:95-106` `roles: []`; `BE/reports/performance/services/weekly-report.service.ts:5-11` has no teacher API. Approach: new teacher API + screen per V2 `guru/laporan-mingguan.blade.php` (class picker, Cetak, Soalan Dijawab, Pelajar Aktif, Pelajar Meningkat, Subjek Perlu Perhatian, Pelajar Terbaik) at `/guru/laporan-mingguan-kelas`. Where it lives (decided): the page, route and API client are S6 paths (`src/modules/m11-teacher-analytics/pages/LaporanMingguanGuruPage.vue`, `src/modules/m11-teacher-analytics/api/weekly-report.ts`, the route in the existing `m11-teacher-analytics/routes/laporan-mingguan.ts`); the backend extends the ONE weekly-report service of S10 (`apps/api/src/modules/reports/performance/services/weekly-report.service.ts`, new method for API-GUR-21) and adds the route `GET /api/guru/weekly-report` in a new `apps/api/src/modules/reports/performance/http/guru-weekly-report.controller.ts`; no second weekly service is created. Those two backend files and the `roles: []` fix in `src/modules/m08-student-performance/routes/prestasi.ts:95-106` are S10-owned, so that part is a **cross-sector PR** per R1-START-HERE decision 7 (`Cross-sector: S10 (weekly-report service and prestasi route roles)`, label `needs:S10`, S10 reviews within 1 working day; send it first, then the S6 PR). The menu target (`user-nav.ts:287`) is S0-T06. Files: `m11-teacher-analytics/**`, `CT/reports/*` (contract PR first), plus the S10 files above. Tests: BE + spec. Verify: V-STD vs V2. DoD: DoD-T + AC-GUR-43-*.
 - Data/API: API-GUR-21
 - Also uses: API-RPT-13 (owned by another card; read or verified here, not an ownership claim)
 - New requirements from the audit (this card owns them): FR-GUR-43-8 (all modes in the weekly report), AC-GUR-43-8..10.
+- Metrics (D-T10-1): every accuracy field of API-GUR-21 is a number with ONE decimal on the wire (pooled correct ÷ answered × 100, XS-5, 60 section 4.6); the screen and the printout show the whole number rounded half up (40 XS-5).
 
 **S6-T02 Kirkpatrick: school admin 7 screens, guru shell** · P0 · L · Type: Complete · deps: S0-T06
 - Starts from (existing): `src/modules/m12-kirkpatrick/routes/mount.ts`, `src/modules/m12-kirkpatrick/pages/KirkpatrickOverviewPage.vue`.
@@ -984,12 +1015,13 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S6-T03 Cross-screen numbers (XS-1..5)** · P0 · L · Type: Fix · deps: S10-T02, S5-T15
 - Starts from (existing): `src/modules/m27-school-admin/routes.ts`, `apps/api/src/modules/school-admin/dashboard.service.ts`.
+- Chain spec (D-T10-5): this card is the last card of AC-CHAIN-5, so it also writes `e2e/r1/chains/chain-5.http.spec.ts` (an S0-owned folder: a small cross-sector PR with the line `Cross-sector: S0 (chain spec)` and the label `needs:S0`, S0 reviews within 1 working day); S9-T06 runs and maintains it.
 - PRD: 20 §5 XS-1..5, AC-XS-*; FR-X4-1. Gap: pupils 17/16/13, teachers 3/4, answers 122/30/36, accuracy 57.9/73.3/33.3 % (`m27/mock/read-models/*`, and the m08, m11, m12 read models). Approach: one school read model (BE) implementing XS definitions; every screen calls it; delete the mock read models. Files: `BE/school-admin/**`, `BE/command-center/**`, `m27-school-admin/{api,mock}/**`, `m11-teacher-analytics/**`. Tests: a single fixture school, assert the same number on all screens (spec lists them). Verify: V-STD, UAT school-admin account. DoD: DoD-T + AC-XS-1..5.
 - Data/API: DM-28; API-AS-01, API-AS-07
 - Also uses: API-AS-02, API-AS-17 (owned by another card; read or verified here, not an ownership claim)
 - New requirements (45, 46, 48; D113): FR-PA-27.
 - New requirements from the audit (this card owns them): AC-X4-1, AC-X4-2 (one number on every screen, pooled accuracy).
-- Metrics (D-A10): one named query per XS-1..XS-8 for every screen, including the Admin Pusat Command Center, Laporan, Monitoring and Kirkpatrick views.
+- Metrics (D-A10): one named query per XS-1..XS-8 for every screen, including the Admin Pusat Command Center, Laporan, Monitoring and Kirkpatrick views. Accuracy (D-T10-1): the read model returns accuracy as a number with ONE decimal (pooled correct ÷ answered × 100, XS-5, 60 section 4.6); every screen shows the whole number rounded half up (40 XS-5), so 57.9 shows as 58 everywhere; only the manual Headcount AR screen may show one decimal.
 
 **S6-T04 Amaran Awal no-data** · P0/P1 · S · Type: Fix · deps: none
 - Starts from (existing): `apps/api/src/modules/school-admin/amaran/risk.rules.ts`.
@@ -1003,6 +1035,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S6-T06 Sumbang Soalan: paper submit (guru)** · P1 · M · Type: Fix · deps: S1-T08
 - Starts from (existing): `src/modules/m10-teacher-class/components/soalan/lib.ts`, `apps/api/src/modules/classes/question-sets/question-sets.ports.ts`.
+- Chain spec (D-T10-5): this card is the last card of AC-CHAIN-6, so it also writes `e2e/r1/chains/chain-6.http.spec.ts` (an S0-owned folder: a small cross-sector PR with the line `Cross-sector: S0 (chain spec)` and the label `needs:S0`, S0 reviews within 1 working day); S9-T06 runs and maintains it.
 - PRD: R1-GUR-44, FR-GUR-44-8, AC-GUR-44-9 (the "Alat Soalan" block of six tiles; AC-GUR-44-9 closes only when S6-T14 and S6-T16..T20 have landed); register row 5 (`m10-teacher-class/components/soalan/lib.ts:28`, `HantarKertasCard.vue:70-73`). Approach: remove "belum tersedia" copy, real upload, status list. Files: `m10-teacher-class/components/soalan/**`, `pages/SumbangSoalan*`. Tests: spec. Verify: V-STD. DoD: DoD-T + AC-GUR-44-*.
 - Data/API: API-DSKP-07, API-GUR-09, API-GUR-18, API-GUR-19, API-GUR-20
 - Also uses: API-GUR-17 (owned by another card; read or verified here, not an ownership claim)
@@ -1011,6 +1044,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S6-T07 Command Center, Dashboards and Misi Harian (guru, AS)** · P1 · L · Type: Build · deps: S7-T05
 - Starts from (existing): `src/modules/m10-teacher-class/pages/CommandCenterPage.vue`, `src/modules/m10-teacher-class/pages/GuruDashboardPage.vue`.
+- New files: `src/modules/m10-teacher-class/pages/MisiHarianPage.vue`, `src/modules/m10-teacher-class/pages/MisiHarianFormPage.vue` (route `/guru/misi-harian` added in the existing `routes.ts`), `apps/api/prisma/migrations/0205_s6_mission_fields/migration.sql`.
 - PRD: R1-GUR-1, R1-GUR-2, R1-GUR-2b (Misi Harian, route `/guru/misi-harian` not built; D106; reward per N-2: per-answer Syiling = the admin coin rate, `rewardCoins` paid once at the target, remove `MISSION_COINS_PER_CORRECT` in `apps/api/src/modules/practice/rules.ts`, AC-GUR-2b-5), R1-AS-1, R1-AS-2; register rows 6, 14, 20. Gap: platform card "0 Sekolah Berdaftar" for AS; Remedial/Evaluate/Badges unverified (`CommandCenterPage.vue:86-170`); checklist dead targets (`components/dashboard/copy.ts:84-96`, `GuruDashboardPage.vue:147`). Files: `m10-teacher-class/pages/{CommandCenterPage,GuruDashboardPage}.vue`, `components/dashboard/**`, `BE/command-center/**`. Tests: click specs. Verify: V-STD. DoD: DoD-T.
 - Data/API: DM-75; API-ADM-21, API-AS-02, API-AS-03, API-GUR-07, API-GUR-10, API-GUR-11, API-GUR-12, API-GUR-13, API-GUR-14, API-MUR-08
 - Also uses: API-GUR-25 (owned by another card; read or verified here, not an ownership claim)
@@ -1037,12 +1071,14 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S6-T11 Admin Pusat users, schools, classes, central dashboards** · P1 · M · Type: Build · deps: none
 - Starts from (existing): `src/modules/m17-admin-dashboard/routes.ts`, `src/modules/m02-users-schools/routes.ts`.
+- New files: `src/modules/m02-users-schools/pages/KelasSekolahPage.vue`, `src/modules/m17-admin-dashboard/pages/AdminDashboardPage.vue`, `src/modules/m17-admin-dashboard/pages/AdminAnalitikPage.vue`, `src/modules/m17-admin-dashboard/pages/AdminLaporanPage.vue`.
 - PRD: R1-ADM-U-05, R1-ADM-U-06, R1-ADM-U-07, R1-ADM-U-08, R1-ADM-U-09, R1-ADM-M-01, R1-ADM-M-02, R1-ADM-M-05, R1-ADM-M-06. Gap: Dashboard redirects to Command Center, Analitik/Laporan empty (gap §5.5), no Kelas Sekolah in Pentadbiran. Files: `m02-users-schools/**`, `m17-admin-dashboard/**`, `BE/users`, `schools`, `school-admin`. Tests/verify standard (V2 admin). DoD: DoD-T.
 - Data/API: API-ADM-02, API-ADM-05, API-ADM-06, API-ADM-11, API-ADM-12
 - Also uses: API-ADM-01, DM-35 (owned by another card; read or verified here, not an ownership claim)
 
 **S6-T12 Admin Pusat Pengguna and Sekolah (U-01..U-04)** · P0 · M · Type: Complete · deps: S4-T05
 - Starts from (existing): `src/modules/m02-users-schools/routes.ts`.
+- Chain spec (D-T10-5): this card is the last card of AC-CHAIN-8, so it also writes `e2e/r1/chains/chain-8.http.spec.ts` (an S0-owned folder: a small cross-sector PR with the line `Cross-sector: S0 (chain spec)` and the label `needs:S0`, S0 reviews within 1 working day); S9-T06 runs and maintains it.
 - PRD: R1-ADM-U-01 Pengguna, U-02 Tambah Pengguna, U-03 Edit (+ reset kata laluan), U-04 Sekolah (all P0); AC-ADM-U01.*..U04.*; OQ-U1 (hide SK/SJK rows by default, D72). The U-OP-12 accounts depend on these screens working.
 - Data/API: DM-35; API-ADM-01, API-ADM-03
 - New requirements from the audit (this card owns them): FR-ADM-U03.4 (grade, school and role changed only by admin edit), FR-ADM-U05.5, FR-ADM-U06.2 (password minimum 8, teacher bulk path is U-06).
@@ -1051,30 +1087,35 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S6-T14 Teacher Set Soalan and Kelas Saya (guru)** · P1 · L · Type: Build · deps: S1-T06 · Delivery A (D106, D108(3))
 - Starts from (existing): `src/modules/m10-teacher-class/pages/SetSoalanSayaPage.vue` (nothing exists for the new part; it is added beside these files).
+- New files: `src/modules/m10-teacher-class/pages/SetSoalanGuruListPage.vue`, `src/modules/m10-teacher-class/pages/SetSoalanGuruFormPage.vue`, `src/modules/m10-teacher-class/pages/SetSoalanGuruKeputusanPage.vue` (routes `/guru/set-soalan`, `/cipta`, `/:id`, `/:id/keputusan` in the existing `routes.ts`), `apps/api/src/modules/classes/teacher-sets/guru-question-sets.controller.ts`, `apps/api/src/modules/classes/teacher-sets/guru-question-sets.service.ts`, `apps/api/src/modules/classes/teacher-sets/guru-question-sets.repository.ts` (S6-owned; it calls the S1 `classes/question-sets` ports and does not edit them), `apps/api/prisma/migrations/0201_s6_question_set_assignments/migration.sql`, `apps/api/prisma/migrations/0203_s6_classroom_unique_name/migration.sql`.
 - PRD: R1-GUR-8, R1-GUR-8b (teacher Set Soalan: `/guru/set-soalan`, `/cipta`, `/:id`, `/:id/keputusan`; V2 `guru/set.blade.php`), feeds R1-MUR-26. Gap: not built for teachers (`m10-teacher-class/pages/SetSoalanSayaPage.vue` is the pupil-facing list). Approach: list with counters, create/edit from approved questions only, Terbitkan/Draf/Jadikan Draf, Salin to a class, results page. Files: `m10-teacher-class/pages/**`, `BE/classes/**` (set endpoints, S1 reviews `question-sets/`). Tests: publish → pupil sees, archived question drops out. Verify: V-STD per module against the SRS description of the PRD modules on this card's "PRD:" line (screen layout, exact BM copy and states are written in words there; §0A). DoD: DoD-T + every AC of the listed modules.
 - Data/API: DM-46, DM-73; API-GUR-01, API-GUR-02, API-GUR-03, API-GUR-04, API-GUR-16
+- API status (60 API-GUR-16 is authoritative): the teacher set routes (`GET/POST /api/guru/question-sets`, `GET/PUT/DELETE /:id`, `POST /:id/status`, `POST /:id/copy`, `GET /:id/results?classroomId=`) are **Missing-Build**: this card builds all of them. Only the pupil feed `GET /api/set-soalan-saya` (API-GUR-15, owned by S5-T11) exists in `classes/question-sets`; the words "exists in classes/question-sets" in 20 R1-GUR-8b mean that feed only. ADD-04 (`question_sets.education_level_id`, the optional field "Tingkatan (pilihan)", DM-46) and ADD-19 (the results route and the copy body `{classroomIds}`) are defined in 20 Appendix A2 and registered as API-GUR-16 (extended); ADD-21 is the delete guard of API-GUR-24 (S6-T16).
 - Also uses: API-MUR-04, DM-15, DM-43 (owned by another card; read or verified here, not an ownership claim)
 - New requirements from the audit (this card owns them): FR-GUR-8b-8 (a partial stimulus group is refused with 422 "Soalan dalam kumpulan rangsangan mesti dipilih bersama."), FR-GUR-8b-3 (several explicitly selected own classes), 8b-5 (results per class), AC-GUR-8b-8..10.
 - Assignment (D-A7): `classroomIds[]` on create/update/copy (API-GUR-16), table `question_set_classrooms` (migration `0201_s6_question_set_assignments`, backfill one row per existing set); results per class; partial stimulus group = 422 "Soalan dalam kumpulan rangsangan mesti dipilih bersama."; only `draft` and `published`; pupil session mode `question_set`.
 
 **S6-T15 Jemput Ibu Bapa and Pautan Ibu Bapa admin** · P2 · M · Type: Build · deps: S6-T12 · Delivery B
 - Starts from (existing): `apps/api/src/modules/parents/parents.controller.ts`.
+- New files: `src/modules/m02-users-schools/pages/AdminParentsTab.vue`, `src/modules/m01-authentication/pages/ProfileParentLinkPanel.vue` (S5 reviews), `apps/api/src/modules/parents/parent-invite.service.ts`.
 - PRD: R1-MUR-40, R1-ADM-P2-16. Files: `m02-users-schools/**` (admin tab Ibu Bapa), `m05-practice`/profile pupil page (S5 reviews), `BE/parents/**`. Tests: link, regenerate invalidates, remove parent. Verify: V-STD per module against the SRS description of the PRD modules on this card's "PRD:" line (screen layout, exact BM copy and states are written in words there; §0A). DoD: DoD-T + every AC of the listed modules.
 - Data/API: API-MUR-09
 
 **S6-T13 Central reports and Admin Sekolah Dashboard** · P2 · L · Type: Build · deps: S6-T03 · Delivery B
 - Starts from (existing): `src/modules/m17-admin-dashboard/routes.ts`.
+- New files: `src/modules/m17-admin-dashboard/pages/AdminCentralReportPage.vue`, `src/modules/m27-school-admin/pages/SchoolAdminDashboardPage.vue`.
 - PRD: R1-ADM-M-07, R1-ADM-M-08, R1-AS-2 (Dashboard numbers per XS), R1-GUR-A4 is S7-T10. Files: `m17-admin-dashboard/**`, `m27-school-admin/**`, `BE/school-admin/**`. Verify: V-STD per module against the SRS description of the PRD modules on this card's "PRD:" line (screen layout, exact BM copy and states are written in words there; §0A). DoD: DoD-T + every AC of the listed modules.
 - Data/API: API-ADM-13, API-ADM-22
 - Also uses: API-AS-01 (owned by another card; read or verified here, not an ownership claim)
 
 **S6-T16 Soalan & Rujukan (guru: personal MCQ with a reference link)** · P1 · M · Type: Build · deps: S6-T07 (Misi Harian), S1-T07 · Delivery A (D106, OQ-G-15)
 - Starts from (existing): `apps/api/src/modules/questions/http/guru.controller.ts`, `src/modules/m10-teacher-class/pages/SumbangSoalanCiptaPage.vue`, `src/shells/nav/out-of-scope.ts`.
+- New files: `apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts`, `apps/api/src/modules/classes/teacher-tools/personal-questions.service.ts`, `apps/api/src/modules/classes/teacher-tools/personal-questions.repository.ts`, `src/modules/m10-teacher-class/pages/SoalanRujukanListPage.vue`, `src/modules/m10-teacher-class/pages/SoalanRujukanCreatePage.vue`, `apps/api/prisma/migrations/0127_s1_personal_question/migration.sql` (S1 range, requested with `needs:schema`).
 - PRD: R1-GUR-44a, FR-GUR-44a-1..6, AC-GUR-44a-1..6; DV-GUR-44a-1, DV-GUR-44a-2.
 - Data/API: DM-42; API-GUR-24, API-GUR-25
 - New requirements from the audit (this card owns them): FR-GUR-44a-7, AC-GUR-44a-7.
 - Gap: `/api/guru/questions` CRUD exists but creates bank submissions in review. Missing: the own-visibility flag, the reference-link field, serving through Misi Harian (R1-GUR-2b) and the routes `/guru/soalan-guru` and `/guru/soalan-guru/cipta`.
-- Approach: (1) small PR to S1 (`needs:schema`): migration `0127_s1_personal_question` and the `visibility = 'bank'` predicate in every served set; (2) `BE/classes/teacher-tools/personal-questions.*` CRUD, own only (another id = 404), http/https links only, Tingkatan 1-5 only; (3) mission draw adds the owner's personal questions for the pupils of the owner's classes only, item carries `referenceUrl`; (4) pages `/guru/soalan-guru` (list) and `/cipta` (form with the V2 labels), link opens in a new tab on the pupil screen; (5) delete-only PR to S0 removes the two routes from `GURU_TOOLS`.
+- Approach: (1) small PR to S1 (`needs:schema`): migration `0127_s1_personal_question` and the `visibility = 'bank'` predicate in every served set; (2) `BE/classes/teacher-tools/personal-questions.*` CRUD, own only (another id = 404), http/https links only, Tingkatan 1-5 only; the request body of API-GUR-24 carries `subjectId`, `educationLevelId` (Tahap, required), `difficulty`, `text`, `options`, `correctIndex`, `referenceUrl?` AND the four DSKP fields `chapterId`, `spIds`, `tp`, `cognitiveLevel`, which are required only where chapters or DSKP nodes exist for the Subjek + Tingkatan (FR-GUR-44a-7, D112; same conditional rule and 422 messages as the bank form, identical in 20 GUR-44a and 60 API-GUR-24); (3) mission draw adds the owner's personal questions for the pupils of the owner's classes only, item carries `referenceUrl`; (4) pages `/guru/soalan-guru` (list) and `/cipta` (form with the V2 labels), link opens in a new tab on the pupil screen; (5) delete-only PR to S0 removes the two routes from `GURU_TOOLS`.
 - Files: `m10-teacher-class/pages/**`, `BE/classes/teacher-tools/**`, `CT/classes`; other sectors by small PR: S1 (`SCH/questions.prisma`, `BE/questions/served-rule.ts`), S0 (`out-of-scope.ts`).
 - Tests: contract test that a private question is absent from Latih Tubi, Databank, Set Soalan pickers, Studio and every count; `javascript:` link rejected; pupil of another teacher is not served it. Verify: V-STD. DoD: DoD-T + AC-GUR-44a-*.
 
@@ -1096,6 +1137,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S6-T19 Databank Soalan (guru)** · P1 · M · Type: Build · deps: S1-T07 · Delivery A (D106, OQ-G-15)
 - Starts from (existing): `apps/api/src/modules/questions/serving/`, `src/shells/nav/user-nav.ts` (nothing exists for the new part; it is added beside these files).
+- New files: `apps/api/src/modules/classes/teacher-tools/databank.controller.ts`, `apps/api/src/modules/classes/teacher-tools/databank.service.ts`, `src/modules/m10-teacher-class/pages/DatabankGuruPage.vue`.
 - PRD: R1-GUR-44d, FR-GUR-44d-1..6, AC-GUR-44d-1..6, FR-X1-4d, FR-X1-4e, FR-X1-4f.
 - Data/API: API-GUR-27
 - Gap: no teacher endpoint and no page. Missing: a read-only list with computed subject counts (Teras and Elektif), search, approved Tingkatan 1-5 questions only, whole stimulus groups. Do not reuse `GET /api/spm/databank`.
@@ -1104,6 +1146,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S6-T20 Kertas Peperiksaan (guru)** · P1 · L · Type: Build · deps: S6-T14, S1-T06 · Delivery A (D106, OQ-G-15)
 - Starts from (existing): `apps/api/src/modules/exam/builder/`, `src/modules/m10-teacher-class/pages/SetSoalanSayaPage.vue`.
+- New files: `apps/api/src/modules/classes/teacher-tools/kertas.controller.ts`, `apps/api/src/modules/classes/teacher-tools/kertas.service.ts`, `src/modules/m10-teacher-class/pages/KertasPeperiksaanPage.vue`, `src/modules/m10-teacher-class/pages/KertasPeperiksaanFormPage.vue`, `apps/api/prisma/migrations/0200_s6_question_set_kind/migration.sql`.
 - PRD: R1-GUR-44e, FR-GUR-44e-1..5, AC-GUR-44e-1..5.
 - Data/API: DM-43; API-GUR-28
 - Gap: the exam builder is admin-only. Missing: a teacher-owned paper resource (list, create draft, add approved questions, share to own classes) and the page `/guru/kertas-peperiksaan`. File upload of a paper stays in S6-T06.
@@ -1114,7 +1157,9 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S7-T01 Permainan (pupil) on real API** · P1 · L · Type: Fix · deps: S0-T09, S5-T15, S7-T05
 - Starts from (existing): `src/modules/m16-battle-games/routes.ts`.
-- PRD: R1-MUR-21; gap: matches V2. Task = remove mock paths (`m16-battle-games/mock`), E-7 evidence. Files: `m16-battle-games/**`. Verify: V-STD. DoD: DoD-T.
+- Chain spec (D-T10-5): this card is the last card of AC-CHAIN-10, so it also writes `e2e/r1/chains/chain-10.http.spec.ts` (an S0-owned folder: a small cross-sector PR with the line `Cross-sector: S0 (chain spec)` and the label `needs:S0`, S0 reviews within 1 working day); S9-T06 runs and maintains it.
+- New files: `apps/api/prisma/migrations/0224_s7_game_engine/migration.sql` (DM-60 and DM-64), `apps/api/prisma/migrations/0228_s7_game_room_session/migration.sql` (DM-67), `apps/api/src/modules/battle/queue/queue-cancel.controller.ts` (API-GAME-14), `apps/api/src/modules/games/solo/spin-segments.service.ts` (DM-64 reads).
+- PRD: R1-MUR-21; gap: the screens match V2. Scope (one job, two parts, nothing else): (a) remove every mock path of the pupil game screens (`m16-battle-games/mock`, S0-T09 lists them; the pupil screens call the real API), E-7 evidence; (b) bring the existing pupil games (Battle Arena, the room games, the solo mini-games, Jutawan Ilmu, Roda Nasib) to the requirements listed below. The FR-GM rows built by this card are exactly the parts of 48 section 5.1 whose owning card is S7-T01: GAME-00, GAME-01, GAME-R, GAME-02..GAME-07, GAME-S, GAME-08..GAME-12, GAME-13, GAME-14 (FR-GM-00, R, S, 01..14, listed below); the Liga and Tournament (GAME-15), boards (GAME-16), economy (GAME-17..19, 25), Misi Harian (GAME-20) and shop (GAME-21..24) are other cards. Most behaviour already exists in `BE/games`/`BE/battle` (60 API-GAME-01..03 are Exists-Fix); the changes that need new schema or routes are the only new work: DM-60 and DM-64 (migration `0224_s7_game_engine`) and DM-67 (migration `0228_s7_game_room_session`), both migrations owned by this card alone (one PR each, in that order), and the route API-GAME-14. Files: `m16-battle-games/**`, `BE/games/**`, `BE/battle/**` (arena, queue, engine), `SCH/games.prisma`, `SCH/battle.prisma`, `CT/games`, `CT/battle`. Verify: V-STD. DoD: DoD-T.
 - Data/API: DM-60, DM-64, DM-67; API-GAME-01, API-GAME-02, API-GAME-03, API-GAME-14
 - New requirements (45, 46, 48; D113): FR-PA-01, 28..33; AC-PA-26, 27, 29..31; FR-GM-S.1..3, FR-GM-00.1..11, FR-GM-R.1..7, FR-GM-01.1..9, FR-GM-02.1..5, FR-GM-03.1..3, FR-GM-04.1..2, FR-GM-05.1..2, FR-GM-06.1..2, FR-GM-07.1..2, FR-GM-08.1, FR-GM-09.1, FR-GM-10.1, FR-GM-11.1, FR-GM-12.1, FR-GM-13.1..3, FR-GM-14.1..4; AC-GM-R.1..6, AC-GM-S.1..3, AC-GM-00.1..12, AC-GM-01.1..11, AC-GM-02.1..5, AC-GM-03.1..2, AC-GM-04.1..3, AC-GM-05.1..3, AC-GM-06.1..3, AC-GM-07.1..3, AC-GM-08.1..4, AC-GM-09.1..2, AC-GM-10.1..3, AC-GM-11.1..3, AC-GM-12.1..3, AC-GM-13.1..4, AC-GM-14.1..5.
 - New requirements from the audit (this card owns them): AC-MUR-21-6 (a game answer counts in the reports).
@@ -1128,12 +1173,14 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S7-T03 Tetapan Permainan (admin)** · P1 · M · Type: Build · deps: S0-T07
 - Starts from (existing): `apps/api/src/modules/games/games.module.ts`, `src/modules/m16-battle-games/routes.ts`.
+- New files: `src/modules/m16-battle-games/pages/TetapanPermainanPage.vue` (the admin page of N-05; route added in the existing `routes.ts`).
 - PRD: 30 N-05. Gap: BE + client exist, no page. Files: `m16-battle-games/**` admin page, `BE/games/**`. Verify: V-STD vs V2. DoD: DoD-T.
 - Data/API: API-ADM-08, API-ADM-23
 - New requirements (45, 46, 48; D113): FR-PA-30; AC-PA-28; FR-GM-00.1..11, FR-GM-02.1..5, FR-GM-14.1..4; AC-GM-00.1..12, AC-GM-02.1..5, AC-GM-14.1..5.
 
 **S7-T04 Syiling, Tukar Token, Cabaran Harian, Pencapaian + admin Gamifikasi** · P1 · L · Type: Build · deps: S0-T07 · Delivery A (R1-MUR-28, 29, 30 linked)
 - Starts from (existing): `apps/api/src/modules/gamification/admin.controller.ts`, `src/modules/m14-gamification/routes.ts`.
+- New files: `src/modules/m14-gamification/pages/AdminGamifikasiPage.vue`, `src/modules/m14-gamification/pages/AdminChallengesPage.vue`, `src/modules/m14-gamification/pages/AdminAchievementsPage.vue`, `apps/api/src/modules/gamification/challenge-claims.service.ts`, `apps/api/prisma/migrations/0226_s7_challenge_claims/migration.sql`, `apps/api/prisma/migrations/0231_s7_ledger_idempotency/migration.sql`, `apps/api/prisma/migrations/0232_s7_challenge_type_combo/migration.sql`.
 - PRD: R1-MUR-28, R1-MUR-29, R1-MUR-30, R1-MUR-34, R1-ADM-P2-01, R1-ADM-P2-02, R1-ADM-P2-03, R1-ADM-P2-04, R1-ADM-P2-05, R1-ADM-P2-06. Gap: pupil screens exist, admin has no Gamifikasi screens (BE `admin/gamification` exists, gap §5.5); reward model differs from V2 (gap §2.3). Files: `m14-*/**`, `m15-*/**`, admin pages under `m14-*`, `BE/gamification/**`. Tests: admin sets a Cabaran, pupil completes it, wallet changes. Verify: V-STD per module against the SRS description of the PRD modules on this card's "PRD:" line (screen layout, exact BM copy and states are written in words there; §0A). DoD: DoD-T + every AC of the listed modules.
 - Data/API: DM-38, DM-63, DM-79, DM-81; API-ADM-14, API-GAME-07, API-GAME-11
 - Also uses: API-MUR-10 (owned by another card; read or verified here, not an ownership claim)
@@ -1141,6 +1188,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S7-T05 Coin rate and reward backend (Kawalan Reward settings, Kedai Hadiah API)** · P1 · M · Type: Build · deps: none · Delivery A (R1-MUR-31 linked) / B (38)
 - Starts from (existing): `apps/api/src/modules/shop`, `apps/api/src/modules/wallet`.
+- New files: `apps/api/src/modules/shop/reward-settings.service.ts`, `packages/contract/src/gamification/reward-settings.ts`, `apps/api/prisma/migrations/0223_s7_reward_settings/migration.sql`, `apps/api/prisma/migrations/0229_s7_reward_catalogue_merge/migration.sql`, `apps/api/prisma/migrations/0230_s7_redemption_idempotency/migration.sql` (three PRs, one per migration, in number order, §3).
 - PRD: R1-ADM-P2-07, R1-ADM-P2-08, R1-ADM-P2-09 (backend part), U-OP-13. Gap: catalogue empty, redemptions cannot be fulfilled (gap §5.5); the coin rate has two sources of truth (F-12). This card is the early backend half of the former single reward card (D113-continued): it lands in Sprint 2 because S5-T03, S3-T04 and S7-T01 read the coin rate; the screens are S7-T11 (Sprint 5).
 - Data/API: DM-48, DM-77, DM-78; API-ADM-15, API-ADM-16, API-GAME-08
 - Also uses: DM-38 (owned by another card; read or verified here, not an ownership claim)
@@ -1152,6 +1200,8 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S7-T06 Papan Pendahulu, Kedudukan, Tournament + admin views** · P1 · L · Type: Build · deps: S7-T04 · Delivery A (R1-MUR-33 linked)
 - Starts from (existing): `src/modules/m08-student-performance/pages/LeaderboardPage.vue`, `apps/api/src/modules/battle/standings/standings.service.ts`.
+- Chain spec (D-T10-5): this card is the last card of AC-CHAIN-9, so it also writes `e2e/r1/chains/chain-9.http.spec.ts` (an S0-owned folder: a small cross-sector PR with the line `Cross-sector: S0 (chain spec)` and the label `needs:S0`, S0 reviews within 1 working day); S9-T06 runs and maintains it.
+- New files: `apps/api/src/modules/battle/tournaments/tournament-rounds.service.ts`, `apps/api/src/modules/battle/standings/league-standings.job.ts`, `src/modules/m16-battle-games/pages/AdminLeagueStandingsPage.vue`, `apps/api/prisma/migrations/0225_s7_league_tournament/migration.sql`.
 - PRD: R1-MUR-33, R1-MUR-18, R1-MUR-23, R1-ADM-P2-14, R1-ADM-P2-15. Gap: no period/scope filters or own rank (gap §2.3); duplicate route `/leaderboard` vs `/gamification/leaderboard` (FR-MUR-33-5). Files: `m16-battle-games/**`, `m14-*/**`, `BE/battle/**`. Tests: own rank outside top 3. Verify: V-STD per module against the SRS description of the PRD modules on this card's "PRD:" line (screen layout, exact BM copy and states are written in words there; §0A). DoD: DoD-T + every AC of the listed modules.
 - Data/API: DM-61, DM-62; API-ADM-17, API-GAME-04, API-GAME-05, API-GAME-06, API-RPT-13, API-GAME-12, API-GAME-13, API-ADM-25
 - Also uses: DM-38 (owned by another card; read or verified here, not an ownership claim)
@@ -1159,6 +1209,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S7-T07 Cabutan Bertuah, Kotak Misteri, Rujuk Kawan** · P2 · L · Type: Build · deps: S7-T05 · Delivery B
 - Starts from (existing): `apps/api/src/modules/shop`, `src/modules/m15-rewards-shop/routes.ts`.
+- New files: `src/modules/m15-rewards-shop/pages/AdminDrawsPage.vue`, `src/modules/m15-rewards-shop/pages/AdminMysteryBoxesPage.vue`, `src/modules/m15-rewards-shop/pages/RujukKawanPage.vue`, `apps/api/src/modules/shop/draw-winners.service.ts`, `apps/api/src/modules/shop/mystery-boxes.service.ts`, `apps/api/prisma/migrations/0221_s7_draw_winners/migration.sql`, `apps/api/prisma/migrations/0222_s7_mystery_boxes/migration.sql`, `apps/api/prisma/migrations/0227_s7_draw_status/migration.sql`.
 - PRD: R1-MUR-22, R1-MUR-35, R1-MUR-36, R1-ADM-P2-10, R1-ADM-P2-11. Gap: admin BE has `POST draws` only; Kotak Misteri admin missing (backend work). Files: `m15-*/**`, `BE/shop/**`. Verify: V-STD per module against the SRS description of the PRD modules on this card's "PRD:" line (screen layout, exact BM copy and states are written in words there; §0A). DoD: DoD-T + every AC of the listed modules.
 - Data/API: DM-36, DM-37, DM-65; API-GAME-09, API-MUR-10, API-ADM-24
 - Also uses: API-ADM-16, API-GAME-08 (owned by another card; read or verified here, not an ownership claim)
@@ -1166,18 +1217,21 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S7-T08 Marketplace (pupil + admin)** · P2 · L · Type: Build · deps: S7-T05 · Delivery B
 - Starts from (existing): `apps/api/src/modules/marketplace/marketplace.controller.ts`, `src/modules/m20-marketplace/routes.ts`.
+- New files: `src/modules/m20-marketplace/pages/AdminProdukPage.vue`, `src/modules/m20-marketplace/pages/AdminPenjualPage.vue`, `apps/api/src/modules/marketplace/marketplace-admin.controller.ts` (no migration, DM-38).
 - PRD: R1-MUR-32, R1-ADM-P2-12, R1-ADM-P2-13. Gap: BE reads only; no admin Produk/Penjual (backend work). Files: `m20-marketplace/**`, `BE/marketplace/**`; no migration (DM-38: the existing marketplace tables are enough; `0220_s7_marketplace_admin` is not needed). Verify: V-STD per module against the SRS description of the PRD modules on this card's "PRD:" line (screen layout, exact BM copy and states are written in words there; §0A). DoD: DoD-T + every AC of the listed modules.
 - Data/API: API-ADM-19
 - Also uses: DM-38 (owned by another card; read or verified here, not an ownership claim)
 
 **S7-T09 Tetapan (support contact) and admin Tiket Bantuan** · P1 · M · Type: Build · deps: none · Delivery A (N-07 feeds Panduan) / B (P2-20)
 - Starts from (existing): `apps/api/src/modules/support/support.controller.ts` (nothing exists for the new part; it is added beside these files).
+- New files: `src/modules/m22-support-tickets/pages/AdminSettingsPage.vue`, `apps/api/src/modules/support/config.controller.ts` (`GET /api/config/support`), `apps/api/prisma/migrations/0180_s5_support_ticket_context/migration.sql` (S5 range, requested with `needs:schema`).
 - PRD: R1-ADM-N-07, R1-ADM-P2-20 (D108(4)). Migration `0180_s5_support_ticket_context` (DM-32; the table is in S5's schema file, so a `needs:schema` request to S5). Gap: UAT `GET /api/config/support` 404; no `/admin/settings`, `/admin/tiket` write screens. Files: `m22-support-tickets/**`, `BE/support/**`. Tests: setting read by Panduan, ticket status flow. Verify: V-STD per module against the SRS description of the PRD modules on this card's "PRD:" line (screen layout, exact BM copy and states are written in words there; §0A). DoD: DoD-T + every AC of the listed modules.
 - Data/API: DM-32; API-ADM-10, API-SUP-03, API-SUP-05
 - Also uses: API-SUP-04, DM-33 (owned by another card; read or verified here, not an ownership claim)
 
 **S7-T10 Tiket Bantuan (pupil, guru, school admin)** · P2 · M · Type: Complete · deps: S7-T09 · Delivery B
 - Starts from (existing): `apps/api/src/modules/support/support.controller.ts`, `src/modules/m22-support-tickets/routes.ts`.
+- Chain spec (D-T10-5): this card is the last card of AC-CHAIN-7, so it also writes `e2e/r1/chains/chain-7.http.spec.ts` (an S0-owned folder: a small cross-sector PR with the line `Cross-sector: S0 (chain spec)` and the label `needs:S0`, S0 reviews within 1 working day); S9-T06 runs and maintains it.
 - PRD: R1-MUR-A4, R1-GUR-A4, R1-AS-A4. Files: `m22-support-tickets/**`, `BE/support/**`. Verify: V-STD per module against the SRS description of the PRD modules on this card's "PRD:" line (screen layout, exact BM copy and states are written in words there; §0A). DoD: DoD-T + every AC of the listed modules.
 - Data/API: API-SUP-01, API-SUP-02
 - Also uses: DM-32 (owned by another card; read or verified here, not an ownership claim)
@@ -1185,6 +1239,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S7-T11 Kedai Hadiah, Kedai Hadiah Digital, Tebusan and Kawalan Reward screens** · P1 · L · Type: Build · deps: S7-T04, S7-T05 · Delivery A (R1-MUR-31 linked) / B (38)
 - Starts from (existing): `src/modules/m15-rewards-shop/routes.ts`.
+- New files: `src/modules/m15-rewards-shop/pages/AdminHadiahPage.vue`, `src/modules/m15-rewards-shop/pages/AdminKawalanRewardPage.vue`, `src/modules/m15-rewards-shop/pages/AdminRedemptionsPage.vue`.
 - PRD: R1-MUR-31, R1-MUR-38, R1-ADM-P2-07, R1-ADM-P2-08, R1-ADM-P2-09. Gap: no admin Hadiah or Kawalan Reward screens and the pupil shop shows an empty catalogue (gap §5.5). Files: `m15-*/**`. Tests: redeem → queue → deliver/cancel in the browser. Verify: V-STD per module against the SRS description of the PRD modules on this card's "PRD:" line (screen layout, exact BM copy and states are written in words there; §0A). DoD: DoD-T + every AC of the listed modules.
 - Data/API: none
 - Also uses: API-ADM-15, API-ADM-16, API-GAME-08, DM-48, DM-77, DM-78 (owned by another card; read or verified here, not an ownership claim)
@@ -1218,12 +1273,14 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S8-T05 Paper view (cover, review, result, preview)** · P1 · M · Type: Complete · deps: S8-T02
 - Starts from (existing): `src/modules/m28-bijak-spm/pages/ResultPage.vue`, `src/modules/m28-bijak-spm/pages/PaperCoverPage.vue`.
+- New files: `src/components/question-display/PaperView.vue`.
 - PRD: FR-X6-10. Sections/parts/marks readable at 375; admin paper preview. Files: `question-display/**` (new `PaperView.vue`). Tests/verify standard. DoD: DoD-T.
 - Data/API: none
 - New requirements (45, 46, 48; D113): FR-PA-18, 20, 40; FR-QA-48, 49; AC-QA-48, 49.
 
 **S8-T06 DS primitives: table→cards, forms, two-pane→tabs** · P0 · M · Type: Complete · deps: none
 - Starts from (existing): `src/ds/DsDataTable.vue`, `src/ds/DsDrawer.vue`.
+- New files: `src/ds/DsSplitPane.vue`.
 - PRD: NFR-1, FR-X6-4, FR-X6-5, FR-X6-11. Files: `src/ds/{DsDataTable,DsDrillTable,DsFormBar,DsFormField,DsDrawer,DsPanel}.vue` + new `DsSplitPane.vue`. Tests: DS component tests; `npm run lint:ds`. Verify: V-STD. DoD: DoD-T.
 - Data/API: none
 
@@ -1263,7 +1320,11 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - Starts from (existing): `docs/prd/r1/40-cross-cutting.md`, `e2e/`
 - PRD: 40 section X9, AC-CHAIN-1..9 (one chain per audited flow: 1 admin question to every report, 2 paper PDF to pupil paper, 3 Bijak lanes, 4 class and Set Soalan, 5 Headcount, 6 Sumbang Soalan to admin, 7 Tiket Bantuan, 8 school-user lifecycle, 9 gamification and redemption). This card **owns all nine**, and also AC-CHAIN-10 (Kuiz and game answers reach every report: the Kuiz writes at the final submit only, a Battle against a human and a Quick Match against the robot write rows of mode `battle`, one total on Prestasi, Analisa Item, the teacher, school-admin and Admin Pusat screens; 46 section 9.7), so it owns all ten.
 - Data/API: none
-- Approach: implement each chain as one Playwright spec per chain (`e2e/r1/chain-n.http.spec.ts`) that enters ONE record on the first side and asserts the same figure on every other side; CI runs it on the CI seed (automated check only), and the **acceptance run is on UAT** (D110) in a **headed** browser at 375, 768 and 1280, with test records created on UAT and removed afterwards (U-OP-14). The chain fails on the first screen that shows a different number or name. Chains land with their cards: 1 (S1-T01, T02, T07, S2-T01, S4-T03, S5-T02, T03, T15, S10-T01, T03, T05, S6-T03) and 2 (S1-T03, T10, S2-T02, S3-T02, T04, S5-T15) and 5 (S10-T02, S6-T03, S5-T15) in Sprint 3; 3 (S3-T05, T06, T07), 4 (S6-T10, T14, S5-T08, T11), 6 (S6-T06, S1-T08), 8 (S6-T09, T12) in Sprint 4; 9 (S5-T03, S7-T04, T05, T06) in Sprint 5; 7 (S7-T09, T10) in Sprint 8.
+- Who does what (D-T10-5): S9 is not claimable as a sector, but this card is worked by the Delivery Lead session. The spec of AC-CHAIN-n is written by the LAST card of chain n (the table below) in the same PR as that card's own change, in the S0-owned folder `e2e/r1/chains/` (small cross-sector PR, `Cross-sector: S0 (chain spec)`, label `needs:S0`); this card runs the full suite on the CI seed, runs the UAT acceptance and maintains the suite afterwards; it never writes a product fix.
+- Last card of each chain (it writes `e2e/r1/chains/chain-<n>.http.spec.ts`): chain 1 S10-T05; chain 2 S3-T04; chain 3 S3-T07; chain 4 S5-T11; chain 5 S6-T03; chain 6 S6-T06; chain 7 S7-T10; chain 8 S6-T12; chain 9 S7-T06; chain 10 S7-T01. Each of those cards carries the line "Chain spec" naming its file.
+- New files: `e2e/r1/chains/chain-1.http.spec.ts` .. `chain-10.http.spec.ts` (each written by the last card of its chain, line above) and `e2e/r1/chains/helpers.ts` (shared login and `UJI` record helpers, written by the first chain card that needs it; later cards only add to it).
+- AC-CHAIN-2 reviewer step (D-T10-4): imported questions arrive as Draf. An Admin Pusat user (the only reviewer role; there is no Penyemak role) sets Bab, SP, TP and Kesukaran in the wizard (Bab required where chapters exist; SP, TP and aras where DSKP nodes exist, D112(3)), sends the group to review (Menunggu Semakan, Studio filter `status=review`), approves it (Diluluskan), and then Terbit publishes the group as one unit. The chain-2 spec seeds these steps through the UI, never through the database.
+- Approach: implement each chain as one Playwright spec per chain (`e2e/r1/chains/chain-<n>.http.spec.ts`) that enters ONE record on the first side and asserts the same figure on every other side; CI runs it on the CI seed (automated check only), and the **acceptance run is on UAT** (D110) in a **headed** browser at 375, 768 and 1280, with test records created on UAT and removed afterwards (U-OP-14). The chain fails on the first screen that shows a different number or name. Chains land with their cards: 1 (S1-T01, T02, T07, S2-T01, S4-T03, S5-T02, T03, T15, S10-T01, T03, T05, S6-T03) and 2 (S1-T03, T10, S2-T02, S3-T02, T04, S5-T15) and 5 (S10-T02, S6-T03, S5-T15) in Sprint 3; 3 (S3-T05, T06, T07), 4 (S6-T10, T14, S5-T08, T11), 6 (S6-T06, S1-T08), 8 (S6-T09, T12) in Sprint 4; 9 (S5-T03, S7-T04, T05, T06) in Sprint 5; 7 (S7-T09, T10) in Sprint 8.
 - **Exit gate:** every chain passes **on UAT** (clone of V2 production data) in a headed browser at 375/768/1280, evidence in `.evidence/S9-T06/` (gitignored, never committed; only pass/fail and IDs are reported); a chain that fails returns the failing step to the owning card (the chain's card list above), it is never patched here. No product code in this card.
 - Tests: the ten specs. DoD: DoD-T (a), (d), (h) only.
 
@@ -1351,7 +1412,7 @@ Exit-criteria notation: `AC-MUR-3-*` means all acceptance criteria of that modul
 - *Cards:* S1-T03, T04, T05, T07, T10 · S2-T01, T02, T05, T07 (start) · S0-T07 (menu FINAL, D107) · S4-T03 (finish, apply on local), S4-T06, T07 · S5-T01, T04 · S6-T03 (finish), S6-T12 (Pengguna/Sekolah, P0) · S10-T04 (after the bulk-mapping tool is finished) · S7-T05 (the coin-rate and reward backend, now its own card) · S10-T09 · S8-T02 (finish) · S0-T09.
 - *Entry:* S1-T01 done; S0-T03 worker on; S8-T01 done; S2-T03 aliases merged (the menu itself is FINAL, D107).
 - *Exit (ACs):* `AC-ADM-QE1.*..QE6.*`, `AC-ADM-Q03..Q09.*`, `AC-ADM-G7.1`, `AC-ADM-G7.3`; AC-X3-1 (T1 and T5 both practise); `AC-ADM-C05.*` on the dataset; `AC-GUR-5-*`, `AC-AS-5-*` (S10-T04); AC-X6-1 for S2 screens at 375/768/1280.
-- *Demo:* (1) Studio: create a stimulus then three questions without re-uploading the figure; (2) upload a PDF fixture: batch finishes, Rajah 3 → Q5–8 grouped, reviewer adjusts range, accept; (3) completeness panel names missing fields; (4) CSV with DSKP columns publishes; (5) sidebar "Soalan" group = 8 items, V2 paths redirect; (6) T1 pupil practises.
+- *Demo:* (1) Studio: create a stimulus then three questions without re-uploading the figure; (2) upload a PDF fixture: batch finishes, Rajah 3 → Q5–8 grouped, reviewer adjusts range, accept; (3) completeness panel names missing fields; (4) CSV with DSKP columns publishes; (5) sidebar "Soalan" group = 9 items, V2 paths redirect; (6) T1 pupil practises.
 
 **Sprint 3 — "T5 pupil on UAT sits a published Bijak SPM paper with stimulus groups on a phone".**
 - *Cards:* S1-T06, T09a, T09b (these first in the sprint) · S3-T02, T04, T08 · S8-T03, T04, T05 · S9-T06 (chains 1, 2, 5) · S2-T04, T08, T10, T09(P2 optional) · S5-T02, T03, T07 · S4-T08, T04 (script and apply, after the Sprint 2 servability work) · S3-T05 · S10-T05 · S6-T07, T08.

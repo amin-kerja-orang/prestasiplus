@@ -84,6 +84,13 @@ The repo `CLAUDE.md` rule `feature/<slug>` is for non-R1 work. R1 branches alway
 ### 9. The label list (the real one)
 `r1` · `sector:S0..S10` · `type:fix|complete|build|keep|verify|ops` · `prio:P0|P1|P2` · `status:ready|in-progress|in-review|blocked|done` · `r1-delivery:A|B` · `team:<team>` (created by the team lead on first use) · `needs:S0..S10` (a cross-sector PR, or a request waiting on that sector). Stuck: `status:blocked` plus a comment. Milestones: `R1 Sprint 0..N`.
 
+### 10. S9 cards and the end-to-end chain specs
+- S9 is the Delivery Lead's sector. It cannot be claimed as a SECTOR (no team holds the lock `S9`), but its cards S9-T01..S9-T06 are worked by the Delivery Lead session; S9-T06 is included. S9 cards need no lock.
+- The spec of AC-CHAIN-n is written by the LAST card of chain n (the table in card S9-T06), in the same PR as that card's change, under `e2e/r1/chains/chain-<n>.http.spec.ts`. That folder belongs to S0, so the card PR is a small cross-sector PR (decision 7): the line `Cross-sector: S0 (chain spec)` and the label `needs:S0`. S9-T06 runs the full chain suite on the CI seed and on UAT and maintains it; it never writes a product fix.
+
+### 11. Numbers on the wire and on the screen
+Every report and practice API returns accuracy as a number with ONE decimal (pooled correct ÷ answered × 100, XS-5; 60 section 4.6); every screen shows the whole number rounded half up (40 XS-5). Only the manual Headcount AR screen may show one decimal. Cards S10-T01, S10-T03, S6-T01 and S6-T03 apply this rule.
+
 ## Steps for one card
 
 1. **Read** [`docs/prd/r1/00-index.md`](../prd/r1/00-index.md), then the PRD sections on the card's `PRD:` line, then its `Data/API:` rows in 50 and 60.
@@ -102,7 +109,7 @@ The repo `CLAUDE.md` rule `feature/<slug>` is for non-R1 work. R1 branches alway
    | FR-X1-4d    | works   | question-display/StimulusGroup.vue          | none                            |
    ```
    File and line numbers written on the cards were true on 2026-11-04; find the code by name (symbol). Only then set `status:in-progress`.
-5. **Close the gaps in the existing files only.** A new file only if the card names it. Branch, commit and PR names: decision 3.
+5. **Close the gaps in the existing files only.** A new file only if the card names it: every Build card has a `New files:` line with the exact paths you may create (a card that has no such line creates no file). If you need a file that is not listed, post a QUESTION (Hard rules) before creating it. Branch, commit and PR names: decision 3.
 6. **Prove the automatable ACs in CI** (decision 4.1). Local checks before you push:
    ```
    npm run typecheck && npm run lint && npm test     # backend also: npm run be:verify; contract change: npm run contract:check
@@ -111,7 +118,7 @@ The repo `CLAUDE.md` rule `feature/<slug>` is for non-R1 work. R1 branches alway
    node scripts/r1-trace-check.mjs                   # only if you touched docs or the plan
    ```
 7. **Open the PR** to `feature/v3-bijak-r1` with the template: exactly one card ID, gap-check link, existing files changed, the reason for any new file, DM/API IDs, ACs proven with their `[CI]`/`[UAT]` tags, "ACs awaiting UAT", and the scope-guard and canonical-map results. Set `status:in-review`.
-8. **CI** must be green: `r1-scope-guard`, `r1-docs` (when docs or the plan change), and the existing frontend/api jobs.
+8. **CI** must be green: `r1-scope-guard`, `r1-docs` (when docs or the plan change), and the existing frontend/api jobs. The scripts `scripts/r1-scope-guard.mjs`, `scripts/r1-canonical-map.mjs` and `scripts/r1-trace-check.mjs` exist today; the required CI jobs that run them are wired by card S0-T04. Until S0-T04 is merged CI does not run them, so run them locally (step 6) and paste the output in the PR.
 9. **Review and merge**: decisions 4.2 and 6. A cross-sector PR also follows decision 7.
 10. **UAT acceptance and Done**: decisions 4.3 to 4.5. Release your card lock after the merge (`release S<n>-T<nn>`); release the sector lock when the sector is finished or your team stops.
 
@@ -129,14 +136,14 @@ node scripts/r1-lock.mjs release S1-T01 --team team-amin --session S-2     after
 - You may set `R1_TEAM` and `R1_SESSION` in the environment instead of the flags. `break` is for the product owner only.
 - Exit codes: **0** ok · **2** usage or setup error · **3** held by another team (pick another) · **4** you are not the holder, or your team does not hold the sector.
 - The tool needs a git remote with **push rights** to the repository (a cloud session uses the repository token its platform provides).
-- Conventions the tool does not enforce: hold at most 3 sectors; never hold a sector idle for more than a day; S9 is the Delivery Lead's and is not claimable.
+- Conventions the tool does not enforce: hold at most 3 sectors; never hold a sector idle for more than a day; S9 is the Delivery Lead's sector and cannot be claimed as a SECTOR (decision 10).
 - **Weekends and leave:** STALE counts calendar hours. Before a weekend or leave run `heartbeat-all` and write `[<team>/S-<k>] away until <date>` in #503. The product owner breaks a STALE lock only after one working day without an answer in #503.
 
 ## Hard rules
 
 - **No rebuilding.** Do not rewrite or delete working code, pages or modules.
 - **No parallel pages, services, stores, routes or tables** for something that already exists. Every schema change names a DM ID, every endpoint an API ID.
-- **Change budget by card Type**: Keep/Verify/Ops = no product code; Fix/Complete = the "Starts from" files (new file only if the card names it); Build = new files only at the named location. If a Verify card turns out to need product code, it is a Fix or Complete card: tell your team lead.
+- **Change budget by card Type**: Keep/Verify/Ops = no product code; Fix/Complete = the "Starts from" files (new file only if the card names it); Build = new files only at the paths of the card's `New files:` line. If a Verify card turns out to need product code, it is a Fix or Complete card: tell your team lead.
 - **No server access for AI sessions** (decision 5). V1 and V2 are not opened by agents.
 - No placeholder strings ("akan datang", "belum tersedia", "Pratonton", "prototaip") and no mock path in the http build.
 - **Duplicated stem text:** a question whose stem is repeated as its only part's prompt (`stem_duplicated`) is **shown once and is NOT excluded** from serving or counting; the data is cleaned later (DM-40). Only `stimulus_missing` and `figure_only` questions are excluded (FR-X1-4, FR-MUR-QP-5, OD-3).
