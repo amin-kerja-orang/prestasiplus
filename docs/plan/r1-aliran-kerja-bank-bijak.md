@@ -4,7 +4,7 @@
 
 **Isi:** 29 proses dan 114 langkah. Setiap langkah menunjukkan siapa buat, di skrin mana, dan keadaannya pada tip e34e0a52d (`feature/v3-bijak-r1`). Status ialah rakaman pada tip itu, jadi semak semula sebelum bergantung padanya.
 
-**Rujukan:** PRD di [`docs/prd/r1/`](../prd/r1/00-index.md). Dalam dokumen ini, "saya" ialah Claude (Team B) dan "awak" ialah ketua Team B.
+**Rujukan:** PRD di [`docs/prd/r1/`](../prd/r1/00-index.md), cara bekerja di [`R1-START-HERE.md`](R1-START-HERE.md). Dokumen ini tidak menggantikan kad pelan. Dalam dokumen ini, "saya" ialah Claude (Team B) dan "awak" ialah ketua Team B.
 
 ## Gambaran besar
 
@@ -50,7 +50,7 @@ Pada kefahaman saya, kerja sejak 31 Oktober menambah skrin di sebelah skrin yang
 | Tiada | Belum dibina. | 17 |
 | Belum diuji | Kod atau PRD ada, saya belum nampak ia berjalan. | 20 |
 
-Sumber: Uji UAT dan Uji lokal ialah ujian pelayar. PRD E2E ialah laporan ujian pada 3 Nov. Kod bermaksud saya baca atau cari dalam e34e0a52d. PRD bermaksud saya hanya pegang tulisan PRD. Status Jalan untuk data contoh tidak bermaksud UAT sudah ada isinya.
+Sumber: Uji UAT dan Uji lokal ialah ujian pelayar. PRD E2E ialah laporan ujian pada 3 Nov. Kod bermaksud saya baca atau cari dalam e34e0a52d. PRD bermaksud saya hanya pegang tulisan PRD. Status Jalan untuk data contoh tidak bermaksud UAT sudah ada isinya. Mengikut D110, penerimaan rasmi hanya di UAT, jadi Uji lokal bukan bukti penerimaan.
 
 ## Bahagian A: Asas sebelum soalan
 
@@ -466,7 +466,7 @@ Rujukan PRD: FR-X4-5, AC-CHAIN-1 hingga 3
 1. **Bab wajib sebelum Terbit?** Kod dan keputusan papan Q17: tidak wajib. PRD D-A5: wajib jika subjek dan tingkatan itu ada Bab. Saya ikut PRD kerana lebih baharu, kecuali awak kata lain.
 2. **OCR dan AI sebenar, atau mock?** Q23 terima mock. PRD U-OP-02 dan AC-ADM-Q18.1 perlukan yang sebenar. Tanpanya, muat naik PDF di UAT hanya menguji aliran, bukan isi kertas. Siapa pembekalnya?
 3. **20 subjek tanpa DSKP?** Termasuk Kimia, Biologi, Geografi, Perniagaan, Akaun dan Ekonomi. PRD kekalkan SP dan TP sebagai syarat, D109 hanya melepaskan T1 hingga T3. Jadi soalan baharu subjek ini tidak boleh Terbit, dan Kontrak tidak boleh dibuat. Muat DSKP mereka, atau longgarkan syarat?
-4. **Siapa isi kandungan Bijak?** Soalan legasi tanpa tag dilarang masuk kertas (D80). Jadi walaupun semua kod siap, murid tetap nampak kosong sehingga seseorang buat U-OP-04, 07, 08, 09. Kertas mana dulu, dan siapa yang buat?
+4. **Siapa isi kandungan Bijak?** Soalan legasi tanpa tag dilarang masuk kertas (D80). Jadi walaupun semua kod siap, murid tetap nampak kosong sehingga U-OP-04, 07, 08, 09 dibuat. D110 sudah tetapkan kerja ini milik pengguna Admin, bukan pembangun. Yang masih perlu: nama orangnya, dan kertas mana dulu.
 5. **Sunting Pantas: Keep atau baiki?** PRD tanda Q-24 Keep. Audit saya dapati ia mati pada API sebenar. Saya anggap perlu dibaiki.
 6. **Jana Kertas untuk murid: ada atau tiada?** PRD 30 bahagian 1.4 kata di luar skop (D88). FR-MUR-13-20 kata tab itu kekal. Saya perlukan satu jawapan.
 7. **Skop 24 jam yang mana?** Pelan PRD: 3 pembangun kira-kira 24 minggu, 5 pembangun kira-kira 13 minggu untuk Delivery A. Dengan 3 orang dalam 24 jam, hanya sebahagian kecil boleh siap. Proses mana yang wajib untuk 24 jam itu?
@@ -476,6 +476,6 @@ Rujukan PRD: FR-X4-5, AC-CHAIN-1 hingga 3
 - Skrin Bijak mana yang awak sendiri maksudkan sebagai pendua. Bahagian D1 hanya ikut senarai PRD.
 - Apa sebenarnya yang rosak pada 31 Oktober yang sepatutnya dibaiki.
 - Di mana hasil Playwright atas .cloud. PRD catat beberapa skrin V2 tidak pernah dirakam: skrin selepas Hantar (E-6) dan Semak Import (E-21).
-- Sama ada PRD ini sudah diluluskan. Cawangan docs/r1-prd-devplan belum di-merge, dan ia sendiri menunggu kelulusan.
+- Siapa pembangun UAT yang dilantik (plan bahagian 10 item 6). PRD dan pelan sudah diluluskan (D111), tetapi cawangannya belum di-merge (PR 406 masih terbuka).
 - Belum pernah diuji: AI sebenar, tamat masa automatik, foto jawapan, rubrik, Terbit pukal, murid T1 hingga T3. Ujian rantaian dibuat pada data contoh tempatan, dengan 4 ubahan data tangan supaya boleh sampai ke hujung.
 - Di luar dokumen ini: modul guru, admin sekolah, gamifikasi, kecuali yang menyuap atau membaca Bank Soalan dan Bijak.
