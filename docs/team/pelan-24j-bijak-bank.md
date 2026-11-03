@@ -43,13 +43,13 @@ Jika tiada jawapan pada jam 1, lalai digunakan.
 | # | Soalan | Lalai | Kenapa |
 |---|---|---|---|
 | K1 | Skrin Bank Soalan utama? | `/admin/questions`. Studio dan Bank SPM keluar dari menu; laluan kekal | Paling lengkap untuk 406k: penapis, pukal, muat turun halaman |
-| K2 | Pembina kertas utama? | `/admin/spm/kertas`. Set Builder keluar dari menu, tetapi dicapai dari Pembina kerana Jana ada di sana | Inilah yang E2E `admin-publish-http` buktikan. Sahkan dengan Amin |
+| K2 | Pembina kertas utama? | `/admin/spm/kertas`. Set Builder keluar dari menu, tetapi dicapai dari Pembina kerana Jana ada di sana | Inilah yang E2E `admin-publish-http` buktikan. Sahkan dengan hasil Playwright |
 | K3 | Soalan T1 hingga T3, dan 8 subjek SPM tanpa DSKP, boleh Terbitkan? | Boleh, tanpa tag DSKP (R1-U1) | Sekarang ia tersekat selama-lamanya |
 | K4 | Satu kertas sebenar untuk bukti? | 3472/2 Matematik Tambahan K2 | Data paling lengkap (runbook 5.2) |
 | K5 | Batch DS 19 kecacatan (REQ-A-083, `adb94601`, 29 fail)? | Merge pada jam 0, sebelum kerja lain | Merge kemudian akan berkonflik dengan semua orang |
 | K6 | Siapa satu-satunya orang merge dan dispatch? | D1 | Dua orang merge pernah membatalkan CI |
 
-**Input Amin pada jam 1:** daripada Playwright di `.cloud`, satu jadual: skrin V2, langkah, dan skrin V3 yang menyamainya. Baca sahaja di production, tiada data sebenar atau nama orang dalam repo. Jika ia bercanggah dengan K1 atau K2, ikut V2.
+**Input Playwright `.cloud` pada jam 1:** daripada Playwright di `.cloud`, satu jadual: skrin V2, langkah, dan skrin V3 yang menyamainya. Baca sahaja di production, tiada data sebenar atau nama orang dalam repo. Jika ia bercanggah dengan K1 atau K2, ikut V2.
 
 ## 5. Tugas
 
@@ -96,7 +96,7 @@ Jika tiada jawapan pada jam 1, lalai digunakan.
 
 | Jam | Kerja |
 |---|---|
-| 0 hingga 1 | K1 hingga K6; T0; input Amin; D3 mula T10 |
+| 0 hingga 1 | K1 hingga K6; T0; input Playwright; D3 mula T10 |
 | 1 hingga 8 | P0 serentak, cawangan sendiri, ujian merah dahulu |
 | 8 hingga 10 | Semakan silang; **Batch 1**: D1 merge sekali, satu CI (kira-kira 40 minit), deploy UAT |
 | 10 hingga 14 | Uji Aliran A dan B di UAT; betulkan yang gagal; C1 dan C2 bermula |
