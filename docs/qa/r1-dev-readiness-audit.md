@@ -406,3 +406,275 @@ Consistent with 10/20/30/50/60 on values, enums and modes:
 | OD-6, OD-12 | CLOSED (user, D109) | 50 section 7; 00-index; plan S4-T09 and section 10; 01 DEP-1; 30 OQ-D101, E-16 |
 
 **Checked, no new conflict:** single answer store and mode registry vs API-PRAC-01; HC-SPEC vs MUR-3 / AS-3 / Prestasi; Set Soalan multi-class vs MUR-26, DM-46, API-GUR-16; join-by-code removal across 10/20/60; ticket single reply with status set separately; whole-number pooled accuracy vs XS-5 (Manual-AR exception stated); Bab vs "Tajuk DSKP" terms; coin rate default 1 (10 section 4.4, 30 P2-09.3, 40 precision list, AC-CHAIN-9, AC-MUR-16-4).
+
+## Wizard re-verification 2026-11-04
+
+Task T9 (re-verify the question-entry wizard against V2 and against the real SPM paper formats). Independent check of the merged PRD; no PRD file was changed by this task. Every NO below is a GAP with the exact fix text in the register at the end; the Delivery Lead routes the fixes to the owning file.
+
+### Method
+
+- Checklists: `wizard-vs-v2.md` (55 V2 functions V01-V55, split paths B1-B3, M1-M8, m1-m8) and `wizard-vs-exam-format.md` (G-01, G-01b, G-02..G-05, G-07..G-19; there is no G-06) with the per-subject paper structures (BM, BI, Fizik, Matematik, Matematik Tambahan, Sejarah).
+- Specs read in full for these items: 30 (QE-01..QE-08, Q-03..Q-05, Q-14..Q-16, Q-25, 4.G), 45 (all of section 3, 4, 7, 8), 46 (sections 2, 3, 7), 50 (DM-50..DM-59, DM-69, DM-70), 60 (API-Q-03..Q-39, API-BIJAK-05/09, section 4.1/4.2), 40 (X11 OPT-MOD-JAWAPAN), 10 (QP rules) and the plan (cards only, read-only, no line numbers cited).
+- Rule per item: PASS only if (1) an FR in 30 or 45 states it, (2) an AC tests it, (3) the data shape is in 50 and the API in 60 where data or an API is involved, (4) the pupil side (answering, marking, self-mark, rendering) is in 46 or 10 where relevant, (5) an owning card family exists in the plan, and (6) the documents do not contradict each other on it. Anything else is GAP with the missing piece.
+- 30 has no single B/M/m/G table; it tags each FR with the ID in brackets, e.g. `FR-ADM-QE1.6 (B1; FR-QA-01..03)`. I searched every ID in 30 and 45 and used those tags (all 38 IDs have at least one FR; M8 sits in FR-ADM-Q25.1).
+- Plan check: the cards named by 45 section 8 / 46 section 7 exist, except that `S1-T09a` / `S1-T09b` are not yet card lines (the plan still has `S1-T09`, P1/M, whose text still says drawing and table_fill stay P2) and no card names R1-ADM-Q-25 (Soalan PKSK). Both are T6 work, listed as W-16; they are not counted against the specification verdicts.
+- Count conventions: one row = one checklist item. 'PASS' needs all six conditions; a missing AC alone makes the row GAP (W-14).
+
+### Result summary
+
+- V2 functions: 46 PASS, 9 GAP of 55.
+- Split paths B/M/m: 11 PASS, 8 GAP of 19.
+- G items: 7 PASS, 12 GAP of 19.
+- Total: **64 PASS, 29 GAP of 93**. 17 distinct defects (W-01..W-17) explain all GAPs; all are text or contradiction fixes, none needs a new screen.
+
+### Verdicts
+
+- **V2 parity: NO** (9 V2 rows GAP: V05, V09, V17, V19, V22, V23, V24, V32, V41; fixes W-01, W-02, W-06, W-07, W-13, W-14).
+- **Bahasa Melayu: NO** (W-02, W-03, W-07, W-08, W-15).
+- **Bahasa Inggeris: NO** (W-02, W-06, W-09, W-11).
+- **Fizik: NO** (W-04, W-05, W-07, W-08).
+- **Matematik: NO** (W-04, W-05, W-08, W-10, W-12).
+- **Matematik Tambahan: NO** (W-04, W-05, W-12).
+- **Sejarah: NO** (W-07, W-08, W-12, W-15).
+
+Each verdict turns YES once the listed W-fixes are applied and this section is re-run (no new design is needed).
+
+### Checklist 1: wizard-vs-v2 (55 V2 functions)
+
+| ID | V2 function | FR | AC | DM / API | Pupil side | Verdict (gap) |
+|---|---|---|---|---|---|---|
+| V01 | Status tiles with counts | FR-ADM-Q03.6 | AC-ADM-Q03.1 | API-Q-01 | n/a | PASS |
+| V02 | Filters + Tapis / Set Semula (V3 adds Tingkatan, Bab, DSKP) | FR-ADM-Q03.* (Q-03 filters) | AC-ADM-Q03.4 | API-Q-01 | n/a | PASS |
+| V03 | Columns, 90 chars, 25 per page | Q-03 field block | AC-ADM-Q03.1 | API-Q-01 | n/a | PASS |
+| V04 | Row actions Pratonton / Edit | Q-03 row 03-16 | AC-ADM-Q04.1 | API-Q-01 | n/a | PASS |
+| V05 | Panel row action Sembunyikan (m1) | FR-ADM-Q03.9 | none | API-Q-04 (archive) | n/a | GAP (W-14) |
+| V06 | Bank lama link, Cipta baharu | Q-03 regions | AC-ADM-Q03.1 | - | n/a | PASS |
+| V07 | Import DOCX (ZIP) (dropped, PDF replaces) | FD-QE-4 | AC-ADM-Q07.1 | API-Q-14 | n/a | PASS |
+| V08 | Import BI Kertas 1 modal (dropped) | FD-QE-4; FR-QA-35, FR-QA-37 | AC-QA-35, AC-QA-37 | API-Q-15 | n/a | PASS |
+| V09 | Draft-recovery banner Pulihkan / Buang | 45 3.1.1 step 4 | none | browser storage | n/a | GAP (W-14) |
+| V10 | Sumber soalan badge | 45 3.1.1 step 2; FR-QA-39 | AC-QA-39 | API-Q-03 | n/a | PASS |
+| V11 | Status bar, Belum dipapar, Hantar, Arkib, Terbitkan | FR-ADM-Q04.3, Q04.4 | AC-ADM-Q04.1 | API-Q-05 | n/a | PASS |
+| V12 | Tab strip (m2) | FR-ADM-QE2.5; FR-QA-16 | AC-ADM-QE2.4; AC-QA-16 | - | n/a | PASS |
+| V13 | Kertas picker | FR-ADM-QE5.2; 45 3.1.3 | AC-ADM-QE5.3 | API-Q-03 (DM-07/08) | n/a | PASS |
+| V14 | Bahagian select | 45 3.1.3; FR-ADM-QE5.2 | AC-ADM-QE5.3 | DM-07 | n/a | PASS |
+| V15 | Nombor soalan | 45 3.1.3 | AC-ADM-QE5.3 | API-Q-03 numberLabel | n/a | PASS |
+| V16 | Teks soalan (stem), placeholder | FR-ADM-QE3.14 (M6); FR-QA-16 | AC-QA-16 | API-Q-03 questionText | stem once: 46 1.5 item 4 | PASS |
+| V17 | 15 stimulus kinds -> 7 (M7) | FR-ADM-QE3.21 | none; FD-QE-8 cited but never defined | DM-70 | 46 2.4 Kinds | GAP (W-13) |
+| V18 | Kapsyen (pilihan) | FR-ADM-QE2.6; 45 G-03 | AC-QA-10 | DM-50 caption_en | 46 2.4 | PASS |
+| V19 | Rich editor toolbar + math dialog | FR-ADM-QE3.16; FR-QA-18; 45 3.1.5 | AC-ADM-QE3.12; AC-QA-18 | sanitiser rule | pupil rendering of u, s, poem, columns, box not specified | GAP (W-07) |
+| V20 | MathML static note | 45 3.1.5 | AC-QA-18 | - | 46 2.2 working (maths keyboard) | PASS |
+| V21 | Stimulus per question -> group-first | FR-ADM-QE1.2, QE2.1..2.4 | AC-ADM-QE1.1, QE2.1 | DM-02..04; API-Q-07, API-Q-08 | 46 2.4; AC-PA-03 | PASS |
+| V22 | Part tree Label, Jenis, Markah, Arahan | 45 3.1.6 L-01..L-05; FR-ADM-QE3.3 | AC-QA-26 | DM-55; API-Q-03 | 46 2.2 | GAP (W-06) |
+| V23 | 14 answer modes (m8 typo, V2 14 -> 11 types / 9 modes) | FR-ADM-QE3.2, QE3.8, QE3.24 | AC-QA-26 | DM-69 | 46 2.2 | GAP (W-01) |
+| V24 | Had perkataan (M6) | FR-ADM-QE3.12; FR-QA-21 | AC-QA-21 | DM-55 maxWords | counter copy and hard-limit behaviour conflict (45 vs 46) | GAP (W-02) |
+| V25 | Jawapan diterima / Isi skema rows | FR-ADM-QE3.9; FR-QA-19 | AC-ADM-QE3.4; AC-QA-19 | DM-54; API-Q-30 | 46 3.3 | PASS |
+| V26 | + Sub-bahagian, Buang, + Bahagian utama | 45 3.1.6 top paragraph | AC-QA-26 | - | n/a | PASS |
+| V27 | Running Jumlah markah, tick, tiada skema | FR-ADM-QE3.9 chip; 45 3.1.6 | AC-QA-19 | API-Q-30 | n/a | PASS |
+| V28 | Bab (real) + DSKP | FR-ADM-QE3.1, QE4.5 | AC-ADM-QE3.1, QE4.4 | API-Q-09 | 46 4.9 | PASS |
+| V29 | Topik select | 45 T-fields; 4.G.1 | AC-ADM-QE3.1 | DM-47 | n/a | PASS |
+| V30 | Kesukaran (TP + Tahap kesukaran 1-5) | FR-ADM-QE3.7; FR-QA-31 | AC-ADM-QE3.3; AC-QA-31 | DM-47; API-Q-03 | n/a | PASS |
+| V31 | Save bar, names missing fields | FR-ADM-QE4.1 | AC-ADM-QE4.1 | API-Q-05 | n/a | PASS |
+| V32 | Preview page (SULIT, marks, 0 patah perkataan) | FR-ADM-QE3.23; QE1.x | AC-ADM-QE3.12 | - | preview word-counter copy differs from 46 | GAP (W-02, W-14) |
+| V33 | Flash / transition copy | 45 3.1.1 step 6 | AC-ADM-Q04.1 | - | n/a | PASS |
+| V34 | Edit sebagai draf | FR-ADM-Q03.3, Q04.5 | AC-ADM-Q24.2 | API-Q-03 | n/a | PASS |
+| V35 | Kelompok Item tab | FR-ADM-Q07.x | AC-ADM-Q07.1 | API-Q-14 | n/a | PASS |
+| V36 | Kertas Diimport / Semak & Terbit | FR-ADM-Q07.6..7.9; FR-QA-41 | AC-ADM-Q07.3..07.6 | DM-45; API-Q-25 | n/a | PASS |
+| V37 | Kiriman Guru tab | FR-ADM-Q12.1..12.6; FR-QA-39 | AC-ADM-Q12.1..12.3; AC-QA-39 | DM-58 | n/a | PASS |
+| V38 | Review page Terima / Tolak / Simpan Sunting | FR-ADM-QE5.4, QE5.9, Q09.x | AC-ADM-Q09.1; AC-QA-36 | API-Q-15, API-Q-37 | n/a | PASS |
+| V39 | Senarai Soalan, bulk, Luluskan Hasil Tapisan | FR-ADM-Q20.x; FR-QA-47 | AC-ADM-Q20.1; AC-QA-47 | API-Q-04 | n/a | PASS |
+| V40 | Import CSV (dead in V2) | FR-ADM-QE6.1..6.4; FR-QA-33, 34 | AC-ADM-QE6.1..6.3; AC-QA-33, 34 | DM-10; API-Q-17 | n/a | PASS |
+| V41 | Tabs Kualiti, Laporan | FR-ADM-Q21.1, Q22.x | AC-ADM-Q22.1; Q21 has no AC | API-Q-18, API-Q-20 | n/a | GAP (W-14) |
+| V42 | Soalan Berstruktur list | FR-ADM-Q23.1..23.5 | AC-ADM-Q23.1, Q23.2 | - | n/a | PASS |
+| V43 | Rubric editor -> Studio K/N/P (dropped) | FR-ADM-Q23.2; FR-QA-19 | AC-ADM-Q23.1 | API-Q-30 | 46 3.3 | PASS |
+| V44 | Set Builder landing | FR-ADM-Q13.1..13.5 | AC-ADM-Q13.1, Q13.2 | API-BIJAK-10, API-BIJAK-11 | n/a | PASS |
+| V45 | Builder: filters, Tambah, rule, Terbitkan | FR-ADM-Q14.1..14.6, QE7.x | AC-ADM-Q14.1, Q14.2 | API-BIJAK-10 | 46 2.5 | PASS |
+| V46 | Panel builder chips (m5) | FR-ADM-Q14.7 | AC-ADM-Q14.3 | - | n/a | PASS |
+| V47 | Paper review, Isu import (m5) | FR-ADM-Q15.1..15.6 | AC-ADM-Q15.1..15.4 | API-BIJAK-10 | n/a | PASS |
+| V48 | Kontrak Simulasi list/editor | FR-ADM-Q16.1..16.9 | AC-ADM-Q16.1..16.5 | DM-57; API-BIJAK-09 | 46 2.5 rule line | PASS |
+| V49 | Tracking A lane + set editor | FR-ADM-Q17.1..17.6 | AC-ADM-Q17.1..17.3 | API-BIJAK-07 | 46 4.5 | PASS |
+| V50 | SPM hub, lanes, Quick Edit | FR-ADM-Q01.x, Q02.x, Q24.x | AC-ADM-Q01.1, Q02.1, Q24.1 | API-Q-11 | 46 4.1 | PASS |
+| V51 | Kertas Subjektif list | FR-ADM-Q18.1..18.8 | AC-ADM-Q18.1..18.3 | API-BIJAK-14 | 46 4.7 | PASS |
+| V52 | Sumber Kertas list + detail | FR-ADM-Q19.1, Q19.2 | AC-ADM-Q19.1 | API-Q-14 | n/a | PASS |
+| V53 | PKSK Soalan (M8) | FR-ADM-Q25.1..25.3 | AC-ADM-Q25.1, Q25.2 | API-ADM-18 | 46 4.12 | PASS |
+| V54 | Kurikulum / Subjek / Tahap | FR-ADM-C01.x..C03.x | AC-ADM-C01.1, C02.1, C03.1 | API-DSKP-04 | n/a | PASS |
+| V55 | Diagram audit (M5) | FR-ADM-QE8.7; FR-QA-15 | AC-ADM-QE8.4; AC-QA-15 | API-Q-21 | n/a | PASS |
+
+### Checklist 1b: split paths B1-B3, M1-M8, m1-m8
+
+| ID | Requirement | FR | AC | DM / API | Pupil side | Verdict (gap) |
+|---|---|---|---|---|---|---|
+| B1 | Group published and served as one unit | FR-ADM-QE1.6; FR-QA-01..03 | AC-ADM-QE1.3; AC-QA-01..03 | DM-51; API-Q-31, API-Q-04, API-Q-11 | 46 1.5; AC-PA-02 | PASS |
+| B2 | Edit a published group via draft copy | FR-ADM-QE1.7, Q05.4; FR-QA-04, 05 | AC-ADM-QE1.4, Q05.2; AC-QA-04, 05 | DM-51; API-Q-32, API-Q-33 | pinned sitting version (46 2.6) | PASS |
+| B3 | Regroup of served members, no DSKP gate | FR-ADM-QE8.5, QE8.6; FR-QA-13 | AC-ADM-QE8.3; AC-QA-13 | DM-59; API-Q-24, API-Q-36 | n/a | PASS |
+| M1 | Unnumbered references, 2-figure items | FR-ADM-QE5.8; FR-QA-08, 12 | AC-ADM-QE5.4; AC-QA-08, 12 | DM-53; API-Q-35, API-Q-38 | 46 1.5 item 2 | PASS |
+| M2 | Group screen fields (Label, alt, Sumber, Bank, buttons) | FR-ADM-QE2.6; 45 G-01..G-09; FR-QA-10 | AC-QA-10 (alt text, bank letter); max-3 stimuli and required Label untested | DM-52; API-Q-07, API-Q-08 | Sumber line not in 46 | GAP (W-14, W-08) |
+| M3 | Gate blocks stimulus_missing / figure_only | FR-ADM-QE4.7, QE4.2; FR-QA-11 | AC-ADM-QE4.6; AC-QA-11 | API-Q-05 | 46 1.5 items 1-2 | PASS |
+| M4 | CSV group columns | FR-ADM-QE6.4; FR-QA-33 | AC-ADM-QE6.3; AC-QA-33 | DM-10; API-Q-17 | n/a | PASS |
+| M5 | Audit Rajah menu entry | FR-ADM-QE8.7; FR-QA-15 | AC-ADM-QE8.4; AC-QA-15 | API-Q-21 | n/a | PASS |
+| M6 | Stem field + Had perkataan | FR-ADM-QE3.14, QE3.12; FR-QA-16, 21 | AC-QA-16, AC-QA-21 | DM-55 | counter copy/hard-limit conflict | GAP (W-02) |
+| M7 | Stimulus kinds record (7 kinds, code, Box, Audio) | FR-ADM-QE3.21 | none; FD-QE-8 undefined | DM-70 | 46 2.4 Kinds | GAP (W-13) |
+| M8 | PKSK Soalan screen | FR-ADM-Q25.1..25.3 | AC-ADM-Q25.1, Q25.2 | API-ADM-18 | 46 4.12 | PASS |
+| m1 | Sembunyikan (Panel Studio) | FR-ADM-Q03.9 | none | API-Q-04 | n/a | GAP (W-14) |
+| m2 | Tab order, group takes Subjek | FR-ADM-QE2.5, QE2.1 (QE3.1 wording conflicts) | AC-ADM-QE2.4 | - | n/a | GAP (W-17) |
+| m3 | Move between groups | FR-ADM-QE2.7; FR-QA-06 | AC-ADM-QE2.3; AC-QA-06 | API-Q-34 | n/a | PASS |
+| m4 | Remove member naming a figure; no warning for 1 member | FR-ADM-QE2.7, QE2.4; FR-QA-07 | AC-ADM-QE2.2; AC-QA-07 (delete only; removal confirm untested) | DM-02 | n/a | GAP (W-14) |
+| m5 | Chips Disematkan / Tidak disajikan; Isu import | FR-ADM-Q14.7, Q15.5 | AC-ADM-Q14.3, Q15.4 | DM-05 | n/a | PASS |
+| m6 | Pilih N over groups | FR-ADM-QE7.5; FR-QA-41 | AC-ADM-QE7.4; AC-QA-41 | DM-57 | 46 2.5 choose-N | PASS |
+| m7 | Review semantics Tolak / Terima | FR-ADM-QE5.9; FR-QA-36 | AC-ADM-QE5.5, AC-QA-36 (Terima kumpulan only; Tolak untested) | API-Q-37, API-Q-38 | n/a | GAP (W-14) |
+| m8 | 13 vs 14 modes typo; delete-guard text | FR-ADM-QE3.24 | AC-ADM-QE3.13 (guard text only) | DM-02, DM-69 | n/a | GAP (W-01) |
+
+### Checklist 2: wizard-vs-exam-format (G-01..G-19)
+
+| ID | Requirement | FR | AC | DM / API | Pupil side | Verdict (gap) |
+|---|---|---|---|---|---|---|
+| G-01 | Marking-scheme editor | FR-ADM-QE3.9; FR-QA-19 | AC-ADM-QE3.4; AC-QA-19 | DM-54; API-Q-30 | 46 3.3, 3.4 (ticks, caps, pairs, bonus, paths, count-based) | PASS |
+| G-01b | Choose one prompt inside a question | FR-ADM-QE3.12; FR-QA-22 | AC-ADM-QE3.7; AC-QA-22 | DM-55 alternatives | 46 2.2 essay_choice; FR-PA-07 | PASS |
+| G-02 | Essay settings: word range, Had keras, Ruang | FR-ADM-QE3.12; FR-QA-21 | AC-ADM-QE3.7; AC-QA-21 | DM-55 | Had keras ON behaviour undefined; copy conflict | GAP (W-02) |
+| G-03 | Per-criterion rubric (BI C/CA/O/L) | FR-ADM-QE3.10; FR-QA-20 | AC-ADM-QE3.5; AC-QA-20 | DM-54; API-BIJAK-05 criteria | 46 3.4 item 5; FR-PA-19; AC-PA-19 | PASS |
+| G-04 | Part-level stimulus, which Bahan | FR-ADM-QE3.15; FR-QA-09 | AC-ADM-QE3.9; AC-QA-09 | question_parts.stimulus_id | 46 2.4 has no part-level / Bahan n / semua bahan rule | GAP (W-08) |
+| G-05 | Rich-text formatting (u, s, poem, columns, box) | FR-ADM-QE3.16; FR-QA-18 | AC-ADM-QE3.12; AC-QA-18 | sanitiser rule | pupil rendering not specified in 46 or 10 | GAP (W-07) |
+| G-07 | Bilingual BM+EN | FR-ADM-QE3.11; FR-QA-17 | AC-ADM-QE3.6; AC-QA-17 | DM-50; API-Q-03 | 45/30 say no toggle, 46 FR-PA-04 has a toggle | GAP (W-04) |
+| G-08 | Inline gaps | FR-ADM-QE3.17; FR-QA-24 | AC-QA-24 | rule | 46 2.2 cloze row; FR-PA-05; AC-PA-05 | PASS |
+| G-09 | Option-bank body, image, distractor | FR-ADM-QE3.18; FR-QA-10 | AC-ADM-QE3.10; AC-QA-10 | DM-52; API shape 4.1 optionBank lacks image/isDistractor/bodyEn | 46 2.2 match_letter; FR-PA-10 | GAP (W-11) |
+| G-10 | Section controls (Wajib, marks list, count, label) | FR-ADM-Q16.8, QE7.5; FR-QA-25 | AC-QA-25; AC-ADM-QE7.4 | DM-57; API-BIJAK-09 text silent | 46 2.5 rule line | GAP (W-12) |
+| G-11 | Pre-filled answer frame | FR-ADM-QE3.20; FR-QA-28 | AC-QA-28 | DM-55 preFill | 46 has no rendering rule | GAP (W-09) |
+| G-12 | Sumber petikan + Rujukan buku teks | FR-ADM-QE3.20; FR-QA-29 | AC-QA-29 | DM-52, DM-56 | 46 3.3 textbook ref ok; Sumber line on stimulus missing | GAP (W-08) |
+| G-13 | drawing and table_fill authored and served | FR-ADM-QE3.13; FR-QA-23 | AC-ADM-QE3.8; AC-QA-23 | DM-55; photo route API-BIJAK-04 | 45 mode 8 says no canvas, 46 2.2.2 has Papan Lukisan | GAP (W-05) |
+| G-14 | MCQ second accepted option + Nota kunci | FR-ADM-QE3.19; FR-QA-27 | AC-QA-27 | DM-55 acceptedOptions | 46 M-MCQ ignores accepted list | GAP (W-10) |
+| G-15 | Dependent parts / ecf | FR-ADM-QE3.20; FR-QA-30 | AC-ADM-QE3.11; AC-QA-30 | DM-55 dependsOnPart | 46 3.2 M-WORK ECF; 3.3 Bergantung pada | PASS |
+| G-16 | Kertas 1..4 everywhere | FR-ADM-QE3.22 | none | DM-08; API 4.1 kertas '1'..'4' | 46 hub | GAP (W-14) |
+| G-17 | marks_per_question + JSU | FR-ADM-Q16.9; FR-QA-25, 40 | AC-ADM-Q16.5; AC-QA-25, 40 | DM-57; API-Q-39 | n/a | PASS |
+| G-18 | Per-mode leaf form | FR-ADM-QE3.8; FR-QA-26 | AC-QA-26 | DM-55 | 46 2.2 | PASS |
+| G-19 | Pupil add-ons (bilingual, alternatives, steppers, gaps) | FR-ADM-QE3.23 (admin); FR-PA-04, 05, 07, 19 | AC-PA-04, 05, 19; admin preview parity has no AC | - | 46 2.3, 2.2, 3.4 | GAP (W-14) |
+
+### Per-subject paper structure
+
+#### Bahasa Melayu
+
+| Paper element | Coverage (FR / AC / DM / pupil) | Verdict | Gap |
+|---|---|---|---|
+| K1 Bahagian A [30] compulsory, one question, 2 e-mail prompts, answer one, 150-200 words, band table | FR-ADM-QE3.12, Q16.8; FR-QA-22, 25; AC-ADM-QE3.7 | PASS | - |
+| K1 Bahagian B [70] 4 questions answer one, 350-500 words, passage boxes with Sumber | Pilih N (FR-ADM-Q14.2, QE7.5), G-07 Sumber; FR-QA-41 | GAP | Sumber line on pupil (W-08); word counter (W-02) |
+| K1 score-band table with sub-bands x criteria | FR-ADM-QE3.10; FR-QA-19/20; pupil 46 3.4 items 4-5 | PASS | - |
+| K2 A [35] / B [35], Q9 summary max 120 words | FR-ADM-Q16.8; FR-QA-21 | GAP | Had keras behaviour (W-02, W-03) |
+| K2 underline, struck word, poem two columns, boxed text | FR-ADM-QE3.16 | GAP | pupil rendering (W-07) |
+| K2 Bahan 1-3, sub-parts citing a bahan or semua bahan | FR-ADM-QE3.15; FR-QA-09 | GAP | pupil panel rule (W-08) |
+| K2 per-question Perhatian rules: copy = 0, minus 1 per spelling/punctuation error | FR-ADM-QE3.9 scheme_rules; DM-54 | GAP | no deduction code for punctuation (W-15) |
+| Alternatives accepted, Peristiwa/Huraian pairs, 'Peristiwa lain boleh diterima' | FR-ADM-QE3.9 (@, Pasangan, Nota) | PASS | - |
+| Verdict | - | NO | W-02, W-03, W-07, W-08, W-15 |
+
+#### Bahasa Inggeris
+
+| Paper element | Coverage (FR / AC / DM / pupil) | Verdict | Gap |
+|---|---|---|---|
+| P1 Part 1 MCQ 3 options each with own stimulus | FR-ADM-QE2.4, QE3.2 (2-8), AC-ADM-QE3.2 | PASS | - |
+| P1 Part 2 cloze 10 gaps, per-gap options, worked example 0 | FR-ADM-QE3.17; FR-PA-05; AC-PA-05 | GAP | 0-mark example leaf contradicts L-04 min 1 (W-06) |
+| P1 Part 3 passage + 8 MCQ | QE1.2, QE2.x | PASS | - |
+| P1 Part 4 bank A-H sentences + 2 distractors | FR-ADM-QE3.18; DM-52; AC-ADM-QE3.10 | GAP | API shape 4.1 optionBank lacks image/isDistractor/bodyEn (W-11) |
+| P1 Part 5 bank = texts A-F with pictures; Q37-40 summary gaps one word max | FR-ADM-QE3.17/3.18; 46 2.2 cloze | GAP | same (W-11); Maksimum perkataan copy (W-02) |
+| P2 Part 1/2 compulsory, Part 3 three questions answer one (OR), numbering continues | FR-ADM-Q16.8, QE7.5; 46 2.5 | PASS | - |
+| P2 e-mail frame pre-printed To/Subject, 80 words; 200-250 words | FR-ADM-QE3.20 / 45 L-12 / mode 6 | GAP | pupil rendering of the frame (W-09); word counter (W-02) |
+| P2 content points C1..C4 with requires, accepted and not-accepted, minor omission | FR-ADM-QE3.9 (Tidak diterima, Bergantung pada, Nota) | PASS | - |
+| P2 language grid C/CA/O/L each /5 = 20 | FR-ADM-QE3.10; FR-QA-20; AC-PA-19 | PASS | - |
+| Verdict | - | NO | W-02, W-06, W-09, W-11 |
+
+#### Fizik
+
+| Paper element | Coverage (FR / AC / DM / pupil) | Verdict | Gap |
+|---|---|---|---|
+| K1 40 MCQ, composite Rajah, options bilingual | FR-ADM-QE3.11; QE2.x | GAP | bilingual rule conflict (W-04) |
+| K2 A all / B answer one of two / C one; 20 marks each | FR-ADM-Q16.8, QE7.5; FR-QA-25/41 | PASS | - |
+| Formula pages (Bahan rujukan) | FR-ADM-Q15.x; 46 4.2 cover reference sheets | PASS | - |
+| Diberi data block, nuclear-equation box | FR-ADM-QE3.16 (Kotak teks); rich text | GAP | pupil rendering of boxes (W-07) |
+| Part-level Rajah / Jadual with bilingual headers | FR-ADM-QE3.15; QE3.11 | GAP | W-08, W-04 |
+| M1..Mn, Gantian betul, unit, JUMLAH, Ciri/Sebab pairs, S, bonus, Maks 4/10, 'terima sebarang bahan' | FR-ADM-QE3.9; AC-ADM-QE3.4; 46 3.3 | PASS | - |
+| Draw / complete on diagram | FR-ADM-QE3.13; 46 2.2.2 | GAP | 45 mode 8 vs 46 contradiction (W-05) |
+| Verdict | - | NO | W-04, W-05, W-07, W-08 |
+
+#### Matematik
+
+| Paper element | Coverage (FR / AC / DM / pupil) | Verdict | Gap |
+|---|---|---|---|
+| K1 40 MCQ bilingual, Rajah per item, options as figures, maths in options | FR-ADM-QE3.11; 45 mode 1 option images; MathML | GAP | W-04 |
+| Key accepting two options | FR-ADM-QE3.19; AC-QA-27 | GAP | pupil marking ignores the accepted list (W-10) |
+| K2 A [40] all / B all / C answer one of two; marks list 3,3,3,5,4 | FR-ADM-Q16.8, Q16.9; AC-ADM-Q16.5 | GAP | API-BIJAK-09 silent on new section fields (W-12) |
+| Draw on printed Rajah / graph, sketch, Venn, shade | FR-ADM-QE3.13; AC-ADM-QE3.8 | GAP | W-05 |
+| Complete table, fill blank from two words, Benar/Salah | 45 mode 9, mode 3, mode 1 | PASS | - |
+| Different stimuli per sub-part; two tables in a question | FR-ADM-QE3.15; QE1.2 | GAP | pupil rule (W-08) |
+| Scheme atau setara, ATAU, Mana-mana, Nota, model drawings | FR-ADM-QE3.9 (Jawapan model with images) | PASS | - |
+| Verdict | - | NO | W-04, W-05, W-08, W-10, W-12 |
+
+#### Matematik Tambahan
+
+| Paper element | Coverage (FR / AC / DM / pupil) | Verdict | Gap |
+|---|---|---|---|
+| K2 A all [50] / B answer three / C answer two | FR-ADM-Q16.8, QE7.5; AC-ADM-QE7.4 | GAP | API-BIJAK-09 silent (W-12) |
+| Bilingual prompts and tables | FR-ADM-QE3.11; 45 2.7 | GAP | W-04 |
+| Fill table, plot at stated scale, best-fit line, read from own graph | FR-ADM-QE3.13, QE3.20; 45 7.6; AC-QA-30 | GAP | drawing pupil input contradiction (W-05) |
+| K1/N1/P1, @, &, //, OR, Alternatif A/B, dilihat, P2,1,0, Mesti tunjuk operasi | FR-ADM-QE3.9; 46 3.3 | PASS | - |
+| Table used by (a) and (b) | FR-ADM-QE1.2 | PASS | - |
+| Verdict | - | NO | W-04, W-05, W-12 |
+
+#### Sejarah
+
+| Paper element | Coverage (FR / AC / DM / pupil) | Verdict | Gap |
+|---|---|---|---|
+| K1 40 MCQ, item-level Sumber box, statement-combination | FR-ADM-QE3.16, QE3.20 | GAP | Sumber line + box rendering on pupil (W-07, W-08) |
+| Textbook ref per answer 'B3T4 M56', range 'M44-45' | FR-ADM-QE3.20; AC-QA-29; 46 3.3 | PASS | - |
+| K2 A [40] all / B [60] answer three of five | FR-ADM-Q16.8 (example text says 'B choose 1 of 3'), QE7.5, AC-ADM-Q14.1 | GAP | wrong example in Q16.8; API-BIJAK-09 silent (W-12) |
+| (a) two answer lines i/ii for [2 markah] | 45 mode 3 blank_count | PASS | - |
+| Part-level source with URL and date | FR-ADM-QE3.15; 45 7.1 | GAP | pupil rule (W-08) |
+| Aras 1-4 bands + content bank + category caps ('kebaikan maksimum 4') | FR-ADM-QE3.10, QE3.9; 45 7.1 note | GAP | rubric content-point groups with caps not specified (W-15) |
+| Verdict | - | NO | W-07, W-08, W-12, W-15 |
+### Gap register with exact fixes (W-01..W-17)
+
+Next free numbers used below: FR-ADM-QE3.25, AC-ADM-QE2.5, QE3.14..QE3.17, QE5.6, Q03.6, Q04.5, Q05.3, Q21.1 (30); FR-QA-48, 49 and AC-QA-48, 49 (45); FR-PA-35..39 and AC-PA-37..41 (46). Fixes marked "(R1 decision D113)" are new decisions made here (reported as D113-continued).
+
+**W-01 (V23, m8; 30) "14 modes" contradicts the 11 types / 9 modes.** 30 FR-ADM-QE3.24, rows 15-12 and 16-13, the OPT line in the section 4.V option-set list ("OPT-MOD-JAWAPAN (14 modes)"), the Q-16 V2 note ("the 14 modes are replaced by the 8 question types") and the QE-03 row of 4.V still say 14 modes or 8 types, while FR-ADM-QE3.2, QE3.8, 40 OPT-MOD-JAWAPAN and DM-69 say 11 types and 9 modes. Fix: replace FR-ADM-QE3.24 with "FR-ADM-QE3.24 (m8) The answer-mode list of the wizard and of `Mod Jawapan Dijangka` (OPT-MOD-JAWAPAN, 40 X11) has the 9 stored modes `mcq`, `match_letter`, `short_text`, `numeric`, `working`, `essay`, `essay_choice`, `drawing`, `table_fill`; the 14 V2 modes are migrated by FR-ADM-QE3.2 and never offered (the earlier '13 modes' typo is void). The delete-guard text is 'Rangsangan ini masih digunakan oleh {n} soalan.' (DM-02) and the code text `inUse` is retired."; in rows 15-12 and 16-13 and the 4.V option-set line write "(the 9 modes)"; in the Q-16 note write "the 14 V2 modes are replaced by the 11 question types and 9 leaf modes (FR-ADM-QE3.2)"; in the QE-03 4.V row write "11 types / 9 modes".
+
+**W-02 (V24, V32, M6, G-02; 46, 45, 30) Word-counter copy conflict.** 30 AC-ADM-QE3.7, 45 AC-QA-21 and V2 use "patah perkataan"; 46 2.2, 2.2.1, FR-PA-06, AC-PA-05, AC-PA-06 use "perkataan". Decision: follow V2 (R1 decision D113). Fix in 46: in the `essay` row of 2.2 and in 2.2.1 write `{n} patah perkataan` and `{n} / {min}-{max} patah perkataan`; hints `Jawapan terlalu pendek ({n} patah perkataan; minimum {min}).` and `Jawapan melebihi {max} patah perkataan.`; in the cloze row and AC-PA-05 write `Maksimum {n} patah perkataan.`; in AC-PA-06 use the same two hints. Also in 45 AC-QA-21 replace "a `short_text` with `Had perkataan` 1 refuses 2 words" with "a `short_text` with `Had perkataan` 1 and two words typed shows 'Maksimum 1 patah perkataan.' and keeps the text".
+
+**W-03 (G-02; 46) `Had keras` on has no pupil behaviour.** 46 2.2.1 defines only `Had keras` off. Add to 46 section 7.1: "FR-PA-35 Word limits. A word is a whitespace-separated token. With `Had keras` off the range is guidance (2.2.1). With `Had keras` on (essay), the editor accepts no word beyond `max`: typing past it is ignored, a paste is cut at `max` words, and the hint `Had {max} patah perkataan dicapai.` shows; below `min` only the hint shows and Hantar is never blocked. `Had perkataan` of a `short_text` leaf and the inline-gap `Maksimum perkataan` (the same `mode_config.maxWords`) show `Maksimum {n} patah perkataan.`, keep the typed text and do not change marking. (R1 decision D113.) Card S8-T03." and to 7.2: "AC-PA-37 Given an essay with 1 to 120 words and `Had keras` on, when the pupil types 125 words, then the text holds 120 words and the hint 'Had 120 patah perkataan dicapai.' shows; given a paste of 300 words, then 120 are kept; given `Had keras` off, 125 words are kept with 'Jawapan melebihi 120 patah perkataan.'; Hantar works in every case. S8-T03."
+
+**W-04 (G-07; 45, 30) Bilingual toggle contradiction and required-English scope.** 45 2.7 last bullet and FR-QA-17, and 30 FR-ADM-QE3.11 say "no toggle"; 46 2.3, FR-PA-04 and AC-PA-04 define a three-way control. Decision: 46 wins on pupil behaviour (R1 decision D113). Fix: 45 2.7 last bullet becomes "The pupil sees BM above English as printed by default; the three-way control of 46 2.3 (FR-PA-04) can show one language only." In FR-QA-17 and 30 FR-ADM-QE3.11 replace "no toggle" with "stacked by default, with the pupil control of FR-PA-04". Also in FR-ADM-QE3.11 replace the sentence "sending with an empty English value is refused" with "sending is refused with 'Teks English diperlukan untuk soalan dwibahasa.' when the English value of the stem, a leaf prompt, an option, a stimulus body, a bank text or an alternative prompt is empty; caption, instruction and scheme text may stay BM only (as 45 2.7)."
+
+**W-05 (G-13; 45) Drawing and table_fill pupil input contradicts 46.** 45 mode 8 says "There is no freehand canvas in R1" and the pupil draws on paper; 46 2.2.2 (FR-PA-08, AC-PA-16) specifies the Papan Lukisan over the template or a photo. Fix: in 45 3.1.6 mode 8 replace from "Pupil (D-QA-2):" to the end of the paragraph with "Pupil: as 46 2.2.2 (FR-PA-08): the template with the Papan Lukisan, or `Ambil gambar jawapan` / `Muat naik gambar` (<= 5 MB, up to 3 files, the existing `POST /api/bijak/attempts/:id/photos`); after Hantar `Tunjuk Skema Pemarkahan` and the pupil self-marks each point." In mode 9 replace "the cells that match the accepted values are pre-ticked as a suggestion; the pupil confirms or changes each tick (a change replaces the row)" with "the scheme shows the filled grid and the suggestion 'Cadangan automatik: {k} daripada {n} sel sepadan' (46 2.2.3); the leaf stays `belum_dimarkah` until the pupil self-marks with the stepper".
+
+**W-06 (V22, BI P1 Part 2; 45, 30) A worked-example gap has 0 marks but marks are 1..100.** 45 mode 3 and 46 2.2 require a 0-mark example leaf; 45 L-04, 30 row 04-26 and AC messages require >= 1 ("Nilai mata mesti sekurang-kurangnya 1."). Fix: 45 L-04 becomes "`Markah` integer 1..100; 0 only when L-13 is ticked". Add "L-13 | `Contoh (tidak dimarkah)` | checkbox | optional; the leaf has marks 0, no scheme and no key, is shown to the pupil filled and read-only (46 2.2 cloze row), adds nothing to the part total, and is exempt from the scheme-sum check | none". In 30 row 04-26 write "marks 1 to 100 (0 for a leaf with `Contoh (tidak dimarkah)`)". Add to 30: "FR-ADM-QE3.25 (W-06; BI Part 2 worked example) A leaf may be marked `Contoh (tidak dimarkah)`: marks 0, no scheme, filled and read-only for the pupil, not counted in totals or reports." and "AC-ADM-QE3.17 Given a BI cloze with 10 gaps where gap 0 is `Contoh (tidak dimarkah)`, then the question saves with 10 marked leaves, the example shows filled and read-only to the pupil, and `practice_answers` gets no row for it."
+
+**W-07 (G-05, V19; 46) Pupil rendering of rich-text formatting is unspecified.** Add to 46 7.1 "FR-PA-36 The pupil view renders exactly what the admin preview shows: `u` underline, `s` strike-through, `Baris puisi` (line breaks kept, a blank line = stanza gap), `Dua lajur` (two columns from 768 px, one column at 375 px, never a horizontal page scroll), `Kotak teks` (bordered box, text wraps), in stimuli, prompts, options and the scheme. Card S8-T03, S8-T02." and 7.2 "AC-PA-38 Given a BM passage with underline, strike-through, a two-column poem and a boxed source, then at 1280 px the pupil view equals the admin preview, at 375 px the poem is one column with its line breaks kept, and the page has no horizontal scroll. S8-T03."
+
+**W-08 (G-04, G-12, M2; 46) Part-level stimulus, 'Bahan n' and 'Sumber:' have no pupil rule.** Add to 46 2.4 a rule block and in 7.1 "FR-PA-37 A stimulus with `sourceCitation` shows the line 'Sumber: {text}' under it, in the same panel. A leaf with its own `stimulusId` shows that stimulus inside the leaf card under the prompt (at 375 px a collapsible 'Lihat {label}' header). A prompt that cites a stimulus label (for example 'Bahan 2') carries a link that opens that stimulus in the panel; 'semua bahan' opens all stimuli of the group. Card S8-T02." and 7.2 "AC-PA-39 Given a Sejarah question with a source on part (c) only, then (a) and (b) show no source and (c) shows it with its 'Sumber:' line; given a prompt citing 'Bahan 2', then the link opens Bahan 2; given 'semua bahan', then all 3 show. S8-T02."
+
+**W-09 (G-11; 46) Pre-filled answer frame has no pupil rule.** Add to 46 7.1 "FR-PA-38 A leaf with `Templat jawapan (pra-isi)` shows it as a read-only block directly above the answer area (for example the printed To and Subject lines of an e-mail); it is not part of the answer text, not counted in the word count and never marked. (R1 decision D113.) Card S8-T03." and 7.2 "AC-PA-40 Given an essay leaf with a pre-filled e-mail frame and a range of 80 words, then the frame shows above the textarea, 80 typed words count as 80, and the leaf marks ignore the frame. S8-T03."
+
+**W-10 (G-14; 46) M-MCQ ignores the accepted second option.** Fix 46 3.2 M-MCQ: "awarded = marks if the chosen option identity equals the key or is listed in the key's `accepted` list (45 mode 1, `Terima pilihan lain`), else 0." and in 3.5 'What is revealed per kind' for mcq add "'Diterima juga: {label}' and the `Nota kunci` text when the key has accepted options". Add 7.1 "FR-PA-39 An MCQ whose key lists accepted options marks every listed option correct and reveals them with the `Nota kunci`. Card S3-T04, S1-T09a." and 7.2 "AC-PA-41 Given an MCQ with correct A and accepted D, then choosing D is awarded full marks, the reveal shows 'Jawapan: A' and 'Diterima juga: D' with the Nota kunci. S3-T04."
+
+**W-11 (G-09, BI Part 4/5; 60 section 4.1) Shapes lag the DMs.** In 60 4.1: change the `questionType` comment to "11 types (DM-69)"; extend `stimuli[]` with `bodyEn?: RichText | null; captionEn?: string | null` (DM-50); change `optionBank?` to `{ label: 'A'..'H'; body: RichText /* {ms, en?} */; imageId?: Id | null; isDistractor?: boolean }[]` (DM-50, DM-52); add to `QuestionDetail` `language: 'bm'|'en'|'ms+en'; modeConfig?` (per part), `schemeRules?`, `textbookRef?: { bab; tingkatan; mukaSurat; hingga? } | null`, `rejectionReason?: string | null`; add the same optional fields to `QuestionCreateRequest`; and extend `StimulusGroupCreateRequest.optionBank` the same way. Owning card S1-T01 / S1-T09a (as DM-50, DM-52).
+
+**W-12 (G-10, G-17; 60 API-BIJAK-09, 30 Q16.8) Kontrak write shape silent on the new section fields, and a wrong example.** Add to the API-BIJAK-09 row: "`BijakBlueprintAdminCreate` and `BijakBlueprintView` sections gain `label` (free text), `compulsory` (bool, mutually exclusive with `choose`), `marksPerQuestion?: number[]` (DM-57) and `questionCount` on the blueprint; verify checks that a paper's per-question marks equal the list ('Markah soalan {no} tidak sepadan dengan kontrak.'); `GET .../jsu` is API-Q-39. Card S3-T01." In 30 FR-ADM-Q16.8 replace "Sejarah (A all, B choose 1 of 3)" with "Sejarah Kertas 2 (A all, B choose 3 of 5, 20 marks each) and BI Paper 2 (Part 3 choose 1 of 3)".
+
+**W-13 (V17, M7; 30) FD-QE-8 is cited but not defined, and M7 has no AC.** Append to the FD paragraph of 4.0: "FD-QE-8 The V2 15-kind `Jenis rangsangan` select is reduced to the 7 kinds of OPT-JENIS-RANGSANGAN; V2 `Box` becomes `Petikan` with `Kotak teks`, code and pseudocode become `Petikan` with the `</>` block, and `Audio` and `Video` are not offered (V2 had no rows for them)." Add "AC-ADM-QE3.15 Given the stimulus kind select, then it lists exactly Petikan, Rajah, Jadual, Graf, Peta, Carta / Infografik, Imej / Gambar and no Audio or Video; given a Sains Komputer pseudocode, then it is a `Petikan` with the `</>` block shown in monospace and never executed."
+
+**W-14 (missing ACs; 30) Nine rows have an FR and no test.** Add to 30:
+- "AC-ADM-Q03.6 (m1) Given the Panel row menu, when `Sembunyikan` is chosen and 'Ya, Sembunyikan' confirmed, then the question becomes `Diarkibkan` with the same audit row as `Arkib`, and a pupil no longer sees it."
+- "AC-ADM-Q04.5 (V09) Given unsaved work from an earlier session, when the wizard opens, then the banner 'Terdapat kerja yang belum disimpan daripada sesi sebelum ini.' shows; `Pulihkan` restores every field; `Buang` asks 'Buang kerja yang belum disimpan?' and removes the draft only after 'Ya, Buang'."
+- "AC-ADM-Q05.3 (M2) Given a group with 3 stimuli, then `Tambah rangsangan` is disabled with 'Satu kumpulan boleh mempunyai paling banyak 3 rangsangan.'; given a stimulus with an empty Label, then saving shows 'Sila isi label rangsangan.'; given `Pratonton kumpulan`, then the stimuli and members show as the pupil sees them."
+- "AC-ADM-Q21.1 (V41) Given the `Kualiti` tab, when `POST /api/question-quality/audit` is run for a scope, then the tab lists the counts computed from the same rows as the Studio list (no figure typed by hand)."
+- "AC-ADM-QE2.5 (m4) Given a member whose text names 'Rajah 3', when it is removed from its group, then the confirm 'Soalan ini menyebut {Rajah 3}. Tanpa kumpulan ia tidak akan dipaparkan kepada murid.' shows and, once confirmed, the question carries `stimulus_missing`."
+- "AC-ADM-QE5.6 (m7) Given Semak Ekstrak, when `Tolak` is pressed on a stimulus item, then the group is discarded and its member items stay `pending` with `stimulus_missing`; when `Tolak` is pressed on a member, then it leaves the range; when `Terima` is pressed on a member before its group exists, then the group is created from the extracted stimulus first."
+- "AC-ADM-QE3.14 (G-16) Given the Kertas filter, the Kontrak form and `GET /api/questions?kertas=4`, then Kertas 1 to 4 are accepted everywhere and `kertas=5` answers 422."
+- "AC-ADM-QE3.16 (G-19, admin side) Given a `ms+en` question with an alternative-prompt essay and a BI criteria rubric, then `Pratonton` shows BM above English, the prompt picker, one stepper per criterion and the gaps in place, equal to the pupil screen."
+
+**W-15 (G-01 for BM K2 and Sejarah K2; 45 3.1.7) Two scheme details are not representable.** (a) Deduction codes are only `spelling`, `unit`, `sf`, `dp`, `copy`; BM K2 'minus 1 per spelling or punctuation error' and a grammar rule need more. (b) Sejarah 'kebaikan sahaja, maksimum 4' is a cap over content points inside a `rubric` key, but groups are defined for `points` only. Add to 45 8.2 "FR-QA-48 In key kind `rubric`, the optional content points C1..Cn accept the same group rules as `points` (`Mana-mana N daripada M`, `Markah maksimum kumpulan`); the pupil self-mark applies the cap, and the reveal shows 'Maks {N}'." and "FR-QA-49 Deduction codes are `spelling`, `punctuation`, `grammar`, `unit`, `sf`, `dp`, `copy` and `other` (with a required free `Label`); each has `Jumlah` and an optional `Had`; the OPT-KOD list is added to 40 X11 as OPT-KOD-POTONGAN." with "AC-QA-48 Given a rubric essay with content points Maklumat (6) and Kebaikan (6) and a group cap 'Maks 4' on Kebaikan, then a pupil who ticks 6 Kebaikan points is credited 4 and the reveal shows 'Maks 4'." and "AC-QA-49 Given a question-level deduction `punctuation` of 1 per error with a cap of 5, then 7 errors deduct 5, never below 0, and the reveal lists the rule." Cards S1-T09a, S3-T06, S8-T05 (DM-54 carries them with no schema change).
+
+**W-16 (plan, for T6; not counted in the verdicts).** (a) Create cards `S1-T09a` (scheme editor backend, `mode_config`, MCQ 2..8 and accepted options, word ranges, `essay_choice`, DM-54/DM-55, API-Q-30) and `S1-T09b` (bilingual `ms+en`, drawing/table_fill authoring, DM-50), P0/L, and rewrite the S1-T09 text that still says drawing and table_fill stay P2 and "8/14 widgets". (b) Give R1-ADM-Q-25 (Soalan PKSK, FR-ADM-Q25.1..25.3, API-ADM-18) an owning card (suggested: S2-T06 with Q-20/22/23). (c) Cite FR-QA-* / AC-QA-* / FR-PA-35..39 on their cards when the traceability is regenerated.
+
+**W-17 (m2, QE3.2; 30) Two wording conflicts.** FR-ADM-QE3.1 says the wizard "keeps the V2 tab labels `Kertas`, `Rangsangan`, `Sub-bahagian`, `Tag` but collects data in the DSKP order", while FR-ADM-QE2.5 and FR-QA-16 fix the tab order `1 Tag`, `2 Kertas`, `3 Rangsangan`, `4 Sub-bahagian`; and AC-ADM-QE3.2 says 'exactly one correct tick' while FR-ADM-QE3.19 allows a second accepted option. Fix: in FR-ADM-QE3.1 replace the first clause with "The wizard keeps the V2 tab labels in the order `1 Tag`, `2 Kertas`, `3 Rangsangan`, `4 Sub-bahagian` (FR-ADM-QE2.5), so data is collected in the DSKP order:"; in AC-ADM-QE3.2 replace "exactly one correct tick" with "exactly one correct tick (a second accepted option only through `Terima pilihan lain` with a `Nota kunci`, FR-ADM-QE3.19)".
+
+### Items checked and found sound (no action)
+
+- B1-B3, M1, M3-M5, m3, m5, m6 are specified end to end: FR and AC in 30 (tagged), the FR-QA / AC-QA rows in 45 section 8, DM-51..DM-53 and DM-59 in 50, API-Q-31..Q-38 in 60 with shapes in 2.17.4, the pupil side in 46 1.5 and 2.4 (AC-PA-02, AC-PA-03), and owning cards S1-T01, S1-T03, S1-T07, S2-T01, S2-T03, S2-T04, S4-T04.
+- The scheme editor (G-01) covers every mark notation in the six subjects' schemes: K/N/P/B/M/F/C, @, &, //, ATAU / Alternatif, Dilihat, tersirat, Maks N, bonus, pairs, P2,1,0, ECF, Tidak diterima, Nota, model answer with images, question-level zero and deduction rules (apart from W-15).
+- Structure elements fully covered: compulsory sections, choose-N with equal marks per unit, marks per question, JSU export, blank_count lines, essay_choice with two stimuli, per-criterion language grid, option banks with images and distractors, inline gaps with one-word cap, formula pages, textbook reference, Kertas 1-4, MCQ 2-8 options, option images and maths in options, true_false, mcq_multi.
+- No real exam text or real person names were written in this section (short identifiers such as "Rajah 3" and paper codes only).
