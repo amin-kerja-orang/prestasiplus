@@ -240,3 +240,5 @@
 | BASE-235 | fb475c97 | UAT deploy sheet `r1/b1-uat-sheet` @ 308e3b73 (Q36, REQ-A-078; docs only; B2 after merge); pushed by Team B lead; **candidate, pending CI** | docs only | 2026-11-03 07:14 |
 | BASE-236 | 6c74b1a2 | UAT sheet corrections `r1/b1-uat-sheet` @ fec5f5b7 (docs only; B2 Majors closed); pushed by Team B lead | **CI GREEN on fb475c97: frontend 41543807971 (verify; e2e 543 passed), api 41543799024.** Nothing outside `docs/` differs since. **Candidate for UAT deploy** | 2026-11-03 07:53 |
 | DEPLOY UAT | 6c74b1a2 | R1 on uat.prestasiplus.cloud only (Q36, REQ-B-133), run by Team B lead with the user's lift for this one deploy | CI on fb475c97; post-deploy checks in status/B1 | 2026-11-03 08:04 |
+| BASE-237 | e34e0a52 | nginx `.mjs` type `r1/a4-nginx-mjs-mime` @ d4d92d51 (REQ-A-081; A2 Approve, read by Team B lead; config only); pushed by Team B lead | Live proof below; CI 41565026716 dispatched | 2026-11-03 10:18 |
+| DEPLOY UAT | e34e0a52 | Same path as 08:04, no pending migrations; previous tag 6c74b1a271ec | Live: `pdf.worker.min-CjEcRF4W.mjs` `content-type: text/javascript`, nginx -t ok, health 200 | 2026-11-03 10:18 |
