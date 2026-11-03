@@ -381,7 +381,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S0-T03 Jobs worker and OCR configured** · P0 · M · Type: Fix · deps: none
 - Starts from (existing): `apps/api/src/modules/jobs/jobs.worker.ts`.
-- PRD: Q-07 FR-ADM-Q07.5; gap F2. Gap: extraction stuck at "Sedang diproses" because `JOBS_WORKER_ENABLED=false`, `OCR_ENGINE=none` (`apps/api/src/common/config/env.schema.ts:169,175`; `jobs/jobs.worker.ts`, `intake/files/intake-processing.service.ts`).
+- PRD: Q-07 FR-ADM-Q07.5, QE-05 FR-ADM-QE5.7, Q-18 FR-ADM-Q18.5; gap F2. D112(2): extraction is REAL OCR, in-house (Tesseract worker, `OCR_ENGINE=tesseract`); there is NO external AI provider in R1 (ALESA/AI stays hidden, D73/D102; pupil data stays private); extraction is rule-based and an admin always reviews before anything publishes; a mock OCR exists only in CI tests and is never configured on UAT. Gap: extraction stuck at "Sedang diproses" because `JOBS_WORKER_ENABLED=false`, `OCR_ENGINE=none` (`apps/api/src/common/config/env.schema.ts:169,175`; `jobs/jobs.worker.ts`, `intake/files/intake-processing.service.ts`).
 - Data/API: none
 - Approach: enable worker and `OCR_ENGINE=tesseract` (+ traineddata folder in the API image) in compose and in the UAT env template; health endpoint reports worker alive; document UAT enablement as U-OP-02 (OPS, user approval, §7). The in-service timeout/error state is S1-T04.
 - Files: `compose*.yaml`, API `Dockerfile`, `docs/ops/api-runbook.md`, `apps/api/src/common/config/env.schema.ts`, `apps/api/src/modules/jobs/**`, `apps/api/src/modules/ocr/**`.
@@ -477,9 +477,9 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - PRD: R1-ADM-QE-03, R1-ADM-QE-04, R1-ADM-Q-06; 30 §4.G. Aras pemikiran per leaf stays an approval gate for SPM T4/T5 with a question-level default (D108(2), FR-ADM-QE3.4; OQ-QE2 closed). Gap: publish returns 422 only at the end (needs SP, thinking level, paper; `publish-gate.ts`, `dskp-gate.ts`); the Studio bar says "5 belum lengkap" without saying what; free-text SP validated late (gap F1/F2).
 - Data/API: DM-19, DM-47; API-Q-02, API-Q-05
 - Also uses: API-Q-03, DM-09 (owned by another card; read or verified here, not an ownership claim)
-- New requirements from the audit (this card owns them): FR-ADM-QE4.5.
+- New requirements from the audit (this card owns them): FR-ADM-QE4.5, FR-ADM-QE4.6 (D112(1), D112(3)); ACs AC-ADM-QE4.4, AC-ADM-QE4.5.
 - Data chain (D-A5, D-A6): `NO_CHAPTER` blocker and `difficulty_level` (DM-47); the write of `difficulty_level` happens in the same save as TP.
-- Approach: reuse `GET /api/questions/:id/gate-check` (API-Q-05), which already returns `issues[{path, code, message, step}]` in BM, and the same list in the `422 fields` of the save routes; **no new `/completeness` route** (D-API-2); the Studio completeness panel renders `issues` instead of ignoring them; validate SP/TP/level/part marks against DSKP when typed; paper optional for non-SPM bank questions as in V2; keep D80/D85 rules. **Publish gate (D-A5):** a new approval needs Bab + SP (+ TP/aras for SPM-bound T4/T5): add the blocker `NO_CHAPTER` "Sila pilih Bab buku teks." to `gate-check` `issues[]`; the wizard calls the DSKP unit "Unit DSKP" and the textbook chapter "Bab". **Difficulty (D-A6):** `difficultyLevel` becomes optional when `tag.tp` is present and the server writes `difficulty_level = min(5, TP)` (DM-47, migration `0128_s1_difficulty_level`, mapping cited in 50 section 4.2.1); the Tag step shows the derived label, it has no separate input.
+- Approach: reuse `GET /api/questions/:id/gate-check` (API-Q-05), which already returns `issues[{path, code, message, step}]` in BM, and the same list in the `422 fields` of the save routes; **no new `/completeness` route** (D-API-2); the Studio completeness panel renders `issues` instead of ignoring them; validate SP/TP/level/part marks against DSKP when typed; paper optional for non-SPM bank questions as in V2; keep D80/D85 rules. **Publish gate (D-A5, D112(1)(3)):** Bab is REQUIRED before Terbit when the question's Subjek + Tingkatan has chapters (N-3; any older "Q17 = Bab not required" is superseded), and SP + TP/aras (SPM-bound T4/T5) are required only when DSKP nodes exist for that Subjek + Tingkatan (the same conditional pattern as Bab; Kimia, Biologi, Geografi, Perniagaan, Prinsip Perakaunan and Ekonomi stay without those items until S4-T09 loads their DSKP): add the blocker `NO_CHAPTER` "Sila pilih Bab buku teks." to `gate-check` `issues[]` (absent for a Subjek + Tingkatan without chapters) and make the unit/SP/TP items conditional on one `curriculum_node` lookup; the wizard calls the DSKP unit "Unit DSKP" and the textbook chapter "Bab". **Difficulty (D-A6):** `difficultyLevel` becomes optional when `tag.tp` is present and the server writes `difficulty_level = min(5, TP)` (DM-47, migration `0128_s1_difficulty_level`, mapping cited in 50 section 4.2.1); the Tag step shows the derived label, it has no separate input.
 - Files: `BE/questions/{publish-gate.ts,dskp-gate.ts,gate-data.ts,status.ts}`, `CT/questions`, `CT/servability`.
 - Tests: table-driven gate tests (every missing field named). Verify: V-STD; API response compared with V2 messages where V2 has them.
 - DoD: DoD-T + AC-ADM-QE3.*, QE4.*, Q06.*.
@@ -585,7 +585,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S2-T05 Manual entry, CSV import UI, Quick Edit** · P1 · M · Type: Complete · deps: S1-T02, S1-T05
 - Starts from (existing): `src/modules/m04-question-bank/pages/QuestionImportPage.vue`.
-- PRD: Q-10, Q-11, Q-24. Approach: DSKP-correct forms (G.5), CSV page with the new template, import history; Quick Edit shows completeness. Files: `m04-question-bank/pages/{QuestionImportPage,ImportHistoryPage}.vue`, `m28-bijak-spm/admin/intake/**`. Tests: component + spec. Verify: V-STD. DoD: DoD-T.
+- PRD: Q-10, Q-11, Q-24. Approach: DSKP-correct forms (G.5), CSV page with the new template, import history; Quick Edit shows completeness and is repaired to work on the real API (Q-24 is Fix, D112(5): "dead on the real API" per Team B's audit). Files: `m04-question-bank/pages/{QuestionImportPage,ImportHistoryPage}.vue`, `m28-bijak-spm/admin/intake/**`. Tests: component + spec. Verify: V-STD. DoD: DoD-T.
 - Data/API: none
 - Also uses: API-Q-17, DM-10 (owned by another card; read or verified here, not an ownership claim)
 
@@ -614,7 +614,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S3-T01 Kontrak: "Disahkan" selectable and honest** · P0 · M · Type: Fix · deps: S4-T02
 - Starts from (existing): `src/modules/m28-bijak-spm/admin/kontrak`, `apps/api/src/modules/exam/blueprints/blueprints.controller.ts`.
-- PRD: Q-16; gap F7, §5.3 (0 contracts on UAT; all 8 "Spec"; Disahkan not choosable). Approach: Disahkan in the status control with the evidence/quota conditions shown inline (not only on the Pengesahan tab); Terbit with a Disahkan contract needs no exception box; keep the exception path but record it. Files: `src/modules/m28-bijak-spm/admin/kontrak/**`, `BE/exam/blueprints/**`. Tests: gate tests, spec. Verify: V-STD vs V2 Kontrak; UAT: U-OP-08 later. DoD: DoD-T + AC-ADM-Q16.*.
+- PRD: Q-16 (incl. FR-ADM-Q16.7, AC-ADM-Q16.4: D112(3), a Kontrak (JSU) can be created only for a Subjek whose DSKP is loaded; the create call and the `Baharu` Subjek list check `curriculum_node`); gap F7, §5.3 (0 contracts on UAT; all 8 "Spec"; Disahkan not choosable). Approach: Disahkan in the status control with the evidence/quota conditions shown inline (not only on the Pengesahan tab); Terbit with a Disahkan contract needs no exception box; keep the exception path but record it. Files: `src/modules/m28-bijak-spm/admin/kontrak/**`, `BE/exam/blueprints/**`. Tests: gate tests, spec. Verify: V-STD vs V2 Kontrak; UAT: U-OP-08 later. DoD: DoD-T + AC-ADM-Q16.*.
 - Data/API: API-BIJAK-02, API-BIJAK-09, API-DSKP-06
 - Also uses: DM-21 (owned by another card; read or verified here, not an ownership claim)
 
@@ -653,9 +653,9 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - New requirements from the audit (this card owns them): AC-MUR-13-24, AC-MUR-13-25 (Subjektif self-mark stored and listed).
 - Answer store (D-A1, DM-44, owned by S5-T15): the Subjektif lane starts an `exam_attempts` row of kind `subjektif` (API-PRAC-10 delegates to it); `POST /bijak/attempts/:id/self-mark` (API-BIJAK-05, existing route, D-A9) updates `marks_awarded` of the part rows (`mode = subjektif`). Writes go through the one `AnswerLogPort` of `practice/`; no second answer table, no report reads anything else.
 
-**S3-T07 Pupil SPM hub, Databank, Jana Kertas** · P1 · M · Type: Complete · deps: S1-T06
+**S3-T07 Pupil SPM hub, Databank** · P1 · M · Type: Complete · deps: S1-T06
 - Starts from (existing): `apps/api/src/modules/spm/hub.service.ts`, `src/modules/m06-spm/routes.ts`.
-- PRD: MUR-13 hub/Databank, OQ-MUR-7. Approach: hub counts = what is servable (D91); Databank draws units; Jana Kertas Disahkan only. Files: `m06-spm/**`, `BE/spm/{hub,pool,mock}.service.ts`. Tests: counts spec. Verify: V-STD vs V2 `/spm`. DoD: DoD-T.
+- PRD: MUR-13 hub/Databank, FR-MUR-13-20, AC-MUR-13-26 (OQ-MUR-7 closed by D112(6)). Approach: hub counts = what is servable (D91); Databank draws units; the pupil "Jana Kertas" tab is hidden and its route returns 404 (FR-X2-2); no pupil path generates a paper; the generate route stays for the admin Jana Kertas only (FR-ADM-QE7.2). Files: `m06-spm/**`, `BE/spm/{hub,pool,mock}.service.ts`. Tests: counts spec. Verify: V-STD vs V2 `/spm`. DoD: DoD-T.
 - Data/API: API-BIJAK-03, API-BIJAK-07, API-BIJAK-08
 - Answer store (D-A1, DM-44, owned by S5-T15): a Databank drill answer writes `mode = databank` (the session mode `past_year` stays for old rows). Writes go through the one `AnswerLogPort` of `practice/`; no second answer table, no report reads anything else.
 
@@ -713,9 +713,10 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - Also uses: DM-12, DM-17, DM-19, DM-22 (owned by another card; read or verified here, not an ownership claim)
 - Verification and report scripts for U-OP-01..U-OP-17 under `apps/api/scripts/uat-ops/` each with `--dry-run` default, a report file, idempotence. The operations are run by the designated UAT developer (OPS) or by ADMIN users in the UI (ADM), never by an AI session (D95, D110); the runbook in §7 is the human side. Tests: dry-run unit tests in CI. Verify: on UAT, dry-run then (after the user's approval) real run, in order. DoD: DoD-T.
 
-**S4-T09 T1-T3 DSKP structure from existing chapter data** · P1 · M · Type: Ops · deps: S4-T07 (user decision D109; not blocked)
+**S4-T09 DSKP structure for T1-T3 and for every SPM subject offered** · P1 · M · Type: Ops · deps: S4-T07 (user decision D109; not blocked)
 - Starts from (existing): `docs/reference/dskp`, `docs/ops/dskp-loader.md`.
-- PRD: FR-ADM-C04.3, R1-ADM-C-04, FR-ADM-C01.6, D101. The repo has T4-T5 extracts only. Decision D109: T1-T3 use the same DSKP structure as T4-T5 (Tingkatan, Subjek, Bab, SK, SP, TP). Build the T1-T3 content from the T1-T3 chapter and topic data that already exists in V3/UAT (and V2), mapped into that structure, plus any PDF in `d:\prestasiplus-dskp` that covers T1-T3. The official T1-T3 PDFs are not a prerequisite. Write it in the JSON format of `docs/reference/dskp/*.json` (`level` T1/T2/T3), run the loader dry-run, then U-OP-01 for T1-T3 (the user approves the UAT write). Bab stays required only where the subject and Tingkatan have chapters (N-3).
+- D112(3) scope extension: this card ALSO loads the DSKP structure for EVERY SPM subject offered that has no `curriculum_node` rows yet (Kimia, Biologi, Geografi, Perniagaan, Prinsip Perakaunan, Ekonomi and any other), from the official KPM DSKP documents, in the same structure as D109 (Tingkatan, Subjek, Bab, SK, SP, TP) and the same JSON format, audit and checksum copy (FR-ADM-C04.5; AC-ADM-C04.3, AC-ADM-C04.4). The loader report lists each offered subject and Tingkatan as `dimuatkan` or `belum dimuatkan` (U-OP-01). Until a subject is loaded, SP and TP are required at publish only where nodes exist (FR-ADM-C04.6, enforced by S1-T02) and no Kontrak can be created for it (FR-ADM-Q16.7, enforced by S3-T01). The sector lead re-estimates the size at sprint planning, since the official documents of several subjects are added to the T1-T3 work.
+- PRD: FR-ADM-C04.3, FR-ADM-C04.5, FR-ADM-C04.6, FR-ADM-C04.7, R1-ADM-C-04, FR-ADM-C01.6, D101. The repo has T4-T5 extracts only. Decision D109: T1-T3 use the same DSKP structure as T4-T5 (Tingkatan, Subjek, Bab, SK, SP, TP). Build the T1-T3 content from the T1-T3 chapter and topic data that already exists in V3/UAT (and V2), mapped into that structure, plus any PDF in `d:\prestasiplus-dskp` that covers T1-T3. The official T1-T3 PDFs are not a prerequisite. Write it in the JSON format of `docs/reference/dskp/*.json` (`level` T1/T2/T3), run the loader dry-run, then U-OP-01 for T1-T3 (the user approves the UAT write). Bab stays required only where the subject and Tingkatan have chapters (N-3).
 - Data/API: API-DSKP-05
 - Also uses: DM-14 (owned by another card; read or verified here, not an ownership claim)
 - Files: `docs/reference/dskp/**`, `apps/api/src/modules/curriculum/dskp/data/**`. Tests: loader tests with a T1-T3 fixture. Verify: V-STD; T2 pupil sees subjects and Bab. DoD: DoD-T + AC-ADM-C04.*.
@@ -1184,6 +1185,20 @@ Inside every sprint each developer works only in their own sectors' paths; a tas
 
 **Tracking per sprint.** GitHub Project fields: **Sprint** (iteration field: Sprint 0, 1, 2, …), **Estimate** (number, ideal days from the S/M/L size), **Sector**, **Phase**, **Priority**, **Status** (Backlog / Claimed / In progress / In review / Verifying / Done). Burn-down: a Project "Burn up" chart on Estimate by Sprint, plus the two-line sprint table in `docs/plan/r1-board.md` (planned days, done days, planned ACs, passing ACs). The AC ledger (`docs/plan/r1-ac-ledger.md`, §6.9) is the real measure.
 
+#### Slice 0: one end-to-end chain first
+
+For a team with limited time (about 24 hours of working time), build ONE chain end to end before anything else (D112(7)). It proves AC-CHAIN-1 and AC-CHAIN-2 (PRD 40 section X9). Everything else follows the normal sprints below; no card is dropped or changed by Slice 0, only ordered first. Cards are done under the usual rules (gap check first, §0B; DoD-T).
+
+The cards, in order (each step needs the one before it):
+
+1. **Stimulus group 1..n, published and served as ONE unit.** S1-T01 (group invariants, 1..n members, FR-ADM-QE2.4) plus the group publish: S1-T02 (publish gate) and S2-T01 (group-first entry in the Studio wizard, the minimum needed to create "Rajah 3" and its members). Done when: AC-ADM-QE1.2, AC-ADM-QE2.1, AC-ADM-QE2.2.
+2. **The conditional Bab/SP gate.** S1-T02 (FR-ADM-QE4.5: Bab before Terbit where the Subjek + Tingkatan has chapters; FR-ADM-QE4.6: SP/TP only where DSKP nodes exist) with S4-T02 (the DSKP loaded and verified for the subject used, U-OP-01). Done when: AC-ADM-QE4.3, AC-ADM-QE4.4, AC-ADM-QE4.5.
+3. **Latih Tubi serves whole groups and writes `practice_answers`.** S1-T06 (group-safe assembly), S1-T07 (servability), S8-T02 (stimulus shown once, sticky), S5-T03 (Latih Tubi) and S5-T15 (the single answer store with `mode`, DM-44); the reports read that store: S10-T01 (Prestasi), S10-T03 (Analisa Item). Done when: AC-ADM-QE7.3, AC-ADM-M06.2, and the AC-CHAIN-1 steps (a) to (d) with their Prestasi and Analisa Item numbers. This proves AC-CHAIN-1.
+4. **ONE Sejarah Kertas 1 paper end to end** (Sejarah has sample papers and its DSKP loaded; Kertas 1 first, D112(4)): Kontrak S3-T01 (Disahkan, FR-ADM-Q16.*) -> Set Builder S3-T02 -> Semak & Terbit (S3-T08 for the Terbit pipeline; S1-T10 for the batch-to-paper step) -> pupil sitting and result S3-T04 (with S8-T03 answer widgets, S8-T04 navigator/timer/Hantar on phone) -> Prestasi and Analisa Item (S10-T01, S10-T03), with the answers written by S5-T15 (mode `simulasi`). Done when: AC-ADM-Q16.1, AC-ADM-Q16.3, AC-ADM-Q07.3 to AC-ADM-Q07.6, AC-MUR-13-1, AC-MUR-13-4, AC-MUR-13-6, AC-MUR-13-25.
+4a. **Paper PDF start of AC-CHAIN-2** (needed to prove AC-CHAIN-2 from its first step; if time runs out, the Sejarah paper may be entered by group-first manual entry (S2-T01) and these cards follow immediately after): S0-T03 (real Tesseract OCR, D112(2)), S1-T03 (extraction keeps groups and Bahagian), S1-T04 (timeout, error state), S2-T02 (Import & Semakan, Semak Ekstrak). Done when: AC-ADM-QE5.1, AC-ADM-QE5.2, AC-ADM-QE5.3, AC-ADM-Q07.1. This completes AC-CHAIN-2.
+
+The final check runs AC-CHAIN-1 and AC-CHAIN-2 on UAT in a visible browser at 1280 px with a 375 px pass of the pupil steps (card S9-T06 owns the chain specs; for Slice 0 they are run by hand with the AC-CHAIN-2 numbers applied to the Sejarah paper). The content for steps 1 to 4 is entered by Admin users (D112(4)).
+
 #### Sprint table (5-developer variant; other variants in 5B)
 
 Exit-criteria notation: `AC-MUR-3-*` means all acceptance criteria of that module in the PRD; the PRD files are authoritative for the IDs.
@@ -1337,9 +1352,9 @@ The IDs are the 17 UAT data tasks of PRD 30 §5 (U-OP-01..17). Owner key (D110):
 | Order | ID | Operation (PRD 30 §5) | Owner | Approval | Needs first | Tool card |
 |---|---|---|---|---|---|---|
 | 1 | (backup) | Backup of the UAT DB | OPS | user | none | n/a |
-| 2 | U-OP-02 | Intake environment: `JOBS_WORKER_ENABLED=true`, `OCR_ENGINE=tesseract` + `OCR_LANG_DIR`, real extraction provider (not `AI_PROVIDER=mock`) | OPS | user | S0-T03 merged | S0-T03 |
+| 2 | U-OP-02 | Intake environment: `JOBS_WORKER_ENABLED=true`, `OCR_ENGINE=tesseract` + `OCR_LANG_DIR` (real in-house OCR, D112(2); no external AI provider; the mock OCR is for CI tests only, never on UAT; an admin reviews every extracted item before publish) | OPS | user | S0-T03 merged | S0-T03 |
 | 3 | U-OP-03 | Deactivate Darjah D1-D6 in `Tahap Pendidikan`; check public stats and pickers | ADM | user | S4-T05 merged | S4-T05 |
-| 4 | U-OP-01 | **DSKP loader** (`npm run dskp:load -w @pp/api -- --dry-run`, then real; T4-T5, T1-T3 when extracts exist) | OPS | user | backup; dry-run report reviewed | S4-T02 |
+| 4 | U-OP-01 | **DSKP loader** (`npm run dskp:load -w @pp/api -- --dry-run`, then real; T4-T5, T1-T3 when extracts exist, and every other SPM subject offered once its DSKP is loaded by S4-T09, D112(3)) | OPS | user | backup; dry-run report reviewed | S4-T02 |
 | 5 | U-OP-12 | Acceptance accounts: T5, T4, T2 pupils, teacher, a school and its Admin Sekolah ("Janakan Akaun") | ADM | user | S6-T12 | S6-T05 |
 | 6 | U-OP-07 | **Bab mapping** in bulk by filter, T4-T5 core subjects first (no auto-mapping, D89) | ADM | user, after dry-run counts | 01, S4-T03, S2-T08 | S4-T03 |
 | 7 | U-OP-05 | **Regroup**: detect and quarantine stimulus-less and duplicated-stem questions (server rule, servability reason) | DEV tool, OPS runs the detector, ADM regroups and supplies figure images in the work-list | user | 01, S1-T07, S2-T04 | S1-T07, S4-T04 |
@@ -1354,6 +1369,8 @@ The IDs are the 17 UAT data tasks of PRD 30 §5 (U-OP-01..17). Owner key (D110):
 | 15 | U-OP-16 | Set the support contact in `Tetapan` (N-07) | ADM | user | N-07 built | S7-T09 |
 | 16 | U-OP-17 | **Regroup work-list** (QE-08): regroup per subject and Tingkatan (Sains T4 first), attach the real figures, re-run the detector report | ADM | user | 05, QE-08 built | S2-T04 |
 | Delivery B | U-OP-13 | Activate digital rewards, tier values, challenges, reward budgets | ADM | user | P2-02, 03, 07, 09 | S7-T05 |
+
+**Bijak content owner and first batch (D112(4)).** Bijak content (Kontrak, trial-paper intake, Set Builder papers, Terbit) is owned by Admin users (D110), not by developers. The first content batch is the 6 subjects that have sample papers: Bahasa Melayu, Bahasa Inggeris, Matematik, Matematik Tambahan, Fizik and Sejarah. Kertas 1 first; Kertas 2 after the scheme editor is built. A subject outside this batch follows only after its DSKP is loaded (S4-T09). Content admins: named by team leads in issue #502 / #503 (an operational assignment, not a doc decision).
 
 There is no local rehearsal dataset (D110): each script step runs as a dry-run on UAT and the dry-run report is attached to the approval request. Rollback = restore from the backup; scripts are insert-only and idempotent where possible (as `dskp:load`). After each step the Delivery Lead re-runs the affected ACs on UAT in a visible browser (T5 pupil first).
 
@@ -1407,11 +1424,11 @@ There is no local rehearsal dataset (D110): each script step runs as a dry-run o
 1. **Approve this plan, the sector split and the 2-week sprint.** Which people take which sectors (or should the Delivery Lead assign)?
 2. ~~Admin menu approval~~ closed: D107 made the menu FINAL (follows the V2 sidebar).
 3. ~~Who does the Bab mapping of ~339k questions and who supplies figure images~~ closed (D110): **ADMIN users** do the content work (Bab mapping, figure images, regrouping) in the Portal Pentadbiran (improved question entry, "Soalan tanpa Bab" work-list, diagram audit, regroup work-list); developers build and fix those screens only. Bulk by filter, no auto-mapping (PRD 30 OQ-03).
-4. **T1-T3 DSKP (decided, D109):** T1-T3 use the same DSKP structure as T4-T5, built from the existing chapter and topic data (and any T1-T3 PDF in `d:\prestasiplus-dskp`); the official PDFs are not required. S4-T09 is not blocked.
+4. **T1-T3 DSKP (decided, D109):** T1-T3 use the same DSKP structure as T4-T5, built from the existing chapter and topic data (and any T1-T3 PDF in `d:\prestasiplus-dskp`); the official PDFs are not required. S4-T09 is not blocked. **D112(3):** S4-T09 also loads the DSKP of every SPM subject offered that has none yet (Kimia, Biologi, Geografi, Perniagaan, Prinsip Perakaunan, Ekonomi) from the official KPM DSKP documents; until a subject is loaded, SP/TP are required only where nodes exist and no Kontrak can be created for it.
 5. ~~UAT dump for local use~~ closed (D110): no dump, no anonymised restore, no synthetic acceptance profile; acceptance runs on UAT (a clone of V2 production data). S4-T01 is a CI-only seed.
 6. **UAT operations** (§7): the operator is **a designated developer with server access** (decided, D110); the user approves every write ("approve U-OP-nn"). Still open: **the name of the designated UAT developer**.
 7. **Work location:** the code and PRD currently live in `D:\pp-cloud-review` (branch `feature/v3-bijak-r1`); the rule says everything stays in `D:\Dev Projects\prestasiplus`. The PRD and this plan must be copied there (or the branch merged into that checkout) before issues are created.
-8. PRD open questions that change tasks (decisions needed before the named card starts): PRD 30 OQ-01, OQ-QE1 and OQ-QE2 are closed by D107/D108; still open: OQ-06 server flags (S0-T10), OQ-Q12 Kiriman Guru reuse of intake batches (S1-T08), OQ-07 Subjektif meaning (S3-T06). Others: OQ-AS-1 (AS dashboard scope), OQ-MUR-1 (**superseded by D101**, so S5-T01 opens T1–T3), OQ-MUR-7 (Jana Kertas), OQ-G-6 (Headcount key-in design, needed by S10-T02).
+8. PRD open questions that change tasks (decisions needed before the named card starts): PRD 30 OQ-01, OQ-QE1 and OQ-QE2 are closed by D107/D108; still open: OQ-06 server flags (S0-T10), OQ-Q12 Kiriman Guru reuse of intake batches (S1-T08), OQ-07 Subjektif meaning (S3-T06). Others: OQ-AS-1 (AS dashboard scope), OQ-MUR-1 (**superseded by D101**, so S5-T01 opens T1–T3), OQ-MUR-7 (pupil Jana Kertas: **closed by D112(6)**, out of R1, tab hidden, route 404), OQ-G-6 (Headcount key-in design, needed by S10-T02).
 
 ---
 

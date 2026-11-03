@@ -17,6 +17,15 @@ Everything else in this set is decided (by the user's standing principles and, f
 - There is no local acceptance environment. Acceptance, AC proofs and AC-CHAIN-1..9 run on UAT (`uat.prestasiplus.cloud`), a clone of V2 production data, in a visible browser at 375/768/1280. Developers still run unit/integration tests and CI locally and in CI. No UAT dump, anonymised restore or synthetic acceptance profile is made; the demo/e2e seed is only for automated tests in CI. UAT holds real pupil data: evidence stays in the gitignored `.evidence/`, and issues/PRs carry only pass/fail and IDs, never names.
 - Content work (mapping questions to the right Bab, supplying missing figure images, regrouping stimulus groups) is owned by ADMIN users in the Portal Pentadbiran (improved question entry, "Soalan tanpa Bab" work-list, diagram audit, regroup work-list). Developers build and fix those screens; they do not do the content work. Scripts may only produce dry-run reports or assist bulk actions an admin confirms in the UI.
 
+**Decided D112 (Delivery Lead, by principle, 2026-11-04; answers the 7 open questions of the Team B workflow doc, PR #522):**
+- **Bab before Terbit:** Bab is REQUIRED when the question's Subjek + Tingkatan has chapters (D-A5, N-3); a Subjek + Tingkatan without chapters does not list the Bab item. Any older board decision "Q17 = not required" is superseded.
+- **OCR/AI:** PDF extraction uses real OCR, in-house (Tesseract worker, `OCR_ENGINE=tesseract`, the S0 card that enables the worker). There is no external AI provider in R1: ALESA/AI stays hidden (D73/D102) and pupil data stays private. Extraction is rule-based (numbering, Rajah/Jadual/Petikan/Sumber detection) and an admin always reviews before anything publishes. A mock OCR is allowed only in CI tests, never on UAT.
+- **Subjects without DSKP nodes** (for example Kimia, Biologi, Geografi, Perniagaan, Prinsip Perakaunan, Ekonomi): the S4 DSKP loading card loads the DSKP structure of every SPM subject offered from the official KPM DSKP documents (Tingkatan -> Subjek -> Bab -> SK -> SP -> TP, as D109). Until a subject's DSKP is loaded, SP and TP are required only when DSKP nodes exist for that Subjek + Tingkatan (the same conditional pattern as Bab). A Kontrak (JSU) can be created only for a Subjek whose DSKP is loaded.
+- **Bijak content owner:** Admin users (D110). First content batch: the 6 subjects with sample papers (BM, BI, Matematik, Matematik Tambahan, Fizik, Sejarah), Kertas 1 first, Kertas 2 after the scheme editor is built. Content admins: named by team leads in issue #502 / #503 (an operational assignment, not a doc decision).
+- **Sunting Pantas:** R1-ADM-Q-24 changes from Keep to Fix ("dead on the real API", Team B's audit).
+- **Pupil Jana Kertas:** OUT of R1 (D88; V2 pupils have no such function). The pupil tab is hidden and its route returns 404 (FR-X2-2). Admin Jana Kertas (FR-ADM-QE7.2) stays.
+- **24-hour slice ("Slice 0"):** plan section 5A, one end-to-end chain first, proving AC-CHAIN-1 and AC-CHAIN-2; everything else follows the normal sprints.
+
 Already closed on 2026-11-04 and not to be reopened: all other OD-* (50 §7) and all OQ-API-* (60 §6.2), for example the public pupil profile (first name only, no school: OQ-API-04), the daily report cap (20), no 70% chapter unlock, Sekolah Bersaing computed on request, teacher submissions as intake batches (`source=guru`), no `/completeness` route, and `stem_duplicated` shown once instead of excluded.
 
 ## How a developer uses this set
@@ -27,6 +36,7 @@ Already closed on 2026-11-04 and not to be reopened: all other OD-* (50 §7) and
    - the card's `Data/API:` line: the DM rows in `50-data-model-erd.md` §4 (change, migration number, risk) and the API rows in `60-api-contract.md` §2 (route, roles, request, response, defect) and §2.17 (shapes of `Missing-Build` routes);
    - `40-cross-cutting.md` for the shared rules (question structure, T1-T5, counts, responsive, NFR).
 3. **Build only the gap.** Reuse the existing code (FR-X1-5). A `Data/API` entry marked `Exists-OK` is only verified; `Exists-Fix` changes only the stated defect; `Missing-Build` adds only the stated route. Migrations use the numbers of `50` §4.8 and the plan's table "Migrations by card". Anything the documents do not say: stop and ask the Delivery Lead.
+   - Team workflow reference (BM): docs/plan/r1-aliran-kerja-bank-bijak.md (PR #522) — its 7 questions are answered by D112.
 4. **Prove the ACs.** Run every AC of the modules on the card in a visible browser at 375/768/1280, with real test output, and tick each AC with its result in the PR; the Delivery Lead records the result in `docs/plan/r1-ac-ledger.md`.
 5. **Check the chain** before the PR: `node scripts/r1-trace-check.mjs` must exit 0. It fails when a URS, FR/AC range, DM or API ID is unknown, when a PRD module has no card, or when a DM or an `Exists-Fix`/`Missing-Build` API does not have exactly one owning card (the `- Data/API:` line of the card).
 
@@ -114,6 +124,7 @@ Full text is in [TRACKER.md](../../TRACKER.md).
 - **D106:** no dead links.
 - **D107:** admin menu follows V2.
 - **D108:** principle rulings: 1..n groups, the thinking-level gate, the Set Soalan feed, Tiket Bantuan, school-admin Kirkpatrick, 404 for hidden URLs.
+- **D112:** Bab before Terbit where chapters exist, in-house OCR and no external AI provider, DSKP for every offered SPM subject, Admin users own Bijak content, Sunting Pantas is Fix, pupil Jana Kertas out of R1, Slice 0 (see "Decided D112" above).
 - Earlier decisions D28–D99 still apply where they are not superseded.
 
 ## ID conventions
