@@ -818,6 +818,8 @@ Task T9 re-run 3 after commit b313db7 (fixes N-1..N-5 and the plan citations). I
 
 ### Verdicts
 
+Superseded by run 4 below.
+
 - **V2 parity: NO** (only V22, via N-6; 54 of 55 V2 rows PASS)
 - **BM: YES**
 - **BI: NO** (N-6)
@@ -831,3 +833,36 @@ All verdicts become YES when N-6 is applied; this is a one-cell edit.
 ### Fix for the remaining GAP
 
 **N-6 (V22, BI).** Target: `docs/prd/r1/30-admin-pusat.md`, the field table that holds the row `| marks | every leaf | integer 1 to 100 | "Nilai mata mesti sekurang-kurangnya 1."; "Markah bahagian tidak boleh melebihi 100." |` (about line 840). Replace the validation cell `integer 1 to 100` with `integer 1 to 100; 0 only for a leaf with `Contoh (tidak dimarkah)` (FR-ADM-QE3.25, `mode_config.example`)`. No new ID is needed; next free IDs are unchanged (AC-ADM-QE3.19, FR-ADM-QE3.26, FR-PA-41, AC-PA-44).
+
+## Wizard re-verification 2026-11-04 (run 4)
+
+Task T9 re-run 4 after commit 8280e78 (N-6). Re-check of V22 and the BI paper, plus a last sweep of every marks-range statement in 30, 45, 46, 50, 60, 20, 10 and 40. No file other than this one was changed; the only edit outside this section is "Superseded by run 4 below." under the run-3 "Verdicts" heading.
+
+### Confirmed since run 3
+
+- N-6 applied: 30 field table row `marks` now reads "integer 1 to 100; 0 only for a leaf with `Contoh (tidak dimarkah)` (FR-ADM-QE3.25, `mode_config.example`)". 30 row 04-26 and row 15-12 (which defers to 04-26), 45 L-04, 50 DM-55 and 60 API-Q-03 all carry the exception. 46, 20, 10 and 40 state no leaf-marks range.
+
+### Sweep result: one more place without the exception
+
+- **N-7 (V22; BI P1 Part 2)** 45 section 3.1 validation table (line about 563): `| marks | every leaf | integer 1..100 | "Nilai mata mesti sekurang-kurangnya 1."; ... |` has no exception, the same defect as N-6 in the sibling table of 45 (L-04 in the same file has it).
+
+### Counts
+
+- V2 functions: 54 PASS, 1 GAP of 55 (V22, via N-7).
+- Split paths B/M/m: 19 PASS, 0 GAP of 19.
+- G items: 19 PASS, 0 GAP of 19.
+- Total: **92 PASS, 1 GAP of 93**. BI paper: 7 of 8 elements PASS (P1 Part 2 worked example, N-7). All other subjects unchanged from run 3.
+
+### Verdicts
+
+- **V2 parity: NO** (V22 only, via N-7)
+- **BM: YES**
+- **BI: NO** (N-7)
+- **Fizik: YES**
+- **Matematik: YES**
+- **Matematik Tambahan: YES**
+- **Sejarah: YES**
+
+### Fix for the remaining GAP
+
+**N-7.** Target: `docs/prd/r1/45-question-authoring-flow.md`, the field validation table row `| marks | every leaf | integer 1..100 | ... |` (about line 563). Replace the cell `integer 1..100` with `integer 1..100; 0 only when L-13 (`Contoh (tidak dimarkah)`) is ticked (`mode_config.example`)`. No new ID needed. Once applied, V22 and BI turn PASS: 93 of 93 and all seven verdicts YES.
