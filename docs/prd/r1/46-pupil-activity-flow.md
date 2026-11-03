@@ -989,7 +989,7 @@ Bilingual twins (`_en` columns and `language`) are defined by 45 / G-07 and only
 | API-PRAC-02 and API-BIJAK-06 (extended) | `CheckAnswerRequest` adds `selectedOptionIds[]` (only for `question_set` and Kuiz); the response adds `correctOptionIds[]`. | API-PRAC-02, API-BIJAK-06 | S5-T11 |
 | API-BIJAK-04 (extended) | The attempt answers union adds `choices`, `gaps`, `cells`, `topicId` (DM-68); `GET /api/bijak/attempts/:id/result?scheme=1` returns the scheme for a closed Kertas Subjektif attempt; without it the scheme is omitted for that lane. | API-BIJAK-04 | S3-T04 (answers union), S3-T06 (result scheme) |
 | API-BIJAK-05 (extended) | `self-mark` request adds `pointsHit?: string[]`, `criteria?: {id, mark}[]`; response returns them. | API-BIJAK-05 | S3-T06 |
-| API-PRAC-03 (extended) | Session sweeper job (no route): idle 2 h to `abandoned`; Kuiz sweep writes rows; `GET /practice/sessions` excludes `abandoned`. | API-PRAC-03 | S5-T03 |
+| API-PRAC-03 (extended) | Session sweeper job (no route): idle 2 h to `abandoned`; Kuiz sweep writes rows; `GET /practice/sessions` excludes `abandoned`. | API-PRAC-03 | S5-T15 |
 | API-GAME-03 and API-GAME-01 (extended) | `GET /api/battle/arena/:uuid` returns `roundEndsAt`; battle and room views return `isBot` / "Robot PrestasiPlus" labels; real-pupil bot pool removed. | API-GAME-01, 03 | S7-T01 |
 | API-GAME-01..03 (extended) | Game result view returns `reward {xp, syiling, capped, reason}`. | API-GAME-01..03 | S7-T01 |
 | API-BIJAK-03 (extended) | The pupil generate call and the Jana Kertas read answer 404 (D112). | API-BIJAK-03 | S3-T07 |

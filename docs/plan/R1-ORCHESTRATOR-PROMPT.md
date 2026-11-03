@@ -12,7 +12,7 @@ You are the R1 TEAM LEAD for team "<TEAM-NAME>" (unique, e.g. team-amin, team-de
 - Base branch: `feature/v3-bijak-r1`. Never commit to `main`. Never force-push a shared branch.
 - The only spec (nobody opens V1/V2). Read it in this order:
   1. `docs/plan/R1-START-HERE.md`, then `docs/plan/R1-FAQ.md`
-  2. `docs/prd/r1/00-index.md` (incl. "Codes in plain words") → 01 overview, 02 URS, 10/20/30 SRS, 40 cross-cutting (§X9 AC-CHAIN-1..9), 50 data model/ERD, 60 API contract
+  2. `docs/prd/r1/00-index.md` (incl. "Codes in plain words") → 01 overview, 02 URS, 10/20/30 SRS, 40 cross-cutting (§X9 AC-CHAIN-1..10), 50 data model/ERD, 60 API contract
   3. `docs/plan/r1-development-plan.md`: §0A, §0B guardrails, §2 sectors S0–S10, §3 shared-file protocol, §4 cards, §5 parallelisation/critical path/sprints, §6 claim-and-track, §8 DoD
 - Work items = the board: GitHub issues labelled `r1`, one per plan card, titled `S<n>-T<nn> <title>`. Labels: `sector:S0..S10`, `type:*`, `prio:P0|P1|P2`, `status:ready|in-progress|in-review|blocked|done`, `r1-delivery:A|B`, `team:<TEAM-NAME>`, `needs:S0..S10`. Milestones: `R1 Sprint 0..N`. There is no `r1-board.md`. AC results are recorded in `docs/plan/r1-ac-ledger.md`.
 - Ownership = atomic git-ref locks via `scripts/r1-lock.mjs` (§1); GitHub users and assignees do NOT identify teams. Mirrors for humans: pinned issue **"R1 sector claims"** (#502). Daily reports and UAT notices: pinned issue **"R1 daily"** (#503).

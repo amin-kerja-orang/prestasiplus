@@ -17,7 +17,7 @@ Full detail: [`r1-development-plan.md`](r1-development-plan.md) (sections 0A, 0B
 
 ## Day 1 box
 
-1. **Which team starts where.** The first team takes sector **S0** (shared files, CI, the stack) and begins with card S0-T02. Other teams take the sectors the orchestrator prompt tells them to take.
+1. **Which team starts where.** The first team takes sector **S0** (shared files, CI, the stack) and begins with card S0-T02. Other teams take the sectors the orchestrator prompt tells them to take. **Nobody takes sector S9**: the Delivery Lead session works the S9 cards (S9-T01..S9-T06, including the end-to-end chain suite S9-T06) and they need no lock (decision 10).
 2. **Does the stack run?** Until S0-T02 is merged, `npm run stack:up` may not start (the e2e seed fails). Until then use unit tests, `npm run typecheck`, `npm run lint`, `npm test`, and for the API `npm run be:dev` as in [`http-switch-checklist.md`](http-switch-checklist.md) (needs `COOKIE_SECURE=false` in `.env.api`).
 3. **Env files and logins.** Copy from `.env.example`, `.env.api.example`, `.env.db.example`. Local demo logins: [`docs/AKAUN-DEMO-LOCAL.md`](../AKAUN-DEMO-LOCAL.md). The CI seed and its profiles: [`docs/ops/e2e-seed.md`](../ops/e2e-seed.md). Demo and CI data are for automated tests only, never for acceptance.
 4. **A cloud session without Docker** runs unit, typecheck, lint and contract checks only. It marks the ACs that need the stack or a browser as "awaiting CI/UAT" in the PR. **Every session has its own clone or worktree**; two sessions never share one checked-out branch.
@@ -46,6 +46,7 @@ Full detail: [`r1-development-plan.md`](r1-development-plan.md) (sections 0A, 0B
 | PR body | names **exactly one** card ID (the scope guard reads it) | `Card: S1-T01` |
 | Issue and PR comment | starts with `[<team>/S-<k>]` | `[team-amin/S-2] claimed` |
 | Lock key | `S<n>` (sector) or `S<n>-T<nn>` (card; a split card has one lowercase letter) | `S1`, `S1-T01`, `S1-T09a` |
+| Card to issue | One issue per card; its title starts with the card ID followed by a space. Find it by searching the `r1` issues for the card ID (for example `S1-T01`). The issue number is not part of the plan. | issue title `S1-T01 Stimulus group invariants end to end` |
 
 The repo `CLAUDE.md` rule `feature/<slug>` is for non-R1 work. R1 branches always start with `r1/`.
 
@@ -86,10 +87,10 @@ The repo `CLAUDE.md` rule `feature/<slug>` is for non-R1 work. R1 branches alway
 
 ### 10. S9 cards and the end-to-end chain specs
 - S9 is the Delivery Lead's sector. It cannot be claimed as a SECTOR (no team holds the lock `S9`), but its cards S9-T01..S9-T06 are worked by the Delivery Lead session; S9-T06 is included. S9 cards need no lock.
-- The spec of AC-CHAIN-n is written by the LAST card of chain n (the table in card S9-T06), in the same PR as that card's change, under `e2e/r1/chains/chain-<n>.http.spec.ts`. That folder belongs to S0, so the card PR is a small cross-sector PR (decision 7): the line `Cross-sector: S0 (chain spec)` and the label `needs:S0`. S9-T06 runs the full chain suite on the CI seed and on UAT and maintains it; it never writes a product fix.
+- The spec of AC-CHAIN-n is written by the LAST card of chain n (the table in card S9-T06), in the same PR as that card's change, under `e2e/r1/chains/chain-<n>.http.spec.ts`. That folder belongs to S0, so the card PR is a small cross-sector PR (decision 7): the line `Cross-sector: S0 (chain spec)` and the label `needs:S0`. The spec file is on the `New files:` line of that last card (step 5 allows exactly the paths of that line), so creating it is not a "file that is not listed". S9-T06 runs the full chain suite on the CI seed and on UAT and maintains it; it never writes a product fix.
 
 ### 11. Numbers on the wire and on the screen
-Every report and practice API returns accuracy as a number with ONE decimal (pooled correct ÷ answered × 100, XS-5; 60 section 4.6); every screen shows the whole number rounded half up (40 XS-5). Only the manual Headcount AR screen may show one decimal. Cards S10-T01, S10-T03, S6-T01 and S6-T03 apply this rule.
+Every report and practice API returns accuracy as a JSON number rounded to ONE decimal (pooled correct ÷ answered × 100, XS-5; 60 section 4.6); a value with no fraction is returned without one (100 and 50, not 100.0), and the test is: the number equals itself rounded to one decimal and the response never carries a second decimal digit; every screen shows the whole number rounded half up (40 XS-5). Only the manual Headcount AR screen may show one decimal. Cards S10-T01, S10-T03, S6-T01 and S6-T03 apply this rule.
 
 ## Steps for one card
 
@@ -115,7 +116,7 @@ Every report and practice API returns accuracy as a number with ONE decimal (poo
    npm run typecheck && npm run lint && npm test     # backend also: npm run be:verify; contract change: npm run contract:check
    node scripts/r1-scope-guard.mjs --base origin/feature/v3-bijak-r1 --head HEAD     # set PR_BODY to your PR text
    node scripts/r1-canonical-map.mjs --check
-   node scripts/r1-trace-check.mjs                   # only if you touched docs or the plan
+   node scripts/r1-trace-check.mjs                   # only if your PR touches docs/ or the plan (it must exit 0)
    ```
 7. **Open the PR** to `feature/v3-bijak-r1` with the template: exactly one card ID, gap-check link, existing files changed, the reason for any new file, DM/API IDs, ACs proven with their `[CI]`/`[UAT]` tags, "ACs awaiting UAT", and the scope-guard and canonical-map results. Set `status:in-review`.
 8. **CI** must be green: `r1-scope-guard`, `r1-docs` (when docs or the plan change), and the existing frontend/api jobs. The scripts `scripts/r1-scope-guard.mjs`, `scripts/r1-canonical-map.mjs` and `scripts/r1-trace-check.mjs` exist today; the required CI jobs that run them are wired by card S0-T04. Until S0-T04 is merged CI does not run them, so run them locally (step 6) and paste the output in the PR.
@@ -145,7 +146,7 @@ node scripts/r1-lock.mjs release S1-T01 --team team-amin --session S-2     after
 - **No parallel pages, services, stores, routes or tables** for something that already exists. Every schema change names a DM ID, every endpoint an API ID.
 - **Change budget by card Type**: Keep/Verify/Ops = no product code; Fix/Complete = the "Starts from" files (new file only if the card names it); Build = new files only at the paths of the card's `New files:` line. If a Verify card turns out to need product code, it is a Fix or Complete card: tell your team lead.
 - **No server access for AI sessions** (decision 5). V1 and V2 are not opened by agents.
-- No placeholder strings ("akan datang", "belum tersedia", "Pratonton", "prototaip") and no mock path in the http build.
+- No placeholder strings ("akan datang", "belum tersedia", "Pratonton", "prototaip") on any page or notice, and no mock path in the http build. The rule is about placeholder PAGES and notices. **Allow-list (admin only):** the buttons and titles `Pratonton`, `Pratonton kumpulan` and `Pratonton kertas` and the preview title `Pratonton — Soalan #{id} — PRESTASIPLUS` are real functions of the Portal Pentadbiran (30 R1-ADM-Q-04, FR-ADM-QE2.6) and are allowed in `src/modules/m04-question-bank/**` and `src/modules/m28-bijak-spm/admin/**`; they are entries of `scripts/placeholder-allowlist.json` (card S0-T04). The same word on a pupil, teacher or school-admin screen, a hidden-module page or a toast is still banned.
 - **Duplicated stem text:** a question whose stem is repeated as its only part's prompt (`stem_duplicated`) is **shown once and is NOT excluded** from serving or counting; the data is cleaned later (DM-40). Only `stimulus_missing` and `figure_only` questions are excluded (FR-X1-4, FR-MUR-QP-5, OD-3).
 - Public repo: no real person names, e-mails, credentials, server addresses or personal data in code, seeds, docs, issues, PRs or logs. Use fictitious names.
 - Docs-only PRs (touch only `docs/**`) have no card and skip the scope guard.

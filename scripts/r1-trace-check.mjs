@@ -9,7 +9,7 @@
 //   (f) a DM or an Exists-Fix / Missing-Build API is not owned by exactly one card
 //       (the "- Data/API:" line of a plan card is the owner declaration), or a card has no such line, or
 //   (g) a card named in the Cards column of 50/60 does not exist, or the owning card is not one of them.
-//   (h) every AC-CHAIN-n defined in 40 (AC-CHAIN-1..9 must exist) is owned by card S9-T06, or
+//   (h) every AC-CHAIN-n defined in 40 (AC-CHAIN-1..N, N = the highest defined, at least 9, must all exist and S9-T06 must name AC-CHAIN-1..N) is owned by card S9-T06, or
 //   (i) a card has no "- Starts from (existing):" line with at least one backticked path (scripts/r1-scope-guard.mjs needs it), or
 //   (j) (F-09) a card is in no sprint list of plan 5A (unless declared recurring there), or a sprint list / `deps:` names a card
 //       that does not exist, or a card's dependency starts in a LATER sprint than the card's first sprint (parenthetical notes in
@@ -400,11 +400,14 @@ for (const [id, v] of [...dmDefined, ...apiDefined]) {
 const chainDefined = new Set([...readDoc(PRD_DIR + '/40-cross-cutting.md').matchAll(/^\*\*(AC-CHAIN-\d+)\b/gm)].map((m) => m[1]))
 const chainCard = cards.find((c) => c.id === 'S9-T06')
 if (!chainCard) problems.chain.push('card S9-T06 does not exist')
-for (let i = 1; i <= 9; i++) if (!chainDefined.has('AC-CHAIN-' + i)) problems.chain.push('AC-CHAIN-' + i + ' is not defined in 40-cross-cutting.md')
+const chainMax = Math.max(0, ...[...chainDefined].map((x) => Number(x.split('-')[2])))
+for (let i = 1; i <= Math.max(9, chainMax); i++) if (!chainDefined.has('AC-CHAIN-' + i)) problems.chain.push('AC-CHAIN-' + i + ' is not defined in 40-cross-cutting.md')
+const chainRange = 'AC-CHAIN-1..' + Math.max(9, chainMax)
+const chainRangeRe = new RegExp(chainRange.replace(/\./g, '\\.'))
 if (chainCard) {
-  const names = (id) => new RegExp('\\b' + id + '\\b').test(chainCard.body) || /AC-CHAIN-1\.\.9/.test(chainCard.body)
+  const names = (id) => new RegExp('\\b' + id + '\\b').test(chainCard.body) || chainRangeRe.test(chainCard.body)
   for (const id of chainDefined) if (!names(id)) problems.chain.push(id + ' is not owned by S9-T06')
-  if (!/AC-CHAIN-1\.\.9/.test(chainCard.body)) problems.chain.push('S9-T06 does not name AC-CHAIN-1..9')
+  if (!chainRangeRe.test(chainCard.body)) problems.chain.push('S9-T06 does not name ' + chainRange)
 }
 // (i) every card has a Starts-from line with backticked paths
 for (const c of cards) {
