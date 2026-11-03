@@ -855,6 +855,8 @@ Task T9 re-run 4 after commit 8280e78 (N-6). Re-check of V22 and the BI paper, p
 
 ### Verdicts
 
+Superseded by run 5 below.
+
 - **V2 parity: NO** (V22 only, via N-7)
 - **BM: YES**
 - **BI: NO** (N-7)
@@ -866,3 +868,32 @@ Task T9 re-run 4 after commit 8280e78 (N-6). Re-check of V22 and the BI paper, p
 ### Fix for the remaining GAP
 
 **N-7.** Target: `docs/prd/r1/45-question-authoring-flow.md`, the field validation table row `| marks | every leaf | integer 1..100 | ... |` (about line 563). Replace the cell `integer 1..100` with `integer 1..100; 0 only when L-13 (`Contoh (tidak dimarkah)`) is ticked (`mode_config.example`)`. No new ID needed. Once applied, V22 and BI turn PASS: 93 of 93 and all seven verdicts YES.
+
+## Wizard re-verification 2026-11-04 (run 5, final)
+
+Task T9 re-run 5 after commit 6ddc2e6 (N-7). No file other than this one was changed; 10, 20, 40, 50, 60 and the plan were read only (other agents are editing them). The only edit outside this section is "Superseded by run 5 below." under the run-4 "Verdicts" heading.
+
+### Confirmed
+
+- N-7 applied: 45 validation table row `marks` reads "integer 1..100; 0 only when L-13 (`Contoh (tidak dimarkah)`) is ticked (`mode_config.example`)". Every marks-range statement for a leaf now carries the exception: 30 row 04-26 and the 30 field table row, 45 L-04 and this row, 50 DM-55, 60 API-Q-03. V22 and the BI paper (P1 Part 2 worked example) are PASS.
+- Spot-check of the other 92 items, unaffected: all fix IDs of runs 1-4 still exist (FR-ADM-QE3.24, QE3.25, AC-ADM-QE3.18, AC-ADM-Q03.6, Q04.5, Q05.3, QE2.5, QE5.6, FD-QE-8 in 30; FR-PA-35..40, AC-PA-37, AC-PA-43 in 46; FR-QA-48, 49, AC-QA-48, 49 in 45; OPT-KOD-POTONGAN in 40); cards S1-T09a, S1-T09b, S2-T10, S3-T04, S3-T06, S8-T02, S8-T03, S8-T05 and S5-T13 (owner of R1-ADM-Q-25) are present in the plan; `acceptedOptions` has no hit in the PRD or plan; "patah perkataan" is still the only word-counter copy in 46.
+
+### Counts
+
+- V2 functions: 55 PASS, 0 GAP of 55.
+- Split paths B/M/m: 19 PASS, 0 GAP of 19.
+- G items: 19 PASS, 0 GAP of 19.
+- Total: **93 PASS, 0 GAP of 93** (run 1: 64 / 29; run 2: 87 / 6; run 3: 92 / 1; run 4: 92 / 1).
+- Per-subject: every paper element of BM, BI, Fizik, Matematik, Matematik Tambahan and Sejarah is PASS.
+
+### Verdicts
+
+- **V2 parity: YES**
+- **BM: YES**
+- **BI: YES**
+- **Fizik: YES**
+- **Matematik: YES**
+- **Matematik Tambahan: YES**
+- **Sejarah: YES**
+
+No remaining GAP.
