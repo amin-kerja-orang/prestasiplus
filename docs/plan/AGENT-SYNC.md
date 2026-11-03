@@ -1,3 +1,5 @@
+> SUPERSEDED for R1 by docs/plan/R1-START-HERE.md. Do not use its branch, claim or board rules for any `S<n>-T<nn>` card.
+
 # Agent sync rules (one page)
 
 Every backend agent on every PC follows this page. Re-read it from `origin/feature/v2-backend` at the start and end of each session. Details: [sessions.md](sessions.md) section 6.

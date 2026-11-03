@@ -1,3 +1,5 @@
+> SUPERSEDED for R1 by docs/plan/R1-START-HERE.md. Do not use its branch, claim or board rules for any `S<n>-T<nn>` card.
+
 # Backend tracker (v2-backend)
 
 Single source of truth for the **state of every backend card**. The lead's project tracker (`docs/TRACKER.md`) stays lead-only; this file is the one the backend sessions edit. Cards: [backend-tasks/](backend-tasks/README.md). Lanes, order and sync points: [sessions.md](sessions.md). Agent prompts: [agent-kickoff/](agent-kickoff/README.md). Design: [../architecture/v2-backend-plan.md](../architecture/v2-backend-plan.md).
