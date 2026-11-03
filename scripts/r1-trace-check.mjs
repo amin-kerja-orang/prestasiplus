@@ -10,9 +10,16 @@
 //       (the "- Data/API:" line of a plan card is the owner declaration), or a card has no such line, or
 //   (g) a card named in the Cards column of 50/60 does not exist, or the owning card is not one of them.
 //   (h) every AC-CHAIN-n defined in 40 (AC-CHAIN-1..9 must exist) is owned by card S9-T06, or
-//   (i) a card has no "- Starts from (existing):" line with at least one backticked path (scripts/r1-scope-guard.mjs needs it).
+//   (i) a card has no "- Starts from (existing):" line with at least one backticked path (scripts/r1-scope-guard.mjs needs it), or
+//   (j) (F-09) a card is in no sprint list of plan 5A (unless declared recurring there), or a sprint list / `deps:` names a card
+//       that does not exist, or a card's dependency starts in a LATER sprint than the card's first sprint (parenthetical notes in
+//       `deps:` are not dependencies; recurring cards have no sprint and are exempt), or
+//   (k) (F-22) a card's Type is weaker than the strongest Action (Keep|Fix|Complete|Build) of the PRD modules it cites
+//       (strength Keep = Verify < Fix < Complete < Build; Type Ops is exempt).
+// Card IDs are S<n>-T<nn> with an optional ONE lowercase letter for a split card (S1-T09a, D113).
 // Writes docs/plan/r1-traceability.md: every PRD module -> its task cards, with FR/AC counts, plus the ID-chain sections.
 // Usage: node scripts/r1-trace-check.mjs [--quiet]
+//        node scripts/r1-trace-check.mjs --self-test   (rules (j) and (k) and the card-ID regex on small fixtures; touches no file)
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -40,6 +47,158 @@ function keyOf(id) {
   return null
 }
 
+
+// ---------- card IDs, sprints, deps, Type vs Action (rules j and k; pure functions, covered by --self-test) ----------
+const CARD_ID = 'S\\d+-T\\d+[a-z]?' // optional ONE lowercase letter: split card (D113)
+const CARD_HEAD_RE = () => new RegExp(`^\\*\\*(${CARD_ID})\\s+([^*]+)\\*\\*(.*)$`, 'gm')
+const CARD_ANY_RE = () => new RegExp(`\\b${CARD_ID}\\b`, 'g')
+const pad = (n) => String(n).padStart(2, '0')
+const stripParens = (t) => { let p; do { p = t; t = t.replace(/\([^()]*\)/g, '') } while (t !== p); return t }
+
+/** Card IDs named by the `deps:` field of a card (first line). Text after " · ", parenthetical notes and non-IDs are ignored; `S4-T02..T05` is a range. */
+function depsOf(body) {
+  const m = body.split('\n')[0].match(/\bdeps:\s*(.*)$/)
+  if (!m) return null
+  const t = stripParens(m[1].split(/\s·\s/)[0])
+  const out = []
+  for (const x of t.matchAll(/\bS(\d+)-T(\d+)([a-z]?)(?:\s*\.\.\s*(?:S\d+-)?T?(\d+))?/g)) {
+    if (x[4] && !x[3]) { for (let i = Number(x[2]); i <= Number(x[4]) && i - Number(x[2]) < 100; i++) out.push(`S${x[1]}-T${pad(i)}`) }
+    else out.push(`S${x[1]}-T${x[2]}${x[3]}`)
+  }
+  return out
+}
+
+/** Sprint lists of plan 5A: card -> sorted sprint numbers; recurring = cards declared recurring (no sprint list). */
+function parseSprints(planText) {
+  const a = planText.indexOf('### 5A.')
+  const b = planText.indexOf('### 5B.')
+  const sec = a >= 0 ? planText.slice(a, b > a ? b : undefined) : ''
+  const sprintsOf = new Map()
+  const add = (id, n) => { if (!sprintsOf.has(id)) sprintsOf.set(id, new Set()); sprintsOf.get(id).add(n) }
+  const walk = (text, startSprint) => {
+    let sprint = startSprint, sector = null
+    for (const t of stripParens(text).matchAll(/\bSprint (\d+)|\bS(\d+)-T(\d+)([a-z]?)\b|\bT(\d{2})([a-z]?)\b/g)) {
+      if (t[1] !== undefined) { sprint = Number(t[1]); sector = null; continue }
+      if (sprint === null) continue
+      if (t[2] !== undefined) { sector = t[2]; add(`S${t[2]}-T${t[3]}${t[4]}`, sprint) }
+      else if (sector !== null) add(`S${sector}-T${t[5]}${t[6]}`, sprint)
+    }
+  }
+  let cur = null
+  for (const line of sec.split('\n')) {
+    const h = line.match(/^\*\*Sprint (\d+)\b/)
+    if (h && /^\*\*Sprint \d+\+/.test(line)) { cur = null; walk(line.replace(/^\*\*Sprint \d+\+[^*]*\*\*/, ''), null); continue }
+    if (h) { cur = Number(h[1]); continue }
+    const c = line.match(/^- \*Cards:\*(.*)$/)
+    if (c && cur !== null) walk(c[1], cur)
+  }
+  const recurring = new Set()
+  const rm = sec.match(/((?:`?S\d+-T\d+[a-z]?`?[,\s]*(?:and\s+)?)+)\s*(?:is|are) recurring/)
+  if (rm) for (const id of rm[1].match(CARD_ANY_RE()) ?? []) recurring.add(id)
+  return { sprintsOf: new Map([...sprintsOf].map(([k, v]) => [k, [...v].sort((x, y) => x - y)])), recurring }
+}
+
+/** Rule (j) / F-09. cards: [{ id, body }]. Returns a list of problem strings. */
+function checkSprintDeps(cards, { sprintsOf, recurring }) {
+  const out = []
+  const ids = new Set(cards.map((c) => c.id))
+  const first = (id) => sprintsOf.get(id)?.[0]
+  for (const [id, sp] of sprintsOf) if (!ids.has(id)) out.push(`sprint ${sp[0]} lists ${id}, which is not a card in the plan`)
+  for (const c of cards) {
+    const mine = first(c.id)
+    if (mine === undefined && !recurring.has(c.id)) out.push(`${c.id}: not in any sprint list of plan 5A and not declared recurring`)
+    for (const d of depsOf(c.body) ?? []) {
+      if (d === c.id) continue
+      if (!ids.has(d)) { out.push(`${c.id}: deps names ${d}, which is not a card in the plan`); continue }
+      if (recurring.has(d) || recurring.has(c.id) || mine === undefined) continue
+      const theirs = first(d)
+      if (theirs !== undefined && theirs > mine) out.push(`${c.id} (first sprint ${mine}) depends on ${d} (first sprint ${theirs}, later)`)
+    }
+  }
+  return out
+}
+
+const ACTION_RANK = { Keep: 0, Verify: 0, Fix: 1, Complete: 2, Build: 3 }
+const typeOf = (body) => ((body.split('\n')[0].match(/\bType:\s*(Keep|Verify|Fix|Complete|Build|Ops)\b/) ?? body.match(/\bType:\s*(Keep|Verify|Fix|Complete|Build|Ops)\b/) ?? [])[1]) ?? null
+
+/** Action of every PRD module: heading `### R1-<role>-<module>` followed by `- **Action**: X` or `- **Action: X**`. key -> Keep|Fix|Complete|Build. */
+function parsePrdActions(text) {
+  const out = new Map()
+  for (const part of text.split(/^(?=#{2,5} R1-)/m)) {
+    const h = part.match(/^#{2,5} (R1-[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)/)
+    if (!h) continue
+    const k = keyOf(h[1])
+    const a = part.match(/\*\*Action(?:\*\*:|:\*\*|:)\s*(Keep|Fix|Complete|Build)\b/)
+    if (k && a && !out.has(k)) out.set(k, a[1])
+  }
+  return out
+}
+
+/** Rule (k) / F-22. cards: [{ id, body, refs:Set }]; actions: key -> Action. */
+function checkTypeAction(cards, actions) {
+  const out = []
+  for (const c of cards) {
+    const type = typeOf(c.body)
+    if (!type) { out.push(`${c.id}: no "Type:" on the card`); continue }
+    if (type === 'Ops') continue
+    const strong = [...c.refs].filter((k) => actions.has(k)).map((k) => [k, actions.get(k)]).filter(([, a]) => ACTION_RANK[a] > ACTION_RANK[type])
+    if (!strong.length) continue
+    const top = Math.max(...strong.map(([, a]) => ACTION_RANK[a]))
+    out.push(`${c.id}: Type ${type} is weaker than the Action of ${strong.filter(([, a]) => ACTION_RANK[a] === top).map(([k, a]) => `${k} (${a})`).join(', ')}`)
+  }
+  return out
+}
+
+if (process.argv.includes('--self-test')) {
+  const rs = []
+  const eq = (name, got, want) => rs.push({ name, ok: JSON.stringify(got) === JSON.stringify(want), detail: `got ${JSON.stringify(got)}\n      want ${JSON.stringify(want)}` })
+  const re = CARD_HEAD_RE()
+  eq('card regex: letter suffix and plain IDs', [...'**S1-T09a Split A** · P1\n**S1-T10 Plain** · P0\n**S1-T11B Upper** · P0'.matchAll(re)].map((m) => m[1]), ['S1-T09a', 'S1-T10'])
+  eq('card ID in text: word-bounded, optional letter', 'see S1-T09a, S1-T09b and S1-T09, not S1-T09ab or S1-T09A'.match(CARD_ANY_RE()), ['S1-T09a', 'S1-T09b', 'S1-T09'])
+  eq('deps: parentheses stripped', depsOf('**S0-T08 x** · deps: none (S0-T07 consumes it)'), [])
+  eq('deps: list, text after the dot, parenthetical', depsOf('**S5-T01 x** · Type: Fix · deps: S4-T03, S8-T02 (stimulus) · Delivery A (S7-T01)'), ['S4-T03', 'S8-T02'])
+  eq('deps: range S4-T02..T05 and split IDs', depsOf('**S9-T09 x** · deps: S4-T02..T05, S1-T09a'), ['S4-T02', 'S4-T03', 'S4-T04', 'S4-T05', 'S1-T09a'])
+  eq('deps: words are not dependencies', depsOf('**S9-T03 x** · deps: sprint merged'), [])
+  const plan = [
+    '### 5A. Sprint plan', 'The cards `S9-T01`, `S9-T02` and `S9-T05` are recurring Delivery Lead cards that run in every sprint.',
+    '**Sprint 0 (1 week) — Foundation.**', '- *Cards:* S0-T01, T02 · S1-T01 (start) · S9-T03.',
+    '**Sprint 1 — x.**', '- *Cards:* S1-T01 (finish), T09a (note, 1, 2) · S2-T01, T02(P2).',
+    '**Sprint 2 — y.**', '- *Cards:* S3-T01 · S9 verification of Sprint 1.',
+    '**Sprint 7+ (Delivery B)** — goals: Sprint 7 S7-T07 (Cabutan), S7-T08; Sprint 8 S7-T10 (x), S6-T13; Sprint 9 hardening.',
+    '### 5B. Capacity', '- *Cards:* S9-T99',
+  ].join('\n')
+  const sp = parseSprints(plan)
+  eq('sprints: sector prefix carries to bare T, parentheses dropped, first sprint kept', [sp.sprintsOf.get('S0-T02'), sp.sprintsOf.get('S1-T01'), sp.sprintsOf.get('S1-T09a'), sp.sprintsOf.get('S2-T02')], [[0], [0, 1], [1], [1]])
+  eq('sprints: Sprint 7+ paragraph', [sp.sprintsOf.get('S7-T07'), sp.sprintsOf.get('S7-T08'), sp.sprintsOf.get('S7-T10'), sp.sprintsOf.get('S6-T13')], [[7], [7], [8], [8]])
+  eq('sprints: recurring declared; 5B is not read', [[...sp.recurring], sp.sprintsOf.has('S9-T99')], [['S9-T01', 'S9-T02', 'S9-T05'], false])
+  const card = (id, deps, type = 'Fix') => ({ id, body: `**${id} t** · P0 · S · Type: ${type} · deps: ${deps}\n- Data/API: none` })
+  const all = ['S0-T01', 'S0-T02', 'S1-T01', 'S1-T09a', 'S2-T01', 'S2-T02', 'S3-T01', 'S9-T03', 'S7-T07', 'S7-T08', 'S7-T10', 'S6-T13']
+  const base = all.map((id) => card(id, 'none'))
+  const cardsOk = [...base, card('S9-T01', 'none'), card('S9-T02', 'S3-T01'), card('S9-T05', 'none')]
+  eq('F-09: all in order -> no problem', checkSprintDeps(cardsOk, sp), [])
+  const bad = (id, deps) => [...cardsOk.filter((c) => c.id !== id), card(id, deps)]
+  eq('F-09: dependency in a later sprint fails', checkSprintDeps(bad('S1-T09a', 'S3-T01'), sp), ['S1-T09a (first sprint 1) depends on S3-T01 (first sprint 2, later)'])
+  eq('F-09: dependency in the same or an earlier sprint is fine', checkSprintDeps(bad('S2-T01', 'S1-T09a, S2-T02, S0-T01'), sp), [])
+  eq('F-09: parenthetical note is not a dependency', checkSprintDeps(bad('S1-T09a', 'none (S3-T01 consumes it)'), sp), [])
+  eq('F-09: recurring card as dependency is exempt', checkSprintDeps(bad('S0-T01', 'S9-T01'), sp), [])
+  eq('F-09: dependency on an unknown card fails', checkSprintDeps(bad('S1-T09a', 'S1-T09'), sp), ['S1-T09a: deps names S1-T09, which is not a card in the plan'])
+  eq('F-09: card in no sprint list fails (not recurring)', checkSprintDeps([...cardsOk, card('S4-T01', 'none')], sp), ['S4-T01: not in any sprint list of plan 5A and not declared recurring'])
+  eq('F-09: sprint list naming an unknown card fails', checkSprintDeps(cardsOk.filter((c) => c.id !== 'S2-T02'), sp), ['sprint 1 lists S2-T02, which is not a card in the plan'])
+  const prd = ['### R1-MUR-3 Headcount', '- **Action**: Complete', 'x', '### R1-GUR-2b Misi (child)', '- **Action: Build**', '#### R1-ADM-QE-01 Rule | P0', '- **Action: Fix** | gap', '### R1-MUR-7 Video', '- **Action**: Keep'].join('\n')
+  const ac = parsePrdActions(prd)
+  eq('Action parser: both notations, letter suffix, QE ids', [...ac], [['MUR-3', 'Complete'], ['GUR-2b', 'Build'], ['ADM-QE1', 'Fix'], ['MUR-7', 'Keep']])
+  const tc = (id, type, ...refs) => ({ id, body: `**${id} t** · P0 · S · Type: ${type} · deps: none`, refs: new Set(refs) })
+  eq('F-22: Type below the Action fails', checkTypeAction([tc('S5-T01', 'Fix', 'MUR-3'), tc('S5-T02', 'Verify', 'MUR-7', 'ADM-QE1')], ac), ['S5-T01: Type Fix is weaker than the Action of MUR-3 (Complete)', 'S5-T02: Type Verify is weaker than the Action of ADM-QE1 (Fix)'])
+  eq('F-22: Type equal or stronger is fine; Keep and Verify are equal', checkTypeAction([tc('S5-T01', 'Complete', 'MUR-3', 'MUR-7'), tc('S5-T02', 'Build', 'GUR-2b', 'MUR-3'), tc('S5-T03', 'Verify', 'MUR-7'), tc('S5-T04', 'Keep', 'MUR-7')], ac), [])
+  eq('F-22: strongest Action decides', checkTypeAction([tc('S5-T01', 'Complete', 'MUR-3', 'GUR-2b')], ac), ['S5-T01: Type Complete is weaker than the Action of GUR-2b (Build)'])
+  eq('F-22: Ops is exempt; unknown modules are ignored', checkTypeAction([tc('S0-T01', 'Ops', 'GUR-2b'), tc('S0-T02', 'Fix', 'NFR-4', 'MUR-99')], ac), [])
+  eq('F-22: a card without Type fails', checkTypeAction([{ id: 'S5-T09', body: '**S5-T09 t** · P0', refs: new Set() }], ac), ['S5-T09: no "Type:" on the card'])
+  let bad2 = 0
+  for (const r of rs) { if (!r.ok) bad2++; console.log(`${r.ok ? 'PASS' : 'FAIL'}  ${r.name}${r.ok ? '' : '\n      ' + r.detail}`) }
+  console.log(`\nSelf-test: ${rs.length - bad2}/${rs.length} passed`)
+  process.exit(bad2 ? 1 : 0)
+}
+
 // ---------- PRD ----------
 const prd = new Map() // key -> { file, fr:Set, ac:Set }
 const ID_RE = /\b(?:FR|AC)-(?:(?:MUR|GUR|AS)-(?:QP|A\d|\d+[a-z]?)-\d+[a-z]?|ADM-(?:P2-\d+|QE\d+|Q\d+|U\d+|C\d+|N\d+|M\d+|G\d+)\.\d+|X\d+-\d+[a-z]?)\b/g
@@ -57,7 +216,7 @@ for (const f of PRD_FILES) {
 // ---------- PLAN ----------
 const plan = readFileSync(join(root, PLAN), 'utf8')
 const cards = [] // { id, title, pri, body }
-const cardRe = /^\*\*(S\d+-T\d+)\s+([^*]+)\*\*(.*)$/gm
+const cardRe = CARD_HEAD_RE()
 const starts = [...plan.matchAll(cardRe)]
 starts.forEach((m, i) => {
   const end = i + 1 < starts.length ? starts[i + 1].index : plan.indexOf('\n## ', m.index + 1)
@@ -114,7 +273,7 @@ const prdAll = readdirSync(join(root, PRD_DIR)).filter((f) => /^\d\d-.*\.md$/.te
 const docText = new Map(prdAll.map((f) => [`${PRD_DIR}/${f}`, readDoc(`${PRD_DIR}/${f}`)]))
 docText.set(PLAN, plan)
 const pad2 = (n) => String(n).padStart(2, '0')
-const problems = { urs: [], ursRange: [], ref: [], own: [], cardLine: [], cardRef: [], chain: [], startsFrom: [] }
+const problems = { urs: [], ursRange: [], ref: [], own: [], cardLine: [], cardRef: [], chain: [], startsFrom: [], sprintDeps: [], typeAction: [] }
 
 // (c) URS ids defined in 02-urs; every cited id must exist
 const urs = readDoc(`${PRD_DIR}/02-urs.md`)
@@ -232,7 +391,7 @@ for (const id of [...dmDefined.keys(), ...apiDefined.keys()]) {
 // (g) cards named in the Cards column of 50/60 must exist, and the owner must be one of them
 const cardIds = new Set(cards.map((c) => c.id))
 for (const [id, v] of [...dmDefined, ...apiDefined]) {
-  const cited = v.cardsCell.match(/\bS\d+-T\d+\b/g) ?? []
+  const cited = v.cardsCell.match(CARD_ANY_RE()) ?? []
   for (const cid of cited) if (!cardIds.has(cid)) problems.cardRef.push(`${id} → ${cid} (card does not exist)`)
   const o = owners.get(id)
   if (o?.length === 1 && cited.length && !cited.includes(o[0])) problems.cardRef.push(`${id}: owner ${o[0]} is not in the Cards column of ${id.startsWith('DM-') ? '50' : '60'} (${cited.join(', ')})`)
@@ -253,6 +412,13 @@ for (const c of cards) {
   if (!m) { problems.startsFrom.push(c.id + ': no "- Starts from (existing):" line'); continue }
   if (!/`[^`]+`/.test(m[1])) problems.startsFrom.push(c.id + ': "Starts from" has no backticked path')
 }
+// (j) F-09: every card is in a sprint (or recurring) and no dependency starts in a later sprint
+const sprintInfo = parseSprints(plan)
+problems.sprintDeps.push(...checkSprintDeps(cards, sprintInfo))
+// (k) F-22: card Type must be at least as strong as the strongest Action of the PRD modules it cites
+const prdActions = new Map()
+for (const f of PRD_FILES) for (const [k, a] of parsePrdActions(docText.get(`${PRD_DIR}/${f}`))) if (!prdActions.has(k)) prdActions.set(k, a)
+problems.typeAction.push(...checkTypeAction(cards, prdActions))
 const chainFail = Object.values(problems).reduce((n, a) => n + a.length, 0)
 const ownedDm = ownRows.filter((r) => r.id.startsWith('DM-')), ownedApi = ownRows.filter((r) => r.id.startsWith('API-'))
 const okOwned = (rows) => rows.filter((r) => r.owners.length === 1).length
@@ -260,7 +426,7 @@ const okOwned = (rows) => rows.filter((r) => r.owners.length === 1).length
 // ---------- report ----------
 let md = `# R1 traceability: PRD ↔ development plan\n\nGenerated by \`node scripts/r1-trace-check.mjs\` — do not edit by hand. Re-run after any change to \`docs/prd/r1/*.md\` or \`${PLAN}\`; CI fails when a PRD module has no task card, a card references an unknown PRD ID, a URS/FR/DM/API id does not resolve, or a DM or Exists-Fix/Missing-Build API has no single owning card.\n\n`
 md += `**Summary:** ${prd.size} PRD modules/screens with requirements · ${cards.length} task cards · ${prd.size - uncovered.length} modules covered · **${uncovered.length} uncovered** · **${dangling.length} dangling card references**.\n\n`
-md += `**ID chain:** ${ursDefined.size} URS defined (${ursCited.size} distinct ids cited, **${problems.urs.length} unknown**) · ${ursTokens} FR/AC references in URS "Satisfied by" (**${problems.ursRange.length} unresolved**) · ${dmDefined.size} DM and ${apiDefined.size} API ids defined (**${problems.ref.length} unknown DM/API citations**) · ${okOwned(ownedDm)}/${ownedDm.length} DM and ${okOwned(ownedApi)}/${ownedApi.length} Exists-Fix/Missing-Build API owned by exactly one card (**${problems.own.length} ownership defects**) · **${problems.cardLine.length} cards without a valid Data/API line** · **${problems.cardRef.length} card-column mismatches** · **${problems.chain.length} AC-CHAIN ownership defects** (${chainDefined.size} AC-CHAIN defined in 40, all owned by S9-T06 when 0 defects) · **${problems.startsFrom.length} cards without a "Starts from" line** (${cards.length - problems.startsFrom.length}/${cards.length} have one).\n\n`
+md += `**ID chain:** ${ursDefined.size} URS defined (${ursCited.size} distinct ids cited, **${problems.urs.length} unknown**) · ${ursTokens} FR/AC references in URS "Satisfied by" (**${problems.ursRange.length} unresolved**) · ${dmDefined.size} DM and ${apiDefined.size} API ids defined (**${problems.ref.length} unknown DM/API citations**) · ${okOwned(ownedDm)}/${ownedDm.length} DM and ${okOwned(ownedApi)}/${ownedApi.length} Exists-Fix/Missing-Build API owned by exactly one card (**${problems.own.length} ownership defects**) · **${problems.cardLine.length} cards without a valid Data/API line** · **${problems.cardRef.length} card-column mismatches** · **${problems.chain.length} AC-CHAIN ownership defects** (${chainDefined.size} AC-CHAIN defined in 40, all owned by S9-T06 when 0 defects) · **${problems.startsFrom.length} cards without a "Starts from" line** (${cards.length - problems.startsFrom.length}/${cards.length} have one) · **${problems.sprintDeps.length} sprint/dependency defects** · **${problems.typeAction.length} Type-below-Action defects**.\n\n`
 md += `| PRD module | File | FR | AC | Task cards |\n|---|---|--:|--:|---|\n`
 for (const k of [...prd.keys()].sort((a, b) => sortKey(a).localeCompare(sortKey(b)))) {
   const v = prd.get(k)
@@ -287,6 +453,8 @@ md += section('Cards without a valid "- Data/API:" line', problems.cardLine)
 md += section('Card references in 50/60 that do not match the plan', problems.cardRef)
 md += section('AC-CHAIN ownership (40 section X9 to S9-T06)', problems.chain)
 md += section('Cards without a "Starts from (existing)" line', problems.startsFrom)
+md += section('Sprint order: card in no sprint, unknown card, or dependency in a later sprint (plan 5A; F-09)', problems.sprintDeps)
+md += section('Card Type weaker than the Action of a cited PRD module (F-22)', problems.typeAction)
 writeFileSync(join(root, OUT), md)
 
 if (!process.argv.includes('--quiet')) {

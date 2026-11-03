@@ -1,12 +1,24 @@
 #!/usr/bin/env node
 // R1 scope guard (card S0-T04 wires it into CI).
-// Purpose: stop rebuilding V3 instead of fixing it. A PR must name one plan card (S<n>-T<nn>); the diff is checked
+// Purpose: stop rebuilding V3 instead of fixing it. A PR must name one plan card (S<n>-T<nn>, or S<n>-T<nn>a / b for a split card, D113); the diff is checked
 // against that card's Type and "Starts from (existing)" paths in docs/plan/r1-development-plan.md.
 //
 // Usage:
 //   node scripts/r1-scope-guard.mjs [--base <ref>] [--head <ref>] [--body-file <path> | env PR_BODY] [--plan <path>]
+//                                   [--labels a,b,c | --labels-file <path> | env PR_LABELS]
 //   node scripts/r1-scope-guard.mjs --self-test
 // Exit 1 on any FAIL, 0 otherwise (WARN does not fail).
+//
+// Cross-sector small PRs (R1-START-HERE decision 7, plan 6.4; F-08):
+//   * A file that belongs to another sector than the card's own sector (table SECTOR_RULES below, from plan sections 2 and 3)
+//     fails with OTHER_SECTOR_PATH, unless the PR body has a line `Cross-sector: S<n> (reason)` naming that sector
+//     (several sectors: `Cross-sector: S3, S5`; text in parentheses is ignored; `none` = no sectors).
+//   * Every sector named on that line needs the PR label `needs:S<n>`; a missing label fails with MISSING_NEEDS_LABEL.
+//   * Labels are read like the PR body: `--labels a,b` or `--labels-file <path>` (one label per line or comma separated, or
+//     a JSON array), else env PR_LABELS (same formats). CI sets PR_LABELS to
+//     ${{ join(github.event.pull_request.labels.*.name, ',') }} (the workflow also needs the `labeled`/`unlabeled` event types).
+//     No label input = no labels, so a Cross-sector PR then fails until the labels are passed.
+//   * Cards of sector S9 (Verification, owns no product code) are exempt from the sector-path rule.
 //
 // Plan format relied on (keep stable):
 //   card line   : **S<n>-T<nn> <title>** ... Type: Fix|Complete|Build|Keep|Verify|Ops ...   (Type on the card line)
@@ -27,7 +39,9 @@ const DEFAULT_BASE = 'origin/feature/v3-bijak-r1'
 const DEFAULT_PLAN = 'docs/plan/r1-development-plan.md'
 const NEW_SURFACE_TYPES = new Set(['Fix', 'Complete', 'Keep', 'Verify'])
 const NO_PRODUCT_TYPES = new Set(['Keep', 'Verify', 'Ops'])
-const CARD_RE = /^\*\*(S\d+-T\d+)\s+([^*]+)\*\*(.*)$/
+const CARD_ID = 'S\\d+-T\\d+[a-z]?' // a split card (D113) has ONE lowercase letter after the number
+const CARD_RE = new RegExp(`^\\*\\*(${CARD_ID})\\s+([^*]+)\\*\\*(.*)$`)
+const CARD_IN_BODY_RE = new RegExp(`\\b${CARD_ID}\\b`)
 const ID_IN_BODY_RE = /\b(?:DM-\d+|API-[A-Z][A-Z0-9]*-\d+)\b/
 const SHRINK_RATIO = 0.6
 const SHRINK_MIN_OLD_LINES = 10 // ignore tiny files, where 60% is a couple of lines
@@ -96,13 +110,122 @@ const isController = (p) => /^apps\/api\/.*\.controller\.ts$/.test(p)
 const isSchema = (p) => /^apps\/api\/prisma\/schema\/[^/]+\.prisma$/.test(p)
 const migrationDir = (p) => (p.match(/^(apps\/api\/prisma\/migrations\/[^/]+)\/./) ?? [])[1] ?? null
 
+// ---------- sector ownership (plan section 2 "Owned" lines and section 3 migration ranges) ----------
+// First matching rule wins, so exceptions come before the general rule. A path that matches no rule belongs to no sector
+// (never an error). Shorthand: BE = apps/api/src/modules/, SCH = apps/api/prisma/schema/, SEED = apps/api/prisma/seed/,
+// CT = packages/contract/src/.
+const BE = 'apps/api/src/modules/', SCH = 'apps/api/prisma/schema/', SEED = 'apps/api/prisma/seed/', CT = 'packages/contract/src/'
+const M28 = 'src/modules/m28-bijak-spm/'
+const MIGRATION_RANGES = [[111, 119, 0], [120, 139, 1], [140, 159, 4], [160, 179, 3], [180, 189, 5], [190, 199, 10], [200, 219, 6], [220, 239, 7], [240, 244, 2], [250, 259, 0]]
+const SECTOR_RULES = [
+  // exceptions first
+  [/^src\/lib\/lower-form\.ts$/, 5],
+  [/^src\/modules\/m01-authentication\/(pages\/(Profile|Tetapan)|routes\/(profile|tetapan)\.ts)/, 5],
+  [/^docs\/ops\/dskp-loader\.md$/, 4],
+  [new RegExp(`^${M28}components/(PartInput|PartNode|QuestionBlock|RichText|MathField|MathKeyboard|StimulusStack|StimulusView|StimulusChip|NavigatorPanel|AttemptShell)\\.vue$`), 8],
+  [new RegExp(`^${M28}components/(SelfMarkControl|ResultGroup|PartResultCard|PastSittingsLink|GenerateShortageAlert|KeywordSuggestion|KuizItem|ReportQuestionButton)\\.vue$`), 3],
+  [new RegExp(`^${M28}admin/intake/`), 2],
+  [new RegExp(`^${M28}__tests__/(intake|figure-links|semakan)`), 2],
+  [new RegExp(`^${M28}(admin/(builder|kontrak|papers|kandungan)/|pages/|lib/|domain/|server/|data/|routes\\.ts$)`), 3],
+  [/^src\/modules\/m03-curriculum\/pages\/(TopicsPage|LearningMapPage|TopicDetailPage)\.vue$/, 5],
+  [/^src\/modules\/m03-curriculum\/pages\/(Chapter|Topic.*Create|Topic.*Edit|Level|Subject|CurriculumBrowserPage)/, 4],
+  [/^src\/modules\/m10-teacher-class\/pages\/(KelasSayaPelajarPage|KelasListPage)\.vue$/, 5],
+  [new RegExp(`^${BE}classes/question-sets/`), 1],
+  [new RegExp(`^${BE}classes/kelas-saya\\.controller\\.ts$`), 5],
+  [new RegExp(`^${BE}reports/performance/`), 10],
+  [new RegExp(`^${BE}reports/(analytics|kirkpatrick)/`), 6],
+  [/^e2e\/bijak\/(intake-|admin-publish-)/, 2],
+  [/^e2e\/m04/, 2],
+  [/^e2e\/bijak\//, 3],
+  // S0
+  [/^(\.github\/|scripts\/|compose[^/]*\.ya?ml$|Dockerfile|docs\/ops\/|docs\/plan\/|e2e\/(global|fixtures|r1)\/|package(-lock)?\.json$)/, 0],
+  [/^src\/(app|shells|api|lib)\//, 0],
+  [/^src\/modules\/(m01-authentication|m13-|m25-)/, 0],
+  [new RegExp(`^${BE}(auth|jobs|ocr|common)/`), 0],
+  [new RegExp(`^${SCH}(base|identity|etl|feature-flags)\\.prisma$`), 0],
+  [new RegExp(`^${SEED}(index\\.ts|guard\\.ts|e2e[^/]*|core/)`), 0],
+  [new RegExp(`^${CT}(common|auth|access|session)(/|\\.ts$)|^${CT}(index|openapi)\\.ts$|^packages/contract/openapi\\.json$`), 0],
+  // S1
+  [new RegExp(`^${BE}(questions|intake|ai-extraction|files)/`), 1],
+  [new RegExp(`^${SCH}(questions|questions-workflow|intake|ai|files)\\.prisma$`), 1],
+  [new RegExp(`^${SEED}questions/`), 1],
+  [new RegExp(`^${CT}(questions|question-workflow|servability|intake|ai|files)(/|\\.ts$)`), 1],
+  [/^apps\/api\/test\/intake-workflow\//, 1],
+  // S2
+  [/^src\/modules\/m04-question-bank\//, 2],
+  // S3
+  [/^src\/modules\/m06-spm\/|^packages\/exam-core\//, 3],
+  [new RegExp(`^${BE}(spm|bijak|exam)/`), 3],
+  [new RegExp(`^${SCH}(exam|spm|bijak-attempts)\\.prisma$`), 3],
+  [new RegExp(`^${SEED}(exam[^/]*\\.ts|spm[^/]*\\.ts|bijak-standards/)`), 3],
+  [new RegExp(`^${CT}bijak(/|\\.ts$)`), 3],
+  // S4
+  [new RegExp(`^${BE}curriculum/`), 4],
+  [new RegExp(`^${SCH}curriculum\\.prisma$`), 4],
+  [new RegExp(`^${SEED}(curriculum\\.ts|curriculum-data/|spm-subject-configs\\.ts)`), 4],
+  [new RegExp(`^${CT}curriculum(/|\\.ts$)`), 4],
+  [/^apps\/api\/scripts\/uat-ops\/|^docs\/reference\/dskp\//, 4],
+  // S5
+  [/^src\/modules\/(m05-practice|m09-content)\//, 5],
+  [new RegExp(`^${BE}(practice|content|account)/`), 5],
+  [new RegExp(`^${SCH}(practice|content)\\.prisma$`), 5],
+  [new RegExp(`^${SEED}(practice|content)\\.ts$`), 5],
+  [new RegExp(`^${CT}(practice|content|account)(/|\\.ts$)`), 5],
+  // S6
+  [/^src\/modules\/(m10-teacher-class|m11-teacher-analytics|m12-kirkpatrick|m27-school-admin|m17-admin-dashboard|m02-users-schools|m18-ppd-jpn)\//, 6],
+  [new RegExp(`^${BE}(school-admin|command-center|classes|users|schools|parents)/`), 6],
+  [new RegExp(`^${SCH}(classes|schools)\\.prisma$`), 6],
+  [new RegExp(`^${CT}(classes|school-admin|schools|admin)(/|\\.ts$)|^${CT}reports/kirkpatrick`), 6],
+  // S7
+  [/^src\/modules\/m(14|15|16|20|21|22)-/, 7],
+  [new RegExp(`^${BE}(gamification|games|battle|shop|marketplace|wallet|sponsorship|subscriptions|support|notifications)/`), 7],
+  [new RegExp(`^${SCH}(gamification|games|battle|marketplace|wallet|sponsorship)\\.prisma$`), 7],
+  [new RegExp(`^${SEED}(games|battle|gamification[^/]*|marketplace|wallet)\\.ts$`), 7],
+  [new RegExp(`^${CT}(gamification|games|battle|marketplace|notifications)(/|\\.ts$)`), 7],
+  // S8
+  [/^src\/(components\/question-display|ds|theme|styles)\//, 8],
+  // S10
+  [/^src\/modules\/m08-/, 10],
+]
+
+export function sectorOf(path) {
+  const mig = path.match(/^apps\/api\/prisma\/migrations\/(\d{4})_/)
+  if (mig) {
+    const n = Number(mig[1])
+    const r = MIGRATION_RANGES.find(([a, b]) => n >= a && n <= b)
+    return r ? r[2] : null
+  }
+  for (const [rx, sec] of SECTOR_RULES) if (rx.test(path)) return sec
+  return null
+}
+
+/** Sectors named on `Cross-sector:` lines of the PR body (text in parentheses is a reason and is ignored; `none` = nothing). */
+export function parseCrossSectors(body) {
+  const out = new Set()
+  for (const m of (body ?? '').matchAll(/^[\s>*-]*`?\s*Cross-sector:[ \t]*(.*)$/gim)) {
+    let v = m[1].replace(/`/g, '').trim()
+    if (/^none\b/i.test(v)) continue
+    while (/\([^()]*\)/.test(v)) v = v.replace(/\([^()]*\)/g, '')
+    for (const x of v.matchAll(/\bS(\d+)\b/g)) out.add(Number(x[1]))
+  }
+  return out
+}
+
+/** PR labels from a JSON array, or comma / newline separated text. */
+export function parseLabels(text) {
+  const t = (text ?? '').trim()
+  if (!t) return []
+  if (t.startsWith('[')) { try { return JSON.parse(t).map((x) => String(x.name ?? x).trim()).filter(Boolean) } catch { /* fall through */ } }
+  return t.split(/[,\n]/).map((x) => x.trim()).filter(Boolean)
+}
+
 // ---------- analysis ----------
-export function analyze({ cwd, base, head, body, planText }) {
+export function analyze({ cwd, base, head, body, planText, labels = [] }) {
   const fails = []
   const warns = []
   const out = { card: null, type: null, fails, warns }
 
-  const idMatch = (body ?? '').match(/\bS\d+-T\d+\b/)
+  const idMatch = (body ?? '').match(CARD_IN_BODY_RE)
   if (!idMatch) {
     fails.push({ rule: 'NO_CARD', file: null, msg_bm: 'PR mesti menyebut ID kad (cth. S1-T02).', msg_en: 'PR must name a card ID (e.g. S1-T02).' })
     return out
@@ -139,6 +262,24 @@ export function analyze({ cwd, base, head, body, planText }) {
     numstat.set(norm(p), { added: a === '-' ? 0 : +a, deleted: d === '-' ? 0 : +d })
   }
   const mergeBase = git(cwd, ['merge-base', base, head]).trim()
+
+  // Rule: cross-sector PR (F-08): other sectors' files need `Cross-sector: S<n>` and the label needs:S<n>
+  const ownSector = Number(cardId.match(/^S(\d+)-/)[1])
+  const declared = parseCrossSectors(body)
+  for (const n of [...declared].sort((a, b) => a - b)) {
+    if (!labels.includes(`needs:S${n}`)) fails.push({ rule: 'MISSING_NEEDS_LABEL', file: `Cross-sector: S${n}`, msg_bm: `PR menyatakan "Cross-sector: S${n}" tetapi tiada label needs:S${n}.`, msg_en: `The PR says "Cross-sector: S${n}" but does not carry the label needs:S${n}.` })
+  }
+  if (ownSector !== 9) {
+    const seen = new Set()
+    for (const e of entries) {
+      for (const p of new Set([e.path, ...(e.st === 'R' || e.st === 'C' ? [e.oldPath] : [])])) {
+        const sec = sectorOf(p)
+        if (sec === null || sec === ownSector || declared.has(sec) || seen.has(`${p}`)) continue
+        seen.add(p)
+        fails.push({ rule: 'OTHER_SECTOR_PATH', file: `${p} (S${sec})`, msg_bm: `Fail milik sektor S${sec}, kad ${cardId} ialah S${ownSector}. Guna PR kecil dengan baris "Cross-sector: S${sec} (sebab)" dan label needs:S${sec}.`, msg_en: `This file belongs to sector S${sec}; card ${cardId} is S${ownSector}. Make it a small PR with the line "Cross-sector: S${sec} (reason)" and the label needs:S${sec}.` })
+      }
+    }
+  }
 
   // Rule: new surface without a DM/API ID (Fix/Complete/Keep/Verify)
   if (NEW_SURFACE_TYPES.has(type) && !hasId) {
@@ -416,6 +557,15 @@ const FIXTURE_PLAN = `# Plan
 
 **S9-T07 Build card (map rules)** · P0 · S · Type: Build · deps: none
 - Starts from (existing): \`src/\`, \`apps/api/\`, \`docs/\`.
+
+**S1-T09a Split card A** · P1 · M · Type: Fix · deps: none
+- Starts from (existing): \`apps/api/src/mod/\`.
+
+**S1-T09b Split card B** · P1 · M · Type: Fix · deps: S1-T09a
+- Starts from (existing): \`apps/api/src/mod/\`.
+
+**S1-T01 Sector one card** · P0 · S · Type: Fix · deps: none
+- Starts from (existing): \`apps/api/\`, \`scripts/\`.
 `
 
 const FIXTURE_MAP = {
@@ -466,11 +616,11 @@ function selfTest() {
     return cwd
   }
 
-  function run(name, body, mutate, expect) {
+  function run(name, body, mutate, expect, labels = []) {
     let ok = false, detail = ''
     try {
       const cwd = makeRepo(name, mutate)
-      const res = analyze({ cwd, base: 'main', head: 'work', body, planText: FIXTURE_PLAN })
+      const res = analyze({ cwd, base: 'main', head: 'work', body, labels, planText: FIXTURE_PLAN })
       const fr = new Set(res.fails.map((f) => f.rule)), wr = new Set(res.warns.map((w) => w.rule))
       const missing = [...(expect.fail ?? [])].filter((r) => !fr.has(r)).concat([...(expect.warn ?? [])].filter((r) => !wr.has(r)))
       const extra = expect.exact ? [...fr].filter((r) => !(expect.fail ?? []).includes(r)).concat([...wr].filter((r) => !(expect.warn ?? []).includes(r))) : []
@@ -503,6 +653,32 @@ function selfTest() {
   run('moderate shrink (<60%) -> ok', 'S9-T01', (c) => { touchA(c); write(c, 'src/mod/big.ts', lines(60)) }, { exact: true })
   run('Build adds file in named dir -> ok', 'S9-T06', (c) => { write(c, 'scripts/new-check.mjs', 'x\n'); write(c, 'docs/ops/n.md', 'x\n') }, { exact: true })
   run('Build adds file outside dirs -> warn', 'S9-T06', (c) => { write(c, 'scripts/new-check.mjs', 'x\n'); write(c, 'src/mod/stray.ts', 'x\n') }, { warn: ['BUILD_OUTSIDE_DIRS'], exact: true })
+
+  // ---- split-card IDs (letter suffix, D113) ----
+  run('split card S1-T09a is found in the plan', 'S1-T09a', (c) => write(c, 'apps/api/src/mod/x.service.ts', lines(5) + 'more\n'), { exact: true })
+  run('split card S1-T09b is found in the plan', 'S1-T09b DM-12', (c) => write(c, 'apps/api/src/mod/x.service.ts', lines(5) + 'more\n'), { exact: true })
+  run('unsplit ID S1-T09 is not a plan card now', 'S1-T09', touchA, { fail: ['UNKNOWN_CARD'], exact: true })
+  run('letter suffix is read from the body (S1-T09a, not S1-T09)', 'Closes S1-T09a.', (c) => write(c, 'apps/api/src/mod/x.service.ts', lines(5) + 'more\n'), { exact: true })
+  run('uppercase suffix is not a card letter -> no card', 'S1-T09A', touchA, { fail: ['NO_CARD'], exact: true })
+
+  // ---- cross-sector PRs (F-08) ----
+  const s0file = (c) => write(c, 'scripts/lint.mjs', lines(20) + 'x\n')
+  const s3file = (c) => write(c, 'apps/api/src/modules/exam/a.ts', 'export {}\n')
+  const mig = (c, n) => write(c, `apps/api/prisma/migrations/${n}_x/migration.sql`, 'select 1;\n')
+  run('sector: own-sector file only -> ok', 'S1-T01', (c) => write(c, 'apps/api/src/modules/questions/a.ts', 'export {}\n'), { exact: true })
+  run('sector: other sector file without Cross-sector -> fail', 'S1-T01', (c) => { write(c, 'apps/api/src/modules/questions/a.ts', 'export {}\n'); s0file(c) }, { fail: ['OTHER_SECTOR_PATH'], exact: true })
+  run('sector: Cross-sector line + label -> ok', 'S1-T01\nCross-sector: S0 (one-line script)', s0file, { exact: true }, ['needs:S0'])
+  run('sector: Cross-sector line, label missing -> fail', 'S1-T01\nCross-sector: S0 (one-line script)', s0file, { fail: ['MISSING_NEEDS_LABEL'], exact: true }, ['sector:S1'])
+  run('sector: Cross-sector names S0 but file is S3 -> fail', 'S1-T01\nCross-sector: S0', s3file, { fail: ['OTHER_SECTOR_PATH'], exact: true }, ['needs:S0'])
+  run('sector: two sectors, both labels -> ok', 'S1-T01\nCross-sector: S3, S0', (c) => { s0file(c); s3file(c) }, { exact: true }, ['needs:S3', 'needs:S0'])
+  run('sector: two sectors, one label missing -> fail', 'S1-T01\nCross-sector: S3, S0', (c) => { s0file(c); s3file(c) }, { fail: ['MISSING_NEEDS_LABEL'], exact: true }, ['needs:S3'])
+  run('sector: reason text in parentheses is not a sector', 'S1-T01\nCross-sector: S0 (S3 asked for it)', s0file, { exact: true }, ['needs:S0'])
+  run('sector: Cross-sector none -> own files only', 'S1-T01\nCross-sector: none', (c) => write(c, 'apps/api/src/modules/questions/a.ts', 'export {}\n'), { exact: true })
+  run('sector: migration in own range -> ok', 'S1-T01 DM-12', (c) => mig(c, '0125'), { exact: true })
+  run('sector: migration in another range -> fail', 'S1-T01 DM-12', (c) => mig(c, '0165'), { fail: ['OTHER_SECTOR_PATH'], exact: true })
+  run('sector: migration in another range, Cross-sector S3 + label -> ok', 'S1-T01 DM-12\nCross-sector: S3 (needs:schema)', (c) => mig(c, '0165'), { exact: true }, ['needs:S3'])
+  run('sector: S9 card is exempt from the path rule', 'S9-T06', (c) => { s0file(c); s3file(c) }, { warn: ['BUILD_OUTSIDE_DIRS'], exact: true })
+  run('sector: split card checks its own sector (S1-T09a touches S3)', 'S1-T09a', s3file, { fail: ['OTHER_SECTOR_PATH'], warn: ['NO_STARTS_FROM_TOUCHED'], exact: true })
 
   // ---- no-duplicates rules (canonical map) ----
   const readMap = (c) => JSON.parse(readFileSync(join(c, MAP_PATH), 'utf8'))
@@ -552,6 +728,13 @@ function selfTest() {
   run('redirect route: new link -> warn (use canonical)', N, (c) => write(c, 'src/mod/link.ts', "export const to = '/moved'\n"), { warn: ['REDIRECT_REF'], exact: true })
   run('redirect route: link to canonical -> ok', N, (c) => write(c, 'src/mod/link.ts', "export const to = '/admin/foo'\n"), { exact: true })
 
+  // pure helpers
+  const eq = (name, got, want) => results.push({ name, ok: JSON.stringify(got) === JSON.stringify(want), detail: `got ${JSON.stringify(got)} want ${JSON.stringify(want)}` })
+  eq('parseCrossSectors: list', [...parseCrossSectors('x\nCross-sector: S3, S5 (why S7)\n')], [3, 5])
+  eq('parseCrossSectors: template placeholder = none', [...parseCrossSectors('Cross-sector: none | `Cross-sector: S<n> (reason)`')], [])
+  eq('parseLabels: comma, newline and JSON', [parseLabels('a, needs:S3'), parseLabels('a\nb'), parseLabels('[{"name":"x"},"y"]')], [['a', 'needs:S3'], ['a', 'b'], ['x', 'y']])
+  eq('sectorOf: examples', [sectorOf('src/modules/m05-practice/a.ts'), sectorOf('src/modules/m28-bijak-spm/components/RichText.vue'), sectorOf('src/modules/m28-bijak-spm/pages/X.vue'), sectorOf('README.md'), sectorOf('apps/api/prisma/migrations/0181_s5_x/migration.sql')], [5, 8, 3, null, 5])
+
   rmSync(tmp, { recursive: true, force: true })
   let bad = 0
   for (const r of results) { if (!r.ok) bad++; console.log(`${r.ok ? 'PASS' : 'FAIL'}  ${r.name}${r.ok ? '' : '\n      ' + r.detail}`) }
@@ -568,10 +751,12 @@ function main() {
   const head = arg('--head', 'HEAD')
   const bodyFile = arg('--body-file', null)
   const body = bodyFile ? readFileSync(bodyFile, 'utf8') : process.env.PR_BODY ?? ''
+  const labelsArg = arg('--labels', null), labelsFile = arg('--labels-file', null)
+  const labels = parseLabels(labelsArg ?? (labelsFile ? readFileSync(labelsFile, 'utf8') : process.env.PR_LABELS ?? ''))
   const planPath = resolve(process.cwd(), arg('--plan', DEFAULT_PLAN))
   if (!existsSync(planPath)) { console.error(`Pelan tidak dijumpai / plan not found: ${planPath}`); process.exit(2) }
   let res
-  try { res = analyze({ cwd: process.cwd(), base, head, body, planText: readFileSync(planPath, 'utf8') }) }
+  try { res = analyze({ cwd: process.cwd(), base, head, body, labels, planText: readFileSync(planPath, 'utf8') }) }
   catch (e) { console.error(`Ralat git / git error (base=${base} head=${head}): ${e.stderr || e.message}`); process.exit(2) }
   console.log(report(res))
   process.exit(res.fails.length ? 1 : 0)

@@ -5,7 +5,7 @@ name: r1-scope-guard
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, edited]
+    types: [opened, synchronize, reopened, edited, labeled, unlabeled]
     branches: [feature/v3-bijak-r1]
     paths-ignore:
       - 'docs/**'
@@ -31,6 +31,7 @@ jobs:
       - name: Scope guard
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
         run: node scripts/r1-scope-guard.mjs --base origin/${{ github.base_ref }} --head HEAD
       - name: Canonical map check (no duplicates)
         run: node scripts/r1-canonical-map.mjs --check
