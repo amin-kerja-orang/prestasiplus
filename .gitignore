@@ -83,3 +83,11 @@ roles-matrix/**/*.jpeg
 roles-matrix/**/*.jpg
 roles-matrix/**/*.png
 WhatsApp Image *
+
+# Local evidence (V1/V2/UAT screenshots, logs, browser sessions): may contain real personal data or session tokens. Never tracked.
+.evidence/
+**/state-*.json
+*.storage-state.json
+
+# V2 reference captures (live data, local only)
+docs/reference/v2-screens/
