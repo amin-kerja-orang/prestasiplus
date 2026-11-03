@@ -610,7 +610,7 @@ Route `/guru`. API: API-GUR-07. The page has no form field. Errors: ERR-SYS-01b 
   - The V1 separate create page with a mission-type select is not in V2 and is not used.
 #### Field & behaviour spec — R1-GUR-2b Misi Harian
 
-Route `/guru/misi-harian`. API: API-GUR-11 (list, create, delete). Data additions: ADD-03.
+Route `/guru/misi-harian`. API: API-GUR-11 (list, create, delete). Data additions: ADD-03 (DM-75, API-GUR-11).
 
 | Label | Type | Req. | Default | Options / data source | Validation + exact BM error | Depends on | Stored as | API-ID |
 |---|---|---|---|---|---|---|---|---|
@@ -685,7 +685,7 @@ Routes `/headcount` and sub-routes. API: API-RPT-09 (list, dashboard, form-optio
 | Key-in AR (Manual only) | decimal per pupil | No | empty | 0 to 100, step 0.1; checkpoint n outside 1..active OTRs answers 404 | "Markah mesti antara 0 dan 100."; success "AR OTR{n} disimpan." | mode Manual | `headcount_entry_marks` (AR of checkpoint n) | API-RPT-10 |
 | Edit TOV / ETR | decimal x2 per pupil | No | the subject-card default | 0 to 100, step 0.1 | "Markah mesti antara 0 dan 100."; success "TOV/ETR disimpan." | none | `headcount_entries.tov`, `headcount_entries.etr` | API-RPT-10 |
 | RS (SPM Sebenar) | decimal per pupil | No | empty | 0 to 100, 1 decimal, on the Edit TOV/ETR page, column "RS (SPM Sebenar)" | "Markah mesti antara 0 dan 100." | none | `headcount_entries.rs` | API-RPT-10 |
-| Tarikh Rekod RS | date | No | date of the first save of RS | not in the future; shown as "Direkodkan: {dd Mon yyyy}" | "Tarikh tidak boleh lebih lewat daripada hari ini." | RS has a value | `headcount_entries.rs_recorded_at` (ADD-14) | API-RPT-10 |
+| Tarikh Rekod RS | date | No | date of the first save of RS | not in the future; shown as "Direkodkan: {dd Mon yyyy}" | "Tarikh tidak boleh lebih lewat daripada hari ini." | RS has a value | `headcount_entries.rs_recorded_at` (ADD-14 (DM-49, API-RPT-10)) | API-RPT-10 |
 | Tetapan: Bilangan OTR | select | Yes | current value | 2 to 5; lowering below a checkpoint that has marks opens CF-05 | none | none | `headcount_configs.active_otrs` | API-RPT-10 |
 
 - **Calculations (HC-SPEC).** OTR_k = round(TOV + (ETR − TOV) × r_k) with r_k = floor(100·k/n)/100 and OTR_n = ETR; grade by OPT-GRED; Auto AR = round(correct ÷ answered × 100) over `practice_answers` of all modes for the subject and year; status per checkpoint On Track when AR is at least OTR_k, else Below; the pupil status is that of the latest checkpoint with an AR; the config On Track % = round(on ÷ (on + below) × 100); Ringkasan bands Above (AR − OTR above 2), On Track (0 to 2), Below (below 0), Belum Diisi; Unjuran end = ETR if AR is at least TOV, else AR; trend Meningkat (above AR + 2), Menurun (below AR − 2), Stabil; Keyakinan Tinggi (AR at least ETR), Sederhana (AR at least TOV), Rendah. Rounding: half away from zero. Refresh: on page load only, no polling.
@@ -924,7 +924,7 @@ Routes `/analisa-item/kelas`, `/guru/analisis-item`. API: API-RPT-07 (class item
   - **States:** empty observed; populated video cards, validation and success/error messages, loading: Not observed in V2 — follow FR-GUR-7-*.
 #### Field & behaviour spec — R1-GUR-7 Video (read-only copy: R1-AS-7)
 
-Route `/video`. API: the existing video list and create endpoints (additions: ADD-18). Errors: ERR-REQ-01, ERR-SYS-01b.
+Route `/video`. API: the existing video list and create endpoints (additions: ADD-18 (DM-76, API-MUR-05)). Errors: ERR-REQ-01, ERR-SYS-01b.
 
 | Label | Type | Req. | Default | Options / data source | Validation + exact BM error | Depends on | Stored as | API-ID |
 |---|---|---|---|---|---|---|---|---|
@@ -967,7 +967,7 @@ Route `/video`. API: the existing video list and create endpoints (additions: AD
   - **Corrections noted:** V2's labels are "Nama Kelas", "Tingkatan", "Subjek (pilihan)", "Tahun Sesi" (the V2 replica code said "Nama", "Tahap Pendidikan", "Sesi"): the V2 screen wins; "Subjek" is optional (V1 required it); the list heading counter is "{n} kelas · {n} pelajar" (not "{n} kelas aktif"); the button is "Cipta Kelas" (V1 "Cipta Kelas Baru"); there is no join code, QR or "Set Soalan" link on the V2 list (the teacher reaches Set Soalan from the Dashboard tile "Set Soalan" and "Urus set →").
 #### Field & behaviour spec — R1-GUR-8 Kelas Saya
 
-Routes `/guru/kelas`, `/guru/kelas/cipta`, `/guru/kelas/:id/edit`. API: API-GUR-01 (list), API-GUR-02 (create), API-GUR-03 (edit), API-GUR-05 (add / remove pupil), API-GUR-06 (create pupil). DM: `classrooms`, `enrolments`. Additions: ADD-01, ADD-02.
+Routes `/guru/kelas`, `/guru/kelas/cipta`, `/guru/kelas/:id/edit`. API: API-GUR-01 (list), API-GUR-02 (create), API-GUR-03 (edit), API-GUR-05 (add / remove pupil), API-GUR-06 (create pupil). DM: `classrooms`, `enrolments`. Additions: ADD-01 (DM-73), ADD-02 (DM-74).
 
 | Label | Type | Req. | Default | Options / data source | Validation + exact BM error | Depends on | Stored as | API-ID |
 |---|---|---|---|---|---|---|---|---|
@@ -1026,7 +1026,7 @@ Routes `/guru/kelas`, `/guru/kelas/cipta`, `/guru/kelas/:id/edit`. API: API-GUR-
   - **Corrections noted:** V2 offers Darjah levels in the filters: V3 offers Tingkatan 1-5 only (D72/D96). The routes are `/guru/set-soalan` (list) and `/guru/set-soalan/cipta`; V2's `/guru/set/cipta` is accepted as an alias. The results page ("Hasil") was not captured (no sets): the V2 code text below applies.
 #### Field & behaviour spec — R1-GUR-8b Set Soalan
 
-Routes `/guru/set-soalan`, `/cipta`, `/:id`, `/:id/keputusan`. API: API-GUR-16 (`GET/POST /api/guru/question-sets`, `GET/PUT/DELETE /:id`, `POST /:id/status`, `POST /:id/copy`; results route: ADD-19). DM: `question_sets`, `question_set_items`, `question_set_classrooms`; addition ADD-04.
+Routes `/guru/set-soalan`, `/cipta`, `/:id`, `/:id/keputusan`. API: API-GUR-16 (`GET/POST /api/guru/question-sets`, `GET/PUT/DELETE /:id`, `POST /:id/status`, `POST /:id/copy`; results route and copy body: A2 ADD-19, registered as API-GUR-16 (extended)). DM: `question_sets`, `question_set_items`, `question_set_classrooms`; addition: A2 ADD-04, registered as DM-46 (extended), `question_sets.education_level_id`.
 
 | Label | Type | Req. | Default | Options / data source | Validation + exact BM error | Depends on | Stored as | API-ID |
 |---|---|---|---|---|---|---|---|---|
@@ -1055,7 +1055,7 @@ Routes `/guru/set-soalan`, `/cipta`, `/:id`, `/:id/keputusan`. API: API-GUR-16 (
 - **AC-GUR-8b-12** Given a published set with one pupil attempt, when the teacher edits the question list, then the request is refused and "Soalan tidak boleh diubah kerana pelajar telah menjawab set ini." shows; changing the title saves.
 - **AC-GUR-8b-13** Given "Ujian 1" copied to "5 Cekap", when the list opens, then "Ujian 1 (Salinan)" is a `draft` with 5 questions under "5 Cekap".
 
-- **Current gap:** no teacher Set Soalan route, page or API in V3 (the pupil side R1-MUR-26 is empty): add the route fragment under `src/modules/m10-teacher-class/routes/`, the list/form/results pages and `GET/POST/PUT/DELETE /api/guru/question-sets*` (the module `apps/api/src/modules/classes/question-sets` already exists for the pupil side).
+- **Current gap:** no teacher Set Soalan route, page or API in V3 (the pupil side R1-MUR-26 is empty): add the route fragment under `src/modules/m10-teacher-class/routes/`, the list/form/results pages and `GET/POST/PUT/DELETE /api/guru/question-sets*` plus status, copy and results (API-GUR-16, Missing-Build; the module `apps/api/src/modules/classes/question-sets` already exists but serves the pupil side only, API-GUR-15, so the teacher routes are added to it).
 - **Route** `/guru/set-soalan` (list "Set Soalan Guru"), `/guru/set-soalan/cipta`, `/guru/set-soalan/:id` (urus), `/guru/set-soalan/:id/keputusan`. **Matrix** none (no Guru sidebar item; reached from Kelas Saya). **Priority** P1. **Status** not built in V3 for teachers (the pupil side R1-MUR-26 shows an empty state).
 - **Reference [V2] `guru/set.blade.php`, `set-form.blade.php`, `set-keputusan.blade.php`; [V1] M10 S13-S14** (V1 title "Set Soalan Anda"): list: header "Set Soalan Anda" ("{n} set soalan"), button "Cipta Set Baru"; counters "Diterbitkan", "Draf", "Penyertaan"; empty "Belum ada set soalan" / "Cipta set soalan tersendiri dan kongsi dengan kelas anda." + "Cipta Set Pertama"; each set card: title, status "Diterbitkan" or "Draf", type, subject, "{n} soalan", "{n} siap", buttons "Hasil", "Urus →", "Salin", "Terbit" / "Jadikan Draf", "Padam" (confirm "Padam set \"{title}\"? Tindakan ini tidak boleh diundur."). "Salin Set ke Kelas": "Pilih Kelas Sasaran" ("-- Pilih kelas --"), note "Set baharu akan dicipta sebagai draf dengan semua soalan disalin.", "Batal" / "Salin". Form "Cipta Set Soalan" / "Urus Set Soalan": filter card "Tapis Bank Soalan" (subject "Semua subjek", tingkatan "Semua tingkatan", search "Cari teks soalan...", "Tapis"); card "Maklumat Set" ("Bina set daripada bank soalan dan terbitkan kepada kelas anda"): "Tajuk Set" (required), "Subjek" (required), "Tingkatan (pilihan)" ("— Tiada —"); "Pilih Soalan Dari Bank" (scroll list of approved questions, checkbox, 120-character preview, "{subjek} · {tahap} · ⭐{kesukaran}", counter "{n} dipilih"; empty "Tiada soalan sepadan. Laraskan penapis di atas."); buttons "Batal", "Simpan Draf", "Terbitkan". Results "Keputusan: {tajuk}": cards "Penyertaan", "Skor Purata", "Jumlah Percubaan"; table # · Pelajar · Skor ("{betul}/{jumlah}") · Ketepatan · Tarikh; empty "Belum ada pelajar menjawab set ini."; link "Kembali ke Set Soalan". Pupil side (`10-murid.md` R1-MUR-26): published sets assigned to the pupil's class; mode `question_set`.
 - **Functional requirements**
@@ -1064,10 +1064,10 @@ Routes `/guru/set-soalan`, `/cipta`, `/:id`, `/:id/keputusan`. API: API-GUR-16 (
   - **FR-GUR-8b-3** (D-A7, decided by principle 2026-11-04) A set is assigned to **explicitly selected own class(es)**: the create/edit form has a required multi-select "Kelas" (the teacher's own classes; label "Kelas", R1 decision D113) and "Terbitkan" is refused with a BM message while no class is selected. A published set is visible only to pupils enrolled in a selected class (it appears in Murid 26 and on the Dashboard "Set Soalan Dari Cikgu"); a pupil of another class, even of the same teacher, does not see it. "Jadikan Draf" withdraws it; archived questions drop out at serve time. A set is never visible to "all classes" implicitly.
   - **FR-GUR-8b-4** "Salin" copies the set with all its questions as a draft assigned to the chosen own class.
   - **FR-GUR-8b-8** The picker selects questions as units: choosing part of a stimulus group is refused (422, "Soalan dalam kumpulan rangsangan mesti dipilih bersama.") or selects the whole group; the star scale of "⭐{kesukaran}" is 1 to 5 (the V2 sample shows 1 to 3).
-  - **FR-GUR-8b-5** "Hasil" returns the results to the teacher **per class**: a "Kelas" filter (default all selected classes), cards and table per class; the results table is one row per pupil attempt, newest first; accuracy = round(correct ÷ total × 100), colours >= 70 green, >= 50 amber, else red.
+  - **FR-GUR-8b-5** "Hasil" returns the results to the teacher **per class**: a "Kelas" filter (default all selected classes), cards and table per class; the results table is one row per pupil attempt, newest first; accuracy = correct ÷ total × 100, returned with one decimal (60 4.6, D-T10-1) and shown as a whole number rounded half up; colours on the whole number: >= 70 green, >= 50 amber, else red.
   - **FR-GUR-8b-6** "Padam" removes the set after the confirm; pupil attempt records are kept for Prestasi.
   - **FR-GUR-8b-7** Responsive: set cards single column with action buttons wrapping (>= 44 px); the question picker is a single-column scroll list with >= 44 px checkboxes; the results table is RP-TABLE-LIST at 375/768; the form RP-FORM with "Simpan Draf" and "Terbitkan" not covering the list.
-- **Data** Owner M10 (sets), M04 (questions), M05 (attempts: `practice_answers`, mode `question_set`; they count in every report, XS-8). API `/api/guru/question-sets*` (exists in `apps/api/src/modules/classes/question-sets`).
+- **Data** Owner M10 (sets), M04 (questions), M05 (attempts: `practice_answers`, mode `question_set`; they count in every report, XS-8). API `/api/guru/question-sets*` (API-GUR-16, **to be built**: the module `apps/api/src/modules/classes/question-sets` exists but holds only the pupil feed `GET /set-soalan-saya`, API-GUR-15; no teacher route exists; 60 API-GUR-16 is Missing-Build).
 - **Acceptance criteria**
   - **AC-GUR-8b-1** Given the question bank with 20 approved Matematik questions, when a set "Ujian 1" with 5 chosen questions is saved with "Simpan Draf", then it is listed as "Draf" with "5 soalan" and the pupils do not see it.
   - **AC-GUR-8b-2** Given that draft assigned to class "5 Bestari", when "Terbit" is pressed, then it is "Diterbitkan", a pupil of "5 Bestari" sees "Ujian 1" in Set Soalan Guru with "5 soalan", and a pupil of another teacher, or of the teacher's other class "5 Cekap", does not.
@@ -1200,7 +1200,7 @@ Routes `/guru/monitoring`, school detail, pupil and teacher detail pages. API: A
   - **Corrections noted:** (1) **V2 banner contradiction:** every Guru Kirkpatrick page says "Data ditapis untuk sekolah anda sahaja." but its copy says "kelas anda" and its tables are "Mengikut Kelas": the data is the teacher's classes, so V3 prints "Data ditapis untuk kelas anda sahaja." (DV-GUR-11-5; Monitoring keeps "sekolah anda" because its data is the school); (2) the Guru tables are "…Mengikut Kelas" (not "…Mengikut Sekolah"); (3) the Guru overview is the V2 flow plus engagement plus "Kesimpulan": the V1 level cards, before/after panel, KPI row and info card are not shown to a teacher (DV-GUR-11-6); (4) T1 uses mood check-ins as the satisfaction proxy (V2 text); (5) the 24-hour heat table and the "Ramalan ALESA" table of V1 are not in V2 and are not shown to the Guru.
 #### Field & behaviour spec — R1-GUR-11 Kirkpatrick (shared with R1-AS-11)
 
-Routes `/guru/kirkpatrick` (Ringkasan), `/reaction`, `/learning`, `/behavior`, `/results`, `/chain`, `/intervention`, `/export-pdf`. API: API-RPT-11. Additions: ADD-05, ADD-15. The pages have no page filter for the Guru.
+Routes `/guru/kirkpatrick` (Ringkasan), `/reaction`, `/learning`, `/behavior`, `/results`, `/chain`, `/intervention`, `/export-pdf`. API: API-RPT-11. Additions: ADD-05 (DM-30), ADD-15 (DM-30, API-RPT-17). The pages have no page filter for the Guru.
 
 | Label | Type | Req. | Default | Options / data source | Validation + exact BM error | Depends on | Stored as | API-ID |
 |---|---|---|---|---|---|---|---|---|
@@ -1269,7 +1269,7 @@ Routes `/guru/kirkpatrick` (Ringkasan), `/reaction`, `/learning`, `/behavior`, `
   - **Corrections noted:** V2 has one list (no "Pelajar Sekolah" / "Pelajar Saya" tabs): V3 keeps the V1 tab "Pelajar Sekolah" as already built (how an existing school pupil is added) and shows the V2 table columns on "Pelajar Saya"; the V2 button is "+ Pelajar" opening the "Cipta Pelajar" form.
 #### Field & behaviour spec — R1-GUR-41 Pelajar Saya
 
-Route `/guru/pelajar`, `/guru/pelajar/:id`. API: API-GUR-05 (`GET /api/guru/students?tab=mine|school&search&page`, add, remove), API-GUR-06 (create pupil). Additions: ADD-02.
+Route `/guru/pelajar`, `/guru/pelajar/:id`. API: API-GUR-05 (`GET /api/guru/students?tab=mine|school&search&page`, add, remove), API-GUR-06 (create pupil). Additions: ADD-02 (DM-74).
 
 | Label | Type | Req. | Default | Options / data source | Validation + exact BM error | Depends on | Stored as | API-ID |
 |---|---|---|---|---|---|---|---|---|
@@ -1391,7 +1391,7 @@ Route `/guru/laporan-mingguan-kelas`. API: API-GUR-21 (`GET /api/guru/weekly-rep
 - **Functional requirements**
   - **FR-GUR-43-1** The sidebar and "Lagi" item "Laporan Mingguan" open `/guru/laporan-mingguan-kelas`.
   - **FR-GUR-43-2** The screen is built exactly as V2 above (copy, cards, empty states).
-  - **FR-GUR-43-3** New API `GET /api/guru/weekly-report?classroomId=&week=YYYY-MM-DD` (teacher, own classes; another class = 403); the old student/parent `/laporan-mingguan` behaviour is unchanged and is not linked from the teacher menu.
+  - **FR-GUR-43-3** New API `GET /api/guru/weekly-report?classroomId=&week=YYYY-MM-DD` (teacher, own classes; another teacher's class = 403, a documented exception to the 404 default of 60 section 1.7 because the resource is a report on a known class, AC-GUR-43-6); the old student/parent `/laporan-mingguan` behaviour is unchanged and is not linked from the teacher menu.
   - **FR-GUR-43-4** Figures follow XS rules with the window "minggu ini".
   - **FR-GUR-43-5** No week navigation is added (V2 has none).
   - **FR-GUR-43-6** "Cetak" prints without sidebar, header and buttons, with the print-only title, A4 portrait.
@@ -1428,7 +1428,7 @@ Route `/guru/laporan-mingguan-kelas`. API: API-GUR-21 (`GET /api/guru/weekly-rep
   - **Corrections noted:** (1) the "Alat Soalan" block is new relative to V1; all six tools are in R1 scope (decision 2026-11-04, OQ-G-15: every V2/V1 function under a module ticked for 1.0 must work in V3): "Set Soalan" is R1-GUR-8b and the other five are R1-GUR-44a to R1-GUR-44e below; the block shows six tiles and every tile resolves (FR-GUR-44-8); (2) the V2 "Import Soalan" card has no "AI Auto-Generate Soalan" card (V1 had one with no action): not built.
 #### Field & behaviour spec — R1-GUR-44 Sumbang Soalan
 
-Routes `/guru/soalan`, `/cipta`, `/:id`, `/:id/edit`. API: API-GUR-17 (paper upload), API-GUR-18 (questions), API-GUR-19 (CSV template and import), API-GUR-20 and API-DSKP-07 (DSKP lists), API-GUR-08 (chapters), API-GUR-09 (contribution counts). DM: `question_versions`, `question_version_sp_nodes`, `question_status_events`, `intake_batches`. Additions: ADD-06 to ADD-09, ADD-12, ADD-22. D112 applies to the DSKP fields: Bab is required only when the chosen Subjek + Tingkatan has chapters; SP, TP and Aras are required only where DSKP nodes exist for that Subjek + Tingkatan.
+Routes `/guru/soalan`, `/cipta`, `/:id`, `/:id/edit`. API: API-GUR-17 (paper upload), API-GUR-18 (questions), API-GUR-19 (CSV template and import), API-GUR-20 and API-DSKP-07 (DSKP lists), API-GUR-08 (chapters), API-GUR-09 (contribution counts). DM: `question_versions`, `question_version_sp_nodes`, `question_status_events`, `intake_batches`. Additions: ADD-06 to ADD-09 (DM-72; API-GUR-17 for ADD-09), ADD-12 (API-GUR-18), ADD-22 (API-GUR-19). D112 applies to the DSKP fields: Bab is required only when the chosen Subjek + Tingkatan has chapters; SP, TP and Aras are required only where DSKP nodes exist for that Subjek + Tingkatan.
 
 **44-F1 Form "Tambah Soalan" (title "Tambah Soalan Baru"; the same form edits)**
 
@@ -1524,7 +1524,7 @@ Routes `/guru/soalan`, `/cipta`, `/:id`, `/:id/edit`. API: API-GUR-17 (paper upl
   - **Corrections noted:** DV-GUR-44a-1 V2's "Tambah Soalan" on Sumbang Soalan opens this private-question form, but Sumbang Soalan says contributions go to the national bank after review: the two rules contradict. V3 keeps "Tambah Soalan" for the bank contribution form (R1-GUR-44, `/guru/soalan/cipta`) and opens this form only from its own tile (D9, minimal fix). DV-GUR-44a-2 Darjah levels not offered (D72).
 #### Field & behaviour spec — R1-GUR-44a Soalan & Rujukan
 
-Routes `/guru/soalan-guru`, `/guru/soalan-guru/cipta`. API: API-GUR-24 (`GET/POST/PUT/DELETE /api/guru/personal-questions`), API-GUR-08, API-DSKP-07. DM: `question_versions.visibility` (`teacher_private`), `owner_user_id`, `reference_url`. Additions: ADD-21. D112 applies to Bab, SP, TP and Aras.
+Routes `/guru/soalan-guru`, `/guru/soalan-guru/cipta`. API: API-GUR-24 (`GET/POST/PUT/DELETE /api/guru/personal-questions`; body fields `subjectId`, `educationLevelId` (the Tahap), `chapterId`, `spIds`, `tp`, `cognitiveLevel`, `difficulty`, `text`, `options`, `correctIndex`, `referenceUrl`, with the conditional DSKP rules and 422 messages of the table below, identical in 60 API-GUR-24), API-GUR-08, API-DSKP-07. DM: `question_versions.visibility` (`teacher_private`), `owner_user_id`, `reference_url`. Additions: A2 ADD-21, registered as API-GUR-24 (extended: the 409 delete guard). D112 applies to Bab, SP, TP and Aras.
 
 | Label | Type | Req. | Default | Options / data source | Validation + exact BM error | Depends on | Stored as | API-ID |
 |---|---|---|---|---|---|---|---|---|
@@ -1544,7 +1544,7 @@ Routes `/guru/soalan-guru`, `/guru/soalan-guru/cipta`. API: API-GUR-24 (`GET/POS
 - **AC-GUR-44a-8** Given a reference link "ftp://contoh", when "Simpan Soalan" is pressed, then "Pautan mesti bermula dengan http:// atau https://." shows and nothing is saved.
 - **AC-GUR-44a-9** Given a private question drawn by an active Misi, when "Padam" is confirmed, then "Soalan sedang digunakan dalam misi." shows and the question stays.
 
-- **Current gap:** no page and no route (`/guru/soalan-guru` is hidden by the `GURU_TOOLS` entry in `src/shells/nav/out-of-scope.ts`, with a nav item `t-soalan-rujukan` in `src/shells/nav/user-nav.ts`). The API `apps/api/src/modules/questions/http/guru.controller.ts` (`/api/guru/questions`) serves bank contributions saved as "review"; no private-question flag or reference-link field was found there (confirm in `@pp/contract`).
+- **Current gap:** no page and no route (`/guru/soalan-guru` is hidden by the `GURU_TOOLS` entry in `src/shells/nav/out-of-scope.ts`, with a nav item `t-soalan-rujukan` in `src/shells/nav/user-nav.ts`). The API `apps/api/src/modules/questions/http/guru.controller.ts` (`/api/guru/questions`) serves bank contributions saved as "review"; it has no private-question flag and no reference-link field, so API-GUR-24 is a separate route set (60 API-GUR-24).
 - **Route** `/guru/soalan-guru`, `/guru/soalan-guru/cipta`. **Matrix** 44 (tool). **Priority** P1. **Delivery** A.
 - **Functional requirements**
   - **FR-GUR-44a-1** The list at `/guru/soalan-guru` shows the teacher's own private questions (text, subject, tahap, kesukaran) with "Tambah Soalan"; the teacher can edit and delete only own questions; another teacher's id is 404.
@@ -1577,7 +1577,7 @@ Routes `/guru/soalan-guru`, `/guru/soalan-guru/cipta`. API: API-GUR-24 (`GET/POS
   - **Corrections noted:** DV-GUR-44b-1 the V2 pager text is English ("Showing ... results", "Previous", "Next"): V3 shows BM ("Menunjukkan {a} hingga {b} daripada {n} keputusan", "Sebelumnya", "Seterusnya") (D9: wrong-language label). DV-GUR-44b-2 Darjah levels not offered (D72). DV-GUR-44b-3 the V2 list text starts with a source line "Soalan Oleh: {nama guru}" inside the question text; V3 never shows a real teacher name from migrated text (privacy).
 #### Field & behaviour spec — R1-GUR-44b Soalan Berstruktur
 
-Routes `/guru/soalan-berstruktur`, `/cipta`, `/:id`, `/:id/edit`. API: API-GUR-26 (list and detail), teacher submission: ADD-13. D112 applies to Bab, SP, TP and Aras.
+Routes `/guru/soalan-berstruktur`, `/cipta`, `/:id`, `/:id/edit`. API: API-GUR-26 (list and detail), teacher submission: ADD-13 (API-GUR-26). D112 applies to Bab, SP, TP and Aras.
 
 | Label | Type | Req. | Default | Options / data source | Validation + exact BM error | Depends on | Stored as | API-ID |
 |---|---|---|---|---|---|---|---|---|
@@ -1632,7 +1632,7 @@ Routes `/guru/soalan-berstruktur`, `/cipta`, `/:id`, `/:id/edit`. API: API-GUR-2
   - **States:** the teacher's own states: Not observed in V2 — follow FR-GUR-44c-*.
 #### Field & behaviour spec — R1-GUR-44c Soalan Gambar Rajah
 
-Route `/admin/soalan-gambar`. API: API-GUR-09 (`galeri-rajah`), diagram image submission: ADD-17.
+Route `/admin/soalan-gambar`. API: API-GUR-09 (`galeri-rajah`), diagram image submission: ADD-17 (API-Q-21).
 
 | Label | Type | Req. | Default | Options / data source | Validation + exact BM error | Depends on | Stored as | API-ID |
 |---|---|---|---|---|---|---|---|---|
@@ -2379,7 +2379,7 @@ Route `/admin-sekolah/laporan-bulanan` with query `?bulan=YYYY-MM`. API: API-AS-
   - **Corrections noted:** (1) V2 shows staff roles (Admin Sekolah, Pegawai PPD, Admin) in the cards and the "Peranan" filter to a school admin: V3 splits the list into Senarai Pelajar (pupils) and Senarai Guru (teachers) and never shows staff roles; (2) the row action is "Sunting" (V2), so V3's "Edit" becomes "Sunting" (DV-AS-51-3); (3) the V2 status radios let the school admin suspend a pupil ("Digantung"): V3 provides the same for pupils (OQ-AS-12 for teachers); (4) the "Import Pelajar via ID Delima" card needs an external KPM service and has no V3 target: not built (DV-AS-51-2); V3 offers Tingkatan 1 to 5 only (Darjah hidden, D72); (5) the V2 import page does not state whether imported accounts are active or pending approval; the V2 server rule (inactive until Admin Pusat approves) is kept [NOT OBSERVED on live]; (6) the button "Tutorial" opens the Panduan tab "Admin Sekolah" (a working target, [PRINCIPLE]).
 #### Field & behaviour spec — R1-AS-51 Senarai Pelajar
 
-Routes `/admin-sekolah/pelajar` (+ `/baru`, `/:id`, `/import`). API: API-AS-05 (list, form-options, export, detail, create, update, reset password), API-AS-06 (import, `dryRun` = preview). DM: `users`, `enrolments`, `school_subscriptions.student_quota`. Additions: ADD-02, ADD-10, ADD-16. An object of another school answers 404 (ERR-ACC-02).
+Routes `/admin-sekolah/pelajar` (+ `/baru`, `/:id`, `/import`). API: API-AS-05 (list, form-options, export, detail, create, update, reset password), API-AS-06 (import, `dryRun` = preview). DM: `users`, `enrolments`, `school_subscriptions.student_quota`. Additions: ADD-02 (DM-74), ADD-10 (API-AS-06), ADD-16 (API-AS-05). An object of another school answers 404 (ERR-ACC-02).
 
 **List filters**
 
@@ -2463,7 +2463,7 @@ Routes `/admin-sekolah/pelajar` (+ `/baru`, `/:id`, `/import`). API: API-AS-05 (
 - **Screen specification (from V2):** the V2 list `/admin/users` filtered to role "Guru" (card "174 Guru", "Peranan" filter value "Guru"; the same header buttons "Eksport CSV", "Tambah Pelajar" (V3: "Tambah Guru"), "Import Pengguna", the same filter bar, counter and table columns as Senarai Pelajar in R1-AS-51). **The teacher edit form and the teacher rows are not observed in V2** — follow FR-AS-52-*: the pupil edit form of R1-AS-51 is the only V2 form seen (the teacher form is [PRINCIPLE] = the same fields plus "Subjek Utama", "Kelayakan"). V1 has the analogue tables below.
 #### Field & behaviour spec — R1-AS-52 Senarai Guru
 
-Routes `/admin-sekolah/guru` (+ `/baru`, `/:id`, `/menunggu`). API: API-AS-07 (list, export, detail, create, update, toggle-active, reset-password; body additions ADD-20), API-AS-04 (pending list and verify).
+Routes `/admin-sekolah/guru` (+ `/baru`, `/:id`, `/menunggu`). API: API-AS-07 (list, export, detail, create, update, toggle-active, reset-password; body additions ADD-20 (API-AS-07)), API-AS-04 (pending list and verify).
 
 | Label | Type | Req. | Default | Options / data source | Validation + exact BM error | Depends on | Stored as | API-ID |
 |---|---|---|---|---|---|---|---|---|
@@ -2866,7 +2866,7 @@ Closed in this pass: OQ-AS-4 (D108(5)), OQ-G-5, OQ-G-6, OQ-G-8, OQ-G-9, OQ-G-12.
 | OPT-KESUKARAN | "⭐ — Sangat mudah" = 1, "⭐⭐ — Mudah" = 2, "⭐⭐⭐ — Sederhana" = 3, "⭐⭐⭐⭐ — Sukar" = 4, "⭐⭐⭐⭐⭐ — Sangat sukar" = 5; stored in `question_versions.difficulty_level` (smallint 1 to 5); lists show "⭐" repeated n times. Typed by the teacher and editable; independent of TP (D-A6). Default: once a TP is chosen the form pre-fills min(5, TP) until the teacher changes Kesukaran; changing TP afterwards never overwrites a value the teacher touched; with no TP chosen the first option is "-- Pilih kesukaran --" (OPT-KESUKARAN in 40 X11, R1 decision D113). |
 | OPT-TP | "1" to "6" = 1 to 6; stored in `question_versions.difficulty_tp`; label "Tahap Penguasaan (TP)"; first option "-- Pilih TP --"; error "Tahap Penguasaan (TP) mesti antara 1 dan 6." |
 | OPT-ARAS | Bloom cognitive level (the pupil "Aras KBAT" filter LOTS 1 to HOTS 6 is a different set, OPT-ARAS-KBAT in 40 X11), stored as the contract values: "Mengingat" = `mengingat`, "Memahami" = `memahami`, "Mengaplikasi" = `mengaplikasi`, "Menganalisis" = `menganalisis`, "Menilai" = `menilai`, "Mencipta" = `mencipta`. Label "Aras Pemikiran"; first option "-- Pilih aras --". The KBAT chip is derived and not stored: Mengingat and Memahami = "LOTS", Mengaplikasi = "MOTS", Menganalisis, Menilai and Mencipta = "HOTS". The BM labels are the R1 decision D113. |
-| OPT-JENIS-HANTARAN (alias OPT-KERTAS in earlier drafts of this file; OPT-KERTAS now means Kertas 1 to 4 only) | Hantar Kertas type, label to stored `intake_batches.paper_type`: "Soalan Umum" = `umum`, "Trial Paper" = `trial`, "Soalan DSKP" = `dskp` (ADD-08), "Buku Teks" = `buku_teks` (ADD-08), "Buku Latihan" = `buku_latihan`, "Soalan Peperiksaan" = `peperiksaan`, "Lain-lain" = `lain` (last, in the select only; the six information chips omit "Lain-lain"). First option "-- Pilih Jenis --". On acceptance the admin side maps the value to OPT-JENIS-KERTAS as written in 40 X11. |
+| OPT-JENIS-HANTARAN (alias OPT-KERTAS in earlier drafts of this file; OPT-KERTAS now means Kertas 1 to 4 only) | Hantar Kertas type, label to stored `intake_batches.paper_type`: "Soalan Umum" = `umum`, "Trial Paper" = `trial`, "Soalan DSKP" = `dskp` (ADD-08 (DM-72)), "Buku Teks" = `buku_teks` (ADD-08), "Buku Latihan" = `buku_latihan`, "Soalan Peperiksaan" = `peperiksaan`, "Lain-lain" = `lain` (last, in the select only; the six information chips omit "Lain-lain"). First option "-- Pilih Jenis --". On acceptance the admin side maps the value to OPT-JENIS-KERTAS as written in 40 X11. |
 | OPT-PERANAN (alias OPT-ROLE) | Stored in `user_roles.role`: "Pelajar" = `student`, "Guru" = `teacher`, "Admin Sekolah" = `school_admin`, "Pegawai PPD" = `ppd_officer`, "Admin" = `admin`. The school admin sees Pelajar and Guru only; the role control on the pupil form is read-only text. |
 | OPT-STATUS-SOALAN | `review` = "Menunggu Semakan" (amber chip), `approved` = "Diluluskan" (green chip), `draft` returned by the admin = "Ditolak" (red chip, shows the reason). |
 | OPT-STATUS-SET | `draft` = "Draf", `published` = "Diterbitkan". Paper (Kertas): `draft` = "Draf", `published` = "Dikongsi". |
