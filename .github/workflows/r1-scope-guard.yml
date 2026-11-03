@@ -32,3 +32,5 @@ jobs:
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
         run: node scripts/r1-scope-guard.mjs --base origin/${{ github.base_ref }} --head HEAD
+      - name: Canonical map check (no duplicates)
+        run: node scripts/r1-canonical-map.mjs --check
