@@ -1741,7 +1741,7 @@ Same template as section 3 (Action, Screen specification (from V2), change list)
 - **Field & behaviour spec**
   | Label | Type | Req | Default | Options / source | Validation + exact BM error | Depends on | Stored as | API |
   |---|---|---|---|---|---|---|---|---|
-  | Alamat Email / Nama Pengguna | text, placeholder "contoh@email.com" | Ya | empty | trimmed, 1-254 | `Sila isi alamat e-mel atau nama pengguna.`; wrong login (never says which part): `E-mel/Nama pengguna atau kata laluan tidak sah.` in the alert above the form (ERR-AUTH-02) | - | - | login API (strict body: unknown keys = 422) |
+  | Alamat Email / Nama Pengguna | text, placeholder "nama@email.com" | Ya | empty | trimmed, 1-254 | `Sila isi alamat e-mel atau nama pengguna.`; wrong login (never says which part): `E-mel/Nama pengguna atau kata laluan tidak sah.` in the alert above the form (ERR-AUTH-02) | - | - | login API (strict body: unknown keys = 422) |
   | Kata Laluan | password | Ya | empty | 1-200, never trimmed | `Sila isi kata laluan.` | - | - | same |
   | Ingat saya | checkbox | Tidak | unticked | unticked = session cookie; ticked = 30 days (R1 decision D113) | - | - | cookie lifetime | same |
   | Pilih Sekolah Anda | radio list, shown only after 422 AMBIGUOUS_USERNAME | Ya when shown | none | `details.schools` (name ascending) sent as `schoolId` | `Nama pengguna ini wujud di lebih daripada satu sekolah. Sila pilih sekolah anda.` (ERR-AUTH-05); identifier and password stay filled | - | - | same |
