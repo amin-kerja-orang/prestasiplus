@@ -13,7 +13,7 @@
 export const focusRing =
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary'
 /** Same, for rows/items that sit flush inside a popup (inset so it is not clipped). */
-const focusInset =
+export const focusInset =
   'focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary'
 export const disabledState =
   'data-[disabled]:opacity-(--ds-disabled-opacity) data-[disabled]:cursor-not-allowed data-[disabled]:pointer-events-none'
@@ -23,7 +23,7 @@ const panel = 'z-50 rounded-lg bg-default p-1.5 shadow-modal ring-0'
 
 /** Menu / listbox row shared by dropdown, select, input menu and command palette. */
 const item = [
-  'min-h-11 items-center gap-2.5 rounded-sm px-3 py-2 text-label transition-colors duration-fast before:inset-0 before:rounded-sm md:min-h-10',
+  'min-h-11 items-center gap-2.5 rounded-sm px-3 py-2 text-label transition-colors duration-fast before:inset-0 before:rounded-sm md:pointer-fine:min-h-10',
   'data-highlighted:before:bg-elevated data-[state=open]:before:bg-elevated',
   'data-[state=checked]:text-primary-t',
   disabledState,
@@ -159,7 +159,7 @@ export const componentDefaults = {
     slots: {
       list: 'gap-1',
       link: [
-        'min-h-9 gap-1.5 rounded-sm px-1.5 text-label transition-colors duration-fast',
+        'min-h-11 pointer-fine:min-h-9 gap-1.5 rounded-sm px-1.5 text-label transition-colors duration-fast',
         'hover:text-highlighted',
         focusRing,
       ].join(' '),
