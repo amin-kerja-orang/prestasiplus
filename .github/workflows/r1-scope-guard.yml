@@ -5,6 +5,7 @@ name: r1-scope-guard
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, edited]
     branches: [feature/v3-bijak-r1]
     paths-ignore:
       - 'docs/**'
