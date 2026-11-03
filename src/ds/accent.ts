@@ -8,7 +8,7 @@ import type { DsAccent } from './types'
 
 /** Solid fill + on-colour (CTA buttons, chips). */
 export const accentSolid: Record<DsAccent, string> = {
-  action: 'bg-primary text-primary-on',
+  action: 'bg-primary text-on-primary-flat',
   win: 'bg-highlight text-on-highlight',
   heat: 'bg-heat text-on-highlight staff:text-primary-on',
   friend: 'bg-friend text-primary-on',

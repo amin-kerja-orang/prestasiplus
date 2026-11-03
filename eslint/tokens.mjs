@@ -36,6 +36,7 @@ export const CURATED = {
     'win-ring',
     'seg-active',
     'primary-on',
+    'on-primary-flat',
     'primary-t',
     // Text-safe semantic colours and the off state of checkbox / switch (contrast audit).
     'secondary-t',

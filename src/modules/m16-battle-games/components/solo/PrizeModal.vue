@@ -14,7 +14,7 @@ defineEmits<{ close: [] }>()
 <template>
   <Teleport to="body">
     <div
-      class="fixed inset-0 z-200 flex items-center justify-center bg-inverted/60 p-4"
+      class="fixed inset-0 z-200 flex items-center justify-center bg-overlay p-4"
       data-testid="prize-overlay"
       @click.self="$emit('close')"
     >

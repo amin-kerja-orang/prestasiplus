@@ -168,7 +168,7 @@ const loaded = computed(() => data.value !== null)
             </ul>
           </div>
           <span
-            class="inline-flex min-h-11 items-center justify-center gap-2 rounded-chip bg-primary px-4 py-2 text-label font-bold text-primary-on"
+            class="inline-flex min-h-11 items-center justify-center gap-2 rounded-chip bg-primary px-4 py-2 text-label font-bold text-on-primary-flat"
           >
             <UIcon name="i-ph-eye-duotone" class="size-4" aria-hidden="true" />
             Lihat Topik

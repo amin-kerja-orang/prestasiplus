@@ -46,7 +46,7 @@ const LABEL: Record<string, string> = {
 }
 const TILE: Record<string, string> = {
   mastered: 'bg-success text-on-sem',
-  started: 'bg-primary text-primary-on',
+  started: 'bg-primary text-on-primary-flat',
   unlocked: 'bg-heat text-on-highlight',
   locked: 'bg-accented text-default',
 }

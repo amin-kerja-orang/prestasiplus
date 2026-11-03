@@ -44,8 +44,9 @@ const fieldConfig = {
   variants: {
     variant: { soft: filled },
     size: {
-      md: { base: fieldSize },
-      lg: { base: fieldSize },
+      // Leading / trailing icon gutter 14px, the same as the text padding (stock 10px).
+      md: { base: fieldSize, leading: 'ps-3.5', trailing: 'pe-3.5' },
+      lg: { base: fieldSize, leading: 'ps-3.5', trailing: 'pe-3.5' },
     },
   },
   // Error / highlight state: 2px inset ring (the theme default is 1px).
@@ -307,18 +308,11 @@ export const uiConfig = {
       container: 'min-h-11 min-w-11 justify-center',
       wrapper: 'ms-1 flex min-h-11 min-w-0 flex-col justify-center has-data-[slot=description]:justify-start has-data-[slot=description]:pt-3',
       // Borders are transparent (layers, not lines): an unchecked box needs its own fill and a 3:1 inset ring (control-off) to show.
-      base: "relative overflow-visible rounded-xs bg-accented ring-2 ring-inset ring-control-off transition-colors duration-fast after:absolute after:-inset-2.5 after:content-[''] hover:brightness-95 aria-invalid:ring-2 aria-invalid:ring-error",
+      base: "relative overflow-visible rounded-xs bg-accented ring-2 ring-inset data-[state=unchecked]:ring-control-off transition-colors duration-fast after:absolute after:-inset-2.5 after:content-[''] hover:brightness-95 aria-invalid:ring-2 aria-invalid:ring-error",
       label: 'text-label',
       description: 'text-caption text-muted',
     },
-    // The check glyph is 14px at every size (stock: 10 / 12 / 14).
-    variants: {
-      size: {
-        xs: { icon: 'size-3.5' },
-        sm: { base: 'size-6', icon: 'size-3.5' },
-        md: { base: 'size-6', icon: 'size-3.5' },
-      },
-    },
+    variants: { size: { md: { base: 'size-6' }, sm: { base: 'size-6' } } },
   },
 
   switch: {
@@ -401,7 +395,7 @@ export const uiConfig = {
     },
     compoundVariants: [
       { variant: ['outline', 'subtle'], class: 'ring-0' },
-      { color: 'primary', variant: 'solid', class: 'text-primary-on' },
+      { color: 'primary', variant: 'solid', class: 'text-on-primary-flat' },
       { color: ['error', 'success', 'info', 'warning'], variant: 'solid', class: 'text-on-sem' },
       { color: 'secondary', variant: 'solid', class: 'bg-highlight text-on-highlight' },
       // Tinted badges: text from the -t tokens so it holds 4.5:1 on its own 12% tint (lime text on

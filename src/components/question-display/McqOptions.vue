@@ -81,7 +81,7 @@ function onImgError(id: string): void {
       />
       <span
         class="flex size-8 shrink-0 items-center justify-center rounded-full text-label font-semibold"
-        :class="modelValue === o.id ? 'bg-primary text-primary-on' : 'bg-elevated text-toned'"
+        :class="modelValue === o.id ? 'bg-primary text-on-primary-flat' : 'bg-elevated text-toned'"
         aria-hidden="true"
         >{{ o.letter }}</span
       >

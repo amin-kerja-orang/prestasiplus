@@ -263,7 +263,7 @@ onBeforeUnmount(() => {
             :class="
               m.role === 'bot'
                 ? 'self-start rounded-bl-md bg-default text-highlighted shadow-lift'
-                : 'self-end rounded-br-md bg-primary text-primary-on'
+                : 'self-end rounded-br-md bg-primary text-on-primary-flat'
             "
             data-msg
             :data-role="m.role"

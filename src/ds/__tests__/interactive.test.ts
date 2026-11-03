@@ -54,7 +54,7 @@ describe('DsQuizOption', () => {
   it('selected: pressed, primary letter chip', () => {
     const w = mount(DsQuizOption, { props: { letter: 'B', state: 'selected' } })
     expect(w.get('button').attributes('aria-pressed')).toBe('true')
-    expect(w.html()).toContain('bg-primary text-primary-on')
+    expect(w.html()).toContain('bg-primary text-on-primary-flat')
   })
   it('correct: check marker with screen-reader text, locked', async () => {
     const w = mount(DsQuizOption, { props: { letter: 'B', state: 'correct' } })

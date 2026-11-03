@@ -55,7 +55,7 @@ const GLYPH = { done: 'i-ph-check-bold', current: 'i-ph-play-fill', locked: 'i-p
             lv.state === 'done'
               ? 'bg-success text-on-sem'
               : lv.state === 'current'
-                ? 'bg-primary text-primary-on'
+                ? 'bg-primary text-on-primary-flat'
                 : 'bg-elevated text-muted'
           "
           aria-hidden="true"

@@ -294,6 +294,8 @@
   --color-seg-active: var(--ds-seg-active);
   --color-soft: var(--ds-bg-soft);
   --color-primary-on: var(--ds-primary-on);
+  /* Label on a flat bg-primary fill (not the gradient): ink in student-dark, where white is 3.3:1. */
+  --color-on-primary-flat: var(--ds-on-primary-flat);
   --color-primary-t: var(--ds-primary-t);
   /* Text-safe semantic colours (>= 4.5:1 on their own 12% tint) and the off state of checkbox / switch. */
   --color-secondary-t: var(--ds-secondary-t);
@@ -503,6 +505,7 @@
   --ui-primary: #2440f0;
   --ds-primary-t: #2440f0;
   --ds-primary-on: #ffffff;
+  --ds-on-primary-flat: #ffffff;
   --ds-on-sem: #ffffff;
   --ds-on-secondary: #ffffff;
   --ds-secondary-t: #4b6112;
@@ -592,6 +595,7 @@
   --ui-primary: #6283ff;
   --ds-primary-t: #8ea5ff;
   --ds-primary-on: #0d1120;
+  --ds-on-primary-flat: #0d1120;
   --ds-on-sem: #0d1120;
   --ds-on-secondary: #0d1120;
   --ui-secondary: #bceb27;
@@ -646,9 +650,10 @@
   --ds-control-off: #727889;
   --ds-secondary-t: #4d6b00;
 
-  --ui-primary: #2c53f5;
+  --ui-primary: #2f5bff;
   --ds-primary-t: #2342d6;
   --ds-primary-on: #ffffff;
+  --ds-on-primary-flat: #ffffff;
   --ds-on-sem: #ffffff;
   --ds-on-secondary: #0b0d12;
   --ui-secondary: #c6f432;
@@ -659,10 +664,10 @@
   --ds-highlight: #c6f432;
   --ds-on-highlight: #0b0d12;
   --ds-win-ring: #6fa300;
-  --ds-ic-theme: #2c53f5;
+  --ds-ic-theme: #2f5bff;
   --ds-overlay: rgb(5 7 10 / 0.62);
 
-  --ds-c1: #2c53f5;
+  --ds-c1: #2f5bff;
   --ds-primary-2: #6a4dff;
   --ds-c2: #c6f432;
   --ds-c3: #ff7a1a;
@@ -706,11 +711,7 @@
      elevated fields. Solid fills keep the gradient from --ds-c1 (white label 5.2:1). */
   --ui-primary: #5b86ff;
   --ds-primary-t: #7a9cff;
-  /* Ink label on the lighter primary (white was 3.3:1); the gradient is lifted to match (ink >= 5.8:1). */
-  --ds-primary-on: #0b0d12;
-  --ds-c1: #5b86ff;
-  --ds-primary-2: #8f7bff;
-  --ds-c4: #a98bff;
+  --ds-on-primary-flat: #0b0d12;
   --ui-info: #a98bff;
   --ds-on-sem: #0b0d12;
   --ui-success: #34d17f;

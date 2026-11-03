@@ -41,7 +41,7 @@ const tint: Record<QuizOptionState, string> = {
 }
 const letterTone: Record<QuizOptionState, string> = {
   idle: 'bg-elevated text-toned',
-  selected: 'bg-primary text-primary-on',
+  selected: 'bg-primary text-on-primary-flat',
   correct: 'bg-success text-on-sem',
   wrong: 'bg-error text-on-sem',
   dimmed: 'bg-elevated text-toned',
