@@ -10,7 +10,7 @@
 
 **Improve, not rebuild.** V3 already has most of the pieces (group entity, intake, part trees, scheme keys, builder). Every step below names the existing V3 file to extend (section 9) and the duplicate NOT to create. Before coding a card: run the code gap check of that card against the FR/AC here, post it on the issue, and change only what is broken or missing.
 
-**How to read IDs.** Existing IDs (R1-ADM-Q-nn, FR-ADM-QEn.n, FR-X1-4a..f, API-Q-nn, DM-nn, S1-T01..) are quoted from 30, 20, 40, 50, 60 and the plan. **NEW** requirements introduced here are `FR-QA-nn` and `AC-QA-nn`. New data changes are `DM-50`..`DM-59` and new API rows `API-Q-30`..`API-Q-39` (API-Q-26..29 are left free for other documents). Copy and values that have no source in V2, V1, the code or the PRD are decided R1 copy (Delivery Lead, D113) and are marked "(R1 copy, D113)"; they are built as written. `OPT-*` are the shared option sets of the 30 field register (section 3.0 lists the values used here). `ERR-*` are the error catalogue IDs of the error-handling register.
+**How to read IDs.** Existing IDs (R1-ADM-Q-nn, FR-ADM-QEn.n, FR-X1-4a..f, API-Q-nn, DM-nn, S1-T01..) are quoted from 30, 20, 40, 50, 60 and the plan. **NEW** requirements introduced here are `FR-QA-nn` and `AC-QA-nn`. New data changes are `DM-50`..`DM-59` and new API rows `API-Q-30`..`API-Q-39`; they are registered in 50 section 4.9 and 60 section 2.6. Copy and values that have no source in V2, V1, the code or the PRD are decided R1 copy (Delivery Lead, D113) and are marked "(R1 copy, D113)"; they are built as written. `OPT-*` are the shared option sets of the 30 field register (section 3.0 lists the values used here). `ERR-*` are the error catalogue IDs of the error-handling register.
 
 **Vocabulary used throughout.** *Bahagian* = a section of a paper ("Bahagian A", "Part 4"). *Sub-bahagian* = a part of a question ((a), (b), (i)). *Leaf* = a sub-bahagian with no children; only a leaf carries marks, an answer mode, an answer key and a scheme. *Stimulus* = a rajah, petikan, jadual, graf, peta, carta or image that is the shared reference of one or more questions; it is never a question. *Kumpulan rangsangan* (group) = 1 to 3 stimuli plus 1 to 40 ordered member questions. *Terbitkan* = the action that makes a question `Diluluskan`. *Tag* = the DSKP and classification fields of a question.
 
@@ -175,7 +175,7 @@ erDiagram
 
 ### 2.3 Question types, leaf modes and what each needs
 
-The wizard picks a **Jenis soalan** (`questionType`, OPT-JENIS-SOALAN); it builds the part-tree template; each leaf then has a **Jenis jawapan** (leaf mode, OPT-MOD-JAWAPAN). All modes are served to pupils in R1 (D-QA-2); `pksk_choice` is PKSK-only and never offered in the Studio.
+The wizard picks a **Jenis soalan** (`questionType`, OPT-JENIS-SOALAN; the 11 values are registered as DM-69); it builds the part-tree template; each leaf then has a **Jenis jawapan** (leaf mode, OPT-MOD-JAWAPAN). All modes are served to pupils in R1 (D-QA-2); `pksk_choice` is PKSK-only and never offered in the Studio.
 
 | Jenis soalan (`questionType`) | Template | Leaf modes allowed | Key kind of the leaf |
 |---|---|---|---|
@@ -193,7 +193,7 @@ The wizard picks a **Jenis soalan** (`questionType`, OPT-JENIS-SOALAN); it build
 
 ### 2.4 Stimulus and group rules
 
-1. Stimulus kinds (OPT-JENIS-RANGSANGAN as decided in 1A.7 of the field register): `Petikan` (`passage`), `Rajah` (`diagram`), `Jadual` (`table`), `Graf` (`graph`), `Peta` (`map`), `Carta / Infografik` (`infographic`), `Imej / Gambar` (`image`). Code or pseudocode is a `Petikan` using the `</>` block; a bordered "Sumber" box is a `Petikan` with the `Kotak teks` tool. The V2 kinds Audio and Video are not offered (Audio KBAT is a separate module); the V2 data of those kinds is reported in the migration list, not migrated.
+1. Stimulus kinds (OPT-JENIS-RANGSANGAN as decided in 1A.7 of the field register; registered as DM-70): `Petikan` (`passage`), `Rajah` (`diagram`), `Jadual` (`table`), `Graf` (`graph`), `Peta` (`map`), `Carta / Infografik` (`infographic`), `Imej / Gambar` (`image`). Code or pseudocode is a `Petikan` using the `</>` block; a bordered "Sumber" box is a `Petikan` with the `Kotak teks` tool. The V2 kinds Audio and Video are not offered (Audio KBAT is a separate module); the V2 data of those kinds is reported in the migration list, not migrated.
 2. A group has 1 to 3 stimuli, shown together once, in order, above its members. A group of 1 member is valid everywhere, including in papers (D108(1)); a group of 0 members is a draft only and cannot be placed in a paper.
 3. A question belongs to at most one group. A question citing two figures belongs to a group that contains both stimuli (a multi-stimulus group). If the two figures sit in two groups, the groups are merged (FR-QA-08).
 4. A leaf may carry `stimulusId`: one of the group's stimuli, or a stimulus of its own (a "part-level stimulus", for example a quoted source on part (c) only). A prompt may cite "Bahan 2"; the pupil panel opens the stimulus labelled so.
@@ -600,6 +600,8 @@ Buttons `Batal`, `Muat naik & ekstrak`; progress "Memuat naik… {x}%". Notice "
 
 #### 3.3.3 Failure states
 
+The retry counter and the status `Selesai dengan ralat` are DM-71; the retry routes are API-Q-26.
+
 | Situation | Shown | Action |
 |---|---|---|
 | password-protected | "Fail dilindungi kata laluan. Buang perlindungan dan muat naik semula." (ERR-INT-01) | `Muat Naik Semula` |
@@ -636,7 +638,7 @@ If `Skema jawapan (PDF)` was uploaded (or the question PDF carries an answer gri
 
 ### 3.4 Path 4: teacher submissions (`source=guru`) to admin review
 
-Teacher forms (20 R1-GUR-44, 44a..44e): all teacher submissions are **intake batches or review-state questions with `source=guru`**; there is no separate `/api/question-submissions` (FR-ADM-Q12.2).
+The teacher intake fields (`source = 'guru'`, nullable Kertas, paper-type slugs) are DM-72. Teacher forms (20 R1-GUR-44, 44a..44e): all teacher submissions are **intake batches or review-state questions with `source=guru`**; there is no separate `/api/question-submissions` (FR-ADM-Q12.2).
 
 | Teacher action (screen) | What is created | Admin sees | Status words to the teacher |
 |---|---|---|---|
@@ -935,6 +937,8 @@ Tab `Perlu dikumpulkan semula` of `Senarai Soalan` (R1-ADM-QE-08, FR-X1-4f; plan
 
 #### 6.6.1 Detection rules (pure functions, the same code as `figure-links.ts`; FR-QA-12)
 
+**This section is the ONE canonical stimulus-reference keyword set** (D113-continued). 30 (FR-ADM-QE5.8, G7.1), 40, the T8 prototype, `figure-links.ts` and its frontend twin all cite this table and do not restate it; the code exports one constant for the set, so a change here is a change in one place. The set is the union of every variant found in the audits: `rajah`, `figure`, `diagram`, `gambar rajah`, `gambar`, `jadual`, `table`, `graf`, `graph`, `carta`, `chart`, `peta`, `map`, `petikan`, `passage` (figure words) plus `sumber`, `teks`, `text`, `maklumat`, `pernyataan`, `situasi`, `bahan` (source words). A reference is triggered by (a) a number directly after a figure word (the numbered form, "Rajah 1", "Jadual 2", "Petikan 3"), or (b) a positional phrase (`di atas`, `di bawah`, `berikut`, `above`, `below`, `following`) within 3 words of a figure or source word, or (c) a figure or source word used as the subject of `menunjukkan` / `shows`. Matching is case-insensitive on normalised text (diacritics and repeated spaces removed).
+
 A question is examined when it has no stimulus, no group and no image. Text examined: stem, options and part prompts.
 
 | Rule | Flag | Predicate |
@@ -946,7 +950,7 @@ A question is examined when it has no stimulus, no group and no image. Text exam
 | missing image | reason `gambar tiada` | the figure existed in V1/V2 but its file was never copied (D80 Q-03) |
 | duplicated stem | `stem_duplicated` | stem equals its only leaf prompt after trimming and normalising; not excluded, text shown once |
 
-An item naming two figures is a conflict for a single group: the work-list suggests a multi-stimulus group (max 3). Unnumbered references are **never auto-linked**: they set `stimulus_missing` with ref kind `unnumbered` (DM-53) and show in the list with the column `Rujukan` = "tanpa nombor". Detection runs on every version write and by the backfill script `uat-ops/flag-stimulus.ts` (dry-run default, batches of 5,000, idempotent, prints counts per subject and Tingkatan; the designated UAT developer runs dry-run, report, the user's approval, then the real run, U-OP-05). A question flagged `stimulus_missing` or `figure_only` is excluded from every pupil surface (FR-ADM-G7.3).
+An item naming two figures is a conflict for a single group: the work-list suggests a multi-stimulus group (max 3). Unnumbered references are **never auto-linked**: they set `stimulus_missing` with ref kind `unnumbered` (DM-53) and show in the list with the column `Rujukan` = "tanpa nombor". Detection runs on every version write and by the backfill script `uat-ops/flag-stimulus.ts` (dry-run default, batches of 5,000, idempotent, prints counts per subject and Tingkatan; the designated UAT developer runs dry-run, report, the user's approval, then the real run, U-OP-05). A question flagged `stimulus_missing` or `figure_only` is excluded from every pupil surface (FR-ADM-G7.3). A question flagged only `stem_duplicated` is shown once and is never excluded.
 
 #### 6.6.2 The screen
 
@@ -1342,6 +1346,8 @@ Each FR names the DM / API change (new IDs are in 8.4 and 8.5; "rule" = no schem
 | API-Q-38 | `POST /api/intake/stimuli/:id/merge` | AP | `{intoStimulusId}` | review group | Missing-Build | FR-QA-08, 36 | S1-T03 |
 | API-Q-39 | `GET /api/admin/papers/:id/jsu`, `GET /api/admin/blueprints/:subject/:kertas/jsu` | AP | none | grid Bahagian x Tajuk DSKP x TP x KBAT x Markah with `required`, `actual`, `ok` | Missing-Build | FR-QA-40 | S3-T02 |
 
+API-Q-26 (intake retry, S1-T04) is registered in 60.
+
 Changes to existing rows (no new ID): API-Q-04 (group-aware bulk), API-Q-01 (`rejected`, search by id, caps), API-Q-03 (`language` `ms+en`, `modeConfig`, `schemeRules`, `textbookRef`), API-Q-05 (new issue codes of 4.1), API-Q-11 (`group_incomplete`, 6 served activities), API-Q-13 (`Rujukan`, `Cadangan`), API-Q-15 (`extract` with `pages[]`), API-Q-17 (columns of 3.2, ZIP), API-Q-24 (served members, `regroup=true`), API-BIJAK-05 (`criteria[]`), API-BIJAK-11 (Tahun, Negeri, Bilangan).
 
 ---
@@ -1378,6 +1384,7 @@ Before coding a card: run the code gap check against the FR/AC and post it on th
 - **FR-QA-01..47 (47):** card per 8.2.
 - **AC-QA-01..47 (47):** one per FR, same number.
 - **DM-50..DM-59 (10):** DM-50 S1-T09b; DM-51 S1-T01; DM-52 S1-T01; DM-53 S1-T07; DM-54 S1-T09a; DM-55 S1-T09a; DM-56 S1-T02; DM-57 S3-T01; DM-58 S1-T02; DM-59 S1-T07 and S4-T04.
+- **Other new IDs used here (registered in 50 and 60 by T5):** DM-69 (question types, S1-T09a), DM-70 (stimulus kinds, S1-T01), DM-71 (intake retry, S1-T04), DM-72 (teacher intake, S1-T08), API-Q-26 (intake retry, S1-T04).
 - **API-Q-30..API-Q-39 (10):** API-Q-30 S1-T09a; API-Q-31, 32, 33, 34, 35 S1-T01; API-Q-36 S1-T07; API-Q-37, 38 S1-T03; API-Q-39 S3-T02.
 
 Plan merge (D113): S1-T09 becomes P0/L and is split into **S1-T09a** (scheme editor backend + `mode_config` + the `options` key kind and MCQ minimum 2: DM-54, DM-55, API-Q-30, FR-QA-19, 21, 22, 26, 27, 28, 30) and **S1-T09b** (bilingual `ms+en` contract + drawing/table_fill: DM-50, FR-QA-17, 20, 23). The plan itself is edited by the Delivery Lead.
@@ -1396,22 +1403,22 @@ Every BM string and value marked "(R1 copy, D113)" in sections 3 to 8 is decided
 
 ### 10.5 Changes the other docs must make (conflicts C-1..C-12, all decided)
 
-Conflicts between the team workflow document (`r1-aliran-kerja-bank-bijak.md`, PR #522), the audits and the PRD were decided by the Delivery Lead (D113). This document already applies each decision. The other documents change as follows (file, item, change):
+Conflicts between the team workflow document (`r1-aliran-kerja-bank-bijak.md`, PR #522), the audits and the PRD were decided by the Delivery Lead (D113). This document already applies each decision. The other documents change as follows (file, item, change); the last words of each row say where it is already applied (T1 = 10, T2 = 20, T3 = 30, T4c = 40, T5 = 50 and 60):
 
 | # | File | Item | Change |
 |---|---|---|---|
-| C-1 | 30 | §3.3 KS-15 redirect | `/admin/studio?status=review` (not `reviewed`); tile label `Menunggu Semakan`. |
-| C-2 | 30, 50 | QE3.2 "8 types", "13 modes" typo, OPT-JENIS-SOALAN | 11 question types (2.3 of this document); the V2 list has 14 modes. |
-| C-3 | 10, 30, 60 | FR-MUR-13-20, Q-06, API-Q-11, OPT-SERVABILITY | The pupil-facing indicator is "n daripada 6"; the value `jana_kertas` stays in the enum for admin use; no pupil Jana Kertas in R1. |
-| C-4 | 30, 50 | 4.G.1 rule table, QE3.1, DM-14 | Unit, SP, TP, aras are required only if `curriculum_nodes` exist for the Subjek and Tingkatan (D112-3, FR-QA-42); the Kontrak picker lists loaded subjects only. |
-| C-5 | 30, 60 | FR-ADM-QE5.5, U-OP-02, AC-ADM-Q18.1, PAR A06 | No AI provider in R1: in-house Tesseract OCR and a deterministic DSKP matcher (D112-2, FR-QA-43); remove "real extraction provider instead of `AI_PROVIDER=mock`". |
-| C-6 | 30 | Q-24 Action, 4.V register | `Sunting Pantas` is "Fix" (FR-QA-44). |
-| C-7 | 30, 20 | subject counts (31, 33) | State "every subject in the UAT `subjects` table", with no number. |
-| C-8 | 30 | U-OP-01 | The loader exists (2,844 nodes loaded locally); UAT had 0 nodes on 2026-11-03, so U-OP-01 is still required on UAT. |
-| C-9 | 30 | FR-ADM-G7.3 wording | State that the intake duplicate (`Sama`, `Hampir sama`, `Varian`) needs a resolution (`Pautkan` / `Diketepikan`, FR-QA-36) and that `stem_duplicated` blocks nothing. |
-| C-10 | 60 | API-Q-05 `NO_CHAPTER` | The message is exactly "Sila pilih Bab." everywhere (30, 60, plan S1-T02). |
-| C-11 | 50, 60 | 50 lines 1242 and 1307, 4.2.1 row `Kesukaran`; API-Q-03 `difficultyLevel` | Kesukaran is typed 1 to 5 with the default `min(5, TP)` (QE3.7); it is not derived; TP stays in `difficulty_tp`. |
-| C-12 | code (contract) | `parts.ts` McqLeaf; `schema.ts` Language; `stimuli.ts` builderBlocker and smallGroup | MCQ options minimum 2; `language` gains `ms+en`; `builderBlocker` allows a 1-member group (text "Kumpulan perlu sekurang-kurangnya 1 soalan."). |
+| C-1 | 30 | §3.3 KS-15 redirect | `/admin/studio?status=review` (not `reviewed`); tile label `Menunggu Semakan`. **Applied in 30 (T3).** |
+| C-2 | 30, 50 | QE3.2 "8 types", "13 modes" typo, OPT-JENIS-SOALAN | 11 question types (2.3 of this document); the V2 list has 14 modes. **Applied in 30 (T3: QE3.2 has 11 types, QE3.24 has 14 modes) and in 50 (T5: DM-69).** |
+| C-3 | 10, 30, 60 | FR-MUR-13-20, Q-06, API-Q-11, OPT-SERVABILITY | The pupil-facing indicator is "n daripada 6"; the value `jana_kertas` stays in the enum for admin use; no pupil Jana Kertas in R1. **Applied in 10 (T1: FR-MUR-13-20, tab hidden) and 30 (T3: "n daripada 6"); 60 API-Q-11 in T5.** |
+| C-4 | 30, 50 | 4.G.1 rule table, QE3.1, DM-14 | Unit, SP, TP, aras are required only if `curriculum_nodes` exist for the Subjek and Tingkatan (D112-3, FR-QA-42); the Kontrak picker lists loaded subjects only. **Applied in 30 (T3: QE4.6, 4.G.1).** |
+| C-5 | 30, 60 | FR-ADM-QE5.5, U-OP-02, AC-ADM-Q18.1, PAR A06 | No AI provider in R1: in-house Tesseract OCR and a deterministic DSKP matcher (D112-2, FR-QA-43); remove "real extraction provider instead of `AI_PROVIDER=mock`". **Applied in 30 (T3: FR-ADM-QE5.7, Q07.5, Q18.5); 60 carries no such text.** |
+| C-6 | 30 | Q-24 Action, 4.V register | `Sunting Pantas` is "Fix" (FR-QA-44). **Applied in 30 (T3: Q-24 Fix, FR-ADM-Q24.3).** |
+| C-7 | 30, 20 | subject counts (31, 33) | State "every subject in the UAT `subjects` table", with no number. **Not yet applied: 20 and 30 still name 31 subjects (listed in the T5c report for the lead).** |
+| C-8 | 30 | U-OP-01 | The loader exists (2,844 nodes loaded locally); UAT had 0 nodes on 2026-11-03, so U-OP-01 is still required on UAT. **Applied in 30 (T3: DM-14 row, tree note: UAT has 0 nodes until U-OP-01 runs).** |
+| C-9 | 30 | FR-ADM-G7.3 wording | State that the intake duplicate (`Sama`, `Hampir sama`, `Varian`) needs a resolution (`Pautkan` / `Diketepikan`, FR-QA-36) and that `stem_duplicated` blocks nothing. **Partly applied in 30 (T3: G7.2, G7.3 say `stem_duplicated` blocks nothing); the resolution wording (`Pautkan` / `Diketepikan`) is not yet in G7.3 (listed in the T5c report).** |
+| C-10 | 60 | API-Q-05 `NO_CHAPTER` | The message is exactly "Sila pilih Bab." everywhere (30, 60, plan S1-T02). **Applied in 30 (T3) and in 50 and 60 (T5: 50 F-2, 60 G-4); plan S1-T02 by T6.** |
+| C-11 | 50, 60 | 50 lines 1242 and 1307, 4.2.1 row `Kesukaran`; API-Q-03 `difficultyLevel` | Kesukaran is typed 1 to 5 with the default `min(5, TP)` (QE3.7); it is not derived; TP stays in `difficulty_tp`. **Applied in 30 (T3: QE3.7, 04-13) and in 50 and 60 (T5: 50 F-1, 60 G-1, G-2).** |
+| C-12 | code (contract) | `parts.ts` McqLeaf; `schema.ts` Language; `stimuli.ts` builderBlocker and smallGroup | MCQ options minimum 2; `language` gains `ms+en`; `builderBlocker` allows a 1-member group (text "Kumpulan perlu sekurang-kurangnya 1 soalan."). **Specified in 30 (T3: QE2.4, AC-ADM-QE2.2, AC-ADM-QE3.2, `prompt_en` rule); the code change belongs to cards S1-T09a and S1-T09b.** |
 
 Decided items (Delivery Lead, D113, 2026-11-04). None is open.
 

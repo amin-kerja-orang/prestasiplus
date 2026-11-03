@@ -33,7 +33,7 @@ Decisions made while writing this file, by the same principles (confirmed as D11
 | D-PA-14 | **Kertas Subjektif: "Hantar & Semak" first, then "Tunjuk Skema Pemarkahan".** The scheme and self-mark are only available after the attempt is closed (API-BIJAK-05 and the 409 `NOT_SUBMITTED` rule), and the scheme text is fetched only when the button is pressed (AC-MUR-13-21). | Reconciles FR-MUR-13-28/29 with B-031. |
 | D-PA-15 | **A swept Kuiz session writes rows for its checked questions, with no reward.** A Kuiz "Semak" writes no row (FR-MUR-13-16); the final submit writes them; the sweeper acts as the final submit for an abandoned Kuiz. | D-PA-8: "the checked answers count". |
 | D-PA-16 | **Retry cadence for a failed autosave is a fixed 5 seconds** (the code's value), not the exponential back-off in the field register (B-026). | Working code wins where the PRD only proposes. |
-| D-PA-17 | **The unique key of the answer store includes the user.** Multiplayer games put several pupils on one `attempt_id`; DM-44's index `(attempt_id, question_id, part_ref)` would collide. | Correctness (DM-PA-03). |
+| D-PA-17 | **The unique key of the answer store includes the user.** Multiplayer games put several pupils on one `attempt_id`; DM-44's index `(attempt_id, question_id, part_ref)` would collide. | Correctness (DM-44). |
 | D-PA-18 | **Games do not create a "Sesi Kuiz".** Their answer rows count in "Soalan Dijawab" and "Ketepatan"; the "Sesi Kuiz" tile counts practice sessions and Bijak sittings only. | Games keep their own session tables; no source says otherwise. |
 
 ## 0. Conventions used in this file
@@ -227,9 +227,9 @@ sequenceDiagram
 A question reaches a pupil only when all of these hold (the S1-T07 servability rule; the admin sees the reason in "Dilihat murid di"):
 
 1. It is approved (Terbit for a paper) and not archived. A draft is never served.
-2. Its stimulus asset exists. A question that cites "Rajah n", "Jadual n" or "Petikan" without the asset is excluded on every surface (FR-MUR-QP-4).
+2. Its stimulus asset exists. A question that cites a stimulus (the reference words and triggers are defined once, in 45 section 6.6.1) without the asset carries the flag `stimulus_missing` (or `figure_only`) and is excluded on every surface (FR-MUR-QP-4).
 3. Its item kind is built for that surface (2.2). A group with one member that a surface cannot render is excluded whole (FR-MUR-QP-7).
-4. A stem is never shown twice. Data with a duplicated stem is flagged and shown once; it is not excluded (FR-MUR-QP-5).
+4. A stem is never shown twice. Data with a duplicated stem is flagged `stem_duplicated` and shown once; it is not excluded. Only `stimulus_missing` and `figure_only` exclude a question (FR-MUR-QP-5, 45 section 6.6.1).
 5. Counts: the number on a card, in the details view and in the draw are the same (D91).
 6. A game additionally needs a text-only approved MCQ (no figure, no group), reason `image_games` (5.1).
 
@@ -261,7 +261,7 @@ The authoring side of each kind is in 45 (per-mode leaf form, G-18). The pupil s
 |---|---|---|---|---|---|
 | `mcq` | Aneka pilihan | all surfaces | Radio group, options A to H (2 to 8). The whole option row is the tap target (at least 44 px). Text, maths and images allowed in an option. A second tap on another option changes the choice until "Semak Jawapan" (drill) or "Hantar" (sitting). After "Semak Jawapan" the group is `aria-disabled` and shows ✅ on the correct option and ❌ on a wrong choice. Keys 1 to 8 or A to H select. Drills shuffle and re-letter per session (the id is the option's identity, mapped back on the server); a sitting keeps the stored order and letters. | no option chosen | Row: `selected_label`, `is_correct`, `time_seconds`; awarded 1 or 0, max 1 |
 | `true_false` | Betul / Salah | all surfaces | The same radio widget with exactly two options, fixed labels in this order: A "Betul", B "Salah". Never shuffled. | no option chosen | As `mcq` |
-| `mcq_multi` | Aneka pilihan (lebih daripada satu jawapan) | **Sitting, Kuiz, Set Soalan Guru, Subjektif, Kertas Subjektif.** **Not** in Latih Tubi, Soalan by Chapter, Databank, Tracking A objective, Remedial, Misi, PKSK, games. | Checkbox group, 3 to 8 options, k correct with 2 <= k <= n-1. Helper line above: "Pilih semua jawapan yang betul." Whole row is the target. Drills of D4 and B2 send all ticked ids at once (`selectedOptionIds[]`, API-PA-02). | no box ticked | Row: `selected_label` holds the comma-joined labels in alphabetical order; awarded by M-MULTI (3.2) |
+| `mcq_multi` | Aneka pilihan (lebih daripada satu jawapan) | **Sitting, Kuiz, Set Soalan Guru, Subjektif, Kertas Subjektif.** **Not** in Latih Tubi, Soalan by Chapter, Databank, Tracking A objective, Remedial, Misi, PKSK, games. | Checkbox group, 2 to 8 options, k correct with 1 <= k <= n-1. Helper line above: "Pilih semua jawapan yang betul." Whole row is the target. Drills of D4 and B2 send all ticked ids at once (`selectedOptionIds[]`, API-PRAC-02 and API-BIJAK-06). | no box ticked | Row: `selected_label` holds the comma-joined labels in alphabetical order; awarded by M-MULTI (3.2) |
 | `match_letter` and **option bank** | Padanan huruf | Sitting, Kuiz paper, Subjektif | One lettered **bank** (A to n, with text or image) is shown **once**, above the gaps or items, inside the stimulus panel so it stays visible; each item has a `Pilih` select whose first option is "—" and then the letters. A letter may be reused. The select closes on choice. | "—" | One row per item (each item is its own leaf with its marks) |
 | `short_text` | Jawapan pendek | Sitting, Subjektif, Kertas Subjektif | One text field (up to 200 characters), or one field per blank when the leaf has `blank_count` (each blank is its own leaf with its marks). No character counter. | empty after trim | Row per blank; awarded by M-SHORT |
 | `numeric` | Nombor | same | Number field (`inputmode="decimal"`) plus a unit select or text field when the key has a unit. Accepts "," or "." as the decimal separator, fractions "1/2", powers, roots, %, pi. The input is never rounded for the pupil. | empty | Row; awarded by M-NUM |
@@ -361,7 +361,7 @@ Rules for every width:
 | Aspect | Rule |
 |---|---|
 | What is saved | Every "Semak Jawapan" writes one row at once (a question can be checked once; a repeat returns the stored result and writes no second row). A choice made but not yet checked lives in memory only. There is no draft text in a drill. |
-| Resume after refresh | At setup the page stores `clientUuid` in `sessionStorage` key `pp:sess:{sessionId}`. Reloading the quiz re-calls `POST /practice/sessions` with the same `clientUuid` and receives the same session and questions (idempotent). The response now carries `answered:[{questionId, selectedLabel, isCorrect}]` and `resumed:true` (API-PA-01). The quiz opens at the first unanswered question and shows once: `Anda menyambung kuiz yang belum selesai.` A `dihantar` session opens the result page. If the stored uuid is lost, a new session starts and the old one is swept after 2 hours. |
+| Resume after refresh | At setup the page stores `clientUuid` in `sessionStorage` key `pp:sess:{sessionId}`. Reloading the quiz re-calls `POST /practice/sessions` with the same `clientUuid` and receives the same session and questions (idempotent). The response now carries `answered:[{questionId, selectedLabel, isCorrect}]` and `resumed:true` (API-PRAC-01). The quiz opens at the first unanswered question and shows once: `Anda menyambung kuiz yang belum selesai.` A `dihantar` session opens the result page. If the stored uuid is lost, a new session starts and the old one is swept after 2 hours. |
 | Offline | Online-only. While `navigator.onLine` is false, "✓ Semak Jawapan" is disabled with the title `Perlukan sambungan internet.` and the banner of the sitting engine shows. If online but the check request fails, it is retried 3 times (1 s, 3 s, 5 s, same `clientUuid`); then the card shows `Jawapan belum dihantar. Cuba Semula.` with **"Cuba Semula"** and **"Langkau"** (ERR-SAVE-06). The pupil cannot move to the next question until the answer is sent or skipped. "Langkau" leaves the question unanswered (no row). There is no queue across reloads in R1. |
 | Leaving | In-app leave: dialog B-050. Closing the tab: the browser's own prompt, only while at least one question is answered. |
 | Abandon sweep (D-PA-8) | A session with no activity for **2 hours** is closed by a job as `ditinggalkan`: rows already written stay and count in every report; **no session reward** (no Syiling, no XP at session level); the session is not listed under "Sesi Kuiz" or in Sejarah; "Masa Belajar" does not include it (the time is unknown). A swept **Kuiz** session writes rows for its checked questions first (D-PA-15), still with no reward. A session whose `timeLimitSec` ended is not "abandoned": it is submitted (2.7). |
@@ -505,10 +505,10 @@ Self-mark is allowed **only on a closed attempt** (`submitted` or `auto_submitte
 2. **Per part card** (paper order; the stimulus once above its member cards): the question and part label; **"Jawapan anda"** (typed text, final answer, step lines, chosen prompt, photo or pad image, filled grid); the **scheme block** "Skema Pemarkahan · {n} markah" (3.3); the verdict chip with "{a}/{m}"; the control **"Markah kendiri:"**.
 3. **By points (scheme kind `points`):** each point row has the tick box "Saya dapat markah ini". Ticking sets the stepper to the capped sum (groups, caps, dependencies and pairs applied). The system suggestion ("Cadangan automatik") is pre-ticked with a dotted outline and the label "Cadangan"; the pupil confirms or changes it. Unticking removes marks.
 4. **By band (scheme kind `rubric`):** a select "Pilih band" listing each band name with its range. Choosing a band sets the stepper to round half up((from + to) / 2). The pupil may then move the stepper inside the band range; the server keeps the mark inside the range (`Band tidak sah untuk bahagian ini.` for an unknown band).
-5. **By criteria (rubric mode "Markah setiap kriteria", for BI Paper 2: Content (C), Communicative Achievement (CA), Organisation (O), Language (L), each 0 to 5):** one stepper per criterion with its descriptors for 0 to 5; the part mark is the sum (20). API `criteria[{id, mark}]` (API-PA-04).
+5. **By criteria (rubric mode "Markah setiap kriteria", for BI Paper 2: Content (C), Communicative Achievement (CA), Organisation (O), Language (L), each 0 to 5):** one stepper per criterion with its descriptors for 0 to 5; the part mark is the sum (20). API `criteria[{id, mark}]` (API-BIJAK-05).
 6. **Stepper:** "−" and "+" buttons of at least 44 px and a numeric input; integer from 0 to the part marks; a typed decimal rounds half up; a negative becomes 0; a value over the maximum is stored as the maximum (AC-MUR-13-22). For a Kertas Subjektif Bahagian marked as a whole the label is **"Markah dinilai sendiri (Bahagian {x}):"** with one stepper for the Bahagian. Without a part budget: `Markah maksimum Bahagian ini belum ditetapkan - hubungi pentadbir.`
 7. **Save:** 500 ms after the last change, with the state "menyimpan…" then "disimpan". The server returns the stored mark, status, recomputed `attemptScore` / `attemptMax`, `provisional` and `pendingReview`; the total "{score} / {max}" refreshes at once.
-8. **Stored:** the same `practice_answers` row (never a second one): `marks_awarded` = the mark, `marks_max` unchanged, `is_correct` = (awarded = max). Per-point ticks and criteria marks are kept in the self-mark detail of the attempt (DM-PA-07). The row updates again on every later change.
+8. **Stored:** the same `practice_answers` row (never a second one): `marks_awarded` = the mark, `marks_max` unchanged, `is_correct` = (awarded = max). Per-point ticks and criteria marks are kept in the self-mark detail of the attempt (DM-25). The row updates again on every later change.
 9. **Reward:** Syiling = rate x the **gain** in marks, XP = 10 x the gain; paid once per part per mark gained; never above full marks; **nothing is taken back** when the pupil lowers the mark (D94, FR-MUR-13-14, AC-MUR-13-7). The gain is measured against the highest total already paid for that part. Examples: 2 → 3 pays 1 mark; 3 → 1 pays nothing; then 1 → 4 pays 1 mark (only the new part above the earlier highest 3). Mod Pelajar pays nothing.
 10. **Provisional ends** when no part is `belum_dimarkah`; the banner disappears.
 
@@ -659,7 +659,7 @@ Cards: S3-T06 (build), S8-T05. Requirements: FR-MUR-13-26..30, FR-PA-24. Mode: `
 |---|---|---|---|
 | 1 | `/kertas-subjektif` "Kertas Subjektif" | Sub "Kertas 2, 3 & 4 percubaan negeri — baca soalan, jawab atas kertas, kemudian buka skema untuk semak sendiri". Papers ordered by Kertas then negeri, grouped by subject (groups by size). Card count "{n} kertas" = the list. | Only Terbit papers; a draft id → 404 (AC-MUR-13-20). Empty `Kertas subjektif sedang dalam penyediaan. Semak semula tidak lama lagi.` |
 | 2 | `/kertas-subjektif/:paperId` | Heading "{Subjek} — Kertas {k}", "{marks_total} markah". The paper as **reflowing text** (not page images) with stimuli inline once, at 375 / 768 / 1280 px, no sideways scroll. Each leaf shows its widget (2.2) where the mode allows typing; the pupil may also answer on paper. Top bar: "Masa berlalu" (count-up, no limit), save state. Bottom bar: **"Hantar & Semak"**. Opening creates or resumes the attempt (kind `subjektif`). | Dialog 2.8 (blank leaves or all blank). |
-| 3 | After **Hantar & Semak** | Button **"Tunjuk Skema Pemarkahan"** becomes enabled (toggle with "Sembunyi"); the scheme is fetched at the press (`GET .../result?scheme=1`, API-PA-08); self-mark per question or per Bahagian: **"Markah dinilai sendiri (Bahagian {x}):"** with a stepper 0 to its marks and the running total. Objective leaves are already marked. | Failure `Skema pemarkahan tidak tersedia untuk kertas ini.` The page source holds no scheme text before the press (AC-MUR-13-21). |
+| 3 | After **Hantar & Semak** | Button **"Tunjuk Skema Pemarkahan"** becomes enabled (toggle with "Sembunyi"); the scheme is fetched at the press (`GET /api/bijak/attempts/:id/result?scheme=1`, API-BIJAK-04); self-mark per question or per Bahagian: **"Markah dinilai sendiri (Bahagian {x}):"** with a stepper 0 to its marks and the running total. Objective leaves are already marked. | Failure `Skema pemarkahan tidak tersedia untuk kertas ini.` The page source holds no scheme text before the press (AC-MUR-13-21). |
 
 **Stored:** as B5 (`subjektif`). **Reports/rewards:** as B5. **Acceptance:** AC-MUR-13-20..23, AC-PA-10. **Reuse:** `m28-bijak-spm/components/{SelfMarkControl,StimulusStack,RichText}.vue`, `m28-bijak-spm/pages/AttemptPage.vue` layout, `apps/api/src/modules/bijak/attempts`.
 
@@ -708,7 +708,7 @@ Cards: S5-T11 (pupil), S6-T14 (teacher). Requirements: FR-MUR-26-1..5, FR-GUR-8b
 | # | Screen | Controls and copy | States |
 |---|---|---|---|
 | 1 | `/set-soalan-saya` ("Set Soalan Guru — PRESTASIPLUS") | Sub "Set soalan yang disediakan oleh guru anda". Cards: title, subject, "{n} soalan", best score. Only **published** sets assigned (explicit classes) to a class the pupil is enrolled in (DM-46); the Dashboard "Set Soalan Dari Cikgu" links here. | Empty "Tiada Set Soalan" / "Guru anda belum menyediakan sebarang set soalan buat masa ini." / "Set soalan akan muncul di sini sebaik sahaja guru anda menerbitkannya." |
-| 2 | `/pelajar/set/:id` play | Drill engine with `mode:'question_set'`, `questionSetId`; options shuffled; whole groups; items archived since publication drop out and the count updates. `mcq_multi` items use ticks sent together (API-PA-02). With `timeLimitSec` the clock counts down and submits at 0 (2.7). | Another class's set or an unknown id: 404 (ERR-ACC-02). A set never listed to a pupil without an assignment. |
+| 2 | `/pelajar/set/:id` play | Drill engine with `mode:'question_set'`, `questionSetId`; options shuffled; whole groups; items archived since publication drop out and the count updates. `mcq_multi` items use ticks sent together (API-PRAC-02). With `timeLimitSec` the clock counts down and submits at 0 (2.7). | Another class's set or an unknown id: 404 (ERR-ACC-02). A set never listed to a pupil without an assignment. |
 | 3 | Result | 3.7. | |
 
 **Reports:** AC-MUR-26-1 (5 rows, mode `question_set`), the teacher's "Hasil" (Penyertaan, Skor Purata, per-class filter), class Prestasi and AS Prestasi +5, Headcount AR (AC-CHAIN-4: Penyertaan 1, Skor Purata 80 for 4 of 5). **Acceptance:** AC-MUR-26-1..5, AC-GUR-8b-*, AC-PA-14. **Reuse:** `m05-practice/pages/QuestionSetQuizPage.vue`, `apps/api/src/modules/classes/question-sets`.
@@ -746,14 +746,14 @@ Every time a pupil answers, or times out on, a bank question in any game, **one 
 | Column | Value |
 |---|---|
 | `mode` | `battle` for Battle, `game` for rooms and solo games |
-| `attempt_id` | the game session uuid: Battle uuid; room: the room's session uuid (not the 6-character code; DM-PA-04); solo: session uuid |
+| `attempt_id` | the game session uuid: Battle uuid; room: the room's session uuid (not the 6-character code; DM-67); solo: session uuid; tournament: `tournament_round_scores.attempt_id` (DM-61) |
 | `part_ref` | `<game_key>#<position>`; game keys: `battle`, `papan-bijak`, `perang-fakta`, `benteng-ilmu`, `perlumbaan-matematik`, `kuiz-relay`, `teka-silang-kata`, `betul-salah`, `cabaran-kilat`, `tembak-jawapan`, `susun-jawapan`, `kad-memori`, `jutawan` |
 | `selected_label` | the chosen option; null on timeout |
 | `is_correct`, `marks_awarded`, `marks_max` | correct = 1, wrong or timeout = 0, max 1 |
 | `time_seconds` | seconds taken |
 | `user_id`, subject, level, Bab, topic, difficulty | copied from the question at answer time |
 
-Rules: a timeout is a wrong answer with a null option. **Never written:** robot answers, answers of "Mod Pelajar", questions a game skipped, results with no bank question (Roda Nasib, the Kad Memori move count). Unique on `(attempt_id, user_id, question_id, part_ref)` so a replay or a second pupil in the same room never collides (D-PA-17, DM-PA-03). Perang Fakta writes one row per vote (correct = the vote matched the truth). Kad Memori writes a row only for each matched pair (correct). Reward events are idempotent per `(game session id, user)`.
+Rules: a timeout is a wrong answer with a null option. **Never written:** robot answers, answers of "Mod Pelajar", questions a game skipped, results with no bank question (Roda Nasib, the Kad Memori move count). Unique on `(attempt_id, user_id, question_id, part_ref)` so a replay or a second pupil in the same room never collides (D-PA-17, DM-44). Perang Fakta writes one row per vote (correct = the vote matched the truth). Kad Memori writes a row only for each matched pair (correct). Reward events are idempotent per `(game session id, user)`.
 
 ### 5.3 Rewards and caps (D-PA-10, FR-PA-30)
 
@@ -790,7 +790,7 @@ Result messages (exact): credited `Anda dapat +{xp} mata dan +{syiling} syiling.
 - Quick Match and Battle Sekolah: the pupil waits in the queue; the client polls every 3 s. Matching order: same subject, type and count, same Tingkatan (unless "Keterlihatan Barisan" is off), oldest first. Battle Sekolah needs a different school.
 - If **no human joins within `battle_bot_fallback_seconds` (30 s)** the server starts the battle with the robot. The pupil sees the name **"Robot PrestasiPlus"** and a chip "Latihan". After `battle_queue_seconds` with no robot allowed: status `expired`, message `Tiada lawan dijumpai.` "Batal" removes the entry at once.
 - Rooms: when `games_room_bots_enabled` and the host polls a `waiting` room below the minimum players, one "Robot {n}" is added per poll until the minimum (each shown with the chip "Robot").
-- A robot **never** uses a real pupil's name, avatar, school or id. The current `SchoolBotPool` (`apps/api/src/modules/games/core/bot-pool.ts`) picks real pupils of the host's school "shown as players" and the Battle opponent is a real identity with pre-drawn answers: **both are removed** and replaced by an anonymous robot with `is_bot = true` (API-PA-06).
+- A robot **never** uses a real pupil's name, avatar, school or id. The current `SchoolBotPool` (`apps/api/src/modules/games/core/bot-pool.ts`) picks real pupils of the host's school "shown as players" and the Battle opponent is a real identity with pre-drawn answers: **both are removed** and replaced by an anonymous robot with `is_bot = true` (API-GAME-03).
 - A battle or room with a robot: no standings, no school ranking, no league points, no "Juara Battle" progress, no win XP; only per-correct XP and play XP (GAME-00). Robot answers write no rows. A real pupil is never used as a robot.
 
 ### 5.5 The games
@@ -817,7 +817,7 @@ Result messages (exact): credited `Anda dapat +{xp} mata dan +{syiling} syiling.
 ### 5.6 Games: edge cases and privacy
 
 - All game state is on the server. A failed action changes nothing and the client retries the same action (idempotent by position). A game session with no activity for **30 minutes** is closed `abandoned`: no reward; answers already written stay. A player with no poll for `games_absent_seconds` times out each round; three consecutive timeouts forfeit.
-- Other pupils appear as first given name plus the initial of the next name (for example "Aisyah B."), never a school. Robots appear as "Robot PrestasiPlus".
+- Other pupils appear by first given name only, no initial and no school (for example "Aisyah"). Robots appear as "Robot PrestasiPlus".
 - Errors: ERR-NET-*, ERR-SYS-01, ERR-RATE-01 (30 starts a minute), ERR-WAL-01; game texts `Soalan tidak mencukupi.`, `Kod bilik tidak sah.`, `Bilik tidak dijumpai.`, `Bilik sudah penuh.`, `Permainan sudah dimulakan.`, `Battle sudah tamat.`, `Masa sudah tamat.`, `Had battle hari ini telah dicapai. Cuba lagi esok.`
 - Result headlines: "Anda menang!", "Anda kalah.", "Seri!", `Lawan menyerah. Anda menang!`, "Anda telah menyerah."
 - Standing rank (human vs human only): wins desc, total score desc, accuracy desc, battles asc, user id asc; top 30 plus the viewer's own row.
@@ -866,7 +866,7 @@ A report that excludes a mode says so in its own caption (none does in R1). Acce
 
 ## 7. Traceability: new requirements, data and API changes, owning cards
 
-Existing IDs (FR-MUR-*, AC-MUR-*, FR-X4-*, AC-CHAIN-*, DM-44..49, API-PRAC-*, API-BIJAK-*, API-GAME-*) are reused unchanged. IDs below are **NEW** (`FR-PA`, `AC-PA`, `DM-PA`, `API-PA`). `DM-PA` and `API-PA` are working names that follow the style of 50 and 60; at merge they take the next free DM and API numbers (50 ends at DM-49, 60 at the API ids above). Card ids are from `docs/plan/r1-development-plan.md`.
+Existing IDs (FR-MUR-*, AC-MUR-*, FR-X4-*, AC-CHAIN-*, DM-44..49, API-PRAC-*, API-BIJAK-*, API-GAME-*) are reused unchanged. IDs below are **NEW** (`FR-PA`, `AC-PA`) except where the table says they extend an existing row. New data items are registered in 50 as DM-66, DM-67, DM-68 (and extend DM-25, DM-38, DM-44); the API changes extend existing 60 rows (API-PRAC-01..03, API-BIJAK-03..06, API-GAME-01..03); no new API IDs. Card ids are from `docs/plan/r1-development-plan.md`.
 
 ### 7.1 New functional requirements
 
@@ -952,14 +952,14 @@ Existing IDs (FR-MUR-*, AC-MUR-*, FR-X4-*, AC-CHAIN-*, DM-44..49, API-PRAC-*, AP
 
 | ID | Change | Card |
 |---|---|---|
-| DM-PA-01 | `practice_sessions.status` check adds `abandoned` (UI word "ditinggalkan"); list queries exclude it. | S5-T15 |
-| DM-PA-02 | `ck_practice_answers_mode` is exactly: `random, chapter, revision, past_year, latih_tubi, ramalan, mission, remedial, question_set, pksk, databank, kuiz, simulasi, tracking_a, subjektif, game` plus the D113 values `structured`, `battle`, `audio_kbat` (`pksk` already exists). Legacy `past_year` and `ramalan` stay valid and are read as `databank` and `tracking_a`. | S5-T15 |
-| DM-PA-03 | The partial unique index of DM-44 becomes `(attempt_id, user_id, question_id, coalesce(part_ref, ''))` where `attempt_id` is not null. | S5-T15 |
-| DM-PA-04 | Checked in `apps/api/prisma/schema/games.prisma`: `GameRoom` has primary key `code` (String, 6 characters) and no uuid, so a code can be reused; `GameSession.id` (uuid) belongs to solo games and `battles` has a uuid. Add to `game_rooms`: `session_id uuid not null default gen_random_uuid() unique`, regenerated each time a room starts (`waiting` to `playing`). `attempt_id` of a room answer row = `game_rooms.session_id`. Battle uses `battles.uuid`; solo uses `game_sessions.id`. | S7-T01 |
-| DM-PA-05 | `battles.counts_for_ranking boolean not null default true`; false for a robot battle. `battle_participants.is_bot` exists. | S7-T01 |
-| DM-PA-06 | New `gamification_settings` keys listed in 5.3 (data rows, no schema change). | S7-T03 |
-| DM-PA-07 | Self-mark detail (`pointsHit[]`, `criteria[]`) stored in the existing self-mark JSON (DM-25), no new table. | S3-T06 |
-| DM-PA-08 | The attempt part-answer JSON gains `choices[]` (mcq_multi), `gaps{}` (cloze), `cells{}` (table_fill) and `topicId` (essay_choice); no migration. | S3-T04 |
+| DM-66 | `practice_sessions.status` check adds `abandoned` (UI word "ditinggalkan"); list queries exclude it; a sweeper job moves a session idle 2 h to `abandoned`. | S5-T15 |
+| DM-44 (extended) | `ck_practice_answers_mode` is exactly the 19 values of 50 section 4.7a: `random, chapter, revision, past_year, latih_tubi, ramalan, mission, remedial, question_set, pksk, databank, kuiz, simulasi, tracking_a, subjektif, structured, battle, audio_kbat, game` (`pksk` already exists as a session mode). Legacy `past_year` and `ramalan` stay valid and are read as `databank` and `tracking_a`. | S5-T15 |
+| DM-44 (extended) | The partial unique index becomes `(attempt_id, user_id, question_id, coalesce(part_ref, ''))` where `attempt_id` is not null. | S5-T15 |
+| DM-67 | Checked in `apps/api/prisma/schema/games.prisma`: `GameRoom` has primary key `code` (String, 6 characters) and no uuid, so a code can be reused; `GameSession.id` (uuid) belongs to solo games and `battles` has a uuid. Add to `game_rooms`: `session_id uuid not null default gen_random_uuid() unique`, regenerated each time a room starts (`waiting` to `playing`). `attempt_id` of a room answer row = `game_rooms.session_id`. Battle uses `battles.uuid`; solo uses `game_sessions.id`; a tournament round uses `tournament_round_scores.attempt_id` (DM-61). | S7-T01 |
+| DM-60 (shared with 48) | `battles.counts_for_ranking boolean not null default true`; false for a robot battle. `battle_participants.is_bot` exists and `user_id` becomes nullable. | S7-T01 |
+| DM-38 (extended) | New `gamification_settings` keys listed in 5.3 (data rows, no schema change). | S7-T04 (rows inserted by S7-T01) |
+| DM-25 (extended) | Self-mark detail (`pointsHit[]`, `criteria[]`) stored in the existing self-mark JSON, no new table. | S3-T06 |
+| DM-68 | The attempt part-answer JSON gains `choices[]` (mcq_multi), `gaps{}` (cloze), `cells{}` (table_fill) and `topicId` (essay_choice), a per-part `rev`, `revealed` and `savedAt`; no migration. | S3-T04 |
 
 Bilingual twins (`_en` columns and `language`) are defined by 45 / G-07 and only consumed here.
 
@@ -967,15 +967,14 @@ Bilingual twins (`_en` columns and `language`) are defined by 45 / G-07 and only
 
 | ID | Change | Extends | Card |
 |---|---|---|---|
-| API-PA-01 | `StartSessionResponse` adds `answered[{questionId, selectedLabel, isCorrect}]` and `resumed`. | API-PRAC-01 | S5-T03 |
-| API-PA-02 | `CheckAnswerRequest` adds `selectedOptionIds[]` (only for `question_set` and Kuiz); the response adds `correctOptionIds[]`. | API-PRAC-02, API-BIJAK-06 | S5-T11 |
-| API-PA-03 | The attempt answers union adds `choices`, `gaps`, `cells`, `topicId`. | API-BIJAK-04 | S3-T04, S1-T09 |
-| API-PA-04 | `self-mark` request adds `pointsHit?: string[]`, `criteria?: {id, mark}[]`; response returns them. | API-BIJAK-05 | S3-T06 |
-| API-PA-05 | Session sweeper job (no route): idle 2 h to `abandoned`; Kuiz sweep writes rows; `GET /practice/sessions` excludes `abandoned`. | API-PRAC-03 | S5-T03 |
-| API-PA-06 | `GET /api/battle/arena/:uuid` returns `roundEndsAt`; battle and room views return `isBot` / "Robot PrestasiPlus" labels; real-pupil bot pool removed. | API-GAME-01, 03 | S7-T01 |
-| API-PA-07 | Game result view returns `reward {xp, syiling, capped, reason}`. | API-GAME-01..03 | S7-T01 |
-| API-PA-08 | `GET /api/bijak/attempts/:id/result?scheme=1` returns the scheme for a closed Kertas Subjektif attempt; without it the scheme is omitted for that lane. | API-BIJAK-04 | S3-T06 |
-| API-PA-09 | The pupil generate call and the Jana Kertas read answer 404 (D112). | API-BIJAK-03 | S3-T07 |
+| API-PRAC-01 (extended) | `StartSessionResponse` adds `answered[{questionId, selectedLabel, isCorrect}]` and `resumed`. | API-PRAC-01 | S5-T03 |
+| API-PRAC-02 and API-BIJAK-06 (extended) | `CheckAnswerRequest` adds `selectedOptionIds[]` (only for `question_set` and Kuiz); the response adds `correctOptionIds[]`. | API-PRAC-02, API-BIJAK-06 | S5-T11 |
+| API-BIJAK-04 (extended) | The attempt answers union adds `choices`, `gaps`, `cells`, `topicId` (DM-68); `GET /api/bijak/attempts/:id/result?scheme=1` returns the scheme for a closed Kertas Subjektif attempt; without it the scheme is omitted for that lane. | API-BIJAK-04 | S3-T04 (answers union), S3-T06 (result scheme) |
+| API-BIJAK-05 (extended) | `self-mark` request adds `pointsHit?: string[]`, `criteria?: {id, mark}[]`; response returns them. | API-BIJAK-05 | S3-T06 |
+| API-PRAC-03 (extended) | Session sweeper job (no route): idle 2 h to `abandoned`; Kuiz sweep writes rows; `GET /practice/sessions` excludes `abandoned`. | API-PRAC-03 | S5-T03 |
+| API-GAME-03 and API-GAME-01 (extended) | `GET /api/battle/arena/:uuid` returns `roundEndsAt`; battle and room views return `isBot` / "Robot PrestasiPlus" labels; real-pupil bot pool removed. | API-GAME-01, 03 | S7-T01 |
+| API-GAME-01..03 (extended) | Game result view returns `reward {xp, syiling, capped, reason}`. | API-GAME-01..03 | S7-T01 |
+| API-BIJAK-03 (extended) | The pupil generate call and the Jana Kertas read answer 404 (D112). | API-BIJAK-03 | S3-T07 |
 
 ## 8. Improve-not-rebuild map
 
@@ -985,7 +984,7 @@ Bilingual twins (`_en` columns and `language`) are defined by 45 / G-07 and only
 | Sitting (B1, B5, B6, B4-Bahasa) | `m28-bijak-spm/pages/{AttemptPage,ResultPage,PaperCoverPage,PaperQuizPage,HistoryPage}.vue`, `components/*`, `lib/autosave.ts`; `apps/api/src/modules/bijak/attempts/**` | widgets, bilingual, scheme points, criteria, Kertas Subjektif route | a separate Subjektif attempt table; a second self-mark route; a paper viewer outside `AttemptPage` layout |
 | Display | `src/components/question-display/{AnswerWidget,McqOptions,TextAnswer,EssayAnswer,StimulusGroup,StimulusFigure}.vue`, `m28-bijak-spm/components/{PartInput,StimulusView,SelfMarkControl,MathField,MathKeyboard}.vue` | gap widget, drawing pad, table grid, language toggle, option bank | a parallel widget set per module |
 | Marking | `packages/exam-core/src/{grading,math-expr,choose-n,types}.ts`; `apps/api/src/modules/bijak/attempts/{marking,self-mark,exam-core.adapter}.ts` | M-MULTI, `true_false`, table_fill suggestion, pointsHit, criteria | a client-side grader; a new keyword matcher |
-| Answer store | `apps/api/src/modules/practice/practice.repository.ts`, `prisma/schema/practice.prisma`, `bijak/integration/*` | `AnswerLogPort`, columns of DM-44, DM-PA-01..03 | any other answer table; a report reading `practice_attempt_aggregates` for answers |
+| Answer store | `apps/api/src/modules/practice/practice.repository.ts`, `prisma/schema/practice.prisma`, `bijak/integration/*` | `AnswerLogPort`, columns of DM-44, DM-66 | any other answer table; a report reading `practice_attempt_aggregates` for answers |
 | Games | `src/modules/m16-battle-games/**`, `apps/api/src/modules/{games,battle,gamification}/**` incl. `games/core/{game-questions.service,wallet-rewards}.ts`, `battle/arena/arena.service.ts` | answer writes, robot label, reward formula, settings | a game-specific answer table; real-pupil bots |
 | Reports | `reports/analytics`, `reports/kirkpatrick`, `heatmap`, `command-center` | read all modes (S10) | a Bijak-only aggregate read |
 | Hub and history | `m06-spm/pages/{SpmHubPage,HistoryPage}.vue`, `spm/hub.service.ts` | Kertas Subjektif card, years, counts | a second hub |
@@ -1000,8 +999,8 @@ Bilingual twins (`_en` columns and `language`) are defined by 45 / G-07 and only
 
 - **FR-PA (34):** 01 S5-T03/S3-T04/S7-T01; 02 S1-T09; 03 S8-T02; 04 S8-T03; 05 S8-T03; 06 S8-T03; 07 S8-T03; 08 S8-T03; 09 S8-T03; 10 S8-T03; 11 S5-T03; 12 S5-T03; 13 S5-T03; 14 S8-T04; 15 S8-T04; 16 S3-T04; 17 S3-T04; 18 S3-T06; 19 S3-T06; 20 S3-T06; 21 S3-T04; 22 S3-T05; 23 S5-T15; 24 S3-T06; 25 S5-T11; 26 S5-T03; 27 S10-T01; 28 S7-T01; 29 S7-T01; 30 S7-T03; 31 S7-T01; 32 S7-T01; 33 S7-T01; 34 S3-T07.
 - **AC-PA (36):** 01 S5-T15; 02 S5-T03; 03 S8-T02; 04 S8-T03; 05 S8-T03; 06 S8-T03; 07 S3-T04; 08 S3-T04; 09 S3-T05; 10 S3-T06; 11 S3-T04; 12 S5-T03; 13 S5-T03; 14 S5-T11; 15 S5-T03; 16 S8-T03; 17 S8-T03; 18 S3-T06; 19 S3-T06; 20 S3-T04; 21 S8-T04; 22 S8-T04; 23 S5-T15; 24 S5-T03; 25 S10-T01; 26 S7-T01; 27 S7-T01; 28 S7-T03; 29 S7-T01; 30 S7-T01; 31 S7-T01; 32 S3-T07; 33 S3-T07; 34 S3-T05; 35 S1-T09; 36 S5-T01.
-- **DM-PA (8):** 01 S5-T15; 02 S5-T15; 03 S5-T15; 04 S7-T01; 05 S7-T01; 06 S7-T03; 07 S3-T06; 08 S3-T04.
-- **API-PA (9):** 01 S5-T03; 02 S5-T11; 03 S3-T04; 04 S3-T06; 05 S5-T03; 06 S7-T01; 07 S7-T01; 08 S3-T06; 09 S3-T07.
+- **DM in this file:** DM-66 S5-T15; DM-67 S7-T01; DM-68 S3-T04; DM-60 shared with 48 (S7-T01). Extended rows keep their owners: DM-44 S5-T15, DM-38 S7-T04 (rows inserted by S7-T01), DM-25 S3-T06.
+- **API:** no new IDs; the changes extend API-PRAC-01 (S5-T03), API-PRAC-02 and API-BIJAK-06 (S5-T11), API-BIJAK-04 (S3-T04, S3-T06), API-BIJAK-05 (S3-T06), API-PRAC-03 (S5-T03), API-GAME-01..03 (S7-T01) and API-BIJAK-03 (S3-T07).
 
 ### 9.3 Chain coverage
 
@@ -1009,27 +1008,27 @@ AC-CHAIN-1: D1, D2, Databank path; AC-CHAIN-2: B1; AC-CHAIN-3: B4, B5; AC-CHAIN-
 
 ### 9.4 Decisions (all final)
 
-D-PA-1..19 are decisions, not options. D-PA-12 to D-PA-18 are confirmed (D113). D-PA-5 (essay_choice served) replaces K17. Every item marked "(R1 copy, D113)" is the final R1 copy: language-toggle labels ("BM + English", "Bahasa Melayu", "English"), the Papan Lukisan tool names, the navigator shapes, the Kertas Subjektif all-blank dialog, the Mod Latihan lock text, the Databank default count 10, the Jutawan 60 s clock and the "Subjek Elektif" heading. Mode values are exactly those of DM-PA-02. The room session id is DM-PA-04. Papan Lukisan is part of R1 (draw over the template, save, photo fallback). The games audit rules in 5.2 to 5.4 are normative and are merged into 10 section 4.4a by the change list below.
+D-PA-1..19 are decisions, not options. D-PA-12 to D-PA-18 are confirmed (D113). D-PA-5 (essay_choice served) replaces K17. Every item marked "(R1 copy, D113)" is the final R1 copy: language-toggle labels ("BM + English", "Bahasa Melayu", "English"), the Papan Lukisan tool names, the navigator shapes, the Kertas Subjektif all-blank dialog, the Mod Latihan lock text, the Databank default count 10, the Jutawan 60 s clock and the "Subjek Elektif" heading. Mode values are exactly those of the DM-44 check list (50 section 4.7a). The room session id is DM-67. Papan Lukisan is part of R1 (draw over the template, save, photo fallback). The games audit rules in 5.2 to 5.4 are normative and are merged into 10 section 4.4a by the change list below.
 
 ### 9.5 Changes the other documents must make
 
 | # | File | Item | Change |
 |---|---|---|---|
-| 1 | 10-murid | FR-MUR-13-20 and section B tab "Jana Kertas" | Delete the requirement and the tab text (D112); `/spm/bijak` has one list. |
-| 2 | 30-admin-pusat | section 1.4 | State that pupil Jana Kertas is out of R1 (D112). |
-| 3 | 60-api-contract | API-BIJAK-03 | Mark "pupil: 404 in R1"; add API-PA-01..09. |
-| 4 | 50 | section 4.7a Tracking A row | Replace "a Bijak-style attempt" with: objective = practice session `ramalan`, rows `tracking_a`; Bahasa = Subjektif attempt, rows `tracking_a`. |
-| 5 | plan | card S3-T05 | Same wording as item 4. |
-| 6 | 10-murid | FR-MUR-13-14 | Add: Mod Latihan pays only parts never opened with "Semak" (D-PA-13). |
-| 7 | 10-murid | FR-MUR-13-28, 13-29 | Add: the scheme button is enabled after "Hantar & Semak" (D-PA-14). |
-| 8 | 10-murid | section 4.6 item 3, F-129, B-108, B-109, K17, OPT-QTYPE | `drawing`, `table_fill`, `essay_choice` are served as in 2.2; K17 is withdrawn. |
-| 9 | 10-murid | FR-MUR-13-10, section 4.6 item 8 | Change "1 s debounce" to "800 ms debounce". |
-| 10 | 50 | DM-44 unique index | Add `user_id` (DM-PA-03); add DM-PA-01..08. |
-| 11 | 50 | registry of `practice_answers.mode` | Use the DM-PA-02 list exactly; Soalan Berstruktur = `structured`, Battle = `battle`. |
-| 12 | 10-murid | FR-MUR-17-3 | Replace `spm_mock` / `spm_ramalan` with `structured` / `tracking_a`. |
-| 13 | 10-murid | section 4.4a (new) | Merge the games audit GAME-00..25 and the settings of 5.3. |
-| 14 | 40-cross-cutting | section X10 and section X9 | Merge the ERR catalogue; add AC-CHAIN-10 (9.7). |
-| 15 | 10-murid | A1 session modes (OPT-MODE-SESI) | Add `databank`, `kuiz`, `simulasi`, `tracking_a`, `structured`, `subjektif`, `battle`, `game`, `audio_kbat` with BM names. |
+| 1 | 10-murid | FR-MUR-13-20 and section B tab "Jana Kertas" | Delete the requirement and the tab text (D112); `/spm/bijak` has one list. **Applied in 10 (T1).** |
+| 2 | 30-admin-pusat | section 1.4 | State that pupil Jana Kertas is out of R1 (D112). **Applied in 30 (T3).** |
+| 3 | 60-api-contract | API-BIJAK-03 | Mark "pupil: 404 in R1"; the API changes of 7.4 extend existing rows. **Applied in 60 (T5: G-7 and the section 4.2 extensions).** |
+| 4 | 50 | section 4.7a Tracking A row | Replace "a Bijak-style attempt" with: objective = practice session `ramalan`, rows `tracking_a`; Bahasa = Subjektif attempt, rows `tracking_a`. **Applied in 50 (T5: F-7).** |
+| 5 | plan | card S3-T05 | Same wording as item 4. Not yet applied: the plan (card S3-T05 line) still says "a Bijak-style attempt" (plan owner T6). |
+| 6 | 10-murid | FR-MUR-13-14 | Add: Mod Latihan pays only parts never opened with "Semak" (D-PA-13). **Applied in 10 (T1).** |
+| 7 | 10-murid | FR-MUR-13-28, 13-29 | Add: the scheme button is enabled after "Hantar & Semak" (D-PA-14). **Applied in 10 (T1).** |
+| 8 | 10-murid | section 4.6 item 3, F-129, B-108, B-109, K17, OPT-QTYPE | `drawing`, `table_fill`, `essay_choice` are served as in 2.2; K17 is withdrawn. **Applied in 10 (T1).** |
+| 9 | 10-murid | FR-MUR-13-10, section 4.6 item 8 | Change "1 s debounce" to "800 ms debounce". **Applied in 10 (T1).** |
+| 10 | 50 | DM-44 unique index | Add `user_id` (DM-44); add DM-66, DM-67, DM-68 and extend DM-25, DM-38, DM-44. **Applied in 50 (T5: F-3, section 4.9).** |
+| 11 | 50 | registry of `practice_answers.mode` | Use the DM-44 check list of 7.3 exactly (19 values); Soalan Berstruktur = `structured`, Battle = `battle`. **Applied in 50 (T5: F-6) and in 40 (OPT-MODE-SESI, T4c).** |
+| 12 | 10-murid | FR-MUR-17-3 | Replace `spm_mock` / `spm_ramalan` with `structured` / `tracking_a`. **Applied in 10 (T1).** |
+| 13 | 10-murid | section 4.4a (new) | Merge the games audit GAME-00..25 and the settings of 5.3. **Applied in 10 (T1: section 4.4a).** |
+| 14 | 40-cross-cutting | section X10 and section X9 | Merge the ERR catalogue; add AC-CHAIN-10 (9.7). **Applied in 40 (T4c).** |
+| 15 | 10-murid | A1 session modes (OPT-MODE-SESI) | Add `databank`, `kuiz`, `simulasi`, `tracking_a`, `structured`, `subjektif`, `battle`, `game`, `audio_kbat` with BM names. **Applied in 10 (T1) and 40 (T4c).** |
 
 ### 9.6 Dependencies outside this file (decided owners)
 

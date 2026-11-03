@@ -11,7 +11,7 @@ Complete, buildable specification of every game and gamification mechanic of Pre
    - `[V2]` = observed on prestasiplus.cloud. `[SRS]` = V1/V2 SRS in the repo.
 3. **Time zone.** Every day, week, month, reset, streak, daily limit and cap uses **Asia/Kuala_Lumpur** (UTC+8, no daylight saving). Day = 00:00:00.000 to 23:59:59.999. Week = Monday 00:00 to Sunday 23:59:59.999. Month = calendar month. All server timestamps are stored UTC; the day key is `date(at AT TIME ZONE 'Asia/Kuala_Lumpur')` [CODE `standings.windows.ts:11-30`, `wallet/streak.service.ts:18`].
 4. **Word "syiling"** = coin, **"token"** = shop token, **"mata"** = XP. A pupil is a minor: first names only on boards, no real-money language anywhere, published odds.
-5. **ID scheme.** New requirement IDs are `FR-GM-<section>.<n>` and `AC-GM-<section>.<n>` where `<section>` is `00`, `01`..`25`, `R` (common room rules, GAME-02..07) or `S` (common solo rules, GAME-08..12). New data items continue the data model from **DM-50**; new routes continue `API-GAME-11` and `API-ADM-23`; new errors are `ERR-GAME-nn` (catalogue in 3.8, to be merged into the cross-cutting catalogue of `40-cross-cutting.md`). Existing IDs are never renumbered.
+5. **ID scheme.** New requirement IDs are `FR-GM-<section>.<n>` and `AC-GM-<section>.<n>` where `<section>` is `00`, `01`..`25`, `R` (common room rules, GAME-02..07) or `S` (common solo rules, GAME-08..12). New data items are DM-60..DM-65 and DM-67 (DM-50..DM-59 belong to 45); new routes are API-GAME-11..14 and API-ADM-23..25; new errors are `ERR-GAME-nn` (catalogue in 3.8, to be merged into the cross-cutting catalogue of `40-cross-cutting.md`). Existing IDs are never renumbered.
 6. **Owning cards.** All cards are in `docs/plan/r1-development-plan.md` section 4.S7 unless stated. S7-T01 grows from "S / Verify" to "XL / Complete" because the audit found that no game writes the answer store and the multiplayer is simulated; the card may be worked in the parts named in each section ("S7-T01 part GAME-01").
 7. **Test accounts (Mod Pelajar).** A teacher or admin in Mod Pelajar may play every game but gets no reward, no standing, no board row, no badge and no `practice_answers` row (the account is `is_test`).
 8. **Hard rules inherited from the PRD** (`10-murid.md` 4.3, 4.4, 4.6): the Syiling rate is the admin setting, never a game constant; game questions are approved, servable, text-only MCQ; the display name is the first given name only; a game result without a bank question writes no answer row.
@@ -34,7 +34,7 @@ Complete, buildable specification of every game and gamification mechanic of Pre
 
 Admin Pusat only changes these values (FR-ADM-H0.3: every write is audited with actor, time, before and after). A change applies only to events after the save; past ledger rows are never recalculated.
 
-**Storage.** The keys `flat_quiz_reward`, `games_award_syiling`, `reward_budget_sen_session` and `current_session_year` live in `reward_settings` (DM-48, migration `0223_s7_reward_settings`, owner S7-T05; the contract alias of `games_award_syiling` is `reward_settings.mini_games_give_coins`; `flat_quiz_reward` is `reward_settings.coins_per_correct`, API-ADM-16 `flatCoins`). Every other key lives in the existing `gamification_settings` key/value table (DM-38) and is inserted with its default by migration `0224_s7_game_engine` (owner S7-T01, together with DM-50 and DM-54). The other new data items have their own migrations: `0225_s7_league_tournament` (DM-51, DM-52, S7-T06), `0226_s7_challenge_claims` (DM-53, S7-T04), `0227_s7_draw_status` (DM-55, S7-T07). One setting has one place; no key is stored twice.
+**Storage.** The keys `flat_quiz_reward`, `games_award_syiling`, `reward_budget_sen_session` and `current_session_year` live in `reward_settings` (DM-48, migration `0223_s7_reward_settings`, owner S7-T05; the contract alias of `games_award_syiling` is `reward_settings.mini_games_give_coins`; `flat_quiz_reward` is `reward_settings.coins_per_correct`, API-ADM-16 `flatCoins`). Every other key lives in the existing `gamification_settings` key/value table (DM-38) and is inserted with its default by migration `0224_s7_game_engine` (owner S7-T01, together with DM-60 and DM-64). The other new data items have their own migrations: `0225_s7_league_tournament` (DM-61, DM-62, S7-T06), `0226_s7_challenge_claims` (DM-63, S7-T04), `0227_s7_draw_status` (DM-65, S7-T07). One setting has one place; no key is stored twice.
 
 **Screens.** "Tetapan Permainan" = N-05 `/admin/permainan` (new card "Ganjaran & Had Permainan" below the Papan Bijak card). "Kawalan Reward" = P2-09 `/admin/reward-control`. "Tetapan Gamifikasi" = P2-06 `/admin/gamification/settings`. "Tier Config" = P2-02. "Cabutan" = P2-10. "Kotak Misteri" = P2-11. Out-of-range input is refused with ERR-REQ-15 "Nilai mesti antara {min} dan {max}." and nothing is saved.
 
@@ -98,7 +98,7 @@ Applies to GAME-01..15 unless a section says otherwise. Matrix rows: 21 (and 22,
 - **Rate limits.** Keep `GAMES_LIMITS` [CODE `games.constants.ts:13-19`] unchanged. Solo starts: 30 per minute per pupil (429 ERR-RATE-01 "Terlalu banyak percubaan. Sila cuba sebentar lagi.").
 
 ### 3.2 Question selection (groups whole)
-1. **Source.** Approved, servable, text-only MCQ (single correct option, 3-8 options) of status "approved" in the bank (owner M04); level within Tingkatan 1-5; the same predicate as the pupil drill pool (D91) [CODE `games/core/game-questions.service.ts`]. Draft, review, archived, hidden and flagged questions never appear (AC-MUR-21-2).
+1. **Source.** Approved, servable, text-only MCQ (single correct option, 2-8 options per the MCQ rule of 45 and DM-69; Cabaran Kilat and Tembak Jawapan keep their own 4-option rule stated in their sections) of status "approved" in the bank (owner M04); level within Tingkatan 1-5; the same predicate as the pupil drill pool (D91) [CODE `games/core/game-questions.service.ts`]. Draft, review, archived, hidden and flagged questions never appear (AC-MUR-21-2).
 2. **Groups whole.** A question that belongs to a stimulus group, or that has a figure, table, audio or image, is **never served by any game**: a group may not be split (ERR-QST-02), and games show one question alone, so the whole group is excluded, never one member. The admin sees the reason `image_games` in N-05 (FR-ADM-N05.3). Tournament `exam_paper` mode skips such a question together with its whole group.
 3. **Difficulty mix.** Unless a section says otherwise: 30% difficulty 1-2, 40% difficulty 3, 30% difficulty 4-5 of the draw size, each rounded to the nearest whole question with the remainder given to difficulty 3; if a band is short, fill from the nearest band. Order inside the game: shuffled by a server random seed saved with the session. †
 4. **No repeats.** A session never shows a question twice. Across sessions, the server first excludes questions the pupil answered in any game in the last 14 days when the eligible pool is at least 3 times the draw size; otherwise it allows repeats. †
@@ -127,12 +127,12 @@ Applies to GAME-01..15 unless a section says otherwise. Matrix rows: 21 (and 22,
 
 ### 3.5 Answer store (`practice_answers`)
 Every time a pupil answers or times out on a bank question in any game, **one `practice_answers` row** is written (DM-44, `AnswerLogPort` of `practice/`; no second table):
-- `mode = 'game'`; `attempt_id` = the game session id (Battle: the battle uuid; room: room code + `:` + the start timestamp in ms; solo: the session uuid; tournament: the round entry id);
+- `mode = 'battle'` for Battle Arena rows and `mode = 'game'` for every other game; `attempt_id` (uuid) = the game session id: Battle: the battle uuid; room: `game_rooms.session_id` (DM-67); solo: the session uuid; tournament: `tournament_round_scores.attempt_id` (DM-61);
 - `part_ref = '<game_key>#<position>'` with position starting at 1; game keys: `battle`, `papan-bijak`, `perang-fakta`, `benteng-ilmu`, `perlumbaan-matematik`, `kuiz-relay`, `teka-silang-kata`, `betul-salah`, `cabaran-kilat`, `tembak-jawapan`, `susun-jawapan`, `kad-memori`, `jutawan`, `tournament` †;
 - selected option (null on timeout), `is_correct`, seconds taken (decimal, 1 place), `marks_awarded` 1 or 0, `marks_max` 1, subject, chapter and dimensions copied at answer time like every mode;
-- written **in the same transaction** as the game state change; unique on (`attempt_id`, `question_id`, `part_ref`) (INV-33) so a replay writes nothing twice.
+- written **in the same transaction** as the game state change; unique on (`attempt_id`, `user_id`, `question_id`, `part_ref`) (INV-33, DM-44) so a replay writes nothing twice and several pupils can share one `attempt_id`.
 
-Never written: robot answers; answers of Mod Pelajar accounts; questions the game skipped. A game result without a bank question (Roda Nasib; Kad Memori move count) writes no row. For Perang Fakta the row is the source MCQ with `is_correct` = the vote was right; for Teka Silang Kata and Susun Jawapan the row is the source MCQ with `is_correct` = the typed or built answer equals the correct option text (rule in each section). Mode `game` rows count in "Soalan Dijawab" (+1 each), accuracy, Heatmap, Analisa Item and every report (FR-X4-5).
+Never written: robot answers; answers of Mod Pelajar accounts; questions the game skipped. A game result without a bank question (Roda Nasib; Kad Memori move count) writes no row. For Perang Fakta the row is the source MCQ with `is_correct` = the vote was right; for Teka Silang Kata and Susun Jawapan the row is the source MCQ with `is_correct` = the typed or built answer equals the correct option text (rule in each section). Rows of mode `battle` and `game` count in "Soalan Dijawab" (+1 each), accuracy, Heatmap, Analisa Item and every report (FR-X4-5).
 
 ### 3.6 Multiplayer integrity, disconnect and robots
 - **Humans first.** A game seat is filled by a real pupil; a robot is added only by the rules of GAME-01 and GAME-R. The robot is a participant with `is_bot = true`, `user_id = null`, name "Robot PrestasiPlus" (in a room with several robots "Robot PrestasiPlus 1", "Robot PrestasiPlus 2"), avatar a fixed robot icon, no school. Robot answers are generated: correct with probability `battle_bot_accuracy_pct`, after a random 2-12 s (never beyond the question time). Robot answers are not written to `practice_answers`.
@@ -214,7 +214,7 @@ Rule for all game screens: a load failure shows `dsCopy.loadError` "Tidak dapat 
 - **FR-GM-00.2** Game questions follow 3.2 (approved servable text MCQ, no stimulus-group or figure question, difficulty mix, no repeats).
 - **FR-GM-00.3** The reward formula of 3.4 is the only source of game XP and syiling; the constants of 3.7 "Replaced" are deleted from code and mocks.
 - **FR-GM-00.4** No robot or fake participant carries a real pupil's identity, answers or user id; `bot-pool.ts` is deleted.
-- **FR-GM-00.5** Every answered or timed-out bank question writes one `practice_answers` row of mode `game` as in 3.5.
+- **FR-GM-00.5** Every answered or timed-out bank question writes one `practice_answers` row as in 3.5 (mode `battle` for Battle Arena, mode `game` with the game key in `part_ref` for every other game).
 - **FR-GM-00.6** Daily caps and the pace guard of 3.4 apply to every game, and a replay never credits twice.
 - **FR-GM-00.7** All clocks are server-side; an unpolled session closes `abandoned` after 30 minutes.
 - **FR-GM-00.8** Boards and rooms show other pupils by display name only (section 3.10).
@@ -311,7 +311,7 @@ The enum `BATTLE_STATUSES` (`active`, `finished`, `forfeited`, `abandoned`) is k
 
 **Errors.** ERR-GAME-01..05, ERR-AUTH-01 (timed session: the pupil's answers are saved, see ERR-AUTH-01 dialog), ERR-NET-01 (banner; the round continues server-side), plus code messages kept: "Giliran tidak dijumpai.", "Cabaran tidak dijumpai.", "Ralat menghantar permohonan.", "Penerima tidak sah." [CODE `battle/schema.ts:43-72`].
 
-**Data.** `battles`, `battle_participants` (`is_bot` exists; `user_id` becomes nullable), `battle_answers` (kept as the per-battle log), `battle_queue`, `battle_invitations` exist. DM-50: `battles.counts_for_ranking boolean not null default true`. Each answer also writes `practice_answers` (3.5, game key `battle`, `attempt_id` = battle uuid).
+**Data.** `battles`, `battle_participants` (`is_bot` exists; `user_id` becomes nullable), `battle_answers` (kept as the per-battle log), `battle_queue`, `battle_invitations` exist. DM-60: `battles.counts_for_ranking boolean not null default true`. Each answer also writes `practice_answers` (3.5, mode `battle`, game key `battle` in `part_ref`, `attempt_id` = battle uuid).
 
 **API.** Existing API-GAME-03 and API-GAME-04. Changes: `GET /api/battle/arena/:uuid` returns `roundEndsAt`, `round`, `totals` and the opponent label (display name or "Robot PrestasiPlus"); the search endpoint is restricted to the same school. NEW API-GAME-14 `POST /api/battle/queue/:queueId/cancel` (the "Batal" of the overlay).
 
@@ -336,7 +336,7 @@ The enum `BATTLE_STATUSES` (`active`, `finished`, `forfeited`, `abandoned`) is k
 - AC-GM-01.5 Given no match and no robot (`battle_bot_fallback_seconds` = 0), when 120 s pass, then the screen shows "Tiada lawan dijumpai.".
 - AC-GM-01.6 Given a pupil types "ai" in Cabar Kawan, then at most 10 pupils of the pupil's own school appear, each as a display name only; typing 1 character shows no result.
 - AC-GM-01.7 Given a player does not poll for 3 rounds, then the battle is `forfeited` and the other player sees "Lawan menyerah. Anda menang!".
-- AC-GM-01.8 Given a 10-question battle where the pupil answers 6 correct and wins, with `games_award_syiling` = Tidak, then XP = 6 x 10 + 20 = 80 and syiling are unchanged; `practice_answers` has 10 rows with `part_ref` `battle#1`..`battle#10`.
+- AC-GM-01.8 Given a 10-question battle where the pupil answers 6 correct and wins, with `games_award_syiling` = Tidak, then XP = 6 x 10 + 20 = 80 and syiling are unchanged; `practice_answers` has 10 rows of mode `battle` with `part_ref` `battle#1`..`battle#10`.
 - AC-GM-01.9 Given the 21st Quick Match of a MYT day, then the start is refused with "Had battle hari ini telah dicapai. Cuba lagi esok.".
 - AC-GM-01.10 Given pupils A (3 wins, score 9000) and B (3 wins, score 9500), then B ranks above A in Ranking Pelajar.
 - AC-GM-01.11 Given 375 px, then the three match cards stack, the overlay fits and the answer buttons are at least 44 px high.
@@ -374,7 +374,7 @@ Only the host starts the game (ERR-GAME-10); the minimum player count includes r
 
 **Messages kept** [CODE `GAMES_MESSAGES` `common.ts:115-169`]: "Hanya hos boleh memulakan permainan.", "Permainan sudah dimulakan.", "Pemain belum mencukupi.", "Soalan tidak mencukupi.", "Bukan giliran anda.", "Bukan giliran anda untuk gulung dadu.", "Soalan tidak sah.", "Pilihan tidak sah.", "Masa tidak sah.", "Tindakan tidak sah.", "Soalan tidak sepadan.", "Jawapan tidak sah.", "Permainan belum bermula.", "Tiada soalan untuk dijawab.", "Tiada jam untuk permainan ini.", "Permainan tidak dijumpai.", "Bilik tidak dijumpai.", "Tahap soalan tidak sah.", "Julat tahap tidak sah.", "Bilangan pemain tidak sah.".
 
-**Data and API.** Existing room tables and API-GAME-01. DM-50 does not apply here. Robots are participants with `is_bot = true` and `user_id = null`. Standing rows exist (`settlement.ts:83-87` gives standings only to the acting human: replace by the rule above). Do not build: private chat, voice, invitations by name (only the code), spectators.
+**Data and API.** Existing room tables and API-GAME-01. DM-60 does not apply here. Robots are participants with `is_bot = true` and `user_id = null`. Standing rows exist (`settlement.ts:83-87` gives standings only to the acting human: replace by the rule above). Do not build: private chat, voice, invitations by name (only the code), spectators.
 
 **Requirements.**
 - FR-GM-R.1 Room codes are 6 characters A-Z0-9; a wrong format is refused client-side with "Kod bilik tidak sah.".
@@ -629,7 +629,7 @@ Expected value = 0.25 x 1 + 0.20 x 3 + 0.15 x 5 + 0.08 x 10 + 0.03 x 20 + 0.10 x
 **Copy.** Button `Putar Roda` †; result "Anda dapat {label}!"; for "Cuba Lagi" "Cuba lagi esok!"; error "Anda sudah spin hari ini.".
 **Admin.** Rows editable in N-05 "Segmen Roda Nasib": exactly 8 rows, integer weights summing to 100, else "Jumlah berat mesti 100." Labels up to 20 characters; syiling 0-100.
 **Errors.** ERR-GAME-15; Mod Pelajar ERR-GAME-26.
-**Data/API.** DM-54 `spin_segments`; existing `spin` table and API-GAME-02; NEW API-ADM-23 `GET/PUT /api/admin/games/spin-segments`.
+**Data/API.** DM-64 `spin_segments`; existing `spin` table and API-GAME-02; NEW API-ADM-23 `GET/PUT /api/admin/games/spin-segments`.
 **Reuse.** `games/solo/spin.rules.ts`, `spin.service.ts`. Do not build extra spins, paid spins or a streak bonus.
 - FR-GM-14.1 One spin per pupil per MYT day, drawn on the server.
 - FR-GM-14.2 Segments and weights are admin rows (8, total 100); defaults as the table.
@@ -685,7 +685,7 @@ stateDiagram-v2
 - Errors (exact): "Tournament tidak dijumpai.", "Tajuk tournament diperlukan.", "Sila pilih tahap pendidikan.", "Format tidak sah.", "Sila pilih sumber soalan.", "Tarikh tutup mesti selepas tarikh buka." [CODE]; new "Pendaftaran belum dibuka.", "Pendaftaran sudah ditutup.", "Anda sudah mendaftar.", "Tahap anda tidak layak untuk tournament ini.", "Pusingan belum dibuka.", "Pusingan sudah tamat.", "Anda sudah bermain pusingan ini." †.
 - Admin (P2-14): create (existing), `PUT` edit before registration opens, `Buka Pendaftaran`, `Batal`, results; the form offers only the two formats.
 
-**Data.** Existing `leagues`, `league_schools`, `league_standings`, `tournaments`. NEW DM-51 `tournament_rounds` (tournament_id, n, opens_at, closes_at, question_ids), `tournament_entries` (tournament_id, user_id, school_id, registered_at; unique (tournament_id, user_id)), `tournament_round_scores` (round_id, user_id, score, correct, answered, total_ms, started_at, finished_at; unique (round_id, user_id)); DM-52 `league_standings.recomputed_at` and `leagues.frozen_at`.
+**Data.** Existing `leagues`, `league_schools`, `league_standings`, `tournaments`. NEW DM-61 `tournament_rounds` (tournament_id, n, opens_at, closes_at, question_ids), `tournament_entries` (tournament_id, user_id, school_id, registered_at; unique (tournament_id, user_id)), `tournament_round_scores` (round_id, user_id, score, correct, answered, total_ms, started_at, finished_at; unique (round_id, user_id)); DM-62 `league_standings.recomputed_at` and `leagues.frozen_at`.
 **API.** API-GAME-05 (existing; `POST /api/leagues/join` is not used by any R1 screen and answers 403 for every role). NEW API-GAME-12 tournament register, round start, round answer, standings; API-GAME-13 `GET /api/leagues/:id/standings?level=`, `GET /api/leagues/:id/me`; NEW API-ADM-25 tournament `PUT`, `open`, `cancel`, league `POST /api/leagues/:id/schools`.
 **Reuse.** `battle/leagues/leagues.service.ts`, `leagues.repository.ts` (the standings "stored, never recomputed" [CODE `leagues.repository.ts:204`] gets the hourly job), `tournaments.service.ts` (create and list exist). **Do not build:** `knockout` or `hybrid` brackets, live synchronous tournament matches, prizes or money, pupil-created leagues.
 
@@ -801,7 +801,7 @@ stateDiagram-v2
     sedia_dituntut --> dituntut: Tuntut (credits once)
     dituntut --> [*]: 00:00 MYT reset
 ```
-**Claim.** `POST /api/gamification/challenges/:id/claim` (NEW API-GAME-11): checks completed and not yet claimed that MYT day, then credits `reward_syiling` and `reward_xp` once in one transaction; unique `(user_id, challenge_id, myt_date)` in DM-53 `challenge_claims`. A challenge deactivated after completion can still be claimed that day. The auto-credit on session completion in the code [SRS BR-M14-13] is **removed**; the claim is the only credit. Claim credits are ledger source `challenge`, not counted in game caps. Counter "{claimed} / {total} ganjaran dituntut".
+**Claim.** `POST /api/gamification/challenges/:id/claim` (NEW API-GAME-11): checks completed and not yet claimed that MYT day, then credits `reward_syiling` and `reward_xp` once in one transaction; unique `(user_id, challenge_id, myt_date)` in DM-63 `challenge_claims`. A challenge deactivated after completion can still be claimed that day. The auto-credit on session completion in the code [SRS BR-M14-13] is **removed**; the claim is the only credit. Claim credits are ledger source `challenge`, not counted in game caps. Counter "{claimed} / {total} ganjaran dituntut".
 **Copy.** Card status "Belum selesai"; button `Tuntut`; claimed label "Dituntut" †; success "Ganjaran dituntut: +{n} syiling, +{m} mata."; errors "Cabaran belum selesai." (ERR-GAME-18), "Ganjaran sudah dituntut." (ERR-GAME-19); empty "Tiada cabaran aktif" / "Cabaran harian belum dibuka. Semak semula kemudian."; date line printed in BM (the V2 English date is a defect).
 **Reuse.** `gamification/gamification.controller.ts:58-100` (list), challenge progress service; one shared progress definition for the Dashboard and this page. **Do not build** weekly challenges, challenge chains or streak-saver rewards.
 - FR-GM-19.1 Progress uses the metric definitions above; Dashboard and this page agree.
@@ -878,7 +878,7 @@ stateDiagram-v2
 ### GAME-22 Cabutan Bertuah
 
 **Purpose.** Buy tickets with syiling for a prize draw. **Row** 22. **PRD** R1-MUR-22, R1-ADM-P2-10. **Card** S7-T07.
-**Draw.** Title, description, ticket price in syiling (>= 1), max tickets per pupil (`draw_max_tickets_per_pupil` default 10), `closes_at` (a MYT date; sales are open through 23:59:59 MYT of that day [CODE `rewards.ts:404`]), prizes (label, quantity >= 1, value). Status: `draft` -> `open` -> `closed` -> `drawn`; or `cancelled` before drawing (DM-55).
+**Draw.** Title, description, ticket price in syiling (>= 1), max tickets per pupil (`draw_max_tickets_per_pupil` default 10), `closes_at` (a MYT date; sales are open through 23:59:59 MYT of that day [CODE `rewards.ts:404`]), prizes (label, quantity >= 1, value). Status: `draft` -> `open` -> `closed` -> `drawn`; or `cancelled` before drawing (DM-65).
 ```mermaid
 stateDiagram-v2
     [*] --> draft
@@ -895,7 +895,7 @@ stateDiagram-v2
 **Draw ("Cabut pemenang").** Admin presses it on a `closed` draw. For each prize slot in position order, the server picks one winner uniformly at random among the remaining tickets using a cryptographic random generator; after a pupil wins, all that pupil's tickets are removed from the pool (one prize per pupil per draw). Each winner is recorded: winner, ticket id, slot, time, admin id (`draw_winners` DM-36; unique `(draw_prize_id, slot)`). With fewer pupils than prizes there are fewer winners; with no tickets the message "Tiada peserta" shows and the draw stays `closed`. The result is final and cannot be redrawn. Winners get the in-app notice "Tahniah! Anda memenangi {prize} dalam {title}."; the page shows other winners by display name only and the pupil's own win as "Anda menang!". Prizes are handed over outside the app; admin marks each winner `delivered`. Every admin action is audited. Cancel before drawing refunds every ticket once (source `cabutan_refund`) and sets `cancelled`.
 **Fairness text on the card (published odds).** "Setiap tiket mempunyai peluang yang sama." and "Tiket anda: {a} / {max}" and "Jumlah tiket terjual: {t}" †; note "Tiket dibeli dengan syiling yang anda kumpul, bukan wang." †
 **Copy.** Page "🎟️ Cabutan Bertuah", sub "Guna syiling untuk beli tiket & menangi hadiah hebat!", "Syiling anda {n} 🪙", section "Cabutan Dibuka", past draws "Keputusan Cabutan" †; empty "Tiada cabutan dibuka buat masa ini. Nanti datang lagi! 🎈"; button `Beli Tiket`; counter "1/10".
-**Data/API.** DM-36 `draw_winners`, DM-55 draw status; API-GAME-08 (pupil), API-GAME-09 (admin list, close, winners), NEW API-ADM-24 (`PUT /api/admin/reward-control/draws/:id` edit before open, `POST .../draws/:id/cancel`, `POST .../draws/:id/winners/:winnerId/deliver`). **Reuse** `shop` module. **Do not build** paid tickets with money, redraw, guaranteed wins, ticket transfer.
+**Data/API.** DM-36 `draw_winners`, DM-65 draw status; API-GAME-08 (pupil), API-GAME-09 (admin list, close, winners), NEW API-ADM-24 (`PUT /api/admin/reward-control/draws/:id` edit before open, `POST .../draws/:id/cancel`, `POST .../draws/:id/winners/:winnerId/deliver`). **Reuse** `shop` module. **Do not build** paid tickets with money, redraw, guaranteed wins, ticket transfer.
 - FR-GM-22.1 Ticket purchase checks status, date, cap and balance, debits the exact price once, and enforces the cap.
 - FR-GM-22.2 The draw is uniformly random per ticket, one prize per pupil, recorded and final.
 - FR-GM-22.3 Cancel before drawing refunds every ticket once.
@@ -1054,19 +1054,20 @@ Cards are from `docs/plan/r1-development-plan.md` section 4.S7 unless another se
 | GAME-24 Rujuk Kawan | FR-GM-24.1..3 | AC-GM-24.1..6 | S7-T07 | M01 registration (S5-T05) |
 | GAME-25 Pencapaian | FR-GM-25.1..5 | AC-GM-25.1..7 | S7-T04 | |
 
-### 5.2 New data items (continue from DM-49)
+### 5.2 New data items (DM-60..DM-65)
 
 | ID | Item | Migration | Owning card |
 |---|---|---|---|
-| DM-50 | `battles.counts_for_ranking boolean not null default true`; `battle_participants.user_id` nullable (robot has none) | `0224_s7_game_engine` | S7-T01 |
-| DM-51 | `tournament_rounds`, `tournament_entries`, `tournament_round_scores` | `0225_s7_league_tournament` | S7-T06 |
-| DM-52 | `league_standings.recomputed_at`, `leagues.frozen_at` | `0225_s7_league_tournament` | S7-T06 |
-| DM-53 | `challenge_claims` (unique `(user_id, challenge_id, myt_date)`) | `0226_s7_challenge_claims` | S7-T04 |
-| DM-54 | `spin_segments` (8 rows, position, label, syiling, weight, active) | `0224_s7_game_engine` | S7-T01 |
-| DM-55 | `draws.status` adds `drawn` and `cancelled`, `draws.cancelled_at` | `0227_s7_draw_status` | S7-T07 |
+| DM-60 | `battles.counts_for_ranking boolean not null default true`; `battle_participants.user_id` nullable (robot has none) | `0224_s7_game_engine` | S7-T01 |
+| DM-61 | `tournament_rounds`, `tournament_entries`, `tournament_round_scores` (the last also has `attempt_id uuid not null default gen_random_uuid() unique`, the answer-store attempt id of a round) | `0225_s7_league_tournament` | S7-T06 |
+| DM-62 | `league_standings.recomputed_at`, `leagues.frozen_at` | `0225_s7_league_tournament` | S7-T06 |
+| DM-63 | `challenge_claims` (unique `(user_id, challenge_id, myt_date)`) | `0226_s7_challenge_claims` | S7-T04 |
+| DM-64 | `spin_segments` (8 rows, position, label, syiling, weight, active) | `0224_s7_game_engine` | S7-T01 |
+| DM-65 | `draws.status` adds `drawn` and `cancelled`, `draws.cancelled_at` | `0227_s7_draw_status` | S7-T07 |
+| DM-67 | `game_rooms.session_id uuid not null default gen_random_uuid() unique`, regenerated each time a room starts; the `attempt_id` of room answer rows (registered by 46) | `0228_s7_game_room_session` | S7-T01 |
 | (seed) | `gamification_settings` rows for every key of section 2 not in `reward_settings`; achievement #26 "Juara Battle" | `0224_s7_game_engine` | S7-T01 (settings), S7-T04 (badge #26) |
 
-Existing and reused: DM-36 `draw_winners`, DM-37 `mystery_boxes` and `mystery_box_prizes`, DM-38 gamification/shop/tournament tables, DM-44 answer store (mode `game`, `part_ref`), DM-48 `reward_settings`.
+Existing and reused: DM-36 `draw_winners`, DM-37 `mystery_boxes` and `mystery_box_prizes`, DM-38 gamification/shop/tournament tables, DM-44 answer store (modes `battle` and `game`, `part_ref`), DM-48 `reward_settings`.
 
 ### 5.3 New and changed routes
 
@@ -1085,6 +1086,8 @@ Existing and reused: DM-36 `draw_winners`, DM-37 `mystery_boxes` and `mystery_bo
 | API-GAME-09 | prize body `{label, kind, amount, weight, stock?}` (no `xp`) | CHANGED | S7-T07 |
 | API-GUR-11 | `rewardCoins` limited to `mission_reward_max`; 5 missions per teacher per day | CHANGED | S6-T07 |
 | API-ADM-14 | `GET/PUT .../settings` carries the keys of section 2 that are in `gamification_settings` | CHANGED | S7-T04 |
+
+API-GAME-12 answers write `practice_answers` with mode `game` and `part_ref` `tournament#<position>` (`attempt_id` = `tournament_round_scores.attempt_id`, DM-61). API-GAME-01..03 also return `isBot` labels and `reward {xp, syiling, capped, reason}`.
 
 ### 5.4 Error IDs
 New: ERR-GAME-01..26 (3.8). Used as they are: ERR-NET-01/02, ERR-SYS-01/01b, ERR-AUTH-01, ERR-ACC-01/02, ERR-RATE-01, ERR-CON-01, ERR-WAL-01, ERR-RWD-01..08, ERR-PRAC-02/04, ERR-QST-02, ERR-REQ-15.
