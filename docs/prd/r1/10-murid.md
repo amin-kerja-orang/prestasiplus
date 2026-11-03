@@ -23,7 +23,7 @@
 
 Every module has a "Field & behaviour spec" block after its "Screen specification". A developer builds every control from that block without asking a question. Where a module block and this section disagree, the module block wins for that module only.
 
-**Table columns.** `Label` is the exact BM text. `Type`, `Req` (Ya/Tidak), `Default`, `Options / source` (an OPT-ID of section A1 or the full list), `Validation + BM error`, `Depends on`, `Stored as`, `API` (an API-ID of 60, or the route; "new" = added in section A2).
+**Table columns.** `Label` is the exact BM text. `Type`, `Req` (Ya/Tidak), `Default`, `Options / source` (an option-set ID of section A1 or the full list), `Validation + BM error`, `Depends on`, `Stored as`, `API` (an API-ID of 60, or the route; "new" = added in section A2).
 
 **0A.1 Errors.** Every error text, toast, banner and page follows the ERR catalogue in `40-cross-cutting.md` section X10. A module line cites the ERR-ID and does not repeat the text unless the text is module specific. The global behaviour (all screens):
 
@@ -934,7 +934,7 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
   | Simulasi — Kuiz count | single select | Ya | 20 | OPT-BILANGAN-KUIZ: 5, 10, 20, 40 | - | - | `count` | API-PRAC-01 mode `kuiz` |
   | Pilih soalan ini untuk dijawab (choose-N) | checkbox per question, counter `{n} / {N} soalan dipilih` | - | unticked | the (N+1)th tick is refused with `Anda hanya boleh memilih {N} soalan dalam bahagian ini.`; picks persist | - | section rule | `picks[sectionId]` | API-BIJAK-04 |
   | Tanda soalan (flag) | toggle | - | off | - | - | - | `flags[]` | same |
-  | Answer controls (all leaf kinds) | see 46 section 2.2 and the field table of 4.6 | - | - | OPT-QTYPE | per 46 section 3.2 | - | one `practice_answers` row per leaf part | API-BIJAK-04 |
+  | Answer controls (all leaf kinds) | see 46 section 2.2 and the field table of 4.6 | - | - | OPT-MOD-JAWAPAN | per 46 section 3.2 | - | one `practice_answers` row per leaf part | API-BIJAK-04 |
   | Foto jalan kerja | file / camera | Tidak | none | JPG or PNG, 5 MB, 3 per part, only `working` and `drawing` parts; remove with dialog B-056e (title `Buang gambar ini?`, body `Gambar ini akan dibuang daripada jawapan anda.`, buttons "Buang" / "Batal") | `Gambar mesti JPG atau PNG, maksimum 5 MB.` / `Maksimum 3 gambar bagi setiap bahagian.` | - | photo file | API-BIJAK-04 |
   | Hantar / Hantar Jawapan | button; at 375 px always in the bottom bar | - | - | dialog B-052: `Hantar jawapan anda sekarang?`, with blanks first line `Anda belum menjawab {n} soalan.`, buttons "Hantar" / "Batal" | double press = one submission (idempotency key `{attemptId}-hantar`) | - | - | API-BIJAK-04 |
   | Mula Semula / Sambung / Cuba Lagi | buttons | - | - | resume page `Percubaan belum dihantar`, `Masa berlalu setakat ini: mm:ss`; "Mula Semula" dialog B-053: `Semua jawapan dan masa untuk percubaan ini akan dikosongkan. Mula semula?` plus note `"Sambung" mengekalkan semua jawapan anda. "Mula Semula" tidak boleh diundur.`, buttons "Mula Semula" / "Batal"; "Cuba Lagi" only from a closed attempt (else `Hantar percubaan ini dahulu sebelum mencuba semula.`; paper gone `Kertas ini sudah tidak tersedia untuk dicuba semula.`; archived question ERR-BIJ-04) | - | - | - | API-BIJAK-04 |
@@ -1248,11 +1248,11 @@ Same template as section 3 (Action, Screen specification (from V2), change list)
   | Label | Type | Req | Default | Options / source | Validation + exact BM error | Depends on | Stored as | API |
   |---|---|---|---|---|---|---|---|---|
   | Subjek | select | Tidak | "Semua Subjek" | subjects that have a published structured set, name asc | - | - | query `subjek` | API-PRAC-10 |
-  | Aras KBAT | select | Tidak | "Semua" | OPT-ARAS: LOTS 1, LOTS 2, MOTS 3, HOTS 4, HOTS 5, HOTS 6 (integer 1-6; badge KBAT for 4-6); never the Bloom leaf level (K14) | - | - | query `aras` | same |
+  | Aras KBAT | select | Tidak | "Semua" | OPT-ARAS-KBAT: LOTS 1, LOTS 2, MOTS 3, HOTS 4, HOTS 5, HOTS 6 (integer 1-6; badge KBAT for 4-6); never the Bloom leaf level (K14) | - | - | query `aras` | same |
   | Cari | text + button | Tidak | empty | stem or stimulus text, max 100 characters | none found: `Tiada soalan berstruktur ditemui` / `Tiada soalan sepadan dengan tapisan anda. Cuba tapisan lain.` | - | query `q` | same |
   | Cards | list | - | - | 12 per page, newest published first, pager "Sebelum" / "Seterusnya" | - | - | - | same |
   | Hantar & Semak | button | - | - | dialog B-056d only when a leaf is blank | see 13 | - | rows of mode `structured` | API-PRAC-10 |
-  - Behaviour: answers are stored with mode `structured` (a Tracking A Bahasa set uses `tracking_a`); the earlier values `spm_mock` and `spm_ramalan` are replaced. FR-MUR-17-3 is read with that change. Objective parts include `true_false` and `mcq_multi` (served here, not in single-option drills).
+  - Behaviour: answers are stored with mode `structured` (a Tracking A Bahasa set uses `tracking_a`); the earlier values `spm_mock` and `spm_ramalan` are replaced by the 19 values of 50 section 4.7a. FR-MUR-17-3 is read with that change. Objective parts include `true_false` and `mcq_multi` (served here, not in single-option drills).
   - New requirements: FR-MUR-17-6 Rows written by Soalan Berstruktur carry `mode = structured`. FR-MUR-17-7 The Aras filter is the integer 1-6 vocabulary only.
   - New acceptance criteria: AC-MUR-17-5 Given a pupil submits a structured set, then its rows in `practice_answers` have mode `structured` and none has `spm_mock` or `spm_ramalan`.
 - **Name**: "Soalan Berstruktur" (sub "Latih tubi format Kertas 2"; Bahasa lane "Tracking A Bahasa" / "BM dan BI ikut format kertas sebenar"). **Route**: `/latihan-berstruktur`, `/latihan-berstruktur/:id`, `/latihan-berstruktur/keputusan/:attempt`. **Row**: 17. **Priority**: P1. **Delivery**: 1.0 (linked from R1-MUR-13).
@@ -1819,7 +1819,7 @@ Sources: `v2-exam-schema.md` (D46/D47), `v2-question-bank.md` 4.10 and US-22 to 
 | `working` | step lines with a maths keyboard in "Ruang kerja", a separate final-answer box "Jawapan:" with unit, photo-of-working fallback (D41-2) | final answer auto; method points by equivalence, uncertain ones suggested for confirmation |
 | `essay` | long text with live word count; optional word range; alternative prompts | never auto-marked; the system may suggest a band and notes, the pupil self-marks (a person confirms) |
 | `true_false` | two fixed options A "Betul", B "Salah" | auto, server (as `mcq`) |
-| `mcq_multi` (3 to 8 options, k correct with 2 <= k <= n-1) | tick every correct option; helper line `Pilih semua jawapan yang betul.`; served in Bijak, Berstruktur, Kertas Subjektif and Set Soalan, NOT in single-option drills (D-PA-6) | auto: c correct ticked, w wrong ticked; marks 1: full only when c = k and w = 0; marks > 1: max(0, floor(marks x (c - w) / k)); ticking every option scores 0 |
+| `mcq_multi` (2 to 8 options, k correct with 1 <= k <= n-1) | tick every correct option; helper line `Pilih semua jawapan yang betul.`; served in Bijak, Berstruktur, Kertas Subjektif and Set Soalan, NOT in single-option drills (D-PA-6) | auto: c correct ticked, w wrong ticked; marks 1: full only when c = k and w = 0; marks > 1: max(0, floor(marks x (c - w) / k)); ticking every option scores 0 |
 | `drawing` | on-screen answer (or a photo of the drawn answer, JPG or PNG up to 5 MB, 3 per part) | checklist points of the scheme, self-marked (D-PA-4) |
 | `table_fill` | grid with input in blank cells, answered on screen | each blank cell is a leaf part marked like `short_text` or `numeric`; partial credit = sum of cells; reveal shows the scheme and the pupil can adjust by self-mark (D-PA-4) |
 | `essay_choice` | "Pilih satu daripada {n} gesaan", then the essay control | as `essay` for the chosen prompt (the chosen topic must belong to the part: `Tajuk yang dipilih tiada pada bahagian ini.`) |
@@ -2001,7 +2001,7 @@ Items 9 to 11 are lock or defensive states, not feature stubs; 1 to 8 and 13 are
 
 The master list of option sets is `40-cross-cutting.md` section X11 (merged from this file, 20 and 30; X11 wins on a difference). This file uses the sets below by ID; the values are those decided for R1 and are repeated only so a module block can be built without opening X11.
 
-| OPT-ID | Used on | Options in display order -> stored value |
+| Option set | Used on | Options in display order -> stored value |
 |---|---|---|
 | OPT-TINGKATAN | register, Latih Tubi, Chapter, Topik, Peta Belajar, Audio KBAT, Analitik | "Tingkatan 1".."Tingkatan 5" -> level code `T1`..`T5`, `users.grade` 7..11 (n + 6); short "Ting. n"; "Semua Tahap" -> `all` only where stated; no Darjah; default = the pupil's own form; only forms with servable content, with counts |
 | OPT-SUBJEK | every subject picker, chip and tab | data source `subjects` (active) filtered by servable content for the pupil's form; Subjek Teras group first, then Elektif, name ascending; names are never hard-coded |
@@ -2009,9 +2009,9 @@ The master list of option sets is `40-cross-cutting.md` section X11 (merged from
 | OPT-BILANGAN-LT | Latih Tubi, Chapter, game rooms | 5, 10 (default), 15, 20 |
 | OPT-BILANGAN-DB | Databank | 5, 10 (default), 20 |
 | OPT-BILANGAN-KUIZ | Simulasi - Kuiz | 5, 10, 20 (default), 40 |
-| OPT-ARAS | Soalan Berstruktur | "LOTS 1" 1, "LOTS 2" 2, "MOTS 3" 3, "HOTS 4" 4, "HOTS 5" 5, "HOTS 6" 6 (integer 1-6; badge KBAT for 4-6); the Bloom leaf level is admin only (K14) |
+| OPT-ARAS-KBAT | Soalan Berstruktur | "LOTS 1" 1, "LOTS 2" 2, "MOTS 3" 3, "HOTS 4" 4, "HOTS 5" 5, "HOTS 6" 6 (integer 1-6; badge KBAT for 4-6); the Bloom leaf level is admin only (K14) |
 | OPT-KERTAS | Bijak, Kertas Subjektif | "Kertas {k}", k = 1, 2, 3, 4 (objective = 1) |
-| OPT-QTYPE | answering, Studio, report | "Aneka pilihan" `mcq` (2-8 options); "Betul / Salah" `true_false`; "Aneka pilihan (lebih daripada satu jawapan)" `mcq_multi`; "Padanan huruf" `match_letter`; "Jawapan pendek" `short_text`; "Nombor" `numeric`; "Kerja & jawapan akhir" `working`; "Esei" `essay`; "Esei (pilih satu gesaan)" `essay_choice`; "Lukisan" `drawing`; "Isi jadual" `table_fill` (eleven served kinds) |
+| OPT-MOD-JAWAPAN / OPT-JENIS-SOALAN (register ID OPT-QTYPE, 40 X11.7) | answering, Studio, report | "Aneka pilihan" `mcq` (2-8 options); "Betul / Salah" `true_false`; "Aneka pilihan (lebih daripada satu jawapan)" `mcq_multi`; "Padanan huruf" `match_letter`; "Jawapan pendek" `short_text`; "Nombor" `numeric`; "Kerja & jawapan akhir" `working`; "Esei" `essay`; "Esei (pilih satu gesaan)" `essay_choice`; "Lukisan" `drawing`; "Isi jadual" `table_fill` (eleven served kinds) |
 | OPT-MODE-SESI | Sejarah chips, A1 "Mod", Prestasi sessions | `latih_tubi` "Latih Tubi", `chapter` "Soalan by Chapter", `revision` "Ulang Kaji", `remedial` "Remedial", `past_year` / `databank` "Databank SPM", `ramalan` / `tracking_a` "Tracking A", `question_set` "Set Soalan Guru", `mission` "Misi Harian", `pksk` "PKSK", `random` "Latih Tubi Rawak", `kuiz` "Simulasi - Kuiz", `simulasi` "Bijak SPM", `subjektif` "Subjektif", `structured` "Soalan Berstruktur", `battle` "Battle", `game` "Permainan", `audio_kbat` "Audio KBAT" |
 | OPT-STATUS-LAPORAN | Laporan Soalan | `pending` Menunggu, `reviewed` Disemak, `fixed` Diperbaiki, `dismissed` Ditolak, `removed` Dikeluarkan |
 | OPT-STATUS-TIKET | Tiket Bantuan | `dibuka` Dibuka, `dalam_proses` Dalam Proses, `menunggu_balas` Menunggu Balas, `selesai` Selesai, `ditutup` Ditutup |
@@ -2031,44 +2031,44 @@ OPT-MOOD is not used: the mood check-in is not built in R1 (OQ-MUR-10 decided).
 
 ## A2. Data/API additions required
 
-Each item is a need cited by an FR/AC of this file. Existing DM/API IDs are named where they exist in 50/60; otherwise the need is described and T5 assigns the ID.
+Each item is a need cited by an FR/AC of this file. Existing DM/API IDs are named where they exist in 50/60; the IDs in the last column are registered in 50/60.
 
 | # | Need | Cited by | Existing ID |
 |---|---|---|---|
-| 1 | New column `users.aspiration` varchar(255) null; returned by `GET /api/me`, accepted by `PUT /api/me` (trim, blank clears); never in the public profile | FR-MUR-A1-10, AC-MUR-A1-9, AC-MUR-A1-10 | API-AUTH-08, API-AUTH-09 (extension) |
-| 2 | `users.bio` holds 1000 characters (migration if shorter); `ACCOUNT_BIO_MAX = 1000` | FR-MUR-A1-11, AC-MUR-A1-8 | API-AUTH-09 |
+| 1 | New column `users.aspiration` varchar(255) null; returned by `GET /api/me`, accepted by `PUT /api/me` (trim, blank clears); never in the public profile | FR-MUR-A1-10, AC-MUR-A1-9, AC-MUR-A1-10 | DM-80, API-AUTH-08, API-AUTH-09 |
+| 2 | `users.bio` holds 1000 characters (migration if shorter); `ACCOUNT_BIO_MAX = 1000` | FR-MUR-A1-11, AC-MUR-A1-8 | DM-80, API-AUTH-09 |
 | 3 | `PUT /api/me` is partial (every key optional, `name` 1-255 when present); for role student the server ignores `grade`, `schoolId` and `role` (200, stored values returned) | FR-MUR-A1-9, FR-MUR-A2-6, AC-MUR-A2-5 | API-AUTH-08, API-AUTH-09 |
-| 4 | `ACCOUNT_PASSWORD_MIN = 8` for register, reset and change; login non-empty only | FR-MUR-A2-8, AC-MUR-A2-6, AC-MUR-AUTH-1 | API-AUTH family |
-| 5 | BM message constants in the account contract (required, max, min, e-mail format, taken, current password wrong, reset token, reset sent, reset done, invalid school, invalid level) replacing Laravel English | FR-MUR-A2-7, FR-MUR-AUTH-1, AC-MUR-A2-8 | 60 section 1.4 |
-| 6 | Helpers `gradeToLevelCode` and `levelCodeToGrade` (Tingkatan n -> `T{n}` -> `grade = n + 6`); register and admin edit reject a student `grade` below 7 or above 11 with `fields.grade` "Tahap tidak sah." | FR-MUR-AUTH-1, AC-MUR-AUTH-4 | API-AUTH register |
-| 7 | `GET /api/leaderboard` is canonical; `period` absent or unknown = `all`; `GET /api/gamification/leaderboard` and the route `/gamification/leaderboard` removed (redirect for the route) | FR-MUR-33-5, FR-MUR-33-6, AC-MUR-33-5 | leaderboard API |
-| 8 | Leaf kinds `true_false` and `mcq_multi`; answer key `choices: string[]` beside `choice`; scheme kind `options` {correct: string[]}; reveal returns `correctOptions[]`; MCQ minimum 2 options | 4.6 item 3, AC-MUR-13-12 | 50 question model, API-BIJAK-04 |
-| 9 | Serving of `drawing`, `table_fill` and `essay_choice` (serving filter lifted; capture widget and grid widget on the pupil side); `table_fill` stored as one leaf part per blank cell | 4.6 item 3, FR-MUR-13-12 | 50 answer-mode registry (4.7a) |
+| 4 | `ACCOUNT_PASSWORD_MIN = 8` for register, reset and change; login non-empty only | FR-MUR-A2-8, AC-MUR-A2-6, AC-MUR-AUTH-1 | API-AUTH-06, API-AUTH-07, API-AUTH-10 |
+| 5 | BM message constants in the account contract (required, max, min, e-mail format, taken, current password wrong, reset token, reset sent, reset done, invalid school, invalid level) replacing Laravel English | FR-MUR-A2-7, FR-MUR-AUTH-1, AC-MUR-A2-8 | 60 section 1.4 (extended) |
+| 6 | Helpers `gradeToLevelCode` and `levelCodeToGrade` (Tingkatan n -> `T{n}` -> `grade = n + 6`); register and admin edit reject a student `grade` below 7 or above 11 with `fields.grade` "Tahap tidak sah." | FR-MUR-AUTH-1, AC-MUR-AUTH-4 | API-AUTH-06 |
+| 7 | `GET /api/leaderboard` is canonical; `period` absent or unknown = `all`; `GET /api/gamification/leaderboard` and the route `/gamification/leaderboard` removed (redirect for the route) | FR-MUR-33-5, FR-MUR-33-6, AC-MUR-33-5 | API-GAME-06, API-RPT-13 |
+| 8 | Leaf kinds `true_false` and `mcq_multi`; answer key `choices: string[]` beside `choice`; scheme kind `options` {correct: string[]}; reveal returns `correctOptions[]`; MCQ minimum 2 options | 4.6 item 3, AC-MUR-13-12 | DM-69, API-BIJAK-04, API-BIJAK-06, API-PRAC-02 |
+| 9 | Serving of `drawing`, `table_fill` and `essay_choice` (serving filter lifted; capture widget and grid widget on the pupil side); `table_fill` stored as one leaf part per blank cell | 4.6 item 3, FR-MUR-13-12 | DM-69, DM-55, API-BIJAK-04, DM-44 (registry) |
 | 10 | `selfMarkable` also for `accepted` parts left `belum_dimarkah` (K20) | FR-MUR-13-13, FR-MUR-13-29 | API-BIJAK-05 |
-| 11 | `practice_answers.mode` registry: `latih_tubi`, `chapter`, `revision`, `remedial`, `databank`/`past_year`, `kuiz`, `simulasi`, `tracking_a`, `subjektif`, `structured`, `question_set`, `pksk`, `audio_kbat`, `mission`, `battle` and the game modes; unique index includes `user_id`; Soalan Berstruktur = `structured`, Battle = `battle` (replaces `spm_mock`, `spm_ramalan`) | FR-MUR-13-21, FR-MUR-17-3, FR-MUR-17-6, FR-MUR-21-8, AC-MUR-17-5 | DM-44, 50 section 4.7a |
-| 12 | Abandoned practice sessions swept after 2 h of no activity: status `ditinggalkan`, no reward, checked answers kept and counted; an abandoned Kuiz writes rows for its checked questions without reward | FR-MUR-13-35 | API-PRAC-03 |
+| 11 | `practice_answers.mode` registry: the 19 values of 50 section 4.7a; Soalan Berstruktur = `structured`, Battle = `battle`, other games = `game`; unique index includes `user_id` (replaces `spm_mock`, `spm_ramalan`) | FR-MUR-13-21, FR-MUR-17-3, FR-MUR-17-6, FR-MUR-21-8, AC-MUR-17-5 | DM-44 (50 section 4.7a) |
+| 12 | Abandoned practice sessions swept after 2 h of no activity: stored status `abandoned`, shown as "ditinggalkan", no reward, checked answers kept and counted; an abandoned Kuiz writes rows for its checked questions without reward | FR-MUR-13-35 | DM-66, API-PRAC-03 |
 | 13 | `POST /api/practice/sessions` is idempotent by `clientUuid`; the response adds `answered:[{questionId, selectedOptionId, isCorrect}]` so a reload resumes at the first unanswered question | FR-MUR-16-16, AC-MUR-16-11 | API-PRAC-01 |
-| 14 | Practice level codes T1-T5 all offered (`OFFERED_LEVEL_CODES`; `rules.ts:40-45`) | FR-MUR-16-13, AC-MUR-16-9 | API-PRAC-04, API-PRAC-01 |
-| 15 | Bijak autosave: 800 ms debounce, per-part `rev`, server ignores a change whose `rev` is not above the stored one, `savedAt` capped at server now, late sync accepted for 24 h | FR-MUR-13-10, FR-MUR-13-32, AC-MUR-13-28 | API-BIJAK-04 |
-| 16 | Mod Latihan reward only for parts never opened with "Semak" (needs a per-part `revealed` marker) | FR-MUR-13-14, AC-MUR-13-31 | API-BIJAK-04 |
-| 17 | Bijak result coins/points = rate x score Syiling and 10 x score XP (rate = admin setting; the "score * 2" comment and constant are wrong); `percent` may stay at one decimal, display is a whole number | FR-MUR-13-14, AC-MUR-13-7 | 60 Bijak result |
-| 18 | Pupil Jana Kertas: `POST /api/bijak/papers/generate` (pupil) answers 404; tab hidden | FR-MUR-13-20, AC-MUR-13-26 | API-BIJAK-03 (pupil: 404 in R1) |
-| 19 | SPM hub read returns the Kertas Subjektif count ("{n} kertas") for every T1-T5 pupil | FR-MUR-13-1, FR-MUR-13-34, AC-MUR-13-29 | SPM hub read |
-| 20 | Question report: duplicate 409 text `Anda sudah melaporkan soalan ini.`; the server fills `source`; `mine` counts five statuses with `removed` counted under `fixed` for the tile | FR-MUR-54-9, FR-MUR-54-10, AC-MUR-54-7 | API-Q-19, API-Q-20 |
-| 21 | Support: BM ticket messages; one admin reply per ticket (status machine); `GET /api/config/support` seeded (no 404) | FR-MUR-A4-6, FR-MUR-A4-7, AC-MUR-A3-6 | API-SUP-01, API-SUP-04, API-SUP-05 |
-| 22 | `GET /api/hadiah-digital/items` reads the shared `rewards` catalogue | FR-MUR-38-5, AC-MUR-38-4 | rewards / reward_redemptions |
-| 23 | Referral reward 100 Syiling from the admin setting; constants 50/25 removed | FR-MUR-36-6, AC-MUR-36-5 | 48 GAME-24 settings |
-| 24 | Headcount read allowed for role student (own classes, own rows only) | FR-MUR-3-1, FR-MUR-3-10 | headcounts API |
-| 25 | `GET /api/prestasi` for role student returns own data and issues no redirect; school/class endpoints 403 for student | FR-MUR-4-2, FR-MUR-4-13, AC-MUR-4-9 | Prestasi API |
-| 26 | Profile reads: last 30 days calendar, badges, last 10 sessions; public profile endpoint (first name only, `school: null`) | FR-MUR-A1-1, FR-MUR-A1-5, AC-MUR-A1-7 | API-AUTH family, `PerformancePublicProfile` |
-| 27 | Join-class endpoint `POST /kelas-saya/join` removed; class `join_code` not shown | FR-MUR-8-3, AC-MUR-8-3 | classes API |
-| 28 | Rank and percentile reads for Kedudukan (kelas, sekolah, negeri, kebangsaan) | FR-MUR-18-2, AC-MUR-18-5 | 48 GAME-16 |
-| 29 | Liga enrolment by Admin Pusat only; no Guru/Admin Sekolah endpoint | FR-MUR-23-5, AC-MUR-23-4 | 48 GAME-15 |
-| 30 | Game coins setting `games_award_syiling` default off, caps, robot label "Robot PrestasiPlus" after 30 s, `battle` rows | FR-MUR-21-8, FR-MUR-21-9, AC-MUR-21-7 | 48 section 2 |
-| 31 | Dashboard: no mood endpoint and no `pupil_moods` table are added | FR-MUR-2-12, AC-MUR-2-8 | none (decision) |
-| 32 | Schools search `GET /api/schools/search?state=&q=` (min 2 characters, 20 results) | FR-MUR-AUTH-1 | schools API |
-| 33 | Timeline: post text max 500 and type enum; Marketplace: category/condition/sort filters and order (quantity, note) | FR-MUR-39-6, FR-MUR-32-6, AC-MUR-39-5, AC-MUR-32-5 | timeline / marketplace API |
-| 34 | Tournament, PKSK start sets (A/B/C = 10, domain = 5) and Cabutan purchase idempotency | FR-MUR-19-7, FR-MUR-22-6, AC-MUR-22-5 | API-PRAC-12, 48 GAME-22 |
+| 14 | Practice level codes T1-T5 all offered (`OFFERED_LEVEL_CODES`; `rules.ts:40-45`) | FR-MUR-16-13, AC-MUR-16-9 | API-PRAC-01, API-PRAC-04 |
+| 15 | Bijak autosave: 800 ms debounce, per-part `rev`, server ignores a change whose `rev` is not above the stored one, `savedAt` capped at server now, late sync accepted for 24 h | FR-MUR-13-10, FR-MUR-13-32, AC-MUR-13-28 | DM-68, API-BIJAK-04 |
+| 16 | Mod Latihan reward only for parts never opened with "Semak" (needs a per-part `revealed` marker) | FR-MUR-13-14, AC-MUR-13-31 | DM-68, API-BIJAK-04 |
+| 17 | Bijak result coins/points = rate x score Syiling and 10 x score XP (rate = admin setting; the "score * 2" comment and constant are wrong); `percent` may stay at one decimal, display is a whole number | FR-MUR-13-14, AC-MUR-13-7 | DM-48, API-BIJAK-04 |
+| 18 | Pupil Jana Kertas: `POST /api/bijak/papers/generate` (pupil) answers 404; tab hidden | FR-MUR-13-20, AC-MUR-13-26 | API-BIJAK-03 (pupil: 404) |
+| 19 | SPM hub read returns the Kertas Subjektif count ("{n} kertas") for every T1-T5 pupil | FR-MUR-13-1, FR-MUR-13-34, AC-MUR-13-29 | API-BIJAK-07 |
+| 20 | Question report: duplicate 409 text `Anda sudah melaporkan soalan ini.`; the server fills `source`; `mine` counts five statuses with `removed` counted under `fixed` for the tile | FR-MUR-54-9, FR-MUR-54-10, AC-MUR-54-7 | DM-82, API-Q-19, API-Q-20 |
+| 21 | Support: BM ticket messages; one admin reply per ticket (status machine); `GET /api/config/support` seeded (no 404) | FR-MUR-A4-6, FR-MUR-A4-7, AC-MUR-A3-6 | API-SUP-01, API-SUP-04, API-SUP-05, DM-32, DM-33 |
+| 22 | `GET /api/hadiah-digital/items` reads the shared `rewards` catalogue | FR-MUR-38-5, AC-MUR-38-4 | API-GAME-08, DM-77 |
+| 23 | Referral reward 100 Syiling from the admin setting; constants 50/25 removed | FR-MUR-36-6, AC-MUR-36-5 | DM-38, DM-48, API-MUR-10 |
+| 24 | Headcount read allowed for role student (own classes, own rows only) | FR-MUR-3-1, FR-MUR-3-10 | API-RPT-08 |
+| 25 | `GET /api/prestasi` for role student returns own data and issues no redirect; school/class endpoints 403 for student | FR-MUR-4-2, FR-MUR-4-13, AC-MUR-4-9 | API-RPT-01 |
+| 26 | Profile reads: last 30 days calendar, badges, last 10 sessions; public profile endpoint (first name only, `school: null`) | FR-MUR-A1-1, FR-MUR-A1-5, AC-MUR-A1-7 | API-MUR-02, API-MUR-03 |
+| 27 | Join-class endpoint `POST /kelas-saya/join` removed; class `join_code` not shown | FR-MUR-8-3, AC-MUR-8-3 | API-MUR-04 (the route answers 404; the column stays; D113-continued 3) |
+| 28 | Rank and percentile reads for Kedudukan (kelas, sekolah, negeri, kebangsaan) | FR-MUR-18-2, AC-MUR-18-5 | API-RPT-13 |
+| 29 | Liga enrolment by Admin Pusat only; no Guru/Admin Sekolah endpoint | FR-MUR-23-5, AC-MUR-23-4 | API-ADM-25, API-GAME-05 |
+| 30 | Game coins setting `games_award_syiling` default off, caps, robot label "Robot PrestasiPlus" after 30 s, `battle` rows | FR-MUR-21-8, FR-MUR-21-9, AC-MUR-21-7 | DM-38, DM-48, DM-60, DM-44 |
+| 31 | Dashboard: no mood endpoint and no `pupil_moods` table are added | FR-MUR-2-12, AC-MUR-2-8 | none (decision, OD-11) |
+| 32 | Schools search `GET /api/schools/search?state=&q=` (min 2 characters, 20 results) | FR-MUR-AUTH-1 | API-ADM-04 |
+| 33 | Timeline: post text max 500 and type enum; Marketplace: category/condition/sort filters and order (quantity, note) | FR-MUR-39-6, FR-MUR-32-6, AC-MUR-39-5, AC-MUR-32-5 | API-RPT-14, API-ADM-19 |
+| 34 | Tournament, PKSK start sets (A/B/C = 10, domain = 5) and Cabutan purchase idempotency | FR-MUR-19-7, FR-MUR-22-6, AC-MUR-22-5 | API-PRAC-12, API-GAME-12, DM-78 |
 
 ---
 
@@ -2181,7 +2181,7 @@ Every question that was open in earlier drafts is decided here by the product-ow
 | K11 OTR fraction floor(100k/n)/100 (settled) | R1-MUR-3, AC-MUR-3-2 |
 | K12 `mcq` 2-8, `true_false`, `mcq_multi` | 4.6 item 3 |
 | K13 report failure copy | FR-MUR-54-7 |
-| K14 two vocabularies | OPT-ARAS, FR-MUR-17-7 |
+| K14 two vocabularies | OPT-ARAS-KBAT, FR-MUR-17-7 |
 | K15 ticket fields | R1-MUR-A4 |
 | K16 Bijak result coins use the rate | FR-MUR-13-14, A2 item 17 |
 | K17 `essay_choice` not served | withdrawn: served (D113, 46 D-PA-5) |

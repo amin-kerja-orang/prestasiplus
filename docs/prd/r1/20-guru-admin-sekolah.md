@@ -1612,7 +1612,7 @@ Routes `/guru/soalan-berstruktur`, `/cipta`, `/:id`, `/:id/edit`. API: API-GUR-2
   - **FR-GUR-44b-5** Not observed in V2 — follow FR-X1-4 and the admin intake: a teacher can submit a new structured question or paper from this tool; the submission creates an intake batch with source "Kiriman Guru" (`source=guru`) in "Menunggu Semakan", with the DSKP fields of FR-GUR-44-9 (Bab, SP, TP and Aras required only where chapters or DSKP nodes exist, D112; the admin may complete missing ones in review), marks, mark scheme and its stimulus group (1..n questions) kept together; the teacher edits or deletes only own pending submissions; there is no separate submissions API.
   - **FR-GUR-44b-6** Pupils-side visibility of a structured question follows its admin status; a structured question that needs a diagram it does not have is not served (FR-X1-4f) and is listed in R1-GUR-44c.
   - **FR-GUR-44b-7** Responsive: the table becomes one card per question at 375 (RP-TABLE-LIST); filters stack; the pager wraps; all controls >= 44 px; figures fit the width and can be opened full screen (FR-X6-7).
-- **Data** Owner M04 (structured questions, intake). API `GET /api/structured-questions*` (exists); submission through the admin intake (exists, source `guru`).
+- **Data** Owner M04 (structured questions, intake). API `GET /api/structured-questions*` (exists); API-GUR-26 (teacher POST/PUT, ADD-13); submission through the admin intake (exists, source `guru`).
 - **Acceptance criteria**
   - **AC-GUR-44b-1** Given 4,061 approved structured questions, when the list opens, then the sub-line shows "4,061 soalan dalam bank", 20 rows show and the summary reads "Menunjukkan 1 hingga 20 daripada 4,061 keputusan" (BM, DV-GUR-44b-1).
   - **AC-GUR-44b-2** Given Subjek "Perniagaan" and Tingkatan "Tingkatan 5", when "Tapis" is pressed, then every row shows "Perniagaan" and "Tingkatan 5" and the count equals the dataset count.
@@ -2889,32 +2889,32 @@ Closed in this pass: OQ-AS-4 (D108(5)), OQ-G-5, OQ-G-6, OQ-G-8, OQ-G-9, OQ-G-12.
 
 ## A2. Data/API additions required
 
-These are needed by the merged field and behaviour spec and are not yet in `50-data-model-erd.md` or `60-api-contract.md`. The owner of 50 and 60 allocates the DM and API ids; the ids ADD-n below are working labels and are cited in the module subsections.
+These are needed by the merged field and behaviour spec and are registered in `50-data-model-erd.md` and `60-api-contract.md`. ADD-n are working labels cited in the module subsections; the registered IDs are in the last column.
 
-| Id | Addition (name) | Purpose | Module |
-|---|---|---|---|
-| ADD-01 | Unique index on `classrooms (teacher_id, academic_year, lower(name))` where `kind` = `classroom` | Unique class name per teacher and year; duplicate answers 409 "Nama kelas sudah digunakan." | GUR-8 |
-| ADD-02 | Unique index on `users (school_id, lower(username))` where username is not null | Unique username per school; generated pupil usernames and the AS-51 rule | GUR-8, GUR-41, AS-51 |
-| ADD-03 | `missions`: `description text null`, `reward_coins smallint null` (0 to 10000), `scope text not null default 'teacher'` (`teacher` or `global`), `mission_type` value `harian`, `subject_id` made nullable; recipients in `mission_items` | Misi Harian fields (Tajuk, Keterangan, Sasaran = `question_count`, Ganjaran, Tarikh = `mission_date`, Kelas = `classroom_id`) and the Global badge | GUR-2b |
-| ADD-04 | `question_sets.education_level_id bigint null` | Field "Tingkatan (pilihan)" of Set Soalan | GUR-8b |
-| ADD-05 | `interventions.alert_type` check extended with `other` | "Lain-lain" of OPT-JENIS-INTERVENSI | GUR-11, AS-11 |
-| ADD-06 | `intake_batches.source text not null default 'admin'` (`admin` or `guru`) | Tab "Kiriman Guru" and the origin of teacher submissions | GUR-44, GUR-44b |
-| ADD-07 | `intake_batches`: `kertas` and `year` nullable; `subject` accepts free text up to 100 characters when `source` = `guru`; `rights_status` defaults to `own` for `guru`; `source_text` filled from "Disediakan Oleh" (max 200, default "Kiriman guru") | Teacher paper form has no Kertas, an optional Tahun and a free-text Matapelajaran | GUR-44 |
-| ADD-08 | `intake_batches.paper_type` check extended with `dskp` and `buku_teks` (and the stored values of OPT-JENIS-HANTARAN replace the earlier English slugs) | "Soalan DSKP" and "Buku Teks" of OPT-JENIS-HANTARAN | GUR-44 |
-| ADD-09 | API-GUR-17 amended: file types PDF, DOCX and XLSX (images not accepted; the SRS wins over the contract); body gains `paperType`, free-text subject, `levelId?`, `year?`, `preparedBy?`, `note?` and the boolean answer-scheme confirmation | Hantar Kertas Soalan behaviour | GUR-44 |
-| ADD-10 | API-AS-06 amended: limits 2 MB and 1000 rows (the V2 caption), `level` T1 to T5, `dryRun` is the preview step | Student import | AS-51 |
-| ADD-11 | API-GUR-22 body amended: `{name, bio, ic?, schoolId, subject, qualification, experienceYears, phone?}` | Profil Saya fields (qualification, years of experience, IC and school) | GUR-A1 |
-| ADD-12 | API-GUR-18 create and update body gains `difficultyLevel`, `tp`, `cognitiveLevel`, `chapterId`, `spId` (the last four optional where D112 allows) | Teacher question form | GUR-44 |
-| ADD-13 | Teacher structured-question submission: `POST /api/guru/structured-questions` and `PUT /:id` (own `review` or `draft`) with stimulus text, image (`question_image`) and 1 to 10 parts; creates an intake batch with `source` = `guru` | Soalan Berstruktur form | GUR-44b |
-| ADD-14 | API-RPT-10 `PUT /api/headcounts/:id/tov` accepts optional `rsRecordedAt` (not in the future) | "Tarikh Rekod RS" | GUR-3 |
-| ADD-15 | Intervention review: `POST /api/kirkpatrick/interventions/:id/review` writes `after_accuracy` (accuracy of the 14 days after the record), allowed 7 days or more after `action_date` | "Semak keputusan" | GUR-11, AS-11 |
-| ADD-16 | API-AS-05 list accepts `level` (T1 to T5) and `classroomId` filters | Tingkatan and Kelas filters of Senarai Pelajar | AS-51 |
-| ADD-17 | Teacher diagram image submission: `POST` of one image (`jpg`, `png`, `webp`, at most 5 MB) for a question that needs a figure; the image stays pending until an admin accepts | "Upload per card" of Soalan Gambar Rajah | GUR-44c |
-| ADD-18 | Teacher video create: body `{title, url, subjectId?, category}`; `videos.category` accepts `motivasi`, `tutorial`, `tips_spm`, `ceramah`, `lain`; stored with `visibility` = `school` and the teacher's `school_id`; list shows global videos plus the own school's | Video form | GUR-7 |
-| ADD-19 | API-GUR-16 gains `GET /api/guru/question-sets/:id/results?classroomId=` and the copy body `{classroomIds}` | Results per class and "Salin" | GUR-8b |
-| ADD-20 | API-AS-07 create-teacher body gains `subject`, `qualification`, `ic?`, `password?` | Cipta Pengguna form of Senarai Guru | AS-52 |
-| ADD-21 | API-GUR-24 delete returns 409 "Soalan sedang digunakan dalam misi." while an active Misi draws the question | Private question delete guard | GUR-44a |
-| ADD-22 | API-GUR-19 limits: `.csv` only, 2 MB, 500 data rows; the error file is generated on the client from the response | Question CSV import | GUR-44 |
+| Id | Addition (name) | Purpose | Module | 50 / 60 ID |
+|---|---|---|---|---|
+| ADD-01 | Unique index on `classrooms (teacher_id, academic_year, lower(name))` where `kind` = `classroom` | Unique class name per teacher and year; duplicate answers 409 "Nama kelas sudah digunakan." | GUR-8 | DM-73 |
+| ADD-02 | Unique index on `users (school_id, lower(username))` where username is not null | Unique username per school; generated pupil usernames and the AS-51 rule | GUR-8, GUR-41, AS-51 | DM-74 |
+| ADD-03 | `missions`: `description text null`, `reward_coins smallint null` (0 to 10000), `scope text not null default 'teacher'` (`teacher` or `global`), `mission_type` value `harian`, `subject_id` made nullable; recipients in `mission_items` | Misi Harian fields (Tajuk, Keterangan, Sasaran = `question_count`, Ganjaran, Tarikh = `mission_date`, Kelas = `classroom_id`) and the Global badge | GUR-2b | DM-75, API-GUR-11 |
+| ADD-04 | `question_sets.education_level_id bigint null` | Field "Tingkatan (pilihan)" of Set Soalan | GUR-8b | DM-46 (extended), API-GUR-16 |
+| ADD-05 | `interventions.alert_type` check extended with `other` | "Lain-lain" of OPT-JENIS-INTERVENSI | GUR-11, AS-11 | DM-30 (extended) |
+| ADD-06 | `intake_batches.source text not null default 'admin'` (`admin` or `guru`) | Tab "Kiriman Guru" and the origin of teacher submissions | GUR-44, GUR-44b | DM-72 |
+| ADD-07 | `intake_batches`: `kertas` and `year` nullable; `subject` accepts free text up to 100 characters when `source` = `guru`; `rights_status` defaults to `own` for `guru`; `source_text` filled from "Disediakan Oleh" (max 200, default "Kiriman guru") | Teacher paper form has no Kertas, an optional Tahun and a free-text Matapelajaran | GUR-44 | DM-72 |
+| ADD-08 | `intake_batches.paper_type` check extended with `dskp` and `buku_teks` (and the stored values of OPT-JENIS-HANTARAN replace the earlier English slugs) | "Soalan DSKP" and "Buku Teks" of OPT-JENIS-HANTARAN | GUR-44 | DM-72 (slugs `umum, trial, dskp, buku_teks, buku_latihan, peperiksaan, lain`; legacy `paper_type` values mapped by the migration; mapping to `source_papers.exam_type` on accept per 40 OPT-JENIS-HANTARAN) |
+| ADD-09 | API-GUR-17 amended: file types PDF, DOCX and XLSX (images not accepted; the SRS wins over the contract); body gains `paperType`, free-text subject, `levelId?`, `year?`, `preparedBy?`, `note?` and the boolean answer-scheme confirmation | Hantar Kertas Soalan behaviour | GUR-44 | API-GUR-17 (extended) |
+| ADD-10 | API-AS-06 amended: limits 2 MB and 1000 rows (the V2 caption), `level` T1 to T5, `dryRun` is the preview step | Student import | AS-51 | API-AS-06 (extended; 2 MB, 1000 rows) |
+| ADD-11 | API-GUR-22 body amended: `{name, bio, ic?, schoolId, subject, qualification, experienceYears, phone?}` | Profil Saya fields (qualification, years of experience, IC and school) | GUR-A1 | API-GUR-22 (extended) |
+| ADD-12 | API-GUR-18 create and update body gains `difficultyLevel`, `tp`, `cognitiveLevel`, `chapterId`, `spId` (the last four optional where D112 allows) | Teacher question form | GUR-44 | API-GUR-18 (extended) |
+| ADD-13 | Teacher structured-question submission: `POST /api/guru/structured-questions` and `PUT /:id` (own `review` or `draft`) with stimulus text, image (`question_image`) and 1 to 10 parts; creates an intake batch with `source` = `guru` | Soalan Berstruktur form | GUR-44b | API-GUR-26 (extended with POST/PUT) |
+| ADD-14 | API-RPT-10 `PUT /api/headcounts/:id/tov` accepts optional `rsRecordedAt` (not in the future) | "Tarikh Rekod RS" | GUR-3 | DM-49 (extended), API-RPT-10 |
+| ADD-15 | Intervention review: `POST /api/kirkpatrick/interventions/:id/review` writes `after_accuracy` (accuracy of the 14 days after the record), allowed 7 days or more after `action_date` | "Semak keputusan" | GUR-11, AS-11 | DM-30 (extended), API-RPT-17 (new) |
+| ADD-16 | API-AS-05 list accepts `level` (T1 to T5) and `classroomId` filters | Tingkatan and Kelas filters of Senarai Pelajar | AS-51 | API-AS-05 (extended) |
+| ADD-17 | Teacher diagram image submission: `POST` of one image (`jpg`, `png`, `webp`, at most 5 MB) for a question that needs a figure; the image stays pending until an admin accepts | "Upload per card" of Soalan Gambar Rajah | GUR-44c | API-Q-21 (extended) |
+| ADD-18 | Teacher video create: body `{title, url, subjectId?, category}`; `videos.category` accepts `motivasi`, `tutorial`, `tips_spm`, `ceramah`, `lain`; stored with `visibility` = `school` and the teacher's `school_id`; list shows global videos plus the own school's | Video form | GUR-7 | DM-76, API-MUR-05 (extended) |
+| ADD-19 | API-GUR-16 gains `GET /api/guru/question-sets/:id/results?classroomId=` and the copy body `{classroomIds}` | Results per class and "Salin" | GUR-8b | API-GUR-16 (extended) |
+| ADD-20 | API-AS-07 create-teacher body gains `subject`, `qualification`, `ic?`, `password?` | Cipta Pengguna form of Senarai Guru | AS-52 | API-AS-07 (extended) |
+| ADD-21 | API-GUR-24 delete returns 409 "Soalan sedang digunakan dalam misi." while an active Misi draws the question | Private question delete guard | GUR-44a | API-GUR-24 (extended) |
+| ADD-22 | API-GUR-19 limits: `.csv` only, 2 MB, 500 data rows; the error file is generated on the client from the response | Question CSV import | GUR-44 | API-GUR-19 (extended) |
 
 **Conflicts between this file and 60 resolved here**
 
