@@ -18,6 +18,7 @@ When a module section conflicts with this file, the module section wins only if 
 - **FR-X1-2** No menu, page, tab or section is added, removed or renamed beyond what this PRD specifies (D77 and the user's standing rule). Layout and design-system improvements are allowed; changes to the user experience are not.
 - **FR-X1-3** Every requirement that cites V2 or V1 names its evidence (screenshot, V2 code file, or discovery document). Unobserved behaviour is never written as fact.
 - **FR-X1-5 Close the gaps, never rewrite (user, 2026-11-04: "cari macam mana nak close gap, fix gap, improve gap je.. jangan buat from scratch").** The existing V3 code (`feature/v3-bijak-r1`) is the base.
+  - **FR-X1-5 guardrail (read this first).** V3 already exists. Each module's *Action* and *Current gap* say what to change. The *Screen specification* describes the target behaviour; it is **not** an instruction to rebuild the screen. Before coding a card: (1) run a code gap check of the existing V3 code against every FR/AC of the card and post it on the issue (FR/AC → works / broken / missing, with file:line); (2) change only what is broken or missing, in the existing files; (3) prove the ACs, including the AC-CHAIN (section X9) that passes through the module.
   - Each module section states an **Action**:
     - **Keep**: it already matches; verify only.
     - **Fix**: existing code is wrong.
@@ -96,6 +97,48 @@ Source: `docs/Matriks-Akses-Peranan .xlsx`, columns *Murid 1.0*, *Guru 1.0*, *Ad
 - **FR-X4-2** A count on a pupil surface shows what that surface can actually serve (D91). The admin "Dilihat murid di n/6" indicator must agree with what pupils actually receive. On UAT it shows 0/6 while Latih Tubi serves the questions, which is a defect.
 - **FR-X4-3** "No data" is never shown as a negative result. For example, a pupil with no practice is "Tiada data", not "Berisiko Tinggi" (Amaran Awal), and a period with no activity is not "Penurunan 73.3%" (Kirkpatrick).
 - **FR-X4-4** Each pupil sees **only their own** data on pupil screens. A pupil route that renders school-wide data (today Prestasi → Dashboard Sekolah) is a privacy defect and P0.
+- **FR-X4-5 One answer store, one computation and one precision per metric (D-A1, D-A10).** Every pupil activity that answers questions writes each answer to the single answer store owned by practice, `practice_answers` (M05), with a **mode** value: Latih Tubi, Soalan by Chapter, SPM Databank, Kuiz, Bijak sittings including Tracking A, Subjektif and Kertas Subjektif self-marked results, Set Soalan Guru (`question_set`), Simulasi, Misi, Remedial / Ulang Kaji and question-based games. The exact mode values are in the API contract (API-PRAC-01) and the data model (50). Every report reads that one store and includes every mode: pupil Prestasi, Dashboard, Profil, Analisa Item, Heatmap, Remedial, Analitik; teacher and school-admin Prestasi, Laporan, Laporan Mingguan, Analisa Item, Command Center, Monitoring, Kirkpatrick; Admin Pusat Command Center, Monitoring, Analitik, Laporan and Kirkpatrick; Headcount AR (the modes HC-3 lists). A report that excludes a mode says so in its own caption. No report reads a separate Bijak aggregate for these figures (`practice_attempt_aggregates` stays a detail of the Bijak result screen). A self-marked part writes its marks awarded and marks available and counts as correct only when it earned full marks; changing a self-mark replaces the row, never adds one. Resubmitting an attempt never duplicates rows.
+
+  **FR-X4 precision list** (the metric list; one computation, one display precision, on every screen of every role including Admin Pusat; XS ids are in `20-guru-admin-sekolah.md` §5):
+
+  | Metric (BM label) | Computation | Display |
+  |---|---|---|
+  | Soalan Dijawab | XS-4: count of answer rows in `practice_answers`, all modes | whole number |
+  | Soalan Diuji / Soalan Unik | XS-7: distinct `question_id` answered | whole number |
+  | Ketepatan, Ketepatan Purata, Purata Ketepatan, Tahap Penguasaan, "betul" % on tiles | XS-5: pooled correct ÷ answered x 100 (never a mean of session accuracies); "—" with 0 answers; never above 100 | whole-number percent, rounded half up, on every screen (V2 pupil screens show whole numbers); the stored value keeps full precision |
+  | Skor Purata (Kirkpatrick, Laporan) | mean of per-session accuracies, a separate named measure | whole-number percent, never labelled "Ketepatan" |
+  | Pelajar berdaftar / aktif, Guru | XS-1 / XS-2 / XS-3 | whole number |
+  | Headcount AR, OTR, grade, On Track | HC-SPEC in 20 R1-GUR-3 (AR in Auto mode is a whole number) | as HC-SPEC |
+  | Penguasaan Subjek / mastery bands | thresholds table in X4b | as X4b |
+  | Syiling per correct answer | admin setting "Syiling flat / soalan betul" (default 1), never a code constant (D-A11) | whole number |
+  | Kesukaran (5 labels) | difficulty 1 to 5 stored on the question; (3 labels) 1-2 "Mudah", 3 "Sederhana", 4-5 "Sukar" | label |
+
+  **AC-X4-1** Given a pupil with 10 Latih Tubi answers (7 correct) and one Bijak sitting of 40 MCQ marks (30 correct), then pupil Prestasi, teacher Prestasi Kelas, school-admin Prestasi and the Admin Pusat Laporan for that pupil all show "Soalan Dijawab" 50 and "Ketepatan" 74, XS-7 is 50 when the 50 answered questions are all different, and the sitting is listed as one session.
+  **AC-X4-2** Given three pupils of one class with 1, 2 and 7 answers of which 1, 1 and 4 are correct, then Ketepatan per pupil is 100, 50 and 57, and for the class 6/10 = 60 (pooled), not 69 (the mean of the three).
+
+### X4a Source table (which activity feeds which figure)
+
+Because every mode writes to `practice_answers` (FR-X4-5), the table has one rule: **Y = counted**. Exceptions are written in the report's own caption.
+
+| Activity (mode value in API-PRAC-01) | Pupil Prestasi / Dashboard | Analisa Item (per question) | Heatmap / Analitik (per Bab / SP) | Teacher, AS, Admin Pusat reports, XS-4 / XS-5, Command Center | Headcount AR |
+|---|---|---|---|---|---|
+| Latih Tubi, Soalan by Chapter, Databank, Kuiz, Remedial, Misi, Set Soalan Guru (`question_set`), PKSK, question-based games | Y | Y | Y when the question has Bab / SP | Y | Y for the modes HC-3 lists |
+| Bijak / Simulasi sittings, Tracking A, Subjektif and Kertas Subjektif (objective and self-marked parts) | Y (sitting also listed as one session) | Y | Y when the question has Bab / SP | Y | Y for the modes HC-3 lists |
+
+Every other figure derived from these rows (sessions, streak, coins, XP) follows its owner module. Where a screen shows a Bijak unit ("sesi", "kertas") it is a count of sittings, not of answers.
+
+### X4b Mastery band thresholds (intentionally different per screen, V2; do not unify)
+
+| Screen | Bands |
+|---|---|
+| Prestasi, Penguasaan Subjek | green at least 80, amber 60-79, red below 60 |
+| Heatmap Topik Lemah | red below 50, amber 50-79, green at least 80, grey "Belum cuba" |
+| Analitik Adaptif (SP) | Mahir at least 75, Sederhana 50-74, Lemah below 50, "Belum cuba" |
+| Analisa Item (pupil) | accuracy pill red below 60; Pemulihan: at least 2 attempts and 0 correct; Pengukuhan: at least 2 attempts and some correct |
+| Remedial | card when pooled accuracy is below 60 (target 60) |
+| Analisa Item (teacher, per question) | per `20-guru-admin-sekolah.md` (70 / 40 bands) |
+
+These differ on purpose because each follows its V2 screen; a developer does not merge them.
 
 ## X5. Environments and data reality
 
@@ -117,7 +160,7 @@ Source: `docs/Matriks-Akses-Peranan .xlsx`, columns *Murid 1.0*, *Guru 1.0*, *Ad
 | NFR-2 Language | All UI copy in Bahasa Melayu, quoted exactly from V2 (or V1). New copy needs the user's approval (D94). |
 | NFR-3 Accessibility | Replicates V2/V1 (D10). No regressions: labels on form controls, visible focus, touch targets usable on mobile. |
 | NFR-4 Performance and rate limits | Normal admin navigation (one page every 2–3 s) never hits HTTP 429. Today fast navigation shows "Ralat" on Kurikulum/Subjek/Tahap/Set Builder. Limits are tuned per route group. A 429 shows a retry message, never an empty "Ralat" screen. |
-| NFR-5 Privacy | No real person's name in docs, seeds or code. Pupils never see another pupil's personal data (X4-4). |
+| NFR-5 Privacy | No real person's name in docs, seeds or code. Pupils never see another pupil's personal data (X4-4). A pupil is shown to other pupils by the **display name = first name only, with no school**; the full name is shown only to the pupil's own teachers, the school admin and Admin Pusat. A pupil cannot change Tingkatan, school or role through `PUT /api/me`. |
 | NFR-6 Feature flags | ALESA AI (D73) and Keluarga Angkat (D74) stay hidden in 1.0. |
 | NFR-7 Errors | Every list and form has defined loading, empty and error states with BM copy. No silent failures. For example, intake "Sedang diproses" must time out with an error. |
 
@@ -153,6 +196,28 @@ A module or task is **done** only when all of these hold:
 
 Evidence capture rules: V1/V2 are read-only, one browser at a time, at least 3 s between pages. The V2 server blocks an IP after rapid scripted access (observed 2026-11-03).
 
+## X9. End-to-end data chains
+
+Each chain follows **one data record** from the place it is entered to every screen and process that must show or use it, across portals. Each is one Playwright spec on the UAT-like dataset (plan card S9-T06), runs at 1280 px with a 375 px pass of the pupil steps, and must pass before the modules it crosses are Done (FR-X1-5). Unless stated, the pupil is new (no earlier answers), the Syiling rate is the default 1, and the school, class and pupil are the seeded demo ones. Values are exact; "same number" means identical under the FR-X4 precision list.
+
+**AC-CHAIN-1 Question group to every report.** Given the admin creates in the Studio wizard the stimulus group "Rajah 3" with 3 MCQ (Sains, Tingkatan 4, Bab 2, one SP, TP 3, difficulty 3), approves and publishes them, then: (a) a publish attempt of a fourth question with no Bab is refused with the gate list naming Bab; (b) the T4 pupil's Latih Tubi Sains with 10 questions serves the 3 together with "Rajah 3" shown once; (c) Soalan by Chapter shows Bab 2 with "3 soalan"; (d) the pupil answers 2 right and 1 wrong. Then: pupil Prestasi "Sesi Kuiz" 1, "Soalan Dijawab" 3, "Ketepatan" 67; Analisa Item lists the wrong one under "Isyarat Awal" and "Soalan Dijawab" 3; the Heatmap Bab 2 tile reads "3 cuba · 67% betul" (amber); the teacher's Prestasi Kelas for the class of that pupil shows "Soalan Dijawab" +3 and XS-7 +3; the school-admin Prestasi shows the same +3; Admin Pusat Laporan shows +3 answers and +1 session for the window; the wallet is +2 Syiling and +20 XP (2 correct x rate 1; 10 XP each).
+
+**AC-CHAIN-2 Paper PDF to a pupil sitting and every report.** Given the admin uploads a paper PDF (Sains, T4, Kertas 1) with Bahagian A of 10 items, Bahagian B of 5 items, and items 5 to 8 sharing "Rajah 3", accepts all 15 and uses "Hantar untuk semakan", then one draft paper with 2 sections and 15 placements exists, items 5 to 8 adjacent in one section, listed in "Kertas Diimport" with "Bilangan Soalan" 15; after "Semak & Terbit" under a Disahkan contract it is listed to a T4 pupil in Bijak. The pupil sits it: "Rajah 3" shows once for items 5 to 8; the pupil answers all 15 with 12 correct and presses Hantar twice. Then: `practice_answers` holds exactly 15 rows of the Simulasi/Bijak mode (12 correct); the result shows "12 / 15"; pupil Prestasi "Soalan Dijawab" 15 and "Ketepatan" 80 with the sitting listed once with its Bijak label; the teacher and school-admin Prestasi and Admin Pusat Laporan show +15 answers; the wallet is +12 Syiling and +120 XP.
+
+**AC-CHAIN-3 Bijak lanes: Tracking A and Subjektif.** Given a complete Tracking A set of 40 MCQ, when the pupil answers 30 correctly, then 40 rows of the Tracking A mode exist, "Soalan Dijawab" is +40, "Ketepatan" is 75 for this pupil, the hub "Prestasi SPM Anda" counts one session, and Headcount AR (Auto, Sains config) includes the 40 rows when HC-3 lists the mode. Given a Subjektif part of 4 marks, when the pupil submits and self-marks 3 through `POST /api/bijak/attempts/:id/self-mark`, then one row holds 3 awarded of 4 available (not counted correct), the Prestasi session list shows "3 / 4" and the wallet gains 3 x rate in Syiling + 30 XP; when the pupil changes the self-mark to 4, then the same row updates (still one row), counts as correct, and the wallet gains only the delta of 1 mark (+1 Syiling, +10 XP).
+
+**AC-CHAIN-4 Class, Set Soalan, results.** Given the teacher creates class "4A" and adds pupil P1, and class "4B" with pupil P2, then P1's Kelas Saya lists 4A, the teacher and the classmates by first name only (no surname, no school), has no "Masukkan Kod Kelas" or "Sertai", and P2 does not see 4A. Given the teacher builds a set of 5 approved questions, where the question list includes one member of a 2-question stimulus group without its sibling, then saving is refused (422, `fields.questionIds`); with both members selected it saves, and the teacher assigns it to class 4A only. Then P1 sees the set in Set Soalan Guru, P2 does not, and P2 opening the set id gets 404. P1 answers the 5 questions with 4 correct: 5 rows of mode `question_set` exist, the teacher's set results show Penyertaan 1 and Skor Purata 80, class Prestasi +5 answers and the school-admin Prestasi +5.
+
+**AC-CHAIN-5 Headcount from key-in to every view.** Given the teacher sets for Sains in class 4A TOV 40 and RS/ETR 80 with 3 OTRs in an Auto config ("Simpan Sasaran"), and the pupil has answered 10 Sains questions with 6 correct, then the teacher's table shows OTR1 53, OTR2 66, OTR3 80, AR 60, "Jurang +40" and pupil status "Below"; the pupil's `/headcount` card reads "Active" and its detail shows the same targets, AR 60, "Belum capai sasaran", Keyakinan "Sederhana" and status "Below"; the school admin's read-only list and the Prestasi Headcount pill show "Below" for the same pupil; "{n} entri headcount" is the same count on all of them. When the pupil then answers 10 more Sains questions all correct (16 of 20), AR becomes 80, status "On Track", Keyakinan "Tinggi", and the teacher's "On Track" count rises by 1 on Dashboard Headcount and the class dashboard.
+
+**AC-CHAIN-6 Teacher question to the pupil.** Given the teacher submits through Sumbang Soalan one MCQ (Sains, Tingkatan 4, 4 options, 3 stars), then the teacher's list shows it "Menunggu Semakan" and the admin's "Kiriman Guru" lists it with source guru. Given the admin opens it in the Studio wizard (Subjek, Tingkatan, options and key prefilled), then Terbitkan is refused while Bab, SP or TP is empty and accepted after the admin sets Bab 2, an SP and TP 3. Then the teacher's list shows "Diluluskan"; a T4 pupil's Soalan by Chapter Bab 2 counts it ("1 soalan" more); after one pupil answers it the teacher's "Digunakan" rises per its definition in R1-GUR-44; a question the admin has not completed is shown to no pupil.
+
+**AC-CHAIN-7 Support ticket.** Given a T5 pupil creates a ticket with Subjek "Tidak boleh buka kertas" and a Butiran, then it is listed to the pupil as "Dibuka" and to the admin in `/admin/tiket` with the role "Murid" and the pupil's school. Given the admin saves a reply and a status, then the pupil's ticket list shows the reply under "Balasan Sokongan" and the new status label with no reply box; the pupil of another school requesting that ticket id gets 404; the same flow with a teacher and a school-admin account shows the role "Guru" / "Admin Sekolah" in the admin queue.
+
+**AC-CHAIN-8 School, quota and users to role visibility.** Given the admin creates a school with a seat limit of 30 pupils and an Admin Sekolah account, and that school admin logs in, then the school admin imports a file of 31 pupils and the whole file is refused with "Kuota penuh! Sila tingkatkan kuota dahulu."; a file of 30 imports (pending approval until Admin Pusat approves) and XS-1 is 30 on the school-admin dashboard and in Admin Pusat. A teacher created by the school admin can log in at once. A pupil can log in with the identifier, a password of 7 characters is refused and 8 accepted; the pupil sees exactly the pupil menu, `/admin` and `/prestasi/sekolah` are refused, a hidden module returns the standard 404 page, `PUT /api/me` with another `grade` or `schoolId` leaves the stored values unchanged, and a pupil of another school requesting this pupil's record gets 404; the school admin sees only the 30 pupils of its own school.
+
+**AC-CHAIN-9 Coins to redemption.** Given the admin Syiling rate is 1, a pupil with 7 of 10 correct in Latih Tubi gains 7 Syiling and 70 XP; the admin sets the rate to 3 and the next 7 of 10 gives 21 Syiling; the Papan Pendahulu tab "Minggu" of the class shows the pupil's first name with 28 Syiling for the period. Given a pupil with 120 Syiling at tier Gangsa (50 : 1) converts 100, then the pupil has 2 tokens and 20 Syiling. Given a gift priced 2 tokens, the pupil redeems it, then tokens are 0, "Tebusan Saya" shows "Menunggu", the admin queue lists it, and after the admin pastes the code the pupil sees "Dihantar" with the code; a second redemption that the admin cancels shows "Dibatalkan" and the tokens are refunded exactly once.
+
 ## X8. Glossary
 
 | Term | Meaning |
@@ -161,5 +226,8 @@ Evidence capture rules: V1/V2 are read-only, one browser at a time, at least 3 s
 | Kontrak / Blueprint | Per subject × paper rule set (sections, quotas, marks). *Disahkan* = verified; required for pupil-facing papers (D76). |
 | Set Builder | The single V2 tool to assemble a paper from the bank and publish it (Terbit). |
 | Stimulus group | One shared image or passage with its questions, shown once and moved as a unit (D90). |
-| Bab / SP | Chapter / Standard Pembelajaran from DSKP; used by Soalan by Chapter, Topik, Peta Belajar, Heatmap and Analitik. |
+| Bab / SP | Bab = textbook chapter (the only word used; never "Unit"); SP = Standard Pembelajaran from DSKP (under its Tajuk and SK). A question cannot be published without Bab, SP and TP/aras (admin gate); the admin work-list "Soalan tanpa Bab" lists legacy questions without one. Used by Soalan by Chapter, Topik, Peta Belajar, Heatmap and Analitik. |
+| Display name | A pupil's first name only, no school; the only pupil name shown to other pupils. |
+| Answer store | `practice_answers`, owned by practice (M05): one row per answered question, with a mode value; the only source of every answer-based figure (FR-X4-5). |
+| Difficulty / TP | Difficulty 1 to 5 and TP 1 to 6 are stored separately; the three labels Mudah / Sederhana / Sukar are derived from difficulty (1-2, 3, 4-5). |
 | P0 / P1 / P2 | Blocks 1.0 / important for 1.0 / polish, can follow 1.0. |

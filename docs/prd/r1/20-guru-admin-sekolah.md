@@ -1,5 +1,7 @@
 # SRS — Guru & Admin Sekolah portals (R1)
 
+> **Read this first.** V3 already exists. Each module's *Action* and *Current gap* say what to change. The *Screen specification* describes the target behaviour; it is **not** an instruction to rebuild the screen. Before coding a card: (1) run a code gap check of the existing V3 code against every FR/AC of the card and post it on the issue (FR/AC → works / broken / missing, with file:line); (2) change only what is broken or missing, in the existing files; (3) prove the ACs, including the AC-CHAIN that passes through the module (40 §X9).
+
 | Item | Content |
 |---|---|
 | Purpose | Software requirements specification for the Guru (teacher) and Admin Sekolah (school admin) portals of PrestasiPlus V3, release R1. It is self-contained: a developer who never opens V1 or V2 and receives no screenshots can build every screen from the "Screen specification (from V2)" subsection, the FRs and the ACs of each module. |
@@ -57,6 +59,7 @@ V2 first. V1 where V2 lacks the module or V2 is broken (D9). Otherwise [PRINCIPL
 
 ### 1.4c Scope rules (one rule per role)
 - **SC-G (Guru):** a teacher's data = the distinct pupils enrolled in the teacher's own classes ("kelas anda"), Tingkatan 1-5. It applies to Command Center, Dashboard, Headcount, Prestasi, Analitik Adaptif, Analisa Item, Kirkpatrick, Laporan, Laporan Mingguan, Pelajar Saya. **One documented exception: Monitoring**, whose V2 view carries the banner "Data ditapis untuk sekolah anda sahaja." (`guru/monitoring.blade.php:10`, `TeacherController::monitoring`): it covers the teacher's whole school. Evidence for the class rule: V2 `GuruAnalyticsController` (`studentIds($t)` over `classrooms.teacher_id`), V2 `KirkpatrickController` ("scoped to the authenticated guru's own classes"), V2 `TeacherAnalyticsController`. This closes OQ-G-8 and OQ-G-9. Captions never claim a wider scope than the data ("kelas anda" instead of V1's "keseluruhan sekolah").
+- **Names (D-A12):** teachers, Admin Sekolah and Admin Pusat see pupils by full name within their scope; another pupil sees a pupil by first name only and no school (pupil screens, `10-murid.md`).
 - **SC-AS (Admin Sekolah):** the school of the session user, Tingkatan 1-5, derived server-side; no school id from URL, query or body; no school = 403; an object of another school = 404; other roles on `/admin-sekolah/*` = 403 (never the V1 500 picker).
 
 ### 1.5 Responsive pattern catalogue (FR-X6-1..5; thresholds aligned with FR-X6-2/X6-3)
@@ -236,19 +239,19 @@ Data scope: SC-G (1.4c). Number definitions: section 5 (XS-1..XS-6).
   - **States:** empty observed ("Jumlah tiket: 0"). Populated list rows, ticket thread page, replies, success/error messages: Not observed in V2 — follow FR-GUR-A4-2 and FR-GUR-A4-4.
 - **Current gap:** None in the screen (built). The scope filter hides the entry (`src/app/prototype-scope.ts`, `ACCOUNT_ITEMS`): show it in Delivery B; support contact setting OQ-X-1. Verify the ACs only.
 - **Route** `/pusat-tuisyen/tiket` (+ `/baru`, `/:id`). **Matrix** A4. **Priority** P2. **Status** GH/UAT built (list, "Tiket Baru", status filter, empty state), hidden by scope.
-- **Reference [V2] sidebar "Bantuan" > "Tiket Bantuan"; [V1] M22; same screens as `10-murid.md` R1-MUR-A4**: list with status filters "Semua", "Dibuka", "Dalam Proses", "Menunggu Balas", "Selesai", "Ditutup"; "Tiket Baru" (Subjek, Butiran: no category); thread with replies. The support contact shown on the page comes from the admin setting of A3.
+- **Reference [V2] sidebar "Bantuan" > "Tiket Bantuan"; [V1] M22; same screens as `10-murid.md` R1-MUR-A4**: list with status filters "Semua", "Dibuka", "Dalam Proses", "Menunggu Balas", "Selesai", "Ditutup"; "Tiket Baru" (Subjek, Butiran: no category); the ticket page shows the single admin reply (OD-4). The support contact shown on the page comes from the admin setting of A3.
 - **Functional requirements**
   - **FR-GUR-A4-1** "Tiket Bantuan" appears under "BANTUAN" and in the account menu (A4 is ticked for every role, D108(4)).
-  - **FR-GUR-A4-2** The teacher creates a ticket, sees only own tickets, replies while the ticket is not "Ditutup", and sees staff replies and status; the ticket reaches the Admin Pusat "Urus Tiket" screen (V2 `/admin/tiket`, Admin PRD).
+  - **FR-GUR-A4-2** (OD-4 of `50-data-model-erd.md`: single reply, no thread) The teacher creates a ticket (Subjek, Butiran), sees only own tickets, and sees the single admin reply under "Balasan Sokongan" and the status; the teacher cannot reply to it (a new ticket is opened instead); the ticket reaches the Admin Pusat "Urus Tiket" screen (V2 `/admin/tiket`, Admin PRD).
   - **FR-GUR-A4-3** The support-contact block uses the same setting and 200-always endpoint as FR-GUR-A3-2.
-  - **FR-GUR-A4-4** Every button works (Tiket Baru, filters, Hantar balasan, Kembali); no mock data.
+  - **FR-GUR-A4-4** Every button works (Tiket Baru, filters, Kembali); there is no "Hantar balasan" for the owner (OD-4); no mock data.
   - **FR-GUR-A4-5** Responsive: RP-TABLE-LIST cards, RP-FORM, attachment picker full width, RP-TOUCH.
 - **Acceptance criteria**
   - **AC-GUR-A4-1** Given "Guru UAT" with no tickets, when "Tiket Baru" is sent with subjek "Ujian" and a message, then the list shows it with status "Dibuka" and the Admin Pusat tiket screen lists it.
   - **AC-GUR-A4-2** Given an admin reply on that ticket, when the teacher opens it, then the reply and the new status show.
   - **AC-GUR-A4-3** Given another user's ticket id, when the teacher opens it, then 404.
   - **AC-GUR-A4-4** Given an empty list, when the page opens, then the empty state and the "Tiket Baru" button show.
-  - **AC-GUR-A4-5 (R)** Given 3 tickets, when the list opens at 375, 768 and 1280 px, then scrollWidth <= innerWidth, tickets are cards at 375 and 768, and "Tiket Baru", the status filter and "Hantar balasan" are visible and >= 44 px.
+  - **AC-GUR-A4-5 (R)** Given 3 tickets, when the list opens at 375, 768 and 1280 px, then scrollWidth <= innerWidth, tickets are cards at 375 and 768, and "Tiket Baru", the status filter are visible and >= 44 px.
 - **Open** none.
 
 ### R1-GUR-A5 Log Keluar
@@ -405,12 +408,13 @@ Data scope: SC-G (1.4c). Number definitions: section 5 (XS-1..XS-6).
 - **Route** `/headcount`, `/headcount/dashboard`, `/headcount/create`, `/headcount/:id` (table), `/headcount/:id/results/:n`, `/edit`, `/unjuran`, `/settings`, `/summary`, `/export`, `/headcount/student/:id`. **Matrix** 3. **Priority** P1. **Delivery** A. **Status** GH list with 2 configs, Auto-Setup works; `results/:n`, `edit`, `unjuran`, `settings` are placeholder shells (`routes/headcount.ts:69-92` -> `pages/HeadcountShellPage.vue`).
 - **Reference [V1] M08 S12-S23 / [V2] `guru/headcount*.blade.php`, `HeadcountDashboardController`, `StudentParityController::headcountStudent`, `pelajar/headcount-detail.blade.php`.** V2 stores per (teacher, class, subject, year): TOV and RS, and computes AR live; V2 teacher screen "Headcount — Sasaran (TOV → RS)" has TOV/RS inputs ("Simpan Sasaran" does not save in V2: its form has `onsubmit="return false"`, a V2 defect fixed here), AR from attempts, "Padam Headcount?" and "Auto-Setup Headcount" (levels T1-T5). V1 adds OTR checkpoints (2-5), per-pupil rows and the modes Auto/Manual. V3 follows V1 for structure and V2 for the AR and OTR arithmetic that R1-MUR-3 already uses.
   - Screens (V1 copy): hero "Headcount" / "Tracking prestasi murid — TOV, OTR, AR & RS"; buttons "Dashboard", "Buat Baru", "Auto-Setup"; empty "Belum ada headcount." + "Buat Sekarang". Auto-Setup modal "Auto-Setup Headcount" / "Pilih tingkatan untuk auto-cipta headcount": checkboxes T1-T5 (Darjah hidden, D72), "Batal", "Auto-Setup (n)" disabled until one is ticked. "Dashboard Headcount" ("Ringkasan prestasi semua kelas anda", "Senarai Penuh"; filter "Tapis:" "Semua (n)" + levels; cards "Konfigurasi", "Jumlah Murid", "On Track", "Off Track"; "Keseluruhan On-Track {n}%" with legend "On Track:", "Off Track:", "Tiada Data:"). "Buat Headcount Baru": "Pilih Kelas", "Pilih Subjek" ("Name (CODE)"), "Tingkatan", "Tahun Akademik" (default current year, 2020-2100), "Bilangan OTR" (2/3/4/5, default 3; "Minimum 2 OTR · Default 3 OTR · Boleh tukar 2/3/4/5 ikut keperluan kelas."), "Mod Pengiraan Markah" ("🤖 Auto — Markah dikira automatik dari soalan latih tubi SPM + Tracking A pelajar di platform PrestasiPlus." / "✍️ Manual — Cikgu key-in markah pelajar sendiri (cth: dari peperiksaan formal sekolah)."; hint "Boleh ada 1 Auto + 1 Manual untuk kelas + subjek + tahun yang sama."), "Cipta Headcount"; duplicate "Headcount Auto untuk kelas, subjek dan tahun ini sudah wujud." (Manual likewise). Table page `/headcount/:id`: header subject, "{n} Simulasi · Tingkatan {n} · {tahun} · Guru: {nama}", pill "Active"; chips "On Track: {n} ({p}%)", "Below: {n} ({p}%)", "Belum Diisi: {n}", "Jumlah: {n}"; actions "Key-in AR", "Edit TOV/ETR", "Export CSV", "Ringkasan Kelas", "Unjuran", "Tetapan", "Reset Data", "Padam"; "Susun:" "Ranking" / "A-Z"; table select-all · # · Nama · TOV · OTR1 · AR1 … OTRn · ARn · ETR, last row "Purata Kelas"; row selection bar "{n} murid dipilih" with "Gugurkan", "Kembalikan", "Batal". Modals: "Reset Semua Data?" / "Semua markah murid akan dikosongkan — TOV, ETR, OTR, AR & RS." with the safe list "Senarai murid (tidak dipadam)", "Tetapan headcount (subjek, kelas, tahun)", "Batal" / "Ya, Reset"; "Padam Headcount?" / "Anda pasti mahu padam headcount {subjek} ({n} Simulasi, {tahun})?" / "Semua data murid, TOV, ETR, OTR, AR & RS akan dipadam secara kekal." / "Batal" / "Ya, Padam". "Ringkasan Kelas" (`/summary`): cards "Jumlah Murid", "Purata TOV (%)", "Purata ETR (%)", "OTR Aktif"; "Taburan Prestasi Per OTR"; buttons "Lihat Table Penuh", "Export CSV". Pupil page "Headcount — Prestasi Individu": chips TOV/ETR/RS, "Unjuran", trend ("Meningkat", "Stabil", "Menurun"), "Keyakinan", chart, table Checkpoint · Target (%) · Gred Target · AR (%) · Gred AR · Status, box "Ketepatan Ramalan ETR vs RS" ("Ramalan Tepat" |d| <= 5, "Hampir Tepat" <= 10, "Selisih Besar" > 10).
+- **Headcount computation spec (HC-SPEC) — the ONE definition of TOV, ETR, OTR, AR, status, Jurang, Unjuran and Keyakinan.** The rules below (model, OTR targets, grade, AR in Auto and Manual mode, status per checkpoint, Ringkasan Kelas bands, Unjuran and Keyakinan) are cited by id: **HC-1** TOV/ETR/Jurang (Jurang = ETR − TOV); **HC-2** OTR targets and rounding; **HC-3** AR sources and modes; **HC-4** the single "On Track" rule; **HC-5** grade and rounding of bands; **HC-6** Unjuran and Keyakinan. `10-murid.md` R1-MUR-3 / R1-MUR-4 (pupil), R1-AS-3 (school admin, read-only), Prestasi, Dashboard and Command Center refer to HC-SPEC and define no rule of their own. **HC-4 (the only "On Track" rule): AR >= OTR_k of the checkpoint; pupil status = the latest checkpoint that has an AR.** The V2 teacher screen shows no headcount status, and V2 pupil-side variants (AR >= ETR, midpoint of TOV/ETR, AR >= TOV) are not consistent, so V1 applies (D9). The V2 Dashboard Guru tiles "On Track" / "Off Track" with the captions "Ketepatan 55% atau lebih" / "Ketepatan di bawah 55%" are a different, V2-observed pupil-accuracy band (XS-5 >= 55) in "Tindakan Hari Ini"; they keep their caption and are never counted as, or compared with, Headcount status. Worked example (TOV 40, ETR 80, n = 3, AR 60): OTR1 = 53, OTR2 = 66, OTR3 = 80; Jurang = +40; AR 60 is On Track at OTR1, Below at OTR2 and OTR3; pupil status "Below"; Keyakinan "Sederhana" (AR >= TOV, AR < ETR).
 - **Headcount model and rules (single definition; consistent with `10-murid.md` R1-MUR-3 which the pupil reads)**
   - Config = class + subject + Tingkatan + year + mode (Auto or Manual) + `activeOtrs` n (2-5). At most one Auto and one Manual per class + subject + year.
   - Per pupil values: **TOV** (take-off value, 0-100, 1 decimal, teacher-entered), **ETR** (final target, "Sasaran Akhir", 0-100, teacher-entered; the pupil screen of R1-MUR-3 calls the same number "RS (Sasaran)"), **OTR1..OTRn** (interim targets), **AR1..ARn** (result at each checkpoint), and an optional **RS actual** (real SPM result, "RS (SPM Sebenar)", entered after the exam with its date "Direkod: {dd Mon yyyy}").
-  - **OTR targets** are computed, never typed: for k = 1 .. n-1, OTR_k = round(TOV + (ETR − TOV) × r_k) where r_k = floor(100 × k / n) / 100 (n=2: 0.50; n=3: 0.33, 0.66; n=4: 0.25, 0.50, 0.75; n=5: 0.20, 0.40, 0.60, 0.80); OTR_n = ETR. `round` = half away from zero to a whole number, as the pupil view (R1-MUR-3 uses 0.33 and 0.66 for n = 3, matching V2 `headcount-detail.blade.php:151-153`). Displayed targets are whole numbers; TOV/ETR/AR keep 1 decimal.
-  - **Grade** from a percentage: A+ 90-100, A 80-89, A- 70-79, B+ 65-69, B 60-64, C+ 55-59, C 50-54, D 45-49, E 40-44, G < 40; grade points A+ 0 … G 9; GPS = mean grade point.
-  - **AR in Auto mode**: AR = round(correct ÷ attempts × 100) over the pupil's own attempts in that subject (SPM latih tubi and Tracking A modes, M05) in the config's year; the same current AR is compared with every checkpoint (V2 note "tiada sejarah AR per-checkpoint disimpan"); the AR columns are read-only and "Key-in AR" is not shown. "—" when the pupil has no attempts.
+  - **OTR targets** are computed, never typed: for k = 1 .. n-1, OTR_k = round(TOV + (ETR − TOV) × r_k) where r_k = floor(100 × k / n) / 100 (n=2: 0.50; n=3: 0.33, 0.66; n=4: 0.25, 0.50, 0.75; n=5: 0.20, 0.40, 0.60, 0.80); OTR_n = ETR. `round` = half away from zero to a whole number, as the pupil view (R1-MUR-3 uses 0.33 and 0.66 for n = 3, matching V2 `headcount-detail.blade.php:151-153`). Displayed targets are whole numbers; TOV/ETR keep 1 decimal; Auto AR is a whole number; a Manual AR keyed by the teacher is the only figure that may show 1 decimal.
+  - **Grade** from a percentage (the value is first rounded to a whole number, half away from zero, so 89.5 reads as 90 = A+): A+ 90-100, A 80-89, A- 70-79, B+ 65-69, B 60-64, C+ 55-59, C 50-54, D 45-49, E 40-44, G < 40; grade points A+ 0 … G 9; GPS = mean grade point.
+  - **AR in Auto mode**: AR = round(correct ÷ answered × 100), a whole number, over the pupil's own rows in the single answer store `practice_answers` (M05) whose question belongs to the config's subject and whose answer date falls in the config's year, **from every mode** (Latih Tubi, Soalan by Chapter, SPM Databank, Kuiz, Bijak sittings including Tracking A, Subjektif self-marked parts, Set Soalan Guru `question_set`, Simulasi, Misi, remedial and question-based games; D-A1). The BM hint "Auto — Markah dikira automatik dari soalan latih tubi SPM + Tracking A pelajar di platform PrestasiPlus." stays as the exact V1 copy. The same current AR is compared with every checkpoint (V2 note "tiada sejarah AR per-checkpoint disimpan"); the AR columns are read-only and "Key-in AR" is not shown. "—" when the pupil has no answers.
   - **AR in Manual mode**: AR_k = the number the teacher keyed for OTR k (0-100, 1 decimal); empty = "—"; no computation from attempts. TOV and ETR are keyed in both modes.
   - **Status per checkpoint**: AR >= OTR_k = "On Track" (green row, check icon); AR < OTR_k = "Below" (red row, arrow-down); no AR = "—". **Status per pupil** = the latest checkpoint that has an AR. **Config On Track %** = on ÷ (on + below) × 100, `round`. A pupil without ETR has status "Belum Ada Data". This single rule feeds the pill, the chips, Dashboard Headcount, the class dashboard "On Track"/"Below" and Prestasi (fixes V1 D-28).
   - **"Ringkasan Kelas" bands** (refinement of the same rule, so counts agree): "Above Target" = AR − OTR > 2; "On Track" = 0 <= AR − OTR <= 2; "Below Target" = AR < OTR; "Belum Diisi" = no AR. On Track total everywhere = Above + On Track (legend copy "On Track (±2%)" becomes "On Track (0 hingga +2)", DV-GUR-3-1).
@@ -429,19 +433,24 @@ Data scope: SC-G (1.4c). Number definitions: section 5 (XS-1..XS-6).
   - **FR-GUR-3-4** Key-in AR, Edit TOV/ETR, Unjuran, Tetapan, Export CSV, Ringkasan Kelas, row selection ("Gugurkan"/"Kembalikan") and the two modals all work; no shell page remains.
   - **FR-GUR-3-5** The pupil page and list read these configs exactly as described under "What the pupil sees".
   - **FR-GUR-3-6** "On Track"/"Off Track" on Dashboard Headcount equal the class dashboard "On Track"/"Below" of Prestasi for the same configs, and the count "{n} entri headcount" equals what the school GPS card of Prestasi (AS-4) states.
+  - **FR-GUR-3-8** HC-SPEC above is the only definition: the teacher pages, the pupil pages (R1-MUR-3), the school-admin pages (R1-AS-3), Prestasi, Dashboard and Command Center call the same rules; Auto AR reads `practice_answers` of all modes (HC-3).
+  - **FR-GUR-3-9** "💾 Simpan Sasaran" on the per-subject card saves the typed TOV and RS (= ETR) as the default of every config of that subject and year of the teacher's classes; a pupil entry with its own TOV/ETR keeps it, an entry without reads the default. A pupil's entry counts as "Active" when it has TOV and ETR (own or default), else "Draft". (Storage and endpoint: `50-data-model-erd.md` / `60-api-contract.md`, finding F-11.)
   - **FR-GUR-3-7** Responsive: hero buttons wrap and are >= 44 px (V1 used 10 px text); the config list is RP-TABLE-LIST cards at 375; the pupil table (TOV, OTRs, ARs, ETR) is RP-TABLE-WIDE with sticky "Nama" column; Key-in AR rows are one input per row with >= 44 px height; chart RP-CHART; modals RP-MODAL.
 - **Data** Owner M08 (`apps/api/src/modules/reports/performance/headcount/*`); M05 for Auto AR. Endpoints exist for list, dashboard, form-options, create, auto-setup, summary, export, detail, drop-students, reset, delete; **new**: key-in AR, edit TOV/ETR, settings.
 - **Acceptance criteria**
   - **AC-GUR-3-1** Given class "5 UAT" with Sejarah and no config, when Auto-Setup is run for T5, then one Auto config "Sejarah" appears; when run again, then no second config is created.
   - **AC-GUR-3-2** Given TOV 40 and ETR 80 with n = 3, when the table opens, then OTR1 = 53, OTR2 = 66, OTR3 = 80; with n = 2, then OTR1 = 60, OTR2 = 80; with n = 4, then 50, 60, 70, 80; with n = 5, then 48, 56, 64, 72, 80.
-  - **AC-GUR-3-3** Given a Manual config, when AR 62.5 is keyed for OTR1 of a pupil and "Simpan" is pressed, then the table shows 62.5 with grade "B", status "On Track" if OTR1 <= 62.5, and Ringkasan Kelas counts the pupil under "On Track" or "Above Target" accordingly.
+  - **AC-GUR-3-3** Given a Manual config with TOV 40, ETR 80 and n = 3 (OTR1 = 53), when AR 62.5 is keyed for OTR1 of a pupil and "Simpan" is pressed, then the table shows 62.5 with grade "B" (62.5 rounds to 63), status "On Track", and Ringkasan Kelas counts the pupil under "Above Target" (62.5 − 53 = 9.5 > 2).
   - **AC-GUR-3-4** Given a pupil with AR 55 and OTR1 53, then "On Track" (Above Target not, since 55 − 53 = 2 is within 0..+2), and with AR 56 then "Above Target"; with AR 52 then "Below Target".
   - **AC-GUR-3-5** Given an Auto config, when the table opens, then no "Key-in AR" control exists and `/headcount/:id/results/1` returns 404.
   - **AC-GUR-3-6** Given a Manual config where the teacher keyed AR 70 for pupil P, when P opens `/headcount/student/:ownId`, then the Manual card shows AR 70 for that checkpoint, the targets of AC-GUR-3-2 and status "On Track", and no classmate value.
   - **AC-GUR-3-7** Given "Reset Data" confirmed, then all TOV, ETR, OTR and AR values are empty, the pupil list is unchanged, and the settings (subject, class, year) are unchanged.
   - **AC-GUR-3-8** Given 10 configs with 6 pupils On Track and 4 Below, when Dashboard Headcount opens, then "Keseluruhan On-Track" = 60% and it equals the class dashboard percentages for the same pupils.
   - **AC-GUR-3-9 (R)** Given a config with 15 pupils and 3 OTRs, when `/headcount/:id` opens at 375, 768 and 1280 px, then scrollWidth <= innerWidth, the table scrolls inside its card with the "Nama" column sticky, and "Key-in AR", "Edit TOV/ETR", "Export CSV" and "Padam" are visible (or in a >= 44 px overflow menu) and >= 44 px.
-  - **AC-GUR-3-10 (U)** Given "Guru UAT" whose class has pupils with answers in Sejarah, when an Auto config is created, then every pupil with answers shows an AR equal to correct ÷ attempts × 100 of that pupil's Sejarah attempts, rounded.
+  - **AC-GUR-3-10 (U)** Given "Guru UAT" whose class has pupils with answers in Sejarah, when an Auto config is created, then every pupil with answers shows an AR equal to correct ÷ answered × 100 of that pupil's Sejarah rows in `practice_answers` (all modes), rounded to a whole number.
+  - **AC-GUR-3-11** Given an Auto Sejarah config and a pupil with 6 Latih Tubi answers (4 correct) and 4 answers in a Bijak sitting (3 correct), when the table opens, then AR = round(7 ÷ 10 × 100) = 70, and with TOV 40, ETR 80, n = 3 the checkpoints read OTR1 53 On Track, OTR2 66 On Track, OTR3 80 Below; pupil status "Below" (latest checkpoint), grade "A-", Keyakinan "Sederhana".
+  - **AC-GUR-3-12** Given TOV 40, ETR 80, n = 3 and AR 60, then OTR1 = 53, OTR2 = 66, OTR3 = 80, Jurang +40, status "Below", Keyakinan "Sederhana", and the pupil view (R1-MUR-3) and R1-AS-3 show exactly the same values.
+  - **AC-GUR-3-13** Given the subject card "Sejarah" with TOV 40 and RS 80 saved with "Simpan Sasaran", when a pupil entry without its own TOV/ETR is opened, then it shows TOV 40 and ETR 80 and is "Active"; a pupil entry with TOV 50 keeps 50.
 - **Gap/root cause** Placeholder pages `routes/headcount.ts:69-92`, `pages/HeadcountShellPage.vue:1-45`; V1/V2 forms were never observed, so the forms above are [PRINCIPLE] derived from the model and R1-MUR-3. **Deviations** DV-GUR-3-1 legend/band; DV-GUR-3-2 V2 "Simpan Sasaran" works. **Open** none (OQ-G-6 closed by this section).
 
 ### R1-GUR-4 Prestasi
@@ -461,6 +470,7 @@ Data scope: SC-G (1.4c). Number definitions: section 5 (XS-1..XS-6).
   - **FR-GUR-4-2** Class figures use XS-1, XS-2, XS-4, XS-5 for that class; "Headcount" column = the pupil's status of the latest checkpoint (GUR-3 rule) or "N/A".
   - **FR-GUR-4-3** Pupil links open Prestasi 360 only for pupils of the teacher's classes (others 403 "Akses Ditolak").
   - **FR-GUR-4-4** No percentage exceeds 100 (V1 D-8).
+  - **FR-GUR-4-6** Every figure counts answers of **all modes** from the single answer store `practice_answers` (XS-8); a Bijak sitting also appears as one unit in the pupil's session list.
   - **FR-GUR-4-5** Responsive: class cards 1/2/3 columns; the six stat cards 2 columns at 375; "Kedudukan Murid" is RP-TABLE-WIDE paginated 25 per page with sticky name; trend chart RP-CHART; "Tukar Kelas" select full width and >= 44 px; Prestasi 360 headcount chips wrap (V1 overflowed at 375, D-9).
 - **Data** M08 `/api/performance/classes*`, `/api/performance/students/:userId`.
 - **Acceptance criteria**
@@ -468,6 +478,7 @@ Data scope: SC-G (1.4c). Number definitions: section 5 (XS-1..XS-6).
   - **AC-GUR-4-2** Given a pupil of another teacher's class, when `/prestasi/{thatId}` is opened by the teacher, then 403.
   - **AC-GUR-4-3** Given a pupil with 3 correct of 3, when "Kedudukan Murid" renders, then Ketepatan shows 100% and no value exceeds 100%.
   - **AC-GUR-4-4 (R)** Given a class with 40 pupils, when its dashboard opens at 375, 768 and 1280 px, then scrollWidth <= innerWidth, stat cards are 2 columns at 375, the ranking table scrolls inside its card with 25 rows per page, and "Tukar Kelas" and the pagination controls are visible and >= 44 px.
+  - **AC-GUR-4-6** Given a pupil with 10 Latih Tubi answers (7 correct) and one Bijak sitting of 40 MCQ answers (30 correct), when the class dashboard opens, then the pupil's "Soalan" = 50 and Ketepatan = 74% (37 ÷ 50), the same as on the pupil's own Prestasi and on Admin Sekolah Prestasi.
   - **AC-GUR-4-5 (U)** Given "Guru UAT" whose only class "5 UAT" has >= 90 migrated pupils, when its dashboard opens, then the first 25 ranking rows load within 3 s and "Soalan Dijawab" equals the Command Center "Soalan Dijawab" of the same teacher.
 - **Gap** none found. **Deviation** DV-GUR-4-1 cap at 100%. **Open** none.
 
@@ -483,13 +494,14 @@ Data scope: SC-G (1.4c). Number definitions: section 5 (XS-1..XS-6).
   - **States:** empty teacher (zeros, no rows) observed; row content, per-row action, empty-table copy, loading, error: Not observed in V2 — follow FR-GUR-5-*. Nothing to correct.
 - **Current gap (change the existing code only):** `src/shells/nav/user-nav.ts:284` sends the Guru item to `/analitik/pelajar`: change it to `/analitik/kelas` (the page and route already exist, `m08-student-performance/routes/class.ts:27-33`); link "Lihat Analitik" to `/prestasi/:userId`; verify the risk rules and "Belum Bermula".
 - **Route** `/analitik/kelas` (title "Analitik Kelas"). **Matrix** 5. **Priority** **P0**. **Delivery** A. **Status** GH/UAT: the sidebar item opens `/analitik/pelajar` (the pupil page, empty "Topik Perlu Perhatian Utama (0)") at `src/shells/nav/user-nav.ts:284`; `/analitik/kelas` exists (`routes/class.ts:27-33`, roles admin+teacher) but is unlinked.
-- **Reference [V2] `guru/analitik-kelas.blade.php`, sidebar "Analitik Adaptif" -> `/analitik/kelas`**: intro "Pantau prestasi pelajar dan kenal pasti yang memerlukan perhatian"; filters (auto-submit) "Kelas" ("Semua Kelas" + own classes), "Mata Pelajaran" ("Semua Subjek"), "Risiko" ("Semua Risiko", "Kritikal", "Tinggi", "Sederhana", "Rendah"); cards "Jumlah Pelajar", "Purata Ketepatan", "Pelajar Berisiko", "Prestasi Baik"; table "Senarai Pelajar": # · Pelajar · Ketepatan · Soalan · Trend · Unjuran · Risiko · Tindakan with "Lihat Analitik" and, for Kritikal/Tinggi, "Rekod Intervensi"; empty "Tiada pelajar sepadan dengan tapisan ini." Rules: no answers = "Belum Bermula"; accuracy < 40 Kritikal; < 55 Tinggi; < 70 Sederhana; else Rendah. Trend: last 7 days vs the 7 before: delta > 3 points up ("Meningkat berbanding minggu lepas"), < −3 down ("Menurun berbanding minggu lepas"), only this week "BARU", else flat. Unjuran = projected SPM grade from mean session accuracy (grade scale of GUR-3). "Purata Ketepatan" = mean over pupils with answers; "Pelajar Berisiko" = Kritikal + Tinggi; "Prestasi Baik" = Rendah. Sorted by accuracy ascending, no-answer pupils last. V1 "Lihat Analitik" -> `/analitik/kelas/pelajar/{id}` was 403 (D-3).
+- **Reference [V2] `guru/analitik-kelas.blade.php`, sidebar "Analitik Adaptif" -> `/analitik/kelas`**: intro "Pantau prestasi pelajar dan kenal pasti yang memerlukan perhatian"; filters (auto-submit) "Kelas" ("Semua Kelas" + own classes), "Mata Pelajaran" ("Semua Subjek"), "Risiko" ("Semua Risiko", "Kritikal", "Tinggi", "Sederhana", "Rendah"); cards "Jumlah Pelajar", "Purata Ketepatan", "Pelajar Berisiko", "Prestasi Baik"; table "Senarai Pelajar": # · Pelajar · Ketepatan · Soalan · Trend · Unjuran · Risiko · Tindakan with "Lihat Analitik" and, for Kritikal/Tinggi, "Rekod Intervensi"; empty "Tiada pelajar sepadan dengan tapisan ini." Rules: no answers = "Belum Bermula"; accuracy < 40 Kritikal; < 55 Tinggi; < 70 Sederhana; else Rendah. Trend: last 7 days vs the 7 before: delta > 3 points up ("Meningkat berbanding minggu lepas"), < −3 down ("Menurun berbanding minggu lepas"), only this week "BARU", else flat. Unjuran = projected SPM grade from the pupil's pooled accuracy (XS-5; grade scale of HC-5). "Purata Ketepatan" = pooled accuracy (XS-5: all correct ÷ all answered of the pupils with answers; no mean of per-pupil percentages); "Pelajar Berisiko" = Kritikal + Tinggi; "Prestasi Baik" = Rendah. Sorted by accuracy ascending, no-answer pupils last. V1 "Lihat Analitik" -> `/analitik/kelas/pelajar/{id}` was 403 (D-3).
 - **Functional requirements**
   - **FR-GUR-5-1** Sidebar and "Lagi" item "Analitik Adaptif" open `/analitik/kelas`.
   - **FR-GUR-5-2** Content, filters, rules and copy as above; "Kelas" lists only the teacher's classes.
   - **FR-GUR-5-3** "Lihat Analitik" opens the pupil's Prestasi 360 `/prestasi/:userId` (V1 target 403; V2 `/pelajar/{id}` is a public profile outside 1.0: DV-GUR-5-1).
   - **FR-GUR-5-4** "Rekod Intervensi" opens Kirkpatrick "Intervensi" with the pupil preselected.
   - **FR-GUR-5-5** "Jumlah Pelajar" uses XS-1 and ketepatan XS-5 for the filtered scope.
+  - **FR-GUR-5-7** Ketepatan, Soalan, Trend and Risiko count answers of all modes from `practice_answers` (XS-8), including Bijak sittings, Set Soalan Guru and games.
   - **FR-GUR-5-6** Responsive: RP-FILTER; four cards 2 x 2 at 375; the table is RP-TABLE-LIST cards at 375/768 (pupil name, Ketepatan, Soalan, Trend, Unjuran, Risiko, two >= 44 px buttons) and a table at 1280.
 - **Data** M08 `GET /api/analytics/classes` (`performance.controllers.ts:54`), M05, M12.
 - **Acceptance criteria**
@@ -498,6 +510,7 @@ Data scope: SC-G (1.4c). Number definitions: section 5 (XS-1..XS-6).
   - **AC-GUR-5-3** Given a pupil with no answers, then Risiko "Belum Bermula", Ketepatan "—", and the pupil is excluded from "Purata Ketepatan".
   - **AC-GUR-5-4** Given "Lihat Analitik" on a pupil row, when clicked, then that pupil's Prestasi 360 opens (no 403).
   - **AC-GUR-5-5 (R)** Given a class of 20 pupils, when opened at 375, 768 and 1280 px, then scrollWidth <= innerWidth, the three selects are stacked and >= 44 px at 375, the four cards are 2 x 2, and pupil rows are cards at 375/768 with both action buttons visible.
+  - **AC-GUR-5-7** Given the pupil of AC-GUR-4-6 (37 correct of 50), when the table renders, then Ketepatan 74%, Soalan 50 and Risiko "Rendah".
   - **AC-GUR-5-6 (U)** Given "Guru UAT" class "5 UAT" (>= 10 pupils), when "Semua Kelas" is selected, then "Jumlah Pelajar" equals the Pelajar Saya count.
 - **Gap/root cause** `user-nav.ts:284` wrong target. **Deviations** DV-GUR-5-1. **Open** none.
 
@@ -516,25 +529,28 @@ Data scope: SC-G (1.4c). Number definitions: section 5 (XS-1..XS-6).
 - **Routes** `/analisa-item` (V2 `/analisa-item/kelas`: picker "Pilih Kelas untuk Analisis"), `/analisa-item/kelas/:id` ("Analisa Item — Papan Guru"), `/guru/analisis-item` (sidebar "Analisis Item" under LAIN-LAIN, title "Analisis Item Soalan"). **Matrix** 6. **Priority** P1. **Delivery** A. **Status** GH/UAT both exist; the class pick works; tables show "Tiada data analisis item" because the seed has no answers.
 - **Reference [V1] M08 S10-S11, M11 S6 / [V2] `guru/analisa-item-kelas`, `guru/analisis-item`**:
   - Picker: "Pilih Kelas untuk Analisis" / "Klik mana-mana kelas untuk melihat analisa item"; one card per own class (name, subject, "{n} pelajar", year, "Lihat Analisa").
-  - Class page: counters "{n} Pelajar", "{n} Soalan Diuji"; cards "Mudah", "Sederhana", "Sukar" (count and "{p}% daripada soalan"); tabs "Indeks Kesukaran" and "Indeks Diskriminasi" with count badges. Difficulty tab: search "Cari soalan...", sort select ("Paling Sukar Dahulu" default, "Paling Mudah Dahulu", "Ketepatan Rendah Dahulu", "Ketepatan Tinggi Dahulu", "Paling Banyak Percubaan"); columns # · Soalan · Subjek / Topik · Percubaan · Ketepatan · Indeks · Tahap; expanded row "Jawapan Betul", "Jawapan Salah Popular (Nx dipilih)", "Pelajar Yang Salah"; empty "Tiada Data Lagi" / "Pelajar dalam kelas ini belum menjawab sebarang soalan lagi." Discrimination tab: "Panduan Indeks Diskriminasi" chips "≥ 0.40 = Sangat Baik", "0.30 – 0.39 = Baik", "0.20 – 0.29 = Sederhana", "< 0.20 = Lemah"; text "Indeks dikira berdasarkan perbezaan prestasi antara 27% pelajar terbaik dan 27% pelajar bawah dengan menggunakan semua sesi latihan."; columns Soalan · Kumpulan Atas · Kumpulan Bawah · Indeks · Status; fewer than 4 pupils with finished sessions: "Data Tidak Mencukupi" / "Perlu sekurang-kurangnya 4 pelajar dengan sesi latihan selesai untuk mengira indeks diskriminasi."; "Tukar Kelas" chips.
+  - Class page: counters "{n} Pelajar", "{n} Soalan Diuji"; cards "Mudah", "Sederhana", "Sukar" (count and "{p}% daripada soalan"); tabs "Indeks Kesukaran" and "Indeks Diskriminasi" with count badges. Difficulty tab: search "Cari soalan...", sort select ("Paling Sukar Dahulu" default, "Paling Mudah Dahulu", "Ketepatan Rendah Dahulu", "Ketepatan Tinggi Dahulu", "Paling Banyak Percubaan"); columns # · Soalan · Subjek / Topik · Percubaan · Ketepatan · Indeks · Tahap; expanded row "Jawapan Betul", "Jawapan Salah Popular (Nx dipilih)", "Pelajar Yang Salah"; empty "Tiada Data Lagi" / "Pelajar dalam kelas ini belum menjawab sebarang soalan lagi." Discrimination tab: "Panduan Indeks Diskriminasi" chips "≥ 0.40 = Sangat Baik", "0.30 – 0.39 = Baik", "0.20 – 0.29 = Sederhana", "< 0.20 = Lemah"; text "Indeks dikira berdasarkan perbezaan prestasi antara 27% pelajar terbaik dan 27% pelajar bawah dengan menggunakan semua sesi latihan."; columns Soalan · Kumpulan Atas · Kumpulan Bawah · Indeks · Status; fewer than 10 pupils with answers on the question [PROPOSED minimum, F-25]: "Data Tidak Mencukupi" / "Perlu sekurang-kurangnya 10 pelajar dengan sesi latihan selesai untuk mengira indeks diskriminasi."; "Tukar Kelas" chips.
   - `/guru/analisis-item` [V1 M11 S6]: filters "Mata Pelajaran" ("Semua Subjek") and "Kelas" ("Semua Kelas"); legend "> 70% (Mudah)", "40–70% (Sederhana)", "< 40% (Sukar)", "Diskriminasi: >0.3 = baik, <0 = semak semula"; empty "Tiada data analisis item untuk paparan ini." / "Pelajar perlu membuat latihan dahulu."
-  - Rules: p = correct ÷ attempts; Ketepatan = p × 100 (1 decimal); difficulty index = 1 − p (2 decimals, shown as a number only); **Tahap by % betul on both screens: > 70 Mudah, 40-70 Sederhana, < 40 Sukar** (V1 used index cut-offs on one screen and % bands on the other, D-M11-9; DV-GUR-6-1); D = p(upper 27%) − p(lower 27%).
+  - Rules: p = correct ÷ attempts; Ketepatan = p × 100 (whole-number percent, XS-5); difficulty index = 1 − p (2 decimals, shown as a number only); **Tahap by % betul on both screens: > 70 Mudah, 40-70 Sederhana, < 40 Sukar** (V1 used index cut-offs on one screen and % bands on the other, D-M11-9; DV-GUR-6-1); D = p(upper 27%) − p(lower 27%).
 - **Functional requirements**
   - **FR-GUR-6-1** The picker lists only the teacher's classes; another teacher's class id = 403 "Akses Ditolak".
   - **FR-GUR-6-2** Counts and the Tahap rule above; the three tier counts sum to "Soalan Diuji".
   - **FR-GUR-6-3** The sort select and the search actually sort and filter the rows (V1 D-15: they were not bound).
   - **FR-GUR-6-4** Row expansion shows the three blocks; pupil names link to Prestasi 360 for own pupils.
   - **FR-GUR-6-5** `/guru/analisis-item` filters by "Mata Pelajaran" and "Tahap Kesukaran" (V2), lists the columns "#", "Soalan", "Subjek", "Cubaan", "Betul", "Salah", "% Betul", "Diskriminasi" for the teacher's pupils, with the exact V2 empty copy.
-  - **FR-GUR-6-6** "Pelajar" uses XS-1 and "Soalan Diuji" XS-4 for the class.
+  - **FR-GUR-6-6** "Pelajar" uses XS-1 and "Soalan Diuji" XS-7 (distinct questions answered, not answer rows) for the class.
+  - **FR-GUR-6-8** "Cubaan", "Betul", "Salah" and the discrimination index count answers of all modes from `practice_answers` (XS-8), so a question answered in Latih Tubi and in a Bijak sitting has both attempts counted; Ketepatan is pooled (XS-5), whole-number percent.
   - **FR-GUR-6-7** Responsive: picker cards 1/2/3 columns; tier cards stacked at 375, 3 across at 1280; the item table is RP-TABLE-WIDE (question text 2-line clamp, sticky first column) paginated 25 per page; tabs scroll inside their row; sort and search full width and >= 44 px.
 - **Data** M08 `GET /api/item-analysis/classes`, `/classes/:id`, `/school`; M04, M05.
 - **Acceptance criteria**
   - **AC-GUR-6-1** Given a class with 596 tested questions of which 381 > 70%, 78 in 40-70% and 137 < 40%, when the class page opens, then the cards show 381, 78 and 137 and sum to 596.
   - **AC-GUR-6-2** Given sort "Paling Mudah Dahulu", when selected, then the first row has the highest Ketepatan and the order changes from the default.
   - **AC-GUR-6-3** Given search "fakta", when typed, then only rows whose question text contains "fakta" remain.
-  - **AC-GUR-6-4** Given a class with 3 pupils with finished sessions, when the discrimination tab opens, then "Data Tidak Mencukupi" shows.
+  - **AC-GUR-6-4** Given a question answered by fewer than 10 pupils [PROPOSED minimum, F-25], when the discrimination tab opens, then "Data Tidak Mencukupi" shows for it; with 10 or more pupils the index shows.
   - **AC-GUR-6-5** Given another teacher's class id, when opened, then 403.
   - **AC-GUR-6-6 (R)** Given a class with 120 tested questions, when opened at 375, 768 and 1280 px, then scrollWidth <= innerWidth, the table scrolls inside its card with 25 rows per page, and the sort select, search field and tabs are visible and >= 44 px.
+  - **AC-GUR-6-8** Given 3 pupils who each answered question A 5 times and question B once, when the class page opens, then "Soalan Diuji" = 2 (not 16) and A shows Percubaan 15.
+  - **AC-GUR-6-9** Given question A answered once in Latih Tubi (correct) and once in a Bijak sitting (wrong), then A shows Percubaan 2, Betul 1, Salah 1, Ketepatan 50%.
   - **AC-GUR-6-7 (U)** Given "Guru UAT" class "5 UAT" with migrated answers, when the class page opens, then "Soalan Diuji" > 0 and "Pelajar" equals the class member count.
 - **Gap** Data only on GH (no answers). **Deviations** DV-GUR-6-1 one Tahap rule; DV-GUR-6-2 working sort/search. **Open** none.
 
@@ -602,23 +618,27 @@ Data scope: SC-G (1.4c). Number definitions: section 5 (XS-1..XS-6).
   - **Corrections noted:** V2 offers Darjah levels in the filters: V3 offers Tingkatan 1-5 only (D72/D96). The routes are `/guru/set-soalan` (list) and `/guru/set-soalan/cipta`; V2's `/guru/set/cipta` is accepted as an alias. The results page ("Hasil") was not captured (no sets): the V2 code text below applies.
 - **Current gap:** no teacher Set Soalan route, page or API in V3 (the pupil side R1-MUR-26 is empty): add the route fragment under `src/modules/m10-teacher-class/routes/`, the list/form/results pages and `GET/POST/PUT/DELETE /api/guru/question-sets*` (the module `apps/api/src/modules/classes/question-sets` already exists for the pupil side).
 - **Route** `/guru/set-soalan` (list "Set Soalan Guru"), `/guru/set-soalan/cipta`, `/guru/set-soalan/:id` (urus), `/guru/set-soalan/:id/keputusan`. **Matrix** none (no Guru sidebar item; reached from Kelas Saya). **Priority** P1. **Status** not built in V3 for teachers (the pupil side R1-MUR-26 shows an empty state).
-- **Reference [V2] `guru/set.blade.php`, `set-form.blade.php`, `set-keputusan.blade.php`; [V1] M10 S13-S14** (V1 title "Set Soalan Anda"): list: header "Set Soalan Anda" ("{n} set soalan"), button "Cipta Set Baru"; counters "Diterbitkan", "Draf", "Penyertaan"; empty "Belum ada set soalan" / "Cipta set soalan tersendiri dan kongsi dengan kelas anda." + "Cipta Set Pertama"; each set card: title, status "Diterbitkan" or "Draf", type, subject, "{n} soalan", "{n} siap", buttons "Hasil", "Urus →", "Salin", "Terbit" / "Jadikan Draf", "Padam" (confirm "Padam set \"{title}\"? Tindakan ini tidak boleh diundur."). "Salin Set ke Kelas": "Pilih Kelas Sasaran" ("-- Pilih kelas --"), note "Set baharu akan dicipta sebagai draf dengan semua soalan disalin.", "Batal" / "Salin". Form "Cipta Set Soalan" / "Urus Set Soalan": filter card "Tapis Bank Soalan" (subject "Semua subjek", tingkatan "Semua tingkatan", search "Cari teks soalan...", "Tapis"); card "Maklumat Set" ("Bina set daripada bank soalan dan terbitkan kepada kelas anda"): "Tajuk Set" (required), "Subjek" (required), "Tingkatan (pilihan)" ("— Tiada —"); "Pilih Soalan Dari Bank" (scroll list of approved questions, checkbox, 120-character preview, "{subjek} · {tahap} · ⭐{kesukaran}", counter "{n} dipilih"; empty "Tiada soalan sepadan. Laraskan penapis di atas."); buttons "Batal", "Simpan Draf", "Terbitkan". Results "Keputusan: {tajuk}": cards "Penyertaan", "Skor Purata", "Jumlah Percubaan"; table # · Pelajar · Skor ("{betul}/{jumlah}") · Ketepatan · Tarikh; empty "Belum ada pelajar menjawab set ini."; link "Kembali ke Set Soalan". Pupil side (`10-murid.md` R1-MUR-26): published sets of the pupil's class teachers; mode `set`.
+- **Reference [V2] `guru/set.blade.php`, `set-form.blade.php`, `set-keputusan.blade.php`; [V1] M10 S13-S14** (V1 title "Set Soalan Anda"): list: header "Set Soalan Anda" ("{n} set soalan"), button "Cipta Set Baru"; counters "Diterbitkan", "Draf", "Penyertaan"; empty "Belum ada set soalan" / "Cipta set soalan tersendiri dan kongsi dengan kelas anda." + "Cipta Set Pertama"; each set card: title, status "Diterbitkan" or "Draf", type, subject, "{n} soalan", "{n} siap", buttons "Hasil", "Urus →", "Salin", "Terbit" / "Jadikan Draf", "Padam" (confirm "Padam set \"{title}\"? Tindakan ini tidak boleh diundur."). "Salin Set ke Kelas": "Pilih Kelas Sasaran" ("-- Pilih kelas --"), note "Set baharu akan dicipta sebagai draf dengan semua soalan disalin.", "Batal" / "Salin". Form "Cipta Set Soalan" / "Urus Set Soalan": filter card "Tapis Bank Soalan" (subject "Semua subjek", tingkatan "Semua tingkatan", search "Cari teks soalan...", "Tapis"); card "Maklumat Set" ("Bina set daripada bank soalan dan terbitkan kepada kelas anda"): "Tajuk Set" (required), "Subjek" (required), "Tingkatan (pilihan)" ("— Tiada —"); "Pilih Soalan Dari Bank" (scroll list of approved questions, checkbox, 120-character preview, "{subjek} · {tahap} · ⭐{kesukaran}", counter "{n} dipilih"; empty "Tiada soalan sepadan. Laraskan penapis di atas."); buttons "Batal", "Simpan Draf", "Terbitkan". Results "Keputusan: {tajuk}": cards "Penyertaan", "Skor Purata", "Jumlah Percubaan"; table # · Pelajar · Skor ("{betul}/{jumlah}") · Ketepatan · Tarikh; empty "Belum ada pelajar menjawab set ini."; link "Kembali ke Set Soalan". Pupil side (`10-murid.md` R1-MUR-26): published sets assigned to the pupil's class; mode `question_set`.
 - **Functional requirements**
   - **FR-GUR-8b-1** List the teacher's own sets with the three counters (Diterbitkan, Draf, Penyertaan = number of pupils who completed at least one attempt on any set of the teacher).
   - **FR-GUR-8b-2** Create and edit a set: title, subject, optional Tingkatan, and a selection of approved questions from the bank filtered by subject, Tingkatan and text; only approved questions can be chosen; "Simpan Draf" and "Terbitkan" set the status.
-  - **FR-GUR-8b-3** A published set is visible to the pupils of the teacher's classes (all classes; a set copied to a class with "Salin" is visible to that class only) and appears in Murid 26 and on the Dashboard "Set Soalan Dari Cikgu"; "Jadikan Draf" withdraws it; archived questions drop out at serve time.
-  - **FR-GUR-8b-4** "Salin" copies the set with all its questions as a draft attached to the chosen own class.
-  - **FR-GUR-8b-5** "Hasil" shows the results table; one row per pupil attempt, newest first; accuracy = round(correct ÷ total × 100), colours >= 70 green, >= 50 amber, else red.
+  - **FR-GUR-8b-3** (D-A7, decided by principle 2026-11-04) A set is assigned to **explicitly selected own class(es)**: the create/edit form has a required multi-select "Kelas" (the teacher's own classes; [PROPOSED] label) and "Terbitkan" is refused with a BM message while no class is selected. A published set is visible only to pupils enrolled in a selected class (it appears in Murid 26 and on the Dashboard "Set Soalan Dari Cikgu"); a pupil of another class, even of the same teacher, does not see it. "Jadikan Draf" withdraws it; archived questions drop out at serve time. A set is never visible to "all classes" implicitly.
+  - **FR-GUR-8b-4** "Salin" copies the set with all its questions as a draft assigned to the chosen own class.
+  - **FR-GUR-8b-8** The picker selects questions as units: choosing part of a stimulus group is refused (422, "Soalan dalam kumpulan rangsangan mesti dipilih bersama.") or selects the whole group; the star scale of "⭐{kesukaran}" is 1 to 5 (the V2 sample shows 1 to 3).
+  - **FR-GUR-8b-5** "Hasil" returns the results to the teacher **per class**: a "Kelas" filter (default all selected classes), cards and table per class; the results table is one row per pupil attempt, newest first; accuracy = round(correct ÷ total × 100), colours >= 70 green, >= 50 amber, else red.
   - **FR-GUR-8b-6** "Padam" removes the set after the confirm; pupil attempt records are kept for Prestasi.
   - **FR-GUR-8b-7** Responsive: set cards single column with action buttons wrapping (>= 44 px); the question picker is a single-column scroll list with >= 44 px checkboxes; the results table is RP-TABLE-LIST at 375/768; the form RP-FORM with "Simpan Draf" and "Terbitkan" not covering the list.
-- **Data** Owner M10 (sets), M04 (questions), M05 (attempts, mode `set`). API `/api/guru/question-sets*` (exists in `apps/api/src/modules/classes/question-sets`).
+- **Data** Owner M10 (sets), M04 (questions), M05 (attempts: `practice_answers`, mode `question_set`; they count in every report, XS-8). API `/api/guru/question-sets*` (exists in `apps/api/src/modules/classes/question-sets`).
 - **Acceptance criteria**
   - **AC-GUR-8b-1** Given the question bank with 20 approved Matematik questions, when a set "Ujian 1" with 5 chosen questions is saved with "Simpan Draf", then it is listed as "Draf" with "5 soalan" and the pupils do not see it.
-  - **AC-GUR-8b-2** Given that draft, when "Terbit" is pressed, then it is "Diterbitkan", a pupil of the teacher's class sees "Ujian 1" in Set Soalan Guru with "5 soalan", and a pupil of another teacher does not.
+  - **AC-GUR-8b-2** Given that draft assigned to class "5 Bestari", when "Terbit" is pressed, then it is "Diterbitkan", a pupil of "5 Bestari" sees "Ujian 1" in Set Soalan Guru with "5 soalan", and a pupil of another teacher, or of the teacher's other class "5 Cekap", does not.
   - **AC-GUR-8b-3** Given a pupil who completes the set with 4 of 5 correct, when "Hasil" opens, then "Penyertaan" = 1, "Skor Purata" = 80%, and the row shows "4/5" and "80%".
   - **AC-GUR-8b-4** Given "Salin" to class "5 Cekap", when confirmed, then a draft copy with 5 questions exists attached to "5 Cekap".
   - **AC-GUR-8b-5** Given a question archived after publication, when a pupil opens the set, then the set shows 4 questions and the list count shows "4 soalan".
   - **AC-GUR-8b-6 (R)** Given 3 sets and a bank of 100 questions, when the list and the form open at 375, 768 and 1280 px, then scrollWidth <= innerWidth, set cards are single column at 375, and "Cipta Set Baru", "Terbit", "Salin" and the question checkboxes are visible and >= 44 px.
+  - **AC-GUR-8b-8** Given a draft with no class selected, when "Terbitkan" is pressed, then a BM message shows and the set stays "Draf".
+  - **AC-GUR-8b-9** Given a stimulus group of a figure and 3 questions, when only 2 of them are sent in the selection, then the request is refused with "Soalan dalam kumpulan rangsangan mesti dipilih bersama." (or the whole group is selected) and no set holds 2 of the 3.
+  - **AC-GUR-8b-10** Given the set assigned to "5 Bestari" and "5 Cekap" with 1 pupil done in each (4/5 and 3/5), when "Hasil" opens and the filter is "5 Cekap", then "Penyertaan" = 1 and "Skor Purata" = 60%; the filter "Semua" shows 2 and 70%.
   - **AC-GUR-8b-7 (U)** Given "Guru UAT" and the UAT bank, when a set of 5 migrated approved questions is published, then a UAT pupil of "5 UAT" can play it and the attempt appears in "Hasil".
 - **Open** none.
 
@@ -637,7 +657,7 @@ Data scope: SC-G (1.4c). Number definitions: section 5 (XS-1..XS-6).
   - **FR-GUR-9-1** Lists every subject with chapter-mapped questions for Tingkatan 1-5 (D101), with chapter and question counts.
   - **FR-GUR-9-2** Every chapter is open (D98); no lock copy.
   - **FR-GUR-9-3** The chapter page lets the teacher answer and preview the questions in chapter order, including figure questions and whole stimulus groups (D105, D90).
-  - **FR-GUR-9-4** Chapters come from the admin's manual Bab choice (D89); unmapped questions are simply absent; nothing errors.
+  - **FR-GUR-9-4** Chapters come from the admin's manual Bab choice (D89); unmapped questions are simply absent; nothing errors. The admin cannot publish a question without Bab, and the Admin Pusat work-list "Soalan tanpa Bab" (30, bulk set-chapter) clears legacy ones, so a question never silently misses this page.
   - **FR-GUR-9-5** Responsive: subject cards 1/2/3 columns; chapter list single column at 375; figures fit the width and can be opened full screen (FR-X6-7).
 - **Data** Owner M03/M04; admin feed Studio/Kurikulum (Admin PRD).
 - **Acceptance criteria**
@@ -780,12 +800,13 @@ Data scope: SC-G (1.4c). Number definitions: section 5 (XS-1..XS-6).
 - **Current gap (change the existing code only):** `m11-teacher-analytics/routes/laporan.ts` page: keep the class filter when a range pill is chosen (V1 dropped it); make the card counts equal the panel counts; use the V2 card label "Pecahan Skor Purata".
 - **Route** `/guru/laporan` (V2 sidebar "Laporan Statistik"). **Matrix** 42. **Priority** P2. **Delivery** A. **Status** built with all sections.
 - **Reference [V1] M11 S1 / [V2] `TeacherAnalyticsController::laporan`**: "Tapis:" class select ("Semua Kelas") and range pills "7 Hari", "30 Hari" (default), "3 Bulan" (`range`=7/30/90; unknown = 30; V1 pills dropped the class filter, DV-GUR-42-1: kept). Cards "Pernah Login" ("{n} / {total} pelajar", "{n} belum pernah login", "Klik untuk lihat senarai"), "Pernah Buat Latihan", "Jumlah Aktiviti" ("{n} hari lepas"), "Skor Purata" ("Klik untuk lihat pecahan"); panels "Pelajar Belum Pernah Login ({n})" ("Semua pelajar sudah pernah login!"), "Pelajar Belum Pernah Buat Latihan ({n})" ("Semua pelajar sudah aktif buat latihan!"), "Pecahan Aktiviti ({range} Lepas)" (Kuiz, Struktur, Latih Tubi, Tracking A, Battle, Permainan, Jumlah), "Pecahan Skor Purata" (5 bars), "Trend Aktiviti", "Paling Aktif" ("Belum ada aktiviti"), "Belum Pernah Buat Latihan" (first 10 with e-mail and "Belum pernah login").
-- Formulas: Pernah Login % = pupils with a recorded login ÷ XS-1 of the scope × 100 (integer); Pernah Buat Latihan % = pupils with >= 1 practice session ÷ the same XS-1 (V1 used different denominators, D-M11-1); Jumlah Aktiviti = sessions in range; Skor Purata = XS-5 in range ("-%" when none); card and panel counts of the same metric are equal (DV-GUR-42-2).
+- Formulas (activity counts sessions and answers of all modes from the single answer store, XS-8): Pernah Login % = pupils with a recorded login ÷ XS-1 of the scope × 100 (integer); Pernah Buat Latihan % = pupils with >= 1 practice session ÷ the same XS-1 (V1 used different denominators, D-M11-1); Jumlah Aktiviti = sessions in range; Skor Purata = the mean of per-session accuracies in range, a separately named measure that is never labelled Ketepatan (XS-5 note; "-%" when none); card and panel counts of the same metric are equal (DV-GUR-42-2).
 - **Functional requirements**
   - **FR-GUR-42-1** Scope: the chosen class or all "kelas anda".
   - **FR-GUR-42-2** Formulas above with one denominator.
   - **FR-GUR-42-3** Card counts equal panel counts.
   - **FR-GUR-42-4** Trend labels "dd/mm", one point per day of the range.
+  - **FR-GUR-42-6** "Pernah Buat Latihan", "Jumlah Aktiviti", "Pecahan Aktiviti" and "Paling Aktif" include every mode of `practice_answers` / practice sessions (XS-8), including Bijak sittings and Set Soalan Guru.
   - **FR-GUR-42-5** Responsive: RP-FILTER; cards 2 columns at 375; expanded panels full width; activity tiles 2 per row; trend chart RP-CHART with thinned labels; lists RP-TABLE-LIST rows with wrapped names/e-mails; range pills >= 44 px.
 - **Data** M11 `GET /api/guru/laporan?range&classroomId`; M05, M01 last login.
 - **Acceptance criteria**
@@ -793,6 +814,7 @@ Data scope: SC-G (1.4c). Number definitions: section 5 (XS-1..XS-6).
   - **AC-GUR-42-2** Given class "5 Bestari" and "7 Hari" chosen, when the range pill is changed to "30 Hari", then the class stays selected (and vice versa).
   - **AC-GUR-42-3** Given 2 of 7 pupils with a practice session, then "Pernah Buat Latihan" = round(2 ÷ 7 × 100) = 29% with "2 / 7 pelajar".
   - **AC-GUR-42-4 (R)** Given a range of 90 days, when opened at 375, 768 and 1280 px, then scrollWidth <= innerWidth, cards are 2 columns at 375, the trend chart fits its card with thinned labels, and the class select and the three range pills are visible and >= 44 px.
+  - **AC-GUR-42-6** Given 7 pupils of whom 1 has only a Bijak sitting and 1 has only a Set Soalan attempt, then both count in "Pernah Buat Latihan" (2 / 7 = 29%) and in "Jumlah Aktiviti".
   - **AC-GUR-42-5 (U)** Given "Guru UAT" with migrated `last_login`, when Laporan opens, then "Pernah Login" = (pupils with a login) ÷ (class pupils) and the unlogged pupils listed equal the "belum pernah login" count.
 - **Gap** none. **Deviations** DV-GUR-42-1/2. **Open** none.
 
@@ -820,6 +842,7 @@ Data scope: SC-G (1.4c). Number definitions: section 5 (XS-1..XS-6).
   - **FR-GUR-43-4** Figures follow XS rules with the window "minggu ini".
   - **FR-GUR-43-5** No week navigation is added (V2 has none).
   - **FR-GUR-43-6** "Cetak" prints without sidebar, header and buttons, with the print-only title, A4 portrait.
+  - **FR-GUR-43-8** All figures count answers of all modes from `practice_answers` (XS-8) in the Monday-Sunday week, including Bijak sittings and Set Soalan Guru.
   - **FR-GUR-43-7** Responsive: select and "Cetak" stack at 375 (select full width, "Cetak" >= 44 px with its text visible); the four tiles 2 x 2 at 375 and 4 across at 768 and 1280; list rows wrap names instead of truncating; subject bars full width.
 - **Data** Owner M08/M11 reporting; M05 answers with subject; M10 classes.
 - **Acceptance criteria**
@@ -831,6 +854,7 @@ Data scope: SC-G (1.4c). Number definitions: section 5 (XS-1..XS-6).
   - **AC-GUR-43-6** Given `classroomId` of another teacher's class, when requested, then 403.
   - **AC-GUR-43-7** Given "Cetak", when the print preview opens, then the sidebar, header and the select are absent and the print title shows.
   - **AC-GUR-43-8 (R)** Given a class with 30 active pupils, when opened at 375, 768 and 1280 px, then scrollWidth <= innerWidth, tiles are 2 x 2 at 375, and the class select and "Cetak" are visible and >= 44 px.
+  - **AC-GUR-43-10** Given a pupil who answered 5 Latih Tubi and 4 Bijak-sitting questions this week, then "Soalan Dijawab" counts 9 for that pupil and the pupil is in Top Performers (>= 5 answers).
   - **AC-GUR-43-9 (U)** Given "Guru UAT" class "5 UAT" with migrated answers dated this week, when the report opens, then "Soalan Dijawab" equals the count of that class's answer rows of this Monday-Sunday week on Prestasi Kelas.
 - **Deviations** none (replicates V2). **Open** none.
 
@@ -843,7 +867,7 @@ Data scope: SC-G (1.4c). Number definitions: section 5 (XS-1..XS-6).
   - **Info paragraph:** "Sumbang Soalan adalah platform perkongsian soalan untuk manfaat semua pelajar di seluruh Malaysia. Setiap soalan yang anda sumbangkan akan melalui proses semakan dan seterusnya tersedia dalam bank soalan kebangsaan PrestasiPlus. Sumbangan anda amat dihargai dalam membina masa depan pendidikan negara."
   - **Block "Alat Soalan" (six tool tiles, each a link; title / caption):** "Soalan & Rujukan" / "Soalan peribadi + rujukan"; "Soalan Berstruktur" / "Soalan subjektif & esei"; "Soalan Gambar Rajah" / "Soalan perlu gambar rajah"; "Databank Soalan" / "Layari bank soalan SPM"; "Set Soalan" / "Cipta set soalan kustom"; "Kertas Peperiksaan" / "Muat naik & kongsi kertas". All six tools are in R1 scope (OQ-G-15 decided 2026-11-04): "Soalan & Rujukan" = R1-GUR-44a, "Soalan Berstruktur" = R1-GUR-44b, "Soalan Gambar Rajah" = R1-GUR-44c, "Databank Soalan" = R1-GUR-44d, "Set Soalan" = R1-GUR-8b, "Kertas Peperiksaan" = R1-GUR-44e.
   - **Block "Pencapaian Badge Penyumbang":** eight tiers in order "Penyumbang Baru (10)", "Penyumbang Aktif (100)", "Penyumbang Dedikasi (500)", "Penyumbang Cemerlang (1,000)", "Penyumbang Terbilang (2,500)", "Legenda Soalan (5,000)", "Guru Maestro (10,000)", "Legenda Terulung (50,000)"; progress line "Sasaran seterusnya: Penyumbang Baru — 10 soalan".
-  - **Block "Import Soalan (CSV/Excel)":** caption "Muat naik banyak soalan sekaligus"; buttons "Template" (downloads the template) and "Import CSV" (reveals the form); form: file field "Pilih Fail CSV" and button "Import"; "Panduan:" with four bullets: "Muat turun template → isi soalan → import kembali"; "Format: subjek, tahap, soalan, 4 pilihan, jawapan (A/B/C/D), kesukaran, penerangan"; "Soalan akan dihantar sebagai "Menunggu Semakan" untuk kelulusan admin"; "Baris yang ada ralat akan dilaporkan — soalan sah tetap diimport".
+  - **Block "Import Soalan (CSV/Excel)":** caption "Muat naik banyak soalan sekaligus"; buttons "Template" (downloads the template) and "Import CSV" (reveals the form); form: file field "Pilih Fail CSV" and button "Import"; "Panduan:" with four bullets: "Muat turun template → isi soalan → import kembali"; "Format: subjek, tahap, soalan, 4 pilihan, jawapan (A/B/C/D), kesukaran, penerangan" (V3: the template and this bullet also list Bab, SP, TP and Aras, FR-GUR-44-9, [PRINCIPLE]); "Soalan akan dihantar sebagai "Menunggu Semakan" untuk kelulusan admin"; "Baris yang ada ralat akan dilaporkan — soalan sah tetap diimport".
   - **Block "Soalan Saya":** header with button "Tambah Soalan"; empty "Belum ada soalan dihantar" / "Klik "Tambah Soalan" untuk mula menyumbang!" with the button "Tambah Soalan Pertama". Populated rows: Not observed in V2 — follow FR-GUR-44-*.
   - **Block "Hantar Kertas Soalan kepada Admin":** caption "Admin akan proses dan upload ke databank soalan". Sub-block "Jenis Soalan Yang Diterima" (chips "Soalan Umum", "Trial Paper", "Soalan DSKP", "Buku Teks", "Buku Latihan", "Soalan Peperiksaan"). Sub-block "Syarat Fail Yang Dihantar": "Format diterima: PDF (teks), DOCX, XLSX"; "PDF scan imej TIDAK diterima — teks mesti boleh disalin"; "Skema jawapan WAJIB disertakan bersama soalan"; "Maksimum 5 fail, saiz maksimum 20MB setiap fail". Three steps: "1. Hantar" / "Upload fail anda"; "2. Proses" / "Admin extract soalan"; "3. Databank" / "Soalan tersedia". Form: "Jenis Soalan *" (select: "-- Pilih Jenis --", "Soalan Umum", "Trial Paper", "Soalan DSKP", "Buku Teks", "Buku Latihan", "Soalan Peperiksaan", "Lain-lain"); "Matapelajaran *" (text); "Tingkatan" (select: "-- Semua / Tidak Pasti --", Tingkatan 1 to 5); "Tahun"; "Disediakan Oleh"; "Catatan Tambahan"; "Fail Soalan + Skema *" (drop zone "Klik untuk pilih fail" / "PDF (teks), DOCX, XLSX — maks 5 fail, 20MB setiap fail"); submit "Hantar kepada Admin".
   - **Linked create form (tool "Soalan & Rujukan"), route `/guru/soalan-guru/cipta`, title "Cipta Soalan & Rujukan — PRESTASIPLUS"** (the tool "Soalan & Rujukan", specified in R1-GUR-44a; recorded here because V2's "Tambah Soalan" opens it, see DV-GUR-44a-1): link "Kembali ke Soalan & Rujukan"; heading "Soalan MCQ Peribadi" with text "Soalan ini hanya kelihatan kepada pelajar anda melalui Misi Harian."; "Subjek *" (select "-- Pilih subjek --" + subjects); "Tahap" (select "-- Semua tahap --", Darjah 1-6 and Tingkatan 1-5 in V2; V3 Tingkatan 1-5, D72); "Kesukaran *" (select "⭐ — Sangat mudah", "⭐⭐ — Mudah", "⭐⭐⭐ — Sederhana", "⭐⭐⭐⭐ — Sukar", "⭐⭐⭐⭐⭐ — Sangat sukar"); "Teks Soalan *"; "Pautan Rujukan (pilihan)" with help "Video YouTube, Anyflip, PDF atau apa-apa link rujukan."; "Pilihan Jawapan * (pilih jawapan betul)" with four options A, B, C, D, each a text field with a radio button, help "Butang radio menandakan jawapan yang betul."; buttons "Batal" and "Simpan Soalan".
@@ -859,6 +883,8 @@ Data scope: SC-G (1.4c). Number definitions: section 5 (XS-1..XS-6).
   - **FR-GUR-44-4** CSV import with a real template download; error rows are reported, valid rows still import.
   - **FR-GUR-44-5** No source/copyright gate per question (D99).
   - **FR-GUR-44-6** Edit shows the stored difficulty and the stored correct answer.
+  - **FR-GUR-44-9** (D-A14) The bank-contribution form "Tambah Soalan" (and the CSV template) require the same DSKP fields as the admin form: Tingkatan, Subjek, Bab, SP (>= 1), TP (1 to 6), Aras pemikiran, picked from the curriculum lists; **Kesukaran is a separate field, 1 to 5 stars** ("⭐ — Sangat mudah" … "⭐⭐⭐⭐⭐ — Sangat sukar"), stored as difficulty, never as TP; the V1 three-label "Tahap Kesukaran (Mudah, Sederhana, Sukar)" is replaced by it. A missing field shows a BM message and nothing is sent. Rows or questions that still arrive incomplete (old CSV, V1 imports) are accepted as "Menunggu Semakan" and the admin completes the fields during review; only publishing is blocked by the admin gate. Tools 44a and 44b use the same fields; 44c, 44d and 44e create no question (44e picks approved questions).
+  - **FR-GUR-44-10** Status words shown to the teacher: "Menunggu Semakan" = `review`; "Diluluskan" = `approved`; "Ditolak" = `draft` returned by the admin, shown with the admin's rejection reason [PROPOSED]. "Digunakan" = the number of the teacher's approved questions answered at least once by any pupil in any mode (`practice_answers`).
   - **FR-GUR-44-8** The "Alat Soalan" block shows the six tiles in the V2 order with the V2 titles and captions; each tile opens its tool (routes in the tool modules R1-GUR-44a to 44e and R1-GUR-8b); none is a dead link or a 404.
   - **FR-GUR-44-7** Responsive: stat cards 2 x 2 at 375; badge tiers in a horizontally scrolling row; "Pecahan Subjek" chips wrap; question cards single column with options stacked; forms RP-FORM (options one per row, correct-answer radio >= 44 px, "Hantar" bar not covering inputs); the file picker full width.
 - **Data** Owner M04 (questions, intake). API `GET/POST /api/guru/questions`, `POST /api/guru/question-papers`, `POST /api/guru/questions/import`. Feeds: Admin Pusat Studio "Menunggu Semakan" and "Kiriman Guru".
@@ -868,7 +894,9 @@ Data scope: SC-G (1.4c). Number definitions: section 5 (XS-1..XS-6).
   - **AC-GUR-44-3** Given a 25 MB file, when chosen, then a BM error shows and nothing is uploaded.
   - **AC-GUR-44-4** Given a CSV of 10 rows with 1 invalid answer letter, when imported, then 9 questions are created as "Menunggu Semakan" and the invalid row is reported.
   - **AC-GUR-44-5** Given another teacher's question id, when opened or edited, then 404 (the record is not revealed to exist; consistent with FR-X2-2 and API 1.7). Decided by principle 2026-11-04: the code returns 404 and a 403 would confirm that the id exists.
-  - **AC-GUR-44-6** Given an own question with difficulty "Sukar", when its edit form opens, then "Sukar" is preselected.
+  - **AC-GUR-44-6** Given an own question with difficulty 4, when its edit form opens, then "⭐⭐⭐⭐ — Sukar" is preselected and TP shows its own stored value.
+  - **AC-GUR-44-10** Given the form with Bab or SP left empty, when "Hantar untuk Semakan" is pressed, then a BM message names the field and nothing is created; with every DSKP field set, the question is "Menunggu Semakan".
+  - **AC-GUR-44-11** Given a question from an old CSV without Bab and SP, when the admin opens it in review, then the admin can set them; before that the gate refuses "Terbitkan" and the teacher still sees "Menunggu Semakan".
   - **AC-GUR-44-7 (R)** Given 25 own questions, when opened at 375, 768 and 1280 px, then scrollWidth <= innerWidth, stat cards are 2 x 2 at 375, question options stack, and "Tambah Soalan", "Hantar kepada Admin" and the correct-answer radios are visible and >= 44 px.
   - **AC-GUR-44-8 (U)** Given "Guru UAT" on UAT, when a PDF paper is sent, then the Admin Pusat UAT "Kiriman Guru" tab lists it within one minute; the send must succeed on UAT, it is not allowed to be unavailable.
   - **AC-GUR-44-9** Given "Guru UAT" opens `/guru/soalan`, when the "Alat Soalan" block is read and each of its six tiles is opened in turn, then six tiles show with the titles "Soalan & Rujukan", "Soalan Berstruktur", "Soalan Gambar Rajah", "Databank Soalan", "Set Soalan", "Kertas Peperiksaan", and every target loads with HTTP 200 and its own title (no 404, no "Akses Ditolak", no "belum tersedia").
@@ -889,6 +917,7 @@ Data scope: SC-G (1.4c). Number definitions: section 5 (XS-1..XS-6).
   - **FR-GUR-44a-3** "Pautan Rujukan" accepts only an http or https address; the pupil sees it as a link that opens in a new tab beside the question. Where it sits on the pupil screen is Not observed in V2 — follow FR-X6-*.
   - **FR-GUR-44a-4** A private question is visible only to the pupils of the teacher's own classes, through Misi Harian (R1-GUR-2b); it never enters the national bank, Databank (R1-GUR-44d), Set Soalan pickers or admin review, and it is not counted in the Sumbang Soalan stat cards or badges.
   - **FR-GUR-44a-5** "Tahap" offers Tingkatan 1-5 only; the question carries one correct option and no stimulus.
+  - **FR-GUR-44a-7** (D-A14) The form also requires the DSKP fields of FR-GUR-44-9 (Tingkatan from "Tahap", Bab, SP, TP, Aras) and keeps "Kesukaran" as the separate 1 to 5 stars; a private question never enters admin review or the bank, so no gate applies to it.
   - **FR-GUR-44a-6** Responsive: RP-FORM; options one per row; the correct-answer radios and "Simpan Soalan" are >= 44 px; no horizontal scroll at 375.
 - **Data** Owner M04 (questions); an own-visibility flag and a reference link are needed in the question store or its contract; Misi Harian read by M05.
 - **Acceptance criteria**
@@ -897,6 +926,7 @@ Data scope: SC-G (1.4c). Number definitions: section 5 (XS-1..XS-6).
   - **AC-GUR-44a-3** Given a Pautan "javascript:alert(1)", when saved, then it is rejected with a BM message.
   - **AC-GUR-44a-4** Given a saved private question, when a pupil of another teacher and a pupil of the teacher open Misi Harian, then only the second can be served it, and the Admin Pusat Studio "Menunggu Semakan" and Databank do not list it.
   - **AC-GUR-44a-5** Given the Tahap select, then it lists "-- Semua tahap --" and Tingkatan 1 to 5 and no Darjah.
+  - **AC-GUR-44a-7** Given the form with SP empty, when "Simpan Soalan" is pressed, then a BM message names SP and nothing is saved.
   - **AC-GUR-44a-6 (R)** Given the form at 375, 768 and 1280 px, then scrollWidth <= innerWidth, the options stack one per row and the radios and "Simpan Soalan" are >= 44 px.
 - **Deviations** DV-GUR-44a-1, DV-GUR-44a-2. **Open** OQ-G-16 (confirm on V2 live whether "Tambah Soalan" on Sumbang Soalan opens this form for every teacher).
 
@@ -917,7 +947,7 @@ Data scope: SC-G (1.4c). Number definitions: section 5 (XS-1..XS-6).
   - **FR-GUR-44b-2** Each row shows the number, text excerpt, level, subject, KBAT chip, number of sub-questions, marks as "{n}m" (the sum of its sub-questions) and the status; the eye opens the detail.
   - **FR-GUR-44b-3** The detail shows the V2 regions in the V2 order; "Skema Jawapan" is shown to the teacher; marks per part and the total agree with the list.
   - **FR-GUR-44b-4** A stimulus (rajah, petikan, jadual, graf) is shown once in "Rangsangan" above all its sub-questions and is never a question or carries marks; it belongs to a stimulus group of 1..n questions that is never split (FR-X1-4a, 4d, 4e); a figure displays with its image.
-  - **FR-GUR-44b-5** Not observed in V2 — follow FR-X1-4 and the admin intake: a teacher can submit a new structured question or paper from this tool; the submission creates an intake batch with source "Kiriman Guru" (`source=guru`) in "Menunggu Semakan", with DSKP tags, marks, mark scheme and its stimulus group (1..n questions) kept together; the teacher edits or deletes only own pending submissions; there is no separate submissions API.
+  - **FR-GUR-44b-5** Not observed in V2 — follow FR-X1-4 and the admin intake: a teacher can submit a new structured question or paper from this tool; the submission creates an intake batch with source "Kiriman Guru" (`source=guru`) in "Menunggu Semakan", with the DSKP fields of FR-GUR-44-9 (the admin may complete missing ones in review), marks, mark scheme and its stimulus group (1..n questions) kept together; the teacher edits or deletes only own pending submissions; there is no separate submissions API.
   - **FR-GUR-44b-6** Pupils-side visibility of a structured question follows its admin status; a structured question that needs a diagram it does not have is not served (FR-X1-4f) and is listed in R1-GUR-44c.
   - **FR-GUR-44b-7** Responsive: the table becomes one card per question at 375 (RP-TABLE-LIST); filters stack; the pager wraps; all controls >= 44 px; figures fit the width and can be opened full screen (FR-X6-7).
 - **Data** Owner M04 (structured questions, intake). API `GET /api/structured-questions*` (exists); submission through the admin intake (exists, source `guru`).
@@ -997,7 +1027,7 @@ Data scope: SC-G (1.4c). Number definitions: section 5 (XS-1..XS-6).
   - **FR-GUR-44e-1** The page lists the teacher's own papers (name, subject, status) with "Cipta Baharu"; with none, the V2 empty copy shows.
   - **FR-GUR-44e-2** "Cipta Baharu" with a "Nama Kertas" and a "Subjek" creates a draft paper owned by the teacher and lists it; an empty name or no subject shows a BM message and creates nothing.
   - **FR-GUR-44e-3** [PRINCIPLE, Not observed in V2] The teacher builds the paper from approved questions with the same picker rules as R1-GUR-8b (FR-GUR-8b-2: approved only, filter by subject, Tingkatan and text), a stimulus group is one unit and never split (FR-X1-4e), and it carries the paper structure of `docs/requirements/v2-exam-schema.md`.
-  - **FR-GUR-44e-4** [PRINCIPLE, Not observed in V2] "Kongsi" makes the paper visible to the pupils of the teacher's own classes (as R1-GUR-8b-3) and can be withdrawn; a paper is never visible to another teacher's pupils. Uploading a document file is the R1-GUR-44 "Hantar Kertas Soalan kepada Admin" flow and is not duplicated here.
+  - **FR-GUR-44e-4** [PRINCIPLE, Not observed in V2] "Kongsi" makes the paper visible to the pupils of the explicitly selected own class(es) only (as R1-GUR-8b-3) and can be withdrawn; a paper is never visible to another teacher's pupils. Uploading a document file is the R1-GUR-44 "Hantar Kertas Soalan kepada Admin" flow and is not duplicated here.
   - **FR-GUR-44e-5** Responsive: RP-FORM, the name and the select full width at 375 and the button >= 44 px; the paper list is single column at 375.
 - **Data** Owner M10 (own papers) over M04 (questions) and the exam builder; API to be defined (a `/api/guru/` exam-paper resource over the existing builder service).
 - **Acceptance criteria**
@@ -1088,7 +1118,7 @@ Data scope for every module: SC-AS (1.4c). Definitions: section 5.
 - **Functional requirements**
   - **FR-AS-3-1** List and dashboard show all configs of the school's classes, each with its teacher.
   - **FR-AS-3-2** The entry count equals the "{n} entri headcount" of Prestasi (AS-4) and of the Dashboard (AS-2).
-  - **FR-AS-3-3** On Track / Off Track, OTR, grade and Unjuran rules are the GUR-3 rules.
+  - **FR-AS-3-3** TOV, ETR, OTR, AR (all modes), grade, On Track / Below, Unjuran and Keyakinan are the GUR-3 computation spec (HC-SPEC, HC-1..HC-6) read-only; this module defines no rule of its own.
   - **FR-AS-3-4** Detail, summary, export and pupil pages open for configs of the school; another school's id = 404.
   - **FR-AS-3-5** Write actions are absent from the page and refused by the API (403).
   - **FR-AS-3-6** Responsive as FR-GUR-3-7.
@@ -1098,6 +1128,7 @@ Data scope for every module: SC-AS (1.4c). Definitions: section 5.
   - **AC-AS-3-2** Given a config id of another school, when opened, then 404.
   - **AC-AS-3-3** Given the page, then no "Buat Baru", "Auto-Setup" or "Padam" control exists and `POST /api/headcounts` returns 403 for the school admin.
   - **AC-AS-3-4 (R)** Given a config with 15 pupils, when opened at 375, 768 and 1280 px, then scrollWidth <= innerWidth, the pupil table scrolls inside its card with "Nama" sticky, and "Ringkasan Kelas" and "Export CSV" are visible and >= 44 px.
+  - **AC-AS-3-6** Given a teacher's Auto config with TOV 40, ETR 80, n = 3 and a pupil with AR 60, when the school admin opens the pupil row, then OTR 53 / 66 / 80, Jurang +40 and status "Below" show, identical to the teacher's and the pupil's views.
   - **AC-AS-3-5 (U)** Given "Admin Sekolah UAT" at a school whose teachers have headcount configs, when Headcount opens, then the card count equals the sum of those teachers' configs.
 - **Deviations** DV-AS-3-1 read-only. **Open** OQ-AS-3.
 
@@ -1109,7 +1140,8 @@ Data scope for every module: SC-AS (1.4c). Definitions: section 5.
 - **Reference [V1] M08 S1-S3, S5**: header "Dashboard Sekolah" / "Ringkasan prestasi keseluruhan · {n} kelas · {n} murid"; pills "Tingkatan", "Kelas"; 7 cards "Murid", "Guru", "Kelas", "Subjek", "Sesi Latihan", "Soalan Dijawab", "Purata Ketepatan"; "📊 GPS Anggaran" ("Gred Purata Sekolah (lebih rendah = lebih baik)", "Berdasarkan {n} entri headcount", "* Anggaran dari markah OTR, bukan SPM sebenar"); "📈 Taburan Gred (Anggaran)" A+..G ("Jumlah: {n} rekod"); "📉 Trend GPS (5 Tahun)"; "📚 GPS Mengikut Subjek"; "🎓 Perbandingan Tingkatan"; "👩‍🏫 Prestasi Guru"; "🔗 Navigasi Pantas". Tingkatan page: cards Kelas, Murid, Purata Ketepatan, Jumlah Sesi, On Track, Below Target; "Headcount Keseluruhan"; "Perbandingan Kelas"; "Murid Terbaik"; "Murid Berisiko". V1 "Murid Terbaik" above 100% (D-8) and link `/prestasi?{id}` (D-5) are fixed. GPS = mean grade point of the school's headcount entries (A+ 0 … G 9); band by GPS: <= 2 "Cemerlang", <= 4 "Baik", <= 6 "Sederhana", else "Perlu Perhatian" (V1's badge contradicted its tooltip, D-22: one rule everywhere). Levels: all Tingkatan 1-5 that have classes (D101; V1 had T4/T5 only).
 - **Functional requirements**
   - **FR-AS-4-1** Cards: "Murid" XS-1, "Guru" XS-3, "Kelas" = AS-53 count, "Soalan Dijawab" XS-4, "Purata Ketepatan" XS-5.
-  - **FR-AS-4-2** Tingkatan and class drills for the own school; pupil links open Prestasi 360 for own-school pupils only; "On Track"/"Below" follow the GUR-3 headcount rule.
+  - **FR-AS-4-2** Tingkatan and class drills for the own school; pupil links open Prestasi 360 for own-school pupils only; "On Track"/"Below" follow HC-4 (GUR-3).
+  - **FR-AS-4-6** All figures count answers of all modes from `practice_answers` (XS-8), including Bijak sittings, Set Soalan Guru and games.
   - **FR-AS-4-3** GPS bands as above; "{n} entri headcount" equals the Headcount list count (AS-3).
   - **FR-AS-4-4** Percentages are capped at 100.
   - **FR-AS-4-5** Responsive: the 7 cards 2 columns at 375 (4 at 768, 7 at 1280); grade bars full width with value text; Trend GPS chart RP-CHART with the table RP-TABLE-WIDE; "Prestasi Guru" list scrolls in its box (RP-TABLE-LIST); class comparison RP-TABLE-WIDE paginated 25.
@@ -1120,6 +1152,7 @@ Data scope for every module: SC-AS (1.4c). Definitions: section 5.
   - **AC-AS-4-3** Given a pupil with 3 correct of 3, when "Murid Terbaik" renders, then 100% and no value above 100%.
   - **AC-AS-4-4** Given a pupil of another school by id, when `/prestasi/{id}` is opened, then 404.
   - **AC-AS-4-5 (R)** Given the school page with data, when opened at 375, 768 and 1280 px, then scrollWidth <= innerWidth, the 7 cards are 2 columns at 375, the GPS chart fits its card, and the buttons "Tingkatan" and "Kelas" are visible and >= 44 px.
+  - **AC-AS-4-7** Given the pupil of AC-GUR-4-6 (10 Latih Tubi answers with 7 correct, one Bijak sitting of 40 with 30 correct), when the school page counts answers, then that pupil adds 50 to "Soalan Dijawab" and 37 correct to Purata Ketepatan, the same as the teacher's Prestasi.
   - **AC-AS-4-6 (U)** Given "Admin Sekolah UAT" with 10 headcount entries, when the page opens, then "Berdasarkan 10 entri headcount" and the Headcount list shows 10 configs.
 - **Gap** none functional; numbers inconsistent (section 5). **Deviations** DV-AS-4-1 teacher count; DV-AS-4-2 GPS band wording. **Open** none.
 
@@ -1135,6 +1168,7 @@ Data scope for every module: SC-AS (1.4c). Definitions: section 5.
   - **FR-AS-5-3** "Rekod Intervensi" is not shown (OQ-AS-5).
   - **FR-AS-5-4** The API admits `school_admin` with the forced school.
   - **FR-AS-5-5** Responsive as FR-GUR-5-6.
+  - **FR-AS-5-6** Counts include all modes (FR-GUR-5-7, XS-8); accuracy is pooled (XS-5).
 - **Data** M08 `/api/analytics/classes`.
 - **Acceptance criteria**
   - **AC-AS-5-1** Given a school admin, when "Analitik Adaptif" is clicked, then "Analitik Kelas" opens and "Kelas" lists only classes of the school.
@@ -1155,11 +1189,13 @@ Data scope for every module: SC-AS (1.4c). Definitions: section 5.
   - **FR-AS-6-2** Tabs, Tahap rule, search and sort as GUR-6 (DV-GUR-6-1).
   - **FR-AS-6-3** Pupil names only for own-school pupils.
   - **FR-AS-6-4** Responsive as FR-GUR-6-7.
+  - **FR-AS-6-5** "Soalan Diuji" = XS-7 (distinct questions) and the counters include all modes (FR-GUR-6-8, XS-8).
 - **Data** M08 `/api/item-analysis/school`.
 - **Acceptance criteria**
   - **AC-AS-6-1** Given "Semua", when the page opens, then "Jawapan" equals the all-time "Soalan Dijawab" of the Command Center and "Pelajar" equals Senarai Pelajar.
   - **AC-AS-6-2** Given chip "Tingkatan 4", then "Pelajar" equals the count of Tingkatan 4 pupils on Senarai Pelajar.
   - **AC-AS-6-3 (R)** Given a school with 200 tested questions, when opened at 375, 768 and 1280 px, then scrollWidth <= innerWidth, the table scrolls inside its card (25 rows per page), and the Tingkatan chips are visible and >= 44 px.
+  - **AC-AS-6-5** Given the data of AC-GUR-6-8 and AC-GUR-6-9 for pupils of the school, then the school page shows the same Soalan Diuji and Percubaan values as the class page.
   - **AC-AS-6-4 (U)** Given "Admin Sekolah UAT", when the page opens, then "Soalan Diuji" > 0 and the tier counts sum to it.
 - **Gap** counters from another read model. **Open** none.
 
@@ -1421,6 +1457,8 @@ Data scope for every module: SC-AS (1.4c). Definitions: section 5.
   - **FR-AS-51-5** "Eksport CSV" exports the filtered list.
   - **FR-AS-51-6** Another school's pupil id = 404.
   - **FR-AS-51-7** "Pratonton" (impersonate) only for active pupils of the school, not self or staff.
+  - **FR-AS-51-9** (D-A15, F-17) A pupil's Tingkatan (grade), school and role change only by Admin Pusat or by the school admin (Tingkatan of an own-school pupil); school and role are locked for the school admin ("Hanya admin pusat boleh menukar peranan."). A pupil, a teacher or a parent cannot change them, and `PUT /api/me` ignores `grade`, `schoolId` and `role`.
+  - **FR-AS-51-10** (D-A17) The import quota equals the school's subscription seat limit (`student_quota`): remaining seats = limit − pupils already in the school (active and pending). A file with more rows than the remaining seats is refused whole with "Kuota penuh! Sila tingkatkan kuota dahulu." and nothing is imported. A new or reset password follows the platform minimum of `30-admin-pusat.md` FR-ADM-U02.4 (8 characters, the V2 hint).
   - **FR-AS-51-8** Responsive: RP-TABLE-LIST cards at 375/768 (name, kelas, status, last active; "Edit" and "Reset" >= 44 px); the filter bar RP-FILTER; "Tambah Pelajar", "Import Pelajar", "Eksport CSV" wrap full width at 375; table with sticky name column at 1280; pagination controls >= 44 px.
 - **Data** Owner M02. API `GET/POST/PUT /api/admin-sekolah/pelajar`, `/export.csv`, `/form-options`, `POST /:id/reset-password` (`people/pupils.controller.ts`); **new** bulk import endpoint.
 - **Acceptance criteria**
@@ -1430,6 +1468,8 @@ Data scope for every module: SC-AS (1.4c). Definitions: section 5.
   - **AC-AS-51-4** Given a pupil of another school by id, when opened or edited, then 404.
   - **AC-AS-51-5** Given "Reset Kata Laluan" on a pupil, when confirmed, then a new password shows once and the pupil can log in with it.
   - **AC-AS-51-6 (R)** Given 60 pupils, when opened at 375, 768 and 1280 px, then scrollWidth <= innerWidth, rows are cards at 375/768, the three header buttons are visible and >= 44 px, and pagination shows 25 per page.
+  - **AC-AS-51-8** Given a school with seat limit 100 and 95 pupils, when a CSV of 6 valid rows is imported, then "Kuota penuh! Sila tingkatkan kuota dahulu." shows and 0 accounts are created; with 5 rows, then 5 pending accounts are created.
+  - **AC-AS-51-9** Given a pupil who sends `schoolId`, `grade` or `role` to `PUT /api/me`, then the stored values are unchanged; given the school admin edits an own-school pupil, then the school and role controls are locked.
   - **AC-AS-51-7 (U)** Given "Admin Sekolah UAT" with 50+ migrated pupils, when the page opens, then "{n} pelajar" equals the XS-1 value and 25 rows load per page with working pagination.
 - **Deviations** DV-AS-51-1 Import as a button, not a menu; DV-AS-51-2 ID Delima card not built, Tingkatan 1-5 only; DV-AS-51-3 "Sunting". **Open** OQ-AS-8.
 
@@ -1446,12 +1486,14 @@ Data scope for every module: SC-AS (1.4c). Definitions: section 5.
   - **FR-AS-52-4** Approving a pending teacher is allowed; deactivating an active teacher follows the V2 server rule (Admin Pusat), OQ-AS-12.
   - **FR-AS-52-5** "Eksport CSV".
   - **FR-AS-52-6** Responsive as FR-AS-51-8.
+  - **FR-AS-52-7** (D-A17) There is no teacher bulk import in R1: the school admin creates teachers one by one with "Cipta Pengguna" (a teacher created by the school admin is approved and active at once [PRINCIPLE]); the bulk path for teachers is Admin Pusat "Import Pengguna". "Guru Menunggu" holds only self-registered teachers. The password minimum is that of FR-AS-51-10.
 - **Data** M02 (`teachers.controller.ts`).
 - **Acceptance criteria**
   - **AC-AS-52-1** Given 3 approved teachers, when the page opens, then "3 guru" shows and Prestasi, Monitoring and Statistik Penggunaan show 3.
   - **AC-AS-52-2** Given "Cipta Pengguna" with a name and e-mail, when saved, then the teacher belongs to the admin's school and appears in the list.
   - **AC-AS-52-3** Given 1 pending teacher, then the list shows 3 (not 4) and "Guru Menunggu" shows 1.
   - **AC-AS-52-4 (R)** Given 10 teachers, when opened at 375, 768 and 1280 px, then scrollWidth <= innerWidth, rows are cards at 375/768, and "Cipta Pengguna", "Edit" and "Eksport CSV" are visible and >= 44 px.
+  - **AC-AS-52-6** Given the page, then no teacher import control exists, and a teacher created with "Cipta Pengguna" can log in without waiting for approval.
   - **AC-AS-52-5 (U)** Given "Admin Sekolah UAT" with 3 migrated teachers, when the page opens, then "3 guru" and Monitoring "Guru Berdaftar" = 3.
 - **Open** OQ-AS-12.
 
@@ -1551,7 +1593,7 @@ Data scope for every module: SC-AS (1.4c). Definitions: section 5.
 - **Route** `/pusat-tuisyen/tiket`. **Matrix** A4 (ticked for every role). **Priority** P2. **Status** built (hidden by scope).
 - **Reference** as R1-GUR-A4 (M22; the ticket carries the school).
 - **Functional requirements**
-  - **FR-AS-A4-1** Create, list, reply; own tickets only; reaches the Admin Pusat "Urus Tiket" screen.
+  - **FR-AS-A4-1** Create (Subjek, Butiran), list, read the single admin reply and status (OD-4: no thread, no owner reply); own tickets only; reaches the Admin Pusat "Urus Tiket" screen.
   - **FR-AS-A4-2** The support contact uses the same admin setting and 200-always endpoint (OQ-X-1).
   - **FR-AS-A4-3** Every control works; no mock data; responsive as FR-GUR-A4-5.
 - **Acceptance criteria**
@@ -1570,13 +1612,16 @@ One definition per measure; each is one named query in the owner module; every l
 | XS-1 Pelajar berdaftar | Count of pupil accounts (`role = student`) of the scope, Tingkatan 1-5 (Darjah hidden, D72/D96). Inactive accounts are in the total and flagged; the active count is a separate figure. A screen that shows a Tingkatan subset names the subset ("Tingkatan 4") and equals XS-1 filtered to it. | M02 users, M10 enrolment | AS: Senarai Pelajar, Dashboard, Command Center, Prestasi, Analisa Item, Amaran Awal, Statistik Penggunaan, Laporan Bulanan, Laporan Aktiviti, Analitik Adaptif, Monitoring, Kirkpatrick. Guru: Dashboard Guru, Pelajar Saya, Kelas Saya, Command Center, Prestasi, Laporan, Analitik Adaptif, Analisa Item, Laporan Mingguan, Kirkpatrick, Headcount |
 | XS-2 Pelajar aktif | Distinct pupils of XS-1 with at least one answer row in the stated window (default "pernah menjawab" = all time). Logging in is not activity. "Aktif 30h" = at least one answer in the last 30 days and says so. | M05 answer log | Command Center ("aktif menjawab"), Monitoring "Pernah Aktif", Kirkpatrick Tahap 3, Statistik Penggunaan, Laporan Bulanan, Laporan Mingguan, Laporan Aktiviti "Murid Buat Latihan", Prestasi class "Aktif 7 Hari" |
 | XS-3 Guru | Teacher accounts (`role = teacher`) of the school, approved and not deleted; pending teachers ("Guru Menunggu") and school-admin accounts are excluded. | M02 | AS: Senarai Guru, Dashboard "Jumlah Guru", Prestasi "Guru", Statistik Penggunaan, Monitoring "Guru Berdaftar" (also for the Guru), Laporan Aktiviti "Guru (n)", Kirkpatrick "Guru Aktif" |
-| XS-4 Soalan dijawab | Count of answer rows (M05) of the scope's pupils within the window; default all time, labelled "sepanjang masa"; windowed figures carry the window ("7 hari", "bulan ini"). XS-4b "Soalan" on Dashboard Guru and Sumbang Soalan = questions contributed by the teacher (M04); it is never labelled "Soalan Dijawab". | M05 (M04 for 4b) | Command Center, Prestasi, Analisa Item "Jawapan", Statistik Penggunaan, Laporan Aktiviti, Monitoring, Kirkpatrick Tahap 2, Laporan, Laporan Mingguan, Laporan Bulanan |
-| XS-5 Ketepatan | Pooled accuracy = correct answers ÷ answered × 100 over the same rows as XS-4, 1 decimal; "—" when there are 0 answers (never 0%, never above 100%). Per-session accuracy appears only inside session tables. "Ketepatan", "Ketepatan Purata" and "Purata Ketepatan" all mean this number. "Skor Purata" (Kirkpatrick Tahap 2, Laporan) is a different, separately named measure: the mean of per-session accuracies; it is never labelled "Ketepatan". | M05 | all screens of XS-4 plus the Amaran Awal "Ketepatan" column |
-| XS-6 Scope, windows, headcount | (a) The scope comes from the session, never from the request. (b) Every number names its window or says "sepanjang masa". (c) Seed/UAT dates are relative to now (FR-AS-0-3). (d) "{n} entri headcount" on Dashboard, Prestasi and the Headcount list is one count. (e) Guru "Kelas Aktif" = the teacher's rows of Kelas Sekolah. (f) Headcount status On Track = AR >= OTR target (GUR-3) on every screen. | all | all |
+| XS-4 Soalan dijawab | Count of answer rows in `practice_answers` (M05, **all modes**, XS-8) of the scope's pupils within the window; default all time, labelled "sepanjang masa"; windowed figures carry the window ("7 hari", "bulan ini"). XS-4b "Soalan" on Dashboard Guru and Sumbang Soalan = questions contributed by the teacher (M04); it is never labelled "Soalan Dijawab". | M05 (M04 for 4b) | Command Center, Prestasi, Analisa Item "Jawapan", Statistik Penggunaan, Laporan Aktiviti, Monitoring, Kirkpatrick Tahap 2, Laporan, Laporan Mingguan, Laporan Bulanan; pupil Prestasi and Penguasaan Subjek; Admin Pusat Command Center, Monitoring, Analitik, Laporan, Kirkpatrick (`30-admin-pusat.md` M-02..M-06) |
+| XS-5 Ketepatan | Pooled accuracy = correct answers ÷ answered × 100 over the same rows as XS-4, displayed as a whole-number percent on every screen (the only exception is a Manual headcount AR keyed by the teacher, which may show 1 decimal); a self-marked part counts as correct only at full marks; "—" when there are 0 answers (never 0%, never above 100%). Per-session accuracy appears only inside session tables. "Ketepatan", "Ketepatan Purata" and "Purata Ketepatan" all mean this number. "Skor Purata" (Kirkpatrick Tahap 2, Laporan) is a different, separately named measure: the mean of per-session accuracies; it is never labelled "Ketepatan". | M05 | all screens of XS-4 plus the Amaran Awal "Ketepatan" column, the pupil Analisa Item, Remedial and Analitik cards, and the Admin Pusat screens of XS-4. Display precision follows the precision list of `40-cross-cutting.md` (FR-X4): one precision per metric on every screen |
+| XS-6 Scope, windows, headcount | (a) The scope comes from the session, never from the request. (b) Every number names its window or says "sepanjang masa". (c) Seed/UAT dates are relative to now (FR-AS-0-3). (d) "{n} entri headcount" on Dashboard, Prestasi and the Headcount list is one count. (e) Guru "Kelas Aktif" = the teacher's rows of Kelas Sekolah. (f) Headcount status On Track = AR >= OTR target (HC-4, GUR-3) on every screen, pupil view included. | all | all |
+| XS-7 Soalan Diuji | Count of **distinct** `question_id` answered by the scope's pupils in the window (from `practice_answers`, all modes). It is not the number of answer rows (that is XS-4). | M05 | Analisa Item (class and school), Admin Pusat Analisa Item views, the pupil Analisa Item |
+| XS-8 Answer source | Every pupil answering activity writes its answers to the single answer store `practice_answers` with a mode value: Latih Tubi, Soalan by Chapter, SPM Databank, Kuiz, Bijak sittings including Tracking A, Subjektif self-mark results, Set Soalan Guru (`question_set`), Simulasi, Misi, remedial and question-based games (D-A1). Every report reads that one store and includes all modes: Prestasi, Analisa Item, Analitik, Laporan, Laporan Mingguan, Headcount AR, AS reports, Command Center, Monitoring, Kirkpatrick, Admin Pusat monitoring and reports. A report that excludes a mode says so in its own caption. | M05 | all screens of XS-4, XS-5 and XS-7 |
 
 - **AC-XS-1** Given the demo school (and again the school of "Admin Sekolah UAT"), when XS-1..XS-5 are read from every listed screen for the same scope and window, then they are identical; the current mismatches (pupils 17/16/13, teachers 3/4, answered 122/30/36, accuracy 57.9/73.3/33.3%) are closed or explained by a visible label (a Tingkatan subset, a window).
 - **AC-XS-2** Given a pupil added to a teacher's class, when any listed Guru screen is refreshed, then its pupil count rises by exactly 1 on all of them.
 - **AC-XS-3** Given the code, then no screen contains a hard-coded display constant for these measures (D11).
+- **AC-XS-4** Given a pupil with 10 Latih Tubi answers (7 correct) and one Bijak sitting of 40 MCQ answers (30 correct) (all 50 questions distinct), when the pupil Prestasi, teacher Prestasi Kelas, Admin Sekolah Prestasi and Admin Pusat Laporan are read, then every one shows 50 answers and Ketepatan 74% for that pupil, and "Soalan Diuji" = 50 (XS-7).
 
 ---
 
@@ -1595,21 +1640,21 @@ One definition per measure; each is one named query in the owner module; every l
 | GUR-1 Command Center | Guru | A | P1 | scope caption, drill titles, Evaluate/Badges unverified | 12 | 8 |
 | GUR-2 Dashboard Guru | Guru | A | P2 | dead tiles | 5 | 6 |
 | GUR-2b Misi Harian (child) | Guru | A | P1 | no route | 4 | 4 |
-| GUR-3 Headcount | Guru | A | P1 | placeholder pages, forms unspecified | 7 | 10 |
-| GUR-4 Prestasi | Guru | A | P2 | none | 5 | 5 |
-| GUR-5 Analitik Adaptif | Guru | A | **P0** | menu opens pupil page | 6 | 6 |
-| GUR-6 Analisa Item | Guru | A | P1 | data, band contradiction | 7 | 7 |
+| GUR-3 Headcount | Guru | A | P1 | placeholder pages, forms unspecified | 9 | 13 |
+| GUR-4 Prestasi | Guru | A | P2 | none | 6 | 6 |
+| GUR-5 Analitik Adaptif | Guru | A | **P0** | menu opens pupil page | 7 | 7 |
+| GUR-6 Analisa Item | Guru | A | P1 | data, band contradiction | 8 | 9 |
 | GUR-7 Video | Guru | A | P2 | none | 3 | 4 |
 | GUR-8 Kelas Saya | Guru | A | P2 | join code to remove | 5 | 6 |
-| GUR-8b Set Soalan (child) | Guru | A | P1 | no teacher screen | 7 | 7 |
+| GUR-8b Set Soalan (child) | Guru | A | P1 | no teacher screen | 8 | 10 |
 | GUR-9 Soalan by Chapter | Guru | A | P1 | chapters empty (data) | 5 | 5 |
 | GUR-10 Monitoring | Guru | A | P1 | scope, Gap tab | 7 | 7 |
 | GUR-11 Kirkpatrick | Guru | A | P1 | admin chrome, false decline | 10 | 7 |
 | GUR-41 Pelajar Saya | Guru | A | P2 | Cipta Pelajar silent | 5 | 5 |
-| GUR-42 Laporan | Guru | A | P2 | class filter dropped | 5 | 5 |
-| GUR-43 Laporan Mingguan | Guru | A | **P0** | 403, no screen, API forbids | 7 | 9 |
-| GUR-44 Sumbang Soalan | Guru | A | P1 | paper submit 503, six-tool block | 8 | 9 |
-| GUR-44a Soalan & Rujukan (tool) | Guru | A | P1 | no page, no private-question flag | 6 | 6 |
+| GUR-42 Laporan | Guru | A | P2 | class filter dropped | 6 | 6 |
+| GUR-43 Laporan Mingguan | Guru | A | **P0** | 403, no screen, API forbids | 8 | 10 |
+| GUR-44 Sumbang Soalan | Guru | A | P1 | paper submit 503, six-tool block | 10 | 11 |
+| GUR-44a Soalan & Rujukan (tool) | Guru | A | P1 | no page, no private-question flag | 7 | 7 |
 | GUR-44b Soalan Berstruktur (tool) | Guru | A | P1 | admin-only mount, no teacher submit | 7 | 7 |
 | GUR-44c Soalan Gambar Rajah (tool) | Guru | A | P2 | admin-only role | 5 | 5 |
 | GUR-44d Databank Soalan (tool) | Guru | A | P1 | no teacher page | 6 | 6 |
@@ -1617,10 +1662,10 @@ One definition per measure; each is one named query in the owner module; every l
 | AS-0 Preconditions | AS | A | **P0** | no UAT AS account | 4 | 2 |
 | AS-A5 Log Keluar | AS | A | P1 | none | 2 | 2 |
 | AS-1 Command Center | AS | A | P1 | platform card, 16 vs 17 | 6 | 7 |
-| AS-3 Headcount | AS | A | **P0** | empty list | 6 | 5 |
-| AS-4 Prestasi | AS | A | P1 | numbers | 5 | 6 |
-| AS-5 Analitik Adaptif | AS | A | **P0** | empty page, forbidden route | 5 | 5 |
-| AS-6 Analisa Item | AS | A | P1 | numbers | 4 | 4 |
+| AS-3 Headcount | AS | A | **P0** | empty list | 6 | 6 |
+| AS-4 Prestasi | AS | A | P1 | numbers | 6 | 7 |
+| AS-5 Analitik Adaptif | AS | A | **P0** | empty page, forbidden route | 6 | 5 |
+| AS-6 Analisa Item | AS | A | P1 | numbers | 5 | 5 |
 | AS-7 Video | AS | A | P2 | none | 2 | 3 |
 | AS-10 Monitoring | AS | A | P1 | filters, 4 vs 3 teachers | 5 | 5 |
 | AS-11 Kirkpatrick | AS | A | **P0** | six screens not reachable (404), dead "Tahap 1" | 5 | 7 |
@@ -1630,17 +1675,17 @@ One definition per measure; each is one named query in the owner module; every l
 | AS-48 Laporan Aktiviti | AS | A | P2 | empty axis | 5 | 5 |
 | AS-49 Amaran Awal | AS | A | P1 | false alarms | 6 | 6 |
 | AS-50 Laporan Bulanan | AS | A | P1 | thin report | 5 | 6 |
-| AS-51 Senarai Pelajar | AS | A | P1 | no import, no class filter | 8 | 7 |
-| AS-52 Senarai Guru | AS | A | P2 | count mismatch | 6 | 5 |
+| AS-51 Senarai Pelajar | AS | A | P1 | no import, no class filter | 10 | 9 |
+| AS-52 Senarai Guru | AS | A | P2 | count mismatch | 7 | 6 |
 | AS-53 Kelas Sekolah | AS | A | P2 | no drill, code column | 4 | 5 |
 | AS-2 Dashboard | AS | B | P1 | Perutusan route missing | 5 | 6 |
 | AS-A1 Profil Saya | AS | B | P2 | school block | 3 | 3 |
 | AS-A2 Tetapan Peribadi | AS | B | P2 | account block | 3 | 3 |
 | AS-A3 Panduan | AS | B | P2 | support endpoint 404 | 4 | 5 |
 | AS-A4 Tiket Bantuan | AS | B | P2 | hidden by scope | 3 | 3 |
-| Cross-screen rules | both | A | **P0** | inconsistent numbers | XS-1..6 | 3 |
+| Cross-screen rules | both | A | **P0** | inconsistent numbers | XS-1..8 | 4 |
 
-**Totals (unique IDs, verified by search on the file):** Guru 27 module sections (20 matrix rows: A1-A5, 1-11, 41-44, plus the child modules 2b, 8b and the five Sumbang Soalan tool modules 44a-44e; 26 in Delivery A, A4 in Delivery B) with 158 FR and 158 AC; Admin Sekolah 24 module sections (18 Delivery-A matrix rows A5, 1, 3-7, 10, 11, 45-53; 5 Delivery-B rows 2, A1-A4; plus the AS-0 precondition) with 110 FR and 114 AC; shell 5 FR and 5 AC; cross-screen rules XS-1..XS-6 with 3 AC. Combined: 51 module sections, 268 module FRs and 272 module ACs (273 FRs and 277 ACs with the shell items, plus 3 cross-screen ACs = 280).
+**Totals (unique IDs, verified by search on the file):** Guru 27 module sections (20 matrix rows: A1-A5, 1-11, 41-44, plus the child modules 2b, 8b and the five Sumbang Soalan tool modules 44a-44e; 26 in Delivery A, A4 in Delivery B) with 169 FR and 173 AC; Admin Sekolah 24 module sections (18 Delivery-A matrix rows A5, 1, 3-7, 10, 11, 45-53; 5 Delivery-B rows 2, A1-A4; plus the AS-0 precondition) with 116 FR and 120 AC; shell 5 FR and 5 AC; cross-screen rules XS-1..XS-8 with 4 AC. Combined: 51 module sections, 285 module FRs and 293 module ACs (290 FRs and 298 ACs with the shell items, plus 4 cross-screen ACs = 302). Headcount computation spec: HC-SPEC (HC-1..HC-6) inside R1-GUR-3.
 P0 list: GUR-43, GUR-5, AS-5, AS-11, AS-3, AS-45, AS-0, cross-screen consistency, shell menu targets.
 
 ### 6.1b Action table (user rule: close, fix and improve the gaps only; never rebuild from scratch; FR-X1-5)
@@ -1662,7 +1707,7 @@ Notes: GUR-3 stays "Complete" because the config screens exist and only the four
 | OQ-AS-1 | `/admin-sekolah/*` in the learning shell conflicts with `v2-portals.md` (AS inside Portal Pentadbiran). | Keep `/admin-sekolah/*` in the learning shell for both deliveries; Delivery A landing = Command Center, Delivery B landing = `/admin-sekolah`. |
 | OQ-AS-3 | May a school admin create headcount? | No; read-only (FR-AS-3-5). |
 | OQ-AS-5 | "Rekod Intervensi" on AS Analitik Adaptif? | Hidden. |
-| OQ-AS-6 | Sekolah Bersaing: V2 live (accuracy ranking, captured) versus V1 (weekly snapshot with "% Aktif", "Streak Avg"). | Follow V2 (primary); the V1 weekly board is dropped (R1-AS-45). Confirm with the user. |
+| OQ-AS-6 | Sekolah Bersaing: V2 live (accuracy ranking, captured) versus V1 (weekly snapshot with "% Aktif", "Streak Avg"). | **Decided (by principle, 2026-11-04):** follow V2 (primary); the V1 weekly board is dropped (R1-AS-45), as already applied. |
 | OQ-AS-7 | Statistik Penggunaan layout [PRINCIPLE]. | As built. |
 | OQ-AS-8 | DSKP Heatmap axes [PRINCIPLE]; Import Pelajar approval rule. | As specified; imports pending Admin Pusat approval (V2). |
 | OQ-AS-9 | Real V1 href of Laporan Aktiviti. | Keep `/admin-sekolah/laporan-aktiviti`. |
@@ -1675,12 +1720,12 @@ Notes: GUR-3 stays "Complete" because the config screens exist and only the four
 | OQ-G-3 | V2 read-only account block on Tetapan? | Add. |
 | OQ-G-4 | V2 coin chip and bell for Guru? | No (not in the matrix). |
 | OQ-G-13 | Misi Harian as a child page only? | Yes (D106; no sidebar item). |
-| OQ-G-14 | Set visibility rule (set for all the teacher's classes; "Salin" restricts to one class) is inferred from V2's "Salin Set ke kelas lain". | Keep as FR-GUR-8b-3; confirm on V2 live. |
+| OQ-G-14 | Set visibility rule. | **Decided (by principle, 2026-11-04, D-A7):** a set is assigned to explicitly selected own class(es); pupils see only sets assigned to their class; results return per class (FR-GUR-8b-3, 8b-5). |
 | OQ-G-15 | V2 Sumbang Soalan has an "Alat Soalan" block linking six teacher tools; only Set Soalan is specified here; the other five (Soalan & Rujukan, Soalan Berstruktur, Soalan Gambar Rajah, Databank Soalan, Kertas Peperiksaan) are not matrix rows but D106 says a module linked from a 1.0 screen ships with 1.0. | **Decided (2026-11-04): all six tools in R1 scope**, per the principle that every V2 function under a 1.0 matrix module must work. Specified as R1-GUR-8b (Set Soalan) and R1-GUR-44a to 44e (Soalan & Rujukan, Soalan Berstruktur, Soalan Gambar Rajah, Databank Soalan, Kertas Peperiksaan). |
 | OQ-G-16 | New with OQ-G-15: V2 captures are incomplete for the tools (no list page of Soalan & Rujukan, no create form of Soalan Berstruktur, no teacher view of Soalan Gambar Rajah, no screen after "Cipta Baharu" of Kertas Peperiksaan); and V2's "Tambah Soalan" on Sumbang Soalan opens the private-question form. | Follow the [PRINCIPLE] FRs in R1-GUR-44a to 44e; confirm on V2 live when a teacher session can observe without writing. |
 | OQ-X-1 | The support contact ("Tetapan Sokongan": e-mel, telefon, WhatsApp, waktu) read by Panduan and Tiket Bantuan has no row in `30-admin-pusat.md` (its `/admin/settings` is "deferred, hidden"). | Admin PRD must add a P1 row "Tetapan Sokongan" (V2 `/admin/settings`) and seed it on UAT; the endpoint stays 200-always. |
-| OQ-X-2 | `10-murid.md` R1-MUR-3 needs the Auto/Manual chip and the Manual AR rule of GUR-3; its AC-MUR-3-2 expects OTR2 = 65 for TOV 40, RS 80, but its own formula (0.66) gives 66. | Update R1-MUR-3 (OTR2 = 66). |
-| OQ-X-3 | `10-murid.md` FR-MUR-8-3 ("Sertai" by class code) contradicts V2 and D77. | Remove it (teacher adds pupils, GUR-8). |
+| OQ-X-2 | `10-murid.md` R1-MUR-3 needs the Auto/Manual chip and the Manual AR rule of GUR-3; its AC-MUR-3-2 expects OTR2 = 65 for TOV 40, RS 80, but the formula (0.66) gives 66. | **Decided (2026-11-04, D-A3):** OTR2 = 66; R1-MUR-3 refers to HC-SPEC (GUR-3) and defines no rule of its own. |
+| OQ-X-3 | `10-murid.md` FR-MUR-8-3 ("Sertai" by class code) contradicts V2 and D77. | **Closed (2026-11-04):** removed; the teacher adds pupils (GUR-8). |
 
 Closed in this pass: OQ-AS-4 (D108(5)), OQ-G-5, OQ-G-6, OQ-G-8, OQ-G-9, OQ-G-12.
 

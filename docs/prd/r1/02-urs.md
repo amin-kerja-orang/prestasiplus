@@ -21,7 +21,7 @@
 | ID | User requirement | Matrix row | Priority | Satisfied by |
 |---|---|---|---|---|
 | URS-MUR-01 | As a pupil I can see my profile (identity, coins, streak, level, badges, 30-day calendar, last 10 sessions), write my bio and ambition, and copy a public profile link, so that I can track myself and share progress without exposing private data. | A1 | 1.0 P1 | FR-MUR-A1-1..8 |
-| URS-MUR-02 | As a pupil I can see my account details read-only, change my password and keep my "Mod Rohani" preferences, so that I can keep my account safe. | A2 | 1.0 P1 | FR-MUR-A2-1..5 |
+| URS-MUR-02 | As a pupil I can see my account details read-only, change my password and keep my "Mod Rohani" preferences (a password has at least 8 characters; I cannot change my Tingkatan, school or role myself), so that I can keep my account safe. | A2 | 1.0 P1 | FR-MUR-A2-1..6 |
 | URS-MUR-03 | As a pupil I can read Panduan (steps and FAQ for pupils) and see the support contact, so that I can solve simple problems myself. | A3 | 1.0 P2 | FR-MUR-A3-1..4 |
 | URS-MUR-04 | As a pupil I can log out in one tap at any screen width, so that nobody else can use my session on a shared device. | A5 | 1.0 P0 | FR-MUR-A5-1..3, FR-MUR-SH-6 |
 | URS-MUR-05 | As a pupil I get one menu (sidebar, drawer, search) in a fixed order where every item opens a working screen and nothing from another role or from a hidden module appears, so that I never meet a dead end. | all rows | 1.0 P0 | FR-MUR-SH-1..5, FR-MUR-SH-7..9, FR-MUR-SH-11, FR-MUR-SH-12 |
@@ -33,8 +33,8 @@
 |---|---|---|---|---|
 | URS-MUR-07 | As a pupil I get a start page with greeting, active package, streak ("Kombo") and warning, five key figures, daily missions and mood check-in, so that I know where I stand today. | 2 | 1.0 P1 | FR-MUR-2-1..5 |
 | URS-MUR-08 | As a pupil I see which topics to strengthen, which subjects I can practise (counts equal the Latih Tubi counts), the newest questions, platform statistics and the latest articles, so that I can choose my next practice. | 2 | 1.0 P1 | FR-MUR-2-6..11 |
-| URS-MUR-09 | As a pupil I can see the targets my teacher set (TOV, RS) against my own achievement (AR) with forecast and checkpoints, so that I know whether I am on track. | 3 | 1.0 P0 | FR-MUR-3-1..8 |
-| URS-MUR-10 | As a pupil I open Prestasi and see only my own performance (accuracy, sessions, trend, activity map, weak topics, advice, subject mastery), never school figures, so that my data is private and useful. | 4 | 1.0 P0 | FR-MUR-4-1..11 |
+| URS-MUR-09 | As a pupil I can see the targets my teacher set (TOV, RS) against my own achievement (AR) with forecast and checkpoints, so that I know whether I am on track, using the same single Headcount computation (HC-SPEC) as my teacher. | 3 | 1.0 P0 | FR-MUR-3-1..9 |
+| URS-MUR-10 | As a pupil I open Prestasi and see only my own performance (accuracy, sessions, trend, activity map, weak topics, advice, subject mastery), computed from every activity I did (one answer store) and never school figures, so that my data is private and useful. | 4 | 1.0 P0 | FR-MUR-4-1..12 |
 | URS-MUR-11 | As a pupil I can see my mastery of each Standard Pembelajaran (SP) per subject and start a focused drill on a weak SP, so that I can improve exactly where I am weak. | 5 | 1.0 P1 | FR-MUR-5-1..7 |
 | URS-MUR-12 | As a pupil I can review the items I answered wrongly or only sometimes right, per subject, with the question, figure and scheme, and start a revision drill, so that I learn from mistakes. | 6 | 1.0 P0 | FR-MUR-6-1..9 |
 | URS-MUR-13 | As a pupil I can see a heatmap of my accuracy per chapter and open practice for a weak chapter, so that I find weak topics at a glance. | 14 | 1.0 P1 | FR-MUR-14-1..6 |
@@ -48,7 +48,7 @@
 | URS-MUR-16 | As a pupil I can practise by chapter (Bab) in textbook order for my own form, with progress per chapter, so that I revise what the class is studying. | 9 | 1.0 P0 | FR-MUR-9-1..11 |
 | URS-MUR-17 | As a pupil I can see the SPM hub (my SPM results, years available, paper lists grouped by subject) and open published Bijak SPM papers, so that I can find a paper to sit. | 13 | 1.0 P0 | FR-MUR-13-1..5, FR-MUR-13-22 |
 | URS-MUR-18 | As a pupil I can sit a Bijak SPM paper (timed, one question or one stimulus group per screen, sections "Jawab semua" and "Pilih N", autosave, navigator), submit once, review the scheme after submit and retry, so that I rehearse a real exam. | 13 | 1.0 P0 | FR-MUR-13-6..15, FR-MUR-13-23..25 |
-| URS-MUR-19 | As a pupil I can use the other SPM modes (Simulasi Kuiz, Databank by year, Tracking A, Jana Kertas) and have every sitting recorded in my performance, so that I can practise in the format I need. | 13 | 1.0 P0 | FR-MUR-13-16..18, FR-MUR-13-20, FR-MUR-13-21 |
+| URS-MUR-19 | As a pupil I can use the other SPM modes (Simulasi Kuiz, Databank by year, Tracking A, Jana Kertas) and have every answer of every sitting recorded in the single answer store (it counts in my performance and my teacher's reports), so that I can practise in the format I need. | 13 | 1.0 P0 | FR-MUR-13-16..18, FR-MUR-13-20, FR-MUR-13-21 |
 | URS-MUR-20 | As a pupil I can answer SPM Subjektif and read Kertas Subjektif papers, reveal the marking scheme and mark myself, with no switch hiding them, so that I can practise written answers. | 13 | 1.0 P0 | FR-MUR-13-19, FR-MUR-13-26..30 |
 | URS-MUR-21 | As a pupil I can practise structured (Kertas 2 style) questions with parts, working and final answer, then see the scheme and self-mark, so that I train for written papers. | 17 | 1.0 (linked from 13) P1 | FR-MUR-17-1..5 |
 | URS-MUR-22 | As a pupil I can report a wrong question from any question card and follow the status of my reports, so that errors get fixed. | 54 | 1.0 P0 | FR-MUR-54-1..8, FR-MUR-16-8 |
@@ -65,11 +65,11 @@
 
 | ID | User requirement | Matrix row | Priority | Satisfied by |
 |---|---|---|---|---|
-| URS-MUR-26 | As a pupil I can see my classes, join one with a class code, see classmates (name and coins only) and open the teacher's question sets and the class leaderboard, so that I belong to my class. | 8 | 1.0 P1 | FR-MUR-8-1..6 |
+| URS-MUR-26 | As a pupil I can see the classes my teacher added me to (there is no join-by-code), see classmates (first name and coins only) and open the teacher's question sets and the class leaderboard, so that I belong to my class. | 8 | 1.0 P1 | FR-MUR-8-1..6 |
 | URS-MUR-27 | As a pupil I can browse and search learning videos by category and subject, so that I can watch explanations. | 7 | 1.0 P2 | FR-MUR-7-1..5 |
 | URS-MUR-28 | As a pupil I can play the learning games that work with the question bank, join a room by a 6-character code and earn coins, so that practice is fun. | 21 | 1.0 P1 | FR-MUR-21-1..7 |
 | URS-MUR-29 | As a pupil I can read articles and open an article from the Dashboard, so that no link is dead. | 20 | 1.0 (linked from 2) P1 | FR-MUR-20-1..4 |
-| URS-MUR-30 | As a pupil I can open and answer the question sets my teacher published to my class, so that I do my teacher's homework in the app. | 26 | 1.0 (linked from 2, 8) P1 | FR-MUR-26-1..5 |
+| URS-MUR-30 | As a pupil I can open and answer the question sets my teacher assigned to my class (and only mine), so that I do my teacher's homework in the app. | 26 | 1.0 (linked from 2, 8) P1 | FR-MUR-26-1..5 |
 
 ### 1.6 Coins, rewards and ranking (linked from the header and Dashboard, then the rest)
 
@@ -95,7 +95,7 @@
 | URS-MUR-43 | As a pupil I can listen to KBAT audio items, so that I can train higher-order thinking by ear. | 27 | Later P2 | FR-MUR-27-1..4 |
 | URS-MUR-44 | As a pupil I can see my timeline of achievements and my own posts, so that I can look back on my progress. | 39 | Later P2 | FR-MUR-39-1..5 |
 | URS-MUR-45 | As a pupil I can invite a parent and manage the link, so that my parent can follow my progress. | 40 | Later P2 | FR-MUR-40-1..5 |
-| URS-MUR-46 | As a pupil I can open a support ticket, follow the reply and answer, so that I get help. | A4 | Later P2 | FR-MUR-A4-1..5 |
+| URS-MUR-46 | As a pupil I can open a support ticket (subject and details) and read the single admin reply and status, so that I get help. | A4 | Later P2 | FR-MUR-A4-1..5 |
 | URS-MUR-47 | As a pupil I can use every later module with real data, own-data-only access, BM messages and no dead control, so that nothing feels unfinished. | rows 17–40, A4 | Later P1 | FR-MUR-P2-1..5 |
 
 ### 1.8 Hidden modules

@@ -1,5 +1,7 @@
 # SRS — Murid portal (R1)
 
+> **Read this first.** V3 already exists. Each module's *Action* and *Current gap* say what to change. The *Screen specification* describes the target behaviour; it is **not** an instruction to rebuild the screen. Before coding a card: (1) run a code gap check of the existing V3 code against every FR/AC of the card and post it on the issue (FR/AC → works / broken / missing, with file:line); (2) change only what is broken or missing, in the existing files; (3) prove the ACs, including the AC-CHAIN that passes through the module.
+
 | Item | Content |
 |---|---|
 | Purpose | Software Requirements Specification of the Murid (secondary-school pupil) portal of PrestasiPlus V3, Release 1.0. A developer builds from it and a tester verifies from it, without opening V1 (prestasiplus.my) or V2 (prestasiplus.cloud) and without screenshots. |
@@ -55,13 +57,15 @@ Only the listed gaps are changed; the existing screen, routes and API are reused
 
 | Action | Modules | Count |
 |---|---|---|
-| Keep | A5, 7, 8, 14, 21, A4, 20, 26, 27, 29, 30, 34, 40 | 13 |
-| Fix | A3, 4, 9, 16, 54, 18, 24, 25, 35, 36 | 10 |
-| Complete | A1, A2, 2, 3, 5, 12, 13, 17, 19, 22, 23, 28, 31, 32, 33, 38, 39 | 17 |
+| Keep | A5, 7, 20, 27, 29, 30, 34, 40 | 8 |
+| Fix | A3, 4, 8, 9, 14, 16, 21, 54, 18, 24, 25, 26, 35, 36 | 14 |
+| Complete | A1, A2, 2, 3, 5, 12, 13, A4, 17, 19, 22, 23, 28, 31, 32, 33, 38, 39 | 18 |
 | Build | 6 | 1 |
 | **Total** | | **41** |
 
-By part: the 1.0 columns have 5 Keep, 5 Fix, 7 Complete, 1 Build (18); the rest of the matrix has 8 Keep, 5 Fix, 10 Complete, 0 Build (23).
+By part: the 1.0 columns have 2 Keep, 8 Fix, 7 Complete, 1 Build (18); the rest of the matrix has 6 Keep, 6 Fix, 11 Complete, 0 Build (23).
+
+Actions changed by the dev-readiness audit (2026-11-04): 8 Kelas Saya (remove the join-by-code box, D-A8), 14 Heatmap (per-subject Bab rule), 21 Permainan (question-based games write the single answer store), 26 Set Soalan Guru (mode `question_set`, 404, assigned class), A4 Tiket Bantuan (single admin reply). Each was "Keep" before; the others stay as listed.
 
 ### 1.3 The rest of the matrix: every other Murid row (full sections in 3B)
 
@@ -228,7 +232,7 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
   - FR-MUR-A1-2 All figures are the pupil's own, from server data; no other pupil's id is accepted.
   - FR-MUR-A1-3 "Simpan" saves Bio and Cita-Cita (limits 1000 and 255) and shows a success line; a failure keeps the typed text and shows the error.
   - FR-MUR-A1-4 "Salin" copies the public URL to the clipboard; fallback text selection when clipboard is blocked.
-  - FR-MUR-A1-5 The public profile `/pelajar/:id` shows only the brand, the pupil's **first name** (never the full name, never the school), "Ahli sejak {date}", the four tiles "Koin", "Streak Hari", "Level", "Hari Berlatih", the line "Sesi latihan: {n} · Ketepatan purata: {x}%" and the button "Sertai PRESTASIPLUS" (V2 public profile page `/pelajar/:id`); no bio, cita-cita, e-mail, phone, class list or posts (privacy; minors). Decided by principle 2026-11-04 (OQ-API-04): V2 showed the full name and school, which V3 does not copy because the page is anonymous and the owners are children; this matches the API (`PerformancePublicProfile`: first name, `school: null`). Deviation FD-MUR-6.
+  - FR-MUR-A1-5 The public profile `/pelajar/:id` shows only the brand, the pupil's **display name = first name** (section 4.3; never the full name, never the school, not even to a pupil of the same school), "Ahli sejak {date}", the four tiles "Koin", "Streak Hari", "Level", "Hari Berlatih", the line "Sesi latihan: {n} · Ketepatan purata: {x}%" and the button "Sertai PRESTASIPLUS" (V2 public profile page `/pelajar/:id`); no bio, cita-cita, e-mail, phone, class list or posts (privacy; minors). Decided by principle 2026-11-04 (OQ-API-04): V2 showed the full name and school, which V3 does not copy because the page is anonymous and the owners are children; this matches the API (`PerformancePublicProfile`: first name, `school: null`). Deviation FD-MUR-6.
   - FR-MUR-A1-6 "Sesi Terkini" lists the last 10 sessions of all modes, mode names in BM (not raw snake case).
   - FR-MUR-A1-7 The V3 "Kemaskini Profil" button is replaced by the in-page form (no extra page, no menu change).
   - FR-MUR-A1-8 Profile picture upload (V3 `POST me/picture`) is kept only if already built; no new field is added.
@@ -240,6 +244,7 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
   - AC-MUR-A1-4 Given a pupil with no badges, then the empty text "Belum ada lencana lagi" and the button "Mula Latih Tubi" show.
   - AC-MUR-A1-5 Given the public profile of a pupil, when an anonymous visitor or another pupil opens it, then only the first name is shown (no surname, no school, no bio or cita-cita) and no e-mail or phone is present in the HTML or API response.
   - AC-MUR-A1-6 Given 375 px, then the six tiles are two columns, the sessions table scrolls inside its card, and the page does not scroll sideways.
+  - AC-MUR-A1-7 Given a pupil of school X opens the public profile of a pupil of school Y (or of school X), then the page shows the first name only, no school name and no surname, in the HTML and in the API response.
 - **Current gap and root cause**: thin `/profile` page (m09/m01 profile page); no endpoints for calendar, badges, sessions (parity C20).
 - **Fidelity deviations**: FD-MUR-5 (level formula), FD-MUR-6 (public profile minimal fields, privacy).
 - **Open questions**: OQ-MUR-8 (level formula). Recommendation there.
@@ -263,15 +268,18 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
 - **Functional requirements**
   - FR-MUR-A2-1 The page shows the five read-only rows with the exact labels above.
   - FR-MUR-A2-2 Role shows "Pelajar"; status shows the real account state.
-  - FR-MUR-A2-3 A "Tukar Kata Laluan" form (current, new, confirm) calls `me/password` and shows success or error in BM; no other profile field is editable here (editing is in A1).
+  - FR-MUR-A2-3 A "Tukar Kata Laluan" form (current, new, confirm) calls `me/password` and shows success or error in BM; the new password has at least 8 characters (the V2 hint "minimum 8 aksara"; the same rule as admin and school-admin password reset, D-A17); no other profile field is editable here (editing is in A1).
   - FR-MUR-A2-4 "Mod Rohani" keeps its existing toggles unchanged.
   - FR-MUR-A2-5 The demo-mode note is replaced by "Untuk menukar e-mel, telefon atau sekolah, hubungi guru atau pentadbir sekolah anda." (OQ-MUR-9).
+  - FR-MUR-A2-6 A pupil cannot change Tingkatan (`grade`), school (`schoolId`) or role through `PUT /api/me` or any other pupil call: those fields change only through the admin user edit or the school-admin pupil edit. The server ignores or rejects them; the stored values never change from a pupil request (scope of XS-1, rankings, level gating and the school admin's list depends on them).
 - **Data and dependencies**: `GET /api/me`, `me/settings`, `me/password` (exist). Owner M01.
 - **Acceptance criteria**
   - AC-MUR-A2-1 Given a pupil, when `/tetapan` opens, then e-mail, telefon, sekolah, peranan and status show the pupil's own values.
   - AC-MUR-A2-2 Given a wrong current password, when "Tukar Kata Laluan" is submitted, then an error shows and the password is unchanged.
   - AC-MUR-A2-3 Given a valid change, then the pupil can log in with the new password and not the old.
   - AC-MUR-A2-4 Given 375 px, then rows stack label over value and nothing overflows.
+  - AC-MUR-A2-5 Given a T5 pupil of school X sends `PUT /api/me` with `grade` 8, `schoolId` of school Y and `role` "teacher", then the response does not apply them (ignored, or 422 for those fields) and `GET /api/me` still returns Tingkatan 5, school X and role pupil; the same pupil appears unchanged in the school-X pupil list.
+  - AC-MUR-A2-6 Given a new password of 7 characters, then "Tukar Kata Laluan" refuses it with a BM message and the password is unchanged; with 8 characters it is accepted.
 - **Current gap and root cause**: page built to V3 spec (Mod Rohani only), account block omitted.
 - **Fidelity deviations**: FD-MUR-7 (demo note), V3 password form kept.
 - **Open questions**: OQ-MUR-9.
@@ -283,7 +291,7 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
   2. Hero: 📖, title "Panduan Pengguna PRESTASIPLUS", subtitle "Pilih peranan anda untuk mula. Semua maklumat di hujung jari!".
   3. Role chooser, five selectable cards (icon, role, sub-title): "Pelajar" / "Darjah 1 – Tingkatan 5" (V3: "Tingkatan 1 – Tingkatan 5", FD-MUR-8), "Guru" / "Guru Mata Pelajaran", "Ibu Bapa" / "Pemantauan Anak", "Admin Sekolah" / "Pengetua / GPK", "PPD / JPN" / "Pegawai Daerah / Negeri". Selecting a card shows that role's panel only.
   4. Pupil panel, three blocks.
-     - "Cara Daftar Akaun Pelajar", numbered steps (title, then text): 1 "Buka Laman Web" (V2 text names the old site address; V3 uses the new address), 2 "Klik \"Daftar\"" "Di halaman utama, klik butang \"Daftar Percuma\" atau minta guru daftarkan anda.", 3 "Isi Maklumat" "Masukkan nama penuh, e-mel, kata laluan, dan pilih tingkatan/darjah anda." (V3: "tingkatan"), 4 "Masuk Kelas" "Minta kod kelas daripada guru anda dan masukkan untuk sertai kelas.", last step marked ✓ "Siap! Mula Berlatih" "Anda kini boleh mula latih tubi, kumpul kombo, dan naik ranking!".
+     - "Cara Daftar Akaun Pelajar", numbered steps (title, then text): 1 "Buka Laman Web" (V2 text names the old site address; V3 uses the new address), 2 "Klik \"Daftar\"" "Di halaman utama, klik butang \"Daftar Percuma\" atau minta guru daftarkan anda.", 3 "Isi Maklumat" "Masukkan nama penuh, e-mel, kata laluan, dan pilih tingkatan/darjah anda." (V3: "tingkatan"), 4 "Masuk Kelas" "Minta guru anda menambah nama anda ke dalam kelas." (V2 text: "Minta kod kelas daripada guru anda dan masukkan untuk sertai kelas." contradicts V2's own Kelas Saya page, which has no code box and says the teacher adds the pupil; the replacement is the same rule in the wording of that page, FD-MUR-37, copy [PROPOSED]), last step marked ✓ "Siap! Mula Berlatih" "Anda kini boleh mula latih tubi, kumpul kombo, dan naik ranking!".
      - "Apa Yang Boleh Anda Buat", six items: "📝 Latih Tubi" "Jawab soalan mengikut subjek dan topik. Semakin banyak latihan, semakin pandai!"; "🔥 Kombo Harian" "Latih tubi setiap hari untuk kekalkan kombo anda. Jangan putus!"; "⚔️ Battle" "Cabaran masa nyata — lawan kawan atau pelajar lain secara langsung!" (hidden feature: dropped in V3, FR-MUR-A3-2); "📊 Prestasi 360" "Lihat kemajuan anda: ketepatan, subjek kuat/lemah, dan cadangan latihan."; "🏆 Ranking & Lencana" "Naik ranking sekolah dan kumpul lencana pencapaian!"; "🪙 Koin & Ganjaran" "Setiap latihan beri koin. Kumpul dan tukar dengan ganjaran menarik.".
      - "Soalan Lazim Pelajar": five accordion rows (question toggles the answer). "Macam mana nak reset kata laluan?" - "Pergi ke halaman login, klik \"Lupa Kata Laluan\", masukkan e-mel anda, dan ikut arahan dalam e-mel yang dihantar."; "Saya tak ada e-mel. Boleh daftar?" - "Ya! Minta guru anda daftarkan akaun untuk anda melalui panel guru. Guru boleh import senarai pelajar."; "Apa itu Kombo?" - "Kombo bermaksud hari berturut-turut anda berlatih. Jika anda berlatih setiap hari tanpa putus, kombo akan bertambah. Putus sehari = mula dari 0!"; "Boleh tukar kelas?" - "Minta guru baru anda tambahkan anda ke kelas baharu. Anda boleh berada dalam lebih dari satu kelas."; "Macam mana nak naikkan ketepatan?" - "Fokus pada topik yang lemah (lihat di Prestasi 360), ulang latihan topik tersebut. Kualiti lebih penting dari kuantiti!".
   5. Other role panels (same three-block pattern: "Cara Daftar Akaun Guru", "Alat-Alat Guru", "Soalan Lazim Guru"; "Cara Daftar Akaun Ibu Bapa", "Apa Yang Ibu Bapa Boleh Lihat", "Soalan Lazim Ibu Bapa"; "Cara Mula Sebagai Admin Sekolah", "Fungsi Admin Sekolah", "Soalan Lazim Admin"; "Cara Mula Sebagai PPD / JPN", "Fungsi PPD / JPN", "Soalan Lazim PPD / JPN"). Their body copy belongs to the other portals' PRDs; a pupil sees them only after choosing the role card.
@@ -291,7 +299,7 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
   7. Footer: "© 2026 PRESTASIPLUS 🇲🇾" / "Platform Latih Tubi Nasional".
   - Loading and error: Not observed in V2 — follow FR-MUR-A3-3.
 - **Copy notes (earlier review of the same screen)**: Exact copy (closes E-4): heading "Panduan Pengguna PRESTASIPLUS", "Pilih peranan anda untuk mula. Semua maklumat di hujung jari!"; role cards Pelajar ("Darjah 1 – Tingkatan 5"), Guru ("Guru Mata Pelajaran"), Ibu Bapa ("Pemantauan Anak"), Admin Sekolah ("Pengetua / GPK"), PPD / JPN ("Pegawai Daerah / Negeri"); section "Cara Daftar Akaun Pelajar" with 5 steps ("Buka Laman Web", "Klik \"Daftar\"", "Isi Maklumat", "Masuk Kelas", "Siap! Mula Berlatih"); "Apa Yang Boleh Anda Buat" with 6 items (Latih Tubi, Kombo Harian, Battle, Prestasi 360, Ranking & Lencana, Koin & Ganjaran); "Soalan Lazim Pelajar" with 5 questions (reset kata laluan; tiada e-mel; apa itu Kombo; tukar kelas; naikkan ketepatan). V2 differs: the pupil card says "Darjah 1 – Tingkatan 5" and step 1 names "prestasiplus.my" — PRD uses "Tingkatan 1 – Tingkatan 5" (D72) and the new site address; the list "Apa Yang Boleh Anda Buat" is trimmed to features that exist.
-- **Current gap and root cause (change list)**: (1) UAT `GET /api/config/support` returns 404 (`apps/api/src/modules/support/support.service.ts:113`): seed or create the support row; the page must still render without it; (2) `src/modules/m09-content/lib/panduan-content.ts`: keep the V2 sections and the "Tingkatan 1 – Tingkatan 5" wording; replace the Tiket Bantuan block per FR-MUR-A3-4.
+- **Current gap and root cause (change list)**: (1) UAT `GET /api/config/support` returns 404 (`apps/api/src/modules/support/support.service.ts:113`): seed or create the support row; the page must still render without it; (2) `src/modules/m09-content/lib/panduan-content.ts`: keep the V2 sections and the "Tingkatan 1 – Tingkatan 5" wording; replace step 4 "Masuk Kelas" text (no class code, FD-MUR-37); replace the Tiket Bantuan block per FR-MUR-A3-4.
 - **Name**: "Panduan" (page "Panduan Pengguna PRESTASIPLUS")
 - **Route**: `/panduan`, also `/pusat-tuisyen/panduan`. **Matrix row**: A3. **Priority**: P2.
 - **Current status**: V3 matches V2 (role chooser: Pelajar, Guru, Ibu Bapa, Admin, PPD; steps "Buka Laman Web", "Klik \"Daftar\"", "Isi Maklumat", "Masuk Kelas", "Siap! Mula Berlatih"; "Apa yang boleh anda buat"; Tiket Bantuan). UAT: `GET /api/config/support` returns 404 "Konfigurasi sokongan tidak dijumpai." because the support singleton row is missing.
@@ -307,8 +315,9 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
   - AC-MUR-A3-1 Given UAT with the support row missing, when `/panduan` opens, then no network error is shown to the pupil.
   - AC-MUR-A3-2 Given the pupil section, then it contains no mention of Darjah.
   - AC-MUR-A3-3 Given 375 px, then the role chooser wraps and steps stack.
+  - AC-MUR-A3-4 Given the pupil section, then no text mentions a class code ("kod kelas") and step 4 reads "Minta guru anda menambah nama anda ke dalam kelas."
 - **Current gap and root cause**: UAT config row missing (`support.service.ts:113`).
-- **Fidelity deviations**: FD-MUR-8 (Tingkatan 1-5 wording, D72).
+- **Fidelity deviations**: FD-MUR-8 (Tingkatan 1-5 wording, D72), FD-MUR-37 (no class code in step 4).
 - **Open questions**: none.
 
 ### R1-MUR-A5 Log Keluar
@@ -372,7 +381,7 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
   V1 adds: banner carousel and a free-trial card "Percubaan Percuma / Baki {n} / 50 soalan / Langgan Sekarang".
 - **Functional requirements**
   - FR-MUR-2-1 Greeting uses server time in Malaysia time and the pupil's name.
-  - FR-MUR-2-2 The five tiles use wallet and session data of the pupil; "Ketepatan" = sum(correct) / sum(questions) over the pupil's sessions (FD-MUR-11: V2 averages per-session accuracy, which disagrees with Prestasi).
+  - FR-MUR-2-2 The five tiles use wallet and session data of the pupil; "Ketepatan" = the pupil's pooled accuracy (correct ÷ answered in the single answer store `practice_answers`, all modes, XS-5 and the FR-X4 precision list in 40-cross-cutting), shown as a whole-number percent (FD-MUR-11: V2 averages per-session accuracy, which disagrees with Prestasi).
   - FR-MUR-2-3 The Kombo card follows the wallet streak rule: first activity = 1; same day = unchanged; consecutive day +1; gap resets to 1. "Rekod terbaik" = longest run of consecutive practice days.
   - FR-MUR-2-4 "Pakej SPM Aktif" shows the pupil's real active package (name, validity) and is hidden when none exists; when none exists and a free-trial quota exists, the V1 "Percubaan Percuma" card shows instead (OQ-MUR-2).
   - FR-MUR-2-5 The missions widget shows today's challenges with real progress and "{done}/{total}"; its count is whatever is active (not a fixed 3 or 10).
@@ -381,7 +390,7 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
   - FR-MUR-2-8 "Soalan Terkini" shows the 5 newest servable questions of the pupil's form (text cut to 140 characters; a question with a figure shows the figure thumbnail), read only, with no answer key.
   - FR-MUR-2-9 The right rail "Artikel Untuk Kamu" shows the 5 latest published articles and "Lihat Semua" opens `/artikel`; the module Artikel (R1-MUR-20) is delivered with 1.0 as "1.0 (linked from R1-MUR-2)" with its sidebar item, so the link is never dead (D106).
   - FR-MUR-2-10 Shortcuts to modules that are hidden (Soalan Aku Salah, Kemajuan, Sejarah Latihan, Cikgu Alesa, Keluarga Angkat, mascot, banners that link to them) are not rendered; every link that is rendered (Artikel, Cabaran Harian, Set Soalan Guru, Subjek, Papan Pendahulu) opens a working module delivered with 1.0 (D106); "Mula Latihan" opens Latih Tubi.
-  - FR-MUR-2-11 Statistik blocks (item 12) show counts of servable questions for T1-T5 only (never Darjah), each equal to the surface definition of D91; blocks with no data are hidden.
+  - FR-MUR-2-11 Statistik blocks (item 12) show counts of servable questions for T1-T5 only (never Darjah), each equal to the surface definition of D91; blocks with no data are hidden. "Tahap Kesukaran" counts servable questions by the five-label difficulty (FR-MUR-16-3: difficulty 1 "Sangat Mudah" … 5 "Sangat Sukar"); "Kesukaran: ⭐…" in "Statistik Subjek" is the average of that difficulty, rounded to a whole star.
 - **Data and dependencies**: wallet and streak (M14), sessions (M05), challenges (M14), packages (M19/school packages), articles (M09), questions counts (M04 via practice overview), `GET /api/dashboard` (exists). Mood needs a new endpoint if kept.
 - **Acceptance criteria**
   - AC-MUR-2-1 Given a pupil with streak 1 and no session today, when the Dashboard opens, then the card "Kombo 1 hari akan putus!" shows with "Mula Latihan".
@@ -409,26 +418,29 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
 - **Current status**: V3 both: menu hidden (`STUDENT_HIDDEN_IDS`), route 403. Missing.
 - **Outcome**: the pupil sees the targets the teacher set (TOV take-off, RS target) against own achievement (AR).
 - **Reference behaviour (V2 `pelajar/headcount*.blade.php`)**
-  - List: when none, card "📋 Belum ada Headcount" / "Guru anda belum menyediakan headcount bagi kelas anda tahun ini.". Otherwise one card per headcount of the pupil's class teachers for the current year: subject (name_bm), label "{Kelas} · {Tingkatan}", pill "Active" (TOV and RS both set) or "Draft", "{n} murid", year, button "Lihat Data Saya" to the own detail.
+  - List: when none, card "📋 Belum ada Headcount" / "Guru anda belum menyediakan headcount bagi kelas anda tahun ini.". Otherwise one card per headcount of the pupil's class teachers for the current year: subject (name_bm), label "{Kelas} · {Tingkatan}", pill "Active" (the pupil's entry has TOV and RS/ETR, own or the class default set by the teacher's "Simpan Sasaran") or "Draft", "{n} murid", year, button "Lihat Data Saya" to the own detail.
   - Detail (page heading "Headcount — Sasaran (TOV → RS)", sub "Tracking prestasi anda — TOV, AR & RS", hero sub "Sasaran yang guru anda tetapkan, dan pencapaian sebenar anda"): info note "💡 **TOV** (Take-Off Value) dan **RS** (Realistic/Sasaran) ditetapkan oleh guru anda. **AR** (Achievement Rate) dikira secara langsung daripada latihan sebenar anda."; empty "Belum ada sasaran Headcount" / "Guru anda belum menetapkan sasaran TOV/RS bagi subjek anda tahun ini.". Per subject: "Sasaran TOV → RS", pill "AR {n}%" or "AR —" (title "Belum ada data AR"), tiles "TOV" and "RS (Sasaran)", chip "Jurang: +{RS-TOV}", "Sasaran tercapai" (AR at least RS) or "Belum capai sasaran". With both targets: "Unjuran: {n}% ({grade})", "Meningkat"/"Menurun", "Keyakinan: Tinggi|Sederhana|Rendah", badge "On Track"/"Below Target", chart (Target OTR dashed blue, Markah Sebenar AR green, Unjuran amber), table Checkpoint/Target/Gred/AR/Gred/Status for OTR1, OTR2, OTR3, "ETR (Sasaran Akhir)", note "Sasaran OTR interim dianggar linear (TOV → RS)...".
-  - Rules: AR = round(correct / attempts x 100) over the pupil's own attempts in that subject. OTR1 = round(TOV + (RS-TOV) x 0.33), OTR2 = 0.66, OTR3 = ETR = RS. Unjuran: if AR at least TOV then end = RS else end = AR, linear over 5 points. Keyakinan: AR at least RS = Tinggi; at least TOV = Sederhana; else Rendah. Grade bands from `GradeForecast` (A+ ... G). Prestasi status (Prestasi page): AR at least ETR, or AR at least the TOV/ETR midpoint = "On Track"; else "Below"; "—" when no AR or ETR.
+  - Rules: **this document defines no Headcount rule of its own.** TOV, RS (= the teacher's ETR), OTR1..OTRn, AR (Auto and Manual), Jurang, "On Track" / "Below", grade, Unjuran and Keyakinan are the single computation spec **HC-SPEC (HC-1 to HC-6) in `20-guru-admin-sekolah.md` R1-GUR-3**, which the teacher, the school admin (read-only), Prestasi, Dashboard and Command Center also use. The pupil view reuses it unchanged: AR in an Auto config is the pupil's pooled accuracy in that subject over `practice_answers` of every mode for the config's year (HC-3), shown as a whole-number percent; status is "On Track" when AR >= OTR_k and the pupil's status is that of the latest checkpoint that has an AR (HC-4). The earlier pupil-side variants (AR >= ETR, TOV/ETR midpoint, AR >= TOV) are removed.
 - **Functional requirements**
   - FR-MUR-3-1 A pupil can open `/headcount` and `/headcount/student/:ownId`; any other id returns 403 (V2 rule) with no existence leak.
   - FR-MUR-3-2 The list shows only headcounts of the pupil's own classes for the current session year.
   - FR-MUR-3-3 The detail shows only the pupil's own AR and the teacher's TOV and RS; no classmate data.
-  - FR-MUR-3-4 All formulas in the rules above are implemented exactly; checkpoint rows show "—" for AR when none.
+  - FR-MUR-3-4 All formulas are those of HC-SPEC (R1-GUR-3), implemented once and shared with the teacher and school-admin screens; checkpoint rows show "—" for AR when none.
   - FR-MUR-3-5 Page title is "Headcount" (not "Dashboard"; FD-MUR-1).
   - FR-MUR-3-6 The pupil view is read only: no "Auto-Setup Headcount", no trash/"Padam Headcount?" (FD-MUR-2).
   - FR-MUR-3-7 Empty states use the exact copy above for both pages.
-  - FR-MUR-3-8 Mixed-case status words "Active", "Draft", "On Track", "Below Target" stay as in V2 (English on live; OQ-MUR-12).
-- **Data and dependencies**: headcounts (owner M08), question attempts (M05). Teacher feed: teacher Headcount screens (cross-ref R1 guru PRD). API: `headcounts` is currently `@Roles('admin','teacher','school_admin')`; needed: `GET /api/headcounts/me` and `/me/detail` scoped to the caller, and the FE role list for `/headcount*` must add `student`.
+  - FR-MUR-3-8 Mixed-case status words "Active", "Draft", "On Track", "Below Target" stay as in V2 (English on live; OQ-MUR-12). The detail table's per-checkpoint status words are "On Track" and "Below" (HC-4).
+  - FR-MUR-3-9 Each card carries the chip "Auto" or "Manual" of its config (HC-SPEC "What the pupil sees"). In a Manual config the pupil sees only the AR values the teacher keyed for that pupil ("—" where none); a pupil dropped from the config ("Gugurkan") does not see it. Never a classmate's value.
+- **Data and dependencies**: headcounts (owner M08), the single answer store `practice_answers` (owner M05, all modes, 40-cross-cutting FR-X4-5). Teacher feed: teacher Headcount screens (cross-ref R1 guru PRD). API: `headcounts` is currently `@Roles('admin','teacher','school_admin')`; needed: `GET /api/headcounts/me` and `/me/detail` scoped to the caller, and the FE role list for `/headcount*` must add `student`.
 - **Acceptance criteria**
   - AC-MUR-3-1 Given a pupil with a class headcount, when `/headcount` opens, then one card per headcount shows with "Lihat Data Saya".
-  - AC-MUR-3-2 Given TOV 40, RS 80 and AR 60, then OTR1 = 53, OTR2 = 65, OTR3 = ETR = 80, "Belum capai sasaran", Keyakinan "Sederhana", "On Track" (AR at least TOV).
+  - AC-MUR-3-2 Given an Auto config with 3 OTRs, TOV 40, RS 80 and AR 60, then OTR1 = round(40 + 40 x 0.33) = 53, OTR2 = round(40 + 40 x 0.66) = 66, OTR3 = ETR = 80; "Jurang: +40"; "Belum capai sasaran" (AR 60 < RS 80); Keyakinan "Sederhana" (AR >= TOV, AR < RS); checkpoint rows OTR1 "On Track" (60 >= 53), OTR2 "Below" (60 < 66), OTR3 "Below" (60 < 80); pupil status "Below" (latest checkpoint, HC-4). The same inputs give the same numbers in AC-GUR-3-2 and on the teacher's table.
   - AC-MUR-3-3 Given a pupil with no headcount, then "Belum ada Headcount" shows with the exact sub-text.
   - AC-MUR-3-4 Given `/headcount/student/{another id}`, then 403.
   - AC-MUR-3-5 Given the pupil view, then no create, delete or Auto-Setup control exists in DOM or API.
   - AC-MUR-3-6 Given 375 px, then the checkpoint table scrolls inside its card and the chart fits.
+  - AC-MUR-3-7 Given a class with default TOV 40 and RS 80 set by "Simpan Sasaran" and a pupil whose entry has no own values, then the pupil's card reads "Active" and shows TOV 40 and RS 80; given a config with no TOV or no RS, then the card reads "Draft".
+  - AC-MUR-3-8 Given a Manual config where the teacher keyed AR 70 for the pupil at OTR1 and nothing else, then the pupil's detail shows AR 70 at OTR1 and "—" at the other checkpoints, the chip "Manual", and the OTR1 status "On Track" when OTR1 <= 70.
 - **Current gap and root cause**: `user-nav.ts:749` `STUDENT_HIDDEN_IDS` contains `headcount`; `routes/headcount.ts` roles exclude student; BE controller roles exclude student.
 - **Fidelity deviations**: FD-MUR-1, FD-MUR-2.
 - **Open questions**: OQ-MUR-12.
@@ -459,28 +471,30 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
   5. "Peta Aktiviti (90 Hari)": 90 cells, oldest first; colours 0 #f1f5f9, 1-4 #bbf7d0, 5-8 #4ade80, 9-12 #16a34a, 13+ #15803d; tooltip "dd/mm (Hari) — {n} sesi latihan" or "Tiada aktiviti" (days Ahad, Isnin, Selasa, Rabu, Khamis, Jumaat, Sabtu); legend "0 1-4 5-8 9-12 13+ sesi/hari". (V1 legend labels "1-1, 2-2, 3-3" are a live quirk; V2 labels used.)
   6. "Aktiviti" with link "Lihat Penuh" (to `/headcount`): "Kombo Hari", "Rekod Terbaik", "Koin", "Hari Latihan" (distinct practice days).
   7. "Topik Perlu Perhatian" (only when any): topic, "{subject} · {n} percubaan", % (amber at least 50, red below), "Fokus {n} →".
-  8. "Cadangan" rules: (a) sessions exist and none today: "Hari ini masih kosong — lakukan sekurang-kurangnya 1 sesi latihan untuk kekalkan kombo {max(1,streak)} hari."; (b) up to 2 subjects below 50% mean accuracy: "{subjek} perlu perhatian segera — purata ketepatan hanya {x}%. Cuba ulang topik asas dahulu."; (c) worst topic: "Topik '{topik}' ({acc}% ketepatan) adalah titik lemah utama — buat latihan tertumpu untuk topik ini."; (d) up to 2 headcounts with AR below ETR: "{subjek}: pencapaian semasa ({ar}%) masih {etr-ar} mata di bawah sasaran ETR ({etr}%). Fokus latihan untuk kejar target."; empty "Belum cukup data untuk cadangan. Mula latihan →".
+  8. "Cadangan" rules: (a) sessions exist and none today: "Hari ini masih kosong — lakukan sekurang-kurangnya 1 sesi latihan untuk kekalkan kombo {max(1,streak)} hari."; (b) up to 2 subjects below 50% pooled accuracy (FR-MUR-4-4): "{subjek} perlu perhatian segera — purata ketepatan hanya {x}%. Cuba ulang topik asas dahulu."; (c) worst topic: "Topik '{topik}' ({acc}% ketepatan) adalah titik lemah utama — buat latihan tertumpu untuk topik ini."; (d) up to 2 headcounts with AR below ETR: "{subjek}: pencapaian semasa ({ar}%) masih {etr-ar} mata di bawah sasaran ETR ({etr}%). Fokus latihan untuk kejar target."; empty "Belum cukup data untuk cadangan. Mula latihan →".
   9. "Penguasaan Subjek": subject tile (two letters), name, bar (green at least 80, amber 60-79, red below 60), "{n} sesi · {m} soalan"; empty "Belum ada latihan. Mula sekarang →".
 - **Functional requirements**
   - FR-MUR-4-1 `/prestasi` for role student renders the pupil's own Prestasi 360; the route `/prestasi/:userId` accepts only the own id (else 404, no existence leak; API already answers 404).
   - FR-MUR-4-2 `/prestasi/sekolah`, `/prestasi/tingkatan*`, `/prestasi/kelas` return 403 for a pupil (removes `student` from `PRESTASI_SCHOOL_ROLES` and `PRESTASI_CLASS_ROLES`). No school, class, teacher or other-pupil figure appears anywhere.
   - FR-MUR-4-3 Page title "Prestasi Saya" / "Analisis pencapaian latihan anda" (V3 inherits the V1 quirk "Dashboard"/"Selamat datang kembali", FD-MUR-1).
-  - FR-MUR-4-4 "Ketepatan" = sum(correct)/sum(questions) x 100 rounded; hero and card use the same number (V2 hero uses the mean of session accuracy; FD-MUR-11).
-  - FR-MUR-4-5 Sessions counted include Latih Tubi, Soalan by Chapter, Databank, Tracking A, Subjektif, Bijak (aggregate per attempt, D97) and games that record sessions; the mode list is documented in the API.
-  - FR-MUR-4-6 Headcount block implements the rules of R1-MUR-3 for status and chips.
+  - FR-MUR-4-4 "Ketepatan" = pooled accuracy = correct ÷ answered x 100 (XS-5; a self-marked part counts as correct only when it earned full marks) over the pupil's rows in `practice_answers` (all modes, FR-MUR-4-5), shown as a whole-number percent; hero, card, Dashboard, Profil and the SPM hub use the same number (V2 hero uses the mean of session accuracy; FD-MUR-11).
+  - FR-MUR-4-5 Every pupil activity that answers questions writes its answers to the single answer store `practice_answers` (with a mode value) and Prestasi reads only that store: Latih Tubi, Soalan by Chapter, SPM Databank, Kuiz, Bijak sittings including Tracking A, Subjektif (self-marked parts), Set Soalan Guru, Simulasi, Misi, Remedial and question-based games (40-cross-cutting FR-X4-5 and the source table X4a). "Sesi" = one practice session or one Bijak sitting; "Soalan Dijawab" = answer rows; "Masa Belajar" = session time. The mode value is in the API contract (API-PRAC-01).
+  - FR-MUR-4-6 Headcount block uses HC-SPEC (R1-GUR-3, HC-1 to HC-6) for status and chips; this document defines no second rule. Status pill: "On Track" / "Below" / "—" (no AR or no ETR).
   - FR-MUR-4-7 Trend, 90-day map, Aktiviti, weak topics, Cadangan and Penguasaan are computed exactly as listed, from the pupil's own sessions only.
   - FR-MUR-4-8 "Topik Perlu Perhatian" uses topic (DSKP SP or chapter, whichever tag exists) with at least 2 attempts and accuracy under 60; "Fokus {n}" opens a Latih Tubi session of up to {n} servable questions on that topic (D91 count).
-  - FR-MUR-4-9 Bijak sittings appear as a labelled subject-mode entry in Penguasaan/Sesi (existing `bijak-label` behaviour) and update after a self-mark (R1-10.3).
+  - FR-MUR-4-9 Bijak sittings appear as a labelled subject-mode entry in Penguasaan/Sesi (existing `bijak-label` behaviour), their answers count like any other (FR-MUR-4-5), and the entry updates after a self-mark (R1-10.3).
   - FR-MUR-4-10 Empty states use the exact copy above; a new pupil sees zeros and no error.
   - FR-MUR-4-11 The page is not cached across users (`no-store`).
+  - FR-MUR-4-12 Each metric on this page has one computation and one display precision, those of the metric table in 40-cross-cutting FR-X4-5 (Ketepatan whole-number percent; "Penguasaan Subjek" bar colours green at least 80, amber 60-79, red below 60 as listed in the threshold table of X4); the same pupil, window and metric show the same value on the teacher, school-admin and Admin Pusat screens.
 - **Data and dependencies**: practice sessions and answers (M05), wallet streak (M14), headcounts (M08), curriculum tags (M03). API: `GET /api/performance/students/:userId` (exists; own scope).
 - **Acceptance criteria**
   - AC-MUR-4-1 Given a T5 pupil on UAT, when `/prestasi` opens, then the hero shows the pupil's name and "Prestasi 360 — Dashboard Individu", and no text "Dashboard Sekolah", "GPS", "Prestasi Guru", "kelas" or "murid" counts of the school appears.
   - AC-MUR-4-2 Given pupil A, when A requests `/api/performance/students/{B}`, then 404.
   - AC-MUR-4-3 Given pupil A, when A types `/prestasi/sekolah`, then 403.
   - AC-MUR-4-4 Given a pupil with 3 sessions in week 1 and 1 in week 2, then the trend has two points with the correct accuracy and session counts and labels "Mgg 1", "Mgg 2".
-  - AC-MUR-4-5 Given a pupil with sessions of 10 questions (6 correct) and 20 questions (20 correct), then "Ketepatan" is 87 (26/30).
+  - AC-MUR-4-5 Given a pupil with sessions of 10 questions (6 correct) and 20 questions (20 correct), then "Ketepatan" is 87 on the hero and on the card (26/30 = 86.67, shown as the whole number 87) and "Soalan Dijawab" is 30.
   - AC-MUR-4-6 Given a pupil with no data, then "Belum ada data prestasi lagi." and "Belum ada latihan." show and no console error.
+  - AC-MUR-4-8 Given a pupil with 10 Latih Tubi answers (7 correct) and one Bijak sitting of 40 MCQ marks (30 correct), then Prestasi shows "Sesi Kuiz" 2, "Soalan Dijawab" 50 and "Ketepatan" 74 (37/50 = 74.0), the sitting is listed in "Sesi" with its Bijak label, and the teacher Prestasi Kelas, the school-admin Prestasi and the Admin Pusat Laporan show the same 50 answers and 74 for this pupil (AC-X4-1).
   - AC-MUR-4-7 Given a pupil with 90 days of data and a 375x667 viewport, when `/prestasi` loads, then the hero mini-stats "Ketepatan" and "Hari Kombo" are not displayed (they are shown from 1024 px only), the 90 map cells occupy more than one row and none extends beyond the container's right edge, the four stat cards are in 2 columns, and `scrollWidth <= innerWidth`.
 - **Current gap and root cause**: `routes/prestasi.ts:29` redirect `/prestasi` to `/prestasi/sekolah`; `PRESTASI_SCHOOL_ROLES` (line 18) contains `student`; `/prestasi/:userId` (`routes/analitik.ts:30`) exists but is not the menu target. V1 (FR-M08-13) showed the own-school view to a pupil; that conflicts with V2 and with privacy and is superseded (FD-MUR-3).
 - **Fidelity deviations**: FD-MUR-1, FD-MUR-3, FD-MUR-11.
@@ -541,7 +555,7 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
 - **Outcome**: the pupil learns which questions to revise (always wrong) and strengthen (sometimes wrong).
 - **Reference behaviour (V2 `pelajar/analisa-item.blade.php`, `StudentParityController::analisaItem`)**
   - Link "Kembali ke Papan Pemuka" (to `/dashboard`).
-  - Four tiles: "Soalan Dijawab" (total attempts), "Perlu Pemulihan", "Perlu Pengukuhan", "Tahap Penguasaan" (correct/attempts, 1 decimal, %).
+  - Four tiles: "Soalan Dijawab" (total attempts), "Perlu Pemulihan", "Perlu Pengukuhan", "Tahap Penguasaan" (pooled correct ÷ answered, whole-number %, FR-X4-5; V2 printed one decimal, FD-MUR-38).
   - Empty (0 attempts): 📊 "Belum ada data untuk dianalisa" / "Mulakan latihan untuk melihat analisa item peribadi anda di sini." and button "Mula Berlatih →".
   - Section "Subjek Perlu Perhatian Sekarang" / "Ringkasan ini guna SEMUA percubaan anda, jadi subjek boleh muncul di sini walaupun item yang sama belum diulang.": per subject card with "{n} percubaan · {m} soalan unik", accuracy pill (red below 60), rows "Jawapan salah", "Item berulang lemah", "Isyarat awal lemah", button "Ulang Kaji Subjek Ini". Sorted by accuracy ascending.
   - Filter chips "Tapis Item:" "Semua", "Ada Betul", "Selalu Salah".
@@ -553,7 +567,7 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
 - **Functional requirements**
   - FR-MUR-6-1 A pupil opens `/analisa-item` (own page); the redirect to Dashboard is removed for student.
   - FR-MUR-6-2 Data is the pupil's own attempts only; the school and class item-analysis routes return 403 for a pupil, including `GET /api/item-analysis/school` (remove `student` from its roles).
-  - FR-MUR-6-3 Tiles and the three categories use the exact rules above.
+  - FR-MUR-6-3 Tiles and the three categories use the exact rules above, over the pupil's rows in the single answer store `practice_answers` from every mode (FR-MUR-4-5), so a question answered in Latih Tubi and again in a Bijak sitting or a Set Soalan counts both attempts. "Soalan Dijawab" is answer rows (XS-4); "Soalan Unik" is distinct questions (XS-7).
   - FR-MUR-6-4 The subject list, filter chips and empty states use the exact BM copy.
   - FR-MUR-6-5 Each item card renders the question per section 4.6 (text, maths, figure) and shows "Penjelasan" only when the question has one; an archived question no longer appears.
   - FR-MUR-6-6 "Ulang Kaji Subjek Ini" opens a revision drill of that subject's wrong items using the Latih Tubi engine (the page `/practice/revision/:subject`, reached only from here, stays a hidden-menu route).
@@ -568,6 +582,7 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
   - AC-MUR-6-4 Given a pupil with no attempts, then "Belum ada data untuk dianalisa" and "Mula Berlatih →" show.
   - AC-MUR-6-5 Given a pupil calls `/api/item-analysis/school`, then 403.
   - AC-MUR-6-6 Given 375 px, then tiles are two columns and item cards stack with no sideways scroll.
+  - AC-MUR-6-7 Given a question answered wrong once in Latih Tubi and wrong once in a Bijak sitting (two rows in `practice_answers`, different modes), then it appears under "Pemulihan" with 2 percubaan and 0 betul, and "Perlu Pemulihan" is 1.
 - **Current gap and root cause**: `analisa-item.ts:43` `analisaItemTarget` returns the home path for student; `STUDENT_HIDDEN_IDS` includes `analisa-item`; BE controller line 118 lists `student` for school scope.
 - **Fidelity deviations**: none besides the added privacy refusal on school scope (FD-MUR-3).
 - **Open questions**: none.
@@ -602,19 +617,19 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
 - **Fidelity deviations**: FD-MUR-13. **Open questions**: OQ-MUR-11.
 
 ### R1-MUR-8 Kelas Saya
-- **Action**: Keep
+- **Action**: Fix (remove the V3 join-by-code box; V2 has none, D-A8)
 - **Screen specification (from V2)** (route `/kelas-saya`, browser title "Kelas Saya — PRESTASIPLUS"). Observed for a pupil in no class. One region: empty state with heading "Anda belum dimasukkan ke dalam kelas" and text "Guru anda yang menambah pelajar ke dalam kelas. Minta guru anda menambah nama anda supaya anda boleh melihat set soalan kelas dan kedudukan kelas." No button. Populated class card, class detail, set and ranking links: Not observed in V2 — follow the reference behaviour below and FR-MUR-8-*. Loading and error: Not observed in V2 — follow FR-X6.
 - **Confirmed in the screens (earlier review)**: Confirmed: empty state "Anda belum dimasukkan ke dalam kelas" with the two-line explanation, exactly as quoted. The populated class card is not in the screens (see E-13b).
-- **Current gap and root cause**: None. Verify the ACs only (the two shortcut buttons point to modules delivered with 1.0, FR-MUR-8-4).
+- **Current gap and root cause (change list)**: (1) remove "Masukkan Kod Kelas" and "Sertai" from the page and `POST /api/kelas-saya/join` (API-MUR-04) from the pupil API; (2) classmates show the display name (4.3); (3) the rest is verified only (the two shortcut buttons point to modules delivered with 1.0, FR-MUR-8-4). V2 evidence: the pupil page for a pupil in no class says "Guru anda yang menambah pelajar ke dalam kelas" and shows no field or button; the teacher also adds pupils by name (R1-GUR-8).
 - **Name**: "Kelas Saya" (sub "Kelas yang anda sertai, guru dan rakan sekelas anda")
 - **Route**: `/kelas-saya`. **Matrix row**: 8. **Priority**: P1.
-- **Current status**: V3 both works (join by code, class list); V3 adds "Masukkan Kod Kelas" + "Sertai" (not in V2).
+- **Current status**: V3 both works (class list); V3 adds "Masukkan Kod Kelas" + "Sertai" (not in V2, removed by FR-MUR-8-3).
 - **Outcome**: see own classes, teacher and classmates.
 - **Reference behaviour (V2 `pelajar/kelas-saya.blade.php`)**: empty card "Anda belum dimasukkan ke dalam kelas" / "Guru anda yang menambah pelajar ke dalam kelas. Minta guru anda menambah nama anda supaya anda boleh melihat set soalan kelas dan kedudukan kelas.". Class card: name, badge "AKTIF"/"TAMAT", "SESI {year}", "{Tahap} · {Sekolah}" ("Sekolah tidak dinyatakan"), "Guru: {name}" ("Belum ditetapkan"), count "Pelajar", list "Rakan sekelas" ordered by syiling descending with rank, own row highlighted with "ANDA" and syiling; buttons "Set soalan guru" and "Papan pendahulu kelas".
 - **Functional requirements**
   - FR-MUR-8-1 Lists only the pupil's own classes.
-  - FR-MUR-8-2 Classmates show name and syiling only (no e-mail, accuracy or other data).
-  - FR-MUR-8-3 "Sertai" by class code is kept (V3 addition, parity C07); an invalid code shows a BM error.
+  - FR-MUR-8-2 Classmates show the display name (first name only, section 4.3) and syiling only (no e-mail, accuracy, surname or other data).
+  - FR-MUR-8-3 There is no pupil "Sertai" box and no class code: a pupil is in a class only because the teacher or the school admin added them (R1-GUR-8, V2 sentence "Guru anda yang menambah pelajar ke dalam kelas"). "Masukkan Kod Kelas", "Sertai" and `POST /api/kelas-saya/join` do not exist (closes OQ-X-3; the class `join_code` is not shown to a pupil).
   - FR-MUR-8-4 The buttons "Set soalan guru" (to Set Soalan Guru, row 26) and "Papan pendahulu kelas" (to Papan Pendahulu with the class scope, row 33) are shown and work (both are delivered with 1.0 as "1.0 (linked from R1-MUR-8)", D106); empty copy is the exact V2 sentence.
   - FR-MUR-8-5 Ranking order and ties follow wallet syiling descending, then name.
   - FR-MUR-8-6 Class from a Darjah level is not listed (D72).
@@ -622,9 +637,9 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
 - **Acceptance criteria**
   - AC-MUR-8-1 Given a pupil in no class, then the exact empty text shows.
   - AC-MUR-8-2 Given a class of 3 pupils, then 3 rows with own row marked "ANDA".
-  - AC-MUR-8-3 Given an invalid code, then the join is refused with an error and no class is added.
+  - AC-MUR-8-3 Given a pupil's Kelas Saya page (with or without a class), then no field "Masukkan Kod Kelas" and no button "Sertai" exist in the DOM, and `POST /api/kelas-saya/join` returns 404; given the teacher adds the pupil to a class, then the class appears on the pupil's next load without any action by the pupil.
   - AC-MUR-8-4 Given 375 px, then the classmate grid is one column.
-- **Current gap**: none. **Fidelity deviations**: none (FD-MUR-14 withdrawn by D100). **Open questions**: none.
+- **Current gap**: join box and join endpoint (see above). **Fidelity deviations**: none (FD-MUR-14 withdrawn by D100). **Open questions**: none (OQ-X-3 closed).
 
 ### R1-MUR-9 Soalan by Chapter
 - **Action**: Fix
@@ -647,7 +662,7 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
   - V2 subject page: hero with subject, "Semua Subjek" back; the V2 text repeats the 70% rule and a note "Nota penguasaan: capai sekurang-kurangnya 70% dalam sesuatu bab sebelum meneruskan ke bab seterusnya."; rows with number tile, "Bab" title, level chip, "{n} soalan", button "Mula" or locked chip "Tiada soalan" (title "Belum ada soalan untuk bab ini"); empty "Belum ada bab untuk subjek ini.".
   - V1 (M05 S5): level select, chapter cards "Bab {n}: {name}", stats "{a}/{b} soalan unik · Skor {s}% · {r} baki", four buttons "5 soalan", "10 soalan", "15 soalan", "20 soalan", real lock chip "Kunci bab sebelumnya" and unlock at all questions answered and 70%.
   - **Conflict and winner**: V1 enforces the 70% lock; V2 only prints the sentence and does not lock (`Mula` goes to the subject, not the chapter); **D98 (user) says no lock, every chapter open**. D98 wins. The 70% sentences are removed (a contradictory rule on screen is a D9 defect, FD-MUR-15). V3 hero text "Pelajar jawab bab demi bab." stays.
-  - **Chapter source**: the admin picks the Bab for each question (D89, `question_versions.chapter_id`); not derived from DSKP. Unassigned legacy questions never appear.
+  - **Chapter source**: the admin picks the Bab for each question (D89, `question_versions.chapter_id`); not derived from DSKP. A question cannot be published without Bab, SP and TP/aras (admin gate, R1-ADM Studio, D-A5), so every newly published question reaches this page and the Heatmap; the pupil surfaces show published questions only. Legacy questions published before the gate and still without a Bab never appear here and are listed to the admin in the work-list "Soalan tanpa Bab", so none is lost silently.
 - **Functional requirements**
   - FR-MUR-9-1 Index lists subjects of the pupil's own form (T1-T5, D101) that have at least one chapter with at least one servable question, each with "{n} bab tersedia" and "{n} soalan chapter" where n = servable MCQ questions linked to a chapter, including figure questions and members of stimulus groups (D91, D105).
   - FR-MUR-9-2 Subject page lists all chapters of the subject and level in textbook order; every chapter is open (no lock, no "Kunci bab sebelumnya").
@@ -662,12 +677,13 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
   - FR-MUR-9-11 The count on the index equals the number drawable on the subject page and in the quiz (D91).
 - **Data and dependencies**: curriculum chapters (owner M03; 686 T4/T5 chapters exist on UAT), question Bab link (owner M04). **Admin feed**: Studio question form "Bab" select (D89, cross-ref R1-ADM Studio) and bulk Bab assignment for legacy questions (needed; OQ-MUR-6). API: `practice/chapter-subjects`, `practice/sessions` (exist).
 - **Acceptance criteria**
-  - AC-MUR-9-1 Given an admin sets Bab "Bab 1" on one approved MCQ of Matematik T5 (and no other Matematik T5 question has a Bab), when a T5 pupil opens Soalan by Chapter, then Matematik shows "1 bab tersedia" and "1 soalan chapter" and chapter 1 offers a quiz.
+  - AC-MUR-9-1 Given an admin sets Bab "Bab 1" on one approved MCQ of Matematik T5 (and no other Matematik T5 question has a Bab), when a T5 pupil opens Soalan by Chapter, then Matematik shows "1 bab tersedia" and "1 soalan chapter" and chapter 1 offers a quiz. Given instead that the admin saves and publishes a new approved MCQ for Matematik T5 with Bab "Bab 1" through the Studio wizard (not the bulk tool), then the T5 pupil's Soalan by Chapter shows "1 soalan" in Bab 1 on the next load (the AC-CHAIN-1 path).
   - AC-MUR-9-2 Given chapter 3 and chapter 1 with 0% scores, then chapter 3 is startable (no lock).
   - AC-MUR-9-3 Given a chapter with 0 servable questions, then "Tiada soalan" shows and no quiz starts.
   - AC-MUR-9-4 Given a data-empty form (no question of that form has a Bab; test fixture), when the pupil opens Soalan by Chapter, then the index shows "Tiada subjek bab tersedia untuk tahap ini." and no card; this is the data-empty state only. **Acceptance of the module requires a fixture or UAT state in which at least 3 subjects have chapters with servable questions and AC-MUR-9-1 passes; an empty module is not a pass (D100).**
   - AC-MUR-9-5 Given a T1 pupil and a T5 pupil, and a data precondition that Sains has at least 1 chapter with 5 servable MCQs for T1 and for T5, when each opens Soalan by Chapter, then each sees their own subjects and chapters and can start a quiz; no "akan datang" text appears for either.
   - AC-MUR-9-6 Given a chapter with one stimulus group of 3 members and 2 single MCQs, when the pupil starts "10 soalan", then the quiz serves all 5 questions, the 3 members adjacent with the figure shown once above them, and the chapter row shows "5 soalan".
+  - AC-MUR-9-9 Given a legacy approved Matematik T5 question with no Bab, then it is not counted or listed in Soalan by Chapter, it appears in the admin work-list "Soalan tanpa Bab", and after the admin sets its Bab it appears in the chapter count on the next load.
   - AC-MUR-9-7 Given 375 px, then subject cards are one column, chapter titles wrap (not truncated without a way to read, V1 defect D-13) and buttons wrap.
   - AC-MUR-9-8 Given a chapter-linked question whose stem cites "Rajah n" but has no figure asset, or whose stem text appears twice, when the chapter quiz is built, then it is not served and not counted in "{x} soalan" (4.8).
 - **Current gap and root cause**: `curriculum_nodes`/chapter links empty on UAT; MCQ bridge `be09-practice-mapping.ts:27-39` drops richer items; Latih Tubi page banner still prints "Bab seterusnya terkunci sehingga bab semasa lengkap." (contradicts D98).
@@ -684,17 +700,17 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
   4. Empty state (no weak subject; text from the earlier capture above): "Tiada topik lemah!" / "Prestasi anda baik merentas semua subjek. Teruskan!" and button "Terus Berlatih →" (V3: opens Latih Tubi).
   - Populated revision page (list of wrong questions): Not observed in V2 — follow FR-MUR-12-* and section 4.6. Loading and error: Not observed in V2 — follow FR-X6.
 - **Confirmed in the screens (earlier review)**: Confirmed: "Ujian Remedial Saya" / "Ujian khas untuk topik yang perlu diperbaiki", section "Perlu Pemulihan Sekarang", card "Sains" with "Perlu Pemulihan", "120 soalan", "Ketepatan: 0.0%", "Sasaran: 60%", chip "Sains (Umum)", "🎯 Latihan Pemulihan →". **V2 differs**: pressing "Latihan Pemulihan" opens "Ulang Kaji Sains" with "Tiada soalan salah untuk Sains buat masa ini." / "Jawapan terkini anda untuk subjek ini sudah betul." / "Kembali" although the card says 0.0% over 120 questions (a contradiction, FD-MUR-36): PRD: a card is shown only when its drill has questions (FR-MUR-12-3).
-- **Current gap and root cause (change list; reuse `remedial-tests/mine` and the page)**: add the derivation of weak-subject cards (mean accuracy below 60%) and the completed-set history; build the drill from wrong servable questions, else the weakest topics of that subject; no new screen.
+- **Current gap and root cause (change list; reuse `remedial-tests/mine` and the page)**: add the derivation of weak-subject cards (pooled accuracy below 60%) and the completed-set history; build the drill from wrong servable questions, else the weakest topics of that subject; no new screen.
 - **Name**: "Remedial" (page "Ujian Remedial Saya", sub "Ujian khas untuk topik yang perlu diperbaiki")
 - **Route**: `/remedial/saya`, `/remedial/:id`. **Matrix row**: 12. **Priority**: P1.
 - **Current status**: V3 both: "Tiada ujian remedial. Bagus" (only teacher-assigned tests). V2 auto-generates cards from weak subjects.
 - **Outcome**: a clear list of what to remedy and a way to do it.
-- **Reference behaviour (V2 `pelajar/remedial.blade.php`)**: header "Ujian Remedial Saya"; list of completed remedial sets (revision drills): "Remedial Set {n} — {Subjek} — {name}", badge "Selesai", "{n} soalan", "Sebelum: {x}%", "Selepas: {y}% ({+/-d}%)" (green if not negative, else red), chip "{Subjek} (Umum)", "🎯 Ulang Latihan →". Section "Perlu Pemulihan Sekarang": one card per subject with mean accuracy below 60%: colour square, subject, badge "Perlu Pemulihan", "{n} soalan", "Ketepatan: {acc}%", "Sasaran: 60%", bar, "🎯 Latihan Pemulihan →". Empty with no sets: 🎉 "Tiada topik lemah!" / "Prestasi anda baik merentas semua subjek. Teruskan!" and button "Terus Berlatih →". Teacher-assigned remedial tests (V3 `remedial-tests/mine`, V2 Command Center) are listed too, with their own status.
+- **Reference behaviour (V2 `pelajar/remedial.blade.php`)**: header "Ujian Remedial Saya"; list of completed remedial sets (revision drills): "Remedial Set {n} — {Subjek} — {name}", badge "Selesai", "{n} soalan", "Sebelum: {x}%", "Selepas: {y}% ({+/-d}%)" (green if not negative, else red), chip "{Subjek} (Umum)", "🎯 Ulang Latihan →". Section "Perlu Pemulihan Sekarang": one card per subject with pooled accuracy below 60% (V2: mean of session accuracy, FD-MUR-38): colour square, subject, badge "Perlu Pemulihan", "{n} soalan", "Ketepatan: {acc}%", "Sasaran: 60%", bar, "🎯 Latihan Pemulihan →". Empty with no sets: 🎉 "Tiada topik lemah!" / "Prestasi anda baik merentas semua subjek. Teruskan!" and button "Terus Berlatih →". Teacher-assigned remedial tests (V3 `remedial-tests/mine`, V2 Command Center) are listed too, with their own status.
 - **Functional requirements**
   - FR-MUR-12-1 The page lists, in this order: completed sets, "Perlu Pemulihan Sekarang" cards, assigned tests; each with the exact V2 copy.
-  - FR-MUR-12-2 A subject is "Perlu Pemulihan" when the pupil's mean session accuracy in it is below 60% (target 60%); the card figures are the pupil's own.
+  - FR-MUR-12-2 A subject is "Perlu Pemulihan" when the pupil's pooled accuracy in it (correct ÷ answered in `practice_answers`, all modes, XS-5) is below 60% (target 60%); "{n} soalan" is the pupil's answers in that subject; "Ketepatan" is shown as a whole-number percent (FD-MUR-38); the card figures are the pupil's own and equal the Penguasaan Subjek and Analisa Item figures for that subject.
   - FR-MUR-12-3 "Latihan Pemulihan" opens a revision drill built from the pupil's wrong, still-servable questions of that subject (V2 Aku Salah drill; session mode `revision`); when the pupil has no still-servable wrong question, the drill uses the subject's weakest topics instead, and the V2 message "Tiada soalan salah untuk {Subjek} buat masa ini." is never shown while a card for that subject is listed (V2 contradiction, FD-MUR-36).
-  - FR-MUR-12-4 "Sebelum" = mean accuracy of the pupil's earlier sessions in that subject before the drill; "Selepas" = the drill accuracy; difference shows sign and colour.
+  - FR-MUR-12-4 "Sebelum" = pooled accuracy of the pupil's answers in that subject before the drill started; "Selepas" = the drill accuracy; difference shows sign and colour (whole-number percents).
   - FR-MUR-12-5 Empty state exact copy; "Terus Berlatih →" opens Latih Tubi.
   - FR-MUR-12-6 The drill follows 4.6 and the Latih Tubi engine; archived questions drop out.
 - **Data and dependencies**: sessions and wrong answers (M05), assigned tests (M10/M11 teacher). Teacher feed: guru Command Center remedial generation.
@@ -704,7 +720,7 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
   - AC-MUR-12-3 Given all subjects at least 60%, then "Tiada topik lemah!" shows.
   - AC-MUR-12-4 Given 375 px, then cards stack.
 - **Current gap and root cause**: only `remedial-tests/mine`; no derivation from weak subjects (MURID gap 11).
-- **Fidelity deviations**: none. **Open questions**: none.
+- **Fidelity deviations**: FD-MUR-38 (pooled accuracy, whole-number percent). **Open questions**: none.
 
 ### R1-MUR-13 SPM (Bijak SPM / Simulasi, Databank, Tracking A, Subjektif, Kertas Subjektif)
 - **Action**: Complete
@@ -732,7 +748,7 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
   **E. Subjektif (V2 `/spm/subjektif`; screens replace the earlier heading)**: page "Latihan Subjektif SPM" with "Kembali ke Mod SPM", "Pilih subjek untuk menjawab set struktur dan esei SPM berasaskan bank subjektif Tingkatan 4 dan 5.", box "Bagaimana ia berfungsi?" ("Pilih subjek → jawab set struktur/subjektif SPM → semak markah dan model jawapan." / "Bank ini ditarik daripada soalan berstruktur Tingkatan 4 dan 5 yang telah diterbitkan."), tiles "Set Dijawab", "Subjek Dicuba", "Skor Terbaik", "Set Terbaik Disimpan" each with an explanatory line, filter chips "Semua {n}", "Teras {n}", "Elektif {n}", subject cards with a "Teras" or "Elektif" badge, English name and "{n} set subjektif" (BM 559, BI 773, Perniagaan 301 in the sample); answer screen "Soalan Berstruktur — Jawab" (per 4.6; V2 text "✍️ Tulis jawapan anda, kemudian tekan Hantar & Semak.", button "Hantar & Semak", scheme "Skema Pemarkahan:"), result `/latihan-berstruktur/keputusan/:attempt`; empty "Tiada soalan berstruktur ditemui".
 - **Functional requirements** (the question display and answering contract of 4.6 applies to every item below)
   - FR-MUR-13-1 The hub shows the exact title, text, stat tiles and cards of A, with every count computed per D91 (card = details = drawable) and the six cards Databank, Latih Tubi SPM, Tracking A, Subjektif, Kertas Subjektif and the Bijak SPM banner all present and working (D104; no flag switches Subjektif or Kertas Subjektif off); a card with zero content shows its data-empty text, never a dead link.
-  - FR-MUR-13-2 "Prestasi SPM Anda" shows the pupil's own SPM-mode sessions (Databank, Tracking A, Subjektif, Bijak) and "Sejarah Kuiz SPM" lists them.
+  - FR-MUR-13-2 "Prestasi SPM Anda" shows the pupil's own SPM-mode sessions (Databank, Tracking A, Subjektif, Bijak) and "Sejarah Kuiz SPM" lists them; "Sesi Kuiz", "Purata Ketepatan" (pooled, whole-number percent) and "Soalan Dijawab" are read from the single answer store `practice_answers` (FR-MUR-13-21).
   - FR-MUR-13-3 "Tahun Tersedia" is the number of distinct exam years among servable papers/questions and is hidden when year data is absent.
   - FR-MUR-13-4 Bijak lists only papers with status Terbit (D79/D85 "papers need Terbit"); draft, in review and archived papers are not listed and their URL returns not-found.
   - FR-MUR-13-5 Papers are grouped by subject (groups ordered by paper count desc), filters Subjek and Kertas work, cards show the three chips.
@@ -744,22 +760,22 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
   - FR-MUR-13-11 Hantar confirms, submits once (idempotent), marks objective parts on the server, and shows Semakan; time limit is a convenience and a late submit is accepted.
   - FR-MUR-13-12 Semakan reveals the scheme only after submit: correct option, accepted values, mapping, marking points with hit or miss, model answer or band rubric (4.6.5); per-part "✓ Betul ({a}/{m})" or "✗ Salah ({a}/{m})".
   - FR-MUR-13-13 Self-mark: for parts that are not auto-marked the pupil sets "Markah kendiri:" from 0 to the part marks (server clamps, owner only, after submit, not locked); a band rubric shows a band picker that sets the stepper to the band midpoint; a Bahagian marked as a whole shows one stepper; the total "{score} / {max}" refreshes at once.
-  - FR-MUR-13-14 Rewards (D97, D94): every submitted attempt earns 2 Syiling and 10 XP per mark; a later self-mark earns 2 Syiling + 10 XP per mark gained (positive change only, once per part, never above full marks, nothing is taken back); "Cuba Lagi" attempts earn again; resubmit never double-awards.
+  - FR-MUR-13-14 Rewards (D97, D94; rates per 4.4): every submitted attempt earns the Syiling rate and 10 XP per mark, where the Syiling rate is the admin setting "Syiling flat / soalan betul" (default 1, never a constant in code); a later self-mark earns the same rate + 10 XP per mark gained (positive change only, once per part, never above full marks, nothing is taken back); "Cuba Lagi" attempts earn again; resubmit never double-awards.
   - FR-MUR-13-15 "Cuba Lagi" creates a new blank attempt of the same paper (refused with "Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini." when the paper contains an archived question); "Lihat semakan lepas" opens the latest submitted result.
   - FR-MUR-13-16 "Simulasi — Kuiz": random approved objective parts with a correct option, count 5/10/20/40; "✓ Semak" checks on the server, the key is not in the page before it, and it does not consume trial checks (D97); per-paper Kuiz may show key and explanation even with an open sitting (D97).
   - FR-MUR-13-17 Databank follows C: counts 5/10/20, random, MCQ questions including figure questions and whole stimulus groups (D105; a group is drawn whole or not at all), "Penjelasan:" when present, grade and "Ganjaran Anda"; every admin-approved MCQ of T1-T5 with a subject becomes eligible with no pool flag (R1-11.2).
   - FR-MUR-13-18 Tracking A follows D including the exact empty text; its content comes from the admin Tracking A set editor (cross-ref R1-ADM Tracking A); the pupil sees only sets that are complete (not "locked").
-  - FR-MUR-13-19 Subjektif follows E; answer, marking suggestion and self-mark use 4.6; the card shows "{n} set subjektif" computed per D91; its copy is corrected (FD-MUR-19).
+  - FR-MUR-13-19 Subjektif follows E; answer, marking suggestion and self-mark use 4.6; the card shows "{n} set subjektif" computed per D91; its copy is corrected (FD-MUR-19). The lane is stored as a Bijak attempt (D-A9): starting a structured set (`POST /api/practice/structured/:id/attempts`) creates an `exam_attempts` row of kind `subjektif`, and scheme reveal and self-mark use the existing `POST /api/bijak/attempts/:id/self-mark` (clamp, owner only, delta-only reward; FR-MUR-13-13); the self-marked result is written to the answer store per FR-MUR-13-21 and the attempt shows in Prestasi "Sesi" and in "Sejarah Kuiz SPM".
   - FR-MUR-13-20 "Jana Kertas" tab: a pupil generates a paper only from Disahkan contracts (D76), exact-or-refuse counts, with a shortage line when the pool is short; the tab is kept because R1-01.1 lists it (OQ-MUR-7).
-  - FR-MUR-13-21 Sessions of every mode are recorded once per attempt and feed Prestasi, Dashboard and Headcount AR (R1-10.3).
+  - FR-MUR-13-21 Every SPM activity writes its answers to the single answer store `practice_answers` (owner practice, M05) with a mode value, once per attempt (idempotent on resubmit): Databank, Kuiz, Tracking A, Simulasi and Bijak sittings, Subjektif and Kertas Subjektif. An auto-marked part writes correct or wrong; a self-marked part writes the marks awarded and the marks available, and updates when the pupil changes the self-mark (the later value replaces the earlier, never a second row). These rows are the only source of Prestasi, Dashboard, Analisa Item, Heatmap, Remedial, the teacher, school-admin and Admin Pusat reports, Kirkpatrick, Command Center and Headcount AR (where HC-3 lists the mode); no screen reads a separate Bijak aggregate for these figures (40-cross-cutting FR-X4-5, X4a).
   - FR-MUR-13-22 A T1-T3 pupil sees the hub, Databank, Latih Tubi SPM and Bijak with the content that exists for T1-T5 (D101, R1-19.1); hub copy "Tingkatan 4 & 5" stays because SPM is a Form 5 exam.
   - FR-MUR-13-23 The sitting bar shows "Hantar" at every width including 375 px (live UAT gap: missing at 375), together with the timer and the navigator button; the mode badge ("Mod Peperiksaan" or "Mod Latihan") is visible at every width.
   - FR-MUR-13-24 Mathematical content (matrices, fractions, powers, roots, units) renders as notation, never as a prose description such as "matriks (5 1; 2 3), iaitu baris pertama 5, 1 dan baris kedua 2, 3"; a question stored as prose is flagged to the admin as needing a maths rewrite and is not a pupil-side rewrite.
   - FR-MUR-13-25 The navigator legend "Dijawab · Ditanda · Belum" shows a colour key and a shape or icon per state so it is not colour-only, at every width.
   - FR-MUR-13-26 Kertas Subjektif lists only published papers (D81 flow, Terbit) with the exact index copy of F, and the card count "{n} kertas" equals the list.
   - FR-MUR-13-27 The Kertas Subjektif viewer shows the paper as reflowing text with stimuli per 4.6 (figure once, group whole), at 375/768/1280 px without sideways scroll; the pupil answers on paper or types, as the question mode allows.
-  - FR-MUR-13-28 "Tunjuk Skema Pemarkahan" reveals the scheme and "Sembunyi" hides it; before it is pressed the scheme is not in the page; the fallback text shows when the paper has no scheme.
-  - FR-MUR-13-29 Self-mark: the pupil sets "Markah dinilai sendiri" from 0 to the question or Bahagian marks (server clamps, owner only); the total updates at once, is saved, and a session is recorded once per paper attempt; rewards per FR-MUR-13-14.
+  - FR-MUR-13-28 "Tunjuk Skema Pemarkahan" reveals the scheme and "Sembunyi" hides it; before it is pressed the scheme is not in the page. A paper without a scheme cannot be published (FR-ADM-Q18.8), so the pupil never meets a paper without a scheme; the V2 fallback text "Skema pemarkahan tidak tersedia untuk kertas ini." is shown only as a defensive state if the scheme fails to load.
+  - FR-MUR-13-29 Self-mark: the pupil sets "Markah dinilai sendiri" from 0 to the question or Bahagian marks (server clamps, owner only); the total updates at once, is saved, and a session is recorded once per paper attempt with its answers written per FR-MUR-13-21 (a Kertas Subjektif self-mark is the same stored Bijak attempt flow as FR-MUR-13-19); rewards per FR-MUR-13-14.
   - FR-MUR-13-30 No feature flag, config or admin toggle hides Subjektif or Kertas Subjektif (D104); the admin Kertas Subjektif screens feed it (cross-ref R1-ADM).
 - **Data and dependencies**: papers, contracts, stimuli, attempts (Bijak/exam core, owner M06/M28 exam model; D12 questions owner M04). Admin feeds (cross-ref R1-ADM): Studio, Import and Semakan, Set Builder / Pembina Kertas (Terbit), Kontrak Simulasi (Disahkan), Tracking A editor (missing, 404 today), Kertas Subjektif upload, OCR, edit and publish (D81; admin 404 today), Latih Tubi lane. API: `bijak/*` (papers, attempts, answers, submit, self-mark, retry, result, history, kuiz), `spm/overview`, `spm/databank`, `spm/tracking-a`, `spm/subjektif`, `practice/structured`.
 - **Acceptance criteria**
@@ -769,7 +785,7 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
   - AC-MUR-13-4 Given a stimulus group "Rajah 1" with Q5-Q6, then Rajah 1 appears once with both questions; at 375 px a chip "Lihat Rajah 1" opens it; at 1280 px it is pinned.
   - AC-MUR-13-5 Given typing, then within 2 s "disimpan" shows; offline shows "luar talian" and answers reach the server when online; reload restores answers.
   - AC-MUR-13-6 Given Hantar pressed twice, then one submission and the same score.
-  - AC-MUR-13-7 Given a submitted attempt with a 4-mark working part marked 2 by suggestion, when the pupil sets 3, then the part, Bahagian total and "{score} / {max}" update and the wallet gains 2 Syiling + 10 XP for that 1 mark; a later change to 1 takes nothing back.
+  - AC-MUR-13-7 Given a submitted attempt with a 4-mark working part marked 2 by suggestion, when the pupil sets 3, then the part, Bahagian total and "{score} / {max}" update and the wallet gains {Syiling rate} Syiling (default 1) + 10 XP for that 1 mark; a later change to 1 takes nothing back.
   - AC-MUR-13-8 Given "Cuba Lagi", then a new attempt opens and the old attempt stays in "Sejarah Bijak SPM".
   - AC-MUR-13-9 Given a Databank subject whose test bank has 30 servable MCQs including one stimulus group of 3, when the pupil starts a 10-question Databank session, then 10 questions are served, each "✓ Semak" returns the server result, any group in the draw appears with all 3 members and its figure once, and the card count shown before the session is 30 (D91, D105).
   - AC-MUR-13-10 Given an admin approves an MCQ for Sejarah T5, then the Databank Sejarah count rises by 1 on next load.
@@ -785,6 +801,8 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
   - AC-MUR-13-21 Given a published paper with a scheme, when the pupil opens it, then the page source does not contain the scheme text; after "Tunjuk Skema Pemarkahan" is pressed the scheme shows and "Sembunyi" hides it again.
   - AC-MUR-13-22 Given a paper with a Bahagian of 20 marks, when the pupil sets the self-mark to 25, then the saved value is 20; when set to 14, then the total shows 14 and reloading shows 14.
   - AC-MUR-13-23 Given no published Kertas Subjektif paper, then the index shows "Kertas subjektif sedang dalam penyediaan. Semak semula tidak lama lagi." and the hub card shows "0 kertas"; acceptance of D104 requires a fixture with at least 2 published papers (an empty module is not a pass).
+  - AC-MUR-13-24 Given a Subjektif part of 4 marks, when the pupil self-marks 3 through `POST /api/bijak/attempts/:id/self-mark`, then the stored self-mark is 3, the pupil's Prestasi "Sesi" list shows the attempt with 3 / 4, and the answer store holds one row for that part with 3 awarded of 4 available; changing the self-mark to 2 updates that row (still one row) and takes no reward back.
+  - AC-MUR-13-25 Given a pupil submits a Bijak sitting of 40 MCQ with 30 correct, then `practice_answers` holds 40 rows of that sitting's mode (30 correct), pupil Prestasi "Soalan Dijawab" rises by 40, the teacher and school-admin Prestasi, Analisa Item and the Heatmap (for Bab-linked questions) include them, and pressing Hantar twice leaves 40 rows (AC-CHAIN-2).
   - AC-MUR-13-19 Given a published question that says "Rajah 14 menunjukkan dua tin..." but has no figure (live UAT, Sains T4; also Rajah 11, 9, 7), then it is not served in Bijak, Kuiz, Databank, Latih Tubi or Soalan by Chapter, and the admin sees the reason.
 - **Current gaps seen live on UAT/GitHub (2026-11-04)**: (1) at 375 px the sitting bottom bar has no "Hantar" (it exists at 768 and 1280); (2) at 375 px "Mod Peperiksaan" badge missing and "Lapor Soalan" alone on a row; (3) matrices written as prose at every width; (4) navigator legend without colour keys at 1280; (5) published Sains T4 questions that cite "Rajah n" have no diagram and the stem is shown twice, and they are served in Latih Tubi. See 4.8 for the contract.
 - **Current gap and root cause**: UAT 0 contracts and 0 papers (GAP 5.3); Tracking A and Kertas Subjektif admin 404; `spmPool:false` on admin create (`questions.service.ts:592`) limits Databank; answer widgets and stimulus kinds incomplete (`PartInput.vue`, `StimulusView.vue`); bridge refuses image stimuli (`be09-mapping.ts`); D94 self-mark reward not in base; hub "Tahun Tersedia" 0.
@@ -792,7 +810,7 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
 - **Open questions**: OQ-MUR-7, OQ-MUR-13, OQ-MUR-14.
 
 ### R1-MUR-14 Heatmap Topik Lemah
-- **Action**: Keep
+- **Action**: Fix (page exists and works; the per-subject Bab rule of FR-MUR-14-3 and the single answer store of FR-MUR-14-1 are checked and fixed where they differ; API-DSKP-08 is "Exists-Fix")
 - **Screen specification (from V2)** (route `/buku-nota/heatmap`, browser title "Heatmap Topik Lemah — PRESTASIPLUS"). Regions:
   1. Heading "Heatmap Topik Lemah", sub "Topik mana anda kuat, mana lemah — semua dalam satu paparan. Klik kotak merah untuk fokus belajar.".
   2. Legend pills: "Lemah (< 50%)", "Sederhana (50-79%)", "Mantap (≥ 80%)", "Belum cuba".
@@ -801,16 +819,16 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
   - Populated heatmap (coloured topic tiles, tile click starts focused practice): Not observed in V2 — follow FR-MUR-14-* and the reference behaviour below. Loading and error: Not observed in V2 — follow FR-X6.
   - Tab "Senarai" opens `/buku-nota`, titled "Buku Nota Saya": heading "Buku Nota Saya", sub "Nota peribadi anda — tulis, kumpul dan ulangkaji ikut subjek anda sendiri."; tiles "Jumlah Nota", "Subjek Diliputi", "Bulan Ini" (0, 0, 0); the same two tabs; button "Nota Baharu" opening a form with "Tajuk", "Subjek (pilihan)" (select, first option "Tanpa Subjek", then the subject list), "Isi Nota" and button "Simpan Nota"; list controls "Subjek:" (select, "Semua" then subjects), "Susun:" (select "Per Subjek" / "Per Tarikh"), button "Tapis"; empty "Belum ada nota lagi." / "Mula dengan menambah nota peribadi pertama anda di atas.". This page is a Nota Ringkas page outside the matrix (section 1.3, hidden in V3): the "Senarai" tab link is hidden in 1.0 (FR-MUR-14-4).
 - **Confirmed in the screens (earlier review)**: Confirmed: heading, subtitle, the four legend pills, tabs "Senarai" and "Heatmap Topik Lemah", empty state "Belum ada data heatmap." / "Jawab soalan latih tubi dahulu — topik kuat dan lemah anda akan dipaparkan di sini." and "Mula Latih Tubi". A populated heatmap is not in the screens (E-15).
-- **Current gap and root cause**: None in code (`HeatmapTopikLemahPage.vue`, `GET buku-nota/heatmap`). Verify the ACs only; the UAT data dependency (no Bab/SP links) is tracked in OQ-MUR-6.
+- **Current gap and root cause**: `HeatmapTopikLemahPage.vue` and `GET buku-nota/heatmap` work; check them against the per-subject Bab-or-SP rule (FR-MUR-14-3) and that the heatmap reads `practice_answers` of every mode (FR-MUR-14-1); the UAT data dependency (no Bab/SP links) is tracked in OQ-MUR-6.
 - **Name**: "Heatmap Topik Lemah" (sub "Topik mana anda kuat, mana lemah — dalam satu paparan")
 - **Route**: `/buku-nota/heatmap`. **Matrix row**: 14. **Priority**: P1.
 - **Current status**: V3 GH works (1 tile), UAT empty (no chapter or SP tags).
 - **Outcome**: one view of strong and weak topics.
 - **Reference behaviour (V2 `pelajar/buku-nota-heatmap.blade.php`)**: hero "Heatmap Topik Lemah" / "Topik mana anda kuat, mana lemah — semua dalam satu paparan. Klik kotak merah untuk fokus belajar."; legend pills "Lemah (< 50%)", "Sederhana (50-79%)", "Mantap (≥ 80%)", "Belum cuba"; tabs "Senarai" and "Heatmap Topik Lemah"; per subject block with grid of chapter tiles: title, "{n} cuba · {acc}% betul" or "Belum cuba"; colours red below 50, amber 50-79, green at least 80, grey none. Subjects shown = those where the pupil attempted at least one chapter-linked question; all chapters of that subject are listed. Empty: "Belum ada data heatmap." / "Jawab soalan latih tubi dahulu — topik kuat dan lemah anda akan dipaparkan di sini." and button "Mula Latih Tubi".
 - **Functional requirements**
-  - FR-MUR-14-1 Own attempts only; accuracy = round(correct/attempts x 100) per chapter.
+  - FR-MUR-14-1 Own attempts only, read from the single answer store `practice_answers` (every mode, FR-MUR-4-5); accuracy = round(correct/attempts x 100) per chapter (whole number, pooled).
   - FR-MUR-14-2 Colours and legend as above; a tile click opens that chapter's Soalan by Chapter list (V2 links to `/practice/chapter`; chapter-specific link is the D9-safe improvement, FD-MUR-25).
-  - FR-MUR-14-3 Unit = Bab (D89), with SP tags used only when no Bab exists (OQ-MUR-6).
+  - FR-MUR-14-3 The tile unit is Bab (D89). Rule per subject: if any approved question of the subject and Tingkatan has a Bab, the Heatmap of that subject uses Bab tiles only and ignores SP; only a subject where no question has a Bab uses SP tiles (OQ-MUR-6). Because a question cannot be published without Bab and SP (D-A5), the SP fallback applies to legacy questions only.
   - FR-MUR-14-4 The "Senarai" tab link is hidden in 1.0 (Buku Nota is out of scope).
   - FR-MUR-14-5 Empty state exact copy; button opens Latih Tubi.
   - FR-MUR-14-6 Subjects and chapters of the pupil's forms T1-T5 (D101); no Darjah.
@@ -831,15 +849,15 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
 - **Route**: `/practice`, `/practice/:code`, `/practice/:code/quiz`. **Matrix row**: 16 (user addition). **Priority**: P0.
 - **Current status**: GH works end to end. UAT T5: Matematik 1,018, Sains 2,551, Sejarah 904, BI 805, BM 411 with difficulty; T1: "akan datang". V2 production flag is OFF (`/practice` redirects to Dashboard), so V1 and the V2 mechanism doc are the references; V3 visible per D80 Q-02.
 - **Outcome**: fast random drills by subject.
-- **Reference behaviour (V1 S2-S3, V2 mechanism §2.1)**: subject cards "Subjek Teras" first, name, English name, "{n} soalan", "Teras" badge, "Mula Latihan"; banner "Soalan by Chapter". Setup: "← Kembali ke Senarai Subjek", "{n} soalan tersedia", "Pilih Tahap Pendidikan" (only T4, T5 and "Semua Tahap"), "Pilih Tahap Kesukaran" (1 "Sangat Mudah" ... 5 "Sangat Sukar" with live counts, or "Semua"), "Bilangan Soalan" 5, 10 (default), 15, 20, summary "Ringkasan" (Tahap Pendidikan, Kesukaran, Bilangan Soalan, Soalan Tersedia), amber "Soalan Tidak Mencukupi" / "Kurangkan bilangan soalan atau tukar tetapan penapisan." when available is fewer than chosen (button disabled), "Bersedia untuk bermula!", button "Mula Kuiz". Quiz: one question per screen, "Soalan {i} daripada {n}", timer "Masa", "🔀 Soalan dan pilihan jawapan dirawak setiap sesi.", chip "✓ Mengikut DSKP" when tagged, options A-D (shuffled and re-lettered per session), "💬 Soalan oleh: …" label only when the question has an author credit, "✓ Semak" (disabled until a choice is made) then ✅/❌, "🎉 Betul!" or "😟 Salah" (V3 "Betul! +10"), optional "Penjelasan:", "Soalan Seterusnya →" / "Tamat →", "Lapor Soalan". Result: "Kuiz Selesai!", "Tahniah, anda telah lengkapkan {subject}.", tiles Markah, Ketepatan, "🪙 Syiling", buttons "↻ Cuba Lagi", "Senarai Subjek". Empty: "Tiada soalan untuk pilihan ini.". Rewards: 2 Syiling and 10 mata per correct answer (V2 `PracticeRecorder` constants).
+- **Reference behaviour (V1 S2-S3, V2 mechanism §2.1)**: subject cards "Subjek Teras" first, name, English name, "{n} soalan", "Teras" badge, "Mula Latihan"; banner "Soalan by Chapter". Setup: "← Kembali ke Senarai Subjek", "{n} soalan tersedia", "Pilih Tahap Pendidikan" (only T4, T5 and "Semua Tahap"), "Pilih Tahap Kesukaran" (1 "Sangat Mudah" ... 5 "Sangat Sukar" with live counts, or "Semua"), "Bilangan Soalan" 5, 10 (default), 15, 20, summary "Ringkasan" (Tahap Pendidikan, Kesukaran, Bilangan Soalan, Soalan Tersedia), amber "Soalan Tidak Mencukupi" / "Kurangkan bilangan soalan atau tukar tetapan penapisan." when available is fewer than chosen (button disabled), "Bersedia untuk bermula!", button "Mula Kuiz". Quiz: one question per screen, "Soalan {i} daripada {n}", timer "Masa", "🔀 Soalan dan pilihan jawapan dirawak setiap sesi.", chip "✓ Mengikut DSKP" when tagged, options A-D (shuffled and re-lettered per session), "💬 Soalan oleh: …" label only when the question has an author credit, "✓ Semak" (disabled until a choice is made) then ✅/❌, "🎉 Betul!" or "😟 Salah" (V3 "Betul! +10"), optional "Penjelasan:", "Soalan Seterusnya →" / "Tamat →", "Lapor Soalan". Result: "Kuiz Selesai!", "Tahniah, anda telah lengkapkan {subject}.", tiles Markah, Ketepatan, "🪙 Syiling", buttons "↻ Cuba Lagi", "Senarai Subjek". Empty: "Tiada soalan untuk pilihan ini.". Rewards: Syiling per correct answer = the admin setting "Syiling flat / soalan betul" (V2 observed value 1) and 10 mata per correct answer (V2 `PracticeRecorder`; the Syiling constant of 2 in that code is superseded by the setting, 4.4).
 - **Functional requirements** (4.6 applies)
   - FR-MUR-16-1 The subject list shows subjects with at least one servable question for the pupil's level, "Subjek Teras" first, with "{n} soalan" per D91.
   - FR-MUR-16-2 Level choices are Tingkatan 1 to 5 that have servable questions, plus "Semua Tahap" (D101); no Darjah anywhere (D72). The default is the pupil's own form. The API offers T1-T5 (today `OFFERED_LEVEL_CODES` = T4, T5 at `apps/api/src/modules/practice/rules.ts:40-43`).
-  - FR-MUR-16-3 Difficulty is derived from the question's TP (D2 of the schema), shown as the five labels; counts per label are drawable counts.
+  - FR-MUR-16-3 Difficulty (1 to 5) is stored on the question separately from TP (1 to 6); the five labels are difficulty 1 "Sangat Mudah", 2 "Mudah", 3 "Sederhana", 4 "Sukar", 5 "Sangat Sukar"; counts per label are drawable counts. Where the admin has not typed a difficulty, it is the code's derivation `min(5, TP)` (TP 6 reads as 5, "Sangat Sukar"). Any three-label "Kesukaran" (Mudah / Sederhana / Sukar) shown to a pupil or teacher is derived from difficulty with the single mapping used by the code: 1-2 "Mudah", 3 "Sederhana", 4-5 "Sukar" (documented in 50-data-model-erd). The stars of a teacher question are the same 1 to 5 difficulty.
   - FR-MUR-16-4 Count choices 5, 10 (default), 15, 20; when fewer are available the warning shows and Start is disabled.
   - FR-MUR-16-5 Latih Tubi serves MCQ questions including figure questions and whole stimulus groups (D105): a group is drawn whole, its members contiguous in published order, its stimulus shown once above them; the quiz length equals the chosen count by adding whole groups while they fit, then ungrouped questions; if only a group that overshoots remains, the quiz is shorter than the count by fewer than the group size and the summary says so; a question whose figure is missing is never drawn (admin sees the reason).
   - FR-MUR-16-6 Options and question order are shuffled per session; the server grades by option identity; the key is not in the page before "✓ Semak" (server-trust per the findings doc; V2 shipped the correct flag in the page: FD-MUR-26).
-  - FR-MUR-16-7 Each answer, session, accuracy, time are recorded once; rewards: 2 Syiling + 10 mata per correct answer, shown on the result and added to the header pills.
+  - FR-MUR-16-7 Each answer is written once to the single answer store `practice_answers` (mode `latih_tubi`, `chapter`, ...; FR-MUR-4-5) together with its session, accuracy and time; rewards: the admin-set Syiling rate (default 1) + 10 mata per correct answer, shown on the result and added to the header pills.
   - FR-MUR-16-8 "Lapor Soalan" is reachable from every question card (R1-MUR-54).
   - FR-MUR-16-9 Maths, units, chemical formulas and RTL text render per 4.6.
   - FR-MUR-16-10 Result and "Cuba Lagi" as above; "Ulang Kaji" later reads the same attempts.
@@ -850,7 +868,7 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
   - AC-MUR-16-1 Given a T5 pupil on UAT, when Latih Tubi opens, then Matematik, Sains, Sejarah, BI and BM show counts equal to the drawable counts and no Darjah.
   - AC-MUR-16-2 Given a test bank of Matematik with 20 single MCQs, 3 figure MCQs and one group of 3 members, when the pupil starts 10 questions, then 10 distinct questions are served, every group present has all 3 members adjacent in published order and its figure is rendered once above them, and no group member appears without its siblings.
   - AC-MUR-16-3 Given the quiz page source, then no option carries a correctness flag.
-  - AC-MUR-16-4 Given 7 of 10 correct, then the result shows Markah 7/10, Ketepatan 70%, 14 Syiling and the wallet increases by 14 Syiling and 70 mata.
+  - AC-MUR-16-4 Given the admin setting "Syiling flat / soalan betul" = 1 (the default) and 7 of 10 correct, then the result shows Markah 7/10, Ketepatan 70%, 7 Syiling and the wallet increases by 7 Syiling and 70 mata; given the admin then sets the rate to 3, the next session with 7 of 10 correct earns 21 Syiling and 70 mata; and 10 rows are written to `practice_answers` for each session.
   - AC-MUR-16-5 Given only 4 questions available and 10 chosen, then the warning shows and Start is disabled.
   - AC-MUR-16-6 Given a T1 pupil and a T5 pupil and a data precondition of at least 10 servable Matematik MCQs for T1 and for T5, when each opens Latih Tubi and starts Matematik with 10 questions, then each quiz serves 10 questions of that pupil's own form and no page text contains "akan datang".
   - AC-MUR-16-7 Given 375 px, then options are full-width targets and "✓ Semak" stays reachable with a long stem (US-22.4).
@@ -859,7 +877,7 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
 - **Fidelity deviations**: FD-MUR-17, FD-MUR-26. **Open questions**: OQ-MUR-1.
 
 ### R1-MUR-21 Permainan
-- **Action**: Keep
+- **Action**: Fix (the games work; question-based games must write their answers to the single answer store, FR-MUR-21-4, and the coin rate must come from the admin setting)
 - **Screen specification (from V2)**. The V2 games hub `/permainan` redirects the pupil to the Dashboard (flag off), so the hub is Not observed in V2 — follow FR-MUR-21-* and the V1 hub described below (E-7). Only the V2 Battle Arena was observed:
   **Battle Arena `/battle`** (title "Battle — Lawan Rakan — PRESTASIPLUS"). Regions: (1) heading "Battle Arena" with badge "BARU" and line "Cabar kawan, cari lawan, atau wakili sekolah anda!"; (2) three header buttons "Ranking Pelajar", "Ranking Sekolah" (opens the school ranking page below), "Cabaran Masuk" (incoming challenges); (3) mode tabs "Biasa", "PKSK", "SPM"; (4) "Pilih Subjek" with group "Subjek Teras" (Bahasa Melayu, Bahasa Inggeris, Matematik, Sains, Sejarah, Pendidikan Islam, Pendidikan Moral) and group "Subjek Elektif" (24 subjects behind a toggle "Lagi 24 subjek elektif" / "Sembunyikan"); (5) "Bilangan Soalan" chips 5, 10, 15, 20; (6) for the PKSK tab "Pilih Domain PKSK", cards of domain name and "{n} soalan" (about 18 domains in V2, e.g. "Alam Sekitar" 40, "Kecerdasan Insaniah" 147); (7) "Pilih Tahap" listing Darjah 1 to Darjah 6 (V2 differs: Darjah must not appear, FR-MUR-SH-8; V3 lists Tingkatan 1-5 or the pupil's own form only); (8) three match cards "Quick Match" ("Cari lawan rawak dari darjah yang sama"; V3: "dari tingkatan yang sama"), "Cabar Kawan" ("Hantar cabaran kepada rakan anda"), "Battle Sekolah" ("Lawan pelajar dari sekolah lain!"); (9) queue toggle "Keterlihatan Barisan" with "Hanya pelajar gred sama boleh match" and chip "Gred Saya"; (10) waiting overlays "Mencari Lawan..." / "Menunggu pelajar sama gred & subjek" with a timer "0:00" and button "Batal", and "Menunggu Kelulusan..." / "Menunggu {name} menerima permohonan anda" with "Batal"; (11) "Cabar Kawan" panel: empty "Tiada pelajar dijumpai"; "Cabaran Masuk" panel: empty "Tiada cabaran buat masa ini"; (12) list "Battle Terkini" / "10 pertandingan paling terkini": rows with ⚔️, "1v1", subject, relative date (English "4 months ago": defect, V3 prints BM) and a status chip (observed "Sedang").
   **Ranking Sekolah `/battle/ranking-sekolah`** (title "Ranking Sekolah — Battle — PRESTASIPLUS"): label "🏫 Pertandingan Antara Sekolah", heading "Ranking Sekolah", text "Sekolah terbaik dinilai berdasarkan jumlah mata, kemenangan, dan ketepatan battle."; empty state 🏫 "Tiada ranking lagi" / "Belum ada sekolah yang menyertai battle. Mulakan pertandingan sekarang!". Populated rows: Not observed in V2.
@@ -874,9 +892,9 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
   - FR-MUR-21-1 The hub lists the V3 games that work with the servable bank; a game without playable content is hidden (no 500 page such as V1 "Sambung Kata").
   - FR-MUR-21-2 Game questions are approved MCQ questions only (all games and Battle; a game that cannot render a figure or a group skips that question), level of the room within T1-T5.
   - FR-MUR-21-3 Level pickers list Tingkatan 1-5 only (V1 offered Darjah 1-6, D72).
-  - FR-MUR-21-4 Coins and ranking use the shared wallet (rewards D97 do not apply; game rewards follow the game rules already built).
+  - FR-MUR-21-4 Coins and ranking use the shared wallet; the admin setting "Mini-games beri syiling?" decides whether a game credits Syiling (V2 value "Tidak (XP sahaja)": XP only), and where it credits, the rate is the admin Syiling rate of 4.4, not a game constant. Every game that asks bank questions writes each answer to the single answer store `practice_answers` (mode `game` unless the API names another, API-PRAC-01) so the rows count in Prestasi, Analisa Item, Heatmap and the teacher and admin reports (FR-X4-5); a game result without a bank question (for example a pure speed score) writes no answer row.
   - FR-MUR-21-5 Room codes are 6 characters; a wrong code shows a BM error.
-  - FR-MUR-21-6 Pupils see only their own and public room data; no personal data of other pupils beyond display name.
+  - FR-MUR-21-6 Pupils see only their own and public room data; no personal data of other pupils beyond the display name (first name only, no school, section 4.3).
   - FR-MUR-21-7 The hub and lobbies pass 375/768/1280 px.
 - **Data and dependencies**: owner M16; questions from M04 pool; admin Tetapan Permainan screen missing (GAP 5.1; cross-ref admin PRD).
 - **Acceptance criteria**
@@ -885,7 +903,8 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
   - AC-MUR-21-3 Given the level picker, then no Darjah option.
   - AC-MUR-21-4 Given a room code of 5 characters, then the form refuses it with a BM message.
   - AC-MUR-21-5 Given 375 px, then cards are one column and the board fits without sideways scroll.
-- **Current gap**: none for the pupil (V3 exceeds V2); level picker defaults to be checked. **Fidelity deviations**: FD-MUR-27. **Open questions**: none.
+  - AC-MUR-21-6 Given a pupil answers 5 bank questions in a question-based game (3 correct), then `practice_answers` holds 5 rows of the game mode (3 correct) and the pupil's Prestasi "Soalan Dijawab" rises by 5; with "Mini-games beri syiling?" = Tidak, no Syiling is credited and XP is.
+- **Current gap**: games that ask bank questions must be checked for answer rows in `practice_answers` and for the reward rate source (FR-MUR-21-4); V3 otherwise exceeds V2; level picker defaults to be checked. **Fidelity deviations**: FD-MUR-27. **Open questions**: none.
 
 ### R1-MUR-54 Laporan Soalan
 - **Action**: Fix
@@ -939,18 +958,18 @@ Same template as section 3 (Action, Screen specification (from V2), change list)
 - AC-MUR-P2-3 Given viewports 375x667, 768x1024 and 1280x800 and the module seeded with at least 3 records, when the page loads, then `document.documentElement.scrollWidth <= window.innerWidth` and the module's primary action button is within the viewport after at most one scroll (AC-X6-1).
 
 ### R1-MUR-A4 Tiket Bantuan
-- **Action**: Keep
+- **Action**: Complete (the list and form exist; the single admin reply "Balasan Sokongan" depends on API-SUP-05, which does not exist yet; OD-4 decided a single reply, no thread)
 - **Screen specification (from V2)** (V2 route `/pusat-tuisyen/tiket`, also `/tiket`; title "Tiket Bantuan — PRESTASIPLUS"). Regions: (1) counter line "Jumlah tiket: {n}" and button "Tiket Baru" (opens the inline form below); (2) inline form headed "Tiket Baru" with fields "Subjek" and "Butiran" and button "Hantar Tiket" (field types, limits and success/error messages: Not observed in V2 — follow FR-MUR-A4-*); (3) status filter chips "Semua", "Dibuka", "Dalam Proses", "Menunggu Balas", "Selesai", "Ditutup"; (4) ticket list, empty state (observed) "Tiada tiket lagi." with button "Buat Tiket Pertama" (opens the same form). Populated rows and the ticket detail/reply page: Not observed in V2 — follow FR-MUR-A4-*. Loading and error: Not observed in V2 — follow FR-X6.
 - **Corrections from the screens (earlier review)**: Corrections: the page shows "Jumlah tiket: {n}", a button "Tiket Baru" that opens an inline form with "Subjek", "Butiran" and "Hantar Tiket", the filters "Semua", "Dibuka", "Dalam Proses", "Menunggu Balas", "Selesai", "Ditutup", and the empty state "Tiada tiket lagi." with the button "Buat Tiket Pertama". A ticket with a thread is not in the screens (E-13).
-- **Current gap and root cause**: None. Verify the ACs only (V3 matches; add the empty-state button "Buat Tiket Pertama" if absent).
+- **Current gap and root cause**: V3 matches V2 for the list and form (add the empty-state button "Buat Tiket Pertama" if absent). Missing: the admin reply and status change (API-SUP-05, R1-ADM-P2-20.2), so `adminReply` is always null today; show the reply under "Balasan Sokongan" once it exists.
 - **Name**: "Tiket Bantuan" (heading "Tiket Bantuan"; new ticket "Tiket Bantuan Baharu"). **Route**: `/pusat-tuisyen/tiket`, `/pusat-tuisyen/tiket/baru`, ticket detail. **Row**: A4. **Priority**: P2.
 - **Current status**: V3 GH/UAT built like V2, 1 sample ticket; hidden from the 1.0 menu until now.
 - **Outcome**: ask for help and follow the answer.
-- **Reference (V2 `pusat-tuisyen-tiket*.blade.php`, M22)**: list filtered by status "Semua", "Dibuka", "Dalam Proses", "Menunggu Balas", "Selesai", "Ditutup"; button "Tiket Baru"; form with subject, category, message; ticket thread with replies.
-- **FRs**: FR-MUR-A4-1 list shows only own tickets with the six status filters and counts. FR-MUR-A4-2 "Tiket Baru" creates a ticket (subject, category, message; limits shown) and shows it in the list as "Dibuka". FR-MUR-A4-3 the thread shows staff replies and lets the pupil reply while the ticket is not "Ditutup". FR-MUR-A4-4 a pupil cannot read another pupil's ticket. FR-MUR-A4-5 empty list shows an empty-state line with the "Tiket Baru" button.
+- **Reference (V2 `pusat-tuisyen-tiket*.blade.php`, M22)**: list filtered by status "Semua", "Dibuka", "Dalam Proses", "Menunggu Balas", "Selesai", "Ditutup"; button "Tiket Baru"; form with subject and message (V1 also had a category and a thread; not in R1, OD-4); the staff reply shows under "Balasan Sokongan".
+- **FRs**: FR-MUR-A4-1 list shows only own tickets with the six status filters and counts. FR-MUR-A4-2 "Tiket Baru" creates a ticket with "Subjek" and "Butiran" (no category in R1; limits 255 and 5000 shown) and shows it in the list as "Dibuka". FR-MUR-A4-3 the ticket shows the single admin reply under "Balasan Sokongan" and its current status; the pupil cannot reply (to add information the pupil opens a new ticket), as OD-4 decided. FR-MUR-A4-4 a pupil cannot read another pupil's ticket. FR-MUR-A4-5 empty list shows an empty-state line with the "Tiket Baru" button.
 - **Data and dependencies**: tickets (owner M22); admin feed: admin Tiket inbox (cross-ref admin PRD); API `tiket`.
-- **ACs**: AC-MUR-A4-1 Given a new ticket, then it appears under "Dibuka" and "Semua". AC-MUR-A4-2 Given a staff reply, then the status changes and the pupil sees the reply on reload. AC-MUR-A4-3 Given another pupil's ticket URL, then 403. AC-MUR-A4-4 Given 375 px, then the form is one column and the keyboard does not hide "Hantar".
-- **Gap**: none known. **FD**: none. **OQ**: none.
+- **ACs**: AC-MUR-A4-1 Given a new ticket, then it appears under "Dibuka" and "Semua". AC-MUR-A4-2 Given the admin saves a reply and a status (R1-ADM-P2-20.2), then on reload the pupil's ticket shows the reply under "Balasan Sokongan", the new status label, and no reply box. AC-MUR-A4-3 Given another pupil's ticket id, then 404 (the list is own-only and there is no cross-user detail route; section 1.7 default). AC-MUR-A4-5 Given the pupil submits a ticket, then the admin ticket list shows it with the role "Murid" and the pupil's school, and the same ticket appears in the pupil's list with the admin reply once saved (AC-CHAIN-7). AC-MUR-A4-4 Given 375 px, then the form is one column and the keyboard does not hide "Hantar".
+- **Gap**: admin reply and status (API-SUP-05). **FD**: none. **OQ**: none (OD-4 decided).
 
 ### R1-MUR-17 Soalan Berstruktur
 - **Action**: Complete
@@ -975,7 +994,7 @@ Same template as section 3 (Action, Screen specification (from V2), change list)
 - **Current status**: V3 GH/UAT: filters Skop/Subjek/Tingkatan and "Tiada data kedudukan" although the pupil has coins; no own-rank card.
 - **Outcome**: see own standing.
 - **Reference (V2 `ranking.blade.php`, `StudentExtrasController::ranking`; V1 M08 `/ranking`)**: own-rank card per scope (class, school, state, national): "#{rank}/{total}", group text such as "Kumpulan {n}% teratas"; "Sekitar anda" lists the pupils just above and below; link to the full board (Papan Pendahulu); V1 filters Nasional/Negeri/Daerah/Sekolah, Subjek, Tingkatan. Rank = 1 + number of pupils in the pool with a higher syiling balance (a lone pupil is 1 of 1). Scopes that do not apply are skipped. Empty: "Kedudukan belum tersedia" / "Akaun anda belum dikaitkan dengan sekolah atau kelas."; "Tiada pelajar lain untuk dibandingkan dalam skop ini."
-- **FRs**: FR-MUR-18-1 own-rank card per applicable scope with rank, total and percentile group. FR-MUR-18-2 "Sekitar anda" shows up to 2 above and 2 below with display name and syiling (no other data). FR-MUR-18-3 ranks are computed live from wallet syiling and agree with Papan Pendahulu and Kelas Saya order. FR-MUR-18-4 V2 has no Skop/Subjek/Tingkatan filters (V2 route `/ranking`); the cards are "Dalam sekolah", "Dalam negeri", "Kebangsaan" (and the class card when the pupil is in a class) and the group text is "Kumpulan {p}% teratas" with p = round(rank / total x 100); V3's V1-style filters are kept only if they work, and Tingkatan lists T1-T5. FR-MUR-18-5 a pupil with coins never sees "Tiada data kedudukan".
+- **FRs**: FR-MUR-18-1 own-rank card per applicable scope with rank, total and percentile group. FR-MUR-18-2 "Sekitar anda" shows up to 2 above and 2 below with the display name (first name only, section 4.3; V2 printed names) and syiling (no other data, no school). FR-MUR-18-3 ranks are computed live from wallet syiling and agree with Papan Pendahulu and Kelas Saya order. FR-MUR-18-4 V2 has no Skop/Subjek/Tingkatan filters (V2 route `/ranking`); the cards are "Dalam sekolah", "Dalam negeri", "Kebangsaan" (and the class card when the pupil is in a class) and the group text is "Kumpulan {p}% teratas" with p = round(rank / total x 100); V3's V1-style filters are kept only if they work, and Tingkatan lists T1-T5. FR-MUR-18-5 a pupil with coins never sees "Tiada data kedudukan".
 - **Data**: wallets (M14), school/class (M01/M10). API `rankings`.
 - **ACs**: AC-MUR-18-1 Given a pupil with 374 coins in a school of 864, then the school card shows the correct rank and "Kumpulan {n}% teratas". AC-MUR-18-2 Given a lone pupil, then "#1/1". AC-MUR-18-3 Given a pupil without school, then only applicable scopes show with the V2 message. AC-MUR-18-4 Given 375 px, then cards stack and the nearby list wraps.
 - **Gap**: ranking not computed for demo pupil (parity gap 10). **FD**: none. **OQ**: none.
@@ -1064,17 +1083,17 @@ Same template as section 3 (Action, Screen specification (from V2), change list)
 - **Gap**: `LearningMapPage.vue:30,50-53` gate; UAT 0 nodes. **FD**: FD-MUR-30. **OQ**: OQ-MUR-16.
 
 ### R1-MUR-26 Set Soalan Guru
-- **Action**: Keep
+- **Action**: Fix (session mode `question_set`, 404 outside the assigned class, answers in the single answer store; the list and play screens exist)
 - **Screen specification (from V2)** (route `/set-soalan-saya`, browser title "Set Soalan Guru — PRESTASIPLUS"). One region observed, the empty state: heading "Tiada Set Soalan", text "Guru anda belum menyediakan sebarang set soalan buat masa ini." and "Set soalan akan muncul di sini sebaik sahaja guru anda menerbitkannya.". No button. Populated set cards, the play screen and the result: Not observed in V2 — follow FR-MUR-26-* and section 4.6. Loading and error: Not observed in V2 — follow FR-X6.
 - **Confirmed in the screens (earlier review)**: Confirmed with one more line: "Tiada Set Soalan" / "Guru anda belum menyediakan sebarang set soalan buat masa ini." / "Set soalan akan muncul di sini sebaik sahaja guru anda menerbitkannya." A populated set and the play screen are not in the screens (E-13).
-- **Current gap and root cause**: None. Verify the ACs only; teacher feed is the guru Set Soalan screen (D108(3)).
+- **Current gap and root cause**: the mode is `question_set` everywhere (not `set`); a set outside the pupil's class answers 404; the list is filtered by the set's assigned class(es); answers go to `practice_answers`. Teacher feed is the guru Set Soalan screen (D108(3), R1-GUR-8b).
 - **Name**: "Set Soalan Guru" (sub "Set soalan yang disediakan oleh guru anda"). **Route**: `/set-soalan-saya`, `/pelajar/set/:id`. **Row**: 26. **Priority**: P1. **Delivery**: 1.0 (linked from R1-MUR-2 and R1-MUR-8).
 - **Current status**: V3 built, empty state; V2 `question_sets` has 0 rows.
 - **Outcome**: do the question sets a teacher published for the class.
-- **Reference (V2 mechanism 2.7)**: list of published sets of the pupil's class teachers; empty "Tiada Set Soalan" / "Guru anda belum menyediakan sebarang set soalan buat masa ini."; play view is the MCQ quiz; access only if the set's teacher teaches the pupil's class (403 otherwise); options shuffled and re-lettered; items still approved at serve time; mode `set`.
-- **FRs**: FR-MUR-26-1 lists only published sets of own class teachers with title, subject, "{n} soalan". FR-MUR-26-2 the quiz follows 4.6/Latih Tubi engine, items archived since publication drop out and the count updates. FR-MUR-26-3 result recorded with mode `set` and rewards per 4.4. FR-MUR-26-4 another class's set returns 403. FR-MUR-26-5 Dashboard "Set Soalan Dari Cikgu" links here.
+- **Reference (V2 mechanism 2.7)**: list of published sets of the pupil's class teachers; empty "Tiada Set Soalan" / "Guru anda belum menyediakan sebarang set soalan buat masa ini."; play view is the MCQ quiz; access only if the set is assigned to the pupil's class (V2: teacher teaches the class); options shuffled and re-lettered; items still approved at serve time; mode `question_set` (V3 name).
+- **FRs**: FR-MUR-26-1 lists only published sets assigned to a class the pupil belongs to (the teacher chooses the class(es) explicitly when assigning, R1-GUR-8b), with title, subject, "{n} soalan"; a set assigned to another class is not listed. FR-MUR-26-2 the quiz follows 4.6/Latih Tubi engine, items archived since publication drop out and the count updates. FR-MUR-26-3 each answer is written to `practice_answers` with mode `question_set` (feeds Prestasi, Analisa Item, Heatmap, Headcount AR per HC-3, and the teacher's set results) and rewards per 4.4. FR-MUR-26-4 another class's set returns 404 (record outside scope, 60 §1.7). FR-MUR-26-5 Dashboard "Set Soalan Dari Cikgu" links here.
 - **Data**: teacher sets (owner M10); teacher feed: Guru Set Soalan creation.
-- **ACs**: AC-MUR-26-1 Given a published set of 5 questions, then the pupil starts and finishes it and a `set` session exists. AC-MUR-26-2 Given a set of another class, then 403. AC-MUR-26-3 Given no sets, then the exact empty text shows. AC-MUR-26-4 Given 375 px, then set cards stack.
+- **ACs**: AC-MUR-26-1 Given a published set of 5 questions, then the pupil starts and finishes it and a `question_set` session with 5 rows in `practice_answers` exists. AC-MUR-26-2 Given a set of another class, then it is not listed and its id answers 404. AC-MUR-26-5 Given a teacher assigns a set to class A only, then a pupil of class A sees it and a pupil of class B does not (AC-CHAIN-4). AC-MUR-26-3 Given no sets, then the exact empty text shows. AC-MUR-26-4 Given 375 px, then set cards stack.
 - **Gap**: no content. **FD**: none. **OQ**: none.
 
 ### R1-MUR-27 Audio KBAT
@@ -1146,7 +1165,7 @@ Same template as section 3 (Action, Screen specification (from V2), change list)
 - **Current status**: V3 "Tiada Hadiah Tersedia", no category filter, catalogue not seeded; admin cannot add rewards (no admin screen).
 - **Outcome**: redeem tokens for digital rewards.
 - **Reference (V2 `gamifikasi-rewards.blade.php`)**: catalogue cards (name, token price, stock, category) with category filter; "Tebus"; "Tebusan Saya" list (empty "Anda belum menebus sebarang hadiah."); catalogue empty "Tiada hadiah tersedia" / "Katalog hadiah belum dibuka untuk kategori ini.".
-- **FRs**: FR-MUR-31-1 only active gifts with stock are redeemable; price in tokens. FR-MUR-31-2 "Tebus" debits tokens and stock once, creates a redemption record and shows the delivery code or status; insufficient tokens refused. FR-MUR-31-3 category filter works. FR-MUR-31-4 "Tebusan Saya" lists own redemptions with status (administrators fulfil in the admin). FR-MUR-31-5 no control for a gift without stock.
+- **FRs**: FR-MUR-31-1 only active gifts with stock are redeemable; price in tokens. FR-MUR-31-2 "Tebus" debits tokens and stock once, creates a redemption record and shows the delivery code or status; insufficient tokens refused. FR-MUR-31-3 category filter works. FR-MUR-31-4 "Tebusan Saya" lists own redemptions with status (administrators fulfil in the admin): "Menunggu" (pending_admin), "Dihantar" (delivered, shows the delivery code the admin pasted) and "Dibatalkan" (cancelled, tokens refunded); the same words are used in R1-ADM-P2-08. FR-MUR-31-5 no control for a gift without stock.
 - **Data**: gifts, redemptions (owner M15/M14); admin Kedai Hadiah and Kawalan Reward (missing; cross-ref, blocks fulfilment).
 - **ACs**: AC-MUR-31-1 Given a gift at 10 tokens and a pupil with 12, then redeeming leaves 2 and creates a redemption. AC-MUR-31-2 Given stock 0, then not redeemable. AC-MUR-31-3 Given a double click, then one redemption. AC-MUR-31-4 Given 375 px, then cards are one column and the confirm dialog fits.
 - **Gap**: catalogue empty, no admin screen. **FD**: none. **OQ**: none.
@@ -1174,7 +1193,7 @@ Same template as section 3 (Action, Screen specification (from V2), change list)
 - **Current status**: V3 podium plus 3 rows, no period or scope filter, no own rank; V2 tabs Kelas/Sekolah and Semua Masa/Minggu/Bulan, own rank, podium.
 - **Outcome**: see top pupils and own place.
 - **Reference (V2 `leaderboard.blade.php`)**: scope `?skop=kelas|sekolah`, period tabs, podium for top 3, table, own rank row; empty "Belum ada pelajar dalam {kelas|sekolah} anda".
-- **FRs**: FR-MUR-33-1 scope tabs Kelas and Sekolah and period tabs "Semua Masa", "Minggu", "Bulan". FR-MUR-33-2 ranking by syiling earned in the period (all time = balance) with ties by name. FR-MUR-33-3 own rank always visible even outside the top. FR-MUR-33-4 rows show display name and syiling only. FR-MUR-33-5 the duplicate route redirects to the single page.
+- **FRs**: FR-MUR-33-1 scope tabs Kelas and Sekolah and period tabs "Semua Masa", "Minggu", "Bulan". FR-MUR-33-2 ranking by syiling earned in the period (all time = balance) with ties by name. FR-MUR-33-3 own rank always visible even outside the top. FR-MUR-33-4 rows show the display name (first name only, section 4.3) and syiling only; the "Ketepatan" and "Streak" columns show the pupil's own values to that pupil and, for others, the same pooled whole-number accuracy (FR-X4-5) and streak, never a school. FR-MUR-33-5 the duplicate route redirects to the single page.
 - **Data**: wallet ledger (M14), classes (M10); API `leaderboard`.
 - **ACs**: AC-MUR-33-1 Given the Minggu tab, then only coins earned this week count. AC-MUR-33-2 Given the pupil is rank 12, then the own row shows "12" below the top 10. AC-MUR-33-3 Given no pupil in the class, then the V2 empty text. AC-MUR-33-4 Given 375 px, then the podium scales and the table fits.
 - **Gap**: filters and own rank missing. **FD**: none. **OQ**: none.
@@ -1278,13 +1297,21 @@ Every number shown (card, hub tile, "Subjek Tersedia", index "soalan chapter", "
 ### 4.3 Data privacy
 - A pupil reads only own data: profile, wallet, sessions, answers, reports, headcount, performance. Another id returns 404/403 with no existence leak.
 - Never shown to a pupil: school, class or teacher aggregates (Prestasi Dashboard Sekolah, Prestasi Guru, GPS), other pupils' attempts, e-mail or phone of other users, source PDFs of questions (AC-17.4), the answer key before "Semak" or Hantar.
-- Class lists show name and syiling only. Public profile shows name, school, badges, bio, cita-cita.
-- Pupils are minors: real names never appear in docs, seeds or screenshots in the repo; the pupil name appears only to the pupil and in the class list.
+- **Display name** = the pupil's first given name only, with no surname and no school. It is the only name another pupil ever sees: Kelas Saya, Kedudukan, Papan Pendahulu, game rooms, public profile and any shared list. The full name is shown only to the pupil, the pupil's own teachers, the school admin and Admin Pusat. Class lists show display name and syiling only. The public profile shows display name, tiles and the line of FR-MUR-A1-5 (no school, bio or cita-cita).
+- Pupils are minors: real names never appear in docs, seeds or screenshots in the repo.
 - Report text and pupil data are never sent to AI services.
 
-### 4.4 Rewards (D97, D94)
-- Latih Tubi, Chapter, Databank, Tracking A, Subjektif objective parts: 2 Syiling and 10 mata (XP) per correct unit (V2 `PracticeRecorder`: `SYILING_PER_CORRECT = 2`, `XP_PER_CORRECT = 10`). Level = floor(XP/1000)+1.
-- Bijak: every submitted attempt earns 2 Syiling + 10 XP per mark, no per-paper cap; "Cuba Lagi" earns again; self-mark adds 2 Syiling + 10 XP per mark gained (positive delta only, once per part, never above part marks, no claw-back); resubmit never double-awards. "Simulasi — Kuiz" "✓ Semak" writes no session (V2 verified) and consumes no trial check.
+### 4.4 Rewards (D97, D94, D-A11)
+- **The Syiling rate is an admin setting, never a constant.** It is the setting "Syiling flat / soalan betul" of Kawalan Reward (R1-ADM-P2-09, API-ADM-16 `flatCoins`); its default is the V2 observed value **1**; the wallet credit reads it at the time of the answer. A mode-specific constant in code (for example the mission rate 3 or the V2 `SYILING_PER_CORRECT = 2`) is replaced by the setting. XP stays 10 per correct unit (V2 `XP_PER_CORRECT = 10`). Level = floor(XP/1000)+1.
+
+| Source | Syiling | XP |
+|---|---|---|
+| Latih Tubi, Soalan by Chapter, Databank, Tracking A, Remedial / Ulang Kaji, Misi, Set Soalan Guru (`question_set`), PKSK, Subjektif and Soalan Berstruktur objective parts | rate x correct units | 10 per correct unit |
+| Bijak / Simulasi / Kertas Subjektif (rules below) | rate x marks | 10 per mark |
+| Games | only when "Mini-games beri syiling?" = Ya (V2 value "Tidak (XP sahaja)"); then rate x correct | 10 per correct unit |
+
+- Example: rate 1, 7 of 10 correct = 7 Syiling + 70 XP; the admin sets rate 3, the next 7 of 10 = 21 Syiling + 70 XP (AC-MUR-16-4).
+- Bijak: every submitted attempt earns the rate in Syiling + 10 XP per mark, no per-paper cap; "Cuba Lagi" earns again; self-mark adds the rate + 10 XP per mark gained (positive delta only, once per part, never above part marks, no claw-back); resubmit never double-awards. "Simulasi — Kuiz" "✓ Semak" writes no session (V2 verified) and consumes no trial check.
 - Streak (kombo): first activity 1; same day unchanged; next day +1; gap resets to 1. Header pills and Dashboard read the same wallet.
 
 ### 4.5 Question reporting (D98)
@@ -1349,6 +1376,8 @@ Sources: `v2-exam-schema.md` (D46/D47), `v2-question-bank.md` 4.10 and US-22 to 
 | FD-MUR-34 | 54 | Five counters; legacy status "Selesai" | Six counters (adds "Dikeluarkan"); no "Selesai" | Counters must add up; v2-question-bank US-19/20 |
 | FD-MUR-35 | 2, 30 | Difficulty printed "easy/medium/hard" and "EASY/MEDIUM/HARD" with "MUDAH"; dates and relative times in English ("Tuesday, 3 November 2026", "8 months ago", "8:06 PM") | BM labels "Mudah/Sederhana/Sukar", BM dates and relative times | Wrong language labels (D9); V2 routes `/dashboard`, `/gamification/challenges`, `/timeline` |
 | FD-MUR-36 | 12 | "Latihan Pemulihan" opens a drill that says there are no wrong questions | A card is listed only when its drill has questions | Contradictory states (D9); V2 routes `/remedial/saya`, `/practice/revision/:id` |
+| FD-MUR-37 | A3 | Step 4 "Masuk Kelas": "Minta kod kelas daripada guru anda dan masukkan untuk sertai kelas." | "Minta guru anda menambah nama anda ke dalam kelas." [PROPOSED copy] | Contradictory rule (D9): V2's own Kelas Saya has no code box and says the teacher adds the pupil (D-A8) |
+| FD-MUR-38 | 6, 12 | Analisa Item tile and Remedial card show one decimal ("0.0%"); Remedial uses the mean of session accuracy | Whole-number percent; pooled accuracy | One computation and one precision per metric (D-A10); Dashboard, Profil and Prestasi observed whole numbers |
 | FD-MUR-30 | 9, 16, 24, 25 | V3 gate "Kandungan akan datang" for T1-T3 | Gate removed; T1-T5 served | D101 (user, 2026-11-04); V2 serves all forms |
 | FD-MUR-31 | 19 | V2 PKSK page lists only, no answering flow found | Full answer flow with result | D100 (no stub in a ticked module); V1 M07 |
 | FD-MUR-32 | 22 | V2 disabled button "Pembelian tiket belum tersedia" | Working ticket purchase | D100 |
@@ -1433,25 +1462,25 @@ Each row is also an acceptance criterion `AC-MUR-RS-n` (18 criteria, one per mod
 
 ### 4.10 DSKP and curriculum level shown by each module
 
-Facts: the DSKP tree (`curriculum_nodes`: unit, SK, SP, TP) is loaded by `docs/ops/dskp-loader.md` from `docs/reference/dskp/*.json` for T4-T5 and is used for tagging, blueprints, Jana Kertas and analytics. Chapters (Bab) and topics are a **separate tree** (686 T4/T5 chapters on UAT); UAT had 0 `curriculum_nodes` and 0 question-to-chapter links (D89). The pupil never sees an unmapped label as if it were mapped.
+Facts: the DSKP tree (`curriculum_nodes`: Tajuk DSKP, SK, SP, TP; the word "Unit" is not used, and "Bab" always means the textbook chapter below) is loaded by `docs/ops/dskp-loader.md` from `docs/reference/dskp/*.json` for T4-T5 and is used for tagging, blueprints, Jana Kertas and analytics. Chapters (Bab) and topics are a **separate tree** (686 T4/T5 chapters on UAT); UAT had 0 `curriculum_nodes` and 0 question-to-chapter links (D89). The pupil never sees an unmapped label as if it were mapped.
 
 | Module | Level displayed | Source | When not mapped |
 |---|---|---|---|
 | Soalan by Chapter (9) | Bab (textbook chapter) | admin-chosen Bab on each question (D89) | chapter listed with "Tiada soalan"; subject hidden when no chapter has a question: "Tiada subjek bab tersedia untuk tahap ini." |
-| Heatmap Topik Lemah (14) | Bab tile (V2 unit) | Bab links | Bab first; SP tile only for questions with an SP tag and no Bab; empty state "Belum ada data heatmap." |
-| Analitik Adaptif (5) | SP grouped by unit and SK (Peta DSKP, TP shown as bands Mahir/Sederhana/Lemah) | question SP tags (`question_version_sp_nodes`) | tile "Belum cuba" for SPs with no tagged question; message "Belum ada latihan untuk {subjek}. Mula berlatih untuk membuka analitik penuh." |
+| Heatmap Topik Lemah (14) | Bab tile (V2 unit) | Bab links | Per subject: Bab tiles when any approved question of the subject and Tingkatan has a Bab (SP ignored there); SP tiles only in a subject where no question has a Bab; empty state "Belum ada data heatmap." |
+| Analitik Adaptif (5) | SP grouped by Tajuk DSKP and SK (Peta DSKP, TP shown as bands Mahir/Sederhana/Lemah) | question SP tags (`question_version_sp_nodes`) | tile "Belum cuba" for SPs with no tagged question; message "Belum ada latihan untuk {subjek}. Mula berlatih untuk membuka analitik penuh." |
 | Prestasi (4) "Topik Perlu Perhatian" | topic: SP if tagged, else Bab | same | topic row omitted; subject rows still shown |
 | Latih Tubi (16), Databank (13), Remedial (12) | subject and level only; chip "✓ Mengikut DSKP" only when the question has an SP tag | tags | untagged legacy questions stay servable (D80 Q-01), no chip |
 | Bijak SPM (13) | blueprint units and TP quotas drive papers; pupil sees Bahagian and weak-topic summary on result | blueprint, tags | untagged questions are not placed in papers (D80) |
 | Topik (24), Peta Belajar (25) | Topik: Bidang/Tajuk (textbook topic tree, chapters/topics); Peta Belajar: Bab islands with SP progress | chapter and topic trees; DSKP SP for progress where nodes exist | "Tiada topik buat masa ini" / "Peta Belum Tersedia" only as data-empty states per 3B; T1-T5 (D101) |
 
 - FR-MUR-DK-1 Each module shows only the level in the table above and never mixes Bab and SP labels in one tile.
-- FR-MUR-DK-2 No label, count or percentage is invented for unmapped content; unmapped questions are excluded from Bab, heatmap and SP analytics but remain in Latih Tubi and Databank when approved (D80 Q-01).
+- FR-MUR-DK-2 No label, count or percentage is invented for unmapped content; unmapped questions are excluded from Bab, heatmap and SP analytics but remain in Latih Tubi and Databank when approved (D80 Q-01). "Unmapped" now means a legacy question published before the admin gate: a question cannot be published without Bab, SP and TP/aras (D-A5), and the admin work-list "Soalan tanpa Bab" lists the legacy ones until they are tagged.
 - FR-MUR-DK-3 Pupil copy for unmapped content uses the exact empty-state strings above; the admin-only wording "Belum ditanda DSKP" is not shown to pupils.
 - FR-MUR-DK-4 DSKP text shown to the pupil is the printed text of the extracts (codes and wording unchanged); for the SPs flagged in the README (formulas as images, reconstructed Sains T4 4.3.1) the SP title is shown without relying on exact wording.
 - FR-MUR-DK-5 DSKP SP/TP labels are shown only where nodes exist (T4-T5 today); T1-T3 screens work without them (D101) and Darjah nodes never appear (D72/D96).
 - AC-MUR-DK-1 Given UAT with 0 Bab links, when a T5 pupil opens Soalan by Chapter, then no chapter is shown as having questions and the empty state shows (not a made-up count).
-- AC-MUR-DK-2 Given a question tagged to SP 1.1.1 only, then it appears in Analitik under that SP and not in Heatmap Bab tiles.
+- AC-MUR-DK-2 Given a question tagged to SP 1.1.1 only, in a subject where other approved questions have a Bab, then it appears in Analitik under that SP and not in Heatmap Bab tiles; in a subject where no question has a Bab, then the Heatmap shows the SP tile.
 - AC-MUR-DK-3 Given a question with a Bab and no SP, then it appears in Soalan by Chapter and the heatmap and not in the Analitik map.
 - AC-MUR-DK-4 Given an untagged approved MCQ, then Latih Tubi and Databank serve it with no "✓ Mengikut DSKP" chip.
 
@@ -1484,26 +1513,26 @@ Counts are unique IDs written in this document (`FR-MUR-...` and `AC-MUR-...`). 
 
 | Module ID | Name | Priority | Delivery | Current status (GH / UAT) | FRs | ACs |
 |---|---|---|---|---|---|---|
-| R1-MUR-A1 | Profil Saya | P1 | 1.0 | Partial / Partial | 8 | 6 |
-| R1-MUR-A2 | Tetapan Peribadi | P1 | 1.0 | Partial / Partial | 5 | 4 |
-| R1-MUR-A3 | Panduan | P2 | 1.0 | OK / OK, config API 404 | 4 | 3 |
+| R1-MUR-A1 | Profil Saya | P1 | 1.0 | Partial / Partial | 8 | 7 |
+| R1-MUR-A2 | Tetapan Peribadi | P1 | 1.0 | Partial / Partial | 6 | 6 |
+| R1-MUR-A3 | Panduan | P2 | 1.0 | OK / OK, config API 404 | 4 | 4 |
 | R1-MUR-A5 | Log Keluar | P0 | 1.0 | OK / OK | 3 | 4 |
 | R1-MUR-2 | Dashboard | P1 | 1.0 | Partial / Partial | 11 | 7 |
-| R1-MUR-3 | Headcount | P0 | 1.0 | Missing (403) / Missing | 8 | 6 |
-| R1-MUR-4 | Prestasi | P0 | 1.0 | Wrong (school data) / Wrong | 11 | 7 |
+| R1-MUR-3 | Headcount | P0 | 1.0 | Missing (403) / Missing | 9 | 8 |
+| R1-MUR-4 | Prestasi | P0 | 1.0 | Wrong (school data) / Wrong | 12 | 8 |
 | R1-MUR-5 | Analitik Adaptif | P1 | 1.0 | OK / OK, SP data empty | 7 | 5 |
-| R1-MUR-6 | Analisa Item | P0 | 1.0 | Missing / Missing | 9 | 6 |
+| R1-MUR-6 | Analisa Item | P0 | 1.0 | Missing / Missing | 9 | 7 |
 | R1-MUR-7 | Video | P2 | 1.0 | OK / OK | 5 | 4 |
 | R1-MUR-8 | Kelas Saya | P1 | 1.0 | OK / OK | 6 | 4 |
-| R1-MUR-9 | Soalan by Chapter | P0 | 1.0 | Empty / Empty ("Tiada subjek bab"), T1 gate | 11 | 8 |
+| R1-MUR-9 | Soalan by Chapter | P0 | 1.0 | Empty / Empty ("Tiada subjek bab"), T1 gate | 11 | 9 |
 | R1-MUR-12 | Remedial | P1 | 1.0 | Partial / Partial | 6 | 4 |
-| R1-MUR-13 | SPM (Bijak, Databank, Tracking A, Subjektif, Kertas Subjektif) | P0 | 1.0 | Partial / No Bijak papers; 375 px gaps | 30 | 23 |
+| R1-MUR-13 | SPM (Bijak, Databank, Tracking A, Subjektif, Kertas Subjektif) | P0 | 1.0 | Partial / No Bijak papers; 375 px gaps | 30 | 25 |
 | R1-MUR-14 | Heatmap Topik Lemah | P1 | 1.0 | OK / Empty | 6 | 4 |
 | R1-MUR-16 | Latih Tubi | P0 | 1.0 | OK / OK (T5), T1 gate; figure-less items served | 12 | 8 |
-| R1-MUR-21 | Permainan | P1 | 1.0 | OK / OK | 7 | 5 |
+| R1-MUR-21 | Permainan | P1 | 1.0 | OK / OK | 7 | 6 |
 | R1-MUR-54 | Laporan Soalan | P0 | 1.0 | Hidden / Hidden | 8 | 6 |
-| **Subtotal 1.0 columns (18 modules)** | | | | | **157** | **114** |
-| R1-MUR-A4 | Tiket Bantuan | P2 | After 1.0 | OK / OK | 5 | 4 |
+| **Subtotal 1.0 columns (18 modules)** | | | | | **160** | **126** |
+| R1-MUR-A4 | Tiket Bantuan | P2 | After 1.0 | OK / OK, reply missing | 5 | 5 |
 | R1-MUR-17 | Soalan Berstruktur | P1 | 1.0 (linked from 13) | Seed only / seed only | 5 | 4 |
 | R1-MUR-18 | Kedudukan | P1 | 1.0 (linked from 33) | Empty list / same | 5 | 4 |
 | R1-MUR-19 | PKSK | P1 | After 1.0 | Listing / listing | 6 | 4 |
@@ -1512,7 +1541,7 @@ Counts are unique IDs written in this document (`FR-MUR-...` and `AC-MUR-...`). 
 | R1-MUR-23 | Tournament | P2 | 1.0 (linked from shell banner) | Empty / empty | 4 | 3 |
 | R1-MUR-24 | Topik | P1 | After 1.0 | OK / T1 gate + empty | 5 | 4 |
 | R1-MUR-25 | Peta Belajar | P1 | After 1.0 | OK / T1 gate + 0/0 | 5 | 4 |
-| R1-MUR-26 | Set Soalan Guru | P1 | 1.0 (linked from 2, 8) | Empty / empty | 5 | 4 |
+| R1-MUR-26 | Set Soalan Guru | P1 | 1.0 (linked from 2, 8) | Empty / empty | 5 | 5 |
 | R1-MUR-27 | Audio KBAT | P2 | After 1.0 | Empty / empty | 4 | 3 |
 | R1-MUR-28 | Syiling & Token | P1 | 1.0 (linked from header, 2) | Partial / partial | 5 | 4 |
 | R1-MUR-29 | Tukar Token | P1 | 1.0 (linked from 28, 31) | OK / OK | 4 | 3 |
@@ -1526,15 +1555,15 @@ Counts are unique IDs written in this document (`FR-MUR-...` and `AC-MUR-...`). 
 | R1-MUR-38 | Kedai Hadiah DIGITAL | P2 | After 1.0 | Empty catalogue / empty | 4 | 3 |
 | R1-MUR-39 | Timeline Saya | P2 | After 1.0 | Manual model / same | 5 | 4 |
 | R1-MUR-40 | Jemput Ibu Bapa | P2 | After 1.0 | OK / OK | 5 | 4 |
-| **Subtotal rest of the matrix (23 modules)** | | | | | **110** | **86** |
+| **Subtotal rest of the matrix (23 modules)** | | | | | **110** | **88** |
 | Common | Common rules for the rest of the matrix (P2) | P1 | | | 5 | 3 |
 | Shell | Shared shell (SH) | P0 | | Partial | 12 | 6 |
 | Cross-cutting | Question-paper contract (QP, 4.8) | P0 | | Gaps seen live | 17 | 17 |
 | Cross-cutting | DSKP level per module (DK, 4.10) | P1 | | UAT 0 mapping | 5 | 4 |
 | Cross-cutting responsive | Responsive rows of 4.9 (AC-MUR-RS-1..18) | P0 | | | 0 | 18 |
-| **Total (41 modules + common, shell, cross-cutting)** | | | | | **306** | **248** |
+| **Total (41 modules + common, shell, cross-cutting)** | | | | | **309** | **262** |
 
-Arithmetic: FR 157 + 110 + 5 + 12 + 17 + 5 = 306; AC 114 + 86 + 3 + 6 + 17 + 4 + 18 = 248.
+Arithmetic: FR 160 + 110 + 5 + 12 + 17 + 5 = 309; AC 126 + 88 + 3 + 6 + 17 + 4 + 18 = 262.
 
 P0 modules (1.0 columns): R1-MUR-A5, 3, 4, 6, 9, 13, 16, 54, plus the QP contract that 9, 13 and 16 depend on. Row 15 and row 37 stay hidden (D102) and have no section.
 
@@ -1564,6 +1593,7 @@ P0 modules (1.0 columns): R1-MUR-A5, 3, 4, 6, 9, 13, 16, 54, plus the QP contrac
 | OQ-MUR-16 | D100 forbids "belum tersedia" in ticked modules, but V2 uses that wording for data-empty states (Peta "Peta Belum Tersedia", Kedudukan "Kedudukan belum tersedia", PKSK access). | Keep the exact V2 sentences only where they state missing data or access, never a missing feature; change wording to "Tiada ... buat masa ini" if the user prefers. |
 | OQ-MUR-17 | Empty-state copy for Tournament/Liga (V3 only; V2 none). | "Tiada liga atau tournament buat masa ini." |
 | OQ-MUR-18 | **Closed by the V2 page `/marketplace` (R1-MUR-32):** orders are recorded, prices are in Ringgit and the seller contacts the buyer; no online payment. | Done in FR-MUR-32-4. |
+| OQ-X-3 (shared with 20) | **Closed (D-A8, 2026-11-04):** does the pupil join a class by code? V2 `/kelas-saya` shows no code box ("Guru anda yang menambah pelajar ke dalam kelas"). | No pupil join: FR-MUR-8-3, AC-MUR-8-3, `POST /kelas-saya/join` removed, class `join_code` not shown. |
 | OQ-MUR-19 | **Closed by the V2 pages `/gamification/mystery-box` and `/gamification/referral`:** one 50-syiling box with the odds quoted in R1-MUR-35; 100 syiling per referred friend. | V2 values adopted as admin-configurable defaults (FR-MUR-35-1, FR-MUR-36-2). |
 
 ### 6.2 Evidence closed by the V2 observation (written into the "Screen specification (from V2)" subsections)
