@@ -13,7 +13,7 @@ Complete, buildable specification of every game and gamification mechanic of Pre
 3. **Time zone.** Every day, week, month, reset, streak, daily limit and cap uses **Asia/Kuala_Lumpur** (UTC+8, no daylight saving). Day = 00:00:00.000 to 23:59:59.999. Week = Monday 00:00 to Sunday 23:59:59.999. Month = calendar month. All server timestamps are stored UTC; the day key is `date(at AT TIME ZONE 'Asia/Kuala_Lumpur')` [CODE `standings.windows.ts:11-30`, `wallet/streak.service.ts:18`].
 4. **Word "syiling"** = coin, **"token"** = shop token, **"mata"** = XP. A pupil is a minor: first names only on boards, no real-money language anywhere, published odds.
 5. **ID scheme.** New requirement IDs are `FR-GM-<section>.<n>` and `AC-GM-<section>.<n>` where `<section>` is `00`, `01`..`25`, `R` (common room rules, GAME-02..07) or `S` (common solo rules, GAME-08..12). New data items are DM-60..DM-65 and DM-67 (DM-50..DM-59 belong to 45); new routes are API-GAME-11..14 and API-ADM-23..25; new errors are `ERR-GAME-nn` (catalogue in 3.8, to be merged into the cross-cutting catalogue of `40-cross-cutting.md`). Existing IDs are never renumbered.
-6. **Owning cards.** All cards are in `docs/plan/r1-development-plan.md` section 4.S7 unless stated. S7-T01 grows from "S / Verify" to "XL / Complete" because the audit found that no game writes the answer store and the multiplayer is simulated; the card may be worked in the parts named in each section ("S7-T01 part GAME-01").
+6. **Owning cards.** All cards are in `docs/plan/r1-development-plan.md` section 4.S7 unless stated. S7-T01 grows from "S / Verify" to "L / Complete" (the plan size, S/M/L only) because the audit found that no game writes the answer store and the multiplayer is simulated; the card may be worked in the parts named in each section ("S7-T01 part GAME-01").
 7. **Test accounts (Mod Pelajar).** A teacher or admin in Mod Pelajar may play every game but gets no reward, no standing, no board row, no badge and no `practice_answers` row (the account is `is_test`).
 8. **Hard rules inherited from the PRD** (`10-murid.md` 4.3, 4.4, 4.6): the Syiling rate is the admin setting, never a game constant; game questions are approved, servable, text-only MCQ; the display name is the first given name only; a game result without a bank question writes no answer row.
 
@@ -152,7 +152,7 @@ Never written: robot answers; answers of Mod Pelajar accounts; questions the gam
 | Solo coin formulas (streak coins, 1-5 per correct in Betul atau Salah, Mathrace 5, Perang Fakta win 10 and every similar per-game amount) | `solo.rules.ts:44-52`, `rooms/engine/constants.ts:31-36` | Replace with the GAME-00 formula. The "solo streak coins" are deleted; a streak inside a game only raises the game score (GAME-08), never syiling. |
 | Battle reward `{coins: 0, xp: 0}` | `battle-engine.service.ts:137` | Replace with the GAME-00 formula (the 0/0 is the defect). |
 | Referral 50 (referrer) + 25 (friend) | `gamification.constants.ts:67-68` (`REFERRAL_REWARD_REFERRER/REFEREE`, contract `GAMIFICATION_REFERRAL_REWARDS`) | Replace with settings `referral_referrer_syiling` = 100 and `referral_referee_syiling` = 0. |
-| `MISSION_COINS_PER_CORRECT = 3` | `apps/api/src/modules/practice/rules.ts:50` (and its use at line 61, `start.planner.ts:317`, `ports.ts:133`; mock copies `m05-practice/mock/datasets/pins.ts:91,99`, `mock/repository/start.ts:286`, `mock/repository/practice.ts:456`) | Delete; the mission path reads `flat_quiz_reward` like every mode (10-murid 4.4). |
+| `MISSION_COINS_PER_CORRECT = 3` | `apps/api/src/modules/practice/rules.ts:50` (and its use at line 61, `start.planner.ts:317`, `ports.ts:133`; mock copies `m05-practice/mock/datasets/pins.ts:91,99`, `mock/repository/start.ts:286`, `mock/repository/practice.ts:456`) | Delete; the mission path reads `flat_quiz_reward` like every mode (10-murid 4.4). Owner card: **S5-T03** (it owns `practice/rules.ts`). It replaces the constant by one reader of `reward_settings.coins_per_correct` with the code default 1 while the table does not yet exist (S7-T05 creates it with the same default), so S6-T07 and S7-T05 only rely on the reader and do not remove the constant; the CI grep of 3.7 must return 0 matches when S7-T05 closes. |
 | `DAILY_LOGIN_REWARD = 2` | `gamification.constants.ts:71` | Replace with `daily_login_syiling` (default 2). |
 | Roda Nasib segment values and weights | `spin.rules.ts:11-20` | Replace with the `spin_segments` rows (same default values). |
 | Kotak Misteri four token boxes with XP | `shop.constants.ts:40-45` | Replace with one box and the seven-row prize table (GAME-23); no XP. |
@@ -223,7 +223,7 @@ Rule for all game screens: a load failure shows `dsCopy.loadError` "Tidak dapat 
 - **FR-GM-00.10** The settings of section 2 are editable only by Admin Pusat, validated against their range, audited, and applied to later events only.
 - **FR-GM-00.11** Responsive: hub, lobbies, boards and result screens pass 375 / 768 / 1280 px without horizontal page scroll; touch targets are at least 44 px.
 
-- **AC-GM-00.1** Given a pupil answers 5 questions in Betul atau Salah (3 correct), when the game ends, then `practice_answers` holds 5 rows with `mode = 'game'` and `part_ref` `betul-salah#1`..`betul-salah#5` (3 with `is_correct`), Prestasi "Soalan Dijawab" rises by 5, and with `games_award_syiling` = Tidak the wallet syiling is unchanged while XP rose by 3 x 10 + `game_play_xp` or `game_win_xp` as the outcome says.
+- **AC-GM-00.1** Given a pupil answers 5 questions in Betul atau Salah (3 correct), when the game ends, then `practice_answers` holds 5 rows with `mode = 'game'` and `part_ref` `betul-salah#1`..`betul-salah#5` (3 with `is_correct`), Prestasi "Soalan Dijawab" rises by 5, and with `games_award_syiling` = Tidak the wallet syiling is unchanged while XP rose by 3 x 10 + `game_play_xp` (Betul atau Salah is a solo game: it has no opponent, so `game_win_xp` never applies, GAME-S; for a multiplayer game the XP is 3 x 10 + `game_play_xp` or `game_win_xp` as the outcome says).
 - **AC-GM-00.2** Given `games_award_syiling` = Ya, `flat_quiz_reward` = 1, `game_win_bonus_syiling` = 5 and a won game with 7 correct answers, then the pupil gets 7 + 5 = 12 syiling and 7 x 10 + 20 = 90 XP.
 - **AC-GM-00.3** Given the reward event is replayed with the same game session id, then the ledger holds one row and the response is the first result.
 - **AC-GM-00.4** Given a game with a robot, then the participant has `is_bot = true`, `user_id` null and the name "Robot PrestasiPlus", no `practice_answers` row exists for it, and no row of `users` of the host's school is linked to the game.
@@ -834,7 +834,7 @@ stateDiagram-v2
 **Data/API.** API-GUR-11 (teacher create/list/delete, the validation above), `GET /api/missions/today` (pupil). **Do not build** pupil-set missions, team missions or a second reward per mission.
 - FR-GM-20.1 `rewardCoins` is limited to `mission_reward_max`; larger values are refused.
 - FR-GM-20.2 The mission reward is paid once at the target, idempotent per pupil and mission.
-- FR-GM-20.3 `MISSION_COINS_PER_CORRECT` no longer exists; the per-answer syiling is `flat_quiz_reward`.
+- FR-GM-20.3 `MISSION_COINS_PER_CORRECT` no longer exists (removed by S5-T03, 3.7); the per-answer syiling is `flat_quiz_reward` (default 1 until the setting table exists).
 - AC-GM-20.1 Given `mission_reward_max` = 100 and a teacher saves `rewardCoins` = 101, then the form shows "Ganjaran misi melebihi had." and nothing is created.
 - AC-GM-20.2 Given rate 1, target 5, `rewardCoins` 10, then 5 correct answers credit 5 + 10 = 15 syiling and a 6th answer credits 1 only.
 - AC-GM-20.3 Given a mission dated yesterday, then it is not listed today.
@@ -1088,7 +1088,7 @@ Existing and reused: DM-36 `draw_winners`, DM-37 `mystery_boxes` and `mystery_bo
 | API-GUR-11 | `rewardCoins` limited to `mission_reward_max`; 5 missions per teacher per day | CHANGED | S6-T07 |
 | API-ADM-14 | `GET/PUT .../settings` carries the keys of section 2 that are in `gamification_settings` | CHANGED | S7-T04 |
 
-API-GAME-12 answers write `practice_answers` with mode `game` and `part_ref` `tournament#<position>` (`attempt_id` = `tournament_round_scores.attempt_id`, DM-61). API-GAME-01..03 also return `isBot` labels and `reward {xp, syiling, capped, reason}`.
+API-GAME-12 answers write `practice_answers` with mode `game` and `part_ref` `tournament#<position>` (that is `<game_key>#<position>` with game key `tournament`, 3.5; `attempt_id` = `tournament_round_scores.attempt_id`, DM-61). API-GAME-01..03 also return `isBot` labels and `reward {xp, syiling, capped, reason}`.
 
 ### 5.4 Error IDs
 New: ERR-GAME-01..26 (3.8). Used as they are: ERR-NET-01/02, ERR-SYS-01/01b, ERR-AUTH-01, ERR-ACC-01/02, ERR-RATE-01, ERR-CON-01, ERR-WAL-01, ERR-RWD-01..08, ERR-PRAC-02/04, ERR-QST-02, ERR-REQ-15.
