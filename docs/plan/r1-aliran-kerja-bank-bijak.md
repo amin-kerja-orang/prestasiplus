@@ -1,6 +1,6 @@
 # Aliran kerja Bank Soalan dan Bijak SPM (R1)
 
-**Status:** kandungan aliran disahkan oleh ketua Team B pada 4 Nov 2026 ("Semua betul"). Pembangunan belum bermula. 7 soalan di hujung dokumen belum dijawab.
+**Status:** kandungan aliran disahkan oleh ketua Team B pada 4 Nov 2026 ("Semua betul"). Pembangunan belum bermula. 7 soalan di hujung dokumen dijawab sebagai D112.
 
 **Isi:** 29 proses dan 114 langkah. Setiap langkah menunjukkan siapa buat, di skrin mana, dan keadaannya pada tip e34e0a52d (`feature/v3-bijak-r1`). Status ialah rakaman pada tip itu, jadi semak semula sebelum bergantung padanya.
 
@@ -70,7 +70,7 @@ Rujukan PRD: R1-ADM-C-01 hingga C-04, U-OP-01, U-OP-03
 | 4 | Admin | Matikan Darjah 1 hingga 6 | `/admin/education-levels` | Rosak | Data UAT | Statistik awam masih 11 tahap. Sasaran 5 tahap (D96). |
 | 5 | Pembangun | Bina DSKP T1 hingga T3 daripada Bab dan Topik sedia ada |  | Tiada | PRD | D109. Sebelum siap, soalan T1 hingga T3 diluluskan tanpa tag. |
 
-> 20 subjek tiada nod DSKP, termasuk Kimia, Biologi, Geografi, Perniagaan, Akaun dan Ekonomi. Kontrak dan muat naik tidak boleh dimulakan untuk subjek ini, dan PRD tidak beri jalan keluar. Lihat soalan 3.
+> 20 subjek tiada nod DSKP, termasuk Kimia, Biologi, Geografi, Perniagaan, Akaun dan Ekonomi. Kontrak dan muat naik tidak boleh dimulakan untuk subjek ini hari ini. D112 luaskan muatan DSKP kepada semua subjek SPM yang ditawarkan.
 
 ## Bahagian B: Soalan masuk
 
@@ -113,7 +113,7 @@ Rujukan PRD: R1-ADM-QE-05, Q-07, Q-08, Q-09
 | # | Siapa | Langkah | Skrin atau API | Status | Sumber | Catatan |
 |---|---|---|---|---|---|---|
 | 1 | Admin | Isi Subjek, Tingkatan, Kertas, Tahun, Negeri, Jenis, Set, Kod, Sumber, Status hak cipta | `/admin/spm/soalan/muat-naik` | Separuh | Uji UAT | Borang jalan di UAT. Ujian lokal: hanya 6 subjek boleh dipilih. PRD: Kertas yang dipilih tidak dibawa ke soalan. |
-| 2 | Sistem | Baca PDF, ekstrak soalan |  | Separuh | Uji UAT | Jalan di UAT dengan OCR dan AI mock. PRD mahu pembekal sebenar (U-OP-02). |
+| 2 | Sistem | Baca PDF, ekstrak soalan |  | Separuh | Uji UAT | Jalan di UAT dengan OCR dan AI mock. D112: OCR Tesseract, tiada AI luar, ekstrak berasaskan peraturan. |
 | 3 | Sistem | Tamat dengan Selesai atau Gagal beserta sebab, ada Cuba lagi |  | Belum diuji | PRD | Dulu tergantung pada 'Sedang diproses'. Tamat masa belum saya uji. |
 | 4 | Sistem | Jadikan rajah objek rangsangan, pautkan kepada semua soalan yang menyebutnya | `figure-links.ts` | Separuh | Uji lokal | Rajah dipaut, Jadual tidak. Rajah tanpa imej menyekat Hantar dan tiada butang muat naik imej (gate.ts:92). Halaman tetap kata semua semakan lulus. |
 | 5 | Admin | Semak satu per satu: Sumber PDF di kiri, Terima, Tolak, Simpan Sunting | `/admin/spm/soalan/ekstrak/:batchId` | Jalan | Uji UAT |  |
@@ -371,7 +371,7 @@ Rujukan PRD: FR-MUR-13-16, FR-MUR-13-20
 | # | Siapa | Langkah | Skrin atau API | Status | Sumber | Catatan |
 |---|---|---|---|---|---|---|
 | 1 | Murid | Pilih 5, 10, 20 atau 40. Semak di pelayan, kunci tiada dalam halaman | `/simulasi/kuiz` | Belum diuji | Kod | Baca kod nampak betul. |
-| 2 | Murid | Jana Kertas dari Kontrak Disahkan, tepat atau ditolak |  | Belum diuji | PRD | PRD bercanggah sendiri. Lihat soalan 6. |
+| 2 | Murid | Jana Kertas dari Kontrak Disahkan, tepat atau ditolak |  | Belum diuji | PRD | D112: tiada dalam R1, tab perlu disembunyikan. |
 
 ### F4 Databank
 
@@ -461,21 +461,23 @@ Rujukan PRD: FR-X4-5, AC-CHAIN-1 hingga 3
 | 2 | Sistem | Prestasi, Analisa Item, Heatmap, Remedial, laporan guru dan admin baca stor itu |  | Belum diuji | PRD | Di luar audit saya setakat ini. |
 | 3 | Sistem | Tambah Syiling dan XP |  | Separuh | PRD | Asas jalan. Kadar dan ganjaran markah kendiri perlu disahkan. |
 
-## Keputusan diperlukan (belum dijawab)
+## Keputusan: dijawab sebagai D112
 
-1. **Bab wajib sebelum Terbit?** Kod dan keputusan papan Q17: tidak wajib. PRD D-A5: wajib jika subjek dan tingkatan itu ada Bab. Saya ikut PRD kerana lebih baharu, kecuali awak kata lain.
-2. **OCR dan AI sebenar, atau mock?** Q23 terima mock. PRD U-OP-02 dan AC-ADM-Q18.1 perlukan yang sebenar. Tanpanya, muat naik PDF di UAT hanya menguji aliran, bukan isi kertas. Siapa pembekalnya?
-3. **20 subjek tanpa DSKP?** Termasuk Kimia, Biologi, Geografi, Perniagaan, Akaun dan Ekonomi. PRD kekalkan SP dan TP sebagai syarat, D109 hanya melepaskan T1 hingga T3. Jadi soalan baharu subjek ini tidak boleh Terbit, dan Kontrak tidak boleh dibuat. Muat DSKP mereka, atau longgarkan syarat?
-4. **Siapa isi kandungan Bijak?** Soalan legasi tanpa tag dilarang masuk kertas (D80). Jadi walaupun semua kod siap, murid tetap nampak kosong sehingga U-OP-04, 07, 08, 09 dibuat. D110 sudah tetapkan kerja ini milik pengguna Admin, bukan pembangun. Yang masih perlu: nama orangnya, dan kertas mana dulu.
-5. **Sunting Pantas: Keep atau baiki?** PRD tanda Q-24 Keep. Audit saya dapati ia mati pada API sebenar. Saya anggap perlu dibaiki.
-6. **Jana Kertas untuk murid: ada atau tiada?** PRD 30 bahagian 1.4 kata di luar skop (D88). FR-MUR-13-20 kata tab itu kekal. Saya perlukan satu jawapan.
-7. **Skop 24 jam yang mana?** Pelan PRD: 3 pembangun kira-kira 24 minggu, 5 pembangun kira-kira 13 minggu untuk Delivery A. Dengan 3 orang dalam 24 jam, hanya sebahagian kecil boleh siap. Proses mana yang wajib untuk 24 jam itu?
+Keputusan Delivery Lead, ikut prinsip, direkod dalam komen PR #522 pada 4 Nov 2026. PRD dan pelan belum dikemas kini dengannya semasa commit ini, jadi jika bercanggah, ikut PRD selepas ia dikemas kini.
+
+1. **Bab wajib sebelum Terbit?** Ya, wajib jika Subjek dan Tingkatan itu ada Bab. Keputusan papan Q17 dibatalkan.
+2. **OCR dan AI sebenar, atau mock?** OCR sebenar dan dalaman (Tesseract). Tiada pembekal AI luar dalam R1. Ekstrak berasaskan peraturan, admin sentiasa semak sebelum terbit. Mock hanya dalam ujian CI, bukan di UAT.
+3. **20 subjek tanpa DSKP?** Muat DSKP semua subjek SPM yang ditawarkan (kad S4). Sementara belum dimuat, SP dan TP wajib hanya jika nod DSKP subjek dan tingkatan itu wujud. Kontrak hanya untuk subjek yang DSKP-nya sudah dimuat.
+4. **Siapa isi kandungan Bijak?** Pengguna Admin (D110). Urutan: BM, BI, Matematik, Matematik Tambahan, Fizik, Sejarah, Kertas 1 dahulu, Kertas 2 selepas editor skema siap. Nama admin kandungan dilantik ketua pasukan (isu #502 dan #503).
+5. **Sunting Pantas: Keep atau baiki?** Baiki. Ia rosak pada API sebenar.
+6. **Jana Kertas untuk murid: ada atau tiada?** Tiada dalam R1 (D88). Tab disembunyikan dan memberi 404. Jana Kertas admin kekal.
+7. **Skop 24 jam yang mana?** Slice 0, satu rantaian penuh: kumpulan rangsangan 1 hingga n, syarat Bab dan SP, Latih Tubi menyajikan kumpulan penuh dan menulis practice_answers, kemudian satu kertas Sejarah K1 melalui Kontrak, Set Builder, Semak dan Terbit, sehingga murid duduk dan keputusan masuk Prestasi dan Analisa Item. Membuktikan AC-CHAIN-1 dan 2.
 
 ## Had kefahaman
 
-- Skrin Bijak mana yang awak sendiri maksudkan sebagai pendua. Bahagian D1 hanya ikut senarai PRD.
+- Skrin Bijak mana yang awak sendiri maksudkan sebagai pendua. Bahagian D1 hanya ikut senarai PRD. Daftar pendua penuh sedang ditambah ke dokumen PRD.
 - Apa sebenarnya yang rosak pada 31 Oktober yang sepatutnya dibaiki.
-- Di mana hasil Playwright atas .cloud. PRD catat beberapa skrin V2 tidak pernah dirakam: skrin selepas Hantar (E-6) dan Semak Import (E-21).
-- Siapa pembangun UAT yang dilantik (plan bahagian 10 item 6). PRD dan pelan sudah diluluskan (D111), tetapi cawangannya belum di-merge (PR 406 masih terbuka).
+- Hasil Playwright atas .cloud tidak masuk repo kerana mengandungi data sebenar. Skrin selepas Hantar (E-6) dan Semak Import (E-21) sedang dispesifikasi dalam dokumen aliran 45 dan 46, yang belum saya baca.
+- Siapa pembangun UAT yang dilantik: ketua pasukan akan menamakannya. PRD dan pelan sudah diluluskan (D111), tetapi cawangannya belum di-merge (PR 406 masih terbuka).
 - Belum pernah diuji: AI sebenar, tamat masa automatik, foto jawapan, rubrik, Terbit pukal, murid T1 hingga T3. Ujian rantaian dibuat pada data contoh tempatan, dengan 4 ubahan data tangan supaya boleh sampai ke hujung.
 - Di luar dokumen ini: modul guru, admin sekolah, gamifikasi, kecuali yang menyuap atau membaca Bank Soalan dan Bijak.
