@@ -8,7 +8,7 @@ withDefaults(defineProps<{ accent?: DsAccent; size?: 'md' | 'lg' }>(), {
 })
 
 const fill: Record<DsAccent, string> = {
-  action: 'bg-primary text-primary-on',
+  action: 'bg-primary text-on-primary-flat',
   win: 'bg-highlight text-on-highlight',
   heat: 'bg-heat text-on-highlight',
   friend: 'bg-friend text-primary-on',

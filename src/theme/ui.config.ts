@@ -44,8 +44,9 @@ const fieldConfig = {
   variants: {
     variant: { soft: filled },
     size: {
-      md: { base: fieldSize },
-      lg: { base: fieldSize },
+      // Leading / trailing icon gutter 14px, the same as the text padding (stock 10px).
+      md: { base: fieldSize, leading: 'ps-3.5', trailing: 'pe-3.5' },
+      lg: { base: fieldSize, leading: 'ps-3.5', trailing: 'pe-3.5' },
     },
   },
   // Error / highlight state: 2px inset ring (the theme default is 1px).
@@ -171,7 +172,7 @@ export const uiConfig = {
   // neutral tonal fill (primary / neutral colours) and lose every ring.
   button: {
     slots: {
-      base: 'font-semibold transition-[transform,box-shadow,background-color] duration-200 ease-pop active:scale-[.97] disabled:opacity-(--ds-disabled-opacity) aria-disabled:opacity-(--ds-disabled-opacity) disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2',
+      base: 'font-semibold transition-[transform,box-shadow,background-color,color] duration-200 ease-pop active:scale-[.97] disabled:opacity-(--ds-disabled-opacity) aria-disabled:opacity-(--ds-disabled-opacity) disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2',
     },
     defaultVariants: { variant: 'soft' },
     variants: {
@@ -214,6 +215,11 @@ export const uiConfig = {
       },
       // Tonal / link text in the readable tone of the primary (`--ds-primary-t`).
       { color: 'primary', variant: ['soft', 'ghost', 'link'], class: 'text-primary-t' },
+      // Tonal / link text of the semantic colours: the -t tokens hold 4.5:1 on the soft tint.
+      { color: 'success', variant: ['soft', 'subtle', 'ghost', 'link'], class: 'text-success-t' },
+      { color: 'warning', variant: ['soft', 'subtle', 'ghost', 'link'], class: 'text-warning-t' },
+      { color: 'error', variant: ['soft', 'subtle', 'ghost', 'link'], class: 'text-error-t' },
+      { color: 'info', variant: ['soft', 'subtle', 'ghost', 'link'], class: 'text-info-t' },
     ],
   },
 
@@ -250,9 +256,9 @@ export const uiConfig = {
   card: {
     slots: {
       root: 'rounded-card',
-      header: 'p-4 sm:px-5',
+      header: 'p-4 sm:p-5',
       body: 'p-4 sm:p-5',
-      footer: 'p-4 sm:px-5',
+      footer: 'p-4 sm:p-5',
     },
     variants: {
       variant: {
@@ -301,8 +307,8 @@ export const uiConfig = {
     slots: {
       container: 'min-h-11 min-w-11 justify-center',
       wrapper: 'ms-1 flex min-h-11 min-w-0 flex-col justify-center has-data-[slot=description]:justify-start has-data-[slot=description]:pt-3',
-      // Borders are transparent (layers, not lines): an unchecked box needs its own fill to show.
-      base: "relative overflow-visible rounded-xs bg-accented transition-colors duration-fast after:absolute after:-inset-2.5 after:content-[''] hover:brightness-95 aria-invalid:ring-2 aria-invalid:ring-error",
+      // Borders are transparent (layers, not lines): an unchecked box needs its own fill and a 3:1 inset ring (control-off) to show.
+      base: "relative overflow-visible rounded-xs bg-accented ring-2 ring-inset data-[state=unchecked]:ring-control-off transition-colors duration-fast after:absolute after:-inset-2.5 after:content-[''] hover:brightness-95 aria-invalid:ring-2 aria-invalid:ring-error",
       label: 'text-label',
       description: 'text-caption text-muted',
     },
@@ -314,7 +320,8 @@ export const uiConfig = {
       container: 'min-h-11 min-w-11 justify-center',
       // Label (+ caption) centred on the 44px control box: box and text share one axis.
       wrapper: 'ms-1 flex min-h-11 min-w-0 flex-col justify-center has-data-[slot=description]:justify-start has-data-[slot=description]:pt-3',
-      base: "relative transition-colors duration-fast after:absolute after:-inset-2 after:content-[''] hover:brightness-95 aria-invalid:ring-2 aria-invalid:ring-error",
+      // Off track: control-off (3:1 against every surface); the stock `bg-accented` is 1.3:1.
+      base: "relative transition-colors duration-fast data-[state=unchecked]:bg-control-off after:absolute after:-inset-2 after:content-[''] hover:brightness-95 aria-invalid:ring-2 aria-invalid:ring-error",
       thumb: 'shadow-ds-xs',
       label: 'text-label',
       description: 'text-caption text-muted',
@@ -388,9 +395,17 @@ export const uiConfig = {
     },
     compoundVariants: [
       { variant: ['outline', 'subtle'], class: 'ring-0' },
-      { color: 'primary', variant: 'solid', class: 'text-primary-on' },
+      { color: 'primary', variant: 'solid', class: 'text-on-primary-flat' },
       { color: ['error', 'success', 'info', 'warning'], variant: 'solid', class: 'text-on-sem' },
       { color: 'secondary', variant: 'solid', class: 'bg-highlight text-on-highlight' },
+      // Tinted badges: text from the -t tokens so it holds 4.5:1 on its own 12% tint (lime text on
+      // white was 1.16:1, the semantic colours 3.5 to 4.2).
+      { color: 'primary', variant: ['subtle', 'outline', 'soft'], class: 'text-primary-t' },
+      { color: 'secondary', variant: ['subtle', 'outline', 'soft'], class: 'text-secondary-t' },
+      { color: 'success', variant: ['subtle', 'outline', 'soft'], class: 'text-success-t' },
+      { color: 'warning', variant: ['subtle', 'outline', 'soft'], class: 'text-warning-t' },
+      { color: 'error', variant: ['subtle', 'outline', 'soft'], class: 'text-error-t' },
+      { color: 'info', variant: ['subtle', 'outline', 'soft'], class: 'text-info-t' },
     ],
   },
 

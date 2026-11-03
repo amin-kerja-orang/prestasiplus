@@ -41,7 +41,7 @@ const wide = useMedia('(min-width: 768px)')
 const STAFF = ['bg-elevated', 'bg-primary/15', 'bg-primary/35', 'bg-primary/60', 'bg-primary']
 const LEARNER = ['bg-elevated', 'bg-heat/15', 'bg-heat/35', 'bg-heat/60', 'bg-heat']
 const STAFF_TEXT = ['text-highlighted', 'text-highlighted', 'text-highlighted', 'text-highlighted', 'text-primary-on']
-const LEARNER_TEXT = ['text-highlighted', 'text-highlighted', 'text-highlighted', 'text-highlighted', 'text-on-sem']
+const LEARNER_TEXT = ['text-highlighted', 'text-highlighted', 'text-highlighted', 'text-highlighted', 'text-on-highlight']
 
 const ramp = computed(() => (personality.value === 'learner' ? LEARNER : STAFF))
 const rampText = computed(() => (personality.value === 'learner' ? LEARNER_TEXT : STAFF_TEXT))

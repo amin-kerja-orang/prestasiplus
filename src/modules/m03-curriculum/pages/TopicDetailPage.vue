@@ -146,7 +146,7 @@ const BADGES = [
           >
             <div class="flex items-start gap-3">
               <span
-                class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary font-bold text-primary-on"
+                class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary font-bold text-on-primary-flat"
                 data-testid="subtopic-number"
               >
                 {{ i + 1 }}

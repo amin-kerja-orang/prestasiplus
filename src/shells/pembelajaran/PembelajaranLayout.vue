@@ -259,7 +259,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
     >
       <a
         href="#kandungan"
-        class="sr-only focus:not-sr-only focus:fixed focus:start-2 focus:top-2 focus:z-50 focus:rounded-chip focus:bg-primary focus:px-4 focus:py-3 focus:text-primary-on"
+        class="sr-only focus:not-sr-only focus:fixed focus:start-2 focus:top-2 focus:z-50 focus:rounded-chip focus:bg-primary focus:px-4 focus:py-3 focus:text-on-primary-flat"
         >Langkau ke kandungan</a
       >
 

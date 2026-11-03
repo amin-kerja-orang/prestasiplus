@@ -48,7 +48,7 @@ const parts = computed(() => {
 <template>
   <Teleport to="body">
     <div
-      class="fixed inset-0 z-200 flex items-center justify-center overflow-y-auto bg-inverted/60 p-4"
+      class="fixed inset-0 z-200 flex items-center justify-center overflow-y-auto bg-overlay p-4"
       :data-testid="overlayTestid"
     >
       <section

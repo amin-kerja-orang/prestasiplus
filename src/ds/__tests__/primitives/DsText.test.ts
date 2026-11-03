@@ -13,7 +13,7 @@ describe('DsText', () => {
   it('kpi is tabular and a span by default; tone and as override', () => {
     const w = mount(DsText, { props: { variant: 'kpi', tone: 'success', as: 'strong' } })
     expect(w.element.tagName).toBe('STRONG')
-    expect(w.classes()).toEqual(expect.arrayContaining(['text-kpi', 'tabular-nums', 'text-success']))
+    expect(w.classes()).toEqual(expect.arrayContaining(['text-kpi', 'tabular-nums', 'text-success-t']))
   })
   it('truncate / clamp / srOnly add their utilities', () => {
     expect(mount(DsText, { props: { variant: 'body', truncate: true } }).classes()).toEqual(

@@ -83,7 +83,7 @@ const MODE_BASE =
   <Teleport to="body">
     <div
       v-if="sheet"
-      class="fixed inset-0 z-40 bg-inverted/40"
+      class="fixed inset-0 z-40 bg-overlay"
       data-testid="vkb-backdrop"
       @click="emit('close')"
     ></div>
@@ -113,7 +113,7 @@ const MODE_BASE =
             type="button"
             :class="[
               MODE_BASE,
-              mode === 'jawi' ? 'bg-primary text-primary-on' : 'bg-default text-default',
+              mode === 'jawi' ? 'bg-primary text-on-primary-flat' : 'bg-default text-default',
             ]"
             data-testid="vkb-mode-jawi"
             @mousedown.prevent
@@ -125,7 +125,7 @@ const MODE_BASE =
             type="button"
             :class="[
               MODE_BASE,
-              mode === 'arab' ? 'bg-primary text-primary-on' : 'bg-default text-default',
+              mode === 'arab' ? 'bg-primary text-on-primary-flat' : 'bg-default text-default',
             ]"
             data-testid="vkb-mode-arab"
             @mousedown.prevent
