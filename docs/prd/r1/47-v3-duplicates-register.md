@@ -488,7 +488,7 @@ Each row of the original 31-row fix list is now an applied fix: the document tha
 
 | # | Target (file, section) | Fix | Applied in |
 |---|---|---|---|
-| 1 | `01-product-overview.md`, problem table, row "Admin side is duplicated" | The row reads: "Three menu items open three lists of the same questions (`Bank Soalan`, `Bank Soalan (Studio)`, `Bank Soalan SPM`);" instead of "Three lists are all called "Bank Soalan";" | `01-product-overview.md`, applied by the Delivery Lead in the final pass (T11) |
+| 1 | `01-product-overview.md`, problem table, row "Admin side is duplicated" | The row reads: "Three menu items open three lists of the same questions (`Bank Soalan`, `Bank Soalan (Studio)`, `Bank Soalan SPM`);" instead of "Three lists are all called "Bank Soalan";" | applied in `01-product-overview.md` (Delivery Lead) |
 | 2 | `30-admin-pusat.md`, 1.1 Problem, row 1 | "Three lists of one question store are labelled `Bank Soalan` (`menu.ts:95`), `Bank Soalan (Studio)` (`:103`) and `Bank Soalan SPM` (`:116`):" | applied in `30-admin-pusat.md` (T2) |
 | 3 | `30-admin-pusat.md`, 3.3 row KS-15 | The queue LIST route `/admin/spm/semakan` redirects to `/admin/studio?status=review` (the value is `review`, never `reviewed`); the review workspace `/admin/spm/semakan/:key` stays and opens from the Studio tile `Menunggu Semakan` and the row action `Semak` (D113) | applied in `30-admin-pusat.md` (T2) |
 | 4 | `30-admin-pusat.md`, 3.3 row KS-02 | HIDE: the list redirects to `/admin/spm/databank` only after the Bank page KPI strip is in the Studio list header, the preview is the Studio row action `Pratonton` (also used by the Databank lane), and "Sunting" creating version n+1 is in Studio `Sunting` (D113) | applied in `30-admin-pusat.md` (T2) |
