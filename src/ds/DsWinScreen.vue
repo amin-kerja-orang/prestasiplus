@@ -82,7 +82,7 @@ defineExpose({ focus: () => hero.value?.focus() })
     </ul>
     <ul v-if="stickers.length" class="flex flex-wrap justify-center gap-2">
       <li v-for="sticker in stickers" :key="sticker.id">
-        <DsSticker contained :art="sticker.art">{{ sticker.text }}</DsSticker>
+        <DsSticker :art="sticker.art">{{ sticker.text }}</DsSticker>
       </li>
     </ul>
     <div v-if="$slots.actions" class="flex w-full max-w-sm flex-col gap-2.5" data-ds="win-actions">

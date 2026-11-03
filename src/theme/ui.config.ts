@@ -437,7 +437,7 @@ export const uiConfig = {
       root: 'bg-elevated shadow-modal ring-0 rounded-md',
       title: 'text-label font-semibold',
       description: 'text-body',
-      close: 'min-w-11 self-center',
+      close: 'min-h-11 min-w-11 self-center learner:min-h-11 learner:px-0',
     },
     // Nuxt UI's default (vertical) orientation sets items-start on the root; centre it.
     variants: { orientation: { vertical: { root: 'items-center' } } },

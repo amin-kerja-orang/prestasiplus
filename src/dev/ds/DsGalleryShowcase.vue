@@ -388,8 +388,8 @@ const drilled = ref('')
         />
       </div>
       <div class="flex flex-wrap justify-center gap-3">
-        <DsSticker contained art="fire">Streak 5 hari!</DsSticker>
-        <DsSticker contained>Tahap naik!</DsSticker>
+        <DsSticker art="fire">Streak 5 hari!</DsSticker>
+        <DsSticker>Tahap naik!</DsSticker>
       </div>
       <DsWinHero art="books" accent="action" title="Teruskan, Murid Contoh!" />
     </section>
