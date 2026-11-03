@@ -95,7 +95,7 @@ This PRD states, for every matrix module, what V3 must do and how to prove it. T
 
 ## Read order and document map
 
-Read in this order: [R1-START-HERE](../../plan/R1-START-HERE.md) and [R1-FAQ](../../plan/R1-FAQ.md) → 00 index → 01 product overview → 02 URS → 10 / 20 / 30 SRS per portal → 40 cross-cutting and NFR → 45 / 46 / 48 flow specs and 47 duplicates register (as the card needs) → 50 data model and ERD → 60 API contract → development plan → traceability.
+This is the order for reading the whole set once; for one card use the short order of R1-START-HERE step 1 and FAQ Q1 (the URS only through the "Satisfied by" link of an FR). Read in this order: [R1-START-HERE](../../plan/R1-START-HERE.md) and [R1-FAQ](../../plan/R1-FAQ.md) → 00 index → 01 product overview → 02 URS → 10 / 20 / 30 SRS per portal → 40 cross-cutting and NFR → 45 / 46 / 48 flow specs and 47 duplicates register (as the card needs) → 50 data model and ERD → 60 API contract → development plan → traceability.
 
 | Order | File | Layer | Content |
 |---|---|---|---|
@@ -193,6 +193,7 @@ Full text is in [TRACKER.md](../../TRACKER.md).
 | Task card (plan) | `S<sector>-T<nn>` | S3-T02 |
 | User requirement (URS) | `URS-<MUR\|GUR\|AS\|ADM\|ALL>-<nn>` | URS-MUR-10 |
 | Data / API | `DM-<nn>` (50), `API-<AREA>-<nn>` (60; areas AUTH, MUR, GUR, AS, ADM, Q, DSKP, BIJAK, PRAC, RPT, GAME, SUP, FILE) | DM-18, API-Q-05, API-GUR-24 |
+| Card ownership (M-8) | A card owns every FR/AC of the PRD modules on its `PRD:` line unless another card names the ID explicitly; it edits Starts-from files and other existing files of its own sector named in its gap check; it creates files only on its `New files:` line | R1-START-HERE decision 12 |
 | Card data line | `- Data/API: DM-…; API-…` (or `none`) on every plan card = the owner declaration; `- Also uses: …` = read only | S6-T16: DM-42; API-GUR-24, API-GUR-25 |
 
 Priority: **P0** blocks the release · **P1** important · **P2** polish. All are in scope (D100).

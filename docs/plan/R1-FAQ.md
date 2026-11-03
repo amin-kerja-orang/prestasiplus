@@ -17,10 +17,12 @@ The other files in `docs/plan/` (the `BE-01..BE-40` cards, `AGENT-SYNC.md`, `bac
 
 **Q3. What do "Keep / Verify / Fix / Complete / Build / Ops" allow me to change?**
 - **Keep** and **Verify**: no product code; the card only proves ACs. If a Verify card turns out to need product code, it is not a Verify card: tell your team lead, who re-types it Fix or Complete in the issue before you write code (the scope guard FAILs a Verify PR that changes `src/`, `apps/` or `packages/`). S7-T01, S5-T10 and S10-T07 were re-typed for this reason.
-- **Fix** and **Complete**: edit the files under the card's "Starts from (existing)"; a new file only if the card names it.
+- **Fix** and **Complete**: edit the files under the card's "Starts from (existing)" and other existing files of your own sector that your gap check names (Q41); a new file only if the card names it.
 - **Build**: new files only at the paths of the card's `New files:` line, reusing the services, components and tables around it. Every Build card has that line; if you need a file that is not on it, post a QUESTION (Q11) before creating it.
 - **Ops**: no product code.
 See [plan section 0B](r1-development-plan.md).
+
+**Q41. Which FR/AC does my card own, which files may I edit, where may I create files? (M-8)** (a) Every FR and AC of the PRD modules on the card's `PRD:` line, including IDs added to those modules later, unless another card names that ID explicitly (explicit beats module). (b) The Starts-from files, plus any other existing file of your own sector that your gap-check row names as on the path of an FR/AC; a file of another sector is a cross-sector PR (Q10). (c) New files only where the card's `New files:` line says. ([START-HERE decision 12](R1-START-HERE.md), [plan section 0B](r1-development-plan.md))
 
 **Q4. What do the internal codes mean (D113, BS-, OPT-, XS-, HC-SPEC, U-OP, ...)?** One table, [00-index "Codes in plain words"](../prd/r1/00-index.md#codes-in-plain-words).
 
@@ -44,7 +46,7 @@ Two unrelated uses of the word are not duplicates in this sense: the intake dete
 - `acquire S1` a sector; `acquire S1-T01` a card (needs the sector). A split card has a letter: `S1-T09a`.
 - `heartbeat-all` every day. `release S1-T01` after the merge or if you drop the card; `release S1` when the sector is finished.
 - `break` is for the product owner only, for a STALE lock after 1 working day without an answer in #503.
-- Needs a git remote with push rights. Hold at most 3 sectors. Never hold a sector idle for more than a day. S9 cannot be claimed as a sector (Q31).
+- Needs a git remote with push rights. Hold at most 3 sectors at a time (a card of a 4th sector waits until you release one, or is done by the team that holds it). Never hold a sector idle for more than a day. S9 cannot be claimed as a sector (Q31).
 - Weekends and leave: run `heartbeat-all` first and write `[<team>/S-<k>] away until <date>` in #503.
 
 **Q8. What do I name my branch, commits and PR?** Branch `r1/<team>/<card-id>-<slug>` from `feature/v3-bijak-r1` (for example `r1/team-amin/S1-T01-group-publish`). Commit in the repo's conventional style with the card at the end (`fix(s1): enforce group publish as one unit (S1-T01)`). PR title `[<team>/S-<k>] S1-T01 <title>`. The PR body names exactly one card ID. Every issue and PR comment starts with `[<team>/S-<k>]`. The repo `CLAUDE.md` rule `feature/<slug>` is for non-R1 work.
