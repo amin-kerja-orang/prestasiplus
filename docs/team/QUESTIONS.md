@@ -230,3 +230,6 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
 
 ## Q37 (USER DECISION 3 Nov ~10:00 MYT, to Mandor): team A takes over UAT server work
 - User: "kan aku cakap kita ambil alih" and gave team A sessions root SSH access to the UAT host directly in their sessions. Mandor's ruling: **one team A session (A2) is the single server operator for UAT; scope = read-only baseline + REQ-A-080 DSKP load only** (UAT deploy itself was done by Team B at 08:04). A1's container cannot reach port 22 (proxy HTTPS only); if A2's cannot either, Team B lead runs REQ-A-080. No prestasiplus.cloud. Credentials stay in the user's sessions only; owner to rotate the root password after this work.
+
+## Q38 (DECIDED UNDER DELEGATION 3 Nov ~10:12 MYT by Mandor; user "no preference"): a Kontrak on UAT for the upload test
+- Decision: **A4 creates ONE test Kontrak** on uat.prestasiplus.cloud as Admin Pusat (one subject, e.g. MATH Kertas 1), via the normal UI per runbook 5.2, and presses Sahkan; labelled clearly as a test ("UJIAN-SMOKE-R1"); archived after the upload test if the UI allows. Order: after the DSKP load (REQ-A-080) and the nginx `.mjs` fix (REQ-A-081), since the Kontrak/upload may need DSKP nodes and the pdf.js worker. Writes to UAT only; no prestasiplus.cloud.
