@@ -42,5 +42,11 @@ sed -e "s#/var/cache/nginx/#@@CACHE@@/#g" -e "s#/tmp/#$work/tmp/#g" -e "s#@@CACH
     -e "s#access_log /dev/stdout#access_log $work/access.log#" \
     "$here/nginx.conf" >"$work/nginx.conf"
 
+# .mjs must be served as JavaScript by both the edge and the frontend container (pdf.js worker of the intake upload):
+# nginx 1.27/1.28 mime.types has no mjs entry, and with nosniff an octet-stream module is refused.
+for f in "$here/nginx.conf" "$here/../../../docker/frontend/nginx.conf"; do
+  grep -Eq '^[[:space:]]*types \{ text/javascript mjs; \}' "$f" || { echo "missing the mjs type in $f" >&2; exit 1; }
+done
+
 nginx -t -p "$work" -c "$work/nginx.conf"
 echo "OK: edge nginx config is valid (csp mode: $mode)"
