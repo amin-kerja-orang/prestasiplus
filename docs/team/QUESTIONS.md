@@ -233,3 +233,8 @@ Lead recommendation: (1). It matches V2: Lapor is on the question page, and the 
 
 ## Q38 (DECIDED UNDER DELEGATION 3 Nov ~10:12 MYT by Mandor; user "no preference"): a Kontrak on UAT for the upload test
 - Decision: **A4 creates ONE test Kontrak** on uat.prestasiplus.cloud as Admin Pusat (one subject, e.g. MATH Kertas 1), via the normal UI per runbook 5.2, and presses Sahkan; labelled clearly as a test ("UJIAN-SMOKE-R1"); archived after the upload test if the UI allows. Order: after the DSKP load (REQ-A-080) and the nginx `.mjs` fix (REQ-A-081), since the Kontrak/upload may need DSKP nodes and the pdf.js worker. Writes to UAT only; no prestasiplus.cloud.
+
+## Q39 (DECIDED UNDER DELEGATION 3 Nov ~11:32 MYT by Mandor; user formula: V2 first): learner colours in the DS contrast fix
+- Learner-light: keep `--ds-primary-t` #2342d6 (needed: #2f5bff on its own tint 4.05–4.36 fails AA); revert `--ui-primary`, `--ds-c1`, `--ds-ic-theme` to #2f5bff (already pass 5.17 / 4.78; V2 brand per docs/design/v2-design-system.md:175/231/233, v2-learner-page-templates.md:138).
+- Learner-dark: keep the V2 gradient c1 #2f5bff → #6a4dff with a white label on gradient fills (pass 5.17/5.1); use ink #0b0d12 only where a solid `bg-primary` (#5b86ff) carries text (white was 3.33:1). No visible change to the V2 brand gradient.
+- #16 = input leading icon offset (add `leading: 'ps-3.5'`), not the checkbox glyph; the glyph change is dropped.
