@@ -1,5 +1,7 @@
 # docs/ index
 
+> **Release 1 (R1) of V3: start at [plan/R1-START-HERE.md](plan/R1-START-HERE.md), then [plan/R1-FAQ.md](plan/R1-FAQ.md).** The product spec is [prd/r1/00-index.md](prd/r1/00-index.md), the plan and cards are [plan/r1-development-plan.md](plan/r1-development-plan.md), the AC results are [plan/r1-ac-ledger.md](plan/r1-ac-ledger.md). Everything under `plan/` that is not named here (BE cards, `AGENT-SYNC.md`, `backend-tracker.md`, `onboarding.md`, `sessions.md`) is legacy and superseded for R1.
+
 Start with [TRACKER.md](TRACKER.md) (progress and decisions) and the repo-level [AGENTS.md](../AGENTS.md).
 
 | Path | Purpose |

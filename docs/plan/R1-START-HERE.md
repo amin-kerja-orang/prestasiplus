@@ -21,7 +21,7 @@ Full detail: [`r1-development-plan.md`](r1-development-plan.md) (sections 0A, 0B
 2. **Does the stack run?** Until S0-T02 is merged, `npm run stack:up` may not start (the e2e seed fails). Until then use unit tests, `npm run typecheck`, `npm run lint`, `npm test`, and for the API `npm run be:dev` as in [`http-switch-checklist.md`](http-switch-checklist.md) (needs `COOKIE_SECURE=false` in `.env.api`).
 3. **Env files and logins.** Copy from `.env.example`, `.env.api.example`, `.env.db.example`. Local demo logins: [`docs/AKAUN-DEMO-LOCAL.md`](../AKAUN-DEMO-LOCAL.md). The CI seed and its profiles: [`docs/ops/e2e-seed.md`](../ops/e2e-seed.md). Demo and CI data are for automated tests only, never for acceptance.
 4. **A cloud session without Docker** runs unit, typecheck, lint and contract checks only. It marks the ACs that need the stack or a browser as "awaiting CI/UAT" in the PR. **Every session has its own clone or worktree**; two sessions never share one checked-out branch.
-5. **Duplication.** The word "duplicate" has six meanings in V3. Read [00-index "Codes in plain words"](../prd/r1/00-index.md#codes-in-plain-words), [30 section 3.3](../prd/r1/30-admin-pusat.md) (admin menu: keep / merge / hide / remove per menu id), [45 section 1.6](../prd/r1/45-question-authoring-flow.md) (one canonical screen per question function) and the rule "No duplicates (enforced by CI)" at the end of this page.
+5. **Duplication.** The word "duplicate" has six meanings in V3: read [R1-FAQ Q5](R1-FAQ.md) first. Then [30 section 3.3](../prd/r1/30-admin-pusat.md) (admin menu: keep / merge / hide / remove per menu id), [45 section 1.6](../prd/r1/45-question-authoring-flow.md) (one canonical screen per question function), [47](../prd/r1/47-v3-duplicates-register.md) (the register of 34 duplicates and what was decided) and the rule "No duplicates (enforced by CI)" at the end of this page.
 
 ## Decisions (D113, 2026-11-04). Stated once, here
 
@@ -45,13 +45,13 @@ Full detail: [`r1-development-plan.md`](r1-development-plan.md) (sections 0A, 0B
 | PR title | `[<team>/S-<k>] <card-id> <title>` | `[team-amin/S-2] S1-T01 Stimulus group invariants` |
 | PR body | names **exactly one** card ID (the scope guard reads it) | `Card: S1-T01` |
 | Issue and PR comment | starts with `[<team>/S-<k>]` | `[team-amin/S-2] claimed` |
-| Lock key | `S<n>` (sector) or `S<n>-T<nn>` (card) | `S1`, `S1-T01` |
+| Lock key | `S<n>` (sector) or `S<n>-T<nn>` (card; a split card has one lowercase letter) | `S1`, `S1-T01`, `S1-T09a` |
 
 The repo `CLAUDE.md` rule `feature/<slug>` is for non-R1 work. R1 branches always start with `r1/`.
 
 ### 4. How an AC is proven, and how code reaches UAT
 1. **Before the PR (the team).** Prove every AC that can be automated in CI tests: unit, integration or e2e on the CI seed; for UI also at 375, 768 and 1280 px with no horizontal scroll. Tag each AC in the PR as `[CI]` (proven by a named automated test), `[UAT]` (needs UAT data or a human look) or `[CI+UAT]`.
-2. **PR review (the team lead).** The team lead (orchestrator) reviews the PR against the card and the guardrails and comments `[<team>/S-<k>] review: approved`, or the exact changes needed. The **product owner (@aminfaudzi) merges** (squash) into `feature/v3-bijak-r1` after green CI.
+2. **PR review (the team lead).** The team lead (orchestrator) reviews the PR against the card and the guardrails within 1 working day and comments `[<team>/S-<k>] review: approved`, or the exact changes needed. The **product owner (@aminfaudzi) merges** (squash) into `feature/v3-bijak-r1` after green CI.
 3. **Deploy to UAT.** The **designated UAT developer** deploys `feature/v3-bijak-r1` to UAT once a day (or on request during Slice 0) after CI is green, and posts the deployed commit in **#503**. Nobody else deploys.
 4. **UAT acceptance (the card's team).** Once the deployed commit contains the card's merge, the card's team runs the `[UAT]` ACs and every AC-CHAIN-n through the card on UAT, in a **visible (headed) browser** at 375, 768 and 1280, using the shared test accounts (decision 5). It records Pass or Fail in [`r1-ac-ledger.md`](r1-ac-ledger.md). **A Fail re-opens the card** (`status:in-progress`).
 5. **Done.** The card moves to `status:done` **only after UAT Pass** of all its ACs.
@@ -139,9 +139,10 @@ node scripts/r1-lock.mjs release S1-T01 --team team-amin --session S-2     after
 - **Change budget by card Type**: Keep/Verify/Ops = no product code; Fix/Complete = the "Starts from" files (new file only if the card names it); Build = new files only at the named location. If a Verify card turns out to need product code, it is a Fix or Complete card: tell your team lead.
 - **No server access for AI sessions** (decision 5). V1 and V2 are not opened by agents.
 - No placeholder strings ("akan datang", "belum tersedia", "Pratonton", "prototaip") and no mock path in the http build.
+- **Duplicated stem text:** a question whose stem is repeated as its only part's prompt (`stem_duplicated`) is **shown once and is NOT excluded** from serving or counting; the data is cleaned later (DM-40). Only `stimulus_missing` and `figure_only` questions are excluded (FR-X1-4, FR-MUR-QP-5, OD-3).
 - Public repo: no real person names, e-mails, credentials, server addresses or personal data in code, seeds, docs, issues, PRs or logs. Use fictitious names.
 - Docs-only PRs (touch only `docs/**`) have no card and skip the scope guard.
-- **Stuck, or the PRD does not answer?** Comment on the issue: `[<team>/S-<k>] QUESTION: <question>; the two places that disagree; my proposed answer`, add `status:blocked`, tell your team lead. The team lead answers with the tie-break in [R1-FAQ Q11](R1-FAQ.md) and records the answer on the issue; the product owner is asked only for the reasons in [ORCHESTRATOR section 6](R1-ORCHESTRATOR-PROMPT.md). "Not observed in V2" in the PRD is **not** a question: build from the FR text and the generic loading/error/empty rules (FR-X6) without blocking.
+- **Stuck, or the PRD does not answer?** Comment on the issue: `[<team>/S-<k>] QUESTION: <question>; the two places that disagree; my suggested answer`, add `status:blocked`, tell your team lead. The team lead answers with the tie-break in [R1-FAQ Q11](R1-FAQ.md) and records the answer on the issue; the product owner is asked only for the reasons in [ORCHESTRATOR section 6](R1-ORCHESTRATOR-PROMPT.md). "Not observed in V2" in the PRD is **not** a question: build from the FR text and the generic loading/error/empty rules (FR-X6) without blocking.
 
 ## Cloud agent prompt
 
@@ -165,7 +166,7 @@ Rules (mandatory):
 - Do not touch another sector's paths. If you need a change there, open a small PR that names your card, has the line "Cross-sector: S<n> (reason)" and the label needs:S<n>.
 - No server access: never SSH or call V1, V2, V3 or UAT servers, never deploy. You may use UAT in a browser with the shared test accounts your team lead holds; never write credentials anywhere.
 - Privacy: this repo is public. No real person names, e-mails, credentials, server addresses or personal data in code, docs, issues or PR text. Screenshots and logs go to local .evidence/<CARD>/ only (gitignored) and are never uploaded.
-- If the PRD does not answer a question, comment "[<TEAM>/S-<K>] QUESTION: ..." with the two places that disagree and your proposed answer, label status:blocked, and tell your team lead. "Not observed in V2" is not a question: build from the FR text.
+- If the PRD does not answer a question, comment "[<TEAM>/S-<K>] QUESTION: ..." with the two places that disagree and your suggested answer, label status:blocked, and tell your team lead. "Not observed in V2" is not a question: build from the FR text.
 
 Finish with:
 - typecheck, lint and tests run locally (a session without Docker runs unit/typecheck/lint/contract only); paste the real output tails in the PR.

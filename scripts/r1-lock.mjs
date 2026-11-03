@@ -19,9 +19,11 @@
 //   node scripts/r1-lock.mjs mine --team team-aa           (locks held by the team)
 //   node scripts/r1-lock.mjs break S1-T03 --owner [--stale-hours 24] [--force-owner]   (PRODUCT OWNER ONLY)
 //   node scripts/r1-lock.mjs --self-test
+//   node scripts/r1-lock.mjs --help                        (prints the lock cheat-sheet; same text as docs/plan/R1-START-HERE.md)
 // Options: --remote <name> (default origin), --stale-hours <n> (default 24).
 // KEY forms: team-<name> | S<n> | S<n>-T<nn>.   Team name: ^team-[a-z0-9-]{2,30}$
-// Exit codes: 0 ok | 2 usage or setup error | 3 held by another team | 4 not the holder / sector not held.
+// Exit codes: 0 ok | 2 usage or setup error | 3 held by another team (pick another card or sector) |
+//             4 you are not the holder, or your team does not hold the sector of that card.
 // register-team: the team key is held by one session (the lead). The same team name from a DIFFERENT session
 // is treated as a name clash (exit 3); pick another name. Other commands treat the same team as the holder.
 import { spawn, spawnSync } from 'node:child_process'
@@ -34,7 +36,7 @@ const SELF = fileURLToPath(import.meta.url)
 const EMPTY_TREE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
 const TEAM_RE = /^team-[a-z0-9-]{2,30}$/
 const SECTOR_RE = /^S(\d+)$/
-const CARD_RE = /^S(\d+)-T\d{2}$/
+const CARD_RE = /^S(\d+)-T\d{2}[a-z]?$/  // S1-T09a / S1-T09b are valid card keys (split cards)
 const PREFIX = 'r1-lock/'
 const IDENT = {
   GIT_AUTHOR_NAME: 'r1-lock', GIT_AUTHOR_EMAIL: 'r1-lock@invalid',
@@ -203,13 +205,51 @@ function printTable(rows, hours) {
   if (!body.length) console.log('(tiada kunci / no locks)')
 }
 
+// ---------- help ----------
+const HELP = `R1 lock tool: the ONLY claim system for R1 sectors and cards (docs/plan/R1-START-HERE.md, decision 1).
+A lock is the remote branch r1-lock/<KEY>; GitHub allows only one team to create it. GitHub users, assignees and
+"/claim" comments mean nothing. The tool needs a git remote (default origin) with PUSH rights (a cloud session uses
+the repository token its platform provides).
+
+COMMANDS (--team and --session may come from env R1_TEAM and R1_SESSION)
+  register-team --team team-amin --session S-1      once, from the lead session. Name: team-[a-z0-9-]{2,30}
+  list                                              all locks: KEY | team | session | card | at | age | STALE
+  mine --team team-amin                             the locks of your team
+  acquire S1 --team team-amin --session S-1         claim a sector
+  acquire S1-T01 --team team-amin --session S-2     claim a card (your team must hold sector S1 first)
+  heartbeat S1-T01 --team team-amin --session S-2   keep one lock fresh
+  heartbeat-all --team team-amin --session S-1      keep all your locks fresh: run it every day
+  release S1-T01 --team team-amin --session S-2     after the card PR is merged, or if you drop the card
+  release S1 --team team-amin --session S-1         when the sector is finished or your team stops
+  break <KEY> --owner [--stale-hours 24]            PRODUCT OWNER ONLY, only for a STALE lock
+  --self-test                                       run the built-in tests (31 checks)
+OPTIONS  --remote <name> (default origin)   --stale-hours <n> (default 24)   --note "<text>"   --help
+
+EXIT CODES
+  0  ok
+  2  usage or setup error (bad key, missing --team/--session, not a git repository, no push rights)
+  3  held by another team: pick another sector or card (or wait; ask in the pinned issue #503)
+  4  you are not the holder, or your team does not hold the sector of that card (acquire the sector first)
+
+RULES (conventions the tool does not enforce)
+  - Hold at most 3 sectors. Never hold a sector idle for more than 1 day.
+  - S9 is the Delivery Lead's and is not claimable.
+  - A lock with no heartbeat for 24 h is STALE (calendar hours, weekends included). Before a weekend or leave run
+    heartbeat-all and write "[<team>/S-<k>] away until <date>" in issue #503. The product owner breaks a STALE lock
+    only after 1 working day without an answer in #503.
+  - After acquire, mirror the claim on the issue: label team:<team> and comment "[<team>/S-<k>] claimed".
+`
+
+function printHelp(stream = process.stdout) { stream.write(HELP) }
+
 function main(argv, { cwd = process.cwd(), env = process.env } = {}) {
   const { flags, pos } = parseArgs(argv)
   const [cmd, key] = pos
   const remote = flags.remote ?? 'origin'
   const hours = flags['stale-hours'] === undefined ? 24 : Number(flags['stale-hours'])
   if (!(hours > 0)) throw new Fail(2, '--stale-hours mesti nombor > 0 / must be a number > 0.')
-  if (!cmd || flags.help) throw new Fail(2, 'Arahan diperlukan / command required: register-team | acquire | heartbeat | heartbeat-all | release | list | mine | break. Lihat kepala fail / see file header.')
+  if (flags.help) { printHelp(); return 0 }
+  if (!cmd) { printHelp(process.stderr); throw new Fail(2, 'Arahan diperlukan / command required (see the help above): register-team | acquire | heartbeat | heartbeat-all | release | list | mine | break.') }
   assertRepo(cwd)
 
   switch (cmd) {
@@ -388,6 +428,7 @@ async function selfTest() {
   const argv = process.argv.slice(2)
   try {
     if (argv.includes('--self-test')) process.exit(await selfTest())
+    if (argv.includes('-h')) { printHelp(); process.exit(0) }
     process.exit(main(argv))
   } catch (e) {
     if (e instanceof Fail) { console.error(`RALAT / ERROR: ${e.message}`); process.exit(e.code) }

@@ -32,12 +32,14 @@ Every card carries one **Type**, chosen after checking the code:
 
 | Type | Delivery A cards | Delivery B cards | Total cards | Estimate (ideal days; S=1, M=3, L=6) |
 |---|--:|--:|--:|--:|
-| Fix | 32 | 0 | 32 | 93 |
-| Complete | 39 | 9 | 48 | 199 |
+| Fix | 34 | 0 | 34 | 95 |
+| Complete | 40 | 9 | 49 | 202 |
 | Build | 15 | 0 | 15 | 54 |
-| Verify | 6 | 0 | 6 | 15 |
+| Verify | 3 | 0 | 3 | 10 |
 | Ops | 12 | 0 | 12 | 28 |
 | **Total** | **104** | **9** | **113** | **389** |
+
+Three cards that were typed Verify need product code, so they are re-typed (F-22, D113): S7-T01 Fix, S5-T10 Fix, S10-T07 Complete (the table above already counts them). The totals are recomputed from the cards by the Delivery Lead whenever cards are added or split (for example S1-T09a/S1-T09b).
 
 Only **Build** is new code; Fix, Complete and Verify reuse what exists. (Estimates are rough and are re-baselined after Sprint 1.)
 
@@ -46,7 +48,7 @@ Only **Build** is new code; Fix, Complete and Verify reuse what exists. (Estimat
 2. **Set Builder exists; Pembina Kertas is merged into it.** `SetBuilderPage.vue` stays as the single builder; the duplicate list route redirects and `/admin/spm/kertas/:id` stays as "Semak Kertas Simulasi" (S3-T02, S2-T03).
 3. **The gamification and shop backends exist, so only admin screens are needed.** `apps/api/src/modules/gamification/admin.controller.ts` and `shop/` already serve the data; S7-T04/T05 add the Pentadbiran pages and fix the pupil side against them.
 4. **Headcount, Analisa Item and Laporan Soalan are built but hidden.** They are blocked by `STUDENT_HIDDEN_IDS` in `user-nav.ts` and by `prototype-scope.ts`; S0-T05/T06 un-hide them and S10-T02/T03 and S5-T06 fix what is wrong inside.
-5. **Tracking A has a backend with no screen.** `apps/api/src/modules/spm/tracking.service.ts` exists while `/admin/spm/tracking-a` is a 404; S3-T05 is a Complete (add the lane list and set editor on the existing service). Likewise the DSKP loader (`docs/ops/dskp-loader.md`) already exists: S4-T02 is a Verify plus an Ops run, not new code.
+5. **Tracking A has a backend with no screen.** `apps/api/src/modules/spm/tracking.service.ts` exists while `/admin/spm/tracking-a` is a 404; S3-T05 is a Complete (add the lane list and set editor on the existing service). Likewise the DSKP loader (`docs/ops/dskp-loader.md`) already exists: S4-T02 is a Verify plus an Ops run, not new code (it changes no product code; a failing AC there becomes a separate Fix card).
 
 
 ### Guardrails: analyse, find the gap, close it, never rebuild (mandatory, user instruction 2026-11-04)
@@ -55,14 +57,14 @@ Only **Build** is new code; Fix, Complete and Verify reuse what exists. (Estimat
 1. **Code gap check before any code.** For every FR and AC on the card, record in the existing V3 code whether it **works / is broken / is missing**, with `file:line` evidence, and post it as the issue's **"Gap check"** section (table: FR/AC, status, evidence, planned change). **A card cannot move to In progress without it.** The "Gap:" line on the card is a starting hypothesis, not the evidence.
 2. **Confirm scope.** If the code has changed since the PRD's "Current gap" was written, update the Gap check, not the PRD intent. The intent (FR/AC) never changes in a card.
 3. **Close the gaps only**, in the existing files named under "Starts from (existing)".
-4. **Prove.** Run the card's ACs, and every AC-CHAIN-n that passes through the card (40 section X9, card S9-T06), in a **visible browser at 375, 768 and 1280 px**, on UAT (D110: no local acceptance). Evidence in `.evidence/<card>/` (gitignored, never committed; only pass/fail and IDs go into issues and PRs).
+4. **Prove, in two steps (D113).** (a) *Before the PR, in CI:* tag every AC of the card `[CI]` (proven by a named automated test: unit, integration or e2e on the CI seed; UI also at 375, 768 and 1280 px with no horizontal scroll), `[UAT]` (needs UAT data or a human look) or `[CI+UAT]`. (b) *After the merge,* when the designated UAT developer has deployed `feature/v3-bijak-r1` to UAT (daily; the commit is posted in the pinned issue #503), the card's team runs the `[UAT]` ACs and every AC-CHAIN-n that passes through the card (40 section X9, card S9-T06) in a **visible browser at 375, 768 and 1280 px** with the team's shared test accounts (D110: no local acceptance) and writes Pass/Fail rows in `docs/plan/r1-ac-ledger.md`. A Fail re-opens the card. Evidence in `.evidence/<card>/` (gitignored, never committed; only pass/fail and IDs go into issues, PRs and the ledger).
 
 **2. Change budget by card Type.**
 
 | Type | Allowed in the diff |
 |---|---|
 | **Keep** | No product-code change; ACs are proven only. |
-| **Verify** | No product code; the card proves ACs (a failing AC becomes a Fix card or a one-line fix named in the issue). |
+| **Verify** | No product code; the card proves ACs only. A card that turns out to need product code is re-typed Fix or Complete by the team lead in the issue before any code (the scope guard FAILs a Verify PR that changes `src/`, `apps/` or `packages/`). |
 | **Ops** | No product code (data, environment, governance, scripts under `apps/api/scripts/uat-ops/` only when the card names them). |
 | **Fix**, **Complete** | Edit the files under "Starts from (existing)" (and the files the Gap check names there); a **new file only when the card names it**. |
 | **Build** | New files **only at the location the card names**; reuse the existing services, components and tables around it. |
@@ -73,36 +75,37 @@ Only **Build** is new code; Fix, Complete and Verify reuse what exists. (Estimat
 - a schema change without a **DM ID** (listed on the card and in 50);
 - an endpoint without an **API ID** (listed on the card and in 60).
 
-**4. PR template and reviewer rule.** The PR template (App. B) has these fields: card ID (exactly one), Gap-check link, existing files changed, the reason for each new file, DM/API IDs, ACs proven (and AC-CHAIN-n). **Reviewer rule: reject a Fix or Complete PR that does not touch its "Starts from" files or that adds a parallel implementation.**
+**4. PR template and reviewer rule.** The PR template (App. B) has these fields: card ID (exactly one), `Cross-sector:` line (or none), Gap-check link, existing files changed, the reason for each new file, DM/API IDs, the scope-guard and canonical-map results, every AC with its `[CI]`/`[UAT]` tag and the list "ACs awaiting UAT". **Reviewer rule: reject a Fix or Complete PR that does not touch its "Starts from" files or that adds a parallel implementation.** The reviewer is the team lead of the author's team, then the product owner merges (R1-START-HERE decisions 4 and 6).
 
 **5. CI helper `scripts/r1-scope-guard.mjs` (wired by S0-T04).** Inputs: base ref, head ref and the PR body (`PR_BODY`). It reads the card ID from the PR body, looks the card up in this plan (Type, "Starts from (existing)" paths) and checks the diff:
 - **FAIL** if a Fix, Complete, Keep or Verify card adds a new Vue page or route file, a NestJS controller or a Prisma model without a DM or API ID listed in the PR body;
-- **FAIL** if a Keep, Verify or Ops card changes product code (`src/`, `apps/`, `packages/`);
+- **FAIL** if a Keep, Verify or Ops card changes product code (`src/`, `apps/`, `packages/`) (so a card that needs code must be typed Fix or Complete first);
 - **WARN** if a Fix or Complete card touches none of its "Starts from" paths;
 - **WARN** if an existing file loses more than 60% of its lines.
-It prints a BM and English summary; exit code 1 = FAIL, 2 = setup error, 0 = pass (warnings allowed). `node scripts/r1-scope-guard.mjs --self-test` runs its fixtures. Plan format the script relies on (do not change it): the card line `**S<n>-T<nn> <title>** ... Type: <type>`, no heading inside a card, and "Starts from (existing)" paths in backticks, repo-relative, plain paths or directories (no `**` globs, no prose in backticks).
+It prints a BM and English summary; exit code 1 = FAIL, 2 = setup error, 0 = pass (warnings allowed). `node scripts/r1-scope-guard.mjs --self-test` runs its fixtures. A cross-sector small PR (R1-START-HERE decision 7) names the card it serves and carries the line `Cross-sector: S<n> (<reason>)`; the guard accepts the files of the named sector when that line is present. Plan format the script relies on (do not change it): the card line `**S<n>-T<nn> <title>** ... Type: <type>` (a split card has one lowercase letter after the number, `S1-T09a`), no heading inside a card, and "Starts from (existing)" paths in backticks, repo-relative, plain paths or directories (no `**` globs, no prose in backticks).
 
 ---
 
 ## 0A. Building with cloud agents (mandatory)
 
-The system is built by **cloud agents** (one session per card). They have **no access to V1, V2 or UAT** and never open them. Everything an agent needs is in the repository.
+The system is built by **cloud agents** (one session per card). They have **no access to V1 or V2** and no server access, and never open them; the only thing they may open is UAT in a browser, with the shared test accounts their team lead holds. Everything an agent needs is in the repository. Each session has its own clone or worktree and never shares a checked-out branch with another session; a session without Docker runs unit, typecheck, lint and contract checks only and marks stack/e2e ACs "awaiting CI/UAT".
 
 **Gap check first.** Before writing code, post the card's **Gap check** on the issue (works / broken / missing per FR and AC, with file:line, §0B workflow). The card is built from that check inside the change budget of its Type (§0B); the agent never creates a parallel implementation.
 
 **Read order for every card, in this order:**
-1. `docs/prd/r1/00-index.md` (IDs, conventions) then `docs/prd/r1/40-cross-cutting.md` (reference rule, X1-X8, NFR).
+0. `docs/plan/R1-START-HERE.md` (the working rules) and `docs/plan/R1-FAQ.md`.
+1. `docs/prd/r1/00-index.md` (IDs, conventions, "Codes in plain words") then `docs/prd/r1/40-cross-cutting.md` (reference rule, X1-X8, NFR).
 2. The PRD section of each module named on the card's "PRD:" line (`10-murid.md`, `20-guru-admin-sekolah.md` or `30-admin-pusat.md`): the FRs, ACs, exact BM copy and deviations.
 3. For the data and API shape: `docs/prd/r1/50-data-model-erd.md` and `docs/prd/r1/60-api-contract.md`. There are **no screenshots** in the repo: every V2/V1 screen is described in words (layout, blocks in order, exact BM copy, states) inside the SRS section of its module, so the SRS text is the only screen reference.
 4. The card itself (this plan, §4, mirrored on the GitHub issue).
 
 **Rules**
-- **Never open V1, V2 or UAT.** If a behaviour, copy, field, state or screen is not in the PRD text, **stop and ask the Delivery Lead** (comment on the issue, label `needs:answer`). Do not guess, do not invent, do not "improve".
-- **One card per session.** Stay inside the sector's owned paths (§2); a change elsewhere is a small PR to its owner (§3). Do not start a second card in the same session.
+- **Agents never open V1 or V2, and never touch a server.** Using UAT in a browser with the team's shared test accounts is allowed (R1-START-HERE decision 5). If a behaviour, copy, field, state or screen is not in the PRD text, **ask your team lead**: comment `[<team>/S-<k>] QUESTION: ...` on the issue with the two places that disagree and your suggested answer, and set `status:blocked`. The team lead answers by the tie-break in R1-FAQ Q11 and records the answer on the issue. Do not guess, do not invent, do not "improve". "Not observed in V2" in the PRD is not a question: build from the FR text and the generic loading/error/empty rules (FR-X6).
+- **One card per session.** Stay inside the sector's owned paths (§2); a change elsewhere is a small cross-sector PR (§3, R1-START-HERE decision 7: the card ID of the work it serves, the line `Cross-sector: S<n> (reason)`, the label `needs:S<n>`, reviewed within 1 working day by the team holding S<n>). Do not start a second card in the same session.
 - **FR-X1-5, close the gaps only (user directive: "close, fix and improve the gaps only; never rebuild from scratch").** Change only what the card's gap lists. Reuse the existing routes, components, APIs and data. Never rewrite, restyle or restructure a working screen or module. A **Verify** card changes no code unless one of its ACs fails, and then fixes only that failure. Replacing a working screen, component or API needs the Delivery Lead's **written approval in the issue** before the work starts; without it the PR is rejected.
 - **Banned patterns** (a PR containing any of them is rejected): placeholder strings ("akan datang", "belum tersedia", "Pratonton", prototype notices), mock or demo data in a matrix module, a new menu item or page that the PRD does not list, a renamed label, an extra feature, a feature flag that hides a matrix module (except those named in the PRD), copy in English where the PRD gives BM, a real person's name anywhere.
-- **Evidence the PR must carry:** real test output (`typecheck`, `lint`, `npm test`, `be:verify`); the card's **AC list with each AC ticked and its result**; for UI changes, the AC result and screenshots at **375 / 768 / 1280** from a **visible** browser **on UAT** once the change is deployed there (D110; produced by the Delivery Lead or the card's developer, kept in `.evidence/`, never attached to the PR; the PR carries only pass/fail and IDs, never names); the deviations from the PRD, if any, as a numbered list.
-- **Verification is the lead's.** The Delivery Lead verifies against V2 and UAT data (§6.5) before an issue becomes Done. An agent never moves its own issue to Done and never claims a gate.
+- **Evidence the PR must carry:** real test output (`typecheck`, `lint`, `npm test`, `be:verify`); the scope-guard and canonical-map results; the card's **AC list, every AC tagged `[CI]`, `[UAT]` or `[CI+UAT]`**, with the automated test that proves each `[CI]` AC (UI also at 375 / 768 / 1280 with no horizontal scroll); the list "ACs awaiting UAT"; the deviations from the PRD text, if any, as a numbered list. Screenshots from UAT stay in the local `.evidence/` and are never attached; the PR carries only pass/fail and IDs, never names.
+- **UAT proof and Done (§6.5).** After the PR is merged and the designated UAT developer has deployed, the card's team runs the `[UAT]` ACs in a visible browser and writes the rows in `docs/plan/r1-ac-ledger.md`. A card moves to `status:done` only after UAT Pass. Comparison with V2 is the Delivery Lead's job at verification (§8); a card team never compares with V2 and never opens it.
 
 **Using the traceability report.** `node scripts/r1-trace-check.mjs` (from the repo root) reads the PRD IDs and this plan's cards and writes `docs/plan/r1-traceability.md`: every PRD module with its FR/AC counts and the cards that cover it, and every card with the PRD modules it cites. Before starting, open that file, find your card, and read **every** PRD module listed against it. When you add or split a card, re-run the script: it must exit 0 (first line `uncovered: 0 | dangling: 0`, second line with `unknown URS: 0`, `unknown DM/API: 0` and `ownership defects: 0`). **Every card carries a line `- Data/API: DM-xx, …; API-…` (or `none`)**: the DM rows of `50-data-model-erd.md` and the `Exists-Fix`/`Missing-Build` API rows of `60-api-contract.md` that the card implements (the `Exists-OK` routes it verifies may be listed too). Each DM and each `Exists-Fix`/`Missing-Build` API is owned by **exactly one** card; a card that only reads an owned item names it in `- Also uses:`. If a DM or API has no card, add it to the most fitting card of the same sector (a new card only when nothing fits, with the card format, sector and CODEOWNERS rules, the sprint table and the totals updated). A card must name every PRD module it implements in its "PRD:" line as full IDs (`R1-MUR-17, R1-MUR-26`, `FR-MUR-QP-6`, `R1-ADM-Q-16`, `NFR-1`). CI runs the same script (S0-T04) and fails when a PRD module has no card or a card cites an unknown ID.
 
@@ -1159,31 +1162,39 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - Sectors never write the same file (§2); shared files go through S0 (§3).
 
 ### 5.2 Critical path (Delivery A)
-`S0-T02 stack` → `S1-T01 groups` → `S1-T03 extraction` → `S2-T02 import UI` → `S3-T02 Set Builder` → (`S8-T01 → S8-T02 → S8-T03/T04`) → `S3-T04 pupil sitting` → `S4-T08 / S3-T08 UAT ops (Kontrak Disahkan → Terbit)` → `S9 UAT acceptance`. Parallel critical branch for chapter learning: `S4-T02 DSKP → S4-T03 Bab mapping (needs the investigation, open question Q3) → S5-T02 → S10-T04/T05`. The P0 portal-breakage branch (`S0-T05 → S0-T06 → S10-T01..T04, S5-T06, S6-T01, S6-T02`) is independent and is the quickest visible win.
+The path is derived from the `deps:` of the cards (the `deps:` win over any list in this plan; the sprint lists in §5A are checked against them).
+- **Longest chain (about 30 ideal days):** `S1-T01 groups` → `S1-T09a/S1-T09b answer modes, scheme editor, bilingual, drawing/table_fill` → `S8-T03 answer widgets` → `S3-T04 pupil sitting` → `S3-T06 Kertas Subjektif and self-mark` → `S5-T11`.
+- **Platform and Bijak chain:** `S0-T02 stack` → `S1-T01` → `S1-T03 extraction` → `S2-T02 import UI`; `S1-T06 group-safe assembly` → `S3-T02 Set Builder` → `S3-T04`; `S8-T01 → S8-T02 → S8-T03/T04` → `S3-T04` → `S3-T08 Terbit pipeline` and `S4-T08 / S3-T08 UAT ops (Kontrak Disahkan → Terbit)` → `S9 UAT acceptance`.
+- **Answer store (reads by every report):** `S0-T02` → `S5-T15 single answer store` (Sprint 1) → the writers (`S5-T03`, `S3-T04`, `S3-T05`, `S3-T06`, `S7-T01`) and the readers (`S10-T01..T03`, `S6-T01`, `S6-T10`).
+- **Chapter learning:** `S4-T02 DSKP` → `S4-T03 Bab mapping tool` (its first step is the investigation of the existing chapter data) → `S5-T02`, `S10-T04`, `S10-T05`.
+- **Coin rate:** the `reward_settings` part of `S7-T05` (DM-48, API-ADM-16) lands in Sprint 2 because `S5-T03`, `S3-T04` and `S7-T01` read it; the rest of `S7-T05` is Sprint 5.
+- **P0 portal-breakage branch** (`S0-T05 → S0-T06 → S10-T01..T03, S5-T06, S5-T10, S6-T01, S6-T02`) is independent and is the quickest visible win.
 
 ### 5.3 Split by number of developers
-Assumptions: **1 ideal day = 1 day of focused work; a developer delivers 8 ideal days per 2-week sprint** (10 working days x 0.8 focus, after reviews, calls, rebasing). S = 1, M = 3, L = 6. Estimated totals: **Delivery A about 340 days, Delivery B about 37 days** (the 110 cards in the traceability report; the per-developer figures in the table below were set before cards S6-T16..T20 were added and are re-baselined after Sprint 1). Estimates are re-baselined after Sprint 1.
+Assumptions: **1 ideal day = 1 day of focused work; a developer delivers 8 ideal days per 2-week sprint** (10 working days x 0.8 focus, after reviews, calls, rebasing). S = 1, M = 3, L = 6. Totals computed from the 113 cards: **Delivery A 335 ideal days for developers (plus 17 days of S9 verification, which is the Delivery Lead's), Delivery B 37 days.** The figures are recomputed from the cards by the Delivery Lead whenever cards are added or split, and re-baselined after Sprint 1.
 
-| Devs | Sector assignment (non-overlapping, permanent) | Delivery A duration | Verdict |
+| Devs | Sector assignment (non-overlapping; days of Delivery A per developer) | Delivery A duration (days / 8 per sprint) | Verdict |
 |---|---|---|---|
-| **1** | one at a time in this order: S0 → S8-T01 → S10 P0 → S6 P0 → S4 → S1 → S2 → S3 → S8 → S5 → S6 P1 → S7 | ≈ 36 sprints for Delivery A (72 weeks) | Not viable for 1.0. Use only if the user lowers the scope; then do P0 cards only (≈ 120 days, 15 sprints) |
-| **2** | Dev A: S0, S1, S4, S3, S10 (≈ 123 d). Dev B: S2, S5, S6, S7, S8 (≈ 122 d) | ≈ 18 sprints (36 weeks) | Possible but long |
-| **3** | A: S0, S1, S4 (74 d). B: S2, S3, S8 (83 d). C: S5, S6, S7, S10 (≈ 94 d) | ≈ 12 sprints (24 weeks) | Minimum recommended |
-| **5** | A: S0 + S1 (51 d). B: S2 + S8 (50 d). C: S3 + S10 (52 d). D: S4 + S5 (50 d). E: S6 + S7 (48 d) | ≈ 7 sprints (Sprint 0 + 6 = 13 weeks), then Delivery B | Recommended; matches the sprint table below |
+| **1** | one at a time in this order: S0 → S8-T01 → S10 P0 → S6 P0 → S4 → S1 → S2 → S3 → S8 → S5 → S6 P1 → S7 (335 d) | about 42 sprints (84 weeks) | Not viable for 1.0. Use only if the user lowers the scope; then do P0 cards only (192 days, 24 sprints) |
+| **2** | Dev A: S6, S5, S4, S10 (165 d). Dev B: S0, S1, S2, S3, S7, S8 (170 d) | about 22 sprints (44 weeks) | Possible but long |
+| **3** | A: S6, S5 (117 d). B: S1, S2, S3, S10 (120 d). C: S0, S4, S7, S8 (98 d) | about 15 sprints (30 weeks) | Minimum recommended |
+| **5** | A: S0 + S1 (56 d). B: S2 + S8 + S10 (75 d). C: S3 + S4 (59 d). D: S5 + S7 (71 d). E: S6 (74 d) | about 10 sprints (Sprint 0 + 9 = 19 weeks), then Delivery B | Recommended |
 
-Inside every sprint each developer works only in their own sectors' paths; a task needing another sector's path is a small PR to that sector's developer. The Delivery Lead (S9) is a separate role and does not count as a developer.
+The sprint lists in §5A give the order of goals and cards. When a team's cards do not fit one sprint, the surplus follows in the next sprint (carry-over rules in §5A); Sprint 6 (hardening) starts when every Delivery A card is merged, not before. Scope is never cut to fit a date (D100).
+
+Inside every sprint each developer works only in their own sectors' paths; a task needing another sector's path is a small cross-sector PR (§3; R1-START-HERE decision 7), reviewed within 1 working day by the team that holds that sector. The Delivery Lead (S9) is a separate role and does not count as a developer.
 
 ### 5A. Sprint plan
 
-**Sprint length: 2 weeks (Sprint 0: 1 week).** Reasons: L cards are 6 ideal days, so they must fit inside one sprint; every sprint needs time for verification on UAT with the Delivery Lead, which is slow (3 s between V2 pages, headed browser); the user sees a demo every 2 weeks, a rhythm they can follow. One week would put ceremonies and verification on the critical path; four weeks would hide a failing direction for too long. After Sprint 3, if velocity is stable and the user wants quicker feedback, switch to 1 week (this is an explicit retro decision).
+**Sprint length: 2 weeks (Sprint 0: 1 week).** Reasons: L cards are 6 ideal days, so they must fit inside one sprint; every sprint needs time for the UAT deploy and the teams' UAT acceptance runs (headed browser, three widths); the user sees a demo every 2 weeks, a rhythm they can follow. One week would put ceremonies and verification on the critical path; four weeks would hide a failing direction for too long. After Sprint 3, if velocity is stable and the user wants quicker feedback, switch to 1 week (this is an explicit retro decision).
 
-**Ceremonies (all kept minimal).** Sprint planning 30 min (Delivery Lead + sector leads: pick cards, confirm ACs, move issues into the iteration). Daily: each developer posts 3 lines (§6.7), no meeting. Sprint review: the user watches the demo script live in a visible browser (≤30 min). Retro: 15 min, three bullets (stop/start/keep) written in `docs/plan/r1-board.md` notes. Nothing else.
+**Ceremonies (all kept minimal).** Sprint planning 30 min (Delivery Lead + team leads: pick cards, confirm ACs, set the issue milestones). Daily: each team posts one report comment in #503 (§6.7), no meeting. Sprint review: the user watches the demo script live in a visible browser (≤30 min). Retro: 15 min, three bullets (stop/start/keep) posted as a comment in #503. Nothing else.
 
-**"Sprint done" definition.** A sprint is done only when (1) every card in it is Done under DoD-T *or* explicitly carried over with a reason; (2) **every AC on the sprint's exit list passes** in the AC ledger with evidence; (3) the demo was shown to the user; (4) `main` branch of work (`feature/v3-bijak-r1`) is green (CI, sidebar-walk). Progress is reported as "ACs passing / ACs planned", then "cards done / planned", in that order.
+**"Sprint done" definition.** A sprint is done only when (1) every card in it is Done under DoD-T *or* explicitly carried over with a reason; (2) **every AC on the sprint's exit list has a Pass row** in the AC ledger (`[CI]` ACs in CI, `[UAT]` ACs on UAT, §6.9); (3) the demo was shown to the user; (4) `main` branch of work (`feature/v3-bijak-r1`) is green (CI, sidebar-walk). Progress is reported as "ACs passing / ACs planned", then "cards done / planned", in that order. Sprint-order rule: a card's dependencies (`deps:`) are in the same sprint or an earlier one, and a card starts only after its dependencies are merged; `S9-T01`, `S9-T02` and `S9-T05` are recurring Delivery Lead cards that run in every sprint and have no sprint list of their own (their issues carry the milestone R1 Sprint 1).
 
-**Carry-over rules.** A card that misses the sprint returns to Backlog with its progress note and is re-estimated; carry-over is allowed once; the second time it must be split or re-assigned at planning. A card whose AC fails at verification returns to In progress (it is not Done); it counts as carry-over. Anything a card needs from another sector and did not get is reported as blocked on day 2, not on the last day.
+**Carry-over rules.** A card that misses the sprint returns to Backlog with its progress note and is re-estimated; carry-over is allowed once; the second time it must be split or re-assigned at planning. A card whose AC fails on UAT returns to `status:in-progress` (it is not Done); it counts as carry-over. Anything a card needs from another sector and did not get is reported as blocked on day 2, not on the last day (comment in #503, label `needs:S<n>`).
 
-**Tracking per sprint.** GitHub Project fields: **Sprint** (iteration field: Sprint 0, 1, 2, …), **Estimate** (number, ideal days from the S/M/L size), **Sector**, **Phase**, **Priority**, **Status** (Backlog / Claimed / In progress / In review / Verifying / Done). Burn-down: a Project "Burn up" chart on Estimate by Sprint, plus the two-line sprint table in `docs/plan/r1-board.md` (planned days, done days, planned ACs, passing ACs). The AC ledger (`docs/plan/r1-ac-ledger.md`, §6.9) is the real measure.
+**Tracking per sprint.** The board is the `r1` issues with their labels and milestones (`R1 Sprint 0..N`); sector, type, priority, delivery and status are labels (§6.1). Per sprint the Delivery Lead posts in #503: planned days, merged days, ACs planned, ACs passing. The AC ledger (`docs/plan/r1-ac-ledger.md`, §6.9) is the real measure.
 
 #### Slice 0: one end-to-end chain first
 
@@ -1197,7 +1208,7 @@ The cards, in order (each step needs the one before it):
 4. **ONE Sejarah Kertas 1 paper end to end** (Sejarah has sample papers and its DSKP loaded; Kertas 1 first, D112(4)): Kontrak S3-T01 (Disahkan, FR-ADM-Q16.*) -> Set Builder S3-T02 -> Semak & Terbit (S3-T08 for the Terbit pipeline; S1-T10 for the batch-to-paper step) -> pupil sitting and result S3-T04 (with S8-T03 answer widgets, S8-T04 navigator/timer/Hantar on phone) -> Prestasi and Analisa Item (S10-T01, S10-T03), with the answers written by S5-T15 (mode `simulasi`). Done when: AC-ADM-Q16.1, AC-ADM-Q16.3, AC-ADM-Q07.3 to AC-ADM-Q07.6, AC-MUR-13-1, AC-MUR-13-4, AC-MUR-13-6, AC-MUR-13-25.
 4a. **Paper PDF start of AC-CHAIN-2** (needed to prove AC-CHAIN-2 from its first step; if time runs out, the Sejarah paper may be entered by group-first manual entry (S2-T01) and these cards follow immediately after): S0-T03 (real Tesseract OCR, D112(2)), S1-T03 (extraction keeps groups and Bahagian), S1-T04 (timeout, error state), S2-T02 (Import & Semakan, Semak Ekstrak). Done when: AC-ADM-QE5.1, AC-ADM-QE5.2, AC-ADM-QE5.3, AC-ADM-Q07.1. This completes AC-CHAIN-2.
 
-The final check runs AC-CHAIN-1 and AC-CHAIN-2 on UAT in a visible browser at 1280 px with a 375 px pass of the pupil steps (card S9-T06 owns the chain specs; for Slice 0 they are run by hand with the AC-CHAIN-2 numbers applied to the Sejarah paper). The content for steps 1 to 4 is entered by Admin users (D112(4)).
+The final check runs AC-CHAIN-1 and AC-CHAIN-2 on UAT in a visible browser at 1280 px with a 375 px pass of the pupil steps, after the designated UAT developer deployed on request (card S9-T06 runs and accepts the chains; the spec of each chain is written by the last card of that chain, §4.S9; for Slice 0 they are run by hand with the AC-CHAIN-2 numbers applied to the Sejarah paper, by the teams that own the Slice 0 cards). The content for steps 1 to 4 is entered by Admin users (D112(4)).
 
 #### Sprint table (5-developer variant; other variants in 5B)
 
@@ -1206,33 +1217,33 @@ Exit-criteria notation: `AC-MUR-3-*` means all acceptance criteria of that modul
 **Sprint 0 (1 week) — Foundation.**
 - *Goal (user-visible):* "Any developer can clone the project, run one command, log in as pupil T1/T4, teacher, school admin and admin on a stack with data (CI/test use) and on UAT; the board exists; UAT has the DSKP loaded and a school-admin account."
 - *Cards:* S0-T01, T02, T03, T04, T08 · S8-T01, T06 · S4-T01, T02 (dry-run + local; UAT run is a ops step), T05 · S1-T01 (start) · S6-T05 (ops) · S2-T03 · S5-T08 (start). ≈ 36 days of 40.
-- *Entry:* plan approved by the user; GitHub Project/labels/CODEOWNERS created by the Delivery Lead (S0-T01); each developer declared a sector in `r1-board.md`.
+- *Entry:* plan approved by the user; labels (including `needs:S0..S10`), milestones and issues created by `scripts/r1-create-issues.mjs`; the designated UAT developer named in the first line of #503; each team has registered (`r1-lock.mjs register-team`) and holds its sector locks.
 - *Exit (ACs):* FR-X5-2 (stack boots untouched, CI `stack-smoke` green); AC-X2-3 check runs (report mode); U-OP-01 (DSKP loader), U-OP-02 (intake env), U-OP-03 (Darjah) and U-OP-12 (accounts) done on UAT with the user's approval: UAT "Tahap" = 5 (FR-X3-2) and a school-admin account can log in; S8-T01 merged.
-- *Demo:* (1) fresh clone → `npm run stack:up` → login as each role; (2) show the Project board with every card, sector and estimate; (3) open a PR touching two sectors and show both owners requested; (4) UAT landing shows Tahap 5; (5) Kurikulum shows DSKP nodes.
+- *Demo:* (1) fresh clone → `npm run stack:up` → login as each role; (2) show the issue board (labels and milestones) with every card, sector and estimate; (3) open a PR touching two sectors and show both owners requested; (4) UAT landing shows Tahap 5; (5) Kurikulum shows DSKP nodes.
 
 **Sprint 1 — "No broken sidebar, correct pupil analytics and teacher/school-admin P0 screens".**
-- *Goal:* "A T5 pupil on UAT opens every sidebar item: Prestasi shows only their own data, Headcount, Analisa Item and Laporan Soalan work; the teacher's Laporan Mingguan and Analitik Adaptif open real screens; the school admin sees Kirkpatrick (7 screens) and Sekolah Bersaing with data."
-- *Cards:* S0-T05, T06 · S10-T01, T02, T03, T04 · S5-T06, T05 (start) · S6-T01, T02, T03 (start), T04 · S7-T02 · S3-T01, T03 · S1-T01 (finish), T02 · S4-T03 (investigate + bulk API start), T04 (script) · S8-T02 (start).
+- *Goal:* "A T5 pupil on UAT opens every sidebar item: Prestasi shows only their own data, Headcount, Analisa Item and Laporan Soalan work; the teacher's Laporan Mingguan opens a real screen; the school admin sees Kirkpatrick (7 screens) and Sekolah Bersaing with data; every answering activity writes the single answer store."
+- *Cards:* S0-T05, T06 · S5-T15 (the single answer store lands first because the reports read it), T10, T06, T05 (start) · S10-T01, T02, T03 · S6-T01, T02, T03 (start), T04 · S7-T02 · S3-T01, T03 · S1-T01 (finish), T02 · S4-T03 (investigate + bulk API start) · S8-T02 (start).
 - *Entry:* Sprint 0 exit.
-- *Exit (ACs):* AC-X2-1 for pupil, teacher, school admin (sidebar-walk green for these rows); AC-X2-2 for the modules fixed; `AC-MUR-4-*`, `AC-MUR-3-*`, `AC-MUR-6-*`, `AC-MUR-54-*`; `AC-GUR-43-*`, `AC-GUR-5-*`, `AC-AS-5-*`, `AC-AS-11-*`, `AC-AS-3-*`, `AC-AS-45-*`, `AC-AS-49-*`; XS-1..3 on the fixture school; FR-X4-4 (pupil cannot see school data).
-- *Demo:* (1) pupil T5 on UAT: open every sidebar item at 375 and 1280 (sidebar-walk spec shown green); (2) Prestasi → own 360, then show school endpoint returns 403 for the pupil; (3) guru → Laporan Mingguan prints a class report; (4) school admin → Kirkpatrick all 7 screens, Sekolah Bersaing board, same pupil count on three screens; (5) side by side with V2 Laporan Mingguan.
+- *Exit (ACs):* AC-X2-1 for pupil, teacher, school admin (sidebar-walk green for these rows); AC-X2-2 for the modules fixed; `AC-MUR-4-*`, `AC-MUR-3-*`, `AC-MUR-6-*`, `AC-MUR-54-*`; `AC-GUR-43-*`, `AC-AS-11-*`, `AC-AS-3-*`, `AC-AS-45-*`, `AC-AS-49-*`; XS-1..3 on the fixture school; FR-X4-4 (pupil cannot see school data); the `practice_answers` `mode` column and write path (S5-T15, DM-44) in CI.
+- *Demo:* (1) pupil T5 on UAT: open every sidebar item at 375 and 1280 (sidebar-walk spec shown green); (2) Prestasi → own 360, then show school endpoint returns 403 for the pupil; (3) guru → Laporan Mingguan prints a class report; (4) school admin → Kirkpatrick all 7 screens, Sekolah Bersaing board, same pupil count on three screens; (5) the Delivery Lead's side-by-side with V2 Laporan Mingguan (verification step, §8).
 
 **Sprint 2 — "DSKP-correct question entry and import".**
 - *Goal:* "An admin enters a question group (one figure, three questions) and imports a PDF paper whose Rajah 3 stays with questions 5–8; completeness is explained at entry; the admin menu has one bank and one review queue."
-- *Cards:* S1-T03, T04, T05, T07 · S2-T01, T02, T05, T07 (start) · S0-T07 (menu FINAL, D107) · S4-T03 (finish, apply on local), S4-T06, T07 · S3-T02 (start) · S5-T01, T04, T15 · S6-T03 (finish), S6-T12 (Pengguna/Sekolah, P0), T06 (waits S1-T08) · S8-T02 (finish), T03 (start) · S0-T09.
+- *Cards:* S1-T03, T04, T05, T07 · S2-T01, T02, T05, T07 (start) · S0-T07 (menu FINAL, D107) · S4-T03 (finish, apply on local), S4-T06, T07 · S5-T01, T04 · S6-T03 (finish), S6-T12 (Pengguna/Sekolah, P0) · S10-T04 (after the bulk-mapping tool is finished) · S7-T05 (the `reward_settings` coin-rate part only; the rest is Sprint 5) · S8-T02 (finish) · S0-T09.
 - *Entry:* S1-T01 done; S0-T03 worker on; S8-T01 done; S2-T03 aliases merged (the menu itself is FINAL, D107).
-- *Exit (ACs):* `AC-ADM-QE1.*..QE6.*`, `AC-ADM-Q03..Q09.*`, `AC-ADM-G7.1`, `AC-ADM-G7.3`; AC-X3-1 (T1 and T5 both practise); `AC-ADM-C05.*` on the dataset; AC-X6-1 for S2 screens at 375/768/1280.
+- *Exit (ACs):* `AC-ADM-QE1.*..QE6.*`, `AC-ADM-Q03..Q09.*`, `AC-ADM-G7.1`, `AC-ADM-G7.3`; AC-X3-1 (T1 and T5 both practise); `AC-ADM-C05.*` on the dataset; `AC-GUR-5-*`, `AC-AS-5-*` (S10-T04); AC-X6-1 for S2 screens at 375/768/1280.
 - *Demo:* (1) Studio: create a stimulus then three questions without re-uploading the figure; (2) upload a PDF fixture: batch finishes, Rajah 3 → Q5–8 grouped, reviewer adjusts range, accept; (3) completeness panel names missing fields; (4) CSV with DSKP columns publishes; (5) sidebar "Soalan" group = 8 items, V2 paths redirect; (6) T1 pupil practises.
 
 **Sprint 3 — "T5 pupil on UAT sits a published Bijak SPM paper with stimulus groups on a phone".**
-- *Cards:* S3-T02, T04, T08 · S8-T03, T04, T05 · S1-T06, T10 · S9-T06 (chains 1, 2, 5) · S2-T04, T08, T09(P2 optional) · S5-T02, T03, T07 · S4-T08, T04 (apply) · S3-T05 · S10-T05 · S6-T07, T08.
+- *Cards:* S1-T06, T09a, T09b, T10 (these first in the sprint) · S3-T02, T04, T08 · S8-T03, T04, T05 · S9-T06 (chains 1, 2, 5) · S2-T04, T08, T09(P2 optional) · S5-T02, T03, T07 · S4-T08, T04 (script and apply, after the Sprint 2 servability work) · S3-T05 · S10-T05 · S6-T07, T08.
 - *Entry:* Sprint 2 exit; S4 Bab mapping tool ready.
 - *Exit (ACs):* `AC-MUR-13-*` (Bijak part), `AC-MUR-QP-1..17`, `AC-ADM-Q17.*`, `AC-ADM-C01.*`, `AC-ADM-U01..U04.*`, AC-X6-2, AC-X6-1 for every question-paper screen; `AC-MUR-9-*`, `AC-MUR-16-*`, `AC-ADM-Q13.*, AC-ADM-Q14.*, AC-ADM-Q15.*, AC-ADM-Q16.*`, `AC-ADM-QE7.*`, `AC-ADM-G7.2`, AC-X3-1, **AC-CHAIN-1, AC-CHAIN-2, AC-CHAIN-5** (S9-T06, headed browser). UAT ops: U-OP-07 (Bab mapping, T4-T5 core subjects), U-OP-05/06 (quarantine and stem clean-up), U-OP-04 (Kontrak Disahkan), U-OP-08 (pool seed), U-OP-09 (Terbit): script-run steps executed by the designated UAT developer (dry-run, report, user approval, real run); content steps (Bab mapping, figures, regroup) done by ADMIN users in the Portal Pentadbiran (D110).
 - *Demo:* (1) admin builds a paper in the single Set Builder from groups, publishes with a Disahkan contract; (2) on **UAT** the T5 pupil on a 375 px headed browser sits it: figure shown once, zoomable, navigator, Hantar, result; (3) Soalan by Chapter lists the chapters, all open (no 70% rule); (4) regroup work-list shows counts; id 812791-like items are no longer served.
 
 **Sprint 4 — Delivery A: remaining P0 and P1 part A.**
 - *Goal:* "Kertas Subjektif with pupil self-mark works (no flag), Tracking A, Kiriman Guru, the pupil Dashboard/Profile, the school-admin reports, teacher Set Soalan and Misi Harian work."
-- *Cards:* S3-T06, T07 · S1-T08, T09 · S2-T05, T06 · S5-T05, T08, T09, T11 · S6-T09, T10, T11, T14 · S8-T05, T07 · S10-T06, T07 · S7-T01, T03, T09 · S0-T10.
+- *Cards:* S3-T06, T07 · S1-T08 · S2-T05, T06 · S4-T09 · S5-T05, T08, T09, T11 · S6-T06 (after the Kiriman Guru backend), T09, T10, T11, T14 · S8-T05, T07 · S10-T06, T07 · S7-T01, T03, T09 · S0-T10.
 - *Exit (ACs):* `AC-MUR-13-*` (all), `AC-MUR-17-*`, `AC-MUR-26-*`, `AC-MUR-2-*`, `AC-MUR-A1-*`, `AC-MUR-A2-*`, `AC-MUR-A3-*`, `AC-GUR-44-*` (except AC-GUR-44-9), `AC-GUR-8-*`, `AC-GUR-8b-*`, `AC-GUR-41-*`, `AC-GUR-42-*`, `AC-AS-46-*..AC-AS-53-*`, `AC-ADM-Q12.*, Q18.*, Q20..Q23.*`, `AC-ADM-N01.*, N05.*, N06.*, N07.*`; AC-X2-3 check switches to **fail** mode and is green; **AC-CHAIN-3, AC-CHAIN-4, AC-CHAIN-6, AC-CHAIN-8** (S9-T06).
 - *Demo:* teacher sends a PDF paper → admin sees it in Kiriman Guru; teacher publishes a Set Soalan → pupil of the class plays it; a subjective paper is sat and self-marked on a phone; school-admin reports show the same numbers.
 
@@ -1252,84 +1263,92 @@ Exit-criteria notation: `AC-MUR-3-*` means all acceptance criteria of that modul
 
 ### 5B. Capacity variants: the same backlog on 1, 2, 3 and 5 developers
 
-| Sprint | 5 devs (A S0+S1, B S2+S8, C S3+S10, D S4+S5, E S6+S7) | 3 devs (A S0+S1+S4, B S2+S3+S8, C S5+S6+S7+S10) | 2 devs (A S0,S1,S4,S3,S10 / B S2,S5,S6,S7,S8) | 1 dev |
-|---|---|---|---|---|
-| 0 | Foundation (above) | S0-T01..T04, S8-T01, S4-T01/T02 (rest slips) | S0-T01..T04, S8-T01 | S0-T01..T04, S8-T01 (≈ 6 d) |
-| 1 | P0 portals | S0-T05/T06, S10-T01..T04, S6-T01 | S0-T05/T06, S10-T01/T02 (A); S6-T01, S5-T06 (B) | S0-T05/T06, S10-T01 |
-| 2 | P0 portals (rest) | S10-T04, S6-T02/T04, S7-T02, S5-T06, S4-T05 | S6-T02, S7-T02 (B); S10-T03/T04, S4-T05 (A) | S10-T02/T03 |
-| 3 | Question pipeline | S1-T01, S1-T02, S2-T03 | … | S10-T04, S5-T06 |
-| 4 | … | S1-T03..T05, S2-T01/T02 | … | S6-T01 |
-| … | Sprint 3 Bijak SPM | continues with S3-T02, S8-T02..T04 (≈ Sprint 6–7) | S3 and S1 pipeline (A), S2/S8 (B) from Sprint 5 | P0 order as §5.3 |
-
-Rules for every variant: (1) P0 cards of the sprint list above come before any P1 card, whatever the variant; (2) the order of sprint *goals* is fixed (portal P0 → question entry → Bijak on phone → P1 → hardening → Delivery B), so fewer developers means more sprints per goal, not a different order; (3) sector ownership stays disjoint: with 2 or 3 developers one developer holds several sectors, but a sector is never split between two developers at the same time (exception: S5 and S6 may be split by sub-folder if the sector lead agrees in `r1-board.md`); (4) at 1 developer, the Delivery Lead decides the order after each sprint and the user is told the new expected date.
+The sector assignment per variant is the table in §5.3. Rules for every variant:
+1. P0 cards of the sprint list in §5A come before any P1 card, whatever the variant.
+2. The order of sprint *goals* is fixed (portal P0 and answer store → question entry → Bijak on phone → P1 → hardening → Delivery B), so fewer developers means more sprints per goal, not a different order.
+3. Sector ownership stays disjoint: a team (or developer) holds whole sectors by lock, and a sector is never split between two teams at the same time. Exception: S5 and S6 may be split by sub-folder if the team that holds the sector agrees in a comment on the sector's mirror line in #502.
+4. At 1 developer, the Delivery Lead decides the order after each sprint and the user is told the new expected date.
+5. Sprint 0 for fewer than 5 developers: S0-T01..T04, S8-T01 first; S4-T01/T02 and the rest of Sprint 0 follow in Sprint 1.
 
 ---
 
 ## 6. Claim-and-track mechanism
 
-### 6.1 Artefacts
-- **GitHub Issues**: one per task card (title `S3-T04 Pupil sitting and result (Bijak SPM)`), created from the issue template (App. A). Body = the card (PRD refs, files, tests, verification, DoD), written to the issue so developers never hunt in the plan.
-- **Labels:** `sector:S0..S10`, `delivery:A|B`, `priority:P0|P1|P2`, `size:S|M|L`, `type:fix|complete|build|verify|ops`, `status:backlog|claimed|in-progress|in-review|verifying|done`, `blocked`, `needs:schema`, `needs:contract`, `needs:answer` (agent stopped: not in the PRD text), `needs:approval` (UAT/V1/V2 or user decision), `sprint:N` mirrored by the Project iteration.
-- **GitHub Project "R1"**: board with columns **Backlog / Claimed / In progress / In review / Verifying / Done**; fields Sprint (iteration), Estimate, Sector, Phase, Priority. Views: Board, Table by Sector, Table by Sprint.
-- **`docs/plan/r1-board.md`**: one table mirroring claims for offline readers (§6.6). Updated by the claimant in the same PR as the first commit of the task and by the Delivery Lead on Done.
-- **`docs/plan/r1-ac-ledger.md`**: one line per PRD AC (§6.9).
+The working rules are stated once in [`R1-START-HERE.md`](R1-START-HERE.md) (decisions 1 to 9). This section is the plan-side summary; if the two differ, START-HERE wins. Questions: [`R1-FAQ.md`](R1-FAQ.md).
 
-### 6.2 Declaring a sector
-A developer (or an AI agent session acting for one) adds a row to the "Sector leads" part of `r1-board.md`: sector ID, name, GitHub handle, date. One **sector lead per sector at a time**; the lead reviews PRs in the sector's paths and keeps the sector's cards in order. Multi-sector developers list each. Handing a sector over = edit the row and comment on the pinned issue "Sector leads".
+### 6.1 Artefacts
+- **The lock** (`scripts/r1-lock.mjs`, remote branch `r1-lock/<KEY>`) is the only truth about who holds a sector or a card. It does not depend on the GitHub user, because several Claude accounts may share one GitHub identity. `node scripts/r1-lock.mjs --help` prints the cheat-sheet.
+- **The board = GitHub issues + labels + milestones.** One issue per task card (title `S3-T04 Pupil sitting and result (Bijak SPM)`), created from the card by `scripts/r1-create-issues.mjs` (App. A is the form for a card added by hand). The issue shows the card, the gap-check checklist, the definition of done and the "How to claim" rules; `node scripts/r1-create-issues.mjs --update-bodies` refreshes the rules and, with `--with-card`, the card text, milestone and labels. There is no `r1-board.md` and no board file of any kind.
+- **Labels (the complete list):** `r1` · `sector:S0..S10` · `type:fix|complete|build|keep|verify|ops` · `prio:P0|P1|P2` · `status:ready|in-progress|in-review|blocked|done` · `r1-delivery:A|B` · `team:<team>` (created by the team lead on first use) · `needs:S0..S10` (a cross-sector PR, or a request waiting on that sector). Stuck: `status:blocked` plus a `QUESTION:` comment. Size (S/M/L) is on the card, not a label. The sprint is the milestone `R1 Sprint 0..N`.
+- **Pinned issue #502 "R1 sector claims":** one mirror comment per sector hold. **Pinned issue #503 "R1 daily":** the designated UAT developer's name (first line), the deployed UAT commit after each deploy, requests for UAT test accounts or a deploy, and one daily report comment per team.
+- **`docs/plan/r1-ac-ledger.md`:** one row per AC and env (§6.9). The result of every AC lives only there.
+
+### 6.2 Holding a sector
+A team registers once (`register-team`) and then locks whole sectors (`acquire S<n>`). **"Sector lead" means the team that holds the sector lock;** there is no other sector lead and no list of leads in a file. After a successful lock the team posts one mirror comment in #502: `[<team>] holds S<n> (sessions S-1, S-3)`. A team holds at most 3 sectors (a convention) and never holds one idle for more than 1 day. S9 is the Delivery Lead's and cannot be claimed. Handing a sector over = `release` by the old team, `acquire` by the new team, and an edit of the #502 comment.
 
 ### 6.3 Claiming a task
-1. Pick a card from your sector in the current Sprint (or any Backlog card if your sector's sprint cards are done).
-2. Check the card's `depends-on` are Done (or the dependency is merged to the integration branch).
-3. **Self-assign the issue and comment `claim`**; move it to **Claimed**. **A card cannot move to In progress until the issue carries the "Gap check" section** (§0B workflow step 1; label `needs:gapcheck` is removed by the sector lead when it is there). A second person who wants it comments instead; one claimant per task.
-4. Create the branch `r1/S<n>-T<nn>-<slug>` (e.g. `r1/S3-T04-pupil-sitting`) from `feature/v3-bijak-r1`; open a **draft PR** within one working day; status → **In progress**.
-5. WIP limit: one In progress + one In review per developer.
-6. A card in another sector may be claimed only after the sector lead comments `ok`.
+1. Pick a card in a sector your team holds, in the current sprint milestone, P0 first (`status:ready`).
+2. Check the card's `deps:`. **A dependency is satisfied when its PR is merged into `feature/v3-bijak-r1` and CI is green.** Wait for `status:done` of a dependency only when the card says "needs data on UAT".
+3. **Lock the card:** `node scripts/r1-lock.mjs acquire S<n>-T<nn> --team <team> --session S-<k>` (exit 3 = another team holds it, exit 4 = your team does not hold the sector). Then mirror it: label `team:<team>` and the comment `[<team>/S-<k>] claimed`. **Self-assigning the issue or commenting `/claim` means nothing.**
+4. **Post the gap check** (table FR/AC | works / broken / missing | file::symbol | planned change) as a comment, then set `status:in-progress`. **A card cannot be `status:in-progress` before the gap check is posted** (§0B).
+5. Create the branch (6.4), open a **draft PR** within one working day, work on it.
+6. WIP limit: per session one card `in-progress` and at most one `in-review`; at most 2 independent cards per session.
+7. A card in a sector held by another team is never claimed: ask that team through a cross-sector PR (6.4) or a comment with the label `needs:S<n>`.
 
-**Stale-claim rules.** Each claimed or in-progress issue needs a daily line (§6.7) or a comment. **No update for 2 working days (P0) / 3 working days (P1/P2): the Delivery Lead comments "releasing"; after 1 more working day the assignee is removed and the card returns to Backlog.** The claimant may reclaim it if no one else did. A draft PR with no push for 3 days is closed with a note, the branch kept.
+**Stale locks.** Every lock needs a heartbeat at least once a day (`heartbeat-all`). A lock with no heartbeat for 24 h is STALE (calendar hours). Before a weekend or leave the team runs `heartbeat-all` and writes `[<team>/S-<k>] away until <date>` in #503. The product owner may break a STALE lock (`break ... --owner`) after 1 working day without an answer in #503. A draft PR with no push for 3 working days is closed with a note; the branch is kept.
 
 ### 6.4 Branches, PRs
-- Branch `r1/S<n>-T<nn>-<slug>`; commits `S3-T04: …`; squash merge title `S3-T04 …`.
-- PR template (App. B) fields: **card ID (exactly one)**, Gap-check link, existing files changed, the reason for each new file, DM/API IDs, ACs and AC-CHAIN-n proven, issue link, PRD refs (module / FR / AC), sector, paths from other sectors touched (and their owners requested), migration number from your range, contract change (yes/no, contract PR link), real test output, **screenshots at 375/768/1280 from a visible browser**, V2 comparison (what differs, deviation numbers), UAT check (pass/fail and IDs only, no names or screenshots in the PR), placeholder-string check, DoD ticks.
-- **CODEOWNERS** (App. C) requests the sector lead for every owned path; a PR touching another sector's paths needs that owner's approval; branch protection requires CODEOWNERS review + green CI.
+- **Naming (one convention):** branch `r1/<team>/<card-id>-<slug>` from `feature/v3-bijak-r1` (example `r1/team-amin/S3-T04-pupil-sitting`); commit in the repo's conventional style with the card at the end (`fix(s3): ... (S3-T04)`); PR title `[<team>/S-<k>] S3-T04 <title>`; the PR body names **exactly one** card ID; every issue and PR comment starts with `[<team>/S-<k>]`. The repo `CLAUDE.md` rule `feature/<slug>` is for non-R1 work.
+- **PR template** (App. B): card ID, `Cross-sector:` line, gap-check link, existing files changed, the reason for each new file, DM/API IDs, scope-guard and canonical-map results, every AC with its `[CI]`/`[UAT]`/`[CI+UAT]` tag, the list "ACs awaiting UAT", migration number from your range, contract change, real test output, deviations from the PRD text, placeholder-string check.
+- **Cross-sector small PR (R1-START-HERE decision 7).** A change in another sector's files (a migration number, a contract index entry, a menu line, a delete-only PR) is a small PR that names the card it serves in the body, adds the line `Cross-sector: S<n> (<reason>)` and the label `needs:S<n>`. It is not a card of its own and does not need the lock of S<n>. The team that holds S<n> reviews it **within 1 working day**; if no team holds S<n>, the product owner reviews it. Use only your own sector's migration range (§3); a migration in another range is requested from the team that holds that sector. Order for work that needs several sectors: the schema PR first, then the contract PR, then the code.
+- **Review and merge.** The author's **team lead** reviews against the card, the gap check and the guardrails and comments `[<team>/S-<k>] review: approved` (or the exact changes needed). **The product owner (`@aminfaudzi`) merges** (squash, title `S3-T04 ...`) after green CI. Nobody else merges. `.github/CODEOWNERS` names `@aminfaudzi` for every path; sector ownership is by lock, not by CODEOWNERS (App. C).
 
 ### 6.4a Board rules from the improve-not-rebuild guardrails (§0B)
-- Status **In progress** needs the Gap check section; **In review** needs the PR with exactly one card ID and the scope-guard job green.
-- The sector lead rejects a Fix or Complete PR that does not touch its "Starts from" files or that adds a parallel page, service, store, route or table; a schema change must name a DM ID and an endpoint an API ID (guardrail 3).
-- Change budget by Type (Keep and Verify: no product code; Fix and Complete: the "Starts from" files, new files only if the card names them; Build: new files only at the named location; Ops: no product code).
-- The Delivery Lead moves an issue to Done only after the card's ACs and every AC-CHAIN-n through it were run in a visible browser at 375/768/1280.
+- `status:in-progress` needs the gap check comment; `status:in-review` needs the PR with exactly one card ID and the scope-guard job green.
+- The reviewer rejects a Fix or Complete PR that does not touch its "Starts from" files or that adds a parallel page, service, store, route or table; a schema change must name a DM ID and an endpoint an API ID (guardrail 3).
+- Change budget by Type (Keep and Verify: no product code; Fix and Complete: the "Starts from" files, new files only if the card names them; Build: new files only at the named location; Ops: no product code). A Verify card that needs product code is re-typed Fix or Complete in the issue before any code.
+- A card moves to `status:done` only after UAT Pass of every one of its ACs and of every AC-CHAIN-n through it (6.5).
 
-### 6.5 Moving to Done (Delivery Lead)
-Merged PR → issue moves to **Verifying**. The Delivery Lead (S9) then: reads the PR evidence; reruns the card's ACs in a visible browser at 375/768/1280, side by side with V2 (§X7); checks the result on UAT (D110; no local acceptance); updates the AC ledger; if everything holds, moves to **Done** and closes the issue; otherwise comments the failed AC, moves it back to **In progress** (the claimant keeps the claim for 2 days to fix). Only S9 moves an issue to Done.
+### 6.5 Proving and moving to Done (D113)
+1. **CI first (before the merge).** The team proves every `[CI]` AC by a named automated test, writes CI rows in the ledger (the PR may carry them) and lists the `[UAT]` ACs as "ACs awaiting UAT" in the PR.
+2. **Merge.** Team lead review, then the product owner's merge.
+3. **Deploy.** The **designated UAT developer** deploys `feature/v3-bijak-r1` to UAT once a day after CI is green (on request during Slice 0) and posts the deployed commit in #503. Nobody else deploys.
+4. **UAT acceptance by the card's team.** Once the deployed commit contains the card's merge, the team runs the `[UAT]` ACs and every AC-CHAIN-n through the card on UAT in a **visible browser at 375, 768 and 1280** with the team's shared test accounts (created privately by the designated UAT developer: one account per role per team; never written in the repo, an issue, a PR or a log) and writes one Pass/Fail row per AC in `docs/plan/r1-ac-ledger.md`. Test records carry the prefix `UJI <team> <date>` and are removed by the creating team the same day.
+5. **Done.** The team lead sets `status:done` and closes the issue when every AC has a Pass row for its tag. A Fail row re-opens the card (`status:in-progress`); the fix is deployed and a new row is added below the Fail row.
+6. **Delivery Lead verification.** Each sprint the Delivery Lead (S9-T01, S9-T03) re-runs a sample of the Pass rows, does the V2 side-by-side comparison (§8, X7) and may re-open a card; a card team never opens V2.
 
-### 6.6 `docs/plan/r1-board.md` format (single table)
+### 6.6 Mirror formats
 ```
-| ID | Title | Sector | Del | Pri | Type | Size | Sprint | Status | Claimant | PR | Updated |
-|----|-------|--------|-----|-----|------|------|--------|--------|----------|----|---------|
-| S3-T04 | Pupil sitting and result | S3 | A | P0 | Complete | L | 3 | In progress | @handle | #123 | 2026-11-20 |
+#502 sector line:   [team-amin] holds S1 (sessions S-1, S-3)
+issue claim:        [team-amin/S-2] claimed            (label team:team-amin)
+issue gap check:    [team-amin/S-2] gap check          (table FR/AC | works / broken / missing | file::symbol | planned change)
+PR review:          [team-amin/S-1] review: approved
+question:           [team-amin/S-2] QUESTION: <question>; the two places that disagree; my suggested answer   (status:blocked)
+#503 UAT notice:    UAT deployed: <short commit sha> on <date>          (posted by the designated UAT developer)
 ```
-Above the table: "Sector leads" (S0..S10: handle, since) and the current sprint goal and ACs planned/passing. Nothing else.
 
-### 6.7 Daily status (3 lines per developer, posted in the pinned issue "Daily" or in the team channel)
+### 6.7 Daily report (one comment per team per day in #503)
 ```
-Done: <card id> <what is proven>.
-Next: <card id> <what I will do today>.
-Blocked: <none | card id waiting for what from whom>.
+[<team>] Sectors held: S1, S3. P0 open/closed in my sectors: 5/7. ACs Pass CI/UAT: 41/12.
+| Session | Card | Done since last | Now | Blocked by | Next |
+|---|---|---|---|---|---|
+| S-1 | S1-T01 | gap check + PR open | review | none | S1-T02 |
 ```
 
 ### 6.8 Anti-bureaucracy limits
-No separate boards per team; no merge log file; no per-agent handoff documents; no extra status words; no new documents unless a PRD/ADR must change. Evidence stays in the gitignored `.evidence/` (UAT holds real pupil data: never committed, no names in issues or PRs).
+No separate boards per team; no board file; no merge log file; no per-agent handoff documents; no extra status words; no new documents unless a PRD/ADR must change. Evidence stays in the gitignored `.evidence/` (UAT holds real pupil data: never committed, no names in issues or PRs).
 
 ### 6.9 AC ledger
-`docs/plan/r1-ac-ledger.md`: table `AC ID | Module | Priority | Sprint | CI | UAT | V2 compared | 375 | 768 | 1280 | Evidence path | Date`. Cell values `-`, `FAIL`, `PASS`. Seeded from the PRD AC lists by a script `scripts/ac-ledger.mjs` (S0, S size, optional). Sprint review reports passing/planned from this file.
+`docs/plan/r1-ac-ledger.md`: one table per sprint with the columns `card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref`. `env` is `CI` or `UAT`, `result` is `Pass` or `Fail`, the evidence ref is only the name of a local `.evidence/` path or of the automated test. A row is added by the card's own team in a docs-only PR; rows are never deleted. Sprint review reports "ACs passing / ACs planned" from this file. The rules (who writes, privacy, test-record cleanup) are in the file itself.
 
 ---
 
 ## 7. Environments and data
 
-**Run the stack.** `npm ci` → `npm run stack:up` (compose.yaml + compose.http.yaml; builds the SPA in `VITE_API_MODE=http`, migrates and seeds the demo data). Ports 5192/5193 (UI) as in the stack docs; `npm run stack:down`. Dev loop without Docker: `npm run be:dev` (API :3000) and `VITE_API_MODE=http npm run dev` with `COOKIE_SECURE=false` in `.env.api` (`docs/plan/http-switch-checklist.md`). Checks: `npm run typecheck`, `npm run lint`, `npm test`, `npm run be:verify`, `npm run contract:check`, `npm run test:e2e:http -- --grep @api`.
+**Run the stack.** `npm ci` → `npm run stack:up` (compose.yaml + compose.http.yaml; builds the SPA in `VITE_API_MODE=http`, migrates and seeds the demo data). Ports 5192/5193 (UI) as in the stack docs; `npm run stack:down`. Dev loop without Docker: `npm run be:dev` (API :3000) and `VITE_API_MODE=http npm run dev` with `COOKIE_SECURE=false` in `.env.api` (`docs/plan/http-switch-checklist.md`). Checks: `npm run typecheck`, `npm run lint`, `npm test`, `npm run be:verify`, `npm run contract:check`, `npm run test:e2e:http -- --grep @api`, `node scripts/r1-scope-guard.mjs`, `node scripts/r1-canonical-map.mjs --check`. Env files: copy `.env.example`, `.env.api.example`, `.env.db.example`; local demo logins are in `docs/AKAUN-DEMO-LOCAL.md`. **Until S0-T02 is merged the stack may not start** (the e2e seed fails): use unit tests, typecheck, lint and `npm run be:dev` as above. A session without Docker (a cloud session) runs unit, typecheck, lint and contract checks only and marks stack/e2e ACs "awaiting CI/UAT".
 **Seeds (CI tests only, D110).** Demo seed (small). E2E profile: `E2E_SEED=1 npm run be:db:seed -- --profile=e2e` (`docs/ops/e2e-seed.md`; needs S0-T02 first). `uat-like` fixture profile: S4-T01. These feed automated tests in CI; they are not acceptance data.
-**Acceptance environment (D110).** Acceptance, AC proofs and AC-CHAIN-1..9 run on **UAT (`uat.prestasiplus.cloud`), a clone of V2 production data**. There is no local acceptance environment, no UAT dump, no anonymised local restore and no synthetic acceptance profile. UAT holds real pupil data: screenshots and evidence stay in the gitignored `.evidence/`, are never committed, and issues/PRs carry only pass/fail and IDs, never names.
-**Accounts.** Demo accounts for local tests only. UAT accounts (pupil T1, T5, teacher, admin, school admin) are in the credentials file outside the repo (CLAUDE.md "Credentials"); never copied into docs or issues.
+**Acceptance environment (D110, D113).** Acceptance, AC proofs and AC-CHAIN-1..9 run on **UAT (`uat.prestasiplus.cloud`), a clone of V2 production data**, after the designated UAT developer deploys `feature/v3-bijak-r1` (daily, after CI is green; on request during Slice 0) and posts the commit in #503. There is no local acceptance environment, no UAT dump, no anonymised local restore and no synthetic acceptance profile. UAT holds real pupil data: screenshots and evidence stay in the gitignored `.evidence/`, are never committed, and issues/PRs carry only pass/fail and IDs, never names.
+**Accounts.** Demo accounts are for local and CI tests only. On UAT the **designated UAT developer** creates, through the admin UI on a dedicated test school, **one account per role per team** (Admin Pusat, Admin Sekolah, Guru, Murid T1, T2, T3, T4, T5) and shares the credentials **privately** with the team leads. Credentials are never written in the repo, an issue, a PR, a comment, a log or the ledger. A new developer asks their team lead, who asks in #503: `[<team>/S-<k>] needs UAT test accounts for <team>`. The designated UAT developer is the person named by the product owner in the first line of #503 (`UAT developer: @handle`). Test records created during an AC run carry the prefix `UJI <team> <date>` and are removed by the creating team the same day (rules in `docs/plan/r1-ac-ledger.md`).
 
 ### Who does what (RACI, D110)
 
@@ -1341,13 +1360,15 @@ R = does it, A = accountable, C = consulted, I = informed.
 | Content work: Bab mapping, figure images, regroup | I | not allowed (build tools only) | R | A (checks results on UAT) | I |
 | Script data operation on UAT (dry-run, report, real run) | R | C (tool author) | I | A | approves every write |
 | Unit/integration tests, CI (lint, typecheck, test) | C | R | n/a | I | n/a |
-| Acceptance, AC proofs, AC-CHAIN-1..9 on UAT | R/C (deploys, restores state) | C | C | R, A (moves Done) | I (demo) |
+| Deploy `feature/v3-bijak-r1` to UAT (daily; post the commit in #503) | R | I | I | A | I |
+| Create the shared UAT test accounts (one per role per team, shared privately) | R | I | I | A | I |
+| AC proofs and AC-CHAIN-1..9 on UAT after the deploy (the card's team, ledger rows) | C (restores state) | R (the card's team) | C | A (samples and re-opens; V2 side-by-side) | I (demo) |
 | Server or environment change on UAT | R | not allowed | n/a | A | approves |
-| Any action on V1, V2 or a server by an AI session | not allowed | not allowed | not allowed | not allowed | not allowed (D95) |
+| Any action on V1, V2 or a server by an AI session (using UAT in a browser with the shared test accounts is allowed) | not allowed | not allowed | not allowed | not allowed | not allowed (D95) |
 
 ### UAT data operations runbook
 
-The IDs are the 17 UAT data tasks of PRD 30 §5 (U-OP-01..17). Owner key (D110): **OPS** = **the designated UAT developer** who has server access (name given by the user; D95 still holds: **no AI session acts on a server**); **ADM** = Admin Pusat users working in the Portal Pentadbiran; **DEV** = a developer builds the tool or screen, then OPS or ADM uses it. **The user approves every write operation.** Every script operation is run by the designated UAT developer in this order: dry-run (default), report written to `.evidence/uat-ops/`, the user's explicit approval in the conversation ("approve U-OP-nn"), then the real run; a backup (`docs/ops/db-backup.md`) comes first. **Content work (Bab mapping, figure images, regrouping) is ADM work in the UI; developers never do it**, and scripts only produce dry-run reports or assist a bulk action an admin confirms in the UI. V1, V2 and UAT are never modified outside this list.
+The IDs are the 17 UAT data tasks of PRD 30 §5 (U-OP-01..17). Owner key (D110): **OPS** = **the designated UAT developer** who has server access (an operational assignment named by the product owner in the first line of #503; D95 still holds: **no AI session acts on a server**); **ADM** = Admin Pusat users working in the Portal Pentadbiran; **DEV** = a developer builds the tool or screen, then OPS or ADM uses it. **The user approves every write operation.** Every script operation is run by the designated UAT developer in this order: dry-run (default), report written to `.evidence/uat-ops/`, the user's explicit approval in the conversation ("approve U-OP-nn"), then the real run; a backup (`docs/ops/db-backup.md`) comes first. **Content work (Bab mapping, figure images, regrouping) is ADM work in the UI; developers never do it**, and scripts only produce dry-run reports or assist a bulk action an admin confirms in the UI. V1, V2 and UAT are never modified outside this list.
 
 | Order | ID | Operation (PRD 30 §5) | Owner | Approval | Needs first | Tool card |
 |---|---|---|---|---|---|---|
@@ -1355,7 +1376,7 @@ The IDs are the 17 UAT data tasks of PRD 30 §5 (U-OP-01..17). Owner key (D110):
 | 2 | U-OP-02 | Intake environment: `JOBS_WORKER_ENABLED=true`, `OCR_ENGINE=tesseract` + `OCR_LANG_DIR` (real in-house OCR, D112(2); no external AI provider; the mock OCR is for CI tests only, never on UAT; an admin reviews every extracted item before publish) | OPS | user | S0-T03 merged | S0-T03 |
 | 3 | U-OP-03 | Deactivate Darjah D1-D6 in `Tahap Pendidikan`; check public stats and pickers | ADM | user | S4-T05 merged | S4-T05 |
 | 4 | U-OP-01 | **DSKP loader** (`npm run dskp:load -w @pp/api -- --dry-run`, then real; T4-T5, T1-T3 when extracts exist, and every other SPM subject offered once its DSKP is loaded by S4-T09, D112(3)) | OPS | user | backup; dry-run report reviewed | S4-T02 |
-| 5 | U-OP-12 | Acceptance accounts: T5, T4, T2 pupils, teacher, a school and its Admin Sekolah ("Janakan Akaun") | ADM | user | S6-T12 | S6-T05 |
+| 5 | U-OP-12 | Acceptance accounts on a dedicated test school ("Janakan Akaun"): per team Admin Pusat, Admin Sekolah, Guru and Murid T1, T2, T3, T4, T5; credentials shared privately with the team leads (never in the repo) | OPS (through the admin UI) | user | S6-T12 | S6-T05 |
 | 6 | U-OP-07 | **Bab mapping** in bulk by filter, T4-T5 core subjects first (no auto-mapping, D89) | ADM | user, after dry-run counts | 01, S4-T03, S2-T08 | S4-T03 |
 | 7 | U-OP-05 | **Regroup**: detect and quarantine stimulus-less and duplicated-stem questions (server rule, servability reason) | DEV tool, OPS runs the detector, ADM regroups and supplies figure images in the work-list | user | 01, S1-T07, S2-T04 | S1-T07, S4-T04 |
 | 8 | U-OP-06 | Clean-up of duplicated stem/prompt on migrated questions (FR-ADM-G7.6) | DEV tool, OPS runs (dry-run, report, approval, real) | user | 05 | S4-T04 |
@@ -1365,31 +1386,31 @@ The IDs are the 17 UAT data tasks of PRD 30 §5 (U-OP-01..17). Owner key (D110):
 | 12 | U-OP-10 | Tracking A: fill each set to target (`Isi set`, `Simpan`) | ADM | user | S3-T05 | S3-T05 |
 | 12b | U-OP-15 | Tingkatan 1-3 chapters/topics created by the admin in Kurikulum when the migrated data has none (FR-ADM-C01.6), then bulk-map (U-OP-07) | ADM | user | E-03, S4-T07 | S4-T07 |
 | 13 | U-OP-11 | Flags: `latih-tubi` ON, `permainan` ON, `kertas-subjektif` ON (D104); Delivery B modules ON as built | ADM | user | S0-T10 / S0-T11 | S0-T10 |
-| 14 | U-OP-14 | Remove QA test data (questions 1272-1276, batches 1-2, papers 6-8) if present | ADM | user | none | n/a |
+| 14 | U-OP-14 | Remove QA test data (questions 1272-1276, batches 1-2, papers 6-8) if present; at the end of each sprint list the leftovers with the prefix `UJI ` and remove them | ADM (OPS lists) | user | none | n/a |
 | 15 | U-OP-16 | Set the support contact in `Tetapan` (N-07) | ADM | user | N-07 built | S7-T09 |
 | 16 | U-OP-17 | **Regroup work-list** (QE-08): regroup per subject and Tingkatan (Sains T4 first), attach the real figures, re-run the detector report | ADM | user | 05, QE-08 built | S2-T04 |
 | Delivery B | U-OP-13 | Activate digital rewards, tier values, challenges, reward budgets | ADM | user | P2-02, 03, 07, 09 | S7-T05 |
 
 **Bijak content owner and first batch (D112(4)).** Bijak content (Kontrak, trial-paper intake, Set Builder papers, Terbit) is owned by Admin users (D110), not by developers. The first content batch is the 6 subjects that have sample papers: Bahasa Melayu, Bahasa Inggeris, Matematik, Matematik Tambahan, Fizik and Sejarah. Kertas 1 first; Kertas 2 after the scheme editor is built. A subject outside this batch follows only after its DSKP is loaded (S4-T09). Content admins: named by team leads in issue #502 / #503 (an operational assignment, not a doc decision).
 
-There is no local rehearsal dataset (D110): each script step runs as a dry-run on UAT and the dry-run report is attached to the approval request. Rollback = restore from the backup; scripts are insert-only and idempotent where possible (as `dskp:load`). After each step the Delivery Lead re-runs the affected ACs on UAT in a visible browser (T5 pupil first).
+There is no local rehearsal dataset (D110): each script step runs as a dry-run on UAT and the dry-run report is attached to the approval request. Rollback = restore from the backup; scripts are insert-only and idempotent where possible (as `dskp:load`). After each step the affected ACs are re-run on UAT in a visible browser (T5 pupil first) by the team that owns the card, and the Delivery Lead samples the result.
 
 ---
 
 ## 8. Definition of Done and release checklist (PRD §X7)
 
-**Per task:** DoD-T (§4). **Per sector:** every card Done; no file in the sector's paths contains a placeholder string; the sector's mock paths are gone from the http build (S0-T09 green); the sector's rows in the sidebar-walk spec are green; the sector lead has no open Blocker/Major review comment; docs of the sector updated.
+**Per task:** DoD-T (§4) with the D113 proof order: CI first, then UAT after the designated UAT developer's deploy, rows in `docs/plan/r1-ac-ledger.md`, `status:done` only after UAT Pass (§6.5). **Per sector:** every card Done; no file in the sector's paths contains a placeholder string; the sector's mock paths are gone from the http build (S0-T09 green); the sector's rows in the sidebar-walk spec are green; the team holding the sector has no open Blocker/Major review comment; docs of the sector updated.
 **Per sprint:** "Sprint done" (§5A).
 **Per phase / release checklist (Delivery Lead):**
 1. **Placeholders:** `scripts/check-placeholders.mjs` green (AC-X2-3); a manual grep of the built bundle for `akan datang`, `belum tersedia`, `Pratonton`, `prototaip`; no `PrototypeUnavailablePage` on a matrix route; the only allow-list entry is the officers' PPD/JPN page (register row 18).
 2. **Sidebar:** for each role (Murid, Guru, Admin Sekolah, Admin) every item opens a screen with the PRD title and no 403/404/"Akses Ditolak" or another role's screen (AC-X2-1), and every button/link in every matrix module completes against the real API with no mock data (AC-X2-2) — done in a visible browser, recorded in the ledger.
 3. **Responsive:** every 1.0 screen at 375/768/1280 has no horizontal scroll and nothing clipped (AC-X6-1); a screenshot per width per screen in `.evidence/`; the question-paper screens including AC-X6-2 re-checked on a 375 px headed browser.
-4. **Side by side:** each module compared with V2 (V1 for the school-admin rows without V2) at the same width; every difference fixed or a numbered fidelity deviation.
-5. **UAT data (acceptance environment, D110):** all P0/P1 ACs and AC-CHAIN-1..9 run on UAT (clone of V2 production data); evidence only in `.evidence/`; §7 U-OP-01..U-OP-12 done; UAT "Tahap" = 5; Bab mapping coverage reported; counts agree across screens (XS-1..5, FR-X4-1/2).
+4. **Side by side (Delivery Lead only; card teams never open V2):** each module compared with V2 (V1 for the school-admin rows without V2) at the same width, 3 seconds between V2 pages, one browser; every difference fixed or a numbered fidelity deviation. A module that V2 does not have ("Not observed in V2") is checked against the FR text instead.
+5. **UAT data (acceptance environment, D110, D113):** all P0/P1 ACs and AC-CHAIN-1..9 have a Pass row on UAT (clone of V2 production data) in the ledger, run by the card teams and sampled by the Delivery Lead; evidence only in `.evidence/`; no `UJI ` test record is left behind; §7 U-OP-01..U-OP-12 done; UAT "Tahap" = 5; Bab mapping coverage reported; counts agree across screens (XS-1..5, FR-X4-1/2).
 6. **Pupil flows:** T1 and T5 can practise (AC-X3-1); no Darjah anywhere (FR-X3-1); a pupil sees only own data (FR-X4-4).
 7. **Quality gates:** `typecheck`, `lint`, `lint:ds`, `npm test`, `be:verify`, `contract:check`, `test:e2e:http`, sidebar-walk, gitleaks, no-dumps all green on the release commit; ADR-0027..0036 not contradicted.
 8. **Hidden by decision:** Cikgu Alesa and Keluarga Angkat unreachable by menu and URL (D102/FR-X2-2).
-9. **User review:** the user watched the Phase demo and approved. Deploy only on explicit user confirmation (G6).
+9. **User review:** the user watched the Phase demo and approved. A production deploy only on explicit user confirmation (G6); the daily UAT deploy of `feature/v3-bijak-r1` by the designated UAT developer is not a production deploy.
 
 ---
 
@@ -1434,135 +1455,203 @@ There is no local rehearsal dataset (D110): each script step runs as a dry-run o
 
 ## Appendix A — GitHub issue template (`.github/ISSUE_TEMPLATE/r1-card.yml`)
 
+The live file is the source; this copy is kept identical. The issues of the 113 cards are created by `scripts/r1-create-issues.mjs` (not by this form); the form is for a card added by hand. The claim is the lock, not a field (R1-START-HERE decision 1).
+
 ```yaml
 name: R1 task card
-description: One task of the Release 1 plan (docs/plan/r1-development-plan.md)
-title: "S?-T??  <title>"
-labels: ["status:backlog"]
+description: One task card of the Release 1 plan (docs/plan/r1-development-plan.md). Rule - gap check first, close gaps, never rebuild.
+title: "S?-T?? <title>"
+labels: ["r1"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Read `docs/plan/R1-START-HERE.md`, `docs/plan/R1-FAQ.md` and `docs/prd/r1/00-index.md` first. Do the code gap check, post it here, close only the gaps in the existing files.
+        The only claim is the lock (`node scripts/r1-lock.mjs --help`); mirror it here with the label `team:<team>` and the comment `[<team>/S-<k>] claimed`. Assigning yourself or commenting `/claim` means nothing.
+        Evidence (screenshots, logs) stays in your local `.evidence/` folder. Never put real names, e-mails or credentials in this issue.
   - type: input
     id: card
-    attributes: {label: Card ID, placeholder: "S3-T04"}
-    validations: {required: true}
+    attributes:
+      label: Card ID
+      placeholder: "S3-T04"
+    validations:
+      required: true
   - type: dropdown
     id: sector
     attributes:
       label: Sector
-      options: [S0 Platform, S1 Question BE, S2 Admin question UI, S3 Bijak SPM, S4 Curriculum and UAT data, S5 Murid learning, S6 Guru and Admin Sekolah, S7 Gamification and games, S8 Rendering and responsive, S9 Verification, S10 Performance and analytics]
-    validations: {required: true}
-  - type: dropdown
-    id: phase
-    attributes: {label: Delivery (A = 1.0 + linked, B = rest), options: ["A", "B"]}
-  - type: dropdown
-    id: priority
-    attributes: {label: Priority, options: [P0, P1, P2]}
+      options:
+        - S0 Platform
+        - S1 Question BE
+        - S2 Admin question UI
+        - S3 Bijak SPM
+        - S4 Curriculum and UAT data
+        - S5 Murid learning
+        - S6 Guru and Admin Sekolah
+        - S7 Gamification and games
+        - S8 Rendering and responsive
+        - S9 Verification
+        - S10 Performance and analytics
+    validations:
+      required: true
+  - type: input
+    id: lock_team
+    attributes:
+      label: Team holding the lock (from `node scripts/r1-lock.mjs list`)
+      placeholder: "team-amin / S-2"
   - type: dropdown
     id: ctype
-    attributes: {label: "Type (Fix / Complete / Build / Verify / Ops)", options: [Fix, Complete, Build, Verify, Ops]}
-  - type: dropdown
-    id: size
-    attributes: {label: Size (S=1 day, M=3, L=6), options: [S, M, L]}
+    attributes:
+      label: Type
+      options:
+        - Fix
+        - Complete
+        - Build
+        - Keep
+        - Verify
+        - Ops
+    validations:
+      required: true
   - type: textarea
     id: prd
-    attributes: {label: "PRD refs (module / FR / AC)", placeholder: "R1-MUR-3; FR-MUR-3-1..; AC-MUR-3-*"}
-    validations: {required: true}
-  - type: textarea
-    id: startsfrom
-    attributes: {label: "Starts from (existing) files, repo-relative, in backticks; and the change budget of the Type (Keep/Verify/Ops: no product code; Fix/Complete: these files, new file only if named; Build: new files only at the named location)"}
-    validations: {required: true}
+    attributes:
+      label: PRD refs (module / FR / AC) and Data/API IDs (DM-xx, API-AREA-nn)
+      placeholder: "R1-MUR-3; FR-MUR-3-1; AC-MUR-3-*; DM-21; API-AUTH-17"
+    validations:
+      required: true
   - type: textarea
     id: gapcheck
     attributes:
-      label: "Gap check (REQUIRED before In progress): for every FR/AC of the card, works / broken / missing in the existing V3 code, with file:line evidence. If the code changed since the PRD gap, update this, not the PRD intent."
+      label: Gap check (REQUIRED before In progress)
+      description: "For every FR/AC of the card: works / broken / missing in the existing V3 code, with file:line evidence. Post this before the first commit."
       placeholder: "| FR/AC | works / broken / missing | file:line | planned change |"
-    validations: {required: true}
-  - type: textarea
-    id: gap
-    attributes: {label: "Current gap and root cause (file:line)"}
+    validations:
+      required: true
+  - type: checkboxes
+    id: startsfrom
+    attributes:
+      label: Starts-from confirmation
+      options:
+        - label: I opened every file under "Starts from (existing)" on the card and the gap check is based on that code, not on the PRD alone
+          required: true
+        - label: The fix is made in those existing files; I add a new file only if the card names it (no parallel page, service, store, route or table)
+          required: true
   - type: textarea
     id: approach
-    attributes: {label: "Approach (2-6 lines) and files to touch"}
+    attributes:
+      label: Approach (2-6 lines) and the existing files I will touch
+    validations:
+      required: true
   - type: textarea
     id: contract
-    attributes: {label: "API / contract / migration (migration number from the sector range)"}
-  - type: textarea
-    id: tests
-    attributes: {label: "Tests to add"}
-  - type: textarea
-    id: verify
     attributes:
-      label: "Verification (V-STD: CI green -> on UAT in a visible browser 375/768/1280 side by side with V2) plus card specifics"
+      label: API / contract / migration (migration number from the sector range, contract PR if any)
   - type: input
     id: deps
-    attributes: {label: Depends on, placeholder: "S1-T01, S8-T02"}
+    attributes:
+      label: Depends on
+      placeholder: "S1-T01, S8-T02"
   - type: checkboxes
     id: dod
     attributes:
       label: Definition of Done
       options:
-        - label: All ACs on this card pass with evidence (.evidence/<card>/)
-        - label: typecheck, lint, tests (and be:verify for BE) green, real output in the PR
-        - label: Tests added as listed
-        - label: Screenshots 375/768/1280 from a visible browser, V2 comparison, UAT-data check in the PR
-        - label: No placeholder string, no mock path in the http build
-        - label: Sector lead and other-sector owners approved the PR
-        - label: Gap check section posted before the first commit (works / broken / missing with file:line)
-        - label: Only the gaps were closed in the existing files; no parallel page, service, store, route or table; every schema change has a DM ID and every endpoint an API ID
-        - label: Card ACs and every AC-CHAIN-n through the card proven in a visible browser at 375/768/1280
-        - label: Delivery Lead verified and moved to Done
+        - label: Gap check posted before the first commit (works / broken / missing with file:line)
+          required: true
+        - label: Only the gaps were closed in the existing files; every schema change has a DM ID and every endpoint an API ID
+          required: true
+        - label: typecheck, lint and tests green (and be:verify for backend), real output in the PR
+          required: true
+        - label: Tests added as listed on the card
+          required: true
+        - label: Every AC tagged [CI], [UAT] or [CI+UAT]; the [CI] ACs proven by named automated tests (UI also at 375, 768 and 1280 with no horizontal scroll)
+          required: true
+        - label: After the designated UAT developer deployed the merge (commit posted in #503), the [UAT] ACs and every AC-CHAIN-n through this card passed on UAT in a visible (headed) browser; rows written in docs/plan/r1-ac-ledger.md
+          required: true
+        - label: No placeholder string (akan datang / belum tersedia / Pratonton / prototaip) and no mock path in the http build
+          required: true
+        - label: Evidence (screenshots, logs) kept in local .evidence/<card>/ only; this issue and the PR contain no real names, e-mails or credentials
+          required: true
+        - label: Team lead review approved and the product owner merged; a cross-sector PR also approved by the team holding that sector (label needs:S<n>)
+          required: true
+        - label: Card moved to status:done only after UAT Pass
+          required: true
 ```
 
 ## Appendix B — PR template (`.github/pull_request_template.md`)
 
+The live file is the source; this copy is kept identical.
+
 ```markdown
-## Task
-Closes #<issue>  ·  Card: S?-T??  (exactly one card ID; `scripts/r1-scope-guard.mjs` reads it)  ·  Sector: S?
-Gap check (link to the issue section): 
-PRD refs (module / FR / AC): 
-DM / API IDs (required when this PR adds a page, route, controller, model or migration): 
+## Card
+Closes #<issue>  ·  Card: S?-T??  (exactly one card ID; `scripts/r1-scope-guard.mjs` reads it)  ·  Sector: S?  ·  Team/session: <team>/S-<k>
+Cross-sector: none | `Cross-sector: S<n> (reason)` (only for a small PR that changes another sector's files; also add the label `needs:S<n>`; the team holding S<n> reviews within 1 working day)
+Gap check (link to the issue comment/section):
+PRD refs (module / FR / AC):
+DM / API IDs (required when this PR adds a page, route, controller, model or migration):
+Docs-only PR (touches only `docs/**`; no card needed): yes | no
 
 ## What changed (3 lines max)
-Existing files changed (from "Starts from"): 
-New files and the reason for each (only those the card names): 
+- ...
 
+Existing files changed (from the card's "Starts from"):
+New files and the reason for each (only those the card names):
 
-## Other-sector paths touched (owner requested via CODEOWNERS)
-- none | path -> sector
+## Endpoints / tables
+- ...
+
+## Other-sector paths touched
+- none | path -> sector (requires the `Cross-sector:` line above)
 
 ## Migration / contract
 - Migration number (from my sector range): none | 0???_s?_<slug>
 - Contract change: none | contract PR #<n> merged first; `npm run contract:check` output below
+- Contract commit: <sha>
 
 ## Test evidence (real output)
 ```
-typecheck / lint / test / be:verify tails
+paste the real tail of the output here (typecheck / lint / test / be:verify / contract:check)
 ```
 
-## Verification evidence (visible browser, not headless)
-- Screenshots at 375 / 768 / 1280 taken on UAT, listed by path in `.evidence/<card>/...` (never attached or committed; UAT has real pupil data):
-- `scrollWidth <= innerWidth` at each width: yes / no
-- V2 comparison (same width): differences fixed / deviations numbered:
-- Acceptance checked on UAT (D110): pass / fail and AC IDs only. No names, no screenshots attached (evidence stays in the gitignored `.evidence/`); CI-only changes: say "no UI"
-- AC IDs run and result (and every AC-CHAIN-n through this card):
+## Scope guard and canonical map
+- `node scripts/r1-scope-guard.mjs --base origin/feature/v3-bijak-r1 --head HEAD` result: PASS | WARN (explain) | FAIL (do not open for review)
+- `node scripts/r1-canonical-map.mjs --check` result: PASS | FAIL (do not open for review)
+- New route / menu entry / model / API: none | listed, with its DM/API ID and the entry in `docs/plan/r1-canonical-map.json` (no parallel implementation of something that already exists)
 
-## Checks
-- [ ] No rewrite of working code; only the gaps of the Gap check changed (FR-X1-5)
-- [ ] No parallel page, service, store, route or table for something that exists; no working page or module deleted or rewritten
+## ACs and proof
+List every AC of the card with a tag: `[CI]` (proven by a named automated test), `[UAT]` (needs UAT data or a human look) or `[CI+UAT]`.
+- AC-...: [CI] test name / result
+- UI at 375 / 768 / 1280 with no horizontal scroll (`scrollWidth <= innerWidth`): yes / no / not UI
+- **ACs awaiting UAT** (run by the card's team after the merge is deployed to UAT; results go in `docs/plan/r1-ac-ledger.md`): <AC and AC-CHAIN IDs>
+- Evidence stays in local `.evidence/<card>/`; never attach images or list names, data or credentials from UAT
+
+## Deviations from the PRD text
+- none | numbered list
+
+## Open questions for the team lead
+- none | list
+
+## Checklist
+- [ ] Exactly one card ID above; gap check posted before the first commit
+- [ ] No rewrite of working code; only the gaps of the gap check changed (FR-X1-5)
+- [ ] No parallel page, service, store, route or table for something that exists (scope guard and canonical map green); no working page or module deleted or rewritten
 - [ ] Every schema change has a DM ID and every endpoint an API ID (listed above)
 - [ ] Change budget of the card Type respected (Keep/Verify/Ops: no product code under `src/`, `apps/`, `packages/`)
 - [ ] Reviewer: a Fix or Complete PR that touches none of its "Starts from" files or adds a parallel implementation is rejected
+- [ ] A duplicated stem is shown once and is not excluded from serving; only `stimulus_missing` and `figure_only` questions are excluded (FR-X1-4)
 - [ ] No placeholder strings (akan datang / belum tersedia / Pratonton / prototaip) and no new mock path
-- [ ] No secrets, no real names, no personal data in code, seeds, fixtures, docs
-- [ ] Claim is current (issue assigned to me, board row updated)
-- [ ] Definition of Done on the issue is complete
+- [ ] No secrets, no real names, no personal data in code, seeds, logs, fixtures, docs, this PR
+- [ ] Scope/role tests included
+- [ ] Branch is `r1/<team>/<card>-<slug>`; PR title is `[<team>/S-<k>] <card> <title>`
+- [ ] Team lead review comment `[<team>/S-<k>] review: approved` is on this PR (the product owner merges; the card becomes Done only after UAT Pass)
 ```
 
 ## Appendix C — CODEOWNERS (`.github/CODEOWNERS`)
 
-Replace `@OWNER-Sn` with the sector lead's GitHub handle (or a team). The last matching pattern wins; specific lines come after general ones.
+This appendix is the **sector map**: which path belongs to which sector. The live `.github/CODEOWNERS` maps **every** path to `@aminfaudzi` (the product owner, who reviews as owner of record and merges). **Sector ownership is by locks** (`scripts/r1-lock.mjs`), because several Claude accounts may share one GitHub user; "sector lead" means the team that holds the sector lock. The live file keeps the sector blocks below commented out as this map; a team never gets ownership by uncommenting one. The last matching pattern wins; specific lines come after general ones.
 
 ```
-# default: platform owner
+# default: product owner (live file: @aminfaudzi for every line below)
 *                                         @OWNER-S0
 
 # S0 Platform and shared registries

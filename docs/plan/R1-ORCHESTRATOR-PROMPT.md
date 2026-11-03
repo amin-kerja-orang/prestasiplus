@@ -46,7 +46,7 @@ Several Claude accounts may share ONE GitHub identity. GitHub user names, assign
    - Build: new files only at the named location.
    - Verify/Ops: no product code.
 3. **Paths.** Edit only the claimed sectors' paths. Use only your sector's migration number range (plan §3). Shared files go through S0.
-4. **Question structure.** A stimulus (figure/passage) serves 1..n questions as ONE group and is never split (FR-X1-4). A published question carries its DSKP tags: Bab when the subject/Tingkatan has chapters, SP, TP/aras. Every pupil answer is written to the single answer store (`practice_answers`, with its mode), and every report reads it.
+4. **Question structure.** A stimulus (figure/passage) serves 1..n questions as ONE group and is never split (FR-X1-4). A published question carries its DSKP tags: Bab when the subject/Tingkatan has chapters, SP, TP/aras. Every pupil answer is written to the single answer store (`practice_answers`, with its mode), and every report reads it. A question whose stem text is duplicated (`stem_duplicated`) is shown once and is NOT excluded; only `stimulus_missing` and `figure_only` questions are excluded from serving.
 5. **No placeholders.** No "akan datang", "pratonton", "belum tersedia" or dead links. Hidden modules return 404.
 6. **Responsive.** Every screen works at 375, 768 and 1280 px, with no horizontal page scroll.
 7. **Privacy (public repo).** No real person's name, e-mail, IC, phone, password, token or server IP in code, seeds, issues, PRs or logs. UAT holds real pupil data: screenshots and evidence from UAT never go to GitHub; only pass/fail and IDs do.

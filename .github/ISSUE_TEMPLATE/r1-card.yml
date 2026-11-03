@@ -6,7 +6,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        Read `docs/plan/R1-START-HERE.md` and `docs/prd/r1/00-index.md` first. Do the code gap check, post it here, close only the gaps in the existing files.
+        Read `docs/plan/R1-START-HERE.md`, `docs/plan/R1-FAQ.md` and `docs/prd/r1/00-index.md` first. Do the code gap check, post it here, close only the gaps in the existing files.
+        The only claim is the lock (`node scripts/r1-lock.mjs --help`); mirror it here with the label `team:<team>` and the comment `[<team>/S-<k>] claimed`. Assigning yourself or commenting `/claim` means nothing.
         Evidence (screenshots, logs) stays in your local `.evidence/` folder. Never put real names, e-mails or credentials in this issue.
   - type: input
     id: card
@@ -34,12 +35,10 @@ body:
     validations:
       required: true
   - type: input
-    id: claimed_by
+    id: lock_team
     attributes:
-      label: Claimed by (developer or agent name / GitHub handle)
-      placeholder: "@handle or agent name"
-    validations:
-      required: true
+      label: Team holding the lock (from `node scripts/r1-lock.mjs list`)
+      placeholder: "team-amin / S-2"
   - type: dropdown
     id: ctype
     attributes:
@@ -105,13 +104,15 @@ body:
           required: true
         - label: Tests added as listed on the card
           required: true
-        - label: Card ACs proven on UAT in a visible (headed) browser at 375, 768 and 1280, with no horizontal scroll
+        - label: Every AC tagged [CI], [UAT] or [CI+UAT]; the [CI] ACs proven by named automated tests (UI also at 375, 768 and 1280 with no horizontal scroll)
           required: true
-        - label: Every AC-CHAIN-n that passes through this card proven in the same way
+        - label: After the designated UAT developer deployed the merge (commit posted in #503), the [UAT] ACs and every AC-CHAIN-n through this card passed on UAT in a visible (headed) browser; rows written in docs/plan/r1-ac-ledger.md
           required: true
         - label: No placeholder string (akan datang / belum tersedia / Pratonton / prototaip) and no mock path in the http build
           required: true
         - label: Evidence (screenshots, logs) kept in local .evidence/<card>/ only; this issue and the PR contain no real names, e-mails or credentials
           required: true
-        - label: Sector lead and other-sector owners approved the PR; Delivery Lead verified and moved the card to Done
+        - label: Team lead review approved and the product owner merged; a cross-sector PR also approved by the team holding that sector (label needs:S<n>)
+          required: true
+        - label: Card moved to status:done only after UAT Pass
           required: true
