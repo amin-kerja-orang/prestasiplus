@@ -429,6 +429,8 @@ Task T9 (re-verify the question-entry wizard against V2 and against the real SPM
 
 ### Verdicts
 
+Superseded by run 2 below.
+
 - **V2 parity: NO** (9 V2 rows GAP: V05, V09, V17, V19, V22, V23, V24, V32, V41; fixes W-01, W-02, W-06, W-07, W-13, W-14).
 - **Bahasa Melayu: NO** (W-02, W-03, W-07, W-08, W-15).
 - **Bahasa Inggeris: NO** (W-02, W-06, W-09, W-11).
@@ -678,3 +680,86 @@ Next free numbers used below: FR-ADM-QE3.25, AC-ADM-QE2.5, QE3.14..QE3.17, QE5.6
 - The scheme editor (G-01) covers every mark notation in the six subjects' schemes: K/N/P/B/M/F/C, @, &, //, ATAU / Alternatif, Dilihat, tersirat, Maks N, bonus, pairs, P2,1,0, ECF, Tidak diterima, Nota, model answer with images, question-level zero and deduction rules (apart from W-15).
 - Structure elements fully covered: compulsory sections, choose-N with equal marks per unit, marks per question, JSU export, blank_count lines, essay_choice with two stimuli, per-criterion language grid, option banks with images and distractors, inline gaps with one-word cap, formula pages, textbook reference, Kertas 1-4, MCQ 2-8 options, option images and maths in options, true_false, mcq_multi.
 - No real exam text or real person names were written in this section (short identifiers such as "Rajah 3" and paper codes only).
+
+## Wizard re-verification 2026-11-04 (run 2)
+
+Task T9 re-run. Independent re-check of all 93 checklist items against the current 30, 45, 46, 50, 60, 40, 10, 20 and the plan, after the fixes for W-01..W-17. No PRD or plan file was changed by this task; the only edit outside this section is the line "Superseded by run 2 below." under the run-1 "Verdicts" heading.
+
+### What changed since run 1
+
+- Applied and verified by grep (each ID exists with the claimed content): 30 FR-ADM-QE3.24 (9 modes), QE3.25, QE3.1 (tab order), QE3.2 (accepted option), QE3.11 (stacked editors, English scope), QE3.21 / FD-QE-8, AC-ADM-QE3.13..QE3.17, AC-ADM-Q03.6, Q04.5, Q05.3, Q21.2, QE2.5, QE5.6, row 04-26, FR-ADM-Q16.8 (Sejarah B choose 3 of 5); 45 L-04, L-13, mode 8 and 9 pupil text, FR-QA-17, 21, 48, 49, AC-QA-21, 48, 49, section 2.7 toggle bullet; 46 FR-PA-35..39, AC-PA-37..42, "patah perkataan" everywhere, M-MCQ accepted list, reveal "Diterima juga"; 60 4.1 shapes (11 types, `bodyEn`, `captionEn`, `optionBank` with `imageId` / `isDistractor`, `schemeRules`, `textbookRef`, `rejectionReason`) and API-BIJAK-09 section fields; 40 OPT-KOD-POTONGAN; plan cards S1-T09a and S1-T09b (old S1-T09 is gone and no other doc cites it), and R1-ADM-Q-25 is owned by S5-T13 (with API-ADM-18). Every one of the 287 IDs cited by the run-1 tables was re-grepped and has a definition; every card named in 45 section 8 and 46 section 7 exists as a plan card.
+- W-01..W-17 are closed as text. Checking the fixes as written found five new defects, N-1..N-5, all small text or one-field fixes; none needs a new screen.
+- Plan note (not counted): the "New requirements" lines of S8-T02, S8-T03, S3-T04 and S1-T09a do not yet cite FR-PA-35..39, AC-PA-37..42, FR-QA-48, 49. The owning card is named in 45 and 46 and exists, so this is not a GAP; cite them when the traceability is regenerated.
+
+### New defects found in run 2
+
+- **N-1 (V22; BI P1 Part 2)** The worked-example leaf has no stored value: L-13 says the leaf is "shown filled", but no field holds the filled answer, DM-55 has no key for it, and nothing in 50 or 60 says marks 0 is valid only for such a leaf.
+- **N-2 (G-07; Fizik, Matematik, Matematik Tambahan)** English-required scope conflicts: 30 FR-ADM-QE3.11 refuses sending only for stem, leaf prompt, option, stimulus body, bank text and alternative prompt (caption, instruction and scheme text may stay BM), but 45 section 3.1.5 (the "Bilingual (FR-QA-17)" paragraph) lists instruction, stimulus caption and bank text under the same refusal without that exception, and the plan card S1-T09b says "every text field".
+- **N-3 (G-01; Sejarah)** FR-QA-48 (rubric content points with group caps) has no pupil side: 46 3.4 item 4 (rubric) has only the band select, and 3.3 has no tick list for a rubric key.
+- **N-4 (V23, m8)** 45 conflict register row C-2 still says "QE3.24 has 14 modes"; QE3.24 now lists the 9 stored modes.
+- **N-5 (G-14; Matematik)** The second accepted MCQ option has two stores: the key `{kind:'option', correct, accepted:[...], note}` (45 mode 1, 46 M-MCQ) and `mode_config.acceptedOptions` (DM-55, 45 section 3.1.6 extras list and DM table, 60 `modeConfig` comment, 30 A2 item 13).
+
+### Per-item table (rows whose verdict changed, plus all remaining GAPs)
+
+PASS now (were GAP in run 1; 24 rows): V05, V09, V17, V19, V24, V32, V41, M2, M6, M7, m1, m2, m4, m7, G-02, G-04, G-05, G-09, G-10, G-11, G-12, G-13, G-16, G-19. Verified closing evidence: V05 AC-ADM-Q03.6; V09 AC-ADM-Q04.5; V17 / M7 FD-QE-8 + AC-ADM-QE3.15 + DM-70; V19 / G-05 FR-PA-36 + AC-PA-38; V24 / M6 / G-02 FR-PA-35 + AC-PA-37 + AC-QA-21 + one copy "patah perkataan"; V32 preview "0 patah perkataan"; V41 AC-ADM-Q21.2; M2 AC-ADM-Q05.3 + FR-PA-37; m1 AC-ADM-Q03.6; m2 FR-ADM-QE3.1 order fixed; m4 AC-ADM-QE2.5; m7 AC-ADM-QE5.6; G-04 / G-12 FR-PA-37 + AC-PA-39; G-09 60 4.1 `optionBank`; G-10 API-BIJAK-09 + Q16.8; G-11 FR-PA-38 + AC-PA-40; G-13 45 mode 8 and 9 aligned with 46 2.2.2 / 2.2.3; G-16 AC-ADM-QE3.14; G-19 AC-ADM-QE3.16.
+
+Rows that changed from PASS (run 1) to GAP, or stay GAP:
+
+| ID | Requirement | Run 1 | Run 2 | Gap |
+|---|---|---|---|---|
+| V22 | Part tree Label, Jenis, Markah, Arahan (incl. 0-mark worked example) | GAP (W-06) | GAP | N-1 (example answer has no field, no DM / API rule for marks 0) |
+| V23 | 14 V2 modes to 11 types / 9 modes | GAP (W-01) | GAP | N-4 (45 C-2 stale) |
+| m8 | 14 vs 13 modes; delete-guard text | GAP (W-01) | GAP | N-4 |
+| G-01 | Marking-scheme editor | PASS | GAP | N-3 (rubric content points: no pupil side) |
+| G-07 | Bilingual BM+EN | GAP (W-04) | GAP | N-2 (English-required scope differs 30 vs 45 vs plan) |
+| G-14 | MCQ second accepted option + Nota kunci | GAP (W-10) | GAP | N-5 (two stores) |
+
+All other rows (the 87 PASS) meet the six conditions.
+
+### Per-subject paper structure (changed elements and verdicts)
+
+| Subject | Elements | PASS | GAP elements (gap) | Verdict |
+|---|---|---|---|---|
+| Bahasa Melayu | 8 | 8 | none | YES |
+| Bahasa Inggeris | 8 | 7 | P1 Part 2 cloze worked example, 0 marks (N-1) | NO |
+| Fizik | 7 | 5 | K1 bilingual MCQ (N-2); part-level Rajah / Jadual with bilingual headers (N-2) | NO |
+| Matematik | 7 | 5 | K1 bilingual (N-2); key accepting two options (N-5) | NO |
+| Matematik Tambahan | 5 | 4 | bilingual prompts and tables (N-2) | NO |
+| Sejarah | 6 | 5 | Aras bands + content bank + category caps (N-3) | NO |
+
+Closed since run 1 in the subject tables: BM K1 Bahagian B Sumber and counter, K2 Had keras, underline / poem / box rendering, Bahan panel, Perhatian deductions (punctuation code, OPT-KOD-POTONGAN); BI Part 4/5 bank shape and e-mail frame; Fizik Draw on diagram, boxes, part-level stimulus; Matematik section marks list, drawing; Matematik Tambahan section choices, plot and best-fit; Sejarah K1 Sumber box, K2 B choose 3 of 5, part-level source.
+
+### Counts
+
+- V2 functions: 53 PASS, 2 GAP of 55 (V22, V23).
+- Split paths B/M/m: 18 PASS, 1 GAP of 19 (m8).
+- G items: 16 PASS, 3 GAP of 19 (G-01, G-07, G-14).
+- Total: **87 PASS, 6 GAP of 93** (run 1: 64 / 29). The 6 GAP rows are explained by 5 defects (N-1..N-5).
+
+### Verdicts
+
+- **V2 parity: NO** (V22 via N-1, V23 via N-4; 53 of 55 V2 rows PASS; m8 via N-4).
+- **BM: YES**
+- **BI: NO** (N-1)
+- **Fizik: NO** (N-2)
+- **Matematik: NO** (N-2, N-5)
+- **Matematik Tambahan: NO** (N-2)
+- **Sejarah: NO** (N-3)
+
+Each verdict turns YES when the fixes below are applied; no new design is needed. Fixes marked "(R1 decision D113)" are new decisions (report as D113-continued). Next free IDs: AC-ADM-QE3.18, FR-ADM-QE3.26 (30); FR-PA-40 and AC-PA-43 (46); FR-QA-50 / AC-QA-50 (45; not needed here).
+
+### Fixes for the remaining GAPs
+
+**N-1 (V22, BI P1 Part 2).** Four edits.
+1. 45 section 3.1.6, row L-13: replace its content cell with: "optional; when ticked, a required text `Jawapan contoh` appears (for an `mcq` or `match_letter` leaf the option label, otherwise text of at most 200 characters; message "Jawapan contoh diperlukan."); the leaf has marks 0 (stored as `mode_config.example = { "answer": "<value>" }`), no scheme and no key, is shown to the pupil filled with that value and read-only (46 2.2 cloze row), adds nothing to the part total, and is exempt from the scheme-sum check".
+2. 50 DM-55: append to the key list "`example` (`{ "answer": string }`, present only on a `Contoh (tidak dimarkah)` leaf; `question_parts.marks` is 0 exactly when `example` is present and 1 to 100 otherwise)"; make the same addition to the DM-55 line of 45 section 10 and to 30 A2 item 13.
+3. 60 API-Q-03 row, after the `modeConfig` mention: "a leaf with `modeConfig.example` has marks 0 and every other leaf marks 1 to 100, else `422` with 'Nilai mata mesti sekurang-kurangnya 1.' or 'Jawapan contoh diperlukan.'".
+4. 46 section 2.2, cloze row, replace "is shown filled and read-only" with "is shown filled with `mode_config.example.answer` and read-only". Add "AC-ADM-QE3.18 Given a leaf with `Contoh (tidak dimarkah)` ticked and an empty `Jawapan contoh`, then saving shows 'Jawapan contoh diperlukan.'; given the answer 'was', then the pupil sees 'was' in the gap, read-only." to 30 after AC-ADM-QE3.17. (R1 decision D113.)
+
+**N-2 (G-07; Fizik, Matematik, Matematik Tambahan).** In 45 section 3.1.5, paragraph starting "Bilingual (FR-QA-17)": replace "every text field below (stem, leaf prompt, option, instruction, stimulus body and caption, bank text, alternative prompt) shows two editors stacked, labelled `BM` and `English`. Saving or sending with an empty English value gives "Teks English diperlukan untuk soalan dwibahasa."" with "every text field below (stem, leaf prompt, option, instruction, stimulus body and caption, bank text, alternative prompt, scheme text) shows two editors stacked, labelled `BM` and `English`. Sending (`Hantar untuk semakan`, `Terbitkan`) gives "Teks English diperlukan untuk soalan dwibahasa." when the English value of the stem, a leaf prompt, an option, a stimulus body, a bank text or an alternative prompt is empty; caption, instruction and scheme text may stay BM only (30 FR-ADM-QE3.11, section 2.7)." Plan S1-T09b (owner T6), Approach (1): replace "a `ms+en` question needs the English text on every text field" with "a `ms+en` question needs the English text on the stem, leaf prompts, options, stimulus bodies, bank texts and alternative prompts (caption, instruction and scheme text may stay BM)".
+
+**N-3 (G-01, Sejarah).** In 46 section 3.4, after item 4 add: "4a. **Rubric content points (FR-PA-40):** when the rubric key has content points C1..Cn (FR-QA-48), each shows the tick box 'Saya dapat markah ini' under the band select; groups 'Mana-mana N daripada M' and caps 'Maks {N}' apply as in 3.3; the stepper is set to the capped sum of the ticks (never above the part marks) and the band select shows the band whose range contains it; the pupil may still choose another band or move the stepper inside the part marks, and the last change wins. (R1 decision D113.)" Add to 46 section 7.1: "FR-PA-40 Self-mark of a rubric with content points: ticks with groups and caps set the stepper, as 3.4 item 4a. Card S3-T06, S8-T05." and to 7.2: "AC-PA-43 Given a rubric essay of 10 marks with content points Maklumat (6 x 1) and Kebaikan (6 x 1, group cap 'Maks 4'), when the pupil ticks 6 Maklumat and 6 Kebaikan, then the stepper shows 10 (6 + 4) and the band select shows the band containing 10; when the pupil then picks a lower band, the stepper moves into that band's range. S3-T06." Add FR-QA-48 to the pupil-side column of 45 8.2 (already cites S3-T06, S8-T05).
+
+**N-4 (V23, m8).** In 45 section 10 conflict row C-2, replace "**Applied in 30 (T3: QE3.2 has 11 types, QE3.24 has 14 modes) and in 50 (T5: DM-69).**" with "**Applied in 30 (QE3.2 has 11 types; QE3.24 lists the 9 stored modes and the 14 V2 modes are migrated, never offered) and in 50 (DM-69).**"
+
+**N-5 (G-14, Matematik).** The key is the single store. Remove `acceptedOptions` from: 50 DM-55 key list; 45 section 3.1.6 line "Per-mode extras are stored in `question_parts.mode_config` (DM-55): ..." and the DM-55 row of 45 section 10; 60 `modeConfig` comment in section 4.1; 30 A2 item 13. In 45 mode 1, after the key example, add "The accepted options live only in the answer key (`accepted`, `note`); `mode_config` has no copy."
