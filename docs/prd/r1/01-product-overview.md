@@ -110,7 +110,7 @@ Earlier decisions D28–D99 still apply where not superseded.
 ### 7.2 Dependencies
 | # | Dependency | Needed for | Status |
 |---|---|---|---|
-| DEP-1 | **DSKP Tingkatan 1–3 source PDFs** (official curriculum documents for Matematik, Sains, Bahasa Melayu, Bahasa Inggeris, Sejarah, Pendidikan Islam, Pendidikan Moral, Pendidikan Seni Visual) | Task S4-T09: extraction of the Tingkatan 1–3 DSKP, so T1–T3 questions can carry SP/TP | **Pending** (not in the repository). Until supplied, T1–T3 screens show Bab only, with no invented SP/TP labels (FR-MUR-DK-5). |
+| DEP-1 | **DSKP Tingkatan 1–3 source PDFs** (official curriculum documents for Matematik, Sains, Bahasa Melayu, Bahasa Inggeris, Sejarah, Pendidikan Islam, Pendidikan Moral, Pendidikan Seni Visual) | Task S4-T09: extraction of the Tingkatan 1–3 DSKP, so T1–T3 questions can carry SP/TP | **Decided (user, 2026-11-04, D109):** not a prerequisite. T1–T3 use the same DSKP structure as T4–T5, built from the existing T1–T3 chapter and topic data (V3/UAT, V2) plus any T1–T3 PDF in `d:\prestasiplus-dskp`. Where no SP/TP is loaded, screens show Bab only, with no invented SP/TP labels (FR-MUR-DK-5). |
 | DEP-2 | Evidence for exam-paper blueprints (at least two bodies of evidence per paper) | Verified contracts (Q-16, U-OP-04) | Prepared per paper; Matematik Tambahan paper 2 is sufficient first |
 | DEP-3 | Extraction worker, OCR and an extraction provider on the acceptance site | Paper upload (Q-07, U-OP-02) | Operator task |
 | DEP-4 | User approval for each one-off data operation on the acceptance site | U-OP-01..17 | Per operation |

@@ -314,3 +314,95 @@ Format: location, problem, **exact fix text** to add. "Edit" = patch the owning 
 ## Files read
 
 `docs/prd/r1/00-index, 40-cross-cutting`; `10-murid` (A1, A4, 2-6, 8, 9, 12-14, 16, 18, 26-31, 33, 4.3, 4.4); `20-guru-admin-sekolah` (GUR-3, 6, 8, 8b, 9, 43, 44, 44a, AS-3, 51, 52, section 5); `30-admin-pusat` (4.0 QE-01..08, Q-06..Q-12, Q-17, Q-18, Q-23, 4.G, U-02, U-03, U-05, U-09, M-05, M-06, P2-08, P2-09, P2-20); `50-data-model-erd` (4.1-4.4, 5, 6, 7); `60-api-contract` (1.3, 1.7, 2.1, 2.6-2.12, 2.17.8, 3); `docs/plan/r1-development-plan.md` (4.0, S1, S2, S3, S5, S6, S7, S9, sprint demos); `r1-traceability.md` and a fresh scratch run of `scripts/r1-trace-check.mjs`; code spot checks in `apps/api/src/modules/{practice,bijak,intake,gamification,reports}`, `apps/api/prisma/migrations/0014*`, `packages/contract/src/{questions,practice}`.
+
+
+---
+
+# Re-audit 2026-11-04
+
+**Scope:** F-01..F-30 re-checked against the current text of 10/20/30/40/50/60/02 and the plan (some alignment edits were still landing). The trace script on a scratch copy now reports: 113 cards, uncovered 0, dangling 0, unknown DM/API 0, DM owned 49/49, API owned 114/114, ownership defects 0, card-column mismatches 0, unresolved URS 0.
+
+## New verdict: READY WITH FIXES (close to READY)
+
+All five original Blockers are closed. No new Blocker. Remaining: 3 Major and 3 Minor items, all small text patches.
+
+## 1. Status of F-01..F-30
+
+| ID | Status | Evidence |
+|---|---|---|
+| F-01 | CLOSED | FR-ADM-Q07.6, API-Q-25 `POST /intake/batches/:id/paper`, AC-CHAIN-2, S1-T03/S2-T02 |
+| F-02 | CLOSED | Single store `practice_answers` (DM-44, FR-MUR-4-5, 13-21), mode registry 50 section 4.7a, 40 X4a, API-PRAC-01 mode list |
+| F-03 | CLOSED | HC-SPEC (20 R1-GUR-3, HC-1..HC-6); AC-MUR-3-2 now 53/66/80 with OTR2 "Below"; FR-MUR-3-4 and FR-GUR-3-8 point to it |
+| F-04 | CLOSED | S5-T02 and the Sprint-3 demo have no 70% lock (plan row "F-04 ... verified") |
+| F-05 | CLOSED (see N-3) | FR-ADM-QE4.5 Bab required at publish, "Tajuk DSKP" term (30 line 26), `bab_kod` CSV column, INV-34, DM 4.2.1 row, AC-CHAIN-1(a) |
+| F-06 | CLOSED | difficulty 1..5 stored, TP-to-label table in 40 precision list, QE3.1 "Tahap kesukaran (1 to 5)" |
+| F-07 | CLOSED | DM-46 `question_set_classrooms`, API-GUR-16 `classroomIds`, partial-group 422, mode `question_set` in MUR-26 and AC-CHAIN-4 |
+| F-08 | CLOSED | FR-MUR-8-3 removes join; API-MUR-04 "remove"; `join_code` left in DM as unused (acceptable) |
+| F-09 | CLOSED | DM-44 row: self-mark updates `marks_awarded` of the part row via `POST /bijak/attempts/:id/self-mark`; AC-CHAIN-3 |
+| F-10 | CLOSED | XS-5 whole-number pooled, XS-7 "Soalan Diuji", 40 precision table, Skor Purata separate |
+| F-11 | CLOSED | DM-49 `headcount_configs.default_tov/default_etr` |
+| F-12 | CLOSED (see N-2) | Rate is admin setting `flatCoins`, default 1; 10 section 4.4 table; AC-CHAIN-9 |
+| F-13 | CLOSED | Display name = first name (10 section 4.3, FR-MUR-8-2, FR-MUR-A1-5 no school) |
+| F-14 | CLOSED | Single reply, status set separately (FR-ADM-P2-20.2, FR-MUR-A4-2/3, AC-MUR-A4-2, AC-CHAIN-7) |
+| F-15 | CLOSED | FR-ADM-Q12.6, status words, Digunakan definition in R1-GUR-44 |
+| F-16 | CLOSED | S1-T02 reuses `gate-check`; S1-T05 uses QE6.1 columns incl. `bab_kod`; 50 Corrections 9-11 |
+| F-17 | CLOSED | API-AUTH-09 ignores `grade`/`schoolId`; AC-CHAIN-8 checks it |
+| F-18 | CLOSED | 40 section X9 AC-CHAIN-1..9; plan S9-T06 "owns all nine" |
+| F-19 | PARTIAL | Q-06 now follows the API-Q-11 enum. Status-label table and grade mapping not found (N-6) |
+| F-20 | CLOSED | Password min 8 (FR-ADM-U02.4, AC-U05.3, AC-MUR-A2-6); whole-file quota refusal (AC-CHAIN-8) |
+| F-21 | CLOSED | Trace script clean; FR-MUR-4-12 exists |
+| F-22 | CLOSED | 40 X4b band table |
+| F-23 | PARTIAL | "SPM-bound" defined; Kertas rule for a drill-only MCQ not found (N-6) |
+| F-24 | CLOSED | FR-MUR-14-3 per-subject Bab-else-SP rule |
+| F-25 | CLOSED | AC-GUR-6-4 minimum 10 pupils [PROPOSED] |
+| F-26 | PARTIAL | No explicit "1 to 3 stimuli" sentence in QE1.2 (N-6) |
+| F-27 | CLOSED | FR-MUR-13-28: a paper without scheme cannot be published |
+| F-28 | CLOSED | HC-5 rounds to a whole number before the band |
+| F-29 | CLOSED | Pupil words Menunggu / Dihantar / Dibatalkan (FR-ADM-P2-08.4) |
+| F-30 | PARTIAL | AC-MUR-26-2 now 404, AC-MUR-A4-3 aligned; GUR-6-1 / AC-GUR-6-5 "403" and the 60 section 1.7 exception list not re-checked (N-6) |
+
+## 2. 40 section X9 AC-CHAIN-1..9
+
+Consistent with 10/20/30/50/60 on values, enums and modes:
+- **CHAIN-1:** 2 of 3 correct gives Ketepatan 67 (whole number), Heatmap amber (50-79), wallet +2 Syiling +20 XP at rate 1, XS-7 +3. OK.
+- **CHAIN-2:** 12/15 gives 80, wallet +12 / +120 XP (rate x marks). Wording "Simulasi/Bijak mode" should read mode `simulasi` (N-5).
+- **CHAIN-3:** mode `tracking_a` (75 = 30/40); Subjektif self-mark 3 then 4 updates one row, delta +1 Syiling / +10 XP; consistent with DM-44 and XS-5 (full marks only counts correct). OK.
+- **CHAIN-4:** `classroomIds`, 404 for the other class, mode `question_set`, first names only, Skor Purata 80 (4/5). OK.
+- **CHAIN-5:** OTR 53/66/80, AR 60 then 80 (16/20); Below then On Track; Keyakinan Sederhana then Tinggi. Matches HC-SPEC and AC-GUR-3-2. OK.
+- **CHAIN-6..9:** consistent (Bab required, single-reply ticket, quota 30/31, password 7/8, 120 Syiling at 50:1 gives 2 tokens + 20 Syiling, weekly 28 = 7 + 21, status words). OK.
+- **S9-T06** exists (P0, L), says it owns all nine and lists the cards each chain passes through. OK.
+
+## 3. New contradictions and remaining fix text
+
+**N-1 (Major) Does a Bijak Kuiz "Semak" write answers?** 50 section 4.7a registry has mode `kuiz` written "on `POST /bijak/attempts/:id/submit` of a kuiz paper", while per-question "Semak" of Simulasi Kuiz (FR-MUR-13-16, API-BIJAK-06 `kuiz/sessions/:id/check`) was earlier documented as writing no session. Fix: add to 50 section 4.7a and FR-MUR-13-16: "A Kuiz `Semak` check writes no `practice_answers` row; only the final submit/finish of the kuiz session writes one row per checked question (idempotent per session and question)", and name the writing call in API-BIJAK-06.
+
+**N-2 (Major) Misi Harian reward has three rates.** API-GUR-11 `rewardCoins` (teacher-set, default 10), 10 section 4.4 table "Misi = rate x correct", and code `MISSION_COINS_PER_CORRECT = 3` (`practice/rules.ts`). Fix in 10 section 4.4: "Misi Harian: per-answer Syiling = the rate; the mission's `rewardCoins` is paid once when the target is reached; the code constant 3 is removed", plus AC "Given rate 1 and a mission with `rewardCoins` 10 and target 5, 5 correct answers give 5 + 10 Syiling". (Or the reverse; state one.)
+
+**N-3 (Major) Bab gate wording.** FR-ADM-QE4.5 says a question without Bab "cannot be published" unconditionally; INV-34 and DM 4.2.1 say "when the subject and Tingkatan have chapters". T1-T3 subjects with no chapters (C-01.6) would be unpublishable. Fix: add to QE4.5 "when the subject and Tingkatan have at least one Bab; otherwise the Bab item is not listed", and mirror it in AC-CHAIN-1(a).
+
+**N-4 (Minor)** 02-urs URS-MUR-09 and 20 OQ-X-2 still describe the old MUR-3 rules; change to "HC-SPEC".
+
+**N-5 (Minor)** AC-CHAIN-1: say "Sesi Kuiz tile (sessions) = 1". AC-CHAIN-2: write the mode as `simulasi`.
+
+**N-6 (Minor) Residuals of F-19, F-23, F-26, F-30:**
+- F-19: add to 30 section 0 the status labels (`draft`=Draf, `review`=Menunggu Semakan, `approved`=Diluluskan, `archived`=Diarkib) and to 50 section 3.1 "Tingkatan n = `education_levels.grade` 6+n = `users.grade` 6+n".
+- F-23: 30 4.G.1 add "A flat MCQ with no paper placement takes Kertas 1 unless the admin sets another."
+- F-26: 30 QE1.2 add "A group carries 1 to 3 stimuli shown together once above its members."
+- F-30: add "another teacher's class in Analisa Item = 403 (AC-GUR-6-5)" to the 60 section 1.7 exception list, or change AC-GUR-6-5 to 404.
+
+## 4. Closure (2026-11-04)
+
+| Item | Status | Fixed in |
+|---|---|---|
+| N-1 | CLOSED | 10 FR-MUR-13-16 and 4.4; 60 API-BIJAK-06; 50 section 4.7a registry row `kuiz` |
+| N-2 | CLOSED | 10 section 4.4 (Misi Harian paragraph with the Fix and file refs); 20 AC-GUR-2b-3 and new AC-GUR-2b-5; 60 API-GUR-11 note; 50 DM-48; plan S6-T07 |
+| N-3 | CLOSED | 30 FR-ADM-QE4.5 and 4.G.1 Bab row; 40 AC-CHAIN-1(a) |
+| N-4 | CLOSED | 02 URS-MUR-09 (HC-SPEC); 20 OQ-X-2 and R1-GUR-3 pupil view note |
+| N-5 | CLOSED | 40 AC-CHAIN-1 (Sesi Kuiz tile) and AC-CHAIN-2 (mode `simulasi`) |
+| N-6 / F-19 | CLOSED | 30 section 0 status table (already present); 50 section 3.1 `ENT-User` grade mapping |
+| N-6 / F-23 | CLOSED | 30 4.G.1 Kertas row |
+| N-6 / F-26 | CLOSED | 30 FR-ADM-QE1.2 |
+| N-6 / F-30 | CLOSED | 60 section 1.7 exception list (AC-GUR-6-5 stays 403) |
+| OD-6, OD-12 | CLOSED (user, D109) | 50 section 7; 00-index; plan S4-T09 and section 10; 01 DEP-1; 30 OQ-D101, E-16 |
+
+**Checked, no new conflict:** single answer store and mode registry vs API-PRAC-01; HC-SPEC vs MUR-3 / AS-3 / Prestasi; Set Soalan multi-class vs MUR-26, DM-46, API-GUR-16; join-by-code removal across 10/20/60; ticket single reply with status set separately; whole-number pooled accuracy vs XS-5 (Manual-AR exception stated); Bab vs "Tajuk DSKP" terms; coin rate default 1 (10 section 4.4, 30 P2-09.3, 40 precision list, AC-CHAIN-9, AC-MUR-16-4).

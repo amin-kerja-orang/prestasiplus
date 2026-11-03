@@ -711,9 +711,9 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - Also uses: DM-12, DM-17, DM-19, DM-22 (owned by another card; read or verified here, not an ownership claim)
 - Verification and report scripts (DEV tools; OPS/ADM run the operations) for U-OP-01..U-OP-14 under `apps/api/scripts/uat-ops/` each with `--dry-run` default, a report file, idempotence; the runbook in §7 is the human side. Tests: dry-run on local. Verify: run all on the UAT-like dataset in order. DoD: DoD-T.
 
-**S4-T09 T1-T3 DSKP extracts (BLOCKED on the user)** · P1 · M · Type: Ops · deps: user supplies the official KPM DSKP KSSM PDFs for Tingkatan 1-3 (PRD 30 E-16, OQ-D101)
+**S4-T09 T1-T3 DSKP structure from existing chapter data** · P1 · M · Type: Ops · deps: S4-T07 (user decision D109; not blocked)
 - Starts from (existing): `docs/reference/dskp`, `docs/ops/dskp-loader.md`.
-- PRD: FR-ADM-C04.3, R1-ADM-C-04, FR-ADM-C01.6, D101. The repo has T4-T5 extracts only; PDFs are **not** in the project. Do not start until the issue carries label `blocked` removed by the Delivery Lead. When unblocked: extract into the JSON format of `docs/reference/dskp/*.json` (`level` T1/T2/T3), run the loader dry-run, then U-OP-01 for T1-T3. Meanwhile T1-T3 questions are served untagged (D101) and chapters are made by U-OP-15 (S4-T07).
+- PRD: FR-ADM-C04.3, R1-ADM-C-04, FR-ADM-C01.6, D101. The repo has T4-T5 extracts only. Decision D109: T1-T3 use the same DSKP structure as T4-T5 (Tingkatan, Subjek, Bab, SK, SP, TP). Build the T1-T3 content from the T1-T3 chapter and topic data that already exists in V3/UAT (and V2), mapped into that structure, plus any PDF in `d:\prestasiplus-dskp` that covers T1-T3. The official T1-T3 PDFs are not a prerequisite. Write it in the JSON format of `docs/reference/dskp/*.json` (`level` T1/T2/T3), run the loader dry-run, then U-OP-01 for T1-T3 (the user approves the UAT write). Bab stays required only where the subject and Tingkatan have chapters (N-3).
 - Data/API: API-DSKP-05
 - Also uses: DM-14 (owned by another card; read or verified here, not an ownership claim)
 - Files: `docs/reference/dskp/**`, `apps/api/src/modules/curriculum/dskp/data/**`. Tests: loader tests with a T1-T3 fixture. Verify: V-STD; T2 pupil sees subjects and Bab. DoD: DoD-T + AC-ADM-C04.*.
@@ -908,7 +908,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 
 **S6-T07 Command Center, Dashboards and Misi Harian (guru, AS)** · P1 · L · Type: Complete · deps: none
 - Starts from (existing): `src/modules/m10-teacher-class/pages/CommandCenterPage.vue`, `src/modules/m10-teacher-class/pages/GuruDashboardPage.vue`.
-- PRD: R1-GUR-1, R1-GUR-2, R1-GUR-2b (Misi Harian, route `/guru/misi-harian` not built; D106), R1-AS-1, R1-AS-2; register rows 6, 14, 20. Gap: platform card "0 Sekolah Berdaftar" for AS; Remedial/Evaluate/Badges unverified (`CommandCenterPage.vue:86-170`); checklist dead targets (`components/dashboard/copy.ts:84-96`, `GuruDashboardPage.vue:147`). Files: `m10-teacher-class/pages/{CommandCenterPage,GuruDashboardPage}.vue`, `components/dashboard/**`, `BE/command-center/**`. Tests: click specs. Verify: V-STD. DoD: DoD-T.
+- PRD: R1-GUR-1, R1-GUR-2, R1-GUR-2b (Misi Harian, route `/guru/misi-harian` not built; D106; reward per N-2: per-answer Syiling = the admin coin rate, `rewardCoins` paid once at the target, remove `MISSION_COINS_PER_CORRECT` in `apps/api/src/modules/practice/rules.ts`, AC-GUR-2b-5), R1-AS-1, R1-AS-2; register rows 6, 14, 20. Gap: platform card "0 Sekolah Berdaftar" for AS; Remedial/Evaluate/Badges unverified (`CommandCenterPage.vue:86-170`); checklist dead targets (`components/dashboard/copy.ts:84-96`, `GuruDashboardPage.vue:147`). Files: `m10-teacher-class/pages/{CommandCenterPage,GuruDashboardPage}.vue`, `components/dashboard/**`, `BE/command-center/**`. Tests: click specs. Verify: V-STD. DoD: DoD-T.
 - Data/API: API-ADM-21, API-AS-02, API-AS-03, API-GUR-07, API-GUR-10, API-GUR-11, API-GUR-12, API-GUR-13, API-GUR-14, API-MUR-08
 - Also uses: API-GUR-25 (owned by another card; read or verified here, not an ownership claim)
 
@@ -1387,7 +1387,7 @@ Each step is rehearsed first on the UAT-like local dataset (S4-T08) and the rehe
 1. **Approve this plan, the sector split and the 2-week sprint.** Which people take which sectors (or should the Delivery Lead assign)?
 2. ~~Admin menu approval~~ closed: D107 made the menu FINAL (follows the V2 sidebar).
 3. **Who does the Bab mapping of ~339k questions** (PRD 30 OQ-03 recommends bulk by filter, no auto-mapping), and **who supplies figure images** for stimulus-less questions (images were not migrated, D80 Q-03)? Without images the regroup list (U-OP-05/06) can only hide the questions, not repair them.
-4. **T1-T3 DSKP PDFs (PRD 30 E-16, OQ-D101):** please supply the official KPM DSKP KSSM Tingkatan 1-3 PDFs; S4-T09 is blocked until then. the loader has no T1–T3 extracts; D101 serves T1–T3 practice without DSKP tags. Confirm that is enough for 1.0.
+4. **T1-T3 DSKP (decided, D109):** T1-T3 use the same DSKP structure as T4-T5, built from the existing chapter and topic data (and any T1-T3 PDF in `d:\prestasiplus-dskp`); the official PDFs are not required. S4-T09 is not blocked.
 5. **UAT dump for local use** (S4-T01): approve an anonymised dump, or accept the synthetic profile.
 6. **UAT operations** (§7): confirm the operator who can run scripts/restart on UAT and the approval phrase.
 7. **Work location:** the code and PRD currently live in `D:\pp-cloud-review` (branch `feature/v3-bijak-r1`); the rule says everything stays in `D:\Dev Projects\prestasiplus`. The PRD and this plan must be copied there (or the branch merged into that checkout) before issues are created.
