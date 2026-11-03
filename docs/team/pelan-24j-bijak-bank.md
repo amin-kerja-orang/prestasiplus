@@ -1,5 +1,7 @@
 # Pelan 24 jam: Bank Soalan dan Bijak SPM
 
+> **DITANGGUH, jangan ikut (2026-11-04 03:42 MYT).** Pengguna menghentikan pelan ini untuk berbincang dahulu. PRD pada cawangan `docs/r1-prd-devplan`, `docs/prd/r1/`, kini sedang disemak oleh pengguna.
+
 Asas: tip `e34e0a52d` (BASE-237), dideploy di `uat.prestasiplus.cloud`. Disemak terhadap kod oleh B2; tiada arahan dalam pelan ini pernah dijalankan. 3 developer: D1, D2, D3. Sasaran: UAT sahaja.
 
 Bukti: dua audit kod lawan keperluan (3 Nov), bacaan data UAT, dan laporan A4. Audit membaca kod; ia tidak menjalankannya. Ujian pelayar rantaian penuh masih berjalan, jadi senarai ini boleh bertambah.
