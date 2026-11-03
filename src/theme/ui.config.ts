@@ -36,7 +36,7 @@ const fieldSize = 'min-h-11 learner:min-h-13 rounded-sm px-3.5 text-base md:staf
 
 /** One pager control: equal square, centred glyph, medium weight, text colour for icons too. */
 const pagerButton =
-  'size-11 min-h-11 min-w-11 justify-center rounded-sm p-0 font-medium text-default shadow-none md:size-10 md:min-h-10 md:min-w-10 hover:bg-elevated hover:text-highlighted'
+  'size-11 min-h-11 learner:min-h-11 min-w-11 justify-center rounded-sm p-0 font-medium text-default shadow-none md:size-10 md:min-h-10 md:learner:min-h-10 md:min-w-10 hover:bg-elevated hover:text-highlighted'
 
 const fieldConfig = {
   slots: { leadingIcon: 'text-muted', trailingIcon: 'text-muted' },
@@ -235,7 +235,7 @@ export const uiConfig = {
   pagination: {
     slots: {
       root: 'max-w-full',
-      list: 'flex-wrap justify-center gap-1',
+      list: 'flex-wrap items-center justify-center gap-1',
       item: `${pagerButton} tabular-nums data-[selected=true]:bg-primary-soft data-[selected=true]:text-primary-t data-[selected=true]:hover:bg-primary-soft data-[selected=true]:shadow-none`,
       first: pagerButton,
       prev: pagerButton,
@@ -420,7 +420,10 @@ export const uiConfig = {
       root: 'bg-elevated shadow-modal ring-0 rounded-md',
       title: 'text-label font-semibold',
       description: 'text-body',
+      close: 'min-w-11 self-center',
     },
+    // Nuxt UI's default (vertical) orientation sets items-start on the root; centre it.
+    variants: { orientation: { vertical: { root: 'items-center' } } },
   },
 
   progress: {
