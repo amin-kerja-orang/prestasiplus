@@ -357,6 +357,7 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - AC-ADM-QE3.15 (M7) Given the stimulus kind select, then it lists exactly Petikan, Rajah, Jadual, Graf, Peta, Carta / Infografik, Imej / Gambar and no Audio or Video; given a Sains Komputer pseudocode, then it is a `Petikan` with the `</>` block shown in monospace and never executed.
 - AC-ADM-QE3.16 (G-19, admin side) Given a `ms+en` question with an alternative-prompt essay and a BI criteria rubric, then `Pratonton` shows BM above English, the prompt picker, one stepper per criterion and the gaps in place, equal to the pupil screen.
 - AC-ADM-QE3.17 (W-06) Given a BI cloze with 10 gaps where gap 0 is `Contoh (tidak dimarkah)`, then the question saves with 10 marked leaves, the example shows filled and read-only to the pupil, and `practice_answers` gets no row for it.
+- AC-ADM-QE3.18 (N-1; R1 decision D113) Given a leaf with `Contoh (tidak dimarkah)` ticked and an empty `Jawapan contoh`, then saving shows 'Jawapan contoh diperlukan.'; given the answer 'was', then the pupil sees 'was' in the gap, read-only. The answer is stored in `mode_config.example`; marks 0 is valid only for such a leaf.
 
 #### R1-ADM-QE-04 Completeness is shown at entry, not as a late 422 | P0
 - **Action: Fix** | gap: 4.V row QE-04.
@@ -2671,7 +2672,7 @@ Legend: VALID (unchanged), CHANGED (still applies with the stated change), SUPER
 Counts below were taken by grep of the unique IDs in this file (each ID counted once, including the IDs of the field-spec additions). Screens are the R1-ADM-Q/C/N/U/M/P2 items; QE, 4.G, 4.R and H0 are cross-screen requirement blocks (all P0 except H0/R0, which apply to every screen).
 | Area | Screens | P0 screens | P1 screens | P2 screens | FRs | ACs |
 |---|---|---|---|---|---|---|
-| Entry standard QE-01..08 (cross-screen blocks) | 0 (8 blocks) | n/a | n/a | n/a | 71 | 49 |
+| Entry standard QE-01..08 (cross-screen blocks) | 0 (8 blocks) | n/a | n/a | n/a | 71 | 50 |
 | A Question pipeline Q-01..Q-25 | 25 | 20 (Q-01 to Q-18, Q-22, Q-23) | 3 (Q-20, Q-24, Q-25) | 2 (Q-19, Q-21) | 122 | 65 |
 | DSKP guidance 4.G: flows G5, G6 and stimulus-less defect G7 | 0 | n/a | n/a | n/a | 6 | 9 |
 | B Curriculum and DSKP C-01..C-05 | 5 | 5 | 0 | 0 | 25 | 11 |
@@ -2681,8 +2682,8 @@ Counts below were taken by grep of the unique IDs in this file (each ID counted 
 | Responsive 4.R (FR-ADM-R0.1, AC-ADM-R1..R11) | 0 | n/a | n/a | n/a | 1 | 11 |
 | Rule H0 (no placeholders) | 0 | n/a | n/a | n/a | 4 | 1 |
 | Rest of the matrix P2-01..P2-20 | 20 | 0 | 20 | 0 | 47 | 68 |
-| **Total** | **74** | **31** | **37** | **6** | **340** | **248** |
-Sum checks (by grep of defined IDs): FR 71+122+6+25+15+26+23+1+4+47 = 340; AC 49+65+9+11+9+15+10+11+1+68 = 248; screens 25+5+7+9+8+20 = 74; priority 31+37+6 = 74. Examples of IDs in section 0 and section 0A are not counted.
+| **Total** | **74** | **31** | **37** | **6** | **340** | **249** |
+Sum checks (by grep of defined IDs): FR 71+122+6+25+15+26+23+1+4+47 = 340; AC 50+65+9+11+9+15+10+11+1+68 = 249; screens 25+5+7+9+8+20 = 74; priority 31+37+6 = 74. Examples of IDs in section 0 and section 0A are not counted.
 Other counts: UAT data operations 17 (U-OP-01..U-OP-17). Reconciliation rows: section 7.1 has 20 rows (PIPE US-01..US-20); section 7.2 has 12 rows (R1-01..R1-10 in one row, then R1-11 to R1-21 one row each, covering all 21 items); section 7.3 has 13 rows; 45 in total. Questions in 8.2: 22 rows, 0 open and 22 CLOSED (15 closed by D113). Evidence items in 8.3: 24 (E-01..E-24), 0 open (all closed or decided). Decided copy and values in 8.4: no pending approval. Action counts over the 74 screens (4.V.4): Keep 7, Fix 25, Complete 8, Build 34; over the 8 entry-standard blocks: Complete 4, Fix 2, Build 2. Field & behaviour spec: 82 of 82 headings (74 screens and 8 blocks) plus 4.G. V2 reference lines: 82 of 82 headings. Screens with no V2 capture: Q-09, C-04, C-05, N-01, U-08, M-07, P2-06, P2-11, P2-14, P2-16 (10 screens, listed in 4.V.1). Appendix A1 lists the option sets; Appendix A2 lists 34 data and API additions.
 
 **P0 list (blocks a 1.0 module today):** (1) Kontrak Simulasi Disahkan reachable and verified, 0 contracts on UAT (Q-16, U-OP-04); (2) one Set Builder and Terbit, 0 papers on UAT (Q-13..15, U-OP-09); (3) Import & Semakan working: worker + OCR + tags and paper carried to items (Q-07..09, QE-05, U-OP-02); (4) stimulus-group entry, DSKP-correct form, completeness at entry, CSV with DSKP columns (QE-01..07, Q-04, Q-05); (5) stimulus-less published questions quarantined and regroup work-list (4.G.7, QE-08, U-OP-05); (6) Bab mapping, DSKP load, Darjah off (C-01, C-03..05, U-OP-01, 03, 07); (7) SPM hub with 6 lanes and Tracking A editor (Q-01, Q-17); (8) servability indicator with reasons and one review queue (Q-03, Q-06); (9) users, schools and Admin Sekolah account (U-01..U-04, U-OP-12); (10) the final V2-order menu with the question duplicates merged (section 3, approved by D107); (11) Kertas Subjektif and the Subjektif lane fully working with DSKP tags and stimulus groups (Q-18, Q-23; D104); (12) Kiriman Guru with a real backend (Q-12), Video (N-01), Tetapan Permainan (N-05) and Laporan Soalan (Q-22), because the 1.0 modules they feed are P0.
@@ -2786,7 +2787,7 @@ Option sets that did not exist in 40 §X11 when this file was first written (OPT
 | 10 | Fix the Quick Edit save (fails at `http-admin.ts:1053`) for a single-leaf MCQ (text, image, 2 to 8 options, correct, legal status moves) with Studio validation and audit | API-Q-03 | FR-ADM-Q24.3, AC-ADM-Q24.2 |
 | 11 | `blueprint_sections.marks_per_question jsonb`, `compulsory bool`, free-text `label`, paper `question_count`; JSU grid and CSV export per paper and per blueprint | DM-57, API-Q-39 | FR-ADM-Q16.8, Q16.9, AC-ADM-Q16.5, G-10, G-17 |
 | 12 | Blueprint unit quota (min,max per Tajuk DSKP), TP profile (6 counts), KBAT mark quota, evidence rows (type, reference, file <= 30 MB) | existing blueprint model (DM-22, API-BIJAK-09); no new ID | 16-14 to 16-20 |
-| 13 | Part config JSON (`maxWords`, `wordRange`, `hardLimit`, `answerSpace`, `alternatives`, `answerTemplate`, `dependsOnPart`, `preFill`, `multi`, `acceptedOptions`, `grid`, `drawingKind`) and `part.wordLimit` | DM-55 | FR-ADM-QE3.12, QE3.14, QE3.15, QE3.20 |
+| 13 | Part config JSON (`maxWords`, `wordRange`, `hardLimit`, `answerSpace`, `alternatives`, `answerTemplate`, `dependsOnPart`, `preFill`, `multi`, `grid`, `drawingKind`, `example`) and `part.wordLimit` | DM-55 | FR-ADM-QE3.12, QE3.14, QE3.15, QE3.20 |
 | 14 | Bilingual twins (`stem_en`, `body_en`, `caption_en`, option `body_en`; `language` check `bm`, `en`, `ms+en`) | DM-50 | FR-ADM-QE3.11, QE3.23 |
 | 15 | Scheme v2 (`scheme_v: 2`, pairs, caps, bonus, count marks, `notAccepted`, per-criterion rubric, `modelText`, `guidance`) and `scheme_rules`; `POST .../scheme/validate` | DM-54, API-Q-30 | FR-ADM-QE3.9, QE3.10, QE3.19 |
 | 16 | Group draft copy (`draft_of_group_id`, `draft_members`), publish, edit-as-draft, discard, retire, move member, merge | DM-51, API-Q-31, API-Q-32, API-Q-33, API-Q-34, API-Q-35 | FR-ADM-QE1.6, QE1.7, QE2.7, Q05.4, AC-ADM-Q05.2 |

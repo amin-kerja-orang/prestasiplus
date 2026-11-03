@@ -585,7 +585,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - PRD: R1-ADM-QE-03 (FR-ADM-QE3.2, FR-ADM-QE3.3), R1-ADM-Q-23 (the scheme of Soalan Berstruktur and Subjektif), OQ-MUR-13, `docs/requirements/v2-exam-schema.md`, D41; 45 §2.3, §2.6, §3.1.6, §3.1.7; 46 §2.2. Gap: 8 of 14 widgets and 3 of 15 stimulus types are supported (gap §2.2 row 13); the scheme model has no groups, pairs, caps, bonus, deductions or per-criterion rubric; an MCQ needs 3 options; `true_false`, `mcq_multi`, `essay_choice`, "Pilih N" and `working` are not whole kinds.
 - Data/API: DM-54, DM-55, DM-69; API-Q-30
 - Also uses: API-BIJAK-04, API-BIJAK-05 (owned by another card; read or verified here, not an ownership claim)
-- New requirements (45, 46, 48; D113): FR-QA-19, 21, 22, 27, 28, 30; AC-QA-19, 21, 22, 27, 28, 30; FR-PA-02, 07, 21; AC-PA-35.
+- New requirements (45, 46, 48; D113): FR-QA-19, 21, 22, 27, 28, 30, 48, 49; AC-QA-19, 21, 22, 27, 28, 30, 48, 49; FR-PA-02, 07, 21, 39; AC-PA-35.
 - Approach: (1) the 11 question types of FR-ADM-QE3.2 in one `QUESTION_TYPES` constant (`mcq`, `mcq_multi`, `true_false`, `short_text`, `numeric`, `match`, `structured`, `working`, `essay`, `drawing`, `table_fill`); the 14 V2 modes map onto them by the migration map of 30 QE3.8; leaf kinds `true_false` and `mcq_multi`; the answer-key kind `options` carries `choices: string[]` beside `choice`; MCQ has 2 to 8 options (default 4); `mcq_multi` has 2 to 8 options with 1..(n-1) correct and the reveal returns `correctOptions[]` (DM-69, migration `0134_s1_question_types`). (2) Scheme v2 in `answer_keys.content` (`scheme_v: 2`) and `question_versions.scheme_rules` (DM-54), and `question_parts.mode_config` (DM-55, migration `0133_s1_scheme_v2_mode_config`): point kinds K/N/P/B/M/F/C, "@" alternatives, "Maks N", groups with caps and bonus, Ciri/Sebab pairs, paths, count-based marks, deductions and zero rules, bands and word ranges, `essay_choice` with 2 to 6 prompts, `Templat jawapan (pra-isi)`, "Bergantung pada jawapan bahagian" (carried-value points), `Had perkataan`, two accepted options with a note. (3) The route `POST /api/questions/:id/parts/:partId/scheme/validate` (the Data/API line) returns `{ok, issues[{path, code, message, step}]}` so the editor shows every problem live. (4) Grading and marking for each kind, the P1 modes `match_letter` and `working`, "Pilih N" (a group is one choice unit); essays and unparseable numbers become `belum_dimarkah`.
 - Files: `BE/questions/{grading.ts,types.ts,publish-gate.ts}`, `SCH/questions.prisma`, `CT/questions`, `packages/exam-core/**` (S3 review).
 - Tests: table-driven grading per kind and per scheme kind, with the worked examples of 45 section 7 as fixtures; scheme validation names every issue with its step; mcq_multi bounds; an old V2 mode maps onto the new kind.
@@ -597,7 +597,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - Data/API: DM-50
 - Also uses: API-BIJAK-05 (owned by another card; read or verified here, not an ownership claim)
 - New requirements (45, 46, 48; D113): FR-QA-17, 20, 23; AC-QA-17, 20, 23; FR-PA-09.
-- Approach: (1) bilingual `ms+en` (DM-50, migration `0129_s1_bilingual_twins`): `stem_en`, `body_en`, `caption_en`, option `body_en`, and the `language` check widened to `bm`, `en`, `ms+en`; a `ms+en` question needs the English text on every text field ("Teks English diperlukan untuk soalan dwibahasa."); CSV `bahasa=bm` is read as `ms`. (2) `drawing` (a template, a checklist and a model drawing; the pupil's PNG up to 5 MB) and `table_fill` (cells, key and the cell-match suggestion "{n} daripada {m} sel sepadan") are authored, validated and self-marked; Terbit is never refused for these two kinds. (3) Rubric mode "Markah setiap kriteria" (BI C, CA, O, L): the criteria are stored in the scheme; the self-mark request shape (`criteria`) is changed by S3-T06.
+- Approach: (1) bilingual `ms+en` (DM-50, migration `0129_s1_bilingual_twins`): `stem_en`, `body_en`, `caption_en`, option `body_en`, and the `language` check widened to `bm`, `en`, `ms+en`; a `ms+en` question needs the English text on the stem, leaf prompts, options, stimulus bodies, bank texts and alternative prompts (caption, instruction and scheme text may stay BM) ("Teks English diperlukan untuk soalan dwibahasa."); CSV `bahasa=bm` is read as `ms`. (2) `drawing` (a template, a checklist and a model drawing; the pupil's PNG up to 5 MB) and `table_fill` (cells, key and the cell-match suggestion "{n} daripada {m} sel sepadan") are authored, validated and self-marked; Terbit is never refused for these two kinds. (3) Rubric mode "Markah setiap kriteria" (BI C, CA, O, L): the criteria are stored in the scheme; the self-mark request shape (`criteria`) is changed by S3-T06.
 - Files: `BE/questions/{questions.service.ts,grading.ts,types.ts}`, `SCH/questions.prisma`, `CT/questions`.
 - Tests: a bilingual question round-trips with both texts; saving without the English text is refused; a drawing and a table_fill leaf publish and are `belum_dimarkah` until self-marked.
 - Verify: V-STD with the S8-T03 widgets. DoD: DoD-T + AC-ADM-QE3.* (bilingual, drawing, table_fill).
@@ -684,6 +684,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - Data/API: none
 - Also uses: DM-54, DM-55, DM-50, DM-69 (owned by another card; read or verified here, not an ownership claim)
 - New requirements (45, 46, 48; D113): FR-QA-17..19, 21..24, 26..28, 30, 46; AC-QA-17..19, 21..24, 26..28, 30, 46.
+- New requirements from the audit (this card owns them): FR-ADM-QE3.25; AC-ADM-QE3.13, AC-ADM-QE3.14, AC-ADM-QE3.15, AC-ADM-QE3.16, AC-ADM-QE3.17, AC-ADM-QE3.18.
 - Approach: in the existing wizard step `Sub-bahagian`, a leaf form for each of the nine modes (fields of 45 section 3.1.6, extras stored in `mode_config`), the full scheme editor of 45 section 3.1.7 with live validation through the S1-T09a validate route, stacked BM and English editors for a `ms+en` question, the rich-text toolbar additions (`U`, `S`, `Baris puisi`, `Dua lajur`, `Kotak teks`, `Penanda ruang kosong`, a widened sanitiser allow-list) and `{{gap:N}}` gaps linked to leaves; a structured question with marks opens and saves in the wizard whatever path created it; the preview equals the pupil view (S8-T03 components).
 - Files: `src/modules/m04-question-bank/pages/{StudioEditorPage,QuestionEditPage}.vue`, `src/modules/m04-question-bank/components/**`, `src/modules/m04-question-bank/api/**`; the rich-text sanitiser allow-list in `src/components/question-display/**` is a small PR to S8.
 - Tests: component tests per mode form; the scheme editor reproduces Fizik 9(d) (4 pairs, "Maks 8", bonus 2 = 10 marks) and a BI P2 rubric of 4 criteria; spec at 375/768/1280. Verify: V-STD. DoD: DoD-T + AC-ADM-QE3.*, AC-ADM-Q23.*.
@@ -716,7 +717,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - Starts from (existing): `src/modules/m28-bijak-spm/pages/AttemptPage.vue`, `src/modules/m28-bijak-spm/pages/ResultPage.vue`.
 - PRD: R1-MUR-13 (all Bijak ACs), AC-X6-2, QP contract 10-murid §4.8. Gap: F8 passes functionally; UAT 0 papers; 375 px gaps (gap §2.2 row 13); structured item "Tidak disajikan: jenis jawapan tidak dibenarkan dalam bahagian ini".
 - Data/API: DM-68; API-BIJAK-04, API-BIJAK-06
-- New requirements (45, 46, 48; D113): FR-PA-01, 08, 14, 16, 17, 21, 26; AC-PA-07, 08, 11, 20.
+- New requirements (45, 46, 48; D113): FR-PA-01, 08, 14, 16, 17, 21, 26, 39; AC-PA-07, 08, 11, 20, 41.
 - Answer store (D-A1, DM-44, owned by S5-T15): `POST /bijak/attempts/:id/submit` writes one answer row per answered leaf with `mode` `simulasi` or `kuiz` (by paper kind) and the `attempt_id`, then upserts the `practice_attempt_aggregates` summary; a regrade updates the rows (idempotent per `(attempt_id, question_id, part_ref)`). Tracking A and Databank sittings use the same submit (S3-T05, S3-T07). Writes go through the one `AnswerLogPort` of `practice/`; no second answer table, no report reads anything else.
 - Approach: compose S8 components in `AttemptPage`, `PaperQuizPage`, `ResultPage`; remove "not served" for allowed modes; remove the demo message "Fungsi ini belum tersedia dalam demo" from the real path (`m28-bijak-spm/server/errors.ts:14`, `server/http-admin.ts:153`, register 10-murid 4.11 #12); stimulus group once, sticky; self-mark flow for structured answers (S3-T06 for subjective). Files: `m28-bijak-spm/pages/**`, `lib/**`, `domain/**`. Tests: spec with a group-of-3 paper at 375. Verify: V-STD on a phone-size headed browser on UAT data. DoD: DoD-T + AC-MUR-13-*, AC-X6-2.
 
@@ -732,7 +733,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - PRD: R1-ADM-Q-18, R1-MUR-13 (Subjektif lane), R1-MUR-17 (answer screen), E-10; D104 (fully working at release). Gap: 404 (F6); the self-mark route `POST /api/bijak/attempts/:id/self-mark` already exists (API-BIJAK-05), the Subjektif lane and its screens do not. Approach: admin list/detail/build on `papers` with `surface = 'subjektif'` (API-BIJAK-14, DM-23); pupil Subjektif answer and Semakan with scheme on the existing self-mark route (no new self-mark endpoint, no `0160_s3_self_mark`, DM-25); the pupil side is UI wiring on that existing endpoint: one stepper per scheme point or per criterion, "Hantar & Semak" before "Tunjuk Skema Pemarkahan" (FR-PA-18..20, FR-PA-24); fully working at release with **no feature flag** (D104 supersedes D80(2)). Files: `m28-bijak-spm/admin/**`, `components/SelfMarkControl.vue`, `BE/spm/**`, `BE/bijak/attempts/**`, `CT/bijak`; migration `0161_s3_paper_surface` (DM-23). Tests: BE + spec. Verify: V-STD vs V2 Subjektif. DoD: DoD-T.
 - Data/API: DM-23, DM-25; API-BIJAK-05, API-BIJAK-14
 - Also uses: DM-08 (owned by another card; read or verified here, not an ownership claim)
-- New requirements (45, 46, 48; D113): FR-QA-20, 23; AC-QA-20, 23; FR-PA-18..20, 24; AC-PA-10, 18, 19.
+- New requirements (45, 46, 48; D113): FR-QA-20, 23, 48, 49; AC-QA-20, 23, 48, 49; FR-PA-18..20, 24, 40; AC-PA-10, 18, 19, 43.
 - New requirements from the audit (this card owns them): AC-MUR-13-24, AC-MUR-13-25 (Subjektif self-mark stored and listed).
 - Answer store (D-A1, DM-44, owned by S5-T15): the Subjektif lane starts an `exam_attempts` row of kind `subjektif` (API-PRAC-10 delegates to it); `POST /bijak/attempts/:id/self-mark` (API-BIJAK-05, existing route, D-A9) updates `marks_awarded` of the part rows (`mode = subjektif`). Writes go through the one `AnswerLogPort` of `practice/`; no second answer table, no report reads anything else.
 
@@ -1201,13 +1202,13 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - PRD: FR-X1-4d, FR-X6-6/7, AC-X6-2, 10-murid §4.8. Gap: 3/15 stimulus types (gap §2.2 row 13; `StimulusView.vue`), `StimulusGroup.vue` shows per-question. Approach: group panel above its questions; below 1024 px the panel is a collapsible sticky "Lihat Rajah" (collapsed at 375, full width at 768; pinned left only from 1024 px, AC-PA-03); pinch/tap full-screen zoom; table/passage/graph types; long maths scrolls inside. Files: `src/components/question-display/{StimulusGroup,StimulusFigure,StimulusView,StimulusStack}.vue`. Tests: component tests incl. 375 snapshot; spec in `e2e/bijak`. Verify: V-STD on a paper with one figure + 3 questions at 375. DoD: DoD-T + AC-X6-2.
 - Data/API: none
 - Also uses: DM-03 (owned by another card; read or verified here, not an ownership claim)
-- New requirements (45, 46, 48; D113): FR-QA-09; AC-QA-09; FR-PA-03; AC-PA-03.
+- New requirements (45, 46, 48; D113): FR-QA-09; AC-QA-09; FR-PA-03, 36, 37; AC-PA-03, 39.
 
 **S8-T03 Answer widgets and maths input** · P0 · L · Type: Complete · deps: S8-T01, S1-T09a, S1-T09b
 - Starts from (existing): `src/components/question-display/AnswerWidget.vue`, `src/modules/m28-bijak-spm/components/PartInput.vue`.
 - PRD: FR-X6-8, D41, OQ-MUR-13. Gap: 8/14 widgets. Approach: full-width MCQ, short text, working + final answer (maths), "Pilih N", photo upload; `MathField`/`MathKeyboard` usable with the phone keyboard; touch ≥44 px. Files: `question-display/{AnswerWidget,McqOptions,TextAnswer,EssayAnswer,PartInput,MathField,MathKeyboard}.vue`. Tests: widget tests per mode. Verify: V-STD at 375 with the on-screen keyboard. DoD: DoD-T.
 - Data/API: none
-- New requirements (45, 46, 48; D113): FR-QA-17, 18, 20, 22..24; AC-QA-17, 18, 20, 22..24; FR-PA-02, 04..10; AC-PA-04..06, 16, 17.
+- New requirements (45, 46, 48; D113): FR-QA-17, 18, 20, 22..24; AC-QA-17, 18, 20, 22..24; FR-PA-02, 04..10, 35, 36, 38; AC-PA-04..06, 16, 17, 37, 38, 40, 42.
 
 **S8-T04 Navigator, timer, Hantar on phone** · P0 · M · Type: Fix · deps: S8-T01
 - Starts from (existing): `src/modules/m28-bijak-spm/components/NavigatorPanel.vue`, `src/modules/m28-bijak-spm/components/AttemptShell.vue`.
@@ -1219,7 +1220,7 @@ Priority: P0 blocks 1.0; P1 important; P2 polish. Delivery: A unless stated.
 - Starts from (existing): `src/modules/m28-bijak-spm/pages/ResultPage.vue`, `src/modules/m28-bijak-spm/pages/PaperCoverPage.vue`.
 - PRD: FR-X6-10. Sections/parts/marks readable at 375; admin paper preview. Files: `question-display/**` (new `PaperView.vue`). Tests/verify standard. DoD: DoD-T.
 - Data/API: none
-- New requirements (45, 46, 48; D113): FR-PA-18, 20.
+- New requirements (45, 46, 48; D113): FR-PA-18, 20, 40; FR-QA-48, 49; AC-QA-48, 49.
 
 **S8-T06 DS primitives: table→cards, forms, two-pane→tabs** · P0 · M · Type: Complete · deps: none
 - Starts from (existing): `src/ds/DsDataTable.vue`, `src/ds/DsDrawer.vue`.
