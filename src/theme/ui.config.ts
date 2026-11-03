@@ -14,7 +14,7 @@
  */
 
 import { dsIconClasses, learnIconClasses } from './ds-icons.ts'
-import { componentDefaults, disabledState, focusRing, selectSlots } from './ui/components.ts'
+import { componentDefaults, disabledState, focusInset, focusRing, selectSlots } from './ui/components.ts'
 
 /** Filled, borderless field with a 2px primary focus ring (D34). */
 const filled = [
@@ -36,7 +36,7 @@ const fieldSize = 'min-h-11 learner:min-h-13 rounded-sm px-3.5 text-base md:staf
 
 /** One pager control: equal square, centred glyph, medium weight, text colour for icons too. */
 const pagerButton =
-  'size-11 min-h-11 min-w-11 justify-center rounded-sm p-0 font-medium text-default shadow-none md:size-10 md:min-h-10 md:min-w-10 hover:bg-elevated hover:text-highlighted'
+  'size-11 min-h-11 min-w-11 justify-center rounded-sm p-0 font-medium text-default shadow-none md:pointer-fine:size-10 md:pointer-fine:min-h-10 md:pointer-fine:min-w-10 hover:bg-elevated hover:text-highlighted'
 
 const fieldConfig = {
   slots: { leadingIcon: 'text-muted', trailingIcon: 'text-muted' },
@@ -178,8 +178,8 @@ export const uiConfig = {
       // Loading: the leading icon spins (stock); the button shows progress and ignores clicks.
       loading: { true: { base: 'cursor-progress' } },
       size: {
-        xs: { base: 'min-h-9 px-2.5 text-label' },
-        sm: { base: 'min-h-10 px-3.5 text-label' },
+        xs: { base: 'min-h-9 pointer-coarse:min-h-11 px-2.5 text-label' },
+        sm: { base: 'min-h-10 pointer-coarse:min-h-11 px-3.5 text-label' },
         md: {
           base: 'min-h-11 gap-2 px-4 text-label learner:min-h-13 learner:rounded-md learner:px-5 learner:text-base',
         },
@@ -314,7 +314,7 @@ export const uiConfig = {
       container: 'min-h-11 min-w-11 justify-center',
       // Label (+ caption) centred on the 44px control box: box and text share one axis.
       wrapper: 'ms-1 flex min-h-11 min-w-0 flex-col justify-center has-data-[slot=description]:justify-start has-data-[slot=description]:pt-3',
-      base: "relative transition-colors duration-fast after:absolute after:-inset-2 after:content-[''] hover:brightness-95 aria-invalid:ring-2 aria-invalid:ring-error",
+      base: "relative transition-colors duration-fast after:absolute after:-inset-2 pointer-coarse:after:-inset-y-3.5 after:content-[''] hover:brightness-95 aria-invalid:ring-2 aria-invalid:ring-error",
       thumb: 'shadow-ds-xs',
       label: 'text-label',
       description: 'text-caption text-muted',
@@ -366,7 +366,9 @@ export const uiConfig = {
       // Zebra, then row states (they beat the zebra by specificity): hover on selectable rows, selected.
       tbody:
         'divide-y-0 [&>tr:nth-child(even)]:bg-soft [&>tr[data-selectable=true]:hover]:bg-elevated [&>tr[data-selected=true]]:bg-primary-soft',
-      tr: `transition-colors duration-fast ${focusRing}`,
+      // Inset ring (the table clips its overflow). `!`: the unlayered generic focus rule in
+      // ds-extras.css (outline-offset 2px) otherwise beats the layered utility.
+      tr: `transition-colors duration-fast ${focusInset} focus-visible:-outline-offset-2!`,
       empty: 'py-8 text-center text-body text-muted',
       th: 'px-4 py-3 text-th text-muted',
       td: 'px-4 py-3 text-body tabular-nums',
