@@ -3,6 +3,7 @@ import {
   SUPPORT_ADMIN_MESSAGES,
   SUPPORT_NEW_TICKET_NOTIFICATION,
   SUPPORT_QUEUE_PER_PAGE,
+  SUPPORT_ROLE_LABELS,
   SUPPORT_TICKET_STATUS_LABELS,
   type ContentSupportConfig,
   type SupportQueueResponse,
@@ -23,7 +24,7 @@ import { isOverloadError } from '../auth/auth.errors'
 import { hasNul } from '../content/audio/null-char'
 import { NotificationsService } from '../notifications'
 import { NOTIFY_BATCH, SUPPORT_AUDIT, SUPPORT_CONFIG_MISSING, WRITE_TX } from './support.constants'
-import { isTicketStatus, SupportRepository, type TicketRow } from './support.repository'
+import { isTicketStatus, SupportRepository, type TicketDetailRow, type TicketRow } from './support.repository'
 
 /** Who is acting: the signed-in user and the request facts the audit row needs. */
 export interface Actor {
@@ -49,17 +50,19 @@ const toView = (r: TicketRow): SupportTicket => ({
   createdAt: toMytTimestamp(r.createdAt),
 })
 
-/** The admin's view of a ticket. `roleLabel`, `school` and `repliedAt` stay null until DM-32 stores them. */
-const toDetail = (r: TicketRow): SupportTicketDetail => ({
+const roleLabelOf = (role: string | null): string | null => (role === null ? null : (SUPPORT_ROLE_LABELS[role] ?? null))
+
+/** The admin's view of a ticket. */
+const toDetail = (r: TicketDetailRow): SupportTicketDetail => ({
   id: r.id,
   subject: r.subject,
   body: r.body,
   status: r.status,
-  roleLabel: null,
-  school: null,
+  roleLabel: roleLabelOf(r.role),
+  school: r.school,
   createdAt: toMytTimestamp(r.createdAt),
   adminReply: r.adminReply,
-  repliedAt: null,
+  repliedAt: r.repliedAt ? toMytTimestamp(r.repliedAt) : null,
 })
 
 /** A `page` query value read tolerantly: an odd value is page 1 (never a 422). */
@@ -93,7 +96,7 @@ export class SupportService {
   async create(actor: Actor, input: SupportTicketCreateRequest): Promise<SupportTicket> {
     const now = this.clock.now()
     const row = await this.write(async (tx) => {
-      const created = await this.repo.create({ userId: actor.userId, subject: input.subject, body: input.body, isTest: actor.isTest, now })
+      const created = await this.repo.create({ userId: actor.userId, role: actor.role, subject: input.subject, body: input.body, isTest: actor.isTest, now })
       await this.audit.record({
         tx,
         action: SUPPORT_AUDIT.TICKET_CREATED,
@@ -115,10 +118,11 @@ export class SupportService {
     return toView(row)
   }
 
-  /** GET /admin/tiket: 25 per page. */
-  async queue(status: string | undefined, rawPage?: string): Promise<SupportQueueResponse> {
+  /** GET /admin/tiket: 25 per page. An unknown `role` is ignored. */
+  async queue(status: string | undefined, rawPage?: string, rawRole?: string): Promise<SupportQueueResponse> {
     const page = pageOf(rawPage)
-    const { rows, total, matched, counts } = await this.guard(() => this.repo.queue(hasNul(status) ? '￿' : (status ?? '').trim(), page))
+    const role = rawRole !== undefined && Object.hasOwn(SUPPORT_ROLE_LABELS, rawRole) ? rawRole : null
+    const { rows, total, matched, counts } = await this.guard(() => this.repo.queue(hasNul(status) ? '￿' : (status ?? '').trim(), role, page))
     return {
       data: rows.map((r) => ({
         id: r.id,
@@ -127,6 +131,8 @@ export class SupportService {
         subject: r.subject,
         status: r.status,
         replied: r.replied,
+        roleLabel: roleLabelOf(r.role),
+        school: r.school,
       })),
       meta: { total, counts, page, perPage: SUPPORT_QUEUE_PER_PAGE, matched },
     }
@@ -134,7 +140,34 @@ export class SupportService {
 
   /** GET /admin/tiket/:id: unknown id is 404. */
   async ticket(id: string): Promise<SupportTicketDetail> {
-    const row = await this.guard(() => this.repo.getById(id))
+    const row = await this.guard(() => this.repo.getDetail(id))
+    if (!row) throw ticketNotFound()
+    return toDetail(row)
+  }
+
+  /** PUT /admin/tiket/:id/reply: saves the single reply; the status does not change. The reply and its audit row commit together; the audit never holds the text. */
+  async reply(actor: Actor, id: string, text: string): Promise<SupportTicketDetail> {
+    const row = await this.write(async (tx) => {
+      const current = await this.repo.getDetail(id)
+      if (!current) throw ticketNotFound()
+      await this.repo.saveReply(id, { text, repliedById: actor.userId, now: this.clock.now() })
+      await this.audit.record({
+        tx,
+        action: SUPPORT_AUDIT.TICKET_REPLIED,
+        actorUserId: actor.userId,
+        actorRole: actor.role,
+        sessionRowId: actor.sessionRowId,
+        scopeLevel: actor.scopeLevel,
+        schoolId: actor.schoolId,
+        requestId: actor.requestId,
+        ip: actor.ip,
+        isTest: actor.isTest,
+        targetType: 'support_ticket',
+        targetId: id,
+        details: { ticketId: id, replaced: current.adminReply !== null },
+      })
+      return this.repo.getDetail(id)
+    })
     if (!row) throw ticketNotFound()
     return toDetail(row)
   }
@@ -142,10 +175,10 @@ export class SupportService {
   /** PATCH /admin/tiket/:id/status: the reply does not change. The status and its audit row commit together; setting the same status writes nothing. */
   async setStatus(actor: Actor, id: string, status: SupportTicketStatus): Promise<SupportTicketDetail> {
     const row = await this.write(async (tx) => {
-      const current = await this.repo.getById(id)
+      const current = await this.repo.getDetail(id)
       if (!current) throw ticketNotFound()
       if (current.status === status) return current
-      const updated = await this.repo.setStatus(id, status, this.clock.now())
+      await this.repo.setStatus(id, status, this.clock.now())
       await this.audit.record({
         tx,
         action: SUPPORT_AUDIT.TICKET_STATUS_CHANGED,
@@ -161,7 +194,7 @@ export class SupportService {
         targetId: id,
         details: { ticketId: id, before: current.status, after: status },
       })
-      return updated
+      return { ...current, status }
     })
     return toDetail(row)
   }

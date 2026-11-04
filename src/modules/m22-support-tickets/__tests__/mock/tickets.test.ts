@@ -10,6 +10,7 @@ import { CLOCK_ANCHOR_ISO, createClock } from '@/lib/time'
 import { issueSession } from '@/mock/core-data'
 import { bootMock, type MockRuntime } from '@/mock/index'
 import m01, { notifications, users } from '@/modules/m01-authentication/mock'
+import m02 from '@/modules/m02-users-schools/mock'
 
 import { TICKET_MESSAGES as MSG } from '../../api/types'
 import m22 from '../../mock'
@@ -29,7 +30,7 @@ let runtime: MockRuntime
 beforeAll(async () => {
   runtime = await bootMock({
     mode: 'test',
-    plugins: [m01, m22],
+    plugins: [m01, m02, m22],
     clock: createClock({ at: CLOCK_ANCHOR_ISO }),
     latencyMs: 0,
     onWarn: null,
@@ -56,7 +57,7 @@ interface Answer<T = unknown> {
 }
 
 async function call<T = unknown>(
-  method: 'GET' | 'POST' | 'PATCH',
+  method: 'GET' | 'POST' | 'PATCH' | 'PUT',
   url: string,
   as: number | null,
   body?: unknown,
@@ -205,7 +206,7 @@ describe('#3 and #4 admin queue (AC-M22-07, 08, 09)', () => {
     ])
     expect(r.body.data?.map((t) => t.id)).toEqual([2, 9, 8, 1, 7, 6, 5, 4, 3])
     expect(Object.keys(r.body.data?.[0] ?? {}).sort()).toEqual(
-      ['createdAt', 'id', 'replied', 'status', 'subject', 'userName'].sort(),
+      ['createdAt', 'id', 'replied', 'roleLabel', 'school', 'status', 'subject', 'userName'].sort(),
     )
     expect(r.body.data?.find((t) => t.id === 6)?.replied).toBe(true)
     expect(r.body.data?.find((t) => t.id === 3)?.replied).toBe(false)
@@ -237,11 +238,35 @@ describe('#3 and #4 admin queue (AC-M22-07, 08, 09)', () => {
     expect((await call('GET', '/api/admin/tiket?page=99', ADMIN)).body.data).toEqual([])
   })
 
+  it('the role filter narrows rows, matched, total and chips; an unknown role is ignored', async () => {
+    const all = await call<QueueDto[]>('GET', '/api/admin/tiket', ADMIN)
+    const teachers = await call<QueueDto[]>('GET', '/api/admin/tiket?role=teacher', ADMIN)
+    expect(teachers.body.meta).toMatchObject({ total: 0, matched: 0 })
+    expect(teachers.body.data).toEqual([])
+    const pupils = await call<QueueDto[]>('GET', '/api/admin/tiket?role=student', ADMIN)
+    expect(pupils.body.meta?.total).toBe(all.body.meta?.total)
+    expect((await call('GET', '/api/admin/tiket?role=zzz', ADMIN)).body.meta?.total).toBe(all.body.meta?.total)
+  })
+
+  it('API-SUP-05: a reply replaces the single reply and keeps the status; the owner sees it', async () => {
+    const saved = await call<{ adminReply: string; status: string; repliedAt: string | null }>('PUT', '/api/admin/tiket/1/reply', ADMIN, { text: ' Baik. ' })
+    expect(saved.status).toBe(200)
+    expect(saved.body.data).toMatchObject({ adminReply: 'Baik.', status: 'dibuka' })
+    expect(saved.body.data?.repliedAt).toBeTruthy()
+    expect((await call('PUT', '/api/admin/tiket/1/reply', ADMIN, { text: '  ' })).body.error?.fields).toEqual({ text: 'Sila tulis balasan.' })
+    expect((await call('PUT', '/api/admin/tiket/1/reply', ADMIN, { text: 'x'.repeat(5001) })).status).toBe(422)
+    expect((await call('PUT', '/api/admin/tiket/999/reply', ADMIN, { text: 'x' })).status).toBe(404)
+    expect((await call('PUT', '/api/admin/tiket/1/reply', 3, { text: 'x' })).status).toBe(403)
+    const queue = await call<QueueDto[]>('GET', '/api/admin/tiket', ADMIN)
+    expect(queue.body.data?.find((t) => t.id === 1)?.replied).toBe(true)
+  })
+
   it('API-SUP-05: detail and status, reply untouched; 403, 404 and 422 as on the server', async () => {
     await runtime.reset({ ticketsProfile: 'tickets-extra' })
     const d = await call<{ status: string; body: string; adminReply: string | null }>('GET', '/api/admin/tiket/6', ADMIN)
     expect(d.status).toBe(200)
-    expect(d.body.data).toMatchObject({ id: 6, status: 'selesai', roleLabel: null, school: null, repliedAt: null })
+    expect(d.body.data).toMatchObject({ id: 6, status: 'selesai' })
+    expect(Object.keys(d.body.data ?? {})).toEqual(expect.arrayContaining(['roleLabel', 'school', 'repliedAt']))
     const reply = d.body.data?.adminReply
     const moved = await call<{ status: string; adminReply: string | null }>('PATCH', '/api/admin/tiket/6/status', ADMIN, { status: 'ditutup' })
     expect(moved.status).toBe(200)

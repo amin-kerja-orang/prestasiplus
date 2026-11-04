@@ -17,7 +17,7 @@ import { ticketsTable } from './tables/tables'
 
 const plugin = defineMockModule({
   id: 'M22',
-  dependsOn: ['core', 'M01'],
+  dependsOn: ['core', 'M01', 'M02'],
   version: 1,
   tables: { supportTickets: ticketsTable },
   repositories: { supportTickets: supportTicketsRepo },

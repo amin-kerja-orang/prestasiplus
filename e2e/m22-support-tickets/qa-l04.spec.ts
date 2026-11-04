@@ -310,6 +310,25 @@ test.describe('R1-ADM-P2-20 detail and status', MODULE, () => {
     await expect(page.getByTestId('tq-chips')).toContainText('Dibuka (1)')
   })
 
+  test('FR-ADM-P2-20.2, AC-ADM-P2-20.3 the reply box stays visible; a reply saves apart and the row says "Ya"', async ({
+    page,
+    loginAs,
+    gotoApp,
+  }) => {
+    await loginAs(ADMIN)
+    await gotoApp(QUEUE)
+    if (viewportWidth(page) < 768) await page.locator('[data-testid="tq-table"] li button').first().click()
+    else await page.getByTestId('tq-row').first().click()
+    await page.getByTestId('tq-reply-text').fill('Kami sedang menyemak.')
+    await expect(page.getByTestId('tq-reply-save')).toBeInViewport()
+    await expectNoHorizontalScroll(page)
+    await page.getByTestId('tq-reply-save').click()
+    await expect(page.getByTestId('tq-reply-flash')).toContainText('Balasan disimpan.')
+    await expect(page.getByTestId('tq-chips')).toContainText('Dibuka (2)')
+    await page.reload()
+    await expect(page.getByTestId('tq-table')).toContainText('Ya')
+  })
+
   test('AC-ADM-P2-20.2 a chip at 0 opens its empty state', async ({ page, loginAs, gotoApp }) => {
     await loginAs(ADMIN)
     await gotoApp(QUEUE)

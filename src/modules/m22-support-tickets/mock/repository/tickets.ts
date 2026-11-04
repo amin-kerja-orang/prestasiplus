@@ -32,32 +32,40 @@ export const supportTicketsRepo = defineRepository({
     },
 
     /**
-     * Q-M22-QUEUE: one page of the rows with the exact status, `createdAt` desc then id desc. `counts` (all five
-     * statuses, a chip at 0 exists) and `total` are over all; `matched` counts the status-filtered rows.
+     * Q-M22-QUEUE: one page of the rows with the exact status and owner filter, `createdAt` desc then id desc.
+     * `counts` (all five statuses, a chip at 0 exists) and `total` follow the owner filter and ignore the status;
+     * `matched` counts the rows of both filters.
      */
     queue(
       status?: string | null,
       page = 1,
+      ownerMatches: (userId: number) => boolean = () => true,
     ): {
       rows: TicketRow[]
       total: number
       matched: number
       counts: { status: TicketStatus; count: number }[]
     } {
-      const grouped = store.groupCount('status')
-      const counts = TICKET_STATUSES.map((s) => ({ status: s, count: grouped.get(s) ?? 0 }))
-      const total = counts.reduce((n, c) => n + c.count, 0)
-      const q = status === undefined || status === null || status === '' ? {} : { status }
-      const result = store.query({
-        where: q as { status?: TicketRow['status'] },
-        sort: [
-          { field: 'createdAt', dir: 'desc' },
-          { field: 'id', dir: 'desc' },
-        ],
-        page,
-        pageSize: QUEUE_PER_PAGE,
-      })
-      return { rows: result.rows.map((r) => ({ ...r })), total, matched: result.total, counts }
+      const owned = store
+        .query({
+          sort: [
+            { field: 'createdAt', dir: 'desc' },
+            { field: 'id', dir: 'desc' },
+          ],
+        })
+        .rows.filter((r) => ownerMatches(r.userId))
+      const counts = TICKET_STATUSES.map((s) => ({
+        status: s,
+        count: owned.filter((r) => r.status === s).length,
+      }))
+      const matching = status ? owned.filter((r) => r.status === status) : owned
+      const start = (page - 1) * QUEUE_PER_PAGE
+      return {
+        rows: matching.slice(start, start + QUEUE_PER_PAGE).map((r) => ({ ...r })),
+        total: owned.length,
+        matched: matching.length,
+        counts,
+      }
     },
 
     /** Q-M22-OPEN. */
@@ -84,6 +92,13 @@ export const supportTicketsRepo = defineRepository({
     get(id: number): TicketRow | undefined {
       const r = store.get(id)
       return r ? { ...r } : undefined
+    },
+
+    /** API-SUP-05: the single reply; a later save replaces it and the status does not change. */
+    setReply(id: number, text: string): TicketRow | undefined {
+      return transaction(() =>
+        store.get(id) ? { ...store.update(id, { adminReply: text, updatedAt: nowIso() }) } : undefined,
+      )
     },
 
     /** API-SUP-05: the admin sets the status; the reply does not change. */

@@ -17002,6 +17002,16 @@
       "approved_by_card": "S7-T09"
     },
     {
+      "key": "PUT /api/admin/tiket/:p/reply",
+      "method": "PUT",
+      "path": "/api/admin/tiket/:id/reply",
+      "api_id": "API-SUP-05",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/support/support.controller.ts",
+      "approved_by_card": "S7-T09"
+    },
+    {
       "key": "PATCH /api/admin/tiket/:p/status",
       "method": "PATCH",
       "path": "/api/admin/tiket/:id/status",

@@ -1,13 +1,13 @@
 <script setup lang="ts">
 /**
  * S2 `/admin/tiket` "Tiket Sokongan" (R1-ADM-P2-20, SRS M22 v1.1 FR-M22-28…38), v2 staff theme. Admin shell,
- * platform admin only: status chips (links, with the counts), a table of 25 rows per page, and a row opens the
- * detail with the status select. Dates are shown in Asia/Kuala_Lumpur (DV-M22-09). Counts and the total cover all
+ * platform admin only: role filter, status chips (links, with the counts), a table of 25 rows per page, and a row
+ * opens the detail with the single reply and the status select, which save apart. Dates are shown in Asia/Kuala_Lumpur (DV-M22-09). Counts and the total cover all
  * tickets. The markup keeps the server's no-ARIA rule (CHK-M22-02).
  */
 import type { TableColumn } from '@nuxt/ui'
 import { computed, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router'
 
 import { ApiError } from '@/api'
 import { useApi } from '@/composables'
@@ -30,9 +30,10 @@ import {
 import { formatNumber } from '@/lib/number'
 import { formatDateTimeRaw } from '@/lib/time'
 
-import { fetchQueue, fetchTicketDetail, setTicketStatus } from '../api/tickets'
+import { fetchQueue, fetchTicketDetail, replyToTicket, setTicketStatus } from '../api/tickets'
 import {
   ADMIN_TICKET_PROPOSED_COPY,
+  ROLE_FILTER_ITEMS,
   TICKET_STATUSES,
   TICKET_STATUS_LABELS,
   isTicketStatus,
@@ -57,9 +58,15 @@ const page = computed(() => {
   return Math.max(1, Number.parseInt(raw ?? '', 10) || 1)
 })
 
+const role = computed(() => {
+  const q = route.query.role
+  const first = Array.isArray(q) ? q[0] : q
+  return first ?? ''
+})
+
 const { data, error, loading, reload } = useApi(
-  (signal) => fetchQueue({ status: status.value, page: page.value, signal }),
-  () => [route.query.status, route.query.page],
+  (signal) => fetchQueue({ status: status.value, role: role.value, page: page.value, signal }),
+  () => [route.query.status, route.query.role, route.query.page],
 )
 
 const rows = computed(() => data.value?.data ?? [])
@@ -74,6 +81,8 @@ const tableRows = computed<TicketRow[]>(() =>
     ...r,
     dateText: formatDateTimeRaw(r.createdAt),
     userText: r.userName ?? '—',
+    roleText: r.roleLabel ?? '—',
+    schoolText: r.school ?? '—',
     statusText: statusWord(r.status),
     repliedText: r.replied ? 'Ya' : '—',
   })),
@@ -81,12 +90,16 @@ const tableRows = computed<TicketRow[]>(() =>
 const CARD_FIELDS = [
   { key: 'dateText', label: 'Tarikh' },
   { key: 'userText', label: 'Pengguna' },
+  { key: 'roleText', label: 'Peranan' },
+  { key: 'schoolText', label: 'Sekolah' },
   { key: 'statusText', label: 'Status' },
   { key: 'repliedText', label: 'Dibalas' },
 ]
 const COLUMNS: TableColumn<TicketRow>[] = [
   { id: 'date', header: 'Tarikh' },
   { id: 'user', header: 'Pengguna' },
+  { accessorKey: 'roleText', header: 'Peranan' },
+  { accessorKey: 'schoolText', header: 'Sekolah' },
   { accessorKey: 'subject', header: 'Subjek' },
   { id: 'status', header: 'Status' },
   { id: 'replied', header: 'Dibalas' },
@@ -95,13 +108,31 @@ const COLUMNS: TableColumn<TicketRow>[] = [
 function statusWord(value: string): string {
   return isTicketStatus(value) ? TICKET_STATUS_LABELS[value] : value
 }
+/** A chip keeps the role filter and goes back to page 1. */
+function chipLink(value: string): string {
+  const query = new URLSearchParams()
+  if (value !== '') query.set('status', value)
+  if (role.value !== '') query.set('role', role.value)
+  const text = query.toString()
+  return text === '' ? '/admin/tiket' : `/admin/tiket?${text}`
+}
+
+function chooseRole(value: unknown): void {
+  const next = typeof value === 'string' ? value : ''
+  const query: LocationQueryRaw = { ...route.query }
+  delete query.page
+  if (next === '') delete query.role
+  else query.role = next
+  void router.push({ path: '/admin/tiket', query })
+}
+
 /** Status chips (links with the counts); the filter lives in the URL. */
 const chipItems = computed<PillItem<string>[]>(() => [
-  { key: '', label: `Semua (${formatNumber(total.value)})`, to: '/admin/tiket', testid: 'all' },
+  { key: '', label: `Semua (${formatNumber(total.value)})`, to: chipLink(''), testid: 'all' },
   ...counts.value.map((c) => ({
     key: c.status,
     label: `${statusWord(c.status)} (${formatNumber(c.count)})`,
-    to: `/admin/tiket?status=${encodeURIComponent(c.status)}`,
+    to: chipLink(c.status),
   })),
 ])
 
@@ -118,15 +149,24 @@ const detailError = ref('')
 const statusFlash = ref(false)
 const statusBusy = ref(false)
 const statusError = ref('')
+const replyText = ref('')
+const replyBusy = ref(false)
+const replyError = ref('')
+const replyFlash = ref(false)
 let openedRow = 0
+
+/** `selesai` and `ditutup` hide the reply box (30 P2-20); a saved reply then shows as text. */
+const canReply = computed(() => detail.value?.status !== 'selesai' && detail.value?.status !== 'ditutup')
 
 const detailItems = computed(() => {
   const current = detail.value
   if (!current) return []
   return [
     { key: 'subject', label: 'Subjek', value: current.subject },
+    { key: 'role', label: 'Peranan', value: current.roleLabel },
+    { key: 'school', label: 'Sekolah', value: current.school },
     { key: 'body', label: 'Butiran' },
-    ...(current.adminReply ? [{ key: 'reply', label: 'Balasan Sokongan' }] : []),
+    ...(current.adminReply && !canReply.value ? [{ key: 'reply', label: 'Balasan Sokongan' }] : []),
   ]
 })
 
@@ -137,7 +177,10 @@ async function loadDetail(id: number): Promise<void> {
   detailError.value = ''
   try {
     const found = await fetchTicketDetail(id)
-    if (openedRow === id) detail.value = found
+    if (openedRow === id) {
+      detail.value = found
+      replyText.value = found.adminReply ?? ''
+    }
   } catch (e) {
     if (openedRow === id) detailError.value = messageOf(e)
   }
@@ -147,8 +190,28 @@ function openDetail(row: TicketRow): void {
   openedRow = row.id
   statusFlash.value = false
   statusError.value = ''
+  replyFlash.value = false
+  replyError.value = ''
   detailOpen.value = true
   void loadDetail(row.id)
+}
+
+async function saveReply(): Promise<void> {
+  const current = detail.value
+  if (!current) return
+  replyBusy.value = true
+  replyFlash.value = false
+  replyError.value = ''
+  try {
+    detail.value = await replyToTicket(current.id, replyText.value)
+    replyText.value = detail.value.adminReply ?? ''
+    replyFlash.value = true
+    void reload()
+  } catch (e) {
+    replyError.value = (e instanceof ApiError && e.fields?.text) || messageOf(e)
+  } finally {
+    replyBusy.value = false
+  }
 }
 
 async function changeStatus(value: unknown): Promise<void> {
@@ -177,6 +240,14 @@ async function changeStatus(value: unknown): Promise<void> {
     data-testid="tq-page"
   >
     <template v-if="data">
+      <DsFormField label="Peranan" name="role">
+        <DsNativeSelect
+          :model-value="role"
+          :items="[...ROLE_FILTER_ITEMS]"
+          data-testid="tq-role"
+          @update:model-value="chooseRole"
+        />
+      </DsFormField>
       <div data-testid="tq-chips">
         <DsPillNav
           :items="chipItems"
@@ -232,7 +303,7 @@ async function changeStatus(value: unknown): Promise<void> {
       <USkeleton v-for="n in 5" :key="n" class="h-14 w-full" />
     </div>
 
-    <DsDialog v-model:open="detailOpen" title="Tiket Sokongan" :loading="statusBusy">
+    <DsDialog v-model:open="detailOpen" title="Tiket Sokongan" :loading="statusBusy || replyBusy">
       <DsStateView
         :status="detail ? 'ready' : detailError ? 'error' : 'loading'"
         :error="detailError"
@@ -249,6 +320,20 @@ async function changeStatus(value: unknown): Promise<void> {
               <UTextarea :model-value="detail.adminReply" readonly autoresize variant="none" />
             </template>
           </DsDefinitionList>
+          <DsStack v-if="canReply" as="form" data-testid="tq-reply-form" @submit.prevent="saveReply">
+            <DsFormField label="Balas" name="text" :error="replyError">
+              <UTextarea v-model="replyText" :rows="4" autoresize data-testid="tq-reply-text" />
+            </DsFormField>
+            <DsStack align="start">
+              <UButton type="submit" label="Balas" :loading="replyBusy" data-testid="tq-reply-save" />
+            </DsStack>
+            <DsCallout
+              v-if="replyFlash"
+              tone="success"
+              :title="ADMIN_TICKET_PROPOSED_COPY.replySavedFlash"
+              data-testid="tq-reply-flash"
+            />
+          </DsStack>
           <DsFormField label="Status" name="status" :error="statusError">
             <DsNativeSelect
               :model-value="detail.status"

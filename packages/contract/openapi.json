@@ -4356,14 +4356,14 @@
               "string",
               "null"
             ],
-            "description": "Role label from `created_role`; null on an old row of a user with several roles. Sent once DM-32 lands."
+            "description": "Role label from `created_role`; null on an old row of a user with several roles."
           },
           "school": {
             "type": [
               "string",
               "null"
             ],
-            "description": "School from `school_id`. Sent once DM-32 lands."
+            "description": "School from `school_id`."
           }
         },
         "required": [
@@ -4372,7 +4372,9 @@
           "userName",
           "subject",
           "status",
-          "replied"
+          "replied",
+          "roleLabel",
+          "school"
         ],
         "additionalProperties": false
       },
@@ -4385,7 +4387,7 @@
           },
           "role": {
             "type": "string",
-            "description": "Exact role of `created_role`; an unknown value is ignored. Applies once DM-32 lands."
+            "description": "Exact role of `created_role`; an unknown value is ignored."
           },
           "page": {
             "type": "string",
@@ -77991,10 +77993,10 @@
           {
             "schema": {
               "type": "string",
-              "description": "Exact role of `created_role`; an unknown value is ignored. Applies once DM-32 lands."
+              "description": "Exact role of `created_role`; an unknown value is ignored."
             },
             "required": false,
-            "description": "Exact role of `created_role`; an unknown value is ignored. Applies once DM-32 lands.",
+            "description": "Exact role of `created_role`; an unknown value is ignored.",
             "name": "role",
             "in": "query"
           },
@@ -78168,7 +78170,7 @@
           "support"
         ],
         "summary": "Save the single reply (API-SUP-05)",
-        "description": "Admin only. Sets the reply, the replier and the time; a second save replaces the text. The status does not change. The owner gets an in-app notification.",
+        "description": "Admin only, audited. Sets the reply, the replier and the time; a second save replaces the text. The status does not change. The owner sees it in `GET /tiket`.",
         "parameters": [
           {
             "schema": {
@@ -78251,7 +78253,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields.text: \"Sila isi balasan.\" or \"Balasan tidak boleh melebihi 5000 aksara.\"",
+            "description": "VALIDATION_ERROR with fields.text: \"Sila tulis balasan.\" or \"Balasan tidak boleh melebihi 5000 aksara.\"",
             "content": {
               "application/json": {
                 "schema": {

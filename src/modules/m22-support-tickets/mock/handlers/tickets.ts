@@ -21,11 +21,13 @@ import {
   type RouteDef,
 } from '@/mock/define'
 import m01, { users } from '@/modules/m01-authentication/mock'
+import { schools } from '@/modules/m02-users-schools/mock'
 
 import {
   ADMIN_TICKET_MESSAGES,
   BODY_MAX,
   QUEUE_PER_PAGE,
+  ROLE_LABELS,
   SUBJECT_MAX,
   TICKET_MESSAGES as MSG,
   TICKET_STATUS_LABELS,
@@ -115,12 +117,26 @@ function create(req: MockRequest): MockResponse {
   return created(toTicket(row))
 }
 
+/** The mock derives the DM-32 context from the owner at read time. */
+function contextOf(userId: number): { roleLabel: string | null; school: string | null } {
+  const owner = users.get(userId)
+  const schoolId = owner?.schoolId
+  return {
+    roleLabel: owner ? (ROLE_LABELS[owner.role] ?? null) : null,
+    school: schoolId ? (schools.get(schoolId)?.name ?? null) : null,
+  }
+}
+
 // #3
 function queue(req: MockRequest): MockResponse {
   const status = queryString(req.query, 'status') ?? ''
   const rawPage = queryString(req.query, 'page') ?? ''
   const page = /^[0-9]{1,9}$/.test(rawPage) ? Math.max(Number(rawPage), 1) : 1
-  const { rows, total, matched, counts } = supportTicketsRepo.queue(status, page)
+  const role = queryString(req.query, 'role')
+  const known = role !== undefined && role !== null && Object.hasOwn(ROLE_LABELS, role)
+  const { rows, total, matched, counts } = supportTicketsRepo.queue(status, page, (userId) =>
+    known ? users.get(userId)?.role === role : true,
+  )
   return ok(
     rows.map((r) => ({
       id: r.id,
@@ -129,6 +145,7 @@ function queue(req: MockRequest): MockResponse {
       subject: r.subject,
       status: r.status,
       replied: r.adminReply !== null && r.adminReply !== '',
+      ...contextOf(r.userId),
     })),
     { meta: { total, counts, page, perPage: QUEUE_PER_PAGE, matched } },
   )
@@ -137,21 +154,31 @@ function queue(req: MockRequest): MockResponse {
 // #4
 const openCount = (): MockResponse => ok({ count: supportTicketsRepo.openCount() })
 
-/** API-SUP-05 detail; `roleLabel`, `school` and `repliedAt` stay null until DM-32, as on the server. */
+/** API-SUP-05 detail. */
 const toDetail = (r: TicketRow): TicketDetail => ({
   id: r.id,
   subject: r.subject,
   body: r.body,
   status: r.status,
-  roleLabel: null,
-  school: null,
+  ...contextOf(r.userId),
   createdAt: r.createdAt,
   adminReply: r.adminReply,
-  repliedAt: null,
+  repliedAt: r.adminReply ? r.updatedAt : null,
 })
 
 function detail(req: MockRequest): MockResponse {
   const row = supportTicketsRepo.get(Number(req.params.id))
+  return row ? ok(toDetail(row)) : notFound(ADMIN_TICKET_MESSAGES.ticketNotFound)
+}
+
+function reply(req: MockRequest): MockResponse {
+  const body = (
+    typeof req.body === 'object' && req.body !== null && !Array.isArray(req.body) ? req.body : {}
+  ) as Record<string, unknown>
+  const text = typeof body.text === 'string' ? body.text.trim() : ''
+  if (text === '') return validationError({ text: ADMIN_TICKET_MESSAGES.replyRequired })
+  if (text.length > BODY_MAX) return validationError({ text: ADMIN_TICKET_MESSAGES.replyTooLong })
+  const row = supportTicketsRepo.setReply(Number(req.params.id), text)
   return row ? ok(toDetail(row)) : notFound(ADMIN_TICKET_MESSAGES.ticketNotFound)
 }
 
@@ -172,5 +199,6 @@ export const ticketRoutes: readonly RouteDef[] = [
   route('GET', '/api/admin/tiket', [adminOnly], queue),
   route('GET', '/api/admin/tiket/open-count', [adminOnly], openCount),
   route('GET', '/api/admin/tiket/:id', [adminOnly], detail, { params: { id: int() } }),
+  route('PUT', '/api/admin/tiket/:id/reply', [adminOnly], reply, { params: { id: int() } }),
   route('PATCH', '/api/admin/tiket/:id/status', [adminOnly], setStatus, { params: { id: int() } }),
 ]

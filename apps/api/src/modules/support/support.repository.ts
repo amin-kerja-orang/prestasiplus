@@ -23,6 +23,15 @@ export interface QueueRow {
   subject: string
   status: SupportTicketStatus
   replied: boolean
+  role: string | null
+  school: string | null
+}
+
+/** A ticket as the admin reads it (API-SUP-05). */
+export interface TicketDetailRow extends TicketRow {
+  role: string | null
+  school: string | null
+  repliedAt: Date | null
 }
 
 interface DbTicket {
@@ -65,10 +74,15 @@ export class SupportRepository {
     return this.users.activeAdminIds()
   }
 
-  async create(input: { userId: string; subject: string; body: string; isTest: boolean; now: Date }): Promise<TicketRow> {
+  /** `role` is the active role at creation and the school is a snapshot of the user's school (DM-32). */
+  async create(input: { userId: string; role: string; subject: string; body: string; isTest: boolean; now: Date }): Promise<TicketRow> {
+    const userId = idFromString(input.userId)
+    const owner = await this.prisma.client.user.findUnique({ where: { id: userId }, select: { schoolId: true } })
     const row = await this.prisma.client.supportTicket.create({
       data: {
-        userId: idFromString(input.userId),
+        userId,
+        createdRole: input.role,
+        schoolId: owner?.schoolId ?? null,
         subject: input.subject,
         body: input.body,
         status: 'dibuka',
@@ -95,22 +109,23 @@ export class SupportRepository {
   }
 
   /**
-   * The admin queue: one page of the rows with the exact status, newest first. `counts` and `total` are over
-   * every ticket (never the status-filtered ones); `counts` has all five statuses in vocabulary order, so a
-   * chip at 0 exists. `matched` counts the rows of the status filter, for the pager.
+   * The admin queue: one page of the rows with the exact status and role, newest first. `counts` and `total` follow
+   * the role filter and ignore the status filter; `counts` has all five statuses in vocabulary order, so a chip at 0
+   * exists. `matched` counts the rows of both filters, for the pager.
    */
-  async queue(status: string, page: number): Promise<{ rows: QueueRow[]; total: number; matched: number; counts: { status: SupportTicketStatus; count: number }[] }> {
-    const where = status === '' ? {} : { status }
+  async queue(status: string, role: string | null, page: number): Promise<{ rows: QueueRow[]; total: number; matched: number; counts: { status: SupportTicketStatus; count: number }[] }> {
+    const byRole = role === null ? {} : { createdRole: role }
+    const where = status === '' ? byRole : { ...byRole, status }
     const [rows, matched, grouped] = await Promise.all([
       this.prisma.client.supportTicket.findMany({
         where,
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         skip: (page - 1) * SUPPORT_QUEUE_PER_PAGE,
         take: SUPPORT_QUEUE_PER_PAGE,
-        select: { id: true, createdAt: true, subject: true, status: true, adminReply: true, user: { select: { name: true } } },
+        select: { id: true, createdAt: true, subject: true, status: true, adminReply: true, createdRole: true, user: { select: { name: true } }, school: { select: { name: true } } },
       }),
       this.prisma.client.supportTicket.count({ where }),
-      this.prisma.client.supportTicket.groupBy({ by: ['status'], _count: { _all: true } }),
+      this.prisma.client.supportTicket.groupBy({ by: ['status'], where: byRole, _count: { _all: true } }),
     ])
     const byStatus = new Map(grouped.map((g) => [g.status, g._count._all]))
     const counts = SUPPORT_TICKET_STATUSES.map((s) => ({ status: s, count: byStatus.get(s) ?? 0 }))
@@ -123,6 +138,8 @@ export class SupportRepository {
         subject: r.subject,
         status: r.status as SupportTicketStatus,
         replied: r.adminReply !== null && r.adminReply !== '',
+        role: r.createdRole,
+        school: r.school?.name ?? null,
       })),
       total: counts.reduce((n, c) => n + c.count, 0),
       counts,
@@ -134,6 +151,21 @@ export class SupportRepository {
     if (!isIdString(id)) return null
     const row = await this.prisma.client.supportTicket.findUnique({ where: { id: idFromString(id) } })
     return row ? toTicket(row) : null
+  }
+
+  /** One ticket with its context for the admin. */
+  async getDetail(id: string): Promise<TicketDetailRow | null> {
+    if (!isIdString(id)) return null
+    const row = await this.prisma.client.supportTicket.findUnique({ where: { id: idFromString(id) }, include: { school: { select: { name: true } } } })
+    return row ? { ...toTicket(row), role: row.createdRole, school: row.school?.name ?? null, repliedAt: row.adminRepliedAt } : null
+  }
+
+  /** The single admin reply: a later save replaces it. The status does not change. */
+  async saveReply(id: string, input: { text: string; repliedById: string; now: Date }): Promise<void> {
+    await this.prisma.client.supportTicket.update({
+      where: { id: idFromString(id) },
+      data: { adminReply: input.text, adminRepliedById: idFromString(input.repliedById), adminRepliedAt: input.now, updatedAt: input.now },
+    })
   }
 
   async setStatus(id: string, status: SupportTicketStatus, now: Date): Promise<TicketRow> {

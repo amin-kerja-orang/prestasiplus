@@ -95,7 +95,7 @@ describe('create request', () => {
 })
 
 describe('admin queue', () => {
-  const row = { id: '31', createdAt: AT, userName: 'Murid Contoh', subject: 'Tidak boleh log masuk', status: 'dibuka', replied: false }
+  const row = { id: '31', createdAt: AT, userName: 'Murid Contoh', subject: 'Tidak boleh log masuk', status: 'dibuka', replied: false, roleLabel: 'Murid', school: null }
   const meta = { total: 2, counts: [{ status: 'dibuka', count: 1 }, { status: 'selesai', count: 1 }], page: 1, perPage: 25, matched: 2 }
 
   it('parses rows with meta.total and meta.counts', () => {
@@ -146,7 +146,7 @@ describe('admin ticket detail, reply and status (API-SUP-05)', () => {
   })
 
   it('keeps the unapproved copy in one [PROPOSED] constant', () => {
-    expect(Object.keys(SUPPORT_ADMIN_PROPOSED_COPY).sort()).toEqual(['allRolesOption', 'replyNoticeTitle', 'replyNoticeType', 'replySavedFlash', 'statusSavedFlash'])
+    expect(Object.keys(SUPPORT_ADMIN_PROPOSED_COPY).sort()).toEqual(['replySavedFlash', 'statusSavedFlash'])
   })
 })
 

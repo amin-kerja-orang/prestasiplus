@@ -4,6 +4,7 @@ import type { RateLimitSpec } from '../../common/throttle'
 export const SUPPORT_AUDIT = {
   TICKET_CREATED: 'support.ticket.created',
   TICKET_STATUS_CHANGED: 'support.ticket.status_changed',
+  TICKET_REPLIED: 'support.ticket.replied',
 } as const
 
 /**
