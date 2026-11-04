@@ -10,7 +10,7 @@
  */
 import UCard from '@nuxt/ui/components/Card.vue'
 import type { TableColumn } from '@nuxt/ui'
-import { computed, watch } from 'vue'
+import { computed, watch, type VNode } from 'vue'
 
 import { dsCopy, fillCopy } from './copy'
 import { warnDeprecated } from './deprecate'
@@ -217,16 +217,38 @@ function toggle(row: T, on: boolean): void {
 
 /**
  * Card fields: the configured ones; with none (and no card title) every column with a key, so each
- * column stays reachable below `md`. Columns without an accessor key or a plain header are skipped.
+ * column stays reachable below `md`. A fallback field is `slotted`: its value renders the same
+ * `#<key>-cell` slot the table does (see `cellSlotProps`), the plain value when there is none.
+ * The label is a string header, else `meta.label`; a column with neither is skipped.
  */
-const shownFields = computed<CardField[]>(() => {
+type ShownField = CardField & { slotted?: boolean }
+const shownFields = computed<ShownField[]>(() => {
   if (props.cardFields.length || props.cardTitle) return props.cardFields
   return props.columns.flatMap((c) => {
     const key = (c as { accessorKey?: string }).accessorKey ?? c.id
-    const label = typeof c.header === 'string' ? c.header : ''
-    return key && label ? [{ key, label }] : []
+    const label = typeof c.header === 'string' ? c.header : (c.meta as { label?: string } | undefined)?.label
+    return key && label ? [{ key, label, slotted: true }] : []
   })
 })
+
+/**
+ * Slot props of a card value, shaped like TanStack's cell context that `UTable` passes to
+ * `#<key>-cell`: `row` (with `original`, `id`, `index`, `getValue`), `column`, `getValue`,
+ * `renderValue`. `cell` and `table` are not provided (no TanStack instance on the card path).
+ */
+/** Calls a forwarded slot with props. A dynamic `<slot :name>` would widen the typed `UTable` slots for every consumer. */
+const CellSlot = (p: { render: (props: Record<string, unknown>) => unknown; slotProps: Record<string, unknown> }) =>
+  p.render(p.slotProps) as VNode[]
+
+function cellSlotProps(row: T, index: number, key: string): Record<string, unknown> {
+  const getValue = (): unknown => row[key]
+  return {
+    row: { original: row, id: String(index), index, getValue: (k: string) => row[k] },
+    column: { id: key },
+    getValue,
+    renderValue: () => getValue() ?? null,
+  }
+}
 
 function cell(row: T, key: string): string {
   const v = row[key]
@@ -306,7 +328,14 @@ function cell(row: T, key: string): string {
                 <dl class="grid grid-cols-2 gap-x-3 gap-y-1">
                   <div v-for="f in shownFields" :key="f.key" class="min-w-0">
                     <dt class="text-caption text-muted">{{ f.label }}</dt>
-                    <dd class="tabular text-body break-words whitespace-normal">{{ cell(row, f.key) }}</dd>
+                    <dd class="tabular text-body break-words whitespace-normal">
+                      <CellSlot
+                        v-if="f.slotted && $slots[`${f.key}-cell`]"
+                        :render="$slots[`${f.key}-cell`]!"
+                        :slot-props="cellSlotProps(row, i, f.key)"
+                      />
+                      <template v-else>{{ cell(row, f.key) }}</template>
+                    </dd>
                   </div>
                 </dl>
               </slot>

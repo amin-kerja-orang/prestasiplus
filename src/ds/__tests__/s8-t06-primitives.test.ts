@@ -243,6 +243,54 @@ describe('DsDataTable cards (S8-T06)', () => {
     expect(t.findAll('dt')).toHaveLength(0)
   })
 
+  it('FR-X6-4: a fallback card renders the #<key>-cell slot, not the raw value', async () => {
+    setWidth(375)
+    const seen: Record<string, unknown>[] = []
+    const w = mount(DsDataTable, {
+      props: { data, columns },
+      slots: {
+        'skor-cell': (p: Record<string, unknown>) => {
+          seen.push(p)
+          return h('span', { 'data-testid': 'badge' }, 'Cemerlang')
+        },
+      },
+    })
+    await w.vm.$nextTick()
+    const dds = w.findAll('[data-ds=data-table-cards] dd').map((d) => d.text())
+    expect(dds).toEqual(['Murid satu', '4 Bestari', 'Cemerlang'])
+    expect(w.find('[data-testid=badge]').exists()).toBe(true)
+    const p = seen[0] as { row: { original: unknown }; getValue: () => unknown }
+    expect(p.row.original).toEqual(data[0])
+    expect(p.getValue()).toBe(80)
+  })
+
+  it('FR-X6-4: without a cell slot the fallback card shows the plain value', async () => {
+    const w = cards()
+    await w.vm.$nextTick()
+    expect(w.findAll('dd')[2]!.text()).toBe('80')
+  })
+
+  it('FR-X6-4: explicit cardFields keep the plain value even when a cell slot exists', async () => {
+    setWidth(375)
+    const w = mount(DsDataTable, {
+      props: { data, columns, cardFields: [{ key: 'skor', label: 'Skor' }] },
+      slots: { 'skor-cell': () => h('span', 'Cemerlang') },
+    })
+    await w.vm.$nextTick()
+    expect(w.get('dd').text()).toBe('80')
+  })
+
+  it('FR-X6-4: the table path (768px) still renders the cell slot', async () => {
+    setWidth(1280)
+    const w = mount(DsDataTable, {
+      props: { data, columns },
+      slots: { 'skor-cell': () => h('span', { 'data-testid': 'badge' }, 'Cemerlang') },
+    })
+    await w.vm.$nextTick()
+    expect(w.find('[data-ds=data-table-cards]').exists()).toBe(false)
+    expect(w.get('[data-testid=badge]').text()).toBe('Cemerlang')
+  })
+
   it('NFR-1: card values wrap instead of truncating', async () => {
     const w = cards()
     await w.vm.$nextTick()
