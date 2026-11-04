@@ -1,3 +1,4 @@
+import { VIDEO_MESSAGES } from '@pp/contract'
 import type { Scenario } from '@pp/contract-tests'
 
 import { API_ONLY, dataOf, errorOf, expectError, listOf } from '../helpers'
@@ -69,26 +70,47 @@ export const videosScenarios: Scenario[] = [
       expectError(ctx, await anon.request('PUT', '/videos/1', { body: video() }), 401, 'UNAUTHORIZED')
       expectError(ctx, await anon.request('DELETE', '/videos/1'), 401, 'UNAUTHORIZED')
 
-      const noCsrf = await ctx.as('student', { csrf: false })
+      const noCsrf = await ctx.as('teacher', { csrf: false })
       expectError(ctx, await noCsrf.request('POST', '/videos', { body: video() }), 403, 'CSRF_INVALID')
 
+      // Writes are for admin and teacher only: a pupil is refused by the role check, with or without a valid body.
       const student = await ctx.as('student')
-      const empty = await student.request('POST', '/videos', { body: {} })
+      expectError(ctx, await student.request('POST', '/videos', { body: video() }), 403, 'FORBIDDEN')
+      expectError(ctx, await student.request('POST', '/videos', { body: {} }), 403, 'FORBIDDEN')
+      expectError(ctx, await student.request('PUT', '/videos/1', { body: video() }), 403, 'FORBIDDEN')
+      expectError(ctx, await student.request('DELETE', '/videos/1'), 403, 'FORBIDDEN')
+
+      const teacher = await ctx.as('teacher')
+      const empty = await teacher.request('POST', '/videos', { body: {} })
       expectError(ctx, empty, 422, 'VALIDATION_ERROR')
-      ctx.check((errorOf(empty).fields as Record<string, string> | undefined)?.title === 'Medan ini diperlukan.', 'a missing title is not "Medan ini diperlukan."')
-      const extra = await student.request('POST', '/videos', { body: video({ uploaderId: '1' }) })
+      const emptyFields = errorOf(empty).fields as Record<string, string> | undefined
+      ctx.check(emptyFields?.title === VIDEO_MESSAGES.titleRequired, 'a missing title is not "Sila isi tajuk video."')
+      ctx.check(emptyFields?.videoUrl === VIDEO_MESSAGES.urlRequired, 'a missing link is not "Sila isi pautan YouTube."')
+      ctx.check(emptyFields?.category === VIDEO_MESSAGES.categoryRequired, 'a missing category is not "Sila pilih kategori."')
+      const extra = await teacher.request('POST', '/videos', { body: video({ uploaderId: '1' }) })
       expectError(ctx, extra, 422, 'VALIDATION_ERROR')
       ctx.check((errorOf(extra).fields as Record<string, string> | undefined)?.uploaderId === 'Medan ini tidak sah.', 'a client uploaderId was not refused')
-      const bad = await student.request('POST', '/videos', { body: video({ videoUrl: 'javascript:alert(1)' }) })
+      const bad = await teacher.request('POST', '/videos', { body: video({ videoUrl: 'javascript:alert(1)' }) })
       expectError(ctx, bad, 422, 'VALIDATION_ERROR')
-      expectError(ctx, await student.request('GET', '/videos/not-an-id'), 404, 'NOT_FOUND')
-      expectError(ctx, await student.request('GET', '/videos/999999999'), 404, 'NOT_FOUND')
+      // The wire allows 255, the server refuses above 150 with the service message.
+      const long = await teacher.request('POST', '/videos', { body: video({ title: 'x'.repeat(151) }) })
+      expectError(ctx, long, 422, 'VALIDATION_ERROR')
+      ctx.check((errorOf(long).fields as Record<string, string> | undefined)?.title === VIDEO_MESSAGES.titleTooLong, 'a 151-character title is not refused with the 150 message')
+      // A teacher link is YouTube only and carries an 11-character video id.
+      for (const videoUrl of ['https://vimeo.com/123456', 'https://www.youtube.com/watch?v=short']) {
+        const res = await teacher.request('POST', '/videos', { body: video({ videoUrl }) })
+        expectError(ctx, res, 422, 'VALIDATION_ERROR')
+        ctx.check((errorOf(res).fields as Record<string, string> | undefined)?.videoUrl === VIDEO_MESSAGES.urlInvalid, `${videoUrl} is not refused with the YouTube message`)
+      }
+      expectError(ctx, await teacher.request('GET', '/videos/not-an-id'), 404, 'NOT_FOUND')
+      expectError(ctx, await teacher.request('GET', '/videos/999999999'), 404, 'NOT_FOUND')
 
-      // The central admin account has no school, so a school video cannot be shared.
+      // The server sets the visibility: an admin has no school, so the video is global whatever the body asks for.
       const admin = await ctx.as('admin')
-      const noSchool = await admin.request('POST', '/videos', { body: video({ visibility: 'school' }) })
-      expectError(ctx, noSchool, 422, 'VALIDATION_ERROR')
-      ctx.check((errorOf(noSchool).fields as Record<string, string> | undefined)?.visibility === 'Anda tiada sekolah untuk dikongsi.', 'the no-school message differs')
+      const global = await admin.request('POST', '/videos', { body: video({ title: 'Video admin conformance', visibility: 'school' }) })
+      ctx.expectStatus(global, 201)
+      ctx.check(dataOf(global).visibility === 'global', 'an admin video is not global')
+      ctx.expectStatus(await admin.request('DELETE', `/videos/${String(dataOf(global).id)}`), 200)
       const context = await student.request('GET', '/videos/form-context')
       ctx.expectStatus(context, 200)
       ctx.check((dataOf(context).uploader as { roleLabel?: string }).roleLabel === 'Pelajar', 'form-context uploader role label is not Pelajar')
