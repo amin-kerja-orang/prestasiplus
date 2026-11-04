@@ -135,7 +135,7 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
   // classrooms (BE-17): the level must exist; the academic year has a check.
   classrooms: async (query) => ({ name: 'Kelas Contoh', education_level_id: await parentLevel(query), academic_year: 2026 }),
   // education_levels (BE-08): code must be upper-case, stage one of three.
-  education_levels: async () => ({ code: next('FXL'), stage: 'primary' }),
+  education_levels: async () => ({ code: next('FXL'), stage: 'primary', is_active: false }),
   // enrolments (BE-17): the class and the pupil must exist.
   enrolments: async (query) => ({ classroom_id: await parentClassroom(query), student_id: await parentUser(query) }),
   // exam_attempts (BE-16): the owner must exist; kind, mode and status have check constraints.

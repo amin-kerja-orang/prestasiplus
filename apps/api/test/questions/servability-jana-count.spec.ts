@@ -62,7 +62,7 @@ describe('Jana eligibility: the SQL scope equals the pool facts through describe
 
     // A level and a unit node that are NOT Tingkatan 4 or 5, and a Darjah level.
     const [tz] = await q(`insert into education_levels (code, name, name_en, stage, curriculum, sort_order, is_active) values ('TZ', 'TZ', 'TZ', 'upper_secondary', 'KSSM', 90, true) returning id::text id`)
-    const [darjah] = await q(`insert into education_levels (code, name, name_en, stage, curriculum, sort_order, is_active) values ('DZ', 'DZ', 'DZ', 'primary', 'KSSR', 91, true) returning id::text id`)
+    const [darjah] = await q(`insert into education_levels (code, name, name_en, stage, curriculum, sort_order, is_active) values ('DZ', 'DZ', 'DZ', 'primary', 'KSSR', 91, false) returning id::text id`)
     const [foreignUnit] = await q(
       `insert into curriculum_nodes (subject_id, education_level_id, kind, code, title, edition) values ($1, $2, 'unit', '9.9', 'Unit di tingkatan lain', 'T') returning id::text id`,
       [tag.subjectId, tz!.id],
