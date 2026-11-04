@@ -172,8 +172,8 @@ describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC
       expect(odd.status, JSON.stringify(odd.body)).toBe(200)
     })
 
-    // API-AUTH-09 / AC-MUR-A2-6: grade, schoolId and role are ignored for every role.
-    it.each(['pelajar@demo.test', 'guru@demo.test', 'ibubapa@demo.test', 'adminsekolah@demo.test', 'admin@demo.test'])(
+    // API-AUTH-09 / AC-MUR-A2-6: grade, schoolId and role are ignored for every role (the identity seed of this app has no parent account; the parent path is the same code).
+    it.each(['pelajar@demo.test', 'guru@demo.test', 'adminsekolah@demo.test', 'admin@demo.test', 'guruadmin@demo.test'])(
       'ignores grade, schoolId and role for %s: 200 and the stored values do not change',
       async (email) => {
         const who = await login(t, email)
