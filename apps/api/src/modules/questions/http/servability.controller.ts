@@ -91,24 +91,29 @@ export class ServabilityController {
     return this.lane('bijak-spm', this.reads.paperLane(this.laneQuery(query)))
   }
 
-  /** API-BIJAK-12: the other four lanes, declared after the two fixed paths above. An unknown lane is 404. */
-  @Get('lanes/:lane')
+  @Get('lanes/tracking-a')
   @RateLimit(SERVABILITY_READ_LIMIT)
-  async otherLane(@Param('lane') lane: string, @Query() query: unknown) {
-    switch (lane) {
-      case 'tracking-a':
-        return this.lane(lane, this.reads.trackingLane(this.laneQuery(query)))
-      case 'subjektif':
-        return this.lane(lane, this.reads.subjektifLane(this.laneQuery(query)))
-      case 'kertas-subjektif':
-        return this.lane(lane, this.reads.kertasSubjektifLane(this.laneQuery(query)))
-      case 'latih-tubi': {
-        const [res, subjects] = await Promise.all([this.reads.latihTubiLane(this.laneQuery(query)), this.reads.activeSubjects()])
-        return { data: res.rows, meta: { ...listMeta(res.page, res.pageSize, res.total), switchEnabled: res.switchEnabled }, subjects, count: res.count, attention: this.attentionOf(lane) }
-      }
-      default:
-        throw ApiError.of('NOT_FOUND')
-    }
+  async trackingA(@Query() query: unknown) {
+    return this.lane('tracking-a', this.reads.trackingLane(this.laneQuery(query)))
+  }
+
+  @Get('lanes/subjektif')
+  @RateLimit(SERVABILITY_READ_LIMIT)
+  async subjektif(@Query() query: unknown) {
+    return this.lane('subjektif', this.reads.subjektifLane(this.laneQuery(query)))
+  }
+
+  @Get('lanes/kertas-subjektif')
+  @RateLimit(SERVABILITY_READ_LIMIT)
+  async kertasSubjektif(@Query() query: unknown) {
+    return this.lane('kertas-subjektif', this.reads.kertasSubjektifLane(this.laneQuery(query)))
+  }
+
+  @Get('lanes/latih-tubi')
+  @RateLimit(SERVABILITY_READ_LIMIT)
+  async latihTubi(@Query() query: unknown) {
+    const [res, subjects] = await Promise.all([this.reads.latihTubiLane(this.laneQuery(query)), this.reads.activeSubjects()])
+    return { data: res.rows, meta: { ...listMeta(res.page, res.pageSize, res.total), switchEnabled: res.switchEnabled }, subjects, count: res.count, attention: this.attentionOf('latih-tubi') }
   }
 
   /** The body of a lane whose items are its rows, so `count` is the row total under the current filters. */

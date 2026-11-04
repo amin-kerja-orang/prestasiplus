@@ -15163,9 +15163,39 @@
       "approved_by_card": null
     },
     {
-      "key": "GET /api/admin/servability/lanes/:p",
+      "key": "GET /api/admin/servability/lanes/tracking-a",
       "method": "GET",
-      "path": "/api/admin/servability/lanes/:lane",
+      "path": "/api/admin/servability/lanes/tracking-a",
+      "api_id": "API-BIJAK-12",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/servability.controller.ts",
+      "approved_by_card": "S3-T03"
+    },
+    {
+      "key": "GET /api/admin/servability/lanes/subjektif",
+      "method": "GET",
+      "path": "/api/admin/servability/lanes/subjektif",
+      "api_id": "API-BIJAK-12",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/servability.controller.ts",
+      "approved_by_card": "S3-T03"
+    },
+    {
+      "key": "GET /api/admin/servability/lanes/kertas-subjektif",
+      "method": "GET",
+      "path": "/api/admin/servability/lanes/kertas-subjektif",
+      "api_id": "API-BIJAK-12",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/servability.controller.ts",
+      "approved_by_card": "S3-T03"
+    },
+    {
+      "key": "GET /api/admin/servability/lanes/latih-tubi",
+      "method": "GET",
+      "path": "/api/admin/servability/lanes/latih-tubi",
       "api_id": "API-BIJAK-12",
       "status": "canonical",
       "sector": "S1",
