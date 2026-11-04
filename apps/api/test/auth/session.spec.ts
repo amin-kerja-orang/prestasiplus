@@ -37,7 +37,7 @@ describe('session endpoints', () => {
 
   describe('GET /api/session and logout', () => {
     it('401 UNAUTHORIZED without a session, 200 with the same Session (csrf included) after login', async () => {
-      expectError(await t.http().get('/api/session'), 'UNAUTHORIZED', 'Unauthenticated.')
+      expectError(await t.http().get('/api/session'), 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
       const me = await login('adminsekolah@demo.test')
       const res = await me.agent.get('/api/session')
       expect(res.status).toBe(200)
@@ -261,11 +261,11 @@ describe('session endpoints', () => {
     it('422 for an unknown role and for a client scope (strict body)', async () => {
       const me = await login('guruadmin@demo.test')
       const set = (b: object) => me.agent.post('/api/session/role').set('X-CSRF-Token', me.csrf).send(b)
-      expectError(await set({ role: 'wizard' }), 'VALIDATION_ERROR', 'The given data was invalid.')
+      expectError(await set({ role: 'wizard' }), 'VALIDATION_ERROR', 'Data yang dihantar tidak sah. Sila semak dan cuba lagi.')
       expectError(
         await set({ role: 'teacher', scope: { level: 'national', label: 'Seluruh Negara' } }),
         'VALIDATION_ERROR',
-        'The given data was invalid.',
+        'Data yang dihantar tidak sah. Sila semak dan cuba lagi.',
       )
     })
 

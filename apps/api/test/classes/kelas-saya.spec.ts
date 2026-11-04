@@ -113,7 +113,7 @@ describe('Kelas Saya: GET /api/kelas-saya and POST /api/kelas-saya/join (AC 1)',
   it('only a student (and the admin) may join: a teacher and a school admin are 403; the admin joins', async () => {
     for (const who of [TEACHER_B, SCHOOL_ADMIN]) {
       const api = await client(t, who)
-      errorIs(await api.post('/kelas-saya/join', { classCode: k.joinCode }), 403, 'FORBIDDEN', 'This action is unauthorized.')
+      errorIs(await api.post('/kelas-saya/join', { classCode: k.joinCode }), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
     }
     const admin = await client(t, ADMIN)
     const res = await admin.post('/kelas-saya/join', { classCode: k.joinCode })

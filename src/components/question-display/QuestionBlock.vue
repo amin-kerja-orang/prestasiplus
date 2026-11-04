@@ -3,18 +3,25 @@
  * One question on the attempt screen: heading ("Soalan 6 · berdasarkan Rajah 2"), stem, then MCQ
  * option cards (DsQuizOption, single column) or the structured parts. Choose-N sections add the
  * "Pilih soalan ini untuk dijawab" box; the flag button marks the question for review.
+ * Slots (filled by the m28 attempt page): `report` (questionId, attemptId, variant) and
+ * `result` (result, title; rendered once per part result after "Semak").
  */
 import { computed, ref } from 'vue'
 
 import { DsQuizOption, DsStack, DsText } from '@/ds'
 
-import { leavesOf } from '../domain/paper-model'
-import type { PartAnswer, QuestionResult, QuestionView } from '../domain/types'
-import { toOptionData, toStimulusData } from '../lib/stimulus-data'
-import { McqOptions, PartNode, RichText, StimulusGroup, qdCopy, useStimulusGroup } from '../../../components/question-display'
-import type { StimulusData } from '../../../components/question-display'
-import PartResultCard from './PartResultCard.vue'
-import ReportQuestionButton from './ReportQuestionButton.vue'
+import { leavesOf } from '@pp/exam-core/paper-model'
+
+import type { PartAnswer, QuestionResult, QuestionView } from '@/modules/m28-bijak-spm/domain/types'
+
+import { qdCopy } from './copy'
+import { toOptionData, toStimulusData } from './lib/stimulus-data'
+import { useStimulusGroup } from './lib/useStimulusOpen'
+import McqOptions from './McqOptions.vue'
+import PartNode from './PartNode.vue'
+import RichText from './RichText.vue'
+import StimulusGroup from './StimulusGroup.vue'
+import type { StimulusData } from './types'
 
 const props = defineProps<{
   question: QuestionView
@@ -51,7 +58,8 @@ const stimulusLookup = computed<StimulusData[]>(() => [
   ...((group?.stimuli() ?? []) as StimulusData[]),
   ...ownStimuli.value.map(toStimulusData),
 ])
-const leaves =computed(() => leavesOf(props.question.parts ?? []))
+const reportVariant = computed(() => (props.question.mcq ? ('mcq' as const) : ('structured' as const)))
+const leaves = computed(() => leavesOf(props.question.parts ?? []))
 /** An option with a picture switches the choices to the shared `McqOptions` (picture boxes, load-failure state). */
 const optionPictures = computed(() => (props.question.mcq?.options ?? []).some((o) => !!o.image))
 const optionData = computed(() => (props.question.mcq?.options ?? []).map(toOptionData))
@@ -102,7 +110,12 @@ function pick(id: string): void {
         @click="emit('toggle-flag')"
         >{{ flagged ? 'Ditanda' : 'Tanda soalan' }}</UButton
       >
-      <ReportQuestionButton :question-id="question.id" :attempt-id="attemptId" :variant="question.mcq ? 'mcq' : 'structured'" />
+      <slot
+        name="report"
+        :question-id="question.id"
+        :attempt-id="attemptId"
+        :variant="reportVariant"
+      />
     </header>
 
     <DsStack v-if="choose" gap="2xs">
@@ -126,10 +139,7 @@ function pick(id: string): void {
 
     <!-- The question's OWN stimuli (R1E2E-05b), above the stem as in V2 section 1.5. -->
     <div v-if="ownStimuli.length" :data-count="ownStimuli.length" data-testid="own-stimuli">
-      <StimulusGroup
-        :stimuli="ownStimuli.map(toStimulusData)"
-        :hint="false"
-      />
+      <StimulusGroup :stimuli="ownStimuli.map(toStimulusData)" :hint="false" />
     </div>
 
     <p v-if="question.stem" class="text-body text-default" data-testid="question-stem">
@@ -184,17 +194,15 @@ function pick(id: string): void {
         :disabled="locked"
         :option-bank="question.optionBank"
         :stimuli="stimulusLookup"
+        :stimuli="stimulusLookup"
         @answer="(id, a) => emit('answer', id, a)"
       />
     </template>
 
     <div v-if="check && !question.mcq" class="flex flex-col gap-3" data-testid="check-results">
-      <PartResultCard
-        v-for="r in partResults"
-        :key="r.partId"
-        :result="r"
-        :title="leaves.find((l) => l.id === r.partId)?.label"
-      />
+      <template v-for="r in partResults" :key="r.partId">
+        <slot name="result" :result="r" :title="leaves.find((l) => l.id === r.partId)?.label" />
+      </template>
     </div>
   </article>
 </template>

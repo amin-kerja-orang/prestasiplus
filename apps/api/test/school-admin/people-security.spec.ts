@@ -97,25 +97,25 @@ describe('BE-21 people security', () => {
   })
 
   it('the impersonate routes do not exist (UD-2): 404, nothing changes', async () => {
-    errorOf(await admin.post(`/admin-sekolah/users/${pupil1}/impersonate`), 404, 'NOT_FOUND', 'Not Found.')
-    errorOf(await admin.post('/admin-sekolah/impersonate/leave'), 404, 'NOT_FOUND', 'Not Found.')
+    errorOf(await admin.post(`/admin-sekolah/users/${pupil1}/impersonate`), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+    errorOf(await admin.post('/admin-sekolah/impersonate/leave'), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
   })
 
-  it('cross-school: school B never sees or changes school A, and the reverse (404 "Not Found.", never 403)', async () => {
+  it('cross-school: school B never sees or changes school A, and the reverse (404 "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?", never 403)', async () => {
     const hashBefore = (await userRow(t.db, teacher1))?.password_hash
     const bodyOk = { name: 'Diubah Orang Luar', email: 'diubah@ujian.test', newPassword: 'Penyerang-123', newPasswordConfirmation: 'Penyerang-123' }
     // B acts on A's ids.
     for (const id of [teacher1]) {
-      errorOf(await other.get(`/admin-sekolah/guru/${id}`), 404, 'NOT_FOUND', 'Not Found.')
-      errorOf(await other.put(`/admin-sekolah/guru/${id}`, bodyOk), 404, 'NOT_FOUND', 'Not Found.')
-      errorOf(await other.post(`/admin-sekolah/guru/${id}/toggle-active`), 404, 'NOT_FOUND', 'Not Found.')
-      errorOf(await other.post(`/admin-sekolah/guru/${id}/reset-password`, bodyOk), 404, 'NOT_FOUND', 'Not Found.')
+      errorOf(await other.get(`/admin-sekolah/guru/${id}`), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+      errorOf(await other.put(`/admin-sekolah/guru/${id}`, bodyOk), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+      errorOf(await other.post(`/admin-sekolah/guru/${id}/toggle-active`), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+      errorOf(await other.post(`/admin-sekolah/guru/${id}/reset-password`, bodyOk), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
     }
-    errorOf(await other.get(`/admin-sekolah/pelajar/${pupil1}`), 404, 'NOT_FOUND', 'Not Found.')
-    errorOf(await other.put(`/admin-sekolah/pelajar/${pupil1}`, bodyOk), 404, 'NOT_FOUND', 'Not Found.')
-    errorOf(await other.post(`/admin-sekolah/pelajar/${pupil1}/reset-password`, bodyOk), 404, 'NOT_FOUND', 'Not Found.')
+    errorOf(await other.get(`/admin-sekolah/pelajar/${pupil1}`), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+    errorOf(await other.put(`/admin-sekolah/pelajar/${pupil1}`, bodyOk), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+    errorOf(await other.post(`/admin-sekolah/pelajar/${pupil1}/reset-password`, bodyOk), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
     // A acts on B's ids.
-    errorOf(await admin.get(`/admin-sekolah/guru/${teacher2}`), 404, 'NOT_FOUND', 'Not Found.')
+    errorOf(await admin.get(`/admin-sekolah/guru/${teacher2}`), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
     errorOf(await admin.post(`/admin-sekolah/guru/${teacher2}/toggle-active`), 404, 'NOT_FOUND')
     errorOf(await admin.get(`/admin-sekolah/pelajar/${pupil2}`), 404, 'NOT_FOUND')
     errorOf(await admin.post(`/admin-sekolah/pelajar/${pupil2}/reset-password`, bodyOk), 404, 'NOT_FOUND')
