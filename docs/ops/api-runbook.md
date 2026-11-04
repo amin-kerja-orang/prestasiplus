@@ -62,7 +62,7 @@ Every value is an integer unless stated. Timeout notes: `REQUEST_TIMEOUT_MS` and
 
 `docker/api/Dockerfile` has a `tessdata` stage that downloads `msa.traineddata` and `eng.traineddata` from the Tesseract project's `tessdata_fast` release `TESSDATA_REF` (4.1.0), checks them against the build args `TESSDATA_MSA_SHA256` and `TESSDATA_ENG_SHA256` (`sha256sum -c`; a mismatch fails the build) and the runtime stage copies them to `/opt/tessdata`. The container is read-only, so language data is baked into the image and never downloaded at run time; no data file is committed to the repo. To bump the release: download both files once from `https://github.com/tesseract-ocr/tessdata_fast/raw/<ref>/`, run `sha256sum` on them, then update `TESSDATA_REF` and both SHA args in the same change.
 
-Real OCR is in-house (D112, supersedes AZ-29 item 4): `OCR_ENGINE=tesseract`, `OCR_LANG_DIR=/opt/tessdata`, `JOBS_WORKER_ENABLED=true`. U-OP-02: enabling it on UAT (and the first real run there) is done by the designated UAT developer, with the user's approval, and not before.
+Real OCR is in-house (D112, supersedes AZ-29 item 4): `OCR_ENGINE=tesseract`, `OCR_LANG_DIR=/opt/tessdata`, `JOBS_WORKER_ENABLED=true`. Local development without Docker (`npm run be:dev` with `.env.api` copied from the example) has no `/opt/tessdata`: the API only logs a warning and scanned pages end as `OCR_UNAVAILABLE`; point `OCR_LANG_DIR` at a local folder holding both files to run real OCR locally. U-OP-02: enabling it on UAT (and the first real run there) is done by the designated UAT developer, with the user's approval, and not before.
 
 ## 3. Start and stop
 
