@@ -90,7 +90,11 @@ function stackOf(exception: unknown): string {
   return exception instanceof Error ? (exception.stack ?? exception.message) : String(exception)
 }
 
-/** The 413 text with `{n}` = the limit that applied (body-parser errors carry `limit` in bytes), rounded up to whole MB, minimum 1. */
+/**
+ * The 413 text with `{n}` = the limit that applied (body-parser errors carry `limit` in bytes), rounded up to whole MB, minimum 1.
+ * A 413 without `limit` (e.g. a multer PayloadTooLargeException) falls back to the default JSON body limit; upload modules that
+ * know their own file limit throw an ApiError with their own text instead.
+ */
 function payloadTooLargeMessage(exception: unknown): string {
   const limit = (exception as { limit?: unknown } | null)?.limit
   const bytes = typeof limit === 'number' && Number.isFinite(limit) && limit > 0 ? limit : DEFAULT_BODY_LIMIT_BYTES

@@ -69,6 +69,10 @@ describe('AllExceptionsFilter (S0-T12)', () => {
     expect(run(big).error).toMatchObject({ code: 'PAYLOAD_TOO_LARGE', message: 'Fail atau data terlalu besar. Saiz maksimum ialah 3 MB.' })
     expect(run(new PayloadTooLargeException()).error.message).toBe('Fail atau data terlalu besar. Saiz maksimum ialah 1 MB.')
     expect(run(new PayloadTooLargeException()).status).toBe(413)
+    // the default body limit (100kb) and a missing, NaN or zero limit all give the minimum 1 MB
+    for (const limit of [100 * 1024, Number.NaN, 0]) {
+      expect(run(Object.assign(new Error('too large'), { status: 413, limit })).error.message).toBe('Fail atau data terlalu besar. Saiz maksimum ialah 1 MB.')
+    }
     expect(error).not.toHaveBeenCalled()
   })
 
