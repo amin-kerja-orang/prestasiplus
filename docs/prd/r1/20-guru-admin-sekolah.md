@@ -690,6 +690,7 @@ Routes `/headcount` and sub-routes. API: API-RPT-09 (list, dashboard, form-optio
 | Tarikh Rekod RS | date | No | date of the first save of RS | not in the future; shown as "Direkodkan: {dd Mon yyyy}" | "Tarikh tidak boleh lebih lewat daripada hari ini." | RS has a value | `headcount_entries.rs_recorded_at` (ADD-14 (DM-49, API-RPT-10)) | API-RPT-10 |
 | Tetapan: Bilangan OTR | select | Yes | current value | 2 to 5; lowering below a checkpoint that has marks opens CF-05 | none | none | `headcount_configs.active_otrs` | API-RPT-10 |
 
+- **Existing V3 code (D115):** OTR targets are today stored values in `headcount_entry_marks.target`; they are replaced by computation and the stored values are ignored (the column stays unused); Auto AR does not exist in V3 and is built from the shared cross-mode reader (S10-T01); `headcount_entries.rs_recorded_at` already exists (timestamptz).
 - **Calculations (HC-SPEC).** OTR_k = round(TOV + (ETR − TOV) × r_k) with r_k = floor(100·k/n)/100 and OTR_n = ETR; grade by OPT-GRED; Auto AR = round(correct ÷ answered × 100) over `practice_answers` of all modes for the subject and year; status per checkpoint On Track when AR is at least OTR_k, else Below; the pupil status is that of the latest checkpoint with an AR; the config On Track % = round(on ÷ (on + below) × 100); Ringkasan bands Above (AR − OTR above 2), On Track (0 to 2), Below (below 0), Belum Diisi; Unjuran end = ETR if AR is at least TOV, else AR; trend Meningkat (above AR + 2), Menurun (below AR − 2), Stabil; Keyakinan Tinggi (AR at least ETR), Sederhana (AR at least TOV), Rendah. Rounding: half away from zero. Refresh: on page load only, no polling.
 - **Pupil entry status.** `Active` when the pupil has an ETR for that config (own or default; TOV alone does not make it Active), else `Draft`; `dropped` through "Gugurkan" (CF-10), reversed by "Kembalikan".
 - **Export CSV** `headcount-{subjek}-{kelas}-{yyyymmdd}.csv`: columns "Bil", "Nama", "TOV", "OTR1", "AR1", up to "OTR{n}", "AR{n}", "ETR", and a last row "Purata Kelas" (mean of the non-empty values, 1 decimal); row order = the current sort. Failure and empty: ERR-EXP-01, ERR-EXP-02.
@@ -2124,7 +2125,7 @@ Same seven pages, forms, formulas and PDF export as R1-GUR-11 (see its Field & b
 ### R1-AS-45 Sekolah Bersaing
 - **Action: Fix** (data source and columns; the page and route already exist)
 - **Screen specification (from V2)** (authoritative; V2 is primary and replaces the V1 weekly board)
-  - **Route / title:** `/sekolah-bersaing` in V2 (V3: `/admin-sekolah/sekolah-bersaing`); title "Sekolah Bersaing — PRESTASIPLUS".
+  - **Route / title:** `/sekolah-bersaing` in V2 (V3: `/sekolah-bersaing`; the path `/admin-sekolah/sekolah-bersaing` does not exist; D115); title "Sekolah Bersaing — PRESTASIPLUS".
   - **Regions in order:** (1) hero; (2) ranking table.
   - **Hero:** 🏆, small label "Papan Pemimpin", heading "Sekolah Bersaing", sub-line "Kedudukan sekolah teratas berdasarkan purata ketepatan latihan pelajar." and decorative 🏅 ⭐.
   - **Table:** columns "#", "Sekolah", "Negeri", "Ketepatan", "Pelajar". Row rendering: rank (🥇 🥈 🥉 for 1-3, then the number); school name; negeri; "Ketepatan" as a pill "{avg}%" (green >= 70, amber >= 50, red < 50); "Pelajar" as a count.
@@ -2139,7 +2140,7 @@ Route `/sekolah-bersaing`. API: API-AS-14 (no `week` parameter). No input field.
 
 | Label | Type | Req. | Default | Options / data source | Validation + exact BM error | Depends on | Stored as | API-ID |
 |---|---|---|---|---|---|---|---|---|
-| Ranking board | list | n/a | accuracy descending | top 30 schools by average session accuracy (XS-5, whole number in the pill); ties by "Pelajar" descending then school name ascending (Malay collation); pill colours at least 70 green, at least 50 amber, below 50 red; ranks 1 to 3 shown as 🥇 🥈 🥉 | none | none | computed on request (no stored board) | API-AS-14 |
+| Ranking board | list | n/a | accuracy descending | top 30 schools by average session accuracy (XS-5, whole number in the pill); ties by "Pelajar" descending, then total sessions descending, then school name ascending (Malay collation; equal to 48 GAME-16, D115); the accuracy is the mean of per-session accuracy per school (V2 behaviour, D-H): XS-5 pooled accuracy does not apply to this board; pill colours at least 70 green, at least 50 amber, below 50 red; ranks 1 to 3 shown as 🥇 🥈 🥉 | none | none | computed on request (no stored board) | API-AS-14 |
 
 - Empty: "Belum ada data" / "Tiada rekod latihan sekolah lagi."
 
