@@ -289,6 +289,18 @@ describe('ApiClient: errors', () => {
     expect(err.retryAfter).toBe(42)
   })
 
+  it('defaults retryAfter to 30 for a 429 with neither body retryAfter nor a header', async () => {
+    const { c } = client(json(429, { error: { code: 'RATE_LIMITED', message: 'x' } }))
+    const err = await catchError(c.post('/api/auth/login'))
+    expect(err.retryAfter).toBe(30)
+  })
+
+  it('defaults retryAfter to 30 for a 429 with no master-SRS error body', async () => {
+    const { c } = client(json(429, { oops: true }))
+    const err = await catchError(c.post('/api/auth/login'))
+    expect(err).toMatchObject({ status: 429, code: 'RATE_LIMITED', retryAfter: 30 })
+  })
+
   it('keeps the first message of Laravel-style array fields', async () => {
     const { c } = client(
       json(422, {

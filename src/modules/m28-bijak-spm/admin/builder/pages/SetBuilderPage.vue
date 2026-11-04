@@ -36,6 +36,8 @@ const flash = useFlash()
 const id = computed(() => String(route.params.paper))
 const editor = ref<PaperEditorData | null>(null)
 const loadError = ref(false)
+/** The caught load error, so DsLoadError can show the 429 countdown (S0-T08). */
+const loadErrorObj = ref<unknown>(undefined)
 const loading = ref(true)
 const pending = ref(new Set<string>())
 
@@ -64,8 +66,10 @@ async function load(): Promise<void> {
   try {
     editor.value = await api.getEditor(id.value)
     loadError.value = false
-  } catch {
+    loadErrorObj.value = undefined
+  } catch (err) {
     loadError.value = true
+    loadErrorObj.value = err
   } finally {
     loading.value = false
   }
@@ -254,7 +258,7 @@ const dskpItems = computed(() => [
     :title="t.landingTitle"
     data-testid="set-builder-editor"
   >
-    <DsLoadError v-if="loadError" :message="t.errLoad" @retry="load()" />
+    <DsLoadError v-if="loadError" :message="t.errLoad" :error="loadErrorObj" @retry="load()" />
     <p v-else-if="loading" class="text-body text-muted" role="status">{{ t.loading }}</p>
 
     <template v-else-if="paper">

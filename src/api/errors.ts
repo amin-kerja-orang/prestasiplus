@@ -126,6 +126,8 @@ export function errorFromResponse(res: {
   url?: string
 }): ApiError {
   const headerRetry = parseRetryAfterHeader(res.headers['retry-after'])
+  // 40 X10.11.5 / X10.8 "429 display": body `retryAfter`, then the header, else a 30 s default.
+  const defaultRetry = res.status === 429 ? 30 : undefined
   const base = { status: res.status, body: res.body, method: res.method, url: res.url }
 
   if (isErrorBody(res.body)) {
@@ -139,7 +141,7 @@ export function errorFromResponse(res: {
           ? RATE_LIMITED_MESSAGE_BM
           : message,
       fields: readFields(fields),
-      retryAfter: typeof retryAfter === 'number' ? retryAfter : headerRetry,
+      retryAfter: typeof retryAfter === 'number' ? retryAfter : (headerRetry ?? defaultRetry),
     })
   }
 
@@ -149,6 +151,6 @@ export function errorFromResponse(res: {
     ...base,
     code: codeForStatus(res.status),
     message: `HTTP ${res.status}`,
-    retryAfter: headerRetry,
+    retryAfter: headerRetry ?? defaultRetry,
   })
 }

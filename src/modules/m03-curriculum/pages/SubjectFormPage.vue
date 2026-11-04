@@ -159,6 +159,7 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
     <DsLoadError
       v-if="failed"
       :message="COPY.loadFailed"
+      :error="levelsError ?? loadError"
       testid="subject-load-error"
       @retry="retryLoad()"
     />

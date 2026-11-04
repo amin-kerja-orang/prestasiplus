@@ -177,6 +177,7 @@ provide(TREE_ACTIONS, actions)
     <DsLoadError
       v-if="optionsFailed || treeFailed"
       :message="LOAD_ERROR"
+      :error="subjectsError ?? levelsError ?? treeError"
       testid="curriculum-load-error"
       @retry="retryLoad"
     />
