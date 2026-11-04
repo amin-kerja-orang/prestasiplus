@@ -1,17 +1,12 @@
 # R1 docs gate: PRD <-> plan traceability (scripts/r1-trace-check.mjs). No install needed (Node built-ins only).
+# Runs on EVERY pull request (no path filter) and on pushes to feature/v3-bijak-r1 so that the required check `r1-docs` always reports; this is why
+# frontend.yml has no trace step (one run per PR).
 name: r1-docs
 
 on:
   pull_request:
-    paths:
-      - 'docs/prd/r1/**'
-      - 'docs/plan/**'
-      - 'scripts/r1-*'
   push:
-    paths:
-      - 'docs/prd/r1/**'
-      - 'docs/plan/**'
-      - 'scripts/r1-*'
+    branches: [feature/v3-bijak-r1]
 
 permissions:
   contents: read
@@ -21,7 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  trace-check:
+  r1-docs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
