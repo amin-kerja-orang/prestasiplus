@@ -28,6 +28,7 @@ Complete, buildable specification of every game and gamification mechanic of Pre
 | D-GAME-5 | **Parent consent is not built** (the Ibu Bapa module is out of scope). Every seeded and every new gift has `requiresParentConsent = false`, the field is hidden in the admin form, and the status `pending_parent_consent` is never produced and never shown in R1. |
 | D-GAME-6 | **Sekolah Bersaing minimum = 1 pupil** (V2 parity): `sekolah_bersaing_min_pupils` default 1. |
 | D113-a | Teacher Misi Harian `rewardCoins` is capped by the setting `mission_reward_max` = 100 syiling per mission per pupil. |
+| D113-d | The Syiling per correct answer is the admin setting `coins_per_correct` (default 1, range 0..20, DM-48) times marks; this D113 rule supersedes TRACKER D97(1) "2 Syiling + 10 XP per mark" for the Syiling rate (the 10 XP per mark stays; the old constant 2 is dropped; TRACKER is not edited). |
 | D113-b | Every game that shows bank questions writes each answer to `practice_answers` with its game mode (GAME-00 section 3.5); Prestasi, Heatmap, Analisa Item and the teacher and admin reports count them. |
 | D113-c | Every value marked `†` is a requirement of R1; values that earlier audits left open are final. |
 

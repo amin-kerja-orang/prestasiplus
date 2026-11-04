@@ -11,14 +11,14 @@ These are binding for this file. Each is applied in the sections named in bracke
 
 | # | Decision | Applied in |
 |---|---|---|
-| D-PA-1 | **One answer store.** Every activity writes its answers to `practice_answers` with its `mode`, through the one `AnswerLogPort`, whose single signature is defined in 60 section 2.17.5 and copied here verbatim: `record(entry: { userId, attemptId, questionId, partRef, mode, isCorrect, marksAwarded, marksMax, answeredAt, isTest })`; idempotency key (`attempt_id`, `user_id`, `question_id`, `part_ref`) (the DM-44 unique index); `isTest: boolean` is true for a "Mod Pelajar" session (INV-30) and the row is then flagged `is_test`; `mode` is one of the writable OPT-MODE-SESI values of the master table in 40 (X11). For a drill the `attemptId` is the practice session id (50 DM-44 fills `session_id` too) and `partRef` is null for an MCQ, so the same key covers drills, sittings and games. Every report reads that store and no other table for answers. | 1.1, 3.7, 4, 5, 6 |
+| D-PA-1 | **One answer store.** Every activity writes its answers to `practice_answers` with its `mode`, through the one `AnswerLogPort`, whose single signature is defined in 60 section 2.17.5 and copied here verbatim: `record(entry: { userId, attemptId, questionId, partRef, mode, isCorrect, marksAwarded, marksMax, answeredAt, isTest })`; idempotency key (`attempt_id`, `user_id`, `question_id`, `part_ref`) (the DM-44 unique index); `isTest: boolean` is true for a "Mod Pelajar" session (INV-30) and the row is then flagged `is_test`; `mode` is one of the writable OPT-MODE-SESI values of the master table in 40 (X11). For a drill the `attemptId` is the practice session id (50 DM-44 fills `session_id` too) and `partRef` is null for an MCQ, so the same key covers drills, sittings and games. **When the row is written (ADR-0014, S5-T15 Decided D115):** a drill writes its rows at session submit ("Tamat"), through the port, inside the submit transaction; "Semak Jawapan" stores a `practice_checks` row only; PKSK practice and Audio KBAT write at their single "Hantar"; a sitting writes at "Hantar". Every report reads that store and no other table for answers. | 1.1, 3.7, 4, 5, 6 |
 | D-PA-2 | **Stimulus groups are always shown together.** The figure or passage is shown once, above or beside all of its questions, never split and never partial. A draw, a set, a paper and a game take a whole group or nothing. | 1.5, 2.4, 4, 5 |
 | D-PA-3 | **Bilingual display.** Where a paper or question is bilingual (`ms+en`), the pupil sees BM and English together as printed and has a language toggle. | 2.3 |
 | D-PA-4 | **`drawing` and `table_fill` are answered on screen**, then self-marked against the scheme (the pupil ticks the scheme points). | 2.2, 3.4 |
 | D-PA-5 | **`essay_choice` is served** ("Pilih satu daripada {n} gesaan"). This reverses K17 of the field register (which said not served). | 2.2, 3.2 |
 | D-PA-6 | **`true_false` and `mcq_multi` are explicit item kinds.** `mcq_multi` is not served in drills that take a single option (Latih Tubi, Soalan by Chapter, Databank, Tracking A objective, Remedial, Misi, PKSK). | 2.2, 3.2 |
 | D-PA-7 | **Accuracy is pooled** (correct answers divided by answered, all modes) and shown as a **whole-number percent**, rounded half up. A mean of session accuracies is never labelled "Ketepatan". | 3.7, 6 |
-| D-PA-8 | **An abandoned drill is swept after 2 hours** of no activity: status `ditinggalkan`, no reward, the answers already checked stay and count. | 2.6, 4 |
+| D-PA-8 | **An abandoned drill is swept after 2 hours** of no activity: status `ditinggalkan`, no reward; its checked answers stay in `practice_checks` only, no `practice_answers` row is written for them and they count in no report (ADR-0014, D115; V3 as built). | 2.6, 4 |
 | D-PA-9 | **Multiplayer uses real pupils first.** After 30 seconds without a human opponent, a clearly labelled "Robot PrestasiPlus" joins. A robot never impersonates a real pupil, never enters standings, badges or leagues. | 5 |
 | D-PA-10 | **Game coins are an admin setting, default off,** with daily caps. XP follows the same rule set. | 5, 6 |
 | D-PA-11 | **Tingkatan 1 to 5 only.** No Darjah anywhere. | all |
@@ -31,7 +31,7 @@ Decisions made while writing this file, by the same principles (confirmed as D11
 | D-PA-12 | **Tracking A objective keeps the existing drill engine** (a practice session of mode `tracking_a`, `QuizRunner`, per-question "Semak Jawapan"); its answer rows carry `mode = tracking_a`. Tracking A Bahasa (structured sets) uses the Subjektif sitting engine and also writes `tracking_a`. 50 section 4.7a and plan card S3-T05 say "a Bijak-style attempt"; they are amended (section 9.5). | Improve, do not rebuild: the drill engine exists and works; a second engine for the same 40 MCQ is forbidden. |
 | D-PA-13 | **A Mod Latihan sitting earns a reward only for parts that were never revealed by "Semak".** The code today pays only Mod Peperiksaan (`attempts.service.ts` pays when `a.mode === 'exam'`); FR-MUR-13-14 says every submitted attempt earns. Both are reconciled: no reward is lost, and nobody can farm a reward by reading the answer. | PRD wins over code (P1); fail-closed against farming. |
 | D-PA-14 | **Kertas Subjektif: "Hantar & Semak" first, then "Tunjuk Skema Pemarkahan".** The scheme and self-mark are only available after the attempt is closed (the scheme through API-BIJAK-04 `GET /api/bijak/attempts/:id/result?scheme=1`, the self-mark through API-BIJAK-05, and the 409 `NOT_SUBMITTED` rule), and the scheme text is fetched only when the button is pressed (AC-MUR-13-21). | Reconciles FR-MUR-13-28/29 with B-031. |
-| D-PA-15 | **A swept Kuiz session writes rows for its checked questions, with no reward.** A Kuiz "Semak" writes no row (FR-MUR-13-16); the final submit writes them; the S3-T04 job in `bijak/` acts as the final submit for an abandoned Kuiz, and a later submit or sync still re-marks per the late-submit rule. | D-PA-8: "the checked answers count". |
+| D-PA-15 | **A swept Kuiz session writes rows for its checked questions, with no reward.** A Kuiz "Semak" writes no row (FR-MUR-13-16); the final submit writes them; the S3-T04 extension of `AttemptSweeper` in `bijak/` acts as the final submit for an abandoned Kuiz, and a later submit or sync still re-marks per the late-submit rule. | D-PA-8: "the checked answers count". |
 | D-PA-16 | **Retry cadence for a failed autosave is a fixed 5 seconds** (the code's value), not the exponential back-off in the field register (B-026). | Working code wins where the PRD only proposes. |
 | D-PA-17 | **The unique key of the answer store includes the user.** Multiplayer games put several pupils on one `attempt_id`; DM-44's index `(attempt_id, question_id, part_ref)` would collide. | Correctness (DM-44). |
 | D-PA-18 | **Games do not create a "Sesi Kuiz".** Their answer rows count in "Soalan Dijawab" and "Ketepatan"; the "Sesi Kuiz" tile counts practice sessions and Bijak sittings only. | Games keep their own session tables; no source says otherwise. |
@@ -61,7 +61,8 @@ Decisions made while writing this file, by the same principles (confirmed as D11
 
 The pupil portal has **three answering engines** and no more (FR-PA-01):
 
-- **Drill engine** (`src/modules/m05-practice/components/quiz/QuizRunner.vue`, API `practice/sessions`): Latih Tubi, Soalan by Chapter, Databank, Tracking A objective, Simulasi Kuiz, Remedial and Ulang Kaji, Set Soalan Guru, Misi Harian, PKSK, Audio KBAT.
+- **Drill engine** (`src/modules/m05-practice/components/quiz/QuizRunner.vue`, API `practice/sessions`): Latih Tubi, Soalan by Chapter, Databank, Tracking A objective, Simulasi Kuiz, Remedial and Ulang Kaji, Set Soalan Guru, Misi Harian.
+- **Batch pages (existing V3 pages of their own modules, not a fourth engine)**: PKSK practice set and full exam (`src/modules/m07-pksk`, API-PRAC-12) and Audio KBAT "Ujian Mendengar" (`src/modules/m09-content/pages/AudioKbatPlayerPage.vue`, `audio_kbat_attempts`): all answers of the page are sent with one "Hantar"; there is no per-question "Semak Jawapan" (D115, S5-T13, S5-T12). Same result view, reward and reports as a drill.
 - **Sitting engine** (`src/modules/m28-bijak-spm/pages/AttemptPage.vue`, API `bijak/attempts`): Bijak Simulasi paper, Subjektif (Soalan Berstruktur), Kertas Subjektif, Tracking A Bahasa.
 - **Room and Battle engines** (`src/modules/m16-battle-games`, API `games/*`, `battle/*`): every game.
 
@@ -76,10 +77,10 @@ The pupil portal has **three answering engines** and no more (FR-PA-01):
 | **D1** | **Latih Tubi** (`/practice`, `/practice/:code`, `/practice/:code/quiz`; also the hub card "Latih Tubi SPM") | Approved MCQ of the chosen subject, Tingkatan and difficulty; figure questions and whole groups included. | T1 to T5; default is the pupil's own form | Untimed (count-up) | Auto on "Semak Jawapan" | Drill | `latih_tubi` (also `random`) | Same as B1 |
 | **D2** | **Soalan by Chapter** (`/practice/chapter`, `/practice/chapter/:code`, `/practice/chapter/:code/:chapterId/quiz`) | Approved MCQ linked to the chapter (Bab) by the admin. Every chapter open, no lock. | T1 to T5 | Untimed | Auto | Drill | `chapter` | Same as B1; the Heatmap needs the Bab |
 | **D3** | **Remedial and Ulang Kaji** (`/remedial/saya`, `/remedial/:id`, `/practice/revision`, `/practice/revision/:code`) | The pupil's own still-servable wrong questions, topped up from the weakest topics; or a teacher-assigned remedial test. | T1 to T5 | Untimed | Auto | Drill | `revision` (own drill), `remedial` (assigned test) | Same as B1; the "Selepas" figure on the Remedial card |
-| **D4** | **Set Soalan Guru** (`/set-soalan-saya`, `/pelajar/set/:id`) | The questions a teacher picked, as published to an assigned class. Archived items drop out at serve time. | T1 to T5 in a class that has the set | Untimed; optional `timeLimitSec` set by the teacher | Auto | Drill | `question_set` | Same as B1 plus the teacher's "Hasil" for the set |
+| **D4** | **Set Soalan Guru** (`/set-soalan-saya`, `/pelajar/set/:id`) | The questions a teacher picked, as published to an assigned class. Archived items drop out at serve time. | T1 to T5 in a class that has the set | Untimed in R1: the teacher form has no time-limit field (20 R1-GUR-8b, S6-T14) and `timeLimitSec` stays null (S5-T11) | Auto | Drill | `question_set` | Same as B1 plus the teacher's "Hasil" for the set |
 | **D5** | **Misi Harian** (V3 routes `/misi-harian`, `/misi-harian/:id`, reached from the Dashboard card; D115, 10 section 1.3 "SERVED") | The teacher's mission: questions picked by the teacher (may include the teacher's personal "Soalan & Rujukan" questions, visible to the owner's classes only). | T1 to T5 in a class that has the mission | Untimed | Auto | Drill | `mission` | Same as B1; mission target and `rewardCoins` |
-| **D6** | **PKSK** (`/pksk`) | Approved PKSK questions by Bahagian A, B, C and domain. Needs an active grant. | T1 and T4 targets, with a grant | Untimed (practice); the full exam has no time limit in R1 (V3 as built; a limit is a follow-up, card S5-T13) | Auto | Drill | `pksk` | Same as B1 |
-| **D7** | **Audio KBAT, Ujian Mendengar** (`/audio-kbat`) | The objective questions of a published audio set. | T1 to T5 | Untimed | Auto | Drill | `audio_kbat` **** | Same as B1 |
+| **D6** | **PKSK** (`/pksk`) | Approved PKSK questions by Bahagian A, B, C and domain. Needs an active grant. | T1 and T4 targets, with a grant | Untimed (practice); the full exam has no time limit in R1 (V3 as built; a limit is a follow-up, card S5-T13) | Auto | Batch page | `pksk` | Same as B1 |
+| **D7** | **Audio KBAT, Ujian Mendengar** (`/audio-kbat`) | The objective questions of a published audio set. | T1 to T5 | Untimed | Auto | Batch page | `audio_kbat` **** | Same as B1 |
 | **G1** | **Battle Arena** (`/battle`; Quick Match, Cabar Kawan, Battle Sekolah; Tournament and Liga rounds use the same rules) | Approved servable **text-only** MCQ of the chosen subject and Tingkatan (no figure, no stimulus group). | T1 to T5; the "SPM" tab T4 and T5 only | Timed: 15 s per question | Auto, server clock | Room and Battle | `battle` | "Soalan Dijawab", "Ketepatan", Analisa Item, Heatmap, teacher and admin reports. No "Sesi Kuiz". Standings only for human-vs-human. |
 | **G2** | **Room games** (`/permainan`): Papan Bijak, Perang Fakta, Benteng Ilmu, Perlumbaan Matematik, Kuiz Relay, Teka Silang Kata | Same as G1 | T1 to T5 (room match mode) | Timed per game | Auto | Room and Battle | `game` | As G1 |
 | **G3** | **Solo games** (`/games/solo/:game`): Betul atau Salah, Cabaran Kilat, Tembak Jawapan, Susun Jawapan, Kad Memori; **Jutawan Ilmu**; **Roda Nasib** (no question) | Same as G1 (Jutawan: difficulty ladder) | T1 to T5 | Timed per game | Auto, server computes score | Room and Battle | `game` (Roda Nasib and the Kad Memori move count write none) | As G1 |
@@ -145,7 +146,8 @@ flowchart LR
     K["PKSK / Audio KBAT sets"]
   end
   subgraph ACT["Pupil activity"]
-    D["Drill engine<br/>D1 D2 D3 D4 D5 D6 D7 B2 B3 B4-Objektif"]
+    D["Drill engine<br/>D1 D2 D3 D4 D5 B2 B3 B4-Objektif"]
+    BP["Batch pages<br/>D6 PKSK, D7 Audio KBAT"]
     SIT["Sitting engine<br/>B1 B5 B6 B4-Bahasa"]
     G["Room and Battle engine<br/>G1 G2 G3"]
   end
@@ -163,11 +165,13 @@ flowchart LR
   T --> D
   T --> SIT
   S --> D
-  K --> D
-  D -->|"each Semak (Kuiz: at final submit)"| A
+  K --> BP
+  D -->|"Tamat = session submit (Kuiz: finish)"| A
+  BP -->|"one Hantar"| A
   SIT -->|"Hantar, then each self-mark updates the row"| A
   G -->|"each answered or timed-out question"| A
   D --> W
+  BP --> W
   SIT --> W
   G --> W
   A --> R1
@@ -190,12 +194,13 @@ sequenceDiagram
   loop each question
     M->>FE: choose option, press Semak Jawapan
     FE->>API: POST /sessions/:id/check-answer
-    API->>LOG: record(mode, question, correct, seconds)
-    LOG->>DB: INSERT one row
+    API->>API: store one practice_checks row (no practice_answers row yet)
     API-->>FE: isCorrect, correctOptionId, explanation
   end
   M->>FE: Tamat
   FE->>API: POST /sessions/:id/submit {timeSpent}
+  API->>LOG: record(mode, question, correct, seconds) for each checked question, inside the submit transaction
+  LOG->>DB: INSERT one row each
   API-->>FE: score, accuracy, coins, xp (credited once)
 ```
 
@@ -358,23 +363,23 @@ Rules for every width:
 | Offline | Amber banner: `Anda luar talian. Jawapan disimpan pada peranti ini dan akan dihantar apabila sambungan pulih.` (ERR-NET-01). Typing continues. On the `online` event the queue is flushed at once and the banner turns green for 3 s: `Sambungan pulih. Jawapan telah disimpan.` (ERR-NET-03). |
 | Session expiry (401) | The local mirror is kept. During a **timed** attempt a dialog (no redirect until confirmed): `Sesi anda telah tamat. Jawapan anda disimpan pada peranti ini. Log masuk semula untuk meneruskan.` button "Log Masuk Semula" (ERR-AUTH-01). After login the pupil returns to the sitting and unsent changes replay. |
 | Leaving | In-app leave shows the dialog B-051 (2.8). The attempt stays `in_progress` and the server clock keeps running. |
-| Server sweeper | An attempt not submitted by `deadline + 300 s` is closed by the server as `auto_submitted` (answers saved until the deadline are marked). Changes whose `savedAt` is at or before the deadline are still accepted for 24 hours (late sync). An untimed attempt (Mod Latihan, B5, B6) has no deadline and stays open until submitted or restarted. One job in the `bijak/` module, written by card S3-T04 and registered in the S0-owned `jobs/` worker by a small cross-sector PR to S0, does this close; the same job closes an abandoned Kuiz session (2.6, 4.3). |
+| Server sweeper | An attempt not submitted by `deadline + 300 s` is closed by the server as `auto_submitted` (answers saved until the deadline are marked). Changes whose `savedAt` is at or before the deadline are still accepted for 24 hours (late sync). An untimed attempt (Mod Latihan, B5, B6) has no deadline and stays open until submitted or restarted. The existing `AttemptSweeper` (`bijak/attempts/attempt-sweeper.ts`), extended by card S3-T04 (no new job file, no S0 jobs-worker PR), does this close; the same sweeper closes an abandoned Kuiz session (2.6, 4.3). |
 
-#### Drill engine (D1 to D7, B2, B3, B4-Objektif)
+#### Drill engine (D1 to D5, B2, B3, B4-Objektif)
 
 | Aspect | Rule |
 |---|---|
-| What is saved | Every "Semak Jawapan" writes one row at once (a question can be checked once; a repeat returns the stored result and writes no second row). A choice made but not yet checked lives in memory only. There is no draft text in a drill. |
+| What is saved | Every "Semak Jawapan" stores one `practice_checks` row at once (a question can be checked once; a repeat returns the stored result and stores no second check). The `practice_answers` rows of the session are written at "Tamat" (session submit) through the port, inside the submit transaction (ADR-0014, D115); a question never checked has no row. A choice made but not yet checked lives in memory only. There is no draft text in a drill. |
 | Resume after refresh | At setup the page stores `clientUuid` in `sessionStorage` key `pp:sess:{sessionId}`. Reloading the quiz re-calls `POST /practice/sessions` with the same `clientUuid` and receives the same session and questions (idempotent). The response now carries `answered:[{questionId, selectedLabel, isCorrect}]` and `resumed:true` (API-PRAC-01). The quiz opens at the first unanswered question and shows once: `Anda menyambung kuiz yang belum selesai.` A `dihantar` session opens the result page. If the stored uuid is lost, a new session starts and the old one is swept after 2 hours. |
 | Offline | Online-only. While `navigator.onLine` is false, "✓ Semak Jawapan" is disabled with the title `Perlukan sambungan internet.` and the banner of the sitting engine shows. If online but the check request fails, it is retried 3 times (1 s, 3 s, 5 s, same `clientUuid`); then the card shows `Jawapan belum dihantar. Cuba Semula.` with **"Cuba Semula"** and **"Langkau"** (ERR-SAVE-06). The pupil cannot move to the next question until the answer is sent or skipped. "Langkau" leaves the question unanswered (no row). There is no queue across reloads in R1. |
 | Leaving | In-app leave: dialog B-050. Closing the tab: the browser's own prompt, only while at least one question is answered. |
-| Abandon sweep (D-PA-8) | A session with no activity for **2 hours** is closed by a job (the practice-session sweeper is written in `practice/` by card S5-T15 and registered in the S0-owned `jobs/` worker by a small cross-sector PR to S0) as `ditinggalkan`: rows already written stay and count in every report; **no session reward** (no Syiling, no XP at session level); the session is not listed under "Sesi Kuiz" or in Sejarah; "Masa Belajar" does not include it (the time is unknown). A **Kuiz** session is not a practice session: the `bijak/` job of card S3-T04 (sitting-engine row "Server sweeper" above) closes it after the same 2 hours and writes rows for its checked questions first (D-PA-15), still with no reward. A session whose `timeLimitSec` ended is not "abandoned": it is submitted (2.7). |
+| Abandon sweep (D-PA-8) | A session with no activity for **2 hours** is closed by an interval service (the practice-session sweeper `session-sweeper.service.ts`, written in `practice/` and started from the practice module by card S5-T15, like `AttemptSweeper`; no `jobs/` registration and no S0 PR, because the jobs module has no cron) as `ditinggalkan`: its checked answers stay in `practice_checks` only, no `practice_answers` row is written and nothing is counted in any report (ADR-0014, D115); **no session reward** (no Syiling, no XP at session level); the session is not listed under "Sesi Kuiz" or in Sejarah; "Masa Belajar" does not include it (the time is unknown). A **Kuiz** session is not a practice session: the extended `AttemptSweeper` of card S3-T04 in `bijak/` (sitting-engine row "Server sweeper" above) closes it after the same 2 hours and writes rows for its checked questions first (D-PA-15), still with no reward. A session whose `timeLimitSec` ended is not "abandoned": it is submitted (2.7). |
 
 ### 2.7 Timers
 
 | Where | Rule |
 |---|---|
-| Drill "Masa" | Counts up mm:ss from the first render; paused when the tab has been hidden for more than 60 s (R1 copy, D113); sent as `timeSpent` seconds at submit; the server stores the value clamped to [0, 180 x question count]. No limit and no auto-submit, **except** a Set Soalan Guru session with `timeLimitSec`: at 0 the session is submitted and the banner shows `Masa telah tamat. Jawapan anda telah dihantar.` |
+| Drill "Masa" | Counts up mm:ss from the first render; paused when the tab has been hidden for more than 60 s (R1 copy, D113); sent as `timeSpent` seconds at submit; the server stores the value clamped to [0, 180 x question count]. No limit and no auto-submit. R1 sets carry no time limit (`timeLimitSec` null); the V3 code of `QuestionSetQuizPage` that would count down and submit at 0 with `Masa telah tamat. Jawapan anda telah dihantar.` stays, with a test that it stays inactive (10 R1-MUR-26, S5-T11). |
 | Sitting, Mod Peperiksaan | The server gives `deadline` and `serverNow`. The client offset = `serverNow - Date.now()` at every response; remaining = `deadline - (Date.now() + offset)`, recomputed every second (survives sleep and rotation). The label is "Masa berbaki". At 300 s or less, once: amber `Amaran: masa berbaki kurang 5 minit.` in the top bar at every width (AC-MUR-QP-17), no layout shift. At 0: automatic submit with `auto:true`, banner `Masa tamat. Jawapan anda telah dihantar secara automatik.`, and the Semakan opens. |
 | Offline at 0 | Inputs are locked; the submit is queued; banner `Masa tamat. Jawapan akan dihantar apabila sambungan pulih.` The submit goes on the `online` event and every 30 s. If the server reports the attempt closed: dialog `Masa tamat. Jawapan yang disimpan sebelum masa tamat telah dihantar.` button "Lihat Keputusan" (ERR-SAVE-05). |
 | Late | A Bijak, Simulasi or Subjektif submit is never rejected for lateness: at 00:00 the client auto-submits; a submit or offline sync arriving after expiry is accepted (late sync up to 24 h, FR-MUR-13-32) and stored with its real `submittedAt` (this includes an attempt the server sweeper already closed as `auto_submitted` at deadline + 300 s: the late submit replaces the swept result and re-marks it); the 30 s figure is only the client grace before auto-submit. The result notes the lateness only in the audit log (FR-MUR-13-11). |
@@ -545,7 +550,8 @@ Syiling rate = the admin setting "Syiling flat / soalan betul" (default 1, `rewa
 
 | Surface | Result tiles and rounding | Rows written (when) |
 |---|---|---|
-| Drills (D1 to D7, B3, B4-Objektif) | "Kuiz Selesai!", "Tahniah, anda telah lengkapkan {subjek}."; tiles **Markah** "{correct}/{served}", **Ketepatan** = round half up(correct / answered x 100) (a skipped question is not "answered"), **Masa** mm:ss, **Syiling** (rate x correct), **Mata** (10 x correct). B3 adds the grade (below) and "Ganjaran Anda". Buttons "↻ Cuba Lagi", "Senarai Subjek". | one row per "Semak Jawapan" (marks 1 or 0, max 1), at the check |
+| Drills (D1 to D5, B3, B4-Objektif) | "Kuiz Selesai!", "Tahniah, anda telah lengkapkan {subjek}."; tiles **Markah** "{correct}/{served}", **Ketepatan** = round half up(correct / answered x 100) (a skipped question is not "answered"), **Masa** mm:ss, **Syiling** (rate x correct), **Mata** (10 x correct). B3 adds the grade (below) and "Ganjaran Anda". Buttons "↻ Cuba Lagi", "Senarai Subjek". | one row per checked question (marks 1 or 0, max 1), written at "Tamat" (session submit, ADR-0014); a swept session writes none |
+| PKSK set and exam (D6), Audio KBAT (D7) | the result view of the page after "Hantar" (no redirect): PKSK "Kuiz Selesai!" with Markah {betul}/{jumlah}, Ketepatan, Syiling, Mata (S5-T13); Audio KBAT result and review (S5-T12) | one row per answered question at that "Hantar" (PKSK practice set, PKSK full exam, Audio KBAT), through the port |
 | B2 Kuiz | "Kuiz Selesai!" with Markah, Ketepatan, Masa; buttons "↻ Cuba Lagi", "Kertas penuh" | **all rows at the final submit**; "Semak" writes none |
 | B1 Simulasi | "{score} / {max}", percent, status chip (OPT-STATUS-ATTEMPT: `in_progress` "Belum dihantar", `submitted` "Dihantar", `auto_submitted` "Dihantar automatik", `abandoned` "Ditinggalkan"), per-Bahagian totals as integers | one row per answered leaf at Hantar; updated by self-mark |
 | B5, B6, B4-Bahasa | as B1, with "Markah sementara..." while provisional | same |
@@ -607,7 +613,7 @@ Cards: S3-T04. Requirements: FR-MUR-13-16, FR-PA-17. Mode: `kuiz`. Engine: drill
 | 3 | **Tamat** | `POST /bijak/kuiz/sessions/:id/finish` (idempotent) | A second finish is idempotent: 200 with the same stored result; no error shows and the result page shows. |
 | 4 | Result | "Kuiz Selesai!", Markah, Ketepatan, Masa, buttons "↻ Cuba Lagi", "Kertas penuh". | |
 
-**Semak semantics (exact):** a Kuiz "Semak" returns the verdict and **writes no `practice_answers` row and no session credit**. Only `finish` writes one row per checked question (`mode = kuiz`, marks 1 or 0), idempotent per session and question, then credits the reward once. A question that was never checked has no row. An abandoned Kuiz (no activity for 2 hours) is finalised by the S3-T04 job in `bijak/` (not by the S5-T15 practice-session sweeper): rows for the checked questions are written, status `ditinggalkan`, no reward (D-PA-15).
+**Semak semantics (exact):** a Kuiz "Semak" returns the verdict and **writes no `practice_answers` row and no session credit**. Only `finish` writes one row per checked question (`mode = kuiz`, marks 1 or 0), idempotent per session and question, then credits the reward once. A question that was never checked has no row. An abandoned Kuiz (no activity for 2 hours) is finalised by the S3-T04 extension of `AttemptSweeper` in `bijak/` (not by the S5-T15 practice-session sweeper): rows for the checked questions are written, status `ditinggalkan`, no reward (D-PA-15).
 **Reports:** rows appear at finish ("Soalan Dijawab" +checked).
 **Acceptance:** AC-PA-07 and AC-PA-08. **Reuse:** `m28-bijak-spm/pages/KuizPage.vue`, `components/KuizItem.vue`, `lib/kuiz*.ts`, `apps/api/src/modules/bijak/kuiz/**`.
 
@@ -621,7 +627,7 @@ Cards: S3-T07, S5-T03 (shared drill), S1-T06/T07 (draw and servability). Require
 | 2 | Quiz `/spm/tahun-lepas/:kod/kuiz?count=n` ("Kuiz {Subjek} — PRESTASIPLUS") | Drill screen 2.1. Start `POST /practice/sessions {mode:'databank', subjectCode, count, clientUuid}`. Random draw of whole groups and single MCQ; options shuffled and re-lettered; "✓ Semak Jawapan"; ✅/❌; "Penjelasan:"; "Soalan Seterusnya →". | ERR-PRAC-02 `Soalan tidak mencukupi.`; resume 2.6. |
 | 3 | Result | "Kuiz Selesai!", "Tahniah, anda telah lengkapkan {Subjek}.", Markah, Ketepatan, grade (3.7), "Masa: mm:ss", "Ganjaran Anda", buttons "↻ Cuba Lagi", "Senarai Subjek". | |
 
-**Stored:** practice session (mode `databank`); one row per check, `mode = databank`. R1 never writes `past_year`; the old `past_year` rows stay read-only and every report treats `past_year` and `databank` as the same lane.
+**Stored:** practice session (mode `databank`); one row per checked question at "Tamat", `mode = databank`. R1 never writes `past_year`; the old `past_year` rows stay read-only and every report treats `past_year` and `databank` as the same lane.
 **Defects fixed here (workflow F4):** step 1 "tag kolam masih menghadkan": the pool flag `spmPool:false` (`questions.service.ts:592`) is removed from the draw, every admin-approved MCQ of a subject is eligible; step 3 "soalan bergambar dan kumpulan penuh dibuang" (`be09-practice-mapping.ts:27-39`): they are served (D105).
 **Acceptance:** AC-MUR-13-9, 13-10, AC-PA-02. **Chain:** AC-CHAIN-1 (same drill path). **Reuse:** `m06-spm/pages/{DatabankPage,DatabankQuizPage}.vue`, `m05-practice/components/quiz/*`, `apps/api/src/modules/practice/start.planner.ts`, `spm/hub.service.ts`.
 
@@ -636,7 +642,7 @@ Cards: S3-T05 (pupil + admin editor). Requirements: FR-MUR-13-18, FR-PA-22, AC-M
 | 3 | **Objektif quiz** `/spm/ramalan/:kod?year=&set=` | The **drill engine**: `POST /practice/sessions {mode:'tracking_a', subjectCode, year, setNo}`; the set's fixed question list (default 40) in the admin's order, groups whole; **options shuffled**; "✓ Semak Jawapan" per question; result as 3.7. A set that became not ready or unknown: the URL is replaced by the set list and no session exists (422 `SET_NOT_READY` / `NOT_ENOUGH_QUESTIONS`, 404). | |
 | 4 | **Bahasa lane** | "Buka Tracking A Bahasa" opens the structured set list and runs the **Subjektif sitting** (4.6) with the answer rows tagged `mode = tracking_a`. | |
 
-**Stored:** objective: practice session of mode `tracking_a` and one row per check, `mode = tracking_a` (R1 never writes `ramalan`; old `ramalan` rows are read-only and count as Tracking A everywhere). Bahasa: attempt `paper_kind = 'subjektif'`, rows `mode = tracking_a` with `part_ref`.
+**Stored:** objective: practice session of mode `tracking_a` and one row per checked question at "Tamat", `mode = tracking_a` (R1 never writes `ramalan`; old `ramalan` rows are read-only and count as Tracking A everywhere). Bahasa: attempt `paper_kind = 'subjektif'`, rows `mode = tracking_a` with `part_ref`.
 **Reports:** AC-CHAIN-3: 40 rows, "Soalan Dijawab" +40, "Ketepatan" 75 for 30 of 40, the hub "Prestasi SPM Anda" +1 session, Headcount AR includes them.
 **Acceptance:** AC-MUR-13-11, AC-PA-09. **Chain:** AC-CHAIN-3. **Reuse:** `m06-spm/pages/Tracking*.vue`, `lib/tracking-quiz-api.ts`, `m05-practice` `QuizRunner`, `apps/api/src/modules/spm/tracking.service.ts`, `practice/ports.ts` (Tracking A set source). No Bijak-style attempt for the objective lane (D-PA-12).
 
@@ -680,7 +686,7 @@ Cards: S5-T03 (+ S5-T01 T1 to T3, S4-T06 BE, S1-T06/T07, S8-T02). Requirements: 
 | 3 | `/practice/:code/quiz` | Drill screen 2.1; draw rule 2.4 (whole groups); `POST /practice/sessions {mode:'latih_tubi', subjectCode, levelId, difficulty, count, clientUuid}`; per question "✓ Semak Jawapan" → `POST .../check-answer`. A question without its figure is never drawn. | Resume 2.6; offline 2.6; ERR-SAVE-06. |
 | 4 | Result | 3.7: Markah, Ketepatan, Masa, Syiling, Mata; "↻ Cuba Lagi", "Senarai Subjek". Example AC-MUR-16-4: 7 of 10 → 7 Syiling and 70 mata at rate 1; rate 3 → 21. | |
 
-**Stored:** session with `mode` = `latih_tubi` for every session started from the screens above (the Soalan by Chapter button "Latih Tubi Rawak" leads to `/practice`, so it also starts `latih_tubi`); `random` ("Latih Tubi Rawak" in OPT-MODE-SESI) is a stored value of old rows only: API-PRAC-01 rejects `mode:"random"` with 422 ERR-PRAC-07 "Mod tidak sah." and the R1 screens never send it (N-5, D113-continued); and one row per check. **Reports:** each check counts at once; "Sesi Kuiz" +1 at Tamat. **Workflow defects closed:** F7 step 2 (T1 to T3), step 4 (figure-less Rajah served), step 5 (lock sentence); step 3 (rate from the admin setting, not a constant). **Acceptance:** AC-MUR-16-1..8, AC-PA-02, 12, 13. **Reuse:** `m05-practice/pages/{PracticeListPage,PracticeConfigPage,PracticeQuizPage}.vue`, `components/quiz/*`, `apps/api/src/modules/practice/{rules.ts,start.planner.ts,practice.service.ts}`.
+**Stored:** session with `mode` = `latih_tubi` for every session started from the screens above (the Soalan by Chapter button "Latih Tubi Rawak" leads to `/practice`, so it also starts `latih_tubi`); `random` ("Latih Tubi Rawak" in OPT-MODE-SESI) is a stored value of old rows only: API-PRAC-01 rejects `mode:"random"` with 422 ERR-PRAC-07 "Mod tidak sah." and the R1 screens never send it (N-5, D113-continued); and one row per checked question, written at "Tamat". **Reports:** the answers count from "Tamat"; "Sesi Kuiz" +1 at Tamat. **Workflow defects closed:** F7 step 2 (T1 to T3), step 4 (figure-less Rajah served), step 5 (lock sentence); step 3 (rate from the admin setting, not a constant). **Acceptance:** AC-MUR-16-1..8, AC-PA-02, 12, 13. **Reuse:** `m05-practice/pages/{PracticeListPage,PracticeConfigPage,PracticeQuizPage}.vue`, `components/quiz/*`, `apps/api/src/modules/practice/{rules.ts,start.planner.ts,practice.service.ts}`.
 
 ### 4.9 D2 Soalan by Chapter
 
@@ -714,18 +720,18 @@ Cards: S5-T11 (pupil), S6-T14 (teacher). Requirements: FR-MUR-26-1..5, FR-GUR-8b
 | # | Screen | Controls and copy | States |
 |---|---|---|---|
 | 1 | `/set-soalan-saya` ("Set Soalan Guru — PRESTASIPLUS") | Sub "Set soalan yang disediakan oleh guru anda". Cards: title, subject, "{n} soalan", best score. Only **published** sets assigned (explicit classes) to a class the pupil is enrolled in (DM-46); the Dashboard "Set Soalan Dari Cikgu" links here. | Empty "Tiada Set Soalan" / "Guru anda belum menyediakan sebarang set soalan buat masa ini." / "Set soalan akan muncul di sini sebaik sahaja guru anda menerbitkannya." |
-| 2 | `/pelajar/set/:id` play | Drill engine with `mode:'question_set'`, `questionSetId`; options shuffled; whole groups; items archived since publication drop out and the count updates. `mcq_multi` items use ticks sent together (API-PRAC-02). With `timeLimitSec` the clock counts down and submits at 0 (2.7). | Another class's set or an unknown id: 404 (ERR-ACC-02). A set never listed to a pupil without an assignment. |
+| 2 | `/pelajar/set/:id` play | Drill engine with `mode:'question_set'`, `questionSetId`; options shuffled; whole groups; items archived since publication drop out and the count updates. `mcq_multi` items use ticks sent together (API-PRAC-02). No timer in R1 (`timeLimitSec` is null, 2.7; ERR-PRAC-05 is never raised). | Another class's set or an unknown id: 404 (ERR-ACC-02). A set never listed to a pupil without an assignment. |
 | 3 | Result | 3.7. | |
 
 **Reports:** AC-MUR-26-1 (5 rows, mode `question_set`), the teacher's "Hasil" (Penyertaan, Skor Purata, per-class filter), class Prestasi and AS Prestasi +5, Headcount AR (AC-CHAIN-4: Penyertaan 1, Skor Purata 80 for 4 of 5). **Acceptance:** AC-MUR-26-1..5, AC-GUR-8b-*, AC-PA-14 (owner S1-T09a; S5-T11 only calls the grader). **Reuse:** `m05-practice/pages/QuestionSetQuizPage.vue`, `apps/api/src/modules/classes/question-sets`.
 
-### 4.12 D5 Misi Harian, D6 PKSK, D7 Audio KBAT (same drill engine)
+### 4.12 D5 Misi Harian (drill engine), D6 PKSK, D7 Audio KBAT (batch pages)
 
 | Activity | Entry and rules | Row mode | Notes |
 |---|---|---|---|
-| **D5 Misi Harian** (card S6-T07 for both the teacher screen and the pupil path, the mission session writer; S5-T03 only removes the code constant) | Dashboard checklist or `/misi`; mission valid on its date (MYT); drill of the mission's questions; per-answer Syiling = admin rate (code constant `MISSION_COINS_PER_CORRECT = 3` removed); the teacher's `rewardCoins` paid **once** when the pupil reaches the target (idempotent per pupil and mission); example rate 1, `rewardCoins` 10, target 5: 15 Syiling (AC-GUR-2b-5). Expired mission: not listed. | `mission` | `ERR-PRAC-04` `Misi ini sudah diselesaikan.` |
-| **D6 PKSK** (card S5-T13) | `/pksk`; without a grant the page shows `Anda belum mempunyai akses PKSK PRO` / `Akses PKSK diberikan oleh pentadbir sekolah anda. Hubungi guru atau pentadbir sekolah untuk mengaktifkan pakej.`, the tiles, "Soalan mengikut Bahagian", "Domain teratas", "Pakej PKSK", and **no question text**. With a grant: a set of 10 by Bahagian (A, B, C formats) and by domain (V3 `PRACTICE_SIZE = 10`, D115), drill screen, result "{betul}/10"; the full exam (A 30, B 70, C 1 essay) and history are the V1 functions already built in V3 (10 FR-MUR-19-7). An expired grant blocks answering at once. | `pksk` | AC-MUR-19-1..4 |
-| **D7 Audio KBAT** (card S5-T12) | `/audio-kbat`: published sets only (filters Tahap, Subjek); player (play, pause, seek, transcript off by default); a missing file shows an error with a retry; "Ujian Mendengar" questions then run as a drill. Empty "Belum ada audio diterbitkan" / "Audio KBAT akan muncul di sini selepas dimuat naik dan diterbitkan." | `audio_kbat` (R1 copy, D113) | AC-MUR-27-1..3 |
+| **D5 Misi Harian** (card S6-T07 for both the teacher screen and the pupil path, the mission session writer; S5-T03 only removes the code constant) | Dashboard checklist or the Misi Harian card (V3 routes `/misi-harian`, `/misi-harian/:id`); mission valid on its date (MYT); drill of the mission's questions; per-answer Syiling = admin rate (code constant `MISSION_COINS_PER_CORRECT = 3` removed); the teacher's `rewardCoins` paid **once** when the pupil reaches the target (idempotent per pupil and mission); example rate 1, `rewardCoins` 10, target 5: 15 Syiling (AC-GUR-2b-5). Expired mission: not listed. | `mission` | `ERR-PRAC-04` `Misi ini sudah diselesaikan.` |
+| **D6 PKSK** (card S5-T13) | `/pksk`; without a grant the page shows `Anda belum mempunyai akses PKSK PRO` / `Akses PKSK diberikan oleh pentadbir sekolah anda. Hubungi guru atau pentadbir sekolah untuk mengaktifkan pakej.`, the tiles, "Soalan mengikut Bahagian", "Domain teratas", "Pakej PKSK", and **no question text**. With a grant: a set of 10 by Bahagian (A, B, C formats) and by domain (V3 `PRACTICE_SIZE = 10`, D115), on ONE batch page (up to 10 questions, answered then sent with one "Hantar"; no per-question "Semak Jawapan"; API-PRAC-12, not API-PRAC-01/02), result "{betul}/10" in the same page; the 10 rows of mode `pksk` are written at that Hantar; the full exam (30 A + 70 B + 1 C) is one batch page too and its answered questions are also written as rows of mode `pksk` with the exam attempt id as `attempt_id` (no practice session and no reward change; D113 "every activity writes the one store", S5-T13); the full exam (A 30, B 70, C 1 essay) and history are the V1 functions already built in V3 (10 FR-MUR-19-7). An expired grant blocks answering at once. | `pksk` | AC-MUR-19-1..4 |
+| **D7 Audio KBAT** (card S5-T12) | `/audio-kbat`: published sets only (filters Tahap, Subjek); player (play, pause, seek, transcript off by default); a missing file shows an error with a retry; "Ujian Mendengar" questions are answered on the player page and sent with one "Hantar" (V3 `audio_kbat_attempts`; one row per question of mode `audio_kbat` is also written through the port at that Hantar, S5-T12). Empty "Belum ada audio diterbitkan" / "Audio KBAT akan muncul di sini selepas dimuat naik dan diterbitkan." | `audio_kbat` (R1 copy, D113) | AC-MUR-27-1..3 |
 
 All three: same result (3.7), same reward (3.6), same reports (6). **Reuse:** `m05-practice/pages/Mission*.vue`, `m07-pksk`, `m09-content` audio pages, `apps/api/src/modules/pksk`, `content/audio`.
 
@@ -840,11 +846,12 @@ Every report is a **live read of `practice_answers`** (no nightly batch, no sepa
 
 | Activity | Row written | "Sesi Kuiz" (sessions) | Counted in answers / accuracy |
 |---|---|---|---|
-| D1, D2, D3, D4, D5, D6, D7, B3, B4-Objektif | at each "Semak Jawapan" | +1 at "Tamat" (not for a swept session) | from the check |
+| D1, D2, D3, D4, D5, B3, B4-Objektif | at "Tamat" (session submit), for every question checked | +1 at "Tamat" (not for a swept session) | from Tamat |
+| D6 PKSK practice set and exam, D7 Audio KBAT | at the single "Hantar" | PKSK practice set: +1 (a completed session, S5-T13); PKSK exam and Audio KBAT: none (as built) | from Hantar |
 | B2 Kuiz | at the final submit (or the sweep) | +1 at finish | from the final submit |
 | B1, B5, B6, B4-Bahasa | at "Hantar" or auto-submit; updated at each self-mark | +1 at close (a sitting is one session with its Bijak label) | from Hantar; "correct" only at full marks |
 | G1, G2, G3 | at each answered or timed-out question | **no** | from the answer |
-| Abandoned drill / sitting restart | drill rows already written stay; a sitting restarted with "Mula Semula" keeps rows only if it was submitted (an `abandoned` attempt writes none) | not counted | as written |
+| Abandoned drill / sitting restart | an abandoned drill writes no row (its checks stay in `practice_checks`, ADR-0014); a sitting restarted with "Mula Semula" keeps rows only if it was submitted (an `abandoned` attempt writes none) | not counted | as written |
 
 ### 6.2 Metric by metric
 
@@ -878,7 +885,7 @@ Existing IDs (FR-MUR-*, AC-MUR-*, FR-X4-*, AC-CHAIN-*, DM-44..49, API-PRAC-*, AP
 
 | ID | Requirement | Section | Card |
 |---|---|---|---|
-| FR-PA-01 | There are exactly three answering engines (drill, sitting, room and battle). No activity creates another answering page, grader or answer table. | 1.1, 8 | S5-T03, S3-T04, S7-T01 |
+| FR-PA-01 | There are exactly three answering engines (drill, sitting, room and battle); PKSK and Audio KBAT keep their existing single-Hantar pages (1.1). No activity creates another answering page, grader or answer table. | 1.1, 8 | S5-T03, S3-T04, S7-T01 |
 | FR-PA-02 | `true_false` and `mcq_multi` are explicit kinds. `mcq_multi` is served only where the answer is `choices[]` (sitting, Kuiz, Set Soalan, Subjektif, Kertas Subjektif), never in single-option drills or games. | 2.2 | S1-T09a, S8-T03 |
 | FR-PA-03 | A stimulus group is shown once and kept in view across all its members at 375 / 768 / 1280 px; sitting = one group screen; drill = one member per screen with a persistent panel; games never draw a group. | 2.4 | S8-T02, S5-T03 |
 | FR-PA-04 | Bilingual (`ms+en`) content shows stacked BM and English with a three-way toggle (labels "BM", "English", "BM + English"; segmented control in the question header; stored in `localStorage` key `pp.qd.lang`; D115 default, new copy pending D94 approval) remembered on the device; chrome stays BM. | 2.3 | S8-T03 (data: 45 / G-07) |
@@ -890,8 +897,8 @@ Existing IDs (FR-MUR-*, AC-MUR-*, FR-X4-*, AC-CHAIN-*, DM-44..49, API-PRAC-*, AP
 | FR-PA-10 | The matching bank is shown once in the stimulus panel and stays visible. | 2.2 | S8-T03 |
 | FR-PA-11 | A drill resumes after refresh with the same `clientUuid`, returns `answered[]` and `resumed`, and shows `Anda menyambung kuiz yang belum selesai.` | 2.6 | S5-T03 |
 | FR-PA-12 | Drills are online-only: "Semak Jawapan" disabled offline; 3 retries then "Cuba Semula" / "Langkau". | 2.6 | S5-T03 |
-| FR-PA-13 | An inactive drill is swept after 2 hours as `ditinggalkan`: rows stay, no reward, not a session. The sweeper is owned by S5-T15 only (S5-T03 owns the drill page and resume, FR-PA-11, 12). | 2.6 | S5-T15 |
-| FR-PA-14 | Timer behaviour: server offset, 5-minute warning, auto-submit at 0, offline-at-zero queue, late sync 24 h, drill count-up, `timeLimitSec` auto-submit. | 2.7 | S8-T04, S3-T04 |
+| FR-PA-13 | An inactive drill is swept after 2 hours as `ditinggalkan`: no `practice_answers` row (its checks stay in `practice_checks`), no reward, not a session. The sweeper is owned by S5-T15 only (S5-T03 owns the drill page and resume, FR-PA-11, 12). | 2.6 | S5-T15 |
+| FR-PA-14 | Timer behaviour: server offset, 5-minute warning, auto-submit at 0, offline-at-zero queue, late sync 24 h, drill count-up; the `timeLimitSec` auto-submit code is kept but unused in R1. | 2.7 | S8-T04, S3-T04 |
 | FR-PA-15 | The confirm dialogs and their exact BM copy, including the Kertas Subjektif variant. | 2.8 | S8-T04, S5-T03 |
 | FR-PA-16 | Mod Latihan earns a reward only for parts never opened with "Semak". | 3.6 | S3-T04 |
 | FR-PA-17 | A Kuiz "Semak" writes no row; the final submit (or the sweep) writes rows; the sweep gives no reward. | 4.3 | S3-T04 |
@@ -937,7 +944,7 @@ Existing IDs (FR-MUR-*, AC-MUR-*, FR-X4-*, AC-CHAIN-*, DM-44..49, API-PRAC-*, AP
 | AC-PA-12 | Given a drill with 4 of 10 checked, when the page is reloaded, then the same session and questions return, `answered` lists 4, the quiz opens at question 5 and shows `Anda menyambung kuiz yang belum selesai.` | S5-T03 |
 | AC-PA-13 | Given the device goes offline, then "✓ Semak Jawapan" is disabled with the title `Perlukan sambungan internet.`; given the network is up but the check fails 3 times, then `Jawapan belum dihantar. Cuba Semula.` shows with "Cuba Semula" and "Langkau" and "Soalan Seterusnya" is not offered. | S5-T03 |
 | AC-PA-14 | Given a Set Soalan `mcq_multi` item with 3 correct options of marks 3, when the pupil ticks 2 correct and 1 wrong, then the check returns awarded floor(3 x (2 - 1) / 3) = 1, status `separa`, and one row with awarded 1 of 3 (not counted correct). The grading is done by `questions/grading.ts`. | S1-T09a |
-| AC-PA-15 | Given a drill idle for 2 hours, then the job sets `ditinggalkan`, the checked rows remain and count in "Soalan Dijawab", "Sesi Kuiz" does not rise, and no Syiling or XP is credited. | S5-T15 |
+| AC-PA-15 | Given a drill idle for 2 hours, then the sweeper sets `ditinggalkan`, no `practice_answers` row exists for it (the checks remain in `practice_checks`), "Soalan Dijawab" and "Sesi Kuiz" do not rise, and no Syiling or XP is credited. | S5-T15 |
 | AC-PA-16 | Given a `drawing` leaf, when the pupil draws with the pad and saves, then a PNG up to 5 MB is stored for the leaf, the status is `belum_dimarkah`, and after Hantar the checklist and model drawing show and a self-mark updates the same row; an empty pad and no file is `kosong`. | S8-T03 |
 | AC-PA-17 | Given a `table_fill` of 6 blank cells with 4 matching, then the suggestion reads "4 daripada 6 sel sepadan", the leaf is `belum_dimarkah`, and the pupil's self-mark decides the awarded marks. | S8-T03 |
 | AC-PA-18 | Given a 10-mark part with 4 Ciri / Sebab pairs, an "S" point and a bonus, when the pupil ticks a Sebab before its Ciri, then the tick is refused; when all are ticked the stepper shows 10; a group "Maks 4" never exceeds 4; the stored mark equals the stepper. | S3-T06 |
@@ -971,7 +978,7 @@ Existing IDs (FR-MUR-*, AC-MUR-*, FR-X4-*, AC-CHAIN-*, DM-44..49, API-PRAC-*, AP
 
 | ID | Change | Card |
 |---|---|---|
-| DM-66 | `practice_sessions.status` check adds `abandoned` (UI word "ditinggalkan"); list queries exclude it; a sweeper job (S5-T15, practice sessions only) moves a session idle 2 h to `abandoned`. | S5-T15 |
+| DM-66 | `practice_sessions.status` check adds `abandoned` (UI word "ditinggalkan"); list queries exclude it; a sweeper (interval service, S5-T15, practice sessions only) moves a session idle 2 h to `abandoned`. | S5-T15 |
 | DM-44 (extended) | `ck_practice_answers_mode` is exactly the 19 values of 50 section 4.7a: `random, chapter, revision, past_year, latih_tubi, ramalan, mission, remedial, question_set, pksk, databank, kuiz, simulasi, tracking_a, subjektif, structured, battle, audio_kbat, game` (`pksk` already exists as a session mode). Legacy `past_year` and `ramalan` stay valid and are read as `databank` and `tracking_a`. | S5-T15 |
 | DM-44 (extended) | The partial unique index becomes `(attempt_id, user_id, question_id, coalesce(part_ref, ''))` where `attempt_id` is not null. | S5-T15 |
 | DM-67 | Checked in `apps/api/prisma/schema/games.prisma`: `GameRoom` has primary key `code` (String, 6 characters) and no uuid, so a code can be reused; `GameSession.id` (uuid) belongs to solo games and `battles` has a uuid. Add to `game_rooms`: `session_id uuid not null default gen_random_uuid() unique`, regenerated each time a room starts (`waiting` to `playing`). `attempt_id` of a room answer row = `game_rooms.session_id`. Battle uses `battles.uuid`; solo uses `game_sessions.id`; a tournament round uses `tournament_round_scores.attempt_id` (DM-61). | S7-T01 |
@@ -990,7 +997,7 @@ Bilingual twins (`_en` columns and `language`) are defined by 45 / G-07 and only
 | API-PRAC-02 and API-BIJAK-06 (extended) | `CheckAnswerRequest` adds `selectedOptionIds[]` (only for `question_set` and Kuiz); the response adds `correctOptionIds[]`. | API-PRAC-02, API-BIJAK-06 | S5-T11 |
 | API-BIJAK-04 (extended) | The attempt answers union adds `choices`, `gaps`, `cells`, `topicId` (DM-68); `GET /api/bijak/attempts/:id/result?scheme=1` returns the scheme for a closed Kertas Subjektif attempt; without it the scheme is omitted for that lane. | API-BIJAK-04 | S3-T04 (answers union), S3-T06 (result scheme) |
 | API-BIJAK-05 (extended) | `self-mark` request adds `pointsHit?: string[]`, `criteria?: {id, mark}[]`; response returns them. | API-BIJAK-05 | S3-T06 |
-| API-PRAC-03 (extended) | Session sweeper job (no route): idle 2 h to `abandoned`; `GET /practice/sessions` excludes `abandoned`. The Kuiz sweep (rows for checked questions, no reward) is the S3-T04 job in `bijak/` under API-BIJAK-06, not this job. | API-PRAC-03 | S5-T15 |
+| API-PRAC-03 (extended) | Session sweeper (interval service, no route): idle 2 h to `abandoned`; `GET /practice/sessions` excludes `abandoned`. The Kuiz sweep (rows for checked questions, no reward) is the S3-T04 extension of `AttemptSweeper` in `bijak/` under API-BIJAK-06, not this job. | API-PRAC-03 | S5-T15 |
 | API-GAME-03 and API-GAME-01 (extended) | `GET /api/battle/arena/:uuid` returns `roundEndsAt`; battle and room views return `isBot` / "Robot PrestasiPlus" labels; real-pupil bot pool removed. | API-GAME-01, 03 | S7-T01 |
 | API-GAME-01..03 (extended) | Game result view returns `reward {xp, syiling, capped, reason}`. | API-GAME-01..03 | S7-T01 |
 | API-BIJAK-03 (extended) | The pupil generate call and the Jana Kertas read answer 404 (D112). | API-BIJAK-03 | S3-T07 |
@@ -1078,7 +1085,7 @@ Source: `PR522-aliran.md`, 29 processes and 114 steps. Bahagian A to E (A1, B1 t
 | F2.10 Semakan, skema | Separuh | 3.4, 3.5, 4.2 step 6 | FR-PA-20, 21; AC-PA-20 | S3-T04, S8-T05 | `belum_dimarkah` never "Salah"; short text and drawing become self-markable; a reviewer screen is not needed (pupil self-marks). |
 | F2.11 Markah kendiri | Separuh | 3.4 | FR-PA-18, 19; AC-MUR-13-7, AC-PA-18, 19 | S3-T06 | Points, bands, criteria; reward = rate x gain, 10 XP per mark, no claw-back. |
 | F2.12 Cuba Lagi, semakan lepas, Sejarah | Jalan | 4.2 step 6 | FR-MUR-13-15; AC-MUR-13-8 | S3-T04 | Kept; refusal texts fixed. |
-| F3.1 Kuiz | Belum diuji | 4.3 | FR-MUR-13-16, FR-PA-17; AC-PA-07, 08 | S3-T04 | "Semak" writes no row; finish writes; the S3-T04 `bijak/` job writes for an abandoned Kuiz without reward. |
+| F3.1 Kuiz | Belum diuji | 4.3 | FR-MUR-13-16, FR-PA-17; AC-PA-07, 08 | S3-T04 | "Semak" writes no row; finish writes; the S3-T04 extension of `AttemptSweeper` in `bijak/` writes for an abandoned Kuiz without reward. |
 | F3.2 Jana Kertas | Belum diuji | 4.1 | FR-PA-34; AC-PA-32 | S3-T07 | **Not in R1 (D112):** tab hidden, 404. |
 | F4.1 Databank subject, count, Mula | Separuh | 4.4 | FR-MUR-13-17; AC-MUR-13-9, 13-10 | S3-T07, S1-T06 | Pool flag removed; counts 5/10/20. |
 | F4.2 Databank answer, result, grade | Belum diuji | 4.4, 3.7 | AC-MUR-13-9 | S3-T07 | Grade scale and "Ganjaran Anda". |
