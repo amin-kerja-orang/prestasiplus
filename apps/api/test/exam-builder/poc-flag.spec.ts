@@ -85,9 +85,9 @@ describe('paper builder with the test-only PoC double plugged and an empty bank'
       expect(pub.status, JSON.stringify(pub.body)).toBe(200)
       const out = Publish.parse(pub.body).data
       if (row.subject === 'SEJ') {
-        // D93: the PoC Sejarah fixture has one question per stimulus group, so its seeded papers cannot be Terbit again (fixture limitation).
+        // The PoC Sejarah fixture still has no pool facts / blueprint for its seeded papers, so they cannot be Terbit again (fixture limitation); a one-member group no longer blocks (S1-T01).
         expect(out.ok, row.title).toBe(false)
-        expect(out.errors, row.title).toContain('Kumpulan perlu sekurang-kurangnya 2 soalan.')
+        expect(out.errors, row.title).not.toContain('Kumpulan perlu sekurang-kurangnya 1 soalan.')
       } else {
         expect(out, row.title).toMatchObject({ ok: true, errors: [] })
       }

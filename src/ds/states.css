@@ -33,6 +33,7 @@
 
 [data-ds='native-select'][data-variant='native'] select:focus-visible {
   box-shadow: 0 0 0 2px var(--ui-primary);
+  /* stylelint-disable-next-line property-disallowed-list -- ring reset for the native select; the tokens.css reset only targets the wrapper, and G-3b allows outline only there */
   outline: none;
 }
 
@@ -50,4 +51,9 @@
   [data-ds='filter-bar'] > [data-ds='active-filters'] {
     max-width: none;
   }
+}
+
+/* Sticky bars (DsFormBar, DsStickyActions) must not cover the focused field: room under every focusable control (the browser reads the focused element's own margin) (FR-X6-5). */
+[data-ds='form-field'] :is(input, select, textarea, [contenteditable], [tabindex]) {
+  scroll-margin-bottom: 6rem;
 }

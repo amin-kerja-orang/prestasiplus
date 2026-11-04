@@ -10,7 +10,7 @@ import { DsText } from '@/ds'
 import { COGNITIVE_OPTIONS } from '@/modules/m04-question-bank'
 
 import type { LeafKind } from '../../../domain/types'
-import RichText from '../../../components/RichText.vue'
+import { RichText } from '../../../../../components/question-display'
 import { bijakAdminServer } from '../../../server/client'
 import { tagWithUnit, unitsFromStudio, type DskpUnit } from '../lib/dskp'
 import { fieldName } from '../domain/validation'

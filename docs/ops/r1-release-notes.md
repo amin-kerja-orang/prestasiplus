@@ -530,12 +530,12 @@ Announce Jana Kertas to pupils only for the pairs counted here.
 
 Check scope ON before the frontend build (REQ-B-117): `grep '^VITE_PROTOTYPE_SCOPE=on$' /etc/pretasiplus/prod.env` must print the line.
 
-**Refused roles in R1.** With scope `on`, the parent (ibu bapa), sponsor (penaja) and PPD roles are refused at login with "Peranan ini tidak termasuk dalam prototaip." On UAT the active accounts are 37 parents, 6 sponsors and 6 PPD (37/6/6).
+**Refused roles in R1.** With scope `on`, the parent (ibu bapa), sponsor (penaja) and PPD roles are refused at login with "Peranan ini belum menggunakan sistem ini." On UAT the active accounts are 37 parents, 6 sponsors and 6 PPD (37/6/6).
 
 **Known limits (REQ-B-118; post-live, owner answer "Selepas live"):**
 
 - The copy "prototaip" is shown in the UI.
-- The pupil menu "Jemput Ibu Bapa" is a dead end: it leads an invited parent to the refusal "Peranan ini tidak termasuk dalam prototaip."
+- The pupil menu "Jemput Ibu Bapa" is a dead end: it leads an invited parent to the refusal "Peranan ini belum menggunakan sistem ini."
 - The role refusal is FRONTEND-only: the API still accepts those roles after login.
 - ~~Trial used up at session START: dead end at `/pricing`~~ **FIXED in R1** (Q31 item 2, REQ-B-123, A3 `r1/q26-ds-ratchet`, SHA recorded at merge): the session start now shows the same contract message as Q26, "Baki percubaan percuma anda telah habis." (`schema.ts:65`), with no dead link under scope on (REQ-B-122 guard). KIV row 66.
 - **Also in R1 (Q31 item 1, REQ-B-123; moved from REQ-B-091 "after live"):** the Kontrak "Pratonton Kolam" API route `GET /api/admin/blueprints/:subject/:kertas/pool` (contract `packages/contract/src/bijak/standards/paths.ts`, A4 `r1/a4-blueprint-pool-route`, SHA recorded at merge); before this it returned 404.

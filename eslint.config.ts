@@ -47,10 +47,12 @@ const DEPRECATED_DS_IMPORTS = {
     '`DsPagedTable` and `@/components/data/*` are removed (L3). Use `DsDataTable variant="bare"` from `@/ds`.',
 }
 
+const MODULE_DEEP_IMPORT = String.raw`^(?:@|/src)/modules/[^/]+/.+`
+
 const uiBoundaryPatterns = [
   DEPRECATED_DS_IMPORTS,
   {
-    regex: String.raw`^(?:@|/src)/modules/[^/]+/.+`,
+    regex: MODULE_DEEP_IMPORT,
     message:
       'Import another module only through its public entry `@/modules/<slug>`. Inside your own module, use relative imports. UI code never imports `mock/`.',
   },
@@ -231,6 +233,47 @@ const dsRawElements = (names: string[]) =>
     message: `Raw <${element}> is forbidden in design-system files (G-5). Use the Nuxt UI / Ds* component (UButton, UInput, USelect, UTextarea, ULink, UTable, UModal, UAvatar, DsArt3D, ...).`,
   }))
 
+/** The shared display components moved from m28 (S8-T01); they keep their strict level (ds-strict.json). */
+const QD_STRICT_FILES = [
+  'src/components/question-display/{PartInput,PartNode,MathField,MathKeyboard,StimulusStack,StimulusChip,NavigatorPanel,AttemptShell,RichText,StimulusView}.vue',
+]
+const M28_DOMAIN_TYPES = String.raw`^(?:@|/src)/modules/m28-bijak-spm/domain/types$`
+
+/**
+ * D115 / S8-T01 (documented exception): `question-display/` may `import type` from
+ * `@/modules/m28-bijak-spm/domain/types` only. Every other `@/modules/<slug>/...` path, and any
+ * runtime import of that file, still fails.
+ */
+function questionDisplayImportRules(
+  patterns: ReadonlyArray<{ regex?: string; group?: string[]; message: string }>,
+): Linter.RulesRecord {
+  const mapped: Array<{
+    regex?: string
+    group?: string[]
+    message: string
+    allowTypeImports?: boolean
+  }> = patterns.flatMap((p) =>
+    p.regex === MODULE_DEEP_IMPORT
+      ? [
+          {
+            regex: String.raw`^(?:@|/src)/modules/(?!m28-bijak-spm/domain/types$)[^/]+/.+`,
+            message: p.message,
+          },
+          {
+            regex: M28_DOMAIN_TYPES,
+            message:
+              'The shared question display may only `import type` from the m28 domain types (D115); no runtime imports from m28.',
+            allowTypeImports: true,
+          },
+        ]
+      : [p],
+  )
+  return {
+    'no-restricted-imports': 'off',
+    '@typescript-eslint/no-restricted-imports': ['error', { patterns: mapped }],
+  }
+}
+
 export default defineConfigWithVueTs(
   {
     name: 'app/ignores',
@@ -371,6 +414,25 @@ export default defineConfigWithVueTs(
   ...(ADMIN_ENFORCE.length
     ? (adminRuleBlocks(ADMIN_ENFORCE, [...ADMIN.exempt]) as Linter.Config[])
     : []),
+
+  // D115 / S8-T01: the shared question display (`src/components/question-display/**`) may use
+  // `import type` from the m28 domain types (they stay in m28). Runtime imports from m28, and every
+  // other boundary pattern, stay forbidden. The core `no-restricted-imports` cannot tell type
+  // imports apart, so these blocks switch to `@typescript-eslint/no-restricted-imports` with the
+  // full pattern list (rule settings replace per file; the later block wins for strict files).
+  {
+    name: 'app/boundaries-question-display',
+    files: ['src/components/question-display/**/*.ts', 'src/components/question-display/**/*.vue'],
+    ignores: ['**/__tests__/**'],
+    rules: questionDisplayImportRules([...uiBoundaryPatterns, DATASET_TESTING_TEST_ONLY]),
+  },
+  // The moved display components stay design-system strict (same patterns as the ds-strict block).
+  {
+    name: 'app/boundaries-question-display-strict',
+    files: QD_STRICT_FILES,
+    ignores: ['**/__tests__/**'],
+    rules: questionDisplayImportRules([...DS_IMPORT_PATTERNS, ...DS_PAGE_ONLY_IMPORTS]),
+  },
 
   // Boundary rule: @pp/exam-core is pure TypeScript shared by the server and the UI (BE-14, ADR-0021).
   {

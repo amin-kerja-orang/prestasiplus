@@ -23,6 +23,8 @@ docs
 # The seed (apps/api/prisma/seed/curriculum.ts) reads the DSKP extracts: ship only the JSON, not the .md notes.
 # The negation must come after `docs`. No `!docs/reference/dskp` line: it would re-include the .md files too.
 !docs/reference/dskp/*.json
+# The e2e seed (seed/bijak-standards/layer2.ts) reads the layer-2 blueprint JSON; without it quota and KBAT seed null (NO_QUOTA, NO_KBAT).
+!docs/reference/blueprints/*.json
 !packages/**/*.md
 docker-compose*.yml
 compose*.yaml
