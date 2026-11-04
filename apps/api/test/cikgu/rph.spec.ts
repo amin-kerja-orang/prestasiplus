@@ -248,7 +248,7 @@ describe('RPH routes: POST/GET /cikgu/rph, GET /cikgu/rph/:id', () => {
     expect(empty.body.meta).toMatchObject({ page: 1, pageSize: 20, totalItems: 0, totalPages: 1, from: null, to: null })
   })
 
-  it('AC9: the detail is the owner\'s only: a foreign, unknown, non-numeric or out-of-range id is the same 404 "Not Found."', async () => {
+  it('AC9: the detail is the owner\'s only: a foreign, unknown, non-numeric or out-of-range id is the same 404 "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?"', async () => {
     const mine = await teacherB.get('/cikgu/rph')
     const id = mine.body.data[0].id as string
     const own = await teacherB.get(`/cikgu/rph/${id}`)
@@ -265,13 +265,13 @@ describe('RPH routes: POST/GET /cikgu/rph, GET /cikgu/rph/:id', () => {
     ] as const) {
       const r = await who.get(path)
       expect(r.status, path).toBe(404)
-      expect(r.body.error).toMatchObject({ code: 'NOT_FOUND', message: 'Not Found.' })
+      expect(r.body.error).toMatchObject({ code: 'NOT_FOUND', message: 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?' })
     }
   })
 
   it('AC2: a student is 403 on the RPH routes', async () => {
     const student = await client(t, STUDENT_1)
-    expect((await student.get('/cikgu/rph')).body.error).toMatchObject({ code: 'FORBIDDEN', message: 'This action is unauthorized.' })
+    expect((await student.get('/cikgu/rph')).body.error).toMatchObject({ code: 'FORBIDDEN', message: 'Anda tidak dibenarkan melakukan tindakan ini.' })
     expect((await student.post('/cikgu/rph', valid)).status).toBe(403)
   })
 })

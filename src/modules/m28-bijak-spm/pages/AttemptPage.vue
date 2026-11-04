@@ -23,13 +23,15 @@ import {
   AttemptShell,
   clearPosition,
   NavigatorPanel,
+  QuestionBlock,
   readPosition,
   StimulusChip,
   StimulusStack,
   writePosition,
 } from '../../../components/question-display'
 import type { NavState } from '../../../components/question-display'
-import QuestionBlock from '../components/QuestionBlock.vue'
+import PartResultCard from '../components/PartResultCard.vue'
+import ReportQuestionButton from '../components/ReportQuestionButton.vue'
 import {
   chooseCounterLine,
   chooseFullHint,
@@ -620,7 +622,10 @@ const feedback = computed(() => {
           @answer="onAnswer"
           @toggle-flag="toggleFlag"
           @toggle-choose="toggleChoose"
-        />
+        >
+          <template #report="p"><ReportQuestionButton v-bind="p" /></template>
+          <template #result="p"><PartResultCard v-bind="p" /></template>
+        </QuestionBlock>
 
         <DsFeedbackSheet
           v-if="feedback && !isExam"

@@ -16,7 +16,7 @@ describe('AC7 guards, no-store and the CSRF check', () => {
   it('no session is 401 UNAUTHORIZED "Unauthenticated." and stores nothing', async () => {
     const res = await t.http().post(PATH).send(validBody())
     expect(res.status).toBe(401)
-    expect(res.body.error).toMatchObject({ code: 'UNAUTHORIZED', message: 'Unauthenticated.', requestId: expect.any(String) })
+    expect(res.body.error).toMatchObject({ code: 'UNAUTHORIZED', message: 'Sesi anda telah tamat. Sila log masuk semula.', requestId: expect.any(String) })
     expect(await applications(t)).toHaveLength(0)
   })
 

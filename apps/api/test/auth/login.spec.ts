@@ -158,7 +158,7 @@ describe('POST /api/auth/login', () => {
       expect(again.status).toBe(200)
       expect(cookieValue(again)).not.toBe(first.token)
       const stale = await t.http().get('/api/session').set('Cookie', `pp_session=${first.token}`)
-      expectError(stale, 'UNAUTHORIZED', 'Unauthenticated.')
+      expectError(stale, 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
     })
   })
 

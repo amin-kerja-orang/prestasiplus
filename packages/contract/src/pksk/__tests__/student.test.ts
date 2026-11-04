@@ -186,10 +186,10 @@ describe('student responses produced by the mock parse', () => {
 
 describe('mock errors match the documented error body', () => {
   const cases: [string, string, number | null, number, string, string][] = [
-    ['GET', '/api/pksk/me/access', null, 401, 'UNAUTHORIZED', PKSK_STUDENT_MESSAGES.unauthenticated],
-    ['GET', '/api/pksk/levels/T9/dashboard', 4, 404, 'NOT_FOUND', PKSK_STUDENT_MESSAGES.notFound],
-    ['GET', '/api/pksk/levels/t1/exam', 4, 404, 'NOT_FOUND', PKSK_STUDENT_MESSAGES.notFound],
-    ['GET', '/api/pksk/levels/T1/domains/NOPE', 4, 404, 'NOT_FOUND', PKSK_STUDENT_MESSAGES.notFound],
+    ['GET', '/api/pksk/me/access', null, 401, 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.'],
+    ['GET', '/api/pksk/levels/T9/dashboard', 4, 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?'],
+    ['GET', '/api/pksk/levels/t1/exam', 4, 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?'],
+    ['GET', '/api/pksk/levels/T1/domains/NOPE', 4, 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?'],
   ]
   it.each(cases)('%s %s as user %s -> %i', async (method, url, user, status, code, message) => {
     const r = await call(method, url, user)
@@ -204,7 +204,7 @@ describe('mock errors match the documented error body', () => {
     expect(r.status).toBe(403)
     expect(ErrorBodySchema.parse(r.body).error).toMatchObject({
       code: 'FORBIDDEN',
-      message: PKSK_STUDENT_MESSAGES.forbidden,
+      message: 'Anda tidak dibenarkan melakukan tindakan ini.',
     })
     expect((await call('GET', '/api/pksk/levels/T9/dashboard', ids.noAccess)).status).toBe(404)
   })
