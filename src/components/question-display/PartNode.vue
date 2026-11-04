@@ -39,6 +39,8 @@ const leafStimulus = computed(() =>
     : undefined,
 )
 const shown = ref(false)
+/** Already in the group's pinned panel: the leaf only links to it, it never draws it twice. */
+const inPanel = computed(() => !!leafStimulus.value && !!group?.stimuli().some((s) => s.id === leafStimulus.value!.id))
 const emit = defineEmits<{ answer: [partId: string, answer: PartAnswer] }>()
 </script>
 
@@ -56,6 +58,7 @@ const emit = defineEmits<{ answer: [partId: string, answer: PartAnswer] }>()
           type="button"
           variant="link"
           color="primary"
+          size="xl"
          
           data-testid="cite-link"
           :data-cite="seg.target"
@@ -82,12 +85,24 @@ const emit = defineEmits<{ answer: [partId: string, answer: PartAnswer] }>()
         @answer="(id, a) => emit('answer', id, a)"
       />
     </template>
-    <template v-if="leafStimulus">
+    <UButton
+      v-if="leafStimulus && inPanel"
+      type="button"
+      color="neutral"
+      variant="soft"
+      block
+      size="xl"
+      data-testid="leaf-stimulus-link"
+      @click="group?.open(leafStimulus.id)"
+      >{{ chipLabel(leafStimulus.label ?? leafStimulus.id) }}</UButton
+    >
+    <template v-else-if="leafStimulus">
       <UButton
         type="button"
         color="neutral"
         variant="soft"
         block
+        size="xl"
         data-leaf-toggle
         :aria-expanded="shown"
         :aria-controls="`leaf-stim-${part.id}`"

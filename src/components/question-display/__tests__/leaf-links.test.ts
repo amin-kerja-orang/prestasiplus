@@ -27,13 +27,14 @@ const media = (wide: boolean, roomy = wide) => {
   }))
 }
 const part = (prompt: string, extra: Record<string, unknown> = {}) => ({
-  id: 'p1', label: '(a)', prompt, marks: 2, answer: { kind: 'short_text' }, ...extra,
+  id: 'p1', label: '(a)', prompt, marks: 2, answer: { kind: 'short_text' as const }, ...extra,
 })
+const own: StimulusData = { id: 'own-1', kind: 'passage', label: 'Petikan Z', text: 'Teks sendiri' }
 const host = (p: unknown) =>
   defineComponent({
     setup: () => () =>
       h(StimulusGroup, { stimuli, split: 'sitting' }, () =>
-        h(PartNode, { part: p as never, answers: {}, attemptId: 'a1', stimuli }),
+        h(PartNode, { part: p as never, answers: {}, attemptId: 'a1', stimuli: [...stimuli, own] }),
       ),
   })
 const go = async (wide: boolean, p: unknown, roomy = wide) => {
@@ -90,10 +91,10 @@ describe('PartNode links', () => {
 
 describe('leaf stimulus', () => {
   it('FR-PA-37: collapsed behind "Lihat {label}" at 375', async () => {
-    const w = await go(false, part('Soalan.', { stimulusId: 'qb-s3' }), false)
+    const w = await go(false, part('Soalan.', { stimulusId: 'own-1' }), false)
     // The 375 / 768 switch is CSS (states.css keys on data-leaf-stim and data-leaf-toggle); jsdom checks those hooks.
     const t = w.find('[data-testid="leaf-stimulus-toggle"]')
-    expect(t.text()).toBe('Lihat Bahan 3')
+    expect(t.text()).toBe('Lihat Petikan Z')
     expect(t.attributes('data-leaf-toggle')).toBeDefined()
     expect(t.attributes('aria-expanded')).toBe('false')
     expect(w.find('[data-leaf-stim]').attributes('data-leaf-stim')).toBe('closed')
@@ -102,12 +103,45 @@ describe('leaf stimulus', () => {
     expect(t.attributes('aria-expanded')).toBe('true')
   })
   it('FR-PA-37: the stimulus sits in the leaf, inline from 768 (toggle hidden by CSS)', async () => {
-    const w = await go(false, part('Soalan.', { stimulusId: 'qb-s3' }), true)
-    expect(w.find('[data-leaf-stim] [data-testid="leaf-stimulus"]').text()).toContain('Teks 3')
+    const w = await go(false, part('Soalan.', { stimulusId: 'own-1' }), true)
+    expect(w.find('[data-leaf-stim] [data-testid="leaf-stimulus"]').text()).toContain('Teks sendiri')
+  })
+  it('FR-PA-37: a leaf whose stimulus is in the group panel only links to it, no second figure', async () => {
+    const w = await go(true, part('Soalan.', { stimulusId: 'qb-s3' }))
+    const l = w.find('[data-testid="leaf-stimulus-link"]')
+    expect(l.text()).toBe('Lihat Bahan 3')
+    expect(w.find('[data-testid="leaf-stimulus"]').exists()).toBe(false)
+    expect(w.find('[data-testid="stimulus-questions"] [data-stimulus-id]').exists()).toBe(false)
+    await l.trigger('click')
+    expect(w.find('[data-stimulus-id="qb-s3"]').attributes('data-stimulus-lit')).toBe('true')
   })
   it('FR-PA-37: a leaf without stimulusId is unchanged', async () => {
     const w = await go(true, part('Soalan.'))
     expect(w.find('[data-testid="leaf-stimulus"]').exists()).toBe(false)
     expect(w.find('[data-testid="leaf-stimulus-toggle"]').exists()).toBe(false)
+  })
+})
+
+describe('two groups on one page', () => {
+  it('AC-PA-39: a cite in group 2 highlights only group 2 stimulus', async () => {
+    media(true)
+    const pair = (gid: string) =>
+      h(StimulusGroup, { stimuli, split: 'sitting', groupId: gid }, () =>
+        h(PartNode, { part: part('Lihat Bahan 2.'), answers: {}, attemptId: gid, stimuli }),
+      )
+    const w = mount(defineComponent({ setup: () => () => h('div', [pair('g1'), pair('g2')]) }), {
+      global: { stubs: { UDrawer: DrawerStub, Drawer: DrawerStub } },
+      attachTo: document.body,
+    })
+    await nextTick()
+    const groups = w.findAll('[data-testid="stimulus-group"]')
+    const scroll = vi.fn()
+    Element.prototype.scrollIntoView = scroll
+    await groups[1]!.find('[data-testid="cite-link"]').trigger('click')
+    await nextTick()
+    expect(groups[0]!.findAll('[data-stimulus-lit="true"]')).toHaveLength(0)
+    expect(groups[1]!.findAll('[data-stimulus-lit="true"]')).toHaveLength(1)
+    expect(scroll).toHaveBeenCalledTimes(1)
+    expect(scroll.mock.contexts[0]).toBe(groups[1]!.find('[data-stimulus-id="qb-s2"]').element)
   })
 })

@@ -60,6 +60,8 @@ const list = computed<readonly StimulusData[]>(() =>
 const label = computed(() => stimuliLabel(list.value))
 
 /** Open one stimulus (or 'all') from a link in a question: the pinned pane scrolls and highlights, the drawer opens and scrolls (FR-PA-37). */
+/** The one rendered stimulus container of THIS group (inline stack, pinned pane or drawer body): scroll never looks outside it. */
+const scope = ref<unknown>(null)
 const lit = ref<string[]>([])
 let timer: ReturnType<typeof setTimeout> | undefined
 function openStimulus(id: string): void {
@@ -70,8 +72,10 @@ function openStimulus(id: string): void {
   clearTimeout(timer)
   timer = setTimeout(() => (lit.value = []), 2500)
   const scroll = (): void => {
-    document
-      .querySelector<HTMLElement>(`[data-stimulus-id="${ids[0]}"]`)
+    const root = scope.value as { $el?: HTMLElement } | HTMLElement | null
+    const el = root && '$el' in root ? root.$el : (root as HTMLElement | null)
+    el
+      ?.querySelector<HTMLElement>(`[data-stimulus-id="${ids[0]}"]`)
       ?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' })
   }
   void nextTick(() => (wide.value || inline ? scroll() : void setTimeout(scroll, 50)))
@@ -89,7 +93,7 @@ const iconOnly = computed(() => thumb.value?.kind === 'passage' || thumb.value?.
 </script>
 
 <template>
-  <DsStack v-if="inline" gap="md" data-testid="stimulus-group" data-layout="inline">
+  <DsStack v-if="inline" ref="scope" gap="md" data-testid="stimulus-group" data-layout="inline">
     <StimulusFigure
       v-for="st in list"
       :key="st.id"
@@ -118,6 +122,7 @@ const iconOnly = computed(() => thumb.value?.kind === 'passage' || thumb.value?.
           : 'sticky top-20 max-h-[calc(100vh-6rem)]'
       "
       :aria-label="split === 'sitting' ? qdCopy.pinnedAria : label"
+      ref="scope"
       data-testid="stimulus-pane"
     >
       <DsStack gap="xs">
@@ -178,7 +183,7 @@ const iconOnly = computed(() => thumb.value?.kind === 'passage' || thumb.value?.
     :description="qdCopy.sheetDescription"
   >
     <template #body>
-      <DsStack gap="md" data-testid="group-stimuli" :data-count="list.length">
+      <DsStack ref="scope" gap="md" data-testid="group-stimuli" :data-count="list.length">
         <StimulusFigure
           v-for="st in list"
           :key="st.id"
