@@ -372,14 +372,14 @@ describe('videos: visibility by school, writes, validation (AC 5, AC 6, AC 8)', 
 
     it('a teacher video is school + the own school whatever the body says; an admin video is global with no school', async () => {
       for (const visibility of ['global', 'school', undefined]) {
-        const res = await api.teacher.post('/videos', body({ visibility, title: `Guru kes ${String(visibility)}` }))
+        const res = await api.teacher.post('/videos', body({ visibility, title: `Guru kes ${visibility === 'global' ? 'umum' : 'sekolah'}` }))
         expect(res.status, JSON.stringify(res.body)).toBe(201)
         expect(res.body.data.visibility).toBe('school')
         const [row] = await t.db.query<{ visibility: string; school_id: string }>(`select visibility, school_id::text from videos where id = $1`, [res.body.data.id])
         expect(row).toEqual({ visibility: 'school', school_id: await schoolIdOf(t.db, 'DEMO001') })
       }
       for (const visibility of ['global', 'school', undefined]) {
-        const res = await api.admin.post('/videos', body({ visibility, title: `Admin kes ${String(visibility)}` }))
+        const res = await api.admin.post('/videos', body({ visibility, title: `Admin kes ${visibility === 'global' ? 'umum' : 'sekolah'}` }))
         expect(res.status, JSON.stringify(res.body)).toBe(201)
         const [row] = await t.db.query<{ visibility: string; school_id: string | null }>(`select visibility, school_id::text from videos where id = $1`, [res.body.data.id])
         expect(row).toEqual({ visibility: 'global', school_id: null })
