@@ -19,7 +19,7 @@ describe('rate limits (D57a)', () => {
         expect((await t.http().get(path)).status).toBe(200)
       }
       const res = await t.http().get('/api/jpn')
-      const err = expectError(res, 'RATE_LIMITED', 'Too Many Attempts.')
+      const err = expectError(res, 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.')
       expect(err.retryAfter).toBe(60)
       expect(res.headers['retry-after']).toBe('60')
     })
@@ -27,7 +27,7 @@ describe('rate limits (D57a)', () => {
     it('the window slides: Retry-After shrinks with time and requests pass again after it', async () => {
       t.clock.advance(20_000)
       const res = await t.http().get('/api/jpn')
-      expect(expectError(res, 'RATE_LIMITED', 'Too Many Attempts.').retryAfter).toBe(40)
+      expect(expectError(res, 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.').retryAfter).toBe(40)
       t.clock.advance(41_000)
       expect((await t.http().get('/api/jpn')).status).toBe(200)
     })
@@ -35,7 +35,7 @@ describe('rate limits (D57a)', () => {
     it('an X-Forwarded-For header does not give a new counter (TRUST_PROXY_HOPS=0)', async () => {
       t.clock.advance(120_000)
       for (let i = 0; i < 3; i++) expect((await t.http().get('/api/jpn').set('X-Forwarded-For', `10.0.0.${String(i + 1)}`)).status).toBe(200)
-      expectError(await t.http().get('/api/jpn').set('X-Forwarded-For', '10.9.9.9'), 'RATE_LIMITED', 'Too Many Attempts.')
+      expectError(await t.http().get('/api/jpn').set('X-Forwarded-For', '10.9.9.9'), 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.')
     })
   })
 
@@ -50,9 +50,9 @@ describe('rate limits (D57a)', () => {
 
     it('search is counted apart from jpn/ppd: 5 searches pass although the lookup ceiling is 1', async () => {
       expect((await t.http().get('/api/jpn')).status).toBe(200)
-      expectError(await t.http().get('/api/jpn'), 'RATE_LIMITED', 'Too Many Attempts.')
+      expectError(await t.http().get('/api/jpn'), 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.')
       for (let i = 0; i < 5; i++) expect((await t.http().get('/api/schools/search?q=demo')).status).toBe(200)
-      expectError(await t.http().get('/api/schools/search?q=demo'), 'RATE_LIMITED', 'Too Many Attempts.')
+      expectError(await t.http().get('/api/schools/search?q=demo'), 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.')
     })
 
     it('the default for lookups is 60 per minute', async () => {
@@ -84,7 +84,7 @@ describe('rate limits (D57a)', () => {
       expect((await post('HAD0001')).status).toBe(201)
       expect((await post('HAD0002')).status).toBe(201)
       const res = await post('HAD0003')
-      expect(expectError(res, 'RATE_LIMITED', 'Too Many Attempts.').retryAfter).toBe(60)
+      expect(expectError(res, 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.').retryAfter).toBe(60)
       expect(res.headers['retry-after']).toBe('60')
       const rows = await t.db.query(`select 1 from schools where code = 'HAD0003'`)
       expect(rows).toEqual([])
@@ -94,8 +94,8 @@ describe('rate limits (D57a)', () => {
     it('reads: the 4th read is 429, for every admin read route', async () => {
       t.clock.advance(61_000)
       for (let i = 0; i < 3; i++) expect((await admin.agent.get('/api/admin/schools/options')).status).toBe(200)
-      expectError(await admin.agent.get('/api/admin/schools'), 'RATE_LIMITED', 'Too Many Attempts.')
-      expectError(await admin.agent.get('/api/schools?all=1'), 'RATE_LIMITED', 'Too Many Attempts.')
+      expectError(await admin.agent.get('/api/admin/schools'), 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.')
+      expectError(await admin.agent.get('/api/schools?all=1'), 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.')
     })
 
     it('a refused request (403 CSRF_INVALID, 401) is not counted against the user', async () => {

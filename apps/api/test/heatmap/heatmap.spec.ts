@@ -351,19 +351,19 @@ describe('AC5: own data only and the role gate', () => {
   })
 
   it('no session is 401 UNAUTHORIZED "Unauthenticated."', async () => {
-    expectError(await t.http().get(HEATMAP), 'UNAUTHORIZED', 'Unauthenticated.')
+    expectError(await t.http().get(HEATMAP), 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
   })
 
   it('teacher, parent and school admin are 403 FORBIDDEN "This action is unauthorized."', async () => {
     for (const who of ['guru@demo.test', 'ibubapa@demo.test', 'adminsekolah@demo.test']) {
       const c = await loginAs(t, who)
-      expectError(await c.get(HEATMAP), 'FORBIDDEN', 'This action is unauthorized.')
+      expectError(await c.get(HEATMAP), 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
     }
   })
 
   it('a dual-role account answers by its ACTIVE role (teacher: 403)', async () => {
     const c = await loginAs(t, 'guruadmin@demo.test')
-    expectError(await c.get(HEATMAP), 'FORBIDDEN', 'This action is unauthorized.')
+    expectError(await c.get(HEATMAP), 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
   })
 })
 
