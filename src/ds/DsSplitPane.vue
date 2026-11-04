@@ -5,9 +5,10 @@
  * supported: `panes[0]` is the main pane, `panes[1]` the aside. Content goes in the named slots
  * `pane-{id}`. The last chosen pane is kept in memory per instance (no storage); `v-model:pane`
  * is optional and emits `update:pane`. `ratio`, `gap`, `stickyAside`, `scrollAside` and `align`
- * go to `DsSplit`. Tabs follow the WAI-ARIA tabs pattern: roving tabindex, Left / Right / Home / End.
+ * go to `DsSplit`, which stays the one rendered tree in both modes (a resize across the
+ * breakpoint never remounts the panes). `breakpoint` is read once: it is static per instance. Tabs follow the WAI-ARIA tabs pattern: roving tabindex, Left / Right / Home / End.
  */
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, useId, watch } from 'vue'
 
 import './states.css'
 
@@ -57,8 +58,9 @@ const WIDTH: Record<Breakpoint, string> = {
   xl: '(min-width: 1280px)',
 }
 const wide = useMedia(WIDTH[props.breakpoint])
+const tabbed = computed(() => !wide.value && props.panes.length >= 2)
 
-const uid = `dsp-${Math.random().toString(36).slice(2, 8)}`
+const uid = `dsp-${useId()}`
 const current = computed(() => {
   const id = pane.value ?? props.defaultPane ?? props.panes[0]?.id
   return props.panes.some((p) => p.id === id) ? id : props.panes[0]?.id
@@ -67,6 +69,12 @@ const tabId = (id: string): string => `${uid}-tab-${id}`
 const panelId = (id: string): string => `${uid}-panel-${id}`
 
 const tabs = ref<HTMLElement[]>([])
+watch(
+  () => props.panes.length,
+  (n) => {
+    tabs.value.length = Math.min(tabs.value.length, n)
+  },
+)
 function onKey(e: KeyboardEvent, index: number): void {
   const last = props.panes.length - 1
   const next =
@@ -83,22 +91,9 @@ function onKey(e: KeyboardEvent, index: number): void {
 </script>
 
 <template>
-  <DsSplit
-    v-if="wide && panes.length >= 2"
-    :ratio="ratio"
-    :stack-below="breakpoint"
-    :gap="gap"
-    :sticky-aside="stickyAside"
-    :scroll-aside="scrollAside"
-    :align="align"
-    data-ds="split-pane"
-    data-mode="split"
-  >
-    <slot :name="`pane-${panes[0]!.id}`" />
-    <template #aside><slot :name="`pane-${panes[1]!.id}`" /></template>
-  </DsSplit>
-  <div v-else class="flex min-w-0 flex-col gap-4" data-ds="split-pane" data-mode="tabs">
+  <div class="flex min-w-0 flex-col gap-4" data-ds="split-pane" :data-mode="tabbed ? 'tabs' : 'split'">
     <div
+      v-if="tabbed"
       role="tablist"
       :aria-label="ariaLabel"
       class="flex w-fit max-w-full gap-1 rounded-md bg-elevated p-1"
@@ -127,17 +122,40 @@ function onKey(e: KeyboardEvent, index: number): void {
         {{ p.label }}
       </component>
     </div>
-    <div
-      v-for="p in panes"
-      :id="panelId(p.id)"
-      :key="p.id"
-      role="tabpanel"
-      :aria-labelledby="tabId(p.id)"
-      class="min-w-0"
-      :class="p.id === current ? '' : 'hidden'"
-      :data-pane="p.id"
+    <!-- One tree in both modes: the same two panes, so a resize never remounts them. Stacked, the
+         tab switch hides one pane by class and the grid gap drops so no empty row is left. -->
+    <DsSplit
+      :ratio="ratio"
+      :stack-below="breakpoint"
+      :gap="tabbed ? 'none' : gap"
+      :sticky-aside="stickyAside"
+      :scroll-aside="scrollAside"
+      :align="align"
+      data-ds="split"
     >
-      <slot :name="`pane-${p.id}`" />
-    </div>
+      <div
+        v-if="panes[0]"
+        :id="panelId(panes[0].id)"
+        :role="tabbed ? 'tabpanel' : undefined"
+        :aria-labelledby="tabbed ? tabId(panes[0].id) : undefined"
+        :tabindex="tabbed ? 0 : undefined"
+        :class="tabbed && panes[0].id !== current ? 'hidden' : ''"
+        :data-pane="panes[0].id"
+      >
+        <slot :name="`pane-${panes[0].id}`" />
+      </div>
+      <template v-if="panes[1]" #aside>
+        <div
+          :id="panelId(panes[1].id)"
+          :role="tabbed ? 'tabpanel' : undefined"
+          :aria-labelledby="tabbed ? tabId(panes[1].id) : undefined"
+          :tabindex="tabbed ? 0 : undefined"
+          :class="tabbed && panes[1].id !== current ? 'hidden' : ''"
+          :data-pane="panes[1].id"
+        >
+          <slot :name="`pane-${panes[1].id}`" />
+        </div>
+      </template>
+    </DsSplit>
   </div>
 </template>

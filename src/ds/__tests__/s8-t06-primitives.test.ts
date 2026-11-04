@@ -67,11 +67,10 @@ describe('DsSplitPane', () => {
     expect(w.get('[data-ds=split-pane]').attributes('data-mode')).toBe(mode)
     if (mode === 'split') {
       expect(w.find('[role=tablist]').exists()).toBe(false)
-      expect(w.get('[data-mode=split]').classes()).toContain(`${breakpoint}:grid-cols-12`)
+      expect(w.get('[data-ds=split]').classes()).toContain(`${breakpoint}:grid-cols-12`)
       expect(w.find('[data-ds=split-main] input').exists()).toBe(true)
       expect(w.get('aside').text()).toContain('Sumber teks')
     } else {
-      expect(w.find('[data-mode=split]').exists()).toBe(false)
       expect(w.findAll('[role=tab]')).toHaveLength(2)
     }
     w.unmount()
@@ -83,7 +82,7 @@ describe('DsSplitPane', () => {
     await w.vm.$nextTick()
     expect(w.get('[data-ds=split-main]').classes()).toContain('md:col-span-5')
     expect(w.get('aside').classes()).toContain('md:sticky')
-    expect(w.get('[data-mode=split]').classes()).toContain('items-stretch')
+    expect(w.get('[data-ds=split]').classes()).toContain('items-stretch')
     w.unmount()
   })
 
@@ -99,6 +98,7 @@ describe('DsSplitPane', () => {
     expect(tabs[0]!.attributes('tabindex')).toBe('0')
     expect(tabs[1]!.attributes('tabindex')).toBe('-1')
     for (const t of tabs) expect(t.classes()).toContain('min-h-11')
+    for (const p of w.findAll('[role=tabpanel]')) expect(p.attributes('tabindex')).toBe('0')
     const panels = w.findAll('[role=tabpanel]')
     expect(panels).toHaveLength(2)
     tabs.forEach((t, i) => {
@@ -176,6 +176,41 @@ describe('DsSplitPane', () => {
     expect(w.emitted('update:pane')?.at(-1)).toEqual(['sumber'])
     await w.setProps({ pane: 'soalan' })
     expect(w.findAll('[role=tab]')[0]!.attributes('aria-selected')).toBe('true')
+    w.unmount()
+  })
+})
+
+describe('DsSplitPane resize', () => {
+  it('FR-X6-11: typed input survives a 375 to 1280 width change (one tree, no remount)', async () => {
+    const listeners: ((e: unknown) => void)[] = []
+    let width = 375
+    window.matchMedia = ((query: string) => {
+      const min = /min-width:\s*(\d+)px/.exec(query)
+      return {
+        get matches() {
+          return min ? Number(min[1]) <= width : false
+        },
+        media: query,
+        addEventListener: (_: string, fn: (e: unknown) => void) => listeners.push(fn),
+        removeEventListener() {},
+        addListener() {},
+        removeListener() {},
+        dispatchEvent: () => false,
+        onchange: null,
+      }
+    })
+    const w = pane()
+    await w.vm.$nextTick()
+    expect(w.get('[data-ds=split-pane]').attributes('data-mode')).toBe('tabs')
+    const input = w.get<HTMLInputElement>('[data-testid=in]')
+    input.element.value = 'jawapan'
+    width = 1280
+    listeners.forEach((fn) => fn({}))
+    await w.vm.$nextTick()
+    expect(w.get('[data-ds=split-pane]').attributes('data-mode')).toBe('split')
+    expect(w.find('[role=tablist]').exists()).toBe(false)
+    expect(w.get('[data-testid=in]').element).toBe(input.element)
+    expect(w.get<HTMLInputElement>('[data-testid=in]').element.value).toBe('jawapan')
     w.unmount()
   })
 })
@@ -282,7 +317,9 @@ describe('DsDrawer (S8-T06)', () => {
 describe('DsFormField scroll clearance (S8-T06)', () => {
   it('FR-X6-5: states.css gives every form row a scroll margin for a sticky bar', () => {
     const css = readFileSync('src/ds/states.css', 'utf8')
-    expect(css).toMatch(/\[data-ds='form-field'\]\s*\{\s*scroll-margin-bottom: 6rem;/)
+    expect(css).toContain(
+      "[data-ds='form-field'] :is(input, select, textarea, [contenteditable], [tabindex]) {\n  scroll-margin-bottom: 6rem;",
+    )
     const d = mount(DsFormField, { props: { label: 'Nama' }, slots: { default: '<input />' } })
     expect(d.find('[data-ds=form-field]').exists() || d.attributes('data-ds') === 'form-field').toBe(true)
     const n = mount(DsFormField, { props: { label: 'Nama', native: true }, slots: { default: '<input />' } })
