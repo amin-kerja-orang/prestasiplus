@@ -32,7 +32,7 @@ describe('remedial tests: student reads and the teacher preview (M05 #20, #20b)'
 
   describe('GET /api/remedial-tests/mine', () => {
     it('401 for an anonymous caller', async () => {
-      errorIs(await t.http().get('/api/remedial-tests/mine'), 401, 'UNAUTHORIZED', 'Unauthenticated.')
+      errorIs(await t.http().get('/api/remedial-tests/mine'), 401, 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
     })
 
     it('is an empty single-page list before any test exists', async () => {
@@ -89,7 +89,7 @@ describe('remedial tests: student reads and the teacher preview (M05 #20, #20b)'
     })
 
     it('401 for an anonymous caller', async () => {
-      errorIs(await t.http().get(`/api/remedial-tests/${test}`), 401, 'UNAUTHORIZED', 'Unauthenticated.')
+      errorIs(await t.http().get(`/api/remedial-tests/${test}`), 401, 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
     })
 
     it('the owner teacher reads it: questions in position order, options and the key, no-store', async () => {
@@ -121,17 +121,17 @@ describe('remedial tests: student reads and the teacher preview (M05 #20, #20b)'
       expect(res.body.data.id).toBe(test)
     })
 
-    it('404 "Not Found." for the assigned pupil, another pupil, a teacher of the same school and a teacher of another school', async () => {
+    it('404 "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" for the assigned pupil, another pupil, a teacher of the same school and a teacher of another school', async () => {
       for (const who of [s1, s2, await client(t, TEACHER_B), await client(t, TEACHER_C)]) {
-        errorIs(await who.get(`/remedial-tests/${test}`), 404, 'NOT_FOUND', 'Not Found.')
+        errorIs(await who.get(`/remedial-tests/${test}`), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
       }
     })
 
-    it('404 "Not Found." for an unknown or malformed id, also for an admin', async () => {
+    it('404 "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" for an unknown or malformed id, also for an admin', async () => {
       const admin = await client(t, ADMIN)
       for (const id of ['987654321', '0', 'abc', '1.5']) {
-        errorIs(await teacherA.get(`/remedial-tests/${id}`), 404, 'NOT_FOUND', 'Not Found.')
-        errorIs(await admin.get(`/remedial-tests/${id}`), 404, 'NOT_FOUND', 'Not Found.')
+        errorIs(await teacherA.get(`/remedial-tests/${id}`), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+        errorIs(await admin.get(`/remedial-tests/${id}`), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
       }
     })
 

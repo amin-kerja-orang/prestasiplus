@@ -74,18 +74,18 @@ describe('GET/POST /api/guru/classes and qr-data (AC 1, 2, 7)', () => {
         ['post', '/api/kelas-saya/join'],
       ] as const) {
         const res = await t.http()[method](path)
-        errorIs(res, 401, 'UNAUTHORIZED', 'Unauthenticated.')
+        errorIs(res, 401, 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
       }
     })
 
     it('a student, a school admin and the central admin are 403 on the teacher routes', async () => {
       for (const who of [STUDENT_1, SCHOOL_ADMIN, ADMIN]) {
         const api = await client(t, who)
-        errorIs(await api.get('/guru/classes'), 403, 'FORBIDDEN', 'This action is unauthorized.')
-        errorIs(await api.post('/guru/classes', { name: 'X' }), 403, 'FORBIDDEN', 'This action is unauthorized.')
-        errorIs(await api.get('/guru/dashboard'), 403, 'FORBIDDEN', 'This action is unauthorized.')
-        errorIs(await api.get('/guru/students'), 403, 'FORBIDDEN', 'This action is unauthorized.')
-        errorIs(await api.get('/guru/classes/1/qr-data'), 403, 'FORBIDDEN', 'This action is unauthorized.')
+        errorIs(await api.get('/guru/classes'), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
+        errorIs(await api.post('/guru/classes', { name: 'X' }), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
+        errorIs(await api.get('/guru/dashboard'), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
+        errorIs(await api.get('/guru/students'), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
+        errorIs(await api.get('/guru/classes/1/qr-data'), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
       }
     })
 
@@ -308,7 +308,7 @@ describe('GET/POST /api/guru/classes and qr-data (AC 1, 2, 7)', () => {
         [a, 'abc'],
         [a, '0'],
       ] as const) {
-        errorIs(await who.get(`/guru/classes/${id}/qr-data`), 404, 'NOT_FOUND', 'Not Found.')
+        errorIs(await who.get(`/guru/classes/${id}/qr-data`), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
       }
     })
   })

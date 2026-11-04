@@ -173,8 +173,8 @@ describe('AC3 Latih Tubi setup (M06-04)', () => {
 
   it('BA stays reachable; an unknown code and a subject that is not configured are 404 "Not Found."', async () => {
     expect(parseData(await student.get('/api/spm/latih-tubi/BA'), SpmLatihTubiConfigSchema).total).toBe(2)
-    expectError(await student.get('/api/spm/latih-tubi/NOPE'), 'NOT_FOUND', 'Not Found.')
-    expectError(await student.get('/api/spm/latih-tubi/SK'), 'NOT_FOUND', 'Not Found.')
+    expectError(await student.get('/api/spm/latih-tubi/NOPE'), 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+    expectError(await student.get('/api/spm/latih-tubi/SK'), 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
   })
 })
 
@@ -249,8 +249,8 @@ describe('AC4 / AC5 Tracking A (M06-05, M06-06)', () => {
       const id = await idOf(t.db, 'subjects', code)
       expect(parseData(await student.get(`/api/spm/tracking-a/${code}`), SpmTrackingASubjectResultSchema)).toEqual({ redirect: `/latihan-berstruktur?subject_id=${id}&scope=spm&track=bahasa` })
     }
-    expectError(await student.get('/api/spm/tracking-a/XYZ'), 'NOT_FOUND', 'Not Found.')
-    expectError(await student.get('/api/spm/tracking-a/SK'), 'NOT_FOUND', 'Not Found.')
+    expectError(await student.get('/api/spm/tracking-a/XYZ'), 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+    expectError(await student.get('/api/spm/tracking-a/SK'), 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
   })
 
   it('a question that stops being eligible leaves the set count with no write to the set tables', async () => {

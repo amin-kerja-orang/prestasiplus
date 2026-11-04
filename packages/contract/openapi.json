@@ -92,7 +92,13 @@
           "CONFLICT",
           "SERVER_ERROR",
           "RATE_LIMITED",
-          "PASSWORD_CHANGE_REQUIRED"
+          "PASSWORD_CHANGE_REQUIRED",
+          "BAD_REQUEST",
+          "PAYLOAD_TOO_LARGE",
+          "UNSUPPORTED_MEDIA_TYPE",
+          "BAD_GATEWAY",
+          "SERVICE_UNAVAILABLE",
+          "TIMEOUT"
         ]
       },
       "ErrorPayload": {
