@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
+import { ModuleRef } from '@nestjs/core'
 import {
   ACCOUNT_PROFILE_ACTIVITY_ROLE,
   ACCOUNT_PROFILE_CALENDAR_DAYS,
@@ -40,7 +41,7 @@ export class ProfileActivityService {
     @Inject(AccountDataRepository) private readonly data: AccountDataRepository,
     @Inject(WalletService) private readonly wallet: WalletService,
     @Inject(StreakService) private readonly streaks: StreakService,
-    @Inject(GamificationService) private readonly gamification: GamificationService,
+    @Inject(ModuleRef) private readonly modules: ModuleRef,
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
@@ -56,7 +57,7 @@ export class ProfileActivityService {
       this.data.profileFacts(userId, window),
       this.wallet.summary(userId),
       this.streaks.get(userId),
-      this.gamification.achievements(userId, ''),
+      this.badges(userId),
       this.practice.history(userId, { modes: PRACTICE_MODES, includeTest: false, take: ACCOUNT_PROFILE_RECENT_MAX }),
     ])
 
@@ -79,7 +80,7 @@ export class ProfileActivityService {
         streakToday: streak.lastActivityDate === today ? streak.current : 0,
       },
       calendar30d,
-      badges: achievements.items.map((a) => ({ code: a.id, name: a.name, unlocked: a.unlocked, earnedAt: a.unlockedAt })),
+      badges: achievements,
       recentSessions: recent.map((s) => ({
         id: s.id,
         mode: s.mode,
@@ -92,5 +93,21 @@ export class ProfileActivityService {
       })),
       publicProfilePath: `/pelajar/${userId}`,
     }
+  }
+
+  /**
+   * Every configured badge, from M14 `GamificationService.achievements`. Resolved at call time (not imported as a module): importing
+   * `GamificationModule` here would register `QuestionsModule` routes before `QuestionWorkflowModule` (ORDER NOTE in `modules/index.ts`).
+   * Without the service (a boot without M14) the list is empty.
+   */
+  private async badges(userId: string): Promise<AccountProfileActivity['badges']> {
+    let service: GamificationService
+    try {
+      service = this.modules.get(GamificationService, { strict: false })
+    } catch {
+      return []
+    }
+    const result = await service.achievements(userId, '')
+    return result.items.map((a) => ({ code: a.id, name: a.name, unlocked: a.unlocked, earnedAt: a.unlockedAt }))
   }
 }

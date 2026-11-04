@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { runSeeds } from '../../prisma/seed'
 import { identitySeed } from '../../prisma/seed/core/identity'
 import { walletSeed } from '../../prisma/seed/wallet'
+import { GamificationModule } from '../../src/modules/gamification'
 import { createTestDatabase } from '../support/db'
 import { type AccountTestApp, bootAccountApp, errorOf, get, login, userRow, type Who } from './account-helpers'
 
@@ -37,7 +38,7 @@ describe('GET /api/me/profile-activity (API-MUR-02)', () => {
   beforeAll(async () => {
     const db = await createTestDatabase()
     await runSeeds([identitySeed, walletSeed], { prisma: db.prisma })
-    t = await bootAccountApp({ db })
+    t = await bootAccountApp({ db, modules: [GamificationModule] })
     studentId = (await userRow(t.db, STUDENT))?.id as string
     otherId = (await userRow(t.db, OTHER_STUDENT))?.id as string
 

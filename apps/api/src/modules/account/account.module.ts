@@ -5,7 +5,6 @@ import { ThrottleModule } from '../../common/throttle'
 import { AccountRepository as AuthAccountRepository } from '../auth/account.repository'
 import { AuthModule, AuthPortsModule } from '../auth'
 import { FilesModule } from '../files'
-import { GamificationModule } from '../gamification'
 import { NotificationsModule } from '../notifications'
 import { PracticeModule } from '../practice'
 import { SchoolsModule } from '../schools'
@@ -34,13 +33,15 @@ import { SettingsService, StatsService } from './settings.service'
  * - `NOTIFICATION_PORT`: bound to part B's `NotificationsService.push` (D59a); sent after commit.
  *
  * API-MUR-02 (`GET /me/profile-activity`) reads wallet/streak (M14 `WalletModule`), the badge catalogue (M14
- * `GamificationModule`) and sessions (M05 `PracticeModule`) through their exported services, read-only.
+ * `GamificationModule`, resolved lazily) and sessions (M05 `PracticeModule`) through their exported services, read-only.
+ * `GamificationModule` is NOT imported here: it pulls `QuestionsModule` in through `GamesCoreModule`, and this module is listed early in
+ * `modules/index.ts`, so `GET /guru/questions/:id` would register before `/guru/questions/template` (see the ORDER NOTE there).
  *
  * The auth `AccountRepository` is stateless and not exported by `AuthModule`,
  * so it is provided here again.
  */
 @Module({
-  imports: [AuditModule, ThrottleModule, AccountPortsModule, AuthModule, AuthPortsModule, UsersModule, SchoolsModule, FilesModule, NotificationsModule, WalletModule, PracticeModule, GamificationModule],
+  imports: [AuditModule, ThrottleModule, AccountPortsModule, AuthModule, AuthPortsModule, UsersModule, SchoolsModule, FilesModule, NotificationsModule, WalletModule, PracticeModule],
   controllers: [AccountPublicController, MeController, PublicStatsController],
   providers: [
     AccountDataRepository,
