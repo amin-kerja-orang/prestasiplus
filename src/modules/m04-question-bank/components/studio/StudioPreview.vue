@@ -2,11 +2,11 @@
 /**
  * Pratonton (design S1.4): the question as the pupil sees it. A question in a group shows the shared stimulus ONCE with every
  * member under it (D90), through the shared display library (`StimulusGroup`: pinned pane from 1024px, chip and sheet below).
- * Every stimulus of the group (up to three) goes into the one panel. Display only.
+ * A group's further stimuli (up to three) are listed above the questions. Display only.
  */
 import { computed } from 'vue'
 
-import { DsDialog, DsStack, DsText, StimulusGroup } from '@/ds'
+import { DsDialog, DsStack, DsText, StimulusFigure, StimulusGroup } from '@/ds'
 
 import type { StudioDraft } from '../../lib/studio/draft'
 import type { GroupView } from '../../lib/studio/group-members'
@@ -25,8 +25,9 @@ const stimuli = computed(() => (props.group?.stimuli ?? []).map(toStimulusData))
     <DsText v-if="(unsupported ?? []).length > 0" variant="body" tone="muted" data-testid="studio-preview-partial">
       Pratonton ini tidak lengkap: ada bahagian yang belum disokong Studio dan tidak dipaparkan.
     </DsText>
-    <StimulusGroup v-if="stimuli[0]" v-model:open="sheet" :stimuli="stimuli">
+    <StimulusGroup v-if="stimuli[0]" v-model:open="sheet" :stimulus="stimuli[0]">
       <DsStack gap="md">
+        <StimulusFigure v-for="s in stimuli.slice(1)" :key="s.id" :stimulus="s" />
         <DsStack v-for="it in items" :key="it.id" gap="xs" :data-testid="`studio-preview-q-${it.id}`">
           <DsText variant="body-strong">{{ it.label ? `${it.label}. ` : '' }}{{ it.stem || 'Teks soalan belum diisi.' }}</DsText>
           <DsStack v-for="l in it.leaves" :key="l.label" gap="2xs">
