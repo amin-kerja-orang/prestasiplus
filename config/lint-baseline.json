@@ -1,9 +1,6 @@
 {
   "note": "Lint ratchet baseline (S0-T04): error counts per file + rule. It only shrinks: each sector removes its own entries when it fixes them (npm run lint -- --update-baseline). Never add entries; new errors must be fixed, not baselined.",
   "eslint": {
-    "deploy/vps/loadtest/pupil-load.k6.js": {
-      "@typescript-eslint/no-unused-vars": 1
-    },
     "src/ds/DsCallout.vue": {
       "pp/ds-class-allowlist": 2
     },
@@ -29,9 +26,5 @@
       "pp/ds-class-allowlist": 1
     }
   },
-  "stylelint": {
-    "src/ds/states.css": {
-      "property-disallowed-list": 1
-    }
-  }
+  "stylelint": {}
 }

@@ -23,6 +23,7 @@ export interface LevelValues {
   curriculum: string
   sort_order: number
   grade: number | null
+  is_active: boolean
   created_at: string
   updated_at: string
 }
@@ -61,6 +62,8 @@ export function transformLevel(row: Staged, existing?: ExistingLevel): Outcome<L
   if (curriculum === null) return reject('INVALID_VALUE', 'curriculum')
   const sort = integer(row.sort_order)
   if (sort === 'invalid') return reject('INVALID_VALUE', 'sort_order')
+  const active = flag(row.is_active, true)
+  if (active === 'invalid') return reject('INVALID_VALUE', 'is_active')
   const { code, grade } = levelIdentity(name, row.id ?? '')
   return ok({
     code,
@@ -70,6 +73,8 @@ export function transformLevel(row: Staged, existing?: ExistingLevel): Outcome<L
     curriculum,
     sort_order: sort ?? 0,
     grade: grade ?? existing?.grade ?? null,
+    // DM-13 (ck_education_levels_no_active_primary): a primary (Darjah) level is always loaded inactive.
+    is_active: stage === 'primary' ? false : active,
     ...stamps(row),
   })
 }
