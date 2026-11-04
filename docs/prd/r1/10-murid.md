@@ -1248,7 +1248,7 @@ Same template as section 3 (Action, Screen specification (from V2), change list)
 - **Field & behaviour spec**
   | Label | Type | Req | Default | Options / source | Validation + exact BM error | Depends on | Stored as | API |
   |---|---|---|---|---|---|---|---|---|
-  | Subjek | select | Tidak | "Semua Subjek" | subjects that have a published structured set, name asc | - | - | query `subjek` | API-PRAC-10 |
+  | Subjek | select | Tidak | "Semua Subjek" | subjects that have a published structured set, name asc | - | - | query `subjectId` | API-PRAC-10 |
   | Aras KBAT | select | Tidak | "Semua" | OPT-ARAS-KBAT: LOTS 1, LOTS 2, MOTS 3, HOTS 4, HOTS 5, HOTS 6 (integer 1-6; badge KBAT for 4-6); never the Bloom leaf level (K14) | - | - | query `aras` | same |
   | Cari | text + button | Tidak | empty | stem or stimulus text, max 100 characters | none found: `Tiada soalan berstruktur ditemui` / `Tiada soalan sepadan dengan tapisan anda. Cuba tapisan lain.` | - | query `q` | same |
   | Cards | list | - | - | 12 per page, newest published first, pager "Sebelum" / "Seterusnya" | - | - | - | same |
@@ -1788,8 +1788,9 @@ Every number shown (card, hub tile, "Subjek Tersedia", index "soalan chapter", "
 
 | Source | Syiling | XP |
 |---|---|---|
-| Latih Tubi, Soalan by Chapter, Databank, Tracking A, Remedial / Ulang Kaji, Misi Harian (per-answer part, see below), Set Soalan Guru (`question_set`), PKSK, Subjektif and Soalan Berstruktur objective parts | rate x correct units | 10 per correct unit |
+| Latih Tubi, Soalan by Chapter, Databank, Tracking A, Remedial / Ulang Kaji, Misi Harian (per-answer part, see below), Set Soalan Guru (`question_set`), PKSK | rate x correct units | 10 per correct unit |
 | Bijak / Simulasi / Kertas Subjektif (rules below) | rate x marks | 10 per mark |
+| Soalan Berstruktur (B6) | rate x awarded marks, paid once per set: only the gain over the highest total already paid for the same set (the highest `coins_awarded` of the pupil's earlier submitted attempts of that set; no new column) | 10 per mark gained |
 | Games | only when "Mini-games beri syiling?" = Ya (V2 value "Tidak (XP sahaja)"); then rate x correct | 10 per correct unit |
 
 - **Misi Harian (N-2):** per-answer Syiling = the admin rate (default 1), like every other mode. The mission's teacher-set `rewardCoins` (API-GUR-11) is paid once, when the pupil reaches the mission target (idempotent per pupil and mission). Example: rate 1, mission `rewardCoins` 10, target 5: 5 correct answers give 5 + 10 = 15 Syiling (AC-GUR-2b-5). **Fix:** the code constant `MISSION_COINS_PER_CORRECT = 3` is removed (`apps/api/src/modules/practice/rules.ts:50` and its use at line 61, `start.planner.ts:317`, `ports.ts:133`; mock copies in `src/modules/m05-practice/mock/datasets/pins.ts:91,99`, `mock/repository/start.ts:286`, `mock/repository/practice.ts:456`); the mission path uses the same rate lookup as the other modes.
@@ -2044,7 +2045,7 @@ Each item is a need cited by an FR/AC of this file. Existing DM/API IDs are name
 | 5 | BM message constants in the account contract (required, max, min, e-mail format, taken, current password wrong, reset token, reset sent, reset done, invalid school, invalid level) replacing Laravel English | FR-MUR-A2-7, FR-MUR-AUTH-1, AC-MUR-A2-8 | 60 section 1.4 (extended) |
 | 6 | Helpers `gradeToLevelCode` and `levelCodeToGrade` (Tingkatan n -> `T{n}` -> `grade = n + 6`); register and admin edit reject a student `grade` below 7 or above 11 with `fields.grade` "Tahap tidak sah." | FR-MUR-AUTH-1, AC-MUR-AUTH-4 | API-AUTH-06 |
 | 7 | `GET /api/leaderboard` is canonical; `period` absent or unknown = `all`; `GET /api/gamification/leaderboard` and the route `/gamification/leaderboard` removed (redirect for the route) | FR-MUR-33-5, FR-MUR-33-6, AC-MUR-33-5 | API-GAME-06, API-RPT-13 |
-| 8 | Leaf kinds `true_false` and `mcq_multi`; answer key `choices: string[]` beside `choice`; scheme kind `options` {correct: string[]}; reveal returns `correctOptions[]`; MCQ minimum 2 options | 4.6 item 3, AC-MUR-13-12 | DM-69, API-BIJAK-04, API-BIJAK-06, API-PRAC-02 |
+| 8 | Leaf kinds `true_false` and `mcq_multi`; answer key kind `options` = `{correctOptionIds: Id[]}` only (no `choices` or `choice` for it; the other key kinds keep their 45 section 7.0 fields); scheme kind `options` {correctOptionIds: Id[]}; reveal returns `correctOptionIds[]`; MCQ minimum 2 options | 4.6 item 3, AC-MUR-13-12 | DM-69, API-BIJAK-04, API-BIJAK-06, API-PRAC-02 |
 | 9 | Serving of `drawing`, `table_fill` and `essay_choice` (serving filter lifted; capture widget and grid widget on the pupil side); `table_fill` stored as one leaf part per blank cell | 4.6 item 3, FR-MUR-13-12 | DM-69, DM-55, API-BIJAK-04, DM-44 (registry) |
 | 10 | `selfMarkable` also for `accepted` parts left `belum_dimarkah` (K20) | FR-MUR-13-13, FR-MUR-13-29 | API-BIJAK-05 |
 | 11 | `practice_answers.mode` registry: the 19 values of 50 section 4.7a; Soalan Berstruktur = `structured`, Battle = `battle`, other games = `game`; unique index includes `user_id` (replaces `spm_mock`, `spm_ramalan`) | FR-MUR-13-21, FR-MUR-17-3, FR-MUR-17-6, FR-MUR-21-8, AC-MUR-17-5 | DM-44 (50 section 4.7a) |

@@ -688,7 +688,7 @@ stateDiagram-v2
 - Admin (P2-14): create (existing), `PUT` edit before registration opens, `Buka Pendaftaran`, `Batal`, results; the form offers only the two formats.
 
 **Data.** Existing `leagues`, `league_schools`, `league_standings`, `tournaments`. NEW DM-61 `tournament_rounds` (tournament_id, n, opens_at, closes_at, question_ids), `tournament_entries` (tournament_id, user_id, school_id, registered_at; unique (tournament_id, user_id)), `tournament_round_scores` (round_id, user_id, score, correct, answered, total_ms, started_at, finished_at; unique (round_id, user_id)); DM-62 `league_standings.recomputed_at` and `leagues.frozen_at`.
-**API.** API-GAME-05 (existing; `POST /api/leagues/join` is not used by any R1 screen and answers 403 for every role). NEW API-GAME-12 tournament register, round start, round answer, standings; API-GAME-13 `GET /api/leagues/:id/standings?level=`, `GET /api/leagues/:id/me`; NEW API-ADM-25 tournament `PUT`, `open`, `cancel`, league `POST /api/leagues/:id/schools`.
+**API.** API-GAME-05 (existing; `POST /api/leagues/join` is not used by any R1 screen and answers 403 for every role). NEW API-GAME-12 tournament register, round start, round answer, standings; API-GAME-13 `GET /api/leagues/:id/standings?level=`, `GET /api/leagues/:id/me`; NEW API-ADM-25 tournament `PUT`, `open`, `cancel`, league `POST /api/leagues/:id/schools`; API-ADM-25 has two create routes, each with its own body: `POST /api/tournaments` (tournament fields only) and `POST /api/leagues` (the league route; the league fields type, scope, mode, scoring, optional subject, `levelIds`, maximum schools, start and end date exist only on this body); `levelIds` are numeric ids.
 **Reuse.** `battle/leagues/leagues.service.ts`, `leagues.repository.ts` (the standings "stored, never recomputed" [CODE `leagues.repository.ts:204`] gets the hourly job), `tournaments.service.ts` (create and list exist). **Do not build:** `knockout` or `hybrid` brackets, live synchronous tournament matches, prizes or money, pupil-created leagues.
 
 - FR-GM-15.1 A school is enrolled in a league once, only by Admin Pusat on the P2-14 screen; no other role or pupil can join.
@@ -821,7 +821,7 @@ stateDiagram-v2
 
 ### GAME-20 Misi Harian (teacher-set)
 
-**Purpose.** Teacher-set daily missions for a class. **Rows** teacher R1-GUR-2b, pupil missions in Latih Tubi (R1-MUR-16 mode `mission`). **PRD** FR-GUR-2b-1..4, AC-GUR-2b-1..5, 4.4. **Cards** S6-T07 (teacher screen, cap), S5-T03 (pupil path, rate lookup), S6-T16 (question draw).
+**Purpose.** Teacher-set daily missions for a class. **Rows** teacher R1-GUR-2b, pupil missions in Latih Tubi (R1-MUR-16 mode `mission`). **PRD** FR-GUR-2b-1..4, AC-GUR-2b-1..5, 4.4. **Cards** S6-T07 (teacher screen, cap, and the pupil path: the mission session writer and the AC-GM-20.2 and AC-GM-20.5 proofs), S5-T03 (removes the `MISSION_COINS_PER_CORRECT` constant only, FR-GM-20.3), S6-T16 (question draw).
 **Rules.**
 - A mission is valid on its `date` only (MYT 00:00-23:59:59); assigned to one class or all of the teacher's classes; a pupil sees missions of own classes plus "Global" (platform) missions. Expired missions are not listed and their progress is frozen.
 - Progress = the number of correct answers by the pupil on that date in mission-mode sessions, up to `targetQuestions` (1-1000 [CODE]).
@@ -1051,7 +1051,7 @@ Cards are from `docs/plan/r1-development-plan.md` section 4.S7 unless another se
 | GAME-17 Economy | FR-GM-17.1..3 | AC-GM-17.1..6 | S7-T04 | S5-T03 (rate lookup) |
 | GAME-18 Tukar Token | FR-GM-18.1..2 | AC-GM-18.1..4 | S7-T04 | |
 | GAME-19 Cabaran Harian | FR-GM-19.1..4 | AC-GM-19.1..6 | S7-T04 | |
-| GAME-20 Misi Harian | FR-GM-20.1..3 | AC-GM-20.1..5 | S6-T07 (teacher validation and cap); S5-T03 (pupil path, rate) | |
+| GAME-20 Misi Harian | FR-GM-20.1..3 | AC-GM-20.1..5 | S6-T07 (teacher validation and cap; pupil path and rate: AC-GM-20.2, AC-GM-20.5); S5-T03 (constant removal, FR-GM-20.3) | |
 | GAME-21 Kedai Hadiah | FR-GM-21.1..4 | AC-GM-21.1..9 | S7-T05 | |
 | GAME-22 Cabutan Bertuah | FR-GM-22.1..4 | AC-GM-22.1..8 | S7-T07 | |
 | GAME-23 Kotak Misteri | FR-GM-23.1..4 | AC-GM-23.1..7 | S7-T07 | |

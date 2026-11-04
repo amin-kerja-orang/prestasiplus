@@ -68,7 +68,7 @@ Every module in sections 3 and 4 has a subsection **"Field & behaviour spec"** p
 | Network failure, timeout | banner / toast, form kept, button enabled again | ERR-NET-01, ERR-NET-02 |
 | Background poll (Command Center and AS-1 live data, every 10 s) | a failed poll keeps the old values and shows nothing; a 401 follows ERR-AUTH-01 | ERR-NET-01 (silent) |
 
-- **404 or 403.** An object of another teacher answers 404 everywhere (FR-X2-2). The documented exceptions answer 403 because the resource is a report on a known pupil or class: AC-GUR-4-2 (pupil), AC-GUR-6-1 / FR-GUR-6-1 (class page of Analisa Item) and AC-GUR-43-6 (class of Laporan Mingguan). An object of another school, requested by a school admin, answers 404.
+- **404 or 403.** An object of another teacher answers 404 everywhere (FR-X2-2). The documented exceptions answer 403 because the resource is a report on a known class: AC-GUR-6-1 / FR-GUR-6-1 (class page of Analisa Item) and AC-GUR-43-6 (class of Laporan Mingguan). An object of another school, requested by a school admin, answers 404.
 - **Double-submit guard.** While a request runs, the button is disabled and shows its busy text ("Menyimpan...", "Menjana...", "Mengimport...", "Memuat naik...", else "Sedang diproses..."); Enter and a second click are ignored (`40-cross-cutting.md` §X10).
 
 ### GLB-3 Loading, empty, partial
@@ -691,7 +691,7 @@ Routes `/headcount` and sub-routes. API: API-RPT-09 (list, dashboard, form-optio
 | Tetapan: Bilangan OTR | select | Yes | current value | 2 to 5; lowering below a checkpoint that has marks opens CF-05 | none | none | `headcount_configs.active_otrs` | API-RPT-10 |
 
 - **Calculations (HC-SPEC).** OTR_k = round(TOV + (ETR − TOV) × r_k) with r_k = floor(100·k/n)/100 and OTR_n = ETR; grade by OPT-GRED; Auto AR = round(correct ÷ answered × 100) over `practice_answers` of all modes for the subject and year; status per checkpoint On Track when AR is at least OTR_k, else Below; the pupil status is that of the latest checkpoint with an AR; the config On Track % = round(on ÷ (on + below) × 100); Ringkasan bands Above (AR − OTR above 2), On Track (0 to 2), Below (below 0), Belum Diisi; Unjuran end = ETR if AR is at least TOV, else AR; trend Meningkat (above AR + 2), Menurun (below AR − 2), Stabil; Keyakinan Tinggi (AR at least ETR), Sederhana (AR at least TOV), Rendah. Rounding: half away from zero. Refresh: on page load only, no polling.
-- **Pupil entry status.** `Active` when the pupil has TOV and ETR (own or default), else `Draft`; `dropped` through "Gugurkan" (CF-10), reversed by "Kembalikan".
+- **Pupil entry status.** `Active` when the pupil has an ETR for that config (own or default; TOV alone does not make it Active), else `Draft`; `dropped` through "Gugurkan" (CF-10), reversed by "Kembalikan".
 - **Export CSV** `headcount-{subjek}-{kelas}-{yyyymmdd}.csv`: columns "Bil", "Nama", "TOV", "OTR1", "AR1", up to "OTR{n}", "AR{n}", "ETR", and a last row "Purata Kelas" (mean of the non-empty values, 1 decimal); row order = the current sort. Failure and empty: ERR-EXP-01, ERR-EXP-02.
 - **Destructive actions.** "Padam" opens CF-03; "Reset Data" opens CF-04; lowering the OTR count opens CF-05; "Gugurkan" opens CF-10.
 - **Empty and loading.** No headcount: "Belum ada headcount." with the button "Buat Sekarang"; a class without pupils: "Belum ada murid dalam kelas ini."; Auto mode with no AR: AR cells show "—". Panel failure: ERR-SYS-01b.
@@ -735,7 +735,7 @@ Routes `/headcount` and sub-routes. API: API-RPT-09 (list, dashboard, form-optio
   - **FR-GUR-3-5** The pupil page and list read these configs exactly as described under "What the pupil sees".
   - **FR-GUR-3-6** "On Track"/"Off Track" on Dashboard Headcount equal the class dashboard "On Track"/"Below" of Prestasi for the same configs, and the count "{n} entri headcount" equals what the school GPS card of Prestasi (AS-4) states.
   - **FR-GUR-3-8** HC-SPEC above is the only definition: the teacher pages, the pupil pages (R1-MUR-3), the school-admin pages (R1-AS-3), Prestasi, Dashboard and Command Center call the same rules; Auto AR reads `practice_answers` of all modes (HC-3).
-  - **FR-GUR-3-9** "💾 Simpan Sasaran" on the per-subject card saves the typed TOV and RS (= ETR) as the default of every config of that subject and year of the teacher's classes; a pupil entry with its own TOV/ETR keeps it, an entry without reads the default. A pupil's entry counts as "Active" when it has TOV and ETR (own or default), else "Draft". (Storage and endpoint: `50-data-model-erd.md` / `60-api-contract.md`, finding F-11.)
+  - **FR-GUR-3-9** "💾 Simpan Sasaran" on the per-subject card saves the typed TOV and RS (= ETR) as the default of every config of that subject and year of the teacher's classes; a pupil entry with its own TOV/ETR keeps it, an entry without reads the default. A pupil's entry counts as "Active" when it has an ETR for that config (own or default; TOV alone does not change the status), else "Draft". (Storage and endpoint: `50-data-model-erd.md` / `60-api-contract.md`, finding F-11.)
   - **FR-GUR-3-7** Responsive: hero buttons wrap and are >= 44 px (V1 used 10 px text); the config list is RP-TABLE-LIST cards at 375; the pupil table (TOV, OTRs, ARs, ETR) is RP-TABLE-WIDE with sticky "Nama" column; Key-in AR rows are one input per row with >= 44 px height; chart RP-CHART; modals RP-MODAL.
 - **Data** Owner M08 (`apps/api/src/modules/reports/performance/headcount/*`); M05 for Auto AR. Endpoints exist for list, dashboard, form-options, create, auto-setup, summary, export, detail, drop-students, reset, delete; **new**: key-in AR, edit TOV/ETR, settings.
 - **Acceptance criteria**
@@ -765,7 +765,7 @@ Routes `/headcount` and sub-routes. API: API-RPT-09 (list, dashboard, form-optio
   - **Corrections noted:** V1/V3 open a class picker first; V2 shows the aggregate of all the teacher's classes. V3 keeps the picker and the per-class dashboards (V1 depth) and adds the V2 aggregate sections "Prestasi Mengikut Subjek" and "Pelajar Terbaik" at the top of `/prestasi/kelas` above the class cards.
 #### Field & behaviour spec — R1-GUR-4 Prestasi
 
-Route `/prestasi/kelas`. API: API-RPT-02 (class performance), API-RPT-01 (pupil detail). Errors: ERR-ACC-01 for another teacher's pupil (AC-GUR-4-2), ERR-SYS-01b per panel.
+Route `/prestasi/kelas`. API: API-RPT-02 (class performance), API-RPT-01 (pupil detail). Errors: ERR-ACC-02 (404) for another teacher's pupil (AC-GUR-4-2), ERR-SYS-01b per panel.
 
 | Label | Type | Req. | Default | Options / data source | Validation + exact BM error | Depends on | Stored as | API-ID |
 |---|---|---|---|---|---|---|---|---|
@@ -787,14 +787,14 @@ Route `/prestasi/kelas`. API: API-RPT-02 (class performance), API-RPT-01 (pupil 
 - **Functional requirements**
   - **FR-GUR-4-1** The picker lists only the teacher's classes.
   - **FR-GUR-4-2** Class figures use XS-1, XS-2, XS-4, XS-5 for that class; "Headcount" column = the pupil's status of the latest checkpoint (GUR-3 rule) or "N/A".
-  - **FR-GUR-4-3** Pupil links open Prestasi 360 only for pupils of the teacher's classes (others 403 "Akses Ditolak").
+  - **FR-GUR-4-3** Pupil links open Prestasi 360 only for pupils of the teacher's classes (any other pupil answers 404, the default of 60 section 1.7, ERR-ACC-02).
   - **FR-GUR-4-4** No percentage exceeds 100 (V1 D-8).
   - **FR-GUR-4-6** Every figure counts answers of **all modes** from the single answer store `practice_answers` (XS-8); a Bijak sitting also appears as one unit in the pupil's session list.
   - **FR-GUR-4-5** Responsive: class cards 1/2/3 columns; the six stat cards 2 columns at 375; "Kedudukan Murid" is RP-TABLE-WIDE paginated 25 per page with sticky name; trend chart RP-CHART; "Tukar Kelas" select full width and >= 44 px; Prestasi 360 headcount chips wrap (V1 overflowed at 375, D-9).
 - **Data** M08 `/api/performance/classes*`, `/api/performance/students/:userId`.
 - **Acceptance criteria**
   - **AC-GUR-4-1** Given a class of 7 pupils, when its dashboard opens, then "Jumlah Murid" = 7 and equals the member count of that class on Kelas Saya.
-  - **AC-GUR-4-2** Given a pupil of another teacher's class, when `/prestasi/{thatId}` is opened by the teacher, then 403.
+  - **AC-GUR-4-2** Given a pupil of another teacher's class, when `/prestasi/{thatId}` is opened by the teacher, then 404 (ERR-ACC-02) and no figure shows.
   - **AC-GUR-4-3** Given a pupil with 3 correct of 3, when "Kedudukan Murid" renders, then Ketepatan shows 100% and no value exceeds 100%.
   - **AC-GUR-4-4 (R)** Given a class with 40 pupils, when its dashboard opens at 375, 768 and 1280 px, then scrollWidth <= innerWidth, stat cards are 2 columns at 375, the ranking table scrolls inside its card with 25 rows per page, and "Tukar Kelas" and the pagination controls are visible and >= 44 px.
   - **AC-GUR-4-6** Given a pupil with 10 Latih Tubi answers (7 correct) and one Bijak sitting of 40 MCQ answers (30 correct), when the class dashboard opens, then the pupil's "Soalan" = 50 and Ketepatan = 74% (37 ÷ 50), the same as on the pupil's own Prestasi and on Admin Sekolah Prestasi.
@@ -1544,7 +1544,7 @@ Routes `/guru/soalan-guru`, `/guru/soalan-guru/cipta`. API: API-GUR-24 (`GET/POS
 - A question used by an active Misi cannot be deleted: 409 with "Soalan sedang digunakan dalam misi."
 
 **Requirements added by this spec**
-- **FR-GUR-44a-8** The private question form enforces the fields, limits and the 2048-character reference link rule of the table; a question used by an active Misi cannot be deleted.
+- **FR-GUR-44a-8** The private question form enforces the fields, limits and the 2048-character reference link rule of the table; a question used by an active Misi cannot be deleted. "Used by an active Misi" means the question has been drawn into an assignment of a mission whose status is active; pool membership alone does not block the delete.
 - **FR-GUR-44a-9** On the pupil's question screen (the shared question card of the drill engine, 46 section 2.1) a question with `reference_url` shows a link "Rujukan" opening in a new tab; every count of questions with `visibility = bank` (hub cards, XS-4, Pelajar counts) excludes `teacher_private` questions.
 - **FR-GUR-44a-10** (R1 decision D113, D-10) The mission draw (`classes/missions`, API-GUR-25, 48 GAME-20) works as follows. The pool of a pupil's mission session is the bank questions the mission builder already serves for the mission's Subjek (the required "Subjek" select of the form in R1-GUR-2b) and the Tingkatan of the pupil's class, plus the personal questions (`visibility = teacher_private`, not deleted) of the teacher who set the mission whose Subjek equals the mission's Subjek and whose Tahap equals the Tingkatan of the pupil's class. A "Global" (platform) mission and a mission of another teacher never contain a personal question. All questions of the pool have equal weight: each is drawn at random without replacement, with no quota, no reserved slots and no cap, so a personal question's share is personal / (bank + personal); the session size (the mission target) is unchanged. A pool with no bank question is served from the personal questions alone, and a pool shorter than the target serves what exists. Answers are written with mode `mission` like every mission answer and the personal question still never enters a bank count (FR-GUR-44a-9).
 - **AC-GUR-44a-8** Given a reference link "ftp://contoh", when "Simpan Soalan" is pressed, then "Pautan mesti bermula dengan http:// atau https://." shows and nothing is saved.
