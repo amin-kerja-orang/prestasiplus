@@ -28,6 +28,12 @@ const counts = computed(() => {
   }
 })
 const label: Record<NavState, string> = { answered: 'Dijawab', flagged: 'Ditanda', none: 'Belum' }
+/** Status never rests on colour alone (FR-MUR-QP-16): each state also has its own shape. */
+const stateIcon: Record<NavState, string> = {
+  answered: 'i-ph-check-bold',
+  flagged: 'i-ph-flag-fill',
+  none: 'i-ph-minus-bold',
+}
 </script>
 
 <template>
@@ -64,20 +70,34 @@ const label: Record<NavState, string> = { answered: 'Dijawab', flagged: 'Ditanda
                 ? 'solid'
                 : 'soft'
           "
-          class="tabular size-11 justify-center rounded-xl p-0 font-bold"
+          class="tabular relative size-11 justify-center rounded-xl p-0 font-bold"
           :aria-label="`Soalan ${q.number}, ${label[states[q.id] ?? 'none']}`"
           :aria-current="q.id === current ? 'true' : undefined"
           :data-testid="`nav-${q.number}`"
           :data-state="states[q.id] ?? 'none'"
           @click="emit('go', q.id)"
-          >{{ q.number }}</UButton
+        >
+          {{ q.number }}
+          <UIcon
+            :name="stateIcon[states[q.id] ?? 'none']"
+            class="absolute end-1 top-1 size-3"
+            aria-hidden="true"
+            :data-icon="stateIcon[states[q.id] ?? 'none']"
+            :data-testid="`nav-${q.number}-icon`"
+          />
+        </UButton>
         >
       </div>
     </section>
-    <ul class="flex flex-wrap gap-x-4 gap-y-1 text-caption text-muted" aria-hidden="true">
-      <li>Dijawab</li>
-      <li>Ditanda</li>
-      <li>Belum</li>
+    <ul class="flex flex-wrap gap-x-4 gap-y-1 text-caption text-muted" data-testid="nav-legend">
+      <li
+        v-for="st in ['answered', 'flagged', 'none'] as const"
+        :key="st"
+        class="flex items-center gap-1"
+      >
+        <UIcon :name="stateIcon[st]" :data-icon="stateIcon[st]" class="size-3" aria-hidden="true" />
+        {{ label[st] }}
+      </li>
     </ul>
   </nav>
 </template>

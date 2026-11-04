@@ -19,7 +19,15 @@ import {
 } from '@/ds'
 import { useMedia } from '@/ds/useMedia'
 
-import { AttemptShell, NavigatorPanel, StimulusChip, StimulusStack } from '../../../components/question-display'
+import {
+  AttemptShell,
+  clearPosition,
+  NavigatorPanel,
+  readPosition,
+  StimulusChip,
+  StimulusStack,
+  writePosition,
+} from '../../../components/question-display'
 import type { NavState } from '../../../components/question-display'
 import QuestionBlock from '../components/QuestionBlock.vue'
 import {
@@ -75,6 +83,16 @@ let retryTimer: ReturnType<typeof setInterval> | undefined
 /** A submit (or the auto-submit at 0) that could not reach the server yet. */
 const submitPending = ref<{ auto: boolean } | null>(null)
 const RETRY_MS = 30_000
+/** Time ran out while offline (AC-PA-21): inputs lock until the queued auto-submit goes through. */
+const timeUp = computed(() => submitPending.value?.auto === true)
+const confirmBack = ref<{ $el: HTMLElement } | null>(null)
+/** Focus starts on the safe choice of the Hantar dialog (AC-PA-22). */
+const dialogContent = {
+  onOpenAutoFocus: (e: Event): void => {
+    e.preventDefault()
+    confirmBack.value?.$el.focus()
+  },
+}
 
 const isExam = computed(() => view.value?.attempt.mode === 'exam')
 const questions = computed(() => view.value?.questions ?? [])
@@ -229,10 +247,17 @@ async function load(): Promise<void> {
     answers.value = autosave.answers()
     flags.value = [...autosave.flags()]
     picks.value = { ...autosave.picks() }
-    index.value = Math.min(autosave.position(), Math.max(0, v.questions.length - 1))
+    const lastIndex = Math.max(0, v.questions.length - 1)
+    // A reload in the same tab (sessionStorage) wins over the saved server position (FR-X6-10).
+    const savedPos = readPosition(attemptId.value)
+    index.value = Math.min(savedPos?.questionIndex ?? autosave.position(), lastIndex)
     checks.value = Object.fromEntries(v.checks.map((c) => [c.questionId, c]))
     clockOffset.value = server.serverNow() - Date.now()
     view.value = v
+    if (savedPos && savedPos.questionIndex === index.value) {
+      await nextTick()
+      scrollEl()?.scrollTo({ top: savedPos.scrollTop })
+    }
   } catch (e) {
     const code = (e as { code?: string }).code
     if (code === 'not_found' || code === 'forbidden') refused.value = true
@@ -240,14 +265,32 @@ async function load(): Promise<void> {
   }
 }
 
+/** The scrolling question area of the shell: it lives outside every `phone`/`lg` switch. */
+const scrollEl = (): HTMLElement | null =>
+  document.querySelector<HTMLElement>('[data-testid=attempt-scroll]')
+let scrollTimer: ReturnType<typeof setTimeout> | undefined
+function onScroll(): void {
+  clearTimeout(scrollTimer)
+  scrollTimer = setTimeout(() => {
+    if (!view.value) return
+    writePosition(attemptId.value, {
+      questionIndex: index.value,
+      scrollTop: Math.round(scrollEl()?.scrollTop ?? 0),
+    })
+  }, 150)
+}
+
 onMounted(() => {
   void load()
+  void nextTick(() => scrollEl()?.addEventListener('scroll', onScroll, { passive: true }))
   tick = setInterval(() => (now.value = Date.now()), 1000)
   document.addEventListener('visibilitychange', onVisibility)
   window.addEventListener('online', onOnline)
 })
 onBeforeUnmount(() => {
   if (tick) clearInterval(tick)
+  clearTimeout(scrollTimer)
+  scrollEl()?.removeEventListener('scroll', onScroll)
   stopRetry()
   document.removeEventListener('visibilitychange', onVisibility)
   window.removeEventListener('online', onOnline)
@@ -277,6 +320,7 @@ async function retrySubmit(): Promise<void> {
 async function goResult(): Promise<void> {
   stopRetry()
   submitPending.value = null
+  clearPosition(attemptId.value)
   clearLocal(browserStorage(), attemptId.value)
   autosave?.dispose()
   await router.replace({ name: 'm28.bijak.result', params: { attemptId: attemptId.value } })
@@ -325,6 +369,7 @@ async function goTo(i: number): Promise<void> {
   if (i < 0 || i >= questions.value.length) return
   index.value = i
   autosave?.setPosition(i)
+  writePosition(attemptId.value, { questionIndex: i, scrollTop: 0 })
   navOpen.value = false
   await nextTick()
   document.querySelector('[data-testid=attempt-scroll]')?.scrollTo({ top: 0 })
@@ -444,7 +489,11 @@ const feedback = computed(() => {
         @close="confirmExit = true"
       />
       <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
-        <p class="min-w-0 truncate text-caption text-muted" data-testid="attempt-title">
+        <p
+          class="min-w-0 truncate text-caption text-muted"
+          data-short-hide
+          data-testid="attempt-title"
+        >
           {{ view?.attempt.title }}
           <UBadge color="neutral" variant="subtle" size="sm" class="ms-1">{{
             isExam ? 'Mod Peperiksaan' : 'Mod Latihan'
@@ -474,9 +523,19 @@ const feedback = computed(() => {
         v-if="warned && isExam && (remaining ?? 0) > 0"
         class="shrink-0 bg-elevated px-3 py-2 text-center text-label text-warning sm:px-6"
         role="status"
+        data-short-compact
         data-testid="time-warning"
       >
         Amaran: masa berbaki kurang 5 minit.
+      </p>
+      <p
+        v-if="timeUp"
+        class="shrink-0 bg-elevated px-3 py-2 text-center text-label text-warning sm:px-6"
+        role="status"
+        data-short-compact
+        data-testid="time-up-offline"
+      >
+        Masa tamat. Jawapan akan dihantar apabila sambungan pulih.
       </p>
     </template>
 
@@ -549,7 +608,7 @@ const feedback = computed(() => {
           :stimulus-blocked="stimulusBlocked"
           :flagged="flags.includes(current.id)"
           :check="currentCheck"
-          :disabled="submitting"
+          :disabled="submitting || timeUp"
           :choose="choose"
           @answer="onAnswer"
           @toggle-flag="toggleFlag"
@@ -707,16 +766,16 @@ const feedback = computed(() => {
           :counters="counters"
           @go="goToId"
         />
-        <!-- Phones: the footer has no room for Hantar, so it lives here on every question (FB-044). -->
+        <!-- Phones: the footer has no room for Hantar, so it lives here on every question (FB-044);
+             latihan pupils get "Selesai" here to finish early (S8-T04, D115). -->
         <UButton
-          v-if="isExam"
           type="button"
           block
           size="lg"
           class="min-h-11"
           data-testid="submit-from-map"
           @click="openSubmitFromMap"
-          >Hantar</UButton
+          >{{ isExam ? 'Hantar' : 'Selesai' }}</UButton
         >
       </DsStack>
     </template>
@@ -724,23 +783,38 @@ const feedback = computed(() => {
 
   <UModal
     v-model:open="confirmSubmit"
-    :title="isExam ? 'Hantar jawapan anda sekarang?' : 'Selesai latihan?'"
-    :description="
-      isExam
-        ? 'Selepas dihantar, anda tidak boleh mengubah jawapan.'
-        : 'Ringkasan markah akan dipaparkan.'
+    :title="
+      !isExam
+        ? 'Selesai latihan?'
+        : unanswered > 0
+          ? `Anda belum menjawab ${unanswered} soalan.`
+          : 'Hantar jawapan anda sekarang?'
     "
+    :description="
+      !isExam
+        ? 'Ringkasan markah akan dipaparkan.'
+        : unanswered > 0
+          ? 'Hantar jawapan anda sekarang?'
+          : undefined
+    "
+    :content="dialogContent"
   >
     <template #body>
       <ul class="flex flex-col gap-1 text-body text-default" data-testid="submit-summary">
-        <li>Belum dijawab: {{ unanswered }} soalan</li>
+        <li v-if="!isExam">Belum dijawab: {{ unanswered }} soalan</li>
         <li>Ditanda: {{ flaggedCount }} soalan</li>
       </ul>
     </template>
     <template #footer>
       <div class="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
-        <UButton color="neutral" variant="soft" class="min-h-11" @click="confirmSubmit = false"
-          >Kembali</UButton
+        <UButton
+          ref="confirmBack"
+          color="neutral"
+          variant="soft"
+          class="min-h-11"
+          data-testid="confirm-back"
+          @click="confirmSubmit = false"
+          >{{ isExam ? 'Batal' : 'Kembali' }}</UButton
         >
         <UButton
           class="min-h-11"
