@@ -1,14 +1,12 @@
 # R1 scope guard: a PR must name exactly one plan card and stay inside its "Starts from" / Type budget
-# (scripts/r1-scope-guard.mjs). Docs-only PRs have no card and are skipped (paths-ignore: a PR that touches
-# anything outside docs/** still runs the guard).
+# (scripts/r1-scope-guard.mjs). The workflow runs on every PR so the required check always reports; a docs-only PR
+# (every changed file under docs/) needs no card and is passed by the script itself.
 name: r1-scope-guard
 
 on:
   pull_request:
     types: [opened, synchronize, reopened, edited, labeled, unlabeled]
     branches: [feature/v3-bijak-r1]
-    paths-ignore:
-      - 'docs/**'
 
 permissions:
   contents: read
