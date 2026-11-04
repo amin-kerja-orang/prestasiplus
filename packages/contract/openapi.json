@@ -8446,6 +8446,13 @@
           "updatedAt": {
             "$ref": "#/components/schemas/Timestamp"
           },
+          "reporterRole": {
+            "type": "string",
+            "enum": [
+              "murid",
+              "guru"
+            ]
+          },
           "reporter": {
             "type": "object",
             "properties": {
@@ -8485,6 +8492,7 @@
           "adminNotes",
           "createdAt",
           "updatedAt",
+          "reporterRole",
           "reporter",
           "question"
         ]
@@ -8600,6 +8608,13 @@
           "updatedAt": {
             "$ref": "#/components/schemas/Timestamp"
           },
+          "reporterRole": {
+            "type": "string",
+            "enum": [
+              "murid",
+              "guru"
+            ]
+          },
           "reporter": {
             "type": "object",
             "properties": {
@@ -8639,6 +8654,7 @@
           "adminNotes",
           "createdAt",
           "updatedAt",
+          "reporterRole",
           "reporter",
           "question"
         ]
