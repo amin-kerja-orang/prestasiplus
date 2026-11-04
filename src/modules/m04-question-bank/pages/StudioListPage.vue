@@ -9,13 +9,14 @@
  */
 import type { TableColumn } from '@nuxt/ui'
 import type { ServabilityReport } from '@pp/contract'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
 import {
   DsBadge,
   DsCallout,
+  DsCluster,
   DsDataTable,
   DsEmptyState,
   DsFilterBar,
@@ -25,7 +26,9 @@ import {
   DsPage,
   DsPanel,
   DsRowActions,
+  DsStack,
   DsStatTile,
+  DsText,
   useConfirm,
   type CardField,
   type RowAction,
@@ -360,6 +363,38 @@ const tableRows = computed<TableRow[]>(() =>
   })),
 )
 
+/**
+ * Phone card (AC-ADM-R9): the full stem, clamped to 3 lines, with `Lihat penuh` when the text is longer than the clamp.
+ * Whether it is clamped is measured on the rendered paragraph (the width decides), and only while it is collapsed.
+ */
+const expanded = ref<Set<string>>(new Set())
+const clamped = ref<Record<string, boolean>>({})
+function toggleStem(id: string): void {
+  const next = new Set(expanded.value)
+  if (next.has(id)) next.delete(id)
+  else next.add(id)
+  expanded.value = next
+}
+/** The rendered stem paragraphs by row id, so a width change (rotation) can measure them again. */
+const stemEls = new Map<string, HTMLElement>()
+function measure(id: string, el: HTMLElement): void {
+  if (expanded.value.has(id)) return
+  const over = el.scrollHeight > el.clientHeight + 1
+  if (clamped.value[id] !== over) clamped.value = { ...clamped.value, [id]: over }
+}
+function measureStem(id: string, inst: unknown): void {
+  const el = (inst as { $el?: unknown } | null)?.$el
+  if (!(el instanceof HTMLElement)) {
+    stemEls.delete(id)
+    return
+  }
+  stemEls.set(id, el)
+  measure(id, el)
+}
+const remeasure = (): void => stemEls.forEach((el, id) => measure(id, el))
+onMounted(() => window.addEventListener('resize', remeasure))
+onBeforeUnmount(() => window.removeEventListener('resize', remeasure))
+
 const META_CLASS = 'class'
 const cellClass = (th: string, td = th): { meta: Record<string, unknown> } => ({ meta: { [META_CLASS]: { th, td } } })
 const columns: TableColumn<TableRow>[] = [
@@ -499,6 +534,34 @@ const cardFields: CardField[] = [
         </template>
         <template #actions-cell="{ row }">
           <DsRowActions :actions="rowActions(row.original.raw)" :inline="3" testid="studio-row-more" />
+        </template>
+        <template #card="{ row }">
+          <DsStack gap="xs" align="start" data-testid="studio-card">
+            <DsCluster gap="xs">
+              <DsText as="span" variant="meta" data-testid="studio-card-no">{{ row.no }}</DsText>
+              <DsBadge :label="row.statusText" :tone="statusTone(row.raw.status)" data-testid="studio-row-status" />
+              <DsBadge v-if="row.raw.dskpComplete === false" tone="warning" size="sm" label="Belum ditanda DSKP" data-testid="studio-row-dskp" />
+            </DsCluster>
+            <DsText
+              :ref="(el: unknown) => measureStem(row.id, el)"
+              variant="body"
+              wrap="anywhere"
+              :clamp="expanded.has(row.id) ? undefined : 3"
+              data-testid="studio-card-stem"
+            >{{ row.raw.questionText }}</DsText>
+            <UButton
+              v-if="clamped[row.id] || expanded.has(row.id)"
+              type="button"
+              color="neutral"
+              variant="link"
+              :aria-expanded="expanded.has(row.id)"
+              data-testid="studio-card-more"
+              @click="toggleStem(row.id)"
+            >{{ expanded.has(row.id) ? 'Tunjuk kurang' : 'Lihat penuh' }}</UButton>
+            <DsText as="span" variant="caption" data-testid="studio-card-kertas">{{ row.kertas }}</DsText>
+            <DsText as="span" variant="caption" data-testid="studio-card-sumber">Sumber: {{ row.sumber }}</DsText>
+            <DsText v-if="reports[row.id]" as="span" variant="caption" data-testid="studio-row-served">{{ servedCaption(reports[row.id]!) }}</DsText>
+          </DsStack>
         </template>
         <template #card-actions="{ row }">
           <DsRowActions :actions="rowActions((row as TableRow).raw)" :inline="3" testid="studio-row-more" />

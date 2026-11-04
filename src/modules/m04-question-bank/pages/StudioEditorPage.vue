@@ -13,7 +13,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { isApiError } from '@/api'
 import { useFlash } from '@/composables'
 import { useSessionStore } from '@/stores'
-import { DsCallout, DsCluster, DsFormBar, DsFormField, DsFormSection, DsGrid, DsLoadError, DsNativeSelect, DsPage, DsPillNav, DsStack, DsText } from '@/ds'
+import { DsCallout, DsCluster, DsDrawer, DsFormBar, DsFormField, DsFormSection, DsGrid, DsLoadError, DsNativeSelect, DsPage, DsPillNav, DsStack, DsText, StimulusFigure } from '@/ds'
+import { useMedia } from '@/ds/useMedia'
 
 import { fetchEducationLevels, fetchSubjects } from '../api/lookups'
 import {
@@ -36,6 +37,7 @@ import StudioPreview from '../components/studio/StudioPreview.vue'
 import StudioStatusBar from '../components/studio/StudioStatusBar.vue'
 import { studioFieldErrors } from '../lib/studio/field-errors'
 import type { GroupView } from '../lib/studio/group-members'
+import { toStimulusData } from '../lib/studio/preview'
 import { stimulusIssue, toCreateBody, type PendingGroup } from '../lib/studio/stimulus'
 import {
   blankDraft,
@@ -82,6 +84,13 @@ const groupView = ref<GroupView | null>(null)
 /** D93: a shared stimulus prepared on the create page; it is created with the question in `save` (no orphan group). */
 const pendingGroup = ref<PendingGroup | null>(null)
 const previewOpen = ref(false)
+/** AC-ADM-R3: below 1024 px a `Rangsangan` button in the save bar opens the group's stimulus in a sheet; the form stays mounted, so typed text is kept. */
+const wide = useMedia('(width >= 64rem)')
+const stimulusOpen = ref(false)
+const stimuli = computed(() => (groupView.value?.stimuli ?? []).map(toStimulusData))
+watch(wide, (w) => {
+  if (w) stimulusOpen.value = false
+})
 
 /* ---- draft recovery (V2 flow 1 step 2): unsaved work is kept in the browser and offered again ---- */
 const store: Storage | null = typeof window === 'undefined' ? null : window.localStorage
@@ -338,12 +347,20 @@ async function save(): Promise<void> {
       </DsStack>
 
       <DsFormBar submit-label="Simpan draf" :saving="saving" :disabled="readOnly" cancel-to="/admin/studio" data-testid="studio-save-bar">
+        <template v-if="stimuli.length > 0 && !wide" #extra>
+          <UButton type="button" color="neutral" variant="soft" aria-haspopup="dialog" data-testid="studio-stimulus-open" @click="stimulusOpen = true">Rangsangan</UButton>
+        </template>
         <template #status>
           <DsText as="span" variant="caption" data-testid="studio-save-marks">{{ totalMarks(draft) }} markah</DsText>
           <DsText v-if="gaps.length > 0" as="span" variant="caption" data-testid="studio-save-gaps"> · {{ gaps.length }} belum lengkap</DsText>
         </template>
       </DsFormBar>
     </DsStack>
+    <DsDrawer v-model:open="stimulusOpen" title="Rangsangan" data-testid="studio-stimulus-sheet">
+      <DsStack gap="md">
+        <StimulusFigure v-for="s in stimuli" :key="s.id" :stimulus="s" />
+      </DsStack>
+    </DsDrawer>
     <StudioPreview v-model:open="previewOpen" :group="groupView" :draft="draft" :question-id="props.id ?? null" />
   </DsPage>
 </template>
