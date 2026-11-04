@@ -34,4 +34,4 @@ SELECT
     COALESCE((SELECT round("value")::smallint FROM "gamification_settings" WHERE "key" = 'flat_quiz_reward' AND round("value") BETWEEN 0 AND 20), 1),
     COALESCE((SELECT round("value")::integer FROM "gamification_settings" WHERE "key" = 'reward_budget_sen_session' AND round("value") BETWEEN 0 AND 100000), 300),
     COALESCE((SELECT round("value")::smallint FROM "gamification_settings" WHERE "key" = 'current_session_year' AND round("value") BETWEEN 2020 AND 2100), 2026),
-    COALESCE((SELECT "value" = 1 FROM "gamification_settings" WHERE "key" = 'games_award_syiling'), false);
+    COALESCE((SELECT round("value") = 1 FROM "gamification_settings" WHERE "key" = 'games_award_syiling'), false);

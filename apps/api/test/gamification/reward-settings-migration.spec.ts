@@ -73,9 +73,37 @@ describe('migration 0223 reward_settings', () => {
     await setting('flat_quiz_reward', 21)
     await setting('reward_budget_sen_session', 100001)
     await setting('current_session_year', 40000)
+    await rerun()
+    expect(await row()).toMatchObject({ coins_per_correct: 1, redeem_budget_sen: 300, session_year: 2026 })
+  })
+
+  it('accepts the inclusive bounds and rounds before it checks the range', async () => {
+    await setting('flat_quiz_reward', 20.4)
+    await setting('reward_budget_sen_session', 100000)
+    await setting('current_session_year', 2100)
+    await rerun()
+    expect(await row()).toMatchObject({ coins_per_correct: 20, redeem_budget_sen: 100000, session_year: 2100 })
+    await db.query('delete from gamification_settings')
+    await setting('flat_quiz_reward', 20.5)
+    await setting('reward_budget_sen_session', 0)
+    await setting('current_session_year', 2020)
+    await rerun()
+    expect(await row()).toMatchObject({ coins_per_correct: 1, redeem_budget_sen: 0, session_year: 2020 })
+  })
+
+  it('a key with no row takes its default while the others are copied', async () => {
+    await setting('flat_quiz_reward', 5)
+    await rerun()
+    expect(await row()).toMatchObject({ coins_per_correct: 5, redeem_budget_sen: 300, session_year: 2026, mini_games_give_coins: false })
+  })
+
+  it('the games toggle is on only for a stored 1', async () => {
     await setting('games_award_syiling', 0)
     await rerun()
-    expect(await row()).toMatchObject({ coins_per_correct: 1, redeem_budget_sen: 300, session_year: 2026, mini_games_give_coins: false })
+    expect((await row()).mini_games_give_coins).toBe(false)
+    await db.query(`update gamification_settings set value = 1 where key = 'games_award_syiling'`)
+    await rerun()
+    expect((await row()).mini_games_give_coins).toBe(true)
   })
 
   it('keeps exactly one row and the rate inside 0..20', async () => {
@@ -86,14 +114,6 @@ describe('migration 0223 reward_settings', () => {
     expect(await rejects(`update reward_settings set coins_per_correct = -1`)).toMatch(/ck_reward_settings_coins_per_correct/)
     await db.query(`update reward_settings set coins_per_correct = 20`)
     expect((await row()).coins_per_correct).toBe(20)
-  })
-
-  it('the rate is read with the query of the S5-T15 helper and answers a change at once', async () => {
-    await rerun()
-    await db.query(`update reward_settings set coins_per_correct = 3`)
-    const [read] = await db.query<{ coins_per_correct: number }>(`select coins_per_correct from reward_settings where id = 1`)
-    expect(read?.coins_per_correct).toBe(3)
-    expect((await db.query<{ present: boolean }>(`select to_regclass('reward_settings') is not null as present`))[0]?.present).toBe(true)
   })
 
   it('updated_by follows the user and is cleared when the user goes', async () => {
