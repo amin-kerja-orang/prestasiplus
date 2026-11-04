@@ -58,8 +58,8 @@ export const laneCopy = {
 } as const
 
 /**
- * Status of a question in the Databank and Subjektif lanes (section 0). `Ditolak` is the fifth label, but it needs
- * `rejection_reason`, which the lane reads do not have yet, so it would filter nothing.
+ * Status of a question in the Databank and Subjektif lanes (section 0). `Ditolak` is the fifth label: it arrives in a later part
+ * of S3-T03, once `rejection_reason` (DM-58, S1-T02) exists. Without the column it would filter nothing.
  */
 export const QUESTION_STATUS_OPTIONS = [
   { value: 'draft', label: 'Draf' },
