@@ -5,7 +5,7 @@ import { resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import AttemptShell from '../AttemptShell.vue'
-import { clearPosition, positionKey, readPosition, writePosition } from '../lib/attempt-position'
+import { clearPosition, positionKey, readPosition, writePosition } from '../lib/photo-store'
 import NavigatorPanel, { type NavState } from '../NavigatorPanel.vue'
 
 const sections = [{ id: 's1', label: 'Bahagian A', rule: { type: 'all' } }] as never
@@ -46,6 +46,12 @@ describe('NavigatorPanel (FR-MUR-QP-16: status never by colour alone)', () => {
     expect(html).toContain('data-icon="i-ph-check-bold"')
     expect(html).toContain('data-icon="i-ph-flag-fill"')
     expect(html).toContain('data-icon="i-ph-minus-bold"')
+  })
+
+  it('FR-MUR-QP-16: the question grid holds the buttons only, no stray text', () => {
+    const w = nav()
+    const grid = w.get('section .flex.flex-wrap')
+    expect(grid.text().replace(/\s+/g, '')).toBe('123')
   })
 
   it('keeps the 44 px buttons and the counts line', () => {

@@ -266,8 +266,9 @@ async function load(): Promise<void> {
 }
 
 /** The scrolling question area of the shell: it lives outside every `phone`/`lg` switch. */
+let scrollNode: HTMLElement | null = null
 const scrollEl = (): HTMLElement | null =>
-  document.querySelector<HTMLElement>('[data-testid=attempt-scroll]')
+  scrollNode ?? document.querySelector<HTMLElement>('[data-testid=attempt-scroll]')
 let scrollTimer: ReturnType<typeof setTimeout> | undefined
 function onScroll(): void {
   clearTimeout(scrollTimer)
@@ -282,7 +283,10 @@ function onScroll(): void {
 
 onMounted(() => {
   void load()
-  void nextTick(() => scrollEl()?.addEventListener('scroll', onScroll, { passive: true }))
+  void nextTick(() => {
+    scrollNode = document.querySelector<HTMLElement>('[data-testid=attempt-scroll]')
+    scrollNode?.addEventListener('scroll', onScroll, { passive: true })
+  })
   tick = setInterval(() => (now.value = Date.now()), 1000)
   document.addEventListener('visibilitychange', onVisibility)
   window.addEventListener('online', onOnline)
@@ -290,7 +294,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   if (tick) clearInterval(tick)
   clearTimeout(scrollTimer)
-  scrollEl()?.removeEventListener('scroll', onScroll)
+  scrollNode?.removeEventListener('scroll', onScroll)
   stopRetry()
   document.removeEventListener('visibilitychange', onVisibility)
   window.removeEventListener('online', onOnline)
@@ -317,13 +321,19 @@ async function retrySubmit(): Promise<void> {
   if (!submitPending.value || submitting.value) return
   await submit(submitPending.value.auto)
 }
-async function goResult(): Promise<void> {
+async function goResult(auto = false): Promise<void> {
   stopRetry()
+  clearTimeout(scrollTimer)
   submitPending.value = null
   clearPosition(attemptId.value)
   clearLocal(browserStorage(), attemptId.value)
   autosave?.dispose()
-  await router.replace({ name: 'm28.bijak.result', params: { attemptId: attemptId.value } })
+  // `auto=1` tells the result page to show the "Masa tamat" banner once (AC-PA-21).
+  await router.replace({
+    name: 'm28.bijak.result',
+    params: { attemptId: attemptId.value },
+    query: auto ? { auto: '1' } : undefined,
+  })
 }
 
 /* --------------------------------------------------------------------------- actions */
@@ -409,7 +419,6 @@ async function submit(auto = false): Promise<void> {
   if (submitting.value || !autosave || !view.value || questions.value.length === 0) return
   submitting.value = true
   submitError.value = ''
-  confirmSubmit.value = false
   await autosave.flush()
   const snap = autosave.snapshot()
   try {
@@ -423,8 +432,9 @@ async function submit(auto = false): Promise<void> {
       auto,
     })
     void res // closed or not, the attempt is final on the server: show its Semakan
-    await goResult()
+    await goResult(auto)
   } catch {
+    confirmSubmit.value = false // the dialog stays open while sending ("Menghantar..."), FR-PA-15
     submitError.value =
       'Luar talian. Jawapan anda disimpan pada peranti ini dan akan dihantar apabila sambungan pulih.'
     submitPending.value = { auto }
@@ -822,7 +832,7 @@ const feedback = computed(() => {
           data-testid="confirm-submit"
           @click="submit(false)"
         >
-          {{ isExam ? 'Hantar' : 'Selesai' }}
+          {{ submitting ? 'Menghantar...' : isExam ? 'Hantar' : 'Selesai' }}
         </UButton>
       </div>
     </template>

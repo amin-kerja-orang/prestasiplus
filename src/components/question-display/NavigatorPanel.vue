@@ -86,7 +86,6 @@ const stateIcon: Record<NavState, string> = {
             :data-testid="`nav-${q.number}-icon`"
           />
         </UButton>
-        >
       </div>
     </section>
     <ul class="flex flex-wrap gap-x-4 gap-y-1 text-caption text-muted" data-testid="nav-legend">

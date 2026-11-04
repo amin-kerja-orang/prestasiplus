@@ -25,6 +25,7 @@ const q = (sel: string): HTMLElement | null => document.body.querySelector(sel)
 const text = (sel: string): string => q(sel)?.textContent?.trim() ?? ''
 let wrapper: VueWrapper | null = null
 let replaced: string[] = []
+let replacedQuery: unknown[] = []
 
 /** A stubbed `matchMedia` for the page's `(width < 640px)` query; `setWidth` fires the change event. */
 function stubMedia(width: number): (w: number) => void {
@@ -52,6 +53,7 @@ beforeEach(() => {
   window.localStorage.clear()
   window.sessionStorage.clear()
   replaced = []
+  replacedQuery = []
   // jsdom has no element scrolling: keep the offset so scroll position can be asserted.
   Element.prototype.scrollTo = function (this: Element, arg?: unknown): void {
     this.scrollTop = (arg as { top?: number } | undefined)?.top ?? 0
@@ -78,6 +80,7 @@ async function render(): Promise<VueWrapper> {
   const orig = router.replace.bind(router)
   router.replace = (to: never) => {
     replaced.push(String((to as { name?: string }).name))
+    replacedQuery.push((to as { query?: unknown }).query)
     return orig(to)
   }
   await router.push('/a/a1')
@@ -141,12 +144,12 @@ async function openMap(): Promise<void> {
   await nextTick()
 }
 
-describe('FR-X6-9 / FR-MUR-QP-11: Hantar reachable on a phone in both modes', () => {
+describe('FR-X6-8 / FR-MUR-QP-11: Hantar reachable on a phone in both modes', () => {
   describe.each([
     ['320x568', 320],
     ['375x667', 375],
   ])('%s', (_label, width) => {
-    it('exam: the map sheet shows "Hantar" and opens the dialog', async () => {
+    it('FR-X6-8 / FR-MUR-QP-11 exam: the map sheet shows "Hantar" and opens the dialog', async () => {
       stubMedia(width)
       server.getAttemptView.mockResolvedValue(view('exam'))
       await render()
@@ -158,7 +161,7 @@ describe('FR-X6-9 / FR-MUR-QP-11: Hantar reachable on a phone in both modes', ()
       expect(text('[role=dialog][data-state=open] [data-testid=confirm-submit]')).toBe('Hantar')
     })
 
-    it('latihan: the map sheet shows "Selesai" before the last question and opens the same dialog', async () => {
+    it('FR-X6-8 / FR-MUR-QP-11 latihan: the map sheet shows "Selesai" before the last question and opens the same dialog', async () => {
       stubMedia(width)
       server.getAttemptView.mockResolvedValue(view('latihan'))
       await render()
@@ -216,6 +219,45 @@ describe('FR-X6-10 / FR-MUR-QP-12: rotation keeps the place', () => {
   })
 })
 
+describe('FR-X6-10: stored position is per attempt and validated', () => {
+  it("FR-X6-10: another attempt's pp.qd.pos key is never read", async () => {
+    stubMedia(375)
+    window.sessionStorage.setItem(
+      'pp.qd.pos.other',
+      JSON.stringify({ questionIndex: 3, scrollTop: 90 }),
+    )
+    server.getAttemptView.mockResolvedValue(view('exam'))
+    await render()
+    expect(text('[data-testid=position]')).toBe('Soalan 1 / 4')
+  })
+
+  it('FR-X6-10: a wrong-shape value for this attempt is ignored', async () => {
+    stubMedia(375)
+    window.sessionStorage.setItem(
+      'pp.qd.pos.a1',
+      JSON.stringify({ questionIndex: 'x', scrollTop: null }),
+    )
+    server.getAttemptView.mockResolvedValue(view('exam'))
+    await render()
+    expect(text('[data-testid=position]')).toBe('Soalan 1 / 4')
+  })
+})
+
+describe('FR-PA-15: the primary button shows the sending label', () => {
+  it('FR-PA-15: "Menghantar..." while the submit is in flight', async () => {
+    stubMedia(1280)
+    server.submit.mockReturnValue(new Promise(() => undefined))
+    server.getAttemptView.mockResolvedValue(view('exam'))
+    await render()
+    q('[data-testid=submit-early]')!.click()
+    await flushPromises()
+    q('[data-testid=confirm-submit]')!.click()
+    await flushPromises()
+    expect(server.submit).toHaveBeenCalled()
+    expect(text('[data-testid=confirm-submit]')).toBe('Menghantar...')
+  })
+})
+
 describe('FR-PA-14 / AC-PA-21: timer', () => {
   beforeEach(() => {
     vi.useFakeTimers({
@@ -264,6 +306,7 @@ describe('FR-PA-14 / AC-PA-21: timer', () => {
     expect(server.submit).toHaveBeenCalledTimes(1)
     expect(server.submit.mock.calls[0]![2]).toMatchObject({ auto: true })
     expect(replaced).toContain('m28.bijak.result')
+    expect(replacedQuery.at(-1)).toEqual({ auto: '1' })
   })
 
   it('AC-PA-21: offline at 0 locks the inputs, shows the banner and submits on reconnect', async () => {
