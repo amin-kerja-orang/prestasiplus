@@ -114,7 +114,7 @@ const globMatch = (glob, path) => globToRegExp(glob).test(path)
 // `{id}` / `{n}` in an allow-list string is a wildcard; everything else is literal (case-insensitive).
 function stringRegExp(s) {
   const parts = s.split(/\{[^}]*\}/).map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-  return new RegExp(parts.join('.*'), 'i')
+  return new RegExp(parts.join('.*?'), 'gi')
 }
 
 // ---------- scanning ----------
@@ -146,7 +146,7 @@ const isRouteFile = (rel) => /(^|\/)routes(\.[a-z]+$|\/)/.test(rel)
 export function scan({ root, banned, allow }) {
   const entries = (allow.entries ?? []).map((e) => ({
     globs: e.screens ?? [],
-    strings: asList(e.string).map((s) => ({ lower: s.toLowerCase(), re: stringRegExp(s) })),
+    strings: asList(e.string).map((s) => ({ len: s.length, re: stringRegExp(s) })),
   }))
   const bannedLower = banned.map((b) => b.toLowerCase())
   const findings = []
@@ -155,13 +155,16 @@ export function scan({ root, banned, allow }) {
       if (isExcluded(rel)) continue
       const lines = readFileSync(join(root, rel), 'utf8').split(/\r?\n/)
       const applicable = entries.filter((e) => e.globs.some((g) => globMatch(g, rel)))
+      const allowedStrings = applicable.flatMap((e) => e.strings).sort((a, b) => b.len - a.len)
       const routeCheck = rel.startsWith('src/modules/') && isRouteFile(rel) && !rel.startsWith('src/modules/m18-ppd-jpn/')
       lines.forEach((line, i) => {
-        const low = line.toLowerCase()
+        // Blank out every span matched by an allowed entry string (longest first), then test what is left:
+        // an allowed string never hides a second, unallowed occurrence of a banned word on the same line.
+        let rest = line
+        for (const s of allowedStrings) rest = rest.replace(s.re, ' ')
+        const low = rest.toLowerCase()
         banned.forEach((b, bi) => {
-          if (!low.includes(bannedLower[bi])) return
-          const allowed = applicable.some((e) => e.strings.some((s) => s.lower.includes(bannedLower[bi]) && s.re.test(line)))
-          if (!allowed) findings.push({ file: rel, line: i + 1, text: b, context: line.trim() })
+          if (low.includes(bannedLower[bi])) findings.push({ file: rel, line: i + 1, text: b, context: line.trim() })
         })
         if (routeCheck && line.includes('PrototypeUnavailablePage'))
           findings.push({ file: rel, line: i + 1, text: 'PrototypeUnavailablePage', context: line.trim() })
@@ -238,6 +241,8 @@ function selfTest() {
   const extra = clone()
   extra.entries.push({ id: 'D-99', string: 'x', screens: ['src/x/**'], condition: 'c', prd: 'p' })
   check('sync: extra JSON id fails', syncCheck(docText, extra).some((p) => p.startsWith('D-99')))
+  const tableChanged = syncCheck(docText.replace('`Peta Belum Tersedia`', '`Peta Belum Tersedia!`'), allow)
+  check('sync: string changed in the TABLE copy (JSON unchanged) fails', tableChanged.some((p) => p.startsWith('D-03') && p.includes('string differs')), tableChanged.join('; '))
   const tamperedDoc = docText.replace(/^\| D-13 \|/m, '| D-98 |')
   const dp = syncCheck(tamperedDoc, allow)
   check('sync: id missing in table fails (both ways)', dp.some((p) => p.startsWith('D-13') && p.includes('missing in table')) && dp.some((p) => p.startsWith('D-98')))
@@ -265,6 +270,13 @@ function selfTest() {
     check('PrototypeUnavailablePage in an m11 route file is a finding', at('src/modules/m11-teacher-analytics/routes/a.ts').length === 1)
     check('PrototypeUnavailablePage in m18-ppd-jpn routes is allowed', at('src/modules/m18-ppd-jpn/routes.ts').length === 0)
     check('total findings in the fixture tree is 2', res.findings.length === 2, String(res.findings.length))
+
+    // an allowed string must not hide a second occurrence of the banned word on the same line
+    put(`${m04}/pages/KertasLine.vue`, '<b>Kertas 2/3/4 percubaan negeri — pratonton & terbitan</b> <i>Pratonton</i>\n')
+    const twice = scan({ root: tmp, banned, allow }).findings.filter((f) => f.file === `${m04}/pages/KertasLine.vue`)
+    check('allowed string does not hide a second banned occurrence on the line (1 finding)', twice.length === 1, String(twice.length))
+    put(`${m04}/pages/KertasOnly.vue`, '<b>Kertas 2/3/4 percubaan negeri — pratonton & terbitan</b>\n')
+    check('the allowed P-06 subtitle alone is no finding', scan({ root: tmp, banned, allow }).findings.filter((f) => f.file === `${m04}/pages/KertasOnly.vue`).length === 0)
 
     check('fail mode exits 1 on the fixture tree', evaluate('fail', tmp, banned, allow, true) === 1)
     check('report mode exits 0 on the fixture tree', evaluate('report', tmp, banned, allow, true) === 0)
