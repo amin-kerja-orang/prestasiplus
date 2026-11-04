@@ -132,6 +132,34 @@ export const SupportQueueResponseSchema = z
   .meta({ id: 'SupportQueueResponse' })
 export type SupportQueueResponse = z.infer<typeof SupportQueueResponseSchema>
 
+/** `data` of `GET /admin/tiket/{id}` and of its reply and status writes (API-SUP-05). One admin reply, no thread (OD-4); no e-mail. */
+export const SupportTicketDetailSchema = z
+  .strictObject({
+    id: IdSchema,
+    subject: z.string(),
+    body: z.string(),
+    status: SupportTicketStatusSchema,
+    roleLabel: z.string().nullable().meta({ description: 'Role label from `created_role`; null on an old row of a user with several roles.' }),
+    school: z.string().nullable(),
+    createdAt: TimestampSchema,
+    adminReply: z.string().nullable(),
+    repliedAt: TimestampSchema.nullable(),
+  })
+  .meta({ id: 'SupportTicketDetail' })
+export type SupportTicketDetail = z.infer<typeof SupportTicketDetailSchema>
+
+/** Body of `PUT /admin/tiket/{id}/reply`. The text is trimmed. */
+export const SupportTicketReplyRequestSchema = z
+  .object({ text: z.string().trim().min(1).max(SUPPORT_BODY_MAX) })
+  .meta({ id: 'SupportTicketReplyRequest' })
+export type SupportTicketReplyRequest = z.infer<typeof SupportTicketReplyRequestSchema>
+
+/** Body of `PATCH /admin/tiket/{id}/status`. */
+export const SupportTicketStatusRequestSchema = z
+  .object({ status: SupportTicketStatusSchema })
+  .meta({ id: 'SupportTicketStatusRequest' })
+export type SupportTicketStatusRequest = z.infer<typeof SupportTicketStatusRequestSchema>
+
 /** `data` of `GET /admin/tiket/open-count`: tickets with status `dibuka`. */
 export const SupportOpenCountSchema = z
   .strictObject({ count: z.number().int().min(0) })

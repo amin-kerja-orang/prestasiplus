@@ -14,8 +14,11 @@ import {
   SupportOpenCountSchema,
   SupportQueueResponseSchema,
   SupportTicketCreateRequestSchema,
+  SupportTicketDetailSchema,
   SupportTicketListResponseSchema,
+  SupportTicketReplyRequestSchema,
   SupportTicketSchema,
+  SupportTicketStatusRequestSchema,
 } from '../schema'
 
 const AT = '2026-10-16T09:30:00+08:00'
@@ -111,16 +114,40 @@ describe('admin queue', () => {
   })
 })
 
+describe('admin ticket detail, reply and status (API-SUP-05)', () => {
+  const detail = { id: '31', subject: 'S', body: 'B', status: 'dibuka', roleLabel: null, school: null, createdAt: AT, adminReply: null, repliedAt: null }
+
+  it('parses the detail and refuses an e-mail or a user id', () => {
+    expect(SupportTicketDetailSchema.parse({ ...detail, roleLabel: 'Murid', school: 'Sekolah Contoh', adminReply: 'Baik.', repliedAt: AT }).adminReply).toBe('Baik.')
+    expect(SupportTicketDetailSchema.safeParse({ ...detail, email: 'a@b.test' }).success).toBe(false)
+    expect(SupportTicketDetailSchema.safeParse({ ...detail, userId: '1' }).success).toBe(false)
+  })
+
+  it('the reply is trimmed, 1..5000', () => {
+    expect(SupportTicketReplyRequestSchema.parse({ text: '  Baik.  ' }).text).toBe('Baik.')
+    expect(SupportTicketReplyRequestSchema.safeParse({ text: '   ' }).success).toBe(false)
+    expect(SupportTicketReplyRequestSchema.safeParse({ text: 'x'.repeat(SUPPORT_BODY_MAX + 1) }).success).toBe(false)
+  })
+
+  it('the status is one of the five codes', () => {
+    for (const status of SUPPORT_TICKET_STATUSES) expect(SupportTicketStatusRequestSchema.safeParse({ status }).success).toBe(true)
+    expect(SupportTicketStatusRequestSchema.safeParse({ status: 'baru' }).success).toBe(false)
+  })
+})
+
 describe('openapi registration', () => {
   const doc = buildOpenApiDocument() as {
     paths: Record<string, Record<string, unknown>>
     components: { schemas: Record<string, unknown> }
   }
 
-  it('contains the four paths', () => {
+  it('contains the support paths', () => {
     expect(Object.keys(doc.paths['/tiket'] ?? {}).sort()).toEqual(['get', 'post'])
     expect(doc.paths['/admin/tiket']).toHaveProperty('get')
     expect(doc.paths['/admin/tiket/open-count']).toHaveProperty('get')
+    expect(doc.paths['/admin/tiket/{id}']).toHaveProperty('get')
+    expect(doc.paths['/admin/tiket/{id}/reply']).toHaveProperty('put')
+    expect(doc.paths['/admin/tiket/{id}/status']).toHaveProperty('patch')
   })
 
   it('contains every support component', () => {
