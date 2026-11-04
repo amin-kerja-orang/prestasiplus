@@ -38,8 +38,9 @@ const data = {
 }
 
 let wrapper: VueWrapper | null = null
-async function render(path: string): Promise<void> {
-  server.getResult.mockResolvedValue(data)
+let routerRef: ReturnType<typeof createRouter> | null = null
+async function render(path: string, status = 'submitted'): Promise<void> {
+  server.getResult.mockResolvedValue({ ...data, attempt: { ...data.attempt, status } })
   const stub = { template: '<i/>' }
   const router = createRouter({
     history: createMemoryHistory(),
@@ -51,6 +52,7 @@ async function render(path: string): Promise<void> {
       { path: '/spm/bijak/percubaan/:attemptId', name: 'm28.bijak.attempt', component: stub },
     ],
   })
+  routerRef = router
   await router.push(path)
   wrapper = mount(
     { template: '<RouterView />' },
@@ -83,5 +85,23 @@ describe('AC-PA-21: banner after the automatic submit at 0', () => {
   it('AC-PA-21: no marker, no banner', async () => {
     await render('/r/a1')
     expect(document.body.querySelector('[data-testid=auto-submit-banner]')).toBeNull()
+  })
+
+  it('AC-PA-21: an auto_submitted attempt with auto=1 shows exactly one banner', async () => {
+    await render('/r/a1?auto=1', 'auto_submitted')
+    expect(document.body.querySelectorAll('[data-testid=auto-submit-banner]')).toHaveLength(1)
+    expect(document.body.querySelector('[data-testid=auto-submitted]')).toBeNull()
+  })
+
+  it('AC-PA-21: auto_submitted without the marker keeps the existing notice', async () => {
+    await render('/r/a1', 'auto_submitted')
+    expect(document.body.querySelector('[data-testid=auto-submit-banner]')).toBeNull()
+    expect(document.body.querySelector('[data-testid=auto-submitted]')).not.toBeNull()
+  })
+
+  it('AC-PA-21: the marker is dropped from the URL after it is read', async () => {
+    await render('/r/a1?auto=1')
+    expect(routerRef!.currentRoute.value.query.auto).toBeUndefined()
+    expect(document.body.querySelectorAll('[data-testid=auto-submit-banner]')).toHaveLength(1)
   })
 })
