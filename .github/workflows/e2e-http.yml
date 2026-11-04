@@ -21,6 +21,10 @@ on:
       - 'apps/api/prisma/**'
       - 'e2e/api/stack-smoke.spec.ts'
       - 'e2e/fixtures/**'
+      - 'e2e/r1/**'
+      - 'src/shells/**'
+      - 'src/app/**'
+      - 'playwright.http.config.ts'
       - '.github/workflows/e2e-http.yml'
 
 permissions:
