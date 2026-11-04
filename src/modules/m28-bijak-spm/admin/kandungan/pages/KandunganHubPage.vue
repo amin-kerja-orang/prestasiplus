@@ -17,8 +17,8 @@ import { hubCopy } from '../lanes'
 const server = kandunganServer()
 const { data, error, loading, reload } = useApi(() => server.overview())
 
-/** The cards come from the API (T45 `overview.cards`: V2 title, description, count and attention label); R1 returns the two lanes that have a screen. */
-const cards = (): readonly ServabilityHubCard[] => data.value?.cards ?? []
+/** The cards come from the API (T45 `overview.cards`: V2 title, description, count and attention label); only the two lanes that have a screen here. */
+const cards = (): readonly ServabilityHubCard[] => (data.value?.cards ?? []).filter((c) => c.lane === 'databank' || c.lane === 'bijak-spm')
 /** Test ids keep the V2 lane key: `databank` and `simulasi` (the Bijak SPM lane). */
 const keyOf = (c: ServabilityHubCard): string => (c.lane === 'databank' ? 'databank' : 'simulasi')
 const routeOf = (c: ServabilityHubCard): string => (c.lane === 'databank' ? KANDUNGAN_ROUTES.databank : KANDUNGAN_ROUTES.simulasi)

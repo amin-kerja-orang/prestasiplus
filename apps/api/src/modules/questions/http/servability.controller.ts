@@ -1,5 +1,5 @@
 import { Body, Controller, Get, HttpCode, Inject, Param, Post, Query, UseGuards, UseInterceptors } from '@nestjs/common'
-import { ServabilityBatchRequestSchema, ServabilityLaneQuerySchema } from '@pp/contract'
+import { ServabilityBatchRequestSchema, ServabilityLaneQuerySchema, type ServabilityHubLane, type ServabilityLaneAttention, type ServabilityOverviewCounts } from '@pp/contract'
 
 import { Roles } from '../../../common/guards'
 import { NoStoreInterceptor } from '../../../common/http'
@@ -12,6 +12,7 @@ import { OverviewCache } from '../serving/overview-cache'
 import { PaperServabilityService } from '../serving/paper-servability.service'
 import { ServabilityReadsService } from '../serving/servability-reads.service'
 import { ServabilityService } from '../serving/servability.service'
+import type { Paged } from '../serving/servability-reads.service'
 import { BODY_MESSAGE, fieldsOf, invalid, parseBody } from './parse'
 
 /** Reads are rate limited per user. Env `THROTTLE_SERVABILITY_READ_PER_MINUTE`, else 120. */
@@ -73,21 +74,56 @@ export class ServabilityController {
   async overview() {
     // H-A21: cached 5 minutes, stale-while-revalidate (the cold compute is slow on a large bank); `computedAt` says how old it is.
     const { value, computedAt } = await this.overviewCache.get(() => this.reads.overview())
+    // A card that failed must not sit in the cache for 5 minutes: `Cuba lagi` reaches a fresh compute.
+    if (value.cards.some((c) => c.failed)) this.overviewCache.invalidate()
     return ok({ ...value, computedAt: toMytTimestamp(computedAt) })
   }
 
   @Get('lanes/databank')
   @RateLimit(SERVABILITY_READ_LIMIT)
   async databank(@Query() query: unknown) {
-    const [res, subjects] = await Promise.all([this.reads.databankLane(this.laneQuery(query)), this.reads.databankSubjects()])
-    return { data: res.rows, meta: listMeta(res.page, res.pageSize, res.total), subjects }
+    return this.lane('databank', this.reads.databankLane(this.laneQuery(query)))
   }
 
   @Get('lanes/bijak-spm')
   @RateLimit(SERVABILITY_READ_LIMIT)
   async papers(@Query() query: unknown) {
-    const [res, subjects] = await Promise.all([this.reads.paperLane(this.laneQuery(query)), this.reads.paperSubjects()])
-    return { data: res.rows, meta: listMeta(res.page, res.pageSize, res.total), subjects }
+    return this.lane('bijak-spm', this.reads.paperLane(this.laneQuery(query)))
+  }
+
+  /** API-BIJAK-12: the other four lanes, declared after the two fixed paths above. An unknown lane is 404. */
+  @Get('lanes/:lane')
+  @RateLimit(SERVABILITY_READ_LIMIT)
+  async otherLane(@Param('lane') lane: string, @Query() query: unknown) {
+    switch (lane) {
+      case 'tracking-a':
+        return this.lane(lane, this.reads.trackingLane(this.laneQuery(query)))
+      case 'subjektif':
+        return this.lane(lane, this.reads.subjektifLane(this.laneQuery(query)))
+      case 'kertas-subjektif':
+        return this.lane(lane, this.reads.kertasSubjektifLane(this.laneQuery(query)))
+      case 'latih-tubi': {
+        const [res, subjects] = await Promise.all([this.reads.latihTubiLane(this.laneQuery(query)), this.reads.activeSubjects()])
+        return { data: res.rows, meta: { ...listMeta(res.page, res.pageSize, res.total), switchEnabled: res.switchEnabled }, subjects, count: res.count, attention: this.attentionOf(lane) }
+      }
+      default:
+        throw ApiError.of('NOT_FOUND')
+    }
+  }
+
+  /** The body of a lane whose items are its rows, so `count` is the row total under the current filters. */
+  private async lane<T>(lane: ServabilityHubLane, read: Promise<Paged<T>>) {
+    const [res, subjects] = await Promise.all([read, this.reads.activeSubjects()])
+    return { data: res.rows, meta: listMeta(res.page, res.pageSize, res.total), subjects, count: res.total, attention: this.attentionOf(lane) }
+  }
+
+  /**
+   * The hub card's lines, so the lane and the hub print one number. Only from what the overview cache holds now: a lane read never waits
+   * for or triggers the costly overview. Left out while the cache is cold or the card failed.
+   */
+  private attentionOf(lane: ServabilityHubLane): ServabilityLaneAttention[] | undefined {
+    const card = this.overviewCache.peek<ServabilityOverviewCounts>()?.value.cards.find((c) => c.lane === lane)
+    return card?.failed ? undefined : card?.attentionLines
   }
 
   private laneQuery(raw: unknown) {

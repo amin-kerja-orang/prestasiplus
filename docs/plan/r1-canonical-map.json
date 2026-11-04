@@ -15163,6 +15163,16 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/admin/servability/lanes/:p",
+      "method": "GET",
+      "path": "/api/admin/servability/lanes/:lane",
+      "api_id": "API-BIJAK-12",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/servability.controller.ts",
+      "approved_by_card": "S3-T03"
+    },
+    {
       "key": "GET /api/admin/questions/:p/paper-servability",
       "method": "GET",
       "path": "/api/admin/questions/:id/paper-servability",

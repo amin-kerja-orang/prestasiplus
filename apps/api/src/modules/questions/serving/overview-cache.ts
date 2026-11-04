@@ -55,6 +55,11 @@ export class SwrSlot<T> {
     this.dirty = true
   }
 
+  /** The value held now, however old; null while nothing is computed. Never computes, so a cheap read can use it without waiting. */
+  peek(): Cached<T> | null {
+    return this.entry === null ? null : view(this.entry)
+  }
+
   async get(compute: () => Promise<T>, fingerprint?: () => Promise<string>): Promise<Cached<T>> {
     const fp = fingerprint ? await fingerprint() : ''
     const e = this.entry
@@ -131,15 +136,21 @@ export class OverviewCache {
     return this.slot<T>(scope).get(compute, () => this.papersFingerprint())
   }
 
+  /** What the scope holds now, or null while it is cold. Never computes. */
+  peek<T>(scope: string = OVERVIEW_SCOPE_ALL): Cached<T> | null {
+    return this.slot<T>(scope).peek()
+  }
+
   /** Every scope becomes stale (the next read refreshes in the background). Cheap: no query. */
   invalidate(): void {
     for (const s of this.slots.values()) s.invalidate()
   }
 
-  /** Published and total papers and the newest edit: a publish or withdraw changes it. A small table, one cheap statement. */
+  /** Published and total papers and the newest edit (a publish or withdraw changes it), then the same for the Tracking A sets. Small tables, one cheap statement. */
   private async papersFingerprint(): Promise<string> {
     const rows = await this.prisma.client.$queryRaw<{ fp: string }[]>`
-      SELECT (count(*) FILTER (WHERE status = 'published'))::text || ':' || count(*)::text || ':' || coalesce(max(updated_at)::text, '') AS fp
+      SELECT (count(*) FILTER (WHERE status = 'published'))::text || ':' || count(*)::text || ':' || coalesce(max(updated_at)::text, '') || ':' ||
+             (SELECT count(*)::text || ':' || coalesce(max(updated_at)::text, '') FROM spm_tracking_sets) AS fp
         FROM papers WHERE kind <> 'jana'`
     return rows[0]?.fp ?? ''
   }
