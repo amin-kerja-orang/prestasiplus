@@ -58,7 +58,7 @@ const emit = defineEmits<{ answer: [partId: string, answer: PartAnswer] }>()
           type="button"
           variant="link"
           color="primary"
-          size="xl"
+          size="md"
          
           data-testid="cite-link"
           :data-cite="seg.target"
@@ -91,7 +91,7 @@ const emit = defineEmits<{ answer: [partId: string, answer: PartAnswer] }>()
       color="neutral"
       variant="soft"
       block
-      size="xl"
+      size="md"
       data-testid="leaf-stimulus-link"
       @click="group?.open(leafStimulus.id)"
       >{{ chipLabel(leafStimulus.label ?? leafStimulus.id) }}</UButton
@@ -102,7 +102,7 @@ const emit = defineEmits<{ answer: [partId: string, answer: PartAnswer] }>()
         color="neutral"
         variant="soft"
         block
-        size="xl"
+        size="md"
         data-leaf-toggle
         :aria-expanded="shown"
         :aria-controls="`leaf-stim-${part.id}`"
