@@ -6363,6 +6363,28 @@
           "gamesAwardSyiling": {
             "type": "integer",
             "minimum": 0
+          },
+          "redeemBudget": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000,
+            "description": "The one global session budget, in sen (`redeem_budget_sen`)."
+          },
+          "flatCoins": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20,
+            "description": "Syiling per correct answer (`coins_per_correct`)."
+          },
+          "sessionYear": {
+            "type": "integer",
+            "minimum": 2020,
+            "maximum": 2100,
+            "description": "The current session year (`session_year`)."
+          },
+          "miniGamesCoins": {
+            "type": "boolean",
+            "description": "Whether games pay Syiling (`mini_games_give_coins`)."
           }
         },
         "required": [
@@ -6395,6 +6417,28 @@
           "gamesAwardSyiling": {
             "type": "integer",
             "minimum": 0
+          },
+          "redeemBudget": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000,
+            "description": "The one global session budget, in sen (`redeem_budget_sen`)."
+          },
+          "flatCoins": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20,
+            "description": "Syiling per correct answer (`coins_per_correct`)."
+          },
+          "sessionYear": {
+            "type": "integer",
+            "minimum": 2020,
+            "maximum": 2100,
+            "description": "The current session year (`session_year`)."
+          },
+          "miniGamesCoins": {
+            "type": "boolean",
+            "description": "Whether games pay Syiling (`mini_games_give_coins`)."
           }
         }
       },
