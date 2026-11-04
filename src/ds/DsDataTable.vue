@@ -145,7 +145,7 @@ type ColumnWidth = keyof typeof WIDTHS
 const cols = computed<TableColumn<T>[]>(() => {
   const first = props.stickyFirstColumn ?? kind.value === 'card'
   const body = props.columns.map((c, i) => {
-    const w = (c.meta as { width?: ColumnWidth } | undefined)?.width
+    const w: ColumnWidth | undefined = c.meta?.width
     const sticky = i === 0 && first
     if (!sticky && !w) return c
     const width = w ? WIDTHS[w] : ''

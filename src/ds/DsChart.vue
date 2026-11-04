@@ -23,7 +23,7 @@ import {
   type Plugin,
 } from 'chart.js'
 import type { TableColumn } from '@nuxt/ui'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch, watchPostEffect } from 'vue'
 
 import { dsCopy, fillCopy } from './copy'
 import { warnDeprecated } from './deprecate'
@@ -113,6 +113,11 @@ const rowsHeight = computed(() =>
 const personality = usePersonality()
 const root = useTemplateRef<HTMLElement>('root')
 const canvas = useTemplateRef<HTMLCanvasElement>('canvas')
+const plot = useTemplateRef<HTMLElement>('plot')
+// Row-sized height is a runtime pixel value no utility class can express; set it on the node, not as an inline style attribute.
+watchPostEffect(() => {
+  if (plot.value) plot.value.style.height = rowsHeight.value ? `${rowsHeight.value}px` : ''
+})
 
 /** Used when the chart sits outside any `[data-personality]` scope (older shells), where `--ds-cat-*` is unset. */
 const CAT_FALLBACK = [
@@ -330,9 +335,9 @@ watch(view, async (v) => {
     <DsEmptyState v-else-if="view === 'empty'" size="sm" :title="emptyLabel" icon="chart-line-up" />
     <div
       v-show="view === 'ready'"
+      ref="plot"
       class="relative w-full"
       :class="rowsHeight ? '' : plotHeight"
-      :style="rowsHeight ? { height: `${rowsHeight}px` } : undefined"
     >
       <canvas ref="canvas" role="img" :aria-label="title" />
     </div>
