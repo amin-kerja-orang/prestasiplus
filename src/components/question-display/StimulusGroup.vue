@@ -8,7 +8,7 @@
  * With `groupId` the sheet is open the first time the group appears and keeps the pupil's choice (FR-X6-6).
  * A stimulus that cannot be drawn excludes the whole group (reason line). The questions go in the default slot. Only one tree is rendered at a time (no duplicate ids).
  */
-import { computed } from 'vue'
+import { computed, useSlots } from 'vue'
 
 import { DsIconChip, DsText } from '@/ds'
 import { useMedia } from '@/ds/useMedia'
@@ -31,8 +31,10 @@ const props = withDefaults(
     hint?: boolean
     /** A group with a stimulus that cannot be drawn shows the reason line instead when this is set (sitting, result, drills); authoring previews leave it off (default). */
     excludeUnrenderable?: boolean
+    /** Wide split: `half` (default, 1:1) or `sitting` (the V3 attempt ratio: stimulus 4 : questions 5). */
+    split?: 'half' | 'sitting'
   }>(),
-  { stimuli: undefined, stimulus: undefined, groupId: undefined, hint: true, excludeUnrenderable: false },
+  { stimuli: undefined, stimulus: undefined, groupId: undefined, hint: true, excludeUnrenderable: false, split: 'half' },
 )
 const emit = defineEmits<{
   loaded: [id: string]
@@ -40,6 +42,9 @@ const emit = defineEmits<{
   retry: [id: string]
   report: [id: string]
 }>()
+
+/** No questions in the default slot (a question's own stimuli): the figures show inline, full width, at every width. */
+const inline = !useSlots().default
 
 const model = defineModel<boolean>('open', { default: false })
 const keyed = computed(() => (props.groupId ? useStimulusOpen(props.groupId) : null))
@@ -70,13 +75,32 @@ const iconOnly = computed(() => thumb.value?.kind === 'passage' || thumb.value?.
   </div>
 
   <div
+    v-else-if="inline"
+    class="flex w-full min-w-0 flex-col gap-4"
+    data-testid="stimulus-group"
+    data-layout="inline"
+  >
+    <StimulusFigure
+      v-for="st in list"
+      :key="st.id"
+      :stimulus="st"
+      @loaded="emit('loaded', st.id)"
+      @error="emit('error', st.id)"
+      @retry="emit('retry', st.id)"
+      @report="emit('report', st.id)"
+    />
+  </div>
+
+  <div
     v-else-if="wide"
-    class="grid grid-cols-2 items-start gap-6"
+    class="grid items-start gap-6"
+    :class="split === 'sitting' ? 'grid-cols-9' : 'grid-cols-2'"
     data-testid="stimulus-group"
     data-layout="split"
   >
     <aside
       class="sticky top-20 flex max-h-[calc(100vh-6rem)] flex-col gap-2 self-start overflow-y-auto"
+      :class="split === 'sitting' ? 'col-span-4' : undefined"
       :aria-label="label"
       data-testid="stimulus-pane"
     >
@@ -92,7 +116,13 @@ const iconOnly = computed(() => thumb.value?.kind === 'passage' || thumb.value?.
         @report="emit('report', st.id)"
       />
     </aside>
-    <div class="flex min-w-0 flex-col gap-6" data-testid="stimulus-questions"><slot /></div>
+    <div
+      class="flex min-w-0 flex-col gap-6"
+      :class="split === 'sitting' ? 'col-span-5' : undefined"
+      data-testid="stimulus-questions"
+    >
+      <slot />
+    </div>
   </div>
 
   <div v-else class="flex w-full min-w-0 flex-col gap-4" data-testid="stimulus-group" data-layout="stacked">
@@ -126,7 +156,7 @@ const iconOnly = computed(() => thumb.value?.kind === 'passage' || thumb.value?.
   </div>
 
   <UDrawer
-    v-if="!wide && !blocked"
+    v-if="!wide && !blocked && !inline"
     v-model:open="open"
     :title="label"
     :description="qdCopy.sheetDescription"

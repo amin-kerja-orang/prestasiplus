@@ -93,6 +93,7 @@ const groupBind = computed(() =>
         stimuli: groupData.value,
         groupId: group.value.id,
         excludeUnrenderable: true,
+        split: 'sitting' as const,
         onError: onStimError,
         onLoaded: onStimLoaded,
       }

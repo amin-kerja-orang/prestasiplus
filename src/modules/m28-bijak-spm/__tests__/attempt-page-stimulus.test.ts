@@ -133,4 +133,14 @@ describe('AttemptPage at 375: one StimulusGroup', () => {
     expect(q('[data-testid=next]')?.hasAttribute('disabled')).toBe(true)
     expect(q('[data-testid=need-stimulus]')).not.toBeNull()
   })
+
+  it('at 1280 the split keeps the V3 ratio: stimulus 4 : questions 5', async () => {
+    width(true)
+    await render()
+    const g = q('[data-testid=stimulus-group]')!
+    expect(g.getAttribute('data-layout')).toBe('split')
+    expect(g.classList.contains('grid-cols-9')).toBe(true)
+    expect(q('[data-testid=stimulus-pane]')!.classList.contains('col-span-4')).toBe(true)
+    expect(q('[data-testid=stimulus-questions]')!.classList.contains('col-span-5')).toBe(true)
+  })
 })

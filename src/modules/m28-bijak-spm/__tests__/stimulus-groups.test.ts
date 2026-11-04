@@ -147,11 +147,11 @@ describe('D90: one stimulus panel per group, members below it', () => {
   it('a group of several stimuli stacks them in one panel, one chip', async () => {
     media(true)
     const two = [picture('image', 'a'), { id: 'b', kind: 'passage' as const, label: 'Petikan A', alt: '', text: 'Isi' }].map(toStimulusData)
-    const w = mount(StimulusGroup, { props: { stimuli: two }, global: { stubs } })
+    const w = mount(StimulusGroup, { props: { stimuli: two }, slots: { default: '<p>Soalan</p>' }, global: { stubs } })
     await nextTick()
     expect(w.findAll('figure')).toHaveLength(2)
     media(false)
-    const chip = mount(StimulusGroup, { props: { stimuli: two }, global: { stubs } })
+    const chip = mount(StimulusGroup, { props: { stimuli: two }, slots: { default: '<p>Soalan</p>' }, global: { stubs } })
     await nextTick()
     expect(chip.text()).toContain('Lihat Rajah 1 dan Petikan A')
   })
@@ -229,7 +229,17 @@ describe('QuestionBlock: stem picture, option pictures, blocked hint', () => {
     const html = w.html()
     expect(html.indexOf('own-stimuli')).toBeLessThan(html.indexOf('question-stem'))
     expect(w.find('[data-testid=own-stimuli]').attributes('data-count')).toBe('2')
-    expect(w.find('[data-testid=stimulus-chip]').exists()).toBe(true)
+    expect(w.find('[data-testid=stimulus-group]').attributes('data-layout')).toBe('inline')
+  })
+
+  it('own stimuli at 1280 are stacked and full width: inline, no pane, no empty right column', async () => {
+    media(true)
+    const w = mountQ(q({ stem: 'Soalan', stimuli: [picture('image', 'a'), picture('image', 'b')] }))
+    await nextTick()
+    expect(w.find('[data-testid=stimulus-group]').attributes('data-layout')).toBe('inline')
+    expect(w.find('[data-testid=stimulus-pane]').exists()).toBe(false)
+    expect(w.find('[data-testid=stimulus-group]').classes()).not.toContain('grid')
+    expect(w.findAll('[data-testid=own-stimuli] figure')).toHaveLength(2)
   })
 
   it('does not show the back-compat stemImage again when stimuli is present', () => {
