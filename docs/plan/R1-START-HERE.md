@@ -105,7 +105,7 @@ Every report and practice API returns accuracy as a JSON number rounded to ONE d
 1. **Read** [`docs/prd/r1/00-index.md`](../prd/r1/00-index.md), then the PRD sections on the card's `PRD:` line, then its `Data/API:` rows in 50 and 60.
    Then open the flow of your card in [`docs/prd/r1/49-flow-diagrams.md`](../prd/r1/49-flow-diagrams.md) (find the card ID): it shows the whole journey your card is part of, what already exists in V3, and the steps owned by other cards.
 2. **Pick a card**: label `r1` + `status:ready` + your sector (`sector:S<n>`), in the current sprint milestone, P0 first, `deps:` satisfied (decision 8).
-3. **Claim it with the lock** (decision 1):
+3. **Join your team once, then claim it with the lock** (decision 1). The lead runs `register-team` (or `claim-token` for a team registered before the token fix) once; it prints the **team token once**. The lead hands the token to each session privately (never in an issue, PR or commit). Each session runs `node scripts/r1-lock.mjs join --team <team> --token <token>` once, or sets the env var `R1_TEAM_TOKEN`. Without the token every lock command of the team exits 3.
    - sector: `node scripts/r1-lock.mjs acquire S<n> --team <team> --session S-<k>`;
    - card: `node scripts/r1-lock.mjs acquire S<n>-T<nn> --team <team> --session S-<k>`.
 
@@ -135,7 +135,9 @@ Every report and practice API returns accuracy as a JSON number rounded to ONE d
 ## Lock cheat-sheet (`node scripts/r1-lock.mjs --help` prints it)
 
 ```
-node scripts/r1-lock.mjs register-team --team team-amin --session S-1      once, from the lead session
+node scripts/r1-lock.mjs register-team --team team-amin --session S-1      once, from the lead session; prints the team token ONCE
+node scripts/r1-lock.mjs claim-token --team team-amin --session S-1         lead, team registered before the token fix: adds the token, prints it once
+node scripts/r1-lock.mjs join --team team-amin --token <token>              every other session, once (or set R1_TEAM_TOKEN)
 node scripts/r1-lock.mjs list                                              all locks (STALE after 24 h without heartbeat)
 node scripts/r1-lock.mjs mine --team team-amin                             locks of your team
 node scripts/r1-lock.mjs acquire S1 --team team-amin --session S-1         a sector
@@ -143,8 +145,8 @@ node scripts/r1-lock.mjs acquire S1-T01 --team team-amin --session S-2     a car
 node scripts/r1-lock.mjs heartbeat-all --team team-amin --session S-1      daily
 node scripts/r1-lock.mjs release S1-T01 --team team-amin --session S-2     after merge, or if you drop the card
 ```
-- You may set `R1_TEAM` and `R1_SESSION` in the environment instead of the flags. `break` is for the product owner only.
-- Exit codes: **0** ok · **2** usage or setup error · **3** held by another team (pick another) · **4** you are not the holder, or your team does not hold the sector.
+- You may set `R1_TEAM`, `R1_SESSION` and `R1_TEAM_TOKEN` in the environment instead of the flags and `join` (the env token wins over the one saved by `join`). `list`, `mine` and `--help` need no token. `break` is for the product owner only and needs no token.
+- Exit codes: **0** ok · **2** usage or setup error · **3** held by another team (pick another), or the team token is missing or wrong (ask your lead for it, then `join`) · **4** you are not the holder, or your team does not hold the sector.
 - The tool needs a git remote with **push rights** to the repository (a cloud session uses the repository token its platform provides).
 - Conventions the tool does not enforce: hold at most 3 sectors at a time (a card of a 4th sector waits until you release one, or is done by the team that holds it; a one-file change there is a cross-sector PR); never hold a sector idle for more than a day; S9 is the Delivery Lead's sector and cannot be claimed as a SECTOR (decision 10).
 - **Weekends and leave:** STALE counts calendar hours. Before a weekend or leave run `heartbeat-all` and write `[<team>/S-<k>] away until <date>` in #503. The product owner breaks a STALE lock only after one working day without an answer in #503.
