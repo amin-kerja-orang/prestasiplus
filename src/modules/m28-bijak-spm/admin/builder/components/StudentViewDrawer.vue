@@ -4,8 +4,7 @@ import type { BijakBuilderStudentView } from '@pp/contract'
 
 import DsPanel from '@/ds/DsPanel.vue'
 
-import RichText from '../../../components/RichText.vue'
-import StimulusView from '../../../components/StimulusView.vue'
+import { RichText, StimulusView } from '../../../../../components/question-display'
 import type { StimulusDef } from '../../../domain/types'
 import { editorStimuliOf } from '../../../lib/stimulus-data'
 import { builderCopy as t } from '../domain/copy'
