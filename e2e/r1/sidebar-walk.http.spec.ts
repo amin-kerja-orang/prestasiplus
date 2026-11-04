@@ -162,13 +162,13 @@ async function problemsOf(page: Page, role: WalkRole, link: Link): Promise<strin
   // The route has settled once the title is set and the shell's main landmark is visible. The
   // 403/404 outcome pages are rendered by LayoutHost and may have no main landmark: then it is a problem.
   try {
-    await expect.poll(() => page.title(), { timeout: 15_000 }).not.toBe('')
+    await expect.poll(() => page.title(), { timeout: 8_000 }).not.toBe('')
   } catch {
     problems.push('empty title')
   }
   const main = page.locator('[data-testid="pembelajaran-main"], main, [role="main"]').first()
   try {
-    await expect(main).toBeVisible({ timeout: 15_000 })
+    await expect(main).toBeVisible({ timeout: 8_000 })
   } catch {
     problems.push('no visible main landmark')
   }
@@ -191,15 +191,30 @@ async function login(page: Page, role: ApiRole): Promise<void> {
 const onDesktop = (info: TestInfo) => info.project.name === 'desktop'
 const onPhone = (info: TestInfo) => info.project.name === 'mobile'
 
+/** Every action and locator wait of a walk test is capped, so a broken shell fails fast instead of hanging. */
+const WAIT_MS = 10_000
+/** Wall-time budget per link: goto plus the settle waits. The walk stops at its budget and reports. */
+const PER_LINK_MS = 6_000
+const BASE_MS = 60_000
+
+/**
+ * Sidebar-only items: the pupil's Remedial has `surfaces: ['sidebar']` (src/shells/nav/user-nav.ts:219), so
+ * the "Lagi" panel (drawer surface) does not list it by design. Not a phone gap.
+ */
+const SIDEBAR_ONLY_PATHS = ['/remedial/saya']
+
 const ROLES: WalkRole[] = ['student', 'guru', 'adminSekolah']
 
 for (const role of ROLES) {
   test.describe(`sidebar walk: ${ROLE_LABEL[role]}`, () => {
     test(`@api every sidebar link opens a real screen (${role}, 1280)`, async ({ page }, info) => {
       test.skip(!onDesktop(info), 'viewport-independent: runs on the desktop project only')
+      page.setDefaultTimeout(WAIT_MS)
       await login(page, role)
       const links = await collect(page, SIDEBAR)
-      test.setTimeout(links.length * 20_000 + 60_000)
+      const budget = links.length * PER_LINK_MS + BASE_MS
+      test.setTimeout(budget + 30_000)
+      const deadline = Date.now() + budget
       expect(links.length, `${role}: sidebar links rendered`).toBeGreaterThanOrEqual(MIN_LINKS[role])
 
       const red = EXPECTED_RED[role]
@@ -209,6 +224,10 @@ for (const role of ROLES) {
         (r) => `${r.id} ${r.route} (${r.ownerCard}): EXPECTED_RED row matches no rendered sidebar link, remove the stale row`,
       )
       for (const link of links) {
+        if (Date.now() > deadline) {
+          failures.push(`${link.id} ${link.href}: not opened, the walk budget of ${budget} ms ran out`)
+          continue
+        }
         const row = red.find((r) => r.route === link.href)
         const problems = await problemsOf(page, role, link)
         if (row) {
@@ -230,36 +249,47 @@ for (const role of ROLES) {
 
     test(`@api the tab bar and the Lagi panel reach the same links (${role}, 375)`, async ({ page }, info) => {
       test.skip(!onPhone(info), 'phone test runs on the mobile project only')
+      test.setTimeout(240_000)
+      page.setDefaultTimeout(WAIT_MS)
       await login(page, role)
       // The desktop sidebar is not in the DOM at 375: read its link set at 1280, then go back to 375.
       await page.setViewportSize({ width: 1280, height: 800 })
       const desktop = await collect(page, SIDEBAR)
       expect(desktop.length, `${role}: sidebar links rendered`).toBeGreaterThanOrEqual(MIN_LINKS[role])
-      test.setTimeout(desktop.length * 15_000 + 60_000)
       await page.setViewportSize({ width: 375, height: 812 })
       const lagiButton = page.locator('[data-nav-id="tab-lagi"]')
-      await expect(lagiButton).toBeVisible()
+      await expect(lagiButton, 'the "Lagi" tab').toBeVisible({ timeout: WAIT_MS })
       const tabs = await collect(page, TABS)
+      const lagiNav = page.getByTestId('pembelajaran-lagi-nav')
       const openLagi = async () => {
-        await lagiButton.click()
-        await expect(page.getByTestId('pembelajaran-lagi-nav')).toBeVisible()
+        await lagiButton.click({ timeout: WAIT_MS })
+        await expect(lagiNav, 'the Lagi panel').toBeVisible({ timeout: WAIT_MS })
       }
       await openLagi()
       const lagi = await collect(page, LAGI)
       const reachable = new Set([...tabs, ...lagi].map((l) => l.href))
       const missing = desktop
         .map((l) => l.href)
-        .filter((h) => !ACCOUNT_PATHS.includes(h) && !reachable.has(h))
+        .filter((h) => !ACCOUNT_PATHS.includes(h) && !SIDEBAR_ONLY_PATHS.includes(h) && !reachable.has(h))
       expect(missing, 'desktop sidebar links not reachable from the tab bar or the Lagi panel').toEqual([])
-      // Tap every Lagi link (new-tab links and expected-red rows excluded); check it lands on its own path.
+      // Tap every Lagi link except new-tab links, expected-red rows and Log Keluar (it would end the
+      // session); check it lands on its own path. The loop stops at its budget.
       const red = EXPECTED_RED[role]
       const failures: string[] = []
-      for (const link of lagi.filter((l) => !l.blank && !red.some((r) => r.route === l.href))) {
-        if (!(await page.getByTestId('pembelajaran-lagi-nav').isVisible())) await openLagi()
-        await page.locator(`${LAGI}[href="${link.href}"]`).first().click()
+      const deadline = Date.now() + 150_000
+      const targets = lagi.filter(
+        (l) => !l.blank && l.href !== '/logout' && !red.some((r) => r.route === l.href),
+      )
+      for (const link of targets) {
+        if (Date.now() > deadline) {
+          failures.push(`${link.id} ${link.href}: not tapped, the phone budget ran out`)
+          continue
+        }
         try {
+          if (!(await lagiNav.isVisible())) await openLagi()
+          await page.locator(`${LAGI}[href="${link.href}"]`).first().click({ timeout: WAIT_MS })
           await expect
-            .poll(() => pathOk(role, link.href, new URL(page.url()).pathname), { timeout: 15_000 })
+            .poll(() => pathOk(role, link.href, new URL(page.url()).pathname), { timeout: 8_000 })
             .toBe(true)
         } catch {
           failures.push(`${link.id} ${link.href}: landed on ${new URL(page.url()).pathname}`)

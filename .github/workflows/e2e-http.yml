@@ -132,7 +132,7 @@ jobs:
       # suite cannot cancel them before they report. The full suite below runs even if this step fails.
       - name: E2E R1 specs (e2e/r1)
         timeout-minutes: 20
-        run: npx playwright test -c playwright.http.config.ts e2e/r1
+        run: npx playwright test -c playwright.http.config.ts e2e/r1 --project=desktop --project=mobile
 
       - name: E2E (real API)
         if: ${{ !cancelled() }}
