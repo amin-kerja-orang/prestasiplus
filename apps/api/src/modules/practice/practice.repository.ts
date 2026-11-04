@@ -41,7 +41,7 @@ export interface SessionRecord {
   questionSetId: string | null
   timeLimitSec: number | null
   questionCount: number
-  status: 'in_progress' | 'completed'
+  status: 'in_progress' | 'completed' | 'abandoned'
   correctCount: number
   timeSpentSec: number
   coinsEarned: number
@@ -641,6 +641,24 @@ export class PracticeRepository {
   }
 
   // --- reads ------------------------------------------------------------------------------------
+
+  /**
+   * DM-66 sweeper statement: every `in_progress` session whose last activity (the newest of its
+   * `practice_checks.checked_at` and `started_at`) is before `cutoff` becomes `abandoned`. Its checks are kept, no
+   * answer row is written, no reward is paid, `completed_at` stays null. Returns the rows changed.
+   */
+  async abandonIdle(cutoff: Date, limit = 500): Promise<number> {
+    return this.db.$executeRaw`
+      UPDATE practice_sessions SET status = 'abandoned', updated_at = now()
+       WHERE id IN (
+         SELECT s.id FROM practice_sessions s
+          WHERE s.status = 'in_progress'
+            AND greatest(s.started_at, coalesce((SELECT max(c.checked_at) FROM practice_checks c WHERE c.session_id = s.id), s.started_at)) < ${cutoff}::timestamptz
+          ORDER BY s.started_at
+          LIMIT ${limit}::int
+          FOR UPDATE OF s SKIP LOCKED)
+         AND status = 'in_progress'`
+  }
 
   /**
    * Completed sessions of a user in `modes`, newest first (completed_at desc, then id desc). Other modules
