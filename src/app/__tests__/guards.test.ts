@@ -112,11 +112,12 @@ describe('guest pages have no guest-only guard (FR-M01-13, BR-08)', () => {
 })
 
 describe('role guard (overview §5.4 step 3)', () => {
-  it('redirects a role mismatch to the landing path by default (BR-07)', async () => {
+  it('answers the 403 page in place for a role mismatch by default (S0-T05, FR-X2-4)', async () => {
     logIn(STUDENT)
     const router = testRouter()
     await router.push('/admin')
-    expect(router.currentRoute.value.path).toBe('/dashboard')
+    expect(router.currentRoute.value.path).toBe('/admin')
+    expect(useRouteOutcome().value).toBe(403)
   })
 
   it('lets the allowed role through', async () => {

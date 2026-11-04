@@ -20,8 +20,7 @@ import { expect, gotoApi, loginViaUi, test } from '../fixtures/api'
 import { account, expectNoHScroll } from './helpers'
 
 const NOT_FOUND = 'Halaman Tidak Dijumpai'
-const OUT_OF_SCOPE = 'Peranan ini tidak termasuk dalam prototaip.'
-const SCOPE_HEADING = 'Belum tersedia dalam prototaip'
+const OUT_OF_SCOPE = 'Peranan ini belum menggunakan sistem ini.'
 
 const OUT_OF_SCOPE_ACCOUNTS = [
   { name: 'parent', user: 'ibubapa@demo.test' },
@@ -87,7 +86,6 @@ test.describe('sweep 23 Oct @api', () => {
     await expect(
       page.getByRole('heading', { name: 'Remedial Progress Dashboard' }).first(),
     ).toBeVisible()
-    await expect(page.getByRole('heading', { name: SCOPE_HEADING })).toHaveCount(0)
     await expectNoHScroll(page)
   })
 
