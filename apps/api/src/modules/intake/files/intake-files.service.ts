@@ -95,8 +95,60 @@ export class IntakeFilesService {
     return toBatchSummary(row as BatchRow)
   }
 
+  /**
+   * S1-T08 (DM-72): creates the batch of a teacher's paper submission (`source = 'guru'`: free-text subject, no kertas, a
+   * guru paper type slug, rights `own`). Used only by the guru paper intake adapter. More than `maxActiveBatches` open batches
+   * is 409 (ERR-QUOTA-04), unlike the admin route's 429.
+   */
+  async createGuruBatch(
+    auth: AuthContext,
+    input: { paperType: string; subject: string; year: number | null; sourceText: string; note: string | null },
+    who: CallerInfo,
+  ): Promise<bigint> {
+    const ownerId = idFromString(auth.userId)
+    return this.prisma.transaction(async (tx) => {
+      if (!isAdmin(auth)) {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`intake:user:${auth.userId}`}, 0))`
+        const open = await tx.intakeBatch.count({ where: { ownerUserId: ownerId, status: { in: ['submitted', 'processing'] } } })
+        if (open >= this.config.maxActiveBatches) {
+          throw ApiError.of('CONFLICT', { message: INTAKE_FILE_MESSAGES.activeLimit(this.config.maxActiveBatches) })
+        }
+      }
+      const created = await tx.intakeBatch.create({
+        data: {
+          ownerUserId: ownerId,
+          source: 'guru',
+          status: 'submitted',
+          paperType: input.paperType,
+          subject: input.subject,
+          kertas: null,
+          year: input.year,
+          sourceText: input.sourceText,
+          rightsStatus: 'own',
+          note: input.note,
+          isTest: auth.mode !== null,
+        },
+        select: { id: true },
+      })
+      await this.record(AUDIT_ACTIONS.INTAKE_BATCH_CREATED, auth, created.id, who, { paperType: input.paperType, source: 'guru' }, tx)
+      return created.id
+    })
+  }
+
+  /** Removes a just-created, still empty guru batch (the adapter's undo when its upload was refused). Never throws. */
+  async discardEmptyBatch(batchId: bigint): Promise<void> {
+    try {
+      await this.prisma.transaction(async (tx) => {
+        const files = await tx.intakeFile.count({ where: { batchId } })
+        if (files === 0) await tx.intakeBatch.deleteMany({ where: { id: batchId, source: 'guru', status: 'submitted' } })
+      })
+    } catch {
+      /* best effort: an orphan empty batch is harmless and visible to the admin */
+    }
+  }
+
   async listBatches(auth: AuthContext, query: IntakeBatchListQuery): Promise<{ data: IntakeBatchSummary[]; meta: ReturnType<typeof listMeta> }> {
-    const where = { ...visibleBatches(auth), ...(query.status ? { status: query.status } : {}) }
+    const where = { ...visibleBatches(auth), ...(query.status ? { status: query.status } : {}), ...(query.source ? { source: query.source } : {}) }
     const [total, rows] = await Promise.all([
       this.prisma.client.intakeBatch.count({ where }),
       this.prisma.client.intakeBatch.findMany({

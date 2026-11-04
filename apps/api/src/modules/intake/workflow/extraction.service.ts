@@ -243,7 +243,7 @@ export class IntakeExtractionService implements OnModuleInit {
     const code = curriculumCodeOf(b.subject.toUpperCase())
     const subject = await tx.subject.findUnique({ where: { code }, select: { id: true } })
     // Only an official paper has a natural key (it is the same paper whoever uploads it); everything else is its own row.
-    const keyOf = (c: string): string | null => (b.paperType === 'exam' ? `${c.toLowerCase()}|${b.year}||k${b.kertas}|sebenar` : null)
+    const keyOf = (c: string): string | null => (b.paperType === 'exam' && b.kertas !== null ? `${c.toLowerCase()}|${b.year}||k${b.kertas}|sebenar` : null)
     const naturalKey = keyOf(code)
     // Rows written before the key was canonical carry the Bijak code ("mat|..."): they still count as the same paper.
     const legacyKey = keyOf(bijakCodeOf(code))
@@ -257,7 +257,7 @@ export class IntakeExtractionService implements OnModuleInit {
     const examType = b.paperType === 'exam' ? 'sebenar' : b.paperType === 'trial' ? 'percubaan' : b.paperType === 'exercise_book' ? 'latihan' : null
     const inserted = await tx.$queryRaw<{ id: bigint }[]>`
       INSERT INTO source_papers (natural_key, file_hash, subject_id, kertas, year, exam_type, rights_status)
-      VALUES (${naturalKey}, ${fileHash}, ${subject?.id ?? null}, ${`K${b.kertas}`}, ${b.year}, ${examType}, ${b.rightsStatus})
+      VALUES (${naturalKey}, ${fileHash}, ${subject?.id ?? null}, ${b.kertas === null ? null : `K${b.kertas}`}, ${b.year}, ${examType}, ${b.rightsStatus})
       ON CONFLICT (natural_key) DO NOTHING
       RETURNING id`
     const paperId = inserted[0]?.id ?? (await tx.sourcePaper.findFirst({ where: { naturalKey }, select: { id: true } }))?.id
