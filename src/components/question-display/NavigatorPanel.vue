@@ -5,7 +5,7 @@
  */
 import { computed } from 'vue'
 
-import './attempt-shell.css'
+import '@/ds/states.css'
 
 import type { QuestionView, SectionView } from '@/modules/m28-bijak-spm/domain/types'
 
