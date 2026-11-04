@@ -92,9 +92,9 @@ describe('GET /marketplace/products/:slug (AC5)', () => {
   })
 
   it('answers 404 for an unknown or hidden slug and changes nothing', async () => {
-    expectError(await student.get('/api/marketplace/products/tiada-produk'), 404, 'NOT_FOUND', 'Not Found.')
+    expectError(await student.get('/api/marketplace/products/tiada-produk'), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
     await t.db.query(`update marketplace_products set status = 'draft' where id = 1`)
-    expectError(await student.get(`/api/marketplace/products/${SLUG_1}`), 404, 'NOT_FOUND', 'Not Found.')
+    expectError(await student.get(`/api/marketplace/products/${SLUG_1}`), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
     await t.db.query(`update marketplace_products set status = 'rejected' where id = 1`)
     expectError(await student.get(`/api/marketplace/products/${SLUG_1}`), 404, 'NOT_FOUND')
     expect(await views(1)).toBe(30)
@@ -181,7 +181,7 @@ describe('POST /marketplace/products/:slug/whatsapp (AC6, D14)', () => {
   })
 
   it('answers 404 for an unknown or hidden product and changes nothing', async () => {
-    expectError(await student.post('/api/marketplace/products/tiada/whatsapp'), 404, 'NOT_FOUND', 'Not Found.')
+    expectError(await student.post('/api/marketplace/products/tiada/whatsapp'), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
     await t.db.query(`update marketplace_products set status = 'draft' where id = 8`)
     expectError(await student.post(`/api/marketplace/products/${SLUG_8}/whatsapp`), 404, 'NOT_FOUND')
     await t.db.query(`update marketplace_products set status = 'active' where id = 8`)

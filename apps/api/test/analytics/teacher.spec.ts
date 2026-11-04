@@ -91,8 +91,8 @@ describe('M11 teacher report S1 and item analysis S6 (AC 1 to 3)', () => {
     it('school_admin and student are 403, no session is 401, on both routes', async () => {
       for (const path of ['/teacher/report', '/teacher/item-analysis']) {
         errorIs(await t.http().get(`/api${path}`), 401, 'UNAUTHORIZED')
-        errorIs(await student.get(path), 403, 'FORBIDDEN', 'This action is unauthorized.')
-        errorIs(await adminA.get(path), 403, 'FORBIDDEN', 'This action is unauthorized.')
+        errorIs(await student.get(path), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
+        errorIs(await adminA.get(path), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
       }
     })
 
