@@ -240,7 +240,7 @@ const cardFields: CardField[] = [
               placeholder="Cari tajuk/sumber..."
               icon="i-ph-magnifying-glass"
               size="md"
-              class="w-full md:min-w-0 md:flex-[2]"
+              class="w-full md:min-w-0 md:flex-2"
               data-testid="filter-search"
             />
           </template>
