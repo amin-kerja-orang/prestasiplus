@@ -5,6 +5,8 @@
  */
 import { computed } from 'vue'
 
+import './attempt-shell.css'
+
 import type { QuestionView, SectionView } from '@/modules/m28-bijak-spm/domain/types'
 
 export type NavState = 'answered' | 'flagged' | 'none'
@@ -70,7 +72,7 @@ const stateIcon: Record<NavState, string> = {
                 ? 'solid'
                 : 'soft'
           "
-          class="tabular relative size-11 justify-center rounded-xl p-0 font-bold"
+          class="tabular size-11 justify-center rounded-xl p-0 font-bold"
           :aria-label="`Soalan ${q.number}, ${label[states[q.id] ?? 'none']}`"
           :aria-current="q.id === current ? 'true' : undefined"
           :data-testid="`nav-${q.number}`"
@@ -80,7 +82,7 @@ const stateIcon: Record<NavState, string> = {
           {{ q.number }}
           <UIcon
             :name="stateIcon[states[q.id] ?? 'none']"
-            class="absolute end-1 top-1 size-3"
+            class="size-3"
             aria-hidden="true"
             :data-icon="stateIcon[states[q.id] ?? 'none']"
             :data-testid="`nav-${q.number}-icon`"
@@ -92,7 +94,6 @@ const stateIcon: Record<NavState, string> = {
       <li
         v-for="st in ['answered', 'flagged', 'none'] as const"
         :key="st"
-        class="flex items-center gap-1"
       >
         <UIcon :name="stateIcon[st]" :data-icon="stateIcon[st]" class="size-3" aria-hidden="true" />
         {{ label[st] }}

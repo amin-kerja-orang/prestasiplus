@@ -284,7 +284,7 @@ function onScroll(): void {
 onMounted(() => {
   void load()
   void nextTick(() => {
-    scrollNode = document.querySelector<HTMLElement>('[data-testid=attempt-scroll]')
+    scrollNode = scrollEl()
     scrollNode?.addEventListener('scroll', onScroll, { passive: true })
   })
   tick = setInterval(() => (now.value = Date.now()), 1000)
@@ -382,7 +382,7 @@ async function goTo(i: number): Promise<void> {
   writePosition(attemptId.value, { questionIndex: i, scrollTop: 0 })
   navOpen.value = false
   await nextTick()
-  document.querySelector('[data-testid=attempt-scroll]')?.scrollTo({ top: 0 })
+  scrollEl()?.scrollTo({ top: 0 })
   questionRef.value?.focus()
 }
 function goToId(id: string): void {
@@ -529,23 +529,20 @@ const feedback = computed(() => {
     </template>
 
     <template #banner>
+      <!-- One bar for both notices: the 5-minute warning (timer still running) and, at 0 while
+           offline, "Masa tamat" (the two never show together). -->
       <p
-        v-if="warned && isExam && (remaining ?? 0) > 0"
+        v-if="timeUp || (warned && isExam && (remaining ?? 0) > 0)"
         class="shrink-0 bg-elevated px-3 py-2 text-center text-label text-warning sm:px-6"
         role="status"
         data-short-compact
-        data-testid="time-warning"
+        :data-testid="timeUp ? 'time-up-offline' : 'time-warning'"
       >
-        Amaran: masa berbaki kurang 5 minit.
-      </p>
-      <p
-        v-if="timeUp"
-        class="shrink-0 bg-elevated px-3 py-2 text-center text-label text-warning sm:px-6"
-        role="status"
-        data-short-compact
-        data-testid="time-up-offline"
-      >
-        Masa tamat. Jawapan akan dihantar apabila sambungan pulih.
+        {{
+          timeUp
+            ? 'Masa tamat. Jawapan akan dihantar apabila sambungan pulih.'
+            : 'Amaran: masa berbaki kurang 5 minit.'
+        }}
       </p>
     </template>
 

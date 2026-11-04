@@ -1,0 +1,17 @@
+
+/* Navigator state cues (FR-MUR-QP-16): the icon sits in the button corner; the legend lines up icon and text. */
+[data-testid='navigator'] button {
+  position: relative;
+}
+
+[data-testid='navigator'] button > [data-icon] {
+  position: absolute;
+  inset-block-start: 0.25rem;
+  inset-inline-end: 0.25rem;
+}
+
+[data-testid='nav-legend'] > li {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
