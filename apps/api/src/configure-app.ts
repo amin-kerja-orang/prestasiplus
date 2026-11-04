@@ -4,6 +4,7 @@ import { json, type NextFunction, type Request, type Response } from 'express'
 import { Logger } from 'nestjs-pino'
 
 import { publicBaseUrlBootWarning } from './common/config/public-base-url'
+import { DEFAULT_JSON_LIMIT_BYTES } from './common/http/body-limits'
 import { clientIpBootWarning, clientIpMiddleware } from './common/net/client-ip'
 import { MetricsService } from './common/metrics/metrics.service'
 import { securityHeaders } from './common/security/security-headers'
@@ -17,6 +18,9 @@ export function trustProxyHops(raw: unknown): number {
   const n = Number.parseInt(String(raw ?? ''), 10)
   return Number.isInteger(n) && n >= 0 && n <= 10 ? n : 0
 }
+
+/** The JSON limit of every route without a larger parser of its own (Nest's default, 100kb); the error filter uses the same constant for a 413. */
+export const DEFAULT_JSON_LIMIT = `${String(DEFAULT_JSON_LIMIT_BYTES / 1024)}kb`
 
 /**
  * JSON limit of the two import routes (bulk user import and DELIMa student import) only; 2200kb because a 1,000,000-character text full of newlines or quotes doubles when JSON-escaped. The contract allows 1,048,576 characters of text plus the

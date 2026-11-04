@@ -34,7 +34,7 @@ export const ERROR_STATUS: Readonly<Record<ErrorCode, number>> = {
   SERVER_ERROR: 500,
   RATE_LIMITED: 429,
   PASSWORD_CHANGE_REQUIRED: 403,
-  BAD_REQUEST: 400, // the API filter answers a malformed body (400) with 422 BAD_REQUEST (40 X10.11 ERR-REQ-02)
+  BAD_REQUEST: 422, // 400 is treated as 422 (40 X10.2, ERR-REQ-02): the API answers a malformed body (400) with 422 BAD_REQUEST
   PAYLOAD_TOO_LARGE: 413,
   UNSUPPORTED_MEDIA_TYPE: 415,
   BAD_GATEWAY: 502,

@@ -19,6 +19,15 @@ export const DEFAULT_ERROR_MESSAGES: Readonly<Record<ErrorCode, string>> = {
   TIMEOUT: 'Permintaan mengambil masa terlalu lama. Cuba lagi.',
 }
 
+/**
+ * ERR-REQ-04 text (40 X10.11). Without a list it is the generic default; a module that knows the allowed formats
+ * passes them and gets "Jenis fail tidak disokong. Format dibenarkan: {senarai}.".
+ */
+export function unsupportedMediaTypeMessage(allowed?: readonly string[]): string {
+  const base = DEFAULT_ERROR_MESSAGES.UNSUPPORTED_MEDIA_TYPE
+  return allowed && allowed.length > 0 ? `${base} Format dibenarkan: ${allowed.join(', ')}.` : base
+}
+
 export interface ApiErrorOptions {
   /** Generic `ErrorCode` or a module-specific code. */
   code: string
