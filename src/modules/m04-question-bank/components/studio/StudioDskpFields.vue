@@ -78,6 +78,7 @@ const full = computed(() => spIds.value.length >= MAX_SP)
       <UCheckbox
         v-for="sp in unit.sps"
         :key="sp.id"
+        variant="card"
         :model-value="spIds.includes(sp.id)"
         :label="`${sp.code} ${sp.title}`"
         :disabled="disabled || (full && !spIds.includes(sp.id))"

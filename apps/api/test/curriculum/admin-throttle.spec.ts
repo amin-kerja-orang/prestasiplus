@@ -43,7 +43,7 @@ describe('curriculum write rate limit', () => {
     expect((await admin.patch('/api/admin/subjects/' + bm + '/active', { isActive: true })).status).toBe(200)
     // Seventh call: over the ceiling of 6, whatever the route.
     const limited = await admin.delete(`${api}/chapters/${created[2]}`)
-    const err = expectError(limited, 'RATE_LIMITED', 'Too Many Attempts.')
+    const err = expectError(limited, 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.')
     expect(err.retryAfter).toBeGreaterThanOrEqual(1)
     expect(err.retryAfter).toBeLessThanOrEqual(60)
     expect(limited.headers['retry-after']).toBe(String(err.retryAfter))

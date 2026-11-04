@@ -64,10 +64,10 @@ describe('POST /api/cikgu/send: the chat turn', () => {
     expect(await count(`select count(*)::int n from chat_threads`)).toBe(0)
   })
 
-  it('a malformed JSON body is rejected by the body parser before the route: standard 422 VALIDATION_ERROR envelope, nothing stored', async () => {
+  it('a malformed JSON body is rejected by the body parser before the route: standard 422 BAD_REQUEST envelope, nothing stored', async () => {
     const res = await student.who.agent.post('/api/cikgu/send').set('X-CSRF-Token', student.who.csrf).set('Content-Type', 'application/json').send('{"message":')
     expect(res.status).toBe(422)
-    expect(res.body.error.code).toBe('VALIDATION_ERROR')
+    expect(res.body.error.code).toBe('BAD_REQUEST')
     expect(await count(`select count(*)::int n from chat_messages`)).toBe(0)
   })
 

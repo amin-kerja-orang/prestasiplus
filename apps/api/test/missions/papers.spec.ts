@@ -103,14 +103,14 @@ describe('BE-18 B: POST /guru/question-papers', () => {
     it('anonymous is 401', async () => {
       const res = await t.http().post('/api/guru/question-papers').field('subject', 'x')
       expect(res.status).toBe(401)
-      expect(res.body.error).toMatchObject({ code: 'UNAUTHORIZED', message: 'Unauthenticated.' })
+      expect(res.body.error).toMatchObject({ code: 'UNAUTHORIZED', message: 'Sesi anda telah tamat. Sila log masuk semula.' })
     })
 
     it('a student is 403 and the body is not read', async () => {
       const s = await client(t, STUDENT_1)
       const res = await upload(s, OK_FIELDS, [{ name: 'a.pdf', size: 3 }])
       expect(res.status).toBe(403)
-      expect(res.body.error).toMatchObject({ code: 'FORBIDDEN', message: 'This action is unauthorized.' })
+      expect(res.body.error).toMatchObject({ code: 'FORBIDDEN', message: 'Anda tidak dibenarkan melakukan tindakan ini.' })
     })
 
     it('a missing CSRF token is 403 CSRF_INVALID', async () => {

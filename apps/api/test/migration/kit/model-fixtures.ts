@@ -32,7 +32,7 @@ async function parentPackage(query: FixtureQuery): Promise<string> {
 /** BE-08: curriculum parents (codes are stored upper-case, a CHECK enforces it; fictitious names). */
 async function parentLevel(query: FixtureQuery): Promise<string> {
   const rows = await query<{ id: string }>(
-    `insert into education_levels (code, name, name_en, stage, curriculum) values ($1, 'Tahap Contoh', 'Sample Level', 'primary', 'KSSR') returning id::text as id`,
+    `insert into education_levels (code, name, name_en, stage, curriculum, is_active) values ($1, 'Tahap Contoh', 'Sample Level', 'primary', 'KSSR', false) returning id::text as id`,
     [next('FXL')],
   )
   return (rows[0] as { id: string }).id
@@ -135,7 +135,7 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
   // classrooms (BE-17): the level must exist; the academic year has a check.
   classrooms: async (query) => ({ name: 'Kelas Contoh', education_level_id: await parentLevel(query), academic_year: 2026 }),
   // education_levels (BE-08): code must be upper-case, stage one of three.
-  education_levels: async () => ({ code: next('FXL'), stage: 'primary' }),
+  education_levels: async () => ({ code: next('FXL'), stage: 'primary', is_active: false }),
   // enrolments (BE-17): the class and the pupil must exist.
   enrolments: async (query) => ({ classroom_id: await parentClassroom(query), student_id: await parentUser(query) }),
   // exam_attempts (BE-16): the owner must exist; kind, mode and status have check constraints.

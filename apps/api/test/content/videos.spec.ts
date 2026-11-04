@@ -93,15 +93,15 @@ describe('videos: visibility by school, writes, validation (AC 5, AC 6, AC 8)', 
     it('an invisible video is a plain 404 on the page, edit and delete, for a guest and for another school', async () => {
       for (const actor of [t.http(), outsider.agent]) {
         const res = await actor.get(`/api/videos/${id.school1}`)
-        expectError(res, 'NOT_FOUND', 'Not Found.')
+        expectError(res, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
       }
       expectError(await api.outsider.put(`/videos/${id.school1}`, body()), 'NOT_FOUND')
       expectError(await api.outsider.del(`/videos/${id.school1}`), 'NOT_FOUND')
       const count = await t.db.query(`select 1 from videos where id = $1`, [id.school1])
       expect(count).toHaveLength(1)
       // A school video of the own school is visible but not manageable: 403, not 404.
-      expectError(await api.student.put(`/videos/${id.school1}`, body()), 'FORBIDDEN', 'This action is unauthorized.')
-      expectError(await api.student.del(`/videos/${id.school1}`), 'FORBIDDEN', 'This action is unauthorized.')
+      expectError(await api.student.put(`/videos/${id.school1}`, body()), 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
+      expectError(await api.student.del(`/videos/${id.school1}`), 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
     })
 
     it('related videos never include a school-only video for a non-admin', async () => {
@@ -420,7 +420,7 @@ describe('videos: hygiene', () => {
       expect((await a.post('/videos', body())).status).toBe(201)
       expect((await a.post('/videos', body())).status).toBe(201)
       const third = await a.post('/videos', body())
-      expectError(third, 'RATE_LIMITED', 'Too Many Attempts.')
+      expectError(third, 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.')
       expect(Number(third.headers['retry-after'])).toBeGreaterThan(0)
       expect(await t.db.query(`select 1 from videos`)).toHaveLength(2)
     } finally {
@@ -432,7 +432,7 @@ describe('videos: hygiene', () => {
     const t = await bootVp({ THROTTLE_PUBLIC_SEARCH_PER_MINUTE: '3' })
     try {
       for (let i = 0; i < 3; i++) expect((await t.http().get('/api/videos')).status).toBe(200)
-      expectError(await t.http().get('/api/videos'), 'RATE_LIMITED', 'Too Many Attempts.')
+      expectError(await t.http().get('/api/videos'), 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.')
     } finally {
       await t.close()
     }
