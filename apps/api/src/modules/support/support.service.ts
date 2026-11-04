@@ -18,7 +18,7 @@ import { PrismaService } from '../../db/prisma.service'
 import { isOverloadError } from '../auth/auth.errors'
 import { hasNul } from '../content/audio/null-char'
 import { NotificationsService } from '../notifications'
-import { NOTIFY_BATCH, SUPPORT_AUDIT, SUPPORT_CONFIG_MISSING, WRITE_TX } from './support.constants'
+import { NOTIFY_BATCH, SUPPORT_AUDIT, WRITE_TX } from './support.constants'
 import { isTicketStatus, SupportRepository, type TicketRow } from './support.repository'
 
 /** Who is acting: the signed-in user and the request facts the audit row needs. */
@@ -110,11 +110,10 @@ export class SupportService {
     return { count: await this.guard(() => this.repo.openCount()) }
   }
 
-  /** GET /config/support (public): the contact from the singleton row. */
+  /** GET /config/support (public): the contact from the singleton row; empty strings when no row exists (DM-33, S5-T05). */
   async supportConfig(): Promise<ContentSupportConfig> {
     const config = await this.guard(() => this.repo.config())
-    if (!config) throw ApiError.of('NOT_FOUND', { message: SUPPORT_CONFIG_MISSING })
-    return config
+    return config ?? { email: '', whatsappNumber: '' }
   }
 
   // --- helpers ------------------------------------------------------------------------------------
