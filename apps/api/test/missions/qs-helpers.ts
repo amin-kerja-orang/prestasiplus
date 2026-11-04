@@ -3,8 +3,13 @@
  * Not a spec. The app is the classes helper's app plus the question sets module; sets and items are
  * inserted directly (no create route exists in this half), classes go through the BE-17 routes.
  */
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
 import { expect } from 'vitest'
 import { Test } from '@nestjs/testing'
+import type { QuestionSetPaper } from '@pp/contract'
 import type { Response } from 'supertest'
 import request from 'supertest'
 import type TestAgent from 'supertest/lib/agent'
@@ -21,6 +26,10 @@ import { CLOCK, FixedClock } from '../../src/db/clock'
 import { AuthModule } from '../../src/modules/auth'
 import { ClassesModule } from '../../src/modules/classes'
 import { QuestionSetsModule } from '../../src/modules/classes/question-sets'
+import { GuruPaperIntakeAdapter } from '../../src/modules/classes/question-sets/guru-paper-intake.adapter'
+import type { PaperSubmission } from '../../src/modules/classes/question-sets/question-sets.ports'
+import { OCR_ENGINE } from '../../src/modules/ocr'
+import { FakeOcrEngine } from '../intake-files/helpers'
 import { loginAs, START, type LoggedIn } from '../auth/helpers'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 import { createClass, apiOf, type Api } from '../classes/helpers'
@@ -45,6 +54,8 @@ export interface QsTestApp {
   clock: FixedClock
   http(): TestAgent
   agent(): TestAgent
+  /** The stub that stands in for the guru paper intake unless the app was booted with `realIntake`. */
+  intake: { handler: (s: PaperSubmission) => Promise<QuestionSetPaper> }
   get<T>(token: abstract new (...args: never[]) => T): T
   close(): Promise<void>
 }
@@ -52,11 +63,14 @@ export interface QsTestApp {
 export interface BootOptions {
   env?: Record<string, string | undefined>
   seeds?: SeedModule[]
+  /** Keep the real GuruPaperIntakeAdapter (an intake batch is created); default is a stub set through `t.intake.handler`. */
+  realIntake?: boolean
 }
 
 /** Nest app with auth, classes and the question sets module on a private migrated and seeded database. */
 export async function bootQsApp(opts: BootOptions = {}): Promise<QsTestApp> {
   const db = await createTestDatabase()
+  const dir = await mkdtemp(join(tmpdir(), 'pp-qs-test-'))
   await runSeeds([identitySeed, schoolsSeed, populationSeed, curriculumSeed, questionsSeed, ...(opts.seeds ?? [])], { prisma: db.prisma })
   const env: Record<string, string | undefined> = {
     DATABASE_URL: db.url,
@@ -73,6 +87,13 @@ export async function bootQsApp(opts: BootOptions = {}): Promise<QsTestApp> {
     TRUST_PROXY_HOPS: undefined,
     LEGACY_BCRYPT_DUMMY_COST: '4',
     LOGIN_FAILURE_FLOOR_MS: '0',
+    FILE_STORAGE_DIR: dir,
+    JOBS_WORKER_ENABLED: 'false',
+    UPLOAD_RATE_PER_MINUTE: '1000',
+    INTAKE_WRITES_PER_MINUTE: '1000',
+    INTAKE_READS_PER_MINUTE: '10000',
+    INTAKE_TEACHER_ENABLED: 'true',
+    INTAKE_MAX_ACTIVE_BATCHES: undefined,
     LOG_LEVEL: process.env.PP_TEST_LOG_LEVEL ?? process.env.LOG_LEVEL,
     ...opts.env,
   }
@@ -81,10 +102,14 @@ export async function bootQsApp(opts: BootOptions = {}): Promise<QsTestApp> {
     else process.env[k] = v
   }
   const clock = new FixedClock(START)
-  const moduleRef = await Test.createTestingModule({ imports: [defineAppModule([AuthModule, ClassesModule, QuestionSetsModule])] })
+  const intake: QsTestApp['intake'] = { handler: () => Promise.reject(new Error('no intake handler set')) }
+  let builder = Test.createTestingModule({ imports: [defineAppModule([AuthModule, ClassesModule, QuestionSetsModule])] })
     .overrideProvider(CLOCK)
     .useValue(clock)
-    .compile()
+    .overrideProvider(OCR_ENGINE)
+    .useValue(new FakeOcrEngine())
+  if (!opts.realIntake) builder = builder.overrideProvider(GuruPaperIntakeAdapter).useValue({ submit: (s: PaperSubmission) => intake.handler(s) })
+  const moduleRef = await builder.compile()
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)
   await app.init()
@@ -92,12 +117,14 @@ export async function bootQsApp(opts: BootOptions = {}): Promise<QsTestApp> {
     app,
     db,
     clock,
+    intake,
     http: () => request(app.getHttpServer()) as unknown as TestAgent,
     agent: () => request.agent(app.getHttpServer()),
     get: <T>(token: abstract new (...args: never[]) => T): T => app.get(token as never),
     async close() {
       await app.close()
       await db.drop()
+      await rm(dir, { recursive: true, force: true })
     },
   }
 }

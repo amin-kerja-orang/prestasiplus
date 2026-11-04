@@ -33,7 +33,7 @@ export const MAX_EDITOR_CANDIDATES = 1000
 export const CANDIDATE_SLACK = 500
 
 /** D90/D93: a stimulus group needs at least this many member questions to be placed in a paper. */
-export const MIN_GROUP_MEMBERS = 2
+export const MIN_GROUP_MEMBERS = 1
 
 /** D93 builder blocker (exact BM text): the contract's `STIMULUS_MESSAGES.builderBlocker` (T32). */
 export const GROUP_MIN_MEMBERS_MESSAGE: string = STIMULUS_MESSAGES.builderBlocker

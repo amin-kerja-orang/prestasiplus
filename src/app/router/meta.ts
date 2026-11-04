@@ -55,7 +55,7 @@ declare module 'vue-router' {
 
 export const DEFAULT_LAYOUT: LayoutMode = 'bare'
 export const DEFAULT_ACCESS: RouteAccess = 'auth'
-export const DEFAULT_ON_FORBIDDEN: ForbiddenOutcome = 'landing'
+export const DEFAULT_ON_FORBIDDEN: ForbiddenOutcome = '403'
 
 /** The tab title of a resolved route, or `null` when the route declares none. */
 export function resolveTitle(route: RouteLocationNormalized): string | null {
