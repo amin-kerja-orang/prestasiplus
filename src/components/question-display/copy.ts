@@ -27,6 +27,10 @@ export const qdCopy = {
   hide: 'Sembunyi',
   passageFallback: 'Petikan',
   /** Reason of a picture kind without a picture; "imej belum dimuat naik" is verbatim from v2-admin-student-pipeline AC-04.2 (the R1 PRD has no reason text). */
+  /** PaperView (S8-T05), verbatim from the V3 PaperCoverPage and QuestionPreview. */
+  question: 'Soalan',
+  markah: 'markah',
+  compulsory: '(wajib)',
   reasonNoPicture: 'imej belum dimuat naik',
 } as const
 
@@ -37,6 +41,22 @@ export const kindFallbackCaption: Record<string, string> = {
   table: 'Jadual',
 }
 
+/** Marks in brackets, then the unit word. */
+export const marksLabel = (n: number): string => `[${n} ${qdCopy.markah}]`
+/** "Soalan 3" */
+export const questionLabel = (n: number): string => `${qdCopy.question} ${n}`
+/**
+ * V3 PaperCoverPage section line (148-159), after the bold label:
+ * " · [N markah] · {count} soalan · {instruction}", with " (wajib)" appended to the instruction when compulsory.
+ */
+export function sectionMeta(marks: number | undefined, count: number, instruction?: string, compulsory?: boolean): string {
+  const parts: string[] = []
+  if (marks !== undefined) parts.push(marksLabel(marks))
+  parts.push(`${count} ${qdCopy.question.toLowerCase()}`)
+  if (instruction) parts.push(`${instruction}${compulsory ? ` ${qdCopy.compulsory}` : ''}`)
+  else if (compulsory) parts.push(qdCopy.compulsory)
+  return ` · ${parts.join(' · ')}`
+}
 /** FR-QA-48: group cap line, shown only when the scheme is revealed. */
 export const maksLabel = (n: number): string => `Maks ${n}`
 /** D115 deduction line, e.g. "Potongan: kesalahan 7 x 1 (maks 5)". */

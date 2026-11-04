@@ -120,6 +120,5 @@ export interface PaperSection {
   instruction?: string
   marks?: number
   compulsory?: boolean
-  rule?: string
   questions: PaperQuestion[]
 }

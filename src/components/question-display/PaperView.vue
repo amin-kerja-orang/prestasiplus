@@ -9,7 +9,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import { DsCluster, DsHeading, DsStack, DsText } from '@/ds'
 
-import { deductionLine, maksLabel } from './copy'
+import { deductionLine, marksLabel, maksLabel, questionLabel, sectionMeta } from './copy'
 import RichText from './RichText.vue'
 import StimulusGroup from './StimulusGroup.vue'
 import type { PaperPart, PaperQuestion, PaperSection } from './types'
@@ -76,13 +76,37 @@ function restore() {
   if (props.scrollContainer) props.scrollContainer.scrollTo({ top: props.scrollContainer.scrollTop + delta })
   else window.scrollTo({ top: window.scrollY + delta })
 }
+/** True from the first resize event until the restore has run and its own scroll event has passed. */
+let restoring = false
+let settleTimer: ReturnType<typeof setTimeout> | undefined
+function runRestore() {
+  restore()
+  clearTimeout(settleTimer)
+  settleTimer = setTimeout(() => {
+    restoring = false
+  }, 100)
+}
 function onResize() {
+  if (!restoring) {
+    // First event of the burst: a pending debounced scroll means the anchor is stale (and would be
+    // recorded post-layout later), so cancel it and record now. A fresh anchor is kept as is.
+    if (scrollTimer !== undefined || !anchor) {
+      clearTimeout(scrollTimer)
+      scrollTimer = undefined
+      record()
+    }
+    restoring = true
+  }
   clearTimeout(timer)
-  timer = setTimeout(restore, 150)
+  timer = setTimeout(runRestore, 150)
 }
 function onScroll() {
+  if (restoring) return
   clearTimeout(scrollTimer)
-  scrollTimer = setTimeout(record, 100)
+  scrollTimer = setTimeout(() => {
+    scrollTimer = undefined
+    record()
+  }, 100)
 }
 onMounted(() => {
   record()
@@ -94,6 +118,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   clearTimeout(timer)
   clearTimeout(scrollTimer)
+  clearTimeout(settleTimer)
   bound?.removeEventListener('scroll', onScroll)
   window.removeEventListener('resize', onResize)
   window.removeEventListener('orientationchange', onResize)
@@ -113,14 +138,10 @@ defineExpose({ record, restore })
       >
         <slot name="section-head" :section="s">
           <DsStack as="header" gap="2xs">
-            <DsHeading :level="2" variant="heading">
-              {{ s.label }}
-              <DsText v-if="s.marks !== undefined" as="span" variant="caption" tone="muted" tabular
-                >[{{ s.marks }} markah]</DsText
-              >
-              <DsText v-if="s.compulsory" as="span" variant="caption" tone="muted">(wajib)</DsText>
-            </DsHeading>
-            <DsText v-if="s.instruction" variant="body" class="min-w-0 overflow-x-auto">{{ s.instruction }}</DsText>
+            <DsText variant="body" class="min-w-0 overflow-x-auto" data-testid="paper-section-line"
+              ><strong>{{ s.label }}</strong
+              >{{ sectionMeta(s.marks, s.questions.length, s.instruction, s.compulsory) }}</DsText
+            >
           </DsStack>
         </slot>
 
@@ -140,8 +161,8 @@ defineExpose({ record, restore })
           >
             <slot name="question-head" :question="q" :section="s">
               <DsCluster justify="between" align="baseline" :wrap="false">
-                <DsHeading :level="3" variant="subheading">Soalan {{ q.number }}</DsHeading>
-                <DsText as="span" variant="caption" tone="muted" tabular>[{{ q.marks }} markah]</DsText>
+                <DsHeading :level="3" variant="subheading">{{ questionLabel(q.number) }}</DsHeading>
+                <DsText as="span" variant="caption" tone="muted" tabular>{{ marksLabel(q.marks) }}</DsText>
               </DsCluster>
             </slot>
             <DsText as="div" variant="body" class="min-w-0 overflow-x-auto" data-testid="paper-stem">
@@ -176,7 +197,7 @@ defineExpose({ record, restore })
                           ><RichText :text="part.prompt"
                         /></DsText>
                         <DsText v-if="isLeaf(part)" as="span" variant="caption" tone="muted" tabular
-                          >[{{ part.marks }} markah]</DsText
+                          >{{ marksLabel(part.marks) }}</DsText
                         >
                       </DsCluster>
                     </slot>

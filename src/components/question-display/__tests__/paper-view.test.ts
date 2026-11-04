@@ -169,6 +169,76 @@ describe('PaperView', () => {
     expect(w.text()).not.toContain('Soalan 1')
   })
 
+  it('FR-X6-10: a resize within the scroll debounce restores from the pre-resize anchor', () => {
+    vi.useFakeTimers()
+    const el = document.createElement('div')
+    el.scrollTop = 100
+    const scrollTo = vi.fn()
+    el.scrollTo = scrollTo as never
+    el.getBoundingClientRect = () => ({ top: 0, bottom: 600 }) as DOMRect
+    document.body.appendChild(el)
+    const w = mountPaper({ scrollContainer: el })
+    let y = 40
+    for (let n = 1; n <= 12; n++) {
+      const e = w.get(`[data-testid="paper-q-q${n}"]`).element
+      e.getBoundingClientRect = () =>
+        (n === 2 ? { top: y, bottom: y + 100 } : n === 1 ? { top: -300, bottom: -10 } : { top: 900, bottom: 1000 }) as DOMRect
+    }
+    y = 100 // the user scrolled
+    el.dispatchEvent(new Event('scroll'))
+    vi.advanceTimersByTime(50) // inside the 100 ms scroll debounce
+    window.dispatchEvent(new Event('resize'))
+    y = 250 // layout shifted after the rotation
+    el.dispatchEvent(new Event('scroll')) // the scroll caused by the resize itself
+    vi.advanceTimersByTime(400)
+    expect(scrollTo).toHaveBeenCalledTimes(1)
+    expect(scrollTo).toHaveBeenCalledWith({ top: 250 }) // 100 + (250 - 100)
+    vi.useRealTimers()
+  })
+
+  it('reveal defaults to false (no reveal lines even with data)', () => {
+    const sections: PaperSection[] = [
+      { id: 's', label: 'B', questions: [{ id: 'q', number: 1, marks: 2, stem: 'S', parts: [{ id: 'p', prompt: 'P', marks: 2, maxCap: 4, deductions: [{ label: 'x', n: 1, amount: 1 }] }] }] },
+    ]
+    const w = mountPaper({ sections })
+    expect(w.text()).not.toContain('Maks')
+    expect(w.text()).not.toContain('Potongan')
+  })
+
+  it('section line matches the V3 cover: label · [N markah] · count soalan · instruction (wajib)', () => {
+    const w = mountPaper()
+    expect(w.get('[data-testid="paper-section-s1"] [data-testid="paper-section-line"]').text()).toBe(
+      'Bahagian 1 · [20 markah] · 4 soalan · Arahan 1 (wajib)',
+    )
+    expect(w.get('[data-testid="paper-section-s2"] [data-testid="paper-section-line"]').text()).toBe(
+      'Bahagian 2 · [20 markah] · 4 soalan · Arahan 2',
+    )
+  })
+
+  it('a part with children shows no marks, leaves do', () => {
+    const w = mountPaper()
+    const q = w.get('[data-testid="paper-q-q1"]')
+    expect(q.get('[data-testid="paper-part-a-1"]').text()).not.toContain('markah')
+    expect(q.get('[data-testid="paper-part-a1-1"]').text()).not.toContain('markah') // has a child
+    expect(q.get('[data-testid="paper-part-a1x-1"]').text()).toContain('[1 markah]')
+    expect(q.get('[data-testid="paper-part-a2-1"]').text()).toContain('[2 markah]')
+  })
+
+  it.each([375, 768, 1280])('renders the same structure at %ipx with no fixed-width class', (width) => {
+    window.matchMedia = vi.fn().mockImplementation((q: string) => ({
+      matches: /min-width:\s*(\d+)px/.test(q) ? width >= Number(/min-width:\s*(\d+)px/.exec(q)![1]) : false,
+      media: q,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+    })) as never
+    const w = mountPaper()
+    expect(w.findAll('[data-paper-q]')).toHaveLength(12)
+    expect(w.findAll('[data-testid^="paper-part-"]')).toHaveLength(12 * 4)
+    expect(w.html()).not.toMatch(/\b(w-\[|w-\d{2,}|min-w-\[|max-w-\[)/)
+  })
+
   it('a stimulus group of 3 questions shows its stimuli once', () => {
     const st: StimulusData = { id: 'p1', kind: 'passage', label: 'Petikan A', text: 'Teks petikan unik.' }
     const sections: PaperSection[] = [
