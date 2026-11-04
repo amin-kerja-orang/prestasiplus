@@ -8,14 +8,14 @@
  * With `groupId` the sheet is open the first time the group appears and keeps the pupil's choice (FR-X6-6).
  * (A stimulus that cannot be drawn is kept out at serving, FR-X1-4.) The questions go in the default slot. Only one tree is rendered at a time (no duplicate ids).
  */
-import { computed, useSlots } from 'vue'
+import { computed, nextTick, onBeforeUnmount, provide, ref, useSlots } from 'vue'
 
 import { DsIconChip, DsStack, DsText } from '@/ds'
 import { useMedia } from '@/ds/useMedia'
 
 import { chipLabel, qdCopy } from './copy'
 import { stimuliLabel } from './lib/stimulus-data'
-import { useStimulusOpen } from './lib/useStimulusOpen'
+import { STIMULUS_GROUP_KEY, useStimulusOpen } from './lib/useStimulusOpen'
 import StimulusFigure from './StimulusFigure.vue'
 import type { StimulusData } from './types'
 
@@ -58,6 +58,28 @@ const list = computed<readonly StimulusData[]>(() =>
   props.stimuli && props.stimuli.length > 0 ? props.stimuli : props.stimulus ? [props.stimulus] : [],
 )
 const label = computed(() => stimuliLabel(list.value))
+
+/** Open one stimulus (or 'all') from a link in a question: the pinned pane scrolls and highlights, the drawer opens and scrolls (FR-PA-37). */
+const lit = ref<string[]>([])
+let timer: ReturnType<typeof setTimeout> | undefined
+function openStimulus(id: string): void {
+  const ids = id === 'all' ? list.value.map((s) => s.id) : list.value.some((s) => s.id === id) ? [id] : []
+  if (ids.length === 0) return
+  if (!wide.value && !inline) open.value = true
+  lit.value = ids
+  clearTimeout(timer)
+  timer = setTimeout(() => (lit.value = []), 2500)
+  const scroll = (): void => {
+    document
+      .querySelector<HTMLElement>(`[data-stimulus-id="${ids[0]}"]`)
+      ?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' })
+  }
+  void nextTick(() => (wide.value || inline ? scroll() : void setTimeout(scroll, 50)))
+}
+onBeforeUnmount(() => clearTimeout(timer))
+provide(STIMULUS_GROUP_KEY, { stimuli: () => list.value, open: openStimulus })
+defineExpose({ openStimulus })
+const isLit = (id: string): 'true' | undefined => (lit.value.includes(id) ? 'true' : undefined)
 /** The pinned hint is about a passage; a figure-only group shows none. */
 const hasPassage = computed(() => list.value.some((s) => s.kind === 'passage'))
 const thumb = computed(() => list.value[0])
@@ -72,6 +94,8 @@ const iconOnly = computed(() => thumb.value?.kind === 'passage' || thumb.value?.
       v-for="st in list"
       :key="st.id"
       :stimulus="st"
+      :data-stimulus-id="st.id"
+      :data-stimulus-lit="isLit(st.id)"
       @loaded="emit('loaded', st.id)"
       @error="emit('error', st.id)"
       @retry="emit('retry', st.id)"
@@ -102,6 +126,8 @@ const iconOnly = computed(() => thumb.value?.kind === 'passage' || thumb.value?.
           v-for="st in list"
           :key="st.id"
           :stimulus="st"
+          :data-stimulus-id="st.id"
+          :data-stimulus-lit="isLit(st.id)"
           :max-height="false"
           @loaded="emit('loaded', st.id)"
           @error="emit('error', st.id)"
@@ -157,6 +183,8 @@ const iconOnly = computed(() => thumb.value?.kind === 'passage' || thumb.value?.
           v-for="st in list"
           :key="st.id"
           :stimulus="st"
+          :data-stimulus-id="st.id"
+          :data-stimulus-lit="isLit(st.id)"
           @loaded="emit('loaded', st.id)"
           @error="emit('error', st.id)"
           @retry="emit('retry', st.id)"

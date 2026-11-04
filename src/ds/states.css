@@ -57,3 +57,25 @@
 [data-ds='form-field'] :is(input, select, textarea, [contenteditable], [tabindex]) {
   scroll-margin-bottom: 6rem;
 }
+
+/* A stimulus a question link just pointed at (FR-PA-37): ring until the group clears it. */
+[data-stimulus-lit='true'] {
+  border-radius: var(--ui-radius);
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
+}
+
+/* Leaf stimulus (FR-PA-37): collapsed behind "Lihat {label}" below 768px, inline from 768px. */
+[data-leaf-stim='closed'] {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  [data-leaf-stim='closed'] {
+    display: block;
+  }
+
+  [data-leaf-toggle] {
+    display: none;
+  }
+}

@@ -11,7 +11,8 @@ import { DsQuizOption, DsStack, DsText } from '@/ds'
 import { leavesOf } from '../domain/paper-model'
 import type { PartAnswer, QuestionResult, QuestionView } from '../domain/types'
 import { toOptionData, toStimulusData } from '../lib/stimulus-data'
-import { McqOptions, PartNode, RichText, StimulusGroup, qdCopy } from '../../../components/question-display'
+import { McqOptions, PartNode, RichText, StimulusGroup, qdCopy, useStimulusGroup } from '../../../components/question-display'
+import type { StimulusData } from '../../../components/question-display'
 import PartResultCard from './PartResultCard.vue'
 import ReportQuestionButton from './ReportQuestionButton.vue'
 
@@ -44,7 +45,13 @@ const correctOption = computed(() => props.check?.parts[0]?.scheme.correctOption
 const partResults = computed(() => props.check?.parts ?? [])
 /** The question's own stimuli above the stem (V2 section 1.5); `stemImage` only when `stimuli` is absent, so a picture shows once. */
 const ownStimuli = computed(() => props.question.stimuli ?? (props.question.stemImage ? [props.question.stemImage] : []))
-const leaves = computed(() => leavesOf(props.question.parts ?? []))
+const group = useStimulusGroup()
+/** Lookup for a leaf's `stimulusId`: the group's stimuli (from the group above), then the question's own. */
+const stimulusLookup = computed<StimulusData[]>(() => [
+  ...((group?.stimuli() ?? []) as StimulusData[]),
+  ...ownStimuli.value.map(toStimulusData),
+])
+const leaves =computed(() => leavesOf(props.question.parts ?? []))
 /** An option with a picture switches the choices to the shared `McqOptions` (picture boxes, load-failure state). */
 const optionPictures = computed(() => (props.question.mcq?.options ?? []).some((o) => !!o.image))
 const optionData = computed(() => (props.question.mcq?.options ?? []).map(toOptionData))
@@ -176,6 +183,7 @@ function pick(id: string): void {
         :attempt-id="attemptId"
         :disabled="locked"
         :option-bank="question.optionBank"
+        :stimuli="stimulusLookup"
         @answer="(id, a) => emit('answer', id, a)"
       />
     </template>
