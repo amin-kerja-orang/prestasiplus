@@ -71,6 +71,25 @@ describe('SubjectDskpReportTab (S4-T02, API-DSKP-11)', () => {
     expect(w.find('button, input, select, textarea').exists()).toBe(false)
   })
 
+  it('below 768 px (cards) still shows the state of every Subjek x Tingkatan', async () => {
+    vi.stubGlobal('matchMedia', vi.fn().mockImplementation((query: string) => ({
+      matches: false, media: query, onchange: null,
+      addEventListener: vi.fn(), removeEventListener: vi.fn(), addListener: vi.fn(), removeListener: vi.fn(), dispatchEvent: vi.fn(),
+    })))
+    try {
+      const w = await render()
+      // The card branch, not the table: no <table> is rendered below 768 px.
+      expect(w.find('table').exists()).toBe(false)
+      const text = w.get('[data-testid=dskp-report-tab]').text()
+      expect(text).toContain('Status')
+      expect(text).toContain('dimuatkan')
+      expect(text).toContain('belum dimuatkan')
+      expect(text).toContain('Kimia')
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('reloads when the filter props change', async () => {
     const w = await render({ subjectId: 3, levelId: null })
     await w.setProps({ levelId: 11 })
