@@ -19,8 +19,11 @@
 //   `<label> -> <importer chunk> =dyn=> <mock chunk> (<mock module>)`  dynamic import of a mock-holding chunk
 // Allow-list of 1: the guarded `import('@/mock')` in `src/app/bootstrap.ts` (edge: the chunk whose source map lists
 // bootstrap.ts -> manifest entry `src/mock/index.ts`). That edge is not followed, so chunks reachable ONLY through it
-// are allowed. Limit: the edge is identified per chunk, so a second `import('@/mock')` inside the same chunk would be
-// allowed too (the manifest cannot tell them apart).
+// are allowed. The manifest cannot tell two imports in one chunk apart, so a source scan runs alongside: every dynamic
+// `import('<literal>')` in `src/**` (not `__tests__`, `*.test.*`, `*.spec.*`, nor inside mock modules) that resolves to
+// a mock module is a finding `<file>:<line> =dyn=> <specifier> (<module>)`, except `import('@/mock')` in exactly
+// `src/app/bootstrap.ts`, once (a second one is a finding). The manifest allow-list applies only when the scan found
+// exactly that one allowed edge. Limit: only string-literal specifiers are seen (a computed `import(x)` is not).
 //
 // Usage: node scripts/check-http-build.mjs [--dist <dir>]   (--dist audits an existing build; it needs
 // `<dir>/.vite/manifest.json` and source maps, i.e. `vite build --manifest --sourcemap`.) `--dist` without a value
@@ -185,7 +188,7 @@ function allSourcesOf(mapJson, chunkFile) {
  * second `import('@/mock')` inside that same chunk would be allowed too; the manifest cannot tell them apart.
  * Returns `{ lines, roots }`.
  */
-export function auditGraph(manifest, maps, routes = []) {
+export function auditGraph(manifest, maps, routes = [], { allowBootstrapEdge = true } = {}) {
   const mocksOfFile = (file) => (maps[file] ? mockSourcesOf(maps[file], file) : [])
   const holdsMock = (key) => Boolean(manifest[key]) && mocksOfFile(manifest[key].file).length > 0
   const bootstrapFiles = new Set(
@@ -210,7 +213,7 @@ export function auditGraph(manifest, maps, routes = []) {
       }
       stack.push(...(entry.imports ?? []))
       for (const dep of entry.dynamicImports ?? []) {
-        if (dep === ALLOWED_DYNAMIC_TARGET && bootstrapFiles.has(entry.file)) continue
+        if (allowBootstrapEdge && dep === ALLOWED_DYNAMIC_TARGET && bootstrapFiles.has(entry.file)) continue
         if (holdsMock(dep)) lines.push(`${label} -> ${entry.file} =dyn=> ${manifest[dep].file} (${mocksOfFile(manifest[dep].file)[0]})`)
       }
     }
@@ -221,6 +224,59 @@ export function auditGraph(manifest, maps, routes = []) {
 /** `maps`: `{ [chunkFile]: mapJson }`. Returns the finding lines of `auditGraph`. */
 export function audit(manifest, maps, routes = []) {
   return auditGraph(manifest, maps, routes).lines
+}
+
+const ALLOWED_IMPORTER = 'src/app/bootstrap.ts'
+const ALLOWED_SPECIFIER = '@/mock'
+
+/** Comments blanked, newlines kept (so line numbers stay right). */
+function blankComments(src) {
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ''))
+    .replace(/(^|[^:'"`\\])\/\/[^\n]*/g, '$1')
+    .replace(/<!--[\s\S]*?-->/g, (m) => m.replace(/[^\n]/g, ''))
+}
+
+function sourceFiles(dir, out = []) {
+  for (const n of readdirSync(dir)) {
+    const p = join(dir, n)
+    if (statSync(p).isDirectory()) {
+      if (n !== '__tests__' && n !== 'node_modules') sourceFiles(p, out)
+    } else if (/\.(ts|vue|js|tsx)$/.test(n) && !/\.(test|spec)\./.test(n)) out.push(p)
+  }
+  return out
+}
+
+/**
+ * Source scan next to the manifest walk: every dynamic `import('<literal>')` in `src/**` (not `__tests__`, not
+ * `*.test.*` / `*.spec.*`, not inside mock modules themselves) whose specifier (`@/` -> `src/`, relative paths) resolves
+ * to a mock module is a finding, except `import('@/mock')` in exactly `src/app/bootstrap.ts`, which may occur once
+ * (a second one there is a finding too). Returns `{ lines, allowedCount }`; line format
+ * `<file>:<line> =dyn=> <specifier> (<resolved module>)`.
+ */
+export function scanSourceImports(repoRoot) {
+  const lines = []
+  let allowedCount = 0
+  const srcDir = join(repoRoot, 'src')
+  if (!existsSync(srcDir)) return { lines, allowedCount }
+  const re = /\bimport\(\s*(['"`])([^'"`$]+)\1\s*[,)]/g
+  for (const abs of sourceFiles(srcDir)) {
+    const file = toPosix(relative(repoRoot, abs))
+    if (MOCK_MODULE_RE.test(file)) continue
+    const text = blankComments(readFileSync(abs, 'utf8'))
+    for (let m = re.exec(text); m; m = re.exec(text)) {
+      const spec = m[2]
+      const resolved = resolveImport(repoRoot, file, spec)
+      if (!resolved || !MOCK_MODULE_RE.test(resolved)) continue
+      const line = text.slice(0, m.index).split('\n').length
+      if (file === ALLOWED_IMPORTER && spec === ALLOWED_SPECIFIER) {
+        allowedCount += 1
+        if (allowedCount === 1) continue
+      }
+      lines.push(`${file}:${line} =dyn=> ${spec} (${resolved})`)
+    }
+  }
+  return { lines, allowedCount }
 }
 
 function readMaps(dist) {
@@ -309,7 +365,12 @@ async function main() {
     }
     const { routes, warnings } = collectRoutes(repoRoot)
     for (const w of warnings) console.error(`${PREFIX} WARN: ${w}`)
-    const { lines, roots } = auditGraph(manifest, maps, routes)
+    const source = scanSourceImports(repoRoot)
+    // The manifest allow-list holds only when the source scan found exactly the one allowed edge.
+    const graph = auditGraph(manifest, maps, routes, { allowBootstrapEdge: source.allowedCount === 1 })
+    const roots = graph.roots
+    const lines = [...source.lines, ...graph.lines]
+    if (source.allowedCount === 0) lines.push(`${ALLOWED_IMPORTER} =dyn=> ${ALLOWED_SPECIFIER}: the allowed import was not found in the source`)
     const labelled = roots.filter((r) => r.routed).length
     if (lines.length > 0) {
       console.log(lines.join('\n'))

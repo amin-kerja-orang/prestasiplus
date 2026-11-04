@@ -8,7 +8,9 @@ import { afterAll, describe, expect, it } from 'vitest'
 
 import {
   audit,
+  auditGraph,
   collectRoutes,
+  scanSourceImports,
   findRoots,
   MOCK_MODULE_RE,
   mockSourcesOf,
@@ -155,6 +157,65 @@ describe('dynamic mock imports', () => {
   it('does not allow the edge from a chunk that is not bootstrap', () => {
     const maps = { ...dynMaps, 'assets/index.js': map('../../src/main.ts') }
     expect(audit(dyn, maps, routes)).toEqual([
+      '(entry) -> assets/index.js =dyn=> assets/mock-core.js (src/mock/index.ts)',
+    ])
+  })
+})
+
+describe('scanSourceImports', () => {
+  const root = mkdtempSync(join(tmpdir(), 'check-http-build-scan-'))
+  afterAll(() => rmSync(root, { recursive: true, force: true }))
+  const BOOT_OK = "// import('@/mock') in a comment is ignored\nexport async function f() {\n  return await import('@/mock')\n}\n"
+
+  /** Fresh tree per case: `files` maps repo-relative path -> text. */
+  function tree(name, files) {
+    const base = join(root, name)
+    const all = { 'src/mock/index.ts': 'export {}\n', 'src/mock/x.ts': 'export {}\n', ...files }
+    for (const [f, text] of Object.entries(all)) {
+      mkdirSync(dirname(join(base, f)), { recursive: true })
+      writeFileSync(join(base, f), text)
+    }
+    return scanSourceImports(base)
+  }
+
+  it('passes the single allowed import in bootstrap.ts', () => {
+    expect(tree('ok', { 'src/app/bootstrap.ts': BOOT_OK })).toEqual({ lines: [], allowedCount: 1 })
+  })
+
+  it('fails a second dynamic @/mock import in another file', () => {
+    const r = tree('other', { 'src/app/bootstrap.ts': BOOT_OK, 'src/lib/a.ts': "export const a = () => import('@/mock')\n" })
+    expect(r.lines).toEqual(['src/lib/a.ts:1 =dyn=> @/mock (src/mock/index.ts)'])
+  })
+
+  it('fails a second import inside bootstrap.ts', () => {
+    const r = tree('twice', { 'src/app/bootstrap.ts': BOOT_OK + "export const g = () => import('@/mock')\n" })
+    expect(r.allowedCount).toBe(2)
+    expect(r.lines).toEqual(['src/app/bootstrap.ts:5 =dyn=> @/mock (src/mock/index.ts)'])
+  })
+
+  it('fails a relative import of ../mock/x from a non-mock file', () => {
+    const r = tree('rel', { 'src/app/bootstrap.ts': BOOT_OK, 'src/lib/b.ts': "export const b = () => import('../mock/x')\n" })
+    expect(r.lines).toEqual(['src/lib/b.ts:1 =dyn=> ../mock/x (src/mock/x.ts)'])
+  })
+
+  it('ignores tests and mock files; reports no allowed edge when bootstrap lacks it', () => {
+    const r = tree('skip', {
+      'src/lib/__tests__/t.ts': "import('@/mock')\n",
+      'src/lib/c.test.ts': "import('@/mock')\n",
+      'src/mock/y.ts': "export const y = () => import('./x')\n",
+    })
+    expect(r).toEqual({ lines: [], allowedCount: 0 })
+  })
+
+  it('without the source-scan allowance the manifest edge is a finding', () => {
+    const m = {
+      ...manifest,
+      'index.html': { ...manifest['index.html'], dynamicImports: ['src/mock/index.ts'] },
+      'src/mock/index.ts': { file: 'assets/mock-core.js' },
+    }
+    const maps = { ...clean, 'assets/index.js': map('../../src/app/bootstrap.ts'), 'assets/mock-core.js': map('../../src/mock/index.ts') }
+    expect(auditGraph(m, maps, routes).lines).toEqual([])
+    expect(auditGraph(m, maps, routes, { allowBootstrapEdge: false }).lines).toEqual([
       '(entry) -> assets/index.js =dyn=> assets/mock-core.js (src/mock/index.ts)',
     ])
   })

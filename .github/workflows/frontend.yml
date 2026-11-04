@@ -1,7 +1,9 @@
 # Frontend CI (AZ-21c). The gate for pull requests into `be/integration-frontend` and `feature/v3-bijak-r1` (R1; S0-T04).
 #
-#   verify   npm ci -> vite build --mode demo -> check-demo-bundle -> vue-tsc -> unit tests (vitest `unit` project) -> lint
-#            (eslint, stylelint, placeholder check; report mode until S0-T04 part 2; runs even if an earlier step failed).
+#   verify   npm ci -> vite build --mode demo -> check-demo-bundle -> HTTP build mock-path audit (S0-T09, `npm run check:http-build`) -> vue-tsc ->
+#            unit tests (vitest `unit` project) -> lint (eslint, stylelint, placeholder check; report mode until S0-T04
+#            part 2). Type-check, unit tests and lint run even if an earlier step failed (`if: !cancelled()`), so a red
+#            audit never hides them.
 #            The build runs BEFORE vue-tsc on purpose: the Nuxt UI Vite plugin writes the git-ignored
 #            `auto-imports.d.ts` and `components.d.ts` that vue-tsc needs (`useToast`, ...). On a clean
 #            checkout `vue-tsc -b` alone fails with TS2304 until a Vite build or dev server has run once.
@@ -76,11 +78,13 @@ jobs:
       # vue-tsc -b on the whole app runs out of heap at Node's default limit (exit 134 on the runner and on an 8 GB host).
       # LEAD exception (22 Oct): 6 GB heap for this step only.
       - name: Type-check (vue-tsc)
+        if: ${{ !cancelled() }}
         env:
           NODE_OPTIONS: --max-old-space-size=6144
         run: npm run typecheck
 
       - name: Unit tests (vitest, project unit)
+        if: ${{ !cancelled() }}
         run: npm test
 
       # Last, and run even when an earlier step failed, so a lint failure never hides the type-check and unit results.
