@@ -326,7 +326,7 @@ export function registerContentPaths(registry: OpenAPIRegistry): void {
     path: '/videos',
     tags: ['content'],
     summary: 'Video library',
-    description: 'Public. A guest sees `global` videos only; a signed-in non-admin also sees `school` videos of the same school; admin sees all. 24 per page, newest first. `meta.facets` carries the category and subject counts.',
+    description: 'Public. A guest sees `global` videos only; a signed-in non-admin also sees `school` videos of the same school; admin sees all. 24 per page by default, newest first; `pageSize` (1..50) sets the page size (the admin list asks for 25). `meta.facets` carries the category and subject counts.',
     request: { query: VideoListQuerySchema },
     responses: { 200: json(VideoListResponseSchema, 'Video cards with meta.facets.') },
   })
@@ -355,13 +355,13 @@ export function registerContentPaths(registry: OpenAPIRegistry): void {
     path: '/videos',
     tags: ['content'],
     summary: 'Publish a video link',
-    description: 'Any signed-in user publishes immediately (the mock has no approval state, OQ-API-B4-16). Platform, external id and thumbnail are parsed from the URL.',
+    description: 'admin and teacher only; other roles get 403. Publishes immediately (no approval state, OQ-API-B4-16). Visibility is set by the server (teacher: own school, admin: global), not by the body. Platform, external id and thumbnail are parsed from the URL.',
     request: { headers: [csrf], body: body(VideoCreateRequestSchema) },
     responses: {
       201: json(contentMutationOf(VideoDetailSchema), 'Created; status "Video ditambah.".'),
       401: unauthorized,
-      403: csrfInvalid,
-      422: validation('videoUrl, title, category, visibility required; description at most 1000 chars; subjectId must exist. Also "Anda tiada sekolah untuk dikongsi." under fields.visibility when `school` is chosen and the uploader has no video-form school.'),
+      403: err('FORBIDDEN "This action is unauthorized." (role is not admin or teacher), or CSRF_INVALID.'),
+      422: validation('videoUrl, title (at most 150 chars) and category required (exact BM copy); a teacher link must be a YouTube video link; description at most 1000 chars; subjectId must exist. "Anda tiada sekolah untuk dikongsi." when a teacher has no school.'),
     },
   })
 
@@ -370,14 +370,14 @@ export function registerContentPaths(registry: OpenAPIRegistry): void {
     path: '/videos/{id}',
     tags: ['content'],
     summary: 'Edit a video',
-    description: 'Uploader or admin. An invisible video is 404 before the role check; another user gets 403 "This action is unauthorized.".',
+    description: 'admin and teacher only (a teacher edits own videos); other roles get 403. An invisible video is 404 before the uploader check; another user gets 403 "This action is unauthorized.". Visibility is not changed by the body.',
     request: { params: idParams, headers: [csrf], body: body(VideoUpdateRequestSchema) },
     responses: {
       200: json(contentMutationOf(VideoDetailSchema), 'Updated; status "Video berjaya dikemaskini.".'),
       401: unauthorized,
       403: err('FORBIDDEN "This action is unauthorized." (not the uploader nor an admin); FORBIDDEN "Anda tidak dibenarkan mengubah video ini." (repository race); or CSRF_INVALID.'),
       404: notFound,
-      422: validation('Same rules as create, including "Anda tiada sekolah untuk dikongsi.".'),
+      422: validation('Same rules as create.'),
     },
   })
 
@@ -386,7 +386,7 @@ export function registerContentPaths(registry: OpenAPIRegistry): void {
     path: '/videos/{id}',
     tags: ['content'],
     summary: 'Delete a video',
-    description: 'Uploader or admin. Hard delete; answers 200 with `{ deleted: 1 }` and the flash.',
+    description: 'admin and teacher only (a teacher deletes own videos); other roles get 403. Hard delete; answers 200 with `{ deleted: 1 }` and the flash.',
     request: { params: idParams, headers: [csrf] },
     responses: {
       200: json(contentMutationOf(ContentDeletedSchema), 'Deleted; status "Video berjaya dipadam.".'),
