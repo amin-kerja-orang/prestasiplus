@@ -53,4 +53,12 @@ export function notServedLine(reason: string): string {
   return `Tidak dihidangkan kerana ${reason}.`
 }
 /** "Sumber: {text}" (FR-PA-37). */
-export const sourceLine = (source: string): string => `Sumber: ${source.trim()}`
+/**
+ * "Sumber: {text}" under a stimulus (FR-PA-37, 46 section 2.4). Stored citations often already carry
+ * the word (`source_citation = 'Sumber: buku teks'` in the API fixtures and seeds), so the prefix is
+ * added only when missing; otherwise the line would read "Sumber: Sumber: …".
+ */
+export const sourceLine = (source: string): string => {
+  const text = source.trim()
+  return /^sumber\s*:/i.test(text) ? text : `Sumber: ${text}`
+}

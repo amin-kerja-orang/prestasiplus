@@ -313,3 +313,12 @@ describe('FR-X6-7 zoom: ESC, unmount, cancel', () => {
     expect(w.find('[data-testid=stimulus-zoom-img]').attributes('data-scale')).toBe('1')
   })
 })
+
+describe('FR-PA-37 source line keeps one prefix', () => {
+  it('adds "Sumber: " once and never doubles a stored prefix', async () => {
+    const { sourceLine } = await import('../copy')
+    expect(sourceLine('buku teks')).toBe('Sumber: buku teks')
+    expect(sourceLine('Sumber: buku teks')).toBe('Sumber: buku teks')
+    expect(sourceLine('  sumber:kajian ')).toBe('sumber:kajian')
+  })
+})
