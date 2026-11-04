@@ -137,7 +137,7 @@ export async function client(t: QsTestApp, identifier: string): Promise<Client> 
   return { ...apiOf(who), who }
 }
 
-/** A teacher creates a class and the given students join it by code. Returns the class. */
+/** A teacher creates a class and the given students are enrolled (direct insert, no join route). Returns the class. */
 export async function classWith(
   t: QsTestApp,
   teacher: Client,
@@ -146,8 +146,9 @@ export async function classWith(
 ): Promise<{ id: string; joinCode: string; name: string }> {
   const cls = await createClass(t as never, teacher, { name })
   for (const s of students) {
-    const res = await s.post('/kelas-saya/join', { classCode: cls.joinCode })
-    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    const me = await s.get('/me')
+    expect(me.status, JSON.stringify(me.body)).toBe(200)
+    await t.db.query(`insert into enrolments (classroom_id, student_id, status, source) values ($1::bigint, $2::bigint, 'active', 'teacher')`, [cls.id, me.body.data.id])
   }
   return cls
 }
