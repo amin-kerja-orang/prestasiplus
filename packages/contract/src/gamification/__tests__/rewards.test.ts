@@ -27,6 +27,7 @@ import {
   RewardRedemptionListQuerySchema,
   RewardRedemptionListResponseSchema,
   RewardTicketBoughtSchema,
+  RewardTicketRequestSchema,
   ShopDigitalItemsQuerySchema,
   ShopDigitalItemsResponseSchema,
   ShopDigitalRedemptionsResponseSchema,
@@ -190,6 +191,12 @@ describe('student redeem, Kotak Misteri, Cabutan', () => {
   it('validates the redeem body and result', () => {
     expect(RewardRedeemRequestSchema.safeParse({ rewardId: '5' }).success).toBe(true)
     expect(RewardRedeemRequestSchema.safeParse({ rewardId: 5 }).success).toBe(false)
+    const uuid = '7f3c2a10-5b1e-4c6d-9a2f-1e8b7c6d5a40'
+    expect(RewardRedeemRequestSchema.safeParse({ rewardId: '5', clientUuid: uuid }).success).toBe(true)
+    expect(RewardRedeemRequestSchema.safeParse({ rewardId: '5', clientUuid: 'not-a-uuid' }).success).toBe(false)
+    expect(RewardTicketRequestSchema.safeParse({}).success).toBe(true)
+    expect(RewardTicketRequestSchema.safeParse({ clientUuid: uuid }).success).toBe(true)
+    expect(RewardTicketRequestSchema.safeParse({ clientUuid: 'not-a-uuid' }).success).toBe(false)
     expect(RewardRedeemRequestSchema.safeParse({}).success).toBe(false)
     expect(RewardRedeemResultSchema.safeParse({ id: '11', status: 'pending_parent_consent', tokenBalance: 4 }).success).toBe(true)
     expect(RewardRedeemResultSchema.safeParse({ id: '11', status: 'pending_admin', tokenBalance: -1 }).success).toBe(false)

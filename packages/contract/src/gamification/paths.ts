@@ -66,6 +66,7 @@ import {
   RewardRedemptionListResponseSchema,
   RewardRedemptionStatusSchema,
   RewardTicketBoughtSchema,
+  RewardTicketRequestSchema,
   ShopDigitalItemsMetaSchema,
   ShopDigitalItemsQuerySchema,
   ShopDigitalItemsResponseSchema,
@@ -192,6 +193,7 @@ export const GAMIFICATION_COMPONENT_SCHEMAS = {
   RewardCabutanDraw: RewardCabutanDrawSchema,
   RewardCabutanView: RewardCabutanViewSchema,
   RewardTicketBought: RewardTicketBoughtSchema,
+  RewardTicketRequest: RewardTicketRequestSchema,
   ShopDigitalItemsQuery: ShopDigitalItemsQuerySchema,
   ShopDigitalItemsMeta: ShopDigitalItemsMetaSchema,
   ShopDigitalItemsResponse: ShopDigitalItemsResponseSchema,
@@ -609,7 +611,7 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
     tags: ['rewards'],
     summary: 'Redeem a catalogue reward with tokens',
     description:
-      'One transaction: snapshot redemption row, token debit (source hadiah_redeem, ref redemption:{id}), stock - 1 when stock is limited. Checks run in this order: reward exists and is active, stock, monthly cap (non-cancelled redemptions of that reward in the Malaysia calendar month), token balance. Any refusal rolls back everything.',
+      'One transaction: snapshot redemption row, token debit (source hadiah_redeem, ref redemption:{id}), stock - 1 when stock is limited. Checks run in this order: reward exists and is active, stock, monthly cap (non-cancelled redemptions of that reward in the Malaysia calendar month), token balance. Any refusal rolls back everything. A repeat with the same clientUuid from the same user returns the first redemption before any of these checks; no header and no time window (DM-78).',
     request: { headers: [csrf], body: body(RewardRedeemRequestSchema) },
     responses: {
       201: json(envelopeOf(RewardRedeemResultSchema), 'Redeemed.'),
@@ -619,7 +621,7 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
       409: err(
         'OUT_OF_STOCK "Stok hadiah telah habis."; MONTHLY_CAP "Had tebusan bulanan dicapai."; INSUFFICIENT_TOKENS "Token tidak mencukupi.".',
       ),
-      422: err('VALIDATION_ERROR fields.rewardId "The reward id field is required." (missing, non-numeric or below 1; the top-level message is the same text).'),
+      422: err('VALIDATION_ERROR fields.rewardId "The reward id field is required." (missing, non-numeric or below 1; the top-level message is the same text); fields.clientUuid "The client uuid field must be a valid UUID.".'),
     },
   })
 
@@ -663,8 +665,8 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
     tags: ['rewards'],
     summary: 'Buy one draw ticket with syiling',
     description:
-      'Debits ticketCostSyiling (ledger spend, source cabutan_ticket, description "Tiket Cabutan: {title}", ref draw:{id}) and inserts one ticket. No body.',
-    request: { params: DrawParams, headers: [csrf] },
+      'Debits ticketCostSyiling (ledger spend, source cabutan_ticket, description "Tiket Cabutan: {title}", ref draw:{id}) and inserts one ticket. The body is optional. A repeat with the same clientUuid from the same user answers for the first ticket before any check and moves nothing (DM-78).',
+    request: { params: DrawParams, headers: [csrf], body: { ...body(RewardTicketRequestSchema), required: false } },
     responses: {
       201: json(envelopeOf(RewardTicketBoughtSchema), 'Ticket bought.'),
       401: UNAUTHORIZED,
@@ -672,6 +674,7 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
       409: err(
         'DRAW_CLOSED "Cabutan ditutup." (missing, not open, or closed by date); TICKET_LIMIT "Had tiket dicapai."; INSUFFICIENT_BALANCE "Baki syiling tidak mencukupi.".',
       ),
+      422: err('VALIDATION_ERROR fields.clientUuid "The client uuid field must be a valid UUID.".'),
     },
   })
 
