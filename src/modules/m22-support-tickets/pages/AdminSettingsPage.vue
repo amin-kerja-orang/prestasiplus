@@ -10,7 +10,7 @@ import { isApiError } from '@/api'
 import { useApi } from '@/composables'
 import { DsCallout, DsFormField, DsFormSection, DsPage, DsStack, DsStateView } from '@/ds'
 
-import { fetchSupportSettings, saveSupportSettings } from '../api/settings'
+import { fetchSupportSettings, saveSupportSettings } from '../api/tickets'
 import { SETTINGS_SAVED_FLASH } from '../api/types'
 
 const { data, error, reload } = useApi((signal) => fetchSupportSettings({ signal }))

@@ -19,10 +19,10 @@ const api = vi.hoisted(() => ({
   fetchTickets: vi.fn(),
   createTicket: vi.fn(),
   fetchQueue: vi.fn(),
+  fetchSupportSettings: vi.fn(),
+  saveSupportSettings: vi.fn(),
 }))
 vi.mock('../../api/tickets', () => api)
-const settingsApi = vi.hoisted(() => ({ fetchSupportSettings: vi.fn(), saveSupportSettings: vi.fn() }))
-vi.mock('../../api/settings', () => settingsApi)
 
 const ticket = (over: Partial<Ticket> = {}): Ticket => ({
   id: 1,
@@ -61,7 +61,6 @@ beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(new Date('2026-09-25T15:40:00+08:00'))
   for (const f of Object.values(api)) f.mockReset()
-  for (const f of Object.values(settingsApi)) f.mockReset()
 })
 
 describe('routes (FR-M22-01, 28, 36, 27)', () => {
@@ -342,7 +341,7 @@ describe('S3 settings (R1-ADM-N-07)', () => {
   const contact = { email: 'sokongan@demo.test', phone: '', whatsapp: '60100000000', hours: '' }
 
   it('shows the section with the saved values and no field for hours', async () => {
-    settingsApi.fetchSupportSettings.mockResolvedValue(contact)
+    api.fetchSupportSettings.mockResolvedValue(contact)
     const { w } = await open('/admin/settings', AdminSettingsPage)
     expect(w.get('h1').text()).toBe('Tetapan')
     expect(w.text()).toContain('Hubungi Sokongan')
@@ -355,19 +354,19 @@ describe('S3 settings (R1-ADM-N-07)', () => {
   })
 
   it('a save sends both fields and shows the flash', async () => {
-    settingsApi.fetchSupportSettings.mockResolvedValue(contact)
-    settingsApi.saveSupportSettings.mockResolvedValue({ ...contact, email: 'bantuan@demo.test' })
+    api.fetchSupportSettings.mockResolvedValue(contact)
+    api.saveSupportSettings.mockResolvedValue({ ...contact, email: 'bantuan@demo.test' })
     const { w } = await open('/admin/settings', AdminSettingsPage)
     await tid(w, 'st-email').setValue('bantuan@demo.test')
     await tid(w, 'st-form').trigger('submit')
     await flushPromises()
-    expect(settingsApi.saveSupportSettings).toHaveBeenCalledWith({ email: 'bantuan@demo.test', whatsapp: contact.whatsapp })
+    expect(api.saveSupportSettings).toHaveBeenCalledWith({ email: 'bantuan@demo.test', whatsapp: contact.whatsapp })
     expect(tid(w, 'st-flash').text()).toContain('Tetapan disimpan.')
   })
 
   it('AC-ADM-N07.2 a refused save shows the field message and no flash', async () => {
-    settingsApi.fetchSupportSettings.mockResolvedValue(contact)
-    settingsApi.saveSupportSettings.mockRejectedValue(
+    api.fetchSupportSettings.mockResolvedValue(contact)
+    api.saveSupportSettings.mockRejectedValue(
       new ApiError({ status: 422, code: 'VALIDATION_ERROR', message: 'E-mel tidak sah.', fields: { email: 'E-mel tidak sah.' } }),
     )
     const { w } = await open('/admin/settings', AdminSettingsPage)
@@ -378,7 +377,7 @@ describe('S3 settings (R1-ADM-N-07)', () => {
   })
 
   it('a failed load shows the error', async () => {
-    settingsApi.fetchSupportSettings.mockRejectedValue(
+    api.fetchSupportSettings.mockRejectedValue(
       new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'Ralat pelayan.' }),
     )
     const { w } = await open('/admin/settings', AdminSettingsPage)

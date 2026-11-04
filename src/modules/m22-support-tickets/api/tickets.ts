@@ -2,7 +2,7 @@
 
 import { api } from '@/api'
 
-import type { QueueList, Ticket, TicketList, TicketStatus } from './types'
+import type { QueueList, SupportSettings, Ticket, TicketList, TicketStatus } from './types'
 
 /** #1 `GET /api/tiket`. */
 export const fetchTickets = (o: { status?: TicketStatus | null; signal?: AbortSignal } = {}) =>
@@ -27,3 +27,11 @@ export const fetchQueue = (o: { status?: string | null; signal?: AbortSignal } =
 /** #4 `GET /api/admin/tiket/open-count`. */
 export const fetchOpenCount = (o: { signal?: AbortSignal } = {}) =>
   api.get<{ count: number }>('/api/admin/tiket/open-count', o.signal ? { signal: o.signal } : {})
+
+/** API-ADM-10 `GET /api/admin/settings/support`. */
+export const fetchSupportSettings = (o: { signal?: AbortSignal } = {}) =>
+  api.get<SupportSettings>('/api/admin/settings/support', o.signal ? { signal: o.signal } : {})
+
+/** API-ADM-10 `PUT /api/admin/settings/support`. */
+export const saveSupportSettings = (input: { email: string; whatsapp: string }) =>
+  api.put<SupportSettings>('/api/admin/settings/support', { body: input })
