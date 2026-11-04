@@ -82,6 +82,21 @@ export const supportTicketScenarios: Scenario[] = [
     },
   },
   {
+    id: 'support-api/settings: the admin reads and saves the contact (API-ADM-10)',
+    domain: 'support',
+    targets: API_ONLY,
+    run: async (ctx) => {
+      const admin = await ctx.as('admin')
+      const read = await admin.request('GET', '/admin/settings/support')
+      ctx.expectStatus(read, 200)
+      const before = dataOf(read)
+      const saved = await admin.request('PUT', '/admin/settings/support', { body: { email: before.email } })
+      ctx.expectStatus(saved, 200)
+      expectError(ctx, await admin.request('PUT', '/admin/settings/support', { body: { email: 'bukan-emel' } }), 422, 'VALIDATION_ERROR')
+      expectError(ctx, await (await ctx.as('student')).request('GET', '/admin/settings/support'), 403, 'FORBIDDEN')
+    },
+  },
+  {
     id: 'support-api/config: the support contact is public',
     domain: 'support',
     targets: API_ONLY,

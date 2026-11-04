@@ -35,6 +35,20 @@ const routes: RouteRecordRaw[] = [
       v2: true,
     },
   },
+  {
+    path: '/admin/settings',
+    name: 'm22.admin-settings',
+    component: () => import('../pages/AdminSettingsPage.vue'),
+    meta: {
+      layout: 'admin',
+      access: 'auth',
+      roles: ['admin'],
+      title: 'Tetapan - PRESTASIPLUS',
+      header: { title: 'Tetapan' },
+      module: 'M22',
+      v2: true,
+    },
+  },
 ]
 
 export default routes

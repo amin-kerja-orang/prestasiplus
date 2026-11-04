@@ -132,6 +132,40 @@ export const SupportQueueResponseSchema = z
   .meta({ id: 'SupportQueueResponse' })
 export type SupportQueueResponse = z.infer<typeof SupportQueueResponseSchema>
 
+/** Support contact limits and messages (30 N07-01, N07-02, FR-ADM-N07.3). */
+export const SUPPORT_CONTACT_MAX = 120
+export const SUPPORT_PHONE_PATTERN = /^\+?[0-9]{9,13}$/
+const SUPPORT_EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+export const SUPPORT_SETTINGS_MESSAGES = {
+  emailInvalid: 'E-mel tidak sah.',
+  phoneInvalid: 'No. telefon tidak sah.',
+} as const
+/** Flash after a save (N07-04). */
+export const SUPPORT_SETTINGS_SAVED_FLASH = 'Tetapan disimpan.'
+
+/** `data` of `GET` and `PUT /admin/settings/support` (API-ADM-10); '' = not set. `phone` and `hours` stay '' until they have a store (open on #458, #507). */
+export const SupportSettingsSchema = z
+  .strictObject({ email: z.string(), phone: z.string(), whatsapp: z.string(), hours: z.string() })
+  .meta({ id: 'SupportSettings' })
+export type SupportSettings = z.infer<typeof SupportSettingsSchema>
+
+/** A contact field: trimmed, and null or blank clears it. */
+const contactField = (pattern: RegExp, message: string) =>
+  z
+    .union([z.string(), z.null()], { error: message })
+    .transform((v) => (v ?? '').trim())
+    .refine((v) => v === '' || (v.length <= SUPPORT_CONTACT_MAX && pattern.test(v)), { error: message })
+    .optional()
+
+/** Body of `PUT /admin/settings/support`: an omitted field keeps its value. */
+export const SupportSettingsUpdateRequestSchema = z
+  .object({
+    email: contactField(SUPPORT_EMAIL_PATTERN, SUPPORT_SETTINGS_MESSAGES.emailInvalid),
+    whatsapp: contactField(SUPPORT_PHONE_PATTERN, SUPPORT_SETTINGS_MESSAGES.phoneInvalid),
+  })
+  .meta({ id: 'SupportSettingsUpdateRequest' })
+export type SupportSettingsUpdateRequest = z.infer<typeof SupportSettingsUpdateRequestSchema>
+
 /** `data` of `GET /admin/tiket/open-count`: tickets with status `dibuka`. */
 export const SupportOpenCountSchema = z
   .strictObject({ count: z.number().int().min(0) })

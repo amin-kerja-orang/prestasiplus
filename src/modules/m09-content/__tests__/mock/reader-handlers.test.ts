@@ -332,6 +332,28 @@ describe('#43 GET /api/config/support', () => {
   })
 })
 
+describe('API-ADM-10 support settings', () => {
+  const URL_ = '/api/admin/settings/support'
+
+  it('is admin only; an omitted field stays, and the public config follows', async () => {
+    expect((await get(URL_, null)).status).toBe(401)
+    expect((await get(URL_, PELAJAR)).status).toBe(403)
+    expect((await call('PUT', URL_, PELAJAR, { email: 'a@demo.test' })).status).toBe(403)
+    expect(await data(URL_, ADMIN)).toEqual({ email: 'support@prestasiplus.my', phone: '', whatsapp: '60123456789', hours: '' })
+    const saved = await call<{ data: unknown }>('PUT', URL_, ADMIN, { email: 'bantuan@demo.test' })
+    expect(saved.body.data).toEqual({ email: 'bantuan@demo.test', phone: '', whatsapp: '60123456789', hours: '' })
+    expect(await data<SupportConfig>('/api/config/support', null)).toMatchObject({ email: 'bantuan@demo.test' })
+  })
+
+  it('AC-ADM-N07.2 a bad value gives its message and saves nothing', async () => {
+    const before = await data(URL_, ADMIN)
+    const bad = await call<{ error: { fields: unknown } }>('PUT', URL_, ADMIN, { email: 'x', whatsapp: '12' })
+    expect(bad.status).toBe(422)
+    expect(bad.body.error.fields).toEqual({ email: 'E-mel tidak sah.', whatsapp: 'No. telefon tidak sah.' })
+    expect(await data(URL_, ADMIN)).toEqual(before)
+  })
+})
+
 // ---------------------------------------------------------------------------------------------
 // Audio KBAT #24–#26 (provisional)
 // ---------------------------------------------------------------------------------------------

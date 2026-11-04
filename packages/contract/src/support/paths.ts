@@ -8,7 +8,10 @@ import {
   SupportQueueMetaSchema,
   SupportQueueQuerySchema,
   SupportQueueResponseSchema,
+  SUPPORT_SETTINGS_MESSAGES,
   SupportQueueRowSchema,
+  SupportSettingsSchema,
+  SupportSettingsUpdateRequestSchema,
   SupportTicketCreateRequestSchema,
   SupportTicketListMetaSchema,
   SupportTicketListQuerySchema,
@@ -30,6 +33,8 @@ export const SUPPORT_COMPONENT_SCHEMAS = {
   SupportQueueMeta: SupportQueueMetaSchema,
   SupportQueueResponse: SupportQueueResponseSchema,
   SupportOpenCount: SupportOpenCountSchema,
+  SupportSettings: SupportSettingsSchema,
+  SupportSettingsUpdateRequest: SupportSettingsUpdateRequestSchema,
 } as const
 
 const json = (schema: z.ZodType, description: string) => ({
@@ -38,7 +43,7 @@ const json = (schema: z.ZodType, description: string) => ({
 })
 const err = (description: string) => json(ErrorBodySchema, description)
 
-/** Registers the four support-ticket endpoints (M22). Bodies are `{ data, meta? }` or `{ error }`. */
+/** Registers the support endpoints (M22). Bodies are `{ data, meta? }` or `{ error }`. */
 export function registerSupportPaths(registry: OpenAPIRegistry): void {
   const csrf = z.object({
     'X-CSRF-Token': z.string().min(1).meta({ description: 'Value of Session.csrf; required on mutating requests.' }),
@@ -96,5 +101,29 @@ export function registerSupportPaths(registry: OpenAPIRegistry): void {
     summary: 'Count of open tickets (badge)',
     description: 'Admin only. `count` = tickets with status `dibuka`.',
     responses: { 200: json(envelopeOf(SupportOpenCountSchema), 'Open ticket count.'), 401: unauthorized, 403: adminOnly },
+  })
+
+  registry.registerPath({
+    method: 'get',
+    path: '/admin/settings/support',
+    tags: ['support'],
+    summary: 'Support contact settings (API-ADM-10)',
+    description: 'Admin only. Empty strings when nothing is saved.',
+    responses: { 200: json(envelopeOf(SupportSettingsSchema), 'The contact.'), 401: unauthorized, 403: adminOnly },
+  })
+
+  registry.registerPath({
+    method: 'put',
+    path: '/admin/settings/support',
+    tags: ['support'],
+    summary: 'Save the support contact (API-ADM-10)',
+    description: 'Admin only, audited. An omitted field keeps its value; null or blank clears it. `phone` and `hours` are refused until they have a store.',
+    request: { headers: [csrf], body: { required: true, content: { 'application/json': { schema: SupportSettingsUpdateRequestSchema } } } },
+    responses: {
+      200: json(envelopeOf(SupportSettingsSchema), 'The saved contact.'),
+      401: unauthorized,
+      403: err('FORBIDDEN (not an admin) or CSRF_INVALID (missing or wrong X-CSRF-Token).'),
+      422: err(`VALIDATION_ERROR with fields: email "${SUPPORT_SETTINGS_MESSAGES.emailInvalid}"; whatsapp "${SUPPORT_SETTINGS_MESSAGES.phoneInvalid}".`),
+    },
   })
 }

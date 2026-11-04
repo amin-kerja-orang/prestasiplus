@@ -298,6 +298,20 @@ export const supportRepo = defineRepository({
       return { email: row.email, whatsappNumber: row.whatsappNumber }
     },
 
+    /** The contact for the admin (API-ADM-10): empty strings when no row exists. */
+    contact(): { email: string; whatsappNumber: string } {
+      const row = store.get(1)
+      return { email: row?.email ?? '', whatsappNumber: row?.whatsappNumber ?? '' }
+    },
+
+    /** API-ADM-10 (S7): the admin saves the contact; the row is created on the first save. */
+    saveContact(input: { email: string; whatsappNumber: string }): void {
+      transaction(() => {
+        if (store.get(1)) store.update(1, input)
+        else store.insert({ id: 1, ...input })
+      })
+    },
+
     /** DV-M09-14 / `mock.config('supportWhatsappNumber', value)`: the owner replaces the number. */
     setWhatsappNumber(value: string): void {
       transaction(() => {

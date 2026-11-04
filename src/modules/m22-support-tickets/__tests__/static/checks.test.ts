@@ -9,7 +9,10 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { SUPPORT_SETTINGS_MESSAGES, SUPPORT_SETTINGS_SAVED_FLASH } from '@pp/contract'
 import { describe, expect, it } from 'vitest'
+
+import { SETTINGS_MESSAGES, SETTINGS_SAVED_FLASH } from '../../api/types'
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url))
 const REPO = fileURLToPath(new URL('../../../../../', import.meta.url))
@@ -63,5 +66,12 @@ describe('CHK-M22-02', () => {
       const text = readFileSync(join(ROOT, 'pages', page), 'utf8')
       expect(/aria-[a-z]+=|role=/.test(text), page).toBe(false)
     }
+  })
+})
+
+describe('settings copy matches the contract', () => {
+  it('the client copies are the contract values', () => {
+    expect(SETTINGS_MESSAGES).toEqual(SUPPORT_SETTINGS_MESSAGES)
+    expect(SETTINGS_SAVED_FLASH).toBe(SUPPORT_SETTINGS_SAVED_FLASH)
   })
 })

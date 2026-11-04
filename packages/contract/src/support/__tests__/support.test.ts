@@ -7,12 +7,15 @@ import {
   SUPPORT_BODY_MAX,
   SUPPORT_MESSAGES,
   SUPPORT_NEW_TICKET_NOTIFICATION,
+  SUPPORT_SETTINGS_MESSAGES,
   SUPPORT_SUBJECT_MAX,
   SUPPORT_TICKET_CREATED_FLASH,
   SUPPORT_TICKET_STATUSES,
   SUPPORT_TICKET_STATUS_LABELS,
   SupportOpenCountSchema,
   SupportQueueResponseSchema,
+  SupportSettingsSchema,
+  SupportSettingsUpdateRequestSchema,
   SupportTicketCreateRequestSchema,
   SupportTicketListResponseSchema,
   SupportTicketSchema,
@@ -108,6 +111,31 @@ describe('admin queue', () => {
   it('open count', () => {
     expect(SupportOpenCountSchema.safeParse({ count: 0 }).success).toBe(true)
     expect(SupportOpenCountSchema.safeParse({ count: -1 }).success).toBe(false)
+  })
+})
+
+describe('support settings (API-ADM-10)', () => {
+  const issues = (value: unknown) =>
+    Object.fromEntries((SupportSettingsUpdateRequestSchema.safeParse(value).error?.issues ?? []).map((i) => [String(i.path[0]), i.message]))
+
+  it('accepts a contact, trims it, and null or blank clears a field; an omitted field stays out', () => {
+    expect(SupportSettingsUpdateRequestSchema.parse({ email: ' sokongan@demo.test ', whatsapp: '+60100000000' })).toEqual({ email: 'sokongan@demo.test', whatsapp: '+60100000000' })
+    expect(SupportSettingsUpdateRequestSchema.parse({ email: null, whatsapp: '  ' })).toEqual({ email: '', whatsapp: '' })
+    expect(SupportSettingsUpdateRequestSchema.parse({})).toEqual({})
+  })
+
+  it('gives the exact messages for a bad e-mail, a bad number and the 120 limit', () => {
+    expect(issues({ email: 'bukan-emel' })).toEqual({ email: SUPPORT_SETTINGS_MESSAGES.emailInvalid })
+    expect(issues({ email: `${'a'.repeat(120)}@demo.test` })).toEqual({ email: SUPPORT_SETTINGS_MESSAGES.emailInvalid })
+    expect(issues({ whatsapp: '12345678' })).toEqual({ whatsapp: SUPPORT_SETTINGS_MESSAGES.phoneInvalid })
+    expect(issues({ whatsapp: '60 10 000' })).toEqual({ whatsapp: SUPPORT_SETTINGS_MESSAGES.phoneInvalid })
+    expect(issues({ email: 5 })).toEqual({ email: SUPPORT_SETTINGS_MESSAGES.emailInvalid })
+  })
+
+  it('the answer has the four keys and nothing else', () => {
+    const full = { email: '', phone: '', whatsapp: '', hours: '' }
+    expect(SupportSettingsSchema.parse(full)).toEqual(full)
+    expect(SupportSettingsSchema.safeParse({ ...full, id: '1' }).success).toBe(false)
   })
 })
 

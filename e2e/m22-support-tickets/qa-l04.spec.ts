@@ -288,6 +288,35 @@ test.describe('L04 queue (S2)', MODULE, () => {
   })
 })
 
+test.describe('R1-ADM-N-07 settings', MODULE, () => {
+  test('AC-ADM-N07.2 a bad e-mail is refused; a good one saves and reaches Panduan config', async ({
+    page,
+    loginAs,
+    gotoApp,
+  }) => {
+    await loginAs(ADMIN)
+    await gotoApp('/admin/settings')
+    await expect(page.getByRole('heading', { level: 1, name: 'Tetapan' })).toBeVisible()
+    await expect(page.getByText('Hubungi Sokongan')).toBeVisible()
+    await expectNoHorizontalScroll(page)
+    await page.getByTestId('st-email').fill('bukan-emel')
+    await page.getByTestId('st-save').click()
+    await expect(page.getByText('E-mel tidak sah.')).toBeVisible()
+    await expect(page.getByTestId('st-flash')).toHaveCount(0)
+    await page.getByTestId('st-email').fill('bantuan@demo.test')
+    await page.getByTestId('st-save').click()
+    await expect(page.getByTestId('st-flash')).toContainText('Tetapan disimpan.')
+    await page.reload()
+    await expect(page.getByTestId('st-email')).toHaveValue('bantuan@demo.test')
+  })
+
+  test('FR-ADM-N07.3 a pupil is refused the page', async ({ page, loginAs, gotoApp }) => {
+    await loginAs('pelajar@demo.test')
+    await gotoApp('/admin/settings')
+    await expect(page.getByTestId('st-page')).toHaveCount(0)
+  })
+})
+
 test.describe('L04 unbuilt paths and states', MODULE, () => {
   test('FR-M22-27 /tiket, /tiket/baru and /pusat-tuisyen/tiket/baru answer 404 (signed in and guest)', async ({
     page,

@@ -37,6 +37,21 @@ export const TICKET_MESSAGES = {
 export const TICKET_CREATED_FLASH =
   'Tiket dihantar. Pasukan sokongan akan membalas secepat mungkin.'
 
+/** N07-01, N07-02, N07-04 (R1-ADM-N-07). */
+export const SETTINGS_MESSAGES = {
+  emailInvalid: 'E-mel tidak sah.',
+  phoneInvalid: 'No. telefon tidak sah.',
+} as const
+export const SETTINGS_SAVED_FLASH = 'Tetapan disimpan.'
+
+/** API-ADM-10; '' = not set. */
+export interface SupportSettings {
+  email: string
+  phone: string
+  whatsapp: string
+  hours: string
+}
+
 /** `Ticket` of §7. */
 export interface Ticket {
   id: number

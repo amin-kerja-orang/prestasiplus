@@ -131,6 +131,16 @@ export class SupportRepository {
     return this.prisma.client.supportTicket.count({ where: { status: 'dibuka' } })
   }
 
+  /** The singleton row: created on the first save (DM-33). */
+  async saveConfig(input: { email: string; whatsappNumber: string; now: Date }): Promise<void> {
+    const values = { email: input.email, whatsappNumber: input.whatsappNumber, updatedAt: input.now }
+    await this.prisma.client.supportConfig.upsert({
+      where: { id: SUPPORT_CONFIG_ID },
+      create: { id: SUPPORT_CONFIG_ID, createdAt: input.now, ...values },
+      update: values,
+    })
+  }
+
   async config(): Promise<{ email: string; whatsappNumber: string } | null> {
     const row = await this.prisma.client.supportConfig.findUnique({ where: { id: SUPPORT_CONFIG_ID } })
     return row ? { email: row.email, whatsappNumber: row.whatsappNumber } : null
