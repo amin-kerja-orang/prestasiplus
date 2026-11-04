@@ -7,5 +7,5 @@ export function fieldError(fields: Record<string, string>): ApiError {
   return ApiError.of('VALIDATION_ERROR', { message: Object.values(fields)[0] ?? DEFAULT_ERROR_MESSAGES.VALIDATION_ERROR, fields })
 }
 
-/** 404 "Not Found." (unknown code, unknown mock, someone else's mock). */
+/** 404 NOT_FOUND, generic BM default (unknown code, unknown mock, someone else's mock). */
 export const notFound = (): ApiError => ApiError.of('NOT_FOUND', { message: SPM_MESSAGES.notFound })

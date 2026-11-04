@@ -14,9 +14,9 @@ import {
 /**
  * PKSK student half (BE-42, M07-01 to M07-09). Wire = the frontend mock
  * (`src/modules/m07-pksk/mock/handlers/student.ts`); ids are `IdSchema` strings (UD-1), the mock
- * sends numbers. Every route needs a session (401 UNAUTHORIZED "Unauthenticated."), any role.
- * Routes with `:level` apply the level gate: an unknown level is 404 NOT_FOUND "Not Found." first,
- * then no access to the level is 403 FORBIDDEN "This action is unauthorized." (access: BR-M07-07).
+ * sends numbers. Every route needs a session (401 UNAUTHORIZED "Sesi anda telah tamat. Sila log masuk semula."), any role.
+ * Routes with `:level` apply the level gate: an unknown level is 404 NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" first,
+ * then no access to the level is 403 FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (access: BR-M07-07).
  */
 
 export const PKSK_STUDENT_MESSAGES = {
@@ -48,14 +48,14 @@ export const PKSK_OPTION_INDEX_MAX = 5
 export const PkskLevelParamsSchema = z
   .object({
     level: z.string().min(1).max(16).meta({
-      description: 'T1 or T4, case-sensitive. Any other value answers 404 "Not Found." before the access check.',
+      description: 'T1 or T4, case-sensitive. Any other value answers 404 "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" before the access check.',
     }),
   })
 export type PkskLevelParams = z.infer<typeof PkskLevelParamsSchema>
 
 export const PkskDomainParamsSchema = PkskLevelParamsSchema.extend({
   code: z.string().min(1).max(50).meta({
-    description: 'Domain code, e.g. PKSK_MATH. An unknown code answers 404 "Not Found." (level checked first).',
+    description: 'Domain code, e.g. PKSK_MATH. An unknown code answers 404 "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (level checked first).',
   }),
 })
 export type PkskDomainParams = z.infer<typeof PkskDomainParamsSchema>

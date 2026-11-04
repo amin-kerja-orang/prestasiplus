@@ -102,7 +102,7 @@ function invalid(fields: Record<string, string>): ApiError {
   const messages = Object.values(fields)
   const [first] = messages
   const more = messages.length - 1
-  const message = first === undefined ? DEFAULT_ERROR_MESSAGES.VALIDATION_ERROR : more === 0 ? first : `${first} (and ${String(more)} more error${more === 1 ? '' : 's'})`
+  const message = first === undefined ? DEFAULT_ERROR_MESSAGES.VALIDATION_ERROR : more === 0 ? first : `${first} (dan ${String(more)} ralat lain)`
   return ApiError.of('VALIDATION_ERROR', { fields, message })
 }
 

@@ -44,7 +44,7 @@ export const PERFORMANCE_TIMELINE_MESSAGES = {
   photoInvalid: 'Gambar tidak sah (JPEG, PNG atau WebP, maks 2MB).',
 } as const
 
-/** Generic mock copy: 401 "Unauthenticated.", 403 "This action is unauthorized.", 404 "Not Found.". */
+/** Generic mock copy: 401 "Sesi anda telah tamat. Sila log masuk semula.", 403 "Anda tidak dibenarkan melakukan tindakan ini.", 404 "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?". */
 export const PERFORMANCE_ERROR_MESSAGES = {
   unauthorized: 'Sesi anda telah tamat. Sila log masuk semula.',
   forbidden: 'Anda tidak dibenarkan melakukan tindakan ini.',

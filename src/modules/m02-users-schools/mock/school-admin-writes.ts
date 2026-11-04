@@ -111,7 +111,7 @@ function text(value: unknown): string | null {
   return trimmed === '' ? null : trimmed
 }
 
-function refuse(fields: Record<string, string> | null): void {
+export function refuse(fields: Record<string, string> | null): void {
   if (fields) {
     const first = Object.values(fields)[0] ?? 'Data yang dihantar tidak sah. Sila semak dan cuba lagi.'
     throw new SchoolAdminWriteError(422, first, fields)
