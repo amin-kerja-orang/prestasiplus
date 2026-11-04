@@ -30,9 +30,11 @@ describe('GET /api/config/support (public)', () => {
     await expect(t.db.query(`insert into support_config (id, email, whatsapp_number) values (2, 'a@b.test', '1')`)).rejects.toThrow()
   })
 
-  it('a missing row is 404 "Konfigurasi sokongan tidak dijumpai."', async () => {
+  it('a missing row answers 200 with empty strings, not 404 (DM-33)', async () => {
     await t.db.query(`delete from support_config`)
-    expectError(await t.http().get('/api/config/support'), 'NOT_FOUND', 'Konfigurasi sokongan tidak dijumpai.')
+    const res = await t.http().get('/api/config/support')
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ data: { email: '', whatsappNumber: '' } })
   })
 
   it('is limited per client address: the 3rd request in a minute is 429', async () => {
