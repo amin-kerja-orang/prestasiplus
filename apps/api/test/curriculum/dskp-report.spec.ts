@@ -24,7 +24,8 @@ describe('admin DSKP load report (API-DSKP-11)', () => {
     t4 = await idOf(t.db, 'education_levels', 'T4')
     t5 = await idOf(t.db, 'education_levels', 'T5')
     d1 = await idOf(t.db, 'education_levels', 'D1')
-    // A small Matematik T4 tree: grouping -> unit (Bab) -> sk -> two sp, two node TP rows and two general rows.
+    // A small Matematik T4 tree: grouping -> unit (Bab) -> sk -> two sp and two node TP rows. The subject's general TP rows
+    // (node_id null) come from the seed: unique (subject, coalesce(node, 0), tp), so the test reads their count instead.
     const ins = async (kind: string, code: string, parent: string | null): Promise<string> =>
       (await t.db.query<{ id: string }>(
         `insert into curriculum_nodes (subject_id, education_level_id, kind, code, title, parent_id, sort_order, edition)
@@ -38,7 +39,7 @@ describe('admin DSKP load report (API-DSKP-11)', () => {
     await ins('sp', '91.1.2', sk)
     await t.db.query(
       `insert into curriculum_tp_descriptors (subject_id, node_id, tp, descriptor, scope) values
-         ($1, $2, 1, 'Unit TP1', 'unit'), ($1, $3, 2, 'SK TP2', 'sk'), ($1, null, 1, 'Umum 1', null), ($1, null, 2, 'Umum 2', null)`,
+         ($1, $2, 1, 'Unit TP1', 'unit'), ($1, $3, 2, 'SK TP2', 'sk')`,
       [math, unit, sk],
     )
   })
