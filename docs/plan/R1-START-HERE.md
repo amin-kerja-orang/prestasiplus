@@ -60,7 +60,7 @@ The repo `CLAUDE.md` rule `feature/<slug>` is for non-R1 work. R1 branches alway
 
 ### 5. UAT access
 - "No server access" means **no SSH, no database access, no deploy** for AI sessions (D95).
-- **Using UAT through the browser with test accounts is allowed**, including creating the test records that an AC-CHAIN needs. Those records live on the dedicated test school, carry the prefix `UJI <team> <date>`, and are removed by the creating team through the UI the same day (rules in [`r1-ac-ledger.md`](r1-ac-ledger.md)).
+- **Using UAT through the browser with test accounts is allowed**, including creating the test records that an AC-CHAIN needs. Those records live on the dedicated test school, carry the prefix `UJI <team> <date>`, and are removed afterwards by the designated UAT developer as U-OP-14 (40 X9; rules in [`r1-ac-ledger.md`](r1-ac-ledger.md)).
 - The **designated UAT developer** creates, through the admin UI on a dedicated test school, **one account per role per team**: Admin Pusat, Admin Sekolah, Guru, Murid T1, T2, T3, T4, T5. The credentials go **privately to the team leads**, never into the repo, an issue, a PR, a comment or a log.
 - **Content work** (questions, papers, Bab mapping, figures) is done by named content admins through the UI (D110); developers do not do it. Script data operations on UAT stay with the designated UAT developer and the product owner's approval ([plan section 7](r1-development-plan.md)).
 - **Request path for a new developer:** you -> your team lead -> the designated UAT developer (comment in #503: `[<team>/S-<k>] needs UAT test accounts for <team>`).
@@ -83,7 +83,7 @@ The repo `CLAUDE.md` rule `feature/<slug>` is for non-R1 work. R1 branches alway
 - Every card starts as `status:ready`: the tool does not show dependencies, so read `deps:` on the card.
 
 ### 9. The label list (the real one)
-`r1` · `sector:S0..S10` · `type:fix|complete|build|keep|verify|ops` · `prio:P0|P1|P2` · `status:ready|in-progress|in-review|blocked|done` · `r1-delivery:A|B` · `team:<team>` (created by the team lead on first use) · `needs:S0..S10` (a cross-sector PR, or a request waiting on that sector). Stuck: `status:blocked` plus a comment. Milestones: `R1 Sprint 0..N`.
+`r1` · `sector:S0..S10` · `type:fix|complete|build|keep|verify|ops` · `prio:P0|P1|P2` · `status:ready|in-progress|in-review|blocked|done` · `r1-delivery:A|B` · `team:<team>` (created by the team lead on first use) · `needs:S0..S10` (a cross-sector PR, or a request waiting on that sector) · `needs:schema` (a migration requested from the team that holds the sector of its number range, together with `needs:S<n>` of that sector). Stuck: `status:blocked` plus a comment. Milestones: `R1 Sprint 0..N`.
 
 ### 10. S9 cards and the end-to-end chain specs
 - S9 is the Delivery Lead's sector. It cannot be claimed as a SECTOR (no team holds the lock `S9`), but its cards S9-T01..S9-T06 are worked by the Delivery Lead session; S9-T06 is included. S9 cards need no lock.
