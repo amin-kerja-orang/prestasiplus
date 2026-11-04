@@ -7,6 +7,8 @@
 import { computed } from 'vue'
 
 import type { StimulusDef } from '../domain/types'
+import { DsStack } from '@/ds'
+
 import { groupLabel, toStimulusData } from '../lib/stimulus-data'
 import { StimulusGroup } from '../../../components/question-display'
 
@@ -18,7 +20,7 @@ const data = computed(() => props.stimuli.map(toStimulusData))
 <template>
   <section :aria-label="label" :data-group="groupId" data-testid="result-group">
     <StimulusGroup :stimuli="data" :hint="false">
-      <div class="flex min-w-0 flex-col gap-3" data-testid="result-group-members"><slot /></div>
+      <DsStack gap="sm" data-testid="result-group-members"><slot /></DsStack>
     </StimulusGroup>
   </section>
 </template>

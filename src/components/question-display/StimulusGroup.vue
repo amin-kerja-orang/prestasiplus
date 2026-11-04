@@ -10,7 +10,7 @@
  */
 import { computed, useSlots } from 'vue'
 
-import { DsIconChip, DsText } from '@/ds'
+import { DsIconChip, DsStack, DsText } from '@/ds'
 import { useMedia } from '@/ds/useMedia'
 
 import { chipLabel, qdCopy } from './copy'
@@ -67,12 +67,7 @@ const iconOnly = computed(() => thumb.value?.kind === 'passage' || thumb.value?.
 </script>
 
 <template>
-  <div
-    v-if="inline"
-    class="flex w-full min-w-0 flex-col gap-4"
-    data-testid="stimulus-group"
-    data-layout="inline"
-  >
+  <DsStack v-if="inline" gap="md" data-testid="stimulus-group" data-layout="inline">
     <StimulusFigure
       v-for="st in list"
       :key="st.id"
@@ -82,7 +77,7 @@ const iconOnly = computed(() => thumb.value?.kind === 'passage' || thumb.value?.
       @retry="emit('retry', st.id)"
       @report="emit('report', st.id)"
     />
-  </div>
+  </DsStack>
 
   <div
     v-else-if="wide"
@@ -92,7 +87,7 @@ const iconOnly = computed(() => thumb.value?.kind === 'passage' || thumb.value?.
     data-layout="split"
   >
     <aside
-      class="flex flex-col gap-2 self-start overflow-y-auto"
+      class="self-start overflow-y-auto"
       :class="
         split === 'sitting'
           ? 'sticky top-0 col-span-4 max-h-screen pt-2'
@@ -101,24 +96,22 @@ const iconOnly = computed(() => thumb.value?.kind === 'passage' || thumb.value?.
       :aria-label="split === 'sitting' ? qdCopy.pinnedAria : label"
       data-testid="stimulus-pane"
     >
-      <DsText v-if="hint && hasPassage" variant="caption" tone="muted" data-testid="stimulus-hint">{{ qdCopy.pinnedHint }}</DsText>
-      <StimulusFigure
-        v-for="st in list"
-        :key="st.id"
-        :stimulus="st"
-        :max-height="false"
-        @loaded="emit('loaded', st.id)"
-        @error="emit('error', st.id)"
-        @retry="emit('retry', st.id)"
-        @report="emit('report', st.id)"
-      />
+      <DsStack gap="xs">
+        <DsText v-if="hint && hasPassage" variant="caption" tone="muted" data-testid="stimulus-hint">{{ qdCopy.pinnedHint }}</DsText>
+        <StimulusFigure
+          v-for="st in list"
+          :key="st.id"
+          :stimulus="st"
+          :max-height="false"
+          @loaded="emit('loaded', st.id)"
+          @error="emit('error', st.id)"
+          @retry="emit('retry', st.id)"
+          @report="emit('report', st.id)"
+        />
+      </DsStack>
     </aside>
-    <div
-      class="flex min-w-0 flex-col gap-6"
-      :class="split === 'sitting' ? 'col-span-5' : undefined"
-      data-testid="stimulus-questions"
-    >
-      <slot />
+    <div class="min-w-0" :class="split === 'sitting' ? 'col-span-5' : undefined" data-testid="stimulus-questions">
+      <DsStack gap="lg"><slot /></DsStack>
     </div>
   </div>
 
@@ -159,7 +152,7 @@ const iconOnly = computed(() => thumb.value?.kind === 'passage' || thumb.value?.
     :description="qdCopy.sheetDescription"
   >
     <template #body>
-      <div class="flex flex-col gap-4" data-testid="group-stimuli" :data-count="list.length">
+      <DsStack gap="md" data-testid="group-stimuli" :data-count="list.length">
         <StimulusFigure
           v-for="st in list"
           :key="st.id"
@@ -169,7 +162,7 @@ const iconOnly = computed(() => thumb.value?.kind === 'passage' || thumb.value?.
           @retry="emit('retry', st.id)"
           @report="emit('report', st.id)"
         />
-      </div>
+      </DsStack>
     </template>
   </UDrawer>
 </template>
