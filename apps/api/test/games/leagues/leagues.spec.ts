@@ -55,7 +55,7 @@ describe('leagues and Sekolah Bersaing (BE-45, M16-46 to M16-50)', () => {
         ['get', '/api/sekolah-bersaing'],
       ] as const) {
         const res = await t.http()[m](url).send({})
-        expectError(res, 'UNAUTHORIZED', 'Unauthenticated.')
+        expectError(res, 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
         expect(res.status).toBe(401)
       }
     })

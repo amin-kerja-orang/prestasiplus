@@ -27,8 +27,8 @@ describe('Roda Nasib (M16-34, M16-35)', () => {
   const spinsOf = (userId: string) => t.db.query<{ spin_date: string; segment_index: number; credited: number; is_test: boolean }>(`select spin_date::text, segment_index, credited, is_test from spins where user_id = $1::bigint order by spin_date`, [userId])
 
   it('401 without a session, CSRF_INVALID on the spin', async () => {
-    expectError(await t.http().get('/api/games/roda-nasib'), 'UNAUTHORIZED', M.unauthenticated)
-    expectError(await t.http().post('/api/games/roda-nasib/spin'), 'UNAUTHORIZED', M.unauthenticated)
+    expectError(await t.http().get('/api/games/roda-nasib'), 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
+    expectError(await t.http().post('/api/games/roda-nasib/spin'), 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
     const c = await loginAs(t, ACCOUNTS.student)
     expectCsrfInvalid(await c.noCsrf.post('/api/games/roda-nasib/spin'))
   })
