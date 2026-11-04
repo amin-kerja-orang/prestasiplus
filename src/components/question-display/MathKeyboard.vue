@@ -19,7 +19,7 @@ import {
   NUMBER_ROWS,
   SHARED_KEYS,
   SYMBOL_ROWS,
-} from '../lib/math-keys'
+} from './lib/math-keys'
 import RichText from './RichText.vue'
 
 export type { KeyPress }
