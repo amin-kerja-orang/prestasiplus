@@ -9,6 +9,7 @@ import { type ErrorBody, type ErrorCode } from '@pp/contract'
 import type { Request, Response } from 'express'
 
 import { DEFAULT_JSON_LIMIT_BYTES } from '../http/respond'
+import { redactUrl } from '../logging/logging'
 import { requestIdOf } from '../request/request-id'
 import { ApiError, DEFAULT_ERROR_MESSAGES } from './api-error'
 
@@ -82,7 +83,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
   /** Exactly one line per error response (X10.3.9, AC-ERR-12): 5xx error with stack, 401/403/429 warn, other 4xx info; a 4xx never carries a stack. */
   private log(status: number, code: string, exception: unknown, req: Request, requestId: string | undefined): void {
-    const line = `${req.method} ${req.originalUrl ?? req.url} -> ${String(status)} ${code} requestId=${requestId ?? '-'}`
+    const line = `${req.method} ${redactUrl(req.originalUrl ?? req.url)} -> ${String(status)} ${code} requestId=${requestId ?? '-'}`
     if (status >= 500) this.logger.error(`${line}\n${stackOf(exception)}`)
     else if (status === 401 || status === 403 || status === 429) this.logger.warn(line)
     else this.logger.log(line)

@@ -7,7 +7,7 @@ import { DEFAULT_JSON_LIMIT_BYTES } from '../src/common/http/respond'
 import { AllExceptionsFilter } from '../src/common/errors/all-exceptions.filter'
 
 /** S0-T12 (X10.12 E-1): the BM defaults, the new codes and the unmapped 4xx, without a database. */
-function run(exception: unknown, requestId = 'req-1') {
+function run(exception: unknown, requestId = 'req-1', url = '/api/x') {
   const headers: Record<string, string> = { 'x-request-id': requestId }
   let status = 0
   let body: unknown
@@ -20,7 +20,7 @@ function run(exception: unknown, requestId = 'req-1') {
       return { json: (b: unknown) => (body = b) }
     },
   }
-  const req = { id: requestId, method: 'GET', url: '/api/x', originalUrl: '/api/x' }
+  const req = { id: requestId, method: 'GET', url, originalUrl: url }
   const host = { switchToHttp: () => ({ getResponse: () => res, getRequest: () => req }) }
   new AllExceptionsFilter().catch(exception, host as never)
   return { status, headers, error: ErrorBodySchema.parse(body).error }
@@ -184,5 +184,16 @@ describe('AllExceptionsFilter (S0-T12)', () => {
     run(new ApiError({ code: 'SERVER_ERROR', status: 500 }))
     expect(error).toHaveBeenCalledTimes(1)
     expect(String(error.mock.calls[0]?.[0])).toContain('Error')
+  })
+
+  it('the log line redacts a token-bearing path and the query values', () => {
+    const token = '0123456789abcdef'.repeat(4)
+    run(new HttpException('x', 404), 'req-1', `/api/parent-invites/${token}/accept?utm=secret`)
+    run(new HttpException('x', 500), 'req-1', `/api/parent-invites/${token.toUpperCase()}`)
+    const all = [...info.mock.calls, ...warn.mock.calls, ...error.mock.calls].map((c) => String(c[0])).join('\n')
+    expect(all).not.toContain(token)
+    expect(all).not.toContain(token.toUpperCase())
+    expect(all).not.toContain('secret')
+    expect(all).toContain('/api/parent-invites/[redacted]/accept?utm=[redacted]')
   })
 })
