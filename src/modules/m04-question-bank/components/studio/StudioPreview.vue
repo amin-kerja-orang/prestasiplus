@@ -25,7 +25,7 @@ const stimuli = computed(() => (props.group?.stimuli ?? []).map(toStimulusData))
     <DsText v-if="(unsupported ?? []).length > 0" variant="body" tone="muted" data-testid="studio-preview-partial">
       Pratonton ini tidak lengkap: ada bahagian yang belum disokong Studio dan tidak dipaparkan.
     </DsText>
-    <StimulusGroup v-if="stimuli[0]" v-model:open="sheet" :stimulus="stimuli[0]">
+    <StimulusGroup v-if="stimuli[0]" v-model:open="sheet" :stimulus="stimuli[0]" :exclude-unrenderable="false">
       <DsStack gap="md">
         <StimulusFigure v-for="s in stimuli.slice(1)" :key="s.id" :stimulus="s" />
         <DsStack v-for="it in items" :key="it.id" gap="xs" :data-testid="`studio-preview-q-${it.id}`">

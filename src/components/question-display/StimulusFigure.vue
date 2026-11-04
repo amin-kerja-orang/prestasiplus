@@ -8,7 +8,10 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { kindFallbackCaption, qdCopy } from './copy'
+import { kindFallbackCaption, qdCopy, sourceLine } from './copy'
+import { canRender, unrenderableReason } from './lib/stimulus-data'
+import NotServedNotice from './NotServedNotice.vue'
+import StimulusZoom from './StimulusZoom.vue'
 import type { StimulusData } from './types'
 
 const props = withDefaults(defineProps<{ stimulus: StimulusData; maxHeight?: boolean }>(), {
@@ -41,7 +44,12 @@ const s = computed(() => props.stimulus)
 const isPassage = computed(() => s.value.kind === 'passage')
 const isTable = computed(() => s.value.kind === 'table')
 /** A table with rows is a real table; an image-only table is a picture with the caption "Jadual". */
-const realTable = computed(() => isTable.value && !!s.value.table && s.value.table.rows.length > 0)
+const hasRows = computed(() => !!s.value.table && s.value.table.rows.length > 0)
+/** A table (any kind) with rows and no picture, or a table-kind with rows, is drawn as a real table. */
+const realTable = computed(() => !isPassage.value && hasRows.value && (isTable.value || !s.value.src))
+const renderable = computed(() => canRender(s.value))
+const emptyReason = computed(() => unrenderableReason(s.value))
+const zoomOpen = ref(false)
 const hasPicture = computed(
   () => !isPassage.value && !realTable.value && !!s.value.src,
 )
@@ -76,13 +84,17 @@ function retry(): void {
     :data-kind="stimulus.kind"
     :data-stimulus="stimulus.id"
   >
-    <!-- passage -->
-    <div v-if="isPassage" class="rounded-xl bg-muted p-3 text-body text-default" data-testid="stimulus-passage">
+    <!-- nothing to draw: never an empty figure -->
+    <NotServedNotice v-if="!renderable" :reason="emptyReason" data-testid="stimulus-empty" />
+
+    <!-- passage: long lines and maths scroll inside (FR-X6-1) -->
+    <div
+      v-else-if="isPassage"
+      class="max-w-full overflow-x-auto rounded-xl bg-muted p-3 text-body text-default"
+      data-testid="stimulus-passage"
+    >
       <p v-if="stimulus.title" class="mb-2 font-semibold text-highlighted">{{ stimulus.title }}</p>
       <p v-for="(p, i) in paragraphs" :key="i" class="mb-2 whitespace-pre-line last:mb-0">{{ p }}</p>
-      <p v-if="stimulus.source" class="mt-2 text-caption text-muted" data-testid="stimulus-source">
-        {{ stimulus.source }}
-      </p>
     </div>
 
     <!-- real table: scrolls inside its own container, never the page -->
@@ -174,11 +186,23 @@ function retry(): void {
           @load="onLoad"
           @error="onError"
         />
+        <UButton
+          v-if="status === 'loaded'"
+          type="button"
+          color="neutral"
+          variant="ghost"
+          class="absolute inset-0 size-full min-h-11 rounded-none p-0 opacity-0"
+          aria-haspopup="dialog"
+          :aria-label="alt"
+          data-testid="stimulus-zoom-open"
+          @click="zoomOpen = true"
+        />
       </div>
+      <StimulusZoom v-if="stimulus.src" v-model:open="zoomOpen" :src="stimulus.src" :alt="alt" />
     </template>
 
     <!-- title / body under the picture (image, infographic) -->
-    <template v-if="!isPassage && !isTable && (stimulus.title || stimulus.text)">
+    <template v-if="renderable && !isPassage && !isTable && (stimulus.title || stimulus.text)">
       <p v-if="stimulus.title" class="font-semibold text-highlighted" data-testid="stimulus-title">
         {{ stimulus.title }}
       </p>
@@ -186,7 +210,7 @@ function retry(): void {
     </template>
 
     <figcaption
-      v-if="!isPassage && (stimulus.label || caption)"
+      v-if="renderable && !isPassage && (stimulus.label || caption)"
       class="text-center text-caption text-muted"
       data-testid="stimulus-caption"
     >
@@ -194,5 +218,10 @@ function retry(): void {
       <template v-if="stimulus.label && caption"> · </template>
       <template v-if="caption">{{ caption }}</template>
     </figcaption>
+
+    <!-- source line under every kind (FR-PA-37) -->
+    <p v-if="renderable && stimulus.source" class="text-caption text-muted" data-testid="stimulus-source">
+      {{ sourceLine(stimulus.source) }}
+    </p>
   </figure>
 </template>

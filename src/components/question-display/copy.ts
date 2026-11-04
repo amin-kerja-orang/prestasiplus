@@ -26,6 +26,10 @@ export const qdCopy = {
   show: 'Lihat',
   hide: 'Sembunyi',
   passageFallback: 'Petikan',
+  /** Reason of a group that cannot be drawn: "imej belum dimuat naik" is verbatim (AC-04.2). */
+  reasonNoPicture: 'imej belum dimuat naik',
+  /** PROPOSED (no PRD wording for a passage without text). */
+  reasonNoText: 'petikan belum lengkap',
 } as const
 
 export const kindFallbackCaption: Record<string, string> = {
@@ -49,4 +53,8 @@ export function visibleSummary(x: number, total = 7): string {
 }
 export function notServedLine(reason: string): string {
   return `Tidak dihidangkan kerana ${reason}.`
+}
+/** "Sumber: {text}" (FR-PA-37); a source that already starts with "Sumber:" is not prefixed twice. */
+export function sourceLine(source: string): string {
+  return /^sumber\s*:/i.test(source.trim()) ? source.trim() : `Sumber: ${source.trim()}`
 }

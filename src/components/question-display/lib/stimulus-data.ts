@@ -2,6 +2,7 @@
  * Adapters from the served Bijak shapes (`StimulusDef`, `McqOption`) to the shared display library
  * (`@/components/question-display`, P5). Display only: no store, no fetch.
  */
+import { qdCopy } from '../copy'
 import type { McqOptionData, StimulusData } from '../types'
 
 import type { GroupView, McqOption, StimulusDef } from '@/modules/m28-bijak-spm/domain/types'
@@ -56,4 +57,28 @@ export const editorGroupLabel = (g: { stimulus?: StimulusDef; stimuli?: Stimulus
 export function groupLabel(stimuli: readonly StimulusDef[]): string {
   const labels = stimuli.map((s) => s.label).filter((l) => l !== '')
   return labels.length > 0 ? labels.join(' dan ') : 'Rajah'
+}
+
+/** Same rule as `groupLabel`, for the display type: "Rajah 1 dan Petikan A" ('Petikan' / 'Rajah' when unlabelled). */
+export function stimuliLabel(stimuli: readonly StimulusData[]): string {
+  const labels = stimuli.map((s) => s.label ?? '').filter((l) => l.trim() !== '')
+  if (labels.length > 0) return labels.join(' dan ')
+  return stimuli[0]?.kind === 'passage' ? qdCopy.passageFallback : 'Rajah'
+}
+
+const hasRows = (s: StimulusData): boolean => !!s.table && s.table.rows.length > 0
+
+/**
+ * Whether the display can draw a stimulus (R1-04, 46 section 2.4): a passage needs text; a table needs rows
+ * or a picture; image, diagram, map, infographic and graph need a picture or a table with rows.
+ */
+export function canRender(s: StimulusData): boolean {
+  if (s.kind === 'passage') return !!s.text && s.text.trim() !== ''
+  return !!s.src || hasRows(s)
+}
+
+/** Reason line text (without the "Tidak dihidangkan kerana" lead) for a stimulus that cannot render, else ''. */
+export function unrenderableReason(s: StimulusData): string {
+  if (canRender(s)) return ''
+  return s.kind === 'passage' ? qdCopy.reasonNoText : qdCopy.reasonNoPicture
 }
