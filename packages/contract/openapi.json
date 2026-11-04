@@ -74453,7 +74453,7 @@
           "content"
         ],
         "summary": "Video library",
-        "description": "Public. A guest sees `global` videos only; a signed-in non-admin also sees `school` videos of the same school; admin sees all. 24 per page, newest first. `meta.facets` carries the category and subject counts.",
+        "description": "Public. A guest sees `global` videos only; a signed-in non-admin also sees `school` videos of the same school; admin sees all. 24 per page by default, newest first; `pageSize` (1..50) sets the page size (the admin list asks for 25). `meta.facets` carries the category and subject counts.",
         "parameters": [
           {
             "schema": {
@@ -74528,7 +74528,7 @@
           "content"
         ],
         "summary": "Publish a video link",
-        "description": "Any signed-in user publishes immediately (the mock has no approval state, OQ-API-B4-16). Platform, external id and thumbnail are parsed from the URL.",
+        "description": "admin and teacher only; other roles get 403. Publishes immediately (no approval state, OQ-API-B4-16). Visibility is set by the server (teacher: own school, admin: global), not by the body. Platform, external id and thumbnail are parsed from the URL.",
         "parameters": [
           {
             "schema": {
@@ -74588,7 +74588,7 @@
             }
           },
           "403": {
-            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin or teacher), or CSRF_INVALID.",
             "content": {
               "application/json": {
                 "schema": {
@@ -74598,7 +74598,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields. videoUrl, title, category, visibility required; description at most 1000 chars; subjectId must exist. Also \"Anda tiada sekolah untuk dikongsi.\" under fields.visibility when `school` is chosen and the uploader has no video-form school. Missing: \"Medan ini diperlukan.\"; invalid: \"Medan ini tidak sah.\". Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
+            "description": "VALIDATION_ERROR with fields. videoUrl, title (at most 150 chars) and category required (exact BM copy); a teacher link must be a YouTube video link; description at most 1000 chars; subjectId must exist. \"Anda tiada sekolah untuk dikongsi.\" when a teacher has no school. Missing: \"Medan ini diperlukan.\"; invalid: \"Medan ini tidak sah.\". Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
             "content": {
               "application/json": {
                 "schema": {
@@ -74716,7 +74716,7 @@
           "content"
         ],
         "summary": "Edit a video",
-        "description": "Uploader or admin. An invisible video is 404 before the role check; another user gets 403 \"This action is unauthorized.\".",
+        "description": "admin and teacher only (a teacher edits own videos); other roles get 403. An invisible video is 404 before the uploader check; another user gets 403 \"This action is unauthorized.\". Visibility is not changed by the body.",
         "parameters": [
           {
             "schema": {
@@ -74805,7 +74805,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields. Same rules as create, including \"Anda tiada sekolah untuk dikongsi.\". Missing: \"Medan ini diperlukan.\"; invalid: \"Medan ini tidak sah.\". Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
+            "description": "VALIDATION_ERROR with fields. Same rules as create. Missing: \"Medan ini diperlukan.\"; invalid: \"Medan ini tidak sah.\". Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
             "content": {
               "application/json": {
                 "schema": {
@@ -74821,7 +74821,7 @@
           "content"
         ],
         "summary": "Delete a video",
-        "description": "Uploader or admin. Hard delete; answers 200 with `{ deleted: 1 }` and the flash.",
+        "description": "admin and teacher only (a teacher deletes own videos); other roles get 403. Hard delete; answers 200 with `{ deleted: 1 }` and the flash.",
         "parameters": [
           {
             "schema": {
