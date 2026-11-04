@@ -84,6 +84,7 @@ async function copyReference(): Promise<void> {
         }}</span>
         <UButton
           size="lg"
+          class="min-h-11"
           color="neutral"
           variant="soft"
           :label="dsCopy.errorReferenceCopy"
