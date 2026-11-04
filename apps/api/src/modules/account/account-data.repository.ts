@@ -187,4 +187,40 @@ export class AccountDataRepository {
       levelCount: await count('education_levels', Prisma.sql`SELECT count(*) AS c FROM education_levels WHERE is_active`),
     }
   }
+
+  // --- pupil profile (API-MUR-02) ----------------------------------------------------------------
+
+  /**
+   * Read-only: over the user's completed sessions of EVERY mode (Mod Pelajar rows excluded, as the public profile), the
+   * all-time totals (sessions, questions, correct, distinct Malaysia practice days) and, for the window `[from, to)`,
+   * the sessions and questions per Malaysia day (days with no session are absent).
+   */
+  async profileFacts(
+    userId: string,
+    window: { from: Date; to: Date },
+  ): Promise<{ sessions: number; answered: number; correct: number; practiceDays: number; days: { day: string; sessions: number; answered: number }[] }> {
+    const uid = idFromString(userId)
+    const [totals, days] = await Promise.all([
+      this.prisma.client.$queryRaw<{ sessions: bigint; answered: bigint | null; correct: bigint | null; days: bigint }[]>`
+        SELECT count(*) AS sessions, sum(question_count) AS answered, sum(correct_count) AS correct,
+               count(DISTINCT (completed_at AT TIME ZONE 'Asia/Kuala_Lumpur')::date) AS days
+          FROM practice_sessions
+         WHERE user_id = ${uid}::bigint AND status = 'completed' AND completed_at IS NOT NULL AND NOT is_test`,
+      this.prisma.client.$queryRaw<{ day: string; sessions: bigint; answered: bigint | null }[]>`
+        SELECT to_char(completed_at AT TIME ZONE 'Asia/Kuala_Lumpur', 'YYYY-MM-DD') AS day,
+               count(*) AS sessions, sum(question_count) AS answered
+          FROM practice_sessions
+         WHERE user_id = ${uid}::bigint AND status = 'completed' AND NOT is_test
+           AND completed_at >= ${window.from} AND completed_at < ${window.to}
+         GROUP BY 1 ORDER BY 1`,
+    ])
+    const t = totals[0]
+    return {
+      sessions: Number(t?.sessions ?? 0),
+      answered: Number(t?.answered ?? 0),
+      correct: Number(t?.correct ?? 0),
+      practiceDays: Number(t?.days ?? 0),
+      days: days.map((d) => ({ day: d.day, sessions: Number(d.sessions), answered: Number(d.answered ?? 0) })),
+    }
+  }
 }

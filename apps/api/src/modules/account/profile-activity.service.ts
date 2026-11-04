@@ -15,6 +15,7 @@ import { CLOCK, type Clock } from '../../db/clock'
 import { GamificationService } from '../gamification'
 import { PracticeRepository } from '../practice'
 import { StreakService, WalletService } from '../wallet'
+import { AccountDataRepository } from './account-data.repository'
 
 const DAY_MS = 86_400_000
 const MYT_OFFSET_MS = 8 * 3_600_000
@@ -36,6 +37,7 @@ export const accuracyOne = (correct: number, answered: number): number | null =>
 export class ProfileActivityService {
   constructor(
     @Inject(PracticeRepository) private readonly practice: PracticeRepository,
+    @Inject(AccountDataRepository) private readonly data: AccountDataRepository,
     @Inject(WalletService) private readonly wallet: WalletService,
     @Inject(StreakService) private readonly streaks: StreakService,
     @Inject(GamificationService) private readonly gamification: GamificationService,
@@ -51,7 +53,7 @@ export class ProfileActivityService {
     const window = { from: new Date(mytDayStart(firstDay)), to: new Date(mytDayStart(today) + DAY_MS) }
 
     const [facts, wallet, streak, achievements, recent] = await Promise.all([
-      this.practice.profileFacts(userId, window),
+      this.data.profileFacts(userId, window),
       this.wallet.summary(userId),
       this.streaks.get(userId),
       this.gamification.achievements(userId, ''),
