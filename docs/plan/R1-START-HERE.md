@@ -150,6 +150,8 @@ node scripts/r1-lock.mjs release S1-T01 --team team-amin --session S-2     after
 
 ## Hard rules
 
+- **Every card lists four bullets (D115):** "Exists in V3 (reuse; do not rebuild)", "Change", "Remove", "Build (absent in V3)" (plan section 0B). A PR that adds a new file duplicating an existing V3 component, route, service or table fails review. You work from the docs only (no browser, no V1, no V2); a missing detail is a documentation defect: stop and report it (QUESTION below), do not guess.
+- **UI: V3 layout and components are kept; V2/V1 define function only (D115).** Never restyle or re-lay-out a V3 screen to look like V2; never add a V2-only visual element. PRD screen specs define fields, actions, rules, copy and states, not layout.
 - **No rebuilding.** Do not rewrite or delete working code, pages or modules.
 - **No parallel pages, services, stores, routes or tables** for something that already exists. Every schema change names a DM ID, every endpoint an API ID.
 - **Change budget by card Type**: Keep/Verify/Ops = no product code; Fix/Complete = the "Starts from" files plus other existing files of your own sector named in your gap check (decision 12; new file only if the card names it); Build = the same existing files of your own sector as Fix/Complete when the gap check shows they are on the path (route, menu and module wiring), and new files only at the paths of the card's `New files:` line. If a Verify card turns out to need product code, it is a Fix or Complete card: tell your team lead.

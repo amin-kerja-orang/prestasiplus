@@ -111,7 +111,7 @@
 | ID | User requirement | Matrix row | Priority | Satisfied by |
 |---|---|---|---|---|
 | URS-GUR-01 | As a teacher I get a shell whose sidebar, drawer, bottom tabs and search show the same teacher items, each opening a working page, so that I can reach every tool. | all rows | 1.0 | FR-SH-1..5 |
-| URS-GUR-02 | As a teacher I can see and edit my profile (including school), and view other teachers' public profile pages, so that colleagues can identify me. | A1 | 1.0 | FR-GUR-A1-1..7 |
+| URS-GUR-02 | As a teacher I can see and edit my profile (my school is shown but changed only by Admin Pusat, FR-GUR-A1-6), and view other teachers' public profile pages, so that colleagues can identify me. | A1 | 1.0 | FR-GUR-A1-1..7 |
 | URS-GUR-03 | As a teacher I can see my account details read-only and keep my preferences, so that I know what my account holds. | A2 | 1.0 | FR-GUR-A2-1..3 |
 | URS-GUR-04 | As a teacher I can read Panduan for teachers and see the support contact, so that I can get started alone. | A3 | 1.0 | FR-GUR-A3-1..4 |
 | URS-GUR-05 | As a teacher I can open, reply to and track my own support tickets, so that I get help. | A4 | Later | FR-GUR-A4-1..5 |
@@ -206,7 +206,7 @@ The central admin is not a matrix column: these requirements are the admin capab
 
 | ID | User requirement | Feeds | Priority | Satisfied by |
 |---|---|---|---|---|
-| URS-ADM-21 | As an admin I can manage videos (list, filters, hide), so that pupils, teachers and school admins see correct videos. | 7 | 1.0 P0 | FR-ADM-N01.1..2 |
+| URS-ADM-21 | As an admin I can manage videos (list, filters, add, edit, delete, hide; matches FR-ADM-N01.1), so that pupils, teachers and school admins see correct videos. | 7 | 1.0 P0 | FR-ADM-N01.1..2 |
 | URS-ADM-22 | As an admin I can manage articles, banners and notes (publish state, dates), so that the Dashboard and Artikel show current content. | 2, 20 | 1.0 (linked) P1/P2 | FR-ADM-N02.1, FR-ADM-N03.1, FR-ADM-N04.1, FR-ADM-P2-18.* |
 | URS-ADM-23 | As an admin I can enable or disable each game and set the Papan Bijak and game settings, so that pupils only get working games. | 21 | 1.0 P0 | FR-ADM-N05.1..3 |
 | URS-ADM-24 | As an admin I can switch modules on and off (Kawalan Ciri) where the matrix allows, with no switch for Subjektif or Kertas Subjektif, so that rollout is controlled. | all | 1.0 P1 | FR-ADM-N06.1..4, FR-ADM-P2-19.* |

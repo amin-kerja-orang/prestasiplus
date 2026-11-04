@@ -42,6 +42,8 @@ Source: `docs/Matriks-Akses-Peranan .xlsx` (sheet "Matriks Akses"; its columns H
 | Guru | Subject teacher; manages own classes and pupils | Guru | 1.0 column: A1–A3, A5, rows 1–11, 41–44; plus linked 2b, 8b; Tiket Bantuan later |
 | Admin Sekolah | School administrator (principal or senior assistant); sees own school only | Admin Sekolah | 1.0 column: A5, rows 1, 3–7, 10, 11, 45–53; Dashboard, Profil, Tetapan, Panduan, Tiket later |
 | Admin Pusat | Central platform administrator | not a matrix column | Every admin capability that feeds, manages and monitors the matrix modules (PRD 30) |
+
+**Matrix totals and answered questions (D115, audit mn-20).** The matrix sheet's ticked cells recount to **37** (Murid), **15** (Murid 1.0), **18** (Guru), **13** (Guru 1.0), **15** (Admin Sekolah) and **17** (Admin Sekolah 1.0) in the order of its six role columns; these are the control totals a reviewer re-counts against `docs/Matriks-Akses-Peranan .xlsx`. The matrix questions answered in `docs/requirements/role-access-matrix.md` bind this PRD: **D-RAM-1** the Murid "PEMBELAJARAN" header means the whole section; **D-RAM-2** Admin Sekolah may use Sekolah Bersaing; **D-RAM-3** Profil Saya, Tetapan Peribadi, Panduan, Tiket Bantuan and Log Keluar are available to every role (section A); **D-RAM-4** the Guru Kirkpatrick sub-pages come with Kirkpatrick. Matrix row 54 (Laporan Soalan) is ticked in "Murid 1.0" and blank in "Murid"; the PRD follows the ticked "Murid 1.0" cell (R1-MUR-54 is in R1, and the pupil gets it by S0-T05).
 | Ibu Bapa (parent) | Parent of a pupil | **no matrix column** | Out of scope as a user. Only the pupil-side "Jemput Ibu Bapa" (row 40) and the admin view of parent links (P2-16) are in the matrix. |
 
 Primary pupils (Darjah 1–6) are out of scope for the whole release (D72, D96).
@@ -62,7 +64,7 @@ Primary pupils (Darjah 1–6) are out of scope for the whole release (D72, D96).
 | Mohon Keluarga Angkat (matrix row 15) | Hidden until the sponsorship flow exists (D74, D102). Standard 404. |
 | Darjah 1–6 (primary) | Secondary only (D72, D96). |
 | Ibu Bapa as a user role | No matrix column. |
-| V2 extras with no matrix row (for example Target SPM, Misi Harian page, Kombo page, Notifikasi, Sekolah Bersaing for pupils, Psikometrik, Wellbeing, billing, Log Audit viewer, Chatbot) | Not ticked in the matrix. |
+| V2 extras with no matrix row (for example Target SPM, Kombo page, Notifikasi, Sekolah Bersaing for pupils, Psikometrik, the Wellbeing screens, billing, Log Audit viewer, Chatbot) | Not ticked in the matrix. Two V2 extras ARE in R1 by user decision D114/D115: the Dashboard mood check-in (R1-MUR-2) and the pupil path to a teacher's Misi Harian (`/misi-harian`, reached from the Dashboard; its sidebar item stays hidden). |
 | A redesign or new features | R1 only fixes and completes (FR-X1-2, FR-X1-5). New menus, pages or copy need the user's approval (D94). |
 | Changing V1, V2 or the acceptance site without the user's approval | Those systems are read-only references; one-off data operations run only with explicit approval (D95, FR-X5-3). |
 
