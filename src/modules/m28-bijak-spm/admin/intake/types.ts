@@ -203,8 +203,10 @@ export interface IntakeSummary {
   title: string
   subject: SubjectCode
   subjectName: string
-  kertas: number
-  year: number
+  /** null for a guru batch (Kiriman Guru, S1-T08). */
+  kertas: number | null
+  /** null for a guru batch with no year. */
+  year: number | null
   status: IntakeStatus
   sourceKind: IntakeSourceKind
   fileName: string

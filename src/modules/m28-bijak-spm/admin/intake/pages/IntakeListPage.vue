@@ -171,7 +171,7 @@ const COLUMNS: TableColumn<Row>[] = [
       </template>
       <template #subjectName-cell="{ row }">
         {{ row.original.subjectName }}
-        <span class="text-muted">· Kertas {{ row.original.kertas }}</span>
+        <span v-if="row.original.kertas !== null" class="text-muted">· Kertas {{ row.original.kertas }}</span>
       </template>
       <template #questionCount-cell="{ row }">
         <span class="tabular" data-testid="batch-count">{{ row.original.questionCount }}</span>

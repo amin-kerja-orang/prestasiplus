@@ -103,7 +103,8 @@ export function summaryFromWire(
   const name = subjectName(b.subject)
   return {
     id: b.id,
-    title: `${name} Kertas ${b.kertas} ${b.year}`,
+    // A guru batch (Kiriman Guru, S1-T08) has no kertas and may have no year: those parts are left out of the title.
+    title: [name, b.kertas === null ? null : `Kertas ${String(b.kertas)}`, b.year === null ? null : String(b.year)].filter((p) => p !== null).join(' '),
     subject: b.subject,
     subjectName: name,
     kertas: b.kertas,
@@ -179,8 +180,9 @@ export function batchFromWire(b: WireBatchDetail, pages: PageText[], extras: Bat
   return {
     id: b.id,
     subject: b.subject,
-    kertas: b.kertas,
-    year: b.year,
+    // A guru batch has no kertas (and may have no year); the admin sets them in the review form, which starts from these defaults.
+    kertas: b.kertas ?? 1,
+    year: b.year ?? new Date().getFullYear(),
     paperType: paperTypeFromWire(b.paperType),
     source: b.source,
     copyright: b.copyright,

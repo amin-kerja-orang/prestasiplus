@@ -112,6 +112,12 @@ describe('intake wire mappers', () => {
     })
     expect(s.updatedAt).toBe(Date.parse(T0))
   })
+  it('maps a guru batch with no kertas or year without printing them (S1-T08)', () => {
+    const g = summaryFromWire({ ...summary, kertas: null, year: null }, () => 'Matematik')
+    expect(g).toMatchObject({ title: 'Matematik', kertas: null, year: null })
+    expect(summaryFromWire({ ...summary, kertas: null }, () => 'Matematik').title).toBe('Matematik 2025')
+    expect(batchFromWire({ ...detail, kertas: null }, [])).toMatchObject({ kertas: 1 })
+  })
   it('maps itemCount, reviewedCount and the wire status of a summary (R1E2E-C1)', () => {
     const s = summaryFromWire({ ...summary, itemCount: 2, reviewedCount: 2 }, () => 'Matematik')
     expect(s.status).toBe('draf') // every http batch stays in the Draf filter bucket
