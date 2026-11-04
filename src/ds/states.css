@@ -52,3 +52,8 @@
     max-width: none;
   }
 }
+
+/* Sticky bars (DsFormBar, DsStickyActions) must not cover the focused field: room under every focusable control (the browser reads the focused element's own margin) (FR-X6-5). */
+[data-ds='form-field'] :is(input, select, textarea, [contenteditable], [tabindex]) {
+  scroll-margin-bottom: 6rem;
+}
