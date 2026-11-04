@@ -34,7 +34,7 @@ Disemak dengan log masuk sebenar ke API pada 29 Okt 2026.
 
 ## Akaun yang disekat oleh skop prototaip
 
-Akaun ini sah di API, tetapi frontend dibina dengan `VITE_PROTOTYPE_SCOPE=on` (lalai), jadi log masuk memaparkan **"Peranan ini tidak termasuk dalam prototaip."** (disemak 29 Okt 2026).
+Akaun ini sah di API, tetapi frontend dibina dengan `VITE_PROTOTYPE_SCOPE=on` (lalai), jadi log masuk memaparkan **"Peranan ini belum menggunakan sistem ini."** (disemak 29 Okt 2026).
 
 | E-mel | Peranan | Skop |
 |---|---|---|
