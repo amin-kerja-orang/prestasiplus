@@ -105,6 +105,13 @@ function releaseLock(cwd, remote, key, cur, extra = {}) {
   if (!p.ok) throw new Fail(2, `Lepas kunci gagal / release failed: ${p.err}`)
 }
 
+// Live sector/card locks held by a team (the team key itself excluded), cards first, then sectors.
+function teamHoldings(cwd, remote, team) {
+  return listLocks(cwd, remote)
+    .filter((r) => r.data.team === team && !isReleased(r.data) && !TEAM_RE.test(r.key))
+    .sort((a, b) => Number(SECTOR_RE.test(a.key)) - Number(SECTOR_RE.test(b.key)) || a.key.localeCompare(b.key, 'en', { numeric: true }))
+}
+
 // Returns {sha, data} or null when the lock does not exist on the remote (data.state may be "released").
 function readLock(cwd, remote, key) {
   const ls = git(cwd, ['ls-remote', remote, refOf(key)])
@@ -450,6 +457,13 @@ function main(argv, { cwd = process.cwd(), env = process.env } = {}) {
       const cur = readLive(cwd, remote, key)
       if (!cur) { console.log(`Kunci ${key} tidak wujud / does not exist (nothing to release).`); return 0 }
       if (cur.data.team !== w.team) { console.error(`Bukan pemegang / not the holder. ${heldMsg(key, cur.data)}`); return 4 }
+      if (TEAM_RE.test(key)) {
+        const held = teamHoldings(cwd, remote, w.team)
+        if (held.length) {
+          console.error(`Lepaskan kad dan sektor dahulu / Release your cards and sectors first: ${held.map((r) => r.key).join(', ')}. Kunci pasukan ${key} tidak dilepaskan / team key not released.`)
+          return 2
+        }
+      }
       releaseLock(cwd, remote, key, cur)
       console.log(`OK: kunci ${key} dilepaskan / released.`)
       return 0
@@ -473,6 +487,13 @@ function main(argv, { cwd = process.cwd(), env = process.env } = {}) {
       if (!isStale(cur.data, hours) && !flags['force-owner']) {
         console.error(`Kunci ${key} masih segar (umur ${fmtAge(ageMs(cur.data))}, had ${hours}j) / still fresh; refused. Guna --force-owner jika pasti. ${heldMsg(key, cur.data)}`)
         return 3
+      }
+      if (TEAM_RE.test(key)) {
+        // releasing the team key alone would let the next register-team of the name inherit the team's locks
+        for (const r of teamHoldings(cwd, remote, cur.data.team)) {
+          releaseLock(cwd, remote, r.key, r, { brokenBy: 'owner' })
+          console.log(`OK: kunci ${r.key} dilepaskan bersama pasukan / released with the team (was ${r.data.team}).`)
+        }
       }
       releaseLock(cwd, remote, key, cur, { brokenBy: 'owner' })
       console.log(`OK: kunci ${key} dipecahkan / broken (was ${cur.data.team}, at ${cur.data.at}).`)
@@ -718,6 +739,47 @@ async function selfTest() {
     check('register-team on a released team key works and issues a NEW token hash', reg2.code === 0 && tok2.length >= 32 && tok2 !== tok1 && hash2 === sha256(tok2) && hash2 !== hash1 && !rawLock('b', 'team-rt').data.state, reg2.text)
     expect('new team-rt token works (acquire from the new owner clone)', cli('b', R('acquire', 'r2', 'S13')), 0)
     expect('old token no longer works (clone a, exit 3)', cli('a', R('acquire', 'r2', 'S13')), 3)
+
+    // team key release/break must not leave the team's sector and card locks behind
+    const RL = (cmd, ...r) => [cmd, ...r, '--team', 'team-rl', '--session', 'q1']
+    expect('team-rl registers', cli('a', RL('register-team')), 0)
+    expect('team-rl acquires S14', cli('a', RL('acquire', 'S14')), 0)
+    expect('team-rl acquires card S14-T01', cli('a', RL('acquire', 'S14-T01')), 0)
+    const rlBefore = rawLock('a', 'team-rl').sha
+    const relBad = cli('a', RL('release', 'team-rl'))
+    expect('release team key with live locks is refused (exit 2, lists them)', relBad, 2, 'S14-T01')
+    check('refusal changed nothing', rawLock('a', 'team-rl').sha === rlBefore && !rawLock('a', 'team-rl').data.state && rawLock('a', 'S14').data.team === 'team-rl' && !rawLock('a', 'S14').data.state && !rawLock('a', 'S14-T01').data.state)
+    expect('refuse text is bilingual', relBad, 2, 'Lepaskan kad dan sektor dahulu')
+    expect('release card then sector then team key: card', cli('a', RL('release', 'S14-T01')), 0)
+    expect('team key still refused while the sector is live', cli('a', RL('release', 'team-rl')), 2, 'S14')
+    expect('release card then sector then team key: sector', cli('a', RL('release', 'S14')), 0)
+    expect('release card then sector then team key: team key', cli('a', RL('release', 'team-rl')), 0)
+
+    const BK = (cmd, ...r) => [cmd, ...r, '--team', 'team-bk', '--session', 'k1']
+    expect('team-bk registers', cli('a', BK('register-team')), 0)
+    expect('team-bk acquires S15', cli('a', BK('acquire', 'S15')), 0)
+    expect('team-bk acquires card S15-T01', cli('a', BK('acquire', 'S15-T01')), 0)
+    {
+      const tk = rawLock('a', 'team-bk')
+      const old2 = new Date(Date.now() - 30 * 3600000).toISOString()
+      const sc = makeCommit(clones.a, { ...tk.data, at: old2 }, tk.sha)
+      must(git(clones.a, ['push', '--quiet', `--force-with-lease=${refOf('team-bk')}:${tk.sha}`, 'origin', `${sc}:${refOf('team-bk')}`]), 'age team-bk')
+    }
+    const brk = cli('b', ['break', 'team-bk', '--owner'])
+    expect('break of a STALE team key succeeds and prints each released lock', brk, 0, 'S15-T01')
+    check('break released the card, the sector and the team key (refs kept)', ['S15-T01', 'S15', 'team-bk'].every((k) => refExists(k) && rawLock('c', k).data.state === 'released'), brk.text)
+    check('break order: cards, then sectors, then the team key', brk.text.indexOf('S15-T01') < brk.text.indexOf('S15 ') && brk.text.indexOf('S15 ') < brk.text.indexOf('kunci team-bk '), brk.text)
+    {
+      const [x, y] = await Promise.all([
+        cliAsync('b', ['register-team', '--team', 'team-bk', '--session', 'k2']),
+        cliAsync('c', ['register-team', '--team', 'team-bk', '--session', 'k3']),
+      ])
+      check('register-team race on a released team key: exactly one wins, the other gets exit 3', [x.code, y.code].sort().join() === '0,3', `${x.code},${y.code} ${x.text}${y.text}`)
+      const wn = x.code === 0 ? 'b' : 'c'
+      const mineBk = cli(wn, ['mine', '--team', 'team-bk'])
+      check('the new team-bk holds no sector or card locks', mineBk.code === 0 && !mineBk.text.includes('S15') && /team-bk/.test(mineBk.text), mineBk.text)
+      expect('and cannot use the old sector: card S15-T01 needs a live sector (exit 4)', cli(wn, ['acquire', 'S15-T01', '--team', 'team-bk', '--session', x.code === 0 ? 'k2' : 'k3']), 4)
+    }
   } catch (e) {
     results.push(false)
     console.log(`FAIL  self-test aborted: ${e.message}`)

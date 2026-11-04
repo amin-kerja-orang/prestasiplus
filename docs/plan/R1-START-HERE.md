@@ -144,7 +144,7 @@ node scripts/r1-lock.mjs acquire S1 --team team-amin --session S-1         a sec
 node scripts/r1-lock.mjs acquire S1-T01 --team team-amin --session S-2     a card (needs the sector)
 node scripts/r1-lock.mjs heartbeat-all --team team-amin --session S-1      daily
 node scripts/r1-lock.mjs release S1-T01 --team team-amin --session S-2     after merge, or if you drop the card (marks the lock released; the ref is not deleted)
-node scripts/r1-lock.mjs release team-amin --team team-amin --session S-1   frees the team name (marks it released; register-team can reuse it)
+node scripts/r1-lock.mjs release team-amin --team team-amin --session S-1   frees the team name (refused while your cards or sectors are live: release them first; register-team can then reuse it)
 ```
 - You may set `R1_TEAM`, `R1_SESSION` and `R1_TEAM_TOKEN` in the environment instead of the flags and `join` (the env token wins over the one saved by `join`). Prefer `R1_TEAM_TOKEN` over `join --token` to keep the token out of shell history. `join` on a team that is not registered exits 4. A team key can be broken by the owner only when it is STALE (`--force-owner` is refused on a team key).
 - **After this merge, every lead who registered a team earlier runs `node scripts/r1-lock.mjs list` first (check the team row and its session), then `claim-token --team <team> --session S-1` once.** The command prints the recorded session and time, and must be run only by the current lead of that team. `list`, `mine` and `--help` need no token. `break` is for the product owner only and needs no token.
