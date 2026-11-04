@@ -39460,6 +39460,18 @@
               "string",
               "null"
             ]
+          },
+          "textbookRef": {
+            "$ref": "#/components/schemas/QuestionTextbookRef"
+          },
+          "rejectionReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "difficultyDefaulted": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -39515,6 +39527,45 @@
           "3",
           null
         ]
+      },
+      "QuestionTextbookRef": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "bab": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "tingkatan": {
+            "type": "string",
+            "enum": [
+              "T1",
+              "T2",
+              "T3",
+              "T4",
+              "T5"
+            ]
+          },
+          "mukaSurat": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 999
+          },
+          "hingga": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 999
+          }
+        },
+        "required": [
+          "bab",
+          "tingkatan",
+          "mukaSurat"
+        ],
+        "description": "Rujukan buku teks: {bab, tingkatan, mukaSurat, hingga?} (DM-56)."
       },
       "QuestionDetail": {
         "type": "object",
@@ -39841,6 +39892,18 @@
               "string",
               "null"
             ]
+          },
+          "textbookRef": {
+            "$ref": "#/components/schemas/QuestionTextbookRef"
+          },
+          "rejectionReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "difficultyDefaulted": {
+            "type": "boolean"
           },
           "subject": {
             "allOf": [
@@ -40264,6 +40327,9 @@
               }
             ]
           },
+          "textbookRef": {
+            "$ref": "#/components/schemas/QuestionTextbookRef"
+          },
           "questionType": {
             "$ref": "#/components/schemas/QuestionType"
           },
@@ -40448,6 +40514,9 @@
                 ]
               }
             ]
+          },
+          "textbookRef": {
+            "$ref": "#/components/schemas/QuestionTextbookRef"
           }
         },
         "required": [
@@ -42637,7 +42706,7 @@
           },
           "code": {
             "type": "string",
-            "description": "Stable machine code, for example LEAF_COGNITIVE_LEVEL_MISSING, KERTAS_MISSING, UNIT_MISSING."
+            "description": "Stable machine code, the Code column of 45 section 4.1, for example NO_SUBJECT, NO_LEVEL, NO_UNIT, NO_SP, LEAF_NO_TP, LEAF_NO_ARAS, NO_KERTAS, NO_CHAPTER, NO_DIFFICULTY, STEM_SHORT (TP_MISSING and SP_NOT_IN_TAXONOMY also exist)."
           },
           "message": {
             "type": "string",
@@ -42688,7 +42757,8 @@
               "draft",
               "review",
               "approved",
-              "archived"
+              "archived",
+              "rejected"
             ]
           },
           "reason": {
@@ -106771,7 +106841,7 @@
           "questions"
         ],
         "summary": "Move a question along the lifecycle",
-        "description": "Draft to review (the owning Guru or Admin), review to approved (\"Terbitkan\", Admin Pusat; runs the merged approve gate), review to archived and approved to archived (Admin; no reason needed, one is recorded when given), review to draft (a reason is required) and archived to draft (Admin). `approved` is the only servable status, so the answer carries the ServabilityReport of an approval. Refusals: 409 for a pair outside the table, 422 with `fields` keyed by path (the gate issues) and `details.gate`, 403 for a role that may not move it.",
+        "description": "Draft to review (the owning Guru or Admin), review to approved (\"Terbitkan\", Admin Pusat; runs the merged approve gate), review to archived and approved to archived (Admin; no reason needed, one is recorded when given), review to draft (a reason is required), `to: \"rejected\"` (\"Tolak\", Admin Pusat, from review only: stored as status draft with `rejection_reason`, reason 5 to 500 characters, else 422 `fields.reason`; sending for review again clears it) and archived to draft (Admin). `approved` is the only servable status, so the answer carries the ServabilityReport of an approval. Refusals: 409 for a pair outside the table, 422 with `fields` keyed by path (the gate issues) and `details.gate`, 403 for a role that may not move it.",
         "parameters": [
           {
             "schema": {
