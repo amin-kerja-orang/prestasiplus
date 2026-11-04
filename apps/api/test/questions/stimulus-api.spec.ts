@@ -201,7 +201,9 @@ describe('stimulus and stimulus group API (admin, real database)', () => {
       await group([used.id], [await question(), await question()])
       const refused = await admin.delete(`/api/stimuli/${used.id}`)
       expect(refused.status).toBe(409)
-      expect(refused.body.error.message).toBe(STIMULUS_MESSAGES.inUse)
+      expect(refused.body.error.message).toBe('Rangsangan ini masih digunakan oleh 2 soalan.')
+      expect(refused.body.error.message).toBe(STIMULUS_MESSAGES.stimulusInUse(2))
+      expect(refused.body.error.details).toMatchObject({ n: 2 })
 
       const audio = (await t.db.query<{ id: string }>(`insert into stimuli (kind, label) values ('audio', 'Bunyi') returning id::text id`))[0]!.id
       expect((await admin.get(`/api/stimuli/${audio}`)).status).toBe(404)
@@ -304,7 +306,7 @@ describe('stimulus and stimulus group API (admin, real database)', () => {
       expect((await admin.post('/api/stimulus-groups/987654321/members', { questionId: q })).status).toBe(404)
     })
 
-    it('removes a member and closes the gap; fewer than 2 left still succeeds with a BM warning', async () => {
+    it('removes a member and closes the gap; removing the last one succeeds with a BM warning', async () => {
       const [q1, q2, q3] = [await question(), await question(), await question()] as [string, string, string]
       const g = await group([(await stimulus()).id], [q1, q2, q3])
       const first = await admin.delete(`/api/stimulus-groups/${g.id}/members/${q2}`)
@@ -317,8 +319,7 @@ describe('stimulus and stimulus group API (admin, real database)', () => {
 
       const second = await admin.delete(`/api/stimulus-groups/${g.id}/members/${q1}`)
       expect(second.status).toBe(200)
-      expect(second.body.data.warning).toBe(STIMULUS_MESSAGES.smallGroup(1))
-      expect(second.body.data.warning).toBe('Kumpulan ini kini hanya mempunyai 1 soalan. Rangsangan bersama lazimnya untuk sekurang-kurangnya 2 soalan.')
+      expect(second.body.data.warning).toBeNull() // one member left is a valid group
       const last = await admin.delete(`/api/stimulus-groups/${g.id}/members/${q3}`)
       expect(last.body.data.warning).toBe(STIMULUS_MESSAGES.smallGroup(0))
       expect(last.body.data.group.questionIds).toEqual([])
@@ -396,6 +397,27 @@ describe('stimulus and stimulus group API (admin, real database)', () => {
       expect(res.status, JSON.stringify(res.body)).toBe(409)
       expect(res.body.error.message).toBe(STIMULUS_MESSAGES.memberServed)
       expect((await t.db.query<{ v: number | null; g: string | null }>(`select live_version_no v, group_id::text g from questions where id = $1`, [seeded]))[0]).toEqual({ v: live, g: null })
+    })
+  })
+
+  describe('FR-X1-4b: a group is built up without a new stimulus', () => {
+    it('adds the 2nd and 3rd question to a one-stimulus group; stimuli stay at 1 and the detail lists 3 members in order', async () => {
+      const first = await question()
+      const g = await group([(await stimulus()).id], [first])
+      const stimuliBefore = Number((await t.db.query<{ n: string }>('select count(*)::text n from stimuli'))[0]!.n)
+      const second = await admin.post(`/api/stimulus-groups/${g.id}/questions`, mcqBody(refs))
+      expect(second.status, JSON.stringify(second.body)).toBe(201)
+      const third = await admin.post(`/api/stimulus-groups/${g.id}/questions`, mcqBody(refs))
+      expect(third.status, JSON.stringify(third.body)).toBe(201)
+      const ids = [first, second.body.data.id as string, third.body.data.id as string]
+      expect(Number((await t.db.query<{ n: string }>('select count(*)::text n from stimuli'))[0]!.n)).toBe(stimuliBefore)
+      const detail = StimulusGroupDetailSchema.parse((await admin.get(`/api/stimulus-groups/${g.id}`)).body.data)
+      expect(detail.stimuli).toHaveLength(1)
+      expect(detail.questionIds).toEqual(ids)
+      expect(detail.questionIds).toHaveLength(3)
+      expect(detail.members.map((m) => m.id)).toEqual(ids)
+      expect(await positions(g.id)).toEqual(ids.map((id, i) => ({ id, pos: i + 1 })))
+      expect(detail.warning ?? null).toBeNull()
     })
   })
 

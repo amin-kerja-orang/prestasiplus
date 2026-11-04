@@ -25,7 +25,7 @@ const PARK = 5000
  *   group (it must be edited as a draft or archived first); the group's served members keep their relative order and stay. New draft
  *   or review questions can still be added, appended at the end, so a group can be built up (and intake can add the next item of a
  *   figure) while its first question is already served.
- * - fewer than 2 members is allowed (a draft group, D93) and answers with a warning.
+ * - a group holds 1..n members; 0 members is allowed (a draft group) and answers with a warning.
  */
 @Injectable()
 export class GroupMembers {
@@ -36,9 +36,9 @@ export class GroupMembers {
     if (!(await this.repo.lockGroup(groupId))) throw notFound()
   }
 
-  /** The BM warning for a group with fewer than 2 members, else null. */
+  /** The BM warning for a group with no member, else null (one member is valid). */
   warning(count: number): string | null {
-    return count < 2 ? M.smallGroup(count) : null
+    return count === 0 ? M.smallGroup(0) : null
   }
 
   /** Throws 409 when the group has a member shown to pupils (for the changes that cannot keep them as they are). */

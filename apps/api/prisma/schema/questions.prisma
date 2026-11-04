@@ -113,7 +113,7 @@ model Question {
   legacySource     String?  @map("legacy_source")
   legacyId         String?  @map("legacy_id")
 
-  group    StimulusGroup?    @relation(fields: [groupId], references: [id], onDelete: SetNull, map: "fk_questions_group_id")
+  group    StimulusGroup?    @relation(fields: [groupId], references: [id], onDelete: Restrict, map: "fk_questions_group_id")
   versions QuestionVersion[]
   tags     QuestionTag[]
 
