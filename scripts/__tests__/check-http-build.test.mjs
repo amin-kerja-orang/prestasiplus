@@ -7,7 +7,7 @@ import { afterAll, describe, expect, it } from 'vitest'
 import {
   audit,
   collectRoutes,
-  dynamicMockImports,
+  dynamicMockFindings,
   MOCK_MODULE_RE,
   mockSourcesOf,
   routeChunkClosure,
@@ -88,11 +88,49 @@ describe('audit', () => {
     expect(audit(manifest, maps, routes)).toEqual(['(entry) -> assets/index.js -> src/mock/index.ts'])
   })
 
-  it('lists dynamic imports of mock chunks separately', () => {
-    const m = { ...manifest, 'index.html': { ...manifest['index.html'], dynamicImports: ['_mockdata.js'] } }
-    const maps = { ...clean, 'assets/mockdata.js': map('../../src/mock/a.ts') }
-    expect(dynamicMockImports(m, maps)).toEqual([
-      'assets/index.js => dynamic import => assets/mockdata.js (src/mock/a.ts)',
+})
+
+describe('dynamic mock imports', () => {
+  // The entry chunk holds src/app/bootstrap.ts and dynamically imports the mock core, which statically needs a mock leaf.
+  const dyn = {
+    ...manifest,
+    'index.html': { ...manifest['index.html'], dynamicImports: ['src/mock/index.ts'] },
+    'src/mock/index.ts': { file: 'assets/mock-core.js', imports: ['_mockleaf.js'] },
+    '_mockleaf.js': { file: 'assets/mock-leaf.js' },
+    '_other.js': { file: 'assets/other.js' },
+  }
+  const dynMaps = {
+    ...clean,
+    'assets/index.js': map('../../src/main.ts', '../../src/app/bootstrap.ts'),
+    'assets/mock-core.js': map('../../src/mock/index.ts'),
+    'assets/mock-leaf.js': map('../../src/modules/m10-teacher-class/mock/data/d.ts'),
+    'assets/other.js': map('../../src/lib/o.ts'),
+  }
+
+  it('allows the bootstrap -> @/mock edge and its descendants', () => {
+    expect(dynamicMockFindings(dyn, dynMaps, routes)).toEqual([])
+    expect(audit(dyn, dynMaps, routes)).toEqual([])
+  })
+
+  it('reports a new dynamic mock import from a non-mock chunk', () => {
+    const m = { ...dyn, 'src/pages/A.vue': { ...dyn['src/pages/A.vue'], dynamicImports: ['_mockleaf.js'] } }
+    expect(audit(m, dynMaps, routes)).toEqual([
+      '/a -> assets/A.js =dyn=> assets/mock-leaf.js (src/modules/m10-teacher-class/mock/data/d.ts)',
+    ])
+  })
+
+  it('reports the mock chunk when it is also reachable through another importer', () => {
+    const m = { ...dyn, '_other.js': { file: 'assets/other.js', dynamicImports: ['src/mock/index.ts'] } }
+    m['src/pages/B.vue'] = { ...m['src/pages/B.vue'], imports: ['_shared.js', '_other.js'] }
+    expect(audit(m, dynMaps, routes)).toEqual([
+      '/b -> assets/other.js =dyn=> assets/mock-core.js (src/mock/index.ts)',
+    ])
+  })
+
+  it('does not allow the edge from a chunk that is not bootstrap', () => {
+    const maps = { ...dynMaps, 'assets/index.js': map('../../src/main.ts') }
+    expect(dynamicMockFindings(dyn, maps, routes)).toEqual([
+      '(entry) -> assets/index.js =dyn=> assets/mock-core.js (src/mock/index.ts)',
     ])
   })
 })

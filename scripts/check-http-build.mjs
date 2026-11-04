@@ -14,7 +14,10 @@
 // Chunk closure of a route = its manifest chunk + the static `imports` closure + the entry chunk (index.html)
 // closure, which loads for every route. Entry-closure hits are reported once for `(entry)`, not once per route.
 //
-// A dynamic `import()` of a mock chunk is not a static import: it is only listed as a WARN (informational).
+// Dynamic imports count too: any chunk holding mock sources that is reachable (static + dynamic imports, from the
+// entry or a route chunk) is a finding, printed `<route or (entry)> -> <importer chunk> =dyn=> <mock chunk> (<mock module>)`.
+// Allow-list of 1: the guarded `import('@/mock')` in `src/app/bootstrap.ts` (edge: the chunk containing bootstrap.ts ->
+// manifest entry `src/mock/index.ts`). That edge is not followed, so chunks reachable ONLY through it are allowed.
 //
 // Usage: node scripts/check-http-build.mjs [--dist <dir>]   (--dist audits an existing build; it needs
 // `<dir>/.vite/manifest.json` and source maps, i.e. `vite build --manifest --sourcemap`.)
@@ -26,6 +29,9 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const PREFIX = 'check-http-build:'
 const ENTRY_KEY = 'index.html'
+/** The one allowed dynamic edge: the chunk holding src/app/bootstrap.ts -> this manifest entry (`import('@/mock')`). */
+export const ALLOWED_DYNAMIC_TARGET = 'src/mock/index.ts'
+const BOOTSTRAP_RE = /(?:^|\/)src\/app\/bootstrap\.ts$/
 
 /** `src/mock/**` or `src/modules/<module>/mock/**`; never `__tests__` or node_modules paths. */
 export const MOCK_MODULE_RE =
@@ -166,28 +172,58 @@ export function audit(manifest, maps, routes) {
       for (const mock of mocksOfFile(fileOf(key))) lines.push(`${r.path} -> ${fileOf(key)} -> ${mock}`)
     }
   }
-  return [...new Set(lines)]
+  return [...new Set([...lines, ...dynamicMockFindings(manifest, maps, routes)])]
+}
+
+/** Normalised source paths of one source map (relative paths resolved against the chunk location). */
+function allSourcesOf(mapJson, chunkFile) {
+  const map = typeof mapJson === 'string' ? JSON.parse(mapJson) : mapJson
+  const dir = posix.dirname(toPosix(chunkFile))
+  return (map.sources ?? []).map((s) => {
+    const p = toPosix(String(s))
+    return p.startsWith('.') ? posix.normalize(posix.join(dir, p)) : p
+  })
 }
 
 /**
- * Informational (does not fail the audit): non-mock chunks that load a mock chunk through a dynamic `import()`
- * (`dynamicImports`). The static closure above does not see these, but the mock code still ships in the build.
- * Returns lines `chunk => dynamic import => mock chunk (first mock module)`.
+ * Dynamic-import findings: walks static + dynamic imports from the entry and from every route chunk (one shared
+ * visited set, so a chunk is attributed to the first root that reaches it; the entry goes first) and reports every
+ * dynamic edge from a non-mock chunk to a chunk that holds mock sources, as
+ * `<route or (entry)> -> <importer chunk> =dyn=> <mock chunk> (<mock module>)`.
+ * Allow-list of 1 (ALLOWED_DYNAMIC_TARGET): the edge `chunk containing src/app/bootstrap.ts` -> manifest entry
+ * `src/mock/index.ts` is not followed, so its descendants count only when something else also reaches them.
  */
-export function dynamicMockImports(manifest, maps) {
-  const mockFirst = (key) => {
-    const file = manifest[key]?.file
-    return file && maps[file] ? (mockSourcesOf(maps[file], file)[0] ?? null) : null
-  }
+export function dynamicMockFindings(manifest, maps, routes) {
+  const mocksOfFile = (file) => (maps[file] ? mockSourcesOf(maps[file], file) : [])
+  const isMock = (key) => Boolean(manifest[key]) && mocksOfFile(manifest[key].file).length > 0
+  const bootstrapFiles = new Set(
+    Object.values(manifest)
+      .map((e) => e.file)
+      .filter((f) => maps[f] && allSourcesOf(maps[f], f).some((p) => BOOTSTRAP_RE.test(p))),
+  )
   const lines = []
-  for (const [key, entry] of Object.entries(manifest)) {
-    if (mockFirst(key)) continue
-    for (const dep of entry.dynamicImports ?? []) {
-      const first = mockFirst(dep)
-      if (first) lines.push(`${entry.file ?? key} => dynamic import => ${manifest[dep].file} (${first})`)
+  const seen = new Set()
+  const walk = (label, start) => {
+    const stack = [start]
+    while (stack.length > 0) {
+      const key = stack.pop()
+      if (!manifest[key] || seen.has(key)) continue
+      seen.add(key)
+      if (isMock(key)) continue // reported through its importer; static edges are the route audit's
+      const entry = manifest[key]
+      stack.push(...(entry.imports ?? []))
+      for (const dep of entry.dynamicImports ?? []) {
+        if (dep === ALLOWED_DYNAMIC_TARGET && bootstrapFiles.has(entry.file)) continue
+        if (isMock(dep)) {
+          lines.push(`${label} -> ${entry.file} =dyn=> ${manifest[dep].file} (${mocksOfFile(manifest[dep].file)[0]})`)
+        }
+        stack.push(dep)
+      }
     }
   }
-  return lines
+  if (manifest[ENTRY_KEY]) walk('(entry)', ENTRY_KEY)
+  for (const r of routes) if (r.component) walk(r.path, r.component)
+  return [...new Set(lines)]
 }
 
 function readMaps(dist) {
@@ -251,11 +287,6 @@ function main() {
       if (r.component && !manifest[r.component]) {
         console.error(`${PREFIX} WARN: route ${r.path}: ${r.component} is not a manifest entry (not audited as its own chunk)`)
       }
-    }
-    const dyn = dynamicMockImports(manifest, maps)
-    if (dyn.length > 0) {
-      console.error(`${PREFIX} WARN: ${dyn.length} mock chunk(s) shipped, loaded only by dynamic import (not failing):`)
-      for (const l of dyn) console.error(`${PREFIX} WARN:   ${l}`)
     }
     const lines = audit(manifest, maps, routes)
     if (lines.length > 0) {
