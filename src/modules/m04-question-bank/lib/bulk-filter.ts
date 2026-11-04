@@ -19,6 +19,11 @@ export const BULK_FILTER_CONFIRM: Record<QuestionFilterAction, string> = {
   archived:
     'ARKIB SEMUA soalan?\n\nBank soalan pelajar akan menjadi KOSONG sehingga anda luluskan soalan secara manual (per soalan atau per tapisan). Tindakan ini boleh dibalikkan.',
 }
+/** [PROPOSED] "Arkib Semua" with a filter on screen: the V2 text above is about emptying the whole bank. */
+export const BULK_FILTER_ARCHIVE_FILTERED_CONFIRM = 'Arkibkan SEMUA soalan hasil tapisan ini? Ia tidak lagi kelihatan kepada pelajar.'
+/** FR-ADM-Q20.3 (D113): the word typed before "Arkib Semua" runs, and the line that asks for it. */
+export const BULK_FILTER_ARCHIVE_WORD = 'ARKIB'
+export const BULK_FILTER_ARCHIVE_HINT = `Taip ${BULK_FILTER_ARCHIVE_WORD} untuk mengesahkan.`
 /** V2: shown when "Luluskan Hasil Tapisan" is used without a filter. */
 export const BULK_FILTER_NEEDED =
   'Sila pilih sekurang-kurangnya satu penapis (subjek/aras/status/carian) sebelum meluluskan secara pukal.'
@@ -29,19 +34,23 @@ export const BULK_FILTER_NONE_ELIGIBLE: Record<QuestionFilterAction, string> = {
   archived: 'Tiada soalan yang boleh diarkibkan.',
 }
 
-/** Success banner: V2 text for the approve case and the archive case. */
-export function bulkFilterSuccess(action: QuestionFilterAction, affected: number): string {
-  return action === 'approved'
-    ? `Berjaya luluskan ${String(affected)} soalan (hasil tapisan) — kini kelihatan kepada pelajar.`
+/** Success banner: V2 text for the approve case and the two archive cases (PRD30 20-10). */
+export function bulkFilterSuccess(action: QuestionFilterAction, affected: number, filtered = false): string {
+  if (action === 'approved') {
+    return `Berjaya luluskan ${String(affected)} soalan (hasil tapisan) — kini kelihatan kepada pelajar.`
+  }
+  return filtered
+    ? `Berjaya arkib ${String(affected)} soalan (hasil tapisan).`
     : `Berjaya arkib ${String(affected)} soalan. Bank pelajar kini kosong — luluskan soalan secara manual untuk memaparkannya semula.`
 }
 
-/** [PROPOSED] UX-78: the count line added to the confirm dialog after the dry run. */
+/** The count line added to the confirm dialog after the dry run: AC-ADM-Q20.1 for the approve case, [PROPOSED] UX-78 otherwise. */
 export function bulkFilterCountLine(action: QuestionFilterAction, r: QuestionFilterBulkResult): string {
-  const verb = action === 'approved' ? 'diluluskan' : 'diarkibkan'
   const cap =
     r.eligible > r.cap ? ` Hanya ${String(r.cap)} soalan diproses setiap kali; jalankan semula untuk baki.` : ''
-  return `${String(r.eligible)} daripada ${String(r.matched)} soalan sepadan akan ${verb}.${cap}`
+  return action === 'approved'
+    ? `${String(r.eligible)} soalan boleh diproses daripada ${String(r.matched)} hasil tapisan.${cap}`
+    : `${String(r.eligible)} daripada ${String(r.matched)} soalan sepadan akan diarkibkan.${cap}`
 }
 
 /** [PROPOSED] UX-78: notes under the success banner (rows left alone, rows left for another run). */

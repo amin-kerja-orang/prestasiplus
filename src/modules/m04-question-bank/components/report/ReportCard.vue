@@ -9,7 +9,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { DsStatusBadge, useConfirm } from '@/ds'
+import { DsStatusBadge, DsText, useConfirm } from '@/ds'
 import { diffForHumans } from '@/lib/time'
 
 import {
@@ -95,6 +95,7 @@ async function act(input: ReportUpdateInput): Promise<void> {
 }
 
 const markFixed = () => act({ status: 'fixed', adminNotes: notes.value })
+const markReviewed = () => act({ status: 'reviewed', adminNotes: notes.value })
 const dismiss = () => act({ status: 'dismissed', adminNotes: DISMISS_NOTE, reactivate: true })
 const deactivate = () =>
   act({ status: 'reviewed', adminNotes: DEACTIVATE_NOTE, forceDeactivate: true })
@@ -108,7 +109,8 @@ const archive = async (): Promise<void> => {
     tone: 'error',
     confirmLabel: 'Arkib',
   })
-  if (ok) await act({ status: 'reviewed', adminNotes: ARCHIVE_NOTE, archive: true })
+  // `fixed` + an archived question is what both the admin and the pupil read as "Dikeluarkan" (PRD30 Q-22).
+  if (ok) await act({ status: 'fixed', adminNotes: ARCHIVE_NOTE, archive: true })
 }
 </script>
 
@@ -203,6 +205,9 @@ const archive = async (): Promise<void> => {
             <p class="mt-2 text-caption text-muted">{{ q.subjectName }} — {{ q.levelName }}</p>
             <p class="text-caption text-muted">Compliance: {{ q.complianceStatus }}</p>
           </template>
+          <DsText v-if="r.paper" variant="caption" as="p" tone="muted" wrap="anywhere" data-testid="report-paper">
+            Kertas: {{ r.paper.label }}
+          </DsText>
         </UCard>
 
         <UAlert
@@ -258,6 +263,17 @@ const archive = async (): Promise<void> => {
         >
           Tandakan Selesai
         </UButton>
+        <UButton
+          v-if="r.status === 'pending'"
+          type="button"
+          label="Disemak"
+          color="neutral"
+          variant="soft"
+          block
+          :disabled="busy"
+          data-testid="report-review"
+          @click="markReviewed"
+        />
         <UButton
           type="button"
           color="neutral"

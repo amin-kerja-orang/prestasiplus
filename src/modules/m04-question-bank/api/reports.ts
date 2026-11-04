@@ -61,6 +61,8 @@ export interface ReportView {
   quizSessionId: string | null
   roomCode: string | null
   sourceSet: string | null
+  /** The paper the pupil reported from, when the report came from a sitting (FR-ADM-Q22.1). */
+  paper?: { label: string } | null
   status: ReportStatus
   displayStatus: ReportDisplayStatus
   adminNotes: string | null

@@ -146,7 +146,7 @@ test.describe('M04 S6 question quality', { tag: [TAG.smoke, moduleTag(4)] }, () 
   test('KPI cards, bucket cards, distribution, lists and no horizontal scroll', async ({
     page,
   }) => {
-    await expectTabTitle(page, 'Kualiti Soalan - Admin')
+    await expectTabTitle(page, 'Dashboard Kualiti Soalan | PRESTASIPLUS')
     await expect(byId(page, 'kpi-total-value')).toHaveText('465,278')
     await expect(byId(page, 'kpi-average-value')).toHaveText('94.1')
     await expect(byId(page, 'kpi-excellent-value')).toHaveText('146,275')

@@ -122,6 +122,30 @@ describe('QuestionQualityPage (M04 S6)', () => {
     expect(t(w, 'quality-audit').text()).toBe('Jalankan Audit Semula')
   })
 
+  it('shows the Kualiti tab active and the three tab links (FR-ADM-Q21.1)', async () => {
+    const stub = { template: '<div />' }
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/admin/questions/:id/edit', component: stub },
+        { path: '/admin/questions/quality', component: QuestionQualityPage },
+      ],
+    })
+    await router.push('/admin/questions/quality')
+    wrapper = mount(QuestionQualityPage, { global: { plugins: [router] }, attachTo: document.body })
+    await flushPromises()
+    expect(t(wrapper, 'question-area-tab-kualiti').attributes('data-active')).toBe('true')
+    expect(t(wrapper, 'question-area-tab-senarai').attributes('href')).toBe('/admin/questions')
+  })
+
+  it('shows "Tiada data kualiti." for an empty bank, with the audit button kept', async () => {
+    api.fetchQualitySummary.mockResolvedValueOnce({ ...SUMMARY, total: 0, actionList: [], bySubject: [], byLevel: [] })
+    const w = await render()
+    expect(t(w, 'quality-empty').text()).toContain('Tiada data kualiti.')
+    expect(w.find('[data-testid=quality-kpis]').exists()).toBe(false)
+    expect(t(w, 'quality-audit').attributes('disabled')).toBeUndefined()
+  })
+
   it('shows the red alert with "Cuba Semula" when the dashboard fails to load', async () => {
     api.fetchQualitySummary.mockRejectedValueOnce(
       new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'Ralat pelayan.' }),

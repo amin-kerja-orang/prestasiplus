@@ -129,7 +129,8 @@ describe('QuestionReportsPage (M04 S7)', () => {
       'Ditolak (1)',
       'Semua (11)',
     ])
-    expect(w.findAll('[data-active=true]').map((t) => t.text())).toEqual(['Menunggu (2)'])
+    expect(w.findAll('[data-testid=reports-tabs] [data-active=true]').map((t) => t.text())).toEqual(['Menunggu (2)'])
+    expect(w.get('[data-testid=question-area-tab-laporan]').attributes('data-active')).toBe('true')
     expect(api.fetchQuestionReports).toHaveBeenCalledWith(expect.objectContaining({ status: null }))
   })
 
@@ -137,7 +138,7 @@ describe('QuestionReportsPage (M04 S7)', () => {
     api.fetchQuestionReports.mockResolvedValue(adminResult([], null))
     const w = await renderAdmin('/admin/question-reports?status=zzz')
     expect(w.get('[data-testid=reports-empty]').text()).toBe('Tiada laporan buat masa ini')
-    expect(w.findAll('[data-active=true]')).toHaveLength(0)
+    expect(w.findAll('[data-testid=reports-tabs] [data-active=true]')).toHaveLength(0)
   })
 
   it('a pending structured card: badges, pill, block, comment and all five actions', async () => {
@@ -224,6 +225,30 @@ describe('QuestionReportsPage (M04 S7)', () => {
     })
   })
 
+  it('"Disemak" sends reviewed with the notes, only on a pending report (PRD30 Q-22 machine)', async () => {
+    api.updateQuestionReport.mockResolvedValue({ data: {}, status: 'ok' })
+    const w = await renderAdmin()
+    await w.get('[data-testid=report-notes]').setValue('Dalam semakan')
+    await w.get('[data-testid=report-review]').trigger('click')
+    await flushPromises()
+    expect(api.updateQuestionReport).toHaveBeenLastCalledWith(10, { status: 'reviewed', adminNotes: 'Dalam semakan' })
+    expect(api.fetchQuestionReports).toHaveBeenCalledTimes(2)
+  })
+
+  it('a reviewed report has no "Disemak"; the card shows the paper when it has one (FR-ADM-Q22.1)', async () => {
+    api.fetchQuestionReports.mockResolvedValue(
+      adminResult([mcq(11, { paper: { label: 'Matematik Kertas 1' } })]),
+    )
+    const w = await renderAdmin('/admin/question-reports?status=reviewed')
+    expect(w.find('[data-testid=report-review]').exists()).toBe(false)
+    expect(w.get('[data-testid=report-paper]').text()).toBe('Kertas: Matematik Kertas 1')
+  })
+
+  it('a report without a paper shows no paper line', async () => {
+    const w = await renderAdmin()
+    expect(w.find('[data-testid=report-paper]').exists()).toBe(false)
+  })
+
   it('"Tolak & Aktifkan Semula" and "Nyahaktif Segera" send the fixed notes and flags', async () => {
     api.updateQuestionReport.mockResolvedValue({ data: {}, status: 'ok' })
     const w = await renderAdmin()
@@ -251,8 +276,9 @@ describe('QuestionReportsPage (M04 S7)', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     await btn.trigger('click')
     await flushPromises()
+    // `fixed` with an archived question is "Dikeluarkan" for the admin and the pupil (PRD30 Q-22).
     expect(api.updateQuestionReport).toHaveBeenLastCalledWith(10, {
-      status: 'reviewed',
+      status: 'fixed',
       adminNotes: 'Diarkibkan oleh admin',
       archive: true,
     })

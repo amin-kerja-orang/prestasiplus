@@ -8,6 +8,7 @@ import { ApiError } from '@/api'
 import { useFlashStore } from '@/stores/flash'
 
 import type { QuestionRow, QuestionSummary } from '../../api/questions'
+import { COMPLIANCE_OPTIONS } from '../../lib/question-list'
 import QuestionListPage from '../../pages/QuestionListPage.vue'
 
 const questions = vi.hoisted(() => ({
@@ -383,6 +384,23 @@ describe('QuestionListPage (M04 S1)', () => {
   })
 })
 
+describe('QuestionListPage: Senarai Soalan regions (R1-ADM-Q-20)', () => {
+  it('shows the tabs with Senarai active, the banner with its Studio link and Import CSV', async () => {
+    const w = await render()
+    expect(w.findAll('[data-testid^="question-area-tab-"]').map((x) => x.text())).toEqual(['Senarai', 'Kualiti', 'Laporan'])
+    expect(t(w, 'question-area-tab-senarai').attributes('data-active')).toBe('true')
+    expect(t(w, 'question-area-tab-kualiti').attributes('href')).toBe('/admin/questions/quality')
+    expect(t(w, 'question-area-tab-laporan').attributes('href')).toBe('/admin/question-reports')
+    expect(t(w, 'questions-legacy-banner').text()).toContain('Ini bank soalan lama (model flat). Soalan baharu dicipta dan diterbitkan di bank kanonikal.')
+    expect(t(w, 'questions-studio-link').attributes('href')).toBe('/admin/studio')
+    expect(t(w, 'questions-import').attributes('href')).toBe('/admin/questions/import')
+  })
+
+  it('offers only the OPT-COMPLIANCE values', () => {
+    expect(COMPLIANCE_OPTIONS.map((o) => o.label)).toEqual(['Verified', 'AI Verified', 'Pending Mapping', 'Tiada Source PDF'])
+  })
+})
+
 describe('QuestionListPage: Luluskan Hasil Tapisan / Arkib Semua (REQ-A-021)', () => {
   const RESULT = {
     matched: 12,
@@ -428,7 +446,7 @@ describe('QuestionListPage: Luluskan Hasil Tapisan / Arkib Semua (REQ-A-021)', (
     )
     const message = dialogs.confirmNative.mock.calls[0]?.[0] as string
     expect(message).toContain('Luluskan SEMUA soalan hasil tapisan ini? Ia akan kelihatan kepada pelajar.')
-    expect(message).toContain('10 daripada 12 soalan sepadan akan diluluskan.')
+    expect(message).toContain('10 soalan boleh diproses daripada 12 hasil tapisan.') // AC-ADM-Q20.1
     expect(questions.bulkQuestionsByFilter).toHaveBeenNthCalledWith(
       2,
       'approved',
@@ -450,17 +468,57 @@ describe('QuestionListPage: Luluskan Hasil Tapisan / Arkib Semua (REQ-A-021)', (
     expect(w.find('[data-testid="bulk-filter-result"]').exists()).toBe(false)
   })
 
-  it('"Arkib Semua" sends an empty filter whatever the list filter is, and shows the V2 result', async () => {
+  /** "Arkib Semua" up to its typed dialog (FR-ADM-Q20.3); the dialog body renders in a portal. */
+  async function openArchive(url: string): Promise<VueWrapper> {
     questions.bulkQuestionsByFilter
       .mockResolvedValueOnce({ data: RESULT, status: '' })
       .mockResolvedValueOnce(done())
-    const w = await render('/admin/questions?status=draft')
+    const w = await render(url)
     await t(w, 'questions-archive-all').trigger('click')
     await flushPromises()
+    return w
+  }
+  const inBody = <T extends HTMLElement>(id: string): T => document.body.querySelector(`[data-testid="${id}"]`) as T
+  async function typeWord(word: string): Promise<void> {
+    const input = inBody<HTMLInputElement>('questions-archive-word')
+    input.value = word
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    await flushPromises()
+  }
+
+  it('"Arkib Semua" without a filter: typed ARKIB, then the whole bank and the V2 result (FR-ADM-Q20.3)', async () => {
+    const w = await openArchive('/admin/questions')
     expect(questions.bulkQuestionsByFilter).toHaveBeenNthCalledWith(1, 'archived', {}, { dryRun: true })
+    expect(inBody('questions-archive-dialog').textContent).toContain('ARKIB SEMUA soalan?')
+    expect(inBody('questions-archive-dialog').textContent).toContain('Taip ARKIB untuk mengesahkan.')
+    expect(inBody<HTMLButtonElement>('questions-archive-confirm').disabled).toBe(true)
+    await typeWord('arkib')
+    expect(inBody<HTMLButtonElement>('questions-archive-confirm').disabled).toBe(true)
+    await typeWord('ARKIB')
+    expect(inBody<HTMLButtonElement>('questions-archive-confirm').disabled).toBe(false)
+    inBody('questions-archive-confirm').click()
+    await flushPromises()
     expect(questions.bulkQuestionsByFilter).toHaveBeenNthCalledWith(2, 'archived', {}, { expectedCount: 12 })
-    expect(dialogs.confirmNative.mock.calls[0]?.[0]).toContain('ARKIB SEMUA soalan?')
     expect(t(w, 'bulk-filter-success').text()).toContain('Berjaya arkib 10 soalan. Bank pelajar kini kosong')
+  })
+
+  it('"Arkib Semua" with a filter sends that filter and shows "(hasil tapisan)" (PRD30 20-10)', async () => {
+    const w = await openArchive('/admin/questions?status=draft')
+    expect(questions.bulkQuestionsByFilter).toHaveBeenNthCalledWith(1, 'archived', { status: 'draft' }, { dryRun: true })
+    expect(inBody('questions-archive-dialog').textContent).not.toContain('KOSONG')
+    await typeWord('ARKIB')
+    inBody('questions-archive-confirm').click()
+    await flushPromises()
+    expect(questions.bulkQuestionsByFilter).toHaveBeenNthCalledWith(2, 'archived', { status: 'draft' }, { expectedCount: 12 })
+    expect(t(w, 'bulk-filter-success').text()).toContain('Berjaya arkib 10 soalan (hasil tapisan).')
+  })
+
+  it('Batal in the "Arkib Semua" dialog makes no real call', async () => {
+    const w = await openArchive('/admin/questions')
+    inBody('questions-archive-cancel').click()
+    await flushPromises()
+    expect(questions.bulkQuestionsByFilter).toHaveBeenCalledTimes(1)
+    expect(w.find('[data-testid="bulk-filter-result"]').exists()).toBe(false)
   })
 
   it('lists the refused rows (10 shown, the rest behind "Lihat n lagi") and the notes', async () => {

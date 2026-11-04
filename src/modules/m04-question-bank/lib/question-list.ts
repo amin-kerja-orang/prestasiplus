@@ -60,12 +60,9 @@ export const DSKP_OPTIONS = [
 
 export const COMPLIANCE_OPTIONS = [
   { value: 'verified', label: 'Verified' },
-  { value: 'pending_mapping', label: 'Pending Mapping' },
-  { value: 'quarantined', label: 'Quarantined' },
-  { value: 'rejected', label: 'Rejected' },
-  { value: 'draft', label: 'Draft' },
-  { value: 'missing_source', label: 'Tiada Source PDF' },
   { value: 'verified_generated', label: 'AI Verified' },
+  { value: 'pending_mapping', label: 'Pending Mapping' },
+  { value: 'missing_source', label: 'Tiada Source PDF' },
 ] as const
 
 export const SOURCE_OPTIONS = [

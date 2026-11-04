@@ -17,7 +17,9 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
 import {
+  DsCallout,
   DsDataTable,
+  DsDialog,
   DsEmptyState,
   DsFilterBar,
   DsFormField,
@@ -26,7 +28,9 @@ import {
   DsPage,
   DsPanel,
   DsRowActions,
+  DsStack,
   DsStatusBadge,
+  DsText,
   useConfirm,
   type CardField,
   type RowAction,
@@ -48,7 +52,12 @@ import {
 } from '../api'
 import BulkFilterResult from '../components/BulkFilterResult.vue'
 import QuestionSummaryCard from '../components/QuestionSummaryCard.vue'
+import QuestionAreaTabs from '../components/QuestionAreaTabs.vue'
+import { IMPORT_PATH } from '../lib/import-quality'
 import {
+  BULK_FILTER_ARCHIVE_FILTERED_CONFIRM,
+  BULK_FILTER_ARCHIVE_HINT,
+  BULK_FILTER_ARCHIVE_WORD,
   BULK_FILTER_CONFIRM,
   BULK_FILTER_LABELS,
   BULK_FILTER_NEEDED,
@@ -90,6 +99,7 @@ const flash = useFlash()
 const confirm = useConfirm()
 /** The columns fit the width from `xl`; below that the table scrolls inside its own container. */
 const xl = useMedia('(min-width: 1280px)')
+const sm = useMedia('(width >= 40rem)')
 
 const PAGE_SIZES = [20, 50, 100]
 const DEFAULT_PAGE_SIZE = 20
@@ -376,8 +386,24 @@ async function submitBulk(): Promise<void> {
 // count, then the real call with `expectedCount`. Only non-blank filter keys are sent.
 const filterBusy = ref(false)
 const filterErrors = ref<string[]>([])
-const filterOutcome = ref<{ action: QuestionFilterAction; result: QuestionFilterBulkResult } | null>(null)
+const filterOutcome = ref<{ action: QuestionFilterAction; result: QuestionFilterBulkResult; filtered: boolean } | null>(null)
 const bulkFilterBody = computed(() => buildBulkFilter(applied.value))
+
+// "Arkib Semua" (FR-ADM-Q20.3, D113): the confirm also needs the typed word, so it is this page's own dialog.
+const archiveAsk = ref<{ message: string; answer: (ok: boolean) => void } | null>(null)
+const archiveTyped = ref('')
+const archiveWordOk = computed(() => archiveTyped.value.trim() === BULK_FILTER_ARCHIVE_WORD)
+const archiveLines = computed(() => (archiveAsk.value?.message ?? '').split(/\n+/))
+function askArchive(message: string): Promise<boolean> {
+  archiveTyped.value = ''
+  return new Promise((resolve) => {
+    archiveAsk.value = { message, answer: resolve }
+  })
+}
+function answerArchive(ok: boolean): void {
+  archiveAsk.value?.answer(ok)
+  archiveAsk.value = null
+}
 const hasFilter = computed(() => Object.keys(bulkFilterBody.value).length > 0)
 
 /** 422 `fields.filter` / `fields.expectedCount` first (the server message), else the usual lines. */
@@ -410,9 +436,10 @@ async function runFilterBulk(action: QuestionFilterAction): Promise<void> {
   if (filterBusy.value) return
   filterErrors.value = []
   filterOutcome.value = null
-  // "Arkib Semua" is the whole bank (empty filter); "Luluskan Hasil Tapisan" needs a filter.
-  const filter = action === 'archived' ? {} : bulkFilterBody.value
-  if (action === 'approved' && Object.keys(filter).length === 0) {
+  // "Arkib Semua" takes the filter on screen, or the whole bank without one (PRD30 20-10); "Luluskan Hasil Tapisan" needs a filter.
+  const filter = bulkFilterBody.value
+  const filtered = Object.keys(filter).length > 0
+  if (action === 'approved' && !filtered) {
     filterErrors.value = [BULK_FILTER_NEEDED]
     return
   }
@@ -423,16 +450,20 @@ async function runFilterBulk(action: QuestionFilterAction): Promise<void> {
       filterErrors.value = [BULK_FILTER_NONE_ELIGIBLE[action]]
       return
     }
-    const confirmed = await confirm({
-      title: BULK_FILTER_LABELS[action],
-      message: `${BULK_FILTER_CONFIRM[action]}\n\n${bulkFilterCountLine(action, dry)}`,
-      confirmLabel: BULK_FILTER_LABELS[action],
-      tone: action === 'archived' ? 'error' : 'primary',
-    })
+    const countLine = bulkFilterCountLine(action, dry)
+    const confirmed =
+      action === 'archived'
+        ? await askArchive(`${filtered ? BULK_FILTER_ARCHIVE_FILTERED_CONFIRM : BULK_FILTER_CONFIRM.archived}\n\n${countLine}`)
+        : await confirm({
+            title: BULK_FILTER_LABELS.approved,
+            message: `${BULK_FILTER_CONFIRM.approved}\n\n${countLine}`,
+            confirmLabel: BULK_FILTER_LABELS.approved,
+            tone: 'primary',
+          })
     if (!confirmed) return
     const done = await bulkQuestionsByFilter(action, filter, { expectedCount: dry.matched })
     selected.value = []
-    filterOutcome.value = { action, result: done.data }
+    filterOutcome.value = { action, result: done.data, filtered }
     await reloadAfterMutation()
   } catch (err) {
     filterErrors.value = filterErrorLines(err)
@@ -567,6 +598,13 @@ const cardFields: CardField[] = [
           </UButton>
         </UDropdownMenu>
         <UButton
+          :to="IMPORT_PATH"
+          :label="sm ? 'Import CSV' : 'Import'"
+          color="neutral"
+          variant="soft"
+          data-testid="questions-import"
+        />
+        <UButton
         :to="QUESTIONS_CREATE_PATH"
         icon="i-ph-plus"
         class="min-h-11 shrink-0"
@@ -578,6 +616,16 @@ const cardFields: CardField[] = [
       </div>
     </template>
 
+    <QuestionAreaTabs />
+
+    <DsCallout
+      description="Ini bank soalan lama (model flat). Soalan baharu dicipta dan diterbitkan di bank kanonikal."
+      data-testid="questions-legacy-banner"
+    >
+      <template #actions>
+        <UButton to="/admin/studio" variant="link" data-testid="questions-studio-link">Bank Soalan (Studio)</UButton>
+      </template>
+    </DsCallout>
 
     <QuestionSummaryCard :summary="summary.data.value" :active-subject-id="activeSubjectId" />
 
@@ -665,7 +713,32 @@ const cardFields: CardField[] = [
       v-if="filterOutcome"
       :action="filterOutcome.action"
       :result="filterOutcome.result"
+      :filtered="filterOutcome.filtered"
     />
+
+    <DsDialog
+      :open="archiveAsk !== null"
+      :title="BULK_FILTER_LABELS.archived"
+      tone="error"
+      @update:open="(open) => !open && answerArchive(false)"
+    >
+      <DsStack gap="sm" data-testid="questions-archive-dialog">
+        <DsText v-for="(line, i) in archiveLines" :key="i" variant="body" as="p" wrap="anywhere">{{ line }}</DsText>
+        <DsFormField v-slot="{ id }" native for="q-archive-word" :label="BULK_FILTER_ARCHIVE_HINT">
+          <UInput :id="id" v-model="archiveTyped" autocomplete="off" data-testid="questions-archive-word" />
+        </DsFormField>
+      </DsStack>
+      <template #footer>
+        <UButton label="Batal" color="neutral" variant="soft" data-testid="questions-archive-cancel" @click="answerArchive(false)" />
+        <UButton
+          :label="BULK_FILTER_LABELS.archived"
+          color="error"
+          :disabled="!archiveWordOk"
+          data-testid="questions-archive-confirm"
+          @click="answerArchive(true)"
+        />
+      </template>
+    </DsDialog>
 
     <!-- Load failure: alert in place of the table + retry (INFERRED copy, SRS §8.2). -->
     <DsLoadError

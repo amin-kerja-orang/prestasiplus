@@ -20,7 +20,7 @@ const routes: RouteRecordRaw[] = [
     path: QUESTIONS_LIST_PATH,
     name: QUESTION_ROUTES.list,
     component: () => import('../pages/QuestionListPage.vue'),
-    meta: { ...adminMeta, title: 'Pengurusan Soalan', header: { title: 'Pengurusan Soalan' } },
+    meta: { ...adminMeta, title: 'Senarai Soalan - Admin Panel', header: { title: 'Pengurusan Soalan' } },
   },
   {
     path: `${QUESTIONS_LIST_PATH}/:id(\\d+)`,

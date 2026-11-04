@@ -17,6 +17,7 @@ import { useApi, useFlash } from '@/composables'
 import {
   DsBadge,
   DsDataTable,
+  DsEmptyState,
   DsLoadError,
   DsPage,
   DsPanel,
@@ -27,6 +28,7 @@ import {
 import { formatNumber } from '@/lib/number'
 
 import { fetchQualitySummary, runQualityAudit } from '../api/quality'
+import QuestionAreaTabs from '../components/QuestionAreaTabs.vue'
 import { averageColor } from '../lib/import-quality'
 import { questionEditPath } from '../lib/question-list'
 import { errorLines, LOAD_ERROR } from '../lib/ui-errors'
@@ -187,6 +189,9 @@ const actionCardFields: CardField[] = [
         {{ running ? 'Sedang audit...' : 'Jalankan Audit Semula' }}
       </UButton>
     </template>
+
+    <QuestionAreaTabs />
+
     <DsLoadError
       v-if="error"
       :message="LOAD_ERROR"
@@ -202,6 +207,10 @@ const actionCardFields: CardField[] = [
       <USkeleton class="h-32 w-full" />
       <USkeleton class="h-64 w-full" />
     </div>
+
+    <DsPanel v-else-if="data && data.total === 0" data-testid="quality-empty">
+      <DsEmptyState size="sm" title="Tiada data kualiti." icon="tray" />
+    </DsPanel>
 
     <template v-else-if="data">
       <DsStatRow :items="kpis" :cols="4" prefix="kpi" data-testid="quality-kpis" />
@@ -288,7 +297,7 @@ const actionCardFields: CardField[] = [
           class="min-w-0"
           data-testid="quality-levels"
         >
-          <div class="flex flex-col gap-4 p-4 pt-0 sm:p-5 sm:pt-0">
+          <div class="flex flex-col gap-4 p-4 pt-0">
             <div v-for="l in data.byLevel" :key="l.levelId" class="flex flex-col gap-1" data-testid="level-row">
               <div class="flex items-baseline justify-between gap-3 text-body">
                 <span class="text-highlighted">{{ l.name }}</span>

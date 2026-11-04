@@ -14,7 +14,7 @@ import {
   bulkFilterSuccess,
 } from '../lib/bulk-filter'
 
-const props = defineProps<{ action: QuestionFilterAction; result: QuestionFilterBulkResult }>()
+const props = defineProps<{ action: QuestionFilterAction; result: QuestionFilterBulkResult; filtered?: boolean }>()
 
 const showAll = ref(false)
 const failed = computed(() => props.result.failed)
@@ -28,7 +28,7 @@ const studioPath = (id: string): string => `/admin/studio/questions/${id}/suntin
   <div class="flex flex-col gap-3" data-testid="bulk-filter-result">
     <UAlert color="success" variant="subtle" icon="i-ph-check-circle" role="status" data-testid="bulk-filter-success">
       <template #description>
-        <p>{{ bulkFilterSuccess(action, result.affected) }}</p>
+        <p>{{ bulkFilterSuccess(action, result.affected, filtered) }}</p>
         <p v-for="(n, i) in notes" :key="i" data-testid="bulk-filter-note">{{ n }}</p>
       </template>
     </UAlert>

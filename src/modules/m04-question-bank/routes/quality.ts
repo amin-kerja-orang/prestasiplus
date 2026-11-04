@@ -16,7 +16,7 @@ const routes: RouteRecordRaw[] = [
       v2: true,
       access: 'auth',
       roles: ['admin'],
-      title: 'Kualiti Soalan - Admin',
+      title: 'Dashboard Kualiti Soalan - Admin Panel',
       header: {
         title: 'Dashboard Kualiti Soalan',
         subtitle: 'Analisa kualiti keseluruhan bank soalan',

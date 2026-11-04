@@ -283,7 +283,7 @@ test.describe('QA G5 S8/S9 details', { tag: [moduleTag(4), '@qa'] }, () => {
     await expect(byId(page, 'structured-add')).toHaveCount(0)
     await expect(page.locator('a[href*="soalan-berstruktur"]')).toHaveCount(0)
     await expect(byId(page, 'structured-stat-total')).toContainText('Jumlah Soalan')
-    await expect(byId(page, 'structured-stat-published')).toContainText('Published')
+    await expect(byId(page, 'structured-stat-published')).toContainText('Diluluskan')
     const kbat = (await byId(page, 'structured-kbat').locator('option').allInnerTexts()).map((s) =>
       s.trim(),
     )
