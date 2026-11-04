@@ -32,11 +32,13 @@ const ModalStub = defineComponent({
     description: { type: String, default: '' },
   },
   emits: ['update:open'],
-  setup(p, { slots }) {
+  setup(p, { slots, emit }) {
     return () =>
       h(
         'div',
-        { 'data-stub': 'modal', 'data-open': String(p.open), 'data-title': p.title, 'data-desc': p.description },
+        {
+          onKeydown: (e: KeyboardEvent) => e.key === 'Escape' && emit('update:open', false),
+          'data-stub': 'modal', 'data-open': String(p.open), 'data-title': p.title, 'data-desc': p.description },
         p.open ? (slots.body?.() ?? []) : [],
       )
   },
@@ -219,7 +221,7 @@ describe('R1-04 canRender and whole-group exclusion', () => {
     expect(canRender({ id: 'a', kind: 'passage' })).toBe(true)
     expect(canRender({ id: 'a', kind: 'table', table: { head: [], rows: [['1']] } })).toBe(true)
     expect(canRender({ id: 'a', kind: 'table', src: '/t.png' })).toBe(true)
-    expect(canRender({ id: 'a', kind: 'table', table: { head: ['a'], rows: [] } })).toBe(false)
+    expect(canRender({ id: 'a', kind: 'table', table: { head: ['a'], rows: [] } })).toBe(true)
     for (const kind of ['image', 'diagram', 'map', 'infographic', 'graph'] as const) {
       expect(canRender({ id: 'a', kind, src: '/a.png' })).toBe(true)
       expect(canRender({ id: 'a', kind, table: { head: [], rows: [['1']] } })).toBe(true)
@@ -237,10 +239,13 @@ describe('R1-04 canRender and whole-group exclusion', () => {
     expect(w.findAll('[data-testid=q]')).toHaveLength(0)
   })
 
-  it('an empty figure is never drawn (not-served notice instead)', () => {
-    const w = mount(StimulusFigure, { props: { stimulus: { id: 'g', kind: 'graph' } }, global: { stubs } })
-    expect(w.find('[data-testid=stimulus-empty]').exists()).toBe(true)
-    expect(w.find('img').exists()).toBe(false)
+  it('with no flag a table without rows renders as before (no notice)', () => {
+    const w = mount(StimulusFigure, {
+      props: { stimulus: { id: 't', kind: 'table', table: { head: ['a'], rows: [] } } },
+      global: { stubs },
+    })
+    expect(w.find('[data-testid=not-served]').exists()).toBe(false)
+    expect(w.find('[data-testid=stimulus]').exists()).toBe(true)
   })
 
   it('a non-table kind with rows and no picture is drawn as a table', () => {
@@ -273,5 +278,38 @@ describe('R1-04 authoring preview default', () => {
     const w = await mountGroup(true, { stimuli: [{ id: 'm', kind: 'map' }] })
     expect(w.find('[data-layout=excluded]').exists()).toBe(false)
     expect(w.findAll('[data-testid=q]')).toHaveLength(3)
+  })
+})
+
+describe('FR-X6-7 zoom: ESC, unmount, cancel', () => {
+  it('ESC closes the viewer', async () => {
+    const w = mount(StimulusFigure, { props: { stimulus: fig }, global: { stubs }, attachTo: document.body })
+    await w.find('img').trigger('load')
+    await w.find('[data-testid=stimulus-zoom-open]').trigger('click')
+    await w.find('[data-stub=modal]').trigger('keydown', { key: 'Escape' })
+    expect(w.find('[data-stub=modal]').attributes('data-open')).toBe('false')
+  })
+
+  it('unmount while open removes the listener and never calls history.back()', async () => {
+    const back = vi.spyOn(window.history, 'back')
+    const remove = vi.spyOn(window, 'removeEventListener')
+    const w = mount(StimulusFigure, { props: { stimulus: fig }, global: { stubs }, attachTo: document.body })
+    await w.find('img').trigger('load')
+    await w.find('[data-testid=stimulus-zoom-open]').trigger('click')
+    w.unmount()
+    expect(back).not.toHaveBeenCalled()
+    expect(remove).toHaveBeenCalledWith('popstate', expect.any(Function))
+  })
+
+  it('pointercancel is not a tap (no double-tap zoom)', async () => {
+    const w = mount(StimulusFigure, { props: { stimulus: fig }, global: { stubs }, attachTo: document.body })
+    await w.find('img').trigger('load')
+    await w.find('[data-testid=stimulus-zoom-open]').trigger('click')
+    const area = w.find('[data-testid=stimulus-zoom-area]')
+    for (let i = 0; i < 2; i++) {
+      await area.trigger('pointerdown')
+      await area.trigger('pointercancel')
+    }
+    expect(w.find('[data-testid=stimulus-zoom-img]').attributes('data-scale')).toBe('1')
   })
 })

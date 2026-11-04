@@ -59,27 +59,27 @@ export function groupLabel(stimuli: readonly StimulusDef[]): string {
   return labels.length > 0 ? labels.join(' dan ') : 'Rajah'
 }
 
-/** Same rule as `groupLabel`, for the display type: "Rajah 1 dan Petikan A" ('Petikan' / 'Rajah' when unlabelled). */
+/** Same rule as `groupLabel`, for the display type: "Rajah 1 dan Petikan A"; 'Petikan' when none is labelled (as before). */
 export function stimuliLabel(stimuli: readonly StimulusData[]): string {
   const labels = stimuli.map((s) => s.label ?? '').filter((l) => l.trim() !== '')
   if (labels.length > 0) return labels.join(' dan ')
-  return stimuli[0]?.kind === 'passage' ? qdCopy.passageFallback : 'Rajah'
+  return qdCopy.passageFallback
 }
 
 const hasRows = (s: StimulusData): boolean => !!s.table && s.table.rows.length > 0
 
 /**
- * Whether the display can draw a stimulus (R1-04, 46 section 2.4): a passage needs text; a table needs rows
- * or a picture; image, diagram, map, infographic and graph need a picture or a table with rows.
+ * Whether the display can draw a stimulus (R1-04, 46 section 2.4). Only a picture kind (image, diagram, map,
+ * infographic, graph) without a picture or a table with rows is unrenderable.
  */
 export function canRender(s: StimulusData): boolean {
-  // DOC DEFECT (#510): no PRD wording exists for a passage without text, so it is not excluded (today's behaviour).
-  if (s.kind === 'passage') return true
+  // DOC DEFECT (#510): the R1 PRD has no reason text for a passage without text or a table without rows,
+  // so neither is excluded (today's behaviour).
+  if (s.kind === 'passage' || s.kind === 'table') return true
   return !!s.src || hasRows(s)
 }
 
 /** Reason line text (without the "Tidak dihidangkan kerana" lead) for a stimulus that cannot render, else ''. */
 export function unrenderableReason(s: StimulusData): string {
-  if (canRender(s)) return ''
-  return qdCopy.reasonNoPicture
+  return canRender(s) ? '' : qdCopy.reasonNoPicture
 }

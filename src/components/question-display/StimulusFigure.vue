@@ -9,8 +9,6 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { kindFallbackCaption, qdCopy, sourceLine } from './copy'
-import { canRender, unrenderableReason } from './lib/stimulus-data'
-import NotServedNotice from './NotServedNotice.vue'
 import type { StimulusData } from './types'
 
 const props = withDefaults(defineProps<{ stimulus: StimulusData; maxHeight?: boolean }>(), {
@@ -46,8 +44,6 @@ const isTable = computed(() => s.value.kind === 'table')
 const hasRows = computed(() => !!s.value.table && s.value.table.rows.length > 0)
 /** A table (any kind) with rows and no picture, or a table-kind with rows, is drawn as a real table. */
 const realTable = computed(() => !isPassage.value && hasRows.value && (isTable.value || !s.value.src))
-const renderable = computed(() => canRender(s.value))
-const emptyReason = computed(() => unrenderableReason(s.value))
 const zoomOpen = ref(false)
 
 /* Full-screen viewer (FR-X6-7): pinch, pan, double-tap fit / 2x; Back closes it (history entry while open). */
@@ -76,7 +72,19 @@ function reset(): void {
   pointers.clear()
   lastTap = { t: 0, x: 0, y: 0 }
 }
+const area = ref<HTMLElement | null>(null)
+/** Keeps the zoomed picture in view: the pan never exceeds half the extra size. */
+function clamp(): void {
+  const mx = (((scale.value - 1) * (area.value?.clientWidth ?? 0)) / 2)
+  const my = (((scale.value - 1) * (area.value?.clientHeight ?? 0)) / 2)
+  tx.value = Math.max(-mx, Math.min(mx, tx.value))
+  ty.value = Math.max(-my, Math.min(my, ty.value))
+}
+function onCancel(e: PointerEvent): void {
+  pointers.delete(e.pointerId ?? 0)
+}
 function onDown(e: PointerEvent): void {
+  ;(e.currentTarget as Element | null)?.setPointerCapture?.(e.pointerId)
   pointers.set(e.pointerId ?? 0, { x: e.clientX ?? 0, y: e.clientY ?? 0 })
   if (pointers.size === 2) {
     pinchStart = dist()
@@ -96,11 +104,13 @@ function onMove(e: PointerEvent): void {
       tx.value = 0
       ty.value = 0
     }
+    clamp()
     return
   }
   if (scale.value > 1) {
     tx.value += x - p.x
     ty.value += y - p.y
+    clamp()
   }
   pointers.set(id, { x, y })
 }
@@ -144,7 +154,9 @@ onBeforeUnmount(() => {
   window.removeEventListener('popstate', onPop)
   if (pushed) {
     pushed = false
-    window.history.back()
+    // drop the marker without navigating (no history.back on unmount)
+    const st = window.history.state as Record<string, unknown> | null
+    if (st?.qdZoom) window.history.replaceState({ ...st, qdZoom: undefined }, '')
   }
 })
 const hasPicture = computed(
@@ -181,17 +193,17 @@ function retry(): void {
     :data-kind="stimulus.kind"
     :data-stimulus="stimulus.id"
   >
-    <!-- nothing to draw: never an empty figure -->
-    <NotServedNotice v-if="!renderable" :reason="emptyReason" data-testid="stimulus-empty" />
-
     <!-- passage: long lines and maths scroll inside (FR-X6-1) -->
     <div
-      v-else-if="isPassage"
+      v-if="isPassage"
       class="max-w-full overflow-x-auto rounded-xl bg-muted p-3 text-body text-default"
       data-testid="stimulus-passage"
     >
       <p v-if="stimulus.title" class="mb-2 font-semibold text-highlighted">{{ stimulus.title }}</p>
       <p v-for="(p, i) in paragraphs" :key="i" class="mb-2 whitespace-pre-line last:mb-0">{{ p }}</p>
+      <p v-if="stimulus.source" class="mt-2 text-caption text-muted" data-testid="stimulus-source">
+        {{ sourceLine(stimulus.source) }}
+      </p>
     </div>
 
     <!-- real table: scrolls inside its own container, never the page -->
@@ -310,12 +322,13 @@ function retry(): void {
           >
         </div>
         <div
+          ref="area"
           class="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-xl bg-muted"
           data-testid="stimulus-zoom-area"
           @pointerdown="onDown"
           @pointermove="onMove"
           @pointerup="onUp"
-          @pointercancel="onUp"
+          @pointercancel="onCancel"
         >
           <img
             :src="stimulus.src"
@@ -333,7 +346,7 @@ function retry(): void {
     </template>
 
     <!-- title / body under the picture (image, infographic) -->
-    <template v-if="renderable && !isPassage && !isTable && (stimulus.title || stimulus.text)">
+    <template v-if="!isPassage && !isTable && (stimulus.title || stimulus.text)">
       <p v-if="stimulus.title" class="font-semibold text-highlighted" data-testid="stimulus-title">
         {{ stimulus.title }}
       </p>
@@ -341,7 +354,7 @@ function retry(): void {
     </template>
 
     <figcaption
-      v-if="renderable && !isPassage && (stimulus.label || caption)"
+      v-if="!isPassage && (stimulus.label || caption)"
       class="text-center text-caption text-muted"
       data-testid="stimulus-caption"
     >
@@ -351,7 +364,7 @@ function retry(): void {
     </figcaption>
 
     <!-- source line under every kind (FR-PA-37) -->
-    <p v-if="renderable && stimulus.source" class="text-caption text-muted" data-testid="stimulus-source">
+    <p v-if="!isPassage && stimulus.source" class="text-caption text-muted" data-testid="stimulus-source">
       {{ sourceLine(stimulus.source) }}
     </p>
   </figure>

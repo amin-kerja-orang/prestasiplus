@@ -26,7 +26,7 @@ export const qdCopy = {
   show: 'Lihat',
   hide: 'Sembunyi',
   passageFallback: 'Petikan',
-  /** Reason of a group that cannot be drawn: "imej belum dimuat naik" is verbatim (AC-04.2). */
+  /** Reason of a picture kind without a picture; "imej belum dimuat naik" is verbatim from v2-admin-student-pipeline AC-04.2 (the R1 PRD has no reason text). */
   reasonNoPicture: 'imej belum dimuat naik',
 } as const
 
@@ -52,7 +52,5 @@ export function visibleSummary(x: number, total = 7): string {
 export function notServedLine(reason: string): string {
   return `Tidak dihidangkan kerana ${reason}.`
 }
-/** "Sumber: {text}" (FR-PA-37); a source that already starts with "Sumber:" is not prefixed twice. */
-export function sourceLine(source: string): string {
-  return /^sumber\s*:/i.test(source.trim()) ? source.trim() : `Sumber: ${source.trim()}`
-}
+/** "Sumber: {text}" (FR-PA-37). */
+export const sourceLine = (source: string): string => `Sumber: ${source.trim()}`
