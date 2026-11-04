@@ -96,7 +96,7 @@ describe('leaderboard names', () => {
 
 describe('weekly report', () => {
   it('is 403 for every role', async () => {
-    for (const k of who) expectError(await (as[k] as Client).get('/api/weekly-report'), 'FORBIDDEN', 'This action is unauthorized.')
+    for (const k of who) expectError(await (as[k] as Client).get('/api/weekly-report'), 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
   })
 })
 

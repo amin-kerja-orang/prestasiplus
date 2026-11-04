@@ -67,7 +67,7 @@ describe('authentication, roles and CSRF', () => {
   it('a student and a parent get 403 on every route', async () => {
     for (const k of ['pelajar', 'ibubapa']) {
       const c = as[k] as Client
-      for (const url of reads()) expectError(await c.get(url), 'FORBIDDEN', 'This action is unauthorized.')
+      for (const url of reads()) expectError(await c.get(url), 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
       expectError(await c.post('/api/headcounts', body()), 'FORBIDDEN')
       expectError(await c.post('/api/headcounts/auto-setup', { levels: ['T4'] }), 'FORBIDDEN')
       expectError(await c.post('/api/headcounts/1/drop-students', { action: 'drop', studentIds: ['1'] }), 'FORBIDDEN')
@@ -265,7 +265,7 @@ describe('privacy 9 and 10: one 404 for unknown and not visible', () => {
 
   it.each(calls)('%s: a foreign teacher, a foreign school admin and an unknown id get the identical 404', async (_name, call) => {
     const unknown = await call(as.guru as Client, UNKNOWN)
-    expectError(unknown, 'NOT_FOUND', 'Not Found.')
+    expectError(unknown, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
     for (const k of ['guru2', 'admin2']) {
       const res = await call(as[k] as Client, cfg)
       expect(res.status).toBe(unknown.status)
