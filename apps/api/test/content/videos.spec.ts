@@ -28,7 +28,7 @@ const OTHER_SCHOOL_TEACHER = 'guruadmin@demo.test'
 const YT = 'https://www.youtube.com/watch?v=abcdefghijk'
 /** Switches the active role of a multi-role login (POST /auth/role); the answer carries the new CSRF token. */
 async function actAs(who: LoggedIn, role: string): Promise<LoggedIn> {
-  const res = await who.agent.post('/api/auth/role').set('X-CSRF-Token', who.csrf).send({ role })
+  const res = await who.agent.post('/api/session/role').set('X-CSRF-Token', who.csrf).send({ role })
   expect(res.status, JSON.stringify(res.body)).toBe(200)
   return { ...who, csrf: res.body.data.csrf as string }
 }
