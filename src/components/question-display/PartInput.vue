@@ -12,13 +12,13 @@
  */
 import { computed, ref } from 'vue'
 
-import { EssayAnswer } from '../../../components/question-display'
+import EssayAnswer from './EssayAnswer.vue'
 import { DsStack, DsText } from '@/ds'
 
-import { isReadableNumber, latexToPlain } from '../domain/math-expr'
-import type { Leaf } from '../domain/paper-model'
-import type { McqOption, PartAnswer } from '../domain/types'
-import { checkPhoto, photoUrl, putPhoto, removePhoto } from '../lib/photo-store'
+import { isReadableNumber, latexToPlain } from '@pp/exam-core/math-expr'
+import type { Leaf } from '@pp/exam-core/paper-model'
+import type { McqOption, PartAnswer } from '@/modules/m28-bijak-spm/domain/types'
+import { checkPhoto, photoUrl, putPhoto, removePhoto } from './lib/photo-store'
 import MathField from './MathField.vue'
 
 const props = defineProps<{

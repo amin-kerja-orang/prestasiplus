@@ -8,8 +8,7 @@ import { computed } from 'vue'
 
 import { DsPanel } from '@/ds'
 
-import RichText from '../../components/RichText.vue'
-import StimulusView from '../../components/StimulusView.vue'
+import { RichText, StimulusView } from '../../../../components/question-display'
 import type { ReviewQuestion } from '../../domain/admin-types'
 import type { McqOption, PartDef, StimulusDef } from '../../domain/types'
 
