@@ -359,6 +359,34 @@ describe('LaporanSoalanPage (M04 S13)', () => {
     expect(second.get('[data-testid=my-report-notes]').text()).toContain('Status tindakan admin:')
   })
 
+  it('AC-MUR-54-7: five reports show the counters, five cards, one "Dikeluarkan" and no "Selesai"', async () => {
+    api.fetchMyReports.mockResolvedValue(
+      mine(
+        [
+          mcq(5, { status: 'pending', displayStatus: 'pending' }),
+          mcq(4, { status: 'reviewed', displayStatus: 'reviewed' }),
+          mcq(3, { status: 'fixed', displayStatus: 'fixed' }),
+          mcq(2, { status: 'fixed', displayStatus: 'removed' }),
+          mcq(1, { status: 'dismissed', displayStatus: 'dismissed' }),
+        ],
+        { pending: 1, reviewed: 1, fixed: 2, dismissed: 1, all: 5 },
+      ),
+    )
+    wrapper = mount(LaporanSoalanPage)
+    await flushPromises()
+    expect(wrapper.findAll('[data-testid^=my-reports-count-]').map((c) => c.text())).toEqual([
+      '5Jumlah',
+      '1Menunggu',
+      '1Disemak',
+      '2Diperbaiki',
+      '1Ditolak',
+    ])
+    expect(wrapper.findAll('[data-testid=my-report-title]')).toHaveLength(5)
+    const badges = wrapper.findAll('[data-testid=my-report-status]').map((n) => n.text())
+    expect(badges.filter((t) => t === 'Dikeluarkan')).toHaveLength(1)
+    expect(wrapper.text()).not.toContain('Selesai')
+  })
+
   it('a load failure keeps the counters row and shows the red box', async () => {
     api.fetchMyReports.mockRejectedValue(new Error('x'))
     wrapper = mount(LaporanSoalanPage)
@@ -508,20 +536,68 @@ describe('ReportQuestionModal (M04 S14)', () => {
     expect(q('report-message')?.textContent).toBe('Laporan berjaya dihantar.')
   })
 
-  it('a failed request shows the done view with the default or the host failure text', async () => {
-    api.createQuestionReport.mockRejectedValue(new Error('network'))
-    await open()
+  async function typeComment(text: string): Promise<void> {
+    const textarea = q('report-comment') as HTMLTextAreaElement
+    textarea.value = text
+    textarea.dispatchEvent(new Event('input'))
+    await flushPromises()
+  }
+
+  it('a generic failure keeps the form, the reasons and the comment and allows a retry (FR-MUR-54-7)', async () => {
+    api.createQuestionReport.mockRejectedValueOnce(new Error('network'))
+    const w = await open()
     await tick('typo')
+    await typeComment('Salah ejaan')
     await click('report-submit')
+    expect(q('report-done')).toBeNull()
+    expect(doc().textContent).not.toContain('Terima Kasih!')
+    expect(q('report-form')).not.toBeNull()
+    const alert = q('report-submit-error') as HTMLElement
+    expect(alert.getAttribute('role')).toBe('alert')
+    expect(alert.textContent?.trim()).toBe('Gagal menghantar laporan. Sila cuba lagi.')
+    expect((q('report-comment') as HTMLTextAreaElement).value).toBe('Salah ejaan')
+    expect(
+      ((q('report-reason-typo') as HTMLElement).querySelector('input') as HTMLInputElement).checked,
+    ).toBe(true)
+    expect((q('report-submit') as HTMLButtonElement).disabled).toBe(false)
+    expect(w.emitted('reported')?.[0]).toEqual([
+      { ok: false, message: 'Gagal menghantar laporan. Sila cuba lagi.' },
+    ])
+    api.createQuestionReport.mockResolvedValueOnce({ success: true, message: 'ok' })
+    await click('report-submit')
+    expect(api.createQuestionReport).toHaveBeenCalledTimes(2)
+    expect(q('report-submit-error')).toBeNull()
     expect(q('report-done')?.textContent).toContain('Terima Kasih!')
-    expect(q('report-message')?.textContent).toBe('Ralat. Sila cuba lagi.')
-    wrapper?.unmount()
-    document.body.innerHTML = ''
-    await open({ failureText: 'Gagal menghantar laporan. Sila cuba lagi.' })
+  })
+
+  it('the host failureText keeps priority for a generic failure', async () => {
+    api.createQuestionReport.mockRejectedValue(new Error('network'))
+    await open({ failureText: 'Teks hos.' })
     await tick('typo')
     await click('report-submit')
-    expect(q('report-message')?.textContent).toBe('Gagal menghantar laporan. Sila cuba lagi.')
+    expect(q('report-submit-error')?.textContent?.trim()).toBe('Teks hos.')
+    expect(q('report-done')).toBeNull()
   })
+
+  it.each([
+    [409, 'Anda sudah melaporkan soalan ini.'],
+    [403, 'Anda hanya boleh melapor soalan yang dipaparkan kepada anda.'],
+    [429, 'Anda telah mencapai had 20 laporan sehari. Sila cuba lagi esok.'],
+  ])(
+    'a %i shows the server text inline and keeps the form and the typed text',
+    async (status, text) => {
+      api.createQuestionReport.mockRejectedValue(new ApiError({ status, code: 'X', message: text }))
+      await open()
+      await tick('typo')
+      await typeComment('Komen saya')
+      await click('report-submit')
+      expect(q('report-submit-error')?.textContent?.trim()).toBe(text)
+      expect(q('report-done')).toBeNull()
+      expect(q('report-form')).not.toBeNull()
+      expect((q('report-comment') as HTMLTextAreaElement).value).toBe('Komen saya')
+      expect((q('report-submit') as HTMLButtonElement).disabled).toBe(false)
+    },
+  )
 
   it('a 422 fields.reasons shows the server message and keeps the form open (REQ-B-046)', async () => {
     api.createQuestionReport.mockRejectedValue(
@@ -577,5 +653,23 @@ describe('ReportQuestionModal (M04 S14)', () => {
     expect(q('report-form')).not.toBeNull()
     expect(q('report-done')).toBeNull()
     expect((q('report-submit') as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('two failures in a row replace the inline alert (not stacked) and reopening clears it', async () => {
+    api.createQuestionReport
+      .mockRejectedValueOnce(new ApiError({ status: 409, code: 'X', message: 'Ralat pertama.' }))
+      .mockRejectedValueOnce(new ApiError({ status: 429, code: 'X', message: 'Ralat kedua.' }))
+    const w = await open()
+    await tick('typo')
+    await click('report-submit')
+    expect(q('report-submit-error')?.textContent?.trim()).toBe('Ralat pertama.')
+    await click('report-submit')
+    expect(doc().querySelectorAll('[data-testid=report-submit-error]')).toHaveLength(1)
+    expect(q('report-submit-error')?.textContent?.trim()).toBe('Ralat kedua.')
+    expect(q('report-submit-error')?.textContent).not.toContain('Ralat pertama.')
+    await w.setProps({ open: false })
+    await w.setProps({ open: true })
+    await flushPromises()
+    expect(q('report-submit-error')).toBeNull()
   })
 })
