@@ -2,7 +2,6 @@ import { Inject, Injectable, Logger } from '@nestjs/common'
 import {
   SUPPORT_NEW_TICKET_NOTIFICATION,
   SUPPORT_TICKET_STATUS_LABELS,
-  type ContentSupportConfig,
   type SupportQueueResponse,
   type SupportTicket,
   type SupportTicketCreateRequest,
@@ -42,6 +41,14 @@ const toView = (r: TicketRow): SupportTicket => ({
   adminReply: r.adminReply,
   createdAt: toMytTimestamp(r.createdAt),
 })
+
+/** Wire shape of `GET /config/support`; local until the S5-T05 contract (`ContentSupportConfig`) reaches this branch. */
+interface SupportConfigResponse {
+  email: string
+  phone: string
+  whatsapp: string
+  hours: string
+}
 
 @Injectable()
 export class SupportService {
@@ -110,10 +117,11 @@ export class SupportService {
     return { count: await this.guard(() => this.repo.openCount()) }
   }
 
-  /** GET /config/support (public): the contact from the singleton row; empty strings when no row exists (DM-33, S5-T05). */
-  async supportConfig(): Promise<ContentSupportConfig> {
+  /** GET /config/support (public): `{email, phone, whatsapp, hours}`; `whatsapp` is the row's `whatsapp_number`, all four are '' when no row exists (DM-33, S5-T05). */
+  async supportConfig(): Promise<SupportConfigResponse> {
     const config = await this.guard(() => this.repo.config())
-    return config ?? { email: '', whatsappNumber: '' }
+    // Four-key wire shape (#458 decision 2): phone and hours are not stored until S7-T09.
+    return { email: config?.email ?? '', phone: '', whatsapp: config?.whatsappNumber ?? '', hours: '' }
   }
 
   // --- helpers ------------------------------------------------------------------------------------
