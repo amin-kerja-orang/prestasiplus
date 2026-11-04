@@ -1,7 +1,7 @@
 # Frontend CI (AZ-21c). The gate for pull requests into `be/integration-frontend` and `feature/v3-bijak-r1` (R1; S0-T04).
 #
-#   verify   npm ci -> vite build --mode demo -> check-demo-bundle -> lint (eslint, stylelint, placeholder check; report mode
-#            until S0-T04 part 2) -> vue-tsc -> unit tests (vitest `unit` project).
+#   verify   npm ci -> vite build --mode demo -> check-demo-bundle -> vue-tsc -> unit tests (vitest `unit` project) -> lint
+#            (eslint, stylelint, placeholder check; report mode until S0-T04 part 2; runs even if an earlier step failed).
 #            The build runs BEFORE vue-tsc on purpose: the Nuxt UI Vite plugin writes the git-ignored
 #            `auto-imports.d.ts` and `components.d.ts` that vue-tsc needs (`useToast`, ...). On a clean
 #            checkout `vue-tsc -b` alone fails with TS2304 until a Vite build or dev server has run once.
@@ -70,12 +70,6 @@ jobs:
             echo "::notice::scripts/check-demo-bundle.mjs is not in this tree; demo bundle check skipped."
           fi
 
-      # eslint . runs out of heap at Node's default limit, so this step gets the same 6 GB as the type-check.
-      - name: Lint (eslint, stylelint, placeholder check in report mode)
-        env:
-          NODE_OPTIONS: --max-old-space-size=6144
-        run: npm run lint
-
       # vue-tsc -b on the whole app runs out of heap at Node's default limit (exit 134 on the runner and on an 8 GB host).
       # LEAD exception (22 Oct): 6 GB heap for this step only.
       - name: Type-check (vue-tsc)
@@ -85,6 +79,14 @@ jobs:
 
       - name: Unit tests (vitest, project unit)
         run: npm test
+
+      # Last, and run even when an earlier step failed, so a lint failure never hides the type-check and unit results.
+      # eslint . runs out of heap at Node's default limit, so this step gets the same 6 GB as the type-check.
+      - name: Lint (eslint, stylelint, placeholder check in report mode)
+        if: ${{ !cancelled() }}
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+        run: npm run lint
 
   e2e-api:
     name: e2e @api (http mode, 375/768/1280)
