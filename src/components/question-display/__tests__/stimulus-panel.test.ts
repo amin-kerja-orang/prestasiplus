@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // S8-T02 part 1: stimulus panel once, sticky, zoomable (FR-X1-4d, FR-X6-1/6/7, FR-PA-03, FR-PA-37, AC-X6-2).
 /* eslint-disable vue/one-component-per-file -- two small stubs */
-import { mount } from '@vue/test-utils'
+import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 
@@ -65,6 +65,7 @@ const mountGroup = async (wide: boolean, props: Record<string, unknown>) => {
   return w
 }
 
+enableAutoUnmount(afterEach)
 beforeEach(() => resetStimulusOpen())
 afterEach(() => {
   vi.restoreAllMocks()
@@ -298,7 +299,7 @@ describe('FR-X6-7 zoom: ESC, unmount, cancel', () => {
     await w.find('[data-testid=stimulus-zoom-open]').trigger('click')
     w.unmount()
     expect(back).not.toHaveBeenCalled()
-    expect(remove).toHaveBeenCalledWith('popstate', expect.any(Function))
+    expect(remove).toHaveBeenCalledWith('popstate', expect.any(Function), true)
   })
 
   it('pointercancel is not a tap (no double-tap zoom)', async () => {
@@ -320,5 +321,43 @@ describe('FR-PA-37 source line keeps one prefix', () => {
     expect(sourceLine('buku teks')).toBe('Sumber: buku teks')
     expect(sourceLine('Sumber: buku teks')).toBe('Sumber: buku teks')
     expect(sourceLine('  sumber:kajian ')).toBe('sumber:kajian')
+  })
+})
+
+describe('FR-X6-7 zoom Back and the router', () => {
+  it('Back closes the viewer; the route does not change and no guard is run', async () => {
+    const { createRouter, createWebHistory } = await import('vue-router')
+    const router = createRouter({
+      history: createWebHistory(),
+      routes: [{ path: '/:p(.*)*', component: { template: '<div />' } }],
+    })
+    await router.push('/soalan')
+    await router.isReady()
+    const guard = vi.fn()
+    router.beforeEach(guard)
+    const w = mount(StimulusFigure, {
+      props: { stimulus: fig },
+      global: { stubs, plugins: [router] },
+      attachTo: document.body,
+    })
+    await w.find('img').trigger('load')
+    await w.find('[data-testid=stimulus-zoom-open]').trigger('click')
+    expect(w.find('[data-stub=modal]').attributes('data-open')).toBe('true')
+    window.history.back()
+    await new Promise((r) => setTimeout(r, 50))
+    expect(w.find('[data-stub=modal]').attributes('data-open')).toBe('false')
+    expect(router.currentRoute.value.fullPath).toBe('/soalan')
+    expect(guard).not.toHaveBeenCalled()
+  })
+})
+
+describe('FR-PA-37 StimulusView passage source', () => {
+  it('uses the same "Sumber:" format as StimulusFigure', async () => {
+    const { default: StimulusView } = await import('../StimulusView.vue')
+    const w = mount(StimulusView, {
+      props: { stimulus: { id: 'p', kind: 'passage', label: 'Petikan A', text: 'Teks.', source: 'Buku Teks', alt: '' } as never },
+      global: { stubs },
+    })
+    expect(w.find('[data-testid=stimulus-source]').text()).toBe('Sumber: Buku Teks')
   })
 })
