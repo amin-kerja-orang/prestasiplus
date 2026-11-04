@@ -3,7 +3,7 @@
 import 'katex/dist/katex.min.css'
 import { computed } from 'vue'
 
-import { renderMath, renderRich } from '../lib/rich-text'
+import { renderMath, renderRich } from './lib/rich-text'
 
 const props = withDefaults(defineProps<{ text: string; mathOnly?: boolean }>(), { mathOnly: false })
 

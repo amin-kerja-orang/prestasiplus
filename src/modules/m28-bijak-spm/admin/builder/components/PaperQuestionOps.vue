@@ -12,7 +12,7 @@ import { onBeforeUnmount, reactive, ref } from 'vue'
 
 import { useConfirm } from '@/ds'
 
-import RichText from '../../../components/RichText.vue'
+import { RichText } from '../../../../../components/question-display'
 import { unitsOf } from '../../../domain/paper-builder'
 import { builderCopy as t } from '../domain/copy'
 import type { SectionPool } from '../server/api'
