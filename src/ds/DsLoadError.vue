@@ -74,11 +74,13 @@ function start() {
     remaining.value = 0
     return
   }
-  // body `retryAfter` then header are already resolved in errors.ts; else 30 s.
-  remaining.value = err.retryAfter ?? 30
-  if (remaining.value <= 0) return
+  // body `retryAfter` then header are already resolved in errors.ts; else 30 s. Clamped to 1..120 s, whole seconds.
+  const seconds = Math.min(120, Math.max(1, Math.ceil(err.retryAfter ?? 30)))
+  // Deadline based, so a throttled background tab shows the right value when its timer finally fires.
+  const deadline = Date.now() + seconds * 1000
+  remaining.value = seconds
   timer = setInterval(() => {
-    remaining.value = Math.max(0, remaining.value - 1)
+    remaining.value = Math.max(0, Math.ceil((deadline - Date.now()) / 1000))
     if (remaining.value <= 0) stop()
   }, 1000)
 }

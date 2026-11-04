@@ -208,6 +208,31 @@ describe('S0-T08 (D115): the global ceiling is per user when signed in, per addr
     expect((await l.agent.get(ME).set('X-Forwarded-For', ip)).status).toBe(200)
   })
 
+  it('a stale (revoked) real session cookie is counted on the unresolved counter and the address bucket', async () => {
+    const ip = '10.30.0.9'
+    const l = await loginAs(t, 'pelajar2@demo.test', { ip }) // 1 address request (the logout is a signed-in request: user bucket)
+    const out = await l.agent.post('/api/auth/logout').set('X-Forwarded-For', ip).set('X-CSRF-Token', l.csrf) // 2
+    expect(out.status, JSON.stringify(out.body)).toBeLessThan(300)
+    const stale = () => t.http().get(ME).set('X-Forwarded-For', ip).set('Cookie', `pp_session=${l.token}`) // the revoked token is still well formed
+    const reads = vi.spyOn(t.app.get(SessionStore, { strict: false }), 'findByToken')
+    try {
+      for (let i = 0; i < IP_LIMIT - 1; i++) expect((await stale()).status).toBe(401)
+      expect(reads).toHaveBeenCalledTimes(IP_LIMIT - 1)
+      expectRateLimited(await stale(), 60)
+    } finally {
+      reads.mockRestore()
+    }
+  })
+
+  it('trade-off: a signed-in user on an address whose unresolved counter is used up falls back to the address bucket', async () => {
+    const ip = '10.30.0.10'
+    const l = await loginAs(t, 'pelajar2@demo.test', { ip })
+    while ((await forged(ip)).status !== 429) {
+      /* forged cookies exhaust the address bucket; the 429 request itself uses the last unresolved unit */
+    }
+    expectRateLimited(await l.agent.get(ME).set('X-Forwarded-For', ip), 60)
+  })
+
   it('a bad CSRF header on a valid session is still CSRF_INVALID from AuthGuard and is counted per address', async () => {
     const ip = '10.30.0.8'
     const l = await loginAs(t, 'pelajar@demo.test', { ip }) // 1 address request
@@ -218,6 +243,19 @@ describe('S0-T08 (D115): the global ceiling is per user when signed in, per addr
       expect(r.body.error.code).toBe('CSRF_INVALID')
     }
     expectRateLimited(await bad(), 60)
+  })
+})
+
+describe('GlobalRateLimitGuard with a throwing resolver', () => {
+  it('counts the request on the unresolved counter and the address bucket', async () => {
+    const consumed: Array<[string, string]> = []
+    const limiter = { consume: (spec: { bucket: string }, subject: string) => void consumed.push([spec.bucket, subject]), remaining: () => 10 }
+    const resolver = { resolve: () => Promise.reject(new Error('db down')) }
+    const moduleRef = { get: (token: unknown) => (typeof token === 'symbol' ? resolver : { cookieName: 'pp_session' }) }
+    const guard = new GlobalRateLimitGuard(limiter as never, moduleRef as never)
+    const ctx = { switchToHttp: () => ({ getRequest: () => ({ originalUrl: '/api/x', ip: '10.1.1.2', headers: { cookie: 'pp_session=' + 'A'.repeat(43) } }) }) } as unknown as ExecutionContext
+    expect(await guard.canActivate(ctx)).toBe(true)
+    expect(consumed).toEqual([['global-unresolved', '10.1.1.2'], ['global', '10.1.1.2']])
   })
 })
 

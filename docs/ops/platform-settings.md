@@ -113,6 +113,8 @@ Why: many pupils sit behind ONE school address. Per-address buckets (everything 
 | Login per-address ceiling (20 failed logins per minute across all identifiers) | address | 20, fixed in code, no env variable | Cannot be changed by config | A whole class mistyping at once could trip it. Report to the backend developers if it matters; otherwise brief pupils to log in in two waves. `LEAD: confirm`. |
 | All per-user `THROTTLE_*` | user | defaults | Keep | Not affected by sharing an address. |
 
+Note on the two global rows (D115): under a forged-cookie flood from a shared school address, signed-in users on that address fall back to the 300 per minute address bucket until the window resets (the same as before S0-T08). Also, an address is no longer capped in aggregate across many signed-in accounts: each signed-in user has its own 1200 per minute.
+
 Set the raised values on Render (Environment), redeploy, then run the demo-smoke test. Check that the edge header mode works first (section 2.1): without it all users already share the Cloudflare egress address and the global bucket would be hit by the whole audience, not just one school.
 
 PUT THEM BACK: after the demo and before any production use, delete these variables on Render (the code defaults apply again) and record it in the rotation/changes log. Production keeps the defaults unless OQ1 in go-live-bijak-spm.md changes them. A production VPS has the same sharing problem for schools: the values to use there are a LEAD decision for AZ-09, not an inheritance of the demo's raised numbers.

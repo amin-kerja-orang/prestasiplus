@@ -71,10 +71,28 @@ describe('DsLoadError rate-limit countdown', () => {
     }
   })
 
-  it('uses minutes from 120 s (ceil)', () => {
+  it('clamps a huge retryAfter to 120 s and rounds a fractional one up', () => {
     vi.useFakeTimers()
-    const w = mount(DsLoadError, { props: { error: rateLimited(150) } })
-    expect(w.text()).toContain('Cuba lagi dalam 3 minit.')
+    expect(mount(DsLoadError, { props: { error: rateLimited(3600) } }).text()).toContain('Cuba lagi dalam 2 minit.')
+    expect(mount(DsLoadError, { props: { error: rateLimited(1.5) } }).text()).toContain('Cuba lagi dalam 2 saat.')
+    expect(mount(DsLoadError, { props: { error: rateLimited(120) } }).text()).toContain('Cuba lagi dalam 2 minit.')
+  })
+
+  it('is deadline based: a 10 s clock jump inside one tick enables the retry', async () => {
+    vi.useFakeTimers()
+    const w = mount(DsLoadError, { props: { error: rateLimited(8), retryTestid: 'retry' } })
+    expect(w.get('[data-testid="retry"]').attributes('disabled')).toBeDefined()
+    vi.setSystemTime(Date.now() + 10_000) // a background tab: time passed, no tick yet
+    vi.advanceTimersByTime(1000) // the single tick that finally fires
+    await w.vm.$nextTick()
+    expect(w.get('[data-testid="retry"]').attributes('disabled')).toBeUndefined()
+    expect(w.text()).not.toContain('Cuba lagi dalam')
+  })
+
+  it('uses seconds up to 119 and minutes from 120 s', () => {
+    vi.useFakeTimers()
+    expect(mount(DsLoadError, { props: { error: rateLimited(119) } }).text()).toContain('Cuba lagi dalam 119 saat.')
+    expect(mount(DsLoadError, { props: { error: rateLimited(150) } }).text()).toContain('Cuba lagi dalam 2 minit.')
   })
 
   it('leaves a non-429 ApiError on the default message', () => {
