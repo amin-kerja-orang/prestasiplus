@@ -148,3 +148,75 @@ Decisions (Q-n), apply exactly:
 - Q-36: the `tapis` filter of Analisa Item applies to every items list; games wire the BM/EN control (FR-PA-04 component, S8-T03) through card S7-T01.
 - Q-37: reward price is the existing `rewards.token_cost`; each redemption stores `token_cost_snapshot` and `cost_value_sen_snapshot`; the session budget sums `cost_value_sen_snapshot`.
 - Q-38: card S6-T20 depends on S1-T06; its teacher paper pages (part 2) merge after S6-T14 (removes a dependency cycle).
+
+## T10 run-7 decisions — STRICT MODE
+
+- R-1 (A-01) Key kind `options` = `{correctOptionIds: Id[]}` only (no `choices`/`choice` for it); other key kinds keep their 45 §7.0 fields. Plan S1-T09a and 10 A2 item 8 copy this.
+- R-2 (A-02) Gate rows whose validators come from S1-T09a/b pass (inert) until those cards merge; their ACs are proven by S1-T09a/b ("part 2"). Plan S1-T02 says which rows.
+- R-3 (A-03) Kesukaran is set on every save (typed, or the default); `NO_DIFFICULTY` fires only when `difficulty_level` is null (legacy rows); `difficultyDefaulted` is a response hint only, never stored. 50 DM-47 and 45 §4.1 row 9.
+- R-4 (A-04) Migration 0163 is written by the S3 holder at S1-T10's request (decision 7), like 0127.
+- R-5 (A-05) `drawing_template` is added to FILE_PURPOSES in S1-T09b's own backend PR (S1-owned file; no separate contract PR).
+- R-6 (B-01) The review payload of a batch carries `targetPaperId` (non-null when a paper has `source_batch_id` = this batch); S2-T02 uses it to pick API-BIJAK-14 vs API-Q-25; that branch is S2-T02 part 2 after S3-T06. 60 §2.17.4 batch shape and plan S2-T02.
+- R-7 (B-02) Kiriman Guru = Q-35 (40 OPT-KIRIMAN-STATUS display mapping over intake items; batch row "Sedang diproses" while extracting). 45 §3.4 copies it.
+- R-8 (B-05) Select-all-by-filter bulk offers only Terbitkan and Arkib (API-Q-04 filter route); Hantar is per selection only. Plan S2-T01.
+- R-9 (B-06) The alias `/admin/studio/questions/:id/edit` → `/sunting` is S2-T01's, in `routes/questions-form.ts`. Plan S2-T01/S2-T03 and 45 §9.
+- R-10 (B-10) Kertas Subjektif `Tempoh (minit)` and `Jumlah Markah` are stored on the paper row (DM-23: use existing columns if present, else extend DM-23 with `duration_minutes int null` (null = untimed, shown as information only) and `total_marks int`); API-BIJAK-14 / the paper detail carry them.
+- R-11 (B-12) The hand-over parameter is `subjectId` everywhere (plan S3-T07, 10 R1-MUR-17, 60 API-PRAC-10).
+- R-12 (B-14) A second Kuiz finish is idempotent: 200 with the same result; the 409 "Kuiz ini sudah selesai." is removed from 46 §4.3.
+- R-13 (C-01) 40 AC-CHAIN-1(d): the test Bab "UJI Rantaian" holds exactly 3 questions, the drill count is 3, the session ends after the 3rd answer (no early "Tamat" control is needed).
+- R-14 (C-02) 50 DM-48 says what FAQ Q43 says: the helper `coinsPerCorrect()` reads the `reward_settings` row when it exists, else 1; S7-T05 creates the row; no reader switch PR.
+- R-15 (C-03) `exam_attempts.kind` gains `structured` (extend the exam_attempts DM row's kind check; migration owned by S5-T11). Plan S5-T11.
+- R-16 (C-04) Soalan Berstruktur reward = rate × awarded marks (46 wins); paid once per set: only the gain over the highest total already paid for the same set. 10 §4.4 and DM-25 copy it.
+- R-17 (C-05) AC-PA-14 owner is S1-T09a (46 §7.2/§9.2 already); plan S5-T11 drops it.
+- R-18 (C-06) Migration 0181 adds the `mode` check and NOT NULL as NOT VALID; it is validated (part 2 of S5-T15) when the direct-writer allow-list is empty. DM-44 and plan S5-T15.
+- R-19 (C-07) S6-T03 proves the query-level ACs (AC-XS-1..3); AC-XS-4 and AC-X4-1 are proven by the screen cards S10-T01 / S10-T07 / S6-T13 (plan 4.0 E row).
+- R-20 (C-08) The Misi Harian pupil path is S6-T07's (the writer in 40's master table); 46 §4.12 and 48 GAME-20 name S6-T07; S5-T03 drops AC-GM-20.2/20.5.
+- R-21 (C-09) The `roles: []` at `routes/prestasi.ts` is the student/parent `/laporan-mingguan` route and stays unchanged; S6-T01 changes only the teacher route `/guru/laporan-mingguan-kelas` (and the `/guru/laporan-mingguan` redirect).
+- R-22 (D-01) Headcount pupil "Active" = has an ETR for that config (P-10); 20 FR-GUR-3-9 and its "Pupil entry status" text copy it.
+- R-23 (D-02) The Dashboard "Set Soalan" entry tile is added by S6-T14 itself (same sector file); plan S6-T14 no longer waits for S6-T07.
+- R-24 (D-03) Settings key / column names: DM-38 is the master; DM-48 uses its names.
+- R-25 (D-04) API-GUR-16 list response adds `summary {total, siap}` and accepts `classroomId`.
+- R-26 (D-05) API-ADM-25 has two create routes, one for tournaments and one for leagues, each with its own body (league fields only on the league route); `levelIds` are numeric ids. 48 GAME-15 names the league route.
+- R-27 (D-06) A teacher personal question (`teacher_private`) is Diluluskan on save (no review) and is servable only in the owner's missions (activity `misi`); 45 §3.4 and 40 OPT-STATUS-SOALAN note it.
+- R-28 (D-07) Soalan & Rujukan edit page: New file `SoalanRujukanEditPage.vue`, route `/guru/soalan-rujukan/:id/sunting` (plan S6-T16).
+- R-29 (D-08) "Used by an active Misi" = drawn into an assignment of a mission whose status is active (20 GUR-44a).
+- R-30 (D-09) An out-of-class pupil answers 404 (60 §1.7 default); 20 AC-GUR-4-2 says 404.
+- R-31 (D-10) Plan S10-T09 gets a New files line (pupil Headcount page path following the S10 layout).
+- R-32 (D-11) S5-T08 removes the pupil "Sertai" box and the join-code fields (plan S5-T08 / S6-T14).
+
+## T10 run-8 decisions — STRICT MODE
+
+- S-0a Migration files: a card may create the migration file(s) that a DM row it owns names (no "New files:" entry needed). A migration on a table whose schema file belongs to another sector is written by that sector's holder at the card's request (decision 7); if no team holds that sector, the requesting card's team writes it in a PR labelled `needs:S<n>` that the product owner reviews. START-HERE decision 12(c), plan §0B, FAQ Q10 and Q41 say this.
+- S-1 (A-01) Blur validation of free-text SP (FR-ADM-QE4.3) is S1-T02's: it calls API-Q-05 validate; S1-T03 only renders the result. Plan 4.0 E row + S1-T02 Approach.
+- S-2 (A-02) 45 §4.1 gate table gets an "Owner card" column: rows that check an answer key or a question-type field → S1-T09a; rows that check a drawing template or table_fill cell → S1-T09b; every other row → S1-T02. (R-2 inert-until-merge rule stays.)
+- S-3 (A-10) A printed Bahagian matches a Disahkan contract section by label, trimmed and case-insensitive ("Bahagian A" = "bahagian a"); the matched section's `semua` / `pilih N` is copied; no match → `semua`. 45 import section and plan S1-T10.
+- S-4 (A-15) For `drawing` and `table_fill`, Terbit is refused only by gate rows 21 and 22 (missing template, blank cell). Plan S1-T09b wording.
+- S-5 (C-01) `practice_answers.is_test` already exists (DM-44); plan S5-T15 removes it from its "add" list.
+- S-6 (C-02, C-03) There is no `exam_attempts.kind` column. The attempt kind is the existing column `exam_attempts.paper_kind` (check today: `pilihan`, `jana`, migration 0013). New row DM-83 (Build, owner S3-T06): migration `0186_s3_exam_attempt_paper_kind` (replaces the name `0186_s5_exam_attempt_kind_structured`) widens `ck_exam_attempts_paper_kind` to `pilihan, jana, subjektif, structured`. A Kertas Subjektif sitting has `paper_kind='subjektif'` and `paper_id` set; a Soalan Berstruktur attempt has `paper_kind='structured'`, `paper_id` null, `composition` = the frozen question list, `title` = the set title; both use `mode='latihan'` (untimed). Every "attempt kind subjektif/structured" text means `paper_kind`. 50 ENT-ExamAttempt, §4.7a, §4.8 migration table (count unchanged), DM-83 row; plan S3-T06 (Data line, migration) and S5-T11 (drops the migration, cites DM-83); 60 API-BIJAK-04/05 and API-PRAC-10.
+- S-7 (C-04) `kbatLevel` = the question's Aras index in OPT-ARAS order (Mengingat 1, Memahami 2, Mengaplikasi 3, Menganalisis 4, Menilai 5, Mencipta 6). KBAT = Aras 3..6 (KPM definition: Mengaplikasi, Menganalisis, Menilai, Mencipta). OPT-ARAS-KBAT badges 3..6; 50 line ~1313 stays; 60 API-PRAC-10 names `kbatLevel` with this source.
+- S-8 (C-05) S5-T01 owns the CI seed fixture for AC-X3-1: a T1 and a T5 pupil, each with servable questions; `docs/ops/e2e-seed.md` profile table lists them; plan S5-T01 says so.
+- S-9 (C-06) The 404 start check for an unassigned Set Soalan is S5-T11's (it already depends on S6-T14); S5-T03 drops it; 60 API-PRAC-01 names S5-T11 for that check.
+- S-10 (C-07) S6-T03 implements XS-1..XS-8 in `xs-queries.ts` (XS-6, XS-7 as queries; XS-8 = every query reads all modes from `practice_answers`); screen cards (S10-T01..T04, S6-T13) import them. 60 §4.6 lists XS-1..8; S10-T02 text no longer claims XS-6..8.
+- S-11 (C-08) Plan §5A: delete the clause saying S9-T06's deps are the chain-last cards (N-1 stands: S9-T06 has no deps).
+- S-12 (B-01) Plan 4.0 E R1-MUR-13 row: FR-MUR-13-26/27/28 and AC-MUR-13-20..23 go to S3-T06 if their text is about Kertas Subjektif pages (check 10); otherwise leave and report.
+- S-13 (B-02) FR-QA-18 rich-text toolbar: authoring editor = S2-T10; the sanitiser and pupil display = S8-T03. 4.0 E row and both cards; the plan fixer names the existing m04 editor file as S2-T10's path.
+- S-14 (B-03, B-04) S2-T10 PRD line adds FR-QA-29 and FR-QA-30; `StudioLeafEditor.vue` goes in S2-T10 Starts-from if it exists in the repo, else in its New files (path following the m04 layout).
+- S-15 (B-05) S2-T02 intake Tolak = API-Q-15 `.../reject` (not API-Q-06).
+- S-16 (B-06) Stored intake item statuses are 40 OPT-KIRIMAN-STATUS's list (`pending`, `accepted`, `approved`, `draft` plus `rejection_reason`); there is no stored `rejected`; Tolak sets `rejection_reason` as 40 says. API-Q-15 accepts `status` ∈ those stored values and `kirimanStatus` ∈ OPT-KIRIMAN-STATUS display keys (mapped server-side). 30 Q-09/Q-12, 45 §3.3.4, 60 API-Q-15 align.
+- S-17 (B-07) Group header actions are `Pisahkan` and `Lampirkan` (30 09-05); 45 §3.3.4 copies them; FAQ gets one line.
+- S-18 (B-08) The helper `coinsPerCorrect()` is written by S5-T15 (both S3-T04 and S5-T03 depend on it); FAQ Q43, DM-48, plan S5-T03/S5-T15 and 48 say S5-T15.
+- S-19 (B-09) `papers.level_scope` already exists (migration 0012, ENT-Paper); plan S3-T07 says "existing column", no DM change.
+- S-20 (R-10 vs ENT-Paper) "Total marks never stored" holds for `pilihan`/`jana` papers; a `subjektif` paper stores the admin-typed `Jumlah Markah` in `total_marks` (DM-23). ENT-Paper text says so.
+- S-21 (D-02) The "Urus set" Dashboard tile is S6-T14's (R-23); 20 R1-GUR-8b names S6-T14.
+- S-22 (D-03) S6-T14 deps read "S6-T20 (part 1: migration 0200 only)"; S6-T20 part 2 merges after S6-T14. No cycle.
+- S-23 (D-04) `/games/pertandingan` and `/games/uji-minda` are off in R1: the pages and `GET /api/games/pertandingan` / `GET /api/games/uji-minda` answer 404 (FR-GM-00.1); 60 API-GAME-02 drops them from the live list and notes "404 in R1"; S7-T01 owns the 404.
+- S-24 (D-05) 48 §2 Storage follows FAQ Q43 (helper reads the row, no switch PR).
+- S-25 (D-07) 60 API-GUR-16 list: key `rows`, `summary {total, siap}`, filter `classroomId`, paging `page`/`perPage` (60 §1 default), plus the counters R1-GUR-8b names (copy them).
+- S-26 (D-08) Teacher CSV import (20 R1-GUR-44 F3): `bab` matches a chapter of the set's Subjek and Tingkatan by number, else by name (trimmed, case-insensitive); `sp` matches an SP code of that chapter; unknown → row error "Bab tidak dijumpai: {nilai}" / "SP tidak dijumpai: {nilai}", row skipped, other rows imported. 40 X10 gets the next ERR-GUR id for each.
+- S-27 (D-13) 60 API-RPT-13: if §2.17.9 defines the rankings shape, the other docs align to it; if not, the 60 fixer writes the shape by copying the fields of 10 R1-MUR-18 and 48 GAME-16 (four scopes, "Sekitar anda") — list anything missing under "Needs lead decision".
+- S-28 Paging params are the 60 §1 default `page`/`pageSize` (S-25 "perPage" was a slip).
+- S-29 API-GUR-16 results route `summary {penyertaan, skorPurata, jumlahPercubaan}` + `classroomId` accepted (copies 20 R1-GUR-8b).
+- S-30 State/national ranking pool = every active pupil of the scope, test accounts (is_test) excluded.
+- S-31 45 §4.1 gate row 11 (MCQ rules) owner S1-T09a.
+
+Lead follow-ups of round 8: `coinsPerCorrect()` lives in `apps/api/src/modules/practice/coins.ts` (S5-T15) and returns 1 until the `reward_settings` table exists; S6-T03 depends on S10-T01, S10-T02 and S10-T03 and switches their screen services to `xs-queries.ts`; S10-T04 and S6-T13 depend on S6-T03 and import it; the FR-QA-18 toolbar path is the existing Studio editor files.
