@@ -148,7 +148,9 @@ export const VideoDetailQuerySchema = z
 
 const videoBodyShape = {
   videoUrl: httpUrl().meta({ description: 'Absolute http(s) video URL; platform, embed URL and thumbnail are parsed from it.' }),
-  title: requiredText(150),
+  // The wire limit stays 255 (no breaking contract change); the server and the form enforce 150 with
+  // VIDEO_MESSAGES.titleTooLong (FR-GUR-7-4).
+  title: requiredText(255).meta({ description: 'Max 255 on the wire; the server answers 422 "Tajuk video tidak boleh melebihi 150 aksara." above 150.' }),
   description: z.string().max(1000).nullable().optional(),
   category: VideoCategorySchema,
   subjectId: IdSchema.nullable().optional().meta({ description: 'An existing subject (curriculum, BE-08); blank or null = none.' }),

@@ -292,7 +292,7 @@ describe('videos', () => {
       { ...body, title: '' },
       { ...body, category: 'sukan' },
       { ...body, visibility: 'private' },
-      { ...body, title: 't'.repeat(151) },
+      { ...body, title: 't'.repeat(256) },
       { ...body, description: 'd'.repeat(1001) },
       { title: 'Tips SPM', category: 'tips-spm', visibility: 'global' },
     ]) {

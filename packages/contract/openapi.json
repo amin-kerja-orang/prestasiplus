@@ -2780,7 +2780,8 @@
           "title": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 150
+            "maxLength": 255,
+            "description": "Max 255 on the wire; the server answers 422 \"Tajuk video tidak boleh melebihi 150 aksara.\" above 150."
           },
           "description": {
             "type": [
@@ -2829,7 +2830,8 @@
           "title": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 150
+            "maxLength": 255,
+            "description": "Max 255 on the wire; the server answers 422 \"Tajuk video tidak boleh melebihi 150 aksara.\" above 150."
           },
           "description": {
             "type": [
