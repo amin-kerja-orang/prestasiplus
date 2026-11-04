@@ -44,6 +44,7 @@ export const AUDIT_ACTIONS = {
   STIMULUS_GROUP_MEMBERS_CHANGED: 'stimulus.group.members_changed',
   STIMULUS_GROUP_PUBLISHED: 'stimulus.group.published',
   STIMULUS_GROUP_DRAFT_COPIED: 'stimulus.group.draft_copied',
+  STIMULUS_GROUP_DRAFT_DISCARDED: 'stimulus.group.draft_discarded',
   STIMULUS_GROUP_RETIRED: 'stimulus.group.retired',
   STIMULUS_GROUP_MEMBER_MOVED: 'stimulus.group.member_moved',
   STIMULUS_GROUP_MERGED: 'stimulus.group.merged',
