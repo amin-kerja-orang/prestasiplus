@@ -68,7 +68,7 @@ export const STIMULUS_MESSAGES = {
 } as const
 
 /** Bounds (BE-NFR-25): every free text field is capped. */
-export const STIMULUS_LIMITS = { label: 100, caption: 300, alt: 1000, source: 300, body: 20_000, cell: 500, columns: 12, rows: 60, groupQuestions: 40, optionBank: 8 } as const
+export const STIMULUS_LIMITS = { label: 100, caption: 300, alt: 1000, source: 300, style: 32, body: 20_000, cell: 500, columns: 12, rows: 60, groupQuestions: 40, optionBank: 8 } as const
 
 /** Kinds that show a picture: the file is the content (inline SVG is never writable, stored-XSS rule). */
 export const IMAGE_STIMULUS_KINDS = ['image', 'diagram', 'map', 'infographic', 'graph'] as const
@@ -77,6 +77,7 @@ const Label = z.string().trim().max(STIMULUS_LIMITS.label)
 const Caption = z.string().trim().max(STIMULUS_LIMITS.caption)
 const Alt = z.string().trim().max(STIMULUS_LIMITS.alt)
 const Source = z.string().trim().max(STIMULUS_LIMITS.source)
+const Style = z.string().trim().min(1).max(STIMULUS_LIMITS.style).meta({ description: 'Presentation hint (DM-70): `kotak` on a passage, `mono` for the code block. Free text, no closed list.' })
 const Body = z.object({ ms: z.string().min(1).max(STIMULUS_LIMITS.body), en: z.string().max(STIMULUS_LIMITS.body).optional() })
 const Table = z.object({
   head: z.array(z.string().max(STIMULUS_LIMITS.cell)).min(1).max(STIMULUS_LIMITS.columns),
@@ -94,6 +95,7 @@ export const StimulusCreateRequestSchema = z
     body: Body.nullish(),
     alt: Alt.nullish(),
     sourceCitation: Source.nullish(),
+    style: Style.nullish(),
     tableData: Table.nullish(),
     imageFileId: imageFile.nullish(),
   })
@@ -114,6 +116,7 @@ export const StimulusUpdateRequestSchema = z
     body: Body.nullable().optional().meta({ description: 'Replaces the whole text (ms and en): send both languages to keep both; null clears (only allowed when the kind does not need it).' }),
     alt: Alt.nullable().optional(),
     sourceCitation: Source.nullable().optional(),
+    style: Style.nullable().optional(),
     tableData: Table.nullable().optional(),
     imageFileId: imageFile.nullable().optional(),
   })
@@ -131,6 +134,7 @@ export const StimulusSchema = z
     body: QuestionRichTextSchema.nullable(),
     alt: z.string().nullable(),
     sourceCitation: z.string().nullable(),
+    style: z.string().max(STIMULUS_LIMITS.style).nullable().optional(),
     tableData: QuestionStimulusTableSchema.nullable(),
     imageId: z.string().nullable(),
     groupCount: z.number().int().min(0).meta({ description: 'Groups that show this stimulus. A stimulus in use cannot be deleted.' }),

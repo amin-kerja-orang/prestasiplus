@@ -117,6 +117,20 @@ describe('stimulus and stimulus group API (admin, real database)', () => {
       }
     })
 
+    it('style (DM-70) round-trips on create, read and update, and null clears it', async () => {
+      const made = await stimulus({ style: 'kotak' })
+      expect(made.style).toBe('kotak')
+      expect(StimulusSchema.parse((await admin.get(`/api/stimuli/${made.id}`)).body.data).style).toBe('kotak')
+      expect((await t.db.query<{ style: string }>('select style from stimuli where id = $1', [made.id]))[0]!.style).toBe('kotak')
+      const put = await admin.put(`/api/stimuli/${made.id}`, { style: 'mono' })
+      expect(put.status, JSON.stringify(put.body)).toBe(200)
+      expect((await admin.get(`/api/stimuli/${made.id}`)).body.data.style).toBe('mono')
+      expect((await admin.put(`/api/stimuli/${made.id}`, { caption: 'Lain' })).body.data.style).toBe('mono')
+      expect((await admin.put(`/api/stimuli/${made.id}`, { style: null })).body.data.style).toBeNull()
+      expect((await stimulus()).style).toBeNull()
+      expect((await admin.post('/api/stimuli', { kind: 'passage', body: { ms: 'x' }, style: 'k'.repeat(33) })).status).toBe(422)
+    })
+
     it('the picture is a token of a question_image file and the admin can download it', async () => {
       const png = await upload()
       const made = await stimulus({ kind: 'image', imageFileId: png, body: undefined })

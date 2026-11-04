@@ -190,7 +190,7 @@ model IntakeStimulus {
   batchId   BigInt   @map("batch_id")
   /// Local key inside the batch (the extractor's id, or `manual-n`); unique per batch.
   ref       String
-  /// diagram, passage, table (check constraint).
+  /// passage, diagram, table, graph, map, infographic, image (check constraint, DM-70).
   kind      String
   label     String   @default("")
   caption   String?
