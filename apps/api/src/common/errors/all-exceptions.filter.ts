@@ -8,7 +8,7 @@ import {
 import { type ErrorBody, type ErrorCode } from '@pp/contract'
 import type { Request, Response } from 'express'
 
-import { DEFAULT_JSON_LIMIT_BYTES } from '../http/body-limits'
+import { DEFAULT_JSON_LIMIT_BYTES } from '../http/respond'
 import { requestIdOf } from '../request/request-id'
 import { ApiError, DEFAULT_ERROR_MESSAGES } from './api-error'
 

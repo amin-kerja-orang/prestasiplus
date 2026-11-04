@@ -3,7 +3,7 @@ import { ERROR_CODES, ERROR_STATUS, ErrorBodySchema } from '@pp/contract'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ApiError, DEFAULT_ERROR_MESSAGES, unsupportedMediaTypeMessage } from '../src/common/errors/api-error'
-import { DEFAULT_JSON_LIMIT_BYTES } from '../src/common/http/body-limits'
+import { DEFAULT_JSON_LIMIT_BYTES } from '../src/common/http/respond'
 import { AllExceptionsFilter } from '../src/common/errors/all-exceptions.filter'
 
 /** S0-T12 (X10.12 E-1): the BM defaults, the new codes and the unmapped 4xx, without a database. */

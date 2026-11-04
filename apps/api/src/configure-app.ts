@@ -4,7 +4,7 @@ import { json, type NextFunction, type Request, type Response } from 'express'
 import { Logger } from 'nestjs-pino'
 
 import { publicBaseUrlBootWarning } from './common/config/public-base-url'
-import { DEFAULT_JSON_LIMIT_BYTES } from './common/http/body-limits'
+import { DEFAULT_JSON_LIMIT_BYTES } from './common/http/respond'
 import { clientIpBootWarning, clientIpMiddleware } from './common/net/client-ip'
 import { MetricsService } from './common/metrics/metrics.service'
 import { securityHeaders } from './common/security/security-headers'
