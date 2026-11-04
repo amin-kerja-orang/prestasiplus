@@ -239,7 +239,6 @@ void load()
           v-if="b.stimuli.length"
           :stimuli="b.stimuli"
           :group-id="b.key"
-          :exclude-unrenderable="true"
         >
           <KuizItem
             v-for="e in b.items"

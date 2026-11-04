@@ -402,6 +402,19 @@ describe('PaperQuizPage', () => {
     expect(text.indexOf('Teks pertama.')).toBeLessThan(text.indexOf('Teks kedua.'))
   })
 
+  it('S8-T02: a group whose picture has no source keeps its questions visible and answerable', async () => {
+    const pic = { kind: 'image', label: 'Rajah 1', body: null, imageToken: null, alt: null }
+    server.getKuizPaperPage.mockResolvedValue({
+      ...page1,
+      items: [mcq('g1', { groupId: 'G' }), mcq('g2', { groupId: 'G' })],
+      groups: [{ id: 'G', stimuli: [pic] }],
+    })
+    await mountPage(PaperQuizPage, '/simulasi/p1/kuiz')
+    expect(document.querySelector('[data-layout="excluded"]')).toBeNull()
+    for (const id of ['g1', 'g2']) expect(q(`[data-testid="kuiz-item-${id}"]`)).not.toBeNull()
+    expect(document.querySelectorAll('[data-testid=kuiz-semak]').length).toBeGreaterThan(0)
+  })
+
   it('numbers questions, not parts, and continues across the Bahagian pages', async () => {
     const part = (id: string): BijakKuizItem => ({ ...open, id, path: id.split(':')[1]! })
     server.getKuizPaperPage.mockImplementation((_id: string, n: number) =>
