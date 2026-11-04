@@ -198,6 +198,40 @@ describe('scanSourceImports', () => {
     expect(r.lines).toEqual(['src/lib/b.ts:1 =dyn=> ../mock/x (src/mock/x.ts)'])
   })
 
+  it('scans .mts, .jsx and .cts files', () => {
+    const r = tree('ext', {
+      'src/app/bootstrap.ts': BOOT_OK,
+      'src/lib/a.mts': "export const a = () => import('@/mock')\n",
+      'src/lib/b.jsx': "export const b = () => import('@/mock')\n",
+      'src/lib/c.cts': "export const c = () => import('@/mock')\n",
+    })
+    expect(r.lines.sort()).toEqual([
+      'src/lib/a.mts:1 =dyn=> @/mock (src/mock/index.ts)',
+      'src/lib/b.jsx:1 =dyn=> @/mock (src/mock/index.ts)',
+      'src/lib/c.cts:1 =dyn=> @/mock (src/mock/index.ts)',
+    ])
+  })
+
+  it('does not treat // inside a string literal as a comment', () => {
+    const r = tree('str', {
+      'src/app/bootstrap.ts': BOOT_OK,
+      'src/lib/d.ts': "const u = 'http://x'; const t = `//${1}`; export const d = () => import('@/mock') // tail\n",
+    })
+    expect(r.lines).toEqual(['src/lib/d.ts:1 =dyn=> @/mock (src/mock/index.ts)'])
+  })
+
+  it('flags a concatenated or template mock import, even in bootstrap.ts', () => {
+    const r = tree('dynspec', {
+      'src/app/bootstrap.ts': BOOT_OK + "export const g = (x: string) => import('@/mock' + x)\n",
+      'src/lib/e.ts': 'export const e = (x: string) => import(`@/mock/${x}`)\n',
+    })
+    expect(r.allowedCount).toBe(1)
+    expect(r.lines.sort()).toEqual([
+      'src/app/bootstrap.ts:5 =dyn=> @/mock + <expression> (src/mock/index.ts)',
+      'src/lib/e.ts:1 =dyn=> @/mock/ + <expression> (src/mock/index.ts)',
+    ])
+  })
+
   it('ignores tests and mock files; reports no allowed edge when bootstrap lacks it', () => {
     const r = tree('skip', {
       'src/lib/__tests__/t.ts': "import('@/mock')\n",

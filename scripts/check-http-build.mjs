@@ -23,7 +23,10 @@
 // `import('<literal>')` in `src/**` (not `__tests__`, `*.test.*`, `*.spec.*`, nor inside mock modules) that resolves to
 // a mock module is a finding `<file>:<line> =dyn=> <specifier> (<module>)`, except `import('@/mock')` in exactly
 // `src/app/bootstrap.ts`, once (a second one is a finding). The manifest allow-list applies only when the scan found
-// exactly that one allowed edge. Limit: only string-literal specifiers are seen (a computed `import(x)` is not).
+// exactly that one allowed edge. Scanned files: `.{js,mjs,jsx,mjsx,ts,mts,tsx,cts,vue}` (`/\.(m?[jt]sx?|cts|vue)$/`); `//` inside string literals is
+// not a comment. An `import(` whose argument starts with a string literal resolving to a mock module and continues with a
+// concatenation or template expression (`'@/mock' + x`, `@/mock/${x}`) is a finding everywhere, bootstrap.ts included
+// (`<file>:<line> =dyn=> <prefix> + <expression> (<module>)`). Limit: a fully computed `import(x)` is not seen.
 //
 // Usage: node scripts/check-http-build.mjs [--dist <dir>]   (--dist audits an existing build; it needs
 // `<dir>/.vite/manifest.json` and source maps, i.e. `vite build --manifest --sourcemap`.) `--dist` without a value
@@ -229,12 +232,89 @@ export function audit(manifest, maps, routes = []) {
 const ALLOWED_IMPORTER = 'src/app/bootstrap.ts'
 const ALLOWED_SPECIFIER = '@/mock'
 
-/** Comments blanked, newlines kept (so line numbers stay right). */
+/** Comments blanked (newlines kept, so line numbers stay right); `//` and `/*` inside string literals are kept. */
 function blankComments(src) {
-  return src
-    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ''))
-    .replace(/(^|[^:'"`\\])\/\/[^\n]*/g, '$1')
-    .replace(/<!--[\s\S]*?-->/g, (m) => m.replace(/[^\n]/g, ''))
+  const s = src.replace(/<!--[\s\S]*?-->/g, (m) => m.replace(/[^\n]/g, ''))
+  /** Code from `start`; with `inTemplateExpr` it stops after the `}` that closes a template `${`. Returns [text, next index]. */
+  function code(start, inTemplateExpr) {
+    let out = ''
+    let i = start
+    let depth = 0
+    while (i < s.length) {
+      const c = s[i]
+      const n = s[i + 1]
+      if (c === '/' && n === '/') {
+        while (i < s.length && s[i] !== '\n') i++
+      } else if (c === '/' && n === '*') {
+        const e = s.indexOf('*/', i + 2)
+        const end = e < 0 ? s.length : e + 2
+        out += s.slice(i, end).replace(/[^\n]/g, '')
+        i = end
+      } else if (c === "'" || c === '"') {
+        let j = i + 1
+        while (j < s.length && s[j] !== c && s[j] !== '\n') j += s[j] === '\\' ? 2 : 1
+        const end = Math.min(s[j] === c ? j + 1 : j, s.length)
+        out += s.slice(i, end)
+        i = end
+      } else if (c === '`') {
+        out += c
+        i++
+        while (i < s.length && s[i] !== '`') {
+          if (s[i] === '\\') {
+            out += s.slice(i, i + 2)
+            i += 2
+          } else if (s[i] === '$' && s[i + 1] === '{') {
+            const [inner, next] = code(i + 2, true)
+            out += `\${${inner}`
+            i = next
+          } else out += s[i++]
+        }
+        if (i < s.length) out += s[i++]
+      } else {
+        if (inTemplateExpr) {
+          if (c === '{') depth++
+          else if (c === '}') {
+            if (depth === 0) return [`${out}}`, i + 1]
+            depth--
+          }
+        }
+        out += c
+        i++
+      }
+    }
+    return [out, i]
+  }
+  return code(0, false)[0]
+}
+
+/**
+ * Dynamic `import(` calls in comment-free text: `{ index, spec, dynamic }` where `spec` is the leading string literal
+ * and `dynamic` is true when it is followed by a concatenation or (for a template) a `${...}` expression.
+ */
+function dynamicImportCalls(text) {
+  const calls = []
+  const re = /\bimport\(\s*(['"`])/g
+  for (let m = re.exec(text); m; m = re.exec(text)) {
+    const q = m[1]
+    let j = m.index + m[0].length
+    let spec = ''
+    let dynamic = false
+    while (j < text.length && text[j] !== q) {
+      if (text[j] === '\n' && q !== '`') break
+      if (q === '`' && text[j] === '$' && text[j + 1] === '{') {
+        dynamic = true
+        break
+      }
+      spec += text[j++]
+    }
+    if (!dynamic) {
+      if (text[j] !== q) continue
+      const next = /^\s*(.)/.exec(text.slice(j + 1))?.[1]
+      dynamic = next !== ',' && next !== ')'
+    }
+    calls.push({ index: m.index, spec, dynamic })
+  }
+  return calls
 }
 
 function sourceFiles(dir, out = []) {
@@ -242,7 +322,7 @@ function sourceFiles(dir, out = []) {
     const p = join(dir, n)
     if (statSync(p).isDirectory()) {
       if (n !== '__tests__' && n !== 'node_modules') sourceFiles(p, out)
-    } else if (/\.(ts|vue|js|tsx)$/.test(n) && !/\.(test|spec)\./.test(n)) out.push(p)
+    } else if (/\.(m?[jt]sx?|cts|vue)$/.test(n) && !/\.(test|spec)\./.test(n)) out.push(p)
   }
   return out
 }
@@ -259,16 +339,25 @@ export function scanSourceImports(repoRoot) {
   let allowedCount = 0
   const srcDir = join(repoRoot, 'src')
   if (!existsSync(srcDir)) return { lines, allowedCount }
-  const re = /\bimport\(\s*(['"`])([^'"`$]+)\1\s*[,)]/g
   for (const abs of sourceFiles(srcDir)) {
     const file = toPosix(relative(repoRoot, abs))
     if (MOCK_MODULE_RE.test(file)) continue
     const text = blankComments(readFileSync(abs, 'utf8'))
-    for (let m = re.exec(text); m; m = re.exec(text)) {
-      const spec = m[2]
-      const resolved = resolveImport(repoRoot, file, spec)
-      if (!resolved || !MOCK_MODULE_RE.test(resolved)) continue
-      const line = text.slice(0, m.index).split('\n').length
+    for (const call of dynamicImportCalls(text)) {
+      const { spec, dynamic } = call
+      // A concatenated / template specifier is resolved by its literal prefix (a trailing `/` names the directory).
+      const target = dynamic ? spec.replace(/\/+$/, '') : spec
+      let resolved = target ? resolveImport(repoRoot, file, target) : null
+      if (!resolved && dynamic && target) {
+        const dir = target.startsWith('@/') ? posix.join('src', target.slice(2)) : posix.join(posix.dirname(file), target)
+        if (existsSync(join(repoRoot, dir)) && MOCK_MODULE_RE.test(`${dir}/x`)) resolved = `${dir}/`
+      }
+      if (!resolved || !MOCK_MODULE_RE.test(resolved.endsWith('/') ? `${resolved}x` : resolved)) continue
+      const line = text.slice(0, call.index).split('\n').length
+      if (dynamic) {
+        lines.push(`${file}:${line} =dyn=> ${spec} + <expression> (${resolved})`)
+        continue
+      }
       if (file === ALLOWED_IMPORTER && spec === ALLOWED_SPECIFIER) {
         allowedCount += 1
         if (allowedCount === 1) continue
