@@ -73,12 +73,13 @@ const hasRows = (s: StimulusData): boolean => !!s.table && s.table.rows.length >
  * or a picture; image, diagram, map, infographic and graph need a picture or a table with rows.
  */
 export function canRender(s: StimulusData): boolean {
-  if (s.kind === 'passage') return !!s.text && s.text.trim() !== ''
+  // DOC DEFECT (#510): no PRD wording exists for a passage without text, so it is not excluded (today's behaviour).
+  if (s.kind === 'passage') return true
   return !!s.src || hasRows(s)
 }
 
 /** Reason line text (without the "Tidak dihidangkan kerana" lead) for a stimulus that cannot render, else ''. */
 export function unrenderableReason(s: StimulusData): string {
   if (canRender(s)) return ''
-  return s.kind === 'passage' ? qdCopy.reasonNoText : qdCopy.reasonNoPicture
+  return qdCopy.reasonNoPicture
 }

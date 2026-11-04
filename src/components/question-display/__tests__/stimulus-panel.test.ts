@@ -216,7 +216,7 @@ describe('FR-PA-37 source line', () => {
 describe('R1-04 canRender and whole-group exclusion', () => {
   it('canRender per kind', () => {
     expect(canRender({ id: 'a', kind: 'passage', text: 'x' })).toBe(true)
-    expect(canRender({ id: 'a', kind: 'passage' })).toBe(false)
+    expect(canRender({ id: 'a', kind: 'passage' })).toBe(true)
     expect(canRender({ id: 'a', kind: 'table', table: { head: [], rows: [['1']] } })).toBe(true)
     expect(canRender({ id: 'a', kind: 'table', src: '/t.png' })).toBe(true)
     expect(canRender({ id: 'a', kind: 'table', table: { head: ['a'], rows: [] } })).toBe(false)

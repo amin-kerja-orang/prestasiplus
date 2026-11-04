@@ -28,8 +28,6 @@ export const qdCopy = {
   passageFallback: 'Petikan',
   /** Reason of a group that cannot be drawn: "imej belum dimuat naik" is verbatim (AC-04.2). */
   reasonNoPicture: 'imej belum dimuat naik',
-  /** PROPOSED (no PRD wording for a passage without text). */
-  reasonNoText: 'petikan belum lengkap',
 } as const
 
 export const kindFallbackCaption: Record<string, string> = {
