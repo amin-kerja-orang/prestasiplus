@@ -48,6 +48,8 @@ export const VIDEO_MESSAGES = {
 const YOUTUBE_HOSTS: ReadonlySet<string> = new Set(['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be'])
 
 /** True for an http(s) link on a YouTube host that carries a video id (youtu.be/<id>, /watch?v=<id>, /embed/<id>, /shorts/<id>). */
+const YOUTUBE_VIDEO_ID = /^[A-Za-z0-9_-]{11}$/
+
 export function isYoutubeVideoUrl(url: string): boolean {
   let u: URL
   try {
@@ -59,9 +61,11 @@ export function isYoutubeVideoUrl(url: string): boolean {
   const host = u.hostname.toLowerCase()
   if (!YOUTUBE_HOSTS.has(host)) return false
   const segments = u.pathname.split('/').filter((x) => x !== '')
-  if (host === 'youtu.be') return segments.length >= 1
-  if (segments[0] === 'watch') return (u.searchParams.get('v') ?? '') !== ''
-  if (segments[0] === 'embed' || segments[0] === 'shorts') return segments.length >= 2
+  // A YouTube video id is 11 characters of [A-Za-z0-9_-]; anything else is not a video link.
+  const isId = (id: string | null | undefined): boolean => YOUTUBE_VIDEO_ID.test(id ?? '')
+  if (host === 'youtu.be') return segments.length === 1 && isId(segments[0])
+  if (segments[0] === 'watch') return segments.length === 1 && isId(u.searchParams.get('v'))
+  if (segments[0] === 'embed' || segments[0] === 'shorts') return segments.length === 2 && isId(segments[1])
   return false
 }
 
