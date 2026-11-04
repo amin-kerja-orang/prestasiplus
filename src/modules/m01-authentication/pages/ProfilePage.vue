@@ -3,7 +3,7 @@
  * S7 `/profile` "Profil Saya - PRESTASIPLUS" (M01-T6; FR-M01-38, DV-14, BR-15), v2 restyle (B09 / A1).
  * Hero card in the shell main: avatar (uploaded picture or the initials avatar) with the crown badge, the
  * name, the email, "Ahli sejak {d MMMM yyyy}"; every role but the pupil also has the tonal button
- * "Kemaskini Profil" -> `/profile/edit`.
+ * "Kemaskini Profil" -> `/profile/edit` (the teacher: `/guru/profil/edit`).
  *
  * Pupil (R1-MUR-A1, S5-T05 part B; FR-MUR-A1-1, in this order): hero, "Profil Awam Saya", six tiles, the in-page
  * form "Kemaskini Profil" (Bio Saya, Cita-Cita Saya, "Simpan"; replaces the button, FR-MUR-A1-7), three combo tiles, "Koleksi
@@ -38,6 +38,8 @@ const SAVED_MS = 4000
 const session = useSessionStore()
 const user = computed(() => session.user)
 const isPupil = computed(() => user.value?.role === 'student')
+/** The teacher edits the teaching details on `/guru/profil/edit` (FR-GUR-A1-2, issue 458 decision 7); every other role keeps `/profile/edit`. */
+const editPath = computed(() => (user.value?.role === 'teacher' ? '/guru/profil/edit' : '/profile/edit'))
 
 const activity = ref<AccountProfileActivity | null>(null)
 const loadState = ref<'loading' | 'ready' | 'error'>('loading')
@@ -159,7 +161,7 @@ onMounted(() => {
 
         <UButton
           v-if="!isPupil"
-          to="/profile/edit"
+          :to="editPath"
           color="primary"
           variant="soft"
           size="lg"

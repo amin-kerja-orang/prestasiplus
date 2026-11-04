@@ -4,14 +4,18 @@
  * Murid / Guru / Admin Sekolah (INFERRED, OQ-6). The controls are independent (no show/hide or
  * enable logic, as live). Save sends every field to `PUT /api/me/settings` and re-renders with the
  * saved values and the green status box (UNVERIFIED COPY).
+ * S5-T05 part C: the read-only "Tetapan Akaun" block (`ProfileAccountPanel`, rows e-mel, telefon, sekolah, peranan from
+ * `GET /api/me`) sits above "Mod Rohani" for every role.
  */
 import { computed, onMounted, reactive, ref } from 'vue'
 
 import { DsPage, DsLoadError } from '@/ds'
+import { useSessionStore } from '@/stores/session'
 
 import { getSettings, saveSettings, type Faith, type UserSettings } from '../api'
 import SettingRow from '../components/tetapan/SettingRow.vue'
 import { errorLines } from '../lib/error-lines'
+import ProfileAccountPanel from './ProfileAccountPanel.vue'
 
 /** Reka selects reject an empty item value, so "Tidak nyatakan" uses a sentinel. */
 const NO_FAITH = '__tiada'
@@ -43,6 +47,8 @@ const form = reactive<Form>({
   sahurPushTime: '04:30',
   faith: '',
 })
+const session = useSessionStore()
+const user = computed(() => session.user)
 const loading = ref(true)
 const loadFailed = ref(false)
 const saving = ref(false)
@@ -97,7 +103,11 @@ async function submit(): Promise<void> {
   }
 }
 
-onMounted(load)
+onMounted(() => {
+  // "Tetapan Akaun" reads the cached user and refreshes it from `GET /api/me` (R1-MUR-A2, R1-GUR-A2, R1-AS-A2).
+  void session.refreshUser()
+  void load()
+})
 </script>
 
 <template>
@@ -106,6 +116,8 @@ onMounted(load)
     subtitle="Atur pengalaman PrestasiPlus mengikut keperluan rohani & masa anda."
     data-testid="tetapan-page"
   >
+    <ProfileAccountPanel v-if="user" :user="user" />
+
     <UAlert
       v-if="status"
       color="success"

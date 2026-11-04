@@ -1928,6 +1928,26 @@
       "approved_by_card": null
     },
     {
+      "key": "/guru/profil/edit|guru-profil-edit",
+      "path": "/guru/profil/edit",
+      "name": "guru-profil-edit",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m10-teacher-class/pages/TeacherProfileEditPage.vue",
+      "file": "src/modules/m10-teacher-class/routes/teacher-profile.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/guru/profil/:id|guru-profil",
+      "path": "/guru/profil/:id",
+      "name": "guru-profil",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m10-teacher-class/pages/TeacherProfilePage.vue",
+      "file": "src/modules/m10-teacher-class/routes/teacher-profile.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "/set-soalan-saya|",
       "path": "/set-soalan-saya",
       "name": null,

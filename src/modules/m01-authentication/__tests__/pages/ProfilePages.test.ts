@@ -120,14 +120,24 @@ describe('S7 /profile (FR-M01-38)', () => {
     expect(w.find('[data-testid=profile-edit-link]').exists()).toBe(false)
   })
 
-  it('keeps the hero button "Kemaskini Profil" for every role but the pupil, and loads no pupil blocks', async () => {
+  it('the teacher hero "Kemaskini Profil" opens /guru/profil/edit (FR-GUR-A1-2) and loads no pupil blocks', async () => {
     const get = vi.spyOn(api, 'get')
     const w = await render(ProfilePage, { ...USER, role: 'teacher' })
     const link = w.get('[data-testid=profile-edit-link]')
     expect(link.text()).toBe('Kemaskini Profil')
-    expect(link.attributes('href')).toBe('/profile/edit')
+    expect(link.attributes('href')).toBe('/guru/profil/edit')
     expect(get).not.toHaveBeenCalled()
     expect(w.find('[data-testid=profile-public-card]').exists()).toBe(false)
+  })
+
+  it('keeps the hero button "Kemaskini Profil" -> /profile/edit for the school admin and the admin', async () => {
+    for (const role of ['school_admin', 'admin'] as const) {
+      const w = await render(ProfilePage, { ...USER, role })
+      const link = w.get('[data-testid=profile-edit-link]')
+      expect(link.text()).toBe('Kemaskini Profil')
+      expect(link.attributes('href')).toBe('/profile/edit')
+      w.unmount()
+    }
   })
 
   it('uses the initials image without a picture and the uploaded picture otherwise', async () => {
