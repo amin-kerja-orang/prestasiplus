@@ -7,6 +7,8 @@
  */
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
+import { DsCluster, DsHeading, DsStack, DsText } from '@/ds'
+
 import { deductionLine, maksLabel } from './copy'
 import RichText from './RichText.vue'
 import StimulusGroup from './StimulusGroup.vue'
@@ -41,10 +43,11 @@ function toBlocks(s: PaperSection): Block[] {
 const sectionBlocks = computed(() => props.sections.map((s) => ({ s, blocks: toBlocks(s) })))
 const grouped = (b: Block) => Boolean(b.groupId && b.stimuli?.length)
 
-/** Depth indent is `ps-3` per level (PartNode style), as literal classes in the template. */
+/** Depth indent is one 12px spacer (a layout hook) per level, the same step as PartNode's indent. */
 function flat(parts: PaperPart[], depth = 0): { part: PaperPart; depth: number }[] {
   return parts.flatMap((p) => [{ part: p, depth }, ...flat(p.children ?? [], depth + 1)])
 }
+const Q_ATTR = 'data-paper-q'
 const isLeaf = (p: PaperPart) => !p.children?.length
 
 /* Rotation keeps place (FR-X6-10): in-memory only, no storage. */
@@ -56,7 +59,7 @@ let bound: EventTarget | null = null
 const top = () => (props.scrollContainer ? props.scrollContainer.getBoundingClientRect().top : 0)
 
 function record() {
-  const els = root.value?.querySelectorAll('[data-paper-q]') ?? []
+  const els = root.value?.querySelectorAll('[' + Q_ATTR + ']') ?? []
   const base = top()
   for (const el of els) {
     const r = el.getBoundingClientRect()
@@ -99,93 +102,113 @@ defineExpose({ record, restore })
 </script>
 
 <template>
-  <div ref="root" class="flex min-w-0 flex-col gap-8" data-testid="paper-view">
-    <section
-      v-for="{ s, blocks } in sectionBlocks"
-      :key="s.id"
-      class="flex min-w-0 flex-col gap-4"
-      :data-testid="`paper-section-${s.id}`"
-    >
-      <slot name="section-head" :section="s">
-        <header class="flex min-w-0 flex-col gap-1">
-          <h2 class="text-heading text-highlighted">
-            {{ s.label }}
-            <span v-if="s.marks !== undefined" class="tabular text-caption text-muted">[{{ s.marks }} markah]</span>
-            <span v-if="s.compulsory" class="text-caption text-muted">(wajib)</span>
-          </h2>
-          <p v-if="s.instruction" class="min-w-0 overflow-x-auto text-body text-default">{{ s.instruction }}</p>
-        </header>
-      </slot>
-
-      <component
-        :is="grouped(b) ? StimulusGroup : 'div'"
-        v-for="b in blocks"
-        :key="b.key"
-        v-bind="grouped(b) ? { stimuli: b.stimuli, groupId: b.groupId } : {}"
-        :class="grouped(b) ? '' : 'flex min-w-0 flex-col gap-6'"
+  <div ref="root" class="min-w-0" data-testid="paper-view">
+    <DsStack gap="xl">
+      <DsStack
+        v-for="{ s, blocks } in sectionBlocks"
+        :key="s.id"
+        as="section"
+        gap="md"
+        :data-testid="`paper-section-${s.id}`"
       >
-        <article
-          v-for="q in b.questions"
-          :key="q.id"
-          class="flex min-w-0 flex-col gap-3"
-          :data-paper-q="q.id"
-          :data-testid="`paper-q-${q.id}`"
+        <slot name="section-head" :section="s">
+          <DsStack as="header" gap="2xs">
+            <DsHeading :level="2" variant="heading">
+              {{ s.label }}
+              <DsText v-if="s.marks !== undefined" as="span" variant="caption" tone="muted" tabular
+                >[{{ s.marks }} markah]</DsText
+              >
+              <DsText v-if="s.compulsory" as="span" variant="caption" tone="muted">(wajib)</DsText>
+            </DsHeading>
+            <DsText v-if="s.instruction" variant="body" class="min-w-0 overflow-x-auto">{{ s.instruction }}</DsText>
+          </DsStack>
+        </slot>
+
+        <component
+          :is="grouped(b) ? StimulusGroup : DsStack"
+          v-for="b in blocks"
+          :key="b.key"
+          v-bind="grouped(b) ? { stimuli: b.stimuli, groupId: b.groupId } : { gap: 'lg' }"
         >
-          <slot name="question-head" :question="q" :section="s">
-            <div class="flex items-baseline justify-between gap-3">
-              <h3 class="text-subheading text-highlighted">Soalan {{ q.number }}</h3>
-              <span class="tabular text-caption text-muted">[{{ q.marks }} markah]</span>
-            </div>
-          </slot>
-          <div class="min-w-0 overflow-x-auto text-body text-default" data-testid="paper-stem">
-            <RichText :text="q.stem" />
-          </div>
-          <ol v-if="q.options?.length" class="flex min-w-0 flex-col gap-2">
-            <li v-for="o in q.options" :key="o.id" class="flex min-w-0 gap-2 rounded-lg bg-muted p-3 text-body">
-              <span class="font-semibold">{{ o.letter }}.</span>
-              <span class="min-w-0 overflow-x-auto"><RichText :text="o.text" /></span>
-            </li>
-          </ol>
-          <ul v-if="q.parts?.length" class="flex min-w-0 flex-col gap-3">
-            <li
-              v-for="{ part, depth } in flat(q.parts)"
-              :key="part.id"
-              class="flex min-w-0 flex-col gap-1"
-              :class="{ 'ps-3': depth === 1, 'ps-6': depth === 2, 'ps-9': depth === 3, 'ps-12': depth >= 4 }"
-              :data-depth="depth"
-              :data-testid="`paper-part-${part.id}`"
-            >
-              <slot name="part" :part="part" :depth="depth" :reveal="reveal">
-                <p class="flex min-w-0 flex-wrap items-baseline gap-x-2 overflow-x-auto text-body text-highlighted">
-                  <span v-if="part.label" class="font-bold">{{ part.label }}</span>
-                  <RichText :text="part.prompt" />
-                  <span v-if="isLeaf(part)" class="tabular text-caption text-muted">[{{ part.marks }} markah]</span>
-                </p>
-              </slot>
-              <slot name="part-extra" :part="part" :depth="depth" :reveal="reveal">
-                <template v-if="reveal">
-                  <p
-                    v-if="typeof part.maxCap === 'number'"
-                    class="tabular text-caption text-muted"
-                    data-testid="paper-cap"
-                  >
-                    {{ maksLabel(part.maxCap) }}
-                  </p>
-                  <p
-                    v-for="(d, i) in part.deductions ?? []"
-                    :key="i"
-                    class="tabular text-caption text-muted"
-                    data-testid="paper-deduction"
-                  >
-                    {{ deductionLine(d.label, d.n, d.amount, d.cap) }}
-                  </p>
-                </template>
-              </slot>
-            </li>
-          </ul>
-          <slot name="question-foot" :question="q" :section="s" />
-        </article>
-      </component>
-    </section>
+          <DsStack
+            v-for="q in b.questions"
+            :key="q.id"
+            as="article"
+            gap="sm"
+            :data-paper-q="q.id"
+            :data-testid="`paper-q-${q.id}`"
+          >
+            <slot name="question-head" :question="q" :section="s">
+              <DsCluster justify="between" align="baseline" :wrap="false">
+                <DsHeading :level="3" variant="subheading">Soalan {{ q.number }}</DsHeading>
+                <DsText as="span" variant="caption" tone="muted" tabular>[{{ q.marks }} markah]</DsText>
+              </DsCluster>
+            </slot>
+            <DsText as="div" variant="body" class="min-w-0 overflow-x-auto" data-testid="paper-stem">
+              <RichText :text="q.stem" />
+            </DsText>
+            <DsStack v-if="q.options?.length" as="ol" gap="xs">
+              <DsText v-for="o in q.options" :key="o.id" as="li" variant="body" class="min-w-0 overflow-x-auto">
+                <strong>{{ o.letter }}.</strong> <RichText :text="o.text" />
+              </DsText>
+            </DsStack>
+            <DsStack v-if="q.parts?.length" as="ul" gap="sm">
+              <li
+                v-for="{ part, depth } in flat(q.parts)"
+                :key="part.id"
+                class="min-w-0"
+                :data-depth="depth"
+                :data-testid="`paper-part-${part.id}`"
+              >
+                <DsCluster :wrap="false" align="stretch" gap="none">
+                  <span
+                    v-for="n in depth"
+                    :key="n"
+                    class="w-3 shrink-0"
+                    aria-hidden="true"
+                    data-testid="paper-indent"
+                  />
+                  <DsStack gap="2xs" class="grow">
+                    <slot name="part" :part="part" :depth="depth" :reveal="reveal">
+                      <DsCluster align="baseline" gap="xs">
+                        <DsText v-if="part.label" as="span" variant="body-strong">{{ part.label }}</DsText>
+                        <DsText as="span" variant="body" class="min-w-0 overflow-x-auto"
+                          ><RichText :text="part.prompt"
+                        /></DsText>
+                        <DsText v-if="isLeaf(part)" as="span" variant="caption" tone="muted" tabular
+                          >[{{ part.marks }} markah]</DsText
+                        >
+                      </DsCluster>
+                    </slot>
+                    <slot name="part-extra" :part="part" :depth="depth" :reveal="reveal">
+                      <template v-if="reveal">
+                        <DsText
+                          v-if="typeof part.maxCap === 'number'"
+                          variant="caption"
+                          tone="muted"
+                          tabular
+                          data-testid="paper-cap"
+                          >{{ maksLabel(part.maxCap) }}</DsText
+                        >
+                        <DsText
+                          v-for="(d, i) in part.deductions ?? []"
+                          :key="i"
+                          variant="caption"
+                          tone="muted"
+                          tabular
+                          data-testid="paper-deduction"
+                          >{{ deductionLine(d.label, d.n, d.amount, d.cap) }}</DsText
+                        >
+                      </template>
+                    </slot>
+                  </DsStack>
+                </DsCluster>
+              </li>
+            </DsStack>
+            <slot name="question-foot" :question="q" :section="s" />
+          </DsStack>
+        </component>
+      </DsStack>
+    </DsStack>
   </div>
 </template>

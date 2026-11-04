@@ -75,11 +75,13 @@ describe('PaperView', () => {
 
   it('FR-X6-10: at 375 no fixed width class, parts indent ps-3 per depth, guards on stem', () => {
     const w = mountPaper()
-    expect(w.html()).not.toMatch(/\b(w-\[\d|w-\d{2,}|min-w-\[|max-w-\[)/)
+    expect(w.html()).not.toMatch(/\b(w-\[|w-\d{2,}|min-w-\[|max-w-\[)/)
     const q = w.get('[data-testid="paper-q-q1"]')
-    expect(q.get('[data-testid="paper-part-a-1"]').classes()).not.toContain('ps-3')
-    expect(q.get('[data-testid="paper-part-a1-1"]').classes()).toContain('ps-3')
-    expect(q.get('[data-testid="paper-part-a1x-1"]').classes()).toContain('ps-6')
+    const spacers = (id: string) =>
+      q.get(`[data-testid="paper-part-${id}"]`).findAll('[data-testid="paper-indent"]').length
+    // one 12px (ps-3 step) spacer per depth level
+    expect([spacers('a-1'), spacers('a1-1'), spacers('a1x-1')]).toEqual([0, 1, 2])
+    expect(q.get('[data-testid="paper-indent"]').classes()).toContain('w-3')
     expect(q.get('[data-testid="paper-stem"]').classes()).toEqual(expect.arrayContaining(['min-w-0', 'overflow-x-auto']))
   })
 
