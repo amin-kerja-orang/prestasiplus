@@ -11,7 +11,7 @@ import { useApi } from '@/composables/useApi'
 import { useFlash } from '@/composables/useFlash'
 import { DsDialog, DsEmptyState, DsLoadError, DsPage, DsPanel, DsStatusBadge } from '@/ds'
 
-import RichText from '../../components/RichText.vue'
+import { RichText } from '../../../../components/question-display'
 import type { DecisionAction } from '../../domain/admin-types'
 import { formatDateTime } from '../../lib/use-bijak'
 import { bijakAdminServer } from '../../server/client'
