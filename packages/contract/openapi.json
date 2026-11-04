@@ -2453,6 +2453,25 @@
           },
           "uploader": {
             "$ref": "#/components/schemas/VideoUploader"
+          },
+          "category": {
+            "$ref": "#/components/schemas/VideoCategory"
+          },
+          "categoryLabel": {
+            "type": "string"
+          },
+          "subject": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ContentSubjectRef"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
           }
         },
         "required": [
@@ -2462,7 +2481,10 @@
           "thumbnailUrl",
           "views",
           "createdAt",
-          "uploader"
+          "uploader",
+          "category",
+          "categoryLabel",
+          "subject"
         ],
         "additionalProperties": false
       },
@@ -2495,24 +2517,6 @@
           "uploader": {
             "$ref": "#/components/schemas/VideoUploader"
           },
-          "videoUrl": {
-            "type": "string"
-          },
-          "embedUrl": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "platform": {
-            "$ref": "#/components/schemas/VideoPlatform"
-          },
-          "description": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "category": {
             "$ref": "#/components/schemas/VideoCategory"
           },
@@ -2530,6 +2534,24 @@
                   "null"
                 ]
               }
+            ]
+          },
+          "videoUrl": {
+            "type": "string"
+          },
+          "embedUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "platform": {
+            "$ref": "#/components/schemas/VideoPlatform"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
             ]
           },
           "visibility": {
@@ -2555,13 +2577,13 @@
           "views",
           "createdAt",
           "uploader",
+          "category",
+          "categoryLabel",
+          "subject",
           "videoUrl",
           "embedUrl",
           "platform",
           "description",
-          "category",
-          "categoryLabel",
-          "subject",
           "visibility",
           "canManage",
           "related"
