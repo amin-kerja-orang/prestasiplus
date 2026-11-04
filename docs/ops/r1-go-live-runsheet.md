@@ -595,7 +595,7 @@ $PSQL -c "SELECT migration_name, started_at, finished_at, rolled_back_at, logs F
 **5.9b Skop `on` berkuat kuasa (bundle yang dihidangkan)**
 - Siapa: operator di UAT; pemegang akaun ujian
 - Arahan: `$PSQL -c "SELECT r.role, count(*) FROM users u JOIN user_roles r ON r.user_id=u.id WHERE u.legacy_source IS NULL GROUP BY 1 ORDER BY 1;"`. Kemudian di pelayar, log masuk dengan akaun **ibu bapa v2-born** (jika ada), bukan akaun dipindah.
-- Jangkaan: amaran **`Peranan ini tidak termasuk dalam prototaip.`**, kekal di `/login`, medan kata laluan kosong, sesi tamat (`LoginPage.test.ts`:284-296). Akaun murid masuk seperti biasa.
+- Jangkaan: amaran **`Peranan ini belum menggunakan sistem ini.`**, kekal di `/login`, medan kata laluan kosong, sesi tamat (`LoginPage.test.ts`:284-296). Akaun murid masuk seperti biasa.
 - Jika tiada akaun ibu bapa v2-born: **BELUM DISAHKAN**, tiada bukti lain dalam repo. Mencari teks mesej dalam bundle tidak membuktikan nilai suis. Laporkan kepada pemilik; jangan guna akaun dipindah.
 - Henti jika: ibu bapa berjaya masuk ke dashboard. Bila henti: semak 5.1b, bina semula dengan `deploy/vps/deploy.sh`.
 - **Nota:** penolakan berlaku di frontend selepas log masuk berjaya (ia memanggil `/api/auth/logout`); API sendiri tidak menolak peranan ini.

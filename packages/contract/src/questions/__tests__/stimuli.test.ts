@@ -73,8 +73,9 @@ describe('R1-T32 stimulus request schemas (D90)', () => {
   })
 
   it('the removal warning is BM and counts the remaining members', () => {
-    expect(STIMULUS_MESSAGES.smallGroup(1)).toBe('Kumpulan ini kini hanya mempunyai 1 soalan. Rangsangan bersama lazimnya untuk sekurang-kurangnya 2 soalan.')
-    expect(STIMULUS_MESSAGES.smallGroup(0)).toContain('kosong')
+    expect(STIMULUS_MESSAGES.smallGroup()).toBe('Kumpulan ini kini kosong. Bubarkan kumpulan jika rangsangan ini tidak diperlukan lagi.')
+    expect(STIMULUS_MESSAGES.builderBlocker).toBe('Kumpulan perlu sekurang-kurangnya 1 soalan.')
+    expect(STIMULUS_MESSAGES.stimulusInUse(3)).toBe('Rangsangan ini masih digunakan oleh 3 soalan.')
   })
 })
 
