@@ -1702,7 +1702,7 @@
       "sector": "S5",
       "component": "src/modules/m09-content/pages/AdminVideoListPage.vue",
       "file": "src/modules/m09-content/routes/admin-media.ts",
-      "approved_by_card": null
+      "approved_by_card": "S5-T08"
     },
     {
       "key": "/admin/audio-kbat|",
