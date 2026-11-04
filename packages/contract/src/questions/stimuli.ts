@@ -34,11 +34,12 @@ export const STIMULUS_MESSAGES = {
   tableRequired: 'Jadual mesti mempunyai kepala dan sekurang-kurangnya satu baris, atau imej.',
   image: 'Imej tidak sah. Muat naik semula.',
   noChange: 'Tiada perubahan untuk disimpan.',
-  inUse: 'Rangsangan ini sedang digunakan oleh kumpulan atau soalan. Keluarkan daripada penggunaan dahulu.',
+  /** The stimulus delete refusal (409); `n` = distinct questions that use the stimulus. */
+  stimulusInUse: (n: number): string => `Rangsangan ini masih digunakan oleh ${String(n)} soalan.`,
   stimuliCount: 'Satu kumpulan mesti mempunyai 1 hingga 3 rangsangan.',
   stimuliInvalid: 'Rangsangan tidak sah atau berulang.',
-  /** The paper builder blocker for a group with fewer than 2 questions (D93). */
-  builderBlocker: 'Kumpulan perlu sekurang-kurangnya 2 soalan.',
+  /** The paper builder blocker for a group with no question (a group holds 1..n; 0 members is a draft group). */
+  builderBlocker: 'Kumpulan perlu sekurang-kurangnya 1 soalan.',
   membersTooMany: 'Satu kumpulan boleh mempunyai paling banyak 40 soalan.',
   memberMixed: 'Soalan dalam satu kumpulan mesti sama subjek.',
   /** Members of one group share the kertas when it is set (a question with no kertas is compatible with any). */
@@ -61,10 +62,7 @@ export const STIMULUS_MESSAGES = {
   orderInvalid: 'Susunan mesti menyenaraikan semua soalan kumpulan tepat sekali.',
   groupMismatch: 'Kumpulan dalam badan permintaan tidak sepadan dengan laluan.',
   /** A 200 `warning`, not an error: the removal went through. */
-  smallGroup: (n: number): string =>
-    n === 0
-      ? 'Kumpulan ini kini kosong. Bubarkan kumpulan jika rangsangan ini tidak diperlukan lagi.'
-      : `Kumpulan ini kini hanya mempunyai ${String(n)} soalan. Rangsangan bersama lazimnya untuk sekurang-kurangnya 2 soalan.`,
+  smallGroup: (): string => 'Kumpulan ini kini kosong. Bubarkan kumpulan jika rangsangan ini tidak diperlukan lagi.',
 } as const
 
 /** Bounds (BE-NFR-25): every free text field is capped. */
@@ -152,7 +150,7 @@ export const StimulusGroupCreateRequestSchema = z
     scope: z.enum(['section', 'paper']).optional(),
     stimulusIds: z.array(IdSchema).min(1, STIMULUS_MESSAGES.stimuliCount).max(3, STIMULUS_MESSAGES.stimuliCount),
     questionIds: z.array(IdSchema).max(STIMULUS_LIMITS.groupQuestions, STIMULUS_MESSAGES.membersTooMany).default([]).meta({
-      description: 'D93: 0 or more existing questions (a group with fewer than 2 is a draft group; every write answers with `warning` until it has 2).',
+      description: '0 or more existing questions (a group holds 1..n; a group with 0 members is a draft group and every write answers with `warning` until it has 1).',
     }),
     optionBank: OptionBank.optional(),
   })
@@ -201,7 +199,7 @@ export const StimulusGroupDetailSchema = z
     optionBank: QuestionStimulusGroupSchema.shape.optionBank,
     questionIds: z.array(IdSchema),
     members: z.array(StimulusGroupMemberSchema).meta({ description: 'The members in published order (same order as `questionIds`), one short form each.' }),
-    warning: z.string().nullable().optional().meta({ description: 'BM warning while the group has fewer than 2 questions (a draft group, D93); null otherwise. The write went through.' }),
+    warning: z.string().nullable().optional().meta({ description: 'BM warning while the group has 0 questions (a draft group); null otherwise. The write went through.' }),
   })
   .meta({ id: 'StimulusGroupDetail' })
 export type StimulusGroupDetail = z.infer<typeof StimulusGroupDetailSchema>
@@ -209,7 +207,7 @@ export type StimulusGroupDetail = z.infer<typeof StimulusGroupDetailSchema>
 export const StimulusGroupRemovedResultSchema = z
   .object({
     group: StimulusGroupDetailSchema,
-    warning: z.string().nullable().meta({ description: 'BM warning when fewer than 2 members remain; the removal went through.' }),
+    warning: z.string().nullable().meta({ description: 'BM warning when no member remains; the removal went through.' }),
   })
   .meta({ id: 'StimulusGroupMemberRemoved' })
 
@@ -372,9 +370,9 @@ export function registerStimuliPaths(registry: OpenAPIRegistry): void {
     method: 'post',
     path: '/stimulus-groups',
     tags,
-    summary: 'Create a group: 1 to 3 stimuli and 0 to 40 member questions (D93: a group with fewer than 2 is a draft group)',
+    summary: 'Create a group: 1 to 3 stimuli and 0 to 40 member questions (a group holds 1..n; 0 members is a draft group)',
     description:
-      'D90: the shared stimulus is one group shown once with all its member questions. A group carries no marks and is never a question. A question already in another group, a PKSK, archived or inactive question, a question of another subject or level, and a question that is already shown to pupils (live approved) are refused. While the group has fewer than 2 members every write answers with `warning`; such a group cannot be placed in a paper (builder blocker "Kumpulan perlu sekurang-kurangnya 2 soalan."). Members get positions 1..n in the order sent. Flash: "Kumpulan rangsangan berjaya dicipta."',
+      'D90: the shared stimulus is one group shown once with all its member questions. A group carries no marks and is never a question. A question already in another group, a PKSK, archived or inactive question, a question of another subject or level, and a question that is already shown to pupils (live approved) are refused. While the group has 0 members every write answers with `warning`; such a group cannot be placed in a paper (builder blocker "Kumpulan perlu sekurang-kurangnya 1 soalan."). Members get positions 1..n in the order sent. Flash: "Kumpulan rangsangan berjaya dicipta."',
     request: { headers: [csrf], body: body(StimulusGroupCreateRequestSchema) },
     responses: { 201: json(mutationEnvelopeOf(StimulusGroupDetailSchema), 'Created.'), 401: unauthorized, 403: forbidden, 422: invalid },
   })
@@ -417,7 +415,7 @@ export function registerStimuliPaths(registry: OpenAPIRegistry): void {
     path: '/stimulus-groups/{id}/members/{questionId}',
     tags,
     summary: 'Remove a question from a group',
-    description: 'Positions of the others close up. When fewer than 2 members remain the removal still succeeds and `warning` carries a BM message ("Kumpulan ini kini hanya mempunyai 1 soalan. ...").',
+    description: 'Positions of the others close up. When the last member is removed the removal still succeeds and `warning` carries the BM empty-group message ("Kumpulan ini kini kosong. ...").',
     request: { params: memberParams, headers: [csrf] },
     responses: { 200: json(mutationEnvelopeOf(StimulusGroupRemovedResultSchema), 'The group after the change, with an optional warning.'), 401: unauthorized, 403: forbidden, 404: notFound, 409: conflict },
   })

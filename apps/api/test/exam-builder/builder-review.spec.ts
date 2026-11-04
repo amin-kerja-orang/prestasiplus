@@ -739,8 +739,8 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
     })
   })
 
-  describe('D93: a stimulus group with fewer than two members', () => {
-    it('is kept as a group in the section pool but not placeable; placed, it blocks Terbit and the override cannot lift it', async () => {
+  describe('S1-T01: a stimulus group with one member', () => {
+    it('is kept as a group in the section pool and is valid and placeable; placed, it does not block Terbit', async () => {
       const stim = await admin.post('/api/stimuli', { kind: 'passage', label: 'Petikan satu', body: { ms: 'Petikan ujian dengan satu soalan.' } })
       expect(stim.status, JSON.stringify(stim.body)).toBe(201)
       // The bank refuses a one-member group (T32) and an approved question in a group (BASE-14), so a legacy one is made on purpose:
@@ -758,17 +758,13 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
       const sections = await sectionsOf(paper)
       const pool = await poolUnits<{ groupId?: string; stimulus?: unknown; questionIds: string[]; eligible: boolean; reasons: string[] }>(paper, sections[0]!, `q=${encodeURIComponent('hasil tambah')}`)
       const unit = pool.find((u) => u.questionIds.includes(lone))!
-      expect(unit).toMatchObject({ groupId, questionIds: [lone], eligible: false })
+      expect(unit).toMatchObject({ groupId, questionIds: [lone], eligible: true })
       expect(unit.stimulus).toBeDefined()
-      expect(unit.reasons).toContain('Kumpulan perlu sekurang-kurangnya 2 soalan.')
+      expect(unit.reasons).not.toContain('Kumpulan perlu sekurang-kurangnya 1 soalan.')
 
       expect((await place(paper, sections[0]!, lone)).status).toBe(201)
       const review = (await admin.get(`/api/admin/papers/${paper}/review`)).body.data
-      expect(review.blockers).toContain('Kumpulan perlu sekurang-kurangnya 2 soalan.')
-      const pub = await admin.post(`/api/admin/papers/${paper}/publish`, { override: true, reason: 'sebab yang sah' })
-      expect(pub.body.data.ok).toBe(false)
-      expect(pub.body.data.errors).toContain('Kumpulan perlu sekurang-kurangnya 2 soalan.')
-      expect(pub.body.data.overridden).toBeUndefined()
+      expect(review.blockers).not.toContain('Kumpulan perlu sekurang-kurangnya 1 soalan.')
     })
   })
 
@@ -823,12 +819,12 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
       const [a] = await sectionsOf(paper)
       expect((await place(paper, a!, members[0]!)).status).toBe(201)
       const review = (await admin.get(`/api/admin/papers/${paper}/review`)).body.data
-      expect(review.blockers).not.toContain('Kumpulan perlu sekurang-kurangnya 2 soalan.')
+      expect(review.blockers).not.toContain('Kumpulan perlu sekurang-kurangnya 1 soalan.')
       const pool = await poolUnits<{ groupId?: string; stimulus?: unknown; questionIds: string[]; reasons: string[] }>(paper, a!)
       const unit = pool.find((u) => u.questionIds.includes(members[0]!))!
       expect(unit.groupId).toBe(groupId)
       expect(unit.stimulus).toBeUndefined()
-      expect(unit.reasons).not.toContain('Kumpulan perlu sekurang-kurangnya 2 soalan.')
+      expect(unit.reasons).not.toContain('Kumpulan perlu sekurang-kurangnya 1 soalan.')
     })
   })
 })

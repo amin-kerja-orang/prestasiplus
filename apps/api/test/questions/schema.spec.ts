@@ -167,7 +167,7 @@ describe('question bank schema (migration 0011_question_bank)', () => {
     await db.query(`insert into questions (group_id, group_position) values ($1, 1)`, [g])
     await rejects(`insert into questions (group_id, group_position) values ($1, 1)`, [g])
     await db.query(`insert into questions (group_id, group_position) values ($1, 2)`, [g])
-    // SET NULL on group_id would break the both-or-neither check, so a group with members cannot be deleted.
+    // fk_questions_group_id is ON DELETE RESTRICT (0120, DM-02): a group with members cannot be deleted.
     await rejects(`delete from stimulus_groups where id = $1`, [g])
   })
 
