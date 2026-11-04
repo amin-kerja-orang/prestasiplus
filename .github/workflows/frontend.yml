@@ -70,6 +70,9 @@ jobs:
             echo "::notice::scripts/check-demo-bundle.mjs is not in this tree; demo bundle check skipped."
           fi
 
+      - name: HTTP build mock-path audit (S0-T09)
+        run: npm run check:http-build
+
       # vue-tsc -b on the whole app runs out of heap at Node's default limit (exit 134 on the runner and on an 8 GB host).
       # LEAD exception (22 Oct): 6 GB heap for this step only.
       - name: Type-check (vue-tsc)
