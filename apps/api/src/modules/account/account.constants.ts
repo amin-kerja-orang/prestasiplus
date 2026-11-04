@@ -18,6 +18,7 @@ export const ACCOUNT_AUDIT = {
   PASSWORD_CHANGE_LOCKED: 'account.password.change_locked',
   PROFILE_UPDATED: 'account.profile.updated',
   PICTURE_UPDATED: 'account.picture.updated',
+  TEACHER_PROFILE_UPDATED: 'account.teacher_profile.updated',
 } as const
 
 /** REG-CLOSE: the 403 code and BM message of a closed self-registration (`REGISTRATION_OPEN=false`). */

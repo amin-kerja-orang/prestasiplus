@@ -28277,6 +28277,167 @@
         ],
         "additionalProperties": false
       },
+      "AccountTeacherProfileUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "bio": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1000
+          },
+          "ic": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d{12}$"
+              },
+              {
+                "type": "string",
+                "enum": [
+                  ""
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "12 digits, no hyphen. Blank or absent keeps the stored IC. Never returned."
+          },
+          "subject": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 100
+          },
+          "qualification": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 150
+          },
+          "experienceYears": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 60
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "AccountTeacherProfile": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "bio": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "icMasked": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "subject": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "qualification": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "experienceYears": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 60
+          },
+          "school": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "name",
+          "bio",
+          "icMasked",
+          "subject",
+          "qualification",
+          "experienceYears",
+          "school"
+        ],
+        "additionalProperties": false
+      },
+      "AccountTeacherPublic": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "subject": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bio": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "qualification": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "experienceYears": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 60
+          }
+        },
+        "required": [
+          "name",
+          "subject",
+          "bio",
+          "qualification",
+          "experienceYears"
+        ],
+        "additionalProperties": false
+      },
       "NotificationCategory": {
         "type": "string",
         "enum": [
@@ -101029,6 +101190,252 @@
                 }
               }
             },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/teacher-profile": {
+      "get": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Own teacher profile (API-GUR-22)",
+        "description": "Teacher role only, own data only (no user id parameter). Returns name, bio, the MASKED IC, Subjek Utama, Kelayakan, Pengalaman and the school name (read-only). The full IC, the e-mail and the phone are never returned. Any other role is 403 FORBIDDEN. no-store.",
+        "responses": {
+          "200": {
+            "description": "The own profile.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store (the body carries a credential or token).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AccountTeacherProfile"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (a role other than teacher), or PASSWORD_CHANGE_REQUIRED (shared common code, 403): while the account must change its password (session.mustChangePassword) every authenticated route except GET /session, PUT /me/password and POST /auth/logout answers this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Save own teacher profile (API-GUR-22)",
+        "description": "Teacher role only, own record. Upserts the teaching details (`teacher_profiles`, by user) and writes name and bio. The IC is stored only as a keyed hash and a masked value and is never returned; a blank or absent `ic` keeps the stored one. `schoolId`, `phone`, `email` and any other key are ignored (the school is changed only by Admin Pusat). Rate limited. D57a: this write route is rate limited (RATE_LIMITED, retryAfter, Retry-After); the per-user limit is a platform setting of the implementation. Log redaction (BE-NFR-10, BE-NFR-11): the request body, the IC number, the reset token, the e-mail and every password are never written to application logs, audit rows or error bodies (an e-mail may appear only masked, a token only as its id).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on authenticated mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on authenticated mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountTeacherProfileUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved. status = \"Profil dikemaskini.\".",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store (the body carries a credential or token).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AccountTeacherProfile"
+                    },
+                    "status": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (a role other than teacher), CSRF_INVALID, or PASSWORD_CHANGE_REQUIRED (shared common code, 403): while the account must change its password (session.mustChangePassword) every authenticated route except GET /session, PUT /me/password and POST /auth/logout answers this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (one message per field, the first failing rule). name \"Sila isi nama penuh.\" / \"Nama penuh tidak boleh melebihi 255 aksara.\"; bio \"Bio tidak boleh melebihi 1000 aksara.\"; ic \"No. IC mesti 12 digit tanpa sempang.\" or \"No. IC sudah didaftarkan.\"; subject \"Subjek utama tidak boleh melebihi 100 aksara.\"; qualification \"Kelayakan tidak boleh melebihi 150 aksara.\"; experienceYears \"Pengalaman mesti antara 0 dan 60 tahun.\". Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter seconds in the body and the Retry-After header. \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" (D57a).",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/public/teachers/{id}": {
+      "get": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Teacher card for other teachers (API-GUR-22)",
+        "description": "Despite the path prefix this is NOT public: it needs a session of a teacher, an admin or a school admin (V2 shares the page with other teachers). Any other role, an unknown id or a user who is not an active teacher is a uniform 404 NOT_FOUND (no existence leak, 60 section 1.7). Returns name, Subjek Utama, Bio, Kelayakan and Pengalaman; never the IC, the e-mail, the phone or the school. no-store.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The teacher card.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store (the body carries a credential or token).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AccountTeacherPublic"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND (unknown id, not a teacher, or a role that may not read it).",
             "content": {
               "application/json": {
                 "schema": {

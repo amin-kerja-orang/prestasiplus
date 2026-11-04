@@ -11242,6 +11242,36 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/account/teacher-profile",
+      "method": "GET",
+      "path": "/api/account/teacher-profile",
+      "api_id": "API-GUR-22",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/src/modules/account/teacher-profile.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "PUT /api/account/teacher-profile",
+      "method": "PUT",
+      "path": "/api/account/teacher-profile",
+      "api_id": "API-GUR-22",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/src/modules/account/teacher-profile.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/public/teachers/:p",
+      "method": "GET",
+      "path": "/api/public/teachers/:id",
+      "api_id": "API-GUR-22",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/src/modules/account/teacher-profile.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "GET /api/ai/status",
       "method": "GET",
       "path": "/api/ai/status",

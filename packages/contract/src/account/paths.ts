@@ -4,6 +4,7 @@ import { z } from '../zod'
 import { AUTH_ERROR_MESSAGES } from '../auth/errors'
 import { ErrorBodySchema } from '../common/error'
 import { envelopeOf } from '../common/envelope'
+import { IdSchema } from '../common/ids'
 import {
   ACCOUNT_AUTH_MESSAGES,
   ACCOUNT_MESSAGES,
@@ -36,6 +37,10 @@ import {
   AccountSettingsSchema,
   AccountSettingsUpdateRequestSchema,
   AccountStatusSchema,
+  AccountTeacherProfileSchema,
+  AccountTeacherProfileUpdateRequestSchema,
+  AccountTeacherPublicSchema,
+  ACCOUNT_TEACHER_PROFILE_MESSAGES,
   AccountUserMeSchema,
   accountStatusEnvelopeOf,
 } from './schema'
@@ -67,6 +72,9 @@ export const ACCOUNT_COMPONENT_SCHEMAS = {
   AccountProfileBadge: AccountProfileBadgeSchema,
   AccountProfileSession: AccountProfileSessionSchema,
   AccountProfileActivity: AccountProfileActivitySchema,
+  AccountTeacherProfileUpdateRequest: AccountTeacherProfileUpdateRequestSchema,
+  AccountTeacherProfile: AccountTeacherProfileSchema,
+  AccountTeacherPublic: AccountTeacherPublicSchema,
 } as const
 
 const json = (schema: z.ZodType, description: string) => ({
@@ -98,7 +106,7 @@ const REDACTION_TEXT =
   'Log redaction (BE-NFR-10, BE-NFR-11): the request body, the IC number, the reset token, the e-mail and every password are never written to application logs, audit rows or error bodies (an e-mail may appear only masked, a token only as its id).'
 const WRITE_THROTTLE_TEXT = 'D57a: this write route is rate limited (RATE_LIMITED, retryAfter, Retry-After); the per-user limit is a platform setting of the implementation.'
 
-/** Registers the 11 account routes (register, reset, own profile, settings, public stats). */
+/** Registers the 14 account routes (register, reset, own profile, settings, public stats). */
 export function registerAccountPaths(registry: OpenAPIRegistry): void {
   const csrf = z.object({
     'X-CSRF-Token': z.string().min(1).meta({ description: 'Value of Session.csrf; required on authenticated mutating requests.' }),
@@ -294,5 +302,45 @@ export function registerAccountPaths(registry: OpenAPIRegistry): void {
       200: json(envelopeOf(AccountPlatformStatsSchema), 'The counters.'),
       429: rateLimited(`"${AUTH_ERROR_MESSAGES.RATE_LIMITED}" (D57a).`),
     },
+  })
+
+  registry.registerPath({
+    method: 'get',
+    path: '/account/teacher-profile',
+    tags: ['account'],
+    summary: 'Own teacher profile (API-GUR-22)',
+    description:
+      'Teacher role only, own data only (no user id parameter). Returns name, bio, the MASKED IC, Subjek Utama, Kelayakan, Pengalaman and the school name (read-only). The full IC, the e-mail and the phone are never returned. Any other role is 403 FORBIDDEN. no-store.',
+    responses: { 200: jsonNoStore(envelopeOf(AccountTeacherProfileSchema), 'The own profile.'), 401: unauthorized, 403: err('FORBIDDEN (a role other than teacher), or ' + PCR) },
+  })
+
+  registry.registerPath({
+    method: 'put',
+    path: '/account/teacher-profile',
+    tags: ['account'],
+    summary: 'Save own teacher profile (API-GUR-22)',
+    description:
+      'Teacher role only, own record. Upserts the teaching details (`teacher_profiles`, by user) and writes name and bio. The IC is stored only as a keyed hash and a masked value and is never returned; a blank or absent `ic` keeps the stored one. `schoolId`, `phone`, `email` and any other key are ignored (the school is changed only by Admin Pusat). Rate limited. ' + WRITE_THROTTLE_TEXT + ' ' + REDACTION_TEXT,
+    request: { headers: [csrf], body: body(AccountTeacherProfileUpdateRequestSchema) },
+    responses: {
+      200: jsonNoStore(accountStatusEnvelopeOf(AccountTeacherProfileSchema), `Saved. status = "${ACCOUNT_TEACHER_PROFILE_MESSAGES.saved}".`),
+      401: unauthorized,
+      403: err('FORBIDDEN (a role other than teacher), CSRF_INVALID, or ' + PCR),
+      422: validation(
+        `name "${ACCOUNT_TEACHER_PROFILE_MESSAGES.nameRequired}" / "${ACCOUNT_TEACHER_PROFILE_MESSAGES.nameMax}"; bio "${ACCOUNT_TEACHER_PROFILE_MESSAGES.bioMax}"; ic "${ACCOUNT_TEACHER_PROFILE_MESSAGES.icFormat}" or "${ACCOUNT_TEACHER_PROFILE_MESSAGES.icTaken}"; subject "${ACCOUNT_TEACHER_PROFILE_MESSAGES.subjectMax}"; qualification "${ACCOUNT_TEACHER_PROFILE_MESSAGES.qualificationMax}"; experienceYears "${ACCOUNT_TEACHER_PROFILE_MESSAGES.experienceRange}".`,
+      ),
+      429: rateLimited(`"${AUTH_ERROR_MESSAGES.RATE_LIMITED}" (D57a).`),
+    },
+  })
+
+  registry.registerPath({
+    method: 'get',
+    path: '/public/teachers/{id}',
+    tags: ['account'],
+    summary: 'Teacher card for other teachers (API-GUR-22)',
+    description:
+      'Despite the path prefix this is NOT public: it needs a session of a teacher, an admin or a school admin (V2 shares the page with other teachers). Any other role, an unknown id or a user who is not an active teacher is a uniform 404 NOT_FOUND (no existence leak, 60 section 1.7). Returns name, Subjek Utama, Bio, Kelayakan and Pengalaman; never the IC, the e-mail, the phone or the school. no-store.',
+    request: { params: z.object({ id: IdSchema }) },
+    responses: { 200: jsonNoStore(envelopeOf(AccountTeacherPublicSchema), 'The teacher card.'), 401: unauthorized, 404: err('NOT_FOUND (unknown id, not a teacher, or a role that may not read it).') },
   })
 }
