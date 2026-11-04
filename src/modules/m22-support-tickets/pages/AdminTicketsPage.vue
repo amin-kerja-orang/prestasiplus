@@ -68,7 +68,22 @@ const total = computed(() => data.value?.meta.total ?? 0)
 const matched = computed(() => data.value?.meta.matched ?? 0)
 
 type TicketRow = QueueRow & Record<string, unknown>
-const tableRows = computed(() => rows.value as TicketRow[])
+/** The card fields below `md` read these display texts (the table cells have their own slots). */
+const tableRows = computed<TicketRow[]>(() =>
+  rows.value.map((r) => ({
+    ...r,
+    dateText: formatDateTimeRaw(r.createdAt),
+    userText: r.userName ?? '—',
+    statusText: statusWord(r.status),
+    repliedText: r.replied ? 'Ya' : '—',
+  })),
+)
+const CARD_FIELDS = [
+  { key: 'dateText', label: 'Tarikh' },
+  { key: 'userText', label: 'Pengguna' },
+  { key: 'statusText', label: 'Status' },
+  { key: 'repliedText', label: 'Dibalas' },
+]
 const COLUMNS: TableColumn<TicketRow>[] = [
   { id: 'date', header: 'Tarikh' },
   { id: 'user', header: 'Pengguna' },
@@ -193,6 +208,7 @@ async function changeStatus(value: unknown): Promise<void> {
         :page="data.meta.page"
         :page-size="data.meta.perPage"
         card-title="subject"
+        :card-fields="CARD_FIELDS"
         data-testid="tq-table"
         @update:page="goToPage"
         @row-click="openDetail"
@@ -209,13 +225,6 @@ async function changeStatus(value: unknown): Promise<void> {
           <UBadge color="neutral" variant="subtle" :label="statusWord(row.original.status)" />
         </template>
         <template #replied-cell="{ row }">{{ row.original.replied ? 'Ya' : '—' }}</template>
-        <template #card="{ row }">
-          <p class="text-body text-highlighted" data-testid="tq-row">{{ row.subject }}</p>
-          <p class="text-label text-muted">
-            {{ row.userName ?? '—' }} · {{ formatDateTimeRaw(row.createdAt as string) }}
-          </p>
-          <UBadge class="w-fit" color="neutral" variant="subtle" :label="statusWord(row.status as string)" />
-        </template>
       </DsDataTable>
     </template>
     <DsLoadError v-else-if="error" :message="error.message" testid="tq-error" @retry="reload" />

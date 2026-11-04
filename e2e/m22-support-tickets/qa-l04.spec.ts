@@ -296,7 +296,9 @@ test.describe('R1-ADM-P2-20 detail and status', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp(QUEUE)
-    await page.getByTestId('tq-row').first().click()
+    // Below 768 px a card opens the detail from its title button, from 768 px the table row opens it.
+    if (viewportWidth(page) < 768) await page.locator('[data-testid="tq-table"] li button').first().click()
+    else await page.getByTestId('tq-row').first().click()
     const dialog = page.getByTestId('tq-detail')
     await expect(dialog).toBeVisible()
     await expect(page.getByTestId('def-subject')).toContainText('Subjek')

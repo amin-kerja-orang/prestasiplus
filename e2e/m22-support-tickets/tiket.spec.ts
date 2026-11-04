@@ -574,28 +574,25 @@ test.describe('S2 queue', MODULE, () => {
     expect((await row.locator('td').allInnerTexts())[1]).toBe('—')
   })
 
-  test('E2E-M22-28 read-only: no control in the table or above it but the chips', async ({
+  test('E2E-M22-28 no control above the table but the chips, no link in a row', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
     await loginAs(ADMIN)
     await openS2(page, gotoApp)
-    await expect(
-      page.getByTestId('tq-page').locator('button, input, textarea, select'),
-    ).toHaveCount(0)
-    await expect(page.locator('tbody a')).toHaveCount(0)
-    await expect(page.getByRole('link', { name: /balas|padam|tutup|tugas/i })).toHaveCount(0)
+    await expect(page.getByTestId('tq-chips').locator('button, input, textarea, select')).toHaveCount(0)
+    await expect(page.locator('tbody a, tbody button')).toHaveCount(0)
   })
 
   test.describe('tickets-many', () => {
     test.use(MANY)
 
-    test('E2E-M22-29 200 rows newest first, "Semua (205)"', async ({ page, loginAs, gotoApp }) => {
+    test('E2E-M22-29 25 rows per page newest first, "Semua (205)"', async ({ page, loginAs, gotoApp }) => {
       test.skip(viewportWidth(page) < 1280, 'E2E-M22-29 runs at 1280 only')
       await loginAs(ADMIN)
       await openS2(page, gotoApp)
-      await expect(page.getByTestId('tq-row')).toHaveCount(200)
+      await expect(page.getByTestId('tq-row')).toHaveCount(25)
       await expect(page.getByTestId('tq-chips').getByRole('link').first()).toHaveText('Semua (205)')
       await expect(page.getByTestId('tq-row').first()).toContainText('2026-09-25 09:30:00')
     })

@@ -424,7 +424,6 @@
     "src/modules/m21-sponsorship/components/mohon/MohonInfoBox.vue": 3,
     "src/modules/m21-sponsorship/components/mohon/ReasonExamples.vue": 4,
     "src/modules/m21-sponsorship/pages/MohonKeluargaAngkatPage.vue": 7,
-    "src/modules/m22-support-tickets/pages/AdminTicketsPage.vue": 2,
     "src/modules/m22-support-tickets/pages/TicketsPage.vue": 7,
     "src/modules/m25-ai-centre/components/heatmap/CikguPakarBlock.vue": 7,
     "src/modules/m25-ai-centre/components/heatmap/HeatmapHero.vue": 5,
