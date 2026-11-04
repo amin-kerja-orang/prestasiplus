@@ -170,7 +170,42 @@ describe('DsErrorPage', () => {
   it('has default BM copy per code and one h1', () => {
     const w = mount(DsErrorPage, { props: { code: 403 } })
     expect(w.get('h1').text()).toBe('Akses Ditolak')
+    expect(w.text()).toContain(
+      'Anda tidak mempunyai kebenaran untuk mengakses halaman ini. Sila log masuk dengan akaun yang betul atau hubungi pentadbir.',
+    )
     expect(mount(DsErrorPage).get('h1').text()).toBe('Halaman Tidak Dijumpai')
+  })
+  it('renders the 503 maintenance copy', () => {
+    const w = mount(DsErrorPage, { props: { code: 503 } })
+    expect(w.get('h1').text()).toBe('Penyelenggaraan Sedang Dijalankan')
+    expect(w.text()).toContain(
+      'Sistem sedang diselenggara buat sementara waktu. Sila cuba semula dalam beberapa minit.',
+    )
+  })
+  it('500 uses the X10.3.8 copy', () => {
+    const w = mount(DsErrorPage, { props: { code: 500 } })
+    expect(w.get('h1').text()).toBe('Ralat Pelayan')
+    expect(w.text()).toContain('Sesuatu tidak kena di pihak kami.')
+  })
+  it('shows Rujukan only on 5xx with a requestId', () => {
+    for (const code of [500, 503] as const) {
+      const w = mount(DsErrorPage, { props: { code, requestId: 'req-123' } })
+      expect(w.get('[data-ds=error-reference]').text()).toContain('Rujukan: req-123')
+      expect(w.text()).toContain('Salin')
+      expect(w.get('[data-ds=error-reference-copy]').classes()).toContain('min-h-11')
+    }
+    expect(mount(DsErrorPage, { props: { code: 500 } }).text()).not.toContain('Rujukan')
+    for (const code of [403, 404] as const) {
+      const w = mount(DsErrorPage, { props: { code, requestId: 'req-123' } })
+      expect(w.text()).not.toContain('Rujukan')
+    }
+  })
+  it('Salin copies the request id', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    const w = mount(DsErrorPage, { props: { code: 500, requestId: 'req-123' } })
+    await w.get('[data-ds=error-reference-copy]').trigger('click')
+    expect(writeText).toHaveBeenCalledWith('req-123')
   })
   it('learner shows the friend instead of the glyph', () => {
     const w = mount(DsThemeScope, {
