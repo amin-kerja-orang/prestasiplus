@@ -12,7 +12,6 @@ import {
   type IntakeFileProgress,
   type IntakeFileSummary,
   type IntakeFileStatus,
-  type IntakePaperType,
   type IntakeTextBlock,
 } from '@pp/contract'
 
@@ -47,8 +46,8 @@ export interface BatchRow {
   status: string
   paperType: string
   subject: string
-  kertas: number
-  year: number
+  kertas: number | null
+  year: number | null
   sourceText: string
   rightsStatus: string
   note: string | null
@@ -73,9 +72,9 @@ export function toBatchSummary(row: BatchRow, counts: BatchItemCounts = NO_ITEMS
     id: idToString(row.id),
     status: row.status as IntakeBatchStatus,
     statusLabel: INTAKE_BATCH_STATUS_LABELS[row.status as IntakeBatchStatus],
-    paperType: row.paperType as IntakePaperType,
+    paperType: row.paperType as IntakeBatchSummary['paperType'],
     subject: row.subject,
-    kertas: row.kertas === 2 ? 2 : 1,
+    kertas: row.kertas === null ? null : row.kertas === 2 ? 2 : 1,
     year: row.year,
     source: row.sourceText,
     copyright: rightsToWire(row.rightsStatus),

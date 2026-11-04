@@ -742,13 +742,12 @@ const SCOPE_DUPLICATE_IDS: ReadonlySet<string> = new Set(['cikgu-alesa-chat'])
 /** The "Tetapan Peribadi" entry lives in the Pusat AI block on live; scope mode moves it. */
 const SETTINGS_ID = 'tetapan-peribadi'
 /**
- * Student menu items with no student screen (the route redirects to /dashboard or refuses the
- * pupil with a 403): hidden, recorded in `docs/requirements/v2-pentadbiran-backlog.md` (student
- * hidden items).
+ * Student menu items with no student screen (the pupil has no Laporan Mingguan row in the
+ * matrix): hidden, recorded in `docs/requirements/v2-pentadbiran-backlog.md` (student hidden
+ * items). Headcount and Analisa Item are shown to the pupil (S0-T05); Laporan Soalan is added by
+ * S5-T06.
  */
 const STUDENT_HIDDEN_IDS: ReadonlySet<string> = new Set([
-  'analisa-item',
-  'headcount',
   'laporan-mingguan',
 ])
 /** Profile entries of each role: scope mode puts "Tetapan Peribadi" right after them. */
@@ -803,8 +802,7 @@ export function navFor(
   // Release 1.0 scope: items listed in out-of-scope.ts stay in the data but are not rendered.
   // With the v2 prototype scope on (D43), role-access-matrix.md governs the menu instead, so the
   // Release 1.0 list is skipped there (it would hide matrix screens such as Laporan Mingguan).
-  // With the scope off the student also loses the items with no student screen (STUDENT_HIDDEN_IDS:
-  // `/headcount` refuses the role, `/analisa-item` bounces to /dashboard), as with the scope on.
+  // The student loses the items with no student screen (STUDENT_HIDDEN_IDS) in both modes.
   const inScope = (entry: NavEntry): boolean =>
     options.includeOutOfScope === true ||
     isPrototypeScopeOn() ||

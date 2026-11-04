@@ -12,7 +12,7 @@ import { PaperUploadInterceptor } from '../../src/modules/classes/question-sets/
 import { PaperUploadSlots } from '../../src/modules/classes/question-sets/paper-upload.slots'
 import { cleanName } from '../../src/modules/classes/question-sets/question-papers'
 import { PAPER_MAX_BODY_BYTES } from '../../src/modules/classes/question-sets/question-sets.constants'
-import { QuestionSetsPorts, type PaperSubmission } from '../../src/modules/classes/question-sets'
+import type { PaperSubmission } from '../../src/modules/classes/question-sets'
 import { STUDENT_1, TEACHER_A, bootQsApp, bytes, classWith, client, eligibleQuestionIds, idOfEmail, insertSession, insertSet, type Client, type QsTestApp } from './qs-helpers'
 
 const FIELDS = { jenisSoalan: 'Trial Paper', subject: 'Matematik' }
@@ -129,14 +129,12 @@ describe('BE-18 B: paper upload guards (integration)', () => {
   beforeAll(async () => {
     t = await bootQsApp()
     teacher = await client(t, TEACHER_A)
-    t.get(QuestionSetsPorts).provideIntake({
-      async submit(s) {
-        seen.push(s)
-        entered()
-        await gate
-        return paperOf(s)
-      },
-    })
+    t.intake.handler = async (s) => {
+      seen.push(s)
+      entered()
+      await gate
+      return paperOf(s)
+    }
   })
   afterAll(async () => {
     await t.close()

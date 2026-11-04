@@ -11,7 +11,7 @@ import { DsEmptyState, DsHeroCard } from '@/ds'
 import { useApi } from '@/composables/useApi'
 
 import PastSittingsLink from '../components/PastSittingsLink.vue'
-import RichText from '../components/RichText.vue'
+import { RichText } from '../../../components/question-display'
 import { formatClock } from '../domain/paper-model'
 import type { AttemptMode } from '../domain/types'
 import { useBijakUser, useLearnerTheme } from '../lib/use-bijak'

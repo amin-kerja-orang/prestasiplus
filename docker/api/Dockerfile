@@ -26,6 +26,7 @@ COPY apps/api ./apps/api
 # DSKP extracts read by the seed (curriculum.ts: ../../../../docs/reference/dskp = /app/docs/reference/dskp).
 # Build stage only (the migrate job); the runtime image does not read them.
 COPY docs/reference/dskp ./docs/reference/dskp
+COPY docs/reference/blueprints ./docs/reference/blueprints
 # Lint, type-check and tests run in CI, not here.
 RUN npm run be:build
 

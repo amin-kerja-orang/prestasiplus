@@ -6,8 +6,8 @@
  */
 import { computed } from 'vue'
 
-import type { StimulusDef } from '../domain/types'
-import { groupLabel } from '../lib/stimulus-data'
+import type { StimulusDef } from '@/modules/m28-bijak-spm/domain/types'
+import { groupLabel } from './lib/stimulus-data'
 import StimulusView from './StimulusView.vue'
 
 const props = defineProps<{ stimuli: readonly StimulusDef[] }>()
