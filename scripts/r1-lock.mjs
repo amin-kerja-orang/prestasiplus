@@ -33,7 +33,8 @@
 // KEY forms: team-<name> | S<n> | S<n>-T<nn>.   Team name: ^team-[a-z0-9-]{2,30}$
 // Exit codes: 0 ok | 2 usage or setup error | 3 held by another team (pick another card or sector), or the team
 //             token is missing or wrong (the team name belongs to a team whose token you do not have) |
-//             4 you are not the holder, or your team does not hold the sector of that card.
+//             4 you are not the holder, your team does not hold the sector of that card, or your team is not registered
+//               (run register-team first; only register-team writes team keys).
 // register-team: the team key is held by one session (the lead). The same team name from a DIFFERENT session
 // is treated as a name clash (exit 3); pick another name. Other commands treat the same team as the holder.
 import { spawn, spawnSync } from 'node:child_process'
@@ -192,10 +193,11 @@ function printToken(team, token) {
 const tokenMsg = (team, why) => `${why} Pasukan ${team} dilindungi token; guna "join --team ${team} --token <token>" atau env R1_TEAM_TOKEN. / Team ${team} is token-protected; run "join --team ${team} --token <token>" or set env R1_TEAM_TOKEN.`
 
 // Returns null when allowed, else the exit code (message already printed).
-// No team lock, or a legacy team lock with no tokenHash: allowed (as before the token fix).
+// No team lock: exit 4 (register first). A legacy team lock with no tokenHash: allowed (as before the token fix).
 function requireToken(cwd, remote, w, env) {
   const cur = readLock(cwd, remote, w.team)
-  if (!cur || !cur.data.tokenHash) return null
+  if (!cur) { console.error(`Pasukan ${w.team} belum didaftar: jalankan register-team dahulu. / Team not registered: run register-team first.`); return 4 }
+  if (!cur.data.tokenHash) return null
   const tok = findToken(cwd, env, w.team)
   if (!tok) { console.error(tokenMsg(w.team, 'Token pasukan tiada. / Team token missing.')); return 3 }
   if (!hashMatches(tok, cur.data.tokenHash)) { console.error(tokenMsg(w.team, 'Token pasukan salah. / Team token wrong.')); return 3 }
@@ -325,7 +327,8 @@ EXIT CODES
   2  usage or setup error (bad key, missing --team/--session, not a git repository, no push rights)
   3  held by another team: pick another sector or card (or wait; ask in the pinned issue #503).
      Also: the team token is missing or wrong (get the token from your lead, then run join, or set R1_TEAM_TOKEN)
-  4  you are not the holder, or your team does not hold the sector of that card (acquire the sector first)
+  4  you are not the holder, your team does not hold the sector of that card (acquire the sector first),
+     or your team is not registered (run register-team first)
 
 TEAM TOKEN  register-team and acquire/heartbeat/heartbeat-all/release need the token of a team that has one. list, mine,
   break and --help need none. The lead gives the token to each session privately; never put it in an issue, PR or commit.
@@ -386,7 +389,7 @@ function main(argv, { cwd = process.cwd(), env = process.env } = {}) {
     case 'acquire': {
       const w = needSession(who(flags, env))
       validKey(key)
-      if (TEAM_RE.test(key) && key !== w.team) throw new Fail(2, 'Kunci pasukan hanya boleh didaftar oleh pasukan itu sendiri (guna register-team) / team key is only for your own team.')
+      if (TEAM_RE.test(key)) throw new Fail(2, 'Kunci pasukan hanya ditulis oleh register-team; guna register-team. / Team keys are written only by register-team; use register-team.')
       const denied = requireToken(cwd, remote, w, env)
       if (denied) return denied
       const c = key.match(CARD_RE)
@@ -598,6 +601,12 @@ async function selfTest() {
     expect('legacy after claim: no token now fails (exit 3)', cli('a', L('acquire', 'l1', 'S6')), 3)
     expect('legacy after claim: claim-token without token (exit 3)', cli('a', L('claim-token', 'l1')), 3)
     expect('legacy after claim: claim-token with token is a no-op', cli('c', L('claim-token', 'l1')), 0, 'sepadan')
+    expect('acquire of a team key is refused (exit 2, use register-team)', cli('a', ['acquire', 'team-zz', '--team', 'team-zz', '--session', 's1']), 2, 'register-team')
+    check('squat attempt wrote no team-zz lock', !cli('a', ['list']).text.includes('team-zz'))
+    expect('unregistered team: acquire sector (exit 4)', cli('a', ['acquire', 'S3', '--team', 'team-ghost', '--session', 's1']), 4, 'register-team')
+    expect('unregistered team: heartbeat (exit 4)', cli('a', ['heartbeat', 'S3', '--team', 'team-ghost', '--session', 's1']), 4)
+    expect('unregistered team: heartbeat-all (exit 4)', cli('a', ['heartbeat-all', '--team', 'team-ghost', '--session', 's1']), 4)
+    expect('unregistered team: release (exit 4)', cli('a', ['release', 'S3', '--team', 'team-ghost', '--session', 's1']), 4)
     legacy('team-lh', 'h1')
     const rl = cli('c', ['register-team', '--team', 'team-lh', '--session', 'h1'])
     const lhToken = (rl.text.match(/--token (\S+)/) ?? [])[1] ?? ''
