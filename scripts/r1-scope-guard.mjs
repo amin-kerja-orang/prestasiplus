@@ -7,6 +7,7 @@
 //   node scripts/r1-scope-guard.mjs [--base <ref>] [--head <ref>] [--body-file <path> | env PR_BODY] [--plan <path>]
 //                                   [--labels a,b,c | --labels-file <path> | env PR_LABELS]
 //   node scripts/r1-scope-guard.mjs --self-test
+// A PR whose changed files are all under docs/ needs no card: it prints `docs-only PR: no card` and exits 0.
 // Exit 1 on any FAIL, 0 otherwise (WARN does not fail).
 //
 // Cross-sector small PRs (R1-START-HERE decision 7, plan 6.4; F-08):
@@ -225,6 +226,13 @@ export function analyze({ cwd, base, head, body, planText, labels = [] }) {
   const warns = []
   const out = { card: null, type: null, fails, warns }
 
+  // Docs-only PR (every changed file under docs/): no card needed, nothing else is checked. An empty diff is not docs-only.
+  const changed = git(cwd, ['diff', '--name-only', '--no-renames', `${base}...${head}`]).split('\n').filter(Boolean).map(norm)
+  if (changed.length && changed.every((f) => f.startsWith('docs/'))) {
+    out.docsOnly = true
+    return out
+  }
+
   const idMatch = (body ?? '').match(CARD_IN_BODY_RE)
   if (!idMatch) {
     fails.push({ rule: 'NO_CARD', file: null, msg_bm: 'PR mesti menyebut ID kad (cth. S1-T02).', msg_en: 'PR must name a card ID (e.g. S1-T02).' })
@@ -367,7 +375,7 @@ export function similarModels(a, b) {
   return lim > 0 && levenshtein(x, y) <= lim
 }
 
-function checkNoDuplicates({ cwd, head, mergeBase, range, entries, body, hasId, cardId, cards, fails, warns }) {
+function checkNoDuplicates({ cwd, head, mergeBase, range, entries, hasId, cardId, cards, fails, warns }) {
   const baseText = gitShowOrNull(cwd, mergeBase, MAP_PATH)
   if (!baseText) return // no map in the base yet: nothing to compare with
   const baseMap = JSON.parse(baseText)
@@ -399,7 +407,6 @@ function checkNoDuplicates({ cwd, head, mergeBase, range, entries, body, hasId, 
     collectConsts('\n' + g, consts)
   } catch { /* none */ }
 
-  const fresh = (items, keyOf, baseKeys, baseItemsOfFile) => items.filter((it) => !baseKeys.has(keyOf(it)) && !baseItemsOfFile.has(keyOf(it)))
   const keysOf = (arr, f) => new Set((arr ?? []).map(f))
   const oldKeys = (e, extract, keyOf) => {
     if (e.st === 'A') return new Set()
@@ -732,6 +739,9 @@ function selfTest() {
   const eq = (name, got, want) => results.push({ name, ok: JSON.stringify(got) === JSON.stringify(want), detail: `got ${JSON.stringify(got)} want ${JSON.stringify(want)}` })
   eq('parseCrossSectors: list', [...parseCrossSectors('x\nCross-sector: S3, S5 (why S7)\n')], [3, 5])
   eq('parseCrossSectors: template placeholder = none', [...parseCrossSectors('Cross-sector: none | `Cross-sector: S<n> (reason)`')], [])
+  const docsOnly = (c) => write(c, 'docs/plan/x.md', 'x\n')
+  run('docs-only PR without a card passes', 'no card here', docsOnly, { exact: true })
+  run('docs plus a src file without a card still fails NO_CARD', 'no card here', (c) => { docsOnly(c); touchA(c) }, { fail: ['NO_CARD'], exact: true })
   eq('parseLabels: comma, newline and JSON', [parseLabels('a, needs:S3'), parseLabels('a\nb'), parseLabels('[{"name":"x"},"y"]')], [['a', 'needs:S3'], ['a', 'b'], ['x', 'y']])
   eq('sectorOf: examples', [sectorOf('src/modules/m05-practice/a.ts'), sectorOf('src/modules/m28-bijak-spm/components/RichText.vue'), sectorOf('src/modules/m28-bijak-spm/pages/X.vue'), sectorOf('README.md'), sectorOf('apps/api/prisma/migrations/0181_s5_x/migration.sql')], [5, 8, 3, null, 5])
 
@@ -758,7 +768,7 @@ function main() {
   let res
   try { res = analyze({ cwd: process.cwd(), base, head, body, labels, planText: readFileSync(planPath, 'utf8') }) }
   catch (e) { console.error(`Ralat git / git error (base=${base} head=${head}): ${e.stderr || e.message}`); process.exit(2) }
-  console.log(report(res))
+  console.log(res.docsOnly ? 'docs-only PR: no card' : report(res))
   process.exit(res.fails.length ? 1 : 0)
 }
 
