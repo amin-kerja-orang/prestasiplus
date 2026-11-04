@@ -240,6 +240,8 @@ SPM-bound = the subject is in the SPM catalogue and Tingkatan is 4 or 5; it deci
 
 Scheme v2 (section 3.1.7) widens `points` and `rubric` and adds question-level rules (`scheme_rules`, DM-54).
 
+Field constraints per leaf mode (D115, from V3 code): `mcq` 3 to 8 options (`lib/studio/draft.ts:15-16`); `match_letter` option letters `A` to `H` (`packages/contract/src/questions/parts.ts:38`); `essay_choice` 2 to 6 topics (`parts.ts:31`); `essay` word range 0 to 5000, min <= max; V3 Studio today edits only `mcq`, `short_text`, `numeric` (S2-T10 adds the other six). BI P2 rubric test data: worked examples of section 7.4. UI: keep the V3 layout; V2 is a reference for function only.
+
 ### 2.7 Bilingual text
 
 - Field `Bahasa soalan` (stored `language`): `Bahasa Melayu` (`ms`, default; `bm` is accepted on input and stored as `ms`), `English` (`en`), `BM + English (dwibahasa)` (`ms+en`, NEW value). Field `Jenis tulisan` (`rumi` default, `arab`, `jawi`, `mixed`) is shown only for the Islamic and Arabic subjects (OPT).
