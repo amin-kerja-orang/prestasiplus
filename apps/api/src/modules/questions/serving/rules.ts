@@ -239,33 +239,43 @@ export function fileIdsOf(live: QuestionRecord, groupAssetIds: readonly string[]
  * past the target is skipped (so the result may hold fewer than `n`). PURE. Callers pass the SERVABLE candidates and, when they know
  * it, each group's `groupSize` so a group with a member that is not servable is skipped, never half served.
  */
-export interface DrawCandidate {
+interface DrawCandidateBase {
   id: string
-  /** `questions.group_id`, or null for a standalone question. */
-  groupId: string | null
-  /** `questions.group_position` (order inside the group). */
-  groupPosition: number | null
-  /** Members the group holds in all; when set and more than the candidates carry, the group is skipped. */
-  groupSize?: number | null
 }
+/** A standalone question, or a member of a group: a member MUST carry `groupSize` (members the group holds in all). */
+export type DrawCandidate =
+  | (DrawCandidateBase & { groupId: null; groupPosition: null; groupSize?: undefined })
+  | (DrawCandidateBase & {
+      /** `questions.group_id`. */
+      groupId: string
+      /** `questions.group_position` (order inside the group). */
+      groupPosition: number | null
+      /** Members the group holds in all; a group whose distinct candidate members differ from it is skipped, never half drawn. */
+      groupSize: number
+    })
 
 /** Ids of the drawn units, flattened: units in draw order, the members of a group contiguous in group order. At most `n` ids. */
 export function drawUnits(candidates: readonly DrawCandidate[], n: number, rng: { next(): number }): string[] {
   if (!(n > 0)) return []
   const singles: DrawCandidate[][] = []
-  const groups = new Map<string, DrawCandidate[]>()
+  const groups = new Map<string, Map<string, DrawCandidate>>()
+  const seenSingles = new Set<string>()
   for (const c of candidates) {
-    if (c.groupId === null) singles.push([c])
-    else {
-      const list = groups.get(c.groupId)
-      if (list) list.push(c)
-      else groups.set(c.groupId, [c])
+    if (c.groupId === null) {
+      if (!seenSingles.has(c.id)) singles.push([c])
+      seenSingles.add(c.id)
+    } else {
+      const list = groups.get(c.groupId) ?? new Map<string, DrawCandidate>()
+      list.set(c.id, c) // a duplicate id is one member
+      groups.set(c.groupId, list)
     }
   }
   const units: DrawCandidate[][] = [...singles]
-  for (const members of groups.values()) {
-    const size = members.reduce<number | null>((acc, m) => (m.groupSize != null && (acc === null || m.groupSize > acc) ? m.groupSize : acc), null)
-    if (size !== null && members.length < size) continue // a member is not servable: the whole group is out
+  for (const map of groups.values()) {
+    const members = [...map.values()]
+    const size = members[0]?.groupSize
+    // A missing size (untyped caller) or a member count that is not the group's size: the whole group is out, never half drawn.
+    if (typeof size !== 'number' || members.some((m) => m.groupSize !== size) || members.length !== size) continue
     units.push([...members].sort((a, b) => (a.groupPosition ?? 0) - (b.groupPosition ?? 0) || a.id.localeCompare(b.id, undefined, { numeric: true })))
   }
   for (let i = units.length - 1; i > 0; i -= 1) {

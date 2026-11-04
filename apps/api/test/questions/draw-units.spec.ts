@@ -28,9 +28,31 @@ describe('drawUnits (S1-T06)', () => {
     expect(drawUnits(c, 5, mulberry32(3))).toEqual(['2'])
   })
 
+  it('skips a group whose members carry no groupSize (never partially drawn)', () => {
+    const c = [
+      { id: '1', groupId: 'g', groupPosition: 1 },
+      { id: '2', groupId: 'g', groupPosition: 2 },
+      { id: '3', groupId: null, groupPosition: null },
+    ] as unknown as DrawCandidate[]
+    for (let seed = 1; seed <= 20; seed += 1) expect(drawUnits(c, 5, mulberry32(seed))).toEqual(['3'])
+  })
+
+  it('a duplicate member id is one member: no double count, no split', () => {
+    const c: DrawCandidate[] = [
+      { id: '1', groupId: 'g', groupPosition: 1, groupSize: 2 },
+      { id: '1', groupId: 'g', groupPosition: 1, groupSize: 2 },
+    ]
+    expect(drawUnits(c, 5, mulberry32(1))).toEqual([]) // one distinct member of two: the group is out
+    const full: DrawCandidate[] = [...c, { id: '2', groupId: 'g', groupPosition: 2, groupSize: 2 }, { id: '9', groupId: null, groupPosition: null }, { id: '9', groupId: null, groupPosition: null }]
+    const out = drawUnits(full, 5, mulberry32(1))
+    expect([...out].sort()).toEqual(['1', '2', '9'])
+    expect(out.filter((x) => x !== '9')).toEqual(['1', '2'])
+  })
+
   it('property: 1000 random draws never return a member without its group, never split a group, and stay within n', () => {
     const rng = mulberry32(2026)
     const rnd = (k: number) => Math.floor(rng.next() * k)
+    let groupsDrawn = 0
     for (let round = 0; round < 1000; round += 1) {
       const cands: DrawCandidate[] = []
       const size = new Map<string, number>()
@@ -58,6 +80,7 @@ describe('drawUnits (S1-T06)', () => {
         seen.set(c.groupId, [...(seen.get(c.groupId) ?? []), c.groupPosition!])
         indexOf.set(c.groupId, [...(indexOf.get(c.groupId) ?? []), i])
       })
+      groupsDrawn += seen.size
       for (const [gid, positions] of seen) {
         expect(positions.length, `group ${gid} whole`).toBe(size.get(gid))
         expect(positions, `group ${gid} in order`).toEqual([...positions].sort((a, b) => a - b))
@@ -65,5 +88,6 @@ describe('drawUnits (S1-T06)', () => {
         expect(idx[idx.length - 1]! - idx[0]! + 1, `group ${gid} contiguous`).toBe(idx.length)
       }
     }
+    expect(groupsDrawn, 'a function that returns nothing must fail').toBeGreaterThan(0)
   })
 })

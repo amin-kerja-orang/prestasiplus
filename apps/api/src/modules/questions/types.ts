@@ -276,7 +276,7 @@ export interface QuestionFilter {
   mcqShape?: { minOptions: number; maxOptions: number; allowStimulus?: boolean }
   /**
    * S1-T06 (D105): the whole-group predicate for the surfaces that serve figure questions and whole stimulus groups. A question
-   * outside a group passes; a group member passes only when its whole group is complete (`whole-group.ts`). Use INSTEAD of `ungrouped`.
+   * outside a group passes; a group member passes only when its whole group is complete (`groupCompleteSql` in `questions.repository.ts`). Use INSTEAD of `ungrouped`.
    * With `mcqShape.allowStimulus: true` (own or group stimulus and option images allowed; one MCQ leaf, option count and key still checked).
    */
   wholeGroups?: boolean

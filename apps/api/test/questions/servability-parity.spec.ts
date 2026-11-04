@@ -559,4 +559,49 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     expect(await reasons(served, 'latih_tubi_spm')).toEqual([])
     expect(new Set(await repo.eligibleAmong([served, draft], filterOf('latih_tubi_spm', {}, all)))).toEqual(new Set([served, draft]))
   })
+
+  it('S1-T06: incompleteGroups / groupCompleteSql edge cases (archived and inactive member, no stimulus, no member)', async () => {
+    const mkGroup = async (label: string): Promise<string> => {
+      const passage = await svc.createStimulus({ kind: 'passage', label, bodyMs: 'Teks.', bodyEn: null, altText: null, assetFileId: null })
+      return svc.createStimulusGroup({ label, scope: 'section', stimulusIds: [passage], optionBank: [] })
+    }
+    // Two approved members plus an archived one (latest archived, no live version): the archived member is NOT a gap (documented rule).
+    const gArch = await mkGroup('Kumpulan arkib')
+    const a1 = await publish('archA1', 'Ahli satu kumpulan arkib untuk kesamaan kebolehhidangan.', { stimulusGroupId: gArch })
+    await publish('archA2', 'Ahli dua kumpulan arkib untuk kesamaan kebolehhidangan.', { stimulusGroupId: gArch })
+    const archived = await publish('archA3', 'Ahli diarkibkan kumpulan arkib untuk kesamaan kebolehhidangan.', { stimulusGroupId: gArch })
+    await q(`update question_versions set status = 'archived' where question_id = $1`, [archived])
+    await q(`update questions set live_version_no = null where id = $1`, [archived])
+    // Two approved members, one inactive: that member is a gap (count 1).
+    const gInact = await mkGroup('Kumpulan tidak aktif')
+    await publish('inA1', 'Ahli satu kumpulan tidak aktif untuk kesamaan kebolehhidangan.', { stimulusGroupId: gInact })
+    const inactive = await publish('inA2', 'Ahli dua kumpulan tidak aktif untuk kesamaan kebolehhidangan.', { stimulusGroupId: gInact })
+    await q(`update questions set is_active = false where id = $1`, [inactive])
+    // A group that lost its stimulus: incomplete, with 0 gap members.
+    const gNoStim = await mkGroup('Kumpulan tanpa rangsangan')
+    const ns = await publish('nsA1', 'Ahli kumpulan tanpa rangsangan untuk kesamaan kebolehhidangan.', { stimulusGroupId: gNoStim })
+    await q(`delete from stimulus_group_stimuli where group_id = $1`, [gNoStim])
+    // A group with a stimulus and no member at all: nothing to serve and nothing missing, so it is not reported incomplete.
+    const gEmpty = await mkGroup('Kumpulan kosong')
+    // A group with no stimulus and no member: incomplete (0 gaps).
+    const gEmptyNoStim = await mkGroup('Kumpulan kosong tanpa rangsangan')
+    await q(`delete from stimulus_group_stimuli where group_id = $1`, [gEmptyNoStim])
+
+    const gaps = await repo.incompleteGroups([gArch, gInact, gNoStim, gEmpty, gEmptyNoStim, '999999999'])
+    expect(gaps.has(gArch), 'archived member is not a gap').toBe(false)
+    expect(gaps.get(gInact), 'inactive member is a gap').toBe(1)
+    expect(gaps.get(gNoStim), 'no stimulus: incomplete, 0 gaps').toBe(0)
+    expect(gaps.has(gEmpty), 'no member, has stimulus').toBe(false)
+    expect(gaps.get(gEmptyNoStim), 'no member, no stimulus').toBe(0)
+    expect(gaps.has('999999999')).toBe(false)
+    expect((await repo.incompleteGroups([])).size).toBe(0)
+
+    // The SQL draw agrees: the complete group's live members pass, the others fail as a whole.
+    const all = [...ALL_GROUP_SURFACES]
+    const pass = async (ids: string[]) => new Set(await repo.eligibleAmong(ids, filterOf('latih_tubi_spm', {}, all)))
+    const ok = await pass([a1, made.archA2!])
+    expect(ok.has(a1) && ok.has(made.archA2!)).toBe(true)
+    const bad = await pass([made.inA1!, inactive, ns])
+    expect(bad.size).toBe(0)
+  })
 })
