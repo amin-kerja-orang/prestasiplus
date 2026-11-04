@@ -245,8 +245,8 @@ describe('videos', () => {
   const card = { id: '9', title: 'Tips SPM', platformLabel: 'YouTube', thumbnailUrl: null, views: 3, createdAt: AT, uploader, category: 'tips-spm', categoryLabel: 'Tips SPM', subject: { id: '3', name: 'Matematik' } }
   const detail = {
     ...card,
-    videoUrl: 'https://www.youtube.com/watch?v=abc123',
-    embedUrl: 'https://www.youtube.com/embed/abc123',
+    videoUrl: 'https://www.youtube.com/watch?v=aB3_dE-7hJk',
+    embedUrl: 'https://www.youtube.com/embed/aB3_dE-7hJk',
     platform: 'Youtube',
     description: null,
     visibility: 'global',
@@ -283,7 +283,7 @@ describe('videos', () => {
   })
 
   it('create body: required fields, http(s) URL, category and visibility', () => {
-    const body = { videoUrl: 'https://youtu.be/abc123', title: 'Tips SPM', category: 'tips-spm', visibility: 'global' }
+    const body = { videoUrl: 'https://youtu.be/aB3_dE-7hJk', title: 'Tips SPM', category: 'tips-spm', visibility: 'global' }
     expect(ok(VideoCreateRequestSchema, body)).toBe(true)
     expect(ok(VideoCreateRequestSchema, { ...body, description: null, subjectId: '3', visibility: 'school' })).toBe(true)
     for (const bad of [
@@ -301,7 +301,7 @@ describe('videos', () => {
   })
 
   it('create body: visibility is optional (ignored by the server) and the title may be 150 characters', () => {
-    const body = { videoUrl: 'https://youtu.be/abc123', title: 't'.repeat(150), category: 'lain-lain' }
+    const body = { videoUrl: 'https://youtu.be/aB3_dE-7hJk', title: 't'.repeat(150), category: 'lain-lain' }
     expect(ok(VideoCreateRequestSchema, body)).toBe(true)
   })
 
@@ -325,13 +325,13 @@ describe('videos', () => {
 
   it('isYoutubeVideoUrl accepts YouTube video links only', () => {
     for (const good of [
-      'https://youtu.be/abc123',
-      'http://youtu.be/abc123',
-      'https://www.youtube.com/watch?v=abc123',
-      'https://youtube.com/watch?v=abc123&t=3',
-      'https://m.youtube.com/watch?v=abc123',
-      'https://www.youtube.com/embed/abc123',
-      'https://www.youtube.com/shorts/abc123',
+      'https://youtu.be/aB3_dE-7hJk',
+      'http://youtu.be/aB3_dE-7hJk',
+      'https://www.youtube.com/watch?v=aB3_dE-7hJk',
+      'https://youtube.com/watch?v=aB3_dE-7hJk&t=3',
+      'https://m.youtube.com/watch?v=aB3_dE-7hJk',
+      'https://www.youtube.com/embed/aB3_dE-7hJk',
+      'https://www.youtube.com/shorts/aB3_dE-7hJk',
     ]) {
       expect(isYoutubeVideoUrl(good)).toBe(true)
     }
@@ -339,14 +339,17 @@ describe('videos', () => {
       '',
       'youtube.com/watch?v=abc',
       'https://vimeo.com/123456',
-      'https://evil-youtube.com/watch?v=abc123',
-      'https://youtube.com.evil.test/watch?v=abc123',
+      'https://evil-youtube.com/watch?v=aB3_dE-7hJk',
+      'https://youtube.com.evil.test/watch?v=aB3_dE-7hJk',
       'https://www.youtube.com/',
       'https://www.youtube.com/watch',
       'https://www.youtube.com/embed/',
       'https://youtu.be/',
-      'ftp://youtu.be/abc123',
+      'ftp://youtu.be/aB3_dE-7hJk',
       'javascript:alert(1)',
+      'https://youtu.be/not-a-video-id',
+      'https://www.youtube.com/watch?v=x',
+      'https://www.youtube.com/embed/aB3_dE-7hJk/extra',
     ]) {
       expect(isYoutubeVideoUrl(bad)).toBe(false)
     }
