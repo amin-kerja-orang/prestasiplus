@@ -1,27 +1,31 @@
 // HTTP-build mock-path audit (S0-T09; FR-X2-0, register 6.2b row 17).
 // Builds the app in http mode (`VITE_API_MODE=http`, like docker/frontend/Dockerfile + compose.http.yaml)
-// and fails when the chunk closure of a matrix route contains a mock module (data). Output: one line per
-// `route -> chunk -> mock module`; exit 1 when any line exists, 0 otherwise.
+// and fails when any chunk the app can load holds a mock module (data). Output: one line per finding, exit 1 when
+// any line exists, 0 otherwise.
 //
-// "Matrix route" = the route table under `src/app/router` (decision D115; NOT `prototype-scope.ts`):
-// `buildRoutes` (router/index.ts) = core routes + every module of `src/app/modules.ts` (its routes file and
-// the route fragments it imports) with a lazy `component: () => import('...')`. Static components (not lazy) live
-// in the entry chunk, which is audited on its own as `(entry)`.
+// Roots are derived from the Vite manifest, NOT from parsed route files (the parser misses routes built by helpers,
+// cross-module route lists and the shell layouts): the `index.html` entry plus every `isDynamicEntry` chunk that is
+// not itself a mock module. The route table under `src/app/router` (decision D115; NOT `prototype-scope.ts`; core
+// routes + each module of `src/app/modules.ts`, found by regex over `path:` and lazy `component: () => import('...')`)
+// is used only to LABEL a root with its route path(s); a root without a known route is labelled with its manifest key.
+// Per root the walk follows static `imports`; a chunk first reached by an earlier root (the entry goes first) is
+// attributed to that root.
 //
 // Mock module rule (MOCK_MODULE_RE): a source path under `src/mock/**` or `src/modules/<module>/mock/**`, with
 // either path separator. Not matched: `__tests__` paths, node_modules, and names that only contain "mock"
 // (`mock-exam`, `mock-lib`, `mock-extractor`, `src/modules/x/mock-data/`...).
-// Chunk closure of a route = its manifest chunk + the static `imports` closure + the entry chunk (index.html)
-// closure, which loads for every route. Entry-closure hits are reported once for `(entry)`, not once per route.
-//
-// Dynamic imports count too: any chunk holding mock sources that is reachable (static + dynamic imports, from the
-// entry or a route chunk) is a finding, printed `<route or (entry)> -> <importer chunk> =dyn=> <mock chunk> (<mock module>)`.
-// Allow-list of 1: the guarded `import('@/mock')` in `src/app/bootstrap.ts` (edge: the chunk containing bootstrap.ts ->
-// manifest entry `src/mock/index.ts`). That edge is not followed, so chunks reachable ONLY through it are allowed.
+// Findings (any edge, static or dynamic, from a non-mock chunk to a chunk holding mock sources):
+//   `<label> -> <chunk> -> <mock module>`                              a reached chunk holds mock sources
+//   `<label> -> <importer chunk> =dyn=> <mock chunk> (<mock module>)`  dynamic import of a mock-holding chunk
+// Allow-list of 1: the guarded `import('@/mock')` in `src/app/bootstrap.ts` (edge: the chunk whose source map lists
+// bootstrap.ts -> manifest entry `src/mock/index.ts`). That edge is not followed, so chunks reachable ONLY through it
+// are allowed. Limit: the edge is identified per chunk, so a second `import('@/mock')` inside the same chunk would be
+// allowed too (the manifest cannot tell them apart).
 //
 // Usage: node scripts/check-http-build.mjs [--dist <dir>]   (--dist audits an existing build; it needs
-// `<dir>/.vite/manifest.json` and source maps, i.e. `vite build --manifest --sourcemap`.)
-import { spawnSync } from 'node:child_process'
+// `<dir>/.vite/manifest.json` and source maps, i.e. `vite build --manifest --sourcemap`.) `--dist` without a value
+// exits 2.
+import { spawn } from 'node:child_process'
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, posix, relative, resolve, sep } from 'node:path'
@@ -121,19 +125,6 @@ export function collectRoutes(repoRoot) {
   return { routes, warnings }
 }
 
-/** Static `imports` closure of `srcKey` (the key itself included) plus the entry chunk closure. */
-export function routeChunkClosure(manifest, srcKey) {
-  const out = new Set()
-  const walk = (key) => {
-    if (!key || out.has(key) || !manifest[key]) return
-    out.add(key)
-    for (const dep of manifest[key].imports ?? []) walk(dep)
-  }
-  walk(srcKey)
-  walk(ENTRY_KEY)
-  return out
-}
-
 /** Mock modules among the `sources` of one source-map JSON (string or object); `chunkFile` is the chunk path inside the build dir. */
 export function mockSourcesOf(mapJson, chunkFile = '') {
   const map = typeof mapJson === 'string' ? JSON.parse(mapJson) : mapJson
@@ -150,29 +141,26 @@ export function mockSourcesOf(mapJson, chunkFile = '') {
 }
 
 /**
- * `maps`: `{ [chunkFile]: mapJson }`. Returns lines `route -> chunk -> mock module`, plus `(entry)` lines for the
- * entry chunk closure (reported once).
+ * Audit roots, derived from the manifest (not from parsed route files): the `index.html` entry plus every
+ * `isDynamicEntry` chunk that is not itself a mock module (key not matching MOCK_MODULE_RE). Chunks that nothing
+ * loads dynamically are reached through their importers. `routes` (from collectRoutes) only LABELS a root with its
+ * route path(s) where the lazy component is known; otherwise the label is the manifest key.
+ * Returns `[{ key, label, routed }]`, the entry first.
  */
-export function audit(manifest, maps, routes) {
-  const cache = new Map()
-  const mocksOfFile = (file) => {
-    if (!cache.has(file)) cache.set(file, maps[file] ? mockSourcesOf(maps[file], file) : [])
-    return cache.get(file)
-  }
-  const fileOf = (key) => manifest[key]?.file
-  const lines = []
-  const entryKeys = manifest[ENTRY_KEY] ? routeChunkClosure(manifest, ENTRY_KEY) : new Set()
-  for (const key of entryKeys) {
-    for (const mock of mocksOfFile(fileOf(key))) lines.push(`(entry) -> ${fileOf(key)} -> ${mock}`)
-  }
+export function findRoots(manifest, routes = []) {
+  const pathsOf = new Map()
   for (const r of routes) {
-    if (!r.component || !manifest[r.component]) continue
-    for (const key of routeChunkClosure(manifest, r.component)) {
-      if (entryKeys.has(key)) continue
-      for (const mock of mocksOfFile(fileOf(key))) lines.push(`${r.path} -> ${fileOf(key)} -> ${mock}`)
-    }
+    if (!r.component) continue
+    pathsOf.set(r.component, [...(pathsOf.get(r.component) ?? []), r.path])
   }
-  return [...new Set([...lines, ...dynamicMockFindings(manifest, maps, routes)])]
+  const roots = []
+  if (manifest[ENTRY_KEY]) roots.push({ key: ENTRY_KEY, label: '(entry)', routed: false })
+  for (const [key, entry] of Object.entries(manifest)) {
+    if (key === ENTRY_KEY || !entry.isDynamicEntry || MOCK_MODULE_RE.test(key)) continue
+    const paths = pathsOf.get(key)
+    roots.push({ key, label: paths ? [...new Set(paths)].join(' | ') : key, routed: Boolean(paths) })
+  }
+  return roots
 }
 
 /** Normalised source paths of one source map (relative paths resolved against the chunk location). */
@@ -186,44 +174,53 @@ function allSourcesOf(mapJson, chunkFile) {
 }
 
 /**
- * Dynamic-import findings: walks static + dynamic imports from the entry and from every route chunk (one shared
- * visited set, so a chunk is attributed to the first root that reaches it; the entry goes first) and reports every
- * dynamic edge from a non-mock chunk to a chunk that holds mock sources, as
- * `<route or (entry)> -> <importer chunk> =dyn=> <mock chunk> (<mock module>)`.
- * Allow-list of 1 (ALLOWED_DYNAMIC_TARGET): the edge `chunk containing src/app/bootstrap.ts` -> manifest entry
- * `src/mock/index.ts` is not followed, so its descendants count only when something else also reaches them.
+ * Graph walk from every root (one shared visited set: a chunk is attributed to the first root that reaches it, the
+ * entry first). Per root it follows static `imports` only; dynamic targets are roots of their own (or reached as
+ * static dependencies of one). Findings, for every non-mock chunk reached:
+ *  - a chunk that itself holds mock sources (reached by static import):  `<label> -> <chunk> -> <mock module>`
+ *  - a dynamic edge to a chunk holding mock sources:  `<label> -> <importer chunk> =dyn=> <mock chunk> (<mock module>)`
+ * Allow-list of 1 (ALLOWED_DYNAMIC_TARGET): the edge from the chunk whose source map lists `src/app/bootstrap.ts` to the
+ * manifest entry `src/mock/index.ts` is skipped, so chunks reachable ONLY through it are allowed. Limit: the edge is
+ * identified per chunk (the importing chunk shows bootstrap.ts in its source map and targets that manifest entry), so a
+ * second `import('@/mock')` inside that same chunk would be allowed too; the manifest cannot tell them apart.
+ * Returns `{ lines, roots }`.
  */
-export function dynamicMockFindings(manifest, maps, routes) {
+export function auditGraph(manifest, maps, routes = []) {
   const mocksOfFile = (file) => (maps[file] ? mockSourcesOf(maps[file], file) : [])
-  const isMock = (key) => Boolean(manifest[key]) && mocksOfFile(manifest[key].file).length > 0
+  const holdsMock = (key) => Boolean(manifest[key]) && mocksOfFile(manifest[key].file).length > 0
   const bootstrapFiles = new Set(
     Object.values(manifest)
       .map((e) => e.file)
       .filter((f) => maps[f] && allSourcesOf(maps[f], f).some((p) => BOOTSTRAP_RE.test(p))),
   )
+  const roots = findRoots(manifest, routes)
   const lines = []
   const seen = new Set()
-  const walk = (label, start) => {
+  for (const { key: start, label } of roots) {
     const stack = [start]
     while (stack.length > 0) {
       const key = stack.pop()
-      if (!manifest[key] || seen.has(key)) continue
-      seen.add(key)
-      if (isMock(key)) continue // reported through its importer; static edges are the route audit's
       const entry = manifest[key]
+      if (!entry || seen.has(key)) continue
+      seen.add(key)
+      const own = mocksOfFile(entry.file)
+      if (own.length > 0) {
+        for (const m of own) lines.push(`${label} -> ${entry.file} -> ${m}`)
+        continue // a mock chunk is reported once; its own dependencies are not walked
+      }
       stack.push(...(entry.imports ?? []))
       for (const dep of entry.dynamicImports ?? []) {
         if (dep === ALLOWED_DYNAMIC_TARGET && bootstrapFiles.has(entry.file)) continue
-        if (isMock(dep)) {
-          lines.push(`${label} -> ${entry.file} =dyn=> ${manifest[dep].file} (${mocksOfFile(manifest[dep].file)[0]})`)
-        }
-        stack.push(dep)
+        if (holdsMock(dep)) lines.push(`${label} -> ${entry.file} =dyn=> ${manifest[dep].file} (${mocksOfFile(manifest[dep].file)[0]})`)
       }
     }
   }
-  if (manifest[ENTRY_KEY]) walk('(entry)', ENTRY_KEY)
-  for (const r of routes) if (r.component) walk(r.path, r.component)
-  return [...new Set(lines)]
+  return { lines: [...new Set(lines)], roots }
+}
+
+/** `maps`: `{ [chunkFile]: mapJson }`. Returns the finding lines of `auditGraph`. */
+export function audit(manifest, maps, routes = []) {
+  return auditGraph(manifest, maps, routes).lines
 }
 
 function readMaps(dist) {
@@ -239,12 +236,40 @@ function readMaps(dist) {
   return maps
 }
 
-function main() {
+/** Runs `cmd`, collecting its output; `onChild` receives the child so a signal handler can kill it. */
+function runCapture(cmd, args, options, onChild) {
+  return new Promise((resolveRun) => {
+    const child = spawn(cmd, args, { ...options, stdio: ['ignore', 'pipe', 'pipe'] })
+    onChild(child)
+    let out = ''
+    child.stdout.on('data', (d) => (out += d))
+    child.stderr.on('data', (d) => (out += d))
+    child.on('error', (e) => resolveRun({ status: 1, out: `${out}${e.message}` }))
+    child.on('close', (status, signal) => resolveRun({ status: status ?? (signal ? 1 : 0), signal, out }))
+  })
+}
+
+async function main() {
   const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
   const args = process.argv.slice(2)
   const di = args.indexOf('--dist')
-  let dist = di >= 0 ? resolve(args[di + 1] ?? '') : null
+  if (di >= 0 && (!args[di + 1] || args[di + 1].startsWith('--'))) {
+    console.error(`${PREFIX} --dist needs a directory (usage: node scripts/check-http-build.mjs [--dist <dir>])`)
+    return 2
+  }
+  let dist = di >= 0 ? resolve(args[di + 1]) : null
   let tmp = null
+  let buildChild = null
+  const cleanup = () => {
+    if (tmp) rmSync(tmp, { recursive: true, force: true })
+  }
+  const onSignal = (signal) => () => {
+    buildChild?.kill('SIGTERM')
+    cleanup()
+    process.exit(signal === 'SIGINT' ? 130 : 143)
+  }
+  process.on('SIGINT', onSignal('SIGINT'))
+  process.on('SIGTERM', onSignal('SIGTERM'))
   try {
     if (!dist) {
       tmp = mkdtempSync(join(tmpdir(), 'check-http-build-'))
@@ -259,14 +284,15 @@ function main() {
         VITE_API_BASE_URL: '',
       }
       delete env.VITE_ARTIFACT
-      const r = spawnSync(
+      const r = await runCapture(
         npx,
         ['vite', 'build', '--mode', 'http', '--manifest', '--sourcemap', '--outDir', tmp, '--emptyOutDir'],
-        { cwd: repoRoot, env, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 },
+        { cwd: repoRoot, env },
+        (c) => (buildChild = c),
       )
       if (r.status !== 0) {
-        console.error(`${r.stdout ?? ''}${r.stderr ?? ''}`.split('\n').slice(-40).join('\n'))
-        console.error(`${PREFIX} vite build failed (exit ${r.status ?? r.signal})`)
+        console.error(r.out.split('\n').slice(-40).join('\n'))
+        console.error(`${PREFIX} vite build failed (exit ${r.status})`)
         return 1
       }
     }
@@ -283,30 +309,27 @@ function main() {
     }
     const { routes, warnings } = collectRoutes(repoRoot)
     for (const w of warnings) console.error(`${PREFIX} WARN: ${w}`)
-    for (const r of routes) {
-      if (r.component && !manifest[r.component]) {
-        console.error(`${PREFIX} WARN: route ${r.path}: ${r.component} is not a manifest entry (not audited as its own chunk)`)
-      }
-    }
-    const lines = audit(manifest, maps, routes)
+    const { lines, roots } = auditGraph(manifest, maps, routes)
+    const labelled = roots.filter((r) => r.routed).length
     if (lines.length > 0) {
       console.log(lines.join('\n'))
-      console.error(`${PREFIX} FAIL: ${lines.length} route -> chunk -> mock module line(s) in the http build`)
+      console.error(`${PREFIX} FAIL: ${lines.length} finding(s) in the http build (${roots.length} roots, ${labelled} labelled with a route)`)
       return 1
     }
     const chunks = new Set(Object.values(manifest).map((e) => e.file)).size
-    console.log(`${PREFIX} OK (${routes.length} routes, ${chunks} chunks, 0 mock modules)`)
+    console.log(`${PREFIX} OK (${roots.length} roots (${labelled} labelled with a route), ${chunks} chunks, 0 mock modules)`)
     return 0
   } finally {
-    if (tmp) rmSync(tmp, { recursive: true, force: true })
+    cleanup()
   }
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
-  try {
-    process.exit(main())
-  } catch (e) {
-    console.error(`${PREFIX} ${e.message}`)
-    process.exit(1)
-  }
+  main().then(
+    (code) => process.exit(code),
+    (e) => {
+      console.error(`${PREFIX} ${e.message}`)
+      process.exit(1)
+    },
+  )
 }

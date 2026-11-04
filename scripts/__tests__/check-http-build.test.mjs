@@ -1,16 +1,17 @@
+import { spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import { afterAll, describe, expect, it } from 'vitest'
 
 import {
   audit,
   collectRoutes,
-  dynamicMockFindings,
+  findRoots,
   MOCK_MODULE_RE,
   mockSourcesOf,
-  routeChunkClosure,
 } from '../check-http-build.mjs'
 
 const map = (...sources) => JSON.stringify({ version: 3, sources })
@@ -48,8 +49,8 @@ const manifest = {
   'index.html': { file: 'assets/index.js', isEntry: true, imports: ['_shared.js'] },
   '_shared.js': { file: 'assets/shared.js' },
   '_mockdata.js': { file: 'assets/mockdata.js' },
-  'src/pages/A.vue': { file: 'assets/A.js', imports: ['_shared.js'] },
-  'src/pages/B.vue': { file: 'assets/B.js', imports: ['_shared.js', '_mockdata.js'] },
+  'src/pages/A.vue': { file: 'assets/A.js', isDynamicEntry: true, imports: ['_shared.js'] },
+  'src/pages/B.vue': { file: 'assets/B.js', isDynamicEntry: true, imports: ['_shared.js', '_mockdata.js'] },
 }
 const routes = [
   { path: '/a', component: 'src/pages/A.vue' },
@@ -63,11 +64,18 @@ const clean = {
   'assets/B.js': map('../../src/pages/B.vue'),
 }
 
-describe('routeChunkClosure', () => {
-  it('includes static imports and the entry closure', () => {
-    expect([...routeChunkClosure(manifest, 'src/pages/B.vue')].sort()).toEqual(
-      ['_mockdata.js', '_shared.js', 'index.html', 'src/pages/B.vue'].sort(),
-    )
+describe('findRoots', () => {
+  it('takes the entry and every dynamic entry, labelled with a route where known', () => {
+    expect(findRoots(manifest, [{ path: '/a', component: 'src/pages/A.vue' }])).toEqual([
+      { key: 'index.html', label: '(entry)', routed: false },
+      { key: 'src/pages/A.vue', label: '/a', routed: true },
+      { key: 'src/pages/B.vue', label: 'src/pages/B.vue', routed: false },
+    ])
+  })
+
+  it('skips mock modules as roots', () => {
+    const m = { ...manifest, 'src/mock/index.ts': { file: 'assets/mock.js', isDynamicEntry: true } }
+    expect(findRoots(m, []).map((r) => r.key)).not.toContain('src/mock/index.ts')
   })
 })
 
@@ -88,6 +96,24 @@ describe('audit', () => {
     expect(audit(manifest, maps, routes)).toEqual(['(entry) -> assets/index.js -> src/mock/index.ts'])
   })
 
+  it('reports a static mock import from a lazily loaded chunk', () => {
+    const m = {
+      ...manifest,
+      'src/pages/A.vue': { ...manifest['src/pages/A.vue'], dynamicImports: ['src/pages/Lazy.vue'] },
+      'src/pages/Lazy.vue': { file: 'assets/Lazy.js', isDynamicEntry: true, imports: ['_mock.js'] },
+      '_mock.js': { file: 'assets/mock.js' },
+    }
+    const maps = { ...clean, 'assets/Lazy.js': map('../../src/pages/Lazy.vue'), 'assets/mock.js': map('../../src/mock/x.ts') }
+    expect(audit(m, maps, routes)).toEqual(['src/pages/Lazy.vue -> assets/mock.js -> src/mock/x.ts'])
+  })
+
+  it('audits a dynamic entry that has no route', () => {
+    const m = { ...manifest, 'src/pages/Orphan.vue': { file: 'assets/Orphan.js', isDynamicEntry: true, imports: ['_mockdata.js'] } }
+    const maps = { ...clean, 'assets/mockdata.js': map('../../src/mock/y.ts'), 'assets/Orphan.js': map('../../src/pages/Orphan.vue') }
+    // _mockdata.js is also reached by B (route label first in manifest order); drop B's edge to isolate the orphan.
+    m['src/pages/B.vue'] = { ...m['src/pages/B.vue'], imports: ['_shared.js'] }
+    expect(audit(m, maps, routes)).toEqual(['src/pages/Orphan.vue -> assets/mockdata.js -> src/mock/y.ts'])
+  })
 })
 
 describe('dynamic mock imports', () => {
@@ -108,7 +134,6 @@ describe('dynamic mock imports', () => {
   }
 
   it('allows the bootstrap -> @/mock edge and its descendants', () => {
-    expect(dynamicMockFindings(dyn, dynMaps, routes)).toEqual([])
     expect(audit(dyn, dynMaps, routes)).toEqual([])
   })
 
@@ -129,9 +154,18 @@ describe('dynamic mock imports', () => {
 
   it('does not allow the edge from a chunk that is not bootstrap', () => {
     const maps = { ...dynMaps, 'assets/index.js': map('../../src/main.ts') }
-    expect(dynamicMockFindings(dyn, maps, routes)).toEqual([
+    expect(audit(dyn, maps, routes)).toEqual([
       '(entry) -> assets/index.js =dyn=> assets/mock-core.js (src/mock/index.ts)',
     ])
+  })
+})
+
+describe('cli', () => {
+  it('exits 2 when --dist has no value', () => {
+    const script = fileURLToPath(new URL('../check-http-build.mjs', import.meta.url))
+    const r = spawnSync(process.execPath, [script, '--dist'], { encoding: 'utf8' })
+    expect(r.status).toBe(2)
+    expect(r.stderr).toContain('--dist needs a directory')
   })
 })
 
