@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { ctxOf, sitting, world, type World } from '../fakes/fixtures'
 
 const d = (iso: string) => new Date(iso)
+const round1 = (v: number): number => Math.round(v * 10) / 10
 
 let w: World
 
@@ -27,52 +28,179 @@ beforeEach(() => {
     .add({ id: '12', schoolId: 's1', kind: 'school_class', teacherId: 't1' }, ['1'])
 })
 
+const NOW_MONDAY = '2026-09-21'
+
 describe('Prestasi 360 (student)', () => {
+  const answer = (userId: string, n: number, correct: number, over: Parameters<World['answers']['addMany']>[3]) => w.answers.addMany(userId, n, correct, over)
+
   beforeEach(() => {
-    w.bijak
-      .addSitting(sitting({ userId: '1', score: 8, maxScore: 10, durationSeconds: 600, submittedAt: d('2026-09-24T10:00:00+08:00') }))
-      .addSitting(sitting({ userId: '1', score: 5, maxScore: 10, durationSeconds: 300, mode: 'latihan', submittedAt: d('2026-09-24T11:00:00+08:00') }))
-      .addSitting(sitting({ userId: '1', score: 4, maxScore: 10, durationSeconds: 100, provisional: true, subjectId: '2', subjectCode: 'MT', subjectName: 'Matematik', submittedAt: d('2026-09-25T09:00:00+08:00') }))
-      // never counted: a Mod Pelajar sitting, an unfinished one
-      .addSitting(sitting({ userId: '1', score: 10, maxScore: 10 }), { isTest: true })
-      .addSitting(sitting({ userId: '1', score: 10, maxScore: 10 }), { state: 'in_progress' })
+    w.directory.addSubject('BM', '1', 'Bahasa Melayu').addSubject('MT', '2', 'Matematik')
   })
 
-  it('counts sittings, marks and seconds; accuracy is marks-weighted and leaves out provisional sittings', async () => {
+  describe('pooled figures come from the one answer store (the Bijak port no longer feeds them)', () => {
+    beforeEach(() => {
+      answer('1', 10, 8, { mode: 'latih_tubi', subjectId: '1', sessionId: 'sA', answeredAt: d('2026-09-22T10:00:00+08:00') })
+      answer('1', 5, 2, { mode: 'simulasi', subjectId: '2', sessionId: 'sB', answeredAt: d('2026-09-23T11:00:00+08:00') })
+      // never counted: a Mod Pelajar answer
+      w.answers.add({ userId: '1', subjectId: '1', questionId: 'x', mode: 'latih_tubi', isCorrect: true, answeredAt: d('2026-09-22T10:30:00+08:00'), sessionId: 'sA', isTest: true })
+      // a Bijak sitting only serves the day map, the practice days and the time spent: it adds no answer and no session
+      w.bijak.addSitting(sitting({ userId: '1', score: 8, maxScore: 10, durationSeconds: 600, submittedAt: d('2026-09-24T10:00:00+08:00') }))
+    })
+
+    it('answered is the sum of attempts, accuracy is correct over answered (one decimal), sessions are distinct sessions', async () => {
+      const r = await w.student.student(ctxOf('student', '1'), '1')
+      expect(r.stats).toEqual({ sessions: 2, accuracy: 66.7, answered: 15, seconds: 600 })
+      expect(r.heroAccuracy).toBe(67)
+      expect(r.activity.practiceDays).toBe(1)
+      PerformanceStudentSchema.parse(r)
+    })
+
+    it('mastery per subject (pooled accuracy, answered, sessions), most answered first', async () => {
+      const r = await w.student.student(ctxOf('student', '1'), '1')
+      expect(r.mastery.map((m) => [m.subjectCode, m.subjectName, m.accuracy, m.sessions, m.answered])).toEqual([
+        ['BM', 'Bahasa Melayu', 80, 1, 10],
+        ['MT', 'Matematik', 40, 1, 5],
+      ])
+    })
+
+    it('heatmap is 90 Malaysian days ending today', async () => {
+      const r = await w.student.student(ctxOf('student', '1'), '1')
+      expect(r.heatmap).toHaveLength(90)
+      expect(r.heatmap.at(-1)).toEqual({ date: '2026-09-25', sessions: 0 })
+      expect(r.heatmap.at(-2)).toEqual({ date: '2026-09-24', sessions: 1 })
+    })
+
+    it('suggests a focus session for a subject under 70 percent', async () => {
+      const r = await w.student.student(ctxOf('student', '1'), '1')
+      expect(r.suggestions).toEqual([{ kind: 'subject', text: 'Tingkatkan prestasi Matematik (purata 40%) dengan 3 sesi latihan fokus minggu ini.' }])
+    })
+  })
+
+  it('AC-X4-1: 10 Latih Tubi (7 correct) and one Bijak sitting of 40 (30 correct) are 50 answered, 74, 2 sessions; battle rows add answers, never a session', async () => {
+    answer('1', 10, 7, { mode: 'latih_tubi', subjectId: '1', sessionId: 'sA', answeredAt: d('2026-09-22T10:00:00+08:00') })
+    answer('1', 40, 30, { mode: 'simulasi', subjectId: '1', sessionId: 'sB', answeredAt: d('2026-09-23T10:00:00+08:00') })
+    const base = await w.student.student(ctxOf('student', '1'), '1')
+    expect(base.stats).toMatchObject({ answered: 50, accuracy: 74, sessions: 2 })
+    expect(base.heroAccuracy).toBe(74)
+
+    answer('1', 5, 3, { mode: 'battle', subjectId: '1', sessionId: 'sC', answeredAt: d('2026-09-24T10:00:00+08:00') })
+    answer('1', 4, 4, { mode: 'game', subjectId: '1', answeredAt: d('2026-09-24T11:00:00+08:00') })
+    const withGames = await w.student.student(ctxOf('student', '1'), '1')
+    expect(withGames.stats).toMatchObject({ answered: 59, accuracy: round1((44 / 59) * 100), sessions: 2 })
+    expect(withGames.trend.at(-1)?.sessions).toBe(2)
+  })
+
+  it('AC-MUR-4-5: 26 of 30 is 86.7 on the wire and 87 in the hero', async () => {
+    answer('1', 30, 26, { mode: 'latih_tubi', subjectId: '1', sessionId: 'sA', answeredAt: d('2026-09-22T10:00:00+08:00') })
     const r = await w.student.student(ctxOf('student', '1'), '1')
-    expect(r.stats).toEqual({ sessions: 3, accuracy: 65, answered: 15, seconds: 1000 })
-    expect(r.heroAccuracy).toBe(65)
-    expect(r.activity.practiceDays).toBe(2)
-    PerformanceStudentSchema.parse(r)
+    expect(r.stats.accuracy).toBe(86.7)
+    expect(r.heroAccuracy).toBe(87)
   })
 
-  it('mastery per subject, most answered first; a provisional-only subject has accuracy 0 not NaN', async () => {
+  describe('trend (AC-MUR-4-4)', () => {
+    it('12 Monday weeks, oldest "Mgg 1" to the current "Mgg 12"; answers of this and last week land at index 11 and 10', async () => {
+      answer('1', 4, 3, { mode: 'latih_tubi', subjectId: '1', sessionId: 'sA', answeredAt: d('2026-09-22T10:00:00+08:00') })
+      answer('1', 2, 1, { mode: 'latih_tubi', subjectId: '1', sessionId: 'sB', answeredAt: d('2026-09-15T10:00:00+08:00') })
+      const r = await w.student.student(ctxOf('student', '1'), '1')
+      expect(r.trend).toHaveLength(12)
+      expect(r.trend.map((t) => t.label)).toEqual(Array.from({ length: 12 }, (_, i) => `Mgg ${String(i + 1)}`))
+      expect(r.trend[0]?.week).toBe('2026-07-06')
+      expect(r.trend[10]).toEqual({ week: '2026-09-14', label: 'Mgg 11', accuracy: 50, sessions: 1 })
+      expect(r.trend[11]).toEqual({ week: NOW_MONDAY, label: 'Mgg 12', accuracy: 75, sessions: 1 })
+      expect(r.trend.slice(0, 10).every((t) => t.accuracy === null && t.sessions === 0)).toBe(true)
+      PerformanceStudentSchema.parse(r)
+    })
+
+    it('weeks start on Monday in Malaysian time: Sunday 23:30 is the old week, Monday 00:10 the new one; older than 12 weeks is out of the trend only', async () => {
+      answer('1', 1, 1, { mode: 'latih_tubi', subjectId: '1', sessionId: 'sA', answeredAt: d('2026-09-20T23:30:00+08:00') })
+      answer('1', 1, 0, { mode: 'latih_tubi', subjectId: '1', sessionId: 'sB', answeredAt: d('2026-09-21T00:10:00+08:00') })
+      answer('1', 2, 2, { mode: 'latih_tubi', subjectId: '1', sessionId: 'sC', answeredAt: d('2026-06-01T10:00:00+08:00') })
+      const r = await w.student.student(ctxOf('student', '1'), '1')
+      expect(r.trend[10]).toMatchObject({ week: '2026-09-14', accuracy: 100, sessions: 1 })
+      expect(r.trend[11]).toMatchObject({ week: NOW_MONDAY, accuracy: 0, sessions: 1 })
+      expect(r.stats).toMatchObject({ answered: 4, sessions: 3 })
+    })
+
+    it('a week with answers only in a game mode has an accuracy and no session', async () => {
+      answer('1', 2, 1, { mode: 'battle', subjectId: '1', sessionId: 'sA', answeredAt: d('2026-09-22T10:00:00+08:00') })
+      const r = await w.student.student(ctxOf('student', '1'), '1')
+      expect(r.trend[11]).toEqual({ week: NOW_MONDAY, label: 'Mgg 12', accuracy: 50, sessions: 0 })
+      expect(r.stats.sessions).toBe(0)
+    })
+  })
+
+  it('wire precision: every accuracy is a JSON number with at most one decimal, and a whole value has no fraction', async () => {
+    answer('1', 3, 2, { mode: 'latih_tubi', subjectId: '1', sessionId: 'sA', answeredAt: d('2026-09-22T10:00:00+08:00') })
+    answer('1', 3, 1, { mode: 'latih_tubi', subjectId: '2', sessionId: 'sB', answeredAt: d('2026-09-16T10:00:00+08:00') })
+    answer('1', 2, 1, { mode: 'latih_tubi', subjectId: '2', topicId: '100', chapterId: '50', sessionId: 'sB', answeredAt: d('2026-09-16T10:00:00+08:00') })
+    w.answers.addChapter('50', { name: 'Bab Lima', subjectCode: 'MT', levelId: 'lv-t4' }).addTopic('100', { name: 'Topik Seratus', chapterId: '50' })
     const r = await w.student.student(ctxOf('student', '1'), '1')
-    expect(r.mastery.map((m) => [m.subjectCode, m.accuracy, m.sessions, m.answered])).toEqual([
-      ['BM', 65, 2, 10],
-      ['MT', 0, 1, 5],
-    ])
+    const wire = JSON.parse(JSON.stringify(r)) as typeof r
+    const values = [wire.stats.accuracy, ...wire.mastery.map((m) => m.accuracy), ...wire.trend.map((t) => t.accuracy), ...wire.weakTopics.map((x) => x.accuracy)].filter((v): v is number => v !== null)
+    expect(values.length).toBeGreaterThan(4)
+    for (const v of values) expect(v).toBe(round1(v))
+    expect(wire.stats.accuracy).toBe(round1((4 / 8) * 100))
+    expect(JSON.stringify(wire.stats.accuracy)).toBe('50')
+    expect(wire.mastery.find((m) => m.subjectCode === 'BM')?.accuracy).toBe(66.7)
+    expect(Number.isInteger(wire.heroAccuracy)).toBe(true)
   })
 
-  it('heatmap is 90 Malaysian days ending today', async () => {
-    const r = await w.student.student(ctxOf('student', '1'), '1')
-    expect(r.heatmap).toHaveLength(90)
-    expect(r.heatmap.at(-1)).toEqual({ date: '2026-09-25', sessions: 1 })
-    expect(r.heatmap.at(-2)).toEqual({ date: '2026-09-24', sessions: 2 })
+  describe('weak topics (FR-MUR-4-8)', () => {
+    const at2 = d('2026-09-22T10:00:00+08:00')
+    beforeEach(() => {
+      w.answers
+        .addChapter('50', { name: 'Bab Lima', dskpCode: '5.1', subjectCode: 'BM', levelId: 'lv-t4' })
+        .addChapter('51', { name: 'Bab Tanpa Topik', dskpCode: '6.1', subjectCode: 'MT', levelId: null })
+        .addTopic('100', { name: 'Topik Lemah', chapterId: '50' })
+        .addTopic('101', { name: 'Topik Sekali', chapterId: '50' })
+        .addTopic('102', { name: 'Topik Kuat', chapterId: '50' })
+        .addTopic('103', { name: 'Topik Enam Puluh', chapterId: '50' })
+        .addTopic('104', { name: 'Topik Banyak', chapterId: '50' })
+      const put = (topicId: string | null, chapterId: string | null, questions: string[], correct: number) =>
+        questions.forEach((q, i) => w.answers.add({ userId: '1', subjectId: '1', questionId: q, topicId, chapterId, mode: 'latih_tubi', isCorrect: i < correct, answeredAt: at2, sessionId: 'sA' }))
+      put('100', '50', ['a', 'b', 'c'], 1) // 33.3, in
+      put('101', '50', ['a'], 0) // one attempt: out
+      put('102', '50', ['a', 'b'], 2) // 100: out
+      put('103', '50', ['a', 'b', 'c', 'd', 'e'], 3) // exactly 60: out
+      put('104', '50', Array.from({ length: 30 }, (_, i) => `q${String(i)}`), 0) // 0, 30 questions: focus capped at 25
+      put(null, '51', ['a', 'b'], 0) // chapter fallback: in, no code
+      put(null, null, ['a', 'b', 'c'], 0) // no topic and no chapter: skipped, but still answered
+      // the same topic in another mode pools with the first
+      w.answers.add({ userId: '1', subjectId: '1', questionId: 'a', topicId: '100', chapterId: '50', mode: 'simulasi', isCorrect: false, answeredAt: at2, sessionId: 'sB' })
+    })
+
+    it('all time, at least 2 attempts and under 60 percent; topic else chapter; rows with neither are skipped; lowest first', async () => {
+      const r = await w.student.student(ctxOf('student', '1'), '1')
+      expect(r.weakTopics).toEqual([
+        { spId: '104', label: 'Topik Banyak', code: '5.1', subjectCode: 'BM', levelId: 'lv-t4', attempts: 30, accuracy: 0, focusCount: 25 },
+        { spId: '51', label: 'Bab Tanpa Topik', code: null, subjectCode: 'MT', levelId: null, attempts: 2, accuracy: 0, focusCount: 2 },
+        { spId: '100', label: 'Topik Lemah', code: '5.1', subjectCode: 'BM', levelId: 'lv-t4', attempts: 4, accuracy: 25, focusCount: 3 },
+      ])
+      expect(r.stats.answered).toBe(3 + 1 + 2 + 5 + 30 + 2 + 3 + 1)
+      PerformanceStudentSchema.parse(r)
+    })
+
+    it('the < 60 rule uses the exact ratio: 1499 of 2500 (59.96, shown 60.0 on the wire) is still weak', async () => {
+      w.answers.addTopic('105', { name: 'Topik Hampir', chapterId: '50' })
+      for (let i = 0; i < 2500; i++)
+        w.answers.add({ userId: '1', subjectId: '1', questionId: `h${String(i)}`, topicId: '105', chapterId: '50', mode: 'latih_tubi', isCorrect: i < 1499, answeredAt: at2, sessionId: 'sC' })
+      const r = await w.student.student(ctxOf('student', '1'), '1')
+      const near = r.weakTopics.find((t) => t.spId === '105')
+      expect(near).toMatchObject({ attempts: 2500, accuracy: 60, focusCount: 25 })
+    })
   })
 
-  it('suggests a focus session for a subject under 70 percent', async () => {
-    const r = await w.student.student(ctxOf('student', '1'), '1')
-    expect(r.suggestions.map((s) => s.kind)).toEqual(['subject', 'subject'])
-    expect(r.suggestions[0]?.text).toBe('Tingkatkan prestasi Matematik (purata 0%) dengan 3 sesi latihan fokus minggu ini.')
-  })
-
-  it('a pupil with no sittings gets zeros and the start suggestion (neutral values, not invented)', async () => {
+  it('a pupil with no answers gets null accuracy, zeros, 12 empty weeks and the start suggestion (neutral values, not invented)', async () => {
     const r = await w.student.student(ctxOf('admin', '99', { level: 'national', label: 'Nasional' }), '2')
-    expect(r.stats).toEqual({ sessions: 0, accuracy: 0, answered: 0, seconds: 0 })
+    expect(r.stats).toEqual({ sessions: 0, accuracy: null, answered: 0, seconds: 0 })
+    expect(r.heroAccuracy).toBeNull()
     expect(r.suggestions).toEqual([{ kind: 'start', text: 'Mulakan perjalanan belajar kamu — setiap sesi latihan membina asas yang kukuh!' }])
     expect(r.mastery).toEqual([])
+    expect(r.weakTopics).toEqual([])
     expect(r.badges).toEqual([])
+    expect(r.trend).toHaveLength(12)
+    expect(r.trend.every((t) => t.accuracy === null && t.sessions === 0)).toBe(true)
+    expect(r.trend.map((t) => t.label)).toEqual(Array.from({ length: 12 }, (_, i) => `Mgg ${String(i + 1)}`))
     PerformanceStudentSchema.parse(r)
   })
 
@@ -259,7 +387,10 @@ describe('Analitik', () => {
         expect(r.subjects[0]).toMatchObject({ accuracy: 70, answered: 9 })
       })
 
-      it('student: one mastery row, while stats and the heatmap still include the legacy sitting', async () => {
+      it('student: one mastery row, while stats still include answers that carry no curriculum subject', async () => {
+        w.answers.addMany('1', 5, 4, { mode: 'latih_tubi', subjectId: '3', sessionId: 'sA', answeredAt: d('2026-09-22T10:00:00+08:00') })
+        w.answers.addMany('1', 4, 3, { mode: 'latih_tubi', subjectId: '3', sessionId: 'sB', answeredAt: d('2026-09-23T10:00:00+08:00') })
+        w.answers.addMany('1', 3, 1, { mode: 'latih_tubi', sessionId: 'sC', answeredAt: d('2026-09-24T10:00:00+08:00') })
         const r = await w.student.student(ctxOf('student', '1'), '1')
         expect(r.mastery.map((m) => m.subjectCode)).toEqual(['MAT'])
         expect(r.stats.answered).toBe(12)
@@ -268,9 +399,11 @@ describe('Analitik', () => {
     })
 
     it('student mastery: one row per subject as well', async () => {
+      w.answers.addMany('1', 5, 4, { mode: 'latih_tubi', subjectId: '3', sessionId: 'sA', answeredAt: d('2026-09-22T10:00:00+08:00') })
+      w.answers.addMany('1', 4, 3, { mode: 'latih_tubi', subjectId: '3', sessionId: 'sB', answeredAt: d('2026-09-23T10:00:00+08:00') })
       const r = await w.student.student(ctxOf('student', '1'), '1')
       expect(r.mastery).toHaveLength(1)
-      expect(r.mastery[0]).toMatchObject({ subjectCode: 'MAT', accuracy: 70, sessions: 2, answered: 9 })
+      expect(r.mastery[0]).toMatchObject({ subjectCode: 'MAT', accuracy: 77.8, sessions: 2, answered: 9 })
     })
   })
 
@@ -400,7 +533,10 @@ describe('Soalan Dijawab counts answered questions, not the paper marks (issue 6
       .addSitting(sitting({ userId: '1', score: 4, maxScore: 10, answeredCount: 2, subjectId: '2', subjectCode: 'MT', subjectName: 'Matematik', submittedAt: d('2026-09-25T09:00:00+08:00') }))
   })
 
-  it('student: stats.answered and mastery.answered are the answered questions', async () => {
+  it('student: stats.answered and mastery.answered are the answered questions of the answer store, not the paper marks', async () => {
+    w.directory.addSubject('BM', '1', 'Bahasa Melayu').addSubject('MT', '2', 'Matematik')
+    w.answers.addMany('1', 3, 2, { mode: 'simulasi', subjectId: '1', sessionId: 'sA', answeredAt: d('2026-09-24T10:00:00+08:00') })
+    w.answers.addMany('1', 2, 1, { mode: 'simulasi', subjectId: '2', sessionId: 'sB', answeredAt: d('2026-09-25T09:00:00+08:00') })
     const r = await w.student.student(ctxOf('student', '1'), '1')
     expect(r.stats.answered).toBe(5)
     expect(r.mastery.map((m) => [m.subjectCode, m.answered])).toEqual([

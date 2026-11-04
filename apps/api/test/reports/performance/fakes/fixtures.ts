@@ -11,6 +11,7 @@ import {
   SchoolPerformanceService,
   StudentPerformanceService,
 } from '../../../../src/modules/reports/performance/services'
+import { InMemoryAnswerFacts } from './in-memory-answer-facts'
 import { InMemoryBijakAggregate } from './in-memory-bijak-aggregate'
 import { InMemoryClasses } from './in-memory-classes'
 import { InMemoryDirectory } from './in-memory-directory'
@@ -77,6 +78,7 @@ export const ctxOf = (role: RoleCode, userId: string, scope: Ctx['scope'] = { le
 })
 
 export interface World {
+  answers: InMemoryAnswerFacts
   bijak: InMemoryBijakAggregate
   classes: InMemoryClasses
   directory: InMemoryDirectory
@@ -98,9 +100,11 @@ export function world(): World {
   const classes = new InMemoryClasses()
   const gamification = new InMemoryGamification()
   const facts = new InMemoryHeadcountFacts()
-  const ports = new PerformancePorts(bijak, classes, undefined, gamification)
+  const answers = new InMemoryAnswerFacts()
+  const ports = new PerformancePorts(bijak, classes, undefined, gamification, undefined, answers)
   const clock = new FixedClock(NOW)
   return {
+    answers,
     bijak,
     classes,
     directory,

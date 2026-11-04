@@ -5,8 +5,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { ApiError } from '@/api'
+import { DsChart } from '@/ds'
 import { useRouteOutcome } from '@/app/router'
 import { setRouteOutcome } from '@/app/router/outcome'
+import { useSessionStore } from '@/stores/session'
 
 import type { Analytics, AnalyticsSubject, StudentPerformance, WeakSp } from '../../api/types'
 import AnalitikPelajarPage from '../../pages/AnalitikPelajarPage.vue'
@@ -27,7 +29,10 @@ async function render(component: object, path: string, route = path) {
   })
   router.addRoute({ path: route, component })
   await router.push(path)
-  wrapper = mount(component, { global: { plugins: [router] }, attachTo: document.body })
+  wrapper = mount(component, {
+    global: { plugins: [router], stubs: { ChartCanvas: { template: '<div />' } } },
+    attachTo: document.body,
+  })
   await flushPromises()
   return wrapper
 }
@@ -237,11 +242,22 @@ const heatmap = Array.from({ length: 90 }, (_, i) => {
   return { date, sessions: date === '2026-09-24' ? 1 : 0 }
 })
 
+/** 12 ISO weeks, oldest first; `points` are the weeks that carry data (index → accuracy / sessions). */
+function trendOf(points: Record<number, { accuracy: number; sessions: number }> = {}): StudentPerformance['trend'] {
+  return Array.from({ length: 12 }, (_, i) => ({
+    week: new Date(Date.UTC(2026, 6, 13) + i * 7 * DAY).toISOString().slice(0, 10),
+    label: `Mgg ${String(i + 1)}`,
+    accuracy: points[i]?.accuracy ?? null,
+    sessions: points[i]?.sessions ?? 0,
+  }))
+}
+
 const S6: StudentPerformance = {
   user: { id: 3001, name: 'Murid Demo 01', initial: 'M' },
-  heroAccuracy: 86,
+  heroAccuracy: 87,
   streak: 2,
-  stats: { sessions: 3, accuracy: 85.7, answered: 14, seconds: 840 },
+  stats: { sessions: 3, accuracy: 86.7, answered: 14, seconds: 840 },
+  trend: trendOf({ 10: { accuracy: 60, sessions: 3 }, 11: { accuracy: 100, sessions: 1 } }),
   headcount: [
     {
       configId: 504,
@@ -329,9 +345,10 @@ const S6: StudentPerformance = {
 const EMPTY_S6: StudentPerformance = {
   ...S6,
   user: { id: 1, name: 'Admin Demo', initial: 'A' },
-  heroAccuracy: 0,
+  heroAccuracy: null,
   streak: 1,
-  stats: { sessions: 0, accuracy: 0, answered: 0, seconds: 0 },
+  stats: { sessions: 0, accuracy: null, answered: 0, seconds: 0 },
+  trend: trendOf(),
   headcount: [],
   mastery: [],
   activity: { streakCurrent: 1, streakBest: 5, koinTotal: 256, practiceDays: 13 },
@@ -355,32 +372,38 @@ describe('S6 Prestasi360Page', () => {
     expect(t(w, 'hero-name').text()).toBe('Murid Demo 01')
     expect(t(w, 'avatar').text()).toBe('M')
     expect(t(w, 'hero').text()).toContain('Prestasi 360 — Dashboard Individu')
-    expect(t(w, 'hero-accuracy').text()).toBe('86%')
+    expect(t(w, 'hero-accuracy').text()).toBe('87%')
     expect(t(w, 'hero-streak').text()).toBe('2')
     expect(t(w, 'hero-mini').classes()).toContain('lg:flex')
     expect(['sesi', 'ketepatan', 'soalan', 'masa'].map((id) => num(w, `stat-${id}`))).toEqual([
       '3',
-      '85.7%',
+      '87%',
       '14',
       '14m',
     ])
     expect(document.title).toBe('Prestasi 360 — Murid Demo 01 | PRESTASIPLUS')
   })
 
-  it('shows the zero state for the admin: 0 / 0.0% / 0 / 0m, no headcount, no badge card', async () => {
+  it('shows the zero state for the admin: 0 / — / 0 / 0m, no headcount, no badge card', async () => {
     api.fetchStudentPerformance.mockResolvedValue(EMPTY_S6)
     const w = await render(Prestasi360Page, '/prestasi/1', PATH)
     expect(['sesi', 'ketepatan', 'soalan', 'masa'].map((id) => num(w, `stat-${id}`))).toEqual([
       '0',
-      '0.0%',
+      '—',
       '0',
       '0m',
     ])
     expect(exists(w, 'headcount-block')).toBe(false)
     expect(exists(w, 'badges-card')).toBe(false)
-    expect(t(w, 'mastery-empty').text()).toContain('Belum ada data latihan.')
+    expect(t(w, 'hero-accuracy').text()).toBe('—')
+    expect(t(w, 'mastery-empty').text()).toContain('Belum ada latihan.')
+    expect(t(w, 'mastery-start').text()).toBe('Mula sekarang →')
     expect(t(w, 'mastery-start').attributes('href')).toBe('/practice')
-    expect(t(w, 'weak-empty').text()).toContain('Tiada topik lemah! Teruskan usaha.')
+    expect(t(w, 'trend-empty').text()).toContain('Belum ada data prestasi lagi.')
+    expect(t(w, 'trend-start').text()).toBe('Mula latihan →')
+    expect(t(w, 'trend-start').attributes('href')).toBe('/practice')
+    expect(exists(w, 'trend-chart')).toBe(false)
+    expect(exists(w, 'weak-block')).toBe(false)
     expect(['kombo', 'rekod', 'koin', 'hari'].map((id) => num(w, `activity-${id}`))).toEqual([
       '1',
       '5',
@@ -485,6 +508,119 @@ describe('S6 Prestasi360Page', () => {
     const w = await render(Prestasi360Page, '/prestasi/3001', PATH)
     const rows = w.findAll('[data-testid=suggestion]')
     expect(rows.map((r) => r.text())).toEqual(S6.suggestions.map((s) => s.text))
+  })
+
+  it('shows the Cadangan empty copy with its link and drops the weak-topics card when there are none', async () => {
+    api.fetchStudentPerformance.mockResolvedValue({ ...EMPTY_S6, suggestions: [] })
+    const w = await render(Prestasi360Page, '/prestasi/1', PATH)
+    expect(t(w, 'suggestions-empty').text()).toContain(
+      'Belum cukup data untuk cadangan. Mula latihan →',
+    )
+    expect(t(w, 'suggestions-start').attributes('href')).toBe('/practice')
+    expect(exists(w, 'weak-block')).toBe(false)
+  })
+
+  it('AC-MUR-4-5: 86.7 shows as the whole number 87 on the hero and the card', async () => {
+    api.fetchStudentPerformance.mockResolvedValue({
+      ...S6,
+      heroAccuracy: 86.7,
+      stats: { sessions: 2, accuracy: 86.7, answered: 30, seconds: 0 },
+    })
+    const w = await render(Prestasi360Page, '/prestasi/3001', PATH)
+    expect(t(w, 'hero-accuracy').text()).toBe('87%')
+    expect(num(w, 'stat-ketepatan')).toBe('87%')
+    expect(num(w, 'stat-soalan')).toBe('30')
+  })
+
+  it('AC-MUR-4-4: Trend Prestasi plots 12 weeks; two weeks of data sit at "Mgg 11" and "Mgg 12", the others are gaps', async () => {
+    api.fetchStudentPerformance.mockResolvedValue(S6)
+    const w = await render(Prestasi360Page, '/prestasi/3001', PATH)
+    expect(t(w, 'trend-card').text()).toContain('Trend Prestasi')
+    expect(exists(w, 'trend-empty')).toBe(false)
+    const chart = w.getComponent(DsChart)
+    const labels = chart.props('labels')
+    expect(labels).toHaveLength(12)
+    expect(labels[0]).toBe('Mgg 1')
+    expect(labels[10]).toBe('Mgg 11')
+    expect(labels[11]).toBe('Mgg 12')
+    const series = chart.props('series')
+    expect(series).toHaveLength(1)
+    expect(series[0]?.label).toBe('Ketepatan (%)')
+    const data = series[0]?.data ?? []
+    expect(data.slice(0, 10).every((v) => Number.isNaN(v))).toBe(true)
+    expect(data.slice(10)).toEqual([60, 100])
+  })
+
+  it('FR-MUR-4-12: 79.5 shows 80% in the green band, 79.4 stays amber', async () => {
+    api.fetchStudentPerformance.mockResolvedValue({
+      ...S6,
+      mastery: [
+        { subjectCode: 'CHEM', subjectName: 'Kimia', color: '#7C3AED', accuracy: 79.5, sessions: 1, answered: 10 },
+        { subjectCode: 'SEJ', subjectName: 'Sejarah', color: '#F59E0B', accuracy: 79.4, sessions: 1, answered: 10 },
+      ],
+    })
+    const w = await render(Prestasi360Page, '/prestasi/3001', PATH)
+    const chem = t(w, 'mastery-CHEM').get('[data-testid=pct]')
+    expect(chem.text()).toBe('80%')
+    expect(chem.classes()).toContain('text-success')
+    const sej = t(w, 'mastery-SEJ').get('[data-testid=pct]')
+    expect(sej.text()).toBe('79%')
+    expect(sej.classes()).toContain('text-warning')
+  })
+
+  it('shows the weak-topic badge as a whole number and no Fokus button when nothing is servable', async () => {
+    api.fetchStudentPerformance.mockResolvedValue({
+      ...S6,
+      weakTopics: [
+        { spId: 7, label: 'Topik Tanpa Soalan', code: null, subjectCode: 'MATH', levelId: null, attempts: 3, accuracy: 33.3, focusCount: 0 },
+      ],
+    })
+    const w = await render(Prestasi360Page, '/prestasi/3001', PATH)
+    expect(t(w, 'weak-7').text()).toContain('33%')
+    expect(exists(w, 'focus-link')).toBe(false)
+  })
+
+  describe('own view at /prestasi (AC-MUR-4-1, FR-MUR-4-1)', () => {
+    const signInPupil = (id: number, role: 'student' | 'teacher'): void => {
+      useSessionStore().setSession({
+        token: 't',
+        remember: false,
+        expiresAt: '2099-01-01T00:00:00+08:00',
+        user: { id, role, landingPath: '/dashboard' } as never,
+      })
+    }
+
+    it('reads the signed-in pupil, prints no h1, no Kembali, no school text and keeps the tab title of the route', async () => {
+      signInPupil(3001, 'student')
+      document.title = 'Prestasi Saya | PRESTASIPLUS'
+      api.fetchStudentPerformance.mockResolvedValue(S6)
+      const w = await render(Prestasi360Page, '/prestasi', '/prestasi')
+      expect(api.fetchStudentPerformance).toHaveBeenCalledWith(3001, expect.anything())
+      expect(t(w, 'hero-name').text()).toBe('Murid Demo 01')
+      expect(t(w, 'hero').text()).toContain('Prestasi 360 — Dashboard Individu')
+      expect(w.find('h1').exists()).toBe(false)
+      expect(exists(w, 'back')).toBe(false)
+      expect(w.text()).not.toContain('Dashboard Sekolah')
+      expect(document.title).toBe('Prestasi Saya | PRESTASIPLUS')
+    })
+
+    it('a pupil on own id also has no Kembali and keeps the route title', async () => {
+      signInPupil(3001, 'student')
+      document.title = 'x'
+      api.fetchStudentPerformance.mockResolvedValue(S6)
+      const w = await render(Prestasi360Page, '/prestasi/3001', PATH)
+      expect(exists(w, 'back')).toBe(false)
+      expect(document.title).toBe('x')
+    })
+
+    it('a teacher opening a pupil by id keeps Kembali, the h1 and the "Prestasi 360 — {nama}" title', async () => {
+      signInPupil(9, 'teacher')
+      api.fetchStudentPerformance.mockResolvedValue(S6)
+      const w = await render(Prestasi360Page, '/prestasi/3001', PATH)
+      expect(exists(w, 'back')).toBe(true)
+      expect(w.get('h1').text()).toBe('Murid Demo 01')
+      expect(document.title).toBe('Prestasi 360 — Murid Demo 01 | PRESTASIPLUS')
+    })
   })
 
   it('renders the standard 404 outcome for an unknown id and 403 for a forbidden one', async () => {

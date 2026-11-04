@@ -1471,15 +1471,14 @@
       "approved_by_card": null
     },
     {
-      "key": "/prestasi|",
+      "key": "/prestasi|m08.prestasi.own",
       "path": "/prestasi",
-      "name": null,
+      "name": "m08.prestasi.own",
       "status": "canonical",
       "sector": "S10",
-      "component": null,
+      "component": "src/modules/m08-student-performance/pages/Prestasi360Page.vue",
       "file": "src/modules/m08-student-performance/routes/prestasi.ts",
-      "redirects_to": "/prestasi/sekolah",
-      "note": "Today redirects every role to /prestasi/sekolah (defect); target is a role-dependent redirect: a pupil goes to /prestasi/{ownId} (docs/prd/r1/10-murid.md row 3)",
+      "note": "S10-T01: a pupil sees own Prestasi 360 at /prestasi (FR-MUR-4-13, AC-MUR-4-9); beforeEnter sends every other role to /prestasi/sekolah. Same page as /prestasi/:userId (staff view of one pupil), not a copy.",
       "approved_by_card": null
     },
     {
