@@ -1,26 +1,110 @@
 <script setup lang="ts">
 /**
  * S7 `/profile` "Profil Saya - PRESTASIPLUS" (M01-T6; FR-M01-38, DV-14, BR-15), v2 restyle (B09 / A1).
- * One header card in the shell main: avatar (uploaded picture or the initials avatar) with
- * the crown badge, the name, the email, "Ahli sejak {d MMMM yyyy}" and the tonal button
- * "Kemaskini Profil" -> `/profile/edit`. No other blocks (the live page shows no statistics).
+ * Hero card in the shell main: avatar (uploaded picture or the initials avatar) with the crown badge, the
+ * name, the email, "Ahli sejak {d MMMM yyyy}"; every role but the pupil also has the tonal button
+ * "Kemaskini Profil" -> `/profile/edit`.
+ *
+ * Pupil (R1-MUR-A1, S5-T05 part B; FR-MUR-A1-1, in this order): hero, "Profil Awam Saya", six tiles, the in-page
+ * form "Kemaskini Profil" (Bio Saya, "Simpan"; replaces the button, FR-MUR-A1-7), three combo tiles, "Koleksi
+ * Lencana", "Kalendar Kombo (30 Hari Terakhir)" and "Sesi Terkini". Figures come from `GET /api/me/profile-activity`
+ * (API-MUR-02). The call lives here: the m01 api client belongs to S0. "Cita-Cita Saya" waits for the column
+ * (`ProfileAspirationField.vue`, not rendered yet).
  * The user comes from the cached session; a background `GET /api/me` keeps it fresh.
  */
-import { computed, onMounted } from 'vue'
+import type { AccountProfileActivity } from '@pp/contract'
+import { computed, onMounted, ref } from 'vue'
 
+import { api } from '@/api'
+import { DsLoadError } from '@/ds'
 import { formatDateLong } from '@/lib/time'
 import { useSessionStore } from '@/stores/session'
 
+import type { UserMe } from '../api'
+import { errorLines } from '../lib/error-lines'
+import ProfileBadgeCollection from './ProfileBadgeCollection.vue'
+import ProfileKomboCalendar from './ProfileKomboCalendar.vue'
+import ProfilePublicCard from './ProfilePublicCard.vue'
+import ProfileRecentSessions from './ProfileRecentSessions.vue'
+import ProfileStatTiles from './ProfileStatTiles.vue'
+
+const BIO_MAX = 1000
+const BIO_TOO_LONG = 'Bio tidak boleh melebihi 1000 aksara.'
+const SAVED_TEXT = 'Profil berjaya dikemaskini.'
+const SAVED_MS = 4000
+
 const session = useSessionStore()
 const user = computed(() => session.user)
+const isPupil = computed(() => user.value?.role === 'student')
+
+const activity = ref<AccountProfileActivity | null>(null)
+const loadState = ref<'loading' | 'ready' | 'error'>('loading')
+const loadError = ref('')
+
+async function load(): Promise<void> {
+  loadState.value = 'loading'
+  try {
+    activity.value = await api.get<AccountProfileActivity>('/api/me/profile-activity')
+    loadState.value = 'ready'
+  } catch (err) {
+    loadError.value = errorLines(err)[0] ?? ''
+    loadState.value = 'error'
+  }
+}
+
+const publicUrl = computed(() =>
+  activity.value ? `${window.location.origin}${activity.value.publicProfilePath}` : '',
+)
+
+// --- the in-page form "Kemaskini Profil" (FR-MUR-A1-3) ---------------------------------------------
+const bio = ref(user.value?.bio ?? '')
+const bioTouched = ref(false)
+const saving = ref(false)
+const saved = ref(false)
+const formErrors = ref<string[]>([])
+let savedTimer: ReturnType<typeof setTimeout> | undefined
+
+const bioTooLong = computed(() => bio.value.length > BIO_MAX)
+
+async function save(): Promise<void> {
+  formErrors.value = []
+  saved.value = false
+  if (bioTooLong.value) {
+    formErrors.value = [BIO_TOO_LONG]
+    return
+  }
+  saving.value = true
+  try {
+    // Partial update (FR-MUR-A1-9): only the bio is sent; a blank bio clears it.
+    const result = await api.put<{ data: UserMe; status: string }>('/api/me', {
+      body: { bio: bio.value.trim() === '' ? null : bio.value.trim() },
+      raw: true,
+    })
+    session.setUser(result.data)
+    bio.value = result.data.bio ?? ''
+    saved.value = true
+    clearTimeout(savedTimer)
+    savedTimer = setTimeout(() => {
+      saved.value = false
+    }, SAVED_MS)
+  } catch (err) {
+    // The typed text stays; the server text shows.
+    formErrors.value = errorLines(err)
+  } finally {
+    saving.value = false
+  }
+}
 
 onMounted(() => {
-  void session.refreshUser()
+  void session.refreshUser().then(() => {
+    if (!bioTouched.value) bio.value = session.user?.bio ?? ''
+  })
+  if (isPupil.value) void load()
 })
 </script>
 
 <template>
-  <section v-if="user" class="mx-auto w-full max-w-3xl" data-testid="profile-page">
+  <section v-if="user" class="mx-auto flex w-full max-w-3xl flex-col gap-4 md:gap-6" data-testid="profile-page">
     <UCard data-testid="profile-hero">
       <div class="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-start">
         <div class="relative shrink-0">
@@ -61,6 +145,7 @@ onMounted(() => {
         </div>
 
         <UButton
+          v-if="!isPupil"
           to="/profile/edit"
           color="primary"
           variant="soft"
@@ -72,5 +157,83 @@ onMounted(() => {
         >
       </div>
     </UCard>
+
+    <template v-if="isPupil">
+      <USkeleton v-if="loadState === 'loading'" class="h-16 w-full" data-testid="profile-activity-loading" />
+
+      <DsLoadError
+        v-else-if="loadState === 'error'"
+        :message="loadError"
+        testid="profile-activity-error"
+        @retry="load"
+      />
+
+      <template v-else-if="activity">
+        <ProfilePublicCard :url="publicUrl" />
+        <ProfileStatTiles :tiles="activity.tiles" kind="main" />
+
+        <UCard data-testid="profile-form-card">
+          <form class="flex flex-col gap-4" data-testid="profile-bio-form" @submit.prevent="save">
+            <div>
+              <h2 class="flex items-center gap-2 text-subheading text-highlighted">
+                <UIcon name="i-ph-pencil-simple" class="size-5" aria-hidden="true" />
+                Kemaskini Profil
+              </h2>
+              <p class="text-caption text-muted">Ceritakan tentang diri dan cita-cita anda</p>
+            </div>
+
+            <UFormField label="Bio Saya">
+              <UTextarea
+                v-model="bio"
+                name="bio"
+                :rows="4"
+                placeholder="Tulis sedikit tentang diri anda..."
+                size="lg"
+                class="w-full"
+                data-testid="profile-bio-input"
+                @input="bioTouched = true"
+              />
+              <template #help>
+                <span :class="bioTooLong ? 'text-error' : ''" data-testid="profile-bio-counter"
+                  >{{ bio.length }}/{{ BIO_MAX }}</span
+                >
+              </template>
+            </UFormField>
+
+            <p
+              v-for="line in formErrors"
+              :key="line"
+              class="text-caption text-error"
+              role="alert"
+              data-testid="profile-form-error"
+            >
+              {{ line }}
+            </p>
+            <p v-if="saved" class="text-caption text-success" role="status" data-testid="profile-form-saved">
+              {{ SAVED_TEXT }}
+            </p>
+
+            <div class="flex justify-end">
+              <UButton
+                type="submit"
+                color="primary"
+                size="lg"
+                icon="i-ph-floppy-disk"
+                class="min-h-11"
+                :loading="saving"
+                :disabled="saving"
+                data-testid="profile-save"
+                >{{ saving ? 'Menyimpan...' : 'Simpan' }}</UButton
+              >
+            </div>
+          </form>
+        </UCard>
+
+        <ProfileStatTiles :tiles="activity.tiles" kind="combo" />
+        <ProfileBadgeCollection :badges="activity.badges" />
+        <ProfileKomboCalendar :days="activity.calendar30d" />
+        <ProfileRecentSessions :sessions="activity.recentSessions" />
+      </template>
+    </template>
   </section>
 </template>

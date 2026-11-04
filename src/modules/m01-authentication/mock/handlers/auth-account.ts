@@ -39,7 +39,7 @@ import {
 import type { Faith, UserSettings } from '../../api/types'
 import { isSessionUser } from '../datasets/users-types'
 import { usersRepo as users } from '../repository/users'
-import { schoolExists } from './auth-deps'
+import { profileActivityOf, schoolExists } from './auth-deps'
 import { bodyOf, intOrNull, isBlank, textOrNull, toBool } from './auth-input'
 import { DEFAULT_SETTINGS, userSettingsRepo } from './auth-state'
 
@@ -97,16 +97,18 @@ function updateProfile(req: MockRequest, ctx: MockContext): MockResponse {
   if (!user) return unauthorized()
   const body = bodyOf(req)
   const invalid = validate(body, {
-    name: [required(), max(255)],
+    // FR-MUR-A1-9: partial, `name` may be absent (a present blank name is still refused).
+    name: 'name' in body ? [required(), max(255)] : [],
     phone: [max(14)],
-    bio: [max(500)],
+    bio: [max(1000)],
     grade: [optionalGrade],
     schoolId: [optionalSchool],
   })
   if (invalid) return invalid
 
   // BR-13: `email` in the body is ignored. A field that is absent keeps its value; `null` clears it.
-  const patch: Parameters<typeof users.update>[1] = { name: String(body.name) }
+  const patch: Parameters<typeof users.update>[1] = {}
+  if ('name' in body) patch.name = String(body.name)
   if ('phone' in body) patch.phone = textOrNull(body.phone)
   if ('bio' in body) patch.bio = textOrNull(body.bio)
   if ('grade' in body) patch.grade = intOrNull(body.grade)
@@ -209,10 +211,19 @@ function saveSettings(req: MockRequest): MockResponse {
   return ok(userSettingsRepo.save(userId(req), settings), { status: MSG_SETTINGS_SAVED })
 }
 
+/** API-MUR-02 (S5-T05): own profile activity; a role other than student is 403 (60 section 2.17.1). */
+function profileActivity(req: MockRequest, ctx: MockContext): MockResponse {
+  const user = currentUser(req)
+  if (!user) return unauthorized()
+  if (user.role !== 'student') return fail(403, API_ERROR_CODES.FORBIDDEN, 'This action is unauthorized.')
+  return ok(profileActivityOf(user.id, ctx.clock.now()))
+}
+
 export const accountRoutes: RouteDef[] = [
   route('PUT', '/api/me', [requireAuth()], updateProfile),
   route('POST', '/api/me/picture', [requireAuth()], uploadPicture),
   route('PUT', '/api/me/password', [requireAuth()], changePassword),
+  route('GET', '/api/me/profile-activity', [requireAuth()], profileActivity),
   route('GET', '/api/me/settings', [requireAuth()], getSettings),
   route('PUT', '/api/me/settings', [requireAuth()], saveSettings),
 ]

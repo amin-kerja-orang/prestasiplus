@@ -5,7 +5,11 @@
 
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
-import { ACCOUNT_REGISTER_PENDING_MESSAGE, ACCOUNT_REGISTER_PENDING_STATUS } from '@pp/contract'
+import {
+  ACCOUNT_REGISTER_PENDING_MESSAGE,
+  ACCOUNT_REGISTER_PENDING_STATUS,
+  type AccountProfileActivity,
+} from '@pp/contract'
 
 import type { TransportResponse } from '@/api/transport'
 import { sessions } from '@/mock/auth/sessions'
@@ -687,16 +691,43 @@ describe('profile, picture and password (#8, #9, #10)', () => {
     const bad = await call(
       'PUT',
       '/api/me',
-      { name: '', bio: 'a'.repeat(501), grade: 12, schoolId: 123_456_789 },
+      { name: '', bio: 'a'.repeat(1001), grade: 12, schoolId: 123_456_789 },
       token,
     )
     expect(bad.status).toBe(422)
     expect(bad.body.error?.fields).toEqual({
       name: 'The name field is required.',
-      bio: 'The bio field must not be greater than 500 characters.',
+      bio: 'The bio field must not be greater than 1000 characters.',
       grade: 'The selected grade is invalid.',
       schoolId: 'The selected school id is invalid.',
     })
+  })
+
+  it('PUT /api/me is partial: a body with the bio only keeps the name (FR-MUR-A1-9)', async () => {
+    const token = await loginToken('pelajar@demo.test')
+    const before = await call('GET', '/api/me', undefined, token)
+    const r = await call('PUT', '/api/me', { bio: 'Saya suka Sains' }, token)
+    expect(r.status).toBe(200)
+    expect(r.body.data).toMatchObject({ name: (before.body.data as { name: string }).name, bio: 'Saya suka Sains' })
+    const blank = await call('PUT', '/api/me', { name: '' }, token)
+    expect(blank.status).toBe(422)
+  })
+
+  it('GET /api/me/profile-activity answers the decided shape for a pupil and 403 for another role (API-MUR-02)', async () => {
+    const token = await loginToken('pelajar@demo.test')
+    const r = await call('GET', '/api/me/profile-activity', undefined, token)
+    expect(r.status).toBe(200)
+    const data = r.body.data as AccountProfileActivity
+    expect(Object.keys(data).sort()).toEqual(['badges', 'calendar30d', 'publicProfilePath', 'recentSessions', 'tiles'])
+    expect(data.calendar30d).toHaveLength(30)
+    expect(Object.keys(data.calendar30d[0] ?? {}).sort()).toEqual(['answered', 'date', 'sessions'])
+    expect(data.recentSessions.length).toBeLessThanOrEqual(10)
+    for (const s of data.recentSessions) expect(s.modeLabel).not.toMatch(/_/)
+    for (const b of data.badges) expect(b.unlocked ? typeof b.earnedAt : b.earnedAt).toBe(b.unlocked ? 'string' : null)
+    const teacher = await call('GET', '/api/me/profile-activity', undefined, await loginToken('guru@demo.test'))
+    expect(teacher.status).toBe(403)
+    const guest = await call('GET', '/api/me/profile-activity')
+    expect(guest.status).toBe(401)
   })
 
   it('POST /api/me/picture stores a data URL (BR-15)', async () => {
