@@ -256,7 +256,7 @@ A very long stem or option scrolls inside the question area; the action bar stay
 
 ### 2.2 Item kinds: what the pupil sees, how input is taken, what is stored
 
-The authoring side of each kind is in 45 (per-mode leaf form, G-18). The pupil side is here. The 11 "kinds" below are the 9 leaf answer modes (OPT-MOD-JAWAPAN) plus the 2 views of leaf mode `mcq`: `true_false` and `mcq_multi` are question types whose leaves use leaf mode `mcq`, with `multi: true` (mcq_multi, key field `correctOptionIds: Id[]`) or two fixed options Betul/Salah (true_false); they are not the 11 question types (`questionType`, OPT-JENIS-SOALAN in 40: `short_text` and `numeric` are leaf modes of `short_answer`, L-1). "Served in" lists the surfaces; a kind that a surface does not serve is excluded from that surface with the admin reason "Jenis jawapan ini belum dibina untuk paparan ini".
+The authoring side of each kind is in 45 (per-mode leaf form, G-18). The pupil side is here. The 11 "kinds" below are the 9 leaf answer modes (OPT-MOD-JAWAPAN) plus the 2 views of leaf mode `mcq`: `true_false` and `mcq_multi` are question types whose leaves use leaf mode `mcq`, with `multi: true` (mcq_multi, key field `correctOptionIds: Id[]`) or two fixed options Betul/Salah (true_false); they are not the 11 question types (`questionType`, OPT-JENIS-SOALAN in 40: `short_text` and `numeric` are leaf modes of `short_answer`, L-1). "Served in" lists the surfaces; a kind that a surface does not serve is excluded from that surface with the admin reason "Jenis jawapan ini tidak disokong untuk paparan ini".
 
 | Kind (stored value) | Display name (OPT-QTYPE) | Served in | Widget and input rules | Blank means | Stored in `practice_answers` / attempt |
 |---|---|---|---|---|---|
