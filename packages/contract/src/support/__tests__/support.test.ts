@@ -107,11 +107,11 @@ describe('admin queue', () => {
       expect(SupportQueueResponseSchema.safeParse({ data: [{ ...row, [leak]: 'x' }], meta }).success).toBe(false)
     }
     expect(SupportQueueResponseSchema.safeParse({ data: Array(201).fill(row), meta }).success).toBe(false)
-    expect(SupportQueueResponseSchema.safeParse({ data: [row], meta: { total: 1, counts: [{ status: 'dibuka', count: -1 }] } }).success).toBe(false)
+    expect(SupportQueueResponseSchema.safeParse({ data: [row], meta: { total: 1, counts: [{ status: 'dibuka', count: 0 }] } }).success).toBe(false)
   })
 
-  it('takes a chip at 0, the pager meta and the role and school of a row (defects on #507)', () => {
-    const paged = { total: 1, counts: [{ status: 'dibuka', count: 1 }, { status: 'selesai', count: 0 }], page: 1, perPage: 25, matched: 1 }
+  it('takes the pager meta and the role and school of a row (defects on #507)', () => {
+    const paged = { total: 1, counts: [{ status: 'dibuka', count: 1 }], page: 1, perPage: 25, matched: 1 }
     expect(SupportQueueResponseSchema.safeParse({ data: [{ ...row, roleLabel: 'Murid', school: null }], meta: paged }).success).toBe(true)
     expect(SupportQueueResponseSchema.safeParse({ data: [row], meta: { ...paged, page: 0 } }).success).toBe(false)
   })

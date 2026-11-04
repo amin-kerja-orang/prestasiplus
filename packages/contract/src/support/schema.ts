@@ -145,14 +145,11 @@ export const SupportQueueQuerySchema = z
   })
   .meta({ id: 'SupportQueueQuery' })
 
-/**
- * `meta` of `GET /admin/tiket`: `total` and `counts` cover the role-filtered tickets, whatever the status filter;
- * `counts` has all five statuses in vocabulary order; `matched` = rows matching both filters, for the pager.
- */
+/** `meta` of `GET /admin/tiket`: `total` = all tickets; `counts` = statuses with a count above 0, in vocabulary order, over all tickets; `matched` = rows matching the filters, for the pager. */
 export const SupportQueueMetaSchema = z
   .strictObject({
     total: z.number().int().min(0),
-    counts: z.array(z.strictObject({ status: SupportTicketStatusSchema, count: z.number().int().min(0) })),
+    counts: z.array(z.strictObject({ status: SupportTicketStatusSchema, count: z.number().int().min(1) })),
     page: z.number().int().min(1).optional(),
     perPage: z.number().int().min(1).optional(),
     matched: z.number().int().min(0).optional(),
