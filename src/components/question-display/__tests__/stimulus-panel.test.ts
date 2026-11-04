@@ -228,7 +228,7 @@ describe('R1-04 canRender and whole-group exclusion', () => {
   })
 
   it('one stimulus that cannot render excludes the whole group with the reason', async () => {
-    const w = await mountGroup(true, { stimuli: [fig, { id: 'm', kind: 'map', label: 'Peta' }] })
+    const w = await mountGroup(true, { stimuli: [fig, { id: 'm', kind: 'map', label: 'Peta' }], excludeUnrenderable: true })
     expect(w.find('[data-layout=excluded]').exists()).toBe(true)
     expect(w.find('[data-testid=not-served-reason]').text()).toBe(
       `Tidak dihidangkan kerana ${unrenderableReason({ id: 'm', kind: 'map' })}.`,
@@ -268,9 +268,9 @@ describe('AC-X6-2 one figure + 3 questions at 375', () => {
   })
 })
 
-describe('R1-04 authoring preview opt-out', () => {
-  it('excludeUnrenderable=false keeps the group and its questions', async () => {
-    const w = await mountGroup(true, { stimuli: [{ id: 'm', kind: 'map' }], excludeUnrenderable: false })
+describe('R1-04 authoring preview default', () => {
+  it('excludeUnrenderable off (default) keeps the group and its questions', async () => {
+    const w = await mountGroup(true, { stimuli: [{ id: 'm', kind: 'map' }] })
     expect(w.find('[data-layout=excluded]').exists()).toBe(false)
     expect(w.findAll('[data-testid=q]')).toHaveLength(3)
   })

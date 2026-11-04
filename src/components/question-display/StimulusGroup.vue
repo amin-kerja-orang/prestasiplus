@@ -29,10 +29,10 @@ const props = withDefaults(
     /** With an id the open state is kept per group for the session (FR-X6-6); without it the `open` model rules. */
     groupId?: string
     hint?: boolean
-    /** A group with a stimulus that cannot be drawn shows the reason line instead (default); an authoring preview turns it off. */
+    /** A group with a stimulus that cannot be drawn shows the reason line instead when this is set (sitting, result, drills); authoring previews leave it off (default). */
     excludeUnrenderable?: boolean
   }>(),
-  { stimuli: undefined, stimulus: undefined, groupId: undefined, hint: true, excludeUnrenderable: true },
+  { stimuli: undefined, stimulus: undefined, groupId: undefined, hint: true, excludeUnrenderable: false },
 )
 const emit = defineEmits<{
   loaded: [id: string]
