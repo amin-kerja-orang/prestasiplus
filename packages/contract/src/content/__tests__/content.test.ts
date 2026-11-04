@@ -38,11 +38,16 @@ import {
   PerutusanReactionResultSchema,
   ScreenshotUploadRequestSchema,
   ScreenshotUploadResultSchema,
+  ADMIN_VIDEO_PAGE_SIZE,
+  VIDEO_MESSAGES,
+  VIDEO_PAGE_SIZE,
   VideoCreateRequestSchema,
   VideoDetailSchema,
   VideoFormContextSchema,
+  VideoListQuerySchema,
   VideoListResponseSchema,
   contentFileRefused,
+  isYoutubeVideoUrl,
   contentMutationOf,
 } from '../schema'
 
@@ -290,10 +295,63 @@ describe('videos', () => {
       { ...body, title: '' },
       { ...body, category: 'sukan' },
       { ...body, visibility: 'private' },
+      { ...body, title: 't'.repeat(151) },
       { ...body, description: 'd'.repeat(1001) },
       { title: 'Tips SPM', category: 'tips-spm', visibility: 'global' },
     ]) {
       expect(ok(VideoCreateRequestSchema, bad)).toBe(false)
+    }
+  })
+
+  it('create body: visibility is optional (ignored by the server) and the title may be 150 characters', () => {
+    const body = { videoUrl: 'https://youtu.be/abc123', title: 't'.repeat(150), category: 'lain-lain' }
+    expect(ok(VideoCreateRequestSchema, body)).toBe(true)
+  })
+
+  it('list query: pageSize 1..50, default constants', () => {
+    expect(ok(VideoListQuerySchema, { pageSize: '25' })).toBe(true)
+    expect(ok(VideoListQuerySchema, {})).toBe(true)
+    expect(ok(VideoListQuerySchema, { pageSize: '0' })).toBe(false)
+    expect(ok(VideoListQuerySchema, { pageSize: '51' })).toBe(false)
+    expect(VIDEO_PAGE_SIZE).toBe(24)
+    expect(ADMIN_VIDEO_PAGE_SIZE).toBe(25)
+  })
+
+  it('exact BM copy and the create flash', () => {
+    expect(VIDEO_MESSAGES.titleRequired).toBe('Sila isi tajuk video.')
+    expect(VIDEO_MESSAGES.titleTooLong).toBe('Tajuk video tidak boleh melebihi 150 aksara.')
+    expect(VIDEO_MESSAGES.urlRequired).toBe('Sila isi pautan YouTube.')
+    expect(VIDEO_MESSAGES.urlInvalid).toBe('Pautan mesti pautan YouTube yang sah.')
+    expect(VIDEO_MESSAGES.categoryRequired).toBe('Sila pilih kategori.')
+    expect(CONTENT_FLASH.video.created).toBe('Video ditambah.')
+  })
+
+  it('isYoutubeVideoUrl accepts YouTube video links only', () => {
+    for (const good of [
+      'https://youtu.be/abc123',
+      'http://youtu.be/abc123',
+      'https://www.youtube.com/watch?v=abc123',
+      'https://youtube.com/watch?v=abc123&t=3',
+      'https://m.youtube.com/watch?v=abc123',
+      'https://www.youtube.com/embed/abc123',
+      'https://www.youtube.com/shorts/abc123',
+    ]) {
+      expect(isYoutubeVideoUrl(good)).toBe(true)
+    }
+    for (const bad of [
+      '',
+      'youtube.com/watch?v=abc',
+      'https://vimeo.com/123456',
+      'https://evil-youtube.com/watch?v=abc123',
+      'https://youtube.com.evil.test/watch?v=abc123',
+      'https://www.youtube.com/',
+      'https://www.youtube.com/watch',
+      'https://www.youtube.com/embed/',
+      'https://youtu.be/',
+      'ftp://youtu.be/abc123',
+      'javascript:alert(1)',
+    ]) {
+      expect(isYoutubeVideoUrl(bad)).toBe(false)
     }
   })
 })

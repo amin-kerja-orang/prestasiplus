@@ -7,7 +7,7 @@ import { ContentSchoolRefSchema, ContentSubjectRefSchema, counter, httpUrl, page
 /**
  * M09 videos (#27-#32). Mock: `handlers/videos.ts`. Reads are public (BR-M09-19: a guest sees
  * `global` videos; a signed-in non-admin also sees `school` videos of the same school; admin sees all).
- * Writes need a session; edit and delete are for the uploader or an admin.
+ * Writes are for admin and teacher only (API-MUR-05); edit and delete are for the uploader or an admin.
  */
 
 export const VIDEO_CATEGORIES = ['motivasi', 'tutorial', 'tips-spm', 'ceramah', 'lain-lain'] as const
@@ -31,6 +31,39 @@ export const VideoPlatformSchema = z.enum(VIDEO_PLATFORMS).meta({ id: 'VideoPlat
 
 /** Fixed page size of the library (newest first). */
 export const VIDEO_PAGE_SIZE = 24
+/** Page size of the admin video list (R1-ADM-N-01), requested with `pageSize`. */
+export const ADMIN_VIDEO_PAGE_SIZE = 25
+/** Largest `pageSize` a client may request. */
+export const VIDEO_PAGE_SIZE_MAX = 50
+
+/** Exact BM copy of the video form (20 R1-GUR-7). */
+export const VIDEO_MESSAGES = {
+  titleRequired: 'Sila isi tajuk video.',
+  titleTooLong: 'Tajuk video tidak boleh melebihi 150 aksara.',
+  urlRequired: 'Sila isi pautan YouTube.',
+  urlInvalid: 'Pautan mesti pautan YouTube yang sah.',
+  categoryRequired: 'Sila pilih kategori.',
+} as const
+
+const YOUTUBE_HOSTS: ReadonlySet<string> = new Set(['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be'])
+
+/** True for an http(s) link on a YouTube host that carries a video id (youtu.be/<id>, /watch?v=<id>, /embed/<id>, /shorts/<id>). */
+export function isYoutubeVideoUrl(url: string): boolean {
+  let u: URL
+  try {
+    u = new URL(url.trim())
+  } catch {
+    return false
+  }
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') return false
+  const host = u.hostname.toLowerCase()
+  if (!YOUTUBE_HOSTS.has(host)) return false
+  const segments = u.pathname.split('/').filter((x) => x !== '')
+  if (host === 'youtu.be') return segments.length >= 1
+  if (segments[0] === 'watch') return (u.searchParams.get('v') ?? '') !== ''
+  if (segments[0] === 'embed' || segments[0] === 'shorts') return segments.length >= 2
+  return false
+}
 
 export const VideoUploaderSchema = z
   .strictObject({ name: z.string(), initial: z.string(), roleLabel: z.string() })
@@ -89,10 +122,17 @@ export const VideoListResponseSchema = z
 
 export const VideoListQuerySchema = z
   .object({
-    search: z.string().optional().meta({ description: 'Title contains.' }),
+    search: z.string().optional().meta({ description: 'Title or description contains (case-insensitive).' }),
     category: z.string().optional().meta({ description: 'A VideoCategory code or `all`.' }),
     subject: IdSchema.optional().meta({ description: 'Subject id.' }),
     page: pageQuery(),
+    pageSize: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(VIDEO_PAGE_SIZE_MAX)
+      .optional()
+      .meta({ description: `Rows per page, 1..${String(VIDEO_PAGE_SIZE_MAX)}; default ${String(VIDEO_PAGE_SIZE)} (the admin list asks for ${String(ADMIN_VIDEO_PAGE_SIZE)}).` }),
   })
   .meta({ id: 'VideoListQuery' })
 
@@ -104,16 +144,17 @@ export const VideoDetailQuerySchema = z
 
 const videoBodyShape = {
   videoUrl: httpUrl().meta({ description: 'Absolute http(s) video URL; platform, embed URL and thumbnail are parsed from it.' }),
-  title: requiredText(255),
+  title: requiredText(150),
   description: z.string().max(1000).nullable().optional(),
   category: VideoCategorySchema,
   subjectId: IdSchema.nullable().optional().meta({ description: 'An existing subject (curriculum, BE-08); blank or null = none.' }),
-  visibility: VideoVisibilitySchema.meta({
-    description: '`school` needs the uploader to have a video-form school, else 422 "Anda tiada sekolah untuk dikongsi." under fields.visibility.',
+  visibility: VideoVisibilitySchema.optional().meta({
+    description:
+      'Ignored: the server sets it by role (teacher = `school` with the teacher\'s school, else 422 "Anda tiada sekolah untuk dikongsi." under fields.visibility; admin = `global`).',
   }),
 }
 
-/** Create body (#29): any signed-in user. */
+/** Create body (#29): admin and teacher only. */
 export const VideoCreateRequestSchema = z.object(videoBodyShape).meta({ id: 'VideoCreateRequest' })
 /** Update body (#30): the same required fields again (the mock validates the whole body on PUT). */
 export const VideoUpdateRequestSchema = z.object(videoBodyShape).meta({ id: 'VideoUpdateRequest' })

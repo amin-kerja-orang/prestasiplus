@@ -2709,7 +2709,7 @@
         "properties": {
           "search": {
             "type": "string",
-            "description": "Title contains."
+            "description": "Title or description contains (case-insensitive)."
           },
           "category": {
             "type": "string",
@@ -2725,6 +2725,12 @@
           "page": {
             "type": "integer",
             "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "description": "Rows per page, 1..50; default 24 (the admin list asks for 25)."
           }
         }
       },
@@ -2752,7 +2758,7 @@
           "title": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 255
+            "maxLength": 150
           },
           "description": {
             "type": [
@@ -2780,14 +2786,13 @@
               "global",
               "school"
             ],
-            "description": "`school` needs the uploader to have a video-form school, else 422 \"Anda tiada sekolah untuk dikongsi.\" under fields.visibility."
+            "description": "Ignored: the server sets it by role (teacher = `school` with the teacher's school, else 422 \"Anda tiada sekolah untuk dikongsi.\" under fields.visibility; admin = `global`)."
           }
         },
         "required": [
           "videoUrl",
           "title",
-          "category",
-          "visibility"
+          "category"
         ]
       },
       "VideoUpdateRequest": {
@@ -2802,7 +2807,7 @@
           "title": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 255
+            "maxLength": 150
           },
           "description": {
             "type": [
@@ -2830,14 +2835,13 @@
               "global",
               "school"
             ],
-            "description": "`school` needs the uploader to have a video-form school, else 422 \"Anda tiada sekolah untuk dikongsi.\" under fields.visibility."
+            "description": "Ignored: the server sets it by role (teacher = `school` with the teacher's school, else 422 \"Anda tiada sekolah untuk dikongsi.\" under fields.visibility; admin = `global`)."
           }
         },
         "required": [
           "videoUrl",
           "title",
-          "category",
-          "visibility"
+          "category"
         ]
       },
       "VideoFormContext": {
@@ -75247,10 +75251,10 @@
           {
             "schema": {
               "type": "string",
-              "description": "Title contains."
+              "description": "Title or description contains (case-insensitive)."
             },
             "required": false,
-            "description": "Title contains.",
+            "description": "Title or description contains (case-insensitive).",
             "name": "search",
             "in": "query"
           },
@@ -75284,6 +75288,18 @@
             },
             "required": false,
             "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "description": "Rows per page, 1..50; default 24 (the admin list asks for 25)."
+            },
+            "required": false,
+            "description": "Rows per page, 1..50; default 24 (the admin list asks for 25).",
+            "name": "pageSize",
             "in": "query"
           }
         ],
@@ -75331,7 +75347,7 @@
         },
         "responses": {
           "201": {
-            "description": "Created; status \"Video berjaya diterbitkan.\".",
+            "description": "Created; status \"Video ditambah.\".",
             "content": {
               "application/json": {
                 "schema": {

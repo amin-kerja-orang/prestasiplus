@@ -358,7 +358,7 @@ export function registerContentPaths(registry: OpenAPIRegistry): void {
     description: 'Any signed-in user publishes immediately (the mock has no approval state, OQ-API-B4-16). Platform, external id and thumbnail are parsed from the URL.',
     request: { headers: [csrf], body: body(VideoCreateRequestSchema) },
     responses: {
-      201: json(contentMutationOf(VideoDetailSchema), 'Created; status "Video berjaya diterbitkan.".'),
+      201: json(contentMutationOf(VideoDetailSchema), 'Created; status "Video ditambah.".'),
       401: unauthorized,
       403: csrfInvalid,
       422: validation('videoUrl, title, category, visibility required; description at most 1000 chars; subjectId must exist. Also "Anda tiada sekolah untuk dikongsi." under fields.visibility when `school` is chosen and the uploader has no video-form school.'),
