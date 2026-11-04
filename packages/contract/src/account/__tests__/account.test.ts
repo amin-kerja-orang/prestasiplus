@@ -6,12 +6,17 @@ import { SessionSchema, type Session } from '../../session/session'
 import { ACCOUNT_COMPONENT_SCHEMAS } from '../paths'
 import {
   ACCOUNT_AUTH_MESSAGES,
+  ACCOUNT_BIO_MAX,
   ACCOUNT_MESSAGES,
   ACCOUNT_PICTURE_MAX_KB,
   ACCOUNT_PICTURE_MESSAGES,
   ACCOUNT_RESET_IC_MAX_ATTEMPTS,
+  ACCOUNT_PROFILE_CALENDAR_DAYS,
+  ACCOUNT_PROFILE_MODE_LABELS,
+  ACCOUNT_PROFILE_RECENT_MAX,
   ACCOUNT_RESET_IC_WINDOW_MINUTES,
   ACCOUNT_SETTINGS_DEFAULTS,
+  AccountProfileActivitySchema,
   AccountPasswordChangeRequestSchema,
   AccountPasswordEmailRequestSchema,
   AccountPasswordResetIcRequestSchema,
@@ -376,8 +381,10 @@ describe('D57 security defaults', () => {
 })
 
 describe('profile', () => {
-  it('requires name, ignores email and any other key', () => {
-    expect(fields(AccountProfileUpdateRequestSchema, {})).toEqual({ name: 'The name field is required.' })
+  it('PUT /me is partial: name may be absent, a blank name is refused, email and any other key are ignored', () => {
+    expect(AccountProfileUpdateRequestSchema.parse({})).toEqual({})
+    expect(AccountProfileUpdateRequestSchema.parse({ bio: 'Saya suka Sains' })).toEqual({ bio: 'Saya suka Sains' })
+    expect(fields(AccountProfileUpdateRequestSchema, { name: '  ' })).toEqual({ name: 'The name field is required.' })
     const parsed = AccountProfileUpdateRequestSchema.parse({ name: ' Murid Baharu ', email: 'lain@contoh.test', role: 'admin', isActive: false })
     expect(parsed).toEqual({ name: 'Murid Baharu' })
   })
@@ -402,9 +409,11 @@ describe('profile', () => {
   })
 
   it('limits and copy', () => {
-    expect(fields(AccountProfileUpdateRequestSchema, { name: 'A', bio: 'b'.repeat(501) })).toEqual({
-      bio: 'The bio field must not be greater than 500 characters.',
+    expect(fields(AccountProfileUpdateRequestSchema, { name: 'A', bio: 'b'.repeat(1001) })).toEqual({
+      bio: 'The bio field must not be greater than 1000 characters.',
     })
+    expect(ACCOUNT_BIO_MAX).toBe(1000)
+    expect(AccountProfileUpdateRequestSchema.safeParse({ name: 'A', bio: 'b'.repeat(1000) }).success).toBe(true)
     expect(fields(AccountProfileUpdateRequestSchema, { name: 'A', phone: '1'.repeat(15) })).toEqual({
       phone: 'The phone field must not be greater than 14 characters.',
     })
@@ -532,13 +541,14 @@ describe('openapi registration', () => {
     ['post', '/me/picture'],
     ['get', '/me/settings'],
     ['put', '/me/settings'],
+    ['get', '/me/profile-activity'],
     ['get', '/public/stats'],
   ]
 
-  it('contains the 11 account routes and counts them by its own tag', () => {
+  it('contains the 12 account routes and counts them by its own tag', () => {
     for (const [method, path] of routes) expect(doc.paths[path]?.[method], `${method} ${path}`).toBeDefined()
     const tagged = Object.values(doc.paths).flatMap((p) => Object.values(p)).filter((o) => o.tags?.includes('account'))
-    expect(tagged).toHaveLength(11)
+    expect(tagged).toHaveLength(12)
   })
 
   it('contains every component, with the Account prefix', () => {
@@ -577,5 +587,54 @@ describe('openapi registration', () => {
       const text = JSON.stringify(doc.components.schemas[id])
       expect(text, id).not.toMatch(/icNumber|passwordHash|"password"/)
     }
+  })
+})
+
+describe('profile activity (API-MUR-02)', () => {
+  const day = (i: number) => ({ date: `2026-10-${String(i + 1).padStart(2, '0')}`, answered: 0, sessions: 0 })
+  const valid = () => ({
+    tiles: { coins: 0, streakDays: 1, level: 1, practiceDays: 1, sessions: 2, accuracy: null, streakBest: 1, streakToday: 1 },
+    calendar30d: Array.from({ length: ACCOUNT_PROFILE_CALENDAR_DAYS }, (_, i) => day(i)),
+    badges: [
+      { code: '1', name: 'Langkah Pertama', unlocked: true, earnedAt: '2026-10-05T10:00:00+08:00' },
+      { code: '2', name: 'Rajin Berlatih', unlocked: false, earnedAt: null },
+    ],
+    recentSessions: [
+      { id: 's1', mode: 'past_year', modeLabel: 'Tahun Lepas', questions: 40, correct: 0, accuracy: 0, coins: 0, at: '2026-10-29T09:00:00+08:00' },
+    ],
+    publicProfilePath: '/pelajar/42',
+  })
+
+  it('accepts the decided shape: calendar {date, answered, sessions}, every badge with unlocked and earnedAt|null', () => {
+    expect(AccountProfileActivitySchema.safeParse(valid()).success).toBe(true)
+    const keys = Object.keys(AccountProfileActivitySchema.parse(valid()).calendar30d[0] ?? {})
+    expect(keys).toEqual(['date', 'answered', 'sessions'])
+  })
+
+  it('has exactly 30 calendar days and at most 10 recent sessions', () => {
+    expect(AccountProfileActivitySchema.safeParse({ ...valid(), calendar30d: valid().calendar30d.slice(1) }).success).toBe(false)
+    const one = valid().recentSessions[0] as ReturnType<typeof valid>['recentSessions'][number]
+    expect(AccountProfileActivitySchema.safeParse({ ...valid(), recentSessions: Array.from({ length: ACCOUNT_PROFILE_RECENT_MAX + 1 }, () => one) }).success).toBe(false)
+  })
+
+  it('accuracy is null or a number with at most one decimal (decision 11)', () => {
+    const tiles = (accuracy: unknown) => AccountProfileActivitySchema.safeParse({ ...valid(), tiles: { ...valid().tiles, accuracy } }).success
+    expect(tiles(null)).toBe(true)
+    expect(tiles(100)).toBe(true)
+    expect(tiles(66.7)).toBe(true)
+    expect(tiles(66.67)).toBe(false)
+    expect(tiles(101)).toBe(false)
+  })
+
+  it('names every session mode in BM, never snake_case', () => {
+    for (const label of Object.values(ACCOUNT_PROFILE_MODE_LABELS)) expect(label).not.toMatch(/_|^[a-z]/)
+    expect(ACCOUNT_PROFILE_MODE_LABELS.past_year).toBe('Tahun Lepas')
+  })
+
+  it('is registered as an own-data, student-only route with no parameter', () => {
+    const op = securityDoc().paths['/me/profile-activity']?.get
+    expect(JSON.stringify(op)).not.toContain('"parameters"')
+    expect(op?.responses['401']).toBeDefined()
+    expect(op?.responses['403']).toBeDefined()
   })
 })

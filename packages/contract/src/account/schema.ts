@@ -2,6 +2,7 @@ import { z } from '../zod'
 import { RoleCodeSchema } from '../common/enums'
 import { IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
+import { PracticeModeSchema, type PracticeMode } from '../practice/schema'
 import { SessionSchema, type Session } from '../session/session'
 
 /**
@@ -149,7 +150,8 @@ export const ACCOUNT_NAME_MAX = 255
 export const ACCOUNT_EMAIL_MAX = 255
 export const ACCOUNT_PHONE_MAX = 14
 export const ACCOUNT_IC_MAX = 14
-export const ACCOUNT_BIO_MAX = 500
+/** Decision 7 (issue 458, FR-MUR-A1-11): the Bio limit is 1000 on every screen. */
+export const ACCOUNT_BIO_MAX = 1000
 export const ACCOUNT_GRADE_MIN = 1
 export const ACCOUNT_GRADE_MAX = 11
 /** A reset token is valid 60 minutes, single use (BR-10, BR-11); a new request per e-mail needs 60 s between. */
@@ -435,7 +437,8 @@ export type AccountPasswordResetResponse = z.infer<typeof AccountPasswordResetRe
  */
 export const AccountProfileUpdateRequestSchema = z
   .object({
-    name: requiredText('name', ACCOUNT_NAME_MAX),
+    // FR-MUR-A1-9: `PUT /me` is partial, so `name` may be absent (a present blank or over-long name is still refused).
+    name: requiredText('name', ACCOUNT_NAME_MAX).optional(),
     phone: optionalText('phone', ACCOUNT_PHONE_MAX),
     bio: optionalText('bio', ACCOUNT_BIO_MAX),
     grade: z
@@ -449,6 +452,101 @@ export const AccountProfileUpdateRequestSchema = z
   })
   .meta({ id: 'AccountProfileUpdateRequest' })
 export type AccountProfileUpdateRequest = z.infer<typeof AccountProfileUpdateRequestSchema>
+
+// --- Profile activity (API-MUR-02) -----------------------------------------------------------------
+
+/** The calendar of the pupil profile covers this many Malaysia days, today last. */
+export const ACCOUNT_PROFILE_CALENDAR_DAYS = 30
+/** "Sesi Terkini" lists at most this many sessions. */
+export const ACCOUNT_PROFILE_RECENT_MAX = 10
+/** `GET /me/profile-activity` is the pupil's own read: any other role is refused with 403. */
+export const ACCOUNT_PROFILE_ACTIVITY_ROLE = 'student' as const
+
+/** BM name of a stored session mode (OPT-MODE-SESI, 40 section X11); never the raw snake_case value. */
+export const ACCOUNT_PROFILE_MODE_LABELS = {
+  random: 'Latih Tubi Rawak',
+  chapter: 'Soalan by Chapter',
+  revision: 'Ulang Kaji',
+  past_year: 'Tahun Lepas',
+  latih_tubi: 'Latih Tubi',
+  ramalan: 'Tracking A',
+  mission: 'Misi Harian',
+  remedial: 'Remedial',
+  question_set: 'Set Soalan Guru',
+  pksk: 'PKSK',
+} as const satisfies Record<PracticeMode, string>
+
+const profileCount = z.number().int().min(0)
+/** Accuracy on the wire: a number rounded to ONE decimal (R1-START-HERE decision 11), `null` with no answers. */
+const profileAccuracy = z
+  .number()
+  .min(0)
+  .max(100)
+  .refine((v) => Math.abs(v * 10 - Math.round(v * 10)) < 1e-9, { error: 'At most one decimal.' })
+  .nullable()
+
+export const AccountProfileTilesSchema = z
+  .strictObject({
+    coins: profileCount,
+    streakDays: profileCount,
+    level: z.number().int().min(1),
+    practiceDays: profileCount,
+    sessions: profileCount.meta({ description: 'Completed sessions of every mode.' }),
+    accuracy: profileAccuracy.meta({ description: 'Pooled correct / answered x 100, one decimal; null with 0 answers.' }),
+    streakBest: profileCount,
+    streakToday: profileCount.meta({ description: 'The current streak when the last activity is today (Malaysia day), else 0.' }),
+  })
+  .meta({ id: 'AccountProfileTiles' })
+export type AccountProfileTiles = z.infer<typeof AccountProfileTilesSchema>
+
+export const AccountProfileCalendarDaySchema = z
+  .strictObject({
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).meta({ description: 'YYYY-MM-DD, Malaysia day.' }),
+    answered: profileCount,
+    sessions: profileCount.meta({ description: 'Completed sessions that day: the shade of the cell.' }),
+  })
+  .meta({ id: 'AccountProfileCalendarDay' })
+export type AccountProfileCalendarDay = z.infer<typeof AccountProfileCalendarDaySchema>
+
+export const AccountProfileBadgeSchema = z
+  .strictObject({
+    code: z.string().min(1),
+    name: z.string(),
+    unlocked: z.boolean(),
+    earnedAt: TimestampSchema.nullable(),
+  })
+  .meta({ id: 'AccountProfileBadge' })
+export type AccountProfileBadge = z.infer<typeof AccountProfileBadgeSchema>
+
+export const AccountProfileSessionSchema = z
+  .strictObject({
+    id: z.string().min(1),
+    mode: PracticeModeSchema,
+    modeLabel: z.string().min(1),
+    questions: profileCount,
+    correct: profileCount,
+    accuracy: profileAccuracy,
+    coins: profileCount,
+    at: TimestampSchema,
+  })
+  .meta({ id: 'AccountProfileSession' })
+export type AccountProfileSession = z.infer<typeof AccountProfileSessionSchema>
+
+/**
+ * `data` of `GET /me/profile-activity` (API-MUR-02, 60 section 2.17.1; issue 458 decision 4). `calendar30d` has
+ * exactly 30 days, today last; `badges` lists EVERY configured badge (locked ones have `unlocked: false` and a null
+ * `earnedAt`); `recentSessions` is the newest 10 of every mode.
+ */
+export const AccountProfileActivitySchema = z
+  .strictObject({
+    tiles: AccountProfileTilesSchema,
+    calendar30d: z.array(AccountProfileCalendarDaySchema).length(ACCOUNT_PROFILE_CALENDAR_DAYS),
+    badges: z.array(AccountProfileBadgeSchema),
+    recentSessions: z.array(AccountProfileSessionSchema).max(ACCOUNT_PROFILE_RECENT_MAX),
+    publicProfilePath: z.string().regex(/^\/pelajar\/.+/),
+  })
+  .meta({ id: 'AccountProfileActivity' })
+export type AccountProfileActivity = z.infer<typeof AccountProfileActivitySchema>
 
 /** Body of `PUT /me/password`. The caller's session is ALWAYS rotated, the CSRF token changes, other sessions end; the client re-reads `GET /session`. */
 export const AccountPasswordChangeRequestSchema = z

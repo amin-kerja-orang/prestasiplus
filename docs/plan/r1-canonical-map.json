@@ -11202,6 +11202,16 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/me/profile-activity",
+      "method": "GET",
+      "path": "/api/me/profile-activity",
+      "api_id": "API-MUR-02",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/src/modules/account/account.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "GET /api/me/settings",
       "method": "GET",
       "path": "/api/me/settings",

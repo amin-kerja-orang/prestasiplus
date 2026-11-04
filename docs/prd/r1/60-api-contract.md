@@ -168,7 +168,7 @@ Controllers: `practice/reads/overview/overview.controller.ts`, `classes/kelas-sa
 | API ID | Method + path | Roles | Request | Response | Status | FR/AC | Card |
 |---|---|---|---|---|---|---|---|
 | API-MUR-01 | `GET /api/dashboard` | any signed-in (pupil data of the caller) | none | `PracticeReadDashboard` (`packages/contract/src/practice/reads/schema.ts:206`): greeting, subjects with servable counts, streak, targets, wallet strip | Exists-Fix: Kombo, Soalan Terkini and Statistik already render in V3; missing: `package` (`{name, validUntil}` or null; Pakej SPM Aktif, from `SubscriptionService.activePackage`, DM-35), the Kombo warning, and today's mood choice for the pupil (see API-MUR-11 `POST /api/me/mood` and `GET /api/me/mood/today`, D114(b)); Cabaran Kilat is NOT in this response: the FE reads API-GAME-07 `GET /api/gamification/challenges`; "Subjek Tersedia" counts must be what Latih Tubi serves (D91) | FR-MUR-2-* | S5-T04 |
-| API-MUR-02 | `GET /api/me/profile-activity` | M (own) | none | `{calendar30d[], badges[], recentSessions[10], tiles}; the public profile of the same pupil returns first name only and `school: null`` | Missing-Build (shape 2.17.1). No route returns the 30-day calendar, badge list or last 10 sessions (parity C20) | FR-MUR-A1-1, A1-2, A1-6 | S5-T05 |
+| API-MUR-02 | `GET /api/me/profile-activity` | M (own) | none | `{calendar30d[] ({date, answered, sessions}), badges[] (every badge, unlocked, earnedAt or null), recentSessions[10], tiles}; the public profile of the same pupil returns first name only and `school: null`` | Missing-Build (shape 2.17.1). No route returns the 30-day calendar, badge list or last 10 sessions (parity C20) | FR-MUR-A1-1, A1-2, A1-6 | S5-T05 |
 | API-MUR-03 | `GET /api/public/students/:id` | public (rate limited per client address, uniform 404 after a 150 ms floor) | none | `PerformancePublicProfile` (first name only, `school: null`, tiles, posts = []) | Exists-Fix is not needed for the shape: the code deliberately returns **first name only and no school** (privacy decision OQ-8 in `public-profile.service.ts`) and the SRS now says the same (FR-MUR-A1-5, OQ-API-04 decided). Keep as is; only the SRS and the test are aligned | FR-MUR-A1-5, AC-MUR-A1-5 | S5-T05 |
 | API-MUR-04 | `GET /api/kelas-saya`, `POST /api/kelas-saya/join` | any signed-in pupil | join: {code} | list of the pupil's classes; join returns the class | Exists-Fix: follow V2 (OQ-X-3): a pupil is in a class only because the teacher or admin enrolled them, so the V3-only "Sertai" box is removed from the UI and `POST /api/kelas-saya/join` answers `404` for every role (OQ-API-08 decided, AC-MUR-8-3); the column `classrooms.join_code` stays (no migration) but `joinCode` and the QR are removed from pupil and teacher responses; the list stays and shows classmates by display name only (4.6) | FR-MUR-8-*, FR-GUR-8-* | S6-T14, S5-T08 |
 | API-MUR-05 | `GET /api/videos` (public), `GET /api/videos/:id` (public), `GET /api/videos/form-context`, `POST /api/videos`, `PUT /api/videos/:id`, `DELETE /api/videos/:id` | list/detail: public; write routes: AP and G (a Guru video is school-scoped, `visibility = 'school'` with the teacher's `school_id`, DM-76); a pupil gets `403` | list: `subject`, `level`, `page`; Guru create: `{title, url, subjectId?, category}` (category `motivasi`, `tutorial`, `tips-spm`, `ceramah`, `lain-lain` (the existing check values, kept: D115)) | `Video[]` | Exists-Fix (`content/videos/videos.controller.ts`): write routes are limited to Admin Pusat and Guru (OQ-API-12 amended); the list returns global videos plus the own school's; admin writes are exposed to the admin list (N-01); the Murid "Tambah Video" button stays hidden (OQ-MUR-11) | FR-MUR-7-*, R1-ADM-N-01 | S5-T08 |
@@ -527,17 +527,19 @@ All new request bodies are `z.strictObject` in `packages/contract/src/<area>/`, 
 
 ```ts
 type ProfileActivity = {
-  tiles: { coins: number; streakDays: number; level: number; practiceDays: number; sessions: number; accuracy: number | null; streakBest: number; streakToday: number }  // sessions = all-mode session count; accuracy = whole number, null with 0 answers
-  calendar30d: { date: string /* YYYY-MM-DD, MYT */; answered: number }[]   // exactly 30, today last
-  badges: { code: string; name: string; earnedAt: Timestamp }[]            // empty -> "Belum ada lencana lagi"
-  recentSessions: {                                                         // max 10, newest first
+  tiles: { coins: number; streakDays: number; level: number; practiceDays: number; sessions: number; accuracy: number | null; streakBest: number; streakToday: number }  // sessions = all-mode completed session count; accuracy = pooled correct / answered x 100, ONE decimal on the wire (R1-START-HERE decision 11), shown as a whole number, null with 0 answers; streakToday = the current streak when the last activity is today (Malaysia day), else 0
+  calendar30d: { date: string /* YYYY-MM-DD, MYT */; answered: number; sessions: number }[]   // exactly 30, oldest first, today last; the shade of a cell uses `sessions`
+  badges: { code: string; name: string; unlocked: boolean; earnedAt: Timestamp | null }[]    // EVERY configured badge; locked ones: unlocked false, earnedAt null (greyed); "{n} lencana telah dikumpul" counts `unlocked`; 0 unlocked -> "Belum ada lencana lagi"
+  recentSessions: {                                                         // max 10, newest first, every mode
     id: string; mode: PracticeMode; modeLabel: string /* BM, never snake_case */
     questions: number; correct: number; accuracy: number | null /* one decimal on the wire, shown as a whole number (4.6, D-T10-1) */; coins: number; at: Timestamp }[]
   publicProfilePath: string                                                 // '/pelajar/{id}'
 }
 ```
 
-Errors: `401`; any role other than `student` -> `403`. Sources: practice sessions (M05), wallet (M14), achievements (M14).
+Decided (issue 458, decision 4, "10 wins on behaviour, 60 on field names, under the same API ID"): `calendar30d[]` carries `{date, answered, sessions}`; `badges[]` lists every configured badge with `unlocked` and `earnedAt | null` (a user who unlocked none gets the whole catalogue locked). Test rows (Mod Pelajar) are not counted.
+
+Errors: `401`; any role other than `student` -> `403`. Sources: practice sessions (M05), wallet and streak (M14), achievements (M14). Code: `apps/api/src/modules/account/profile-activity.service.ts`; contract `packages/contract/src/account/schema.ts` (`AccountProfileActivitySchema`).
 
 ### 2.17.2 GUR
 

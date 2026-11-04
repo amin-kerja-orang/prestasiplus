@@ -21,6 +21,11 @@ import {
   AccountPictureSchema,
   AccountPictureUploadRequestSchema,
   AccountPlatformStatsSchema,
+  AccountProfileActivitySchema,
+  AccountProfileBadgeSchema,
+  AccountProfileCalendarDaySchema,
+  AccountProfileSessionSchema,
+  AccountProfileTilesSchema,
   AccountProfileUpdateRequestSchema,
   AccountRegisterPendingSchema,
   AccountRegisterResponseSchema,
@@ -57,6 +62,11 @@ export const ACCOUNT_COMPONENT_SCHEMAS = {
   AccountSettings: AccountSettingsSchema,
   AccountSettingsUpdateRequest: AccountSettingsUpdateRequestSchema,
   AccountPlatformStats: AccountPlatformStatsSchema,
+  AccountProfileTiles: AccountProfileTilesSchema,
+  AccountProfileCalendarDay: AccountProfileCalendarDaySchema,
+  AccountProfileBadge: AccountProfileBadgeSchema,
+  AccountProfileSession: AccountProfileSessionSchema,
+  AccountProfileActivity: AccountProfileActivitySchema,
 } as const
 
 const json = (schema: z.ZodType, description: string) => ({
@@ -177,6 +187,16 @@ export function registerAccountPaths(registry: OpenAPIRegistry): void {
   })
 
   registry.registerPath({
+    method: 'get',
+    path: '/me/profile-activity',
+    tags: ['account'],
+    summary: 'Own profile activity (API-MUR-02)',
+    description:
+      'Student role only, own data only (there is no user id parameter). Tiles, the 30-day calendar (exactly 30 Malaysia days, today last; the shade uses `sessions`), every configured badge (locked ones greyed: `unlocked` false, `earnedAt` null) and the newest 10 sessions of every mode with the BM mode name. `tiles.accuracy` is pooled correct / answered x 100 with one decimal, null with 0 answers. Any other role is 403 FORBIDDEN. no-store.',
+    responses: { 200: jsonNoStore(envelopeOf(AccountProfileActivitySchema), 'The pupil own activity.'), 401: unauthorized, 403: err('FORBIDDEN (a role other than student), or ' + PCR) },
+  })
+
+  registry.registerPath({
     method: 'put',
     path: '/me',
     tags: ['account'],
@@ -189,7 +209,7 @@ export function registerAccountPaths(registry: OpenAPIRegistry): void {
       401: unauthorized,
       403: csrfOrPcr,
       422: validation(
-        `name required, max 255; phone max 14; bio max 500; grade "${ACCOUNT_AUTH_MESSAGES.gradeInvalid}" and school "${ACCOUNT_AUTH_MESSAGES.schoolInvalid}" when the value has the wrong type (a valid value is ignored).`,
+        `name required, max 255; phone max 14; bio max 1000; grade "${ACCOUNT_AUTH_MESSAGES.gradeInvalid}" and school "${ACCOUNT_AUTH_MESSAGES.schoolInvalid}" when the value has the wrong type (a valid value is ignored).`,
       ),
       429: rateLimited(`"${AUTH_ERROR_MESSAGES.RATE_LIMITED}" (D57a).`),
     },

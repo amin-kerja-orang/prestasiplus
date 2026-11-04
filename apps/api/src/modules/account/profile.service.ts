@@ -127,7 +127,7 @@ export class ProfileService {
       const now = this.clock.now()
       await this.prisma.transaction(async () => {
         await this.users.update(user.id, {
-          name: data.name,
+          ...(data.name !== undefined ? { name: data.name } : {}),
           ...(data.phone !== undefined ? { phone: blankToNull(data.phone) } : {}),
           ...(data.bio !== undefined ? { bio: blankToNull(data.bio) } : {}),
           now,

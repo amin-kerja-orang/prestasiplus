@@ -160,10 +160,10 @@ describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC
 
     it('validates name, phone and bio with the mock copy; a valid-typed grade and school are accepted and ignored', async () => {
       const who = await login(t, 'pelajar2@demo.test')
-      const res = await put(who, '/me', { name: '', bio: 'a'.repeat(501) })
+      const res = await put(who, '/me', { name: '', bio: 'a'.repeat(1001) })
       expect(fieldsOf(res)).toEqual({
         name: 'The name field is required.',
-        bio: 'The bio field must not be greater than 500 characters.',
+        bio: 'The bio field must not be greater than 1000 characters.',
       })
       expect(ErrorBodySchema.parse(res.body).error.message).toBe('The name field is required. (and 1 more error)')
       const long = await put(who, '/me', { name: 'x', phone: '0'.repeat(15) })
