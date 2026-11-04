@@ -345,9 +345,9 @@ const S6: StudentPerformance = {
 const EMPTY_S6: StudentPerformance = {
   ...S6,
   user: { id: 1, name: 'Admin Demo', initial: 'A' },
-  heroAccuracy: null,
+  heroAccuracy: 0,
   streak: 1,
-  stats: { sessions: 0, accuracy: null, answered: 0, seconds: 0 },
+  stats: { sessions: 0, accuracy: 0, answered: 0, seconds: 0 },
   trend: trendOf(),
   headcount: [],
   mastery: [],
@@ -513,9 +513,8 @@ describe('S6 Prestasi360Page', () => {
   it('shows the Cadangan empty copy with its link and drops the weak-topics card when there are none', async () => {
     api.fetchStudentPerformance.mockResolvedValue({ ...EMPTY_S6, suggestions: [] })
     const w = await render(Prestasi360Page, '/prestasi/1', PATH)
-    expect(t(w, 'suggestions-empty').text()).toContain(
-      'Belum cukup data untuk cadangan. Mula latihan →',
-    )
+    expect(t(w, 'suggestions-empty').text()).toContain('Belum cukup data untuk cadangan.')
+    expect(t(w, 'suggestions-start').text()).toBe('Mula latihan →')
     expect(t(w, 'suggestions-start').attributes('href')).toBe('/practice')
     expect(exists(w, 'weak-block')).toBe(false)
   })

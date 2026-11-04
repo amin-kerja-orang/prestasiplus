@@ -47,30 +47,28 @@ export class StudentPerformanceService {
     const weeks = lastWeeks(now, STUDENT_TREND_WEEKS)
     const own = { userIds: [userId] } as const
     // The pooled figures come from the one answer store (S10-T01 shared reader): every mode answers, game modes add no session.
-    const [rows, trendRows, sessionRows, sittings] = await Promise.all([
+    const [rows, trendRows, sessionRows, sessionCounts, sittings, practiceDays] = await Promise.all([
       this.ports.answerFacts.answerFacts(own),
       this.ports.answerFacts.weeklyFacts({ ...own, from: mytMidnight(weeks[0] as string), to: now }),
       this.ports.answerFacts.weeklyFacts({ ...own, modes: SESSION_MODES }),
-      // Bijak sittings stay the source of the day map, the practice-day count and the time spent only:
-      // the answer reader carries no per-day or duration figure.
+      // One grouped distinct count: a session that crosses Monday 00:00 is one session, not one per week.
+      this.ports.answerFacts.sessionCounts({ ...own, modes: SESSION_MODES }),
+      // The day map, the practice days and the time spent come from the Bijak sittings AND the practice sessions
+      // (the answer reader carries no per-day or duration figure). A Bijak sitting is not a `practice_sessions` row, so nothing is counted twice.
       this.ports.bijak.sittings({ userIds: [userId], modes: COUNTED_MODES.student }),
+      this.ports.practice.dailyActivity(userId),
     ])
 
     const answered = sum(rows, (r) => r.attempts)
-    const accuracy = answered === 0 ? null : accuracyPct(sum(rows, (r) => r.correct), answered)
-    const sessions = sum(sessionRows, (r) => r.sessions)
+    const accuracy = answered === 0 ? 0 : accuracyPct(sum(rows, (r) => r.correct), answered)
+    const sessions = sessionCounts.find((r) => r.subjectId === null)?.sessions ?? 0
+    const subjectSessions = new Map(sessionCounts.flatMap((r) => (r.subjectId === null ? [] : [[r.subjectId, r.sessions] as const])))
 
     const bySubject = groupBy(
       rows.filter((r) => r.subjectId !== '0'),
       (r) => r.subjectId,
     )
     const subjects = await this.directory.subjectsOfIds([...bySubject.keys()])
-    // Sessions per subject: one weekly read per subject of this one pupil (a handful of subjects, set-based inside).
-    const subjectSessions = new Map(
-      await Promise.all(
-        [...bySubject.keys()].map(async (id) => [id, sum(await this.ports.answerFacts.weeklyFacts({ ...own, subjectId: id, modes: SESSION_MODES }), (r) => r.sessions)] as const),
-      ),
-    )
     const mastery = [...bySubject]
       .flatMap(([id, list]) => {
         const subject = subjects.get(id)
@@ -94,6 +92,7 @@ export class StudentPerformanceService {
       const d = mytDay(s.submittedAt)
       perDay.set(d, (perDay.get(d) ?? 0) + 1)
     }
+    for (const p of practiceDays) perDay.set(p.day, (perDay.get(p.day) ?? 0) + p.sessions)
     const heatmap = lastDays(now, HEATMAP_DAYS).map((date) => ({ date, sessions: perDay.get(date) ?? 0 }))
 
     const suggestions: PerformanceStudent['suggestions'] =
@@ -125,9 +124,9 @@ export class StudentPerformanceService {
 
     return {
       user: { id: pupil.id, name: pupil.name, initial: (pupil.name.trim()[0] ?? '?').toUpperCase() },
-      heroAccuracy: accuracy === null ? null : Math.round(accuracy),
+      heroAccuracy: Math.round(accuracy),
       streak: profile?.streak.current ?? 0,
-      stats: { sessions, accuracy, answered, seconds: figuresOf(sittings).seconds },
+      stats: { sessions, accuracy, answered, seconds: figuresOf(sittings).seconds + sum(practiceDays, (p) => p.seconds) },
       headcount,
       mastery,
       activity: {

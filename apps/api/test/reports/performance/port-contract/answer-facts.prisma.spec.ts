@@ -130,6 +130,8 @@ async function translating(seed: AnswerFactsSeed): Promise<AnswerFactsPort> {
         mode: MODE_OUT[r.mode] ?? r.mode,
       })),
     weeklyFacts: async (q) => (await real.weeklyFacts(scope(q))).map((r) => ({ ...r, userId: userBack.get(r.userId)! })),
+    sessionCounts: async (q) =>
+      (await real.sessionCounts(scope(q))).map((r) => ({ ...r, userId: userBack.get(r.userId)!, subjectId: r.subjectId === null ? null : (subjectBack.get(r.subjectId) ?? r.subjectId) })),
     spInfo: async (q) =>
       (await real.spInfo({ topicIds: q.topicIds.map((x) => topicOf.get(x) ?? '0'), chapterIds: q.chapterIds.map((x) => chapterOf.get(x) ?? '0') })).map((r) => ({
         ...r,

@@ -176,10 +176,10 @@ export interface PerformanceTrendWeek {
 
 export interface StudentPerformance {
   user: { id: number; name: string; initial: string }
-  /** Null when the pupil has answered nothing (the screen shows "—"). */
-  heroAccuracy: number | null
+  /** 0 when nothing is answered; the screen shows "—" then (`stats.answered === 0`). */
+  heroAccuracy: number
   streak: number
-  stats: { sessions: number; accuracy: number | null; answered: number; seconds: number }
+  stats: { sessions: number; accuracy: number; answered: number; seconds: number }
   /** Always 12 weeks, oldest first. */
   trend: PerformanceTrendWeek[]
   headcount: {

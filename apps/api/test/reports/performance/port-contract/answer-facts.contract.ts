@@ -127,6 +127,19 @@ export function describeAnswerFactsPort(
       expect(weeks(await port.weeklyFacts({ userIds: ['1'] }))).toEqual([['1', '2026-09-21', 4, 3, 3]])
     })
 
+    it('sessionCounts: distinct sessions over the whole window (a session across Monday is one), per subject and in total', async () => {
+      const port = await make(SEED)
+      const rows = await port.sessionCounts({ userIds: ['1'] })
+      const of = (subjectId: string | null): number | undefined => rows.find((r) => r.userId === '1' && r.subjectId === subjectId)?.sessions
+      // sA, sB, sC, sD in total; subject 1 has sA, sB, sD and subject 2 has sC.
+      expect(of(null)).toBe(4)
+      expect(of('1')).toBe(3)
+      expect(of('2')).toBe(1)
+      const noBattle = await port.sessionCounts({ userIds: ['1'], modes: ['latih_tubi', 'simulasi'] })
+      expect(noBattle.find((r) => r.subjectId === null)?.sessions).toBe(3)
+      expect(await port.sessionCounts({ userIds: [] })).toEqual([])
+    })
+
     it('spInfo: topic name with the chapter code, chapter name without a code, subject and level', async () => {
       const port = await make(SEED)
       const info = await port.spInfo({ topicIds: ['100'], chapterIds: ['50', '51'] })

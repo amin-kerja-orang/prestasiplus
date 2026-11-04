@@ -13,10 +13,13 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   DsBackLink,
   DsChart,
+  DsEmptyState,
+  DsHeading,
   DsLoadError,
   DsPage,
   DsPageHeader,
   DsPanel,
+  DsSection,
   DsStatRow,
   DsStatTile,
 } from '@/ds'
@@ -32,7 +35,7 @@ import SuggestionsCard from '../components/prestasi360/SuggestionsCard.vue'
 import WeakTopicsCard from '../components/prestasi360/WeakTopicsCard.vue'
 import { usePhIcon } from '../lib/icons'
 import { studyTime } from '../lib/analitik'
-import { grouped, pctWhole, plain } from '../lib/prestasi/format'
+import { DASH, grouped, pctWhole, plain } from '../lib/prestasi/format'
 import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
 import { routeId } from '../lib/route-id'
 import { useStatItems, type StatSpec } from '../lib/stat-items'
@@ -82,7 +85,7 @@ const stats = computed<StatSpec[]>(() => {
   if (!s) return []
   return [
     { id: 'sesi', label: 'Sesi Kuiz', value: plain(s.sessions), icon: 'clipboard-text' },
-    { id: 'ketepatan', label: 'Ketepatan', value: pctWhole(s.accuracy), icon: 'check-circle' },
+    { id: 'ketepatan', label: 'Ketepatan', value: s.answered === 0 ? DASH : pctWhole(s.accuracy), icon: 'check-circle' },
     { id: 'soalan', label: 'Soalan Dijawab', value: plain(s.answered), icon: 'question' },
     { id: 'masa', label: 'Masa Belajar', value: studyTime(s.seconds), icon: 'clock' },
   ]
@@ -140,7 +143,7 @@ const activity = computed(() => {
             />
           </template>
           <template v-if="!byId" #subtitle>
-            <p class="text-title text-highlighted" data-testid="hero-name">{{ data.user.name }}</p>
+            <DsHeading :level="2" variant="title" data-testid="hero-name">{{ data.user.name }}</DsHeading>
             <p>Prestasi 360 — Dashboard Individu</p>
           </template>
           <template #leading>
@@ -150,7 +153,7 @@ const activity = computed(() => {
             <div class="hidden gap-3 lg:flex" data-testid="hero-mini">
               <p class="flex flex-col items-center bg-elevated px-4 py-2">
                 <span class="tabular text-heading text-highlighted" data-testid="hero-accuracy"
-                  >{{ pctWhole(data.heroAccuracy) }}</span
+                  >{{ data.stats.answered === 0 ? DASH : pctWhole(data.heroAccuracy) }}</span
                 >
                 <span class="text-caption text-muted">Ketepatan</span>
               </p>
@@ -174,20 +177,20 @@ const activity = computed(() => {
       />
 
       <DsPanel data-testid="trend-card">
-        <div class="flex flex-col gap-4">
-          <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-            <UIcon :name="icon('chart-line-up')" class="size-5 text-primary-t" />Trend Prestasi
-          </h2>
-          <p v-if="trendEmpty" class="text-body text-muted" data-testid="trend-empty">
-            Belum ada data prestasi lagi.
-            <UButton
-              to="/practice"
-              variant="link"
-              color="primary"
-              label="Mula latihan →"
-              data-testid="trend-start"
-            />
-          </p>
+        <DsSection title="Trend Prestasi" variant="subheading" icon="chart-line-up">
+          <div v-if="trendEmpty" data-testid="trend-empty">
+            <DsEmptyState title="Belum ada data prestasi lagi." icon="i-ph-chart-line-up">
+              <template #actions>
+                <UButton
+                  to="/practice"
+                  variant="link"
+                  color="primary"
+                  label="Mula latihan →"
+                  data-testid="trend-start"
+                />
+              </template>
+            </DsEmptyState>
+          </div>
           <DsChart
             v-else
             title="Ketepatan mingguan (12 minggu)"
@@ -198,7 +201,7 @@ const activity = computed(() => {
             table-label="Trend prestasi mengikut minggu"
             data-testid="trend-chart"
           />
-        </div>
+        </DsSection>
       </DsPanel>
 
       <div class="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-3">

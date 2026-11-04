@@ -2,6 +2,7 @@ import type {
   AnswerFactRow,
   AnswerFactsPort,
   AnswerFactsQuery,
+  SessionCountRow,
   SpInfo,
   WeeklyFactRow,
 } from '../../../../src/modules/reports/performance/ports'
@@ -123,6 +124,24 @@ export class InMemoryAnswerFacts implements AnswerFactsPort {
     return [...by.values()]
       .map((t) => ({ userId: t.userId, weekStart: t.weekStart, attempts: t.attempts, correct: t.correct, sessions: t.sessions.size }))
       .sort((x, y) => cmp(x.userId, y.userId) || (x.weekStart < y.weekStart ? -1 : 1))
+  }
+
+  async sessionCounts(q: AnswerFactsQuery): Promise<SessionCountRow[]> {
+    const total = new Map<string, Set<string>>()
+    const per = new Map<string, Set<string>>()
+    for (const a of this.pick(q)) {
+      const k = a.sessionId ? `s:${a.sessionId}` : `n:${a.mode}:${mytDayOf(a.answeredAt)}`
+      const add = (m: Map<string, Set<string>>, key: string) => m.set(key, (m.get(key) ?? new Set<string>()).add(k))
+      add(total, a.userId)
+      add(per, `${a.userId}|${a.subjectId ?? '0'}`)
+    }
+    return [
+      ...[...total].map(([userId, set]) => ({ userId, subjectId: null, sessions: set.size })),
+      ...[...per].map(([key, set]) => {
+        const [userId, subjectId] = key.split('|') as [string, string]
+        return { userId, subjectId, sessions: set.size }
+      }),
+    ]
   }
 
   async spInfo(q: { topicIds: readonly string[]; chapterIds: readonly string[] }): Promise<SpInfo[]> {

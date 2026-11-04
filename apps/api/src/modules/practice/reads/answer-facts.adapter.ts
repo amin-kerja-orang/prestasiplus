@@ -7,6 +7,7 @@ import type {
   AnswerFactRow,
   AnswerFactsPort,
   AnswerFactsQuery,
+  SessionCountRow,
   SpInfo,
   WeeklyFactRow,
 } from '../../reports/performance/ports'
@@ -123,6 +124,23 @@ export class AnswerFactsAdapter implements AnswerFactsPort {
        GROUP BY b.user_id, date_trunc('week', b.local_at)
        ORDER BY b.user_id, "weekStart"`
     return rows.map((r) => ({ userId: idToString(r.userId), weekStart: r.weekStart, attempts: num(r.attempts), correct: num(r.correct), sessions: num(r.sessions) }))
+  }
+
+  async sessionCounts(q: AnswerFactsQuery): Promise<SessionCountRow[]> {
+    if (q.modes && q.modes.length === 0) return []
+    // One grouped distinct count: GROUPING SETS gives the per-subject rows and the all-subject total (subject null).
+    // A session key is its session id; an answer with no session is one session per mode per MYT day.
+    const rows = await this.db.$queryRaw<{ userId: bigint; subjectId: bigint | null; sessions: bigint }[]>`
+      WITH base AS (
+        SELECT a.user_id, a.subject_id,
+               coalesce(a.session_id::text, 'n:' || ${MODE} || ':' || to_char(a.answered_at AT TIME ZONE ${MYT}, 'YYYY-MM-DD')) AS skey
+          ${this.from}
+         WHERE ${this.where(q)})
+      SELECT b.user_id AS "userId", b.subject_id AS "subjectId", count(DISTINCT b.skey)::bigint AS sessions
+        FROM base b
+       GROUP BY GROUPING SETS ((b.user_id), (b.user_id, b.subject_id))
+       ORDER BY b.user_id, b.subject_id NULLS FIRST`
+    return rows.map((r) => ({ userId: idToString(r.userId), subjectId: r.subjectId === null ? null : idToString(r.subjectId), sessions: num(r.sessions) }))
   }
 
   async spInfo(q: { topicIds: readonly string[]; chapterIds: readonly string[] }): Promise<SpInfo[]> {

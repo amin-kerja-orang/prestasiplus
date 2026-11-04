@@ -4,7 +4,7 @@
  * is INFERRED). Recommendations are friend/info content, so the chip uses the info accent.
  */
 import { usePrototypeScope } from '@/composables'
-import { DsIconChip, DsPanel } from '@/ds'
+import { DsEmptyState, DsIconChip, DsPanel } from '@/ds'
 
 import type { StudentPerformance } from '../../api/types'
 import { usePhIcon, type PhIcon } from '../../lib/icons'
@@ -31,17 +31,19 @@ const ICON: Record<string, PhIcon> = {
       <h2 class="flex items-center gap-2 text-subheading text-highlighted">
         <UIcon :name="icon('lightbulb')" class="size-5 text-primary-t" />Cadangan
       </h2>
-      <p v-if="items.length === 0" class="text-body text-muted" data-testid="suggestions-empty">
-        Belum cukup data untuk cadangan.
-        <UButton
-          v-if="allows('/practice')"
-          to="/practice"
-          variant="link"
-          color="primary"
-          label="Mula latihan →"
-          data-testid="suggestions-start"
-        />
-      </p>
+      <div v-if="items.length === 0" data-testid="suggestions-empty">
+        <DsEmptyState title="Belum cukup data untuk cadangan." icon="i-ph-lightbulb">
+          <template v-if="allows('/practice')" #actions>
+            <UButton
+              to="/practice"
+              variant="link"
+              color="primary"
+              label="Mula latihan →"
+              data-testid="suggestions-start"
+            />
+          </template>
+        </DsEmptyState>
+      </div>
       <ul v-else class="flex flex-col gap-2">
         <li
           v-for="(s, i) in items"

@@ -42,6 +42,17 @@ export interface WeeklyFactRow {
   sessions: number
 }
 
+/**
+ * Distinct sessions over the whole window, never summed from weeks (a session that crosses Monday 00:00 is ONE session).
+ * `subjectId` null = the total over all subjects of the pupil; otherwise that subject's own count.
+ * Same session rule as `WeeklyFactRow.sessions`; callers pass `modes` to leave the game modes out.
+ */
+export interface SessionCountRow {
+  userId: string
+  subjectId: string | null
+  sessions: number
+}
+
 export interface SpInfo {
   id: string
   kind: 'topic' | 'chapter'
@@ -54,6 +65,8 @@ export interface SpInfo {
 export interface AnswerFactsPort {
   answerFacts(query: AnswerFactsQuery): Promise<AnswerFactRow[]>
   weeklyFacts(query: AnswerFactsQuery): Promise<WeeklyFactRow[]>
+  /** Added for S10-T01 (not on the card): a distinct count cannot be built from `weeklyFacts` rows. */
+  sessionCounts(query: AnswerFactsQuery): Promise<SessionCountRow[]>
   spInfo(ids: { topicIds: readonly string[]; chapterIds: readonly string[] }): Promise<SpInfo[]>
 }
 
@@ -65,6 +78,9 @@ export class EmptyAnswerFacts implements AnswerFactsPort {
     return []
   }
   async weeklyFacts(): Promise<WeeklyFactRow[]> {
+    return []
+  }
+  async sessionCounts(): Promise<SessionCountRow[]> {
     return []
   }
   async spInfo(): Promise<SpInfo[]> {

@@ -190,10 +190,36 @@ describe('Prestasi 360 (student)', () => {
     })
   })
 
-  it('a pupil with no answers gets null accuracy, zeros, 12 empty weeks and the start suggestion (neutral values, not invented)', async () => {
+  it('a session that crosses Monday 00:00 is one session in stats, and one in each of the two trend weeks', async () => {
+    w.answers.add({ userId: '1', subjectId: '1', questionId: 'a', mode: 'latih_tubi', isCorrect: true, answeredAt: d('2026-09-20T23:50:00+08:00'), sessionId: 'sX' })
+    w.answers.add({ userId: '1', subjectId: '1', questionId: 'b', mode: 'latih_tubi', isCorrect: false, answeredAt: d('2026-09-21T00:10:00+08:00'), sessionId: 'sX' })
+    const r = await w.student.student(ctxOf('student', '1'), '1')
+    expect(r.stats.sessions).toBe(1)
+    expect(r.trend[10]).toMatchObject({ week: '2026-09-14', sessions: 1 })
+    expect(r.trend[11]).toMatchObject({ week: NOW_MONDAY, sessions: 1 })
+    expect(r.mastery.map((m) => m.sessions)).toEqual([1])
+  })
+
+  it('a Latih Tubi only pupil (no Bijak sitting) has a heatmap, practice days and study time from practice_sessions', async () => {
+    w.practice.addPupil({ id: '1' })
+    w.practice.addSession({ userId: '1', completedAt: d('2026-09-24T10:00:00+08:00'), questionCount: 10, correctCount: 7, coins: 0, seconds: 300 })
+    w.practice.addSession({ userId: '1', completedAt: d('2026-09-24T18:00:00+08:00'), questionCount: 10, correctCount: 5, coins: 0, seconds: 200 })
+    w.practice.addSession({ userId: '1', completedAt: d('2026-09-25T09:00:00+08:00'), questionCount: 10, correctCount: 5, coins: 0, seconds: 100, isTest: true })
+    w.practice.addSession({ userId: '1', completedAt: d('2026-09-22T09:00:00+08:00'), questionCount: 10, correctCount: 5, coins: 0, seconds: 50 })
+    // plus one Bijak sitting on a shared day: added, not merged away
+    w.bijak.addSitting(sitting({ userId: '1', durationSeconds: 60, submittedAt: d('2026-09-24T12:00:00+08:00') }))
+    const r = await w.student.student(ctxOf('student', '1'), '1')
+    expect(r.stats.seconds).toBe(300 + 200 + 50 + 60)
+    expect(r.activity.practiceDays).toBe(2)
+    expect(r.heatmap.find((h) => h.date === '2026-09-24')?.sessions).toBe(3)
+    expect(r.heatmap.find((h) => h.date === '2026-09-22')?.sessions).toBe(1)
+    expect(r.heatmap.find((h) => h.date === '2026-09-25')?.sessions).toBe(0)
+  })
+
+  it('a pupil with no answers gets zero accuracy (the screen shows a dash), zeros, 12 empty weeks and the start suggestion (neutral values, not invented)', async () => {
     const r = await w.student.student(ctxOf('admin', '99', { level: 'national', label: 'Nasional' }), '2')
-    expect(r.stats).toEqual({ sessions: 0, accuracy: null, answered: 0, seconds: 0 })
-    expect(r.heroAccuracy).toBeNull()
+    expect(r.stats).toEqual({ sessions: 0, accuracy: 0, answered: 0, seconds: 0 })
+    expect(r.heroAccuracy).toBe(0)
     expect(r.suggestions).toEqual([{ kind: 'start', text: 'Mulakan perjalanan belajar kamu — setiap sesi latihan membina asas yang kukuh!' }])
     expect(r.mastery).toEqual([])
     expect(r.weakTopics).toEqual([])
