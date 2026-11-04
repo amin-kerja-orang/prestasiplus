@@ -44,7 +44,7 @@ export function registerSupportPaths(registry: OpenAPIRegistry): void {
     'X-CSRF-Token': z.string().min(1).meta({ description: 'Value of Session.csrf; required on mutating requests.' }),
   })
   const unauthorized = err('UNAUTHORIZED: no valid session.')
-  const adminOnly = err('FORBIDDEN "This action is unauthorized." (not an admin).')
+  const adminOnly = err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (not an admin).')
 
   registry.registerPath({
     method: 'get',

@@ -205,15 +205,15 @@ const json = (schema: z.ZodType, description: string) => ({
 const err = (description: string) => json(ErrorBodySchema, description)
 const body = (schema: z.ZodType) => ({ required: true, content: { 'application/json': { schema } } })
 
-const IdParams = z.object({ id: IdSchema.meta({ description: 'Digits only; a non-numeric segment does not match the route (404 "Not Found.").' }) })
-const DrawParams = z.object({ drawId: IdSchema.meta({ description: 'Digits only; a non-numeric segment does not match the route (404 "Not Found.").' }) })
+const IdParams = z.object({ id: IdSchema.meta({ description: 'Digits only; a non-numeric segment does not match the route (404 "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?").' }) })
+const DrawParams = z.object({ drawId: IdSchema.meta({ description: 'Digits only; a non-numeric segment does not match the route (404 "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?").' }) })
 const csrf = z.object({
   'X-CSRF-Token': z.string().min(1).meta({ description: 'Value of Session.csrf; required on mutating requests.' }),
 })
 
-const UNAUTHORIZED = err('UNAUTHORIZED "Unauthenticated." (no valid session).')
-const FORBIDDEN_ADMIN = err('FORBIDDEN "This action is unauthorized." (role is not admin).')
-const FORBIDDEN_ADMIN_WRITE = err('FORBIDDEN "This action is unauthorized." (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).')
+const UNAUTHORIZED = err('UNAUTHORIZED "Sesi anda telah tamat. Sila log masuk semula." (no valid session).')
+const FORBIDDEN_ADMIN = err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role is not admin).')
+const FORBIDDEN_ADMIN_WRITE = err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).')
 const FORBIDDEN_CSRF = err('CSRF_INVALID (missing or wrong X-CSRF-Token).')
 const VALIDATION_FIELDS =
   'VALIDATION_ERROR "Sila lengkapkan semua medan wajib." with fields (name -> "Medan ini diperlukan." when missing or blank, "Medan ini tidak sah." when the type, range, enum or pattern is wrong; the first problem of every failing field).'
@@ -726,7 +726,7 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
       200: json(envelopeOf(RewardDeliverResultSchema), 'Delivered.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_ADMIN_WRITE,
-      404: err('NOT_FOUND "Not Found." (unknown id).'),
+      404: err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (unknown id).'),
       409: err('CONFLICT "Tebusan ini tidak lagi menunggu pemprosesan." (status is not pending_admin).'),
       422: err('VALIDATION_ERROR fields.code "The code field is required." / "The code field must not be greater than 100 characters.".'),
     },
@@ -758,7 +758,7 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
       200: json(envelopeOf(RewardItemSchema), 'The reward.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_ADMIN,
-      404: err('NOT_FOUND "Not Found."'),
+      404: err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?"'),
     },
   })
 
@@ -787,7 +787,7 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
       200: json(envelopeOf(RewardItemSchema), 'The updated reward.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_ADMIN_WRITE,
-      404: err('NOT_FOUND "Not Found."'),
+      404: err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?"'),
       422: err(VALIDATION_LARAVEL),
     },
   })
