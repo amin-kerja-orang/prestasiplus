@@ -24,7 +24,7 @@ describe('StimulusFigure kinds', () => {
   it('passage: title, body paragraphs, source, no caption', () => {
     const w = mount(StimulusFigure, {
       props: {
-        stimulus: { ...base, kind: 'passage', title: 'Merdeka', text: 'A.\n\nB.', source: 'Sumber: buku' },
+        stimulus: { ...base, kind: 'passage', title: 'Merdeka', text: 'A.\n\nB.', source: 'buku' },
       },
     })
     expect(w.find('[data-testid=stimulus-passage]').text()).toContain('Merdeka')

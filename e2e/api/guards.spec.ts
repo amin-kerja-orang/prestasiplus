@@ -4,8 +4,8 @@
  * What the code does (src/app/router/guards.ts `decideAccess`, routes in src/modules/m28-bijak-spm):
  * - `/spm/bijak` has `roles: ['student','admin']` + `onForbidden: '403'`, so a teacher gets the
  *   in-place 403 page (URL unchanged, tab title "Akses Ditolak | PRESTASIPLUS"), D43.
- * - `/admin/spm/kertas` has `roles: ['admin']` and no `onForbidden`, so another role is redirected to
- *   its own home (`scopeHomePath`, intentional, fix B2 in #60): murid /dashboard, guru /guru, admin sekolah /admin-sekolah.
+ * - `/admin/spm/kertas` has `roles: ['admin']` and no `onForbidden` (default '403'), so another role gets the
+ *   in-place 403 page (URL unchanged, FR-X2-4).
  * - The API is the real boundary: `GET /api/admin/papers` is `@Roles('admin')` (apps/api/src/modules/
  *   exam/builder/builder.controller.ts) and `/api/bijak/*` is `@Roles('student')` (attempts + papers
  *   controllers, D43): both answer 403 to the wrong role.
@@ -16,14 +16,16 @@
 import type { Page } from '@playwright/test'
 
 import { expect, gotoApi, loginViaUi, test } from '../fixtures/api'
-import { account, expectNoHScroll, FORBIDDEN_TITLE, HOME } from './helpers'
+import { account, expectNoHScroll, FORBIDDEN_TITLE } from './helpers'
 
 const ADMIN_PAGE = '/admin/spm/kertas'
 const BIJAK_PAGE = '/spm/bijak'
 
-/** Strict: redirected to the role home, the builder is not rendered, no horizontal scroll. */
-async function expectRedirectedHome(page: Page, home: string): Promise<void> {
-  await expect(page).toHaveURL(new RegExp(`${home}/?([?#]|$)`), { timeout: 20_000 })
+/** Strict: the 403 page renders in place (URL unchanged), the builder is not rendered, no horizontal scroll. */
+async function expectForbiddenInPlace(page: Page): Promise<void> {
+  await expect(page).toHaveTitle(FORBIDDEN_TITLE, { timeout: 20_000 })
+  await expect(page).toHaveURL(new RegExp(`${ADMIN_PAGE}/?([?#]|$)`))
+  await expect(page.getByText('Akses Ditolak').first()).toBeVisible()
   await expect(page.getByTestId('papers-page')).toHaveCount(0)
   await expect(page.getByText('Pembina Kertas')).toHaveCount(0)
   await expectNoHScroll(page)
@@ -39,7 +41,7 @@ test.describe('role guards @api', () => {
   ] as const
 
   for (const { role, label } of adminDenied) {
-    test(`${label} is redirected home from ${ADMIN_PAGE} and GET /api/admin/papers is 403 @api`, async ({
+    test(`${label} sees Akses Ditolak on ${ADMIN_PAGE} and GET /api/admin/papers is 403 @api`, async ({
       page,
     }) => {
       const { user, pass } = account(role)
@@ -49,9 +51,9 @@ test.describe('role guards @api', () => {
       const res = await page.request.get('/api/admin/papers')
       expect(res.status(), 'GET /api/admin/papers').toBe(403)
 
-      // SPA: redirect to the role home (scopeHomePath).
+      // SPA: the in-place 403 page (`roles: ['admin']`, default onForbidden '403'; FR-X2-4).
       await gotoApi(page, ADMIN_PAGE)
-      await expectRedirectedHome(page, HOME[role])
+      await expectForbiddenInPlace(page)
     })
   }
 

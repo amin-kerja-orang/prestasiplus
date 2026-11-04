@@ -27,7 +27,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
 import { currentSession, gotoApi, loginViaUi } from '../fixtures/api'
-import { account, expectNoHScroll, HOME, newPeerContext, type ApiRole } from './helpers'
+import { account, expectNoHScroll, FORBIDDEN_TITLE, newPeerContext, type ApiRole } from './helpers'
 import {
   applyFilters,
   cancelOpenSubscriptions,
@@ -573,20 +573,21 @@ test.describe('M02 role guards on schools and subscriptions @api', () => {
     ['guru', 'Guru'],
     ['student', 'Pelajar'],
   ] as const) {
-    test(`GRD-02 ${label} opening the admin school screens is sent to its own home @api`, async ({
+    test(`GRD-02 ${label} opening the admin school screens sees Akses Ditolak in place @api`, async ({
       page,
     }) => {
       await signIn(page, role)
       const session = await currentSession(page)
       expect(session.active.role).toBeTruthy()
-      const home =
-        HOME[role === 'adminSekolah' ? 'adminSekolah' : role === 'guru' ? 'guru' : 'student']
       for (const path of [
         '/admin/schools',
         '/admin/school-subscriptions',
         '/admin/schools/create',
       ]) {
-        await gotoExpectUrl(page, path, new RegExp(`${home}$`))
+        // `roles: ['admin']`, default onForbidden '403': the 403 page renders in place, URL unchanged.
+        await gotoExpectUrl(page, path, new RegExp(`${path}/?$`))
+        await expect(page).toHaveTitle(FORBIDDEN_TITLE)
+        await expect(page.getByText('Akses Ditolak').first()).toBeVisible()
         await expect(page.getByTestId('schools-page')).toHaveCount(0)
         await expect(page.getByTestId('subs-page')).toHaveCount(0)
         await expectNoHScroll(page)

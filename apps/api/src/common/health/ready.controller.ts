@@ -5,6 +5,8 @@ import { ApiError } from '../errors/api-error'
 import { Public } from '../guards/decorators'
 import { ok } from '../http/respond'
 import { toMytTimestamp } from '../time/myt'
+import { JobsConfig } from '../../modules/jobs/jobs.config'
+import { getWorkerHealth, type WorkerHealth } from '../../modules/jobs/jobs.health'
 import { ReadyService } from './ready.service'
 
 @Public()
@@ -12,17 +14,27 @@ import { ReadyService } from './ready.service'
 export class ReadyController {
   private readonly logger = new Logger(ReadyController.name)
 
-  constructor(private readonly ready: ReadyService) {}
+  constructor(
+    private readonly ready: ReadyService,
+    private readonly jobsConfig: JobsConfig,
+  ) {}
 
-  /** No auth. 200 only when the database answers and the migrations are applied; otherwise 503 SERVER_ERROR with no detail. */
+  /** No auth. 200 only when the database answers and the migrations are applied; otherwise 503 SERVER_ERROR with no detail.
+   * `worker` (ok | down | disabled) is informational and never changes the status. */
   @Get()
   @Header('Cache-Control', 'no-store')
-  async get(): Promise<{ data: { status: 'ready'; db: 'up'; migrations: 'applied'; time: Timestamp } }> {
+  async get(): Promise<{ data: { status: 'ready'; db: 'up'; migrations: 'applied'; worker: WorkerHealth; time: Timestamp } }> {
     const result = await this.ready.check()
     if (!result.ok) {
       this.logger.error(`not ready: ${result.reason}`)
       throw new ApiError({ code: 'SERVER_ERROR', status: 503 })
     }
-    return ok({ status: 'ready' as const, db: 'up' as const, migrations: 'applied' as const, time: toMytTimestamp() })
+    return ok({
+      status: 'ready' as const,
+      db: 'up' as const,
+      migrations: 'applied' as const,
+      worker: getWorkerHealth(this.jobsConfig.workerEnabled),
+      time: toMytTimestamp(),
+    })
   }
 }

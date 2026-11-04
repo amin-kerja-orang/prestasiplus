@@ -44,7 +44,7 @@ export const missionsScenarios: Scenario[] = [
         ctx.check(listOf(mine).length === 0, `${role}: unexpected remedial tests`)
         const preview = await who.request('GET', '/remedial-tests/987654321')
         expectError(ctx, preview, 404, 'NOT_FOUND')
-        ctx.check(errorOf(preview).message === 'Not Found.', 'preview 404 message differs')
+        ctx.check(errorOf(preview).message === 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?', 'preview 404 message differs')
       }
       const student = await ctx.as('student')
       expectError(ctx, await student.request('GET', '/remedial-tests/abc'), 404, 'NOT_FOUND')

@@ -68,19 +68,19 @@ describe('BE-21 Amaran access: /amaran/*', () => {
 
   it('403 "This action is unauthorized." for a pupil on all four routes, before any school lookup', async () => {
     for (const path of [`/amaran/schools/${s1}`, `/amaran/schools/${unknownSchool}`, '/amaran/summary', '/amaran/effectiveness', `/amaran/export/school/${unknownSchool}`]) {
-      errorOf(await student.get(path), 403, 'FORBIDDEN', 'This action is unauthorized.')
+      errorOf(await student.get(path), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
     }
   })
 
   it('the CSV is admin and school_admin only: a teacher gets 403 even for an unknown school (role before 404)', async () => {
-    errorOf(await teacher.get(`/amaran/export/school/${s1}`), 403, 'FORBIDDEN', 'This action is unauthorized.')
+    errorOf(await teacher.get(`/amaran/export/school/${s1}`), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
     errorOf(await teacher.get(`/amaran/export/school/${unknownSchool}`), 403, 'FORBIDDEN')
   })
 
   it('an unknown school and a school outside the caller reach answer the SAME 404 (no enumeration)', async () => {
     for (const path of [`/amaran/schools/${unknownSchool}`, `/amaran/schools/${s2}`, '/amaran/schools/abc', '/amaran/schools/0', '/amaran/schools/-1']) {
       const res = await schoolAdmin.get(path)
-      errorOf(res, 404, 'NOT_FOUND', 'Not Found.')
+      errorOf(res, 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
     }
     const unknown = await schoolAdmin.get(`/amaran/schools/${unknownSchool}`)
     const foreign = await schoolAdmin.get(`/amaran/schools/${s2}`)
@@ -89,7 +89,7 @@ describe('BE-21 Amaran access: /amaran/*', () => {
     expect(noReq(teacherForeign.body)).toEqual(noReq(unknown.body))
     const exportForeign = await schoolAdmin.get(`/amaran/export/school/${s2}`)
     const exportUnknown = await schoolAdmin.get(`/amaran/export/school/${unknownSchool}`)
-    errorOf(exportForeign, 404, 'NOT_FOUND', 'Not Found.')
+    errorOf(exportForeign, 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
     expect(noReq(exportForeign.body)).toEqual(noReq(exportUnknown.body))
     // The other school admin cannot read school 1 either.
     errorOf(await otherAdmin.get(`/amaran/schools/${s1}`), 404, 'NOT_FOUND')
@@ -194,7 +194,7 @@ describe('BE-21 Amaran access: /amaran/*', () => {
       expect(s.pupilsLine).toBe(`${s.tally.total} pelajar`)
       expect(Number.isInteger(s.generatedAt)).toBe(true)
     }
-    errorOf(await admin.get('/amaran/summary'), 403, 'FORBIDDEN', 'This action is unauthorized.')
+    errorOf(await admin.get('/amaran/summary'), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
   })
 
   it('summary 422 texts come from AMARAN_MESSAGES and the top-level message equals the field text', async () => {
@@ -213,17 +213,17 @@ describe('BE-21 Amaran access: /amaran/*', () => {
 
   it('district and state scopes are admin only (403 for school_admin and teacher); admin gets 404 for a state without schools', async () => {
     for (const api of [schoolAdmin, teacher]) {
-      errorOf(await api.get('/amaran/summary?scope=state&state=Selangor'), 403, 'FORBIDDEN', 'This action is unauthorized.')
+      errorOf(await api.get('/amaran/summary?scope=state&state=Selangor'), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
       errorOf(await api.get('/amaran/summary?scope=district&district=Gombak&state=Selangor'), 403, 'FORBIDDEN')
     }
-    errorOf(await admin.get('/amaran/summary?scope=state&state=Negeri%20Tiada'), 404, 'NOT_FOUND', 'Not Found.')
+    errorOf(await admin.get('/amaran/summary?scope=state&state=Negeri%20Tiada'), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
     errorOf(await admin.get('/amaran/summary?scope=district&district=Daerah%20Tiada&state=Negeri%20Tiada'), 404, 'NOT_FOUND')
   })
 
   it('summary scope=school with a foreign or unknown school is the same 404 for school_admin; admin reads any', async () => {
     const foreign = await schoolAdmin.get(`/amaran/summary?scope=school&schoolId=${s2}`)
     const unknown = await schoolAdmin.get(`/amaran/summary?scope=school&schoolId=${unknownSchool}`)
-    errorOf(foreign, 404, 'NOT_FOUND', 'Not Found.')
+    errorOf(foreign, 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
     expect(noReq(foreign.body)).toEqual(noReq(unknown.body))
     expect((await admin.get(`/amaran/summary?scope=school&schoolId=${s2}`)).status).toBe(200)
   })
@@ -256,7 +256,7 @@ describe('BE-21 Amaran access: /amaran/*', () => {
     const other = AmaranEffectivenessResultSchema.parse((await otherAdmin.get('/amaran/effectiveness')).body.data)
     expect(other.school.id).toBe(s2)
     expect(other.report.cards.total).toBe(1)
-    errorOf(await admin.get('/amaran/effectiveness'), 403, 'FORBIDDEN', 'This action is unauthorized.')
+    errorOf(await admin.get('/amaran/effectiveness'), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
   })
 
   it('a teacher sees the interventions of the own pupils only', async () => {
