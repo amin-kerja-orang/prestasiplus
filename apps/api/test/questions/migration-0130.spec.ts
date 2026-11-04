@@ -15,7 +15,8 @@ import { createTestDatabase, type TestDatabase } from '../support/db'
  * AC: FR-QA-51 (the group row holds its scope), FR-QA-04 (one open draft per group), D115 (a mixed T4/T5 group gets a NULL level).
  */
 const SQL = readFileSync(join(__dirname, '../../prisma/migrations/0130_s1_group_draft_copy/migration.sql'), 'utf8')
-const BACKFILL = SQL.slice(SQL.indexOf('UPDATE "stimulus_groups" g'), SQL.indexOf('ALTER TABLE "stimulus_group_options"')).trim()
+const BACKFILL_AT = SQL.indexOf('UPDATE "stimulus_groups" g')
+const BACKFILL = SQL.slice(BACKFILL_AT, SQL.indexOf('ALTER TABLE "stimulus_group_options"', BACKFILL_AT)).trim()
 
 describe('migration 0130 group scope, draft copy and option fields', () => {
   let db: TestDatabase
@@ -70,6 +71,8 @@ describe('migration 0130 group scope, draft copy and option fields', () => {
       expect(names, n).toContain(n)
       expect(n.length).toBeLessThan(63)
     }
+    const invalid = await db.query(`select conname from pg_constraint where conrelid in ('stimulus_groups'::regclass, 'stimulus_group_options'::regclass) and not convalidated`)
+    expect(invalid).toEqual([]) // every constraint was added NOT VALID and then VALIDATEd
     const g = await group()
     for (const ok of [1, 4]) await db.query(`update stimulus_groups set kertas = $2 where id = $1::bigint`, [g, ok])
     for (const bad of [0, 5]) await expect(db.query(`update stimulus_groups set kertas = $2 where id = $1::bigint`, [g, bad])).rejects.toMatchObject({ code: '23514' })

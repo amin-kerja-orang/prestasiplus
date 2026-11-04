@@ -12,12 +12,15 @@
 -- DM-52 (`stimulus_group_options`): `body` text null, `image_file_id` (FK files, SET NULL) and `is_distractor` boolean not null default false.
 -- (`stimuli.source_citation` already exists since 0011; it is not added here.)
 --
--- Lock: ADD COLUMN with no default (and one constant default on a small table) is a metadata change; the backfill updates only grouped rows.
--- Reversible: the down step drops the index, the constraints and the ten added columns (data in the new columns is lost, nothing else is):
---   DROP INDEX uq_stimulus_groups_draft_of_group_id; ALTER TABLE stimulus_groups DROP COLUMN subject_id, DROP COLUMN education_level_id, DROP COLUMN kertas,
---   DROP COLUMN draft_of_group_id, DROP COLUMN draft_members, DROP COLUMN draft_created_by, DROP COLUMN draft_created_at;
---   ALTER TABLE stimulus_group_options DROP COLUMN body, DROP COLUMN image_file_id, DROP COLUMN is_distractor;
--- (dropping a column drops its constraints with it).
+-- Lock: ADD COLUMN with no default (and one constant default on a small table) is a metadata change; every constraint is added NOT VALID and then
+-- VALIDATEd (short lock, no long table lock); the backfill updates only grouped rows.
+-- Rollback: forward-only in the migration runner. Manual revert (the added columns hold no data other code needs; nothing else is touched):
+--   DROP INDEX "uq_stimulus_groups_draft_of_group_id";
+--   ALTER TABLE "stimulus_groups" DROP COLUMN "subject_id", DROP COLUMN "education_level_id", DROP COLUMN "kertas", DROP COLUMN "draft_of_group_id",
+--     DROP COLUMN "draft_members", DROP COLUMN "draft_created_by", DROP COLUMN "draft_created_at";
+--   ALTER TABLE "stimulus_group_options" DROP COLUMN "body", DROP COLUMN "image_file_id", DROP COLUMN "is_distractor";
+--   (dropping a column drops its constraints; the draft copies and the backfilled scope are lost, the groups and members are not).
+-- Before a revert, discard open draft copies (DELETE FROM stimulus_groups WHERE draft_of_group_id IS NOT NULL).
 
 ALTER TABLE "stimulus_groups"
   ADD COLUMN "subject_id" BIGINT,
@@ -28,12 +31,18 @@ ALTER TABLE "stimulus_groups"
   ADD COLUMN "draft_created_by" BIGINT,
   ADD COLUMN "draft_created_at" TIMESTAMPTZ(6);
 
-ALTER TABLE "stimulus_groups" ADD CONSTRAINT "fk_stimulus_groups_subject_id" FOREIGN KEY ("subject_id") REFERENCES "subjects"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE "stimulus_groups" ADD CONSTRAINT "fk_stimulus_groups_level_id" FOREIGN KEY ("education_level_id") REFERENCES "education_levels"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE "stimulus_groups" ADD CONSTRAINT "fk_stimulus_groups_draft_of" FOREIGN KEY ("draft_of_group_id") REFERENCES "stimulus_groups"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE "stimulus_groups" ADD CONSTRAINT "fk_stimulus_groups_draft_created_by" FOREIGN KEY ("draft_created_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE "stimulus_groups" ADD CONSTRAINT "ck_stimulus_groups_kertas" CHECK ("kertas" IS NULL OR "kertas" BETWEEN 1 AND 4);
-ALTER TABLE "stimulus_groups" ADD CONSTRAINT "ck_stimulus_groups_draft_members" CHECK ("draft_members" IS NULL OR jsonb_typeof("draft_members") = 'array');
+ALTER TABLE "stimulus_groups" ADD CONSTRAINT "fk_stimulus_groups_subject_id" FOREIGN KEY ("subject_id") REFERENCES "subjects"("id") ON DELETE RESTRICT ON UPDATE CASCADE NOT VALID;
+ALTER TABLE "stimulus_groups" VALIDATE CONSTRAINT "fk_stimulus_groups_subject_id";
+ALTER TABLE "stimulus_groups" ADD CONSTRAINT "fk_stimulus_groups_level_id" FOREIGN KEY ("education_level_id") REFERENCES "education_levels"("id") ON DELETE RESTRICT ON UPDATE CASCADE NOT VALID;
+ALTER TABLE "stimulus_groups" VALIDATE CONSTRAINT "fk_stimulus_groups_level_id";
+ALTER TABLE "stimulus_groups" ADD CONSTRAINT "fk_stimulus_groups_draft_of" FOREIGN KEY ("draft_of_group_id") REFERENCES "stimulus_groups"("id") ON DELETE SET NULL ON UPDATE CASCADE NOT VALID;
+ALTER TABLE "stimulus_groups" VALIDATE CONSTRAINT "fk_stimulus_groups_draft_of";
+ALTER TABLE "stimulus_groups" ADD CONSTRAINT "fk_stimulus_groups_draft_created_by" FOREIGN KEY ("draft_created_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE NOT VALID;
+ALTER TABLE "stimulus_groups" VALIDATE CONSTRAINT "fk_stimulus_groups_draft_created_by";
+ALTER TABLE "stimulus_groups" ADD CONSTRAINT "ck_stimulus_groups_kertas" CHECK ("kertas" IS NULL OR "kertas" BETWEEN 1 AND 4) NOT VALID;
+ALTER TABLE "stimulus_groups" VALIDATE CONSTRAINT "ck_stimulus_groups_kertas";
+ALTER TABLE "stimulus_groups" ADD CONSTRAINT "ck_stimulus_groups_draft_members" CHECK ("draft_members" IS NULL OR jsonb_typeof("draft_members") = 'array') NOT VALID;
+ALTER TABLE "stimulus_groups" VALIDATE CONSTRAINT "ck_stimulus_groups_draft_members";
 CREATE UNIQUE INDEX "uq_stimulus_groups_draft_of_group_id" ON "stimulus_groups"("draft_of_group_id") WHERE "draft_of_group_id" IS NOT NULL;
 
 -- Backfill: the common value of the members' latest versions, else NULL.
@@ -64,4 +73,5 @@ ALTER TABLE "stimulus_group_options"
   ADD COLUMN "image_file_id" BIGINT,
   ADD COLUMN "is_distractor" BOOLEAN NOT NULL DEFAULT false;
 
-ALTER TABLE "stimulus_group_options" ADD CONSTRAINT "fk_stimulus_group_options_image_file_id" FOREIGN KEY ("image_file_id") REFERENCES "files"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "stimulus_group_options" ADD CONSTRAINT "fk_stimulus_group_options_image_file_id" FOREIGN KEY ("image_file_id") REFERENCES "files"("id") ON DELETE SET NULL ON UPDATE CASCADE NOT VALID;
+ALTER TABLE "stimulus_group_options" VALIDATE CONSTRAINT "fk_stimulus_group_options_image_file_id";

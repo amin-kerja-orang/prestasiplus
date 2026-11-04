@@ -475,6 +475,68 @@ describe('stimulus group actions (admin, real database)', () => {
 
   // ---------------------------------------------------------------------------------------------------------- API-Q-33
 
+  describe('review closure (draft copy audit, member routes on a copy, whole-request rollback)', () => {
+    it('discarding a draft copy writes a stimulus.group.draft_discarded audit row (and no group_deleted row)', async () => {
+      const s = await servedGroup(1)
+      const copy = (await admin.post(`/api/stimulus-groups/${s.id}/edit-as-draft`)).body.data as { id: string }
+      const before = (await auditRows('stimulus.group.deleted')).length
+      expect((await admin.delete(`/api/stimulus-groups/${s.id}/draft`)).status).toBe(204)
+      expect((await auditRows('stimulus.group.draft_discarded')).at(-1)).toMatchObject({ target_id: s.id, detail: { draftGroupId: copy.id } })
+      expect((await auditRows('stimulus.group.deleted')).length).toBe(before)
+    })
+
+    it('every member route on a draft copy answers 409 (add, set, remove, order); nothing changes', async () => {
+      const s = await servedGroup(2)
+      const copy = (await admin.post(`/api/stimulus-groups/${s.id}/edit-as-draft`)).body.data as { id: string }
+      const extra = await draft()
+      const calls = [
+        await admin.post(`/api/stimulus-groups/${copy.id}/members`, { questionId: extra }),
+        await admin.put(`/api/stimulus-groups/${copy.id}/members`, { questionIds: [extra] }),
+        await admin.delete(`/api/stimulus-groups/${copy.id}/members/${s.ids[0]}`),
+        await admin.put(`/api/stimulus-groups/${copy.id}/members/order`, { questionIds: [...s.ids].reverse() }),
+      ]
+      for (const res of calls) expect(res.status, JSON.stringify(res.body)).toBe(409)
+      expect(await members(s.id)).toEqual(s.ids)
+    })
+
+    it('a publish where a LATER member fails the gate changes none of the earlier members (no status, no event, no audit row)', async () => {
+      const ids = [await review(), await review(), await review(), await review()]
+      const g = await group(ids)
+      await t.db.query(`update question_versions set difficulty_tp = null where question_id = $1`, [ids[3]])
+      const audits = (await auditRows('stimulus.group.published')).length
+      const res = await admin.post(`/api/stimulus-groups/${g.id}/publish`)
+      expect(res.status).toBe(422)
+      expect(await statuses(ids)).toEqual(['review', 'review', 'review', 'review'])
+      expect(await t.db.query(`select 1 from question_status_events where question_id = any($1::bigint[]) and to_status = 'approved'`, [ids])).toHaveLength(0)
+      expect((await auditRows('stimulus.group.published')).length).toBe(audits)
+    })
+
+    it('bulk ids with two whole groups: the second has a member that fails the gate: nothing changes in either group, nor in an ungrouped id', async () => {
+      const a = [await draft(), await draft()]
+      const b = [await draft(), await draft()]
+      const loose = await draft()
+      await group(a)
+      await group(b)
+      await t.db.query(`update question_versions set subject_id = null where question_id = $1`, [b[1]])
+      const res = await bulk({ action: 'review', ids: [...a, ...b, loose] })
+      expect(res.status, JSON.stringify(res.body)).toBe(422)
+      expect(await statuses([...a, ...b, loose])).toEqual(['draft', 'draft', 'draft', 'draft', 'draft'])
+      expect(await t.db.query(`select 1 from question_status_events where question_id = any($1::bigint[])`, [[...a, ...b, loose]])).toHaveLength(0)
+    })
+
+    it('bulk ids with two whole groups that both pass moves both groups and the ungrouped id', async () => {
+      const a = [await draft(), await draft()]
+      const b = [await draft(), await draft()]
+      const loose = await draft()
+      await group(a)
+      await group(b)
+      const res = await bulk({ action: 'review', ids: [...a, ...b, loose] })
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(res.body.data.affected).toBe(5)
+      expect(await statuses([...a, ...b, loose])).toEqual(['review', 'review', 'review', 'review', 'review'])
+    })
+  })
+
   describe('AC-QA-05 retire the group (API-Q-33)', () => {
     const paper = async (title: string, status: string, questionIds: string[]): Promise<string> => {
       const p = (

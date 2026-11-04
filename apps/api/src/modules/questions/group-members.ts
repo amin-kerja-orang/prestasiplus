@@ -39,6 +39,11 @@ export class GroupMembers {
     if (!(await this.repo.lockGroup(groupId))) throw notFound()
   }
 
+  /** A draft copy stages its members in `draft_members`: no in-place member route applies to it (409). */
+  async assertNotDraftCopy(groupId: string): Promise<void> {
+    if ((await this.repo.groupScope(groupId))?.draftOfGroupId != null) throw conflict(M.conflict)
+  }
+
   /** The BM warning for a group with no member, else null (one member is valid). */
   warning(count: number): string | null {
     return count === 0 ? M.smallGroup() : null

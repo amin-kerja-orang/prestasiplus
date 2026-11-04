@@ -225,6 +225,7 @@ export class StimuliService {
     await this.groupOrThrow(id)
     return this.prisma.transaction(async () => {
       await this.members.lock(id)
+      await this.members.assertNotDraftCopy(id)
       const current = await this.repo.memberIds(id)
       if (current.includes(questionId)) throw fail({ questionId: STIMULUS_MESSAGES.memberExists })
       const after = await this.members.set(id, [...current, questionId], 'questionId')
@@ -236,6 +237,7 @@ export class StimuliService {
     await this.groupOrThrow(id)
     return this.prisma.transaction(async () => {
       await this.members.lock(id)
+      await this.members.assertNotDraftCopy(id)
       const current = await this.repo.memberIds(id)
       if (!current.includes(questionId)) throw notFound(STIMULUS_MESSAGES.memberMissing)
       const rest = await this.members.set(id, current.filter((m) => m !== questionId))
@@ -250,6 +252,7 @@ export class StimuliService {
     await this.groupOrThrow(id)
     return this.prisma.transaction(async () => {
       await this.members.lock(id)
+      await this.members.assertNotDraftCopy(id)
       const current = await this.repo.memberIds(id)
       const same = questionIds.length === current.length && new Set(questionIds).size === current.length && questionIds.every((q) => current.includes(q))
       if (!same) throw fail({ questionIds: STIMULUS_MESSAGES.orderInvalid })
@@ -410,7 +413,7 @@ export class StimuliService {
   /**
    * API-Q-04 `{action, ids}`: a list that holds part of a stimulus group is refused as a whole (422, `details.reason` `stimulus_group_split`, nothing
    * changes); a list that holds every member of a group moves that group as one unit (checked first for every group, then applied group by group,
-   * one transaction each); the other ids keep the per-id behaviour. `delete` is per id like before.
+   * ONE transaction for all of them); the other ids keep the per-id behaviour. `delete` is per id like before.
    */
   async bulkWithGroups(action: QuestionBulkAction, ids: readonly string[], actor: GroupActor, perId: (rest: string[]) => Promise<BulkOutcome>): Promise<BulkOutcome> {
     const held = await this.repo.groupsHolding(ids)
@@ -424,8 +427,14 @@ export class StimuliService {
     if (wholeGroups.length === 0 || action === 'delete') return perId([...new Set(ids)])
     const unitAction = action as 'draft' | 'review' | 'approved' | 'archived'
     for (const groupId of wholeGroups) await this.groupUnit(groupId, unitAction, actor, false)
-    const moved: string[] = []
-    for (const groupId of wholeGroups) moved.push(...(await this.groupUnit(groupId, unitAction, actor, true)))
+    // ONE transaction for every whole group in the list (the nested `groupUnit` calls join it): a refusal in any group changes nothing in any group,
+    // and the ungrouped ids below are only touched after it committed.
+    const moved = await this.prisma.transaction(async () => {
+      const done: string[] = []
+      for (const groupId of wholeGroups) done.push(...(await this.groupUnit(groupId, unitAction, actor, true)))
+      return done
+    }, TX)
+    this.questions.invalidateOverview()
     const inUnits = new Set([...held.values()].flatMap((g) => g.members))
     const rest = await perId([...new Set(ids)].filter((i) => !inUnits.has(i)))
     return { affected: moved.length + rest.affected, ids: [...moved, ...rest.ids], failed: rest.failed, ...(rest.skipped === undefined ? {} : { skipped: rest.skipped }) }
