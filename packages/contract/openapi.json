@@ -40656,6 +40656,13 @@
           },
           "dryRun": {
             "type": "boolean"
+          },
+          "affectedPapers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionAffectedPaper"
+            },
+            "description": "Action `archived` only: the Terbit papers that place an eligible row (dry run) or an archived row (real run). Present only when there is at least one."
           }
         },
         "required": [
@@ -40702,6 +40709,21 @@
           "code",
           "message",
           "fields"
+        ]
+      },
+      "QuestionAffectedPaper": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
         ]
       },
       "QuestionStructuredRow": {
@@ -73722,6 +73744,13 @@
               "$ref": "#/components/schemas/QuestionBulkSkipped"
             },
             "description": "Rows already in the target status (bulk Terbitkan only); not applied, not counted in affected. Present only when there is at least one such row."
+          },
+          "affectedPapers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionAffectedPaper"
+            },
+            "description": "Bulk archive only: the Terbit papers that place an archived row. Present only when there is at least one."
           }
         },
         "required": [

@@ -407,6 +407,27 @@ export class QuestionsRepository {
     return { matched: counts[0]?.matched ?? 0, eligible: counts[0]?.eligible ?? 0, ids: rows.map((r) => idToString(r.id)) }
   }
 
+  /** FR-QA-47: the Terbit papers that place one of these questions (a bulk archive warns about them). Read-only; oldest paper first. */
+  async publishedPapersPlacing(where: { ids: readonly string[] } | { filter: Omit<AdminListFilter, 'page' | 'pageSize'>; fromStatuses: readonly QuestionStatus[] }): Promise<{ id: string; title: string }[]> {
+    let questions: Prisma.Sql
+    if ('ids' in where) {
+      const keys = where.ids.map(bi).filter((k): k is bigint => k !== null)
+      if (keys.length === 0) return []
+      questions = Prisma.join(keys)
+    } else {
+      const conds = [...this.adminConds({ ...where.filter, page: 1, pageSize: 1 }), Prisma.sql`v.status IN (${Prisma.join(where.fromStatuses.map((x) => Prisma.sql`${x}`))})`]
+      questions = Prisma.sql`SELECT q.id FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no WHERE ${Prisma.join(conds, ' AND ')}`
+    }
+    const rows = await this.db.$queryRaw<{ id: bigint; title: string }[]>`
+      SELECT DISTINCT p.id, p.title
+        FROM papers p
+        JOIN paper_sections s ON s.paper_id = p.id
+        JOIN paper_placements pl ON pl.paper_section_id = s.id
+       WHERE p.kind = 'pilihan' AND p.status = 'published' AND pl.question_id IN (${questions})
+       ORDER BY p.id ASC`
+    return rows.map((p) => ({ id: idToString(p.id), title: p.title }))
+  }
+
   async listIdsKeyset(filter: Omit<AdminListFilter, 'page' | 'pageSize'>, idBelow: string | undefined, limit: number): Promise<string[]> {
     const conds = this.adminConds({ ...filter, page: 1, pageSize: limit })
     const below = idBelow === undefined ? undefined : bi(idBelow)

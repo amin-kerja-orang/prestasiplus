@@ -63,6 +63,7 @@ import {
   BULK_FILTER_NEEDED,
   BULK_FILTER_NONE_ELIGIBLE,
   BULK_FILTER_TITLES,
+  bulkArchivePaperLines,
   bulkFilterCountLine,
 } from '../lib/bulk-filter'
 import {
@@ -373,7 +374,8 @@ async function submitBulk(): Promise<void> {
         message: notUpdatedLines(result.data.affected, result.notUpdated, option.verb),
       })
     } else {
-      flash.show({ type: 'success', message: result.status })
+      const papers = bulkArchivePaperLines(result.data.affectedPapers)
+      flash.show({ type: 'success', message: papers.length > 0 ? [result.status, ...papers] : result.status })
     }
   } catch (err) {
     flash.show({ type: 'error', message: errorLines(err) })
@@ -457,7 +459,9 @@ async function runFilterBulk(action: QuestionFilterAction): Promise<void> {
     const countLine = bulkFilterCountLine(action, dry)
     const confirmed =
       action === 'archived'
-        ? await askArchive(`${filtered ? BULK_FILTER_ARCHIVE_FILTERED_CONFIRM : BULK_FILTER_CONFIRM.archived}\n\n${countLine}`)
+        ? await askArchive(
+            [filtered ? BULK_FILTER_ARCHIVE_FILTERED_CONFIRM : BULK_FILTER_CONFIRM.archived, countLine, ...bulkArchivePaperLines(dry.affectedPapers)].join('\n'),
+          )
         : await confirm({
             title: BULK_FILTER_LABELS.approved,
             message: `${BULK_FILTER_CONFIRM.approved}\n\n${countLine}`,

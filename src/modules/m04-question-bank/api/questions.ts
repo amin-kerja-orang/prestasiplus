@@ -526,10 +526,10 @@ export async function bulkQuestionAction(
   action: BulkAction,
   ids: readonly number[],
 ): Promise<
-  QuestionMutation<{ affected: number }> & { notUpdated?: number[]; failed?: BulkFailedRow[] }
+  QuestionMutation<{ affected: number; affectedPapers?: { title: string }[] }> & { notUpdated?: number[]; failed?: BulkFailedRow[] }
 > {
   const http = isHttpMode()
-  const result = await api.post<QuestionMutation<{ affected: number }>>(
+  const result = await api.post<QuestionMutation<{ affected: number; affectedPapers?: { title: string }[] }>>(
     '/api/questions/bulk-action',
     {
       // http: the contract takes ids as strings (`QuestionBulkRequestSchema`); numbers answer 422 "Senarai soalan tidak sah."
@@ -585,6 +585,8 @@ export interface QuestionFilterBulkResult {
   remaining: number
   capped: boolean
   dryRun: boolean
+  /** FR-QA-47: `archived` only, the Terbit papers that place a row. */
+  affectedPapers?: { id: string; title: string }[]
 }
 
 /** The applied list filter (URL keys, trimmed), keyed as the list filter keys. */

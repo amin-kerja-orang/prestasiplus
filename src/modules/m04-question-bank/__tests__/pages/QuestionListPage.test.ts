@@ -513,6 +513,21 @@ describe('QuestionListPage: Luluskan Hasil Tapisan / Arkib Semua (REQ-A-021)', (
     expect(t(w, 'bulk-filter-success').text()).toContain('Berjaya arkib 10 soalan (hasil tapisan).')
   })
 
+  it('the "Arkib Semua" dialog names the Terbit papers from the dry run (FR-QA-47)', async () => {
+    questions.bulkQuestionsByFilter.mockResolvedValueOnce({
+      data: { ...RESULT, affectedPapers: [{ id: '1', title: 'Matematik Set 1' }, { id: '2', title: 'Sains Set 2' }] },
+      status: '',
+    })
+    const w = await render('/admin/questions')
+    await t(w, 'questions-archive-all').trigger('click')
+    await flushPromises()
+    const text = inBody('questions-archive-dialog').textContent ?? ''
+    expect(text).toContain('Sebahagian soalan ini ada dalam kertas yang telah diterbitkan.')
+    expect(text).toContain('Kertas: Matematik Set 1; Sains Set 2')
+    inBody('questions-archive-cancel').click()
+    await flushPromises()
+  })
+
   it('Batal in the "Arkib Semua" dialog makes no real call and frees the buttons', async () => {
     const w = await openArchive('/admin/questions')
     inBody('questions-archive-cancel').click()

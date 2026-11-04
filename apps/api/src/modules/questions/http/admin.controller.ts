@@ -83,7 +83,8 @@ export class AdminQuestionsController {
     // skipped, NOTHING refused) must not flash "0 soalan berjaya dikemaskini."; it says why instead. Any refused row (`failed`) or any published row keeps
     // the count (lead decision; V2 has no wording for either case).
     const message = affected === 0 && failed.length === 0 && skipped !== undefined && skipped.length > 0 ? QUESTION_MESSAGES.bulkAlreadyApproved : QUESTION_MESSAGES.bulkUpdated(affected)
-    return flash({ affected, failed, ...(skipped ? { skipped } : {}) }, message)
+    const placing = input.action === 'archived' ? await this.questions.papersPlacing(ids) : []
+    return flash({ affected, failed, ...(skipped ? { skipped } : {}), ...(placing.length > 0 ? { affectedPapers: placing } : {}) }, message)
   }
 
   /**

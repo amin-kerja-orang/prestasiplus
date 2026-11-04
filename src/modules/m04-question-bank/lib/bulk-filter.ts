@@ -24,6 +24,14 @@ export const BULK_FILTER_ARCHIVE_FILTERED_CONFIRM = 'Arkibkan SEMUA soalan hasil
 /** FR-ADM-Q20.3 (D113): the word typed before "Arkib Semua" runs, and the line that asks for it. */
 export const BULK_FILTER_ARCHIVE_WORD = 'ARKIB'
 export const BULK_FILTER_ARCHIVE_HINT = `Taip ${BULK_FILTER_ARCHIVE_WORD} untuk mengesahkan.`
+/** [PROPOSED] FR-QA-47: the lines that warn about Terbit papers on a bulk archive; none without such a paper. */
+export function bulkArchivePaperLines(papers: readonly { title: string }[] | undefined): string[] {
+  if (!papers?.length) return []
+  return [
+    'Sebahagian soalan ini ada dalam kertas yang telah diterbitkan. Murid tidak boleh memulakan percubaan baharu pada kertas itu sehingga soalan diganti.',
+    `Kertas: ${papers.map((p) => p.title).join('; ')}`,
+  ]
+}
 /** V2: shown when "Luluskan Hasil Tapisan" is used without a filter. */
 export const BULK_FILTER_NEEDED =
   'Sila pilih sekurang-kurangnya satu penapis (subjek/aras/status/carian) sebelum meluluskan secara pukal.'

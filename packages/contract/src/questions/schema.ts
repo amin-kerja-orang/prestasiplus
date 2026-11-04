@@ -463,6 +463,9 @@ export const QuestionBulkSkippedSchema = z
   })
   .meta({ id: 'QuestionBulkSkipped' })
 export type QuestionBulkSkipped = z.infer<typeof QuestionBulkSkippedSchema>
+/** FR-QA-47: a Terbit paper that places a question of a bulk archive; it refuses new sittings until the question is replaced. */
+export const QuestionAffectedPaperSchema = z.object({ id: IdSchema, title: z.string() }).meta({ id: 'QuestionAffectedPaper' })
+
 export const QuestionBulkResultSchema = z
   .object({
     affected: z.number().int().min(0),
@@ -474,6 +477,7 @@ export const QuestionBulkResultSchema = z
       .array(QuestionBulkSkippedSchema)
       .optional()
       .meta({ description: 'Rows already in the target status (bulk Terbitkan only); not applied, not counted in affected. Present only when there is at least one such row.' }),
+    affectedPapers: z.array(QuestionAffectedPaperSchema).optional().meta({ description: 'Bulk archive only: the Terbit papers that place an archived row. Present only when there is at least one.' }),
   })
   .meta({ id: 'QuestionBulkResult' })
 
@@ -513,6 +517,7 @@ export const QuestionFilterBulkResultSchema = z
     remaining: z.number().int().min(0).meta({ description: 'eligible - processed: rows a further run would still try.' }),
     capped: z.boolean().meta({ description: 'true when `remaining` > 0 because of the cap.' }),
     dryRun: z.boolean(),
+    affectedPapers: z.array(QuestionAffectedPaperSchema).optional().meta({ description: 'Action `archived` only: the Terbit papers that place an eligible row (dry run) or an archived row (real run). Present only when there is at least one.' }),
   })
   .meta({ id: 'QuestionFilterBulkResult' })
 
