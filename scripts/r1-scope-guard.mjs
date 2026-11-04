@@ -344,7 +344,7 @@ export function analyze({ cwd, base, head, body, planText, labels = [] }) {
       const paths = [e.path, ...(e.st === 'R' ? [e.oldPath] : [])]
       if (!paths.some(isProduct)) continue
       if (type === 'Verify' && isTest(e.path)) continue
-      if (paths.filter(isProduct).every((q) => matchesOwnFile(q, card.own))) continue
+      if (paths.filter(isProduct).every((q) => matchesOwnFile(q, [...card.own, ...card.starts]))) continue
       fails.push({ rule: 'PRODUCT_CODE_CHANGED', file: e.path, msg_bm: `Kad ${type} tidak boleh mengubah kod produk (src/, apps/, packages/).`, msg_en: `A ${type} card must not change product code (src/, apps/, packages/).` })
     }
   }
@@ -597,6 +597,9 @@ const FIXTURE_PLAN = `# Plan
 **S9-T12 Fix card single line** · P0 · S · Type: Fix · deps: none
 - Starts from (existing): \`src/mod/a.ts:12\`.
 
+**S9-T13 Ops card Starts-from apps** · P0 · S · Type: Ops · deps: none
+- Starts from (existing): \`apps/api/prisma/seed/y.ts:10-20\`.
+
 **S9-T06 Build card** · P0 · S · Type: Build · deps: none
 - Starts from (existing): \`scripts/lint.mjs\`.
 - Files: \`scripts/new-check.mjs\`, \`docs/ops/\`.
@@ -677,6 +680,7 @@ function selfTest() {
   }
 
   const touchA = (c) => write(c, 'src/mod/a.ts', lines(30) + 'extra\n')
+  const touchBig = (c) => write(c, 'src/mod/big.ts', lines(100) + 'extra\n')
   run('no card id in body', 'tiada kad', touchA, { fail: ['NO_CARD'], exact: true })
   run('unknown card id', 'S9-T99', touchA, { fail: ['UNKNOWN_CARD'], exact: true })
   run('clean Fix PR passes', 'S9-T01', touchA, { exact: true })
@@ -688,17 +692,20 @@ function selfTest() {
   run('Fix adds Prisma model, no ID', 'S9-T01', (c) => { touchA(c); write(c, 'apps/api/prisma/schema/core.prisma', 'model Existing {\n  id Int @id\n}\n\nmodel Brand {\n  id Int @id\n}\n') }, { fail: ['NEW_MODEL'], exact: true })
   run('Fix edits existing model only -> ok', 'S9-T01', (c) => { touchA(c); write(c, 'apps/api/prisma/schema/core.prisma', 'model Existing {\n  id Int @id\n  name String\n}\n') }, { exact: true })
   run('Fix adds migration folder, no ID', 'S9-T01', (c) => { touchA(c); write(c, 'apps/api/prisma/migrations/0002_new/migration.sql', 'select 2;\n') }, { fail: ['NEW_MIGRATION'], exact: true })
-  run('Keep card changes product code', 'S9-T03', touchA, { fail: ['PRODUCT_CODE_CHANGED'], exact: true })
+  run('Keep card changes product code', 'S9-T03', touchBig, { fail: ['PRODUCT_CODE_CHANGED'], exact: true })
   run('Ops card changes product code', 'S9-T05', (c) => { write(c, 'compose.yaml', 'a: 2\n'); touchA(c) }, { fail: ['PRODUCT_CODE_CHANGED'], exact: true })
   run('Ops card: own Files apps/ path -> ok', 'S9-T08', (c) => write(c, 'apps/api/prisma/seed/x.ts', 'export {}\n'), { exact: true })
   run('Ops card: other apps/ file still fails', 'S9-T08', (c) => { write(c, 'apps/api/prisma/seed/x.ts', 'export {}\n'); write(c, 'apps/api/src/mod/x.service.ts', lines(5) + 'more\n') }, { fail: ['PRODUCT_CODE_CHANGED'], exact: true })
   run('Ops card: brace and dir/** Files forms -> ok', 'S9-T09', (c) => { write(c, 'src/app/router/meta.ts', 'export {}\n'); write(c, 'packages/ct/deep/z.ts', 'export {}\n') }, { exact: true })
-  run('Verify card with no Files line: src/ still fails', 'S9-T10', touchA, { fail: ['PRODUCT_CODE_CHANGED'], exact: true })
+  run('Verify card with no Files line: src/ still fails', 'S9-T10', touchBig, { fail: ['PRODUCT_CODE_CHANGED'], exact: true })
   run('Starts-from with :391-480,560-570 suffix matches', 'S9-T11', (c) => write(c, 'src/mod/a.ts', lines(30) + 'extra\n'), { exact: true })
   run('Starts-from with :12 suffix matches', 'S9-T12', (c) => write(c, 'src/mod/a.ts', lines(30) + 'extra\n'), { exact: true })
+  run('Ops card: own Starts-from apps/ path, no Files line -> ok', 'S9-T13', (c) => write(c, 'apps/api/prisma/seed/y.ts', 'export {}\n'), { exact: true })
+  run('Ops card: other apps/ file than Starts-from still fails', 'S9-T13', (c) => { write(c, 'apps/api/prisma/seed/y.ts', 'export {}\n'); write(c, 'apps/api/src/mod/x.service.ts', lines(5) + 'more\n') }, { fail: ['PRODUCT_CODE_CHANGED'], exact: true })
+  run('Keep card: Starts-from src/ file may change -> ok', 'S9-T03', touchA, { exact: true })
   run('Ops card changes only compose -> ok', 'S9-T05', (c) => write(c, 'compose.yaml', 'a: 2\n'), { exact: true })
   run('Verify card: tests allowed', 'S9-T04', (c) => { write(c, 'src/mod/__tests__/a.test.ts', 'export {}\n'); write(c, 'apps/api/src/mod/x.spec.ts', 'export {}\n') }, { exact: true })
-  run('Verify card: product code fails', 'S9-T04', (c) => { write(c, 'src/mod/__tests__/a.test.ts', 'export {}\n'); touchA(c) }, { fail: ['PRODUCT_CODE_CHANGED'], exact: true })
+  run('Verify card: product code fails', 'S9-T04', (c) => { write(c, 'src/mod/__tests__/a.test.ts', 'export {}\n'); touchBig(c) }, { fail: ['PRODUCT_CODE_CHANGED'], exact: true })
   run('Fix touches no Starts-from path -> warn', 'S9-T01', (c) => write(c, 'src/other/z.ts', 'export {}\n'), { warn: ['NO_STARTS_FROM_TOUCHED'], exact: true })
   run('Starts-from directory prefix counts', 'S9-T01', (c) => write(c, 'apps/api/src/mod/x.service.ts', lines(5) + 'more\n'), { exact: true })
   run('big shrink (>60%) -> warn', 'S9-T01', (c) => { touchA(c); write(c, 'src/mod/big.ts', lines(20)) }, { warn: ['BIG_SHRINK'], exact: true })
