@@ -34,6 +34,10 @@ on:
 permissions:
   contents: read
 
+env:
+  # Placeholder-string check (scripts/check-placeholders.mjs, run by lint): report until S0-T04 part 2 (Sprint 4) flips it to fail.
+  PLACEHOLDER_CHECK_MODE: report
+
 concurrency:
   group: frontend-${{ github.ref }}
   cancel-in-progress: true
