@@ -38,7 +38,14 @@ export interface Inspected {
 /** Decompression-bomb guard: largest accepted image area in pixels. */
 export const MAX_PIXELS = 50_000_000
 
-export const EXTENSION_OF: Readonly<Record<DetectedMime | 'image/gif', string>> = {
+/** OOXML containers accepted for a teacher paper (S1-T08, FR-GUR-44-13): stored as they are, never opened or converted. */
+export const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+export const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+export type OfficeMime = typeof DOCX_MIME | typeof XLSX_MIME
+
+export const EXTENSION_OF: Readonly<Record<DetectedMime | OfficeMime | 'image/gif', string>> = {
+  [DOCX_MIME]: 'docx',
+  [XLSX_MIME]: 'xlsx',
   'image/gif': 'gif', // stored only by BE-24 perutusan images (no upload purpose detects gif)
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -65,6 +72,46 @@ export function sniffMime(b: Buffer): DetectedMime | null {
   if (b.length >= 4 && b.toString('latin1', 0, 3) === 'ID3') return 'audio/mpeg'
   const b1 = b[1] ?? 0
   if (b.length >= 4 && b[0] === 0xff && (b1 & 0xe0) === 0xe0 && (b1 & 0x06) !== 0 && (b1 & 0x18) !== 0x08) return 'audio/mpeg'
+  return null
+}
+
+
+/**
+ * DOCX or XLSX by content: a ZIP whose end-of-central-directory record is intact and whose entry names include
+ * `[Content_Types].xml` plus a `word/` (docx) or `xl/` (xlsx) entry. Only the central directory NAMES are read (node built-ins);
+ * no entry is inflated, so there is no bomb risk. Anything else (legacy OLE .doc/.xls, other ZIPs, damaged ZIPs) is null.
+ */
+export function detectOffice(b: Buffer): OfficeMime | null {
+  if (b.length < 22 || b.readUInt32LE(0) !== 0x04034b50) return null
+  // End of central directory: the last 22..(22+65535) bytes.
+  let eocd = -1
+  for (let i = b.length - 22; i >= Math.max(0, b.length - 22 - 0xffff); i -= 1) {
+    if (b.readUInt32LE(i) === 0x06054b50) {
+      eocd = i
+      break
+    }
+  }
+  if (eocd < 0) return null
+  const entries = b.readUInt16LE(eocd + 10)
+  let off = b.readUInt32LE(eocd + 16)
+  let content = false
+  let word = false
+  let xl = false
+  for (let n = 0; n < entries; n += 1) {
+    if (off + 46 > b.length || b.readUInt32LE(off) !== 0x02014b50) return null
+    const nameLen = b.readUInt16LE(off + 28)
+    const extraLen = b.readUInt16LE(off + 30)
+    const commentLen = b.readUInt16LE(off + 32)
+    if (off + 46 + nameLen > b.length) return null
+    const name = b.toString('latin1', off + 46, off + 46 + nameLen)
+    if (name === '[Content_Types].xml') content = true
+    else if (name.startsWith('word/')) word = true
+    else if (name.startsWith('xl/')) xl = true
+    off += 46 + nameLen + extraLen + commentLen
+  }
+  if (!content) return null
+  if (word && !xl) return DOCX_MIME
+  if (xl && !word) return XLSX_MIME
   return null
 }
 
