@@ -7,7 +7,7 @@ export const DEFAULT_ERROR_MESSAGES: Readonly<Record<ErrorCode, string>> = {
   FORBIDDEN: 'This action is unauthorized.',
   NOT_FOUND: 'Not Found.',
   SERVER_ERROR: 'Server Error',
-  RATE_LIMITED: 'Too Many Attempts.',
+  RATE_LIMITED: 'Terlalu banyak percubaan. Sila cuba sebentar lagi.',
   CONFLICT: 'Conflict.',
   VALIDATION_ERROR: 'The given data was invalid.',
   PASSWORD_CHANGE_REQUIRED: 'Sila tukar kata laluan anda sebelum meneruskan.',

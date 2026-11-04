@@ -2,7 +2,7 @@ import { ErrorBodySchema } from '@pp/contract'
 import type { Response } from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { GLOBAL_RATE_SPEC } from '../../src/common/security/global-rate-limit.guard'
+import { GLOBAL_RATE_SPEC, GLOBAL_USER_RATE_SPEC } from '../../src/common/security/global-rate-limit.guard'
 import { ACCOUNT_LIMITS } from '../../src/modules/account/account.constants'
 import { DEFAULT_LOGIN_LIMIT } from '../../src/modules/auth/auth.constants'
 import { FilesConfig } from '../../src/modules/files/files.config'
@@ -116,7 +116,7 @@ describe('BE-33 AC2: rate limits answer 429 RATE_LIMITED with retryAfter', () =>
 })
 
 describe('BE-33 AC2: the default numbers (the ones the runbook lists)', () => {
-  it('login 5 failed per 60 s; reset 1 per e-mail per 60 s and 20 per address; registration 30 per minute; upload 30 per minute; tickets 10 per hour; global 300 per minute', () => {
+  it('login 5 failed per 60 s; reset 1 per e-mail per 60 s and 20 per address; registration 30 per minute; upload 30 per minute; tickets 10 per hour; global 300 per minute per address and 1200 per minute per signed-in user', () => {
     expect(DEFAULT_LOGIN_LIMIT).toBe(5)
     expect(ACCOUNT_RESET_REQUEST_INTERVAL_SECONDS).toBe(60)
     expect(ACCOUNT_THROTTLE).toEqual({ failedAttemptsPerWindow: 5, windowSeconds: 60, ipCeilingPerWindow: 20 })
@@ -126,5 +126,58 @@ describe('BE-33 AC2: the default numbers (the ones the runbook lists)', () => {
     expect(SUPPORT_LIMITS.create).toMatchObject({ default: 10, per: 'user', windowSeconds: 3600 })
     expect(INTAKE_LIMITS.write).toMatchObject({ default: 20, per: 'user' })
     expect(GLOBAL_RATE_SPEC).toMatchObject({ default: 300, per: 'ip' })
+    expect(GLOBAL_USER_RATE_SPEC).toMatchObject({ default: 1200, per: 'user', env: 'THROTTLE_GLOBAL_USER_PER_MINUTE' })
+  })
+})
+
+describe('S0-T08 (D115): the global ceiling is per user when signed in, per address otherwise', () => {
+  let t: SecurityApp
+  const IP_LIMIT = 5
+  const USER_LIMIT = 8
+  const ME = '/api/session'
+
+  beforeAll(async () => {
+    t = await bootSecurityApp({ env: { THROTTLE_GLOBAL_PER_MINUTE: String(IP_LIMIT), THROTTLE_GLOBAL_USER_PER_MINUTE: String(USER_LIMIT) } })
+  })
+  afterAll(async () => {
+    await t.close()
+  })
+
+  const anon = (ip: string) => t.http().get(ME).set('X-Forwarded-For', ip)
+
+  it('anonymous requests from one address hit 429 at the address limit; the 429 has RATE_LIMITED, the BM message, retryAfter and Retry-After', async () => {
+    const ip = '10.30.0.1'
+    for (let i = 0; i < IP_LIMIT; i++) expect((await anon(ip)).status).toBe(401)
+    const res = await anon(ip)
+    expectRateLimited(res, 60)
+    expect(res.body.error.message).toBe('Terlalu banyak percubaan. Sila cuba sebentar lagi.')
+    // Another address is a separate bucket.
+    expect((await anon('10.30.0.2')).status).toBe(401)
+  })
+
+  it('a signed-in user is not blocked by the address bucket being exhausted, and gets its own per-user ceiling', async () => {
+    const ip = '10.30.0.3'
+    const l = await loginAs(t, 'pelajar@demo.test', { ip }) // the login is one anonymous request from this address
+    while ((await anon(ip)).status !== 429) {
+      /* exhaust the address bucket with anonymous requests */
+    }
+    for (let i = 0; i < USER_LIMIT; i++) {
+      const r = await l.agent.get(ME).set('X-Forwarded-For', ip)
+      expect(r.status, `request ${i + 1}`).toBe(200)
+    }
+    const over = await l.agent.get(ME).set('X-Forwarded-For', ip)
+    expectRateLimited(over, 60)
+    // The user bucket is per user: another user from the same address is unaffected.
+    const other = await loginAs(t, 'pelajar2@demo.test', { ip: '10.30.0.4' })
+    expect((await other.agent.get(ME).set('X-Forwarded-For', '10.30.0.4')).status).toBe(200)
+  })
+
+  it('/api/health and /api/ready stay exempt past both ceilings', async () => {
+    const ip = '10.30.0.5'
+    for (let i = 0; i < IP_LIMIT + USER_LIMIT + 2; i++) {
+      expect((await t.http().get('/api/health').set('X-Forwarded-For', ip)).status).toBe(200)
+      // Readiness may answer 503 in this test app (no real probes); what matters is that it is never throttled.
+      expect((await t.http().get('/api/ready').set('X-Forwarded-For', ip)).status).not.toBe(429)
+    }
   })
 })

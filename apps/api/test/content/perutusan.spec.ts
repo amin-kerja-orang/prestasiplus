@@ -409,7 +409,7 @@ describe('perutusan: feed, visibility, reads, reactions, comments, public page (
         expect((await postPerutusan(adm, text())).status).toBe(201)
         expect((await postPerutusan(adm, text())).status).toBe(201)
         const third = await postPerutusan(adm, text())
-        expectError(third, 'RATE_LIMITED', 'Too Many Attempts.')
+        expectError(third, 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.')
         expect(await t2.db.query(`select 1 from perutusan`)).toHaveLength(2)
       } finally {
         await t2.close()

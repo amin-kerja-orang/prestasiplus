@@ -226,7 +226,7 @@ describe('notifications inbox (BE-06 part B)', () => {
     const spy = vi.spyOn(t.repo, 'unreadCount').mockRejectedValueOnce(Object.assign(new Error('pool exhausted'), { code: 'P2024' }))
     try {
       const res = await me.get('/me/notifications/unread-count')
-      expectError(res, 'RATE_LIMITED', 'Too Many Attempts.')
+      expectError(res, 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.')
     } finally {
       spy.mockRestore()
     }
@@ -254,7 +254,7 @@ describe('notification write throttle (D57a)', () => {
     const me = apiOf(await login(t, STUDENT))
     for (let i = 0; i < 3; i++) expect((await me.post('/me/notifications/read-all')).status).toBe(200)
     const res = await me.post('/me/notifications/read-all')
-    const err = expectError(res, 'RATE_LIMITED', 'Too Many Attempts.')
+    const err = expectError(res, 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.')
     expect(err.retryAfter).toBeGreaterThan(0)
     expect(Number(res.headers['retry-after'])).toBeGreaterThan(0)
     expect((await me.get('/me/notifications')).status).toBe(200)
@@ -264,7 +264,7 @@ describe('notification write throttle (D57a)', () => {
     const me = apiOf(await login(t, TEACHER))
     expect((await me.get('/me/notifications')).status).toBe(200)
     expect((await me.get('/me/notifications/unread-count')).status).toBe(200)
-    expectError(await me.get('/me/notifications'), 'RATE_LIMITED', 'Too Many Attempts.')
+    expectError(await me.get('/me/notifications'), 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.')
     expect((await me.post('/me/notifications/read-all')).status).toBe(200)
   })
 })

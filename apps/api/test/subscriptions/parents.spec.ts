@@ -318,7 +318,7 @@ describe('parent invite rate limits (D57a)', () => {
   it('the public preview is limited per address: 429 with Retry-After after the ceiling, even for unknown tokens', async () => {
     for (let i = 0; i < 3; i++) expectError(await t.http().get('/api/parent-invites/zzz'), 'NOT_FOUND')
     const res = await t.http().get('/api/parent-invites/zzz')
-    expectError(res, 'RATE_LIMITED', 'Too Many Attempts.')
+    expectError(res, 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.')
     expect(Number(res.headers['retry-after'])).toBeGreaterThan(0)
   })
 
@@ -326,6 +326,6 @@ describe('parent invite rate limits (D57a)', () => {
     const student = apiOf(await login(t, STUDENT))
     expect((await student.post('/me/parent-invite')).status).toBe(200)
     expect((await student.post('/me/parent-invite')).status).toBe(200)
-    expectError(await student.post('/me/parent-invite'), 'RATE_LIMITED', 'Too Many Attempts.')
+    expectError(await student.post('/me/parent-invite'), 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.')
   })
 })

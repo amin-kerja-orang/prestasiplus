@@ -420,7 +420,7 @@ describe('videos: hygiene', () => {
       expect((await a.post('/videos', body())).status).toBe(201)
       expect((await a.post('/videos', body())).status).toBe(201)
       const third = await a.post('/videos', body())
-      expectError(third, 'RATE_LIMITED', 'Too Many Attempts.')
+      expectError(third, 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.')
       expect(Number(third.headers['retry-after'])).toBeGreaterThan(0)
       expect(await t.db.query(`select 1 from videos`)).toHaveLength(2)
     } finally {
@@ -432,7 +432,7 @@ describe('videos: hygiene', () => {
     const t = await bootVp({ THROTTLE_PUBLIC_SEARCH_PER_MINUTE: '3' })
     try {
       for (let i = 0; i < 3; i++) expect((await t.http().get('/api/videos')).status).toBe(200)
-      expectError(await t.http().get('/api/videos'), 'RATE_LIMITED', 'Too Many Attempts.')
+      expectError(await t.http().get('/api/videos'), 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.')
     } finally {
       await t.close()
     }

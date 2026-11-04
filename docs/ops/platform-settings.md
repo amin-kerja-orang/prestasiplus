@@ -102,7 +102,8 @@ Why: many pupils sit behind ONE school address. Per-address buckets (everything 
 
 | Variable | Keyed by | Default | Demo recommendation | Reason |
 |---|---|---|---|---|
-| `THROTTLE_GLOBAL_PER_MINUTE` | address, all `/api` routes except health and ready | 300 | Raise to 3000 `LEAD: confirm` | 30 or more pupils loading pages (several calls each) from one school address can pass 300 per minute and get 429 on random calls. This is the one most likely to bite. |
+| `THROTTLE_GLOBAL_USER_PER_MINUTE` | signed-in user, all `/api` routes except health and ready (D115) | 1200 | Keep | Signed-in requests count per user and never use the address bucket, so a school behind one address does not share a ceiling. |
+| `THROTTLE_GLOBAL_PER_MINUTE` | address, anonymous requests only (no valid session), all `/api` routes except health and ready | 300 | Keep | Since D115 signed-in pupils no longer draw on this bucket; it only covers anonymous traffic (login, public pages). Raise only if a whole class opens public pages at once. |
 | `THROTTLE_PUBLIC_PER_MINUTE` | address (public lookups: jpn, ppd) | 60 | Raise to 600 `LEAD: confirm` | A class registering or looking up schools at the same time. |
 | `THROTTLE_PUBLIC_SEARCH_PER_MINUTE` | address (school typeahead) | 300 | Keep | Already sized for a school. |
 | `THROTTLE_REGISTER_PER_MINUTE` | address (self-registration) | 30 | Keep, raise to 120 only if the demo registers a whole class live | The default already tolerates a school behind one NAT. |

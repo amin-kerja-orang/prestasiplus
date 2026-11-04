@@ -346,7 +346,7 @@ describe('M15 student routes (BE-23)', () => {
       try {
         const api = apiOf(await login(limited, STUDENT))
         for (let i = 0; i < 3; i++) await api.post('/cabutan/1/tickets')
-        expectError(await api.post('/cabutan/1/tickets'), 429, 'RATE_LIMITED', 'Too Many Attempts.')
+        expectError(await api.post('/cabutan/1/tickets'), 429, 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.')
       } finally {
         await limited.close()
       }

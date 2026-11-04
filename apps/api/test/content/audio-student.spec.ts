@@ -174,7 +174,7 @@ describe('audio KBAT student play (AC 8, AC 9)', () => {
       const gate = t.app.get(AudioReadGate)
       const held = Array.from({ length: AUDIO_READ_CONCURRENCY }, () => gate.acquire())
       const res = await student.agent.get(`/api/audio-kbat-sets/${approvedId}/sections/1/audio`)
-      expectError(res, 'RATE_LIMITED', 'Too Many Attempts.')
+      expectError(res, 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.')
       expect(res.headers['retry-after']).toBe('1')
       held[0]?.()
       expect((await student.agent.get(`/api/audio-kbat-sets/${approvedId}/sections/1/audio`)).status).toBe(200)
