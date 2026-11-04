@@ -8,6 +8,8 @@
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
+import { DsCluster, DsStack, DsText } from '@/ds'
+
 import { kindFallbackCaption, qdCopy, sourceLine } from './copy'
 import type { StimulusData } from './types'
 
@@ -52,7 +54,8 @@ const scale = ref(1)
 const tx = ref(0)
 const ty = ref(0)
 const style = computed(() => ({
-  transform: `translate(${tx.value}px, ${ty.value}px) scale(${scale.value})`,
+  translate: `${tx.value}px ${ty.value}px`,
+  scale: String(scale.value),
   touchAction: 'none',
 }))
 
@@ -72,11 +75,11 @@ function reset(): void {
   pointers.clear()
   lastTap = { t: 0, x: 0, y: 0 }
 }
-const area = ref<HTMLElement | null>(null)
+const area = ref<{ $el?: HTMLElement } | null>(null)
 /** Keeps the zoomed picture in view: the pan never exceeds half the extra size. */
 function clamp(): void {
-  const mx = (((scale.value - 1) * (area.value?.clientWidth ?? 0)) / 2)
-  const my = (((scale.value - 1) * (area.value?.clientHeight ?? 0)) / 2)
+  const mx = (((scale.value - 1) * (area.value?.$el?.clientWidth ?? 0)) / 2)
+  const my = (((scale.value - 1) * (area.value?.$el?.clientHeight ?? 0)) / 2)
   tx.value = Math.max(-mx, Math.min(mx, tx.value))
   ty.value = Math.max(-my, Math.min(my, ty.value))
 }
@@ -302,7 +305,8 @@ function retry(): void {
           type="button"
           color="neutral"
           variant="ghost"
-          class="absolute inset-0 size-full min-h-11 rounded-none p-0 opacity-0"
+          class="size-full min-h-11"
+          :style="{ position: 'absolute', inset: 0, padding: 0, borderRadius: 0, opacity: 0 }"
           aria-haspopup="dialog"
           :aria-label="alt"
           data-testid="stimulus-zoom-open"
@@ -311,21 +315,24 @@ function retry(): void {
       </div>
       <UModal v-model:open="zoomOpen" fullscreen :close="false" :title="alt" :description="alt">
         <template #body>
-          <div class="flex h-full flex-col gap-3" data-testid="stimulus-zoom">
-            <div class="flex justify-end">
+          <DsStack gap="sm" class="h-full" data-testid="stimulus-zoom">
+            <DsCluster justify="end">
               <UButton
                 type="button"
                 color="neutral"
                 variant="soft"
-                class="min-h-11 min-w-11 justify-center"
+                class="min-h-11 min-w-11"
                 data-testid="stimulus-zoom-close"
                 @click="zoomOpen = false"
                 >{{ qdCopy.close }}</UButton
               >
-            </div>
-            <div
+            </DsCluster>
+            <DsStack
               ref="area"
-              class="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-xl bg-muted"
+              fill
+              align="center"
+              justify="center"
+              class="overflow-hidden"
               data-testid="stimulus-zoom-area"
               @pointerdown="onDown"
               @pointermove="onMove"
@@ -341,8 +348,8 @@ function retry(): void {
                 :data-scale="scale"
                 data-testid="stimulus-zoom-img"
               />
-            </div>
-          </div>
+            </DsStack>
+          </DsStack>
         </template>
       </UModal>
     </template>
@@ -366,8 +373,8 @@ function retry(): void {
     </figcaption>
 
     <!-- source line under every kind (FR-PA-37) -->
-    <p v-if="!isPassage && stimulus.source" class="text-caption text-muted" data-testid="stimulus-source">
+    <DsText v-if="!isPassage && stimulus.source" variant="caption" tone="muted" data-testid="stimulus-source">
       {{ sourceLine(stimulus.source) }}
-    </p>
+    </DsText>
   </figure>
 </template>
