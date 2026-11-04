@@ -237,10 +237,14 @@ test.describe('S2-T06 Laporan Soalan row actions (gap 5.1) @api', () => {
       const mine = ((await (await pupil.get('/api/question-reports/mine')).json()) as { data: Report[] }).data
       expect(mine.find((m) => m.id === r.id)?.displayStatus).toBe('removed')
     } finally {
-      await page.request.post('/api/questions/bulk-action', {
-        headers: { 'x-csrf-token': csrf },
-        data: { action: 'approved', ids: [r.questionId] },
-      })
+      // An archived version goes back to approved only through draft and review (lifecycle.ts); this question sits in a paper.
+      for (const action of ['draft', 'review', 'approved']) {
+        await page.request.post('/api/questions/bulk-action', {
+          headers: { 'x-csrf-token': csrf },
+          data: { action, ids: [r.questionId] },
+        })
+      }
+      expect((await (await page.request.get(`/api/questions/${r.questionId}`)).json()) as { data: { status: string } }).toMatchObject({ data: { status: 'approved' } })
     }
   })
 })
