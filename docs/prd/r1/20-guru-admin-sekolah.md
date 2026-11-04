@@ -276,7 +276,7 @@ Route `/guru/profil/edit`. API: API-GUR-22 (body amended, ADD-11). Errors: ERR-R
   - **FR-GUR-A1-3** `/guru/profil/edit` has the fields above with the V2 labels; "Nama Penuh" is required; IC accepts digits only; saving shows "Profil dikemaskini." ([PRINCIPLE] copy) and the values persist.
   - **FR-GUR-A1-4** `/guru/profil/{id}` is a read-only profile page for other logged-in teachers with nama, Subjek Utama, Bio, Kelayakan, Pengalaman; IC and e-mail are never shown; the e-mail field of the edit form is read-only.
   - **FR-GUR-A1-5** The sidebar "Profil Saya" -> "Kemaskini Profil" and the Pelajar Sekolah card "Tetapan Profil" open `/guru/profil/edit` (V2 has no "Edit Profil Guru" tile on the Dashboard).
-  - **FR-GUR-A1-6** Changing school uses the M02 school search; the new school re-scopes the Monitoring data (SC-G exception).
+  - **FR-GUR-A1-6** A Guru cannot change school in Profil: `PUT /api/me` ignores `schoolId` for every role (D-A15, D115); the Guru asks the admin. (The earlier M02 school search for Guru is withdrawn.)
   - **FR-GUR-A1-7** Responsive (RP-FORM, RP-TOUCH): single column at 375; "Salin Link", "Lihat" and "Simpan Profil" >= 44 px.
 - **Data** Owner M01/M02. API needed: `GET/PUT /api/account/teacher-profile`, `GET /api/public/teachers/:id`.
 - **Acceptance criteria**
@@ -934,7 +934,7 @@ Route `/video`. API: the existing video list and create endpoints (additions: AD
 | Tajuk Video * | text | Yes | empty | max 150 | "Sila isi tajuk video."; over 150: "Tajuk video tidak boleh melebihi 150 aksara." | none | `videos.title` | video create endpoint |
 | Pautan YouTube * | url | Yes | empty | host `youtube.com`, `www.youtube.com`, `m.youtube.com` or `youtu.be` with a video id | "Sila isi pautan YouTube."; "Pautan mesti pautan YouTube yang sah." | none | `videos.url`, `videos.platform` = `Youtube` | video create endpoint |
 | Subjek (pilihan) | select | No | "— Tiada subjek —" | OPT-SUBJEK | none | none | `videos.subject_id` | video create endpoint |
-| Kategori * | select | Yes | "Lain-lain" | "Motivasi", "Tutorial", "Tips SPM", "Ceramah", "Lain-lain" | "Sila pilih kategori." | none | `videos.category` slugs `motivasi`, `tutorial`, `tips_spm`, `ceramah`, `lain` | video create endpoint |
+| Kategori * | select | Yes | "Lain-lain" | "Motivasi", "Tutorial", "Tips SPM", "Ceramah", "Lain-lain" | "Sila pilih kategori." | none | `videos.category` slugs `motivasi`, `tutorial`, `tips-spm`, `ceramah`, `lain-lain` (the existing check values, kept: D115) | video create endpoint |
 
 - "Tambah Video" shows the form; submit "Tambah Video" (busy "Menyimpan...") shows the toast "Video ditambah.". A teacher-added video is stored with `visibility` = `school` and the teacher's `school_id`; teachers see all global videos plus the videos of their own school (R1 decision D113).
 - List: newest first, 12 per page. Card = thumbnail, title, category chip, subject, views. A click opens the player page (16:9) and adds 1 to `videos.views`. Empty (all counts 0): "Tiada video buat masa ini" / "Video pembelajaran akan dipaparkan di sini".
@@ -2589,7 +2589,7 @@ Route `/admin-sekolah`. API: API-AS-01. The dashboard has no input field.
 
 ### R1-AS-A1 Profil Saya
 - **Action: Complete** (generic hero exists; add the school block)
-- **Screen specification (from V2):** Not observed in V2 for the school admin — follow FR-AS-A1-*. **Current gap:** `/profile` has no school block (nama sekolah, kod, PPD, negeri); add it from M02.
+- **Screen specification (from V2):** Not observed in V2 for the school admin — follow FR-AS-A1-*. **Current gap:** `/profile` has no school block (nama sekolah, kod, PPD, negeri); add it from the school endpoint of M02 (`GET /api/schools/:id` for the admin's `schoolId`; add PPD and negeri to its response if missing; D115).
 #### Field & behaviour spec — R1-AS-A1 Profil Saya
 
 Route `/profile`. API: the existing account profile endpoint. Errors: ERR-REQ-01.
