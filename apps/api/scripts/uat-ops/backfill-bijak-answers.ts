@@ -56,11 +56,12 @@ export function leavesOfGraded(questions: readonly GradedQuestion[], selfMarks: 
       continue
     }
     for (const p of q.parts ?? []) {
-      if (q.attempted === false) {
+      // A self-mark makes its question attempted (`applySelfMarks`): read it before the automatic `attempted: false`.
+      const self = selfMarks[p.partId]
+      if (q.attempted === false && !self) {
         skip('not_attempted')
         continue
       }
-      const self = selfMarks[p.partId]
       if (p.status === 'kosong' && !self) {
         skip('blank_part')
         continue

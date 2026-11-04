@@ -155,6 +155,9 @@ export async function upsertAnswerRow(db: Pick<TxClient, '$queryRaw'>, row: Answ
   return { id: out.id, created: out.created }
 }
 
+/** The dimensions copied onto a row. */
+type Dimensions = Pick<PracticeQuestion, 'subjectId' | 'educationLevelId' | 'chapterId' | 'topicId' | 'difficulty' | 'questionType'>
+
 @Injectable()
 export class AnswerLogPort {
   private readonly logger = new Logger(AnswerLogPort.name)
@@ -202,14 +205,20 @@ export class AnswerLogPort {
 
   /**
    * The version the pupil was served: `versionNo` when the caller knows it, else the one the session served
-   * (`practice_session_questions`), else the question's current version. Read through the question bridge.
-   * An unknown question (not eligible now, no bridge) gives no dimensions and no version number.
+   * (`practice_session_questions`), else the question's current version (live, else latest).
+   *
+   * The dimensions are read straight from `question_versions`, NOT through the drill bridge: the bridge applies the
+   * drill serving filter (`servableMcq`, active and published only, no PKSK) and would drop the dimensions of
+   * structured, subjective, stimulus and image-option questions, which then vanish from dimension-filtered reports.
+   * Difficulty is the TP clamped to 1..5 (`difficultyOfTp`) and the type is the version's `type`, as the bridge maps them.
+   * Only when the question is not in the table at all (no bank, a plugged-in source) is the bridge asked, so an
+   * unknown question gives no dimensions and no version number.
    */
   private async servedVersion(
     questionId: string,
     sessionId: string | null,
     versionNo?: number,
-  ): Promise<{ versionNo: number | null; question: PracticeQuestion | null }> {
+  ): Promise<{ versionNo: number | null; question: Dimensions | null }> {
     let no = versionNo ?? null
     if (no === null && sessionId !== null) {
       const rows = await this.prisma.client.$queryRaw<{ v: number }[]>`
@@ -217,6 +226,39 @@ export class AnswerLogPort {
          WHERE session_id = ${sessionId}::uuid AND question_id = ${idFromString(questionId)}::bigint`
       no = rows[0]?.v ?? null
     }
+    const rows = await this.prisma.client.$queryRaw<
+      {
+        version_no: number | null
+        subject_id: string | null
+        education_level_id: string | null
+        chapter_id: string | null
+        topic_id: string | null
+        difficulty: number | null
+        type: string | null
+      }[]
+    >`SELECT v.version_no, v.subject_id::text, v.education_level_id::text, v.chapter_id::text, v.topic_id::text,
+             CASE WHEN v.difficulty_tp IS NULL THEN NULL ELSE least(5, greatest(1, v.difficulty_tp)) END AS difficulty, v.type
+        FROM questions q
+        LEFT JOIN question_versions v ON v.question_id = q.id AND v.version_no = coalesce(${no}::int, q.live_version_no, q.latest_version_no)
+       WHERE q.id = ${idFromString(questionId)}::bigint`
+    const row = rows[0]
+    if (row) {
+      return {
+        versionNo: row.version_no ?? no,
+        question:
+          row.version_no === null
+            ? null
+            : {
+                subjectId: row.subject_id,
+                educationLevelId: row.education_level_id,
+                chapterId: row.chapter_id,
+                topicId: row.topic_id,
+                difficulty: row.difficulty,
+                questionType: row.type ?? '',
+              },
+      }
+    }
+    // Not in the question table: fall back to the bridge (a plugged-in source), which may still know it.
     if (no !== null) {
       const found = await this.ports.questions.versions([{ questionId, versionNo: no }])
       return { versionNo: no, question: found.get(versionKey(questionId, no)) ?? null }

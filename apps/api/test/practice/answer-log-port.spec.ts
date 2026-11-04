@@ -242,6 +242,27 @@ describe('unknown question', () => {
   })
 })
 
+describe('dimensions of questions the drill bridge refuses', () => {
+  it('a structured question (refused by the drill bridge) keeps its subject, level, Bab, topic, difficulty and type', async () => {
+    const id = (await t.db.query<{ id: string }>(`insert into questions (source_type, live_version_no, latest_version_no, is_active) values ('manual', 2, 2, true) returning id::text`))[0]?.id as string
+    await t.db.query(
+      `insert into question_versions (question_id, version_no, status, type, stem_ms, subject_id, education_level_id, chapter_id, difficulty_tp)
+       values ($1, 1, 'archived', 'structured', 'lama', $2, $3, $4, 2), ($1, 2, 'approved', 'structured', 'baru', $2, $3, $4, 6)`,
+      [id, w.subject.math, w.level.d1, w.chapter.c2],
+    )
+    // The drill bridge (fake bank here, servableMcq in production) does not know it: only the table does.
+    const a = randomUUID()
+    await port.record(entry({ attemptId: a, questionId: id, mode: 'structured', partRef: '1.a', marksMax: 3, marksAwarded: 3 }))
+    expect(await rowsOf(a)).toEqual([
+      expect.objectContaining({ question_version_no: 2, subject_id: w.subject.math, education_level_id: w.level.d1, chapter_id: w.chapter.c2, difficulty: 5, question_type: 'structured' }),
+    ])
+    // A session that served version 1 pins it.
+    const sid = await drillSession(u1, id, 1)
+    await port.record(entry({ attemptId: sid, questionId: id, mode: 'latih_tubi' }))
+    expect(await rowsOf(sid)).toEqual([expect.objectContaining({ question_version_no: 1, difficulty: 2, question_type: 'structured' })])
+  })
+})
+
 describe('transactions', () => {
   it('joins the caller transaction: a rollback removes the row', async () => {
     const a = randomUUID()
@@ -278,8 +299,10 @@ describe('backfill-bijak-answers (UAT script)', () => {
           { partId: '504-c', marks: 2, awarded: 0, status: 'kosong' },
         ],
       },
+      // Automatic grading says not attempted; the pupil then self-marked its part (the real persisted shape keeps this row).
+      { questionId: '505', attempted: false, parts: [{ partId: '505', marks: 4, awarded: 0, status: 'belum_dimarkah' }] },
     ],
-    selfMarks: { '504-b': { mark: 2 } },
+    selfMarks: { '504-b': { mark: 2 }, '505': { mark: 4, band: 'A' } },
   }
 
   it('maps the V3 attempt kinds to simulasi and nothing else', () => {
@@ -296,6 +319,7 @@ describe('backfill-bijak-answers (UAT script)', () => {
       ['502', null, false, 0, 1],
       ['504', '504-a', false, 1, 3],
       ['504', '504-b', true, 2, 2],
+      ['505', null, true, 4, 4],
     ])
     expect(Object.fromEntries(skips)).toEqual({ not_attempted: 1, blank_part: 1 })
   })
@@ -311,20 +335,21 @@ describe('backfill-bijak-answers (UAT script)', () => {
 
     const dry = await runBackfill(prisma, { apply: false })
     expect(dry.attempts).toBe(1)
-    expect(dry.rowsByMode.get('simulasi')).toBe(4)
+    expect(dry.rowsByMode.get('simulasi')).toBe(5)
     expect(await countRows(t.db, 'practice_answers', 'attempt_id = $1', [attempt])).toBe(0)
 
     const first = await runBackfill(prisma, { apply: true })
-    expect([first.created, first.updated]).toEqual([4, 0])
+    expect([first.created, first.updated]).toEqual([5, 0])
     const rows = await rowsOf(attempt)
     expect(rows.map((r) => [r.mode, r.question_id, r.part_ref, r.is_correct, r.marks_awarded, r.marks_max, r.session_id])).toEqual([
       ['simulasi', '501', null, true, 1, 1, null],
       ['simulasi', '502', null, false, 0, 1, null],
       ['simulasi', '504', '504-a', false, 1, 3, null],
       ['simulasi', '504', '504-b', true, 2, 2, null],
+      ['simulasi', '505', null, true, 4, 4, null],
     ])
     const second = await runBackfill(prisma, { apply: true })
-    expect([second.created, second.updated]).toEqual([0, 4])
-    expect(await countRows(t.db, 'practice_answers', 'attempt_id = $1', [attempt])).toBe(4)
+    expect([second.created, second.updated]).toEqual([0, 5])
+    expect(await countRows(t.db, 'practice_answers', 'attempt_id = $1', [attempt])).toBe(5)
   })
 })
