@@ -10,7 +10,7 @@
  */
 import { computed } from 'vue'
 
-import { DsIconChip, DsText } from '@/ds'
+import { DsIconChip, DsStack, DsText } from '@/ds'
 import { useMedia } from '@/ds/useMedia'
 
 import { chipLabel, qdCopy } from './copy'
@@ -65,9 +65,9 @@ const iconOnly = computed(() => thumb.value?.kind === 'passage' || thumb.value?.
 </script>
 
 <template>
-  <div v-if="blocked" class="flex flex-col gap-2" data-testid="stimulus-group" data-layout="excluded">
+  <DsStack v-if="blocked" gap="xs" data-testid="stimulus-group" data-layout="excluded">
     <NotServedNotice :reason="unrenderableReason(blocked)" />
-  </div>
+  </DsStack>
 
   <div
     v-else-if="wide"
@@ -132,7 +132,7 @@ const iconOnly = computed(() => thumb.value?.kind === 'passage' || thumb.value?.
     :description="qdCopy.sheetDescription"
   >
     <template #body>
-      <div class="flex flex-col gap-4" data-testid="group-stimuli" :data-count="list.length">
+      <DsStack gap="md" data-testid="group-stimuli" :data-count="list.length">
         <StimulusFigure
           v-for="st in list"
           :key="st.id"
@@ -142,7 +142,7 @@ const iconOnly = computed(() => thumb.value?.kind === 'passage' || thumb.value?.
           @retry="emit('retry', st.id)"
           @report="emit('report', st.id)"
         />
-      </div>
+      </DsStack>
     </template>
   </UDrawer>
 </template>
