@@ -51,3 +51,19 @@ describe('DsChart staff colours (S-02)', () => {
     expect(configs[0]?.data.datasets[0]?.backgroundColor).toBe('#2440f0')
   })
 })
+
+describe('DsChart data table (S10-T01 #544)', () => {
+  it('shows a dash for null and NaN, and a normal value as before', () => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({} as CanvasRenderingContext2D)
+    const w = mount(DsChart, {
+      props: {
+        title: 'Gred',
+        labels: ['A', 'B', 'C', 'D'],
+        unit: '%',
+        series: [{ label: 'Murid', data: [42, null, Number.NaN, Number.POSITIVE_INFINITY] }],
+      },
+    })
+    const cells = w.findAll('[data-ds="chart-table"] tbody tr').map((r) => r.findAll('td').at(-1)?.text())
+    expect(cells).toEqual(['42%', '—', '—', '—'])
+  })
+})

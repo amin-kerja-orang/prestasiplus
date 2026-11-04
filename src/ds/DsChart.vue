@@ -48,7 +48,7 @@ Chart.register(
 
 export interface ChartSeries {
   label: string
-  data: number[]
+  data: (number | null)[]
   /** Staff colour slot 1-8 (`--ds-cat-<slot>`). Defaults to the series position. */
   slot?: number
 }
@@ -298,7 +298,9 @@ const tableRows = computed(() =>
   props.labels.map((label, r) => {
     const row: Record<string, string> = { label }
     props.series.forEach((s, i) => {
-      row[`s${i}`] = `${s.data[r] ?? ''}${props.unit}`
+      const v = s.data[r]
+      // Missing or non-finite values read as a dash, never "NaN%"; the plot is unchanged (null stays a gap in Chart.js).
+      row[`s${i}`] = typeof v === 'number' && Number.isFinite(v) ? `${v}${props.unit}` : '\u2014'
     })
     return row
   }),
