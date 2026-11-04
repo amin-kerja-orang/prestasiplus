@@ -143,13 +143,38 @@ export const GamesLeagueDetailSchema = z
   .meta({ id: 'GamesLeagueDetail' })
 export type GamesLeagueDetail = z.infer<typeof GamesLeagueDetailSchema>
 
-// --- Sekolah Bersaing (M16-50) ------------------------------------------------------------------------------------------
+// --- Sekolah Bersaing (API-AS-14) ----------------------------------------------------------------------------------------
 
-/** `week`: a valid YYYY-MM-DD selects the Monday of that week; anything else the current week; never an error. */
+/** One school of the live board, computed on request (FR-AS-45-1, DM-31). `accuracy`: one decimal on the wire (60 section 4.6). */
+export const GamesSekolahBersaingBoardRowSchema = z
+  .strictObject({
+    rank: z.number().int().min(1),
+    school: z.string(),
+    state: z.string(),
+    accuracy: z
+      .number()
+      .min(0)
+      .max(100)
+      .refine((n) => Math.round(n * 10) / 10 === n, { error: 'At most one decimal.' })
+      .meta({ description: 'Mean of per-session accuracy of the school, percent, one decimal.' }),
+    pupils: gamesCount.meta({ description: 'Distinct pupils of the school with a session.' }),
+  })
+  .meta({ id: 'GamesSekolahBersaingBoardRow' })
+export type GamesSekolahBersaingBoardRow = z.infer<typeof GamesSekolahBersaingBoardRowSchema>
+
+export const GamesSekolahBersaingBoardSchema = z
+  .array(GamesSekolahBersaingBoardRowSchema)
+  .meta({ id: 'GamesSekolahBersaingBoard', description: 'Rank order; [] when no school has a session.' })
+export type GamesSekolahBersaingBoard = z.infer<typeof GamesSekolahBersaingBoardSchema>
+
+// The weekly snapshot below is what the API still answers until the S7-T02 BE part, which removes these schemas.
+
+/** @deprecated Weekly snapshot, removed by the S7-T02 BE part. `week`: a valid YYYY-MM-DD selects the Monday of that week; anything else the current week; never an error. */
 export const GamesSekolahBersaingQuerySchema = z
   .object({ week: z.string().optional().meta({ description: 'Any text; an invalid value is ignored.' }) })
   .meta({ id: 'GamesSekolahBersaingQuery' })
 
+/** @deprecated Weekly snapshot, removed by the S7-T02 BE part. */
 export const GamesSekolahBersaingRowSchema = z
   .strictObject({
     rank: z.number().int().min(1),
@@ -167,6 +192,7 @@ export const GamesSekolahBersaingRowSchema = z
   .meta({ id: 'GamesSekolahBersaingRow' })
 export type GamesSekolahBersaingRow = z.infer<typeof GamesSekolahBersaingRowSchema>
 
+/** @deprecated Weekly snapshot, removed by the S7-T02 BE part. */
 export const GamesSekolahBersaingSchema = z
   .strictObject({
     weekStart: DateOnlySchema.meta({ description: 'Monday of the selected week.' }),

@@ -24573,6 +24573,47 @@
         ],
         "additionalProperties": false
       },
+      "GamesSekolahBersaingBoardRow": {
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "school": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "accuracy": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Mean of per-session accuracy of the school, percent, one decimal."
+          },
+          "pupils": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Distinct pupils of the school with a session."
+          }
+        },
+        "required": [
+          "rank",
+          "school",
+          "state",
+          "accuracy",
+          "pupils"
+        ],
+        "additionalProperties": false
+      },
+      "GamesSekolahBersaingBoard": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/GamesSekolahBersaingBoardRow"
+        },
+        "description": "Rank order; [] when no school has a session."
+      },
       "GamesSekolahBersaingQuery": {
         "type": "object",
         "properties": {
@@ -96430,30 +96471,18 @@
         "tags": [
           "games"
         ],
-        "summary": "Sekolah Bersaing weekly board (M16-50)",
-        "description": "National board, no school scope. `week`: a valid YYYY-MM-DD selects the Monday of that week; anything else the current week; never an error. An anonymous row shows \"Sekolah anonim\".",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "description": "Any text; an invalid value is ignored."
-            },
-            "required": false,
-            "description": "Any text; an invalid value is ignored.",
-            "name": "week",
-            "in": "query"
-          }
-        ],
+        "summary": "Sekolah Bersaing live board (API-AS-14)",
+        "description": "National board, no school scope, computed on request. School admin and admin only. Top 30 schools by mean session accuracy; ties by pupils, sessions, school name. An unknown query parameter is ignored.",
         "responses": {
           "200": {
-            "description": "Weekly snapshot.",
+            "description": "Rank order; [] when no school has a session.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/components/schemas/GamesSekolahBersaing"
+                      "$ref": "#/components/schemas/GamesSekolahBersaingBoard"
                     }
                   },
                   "required": [
@@ -96465,6 +96494,16 @@
           },
           "401": {
             "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not school_admin or admin).",
             "content": {
               "application/json": {
                 "schema": {
