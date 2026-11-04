@@ -3,14 +3,29 @@ import { ERROR_STATUS, type ErrorCode } from '@pp/contract'
 
 /** Generic messages, identical to the mock's `DEFAULT_ERROR_MESSAGES` (src/mock/server/respond.ts). */
 export const DEFAULT_ERROR_MESSAGES: Readonly<Record<ErrorCode, string>> = {
-  UNAUTHORIZED: 'Unauthenticated.',
-  FORBIDDEN: 'This action is unauthorized.',
-  NOT_FOUND: 'Not Found.',
-  SERVER_ERROR: 'Server Error',
+  UNAUTHORIZED: 'Sesi anda telah tamat. Sila log masuk semula.',
+  FORBIDDEN: 'Anda tidak dibenarkan melakukan tindakan ini.',
+  NOT_FOUND: 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?',
+  SERVER_ERROR: 'Sesuatu tidak kena di pihak kami. Pasukan teknikal telah dimaklumkan. Sila cuba sebentar lagi.',
   RATE_LIMITED: 'Terlalu banyak percubaan. Sila cuba sebentar lagi.',
-  CONFLICT: 'Conflict.',
-  VALIDATION_ERROR: 'The given data was invalid.',
+  CONFLICT: 'Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi.',
+  VALIDATION_ERROR: 'Data yang dihantar tidak sah. Sila semak dan cuba lagi.',
   PASSWORD_CHANGE_REQUIRED: 'Sila tukar kata laluan anda sebelum meneruskan.',
+  BAD_REQUEST: 'Permintaan tidak sah. Sila muat semula halaman dan cuba lagi.',
+  PAYLOAD_TOO_LARGE: 'Fail atau data terlalu besar. Saiz maksimum ialah {n} MB.',
+  UNSUPPORTED_MEDIA_TYPE: 'Jenis fail tidak disokong.',
+  BAD_GATEWAY: 'Sesuatu tidak kena di pihak kami. Pasukan teknikal telah dimaklumkan. Sila cuba sebentar lagi.',
+  SERVICE_UNAVAILABLE: 'Sistem sedang diselenggara buat sementara waktu. Sila cuba semula dalam beberapa minit.',
+  TIMEOUT: 'Permintaan mengambil masa terlalu lama. Cuba lagi.',
+}
+
+/**
+ * ERR-REQ-04 text (40 X10.11). Without a list it is the generic default; a module that knows the allowed formats
+ * passes them and gets "Jenis fail tidak disokong. Format dibenarkan: {senarai}.".
+ */
+export function unsupportedMediaTypeMessage(allowed?: readonly string[]): string {
+  const base = DEFAULT_ERROR_MESSAGES.UNSUPPORTED_MEDIA_TYPE
+  return allowed && allowed.length > 0 ? `${base} Format dibenarkan: ${allowed.join(', ')}.` : base
 }
 
 export interface ApiErrorOptions {

@@ -123,6 +123,7 @@ defineExpose({ focus })
       </span>
     </template>
     <template v-if="title" #title>
+      <!-- eslint-disable pp/ds-class-allowlist -- ghost hover/active fill must stay clear so the tone tint shows; no token equals transparent -->
       <UButton
         v-if="collapsible"
         type="button"
@@ -139,6 +140,7 @@ defineExpose({ focus })
         <span class="grow text-start">{{ title }}</span>
       </UButton>
       <template v-else>{{ title }}</template>
+      <!-- eslint-enable pp/ds-class-allowlist -->
     </template>
     <template v-if="hasBody" #description>
       <div

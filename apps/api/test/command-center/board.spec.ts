@@ -159,8 +159,8 @@ describe('GET /admin/command-center/live-data', () => {
   })
 
   it('401, 403 for teacher and student, no-store header', async () => {
-    expectError(await t.http().get('/api/admin/command-center/live-data'), 'UNAUTHORIZED', 'Unauthenticated.')
-    expectError(await getAs(teacher, '/admin/command-center/live-data'), 'FORBIDDEN', 'This action is unauthorized.')
+    expectError(await t.http().get('/api/admin/command-center/live-data'), 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
+    expectError(await getAs(teacher, '/admin/command-center/live-data'), 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
     const res = await getAs(admin, '/admin/command-center/live-data')
     expect(res.headers['cache-control']).toBe('no-store')
   })
@@ -264,8 +264,8 @@ describe('GET /command-center/daily-activity', () => {
   })
 
   it('401 and 403 per role', async () => {
-    expectError(await t.http().get('/api/command-center/daily-activity'), 'UNAUTHORIZED', 'Unauthenticated.')
-    expectError(await getAs(teacher, '/command-center/daily-activity'), 'FORBIDDEN', 'This action is unauthorized.')
+    expectError(await t.http().get('/api/command-center/daily-activity'), 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
+    expectError(await getAs(teacher, '/command-center/daily-activity'), 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
   })
 
   it('ETag/304 on the daily board', async () => {
@@ -307,11 +307,11 @@ describe('GET /command-center/daily-activity/school/:id', () => {
   })
 
   it('404 for an unknown or non-numeric school, 403 for the school admin and the teacher, 401 anonymous', async () => {
-    expectError(await getAs(admin, '/command-center/daily-activity/school/99999999'), 'NOT_FOUND', 'Not Found.')
-    expectError(await getAs(admin, '/command-center/daily-activity/school/abc'), 'NOT_FOUND', 'Not Found.')
-    expectError(await getAs(schoolAdmin, `/command-center/daily-activity/school/${w.school1}`), 'FORBIDDEN', 'This action is unauthorized.')
-    expectError(await getAs(teacher, `/command-center/daily-activity/school/${w.school1}`), 'FORBIDDEN', 'This action is unauthorized.')
-    expectError(await t.http().get(`/api/command-center/daily-activity/school/${w.school1}`), 'UNAUTHORIZED', 'Unauthenticated.')
+    expectError(await getAs(admin, '/command-center/daily-activity/school/99999999'), 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+    expectError(await getAs(admin, '/command-center/daily-activity/school/abc'), 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+    expectError(await getAs(schoolAdmin, `/command-center/daily-activity/school/${w.school1}`), 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
+    expectError(await getAs(teacher, `/command-center/daily-activity/school/${w.school1}`), 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
+    expectError(await t.http().get(`/api/command-center/daily-activity/school/${w.school1}`), 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
   })
 })
 

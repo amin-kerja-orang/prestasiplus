@@ -93,15 +93,15 @@ describe('videos: visibility by school, writes, validation (AC 5, AC 6, AC 8)', 
     it('an invisible video is a plain 404 on the page, edit and delete, for a guest and for another school', async () => {
       for (const actor of [t.http(), outsider.agent]) {
         const res = await actor.get(`/api/videos/${id.school1}`)
-        expectError(res, 'NOT_FOUND', 'Not Found.')
+        expectError(res, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
       }
       expectError(await api.outsider.put(`/videos/${id.school1}`, body()), 'NOT_FOUND')
       expectError(await api.outsider.del(`/videos/${id.school1}`), 'NOT_FOUND')
       const count = await t.db.query(`select 1 from videos where id = $1`, [id.school1])
       expect(count).toHaveLength(1)
       // A school video of the own school is visible but not manageable: 403, not 404.
-      expectError(await api.student.put(`/videos/${id.school1}`, body()), 'FORBIDDEN', 'This action is unauthorized.')
-      expectError(await api.student.del(`/videos/${id.school1}`), 'FORBIDDEN', 'This action is unauthorized.')
+      expectError(await api.student.put(`/videos/${id.school1}`, body()), 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
+      expectError(await api.student.del(`/videos/${id.school1}`), 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
     })
 
     it('related videos never include a school-only video for a non-admin', async () => {

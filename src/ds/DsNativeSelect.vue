@@ -136,7 +136,7 @@ const rows = computed<Row[]>(() => {
 })
 
 /** A blank row worded "Pilih ..." is a prompt (trigger placeholder, not a list row); "Semua ..." stays a row. */
-const isPrompt = (label: string): boolean => /^pilih/i.test(label)
+const isPrompt = (label: string): boolean => /^pilih\b/i.test(label)
 const promptText = computed(() => {
   const r = rows.value.find((x) => x.type === 'option' && x.value === '' && isPrompt(x.label))
   return r?.label
