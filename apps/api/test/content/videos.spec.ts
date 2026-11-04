@@ -15,6 +15,7 @@ import {
   insertVideo,
   login,
   moveUser,
+  schoolIdOf,
   userIdOf,
   type Api,
   type LoggedIn,
@@ -22,6 +23,8 @@ import {
 } from './vp-helpers'
 
 const OTHER_SCHOOL_STUDENT = 'pelajar2@demo.test'
+/** A second teacher (also a school admin); moved to school DEMO002 so a teacher of another school exists. */
+const OTHER_SCHOOL_TEACHER = 'guruadmin@demo.test'
 const YT = 'https://www.youtube.com/watch?v=abcdefghijk'
 const body = (over: Record<string, unknown> = {}) => ({ videoUrl: YT, title: 'Video contoh', category: 'tutorial', visibility: 'global', ...over })
 
@@ -31,8 +34,9 @@ describe('videos: visibility by school, writes, validation (AC 5, AC 6, AC 8)', 
   let student: LoggedIn
   let outsider: LoggedIn
   let schoolAdmin: LoggedIn
+  let teacher2: LoggedIn
   let admin: LoggedIn
-  let api: Record<'teacher' | 'student' | 'outsider' | 'schoolAdmin' | 'admin', Api>
+  let api: Record<'teacher' | 'teacher2' | 'student' | 'outsider' | 'schoolAdmin' | 'admin', Api>
   const id: Record<string, string> = {}
   let sejarah = ''
   let fizik = ''
@@ -42,12 +46,14 @@ describe('videos: visibility by school, writes, validation (AC 5, AC 6, AC 8)', 
   beforeAll(async () => {
     t = await bootVp()
     await moveUser(t.db, OTHER_SCHOOL_STUDENT, 'DEMO002')
+    await moveUser(t.db, OTHER_SCHOOL_TEACHER, 'DEMO002')
     teacher = await login(t, TEACHER)
     student = await login(t, STUDENT)
     outsider = await login(t, OTHER_SCHOOL_STUDENT)
     schoolAdmin = await login(t, SCHOOL_ADMIN)
     admin = await login(t, ADMIN)
-    api = { teacher: apiOf(teacher), student: apiOf(student), outsider: apiOf(outsider), schoolAdmin: apiOf(schoolAdmin), admin: apiOf(admin) }
+    teacher2 = await login(t, OTHER_SCHOOL_TEACHER)
+    api = { teacher: apiOf(teacher), teacher2: apiOf(teacher2), student: apiOf(student), outsider: apiOf(outsider), schoolAdmin: apiOf(schoolAdmin), admin: apiOf(admin) }
 
     sejarah = await insertSubject(t.db, 'SEJ', 'Sejarah')
     fizik = await insertSubject(t.db, 'FIZ', 'Fizik')
@@ -99,16 +105,18 @@ describe('videos: visibility by school, writes, validation (AC 5, AC 6, AC 8)', 
       expectError(await api.outsider.del(`/videos/${id.school1}`), 'NOT_FOUND')
       const count = await t.db.query(`select 1 from videos where id = $1`, [id.school1])
       expect(count).toHaveLength(1)
-      // A school video of the own school is visible but not manageable: 403, not 404.
+      // A pupil never writes: 403 from the role check, whether or not the video is visible.
       expectError(await api.student.put(`/videos/${id.school1}`, body()), 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
       expectError(await api.student.del(`/videos/${id.school1}`), 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
     })
 
-    it('related videos never include a school-only video for a non-admin', async () => {
-      const own = await student.agent.get(`/api/videos/${id.global1}`)
-      expect(own.body.data.related.map((c: { id: string }) => c.id)).toEqual([id.global2])
-      const admins = await admin.agent.get(`/api/videos/${id.global1}`)
-      expect(admins.body.data.related.map((c: { id: string }) => c.id)).toEqual([id.school1, id.global2])
+    it('related videos follow the same visibility as the list (global + own school; a guest global only; admin all)', async () => {
+      const related = async (who: { get(url: string): Promise<{ body: { data: { related: { id: string }[] } } }> }) =>
+        (await who.get(`/api/videos/${id.global1}`)).body.data.related.map((c) => c.id)
+      expect(await related(student.agent)).toEqual([id.school1, id.global2])
+      expect(await related(outsider.agent)).toEqual([id.global2])
+      expect(await related(t.http())).toEqual([id.global2])
+      expect(await related(admin.agent)).toEqual([id.school1, id.global2])
     })
 
     it('an invalid or unknown id is 404 for everyone', async () => {
@@ -120,9 +128,9 @@ describe('videos: visibility by school, writes, validation (AC 5, AC 6, AC 8)', 
 
   describe('create, update, delete (AC 5, AC 8)', () => {
     it('a teacher publishes at once (no approval state in the mock): 201, flash, detail shape, uploader from the session', async () => {
-      const res = await api.teacher.post('/videos', body({ title: 'Video guru', visibility: 'school', description: 'Penerangan', subjectId: fizik, uploaderId: undefined }))
+      const res = await api.teacher.post('/videos', body({ title: 'Video guru', visibility: 'global', description: 'Penerangan', subjectId: fizik, uploaderId: undefined }))
       expect(res.status, JSON.stringify(res.body)).toBe(201)
-      expect(res.body.status).toBe('Video berjaya diterbitkan.')
+      expect(res.body.status).toBe('Video ditambah.')
       const detail = VideoDetailSchema.parse(res.body.data)
       expect(detail.visibility).toBe('school')
       expect(detail.platform).toBe('Youtube')
@@ -134,18 +142,24 @@ describe('videos: visibility by school, writes, validation (AC 5, AC 6, AC 8)', 
       expect(detail.uploader).toEqual({ name: 'Guru Demo', initial: 'G', roleLabel: 'Guru' })
       const [row] = await t.db.query<{ uploader_id: string; school_id: string; subject_id: string }>(`select uploader_id::text, school_id::text, subject_id::text from videos where id = $1`, [detail.id])
       expect(row?.uploader_id).toBe(await userIdOf(t.db, TEACHER))
+      // The body asked for `global`; the server stores `school` with the teacher's own school (AC-GUR-7-6).
+      expect(row?.school_id).toBe(await schoolIdOf(t.db, 'DEMO001'))
       const shares = await t.db.query<{ school_id: string }>(`select school_id::text from video_schools where video_id = $1`, [detail.id])
       expect(shares.map((s) => s.school_id)).toEqual([row?.school_id])
       // The classmate sees it, the other school does not.
       expect((await student.agent.get(`/api/videos/${detail.id}`)).status).toBe(200)
       expect((await outsider.agent.get(`/api/videos/${detail.id}`)).status).toBe(404)
+      // A teacher of school Y does not see it; a teacher of school X (the uploader) does.
+      expect((await teacher2.agent.get(`/api/videos/${detail.id}`)).status).toBe(404)
+      expect(idsOf(await teacher2.agent.get('/api/videos'))).not.toContain(detail.id)
+      expect(idsOf(await teacher.agent.get('/api/videos'))).toContain(detail.id)
       const audit = await t.db.query<{ actor_user_id: string }>(`select actor_user_id::text from audit_events where action = 'content.video.created' and target_id = $1`, [detail.id])
       expect(audit).toHaveLength(1)
       expect(audit[0]?.actor_user_id).toBe(await userIdOf(t.db, TEACHER))
     })
 
     it('a client-sent uploader, school or any unknown key is refused, never read', async () => {
-      const res = await api.student.post('/videos', body({ uploaderId: '1', schoolId: '1' }))
+      const res = await api.teacher.post('/videos', body({ uploaderId: '1', schoolId: '1' }))
       expect(fieldsOf(res)).toEqual({ uploaderId: 'Medan ini tidak sah.', schoolId: 'Medan ini tidak sah.' })
     })
 
@@ -162,37 +176,52 @@ describe('videos: visibility by school, writes, validation (AC 5, AC 6, AC 8)', 
       expect(cleared.body.data.subject).toBeNull()
     })
 
-    it('required and invalid fields use the mock placeholder messages', async () => {
-      expect(fieldsOf(await api.student.post('/videos', {}))).toEqual({
-        videoUrl: 'Medan ini diperlukan.',
-        title: 'Medan ini diperlukan.',
-        category: 'Medan ini diperlukan.',
-        visibility: 'Medan ini diperlukan.',
+    it('a teacher gets the exact BM copy for title, link and category; the other fields keep the generic copy', async () => {
+      expect(fieldsOf(await api.teacher.post('/videos', {}))).toEqual({
+        videoUrl: 'Sila isi pautan YouTube.',
+        title: 'Sila isi tajuk video.',
+        category: 'Sila pilih kategori.',
       })
-      expect(fieldsOf(await api.student.post('/videos', body({ title: '   ' })))).toEqual({ title: 'Medan ini diperlukan.' })
-      const bad = fieldsOf(
-        await api.student.post('/videos', body({ videoUrl: 'javascript:alert(1)', title: 'x'.repeat(256), category: 'lain', visibility: 'private', description: 'd'.repeat(1001) })),
-      )
-      expect(bad).toEqual({
-        videoUrl: 'Medan ini tidak sah.',
-        title: 'Medan ini tidak sah.',
+      expect(fieldsOf(await api.teacher.post('/videos', body({ title: '   ' })))).toEqual({ title: 'Sila isi tajuk video.' })
+      expect(fieldsOf(await api.teacher.post('/videos', body({ category: '' })))).toEqual({ category: 'Sila pilih kategori.' })
+      expect(fieldsOf(await api.teacher.post('/videos', body({ title: 'x'.repeat(151) })))).toEqual({ title: 'Tajuk video tidak boleh melebihi 150 aksara.' })
+      expect((await api.teacher.post('/videos', body({ title: 'x'.repeat(150) }))).status).toBe(201)
+      const missingCategory = body()
+      delete (missingCategory as Record<string, unknown>).category
+      expect(fieldsOf(await api.teacher.post('/videos', missingCategory))).toEqual({ category: 'Sila pilih kategori.' })
+      expect(fieldsOf(await api.teacher.post('/videos', body({ videoUrl: 'https://vimeo.com/123456' })))).toEqual({ videoUrl: 'Pautan mesti pautan YouTube yang sah.' })
+      expect(fieldsOf(await api.teacher.post('/videos', body({ category: 'lain', description: 'd'.repeat(1001), subjectId: 'abc' })))).toEqual({
         category: 'Medan ini tidak sah.',
-        visibility: 'Medan ini tidak sah.',
         description: 'Medan ini tidak sah.',
+        subjectId: 'Medan ini tidak sah.',
       })
-      expect(fieldsOf(await api.student.post('/videos', body({ subjectId: 'abc' })))).toEqual({ subjectId: 'Medan ini tidak sah.' })
-      expect(fieldsOf(await api.student.post('/videos', body({ title: 42 })))).toEqual({ title: 'Medan ini tidak sah.' })
-      expect(fieldsOf(await api.student.post('/videos', body({ videoUrl: 'ftp://example.test/v' })))).toEqual({ videoUrl: 'Medan ini tidak sah.' })
+      expect(fieldsOf(await api.teacher.post('/videos', body({ title: 42 })))).toEqual({ title: 'Medan ini tidak sah.' })
     })
 
-    it('"school" needs a school on the uploader account: 422 under fields.visibility', async () => {
-      // The central admin account has no school.
-      const res = await api.admin.post('/videos', body({ visibility: 'school' }))
-      expect(fieldsOf(res)).toEqual({ visibility: 'Anda tiada sekolah untuk dikongsi.' })
-      expect(errorOf(res).message).toBe('Anda tiada sekolah untuk dikongsi.')
+    it('an admin gets the same required copy and the 150 limit; the host rule stays as it was', async () => {
+      expect(fieldsOf(await api.admin.post('/videos', {}))).toEqual({
+        videoUrl: 'Sila isi pautan YouTube.',
+        title: 'Sila isi tajuk video.',
+        category: 'Sila pilih kategori.',
+      })
+      expect(fieldsOf(await api.admin.post('/videos', body({ title: 'x'.repeat(151) })))).toEqual({ title: 'Tajuk video tidak boleh melebihi 150 aksara.' })
+      expect(fieldsOf(await api.admin.post('/videos', body({ videoUrl: 'ftp://example.test/v' })))).toEqual({ videoUrl: 'Medan ini tidak sah.' })
+    })
+
+    it('a teacher without a school gets 422 "Anda tiada sekolah untuk dikongsi." under fields.visibility; an admin (no school) is global', async () => {
+      await moveUser(t.db, OTHER_SCHOOL_TEACHER, null)
+      try {
+        const res = await api.teacher2.post('/videos', body())
+        expect(fieldsOf(res)).toEqual({ visibility: 'Anda tiada sekolah untuk dikongsi.' })
+        expect(errorOf(res).message).toBe('Anda tiada sekolah untuk dikongsi.')
+      } finally {
+        await moveUser(t.db, OTHER_SCHOOL_TEACHER, 'DEMO002')
+      }
       const ctx = await admin.agent.get('/api/videos/form-context')
       expect(VideoFormContextSchema.parse(ctx.body.data).school).toBeNull()
-      expect((await api.admin.post('/videos', body({ visibility: 'global' }))).status).toBe(201)
+      const created = await api.admin.post('/videos', body({ visibility: 'school' }))
+      expect(created.status, JSON.stringify(created.body)).toBe(201)
+      expect(created.body.data.visibility).toBe('global')
     })
 
     it('form-context returns the uploader and the account school; a guest gets 401', async () => {
@@ -213,25 +242,28 @@ describe('videos: visibility by school, writes, validation (AC 5, AC 6, AC 8)', 
       expect(await t.db.query(`select 1 from videos where id = $1`, [id.global1])).toHaveLength(1)
     })
 
-    it('the uploader edits: visibility school -> global removes the share row; other fields change; one audit row', async () => {
-      const created = await api.teacher.post('/videos', body({ title: 'Untuk diubah', visibility: 'school' }))
+    it('the uploader edits: other fields change, the video stays school with the same share row; the body visibility is ignored; one audit row', async () => {
+      const created = await api.teacher.post('/videos', body({ title: 'Untuk diubah' }))
       const vid = created.body.data.id as string
-      const res = await api.teacher.put(`/videos/${vid}`, body({ title: 'Sudah diubah', visibility: 'global', videoUrl: 'https://vimeo.com/123456', category: 'ceramah' }))
+      const res = await api.teacher.put(`/videos/${vid}`, body({ title: 'Sudah diubah', visibility: 'global', videoUrl: 'https://youtu.be/abcdefghijk', category: 'ceramah' }))
       expect(res.status, JSON.stringify(res.body)).toBe(200)
       expect(res.body.status).toBe('Video berjaya dikemaskini.')
       const detail = VideoDetailSchema.parse(res.body.data)
-      expect(detail).toMatchObject({ title: 'Sudah diubah', platform: 'Vimeo', category: 'ceramah', visibility: 'global', embedUrl: 'https://player.vimeo.com/video/123456' })
-      expect(await t.db.query(`select 1 from video_schools where video_id = $1`, [vid])).toHaveLength(0)
+      expect(detail).toMatchObject({ title: 'Sudah diubah', platform: 'Youtube', category: 'ceramah', visibility: 'school', embedUrl: 'https://www.youtube.com/embed/abcdefghijk' })
+      expect(await t.db.query(`select 1 from video_schools where video_id = $1`, [vid])).toHaveLength(1)
       const [row] = await t.db.query<{ school_id: string | null }>(`select school_id::text from videos where id = $1`, [vid])
-      expect(row?.school_id).toBeNull()
+      expect(row?.school_id).toBe(await schoolIdOf(t.db, 'DEMO001'))
       expect(await t.db.query(`select 1 from audit_events where action = 'content.video.updated' and target_id = $1`, [vid])).toHaveLength(1)
+      // Another teacher cannot see, so cannot edit, this video.
+      expectError(await api.teacher2.put(`/videos/${vid}`, body()), 'NOT_FOUND')
     })
 
-    it('an admin edits another user video and the school stays the uploader school', async () => {
-      const created = await api.teacher.post('/videos', body({ title: 'Guru kongsi', visibility: 'global' }))
+    it('an admin edits another user video and the stored visibility and school stay the uploader ones', async () => {
+      const created = await api.teacher.post('/videos', body({ title: 'Guru kongsi' }))
       const vid = created.body.data.id as string
-      const res = await api.admin.put(`/videos/${vid}`, body({ title: 'Admin ubah', visibility: 'school' }))
+      const res = await api.admin.put(`/videos/${vid}`, body({ title: 'Admin ubah', visibility: 'global' }))
       expect(res.status).toBe(200)
+      expect(res.body.data.visibility).toBe('school')
       const shares = await t.db.query<{ school_id: string }>(`select school_id::text from video_schools where video_id = $1`, [vid])
       expect(shares).toHaveLength(1)
       const [teacherRow] = await t.db.query<{ school_id: string }>(`select school_id::text from users where lower(email) = lower($1)`, [TEACHER])
@@ -239,7 +271,7 @@ describe('videos: visibility by school, writes, validation (AC 5, AC 6, AC 8)', 
       expect(res.body.data.canManage).toBe(true)
     })
 
-    it('validation on update comes after 404 and 403 (the mock order)', async () => {
+    it('on update the role check (403) comes first, then 404, then validation', async () => {
       expectError(await api.student.put(`/videos/${id.global1}`, {}), 'FORBIDDEN')
       expectError(await api.admin.put('/videos/999999', {}), 'NOT_FOUND')
       expect(fieldsOf(await api.admin.put(`/videos/${id.global1}`, {}))).toHaveProperty('title')
@@ -258,57 +290,74 @@ describe('videos: visibility by school, writes, validation (AC 5, AC 6, AC 8)', 
     })
   })
 
-  describe('child safety: global and open links are for staff only (LEAD 2026-10-20, D9)', () => {
+  describe('writes are for admin and teacher only (API-MUR-05, OQ-MUR-11, AC-AS-7-4)', () => {
     const count = async () => (await t.db.query(`select 1 from videos`)).length
 
-    it('a student cannot publish global: 422 under visibility, nothing stored; school is accepted and stays school', async () => {
+    it('a student gets 403 on POST, PUT and DELETE and nothing is stored or changed', async () => {
       const before = await count()
-      expect(fieldsOf(await api.student.post('/videos', body({ visibility: 'global' })))).toEqual({ visibility: 'Medan ini tidak sah.' })
+      expectError(await api.student.post('/videos', body()), 'FORBIDDEN', 'This action is unauthorized.')
+      expectError(await api.student.put(`/videos/${id.global1}`, body({ title: 'Diubah murid' })), 'FORBIDDEN', 'This action is unauthorized.')
+      expectError(await api.student.del(`/videos/${id.global1}`), 'FORBIDDEN', 'This action is unauthorized.')
       expect(await count()).toBe(before)
-      const ok = await api.student.post('/videos', body({ visibility: 'school', title: 'Pelajar sekolah' }))
-      expect(ok.status, JSON.stringify(ok.body)).toBe(201)
-      expect(ok.body.data.visibility).toBe('school')
-      // Only the own school sees it.
-      expect((await outsider.agent.get(`/api/videos/${ok.body.data.id}`)).status).toBe(404)
-      expect((await t.http().get(`/api/videos/${ok.body.data.id}`)).status).toBe(404)
+      const [row] = await t.db.query<{ title: string }>(`select title from videos where id = $1`, [id.global1])
+      expect(row?.title).toBe('Global satu')
     })
 
-    it('a teacher and an admin may publish global, and any https host', async () => {
-      for (const who of [api.teacher, api.admin]) {
-        const res = await who.post('/videos', body({ visibility: 'global', videoUrl: 'https://example.test/clip.mp4' }))
+    it('a school admin gets 403 on POST, PUT and DELETE', async () => {
+      const before = await count()
+      expectError(await api.schoolAdmin.post('/videos', body()), 'FORBIDDEN', 'This action is unauthorized.')
+      expectError(await api.schoolAdmin.put(`/videos/${id.school1}`, body()), 'FORBIDDEN', 'This action is unauthorized.')
+      expectError(await api.schoolAdmin.del(`/videos/${id.school1}`), 'FORBIDDEN', 'This action is unauthorized.')
+      expect(await count()).toBe(before)
+    })
+
+    it('a teacher video is school + the own school whatever the body says; an admin video is global with no school', async () => {
+      for (const visibility of ['global', 'school', undefined]) {
+        const res = await api.teacher.post('/videos', body({ visibility, title: `Guru ${String(visibility)}` }))
         expect(res.status, JSON.stringify(res.body)).toBe(201)
-        expect(res.body.data.visibility).toBe('global')
+        expect(res.body.data.visibility).toBe('school')
+        const [row] = await t.db.query<{ visibility: string; school_id: string }>(`select visibility, school_id::text from videos where id = $1`, [res.body.data.id])
+        expect(row).toEqual({ visibility: 'school', school_id: await schoolIdOf(t.db, 'DEMO001') })
+      }
+      for (const visibility of ['global', 'school', undefined]) {
+        const res = await api.admin.post('/videos', body({ visibility, title: `Admin ${String(visibility)}` }))
+        expect(res.status, JSON.stringify(res.body)).toBe(201)
+        const [row] = await t.db.query<{ visibility: string; school_id: string | null }>(`select visibility, school_id::text from videos where id = $1`, [res.body.data.id])
+        expect(row).toEqual({ visibility: 'global', school_id: null })
+        expect(await t.db.query(`select 1 from video_schools where video_id = $1`, [res.body.data.id])).toHaveLength(0)
       }
     })
 
-    it('a student link must be https on a known video host: YouTube and Vimeo pass, everything else is 422 under videoUrl', async () => {
-      for (const url of [YT, 'https://youtu.be/abcdefghijk', 'https://m.youtube.com/watch?v=abcdefghijk', 'https://vimeo.com/123456', 'https://player.vimeo.com/video/123456']) {
-        const res = await api.student.post('/videos', body({ visibility: 'school', videoUrl: url }))
+    it('a teacher of another school cannot see a teacher video; a guest and a pupil of another school cannot either', async () => {
+      const res = await api.teacher.post('/videos', body({ title: 'Hanya sekolah X' }))
+      const vid = res.body.data.id as string
+      expect((await teacher.agent.get(`/api/videos/${vid}`)).status).toBe(200)
+      expect((await student.agent.get(`/api/videos/${vid}`)).status).toBe(200)
+      for (const who of [teacher2.agent, outsider.agent, t.http()]) expect((await who.get(`/api/videos/${vid}`)).status).toBe(404)
+      expect(idsOf(await teacher2.agent.get('/api/videos?search=Hanya%20sekolah%20X'))).toEqual([])
+    })
+
+    it('a teacher link must be a YouTube video link: everything else is 422 "Pautan mesti pautan YouTube yang sah." under videoUrl', async () => {
+      for (const url of [YT, 'https://youtu.be/abcdefghijk', 'https://m.youtube.com/watch?v=abcdefghijk', 'http://www.youtube.com/watch?v=abcdefghijk', 'https://www.youtube.com/embed/abcdefghijk', 'https://www.youtube.com/shorts/abcdefghijk']) {
+        const res = await api.teacher.post('/videos', body({ videoUrl: url }))
         expect(res.status, url).toBe(201)
       }
       for (const url of [
         'https://example.test/clip.mp4',
-        'http://www.youtube.com/watch?v=abcdefghijk',
+        'https://vimeo.com/123456',
         'https://evil.test/www.youtube.com/watch?v=abcdefghijk',
         'https://www.youtube.com.evil.test/watch?v=abcdefghijk',
-        'https://user:pw@www.youtube.com/watch?v=abcdefghijk',
-        'https://www.dailymotion.com/video/x8abc',
         'https://www.youtube.com/channel/abc',
+        'https://www.youtube.com/watch',
       ]) {
-        expect(fieldsOf(await api.student.post('/videos', body({ visibility: 'school', videoUrl: url }))), url).toEqual({ videoUrl: 'Medan ini tidak sah.' })
+        expect(fieldsOf(await api.teacher.post('/videos', body({ videoUrl: url }))), url).toEqual({ videoUrl: 'Pautan mesti pautan YouTube yang sah.' })
       }
     })
 
-    it('a student cannot edit the own video to global or to another host; a staff member can edit it', async () => {
-      const created = await api.student.post('/videos', body({ visibility: 'school', title: 'Ubah saya' }))
-      const vid = created.body.data.id as string
-      expect(fieldsOf(await api.student.put(`/videos/${vid}`, body({ visibility: 'global' })))).toEqual({ visibility: 'Medan ini tidak sah.' })
-      expect(fieldsOf(await api.student.put(`/videos/${vid}`, body({ visibility: 'school', videoUrl: 'https://example.test/x' })))).toEqual({ videoUrl: 'Medan ini tidak sah.' })
-      expect((await api.student.put(`/videos/${vid}`, body({ visibility: 'school', title: 'Sudah ubah' }))).status).toBe(200)
-      const [row] = await t.db.query<{ visibility: string; title: string }>(`select visibility, title from videos where id = $1`, [vid])
-      expect(row).toEqual({ visibility: 'school', title: 'Sudah ubah' })
-      const staff = await api.admin.put(`/videos/${vid}`, body({ visibility: 'global', title: 'Disemak admin' }))
-      expect(staff.status, JSON.stringify(staff.body)).toBe(200)
+    it('an admin keeps today\'s host rule: any https host is accepted', async () => {
+      const res = await api.admin.post('/videos', body({ videoUrl: 'https://example.test/clip.mp4' }))
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      expect(res.body.data.visibility).toBe('global')
     })
   })
 
@@ -351,6 +400,11 @@ describe('videos: visibility by school, writes, validation (AC 5, AC 6, AC 8)', 
         const two = await other.http().get('/api/videos?page=2')
         expect(two.body.data).toHaveLength(6)
         expect(two.body.meta).toMatchObject({ page: 2, from: 25, to: 30 })
+        const sized = await other.http().get('/api/videos?pageSize=25')
+        expect(sized.body.data).toHaveLength(25)
+        expect(sized.body.meta).toMatchObject({ page: 1, pageSize: 25, totalItems: 30, totalPages: 2, from: 1, to: 25 })
+        expect((await other.http().get('/api/videos?pageSize=25&page=2')).body.data).toHaveLength(5)
+        for (const bad of ['0', '51', 'abc', '']) expect((await other.http().get(`/api/videos?pageSize=${bad}`)).body.meta.pageSize).toBe(24)
         for (const bad of ['abc', '0', '-3', '1.5', '']) {
           expect((await other.http().get(`/api/videos?page=${bad}`)).body.meta.page).toBe(1)
         }
@@ -372,6 +426,16 @@ describe('videos: visibility by school, writes, validation (AC 5, AC 6, AC 8)', 
       expect(await titles('%')).toEqual(['Diskaun 100% Hebat'])
       expect(await titles('a_g')).toEqual(['Nama_garis'])
       expect(await titles("' OR 1=1 --")).toEqual([])
+    })
+
+    it('search also matches the description, case-insensitively', async () => {
+      const vid = await insertVideo(t.db, { title: 'Tajuk biasa', uploader: ADMIN })
+      await t.db.query(`update videos set description = $2 where id = $1`, [vid, 'Penerangan tentang Nukleus Sel'])
+      const titles = async (q: string) => ((await t.http().get(`/api/videos?search=${encodeURIComponent(q)}`)).body.data as { title: string }[]).map((v) => v.title)
+      expect(await titles('nukleus')).toEqual(['Tajuk biasa'])
+      expect(await titles('NUKLEUS SEL')).toEqual(['Tajuk biasa'])
+      expect(await titles('tajuk biasa')).toEqual(['Tajuk biasa'])
+      expect(await titles('tiada padanan')).toEqual([])
     })
 
     it('facets: all five categories (zero counts too) and only subjects with a count, in id order; names come from the curriculum', async () => {

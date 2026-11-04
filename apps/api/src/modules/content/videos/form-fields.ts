@@ -29,21 +29,24 @@ export function pageOf(raw: string | undefined): number {
  * a missing, null or blank required field is "Medan ini diperlukan.", any other failure and any unknown
  * key is "Medan ini tidak sah." (strict bodies: a client-sent `uploaderId`, `authorId` or `schoolId` is refused, never read).
  * `prepare` may normalise the raw values first (for example a blank optional id to null).
+ * `preset` may give field-specific messages (for example the exact copy of a form); a preset message wins over the generic one.
  */
 export function validateBody<S extends z.ZodObject>(
   schema: S,
   raw: unknown,
   required: readonly string[],
   prepare?: (body: Record<string, unknown>) => Record<string, unknown>,
+  preset?: (body: Record<string, unknown>) => Fields,
 ): z.output<S> {
   const input = isPlainObject(raw) ? { ...raw } : {}
   const fields: Fields = {}
   const known = new Set(Object.keys(schema.shape))
   for (const key of Object.keys(input)) if (!known.has(key)) fields[key] = FIELD_INVALID
   const body = prepare ? prepare(input) : input
+  Object.assign(fields, preset?.(body))
   for (const key of required) {
     const v = body[key]
-    if (v === undefined || v === null || (typeof v === 'string' && v.trim() === '')) fields[key] = FIELD_REQUIRED
+    if (v === undefined || v === null || (typeof v === 'string' && v.trim() === '')) fields[key] ??= FIELD_REQUIRED
   }
   const parsed = schema.safeParse(body)
   if (!parsed.success) {

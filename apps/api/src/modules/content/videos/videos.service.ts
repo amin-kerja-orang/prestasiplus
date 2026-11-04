@@ -2,6 +2,9 @@ import { Inject, Injectable } from '@nestjs/common'
 import {
   CONTENT_MESSAGES,
   VIDEO_CATEGORIES,
+  VIDEO_MESSAGES,
+  VIDEO_PAGE_SIZE_MAX,
+  isYoutubeVideoUrl,
   VideoCreateRequestSchema,
   VideoDetailSchema,
   VideoFormContextSchema,
@@ -57,10 +60,9 @@ export interface VideoListQuery {
   category?: unknown
   subject?: unknown
   page?: unknown
+  pageSize?: unknown
 }
 
-/** Roles that may publish a `global` video and link any host. */
-const STAFF_ROLES: ReadonlySet<string> = new Set(['admin', 'teacher'])
 const ALLOWED_HOSTS: ReadonlySet<string> = new Set(['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be', 'vimeo.com', 'player.vimeo.com'])
 
 /** https on a known host AND a recognised YouTube or Vimeo link (the parser patterns alone are not anchored to the host). */
@@ -75,7 +77,24 @@ export function isAllowedHost(url: string): boolean {
   return platform === 'Youtube' || platform === 'Vimeo'
 }
 
-const REQUIRED = ['videoUrl', 'title', 'category', 'visibility'] as const
+const REQUIRED = ['videoUrl', 'title', 'category'] as const
+const TITLE_MAX = 150
+
+const isBlank = (v: unknown): boolean => v === undefined || v === null || (typeof v === 'string' && v.trim() === '')
+
+/** Exact BM copy of the video form (20 R1-GUR-7) for title, link and category; the teacher link must be a YouTube video link. */
+function presetMessages(role: string): (body: Record<string, unknown>) => Record<string, string> {
+  return (body) => {
+    const fields: Record<string, string> = {}
+    if (isBlank(body.title)) fields.title = VIDEO_MESSAGES.titleRequired
+    else if (typeof body.title === 'string' && body.title.trim().length > TITLE_MAX) fields.title = VIDEO_MESSAGES.titleTooLong
+    if (isBlank(body.videoUrl)) fields.videoUrl = VIDEO_MESSAGES.urlRequired
+    else if (role === 'teacher' && (typeof body.videoUrl !== 'string' || !isYoutubeVideoUrl(body.videoUrl))) fields.videoUrl = VIDEO_MESSAGES.urlInvalid
+    if (isBlank(body.category)) fields.category = VIDEO_MESSAGES.categoryRequired
+    return fields
+  }
+}
+
 
 /** A blank optional id is "none"; a number is its decimal text (the mock accepted both). */
 function prepareBody(body: Record<string, unknown>): Record<string, unknown> {
@@ -85,6 +104,13 @@ function prepareBody(body: Record<string, unknown>): Record<string, unknown> {
   if (s === '' || (typeof s === 'string' && s.trim() === '')) out.subjectId = null
   else if (typeof s === 'number' && Number.isSafeInteger(s) && s >= 0) out.subjectId = String(s)
   return out
+}
+
+/** `pageSize`: a whole number 1..50, anything else is the default page size (never rejected, like `page`). */
+function pageSizeOf(raw: string | undefined): number {
+  const t = raw?.trim() ?? ''
+  const n = /^\d+$/.test(t) ? Number(t) : 0
+  return n >= 1 && n <= VIDEO_PAGE_SIZE_MAX ? n : VIDEO_PAGE_SIZE
 }
 
 const fieldError = (field: string, message: string): ApiError =>
@@ -104,7 +130,7 @@ export class VideosService {
 
   // --- reads ----------------------------------------------------------------------------------------
 
-  /** GET /videos: public. A guest sees `global`; a signed-in user also their own and their school's shared videos; admin all. */
+  /** GET /videos: public. A guest sees `global`; a signed-in user also their school's videos; admin all. */
   async list(actor: VideoActor | null, q: VideoListQuery) {
     const viewer = await this.viewerOf(actor)
     const search = (queryString(q.search) ?? '').trim().slice(0, SEARCH_MAX)
@@ -115,13 +141,14 @@ export class VideosService {
       subjectId: subjectRaw !== undefined && isIdString(subjectRaw) ? subjectRaw : null,
     }
     const page = pageOf(queryString(q.page))
-    const [{ rows, total }, facets] = await Promise.all([this.repo.list(viewer, filter, page), this.repo.facets(viewer, filter)])
+    const pageSize = pageSizeOf(queryString(q.pageSize))
+    const [{ rows, total }, facets] = await Promise.all([this.repo.list(viewer, filter, page, pageSize), this.repo.facets(viewer, filter)])
     const names = await this.subjects.names(facets.subjects.map((s) => s.subjectId))
     const counts = new Map(facets.categories.map((c) => [c.category, c.count]))
     return {
       data: await this.cards(rows),
       meta: {
-        ...listMeta(page, VIDEO_PAGE_SIZE, total),
+        ...listMeta(page, pageSize, total),
         facets: {
           total: facets.total,
           categories: VIDEO_CATEGORIES.map((code) => ({ code, label: VIDEO_CATEGORY_LABELS[code], count: counts.get(code) ?? 0 })),
@@ -152,10 +179,10 @@ export class VideosService {
 
   // --- writes ---------------------------------------------------------------------------------------
 
-  /** POST /videos: any signed-in user publishes at once (the mock has no approval state). */
+  /** POST /videos: admin and teacher only (the controller refuses every other role); published at once. */
   async create(actor: VideoActor, raw: unknown): Promise<{ data: VideoDetail; status: string }> {
-    const body = validateBody(VideoCreateRequestSchema, raw, REQUIRED, prepareBody)
-    const data = await this.writeOf(actor, actor.userId, body)
+    const body = validateBody(VideoCreateRequestSchema, raw, REQUIRED, prepareBody, presetMessages(actor.role))
+    const data = await this.writeOf(actor, actor.userId, body, null)
     const now = this.clock.now()
     const row = await this.write(async (tx) => {
       const created = await this.repo.create(actor.userId, data, now)
@@ -176,9 +203,9 @@ export class VideosService {
   async update(actor: VideoActor, id: string, raw: unknown): Promise<{ data: VideoDetail; status: string }> {
     const viewer = await this.viewerOf(actor)
     const existing = await this.manageable(viewer, actor, id)
-    const body = validateBody(VideoUpdateRequestSchema, raw, REQUIRED, prepareBody)
+    const body = validateBody(VideoUpdateRequestSchema, raw, REQUIRED, prepareBody, presetMessages(actor.role))
     // BR-M09-21: the school of a shared video is the UPLOADER's, also when an admin edits it.
-    const data = await this.writeOf(actor, existing.uploaderId, body)
+    const data = await this.writeOf(actor, existing.uploaderId, body, existing)
     const now = this.clock.now()
     const row = await this.write(async (tx) => {
       const updated = await this.repo.update(existing.id, data, now)
@@ -224,21 +251,29 @@ export class VideosService {
     return row
   }
 
-  /** The columns to store: the URL is parsed, a `school` video needs the uploader to have a school, the subject must exist. */
   /**
-   * The columns to store. Child safety (LEAD 2026-10-20, D9): only staff (admin, teacher) may publish for everyone or link any
-   * host. For every other ACTIVE role (Mod Pelajar included) `global` is refused with 422 under `visibility`, a `school` video
-   * needs the uploader to have a school (fail closed), and the URL must be https on a known video host.
+   * The columns to store. The server decides the visibility by role and ignores any `visibility` in the body: a teacher's video is
+   * `school` with the uploader's school (422 under `visibility` when there is none, fail closed); an admin's new video is `global`
+   * with no school, and an admin who edits an existing video keeps its stored visibility and school.
    */
-  private async writeOf(actor: VideoActor, uploaderId: string, body: z.output<typeof VideoCreateRequestSchema>): Promise<VideoWrite> {
+  private async writeOf(
+    actor: VideoActor,
+    uploaderId: string,
+    body: z.output<typeof VideoCreateRequestSchema>,
+    existing: VideoRow | null,
+  ): Promise<VideoWrite> {
     const subjectId = body.subjectId ?? null
     if (subjectId !== null && (!isIdString(subjectId) || !(await this.subjects.exists(subjectId)))) throw fieldError('subjectId', FIELD_INVALID)
-    if (!STAFF_ROLES.has(actor.role)) {
-      if (body.visibility === 'global') throw fieldError('visibility', FIELD_INVALID)
-      if (!isAllowedHost(body.videoUrl)) throw fieldError('videoUrl', FIELD_INVALID)
+    let visibility: VideoWrite['visibility'] = 'global'
+    let schoolId: string | null = null
+    if (actor.role === 'admin' && existing !== null) {
+      visibility = existing.visibility
+      schoolId = existing.visibility === 'school' ? existing.schoolId : null
+    } else if (actor.role !== 'admin') {
+      schoolId = (await this.users.get(uploaderId))?.schoolId ?? null
+      if (schoolId === null) throw fieldError('visibility', CONTENT_MESSAGES.videoNoSchool)
+      visibility = 'school'
     }
-    const schoolId = (await this.users.get(uploaderId))?.schoolId ?? null
-    if (body.visibility === 'school' && schoolId === null) throw fieldError('visibility', CONTENT_MESSAGES.videoNoSchool)
     const parsed = parseVideoUrl(body.videoUrl)
     const description = body.description?.trim() ? body.description : null
     return {
@@ -250,8 +285,8 @@ export class VideosService {
       description,
       category: body.category,
       subjectId,
-      visibility: body.visibility,
-      schoolId: body.visibility === 'school' ? schoolId : null,
+      visibility,
+      schoolId,
     }
   }
 

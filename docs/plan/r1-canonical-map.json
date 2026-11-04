@@ -11932,16 +11932,6 @@
       "approved_by_card": null
     },
     {
-      "key": "POST /api/kelas-saya/join",
-      "method": "POST",
-      "path": "/api/kelas-saya/join",
-      "api_id": "API-MUR-04",
-      "status": "canonical",
-      "sector": "S5",
-      "file": "apps/api/src/modules/classes/kelas-saya.controller.ts",
-      "approved_by_card": null
-    },
-    {
       "key": "GET /api/missions/today",
       "method": "GET",
       "path": "/api/missions/today",

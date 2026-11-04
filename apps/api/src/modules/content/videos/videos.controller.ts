@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Post, Put, Query, Req, UseGuards, UseInterceptors } from '@nestjs/common'
 
-import { Public } from '../../../common/guards/decorators'
+import { Public, Roles } from '../../../common/guards/decorators'
 import { SESSION_RESOLVER, type SessionResolver } from '../../../common/guards/session-resolver'
 import { NoStoreInterceptor, ok } from '../../../common/http'
 import { RateLimit, RateLimitGuard } from '../../../common/throttle'
@@ -11,7 +11,7 @@ import { VideosService, type VideoListQuery } from './videos.service'
 
 /**
  * M09 videos (#27-#32). Reads are public (the library is visibility-filtered per viewer, so every answer is
- * `no-store`); writes need a session and CSRF (global guards). `form-context` is declared before `:id` so
+ * `no-store`); writes need a session and CSRF (global guards) and are for admin and teacher only (403 for every other role, API-MUR-05). `form-context` is declared before `:id` so
  * it is not read as an id. An invalid id is the same 404 as an unknown or invisible one.
  */
 @Controller('videos')
@@ -44,6 +44,7 @@ export class VideosController {
   }
 
   @Post()
+  @Roles('admin', 'teacher')
   @HttpCode(201)
   @RateLimit(VIDEO_LIMITS.write)
   async create(@Req() req: AuthedRequest, @Body() body: unknown) {
@@ -51,12 +52,14 @@ export class VideosController {
   }
 
   @Put(':id')
+  @Roles('admin', 'teacher')
   @RateLimit(VIDEO_LIMITS.write)
   async update(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: unknown) {
     return this.videos.update(actorOf(req), id, body)
   }
 
   @Delete(':id')
+  @Roles('admin', 'teacher')
   @RateLimit(VIDEO_LIMITS.write)
   async remove(@Req() req: AuthedRequest, @Param('id') id: string) {
     return this.videos.remove(actorOf(req), id)
