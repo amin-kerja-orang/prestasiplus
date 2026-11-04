@@ -134,4 +134,28 @@ describe('IntakeReviewPage panes', () => {
     expect(viewer).not.toBeNull()
     expect(viewer?.querySelector('[data-testid="figure-viewer-img"]')?.getAttribute('src')).toContain('/api/files/tok-s1')
   })
+
+  it('a named button opens the same figure for keyboard users (NFR-3)', async () => {
+    viewport(true)
+    server.getIntakeBatch.mockResolvedValue(
+      batchOf({ stimuli: [{ id: 's1', kind: 'diagram', label: 'Rajah 1', alt: 'Litar bersiri', image: { url: '/api/files/tok-s1' } }] }),
+    )
+    const w = await mountPage()
+    const open = w.get('[data-testid="stimulus-card"] [data-testid="figure-open"]')
+    expect(open.element.tagName).toBe('BUTTON')
+    expect(open.attributes('type')).toBe('button')
+    expect(open.attributes('aria-label')).toBe('Lihat penuh Rajah 1')
+    await open.trigger('click')
+    await flushPromises()
+    const viewer = document.body.querySelector('[role="dialog"]')
+    expect(viewer?.querySelector('[data-testid="figure-viewer-img"]')?.getAttribute('src')).toContain('/api/files/tok-s1')
+    expect(viewer?.querySelector('[data-testid="figure-viewer-img"]')?.getAttribute('alt')).toBe('Litar bersiri')
+  })
+
+  it('a stimulus with no image offers no such button', async () => {
+    viewport(true)
+    server.getIntakeBatch.mockResolvedValue(batchOf({ stimuli: [{ id: 's1', kind: 'passage', label: 'Petikan 1', alt: 'Petikan 1', text: 'Teks petikan.' }] }))
+    const w = await mountPage()
+    expect(w.find('[data-testid="figure-open"]').exists()).toBe(false)
+  })
 })

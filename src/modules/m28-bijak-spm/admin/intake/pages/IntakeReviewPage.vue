@@ -354,6 +354,12 @@ function openFigure(e: MouseEvent): void {
   const img = (e.target as HTMLElement).closest('img')
   if (img) figure.value = { src: img.currentSrc || img.src, alt: img.alt }
 }
+/** The image of a stimulus card, for the named button beside it (keyboard users; a stimulus of text or a table has none). */
+function figureSource(s: IntakeStimulus): { src: string; alt: string } | null {
+  if (s.image && !s.table) return { src: s.image.url, alt: s.alt || s.label }
+  const page = !s.image && !s.text ? previewImage(s) : undefined
+  return page ? { src: page.dataUrl, alt: s.alt || `Halaman ${s.page}` } : null
+}
 function previewImage(s: IntakeStimulus) {
   return images.value.find((i) => i.page === s.page)
 }
@@ -910,6 +916,15 @@ async function submit(): Promise<void> {
                         class="max-h-48 w-full rounded-lg border border-default object-contain"
                       />
                     </div>
+                    <UButton
+                      v-if="figureSource(s)"
+                      type="button"
+                      color="neutral"
+                      variant="link"
+                      :aria-label="`Lihat penuh ${s.label}`"
+                      data-testid="figure-open"
+                      @click="figure = figureSource(s)"
+                    >Lihat penuh</UButton>
                     <label class="flex flex-col gap-1 text-sm">
                       <span class="text-muted">Tajuk kapsyen</span>
                       <input
