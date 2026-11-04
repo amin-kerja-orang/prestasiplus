@@ -1,6 +1,6 @@
 # R1 User Requirements Specification (URS)
 
-**Slug:** `r1-prd-devplan`. **Status:** For user review (G1). **Date:** 2026-11-04. **Owner:** Product Analyst.
+**Slug:** `r1-prd-devplan`. **Status:** Approved (D111). **Date:** 2026-11-04. **Owner:** Product Analyst.
 **Position in the document set:** [00-index](00-index.md) → [01-product-overview](01-product-overview.md) → **02-urs (this file)** → SRS per portal ([10](10-murid.md), [20](20-guru-admin-sekolah.md), [30](30-admin-pusat.md)) → [40](40-cross-cutting.md) → 50 data model and ERD → 60 API contract → [plan](../../plan/r1-development-plan.md) → [traceability](../../plan/r1-traceability.md).
 
 ## 0. How to read this file
@@ -48,7 +48,7 @@
 | URS-MUR-16 | As a pupil I can practise by chapter (Bab) in textbook order for my own form, with progress per chapter, so that I revise what the class is studying. | 9 | 1.0 P0 | FR-MUR-9-1..11 |
 | URS-MUR-17 | As a pupil I can see the SPM hub (my SPM results, years available, paper lists grouped by subject) and open published Bijak SPM papers, so that I can find a paper to sit. | 13 | 1.0 P0 | FR-MUR-13-1..5, FR-MUR-13-22 |
 | URS-MUR-18 | As a pupil I can sit a Bijak SPM paper (timed, one question or one stimulus group per screen, sections "Jawab semua" and "Pilih N", autosave, navigator), submit once, review the scheme after submit and retry, so that I rehearse a real exam. | 13 | 1.0 P0 | FR-MUR-13-6..15, FR-MUR-13-23..25 |
-| URS-MUR-19 | As a pupil I can use the other SPM modes (Simulasi Kuiz, Databank by year, Tracking A, Jana Kertas) and have every answer of every sitting recorded in the single answer store (it counts in my performance and my teacher's reports), so that I can practise in the format I need. | 13 | 1.0 P0 | FR-MUR-13-16..18, FR-MUR-13-20, FR-MUR-13-21 |
+| URS-MUR-19 | As a pupil I can use the other SPM modes (Simulasi Kuiz, Databank by year, Tracking A; there is no pupil Jana Kertas in R1, D112(6)) and have every answer of every sitting recorded in the single answer store (it counts in my performance and my teacher's reports), so that I can practise in the format I need. | 13 | 1.0 P0 | FR-MUR-13-16..18, FR-MUR-13-20, FR-MUR-13-21 |
 | URS-MUR-20 | As a pupil I can answer SPM Subjektif and read Kertas Subjektif papers, reveal the marking scheme and mark myself, with no switch hiding them, so that I can practise written answers. | 13 | 1.0 P0 | FR-MUR-13-19, FR-MUR-13-26..30 |
 | URS-MUR-21 | As a pupil I can practise structured (Kertas 2 style) questions with parts, working and final answer, then see the scheme and self-mark, so that I train for written papers. | 17 | 1.0 (linked from 13) P1 | FR-MUR-17-1..5 |
 | URS-MUR-22 | As a pupil I can report a wrong question from any question card and follow the status of my reports, so that errors get fixed. | 54 | 1.0 P0 | FR-MUR-54-1..8, FR-MUR-16-8 |
@@ -57,7 +57,7 @@
 
 | ID | User requirement | Matrix row | Priority | Satisfied by |
 |---|---|---|---|---|
-| URS-MUR-23 | As a pupil I see a shared figure, passage or table once, above all the questions that refer to it, and it stays visible while I answer them, and I never get a question whose figure is missing or a stem shown twice, so that questions follow the DSKP and the real paper. | 9, 13, 16, 6, 12, 17 | 1.0 P0 | FR-MUR-QP-1..7, FR-X1-4a..f |
+| URS-MUR-23 | As a pupil I see a shared figure, passage or table once, above all the questions that refer to it, and it stays visible while I answer them, and I never get a question whose figure is missing; a question whose stem is duplicated is shown once and counted as served (only a question flagged `stimulus_missing` or `figure_only` is excluded), and a stimulus group of 1..n questions is always one unit, so that questions follow the DSKP and the real paper. | 9, 13, 16, 6, 12, 17 | 1.0 P0 | FR-MUR-QP-1..7, FR-X1-4a..f |
 | URS-MUR-24 | As a pupil on a phone I can zoom a figure, use full-width answer inputs with the keyboard open, move between questions with a compact navigator and always reach "Hantar", without losing my place when I rotate, so that sitting a paper on a phone works. | 9, 13, 16 | 1.0 P0 | FR-MUR-QP-8..17, FR-X6-6..10 |
 | URS-MUR-25 | As a pupil I see the DSKP level that fits each screen (Bab for chapter screens, SP for mastery screens) and never an invented label for unmapped content, so that what I see is true to the curriculum. | 5, 9, 14, 24, 25 | 1.0 P1 | FR-MUR-DK-1..5 |
 
@@ -65,9 +65,9 @@
 
 | ID | User requirement | Matrix row | Priority | Satisfied by |
 |---|---|---|---|---|
-| URS-MUR-26 | As a pupil I can see the classes my teacher added me to (there is no join-by-code), see classmates (first name and coins only) and open the teacher's question sets and the class leaderboard, so that I belong to my class. | 8 | 1.0 P1 | FR-MUR-8-1..6 |
+| URS-MUR-26 | As a pupil I can see the classes my teacher added me to (there is no join-by-code), see classmates (first name and coins only, no school) and open the teacher's question sets and the class leaderboard, so that I belong to my class. | 8 | 1.0 P1 | FR-MUR-8-1..6 |
 | URS-MUR-27 | As a pupil I can browse and search learning videos by category and subject, so that I can watch explanations. | 7 | 1.0 P2 | FR-MUR-7-1..5 |
-| URS-MUR-28 | As a pupil I can play the learning games that work with the question bank, join a room by a 6-character code and earn coins, so that practice is fun. | 21 | 1.0 P1 | FR-MUR-21-1..7 |
+| URS-MUR-28 | As a pupil I can play the learning games that work with the question bank, join a room by a 6-character code, play real pupils first or a labelled "Robot PrestasiPlus" after 30 seconds (never a real pupil's identity) and earn XP (game coins only when the admin setting is on), with every answer written to the single answer store, so that practice is fun. | 21 | 1.0 P1 | FR-MUR-21-1..7 |
 | URS-MUR-29 | As a pupil I can read articles and open an article from the Dashboard, so that no link is dead. | 20 | 1.0 (linked from 2) P1 | FR-MUR-20-1..4 |
 | URS-MUR-30 | As a pupil I can open and answer the question sets my teacher assigned to my class (and only mine), so that I do my teacher's homework in the app. | 26 | 1.0 (linked from 2, 8) P1 | FR-MUR-26-1..5 |
 
@@ -79,7 +79,7 @@
 | URS-MUR-32 | As a pupil I can convert coins to tokens (50, 250 or all), so that I can use my coins. | 29 | 1.0 (linked from 28, 31) P1 | FR-MUR-29-1..4 |
 | URS-MUR-33 | As a pupil I can see today's daily challenges with real progress and rewards, so that I have goals each day. | 30 | 1.0 (linked from 2, 28) P1 | FR-MUR-30-1..5 |
 | URS-MUR-34 | As a pupil I can redeem rewards from Kedai Hadiah and see my redemptions fulfilled or cancelled, so that my coins have value. | 31 | 1.0 (linked from 28) P1 | FR-MUR-31-1..5 |
-| URS-MUR-35 | As a pupil I can see the leaderboard with period and scope filters and my own rank, and see my standing (class, school, state, national) with the pupils just above and below me, so that I know where I stand. | 33, 18 | 1.0 (linked from 8, 18) P1 | FR-MUR-33-1..5, FR-MUR-18-1..5 |
+| URS-MUR-35 | As a pupil I can see the leaderboard with period and scope filters and my own rank, and see my standing (class, school, state, national) with the pupils just above and below me (other pupils appear by first name only, no school), so that I know where I stand. | 33, 18 | 1.0 (linked from 8, 18) P1 | FR-MUR-33-1..5, FR-MUR-18-1..5 |
 | URS-MUR-36 | As a pupil I can see a tournament banner and enter an active tournament, so that I can compete. | 23 | 1.0 (linked from banner) P2 | FR-MUR-23-1..4, FR-MUR-SH-12 |
 | URS-MUR-37 | As a pupil I can see my achievements (badges), so that I am rewarded for effort. | 34 | Later P2 | FR-MUR-34-1..4 |
 | URS-MUR-38 | As a pupil I can join a lucky draw (Cabutan Bertuah) and open a Kotak Misteri, so that I get surprise rewards under the rules the admin sets. | 22, 35 | Later P1/P2 | FR-MUR-22-1..5, FR-MUR-35-1..5 |
@@ -178,12 +178,12 @@ The central admin is not a matrix column: these requirements are the admin capab
 |---|---|---|---|---|
 | URS-ADM-01 | As an admin I can treat a figure, passage, table or graph as a **stimulus group** that holds 1..n questions, never as a question, so that a figure never separates from the questions that refer to it. | 6, 9, 13, 16 | 1.0 P0 | FR-ADM-QE1.1..5, FR-X1-4a, FR-X1-4b |
 | URS-ADM-02 | As an admin entering questions by hand I create the stimulus group first and then add question 1, 2, 3 … to it without re-uploading the figure, and I can reorder or remove members, so that entry is quick and correct. | 9, 13, 16 | 1.0 P0 | FR-ADM-QE2.1..4, FR-ADM-Q05.1..3, FR-ADM-Q10.1..2 |
-| URS-ADM-03 | As an admin I fill a question form that is correct to the DSKP (question type, parts, mode, marks, key, TP, Aras pemikiran, Tingkatan 1–5, provenance, Unit/Bab and SP), so that every question is tagged properly. | 5, 9, 13, 14, 16 | 1.0 P0 | FR-ADM-QE3.1..6, FR-ADM-Q04.1..6, FR-ADM-Q24.1..2 |
+| URS-ADM-03 | As an admin I fill a question form that is correct to the DSKP (one of 11 question types, parts, answer mode, marks, key, MCQ with 2 to 8 options, TP 1–6 and Kesukaran 1–5 as two separate fields with Kesukaran pre-filled with min(5, TP), Aras pemikiran, Kertas 1–4, Tingkatan 1–5, provenance, Unit/Bab and SP), so that every question is tagged properly. | 5, 9, 13, 14, 16 | 1.0 P0 | FR-ADM-QE3.1..6, FR-ADM-Q04.1..6, FR-ADM-Q24.1..2 |
 | URS-ADM-04 | As an admin I see at entry what is missing and why Terbitkan is blocked, and I cannot type a tag that is not in the curriculum, so that I do not meet a late error. | 13, 16 | 1.0 P0 | FR-ADM-QE4.1..4 |
 | URS-ADM-05 | As an admin I can upload a paper PDF (once per batch: subject, Tingkatan, paper, section), let it be extracted with stimuli kept with **all** their questions (for example Rajah 3 → questions 5–8), fix the group range and approve items into drafts carrying the paper and DSKP tags, so that paper upload follows the DSKP. | 13, 16 | 1.0 P0 | FR-ADM-QE5.1..6, FR-ADM-Q08.1..4, FR-ADM-Q09.1..5, FR-X1-4c |
 | URS-ADM-06 | As an admin I can import questions by CSV with DSKP and group columns and a real template, and see rejected rows with the reason, so that bulk entry follows the DSKP. | 9, 13, 16 | 1.0 P0 | FR-ADM-QE6.1..3, FR-ADM-Q11.1 |
 | URS-ADM-07 | As an admin I can assemble and generate papers and drill pools so that a stimulus group is always used as one unit, never split, and figure questions and groups are served by every drill, so that papers and drills are true to the DSKP. | 9, 13, 16, 21 | 1.0 P0 | FR-ADM-QE7.1..4, FR-X1-4e |
-| URS-ADM-08 | As an admin I get a regroup work-list of migrated questions that are a bare figure, say "Rajah n" with no figure, or repeat their stem, can attach a figure or form a group, and flagged questions are never served to pupils, so that old broken data is repaired without inventing content. | 6, 9, 13, 16 | 1.0 P0 | FR-ADM-QE8.1..4, FR-ADM-G7.1..6, FR-X1-4f, U-OP-05, U-OP-06, U-OP-17 |
+| URS-ADM-08 | As an admin I get a regroup work-list of migrated questions that are a bare figure or say "Rajah n" (or another unnumbered reference such as "Rajah di atas") with no figure, can attach a figure or form a group (an audited structural change), and questions flagged `stimulus_missing` or `figure_only` are never served to pupils (a duplicated stem is not flagged: it is shown once), so that old broken data is repaired without inventing content. | 6, 9, 13, 16 | 1.0 P0 | FR-ADM-QE8.1..4, FR-ADM-G7.1..6, FR-X1-4f, U-OP-05, U-OP-06, U-OP-17 |
 | URS-ADM-09 | As an admin I can see an indicator of where a question is shown to pupils ("Dilihat murid di") with the reason when it is not, the same rule the pupil query uses, so that the count I see equals what pupils get. | 9, 13, 16 | 1.0 P0 | FR-ADM-Q06.1..3, FR-ADM-Q03.1..6, FR-X4-2 |
 | URS-ADM-10 | As an admin I can open the SPM hub and its lanes (Databank, Latih Tubi, Bijak SPM, Tracking A, Subjektif) with filters and attention counts, so that I manage every pupil-facing question lane. | 13, 16 | 1.0 P0 | FR-ADM-Q01.1..5, FR-ADM-Q02.1..4 |
 | URS-ADM-11 | As an admin I can import and review (Import & Semakan: Kelompok Item, Kertas Diimport, Kiriman Guru), including teacher submissions, with an extraction that completes or times out with an error, so that intake always ends. | 13, 44 | 1.0 P0 | FR-ADM-Q07.1..5, FR-ADM-Q12.1..5, FR-ADM-Q19.1..2, FR-ADM-Q20.1..3 |
@@ -199,7 +199,7 @@ The central admin is not a matrix column: these requirements are the admin capab
 |---|---|---|---|---|
 | URS-ADM-17 | As an admin I can browse and maintain Subjek, Tingkatan 1–5, Bab, Topik and the loaded DSKP (Bidang, SK, SP, TP), with question counts per Bab and refusal to delete a Bab that has questions, so that the curriculum is correct. | 5, 9, 14, 24, 25 | 1.0 P0 | FR-ADM-C01.1..7, FR-ADM-C02.1 |
 | URS-ADM-18 | As an admin I can activate or deactivate education levels so that only Tingkatan 1–5 show everywhere (Darjah hidden), so that the app is secondary-only. | all | 1.0 P0 | FR-ADM-C03.1..3, FR-X3-1, FR-X3-2 |
-| URS-ADM-19 | As an admin I can load and verify the DSKP for Tingkatan 1–5 (T4–T5 now; T1–T3 once the DSKP source PDFs are supplied), so that SP/TP tags exist. | 5, 9, 14, 24, 25 | 1.0 P0 | FR-ADM-C04.1..4, U-OP-01 |
+| URS-ADM-19 | As an admin I can load and verify the DSKP for Tingkatan 1–5 (T1–T3 use the same DSKP structure as T4–T5, built from the existing chapter and topic data; the official PDFs are not a prerequisite, D109), so that SP/TP tags exist. | 5, 9, 14, 24, 25 | 1.0 P0 | FR-ADM-C04.1..4, U-OP-01 |
 | URS-ADM-20 | As an admin I can set the Bab of a question one by one or in bulk by filter, and see progress per Bab, so that Soalan by Chapter has content. | 9, 14, 24, 25 | 1.0 P0 | FR-ADM-C05.1..5, U-OP-07, U-OP-15 |
 
 ### 4.3 Content, settings and flags
@@ -283,4 +283,4 @@ The central admin is not a matrix column: these requirements are the admin capab
 | Admin Pusat DSKP authoring stories (manual, paper upload, stimulus 1..n, DSKP tags) | URS-ADM-01..08 |
 | Responsive stories | URS-MUR-06, URS-MUR-24, URS-GUR-24, URS-AS-23, URS-ADM-33, URS-ALL-01 |
 
-Open points: none that block the next phase. The role split Murid / Guru / Admin Sekolah / Admin Pusat is final; Ibu Bapa has no matrix column (see [01-product-overview](01-product-overview.md) §3).
+Open points: none. The role split Murid / Guru / Admin Sekolah / Admin Pusat is final; Ibu Bapa has no matrix column (see [01-product-overview](01-product-overview.md) §3).

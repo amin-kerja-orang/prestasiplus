@@ -1,9 +1,15 @@
 # R1 CODEOWNERS (plan App. C). The last matching pattern wins; specific lines come after general ones.
 #
-# Sector owners are NOT named yet: developers claim cards (docs/plan/R1-START-HERE.md). Until a sector lead is
-# declared in docs/plan/r1-board.md, the shared files below are owned by @aminfaudzi. When a sector is claimed,
-# add the sector block at the bottom (commented template from plan App. C) with the lead's GitHub handle.
-# Replacing the owner of a pattern is a PR to S0 (this file is S0-owned).
+# Owner of every path: @aminfaudzi, the product owner (D113). He is the reviewer of record and the only person who merges
+# into feature/v3-bijak-r1, after the team lead's review (docs/plan/R1-START-HERE.md decisions 4 and 6).
+#
+# SECTOR OWNERSHIP IS BY LOCKS, NOT BY THIS FILE. Several Claude accounts may share one GitHub user, so a GitHub handle
+# cannot tell teams apart. Which team owns a sector (S0..S10) and a card is decided only by the git-ref lock
+# (`node scripts/r1-lock.mjs list`). "Sector lead" = the team that holds the sector lock. A cross-sector PR
+# (line `Cross-sector: S<n>`, label `needs:S<n>`) is reviewed by the team that holds S<n> within 1 working day;
+# if no team holds it, by @aminfaudzi.
+# The sector blocks at the bottom stay commented out; a team never gets ownership by uncommenting one.
+# Changing this file is a small PR to S0 (this file is S0-owned).
 
 # default: platform owner
 *                                         @aminfaudzi
@@ -55,8 +61,9 @@
 /docs/TRACKER.md                          @aminfaudzi
 
 # ---------------------------------------------------------------------------------------------------------
-# Sector blocks S1..S10: TEMPLATE. Uncomment a block and replace @OWNER-Sn with the sector lead's handle
-# when that sector is claimed. Until then the default (*) above applies.
+# Sector blocks S1..S10: TEMPLATE, kept as the map of which paths belong to which sector (the scope guard and the locks
+# use the same map). Uncomment a block only if a sector owner has a personal GitHub handle of their own and the product
+# owner agrees; replace @OWNER-Sn with it. Otherwise the default (*) above applies.
 # ---------------------------------------------------------------------------------------------------------
 # /apps/api/src/modules/pksk/               @OWNER-S5   (S5-owned, listed in the S0 block of App. C)
 # 

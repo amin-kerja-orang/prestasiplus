@@ -1,4 +1,10 @@
-# Backend collaboration: start here
+# docs/plan: start here
+
+> **Release 1 (R1) of V3: read [R1-START-HERE.md](R1-START-HERE.md) first, then [R1-FAQ.md](R1-FAQ.md).** R1 uses locks (`scripts/r1-lock.mjs`) as the only claim, GitHub issues with labels and milestones as the board, and branches `r1/<team>/<card>-<slug>`. The plan is [r1-development-plan.md](r1-development-plan.md); AC results go in [r1-ac-ledger.md](r1-ac-ledger.md).
+>
+> **Everything below this banner is LEGACY (superseded for R1):** the earlier backend programme (cards `BE-01..BE-40`, branch `feature/v2-backend`, `be/<card>` branches, `AGENT-SYNC.md`, `backend-tracker.md`, `onboarding.md`, `sessions.md`). Do not follow its branch, claim or board rules for any `S<n>-T<nn>` card.
+
+## Backend collaboration (legacy programme)
 
 ## Programme files (multi-PC, multi-session)
 

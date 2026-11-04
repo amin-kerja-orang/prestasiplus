@@ -1,5 +1,7 @@
 # AGENTS.md — entry point for AI coding agents
 
+> **Release 1 (R1) of V3: read [docs/plan/R1-START-HERE.md](docs/plan/R1-START-HERE.md) and [docs/plan/R1-FAQ.md](docs/plan/R1-FAQ.md) first.** Release 1 precedence: for any work on a card `S<n>-T<nn>`, R1-START-HERE wins over everything below on branches (`r1/<team>/<card>-<slug>`), commits, pull requests, claims (the `scripts/r1-lock.mjs` lock is the only claim) and scope. Everything about `BE-01..BE-40`, `AGENT-SYNC.md`, `backend-tracker.md`, `onboarding.md`, `sessions.md` and `feature/v2-backend` is legacy and superseded for R1. The product spec is `docs/prd/r1/00-index.md`; the plan is `docs/plan/r1-development-plan.md`.
+
 Read this first. It works for any agent (Claude Code, Codex, Cursor, ...). Human-facing setup is in
 [README.md](README.md); the docs index is [docs/README.md](docs/README.md). Full process rules are in
 [CLAUDE.md](CLAUDE.md) (Claude Code reads it automatically; other agents should read it too).
@@ -18,7 +20,7 @@ Read this first. It works for any agent (Claude Code, Codex, Cursor, ...). Human
     replicated; changed flows (two portals, question intake/display, UI theme) are redesigned.
   - Two portals: **Portal Pentadbiran** (one portal replacing the 3 old admin surfaces; admin / admin_sekolah /
     pegawai_ppd) and **Portal Pembelajaran** (murid / guru / ibu bapa).
-- **Current phase:** v2 **G2 Design in progress** (no v2 build yet). Check the TRACKER for the latest.
+- **Current phase:** **V3 Release 1 build** on branch `feature/v3-bijak-r1`. The PRD is `docs/prd/r1/` (start at `00-index.md`), the plan and cards are `docs/plan/r1-development-plan.md`, and the working rules are `docs/plan/R1-START-HERE.md`. The earlier v2 design phase (G2) is history; check the TRACKER for decisions (D100-D113).
 
 ## 2. Where to look
 

@@ -1,6 +1,6 @@
 # R1 Product Overview (PRD / BRD layer)
 
-**Slug:** `r1-prd-devplan`. **Status:** For user review (G1). **Date:** 2026-11-04. **Owner:** Product Analyst (what and why only).
+**Slug:** `r1-prd-devplan`. **Status:** Approved (D111). **Date:** 2026-11-04. **Owner:** Product Analyst (what and why only).
 **Position:** [00-index](00-index.md) → **01-product-overview (this file)** → [02-urs](02-urs.md) → SRS per portal ([10-murid](10-murid.md), [20-guru-admin-sekolah](20-guru-admin-sekolah.md), [30-admin-pusat](30-admin-pusat.md)) → [40-cross-cutting](40-cross-cutting.md) → 50 data model and ERD → 60 API contract → [development plan](../../plan/r1-development-plan.md) → [traceability](../../plan/r1-traceability.md).
 
 Naming: **V1** = prestasiplus.my, **V2** = prestasiplus.cloud (with its admin panel), **V3** = the new build in this repository (older documents call it "v2"). **UAT** = the V3 acceptance site.
@@ -12,7 +12,7 @@ V3 was built in a short time by many parallel cloud sessions. A row-by-row compa
 | Area | What is wrong in V3 today |
 |---|---|
 | Question entry does not follow the DSKP | A figure, passage or table is stored as if it were a question. Questions that say "Rajah 3 menunjukkan…" are published without the figure. When a paper is uploaded, the stimulus is attached to the first question only, or is split from the 1..n questions that refer to it. Manual entry cannot add a second question to the same figure without uploading the figure again. Questions cannot be published without hand editing because the entry form and the CSV template lack the DSKP fields (unit, SP, thinking level, paper). |
-| Admin side is duplicated, partly broken and incomplete | Three lists are all called "Bank Soalan"; two menu items open the same screen; two review queues disagree. PDF extraction hangs for ever. Several admin screens are missing or open a 404 (Tracking A, Kertas Subjektif, Tetapan, Video, Kelas, Kawalan Ciri). Teacher question submissions show "belum tersedia dalam demo". Dashboard, Analitik and Laporan are empty. |
+| Admin side is duplicated, partly broken and incomplete | Three menu items open three lists of the same questions (`Bank Soalan`, `Bank Soalan (Studio)`, `Bank Soalan SPM`); two menu items open the same screen; two review queues disagree. PDF extraction hangs for ever. Several admin screens are missing or open a 404 (Tracking A, Kertas Subjektif, Tetapan, Video, Kelas, Kawalan Ciri). Teacher question submissions show "belum tersedia dalam demo". Dashboard, Analitik and Laporan are empty. |
 | Acceptance data is wrong | The acceptance site has no verified exam contracts and no published papers, so Bijak SPM is empty. Hundreds of thousands of migrated questions have no chapter (Bab) or SP. Primary-school levels (Darjah) are still active, so statistics show 11 levels instead of 5. |
 | Pupil modules missing or wrong | Headcount and Analisa Item are hidden; Prestasi opens a school-wide dashboard (a privacy defect); Soalan by Chapter and Latih Tubi say "akan datang" for Tingkatan 1–3; Laporan Soalan is hidden; Profil, Tetapan and Dashboard are thin; drills serve only text questions. |
 | Teacher and school-admin screens disagree | The same measure (pupils, teachers, answers) shows different numbers on different screens. Weekly report and several analytics screens are missing. |
@@ -66,9 +66,9 @@ Primary pupils (Darjah 1–6) are out of scope for the whole release (D72, D96).
 | A redesign or new features | R1 only fixes and completes (FR-X1-2, FR-X1-5). New menus, pages or copy need the user's approval (D94). |
 | Changing V1, V2 or the acceptance site without the user's approval | Those systems are read-only references; one-off data operations run only with explicit approval (D95, FR-X5-3). |
 
-## 5. User decisions D100–D108 in plain words
+## 5. Decisions D100–D113 in plain words
 
-Full text is in [TRACKER.md](../../TRACKER.md).
+Full text of D100–D113 is in [TRACKER.md](../../TRACKER.md); D112 and D113 are also indexed in [00-index](00-index.md). D100–D111 are the product owner's; D112 and D113 are the Delivery Lead's, by principle (the product owner delegated detail decisions). None of them is open.
 
 | ID | Decision in plain words |
 |---|---|
@@ -82,6 +82,22 @@ Full text is in [TRACKER.md](../../TRACKER.md).
 | D107 | The admin UI stays close to V2 and V1. The admin menu follows the V2 sidebar with one "Soalan" group; V3 duplicates are merged or redirected with no function lost. |
 | D108 | Principle rulings: (1) a stimulus group holds 1..n questions, even inside papers; (2) the thinking-level gate stays for Tingkatan 4–5; (3) Set Soalan Guru is fed by a teacher "Set Soalan" screen; (4) an admin Tiket Bantuan screen exists and the support contact is an admin setting; (5) school-admin Kirkpatrick shows all seven screens for the school; (6) hidden modules return the standard 404 page. The user may override these. |
 
+| D109 | Tingkatan 1–3 pupils use the existing school subscription and quota, as in V2 (no separate T1–T3 package). T1–T3 use the same DSKP structure as T4–T5, built from the existing T1–T3 chapter and topic data; the official PDFs are not a prerequisite. |
+| D110 | Working model: a designated developer operates UAT and runs every data operation as dry-run, report, user approval, real run; acceptance runs on UAT, not locally; UAT evidence stays in the gitignored `.evidence/`; content work (Bab, figures, regroup) is done by Admin users in the Portal Pentadbiran. |
+| D111 | The user approved this PRD set and the development plan; development starts. Tracking is by issues per card, sprint milestones and CI checks. |
+| D112 | Seven detail rulings: Bab required before Terbit when chapters exist; in-house Tesseract OCR and no external AI in R1; DSKP loaded for every SPM subject offered; content owned by Admin users, six sample-paper subjects first; Sunting Pantas is a Fix; no pupil Jana Kertas (admin Jana Kertas stays); a 24-hour "Slice 0" end-to-end chain. |
+| D113 | Final product rulings: one answer store `practice_answers` with a `mode`; a stimulus group of 1..n questions is one unit and a duplicated stem is shown once, not excluded; 11 question types, MCQ 2 to 8 options; TP 1–6 and Kesukaran 1–5 are separate fields (Kesukaran default min(5, TP)); Kertas 1–4; five status labels and no separate Penyemak role; accuracy pooled and shown as a whole-number %; password minimum 8; other pupils shown by first name only; games use real pupils first and then a labelled "Robot PrestasiPlus"; one canonical page, API, menu and reward catalogue per function; locks, issues and labels as the only process. |
+
+Other decision families (all final, each written once where it is used; the ID chain is explained in [00-index](00-index.md)):
+
+| Family | Meaning | Lives in |
+|---|---|---|
+| D-A1..D-A17 | Audit decisions of the Delivery Lead (for example D-A1 single answer store, D-A6 TP versus Kesukaran, D-A11 coin rate, D-A12 first name only, D-A17 password minimum 8) | [47](47-v3-duplicates-register.md) sections 7 and 8 and its glossary, cited in 10, 20, 30, 40 and 60 |
+| D-API-n | Decisions inside the API contract (for example hidden features answer 404 before authentication) | [60](60-api-contract.md) section 6.1 |
+| D-QA-n | Question authoring decisions (bilingual text, scheme editor, stimulus group rules) | [45](45-question-authoring-flow.md) section 0 |
+| D-PA-n | Pupil activity decisions (D-PA-1 one answer store, D-PA-5 `essay_choice` served) | [46](46-pupil-activity-flow.md) "Decisions" section |
+| D-GAME-n | Game and gamification decisions (D-GAME-1 real opponents first, then the labelled robot; coins off by default; Liga by Admin Pusat) | [48](48-game-and-gamification-spec.md) section 1 |
+
 Earlier decisions D28–D99 still apply where not superseded.
 
 ## 6. Constraints
@@ -94,7 +110,7 @@ Earlier decisions D28–D99 still apply where not superseded.
 | Stimulus groups | A stimulus is never a question. It holds 1..n questions, is shown once and stays visible while answering. |
 | UI close to V2/V1 | Menus, pages, tabs and sections stay as in the SRS. The visual theme follows the design system decisions (light and dark). No UX change beyond what the SRS lists. |
 | Responsive | 375 / 768 / 1280 px, no sideways page scroll, text at least 14 px (labels at least 12 px), touch targets at least 44 px. |
-| Language | UI in exact Bahasa Melayu. New copy needs user approval. |
+| Language | UI in exact Bahasa Melayu. New copy requires the user's approval. |
 | Privacy | The repository is public. No real person's name, e-mail, credential or account name in documents, seeds or code; pupil data is never tied to a named real school; a pupil sees only their own data. |
 | Read-only references | Nobody changes V1, V2 or the acceptance site without the user's explicit approval. |
 
@@ -107,7 +123,7 @@ Earlier decisions D28–D99 still apply where not superseded.
 - A4. The acceptance site is UAT (`uat.prestasiplus.cloud`), a clone of V2 production data, so ACs are proven on that data (FR-X5-1). There is no local acceptance environment; the demo/e2e seed is for automated tests in CI only (D110). UAT holds real pupil data: evidence stays in the gitignored `.evidence/` and issues/PRs carry only pass/fail and IDs, never names.
 - A6. The UAT operator is a designated developer with server access; the user approves every write; no AI session acts on a server (D95, D110). Every script operation runs as dry-run, report, user approval, real run.
 - A7. Content work (Bab mapping, figure images for "Rajah n" questions, regrouping stimulus groups) is done by ADMIN users in the Portal Pentadbiran. Developers build and fix those screens and do not do the content work (D110).
-- A5. The build is done by cloud agents that see only this repository; they never open V1, V2 or the acceptance site. **Every V2/V1 screen is therefore described in words inside the SRS** (layout, blocks in order, exact BM copy, states). If the text lacks a detail, the agent asks the Delivery Lead; it does not guess.
+- A5. The build is done by cloud agents that see only this repository; they never open V1, V2 or the acceptance site. **Every V2/V1 screen is therefore described in words inside the SRS** (layout, blocks in order, exact BM copy, states). If the text lacks a detail, the agent follows the tie-break in [R1-FAQ](../../plan/R1-FAQ.md) Q11 (post the question on the card's issue and let the team lead answer by the stated principles); it does not guess.
 
 ### 7.2 Dependencies
 | # | Dependency | Needed for | Status |
@@ -115,7 +131,7 @@ Earlier decisions D28–D99 still apply where not superseded.
 | DEP-1 | **DSKP Tingkatan 1–3 source PDFs** (official curriculum documents for Matematik, Sains, Bahasa Melayu, Bahasa Inggeris, Sejarah, Pendidikan Islam, Pendidikan Moral, Pendidikan Seni Visual) | Task S4-T09: extraction of the Tingkatan 1–3 DSKP, so T1–T3 questions can carry SP/TP | **Decided (user, 2026-11-04, D109):** not a prerequisite. T1–T3 use the same DSKP structure as T4–T5, built from the existing T1–T3 chapter and topic data (V3/UAT, V2) plus any T1–T3 PDF in `d:\prestasiplus-dskp`. Where no SP/TP is loaded, screens show Bab only, with no invented SP/TP labels (FR-MUR-DK-5). |
 | DEP-2 | Evidence for exam-paper blueprints (at least two bodies of evidence per paper) | Verified contracts (Q-16, U-OP-04) | Prepared per paper; Matematik Tambahan paper 2 is sufficient first |
 | DEP-3 | Extraction worker, OCR and an extraction provider on the acceptance site | Paper upload (Q-07, U-OP-02) | Operator task, done by the designated UAT developer (D110) |
-| DEP-4 | User approval for each one-off data operation on the acceptance site, run by the designated UAT developer (dry-run, report, approval, real run) | U-OP-01..17 | Per operation; the developer's name is awaiting the user |
+| DEP-4 | User approval for each one-off data operation on the acceptance site, run by the designated UAT developer (dry-run, report, approval, real run) | U-OP-01..17 | Per operation; the developer is named by the team leads in issue #503 (operational assignment, D110, D113) |
 | DEP-6 | ADMIN users available to do the content work (Bab mapping, figure images, regroup) in the Portal Pentadbiran | U-OP-05, 07, 15, 17; AC-ADM-C05.3, AC-ADM-G7.2 | Decided owner (D110) |
 | DEP-5 | A real AI provider | Only to un-hide Cikgu Alesa (out of scope) | Not planned |
 

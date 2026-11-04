@@ -1,5 +1,7 @@
 # PrestasiPlus App
 
+> **Release 1 (R1) of V3: start at [docs/plan/R1-START-HERE.md](docs/plan/R1-START-HERE.md), then [docs/plan/R1-FAQ.md](docs/plan/R1-FAQ.md).** For any card `S<n>-T<nn>` those two pages win over the rest of this file. The backend-card programme (`BE-01..BE-40`, `docs/plan/backend-tracker.md`, `AGENT-SYNC.md`, `onboarding.md`, branch `feature/v2-backend`) is legacy and superseded for R1.
+
 > **English summary.** PrestasiPlus App is a Vue 3 + Vite + TypeScript + Tailwind v4 front-end prototype (mock data,
 > no backend) that rebuilds the education platform prestasiplus.my module by module (M01–M27; all 59 role-matrix rows
 > are at G5 READY). **v2 status:** the project is now evolving into a new system (decisions D28–D32): the frontend is

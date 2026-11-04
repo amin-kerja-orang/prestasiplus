@@ -1,3 +1,5 @@
+> SUPERSEDED for R1 by docs/plan/R1-START-HERE.md. Do not use its branch, claim or board rules for any `S<n>-T<nn>` card.
+
 # Backend programme: PCs, lanes, sessions and sync
 
 How the v2 backend (48 cards, BE-01 to BE-48) is split across several PCs and Claude Code sessions, in strict priority and dependency order, without two PCs editing the same files. Companion files: [backend-tracker.md](backend-tracker.md) (status), [agent-kickoff/](agent-kickoff/README.md) (prompts), [backend-tasks/](backend-tasks/README.md) (cards), [../architecture/v2-backend-plan.md](../architecture/v2-backend-plan.md) (design; section 14 migration-first, section 15 intake).
