@@ -35,12 +35,6 @@ describe('BE-18 B: POST /guru/question-papers', () => {
     await t.close()
   })
 
-  it('answers honestly that the intake is not available yet while no port is bound (valid request)', async () => {
-    const res = await upload(teacher, OK_FIELDS, [{ name: 'soalan.pdf', size: 10 }])
-    expect(res.status).toBe(503)
-    expect(res.body.error).toMatchObject({ code: 'SERVER_ERROR', message: 'Muat naik kertas soalan belum tersedia buat masa ini.' })
-  })
-
   describe('validation (422, every failing field at once)', () => {
     const run = async (fields: Record<string, string>, files: { name: string; size: number }[], key = 'files') => {
       const res = await upload(teacher, fields, files, key)
@@ -99,7 +93,7 @@ describe('BE-18 B: POST /guru/question-papers', () => {
     })
 
     it('validation runs before the port is called', async () => {
-      // the default (unbound) intake would answer 503; a 422 proves nothing reached it
+      // the stub intake rejects when called; a 422 proves nothing reached it
       const res = await upload(teacher, { ...OK_FIELDS, subject: '' }, good)
       expect(res.status).toBe(422)
     })
@@ -143,12 +137,10 @@ describe('BE-18 B: POST /guru/question-papers', () => {
     })
 
     beforeAll(() => {
-      t.get(QuestionSetsPorts).provideIntake({
-        async submit(s) {
-          seen.push(s)
-          return pending('77', s)
-        },
-      })
+      t.intake.handler = async (s) => {
+        seen.push(s)
+        return pending('77', s)
+      }
     })
 
     it('201 {data} with the pending submission; the port gets the declaration and the buffers', async () => {
@@ -158,7 +150,8 @@ describe('BE-18 B: POST /guru/question-papers', () => {
       const paper = QuestionSetPaperSchema.parse(res.body.data)
       expect(paper).toMatchObject({ status: 'pending', teacherId, subjectText: 'Matematik', levelCode: 'T4', year: 2025, paperType: 'Trial Paper', authorCredit: 'Cikgu Ujian', note: 'Nota' })
       const call = seen.at(-1) as PaperSubmission
-      expect(call).toMatchObject({ teacherId, role: 'teacher', isTest: false })
+      expect(call).toMatchObject({ teacherId, role: 'teacher', isTest: false, requestId: expect.any(String) })
+      expect(call.auth.userId).toBe(teacherId)
       expect(call.files.map((f) => [f.index, f.name, f.size])).toEqual([[0, 'a.pdf', 12], [1, 'b.docx', 7]])
       expect(call.files[0]?.buffer.equals(bytes(12))).toBe(true)
     })
