@@ -112,7 +112,7 @@ function call(method, path, kind, body) {
 function json(res, pick) {
   try {
     return pick(res.json())
-  } catch (e) {
+  } catch {
     return undefined
   }
 }
