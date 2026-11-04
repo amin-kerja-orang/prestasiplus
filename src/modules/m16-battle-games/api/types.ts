@@ -3,6 +3,8 @@
  * keep the live JSON bodies (snake_case, `{error}` strings); the others use the `{data}` envelope.
  */
 
+import type { GamesSekolahBersaingBoardRow } from '@pp/contract'
+
 export type QuestionType = 'biasa' | 'pksk' | 'spm'
 export type PkskLevel = 'T1' | 'T4'
 export type StandingPeriod = 'weekly' | 'monthly' | 'all_time'
@@ -308,17 +310,5 @@ export interface LeagueBody {
   max_schools?: number | null
 }
 
-/** #50. `rows: []` is the empty state. */
-export interface SekolahBersaingResult {
-  weekStart: string
-  count: number
-  rows: {
-    rank: number
-    schoolName: string
-    state: string
-    aktifPct: number
-    streakAvg: number
-    notaPer10: number
-    anonymous: boolean
-  }[]
-}
+/** API-AS-14, in rank order. `[]` is the empty state. */
+export type SekolahBersaingResult = GamesSekolahBersaingBoardRow[]

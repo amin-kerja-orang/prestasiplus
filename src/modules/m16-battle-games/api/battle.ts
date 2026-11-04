@@ -296,13 +296,7 @@ export function fetchLeague(id: number, options: Signal = {}): Promise<LeagueDet
   return api.get<LeagueDetail>(`/api/leagues/${String(id)}`, withSignal(options))
 }
 
-/** #50 `GET /api/sekolah-bersaing?week=` (any `week`; an invalid value shows the current week). */
-export function fetchSekolahBersaing(
-  week?: string,
-  options: Signal = {},
-): Promise<SekolahBersaingResult> {
-  return api.get<SekolahBersaingResult>('/api/sekolah-bersaing', {
-    ...(week === undefined ? {} : { query: { week } }),
-    ...withSignal(options),
-  })
+/** API-AS-14 `GET /api/sekolah-bersaing`: the live board in rank order (school admin and admin only, 403 otherwise). */
+export function fetchSekolahBersaing(options: Signal = {}): Promise<SekolahBersaingResult> {
+  return api.get<SekolahBersaingResult>('/api/sekolah-bersaing', withSignal(options))
 }

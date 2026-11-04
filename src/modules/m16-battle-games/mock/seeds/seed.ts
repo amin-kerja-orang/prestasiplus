@@ -5,8 +5,7 @@
  *   standing figures (DC-M16-03), the 47 submitted game results, the two leagues; and the M11 port
  *   (`registerM16Reads`).
  * - `finaliseM16(ctx)` (after every dataset has compiled): the 24 generated older battles (they need
- *   real M02 pupils), the Sekolah Bersaing snapshots (their schools are register placements), and
- *   the build check — every documented M16 figure must equal the computed count.
+ *   real M02 pupils) and the build check — every documented M16 figure must equal the computed count.
  */
 
 import { checkNamedQueries } from '@/mock/dataset'
@@ -35,9 +34,7 @@ import {
   resetBotAccuracy,
   roomQueries,
   roomsRepo,
-  sekolahBersaingQueries,
   standingQueries,
-  sekolahBersaingRepo,
   setPendingSim,
   tournamentQueries,
 } from '../repository'
@@ -96,7 +93,6 @@ export function finaliseM16(ctx: SeedContext): void {
       rng,
     ),
   )
-  sekolahBersaingRepo.seedWeeks()
   // The 160 closed rooms: 189 distinct users = the 38 standing users + 151 generated students (§6.11.0).
   const standing = new Set(standingUserIds())
   const generated = users
@@ -118,7 +114,6 @@ export function finaliseM16(ctx: SeedContext): void {
     ...checkNamedQueries(gameResultQueries),
     ...checkNamedQueries(tournamentQueries),
     ...checkNamedQueries(leagueQueries),
-    ...checkNamedQueries(sekolahBersaingQueries),
   ]
   if (issues.length > 0) {
     throw new Error(`M16 build check failed:\n${issues.map((i) => `- ${i.message}`).join('\n')}`)

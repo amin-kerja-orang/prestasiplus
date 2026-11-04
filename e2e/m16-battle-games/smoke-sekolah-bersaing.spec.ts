@@ -1,7 +1,7 @@
 /**
- * M16 S28 `/sekolah-bersaing` at 375 / 768 / 1280 (M16-T6a, roles-matrix row L50; SRS M16 v1.6 §12
- * E2E-M16-89, 90, AC-M16-38.1..6). Account 8 is the school admin (user shell, DV-M16-02). Clock
- * 2026-09-25T15:40+08:00: the current week is Monday 21 Sep 2026 with 49 rows.
+ * `/sekolah-bersaing` at 375 / 768 / 1280: the live board (R1-AS-45, FR-AS-45-1..6, OQ-API-09). Account 8
+ * is the school admin. The rows come from the M05 owner mock, so only their shape is asserted here:
+ * the exact values are covered by the handler tests.
  */
 
 import type { Page } from '@playwright/test'
@@ -9,164 +9,85 @@ import type { Page } from '@playwright/test'
 import { expect, test } from '../fixtures/test'
 import { expectNoHorizontalScroll, expectTabTitle, moduleTag, viewportWidth } from '../support'
 
-const SCHOOL_ADMIN = 'adminsekolah@demo.test'
 const ADMIN = 'admin@demo.test'
 const STUDENT = 'pelajar@demo.test'
 const MODULE = { tag: [moduleTag(16)] }
 
 test.use({ mockInit: { latency: 0 } })
 
-test(
-  'E2E-M16-89 school admin (account 8): title, hero, 49 rows, medals, footer',
-  MODULE,
-  async ({ page, gotoApp, loginAs }) => {
-    await loginAs(8)
+async function expectBoard(page: Page): Promise<void> {
+  // The shell sets the tab title from its header title (useShellTabTitle), over the route meta.
+  await expectTabTitle(page, 'Sekolah Bersaing | PRESTASIPLUS')
+  await expect(page.getByRole('heading', { level: 1, name: 'Sekolah Bersaing' })).toBeVisible()
+  // The admin shell moves the sub-line into its own header and hides the copy on the page.
+  await expect(
+    page
+      .getByText('Kedudukan sekolah teratas berdasarkan purata ketepatan latihan pelajar.')
+      .filter({ visible: true }),
+  ).toBeVisible()
+  await expect(page.getByTestId('sb-label')).toHaveText('Papan Pemimpin')
+
+  const rows = page.getByTestId('sb-row')
+  await expect(rows.first()).toBeVisible()
+  const count = await rows.count()
+  expect(count).toBeGreaterThanOrEqual(4)
+  expect(count).toBeLessThanOrEqual(30)
+
+  const ranks = page.getByTestId('sb-rank')
+  await expect(ranks.nth(0)).toHaveText('🥇')
+  await expect(ranks.nth(1)).toHaveText('🥈')
+  await expect(ranks.nth(2)).toHaveText('🥉')
+  await expect(ranks.nth(3)).toHaveText('4')
+
+  for (const field of ['sb-school', 'sb-state', 'sb-pupils']) {
+    await expect(page.getByTestId(field)).toHaveCount(count)
+    await expect(page.getByTestId(field).first()).toBeVisible()
+  }
+  await expect(page.getByTestId('sb-accuracy')).toHaveCount(count)
+  await expect(page.getByTestId('sb-accuracy').first()).toHaveText(/^\d{1,3}%$/)
+
+  const table = page.getByTestId('sb-table')
+  if (viewportWidth(page) >= 768) {
+    await expect(table.locator('thead th')).toHaveText([
+      '#',
+      'Sekolah',
+      'Negeri',
+      'Ketepatan',
+      'Pelajar',
+    ])
+  } else {
+    await expect(table.locator('table')).toHaveCount(0)
+    await expect(table.locator('[data-ds="data-table-cards"] > li')).toHaveCount(count)
+    await expect(rows.first().locator('dt')).toHaveText(['Negeri', 'Ketepatan', 'Pelajar'])
+    // AC-AS-45-4: every text of a card is at least 14 px at 375.
+    const sizes = await rows
+      .first()
+      .locator('p, span, dt, dd')
+      .evaluateAll((els) => els.map((e) => parseFloat(getComputedStyle(e).fontSize)))
+    expect(Math.min(...sizes)).toBeGreaterThanOrEqual(14)
+  }
+  await expectNoHorizontalScroll(page)
+}
+
+for (const [name, who] of [
+  ['school admin (account 8)', 8],
+  ['admin', ADMIN],
+] as const) {
+  test(`AC-AS-45-4 ${name} sees the live board`, MODULE, async ({ page, gotoApp, loginAs }) => {
+    await loginAs(who)
     await gotoApp('/sekolah-bersaing')
-    await expectTabTitle(page, 'Sekolah Bersaing — Leaderboard Mingguan')
-    await expect(page.getByTestId('shell-user-title')).toHaveText('Sekolah Bersaing')
-    await expect(page.getByTestId('shell-user-subtitle')).toHaveText('Selamat datang kembali')
-    await expect(page.getByRole('heading', { level: 1, name: '🏆 Sekolah Bersaing' })).toBeVisible()
-    await expect(
-      page.getByText(
-        'Leaderboard mingguan — bandingkan sekolah-sekolah di Malaysia. Anda rasa bangga? Kongsi.',
-      ),
-    ).toBeVisible()
-    await expect(page.getByTestId('sb-week')).toHaveText(
-      'Minggu 21 Sep 2026 · 49 sekolah dalam pertandingan',
-    )
-
-    const rows = page.getByTestId('sb-row')
-    await expect(rows).toHaveCount(49)
-    await expect(rows.nth(0).getByTestId('sb-rank')).toHaveText('🥇')
-    await expect(rows.nth(0)).toHaveClass(/gold/)
-    await expect(rows.nth(0).getByTestId('sb-state')).toHaveText('Kelantan')
-    await expect(rows.nth(0).getByTestId('sb-aktif')).toContainText('0.0%')
-    await expect(rows.nth(1).getByTestId('sb-rank')).toHaveText('🥈')
-    await expect(rows.nth(1)).toHaveClass(/silver/)
-    await expect(rows.nth(1).getByTestId('sb-state')).toHaveText('Johor')
-    await expect(rows.nth(2).getByTestId('sb-rank')).toHaveText('🥉')
-    await expect(rows.nth(2)).toHaveClass(/bronze/)
-    await expect(rows.nth(2).getByTestId('sb-state')).toHaveText('Sabah')
-    // Row #17 and #49 (AC-M16-38.2).
-    await expect(rows.nth(16).getByTestId('sb-rank')).toHaveText('#17')
-    await expect(rows.nth(16).getByTestId('sb-state')).toHaveText('Selangor')
-    await expect(rows.nth(16).getByTestId('sb-aktif')).toContainText('0.5%')
-    await expect(rows.nth(48).getByTestId('sb-rank')).toHaveText('#49')
-    await expect(rows.nth(48).getByTestId('sb-state')).toHaveText('Selangor')
-
-    const wide = viewportWidth(page) >= 768
-    const header = page.getByTestId('sb-header')
-    for (const label of ['#', 'Sekolah', '% Aktif']) await expect(header).toContainText(label)
-    if (wide) {
-      await expect(header).toContainText('Streak Avg')
-      await expect(header).toContainText('Nota/Pelajar')
-      await expect(rows.nth(0).getByTestId('sb-streak')).toContainText('🔥 15.0')
-      await expect(rows.nth(1).getByTestId('sb-streak')).toContainText('🔥 9.3')
-      await expect(rows.nth(2).getByTestId('sb-streak')).toContainText('🔥 8.6')
-      await expect(rows.nth(16).getByTestId('sb-streak')).toContainText('🔥 1.6')
-      await expect(rows.nth(48).getByTestId('sb-streak')).toContainText('🔥 0.0')
-    } else {
-      await expect(page.getByText('Streak Avg')).toBeHidden()
-      await expect(page.getByText('Nota/Pelajar')).toBeHidden()
-      await expect(rows.nth(0).getByTestId('sb-streak')).toBeHidden()
-      const size = await rows
-        .nth(0)
-        .getByTestId('sb-aktif')
-        .locator('div')
-        .nth(1)
-        .evaluate((e) => parseFloat(getComputedStyle(e).fontSize))
-      expect(size).toBeGreaterThanOrEqual(12)
-    }
-
-    const tip = page.getByTestId('sb-tip')
-    await expect(tip).toContainText('💡 Untuk Cikgu Besar / PIBG:')
-    await expect(tip).toContainText('Share ranking ini ke parent group WhatsApp.')
-    await expect(tip).toContainText('Sekolah yang opt-out akan paparkan sebagai "Sekolah anonim".')
-    await expectNoHorizontalScroll(page)
-  },
-)
-
-const WEEKS = [
-  {
-    query: '2026-09-16',
-    label: '14 Sep 2026',
-    check: async (page: Page) => {
-      const rows = page.getByTestId('sb-row')
-      await expect(rows.nth(17).getByTestId('sb-state')).toHaveText('Kelantan')
-      await expect(rows.nth(17).getByTestId('sb-aktif')).toContainText('0.0%')
-      await expect(rows.nth(19).getByTestId('sb-state')).toHaveText('Kuala Lumpur')
-    },
-  },
-  { query: '2026-09-07', label: '07 Sep 2026', check: async () => {} },
-  {
-    query: '2026-08-31',
-    label: '31 Aug 2026',
-    check: async (page: Page) => {
-      const rows = page.getByTestId('sb-row')
-      await expect(rows.nth(16).getByTestId('sb-state')).toHaveText('Selangor')
-      await expect(rows.nth(16).getByTestId('sb-aktif')).toContainText('0.2%')
-    },
-  },
-] as const
-
-for (const week of WEEKS) {
-  test(
-    `E2E-M16-90 ?week=${week.query} shows ${week.label} with 48 rows`,
-    MODULE,
-    async ({ page, gotoApp, loginAs }) => {
-      await loginAs(SCHOOL_ADMIN)
-      await gotoApp(`/sekolah-bersaing?week=${week.query}`)
-      await expect(page.getByTestId('sb-week')).toHaveText(
-        `Minggu ${week.label} · 48 sekolah dalam pertandingan`,
-      )
-      await expect(page.getByTestId('sb-row')).toHaveCount(48)
-      await week.check(page)
-    },
-  )
+    await expectBoard(page)
+  })
 }
 
 test(
-  'E2E-M16-90 a week without a snapshot shows the empty state',
+  'FR-X2-4 a student gets the 403 page and no board',
   MODULE,
   async ({ page, gotoApp, loginAs }) => {
-    await loginAs(SCHOOL_ADMIN)
-    await gotoApp('/sekolah-bersaing?week=2025-01-06')
-    await expect(page.getByRole('heading', { level: 1, name: '🏆 Sekolah Bersaing' })).toBeVisible()
-    await expect(page.getByTestId('sb-empty')).toContainText('📊 Data minggu ini belum dijana.')
-    await expect(page.getByTestId('sb-empty')).toContainText(
-      'Cron mingguan akan kira pada Isnin pagi. Tunggu kejap ya.',
-    )
+    await loginAs(STUDENT)
+    await gotoApp('/sekolah-bersaing')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Akses Ditolak')
     await expect(page.getByTestId('sb-row')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
   },
 )
-
-test(
-  'E2E-M16-90 an invalid week shows the current week (DV-M16-30)',
-  MODULE,
-  async ({ page, gotoApp, loginAs }) => {
-    await loginAs(SCHOOL_ADMIN)
-    await gotoApp('/sekolah-bersaing?week=bogus')
-    await expect(page.getByTestId('sb-week')).toHaveText(
-      'Minggu 21 Sep 2026 · 49 sekolah dalam pertandingan',
-    )
-    await expect(page.getByTestId('sb-row')).toHaveCount(49)
-  },
-)
-
-for (const [name, who] of [
-  ['admin', ADMIN],
-  ['student', STUDENT],
-] as const) {
-  test(
-    `E2E-M16-05 ${name} opens S28 in the user shell with the live title`,
-    MODULE,
-    async ({ page, gotoApp, loginAs }) => {
-      await loginAs(who)
-      await gotoApp('/sekolah-bersaing')
-      await expectTabTitle(page, 'Sekolah Bersaing — Leaderboard Mingguan')
-      await expect(page.getByTestId('shell-user-title')).toHaveText('Sekolah Bersaing')
-      await expect(page.getByTestId('sb-row')).toHaveCount(49)
-    },
-  )
-}

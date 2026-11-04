@@ -90,7 +90,7 @@ test.describe('S23 Tournament list', () => {
 
 test.describe('S30 Tournament banner', () => {
   // One page load per test (three loads in one test exceed the 120 s timeout on a loaded machine).
-  for (const path of ['/dashboard', '/tournament', '/sekolah-bersaing']) {
+  for (const path of ['/dashboard', '/tournament']) {
     test(
       `E2E-M16-09 hidden by default on ${path}: one request per page load, no banner`,
       MODULE,

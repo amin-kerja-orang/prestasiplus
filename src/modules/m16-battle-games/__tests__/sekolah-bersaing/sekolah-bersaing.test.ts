@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
 import SekolahBersaingPage from '../../pages/SekolahBersaingPage.vue'
 import routes from '../../routes/sekolah-bersaing'
@@ -9,154 +8,195 @@ import routes from '../../routes/sekolah-bersaing'
 const api = vi.hoisted(() => ({ fetchSekolahBersaing: vi.fn() }))
 vi.mock('../../api', () => api)
 
-type Row = {
-  rank: number
-  schoolName: string
-  state: string
-  aktifPct: number
-  streakAvg: number
-  notaPer10: number
-  anonymous: boolean
-}
+type Row = { rank: number; school: string; state: string; accuracy: number; pupils: number }
 
 function row(rank: number, over: Partial<Row> = {}): Row {
-  return {
-    rank,
-    schoolName: `Sekolah ${String(rank)}`,
-    state: 'Kelantan',
-    aktifPct: 0,
-    streakAvg: 15,
-    notaPer10: 0,
-    anonymous: false,
-    ...over,
-  }
+  return { rank, school: `Sekolah ${String(rank)}`, state: 'Kelantan', accuracy: 75, pupils: 10, ...over }
 }
 
-const week = (rows: Row[], weekStart = '2026-09-21') => ({ weekStart, count: rows.length, rows })
+const SUB = 'Kedudukan sekolah teratas berdasarkan purata ketepatan latihan pelajar.'
 
 let wrapper: VueWrapper | undefined
-let router: Router
 
-async function open(url: string) {
-  router = createRouter({
-    history: createMemoryHistory(),
-    routes: [{ path: '/sekolah-bersaing', component: SekolahBersaingPage }],
-  })
-  await router.push(url)
-  await router.isReady()
-  wrapper = mount(SekolahBersaingPage, { global: { plugins: [router] }, attachTo: document.body })
+async function open() {
+  wrapper = mount(SekolahBersaingPage, { attachTo: document.body })
   await flushPromises()
   return wrapper
 }
 
+/** `DsDataTable` reads the breakpoint on mount: below 768 px it renders the cards. */
+function setPhone(): void {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: false,
+    media: query,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+  }))
+}
+
+const texts = (w: VueWrapper, testid: string) =>
+  w.findAll(`[data-testid="${testid}"]`).map((e) => e.text())
+const pills = (w: VueWrapper) => w.findAll('[data-testid="sb-accuracy"]')
+
 beforeEach(() => {
   vi.clearAllMocks()
-  api.fetchSekolahBersaing.mockResolvedValue(
-    week([row(1), row(2), row(3), row(4, { aktifPct: 0.5, streakAvg: 1.6, notaPer10: 2.3 })]),
-  )
+  api.fetchSekolahBersaing.mockResolvedValue([row(1), row(2), row(3), row(4)])
 })
 afterEach(() => {
   wrapper?.unmount()
   wrapper = undefined
+  vi.unstubAllGlobals()
 })
 
-describe('route (FR-M16-127, DV-M16-02, roles-matrix L50)', () => {
-  it('uses the user shell for every role, with the live tab title', () => {
+describe('route (OQ-API-09, FR-X2-4)', () => {
+  it('is for the school admin and the admin, 403 for anyone else, in the user shell', () => {
     const r = routes.find((x) => x.path === '/sekolah-bersaing')
     expect(r?.meta).toMatchObject({
       layout: 'user',
       access: 'auth',
-      title: 'Sekolah Bersaing — Leaderboard Mingguan',
+      roles: ['school_admin', 'admin'],
+      onForbidden: '403',
+      title: 'Sekolah Bersaing — PRESTASIPLUS',
       header: { title: 'Sekolah Bersaing', subtitle: 'Selamat datang kembali' },
     })
-    expect(r?.meta?.roles).toBeUndefined()
-    expect(r?.meta?.onForbidden).toBeUndefined()
   })
 })
 
-describe('S28 SekolahBersaingPage', () => {
-  it('renders the hero, the week line, the header row, the rows and the footer tip', async () => {
-    const w = await open('/sekolah-bersaing')
+describe('SekolahBersaingPage (R1-AS-45)', () => {
+  it('shows the hero, the label, the caption and the five headers', async () => {
+    const w = await open()
     expect(w.get('h1').text()).toBe('Sekolah Bersaing')
-    expect(w.text()).toContain(
-      'Leaderboard mingguan — bandingkan sekolah-sekolah di Malaysia. Anda rasa bangga? Kongsi.',
-    )
-    expect(w.get('[data-testid="sb-week"]').text()).toBe(
-      'Minggu 21 Sep 2026 · 4 sekolah dalam pertandingan',
-    )
+    expect(w.text()).toContain(SUB)
+    expect(w.get('[data-testid="sb-label"]').text()).toBe('Papan Pemimpin')
+    expect(w.get('caption').text()).toBe('Papan Pemimpin')
     expect(w.findAll('thead th').map((d) => d.text())).toEqual([
       '#',
       'Sekolah',
-      '% Aktif',
-      'Streak Avg',
-      'Nota/Pelajar',
+      'Negeri',
+      'Ketepatan',
+      'Pelajar',
     ])
-    const rows = w.findAll('tbody tr')
-    expect(rows).toHaveLength(4)
-    expect(rows.map((r) => r.get('[data-testid="sb-rank"]').text())).toEqual([
-      '🥇',
-      '🥈',
-      '🥉',
-      '#4',
-    ])
-    expect(rows[0]?.get('[data-testid="sb-school"]').text()).toBe('Sekolah 1')
-    expect(rows[0]?.get('[data-testid="sb-state"]').text()).toBe('Kelantan')
-    const cells = (i: number) => rows[i]?.findAll('td').map((c) => c.text())
-    expect(cells(0)?.slice(2)).toEqual(['0.0% aktif', '15.0 hari', '0.0 per 10'])
-    expect(cells(3)?.slice(2)).toEqual(['0.5% aktif', '1.6 hari', '2.3 per 10'])
-    const tip = w.get('[data-testid="sb-tip"]').text()
-    expect(tip).toContain('Untuk Cikgu Besar / PIBG:')
-    expect(tip).toContain('Share ranking ini ke parent group WhatsApp.')
-    expect(tip).toContain('"Sekolah anonim"')
   })
 
-  it('an anonymous school shows "Sekolah anonim" and no state', async () => {
-    api.fetchSekolahBersaing.mockResolvedValue(
-      week([row(1, { anonymous: true, schoolName: 'Rahsia' })]),
-    )
-    const w = await open('/sekolah-bersaing')
-    expect(w.get('[data-testid="sb-school"]').text()).toBe('Sekolah anonim')
-    expect(w.text()).not.toContain('Rahsia')
-    expect(w.find('[data-testid="sb-state"]').exists()).toBe(false)
+  it('asks the API once, with no week', async () => {
+    await open()
+    expect(api.fetchSekolahBersaing).toHaveBeenCalledTimes(1)
+    expect(api.fetchSekolahBersaing).toHaveBeenCalledWith({ signal: expect.any(AbortSignal) })
   })
 
-  it('a week without a snapshot shows the hero and the empty state', async () => {
-    api.fetchSekolahBersaing.mockResolvedValue(week([], '2025-01-06'))
-    const w = await open('/sekolah-bersaing?week=2025-01-06')
+  it('shows medals for ranks 1 to 3, then the plain number', async () => {
+    const w = await open()
+    expect(texts(w, 'sb-rank')).toEqual(['🥇', '🥈', '🥉', '4'])
+  })
+
+  it('AC-AS-45-1: A rank 1 with a success 80% pill and 5, B rank 2 with a warning 60% pill and 3', async () => {
+    api.fetchSekolahBersaing.mockResolvedValue([
+      row(1, { school: 'Sekolah A', state: 'Johor', accuracy: 80, pupils: 5 }),
+      row(2, { school: 'Sekolah B', state: 'Sabah', accuracy: 60, pupils: 3 }),
+    ])
+    const w = await open()
+    const cells = w.findAll('tbody tr').map((r) => r.findAll('td').map((c) => c.text()))
+    expect(cells).toEqual([
+      ['🥇', 'Sekolah A', 'Johor', '80%', '5'],
+      ['🥈', 'Sekolah B', 'Sabah', '60%', '3'],
+    ])
+    expect(pills(w)[0]?.classes().join(' ')).toContain('text-success')
+    expect(pills(w)[1]?.classes().join(' ')).toContain('text-warning')
+  })
+
+  it('AC-AS-45-6: the colour follows the rounded value', async () => {
+    api.fetchSekolahBersaing.mockResolvedValue([
+      row(1, { accuracy: 70 }),
+      row(2, { accuracy: 69.6 }),
+      row(3, { accuracy: 69.4 }),
+      row(4, { accuracy: 49.5 }),
+      row(5, { accuracy: 49 }),
+    ])
+    const w = await open()
+    expect(texts(w, 'sb-accuracy')).toEqual(['70%', '70%', '69%', '50%', '49%'])
+    const colour = (i: number) => pills(w)[i]?.classes().join(' ')
+    expect(colour(0)).toContain('text-success')
+    expect(colour(1)).toContain('text-success')
+    expect(colour(2)).toContain('text-warning')
+    expect(colour(3)).toContain('text-warning')
+    expect(colour(4)).toContain('text-error')
+  })
+
+  it('shows the pupils as a count with thousands separators', async () => {
+    api.fetchSekolahBersaing.mockResolvedValue([row(1, { pupils: 1234 })])
+    const w = await open()
+    expect(texts(w, 'sb-pupils')).toEqual(['1,234'])
+  })
+
+  it('AC-AS-45-2: an empty board shows both exact lines and no table', async () => {
+    api.fetchSekolahBersaing.mockResolvedValue([])
+    const w = await open()
     expect(w.get('h1').text()).toBe('Sekolah Bersaing')
-    expect(w.get('[data-testid="sb-empty"]').text()).toContain('Data minggu ini belum dijana.')
-    expect(w.get('[data-testid="sb-empty"]').text()).toContain(
-      'Cron mingguan akan kira pada Isnin pagi. Tunggu kejap ya.',
-    )
+    const empty = w.get('[data-testid="sb-empty"]')
+    expect(empty.text()).toContain('Belum ada data')
+    expect(empty.text()).toContain('Tiada rekod latihan sekolah lagi.')
     expect(w.find('[data-testid="sb-table"]').exists()).toBe(false)
-    expect(w.find('[data-testid="sb-tip"]').exists()).toBe(false)
   })
 
-  it("passes ?week= to #50 as typed (Monday normalisation and invalid values are the API's)", async () => {
-    await open('/sekolah-bersaing?week=2026-09-16')
-    expect(api.fetchSekolahBersaing).toHaveBeenCalledWith('2026-09-16', expect.anything())
-    wrapper?.unmount()
-    await open('/sekolah-bersaing')
-    expect(api.fetchSekolahBersaing).toHaveBeenLastCalledWith(undefined, expect.anything())
-  })
-
-  it('reloads when the week query changes', async () => {
-    const w = await open('/sekolah-bersaing')
-    api.fetchSekolahBersaing.mockResolvedValue(week([row(1)], '2026-09-14'))
-    await router.push('/sekolah-bersaing?week=2026-09-14')
-    await flushPromises()
-    expect(api.fetchSekolahBersaing).toHaveBeenCalledTimes(2)
-    expect(w.get('[data-testid="sb-week"]').text()).toBe(
-      'Minggu 14 Sep 2026 · 1 sekolah dalam pertandingan',
-    )
+  it('shows the skeleton while loading', async () => {
+    api.fetchSekolahBersaing.mockReturnValue(new Promise(() => undefined))
+    const w = await open()
+    expect(w.find('[data-testid="sb-loading"]').exists()).toBe(true)
+    expect(w.find('[data-testid="sb-table"]').exists()).toBe(false)
   })
 
   it('shows the load error with a working retry', async () => {
     api.fetchSekolahBersaing.mockRejectedValueOnce(new Error('boom'))
-    const w = await open('/sekolah-bersaing')
+    const w = await open()
     expect(w.find('[data-testid="m16-load-error"]').exists()).toBe(true)
     await w.get('[data-testid="m16-retry"]').trigger('click')
     await flushPromises()
     expect(w.findAll('[data-testid="sb-row"]')).toHaveLength(4)
+  })
+
+  it('has no week line, footer tip or old column', async () => {
+    const w = await open()
+    for (const gone of ['sb-week', 'sb-week-date', 'sb-count', 'sb-tip']) {
+      expect(w.find(`[data-testid="${gone}"]`).exists(), gone).toBe(false)
+    }
+    for (const gone of ['Minggu', '% Aktif', 'Streak Avg', 'Nota/Pelajar', 'Sekolah anonim']) {
+      expect(w.text(), gone).not.toContain(gone)
+    }
+  })
+})
+
+describe('cards below 768 px (FR-AS-45-5)', () => {
+  it('each card shows every field, with the same pill', async () => {
+    setPhone()
+    api.fetchSekolahBersaing.mockResolvedValue([
+      row(1, { school: 'Sekolah A', state: 'Johor', accuracy: 80, pupils: 5 }),
+      row(4, { school: 'Sekolah B', state: 'Sabah', accuracy: 60, pupils: 3 }),
+    ])
+    const w = await open()
+    expect(w.find('table').exists()).toBe(false)
+    expect(w.findAll('[data-testid="sb-row"]')).toHaveLength(2)
+    expect(texts(w, 'sb-rank')).toEqual(['🥇', '4'])
+    expect(texts(w, 'sb-school')).toEqual(['Sekolah A', 'Sekolah B'])
+    expect(texts(w, 'sb-state')).toEqual(['Johor', 'Sabah'])
+    expect(texts(w, 'sb-accuracy')).toEqual(['80%', '60%'])
+    expect(texts(w, 'sb-pupils')).toEqual(['5', '3'])
+    expect(pills(w)[0]?.classes().join(' ')).toContain('text-success')
+    expect(pills(w)[1]?.classes().join(' ')).toContain('text-warning')
+    expect(w.findAll('dt').map((d) => d.text())).toEqual([
+      'Negeri',
+      'Ketepatan',
+      'Pelajar',
+      'Negeri',
+      'Ketepatan',
+      'Pelajar',
+    ])
+  })
+
+  it('no card text uses the 13 px caption role', async () => {
+    setPhone()
+    const w = await open()
+    const table = w.get('[data-testid="sb-table"]')
+    expect(table.findAll('.text-caption')).toHaveLength(0)
+    expect(table.findAll('dt').every((d) => d.classes().includes('text-body'))).toBe(true)
   })
 })

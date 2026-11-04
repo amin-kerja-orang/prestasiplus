@@ -18,7 +18,7 @@ export { gradeFits, kadarOf, parseRoomBody, roomQueries, roomsRepo, standingQuer
 export type { RoomCreateInput, RoomPlayerView, RoomView } from './rooms'
 export { leagueQueries, leaguesRepo, parseLeagueBody } from './leagues'
 export type { LeagueCard, LeagueDetail, LeagueInput, LeagueStandingView } from './leagues'
-export { sekolahBersaingQueries, sekolahBersaingRepo, weekStartOf } from './sekolah-bersaing'
+export { sekolahBersaingRepo } from './sekolah-bersaing'
 export type { SekolahBersaingView } from './sekolah-bersaing'
 export {
   effectiveStatus,

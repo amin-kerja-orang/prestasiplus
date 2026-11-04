@@ -1,6 +1,6 @@
 /**
- * SRS M16 v1.6 §7 #46-#49 and #50: the leagues (S25-S27) and the Sekolah Bersaing weekly board (S28).
- * Logged in (U). The league invite code is visible to non-members, as live.
+ * SRS M16 v1.6 §7 #46-#49: the leagues (S25-S27), logged in (U); the league invite code is visible to
+ * non-members, as live. API-AS-14: the live Sekolah Bersaing board, school admin and admin only.
  */
 
 import {
@@ -8,8 +8,8 @@ import {
   int,
   notFound,
   ok,
-  queryString,
   requireAuth,
+  requireRole,
   route,
   type RouteDef,
 } from '@/mock/define'
@@ -58,8 +58,8 @@ export const leagueRoutes: RouteDef[] = [
     { params: { id: int() } },
   ),
 
-  // #50 (S28): `week` is any text; an invalid value is ignored (DV-M16-30).
-  route('GET', '/api/sekolah-bersaing', [requireAuth()], (req) =>
-    ok(sekolahBersaingRepo.view(queryString(req.query, 'week'))),
+  // API-AS-14 (OQ-API-09): reads no query parameter, so an unknown one is ignored (FR-AS-45-3).
+  route('GET', '/api/sekolah-bersaing', [requireRole('school_admin', 'admin')], () =>
+    ok(sekolahBersaingRepo.view()),
   ),
 ]

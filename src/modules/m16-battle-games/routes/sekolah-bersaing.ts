@@ -1,11 +1,10 @@
 import type { RouteRecordRaw } from 'vue-router'
 
 /**
- * M16 route fragment: S28 `/sekolah-bersaing` (`?week=`; M16-T6a, SRS M16 v1.6 FR-M16-127..131, DV-M16-02,
- * DV-M16-30). User shell for **every** logged-in role (no `roles`): the admin and the school admin
- * (roles-matrix row L50) open it in the user shell like the student. Tab title is the live one; the
- * shell header is the page title with the user-portal subtitle (DV-M16-02). A guest goes to `/login`
- * by the shared guard.
+ * M16 route fragment: `/sekolah-bersaing`, the live school board (R1-AS-45). Restricted to the school
+ * admin and the admin (OQ-API-09, FR-X2-4): a guest goes to `/login` by the shared guard and any other
+ * role sees the global 403 page in place. `layout: 'user'` gives each of the two its own frame
+ * (Pembelajaran for the school admin, Pentadbiran for the admin).
  */
 const routes: RouteRecordRaw[] = [
   {
@@ -15,7 +14,9 @@ const routes: RouteRecordRaw[] = [
     meta: {
       layout: 'user',
       access: 'auth',
-      title: 'Sekolah Bersaing — Leaderboard Mingguan',
+      roles: ['school_admin', 'admin'],
+      onForbidden: '403',
+      title: 'Sekolah Bersaing — PRESTASIPLUS',
       header: { title: 'Sekolah Bersaing', subtitle: 'Selamat datang kembali' },
       module: 'M16',
       v2: true,

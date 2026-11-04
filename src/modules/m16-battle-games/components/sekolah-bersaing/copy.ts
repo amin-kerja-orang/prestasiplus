@@ -1,19 +1,12 @@
-/** Exact BM copy of S28 (SRS M16 v1.6 §8.1; URS FN-M16-10.1.1 ... 10.1.6). */
+/** Exact BM copy of the live board (R1-AS-45, FR-AS-45-2, FR-AS-45-3). */
 
 export const SB_COPY = {
   heading: 'Sekolah Bersaing',
-  sub: 'Leaderboard mingguan — bandingkan sekolah-sekolah di Malaysia. Anda rasa bangga? Kongsi.',
-  weekPrefix: 'Minggu',
-  weekSuffix: 'sekolah dalam pertandingan',
-  headers: ['#', 'Sekolah', '% Aktif', 'Streak Avg', 'Nota/Pelajar'],
-  aktif: 'aktif',
-  hari: 'hari',
-  per10: 'per 10',
-  anonymous: 'Sekolah anonim',
-  tipLabel: 'Untuk Cikgu Besar / PIBG:',
-  tip: 'Share ranking ini ke parent group WhatsApp. Pelajar nampak sekolah berbangga = lebih semangat. Sekolah yang opt-out akan paparkan sebagai "Sekolah anonim".',
-  emptyTitle: 'Data minggu ini belum dijana.',
-  emptyHint: 'Cron mingguan akan kira pada Isnin pagi. Tunggu kejap ya.',
+  label: 'Papan Pemimpin',
+  sub: 'Kedudukan sekolah teratas berdasarkan purata ketepatan latihan pelajar.',
+  headers: ['#', 'Sekolah', 'Negeri', 'Ketepatan', 'Pelajar'],
+  emptyTitle: 'Belum ada data',
+  emptyHint: 'Tiada rekod latihan sekolah lagi.',
 } as const
 
 export const SB_MEDALS = ['🥇', '🥈', '🥉'] as const
