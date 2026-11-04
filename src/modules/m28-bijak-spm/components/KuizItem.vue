@@ -11,7 +11,7 @@ import { McqOptions, StimulusFigure } from '../lib/question-display'
 import type { BijakKuizCheckResult, BijakKuizItem } from '@pp/contract'
 
 import { kuizCopy, textLayers, toOptions, toStimulus } from '../lib/kuiz'
-import RichText from './RichText.vue'
+import { RichText } from '../../../components/question-display'
 
 const props = withDefaults(
   defineProps<{
