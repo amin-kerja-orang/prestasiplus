@@ -7,7 +7,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { useFlashStore } from '@/stores/flash'
 
-import type { VideoCard, VideoDetail } from '../../api/types'
+import type { VideoCard } from '../../api/types'
 import routes from '../../routes/admin-media'
 import AdminVideoListPage from '../../pages/AdminVideoListPage.vue'
 import { chooseRowAction, menuItem, openRowMenu } from '../menu'
@@ -15,8 +15,6 @@ import { mountAt, t } from './harness'
 
 const api = vi.hoisted(() => ({ fetchVideos: vi.fn(), deleteVideo: vi.fn() }))
 vi.mock('../../api/content', () => api)
-const edit = vi.hoisted(() => ({ fetchVideoForEdit: vi.fn() }))
-vi.mock('../../lib/video-edit-api', () => edit)
 
 const confirmCalls = vi.hoisted(() => [] as unknown[])
 vi.mock('@/ds', async (importOriginal) => ({
@@ -36,6 +34,9 @@ function card(id: number): VideoCard {
     views: 100 + id,
     createdAt: '2026-03-03T10:00:00+08:00',
     uploader: { name: 'Admin Demo', initial: 'A', roleLabel: 'admin' },
+    category: 'tutorial',
+    categoryLabel: 'Tutorial',
+    subject: id === 1 ? { id: 3, name: 'Matematik' } : null,
   }
 }
 
@@ -68,13 +69,6 @@ beforeEach(() => {
   api.fetchVideos.mockReset().mockResolvedValue(listResult([card(1), card(2)]))
   api.deleteVideo.mockReset()
   confirmCalls.length = 0
-  edit.fetchVideoForEdit.mockReset().mockImplementation((id: number) =>
-    Promise.resolve({
-      ...card(id),
-      categoryLabel: 'Tutorial',
-      subject: id === 1 ? { id: 3, name: 'Matematik' } : null,
-    } as VideoDetail),
-  )
 })
 
 afterEach(() => {

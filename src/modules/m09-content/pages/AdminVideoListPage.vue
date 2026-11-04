@@ -4,9 +4,6 @@
  * Tontonan, Tarikh; filter Subjek (from the list facets); actions Tambah Video, Edit (`/video/:id/edit`)
  * and Padam (confirm "Padam video ini?"); 25 per page (`pageSize`). No Tingkatan, Bab, Status filter or
  * hide toggle (doc defect: the table has no such columns).
- *
- * The list card carries no category or subject, so the page reads each row's detail through the
- * non-counting `?for=edit` read (the cells show a dash until it arrives).
  */
 import { ADMIN_VIDEO_PAGE_SIZE } from '@pp/contract'
 import type { TableColumn } from '@nuxt/ui'
@@ -17,11 +14,10 @@ import { DsDataTable, DsEmptyState, DsLoadError, DsPage, DsPanel, DsRowActions, 
 import type { CardField, RowAction } from '@/ds'
 
 import { deleteVideo, fetchVideos } from '../api/content'
-import type { VideoCard, VideoDetail, VideoListQuery } from '../api/types'
+import type { VideoCard, VideoListQuery } from '../api/types'
 import { COPY, dmy, errorLines } from '../lib/admin-media/common'
 import { cellClass } from '../lib/table-cols'
 import { VIDEO_ADD_PATH, videoEditPath } from '../lib/video'
-import { fetchVideoForEdit } from '../lib/video-edit-api'
 
 const flash = useFlash()
 const confirm = useConfirm()
@@ -56,22 +52,6 @@ watch(subject, () => {
   page.value = 1
 })
 
-const details = ref<Record<number, VideoDetail>>({})
-watch(
-  rows,
-  (list) => {
-    for (const row of list) {
-      if (details.value[row.id]) continue
-      fetchVideoForEdit(row.id)
-        .then((d) => {
-          details.value = { ...details.value, [row.id]: d }
-        })
-        .catch(() => undefined)
-    }
-  },
-  { immediate: true },
-)
-
 interface TableRow extends Record<string, unknown> {
   id: number
   title: string
@@ -85,8 +65,8 @@ const tableRows = computed<TableRow[]>(() =>
   rows.value.map((v) => ({
     id: v.id,
     title: v.title,
-    category: details.value[v.id]?.categoryLabel ?? '—',
-    subjectName: details.value[v.id] ? (details.value[v.id]?.subject?.name ?? '—') : '—',
+    category: v.categoryLabel,
+    subjectName: v.subject?.name ?? '—',
     views: v.views,
     date: dmy(v.createdAt.slice(0, 10)),
   })),

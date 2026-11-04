@@ -18,7 +18,7 @@ export const videosScenarios: Scenario[] = [
       const teacher = await ctx.as('teacher')
       const created = await teacher.request('POST', '/videos', { body: video({ title: 'Video sekolah conformance', visibility: 'school' }) })
       ctx.expectStatus(created, 201)
-      ctx.check((created.body as { status?: string }).status === 'Video berjaya diterbitkan.', 'create did not answer the flash text')
+      ctx.check((created.body as { status?: string }).status === 'Video ditambah.', 'create did not answer the flash text')
       const id = String(dataOf(created).id)
 
       const anon = ctx.anonymous()

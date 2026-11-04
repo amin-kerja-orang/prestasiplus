@@ -76,6 +76,8 @@ describe('videos: visibility by school, writes, validation (AC 5, AC 6, AC 8)', 
       VideoListResponseSchema.parse(res.body)
       expect(idsOf(res)).toEqual([id.global2, id.global1])
       expect(res.body.meta.facets.total).toBe(2)
+      // The list card carries the category and the subject (admin list columns).
+      expect(res.body.data[0]).toMatchObject({ category: 'tutorial', categoryLabel: 'Tutorial', subject: { id: sejarah } })
     })
 
     it('a student sees global videos and those shared with the own school, not other schools or unshared ones', async () => {

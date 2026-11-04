@@ -123,6 +123,9 @@ export interface VideoCard {
   views: number
   createdAt: string
   uploader: VideoUploader
+  category: VideoCategory
+  categoryLabel: string
+  subject: { id: number; name: string } | null
 }
 
 export interface VideoFacets {
@@ -154,9 +157,6 @@ export interface VideoDetail extends VideoCard {
   embedUrl: string | null
   platform: string
   description: string | null
-  category: VideoCategory
-  categoryLabel: string
-  subject: { id: number; name: string } | null
   visibility: VideoVisibility
   canManage: boolean
   related: VideoCard[]

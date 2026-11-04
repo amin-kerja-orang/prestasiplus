@@ -63,6 +63,9 @@ function card(id: number, extra: Partial<VideoCard> = {}): VideoCard {
     views: 10 + id,
     createdAt: '2026-03-03T10:00:00+08:00',
     uploader: { name: 'Admin Demo', initial: 'A', roleLabel: 'admin' },
+    category: 'tutorial',
+    categoryLabel: 'Tutorial',
+    subject: null,
     ...extra,
   }
 }

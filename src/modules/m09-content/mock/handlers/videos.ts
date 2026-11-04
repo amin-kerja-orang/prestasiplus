@@ -38,7 +38,7 @@ import { VIDEO_CATEGORIES, VIDEO_CATEGORY_LABELS } from '../data/labels'
 import { videosRepo, videoVisibleTo, type VideoDetailResult } from '../repository'
 import { uploaderRef } from '../repository/common'
 import { VIDEO_PAGE_SIZE } from '../repository/videos'
-import type { VideoCard, VideoCategory, VideoRow, Viewer } from '../types'
+import type { VideoCategory, VideoRow, Viewer } from '../types'
 import {
   FIELD_INVALID,
   FIELD_REQUIRED,
@@ -65,7 +65,20 @@ function requireVideoViewer(req: MockRequest): Viewer {
   return { ...viewer, schoolId: videosRepo.videoSchool(viewer.id) ?? viewer.schoolId }
 }
 
-const cardOf = (v: VideoRow): VideoCard => videosRepo.cards([v])[0] as VideoCard
+/** The wire card: the repository card plus the category and the subject (admin list columns). */
+function cardsOf(rows: readonly VideoRow[]) {
+  return videosRepo.cards(rows).map((card, i) => {
+    const row = rows[i] as VideoRow
+    return {
+      ...card,
+      category: row.category,
+      categoryLabel: VIDEO_CATEGORY_LABELS[row.category],
+      subject: subjectRef(row.subjectId),
+    }
+  })
+}
+
+const cardOf = (v: VideoRow) => cardsOf([v])[0] as ReturnType<typeof cardsOf>[number]
 
 function detailBody(d: VideoDetailResult) {
   const v = d.video
@@ -75,12 +88,9 @@ function detailBody(d: VideoDetailResult) {
     embedUrl: d.embedUrl,
     platform: v.platform,
     description: v.description,
-    category: v.category,
-    categoryLabel: VIDEO_CATEGORY_LABELS[v.category],
-    subject: subjectRef(v.subjectId),
     visibility: v.visibility,
     canManage: d.canManage,
-    related: videosRepo.cards(d.related),
+    related: cardsOf(d.related),
   }
 }
 
@@ -176,7 +186,7 @@ export const videoRoutes: RouteDef[] = [
     }
     const res = videosRepo.list({ ...filter, page: page.page, pageSize: page.pageSize })
     const facets = videosRepo.facets(filter)
-    return paged({ rows: videosRepo.cards(res.rows), total: res.total }, page, {
+    return paged({ rows: cardsOf(res.rows), total: res.total }, page, {
       facets: {
         total: facets.total,
         categories: facets.categories.map((c) => ({

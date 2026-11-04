@@ -304,6 +304,8 @@ export class VideosService {
   private async cards(rows: readonly VideoRow[]): Promise<VideoCard[]> {
     const uploaders = new Map<string, UserRecord | null>()
     for (const id of new Set(rows.map((r) => r.uploaderId))) uploaders.set(id, await this.users.get(id))
+    const subjectIds = [...new Set(rows.flatMap((r) => (r.subjectId === null ? [] : [r.subjectId])))]
+    const names = subjectIds.length === 0 ? new Map<string, string>() : await this.subjects.names(subjectIds)
     return rows.map((v) => ({
       id: v.id,
       title: v.title,
@@ -312,25 +314,23 @@ export class VideosService {
       views: v.views,
       createdAt: toMytTimestamp(v.createdAt),
       uploader: this.uploaderOf(uploaders.get(v.uploaderId) ?? null),
+      category: v.category as VideoCard['category'],
+      categoryLabel: VIDEO_CATEGORY_LABELS[v.category as keyof typeof VIDEO_CATEGORY_LABELS] ?? v.category,
+      subject: v.subjectId !== null && names.has(v.subjectId) ? { id: v.subjectId, name: names.get(v.subjectId) as string } : null,
     }))
   }
 
   private async detailOf(v: VideoRow, viewer: VideoViewer, actor: VideoActor | null): Promise<VideoDetail> {
-    const [[card], related, names] = await Promise.all([
+    const [[card], related] = await Promise.all([
       this.cards([v]),
       this.repo.related(viewer, v).then((rows) => this.cards(rows)),
-      v.subjectId === null ? Promise.resolve(new Map<string, string>()) : this.subjects.names([v.subjectId]),
     ])
-    const name = v.subjectId === null ? undefined : names.get(v.subjectId)
     return {
       ...(card as VideoCard),
       videoUrl: v.videoUrl,
       embedUrl: parseVideoUrl(v.videoUrl).embedUrl,
       platform: v.platform,
       description: v.description,
-      category: v.category as VideoDetail['category'],
-      categoryLabel: VIDEO_CATEGORY_LABELS[v.category as keyof typeof VIDEO_CATEGORY_LABELS] ?? v.category,
-      subject: v.subjectId !== null && name !== undefined ? { id: v.subjectId, name } : null,
       visibility: v.visibility,
       canManage: actor !== null && (viewer.isAdmin || v.uploaderId === actor.userId),
       related,
