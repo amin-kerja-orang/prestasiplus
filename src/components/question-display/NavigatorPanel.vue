@@ -5,7 +5,7 @@
  */
 import { computed } from 'vue'
 
-import type { QuestionView, SectionView } from '../domain/types'
+import type { QuestionView, SectionView } from '@/modules/m28-bijak-spm/domain/types'
 
 export type NavState = 'answered' | 'flagged' | 'none'
 

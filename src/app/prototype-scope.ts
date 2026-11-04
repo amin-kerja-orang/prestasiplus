@@ -5,8 +5,7 @@
  *
  * ONE source for the menus (sidebar, drawer, bottom nav, "Lagi"), the route guard, the mock
  * login and the in-page links. Everything else (Admin Pusat, PPD/JPN, Ibu Bapa, Penaja and any
- * menu or route not in the matrix) is hidden, and a typed URL shows the friendly "Belum tersedia
- * dalam prototaip" page.
+ * menu or route not in the matrix) is hidden, and a typed URL answers the standard 404 page.
  *
  * The scope is ON in every mode (dev, demo, artifact). The only switch is
  * `VITE_PROTOTYPE_SCOPE=off` (set for the e2e build and for Vitest, so the admin/PPD/parent
@@ -14,20 +13,16 @@
  * switch only hides routes, menus and roles: which shell frames a page never depends on it
  * (`src/app/router/layouts.ts`).
  *
+ * Sector markers: rows of the matrix lists are grouped by owning sector with `// [S<n> begin]` /
+ * `// [S<n> end]` comments (R1 plan section 2); each sector edits only its own rows. A path that
+ * several sectors share (e.g. `/analitik`) sits in the row of its primary owner. Row order has no
+ * effect (`isPathInScope` uses `some`), but menus read the lists in order, so rows are not reordered.
+ *
  * Mapping to the live rows: `docs/ROLES-MATRIX-LINES.md` (L01-L59). Each `MatrixItem.no` is the
  * matrix row number of section B; section A items are `A1`-`A5`.
  */
 
 import type { Role } from '@/stores/session-types'
-
-/*
- * Known gaps (by design, D43):
- * - The Murid bottom-nav "Chat" button is not a route: it dispatches `toggle-chatbot`, which has no
- *   listener yet, so it is inert.
- * - The notification bell (`/notifikasi`) is not in the role-access matrix, so the user shell hides it.
- * - Guru "Laporan Mingguan" (`/guru/laporan-mingguan-kelas`) has no built screen; its route shows
- *   the "Belum tersedia dalam prototaip" page.
- */
 
 export const SCOPE_SWITCH_ENV = 'VITE_PROTOTYPE_SCOPE'
 
@@ -49,14 +44,8 @@ export function isPrototypeRole(role: Role | null): role is PrototypeRole {
 }
 
 /** Login refusal shown for an account whose role is outside the prototype (BM). */
-export const MSG_ROLE_OUT_OF_SCOPE = 'Peranan ini tidak termasuk dalam prototaip.'
+export const MSG_ROLE_OUT_OF_SCOPE = 'Peranan ini belum menggunakan sistem ini.'
 export const ROLE_OUT_OF_SCOPE_CODE = 'ROLE_OUT_OF_SCOPE'
-
-/** Copy of the "not available" page (BM). */
-export const SCOPE_PAGE_TITLE = 'Belum Tersedia dalam Prototaip | PRESTASIPLUS'
-export const SCOPE_PAGE_HEADING = 'Belum tersedia dalam prototaip'
-export const SCOPE_PAGE_MESSAGE =
-  'Skrin ini belum termasuk dalam skop prototaip ini. Sila gunakan menu untuk melihat skrin yang tersedia.'
 
 /** A path rule: the path itself and everything below it, or the path alone (`exact`). */
 export interface PathRule {
@@ -82,11 +71,17 @@ const item = (no: MatrixItem['no'], label: string, ...rules: PathRule[]): Matrix
 
 /** Section A: available to every prototype role (D-RAM-3). */
 export const ACCOUNT_ITEMS: readonly MatrixItem[] = [
+  // [S5 begin]
   item('A1', 'Profil Saya', p('/profile')),
   item('A2', 'Tetapan Peribadi', p('/tetapan')),
   item('A3', 'Panduan', p('/panduan'), p('/pusat-tuisyen/panduan')),
+  // [S5 end]
+  // [S7 begin]
   item('A4', 'Tiket Bantuan', p('/pusat-tuisyen/tiket')),
+  // [S7 end]
+  // [S0 begin]
   item('A5', 'Log Keluar', p('/logout')),
+  // [S0 end]
 ]
 
 /** Auth and public pages: reachable by everyone, logged in or not. */
@@ -112,24 +107,43 @@ const GUEST_RULES: readonly PathRule[] = [p('/video'), p('/artikel'), p('/ibu-ba
 
 /** Murid: 37 module items (rows 2-9 and 12-40). */
 export const STUDENT_ITEMS: readonly MatrixItem[] = [
+  // [S5 begin]
   item(2, 'Dashboard', p('/dashboard', true)),
+  // [S5 end]
+  // [S10 begin]
   item(3, 'Headcount', p('/headcount')),
   item(4, 'Prestasi', p('/prestasi')),
   item(5, 'Analitik Adaptif', p('/analitik')),
   item(6, 'Analisa Item', p('/analisa-item')),
+  // [S10 end]
+  // [S5 begin]
   item(7, 'Video', p('/video')),
   item(8, 'Kelas Saya', p('/kelas-saya')),
   item(9, 'Soalan by Chapter', p('/practice/chapter')),
   item(12, 'Remedial', p('/remedial')),
+  // [S5 end]
+  // [S3 begin]
   // /simulasi: Simulasi - Kuiz (V2 path), linked from Bijak SPM under /spm.
   item(13, 'SPM', p('/spm'), p('/simulasi')),
+  // [S3 end]
+  // [S10 begin]
   item(14, 'Heatmap Topik Lemah', p('/buku-nota/heatmap')),
+  // [S10 end]
+  // [S7 begin]
   item(15, 'Mohon Keluarga Angkat', p('/mohon-keluarga-angkat')),
+  // [S7 end]
+  // [S5 begin]
   item(16, 'Latih Tubi', p('/practice')),
   item(17, 'Soalan Berstruktur', p('/latihan-berstruktur')),
+  // [S5 end]
+  // [S10 begin]
   item(18, 'Kedudukan', p('/ranking')),
+  // [S10 end]
+  // [S5 begin]
   item(19, 'PKSK', p('/pksk')),
   item(20, 'Artikel', p('/artikel')),
+  // [S5 end]
+  // [S7 begin]
   item(
     21,
     'Permainan',
@@ -145,10 +159,14 @@ export const STUDENT_ITEMS: readonly MatrixItem[] = [
   ),
   item(22, 'Cabutan Bertuah', p('/cabutan')),
   item(23, 'Tournament', p('/tournament')),
+  // [S7 end]
+  // [S5 begin]
   item(24, 'Topik', p('/topics')),
   item(25, 'Peta Belajar', p('/peta-belajar')),
   item(26, 'Set Soalan Guru', p('/set-soalan-saya')),
   item(27, 'Audio KBAT', p('/audio-kbat')),
+  // [S5 end]
+  // [S7 begin]
   item(28, 'Syiling & Token', p('/gamification', true), p('/gamification/history')),
   item(29, 'Tukar Token', p('/gamification/convert')),
   item(30, 'Cabaran Harian', p('/gamification/challenges')),
@@ -158,43 +176,75 @@ export const STUDENT_ITEMS: readonly MatrixItem[] = [
   item(34, 'Pencapaian', p('/gamification/achievements')),
   item(35, 'Kotak Misteri', p('/gamification/mystery-box')),
   item(36, 'Rujuk Kawan', p('/gamification/referral'), p('/gamification/kad-kongsi')),
+  // [S7 end]
+  // [S0 begin]
   item(37, 'Cikgu Alesa', p('/cikgu')),
+  // [S0 end]
+  // [S7 begin]
   item(38, 'Kedai Hadiah 🎁 (DIGITAL)', p('/cikgu/hadiah')),
+  // [S7 end]
+  // [S10 begin]
   item(39, 'Timeline Saya', p('/timeline')),
+  // [S10 end]
+  // [S6 begin]
   item(40, 'Jemput Ibu Bapa', p('/jemput-ibu-bapa'), p('/ibu-bapa/terima')),
+  // [S6 end]
 ]
 
 /** Guru: 15 module items (rows 1-11 and 41-44). */
 export const TEACHER_ITEMS: readonly MatrixItem[] = [
+  // [S6 begin]
   item(1, 'Command Center', p('/guru/command-center'), p('/guru/remedial-progress')),
   item(2, 'Dashboard Guru', p('/guru', true)),
+  // [S6 end]
+  // [S10 begin]
   item(3, 'Headcount', p('/headcount')),
   item(4, 'Prestasi', p('/prestasi')),
   item(5, 'Analitik Adaptif', p('/analitik')),
   item(6, 'Analisa Item', p('/analisa-item'), p('/guru/analisis-item')),
+  // [S10 end]
+  // [S5 begin]
   item(7, 'Video', p('/video')),
+  // [S5 end]
+  // [S6 begin]
   item(8, 'Kelas Saya', p('/guru/kelas')),
+  // [S6 end]
+  // [S5 begin]
   item(9, 'Soalan by Chapter', p('/practice/chapter')),
+  // [S5 end]
+  // [S6 begin]
   item(10, 'Monitoring', p('/guru/monitoring')),
   item(11, 'Kirkpatrick', p('/guru/kirkpatrick')),
   item(41, 'Pelajar Saya', p('/guru/pelajar')),
   item(42, 'Laporan', p('/guru/laporan')),
   item(43, 'Laporan Mingguan', p('/guru/laporan-mingguan-kelas'), p('/laporan-mingguan')),
   item(44, 'Sumbang Soalan', p('/guru/soalan')),
+  // [S6 end]
 ]
 
 /** Admin Sekolah: 18 module items (rows 1-7, 10, 11 and 45-53). */
 export const SCHOOL_ADMIN_ITEMS: readonly MatrixItem[] = [
+  // [S6 begin]
   item(1, 'Command Center', p('/admin-sekolah/command-center')),
   item(2, 'Dashboard', p('/admin-sekolah', true)),
+  // [S6 end]
+  // [S10 begin]
   item(3, 'Headcount', p('/headcount')),
   item(4, 'Prestasi', p('/prestasi')),
   item(5, 'Analitik Adaptif', p('/analitik')),
   item(6, 'Analisa Item', p('/analisa-item')),
+  // [S10 end]
+  // [S5 begin]
   item(7, 'Video', p('/video')),
+  // [S5 end]
+  // [S6 begin]
   item(10, 'Monitoring', p('/admin-sekolah/monitoring')),
   item(11, 'Kirkpatrick', p('/admin-sekolah/kirkpatrick')),
+  // [S6 end]
+  // [S7 begin]
   item(45, 'Sekolah Bersaing', p('/sekolah-bersaing')),
+  // [S7 end]
+  // [S6 begin]
   item(46, 'Statistik Penggunaan', p('/admin-sekolah/statistik-penggunaan')),
   item(47, 'DSKP Heatmap', p('/admin-sekolah/dskp-heatmap')),
   item(48, 'Laporan Aktiviti', p('/admin-sekolah/laporan-aktiviti')),
@@ -210,10 +260,15 @@ export const SCHOOL_ADMIN_ITEMS: readonly MatrixItem[] = [
   item(51, 'Senarai Pelajar', p('/admin-sekolah/pelajar')),
   item(52, 'Senarai Guru', p('/admin-sekolah/guru')),
   item(53, 'Kelas Sekolah', p('/admin-sekolah/kelas')),
+  // [S6 end]
 ]
 
 /** Admin Pusat (Portal Pentadbiran, D48): every admin route, including Bijak SPM admin (all under `/admin`). */
-export const ADMIN_ITEMS: readonly MatrixItem[] = [item(1, 'Portal Pentadbiran', p('/admin'))]
+export const ADMIN_ITEMS: readonly MatrixItem[] = [
+  // [S0 begin]
+  item(1, 'Portal Pentadbiran', p('/admin')),
+  // [S0 end]
+]
 
 const ITEMS: Readonly<Record<PrototypeRole, readonly MatrixItem[]>> = {
   student: STUDENT_ITEMS,

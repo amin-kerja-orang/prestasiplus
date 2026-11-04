@@ -17,9 +17,9 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId, watch } fro
 import { useClickOutside } from '@/composables/useClickOutside'
 import { DsCluster, DsStack, DsSurface, DsText } from '@/ds'
 
-import { latexToFriendly, plainToLatex, previewLatex } from '../domain/math-expr'
-import { openKeypad } from '../lib/keypad-owner'
-import { applyKey, type KeyPress } from '../lib/math-keys'
+import { latexToFriendly, plainToLatex, previewLatex } from '@pp/exam-core/math-expr'
+import { openKeypad } from './lib/keypad-owner'
+import { applyKey, type KeyPress } from './lib/math-keys'
 import MathKeyboard from './MathKeyboard.vue'
 import RichText from './RichText.vue'
 

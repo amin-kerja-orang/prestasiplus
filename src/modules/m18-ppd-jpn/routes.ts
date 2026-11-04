@@ -1,5 +1,7 @@
 import type { RouteRecordRaw } from 'vue-router'
 
+import { NOT_FOUND_TITLE } from '@/app/router/outcome'
+
 /**
  * M18 routes. Built so far (design `docs/design/m18-amaran-summary.md`): S23 `/amaran/ringkasan-eksekutif` and
  * S21 `/amaran/keberkesanan`, reached from the two buttons of M27 S4 `/amaran/sekolah`. User shell, in-place 403
@@ -11,15 +13,14 @@ import type { RouteRecordRaw } from 'vue-router'
 const routes: RouteRecordRaw[] = [
   {
     // UAT-M18-001: the API lands a PPD officer on `/admin/pemantauan/wilayah` (session-view LANDING_PATHS), but
-    // officers have no v2 screen or endpoint yet. Show the friendly "Belum tersedia" page (its button signs the
-    // officer out) instead of the 404 page. Bare layout: no shell is built for the officer role.
+    // officers have no v2 screen or endpoint yet. Show the standard 404 page. Bare layout: no shell is built for the officer role.
     path: '/admin/pemantauan/:level(wilayah|negeri)',
     name: 'm18.pemantauan-unavailable',
-    component: () => import('@/pages/PrototypeUnavailablePage.vue'),
+    component: () => import('@/pages/NotFoundPage.vue'),
     meta: {
       layout: 'bare',
       access: 'auth',
-      title: 'Belum Tersedia | PRESTASIPLUS',
+      title: NOT_FOUND_TITLE,
       module: 'M18',
       v2: true,
     },
