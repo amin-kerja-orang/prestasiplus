@@ -81,7 +81,7 @@ export const marketplaceScenarios: Scenario[] = [
       ctx.check(body.shop?.shopName === 'JomBelajar Official' && body.shop?.productCount === 10, 'the seeded shop has 10 visible products')
       ctx.check(body.products?.length === 10, 'the shop lists its 10 products')
       for (const id of ['99', 'abc']) expectError(ctx, await me.request('GET', `/marketplace/sellers/${id}`), 404, 'NOT_FOUND')
-      ctx.check(errorOf(await me.request('GET', '/marketplace/sellers/abc')).message === 'Not Found.', 'the 404 message is "Not Found."')
+      ctx.check(errorOf(await me.request('GET', '/marketplace/sellers/abc')).message === 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?', 'the 404 message is "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?"')
     },
   },
   {

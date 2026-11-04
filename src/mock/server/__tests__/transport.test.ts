@@ -107,7 +107,7 @@ describe('fault injection (failNext)', () => {
   it('resolves every spec form', () => {
     expect(resolveFaultSpec(500)).toMatchObject({
       kind: 'response',
-      response: { status: 500, body: { error: { code: 'SERVER_ERROR', message: 'Server Error' } } },
+      response: { status: 500, body: { error: { code: 'SERVER_ERROR', message: 'Sesuatu tidak kena di pihak kami. Pasukan teknikal telah dimaklumkan. Sila cuba sebentar lagi.' } } },
     })
     expect(resolveFaultSpec(404)).toMatchObject({
       response: { status: 404, body: { error: { code: 'NOT_FOUND' } } },
