@@ -810,7 +810,7 @@ The three field registers (Murid, Guru and Admin Sekolah, Admin Pusat) used diff
 | Soalan Berstruktur (R1-MUR-17, "Latihan Berstruktur") | `structured` | API-PRAC-10 | S5-T11 |
 | Set Soalan Guru | `question_set` | API-PRAC-01, API-PRAC-02 | S5-T11 |
 | Misi Harian | `mission` | API-PRAC-01, API-PRAC-02 | S6-T07 |
-| PKSK | `pksk` | API-PRAC-01, API-PRAC-02 | S5-T13 |
+| PKSK | `pksk` | API-PRAC-12 (`practice-sessions` of M07; not API-PRAC-01/02) | S5-T13 |
 | Audio KBAT | `audio_kbat` | the Audio KBAT answer route | S5-T12 |
 | Battle Arena | `battle` | API-GAME-03 answer | S7-T01 |
 | Every other question-based game (rooms, solo, tournament) | `game` (the game key in `part_ref`, OPT-GAME-KEY) | API-GAME-01, API-GAME-12 | S7-T01, S7-T06 |
