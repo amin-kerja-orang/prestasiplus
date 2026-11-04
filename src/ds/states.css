@@ -33,6 +33,7 @@
 
 [data-ds='native-select'][data-variant='native'] select:focus-visible {
   box-shadow: 0 0 0 2px var(--ui-primary);
+  /* stylelint-disable-next-line property-disallowed-list -- ring reset for the native select; the tokens.css reset only targets the wrapper, and G-3b allows outline only there */
   outline: none;
 }
 
