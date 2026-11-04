@@ -244,10 +244,12 @@ export const gamesScenarios: Scenario[] = [
       const noSchool = await admin.request('POST', '/leagues/join', { body: { invite_code: code } })
       ctx.expectStatus(noSchool, 422)
 
-      const sb = await s.request('GET', '/sekolah-bersaing?week=bukan-tarikh')
+      // API-AS-14: school admin and admin only; an unknown query parameter is ignored.
+      expectError(ctx, await s.request('GET', '/sekolah-bersaing'), 403, 'FORBIDDEN')
+      const sb = await (await ctx.as('school_admin')).request('GET', '/sekolah-bersaing?week=bukan-tarikh')
       ctx.expectStatus(sb, 200)
-      ctx.check(dataOf(sb).count === (dataOf(sb).rows as unknown[]).length, 'count equals the number of rows')
-      ctx.expectStatus(await s.request('GET', '/sekolah-bersaing?week=2026-09-23'), 200)
+      ctx.check(Array.isArray((sb.body as { data?: unknown }).data), 'the board is an array')
+      ctx.expectStatus(await admin.request('GET', '/sekolah-bersaing'), 200)
     },
   },
   {

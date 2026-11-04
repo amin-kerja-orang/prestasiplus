@@ -38,9 +38,6 @@ import {
   GamesLeagueTypeSchema,
   GamesSekolahBersaingBoardRowSchema,
   GamesSekolahBersaingBoardSchema,
-  GamesSekolahBersaingQuerySchema,
-  GamesSekolahBersaingRowSchema,
-  GamesSekolahBersaingSchema,
 } from './leagues'
 import {
   GamesBoardTileSchema,
@@ -207,9 +204,6 @@ export const GAMES_COMPONENT_SCHEMAS = {
   GamesLeagueDetail: GamesLeagueDetailSchema,
   GamesSekolahBersaingBoardRow: GamesSekolahBersaingBoardRowSchema,
   GamesSekolahBersaingBoard: GamesSekolahBersaingBoardSchema,
-  GamesSekolahBersaingQuery: GamesSekolahBersaingQuerySchema,
-  GamesSekolahBersaingRow: GamesSekolahBersaingRowSchema,
-  GamesSekolahBersaing: GamesSekolahBersaingSchema,
   // admin
   GamesAdminOverview: GamesAdminOverviewSchema,
   GamesAdminSettingsUpdateRequest: GamesAdminSettingsUpdateRequestSchema,

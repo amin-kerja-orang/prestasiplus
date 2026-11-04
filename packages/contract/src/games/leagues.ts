@@ -4,13 +4,12 @@ import { DateOnlySchema } from '../common/time'
 import { GAMES_MESSAGES, gamesCount } from './common'
 
 /**
- * Leagues (M16-46 to M16-49) and the Sekolah Bersaing weekly board (M16-50). All bodies are `{ data }`.
+ * Leagues (M16-46 to M16-49) and the Sekolah Bersaing board (API-AS-14). All bodies are `{ data }`.
  *
- * League standings and Sekolah Bersaing rows are stored job output in the mock and are never recomputed
- * (BE-45 Open question 7); league `status` is stored and not moved by dates.
+ * League standings are stored job output in the mock and are never recomputed (BE-45 Open question 7); league `status`
+ * is stored and not moved by dates. Sekolah Bersaing is computed on request (DM-31).
  * D54(d): only the creator's display name and school names are shown (the creator's name follows the children's
- * names rule, issue #76: first name + initial unless the viewer may see it); an `anonymous` Sekolah Bersaing row
- * shows "Sekolah anonim".
+ * names rule, issue #76: first name + initial unless the viewer may see it).
  */
 
 export const GAMES_LEAGUE_TYPES = ['friendly', 'tournament', 'league'] as const
@@ -166,39 +165,3 @@ export const GamesSekolahBersaingBoardSchema = z
   .array(GamesSekolahBersaingBoardRowSchema)
   .meta({ id: 'GamesSekolahBersaingBoard', description: 'Rank order; [] when no school has a session.' })
 export type GamesSekolahBersaingBoard = z.infer<typeof GamesSekolahBersaingBoardSchema>
-
-// The weekly snapshot below is what the API still answers until the S7-T02 BE part, which removes these schemas.
-
-/** @deprecated Weekly snapshot, removed by the S7-T02 BE part. `week`: a valid YYYY-MM-DD selects the Monday of that week; anything else the current week; never an error. */
-export const GamesSekolahBersaingQuerySchema = z
-  .object({ week: z.string().optional().meta({ description: 'Any text; an invalid value is ignored.' }) })
-  .meta({ id: 'GamesSekolahBersaingQuery' })
-
-/** @deprecated Weekly snapshot, removed by the S7-T02 BE part. */
-export const GamesSekolahBersaingRowSchema = z
-  .strictObject({
-    rank: z.number().int().min(1),
-    schoolName: z.string(),
-    state: z.string(),
-    aktifPct: z.number().min(0).max(100),
-    streakAvg: z.number().min(0),
-    notaPer10: z.number().min(0),
-    anonymous: z.boolean(),
-  })
-  .refine((r) => !r.anonymous || r.schoolName === GAMES_MESSAGES.sekolahAnonymous, {
-    path: ['schoolName'],
-    error: 'An anonymous row shows "Sekolah anonim".',
-  })
-  .meta({ id: 'GamesSekolahBersaingRow' })
-export type GamesSekolahBersaingRow = z.infer<typeof GamesSekolahBersaingRowSchema>
-
-/** @deprecated Weekly snapshot, removed by the S7-T02 BE part. */
-export const GamesSekolahBersaingSchema = z
-  .strictObject({
-    weekStart: DateOnlySchema.meta({ description: 'Monday of the selected week.' }),
-    count: gamesCount,
-    rows: z.array(GamesSekolahBersaingRowSchema).meta({ description: 'Stored rank order; [] for an empty week.' }),
-  })
-  .refine((v) => v.count === v.rows.length, { path: ['count'], error: 'count equals the number of rows.' })
-  .meta({ id: 'GamesSekolahBersaing' })
-export type GamesSekolahBersaing = z.infer<typeof GamesSekolahBersaingSchema>

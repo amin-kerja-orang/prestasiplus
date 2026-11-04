@@ -46,7 +46,6 @@ import {
   GamesRoomJoinRequestSchema,
   GamesRoomViewSchema,
   GamesSekolahBersaingBoardSchema,
-  GamesSekolahBersaingSchema,
   GamesSoloPayloadSchema,
   GamesSoloCheckRequestSchema,
   GamesSoloCheckResponseSchema,
@@ -817,22 +816,6 @@ describe('Sekolah Bersaing live board (API-AS-14, S7-T02)', () => {
     const op = doc.paths['/sekolah-bersaing']!.get!
     expect(op.parameters ?? []).toEqual([])
     expect(Object.keys(op.responses).sort()).toEqual(['200', '401', '403'])
-  })
-})
-
-describe('Sekolah Bersaing (M16-50)', () => {
-  const row = { rank: 1, schoolName: 'SK Rekaan', state: 'Negeri Rekaan', aktifPct: 61.5, streakAvg: 3.2, notaPer10: 4.1, anonymous: false }
-
-  it('parses a week and an empty week', () => {
-    ok(GamesSekolahBersaingSchema, { weekStart: '2026-09-21', count: 1, rows: [row] })
-    ok(GamesSekolahBersaingSchema, { weekStart: '2026-09-21', count: 0, rows: [] })
-    rejected(GamesSekolahBersaingSchema, { weekStart: '2026-09-21', count: 2, rows: [row] })
-  })
-
-  it('D54(d): an anonymous row shows "Sekolah anonim", never the school name', () => {
-    ok(GamesSekolahBersaingSchema, { weekStart: '2026-09-21', count: 1, rows: [{ ...row, schoolName: 'Sekolah anonim', anonymous: true }] })
-    rejected(GamesSekolahBersaingSchema, { weekStart: '2026-09-21', count: 1, rows: [{ ...row, anonymous: true }] })
-    expect(GAMES_MESSAGES.sekolahAnonymous).toBe('Sekolah anonim')
   })
 })
 
