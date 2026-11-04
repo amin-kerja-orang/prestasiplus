@@ -72311,6 +72311,13 @@
           "status": {
             "$ref": "#/components/schemas/IntakeBatchStatus"
           },
+          "source": {
+            "type": "string",
+            "enum": [
+              "guru"
+            ],
+            "description": "S1-T08: `guru` = teacher submissions (Kiriman Guru) only. Omitted = every batch. Any other value is 422."
+          },
           "page": {
             "type": "integer",
             "minimum": 1,
@@ -72452,10 +72459,28 @@
             "description": "BM label of `status` (INTAKE_BATCH_STATUS_LABELS)."
           },
           "paperType": {
-            "$ref": "#/components/schemas/IntakePaperType"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IntakePaperType"
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "umum",
+                  "trial",
+                  "dskp",
+                  "buku_teks",
+                  "buku_latihan",
+                  "peperiksaan",
+                  "lain"
+                ]
+              }
+            ],
+            "description": "An admin code (IntakePaperType) or, for a teacher submission, an OPT-JENIS-HANTARAN slug."
           },
           "subject": {
-            "type": "string"
+            "type": "string",
+            "description": "Admin: subject code. Teacher submission: free text (at most 100)."
           },
           "kertas": {
             "anyOf": [
@@ -72470,11 +72495,19 @@
                 "enum": [
                   2
                 ]
+              },
+              {
+                "type": "null"
               }
-            ]
+            ],
+            "description": "Null only for a teacher submission."
           },
           "year": {
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Null only when a teacher submission has no year."
           },
           "source": {
             "type": "string"
@@ -72585,10 +72618,28 @@
             "description": "BM label of `status` (INTAKE_BATCH_STATUS_LABELS)."
           },
           "paperType": {
-            "$ref": "#/components/schemas/IntakePaperType"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IntakePaperType"
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "umum",
+                  "trial",
+                  "dskp",
+                  "buku_teks",
+                  "buku_latihan",
+                  "peperiksaan",
+                  "lain"
+                ]
+              }
+            ],
+            "description": "An admin code (IntakePaperType) or, for a teacher submission, an OPT-JENIS-HANTARAN slug."
           },
           "subject": {
-            "type": "string"
+            "type": "string",
+            "description": "Admin: subject code. Teacher submission: free text (at most 100)."
           },
           "kertas": {
             "anyOf": [
@@ -72603,11 +72654,19 @@
                 "enum": [
                   2
                 ]
+              },
+              {
+                "type": "null"
               }
-            ]
+            ],
+            "description": "Null only for a teacher submission."
           },
           "year": {
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Null only when a teacher submission has no year."
           },
           "source": {
             "type": "string"
@@ -123962,6 +124021,19 @@
             "required": false,
             "description": "Processing status of a submission (card BE-37): submitted = Dihantar, processing = Sedang diproses, ready_for_review = Sedia untuk semakan, failed = Gagal, cancelled = Dibatalkan [PROPOSED].",
             "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "guru"
+              ],
+              "description": "S1-T08: `guru` = teacher submissions (Kiriman Guru) only. Omitted = every batch. Any other value is 422."
+            },
+            "required": false,
+            "description": "S1-T08: `guru` = teacher submissions (Kiriman Guru) only. Omitted = every batch. Any other value is 422.",
+            "name": "source",
             "in": "query"
           },
           {
