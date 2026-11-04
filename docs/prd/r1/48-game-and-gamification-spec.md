@@ -837,7 +837,7 @@ stateDiagram-v2
 - FR-GM-20.1 `rewardCoins` is limited to `mission_reward_max`; larger values are refused.
 - FR-GM-20.2 The mission reward is paid once at the target, idempotent per pupil and mission.
 - FR-GM-20.3 `MISSION_COINS_PER_CORRECT` no longer exists (removed by S5-T03, 3.7); the per-answer syiling is `flat_quiz_reward` (default 1 until the setting table exists).
-- AC-GM-20.1 Given `mission_reward_max` = 100 and a teacher saves `rewardCoins` = 101, then the form shows "Ganjaran misi melebihi had." and nothing is created.
+- AC-GM-20.1 Given `mission_reward_max` = 100 and a teacher saves `rewardCoins` = 101, then the form shows the field message "Ganjaran syiling mesti antara 0 dan 100." (20 Misi Harian form) and nothing is created; a direct API call with 101 is refused with 422 ERR-GAME-17 "Ganjaran misi melebihi had." (the API message, shown only if the client check is bypassed).
 - AC-GM-20.2 Given rate 1, target 5, `rewardCoins` 10, then 5 correct answers credit 5 + 10 = 15 syiling and a 6th answer credits 1 only.
 - AC-GM-20.3 Given a mission dated yesterday, then it is not listed today.
 - AC-GM-20.4 Given a teacher with 5 missions today, then creating a 6th is refused with "Had 5 misi sehari telah dicapai.".
