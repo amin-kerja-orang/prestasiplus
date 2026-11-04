@@ -19,7 +19,7 @@ import { idFromString, idToString } from '../../db/ids'
 import type { File as FileRow } from '../../db/generated/client'
 import { PrismaService } from '../../db/prisma.service'
 import { authorMayReadQuestionImageSql, pupilMayReadQuestionImageSql } from './question-image-access'
-import { detectOffice, EXTENSION_OF, inspectUpload, OFFICE_EXTENSION_OF, type DetectedMime, type OfficeMime } from './content-inspect'
+import { detectOffice, DOCX_MIME, EXTENSION_OF, inspectUpload, XLSX_MIME, type DetectedMime, type OfficeMime } from './content-inspect'
 import { FILE_STORAGE, type FileStorage } from './file-storage'
 import { FilesConfig } from './files.config'
 
@@ -166,6 +166,9 @@ const READ_RULES: Readonly<Record<string, ReadRule>> = {
   // its owner and admin only. Everyone else, another pupil and a teacher included, gets 404.
   timeline_photo: (c) => (c.row.isTest ? c.owns || isRole(c, 'admin') : ownerOrScopedStaff(c)),
   avatar: ownerOrScopedStaff,
+  // S1-T08: a teacher's DOCX/XLSX intake original is served only by `GET /api/intake/files/:id/original` (batch scope, always an attachment,
+  // nosniff): fail closed here for every caller, the owner and the admin included. A PDF original keeps the default (owner or admin).
+  intake_original: (c) => (c.row.mime === DOCX_MIME || c.row.mime === XLSX_MIME ? false : c.owns || isRole(c, 'admin')),
 }
 
 /** Everything else (derived intake files, unknown purposes): the owner or an admin. */
@@ -437,7 +440,7 @@ export class FilesService {
     isTest: boolean
   }): Promise<StoredFile> {
     // The key is random and built from the purpose and the detected type only: the client's file name never reaches it.
-    const storageKey = `${input.purpose.replace(/_/g, '-')}/${randomUUID()}.${input.mime in OFFICE_EXTENSION_OF ? OFFICE_EXTENSION_OF[input.mime as OfficeMime] : EXTENSION_OF[input.mime as DetectedMime]}`
+    const storageKey = `${input.purpose.replace(/_/g, '-')}/${randomUUID()}.${EXTENSION_OF[input.mime]}`
     await this.storage.put(storageKey, input.bytes)
     try {
       const row = await this.prisma.client.file.create({

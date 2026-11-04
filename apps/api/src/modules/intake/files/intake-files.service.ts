@@ -109,7 +109,18 @@ export class IntakeFilesService {
     return this.prisma.transaction(async (tx) => {
       if (!isAdmin(auth)) {
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`intake:user:${auth.userId}`}, 0))`
-        const open = await tx.intakeBatch.count({ where: { ownerUserId: ownerId, status: { in: ['submitted', 'processing'] } } })
+        // Active = still being processed, or finished (`ready_for_review`) but not yet handled by the admin: an office-only batch is never
+        // processed, so it would otherwise bypass the limit. Handled = it has items and every one is accepted or rejected.
+        const open = await tx.intakeBatch.count({
+          where: {
+            ownerUserId: ownerId,
+            source: 'guru',
+            OR: [
+              { status: { in: ['submitted', 'processing'] } },
+              { status: 'ready_for_review', OR: [{ items: { none: {} } }, { items: { some: { reviewState: { notIn: ['accepted', 'rejected'] } } } }] },
+            ],
+          },
+        })
         if (open >= this.config.maxActiveBatches) {
           throw ApiError.of('CONFLICT', { message: INTAKE_FILE_MESSAGES.activeLimit(this.config.maxActiveBatches) })
         }

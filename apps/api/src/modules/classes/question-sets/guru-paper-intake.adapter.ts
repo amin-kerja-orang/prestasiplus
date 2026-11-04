@@ -1,13 +1,16 @@
 import { Inject, Injectable } from '@nestjs/common'
-import type { QuestionSetPaper } from '@pp/contract'
+import { ConfigService } from '@nestjs/config'
+import { INTAKE_FILE_MESSAGES, type QuestionSetPaper } from '@pp/contract'
 
 import { ApiError } from '../../../common/errors/api-error'
 import { toMytTimestamp } from '../../../common/time/myt'
 import { idToString } from '../../../db/ids'
 import { detectOffice, inspectUpload } from '../../files/content-inspect'
+import { FilesConfig } from '../../files/files.config'
 import { IntakeFilesService } from '../../intake/files/intake-files.service'
 import { IntakeUploadService } from '../../intake/files/intake-upload.service'
 import { PDF_ENGINE, type PdfEngine } from '../../ocr'
+import { intakeTeacherEnabled } from '../../intake/intake-teacher.gate'
 import { type PaperSubmission, type QuestionPaperIntakePort } from './question-sets.ports'
 
 /** OPT-JENIS-HANTARAN (docs/prd/r1/40-cross-cutting.md): the declaration label to the stored slug. Unknown reads as `lain`. */
@@ -43,10 +46,16 @@ export class GuruPaperIntakeAdapter implements QuestionPaperIntakePort {
     @Inject(IntakeFilesService) private readonly batches: IntakeFilesService,
     @Inject(IntakeUploadService) private readonly uploads: IntakeUploadService,
     @Inject(PDF_ENGINE) private readonly pdf: PdfEngine,
+    @Inject(FilesConfig) private readonly filesConfig: FilesConfig,
+    @Inject(ConfigService) private readonly config: Pick<ConfigService, 'get'>,
   ) {}
 
   async submit(input: PaperSubmission): Promise<QuestionSetPaper> {
     const { declaration: d } = input
+    // Defence in depth: the route already has IntakeTeacherGate; the same 403 here if the adapter is ever reached another way.
+    // PRECONDITION: INTAKE_TEACHER_ENABLED must stay off in production until AZ-35 ClamAV scanning of uploads is live (OOXML files are
+    // stored unopened and an admin opens them on a desktop; a macro-bearing file passes the content check).
+    if (input.auth.active.role === 'teacher' && !intakeTeacherEnabled(this.config.get<unknown>('INTAKE_TEACHER_ENABLED'))) throw ApiError.of('FORBIDDEN')
     // Refusals first, so no batch is created for a file that cannot be accepted.
     for (const f of input.files) await this.assertAcceptable(f.buffer)
 
@@ -90,6 +99,9 @@ export class GuruPaperIntakeAdapter implements QuestionPaperIntakePort {
 
   /** DOCX/XLSX by content (stored as they are), or a PDF with a text layer on at least one of its first 3 pages. Anything else is refused. */
   private async assertAcceptable(buffer: Buffer): Promise<void> {
+    // Size first (cheap), before any parsing of the content.
+    if (buffer.length === 0) throw refuse(GURU_PAPER_TYPE_REFUSED)
+    if (buffer.length > this.filesConfig.intakeMaxBytes) throw refuse(INTAKE_FILE_MESSAGES.size(Math.floor(this.filesConfig.intakeMaxBytes / (1024 * 1024))))
     if (detectOffice(buffer)) return
     const inspected = inspectUpload(buffer)
     if (!inspected || inspected.mime !== 'application/pdf') throw refuse(GURU_PAPER_TYPE_REFUSED)

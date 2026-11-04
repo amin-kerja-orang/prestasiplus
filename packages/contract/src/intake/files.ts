@@ -150,7 +150,7 @@ export type IntakeBatchCreate = z.infer<typeof IntakeBatchCreateSchema>
 export const IntakeBatchListQuerySchema = z
   .strictObject({
     status: IntakeBatchStatusSchema.optional(),
-    source: z.enum(['admin', 'guru']).optional().meta({ description: 'S1-T08: `guru` = teacher submissions (Kiriman Guru), `admin` = admin intake. Omitted = both.' }),
+    source: z.enum(['guru']).optional().meta({ description: 'S1-T08: `guru` = teacher submissions (Kiriman Guru) only. Omitted = every batch. Any other value is 422.' }),
     page: z.coerce.number().int().min(1).default(1),
     pageSize: z.coerce.number().int().min(1).max(INTAKE_BATCH_PAGE_SIZE_MAX).default(20),
   })

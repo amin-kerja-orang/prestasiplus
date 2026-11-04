@@ -38,7 +38,14 @@ export interface Inspected {
 /** Decompression-bomb guard: largest accepted image area in pixels. */
 export const MAX_PIXELS = 50_000_000
 
-export const EXTENSION_OF: Readonly<Record<DetectedMime | 'image/gif', string>> = {
+/** OOXML containers accepted for a teacher paper (S1-T08, FR-GUR-44-13): stored as they are, never opened or converted. */
+export const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+export const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+export type OfficeMime = typeof DOCX_MIME | typeof XLSX_MIME
+
+export const EXTENSION_OF: Readonly<Record<DetectedMime | OfficeMime | 'image/gif', string>> = {
+  [DOCX_MIME]: 'docx',
+  [XLSX_MIME]: 'xlsx',
   'image/gif': 'gif', // stored only by BE-24 perutusan images (no upload purpose detects gif)
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -68,11 +75,6 @@ export function sniffMime(b: Buffer): DetectedMime | null {
   return null
 }
 
-/** OOXML containers accepted for a teacher paper (S1-T08, FR-GUR-44-13): stored as they are, never opened or converted. */
-export const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-export const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-export type OfficeMime = typeof DOCX_MIME | typeof XLSX_MIME
-export const OFFICE_EXTENSION_OF: Readonly<Record<OfficeMime, string>> = { [DOCX_MIME]: 'docx', [XLSX_MIME]: 'xlsx' }
 
 /**
  * DOCX or XLSX by content: a ZIP whose end-of-central-directory record is intact and whose entry names include

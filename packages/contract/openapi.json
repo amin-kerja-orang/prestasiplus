@@ -72056,10 +72056,9 @@
           "source": {
             "type": "string",
             "enum": [
-              "admin",
               "guru"
             ],
-            "description": "S1-T08: `guru` = teacher submissions (Kiriman Guru), `admin` = admin intake. Omitted = both."
+            "description": "S1-T08: `guru` = teacher submissions (Kiriman Guru) only. Omitted = every batch. Any other value is 422."
           },
           "page": {
             "type": "integer",
@@ -123136,13 +123135,12 @@
             "schema": {
               "type": "string",
               "enum": [
-                "admin",
                 "guru"
               ],
-              "description": "S1-T08: `guru` = teacher submissions (Kiriman Guru), `admin` = admin intake. Omitted = both."
+              "description": "S1-T08: `guru` = teacher submissions (Kiriman Guru) only. Omitted = every batch. Any other value is 422."
             },
             "required": false,
-            "description": "S1-T08: `guru` = teacher submissions (Kiriman Guru), `admin` = admin intake. Omitted = both.",
+            "description": "S1-T08: `guru` = teacher submissions (Kiriman Guru) only. Omitted = every batch. Any other value is 422.",
             "name": "source",
             "in": "query"
           },

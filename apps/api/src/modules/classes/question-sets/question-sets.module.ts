@@ -5,6 +5,7 @@ import { ThrottleModule } from '../../../common/throttle'
 import { CurriculumModule } from '../../curriculum'
 import { PracticeModule } from '../../practice'
 import { QuestionsModule } from '../../questions'
+import { FilesConfig } from '../../files/files.config'
 import { IntakeFilesModule } from '../../intake/files'
 import { OcrModule } from '../../ocr'
 import { ClassesModule } from '../classes.module'
@@ -26,7 +27,7 @@ import { QuestionSetsService } from './question-sets.service'
 @Module({
   imports: [AuditModule, ThrottleModule, ClassesModule, CurriculumModule, PracticeModule, QuestionsModule, IntakeFilesModule, OcrModule],
   controllers: [StudentQuestionSetsController, TeacherQuestionToolsController],
-  providers: [QuestionSetsRepository, QuestionSetsService, QuestionSetAssignments, QuestionSetsPorts, QuestionPapersService, DskpService, PaperUploadSlots, GuruPaperIntakeAdapter],
+  providers: [QuestionSetsRepository, QuestionSetsService, QuestionSetAssignments, QuestionSetsPorts, QuestionPapersService, DskpService, PaperUploadSlots, GuruPaperIntakeAdapter, FilesConfig],
   exports: [QuestionSetAssignments, QuestionSetsPorts],
 })
 export class QuestionSetsModule implements OnModuleInit {
