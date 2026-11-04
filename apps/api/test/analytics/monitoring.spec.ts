@@ -84,13 +84,13 @@ describe('M11 monitoring S2 to S5 and export (AC 1 to 3, 5)', () => {
   describe('guards', () => {
     it('no session is 401 on all seven routes', async () => {
       for (const path of [...MONITORING, ...TEACHER_ROUTES]) {
-        errorIs(await t.http().get(`/api${path}`), 401, 'UNAUTHORIZED', 'Unauthenticated.')
+        errorIs(await t.http().get(`/api${path}`), 401, 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
       }
     })
 
     it('a student is 403 on all seven routes', async () => {
       for (const path of [...MONITORING, ...TEACHER_ROUTES]) {
-        errorIs(await student.get(path), 403, 'FORBIDDEN', 'This action is unauthorized.')
+        errorIs(await student.get(path), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
       }
     })
 
@@ -366,7 +366,7 @@ describe('M11 monitoring S2 to S5 and export (AC 1 to 3, 5)', () => {
       for (const who of [teacherA, adminA]) {
         expect((await who.get(`/monitoring/schools/${w.schoolA}`)).status).toBe(200)
         for (const id of [w.schoolB, '987654321', '0', 'abc', '00012', '99999999999999999999']) {
-          errorIs(await who.get(`/monitoring/schools/${id}`), 404, 'NOT_FOUND', 'Not Found.')
+          errorIs(await who.get(`/monitoring/schools/${id}`), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
         }
       }
       errorIs(await adminB.get(`/monitoring/schools/${w.schoolA}`), 404, 'NOT_FOUND')
@@ -480,7 +480,7 @@ describe('M11 monitoring S2 to S5 and export (AC 1 to 3, 5)', () => {
 
     it('unknown, non-numeric, non-pupil and not-T4/T5 users are 404 for the admin too', async () => {
       for (const id of ['987654321', '0', 'abc', ids.teacherB, ids.adminA]) {
-        errorIs(await admin.get(`/monitoring/schools/${w.schoolA}/students/${id}`), 404, 'NOT_FOUND', 'Not Found.')
+        errorIs(await admin.get(`/monitoring/schools/${w.schoolA}/students/${id}`), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
       }
       await t.db.query(`update users set grade = 8 where id = $1`, [ids.p2])
       errorIs(await admin.get(`/monitoring/schools/${w.schoolA}/students/${ids.p2}`), 404, 'NOT_FOUND')
@@ -590,7 +590,7 @@ describe('M11 monitoring S2 to S5 and export (AC 1 to 3, 5)', () => {
 
     it('a user who is not a teacher is 404, also for the admin; the school segment is not validated for the admin', async () => {
       for (const id of [ids.p1, ids.adminA, '987654321', '0']) {
-        errorIs(await admin.get(`/monitoring/schools/${w.schoolA}/teachers/${id}`), 404, 'NOT_FOUND', 'Not Found.')
+        errorIs(await admin.get(`/monitoring/schools/${w.schoolA}/teachers/${id}`), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
       }
       errorIs(await admin.get(`/monitoring/schools/${w.schoolA}/teachers/abc`), 404, 'NOT_FOUND')
       // Teacher of school A under school B: the person is loaded by id, the pupil list is the school in the URL.

@@ -107,7 +107,7 @@ describe('perutusan: feed, visibility, reads, reactions, comments, public page (
         [st1, a.st1, id.future],
       ]
       for (const [who, api, post] of cases) {
-        expectError(await who.agent.get(`/api/perutusan/${post}`), 'NOT_FOUND', 'Not Found.')
+        expectError(await who.agent.get(`/api/perutusan/${post}`), 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
         expectError(await api.post(`/perutusan/${post}/reactions`, { type: 'like' }), 'NOT_FOUND')
         expectError(await api.post(`/perutusan/${post}/comments`, { body: 'Hai' }), 'NOT_FOUND')
       }
@@ -274,7 +274,7 @@ describe('perutusan: feed, visibility, reads, reactions, comments, public page (
       const draftPublic = await insertPost(t.db, { title: 'Draf awam', author: ADMIN, isPublic: true, status: 'draft' })
       const futurePublic = await insertPost(t.db, { title: 'Jadual awam', author: ADMIN, isPublic: true, status: 'scheduled', scheduledAt: '2026-12-01T09:00:00+08:00' })
       for (const post of [id.nat1, id.s1, draftPublic, futurePublic, '999999', 'abc']) {
-        expectError(await t.http().get(`/api/public/perutusan/${post}`), 'NOT_FOUND', 'Not Found.')
+        expectError(await t.http().get(`/api/public/perutusan/${post}`), 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
       }
     })
 
@@ -286,7 +286,7 @@ describe('perutusan: feed, visibility, reads, reactions, comments, public page (
 
   describe('write access and validation (BR-M09-22)', () => {
     it('only admin and school_admin may write: 403 for teacher and student, 401 without a session, CSRF_INVALID without a token', async () => {
-      for (const who of [teacher, st1]) expectError(await postPerutusan(who, text()), 'FORBIDDEN', 'This action is unauthorized.')
+      for (const who of [teacher, st1]) expectError(await postPerutusan(who, text()), 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
       expectError(await postPerutusan({ agent: t.http(), csrf: '' }, text(), {}, { csrf: null }), 'UNAUTHORIZED')
       expectError(await postPerutusan(admin, text(), {}, { csrf: null }), 'CSRF_INVALID')
       expectError(await postPerutusan(admin, text(), {}, { csrf: 'wrong' }), 'CSRF_INVALID')
@@ -409,7 +409,7 @@ describe('perutusan: feed, visibility, reads, reactions, comments, public page (
         expect((await postPerutusan(adm, text())).status).toBe(201)
         expect((await postPerutusan(adm, text())).status).toBe(201)
         const third = await postPerutusan(adm, text())
-        expectError(third, 'RATE_LIMITED', 'Too Many Attempts.')
+        expectError(third, 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.')
         expect(await t2.db.query(`select 1 from perutusan`)).toHaveLength(2)
       } finally {
         await t2.close()

@@ -331,6 +331,9 @@ export const BijakAttemptPartViewSchema = z
       })
       .optional()
       .meta({ description: 'Answer mode of a leaf; absent on a part that only holds children.' }),
+    stimulusId: IdSchema.optional().meta({
+      description: 'FR-QA-09: the id of the stimulus of the question group this leaf cites (a `stimuli[].id` of the view).',
+    }),
     get children() {
       return z.array(BijakAttemptPartViewSchema).optional()
     },
@@ -347,6 +350,7 @@ export type BijakAttemptPartView = {
     wordRange?: { min: number; max: number }
     topics?: { id: string; label: string }[]
   }
+  stimulusId?: string
   children?: BijakAttemptPartView[]
 }
 
