@@ -233,7 +233,7 @@ describe('wrong-role URL of a visible module answers the 403 page (AC-MUR-SH-7, 
     ['school_admin', '/guru/command-center'],
     ['school_admin', '/admin/studio'],
   ])('%s on %s: in-place 403, no redirect', (role, path) => {
-    expect(decideAccess(router.resolve(path), session(role))).toEqual({
+    expect(decideAccess(router.resolve(path) as unknown as RouteLocationNormalized, session(role))).toEqual({
       kind: 'in-place',
       status: 403,
     })
