@@ -32,7 +32,7 @@ Every module has a "Field & behaviour spec" block after its "Screen specificatio
 | Offline or no response | ERR-NET-01, ERR-NET-03 | Amber banner, not blocking; the typed input is kept; green banner for 3 s on recovery. On answering screens the banner text of 46 section 2.6 is used (answers kept on the device). |
 | Timeout (30 s for JSON calls, 60 s without upload progress, 120 s for export) | ERR-NET-02 | Toast with "Cuba Semula"; typed input kept; a retried write reuses the same key (`clientUuid`, `rev`, idempotency key) so it cannot apply twice. |
 | 400 / 422 | ERR-REQ-01, ERR-REQ-10..16 | The text of `fields.{name}` under the field (red, `aria-describedby`); summary line `{n} medan perlu dibetulkan.`; typed input never cleared; focus goes to the first invalid field. |
-| 401 | ERR-AUTH-01 | `Sesi anda telah tamat. Sila log masuk semula.`; go to `/login?kembali={path}`; the local answer mirror `pp:ans:{userId}:{id}` is kept (only Log Keluar clears it); after login the pupil returns and unsent changes replay. A login 401 uses ERR-AUTH-02. |
+| 401 | ERR-AUTH-01 | `Sesi anda telah tamat. Sila log masuk semula.`; go to `/login?kembali={path}`; the local answer mirror (`pp.bijak.local.{attemptId}` in V3) is kept (only Log Keluar clears it); after login the pupil returns and unsent changes replay. A login 401 uses ERR-AUTH-02. |
 | 403 | ERR-ACC-01 | The standard 403 page with "Halaman Utama"; `PASSWORD_CHANGE_REQUIRED` goes to the password page (ERR-AUTH-07). |
 | 404 / hidden module | ERR-ACC-02, ERR-ACC-03 | One page for another pupil's id, an unknown id and a hidden module (no existence leak). |
 | 409 | ERR-CON-01 or the module code | The module message when the module has one; else ERR-CON-01 with "Muat Semula". |
@@ -203,7 +203,7 @@ All screens, dialogs and the quiz/attempt screens pass these three widths (proje
 ### 2.5 Functional requirements of the shell
 - FR-MUR-SH-1 The sidebar and drawer render the table in 2.1 (the 1.0 columns) plus the items of the modules marked "1.0 (linked from R1-MUR-x)" in the order of 2.1b; when the rest of the matrix ships, the full order of 2.1b. No other item appears.
 - FR-MUR-SH-2 Every item opens a working screen (no 403, no redirect to Dashboard, no "akan datang" for any T1-T5 pupil whose data exists).
-- FR-MUR-SH-3 The same list is used for sidebar, drawer and "Cari menu".
+- FR-MUR-SH-3 The same list is used for sidebar and drawer (and "Cari menu" where V3 already has it: `PembelajaranLayout`; not added to `UserShell`, D115).
 - FR-MUR-SH-4 Header pills show the pupil's own wallet values from the server (coin, streak), never constants.
 - FR-MUR-SH-5 Light and dark themes both pass contrast checks on every Murid screen (D28-D32).
 - FR-MUR-SH-6 Log Keluar ends the session and returns to `/login`.
@@ -412,10 +412,10 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
 - **Field & behaviour spec**
   | Label | Type | Req | Default | Options / source | Validation + exact BM error | Depends on | Stored as | API |
   |---|---|---|---|---|---|---|---|---|
-  | Log Keluar | button in the account menu (one tap, no dialog) | - | - | - | an open Bijak sitting is not warned about: its answers are already saved on the server (B-057) | - | clears the token and the keys `pp:ans:{userId}:*` | `POST /api/auth/logout` |
+  | Log Keluar | button in the account menu (one tap, no dialog) | - | - | - | an open Bijak sitting is not warned about: its answers are already saved on the server (B-057) | - | clears the token and every key starting `pp.bijak.local.` (V3 key `autosave.ts:26`) and `pp:draft:*` | `POST /api/auth/logout` |
   - Behaviour: the only action that clears the local answer mirror. A failed logout call (network) still clears the local session and goes to `/login`; the server session expires by itself. ERR-AUTH-01 on a later call is the normal result of a logged-out Back press.
   - New requirements: FR-MUR-A5-4 A failed logout request still ends the local session and shows `/login`.
-  - New acceptance criteria: AC-MUR-A5-5 Given the network is off, when "Log Keluar" is pressed, then `/login` shows and every `pp:ans:{userId}:*` key is removed from local storage.
+  - New acceptance criteria: AC-MUR-A5-5 Given the network is off, when "Log Keluar" is pressed, then `/login` shows and every `pp.bijak.local.*` key is removed from local storage.
 - **Name**: "Log Keluar". **Route**: action in account menu (V2: icon in header and user card). **Matrix row**: A5. **Priority**: P0.
 - **Current status**: works in V3 (account menu).
 - **Outcome**: end the session safely on a shared device.
@@ -813,7 +813,7 @@ Template per module: ID line, **Action**, **Screen specification (from V2)** (ro
   5. Chapter rows: number tile (V2 shows "1" on every row: defect, V3 shows the real number), title (V2 uses a DSKP learning-standard sentence, e.g. "Mendengar dan memberikan respons dalam pelbagai jenis ayat tanpa mengubah maksud konteks ayat."; V3 uses the admin-chosen Bab title, D89), level chip (observed "Tingkatan 5"), question count "0 soalan", status chip "Tiada soalan" when there are none. What a row with questions shows and where it goes: Not observed in V2 — follow FR-MUR-9-* and section 4.6.
   - Loading and error: Not observed in V2 — follow FR-X6.
 - **Confirmed in the screens (earlier review)**: Confirmed: hero "Mode Sistematik" / "Soalan by Chapter" with the 70% sentence and button "Latih Tubi Rawak"; 14 subject cards "{n} bab tersedia" / "{n} soalan chapter" (BM 26, BI 34, Matematik 52, Sains 81, Sejarah 51, PI 33, PM 72, Matematik Tambahan 63, Fizik 97, Geografi 38, PSV 37, Ekonomi 31, Perniagaan 42, Tasawwur 29; every one "0 soalan chapter"); subject page with "Semua Subjek", the note "Nota penguasaan: capai sekurang-kurangnya 70% dalam sesuatu bab sebelum meneruskan ke bab seterusnya.", rows with a number tile, title, level chip ("Tingkatan 5"), "0 soalan" and the chip "Tiada soalan". **V2 differs**: (a) V2's "bab" are DSKP learning-standard sentences (e.g. "Menentukan hubungan antara dua pemboleh ubah bagi ubahan langsung.") and every number tile reads "1" (a V2 defect); (b) V2 lists 0 questions on every chapter; (c) the 70% sentence is copy only. PRD follows D89 (the admin chooses the textbook Bab; the pupil sees Bab with real counts), D98 (no 70% lock, no 70% copy) and D90/D105 for the questions.
-- **Current gap and root cause (change list; reuse `ChapterIndexPage.vue`, `ChapterSubjectPage.vue`, `practice/chapter-subjects`)**: (1) remove the lower-form gate (`ChapterIndexPage.vue:21,48-51`, `src/lib/lower-form.ts:6-10`); (2) remove the sentence "Bab seterusnya terkunci sehingga bab semasa lengkap." from the Latih Tubi banner (`PracticeListPage.vue`) and any 70% copy; (3) number the chapters with their real number; (4) serve figure questions and whole groups (`be09-practice-mapping.ts:27-39` drops them today); (5) data: admin sets Bab (D89; 0 of 339,112 UAT questions have one), see OQ-MUR-6.
+- **Current gap and root cause (change list; reuse `ChapterIndexPage.vue`, `ChapterSubjectPage.vue`, `practice/chapter-subjects`; the 70% sentence and the lock are ALREADY absent from the V3 FE: regression test only; real gaps are in plan S5-T02)**: (1) remove the lower-form gate (`ChapterIndexPage.vue:21,48-51`, `src/lib/lower-form.ts:6-10`); (2) remove the sentence "Bab seterusnya terkunci sehingga bab semasa lengkap." from the Latih Tubi banner (`PracticeListPage.vue`) and any 70% copy; (3) number the chapters with their real number; (4) serve figure questions and whole groups (`be09-practice-mapping.ts:27-39` drops them today); (5) data: admin sets Bab (D89; 0 of 339,112 UAT questions have one), see OQ-MUR-6.
 - **End-to-end flow**: see 46 section 4.9 (D2 Soalan by Chapter) and 46 section 2 (shared answering engine), 46 section 3 (marking). This block keeps only the fields specific to the module.
 - **Field & behaviour spec**
   | Label | Type | Req | Default | Options / source | Validation + exact BM error | Depends on | Stored as | API |
@@ -1299,7 +1299,7 @@ Same template as section 3 (Action, Screen specification (from V2), change list)
   | Bahagian A / B / C cards | cards | - | - | start a set of 10 questions | no access: the V2 banner `Anda belum mempunyai akses PKSK PRO` with the exact sub-text of the screen specification | access | rows of mode `pksk` | API-PRAC-12 |
   | Domain cards (top 12) | cards | - | - | a domain card starts a set of 5 (button "5 soalan") | - | - | same | same |
   - Behaviour: access follows the pupil's PKSK entitlement; a pupil without it sees the banner and no start button. Answers are stored with mode `pksk`. "PRO" badge in the sidebar.
-  - New requirements: FR-MUR-19-7 Start choices are exactly Bahagian A/B/C = 10 questions and a domain = 5 (R1 decision D113). FR-MUR-19-8 Rows carry mode `pksk`.
+  - New requirements: FR-MUR-19-7 Start choices include Bahagian A/B/C sets of 10 questions and a domain set of 5 (R1 decision D113); the V3 full exam "Peperiksaan Penuh" (30/70/1) stays as built (D115); Bahagian A and B are marked by the flagged option, C by the existing simulated marker. FR-MUR-19-8 Rows carry mode `pksk`.
   - New acceptance criteria: AC-MUR-19-5 Given a domain card is started, then 5 questions are served and 5 rows of mode `pksk` exist after the checks.
 - **Name**: "PKSK" (page "PKSK PRO", sub "Bank soalan Pentaksiran Kompetensi & Sijil Kemahiran"; V3 title "Persediaan Kemasukan"; badge "PRO"). **Route**: `/pksk`. **Row**: 19. **Priority**: P1.
 - **Current status**: GH/UAT open (AKTIF T1/T4, format A/B/C); V2 locked without access, 748 questions, 3 Bahagian, 12 domains. V2 lists only; the answering flow was not found (D100: a listing-only page is a stub).
