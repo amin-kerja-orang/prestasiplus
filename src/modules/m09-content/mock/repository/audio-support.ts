@@ -294,7 +294,8 @@ export const supportRepo = defineRepository({
     /** S26/S27: the support e-mail and WhatsApp number. */
     config(): { email: string; whatsappNumber: string } {
       const row = store.get(1)
-      if (!row) throw new M09Error('NOT_FOUND', 'Konfigurasi sokongan tidak dijumpai.')
+      // DM-33 / API-SUP-04: no row is not an error; the server answers empty values (S5-T05).
+      if (!row) return { email: '', whatsappNumber: '' }
       return { email: row.email, whatsappNumber: row.whatsappNumber }
     },
 
