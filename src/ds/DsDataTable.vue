@@ -215,6 +215,19 @@ function toggle(row: T, on: boolean): void {
     : selection.value.filter((s) => !same(s, row))
 }
 
+/**
+ * Card fields: the configured ones; with none (and no card title) every column with a key, so each
+ * column stays reachable below `md`. Columns without an accessor key or a plain header are skipped.
+ */
+const shownFields = computed<CardField[]>(() => {
+  if (props.cardFields.length || props.cardTitle) return props.cardFields
+  return props.columns.flatMap((c) => {
+    const key = (c as { accessorKey?: string }).accessorKey ?? c.id
+    const label = typeof c.header === 'string' ? c.header : ''
+    return key && label ? [{ key, label }] : []
+  })
+})
+
 function cell(row: T, key: string): string {
   const v = row[key]
   return typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean' ? String(v) : ''
@@ -286,14 +299,14 @@ function cell(row: T, key: string): string {
                   type="button"
                   color="neutral"
                   variant="link"
-                  class="h-auto justify-start p-0 text-start text-label whitespace-normal"
+                  class="h-auto min-h-11 justify-start p-0 text-start text-label whitespace-normal"
                   :label="cell(row, cardTitle)"
                   @click="emit('row-click', row)"
                 />
                 <dl class="grid grid-cols-2 gap-x-3 gap-y-1">
-                  <div v-for="f in cardFields" :key="f.key" class="min-w-0">
+                  <div v-for="f in shownFields" :key="f.key" class="min-w-0">
                     <dt class="text-caption text-muted">{{ f.label }}</dt>
-                    <dd class="tabular truncate text-body">{{ cell(row, f.key) }}</dd>
+                    <dd class="tabular text-body break-words whitespace-normal">{{ cell(row, f.key) }}</dd>
                   </div>
                 </dl>
               </slot>

@@ -27,6 +27,8 @@ const roomy = useMedia('(min-width: 640px)')
 
 const canDismiss = computed(() => props.dismissible && !props.loading)
 const WIDTH = { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-2xl' } as const
+/** Close button of both surfaces: Nuxt UI renders none on `UDrawer` by default, and its slide-over one is 32px. */
+const closeButton = { class: 'min-h-11 min-w-11 justify-center' }
 const ui = computed(() => ({
   content: `${WIDTH[props.size]} w-full`,
   title: 'text-heading text-highlighted',
@@ -45,6 +47,7 @@ const ui = computed(() => ({
     :description="description ?? ' '"
     :side="side"
     :dismissible="canDismiss"
+    :close="closeButton"
     :ui="ui"
     :aria-busy="loading ? 'true' : undefined"
     :data-side="side"
@@ -62,6 +65,7 @@ const ui = computed(() => ({
     :title="title"
     :description="description ?? ' '"
     :dismissible="canDismiss"
+    :close="closeButton"
     :aria-busy="loading ? 'true' : undefined"
     :data-size="size"
     data-ds="drawer"
