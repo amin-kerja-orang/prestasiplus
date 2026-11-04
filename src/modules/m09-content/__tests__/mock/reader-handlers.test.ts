@@ -37,7 +37,7 @@ import type {
   VideoFormContext,
   VideoListMeta,
 } from '../../api/types'
-import m09, { audioKbat, perutusan, showPrimaryContent, videos } from '../../mock'
+import m09, { audioKbat, perutusan, showPrimaryContent } from '../../mock'
 
 class MemoryStorage {
   private readonly items = new Map<string, string>()
@@ -566,35 +566,39 @@ describe('#32 GET /api/videos/form-context', () => {
 describe('#29–#31 video writes (S19, S20)', () => {
   const body = {
     videoUrl: 'https://www.youtube.com/watch?v=abcdefghijk',
-    title: 'Video ujian pelajar',
+    title: 'Video ujian admin',
     description: 'Penerangan ringkas',
     category: 'tutorial',
     subjectId: 3,
-    visibility: 'global',
   }
   let ownId = 0
 
-  it('creates a video for any logged-in user (201, flash, platform derived)', async () => {
-    const r = await call<{ data: VideoDetail; status: string }>(
-      'POST',
-      '/api/videos',
-      PELAJAR,
-      body,
-    )
+  it('refuses a pupil and a school admin with 403 on POST, PUT and DELETE (API-MUR-05)', async () => {
+    for (const who of [PELAJAR, ADMIN_SEKOLAH]) {
+      expect((await call('POST', '/api/videos', who, body)).status).toBe(403)
+      expect((await call('PUT', '/api/videos/2224', who, body)).status).toBe(403)
+      expect((await call('DELETE', '/api/videos/2224', who)).status).toBe(403)
+    }
+    const list = await get<ListBody<VideoCard, VideoListMeta>>('/api/videos', null)
+    expect(list.body.meta.totalItems).toBe(2_260)
+  })
+
+  it('creates a global video for the admin (201, flash "Video ditambah.", platform derived)', async () => {
+    const r = await call<{ data: VideoDetail; status: string }>('POST', '/api/videos', ADMIN, body)
     expect(r.status).toBe(201)
-    expect(r.body.status).toBe('Video berjaya diterbitkan.')
+    expect(r.body.status).toBe('Video ditambah.')
     ownId = r.body.data.id
     expect(ownId).toBeGreaterThan(2_260)
     expect(r.body.data).toMatchObject({
-      title: 'Video ujian pelajar',
+      title: 'Video ujian admin',
       platformLabel: 'YouTube',
       platform: 'Youtube',
       thumbnailUrl: 'https://img.youtube.com/vi/abcdefghijk/hqdefault.jpg',
       embedUrl: 'https://www.youtube.com/embed/abcdefghijk',
       views: 0,
       canManage: true,
+      visibility: 'global',
       subject: { id: 3, name: 'Matematik' },
-      uploader: { roleLabel: 'Pelajar' },
     })
     const list = await get<ListBody<VideoCard, VideoListMeta>>('/api/videos', null)
     expect(list.body.meta.totalItems).toBe(2_261)
@@ -602,16 +606,28 @@ describe('#29–#31 video writes (S19, S20)', () => {
     expect(ids(list.body.data)[0]).toBe(ownId)
   })
 
-  it('refuses invalid input with 422 fields', async () => {
-    const empty = await call<ErrorBody>('POST', '/api/videos', PELAJAR, {})
+  it('honours pageSize on the list (the admin list asks for 25)', async () => {
+    const r = await get<ListBody<VideoCard, VideoListMeta>>('/api/videos?pageSize=25', ADMIN)
+    expect(r.body.data).toHaveLength(25)
+    expect(r.body.meta.pageSize).toBe(25)
+    const plain = await get<ListBody<VideoCard, VideoListMeta>>('/api/videos', ADMIN)
+    expect(plain.body.meta.pageSize).toBe(24)
+  })
+
+  it('refuses invalid input with the exact BM copy', async () => {
+    const empty = await call<ErrorBody>('POST', '/api/videos', ADMIN, {})
     expect(empty.status).toBe(422)
-    expect(Object.keys(empty.body.error.fields ?? {}).sort()).toEqual([
-      'category',
-      'title',
-      'videoUrl',
-      'visibility',
-    ])
-    const bad = await call<ErrorBody>('POST', '/api/videos', PELAJAR, {
+    expect(empty.body.error.fields).toEqual({
+      category: 'Sila pilih kategori.',
+      title: 'Sila isi tajuk video.',
+      videoUrl: 'Sila isi pautan YouTube.',
+    })
+    const long = await call<ErrorBody>('POST', '/api/videos', ADMIN, {
+      ...body,
+      title: 'x'.repeat(151),
+    })
+    expect(long.body.error.fields?.title).toBe('Tajuk video tidak boleh melebihi 150 aksara.')
+    const bad = await call<ErrorBody>('POST', '/api/videos', ADMIN, {
       ...body,
       videoUrl: 'bukan url',
       category: 'lain',
@@ -626,80 +642,65 @@ describe('#29–#31 video writes (S19, S20)', () => {
     ])
   })
 
-  it('refuses "Sekolah Saya" without a video-form school and accepts it for the guru', async () => {
-    const refused = await call<ErrorBody>('POST', '/api/videos', ADMIN, {
+  it('stores a teacher video school-scoped (own school sees it, another school does not) and demands YouTube', async () => {
+    const notYoutube = await call<ErrorBody>('POST', '/api/videos', GURU, {
       ...body,
-      visibility: 'school',
+      videoUrl: 'https://example.org/video',
     })
-    expect(refused.status).toBe(422)
-    expect(refused.body.error.fields?.visibility).toEqual(expect.any(String))
+    expect(notYoutube.status).toBe(422)
+    expect(notYoutube.body.error.fields?.videoUrl).toBe('Pautan mesti pautan YouTube yang sah.')
     const ok = await call<{ data: VideoDetail }>('POST', '/api/videos', GURU, {
       ...body,
       title: 'Video sekolah guru',
-      visibility: 'school',
+      visibility: 'global',
     })
     expect(ok.status).toBe(201)
-    const schoolId = ok.body.data.id
-    // Visible to the uploader, the admin and the same school; hidden from guests and others (BR-M09-19).
-    expect((await get(`/api/videos/${String(schoolId)}`, GURU)).status).toBe(200)
-    expect((await get(`/api/videos/${String(schoolId)}`, ADMIN)).status).toBe(200)
-    // The school rule compares the viewer's video-form school, not the profile school: the school
-    // admin's profile school is 900001 too, yet without a video-form school the video is hidden.
-    expect((await get(`/api/videos/${String(schoolId)}`, ADMIN_SEKOLAH)).status).toBe(404)
-    videos.setVideoSchool(ADMIN_SEKOLAH, 900001)
-    expect((await get(`/api/videos/${String(schoolId)}`, ADMIN_SEKOLAH)).status).toBe(200)
-    expect((await get(`/api/videos/${String(schoolId)}`, MAJU)).status).toBe(404)
-    expect((await get(`/api/videos/${String(schoolId)}`, null)).status).toBe(404)
-    const guest = await get<ListBody<VideoCard, VideoListMeta>>('/api/videos', null)
-    expect(guest.body.meta.totalItems).toBe(2_261)
-    const own = await get<ListBody<VideoCard, VideoListMeta>>('/api/videos', GURU)
-    expect(own.body.meta.totalItems).toBe(2_262)
-    expect(await call('DELETE', `/api/videos/${String(schoolId)}`, GURU)).toMatchObject({
-      status: 200,
-    })
+    expect(ok.body.data.visibility).toBe('school')
+    const id = ok.body.data.id
+    expect((await get(`/api/videos/${String(id)}`, GURU)).status).toBe(200)
+    expect((await get(`/api/videos/${String(id)}`, PELAJAR)).status).toBe(200)
+    expect((await get(`/api/videos/${String(id)}`, ADMIN)).status).toBe(200)
+    expect((await get(`/api/videos/${String(id)}`, OTHER_SCHOOL_PUPIL)).status).toBe(404)
+    expect((await get(`/api/videos/${String(id)}`, null)).status).toBe(404)
+    expect(await call('DELETE', `/api/videos/${String(id)}`, GURU)).toMatchObject({ status: 200 })
   })
 
-  it('lets only the uploader or the admin edit (PUT) and refuses others with 403', async () => {
+  it('lets only the uploader teacher or the admin edit (PUT); a teacher cannot edit an admin video', async () => {
     const edit = { ...body, title: 'Tajuk baharu' }
-    const other = await call<ErrorBody>('PUT', `/api/videos/${String(ownId)}`, MAJU, edit)
+    const other = await call<ErrorBody>('PUT', `/api/videos/${String(ownId)}`, GURU, edit)
     expect(other.status).toBe(403)
     expect(other.body.error.code).toBe('FORBIDDEN')
-    const own = await call<{ data: VideoDetail; status: string }>(
+    const admin = await call<{ data: VideoDetail; status: string }>(
       'PUT',
       `/api/videos/${String(ownId)}`,
-      PELAJAR,
-      edit,
+      ADMIN,
+      { ...edit, videoUrl: 'https://vimeo.com/123456', category: 'motivasi' },
     )
-    expect(own.status).toBe(200)
-    expect(own.body.status).toBe('Video berjaya dikemaskini.')
-    expect(own.body.data.title).toBe('Tajuk baharu')
-    const admin = await call<{ data: VideoDetail }>('PUT', `/api/videos/${String(ownId)}`, ADMIN, {
-      ...edit,
-      videoUrl: 'https://vimeo.com/123456',
-      category: 'motivasi',
-    })
     expect(admin.status).toBe(200)
+    expect(admin.body.status).toBe('Video berjaya dikemaskini.')
     expect(admin.body.data).toMatchObject({
+      title: 'Tajuk baharu',
       platform: 'Vimeo',
       category: 'motivasi',
       thumbnailUrl: null,
+      visibility: 'global',
     })
-    expect((await call('PUT', '/api/videos/99999', PELAJAR, edit)).status).toBe(404)
-    const invalid = await call<ErrorBody>('PUT', `/api/videos/${String(ownId)}`, PELAJAR, {
+    expect((await call('PUT', '/api/videos/99999', ADMIN, edit)).status).toBe(404)
+    const invalid = await call<ErrorBody>('PUT', `/api/videos/${String(ownId)}`, ADMIN, {
       ...edit,
       title: '',
     })
     expect(invalid.status).toBe(422)
-    expect(invalid.body.error.fields?.title).toBe('Medan ini diperlukan.')
+    expect(invalid.body.error.fields?.title).toBe('Sila isi tajuk video.')
   })
 
   it('lets only the uploader or the admin delete (DELETE)', async () => {
-    expect((await call('DELETE', `/api/videos/${String(ownId)}`, MAJU)).status).toBe(403)
-    expect((await call('DELETE', '/api/videos/99999', PELAJAR)).status).toBe(404)
+    expect((await call('DELETE', `/api/videos/${String(ownId)}`, GURU)).status).toBe(403)
+    expect((await call('DELETE', '/api/videos/99999', ADMIN)).status).toBe(404)
     const r = await call<{ data: { deleted: number }; status: string }>(
       'DELETE',
       `/api/videos/${String(ownId)}`,
-      PELAJAR,
+      ADMIN,
     )
     expect(r.status).toBe(200)
     expect(r.body).toEqual({ data: { deleted: 1 }, status: 'Video berjaya dipadam.' })
@@ -707,12 +708,6 @@ describe('#29–#31 video writes (S19, S20)', () => {
     const list = await get<ListBody<VideoCard, VideoListMeta>>('/api/videos', null)
     expect(list.body.meta.totalItems).toBe(2_260)
     expect(list.body.meta.facets.total).toBe(2_260)
-  })
-
-  it('lets the admin delete another user video', async () => {
-    const made = await call<{ data: VideoDetail }>('POST', '/api/videos', MAJU, body)
-    const gone = await call('DELETE', `/api/videos/${String(made.body.data.id)}`, ADMIN)
-    expect(gone.status).toBe(200)
   })
 })
 
@@ -1131,7 +1126,6 @@ describe('videos: admin on the virtual dataset, malformed input and non-owners',
     title: 'Tajuk disunting admin',
     category: 'tutorial',
     subjectId: 9,
-    visibility: 'global',
   }
 
   it('lets the admin edit and delete a seeded virtual video', async () => {
@@ -1151,18 +1145,18 @@ describe('videos: admin on the virtual dataset, malformed input and non-owners',
     expect(list.body.meta.totalItems).toBe(2_259)
   })
 
-  it('answers 403 to a non-owner before validating the body', async () => {
+  it('answers 403 to a non-writer or a non-owner before validating the body', async () => {
     expect((await call('PUT', '/api/videos/2224', MAJU, {})).status).toBe(403)
     expect((await call('DELETE', '/api/videos/2224', MAJU)).status).toBe(403)
+    expect((await call('PUT', '/api/videos/2224', GURU, {})).status).toBe(403)
   })
 
   it('answers 422, not 500, to a malformed body', async () => {
-    const r = await call<ErrorBody>('POST', '/api/videos', PELAJAR, {
+    const r = await call<ErrorBody>('POST', '/api/videos', ADMIN, {
       videoUrl: 7,
       title: 5,
       description: { a: 1 },
       category: 'tutorial',
-      visibility: 'global',
     })
     expect(r.status).toBe(422)
     expect(Object.keys(r.body.error.fields ?? {}).sort()).toEqual([

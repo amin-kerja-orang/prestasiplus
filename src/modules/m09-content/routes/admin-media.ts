@@ -1,6 +1,6 @@
 import type { RouteRecordRaw } from 'vue-router'
 
-import { MEDIA_ROUTES } from '../lib/admin-media/common'
+import { ADMIN_VIDEOS_PATH, MEDIA_ROUTES } from '../lib/admin-media/common'
 
 /**
  * M09 route fragment: S9–S11 banners, S12–S13 Audio KBAT sets with the two template downloads, and
@@ -47,6 +47,15 @@ const routes: RouteRecordRaw[] = [
     meta: meta('Edit Banner - Admin PRESTASIPLUS', {
       title: 'Edit Banner',
       subtitle: 'Kemaskini maklumat banner',
+    }),
+  },
+  {
+    path: ADMIN_VIDEOS_PATH,
+    name: MEDIA_ROUTES.videoList,
+    component: () => import('../pages/AdminVideoListPage.vue'),
+    meta: meta('Pengurusan Video - Admin PRESTASIPLUS', {
+      title: 'Video',
+      subtitle: 'Urus video pembelajaran',
     }),
   },
   {

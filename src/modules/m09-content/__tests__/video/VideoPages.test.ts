@@ -1,10 +1,8 @@
 // @vitest-environment jsdom
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import USelect from '@nuxt/ui/components/Select.vue'
-import URadioGroup from '@nuxt/ui/components/RadioGroup.vue'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
 import { ApiError } from '@/api'
@@ -142,7 +140,6 @@ const t = (w: VueWrapper, id: string) => w.get(`[data-testid="${id}"]`)
 /** Reka selects / radios are not native: drive them through their v-model. */
 const category = (w: VueWrapper) => w.findAllComponents(USelect)[0]! as unknown as Probe
 const subject = (w: VueWrapper) => w.findAllComponents(USelect)[1]! as unknown as Probe
-const visibility = (w: VueWrapper) => w.findComponent(URadioGroup) as unknown as Probe
 
 beforeEach(() => {
   localStorage.clear()
@@ -168,7 +165,7 @@ afterEach(() => {
   wrapper = null
 })
 
-function login(role: 'admin' | 'student' = 'student') {
+function login(role: 'admin' | 'student' | 'teacher' | 'school_admin' = 'student') {
   useSessionStore().setSession({
     token: 't',
     remember: false,
@@ -183,7 +180,7 @@ describe('VideoListPage (S17)', () => {
   })
 
   it('logged in: pills, add button, cards and pager', async () => {
-    login()
+    login('admin')
     const w = await mountAt(VideoListPage, '/page')
     expect(w.find('[data-testid="video-guest-hero"]').exists()).toBe(false)
     expect(w.findAll('[data-testid="video-category-pill"]').map((p) => p.text())).toEqual([
@@ -197,6 +194,74 @@ describe('VideoListPage (S17)', () => {
     expect(t(w, 'video-card').text()).toContain('11 tontonan')
     expect(w.find('[data-testid="video-pager"]').exists()).toBe(true)
     expect(t(w, 'video-search').attributes('placeholder')).toBe('Cari video...')
+  })
+
+  it.each([
+    ['student', false],
+    ['school_admin', false],
+    ['teacher', true],
+    ['admin', true],
+  ] as const)('"Tambah Video" for %s: %s', async (role, shown) => {
+    login(role)
+    const w = await mountAt(VideoListPage, '/page')
+    expect(w.find('[data-testid="video-add"]').exists()).toBe(shown)
+  })
+
+  it('pills sit on one scrollable row and are at least 44 px tall', async () => {
+    login()
+    const w = await mountAt(VideoListPage, '/page')
+    const nav = t(w, 'video-category-pills')
+    expect(nav.classes()).toEqual(expect.arrayContaining(['flex-nowrap', 'overflow-x-auto']))
+    for (const pill of w.findAll('[data-testid="video-category-pill"]')) {
+      expect(pill.classes()).toContain('min-h-11')
+    }
+  })
+
+  it('the grid has 1, 2 and 3 columns only', async () => {
+    login()
+    const w = await mountAt(VideoListPage, '/page')
+    const cls = t(w, 'video-grid').classes()
+    expect(cls).toEqual(expect.arrayContaining(['grid-cols-1', 'sm:grid-cols-2', 'lg:grid-cols-3']))
+    expect(cls).not.toContain('xl:grid-cols-4')
+  })
+
+  it('the pager shows Sebelum, Seterusnya and "Halaman {p} daripada {n}"', async () => {
+    login()
+    api.fetchVideos.mockResolvedValue({
+      ...listResult([card(1), card(2)], 50),
+      meta: { ...listResult([], 50).meta, totalPages: 3, page: 2 },
+    })
+    const w = await mountAt(VideoListPage, '/page?page=2')
+    const pager = t(w, 'video-pager')
+    expect(pager.text()).toContain('Sebelum')
+    expect(pager.text()).toContain('Seterusnya')
+    expect(t(w, 'video-page-text').text()).toBe('Halaman 2 daripada 3')
+  })
+
+  it('search is debounced 300 ms, keeps category and subject and resets the page', async () => {
+    login()
+    const w = await mountAt(VideoListPage, '/page?category=tutorial&subject=5&page=3')
+    vi.useFakeTimers()
+    try {
+      await t(w, 'video-search').setValue('sejarah')
+      await vi.advanceTimersByTimeAsync(299)
+      expect(router.currentRoute.value.query.search).toBeUndefined()
+      await vi.advanceTimersByTimeAsync(2)
+    } finally {
+      vi.useRealTimers()
+    }
+    await flushPromises()
+    expect(router.currentRoute.value.fullPath).toBe('/video?subject=5&category=tutorial&search=sejarah')
+    expect(router.currentRoute.value.query.page).toBeUndefined()
+  })
+
+  it('shows the no-filter empty state, not the filtered one, when the library is empty', async () => {
+    login()
+    api.fetchVideos.mockResolvedValue(listResult([]))
+    const w = await mountAt(VideoListPage, '/page')
+    expect(t(w, 'video-empty-all').text()).toContain('Tiada video buat masa ini')
+    expect(t(w, 'video-empty-all').text()).toContain('Video pembelajaran akan dipaparkan di sini')
+    expect(w.find('[data-testid="video-empty"]').exists()).toBe(false)
   })
 
   it('a pill with count 0 is not a link; others link to ?category', async () => {
@@ -230,6 +295,7 @@ describe('VideoListPage (S17)', () => {
     expect(t(w, 'video-empty').text()).toContain('Tiada Video Dijumpai')
     expect(t(w, 'video-empty').text()).toContain('Cuba ubah carian atau pilih kategori lain.')
     expect(t(w, 'video-empty-action').attributes('href')).toBe('/video')
+    expect(w.find('[data-testid="video-empty-all"]').exists()).toBe(false)
   })
 
   it('guest: hero without "Tambah Video"', async () => {
@@ -345,103 +411,53 @@ describe('VideoDetailPage (S18)', () => {
 })
 
 describe('VideoFormPage (S20 add)', () => {
-  it('renders the add form with the uploader strip and the no-school card', async () => {
+  it('renders the add form with the R1-GUR-7 copy and no visibility field', async () => {
     login('admin')
     const w = await mountAt(VideoFormPage, '/page', { mode: 'create' })
     expect(t(w, 'video-form-h1').text()).toBe('Tambah Video Baru')
-    expect(t(w, 'video-form-sub').text()).toBe(
-      'Paste sahaja link video — kami akan buat selebihnya',
-    )
+    const labels = w.findAll('label').map((l) => l.text().replace(/\s+/g, ' '))
+    // The required star is drawn by the field (CSS), so the text is the bare label.
+    expect(labels).toEqual(['Pautan YouTube', 'Tajuk Video', 'Penerangan', 'Kategori', 'Subjek (pilihan)'])
+    expect(t(w, 'video-title-input').attributes('required')).toBeDefined()
     expect(t(w, 'video-url').attributes('required')).toBeDefined()
     expect(t(w, 'video-url').attributes('type')).toBe('url')
-    expect(t(w, 'video-title-input').attributes('required')).toBeDefined()
-    expect(category(w).props('required')).toBe(true)
+    expect(t(w, 'video-title-input').attributes('maxlength')).toBe('150')
+    expect(category(w).props('modelValue')).toBe('lain-lain')
     expect(t(w, 'video-description-input').attributes('maxlength')).toBe('1000')
     const options = (subject(w).props('items') as { label: string }[]).map((o) => o.label)
-    expect(options).toEqual(['Tiada subjek khusus', 'Matematik', 'Sejarah'])
-    const radios = visibility(w).props('items') as { disabled?: boolean; description?: string }[]
-    expect(radios[1]?.disabled).toBe(true)
-    expect(radios[1]?.description).toBe('Tiada sekolah')
+    expect(options).toEqual(['— Tiada subjek —', 'Matematik', 'Sejarah'])
+    expect(w.text()).not.toContain('Siapa boleh lihat?')
+    expect(w.find('[data-testid="video-visibility"]').exists()).toBe(false)
     expect(t(w, 'video-uploader-strip').text()).toContain('Admin Demo')
-    expect(t(w, 'form-submit').text()).toBe('Terbitkan Video')
+    expect(t(w, 'form-submit').text()).toBe('Tambah Video')
     expect(t(w, 'form-cancel').attributes('href')).toBe('/video')
   })
 
-  it('enables "Sekolah Saya" with the school name when the context has one', async () => {
-    login()
-    api.fetchVideoFormContext.mockResolvedValue({
-      uploader: { name: 'Guru Demo', initial: 'G', roleLabel: 'teacher' },
-      school: { id: 900001, name: 'SMK DEMO' },
-    })
+  it('validates with the contract copy and posts nothing when invalid', async () => {
+    login('teacher')
     const w = await mountAt(VideoFormPage, '/page', { mode: 'create' })
-    const radios = visibility(w).props('items') as { disabled?: boolean; description?: string }[]
-    expect(radios[1]?.disabled).toBe(false)
-    expect(radios[1]?.description).toBe('SMK DEMO')
+    await t(w, 'video-form').trigger('submit')
+    await flushPromises()
+    expect(w.text()).toContain('Sila isi tajuk video.')
+    expect(w.text()).toContain('Sila isi pautan YouTube.')
+    await t(w, 'video-title-input').setValue('x'.repeat(151))
+    await t(w, 'video-url').setValue('https://example.org/video')
+    await t(w, 'video-form').trigger('submit')
+    await flushPromises()
+    expect(w.text()).toContain('Tajuk video tidak boleh melebihi 150 aksara.')
+    expect(w.text()).toContain('Pautan mesti pautan YouTube yang sah.')
+    expect(api.createVideo).not.toHaveBeenCalled()
   })
 
-  describe('visibility in http mode (SW12-05, DV-M09-23)', () => {
-    const values = (w: VueWrapper) =>
-      (visibility(w).props('items') as { value: string }[]).map((o) => o.value)
-
-    afterEach(() => {
-      vi.unstubAllEnvs()
-    })
-
-    it('a pupil defaults to "Sekolah Saya", has no "Semua Pengguna" and posts school', async () => {
-      vi.stubEnv('VITE_API_MODE', 'http')
-      login('student')
-      api.fetchVideoFormContext.mockResolvedValue({
-        uploader: { name: 'Pelajar Demo', initial: 'P', roleLabel: 'student' },
-        school: { id: 900001, name: 'SMK DEMO' },
-      })
-      api.createVideo.mockResolvedValue({
-        data: detail(2261),
-        status: 'Video berjaya diterbitkan.',
-      })
-      const w = await mountAt(VideoFormPage, '/page', { mode: 'create' })
-      expect(values(w)).toEqual(['school'])
-      expect(visibility(w).props('modelValue')).toBe('school')
-      await t(w, 'video-url').setValue('https://youtu.be/abc123XYZ00')
-      await t(w, 'video-title-input').setValue('Tajuk')
-      category(w).vm.$emit('update:modelValue', 'tutorial')
-      await flushPromises()
-      await t(w, 'video-form').trigger('submit')
-      await flushPromises()
-      expect(api.createVideo).toHaveBeenCalledWith(
-        expect.objectContaining({ visibility: 'school' }),
-      )
-    })
-
-    it('a pupil without a school keeps "school" selected (never flipped to global)', async () => {
-      vi.stubEnv('VITE_API_MODE', 'http')
-      login('student')
-      const w = await mountAt(VideoFormPage, '/page', { mode: 'create' })
-      expect(values(w)).toEqual(['school'])
-      expect(visibility(w).props('modelValue')).toBe('school')
-    })
-
-    it.each(['admin', 'teacher'] as const)(
-      '%s keeps both options and the global default',
-      async (role) => {
-        vi.stubEnv('VITE_API_MODE', 'http')
-        useSessionStore().setSession({
-          token: 't',
-          remember: false,
-          expiresAt: '2099-01-01T00:00:00+08:00',
-          user: { id: 2, role, landingPath: '/dashboard' } as never,
-        })
-        const w = await mountAt(VideoFormPage, '/page', { mode: 'create' })
-        expect(values(w)).toEqual(['global', 'school'])
-        expect(visibility(w).props('modelValue')).toBe('global')
-      },
-    )
-
-    it('mock mode keeps the live two-option form for a pupil', async () => {
-      login('student')
-      const w = await mountAt(VideoFormPage, '/page', { mode: 'create' })
-      expect(values(w)).toEqual(['global', 'school'])
-      expect(visibility(w).props('modelValue')).toBe('global')
-    })
+  it('the admin keeps any http(s) link for now', async () => {
+    login('admin')
+    api.createVideo.mockResolvedValue({ data: detail(2261), status: 'x' })
+    const w = await mountAt(VideoFormPage, '/page', { mode: 'create' })
+    await t(w, 'video-url').setValue('https://vimeo.com/123')
+    await t(w, 'video-title-input').setValue('Tajuk')
+    await t(w, 'video-form').trigger('submit')
+    await flushPromises()
+    expect(api.createVideo).toHaveBeenCalledTimes(1)
   })
 
   it('detects the platform 500 ms after the last input and shows nothing for other URLs', async () => {
@@ -468,9 +484,9 @@ describe('VideoFormPage (S20 add)', () => {
     }
   })
 
-  it('publishes, flashes and goes to /video', async () => {
-    login()
-    api.createVideo.mockResolvedValue({ data: detail(2261), status: 'Video berjaya diterbitkan.' })
+  it('teacher adds a video: no visibility sent, toast "Video ditambah.", back to /video', async () => {
+    login('teacher')
+    api.createVideo.mockResolvedValue({ data: detail(2261), status: 'Mesej pelayan.' })
     const w = await mountAt(VideoFormPage, '/page', { mode: 'create' })
     await t(w, 'video-url').setValue('https://youtu.be/abc123XYZ00')
     await t(w, 'video-title-input').setValue('  Tajuk baru ')
@@ -485,8 +501,8 @@ describe('VideoFormPage (S20 add)', () => {
       description: null,
       category: 'tutorial',
       subjectId: 3,
-      visibility: 'global',
     })
+    expect(useFlashStore().pending?.message).toBe('Video ditambah.')
     expect(router.currentRoute.value.path).toBe('/video')
   })
 
@@ -637,27 +653,5 @@ describe('VideoFormPage (S19 edit)', () => {
     expect(editApi.fetchVideoForEdit).toHaveBeenCalledTimes(1)
     expect(editApi.fetchVideoForEdit.mock.calls[0]?.[0]).toBe(2224)
     expect(api.fetchVideo).not.toHaveBeenCalled()
-  })
-
-  it('shows "Semua Pengguna" when the stored visibility is school but the user has no school', async () => {
-    login('admin')
-    editApi.fetchVideoForEdit.mockResolvedValue(detail(2224, { visibility: 'school' }))
-    const w = await mountAt(VideoFormPage, '/page', { mode: 'edit', id: 2224 })
-    await flushPromises()
-    await nextTick()
-    const radios = visibility(w).props('items') as { disabled?: boolean }[]
-    expect(radios[1]?.disabled).toBe(true)
-    expect(visibility(w).props('modelValue')).toBe('global')
-  })
-
-  it('keeps "school" when the user has a video-form school', async () => {
-    login('admin')
-    api.fetchVideoFormContext.mockResolvedValue({
-      uploader: { name: 'Guru Demo', initial: 'G', roleLabel: 'teacher' },
-      school: { id: 900001, name: 'SMK DEMO' },
-    })
-    editApi.fetchVideoForEdit.mockResolvedValue(detail(2224, { visibility: 'school' }))
-    const w = await mountAt(VideoFormPage, '/page', { mode: 'edit', id: 2224 })
-    expect(visibility(w).props('modelValue')).toBe('school')
   })
 })

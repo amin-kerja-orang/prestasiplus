@@ -142,6 +142,7 @@ export interface VideoListQuery {
   category?: VideoCategory | 'all'
   subject?: number
   page?: number
+  pageSize?: number
 }
 
 /**
@@ -168,7 +169,6 @@ export interface VideoInput {
   category: VideoCategory
   /** A string on the wire in http mode (contract `IdSchema`), a number in mock mode. */
   subjectId?: number | string | null
-  visibility: VideoVisibility
 }
 
 /** #32. `school` is the user's video-form school (BR-M09-21), not the profile school. */

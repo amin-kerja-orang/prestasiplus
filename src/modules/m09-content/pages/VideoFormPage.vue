@@ -8,31 +8,32 @@
  *   ("Youtube"). The thumbnail is the live img.youtube.com image (D22).
  * - Native validation (`required`, `type=url`) on `video_url`, `title`, `category`; server 422 field
  *   messages show under the fields (UNVERIFIED COPY).
- * - "Sekolah Saya" is enabled only when `GET /api/videos/form-context` returns a video-form school.
+ * - No visibility field: the server decides (teacher = own school, admin = everyone; R1-GUR-7).
+- Client validation uses the contract copy (`VIDEO_MESSAGES`); a teacher may only give a YouTube link.
  * - S20 shows the uploader strip; S19 does not. S19 is for the uploader or the admin: anyone else is
  *   sent to their landing page (the API answers 403, M09 §9); an unknown id is the 404 page.
  *
  * v2 restyle (B04): AR-FORM cards with `UFormField`, `UInput`, `USelect`, `URadioGroup` (card
  * variant) and a `DsPage` shell.
  */
+import { isYoutubeVideoUrl, VIDEO_MESSAGES } from '@pp/contract'
 import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { isHttpMode, wireId } from '@/api'
+import { wireId } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi, useDebounce, useFlash, usePageMeta, useSession } from '@/composables'
 import { DsFormBar, DsFormField, DsLoadError, DsPage, DsPanel } from '@/ds'
 
 import { fetchSubjectOptions } from '../api/admin-media'
 import { createVideo, fetchVideoFormContext, updateVideo } from '../api/content'
-import type { VideoCategory, VideoInput, VideoVisibility } from '../api/types'
+import type { VideoCategory, VideoInput } from '../api/types'
 import { fetchVideoForEdit } from '../lib/video-edit-api'
 import VideoThumb from '../components/video/VideoThumb.vue'
 import {
   CATEGORY_OPTIONS,
   COPY,
   VIDEO_PATH,
-  VIDEO_STAFF_ROLES,
   VIDEO_TITLES,
   detectPlatform,
   errorLines,
@@ -50,13 +51,7 @@ const pageMeta = usePageMeta()
 const session = useSession()
 
 const isEdit = computed(() => props.mode === 'edit')
-
-/**
- * http mode only (the real API refuses `global` from non-staff with a 422; the mock does not, so mock
- * mode keeps the live two-option form): outside admin/teacher the form defaults to "Sekolah Saya"
- * and does not offer "Semua Pengguna".
- */
-const globalRefused = isHttpMode() && !VIDEO_STAFF_ROLES.includes(session.role.value ?? '')
+const TITLE_MAX = 150
 
 const { data: context } = useApi((signal) => fetchVideoFormContext({ signal }))
 const { data: subjectList } = useApi((signal) => fetchSubjectOptions({ signal }))
@@ -107,32 +102,17 @@ interface FormState {
   category: VideoCategory | ''
   /** The id as the API gave it (a number in mock mode, a string in http mode); '' = none. */
   subjectId: number | string
-  visibility: VideoVisibility
 }
 
 const form = reactive<FormState>({
   videoUrl: '',
   title: '',
   description: '',
-  category: '',
+  category: 'lain-lain',
   subjectId: '',
-  visibility: globalRefused ? 'school' : 'global',
 })
 
 const preview = ref<DetectedPlatform | null>(null)
-
-// A stored "school" visibility without a video-form school cannot stay selected: the radio is
-// disabled, so the form shows "Semua Pengguna" (live form semantics).
-function normalizeVisibility(): void {
-  if (
-    !globalRefused &&
-    context.value !== null &&
-    context.value.school === null &&
-    form.visibility === 'school'
-  ) {
-    form.visibility = 'global'
-  }
-}
 
 const parseUrl = useDebounce(() => {
   preview.value = detectPlatform(form.videoUrl)
@@ -147,8 +127,6 @@ watch(
     form.description = row.description ?? ''
     form.category = row.category
     form.subjectId = row.subject?.id ?? ''
-    form.visibility = row.visibility
-    normalizeVisibility()
     preview.value = { label: row.platform, thumbnailUrl: row.thumbnailUrl }
     pageMeta.setHeader({ title: COPY.editHeader, subtitle: row.title })
     pageMeta.setTitle(VIDEO_TITLES.edit(row.title))
@@ -156,9 +134,6 @@ watch(
   { immediate: true },
 )
 
-const school = computed(() => context.value?.school ?? null)
-
-watch([context, video], normalizeVisibility)
 const ready = computed(
   () =>
     context.value !== null &&
@@ -177,18 +152,41 @@ function body(): VideoInput {
     description: form.description.trim() === '' ? null : form.description,
     category: form.category as VideoCategory,
     subjectId: form.subjectId === '' ? null : wireId(form.subjectId),
-    visibility: form.visibility,
   }
+}
+
+/** Only a teacher is held to YouTube; the admin keeps any http(s) link for now (R1-ADM-N-01). */
+function isAcceptedUrl(url: string): boolean {
+  if (session.role.value === 'teacher') return isYoutubeVideoUrl(url)
+  try {
+    const parsed = new URL(url)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+function validate(): Record<string, string> {
+  const found: Record<string, string> = {}
+  const title = form.title.trim()
+  const url = form.videoUrl.trim()
+  if (title === '') found.title = VIDEO_MESSAGES.titleRequired
+  else if (title.length > TITLE_MAX) found.title = VIDEO_MESSAGES.titleTooLong
+  if (url === '') found.videoUrl = VIDEO_MESSAGES.urlRequired
+  else if (!isAcceptedUrl(url)) found.videoUrl = VIDEO_MESSAGES.urlInvalid
+  if (form.category === '') found.category = VIDEO_MESSAGES.categoryRequired
+  return found
 }
 
 async function submit(): Promise<void> {
   if (busy.value) return
-  busy.value = true
   failure.value = []
-  errors.value = {}
+  errors.value = validate()
+  if (Object.keys(errors.value).length > 0) return
+  busy.value = true
   try {
     const result = isEdit.value ? await updateVideo(props.id, body()) : await createVideo(body())
-    flash.success(result.status)
+    flash.success(isEdit.value ? result.status : COPY.created)
     await router.push(isEdit.value ? videoPath(props.id) : VIDEO_PATH)
   } catch (err) {
     failure.value = errorLines(err)
@@ -219,28 +217,6 @@ const categoryModel = computed({
     form.category = v ?? ''
   },
 })
-const visibilityItems = computed(() => {
-  const schoolItem = {
-    label: COPY.visibilitySchool,
-    description: school.value
-      ? school.value.name
-      : isEdit.value
-        ? undefined
-        : COPY.visibilityNoSchool,
-    value: 'school',
-    disabled: school.value === null,
-  }
-  // A stored `global` video stays visible on its own edit form so the selection is not blank.
-  if (globalRefused && !(isEdit.value && video.value?.visibility === 'global')) return [schoolItem]
-  return [
-    {
-      label: COPY.visibilityGlobal,
-      description: isEdit.value ? undefined : COPY.visibilityGlobalHint,
-      value: 'global',
-    },
-    schoolItem,
-  ]
-})
 </script>
 
 <template>
@@ -262,7 +238,12 @@ const visibilityItems = computed(() => {
     />
 
     <template v-else-if="ready">
-      <form class="flex flex-col gap-4 md:gap-6" data-testid="video-form" @submit.prevent="submit">
+      <form
+        class="flex flex-col gap-4 md:gap-6"
+        novalidate
+        data-testid="video-form"
+        @submit.prevent="submit"
+      >
         <UAlert
           v-if="failure.length"
           color="error"
@@ -324,7 +305,7 @@ const visibilityItems = computed(() => {
                 type="text"
                 name="title"
                 required
-                maxlength="255"
+                maxlength="150"
                 :placeholder="COPY.titlePlaceholder"
                 class="w-full"
                 data-testid="video-title-input"
@@ -350,7 +331,7 @@ const visibilityItems = computed(() => {
           </div>
         </DsPanel>
 
-        <!-- Category, subject, visibility. -->
+        <!-- Category and subject. -->
         <DsPanel>
           <div class="flex flex-col gap-4">
             <div class="grid gap-4 sm:grid-cols-2">
@@ -373,7 +354,6 @@ const visibilityItems = computed(() => {
               <DsFormField
                 :label="COPY.subjectLabel"
                 name="subject_id"
-                :hint="isEdit ? undefined : COPY.optional"
               >
                 <USelect
                   v-model="subjectModel"
@@ -384,22 +364,6 @@ const visibilityItems = computed(() => {
                 />
               </DsFormField>
             </div>
-
-            <DsFormField
-              :label="COPY.visibilityLabel"
-              name="visibility"
-              required
-              :error="errors.visibility"
-            >
-              <URadioGroup
-                v-model="form.visibility"
-                :items="visibilityItems"
-                variant="card"
-                orientation="horizontal"
-                class="w-full"
-                data-testid="video-visibility"
-              />
-            </DsFormField>
           </div>
         </DsPanel>
 
@@ -428,7 +392,7 @@ const visibilityItems = computed(() => {
           :sticky="false"
           :cancel-to="backTo"
           :cancel-label="COPY.cancel"
-          :submit-label="isEdit ? COPY.save : COPY.publish"
+          :submit-label="busy ? COPY.saving : isEdit ? COPY.save : COPY.publish"
           :submit-icon="isEdit ? 'i-ph-floppy-disk' : 'i-ph-upload-simple'"
           :saving="busy"
           data-testid="video-form-footer"

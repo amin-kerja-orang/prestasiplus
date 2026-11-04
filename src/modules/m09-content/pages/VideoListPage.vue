@@ -16,7 +16,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { useApi } from '@/composables'
+import { useApi, useDebounce } from '@/composables'
 import { DsArt3D, DsEmptyState, DsLoadError, DsPage } from '@/ds'
 import { useSessionStore } from '@/stores/session'
 
@@ -26,6 +26,7 @@ import VideoCard from '../components/video/VideoCard.vue'
 import {
   COPY,
   VIDEO_ADD_PATH,
+  canWriteVideos,
   VIDEO_PATH,
   errorLines,
   listQuery,
@@ -116,13 +117,30 @@ const pagerQuery = computed(() =>
   ),
 )
 
-function submitSearch(): void {
+/** The search keeps the category and subject and drops `page` (a new search starts at page 1). */
+function pushSearch(text: string): void {
+  if (text.trim() === applied.value.search) return
   const query = listQuery(
-    { subject: applied.value.subject, category: applied.value.category, search: search.value },
+    { subject: applied.value.subject, category: applied.value.category, search: text },
     'subject-first',
   )
   void router.push({ path: VIDEO_PATH, query })
 }
+
+const debouncedSearch = useDebounce(pushSearch, COPY.searchDebounceMs)
+watch(search, (value) => debouncedSearch(value))
+
+function submitSearch(): void {
+  debouncedSearch.cancel()
+  pushSearch(search.value)
+}
+
+const canAdd = computed(() => canWriteVideos(session.role))
+/** No search, category or subject: an empty result means the library itself is empty. */
+const unfiltered = computed(
+  () => applied.value.search === '' && applied.value.category === '' && applied.value.subject === undefined,
+)
+const totalPages = computed(() => Math.max(1, data.value?.meta.totalPages ?? 1))
 
 function pageTo(page: number) {
   return { path: VIDEO_PATH, query: { ...pagerQuery.value, page: String(page) } }
@@ -184,7 +202,7 @@ function goToPage(page: number): void {
     <template v-else-if="data && facets">
       <!-- Category pills (BR-M09-18). -->
       <nav
-        class="flex flex-wrap gap-2"
+        class="flex flex-nowrap gap-2 overflow-x-auto"
         aria-label="Kategori video"
         data-testid="video-category-pills"
       >
@@ -193,6 +211,7 @@ function goToPage(page: number): void {
           :disabled="facets.total === 0"
           :color="applied.category === '' ? 'primary' : 'neutral'"
           :variant="applied.category === '' ? 'solid' : 'soft'"
+          class="min-h-11 shrink-0"
           data-testid="video-category-pill"
           data-code="all"
           >{{ COPY.all }} <span class="tabular">({{ facets.total }})</span></UButton
@@ -204,6 +223,7 @@ function goToPage(page: number): void {
           :disabled="c.count === 0"
           :color="applied.category === c.code ? 'primary' : 'neutral'"
           :variant="applied.category === c.code ? 'solid' : 'soft'"
+          class="min-h-11 shrink-0"
           data-testid="video-category-pill"
           :data-code="c.code"
           >{{ c.label }} <span class="tabular">({{ c.count }})</span></UButton
@@ -242,14 +262,22 @@ function goToPage(page: number): void {
         >
       </nav>
 
-      <div v-if="session.isLoggedIn" class="flex justify-end">
+      <div v-if="canAdd" class="flex justify-end">
         <UButton :to="VIDEO_ADD_PATH" icon="i-ph-plus-bold" data-testid="video-add">{{
           COPY.add
         }}</UButton>
       </div>
 
       <DsEmptyState
-        v-if="videos.length === 0"
+        v-if="videos.length === 0 && unfiltered"
+        :title="COPY.noVideosTitle"
+        :description="COPY.noVideosBody"
+        icon="i-ph-film-slate-duotone"
+        data-testid="video-empty-all"
+      />
+
+      <DsEmptyState
+        v-else-if="videos.length === 0"
         :title="COPY.emptyTitle"
         :description="COPY.emptyBody"
         icon="i-ph-film-slate-duotone"
@@ -264,7 +292,7 @@ function goToPage(page: number): void {
 
       <ul
         v-else
-        class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-4"
+        class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3"
         data-testid="video-grid"
       >
         <li v-for="video in videos" :key="video.id" class="min-w-0">
@@ -274,19 +302,41 @@ function goToPage(page: number): void {
 
       <div
         v-if="total > data.meta.pageSize"
-        class="flex max-w-full justify-center overflow-x-auto"
+        class="flex max-w-full flex-col items-center gap-2 overflow-x-auto"
         data-testid="video-pager"
       >
+        <p class="text-caption text-muted" data-testid="video-page-text">
+          {{ COPY.pageOf(applied.page, totalPages) }}
+        </p>
         <UPagination
           :sibling-count="0"
           :page="applied.page"
           :total="total"
           :items-per-page="data.meta.pageSize"
           :to="pageTo"
-          :prev="{ 'aria-label': 'Sebelum' }"
-          :next="{ 'aria-label': 'Seterusnya' }"
           @update:page="goToPage"
-        />
+        >
+          <template #prev>
+            <UButton
+              color="neutral"
+              variant="outline"
+              icon="i-ph-caret-left"
+              :label="COPY.pagePrev"
+              :to="applied.page > 1 ? pageTo(applied.page - 1) : undefined"
+              class="min-h-11"
+            />
+          </template>
+          <template #next>
+            <UButton
+              color="neutral"
+              variant="outline"
+              trailing-icon="i-ph-caret-right"
+              :label="COPY.pageNext"
+              :to="applied.page < totalPages ? pageTo(applied.page + 1) : undefined"
+              class="min-h-11"
+            />
+          </template>
+        </UPagination>
       </div>
     </template>
   </DsPage>

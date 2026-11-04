@@ -35,4 +35,12 @@ describe('video routes (S17 to S20)', () => {
     })
     expect(meta('/video/1/edit')).toMatchObject({ layout: 'user', access: 'auth' })
   })
+
+  it('add and edit are for the roles teacher and admin only; the library stays open', () => {
+    const meta = (path: string) => router.resolve(path).meta
+    expect(meta('/video/tambah').roles).toEqual(['teacher', 'admin'])
+    expect(meta('/video/1/edit').roles).toEqual(['teacher', 'admin'])
+    expect(meta('/video').roles).toBeUndefined()
+    expect(meta('/video/1').roles).toBeUndefined()
+  })
 })

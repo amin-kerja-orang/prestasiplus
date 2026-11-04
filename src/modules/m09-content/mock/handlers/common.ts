@@ -48,7 +48,7 @@ export function levelRef(id: number): { id: number; name: string } | null {
 
 /** Flash texts of the mutating endpoints (PROPOSED COPY, SRS M09 §8.2). */
 export const FLASH = {
-  videoCreated: 'Video berjaya diterbitkan.',
+  videoCreated: 'Video ditambah.',
   videoUpdated: 'Video berjaya dikemaskini.',
   videoDeleted: 'Video berjaya dipadam.',
   perutusanSent: 'Perutusan berjaya dihantar.',
