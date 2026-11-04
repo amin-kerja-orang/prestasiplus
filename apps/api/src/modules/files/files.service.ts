@@ -19,7 +19,7 @@ import { idFromString, idToString } from '../../db/ids'
 import type { File as FileRow } from '../../db/generated/client'
 import { PrismaService } from '../../db/prisma.service'
 import { authorMayReadQuestionImageSql, pupilMayReadQuestionImageSql } from './question-image-access'
-import { EXTENSION_OF, inspectUpload, type DetectedMime } from './content-inspect'
+import { detectOffice, DOCX_MIME, EXTENSION_OF, inspectUpload, XLSX_MIME, type DetectedMime, type OfficeMime } from './content-inspect'
 import { FILE_STORAGE, type FileStorage } from './file-storage'
 import { FilesConfig } from './files.config'
 
@@ -166,6 +166,9 @@ const READ_RULES: Readonly<Record<string, ReadRule>> = {
   // its owner and admin only. Everyone else, another pupil and a teacher included, gets 404.
   timeline_photo: (c) => (c.row.isTest ? c.owns || isRole(c, 'admin') : ownerOrScopedStaff(c)),
   avatar: ownerOrScopedStaff,
+  // S1-T08: a teacher's DOCX/XLSX intake original is served only by `GET /api/intake/files/:id/original` (batch scope, always an attachment,
+  // nosniff): fail closed here for every caller, the owner and the admin included. A PDF original keeps the default (owner or admin).
+  intake_original: (c) => (c.row.mime === DOCX_MIME || c.row.mime === XLSX_MIME ? false : c.owns || isRole(c, 'admin')),
 }
 
 /** Everything else (derived intake files, unknown purposes): the owner or an admin. */
@@ -238,6 +241,20 @@ export class FilesService {
       bytes: inspected.bytes,
       isTest: input.isTest ?? false,
     })
+  }
+
+  /**
+   * S1-T08: stores a teacher's DOCX or XLSX as an `intake_original` (bytes unchanged, type from `detectOffice`, same
+   * `INTAKE_MAX_FILE_MB` limit). Only the guru paper intake calls it; the PDF path keeps using `storeDerived`.
+   */
+  async storeIntakeOffice(input: { ownerUserId: string | null; bytes: Buffer; isTest?: boolean }): Promise<StoredFile> {
+    if (input.bytes.length === 0) throw invalidFile(FILE_MESSAGES.required)
+    if (input.bytes.length > this.config.intakeMaxBytes) {
+      throw invalidFile(`The file field must not be greater than ${Math.floor(this.config.intakeMaxBytes / 1024)} kilobytes.`)
+    }
+    const mime = detectOffice(input.bytes)
+    if (!mime) throw invalidFile('The file field must be a file of type: docx, xlsx.')
+    return this.persist({ ownerUserId: input.ownerUserId, purpose: 'intake_original', mime, bytes: input.bytes, isTest: input.isTest ?? false })
   }
 
   /**
@@ -418,7 +435,7 @@ export class FilesService {
   private async persist(input: {
     ownerUserId: string | null
     purpose: string
-    mime: DetectedMime
+    mime: DetectedMime | OfficeMime
     bytes: Buffer
     isTest: boolean
   }): Promise<StoredFile> {

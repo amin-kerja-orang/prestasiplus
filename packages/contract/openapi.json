@@ -42135,7 +42135,7 @@
             },
             "maxItems": 40,
             "default": [],
-            "description": "D93: 0 or more existing questions (a group with fewer than 2 is a draft group; every write answers with `warning` until it has 2)."
+            "description": "0 or more existing questions (a group holds 1..n; a group with 0 members is a draft group and every write answers with `warning` until it has 1)."
           },
           "optionBank": {
             "type": "array",
@@ -42293,7 +42293,7 @@
               "string",
               "null"
             ],
-            "description": "BM warning while the group has fewer than 2 questions (a draft group, D93); null otherwise. The write went through."
+            "description": "BM warning while the group has 0 questions (a draft group); null otherwise. The write went through."
           }
         },
         "required": [
@@ -42493,7 +42493,7 @@
               "string",
               "null"
             ],
-            "description": "BM warning when fewer than 2 members remain; the removal went through."
+            "description": "BM warning when no member remains; the removal went through."
           }
         },
         "required": [
@@ -72053,6 +72053,13 @@
           "status": {
             "$ref": "#/components/schemas/IntakeBatchStatus"
           },
+          "source": {
+            "type": "string",
+            "enum": [
+              "guru"
+            ],
+            "description": "S1-T08: `guru` = teacher submissions (Kiriman Guru) only. Omitted = every batch. Any other value is 422."
+          },
           "page": {
             "type": "integer",
             "minimum": 1,
@@ -72194,10 +72201,28 @@
             "description": "BM label of `status` (INTAKE_BATCH_STATUS_LABELS)."
           },
           "paperType": {
-            "$ref": "#/components/schemas/IntakePaperType"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IntakePaperType"
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "umum",
+                  "trial",
+                  "dskp",
+                  "buku_teks",
+                  "buku_latihan",
+                  "peperiksaan",
+                  "lain"
+                ]
+              }
+            ],
+            "description": "An admin code (IntakePaperType) or, for a teacher submission, an OPT-JENIS-HANTARAN slug."
           },
           "subject": {
-            "type": "string"
+            "type": "string",
+            "description": "Admin: subject code. Teacher submission: free text (at most 100)."
           },
           "kertas": {
             "anyOf": [
@@ -72212,11 +72237,19 @@
                 "enum": [
                   2
                 ]
+              },
+              {
+                "type": "null"
               }
-            ]
+            ],
+            "description": "Null only for a teacher submission."
           },
           "year": {
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Null only when a teacher submission has no year."
           },
           "source": {
             "type": "string"
@@ -72327,10 +72360,28 @@
             "description": "BM label of `status` (INTAKE_BATCH_STATUS_LABELS)."
           },
           "paperType": {
-            "$ref": "#/components/schemas/IntakePaperType"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IntakePaperType"
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "umum",
+                  "trial",
+                  "dskp",
+                  "buku_teks",
+                  "buku_latihan",
+                  "peperiksaan",
+                  "lain"
+                ]
+              }
+            ],
+            "description": "An admin code (IntakePaperType) or, for a teacher submission, an OPT-JENIS-HANTARAN slug."
           },
           "subject": {
-            "type": "string"
+            "type": "string",
+            "description": "Admin: subject code. Teacher submission: free text (at most 100)."
           },
           "kertas": {
             "anyOf": [
@@ -72345,11 +72396,19 @@
                 "enum": [
                   2
                 ]
+              },
+              {
+                "type": "null"
               }
-            ]
+            ],
+            "description": "Null only for a teacher submission."
           },
           "year": {
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Null only when a teacher submission has no year."
           },
           "source": {
             "type": "string"
@@ -105265,8 +105324,8 @@
           "questions",
           "stimuli"
         ],
-        "summary": "Create a group: 1 to 3 stimuli and 0 to 40 member questions (D93: a group with fewer than 2 is a draft group)",
-        "description": "D90: the shared stimulus is one group shown once with all its member questions. A group carries no marks and is never a question. A question already in another group, a PKSK, archived or inactive question, a question of another subject or level, and a question that is already shown to pupils (live approved) are refused. While the group has fewer than 2 members every write answers with `warning`; such a group cannot be placed in a paper (builder blocker \"Kumpulan perlu sekurang-kurangnya 2 soalan.\"). Members get positions 1..n in the order sent. Flash: \"Kumpulan rangsangan berjaya dicipta.\"",
+        "summary": "Create a group: 1 to 3 stimuli and 0 to 40 member questions (a group holds 1..n; 0 members is a draft group)",
+        "description": "D90: the shared stimulus is one group shown once with all its member questions. A group carries no marks and is never a question. A question already in another group, a PKSK, archived or inactive question, a question of another subject or level, and a question that is already shown to pupils (live approved) are refused. While the group has 0 members every write answers with `warning`; such a group cannot be placed in a paper (builder blocker \"Kumpulan perlu sekurang-kurangnya 1 soalan.\"). Members get positions 1..n in the order sent. Flash: \"Kumpulan rangsangan berjaya dicipta.\"",
         "parameters": [
           {
             "schema": {
@@ -106138,7 +106197,7 @@
           "stimuli"
         ],
         "summary": "Remove a question from a group",
-        "description": "Positions of the others close up. When fewer than 2 members remain the removal still succeeds and `warning` carries a BM message (\"Kumpulan ini kini hanya mempunyai 1 soalan. ...\").",
+        "description": "Positions of the others close up. When the last member is removed the removal still succeeds and `warning` carries the BM empty-group message (\"Kumpulan ini kini kosong. ...\").",
         "parameters": [
           {
             "schema": {
@@ -123070,6 +123129,19 @@
             "required": false,
             "description": "Processing status of a submission (card BE-37): submitted = Dihantar, processing = Sedang diproses, ready_for_review = Sedia untuk semakan, failed = Gagal, cancelled = Dibatalkan [PROPOSED].",
             "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "guru"
+              ],
+              "description": "S1-T08: `guru` = teacher submissions (Kiriman Guru) only. Omitted = every batch. Any other value is 422."
+            },
+            "required": false,
+            "description": "S1-T08: `guru` = teacher submissions (Kiriman Guru) only. Omitted = every batch. Any other value is 422.",
+            "name": "source",
             "in": "query"
           },
           {

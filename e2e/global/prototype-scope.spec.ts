@@ -1,7 +1,7 @@
 /**
  * Smoke for the prototype scope (TRACKER D43): Murid, Guru and Admin Sekolah see only the menu
- * items of docs/requirements/role-access-matrix.md, and a typed out-of-scope URL shows the
- * friendly "Belum tersedia dalam prototaip" page inside the shell.
+ * items of docs/requirements/role-access-matrix.md, and a typed out-of-scope URL answers the
+ * standard 404 page ("Halaman Tidak Dijumpai"), URL unchanged (S0-T05).
  *
  * Needs a build with the scope ON (the e2e mode turns it off): run it with
  * `npx playwright test -c playwright.scope.config.mjs` (port 5190).
@@ -101,16 +101,16 @@ for (const [role, c] of Object.entries(CASES)) {
       await expectNoHorizontalScroll(page)
     })
 
-    test('an out-of-scope URL goes to the role home, never "Belum tersedia"', async ({
+    test('an out-of-scope URL shows the standard 404 page, URL unchanged', async ({
       page,
       loginAs,
       gotoApp,
     }) => {
       await loginAs(c.email)
       await gotoApp(c.blocked)
-      await expect(page).toHaveURL(new RegExp(`${c.home}$`))
-      await expect(page.getByTestId('prototype-unavailable')).toHaveCount(0)
-      await expect(page.locator('[data-layout]').first()).toBeVisible()
+      await expect(page).toHaveURL(new RegExp(`${c.blocked}$`))
+      await expect(page.getByRole('heading', { name: 'Halaman Tidak Dijumpai' })).toBeVisible()
+      await expect(page.getByText('Belum tersedia dalam prototaip')).toHaveCount(0)
       await expectNoHorizontalScroll(page)
     })
   })
@@ -129,7 +129,7 @@ test.describe('prototype scope: accounts', { tag: [TAG.smoke] }, () => {
       await page.getByTestId('login-password').fill('Demo1234')
       await page.getByTestId('login-submit').click()
       await expect(page.getByTestId('login-alert')).toContainText(
-        'Peranan ini tidak termasuk dalam prototaip.',
+        'Peranan ini belum menggunakan sistem ini.',
       )
       await expect(page).toHaveURL(/\/login$/)
     })
