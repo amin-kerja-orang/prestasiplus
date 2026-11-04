@@ -812,12 +812,6 @@ describe('Sekolah Bersaing live board (API-AS-14, S7-T02)', () => {
     for (const accuracy of [0, 50, 100, 69.6]) ok(GamesSekolahBersaingBoardSchema, [{ ...row, accuracy }])
     for (const accuracy of [-1, 100.1, 69.65]) rejected(GamesSekolahBersaingBoardSchema, [{ ...row, accuracy }])
   })
-
-  it('the route has no week parameter and documents 403', () => {
-    const op = doc.paths['/sekolah-bersaing']!.get!
-    expect(op.parameters ?? []).toEqual([])
-    expect(Object.keys(op.responses).sort()).toEqual(['200', '401', '403'])
-  })
 })
 
 describe('Sekolah Bersaing (M16-50)', () => {
@@ -1044,7 +1038,7 @@ describe('openapi registration', () => {
     expect(names('GET /games/jutawan')).toEqual(['query:darjah'])
     expect(names('POST /games/jutawan/{sessionId}/answer')).toEqual(['header:X-CSRF-Token', 'path:sessionId'])
     expect(names('GET /leagues/{id}')).toEqual(['path:id'])
-    expect(names('GET /sekolah-bersaing')).toEqual([])
+    expect(names('GET /sekolah-bersaing')).toEqual(['query:week'])
     expect(op('POST /games/{game}/rooms').requestBody).toBeDefined()
     expect(op('POST /games/{game}/rooms/{code}/start').requestBody).toBeUndefined()
     expect(op('POST /papan-bijak/quick-match/cancel').requestBody).toBeUndefined()

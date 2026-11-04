@@ -167,7 +167,8 @@ export const GamesSekolahBersaingBoardSchema = z
   .meta({ id: 'GamesSekolahBersaingBoard', description: 'Rank order; [] when no school has a session.' })
 export type GamesSekolahBersaingBoard = z.infer<typeof GamesSekolahBersaingBoardSchema>
 
-// The weekly snapshot below is what the API still answers until the S7-T02 BE part, which removes these schemas.
+// The weekly snapshot below is what the API still answers and documents until the S7-T02 BE part, which switches the
+// route to the board above and removes these schemas.
 
 /** @deprecated Weekly snapshot, removed by the S7-T02 BE part. `week`: a valid YYYY-MM-DD selects the Monday of that week; anything else the current week; never an error. */
 export const GamesSekolahBersaingQuerySchema = z

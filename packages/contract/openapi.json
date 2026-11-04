@@ -96471,18 +96471,30 @@
         "tags": [
           "games"
         ],
-        "summary": "Sekolah Bersaing live board (API-AS-14)",
-        "description": "National board, no school scope, computed on request. School admin and admin only. Top 30 schools by mean session accuracy; ties by pupils, sessions, school name. An unknown query parameter is ignored.",
+        "summary": "Sekolah Bersaing weekly board (M16-50)",
+        "description": "National board, no school scope. `week`: a valid YYYY-MM-DD selects the Monday of that week; anything else the current week; never an error. An anonymous row shows \"Sekolah anonim\".",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Any text; an invalid value is ignored."
+            },
+            "required": false,
+            "description": "Any text; an invalid value is ignored.",
+            "name": "week",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Rank order; [] when no school has a session.",
+            "description": "Weekly snapshot.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/components/schemas/GamesSekolahBersaingBoard"
+                      "$ref": "#/components/schemas/GamesSekolahBersaing"
                     }
                   },
                   "required": [
@@ -96494,16 +96506,6 @@
           },
           "401": {
             "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not school_admin or admin).",
             "content": {
               "application/json": {
                 "schema": {
