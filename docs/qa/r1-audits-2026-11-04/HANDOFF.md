@@ -32,7 +32,7 @@ D113 (all final):
 - S1-T09 is P0/L, split into S1-T09a (scheme editor backend, `mode_config`, `options` key kind, MCQ min 2) and S1-T09b (bilingual `ms+en`, drawing/table_fill).
 - Verified facts (code + UAT): diagram audit route is `/admin/soalan-gambar`; Studio shows "Diterbitkan" (must be "Diluluskan"); AC-ADM-QE3.2 says MCQ 3–8 (fix to 2–8); 375 px Bijak sitting has no "Hantar" and no "Mod Peperiksaan" label; Kertas Subjektif card missing from the pupil hub (real gap); pupil Jana Kertas tab visible on UAT; pupil Prestasi redirects to the school dashboard; T1–T3 Latih Tubi shows "akan datang" (`rules.ts:43-45`); Laporan Soalan Saya has 5 counters (not 6); self-mark API (`attempts.controller.ts:171`) and photo API exist (plan S3-T06 "no self-mark endpoint" is wrong); `POST /api/intake/batches/:id/paper` does not exist; Sunting Pantas fails at `http-admin.ts:1053`; Studio list has no Tingkatan/Bab/DSKP filter; DSKP nodes on UAT unknown (2,844 vs 0) → U-OP-01 stays.
 
-## 2. Input files in this folder (`docs/prd/r1/_handoff-inputs/`)
+## 2. Input files in this folder (moved at T11 from `docs/prd/r1/_handoff-inputs/` to `docs/qa/r1-audits-2026-11-04/`; the decisions live in docs/TRACKER.md rows D113 and D113-c and in docs/prd/r1/00-index.md)
 
 | File | What it is |
 |---|---|
