@@ -504,7 +504,8 @@ Screen template used below: **ID | Route | Priority | Status GH / UAT**; Outcome
 - States: no empty or error state observed. V3 differences: the Tracking A attention counts questions and groups per D90; V3 adds the BM reason text of FR-ADM-Q02.3.
 - Reference (DISC 3.0): filters `Subjek` ("Semua Subjek"), `Status` ("Semua Status"), `Cari`, buttons `Tapis`, `Set Semula`; columns `Senarai`, `Tajuk`, `Perhatian`, `Tindakan`; row actions `Pratonton`, `Salin` (native Simulasi rows), `Sunting`; link "← Semua laluan SPM", "lihat sisi pelajar".
 - FR-ADM-Q02.1 Same filters, columns and row actions in every lane.
-- FR-ADM-Q02.2 The Bijak SPM lane row `Sunting` opens Semak Kertas Simulasi (Q-15); the Tracking A row `Sunting` opens Q-17; the Kertas Subjektif lane opens Q-18.
+- FR-ADM-Q07.10 (D115) Import & Semakan tabs are route links: `Kelompok Item` `/admin/spm/soalan/ekstrak`, `Kertas Diimport` `/admin/spm/soalan/ekstrak?tab=kertas-diimport`, `Kiriman Guru` `/admin/question-submissions`. A group in Semak Ekstrak holds at most 40 members (D115 default).
+- FR-ADM-Q02.2 The Bijak SPM lane row `Sunting` opens Semak Kertas (Q-15; heading "Semak Kertas", D115); the Tracking A row `Sunting` opens Q-17; the Kertas Subjektif lane opens Q-18.
 - FR-ADM-Q02.3 `Perhatian` text is the BM reason from the servability catalogue (`packages/contract/src/servability/schema.ts:73-74`, e.g. "DSKP belum lengkap — lengkapkan Tag dan TP di borang soalan.").
 - FR-ADM-Q02.4 The Latih Tubi lane lists subjects x Tingkatan with servable counts and the `latih-tubi` switch state (N-06).
 - AC-ADM-Q02.1 Given the Databank lane filtered by subject, then objective questions including figure questions and group members are listed, each with its BM reason when not servable.
@@ -1084,7 +1085,7 @@ Derived line per section: "Jawab {n} daripada {m}". Confirm delete "Padam kontra
 | # | Label (exact) | Control | Required / default | Source / OPT | Message / ERR |
 |---|---|---|---|---|---|
 | 17-01 | `Subjek`, `Tahun`, `Set` no., chip `ramalan` | select, select, number | required | OPT-SUBJEK; year >= 2020 and <= current year + 1 (default 2026); set 1 to 99 | "Sila pilih subjek."; "Set {n} sudah wujud untuk subjek dan tahun ini." |
-| 17-02 | `Bilangan sasaran` (`target_count`) | number | default 40 | integer 1 to 100 | "Bilangan sasaran tidak sah." |
+| 17-02 | (dropped, D115) `Bilangan sasaran`: not a per-set field; the subject target stays `spm_subject_configs.target_size` (DM-24) and is shown read-only | n/a | n/a | n/a | n/a |
 | 17-03 | `tukar`, `buang`, `Isi set`, `Simpan`, `Tambah Set` | buttons | n/a | `Isi set` hidden when full | "Tiada soalan lain yang boleh disajikan untuk mengisi set ini."; "Tukar gagal."; "Pilih sekurang-kurangnya satu soalan sebelum menyimpan."; flashes "Set dikemas kini.", "Set ini lengkap.", "Set ini masih kosong." |
 Behaviour: "{n} soalan lagi diperlukan." = target minus current; attention "Hanya {a} daripada {b} soalan"; "tersedia" counts servable questions (V2 counted raw; fixed by D90 unit counting); a question may not be in two sibling sets; save is one transaction; a set that reaches the target is unlocked for the pupil; Naik / Turun on touch.
 
@@ -1356,6 +1357,7 @@ Buttons `Simpan Subjek`, `Batal`. List "Jumlah: {n} subjek"; `Soalan` column = c
 - Reference: V1/V2 level CRUD; D72/D96: Darjah D1-D6 inactive, hidden from every picker, list, chart and filter; Tingkatan 1-5 stay.
 - FR-ADM-C03.1 Each level has an active switch (`PATCH :id/active`, `admin.controller.ts:47`); the list shows the 5 Tingkatan first and Darjah rows labelled inactive when deactivated (rows and FKs stay; hard delete is a later migration).
 - FR-ADM-C03.2 The list follows V2: heading "Senarai Tahap Pendidikan", "Jumlah: {n} tahap", columns `#`, `Nama (BM)`, `Nama (EN)`, `Kod`, `Peringkat`, `Kurikulum`, `Soalan` ("{n} soalan"), `Subjek` ("{n} subjek"), `Aktif?`; the counts come from the question list, not stored figures.
+- FR-ADM-C03.3a (PROPOSED copy, D115) An admin who tries to activate a Darjah level gets 409 "Darjah tidak boleh diaktifkan. Hanya Tingkatan 1 hingga 5 digunakan." (DM-13).
 - FR-ADM-C03.3 With Darjah inactive: public statistics show 5 levels, Studio filters offer Tingkatan 1-5, registration, import forms and Kontrak offer Tingkatan only.
 - AC-ADM-C03.1 (E2E) Given the admin deactivates D1-D6 on UAT, when the public statistics and the T5 pupil's level picker load, then 5 levels appear (UAT shows 11 today).
 - Gap: UAT data (U-OP-03). Deviation: none (D72).
@@ -1367,6 +1369,7 @@ Buttons `Simpan Subjek`, `Batal`. List "Jumlah: {n} subjek"; `Soalan` column = c
 
 **Screen specification (from V2).** Not observed in V2 — V2 has no DSKP tree or loader screen; follow FR-ADM-C04.1..C04.4. The V2 Studio Tag step lists curriculum learning-standard sentences in its `Bab` select (R1-ADM-Q-04), which is the closest V2 behaviour.
 - Reference: R1-12 (AC-R1-12.1 to 12.6), architecture 13.8a, `docs/ops/dskp-loader.md`, extracts `docs/reference/dskp/` (T4-T5 today).
+- FR-ADM-C04.0 (D115) The `DSKP` tab shows live counts and the state `dimuatkan` / `belum dimuatkan` per Subjek x Tingkatan (API-DSKP-11); the columns `Baris ditolak` / `Sebab` and "0 nod baharu" exist only in the loader's CLI report.
 - FR-ADM-C04.1 The loader creates Bidang / SK / SP with TP descriptors, idempotently, for Tingkatan 1-5 (D101); Darjah rows are ignored and reported; a subject loads fully or not at all.
 - FR-ADM-C04.2 After a run, `curriculum_nodes` > 0 for every in-scope subject and every level that has an extract on UAT (evidence in the QA table); the loader report lists the subjects/levels still without an extract.
 - FR-ADM-C04.3 T1-T3 extraction task (D101): the repo has T4-T5 extracts only. For each subject that has a Tingkatan 1-3 syllabus, extract the official KSSM DSKP into the same JSON format as `docs/reference/dskp/*.json` (units with `level` T1/T2/T3, SK, SP, TP 1-6, `edition` per level, printed codes kept), audit it as the T4-T5 extracts were (`docs/qa/audit/dskp-extracts-audit.md`), copy it to `apps/api/src/modules/curriculum/dskp/data/` and `docs/reference/dskp/` (the checksum test compares them), rebuild and run the loader (`--data-dir` allows a dry run first). Source PDFs needed (none of them is in the repo or in the official KPM DSKP PDFs held privately by the designated UAT developer, outside the repo, which hold T4-T5 only): the official KPM DSKP KSSM Tingkatan 1, 2 and 3 documents for Matematik, Sains, Bahasa Melayu, Bahasa Inggeris, Sejarah, Pendidikan Islam, Pendidikan Moral and Pendidikan Seni Visual (the subjects of the 13 extracts that continue below Tingkatan 4; whether Fizik, Matematik Tambahan, Tasawwur Islam, Landskap dan Nurseri and Katering dan Penyajian have T1-T3 content is not established, E-16). The missing PDFs are a blocking evidence item (E-16).
@@ -2815,7 +2818,7 @@ Option sets that did not exist in 40 §X11 when this file was first written (OPT
 | 8 | Group-aware bulk action with dry-run and `FILTER_ACTION_CAP` 1,000; `POST /api/admin/curriculum/questions/bulk-chapter` | API-Q-04, API-DSKP-09 | 03-14, 03-15, FR-ADM-C05.2 |
 | 9 | `POST /api/intake/batches/:id/paper` (GAP: the route does not exist in the code today); 409 while an item is `pending`; 422 when a placement would split a group | API-Q-25 | FR-ADM-Q07.6, 07-04, AC-ADM-Q07.4 |
 | 10 | Fix the Quick Edit save (fails at `http-admin.ts:1053`) for a single-leaf MCQ (text, image, 2 to 8 options, correct, legal status moves) with Studio validation and audit | API-Q-03 | FR-ADM-Q24.3, AC-ADM-Q24.2 |
-| 11 | `blueprint_sections.marks_per_question jsonb`, `compulsory bool`, free-text `label`, paper `question_count`; JSU grid and CSV export per paper and per blueprint | DM-57, API-Q-39 | FR-ADM-Q16.8, Q16.9, AC-ADM-Q16.5, G-10, G-17 |
+| 11 | `blueprint_sections.marks_per_question jsonb`, `compulsory bool`, free-text `label`, `blueprints.question_count` (DM-57, not on the paper); JSU grid and CSV export per paper and per blueprint | DM-57, API-Q-39 | FR-ADM-Q16.8, Q16.9, AC-ADM-Q16.5, G-10, G-17 |
 | 12 | Blueprint unit quota (min,max per Tajuk DSKP), TP profile (6 counts), KBAT mark quota, evidence rows (type, reference, file <= 30 MB) | existing blueprint model (DM-22, API-BIJAK-09); no new ID | 16-14 to 16-20 |
 | 13 | Part config JSON (`maxWords`, `wordRange`, `hardLimit`, `answerSpace`, `alternatives`, `answerTemplate`, `dependsOnPart`, `preFill`, `multi`, `grid`, `drawingKind`, `example`) and `part.wordLimit` | DM-55 | FR-ADM-QE3.12, QE3.14, QE3.15, QE3.20 |
 | 14 | Bilingual twins (`stem_en`, `body_en`, `caption_en`, option `body_en`; `language` check `ms`, `en`, `ms+en`; `bm` is accepted on input and stored as `ms`) | DM-50 | FR-ADM-QE3.11, QE3.23 |
