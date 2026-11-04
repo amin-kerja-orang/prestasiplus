@@ -582,7 +582,6 @@ describe('ReportQuestionModal (M04 S14)', () => {
   it.each([
     [409, 'Anda sudah melaporkan soalan ini.'],
     [403, 'Anda hanya boleh melapor soalan yang dipaparkan kepada anda.'],
-    [429, 'Anda telah mencapai had 20 laporan sehari. Sila cuba lagi esok.'],
   ])(
     'a %i shows the server text inline and keeps the form and the typed text',
     async (status, text) => {
@@ -655,10 +654,23 @@ describe('ReportQuestionModal (M04 S14)', () => {
     expect((q('report-submit') as HTMLButtonElement).disabled).toBe(true)
   })
 
+  it('a 429 shows the contract daily-cap text even when the error message is the generic HTTP one', async () => {
+    api.createQuestionReport.mockRejectedValue(
+      new ApiError({ status: 429, code: 'RATE_LIMITED', message: 'Terlalu banyak permintaan. Sila cuba lagi sebentar.' }),
+    )
+    await open()
+    await tick('typo')
+    await click('report-submit')
+    expect(q('report-submit-error')?.textContent?.trim()).toBe(
+      'Anda telah mencapai had 20 laporan sehari. Sila cuba lagi esok.',
+    )
+    expect(q('report-form')).not.toBeNull()
+  })
+
   it('two failures in a row replace the inline alert (not stacked) and reopening clears it', async () => {
     api.createQuestionReport
       .mockRejectedValueOnce(new ApiError({ status: 409, code: 'X', message: 'Ralat pertama.' }))
-      .mockRejectedValueOnce(new ApiError({ status: 429, code: 'X', message: 'Ralat kedua.' }))
+      .mockRejectedValueOnce(new ApiError({ status: 403, code: 'X', message: 'Ralat kedua.' }))
     const w = await open()
     await tick('typo')
     await click('report-submit')
