@@ -58,6 +58,25 @@ describe('random Kuiz: a stimulus group is drawn whole or not at all (S1-T06)', 
     }
   })
 
+  it('[CI] AC-QP-6: an archived member is not part of the group (as groupCompleteSql): the two approved members are served together', async () => {
+    const [g] = await t.db.query<{ g: string }>(`select group_id::text g from questions where id = $1::bigint`, [id('SEED-GRP-PASAR-3')])
+    const qid = id('SEED-GRP-PASAR-3')
+    const before = (await t.db.query<{ live: number | null }>(`select live_version_no live from questions where id = $1::bigint`, [qid]))[0]!.live
+    await t.db.query(`update question_versions set status = 'archived' where question_id = $1::bigint`, [qid])
+    await t.db.query(`update questions set live_version_no = null where id = $1::bigint`, [qid])
+    try {
+      expect((await t.db.query(`select 1 from questions where group_id = $1::bigint`, [g!.g])).length).toBe(3)
+      const served = (await start({ subject: 'BM', count: 5 })).items.map((i) => i.id)
+      expect(served).not.toContain(qid)
+      const i1 = served.indexOf(id('SEED-GRP-PASAR-1'))
+      expect(i1).toBeGreaterThanOrEqual(0)
+      expect(served.slice(i1, i1 + 2)).toEqual([id('SEED-GRP-PASAR-1'), id('SEED-GRP-PASAR-2')])
+    } finally {
+      await t.db.query(`update question_versions set status = 'approved' where question_id = $1::bigint`, [qid])
+      await t.db.query(`update questions set live_version_no = $2 where id = $1::bigint`, [qid, before])
+    }
+  })
+
   it('[CI] AC-QP-6: over many draws of 5 across all subjects, every group present in a session is present with all its members', async () => {
     const size = new Map<string, number>(
       (await t.db.query<{ g: string; n: string }>(`select group_id::text g, count(*)::text n from questions where group_id is not null group by group_id`)).map((r) => [r.g, Number(r.n)]),

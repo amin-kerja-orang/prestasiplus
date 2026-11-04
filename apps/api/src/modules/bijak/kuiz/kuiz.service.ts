@@ -100,7 +100,7 @@ export class KuizService {
       count * KUIZ_OVER_FETCH,
       mulberry32(randomInt(0, 0x1_0000_0000)),
     )
-    const records = await this.withGroupMembers((await this.questions.getMany(ids, 'live')).filter((r) => r.isActive && r.version.status === 'approved'))
+    const { records, sizes } = await this.withGroupMembers((await this.questions.getMany(ids, 'live')).filter((r) => r.isActive && r.version.status === 'approved'))
     const prepared = await this.prepare(records)
     const answerable = prepared.flatMap((p) => {
       const leaf = leavesOf(p.record.id, p.record.version.parts)[0]
@@ -111,7 +111,7 @@ export class KuizService {
     const candidates: DrawCandidate[] = answerable.map((p) =>
       p.record.groupId === null
         ? { id: p.record.id, groupId: null, groupPosition: null }
-        : { id: p.record.id, groupId: p.record.groupId, groupPosition: p.record.groupPosition, groupSize: p.group?.questionIds.length ?? 0 },
+        : { id: p.record.id, groupId: p.record.groupId, groupPosition: p.record.groupPosition, groupSize: sizes.get(p.record.groupId) ?? 0 },
     )
     const chosen = drawUnits(candidates, count, mulberry32(randomInt(0, 0x1_0000_0000))).flatMap((id) => byId.get(id) ?? [])
     if (chosen.length === 0) throw noQuestions()
@@ -380,16 +380,24 @@ export class KuizService {
 
   // --- shared -------------------------------------------------------------------------------------
 
-  /** The records plus the not-yet-loaded live members of their groups, so a group cut by the sample window is judged whole, not dropped for the cut. */
-  private async withGroupMembers(records: readonly QuestionRecord[]): Promise<QuestionRecord[]> {
+  /**
+   * The records plus the not-yet-loaded live members of their groups, so a group cut by the sample window is judged whole, not dropped
+   * for the cut. Also each group's size: its members whose latest version is not archived (the count `groupCompleteSql` uses; an
+   * archived member stays in the group but is no longer a member to serve).
+   */
+  private async withGroupMembers(records: readonly QuestionRecord[]): Promise<{ records: QuestionRecord[]; sizes: Map<string, number> }> {
     const groupIds = [...new Set(records.flatMap((r) => (r.groupId === null ? [] : [r.groupId])))]
-    if (groupIds.length === 0) return [...records]
+    const sizes = new Map<string, number>()
+    if (groupIds.length === 0) return { records: [...records], sizes }
+    const groups = await this.questions.groupsByIds(groupIds)
+    const latest = new Map((await this.questions.getMany(groups.flatMap((g) => g.questionIds), 'latest')).map((r) => [r.id, r]))
+    for (const g of groups) sizes.set(g.id, g.questionIds.filter((id) => latest.get(id)?.version.status !== 'archived').length)
     const have = new Set(records.map((r) => r.id))
-    const missing = [...new Set((await this.questions.groupsByIds(groupIds)).flatMap((g) => g.questionIds))].filter((id) => !have.has(id))
+    const missing = [...new Set(groups.flatMap((g) => g.questionIds))].filter((id) => !have.has(id))
     const extra = missing.length === 0 ? [] : (await this.questions.getMany(missing, 'live')).filter(
-          (r) => r.isActive && r.version.status === 'approved' && r.version.type === 'mcq' && leavesOf(r.id, r.version.parts).length === 1,
-        )
-    return [...records, ...extra]
+      (r) => r.isActive && r.version.status === 'approved' && r.version.type === 'mcq' && leavesOf(r.id, r.version.parts).length === 1,
+    )
+    return { records: [...records, ...extra], sizes }
   }
 
   /** Groups, linked pictures and whether every stimulus can be shown, for each record (one query per kind, not per record). */
