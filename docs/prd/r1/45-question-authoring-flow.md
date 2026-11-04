@@ -553,6 +553,8 @@ Buttons `Batal`, `Muat naik & ekstrak`; progress "Memuat naik… {x}%". Notice "
 
 #### 3.3.2 Extraction (no external AI in R1, D-QA-13)
 
+V3 code note (D115): `POST /api/intake/batches/:id/extract` has an EMPTY body in V3, so `pages[]` and the two retry routes (`POST /api/intake/files/:id/retry`, `POST /api/intake/batches/:id/retry`) are NEW, built by S1-T04; they are not an existing retry API.
+
 1. A digital PDF uses its text layer first; a scanned page uses the in-house Tesseract OCR (languages msa + eng, `OCR_ENGINE=tesseract`, `OCR_LANG_DIR`) (D81, ADR-0034). The worker runs (`JOBS_WORKER_ENABLED=true`). The mock provider is not a valid state on UAT (U-OP-02).
 2. Rule-based structure detection reads: Bahagian headers and the rule text ("Jawab semua", "Jawab satu", "Jawab tiga", "Soalan ini mesti dijawab"), printed question numbers, sub-part markers, mark labels "[n markah]", option lists A to H, option banks, "Sumber:" lines, word ranges ("150-200 patah perkataan"), and the repeated BM and English text of bilingual papers.
 3. The output is **structure**: Paper > Bahagian > questions > parts, plus stimulus groups ("Rajah 3 -> soalan 5-8"), the skema attached by number, and Kertas and Bahagian copied from the form. A figure is a stimulus object, never an item. Every stimulus crop is stored once.
