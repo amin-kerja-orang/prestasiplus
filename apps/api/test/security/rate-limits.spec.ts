@@ -1,9 +1,11 @@
 import { ErrorBodySchema } from '@pp/contract'
 import type { Response } from 'supertest'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import type { ExecutionContext } from '@nestjs/common'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
-import { GLOBAL_RATE_SPEC, GLOBAL_USER_RATE_SPEC } from '../../src/common/security/global-rate-limit.guard'
+import { GlobalRateLimitGuard, GLOBAL_RATE_SPEC, GLOBAL_USER_RATE_SPEC } from '../../src/common/security/global-rate-limit.guard'
 import { ACCOUNT_LIMITS } from '../../src/modules/account/account.constants'
+import { SessionStore } from '../../src/modules/auth/session.store'
 import { DEFAULT_LOGIN_LIMIT } from '../../src/modules/auth/auth.constants'
 import { FilesConfig } from '../../src/modules/files/files.config'
 import { INTAKE_LIMITS } from '../../src/modules/intake/files/intake-files.config'
@@ -179,5 +181,58 @@ describe('S0-T08 (D115): the global ceiling is per user when signed in, per addr
       // Readiness may answer 503 in this test app (no real probes); what matters is that it is never throttled.
       expect((await t.http().get('/api/ready').set('X-Forwarded-For', ip)).status).not.toBe(429)
     }
+  })
+
+  const FORGED = `pp_session=${'A'.repeat(43)}`
+  const forged = (ip: string) => t.http().get(ME).set('X-Forwarded-For', ip).set('Cookie', FORGED)
+
+  it('forged well-formed cookies fall back to the address bucket (429 at the limit) and stop reaching the session store once the unresolved counter is used up', async () => {
+    const reads = vi.spyOn(t.app.get(SessionStore, { strict: false }), 'findByToken')
+    try {
+      const ip = '10.30.0.6'
+      for (let i = 0; i < IP_LIMIT; i++) expect((await forged(ip)).status).toBe(401)
+      expect(reads).toHaveBeenCalledTimes(IP_LIMIT)
+      expectRateLimited(await forged(ip), 60)
+      expectRateLimited(await forged(ip), 60)
+      expect(reads).toHaveBeenCalledTimes(IP_LIMIT) // no further database read
+    } finally {
+      reads.mockRestore()
+    }
+  })
+
+  it('a real signed-in user on an address flooded with forged cookies still passes', async () => {
+    const ip = '10.30.0.7'
+    const l = await loginAs(t, 'pelajar2@demo.test', { ip })
+    // Forged cookies use up the address bucket (limit 5, login used 1) but not yet the unresolved counter.
+    for (let i = 0; i < IP_LIMIT - 2; i++) expect((await forged(ip)).status).toBe(401)
+    expect((await l.agent.get(ME).set('X-Forwarded-For', ip)).status).toBe(200)
+  })
+
+  it('a bad CSRF header on a valid session is still CSRF_INVALID from AuthGuard and is counted per address', async () => {
+    const ip = '10.30.0.8'
+    const l = await loginAs(t, 'pelajar@demo.test', { ip }) // 1 address request
+    const bad = () => l.agent.post('/api/tiket').set('X-Forwarded-For', ip).set('X-CSRF-Token', 'wrong').send({ subject: 'Ujian', body: 'Isi ujian.' })
+    for (let i = 0; i < IP_LIMIT - 1; i++) {
+      const r = await bad()
+      expect(r.status, JSON.stringify(r.body)).toBe(403)
+      expect(r.body.error.code).toBe('CSRF_INVALID')
+    }
+    expectRateLimited(await bad(), 60)
+  })
+})
+
+describe('GlobalRateLimitGuard without a session resolver', () => {
+  it('counts the request per address', async () => {
+    const consumed: Array<[string, string]> = []
+    const limiter = { consume: (spec: { bucket: string }, subject: string) => void consumed.push([spec.bucket, subject]), remaining: () => 10 }
+    const moduleRef = {
+      get: () => {
+        throw new Error('not found')
+      },
+    }
+    const guard = new GlobalRateLimitGuard(limiter as never, moduleRef as never)
+    const ctx = { switchToHttp: () => ({ getRequest: () => ({ originalUrl: '/api/x', ip: '10.1.1.1', headers: { cookie: 'pp_session=' + 'A'.repeat(43) } }) }) } as unknown as ExecutionContext
+    expect(await guard.canActivate(ctx)).toBe(true)
+    expect(consumed).toEqual([['global', '10.1.1.1']])
   })
 })

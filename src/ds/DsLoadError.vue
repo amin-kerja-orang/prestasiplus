@@ -106,15 +106,12 @@ const alertTitle = computed(() =>
 
 /** Alert body: the countdown for a rate limit, else the existing description behaviour. */
 const alertDescription = computed(() => {
-  if (rateLimited.value !== null) return countdownText.value || undefined
+  if (rateLimited.value !== null) return undefined // the countdown renders in the description slot (aria-live off)
   return props.title ? props.message : undefined
 })
 
-/** The one-line message for the inline form. */
-const inlineMessage = computed(() => {
-  if (rateLimited.value === null) return props.message
-  return countdownText.value ? `${RATE_LIMITED_TEXT} ${countdownText.value}` : RATE_LIMITED_TEXT
-})
+/** The one-line message for the inline form (the countdown is a separate span, see the template). */
+const inlineMessage = computed(() => (rateLimited.value === null ? props.message : RATE_LIMITED_TEXT))
 
 /** The retry button of the alert form (`UAlert` takes button props; the test id rides along as an attribute). */
 const actions = computed(() => [
@@ -139,7 +136,11 @@ const actions = computed(() => [
     :data-testid="testid"
   >
     <UIcon name="i-ph-warning-circle" class="size-5 shrink-0" />
-    <span class="min-w-0 grow">{{ inlineMessage }}</span>
+    <span class="min-w-0 grow"
+      >{{ inlineMessage }}<template v-if="rateLimited !== null && countdownText"
+        >{{ ' ' }}<span aria-live="off">{{ countdownText }}</span></template
+      ></span
+    >
     <UButton
       type="button"
       color="neutral"
@@ -162,5 +163,10 @@ const actions = computed(() => [
     role="alert"
     data-ds="load-error"
     :data-testid="testid"
-  />
+  >
+    <!-- The countdown changes every second: keep it out of the assertive live region's announcements. -->
+    <template v-if="rateLimited !== null && countdownText" #description>
+      <span aria-live="off">{{ countdownText }}</span>
+    </template>
+  </UAlert>
 </template>

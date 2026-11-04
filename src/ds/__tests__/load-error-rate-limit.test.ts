@@ -61,6 +61,16 @@ describe('DsLoadError rate-limit countdown', () => {
     expect(w.emitted('retry')).toHaveLength(1)
   })
 
+  it('keeps the changing countdown out of the live region announcements (aria-live off)', () => {
+    vi.useFakeTimers()
+    for (const variant of ['alert', 'inline'] as const) {
+      const w = mount(DsLoadError, { props: { error: rateLimited(5), variant } })
+      const live = w.get('[aria-live="off"]')
+      expect(live.text()).toBe('Cuba lagi dalam 5 saat.')
+      expect(live.element.closest('[role="alert"]')).not.toBeNull()
+    }
+  })
+
   it('uses minutes from 120 s (ceil)', () => {
     vi.useFakeTimers()
     const w = mount(DsLoadError, { props: { error: rateLimited(150) } })
