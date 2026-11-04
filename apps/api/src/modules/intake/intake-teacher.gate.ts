@@ -14,6 +14,7 @@ export function intakeTeacherEnabled(value: unknown): boolean {
  * `INTAKE_TEACHER_ENABLED` (default off) re-opens the intake files and workflow routes to the teacher role; while it is
  * off a teacher gets 403 `FORBIDDEN` on every one of them, before any body is read or any row is touched. The role
  * comes from the session only. Admin is never affected.
+ * PRECONDITION: the flag must stay off in production until AZ-35 ClamAV scanning of uploads is live.
  */
 @Injectable()
 export class IntakeTeacherGate implements CanActivate {

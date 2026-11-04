@@ -12,7 +12,7 @@ import { CLOCK, type Clock, startOfMytDay } from '../../../db/clock'
 import { idFromString, idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { FILE_STORAGE, type FileStorage } from '../../files'
-import { inspectUpload } from '../../files/content-inspect'
+import { detectOffice, inspectUpload, type OfficeMime } from '../../files/content-inspect'
 import { FilesConfig } from '../../files/files.config'
 import { FilesService, type StoredFile } from '../../files'
 import { JobsService } from '../../jobs'
@@ -35,6 +35,13 @@ interface Checked {
   name: string
   sha256: string
   pages: number
+  /** Set for a teacher's DOCX/XLSX (guru path only): stored as is, no pages, no job. */
+  office?: OfficeMime
+}
+
+/** Narrow switches only the guru paper adapter passes; the admin route never does. */
+export interface UploadOptions {
+  acceptOffice?: boolean
 }
 
 const OPEN = ['submitted', 'processing']
@@ -80,18 +87,18 @@ export class IntakeUploadService {
     if (!OPEN.includes(batch.status)) throw ApiError.of('CONFLICT', { message: INTAKE_FILE_MESSAGES.batchClosed })
   }
 
-  async upload(auth: AuthContext, idText: string, parts: UploadedPart[], who: CallerInfo, signal?: AbortSignal): Promise<IntakeUploadResult> {
+  async upload(auth: AuthContext, idText: string, parts: UploadedPart[], who: CallerInfo, signal?: AbortSignal, opts: UploadOptions = {}): Promise<IntakeUploadResult> {
     await this.assertOpen(auth, idText)
     // Excess requests wait here (their bodies are already buffered, which multer bounds per request).
     const release = await this.slots.acquire(signal)
     try {
-      return await this.uploadLocked(auth, idText, parts, who, signal)
+      return await this.uploadLocked(auth, idText, parts, who, signal, opts)
     } finally {
       release()
     }
   }
 
-  private async uploadLocked(auth: AuthContext, idText: string, parts: UploadedPart[], who: CallerInfo, signal?: AbortSignal): Promise<IntakeUploadResult> {
+  private async uploadLocked(auth: AuthContext, idText: string, parts: UploadedPart[], who: CallerInfo, signal: AbortSignal | undefined, opts: UploadOptions): Promise<IntakeUploadResult> {
     // The batch may have been closed while this request waited for a slot.
     await this.assertOpen(auth, idText)
     const batchId = idFromString(idText)
@@ -99,7 +106,7 @@ export class IntakeUploadService {
     const max = this.config.maxFilesPerBatch
     if (parts.length > max) throw invalid(INTAKE_FILE_MESSAGES.tooManyFiles(max))
 
-    const checked = await this.validate(parts, signal)
+    const checked = await this.validate(parts, signal, opts)
     await this.admit(this.prisma.client, auth, batchId, checked)
 
     // Store the bytes (outside the transaction), then write the rows and the jobs in one transaction.
@@ -107,7 +114,9 @@ export class IntakeUploadService {
     try {
       for (const c of checked) {
         stored.push(
-          await this.files.storeDerived({ ownerUserId: auth.userId, purpose: 'intake_original', bytes: c.bytes, isTest: auth.mode !== null }),
+          c.office
+            ? await this.files.storeIntakeOffice({ ownerUserId: auth.userId, bytes: c.bytes, isTest: auth.mode !== null })
+            : await this.files.storeDerived({ ownerUserId: auth.userId, purpose: 'intake_original', bytes: c.bytes, isTest: auth.mode !== null }),
         )
       }
       return await this.prisma.transaction(
@@ -127,12 +136,12 @@ export class IntakeUploadService {
   // ---- validation (no storage) -----------------------------------------------------------------
 
   /** One file after the other, stopping at the first refusal, so a bad request costs at most one worker. */
-  private async validate(parts: UploadedPart[], signal?: AbortSignal): Promise<Checked[]> {
+  private async validate(parts: UploadedPart[], signal: AbortSignal | undefined, opts: UploadOptions): Promise<Checked[]> {
     const limit = this.filesConfig.intakeMaxBytes
     const checked: Checked[] = []
     const seen = new Set<string>()
     for (const part of parts) {
-      const result = await this.checkOne(part, limit, signal)
+      const result = await this.checkOne(part, limit, signal, opts)
       if ('error' in result) throw result.error
       if (seen.has(result.sha256)) throw invalid(INTAKE_FILE_MESSAGES.duplicate)
       seen.add(result.sha256)
@@ -141,9 +150,22 @@ export class IntakeUploadService {
     return checked
   }
 
-  private async checkOne(part: UploadedPart, limit: number, signal?: AbortSignal): Promise<Checked | { error: ApiError }> {
+  private async checkOne(part: UploadedPart, limit: number, signal: AbortSignal | undefined, opts: UploadOptions): Promise<Checked | { error: ApiError }> {
     const buffer = part.buffer
     if (buffer.length > limit) return { error: invalid(INTAKE_FILE_MESSAGES.size(Math.floor(limit / (1024 * 1024)))) }
+    if (opts.acceptOffice) {
+      const office = detectOffice(buffer)
+      if (office) {
+        return {
+          part,
+          bytes: buffer,
+          name: sanitizeOriginalName(decodeUploadName(part.originalname)),
+          sha256: createHash('sha256').update(buffer).digest('hex'),
+          pages: 0,
+          office,
+        }
+      }
+    }
     const inspected = inspectUpload(buffer)
     if (!inspected || inspected.mime !== 'application/pdf') return { error: invalid(INTAKE_FILE_MESSAGES.type) }
     let pages: number
@@ -241,11 +263,16 @@ export class IntakeUploadService {
           originalName: c.name,
           sha256: c.sha256,
           sizeBytes: BigInt(c.bytes.length),
-          pageCount: c.pages,
-          status: 'uploaded',
+          pageCount: c.office ? null : c.pages,
+          status: c.office ? 'done' : 'uploaded',
           createdAt: now,
         },
       })
+      if (c.office) {
+        // DOCX/XLSX: stored for the admin to download; nothing to read, so no pages and no job.
+        created.push(file.id)
+        continue
+      }
       await tx.intakePage.createMany({ data: Array.from({ length: c.pages }, (_, n) => ({ intakeFileId: file.id, pageNo: n + 1 })) })
       await this.jobs.enqueue(
         {
@@ -262,7 +289,8 @@ export class IntakeUploadService {
     const batch = await tx.intakeBatch.findUniqueOrThrow({ where: { id: batchId }, select: { submittedAt: true } })
     await tx.intakeBatch.update({
       where: { id: batchId },
-      data: { status: 'processing', submittedAt: batch.submittedAt ?? now },
+      // An office-only batch has no job to finish it: it goes straight to review so the admin sees (and can download) the files.
+      data: { status: checked.every((c) => c.office) ? 'ready_for_review' : 'processing', submittedAt: batch.submittedAt ?? now },
     })
     await this.audit.record({
       action: AUDIT_ACTIONS.INTAKE_FILES_UPLOADED,
