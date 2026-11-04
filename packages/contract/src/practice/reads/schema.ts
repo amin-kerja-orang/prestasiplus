@@ -87,6 +87,9 @@ export const PRACTICE_READS_HISTORY_BADGES: Readonly<Record<PracticeMode, { labe
   remedial: { label: 'Latihan', icon: 'fa-book', color: '#6B7280' },
   question_set: { label: 'Latihan', icon: 'fa-book', color: '#6B7280' },
   pksk: { label: 'PKSK', icon: 'fa-book', color: '#6B7280' },
+  // S5-T15: the new lanes look like the legacy values they replace (past_year -> databank, ramalan -> tracking_a).
+  databank: { label: 'Latihan', icon: 'fa-book', color: '#6B7280' },
+  tracking_a: { label: 'Tracking A', icon: 'fa-book', color: '#6B7280' },
 }
 
 const count = () => z.number().int().min(0)
