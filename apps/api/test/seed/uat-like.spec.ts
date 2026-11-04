@@ -30,7 +30,7 @@ async function fingerprint(db: TestDatabase): Promise<{ hash: string; counts: Re
     blueprints: 'id',
   }
   for (const [table, c] of Object.entries(cols)) {
-    const rows = await db.query(`select ${c} from ${table} order by 1, 2`)
+    const rows = await db.query(`select ${c} from ${table} order by ${c}`)
     counts[table] = rows.length
     h.update(table).update(JSON.stringify(rows, (_k, v: unknown) => (typeof v === 'bigint' ? v.toString() : v)))
   }
