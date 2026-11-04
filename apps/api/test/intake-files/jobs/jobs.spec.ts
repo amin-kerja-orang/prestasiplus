@@ -1,7 +1,16 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createPrismaClient, type PrismaClient } from '../../../src/db/client'
-import { JobError, JobsConfig, JobsService, JobsWorker } from '../../../src/modules/jobs'
+import {
+  getWorkerHealth,
+  JobError,
+  JobsConfig,
+  JobsService,
+  JobsWorker,
+  markTick,
+  resetWorkerHealthForTest,
+  WORKER_OK_WINDOW_MS,
+} from '../../../src/modules/jobs'
 import { createTestDatabase, type TestDatabase } from '../../support/db'
 
 let db: TestDatabase
@@ -424,6 +433,46 @@ describe('stuck sweeper and crash recovery', () => {
     expect(await svc.sweepStuck()).toBe(0)
     expect(await svc.sweepStuck(new Date(Date.now() + 120_000))).toBe(1)
     expect((await row(id)).state).toBe('queued')
+  })
+})
+
+describe('worker health (jobs.health)', () => {
+  beforeEach(() => resetWorkerHealthForTest())
+
+  it('is disabled whenever the worker is off, even right after a tick', () => {
+    markTick(1_000)
+    expect(getWorkerHealth(false, 1_000)).toBe('disabled')
+  })
+
+  it('is down when the worker never ticked', () => {
+    expect(getWorkerHealth(true, 5_000)).toBe('down')
+  })
+
+  it('is ok up to the 60 s window and down after it', () => {
+    expect(WORKER_OK_WINDOW_MS).toBe(60_000)
+    markTick(10_000)
+    expect(getWorkerHealth(true, 10_000)).toBe('ok')
+    expect(getWorkerHealth(true, 10_000 + WORKER_OK_WINDOW_MS)).toBe('ok')
+    expect(getWorkerHealth(true, 10_000 + WORKER_OK_WINDOW_MS + 1)).toBe('down')
+  })
+
+  it('tick() stamps the health clock first, even when draining or already ticking', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(new Date('2026-01-01T00:00:00Z'))
+      const draining = { isDraining: true, sweepStuck: vi.fn(), dispatch: vi.fn() }
+      const worker = new JobsWorker(draining as never, cfg({ JOBS_WORKER_ENABLED: 'true' }))
+      expect(getWorkerHealth(true)).toBe('down')
+      await worker.tick()
+      expect(getWorkerHealth(true)).toBe('ok')
+      expect(draining.sweepStuck).not.toHaveBeenCalled()
+      vi.setSystemTime(Date.now() + WORKER_OK_WINDOW_MS + 1)
+      expect(getWorkerHealth(true)).toBe('down')
+      await worker.tick()
+      expect(getWorkerHealth(true)).toBe('ok')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
 
