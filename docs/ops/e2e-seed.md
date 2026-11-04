@@ -2,6 +2,24 @@
 
 A guarded seed profile for local and end-to-end runs. It is **off by default** and must never be run on a server: the `poc` profile does not include it, the production demo guard skips it, and it also needs its own flag.
 
+## One command
+
+```bash
+cp .env.db.example .env.db && cp .env.api.example .env.api
+# .env.api: set DATABASE_URL to the .env.db user, password and database (host `db`), and SESSION_SECRET
+npm run stack:up
+```
+
+`stack:up` is `docker compose -f compose.yaml -f compose.http.yaml up -d --build --wait`. It runs, in order: db, then the `migrate` job (`prisma migrate deploy`, the demo seed, then this e2e seed), then the api (`compose.yaml` `depends_on` makes it wait for `migrate` to finish successfully), then the frontend on http://localhost:5192. No other manual step is needed.
+
+The five e2e logins are `account(role)` in `e2e/api/helpers.ts` (`student`, `studentB`, `guru`, `adminSekolah`, `adminPusat`; the password comes from `BIJAK_<ROLE>_PASS`, `E2E_DEMO_PASSWORD`, else the fixture default). The smoke check logs each one in and reads the session role:
+
+```bash
+npx playwright test -c playwright.http.config.ts e2e/api/stack-smoke.spec.ts
+```
+
+The API image ships `docs/reference/blueprints/*.json` (the layer-2 blueprint files read by `seed/bijak-standards/layer2.ts`). Before it did, the seed saw no quota or KBAT data and the e2e seed stopped with `blueprint 3472/2 does not pass the Sahkan checks (NO_QUOTA, NO_KBAT)`, so `migrate` failed and the api never started.
+
 ## Run
 
 ```bash

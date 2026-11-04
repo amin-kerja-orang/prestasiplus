@@ -3,7 +3,7 @@ import { BIJAK_ATTEMPT_LEAF_KINDS, QUESTION_LEAF_MODES } from '@pp/contract'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 
-import PartInput from '../components/PartInput.vue'
+import { PartInput } from '../../../components/question-display'
 import type { Leaf } from '../domain/paper-model'
 import type { LeafKind } from '../domain/types'
 

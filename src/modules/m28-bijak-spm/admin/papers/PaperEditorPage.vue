@@ -11,7 +11,7 @@ import { useApi } from '@/composables/useApi'
 import { useFlash } from '@/composables/useFlash'
 import { useConfirm, DsCluster, DsLoadError, DsPage, DsPanel, DsStatRow, DsStatusBadge, type StatItem } from '@/ds'
 
-import RichText from '../../components/RichText.vue'
+import { RichText } from '../../../../components/question-display'
 import type { BuilderGroup, BuilderQuestion, SectionPoolPage } from '../../domain/admin-types'
 import type { StimulusDef } from '../../domain/types'
 import { checkPaper, moveUnit, removeUnit, unitsOf } from '../../domain/paper-builder'

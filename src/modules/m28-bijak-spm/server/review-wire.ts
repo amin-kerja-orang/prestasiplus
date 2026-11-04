@@ -88,7 +88,7 @@ export function plainText(text: string): string {
 export interface QueueContext {
   subjectName: (code: string) => string
   /** Kertas and source of the batch (the row only has its id). */
-  batch: { kertas: number; source: string } | undefined
+  batch: { kertas: number | null; source: string } | undefined
   now: number
 }
 

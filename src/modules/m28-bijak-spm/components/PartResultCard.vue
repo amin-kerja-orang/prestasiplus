@@ -7,7 +7,7 @@
 import { computed } from 'vue'
 
 import type { McqOption, PartResult, PartStatus } from '../domain/types'
-import RichText from './RichText.vue'
+import { RichText } from '../../../components/question-display'
 
 const props = defineProps<{ result: PartResult; options?: McqOption[]; title?: string }>()
 
