@@ -375,31 +375,35 @@ describe('stimulus group rules (admin, real database)', () => {
   })
 
   describe('draft groups (D93)', () => {
-    it('a group with 0 or 1 members is created, answers with a BM warning, and loses it at 2', async () => {
+    it('a group with 0 members is created and answers with the empty-group warning; one member is valid and has no warning', async () => {
       const empty = await admin.post('/api/stimulus-groups', { stimulusIds: [await stimulus()] })
       expect(empty.status, JSON.stringify(empty.body)).toBe(201)
       expect(empty.body.data.questionIds).toEqual([])
-      expect(empty.body.data.warning).toBe(STIMULUS_MESSAGES.smallGroup(0))
+      expect(empty.body.data.warning).toBe(STIMULUS_MESSAGES.smallGroup())
       const id = empty.body.data.id as string
-      expect((await admin.get(`/api/stimulus-groups/${id}`)).body.data.warning).toBe(STIMULUS_MESSAGES.smallGroup(0))
+      expect((await admin.get(`/api/stimulus-groups/${id}`)).body.data.warning).toBe(STIMULUS_MESSAGES.smallGroup())
 
       const one = await admin.post(`/api/stimulus-groups/${id}/members`, { questionId: await question() })
       expect(one.status).toBe(200)
-      expect(one.body.data.warning).toBe(STIMULUS_MESSAGES.smallGroup(1))
+      expect(one.body.data.warning).toBeNull() // S1-T01: a one-member group is valid (1..n)
+      expect((await admin.get(`/api/stimulus-groups/${id}`)).body.data.warning).toBeNull()
       const two = await admin.post(`/api/stimulus-groups/${id}/members`, { questionId: await question() })
       expect(two.body.data.warning).toBeNull()
 
       const single = await admin.post('/api/stimulus-groups', { stimulusIds: [await stimulus()], questionIds: [await question()] })
       expect(single.status).toBe(201)
-      expect(single.body.data.warning).toBe(STIMULUS_MESSAGES.smallGroup(1))
+      expect(single.body.data.warning).toBeNull()
     })
 
-    it('removing below 2 succeeds with a warning and never a 422', async () => {
+    it('removing down to one member succeeds without a warning; removing the last one warns and is never a 422', async () => {
       const [q1, q2] = [await question(), await question()] as [string, string]
       const g = await group([q1, q2])
       const res = await admin.delete(`/api/stimulus-groups/${g.id}/members/${q1}`)
       expect(res.status).toBe(200)
-      expect(res.body.data.warning).toBe(STIMULUS_MESSAGES.smallGroup(1))
+      expect(res.body.data.warning).toBeNull()
+      const last = await admin.delete(`/api/stimulus-groups/${g.id}/members/${q2}`)
+      expect(last.status).toBe(200)
+      expect(last.body.data.warning).toBe(STIMULUS_MESSAGES.smallGroup())
     })
   })
 })
