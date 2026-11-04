@@ -16,7 +16,7 @@ export function useStimulusOpen(groupId: string): Ref<boolean> {
   return state
 }
 
-/** New session (sign-out) and tests. */
+/** TESTS ONLY: clears the session map. Not wired to sign-out (another module). */
 export function resetStimulusOpen(): void {
   states.clear()
 }

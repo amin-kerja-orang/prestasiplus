@@ -103,7 +103,9 @@ export function summaryFromWire(
   const name = subjectName(b.subject)
   return {
     id: b.id,
-    title: `${name} Kertas ${b.kertas} ${b.year}`,
+    title: [name, b.kertas != null ? `Kertas ${b.kertas}` : null, b.year ?? null]
+      .filter((x) => x != null)
+      .join(' '),
     subject: b.subject,
     subjectName: name,
     kertas: b.kertas,
@@ -179,8 +181,10 @@ export function batchFromWire(b: WireBatchDetail, pages: PageText[], extras: Bat
   return {
     id: b.id,
     subject: b.subject,
-    kertas: b.kertas,
-    year: b.year,
+    // Wire kertas/year are null only for a teacher submission; IntakeBatch keeps the 0 "blank"
+    // sentinel (cast: 0 is outside 1 | 2) and the render sites omit it.
+    kertas: (b.kertas ?? 0) as 1 | 2,
+    year: b.year ?? 0,
     paperType: paperTypeFromWire(b.paperType),
     source: b.source,
     copyright: b.copyright,

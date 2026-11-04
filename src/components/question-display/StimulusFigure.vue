@@ -132,7 +132,9 @@ function onUp(e: PointerEvent): void {
 }
 
 let pushed = false
-function onPop(): void {
+/* Capture phase: the viewer's own history entry is consumed here, so the router never sees it (no guard, no navigation). */
+function onPop(e: Event): void {
+  e.stopImmediatePropagation()
   pushed = false
   zoomOpen.value = false
 }
@@ -141,9 +143,9 @@ watch(zoomOpen, (v) => {
     reset()
     window.history.pushState({ ...(window.history.state as object | null), qdZoom: true }, '')
     pushed = true
-    window.addEventListener('popstate', onPop)
+    window.addEventListener('popstate', onPop, true)
   } else {
-    window.removeEventListener('popstate', onPop)
+    window.removeEventListener('popstate', onPop, true)
     if (pushed) {
       pushed = false
       window.history.back()
@@ -151,7 +153,7 @@ watch(zoomOpen, (v) => {
   }
 })
 onBeforeUnmount(() => {
-  window.removeEventListener('popstate', onPop)
+  window.removeEventListener('popstate', onPop, true)
   if (pushed) {
     pushed = false
     // drop the marker without navigating (no history.back on unmount)
@@ -308,41 +310,41 @@ function retry(): void {
         />
       </div>
       <UModal v-model:open="zoomOpen" fullscreen :close="false" :title="alt" :description="alt">
-    <template #body>
-      <div class="flex h-full flex-col gap-3" data-testid="stimulus-zoom">
-        <div class="flex justify-end">
-          <UButton
-            type="button"
-            color="neutral"
-            variant="soft"
-            class="min-h-11 min-w-11 justify-center"
-            data-testid="stimulus-zoom-close"
-            @click="zoomOpen = false"
-            >{{ qdCopy.close }}</UButton
-          >
-        </div>
-        <div
-          ref="area"
-          class="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-xl bg-muted"
-          data-testid="stimulus-zoom-area"
-          @pointerdown="onDown"
-          @pointermove="onMove"
-          @pointerup="onUp"
-          @pointercancel="onCancel"
-        >
-          <img
-            :src="stimulus.src"
-            :alt="alt"
-            draggable="false"
-            class="max-h-full max-w-full select-none object-contain"
-            :style="style"
-            :data-scale="scale"
-            data-testid="stimulus-zoom-img"
-          />
-        </div>
-      </div>
-    </template>
-  </UModal>
+        <template #body>
+          <div class="flex h-full flex-col gap-3" data-testid="stimulus-zoom">
+            <div class="flex justify-end">
+              <UButton
+                type="button"
+                color="neutral"
+                variant="soft"
+                class="min-h-11 min-w-11 justify-center"
+                data-testid="stimulus-zoom-close"
+                @click="zoomOpen = false"
+                >{{ qdCopy.close }}</UButton
+              >
+            </div>
+            <div
+              ref="area"
+              class="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-xl bg-muted"
+              data-testid="stimulus-zoom-area"
+              @pointerdown="onDown"
+              @pointermove="onMove"
+              @pointerup="onUp"
+              @pointercancel="onCancel"
+            >
+              <img
+                :src="stimulus.src"
+                :alt="alt"
+                draggable="false"
+                class="max-h-full max-w-full select-none object-contain"
+                :style="style"
+                :data-scale="scale"
+                data-testid="stimulus-zoom-img"
+              />
+            </div>
+          </div>
+        </template>
+      </UModal>
     </template>
 
     <!-- title / body under the picture (image, infographic) -->
