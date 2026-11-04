@@ -2,7 +2,13 @@
  * HTTP implementation of `KandunganApi` (`/api/admin/servability/*`, T30): GETs only, so no CSRF. Reasons arrive as BM
  * sentences from the API's one copy table (D94); this client never rewrites them.
  */
-import type { ServabilityDatabankRow, ServabilityOverview, ServabilityPaperRow } from '@pp/contract'
+import type {
+  ServabilityDatabankRow,
+  ServabilityLaneRow,
+  ServabilityLatihTubiCell,
+  ServabilityOverview,
+  ServabilityPaperRow,
+} from '@pp/contract'
 
 import { api } from '@/api'
 
@@ -15,6 +21,7 @@ interface ListBody<T> {
   data?: T[]
   meta?: { page?: number; pageSize?: number; totalItems?: number }
   subjects?: { id: string; name: string }[]
+  count?: number
 }
 
 function qs(q: LaneQuery): string {
@@ -31,11 +38,13 @@ export class HttpKandunganServer implements KandunganApi {
   private async list<T>(url: string, q: LaneQuery): Promise<LanePage<T>> {
     try {
       const res = await api.request<ListBody<T>>('GET', `${url}?${qs(q)}`, { raw: true })
+      const total = res?.meta?.totalItems ?? res?.data?.length ?? 0
       return {
         rows: res?.data ?? [],
         page: res?.meta?.page ?? q.page ?? 1,
         pageSize: res?.meta?.pageSize ?? q.pageSize ?? 25,
-        total: res?.meta?.totalItems ?? res?.data?.length ?? 0,
+        total,
+        count: res?.count ?? total,
         subjects: (res?.subjects ?? []).map((s) => ({ id: s.id, name: s.name })),
       }
     } catch (e) {
@@ -57,5 +66,13 @@ export class HttpKandunganServer implements KandunganApi {
 
   paperLane(q: LaneQuery): Promise<LanePage<ServabilityPaperRow>> {
     return this.list('/api/admin/servability/lanes/bijak-spm', q)
+  }
+
+  subjektifLane(q: LaneQuery): Promise<LanePage<ServabilityLaneRow>> {
+    return this.list('/api/admin/servability/lanes/subjektif', q)
+  }
+
+  latihTubiLane(q: LaneQuery): Promise<LanePage<ServabilityLatihTubiCell>> {
+    return this.list('/api/admin/servability/lanes/latih-tubi', q)
   }
 }

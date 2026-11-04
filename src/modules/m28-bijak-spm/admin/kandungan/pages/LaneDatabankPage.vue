@@ -7,11 +7,11 @@
 import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 
-import { DsDataTable, DsLoadError } from '@/ds'
+import { DsDataTable, DsLoadError, DsPage, DsText } from '@/ds'
 
 import { ADMIN_ROUTES } from '../../papers/ui'
 import { kandunganServer } from '../client'
-import { laneCopy } from '../lanes'
+import { laneCopy, QUESTION_STATUS_OPTIONS, questionStatusLabel } from '../lanes'
 import { PAGE_SIZE, useLane } from '../use-lane'
 import LaneShell from './LaneShell.vue'
 
@@ -19,16 +19,10 @@ import type { ServabilityDatabankRow } from '@pp/contract'
 
 type Row = ServabilityDatabankRow & { no: number } & Record<string, unknown>
 
-const STATUSES = [
-  { value: 'draft', label: 'Draf' },
-  { value: 'review', label: 'Menunggu Semakan' },
-  { value: 'approved', label: 'Diterbitkan' },
-  { value: 'archived', label: 'Diarkibkan' },
-]
-const statusText = (code: string): string => STATUSES.find((s) => s.value === code)?.label ?? code
+const statusText = questionStatusLabel
 
 const server = kandunganServer()
-const { filters, page, subjects, list, chips, removeChip } = useLane((q) => server.databankLane(q), statusText)
+const { filters, page, subjects, count, list, chips, removeChip } = useLane((q) => server.databankLane(q), statusText)
 
 const rows = computed<Row[]>(() =>
   (list.data.value?.rows ?? []).map((r, i) => ({ ...r, no: (page.value - 1) * PAGE_SIZE + i + 1 })),
@@ -42,15 +36,16 @@ const columns: TableColumn<Row>[] = [
 </script>
 
 <template>
-  <LaneShell
-    v-model:filters="filters"
-    heading="Databank Soalan"
-    :subjects="subjects"
-    :statuses="STATUSES"
-    :chips="chips"
-    testid="lane-databank"
-    @remove-chip="removeChip"
-  >
+  <DsPage layout="list" data-testid="lane-databank">
+    <LaneShell
+      v-model:filters="filters"
+      lane="databank"
+      :count="count"
+      :subjects="subjects"
+      :statuses="QUESTION_STATUS_OPTIONS"
+      :chips="chips"
+      @remove-chip="removeChip"
+    />
     <DsLoadError v-if="list.error.value" message="Tidak dapat memuatkan senarai." @retry="list.reload()" />
     <DsDataTable
       v-else
@@ -72,7 +67,7 @@ const columns: TableColumn<Row>[] = [
         <div class="min-w-0">
           <p class="break-words text-body">{{ row.original.title }}</p>
           <p class="text-caption text-muted">
-            {{ row.original.subject?.name ?? '' }} · {{ statusText(row.original.status) }}
+            {{ row.original.meta ?? row.original.subject?.name ?? '' }} · {{ statusText(row.original.status) }}
           </p>
         </div>
       </template>
@@ -80,11 +75,12 @@ const columns: TableColumn<Row>[] = [
         <ul v-if="row.original.attention.length" class="flex flex-col gap-1" :data-testid="`attention-${row.original.questionId}`">
           <li v-for="a in row.original.attention" :key="a.code" class="text-caption text-error">{{ a.message }}</li>
         </ul>
+        <DsText v-else variant="caption" tone="muted">{{ laneCopy.noAttention }}</DsText>
       </template>
       <template #card="{ row }">
         <div class="flex min-w-0 flex-1 flex-col gap-1">
           <p class="break-words text-body">{{ row.title }}</p>
-          <p class="text-caption text-muted">{{ row.subject?.name ?? '' }} · {{ statusText(row.status as string) }}</p>
+          <p class="text-caption text-muted">{{ row.meta ?? row.subject?.name ?? '' }} · {{ statusText(row.status as string) }}</p>
           <ul v-if="(row.attention as unknown[]).length" class="flex flex-col gap-1">
             <li
               v-for="a in row.attention as { code: string; message: string }[]"
@@ -94,6 +90,7 @@ const columns: TableColumn<Row>[] = [
               {{ a.message }}
             </li>
           </ul>
+          <DsText v-else variant="caption" tone="muted">{{ laneCopy.noAttention }}</DsText>
         </div>
       </template>
       <template #card-actions="{ row }">
@@ -117,5 +114,5 @@ const columns: TableColumn<Row>[] = [
         />
       </template>
     </DsDataTable>
-  </LaneShell>
+  </DsPage>
 </template>

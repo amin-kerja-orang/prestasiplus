@@ -1,4 +1,4 @@
-/** State shared by the two lane pages: applied filters, chips, the current page and the load. */
+/** State shared by the lane pages: applied filters, chips, the current page and the load. */
 import { computed, ref, watch } from 'vue'
 
 import { useApi } from '@/composables/useApi'
@@ -34,6 +34,7 @@ export function useLane<T>(
 
   /** The Subjek options come from the lane response (REQ-C-020), not from the bank summary. */
   const subjects = computed(() => list.data.value?.subjects ?? [])
+  const count = computed(() => list.data.value?.count ?? 0)
   const chips = computed(() => [
     ...(filters.value.subjectId
       ? [{ key: 'subjectId', label: subjects.value.find((s) => s.id === filters.value.subjectId)?.name ?? filters.value.subjectId }]
@@ -44,5 +45,5 @@ export function useLane<T>(
   function removeChip(key: string): void {
     filters.value = { ...filters.value, [key]: '' }
   }
-  return { filters, page, subjects, list, chips, removeChip }
+  return { filters, page, subjects, count, list, chips, removeChip }
 }
