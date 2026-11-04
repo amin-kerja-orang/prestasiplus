@@ -193,11 +193,11 @@ describe('hub and lobby (M16-22, M16-23)', () => {
   })
 
   it('hub and lobby need a session (401)', async () => {
-    expectError(await t.http().get('/api/games/hub'), 'UNAUTHORIZED', 'Unauthenticated.')
+    expectError(await t.http().get('/api/games/hub'), 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
     expectError(
       await t.http().get('/api/games/papan-bijak/lobby'),
       'UNAUTHORIZED',
-      'Unauthenticated.',
+      'Sesi anda telah tamat. Sila log masuk semula.',
     )
   })
 })

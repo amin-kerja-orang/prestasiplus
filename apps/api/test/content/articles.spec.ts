@@ -128,7 +128,7 @@ describe('AC 1 the public never sees a draft', () => {
   })
 
   it('GET /articles/:slug of a draft or an unknown slug is 404 and counts nothing', async () => {
-    errorOf(await pub(`/articles/${draftSlug}`), 404, 'NOT_FOUND', 'Not Found.')
+    errorOf(await pub(`/articles/${draftSlug}`), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
     errorOf(await pub('/articles/tiada-slug'), 404, 'NOT_FOUND')
     const [row] = await t.db.query<{ views: number }>(`select views from articles where slug = 'draf-rahsia'`)
     expect(row?.views).toBe(9999)
