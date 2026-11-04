@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import type { QuestionSetPaper } from '@pp/contract'
 
+import type { AuthContext } from '../../../common/scope/auth-context'
 import { ApiError } from '../../../common/errors/api-error'
 import { PAPER_INTAKE_UNAVAILABLE } from './question-sets.constants'
 
@@ -35,6 +36,10 @@ export interface PaperSubmission {
   declaration: PaperDeclaration
   files: PaperUpload[]
   at: Date
+  /** The caller's session context (intake scope and audit), the client address and the request id (null when unknown). */
+  auth: AuthContext
+  ip: string | null
+  requestId: string | null
 }
 
 /** Implemented by BE-37 (intake): stores the files, creates the pending question bank submission. */
