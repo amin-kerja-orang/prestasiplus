@@ -1,7 +1,8 @@
 /**
  * S0-T06 sidebar walk (R1, D115). Logs in as the pupil, the Guru and the Admin Sekolah, opens every
  * link the rendered sidebar shows and asserts: a non-empty title that is neither the 403 nor the
- * 404 title, no banned string (AC-X2-3), and no redirect away from the item's own path. Also asserts
+ * 404 title, no banned string (AC-X2-3), and no redirect away from the item's own path (exact path
+ * match, query and trailing slash ignored, plus the by-design ALLOWED_REDIRECTS). Also asserts
  * the role-denial ACs AC-MUR-SH-7 and AC-SH-6 (a wrong-role URL answers the 403 page; one API call
  * answers 403 FORBIDDEN).
  *
@@ -13,12 +14,15 @@
  * collapsed group (`v-show`, so they stay in the DOM). Reading `href` from the DOM therefore needs no
  * group expansion and excludes the logo, profile and logout links that have no `data-nav-id`.
  *
+ * Calibration: EXPECTED_RED is calibrated by the first CI run, per the card (D115). The S0-T06 PR
+ * lists that as awaiting CI.
+ *
  * Keep in step with `src/shells/__tests__/user-nav.test.ts` ("pins the sidebar item ids"): a nav
  * change must update both, and EXPECTED_RED below.
  */
 import { readFileSync } from 'node:fs'
 
-import type { Page } from '@playwright/test'
+import type { Page, TestInfo } from '@playwright/test'
 
 import { account, FORBIDDEN_TITLE, type ApiRole } from '../api/helpers'
 import { expect, gotoApi, loginViaUi, test } from '../fixtures/api'
@@ -86,6 +90,46 @@ const ROLE_LABEL: Record<WalkRole, string> = {
 interface Link {
   id: string
   href: string
+  /** `target="_blank"` links open a new tab; the drawer click loop skips them. */
+  blank: boolean
+}
+
+/**
+ * Redirects that are by design, so they are not a "redirected" problem. Any other difference between
+ * the link path and the final path is one. Derived from the m08 route files.
+ */
+const ALLOWED_REDIRECTS: { role: WalkRole; from: string; to: string; reason: string }[] = [
+  {
+    role: 'guru',
+    from: '/analisa-item',
+    to: '/analisa-item/kelas',
+    // src/modules/m08-student-performance/routes/analisa-item.ts: analisaItemTarget(teacher)
+    reason: 'teacher is sent to the class item analysis',
+  },
+  {
+    role: 'adminSekolah',
+    from: '/analisa-item',
+    to: '/analisa-item/sekolah',
+    // src/modules/m08-student-performance/routes/analisa-item.ts: analisaItemTarget(school_admin)
+    reason: 'school admin is sent to the school item analysis',
+  },
+  {
+    role: 'adminSekolah',
+    from: '/prestasi',
+    to: '/prestasi/sekolah',
+    // src/modules/m08-student-performance/routes/prestasi.ts:29 redirects /prestasi for every role;
+    // /prestasi/sekolah is the school admin's own dashboard (the pupil's row is EXPECTED_RED, S10-T01).
+    reason: 'school admin Prestasi is the school dashboard',
+  },
+]
+
+const normalPath = (p: string): string => (p.length > 1 ? p.replace(/\/+$/, '') : p)
+
+/** True when `finalPath` is the link's own path (query and trailing slash ignored) or an allowed redirect. */
+function pathOk(role: WalkRole, from: string, finalPath: string): boolean {
+  const f = normalPath(finalPath)
+  if (f === normalPath(from)) return true
+  return ALLOWED_REDIRECTS.some((r) => r.role === role && r.from === from && r.to === f)
 }
 
 async function collect(page: Page, selector: string): Promise<Link[]> {
@@ -94,6 +138,7 @@ async function collect(page: Page, selector: string): Promise<Link[]> {
     as.map((a) => ({
       id: a.getAttribute('data-nav-id') ?? '',
       href: new URL((a as HTMLAnchorElement).href).pathname,
+      blank: (a as HTMLAnchorElement).target === '_blank',
     })),
   )
   const seen = new Set<string>()
@@ -101,18 +146,29 @@ async function collect(page: Page, selector: string): Promise<Link[]> {
 }
 
 /** Opens one link and returns the list of problems found (empty = the link is healthy). */
-async function problemsOf(page: Page, link: Link): Promise<string[]> {
+async function problemsOf(page: Page, role: WalkRole, link: Link): Promise<string[]> {
   await gotoApi(page, link.href)
-  await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {})
   const problems: string[] = []
+  // The route has settled once the title is set and the shell's main landmark is visible. The
+  // 403/404 outcome pages are rendered by LayoutHost and may have no main landmark: then it is a problem.
+  try {
+    await expect.poll(() => page.title(), { timeout: 15_000 }).not.toBe('')
+  } catch {
+    problems.push('empty title')
+  }
+  const main = page.locator('[data-testid="shell-user-main"], main, [role="main"]').first()
+  try {
+    await expect(main).toBeVisible({ timeout: 15_000 })
+  } catch {
+    problems.push('no visible main landmark')
+  }
   const title = await page.title()
-  if (!title.trim()) problems.push('empty title')
   if (title === FORBIDDEN_TITLE) problems.push('403 title')
   if (title === NOT_FOUND_TITLE) problems.push('404 title')
   const text = (await page.locator('body').innerText()).toLowerCase()
   for (const s of BANNED) if (text.includes(s)) problems.push(`banned string "${s}"`)
   const path = new URL(page.url()).pathname
-  if (!path.startsWith(link.href)) problems.push(`redirected to ${path}`)
+  if (!pathOk(role, link.href, path)) problems.push(`redirected to ${path}`)
   return problems
 }
 
@@ -121,31 +177,30 @@ async function login(page: Page, role: ApiRole): Promise<void> {
   await loginViaUi(page, user, pass)
 }
 
-const isDesktop = (page: Page) => (page.viewportSize()?.width ?? 0) >= 1280
-const isPhone = (page: Page) => page.viewportSize()?.width === 375
+// Project names of playwright.http.config.ts: mobile (375), tablet (768), desktop (1280).
+const onDesktop = (info: TestInfo) => info.project.name === 'desktop'
+const onPhone = (info: TestInfo) => info.project.name === 'mobile'
 
 const ROLES: WalkRole[] = ['student', 'guru', 'adminSekolah']
 
 for (const role of ROLES) {
   test.describe(`sidebar walk: ${ROLE_LABEL[role]}`, () => {
-    test(`@api every sidebar link opens a real screen (${role}, 1280)`, async ({ page }) => {
-      test.skip(!isDesktop(page), 'viewport-independent: runs at 1280 only')
-      test.setTimeout(300_000)
+    test(`@api every sidebar link opens a real screen (${role}, 1280)`, async ({ page }, info) => {
+      test.skip(!onDesktop(info), 'viewport-independent: runs on the desktop project only')
       await login(page, role)
       const links = await collect(page, SIDEBAR)
+      test.setTimeout(links.length * 20_000 + 60_000)
       expect(links.length, `${role}: sidebar links rendered`).toBeGreaterThanOrEqual(MIN_LINKS[role])
 
       const red = EXPECTED_RED[role]
       const stale = red.filter((r) => !links.some((l) => l.href === r.route))
-      expect(
-        stale.map((r) => `${r.id} ${r.route} (${r.ownerCard})`),
-        'EXPECTED_RED rows that match no rendered sidebar link: remove the stale rows',
-      ).toEqual([])
-
-      const failures: string[] = []
+      // All problems are collected first and asserted once, so a slow link does not hide the others.
+      const failures: string[] = stale.map(
+        (r) => `${r.id} ${r.route} (${r.ownerCard}): EXPECTED_RED row matches no rendered sidebar link, remove the stale row`,
+      )
       for (const link of links) {
         const row = red.find((r) => r.route === link.href)
-        const problems = await problemsOf(page, link)
+        const problems = await problemsOf(page, role, link)
         if (row) {
           if (problems.length === 0) {
             failures.push(`${link.id} ${link.href}: now passes, remove its EXPECTED_RED row (${row.ownerCard})`)
@@ -163,21 +218,36 @@ for (const role of ROLES) {
       })
     }
 
-    test(`@api the drawer reaches the same links (${role}, 375)`, async ({ page }) => {
-      test.skip(!isPhone(page), 'drawer test runs at 375 only')
+    test(`@api the drawer reaches the same links (${role}, 375)`, async ({ page }, info) => {
+      test.skip(!onPhone(info), 'drawer test runs on the mobile project only')
       await login(page, role)
       // The sidebar is in the DOM but hidden below lg: read its link set, then open the drawer.
       const sidebar = await collect(page, SIDEBAR)
+      test.setTimeout(sidebar.length * 15_000 + 60_000)
       expect(sidebar.length, `${role}: sidebar links rendered`).toBeGreaterThanOrEqual(MIN_LINKS[role])
-      await page.getByTestId('shell-user-hamburger').click()
-      await expect(page.getByTestId('shell-user-drawer')).toBeVisible()
+      const open = async () => {
+        await page.getByTestId('shell-user-hamburger').click()
+        await expect(page.getByTestId('shell-user-drawer')).toBeVisible()
+      }
+      await open()
       const drawer = new Set((await collect(page, DRAWER)).map((l) => l.href))
       const missing = sidebar.map((l) => l.href).filter((h) => !drawer.has(h))
       expect(missing, 'sidebar links missing from the drawer').toEqual([])
-      // One link of the drawer is reachable by tapping it (the rest are covered at 1280).
-      const first = sidebar[0]!
-      await page.locator(`${DRAWER}[href="${first.href}"]`).first().click()
-      await expect.poll(() => new URL(page.url()).pathname).toMatch(new RegExp(`^${first.href}`))
+      // Tap every drawer link (new-tab links and expected-red rows excluded), check it lands on its own path.
+      const red = EXPECTED_RED[role]
+      const failures: string[] = []
+      for (const link of sidebar.filter((l) => !l.blank && !red.some((r) => r.route === l.href))) {
+        if (!(await page.getByTestId('shell-user-drawer').isVisible())) await open()
+        await page.locator(`${DRAWER}[href="${link.href}"]`).first().click()
+        try {
+          await expect
+            .poll(() => pathOk(role, link.href, new URL(page.url()).pathname), { timeout: 15_000 })
+            .toBe(true)
+        } catch {
+          failures.push(`${link.id} ${link.href}: landed on ${new URL(page.url()).pathname}`)
+        }
+      }
+      expect(failures, 'drawer links that do not reach their own path').toEqual([])
     })
   })
 }
@@ -200,8 +270,8 @@ test.describe('role denial (AC-MUR-SH-7, AC-SH-6)', () => {
 
   for (const { role, paths } of DENIED) {
     for (const path of paths) {
-      test(`@api ${role} on ${path} answers 403 (1280)`, async ({ page }) => {
-        test.skip(!isDesktop(page), 'viewport-independent: runs at 1280 only')
+      test(`@api ${role} on ${path} answers 403 (1280)`, async ({ page }, info) => {
+        test.skip(!onDesktop(info), 'viewport-independent: runs on the desktop project only')
         await login(page, role)
         await expectForbidden(page, path)
       })
@@ -215,8 +285,8 @@ test.describe('role denial (AC-MUR-SH-7, AC-SH-6)', () => {
     await expectForbidden(page, '/prestasi/sekolah')
   })
 
-  test('@api GET /api/admin/pksk-access as the pupil answers 403 FORBIDDEN (1280)', async ({ page }) => {
-    test.skip(!isDesktop(page), 'viewport-independent: runs at 1280 only')
+  test('@api GET /api/admin/pksk-access as the pupil answers 403 FORBIDDEN (1280)', async ({ page }, info) => {
+    test.skip(!onDesktop(info), 'viewport-independent: runs on the desktop project only')
     await login(page, 'student')
     const res = await page.request.get('/api/admin/pksk-access')
     expect(res.status()).toBe(403)
