@@ -1,18 +1,27 @@
 <script setup lang="ts">
 /** The five stat cards (FR-M05-10, 11): Syiling Kamu, Mata (Lvl n), Hari Berturut, Sesi Minggu Ini, Ketepatan. */
+import { computed } from 'vue'
+
 import { DsStatTile } from '@/ds'
 
 import type { Dashboard } from '../../api/types'
-import { COUNT_RULES } from '../dashboard/dashboard-lib'
+import { accuracyDisplay, COUNT_RULES } from '../dashboard/dashboard-lib'
 import { useDisplayCount } from './useDisplayCount'
 
-const props = defineProps<Pick<Dashboard, 'wallet' | 'streak' | 'week'>>()
+const props = defineProps<Pick<Dashboard, 'wallet' | 'streak' | 'week' | 'accuracyPct'>>()
 
 const coins = useDisplayCount(() => props.wallet.coins, COUNT_RULES.coins)
 const points = useDisplayCount(() => props.wallet.points, COUNT_RULES.points)
 const streak = useDisplayCount(() => props.streak.count, COUNT_RULES.streak)
 const sessions = useDisplayCount(() => props.week.sessions, COUNT_RULES.sessions)
-const accuracy = useDisplayCount(() => props.week.accuracyPct, COUNT_RULES.accuracy)
+// Pooled accuracy (top-level field): "—" with no answers (no count-up), else the half-up whole number.
+const accuracy = useDisplayCount(
+  () => (props.accuracyPct === null ? 0 : Math.floor(props.accuracyPct + 0.5)),
+  COUNT_RULES.accuracy,
+)
+const accuracyText = computed(() =>
+  props.accuracyPct === null ? accuracyDisplay(null) : `${accuracy.value}%`,
+)
 </script>
 
 <template>
@@ -53,7 +62,7 @@ const accuracy = useDisplayCount(() => props.week.accuracyPct, COUNT_RULES.accur
     </li>
     <li class="col-span-2 min-w-0 md:col-span-1" data-testid="dash-stat-accuracy">
       <DsStatTile
-        :value="`${accuracy}%`"
+        :value="accuracyText"
         unit="Ketepatan"
         icon="star"
         accent="trial"

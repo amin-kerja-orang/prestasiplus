@@ -24,6 +24,8 @@ import HomeDifficulty from '../components/dashboard-v2/HomeDifficulty.vue'
 import HomeGreeting from '../components/dashboard-v2/HomeGreeting.vue'
 import HomeKombo from '../components/dashboard-v2/HomeKombo.vue'
 import HomeLevels from '../components/dashboard-v2/HomeLevels.vue'
+import HomeCabaran from '../components/dashboard-v2/HomeCabaran.vue'
+import HomePakej from '../components/dashboard-v2/HomePakej.vue'
 import HomePlatform from '../components/dashboard-v2/HomePlatform.vue'
 import HomeQuests from '../components/dashboard-v2/HomeQuests.vue'
 import HomeQuickActions from '../components/dashboard-v2/HomeQuickActions.vue'
@@ -63,15 +65,22 @@ watch(
       />
       <HomeRewards :data="data" />
       <div class="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
-        <HomeTrial v-if="data.trial.active" :trial="data.trial" />
+        <HomePakej v-if="data.package" :name="data.package.name" :valid-until="data.package.validUntil" />
+        <HomeTrial v-else-if="data.trial.active" :trial="data.trial" />
         <HomeCarousel v-if="data.banners.length > 0" :banners="data.banners" />
         <HomeKombo v-if="kombo" :count="data.streak.count" />
       </div>
-      <HomeStats :wallet="data.wallet" :streak="data.streak" :week="data.week" />
+      <HomeStats
+        :wallet="data.wallet"
+        :streak="data.streak"
+        :week="data.week"
+        :accuracy-pct="data.accuracyPct"
+      />
       <div class="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
         <HomeQuests :quests="data.quests" :completed="data.questsCompleted" />
         <HomeBadges :badges="data.badges" />
       </div>
+      <HomeCabaran />
       <HomeQuickActions
         :revision-total="data.revisionTotal"
         :is-admin="data.user.role === 'admin'"

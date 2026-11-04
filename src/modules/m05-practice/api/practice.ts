@@ -65,6 +65,8 @@ export function normaliseDashboard(wire: Dashboard): Dashboard {
   const list = <T>(rows: readonly T[] | null | undefined): T[] => (Array.isArray(rows) ? [...rows] : [])
   return {
     ...wire,
+    accuracyPct: wire.accuracyPct ?? null,
+    package: wire.package ?? null,
     banners: list(wire.banners),
     quests: list(wire.quests),
     badges: list(wire.badges),
@@ -75,6 +77,28 @@ export function normaliseDashboard(wire: Dashboard): Dashboard {
     difficultyChart: list(wire.difficultyChart),
     subjectStats: list(wire.subjectStats),
   }
+}
+
+/** One row of `GET /api/gamification/challenges` as the dashboard "Cabaran Kilat" card reads it. */
+export interface ChallengeToday {
+  id: number | string
+  icon: string
+  title: string
+  description: string
+  difficulty: 'easy' | 'medium' | 'hard'
+  rewardSyiling: number
+  target: number
+  progress: number
+  completed: boolean
+}
+
+/** Today's challenges (API-GAME-07, the existing endpoint; the response is `{ data: rows[] }`). */
+export async function fetchChallengesToday(options: Signal = {}): Promise<ChallengeToday[]> {
+  const body = await api.get<{ data?: ChallengeToday[] }>(
+    '/api/gamification/challenges',
+    withSignal(options),
+  )
+  return Array.isArray(body?.data) ? body.data : []
 }
 
 /** #2 `GET /api/practice/subjects`. */

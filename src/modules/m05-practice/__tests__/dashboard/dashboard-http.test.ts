@@ -24,6 +24,8 @@ function wireBody(over: Record<string, unknown> = {}): Record<string, unknown> {
     streak: { count: 2, practisedToday: false },
     wallet: { coins: 370, points: 916, level: 1, levelProgressPct: 100 },
     week: { sessions: 0, accuracyPct: 0 },
+    accuracyPct: null,
+    package: null,
     banners: [{ type: 'HERO', title: 'Contoh: Selamat datang', body: 'Banner contoh.' }],
     quests: [],
     questsCompleted: 0,
