@@ -16992,7 +16992,7 @@
       "approved_by_card": null
     },
     {
-      "key": "GET /api/admin/tiket/:id",
+      "key": "GET /api/admin/tiket/:p",
       "method": "GET",
       "path": "/api/admin/tiket/:id",
       "api_id": "API-SUP-05",
@@ -17002,7 +17002,7 @@
       "approved_by_card": "S7-T09"
     },
     {
-      "key": "PATCH /api/admin/tiket/:id/status",
+      "key": "PATCH /api/admin/tiket/:p/status",
       "method": "PATCH",
       "path": "/api/admin/tiket/:id/status",
       "api_id": "API-SUP-05",
