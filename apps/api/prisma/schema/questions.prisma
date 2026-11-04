@@ -132,7 +132,7 @@ model QuestionVersion {
   versionNo     Int       @map("version_no")
   /// draft, review, approved, archived (check constraint, migration 0100; approved is the only servable status, ADR-0027).
   status        String    @default("draft")
-  /// superseded, withdrawn, source_takedown; only when archived (check constraint).
+  /// superseded, withdrawn, source_takedown, regrouped (migration 0122, DM-06); only when archived (check constraint).
   archiveReason String?   @map("archive_reason")
   publishedAt   DateTime? @map("published_at") @db.Timestamptz(6)
 
