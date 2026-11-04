@@ -236,8 +236,8 @@ export function batchToSeeds(batch: IntakeBatch, opts: { groupBase?: string } = 
   const manual = batch.sourceKind === 'manual'
   const qid = (i: number): string => `${batch.id}-q${i + 1}`
   const source = manual
-    ? `Manual: ${batch.source} (${batch.paperType} ${batch.year})`
-    : `${batch.source} (${batch.paperType} ${batch.year})`
+    ? `Manual: ${batch.source} (${[batch.paperType, batch.year || null].filter((x) => x != null).join(' ')})`
+    : `${batch.source} (${[batch.paperType, batch.year || null].filter((x) => x != null).join(' ')})`
   const lows = batch.questions.reduce(
     (n, q) => n + q.lowFields.filter((f) => !q.confirmed.includes(f)).length,
     0,

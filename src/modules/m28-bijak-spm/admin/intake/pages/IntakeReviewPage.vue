@@ -505,8 +505,8 @@ async function submit(): Promise<void> {
     :subtitle="
       batch
         ? isManual
-          ? `Soalan manual · ${batch.source} · ${batch.year}`
-          : `${batch.fileName} · ${batch.year}`
+          ? `Soalan manual · ${batch.source}${batch.year ? ` · ${batch.year}` : ''}`
+          : `${batch.fileName}${batch.year ? ` · ${batch.year}` : ''}`
         : undefined
     "
     back-label="Kembali ke Senarai Ekstrak"
