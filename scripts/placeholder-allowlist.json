@@ -1,0 +1,232 @@
+{
+  "source": "docs/prd/r1/40-cross-cutting.md AC-X2-3 table X2-3-A",
+  "entries": [
+    {
+      "id": "P-01",
+      "string": "Pratonton",
+      "screens": [
+        "src/modules/m04-question-bank/pages/StudioListPage.vue",
+        "src/modules/m04-question-bank/pages/StudioEditorPage.vue",
+        "src/modules/m04-question-bank/components/studio/**",
+        "src/modules/m04-question-bank/lib/studio/**",
+        "src/modules/m28-bijak-spm/admin/kandungan/**",
+        "src/modules/m28-bijak-spm/admin/papers/**",
+        "src/modules/m28-bijak-spm/admin/intake/**",
+        "src/modules/m28-bijak-spm/routes/admin-*.ts"
+      ],
+      "condition": "a button or row action that opens the real preview",
+      "prd": "30 R1-ADM-Q-02, Q-03, Q-04, Q-18, Q-24"
+    },
+    {
+      "id": "P-02",
+      "string": "Pratonton kumpulan",
+      "screens": [
+        "src/modules/m04-question-bank/pages/StudioGroupPage.vue",
+        "src/modules/m04-question-bank/pages/StudioEditorPage.vue",
+        "src/modules/m04-question-bank/components/studio/**"
+      ],
+      "condition": "a button that opens the group as the pupil sees it",
+      "prd": "30 R1-ADM-Q-05; 45 section 3.1"
+    },
+    {
+      "id": "P-03",
+      "string": [
+        "Pratonton — Soalan #{id} — PRESTASIPLUS",
+        "Pratonton — Draft."
+      ],
+      "screens": [
+        "src/modules/m04-question-bank/pages/StudioEditorPage.vue",
+        "src/modules/m04-question-bank/components/studio/**",
+        "src/modules/m04-question-bank/lib/studio/preview.ts",
+        "src/modules/m04-question-bank/routes/studio.ts"
+      ],
+      "condition": "the preview of a question",
+      "prd": "30 R1-ADM-Q-04; 45 section 3.3"
+    },
+    {
+      "id": "P-04",
+      "string": "Pratonton Kolam",
+      "screens": [
+        "src/modules/m28-bijak-spm/admin/kontrak/**",
+        "src/modules/m28-bijak-spm/admin/builder/**",
+        "src/modules/m28-bijak-spm/routes/admin-kontrak.ts",
+        "src/modules/m28-bijak-spm/routes/admin-builder.ts"
+      ],
+      "condition": "the button that shows whether the pool can fill each unit and KBAT quota",
+      "prd": "30 R1-ADM-Q-16; 45 section 5.2"
+    },
+    {
+      "id": "P-05",
+      "string": "Pratonton pelajar",
+      "screens": [
+        "src/modules/m04-question-bank/pages/StudioEditorPage.vue",
+        "src/modules/m04-question-bank/components/studio/**",
+        "src/modules/m04-question-bank/lib/studio/**"
+      ],
+      "condition": "the pane or button that shows the question as the pupil sees it",
+      "prd": "30 R1-ADM-Q-24; 30 section 7 responsive rules"
+    },
+    {
+      "id": "P-06",
+      "string": "Kertas 2/3/4 percubaan negeri — pratonton & terbitan",
+      "screens": [
+        "src/modules/m04-question-bank/pages/**"
+      ],
+      "condition": "the fixed subtitle of that list",
+      "prd": "30 R1-ADM-Q-18"
+    },
+    {
+      "id": "P-07",
+      "string": [
+        "Pratonton · semua {n} baris",
+        "Pratonton"
+      ],
+      "screens": [
+        "src/modules/m02-users-schools/pages/StudentImportPage.vue",
+        "src/modules/m02-users-schools/pages/BulkImportPage.vue",
+        "src/modules/m02-users-schools/components/**",
+        "src/modules/m02-users-schools/lib/import-options.ts",
+        "src/modules/m27-school-admin/pages/SenaraiPelajarPage.vue",
+        "src/modules/m27-school-admin/components/users/**"
+      ],
+      "condition": "the dry-run preview of a CSV import, and the impersonation action for an active pupil of the school",
+      "prd": "30 R1-ADM-U-05; 20 R1-AS-51 (FR-AS-51-4, FR-AS-51-7)"
+    },
+    {
+      "id": "D-01",
+      "string": [
+        "Kedudukan belum tersedia",
+        "Akaun anda belum dikaitkan dengan sekolah atau kelas."
+      ],
+      "screens": [
+        "src/modules/m08-student-performance/pages/RankingPage.vue",
+        "src/modules/m08-student-performance/pages/LeaderboardPage.vue",
+        "src/modules/m14-gamification/pages/student-b/LeaderboardPage.vue",
+        "src/modules/m14-gamification/components/student-b/**"
+      ],
+      "condition": "the viewer has no school or class, so no rank exists",
+      "prd": "10 R1-MUR-18; 48 GAME-16"
+    },
+    {
+      "id": "D-02",
+      "string": "Belum tersedia",
+      "screens": [
+        "src/modules/m08-student-performance/pages/RankingPage.vue",
+        "src/modules/m14-gamification/components/student-b/**"
+      ],
+      "condition": "the pupil has no state recorded",
+      "prd": "48 GAME-16"
+    },
+    {
+      "id": "D-03",
+      "string": [
+        "Peta Belum Tersedia",
+        "Bab DSKP untuk subjek ini belum dimuatkan."
+      ],
+      "screens": [
+        "src/modules/m03-curriculum/pages/LearningMapPage.vue",
+        "src/modules/m03-curriculum/components/**"
+      ],
+      "condition": "the open subject has no chapter map (data absent)",
+      "prd": "10 R1-MUR-25"
+    },
+    {
+      "id": "D-04",
+      "string": "Belum tersedia",
+      "screens": [
+        "src/modules/m03-curriculum/pages/LearningMapPage.vue",
+        "src/modules/m03-curriculum/components/**"
+      ],
+      "condition": "the chapter has no servable question",
+      "prd": "10 R1-MUR-25"
+    },
+    {
+      "id": "D-05",
+      "string": "Bank soalan belum sedia",
+      "screens": [
+        "src/modules/m03-curriculum/pages/LearningMapPage.vue",
+        "src/modules/m03-curriculum/components/**"
+      ],
+      "condition": "the chapter has no servable question",
+      "prd": "10 R1-MUR-25"
+    },
+    {
+      "id": "D-06",
+      "string": "Bank topik DSKP belum tersedia untuk pilihan ini. Cuba pilih subjek lain atau semak semula nanti.",
+      "screens": [
+        "src/modules/m03-curriculum/pages/TopicsPage.vue",
+        "src/modules/m03-curriculum/components/**"
+      ],
+      "condition": "the chosen subject and Tingkatan have no topic tree",
+      "prd": "10 R1-MUR-24"
+    },
+    {
+      "id": "D-07",
+      "string": "Trend, unjuran gred dan perbandingan kelas belum tersedia untuk sekolah ini.",
+      "screens": [
+        "src/modules/m08-student-performance/pages/AnalitikPelajarPage.vue",
+        "src/modules/m08-student-performance/components/**"
+      ],
+      "condition": "shown only when the school has no trend, projection or class comparison data; hidden when they exist",
+      "prd": "10 R1-MUR-5"
+    },
+    {
+      "id": "D-08",
+      "string": "Semakan belum tersedia",
+      "screens": [
+        "src/modules/m28-bijak-spm/pages/ResultPage.vue"
+      ],
+      "condition": "the result is requested before the sitting is submitted",
+      "prd": "10 section 4.11 item 9"
+    },
+    {
+      "id": "D-09",
+      "string": "Kertas belum tersedia",
+      "screens": [
+        "src/modules/m28-bijak-spm/pages/PaperQuizPage.vue"
+      ],
+      "condition": "the paper is withdrawn or being updated",
+      "prd": "10 section 4.11 item 10"
+    },
+    {
+      "id": "D-10",
+      "string": "Skema jawapan belum tersedia untuk soalan ini.",
+      "screens": [
+        "src/modules/m28-bijak-spm/lib/kuiz.ts"
+      ],
+      "condition": "a Kuiz question without a scheme (defensive only; such a question is not served)",
+      "prd": "10 section 4.11 item 11"
+    },
+    {
+      "id": "D-11",
+      "string": "data survey NPS penuh belum tersedia",
+      "screens": [
+        "src/modules/m12-kirkpatrick/pages/KirkpatrickOverviewPage.vue",
+        "src/modules/m12-kirkpatrick/components/kirkpatrick/overview/**"
+      ],
+      "condition": "the note that Tahap 1 uses mood check-in as a proxy",
+      "prd": "20 R1-AS-11"
+    },
+    {
+      "id": "D-12",
+      "string": "keputusan peperiksaan/head count sebenar belum tersedia",
+      "screens": [
+        "src/modules/m12-kirkpatrick/pages/KirkpatrickOverviewPage.vue",
+        "src/modules/m12-kirkpatrick/components/kirkpatrick/overview/**"
+      ],
+      "condition": "the note that Tahap 4 uses the grade forecast",
+      "prd": "20 R1-AS-11"
+    },
+    {
+      "id": "D-13",
+      "string": "Akan Datang",
+      "screens": [
+        "src/modules/m16-battle-games/pages/TournamentListPage.vue",
+        "src/modules/m16-battle-games/components/tournament/**",
+        "src/modules/m16-battle-games/mock/data/leagues.ts"
+      ],
+      "condition": "the status `upcoming` derived from the start date",
+      "prd": "30 R1-ADM-P2-14 (P14-14)"
+    }
+  ]
+}
