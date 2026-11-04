@@ -109,6 +109,8 @@ const DEFAULT_PAGE_SIZE = 20
 const applied = computed(() => {
   const out = {} as Record<FilterKey, string>
   for (const key of FILTER_KEYS) out[key] = queryText(route.query[key]).trim()
+  // An old link with a value no longer offered (OPT-COMPLIANCE) is no filter: a bulk action must not inherit what the screen does not show.
+  if (!COMPLIANCE_OPTIONS.some((o) => o.value === out.compliance_filter)) out.compliance_filter = ''
   return out
 })
 const page = computed(() => pageOf(route.query.page))

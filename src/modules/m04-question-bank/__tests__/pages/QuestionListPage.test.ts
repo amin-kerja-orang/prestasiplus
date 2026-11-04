@@ -396,6 +396,12 @@ describe('QuestionListPage: Senarai Soalan regions (R1-ADM-Q-20)', () => {
     expect(t(w, 'questions-import').attributes('href')).toBe('/admin/questions/import')
   })
 
+  it('an old link with a Compliance value no longer offered is no filter', async () => {
+    const w = await render('/admin/questions?compliance_filter=draft')
+    expect(questions.fetchQuestions).toHaveBeenCalledWith(expect.objectContaining({ complianceFilter: null }))
+    expect(t(w, 'questions-approve-filter').attributes('disabled')).toBeDefined()
+  })
+
   it('offers only the OPT-COMPLIANCE values', () => {
     expect(COMPLIANCE_OPTIONS.map((o) => o.label)).toEqual(['Verified', 'AI Verified', 'Pending Mapping', 'Tiada Source PDF'])
   })
@@ -534,6 +540,15 @@ describe('QuestionListPage: Luluskan Hasil Tapisan / Arkib Semua (REQ-A-021)', (
     await flushPromises()
     expect(questions.bulkQuestionsByFilter).toHaveBeenCalledTimes(1)
     expect(w.find('[data-testid="bulk-filter-result"]').exists()).toBe(false)
+    expect(t(w, 'questions-archive-all').attributes('disabled')).toBeUndefined()
+  })
+
+  it('Esc in the "Arkib Semua" dialog is a Batal', async () => {
+    const w = await openArchive('/admin/questions')
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await flushPromises()
+    expect(questions.bulkQuestionsByFilter).toHaveBeenCalledTimes(1)
+    expect(document.body.querySelector('[data-testid="questions-archive-dialog"]')).toBeNull()
     expect(t(w, 'questions-archive-all').attributes('disabled')).toBeUndefined()
   })
 

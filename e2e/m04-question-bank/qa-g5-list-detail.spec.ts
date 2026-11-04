@@ -226,9 +226,6 @@ test.describe('QA G5 S1 list', { tag: [moduleTag(4), '@qa'] }, () => {
     await expect(listRows(page).first()).toBeVisible()
     await expect(byId(page, 'question-source-file')).toHaveCount(0)
 
-    await gotoApp('/admin/questions?compliance_filter=draft')
-    if (!isNarrow(page)) await expect(byId(page, 'question-source').first()).toContainText('Source: TIADA')
-
     await gotoApp('/admin/questions?compliance_filter=verified_generated')
     if (!isNarrow(page)) await expect(byId(page, 'question-ai-verified').first()).toContainText('AI Verified')
 
