@@ -97,9 +97,9 @@ Source: `docs/Matriks-Akses-Peranan .xlsx`, columns *Murid 1.0*, *Guru 1.0*, *Ad
 | P-05 | `Pratonton pelajar` | Admin Pusat Panel Quick Edit button and the right pane of the Studio editor | the pane or button that shows the question as the pupil sees it | 30 R1-ADM-Q-24; 30 section 7 responsive rules |
 | P-06 | `Kertas 2/3/4 percubaan negeri — pratonton & terbitan` | Admin Pusat Kertas Subjektif list subtitle (`/admin/kertas-subjektif`) | the fixed subtitle of that list | 30 R1-ADM-Q-18 |
 | P-07 | `Pratonton · semua {n} baris` and `Pratonton` (impersonate action) | Admin Pusat Import Pelajar (`/admin/import-students`); School Admin Senarai Pelajar import preview and pupil row action (`/sekolah/pelajar`) | the dry-run preview of a CSV import, and the impersonation action for an active pupil of the school | 30 R1-ADM-U-05; 20 R1-AS-51 (FR-AS-51-4, FR-AS-51-7) |
-| D-01 | `Kedudukan belum tersedia` | Pupil Kedudukan `/ranking` and Papan Pendahulu | the viewer has no school or class, so no rank exists | 10 R1-MUR-18; 48 GAME-16 |
+| D-01 | `Kedudukan belum tersedia` (with its second line `Akaun anda belum dikaitkan dengan sekolah atau kelas.`, which holds no banned string) | Pupil Kedudukan `/ranking` and Papan Pendahulu | the viewer has no school or class, so no rank exists | 10 R1-MUR-18; 48 GAME-16 |
 | D-02 | `Belum tersedia` | Pupil Kedudukan card "Dalam negeri" | the pupil has no state recorded | 48 GAME-16 |
-| D-03 | `Peta Belum Tersedia` | Pupil Peta Belajar `/peta-belajar` | the open subject has no chapter map (data absent) | 10 R1-MUR-25 |
+| D-03 | `Peta Belum Tersedia` (with its second line `Bab DSKP untuk subjek ini belum dimuatkan.`, which holds no banned string) | Pupil Peta Belajar `/peta-belajar` | the open subject has no chapter map (data absent) | 10 R1-MUR-25 |
 | D-04 | `Belum tersedia` | Pupil Peta Belajar chapter status badge and legend | the chapter has no servable question | 10 R1-MUR-25 |
 | D-05 | `Bank soalan belum sedia` | Pupil Peta Belajar chapter card (this wording contains no banned string; it is listed so that the allow-list is complete) | the chapter has no servable question | 10 R1-MUR-25 |
 | D-06 | `Bank topik DSKP belum tersedia untuk pilihan ini. Cuba pilih subjek lain atau semak semula nanti.` | Pupil Topik `/topik` | the chosen subject and Tingkatan have no topic tree | 10 R1-MUR-24 |
