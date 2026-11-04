@@ -18,6 +18,8 @@ With `E2E_DEMO_SECONDARY=1` as well, the demo schools DEMO002..004 become type S
 | What | Value |
 |---|---|
 | Tingkatan 4 pupil | `murid.t4.e2e@example.test`, grade 10, school DEMO001 |
+| Tingkatan 1 pupil | `murid.t1.e2e@example.test`, grade 7, school DEMO001, with servable questions in at least one subject (CI fixture for AC-X3-1, card S5-T01) |
+| Tingkatan 5 pupil | `murid.t5.e2e@example.test`, grade 11, school DEMO001, with servable questions in at least one subject (CI fixture for AC-X3-1, card S5-T01) |
 | Admin Pusat | `admin.pusat.e2e@example.test`, national scope |
 | Evidence | the study evidence rows of `3472/2` replaced by admin-origin rows with the same values, note `E2E fixture: ...` (H-A15: study rows do not count at Sahkan) |
 | Blueprint | `3472/2` moved from Spec to Disahkan with `serves_students = true` (verification note set) |

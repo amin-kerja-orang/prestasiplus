@@ -1258,7 +1258,7 @@ type ErrorBody = { error: { code: string; message: string; fields?: Record<strin
 
 **Display name (D-A12).** Any pupil other than the viewer is shown by **first given name only**, no initial (for example "Aisyah"), **never a school** (D113). This applies to Kelas Saya, Kedudukan, Papan Pendahulu, game rooms, tournaments and `GET /api/public/students/:id`. Full name goes only to the pupil, the class teacher, the school admin of the school and Admin Pusat. A projection that cannot prove the viewer's scope returns the display name and `school: null`.
 
-**Metric fields (one computation, one precision).** The authoritative list is 40 FR-X4 (counts) and 50 section 5.3 (XS-1..8). S6-T03 implements XS-1..XS-8 in `xs-queries.ts` (XS-6 and XS-7 as queries; XS-8 = every query reads all modes from `practice_answers`) and the screen cards (S10-T01..T04, S6-T13) import them; the wire types are:
+**Metric fields (one computation, one precision).** The authoritative list is 40 FR-X4 (counts) and 50 section 5.3 (XS-1..8). S6-T03 implements XS-1..XS-8 in `xs-queries.ts` (XS-6 and XS-7 as queries; XS-8 = every query reads all modes from `practice_answers`); S6-T03 switches the screen services of S10-T01, S10-T02 and S10-T03 to them after those cards merge (S6-T03 depends on them); S10-T04 and S6-T13 depend on S6-T03 and import them; the wire types are:
 
 | Field | Type | Computation | Precision |
 |---|---|---|---|
