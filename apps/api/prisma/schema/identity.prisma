@@ -77,6 +77,7 @@ model User {
   audioKbatSets         AudioKbatSet[]      @relation("AudioKbatSetCreator")
   audioKbatAttempts     AudioKbatAttempt[]  @relation("AudioKbatAttemptUser")
   supportTickets        SupportTicket[]     @relation("SupportTicketUser")
+  repliedSupportTickets SupportTicket[]     @relation("SupportTicketReplier")
   // BE-37 back-relations (intake.prisma owns the models).
   intakeBatches         IntakeBatch[]
 

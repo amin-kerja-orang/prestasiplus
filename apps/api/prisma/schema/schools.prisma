@@ -65,6 +65,7 @@ model School {
   ppd           Ppd?                 @relation(fields: [ppdId], references: [id], onDelete: Restrict, map: "fk_schools_ppd_id")
   users         User[]
   pendingUsers  User[]               @relation("UserPendingSchool")
+  supportTickets SupportTicket[]     @relation("SupportTicketSchool")
   userScopes    UserScope[]
   auditEvents   AuditEvent[]
   importJobs    ImportJob[]
