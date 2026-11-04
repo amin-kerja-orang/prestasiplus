@@ -203,8 +203,8 @@ export interface IntakeSummary {
   title: string
   subject: SubjectCode
   subjectName: string
-  kertas: number
-  year: number
+  kertas: number | null
+  year: number | null
   status: IntakeStatus
   sourceKind: IntakeSourceKind
   fileName: string
