@@ -1,0 +1,241 @@
+# R1 CODEOWNERS (plan App. C). The last matching pattern wins; specific lines come after general ones.
+#
+# Owner of every path: @aminfaudzi, the product owner (D113). He is the reviewer of record and the only person who merges
+# into feature/v3-bijak-r1, after the team lead's review (docs/plan/R1-START-HERE.md decisions 4 and 6).
+#
+# SECTOR OWNERSHIP IS BY LOCKS, NOT BY THIS FILE. Several Claude accounts may share one GitHub user, so a GitHub handle
+# cannot tell teams apart. Which team owns a sector (S0..S10) and a card is decided only by the git-ref lock
+# (`node scripts/r1-lock.mjs list`). "Sector lead" = the team that holds the sector lock. A cross-sector PR
+# (line `Cross-sector: S<n>`, label `needs:S<n>`) is reviewed by the team that holds S<n> within 1 working day;
+# if no team holds it, by @aminfaudzi.
+# The sector blocks at the bottom stay commented out; a team never gets ownership by uncommenting one.
+# Changing this file is a small PR to S0 (this file is S0-owned).
+
+# default: platform owner
+*                                         @aminfaudzi
+
+# S0 Platform and shared registries (contract, prisma schema index, menus, CI, docs)
+/.github/                                 @aminfaudzi
+/scripts/                                 @aminfaudzi
+/compose*.yaml                            @aminfaudzi
+/docs/ops/                                @aminfaudzi
+/docs/plan/                               @aminfaudzi
+/package.json                             @aminfaudzi
+/package-lock.json                        @aminfaudzi
+/e2e/global/                              @aminfaudzi
+/e2e/fixtures/                            @aminfaudzi
+/e2e/r1/                                  @aminfaudzi
+/src/app/                                 @aminfaudzi
+/src/shells/                              @aminfaudzi
+/src/api/                                 @aminfaudzi
+/src/lib/                                 @aminfaudzi
+/src/modules/m01-authentication/          @aminfaudzi
+/apps/api/src/common/                     @aminfaudzi
+/apps/api/src/modules/auth/               @aminfaudzi
+/apps/api/src/modules/jobs/               @aminfaudzi
+/apps/api/src/modules/ocr/                @aminfaudzi
+/apps/api/src/modules/index.ts            @aminfaudzi
+/apps/api/prisma/schema/base.prisma       @aminfaudzi
+/apps/api/prisma/schema/identity.prisma   @aminfaudzi
+/apps/api/prisma/schema/etl.prisma        @aminfaudzi
+/apps/api/prisma/schema/feature-flags.prisma @aminfaudzi
+/apps/api/prisma/seed/index.ts            @aminfaudzi
+/apps/api/prisma/seed/guard.ts            @aminfaudzi
+/apps/api/prisma/seed/e2e*.ts             @aminfaudzi
+/apps/api/prisma/seed/core/               @aminfaudzi
+/apps/api/prisma/migrations/              @aminfaudzi
+/packages/contract/openapi.json           @aminfaudzi
+/packages/contract/src/index.ts           @aminfaudzi
+/packages/contract/src/openapi.ts         @aminfaudzi
+/packages/contract/src/common/            @aminfaudzi
+/packages/contract/src/auth/              @aminfaudzi
+/packages/contract/src/access/            @aminfaudzi
+/packages/contract/src/session/           @aminfaudzi
+/src/modules/m13-cikgu-alesa/             @aminfaudzi
+# /src/modules/m07-pksk/                    @OWNER-S5
+/src/modules/m25-ai-centre/               @aminfaudzi
+/apps/api/src/modules/cikgu/              @aminfaudzi
+/apps/api/prisma/schema/                  @aminfaudzi
+/src/shells/pentadbiran/menu.ts           @aminfaudzi
+/docs/prd/                                @aminfaudzi
+/docs/TRACKER.md                          @aminfaudzi
+
+# ---------------------------------------------------------------------------------------------------------
+# Sector blocks S1..S10: TEMPLATE, kept as the map of which paths belong to which sector (the scope guard and the locks
+# use the same map). Uncomment a block only if a sector owner has a personal GitHub handle of their own and the product
+# owner agrees; replace @OWNER-Sn with it. Otherwise the default (*) above applies.
+# ---------------------------------------------------------------------------------------------------------
+# /apps/api/src/modules/pksk/               @OWNER-S5   (S5-owned, listed in the S0 block of App. C)
+# 
+# # S1 Question model and pipeline (backend)
+# /apps/api/src/modules/questions/          @OWNER-S1
+# /apps/api/src/modules/intake/             @OWNER-S1
+# /apps/api/src/modules/ai-extraction/      @OWNER-S1
+# /apps/api/src/modules/files/              @OWNER-S1
+# /apps/api/src/modules/classes/question-sets/  @OWNER-S1
+# /apps/api/prisma/schema/questions.prisma  @OWNER-S1
+# /apps/api/prisma/schema/questions-workflow.prisma @OWNER-S1
+# /apps/api/prisma/schema/intake.prisma     @OWNER-S1
+# /apps/api/prisma/schema/ai.prisma         @OWNER-S1
+# /apps/api/prisma/schema/files.prisma      @OWNER-S1
+# /apps/api/prisma/seed/questions/          @OWNER-S1
+# /apps/api/test/intake-workflow/           @OWNER-S1
+# /packages/contract/src/questions/         @OWNER-S1
+# /packages/contract/src/question-workflow/ @OWNER-S1
+# /packages/contract/src/servability/       @OWNER-S1
+# /packages/contract/src/intake/            @OWNER-S1
+# /packages/contract/src/ai/                @OWNER-S1
+# /packages/contract/src/files/             @OWNER-S1
+# 
+# # S2 Admin question UI
+# /src/modules/m04-question-bank/           @OWNER-S2
+# /src/modules/m28-bijak-spm/admin/intake/  @OWNER-S2
+# /e2e/m04*                                 @OWNER-S2
+# /e2e/bijak/intake-*                       @OWNER-S2
+# /e2e/bijak/admin-publish-*                @OWNER-S2
+# 
+# # S3 Bijak SPM papers
+# /src/modules/m28-bijak-spm/               @OWNER-S3
+# /src/modules/m28-bijak-spm/admin/intake/  @OWNER-S2
+# /src/modules/m06-spm/                     @OWNER-S3
+# /packages/exam-core/                      @OWNER-S3
+# /apps/api/src/modules/spm/                @OWNER-S3
+# /apps/api/src/modules/bijak/              @OWNER-S3
+# /apps/api/src/modules/exam/               @OWNER-S3
+# /apps/api/prisma/schema/exam.prisma       @OWNER-S3
+# /apps/api/prisma/schema/spm.prisma        @OWNER-S3
+# /apps/api/prisma/schema/bijak-attempts.prisma @OWNER-S3
+# /apps/api/prisma/seed/exam*.ts            @OWNER-S3
+# /apps/api/prisma/seed/spm*.ts             @OWNER-S3
+# /apps/api/prisma/seed/bijak-standards/    @OWNER-S3
+# /packages/contract/src/bijak/             @OWNER-S3
+# /e2e/bijak/                               @OWNER-S3
+# /e2e/bijak/intake-*                       @OWNER-S2
+# /e2e/bijak/admin-publish-*                @OWNER-S2
+# 
+# # S4 Curriculum / DSKP and UAT data
+# /apps/api/src/modules/curriculum/         @OWNER-S4
+# /apps/api/prisma/schema/curriculum.prisma @OWNER-S4
+# /apps/api/prisma/seed/curriculum.ts       @OWNER-S4
+# /apps/api/prisma/seed/curriculum-data/    @OWNER-S4
+# /apps/api/prisma/seed/spm-subject-configs.ts @OWNER-S4
+# /apps/api/prisma/seed/uat-like/           @OWNER-S4
+# /apps/api/scripts/uat-ops/                @OWNER-S4
+# /docs/reference/dskp/                     @OWNER-S4
+# /docs/ops/dskp-loader.md                  @OWNER-S4
+# /packages/contract/src/curriculum/        @OWNER-S4
+# /src/modules/m03-curriculum/              @OWNER-S4
+# /src/modules/m03-curriculum/pages/TopicsPage.vue      @OWNER-S5
+# /src/modules/m03-curriculum/pages/LearningMapPage.vue @OWNER-S5
+# /src/modules/m03-curriculum/pages/TopicDetailPage.vue @OWNER-S5
+# 
+# # S5 Murid learning, account, content
+# /src/modules/m05-practice/                @OWNER-S5
+# /src/modules/m09-content/                 @OWNER-S5
+# /src/modules/m10-teacher-class/pages/KelasSayaPelajarPage.vue @OWNER-S5
+# /src/modules/m10-teacher-class/pages/KelasListPage.vue        @OWNER-S5
+# /src/modules/m01-authentication/pages/Profile*                @OWNER-S5
+# /src/modules/m01-authentication/routes/profile.ts             @OWNER-S5
+# /src/modules/m01-authentication/routes/tetapan.ts             @OWNER-S5
+# /src/lib/lower-form.ts                    @OWNER-S5
+# /apps/api/src/modules/practice/           @OWNER-S5
+# /apps/api/src/modules/content/            @OWNER-S5
+# /apps/api/src/modules/account/            @OWNER-S5
+# /apps/api/src/modules/classes/kelas-saya.controller.ts @OWNER-S5
+# /apps/api/prisma/schema/practice.prisma   @OWNER-S5
+# /apps/api/prisma/schema/content.prisma    @OWNER-S5
+# /apps/api/prisma/seed/practice.ts         @OWNER-S5
+# /apps/api/prisma/seed/content.ts          @OWNER-S5
+# /packages/contract/src/practice/          @OWNER-S5
+# /packages/contract/src/content/           @OWNER-S5
+# /packages/contract/src/account/           @OWNER-S5
+# 
+# # S10 Performance and analytics (m08)
+# /src/modules/m08-student-performance/     @OWNER-S10
+# /apps/api/src/modules/reports/performance/ @OWNER-S10
+# /apps/api/src/modules/heatmap/            @OWNER-S10
+# /apps/api/prisma/schema/reports.prisma    @OWNER-S10
+# /packages/contract/src/reports/           @OWNER-S10
+# /packages/contract/src/heatmap/           @OWNER-S10
+# 
+# # S6 Guru and Admin Sekolah, Admin Pusat users/monitoring
+# /src/modules/m10-teacher-class/           @OWNER-S6
+# /src/modules/m10-teacher-class/pages/KelasSayaPelajarPage.vue @OWNER-S5
+# /src/modules/m10-teacher-class/pages/KelasListPage.vue        @OWNER-S5
+# /src/modules/m11-teacher-analytics/       @OWNER-S6
+# /src/modules/m12-kirkpatrick/             @OWNER-S6
+# /src/modules/m17-admin-dashboard/         @OWNER-S6
+# /src/modules/m18-ppd-jpn/                 @OWNER-S6
+# /src/modules/m27-school-admin/            @OWNER-S6
+# /src/modules/m02-users-schools/           @OWNER-S6
+# /apps/api/src/modules/school-admin/       @OWNER-S6
+# /apps/api/src/modules/command-center/     @OWNER-S6
+# /apps/api/src/modules/classes/            @OWNER-S6
+# /apps/api/src/modules/classes/question-sets/  @OWNER-S1
+# /apps/api/src/modules/classes/kelas-saya.controller.ts @OWNER-S5
+# /apps/api/src/modules/reports/analytics/  @OWNER-S6
+# /apps/api/src/modules/reports/kirkpatrick/ @OWNER-S6
+# /apps/api/src/modules/users/              @OWNER-S6
+# /apps/api/src/modules/schools/            @OWNER-S6
+# /apps/api/src/modules/parents/            @OWNER-S6
+# /apps/api/prisma/schema/classes.prisma    @OWNER-S6
+# /apps/api/prisma/schema/schools.prisma    @OWNER-S6
+# /packages/contract/src/classes/           @OWNER-S6
+# /packages/contract/src/school-admin/      @OWNER-S6
+# /packages/contract/src/schools/           @OWNER-S6
+# /packages/contract/src/admin/             @OWNER-S6
+# 
+# # S7 Gamification, games, marketplace
+# /src/modules/m14-gamification/            @OWNER-S7
+# /src/modules/m15-rewards-shop/            @OWNER-S7
+# /src/modules/m16-battle-games/            @OWNER-S7
+# /src/modules/m20-marketplace/             @OWNER-S7
+# /src/modules/m21-sponsorship/             @OWNER-S7
+# /src/modules/m22-support-tickets/         @OWNER-S7
+# /apps/api/src/modules/gamification/       @OWNER-S7
+# /apps/api/src/modules/games/              @OWNER-S7
+# /apps/api/src/modules/battle/             @OWNER-S7
+# /apps/api/src/modules/shop/               @OWNER-S7
+# /apps/api/src/modules/marketplace/        @OWNER-S7
+# /apps/api/src/modules/wallet/             @OWNER-S7
+# /apps/api/src/modules/sponsorship/        @OWNER-S7
+# /apps/api/src/modules/subscriptions/      @OWNER-S7
+# /apps/api/src/modules/support/            @OWNER-S7
+# /apps/api/src/modules/notifications/      @OWNER-S7
+# /apps/api/prisma/schema/gamification.prisma @OWNER-S7
+# /apps/api/prisma/schema/games.prisma      @OWNER-S7
+# /apps/api/prisma/schema/battle.prisma     @OWNER-S7
+# /apps/api/prisma/schema/marketplace.prisma @OWNER-S7
+# /apps/api/prisma/schema/wallet.prisma     @OWNER-S7
+# /apps/api/prisma/schema/sponsorship.prisma @OWNER-S7
+# /apps/api/prisma/seed/games.ts            @OWNER-S7
+# /apps/api/prisma/seed/battle.ts           @OWNER-S7
+# /apps/api/prisma/seed/gamification*.ts    @OWNER-S7
+# /apps/api/prisma/seed/marketplace.ts      @OWNER-S7
+# /apps/api/prisma/seed/wallet.ts           @OWNER-S7
+# /packages/contract/src/gamification/      @OWNER-S7
+# /packages/contract/src/games/             @OWNER-S7
+# /packages/contract/src/battle/            @OWNER-S7
+# /packages/contract/src/marketplace/       @OWNER-S7
+# /packages/contract/src/notifications/     @OWNER-S7
+# 
+# # S8 Question rendering and responsive (shared display layer)
+# /src/components/                          @OWNER-S8
+# /src/ds/                                  @OWNER-S8
+# /src/theme/                               @OWNER-S8
+# /src/styles/                              @OWNER-S8
+# /src/modules/m28-bijak-spm/components/PartInput.vue       @OWNER-S8
+# /src/modules/m28-bijak-spm/components/PartNode.vue        @OWNER-S8
+# /src/modules/m28-bijak-spm/components/QuestionBlock.vue   @OWNER-S8
+# /src/modules/m28-bijak-spm/components/RichText.vue        @OWNER-S8
+# /src/modules/m28-bijak-spm/components/MathField.vue       @OWNER-S8
+# /src/modules/m28-bijak-spm/components/MathKeyboard.vue    @OWNER-S8
+# /src/modules/m28-bijak-spm/components/StimulusStack.vue   @OWNER-S8
+# /src/modules/m28-bijak-spm/components/StimulusView.vue    @OWNER-S8
+# /src/modules/m28-bijak-spm/components/StimulusChip.vue    @OWNER-S8
+# /src/modules/m28-bijak-spm/components/NavigatorPanel.vue  @OWNER-S8
+# /src/modules/m28-bijak-spm/components/AttemptShell.vue    @OWNER-S8
+# 
+# # S9 Delivery Lead: PRD and plan
+# /docs/prd/                                @OWNER-S9
+# /docs/TRACKER.md                          @OWNER-S9

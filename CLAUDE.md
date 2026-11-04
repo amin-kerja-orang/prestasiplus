@@ -1,5 +1,7 @@
 # PretasiPlus App
 
+> Release 1 (V3) cards `S<n>-T<nn>`: read `docs/plan/R1-START-HERE.md` first; it wins over this file on branches, commits, PRs, claims and scope.
+
 > Cross-tool agent entry point: see [AGENTS.md](AGENTS.md). Docs index: [docs/README.md](docs/README.md).
 
 The user communicates in Bahasa Melayu; reply in Bahasa Melayu. Code, commits, and docs in `docs/` are in English unless asked otherwise.

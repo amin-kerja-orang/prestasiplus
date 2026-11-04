@@ -1,3 +1,5 @@
+> SUPERSEDED for R1 by docs/plan/R1-START-HERE.md. Do not use its branch, claim or board rules for any `S<n>-T<nn>` card.
+
 # New PC onboarding (zero to working setup)
 
 Audience: a person or a Claude Code session on a brand-new PC. Windows 11 first; macOS/Linux differences are noted. Status legend used below: **exists** = in the repo today, **added by BE-xx** = planned by that card and not yet on the branch. Always check the card status in [backend-tracker.md](backend-tracker.md) before relying on a "planned" item.

@@ -1,0 +1,37 @@
+# R1 scope guard: a PR must name exactly one plan card and stay inside its "Starts from" / Type budget
+# (scripts/r1-scope-guard.mjs). Docs-only PRs have no card and are skipped (paths-ignore: a PR that touches
+# anything outside docs/** still runs the guard).
+name: r1-scope-guard
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited, labeled, unlabeled]
+    branches: [feature/v3-bijak-r1]
+    paths-ignore:
+      - 'docs/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r1-scope-guard-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  scope-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Scope guard
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: node scripts/r1-scope-guard.mjs --base origin/${{ github.base_ref }} --head HEAD
+      - name: Canonical map check (no duplicates)
+        run: node scripts/r1-canonical-map.mjs --check

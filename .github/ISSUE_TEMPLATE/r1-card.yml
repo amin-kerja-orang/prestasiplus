@@ -1,0 +1,118 @@
+name: R1 task card
+description: One task card of the Release 1 plan (docs/plan/r1-development-plan.md). Rule - gap check first, close gaps, never rebuild.
+title: "S?-T?? <title>"
+labels: ["r1"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Read `docs/plan/R1-START-HERE.md`, `docs/plan/R1-FAQ.md` and `docs/prd/r1/00-index.md` first. Do the code gap check, post it here, close only the gaps in the existing files.
+        The only claim is the lock (`node scripts/r1-lock.mjs --help`); mirror it here with the label `team:<team>` and the comment `[<team>/S-<k>] claimed`. Assigning yourself or commenting `/claim` means nothing.
+        Evidence (screenshots, logs) stays in your local `.evidence/` folder. Never put real names, e-mails or credentials in this issue.
+  - type: input
+    id: card
+    attributes:
+      label: Card ID
+      placeholder: "S3-T04"
+    validations:
+      required: true
+  - type: dropdown
+    id: sector
+    attributes:
+      label: Sector
+      options:
+        - S0 Platform
+        - S1 Question BE
+        - S2 Admin question UI
+        - S3 Bijak SPM
+        - S4 Curriculum and UAT data
+        - S5 Murid learning
+        - S6 Guru and Admin Sekolah
+        - S7 Gamification and games
+        - S8 Rendering and responsive
+        - S9 Verification
+        - S10 Performance and analytics
+    validations:
+      required: true
+  - type: input
+    id: lock_team
+    attributes:
+      label: Team holding the lock (from `node scripts/r1-lock.mjs list`)
+      placeholder: "team-amin / S-2"
+  - type: dropdown
+    id: ctype
+    attributes:
+      label: Type
+      options:
+        - Fix
+        - Complete
+        - Build
+        - Keep
+        - Verify
+        - Ops
+    validations:
+      required: true
+  - type: textarea
+    id: prd
+    attributes:
+      label: PRD refs (module / FR / AC) and Data/API IDs (DM-xx, API-AREA-nn)
+      placeholder: "R1-MUR-3; FR-MUR-3-1; AC-MUR-3-*; DM-21; API-AUTH-17"
+    validations:
+      required: true
+  - type: textarea
+    id: gapcheck
+    attributes:
+      label: Gap check (REQUIRED before In progress)
+      description: "For every FR/AC of the card: works / broken / missing in the existing V3 code, with file:line evidence. Post this before the first commit."
+      placeholder: "| FR/AC | works / broken / missing | file:line | planned change |"
+    validations:
+      required: true
+  - type: checkboxes
+    id: startsfrom
+    attributes:
+      label: Starts-from confirmation
+      options:
+        - label: I opened every file under "Starts from (existing)" on the card and the gap check is based on that code, not on the PRD alone
+          required: true
+        - label: The fix is made in those existing files; I add a new file only if the card names it (no parallel page, service, store, route or table)
+          required: true
+  - type: textarea
+    id: approach
+    attributes:
+      label: Approach (2-6 lines) and the existing files I will touch
+    validations:
+      required: true
+  - type: textarea
+    id: contract
+    attributes:
+      label: API / contract / migration (migration number from the sector range, contract PR if any)
+  - type: input
+    id: deps
+    attributes:
+      label: Depends on
+      placeholder: "S1-T01, S8-T02"
+  - type: checkboxes
+    id: dod
+    attributes:
+      label: Definition of Done
+      options:
+        - label: Gap check posted before the first commit (works / broken / missing with file:line)
+          required: true
+        - label: Only the gaps were closed in the existing files; every schema change has a DM ID and every endpoint an API ID
+          required: true
+        - label: typecheck, lint and tests green (and be:verify for backend), real output in the PR
+          required: true
+        - label: Tests added as listed on the card
+          required: true
+        - label: Every AC tagged [CI], [UAT] or [CI+UAT]; the [CI] ACs proven by named automated tests (UI also at 375, 768 and 1280 with no horizontal scroll)
+          required: true
+        - label: After the designated UAT developer deployed the merge (commit posted in #503), the [UAT] ACs and every AC-CHAIN-n through this card passed on UAT in a visible (headed) browser; rows written in docs/plan/r1-ac-ledger.md
+          required: true
+        - label: No placeholder string (akan datang / belum tersedia / Pratonton / prototaip) and no mock path in the http build
+          required: true
+        - label: Evidence (screenshots, logs) kept in local .evidence/<card>/ only; this issue and the PR contain no real names, e-mails or credentials
+          required: true
+        - label: Team lead review approved and the product owner merged; a cross-sector PR also approved by the team holding that sector (label needs:S<n>)
+          required: true
+        - label: Card moved to status:done only after UAT Pass
+          required: true

@@ -1,0 +1,33 @@
+# R1 docs gate: PRD <-> plan traceability (scripts/r1-trace-check.mjs). No install needed (Node built-ins only).
+name: r1-docs
+
+on:
+  pull_request:
+    paths:
+      - 'docs/prd/r1/**'
+      - 'docs/plan/**'
+      - 'scripts/r1-*'
+  push:
+    paths:
+      - 'docs/prd/r1/**'
+      - 'docs/plan/**'
+      - 'scripts/r1-*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r1-docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  trace-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: PRD to plan traceability
+        run: node scripts/r1-trace-check.mjs
