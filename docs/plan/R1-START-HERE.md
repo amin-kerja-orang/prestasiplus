@@ -144,8 +144,10 @@ node scripts/r1-lock.mjs acquire S1 --team team-amin --session S-1         a sec
 node scripts/r1-lock.mjs acquire S1-T01 --team team-amin --session S-2     a card (needs the sector)
 node scripts/r1-lock.mjs heartbeat-all --team team-amin --session S-1      daily
 node scripts/r1-lock.mjs release S1-T01 --team team-amin --session S-2     after merge, or if you drop the card
+node scripts/r1-lock.mjs release team-amin --team team-amin --session S-1   frees the team name (when your team stops)
 ```
-- You may set `R1_TEAM`, `R1_SESSION` and `R1_TEAM_TOKEN` in the environment instead of the flags and `join` (the env token wins over the one saved by `join`). Prefer `R1_TEAM_TOKEN` over `join --token` to keep the token out of shell history. `list`, `mine` and `--help` need no token. `break` is for the product owner only and needs no token.
+- You may set `R1_TEAM`, `R1_SESSION` and `R1_TEAM_TOKEN` in the environment instead of the flags and `join` (the env token wins over the one saved by `join`). Prefer `R1_TEAM_TOKEN` over `join --token` to keep the token out of shell history. `join` on a team that is not registered exits 4. A team key can be broken by the owner only when it is STALE (`--force-owner` is refused on a team key).
+- **After this merge, every lead who registered a team earlier runs `node scripts/r1-lock.mjs list` first (check the team row and its session), then `claim-token --team <team> --session S-1` once.** The command prints the recorded session and time, and must be run only by the current lead of that team. `list`, `mine` and `--help` need no token. `break` is for the product owner only and needs no token.
 - Exit codes: **0** ok · **2** usage or setup error · **3** held by another team (pick another), or the team token is missing or wrong (ask your lead for it, then `join`) · **4** you are not the holder, or your team does not hold the sector.
 - The tool needs a git remote with **push rights** to the repository (a cloud session uses the repository token its platform provides).
 - Conventions the tool does not enforce: hold at most 3 sectors at a time (a card of a 4th sector waits until you release one, or is done by the team that holds it; a one-file change there is a cross-sector PR); never hold a sector idle for more than a day; S9 is the Delivery Lead's sector and cannot be claimed as a SECTOR (decision 10).

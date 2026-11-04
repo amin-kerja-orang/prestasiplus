@@ -206,6 +206,8 @@ function requireToken(cwd, remote, w, env) {
 
 // Adds a tokenHash to a legacy team lock (force-with-lease on its current sha) and prints the token once.
 function claimLegacy(cwd, remote, cur, w) {
+  console.log(`Kunci pasukan lama ${w.team}: sesi direkod/recorded session ${cur.data.session ?? '?'}, sejak/at ${cur.data.at ?? '?'}.`)
+  console.log('Jalankan hanya jika anda ketua pasukan ini / Only run this if you are the current lead of this team.')
   const token = newToken()
   const data = { ...cur.data, tokenHash: sha256(token), at: new Date().toISOString() }
   const sha = makeCommit(cwd, data, cur.sha)
@@ -307,7 +309,8 @@ COMMANDS (--team and --session may come from env R1_TEAM and R1_SESSION)
   register-team --team team-amin --session S-1      once, from the lead session. Name: team-[a-z0-9-]{2,30}
                                                     prints the TEAM TOKEN once (only its SHA-256 is stored in the lock)
   join --team team-amin --token <token>             each other session of the team, once: stores the token in this clone's
-                                                    git config (r1.teamToken.<team>). Or set env R1_TEAM_TOKEN (wins over git config)
+                                                    git config (r1.teamToken.<team>). Or set env R1_TEAM_TOKEN (wins over git config).
+                                                    Exit 4 if the team is not registered
   claim-token --team team-amin --session S-1        team registered BEFORE the token fix (lock has no hash): adds the hash and
                                                     prints the token once. With a hash already there it needs the token (else exit 3)
   list                                              all locks: KEY | team | session | card | at | age | STALE
@@ -363,7 +366,7 @@ function main(argv, { cwd = process.cwd(), env = process.env } = {}) {
       const w = who(flags, env)
       if (!flags.token) throw new Fail(2, 'Perlukan --token / --token required.')
       const cur = readLock(cwd, remote, w.team)
-      if (!cur) throw new Fail(2, `Pasukan ${w.team} belum didaftar / not registered (lead runs register-team first).`)
+      if (!cur) { console.error(`Pasukan ${w.team} belum didaftar: jalankan register-team dahulu. / Team not registered: run register-team first.`); return 4 }
       if (!cur.data.tokenHash) throw new Fail(2, `Pasukan ${w.team} belum ada token (didaftar sebelum pembetulan); lead jalankan claim-token. / No token yet (legacy registration); the lead runs claim-token.`)
       if (!hashMatches(flags.token, cur.data.tokenHash)) { console.error(tokenMsg(w.team, 'Token salah. / Wrong token.')); return 3 }
       saveToken(cwd, w.team, flags.token)
@@ -443,6 +446,7 @@ function main(argv, { cwd = process.cwd(), env = process.env } = {}) {
     case 'break': {
       validKey(key)
       if (!flags.owner) throw new Fail(2, 'break memerlukan --owner / requires --owner.')
+      if (TEAM_RE.test(key) && flags['force-owner']) throw new Fail(2, 'Kunci pasukan hanya boleh dipecahkan apabila STALE; --force-owner tidak dibenarkan. / A team key can be broken only when it is STALE; --force-owner is not allowed.')
       console.error('AMARAN / WARNING: hanya pemilik produk (product owner) boleh memecahkan kunci. / Only the product owner may break a lock.')
       const cur = readLock(cwd, remote, key)
       if (!cur) { console.log(`Kunci ${key} tidak wujud / does not exist.`); return 0 }
@@ -582,7 +586,18 @@ async function selfTest() {
     expect('env token wins over a wrong git config (right env, ok)', cli('c', T('heartbeat', 'S8'), { R1_TEAM_TOKEN: token }), 0)
     expect('wrong git config token (exit 3)', cli('c', T('heartbeat', 'S8')), 3)
     expect('token holder releases S8', cli('a', T('release', 'S8')), 0)
-    expect('break needs no token (force-owner on team key)', cli('b', ['break', 'team-tk', '--owner', '--force-owner']), 0)
+    const tkBefore = readLock(clones.b, 'origin', 'team-tk').sha
+    expect('break --force-owner on a live team key is refused (exit 2)', cli('b', ['break', 'team-tk', '--owner', '--force-owner']), 2, 'STALE')
+    check('live team key unchanged after refused force-owner', readLock(clones.b, 'origin', 'team-tk').sha === tkBefore)
+    expect('break refuses a fresh team key without force (exit 3)', cli('b', ['break', 'team-tk', '--owner']), 3)
+    expect('join on an unregistered team (exit 4)', cli('c', ['join', '--team', 'team-nobody', '--token', 'x']), 4, 'register-team')
+    {
+      const oldAt = new Date(Date.now() - 30 * 3600000).toISOString()
+      const sc = makeCommit(clones.c, { key: 'team-old', team: 'team-old', session: 'o1', card: '', note: '', at: oldAt }, null)
+      must(git(clones.c, ['push', '--quiet', 'origin', `${sc}:${refOf('team-old')}`]), 'push stale team')
+      expect('breaking a STALE team key still works (no token needed)', cli('b', ['break', 'team-old', '--owner']), 0)
+      check('stale team key gone after break', !cli('b', ['list']).text.split(/\r?\n/).some((l) => l.startsWith('team-old ')))
+    }
 
     // legacy: team lock with no tokenHash, written directly (as registered before the fix)
     const legacy = (team, session) => {
@@ -596,7 +611,7 @@ async function selfTest() {
     expect('legacy: claim-token from a non-holder session (exit 3)', cli('a', L('claim-token', 'l2')), 3)
     const cl = cli('c', L('claim-token', 'l1'))
     const lgToken = (cl.text.match(/--token (\S+)/) ?? [])[1] ?? ''
-    check('legacy: claim-token by the holder adds the hash and prints the token', cl.code === 0 && lgToken.length >= 32 && readLock(clones.c, 'origin', 'team-lg').data.tokenHash === sha256(lgToken), cl.text)
+    check('legacy: claim-token by the holder adds the hash and prints the token', cl.code === 0 && cl.text.includes('l1') && cl.text.includes('Only run this if you are the current lead') && lgToken.length >= 32 && readLock(clones.c, 'origin', 'team-lg').data.tokenHash === sha256(lgToken), cl.text)
     check('legacy: session of the team lock is preserved', readLock(clones.c, 'origin', 'team-lg').data.session === 'l1')
     expect('legacy after claim: no token now fails (exit 3)', cli('a', L('acquire', 'l1', 'S6')), 3)
     expect('legacy after claim: claim-token without token (exit 3)', cli('a', L('claim-token', 'l1')), 3)
