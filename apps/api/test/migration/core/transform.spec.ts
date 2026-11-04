@@ -52,6 +52,13 @@ describe('levels, subjects, chapters, topics', () => {
     expect(bad).toEqual({ ok: false, reject: expect.objectContaining({ reason: 'UNKNOWN_ENUM', column: 'stage', enumValue: 'secondary' }) })
   })
 
+  // DM-13: a primary (Darjah) level is always loaded inactive; a secondary level keeps the source flag (default active).
+  it('loads a primary level inactive and keeps the source flag for a secondary level', () => {
+    expect(transformLevel({ id: '1', name_bm: 'Darjah 1', stage: 'primary', curriculum: 'kssr', is_active: '1' })).toMatchObject({ ok: true, value: { is_active: false } })
+    expect(transformLevel({ id: '2', name_bm: 'Tingkatan 4', stage: 'upper_secondary', curriculum: 'kssm' })).toMatchObject({ ok: true, value: { is_active: true } })
+    expect(transformLevel({ id: '3', name_bm: 'Tingkatan 5', stage: 'upper_secondary', curriculum: 'kssm', is_active: '0' })).toMatchObject({ ok: true, value: { is_active: false } })
+  })
+
   // A1-FIX: the real source stores the BM stage names (the complete distinct set, confirmed by the LEAD). One case per value.
   it.each([
     ['Rendah', 'primary'],
