@@ -536,14 +536,15 @@ test.describe('QA G5 guards and nav', { tag: [moduleTag(4), '@qa'] }, () => {
     }
   })
 
-  test('E2E-M04-56 a pelajar opening an admin M04 route is sent away (AC-29.2)', async ({
+  test('E2E-M04-56 a pelajar opening an admin M04 route sees Akses Ditolak in place (AC-29.2, FR-X2-4)', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
     await loginAs('pelajar@demo.test')
     await gotoApp('/admin/questions')
-    await expect(page).not.toHaveURL(/\/admin\/questions/)
+    await expect(page.getByRole('heading', { level: 1, name: 'Akses Ditolak' })).toBeVisible()
+    await expect(page).toHaveURL(/\/admin\/questions/)
     await expect(page.getByTestId('questions-page')).toHaveCount(0)
   })
 
@@ -557,7 +558,7 @@ test.describe('QA G5 guards and nav', { tag: [moduleTag(4), '@qa'] }, () => {
     // Portal Pentadbiran menu (v2): one sidebar, a drawer behind the menu button below lg.
     const expected: Array<[string, string]> = [
       ['Bank Soalan', '/admin/questions'],
-      ['Import & Semakan', '/admin/questions/import'],
+      ['Import & Semakan', '/admin/spm/soalan/ekstrak'],
       ['Kualiti Soalan', '/admin/questions/quality'],
       ['Laporan Soalan', '/admin/question-reports'],
     ]

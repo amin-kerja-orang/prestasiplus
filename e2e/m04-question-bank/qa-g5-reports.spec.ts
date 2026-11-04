@@ -367,14 +367,15 @@ test.describe('QA G5 S13 and access', { tag: [moduleTag(4), '@qa'] }, () => {
     void loginAs
   })
 
-  test('E2E-M04-56 pelajar opening S7 is sent to their own landing page; S13 stays available (AC-29.2)', async ({
+  test('E2E-M04-56 pelajar opening S7 sees Akses Ditolak in place; S13 stays available (AC-29.2, FR-X2-4)', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
     await loginAs(PELAJAR)
     await gotoApp(S7)
-    await expect(page).not.toHaveURL(/question-reports/)
+    await expect(page.getByRole('heading', { level: 1, name: 'Akses Ditolak' })).toBeVisible()
+    await expect(page).toHaveURL(/question-reports/)
     await gotoApp(S13)
     await expect(page).toHaveURL(/laporan-soalan/)
     await expect(byId(page, 'my-reports-page')).toBeVisible()
