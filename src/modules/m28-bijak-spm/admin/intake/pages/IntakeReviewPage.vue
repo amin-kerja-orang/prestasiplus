@@ -5,10 +5,10 @@
  * Stimulus groups: a figure or passage is stored once and several questions attach to it; the
  * group stays contiguous. "Hantar untuk semakan" is blocked until the quality gates pass.
  */
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, h, nextTick, onBeforeUnmount, onMounted, ref, watch, type FunctionalComponent } from 'vue'
 
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsEmptyState, DsPage, DsPanel, DsStack, DsStateView, DsStatusBadge, DsText } from '@/ds'
+import { DsBadge, DsEmptyState, DsPage, DsPanel, DsSplitPane, DsStack, DsStateView, DsStatusBadge, DsText } from '@/ds'
 
 import { StimulusView } from '../../../../../components/question-display'
 import { formatDateTime } from '../../../lib/use-bijak'
@@ -48,7 +48,16 @@ watch(isManual, (m) => {
   pageMeta.setHeader({ title: 'Tulis Soalan Manual', subtitle: 'Taip soalan sendiri tanpa PDF' })
   pageMeta.setTitle('Tulis Soalan Manual - Admin PRESTASIPLUS')
 })
-const mobileTab = ref<'soalan' | 'sumber'>('soalan')
+/** Pane shown below `lg` (FR-X6-11): `Sumber PDF` | `Editor`. A manual batch has no source file and shows no tabs. */
+const pane = ref<'sumber' | 'editor'>('editor')
+const PANES = [
+  { id: 'sumber', label: 'Sumber PDF' },
+  { id: 'editor', label: 'Editor' },
+]
+/** The manual batch keeps both blocks one under the other, as before: the same two slots, no tabs. */
+const StackedPanes: FunctionalComponent = (_props, { slots }) =>
+  h(DsStack, { gap: 'lg' }, () => [slots['pane-sumber']?.(), slots['pane-editor']?.()])
+StackedPanes.inheritAttrs = false
 const pageNo = ref(1)
 const open = ref<Set<string>>(new Set())
 const saveState = ref<'tersimpan' | 'belum' | 'menyimpan' | 'gagal'>('tersimpan')
@@ -333,6 +342,18 @@ function quickAttach(qid: string, stimulusId: string): void {
   toggleMember(stimulusId || '', qid, false)
   if (stimulusId) toggleMember(stimulusId, qid, true)
 }
+/** Full-screen figure (AC-ADM-R5): the crop that was tapped, full-screen in a modal. */
+const figure = ref<{ src: string; alt: string } | null>(null)
+const figureOpen = computed({
+  get: () => figure.value !== null,
+  set: (v: boolean) => {
+    if (!v) figure.value = null
+  },
+})
+function openFigure(e: MouseEvent): void {
+  const img = (e.target as HTMLElement).closest('img')
+  if (img) figure.value = { src: img.currentSrc || img.src, alt: img.alt }
+}
 function previewImage(s: IntakeStimulus) {
   return images.value.find((i) => i.page === s.page)
 }
@@ -341,7 +362,7 @@ function previewImage(s: IntakeStimulus) {
 function goTo(i: IntakeIssue): void {
   if (!i.questionId) return
   open.value = new Set([...open.value, i.questionId])
-  mobileTab.value = 'soalan'
+  pane.value = 'editor'
   setTimeout(
     () => document.getElementById(`q-${i.questionId}`)?.scrollIntoView({ block: 'start', behavior: 'smooth' }),
     50,
@@ -610,7 +631,6 @@ async function submit(): Promise<void> {
             <template #actions>
               <UButton
                 to="/admin/spm/semakan"
-                size="sm"
                 color="success"
                 variant="outline"
                 icon="i-ph-seal-check"
@@ -621,7 +641,6 @@ async function submit(): Promise<void> {
               <UButton
                 v-if="paperBack"
                 :to="paperBack"
-                size="sm"
                 color="neutral"
                 variant="outline"
                 icon="i-ph-stack"
@@ -784,390 +803,397 @@ async function submit(): Promise<void> {
           data-testid="all-decided"
         />
 
-        <!-- mobile switch -->
-        <div v-if="!isManual" class="flex gap-2 lg:hidden" role="tablist" aria-label="Paparan">
-          <UButton
-            v-for="t in [
-              { v: 'soalan', l: 'Soalan' },
-              { v: 'sumber', l: 'Sumber kertas' },
-            ] as const"
-            :key="t.v"
-            role="tab"
-            :aria-selected="mobileTab === t.v"
-            :variant="mobileTab === t.v ? 'solid' : 'outline'"
-            color="neutral"
-            class="flex-1 justify-center"
-            @click="mobileTab = t.v"
-          >
-            {{ t.l }}
-          </UButton>
-        </div>
-
-        <div
-          class="grid min-w-0 gap-6"
-          :class="isManual ? '' : 'lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start'"
+        <component
+          :is="isManual ? StackedPanes : DsSplitPane"
+          v-model:pane="pane"
+          :panes="PANES"
+          aria-label="Paparan"
+          breakpoint="lg"
+          default-pane="editor"
+          ratio="5-7"
+          align="stretch"
         >
-          <!-- source (stimuli only for a manual batch) -->
-          <aside
-            :class="
-              isManual
-                ? 'block'
-                : [
-                    mobileTab === 'sumber' ? 'block' : 'hidden lg:block',
-                    'lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-auto',
-                  ]
-            "
-            class="flex min-w-0 flex-col gap-3"
-            :aria-label="isManual ? 'Rajah dan petikan' : 'Sumber kertas'"
-            data-testid="source-panel"
-          >
-            <DsPanel v-if="!isManual">
-              <div class="flex flex-col gap-3">
-                <div class="flex flex-wrap items-center gap-2">
-                  <p class="font-semibold">Halaman sumber</p>
-                  <UBadge v-if="pageText" variant="subtle" color="neutral">
-                    {{ pageText.source === 'ocr' ? 'OCR' : 'Lapisan teks' }}
-                  </UBadge>
-                </div>
-                <div class="flex flex-wrap gap-1" role="group" aria-label="Pilih halaman">
-                  <UButton
-                    v-for="p in batch.pages"
-                    :key="p.page"
-                    size="sm"
-                    :variant="pageNo === p.page ? 'solid' : 'outline'"
-                    color="neutral"
-                    :aria-pressed="pageNo === p.page"
-                    @click="pageNo = p.page"
-                  >
-                    {{ p.page }}
-                  </UButton>
-                </div>
-                <img
-                  v-if="pageImage"
-                  :src="pageImage.dataUrl"
-                  :alt="`Halaman ${pageNo} kertas`"
-                  class="w-full rounded-lg border border-default"
-                />
-                <pre
-                  v-else-if="pageText"
-                  class="max-h-96 overflow-auto whitespace-pre-wrap rounded-lg bg-muted p-3 text-sm"
-                  data-testid="source-text"
-                  >{{ pageText.text }}</pre
-                >
-              </div>
-            </DsPanel>
-
-            <!-- stimuli -->
-            <DsPanel data-testid="stimulus-panel">
-              <fieldset :disabled="readonly" class="flex min-w-0 flex-col gap-4">
-                <legend class="mb-1 font-semibold">Rajah dan petikan</legend>
-                <p class="text-sm text-muted">
-                  Satu rajah disimpan sekali. Pilih soalan yang berkongsinya; soalan itu kekal berturutan.
-                </p>
-                <p v-if="batch.stimuli.length === 0" class="text-sm text-muted">
-                  Tiada rajah atau petikan.
-                </p>
-                <p
-                  v-if="groupNote"
-                  class="rounded-lg bg-info/10 p-2 text-sm text-info"
-                  role="status"
-                  data-testid="group-note"
-                >
-                  {{ groupNote }}
-                </p>
-                <div
-                  v-for="s in batch.stimuli"
-                  :key="s.id"
-                  class="flex flex-col gap-3 rounded-xl border border-default p-3"
-                  data-testid="stimulus-card"
-                >
-                  <div class="flex items-center justify-between gap-2">
-                    <div class="flex min-w-0 flex-col">
-                      <p class="font-medium">{{ s.label }}</p>
-                      <p class="text-sm text-muted" data-testid="stimulus-shared">
-                        {{ sharedBy(s.id) ? `Dikongsi oleh soalan ${sharedBy(s.id)}` : 'Belum dikongsi oleh mana-mana soalan' }}
-                      </p>
-                    </div>
-                    <UButton
-                      icon="i-ph-trash"
-                      color="error"
-                      variant="ghost"
-                      :aria-label="`Buang ${s.label}`"
-                      @click="dropStimulus(s.id)"
-                    />
+          <!-- source (stimuli only for a manual batch). `lg:[div:has(>&)]:h-full` makes the pane wrapper of DsSplitPane as tall as the
+               column, so `sticky` has room to hold the source while the editor scrolls (needs:S8 for a native sticky first pane). -->
+          <template #pane-sumber>
+            <aside
+              :class="isManual ? '' : 'lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-auto lg:[div:has(>&)]:h-full'"
+              class="flex min-w-0 flex-col gap-3"
+              :aria-label="isManual ? 'Rajah dan petikan' : 'Sumber kertas'"
+              data-testid="source-panel"
+            >
+              <DsPanel v-if="!isManual">
+                <div class="flex flex-col gap-3">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <p class="font-semibold">Halaman sumber</p>
+                    <DsBadge v-if="pageText" :label="pageText.source === 'ocr' ? 'OCR' : 'Lapisan teks'" />
                   </div>
-                  <StimulusView v-if="s.image || s.text" :stimulus="s" />
+                  <div class="flex flex-wrap gap-1" role="group" aria-label="Pilih halaman">
+                    <UButton
+                      v-for="p in batch.pages"
+                      :key="p.page"
+                      size="lg"
+                      :variant="pageNo === p.page ? 'solid' : 'outline'"
+                      color="neutral"
+                      :aria-pressed="pageNo === p.page"
+                      @click="pageNo = p.page"
+                    >
+                      {{ p.page }}
+                    </UButton>
+                  </div>
                   <img
-                    v-else-if="previewImage(s)"
-                    :src="previewImage(s)!.dataUrl"
-                    :alt="s.alt || `Halaman ${s.page}`"
-                    class="max-h-48 w-full rounded-lg border border-default object-contain"
+                    v-if="pageImage"
+                    :src="pageImage.dataUrl"
+                    :alt="`Halaman ${pageNo} kertas`"
+                    class="w-full rounded-lg border border-default"
                   />
-                  <label class="flex flex-col gap-1 text-sm">
-                    <span class="text-muted">Tajuk kapsyen</span>
-                    <input
-                      :value="s.caption ?? ''"
-                      class="min-h-11 rounded-lg border border-default bg-default px-3"
-                      :aria-label="`Kapsyen ${s.label}`"
-                      @input="patchStimulus(s.id, { caption: ($event.target as HTMLInputElement).value })"
-                    />
-                  </label>
-                  <label class="flex flex-col gap-1 text-sm">
-                    <span class="text-muted">Teks alternatif (wajib)</span>
-                    <input
-                      :value="s.alt"
-                      class="min-h-11 rounded-lg border border-default bg-default px-3"
-                      :aria-label="`Teks alternatif ${s.label}`"
-                      data-testid="stimulus-alt"
-                      @input="patchStimulus(s.id, { alt: ($event.target as HTMLInputElement).value })"
-                    />
-                  </label>
-                  <label v-if="s.kind === 'passage'" class="flex flex-col gap-1 text-sm">
-                    <span class="text-muted">Teks petikan</span>
-                    <textarea
-                      :value="s.text ?? ''"
-                      rows="3"
-                      class="rounded-lg border border-default bg-default p-3"
-                      @input="patchStimulus(s.id, { text: ($event.target as HTMLTextAreaElement).value })"
-                    />
-                  </label>
-                  <UButton
-                    type="button"
-                    color="neutral"
-                    variant="soft"
-                    class="min-h-11 self-start"
-                    :loading="linking === s.id"
-                    :data-testid="`link-references-${s.label}`"
-                    @click="linkReferences(s)"
+                  <pre
+                    v-else-if="pageText"
+                    class="max-h-96 overflow-auto whitespace-pre-wrap rounded-lg bg-muted p-3 text-sm"
+                    data-testid="source-text"
+                    >{{ pageText.text }}</pre
                   >
-                    Pautkan semua yang merujuk
-                  </UButton>
-                  <fieldset class="flex flex-col gap-1">
-                    <legend class="mb-1 text-sm font-medium">Soalan dalam kumpulan ini</legend>
-                    <UCheckbox
-                      v-for="q in batch.questions"
-                      :key="q.id"
-                      :model-value="inGroup(s.id, q)"
-                      :disabled="!!q.stimulusId && q.stimulusId !== s.id"
-                      :label="`Soalan ${q.label}${q.stimulusId && q.stimulusId !== s.id ? ' (dalam kumpulan lain)' : ''}`"
-                      :data-testid="`group-${s.id}-q${q.label}`"
-                      @update:model-value="(v: boolean | 'indeterminate') => toggleMember(s.id, q.id, v === true)"
-                    />
-                  </fieldset>
                 </div>
-                <div class="flex flex-wrap gap-2">
-                  <UButton
-                    v-if="!isManual"
-                    size="sm"
-                    variant="outline"
-                    color="neutral"
-                    icon="i-ph-image"
-                    data-testid="add-diagram"
-                    @click="addStimulus('diagram')"
+              </DsPanel>
+
+              <!-- stimuli -->
+              <DsPanel data-testid="stimulus-panel">
+                <fieldset :disabled="readonly" class="flex min-w-0 flex-col gap-4">
+                  <legend class="mb-1 font-semibold">Rajah dan petikan</legend>
+                  <p class="text-sm text-muted">
+                    Satu rajah disimpan sekali. Pilih soalan yang berkongsinya; soalan itu kekal berturutan.
+                  </p>
+                  <p v-if="batch.stimuli.length === 0" class="text-sm text-muted">
+                    Tiada rajah atau petikan.
+                  </p>
+                  <p
+                    v-if="groupNote"
+                    class="rounded-lg bg-info/10 p-2 text-sm text-info"
+                    role="status"
+                    data-testid="group-note"
                   >
-                    Tambah rajah
-                  </UButton>
-                  <UButton
-                    size="sm"
-                    variant="outline"
-                    color="neutral"
-                    icon="i-ph-article"
-                    @click="addStimulus('passage')"
+                    {{ groupNote }}
+                  </p>
+                  <div
+                    v-for="s in batch.stimuli"
+                    :key="s.id"
+                    class="flex flex-col gap-3 rounded-xl border border-default p-3"
+                    data-testid="stimulus-card"
                   >
-                    Tambah petikan
-                  </UButton>
-                </div>
-              </fieldset>
-            </DsPanel>
-          </aside>
+                    <div class="flex items-center justify-between gap-2">
+                      <div class="flex min-w-0 flex-col">
+                        <p class="font-medium">{{ s.label }}</p>
+                        <p class="text-sm text-muted" data-testid="stimulus-shared">
+                          {{ sharedBy(s.id) ? `Dikongsi oleh soalan ${sharedBy(s.id)}` : 'Belum dikongsi oleh mana-mana soalan' }}
+                        </p>
+                      </div>
+                      <UButton
+                        icon="i-ph-trash"
+                        color="error"
+                        variant="ghost"
+                        class="min-w-11 justify-center"
+                        :aria-label="`Buang ${s.label}`"
+                        @click="dropStimulus(s.id)"
+                      />
+                    </div>
+                    <!-- AC-ADM-R5: a tap on the figure crop opens it full-screen (the browser keeps its own pinch-zoom). -->
+                    <div
+                      v-if="s.image || s.text || previewImage(s)"
+                      data-testid="figure-tap"
+                      @click="openFigure"
+                    >
+                      <StimulusView v-if="s.image || s.text" :stimulus="s" />
+                      <img
+                        v-else
+                        :src="previewImage(s)!.dataUrl"
+                        :alt="s.alt || `Halaman ${s.page}`"
+                        class="max-h-48 w-full rounded-lg border border-default object-contain"
+                      />
+                    </div>
+                    <label class="flex flex-col gap-1 text-sm">
+                      <span class="text-muted">Tajuk kapsyen</span>
+                      <input
+                        :value="s.caption ?? ''"
+                        class="min-h-11 rounded-lg border border-default bg-default px-3"
+                        :aria-label="`Kapsyen ${s.label}`"
+                        @input="patchStimulus(s.id, { caption: ($event.target as HTMLInputElement).value })"
+                      />
+                    </label>
+                    <label class="flex flex-col gap-1 text-sm">
+                      <span class="text-muted">Teks alternatif (wajib)</span>
+                      <input
+                        :value="s.alt"
+                        class="min-h-11 rounded-lg border border-default bg-default px-3"
+                        :aria-label="`Teks alternatif ${s.label}`"
+                        data-testid="stimulus-alt"
+                        @input="patchStimulus(s.id, { alt: ($event.target as HTMLInputElement).value })"
+                      />
+                    </label>
+                    <label v-if="s.kind === 'passage'" class="flex flex-col gap-1 text-sm">
+                      <span class="text-muted">Teks petikan</span>
+                      <textarea
+                        :value="s.text ?? ''"
+                        rows="3"
+                        class="rounded-lg border border-default bg-default p-3"
+                        @input="patchStimulus(s.id, { text: ($event.target as HTMLTextAreaElement).value })"
+                      />
+                    </label>
+                    <UButton
+                      type="button"
+                      color="neutral"
+                      variant="soft"
+                      class="min-h-11 self-start"
+                      :loading="linking === s.id"
+                      :data-testid="`link-references-${s.label}`"
+                      @click="linkReferences(s)"
+                    >
+                      Pautkan semua yang merujuk
+                    </UButton>
+                    <fieldset class="flex flex-col gap-1">
+                      <legend class="mb-1 text-sm font-medium">Soalan dalam kumpulan ini</legend>
+                      <UCheckbox
+                        v-for="q in batch.questions"
+                        :key="q.id"
+                        variant="card"
+                        :model-value="inGroup(s.id, q)"
+                        :disabled="!!q.stimulusId && q.stimulusId !== s.id"
+                        :label="`Soalan ${q.label}${q.stimulusId && q.stimulusId !== s.id ? ' (dalam kumpulan lain)' : ''}`"
+                        :data-testid="`group-${s.id}-q${q.label}`"
+                        @update:model-value="(v: boolean | 'indeterminate') => toggleMember(s.id, q.id, v === true)"
+                      />
+                    </fieldset>
+                  </div>
+                  <div class="flex flex-wrap gap-2">
+                    <UButton
+                      v-if="!isManual"
+                      variant="outline"
+                      color="neutral"
+                      icon="i-ph-image"
+                      data-testid="add-diagram"
+                      @click="addStimulus('diagram')"
+                    >
+                      Tambah rajah
+                    </UButton>
+                    <UButton
+                      variant="outline"
+                      color="neutral"
+                      icon="i-ph-article"
+                      @click="addStimulus('passage')"
+                    >
+                      Tambah petikan
+                    </UButton>
+                  </div>
+                </fieldset>
+              </DsPanel>
+            </aside>
+          </template>
 
           <!-- questions -->
-          <section
-            :class="isManual || mobileTab === 'soalan' ? 'block' : 'hidden lg:block'"
-            class="flex min-w-0 flex-col gap-4"
-            aria-label="Soalan diekstrak"
-            data-testid="questions-panel"
-          >
-            <div class="flex min-w-0 flex-col gap-4">
-              <template v-for="(q, i) in batch.questions" :key="q.id">
-                <div
-                  v-if="startsGroup(i) && stimulusOf(q)"
-                  class="flex flex-col gap-2 rounded-2xl border border-primary/30 bg-primary/5 p-4"
-                  data-testid="group-header"
-                >
-                  <p class="text-sm font-semibold">
-                    {{ stimulusOf(q)!.label }}
-                    <span v-if="groupFor(q)" class="font-normal text-muted">
-                      · {{ groupLabel(groupFor(q)!) }} berkongsi rajah ini
-                    </span>
-                  </p>
-                  <StimulusView v-if="stimulusOf(q)!.image || stimulusOf(q)!.text" :stimulus="stimulusOf(q)!" />
-                  <p v-else class="text-sm text-muted">{{ stimulusOf(q)!.alt || 'Tiada pratonton' }}</p>
-                </div>
-                <article
-                  :id="`q-${q.id}`"
-                  class="scroll-mt-4 overflow-hidden rounded-2xl border bg-default"
-                  :class="q.stimulusId ? 'border-primary/30 ml-3 sm:ml-6' : 'border-default'"
-                  :data-testid="`question-card`"
-                  :data-label="q.label"
-                >
-                  <button
-                    type="button"
-                    class="flex min-h-14 w-full flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-left"
-                    :aria-expanded="open.has(q.id)"
-                    :aria-controls="`qb-${q.id}`"
-                    @click="toggle(q.id)"
+          <template #pane-editor>
+            <section
+              class="flex min-w-0 flex-col gap-4"
+              aria-label="Soalan diekstrak"
+              data-testid="questions-panel"
+            >
+              <div class="flex min-w-0 flex-col gap-4">
+                <template v-for="(q, i) in batch.questions" :key="q.id">
+                  <div
+                    v-if="startsGroup(i) && stimulusOf(q)"
+                    class="flex flex-col gap-2 rounded-2xl border border-primary/30 bg-primary/5 p-4"
+                    data-testid="group-header"
                   >
-                    <span class="text-lg font-bold">{{ q.label }}</span>
-                    <UBadge variant="subtle" color="neutral">
-                      {{ q.type === 'mcq' ? 'Objektif' : q.type === 'structured' ? 'Berstruktur' : q.type === 'essay' ? 'Esei' : 'Pendek' }}
-                    </UBadge>
-                    <span class="text-sm text-muted">{{ questionMarks(q) }} markah</span>
-                    <UBadge v-if="stimulusOf(q)" variant="subtle" color="primary">
+                    <p class="text-sm font-semibold">
                       {{ stimulusOf(q)!.label }}
-                    </UBadge>
-                    <UBadge
-                      v-if="issuesByQuestion.get(q.id)"
-                      variant="subtle"
-                      color="warning"
-                      data-testid="q-issues"
-                    >
-                      {{ issuesByQuestion.get(q.id) }} isu
-                    </UBadge>
-                    <UBadge v-else variant="subtle" color="success">Sedia</UBadge>
-                    <span class="min-w-0 flex-1 basis-full truncate text-sm text-muted sm:basis-auto">
-                      {{ q.stem || q.parts[0]?.prompt }}
-                    </span>
-                    <span
-                      :class="open.has(q.id) ? 'i-ph-caret-up' : 'i-ph-caret-down'"
-                      class="ml-auto"
-                      aria-hidden="true"
-                    />
-                  </button>
-                  <fieldset
-                    v-if="open.has(q.id)"
-                    :id="`qb-${q.id}`"
-                    :disabled="readonly"
-                    class="flex min-w-0 flex-col gap-4 border-t border-default p-4"
+                      <span v-if="groupFor(q)" class="font-normal text-muted">
+                        · {{ groupLabel(groupFor(q)!) }} berkongsi rajah ini
+                      </span>
+                    </p>
+                    <StimulusView v-if="stimulusOf(q)!.image || stimulusOf(q)!.text" :stimulus="stimulusOf(q)!" />
+                    <p v-else class="text-sm text-muted">{{ stimulusOf(q)!.alt || 'Tiada pratonton' }}</p>
+                  </div>
+                  <article
+                    :id="`q-${q.id}`"
+                    class="scroll-mt-4 overflow-hidden rounded-2xl border bg-default"
+                    :class="q.stimulusId ? 'border-primary/30 ml-3 sm:ml-6' : 'border-default'"
+                    :data-testid="`question-card`"
+                    :data-label="q.label"
                   >
-                    <label class="flex max-w-sm flex-col gap-1 text-sm">
-                      <span class="font-medium">Rajah / petikan dikongsi</span>
-                      <select
-                        :value="q.stimulusId ?? ''"
-                        class="min-h-11 rounded-lg border border-default bg-default px-3"
-                        data-testid="q-stimulus"
-                        @change="quickAttach(q.id, ($event.target as HTMLSelectElement).value)"
+                    <button
+                      type="button"
+                      class="flex min-h-14 w-full flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 text-left"
+                      :aria-expanded="open.has(q.id)"
+                      :aria-controls="`qb-${q.id}`"
+                      @click="toggle(q.id)"
+                    >
+                      <span class="text-lg font-bold">{{ q.label }}</span>
+                      <UBadge variant="subtle" color="neutral">
+                        {{ q.type === 'mcq' ? 'Objektif' : q.type === 'structured' ? 'Berstruktur' : q.type === 'essay' ? 'Esei' : 'Pendek' }}
+                      </UBadge>
+                      <span class="text-sm text-muted">{{ questionMarks(q) }} markah</span>
+                      <UBadge v-if="stimulusOf(q)" variant="subtle" color="primary">
+                        {{ stimulusOf(q)!.label }}
+                      </UBadge>
+                      <UBadge
+                        v-if="issuesByQuestion.get(q.id)"
+                        variant="subtle"
+                        color="warning"
+                        data-testid="q-issues"
                       >
-                        <option value="">Tiada</option>
-                        <option v-for="s in batch.stimuli" :key="s.id" :value="s.id">{{ s.label }}</option>
-                      </select>
-                    </label>
-                    <QuestionEditor
-                      show-cognitive
-                      :model-value="q"
-                      @update:model-value="updateQuestion(q.id, $event)"
-                    />
-                    <div v-if="canDecide" class="flex flex-col gap-3" data-testid="item-actions">
-                      <p class="text-caption text-muted" data-testid="item-counter">
-                        Item {{ batch.questions.findIndex((x) => x.id === q.id) + 1 }} / {{ batch.questions.length }}
-                      </p>
-                      <div
-                        class="flex flex-wrap gap-2 max-sm:sticky max-sm:bottom-0 max-sm:z-10 max-sm:border-t max-sm:border-default max-sm:bg-default max-sm:py-2"
-                        data-testid="item-buttons"
-                      >
-                        <UButton
-                          color="success"
-                          icon="i-ph-check"
-                          class="min-h-11"
-                          :loading="deciding"
-                          data-testid="item-accept"
-                          @click="accept(q.id)"
+                        {{ issuesByQuestion.get(q.id) }} isu
+                      </UBadge>
+                      <UBadge v-else variant="subtle" color="success">Sedia</UBadge>
+                      <span class="min-w-0 flex-1 basis-full truncate text-sm text-muted sm:basis-auto">
+                        {{ q.stem || q.parts[0]?.prompt }}
+                      </span>
+                      <span
+                        :class="open.has(q.id) ? 'i-ph-caret-up' : 'i-ph-caret-down'"
+                        class="ml-auto"
+                        aria-hidden="true"
+                      />
+                    </button>
+                    <fieldset
+                      v-if="open.has(q.id)"
+                      :id="`qb-${q.id}`"
+                      :disabled="readonly"
+                      class="flex min-w-0 flex-col gap-4 border-t border-default p-4"
+                    >
+                      <label class="flex max-w-sm flex-col gap-1 text-sm">
+                        <span class="font-medium">Rajah / petikan dikongsi</span>
+                        <select
+                          :value="q.stimulusId ?? ''"
+                          class="min-h-11 rounded-lg border border-default bg-default px-3"
+                          data-testid="q-stimulus"
+                          @change="quickAttach(q.id, ($event.target as HTMLSelectElement).value)"
                         >
-                          Terima<span class="pointer-coarse:hidden"> (A)</span>
-                        </UButton>
-                        <UButton
-                          color="error"
-                          variant="outline"
-                          icon="i-ph-x"
-                          class="min-h-11"
-                          :disabled="deciding"
-                          data-testid="item-reject"
-                          @click="askReject(q.id)"
+                          <option value="">Tiada</option>
+                          <option v-for="s in batch.stimuli" :key="s.id" :value="s.id">{{ s.label }}</option>
+                        </select>
+                      </label>
+                      <QuestionEditor
+                        show-cognitive
+                        :model-value="q"
+                        @update:model-value="updateQuestion(q.id, $event)"
+                      />
+                      <div v-if="canDecide" class="flex flex-col gap-3" data-testid="item-actions">
+                        <p class="text-caption text-muted" data-testid="item-counter">
+                          Item {{ batch.questions.findIndex((x) => x.id === q.id) + 1 }} / {{ batch.questions.length }}
+                        </p>
+                        <div
+                          class="flex flex-wrap gap-2 max-sm:sticky max-sm:bottom-0 max-sm:z-10 max-sm:border-t max-sm:border-default max-sm:bg-default max-sm:py-2"
+                          data-testid="item-buttons"
                         >
-                          Tolak<span class="pointer-coarse:hidden"> (R)</span>
-                        </UButton>
-                        <UButton
-                          color="neutral"
-                          variant="outline"
-                          icon="i-ph-floppy-disk"
-                          class="min-h-11"
-                          :disabled="deciding"
-                          data-testid="item-save"
-                          @click="save"
-                        >
-                          Simpan Sunting<span class="pointer-coarse:hidden"> (E)</span>
-                        </UButton>
-                      </div>
-                      <div v-if="rejectingId === q.id" class="flex flex-col gap-2" data-testid="reject-box">
-                        <label class="flex flex-col gap-1 text-sm">
-                          <span class="font-medium">Sebab menolak</span>
-                          <input
-                            v-model="rejectReason"
-                            type="text"
-                            maxlength="500"
-                            class="min-h-11 rounded-lg border border-default bg-default px-3"
-                            data-testid="reject-reason"
-                          />
-                        </label>
-                        <div class="flex flex-wrap gap-2">
                           <UButton
-                            color="error"
+                            color="success"
+                            icon="i-ph-check"
                             class="min-h-11"
                             :loading="deciding"
-                            data-testid="reject-confirm"
-                            @click="confirmReject"
+                            data-testid="item-accept"
+                            @click="accept(q.id)"
                           >
-                            Tolak soalan
+                            Terima<span class="pointer-coarse:hidden"> (A)</span>
+                          </UButton>
+                          <UButton
+                            color="error"
+                            variant="outline"
+                            icon="i-ph-x"
+                            class="min-h-11"
+                            :disabled="deciding"
+                            data-testid="item-reject"
+                            @click="askReject(q.id)"
+                          >
+                            Tolak<span class="pointer-coarse:hidden"> (R)</span>
                           </UButton>
                           <UButton
                             color="neutral"
-                            variant="ghost"
+                            variant="outline"
+                            icon="i-ph-floppy-disk"
                             class="min-h-11"
-                            @click="rejectingId = null"
+                            :disabled="deciding"
+                            data-testid="item-save"
+                            @click="save"
                           >
-                            Batal
+                            Simpan Sunting<span class="pointer-coarse:hidden"> (E)</span>
                           </UButton>
                         </div>
+                        <div v-if="rejectingId === q.id" class="flex flex-col gap-2" data-testid="reject-box">
+                          <label class="flex flex-col gap-1 text-sm">
+                            <span class="font-medium">Sebab menolak</span>
+                            <input
+                              v-model="rejectReason"
+                              type="text"
+                              maxlength="500"
+                              class="min-h-11 rounded-lg border border-default bg-default px-3"
+                              data-testid="reject-reason"
+                            />
+                          </label>
+                          <div class="flex flex-wrap gap-2">
+                            <UButton
+                              color="error"
+                              class="min-h-11"
+                              :loading="deciding"
+                              data-testid="reject-confirm"
+                              @click="confirmReject"
+                            >
+                              Tolak soalan
+                            </UButton>
+                            <UButton
+                              color="neutral"
+                              variant="ghost"
+                              class="min-h-11"
+                              @click="rejectingId = null"
+                            >
+                              Batal
+                            </UButton>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <div class="flex justify-end">
-                      <UButton
-                        color="error"
-                        variant="ghost"
-                        icon="i-ph-trash"
-                        @click="removeQuestion(q.id)"
-                      >
-                        Buang soalan
-                      </UButton>
-                    </div>
-                  </fieldset>
-                </article>
-              </template>
-              <div v-if="!readonly">
-                <UButton
-                  icon="i-ph-plus"
-                  variant="outline"
-                  color="neutral"
-                  data-testid="add-question"
-                  @click="addQuestion"
-                >
-                  Tambah soalan
-                </UButton>
+                      <div class="flex justify-end">
+                        <UButton
+                          color="error"
+                          variant="ghost"
+                          icon="i-ph-trash"
+                          @click="removeQuestion(q.id)"
+                        >
+                          Buang soalan
+                        </UButton>
+                      </div>
+                    </fieldset>
+                  </article>
+                </template>
+                <div v-if="!readonly">
+                  <UButton
+                    icon="i-ph-plus"
+                    variant="outline"
+                    color="neutral"
+                    data-testid="add-question"
+                    @click="addQuestion"
+                  >
+                    Tambah soalan
+                  </UButton>
+                </div>
               </div>
-            </div>
-          </section>
-        </div>
+            </section>
+          </template>
+        </component>
       </template>
     </DsStateView>
+
+    <UModal
+      v-model:open="figureOpen"
+      fullscreen
+      :title="figure?.alt || 'Rajah'"
+      description=" "
+      :close="{ class: 'min-h-11 min-w-11 justify-center' }"
+    >
+      <template #body>
+        <img
+          v-if="figure"
+          :src="figure.src"
+          :alt="figure.alt"
+          class="mx-auto max-h-full max-w-full object-contain"
+          data-testid="figure-viewer-img"
+        />
+      </template>
+    </UModal>
   </DsPage>
 </template>

@@ -47,7 +47,12 @@ async function onPick(next: File | File[] | null): Promise<void> {
         :disabled="disabled || busy"
         :data-testid="`${testid}-input`"
         @update:model-value="onPick"
-      />
+      >
+        <!-- A named trigger: without this slot the field draws an icon-only 32 px button with no accessible name. -->
+        <template #default="{ open }">
+          <UButton type="button" color="neutral" variant="soft" :label="label" :disabled="disabled || busy" @click="open()" />
+        </template>
+      </DsFileField>
       <DsText v-if="busy" variant="caption" tone="muted" :data-testid="`${testid}-busy`">Memuat naik…</DsText>
       <UButton
         v-if="token !== null && !disabled"
