@@ -6,9 +6,11 @@
  * "Lapor" (AC-07.4 / AC-11.9); the parent decides whether Seterusnya stays enabled (`error`).
  * Display only: no store, no fetch.
  */
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
-import { kindFallbackCaption, qdCopy } from './copy'
+import { DsCluster, DsStack, DsText } from '@/ds'
+
+import { kindFallbackCaption, qdCopy, sourceLine } from './copy'
 import type { StimulusData } from './types'
 
 const props = withDefaults(defineProps<{ stimulus: StimulusData; maxHeight?: boolean }>(), {
@@ -41,7 +43,127 @@ const s = computed(() => props.stimulus)
 const isPassage = computed(() => s.value.kind === 'passage')
 const isTable = computed(() => s.value.kind === 'table')
 /** A table with rows is a real table; an image-only table is a picture with the caption "Jadual". */
-const realTable = computed(() => isTable.value && !!s.value.table && s.value.table.rows.length > 0)
+const hasRows = computed(() => !!s.value.table && s.value.table.rows.length > 0)
+/** A table (any kind) with rows and no picture, or a table-kind with rows, is drawn as a real table. */
+const realTable = computed(() => !isPassage.value && hasRows.value && (isTable.value || !s.value.src))
+const zoomOpen = ref(false)
+
+/* Full-screen viewer (FR-X6-7): pinch, pan, double-tap fit / 2x; Back closes it (history entry while open). */
+const MAX = 5
+const scale = ref(1)
+const tx = ref(0)
+const ty = ref(0)
+const style = computed(() => ({
+  translate: `${tx.value}px ${ty.value}px`,
+  scale: String(scale.value),
+  touchAction: 'none',
+}))
+
+const pointers = new Map<number, { x: number; y: number }>()
+let pinchStart = 0
+let pinchScale = 1
+let lastTap = { t: 0, x: 0, y: 0 }
+
+const dist = (): number => {
+  const [a, b] = [...pointers.values()]
+  return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0
+}
+function reset(): void {
+  scale.value = 1
+  tx.value = 0
+  ty.value = 0
+  pointers.clear()
+  lastTap = { t: 0, x: 0, y: 0 }
+}
+const area = ref<{ $el?: HTMLElement } | null>(null)
+/** Keeps the zoomed picture in view: the pan never exceeds half the extra size. */
+function clamp(): void {
+  const mx = (((scale.value - 1) * (area.value?.$el?.clientWidth ?? 0)) / 2)
+  const my = (((scale.value - 1) * (area.value?.$el?.clientHeight ?? 0)) / 2)
+  tx.value = Math.max(-mx, Math.min(mx, tx.value))
+  ty.value = Math.max(-my, Math.min(my, ty.value))
+}
+function onCancel(e: PointerEvent): void {
+  pointers.delete(e.pointerId ?? 0)
+}
+function onDown(e: PointerEvent): void {
+  ;(e.currentTarget as Element | null)?.setPointerCapture?.(e.pointerId)
+  pointers.set(e.pointerId ?? 0, { x: e.clientX ?? 0, y: e.clientY ?? 0 })
+  if (pointers.size === 2) {
+    pinchStart = dist()
+    pinchScale = scale.value
+  }
+}
+function onMove(e: PointerEvent): void {
+  const id = e.pointerId ?? 0
+  const p = pointers.get(id)
+  if (!p) return
+  const x = e.clientX ?? 0
+  const y = e.clientY ?? 0
+  if (pointers.size === 2) {
+    pointers.set(id, { x, y })
+    if (pinchStart > 0) scale.value = Math.min(MAX, Math.max(1, (pinchScale * dist()) / pinchStart))
+    if (scale.value === 1) {
+      tx.value = 0
+      ty.value = 0
+    }
+    clamp()
+    return
+  }
+  if (scale.value > 1) {
+    tx.value += x - p.x
+    ty.value += y - p.y
+    clamp()
+  }
+  pointers.set(id, { x, y })
+}
+function onUp(e: PointerEvent): void {
+  const wasSingle = pointers.size === 1
+  pointers.delete(e.pointerId ?? 0)
+  if (!wasSingle) return
+  const now = e.timeStamp || Date.now()
+  const x = e.clientX ?? 0
+  const y = e.clientY ?? 0
+  if (lastTap.t > 0 && now - lastTap.t < 300 && Math.hypot(x - lastTap.x, y - lastTap.y) < 30) {
+    scale.value = scale.value > 1 ? 1 : 2
+    tx.value = 0
+    ty.value = 0
+    lastTap = { t: 0, x: 0, y: 0 }
+  } else {
+    lastTap = { t: now, x, y }
+  }
+}
+
+let pushed = false
+/* Capture phase: the viewer's own history entry is consumed here, so the router never sees it (no guard, no navigation). */
+function onPop(e: Event): void {
+  e.stopImmediatePropagation()
+  pushed = false
+  zoomOpen.value = false
+}
+watch(zoomOpen, (v) => {
+  if (v) {
+    reset()
+    window.history.pushState({ ...(window.history.state as object | null), qdZoom: true }, '')
+    pushed = true
+    window.addEventListener('popstate', onPop, true)
+  } else {
+    window.removeEventListener('popstate', onPop, true)
+    if (pushed) {
+      pushed = false
+      window.history.back()
+    }
+  }
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('popstate', onPop, true)
+  if (pushed) {
+    pushed = false
+    // drop the marker without navigating (no history.back on unmount)
+    const st = window.history.state as Record<string, unknown> | null
+    if (st?.qdZoom) window.history.replaceState({ ...st, qdZoom: undefined }, '')
+  }
+})
 const hasPicture = computed(
   () => !isPassage.value && !realTable.value && !!s.value.src,
 )
@@ -76,12 +198,16 @@ function retry(): void {
     :data-kind="stimulus.kind"
     :data-stimulus="stimulus.id"
   >
-    <!-- passage -->
-    <div v-if="isPassage" class="rounded-xl bg-muted p-3 text-body text-default" data-testid="stimulus-passage">
+    <!-- passage: long lines and maths scroll inside (FR-X6-1) -->
+    <div
+      v-if="isPassage"
+      class="max-w-full overflow-x-auto rounded-xl bg-muted p-3 text-body text-default"
+      data-testid="stimulus-passage"
+    >
       <p v-if="stimulus.title" class="mb-2 font-semibold text-highlighted">{{ stimulus.title }}</p>
       <p v-for="(p, i) in paragraphs" :key="i" class="mb-2 whitespace-pre-line last:mb-0">{{ p }}</p>
       <p v-if="stimulus.source" class="mt-2 text-caption text-muted" data-testid="stimulus-source">
-        {{ stimulus.source }}
+        {{ sourceLine(stimulus.source) }}
       </p>
     </div>
 
@@ -174,7 +300,58 @@ function retry(): void {
           @load="onLoad"
           @error="onError"
         />
+        <UButton
+          v-if="status === 'loaded'"
+          type="button"
+          color="neutral"
+          variant="ghost"
+          class="size-full min-h-11"
+          :style="{ position: 'absolute', inset: 0, padding: 0, borderRadius: 0, opacity: 0 }"
+          aria-haspopup="dialog"
+          :aria-label="alt"
+          data-testid="stimulus-zoom-open"
+          @click="zoomOpen = true"
+        />
       </div>
+      <UModal v-model:open="zoomOpen" fullscreen :close="false" :title="alt" :description="alt">
+        <template #body>
+          <DsStack gap="sm" class="h-full" data-testid="stimulus-zoom">
+            <DsCluster justify="end">
+              <UButton
+                type="button"
+                color="neutral"
+                variant="soft"
+                class="min-h-11 min-w-11"
+                data-testid="stimulus-zoom-close"
+                @click="zoomOpen = false"
+                >{{ qdCopy.close }}</UButton
+              >
+            </DsCluster>
+            <DsStack
+              ref="area"
+              fill
+              align="center"
+              justify="center"
+              class="overflow-hidden"
+              data-testid="stimulus-zoom-area"
+              @pointerdown="onDown"
+              @pointermove="onMove"
+              @pointerup="onUp"
+              @pointercancel="onCancel"
+            >
+              <img
+                :src="stimulus.src"
+                :alt="alt"
+                draggable="false"
+                class="max-h-full max-w-full select-none object-contain"
+                :style="style"
+                :data-scale="scale"
+                data-testid="stimulus-zoom-img"
+              />
+            </DsStack>
+          </DsStack>
+        </template>
+      </UModal>
     </template>
 
     <!-- title / body under the picture (image, infographic) -->
@@ -194,5 +371,10 @@ function retry(): void {
       <template v-if="stimulus.label && caption"> · </template>
       <template v-if="caption">{{ caption }}</template>
     </figcaption>
+
+    <!-- source line under every kind (FR-PA-37) -->
+    <DsText v-if="!isPassage && stimulus.source" variant="caption" tone="muted" data-testid="stimulus-source">
+      {{ sourceLine(stimulus.source) }}
+    </DsText>
   </figure>
 </template>

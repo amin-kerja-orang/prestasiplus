@@ -170,7 +170,7 @@ describe('BE-18 B: teacher DSKP picks (bidang, SK, SP)', () => {
       for (const [path, body] of calls) {
         const res = await t.http().post(`/api${path}`).send(body)
         expect(res.status, path).toBe(401)
-        expect(res.body.error.message).toBe('Unauthenticated.')
+        expect(res.body.error.message).toBe('Sesi anda telah tamat. Sila log masuk semula.')
       }
     })
     it('a student is 403 "This action is unauthorized."', async () => {
@@ -178,7 +178,7 @@ describe('BE-18 B: teacher DSKP picks (bidang, SK, SP)', () => {
       for (const [path, body] of calls) {
         const res = await s.post(path, body)
         expect(res.status, path).toBe(403)
-        expect(res.body.error).toMatchObject({ code: 'FORBIDDEN', message: 'This action is unauthorized.' })
+        expect(res.body.error).toMatchObject({ code: 'FORBIDDEN', message: 'Anda tidak dibenarkan melakukan tindakan ini.' })
       }
     })
     it('a missing CSRF token is 403 CSRF_INVALID', async () => {

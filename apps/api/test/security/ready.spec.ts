@@ -3,10 +3,11 @@ import { fileURLToPath } from 'node:url'
 
 import type { INestApplication } from '@nestjs/common'
 import request from 'supertest'
-import { afterAll, vi, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, vi, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { ReadyService } from '../../src/common/health/ready.service'
 import { PrismaService } from '../../src/db/prisma.service'
+import { markTick, resetWorkerHealthForTest, WORKER_OK_WINDOW_MS } from '../../src/modules/jobs'
 import { createTestApp } from '../support/app'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
@@ -48,8 +49,53 @@ describe('GET /api/ready (BE-33)', () => {
   it('is 200 with the documented shape, no session needed, when the DB answers and every migration is applied', async () => {
     const res = await request(app.getHttpServer()).get('/api/ready')
     expect(res.status).toBe(200)
-    expect(res.body).toEqual({ data: { status: 'ready', db: 'up', migrations: 'applied', time: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T.*\+08:00$/) } })
+    expect(res.body).toEqual({ data: { status: 'ready', db: 'up', migrations: 'applied', worker: 'disabled', time: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T.*\+08:00$/) } })
     expect(res.headers['cache-control']).toBe('no-store')
+  })
+
+  describe('worker field (informational)', () => {
+    let workerApp: INestApplication | undefined
+    const withWorker = async (value: string | undefined): Promise<INestApplication> => {
+      const prev = process.env.JOBS_WORKER_ENABLED
+      if (value === undefined) delete process.env.JOBS_WORKER_ENABLED
+      else process.env.JOBS_WORKER_ENABLED = value
+      try {
+        workerApp = await createTestApp({ db })
+      } finally {
+        if (prev === undefined) delete process.env.JOBS_WORKER_ENABLED
+        else process.env.JOBS_WORKER_ENABLED = prev
+      }
+      workerApp.get(ReadyService).ttlMs = 0
+      return workerApp
+    }
+    afterEach(async () => {
+      await workerApp?.close()
+      workerApp = undefined
+      resetWorkerHealthForTest()
+    })
+
+    it('is disabled when JOBS_WORKER_ENABLED is false', async () => {
+      const a = await withWorker('false')
+      markTick()
+      const res = await request(a.getHttpServer()).get('/api/ready')
+      expect(res.status).toBe(200)
+      expect(res.body.data.worker).toBe('disabled')
+    })
+
+    it('is ok after a tick, and down when it never ticked or the last tick is older than 60 s (status stays 200)', async () => {
+      const a = await withWorker('true')
+      resetWorkerHealthForTest()
+      const never = await request(a.getHttpServer()).get('/api/ready')
+      expect(never.status).toBe(200)
+      expect(never.body.data.worker).toBe('down')
+      markTick()
+      expect((await request(a.getHttpServer()).get('/api/ready')).body.data.worker).toBe('ok')
+      markTick(Date.now() - WORKER_OK_WINDOW_MS - 5_000)
+      const stale = await request(a.getHttpServer()).get('/api/ready')
+      expect(stale.status).toBe(200)
+      expect(stale.body.data.worker).toBe('down')
+      expect(stale.body.data.status).toBe('ready')
+    })
   })
 
   it('is 503 SERVER_ERROR when a migration row is unfinished (failed)', async () => {

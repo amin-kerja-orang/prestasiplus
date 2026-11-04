@@ -17,7 +17,7 @@ export const heatmapScenarios: Scenario[] = [
     async run(ctx) {
       const res = await ctx.anonymous().request('GET', PATH)
       expectError(ctx, res, 401, 'UNAUTHORIZED')
-      ctx.check(errorOf(res).message === 'Unauthenticated.', 'unauthenticated message differs')
+      ctx.check(errorOf(res).message === 'Sesi anda telah tamat. Sila log masuk semula.', 'unauthenticated message differs')
     },
   },
   {
@@ -28,7 +28,7 @@ export const heatmapScenarios: Scenario[] = [
       for (const role of ['teacher', 'school_admin'] as const) {
         const res = await (await ctx.as(role)).request('GET', PATH)
         expectError(ctx, res, 403, 'FORBIDDEN')
-        ctx.check(errorOf(res).message === 'This action is unauthorized.', `${role}: forbidden message differs`)
+        ctx.check(errorOf(res).message === 'Anda tidak dibenarkan melakukan tindakan ini.', `${role}: forbidden message differs`)
       }
     },
   },

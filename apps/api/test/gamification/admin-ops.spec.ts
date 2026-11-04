@@ -169,7 +169,7 @@ describe('M14 admin operations: settings, reward control, lucky draws (BE-23, AC
       fail(await admin.put(`/admin/reward-control/rewards/${id}/cost`, { costValueSen: 1.5 }), 422, 'VALIDATION_ERROR', SUMMARY)
       fail(await admin.put(`/admin/reward-control/rewards/${id}/cost`, {}), 422, 'VALIDATION_ERROR', SUMMARY)
       fail(await admin.put('/admin/reward-control/rewards/999999/cost', { costValueSen: 5 }), 404, 'NOT_FOUND', 'Hadiah tidak dijumpai.')
-      fail(await admin.put('/admin/reward-control/rewards/abc/cost', { costValueSen: 5 }), 404, 'NOT_FOUND', 'Not Found.')
+      fail(await admin.put('/admin/reward-control/rewards/abc/cost', { costValueSen: 5 }), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
     })
   })
 

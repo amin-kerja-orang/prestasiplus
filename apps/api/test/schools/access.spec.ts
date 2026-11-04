@@ -51,7 +51,7 @@ describe('schools: roles, scope and CSRF (AC 3, AC 10)', () => {
     for (const [method, url] of endpoints()) {
       const req = t.http()[method](url)
       const res = method === 'get' ? await req : await req.send(VALID)
-      expectError(res, 'UNAUTHORIZED', 'Unauthenticated.')
+      expectError(res, 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
     }
   })
 
@@ -65,7 +65,7 @@ describe('schools: roles, scope and CSRF (AC 3, AC 10)', () => {
     for (const [method, url] of endpoints()) {
       const req = me.agent[method](url)
       const res = method === 'get' ? await req : await req.set('X-CSRF-Token', me.csrf).send(VALID)
-      expectError(res, 'FORBIDDEN', 'This action is unauthorized.')
+      expectError(res, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
     }
   })
 
@@ -80,7 +80,7 @@ describe('schools: roles, scope and CSRF (AC 3, AC 10)', () => {
 
   it('an unknown or malformed id is 404 for the admin (nothing is probed through 403)', async () => {
     const me = people.admin as LoggedIn
-    expectError(await me.agent.get('/api/admin/schools/99999999'), 'NOT_FOUND', 'Not Found.')
+    expectError(await me.agent.get('/api/admin/schools/99999999'), 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
     expectError(await me.agent.get('/api/admin/schools/abc'), 'NOT_FOUND')
     expectError(await me.agent.get('/api/admin/schools/12345678901234567890123'), 'NOT_FOUND')
   })

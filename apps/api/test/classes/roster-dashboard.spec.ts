@@ -393,7 +393,7 @@ describe('teacher roster, dashboard and inline curriculum (AC 2, 3, 4, 7)', () =
 
     it('the writes need the teacher role and CSRF', async () => {
       const student = await client(t, STUDENT_1)
-      errorIs(await student.post('/guru/chapters', {}), 403, 'FORBIDDEN', 'This action is unauthorized.')
+      errorIs(await student.post('/guru/chapters', {}), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
       const res = await a.who.agent.post('/api/guru/topics').send({ name: 'T', chapterId: '1' })
       expect(res.status).toBe(403)
       expect(res.body.error.code).toBe('CSRF_INVALID')
