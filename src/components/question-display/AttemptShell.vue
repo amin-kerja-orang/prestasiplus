@@ -5,7 +5,7 @@
  * while the questions of its group change), the question in the middle, the question map on the
  * right. The frame owns the fixed positioning so pages stay free of layering utilities.
  */
-import './attempt-shell.css'
+import '@/ds/states.css'
 
 defineProps<{ hasStimulus: boolean }>()
 </script>

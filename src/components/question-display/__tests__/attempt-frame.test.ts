@@ -81,7 +81,7 @@ describe('AttemptShell (FR-X6-5/8, AC-X6-1)', () => {
   })
 
   const css = readFileSync(
-    resolve(process.cwd(), 'src/components/question-display/attempt-shell.css'),
+    resolve(process.cwd(), 'src/ds/states.css'),
     'utf8',
   )
 
