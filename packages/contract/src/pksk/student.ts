@@ -22,9 +22,9 @@ import {
 export const PKSK_STUDENT_MESSAGES = {
   /** 422 message and `fields.answers` text of both POST routes (the M05 mock message). */
   answers: 'Jawapan tidak sah.',
-  notFound: 'Not Found.',
-  forbidden: 'This action is unauthorized.',
-  unauthenticated: 'Unauthenticated.',
+  notFound: 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?',
+  forbidden: 'Anda tidak dibenarkan melakukan tindakan ini.',
+  unauthenticated: 'Sesi anda telah tamat. Sila log masuk semula.',
 } as const
 
 const ANSWERS_MESSAGE = PKSK_STUDENT_MESSAGES.answers
