@@ -125,7 +125,7 @@ describe('headers, rate limits and body limits', () => {
   it('writes: the 6th in a minute is 429 with retryAfter and Retry-After; it resets with the window', async () => {
     for (let i = 0; i < 5; i++) expect((await admin.post('/admin/users', teacherBody(s1))).status).toBe(201)
     const res = await admin.post('/admin/users', teacherBody(s1))
-    const err = expectError(res, 'RATE_LIMITED', 'Too Many Attempts.')
+    const err = expectError(res, 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.')
     expect(err.retryAfter).toBeGreaterThanOrEqual(1)
     expect(err.retryAfter).toBeLessThanOrEqual(60)
     expect(res.headers['retry-after']).toBe(String(err.retryAfter))
@@ -136,7 +136,7 @@ describe('headers, rate limits and body limits', () => {
   it('reads: the 9th read in a minute is 429; another user is not affected', async () => {
     t.clock.advance(61_000)
     for (let i = 0; i < 8; i++) expect((await admin.get('/admin/users/filters')).status).toBe(200)
-    expectError(await admin.get('/admin/users/filters'), 'RATE_LIMITED', 'Too Many Attempts.')
+    expectError(await admin.get('/admin/users/filters'), 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.')
     const sa = apiOf(await login(t, SCHOOL_ADMIN))
     expect((await sa.get('/admin/users/filters')).status).toBe(200)
   })
@@ -146,10 +146,10 @@ describe('headers, rate limits and body limits', () => {
     const imp = (n: number) => admin.post('/admin/users/bulk-import', { role: 'parent', importMode: 'paste', pasteContent: `P${n},p${n}@limit.test` })
     expect((await imp(1)).status).toBe(200)
     expect((await imp(2)).status).toBe(200)
-    expectError(await imp(3), 'RATE_LIMITED', 'Too Many Attempts.')
+    expectError(await imp(3), 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.')
     // Still limited after a minute; free again once the hour window has passed.
     t.clock.advance(61_000)
-    expectError(await imp(4), 'RATE_LIMITED', 'Too Many Attempts.')
+    expectError(await imp(4), 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.')
     t.clock.advance(3_600_000)
     expect((await imp(5)).status).toBe(200)
   })

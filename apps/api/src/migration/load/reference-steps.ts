@@ -66,7 +66,7 @@ export function educationLevelsStep(core: CoreContext): AnyEntityStep {
   }
 }
 
-const LEVEL_COLUMNS = ['code', 'name', 'name_en', 'stage', 'curriculum', 'sort_order', 'grade', 'created_at', 'updated_at'] as const
+const LEVEL_COLUMNS = ['code', 'name', 'name_en', 'stage', 'curriculum', 'sort_order', 'grade', 'is_active', 'created_at', 'updated_at'] as const
 
 const toRow = <V extends object>(i: { legacyId: string; values: V }): LegacyRow => ({
   legacyId: i.legacyId,

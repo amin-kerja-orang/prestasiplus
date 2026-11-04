@@ -72,7 +72,7 @@ describe('M12 levels S1 to S6 and filter options (AC 1 to 3)', () => {
   describe('guards', () => {
     it('no session is 401 on every route', async () => {
       for (const path of [...LEVEL_ROUTES, '/kirkpatrick/me', '/feedback/status']) {
-        errorIs(await t.http().get(`/api${path}`), 401, 'UNAUTHORIZED', 'Unauthenticated.')
+        errorIs(await t.http().get(`/api${path}`), 401, 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
       }
       errorIs(await t.http().post('/api/kirkpatrick/interventions').send({}), 401, 'UNAUTHORIZED')
       errorIs(await t.http().post('/api/feedback').send({}), 401, 'UNAUTHORIZED')
@@ -80,7 +80,7 @@ describe('M12 levels S1 to S6 and filter options (AC 1 to 3)', () => {
 
     it('a student is 403 on every staff route', async () => {
       for (const path of LEVEL_ROUTES) {
-        errorIs(await student.get(path), 403, 'FORBIDDEN', 'This action is unauthorized.')
+        errorIs(await student.get(path), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
       }
       errorIs(await student.post('/kirkpatrick/interventions', {}), 403, 'FORBIDDEN')
     })

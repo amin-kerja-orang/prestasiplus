@@ -53,7 +53,7 @@ describe('battle standings (M16-18, M16-19)', () => {
       expect(res.status, path).toBe(401)
       const body = ErrorBodySchema.parse(res.body)
       expect(body.error.code).toBe('UNAUTHORIZED')
-      expect(body.error.message).toBe('Unauthenticated.')
+      expect(body.error.message).toBe('Sesi anda telah tamat. Sila log masuk semula.')
     }
   })
 

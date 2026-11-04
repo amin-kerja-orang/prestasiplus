@@ -58,7 +58,7 @@ describe('mock server: routing and errors', () => {
     const res = await runtime.server.handle(req('GET', '/api/nope'))
     expect(res).toMatchObject({
       status: 404,
-      body: { error: { code: 'NOT_FOUND', message: 'Not Found.' } },
+      body: { error: { code: 'NOT_FOUND', message: 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?' } },
     })
     expect((await runtime.server.handle(req('GET', '/api/notes/abc'))).status).toBe(404)
     expect((await runtime.server.handle(req('PUT', '/api/notes'))).status).toBe(404)
@@ -136,7 +136,7 @@ describe('mock server: auth middleware', () => {
     const noToken = await runtime.server.handle(req('GET', '/api/notes', { headers: {} }))
     expect(noToken).toMatchObject({
       status: 401,
-      body: { error: { code: 'UNAUTHORIZED', message: 'Unauthenticated.' } },
+      body: { error: { code: 'UNAUTHORIZED', message: 'Sesi anda telah tamat. Sila log masuk semula.' } },
     })
     const bad = await runtime.server.handle(req('GET', '/api/notes', { headers: authHeaders('x') }))
     expect(bad.status).toBe(401)

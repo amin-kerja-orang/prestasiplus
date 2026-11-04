@@ -44,6 +44,10 @@ export const QUESTION_MESSAGES = {
   bulkBadAction: 'Tindakan tidak sah.',
   bulkNoIds: 'Sila pilih sekurang-kurangnya satu soalan.',
   bulkBadIds: 'Senarai soalan tidak sah.',
+  /** S1-T01 (API-Q-04): a group-aware bulk action. */
+  groupSplit: 'Soalan dalam kumpulan rangsangan mesti dipilih bersama.',
+  groupArchivedMember: 'Kumpulan mengandungi soalan diarkibkan.',
+  bothIdsAndGroup: 'Pilih soalan atau kumpulan, bukan kedua-duanya.',
   /** Filter-based actions (AC-03.3; V2 A11 "Luluskan Hasil Tapisan" / "Arkib Semua"). */
   filterInvalid: 'Nilai penapis tidak sah.',
   filterNeeded: 'Sila pilih sekurang-kurangnya satu penapis (subjek/aras/status/carian) sebelum meluluskan secara pukal.',
@@ -420,6 +424,18 @@ export const QuestionBulkRequestSchema = z
       .min(1, QUESTION_MESSAGES.bulkNoIds),
   })
   .meta({ id: 'QuestionBulkRequest' })
+
+/**
+ * S1-T01 (API-Q-04): the group form of the bulk action: every member of one stimulus group goes together (draft or review only).
+ * `POST /questions/bulk-action` takes either this or `QuestionBulkRequest`; the "ids and groupId together" refusal
+ * (`QUESTION_MESSAGES.bothIdsAndGroup`) is enforced by the backend parser, not here.
+ */
+export const QuestionBulkGroupRequestSchema = z
+  .strictObject({
+    action: z.enum(['draft', 'review'], { error: QUESTION_MESSAGES.bulkBadAction }),
+    groupId: IdSchema,
+  })
+  .meta({ id: 'QuestionBulkGroupRequest' })
 
 /** `POST /questions/:id/edit-as-draft`: the new draft is version `versionNo` of the same question; the live version keeps serving. */
 export const QuestionEditAsDraftResultSchema = z.object({ id: IdSchema, versionNo: z.number().int().min(2) }).meta({ id: 'QuestionEditAsDraftResult' })
