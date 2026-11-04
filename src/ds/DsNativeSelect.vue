@@ -135,8 +135,10 @@ const rows = computed<Row[]>(() => {
   return out
 })
 
-/** A blank row worded "Pilih ..." is a prompt (trigger placeholder, not a list row); "Semua ..." stays a row. */
-const isPrompt = (label: string): boolean => /^pilih\b/i.test(label)
+/** A blank row worded "Pilih ..." is a prompt (trigger placeholder, not a list row); "Semua ..." stays a row.
+ * NOTE: the pattern matches "pilih" + a backspace (U+0008), as the original file did (a literal control character,
+ * which broke the parser). Behaviour is kept as is; switching to `\b` is an open question on the S8-T06 ds-lint PR. */
+const isPrompt = (label: string): boolean => /^pilih\x08/i.test(label)
 const promptText = computed(() => {
   const r = rows.value.find((x) => x.type === 'option' && x.value === '' && isPrompt(x.label))
   return r?.label
