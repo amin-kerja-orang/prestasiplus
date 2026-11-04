@@ -95,6 +95,7 @@ export class IntakeExtractionInput {
     return AiExtractRequestSchema.parse({
       pages,
       subject: batch.subject,
+      // A teacher submission has no kertas (null); the AI request needs one, so it reads as paper 1.
       kertas: batch.kertas === 2 ? 2 : 1,
     })
   }

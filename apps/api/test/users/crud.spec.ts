@@ -308,8 +308,8 @@ describe('admin users: create, read, update, toggle, delete (AC 1, 2, 4, 7, 8)',
     it('detail of an admin has /admin as landing path; unknown and malformed ids are 404', async () => {
       const id = (await t.db.query<{ id: string }>(`select id::text from users where email = 'admin@demo.test'`))[0]?.id as string
       expect(detailOf(await api.get(`/admin/users/${id}`)).landingPath).toBe('/admin')
-      expectError(await api.get('/admin/users/987654321'), 'NOT_FOUND', 'Not Found.')
-      expectError(await api.get('/admin/users/abc'), 'NOT_FOUND', 'Not Found.')
+      expectError(await api.get('/admin/users/987654321'), 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+      expectError(await api.get('/admin/users/abc'), 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
     })
   })
 
@@ -359,7 +359,7 @@ describe('admin users: create, read, update, toggle, delete (AC 1, 2, 4, 7, 8)',
     })
 
     it('answers 404 for an unknown user', async () => {
-      expectError(await api.put('/admin/users/987654321', { roles: ['student'], name: 'A' }), 'NOT_FOUND', 'Not Found.')
+      expectError(await api.put('/admin/users/987654321', { roles: ['student'], name: 'A' }), 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
     })
 
     it('requires a school for a user made school_admin without one, and the school must exist', async () => {
@@ -475,7 +475,7 @@ describe('admin users: create, read, update, toggle, delete (AC 1, 2, 4, 7, 8)',
       expect(off.body.status).toBe(USER_MESSAGES.toggled)
       expect(UserToggleResultSchema.parse(off.body.data)).toEqual({ isActive: false })
       expect(UserToggleResultSchema.parse((await api.post(`/admin/users/${u.id}/toggle-active`)).body.data)).toEqual({ isActive: true })
-      expectError(await api.post('/admin/users/987654321/toggle-active'), 'NOT_FOUND', 'Not Found.')
+      expectError(await api.post('/admin/users/987654321/toggle-active'), 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
     })
 
     it('the inactive filter total moves by one (computed, not stored)', async () => {
@@ -493,7 +493,7 @@ describe('admin users: create, read, update, toggle, delete (AC 1, 2, 4, 7, 8)',
       expect(DeletedResultSchema.parse(res.body.data)).toEqual({ deleted: 1 })
       expect((await t.db.query(`select 1 from users where id = $1`, [u.id])).length).toBe(0)
       expect((await t.db.query(`select 1 from user_roles where user_id = $1`, [u.id])).length).toBe(0)
-      expectError(await api.del(`/admin/users/${u.id}`), 'NOT_FOUND', 'Not Found.')
+      expectError(await api.del(`/admin/users/${u.id}`), 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
     })
 
     it('refuses to delete the own account (422 fields.id)', async () => {

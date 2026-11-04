@@ -222,7 +222,7 @@ describe('M15 student routes (BE-23)', () => {
       const api = await as(STUDENT_2)
       const uid = await userIdOf(t.db, STUDENT_2)
       expectError(await api.post('/gamification/mystery-boxes/9/open'), 404, 'NOT_FOUND', 'Kotak tidak dijumpai.')
-      expectError(await api.post('/gamification/mystery-boxes/abc/open'), 404, 'NOT_FOUND', 'Not Found.')
+      expectError(await api.post('/gamification/mystery-boxes/abc/open'), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
       await t.db.query(`update wallets set token_balance = 3 where user_id = $1`, [uid]) // fixture: below the cost of the Legenda box
       const before = await walletRow(t, uid)
       expectError(await api.post('/gamification/mystery-boxes/4/open'), 409, 'INSUFFICIENT_TOKENS', 'Token tidak mencukupi.')
@@ -295,7 +295,7 @@ describe('M15 student routes (BE-23)', () => {
       for (const o of [{ status: 'draft' }, { status: 'closed' }, { closesOn: '2026-10-18' }]) {
         expectError(await api.post(`/cabutan/${await insertDraw(t, o)}/tickets`), 409, 'DRAW_CLOSED', 'Cabutan ditutup.')
       }
-      expectError(await api.post('/cabutan/abc/tickets'), 404, 'NOT_FOUND', 'Not Found.')
+      expectError(await api.post('/cabutan/abc/tickets'), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
       const dear = await insertDraw(t, { cost: 99_999 })
       const before = await walletRow(t, uid)
       expectError(await api.post(`/cabutan/${dear}/tickets`), 409, 'INSUFFICIENT_BALANCE', 'Baki syiling tidak mencukupi.')

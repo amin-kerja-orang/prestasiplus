@@ -40,7 +40,7 @@ describe('guards (AC2): guest 401, teacher and admin allowed, every other role 4
   it.each(TEACHER_ROUTES.map((r) => [`${r.method.toUpperCase()} ${r.path}`, r] as const))('%s: a guest gets 401 UNAUTHORIZED "Unauthenticated."', async (_name, r) => {
     const res = await call(null, r)
     expect(res.status).toBe(401)
-    expect(res.body.error).toMatchObject({ code: 'UNAUTHORIZED', message: 'Unauthenticated.' })
+    expect(res.body.error).toMatchObject({ code: 'UNAUTHORIZED', message: 'Sesi anda telah tamat. Sila log masuk semula.' })
     expect(res.body.error.requestId).toBeTruthy()
   })
 
@@ -48,7 +48,7 @@ describe('guards (AC2): guest 401, teacher and admin allowed, every other role 4
     for (const email of [STUDENT_1, STUDENT_2, STUDENT_3, SCHOOL_ADMIN, PPD]) {
       const res = await call(clients.get(email) as Client, r)
       expect(res.status, email).toBe(403)
-      expect(res.body.error, email).toMatchObject({ code: 'FORBIDDEN', message: 'This action is unauthorized.' })
+      expect(res.body.error, email).toMatchObject({ code: 'FORBIDDEN', message: 'Anda tidak dibenarkan melakukan tindakan ini.' })
     }
   })
 

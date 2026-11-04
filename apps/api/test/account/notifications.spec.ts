@@ -140,8 +140,8 @@ describe('notifications inbox (BE-06 part B)', () => {
 
   it('AC7: another user id is 404 on :id/read and DELETE and the row is untouched; unknown and malformed ids are 404 too', async () => {
     const [foreign] = await seed(otherId, 1)
-    expectError(await me.post(`/me/notifications/${foreign}/read`), 'NOT_FOUND', 'Not Found.')
-    expectError(await me.del(`/me/notifications/${foreign}`), 'NOT_FOUND', 'Not Found.')
+    expectError(await me.post(`/me/notifications/${foreign}/read`), 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+    expectError(await me.del(`/me/notifications/${foreign}`), 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
     expectError(await me.post('/me/notifications/999999999/read'), 'NOT_FOUND')
     expectError(await me.del('/me/notifications/abc'), 'NOT_FOUND')
     const row = await t.db.query<{ read_at: Date | null }>('select read_at from notifications where id = $1', [foreign])

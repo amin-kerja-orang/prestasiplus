@@ -107,8 +107,8 @@ describe('parent invites (BE-25 part B, AC 4)', () => {
 
     it('only a student may call the student routes; no session is 401; a missing CSRF token is 403', async () => {
       const parent = await newParent(t, admin, 'ibu.guard@ujian.test')
-      expectError(await t.http().get('/api/me/parent-invite'), 'UNAUTHORIZED', 'Unauthenticated.')
-      expectError(await t.http().post('/api/me/parent-invite'), 'UNAUTHORIZED', 'Unauthenticated.')
+      expectError(await t.http().get('/api/me/parent-invite'), 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
+      expectError(await t.http().post('/api/me/parent-invite'), 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
       expectError(await parent.api.get('/me/parent-invite'), 'FORBIDDEN')
       expectError(await parent.api.post('/me/parent-invite'), 'FORBIDDEN')
       expectError(await admin.post('/me/parent-invite'), 'FORBIDDEN')
@@ -190,7 +190,7 @@ describe('parent invites (BE-25 part B, AC 4)', () => {
   describe('accept', () => {
     it('checks the session before the token: 401 without a session, 403 for a non-parent, 403 without CSRF', async () => {
       const token = await generate()
-      expectError(await t.http().post(`/api/parent-invites/${token}/accept`), 'UNAUTHORIZED', 'Unauthenticated.')
+      expectError(await t.http().post(`/api/parent-invites/${token}/accept`), 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
       expectError(await student.post(`/parent-invites/${token}/accept`), 'FORBIDDEN')
       expectError(await admin.post(`/parent-invites/${token}/accept`), 'FORBIDDEN')
       const parent = await newParent(t, admin, 'ibu.csrf@ujian.test')
