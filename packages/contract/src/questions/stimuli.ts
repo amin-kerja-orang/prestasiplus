@@ -5,7 +5,7 @@ import { envelopeOf, listEnvelopeOf } from '../common/envelope'
 import { ErrorBodySchema } from '../common/error'
 import { IdSchema } from '../common/ids'
 import { QUESTION_STIMULUS_KINDS, QuestionRichTextSchema, QuestionStimulusGroupSchema, QuestionStimulusKindSchema, QuestionStimulusTableSchema } from './parts'
-import { QuestionCreateRequestSchema, QuestionSchema, mutationEnvelopeOf } from './schema'
+import { QuestionCreateRequestSchema, QuestionKertasSchema, QuestionSchema, mutationEnvelopeOf } from './schema'
 
 /**
  * R1-T32 (D90): admin HTTP API to author stimuli and stimulus groups for the Studio (V2 "Langkah 2 Rangsangan": `Jenis rangsangan`,
@@ -61,6 +61,23 @@ export const STIMULUS_MESSAGES = {
   memberMissing: 'Soalan ini bukan ahli kumpulan ini.',
   orderInvalid: 'Susunan mesti menyenaraikan semua soalan kumpulan tepat sekali.',
   groupMismatch: 'Kumpulan dalam badan permintaan tidak sepadan dengan laluan.',
+  /** S1-T01 group actions (API-Q-31..35). */
+  publishNotReady: 'Semua soalan dalam kumpulan mesti dihantar untuk semakan dahulu.',
+  memberScope: 'Subjek dan Tingkatan ahli mesti sama dengan kumpulan.',
+  /** ERR-REQ-01 no-field text (40-cross-cutting X10): a body that is invalid with no field to point at. */
+  requestInvalid: 'Data yang dihantar tidak sah. Sila semak dan cuba lagi.',
+  /** ERR-CON-01 (40-cross-cutting X10). */
+  conflict: 'Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi.',
+  /** 409 CONFLICT with `details.id` when a draft copy already exists: ERR-CON-02 with the ERR-CON-01 text (lead decision 20). */
+  draftExists: 'Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi.',
+  /** `DELETE /draft` when there is no draft: ERR-CON-01. */
+  noDraft: 'Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi.',
+  /** 422 when the retire body has no `confirm: true`: ERR-REQ-01. */
+  retireConfirm: 'Data yang dihantar tidak sah. Sila semak dan cuba lagi.',
+  /** 422 on a merge of a group into itself: ERR-REQ-01. */
+  mergeSame: 'Data yang dihantar tidak sah. Sila semak dan cuba lagi.',
+  /** Flash after `POST /stimulus-groups/{id}/edit-as-draft` (45:888). */
+  groupDraftCreated: (id: string): string => `Draf kumpulan #${id} dicipta.`,
   /** A 200 `warning`, not an error: the removal went through. */
   smallGroup: (): string => 'Kumpulan ini kini kosong. Bubarkan kumpulan jika rangsangan ini tidak diperlukan lagi.',
 } as const
@@ -153,6 +170,9 @@ export const StimulusGroupCreateRequestSchema = z
       description: '0 or more existing questions (a group holds 1..n; a group with 0 members is a draft group and every write answers with `warning` until it has 1).',
     }),
     optionBank: OptionBank.optional(),
+    subjectId: IdSchema.optional().meta({ description: 'S1-T01 (DM-51): subject of the group; defaulted from the members when absent (60 makes it required, kept optional for additivity).' }),
+    educationLevelId: IdSchema.optional().meta({ description: 'S1-T01: Tingkatan of the group; defaulted from the members when absent.' }),
+    kertas: QuestionKertasSchema.nullish().meta({ description: 'S1-T01: kertas of the group (reuses `QuestionKertas`); defaulted from the members when absent.' }),
   })
   .meta({ id: 'StimulusGroupCreateRequest' })
 export type StimulusGroupCreateRequest = z.infer<typeof StimulusGroupCreateRequestSchema>
@@ -162,6 +182,9 @@ export const StimulusGroupUpdateRequestSchema = z
   .strictObject({
     label: GroupLabel.nullable().optional(),
     stimulusIds: z.array(IdSchema).min(1, STIMULUS_MESSAGES.stimuliCount).max(3, STIMULUS_MESSAGES.stimuliCount).optional(),
+    subjectId: IdSchema.optional().meta({ description: 'S1-T01 (DM-51): subject of the group; defaulted from the members when absent (60 makes it required, kept optional for additivity).' }),
+    educationLevelId: IdSchema.optional().meta({ description: 'S1-T01: Tingkatan of the group; defaulted from the members when absent.' }),
+    kertas: QuestionKertasSchema.nullish().meta({ description: 'S1-T01: kertas of the group (reuses `QuestionKertas`); defaulted from the members when absent.' }),
   })
   .refine((v) => Object.keys(v).length > 0, { message: STIMULUS_MESSAGES.noChange, path: ['_'] })
   .meta({ id: 'StimulusGroupUpdateRequest' })
@@ -199,6 +222,10 @@ export const StimulusGroupDetailSchema = z
     optionBank: QuestionStimulusGroupSchema.shape.optionBank,
     questionIds: z.array(IdSchema),
     members: z.array(StimulusGroupMemberSchema).meta({ description: 'The members in published order (same order as `questionIds`), one short form each.' }),
+    subjectId: IdSchema.nullable().optional(),
+    educationLevelId: IdSchema.nullable().optional(),
+    kertas: QuestionKertasSchema.nullable().optional(),
+    draftOfGroupId: IdSchema.nullable().optional().meta({ description: 'S1-T01 (DM-51): the served group this draft copy replaces on publish; null for an ordinary group.' }),
     warning: z.string().nullable().optional().meta({ description: 'BM warning while the group has 0 questions (a draft group); null otherwise. The write went through.' }),
   })
   .meta({ id: 'StimulusGroupDetail' })
@@ -213,6 +240,43 @@ export const StimulusGroupRemovedResultSchema = z
 
 export const StimulusGroupDeleteResultSchema = z.object({ deleted: z.literal(1), releasedQuestionIds: z.array(IdSchema) }).meta({ id: 'StimulusGroupDeleteResult' })
 
+/* ------------------------------------------------------------------------------------- group actions (S1-T01, API-Q-31..35) */
+
+/** One failing member of a publish: `message` is "Soalan {no}: {mesej}". */
+export const StimulusGroupPublishGateDetailSchema = z
+  .object({ questionId: IdSchema, message: z.string() })
+  .meta({ id: 'StimulusGroupPublishGateDetail' })
+export type StimulusGroupPublishGateDetail = z.infer<typeof StimulusGroupPublishGateDetailSchema>
+/** The 422 body of a refused publish: nothing changed. */
+export const StimulusGroupPublishGateErrorSchema = z
+  .object({
+    error: z.object({
+      code: z.literal('VALIDATION_ERROR'),
+      message: z.string(),
+      details: z.object({ gate: z.array(StimulusGroupPublishGateDetailSchema) }),
+    }),
+  })
+  .meta({ id: 'StimulusGroupPublishGateError' })
+
+/** `POST /stimulus-groups/{id}/retire`: archives every member in one transaction. */
+export const StimulusGroupRetireRequestSchema = z
+  .strictObject({ confirm: z.literal(true, { error: STIMULUS_MESSAGES.requestInvalid }) })
+  .meta({ id: 'StimulusGroupRetireRequest' })
+export const StimulusGroupRetireResultSchema = z
+  .object({ archived: z.number().int().min(0), affectedPapers: z.array(z.object({ id: IdSchema, title: z.string() })) })
+  .meta({ id: 'StimulusGroupRetireResult' })
+
+/** `POST /stimulus-groups/{id}/members/{questionId}/move`. */
+export const StimulusGroupMoveRequestSchema = z.strictObject({ toGroupId: IdSchema }).meta({ id: 'StimulusGroupMoveRequest' })
+export const StimulusGroupMoveResultSchema = z
+  .object({ from: StimulusGroupDetailSchema, to: StimulusGroupDetailSchema })
+  .meta({ id: 'StimulusGroupMoveResult' })
+
+/** `POST /stimulus-groups/merge`: `fromGroupId` is merged into `intoGroupId` (at most 3 stimuli after the merge). */
+export const StimulusGroupMergeRequestSchema = z
+  .strictObject({ fromGroupId: IdSchema, intoGroupId: IdSchema })
+  .refine((v) => v.fromGroupId !== v.intoGroupId, { message: STIMULUS_MESSAGES.requestInvalid, path: ['intoGroupId'] })
+  .meta({ id: 'StimulusGroupMergeRequest' })
 
 /* ------------------------------------------------------------------------------------- lists (R1-T49) */
 
@@ -292,6 +356,13 @@ export const STIMULI_COMPONENT_SCHEMAS = {
   StimulusGroupListRow: StimulusGroupListRowSchema,
   StimulusGroupMemberRemoved: StimulusGroupRemovedResultSchema,
   StimulusGroupDeleteResult: StimulusGroupDeleteResultSchema,
+  StimulusGroupPublishGateDetail: StimulusGroupPublishGateDetailSchema,
+  StimulusGroupPublishGateError: StimulusGroupPublishGateErrorSchema,
+  StimulusGroupRetireRequest: StimulusGroupRetireRequestSchema,
+  StimulusGroupRetireResult: StimulusGroupRetireResultSchema,
+  StimulusGroupMoveRequest: StimulusGroupMoveRequestSchema,
+  StimulusGroupMoveResult: StimulusGroupMoveResultSchema,
+  StimulusGroupMergeRequest: StimulusGroupMergeRequestSchema,
 } as const
 
 const json = (schema: z.ZodType, description: string) => ({ description, content: { 'application/json': { schema } } })
@@ -437,6 +508,68 @@ export function registerStimuliPaths(registry: OpenAPIRegistry): void {
     description: '`questionIds` must list every current member exactly once (422 `questionIds` otherwise).',
     request: { params: idParams, headers: [csrf], body: body(StimulusGroupReorderRequestSchema) },
     responses: { 200: json(mutationEnvelopeOf(StimulusGroupDetailSchema), 'The group after the change.'), 401: unauthorized, 403: forbidden, 404: notFound, 409: conflict, 422: invalid },
+  })
+  registry.registerPath({
+    method: 'post',
+    path: '/stimulus-groups/{id}/publish',
+    tags,
+    summary: 'Publish a group: every member becomes approved in one audited transaction (S1-T01, API-Q-31)',
+    description:
+      'No body. Every member must be `review` or already `approved`; a `draft` member answers 409 "Semua soalan dalam kumpulan mesti dihantar untuk semakan dahulu." and nothing changes. An empty group is 409 "Kumpulan perlu sekurang-kurangnya 1 soalan.". One member failing its approve gate is 422 `details.gate[{questionId, message}]` and nothing changes. On a draft copy (`draftOfGroupId`) the publish swaps it in for the served group in one transaction.',
+    request: { params: idParams, headers: [csrf] },
+    responses: {
+      200: json(mutationEnvelopeOf(StimulusGroupDetailSchema), 'Published.'),
+      401: unauthorized,
+      403: forbidden,
+      404: notFound,
+      409: conflict,
+      422: json(StimulusGroupPublishGateErrorSchema, 'VALIDATION_ERROR with `details.gate[]`, one entry per failing member.'),
+    },
+  })
+  registry.registerPath({
+    method: 'post',
+    path: '/stimulus-groups/{id}/edit-as-draft',
+    tags,
+    summary: 'Make a draft copy of a served group (S1-T01, API-Q-32, DM-51)',
+    description: 'No body. Stimuli are copied and the members become draft versions n+1; the original keeps serving. One open draft per group: a second call is 409 with `details.id` (the open draft). Flash: "Draf kumpulan #{id} dicipta."',
+    request: { params: idParams, headers: [csrf] },
+    responses: { 201: json(mutationEnvelopeOf(StimulusGroupDetailSchema), 'The draft copy (`draftOfGroupId` = the path id).'), 401: unauthorized, 403: forbidden, 404: notFound, 409: conflict },
+  })
+  registry.registerPath({
+    method: 'delete',
+    path: '/stimulus-groups/{id}/draft',
+    tags,
+    summary: 'Discard the open draft copy of a group (S1-T01, API-Q-32)',
+    description: 'The original keeps serving. The copy and its staged versions are removed.',
+    request: { params: idParams, headers: [csrf] },
+    responses: { 204: { description: 'Discarded; no body.' }, 401: unauthorized, 403: forbidden, 404: notFound, 409: conflict },
+  })
+  registry.registerPath({
+    method: 'post',
+    path: '/stimulus-groups/{id}/retire',
+    tags,
+    summary: 'Archive every member of a group in one transaction (S1-T01, API-Q-33)',
+    description: 'Body `{confirm: true}` (422 otherwise). The stimuli are kept. `affectedPapers` names the published papers that hold a member.',
+    request: { params: idParams, headers: [csrf], body: body(StimulusGroupRetireRequestSchema) },
+    responses: { 200: json(mutationEnvelopeOf(StimulusGroupRetireResultSchema), 'Archived.'), 401: unauthorized, 403: forbidden, 404: notFound, 409: conflict, 422: invalid },
+  })
+  registry.registerPath({
+    method: 'post',
+    path: '/stimulus-groups/{id}/members/{questionId}/move',
+    tags,
+    summary: 'Move a member question to another group (S1-T01, API-Q-34)',
+    description: 'Same Subjek, Tingkatan and Kertas only (422 "Subjek dan Tingkatan ahli mesti sama dengan kumpulan." / "Soalan dalam satu kumpulan mesti sama subjek." / "...sama kertas."). A served member moves through draft copies.',
+    request: { params: memberParams, headers: [csrf], body: body(StimulusGroupMoveRequestSchema) },
+    responses: { 200: json(mutationEnvelopeOf(StimulusGroupMoveResultSchema), 'Both groups after the move.'), 401: unauthorized, 403: forbidden, 404: notFound, 409: conflict, 422: invalid },
+  })
+  registry.registerPath({
+    method: 'post',
+    path: '/stimulus-groups/merge',
+    tags,
+    summary: 'Merge one group into another (S1-T01, API-Q-35)',
+    description: 'At most 3 stimuli after the merge (422 "Satu kumpulan mesti mempunyai 1 hingga 3 rangsangan."); the two ids must differ.',
+    request: { headers: [csrf], body: body(StimulusGroupMergeRequestSchema) },
+    responses: { 200: json(mutationEnvelopeOf(StimulusGroupDetailSchema), 'The merged group.'), 401: unauthorized, 403: forbidden, 404: notFound, 409: conflict, 422: invalid },
   })
   registry.registerPath({
     method: 'post',
