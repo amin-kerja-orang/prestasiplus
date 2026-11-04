@@ -118,6 +118,8 @@ export const INTAKE_FILE_MESSAGES = {
   duplicate: 'Fail ini telah diimport dalam kelompok lain.',
   tooManyFiles: (n: number) => `Maksimum ${n} fail bagi setiap kelompok.`,
   quota: 'Had kuota muat naik harian telah dicapai. Cuba lagi esok.',
+  /** ERR-QUOTA-04 (teacher submission path, 409). */
+  activeLimit: (n: number) => `Terlalu banyak kumpulan sedang diproses (maksimum ${n}). Tunggu salah satu selesai.`,
   batchClosed: 'Kelompok ini tidak lagi menerima fail.',
 } as const
 
@@ -148,6 +150,7 @@ export type IntakeBatchCreate = z.infer<typeof IntakeBatchCreateSchema>
 export const IntakeBatchListQuerySchema = z
   .strictObject({
     status: IntakeBatchStatusSchema.optional(),
+    source: z.enum(['guru']).optional().meta({ description: 'S1-T08: `guru` = teacher submissions (Kiriman Guru) only. Omitted = every batch. Any other value is 422.' }),
     page: z.coerce.number().int().min(1).default(1),
     pageSize: z.coerce.number().int().min(1).max(INTAKE_BATCH_PAGE_SIZE_MAX).default(20),
   })
@@ -195,15 +198,18 @@ export const IntakeFileSummarySchema = z
   .meta({ id: 'IntakeFileSummary', description: '[PROPOSED] One stored PDF of a submission and its progress.' })
 export type IntakeFileSummary = z.infer<typeof IntakeFileSummarySchema>
 
+/** S1-T08 (DM-72): the paper type slugs of a teacher submission (OPT-JENIS-HANTARAN). Only ever on a response (`source = guru` batches). */
+export const INTAKE_GURU_PAPER_TYPE_CODES = ['umum', 'trial', 'dskp', 'buku_teks', 'buku_latihan', 'peperiksaan', 'lain'] as const
+
 export const IntakeBatchSummarySchema = z
   .strictObject({
     id: IdSchema,
     status: IntakeBatchStatusSchema,
     statusLabel: z.string().meta({ description: 'BM label of `status` (INTAKE_BATCH_STATUS_LABELS).' }),
-    paperType: IntakePaperTypeSchema,
-    subject: z.string(),
-    kertas: z.union([z.literal(1), z.literal(2)]),
-    year: z.number().int(),
+    paperType: z.union([IntakePaperTypeSchema, z.enum(INTAKE_GURU_PAPER_TYPE_CODES)]).meta({ description: 'An admin code (IntakePaperType) or, for a teacher submission, an OPT-JENIS-HANTARAN slug.' }),
+    subject: z.string().meta({ description: 'Admin: subject code. Teacher submission: free text (at most 100).' }),
+    kertas: z.union([z.literal(1), z.literal(2)]).nullable().meta({ description: 'Null only for a teacher submission.' }),
+    year: z.number().int().nullable().meta({ description: 'Null only when a teacher submission has no year.' }),
     source: z.string(),
     copyright: IntakeCopyrightSchema,
     notes: z.string().nullable(),
