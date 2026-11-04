@@ -617,7 +617,7 @@ Route `/guru/misi-harian`. API: API-GUR-11 (list, create, delete). Data addition
 | Tajuk Misi | text | Yes | empty | placeholder "cth: Jawab 20 soalan Matematik"; max 255 | "Sila isi tajuk misi."; over 255: "Tajuk misi tidak boleh melebihi 255 aksara." | none | `missions.title` | API-GUR-11 |
 | Keterangan (opsional) | textarea | No | empty | placeholder "cth: Fokus Bab 3 Algebra sebelum ujian"; max 500 | "Keterangan tidak boleh melebihi 500 aksara." | none | `missions.description` | API-GUR-11 |
 | Sasaran Soalan | integer | Yes | 10 | 1 to 1000 | "Sasaran soalan mesti antara 1 dan 1000." | none | `missions.question_count` | API-GUR-11 |
-| Ganjaran Syiling | integer | Yes | 10 | 0 to 10000 | "Ganjaran syiling mesti antara 0 dan 10000." | none | `missions.reward_coins` | API-GUR-11 |
+| Ganjaran Syiling | integer | Yes | 10 | 0 to 100 (`mission_reward_max`, D113-a) | "Ganjaran syiling mesti antara 0 dan 100." | none | `missions.reward_coins` | API-GUR-11 |
 | Tarikh | date | Yes | today | today or later | "Tarikh tidak boleh lebih awal daripada hari ini." | none | `missions.mission_date` | API-GUR-11 |
 | Kelas (opsional) | select | No | "Semua kelas saya" | OPT-KELAS-OWN with the first option "Semua kelas saya" (empty value = all own classes) | none | none | `missions.classroom_id` (null = all own classes); recipients in `mission_items` | API-GUR-11 |
 | Subjek | select | Yes | "-- Pilih subjek --" | OPT-SUBJEK (every active subject); the mission draw of FR-GUR-44a-10 uses it | "Sila pilih subjek." | none | `missions.subject_id` | API-GUR-11 |
@@ -1595,7 +1595,7 @@ Routes `/guru/soalan-berstruktur`, `/cipta`, `/:id`, `/:id/edit`. API: API-GUR-2
 | Tingkatan *, Subjek *, Kesukaran * | selects | Yes | placeholders as 44-F1 | OPT-TINGKATAN, OPT-SUBJEK, OPT-KESUKARAN | as 44-F1 | none | as 44-F1 | ADD-13 |
 | Bab, SP, TP, Aras Pemikiran | selects | Only where chapters or DSKP nodes exist (D112) | placeholders as 44-F1 | as 44-F1 | as 44-F1 | Subjek + Tingkatan | as 44-F1 | ADD-13 |
 | Rangsangan | textarea | No | empty | max 4000 | "Rangsangan tidak boleh melebihi 4000 aksara." | none | stimulus text | ADD-13 |
-| Imej rangsangan (`question_image`) | file | No | none | `jpg`, `png`, `webp`; at most 5 MB | "Fail mesti berupa imej (jpg, png atau webp)."; "Saiz imej tidak boleh melebihi 5 MB." | none | stimulus image | ADD-13 |
+| Imej rangsangan (`question_image`) | file | No | none | `jpg`, `png`, `webp`; at most 2 MB | "Fail mesti berupa imej (jpg, png atau webp)."; "Saiz imej tidak boleh melebihi 2 MB." | none | stimulus image | ADD-13 |
 | Sub-Soalan (1 to 10, repeatable): Teks sub-soalan * | textarea | Yes | empty | max 2000 | "Sila isi teks sub-soalan." | none | part text | ADD-13 |
 | Sub-Soalan: Markah * | integer | Yes | empty | 1 to 20 | "Markah mesti antara 1 dan 20." | none | part marks | ADD-13 |
 | Sub-Soalan: Skema Jawapan * | textarea | Yes | empty | max 2000 | "Sila isi skema jawapan." | none | part mark scheme | ADD-13 |
@@ -1646,13 +1646,13 @@ Route `/admin/soalan-gambar`. API: API-GUR-09 (`galeri-rajah`), diagram image su
 | Mata Pelajaran | select | No | "Semua Mata Pelajaran" | OPT-SUBJEK (A-Z variant) limited to subjects that have listed questions | none | none | query string | API-GUR-09 |
 | Semua Sekolah | filter | n/a | n/a | hidden for the Guru and the Admin Sekolah (scope is the own school) | none | none | n/a | none |
 | Tapis | button | n/a | n/a | applies the subject filter | none | none | n/a | API-GUR-09 |
-| Upload per card | file | Yes to submit | none | `jpg`, `png`, `webp`; at most 5 MB | "Fail mesti berupa imej (jpg, png atau webp)."; "Saiz imej tidak boleh melebihi 5 MB." | none | question image, status pending acceptance | ADD-17 |
+| Upload per card | file | Yes to submit | none | `jpg`, `png`, `webp`; at most 2 MB | "Fail mesti berupa imej (jpg, png atau webp)."; "Saiz imej tidak boleh melebihi 2 MB." | none | question image, status pending acceptance | ADD-17 |
 
 - Success: "Gambar dihantar untuk semakan."; the card stays in the list with the chip "Menunggu Semakan" until an admin accepts it. There is no "Dismiss" for a teacher. Empty: "Semua soalan sudah lengkap dengan gambar rajah!" Counts are computed from the dataset; the navigation badge reads "MCQ Perlu Gambar".
 
 **Requirements added by this spec**
-- **FR-GUR-44c-6** The upload accepts only `jpg`, `png` and `webp` up to 5 MB and the card shows "Menunggu Semakan" after a successful submit.
-- **AC-GUR-44c-6** Given a 6 MB `png`, when uploaded, then "Saiz imej tidak boleh melebihi 5 MB." shows and the card is unchanged; given a valid `webp`, then "Gambar dihantar untuk semakan." shows and the chip "Menunggu Semakan" appears.
+- **FR-GUR-44c-6** The upload accepts only `jpg`, `png` and `webp` up to 2 MB and the card shows "Menunggu Semakan" after a successful submit.
+- **AC-GUR-44c-6** Given a 3 MB `png`, when uploaded, then "Saiz imej tidak boleh melebihi 2 MB." shows and the card is unchanged; given a valid `webp`, then "Gambar dihantar untuk semakan." shows and the chip "Menunggu Semakan" appears.
 
 - **Current gap:** `src/modules/m04-question-bank/routes/diagrams.ts` allows `roles: ['admin']` only, although the nav items `gambar-rajah` (`src/shells/nav/user-nav.ts:584`, roles admin, teacher, school_admin) and the badge `src/shells/user/nav-badges.ts` already point teachers to it; the tile on Sumbang Soalan is absent. API `diagram-audit` (`apps/api/src/modules/questions/workflow/diagram-audit/`: `GET`, `POST :kind/:id/image`, `POST :kind/:id/dismiss`) exists.
 - **Route** `/admin/soalan-gambar` (the V2 route, kept). **Matrix** 44 (tool). **Priority** P2. **Delivery** A.
@@ -2903,7 +2903,7 @@ These are needed by the merged field and behaviour spec and are registered in `5
 |---|---|---|---|---|
 | ADD-01 | Unique index on `classrooms (teacher_id, academic_year, lower(btrim(name)))` where `kind` = `classroom` | Unique class name per teacher and year; duplicate answers 409 "Nama kelas sudah digunakan." | GUR-8 | DM-73 |
 | ADD-02 | Unique index on `users (school_id, lower(username))` where username is not null | Unique username per school; generated pupil usernames and the AS-51 rule | GUR-8, GUR-41, AS-51 | DM-74 |
-| ADD-03 | `missions`: `description text null`, `reward_coins smallint null` (0 to 10000), `scope text not null default 'teacher'` (`teacher` or `global`), `mission_type` value `harian`, `subject_id` made nullable; recipients in `mission_items` | Misi Harian fields (Tajuk, Keterangan, Sasaran = `question_count`, Ganjaran, Tarikh = `mission_date`, Kelas = `classroom_id`) and the Global badge | GUR-2b | DM-75, API-GUR-11 |
+| ADD-03 | `missions`: `description text null`, `reward_coins smallint null` (0 to 100), `scope text not null default 'teacher'` (`teacher` or `global`), `mission_type` value `harian`, `subject_id` made nullable; recipients in `mission_items` | Misi Harian fields (Tajuk, Keterangan, Sasaran = `question_count`, Ganjaran, Tarikh = `mission_date`, Kelas = `classroom_id`) and the Global badge | GUR-2b | DM-75, API-GUR-11 |
 | ADD-04 | `question_sets.education_level_id bigint null` | Field "Tingkatan (pilihan)" of Set Soalan | GUR-8b | DM-46 (extended), API-GUR-16 |
 | ADD-05 | `interventions.alert_type` check extended with `other` | "Lain-lain" of OPT-JENIS-INTERVENSI | GUR-11, AS-11 | DM-30 (extended) |
 | ADD-06 | `intake_batches.source text not null default 'admin'` (`admin` or `guru`) | Tab "Kiriman Guru" and the origin of teacher submissions | GUR-44, GUR-44b | DM-72 |
@@ -2917,7 +2917,7 @@ These are needed by the merged field and behaviour spec and are registered in `5
 | ADD-14 | API-RPT-10 `PUT /api/headcounts/:id/tov` accepts optional `rsRecordedAt` (not in the future) | "Tarikh Rekod RS" | GUR-3 | DM-49 (extended), API-RPT-10 |
 | ADD-15 | Intervention review: `POST /api/kirkpatrick/interventions/:id/review` writes `after_accuracy` (accuracy of the 14 days after the record), allowed 7 days or more after `action_date` | "Semak keputusan" | GUR-11, AS-11 | DM-30 (extended), API-RPT-17 (new) |
 | ADD-16 | API-AS-05 list accepts `level` (T1 to T5) and `classroomId` filters | Tingkatan and Kelas filters of Senarai Pelajar | AS-51 | API-AS-05 (extended) |
-| ADD-17 | Teacher diagram image submission: `POST` of one image (`jpg`, `png`, `webp`, at most 5 MB) for a question that needs a figure; the image stays pending until an admin accepts | "Upload per card" of Soalan Gambar Rajah | GUR-44c | API-Q-21 (extended) |
+| ADD-17 | Teacher diagram image submission: `POST` of one image (`jpg`, `png`, `webp`, at most 2 MB) for a question that needs a figure; the image stays pending until an admin accepts | "Upload per card" of Soalan Gambar Rajah | GUR-44c | API-Q-21 (extended) |
 | ADD-18 | Teacher video create: body `{title, url, subjectId?, category}`; `videos.category` accepts `motivasi`, `tutorial`, `tips_spm`, `ceramah`, `lain`; stored with `visibility` = `school` and the teacher's `school_id`; list shows global videos plus the own school's | Video form | GUR-7 | DM-76, API-MUR-05 (extended) |
 | ADD-19 | API-GUR-16 gains `GET /api/guru/question-sets/:id/results?classroomId=` and the copy body `{classroomIds}` | Results per class and "Salin" | GUR-8b | API-GUR-16 (extended) |
 | ADD-20 | API-AS-07 create-teacher body gains `subject`, `qualification`, `ic?`, `password?` | Cipta Pengguna form of Senarai Guru | AS-52 | API-AS-07 (extended) |
@@ -2936,3 +2936,18 @@ These are needed by the merged field and behaviour spec and are registered in `5
 | Private question reference link | 2048 characters (DM `reference_url`), replacing 500 |
 | Required-field message wording | the per-field "Sila isi {medan}." / "{Medan} sudah digunakan." / "{Medan} mesti antara {a} dan {b}." of this file are the field-specific instances of ERR-REQ-10, ERR-REQ-16 and ERR-REQ-15; the owner of §X10 aligns the generic pattern text to them |
 
+
+
+## Appendix A3 - D115 corrections against V3 code (2026-11-04, sector S6)
+
+- R1-GUR-43: role code is `teacher` (not `guru`); an admin has no classes; month names use the BM abbreviations (Jan, Feb, Mac, Apr, Mei, Jun, Jul, Ogo, Sep, Okt, Nov, Dis); the V3 route stub has `roles ['teacher','admin']` and title "Belum Tersedia dalam Prototaip"; the old path `/guru/laporan-mingguan` has no route yet (a redirect is added).
+- R1-GUR-1 current gap: the pupil and class drill pages already exist (`/guru/command-center/classroom/:id`, `/student/:userId`); only click-verification remains.
+- R1-GUR-11 / R1-AS-11: a pupil of another school answers 404 for teacher and school admin (V3 returns 403 today and is changed); the BE already allows `school_admin`, the missing part is the FE mounts; Taburan Mood reads real mood data (D114(b)) written by the S5 mood check-in.
+- R1-AS-46 / API-AS-08: the query parameter is `period=today|7days|30days`; the "zero usage" and "fixed-date seed" gaps are in-browser mock only (R1-AS-0, R1-AS-47, 48, 50 likewise).
+- R1-AS-2: priority P1; the dashboard page exists (`SchoolDashboardPage.vue`); the Perutusan pages are owned by S5-T09.
+- R1-GUR-8 / DM-46 / DM-73: `question_sets.classroom_id` becomes nullable for all rows and `ck_question_sets_classroom_or_migrated` is dropped; `scheduled` status is kept but never produced; the unique class-name index is partial (`kind = 'classroom' AND teacher_id IS NOT NULL`). FR-GUR-8-7 / AC-GUR-8-8: the IC is exactly 12 digits without hyphen (an 11-digit IC is the negative test).
+- R1-GUR-2b: Global missions are seeded rows without an admin screen (D115); recipients are a snapshot at creation; cap message "Had 5 misi sehari telah dicapai.".
+- R1-GUR-44c: route `/admin/soalan-gambar` kept with roles widened; teacher list = whole bank; image limit 2 MB (V3 constant); the field-table API id is API-Q-21, not API-GUR-09.
+- R1-GUR-44b: API-GUR-26 is read-only; the submit form posts to API-GUR-17.
+- R1-GUR-44e: sharing targets chosen own classes.
+- UI rule (product owner, 2026-11-04): V3 layout and components stay; V1/V2 are references for function, data, rules and messages only. Wherever this file describes a V2 layout, read it as "function required, V3 layout kept".
