@@ -1695,6 +1695,16 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/videos|",
+      "path": "/admin/videos",
+      "name": null,
+      "status": "canonical",
+      "sector": "S5",
+      "component": "src/modules/m09-content/pages/AdminVideoListPage.vue",
+      "file": "src/modules/m09-content/routes/admin-media.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "/admin/audio-kbat|",
       "path": "/admin/audio-kbat",
       "name": null,
