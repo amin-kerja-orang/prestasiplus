@@ -95,28 +95,27 @@ export const REWARD_MESSAGES = {
   redemptionNotFound: 'Tebusan tidak dijumpai.',
   boxNotFound: 'Kotak tidak dijumpai.',
   /** Default message of an unmatched id: unknown reward/redemption on the admin GET/PUT/deliver, or a non-numeric path id. */
-  notFound: 'Not Found.',
+  notFound: 'Rekod tidak dijumpai.',
 } as const
 
-/** Laravel-style validation messages of the admin writes (field -> message), as the mock emits them. */
+/** Validation messages of the M15 writes (field -> message): the P07 and P08 rows where they give one, else the ERR-REQ-10..15 patterns. */
 export const REWARD_VALIDATION_MESSAGES = {
-  rewardIdRequired: 'The reward id field is required.',
-  clientUuidInvalid: 'The client uuid field must be a valid UUID.',
-  actionRequired: 'The action field is required.',
-  actionInvalid: 'The selected action is invalid.',
-  idsRequired: 'The ids field is required.',
-  idsInvalid: 'The ids field must contain positive integers.',
-  stockValue: 'The stock value must be 0-999999 or empty.',
-  maxPerMonthValue: 'The max per month value must be 0-99 or empty.',
-  tokenCostDeltaPct: 'The token cost adjustment must be between -90 and 500 (not 0).',
-  codeRequired: 'The code field is required.',
-  codeTooLong: 'The code field must not be greater than 100 characters.',
-  categoryRequired: 'The category field is required.',
-  categoryInvalid: 'The selected category is invalid.',
-  deliveryMethodInvalid: 'The selected delivery method is invalid.',
-  imageUrlInvalid: 'The image url field must be a valid URL.',
-  isActiveInvalid: 'The is active field must be true or false.',
-  requiresParentConsentInvalid: 'The requires parent consent field must be true or false.',
+  rewardIdRequired: 'Sila pilih hadiah.',
+  clientUuidInvalid: 'Format kunci permintaan tidak sah.',
+  actionRequired: 'Sila pilih tindakan.',
+  actionInvalid: 'Format tindakan tidak sah.',
+  idsRequired: 'Sila pilih hadiah.',
+  idsInvalid: 'Format hadiah tidak sah.',
+  stockValue: 'Stok tidak sah.',
+  maxPerMonthValue: 'Maks/bulan/pelajar mesti antara 1 dan 100.',
+  tokenCostDeltaPct: 'Pelaras Token mesti antara -90 dan 500.',
+  codeRequired: 'Kod baucar diperlukan.',
+  codeTooLong: 'Kod baucar tidak boleh melebihi 100 aksara.',
+  categoryRequired: 'Kategori diperlukan.',
+  categoryInvalid: 'Format kategori tidak sah.',
+  deliveryMethodInvalid: 'Format delivery tidak sah.',
+  imageUrlInvalid: 'Format Image URL tidak sah.',
+  isActiveInvalid: 'Format Aktif tidak sah.',
 } as const
 
 const FIELD = (description: string) => ({ description })
@@ -134,7 +133,7 @@ export const RewardItemSchema = z
     vendor: z.string(),
     title: z.string(),
     description: z.string().nullable(),
-    denominationRm: z.number().int().min(1),
+    denominationRm: z.number().min(0.01),
     tokenCost: z.number().int().min(1),
     iconEmoji: z.string().nullable(),
     stockQuantity: count.nullable(),
@@ -156,33 +155,33 @@ export type RewardItem = z.infer<typeof RewardItemSchema>
 /**
  * `POST /admin/hadiah` and `PUT /admin/hadiah/{id}` body (PUT replaces: an omitted optional field
  * falls back to its default, it is not a patch). Defaults: `voucherValidityDays` 365,
- * `deliveryMethod` manual, `displayOrder` 100, `isActive` true, `requiresParentConsent` false,
+ * `deliveryMethod` manual, `displayOrder` 100, `isActive` false (U-OP-09), `requiresParentConsent` false,
  * every other optional field null.
  */
 export const RewardInputSchema = z
   .object({
     category: RewardCategorySchema,
-    vendor: nonBlank(100),
-    title: nonBlank(200),
-    description: optionalText(1000),
-    denominationRm: z.number().int().min(1).max(10_000),
-    tokenCost: z.number().int().min(1).max(10_000),
-    iconEmoji: optionalText(8),
-    stockQuantity: z.number().int().min(0).max(999_999_999).nullable().optional().meta(FIELD('null or absent = unlimited.')),
-    maxPerMonthPerStudent: z.number().int().min(1).max(99).nullable().optional().meta(FIELD('null or absent = no cap.')),
-    voucherValidityDays: z.number().int().min(1).max(1825).optional(),
-    deliveryMethod: RewardDeliveryMethodSchema.optional(),
-    vendorSku: optionalText(100),
+    vendor: nonBlank(60),
+    title: nonBlank(100),
+    description: optionalText(500),
+    denominationRm: z.number().min(0.01).max(10_000).refine((v) => Number.isInteger(Math.round(v * 1e6) / 1e4), 'at most 2 decimal places'),
+    tokenCost: z.number().int().min(1).max(100_000),
+    iconEmoji: optionalText(16).meta(FIELD('1 to 2 characters as a reader counts them (an emoji may take several code units).')),
+    stockQuantity: z.number().int().min(0).max(999_999_999).nullable().optional().meta(FIELD('null or absent = unlimited')),
+    maxPerMonthPerStudent: z.number().int().min(1).max(100).nullable().optional().meta(FIELD('null or absent = no cap.')),
+    voucherValidityDays: z.number().int().min(1).max(3650).optional(),
+    deliveryMethod: z.enum(['manual', 'instant']).optional().meta(FIELD('`api` is not offered (FR-ADM-P2-07.3); a stored row may still read `api`.')),
+    vendorSku: optionalText(50),
     displayOrder: z.number().int().min(0).max(9999).optional(),
     imageUrl: z
       .string()
       .max(500)
-      .regex(/^[Hh][Tt][Tt][Pp][Ss]?:\/\/\S+$/)
+      .regex(/^[Hh][Tt][Tt][Pp][Ss]:\/\/\S+$/)
       .nullable()
       .optional(),
-    termsText: optionalText(2000),
+    termsText: optionalText(1000),
     isActive: z.boolean().optional(),
-    requiresParentConsent: z.boolean().optional(),
+    requiresParentConsent: z.boolean().optional().meta(FIELD('Ignored: no consent status exists (FR-GM-21.3); always stored false.')),
   })
   .meta({ id: 'RewardInput' })
 export type RewardInput = z.infer<typeof RewardInputSchema>
@@ -204,7 +203,7 @@ export const RewardListItemSchema = z
     vendor: z.string(),
     title: z.string(),
     iconEmoji: z.string().nullable(),
-    denominationRm: z.number().int().min(1),
+    denominationRm: z.number().min(0.01),
     tokenCost: z.number().int().min(1),
     stockQuantity: count.nullable(),
     redemptionCount: count.meta(FIELD('Non-cancelled redemptions of this reward.')),
@@ -232,7 +231,7 @@ export type RewardListResponse = z.infer<typeof RewardListResponseSchema>
 
 /**
  * `POST /admin/hadiah/bulk` body. The value fields are the raw page strings:
- * `stockValue` empty (= unlimited) or digits <= 999999; `maxPerMonthValue` empty or 0 (= no cap)
+ * `stockValue` empty (= unlimited) or digits <= 999999999; `maxPerMonthValue` empty or 0 (= no cap)
  * or digits <= 99; `tokenCostDeltaPct` a non-zero integer text in -90..500 (parseInt semantics).
  * Only the field of the chosen action is read.
  */
@@ -276,7 +275,7 @@ export const RewardRedemptionListItemSchema = z
     rewardId: IdSchema,
     rewardTitle: z.string(),
     rewardVendor: z.string(),
-    denominationRm: z.number().int().min(1),
+    denominationRm: z.number().min(0.01),
     tokenCost: z.number().int().min(1),
     status: RewardRedemptionStatusSchema,
     createdAt: TimestampSchema,
@@ -330,7 +329,7 @@ export const RewardRedeemRequestSchema = z
   .meta({ id: 'RewardRedeemRequest' })
 export type RewardRedeemRequest = z.infer<typeof RewardRedeemRequestSchema>
 
-/** `status` is `pending_parent_consent` when the reward needs parent consent, else `pending_admin`. */
+/** A new redemption is always `pending_admin` (FR-GM-21.3); `pending_parent_consent` stays in the enum only for stored rows. */
 export const RewardRedeemResultSchema = z
   .object({ id: IdSchema, status: RewardRedemptionStatusSchema, tokenBalance: count })
   .meta({ id: 'RewardRedeemResult' })

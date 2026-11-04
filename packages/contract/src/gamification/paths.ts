@@ -621,7 +621,7 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
       409: err(
         'OUT_OF_STOCK "Stok hadiah telah habis."; MONTHLY_CAP "Had tebusan bulanan dicapai."; INSUFFICIENT_TOKENS "Token tidak mencukupi.".',
       ),
-      422: err('VALIDATION_ERROR fields.rewardId "The reward id field is required." (missing, non-numeric or below 1; the top-level message is the same text); fields.clientUuid "The client uuid field must be a valid UUID.".'),
+      422: err('VALIDATION_ERROR fields.rewardId "Sila pilih hadiah." (missing, non-numeric or below 1; the top-level message is the same text); fields.clientUuid "Format kunci permintaan tidak sah.".'),
     },
   })
 
@@ -674,7 +674,7 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
       409: err(
         'DRAW_CLOSED "Cabutan ditutup." (missing, not open, or closed by date); TICKET_LIMIT "Had tiket dicapai."; INSUFFICIENT_BALANCE "Baki syiling tidak mencukupi.".',
       ),
-      422: err('VALIDATION_ERROR fields.clientUuid "The client uuid field must be a valid UUID.".'),
+      422: err('VALIDATION_ERROR fields.clientUuid "Format kunci permintaan tidak sah.".'),
     },
   })
 

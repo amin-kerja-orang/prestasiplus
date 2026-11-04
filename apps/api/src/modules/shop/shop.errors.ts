@@ -20,11 +20,10 @@ export const plainNotFound = (): ApiError => ApiError.of('NOT_FOUND')
 
 export const modPelajarRefused = (): ApiError => ApiError.of('FORBIDDEN', { message: MOD_PELAJAR_REFUSAL })
 
-/** 422 with the mock's Laravel-style summary: the first message plus " (and N more error(s))". */
+/** 422: the one message, or the ERR-REQ-01 summary "{n} medan perlu dibetulkan." when there are several. */
 export function validation(fields: Record<string, string>): ApiError {
   const messages = Object.values(fields)
   const [first] = messages
-  const more = messages.length - 1
-  const message = first === undefined ? undefined : more <= 0 ? first : `${first} (and ${String(more)} more error${more === 1 ? '' : 's'})`
+  const message = first === undefined ? undefined : messages.length === 1 ? first : `${String(messages.length)} medan perlu dibetulkan.`
   return ApiError.of('VALIDATION_ERROR', { ...(message ? { message } : {}), fields })
 }

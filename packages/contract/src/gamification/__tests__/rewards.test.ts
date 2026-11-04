@@ -101,21 +101,27 @@ describe('admin catalogue', () => {
     const bad = (patch: Record<string, unknown>) => RewardInputSchema.safeParse({ ...input, ...patch }).success
     expect(bad({ category: 'crypto' })).toBe(false)
     expect(bad({ vendor: '' })).toBe(false)
-    expect(bad({ vendor: 'x'.repeat(101) })).toBe(false)
+    expect(bad({ vendor: 'x'.repeat(61) })).toBe(false)
     expect(bad({ title: '   ' })).toBe(false)
-    expect(bad({ title: 'x'.repeat(201) })).toBe(false)
+    expect(bad({ title: 'x'.repeat(101) })).toBe(false)
     expect(bad({ denominationRm: 0 })).toBe(false)
     expect(bad({ denominationRm: 10_001 })).toBe(false)
+    expect(bad({ denominationRm: 1.234 })).toBe(false)
+    expect(bad({ denominationRm: 0.01 })).toBe(true)
+    expect(bad({ denominationRm: 19.99 })).toBe(true)
+    expect(bad({ tokenCost: 100_001 })).toBe(false)
+    expect(bad({ deliveryMethod: 'api' })).toBe(false)
+    expect(bad({ imageUrl: 'http://x.test/a.png' })).toBe(false)
     expect(bad({ tokenCost: 0 })).toBe(false)
     expect(bad({ stockQuantity: -1 })).toBe(false)
     expect(bad({ maxPerMonthPerStudent: 0 })).toBe(false)
-    expect(bad({ maxPerMonthPerStudent: 100 })).toBe(false)
-    expect(bad({ voucherValidityDays: 1826 })).toBe(false)
+    expect(bad({ maxPerMonthPerStudent: 101 })).toBe(false)
+    expect(bad({ voucherValidityDays: 3651 })).toBe(false)
     expect(bad({ displayOrder: 10_000 })).toBe(false)
     expect(bad({ deliveryMethod: 'post' })).toBe(false)
     expect(bad({ imageUrl: 'ftp://x.test/a.png' })).toBe(false)
     expect(bad({ imageUrl: 'https://x.test/a b.png' })).toBe(false)
-    expect(bad({ iconEmoji: 'x'.repeat(9) })).toBe(false)
+    expect(bad({ iconEmoji: 'x'.repeat(17) })).toBe(false)
     expect(bad({ isActive: 'yes' })).toBe(false)
     // eslint-disable-next-line @typescript-eslint/no-unused-vars -- omit keys to build an invalid payload
     const { tokenCost: _t, ...missing } = input
@@ -284,7 +290,7 @@ describe('errors', () => {
     }
   })
 
-  it('carries VALIDATION_ERROR fields with the Laravel-style messages', () => {
+  it('carries VALIDATION_ERROR fields with the BM messages (ERR-RWD-08)', () => {
     const body = {
       error: {
         code: 'VALIDATION_ERROR',
@@ -294,7 +300,7 @@ describe('errors', () => {
     }
     expect(ErrorBodySchema.safeParse(body).success).toBe(true)
     expect(REWARD_MESSAGES.redemptionNotFound).toBe('Tebusan tidak dijumpai.')
-    expect(REWARD_MESSAGES.notFound).toBe('Not Found.')
+    expect(REWARD_MESSAGES.notFound).toBe('Rekod tidak dijumpai.')
   })
 })
 

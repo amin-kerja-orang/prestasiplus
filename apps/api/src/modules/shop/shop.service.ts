@@ -110,7 +110,7 @@ export class ShopService {
         rewardIcon: reward.iconEmoji,
         denominationRm: reward.denominationRm,
         tokenCost: reward.tokenCost,
-        status: reward.requiresParentConsent ? 'pending_parent_consent' : 'pending_admin',
+        status: 'pending_admin',
         stockReserved: reserved,
         clientUuid,
         at,

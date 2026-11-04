@@ -6794,8 +6794,8 @@
             ]
           },
           "denominationRm": {
-            "type": "integer",
-            "minimum": 1
+            "type": "number",
+            "minimum": 0.01
           },
           "tokenCost": {
             "type": "integer",
@@ -6894,12 +6894,12 @@
           },
           "vendor": {
             "type": "string",
-            "maxLength": 100,
+            "maxLength": 60,
             "pattern": "\\S"
           },
           "title": {
             "type": "string",
-            "maxLength": 200,
+            "maxLength": 100,
             "pattern": "\\S"
           },
           "description": {
@@ -6907,24 +6907,25 @@
               "string",
               "null"
             ],
-            "maxLength": 1000
+            "maxLength": 500
           },
           "denominationRm": {
-            "type": "integer",
-            "minimum": 1,
+            "type": "number",
+            "minimum": 0.01,
             "maximum": 10000
           },
           "tokenCost": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 10000
+            "maximum": 100000
           },
           "iconEmoji": {
             "type": [
               "string",
               "null"
             ],
-            "maxLength": 8
+            "maxLength": 16,
+            "description": "1 to 2 characters as a reader counts them (an emoji may take several code units)."
           },
           "stockQuantity": {
             "type": [
@@ -6933,7 +6934,7 @@
             ],
             "minimum": 0,
             "maximum": 999999999,
-            "description": "null or absent = unlimited."
+            "description": "null or absent = unlimited"
           },
           "maxPerMonthPerStudent": {
             "type": [
@@ -6941,23 +6942,28 @@
               "null"
             ],
             "minimum": 1,
-            "maximum": 99,
+            "maximum": 100,
             "description": "null or absent = no cap."
           },
           "voucherValidityDays": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 1825
+            "maximum": 3650
           },
           "deliveryMethod": {
-            "$ref": "#/components/schemas/RewardDeliveryMethod"
+            "type": "string",
+            "enum": [
+              "manual",
+              "instant"
+            ],
+            "description": "`api` is not offered (FR-ADM-P2-07.3); a stored row may still read `api`."
           },
           "vendorSku": {
             "type": [
               "string",
               "null"
             ],
-            "maxLength": 100
+            "maxLength": 50
           },
           "displayOrder": {
             "type": "integer",
@@ -6970,20 +6976,21 @@
               "null"
             ],
             "maxLength": 500,
-            "pattern": "^[Hh][Tt][Tt][Pp][Ss]?:\\/\\/\\S+$"
+            "pattern": "^[Hh][Tt][Tt][Pp][Ss]:\\/\\/\\S+$"
           },
           "termsText": {
             "type": [
               "string",
               "null"
             ],
-            "maxLength": 2000
+            "maxLength": 1000
           },
           "isActive": {
             "type": "boolean"
           },
           "requiresParentConsent": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Ignored: no consent status exists (FR-GM-21.3); always stored false."
           }
         },
         "required": [
@@ -7034,8 +7041,8 @@
             ]
           },
           "denominationRm": {
-            "type": "integer",
-            "minimum": 1
+            "type": "number",
+            "minimum": 0.01
           },
           "tokenCost": {
             "type": "integer",
@@ -7278,8 +7285,8 @@
             "type": "string"
           },
           "denominationRm": {
-            "type": "integer",
-            "minimum": 1
+            "type": "number",
+            "minimum": 0.01
           },
           "tokenCost": {
             "type": "integer",
@@ -80000,7 +80007,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR fields.rewardId \"The reward id field is required.\" (missing, non-numeric or below 1; the top-level message is the same text); fields.clientUuid \"The client uuid field must be a valid UUID.\".",
+            "description": "VALIDATION_ERROR fields.rewardId \"Sila pilih hadiah.\" (missing, non-numeric or below 1; the top-level message is the same text); fields.clientUuid \"Format kunci permintaan tidak sah.\".",
             "content": {
               "application/json": {
                 "schema": {
@@ -80277,7 +80284,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR fields.clientUuid \"The client uuid field must be a valid UUID.\".",
+            "description": "VALIDATION_ERROR fields.clientUuid \"Format kunci permintaan tidak sah.\".",
             "content": {
               "application/json": {
                 "schema": {

@@ -92,25 +92,25 @@ describe('M15 student routes (BE-23)', () => {
       expect(moves).toEqual([{ delta: -12, source: 'hadiah_redeem', ref_id: `redemption:${data.id}` }])
     })
 
-    it('accepts a numeric rewardId, leaves unlimited stock alone and starts at pending_parent_consent when consent is required', async () => {
+    it('accepts a numeric rewardId, leaves unlimited stock alone and starts at pending_admin even on a stored row with the consent flag (FR-GM-21.3)', async () => {
       const api = await as(STUDENT)
       const uid = await userIdOf(t.db, STUDENT)
       await fund(t, uid, { tokens: 30 }, 'redeem-consent')
       const reward = await insertReward(t, { tokenCost: 5, stock: null, consent: true })
       const res = await api.post('/hadiah/redemptions', { rewardId: Number(reward) })
       expect(res.status).toBe(201)
-      expect(RewardRedeemResultSchema.parse(res.body.data).status).toBe('pending_parent_consent')
+      expect(RewardRedeemResultSchema.parse(res.body.data).status).toBe('pending_admin')
       expect(await stockOf(t, reward)).toBeNull()
       const [row] = await t.db.query<{ stock_reserved: boolean }>(`select stock_reserved from reward_redemptions where id = $1`, [res.body.data.id])
       expect(row!.stock_reserved).toBe(false)
     })
 
-    it('422 for a missing, non-numeric or zero rewardId (the mock text), 404 for an unknown or inactive reward', async () => {
+    it('422 for a missing, non-numeric or zero rewardId, 404 for an unknown or inactive reward', async () => {
       const api = await as(STUDENT)
       for (const body of [{}, { rewardId: 'abc' }, { rewardId: 0 }, { rewardId: -3 }, { rewardId: 1.5 }]) {
         const res = await api.post('/hadiah/redemptions', body)
-        const e = expectError(res, 422, 'VALIDATION_ERROR', 'The reward id field is required.')
-        expect(e.fields).toEqual({ rewardId: 'The reward id field is required.' })
+        const e = expectError(res, 422, 'VALIDATION_ERROR', 'Sila pilih hadiah.')
+        expect(e.fields).toEqual({ rewardId: 'Sila pilih hadiah.' })
       }
       expectError(await api.post('/hadiah/redemptions', { rewardId: '999999' }), 404, 'NOT_FOUND', 'Hadiah tidak dijumpai.')
       const off = await insertReward(t, { active: false })

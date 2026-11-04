@@ -26,7 +26,7 @@ async function fundTokens(ctx: ScenarioContext, student: HttpClient): Promise<bo
 }
 
 async function createReward(ctx: ScenarioContext, admin: HttpClient, over: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
-  const res = await admin.request('POST', '/admin/hadiah', { body: { ...NEW_REWARD, title: nextTag('Baucar Konformans '), ...over } })
+  const res = await admin.request('POST', '/admin/hadiah', { body: { ...NEW_REWARD, isActive: true, title: nextTag('Baucar Konformans '), ...over } })
   ctx.expectStatus(res, 201)
   return dataOf(res)
 }
