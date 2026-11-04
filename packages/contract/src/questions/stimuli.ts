@@ -62,7 +62,7 @@ export const STIMULUS_MESSAGES = {
   orderInvalid: 'Susunan mesti menyenaraikan semua soalan kumpulan tepat sekali.',
   groupMismatch: 'Kumpulan dalam badan permintaan tidak sepadan dengan laluan.',
   /** A 200 `warning`, not an error: the removal went through. */
-  smallGroup: (_n: number): string => 'Kumpulan ini kini kosong. Bubarkan kumpulan jika rangsangan ini tidak diperlukan lagi.',
+  smallGroup: (): string => 'Kumpulan ini kini kosong. Bubarkan kumpulan jika rangsangan ini tidak diperlukan lagi.',
 } as const
 
 /** Bounds (BE-NFR-25): every free text field is capped. */

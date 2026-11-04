@@ -38,7 +38,7 @@ export class GroupMembers {
 
   /** The BM warning for a group with no member, else null (one member is valid). */
   warning(count: number): string | null {
-    return count === 0 ? M.smallGroup(0) : null
+    return count === 0 ? M.smallGroup() : null
   }
 
   /** Throws 409 when the group has a member shown to pupils (for the changes that cannot keep them as they are). */

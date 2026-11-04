@@ -321,7 +321,7 @@ describe('stimulus and stimulus group API (admin, real database)', () => {
       expect(second.status).toBe(200)
       expect(second.body.data.warning).toBeNull() // one member left is a valid group
       const last = await admin.delete(`/api/stimulus-groups/${g.id}/members/${q3}`)
-      expect(last.body.data.warning).toBe(STIMULUS_MESSAGES.smallGroup(0))
+      expect(last.body.data.warning).toBe(STIMULUS_MESSAGES.smallGroup())
       expect(last.body.data.group.questionIds).toEqual([])
       // A non-member and an unknown group are 404.
       expect((await admin.delete(`/api/stimulus-groups/${g.id}/members/${q1}`)).status).toBe(404)

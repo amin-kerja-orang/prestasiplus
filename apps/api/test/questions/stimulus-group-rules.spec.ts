@@ -379,9 +379,9 @@ describe('stimulus group rules (admin, real database)', () => {
       const empty = await admin.post('/api/stimulus-groups', { stimulusIds: [await stimulus()] })
       expect(empty.status, JSON.stringify(empty.body)).toBe(201)
       expect(empty.body.data.questionIds).toEqual([])
-      expect(empty.body.data.warning).toBe(STIMULUS_MESSAGES.smallGroup(0))
+      expect(empty.body.data.warning).toBe(STIMULUS_MESSAGES.smallGroup())
       const id = empty.body.data.id as string
-      expect((await admin.get(`/api/stimulus-groups/${id}`)).body.data.warning).toBe(STIMULUS_MESSAGES.smallGroup(0))
+      expect((await admin.get(`/api/stimulus-groups/${id}`)).body.data.warning).toBe(STIMULUS_MESSAGES.smallGroup())
 
       const one = await admin.post(`/api/stimulus-groups/${id}/members`, { questionId: await question() })
       expect(one.status).toBe(200)
@@ -403,7 +403,7 @@ describe('stimulus group rules (admin, real database)', () => {
       expect(res.body.data.warning).toBeNull()
       const last = await admin.delete(`/api/stimulus-groups/${g.id}/members/${q2}`)
       expect(last.status).toBe(200)
-      expect(last.body.data.warning).toBe(STIMULUS_MESSAGES.smallGroup(0))
+      expect(last.body.data.warning).toBe(STIMULUS_MESSAGES.smallGroup())
     })
   })
 })
