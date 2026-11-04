@@ -4204,12 +4204,10 @@
         "type": "object",
         "properties": {
           "email": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "whatsappNumber": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           }
         },
         "required": [
@@ -74736,10 +74734,10 @@
           "content"
         ],
         "summary": "Support contact (help box)",
-        "description": "Public. If the config row is missing the server answers 404 \"Konfigurasi sokongan tidak dijumpai.\" (the mock would fail with a generic error).",
+        "description": "Public. If the config row is missing the server answers 200 with empty strings {email: \"\", whatsappNumber: \"\"} (S5-T05, DM-33); the client hides a contact whose value is empty.",
         "responses": {
           "200": {
-            "description": "E-mail and WhatsApp number.",
+            "description": "E-mail and WhatsApp number (empty strings when not set).",
             "content": {
               "application/json": {
                 "schema": {
@@ -74752,16 +74750,6 @@
                   "required": [
                     "data"
                   ]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "NOT_FOUND \"Konfigurasi sokongan tidak dijumpai.\"",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }

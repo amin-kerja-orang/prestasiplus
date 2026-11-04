@@ -511,6 +511,8 @@ describe('screenshots and support config', () => {
   it('support config', () => {
     expect(ok(ContentSupportConfigSchema, { email: 'bantuan@example.test', whatsappNumber: '60123456789' })).toBe(true)
     expect(ok(ContentSupportConfigSchema, { email: 'bantuan@example.test' })).toBe(false)
+    expect(ok(ContentSupportConfigSchema, { email: '', whatsappNumber: '' })).toBe(true)
+    expect(ok(ContentSupportConfigSchema, { email: 'bantuan@example.test', whatsappNumber: '' })).toBe(true)
   })
 })
 

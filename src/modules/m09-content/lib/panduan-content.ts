@@ -186,12 +186,8 @@ export const GUIDE_ROLES: readonly GuideRole[] = [
         ],
       },
       {
-        title: 'Kongsi Kod Kelas',
-        text: [
-          'Setiap kelas ada ',
-          b('kod unik'),
-          ' (contoh: LZ0942). Beri kod ini kepada pelajar untuk sertai kelas.',
-        ],
+        title: 'Tambah Pelajar',
+        text: ['Tambah pelajar ke kelas anda daripada Kelas Saya.'],
       },
     ],
     done: {
@@ -511,4 +507,27 @@ export const GUIDE_ROLES: readonly GuideRole[] = [
 /** The role whose panel shows for a URL hash: the hash without "#", or `pelajar` when empty. */
 export function roleFromHash(hash: string): string {
   return hash.replace('#', '') || 'pelajar'
+}
+
+/** `?peranan=` value -> tab id (R1-AS-A3, FR-AS-A3-5). */
+const ROLE_BY_QUERY: Readonly<Record<string, RoleId>> = {
+  pelajar: 'pelajar',
+  guru: 'guru',
+  'ibu-bapa': 'ibubapa',
+  'admin-sekolah': 'admin',
+  ppd: 'ppd',
+}
+
+/** The tab for `?peranan=`: an unknown, empty or missing value gives `pelajar`. */
+export function roleFromQuery(value: unknown): RoleId {
+  const raw = Array.isArray(value) ? value[0] : value
+  return typeof raw === 'string' && Object.hasOwn(ROLE_BY_QUERY, raw)
+    ? ROLE_BY_QUERY[raw]!
+    : 'pelajar'
+}
+
+/** The active tab: the URL hash wins, then `?peranan=`, then `pelajar`. */
+export function resolveGuideRole(hash: string, query: unknown): string {
+  const fromHash = hash.replace('#', '')
+  return fromHash || roleFromQuery(query)
 }

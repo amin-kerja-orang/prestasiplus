@@ -68,8 +68,11 @@ export const ScreenshotUploadResultSchema = z
   })
   .meta({ id: 'ScreenshotUploadResult' })
 
-/** `data` of `GET /config/support` (#43, public): the contact shown in the help box. */
+/**
+ * `data` of `GET /config/support` (#43, public): the contact shown in the help box. A value is the empty
+ * string when it is not set; when no config row exists both are empty (S5-T05, DM-33).
+ */
 export const ContentSupportConfigSchema = z
-  .strictObject({ email: z.string().min(1), whatsappNumber: z.string().min(1) })
+  .strictObject({ email: z.string(), whatsappNumber: z.string() })
   .meta({ id: 'ContentSupportConfig' })
 export type ContentSupportConfig = z.infer<typeof ContentSupportConfigSchema>

@@ -1,9 +1,11 @@
 <script setup lang="ts">
 /**
  * S26 `/panduan` and S27 `/pusat-tuisyen/panduan` (FR-M09-112 to FR-M09-118): the same standalone
- * user guide. Five role tabs (initial role = the URL hash without "#", or `pelajar`; an unknown
- * hash leaves no tab active and no panel, as live), the help box fed by `GET /api/config/support`
- * (#43) and, for a guest, the "Daftar Percuma Sekarang" button.
+ * user guide. Five role tabs (initial role = the URL hash without "#", else `?peranan=`, else
+ * `pelajar`; an unknown hash leaves no tab active and no panel, as live), the contact block fed by
+ * `GET /api/config/support` (#43; hidden until the API answers with a non-empty value, each button
+ * hidden when its own value is empty, nothing on a failed call) and, for a guest, the "Daftar
+ * Percuma Sekarang" button.
  *
  * v2 restyle (B04): standalone page on the theme tokens (own top bar, no shell), role cards as
  * buttons, panels as `UCard`s.
@@ -20,10 +22,8 @@ import { fetchSupportConfig } from '../api/content'
 import WhatsAppIcon from '../components/icons/WhatsAppIcon.vue'
 import PanduanRolePanel from '../components/panduan/PanduanRolePanel.vue'
 import PanduanTopBar from '../components/panduan/PanduanTopBar.vue'
-import { GUIDE_ROLES, roleFromHash, type RoleId } from '../lib/panduan-content'
+import { GUIDE_ROLES, resolveGuideRole, type RoleId } from '../lib/panduan-content'
 
-/** Live defaults, used until `GET /api/config/support` answers (or if it fails). */
-const DEFAULT_SUPPORT = { email: 'support@prestasiplus.my', whatsappNumber: '60123456789' }
 const LOGO_URL = `${import.meta.env.BASE_URL}images/prestasiplus-logo.svg`
 
 const ROLE_ICONS: Record<RoleId, string> = {
@@ -39,19 +39,23 @@ const { isLoggedIn, role: sessionRole } = useSession()
 // Standalone page: follow the stored theme (dark by default for a student, calm staff otherwise).
 useThemeMode(computed(() => (sessionRole?.value === 'student' ? 'learner' : 'staff')))
 
-const activeRole = ref<string>(roleFromHash(route.hash))
+const activeRole = ref<string>(resolveGuideRole(route.hash, route.query.peranan))
 const activePanel = computed(() => GUIDE_ROLES.find((r) => r.id === activeRole.value) ?? null)
 
-// `/panduan` and `/pusat-tuisyen/panduan` share this component: re-read the hash on a route switch.
+// `/panduan` and `/pusat-tuisyen/panduan` share this component: re-read the hash and `?peranan=` on a
+// route switch or a query change (the hash still wins).
 watch(
-  () => route.path,
+  () => [route.path, route.query.peranan] as const,
   () => {
-    activeRole.value = roleFromHash(route.hash)
+    activeRole.value = resolveGuideRole(route.hash, route.query.peranan)
   },
 )
 
 const support = useApi((signal) => fetchSupportConfig({ signal }))
-const config = computed(() => support.data.value ?? DEFAULT_SUPPORT)
+// No fallback: nothing is shown until the API answers, and nothing on an error.
+const email = computed(() => support.data.value?.email?.trim() ?? '')
+const whatsapp = computed(() => support.data.value?.whatsappNumber?.trim() ?? '')
+const hasContact = computed(() => email.value !== '' || whatsapp.value !== '')
 
 function setRole(id: string): void {
   activeRole.value = id
@@ -98,31 +102,37 @@ function setRole(id: string): void {
 
       <PanduanRolePanel v-if="activePanel" :key="activePanel.id" :role="activePanel" />
 
-      <UCard data-testid="panduan-help">
+      <UCard v-if="hasContact || !isLoggedIn" data-testid="panduan-help">
         <div class="flex flex-col items-center gap-3 text-center">
-          <DsIconChip icon="i-ph-chats-circle-duotone" size="lg" />
-          <h2 class="text-heading text-highlighted">Perlukan Bantuan Lanjut?</h2>
-          <p class="text-label text-muted">
-            Hubungi pasukan sokongan kami untuk sebarang pertanyaan.
-          </p>
-          <div class="flex flex-wrap items-center justify-center gap-3">
-            <UButton
-              :to="`mailto:${config.email}`"
-              icon="i-ph-envelope-simple-duotone"
-              data-testid="panduan-email"
-              >E-mel Kami</UButton
-            >
-            <UButton
-              :to="`https://wa.me/${config.whatsappNumber}`"
-              target="_blank"
-              rel="noopener noreferrer"
-              color="neutral"
-              variant="soft"
-              data-testid="panduan-whatsapp"
-            >
-              <WhatsAppIcon class="size-4" />WhatsApp
-            </UButton>
-          </div>
+          <template v-if="hasContact">
+            <div class="flex flex-col items-center gap-3" data-testid="panduan-contact">
+              <DsIconChip icon="i-ph-chats-circle-duotone" size="lg" />
+              <h2 class="text-heading text-highlighted">Perlukan Bantuan Lanjut?</h2>
+              <p class="text-label text-muted">
+                Hubungi pasukan sokongan kami untuk sebarang pertanyaan.
+              </p>
+              <div class="flex flex-wrap items-center justify-center gap-3">
+                <UButton
+                  v-if="email !== ''"
+                  :to="`mailto:${email}`"
+                  icon="i-ph-envelope-simple-duotone"
+                  data-testid="panduan-email"
+                  >E-mel Kami</UButton
+                >
+                <UButton
+                  v-if="whatsapp !== ''"
+                  :to="`https://wa.me/${whatsapp}`"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  color="neutral"
+                  variant="soft"
+                  data-testid="panduan-whatsapp"
+                >
+                  <WhatsAppIcon class="size-4" />WhatsApp
+                </UButton>
+              </div>
+            </div>
+          </template>
           <UButton
             v-if="!isLoggedIn"
             to="/register"
