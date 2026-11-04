@@ -99,8 +99,8 @@ describe('Prestasi 360 (student)', () => {
   it('an unknown pupil and a hidden pupil give the same outcome', async () => {
     const hidden = await w.student.student(ctxOf('student', '2'), '1').catch((e: unknown) => e)
     const unknown = await w.student.student(ctxOf('student', '2'), '12345').catch((e: unknown) => e)
-    expect(hidden).toMatchObject({ status: 404, message: 'Not Found.' })
-    expect(unknown).toMatchObject({ status: 404, message: 'Not Found.' })
+    expect(hidden).toMatchObject({ status: 404, message: 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?' })
+    expect(unknown).toMatchObject({ status: 404, message: 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?' })
   })
 
   it('an officer never opens a pupil, in or out of the district (H1)', async () => {
@@ -327,8 +327,8 @@ describe('Analitik', () => {
     it('an unknown classroom and another teacher class give the same 403 (M3); other roles are 403', async () => {
       const unknown = await w.analytics.classes(ctxOf('teacher', 't1'), { classroomId: '999' }).catch((e: unknown) => e)
       const forbidden = await w.analytics.classes(ctxOf('teacher', 't2'), { classroomId: '10' }).catch((e: unknown) => e)
-      expect(unknown).toMatchObject({ status: 403, message: 'This action is unauthorized.' })
-      expect(forbidden).toMatchObject({ status: 403, message: 'This action is unauthorized.' })
+      expect(unknown).toMatchObject({ status: 403, message: 'Anda tidak dibenarkan melakukan tindakan ini.' })
+      expect(forbidden).toMatchObject({ status: 403, message: 'Anda tidak dibenarkan melakukan tindakan ini.' })
       await expect(w.analytics.classes(ctxOf('teacher', 't2'), { classroomId: '10' })).rejects.toMatchObject({ status: 403 })
       await expect(w.analytics.classes(ctxOf('student', '1'), {})).rejects.toMatchObject({ status: 403 })
       await expect(w.analytics.classes(ctxOf('school_admin', 'sa1'), {})).rejects.toMatchObject({ status: 403 })

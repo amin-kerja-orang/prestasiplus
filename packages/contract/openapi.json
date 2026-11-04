@@ -92,7 +92,13 @@
           "CONFLICT",
           "SERVER_ERROR",
           "RATE_LIMITED",
-          "PASSWORD_CHANGE_REQUIRED"
+          "PASSWORD_CHANGE_REQUIRED",
+          "BAD_REQUEST",
+          "PAYLOAD_TOO_LARGE",
+          "UNSUPPORTED_MEDIA_TYPE",
+          "BAD_GATEWAY",
+          "SERVICE_UNAVAILABLE",
+          "TIMEOUT"
         ]
       },
       "ErrorPayload": {
@@ -11575,6 +11581,13 @@
             ],
             "additionalProperties": false,
             "description": "Answer mode of a leaf; absent on a part that only holds children."
+          },
+          "stimulusId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "FR-QA-09: the id of the stimulus of the question group this leaf cites (a `stimuli[].id` of the view).",
+            "example": "1042"
           },
           "children": {
             "type": "array",

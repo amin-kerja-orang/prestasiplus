@@ -123,10 +123,10 @@ describe('audio KBAT student play (AC 8, AC 9)', () => {
       expect([...allKeys(body)].join(' ')).not.toMatch(/dskp|kbat|correct|explan/i)
     })
 
-    it('a draft, pending, archived, unknown or malformed set is 404 "Not Found."', async () => {
+    it('a draft, pending, archived, unknown or malformed set is 404 "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?"', async () => {
       for (const id of [draftId, pendingId, archivedId, '999999', 'abc', '0', '99999999999999999999']) {
         const res = await s().get(`/audio-kbat-sets/${id}`)
-        expectError(res, 'NOT_FOUND', 'Not Found.')
+        expectError(res, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
       }
     })
   })
@@ -174,7 +174,7 @@ describe('audio KBAT student play (AC 8, AC 9)', () => {
       const gate = t.app.get(AudioReadGate)
       const held = Array.from({ length: AUDIO_READ_CONCURRENCY }, () => gate.acquire())
       const res = await student.agent.get(`/api/audio-kbat-sets/${approvedId}/sections/1/audio`)
-      expectError(res, 'RATE_LIMITED', 'Too Many Attempts.')
+      expectError(res, 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.')
       expect(res.headers['retry-after']).toBe('1')
       held[0]?.()
       expect((await student.agent.get(`/api/audio-kbat-sets/${approvedId}/sections/1/audio`)).status).toBe(200)
@@ -276,9 +276,9 @@ describe('audio KBAT student play (AC 8, AC 9)', () => {
 
     it('a draft or unknown set is 404 before the body is judged (even with an invalid body)', async () => {
       const rowsBefore = (await attemptRows()).length
-      expectError(await s().post(`/audio-kbat-sets/${draftId}/attempts`, { answers: [{ no: 1, choice: 'A' }] }), 'NOT_FOUND', 'Not Found.')
-      expectError(await s().post(`/audio-kbat-sets/${draftId}/attempts`, {}), 'NOT_FOUND', 'Not Found.')
-      expectError(await s().post('/audio-kbat-sets/424242/attempts', { answers: [{ no: 1, choice: 'A' }] }), 'NOT_FOUND', 'Not Found.')
+      expectError(await s().post(`/audio-kbat-sets/${draftId}/attempts`, { answers: [{ no: 1, choice: 'A' }] }), 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+      expectError(await s().post(`/audio-kbat-sets/${draftId}/attempts`, {}), 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+      expectError(await s().post('/audio-kbat-sets/424242/attempts', { answers: [{ no: 1, choice: 'A' }] }), 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
       expect((await attemptRows()).length).toBe(rowsBefore)
     })
 

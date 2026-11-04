@@ -57,7 +57,7 @@ describe('authentication', () => {
 describe('roles', () => {
   it('parent and sponsor are refused (403) on both school item analyses', async () => {
     for (const k of ['ibubapa', 'penaja']) {
-      expectError(await (as[k] as Client).get('/api/item-analysis/school'), 'FORBIDDEN', 'This action is unauthorized.')
+      expectError(await (as[k] as Client).get('/api/item-analysis/school'), 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
       expectError(await (as[k] as Client).get(`/api/item-analysis/school/${w.schools.demo1}`), 'FORBIDDEN')
     }
   })
@@ -126,7 +126,7 @@ describe('contract shapes and no-store', () => {
 describe('404 versus 403 and hostile ids', () => {
   it('a student opening another pupil is 404, as is an unknown pupil (no enumeration)', async () => {
     const s = as.pelajar as Client
-    expectError(await s.get(`/api/performance/students/${w.ids['pelajarmaju@demo.test']}`), 'NOT_FOUND', 'Not Found.')
+    expectError(await s.get(`/api/performance/students/${w.ids['pelajarmaju@demo.test']}`), 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
     expectError(await s.get('/api/performance/students/987654'), 'NOT_FOUND')
     parseData(await s.get(`/api/performance/students/${w.ids['pelajar@demo.test']}`), PerformanceStudentSchema)
   })
@@ -139,8 +139,8 @@ describe('404 versus 403 and hostile ids', () => {
 
   it('an officer never opens a pupil (404), as for an unknown id', async () => {
     const p = as.ppd as Client
-    expectError(await p.get(`/api/performance/students/${w.ids['pelajar@demo.test']}`), 'NOT_FOUND', 'Not Found.')
-    expectError(await p.get('/api/performance/students/987654'), 'NOT_FOUND', 'Not Found.')
+    expectError(await p.get(`/api/performance/students/${w.ids['pelajar@demo.test']}`), 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+    expectError(await p.get('/api/performance/students/987654'), 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
   })
 
   it('analytics/classes: an unknown classroomId is 403, like a class the teacher does not own', async () => {

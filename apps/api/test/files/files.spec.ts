@@ -422,6 +422,6 @@ describe('error shape', () => {
     const res = await upload(student, 'avatar', Buffer.from('x'))
     const body = ErrorBodySchema.parse(res.body)
     expect(body.error.requestId).toBeTruthy()
-    expect(body.error.message).toBe('The given data was invalid.')
+    expect(body.error.message).toBe('Data yang dihantar tidak sah. Sila semak dan cuba lagi.')
   })
 })

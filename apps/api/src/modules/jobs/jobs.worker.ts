@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common'
 
 import { JobsConfig } from './jobs.config'
+import { markTick } from './jobs.health'
 import { JobsService } from './jobs.service'
 
 /**
@@ -31,6 +32,7 @@ export class JobsWorker implements OnApplicationBootstrap, OnModuleDestroy, Befo
 
   /** One poll: sweep, then claim. Exposed for tests. */
   async tick(): Promise<void> {
+    markTick() // first: a long dispatch or a draining worker must not look dead
     if (this.ticking || this.jobs.isDraining) return
     this.ticking = true
     try {

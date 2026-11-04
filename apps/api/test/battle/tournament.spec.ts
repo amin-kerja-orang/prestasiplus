@@ -131,14 +131,14 @@ describe('battle tournaments (M16-01, M16-42..45)', () => {
         await http().post('/api/tournaments').send({}),
         await http().get(`/api/tournaments/${uuid}`),
       ]) {
-        error(res, 401, 'UNAUTHORIZED', 'Unauthenticated.')
+        error(res, 401, 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
       }
     })
 
     it.each(Object.keys(ROLE_ACCOUNTS).filter((r) => r !== 'admin'))('%s gets 403 FORBIDDEN on form options and create', async (role) => {
       const who = clients[role] as LoggedIn
-      error(await get(who, '/tournaments/form-options'), 403, 'FORBIDDEN', 'This action is unauthorized.')
-      error(await post(who, '/tournaments', VALID), 403, 'FORBIDDEN', 'This action is unauthorized.')
+      error(await get(who, '/tournaments/form-options'), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
+      error(await post(who, '/tournaments', VALID), 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
       expect((await get(who, '/tournament/active')).status).toBe(200)
       expect((await get(who, '/tournaments')).status).toBe(200)
     })
@@ -346,7 +346,7 @@ describe('battle tournaments (M16-01, M16-42..45)', () => {
     it('a Mod Pelajar session acts as a student, so it cannot create; is_test rows are seen only by test sessions', async () => {
       await clear()
       const denied = await adminTest.post('/api/tournaments').set('X-CSRF-Token', adminTestCsrf).send({ ...VALID, subject_id: subjectIds[0] })
-      error(denied, 403, 'FORBIDDEN', 'This action is unauthorized.')
+      error(denied, 403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
       const [row] = await db.query<{ id: string }>(
         `insert into tournaments (title, education_level_id, format, question_mode, total_questions, time_window_minutes, top_n_scoring, min_participants, status, created_by, is_test)
          values ('Ujian', 'spm', 'knockout', 'subject', 10, 30, 5, 2, 'registration', $1, true) returning id`,
