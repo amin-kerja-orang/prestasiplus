@@ -431,7 +431,7 @@ export default defineConfigWithVueTs(
     name: 'app/boundaries-question-display-strict',
     files: QD_STRICT_FILES,
     ignores: ['**/__tests__/**'],
-    rules: questionDisplayImportRules(DS_IMPORT_PATTERNS),
+    rules: questionDisplayImportRules([...DS_IMPORT_PATTERNS, ...DS_PAGE_ONLY_IMPORTS]),
   },
 
   // Boundary rule: @pp/exam-core is pure TypeScript shared by the server and the UI (BE-14, ADR-0021).
