@@ -428,23 +428,18 @@ export type AccountPasswordResetResponse = z.infer<typeof AccountPasswordResetRe
 // --- Profile ----------------------------------------------------------------------------------
 
 /**
- * Body of `PUT /me`. `email` (and any other key) in the body is ignored (BR-13). An ABSENT key keeps
- * the stored value; `null` or a blank text clears `phone`, `bio`, `grade`, `schoolId`. For school
- * admin, PPD/JPN officer and admin accounts `schoolId` is ignored (a staff school is an
- * admin-assigned scope).
+ * Body of `PUT /me`. `email`, `role` and any other key in the body are ignored (BR-13). An ABSENT key keeps
+ * the stored value; `null` or a blank text clears `phone` and `bio`. `grade` and `schoolId` stay as optional keys
+ * only so that old clients do not get a 422: any value is accepted and IGNORED for every role (API-AUTH-09,
+ * S5-T05); a pupil's Tingkatan and school change only through the admin or school-admin user edit.
  */
 export const AccountProfileUpdateRequestSchema = z
   .object({
     name: requiredText('name', ACCOUNT_NAME_MAX),
     phone: optionalText('phone', ACCOUNT_PHONE_MAX),
     bio: optionalText('bio', ACCOUNT_BIO_MAX),
-    grade: z
-      .number({ error: ACCOUNT_AUTH_MESSAGES.gradeInvalid })
-      .int({ error: ACCOUNT_AUTH_MESSAGES.gradeInvalid })
-      .min(ACCOUNT_GRADE_MIN, { error: ACCOUNT_AUTH_MESSAGES.gradeInvalid })
-      .max(ACCOUNT_GRADE_MAX, { error: ACCOUNT_AUTH_MESSAGES.gradeInvalid })
-      .nullish(),
-    schoolId: schoolIdField,
+    grade: z.unknown().optional().meta({ description: 'Accepted and ignored (deprecated).' }),
+    schoolId: z.unknown().optional().meta({ description: 'Accepted and ignored (deprecated).' }),
   })
   .meta({ id: 'AccountProfileUpdateRequest' })
 export type AccountProfileUpdateRequest = z.infer<typeof AccountProfileUpdateRequestSchema>

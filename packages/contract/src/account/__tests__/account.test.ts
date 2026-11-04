@@ -385,14 +385,18 @@ describe('profile', () => {
   it('absent keeps, null or blank clears', () => {
     const absent = AccountProfileUpdateRequestSchema.parse({ name: 'A' })
     expect('phone' in absent).toBe(false)
-    expect(AccountProfileUpdateRequestSchema.parse({ name: 'A', phone: null, bio: null, grade: null, schoolId: null })).toEqual({
+    expect(AccountProfileUpdateRequestSchema.parse({ name: 'A', phone: null, bio: null })).toEqual({
       name: 'A',
       phone: null,
       bio: null,
-      grade: null,
-      schoolId: null,
     })
     expect(AccountProfileUpdateRequestSchema.parse({ name: 'A', phone: '   ' }).phone).toBe('')
+  })
+
+  it('accepts any grade and schoolId without validating them (ignored by the server, old clients keep working)', () => {
+    for (const extra of [{ grade: 99, schoolId: 'x' }, { grade: 'abc', schoolId: 123 }, { grade: null, schoolId: null }, { grade: 0 }]) {
+      expect(AccountProfileUpdateRequestSchema.safeParse({ name: 'A', ...extra }).success).toBe(true)
+    }
   })
 
   it('limits and copy', () => {
@@ -402,11 +406,6 @@ describe('profile', () => {
     expect(fields(AccountProfileUpdateRequestSchema, { name: 'A', phone: '1'.repeat(15) })).toEqual({
       phone: 'The phone field must not be greater than 14 characters.',
     })
-    for (const grade of [0, 12, 1.5, '5']) {
-      expect(fields(AccountProfileUpdateRequestSchema, { name: 'A', grade })).toEqual({ grade: ACCOUNT_AUTH_MESSAGES.gradeInvalid })
-    }
-    expect(AccountProfileUpdateRequestSchema.safeParse({ name: 'A', grade: 11, schoolId: '3' }).success).toBe(true)
-    expect(AccountProfileUpdateRequestSchema.safeParse({ name: 'A', schoolId: 3 }).success).toBe(false)
   })
 
   it('exact success copy', () => {

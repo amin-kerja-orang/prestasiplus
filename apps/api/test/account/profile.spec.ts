@@ -11,7 +11,6 @@ import {
 } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { ACCOUNT_SCHOOL_USERNAME_TAKEN_MESSAGE } from '../../src/modules/account/account.constants'
 import { makePng } from '../files/fixtures'
 import { schoolIdOf } from '../auth/helpers'
 import {
@@ -123,8 +122,9 @@ describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC
   })
 
   describe('PUT /me (BR-13, BR-14)', () => {
-    it('saves the profile, ignores the e-mail and unknown keys, trims, and bumps updatedAt', async () => {
+    it('saves name, phone and bio, ignores the e-mail, grade, school and unknown keys, trims, and bumps updatedAt', async () => {
       const who = await login(t, 'pelajar2@demo.test')
+      const before = AccountUserMeSchema.parse((await get(who, '/me')).body.data)
       t.clock.advance(60_000)
       const res = await put(who, '/me', {
         name: '  Nama Baharu ',
@@ -139,8 +139,7 @@ describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC
       expect(res.status, JSON.stringify(res.body)).toBe(200)
       expect(res.body.status).toBe(ACCOUNT_MESSAGES.profileSaved)
       const me = AccountUserMeSchema.parse(res.body.data)
-      expect(me).toMatchObject({ name: 'Nama Baharu', email: 'pelajar2@demo.test', phone: '012-3456789', bio: 'Motto', grade: 9, schoolId: school2, role: 'student', roles: ['student'] })
-      expect(me.school?.id).toBe(school2)
+      expect(me).toMatchObject({ name: 'Nama Baharu', email: 'pelajar2@demo.test', phone: '012-3456789', bio: 'Motto', grade: before.grade, schoolId: before.schoolId, role: 'student', roles: ['student'] })
       expect(me.updatedAt).toBe('2026-10-19T09:01:00.000+08:00')
       const again = AccountUserMeSchema.parse((await get(who, '/me')).body.data)
       expect(again.name).toBe('Nama Baharu')
@@ -150,71 +149,50 @@ describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC
       expect(active[0]?.is_active).toBe(true)
     })
 
-    it('an absent key keeps the value; null or blank clears phone, bio, grade and school', async () => {
+    it('an absent key keeps the value; null or blank clears phone and bio only', async () => {
       const who = await login(t, 'pelajar2@demo.test')
+      const before = AccountUserMeSchema.parse((await get(who, '/me')).body.data)
       const kept = AccountUserMeSchema.parse((await put(who, '/me', { name: 'Nama Baharu' })).body.data)
-      expect(kept).toMatchObject({ phone: '012-3456789', bio: 'Motto', grade: 9, schoolId: school2 })
+      expect(kept).toMatchObject({ phone: '012-3456789', bio: 'Motto', grade: before.grade, schoolId: before.schoolId })
       const cleared = AccountUserMeSchema.parse((await put(who, '/me', { name: 'Nama Baharu', phone: '', bio: null, grade: null, schoolId: null })).body.data)
-      expect(cleared).toMatchObject({ phone: null, bio: null, grade: null, schoolId: null, school: null })
+      expect(cleared).toMatchObject({ phone: null, bio: null, grade: before.grade, schoolId: before.schoolId })
     })
 
-    it('validates with the mock copy, one message per field', async () => {
+    it('validates name, phone and bio with the mock copy; grade and school are not validated any more', async () => {
       const who = await login(t, 'pelajar2@demo.test')
       const res = await put(who, '/me', { name: '', bio: 'a'.repeat(501), grade: 12, schoolId: '123456789' })
       expect(fieldsOf(res)).toEqual({
         name: 'The name field is required.',
         bio: 'The bio field must not be greater than 500 characters.',
-        grade: 'The selected grade is invalid.',
-        schoolId: 'The selected school id is invalid.',
       })
-      expect(ErrorBodySchema.parse(res.body).error.message).toBe('The name field is required. (and 3 more errors)')
+      expect(ErrorBodySchema.parse(res.body).error.message).toBe('The name field is required. (and 1 more error)')
       const long = await put(who, '/me', { name: 'x', phone: '0'.repeat(15) })
       expect(fieldsOf(long)).toEqual({ phone: 'The phone field must not be greater than 14 characters.' })
+      const odd = await put(who, '/me', { name: 'Nama Baharu', grade: 12, schoolId: '123456789' })
+      expect(odd.status, JSON.stringify(odd.body)).toBe(200)
     })
 
-    it.each(['adminsekolah@demo.test', 'admin@demo.test'])('ignores schoolId for the staff account %s (tenant scope)', async (email) => {
-      const who = await login(t, email)
-      const before = AccountUserMeSchema.parse((await get(who, '/me')).body.data)
-      const changed = await put(who, '/me', { name: before.name, schoolId: school2 })
-      expect(changed.status, JSON.stringify(changed.body)).toBe(200)
-      expect(AccountUserMeSchema.parse(changed.body.data).schoolId).toBe(before.schoolId)
-      const cleared = await put(who, '/me', { name: before.name, schoolId: null })
-      expect(AccountUserMeSchema.parse(cleared.body.data).schoolId).toBe(before.schoolId)
-    })
-
-    it('school membership is an ALLOW-list: a student sets it, any other role (even a new one) ignores it', async () => {
-      const hash = (await t.db.query<{ h: string }>("select password_hash as h from users where email = 'pelajar@demo.test'"))[0]?.h
-      const sponsor = (
-        await t.db.query<{ id: string }>("insert into users (name, email, password_hash, school_id) values ('Penaja Ujian', 'penaja@ujian.test', $1, $2::bigint) returning id::text", [hash, school2])
-      )[0]?.id
-      await t.db.query("insert into user_roles (user_id, role) values ($1::bigint, 'sponsor')", [sponsor])
-      const who = await login(t, 'penaja@ujian.test')
-      const other = await schoolIdOf(t.db, 'DEMO001')
-      const res = await put(who, '/me', { name: 'Penaja Ujian', schoolId: other })
-      expect(res.status, JSON.stringify(res.body)).toBe(200)
-      expect(AccountUserMeSchema.parse(res.body.data).schoolId).toBe(school2)
-      const student = await login(t, 'pelajar2@demo.test')
-      const set = await put(student, '/me', { name: 'Nama Baharu', schoolId: school2 })
-      expect(set.status, JSON.stringify(set.body)).toBe(200)
-      expect(AccountUserMeSchema.parse(set.body.data).schoolId).toBe(school2)
-    })
-
-    it('a student whose username already exists in the target school gets 422, not 500', async () => {
-      const who = await login(t, 'pelajar@demo.test') // username murid01; DEMO002 already has a murid01
-      const res = await put(who, '/me', { name: 'Murid Demo', schoolId: school2 })
-      expect(fieldsOf(res)).toEqual({ schoolId: ACCOUNT_SCHOOL_USERNAME_TAKEN_MESSAGE })
-      expect(ACCOUNT_SCHOOL_USERNAME_TAKEN_MESSAGE).toBe('Nama pengguna anda sudah digunakan di sekolah ini. Sila hubungi pentadbir sekolah.')
-    })
-
-    it('a teacher cannot change or clear the school: schoolId is ignored (membership is managed by school_admin/admin)', async () => {
-      const who = await login(t, 'guru@demo.test')
-      const before = AccountUserMeSchema.parse((await get(who, '/me')).body.data)
-      const changed = await put(who, '/me', { name: 'Guru Demo', schoolId: school2 })
-      expect(changed.status, JSON.stringify(changed.body)).toBe(200)
-      expect(AccountUserMeSchema.parse(changed.body.data).schoolId).toBe(before.schoolId)
-      const cleared = await put(who, '/me', { name: 'Guru Demo', schoolId: null })
-      expect(AccountUserMeSchema.parse(cleared.body.data).schoolId).toBe(before.schoolId)
-    })
+    // API-AUTH-09 / AC-MUR-A2-6: grade, schoolId and role are ignored for every role.
+    it.each(['pelajar@demo.test', 'guru@demo.test', 'ibubapa@demo.test', 'adminsekolah@demo.test', 'admin@demo.test'])(
+      'ignores grade, schoolId and role for %s: 200 and the stored values do not change',
+      async (email) => {
+        const who = await login(t, email)
+        const before = AccountUserMeSchema.parse((await get(who, '/me')).body.data)
+        const other = await schoolIdOf(t.db, 'DEMO001')
+        const target = before.schoolId === other ? school2 : other
+        for (const extra of [{ grade: 9, schoolId: target, role: 'admin' }, { grade: null, schoolId: null }, { grade: 99, schoolId: '123456789' }]) {
+          const res = await put(who, '/me', { name: before.name, ...extra })
+          expect(res.status, JSON.stringify(res.body)).toBe(200)
+          const after = AccountUserMeSchema.parse(res.body.data)
+          expect(after).toMatchObject({ grade: before.grade, schoolId: before.schoolId, role: before.role, roles: before.roles })
+          expect(after.school?.id).toBe(before.school?.id)
+        }
+        const row = await userRow(t.db, email)
+        const stored = await t.db.query<{ grade: number | null; school_id: string | null }>(`select grade, school_id::text as school_id from users where id = $1::bigint`, [row?.id])
+        expect(stored[0]?.grade ?? null).toBe(before.grade)
+        expect(stored[0]?.school_id ?? null).toBe(before.schoolId)
+      },
+    )
   })
 
   describe('PUT /me/password (BR-16, AC5)', () => {

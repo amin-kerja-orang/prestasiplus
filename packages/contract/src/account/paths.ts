@@ -182,14 +182,14 @@ export function registerAccountPaths(registry: OpenAPIRegistry): void {
     tags: ['account'],
     summary: 'Update own profile',
     description:
-      'Any signed-in role, own record only. `email` and any other key in the body are ignored (BR-13). An absent key keeps the stored value; null or blank clears phone, bio, grade, schoolId. schoolId is ignored for school_admin, ppd_officer and admin accounts. ' + WRITE_THROTTLE_TEXT,
+      'Any signed-in role, own record only. `email` and any other key in the body are ignored (BR-13). An absent key keeps the stored value; null or blank clears phone and bio. `grade`, `schoolId` and `role` are accepted and ignored for every role (API-AUTH-09). ' + WRITE_THROTTLE_TEXT,
     request: { headers: [csrf], body: body(AccountProfileUpdateRequestSchema) },
     responses: {
       200: json(accountStatusEnvelopeOf(AccountUserMeSchema), `Saved. status = "${ACCOUNT_MESSAGES.profileSaved}".`),
       401: unauthorized,
       403: csrfOrPcr,
       422: validation(
-        `name required, max 255; phone max 14; bio max 500; grade "${ACCOUNT_AUTH_MESSAGES.gradeInvalid}"; school "${ACCOUNT_AUTH_MESSAGES.schoolInvalid}".`,
+        'name required, max 255; phone max 14; bio max 500.',
       ),
       429: rateLimited(`"${AUTH_ERROR_MESSAGES.RATE_LIMITED}" (D57a).`),
     },
