@@ -2,7 +2,7 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 
-import PartNode from '../components/PartNode.vue'
+import { PartNode } from '../../../components/question-display'
 import { leavesOf } from '../domain/paper-model'
 import type { PartView } from '../domain/types'
 
