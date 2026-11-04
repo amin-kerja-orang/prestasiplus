@@ -280,7 +280,7 @@ describe('DsDataTable cards (S8-T06)', () => {
     expect(w.get('dd').text()).toBe('80')
   })
 
-  it('FR-X6-4: the table path (768px) still renders the cell slot', async () => {
+  it('FR-X6-4: the table path (1280px) still renders the cell slot', async () => {
     setWidth(1280)
     const w = mount(DsDataTable, {
       props: { data, columns },
