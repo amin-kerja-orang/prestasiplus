@@ -67,7 +67,7 @@ export const spmScenarios: Scenario[] = [
       for (const path of ['/spm/latih-tubi/NOPE', '/spm/latih-tubi/SK', '/spm/tracking-a/NOPE']) {
         const res = await student.request('GET', path)
         expectError(ctx, res, 404, 'NOT_FOUND')
-        ctx.check(errorOf(res).message === 'Not Found.', `${path} message differs`)
+        ctx.check(errorOf(res).message === 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?', `${path} message differs`)
       }
       const redirect = dataOf(await student.request('GET', '/spm/tracking-a/BM'))
       ctx.check(typeof redirect.redirect === 'string' && /^\/latihan-berstruktur\?subject_id=\d+&scope=spm&track=bahasa$/.test(redirect.redirect), 'BM must redirect to the bahasa track')

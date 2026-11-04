@@ -223,7 +223,7 @@ describe('BE-18 B: GET /set-soalan-saya and QuestionSetAssignments', () => {
     it('anonymous is 401 with the Laravel text', async () => {
       const res = await t.http().get('/api/set-soalan-saya')
       expect(res.status).toBe(401)
-      expect(res.body.error).toMatchObject({ code: 'UNAUTHORIZED', message: 'Unauthenticated.' })
+      expect(res.body.error).toMatchObject({ code: 'UNAUTHORIZED', message: 'Sesi anda telah tamat. Sila log masuk semula.' })
     })
 
     it('any signed-in role may call it (teacher and other-school teacher get their own, empty, list)', async () => {

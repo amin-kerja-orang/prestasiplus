@@ -149,7 +149,7 @@ describe('M14 admin economy (BE-23, AC4, AC8)', () => {
       expect(err.fields!.quizRewardL1).toBe('Medan ini diperlukan.')
       expect(err.fields!.color).toBe('Medan ini tidak sah.')
       fail(await admin.put('/admin/gamification/tiers/999999', TIER_BODY), 404, 'NOT_FOUND', 'Tier tidak dijumpai.')
-      fail(await admin.put('/admin/gamification/tiers/abc', TIER_BODY), 404, 'NOT_FOUND', 'Not Found.')
+      fail(await admin.put('/admin/gamification/tiers/abc', TIER_BODY), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
     })
 
     it('POST creates a tier (lower-case key, one text as perks, default colour, active), refuses a duplicate name and a bad name', async () => {
@@ -230,7 +230,7 @@ describe('M14 admin economy (BE-23, AC4, AC8)', () => {
     it('every field is required; an unknown type or difficulty and a zero target are 422 with the mock copy', async () => {
       const err = fail(await admin.post('/admin/gamification/challenges', { ...CHALLENGE_BODY, title: '  ', challengeType: 'weird', difficulty: 'extreme', targetValue: 0, sortOrder: undefined, description: 'x'.repeat(256) }), 422, 'VALIDATION_ERROR', 'Sila lengkapkan semua medan wajib.')
       expect(err.fields).toEqual({ title: 'Medan ini diperlukan.', description: 'Medan ini tidak sah.', challengeType: 'Medan ini tidak sah.', targetValue: 'Medan ini tidak sah.', difficulty: 'Medan ini tidak sah.', sortOrder: 'Medan ini diperlukan.' })
-      fail(await admin.put('/admin/gamification/challenges/abc', CHALLENGE_BODY), 404, 'NOT_FOUND', 'Not Found.')
+      fail(await admin.put('/admin/gamification/challenges/abc', CHALLENGE_BODY), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
     })
 
     it('deleting a challenge removes its completions (FK cascade) and leaves the ledger rows already paid', async () => {
