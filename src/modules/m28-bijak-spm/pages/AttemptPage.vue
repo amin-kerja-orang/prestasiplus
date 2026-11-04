@@ -92,12 +92,11 @@ const groupBind = computed(() =>
     ? {
         stimuli: groupData.value,
         groupId: group.value.id,
-        excludeUnrenderable: true,
         split: 'sitting' as const,
         onError: onStimError,
         onLoaded: onStimLoaded,
       }
-    : { class: 'flex flex-col gap-4' },
+    : { gap: 'md' as const },
 )
 const groupText = computed(() => (group.value ? groupLabel(groupStimuli.value) : undefined))
 /** Stimulus ids whose picture failed to load (AC-07.4): Seterusnya / Semak wait for "Cuba lagi" to succeed. */
@@ -447,7 +446,7 @@ const feedback = computed(() => {
 </script>
 
 <template>
-  <AttemptShell :has-stimulus="false">
+  <AttemptShell>
     <template #header>
       <DsQuizHeader
         close-label="Keluar daripada kertas"
@@ -546,7 +545,7 @@ const feedback = computed(() => {
           </DsText>
         </div>
 
-        <component :is="group ? StimulusGroup : 'div'" v-bind="groupBind">
+        <component :is="group ? StimulusGroup : DsStack" v-bind="groupBind">
           <QuestionBlock
             ref="questionRef"
             :key="current.id"

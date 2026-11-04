@@ -235,7 +235,7 @@ const dsRawElements = (names: string[]) =>
 
 /** The shared display components moved from m28 (S8-T01); they keep their strict level (ds-strict.json). */
 const QD_STRICT_FILES = [
-  'src/components/question-display/{PartInput,PartNode,MathField,MathKeyboard,StimulusStack,StimulusChip,NavigatorPanel,AttemptShell,RichText,StimulusView}.vue',
+  'src/components/question-display/{PartInput,PartNode,MathField,MathKeyboard,NavigatorPanel,AttemptShell,RichText,StimulusView}.vue',
 ]
 const M28_DOMAIN_TYPES = String.raw`^(?:@|/src)/modules/m28-bijak-spm/domain/types$`
 

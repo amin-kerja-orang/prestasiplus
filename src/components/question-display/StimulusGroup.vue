@@ -6,7 +6,7 @@
  *    stimulus; closing the sheet never touches answers (D-3).
  * `stimuli` (1 to 3, in order) or the older single `stimulus`; the label is the labels joined ("Rajah 1 dan Petikan A").
  * With `groupId` the sheet is open the first time the group appears and keeps the pupil's choice (FR-X6-6).
- * A stimulus that cannot be drawn excludes the whole group (reason line). The questions go in the default slot. Only one tree is rendered at a time (no duplicate ids).
+ * (A stimulus that cannot be drawn is kept out at serving, FR-X1-4.) The questions go in the default slot. Only one tree is rendered at a time (no duplicate ids).
  */
 import { computed, useSlots } from 'vue'
 
@@ -14,9 +14,8 @@ import { DsIconChip, DsText } from '@/ds'
 import { useMedia } from '@/ds/useMedia'
 
 import { chipLabel, qdCopy } from './copy'
-import { canRender, stimuliLabel, unrenderableReason } from './lib/stimulus-data'
+import { stimuliLabel } from './lib/stimulus-data'
 import { useStimulusOpen } from './lib/useStimulusOpen'
-import NotServedNotice from './NotServedNotice.vue'
 import StimulusFigure from './StimulusFigure.vue'
 import type { StimulusData } from './types'
 
@@ -29,12 +28,10 @@ const props = withDefaults(
     /** With an id the open state is kept per group for the session (FR-X6-6); without it the `open` model rules. */
     groupId?: string
     hint?: boolean
-    /** A group with a stimulus that cannot be drawn shows the reason line instead when this is set (sitting, result, drills); authoring previews leave it off (default). */
-    excludeUnrenderable?: boolean
     /** Wide split: `half` (default, 1:1) or `sitting` (the V3 attempt ratio: stimulus 4 : questions 5). */
     split?: 'half' | 'sitting'
   }>(),
-  { stimuli: undefined, stimulus: undefined, groupId: undefined, hint: true, excludeUnrenderable: false, split: 'half' },
+  { stimuli: undefined, stimulus: undefined, groupId: undefined, hint: true, split: 'half' },
 )
 const emit = defineEmits<{
   loaded: [id: string]
@@ -61,8 +58,8 @@ const list = computed<readonly StimulusData[]>(() =>
   props.stimuli && props.stimuli.length > 0 ? props.stimuli : props.stimulus ? [props.stimulus] : [],
 )
 const label = computed(() => stimuliLabel(list.value))
-/** One stimulus that cannot be drawn excludes the whole group, never a partial group. */
-const blocked = computed(() => (props.excludeUnrenderable ? list.value.find((s) => !canRender(s)) : undefined))
+/** The pinned hint is about a passage; a figure-only group shows none. */
+const hasPassage = computed(() => list.value.some((s) => s.kind === 'passage'))
 const thumb = computed(() => list.value[0])
 const thumbIcon = computed(() => (thumb.value?.kind === 'table' ? 'table' : 'file-text'))
 const thumbSrc = computed(() => thumb.value?.src)
@@ -70,12 +67,8 @@ const iconOnly = computed(() => thumb.value?.kind === 'passage' || thumb.value?.
 </script>
 
 <template>
-  <div v-if="blocked" class="flex flex-col gap-2" data-testid="stimulus-group" data-layout="excluded">
-    <NotServedNotice :reason="unrenderableReason(blocked)" />
-  </div>
-
   <div
-    v-else-if="inline"
+    v-if="inline"
     class="flex w-full min-w-0 flex-col gap-4"
     data-testid="stimulus-group"
     data-layout="inline"
@@ -99,12 +92,16 @@ const iconOnly = computed(() => thumb.value?.kind === 'passage' || thumb.value?.
     data-layout="split"
   >
     <aside
-      class="sticky top-20 flex max-h-[calc(100vh-6rem)] flex-col gap-2 self-start overflow-y-auto"
-      :class="split === 'sitting' ? 'col-span-4' : undefined"
-      :aria-label="label"
+      class="flex flex-col gap-2 self-start overflow-y-auto"
+      :class="
+        split === 'sitting'
+          ? 'sticky top-0 col-span-4 max-h-screen pt-2'
+          : 'sticky top-20 max-h-[calc(100vh-6rem)]'
+      "
+      :aria-label="split === 'sitting' ? qdCopy.pinnedAria : label"
       data-testid="stimulus-pane"
     >
-      <DsText v-if="hint" variant="caption" tone="muted" data-testid="stimulus-hint">{{ qdCopy.pinnedHint }}</DsText>
+      <DsText v-if="hint && hasPassage" variant="caption" tone="muted" data-testid="stimulus-hint">{{ qdCopy.pinnedHint }}</DsText>
       <StimulusFigure
         v-for="st in list"
         :key="st.id"
@@ -156,7 +153,7 @@ const iconOnly = computed(() => thumb.value?.kind === 'passage' || thumb.value?.
   </div>
 
   <UDrawer
-    v-if="!wide && !blocked && !inline"
+    v-if="!wide && !inline"
     v-model:open="open"
     :title="label"
     :description="qdCopy.sheetDescription"

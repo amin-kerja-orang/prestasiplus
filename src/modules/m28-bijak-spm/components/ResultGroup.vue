@@ -17,7 +17,7 @@ const data = computed(() => props.stimuli.map(toStimulusData))
 
 <template>
   <section :aria-label="label" :data-group="groupId" data-testid="result-group">
-    <StimulusGroup :stimuli="data" :exclude-unrenderable="true" :hint="false">
+    <StimulusGroup :stimuli="data" :hint="false">
       <div class="flex min-w-0 flex-col gap-3" data-testid="result-group-members"><slot /></div>
     </StimulusGroup>
   </section>
