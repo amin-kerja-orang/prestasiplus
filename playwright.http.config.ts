@@ -34,6 +34,8 @@ export default defineConfig({
     '**/bijak/http-*.spec.ts',
     '**/r1/**/*.http.spec.ts',
   ],
+  // E2E_SKIP_R1=1 (set by the full-suite step of e2e-http.yml): e2e/r1 already ran in its own step, so skip it here.
+  testIgnore: process.env.E2E_SKIP_R1 === '1' ? ['**/r1/**'] : [],
   grep: /@api/,
   // The seeded database is shared by every worker and project: keep one worker so a spec that
   // changes data (profile, password) cannot race another. Raise it only for read-only specs.

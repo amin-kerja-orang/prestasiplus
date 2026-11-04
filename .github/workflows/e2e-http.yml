@@ -136,6 +136,8 @@ jobs:
 
       - name: E2E (real API)
         if: ${{ !cancelled() }}
+        env:
+          E2E_SKIP_R1: '1'
         run: npm run test:e2e:http
 
       - name: Upload the Playwright report
