@@ -10,11 +10,11 @@
  */
 import { computed } from 'vue'
 
-import { StimulusFigure } from '../../../components/question-display'
+import StimulusFigure from './StimulusFigure.vue'
 import { DsIconChip } from '@/ds'
 
-import type { StimulusDef } from '../domain/types'
-import { toStimulusData } from '../lib/stimulus-data'
+import type { StimulusDef } from '@/modules/m28-bijak-spm/domain/types'
+import { toStimulusData } from './lib/stimulus-data'
 import RichText from './RichText.vue'
 
 const props = withDefaults(defineProps<{ stimulus: StimulusDef; thumb?: boolean }>(), {

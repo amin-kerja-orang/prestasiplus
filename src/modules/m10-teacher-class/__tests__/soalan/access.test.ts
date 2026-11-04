@@ -28,9 +28,9 @@ describe('S21-S24 route access (decideAccess)', () => {
 
   for (const r of routes) {
     const to = { path: r.path, meta: r.meta ?? {} } as unknown as RouteLocationNormalized
-    it(`${r.path}: guest to /login, student to the landing page, teacher and admin allowed`, () => {
+    it(`${r.path}: guest to /login, student to the 403 page, teacher and admin allowed`, () => {
       expect(decideAccess(to, session(null))).toEqual({ kind: 'redirect', to: '/login' })
-      expect(decideAccess(to, session('student'))).toEqual({ kind: 'redirect', to: landing })
+      expect(decideAccess(to, session('student'))).toEqual({ kind: 'in-place', status: 403 })
       expect(decideAccess(to, session('teacher'))).toEqual({ kind: 'allow' })
       expect(decideAccess(to, session('admin'))).toEqual({ kind: 'allow' })
     })

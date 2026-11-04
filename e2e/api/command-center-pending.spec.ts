@@ -17,7 +17,7 @@ import type { Page } from '@playwright/test'
 import { API_PASSWORD, expect, loginViaUi, test } from '../fixtures/api'
 import { account, expectNoHScroll, newPeerContext } from './helpers'
 
-const NOT_AVAILABLE = 'Belum tersedia dalam prototaip'
+const NOT_FOUND_HEADING = 'Halaman Tidak Dijumpai'
 
 async function getData<T>(page: Page, path: string): Promise<T> {
   const res = await page.request.get(path)
@@ -25,9 +25,9 @@ async function getData<T>(page: Page, path: string): Promise<T> {
   return ((await res.json()) as { data: T }).data
 }
 
-/** The first page (any role) must not be the "not in the prototype" page nor a 403/404 page. */
+/** The first page (any role) must not be the standard 404 page nor a 403/404 page. */
 async function expectInScope(page: Page): Promise<void> {
-  await expect(page.getByText(NOT_AVAILABLE)).toHaveCount(0)
+  await expect(page.getByText(NOT_FOUND_HEADING)).toHaveCount(0)
 }
 
 async function expectNoLoadError(page: Page): Promise<void> {

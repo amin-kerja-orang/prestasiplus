@@ -70,7 +70,7 @@ Kemudian runbook 3.3 (status soalan: tiada `published`, `approved` hampir jumlah
 `sudoedit /etc/pretasiplus/migrate.env`: keluarkan `options=...`.
 
 ## U10. Smoke di uat.prestasiplus.cloud
-Murid, guru, admin sekolah, admin: log masuk masuk ke papan pemuka. Murid: Latih Tubi dan kuiz bab sampai keputusan. Admin: Kontrak, Pratonton Kolam, Jana Kertas melalui Mod Pelajar. Guru: `/guru/monitoring`, angka murid sama dengan senarai (angka ini turun berbanding sebelum ini, itu dijangka; #349). Akaun ibu bapa buatan UAT, jika ada: ditolak dengan `Peranan ini tidak termasuk dalam prototaip.`, dan murid tetap masuk.
+Murid, guru, admin sekolah, admin: log masuk masuk ke papan pemuka. Murid: Latih Tubi dan kuiz bab sampai keputusan. Admin: Kontrak, Pratonton Kolam, Jana Kertas melalui Mod Pelajar. Guru: `/guru/monitoring`, angka murid sama dengan senarai (angka ini turun berbanding sebelum ini, itu dijangka; #349). Akaun ibu bapa buatan UAT, jika ada: ditolak dengan `Peranan ini belum menggunakan sistem ini.`, dan murid tetap masuk.
 
 ## U11. Kandungan, jika pemilik mahu Jana Kertas di UAT
 DSKP dan Kontrak mengikut `r1-go-live-runsheet.md` 5.11, runbook 4 dan 5.2. Jana Kertas memerlukan blueprint Disahkan. Tiada seed untuk ini.

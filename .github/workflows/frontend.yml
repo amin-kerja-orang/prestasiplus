@@ -1,10 +1,13 @@
-# Frontend CI (AZ-21c). The gate for pull requests into `be/integration-frontend`.
+# Frontend CI (AZ-21c). The gate for pull requests into `be/integration-frontend` and `feature/v3-bijak-r1` (R1; S0-T04).
 #
-#   verify   npm ci -> vite build --mode demo -> check-demo-bundle -> vue-tsc -> unit tests (vitest `unit` project).
+#   verify   npm ci -> vite build --mode demo -> check-demo-bundle -> HTTP build mock-path audit (S0-T09, `npm run check:http-build`) -> vue-tsc ->
+#            unit tests (vitest `unit` project) -> lint (eslint, stylelint, placeholder check; report mode until S0-T04
+#            part 2). Type-check, unit tests and lint run even if an earlier step failed (`if: !cancelled()`), so a red
+#            audit never hides them.
 #            The build runs BEFORE vue-tsc on purpose: the Nuxt UI Vite plugin writes the git-ignored
 #            `auto-imports.d.ts` and `components.d.ts` that vue-tsc needs (`useToast`, ...). On a clean
 #            checkout `vue-tsc -b` alone fails with TS2304 until a Vite build or dev server has run once.
-#   e2e-api  The @api Playwright specs (playwright.http.config.ts) on mobile 375, tablet 768 and desktop 1280
+#   e2e-api  (not run for feature/v3-bijak-r1.) The @api Playwright specs (playwright.http.config.ts) on mobile 375, tablet 768 and desktop 1280
 #            against a REAL API: Postgres 16 service + the API checked out from `feature/v2-backend`
 #            (`api_ref` input on a manual run), migrated and seeded with the poc profile, then with the T26
 #            local/E2E profile when the API ref has it (`--profile=e2e`, E2E_SEED=1). PoC question papers are
@@ -21,9 +24,9 @@ name: frontend
 
 on:
   pull_request:
-    branches: [be/integration-frontend]
+    branches: [be/integration-frontend, feature/v3-bijak-r1]
   push:
-    branches: [be/integration-frontend]
+    branches: [be/integration-frontend, feature/v3-bijak-r1]
   workflow_dispatch:
     inputs:
       api_ref:
@@ -33,6 +36,10 @@ on:
 
 permissions:
   contents: read
+
+env:
+  # Placeholder-string check (scripts/check-placeholders.mjs, run by lint): report until S0-T04 part 2 (Sprint 4) flips it to fail.
+  PLACEHOLDER_CHECK_MODE: report
 
 concurrency:
   group: frontend-${{ github.ref }}
@@ -65,18 +72,33 @@ jobs:
             echo "::notice::scripts/check-demo-bundle.mjs is not in this tree; demo bundle check skipped."
           fi
 
+      - name: HTTP build mock-path audit (S0-T09)
+        run: npm run check:http-build
+
       # vue-tsc -b on the whole app runs out of heap at Node's default limit (exit 134 on the runner and on an 8 GB host).
       # LEAD exception (22 Oct): 6 GB heap for this step only.
       - name: Type-check (vue-tsc)
+        if: ${{ !cancelled() }}
         env:
           NODE_OPTIONS: --max-old-space-size=6144
         run: npm run typecheck
 
       - name: Unit tests (vitest, project unit)
+        if: ${{ !cancelled() }}
         run: npm test
+
+      # Last, and run even when an earlier step failed, so a lint failure never hides the type-check and unit results.
+      # eslint . runs out of heap at Node's default limit, so this step gets the same 6 GB as the type-check.
+      - name: Lint (eslint, stylelint, placeholder check in report mode)
+        if: ${{ !cancelled() }}
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+        run: npm run lint
 
   e2e-api:
     name: e2e @api (http mode, 375/768/1280)
+    # Runs against the v2 API (feature/v2-backend); not part of R1, so it does not start on feature/v3-bijak-r1 events.
+    if: github.event_name == 'workflow_dispatch' || github.base_ref == 'be/integration-frontend' || github.ref_name == 'be/integration-frontend'
     runs-on: ubuntu-latest
     # 498 tests on 1 worker: run 41407548286 reached 219 in 41 min, so 45 was too short for all three viewports.
     timeout-minutes: 120

@@ -6,8 +6,7 @@ import { defineComponent, h } from 'vue'
 import { formStubs } from '@/test-support/form-stubs'
 
 import { answersEquivalent, plainToLatex, previewLatex } from '../domain/math-expr'
-import MathField from '../components/MathField.vue'
-import MathKeyboard from '../components/MathKeyboard.vue'
+import { MathField, MathKeyboard } from '../../../components/question-display'
 import { openKeypad } from '../lib/keypad-owner'
 import {
   ALL_KEYS,

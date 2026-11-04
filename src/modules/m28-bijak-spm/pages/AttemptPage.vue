@@ -19,11 +19,9 @@ import {
 } from '@/ds'
 import { useMedia } from '@/ds/useMedia'
 
-import AttemptShell from '../components/AttemptShell.vue'
-import NavigatorPanel, { type NavState } from '../components/NavigatorPanel.vue'
+import { AttemptShell, NavigatorPanel, StimulusChip, StimulusStack } from '../../../components/question-display'
+import type { NavState } from '../../../components/question-display'
 import QuestionBlock from '../components/QuestionBlock.vue'
-import StimulusChip from '../components/StimulusChip.vue'
-import StimulusStack from '../components/StimulusStack.vue'
 import {
   chooseCounterLine,
   chooseFullHint,

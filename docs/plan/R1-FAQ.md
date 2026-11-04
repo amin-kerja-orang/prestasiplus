@@ -45,10 +45,10 @@ Two unrelated uses of the word are not duplicates in this sense: the intake dete
 **Q6. How do I claim a card?** The lock is the only claim. Your team holds the sector lock, then you lock the card: `node scripts/r1-lock.mjs acquire S<n> --team <team> --session S-<k>`, then `node scripts/r1-lock.mjs acquire S<n>-T<nn> --team <team> --session S-<k>`. Exit code 3 = another team holds it (pick another); 4 = you are not the holder or your team does not hold the sector. Mirror it on the issue: label `team:<team>` and the comment `[<team>/S-<k>] claimed`. Assigning yourself on GitHub or commenting `/claim` means nothing, because several Claude accounts may share one GitHub user. ([START-HERE decision 1](R1-START-HERE.md), [ORCHESTRATOR section 1](R1-ORCHESTRATOR-PROMPT.md))
 
 **Q7. Lock cheat-sheet.** `node scripts/r1-lock.mjs --help` prints it.
-- `register-team --team team-amin --session S-1` once, from the lead session.
-- `list` all locks (STALE after 24 h without heartbeat). `mine --team team-amin` your locks.
+- `register-team --team team-amin --session S-1` once, from the lead session; it prints the team token once. The lead gives it to each session privately; each session runs `join --team team-amin --token <token>` once, or sets `R1_TEAM_TOKEN`. A team registered before the token fix runs `claim-token --team team-amin --session S-1` instead. Exit 3 also means a missing or wrong token.
+- `list` live locks (STALE after 24 h without heartbeat); `list --all` also shows RELEASED locks. `mine --team team-amin` your locks.
 - `acquire S1` a sector; `acquire S1-T01` a card (needs the sector). A split card has a letter: `S1-T09a`.
-- `heartbeat-all` every day. `release S1-T01` after the merge or if you drop the card; `release S1` when the sector is finished.
+- `heartbeat-all` every day. `release S1-T01` after the merge or if you drop the card; `release S1` when the sector is finished. `release` marks the lock released and does not delete the ref (cloud git proxies refuse deletes), and a released lock is free for the next team.
 - `break` is for the product owner only, for a STALE lock after 1 working day without an answer in #503.
 - Needs a git remote with push rights. Hold at most 3 sectors at a time (a card of a 4th sector waits until you release one, or is done by the team that holds it). Never hold a sector idle for more than a day. S9 cannot be claimed as a sector (Q31).
 - Weekends and leave: run `heartbeat-all` first and write `[<team>/S-<k>] away until <date>` in #503.

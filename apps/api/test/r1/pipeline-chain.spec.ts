@@ -209,7 +209,7 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     })
 
     // G1 (closed by T32): the Studio authors stimuli and groups over HTTP: POST /api/stimuli, then POST /api/stimulus-groups with the
-    // ids of 1 to 3 stimuli and at least 2 existing member questions (D90: one stimulus shown once, no marks on the group).
+    // ids of 1 to 3 stimuli and 1..n existing member questions (D90, FR-X1-4a: one stimulus shown once, no marks on the group).
     it('creates the image stimulus and the passage stimulus (POST /api/stimuli), 4 member MCQs, then the two groups (POST /api/stimulus-groups)', async () => {
       const image = await admin.post('/api/stimuli', { kind: 'image', label: 'Rajah 1', caption: 'Segi empat tepat', alt: 'Rajah segi empat tepat 3 cm kali 4 cm', imageFileId: fx.imageToken })
       expect(image.status, JSON.stringify(image.body)).toBe(201)
@@ -230,8 +230,10 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       const passageGroup = await admin.post('/api/stimulus-groups', { label: 'Petikan 1', scope: 'section', stimulusIds: [passage.body.data.id], questionIds: fx.passageMembers })
       expect(passageGroup.status, JSON.stringify(passageGroup.body)).toBe(201)
       fx.passageGroup = passageGroup.body.data.id as string
-      // a group needs at least 2 members and a stimulus; a bad body is 422
-      expect((await admin.post('/api/stimulus-groups', { stimulusIds: [image.body.data.id], questionIds: [fx.imageMembers[0]] })).status).toBe(422)
+      // a group needs 1 to 3 stimuli (1..n members is valid, FR-X1-4a): a group with no stimulus is 422 with the stimuli-count text
+      const noStimulus = await admin.post('/api/stimulus-groups', { stimulusIds: [], questionIds: [] })
+      expect(noStimulus.status).toBe(422)
+      expect(JSON.stringify(noStimulus.body)).toContain('Satu kumpulan mesti mempunyai 1 hingga 3 rangsangan.')
       expect((await pupil.post('/api/stimulus-groups', { stimulusIds: [image.body.data.id], questionIds: fx.imageMembers })).status).toBe(403)
       const detail = await admin.get(`/api/questions/${fx.imageMembers[0]!}`)
       expect(detail.status, JSON.stringify(detail.body)).toBe(200)

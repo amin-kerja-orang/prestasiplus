@@ -10,7 +10,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { usePageMeta } from '@/composables/usePageMeta'
 import { DsEmptyState, DsPage, DsPanel, DsStack, DsStateView, DsStatusBadge, DsText } from '@/ds'
 
-import StimulusView from '../../../components/StimulusView.vue'
+import { StimulusView } from '../../../../../components/question-display'
 import { formatDateTime } from '../../../lib/use-bijak'
 import { bijakAdminServer } from '../../../server/client'
 import { isUnavailable, UNAVAILABLE_TITLE } from '../../../server/errors'
@@ -505,8 +505,8 @@ async function submit(): Promise<void> {
     :subtitle="
       batch
         ? isManual
-          ? `Soalan manual · ${batch.source} · ${batch.year}`
-          : `${batch.fileName} · ${batch.year}`
+          ? `Soalan manual · ${batch.source}${batch.year ? ` · ${batch.year}` : ''}`
+          : `${batch.fileName}${batch.year ? ` · ${batch.year}` : ''}`
         : undefined
     "
     back-label="Kembali ke Senarai Ekstrak"
