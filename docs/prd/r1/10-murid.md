@@ -207,7 +207,7 @@ All screens, dialogs and the quiz/attempt screens pass these three widths (proje
 - FR-MUR-SH-4 Header pills show the pupil's own wallet values from the server (coin, streak), never constants.
 - FR-MUR-SH-5 Light and dark themes both pass contrast checks on every Murid screen (D28-D32).
 - FR-MUR-SH-6 Log Keluar ends the session and returns to `/login`.
-- FR-MUR-SH-7 A pupil who types a URL of another role (guru, admin, `/prestasi/sekolah`, `/analisa-item/kelas`) gets the 403 page, never data.
+- FR-MUR-SH-7 A pupil who types a URL of another role (guru, admin, `/prestasi/sekolah`, `/analisa-item/kelas`) gets the 403 page, never data. One rule (D115, 40 X10.3.2, 60): a wrong-role URL of a module that is switched on answers the existing 403 page (`ForbiddenPage`, ERR-ACC-01); a module that is hidden or switched off answers 404 for everyone.
 - FR-MUR-SH-8 Darjah (D1-D6) never appears in any picker, chip, count or copy of the Murid portal (D72/D96).
 - FR-MUR-SH-9 The prototype scope list (`src/app/prototype-scope.ts` STUDENT_ITEMS and the page "Belum Tersedia dalam Prototaip", lines 8-9, 52-59, `PrototypeUnavailablePage.vue:3`) is retired for Murid: every matrix row ticked in the Murid column opens its real screen. Only row 15 and row 37 (D102) and V2 extras with no matrix row stay hidden, through one switch, and their typed URL shows the standard 404.
 - AC-MUR-SH-1 Given a T5 pupil on UAT, when the app opens at 375, 768 and 1280 px, then the menu lists exactly the 18 items of 2.1 (Log Keluar in the account menu) in that order.
