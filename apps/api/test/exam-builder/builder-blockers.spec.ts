@@ -181,7 +181,7 @@ describe('R1-T34 structured blockers: review and publish agree', () => {
     expect(review.blockerDetails).toEqual([{ code: 'NOT_SERVABLE', message: expect.stringContaining(`Soalan ${bad} tidak dapat dihidangkan kepada murid`), overridable: false, questionId: bad }])
   })
 
-  it('D93: a one-member group is a hard GROUP_MIN_MEMBERS (paper-wide, exact line)', async () => {
+  it('S1-T01: a one-member group is valid and raises no GROUP_MIN_MEMBERS (a zero-member group cannot hold a placed question)', async () => {
     const stim = await admin.post('/api/stimuli', { kind: 'passage', label: 'Petikan satu', body: { ms: 'Petikan ujian dengan satu soalan.' } })
     expect(stim.status, JSON.stringify(stim.body)).toBe(201)
     // BASE-14: an approved question is not grouped, so the members are grouped as drafts and approved afterwards.
@@ -195,9 +195,7 @@ describe('R1-T34 structured blockers: review and publish agree', () => {
     const sections = await sectionsOf(paper)
     expect((await place(paper, sections[0]!, lone)).status).toBe(201)
     const review = await expectAgree(paper)
-    expect(review.canOverride).toBe(false)
-    expect(review.blockerDetails).toContainEqual({ code: 'GROUP_MIN_MEMBERS', message: 'Kumpulan perlu sekurang-kurangnya 2 soalan.', overridable: false })
-    expect(review.blockerDetails.some((b) => b.overridable)).toBe(false)
+    expect(review.blockerDetails.map((b) => b.code)).not.toContain('GROUP_MIN_MEMBERS')
   })
 
   // B2 MAJOR 1 / B3 T34-L2 (PIPE AC-07.5, AC-26.3): the audited override lifts only the blueprint-conformance failures. A question without a key

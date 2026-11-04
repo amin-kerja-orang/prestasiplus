@@ -44,8 +44,8 @@ export interface StimulusWrite<T> {
 /**
  * Stimulus library and stimulus groups for the Studio (R1-T32, D90). Business rules:
  * - a stimulus is one of the seven kinds; pictures are `question_image` files, never inline SVG or HTML;
- * - a group has 1 to 3 stimuli and at least 2 member questions when created; it carries no marks and is never a question;
- * - a question is in at most one group; removal that leaves fewer than 2 members succeeds with a BM warning;
+ * - a group has 1 to 3 stimuli and 1..n member questions (0 members is a draft group, never published or placed in a paper); it carries no marks and is never a question;
+ * - a question is in at most one group; removal of the last member succeeds with a BM warning (the group is then empty);
  * - a stimulus used by a group, a question version or a part cannot be deleted.
  * Every write runs in one transaction with the rows it depends on locked.
  */
@@ -130,7 +130,10 @@ export class StimuliService {
       if (!(await this.repo.lockStimulus(id))) throw notFound(STIMULUS_MESSAGES.notFound)
       await this.stimulusOrThrow(id)
       const use = await this.repo.usageOf(id)
-      if (use.groups + use.versions + use.parts > 0) throw ApiError.of('CONFLICT', { message: STIMULUS_MESSAGES.inUse, details: use })
+      if (use.groups + use.versions + use.parts > 0) {
+        const n = await this.repo.usingQuestionCount(id)
+        throw ApiError.of('CONFLICT', { message: STIMULUS_MESSAGES.stimulusInUse(n), details: { ...use, n } })
+      }
       await this.repo.deleteStimulus(id)
       return { result: { deleted: 1 as const }, audit: {} }
     }, TX)

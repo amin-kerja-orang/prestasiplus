@@ -19,19 +19,14 @@ afterEach(() => {
   vi.unstubAllEnvs()
 })
 
-describe('forbidden role in scope mode goes to the role home (demo rehearsal blocker)', () => {
-  it('sends a school admin to /admin-sekolah instead of looping on the server landing /admin', () => {
-    vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')
-    expect(decideAccess(ADMIN_HOME, SCHOOL_ADMIN)).toEqual({
-      kind: 'redirect',
-      to: '/admin-sekolah',
-    })
-  })
-
-  it('keeps the server landing path when the prototype scope is off', () => {
-    vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'off')
-    expect(decideAccess(ADMIN_HOME, SCHOOL_ADMIN)).toEqual({ kind: 'redirect', to: '/admin' })
-  })
+describe('forbidden role answers the 403 page in place (default onForbidden, S0-T05)', () => {
+  it.each(['on', 'off'])(
+    'answers 403 for a school admin on an Admin Pusat route, scope %s (no landing redirect)',
+    (scope) => {
+      vi.stubEnv('VITE_PROTOTYPE_SCOPE', scope)
+      expect(decideAccess(ADMIN_HOME, SCHOOL_ADMIN)).toEqual({ kind: 'in-place', status: 403 })
+    },
+  )
 })
 
 describe('student landing (GET /api/dashboard is served in both modes)', () => {
@@ -42,7 +37,7 @@ describe('student landing (GET /api/dashboard is served in both modes)', () => {
     expect(isPathInScope('student', '/dashboard')).toBe(true)
     expect(
       decideAccess(ADMIN_HOME, { isLoggedIn: true, role: 'student', landingPath: '/dashboard' }),
-    ).toEqual({ kind: 'redirect', to: '/dashboard' })
+    ).toEqual({ kind: 'in-place', status: 403 })
   })
 
   it('lands the student on /dashboard in mock mode', () => {

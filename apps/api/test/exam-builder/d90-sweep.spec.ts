@@ -205,7 +205,7 @@ describe('D90 builder sweep: a stimulus group is one unit on every builder path'
       expect(removed.body.data.removed).toEqual(g.members)
     })
 
-    it('Padam soalan on an added question that was grouped in the Studio afterwards removes only that member: the survivor is a one-member group and D93 blocks Terbit (hard)', async () => {
+    it('Padam soalan on an added question that was grouped in the Studio afterwards removes only that member: the survivor is a one-member group, which is valid (S1-T01)', async () => {
       const paper = await newPaper()
       const d = await addSection(paper, 'Bahagian D')
       const added = await admin.post(`/api/admin/papers/${paper}/sections/${d}/questions`, { number: '21', mode: 'mcq', marks: 2 })
@@ -224,12 +224,8 @@ describe('D90 builder sweep: a stimulus group is one unit on every builder path'
       // current behaviour: Padam soalan removes the one question, not the group unit (removePlacement is the unit route)
       expect(await idsIn(paper, d)).toEqual([y])
       expect((await q(`select count(*)::int n from questions where group_id = $1`, [made.body.data.id]))[0]!.n).toBe(1)
-      // the safety net: D93, a paper-level hard blocker the override cannot lift
-      const review = await reviewOf(paper)
-      expect(review.blockerDetails).toContainEqual({ code: 'GROUP_MIN_MEMBERS', message: 'Kumpulan perlu sekurang-kurangnya 2 soalan.', overridable: false })
-      const forced = await admin.post(`/api/admin/papers/${paper}/publish`, { override: true, reason: 'sebab yang sah untuk ujian' })
-      expect(forced.body.data).toMatchObject({ ok: false, canOverride: false })
-      expect((await q(`select status from papers where id = $1`, [paper]))[0]!.status).toBe('draft')
+      // S1-T01: a one-member group is a valid group, so no GROUP_MIN_MEMBERS blocker
+      expect((await reviewOf(paper)).blockerDetails.map((b) => b.code)).not.toContain('GROUP_MIN_MEMBERS')
     })
   })
 
