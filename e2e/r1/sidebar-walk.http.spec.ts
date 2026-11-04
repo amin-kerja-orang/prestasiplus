@@ -16,6 +16,8 @@
  * Keep in step with `src/shells/__tests__/user-nav.test.ts` ("pins the sidebar item ids"): a nav
  * change must update both, and EXPECTED_RED below.
  */
+import { readFileSync } from 'node:fs'
+
 import type { Page } from '@playwright/test'
 
 import { account, FORBIDDEN_TITLE, type ApiRole } from '../api/helpers'
@@ -25,19 +27,15 @@ import { expect, gotoApi, loginViaUi, test } from '../fixtures/api'
 const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 
 /**
- * Banned strings of AC-X2-3 (docs/prd/r1/40-cross-cutting.md), compared case-insensitively.
- * `scripts/check-placeholders.mjs` (S0-T04) does not exist on this branch, so the list is restated
- * here; update it together with AC-X2-3. The allow-list rows of AC-X2-3 are not on any sidebar screen.
+ * Banned strings of AC-X2-3 (docs/prd/r1/40-cross-cutting.md), compared case-insensitively. Read at
+ * load time by the S0-T04 loader so the walk and the repository check never drift. The allow-list
+ * rows of AC-X2-3 are not on any sidebar screen.
  */
-const BANNED = [
-  'akan datang',
-  'belum tersedia',
-  'dalam prototaip',
-  'dalam demo',
-  'coming soon',
-  'prototaip',
-  'pratonton',
-]
+// @ts-expect-error the loader is plain .mjs without type declarations
+import { loadBannedStrings } from '../../scripts/check-placeholders.mjs'
+const BANNED: string[] = (
+  loadBannedStrings(readFileSync(new URL('../../docs/prd/r1/40-cross-cutting.md', import.meta.url), 'utf8')) as string[]
+).map((s) => s.toLowerCase())
 
 const SIDEBAR = '[data-testid="shell-user-sidebar"] nav a[data-nav-id]'
 const DRAWER = '[data-testid="shell-user-drawer"] nav a[data-nav-id]'
