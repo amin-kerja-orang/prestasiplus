@@ -53,6 +53,8 @@ const dashboard = {
   streak: { count: 2, practisedToday: true },
   wallet: { coins: 120, points: 340, level: 3, levelProgressPct: 45.5 },
   week: { sessions: 4, accuracyPct: 72 },
+  accuracyPct: 66.7,
+  package: { name: 'Pakej Percuma', validUntil: '2027-11-03' },
   banners: [{ type: 'info', title: 'Selamat datang', body: null }],
   quests: [
     { key: '9', emoji: '🎯', title: 'Jawab 10 soalan', difficulty: 'easy', description: 'Jawab 10 soalan hari ini', target: 10, reward: 5, progress: 4, completed: false },
@@ -109,6 +111,16 @@ describe('dashboard', () => {
       }).success,
     ).toBe(false)
     expect(PracticeReadDashboardSchema.safeParse({ ...dashboard, greetingPeriod: 'Subuh' }).success).toBe(false)
+  })
+  it('accuracyPct: null with no answers, one decimal at most, 0..100', () => {
+    for (const ok of [null, 0, 75, 66.7, 100]) expect(PracticeReadDashboardSchema.safeParse({ ...dashboard, accuracyPct: ok }).success).toBe(true)
+    for (const bad of [66.67, 100.1, -1, '75', undefined]) expect(PracticeReadDashboardSchema.safeParse({ ...dashboard, accuracyPct: bad }).success).toBe(false)
+  })
+  it('package: null, or { name, validUntil YYYY-MM-DD }', () => {
+    expect(PracticeReadDashboardSchema.safeParse({ ...dashboard, package: null }).success).toBe(true)
+    expect(PracticeReadDashboardSchema.safeParse({ ...dashboard, package: { name: 'P', validUntil: '2027-11-03T00:00:00+08:00' } }).success).toBe(false)
+    expect(PracticeReadDashboardSchema.safeParse({ ...dashboard, package: { name: 'P' } }).success).toBe(false)
+    expect(PracticeReadDashboardSchema.safeParse({ ...dashboard, package: undefined }).success).toBe(false)
   })
   it('rejects an unknown key (strict)', () => {
     expect(PracticeReadDashboardSchema.safeParse({ ...dashboard, secret: 1 }).success).toBe(false)
