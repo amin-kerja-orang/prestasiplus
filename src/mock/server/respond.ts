@@ -37,6 +37,12 @@ export const DEFAULT_ERROR_MESSAGES = {
   CONFLICT: 'Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi.',
   VALIDATION_ERROR: 'Data yang dihantar tidak sah. Sila semak dan cuba lagi.',
   PASSWORD_CHANGE_REQUIRED: 'Sila tukar kata laluan anda sebelum meneruskan.',
+  BAD_REQUEST: 'Permintaan tidak sah. Sila muat semula halaman dan cuba lagi.',
+  PAYLOAD_TOO_LARGE: 'Fail atau data terlalu besar. Saiz maksimum ialah {n} MB.',
+  UNSUPPORTED_MEDIA_TYPE: 'Jenis fail tidak disokong.',
+  BAD_GATEWAY: 'Sesuatu tidak kena di pihak kami. Pasukan teknikal telah dimaklumkan. Sila cuba sebentar lagi.',
+  SERVICE_UNAVAILABLE: 'Sistem sedang diselenggara buat sementara waktu. Sila cuba semula dalam beberapa minit.',
+  TIMEOUT: 'Permintaan mengambil masa terlalu lama. Cuba lagi.',
 } as const
 
 /** Status of each known error code (used by `failNext(path, code)` and `fail` shortcuts). */
@@ -48,6 +54,12 @@ export const STATUS_FOR_CODE: Readonly<Record<string, number>> = {
   [API_ERROR_CODES.CONFLICT]: 409,
   [API_ERROR_CODES.RATE_LIMITED]: 429,
   [API_ERROR_CODES.SERVER_ERROR]: 500,
+  BAD_REQUEST: 422,
+  PAYLOAD_TOO_LARGE: 413,
+  UNSUPPORTED_MEDIA_TYPE: 415,
+  BAD_GATEWAY: 502,
+  SERVICE_UNAVAILABLE: 503,
+  TIMEOUT: 504,
 }
 
 const JSON_HEADERS = (): Record<string, string> => ({ 'content-type': 'application/json' })

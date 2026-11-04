@@ -8,6 +8,8 @@ import {
 import { type ErrorBody, type ErrorCode } from '@pp/contract'
 import type { Request, Response } from 'express'
 
+import { DEFAULT_JSON_LIMIT_BYTES } from '../http/respond'
+import { redactUrl } from '../logging/logging'
 import { requestIdOf } from '../request/request-id'
 import { ApiError, DEFAULT_ERROR_MESSAGES } from './api-error'
 
@@ -24,9 +26,6 @@ const CODE_BY_STATUS: Readonly<Record<number, ErrorCode>> = {
   503: 'SERVICE_UNAVAILABLE',
   504: 'TIMEOUT',
 }
-
-/** Nest's default JSON body limit (100kb), used when a 413 does not say which limit applied. */
-const DEFAULT_BODY_LIMIT_BYTES = 100 * 1024
 
 /** Renders every error as `{ error: { code, message, fields?, details?, retryAfter?, requestId } }`. */
 @Catch()
@@ -57,32 +56,37 @@ export class AllExceptionsFilter implements ExceptionFilter {
       const mapped = raw === 400 ? 422 : raw
       const code = raw === 400 ? 'BAD_REQUEST' : mapped ? CODE_BY_STATUS[mapped] : undefined
       if (mapped === 413) {
-        // A body over the parser limit (100kb default; the import and content routes have larger ones) or an upload over its size limit.
+        // A body over the parser limit (the default JSON limit; the import and content routes have larger ones) or an upload over its size limit.
         status = 413
         payload = { code: 'PAYLOAD_TOO_LARGE', message: payloadTooLargeMessage(exception) }
       } else if (raw === 400) {
         status = 422
         payload = { code: 'BAD_REQUEST', message: DEFAULT_ERROR_MESSAGES.BAD_REQUEST }
-        this.logger.warn(`Malformed request (400): ${exception instanceof Error ? exception.message : String(exception)}`)
       } else if (code && mapped) {
         status = mapped
         payload = { code, message: DEFAULT_ERROR_MESSAGES[code] }
-        if (mapped >= 500) this.logger.error(stackOf(exception))
       } else if (mapped !== undefined && mapped >= 400 && mapped < 500) {
         // An unmapped 4xx (405, 408, 410 ...) keeps its status; no stack in the log.
         status = mapped
         payload = { code: 'BAD_REQUEST', message: DEFAULT_ERROR_MESSAGES.BAD_REQUEST }
-        this.logger.warn(`Unmapped ${mapped} on ${req.method} ${req.originalUrl ?? req.url}`)
       } else {
         // A non-HTTP exception, or a 5xx without its own code: the stack goes to the log only, never to the client.
         status = mapped !== undefined && mapped >= 500 ? mapped : 500
         payload = { code: 'SERVER_ERROR', message: DEFAULT_ERROR_MESSAGES.SERVER_ERROR }
-        this.logger.error(stackOf(exception))
       }
     }
 
+    this.log(status, payload.code, exception, req, requestId)
     if (payload.retryAfter !== undefined) res.setHeader('Retry-After', String(payload.retryAfter))
     res.status(status).json({ error: { ...payload, requestId } } satisfies ErrorBody)
+  }
+
+  /** Exactly one line per error response (X10.3.9, AC-ERR-12): 5xx error with stack, 401/403/429 warn, other 4xx info; a 4xx never carries a stack. */
+  private log(status: number, code: string, exception: unknown, req: Request, requestId: string | undefined): void {
+    const line = `${req.method} ${redactUrl(req.originalUrl ?? req.url)} -> ${String(status)} ${code} requestId=${requestId ?? '-'}`
+    if (status >= 500) this.logger.error(`${line}\n${stackOf(exception)}`)
+    else if (status === 401 || status === 403 || status === 429) this.logger.warn(line)
+    else this.logger.log(line)
   }
 }
 
@@ -92,12 +96,12 @@ function stackOf(exception: unknown): string {
 
 /**
  * The 413 text with `{n}` = the limit that applied (body-parser errors carry `limit` in bytes), rounded up to whole MB, minimum 1.
- * A 413 without `limit` (e.g. a multer PayloadTooLargeException) falls back to the default JSON body limit; upload modules that
+ * A 413 without `limit` (e.g. a multer PayloadTooLargeException) uses the app's configured default JSON body limit (DEFAULT_JSON_LIMIT_BYTES, the same source configure-app uses); upload modules that
  * know their own file limit throw an ApiError with their own text instead.
  */
 function payloadTooLargeMessage(exception: unknown): string {
   const limit = (exception as { limit?: unknown } | null)?.limit
-  const bytes = typeof limit === 'number' && Number.isFinite(limit) && limit > 0 ? limit : DEFAULT_BODY_LIMIT_BYTES
+  const bytes = typeof limit === 'number' && Number.isFinite(limit) && limit > 0 ? limit : DEFAULT_JSON_LIMIT_BYTES
   const mb = Math.max(1, Math.ceil(bytes / (1024 * 1024)))
   return DEFAULT_ERROR_MESSAGES.PAYLOAD_TOO_LARGE.replace('{n}', String(mb))
 }
