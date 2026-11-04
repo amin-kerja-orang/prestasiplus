@@ -24,7 +24,11 @@ import { StreakService, WalletService } from '../../../wallet'
 import { OFFERED_LEVEL_CODES } from '../../rules'
 import { BankFacts } from './bank-facts'
 import { OverviewRepository } from './overview.repository'
-import { bannerAudiences, cutQuestionText, difficultyLevelOfTp, greetingPeriod, pct, round, weekEndMyt, weekStartMyt } from './rules'
+import { DASHBOARD_LEVEL_CODES, bannerAudiences, cutQuestionText, difficultyLevelOfTp, greetingPeriod, pct, pooledAccuracy, round, weekEndMyt, weekStartMyt } from './rules'
+
+/** An open window over the answer store (all time) for the pooled accuracy. */
+const ALL_TIME_FROM = new Date(0)
+const ALL_TIME_TO = new Date('9999-12-31T00:00:00Z')
 
 /** The caller of a read: own data only (card AC4), in the mode (real or Mod Pelajar) of the request. */
 export interface Reader {
@@ -130,7 +134,7 @@ export class OverviewService {
     const now = this.clock.now()
     const from = weekStartMyt(now)
     const to = weekEndMyt(from)
-    const [subjects, levels, bank, user, trial, streak, wallet, week, weekSessions, revisionTotal, usage, banners, articles, recent] = await Promise.all([
+    const [subjects, levels, bank, user, trial, streak, wallet, week, weekSessions, revisionTotal, usage, banners, articles, recent, pooled, activePackage] = await Promise.all([
       this.curriculum.subjects({ active: true }),
       this.curriculum.levels({ active: true }),
       this.bankFacts(),
@@ -145,6 +149,8 @@ export class OverviewService {
       this.activeBanners(who.role, now),
       this.latestArticles(),
       this.recentQuestions(),
+      this.repo.answerFigures(who.userId, ALL_TIME_FROM, ALL_TIME_TO, who.isTest),
+      this.subscriptions.activePackage(who.userId, now),
     ])
     const views = subjects.map((s) => subjectView(s, bank, this.offeredOf(s, levels).map((l) => idToString(l.id))))
     const subjectStats = views
@@ -166,6 +172,8 @@ export class OverviewService {
       streak: { count: streak.current, practisedToday: streak.lastActivityDate === mytDay(now) },
       wallet: { coins: wallet.currentSyiling, points: wallet.xp, level: wallet.level, levelProgressPct: wallet.levelProgressPct },
       week: { sessions: weekSessions, accuracyPct: Math.round(pct(week.correct, week.answered)) },
+      accuracyPct: pooledAccuracy(pooled.correct, pooled.answered),
+      package: activePackage,
       banners,
       // BE-23 (challenges, badges) has not merged: nothing to show yet (open question).
       quests: [],
@@ -181,7 +189,17 @@ export class OverviewService {
         activeLevels: levels.length,
         approvedQuestions: bank.count(),
       },
-      levelPills: levels.map((l) => ({ code: l.code, name: l.name, stage: l.stage as 'primary' | 'lower_secondary' | 'upper_secondary', count: bank.count({ levelId: idToString(l.id) }) })),
+      // FR-MUR-2-11, D91: Tingkatan 1-5 only; each count is the Latih Tubi figure the subject chips use (`bank.practice` per subject that offers the level, summed).
+      levelPills: levels
+        .filter((l) => DASHBOARD_LEVEL_CODES.includes(l.code))
+        .map((l) => {
+          const levelId = idToString(l.id)
+          const count = subjects.reduce(
+            (n, s) => (this.offeredOf(s, levels).some((o) => idToString(o.id) === levelId) ? n + bank.practice(idToString(s.id), [levelId]) : n),
+            0,
+          )
+          return { code: l.code, name: l.name, stage: l.stage as 'primary' | 'lower_secondary' | 'upper_secondary', count }
+        }),
       recentQuestions: recent,
       difficultyChart: bank.difficultyChart(),
       subjectStats,
