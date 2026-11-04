@@ -4,8 +4,12 @@
  * server error (`data-testid="field-error"`, `role="alert"`). Default mode wraps `UFormField`, so
  * `UForm` validation reaches the control. `native` mode has no form context: it keeps browser
  * `required` validation and hands `id`, `describedby` and `invalid` to the slotted control.
+ * Every row has `scroll-margin-bottom: 6rem` (states.css, keyed on `data-ds`) so a focused field is
+ * scrolled clear of a sticky bar (`DsFormBar`, `DsStickyActions`), FR-X6-5.
  */
 import { computed, useId } from 'vue'
+
+import './states.css'
 
 import { dsCopy } from './copy'
 

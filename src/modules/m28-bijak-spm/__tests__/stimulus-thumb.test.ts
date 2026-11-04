@@ -6,7 +6,7 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 
-import StimulusView from '../components/StimulusView.vue'
+import { StimulusView } from '../../../components/question-display'
 import type { StimulusDef } from '../domain/types'
 
 const stubs = {

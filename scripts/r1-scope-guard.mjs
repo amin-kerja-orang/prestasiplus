@@ -7,6 +7,7 @@
 //   node scripts/r1-scope-guard.mjs [--base <ref>] [--head <ref>] [--body-file <path> | env PR_BODY] [--plan <path>]
 //                                   [--labels a,b,c | --labels-file <path> | env PR_LABELS]
 //   node scripts/r1-scope-guard.mjs --self-test
+// A PR whose changed files are all under docs/ needs no card: it prints `docs-only PR: no card` and exits 0.
 // Exit 1 on any FAIL, 0 otherwise (WARN does not fail).
 //
 // Cross-sector small PRs (R1-START-HERE decision 7, plan 6.4; F-08):
@@ -52,6 +53,26 @@ const git = (cwd, args, opts = {}) =>
 
 const norm = (p) => p.replace(/\\/g, '/')
 
+// a plan path may carry a line suffix, e.g. `a.ts:391-480,560-570` or `a.ts:12`: strip it before comparing
+const stripLines = (p) => p.replace(/:\d+(?:-\d+)?(?:,\d+(?:-\d+)?)*$/, '')
+const planPath = (p) => stripLines(norm(p)).replace(/^\.\//, '')
+
+// expand one level-by-level brace group: `a/{b.ts,c.ts}` -> [`a/b.ts`, `a/c.ts`]
+function expandBraces(p) {
+  const m = p.match(/^(.*?)\{([^{}]*)\}(.*)$/)
+  if (!m) return [p]
+  return m[2].split(',').flatMap((alt) => expandBraces(m[1] + alt.trim() + m[3]))
+}
+
+// does a changed path match one of the card's own Files / New files entries (exact file, `dir/**`, `dir/`)?
+function matchesOwnFile(path, own) {
+  return own.some((g) => {
+    if (g.endsWith('/**')) return path.startsWith(g.slice(0, -2))
+    if (g.endsWith('/')) return path.startsWith(g)
+    return path === g
+  })
+}
+
 // ---------- plan parsing ----------
 export function parsePlan(text) {
   const lines = text.split(/\r?\n/)
@@ -61,7 +82,7 @@ export function parsePlan(text) {
     const m = line.match(CARD_RE)
     if (m) {
       const type = (m[3].match(/Type:\s*(Fix|Complete|Build|Keep|Verify|Ops)\b/) ?? [])[1] ?? null
-      cur = { id: m[1], title: m[2].trim(), type, lines: [line], starts: [] }
+      cur = { id: m[1], title: m[2].trim(), type, lines: [line], starts: [], own: [] }
       cards.set(cur.id, cur)
       continue
     }
@@ -73,7 +94,9 @@ export function parsePlan(text) {
       if (t) cur.type = t[1]
     }
     const s = line.match(/Starts from \(existing\):(.*)$/)
-    if (s) for (const b of s[1].matchAll(/`([^`]+)`/g)) cur.starts.push(norm(b[1]).replace(/^\.\//, ''))
+    if (s) for (const b of s[1].matchAll(/`([^`]+)`/g)) cur.starts.push(planPath(b[1]))
+    const f = line.match(/^\s*-\s*(?:New files|Files)(?:\s*\([^)]*\))?:(.*)$/)
+    if (f) for (const b of f[1].matchAll(/`([^`]+)`/g)) cur.own.push(...expandBraces(planPath(b[1])))
   }
   for (const c of cards.values()) c.text = c.lines.join('\n')
   return cards
@@ -93,7 +116,7 @@ function dirPrefix(p) {
 function buildDirs(card) {
   const dirs = new Set()
   const cands = [...card.starts]
-  for (const m of card.text.matchAll(/`([^`\s]+\/[^`\s]*)`/g)) cands.push(norm(m[1]))
+  for (const m of card.text.matchAll(/`([^`\s]+\/[^`\s]*)`/g)) cands.push(planPath(m[1]))
   for (const c of cands) {
     const d = dirPrefix(c)
     if (d) dirs.add(d)
@@ -225,6 +248,13 @@ export function analyze({ cwd, base, head, body, planText, labels = [] }) {
   const warns = []
   const out = { card: null, type: null, fails, warns }
 
+  // Docs-only PR (every changed file under docs/): no card needed, nothing else is checked. An empty diff is not docs-only.
+  const changed = git(cwd, ['diff', '--name-only', '--no-renames', `${base}...${head}`]).split('\n').filter(Boolean).map(norm)
+  if (changed.length && changed.every((f) => f.startsWith('docs/'))) {
+    out.docsOnly = true
+    return out
+  }
+
   const idMatch = (body ?? '').match(CARD_IN_BODY_RE)
   if (!idMatch) {
     fails.push({ rule: 'NO_CARD', file: null, msg_bm: 'PR mesti menyebut ID kad (cth. S1-T02).', msg_en: 'PR must name a card ID (e.g. S1-T02).' })
@@ -314,6 +344,7 @@ export function analyze({ cwd, base, head, body, planText, labels = [] }) {
       const paths = [e.path, ...(e.st === 'R' ? [e.oldPath] : [])]
       if (!paths.some(isProduct)) continue
       if (type === 'Verify' && isTest(e.path)) continue
+      if (type === 'Ops' && paths.filter(isProduct).every((q) => matchesOwnFile(q, [...card.own, ...card.starts]))) continue
       fails.push({ rule: 'PRODUCT_CODE_CHANGED', file: e.path, msg_bm: `Kad ${type} tidak boleh mengubah kod produk (src/, apps/, packages/).`, msg_en: `A ${type} card must not change product code (src/, apps/, packages/).` })
     }
   }
@@ -367,7 +398,7 @@ export function similarModels(a, b) {
   return lim > 0 && levenshtein(x, y) <= lim
 }
 
-function checkNoDuplicates({ cwd, head, mergeBase, range, entries, body, hasId, cardId, cards, fails, warns }) {
+function checkNoDuplicates({ cwd, head, mergeBase, range, entries, hasId, cardId, cards, fails, warns }) {
   const baseText = gitShowOrNull(cwd, mergeBase, MAP_PATH)
   if (!baseText) return // no map in the base yet: nothing to compare with
   const baseMap = JSON.parse(baseText)
@@ -399,7 +430,6 @@ function checkNoDuplicates({ cwd, head, mergeBase, range, entries, body, hasId, 
     collectConsts('\n' + g, consts)
   } catch { /* none */ }
 
-  const fresh = (items, keyOf, baseKeys, baseItemsOfFile) => items.filter((it) => !baseKeys.has(keyOf(it)) && !baseItemsOfFile.has(keyOf(it)))
   const keysOf = (arr, f) => new Set((arr ?? []).map(f))
   const oldKeys = (e, extract, keyOf) => {
     if (e.st === 'A') return new Set()
@@ -551,6 +581,25 @@ const FIXTURE_PLAN = `# Plan
 **S9-T05 Ops card** · P0 · S · Type: Ops · deps: none
 - Starts from (existing): \`compose.yaml\`.
 
+**S9-T08 Ops card with apps files** · P0 · S · Type: Ops · deps: none
+- Starts from (existing): \`compose.yaml\`.
+- New files: \`apps/api/prisma/seed/x.ts\`.
+
+**S9-T09 Ops card with brace and glob** · P0 · S · Type: Ops · deps: none
+- Files: \`src/app/router/{guards.ts,meta.ts}\`, \`packages/ct/**\`.
+
+**S9-T10 Verify card no files** · P0 · S · Type: Verify · deps: none
+- Starts from (existing): \`src/mod/a.ts\`.
+
+**S9-T11 Fix card line range** · P0 · S · Type: Fix · deps: none
+- Starts from (existing): \`src/mod/a.ts:391-480,560-570\`.
+
+**S9-T12 Fix card single line** · P0 · S · Type: Fix · deps: none
+- Starts from (existing): \`src/mod/a.ts:12\`.
+
+**S9-T13 Ops card Starts-from apps** · P0 · S · Type: Ops · deps: none
+- Starts from (existing): \`apps/api/prisma/seed/y.ts:10-20\`.
+
 **S9-T06 Build card** · P0 · S · Type: Build · deps: none
 - Starts from (existing): \`scripts/lint.mjs\`.
 - Files: \`scripts/new-check.mjs\`, \`docs/ops/\`.
@@ -644,6 +693,15 @@ function selfTest() {
   run('Fix adds migration folder, no ID', 'S9-T01', (c) => { touchA(c); write(c, 'apps/api/prisma/migrations/0002_new/migration.sql', 'select 2;\n') }, { fail: ['NEW_MIGRATION'], exact: true })
   run('Keep card changes product code', 'S9-T03', touchA, { fail: ['PRODUCT_CODE_CHANGED'], exact: true })
   run('Ops card changes product code', 'S9-T05', (c) => { write(c, 'compose.yaml', 'a: 2\n'); touchA(c) }, { fail: ['PRODUCT_CODE_CHANGED'], exact: true })
+  run('Ops card: own Files apps/ path -> ok', 'S9-T08', (c) => write(c, 'apps/api/prisma/seed/x.ts', 'export {}\n'), { exact: true })
+  run('Ops card: other apps/ file still fails', 'S9-T08', (c) => { write(c, 'apps/api/prisma/seed/x.ts', 'export {}\n'); write(c, 'apps/api/src/mod/x.service.ts', lines(5) + 'more\n') }, { fail: ['PRODUCT_CODE_CHANGED'], exact: true })
+  run('Ops card: brace and dir/** Files forms -> ok', 'S9-T09', (c) => { write(c, 'src/app/router/meta.ts', 'export {}\n'); write(c, 'packages/ct/deep/z.ts', 'export {}\n') }, { exact: true })
+  run('Verify card with no Files line: src/ still fails', 'S9-T10', touchA, { fail: ['PRODUCT_CODE_CHANGED'], exact: true })
+  run('Starts-from with :391-480,560-570 suffix matches', 'S9-T11', (c) => write(c, 'src/mod/a.ts', lines(30) + 'extra\n'), { exact: true })
+  run('Starts-from with :12 suffix matches', 'S9-T12', (c) => write(c, 'src/mod/a.ts', lines(30) + 'extra\n'), { exact: true })
+  run('Ops card: own Starts-from apps/ path, no Files line -> ok', 'S9-T13', (c) => write(c, 'apps/api/prisma/seed/y.ts', 'export {}\n'), { exact: true })
+  run('Ops card: other apps/ file than Starts-from still fails', 'S9-T13', (c) => { write(c, 'apps/api/prisma/seed/y.ts', 'export {}\n'); write(c, 'apps/api/src/mod/x.service.ts', lines(5) + 'more\n') }, { fail: ['PRODUCT_CODE_CHANGED'], exact: true })
+  run('Keep card: own Starts-from src/ file still fails (Ops only)', 'S9-T03', touchA, { fail: ['PRODUCT_CODE_CHANGED'], exact: true })
   run('Ops card changes only compose -> ok', 'S9-T05', (c) => write(c, 'compose.yaml', 'a: 2\n'), { exact: true })
   run('Verify card: tests allowed', 'S9-T04', (c) => { write(c, 'src/mod/__tests__/a.test.ts', 'export {}\n'); write(c, 'apps/api/src/mod/x.spec.ts', 'export {}\n') }, { exact: true })
   run('Verify card: product code fails', 'S9-T04', (c) => { write(c, 'src/mod/__tests__/a.test.ts', 'export {}\n'); touchA(c) }, { fail: ['PRODUCT_CODE_CHANGED'], exact: true })
@@ -732,6 +790,9 @@ function selfTest() {
   const eq = (name, got, want) => results.push({ name, ok: JSON.stringify(got) === JSON.stringify(want), detail: `got ${JSON.stringify(got)} want ${JSON.stringify(want)}` })
   eq('parseCrossSectors: list', [...parseCrossSectors('x\nCross-sector: S3, S5 (why S7)\n')], [3, 5])
   eq('parseCrossSectors: template placeholder = none', [...parseCrossSectors('Cross-sector: none | `Cross-sector: S<n> (reason)`')], [])
+  const docsOnly = (c) => write(c, 'docs/plan/x.md', 'x\n')
+  run('docs-only PR without a card passes', 'no card here', docsOnly, { exact: true })
+  run('docs plus a src file without a card still fails NO_CARD', 'no card here', (c) => { docsOnly(c); touchA(c) }, { fail: ['NO_CARD'], exact: true })
   eq('parseLabels: comma, newline and JSON', [parseLabels('a, needs:S3'), parseLabels('a\nb'), parseLabels('[{"name":"x"},"y"]')], [['a', 'needs:S3'], ['a', 'b'], ['x', 'y']])
   eq('sectorOf: examples', [sectorOf('src/modules/m05-practice/a.ts'), sectorOf('src/modules/m28-bijak-spm/components/RichText.vue'), sectorOf('src/modules/m28-bijak-spm/pages/X.vue'), sectorOf('README.md'), sectorOf('apps/api/prisma/migrations/0181_s5_x/migration.sql')], [5, 8, 3, null, 5])
 
@@ -758,7 +819,7 @@ function main() {
   let res
   try { res = analyze({ cwd: process.cwd(), base, head, body, labels, planText: readFileSync(planPath, 'utf8') }) }
   catch (e) { console.error(`Ralat git / git error (base=${base} head=${head}): ${e.stderr || e.message}`); process.exit(2) }
-  console.log(report(res))
+  console.log(res.docsOnly ? 'docs-only PR: no card' : report(res))
   process.exit(res.fails.length ? 1 : 0)
 }
 

@@ -6,17 +6,14 @@
  */
 import { computed, ref } from 'vue'
 
-import { McqOptions, qdCopy } from '../../../components/question-display'
 import { DsQuizOption, DsStack, DsText } from '@/ds'
 
 import { leavesOf } from '../domain/paper-model'
 import type { PartAnswer, QuestionResult, QuestionView } from '../domain/types'
 import { toOptionData } from '../lib/stimulus-data'
-import PartNode from './PartNode.vue'
+import { McqOptions, PartNode, RichText, StimulusStack, qdCopy } from '../../../components/question-display'
 import PartResultCard from './PartResultCard.vue'
 import ReportQuestionButton from './ReportQuestionButton.vue'
-import RichText from './RichText.vue'
-import StimulusStack from './StimulusStack.vue'
 
 const props = defineProps<{
   question: QuestionView

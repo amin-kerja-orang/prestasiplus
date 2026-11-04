@@ -104,17 +104,21 @@ describe('violationLines (D78 O-2)', () => {
   })
 })
 
-describe('D93: a stimulus group with fewer than two members', () => {
+describe('D93: a stimulus group with no member (a group holds 1..n)', () => {
   const base = {
     specs: [{ label: 'A', markBudget: 2, questionCount: 2, rule: { type: 'all' as const } }],
     marksOf: () => 1,
     isLive: () => true,
   }
   it('is a paper-level error with the exact BM line (not section-prefixed, hard)', () => {
+    const empty = checkPaper({ ...base, groupOf: (id) => (id === 'g1' ? 'G' : undefined), membersOf: () => [], sections: [{ questionIds: ['g1', 'a'] }] })
+    expect(empty.errors).toEqual(['Kumpulan perlu sekurang-kurangnya 1 soalan.'])
+    // S1-T01: one member is a valid group
     const alone = checkPaper({ ...base, groupOf: (id) => (id === 'g1' ? 'G' : undefined), membersOf: () => ['g1'], sections: [{ questionIds: ['g1', 'a'] }] })
-    expect(alone.errors).toEqual(['Kumpulan perlu sekurang-kurangnya 2 soalan.'])
-    expect(GROUP_MIN_MEMBERS_MESSAGE).toBe('Kumpulan perlu sekurang-kurangnya 2 soalan.')
-    expect(alone.ok).toBe(false)
+    expect(alone.errors).toEqual([])
+    expect(GROUP_MIN_MEMBERS_MESSAGE).toBe('Kumpulan perlu sekurang-kurangnya 1 soalan.')
+    expect(alone.ok).toBe(true)
+    expect(empty.ok).toBe(false)
   })
   it('does not apply to a group of two or more, nor to a group the bank does not know as a stimulus group', () => {
     const two = checkPaper({ ...base, groupOf, membersOf, sections: [{ questionIds: ['g1', 'g2'] }] })
