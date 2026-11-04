@@ -95,7 +95,6 @@ function presetMessages(role: string): (body: Record<string, unknown>) => Record
   }
 }
 
-
 /** A blank optional id is "none"; a number is its decimal text (the mock accepted both). */
 function prepareBody(body: Record<string, unknown>): Record<string, unknown> {
   const out = { ...body }
@@ -332,7 +331,8 @@ export class VideosService {
       platform: v.platform,
       description: v.description,
       visibility: v.visibility,
-      canManage: actor !== null && (viewer.isAdmin || v.uploaderId === actor.userId),
+      // Only a writer role manages: a legacy student upload shows no Edit or Padam.
+      canManage: actor !== null && (actor.role === 'admin' || (actor.role === 'teacher' && v.uploaderId === actor.userId)),
       related,
     }
   }

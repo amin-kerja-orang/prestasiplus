@@ -9,6 +9,7 @@ import { ADMIN_VIDEO_PAGE_SIZE } from '@pp/contract'
 import type { TableColumn } from '@nuxt/ui'
 import { computed, ref, watch } from 'vue'
 
+import { wireId } from '@/api'
 import { useApi, useFlash } from '@/composables'
 import { DsDataTable, DsEmptyState, DsLoadError, DsPage, DsPanel, DsRowActions, useConfirm } from '@/ds'
 import type { CardField, RowAction } from '@/ds'
@@ -28,7 +29,7 @@ const subject = ref('all')
 const { data, error, reload } = useApi(
   (signal) => {
     const query: VideoListQuery = { page: page.value, pageSize: ADMIN_VIDEO_PAGE_SIZE }
-    if (subject.value !== 'all') query.subject = Number(subject.value)
+    if (subject.value !== 'all') query.subject = wireId(subject.value)
     return fetchVideos(query, { signal })
   },
   [page, subject],

@@ -6,10 +6,10 @@
  * - URL field with the 500 ms debounced platform preview ("Platform dikesan: {label}" + thumbnail;
  *   nothing for an unsupported URL, which is still accepted). S19 starts with the stored spelling
  *   ("Youtube"). The thumbnail is the live img.youtube.com image (D22).
- * - Native validation (`required`, `type=url`) on `video_url`, `title`, `category`; server 422 field
- *   messages show under the fields (UNVERIFIED COPY).
+ * - The form is `novalidate`: the page validates `video_url`, `title` and `category` itself; server 422
+ *   field messages show under the fields.
  * - No visibility field: the server decides (teacher = own school, admin = everyone; R1-GUR-7).
-- Client validation uses the contract copy (`VIDEO_MESSAGES`); a teacher may only give a YouTube link.
+ * - Client validation uses the contract copy (`VIDEO_MESSAGES`); a teacher may only give a YouTube link.
  * - S20 shows the uploader strip; S19 does not. S19 is for the uploader or the admin: anyone else is
  *   sent to their landing page (the API answers 403, M09 §9); an unknown id is the 404 page.
  *

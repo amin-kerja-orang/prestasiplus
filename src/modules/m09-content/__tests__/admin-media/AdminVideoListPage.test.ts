@@ -118,7 +118,7 @@ describe('AdminVideoListPage', () => {
     expect(select.props('modelValue')).toBe('all')
     select.vm.$emit('update:modelValue', '5')
     await flushPromises()
-    expect(api.fetchVideos.mock.calls.at(-1)?.[0]).toMatchObject({ subject: 5, page: 1, pageSize: 25 })
+    expect(api.fetchVideos.mock.calls.at(-1)?.[0]).toMatchObject({ subject: '5', page: 1, pageSize: 25 })
   })
 
   it('Edit links to /video/:id/edit', async () => {

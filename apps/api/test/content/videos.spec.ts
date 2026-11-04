@@ -260,6 +260,55 @@ describe('videos: visibility by school, writes, validation (AC 5, AC 6, AC 8)', 
       expectError(await api.teacher2.put(`/videos/${vid}`, body()), 'NOT_FOUND')
     })
 
+    it('only the ACTIVE role counts: a teacher+student account acting as a student is refused, acting as a teacher may post', async () => {
+      const uid = await userIdOf(t.db, OTHER_SCHOOL_STUDENT)
+      await t.db.query(`insert into user_roles (user_id, role, created_at) values ($1::bigint, 'teacher', now())`, [uid])
+      let createdId: string | null = null
+      try {
+        const who = await login(t, OTHER_SCHOOL_STUDENT)
+        const switchTo = async (role: string): Promise<string> => {
+          const res = await who.agent.post('/api/auth/role').set('X-CSRF-Token', who.csrf).send({ role })
+          expect(res.status, JSON.stringify(res.body)).toBe(200)
+          return res.body.data.csrf as string
+        }
+        let csrf = await switchTo('student')
+        const refused = await who.agent.post('/api/videos').set('X-CSRF-Token', csrf).send(body())
+        expect(refused.status).toBe(403)
+        csrf = await switchTo('teacher')
+        const allowed = await who.agent.post('/api/videos').set('X-CSRF-Token', csrf).send(body({ title: 'Guru peranan aktif' }))
+        expect(allowed.status, JSON.stringify(allowed.body)).toBe(201)
+        createdId = allowed.body.data.id as string
+      } finally {
+        if (createdId) {
+          await t.db.query(`delete from video_schools where video_id = $1`, [createdId])
+          await t.db.query(`delete from videos where id = $1`, [createdId])
+        }
+        await t.db.query(`delete from user_roles where user_id = $1::bigint and role = 'teacher'`, [uid])
+      }
+    })
+
+    it('a teacher of another school cannot edit or delete a school video: 404 and the row is unchanged', async () => {
+      const before = await t.db.query<{ title: string; updated_at: string }>(`select title, updated_at::text from videos where id = $1`, [id.school1])
+      expectError(await api.teacher2.put(`/videos/${id.school1}`, body({ title: 'Dirampas' })), 'NOT_FOUND')
+      expectError(await api.teacher2.del(`/videos/${id.school1}`), 'NOT_FOUND')
+      const after = await t.db.query<{ title: string; updated_at: string }>(`select title, updated_at::text from videos where id = $1`, [id.school1])
+      expect(after).toEqual(before)
+      expect(after).toHaveLength(1)
+    })
+
+    it('a legacy student upload shows no Edit or Padam: canManage is false for its own uploader', async () => {
+      const legacy = await insertVideo(t.db, { title: 'Muat naik lama pelajar', uploader: OTHER_SCHOOL_STUDENT, createdAt: '2026-10-06T10:00:00+08:00' })
+      try {
+        const res = await outsider.agent.get(`/api/videos/${legacy}`)
+        expect(res.status).toBe(200)
+        expect(res.body.data.canManage).toBe(false)
+        const asAdmin = await admin.agent.get(`/api/videos/${legacy}`)
+        expect(asAdmin.body.data.canManage).toBe(true)
+      } finally {
+        await t.db.query(`delete from videos where id = $1`, [legacy])
+      }
+    })
+
     it('an admin edits another user video and the stored visibility and school stay the uploader ones', async () => {
       const created = await api.teacher.post('/videos', body({ title: 'Guru kongsi' }))
       const vid = created.body.data.id as string

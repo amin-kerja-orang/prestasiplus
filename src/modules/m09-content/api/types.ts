@@ -143,7 +143,7 @@ export interface VideoListMeta {
 export interface VideoListQuery {
   search?: string
   category?: VideoCategory | 'all'
-  subject?: number
+  subject?: number | string
   page?: number
   pageSize?: number
 }
