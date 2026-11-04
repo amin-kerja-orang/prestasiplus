@@ -48,7 +48,7 @@ Chart.register(
 
 export interface ChartSeries {
   label: string
-  data: (number | null)[]
+  data: number[]
   /** Staff colour slot 1-8 (`--ds-cat-<slot>`). Defaults to the series position. */
   slot?: number
 }

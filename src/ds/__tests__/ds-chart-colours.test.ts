@@ -60,7 +60,7 @@ describe('DsChart data table (S10-T01 #544)', () => {
         title: 'Gred',
         labels: ['A', 'B', 'C', 'D'],
         unit: '%',
-        series: [{ label: 'Murid', data: [42, null, Number.NaN, Number.POSITIVE_INFINITY] }],
+        series: [{ label: 'Murid', data: [42, null, Number.NaN, Number.POSITIVE_INFINITY] as unknown as number[] }],
       },
     })
     const cells = w.findAll('[data-ds="chart-table"] tbody tr').map((r) => r.findAll('td').at(-1)?.text())
