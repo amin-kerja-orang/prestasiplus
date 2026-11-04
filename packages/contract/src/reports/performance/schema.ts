@@ -46,9 +46,9 @@ export const PERFORMANCE_TIMELINE_MESSAGES = {
 
 /** Generic mock copy: 401 "Unauthenticated.", 403 "This action is unauthorized.", 404 "Not Found.". */
 export const PERFORMANCE_ERROR_MESSAGES = {
-  unauthorized: 'Unauthenticated.',
-  forbidden: 'This action is unauthorized.',
-  notFound: 'Not Found.',
+  unauthorized: 'Sesi anda telah tamat. Sila log masuk semula.',
+  forbidden: 'Anda tidak dibenarkan melakukan tindakan ini.',
+  notFound: 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?',
 } as const
 
 // --- Enums -----------------------------------------------------------------------------------
