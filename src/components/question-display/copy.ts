@@ -37,6 +37,12 @@ export const kindFallbackCaption: Record<string, string> = {
   table: 'Jadual',
 }
 
+/** FR-QA-48: group cap line, shown only when the scheme is revealed. */
+export const maksLabel = (n: number): string => `Maks ${n}`
+/** D115 deduction line, e.g. "Potongan: kesalahan 7 x 1 (maks 5)". */
+export const deductionLine = (label: string, n: number, amount: number, cap?: number): string =>
+  `Potongan: ${label} ${n} x ${amount}${cap === undefined ? '' : ` (maks ${cap})`}`
+
 export function wordCountLabel(n: number): string {
   return `${n} patah perkataan`
 }

@@ -82,3 +82,44 @@ export interface VisibilityRowData {
   /** Optional action beside the reason, e.g. "Buka Tracking A". */
   actionLabel?: string
 }
+
+/** A deduction rule line of a part (D115): "{label} {n} x {amount} (max {cap})". */
+export interface PaperDeduction {
+  label: string
+  n: number
+  amount: number
+  cap?: number
+}
+
+export interface PaperPart {
+  id: string
+  label?: string
+  prompt: string
+  marks: number
+  /** Group cap (FR-QA-48), shown as "Maks {N}" when the scheme is revealed. */
+  maxCap?: number
+  deductions?: PaperDeduction[]
+  children?: PaperPart[]
+}
+
+export interface PaperQuestion {
+  id: string
+  number: number
+  marks: number
+  stem: string
+  options?: McqOptionData[]
+  parts?: PaperPart[]
+  stimuli?: readonly StimulusData[]
+  /** Consecutive questions with the same group id share one stimulus panel. */
+  groupId?: string
+}
+
+export interface PaperSection {
+  id: string
+  label: string
+  instruction?: string
+  marks?: number
+  compulsory?: boolean
+  rule?: string
+  questions: PaperQuestion[]
+}
