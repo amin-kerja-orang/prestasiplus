@@ -149,6 +149,17 @@ describe('hub SPM (R1-ADM-Q-01)', () => {
     expect(text('[data-testid=kandungan-total-subjektif]')).toBe('10')
   })
 
+  it('keeps the other cards when Cuba lagi fails (SR-3)', async () => {
+    const failed = { ...OVERVIEW, cards: OVERVIEW.cards.map((c) => (c.lane === 'subjektif' ? { ...c, total: 0, attention: 0, attentionLines: [], failed: true } : c)) }
+    server.overview.mockResolvedValueOnce(failed).mockRejectedValue(new Error('429'))
+    await mountAt(KandunganHubPage, '/admin/spm')
+    q('[data-testid=kandungan-retry-subjektif]')!.click()
+    await flushPromises()
+    expect(text('[data-testid=kandungan-total-databank]')).toBe('1,234')
+    expect(q('[data-testid=kandungan-failed-subjektif]')).not.toBeNull()
+    expect(document.body.textContent).not.toContain('Tidak dapat memuatkan ringkasan kandungan.')
+  })
+
   it('links lihat sisi pelajar only when the pupil route exists (FR-ADM-Q01.5)', async () => {
     await mountAt(KandunganHubPage, '/admin/spm')
     expect(text('[data-testid=kandungan-pupil-databank]')).toBe('lihat sisi pelajar')
@@ -225,6 +236,26 @@ describe('lane Databank Soalan (R1-ADM-Q-02)', () => {
     expect(server.databankLane).toHaveBeenLastCalledWith({ search: 'luas', page: 1, pageSize: 25 })
   })
 
+  it('shows no item count while the lane has not answered or has failed', async () => {
+    server.databankLane.mockRejectedValue(new Error('boom'))
+    await mountAt(LaneDatabankPage, '/admin/spm/databank')
+    expect(q('[data-testid=lane-count]')).toBeNull()
+    expect(document.body.textContent).toContain('Tidak dapat memuatkan senarai.')
+  })
+
+  it('does not bring a removed chip back on the next Tapis', async () => {
+    await mountAt(LaneDatabankPage, '/admin/spm/databank')
+    await search('luas')
+    const chip = [...document.body.querySelectorAll('button')].find((b) => /Buang|Alih|Padam|luas/.test(b.getAttribute('aria-label') ?? ''))
+    expect(chip).toBeDefined()
+    chip!.click()
+    await flushPromises()
+    expect(server.databankLane).toHaveBeenLastCalledWith({ page: 1, pageSize: 25 })
+    ;[...document.body.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Tapis')!.click()
+    await flushPromises()
+    expect(server.databankLane).toHaveBeenLastCalledWith({ page: 1, pageSize: 25 })
+  })
+
   it('shows the empty copy "Tiada item untuk penapis ini."', async () => {
     server.databankLane.mockResolvedValue({ rows: [], page: 1, pageSize: 25, total: 0, subjects: SUBJECTS, count: 0 })
     await mountAt(LaneDatabankPage, '/admin/spm/databank')
@@ -278,7 +309,7 @@ describe('lane Subjektif (FR-ADM-Q23.3)', () => {
     })
   })
 
-  it('lists the reasons, "—" when none, and opens the Studio for Pratonton and Sunting', async () => {
+  it('lists the reasons, "—" when none, and opens the Studio for Sunting', async () => {
     await mountAt(LaneSubjektifPage, '/admin/spm/subjektif')
     expect(text('[data-testid=lane-count]')).toBe('2 item ·')
     const reasons = text('[data-testid=attention-41]')
@@ -288,7 +319,7 @@ describe('lane Subjektif (FR-ADM-Q23.3)', () => {
     expect(document.body.textContent).toContain('—')
     expect(document.body.textContent).toContain('#41 · Sejarah · Tingkatan 5 · Diluluskan')
     expect(q('[data-testid=lane-edit-41]')?.getAttribute('href')).toBe('/admin/studio/questions/41/sunting')
-    expect(q('[data-testid=lane-preview-41]')?.getAttribute('href')).toBe('/admin/studio/questions/41/sunting?pratonton=1')
+    expect(q('[data-testid=lane-preview-41]')).toBeNull()
   })
 })
 

@@ -2,7 +2,8 @@
 /**
  * Lane "Subjektif" (`/admin/spm/subjektif`, FR-ADM-Q23.3, frame R1-ADM-Q-02): structured and essay questions, one per row. `Perhatian`
  * shows the sentences from the API ("Tiada skema ...", "Tiada kunci jawapan ..."), "—" when nothing is wrong. These questions are edited
- * in the Studio wizard, so `Sunting` and `Pratonton` open it, unlike the MCQ form of the Databank lane.
+ * in the Studio wizard, so `Sunting` opens it, unlike the MCQ form of the Databank lane. No `Pratonton` yet: the wizard has no entry
+ * that opens its preview, so the action would only repeat `Sunting`.
  */
 import type { TableColumn } from '@nuxt/ui'
 import type { ServabilityLaneRow } from '@pp/contract'
@@ -19,10 +20,7 @@ type Row = ServabilityLaneRow & { no: number } & Record<string, unknown>
 
 const statusText = questionStatusLabel
 const editPath = (id: string): string => `/admin/studio/questions/${id}/sunting`
-const actionsOf = (id: string): RowAction[] => [
-  { label: laneCopy.preview, testid: `lane-preview-${id}`, to: `${editPath(id)}?pratonton=1` },
-  { label: laneCopy.edit, testid: `lane-edit-${id}`, to: editPath(id) },
-]
+const actionsOf = (id: string): RowAction[] => [{ label: laneCopy.edit, testid: `lane-edit-${id}`, to: editPath(id) }]
 
 const server = kandunganServer()
 const { filters, page, subjects, count, list, chips, removeChip } = useLane((q) => server.subjektifLane(q), statusText)
@@ -86,11 +84,11 @@ const columns: TableColumn<Row>[] = [
             <DsText v-for="a in row.attention as string[]" :key="a" as="p" variant="caption" tone="error">{{ a }}</DsText>
           </template>
           <DsText v-else variant="caption" tone="muted">{{ laneCopy.noAttention }}</DsText>
-          <DsRowActions :actions="actionsOf(String(row.id))" :inline="2" />
+          <DsRowActions :actions="actionsOf(String(row.id))" :inline="1" />
         </DsStack>
       </template>
       <template #actions-cell="{ row }">
-        <DsRowActions :actions="actionsOf(row.original.id)" :inline="2" />
+        <DsRowActions :actions="actionsOf(row.original.id)" :inline="1" />
       </template>
     </DsDataTable>
   </DsPage>

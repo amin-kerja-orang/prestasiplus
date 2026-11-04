@@ -17,7 +17,7 @@ const SEARCH_MAX = 100
 
 const props = defineProps<{
   lane: ServabilityHubLane
-  count: number
+  count: number | null
   subjects: LaneSubject[]
   statuses?: { value: string; label: string }[]
   chips: { key: string; label: string }[]
@@ -35,6 +35,11 @@ function apply(): void {
   filters.value = { ...draft }
   emit('apply')
 }
+/** A chip removed here must not come back with the next Tapis. */
+function removeChip(key: string): void {
+  Object.assign(draft, { [key]: '' })
+  emit('remove-chip', key)
+}
 function reset(): void {
   Object.assign(draft, { subjectId: '', status: '', search: '' })
   searchError.value = ''
@@ -47,7 +52,7 @@ function reset(): void {
   <DsStack gap="sm">
     <DsLink :to="{ name: KANDUNGAN_ROUTES.hub }" data-testid="lane-back">{{ laneCopy.back }}</DsLink>
     <DsCluster gap="xs">
-      <DsText variant="body" tone="muted" data-testid="lane-count">{{ formatCount(count) }} {{ laneCopy.items }}</DsText>
+      <DsText v-if="count !== null" variant="body" tone="muted" data-testid="lane-count">{{ formatCount(count) }} {{ laneCopy.items }}</DsText>
       <DsLink v-if="pupil" :to="pupil" data-testid="lane-pupil">{{ laneCopy.pupil }}</DsLink>
     </DsCluster>
     <DsFilterBar
@@ -58,7 +63,7 @@ function reset(): void {
       data-testid="lane-filter"
       @apply="apply"
       @reset="reset"
-      @remove-chip="(k: string) => emit('remove-chip', k)"
+      @remove-chip="removeChip"
     >
       <template #search>
         <UInput

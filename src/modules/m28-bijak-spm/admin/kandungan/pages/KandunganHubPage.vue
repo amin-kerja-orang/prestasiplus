@@ -5,8 +5,8 @@
  * card whose screen is not registered is hidden (FR-ADM-Q01.4). A card that could not be computed shows its own error; the others
  * stay (SR-3). A card whose attention rule is still open (`attentionOpen`) shows neither lines nor "Semua elok".
  */
-import type { ServabilityHubCard } from '@pp/contract'
-import { computed } from 'vue'
+import type { ServabilityHubCard, ServabilityOverview } from '@pp/contract'
+import { computed, shallowRef, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useApi } from '@/composables/useApi'
@@ -21,8 +21,13 @@ const COLS = { base: 1, md: 2, xl: 3 } as const
 const router = useRouter()
 const server = kandunganServer()
 const { data, error, loading, reload } = useApi(() => server.overview())
+/** The last good overview: a failed `Cuba lagi` must not take the other cards down (SR-3); `useApi` nulls `data` on failure. */
+const overview = shallowRef<ServabilityOverview | null>(null)
+watch(data, (d) => {
+  if (d) overview.value = d
+})
 
-const cards = computed<readonly ServabilityHubCard[]>(() => (data.value?.cards ?? []).filter((c) => router.hasRoute(laneRouteOf(c.lane))))
+const cards = computed<readonly ServabilityHubCard[]>(() => (overview.value?.cards ?? []).filter((c) => router.hasRoute(laneRouteOf(c.lane))))
 /** Test ids keep the V2 lane key: `simulasi` for the Bijak SPM lane. */
 const keyOf = (c: ServabilityHubCard): string => (c.lane === 'bijak-spm' ? 'simulasi' : c.lane)
 const linesOf = (c: ServabilityHubCard): string[] =>
@@ -35,8 +40,8 @@ const linesOf = (c: ServabilityHubCard): string[] =>
       <DsText as="p" variant="body" tone="muted" data-testid="kandungan-intro">{{ hubCopy.intro }}</DsText>
     </template>
 
-    <DsLoadError v-if="error" message="Tidak dapat memuatkan ringkasan kandungan." @retry="reload()" />
-    <DsGrid v-else-if="loading && !data" :cols="COLS" aria-busy="true">
+    <DsLoadError v-if="error && !overview" message="Tidak dapat memuatkan ringkasan kandungan." @retry="reload()" />
+    <DsGrid v-else-if="loading && !overview" :cols="COLS" aria-busy="true">
       <USkeleton v-for="n in 6" :key="n" class="h-40 w-full" />
     </DsGrid>
     <DsGrid v-else as="ul" :cols="COLS" data-testid="kandungan-cards">
@@ -51,6 +56,7 @@ const linesOf = (c: ServabilityHubCard): string[] =>
               variant="soft"
               class="min-h-11"
               :label="hubCopy.retry"
+              :loading="loading"
               :data-testid="`kandungan-retry-${keyOf(c)}`"
               @click="reload()"
             />

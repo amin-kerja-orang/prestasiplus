@@ -34,7 +34,8 @@ export function useLane<T>(
 
   /** The Subjek options come from the lane response (REQ-C-020), not from the bank summary. */
   const subjects = computed(() => list.data.value?.subjects ?? [])
-  const count = computed(() => list.data.value?.count ?? 0)
+  /** Null until the lane has answered: a load or a failure must not read as an empty lane. */
+  const count = computed(() => list.data.value?.count ?? null)
   const chips = computed(() => [
     ...(filters.value.subjectId
       ? [{ key: 'subjectId', label: subjects.value.find((s) => s.id === filters.value.subjectId)?.name ?? filters.value.subjectId }]

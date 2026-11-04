@@ -42,7 +42,7 @@ async function copyRow(id: string): Promise<void> {
 }
 const actionsOf = (id: string): RowAction[] => [
   { label: laneCopy.preview, testid: `lane-preview-${id}`, onSelect: () => void openPreview(id) },
-  { label: laneCopy.copy, testid: `lane-copy-${id}`, onSelect: () => void copyRow(id) },
+  { label: laneCopy.copy, testid: `lane-copy-${id}`, loading: paper.busy.value, onSelect: () => void copyRow(id) },
   { label: laneCopy.edit, testid: `lane-edit-${id}`, to: { name: ADMIN_ROUTES.paperEdit, params: { id } } },
 ]
 

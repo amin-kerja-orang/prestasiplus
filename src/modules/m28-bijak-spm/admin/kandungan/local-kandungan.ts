@@ -131,6 +131,7 @@ export function createMockKandungan(): KandunganApi {
   /** Databank lane rows (filtered by `q`) from one bank read. */
   const databankRows = (rows: BankRow[], q: LaneQuery): ServabilityDatabankRow[] => {
     return matching(rows, q)
+      .filter((r) => r.kind === 'objektif')
       .filter((r) => !q.status || WIRE_STATUS[r.status] === q.status)
       .map<ServabilityDatabankRow>((r) => ({
         questionId: r.id,
