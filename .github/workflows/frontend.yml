@@ -5,7 +5,7 @@
 #            The build runs BEFORE vue-tsc on purpose: the Nuxt UI Vite plugin writes the git-ignored
 #            `auto-imports.d.ts` and `components.d.ts` that vue-tsc needs (`useToast`, ...). On a clean
 #            checkout `vue-tsc -b` alone fails with TS2304 until a Vite build or dev server has run once.
-#   e2e-api  (not on feature/v3-bijak-r1 events; R1's stack job is e2e-http.yml) The @api Playwright specs (playwright.http.config.ts) on mobile 375, tablet 768 and desktop 1280
+#   e2e-api  (not run for feature/v3-bijak-r1.) The @api Playwright specs (playwright.http.config.ts) on mobile 375, tablet 768 and desktop 1280
 #            against a REAL API: Postgres 16 service + the API checked out from `feature/v2-backend`
 #            (`api_ref` input on a manual run), migrated and seeded with the poc profile, then with the T26
 #            local/E2E profile when the API ref has it (`--profile=e2e`, E2E_SEED=1). PoC question papers are
