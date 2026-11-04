@@ -32,6 +32,9 @@ export class QuestionPapersService {
       declaration,
       files: files.map((f, index) => ({ index, name: f.name, size: f.size, declaredMime: f.mimetype, buffer: f.buffer })),
       at,
+      auth: actor.auth,
+      ip: actor.ip,
+      requestId: actor.requestId,
     })
     // Best effort: a failed audit write must not turn a created submission into a 500.
     await this.audit

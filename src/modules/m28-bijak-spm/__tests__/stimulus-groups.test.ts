@@ -8,12 +8,10 @@ import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 
-import PartInput from '../components/PartInput.vue'
-import QuestionBlock from '../components/QuestionBlock.vue'
+import { PartInput, QuestionBlock, StimulusChip, StimulusStack, StimulusView } from '../../../components/question-display'
+import PartResultCard from '../components/PartResultCard.vue'
+import ReportQuestionButton from '../components/ReportQuestionButton.vue'
 import ResultGroup from '../components/ResultGroup.vue'
-import StimulusChip from '../components/StimulusChip.vue'
-import StimulusStack from '../components/StimulusStack.vue'
-import StimulusView from '../components/StimulusView.vue'
 import type { QuestionView, StimulusDef } from '../domain/types'
 import { groupLabel, stimuliOf, toStimulusData } from '../lib/stimulus-data'
 
@@ -176,6 +174,10 @@ describe('QuestionBlock: stem picture, option pictures, blocked hint', () => {
     mount(QuestionBlock, {
       props: { question, answers: {}, attemptId: 'a1', flagged: false, ...extra },
       global: { stubs },
+      slots: {
+        report: (p: Record<string, unknown>) => h(ReportQuestionButton, p as never),
+        result: (p: Record<string, unknown>) => h(PartResultCard, p as never),
+      },
     })
 
   it('option images switch to the radio list with the picture and its alt', () => {

@@ -184,6 +184,20 @@ export class StimuliRepository {
     return { groups, versions, parts }
   }
 
+  /** Distinct questions that use the stimulus: members of a group that links it, plus questions whose versions or parts reference it. */
+  async usingQuestionCount(id: string): Promise<number> {
+    const key = BigInt(id)
+    const rows = await this.db.$queryRaw<{ n: bigint }[]>`
+      SELECT count(DISTINCT q.id) AS n FROM (
+        SELECT q1.id FROM questions q1 JOIN stimulus_group_stimuli gs ON gs.group_id = q1.group_id WHERE gs.stimulus_id = ${key}
+        UNION
+        SELECT qv.question_id FROM question_versions qv JOIN question_version_stimuli vs ON vs.question_version_id = qv.id WHERE vs.stimulus_id = ${key}
+        UNION
+        SELECT qv2.question_id FROM question_versions qv2 JOIN question_parts qp ON qp.question_version_id = qv2.id WHERE qp.stimulus_id = ${key}
+      ) q`
+    return Number(rows[0]?.n ?? 0n)
+  }
+
   async deleteStimulus(id: string): Promise<void> {
     await this.db.stimulus.delete({ where: { id: BigInt(id) } })
   }

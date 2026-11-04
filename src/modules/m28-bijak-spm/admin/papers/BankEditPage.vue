@@ -23,7 +23,7 @@ import {
   DsText,
 } from '@/ds'
 
-import StimulusView from '../../components/StimulusView.vue'
+import { StimulusView } from '../../../../components/question-display'
 import QuestionEditor from '../intake/components/QuestionEditor.vue'
 import { validateRevision } from '../intake/domain/validation'
 import type { IntakeQuestion, IntakeStimulus } from '../intake/types'

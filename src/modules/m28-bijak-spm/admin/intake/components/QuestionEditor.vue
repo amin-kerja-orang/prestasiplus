@@ -6,11 +6,11 @@
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
-import { DsText } from '@/ds'
+import { DsCluster, DsText } from '@/ds'
 import { COGNITIVE_OPTIONS } from '@/modules/m04-question-bank'
 
 import type { LeafKind } from '../../../domain/types'
-import RichText from '../../../components/RichText.vue'
+import { RichText } from '../../../../../components/question-display'
 import { bijakAdminServer } from '../../../server/client'
 import { tagWithUnit, unitsFromStudio, type DskpUnit } from '../lib/dskp'
 import { fieldName } from '../domain/validation'
@@ -190,7 +190,7 @@ function insertMath(field: 'stem'): void {
       description="Pengekstrak tidak dapat membaca soalan ini sepenuhnya."
     >
       <template #actions>
-        <UButton size="sm" color="warning" variant="outline" @click="set({ needsManual: false })">
+        <UButton color="warning" variant="outline" @click="set({ needsManual: false })">
           Tandakan selesai disemak
         </UButton>
       </template>
@@ -246,12 +246,12 @@ function insertMath(field: 'stem'): void {
 
     <!-- stem -->
     <div class="flex flex-col gap-2">
-      <div class="flex items-center justify-between gap-2">
+      <DsCluster gap="xs" justify="between" :wrap="false">
         <label :for="`stem-${q.id}`" class="text-sm font-medium">Teks soalan</label>
-        <UButton size="xs" variant="ghost" color="neutral" icon="i-ph-function" @click="insertMath('stem')">
+        <UButton variant="ghost" color="neutral" icon="i-ph-function" @click="insertMath('stem')">
           Sisip matematik
         </UButton>
-      </div>
+      </DsCluster>
       <textarea
         :id="`stem-${q.id}`"
         :value="q.stem"
@@ -260,7 +260,7 @@ function insertMath(field: 'stem'): void {
         data-testid="q-stem"
         @input="set({ stem: ($event.target as HTMLTextAreaElement).value })"
       />
-      <p class="text-xs text-muted">Gunakan $...$ untuk matematik, cth. $x^2 + 3$.</p>
+      <DsText variant="caption">Gunakan $...$ untuk matematik, cth. $x^2 + 3$.</DsText>
       <p v-if="q.stem" class="rounded-lg bg-muted p-3 text-sm" aria-label="Pratonton teks soalan">
         <RichText :text="q.stem" />
       </p>
@@ -269,7 +269,8 @@ function insertMath(field: 'stem'): void {
     <!-- MCQ -->
     <fieldset v-if="q.type === 'mcq'" class="flex flex-col gap-2">
       <legend class="mb-1 text-sm font-medium">Pilihan jawapan dan kunci</legend>
-      <div v-for="(o, i) in q.options" :key="o.id" class="flex items-center gap-2">
+      <!-- The row is the label of the key radio: its hit area is the whole 44 px tall row (AC-ADM-R10). -->
+      <label v-for="(o, i) in q.options" :key="o.id" class="flex items-center gap-2">
         <input
           type="radio"
           :name="`key-${q.id}`"
@@ -290,12 +291,13 @@ function insertMath(field: 'stem'): void {
           icon="i-ph-trash"
           color="error"
           variant="ghost"
+          class="min-w-11 justify-center"
           :aria-label="`Buang pilihan ${o.id}`"
           @click="removeOption(i)"
         />
-      </div>
+      </label>
       <div>
-        <UButton size="sm" variant="outline" color="neutral" icon="i-ph-plus" :disabled="q.options.length >= 5" @click="addOption">
+        <UButton variant="outline" color="neutral" icon="i-ph-plus" :disabled="q.options.length >= 5" @click="addOption">
           Tambah pilihan
         </UButton>
       </div>
@@ -388,7 +390,7 @@ function insertMath(field: 'stem'): void {
         </div>
       </div>
       <div>
-        <UButton size="sm" variant="outline" color="neutral" icon="i-ph-plus" @click="addPart">
+        <UButton variant="outline" color="neutral" icon="i-ph-plus" @click="addPart">
           Tambah bahagian
         </UButton>
       </div>
@@ -478,6 +480,7 @@ function insertMath(field: 'stem'): void {
         <UCheckbox
           v-for="f in q.lowFields"
           :key="f"
+          variant="card"
           :model-value="q.confirmed.includes(f)"
           :label="`Saya sahkan ${fieldName(f)} (keyakinan rendah)`"
           :data-testid="`confirm-${f}`"

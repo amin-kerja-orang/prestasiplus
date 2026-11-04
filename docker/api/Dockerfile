@@ -26,8 +26,22 @@ COPY apps/api ./apps/api
 # DSKP extracts read by the seed (curriculum.ts: ../../../../docs/reference/dskp = /app/docs/reference/dskp).
 # Build stage only (the migrate job); the runtime image does not read them.
 COPY docs/reference/dskp ./docs/reference/dskp
+COPY docs/reference/blueprints ./docs/reference/blueprints
 # Lint, type-check and tests run in CI, not here.
 RUN npm run be:build
+
+# ---- tessdata: OCR language data (Malay + English), pinned and checksummed ----
+# Baked into the image, never downloaded at run time (D113): the container is read_only and tesseract.js uses
+# langPath = OCR_LANG_DIR (/opt/tessdata), no CDN. A SHA-256 mismatch fails the build. To bump, see docs/ops/api-runbook.md.
+FROM node:22.22.2-alpine AS tessdata
+ARG TESSDATA_REF=4.1.0
+ARG TESSDATA_MSA_SHA256=e41a3e5febfec50c90371eb1cbb17a48b10cad387900e3420b1f134c1b766cba
+ARG TESSDATA_ENG_SHA256=7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2
+WORKDIR /opt/tessdata
+RUN wget -q -O msa.traineddata "https://github.com/tesseract-ocr/tessdata_fast/raw/${TESSDATA_REF}/msa.traineddata" \
+ && wget -q -O eng.traineddata "https://github.com/tesseract-ocr/tessdata_fast/raw/${TESSDATA_REF}/eng.traineddata" \
+ && echo "${TESSDATA_MSA_SHA256}  msa.traineddata" | sha256sum -c - \
+ && echo "${TESSDATA_ENG_SHA256}  eng.traineddata" | sha256sum -c -
 
 # ---- runtime ----
 FROM node:22.22.2-alpine AS runtime
@@ -51,6 +65,8 @@ COPY --from=build --chown=node:node /app/apps/api/package.json ./apps/api/packag
 COPY --from=build --chown=node:node /app/apps/api/dist ./apps/api/dist
 # Migration folder names only matter to GET /api/ready (shipped migrations must be applied); the SQL is not executed here.
 COPY --from=build --chown=node:node /app/apps/api/prisma/migrations ./apps/api/prisma/migrations
+# OCR language data (see the tessdata stage); OCR_LANG_DIR=/opt/tessdata. Read-only at run time.
+COPY --from=tessdata --chown=node:node /opt/tessdata /opt/tessdata
 WORKDIR /app/apps/api
 # Non-root (uid 1000 from the base image). Nothing writes outside /tmp (tmpfs) and the uploads folder.
 # The uploads folder is owned by node in the image, so a new named volume (apifiles) inherits that owner.

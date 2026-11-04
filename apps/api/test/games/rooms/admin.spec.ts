@@ -115,11 +115,11 @@ describe('admin game settings (M16-51, M16-52)', () => {
 
   describe('guards', () => {
     it('no session: 401 on both routes', async () => {
-      expectError(await t.http().get('/api/admin/games'), 'UNAUTHORIZED', 'Unauthenticated.')
+      expectError(await t.http().get('/api/admin/games'), 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
       expectError(
         await t.http().put('/api/admin/games/settings').send({ boardgame_quiz_tiles: 3 }),
         'UNAUTHORIZED',
-        'Unauthenticated.',
+        'Sesi anda telah tamat. Sila log masuk semula.',
       )
     })
 
@@ -131,11 +131,11 @@ describe('admin game settings (M16-51, M16-52)', () => {
     ] as const) {
       it(`${name}: 403 "This action is unauthorized." on both routes, and nothing is written`, async () => {
         const c = await loginAs(t, email)
-        expectError(await c.get('/api/admin/games'), 'FORBIDDEN', 'This action is unauthorized.')
+        expectError(await c.get('/api/admin/games'), 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
         expectError(
           await c.put('/api/admin/games/settings', { boardgame_quiz_tiles: 1 }),
           'FORBIDDEN',
-          'This action is unauthorized.',
+          'Anda tidak dibenarkan melakukan tindakan ini.',
         )
         expect(
           parseData(await admin.get('/api/admin/games'), GamesAdminOverviewSchema).settings
@@ -146,7 +146,7 @@ describe('admin game settings (M16-51, M16-52)', () => {
 
     it('an admin in Mod Pelajar acts as a student: 403', async () => {
       const mod = await loginAs(t, ACCOUNTS.admin, { mod: true })
-      expectError(await mod.get('/api/admin/games'), 'FORBIDDEN', 'This action is unauthorized.')
+      expectError(await mod.get('/api/admin/games'), 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.')
     })
 
     it('PUT without the CSRF token is CSRF_INVALID', async () => {

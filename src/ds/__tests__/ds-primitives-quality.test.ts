@@ -51,6 +51,26 @@ describe('DsNativeSelect (themed list)', () => {
     expect(w.get('[role=combobox]').attributes('aria-label')).toBe('Tahap')
     expect(w.classes()).toContain('w-48')
   })
+  describe('blank row wording', () => {
+    const mk = (label: string) =>
+      mount(DsNativeSelect, {
+        props: { modelValue: '', items: [{ label: 'A', value: 'a' }] },
+        slots: { default: `<option value="">${label}</option>` },
+      })
+    const rowsOf = (w: ReturnType<typeof mk>) =>
+      (w.findComponent({ name: 'Select' }).props('items') as { label?: string }[]).map((i) => i.label)
+    it('a blank "Pilih kelas" row becomes the placeholder and is not a list item', () => {
+      const w = mk('Pilih kelas')
+      expect(rowsOf(w)).toEqual(['A'])
+      expect(w.get('[role=combobox]').text()).toContain('Pilih kelas')
+    })
+    it('a blank "Semua kelas" row stays a list item', () => {
+      expect(rowsOf(mk('Semua kelas'))).toEqual(['A', 'Semua kelas'])
+    })
+    it('"Pilihan" (no word boundary) is not a prompt', () => {
+      expect(rowsOf(mk('Pilihan'))).toContain('Pilihan')
+    })
+  })
   it('numeric values keep their type through v-model', async () => {
     const w = mount(DsNativeSelect, {
       props: { modelValue: 1, items: [{ label: 'Satu', value: 1 }, { label: 'Dua', value: 2 }] },

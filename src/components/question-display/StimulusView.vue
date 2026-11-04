@@ -10,11 +10,12 @@
  */
 import { computed } from 'vue'
 
-import { StimulusFigure } from '../../../components/question-display'
+import { sourceLine } from './copy'
+import StimulusFigure from './StimulusFigure.vue'
 import { DsIconChip } from '@/ds'
 
-import type { StimulusDef } from '../domain/types'
-import { toStimulusData } from '../lib/stimulus-data'
+import type { StimulusDef } from '@/modules/m28-bijak-spm/domain/types'
+import { toStimulusData } from './lib/stimulus-data'
 import RichText from './RichText.vue'
 
 const props = withDefaults(defineProps<{ stimulus: StimulusDef; thumb?: boolean }>(), {
@@ -85,10 +86,12 @@ const figure = computed(() => toStimulusData(props.stimulus))
   />
 
   <figure v-else class="flex flex-col gap-2" data-testid="stimulus" :data-stimulus="stimulus.id">
-    <div v-if="stimulus.text" class="rounded-xl bg-muted p-3 text-body text-default">
+    <div v-if="stimulus.text" class="max-w-full overflow-x-auto rounded-xl bg-muted p-3 text-body text-default">
       <p v-if="stimulus.title" class="mb-2 font-semibold text-highlighted">{{ stimulus.title }}</p>
       <p><RichText :text="stimulus.text" /></p>
-      <p v-if="stimulus.source" class="mt-2 text-caption text-muted">{{ stimulus.source }}</p>
+      <p v-if="stimulus.source" class="mt-2 text-caption text-muted" data-testid="stimulus-source">
+        {{ sourceLine(stimulus.source) }}
+      </p>
     </div>
     <div v-else-if="stimulus.table" class="max-w-full overflow-x-auto rounded-xl bg-muted p-2">
       <UTable :data="tableRows" :columns="tableColumns" :aria-label="stimulus.alt" />

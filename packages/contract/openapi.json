@@ -92,7 +92,13 @@
           "CONFLICT",
           "SERVER_ERROR",
           "RATE_LIMITED",
-          "PASSWORD_CHANGE_REQUIRED"
+          "PASSWORD_CHANGE_REQUIRED",
+          "BAD_REQUEST",
+          "PAYLOAD_TOO_LARGE",
+          "UNSUPPORTED_MEDIA_TYPE",
+          "BAD_GATEWAY",
+          "SERVICE_UNAVAILABLE",
+          "TIMEOUT"
         ]
       },
       "ErrorPayload": {
@@ -11531,6 +11537,13 @@
             ],
             "additionalProperties": false,
             "description": "Answer mode of a leaf; absent on a part that only holds children."
+          },
+          "stimulusId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "FR-QA-09: the id of the stimulus of the question group this leaf cites (a `stimuli[].id` of the view).",
+            "example": "1042"
           },
           "children": {
             "type": "array",
@@ -40485,6 +40498,26 @@
           "ids"
         ]
       },
+      "QuestionBulkGroupRequest": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "review"
+            ]
+          },
+          "groupId": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "action",
+          "groupId"
+        ],
+        "additionalProperties": false
+      },
       "QuestionFilter": {
         "type": "object",
         "properties": {
@@ -42160,7 +42193,7 @@
             },
             "maxItems": 40,
             "default": [],
-            "description": "D93: 0 or more existing questions (a group with fewer than 2 is a draft group; every write answers with `warning` until it has 2)."
+            "description": "0 or more existing questions (a group holds 1..n; a group with 0 members is a draft group and every write answers with `warning` until it has 1)."
           },
           "optionBank": {
             "type": "array",
@@ -42181,6 +42214,33 @@
               ]
             },
             "maxItems": 8
+          },
+          "subjectId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "S1-T01 (DM-51): subject of the group; defaulted from the members when absent (60 makes it required, kept optional for additivity).",
+            "example": "1042"
+          },
+          "educationLevelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "S1-T01: Tingkatan of the group; defaulted from the members when absent.",
+            "example": "1042"
+          },
+          "kertas": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "1",
+              "2",
+              "3",
+              null
+            ],
+            "description": "S1-T01: kertas of the group (reuses `QuestionKertas`); defaulted from the members when absent."
           }
         },
         "required": [
@@ -42205,6 +42265,33 @@
             },
             "minItems": 1,
             "maxItems": 3
+          },
+          "subjectId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "S1-T01 (DM-51): subject of the group; defaulted from the members when absent (60 makes it required, kept optional for additivity).",
+            "example": "1042"
+          },
+          "educationLevelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "S1-T01: Tingkatan of the group; defaulted from the members when absent.",
+            "example": "1042"
+          },
+          "kertas": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "1",
+              "2",
+              "3",
+              null
+            ],
+            "description": "S1-T01: kertas of the group (reuses `QuestionKertas`); defaulted from the members when absent."
           }
         },
         "additionalProperties": false
@@ -42313,12 +42400,51 @@
             },
             "description": "The members in published order (same order as `questionIds`), one short form each."
           },
+          "subjectId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "educationLevelId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "kertas": {
+            "$ref": "#/components/schemas/QuestionKertas"
+          },
+          "draftOfGroupId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "S1-T01 (DM-51): the served group this draft copy replaces on publish; null for an ordinary group.",
+            "example": "1042"
+          },
           "warning": {
             "type": [
               "string",
               "null"
             ],
-            "description": "BM warning while the group has fewer than 2 questions (a draft group, D93); null otherwise. The write went through."
+            "description": "BM warning while the group has 0 questions (a draft group); null otherwise. The write went through."
           }
         },
         "required": [
@@ -42518,7 +42644,7 @@
               "string",
               "null"
             ],
-            "description": "BM warning when fewer than 2 members remain; the removal went through."
+            "description": "BM warning when no member remains; the removal went through."
           }
         },
         "required": [
@@ -42546,6 +42672,151 @@
           "deleted",
           "releasedQuestionIds"
         ]
+      },
+      "StimulusGroupPublishGateDetail": {
+        "type": "object",
+        "properties": {
+          "questionId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "questionId",
+          "message"
+        ]
+      },
+      "StimulusGroupPublishGateError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "VALIDATION_ERROR"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "details": {
+                "type": "object",
+                "properties": {
+                  "gate": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/StimulusGroupPublishGateDetail"
+                    }
+                  }
+                },
+                "required": [
+                  "gate"
+                ]
+              }
+            },
+            "required": [
+              "code",
+              "message",
+              "details"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "StimulusGroupRetireRequest": {
+        "type": "object",
+        "properties": {
+          "confirm": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "confirm"
+        ],
+        "additionalProperties": false
+      },
+      "StimulusGroupRetireResult": {
+        "type": "object",
+        "properties": {
+          "archived": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "affectedPapers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "title": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "title"
+              ]
+            }
+          }
+        },
+        "required": [
+          "archived",
+          "affectedPapers"
+        ]
+      },
+      "StimulusGroupMoveRequest": {
+        "type": "object",
+        "properties": {
+          "toGroupId": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "toGroupId"
+        ],
+        "additionalProperties": false
+      },
+      "StimulusGroupMoveResult": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "$ref": "#/components/schemas/StimulusGroupDetail"
+          },
+          "to": {
+            "$ref": "#/components/schemas/StimulusGroupDetail"
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ]
+      },
+      "StimulusGroupMergeRequest": {
+        "type": "object",
+        "properties": {
+          "fromGroupId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "intoGroupId": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "fromGroupId",
+          "intoGroupId"
+        ],
+        "additionalProperties": false
       },
       "StudioFigureLinks": {
         "type": "object",
@@ -72082,6 +72353,13 @@
           "status": {
             "$ref": "#/components/schemas/IntakeBatchStatus"
           },
+          "source": {
+            "type": "string",
+            "enum": [
+              "guru"
+            ],
+            "description": "S1-T08: `guru` = teacher submissions (Kiriman Guru) only. Omitted = every batch. Any other value is 422."
+          },
           "page": {
             "type": "integer",
             "minimum": 1,
@@ -72223,10 +72501,28 @@
             "description": "BM label of `status` (INTAKE_BATCH_STATUS_LABELS)."
           },
           "paperType": {
-            "$ref": "#/components/schemas/IntakePaperType"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IntakePaperType"
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "umum",
+                  "trial",
+                  "dskp",
+                  "buku_teks",
+                  "buku_latihan",
+                  "peperiksaan",
+                  "lain"
+                ]
+              }
+            ],
+            "description": "An admin code (IntakePaperType) or, for a teacher submission, an OPT-JENIS-HANTARAN slug."
           },
           "subject": {
-            "type": "string"
+            "type": "string",
+            "description": "Admin: subject code. Teacher submission: free text (at most 100)."
           },
           "kertas": {
             "anyOf": [
@@ -72241,11 +72537,19 @@
                 "enum": [
                   2
                 ]
+              },
+              {
+                "type": "null"
               }
-            ]
+            ],
+            "description": "Null only for a teacher submission."
           },
           "year": {
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Null only when a teacher submission has no year."
           },
           "source": {
             "type": "string"
@@ -72356,10 +72660,28 @@
             "description": "BM label of `status` (INTAKE_BATCH_STATUS_LABELS)."
           },
           "paperType": {
-            "$ref": "#/components/schemas/IntakePaperType"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IntakePaperType"
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "umum",
+                  "trial",
+                  "dskp",
+                  "buku_teks",
+                  "buku_latihan",
+                  "peperiksaan",
+                  "lain"
+                ]
+              }
+            ],
+            "description": "An admin code (IntakePaperType) or, for a teacher submission, an OPT-JENIS-HANTARAN slug."
           },
           "subject": {
-            "type": "string"
+            "type": "string",
+            "description": "Admin: subject code. Teacher submission: free text (at most 100)."
           },
           "kertas": {
             "anyOf": [
@@ -72374,11 +72696,19 @@
                 "enum": [
                   2
                 ]
+              },
+              {
+                "type": "null"
               }
-            ]
+            ],
+            "description": "Null only for a teacher submission."
           },
           "year": {
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Null only when a teacher submission has no year."
           },
           "source": {
             "type": "string"
@@ -103711,7 +104041,7 @@
           "questions"
         ],
         "summary": "Apply one lifecycle action to many questions",
-        "description": "Unknown ids are skipped silently; duplicates count once. Flash: \"<n> soalan berjaya dikemaskini.\" (when nothing was affected, at least one row was skipped as already Diterbitkan and no row failed, the flash is \"Soalan ini sudah diterbitkan.\" [PROPOSED]). Transition rules and \"only Admin Pusat publishes\" belong to BE-10; forbidden transitions and their error are BE-10 to define. `approved` runs the merged approve gate (ADR-0027: tag, keys, open duplicate, marks, media, AI as last editor, DSKP-complete for an SPM-bound question; no per-question source or rights rule, D99) per id, the same as `POST /questions/{id}/status`: a refused id is a `failed[]` entry (VALIDATION_ERROR with the gate `fields`), the others are applied. A bulk `approved` of a question that is already Diterbitkan is an idempotent no-op (R1E2E-10): no transition, no status event, not counted in `affected`, not in the audit `ids`, and not an error; it is listed in `skipped[]` as `{ id, reason }` with reason \"Soalan ini sudah diterbitkan.\" (`skipped` is present only when there is such a row), `failed[]` keeps the real refusals only, and the other ids of the batch are still applied (the single `POST /questions/{id}/status` still answers 409 for it). `POST /questions` with `status: approved` runs the same gate (422, nothing stored).",
+        "description": "Unknown ids are skipped silently; duplicates count once. Flash: \"<n> soalan berjaya dikemaskini.\" (when nothing was affected, at least one row was skipped as already Diterbitkan and no row failed, the flash is \"Soalan ini sudah diterbitkan.\" [PROPOSED]). Transition rules and \"only Admin Pusat publishes\" belong to BE-10; forbidden transitions and their error are BE-10 to define. `approved` runs the merged approve gate (ADR-0027: tag, keys, open duplicate, marks, media, AI as last editor, DSKP-complete for an SPM-bound question; no per-question source or rights rule, D99) per id, the same as `POST /questions/{id}/status`: a refused id is a `failed[]` entry (VALIDATION_ERROR with the gate `fields`), the others are applied. A bulk `approved` of a question that is already Diterbitkan is an idempotent no-op (R1E2E-10): no transition, no status event, not counted in `affected`, not in the audit `ids`, and not an error; it is listed in `skipped[]` as `{ id, reason }` with reason \"Soalan ini sudah diterbitkan.\" (`skipped` is present only when there is such a row), `failed[]` keeps the real refusals only, and the other ids of the batch are still applied (the single `POST /questions/{id}/status` still answers 409 for it). `POST /questions` with `status: approved` runs the same gate (422, nothing stored). S1-T01: the body is either `{action, ids}` (`QuestionBulkRequest`) or `{action: draft|review, groupId}` (`QuestionBulkGroupRequest`: every member of the stimulus group goes together); `ids` and `groupId` together are refused 422 on `groupId` (\"Pilih soalan atau kumpulan, bukan kedua-duanya.\"), a request with only part of a group is refused 422 (\"Soalan dalam kumpulan rangsangan mesti dipilih bersama.\"), a group with an archived member 409 (\"Kumpulan mengandungi soalan diarkibkan.\"), a group with 0 members 422 (\"Kumpulan perlu sekurang-kurangnya 1 soalan.\"). A partial group in the ids form carries `details.reason = stimulus_group_split`. In the `groupId` form, members already Menunggu Semakan or Diluluskan are left as they are (skipped, not failed) and the other members move together.",
         "parameters": [
           {
             "schema": {
@@ -103730,7 +104060,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/QuestionBulkRequest"
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/QuestionBulkRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/QuestionBulkGroupRequest"
+                  }
+                ]
               }
             }
           }
@@ -105294,8 +105631,8 @@
           "questions",
           "stimuli"
         ],
-        "summary": "Create a group: 1 to 3 stimuli and 0 to 40 member questions (D93: a group with fewer than 2 is a draft group)",
-        "description": "D90: the shared stimulus is one group shown once with all its member questions. A group carries no marks and is never a question. A question already in another group, a PKSK, archived or inactive question, a question of another subject or level, and a question that is already shown to pupils (live approved) are refused. While the group has fewer than 2 members every write answers with `warning`; such a group cannot be placed in a paper (builder blocker \"Kumpulan perlu sekurang-kurangnya 2 soalan.\"). Members get positions 1..n in the order sent. Flash: \"Kumpulan rangsangan berjaya dicipta.\"",
+        "summary": "Create a group: 1 to 3 stimuli and 0 to 40 member questions (a group holds 1..n; 0 members is a draft group)",
+        "description": "D90: the shared stimulus is one group shown once with all its member questions. A group carries no marks and is never a question. A question already in another group, a PKSK, archived or inactive question, a question of another subject or level, and a question that is already shown to pupils (live approved) are refused. While the group has 0 members every write answers with `warning`; such a group cannot be placed in a paper (builder blocker \"Kumpulan perlu sekurang-kurangnya 1 soalan.\"). Members get positions 1..n in the order sent. Flash: \"Kumpulan rangsangan berjaya dicipta.\"",
         "parameters": [
           {
             "schema": {
@@ -106167,7 +106504,7 @@
           "stimuli"
         ],
         "summary": "Remove a question from a group",
-        "description": "Positions of the others close up. When fewer than 2 members remain the removal still succeeds and `warning` carries a BM message (\"Kumpulan ini kini hanya mempunyai 1 soalan. ...\").",
+        "description": "Positions of the others close up. When the last member is removed the removal still succeeds and `warning` carries the BM empty-group message (\"Kumpulan ini kini kosong. ...\").",
         "parameters": [
           {
             "schema": {
@@ -106308,6 +106645,633 @@
         "responses": {
           "200": {
             "description": "The group after the change.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/StimulusGroupDetail"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Admin Pusat only), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the stimulus is still used by a group or a question, or the change touches a question or stimulus that is shown to pupils (lifecycle first).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stimulus-groups/{id}/publish": {
+      "post": {
+        "tags": [
+          "questions",
+          "stimuli"
+        ],
+        "summary": "Publish a group: every member becomes approved in one audited transaction (S1-T01, API-Q-31)",
+        "description": "No body. Every member must be Menunggu Semakan (`review`) or already Diluluskan (`approved`); any other member (Draf, Diarkibkan or another status) answers 409 \"Semua soalan dalam kumpulan mesti dihantar untuk semakan dahulu.\" and nothing changes. An empty group is 409 \"Kumpulan perlu sekurang-kurangnya 1 soalan.\". One member failing its approve gate is 422 `details.gate[{questionId, message}]` and nothing changes. Publishing a draft copy (`draftOfGroupId` set) answers 409 until part 3b, which swaps it in for the served group in one transaction.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Published.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/StimulusGroupDetail"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Admin Pusat only), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the stimulus is still used by a group or a question, or the change touches a question or stimulus that is shown to pupils (lifecycle first).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with `details.gate[]`, one entry per failing member.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StimulusGroupPublishGateError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stimulus-groups/{id}/edit-as-draft": {
+      "post": {
+        "tags": [
+          "questions",
+          "stimuli"
+        ],
+        "summary": "Make a draft copy of a served group (S1-T01, API-Q-32, DM-51)",
+        "description": "No body. Stimuli are copied and the members become draft versions n+1; the original keeps serving. One open draft per group: a second call is 409 with `details.id` (the open draft). Flash: \"Draf kumpulan #{id} dicipta.\"",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The draft copy (`draftOfGroupId` = the path id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/StimulusGroupDetail"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Admin Pusat only), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the stimulus is still used by a group or a question, or the change touches a question or stimulus that is shown to pupils (lifecycle first).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stimulus-groups/{id}/draft": {
+      "delete": {
+        "tags": [
+          "questions",
+          "stimuli"
+        ],
+        "summary": "Discard the open draft copy of a group (S1-T01, API-Q-32)",
+        "description": "The original keeps serving. The copy and its staged versions are removed.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Discarded; no body."
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Admin Pusat only), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the stimulus is still used by a group or a question, or the change touches a question or stimulus that is shown to pupils (lifecycle first).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stimulus-groups/{id}/retire": {
+      "post": {
+        "tags": [
+          "questions",
+          "stimuli"
+        ],
+        "summary": "Archive every member of a group in one transaction (S1-T01, API-Q-33)",
+        "description": "Body `{confirm: true}` (422 otherwise). The stimuli are kept. `affectedPapers` names the published papers that hold a member.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StimulusGroupRetireRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Archived.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/StimulusGroupRetireResult"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Admin Pusat only), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the stimulus is still used by a group or a question, or the change touches a question or stimulus that is shown to pupils (lifecycle first).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stimulus-groups/{id}/members/{questionId}/move": {
+      "post": {
+        "tags": [
+          "questions",
+          "stimuli"
+        ],
+        "summary": "Move a member question to another group (S1-T01, API-Q-34)",
+        "description": "Same Subjek, Tingkatan and Kertas only (422 \"Subjek dan Tingkatan ahli mesti sama dengan kumpulan.\" / \"Soalan dalam satu kumpulan mesti sama subjek.\" / \"...sama kertas.\"). A member that is shown to pupils answers 409 `memberServed` (\"Soalan ini sedang dipaparkan kepada murid. Sunting sebagai draf atau arkibkannya dahulu sebelum memasukkannya ke dalam kumpulan.\") and nothing changes; moving a served member through draft copies comes with part 3b.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "questionId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StimulusGroupMoveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Both groups after the move.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/StimulusGroupMoveResult"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (Admin Pusat only), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the stimulus is still used by a group or a question, or the change touches a question or stimulus that is shown to pupils (lifecycle first).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stimulus-groups/merge": {
+      "post": {
+        "tags": [
+          "questions",
+          "stimuli"
+        ],
+        "summary": "Merge one group into another (S1-T01, API-Q-35)",
+        "description": "At most 3 stimuli after the merge (422 \"Satu kumpulan mesti mempunyai 1 hingga 3 rangsangan.\"); the two ids must differ.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StimulusGroupMergeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The merged group.",
             "content": {
               "application/json": {
                 "schema": {
@@ -123099,6 +124063,19 @@
             "required": false,
             "description": "Processing status of a submission (card BE-37): submitted = Dihantar, processing = Sedang diproses, ready_for_review = Sedia untuk semakan, failed = Gagal, cancelled = Dibatalkan [PROPOSED].",
             "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "guru"
+              ],
+              "description": "S1-T08: `guru` = teacher submissions (Kiriman Guru) only. Omitted = every batch. Any other value is 422."
+            },
+            "required": false,
+            "description": "S1-T08: `guru` = teacher submissions (Kiriman Guru) only. Omitted = every batch. Any other value is 422.",
+            "name": "source",
             "in": "query"
           },
           {

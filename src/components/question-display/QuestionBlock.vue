@@ -3,18 +3,21 @@
  * One question on the attempt screen: heading ("Soalan 6 · berdasarkan Rajah 2"), stem, then MCQ
  * option cards (DsQuizOption, single column) or the structured parts. Choose-N sections add the
  * "Pilih soalan ini untuk dijawab" box; the flag button marks the question for review.
+ * Slots (filled by the m28 attempt page): `report` (questionId, attemptId, variant) and
+ * `result` (result, title; rendered once per part result after "Semak").
  */
 import { computed, ref } from 'vue'
 
-import { McqOptions, qdCopy } from '../../../components/question-display'
 import { DsQuizOption, DsStack, DsText } from '@/ds'
 
-import { leavesOf } from '../domain/paper-model'
-import type { PartAnswer, QuestionResult, QuestionView } from '../domain/types'
-import { toOptionData } from '../lib/stimulus-data'
+import { leavesOf } from '@pp/exam-core/paper-model'
+
+import type { PartAnswer, QuestionResult, QuestionView } from '@/modules/m28-bijak-spm/domain/types'
+
+import { qdCopy } from './copy'
+import { toOptionData } from './lib/stimulus-data'
+import McqOptions from './McqOptions.vue'
 import PartNode from './PartNode.vue'
-import PartResultCard from './PartResultCard.vue'
-import ReportQuestionButton from './ReportQuestionButton.vue'
 import RichText from './RichText.vue'
 import StimulusStack from './StimulusStack.vue'
 
@@ -47,6 +50,7 @@ const correctOption = computed(() => props.check?.parts[0]?.scheme.correctOption
 const partResults = computed(() => props.check?.parts ?? [])
 /** The question's own stimuli above the stem (V2 section 1.5); `stemImage` only when `stimuli` is absent, so a picture shows once. */
 const ownStimuli = computed(() => props.question.stimuli ?? (props.question.stemImage ? [props.question.stemImage] : []))
+const reportVariant = computed(() => (props.question.mcq ? ('mcq' as const) : ('structured' as const)))
 const leaves = computed(() => leavesOf(props.question.parts ?? []))
 /** An option with a picture switches the choices to the shared `McqOptions` (picture boxes, load-failure state). */
 const optionPictures = computed(() => (props.question.mcq?.options ?? []).some((o) => !!o.image))
@@ -98,7 +102,12 @@ function pick(id: string): void {
         @click="emit('toggle-flag')"
         >{{ flagged ? 'Ditanda' : 'Tanda soalan' }}</UButton
       >
-      <ReportQuestionButton :question-id="question.id" :attempt-id="attemptId" :variant="question.mcq ? 'mcq' : 'structured'" />
+      <slot
+        name="report"
+        :question-id="question.id"
+        :attempt-id="attemptId"
+        :variant="reportVariant"
+      />
     </header>
 
     <DsStack v-if="choose" gap="2xs">
@@ -179,12 +188,9 @@ function pick(id: string): void {
     </template>
 
     <div v-if="check && !question.mcq" class="flex flex-col gap-3" data-testid="check-results">
-      <PartResultCard
-        v-for="r in partResults"
-        :key="r.partId"
-        :result="r"
-        :title="leaves.find((l) => l.id === r.partId)?.label"
-      />
+      <template v-for="r in partResults" :key="r.partId">
+        <slot name="result" :result="r" :title="leaves.find((l) => l.id === r.partId)?.label" />
+      </template>
     </div>
   </article>
 </template>

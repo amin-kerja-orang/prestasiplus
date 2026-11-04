@@ -1,0 +1,30 @@
+{
+  "note": "Lint ratchet baseline (S0-T04): error counts per file + rule. It only shrinks: each sector removes its own entries when it fixes them (npm run lint -- --update-baseline). Never add entries; new errors must be fixed, not baselined.",
+  "eslint": {
+    "src/ds/DsCallout.vue": {
+      "pp/ds-class-allowlist": 2
+    },
+    "src/ds/DsChart.vue": {
+      "pp/ds-no-inline-style": 1
+    },
+    "src/ds/DsDataTable.vue": {
+      "@typescript-eslint/no-unnecessary-type-assertion": 1
+    },
+    "src/ds/DsNativeSelect.vue": {
+      "vue/no-parsing-error": 1
+    },
+    "src/modules/m04-question-bank/pages/QuestionQualityPage.vue": {
+      "pp/ds-class-allowlist": 1
+    },
+    "src/modules/m07-pksk/pages/PkskQuestionListPage.vue": {
+      "pp/ds-class-allowlist": 2
+    },
+    "src/modules/m09-content/pages/AdminArticleListPage.vue": {
+      "pp/ds-class-allowlist": 2
+    },
+    "src/modules/m09-content/pages/AudioSetListPage.vue": {
+      "pp/ds-class-allowlist": 1
+    }
+  },
+  "stylelint": {}
+}

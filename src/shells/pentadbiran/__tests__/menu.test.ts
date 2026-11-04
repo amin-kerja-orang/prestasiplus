@@ -111,6 +111,8 @@ describe('Pentadbiran routing', () => {
   })
 })
 
+const PUPIL_PENDING_ROUTE_ACCESS: ReadonlySet<string> = new Set(['headcount', 'analisa-item'])
+
 describe('Pembelajaran menus (scope off, UAT build)', () => {
   // `${role} ${path}` pairs allowed to open the observed live 403-for-every-role page (M08 S21,
   // OQ-M08-01): only the teacher, whose matrix lists it with the scope on too (row 43). The student
@@ -162,7 +164,12 @@ describe('Pembelajaran menus (scope off, UAT build)', () => {
       vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')
       const on = ids(role)
       vi.unstubAllEnvs()
-      for (const id of on) expect(off.has(id), `${role} ${id}`).toBe(true)
+      for (const id of on) {
+        // S0-T05 shows Headcount and Analisa Item to the pupil with the scope on; their m08 routes
+        // still refuse the pupil, so the scope-off menu (route-role check) drops them until S10-T09.
+        if (role === 'student' && PUPIL_PENDING_ROUTE_ACCESS.has(id)) continue
+        expect(off.has(id), `${role} ${id}`).toBe(true)
+      }
     }
   })
 })
