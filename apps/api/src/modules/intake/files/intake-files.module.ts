@@ -39,6 +39,6 @@ import { IntakeUploadService } from './intake-upload.service'
     // BE-36: the real adapter (mock unless AI_PROVIDER says otherwise). DisabledAiExtractor stays exported for tests that want a dead port.
     { provide: AI_EXTRACTOR, useExisting: AiExtractorAdapter },
   ],
-  exports: [IntakeFilesService, IntakeFiguresService, IntakeProcessingService, IntakeExtractionInput, AI_EXTRACTOR],
+  exports: [IntakeFilesService, IntakeUploadService, IntakeFiguresService, IntakeProcessingService, IntakeExtractionInput, AI_EXTRACTOR],
 })
 export class IntakeFilesModule {}

@@ -20,7 +20,7 @@ import {
   type StatItem,
 } from '@/ds'
 
-import RichText from '../../components/RichText.vue'
+import { RichText } from '../../../../components/question-display'
 import type { QuestionStatus, QueueItem } from '../../domain/admin-types'
 import { bijakAdminServer } from '../../server/client'
 import { isUnavailable, UNAVAILABLE_TITLE } from '../../server/errors'

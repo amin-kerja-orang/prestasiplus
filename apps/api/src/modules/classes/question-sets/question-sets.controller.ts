@@ -13,6 +13,7 @@ import { CLOCK, type Clock } from '../../../db/clock'
 import { Actor, type ClassActor } from '../actor'
 import { DskpService } from './dskp.service'
 import { tableDocx } from './docx'
+import { IntakeTeacherGate } from '../../intake/intake-teacher.gate'
 import { PaperUploadInterceptor } from './paper-upload.interceptor'
 import type { RawPart } from './question-papers'
 import { QuestionPapersService } from './question-papers.service'
@@ -62,6 +63,8 @@ export class TeacherQuestionToolsController {
   ) {}
 
   @Post('question-papers')
+  // S1-T08: the teacher paper path follows the intake teacher flag (403 while INTAKE_TEACHER_ENABLED is off), before the body is read.
+  @UseGuards(IntakeTeacherGate)
   @RateLimit(QUESTION_SET_LIMITS.paper)
   @UseInterceptors(PaperUploadInterceptor)
   async uploadPaper(@Actor() actor: ClassActor, @Body() body: unknown, @UploadedFiles() files: RawPart[] | undefined) {

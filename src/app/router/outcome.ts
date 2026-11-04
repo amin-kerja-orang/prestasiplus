@@ -11,10 +11,7 @@ import { readonly, shallowRef } from 'vue'
 
 import { formatTabTitle } from '@/composables/tabTitle'
 
-import { SCOPE_PAGE_TITLE } from '../prototype-scope'
-
-/** `'scope'`: the route exists but is outside the prototype scope (D43, `prototype-scope.ts`). */
-export type RouteOutcome = 403 | 404 | 'scope'
+export type RouteOutcome = 403 | 404
 
 const outcome = shallowRef<RouteOutcome | null>(null)
 
@@ -23,8 +20,7 @@ export function setRouteOutcome(next: RouteOutcome | null): void {
   // A page that raises 404/403 itself (after its fetch) must show the error tab title too. Clearing
   // needs nothing here: the after-each hook sets the next page's title on navigation.
   if (next !== null && typeof document !== 'undefined') {
-    document.title =
-      next === 404 ? NOT_FOUND_TITLE : next === 'scope' ? SCOPE_PAGE_TITLE : FORBIDDEN_TITLE
+    document.title = next === 404 ? NOT_FOUND_TITLE : FORBIDDEN_TITLE
   }
 }
 

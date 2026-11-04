@@ -44,7 +44,7 @@ Buka **https://claude.ai/artifact/5My2fSJfDXivvSUBmcVtbT** di telefon atau deskt
 
 ## Akaun di luar skop
 
-Akaun berikut wujud, tetapi dalam skop prototaip (TRACKER D43, D48) log masuknya memaparkan "Peranan ini tidak termasuk dalam prototaip.":
+Akaun berikut wujud, tetapi dalam skop prototaip (TRACKER D43, D48) log masuknya memaparkan "Peranan ini belum menggunakan sistem ini.":
 
 | Peranan | E-mel |
 |---|---|

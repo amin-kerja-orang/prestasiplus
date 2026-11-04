@@ -139,7 +139,7 @@ describe('stimulus group and stimulus lists (admin, real database)', () => {
       const row = (await groups('status=served&pageSize=100')).data.find((r) => r.id === s.id)!
       expect(row.status).toBe('served')
       expect(row.members[0]).toMatchObject({ status: 'approved', servable: true })
-      expect(row.warning).not.toBeNull() // one member
+      expect(row.warning).toBeNull() // one member is a valid group (S1-T01)
     })
 
     it('REQ-B-025a: a group whose only pinned member was archived or deactivated still lists as served while a published paper pins it', async () => {

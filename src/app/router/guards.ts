@@ -39,7 +39,6 @@ import {
   isPathAllowed,
   isPrototypeRole,
   isPrototypeScopeOn,
-  SCOPE_PAGE_TITLE,
   scopeHomePath,
 } from '../prototype-scope'
 import { resolveShell } from './layouts'
@@ -131,18 +130,10 @@ export function decideAccess(to: RouteLocationNormalized, session: GuardSession)
     return { kind: 'redirect', to: home }
   }
 
-  // Prototype scope (D43): a route outside the role's allowed set renders the friendly "Belum
-  // tersedia" page in place (URL unchanged). That includes a path no screen exists for (an unbuilt
-  // or mistyped URL): a logged-in user gets the friendly page, a guest keeps the plain 404.
-  if (isPrototypeScopeOn() && (to.name !== NOT_FOUND_ROUTE_NAME || session.isLoggedIn)) {
-    if (!isPathAllowed(session.role, to.path)) {
-      // Never show "Belum tersedia": send a logged-in prototype role to its own home. The page
-      // stays only where no home exists (guest, or the home itself is out of scope).
-      if (isPrototypeRole(session.role) && home !== to.path && isPathAllowed(session.role, home)) {
-        return { kind: 'redirect', to: home }
-      }
-      return { kind: 'in-place', status: 'scope' }
-    }
+  // Prototype scope: a path outside the role's matrix list is a hidden module. It answers the
+  // standard 404 page in place (URL unchanged) for guests and logged-in users alike (FR-X2-2).
+  if (isPrototypeScopeOn() && !isPathAllowed(session.role, to.path)) {
+    return { kind: 'in-place', status: 404 }
   }
 
   return ALLOW
@@ -206,7 +197,6 @@ function titleFor(to: RouteLocationNormalized): string | null {
   const status = useRouteOutcome().value
   if (status === 403) return FORBIDDEN_TITLE
   if (status === 404) return NOT_FOUND_TITLE
-  if (status === 'scope') return SCOPE_PAGE_TITLE
   // A guest on a `public-or-user` route sees the public layout's title (F-20, M09 FR-M09-29/82).
   const guestTitle = to.meta.guestTitle
   if (
