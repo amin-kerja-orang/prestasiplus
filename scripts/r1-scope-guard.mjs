@@ -375,7 +375,7 @@ export function similarModels(a, b) {
   return lim > 0 && levenshtein(x, y) <= lim
 }
 
-function checkNoDuplicates({ cwd, head, mergeBase, range, entries, body, hasId, cardId, cards, fails, warns }) {
+function checkNoDuplicates({ cwd, head, mergeBase, range, entries, hasId, cardId, cards, fails, warns }) {
   const baseText = gitShowOrNull(cwd, mergeBase, MAP_PATH)
   if (!baseText) return // no map in the base yet: nothing to compare with
   const baseMap = JSON.parse(baseText)
@@ -407,7 +407,6 @@ function checkNoDuplicates({ cwd, head, mergeBase, range, entries, body, hasId, 
     collectConsts('\n' + g, consts)
   } catch { /* none */ }
 
-  const fresh = (items, keyOf, baseKeys, baseItemsOfFile) => items.filter((it) => !baseKeys.has(keyOf(it)) && !baseItemsOfFile.has(keyOf(it)))
   const keysOf = (arr, f) => new Set((arr ?? []).map(f))
   const oldKeys = (e, extract, keyOf) => {
     if (e.st === 'A') return new Set()
