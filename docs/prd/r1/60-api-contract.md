@@ -850,6 +850,8 @@ The drill is `POST /api/practice/sessions { mode: 'remedial' | 'revision', subje
 
 ### 2.17.6 RPT
 
+**API-RPT-01 additions to `PerformanceStudent`** (S10-T01): `trend: { week: string /* Monday, YYYY-MM-DD, Asia/Kuala_Lumpur */; label: string /* "Mgg 1" oldest ... "Mgg 12" current */; accuracy: number | null /* pooled, one decimal; null = no answers */; sessions: number }[12]`; `weakTopics[]` keeps its existing shape (`spId`, `label`, `code`, `subjectCode`, `levelId`, `attempts`, `accuracy`, `focusCount`) where `spId` is the answer rows' `topic_id` (DSKP SP) else `chapter_id` (then `code` is null), >= 2 attempts and accuracy < 60.
+
 **API-RPT-16 `PUT /api/headcounts/:id/defaults`** (G own config): body `{ defaultTov: number | null; defaultEtr: number | null }` (0..100) -> `{ data: PerformanceHeadcountDetail }`; an entry with a null `tov` or `etr` reads the default (DM-49).
 
 **API-RPT-05 `GET /api/item-analysis/me`** (M, own attempts only; `?subjectCode&tapis`)
