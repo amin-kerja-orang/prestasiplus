@@ -510,6 +510,7 @@ function mapPart(
     label: p.label,
     prompt: p.prompt.ms,
     marks: p.marks,
+    ...(p.stimulusId != null ? { stimulusId: stimulusWireId(p.stimulusId) } : {}),
     answer: {
       kind,
       ...(unit !== undefined ? { unit } : {}),
