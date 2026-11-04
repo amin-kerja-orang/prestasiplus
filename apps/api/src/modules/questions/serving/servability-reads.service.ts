@@ -64,6 +64,9 @@ interface PaperRow {
   subject_name: string | null
 }
 const PAPER_STATUSES: readonly string[] = SERVABILITY_PAPER_STATUSES
+/** A count in a card's attention line, as the hub prints its totals: "2,428". */
+const countText = (n: number): string => n.toLocaleString('en-US')
+
 const paperStatusOf = (status: string): ServabilityPaperRow['status'] => SERVABILITY_PAPER_STATUSES.find((s) => s === status) ?? 'draft'
 
 const like = (s: string): string => `%${s.replace(/[\\%_]/g, (c) => `\\${c}`)}%`
@@ -217,14 +220,14 @@ export class ServabilityReadsService {
     // Hub cards (FR-ADM-Q01.1), PRD order. Each counts the ROWS of the lane it opens; Latih Tubi counts the questions of its cells.
     const card = (lane: ServabilityHubLane, total: number, attention: number): ServabilityHubCard => {
       const copy = SERVABILITY_HUB_CARDS[lane]
-      return { lane, ...copy, total, attention, attentionLines: attention > 0 ? [{ count: attention, text: `${String(attention)} ${copy.attentionLabel}` }] : [] }
+      return { lane, ...copy, total, attention, attentionLines: attention > 0 ? [{ count: attention, text: `${countText(attention)} ${copy.attentionLabel}` }] : [] }
     }
     const failed = (lane: ServabilityHubLane): ServabilityHubCard => ({ ...card(lane, 0, 0), failed: true })
     // "tiada halaman" has no definition yet (issue S3-T03, awaiting the product owner): the card carries the count only.
     const subjektif = (f: SubjektifFigures): ServabilityHubCard => {
       const lines: ServabilityLaneAttention[] = []
-      if (f.noScheme > 0) lines.push({ count: f.noScheme, text: `${String(f.noScheme)} ${SERVABILITY_HUB_CARDS.subjektif.attentionLabel}` })
-      if (f.noKey > 0) lines.push({ count: f.noKey, text: `${String(f.noKey)} tiada kunci jawapan` })
+      if (f.noScheme > 0) lines.push({ count: f.noScheme, text: `${countText(f.noScheme)} ${SERVABILITY_HUB_CARDS.subjektif.attentionLabel}` })
+      if (f.noKey > 0) lines.push({ count: f.noKey, text: `${countText(f.noKey)} tiada kunci jawapan` })
       return { ...card('subjektif', f.total, f.attention), attentionLines: lines }
     }
     return {
