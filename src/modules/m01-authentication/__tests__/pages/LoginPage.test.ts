@@ -289,7 +289,7 @@ describe('LoginPage (M01 S1)', () => {
       expect(post).toHaveBeenCalledWith('/api/auth/logout')
       expect(useSessionStore().isLoggedIn).toBe(false)
       expect(w.get('[data-testid=login-alert]').text()).toBe(
-        'Peranan ini tidak termasuk dalam prototaip.',
+        'Peranan ini belum menggunakan sistem ini.',
       )
       expect(router.currentRoute.value.fullPath).toBe('/login')
       expect((w.get('[data-testid=login-password]').element as HTMLInputElement).value).toBe('')
