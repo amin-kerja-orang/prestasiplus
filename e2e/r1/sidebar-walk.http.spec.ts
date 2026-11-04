@@ -7,18 +7,21 @@
  * answers 403 FORBIDDEN).
  *
  * Runs only under playwright.http.config.ts (real stack). Viewport-independent checks run at 1280;
- * one 375 test per role opens the drawer and checks the sidebar link set is reachable there.
+ * one 375 test per role checks that the tab bar plus the "Lagi" panel reach the desktop link set
+ * (minus the account links) and taps each link.
  *
- * Selector: `[data-testid="shell-user-sidebar"] nav a[data-nav-id]`. `UserNavList` puts a stable
- * `data-nav-id` (the nav item id of user-nav.ts) on every item link, including the children of a
- * collapsed group (`v-show`, so they stay in the DOM). Reading `href` from the DOM therefore needs no
- * group expansion and excludes the logo, profile and logout links that have no `data-nav-id`.
+ * Selectors: in the http build the pupil, Guru and Admin Sekolah render the Pembelajaran shell
+ * (src/app/router/layouts.ts), not UserShell. Desktop: `[data-testid="pembelajaran-nav"] a[href]`, the
+ * `UNavigationMenu` of the sidebar (section headings are label rows, not links, so `a[href]` is exactly
+ * the openable items; the Kirkpatrick group is one row that opens its first page; account links live in
+ * the footer menu). Phone: the bottom tab bar (`pembelajaran-bottom-nav`) plus the "Lagi" slide-over
+ * (`pembelajaran-lagi-nav`). The links carry no `data-nav-id`, so rows are keyed by role and route path.
  *
  * Calibration: EXPECTED_RED is calibrated by the first CI run, per the card (D115). The S0-T06 PR
  * lists that as awaiting CI.
  *
- * Keep in step with `src/shells/__tests__/user-nav.test.ts` ("pins the sidebar item ids"): a nav
- * change must update both, and EXPECTED_RED below.
+ * Keep in step with `src/shells/__tests__/user-nav.test.ts` ("pins the sidebar item ids") and
+ * `src/shells/pembelajaran/pembelajaran-nav.ts`: a nav change must update both, and EXPECTED_RED below.
  */
 import { readFileSync } from 'node:fs'
 
@@ -41,8 +44,11 @@ const BANNED: string[] = (
   loadBannedStrings(readFileSync(new URL('../../docs/prd/r1/40-cross-cutting.md', import.meta.url), 'utf8')) as string[]
 ).map((s) => s.toLowerCase())
 
-const SIDEBAR = '[data-testid="shell-user-sidebar"] nav a[data-nav-id]'
-const DRAWER = '[data-testid="shell-user-drawer"] nav a[data-nav-id]'
+const SIDEBAR = '[data-testid="pembelajaran-nav"] a[href]'
+const TABS = '[data-testid="pembelajaran-bottom-nav"] a[href]'
+const LAGI = '[data-testid="pembelajaran-lagi-nav"] a[href]'
+/** Account links: in the footer menu on desktop and the account block of "Lagi"; not part of the phone diff. */
+const ACCOUNT_PATHS = ['/profile', '/tetapan', '/panduan', '/pusat-tuisyen/panduan', '/pusat-tuisyen/tiket']
 
 interface Row {
   id: string
@@ -78,8 +84,12 @@ const EXPECTED_RED: Record<WalkRole, Row[]> = {
   adminSekolah: [],
 }
 
-/** Fewest sidebar links a role must show (nav data: 41 / 26 / 23 ids); an empty sidebar fails. */
-const MIN_LINKS: Record<WalkRole, number> = { student: 30, guru: 20, adminSekolah: 18 }
+/**
+ * Fewest sidebar links a role must show, from what `sidebarEntries(role)` yields with the scope on:
+ * pupil 41 items (40 allowed here because the Cikgu ALESA item depends on VITE_ALESA_AI), Guru 26 items
+ * minus the 7 Kirkpatrick pages plus their one row = 20, Admin Sekolah 23. An empty sidebar fails.
+ */
+const MIN_LINKS: Record<WalkRole, number> = { student: 40, guru: 20, adminSekolah: 23 }
 
 const ROLE_LABEL: Record<WalkRole, string> = {
   student: 'pupil',
@@ -136,7 +146,7 @@ async function collect(page: Page, selector: string): Promise<Link[]> {
   await expect(page.locator(selector).first()).toBeAttached({ timeout: 20_000 })
   const links = await page.locator(selector).evaluateAll((as) =>
     as.map((a) => ({
-      id: a.getAttribute('data-nav-id') ?? '',
+      id: (a.textContent ?? '').trim().replace(/\s+/g, ' '),
       href: new URL((a as HTMLAnchorElement).href).pathname,
       blank: (a as HTMLAnchorElement).target === '_blank',
     })),
@@ -156,7 +166,7 @@ async function problemsOf(page: Page, role: WalkRole, link: Link): Promise<strin
   } catch {
     problems.push('empty title')
   }
-  const main = page.locator('[data-testid="shell-user-main"], main, [role="main"]').first()
+  const main = page.locator('[data-testid="pembelajaran-main"], main, [role="main"]').first()
   try {
     await expect(main).toBeVisible({ timeout: 15_000 })
   } catch {
@@ -218,27 +228,35 @@ for (const role of ROLES) {
       })
     }
 
-    test(`@api the drawer reaches the same links (${role}, 375)`, async ({ page }, info) => {
-      test.skip(!onPhone(info), 'drawer test runs on the mobile project only')
+    test(`@api the tab bar and the Lagi panel reach the same links (${role}, 375)`, async ({ page }, info) => {
+      test.skip(!onPhone(info), 'phone test runs on the mobile project only')
       await login(page, role)
-      // The sidebar is in the DOM but hidden below lg: read its link set, then open the drawer.
-      const sidebar = await collect(page, SIDEBAR)
-      test.setTimeout(sidebar.length * 15_000 + 60_000)
-      expect(sidebar.length, `${role}: sidebar links rendered`).toBeGreaterThanOrEqual(MIN_LINKS[role])
-      const open = async () => {
-        await page.getByTestId('shell-user-hamburger').click()
-        await expect(page.getByTestId('shell-user-drawer')).toBeVisible()
+      // The desktop sidebar is not in the DOM at 375: read its link set at 1280, then go back to 375.
+      await page.setViewportSize({ width: 1280, height: 800 })
+      const desktop = await collect(page, SIDEBAR)
+      expect(desktop.length, `${role}: sidebar links rendered`).toBeGreaterThanOrEqual(MIN_LINKS[role])
+      test.setTimeout(desktop.length * 15_000 + 60_000)
+      await page.setViewportSize({ width: 375, height: 812 })
+      const lagiButton = page.locator('[data-nav-id="tab-lagi"]')
+      await expect(lagiButton).toBeVisible()
+      const tabs = await collect(page, TABS)
+      const openLagi = async () => {
+        await lagiButton.click()
+        await expect(page.getByTestId('pembelajaran-lagi-nav')).toBeVisible()
       }
-      await open()
-      const drawer = new Set((await collect(page, DRAWER)).map((l) => l.href))
-      const missing = sidebar.map((l) => l.href).filter((h) => !drawer.has(h))
-      expect(missing, 'sidebar links missing from the drawer').toEqual([])
-      // Tap every drawer link (new-tab links and expected-red rows excluded), check it lands on its own path.
+      await openLagi()
+      const lagi = await collect(page, LAGI)
+      const reachable = new Set([...tabs, ...lagi].map((l) => l.href))
+      const missing = desktop
+        .map((l) => l.href)
+        .filter((h) => !ACCOUNT_PATHS.includes(h) && !reachable.has(h))
+      expect(missing, 'desktop sidebar links not reachable from the tab bar or the Lagi panel').toEqual([])
+      // Tap every Lagi link (new-tab links and expected-red rows excluded); check it lands on its own path.
       const red = EXPECTED_RED[role]
       const failures: string[] = []
-      for (const link of sidebar.filter((l) => !l.blank && !red.some((r) => r.route === l.href))) {
-        if (!(await page.getByTestId('shell-user-drawer').isVisible())) await open()
-        await page.locator(`${DRAWER}[href="${link.href}"]`).first().click()
+      for (const link of lagi.filter((l) => !l.blank && !red.some((r) => r.route === l.href))) {
+        if (!(await page.getByTestId('pembelajaran-lagi-nav').isVisible())) await openLagi()
+        await page.locator(`${LAGI}[href="${link.href}"]`).first().click()
         try {
           await expect
             .poll(() => pathOk(role, link.href, new URL(page.url()).pathname), { timeout: 15_000 })
@@ -247,7 +265,7 @@ for (const role of ROLES) {
           failures.push(`${link.id} ${link.href}: landed on ${new URL(page.url()).pathname}`)
         }
       }
-      expect(failures, 'drawer links that do not reach their own path').toEqual([])
+      expect(failures, 'Lagi links that do not reach their own path').toEqual([])
     })
   })
 }
