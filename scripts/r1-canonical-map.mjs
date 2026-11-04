@@ -15,7 +15,6 @@
 //
 // Statuses: canonical | redirect-to:<path> | retire (routes, menus, apis)
 //           canonical | legacy-retire | parallel-of:<model> (models)
-import { execFileSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join, posix, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -822,7 +821,7 @@ function ordered(o, order) {
 
 /** Build the map from the code (and previous map, to keep hand-set fields). */
 export function buildMap({ code, prev, sector, apiIds, today }) {
-  const prevBy = (arr, k) => new Map((arr ?? []).map((x) => [x.key ?? x.name, x]))
+  const prevBy = (arr) => new Map((arr ?? []).map((x) => [x.key ?? x.name, x]))
   const pr = prevBy(prev?.routes), pm = prevBy(prev?.menus), pmod = prevBy(prev?.models), pa = prevBy(prev?.apis)
 
   const routes = code.routes.map((r) => {
