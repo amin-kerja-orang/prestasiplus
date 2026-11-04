@@ -205,7 +205,7 @@ const archive = async (): Promise<void> => {
             <p class="mt-2 text-caption text-muted">{{ q.subjectName }} — {{ q.levelName }}</p>
             <p class="text-caption text-muted">Compliance: {{ q.complianceStatus }}</p>
           </template>
-          <DsText v-if="r.paper" variant="caption" as="p" tone="muted" wrap="anywhere" data-testid="report-paper">
+          <DsText v-if="r.paper?.label" variant="caption" as="p" tone="muted" wrap="anywhere" data-testid="report-paper">
             Kertas: {{ r.paper.label }}
           </DsText>
         </UCard>

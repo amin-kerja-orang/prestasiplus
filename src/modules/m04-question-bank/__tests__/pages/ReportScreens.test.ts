@@ -244,9 +244,25 @@ describe('QuestionReportsPage (M04 S7)', () => {
     expect(w.get('[data-testid=report-paper]').text()).toBe('Kertas: Matematik Kertas 1')
   })
 
-  it('a report without a paper shows no paper line', async () => {
+  it('a report without a paper, or with an empty paper label, shows no paper line', async () => {
     const w = await renderAdmin()
     expect(w.find('[data-testid=report-paper]').exists()).toBe(false)
+    wrapper?.unmount()
+    api.fetchQuestionReports.mockResolvedValue(adminResult([report(12, { paper: { label: '' } })]))
+    const again = await renderAdmin()
+    expect(again.find('[data-testid=report-paper]').exists()).toBe(false)
+  })
+
+  it('a reviewed report keeps "Arkib" and it still archives', async () => {
+    api.updateQuestionReport.mockResolvedValue({ data: {}, status: 'ok' })
+    api.fetchQuestionReports.mockResolvedValue(
+      adminResult([mcq(11, { question: { ...mcq(11).question, isActive: true } })]),
+    )
+    const w = await renderAdmin('/admin/question-reports?status=reviewed')
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    await w.get('[data-testid=report-archive]').trigger('click')
+    await flushPromises()
+    expect(api.updateQuestionReport).toHaveBeenLastCalledWith(11, expect.objectContaining({ status: 'fixed', archive: true }))
   })
 
   it('"Tolak & Aktifkan Semula" and "Nyahaktif Segera" send the fixed notes and flags', async () => {

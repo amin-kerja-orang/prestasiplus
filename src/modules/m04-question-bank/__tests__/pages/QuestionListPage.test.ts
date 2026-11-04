@@ -513,12 +513,24 @@ describe('QuestionListPage: Luluskan Hasil Tapisan / Arkib Semua (REQ-A-021)', (
     expect(t(w, 'bulk-filter-success').text()).toContain('Berjaya arkib 10 soalan (hasil tapisan).')
   })
 
-  it('Batal in the "Arkib Semua" dialog makes no real call', async () => {
+  it('Batal in the "Arkib Semua" dialog makes no real call and frees the buttons', async () => {
     const w = await openArchive('/admin/questions')
     inBody('questions-archive-cancel').click()
     await flushPromises()
     expect(questions.bulkQuestionsByFilter).toHaveBeenCalledTimes(1)
     expect(w.find('[data-testid="bulk-filter-result"]').exists()).toBe(false)
+    expect(t(w, 'questions-archive-all').attributes('disabled')).toBeUndefined()
+  })
+
+  it('"Arkib Semua" counts a search still inside the debounce, not the whole bank', async () => {
+    questions.bulkQuestionsByFilter.mockResolvedValueOnce({ data: RESULT, status: '' })
+    const w = await render('/admin/questions')
+    await t(w, 'questions-search').setValue('sel')
+    await t(w, 'questions-archive-all').trigger('click')
+    await flushPromises()
+    expect(questions.bulkQuestionsByFilter).toHaveBeenNthCalledWith(1, 'archived', { search: 'sel' }, { dryRun: true })
+    inBody('questions-archive-cancel').click()
+    await flushPromises()
   })
 
   it('lists the refused rows (10 shown, the rest behind "Lihat n lagi") and the notes', async () => {

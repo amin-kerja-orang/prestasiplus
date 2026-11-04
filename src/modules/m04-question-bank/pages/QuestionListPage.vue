@@ -436,6 +436,10 @@ async function runFilterBulk(action: QuestionFilterAction): Promise<void> {
   if (filterBusy.value) return
   filterErrors.value = []
   filterOutcome.value = null
+  // A filter still inside the 300 ms debounce must count: "Arkib Semua" without one is the whole bank.
+  debounced.cancel()
+  const query = draftQuery()
+  if (JSON.stringify(query) !== JSON.stringify(pagerQuery.value)) await router.push({ path: QUESTIONS_LIST_PATH, query })
   // "Arkib Semua" takes the filter on screen, or the whole bank without one (PRD30 20-10); "Luluskan Hasil Tapisan" needs a filter.
   const filter = bulkFilterBody.value
   const filtered = Object.keys(filter).length > 0
