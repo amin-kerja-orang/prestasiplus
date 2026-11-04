@@ -5,6 +5,7 @@ import { ErrorBodySchema } from '../common/error'
 import { envelopeOf } from '../common/envelope'
 import { IdSchema } from '../common/ids'
 import {
+  SUPPORT_ADMIN_MESSAGES,
   SupportOpenCountSchema,
   SupportQueueMetaSchema,
   SupportQueueQuerySchema,
@@ -54,6 +55,7 @@ export function registerSupportPaths(registry: OpenAPIRegistry): void {
   const adminOnly = err('FORBIDDEN "This action is unauthorized." (not an admin).')
   const adminWrite = err('FORBIDDEN (not an admin) or CSRF_INVALID (missing or wrong X-CSRF-Token).')
   const idParams = z.object({ id: IdSchema })
+  const ticketNotFound = err(`NOT_FOUND "${SUPPORT_ADMIN_MESSAGES.ticketNotFound}" (unknown id).`)
 
   registry.registerPath({
     method: 'get',
@@ -91,9 +93,9 @@ export function registerSupportPaths(registry: OpenAPIRegistry): void {
     method: 'get',
     path: '/admin/tiket',
     tags: ['support'],
-    summary: 'Admin support queue (read-only)',
+    summary: 'Admin support queue',
     description:
-      'Admin only (D27: read-only, no reply or status change). Newest first (createdAt desc, then id desc), first 200 rows only. `meta.total` = all tickets; `meta.counts` = statuses with a count above 0, in vocabulary order, over all tickets (not the filtered ones).',
+      'Admin only. Newest first (createdAt desc, then id desc), 25 per page with `page`. `meta.total` and `meta.counts` cover the role-filtered tickets, whatever the status filter; `meta.counts` has all five statuses in vocabulary order; `meta.matched` counts the rows matching both filters. A row has no body, no e-mail and no user id.',
     request: { query: SupportQueueQuerySchema },
     responses: { 200: json(SupportQueueResponseSchema, 'Queue rows with meta.total and meta.counts.'), 401: unauthorized, 403: adminOnly },
   })
@@ -114,7 +116,7 @@ export function registerSupportPaths(registry: OpenAPIRegistry): void {
     summary: 'One support ticket (API-SUP-05)',
     description: 'Admin only. The ticket with its single reply. No e-mail is returned.',
     request: { params: idParams },
-    responses: { 200: json(envelopeOf(SupportTicketDetailSchema), 'The ticket.'), 401: unauthorized, 403: adminOnly, 404: err('NOT_FOUND (unknown id).') },
+    responses: { 200: json(envelopeOf(SupportTicketDetailSchema), 'The ticket.'), 401: unauthorized, 403: adminOnly, 404: ticketNotFound },
   })
 
   registry.registerPath({
@@ -128,8 +130,8 @@ export function registerSupportPaths(registry: OpenAPIRegistry): void {
       200: json(envelopeOf(SupportTicketDetailSchema), 'The updated ticket.'),
       401: unauthorized,
       403: adminWrite,
-      404: err('NOT_FOUND (unknown id).'),
-      422: err('VALIDATION_ERROR with fields.text.'),
+      404: ticketNotFound,
+      422: err(`VALIDATION_ERROR with fields.text: "${SUPPORT_ADMIN_MESSAGES.replyRequired}" or "${SUPPORT_ADMIN_MESSAGES.replyTooLong}"`),
     },
   })
 
@@ -144,8 +146,8 @@ export function registerSupportPaths(registry: OpenAPIRegistry): void {
       200: json(envelopeOf(SupportTicketDetailSchema), 'The updated ticket.'),
       401: unauthorized,
       403: adminWrite,
-      404: err('NOT_FOUND (unknown id).'),
-      422: err('VALIDATION_ERROR with fields.status.'),
+      404: ticketNotFound,
+      422: err(`VALIDATION_ERROR with fields.status: "${SUPPORT_ADMIN_MESSAGES.statusRequired}"`),
     },
   })
 }

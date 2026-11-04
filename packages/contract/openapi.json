@@ -4344,6 +4344,20 @@
           "replied": {
             "type": "boolean",
             "description": "adminReply is non-empty."
+          },
+          "roleLabel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Role label from `created_role`; null on an old row of a user with several roles. Sent once DM-32 lands."
+          },
+          "school": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "School from `school_id`. Sent once DM-32 lands."
           }
         },
         "required": [
@@ -4362,6 +4376,14 @@
           "status": {
             "type": "string",
             "description": "Exact SupportTicketStatus value; blank = all; an unknown value returns no rows."
+          },
+          "role": {
+            "type": "string",
+            "description": "Exact role of `created_role`; an unknown value is ignored. Applies once DM-32 lands."
+          },
+          "page": {
+            "type": "string",
+            "description": "Page number from 1, 25 rows per page; an odd value is page 1; a page past the end returns no rows."
           }
         }
       },
@@ -4382,7 +4404,7 @@
                 },
                 "count": {
                   "type": "integer",
-                  "minimum": 1
+                  "minimum": 0
                 }
               },
               "required": [
@@ -4391,6 +4413,18 @@
               ],
               "additionalProperties": false
             }
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "perPage": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "matched": {
+            "type": "integer",
+            "minimum": 0
           }
         },
         "required": [
@@ -4512,7 +4546,14 @@
         "type": "object",
         "properties": {
           "status": {
-            "$ref": "#/components/schemas/SupportTicketStatus"
+            "type": "string",
+            "enum": [
+              "dibuka",
+              "dalam_proses",
+              "menunggu_balas",
+              "selesai",
+              "ditutup"
+            ]
           }
         },
         "required": [
@@ -77918,8 +77959,8 @@
         "tags": [
           "support"
         ],
-        "summary": "Admin support queue (read-only)",
-        "description": "Admin only (D27: read-only, no reply or status change). Newest first (createdAt desc, then id desc), first 200 rows only. `meta.total` = all tickets; `meta.counts` = statuses with a count above 0, in vocabulary order, over all tickets (not the filtered ones).",
+        "summary": "Admin support queue",
+        "description": "Admin only. Newest first (createdAt desc, then id desc), 25 per page with `page`. `meta.total` and `meta.counts` cover the role-filtered tickets, whatever the status filter; `meta.counts` has all five statuses in vocabulary order; `meta.matched` counts the rows matching both filters. A row has no body, no e-mail and no user id.",
         "parameters": [
           {
             "schema": {
@@ -77929,6 +77970,26 @@
             "required": false,
             "description": "Exact SupportTicketStatus value; blank = all; an unknown value returns no rows.",
             "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Exact role of `created_role`; an unknown value is ignored. Applies once DM-32 lands."
+            },
+            "required": false,
+            "description": "Exact role of `created_role`; an unknown value is ignored. Applies once DM-32 lands.",
+            "name": "role",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Page number from 1, 25 rows per page; an odd value is page 1; a page past the end returns no rows."
+            },
+            "required": false,
+            "description": "Page number from 1, 25 rows per page; an odd value is page 1; a page past the end returns no rows.",
+            "name": "page",
             "in": "query"
           }
         ],
@@ -78073,7 +78134,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND (unknown id).",
+            "description": "NOT_FOUND \"Rekod tidak dijumpai. Ia mungkin telah dipadam.\" (unknown id).",
             "content": {
               "application/json": {
                 "schema": {
@@ -78164,7 +78225,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND (unknown id).",
+            "description": "NOT_FOUND \"Rekod tidak dijumpai. Ia mungkin telah dipadam.\" (unknown id).",
             "content": {
               "application/json": {
                 "schema": {
@@ -78174,7 +78235,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields.text.",
+            "description": "VALIDATION_ERROR with fields.text: \"Sila isi balasan.\" or \"Balasan tidak boleh melebihi 5000 aksara.\"",
             "content": {
               "application/json": {
                 "schema": {
@@ -78265,7 +78326,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND (unknown id).",
+            "description": "NOT_FOUND \"Rekod tidak dijumpai. Ia mungkin telah dipadam.\" (unknown id).",
             "content": {
               "application/json": {
                 "schema": {
@@ -78275,7 +78336,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields.status.",
+            "description": "VALIDATION_ERROR with fields.status: \"Sila pilih status.\"",
             "content": {
               "application/json": {
                 "schema": {
