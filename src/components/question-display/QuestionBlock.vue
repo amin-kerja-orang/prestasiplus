@@ -194,7 +194,6 @@ function pick(id: string): void {
         :disabled="locked"
         :option-bank="question.optionBank"
         :stimuli="stimulusLookup"
-        :stimuli="stimulusLookup"
         @answer="(id, a) => emit('answer', id, a)"
       />
     </template>
