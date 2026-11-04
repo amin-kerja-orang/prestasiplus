@@ -34,7 +34,14 @@
 import { expect, test, type Page } from '@playwright/test'
 
 import { loginViaUi } from '../fixtures/api'
-import { account, expectNoHScroll, HOME, newPeerContext, type ApiRole } from './helpers'
+import {
+  account,
+  expectNoHScroll,
+  FORBIDDEN_TITLE,
+  HOME,
+  newPeerContext,
+  type ApiRole,
+} from './helpers'
 import {
   cancelOpenSubscriptions,
   cancelOpenSubscriptionsQuietly,
@@ -125,7 +132,9 @@ test.describe('M17 Command Center board (Admin Pusat) @api', () => {
     const panels: [string, string][] = [
       ['cc-panel-top-schools', 'Top Sekolah'],
       ['cc-panel-kirkpatrick', 'Kirkpatrick'],
-      ...(process.env.VITE_ALESA_AI === 'on' ? [['cc-panel-alesa', 'ALESA AI'] as [string, string]] : []),
+      ...(process.env.VITE_ALESA_AI === 'on'
+        ? [['cc-panel-alesa', 'ALESA AI'] as [string, string]]
+        : []),
       ['cc-panel-today', 'Aktiviti Hari Ini'],
       ['cc-panel-feed', 'Live Feed'],
       ['cc-panel-mood', 'Mood Pelajar'],
@@ -134,7 +143,9 @@ test.describe('M17 Command Center board (Admin Pusat) @api', () => {
     ]
     for (const [id, title] of panels) {
       await expect(page.getByTestId(id), title).toBeVisible()
-      await expect(page.getByTestId(id).getByRole('heading', { level: 2 }).first()).toHaveText(title)
+      await expect(page.getByTestId(id).getByRole('heading', { level: 2 }).first()).toHaveText(
+        title,
+      )
     }
 
     // Top Sekolah lists the API's schools in the API's order; the feed shows the API's latest answers.
@@ -149,7 +160,9 @@ test.describe('M17 Command Center board (Admin Pusat) @api', () => {
     const feed = page.getByTestId('cc-feed-row')
     if (data.recentFeed.length > 0) {
       await expect(feed.first()).toBeVisible()
-      await expect(feed.first().locator('[data-ds="list-row-title"]')).toHaveText(data.recentFeed[0]!.student)
+      await expect(feed.first().locator('[data-ds="list-row-title"]')).toHaveText(
+        data.recentFeed[0]!.student,
+      )
     }
     await expect(page.getByTestId('cc-unavailable')).toHaveCount(0)
     await expect(page.getByTestId('cc-footer')).toBeVisible()
@@ -492,7 +505,7 @@ test.describe('M17 Command Center scope and role guards @api', () => {
     ['guru', 'Guru', HOME.guru],
     ['student', 'Pelajar', HOME.student],
   ] as const) {
-    test(`CC-07 ${label} on /admin/command-center is sent to its own home @api`, async ({
+    test(`CC-07 ${label} on /admin/command-center sees Akses Ditolak in place @api`, async ({
       page,
     }) => {
       await signIn(page, role)
@@ -502,7 +515,22 @@ test.describe('M17 Command Center scope and role guards @api', () => {
         '/admin/command-center/school/1',
         '/admin',
       ]) {
-        await gotoExpectUrl(page, path, new RegExp(`${home}$`))
+        if (path === '/admin') {
+          // `/admin` is a role redirect (adminLandingFor), not a guard outcome: the school admin lands on
+          // its own home; the others land on /admin/command-center, which then answers the 403 page.
+          if (role === 'adminSekolah') {
+            await gotoExpectUrl(page, path, new RegExp(`${home}$`))
+          } else {
+            await gotoExpectUrl(page, path, /\/admin\/command-center\/?$/)
+            await expect(page).toHaveTitle(FORBIDDEN_TITLE)
+            await expect(page.getByText('Akses Ditolak').first()).toBeVisible()
+          }
+        } else {
+          // `roles: ['admin']`, default onForbidden '403': the 403 page renders in place, URL unchanged.
+          await gotoExpectUrl(page, path, new RegExp(`${path}/?$`))
+          await expect(page).toHaveTitle(FORBIDDEN_TITLE)
+          await expect(page.getByText('Akses Ditolak').first()).toBeVisible()
+        }
         await expect(page.getByTestId('cc-s2')).toHaveCount(0)
         await expectNoHScroll(page)
       }
