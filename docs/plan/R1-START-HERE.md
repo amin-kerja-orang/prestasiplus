@@ -103,6 +103,7 @@ Every report and practice API returns accuracy as a JSON number rounded to ONE d
 ## Steps for one card
 
 1. **Read** [`docs/prd/r1/00-index.md`](../prd/r1/00-index.md), then the PRD sections on the card's `PRD:` line, then its `Data/API:` rows in 50 and 60.
+   Then open the flow of your card in [`docs/prd/r1/49-flow-diagrams.md`](../prd/r1/49-flow-diagrams.md) (find the card ID): it shows the whole journey your card is part of, what already exists in V3, and the steps owned by other cards.
 2. **Pick a card**: label `r1` + `status:ready` + your sector (`sector:S<n>`), in the current sprint milestone, P0 first, `deps:` satisfied (decision 8).
 3. **Claim it with the lock** (decision 1):
    - sector: `node scripts/r1-lock.mjs acquire S<n> --team <team> --session S-<k>`;

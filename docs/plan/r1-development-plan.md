@@ -7,6 +7,8 @@
 
 ## 0. How to read this plan (one page)
 
+Flow diagrams of every Bijak SPM, question-intake, practice/test and reporting journey, with each step marked Exists in V3 / Change / Build and its owning card: [`docs/prd/r1/49-flow-diagrams.md`](../prd/r1/49-flow-diagrams.md).
+
 1. The work is cut into **11 non-overlapping sectors** (S0–S10, §2). Every path in the repo has exactly one sector owner (CODEOWNERS, App. C).
 2. Each sector has **task cards** (§4), 118 (Delivery A and B), each with PRD refs, root cause, files, tests, verification and Definition of Done.
 3. A team **holds a sector by lock** (`scripts/r1-lock.mjs`) and **claims a card by lock** (R1-START-HERE, decision 1); the issue is the board. One claimant per card; the team holding the sector lock is the sector lead.
