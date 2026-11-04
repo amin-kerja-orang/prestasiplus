@@ -242,16 +242,13 @@ describe('notes', () => {
 
 describe('videos', () => {
   const uploader = { name: 'Hakim Pengunggah', initial: 'H', roleLabel: 'Guru' }
-  const card = { id: '9', title: 'Tips SPM', platformLabel: 'YouTube', thumbnailUrl: null, views: 3, createdAt: AT, uploader }
+  const card = { id: '9', title: 'Tips SPM', platformLabel: 'YouTube', thumbnailUrl: null, views: 3, createdAt: AT, uploader, category: 'tips-spm', categoryLabel: 'Tips SPM', subject: { id: '3', name: 'Matematik' } }
   const detail = {
     ...card,
     videoUrl: 'https://www.youtube.com/watch?v=abc123',
     embedUrl: 'https://www.youtube.com/embed/abc123',
     platform: 'Youtube',
     description: null,
-    category: 'tips-spm',
-    categoryLabel: 'Tips SPM',
-    subject: { id: '3', name: 'Matematik' },
     visibility: 'global',
     canManage: false,
     related: [card],

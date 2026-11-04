@@ -77,6 +77,9 @@ const videoCardShape = {
   views: counter(),
   createdAt: TimestampSchema,
   uploader: VideoUploaderSchema,
+  category: VideoCategorySchema,
+  categoryLabel: z.string(),
+  subject: ContentSubjectRefSchema.nullable(),
 }
 
 /** Card of the library (#27) and of `related` (#28). */
@@ -91,9 +94,6 @@ export const VideoDetailSchema = z
     embedUrl: z.string().nullable(),
     platform: VideoPlatformSchema,
     description: z.string().nullable(),
-    category: VideoCategorySchema,
-    categoryLabel: z.string(),
-    subject: ContentSubjectRefSchema.nullable(),
     visibility: VideoVisibilitySchema,
     canManage: z.boolean().meta({ description: 'The caller is the uploader or an admin.' }),
     related: z.array(VideoCardSchema).max(6),
