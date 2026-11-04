@@ -212,8 +212,32 @@ export const PracticeReadDashboardSchema = z
     wallet: z.strictObject({ coins: count(), points: count(), level: count(), levelProgressPct: percent() }),
     week: z.strictObject({
       sessions: count(),
-      accuracyPct: z.number().int().min(0).max(100).meta({ description: 'Correct / answered this Monday-Sunday week, integer (BR-25).' }),
+      accuracyPct: z
+        .number()
+        .int()
+        .min(0)
+        .max(100)
+        .meta({ description: 'Legacy (S5-T04): correct / answered this Monday-Sunday week, integer (BR-25). The Ketepatan tile reads the top-level `accuracyPct`.' }),
     }),
+    accuracyPct: z
+      .number()
+      .min(0)
+      .max(100)
+      .refine((n) => Math.round(n * 10) / 10 === n, { message: 'At most one decimal.' })
+      .nullable()
+      .meta({
+        description:
+          "The pupil's pooled accuracy: correct / answered x 100 over `practice_answers`, all modes and all time, rounded to one decimal (a whole number has no fraction, e.g. 75, 66.7); null when there are 0 answers (FR-MUR-2-2, FR-MUR-2-13, decision 11).",
+      }),
+    package: z
+      .strictObject({
+        name: z.string(),
+        validUntil: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).meta({ description: 'Malaysia calendar day, YYYY-MM-DD.' }),
+      })
+      .nullable()
+      .meta({
+        description: 'The active package (Pakej SPM Aktif; `SubscriptionService.activePackage`, same rule as `isSubscribed`); null when none (FR-MUR-2-4, DM-35).',
+      }),
     banners: z.array(PracticeReadBannerSchema),
     quests: z.array(PracticeReadQuestSchema),
     questsCompleted: count(),
