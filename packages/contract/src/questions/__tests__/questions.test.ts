@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   QUESTION_MESSAGES,
   QUESTION_STATUSES,
+  QuestionBulkGroupRequestSchema,
   QuestionBulkRequestSchema,
   QuestionCreateRequestSchema,
   QuestionDetailSchema,
@@ -352,5 +353,16 @@ describe('bulk-action three-way copy', () => {
   })
   it('accepts a valid request', () => {
     expect(QuestionBulkRequestSchema.safeParse({ action: 'approved', ids: ['1', '2'] }).success).toBe(true)
+  })
+  it('S1-T01: the group form takes groupId with draft or review only; the ids form is unchanged', () => {
+    expect(QuestionBulkGroupRequestSchema.safeParse({ action: 'draft', groupId: '7' }).success).toBe(true)
+    expect(QuestionBulkGroupRequestSchema.safeParse({ action: 'review', groupId: '7' }).success).toBe(true)
+    expect(issuesOf(QuestionBulkGroupRequestSchema.safeParse({ action: 'approved', groupId: '7' }))).toEqual({ action: m.bulkBadAction })
+    expect(QuestionBulkGroupRequestSchema.safeParse({ action: 'draft' }).success).toBe(false)
+    expect(QuestionBulkGroupRequestSchema.safeParse({ action: 'draft', groupId: '7', ids: ['1'] }).success).toBe(false)
+    expect(msg({ action: 'draft', groupId: '7' }).ids).toBe(m.bulkNoIds)
+    expect(m.groupSplit).toBe('Soalan dalam kumpulan rangsangan mesti dipilih bersama.')
+    expect(m.groupArchivedMember).toBe('Kumpulan mengandungi soalan diarkibkan.')
+    expect(m.bothIdsAndGroup).toBe('Pilih soalan atau kumpulan, bukan kedua-duanya.')
   })
 })
