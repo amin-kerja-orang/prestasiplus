@@ -18,7 +18,7 @@ const ROLES: [ApiRole, string][] = [
 ]
 
 test.describe('stack smoke @api', () => {
-  // bcrypt/argon2 on the real API makes a login take several seconds on a busy machine.
+  // argon2 on the real API makes a login take several seconds on a busy machine.
   test.setTimeout(60_000)
 
   for (const [role, activeRole] of ROLES) {

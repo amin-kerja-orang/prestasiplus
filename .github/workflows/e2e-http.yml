@@ -1,5 +1,6 @@
-# E2E against the real stack (BE-32). Manual only: no push, no schedule (Actions budget).
-#   Actions -> e2e-http -> Run workflow
+# E2E against the real stack (BE-32). No push, no schedule (Actions budget). Runs:
+#   - on a pull request to feature/v3-bijak-r1 that can change the stack (path filter below; S0-T02), and
+#   - manually (Actions -> e2e-http -> Run workflow; only once this file is on the default branch).
 # Builds compose.yaml + compose.http.yaml (as `npm run stack:up`), runs the @api specs
 # (`npm run test:e2e:http`: e2e/api/** and the Bijak *-http specs) on mobile, tablet and desktop.
 # Secret needed: E2E_DEMO_PASSWORD (repository Actions secret, set by the LEAD; see docs/ops/ci-secrets.md).
@@ -10,6 +11,17 @@ name: e2e-http
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [feature/v3-bijak-r1]
+    paths:
+      - 'docker/**'
+      - '.dockerignore'
+      - '.env*.example'
+      - 'compose*.yaml'
+      - 'apps/api/prisma/**'
+      - 'e2e/api/stack-smoke.spec.ts'
+      - 'e2e/fixtures/**'
+      - '.github/workflows/e2e-http.yml'
 
 permissions:
   contents: read
