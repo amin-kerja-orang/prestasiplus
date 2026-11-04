@@ -2,8 +2,8 @@
 /** One node of a structured question: label + prompt, then either the answer controls (leaf) or its children. */
 import { computed } from 'vue'
 
-import { isStemRow } from '../domain/paper-model'
-import type { McqOption, PartAnswer, PartView } from '../domain/types'
+import { isStemRow } from '@pp/exam-core/paper-model'
+import type { McqOption, PartAnswer, PartView } from '@/modules/m28-bijak-spm/domain/types'
 import PartInput from './PartInput.vue'
 import RichText from './RichText.vue'
 
