@@ -359,11 +359,20 @@ model SupportTicket {
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   legacySource String?  @map("legacy_source")
   legacyId     String?  @map("legacy_id")
+  /// DM-32: the active role at creation (same list as user_roles.role, check); null on old rows of a user with several roles.
+  createdRole      String?   @map("created_role")
+  /// DM-32: school snapshot at creation (set null on school delete).
+  schoolId         BigInt?   @map("school_id")
+  adminRepliedById BigInt?   @map("admin_replied_by_id")
+  adminRepliedAt   DateTime? @map("admin_replied_at") @db.Timestamptz(6)
 
-  user User @relation("SupportTicketUser", fields: [userId], references: [id], onDelete: Cascade, map: "fk_support_tickets_user_id")
+  user         User    @relation("SupportTicketUser", fields: [userId], references: [id], onDelete: Cascade, map: "fk_support_tickets_user_id")
+  school       School? @relation("SupportTicketSchool", fields: [schoolId], references: [id], onDelete: SetNull, map: "fk_support_tickets_school_id")
+  adminRepliedBy User? @relation("SupportTicketReplier", fields: [adminRepliedById], references: [id], onDelete: SetNull, map: "fk_support_tickets_admin_replied_by_id")
 
   @@unique([legacySource, legacyId], map: "uq_support_tickets_legacy")
   @@index([userId, status, createdAt(sort: Desc)], map: "ix_support_tickets_user_status_created")
   @@index([status, createdAt(sort: Desc), id(sort: Desc)], map: "ix_support_tickets_status_created")
+  @@index([createdRole, status, createdAt(sort: Desc)], map: "ix_support_tickets_role_status_created")
   @@map("support_tickets")
 }
