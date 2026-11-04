@@ -128,7 +128,14 @@ jobs:
       - name: stack-smoke
         run: npx playwright test -c playwright.http.config.ts e2e/api/stack-smoke.spec.ts
 
+      # Card S0-T06: the R1 specs (sidebar walk and role denials) run first with their own budget, so a slow full
+      # suite cannot cancel them before they report. The full suite below runs even if this step fails.
+      - name: E2E R1 specs (e2e/r1)
+        timeout-minutes: 20
+        run: npx playwright test -c playwright.http.config.ts e2e/r1
+
       - name: E2E (real API)
+        if: ${{ !cancelled() }}
         run: npm run test:e2e:http
 
       - name: Upload the Playwright report
