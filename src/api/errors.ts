@@ -22,6 +22,14 @@ export const API_ERROR_CODES = {
   RATE_LIMITED: 'RATE_LIMITED',
   /** Client-only: the transport produced no response (status 0). */
   NETWORK_ERROR: 'NETWORK_ERROR',
+  /** 400 (a malformed body is answered 422 by the server; a raw 400 is a developer error). */
+  BAD_REQUEST: 'BAD_REQUEST',
+  PAYLOAD_TOO_LARGE: 'PAYLOAD_TOO_LARGE',
+  UNSUPPORTED_MEDIA_TYPE: 'UNSUPPORTED_MEDIA_TYPE',
+  BAD_GATEWAY: 'BAD_GATEWAY',
+  SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
+  /** 504, also used with `NETWORK_ERROR` subtype `TIMEOUT` for the client's own timer. */
+  TIMEOUT: 'TIMEOUT',
 } as const
 
 export type KnownApiErrorCode = (typeof API_ERROR_CODES)[keyof typeof API_ERROR_CODES]
@@ -35,6 +43,7 @@ export function codeForStatus(status: number): KnownApiErrorCode {
     case 0:
       return API_ERROR_CODES.NETWORK_ERROR
     case 400:
+      return API_ERROR_CODES.BAD_REQUEST
     case 422:
       return API_ERROR_CODES.VALIDATION_ERROR
     case 401:
@@ -45,8 +54,18 @@ export function codeForStatus(status: number): KnownApiErrorCode {
       return API_ERROR_CODES.NOT_FOUND
     case 409:
       return API_ERROR_CODES.CONFLICT
+    case 413:
+      return API_ERROR_CODES.PAYLOAD_TOO_LARGE
+    case 415:
+      return API_ERROR_CODES.UNSUPPORTED_MEDIA_TYPE
     case 429:
       return API_ERROR_CODES.RATE_LIMITED
+    case 502:
+      return API_ERROR_CODES.BAD_GATEWAY
+    case 503:
+      return API_ERROR_CODES.SERVICE_UNAVAILABLE
+    case 504:
+      return API_ERROR_CODES.TIMEOUT
     default:
       return API_ERROR_CODES.SERVER_ERROR
   }
@@ -62,6 +81,12 @@ export interface ApiErrorInit {
   method?: HttpMethod
   url?: string
   cause?: unknown
+  /** Server correlation id (`error.requestId`, else the `x-request-id` header). */
+  requestId?: string
+  /** The body's `error.details`, untouched. */
+  details?: unknown
+  /** `'TIMEOUT'` on a `NETWORK_ERROR` raised by the client's own timer (ERR-NET-02). */
+  subtype?: 'TIMEOUT'
 }
 
 export class ApiError extends Error {
@@ -77,6 +102,9 @@ export class ApiError extends Error {
   readonly body: unknown
   readonly method: HttpMethod | undefined
   readonly url: string | undefined
+  readonly requestId: string | undefined
+  readonly details: unknown
+  readonly subtype: 'TIMEOUT' | undefined
 
   constructor(init: ApiErrorInit) {
     super(init.message, init.cause === undefined ? undefined : { cause: init.cause })
@@ -87,6 +115,9 @@ export class ApiError extends Error {
     this.body = init.body
     this.method = init.method
     this.url = init.url
+    this.requestId = init.requestId
+    this.details = init.details
+    this.subtype = init.subtype
   }
 }
 
@@ -120,8 +151,41 @@ function readFields(value: unknown): Record<string, string> | undefined {
   return fields
 }
 
-/** BM copy for a rate-limited response; the backend's 429 envelope carries English (BE-47 deferred). */
-export const RATE_LIMITED_MESSAGE_BM = 'Terlalu banyak percubaan. Cuba sebentar lagi.'
+/** BM copy for a rate-limited response (ERR-RATE-01); the backend's 429 envelope may carry English. */
+export const RATE_LIMITED_MESSAGE_BM = 'Terlalu banyak percubaan. Sila cuba sebentar lagi.'
+
+/** ERR-NET-01 (banner text): no response at all. */
+export const NETWORK_ERROR_MESSAGE_BM = 'Anda sedang luar talian. Semak sambungan internet anda.'
+/** ERR-NET-02 / ERR-SYS-04: the client timer or a 504. */
+export const TIMEOUT_MESSAGE_BM = 'Permintaan mengambil masa terlalu lama. Cuba lagi.'
+
+const SYS_MESSAGE_BM =
+  'Sesuatu tidak kena di pihak kami. Pasukan teknikal telah dimaklumkan. Sila cuba sebentar lagi.'
+
+/** §X10.11 BM text for a status whose body has no envelope (generic codes only). */
+const FALLBACK_MESSAGES_BM: Readonly<Record<string, string>> = {
+  [API_ERROR_CODES.NETWORK_ERROR]: NETWORK_ERROR_MESSAGE_BM,
+  [API_ERROR_CODES.BAD_REQUEST]: 'Permintaan tidak sah. Sila muat semula halaman dan cuba lagi.', // ERR-REQ-02
+  [API_ERROR_CODES.UNAUTHORIZED]: 'Sesi anda telah tamat. Sila log masuk semula.', // ERR-AUTH-01
+  [API_ERROR_CODES.FORBIDDEN]: 'Anda tidak dibenarkan melakukan tindakan ini.', // ERR-ACC-01 (action)
+  [API_ERROR_CODES.NOT_FOUND]:
+    'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?', // ERR-ACC-02
+  [API_ERROR_CODES.CONFLICT]:
+    'Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi.', // ERR-CON-01
+  [API_ERROR_CODES.PAYLOAD_TOO_LARGE]: 'Fail atau data terlalu besar.', // ERR-REQ-03 without the unknown {n}
+  [API_ERROR_CODES.UNSUPPORTED_MEDIA_TYPE]: 'Jenis fail tidak disokong.', // ERR-REQ-04 without {senarai}
+  [API_ERROR_CODES.VALIDATION_ERROR]: 'Data yang dihantar tidak sah. Sila semak dan cuba lagi.', // ERR-REQ-01
+  [API_ERROR_CODES.RATE_LIMITED]: RATE_LIMITED_MESSAGE_BM,
+  [API_ERROR_CODES.SERVER_ERROR]: SYS_MESSAGE_BM, // ERR-SYS-01
+  [API_ERROR_CODES.BAD_GATEWAY]: SYS_MESSAGE_BM, // ERR-SYS-02
+  [API_ERROR_CODES.SERVICE_UNAVAILABLE]:
+    'Sistem sedang diselenggara buat sementara waktu. Sila cuba semula dalam beberapa minit.', // ERR-SYS-03
+  [API_ERROR_CODES.TIMEOUT]: TIMEOUT_MESSAGE_BM, // ERR-SYS-04
+}
+
+function readString(value: unknown): string | undefined {
+  return typeof value === 'string' && value !== '' ? value : undefined
+}
 
 /** Builds the `ApiError` for a non-2xx response. */
 export function errorFromResponse(res: {
@@ -133,13 +197,17 @@ export function errorFromResponse(res: {
 }): ApiError {
   const headerRetry = parseRetryAfterHeader(res.headers['retry-after'])
   // body `retryAfter`, then the header; the "else 30 s" display rule lives in DsLoadError, not here.
+  const headerRequestId = readString(res.headers['x-request-id'])
   const base = { status: res.status, body: res.body, method: res.method, url: res.url }
 
   if (isErrorBody(res.body)) {
     const { code, message, fields, retryAfter } = res.body.error
+    const extra = res.body.error as { requestId?: unknown; details?: unknown }
     return new ApiError({
       ...base,
       code,
+      requestId: readString(extra.requestId) ?? headerRequestId,
+      details: extra.details,
       // Http mode only (mock unchanged): map by code/status, never by the English text.
       message:
         isHttpMode() && (code === API_ERROR_CODES.RATE_LIMITED || res.status === 429)
@@ -150,12 +218,13 @@ export function errorFromResponse(res: {
     })
   }
 
-  // No master-SRS error body: derive the code from the status. The message is developer text;
-  // pages show their own SRS copy for such cases.
+  // No master-SRS error body: derive the code from the status; the message is the §X10.11 BM text.
+  const code = codeForStatus(res.status)
   return new ApiError({
     ...base,
-    code: codeForStatus(res.status),
-    message: `HTTP ${res.status}`,
+    code,
+    message: FALLBACK_MESSAGES_BM[code] ?? SYS_MESSAGE_BM,
+    requestId: headerRequestId,
     retryAfter: headerRetry,
   })
 }
