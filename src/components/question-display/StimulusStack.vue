@@ -4,7 +4,7 @@
  * question (D90): the pinned panel (from 1024px), the sheet (below it) and the result group all use this.
  * A picture that fails to load reports its stimulus id to the parent.
  */
-import type { StimulusDef } from '../domain/types'
+import type { StimulusDef } from '@/modules/m28-bijak-spm/domain/types'
 import StimulusView from './StimulusView.vue'
 
 defineProps<{ stimuli: readonly StimulusDef[] }>()

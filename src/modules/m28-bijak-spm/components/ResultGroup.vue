@@ -6,13 +6,11 @@
  */
 import { ref } from 'vue'
 
-import { qdCopy } from '../../../components/question-display'
 import { useMedia } from '@/ds/useMedia'
 
 import type { StimulusDef } from '../domain/types'
 import { groupLabel } from '../lib/stimulus-data'
-import StimulusChip from './StimulusChip.vue'
-import StimulusStack from './StimulusStack.vue'
+import { StimulusChip, StimulusStack, qdCopy } from '../../../components/question-display'
 
 const props = defineProps<{ groupId: string; stimuli: readonly StimulusDef[] }>()
 const wide = useMedia('(min-width: 1024px)')
