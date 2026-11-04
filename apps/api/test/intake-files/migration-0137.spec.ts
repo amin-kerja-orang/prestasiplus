@@ -47,6 +47,18 @@ describe('migration 0137 intake guru source', () => {
     await expect(insert({ paper: 'bogus', subject: 'BM', kertas: 2 })).rejects.toThrow(/ck_intake_batches_paper_type/)
   })
 
+  it('widens files.mime additively for DOCX and XLSX', async () => {
+    let n = 0
+    const put = (mime: string) => {
+      n += 1
+      return db.query(`insert into files (public_id, purpose, mime, size_bytes, sha256, storage_key) values ($1, 'intake_original', $2, 1, repeat('a', 64), $1)`, [`${'p'.repeat(21)}${String(n)}`, mime])
+    }
+    await put('application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+    await put('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    await put('application/pdf')
+    await expect(put('application/msword')).rejects.toThrow(/ck_files_mime/)
+  })
+
   it('refuses a bad source', async () => {
     await expect(insert({ source: 'cikgu', paper: 'trial', subject: 'MAT', kertas: 1 })).rejects.toThrow(/ck_intake_batches_source/)
   })

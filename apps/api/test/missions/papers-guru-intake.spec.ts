@@ -15,6 +15,47 @@ function upload(c: Client, fields: Record<string, string>, files: { name: string
   return req
 }
 
+const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+const XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+/** A tiny ZIP (stored entries, no compression) with the given entry names; `salt` makes the bytes unique per test. */
+function zip(names: string[], salt: string): Buffer {
+  const local: Buffer[] = []
+  const central: Buffer[] = []
+  let offset = 0
+  for (const name of names) {
+    const n = Buffer.from(name, 'latin1')
+    const data = Buffer.from(`<x>${salt}</x>`)
+    const lh = Buffer.alloc(30)
+    lh.writeUInt32LE(0x04034b50, 0)
+    lh.writeUInt16LE(20, 4)
+    lh.writeUInt32LE(data.length, 18)
+    lh.writeUInt32LE(data.length, 22)
+    lh.writeUInt16LE(n.length, 26)
+    const ch = Buffer.alloc(46)
+    ch.writeUInt32LE(0x02014b50, 0)
+    ch.writeUInt16LE(20, 4)
+    ch.writeUInt16LE(20, 6)
+    ch.writeUInt32LE(data.length, 20)
+    ch.writeUInt32LE(data.length, 24)
+    ch.writeUInt16LE(n.length, 28)
+    ch.writeUInt32LE(offset, 42)
+    local.push(lh, n, data)
+    central.push(ch, n)
+    offset += lh.length + n.length + data.length
+  }
+  const cd = Buffer.concat(central)
+  const end = Buffer.alloc(22)
+  end.writeUInt32LE(0x06054b50, 0)
+  end.writeUInt16LE(names.length, 8)
+  end.writeUInt16LE(names.length, 10)
+  end.writeUInt32LE(cd.length, 12)
+  end.writeUInt32LE(offset, 16)
+  return Buffer.concat([...local, cd, end])
+}
+
+const jobCount = async (t: QsTestApp): Promise<number> => Number((await t.db.query<{ n: string }>('select count(*)::text n from jobs'))[0]?.n)
+
 const count = async (t: QsTestApp): Promise<number> => Number((await t.db.query<{ n: string }>('select count(*)::text n from intake_batches'))[0]?.n)
 
 describe('S1-T08: the teacher paper upload with the real intake', () => {
@@ -66,13 +107,64 @@ describe('S1-T08: the teacher paper upload with the real intake', () => {
     expect(row).toMatchObject({ source_text: 'Kiriman guru', paper_type: 'lain', is_test: false })
   })
 
-  it('DOCX and XLSX are refused with the type text and no batch is created', async () => {
+  it('DOCX is accepted by content: stored, listed with the docx mime, no extraction job, the admin can download it', async () => {
+    const jobsBefore = await jobCount(t)
+    const bytes = zip(['[Content_Types].xml', '_rels/.rels', 'word/document.xml'], 'docx-1')
+    const res = await upload(teacher, FIELDS, [{ name: 'soalan.docx', bytes }])
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    const paper = QuestionSetPaperSchema.parse(res.body.data)
+    expect(paper.files).toEqual([{ index: 0, name: 'soalan.docx', size: bytes.length, mime: DOCX }])
+    expect(paper.status).toBe('pending')
+    expect(await jobCount(t)).toBe(jobsBefore)
+
+    const batch = (await t.db.query<Record<string, unknown>>(`select status from intake_batches where id = $1::bigint`, [paper.id]))[0]
+    expect(batch?.status).toBe('ready_for_review')
+    const file = (await t.db.query<{ id: string; status: string; page_count: number | null; mime: string; pages: string }>(
+      `select f.id::text id, f.status, f.page_count, s.mime, (select count(*)::text from intake_pages p where p.intake_file_id = f.id) pages
+         from intake_files f join files s on s.id = f.file_id where f.batch_id = $1::bigint`,
+      [paper.id],
+    ))[0]
+    expect(file).toMatchObject({ status: 'done', page_count: null, mime: DOCX, pages: '0' })
+
+    const listed = await admin.get('/intake/batches?source=guru')
+    expect((listed.body.data as { id: string }[]).map((b) => b.id)).toContain(paper.id)
+    const dl = await admin.get(`/intake/files/${(file as { id: string }).id}/original`)
+    expect(dl.status).toBe(200)
+    expect(dl.headers['content-type']).toContain(DOCX)
+    expect(Number(dl.headers['content-length'])).toBe(bytes.length)
+    expect(dl.headers['content-disposition']).toContain('soalan.docx')
+  })
+
+  it('XLSX is accepted; a mixed PDF + DOCX batch processes the PDF and only stores the DOCX', async () => {
+    const x = await upload(teacher, FIELDS, [{ name: 'markah.xlsx', bytes: zip(['[Content_Types].xml', 'xl/workbook.xml'], 'xlsx-1') }])
+    expect(x.status, JSON.stringify(x.body)).toBe(201)
+    expect(x.body.data.files[0].mime).toBe(XLSX)
+
+    const mixed = await upload(teacher, FIELDS, [
+      { name: 'a.pdf', bytes: textPdf(7) },
+      { name: 'a.docx', bytes: zip(['[Content_Types].xml', 'word/document.xml'], 'docx-mixed') },
+    ])
+    expect(mixed.status, JSON.stringify(mixed.body)).toBe(201)
+    expect(mixed.body.data.files.map((f: { mime: string }) => f.mime)).toEqual(['application/pdf', DOCX])
+    const rows = await t.db.query<{ status: string; page_count: number | null }>(`select status, page_count from intake_files where batch_id = $1::bigint order by id`, [mixed.body.data.id])
+    expect(rows).toEqual([{ status: 'uploaded', page_count: 7 }, { status: 'done', page_count: null }])
+    expect((await t.db.query<{ status: string }>(`select status from intake_batches where id = $1::bigint`, [mixed.body.data.id]))[0]?.status).toBe('processing')
+  })
+
+  it('legacy .doc/.xls (OLE), a ZIP that is neither, and a name-only DOCX are refused with no batch', async () => {
     const before = await count(t)
-    const docx = await upload(teacher, FIELDS, [{ name: 'a.docx', bytes: Buffer.from('PK\u0003\u0004rest-of-a-zip') }])
-    expect(docx.status).toBe(422)
-    expect(docx.body.error.fields.files).toBe('Jenis fail tidak disokong. Format dibenarkan: PDF.')
-    const xlsx = await upload(teacher, FIELDS, [{ name: 'a.xlsx', bytes: Buffer.from('PK\u0003\u0004rest-of-a-zip') }])
-    expect(xlsx.status).toBe(422)
+    const ole = Buffer.concat([Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]), Buffer.alloc(600)])
+    const cases: [string, Buffer][] = [
+      ['old.doc', ole],
+      ['old.xls', ole],
+      ['other.docx', zip(['[Content_Types].xml', 'readme.txt'], 'other')],
+      ['plain.docx', Buffer.from('not a zip at all')],
+    ]
+    for (const [name, bytes] of cases) {
+      const res = await upload(teacher, FIELDS, [{ name, bytes }])
+      expect(res.status, name).toBe(422)
+      expect(res.body.error.fields.files, name).toBe('Jenis fail tidak disokong. Format dibenarkan: PDF, DOCX, XLSX.')
+    }
     expect(await count(t)).toBe(before)
   })
 

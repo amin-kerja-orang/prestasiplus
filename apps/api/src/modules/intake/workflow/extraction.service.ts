@@ -148,14 +148,16 @@ export class IntakeExtractionService implements OnModuleInit {
     if (id === null) throw ApiError.of('NOT_FOUND', { message: INTAKE_MESSAGES.batchNotFound })
     const batch = await this.prisma.client.intakeBatch.findFirst({
       where: { id, ...visibleBatches(auth) },
-      select: { id: true, status: true, files: { select: { id: true, status: true, sha256: true } } },
+      select: { id: true, status: true, files: { select: { id: true, status: true, sha256: true, pageCount: true } } },
     })
     if (!batch) throw ApiError.of('NOT_FOUND', { message: INTAKE_MESSAGES.batchNotFound })
 
     const existing = await this.shortcut(id)
     if (existing) return existing
 
-    const done = batch.files.filter((f) => f.status === 'done')
+    // A teacher's DOCX/XLSX is stored with no pages (page_count null): it has nothing to read, so a batch with only such files is not
+    // extractable (409, no run, no job, no state change) and in a mixed batch only the PDFs count.
+    const done = batch.files.filter((f) => f.status === 'done' && f.pageCount !== null)
     if ((batch.status !== 'ready_for_review' && batch.status !== 'failed') || done.length === 0) {
       throw ApiError.of('CONFLICT', { message: INTAKE_MESSAGES.notExtractable })
     }

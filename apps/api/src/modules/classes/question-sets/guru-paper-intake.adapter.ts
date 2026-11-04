@@ -4,7 +4,7 @@ import type { QuestionSetPaper } from '@pp/contract'
 import { ApiError } from '../../../common/errors/api-error'
 import { toMytTimestamp } from '../../../common/time/myt'
 import { idToString } from '../../../db/ids'
-import { inspectUpload } from '../../files/content-inspect'
+import { detectOffice, inspectUpload } from '../../files/content-inspect'
 import { IntakeFilesService } from '../../intake/files/intake-files.service'
 import { IntakeUploadService } from '../../intake/files/intake-upload.service'
 import { PDF_ENGINE, type PdfEngine } from '../../ocr'
@@ -21,8 +21,8 @@ export const GURU_PAPER_TYPE_SLUGS: Readonly<Record<string, string>> = {
   'Lain-lain': 'lain',
 }
 
-/** ERR-REQ-04 with the list of what the guru path accepts today (PDF only: DOCX and XLSX are not converted). */
-export const GURU_PAPER_TYPE_REFUSED = 'Jenis fail tidak disokong. Format dibenarkan: PDF.'
+/** ERR-REQ-04 with the list of what the guru path accepts (FR-GUR-44-13). */
+export const GURU_PAPER_TYPE_REFUSED = 'Jenis fail tidak disokong. Format dibenarkan: PDF, DOCX, XLSX.'
 /** Field table of 20 FR-GUR-44-13 (D-26): refusal of a PDF with no extractable text on its first 3 pages. */
 export const GURU_PAPER_SCANNED_REFUSED = 'PDF imbasan imej tidak diterima — teks mesti boleh disalin.'
 const SCAN_CHECK_PAGES = 3
@@ -33,7 +33,7 @@ function refuse(message: string): ApiError {
 }
 
 /**
- * The real paper intake of the teacher "Hantar Kertas Soalan" (S1-T08, API-GUR-17): refuses what is not a text PDF, creates an
+ * The real paper intake of the teacher "Hantar Kertas Soalan" (S1-T08, API-GUR-17): refuses what is not a text PDF, DOCX or XLSX, creates an
  * intake batch with `source = 'guru'` owned by the teacher and stores the files through the same upload pipeline as the admin
  * (magic bytes, page limits, duplicates, jobs). The level is not stored (no column until DM-09).
  */
@@ -48,7 +48,7 @@ export class GuruPaperIntakeAdapter implements QuestionPaperIntakePort {
   async submit(input: PaperSubmission): Promise<QuestionSetPaper> {
     const { declaration: d } = input
     // Refusals first, so no batch is created for a file that cannot be accepted.
-    for (const f of input.files) await this.assertTextPdf(f.buffer)
+    for (const f of input.files) await this.assertAcceptable(f.buffer)
 
     const who = { ip: input.ip, requestId: input.requestId }
     const author = d.authorCredit.trim()
@@ -66,7 +66,7 @@ export class GuruPaperIntakeAdapter implements QuestionPaperIntakePort {
     const id = idToString(batchId)
     let uploaded
     try {
-      uploaded = await this.uploads.upload(input.auth, id, input.files.map((f) => ({ buffer: f.buffer, originalname: f.name })), who)
+      uploaded = await this.uploads.upload(input.auth, id, input.files.map((f) => ({ buffer: f.buffer, originalname: f.name })), who, undefined, { acceptOffice: true })
     } catch (err) {
       await this.batches.discardEmptyBatch(batchId)
       throw err
@@ -81,15 +81,16 @@ export class GuruPaperIntakeAdapter implements QuestionPaperIntakePort {
       paperType: d.paperType,
       authorCredit: d.authorCredit,
       note: d.note,
-      files: uploaded.files.map((f, index) => ({ index, name: f.originalName, size: f.sizeBytes, mime: 'application/pdf' })),
+      files: uploaded.files.map((f, index) => ({ index, name: f.originalName, size: f.sizeBytes, mime: detectOffice(input.files[index]?.buffer ?? Buffer.alloc(0)) ?? 'application/pdf' })),
       status: detail.status === 'processing' ? 'processing' : 'pending',
       adminNotes: null,
       createdAt: toMytTimestamp(input.at),
     }
   }
 
-  /** PDF by content (DOCX/XLSX are refused) and with a text layer on at least one of its first 3 pages. */
-  private async assertTextPdf(buffer: Buffer): Promise<void> {
+  /** DOCX/XLSX by content (stored as they are), or a PDF with a text layer on at least one of its first 3 pages. Anything else is refused. */
+  private async assertAcceptable(buffer: Buffer): Promise<void> {
+    if (detectOffice(buffer)) return
     const inspected = inspectUpload(buffer)
     if (!inspected || inspected.mime !== 'application/pdf') throw refuse(GURU_PAPER_TYPE_REFUSED)
     let pages: number

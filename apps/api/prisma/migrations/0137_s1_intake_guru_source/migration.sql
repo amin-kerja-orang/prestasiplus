@@ -27,7 +27,16 @@ ALTER TABLE "intake_batches" ADD CONSTRAINT "ck_intake_batches_paper_type" CHECK
 ) NOT VALID;
 ALTER TABLE "intake_batches" VALIDATE CONSTRAINT "ck_intake_batches_paper_type";
 
+-- A teacher's DOCX/XLSX paper (FR-GUR-44-13) is stored as an intake original without conversion: ck_files_mime is widened ADDITIVELY.
+ALTER TABLE "files" DROP CONSTRAINT "ck_files_mime";
+ALTER TABLE "files" ADD CONSTRAINT "ck_files_mime" CHECK (
+  "mime" IN ('image/jpeg', 'image/png', 'image/webp', 'application/pdf', 'image/gif', 'audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/ogg',
+             'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+) NOT VALID;
+ALTER TABLE "files" VALIDATE CONSTRAINT "ck_files_mime";
+
 -- Down (manual):
+--   (first delete intake_files rows and files rows whose mime is one of the two OOXML types, then restore the 0009 ck_files_mime)
 --   DELETE FROM "intake_batches" WHERE "source" = 'guru';
 --   ALTER TABLE "intake_batches" DROP CONSTRAINT "ck_intake_batches_kertas_required";
 --   ALTER TABLE "intake_batches" DROP CONSTRAINT "ck_intake_batches_subject";

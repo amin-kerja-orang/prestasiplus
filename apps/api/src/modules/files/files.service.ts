@@ -19,7 +19,7 @@ import { idFromString, idToString } from '../../db/ids'
 import type { File as FileRow } from '../../db/generated/client'
 import { PrismaService } from '../../db/prisma.service'
 import { authorMayReadQuestionImageSql, pupilMayReadQuestionImageSql } from './question-image-access'
-import { EXTENSION_OF, inspectUpload, type DetectedMime } from './content-inspect'
+import { detectOffice, EXTENSION_OF, inspectUpload, OFFICE_EXTENSION_OF, type DetectedMime, type OfficeMime } from './content-inspect'
 import { FILE_STORAGE, type FileStorage } from './file-storage'
 import { FilesConfig } from './files.config'
 
@@ -241,6 +241,20 @@ export class FilesService {
   }
 
   /**
+   * S1-T08: stores a teacher's DOCX or XLSX as an `intake_original` (bytes unchanged, type from `detectOffice`, same
+   * `INTAKE_MAX_FILE_MB` limit). Only the guru paper intake calls it; the PDF path keeps using `storeDerived`.
+   */
+  async storeIntakeOffice(input: { ownerUserId: string | null; bytes: Buffer; isTest?: boolean }): Promise<StoredFile> {
+    if (input.bytes.length === 0) throw invalidFile(FILE_MESSAGES.required)
+    if (input.bytes.length > this.config.intakeMaxBytes) {
+      throw invalidFile(`The file field must not be greater than ${Math.floor(this.config.intakeMaxBytes / 1024)} kilobytes.`)
+    }
+    const mime = detectOffice(input.bytes)
+    if (!mime) throw invalidFile('The file field must be a file of type: docx, xlsx.')
+    return this.persist({ ownerUserId: input.ownerUserId, purpose: 'intake_original', mime, bytes: input.bytes, isTest: input.isTest ?? false })
+  }
+
+  /**
    * A service-side upload of a public purpose (BE-24 audio sets): the same size and type rules as `upload`
    * (type from the bytes, `FILE_PURPOSE_RULES`), but no role check and no route: the caller did its own
    * authorisation. A refusal is the same 422 `fields.file`.
@@ -418,12 +432,12 @@ export class FilesService {
   private async persist(input: {
     ownerUserId: string | null
     purpose: string
-    mime: DetectedMime
+    mime: DetectedMime | OfficeMime
     bytes: Buffer
     isTest: boolean
   }): Promise<StoredFile> {
     // The key is random and built from the purpose and the detected type only: the client's file name never reaches it.
-    const storageKey = `${input.purpose.replace(/_/g, '-')}/${randomUUID()}.${EXTENSION_OF[input.mime]}`
+    const storageKey = `${input.purpose.replace(/_/g, '-')}/${randomUUID()}.${input.mime in OFFICE_EXTENSION_OF ? OFFICE_EXTENSION_OF[input.mime as OfficeMime] : EXTENSION_OF[input.mime as DetectedMime]}`
     await this.storage.put(storageKey, input.bytes)
     try {
       const row = await this.prisma.client.file.create({
