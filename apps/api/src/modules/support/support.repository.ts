@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { SUPPORT_QUEUE_LIMIT, SUPPORT_TICKET_STATUSES, type SupportTicketStatus } from '@pp/contract'
+import { SUPPORT_QUEUE_PER_PAGE, SUPPORT_TICKET_STATUSES, type SupportTicketStatus } from '@pp/contract'
 
 import { idFromString, idToString, isIdString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
@@ -95,25 +95,27 @@ export class SupportRepository {
   }
 
   /**
-   * The admin queue: rows filtered by the exact status, newest first, at most 200. `counts` and `total`
-   * are over every ticket (never the filtered ones); statuses with no ticket are left out, in vocabulary order.
+   * The admin queue: one page of the rows with the exact status, newest first. `counts` and `total` are over
+   * every ticket (never the status-filtered ones); `counts` has all five statuses in vocabulary order, so a
+   * chip at 0 exists. `matched` counts the rows of the status filter, for the pager.
    */
-  async queue(status: string): Promise<{ rows: QueueRow[]; total: number; counts: { status: SupportTicketStatus; count: number }[] }> {
-    const [rows, grouped] = await Promise.all([
+  async queue(status: string, page: number): Promise<{ rows: QueueRow[]; total: number; matched: number; counts: { status: SupportTicketStatus; count: number }[] }> {
+    const where = status === '' ? {} : { status }
+    const [rows, matched, grouped] = await Promise.all([
       this.prisma.client.supportTicket.findMany({
-        where: status === '' ? {} : { status },
+        where,
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-        take: SUPPORT_QUEUE_LIMIT,
+        skip: (page - 1) * SUPPORT_QUEUE_PER_PAGE,
+        take: SUPPORT_QUEUE_PER_PAGE,
         select: { id: true, createdAt: true, subject: true, status: true, adminReply: true, user: { select: { name: true } } },
       }),
+      this.prisma.client.supportTicket.count({ where }),
       this.prisma.client.supportTicket.groupBy({ by: ['status'], _count: { _all: true } }),
     ])
     const byStatus = new Map(grouped.map((g) => [g.status, g._count._all]))
-    const counts = SUPPORT_TICKET_STATUSES.flatMap((s) => {
-      const count = byStatus.get(s) ?? 0
-      return count > 0 ? [{ status: s, count }] : []
-    })
+    const counts = SUPPORT_TICKET_STATUSES.map((s) => ({ status: s, count: byStatus.get(s) ?? 0 }))
     return {
+      matched,
       rows: rows.map((r) => ({
         id: idToString(r.id),
         createdAt: r.createdAt,
@@ -125,6 +127,17 @@ export class SupportRepository {
       total: counts.reduce((n, c) => n + c.count, 0),
       counts,
     }
+  }
+
+  /** One ticket for the admin; an id that cannot exist is simply not found. */
+  async getById(id: string): Promise<TicketRow | null> {
+    if (!isIdString(id)) return null
+    const row = await this.prisma.client.supportTicket.findUnique({ where: { id: idFromString(id) } })
+    return row ? toTicket(row) : null
+  }
+
+  async setStatus(id: string, status: SupportTicketStatus, now: Date): Promise<TicketRow> {
+    return toTicket(await this.prisma.client.supportTicket.update({ where: { id: idFromString(id) }, data: { status, updatedAt: now } }))
   }
 
   async openCount(): Promise<number> {

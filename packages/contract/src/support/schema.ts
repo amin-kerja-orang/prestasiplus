@@ -6,9 +6,8 @@ import { TimestampSchema } from '../common/time'
  * M22 support tickets wire contract (BE-24, contract-only). Mock:
  * `src/modules/m22-support-tickets/mock/handlers/tickets.ts`, types in `.../api/types.ts`.
  *
- * Learners (any signed-in user) create and list their own tickets; the admin queue is read-only
- * (D27, DV-M22-07). There is no reply or status-change route (OQ-API-B4-21), so `adminReply` is
- * always null and new tickets stay `dibuka`. Ids are opaque strings (`Id`), not the mock integers.
+ * Learners (any signed-in user) create and list their own tickets. Admin Pusat reads the queue and
+ * sets the status (API-SUP-03, API-SUP-05). Ids are opaque strings (`Id`), not the mock integers.
  */
 
 export const SUPPORT_TICKET_STATUSES = ['dibuka', 'dalam_proses', 'menunggu_balas', 'selesai', 'ditutup'] as const
@@ -26,8 +25,6 @@ export const SUPPORT_TICKET_STATUS_LABELS = {
 
 export const SUPPORT_SUBJECT_MAX = 255
 export const SUPPORT_BODY_MAX = 5000
-/** The admin queue returns the newest 200 tickets only (BR-M22-10). */
-export const SUPPORT_QUEUE_LIMIT = 200
 /** Rows per page of the admin queue (API-SUP-03). */
 export const SUPPORT_QUEUE_PER_PAGE = 25
 
@@ -153,14 +150,14 @@ export const SupportQueueMetaSchema = z
   .strictObject({
     total: z.number().int().min(0),
     counts: z.array(z.strictObject({ status: SupportTicketStatusSchema, count: z.number().int().min(0) })),
-    page: z.number().int().min(1).optional(),
-    perPage: z.number().int().min(1).optional(),
-    matched: z.number().int().min(0).optional(),
+    page: z.number().int().min(1),
+    perPage: z.number().int().min(1),
+    matched: z.number().int().min(0),
   })
   .meta({ id: 'SupportQueueMeta' })
 
 export const SupportQueueResponseSchema = z
-  .object({ data: z.array(SupportQueueRowSchema).max(SUPPORT_QUEUE_LIMIT), meta: SupportQueueMetaSchema })
+  .object({ data: z.array(SupportQueueRowSchema).max(SUPPORT_QUEUE_PER_PAGE), meta: SupportQueueMetaSchema })
   .meta({ id: 'SupportQueueResponse' })
 export type SupportQueueResponse = z.infer<typeof SupportQueueResponseSchema>
 

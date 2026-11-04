@@ -9,6 +9,7 @@ import {
   SUPPORT_BODY_MAX,
   SUPPORT_MESSAGES,
   SUPPORT_NEW_TICKET_NOTIFICATION,
+  SUPPORT_QUEUE_PER_PAGE,
   SUPPORT_SUBJECT_MAX,
   SUPPORT_TICKET_CREATED_FLASH,
   SUPPORT_TICKET_STATUSES,
@@ -95,19 +96,19 @@ describe('create request', () => {
 
 describe('admin queue', () => {
   const row = { id: '31', createdAt: AT, userName: 'Murid Contoh', subject: 'Tidak boleh log masuk', status: 'dibuka', replied: false }
-  const meta = { total: 2, counts: [{ status: 'dibuka', count: 1 }, { status: 'selesai', count: 1 }] }
+  const meta = { total: 2, counts: [{ status: 'dibuka', count: 1 }, { status: 'selesai', count: 1 }], page: 1, perPage: 25, matched: 2 }
 
   it('parses rows with meta.total and meta.counts', () => {
     expect(SupportQueueResponseSchema.safeParse({ data: [row], meta }).success).toBe(true)
-    expect(SupportQueueResponseSchema.safeParse({ data: [{ ...row, userName: null }], meta: { total: 0, counts: [] } }).success).toBe(true)
+    expect(SupportQueueResponseSchema.safeParse({ data: [{ ...row, userName: null }], meta: { total: 0, counts: [], page: 1, perPage: 25, matched: 0 } }).success).toBe(true)
   })
 
-  it('never exposes the body, e-mail or user id, and is capped at 200 rows', () => {
+  it('never exposes the body, e-mail or user id, and is capped at one page', () => {
     for (const leak of ['body', 'email', 'userId']) {
       expect(SupportQueueResponseSchema.safeParse({ data: [{ ...row, [leak]: 'x' }], meta }).success).toBe(false)
     }
-    expect(SupportQueueResponseSchema.safeParse({ data: Array(201).fill(row), meta }).success).toBe(false)
-    expect(SupportQueueResponseSchema.safeParse({ data: [row], meta: { total: 1, counts: [{ status: 'dibuka', count: -1 }] } }).success).toBe(false)
+    expect(SupportQueueResponseSchema.safeParse({ data: Array(SUPPORT_QUEUE_PER_PAGE + 1).fill(row), meta }).success).toBe(false)
+    expect(SupportQueueResponseSchema.safeParse({ data: [row], meta: { ...meta, counts: [{ status: 'dibuka', count: -1 }] } }).success).toBe(false)
   })
 
   it('takes a chip at 0, the pager meta and the role and school of a row (defects on #507)', () => {

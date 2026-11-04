@@ -4429,7 +4429,10 @@
         },
         "required": [
           "total",
-          "counts"
+          "counts",
+          "page",
+          "perPage",
+          "matched"
         ],
         "additionalProperties": false
       },
@@ -4441,7 +4444,7 @@
             "items": {
               "$ref": "#/components/schemas/SupportQueueRow"
             },
-            "maxItems": 200
+            "maxItems": 25
           },
           "meta": {
             "$ref": "#/components/schemas/SupportQueueMeta"

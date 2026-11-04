@@ -1,11 +1,15 @@
 import { Inject, Injectable, Logger } from '@nestjs/common'
 import {
+  SUPPORT_ADMIN_MESSAGES,
   SUPPORT_NEW_TICKET_NOTIFICATION,
+  SUPPORT_QUEUE_PER_PAGE,
   SUPPORT_TICKET_STATUS_LABELS,
   type ContentSupportConfig,
   type SupportQueueResponse,
   type SupportTicket,
   type SupportTicketCreateRequest,
+  type SupportTicketDetail,
+  type SupportTicketStatus,
   type SupportTicketListResponse,
 } from '@pp/contract'
 
@@ -33,6 +37,8 @@ export interface Actor {
   ip: string | null
 }
 
+const ticketNotFound = (): ApiError => ApiError.of('NOT_FOUND', { message: SUPPORT_ADMIN_MESSAGES.ticketNotFound })
+
 const toView = (r: TicketRow): SupportTicket => ({
   id: r.id,
   subject: r.subject,
@@ -42,6 +48,25 @@ const toView = (r: TicketRow): SupportTicket => ({
   adminReply: r.adminReply,
   createdAt: toMytTimestamp(r.createdAt),
 })
+
+/** The admin's view of a ticket. `roleLabel`, `school` and `repliedAt` stay null until DM-32 stores them. */
+const toDetail = (r: TicketRow): SupportTicketDetail => ({
+  id: r.id,
+  subject: r.subject,
+  body: r.body,
+  status: r.status,
+  roleLabel: null,
+  school: null,
+  createdAt: toMytTimestamp(r.createdAt),
+  adminReply: r.adminReply,
+  repliedAt: null,
+})
+
+/** A `page` query value read tolerantly: an odd value is page 1 (never a 422). */
+const pageOf = (raw: string | undefined): number => {
+  const page = /^[0-9]{1,9}$/.test(raw ?? '') ? Number(raw) : 1
+  return Math.max(page, 1)
+}
 
 @Injectable()
 export class SupportService {
@@ -90,9 +115,10 @@ export class SupportService {
     return toView(row)
   }
 
-  /** GET /admin/tiket (read-only, D27). */
-  async queue(status: string | undefined): Promise<SupportQueueResponse> {
-    const { rows, total, counts } = await this.guard(() => this.repo.queue(hasNul(status) ? '￿' : (status ?? '').trim()))
+  /** GET /admin/tiket: 25 per page. */
+  async queue(status: string | undefined, rawPage?: string): Promise<SupportQueueResponse> {
+    const page = pageOf(rawPage)
+    const { rows, total, matched, counts } = await this.guard(() => this.repo.queue(hasNul(status) ? '￿' : (status ?? '').trim(), page))
     return {
       data: rows.map((r) => ({
         id: r.id,
@@ -102,8 +128,42 @@ export class SupportService {
         status: r.status,
         replied: r.replied,
       })),
-      meta: { total, counts },
+      meta: { total, counts, page, perPage: SUPPORT_QUEUE_PER_PAGE, matched },
     }
+  }
+
+  /** GET /admin/tiket/:id: unknown id is 404. */
+  async ticket(id: string): Promise<SupportTicketDetail> {
+    const row = await this.guard(() => this.repo.getById(id))
+    if (!row) throw ticketNotFound()
+    return toDetail(row)
+  }
+
+  /** PATCH /admin/tiket/:id/status: the reply does not change. The status and its audit row commit together; setting the same status writes nothing. */
+  async setStatus(actor: Actor, id: string, status: SupportTicketStatus): Promise<SupportTicketDetail> {
+    const row = await this.write(async (tx) => {
+      const current = await this.repo.getById(id)
+      if (!current) throw ticketNotFound()
+      if (current.status === status) return current
+      const updated = await this.repo.setStatus(id, status, this.clock.now())
+      await this.audit.record({
+        tx,
+        action: SUPPORT_AUDIT.TICKET_STATUS_CHANGED,
+        actorUserId: actor.userId,
+        actorRole: actor.role,
+        sessionRowId: actor.sessionRowId,
+        scopeLevel: actor.scopeLevel,
+        schoolId: actor.schoolId,
+        requestId: actor.requestId,
+        ip: actor.ip,
+        isTest: actor.isTest,
+        targetType: 'support_ticket',
+        targetId: id,
+        details: { ticketId: id, before: current.status, after: status },
+      })
+      return updated
+    })
+    return toDetail(row)
   }
 
   async openCount(): Promise<{ count: number }> {

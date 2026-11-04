@@ -233,7 +233,7 @@ test.describe('L04 access and badge', MODULE, () => {
 })
 
 test.describe('L04 queue (S2)', MODULE, () => {
-  test('AC-07.x read-only, chips, MYT dates, no console errors', async ({
+  test('AC-07.x chips, MYT dates, no console errors', async ({
     page,
     loginAs,
     gotoApp,
@@ -243,7 +243,7 @@ test.describe('L04 queue (S2)', MODULE, () => {
     await gotoApp(QUEUE)
     await expect(page.getByTestId('tq-table')).toBeVisible()
     await expect(page.getByTestId('tq-chips')).toContainText('Semua (2)')
-    await expect(page.getByTestId('tq-chips')).toContainText('dibuka (2)')
+    await expect(page.getByTestId('tq-chips')).toContainText('Dibuka (2)')
     const rows = page.getByTestId('tq-row')
     await expect(rows).toHaveCount(2)
     await expect(rows.nth(0).locator('td').nth(0)).toHaveText('2026-09-25 09:30:00')
@@ -251,7 +251,7 @@ test.describe('L04 queue (S2)', MODULE, () => {
     for (const th of await page.locator('[data-testid="tq-table"] th').all()) {
       expect(await th.evaluate((el) => getComputedStyle(el).textTransform)).toBe('uppercase')
     }
-    // nothing writable inside the page content
+    // the rows hold no control: a row opens the detail dialog
     const page_ = page.getByTestId('tq-page')
     await expect(page_.locator('button, input, textarea, select, form')).toHaveCount(0)
     await expect(rows.locator('a, button')).toHaveCount(0)
@@ -281,10 +281,38 @@ test.describe('L04 queue (S2)', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp(`${QUEUE}?status=selesai`)
-    await expect(page.getByTestId('tq-empty')).toHaveText('Tiada tiket berstatus “selesai”.')
+    await expect(page.getByTestId('tq-empty')).toHaveText('Tiada tiket berstatus “Selesai”.')
     await gotoApp(`${QUEUE}?status=<b>x</b>`)
     await expect(page.getByTestId('tq-empty')).toHaveText('Tiada tiket berstatus “<b>x</b>”.')
     await expect(page.getByTestId('tq-page').locator('b')).toHaveCount(0)
+  })
+})
+
+test.describe('R1-ADM-P2-20 detail and status', MODULE, () => {
+  test('FR-ADM-P2-20.2 a row opens the detail; the status saves apart and the chips follow', async ({
+    page,
+    loginAs,
+    gotoApp,
+  }) => {
+    await loginAs(ADMIN)
+    await gotoApp(QUEUE)
+    await page.getByTestId('tq-row').first().click()
+    const dialog = page.getByTestId('tq-detail')
+    await expect(dialog).toBeVisible()
+    await expect(page.getByTestId('def-subject')).toContainText('Subjek')
+    await expect(page.getByTestId('def-body')).toContainText('Butiran')
+    await expectNoHorizontalScroll(page)
+    await page.getByTestId('tq-detail-status').selectOption('selesai', { force: true })
+    await expect(page.getByTestId('tq-detail-flash')).toContainText('Status dikemas kini.')
+    await expect(page.getByTestId('tq-chips')).toContainText('Selesai (1)')
+    await expect(page.getByTestId('tq-chips')).toContainText('Dibuka (1)')
+  })
+
+  test('AC-ADM-P2-20.2 a chip at 0 opens its empty state', async ({ page, loginAs, gotoApp }) => {
+    await loginAs(ADMIN)
+    await gotoApp(QUEUE)
+    await page.getByTestId('tq-chips').getByText('Ditutup (0)').click()
+    await expect(page.getByTestId('tq-empty')).toHaveText('Tiada tiket berstatus “Ditutup”.')
   })
 })
 

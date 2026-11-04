@@ -42,7 +42,14 @@ export const supportTicketScenarios: Scenario[] = [
       ctx.expectStatus(await admin.request('GET', '/admin/tiket?status=dibuka'), 200)
       const openAfter = Number(dataOf(await admin.request('GET', '/admin/tiket/open-count')).count)
       ctx.check(openAfter === openBefore + 1, `open-count must grow by one (${String(openBefore)} to ${String(openAfter)})`)
-      // read-only (D27): the contract has no write operation on the admin paths (integration spec: 404 on every write)
+      const detail = await admin.request('GET', `/admin/tiket/${String(ticket.id)}`)
+      ctx.expectStatus(detail, 200)
+      ctx.check(dataOf(detail).adminReply === null && dataOf(detail).body === 'Butiran ujian', 'the detail must hold the body and no reply')
+      const moved = await admin.request('PATCH', `/admin/tiket/${String(ticket.id)}/status`, { body: { status: 'dalam_proses' } })
+      ctx.expectStatus(moved, 200)
+      ctx.check(dataOf(moved).status === 'dalam_proses', 'the status must change')
+      expectError(ctx, await admin.request('PATCH', `/admin/tiket/${String(ticket.id)}/status`, { body: { status: 'baru' } }), 422, 'VALIDATION_ERROR')
+      expectError(ctx, await admin.request('GET', '/admin/tiket/999999999'), 404, 'NOT_FOUND')
     },
   },
   {
