@@ -70,12 +70,12 @@ test.describe('Bijak SPM @bijak', () => {
 
     const desktop = isDesktopShell(page)
     if (desktop) {
-      await expect(page.getByTestId('pinned-stimulus')).toBeVisible()
+      await expect(page.getByTestId('stimulus-pane')).toBeVisible()
     } else {
-      await expect(page.getByTestId('stimulus-chip')).toBeVisible()
-      await page.getByTestId('stimulus-chip').click()
+      // S8-T02: the group sheet is open the first time the group appears; close it, the chip stays.
       await expect(page.getByRole('dialog').getByTestId('stimulus')).toBeVisible()
       await page.keyboard.press('Escape')
+      await expect(page.getByTestId('stimulus-chip')).toBeVisible()
     }
     await page.locator('[data-testid^=option-]').first().click()
     await expectNoHorizontalScroll(page)
@@ -84,7 +84,7 @@ test.describe('Bijak SPM @bijak', () => {
     // Next question of the group: the Rajah stays.
     await page.getByTestId('next').click()
     await expect(page.getByTestId('question-heading')).toHaveText(/Soalan 6 · berdasarkan Rajah 1/)
-    if (desktop) await expect(page.getByTestId('pinned-stimulus')).toBeVisible()
+    if (desktop) await expect(page.getByTestId('stimulus-pane')).toBeVisible()
     await page.locator('[data-testid^=option-]').nth(1).click()
 
     // Autosave status settles.

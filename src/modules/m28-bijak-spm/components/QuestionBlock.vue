@@ -10,8 +10,8 @@ import { DsQuizOption, DsStack, DsText } from '@/ds'
 
 import { leavesOf } from '../domain/paper-model'
 import type { PartAnswer, QuestionResult, QuestionView } from '../domain/types'
-import { toOptionData } from '../lib/stimulus-data'
-import { McqOptions, PartNode, RichText, StimulusStack, qdCopy } from '../../../components/question-display'
+import { toOptionData, toStimulusData } from '../lib/stimulus-data'
+import { McqOptions, PartNode, RichText, StimulusGroup, qdCopy } from '../../../components/question-display'
 import PartResultCard from './PartResultCard.vue'
 import ReportQuestionButton from './ReportQuestionButton.vue'
 
@@ -118,7 +118,12 @@ function pick(id: string): void {
     </DsStack>
 
     <!-- The question's OWN stimuli (R1E2E-05b), above the stem as in V2 section 1.5. -->
-    <StimulusStack v-if="ownStimuli.length" :stimuli="ownStimuli" data-testid="own-stimuli" />
+    <div v-if="ownStimuli.length" :data-count="ownStimuli.length" data-testid="own-stimuli">
+      <StimulusGroup
+        :stimuli="ownStimuli.map(toStimulusData)"
+        :hint="false"
+      />
+    </div>
 
     <p v-if="question.stem" class="text-body text-default" data-testid="question-stem">
       <RichText :text="question.stem" />
