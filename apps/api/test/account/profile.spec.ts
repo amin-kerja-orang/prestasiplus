@@ -158,9 +158,9 @@ describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC
       expect(cleared).toMatchObject({ phone: null, bio: null, grade: before.grade, schoolId: before.schoolId })
     })
 
-    it('validates name, phone and bio with the mock copy; grade and school are not validated any more', async () => {
+    it('validates name, phone and bio with the mock copy; a valid-typed grade and school are accepted and ignored', async () => {
       const who = await login(t, 'pelajar2@demo.test')
-      const res = await put(who, '/me', { name: '', bio: 'a'.repeat(501), grade: 12, schoolId: '123456789' })
+      const res = await put(who, '/me', { name: '', bio: 'a'.repeat(501) })
       expect(fieldsOf(res)).toEqual({
         name: 'The name field is required.',
         bio: 'The bio field must not be greater than 500 characters.',
@@ -168,7 +168,7 @@ describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC
       expect(ErrorBodySchema.parse(res.body).error.message).toBe('The name field is required. (and 1 more error)')
       const long = await put(who, '/me', { name: 'x', phone: '0'.repeat(15) })
       expect(fieldsOf(long)).toEqual({ phone: 'The phone field must not be greater than 14 characters.' })
-      const odd = await put(who, '/me', { name: 'Nama Baharu', grade: 12, schoolId: '123456789' })
+      const odd = await put(who, '/me', { name: 'Nama Baharu', grade: 11, schoolId: '123456789' })
       expect(odd.status, JSON.stringify(odd.body)).toBe(200)
     })
 
@@ -180,7 +180,7 @@ describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC
         const before = AccountUserMeSchema.parse((await get(who, '/me')).body.data)
         const other = await schoolIdOf(t.db, 'DEMO001')
         const target = before.schoolId === other ? school2 : other
-        for (const extra of [{ grade: 9, schoolId: target, role: 'admin' }, { grade: null, schoolId: null }, { grade: 99, schoolId: '123456789' }]) {
+        for (const extra of [{ grade: 9, schoolId: target, role: 'admin' }, { grade: null, schoolId: null }, { grade: 11, schoolId: '123456789' }]) {
           const res = await put(who, '/me', { name: before.name, ...extra })
           expect(res.status, JSON.stringify(res.body)).toBe(200)
           const after = AccountUserMeSchema.parse(res.body.data)

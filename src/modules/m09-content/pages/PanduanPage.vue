@@ -54,7 +54,7 @@ watch(
 const support = useApi((signal) => fetchSupportConfig({ signal }))
 // No fallback: nothing is shown until the API answers, and nothing on an error.
 const email = computed(() => support.data.value?.email?.trim() ?? '')
-const whatsapp = computed(() => support.data.value?.whatsappNumber?.trim() ?? '')
+const whatsapp = computed(() => support.data.value?.whatsapp?.trim() ?? '')
 const hasContact = computed(() => email.value !== '' || whatsapp.value !== '')
 
 function setRole(id: string): void {

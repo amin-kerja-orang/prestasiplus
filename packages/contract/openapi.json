@@ -4206,13 +4206,21 @@
           "email": {
             "type": "string"
           },
-          "whatsappNumber": {
+          "phone": {
+            "type": "string"
+          },
+          "whatsapp": {
+            "type": "string"
+          },
+          "hours": {
             "type": "string"
           }
         },
         "required": [
           "email",
-          "whatsappNumber"
+          "phone",
+          "whatsapp",
+          "hours"
         ],
         "additionalProperties": false
       },
@@ -27831,10 +27839,23 @@
             "maxLength": 500
           },
           "grade": {
-            "description": "Accepted and ignored (deprecated)."
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 11,
+            "description": "Tingkatan 1-11. Accepted and ignored by the server for every role (API-AUTH-09)."
           },
           "schoolId": {
-            "description": "Accepted and ignored (deprecated)."
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "School id. Accepted and ignored by the server for every role (API-AUTH-09).",
+            "example": "1042"
           }
         },
         "required": [
@@ -74734,10 +74755,10 @@
           "content"
         ],
         "summary": "Support contact (help box)",
-        "description": "Public. If the config row is missing the server answers 200 with empty strings {email: \"\", whatsappNumber: \"\"} (S5-T05, DM-33); the client hides a contact whose value is empty.",
+        "description": "Public. If the config row is missing the server answers 200 with empty strings {email: \"\", phone: \"\", whatsapp: \"\", hours: \"\"} (S5-T05, DM-33); phone and hours are always empty until S7-T09; the client hides a contact whose value is empty.",
         "responses": {
           "200": {
-            "description": "E-mail and WhatsApp number (empty strings when not set).",
+            "description": "E-mail, phone, WhatsApp number and hours (empty strings when not set).",
             "content": {
               "application/json": {
                 "schema": {
@@ -100304,7 +100325,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields (one message per field, the first failing rule). name required, max 255; phone max 14; bio max 500. Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
+            "description": "VALIDATION_ERROR with fields (one message per field, the first failing rule). name required, max 255; phone max 14; bio max 500; grade \"The selected grade is invalid.\" and school \"The selected school id is invalid.\" when the value has the wrong type (a valid value is ignored). Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
             "content": {
               "application/json": {
                 "schema": {

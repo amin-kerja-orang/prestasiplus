@@ -189,7 +189,7 @@ export function registerAccountPaths(registry: OpenAPIRegistry): void {
       401: unauthorized,
       403: csrfOrPcr,
       422: validation(
-        'name required, max 255; phone max 14; bio max 500.',
+        `name required, max 255; phone max 14; bio max 500; grade "${ACCOUNT_AUTH_MESSAGES.gradeInvalid}" and school "${ACCOUNT_AUTH_MESSAGES.schoolInvalid}" when the value has the wrong type (a valid value is ignored).`,
       ),
       429: rateLimited(`"${AUTH_ERROR_MESSAGES.RATE_LIMITED}" (D57a).`),
     },

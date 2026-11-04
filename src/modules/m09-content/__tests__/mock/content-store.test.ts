@@ -654,10 +654,12 @@ describe('notes, perutusan, support', () => {
   it('holds the support config and an empty audio / screenshot state', () => {
     expect(support.config()).toEqual({
       email: 'support@prestasiplus.my',
-      whatsappNumber: '60123456789',
+      phone: '',
+      whatsapp: '60123456789',
+      hours: '',
     })
     support.setWhatsappNumber('60111111111')
-    expect(support.config().whatsappNumber).toBe('60111111111')
+    expect(support.config().whatsapp).toBe('60111111111')
     expect(support.screenshotCount()).toBe(0)
   })
 
@@ -701,7 +703,7 @@ describe('cross-module references and reset', () => {
     expect(videos.count('Q-VID-ALL')).toBe(2_260)
     expect(videos.count('Q-VID-CAT', 'lain-lain')).toBe(0)
     expect(articles.count('Q-ART-ALL')).toBe(72)
-    expect(support.config().whatsappNumber).toBe('60123456789')
+    expect(support.config().whatsapp).toBe('60123456789')
     expect(perutusan.list(ADMIN).map((p) => p.reads)).toEqual([3, 4, 55])
   })
 })

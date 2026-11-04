@@ -292,11 +292,12 @@ export const supportRepo = defineRepository({
     },
 
     /** S26/S27: the support e-mail and WhatsApp number. */
-    config(): { email: string; whatsappNumber: string } {
+    config(): { email: string; phone: string; whatsapp: string; hours: string } {
       const row = store.get(1)
       // DM-33 / API-SUP-04: no row is not an error; the server answers empty values (S5-T05).
-      if (!row) return { email: '', whatsappNumber: '' }
-      return { email: row.email, whatsappNumber: row.whatsappNumber }
+      if (!row) return { email: '', phone: '', whatsapp: '', hours: '' }
+      // phone and hours are not stored until S7-T09 (#458 decision 2).
+      return { email: row.email, phone: '', whatsapp: row.whatsappNumber, hours: '' }
     },
 
     /** DV-M09-14 / `mock.config('supportWhatsappNumber', value)`: the owner replaces the number. */

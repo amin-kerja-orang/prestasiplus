@@ -43,7 +43,9 @@ async function render(url = '/panduan', loggedIn = false): Promise<VueWrapper> {
 beforeEach(() => {
   api.fetchSupportConfig.mockResolvedValue({
     email: 'support@prestasiplus.my',
-    whatsappNumber: '60123456789',
+    phone: '',
+    whatsapp: '60123456789',
+    hours: '',
   })
   window.scrollTo = scrollTo
 })
@@ -192,7 +194,7 @@ describe('PanduanPage', () => {
   })
 
   it('builds the help box links from the support config', async () => {
-    api.fetchSupportConfig.mockResolvedValue({ email: 'a@b.my', whatsappNumber: '60111111111' })
+    api.fetchSupportConfig.mockResolvedValue({ email: 'a@b.my', phone: '', whatsapp: '60111111111', hours: '' })
     const w = await render()
     expect(w.find('[data-testid="panduan-email"]').attributes('href')).toBe('mailto:a@b.my')
     const wa = w.find('[data-testid="panduan-whatsapp"]')
@@ -201,7 +203,7 @@ describe('PanduanPage', () => {
   })
 
   it('hides the contact block for an empty config but keeps the guest register button', async () => {
-    api.fetchSupportConfig.mockResolvedValue({ email: '', whatsappNumber: '' })
+    api.fetchSupportConfig.mockResolvedValue({ email: '', phone: '', whatsapp: '', hours: '' })
     const w = await render()
     expect(w.find('[data-testid="panduan-contact"]').exists()).toBe(false)
     expect(w.find('[data-testid="panduan-email"]').exists()).toBe(false)
@@ -211,7 +213,7 @@ describe('PanduanPage', () => {
   })
 
   it('hides the whole help card for an empty config when logged in', async () => {
-    api.fetchSupportConfig.mockResolvedValue({ email: '', whatsappNumber: '' })
+    api.fetchSupportConfig.mockResolvedValue({ email: '', phone: '', whatsapp: '', hours: '' })
     const w = await render('/panduan', true)
     expect(w.find('[data-testid="panduan-help"]').exists()).toBe(false)
   })
@@ -227,7 +229,7 @@ describe('PanduanPage', () => {
   })
 
   it('shows only the e-mail button when only the e-mail is set', async () => {
-    api.fetchSupportConfig.mockResolvedValue({ email: 'a@b.my', whatsappNumber: '' })
+    api.fetchSupportConfig.mockResolvedValue({ email: 'a@b.my', phone: '', whatsapp: '', hours: '' })
     const w = await render()
     expect(w.find('[data-testid="panduan-contact"]').exists()).toBe(true)
     expect(w.find('[data-testid="panduan-email"]').attributes('href')).toBe('mailto:a@b.my')
@@ -235,7 +237,7 @@ describe('PanduanPage', () => {
   })
 
   it('shows only the WhatsApp button when only the number is set', async () => {
-    api.fetchSupportConfig.mockResolvedValue({ email: '', whatsappNumber: '60111111111' })
+    api.fetchSupportConfig.mockResolvedValue({ email: '', phone: '', whatsapp: '60111111111', hours: '' })
     const w = await render()
     expect(w.find('[data-testid="panduan-email"]').exists()).toBe(false)
     expect(w.find('[data-testid="panduan-whatsapp"]').attributes('href')).toBe(

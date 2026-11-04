@@ -310,9 +310,9 @@ export function registerContentPaths(registry: OpenAPIRegistry): void {
     path: '/config/support',
     tags: ['content'],
     summary: 'Support contact (help box)',
-    description: 'Public. If the config row is missing the server answers 200 with empty strings {email: "", whatsappNumber: ""} (S5-T05, DM-33); the client hides a contact whose value is empty.',
+    description: 'Public. If the config row is missing the server answers 200 with empty strings {email: "", phone: "", whatsapp: "", hours: ""} (S5-T05, DM-33); phone and hours are always empty until S7-T09; the client hides a contact whose value is empty.',
     responses: {
-      200: json(envelopeOf(ContentSupportConfigSchema), 'E-mail and WhatsApp number (empty strings when not set).'),
+      200: json(envelopeOf(ContentSupportConfigSchema), 'E-mail, phone, WhatsApp number and hours (empty strings when not set).'),
     },
   })
 

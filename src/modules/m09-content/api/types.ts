@@ -277,5 +277,7 @@ export interface PublicPerutusan {
 /** #43. */
 export interface SupportConfig {
   email: string
-  whatsappNumber: string
+  phone: string
+  whatsapp: string
+  hours: string
 }
