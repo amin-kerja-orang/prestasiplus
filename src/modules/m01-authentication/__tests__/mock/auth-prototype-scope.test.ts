@@ -63,13 +63,13 @@ describe('POST /api/auth/login with the prototype scope on', () => {
     'jpn@demo.test',
     'ibubapa@demo.test',
     'penaja@demo.test',
-  ])('refuses %s with "Peranan ini tidak termasuk dalam prototaip."', async (email) => {
+  ])('refuses %s with "Peranan ini belum menggunakan sistem ini."', async (email) => {
     const res = await login(email)
     expect(res.status).toBe(403)
     const error = (res.body as { error: { code: string; message: string } }).error
     expect(error.code).toBe(ROLE_OUT_OF_SCOPE_CODE)
     expect(error.message).toBe(MSG_ROLE_OUT_OF_SCOPE)
-    expect(MSG_ROLE_OUT_OF_SCOPE).toBe('Peranan ini tidak termasuk dalam prototaip.')
+    expect(MSG_ROLE_OUT_OF_SCOPE).toBe('Peranan ini belum menggunakan sistem ini.')
   })
 
   it('keeps the "akaun tidak aktif" message for the inactive account', async () => {

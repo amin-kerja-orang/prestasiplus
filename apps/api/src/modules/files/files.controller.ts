@@ -42,7 +42,7 @@ import { AUTH_CONTEXT_KEY, type AuthContext, type RequestWithAuth } from '../../
 import { AuthConfig } from '../auth/auth.config'
 import { sessionTokenOf } from '../auth/cookies'
 import { ZodValidationPipe } from '../../common/validation/zod-validation.pipe'
-import { EXTENSION_OF, type DetectedMime } from './content-inspect'
+import { DOCX_MIME, EXTENSION_OF, XLSX_MIME, type DetectedMime, type OfficeMime } from './content-inspect'
 import { FilesConfig } from './files.config'
 import { type CallerInfo, FilesService, isFilePurpose, limitFor, mayUpload, sizeMessageFor } from './files.service'
 import { DownloadThrottle, UploadThrottle } from './upload-throttle'
@@ -177,8 +177,9 @@ export class FilesController {
       this.reads.hit(auth ? { userId: auth.userId } : { ip })
     }
     const file = await this.files.read(id, auth)
-    const mime = file.mime as DetectedMime
-    const inline = mime !== 'application/pdf'
+    const mime = file.mime as DetectedMime | OfficeMime
+    // Only images and audio may render in the browser; a PDF and the OOXML containers are always downloaded.
+    const inline = mime !== 'application/pdf' && mime !== DOCX_MIME && mime !== XLSX_MIME
     res
       .status(200)
       .set({

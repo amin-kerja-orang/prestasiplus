@@ -392,7 +392,7 @@ describe('paper builder R1-B09a: placements, D90 groups, review, publish, copy, 
       }
     })
 
-    it('D90/D93: a one-member group stays a group (groupId + stimulus) in the pool and is not placeable', async () => {
+    it('D90/S1-T01: a one-member group stays a group (groupId + stimulus) in the pool and is valid (no group-size reason)', async () => {
       bank.add({ id: '700041', marks: 1, groupId: '800009' }).addGroup('800009', ['700041'])
       ;(FACTS as Record<string, unknown>)['700041'] = { marks: 1, group: '800009', position: 1, size: 1 }
       try {
@@ -404,12 +404,10 @@ describe('paper builder R1-B09a: placements, D90 groups, review, publish, copy, 
         const lone = units.find((u) => u.questionIds.includes('700041'))!
         expect(lone.groupId).toBe('800009')
         expect(lone.stimulus).toBeDefined()
-        expect(lone.eligible).toBe(false)
-        expect(lone.reasons).toContain('Kumpulan perlu sekurang-kurangnya 2 soalan.')
-        // placed (the editor accepts it), the review blocks Terbit with the same line and the override never lifts it
+        expect(lone.reasons).not.toContain('Kumpulan perlu sekurang-kurangnya 1 soalan.')
         await placeOk(id, a, '700041')
         const review = Review.parse((await admin.get(`/api/admin/papers/${id}/review`)).body).data
-        expect(review.blockers).toContain('Kumpulan perlu sekurang-kurangnya 2 soalan.')
+        expect(review.blockers).not.toContain('Kumpulan perlu sekurang-kurangnya 1 soalan.')
       } finally {
         delete (FACTS as Record<string, unknown>)['700041']
         pool.ids = new Set(Object.keys(FACTS))
