@@ -28,7 +28,7 @@ const baseURL = process.env.BASE_URL || process.env.BIJAK_API_BASE || `http://lo
 export default defineConfig({
   testDir: process.env.E2E_HTTP_TEST_DIR || 'e2e',
   // Only the http specs: e2e/api/** and the Bijak *-http specs. The mock specs are never loaded.
-  testMatch: ['**/api/**/*.spec.ts', '**/bijak/*-http.spec.ts', '**/bijak/http-*.spec.ts'],
+  testMatch: ['**/api/**/*.spec.ts', '**/bijak/*-http.spec.ts', '**/bijak/http-*.spec.ts', '**/m04-question-bank/responsive-s2.spec.ts'],
   grep: /@api/,
   // The seeded database is shared by every worker and project: keep one worker so a spec that
   // changes data (profile, password) cannot race another. Raise it only for read-only specs.
