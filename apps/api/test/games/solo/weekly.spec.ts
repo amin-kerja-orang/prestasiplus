@@ -1,10 +1,8 @@
-import { GAMES_MESSAGES, GamesUjiMindaSchema, GamesWeeklyCompetitionSchema } from '@pp/contract'
+import { GamesUjiMindaSchema, GamesWeeklyCompetitionSchema } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import type { WeeklyPracticeRow, WeeklyPracticeSource } from '../../../src/modules/games'
 import { ACCOUNTS, bootGamesApp, expectError, loginAs, parseData, START, type GamesTestApp } from '../helpers'
-
-const M = GAMES_MESSAGES
 
 /** A bound double: 25 ranked rows (with an extra personal field that must never reach the response) and a fixed "me". */
 class FakeWeekly implements WeeklyPracticeSource {
@@ -35,8 +33,8 @@ describe('weekly competition and Uji Minda (M16-40, M16-41)', () => {
     })
 
     it('401 without a session', async () => {
-      expectError(await t.http().get('/api/games/pertandingan'), 'UNAUTHORIZED', M.unauthenticated)
-      expectError(await t.http().get('/api/games/uji-minda'), 'UNAUTHORIZED', M.unauthenticated)
+      expectError(await t.http().get('/api/games/pertandingan'), 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
+      expectError(await t.http().get('/api/games/uji-minda'), 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
     })
 
     it('an empty board in the current Malaysia week (Monday 19 to Sunday 25 October 2026), prizes 100/50/25', async () => {
