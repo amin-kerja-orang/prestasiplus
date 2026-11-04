@@ -9,7 +9,7 @@ import { apiOf } from '../users/helpers'
 
 /** A refused call: 429 + D57 envelope + the Retry-After header that matches the body's retryAfter. */
 function expectLimited(res: Parameters<typeof expectError>[0], retryAfter?: number): void {
-  const err = expectError(res, 'RATE_LIMITED', 'Too Many Attempts.')
+  const err = expectError(res, 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.')
   expect(err.retryAfter).toBeGreaterThan(0)
   expect(Number(res.headers['retry-after'])).toBe(err.retryAfter)
   if (retryAfter !== undefined) expect(err.retryAfter).toBe(retryAfter)

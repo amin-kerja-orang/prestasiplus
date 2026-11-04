@@ -26,6 +26,8 @@ export const qdCopy = {
   show: 'Lihat',
   hide: 'Sembunyi',
   passageFallback: 'Petikan',
+  /** Reason of a picture kind without a picture; "imej belum dimuat naik" is verbatim from v2-admin-student-pipeline AC-04.2 (the R1 PRD has no reason text). */
+  reasonNoPicture: 'imej belum dimuat naik',
 } as const
 
 export const kindFallbackCaption: Record<string, string> = {
@@ -49,4 +51,13 @@ export function visibleSummary(x: number, total = 7): string {
 }
 export function notServedLine(reason: string): string {
   return `Tidak dihidangkan kerana ${reason}.`
+}
+/**
+ * "Sumber: {text}" under a stimulus (FR-PA-37, 46 section 2.4). Stored citations often already carry
+ * the word (`source_citation = 'Sumber: buku teks'` in the API fixtures and seeds), so the prefix is
+ * added only when missing; otherwise the line would read "Sumber: Sumber: …".
+ */
+export const sourceLine = (source: string): string => {
+  const text = source.trim()
+  return /^sumber\s*:/i.test(text) ? text : `Sumber: ${text}`
 }

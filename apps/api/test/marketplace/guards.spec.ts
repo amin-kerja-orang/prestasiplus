@@ -22,7 +22,7 @@ afterAll(async () => {
 describe('roles and sessions (AC8)', () => {
   it.each(ROUTES)('%s %s without a session is 401 UNAUTHORIZED "Unauthenticated."', async (method, url) => {
     const req = method === 'GET' ? t.http().get(url) : t.http().post(url)
-    expectError(await req, 401, 'UNAUTHORIZED', 'Unauthenticated.')
+    expectError(await req, 401, 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
   })
 
   it('a refused call counts nothing', async () => {
