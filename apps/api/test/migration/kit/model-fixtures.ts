@@ -32,7 +32,7 @@ async function parentPackage(query: FixtureQuery): Promise<string> {
 /** BE-08: curriculum parents (codes are stored upper-case, a CHECK enforces it; fictitious names). */
 async function parentLevel(query: FixtureQuery): Promise<string> {
   const rows = await query<{ id: string }>(
-    `insert into education_levels (code, name, name_en, stage, curriculum) values ($1, 'Tahap Contoh', 'Sample Level', 'primary', 'KSSR') returning id::text as id`,
+    `insert into education_levels (code, name, name_en, stage, curriculum, is_active) values ($1, 'Tahap Contoh', 'Sample Level', 'primary', 'KSSR', false) returning id::text as id`,
     [next('FXL')],
   )
   return (rows[0] as { id: string }).id
