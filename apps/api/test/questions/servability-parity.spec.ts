@@ -11,7 +11,7 @@ import { Be09PracticeQuestionSource } from '../../src/modules/practice/question-
 import type { UsersRepository } from '../../src/modules/users'
 import { QuestionsBijakPoolSource } from '../../src/modules/questions/bijak-pool'
 import { QuestionsRepository, QuestionsService } from '../../src/modules/questions'
-import { ServabilityService, filterOf } from '../../src/modules/questions/serving'
+import { ALL_GROUP_SURFACES, GROUP_SURFACES, ServabilityService, evaluateAll, filterOf } from '../../src/modules/questions/serving'
 import { adminActor, mcqInput, tagBody, tagOf, type Tag } from './fixtures'
 import { bootQuestionsApp, type QuestionsTestApp } from './helpers'
 
@@ -277,7 +277,7 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     expect(databank.has(made.plain!)).toBe(true)
   })
 
-  it('latih_tubi_spm gives the practice reason for each refused shape and the SQL scope filter agrees', async () => {
+  it('latih_tubi_spm (GROUP_SURFACES without the drills, until S5-T03 renders groups) gives the text-only practice reason and the SQL scope filter agrees', async () => {
     expect(reasonsOf('stemImage', 'latih_tubi_spm')).toEqual(['has_stimulus'])
     expect(reasonsOf('optionImage', 'latih_tubi_spm')).toEqual(['has_option_image'])
     expect(reasonsOf('groupA', 'latih_tubi_spm')).toEqual(['has_stimulus'])
@@ -292,6 +292,11 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     // mapper is served (the filter is the reader's own `QuestionFilter`).
     const inScope = new Set(await repo.eligibleAmong(allIds, filterOf('latih_tubi_spm')))
     for (const id of servedBy('latih_tubi_spm')) expect(inScope.has(id), id).toBe(true)
+  })
+
+  it('S1-T06: GROUP_SURFACES starts as Bijak papers and the Jana set; the drills and games are not in it', () => {
+    expect([...GROUP_SURFACES].sort()).toEqual(['jana_kertas', 'simulasi_paper'])
+    expect(ALL_GROUP_SURFACES).toEqual(expect.arrayContaining(['latih_tubi_spm', 'databank', 'bab']))
   })
 
   it('level and subject facts follow the LIVE version: a draft v2 that moves level or subject changes nothing (T29 B2)', async () => {
@@ -505,5 +510,53 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     }
     expect(await drawnWith()).toBe(true)
     expect(await reasonCodes()).toEqual([])
+  })
+
+  it('S1-T06 (D105, AC-QP-7): with every INCLUDE surface, drills serve figures and whole groups, and an incomplete group is excluded as a whole', async () => {
+    const all = [...ALL_GROUP_SURFACES]
+    const reasons = async (id: string, activity: ServabilityActivity): Promise<string[]> => {
+      const f = (await servability.factsOf([id])).get(id)!
+      return evaluateAll(f, all).activities.find((a) => a.activity === activity)!.reasons.map((r) => r.code)
+    }
+    for (const activity of ['latih_tubi_spm', 'databank', 'bab'] as const) {
+      for (const key of ['groupA', 'groupB', 'stemImage', 'optionImage']) {
+        const codes = await reasons(made[key]!, activity)
+        expect(codes, `${key} on ${activity}`).not.toContain('has_stimulus')
+        expect(codes, `${key} on ${activity}`).not.toContain('has_option_image')
+        expect(codes, `${key} on ${activity}`).not.toContain('group_incomplete')
+      }
+      expect(await reasons(made.structured!, activity)).toContain('shape_unsupported')
+    }
+    expect(await reasons(made.groupA!, 'latih_tubi_spm')).toEqual([])
+    expect(await reasons(made.stemImage!, 'latih_tubi_spm')).toEqual([])
+    expect(await reasons(made.optionImage!, 'latih_tubi_spm')).toEqual([])
+
+    // The SQL half under the same surfaces: figure questions and the complete group pass; the text-only ungrouped shape is gone.
+    const ids = ['groupA', 'groupB', 'stemImage', 'optionImage', 'plain', 'structured'].map((k) => made[k]!)
+    for (const activity of ['latih_tubi_spm', 'databank', 'bab'] as const) {
+      const inScope = new Set(await repo.eligibleAmong(ids, filterOf(activity, {}, all)))
+      for (const k of ['groupA', 'groupB', 'stemImage', 'optionImage', 'plain']) expect(inScope.has(made[k]!), `${k} in ${activity} scope`).toBe(true)
+      expect(inScope.has(made.structured!), `structured in ${activity} scope`).toBe(false)
+    }
+    // Games stay out: the default (shipped) filter keeps the text-only ungrouped shape.
+    expect(filterOf('latih_tubi_spm').ungrouped).toBe(true)
+    expect(filterOf('latih_tubi_spm', {}, all).ungrouped).toBeUndefined()
+
+    // AC-QP-7: a group whose second member is only a draft is excluded whole, in the indicator and in the draw.
+    const passage = await svc.createStimulus({ kind: 'passage', label: 'Petikan B', bodyMs: 'Teks petikan B.', bodyEn: null, altText: null, assetFileId: null })
+    const gid = await svc.createStimulusGroup({ label: 'Kumpulan tidak lengkap', scope: 'section', stimulusIds: [passage], optionBank: [] })
+    const served = await publish('halfA', 'Ahli diterbitkan kumpulan tidak lengkap untuk kesamaan kebolehhidangan.', { stimulusGroupId: gid })
+    const draft = (await svc.create(mcqInput(tag, { questionText: 'Ahli draf kumpulan tidak lengkap untuk kesamaan kebolehhidangan.', stimulusGroupId: gid }), admin)).id
+    for (const activity of ['latih_tubi_spm', 'databank', 'bab'] as const) {
+      expect(await reasons(served, activity), `half group on ${activity}`).toContain('group_incomplete')
+      expect((await repo.eligibleAmong([served, draft], filterOf(activity, {}, all))).length, `half group in ${activity} scope`).toBe(0)
+    }
+    const msg = evaluateAll((await servability.factsOf([served])).get(served)!, all).activities.find((a) => a.activity === 'latih_tubi_spm')!.reasons[0]!.message
+    expect(msg).toBe('Kumpulan belum lengkap - 1 soalan belum diluluskan.')
+    // Once the second member is published the whole group is served.
+    await q(`update question_versions set status = 'approved', published_at = now(), paper_code = '1449/2' where question_id = $1`, [draft])
+    await q(`update questions set live_version_no = 1 where id = $1`, [draft])
+    expect(await reasons(served, 'latih_tubi_spm')).toEqual([])
+    expect(new Set(await repo.eligibleAmong([served, draft], filterOf('latih_tubi_spm', {}, all)))).toEqual(new Set([served, draft]))
   })
 })
