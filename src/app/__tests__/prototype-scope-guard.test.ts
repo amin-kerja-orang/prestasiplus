@@ -13,7 +13,7 @@ import { setUnauthorizedRedirect } from '@/stores'
 import LayoutHost from '../LayoutHost.vue'
 import type { ModuleManifest } from '../modules'
 import { createAppRouter, decideAccess, setRouteOutcome, useRouteOutcome } from '../router'
-import { ADMIN, fakeTransport, logIn, NOW, STUDENT } from './router-fixtures'
+import { fakeTransport, logIn, NOW, STUDENT } from './router-fixtures'
 
 vi.mock('@/shells/user/UserShell.vue', async () => {
   const { defineComponent, h } = await import('vue')
@@ -101,18 +101,23 @@ describe('decideAccess with the prototype scope on', () => {
     vi.unstubAllEnvs()
   })
 
-  it("sends an out-of-scope route of a logged-in role to the role's home", () => {
-    expect(decideAccess(fakeRoute('/misi-harian', 'm05.missions'), session('student'))).toEqual({
-      kind: 'redirect',
-      to: '/dashboard',
+  it.each([
+    ['student', '/misi-harian'],
+    ['teacher', '/misi-harian'],
+    ['school_admin', '/misi-harian'],
+    // A role outside the prototype (parent) has no matrix list at all.
+    ['parent', '/misi-harian'],
+    ['parent', '/practice'],
+  ])('answers an in-place 404, no redirect, for %s on %s (outside the matrix)', (role, path) => {
+    expect(decideAccess(fakeRoute(path, 'x'), session(role))).toEqual({
+      kind: 'in-place',
+      status: 404,
     })
   })
 
-  it("keeps the in-place 'scope' outcome for a role outside the prototype", () => {
-    expect(decideAccess(fakeRoute('/misi-harian', 'x'), session('parent'))).toEqual({
-      kind: 'in-place',
-      status: 'scope',
-    })
+  it('answers an in-place 404 for a guest on a public page outside the matrix', () => {
+    const route = { path: '/sponsor/register', name: 'x', meta: { access: 'public' } }
+    expect(decideAccess(route as never, session(null))).toEqual({ kind: 'in-place', status: 404 })
   })
 
   it('lets an in-scope route through', () => {
@@ -137,27 +142,29 @@ describe('decideAccess with the prototype scope on', () => {
     })
   })
 
-  it('redirects an unbuilt or mistyped path of a logged-in user to their home', () => {
+  it('answers 404 in place for an unbuilt or mistyped path of a logged-in user and of a guest', () => {
     expect(decideAccess(fakeRoute('/liga', 'core.not-found'), session('teacher'))).toEqual({
-      kind: 'redirect',
-      to: '/guru',
+      kind: 'in-place',
+      status: 404,
+    })
+    const catchAll = { path: '/entah-apa', name: 'core.not-found', meta: { access: 'public' } }
+    expect(decideAccess(catchAll as never, session(null))).toEqual({
+      kind: 'in-place',
+      status: 404,
     })
   })
 
-  it('keeps the plain 404 for a guest, and for an in-scope path no screen exists for', () => {
-    // The catch-all 404 route is public.
-    const catchAll = { path: '/entah-apa', name: 'core.not-found', meta: { access: 'public' } }
-    expect(decideAccess(catchAll as never, session(null))).toEqual({ kind: 'allow' })
+  it('lets a path in the matrix through even when no screen exists for it', () => {
     expect(
       decideAccess(fakeRoute('/guru/laporan-mingguan-kelas', 'core.not-found'), session('teacher')),
     ).toEqual({ kind: 'allow' })
   })
 
-  it('still redirects a role the route refuses before it looks at the scope', () => {
+  it('answers 403 in place for a role the route refuses (default onForbidden), before the scope', () => {
     const route = { path: '/guru', name: 'x', meta: { access: 'auth', roles: ['teacher'] } }
     expect(decideAccess(route as never, session('student'))).toEqual({
-      kind: 'redirect',
-      to: '/dashboard',
+      kind: 'in-place',
+      status: 403,
     })
   })
 
@@ -208,7 +215,55 @@ describe('v2 staff home from /dashboard, scope on or off (UAT runs with it off)'
   })
 })
 
-describe('LayoutHost: "Belum tersedia dalam prototaip"', () => {
+describe('wrong-role URL of a visible module answers the 403 page (AC-MUR-SH-7, AC-SH-6)', () => {
+  const router = createAppRouter({ history: createMemoryHistory() })
+
+  beforeEach(() => {
+    vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')
+  })
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it.each([
+    ['student', '/guru/command-center'],
+    ['student', '/admin-sekolah/command-center'],
+    ['student', '/admin/studio'],
+    ['teacher', '/admin-sekolah/command-center'],
+    ['school_admin', '/guru/command-center'],
+    ['school_admin', '/admin/studio'],
+  ])('%s on %s: in-place 403, no redirect', (role, path) => {
+    expect(decideAccess(router.resolve(path), session(role))).toEqual({
+      kind: 'in-place',
+      status: 403,
+    })
+  })
+})
+
+describe('wrong-role URL of a visible module, fake route (no real route refuses the pupil)', () => {
+  beforeEach(() => {
+    vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')
+  })
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  // The real `/prestasi/sekolah` currently lists `student` in its roles (S10-T03 owns m08), so the
+  // pupil case of AC-MUR-SH-7 is asserted on a route that excludes the pupil.
+  it('student on /prestasi/sekolah (route without student): in-place 403', () => {
+    const route = {
+      path: '/prestasi/sekolah',
+      name: 'x',
+      meta: { access: 'auth', roles: ['teacher', 'school_admin', 'admin'] },
+    }
+    expect(decideAccess(route as never, session('student'))).toEqual({
+      kind: 'in-place',
+      status: 403,
+    })
+  })
+})
+
+describe('LayoutHost: hidden module answers the standard 404 page', () => {
   let wrapper: VueWrapper | null = null
 
   async function open(path: string): Promise<VueWrapper> {
@@ -245,19 +300,19 @@ describe('LayoutHost: "Belum tersedia dalam prototaip"', () => {
     vi.unstubAllEnvs()
   })
 
-  it('redirects a typed out-of-scope URL to the role home instead of the friendly page', async () => {
+  it('renders NotFoundPage for a typed out-of-scope URL, URL unchanged', async () => {
     logIn(STUDENT)
     const w = await open('/misi-harian')
-    expect(useRouteOutcome().value).toBeNull()
-    expect(w.find('[data-testid="prototype-unavailable"]').exists()).toBe(false)
-    expect(w.text()).not.toContain('Belum tersedia dalam prototaip')
+    expect(useRouteOutcome().value).toBe(404)
+    expect(w.find('[data-page="not-found"]').exists()).toBe(true)
     expect(w.find('[data-testid="misi-harian"]').exists()).toBe(false)
   })
 
-  it('redirects a blocked bare page the same way', async () => {
+  it('renders NotFoundPage for a blocked bare page too', async () => {
     logIn(STUDENT)
     const w = await open('/pricing')
-    expect(w.find('[data-testid="prototype-unavailable"]').exists()).toBe(false)
+    expect(useRouteOutcome().value).toBe(404)
+    expect(w.find('[data-page="not-found"]').exists()).toBe(true)
   })
 
   it('renders an in-scope route normally and clears the outcome', async () => {
@@ -265,22 +320,14 @@ describe('LayoutHost: "Belum tersedia dalam prototaip"', () => {
     const w = await open('/practice')
     expect(useRouteOutcome().value).toBeNull()
     expect(w.find('[data-testid="practice"]').exists()).toBe(true)
-    expect(w.find('[data-testid="prototype-unavailable"]').exists()).toBe(false)
+    expect(w.find('[data-page="not-found"]').exists()).toBe(false)
   })
 
-  it('a role outside the prototype restored from storage gets a "Log Keluar" button, not /login', async () => {
-    logIn({ ...ADMIN, role: 'parent' })
-    const w = await open('/misi-harian')
-    const home = w.find('[data-testid="prototype-unavailable-home"]')
-    expect(home.attributes('href')).toBe('/logout')
-    expect(home.text()).toBe('Log Keluar')
-  })
-
-  it('shows it on its own (no shell) for a guest on a public page outside the scope', async () => {
+  it('shows NotFoundPage on its own (no shell) for a guest on a public page outside the scope', async () => {
     const w = await open('/sponsor/register')
     expect(w.find('[data-layout]').exists()).toBe(false)
-    expect(w.find('[data-testid="prototype-unavailable"]').exists()).toBe(true)
-    expect(w.find('[data-testid="prototype-unavailable-home"]').attributes('href')).toBe('/login')
+    expect(useRouteOutcome().value).toBe(404)
+    expect(w.find('[data-page="not-found"]').exists()).toBe(true)
   })
 
   it('still sends a guest on a protected route to /login', async () => {
@@ -288,10 +335,10 @@ describe('LayoutHost: "Belum tersedia dalam prototaip"', () => {
     expect(w.find('[data-testid="login"]').exists()).toBe(true)
   })
 
-  it('a Murid on an admin route keeps the 403 page, not the scope page', async () => {
+  it('a Murid on an admin route keeps the 403 page, not the 404 page', async () => {
     logIn(STUDENT)
     const w = await open('/admin/users')
     expect(useRouteOutcome().value).toBe(403)
-    expect(w.find('[data-testid="prototype-unavailable"]').exists()).toBe(false)
+    expect(w.find('[data-page="not-found"]').exists()).toBe(false)
   })
 })
