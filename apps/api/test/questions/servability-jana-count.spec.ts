@@ -60,7 +60,7 @@ describe('Jana eligibility: the SQL scope equals the pool facts through describe
     prisma = t.app.get(PrismaService)
     tag = await tagOf(t.db, 'SEED-MCQ-MATH-T4')
 
-    // A level and a unit node that are NOT Tingkatan 4 or 5, and a Darjah level.
+    // A level and a unit node that are NOT Tingkatan 4 or 5, and an inactive Darjah level (an active primary level is refused by DM-13).
     const [tz] = await q(`insert into education_levels (code, name, name_en, stage, curriculum, sort_order, is_active) values ('TZ', 'TZ', 'TZ', 'upper_secondary', 'KSSM', 90, true) returning id::text id`)
     const [darjah] = await q(`insert into education_levels (code, name, name_en, stage, curriculum, sort_order, is_active) values ('DZ', 'DZ', 'DZ', 'primary', 'KSSR', 91, false) returning id::text id`)
     const [foreignUnit] = await q(
