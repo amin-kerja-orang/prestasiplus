@@ -48,14 +48,14 @@ async function save(): Promise<void> {
 </script>
 
 <template>
-  <DsPage title="Tetapan" data-testid="st-page">
+  <DsPage layout="form" data-testid="st-page">
     <DsStateView
       :status="data ? 'ready' : error ? 'error' : 'loading'"
       :error="error?.message"
       skeleton="text"
       @retry="reload"
     >
-      <DsStack as="form" novalidate data-testid="st-form" @submit.prevent="save">
+      <DsStack as="form" data-testid="st-form" @submit.prevent="save">
         <DsCallout
           v-if="saved"
           tone="success"
@@ -65,9 +65,13 @@ async function save(): Promise<void> {
         <DsCallout v-if="formError" tone="error" :title="formError" data-testid="st-error" />
         <DsFormSection title="Hubungi Sokongan">
           <DsFormField label="E-mel sokongan" name="email" :error="fields.email">
-            <UInput v-model="email" type="email" maxlength="120" data-testid="st-email" />
+            <UInput v-model="email" type="text" inputmode="email" maxlength="120" data-testid="st-email" />
           </DsFormField>
-          <DsFormField label="Telefon / WhatsApp sokongan" name="whatsapp" :error="fields.whatsapp">
+          <DsFormField
+            label="Telefon / WhatsApp sokongan"
+            name="whatsapp"
+            :error="fields.whatsapp"
+          >
             <UInput v-model="whatsapp" type="text" inputmode="tel" data-testid="st-whatsapp" />
           </DsFormField>
         </DsFormSection>

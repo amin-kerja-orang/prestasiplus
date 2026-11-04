@@ -343,7 +343,6 @@ describe('S3 settings (R1-ADM-N-07)', () => {
   it('shows the section with the saved values and no field for hours', async () => {
     api.fetchSupportSettings.mockResolvedValue(contact)
     const { w } = await open('/admin/settings', AdminSettingsPage)
-    expect(w.get('h1').text()).toBe('Tetapan')
     expect(w.text()).toContain('Hubungi Sokongan')
     expect(w.text()).toContain('E-mel sokongan')
     expect(w.text()).toContain('Telefon / WhatsApp sokongan')
