@@ -107,6 +107,11 @@ jobs:
 
       - run: npx playwright install --with-deps chromium
 
+      # Card S0-T02 (FR-X5-2): the stack booted with no manual step and the five e2e accounts sign in. BASE_URL and
+      # E2E_DEMO_PASSWORD come from the job env, so account(role) resolves the same passwords as the E2E step.
+      - name: stack-smoke
+        run: npx playwright test -c playwright.http.config.ts e2e/api/stack-smoke.spec.ts
+
       - name: E2E (real API)
         run: npm run test:e2e:http
 
