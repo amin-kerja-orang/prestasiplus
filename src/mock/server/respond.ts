@@ -29,14 +29,20 @@ import type { MockResponse } from './types'
  * API defaults, like the M01 §5 validation copy. Pages show their own SRS copy for such cases.
  */
 export const DEFAULT_ERROR_MESSAGES = {
-  UNAUTHORIZED: 'Unauthenticated.',
-  FORBIDDEN: 'This action is unauthorized.',
-  NOT_FOUND: 'Not Found.',
-  SERVER_ERROR: 'Server Error',
-  RATE_LIMITED: 'Too Many Attempts.',
-  CONFLICT: 'Conflict.',
-  VALIDATION_ERROR: 'The given data was invalid.',
+  UNAUTHORIZED: 'Sesi anda telah tamat. Sila log masuk semula.',
+  FORBIDDEN: 'Anda tidak dibenarkan melakukan tindakan ini.',
+  NOT_FOUND: 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?',
+  SERVER_ERROR: 'Sesuatu tidak kena di pihak kami. Pasukan teknikal telah dimaklumkan. Sila cuba sebentar lagi.',
+  RATE_LIMITED: 'Terlalu banyak percubaan. Sila cuba sebentar lagi.',
+  CONFLICT: 'Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi.',
+  VALIDATION_ERROR: 'Data yang dihantar tidak sah. Sila semak dan cuba lagi.',
   PASSWORD_CHANGE_REQUIRED: 'Sila tukar kata laluan anda sebelum meneruskan.',
+  BAD_REQUEST: 'Permintaan tidak sah. Sila muat semula halaman dan cuba lagi.',
+  PAYLOAD_TOO_LARGE: 'Fail atau data terlalu besar. Saiz maksimum ialah {n} MB.',
+  UNSUPPORTED_MEDIA_TYPE: 'Jenis fail tidak disokong.',
+  BAD_GATEWAY: 'Sesuatu tidak kena di pihak kami. Pasukan teknikal telah dimaklumkan. Sila cuba sebentar lagi.',
+  SERVICE_UNAVAILABLE: 'Sistem sedang diselenggara buat sementara waktu. Sila cuba semula dalam beberapa minit.',
+  TIMEOUT: 'Permintaan mengambil masa terlalu lama. Cuba lagi.',
 } as const
 
 /** Status of each known error code (used by `failNext(path, code)` and `fail` shortcuts). */
@@ -48,6 +54,12 @@ export const STATUS_FOR_CODE: Readonly<Record<string, number>> = {
   [API_ERROR_CODES.CONFLICT]: 409,
   [API_ERROR_CODES.RATE_LIMITED]: 429,
   [API_ERROR_CODES.SERVER_ERROR]: 500,
+  BAD_REQUEST: 422,
+  PAYLOAD_TOO_LARGE: 413,
+  UNSUPPORTED_MEDIA_TYPE: 415,
+  BAD_GATEWAY: 502,
+  SERVICE_UNAVAILABLE: 503,
+  TIMEOUT: 504,
 }
 
 const JSON_HEADERS = (): Record<string, string> => ({ 'content-type': 'application/json' })

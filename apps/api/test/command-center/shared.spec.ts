@@ -178,7 +178,7 @@ describe('repository and scope on a seeded world (is_test never counted)', () =>
 
   const viewer = (role: Viewer['role'], userId: string, schoolId: string | null = null): Viewer => ({ role, userId, schoolId, isAdmin: role === 'admin' })
 
-  it('scope: teacher opens own school/class/pupils only; every miss is 404 "Not Found."', async () => {
+  it('scope: teacher opens own school/class/pupils only; every miss is 404 "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?"', async () => {
     const s = await scope.scopeOf(viewer('teacher', w.teacherId))
     expect(s.ownedClassIds).toEqual([w.class1])
     expect(s.ownedSchoolIds).toEqual([w.school1])
