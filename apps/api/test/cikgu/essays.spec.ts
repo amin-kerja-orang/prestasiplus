@@ -75,7 +75,7 @@ describe('essay markings: GET /cikgu/essays and /cikgu/essays/:id', () => {
     expect(e).toMatchObject({ userId: aId, rubricKey: 'sejarah_essay', level: 'T5', essayText: 'Teks karangan rahsia', comment: 'Markah: 14/20', threadId: threadA })
   })
 
-  it('AC9: a foreign, unknown or non-numeric id is the same 404 "Not Found." and reveals nothing', async () => {
+  it('AC9: a foreign, unknown or non-numeric id is the same 404 "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" and reveals nothing', async () => {
     const mine = (await teacher.get('/cikgu/essays')).body.data[0].id as string
     for (const [who, path] of [
       [teacherB, `/cikgu/essays/${mine}`],
@@ -86,7 +86,7 @@ describe('essay markings: GET /cikgu/essays and /cikgu/essays/:id', () => {
     ] as const) {
       const r = await who.get(path)
       expect(r.status, path).toBe(404)
-      expect(r.body.error).toMatchObject({ code: 'NOT_FOUND', message: 'Not Found.' })
+      expect(r.body.error).toMatchObject({ code: 'NOT_FOUND', message: 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?' })
       expect(JSON.stringify(r.body)).not.toContain('Teks karangan rahsia')
     }
   })

@@ -14,6 +14,12 @@ export const ERROR_CODES = [
   'SERVER_ERROR',
   'RATE_LIMITED',
   'PASSWORD_CHANGE_REQUIRED',
+  'BAD_REQUEST',
+  'PAYLOAD_TOO_LARGE',
+  'UNSUPPORTED_MEDIA_TYPE',
+  'BAD_GATEWAY',
+  'SERVICE_UNAVAILABLE',
+  'TIMEOUT',
 ] as const
 export const ErrorCodeSchema = z.enum(ERROR_CODES).meta({ id: 'ErrorCode' })
 export type ErrorCode = z.infer<typeof ErrorCodeSchema>
@@ -28,6 +34,12 @@ export const ERROR_STATUS: Readonly<Record<ErrorCode, number>> = {
   SERVER_ERROR: 500,
   RATE_LIMITED: 429,
   PASSWORD_CHANGE_REQUIRED: 403,
+  BAD_REQUEST: 400,
+  PAYLOAD_TOO_LARGE: 413,
+  UNSUPPORTED_MEDIA_TYPE: 415,
+  BAD_GATEWAY: 502,
+  SERVICE_UNAVAILABLE: 503,
+  TIMEOUT: 504,
 }
 
 export const ErrorPayloadSchema = z

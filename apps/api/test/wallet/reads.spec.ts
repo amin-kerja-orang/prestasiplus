@@ -319,7 +319,7 @@ describe('wallet routes under a low read limit and without tiers', () => {
       const api = apiOf(await login(t, STUDENT))
       for (let i = 0; i < 3; i++) expect((await api.get('/me/gamification-summary')).status).toBe(200)
       const limited = await api.get('/gamification/wallet') // the three routes share one counter per user
-      expectError(limited, 'RATE_LIMITED', 'Too Many Attempts.')
+      expectError(limited, 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.')
       expect(limited.headers['retry-after']).toBeTruthy()
     } finally {
       await t.close()

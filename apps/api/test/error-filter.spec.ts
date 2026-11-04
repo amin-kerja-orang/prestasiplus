@@ -1,0 +1,122 @@
+import { BadGatewayException, BadRequestException, HttpException, Logger, MethodNotAllowedException, PayloadTooLargeException, ServiceUnavailableException, UnsupportedMediaTypeException } from '@nestjs/common'
+import { ErrorBodySchema } from '@pp/contract'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { ApiError } from '../src/common/errors/api-error'
+import { AllExceptionsFilter } from '../src/common/errors/all-exceptions.filter'
+
+/** S0-T12 (X10.12 E-1): the BM defaults, the new codes and the unmapped 4xx, without a database. */
+function run(exception: unknown, requestId = 'req-1') {
+  const headers: Record<string, string> = { 'x-request-id': requestId }
+  let status = 0
+  let body: unknown
+  const res = {
+    setHeader: (k: string, v: string) => {
+      headers[k.toLowerCase()] = v
+    },
+    status: (s: number) => {
+      status = s
+      return { json: (b: unknown) => (body = b) }
+    },
+  }
+  const req = { id: requestId, method: 'GET', url: '/api/x', originalUrl: '/api/x' }
+  const host = { switchToHttp: () => ({ getResponse: () => res, getRequest: () => req }) }
+  new AllExceptionsFilter().catch(exception, host as never)
+  return { status, headers, error: ErrorBodySchema.parse(body).error }
+}
+
+describe('AllExceptionsFilter (S0-T12)', () => {
+  let warn: ReturnType<typeof vi.spyOn>
+  let error: ReturnType<typeof vi.spyOn>
+  beforeEach(() => {
+    warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
+    error = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined)
+  })
+  afterEach(() => vi.restoreAllMocks())
+
+  it('ApiError keeps its module message and carries requestId', () => {
+    const r = run(ApiError.of('NOT_FOUND', { message: 'Pengguna tidak ditemui.' }))
+    expect(r.status).toBe(404)
+    expect(r.error).toMatchObject({ code: 'NOT_FOUND', message: 'Pengguna tidak ditemui.', requestId: 'req-1' })
+    expect(r.headers['x-request-id']).toBe('req-1')
+  })
+
+  it('ApiError without a message gets the BM default', () => {
+    expect(run(ApiError.of('UNAUTHORIZED')).error.message).toBe('Sesi anda telah tamat. Sila log masuk semula.')
+    expect(run(ApiError.of('RATE_LIMITED', { retryAfter: 3 })).error.message).toBe('Terlalu banyak percubaan. Sila cuba sebentar lagi.')
+  })
+
+  it('400 keeps status 422 with code BAD_REQUEST and a warn log without a stack', () => {
+    const r = run(new BadRequestException('x'))
+    expect(r.status).toBe(422)
+    expect(r.error.code).toBe('BAD_REQUEST')
+    expect(r.error.message).toBe('Permintaan tidak sah. Sila muat semula halaman dan cuba lagi.')
+    expect(warn).toHaveBeenCalled()
+    expect(error).not.toHaveBeenCalled()
+  })
+
+  it('405 (unmapped 4xx) keeps its status as BAD_REQUEST and is logged at warn without a stack', () => {
+    const r = run(new MethodNotAllowedException())
+    expect(r.status).toBe(405)
+    expect(r.error.code).toBe('BAD_REQUEST')
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(String(warn.mock.calls[0]?.[0])).not.toContain(' at ')
+    expect(error).not.toHaveBeenCalled()
+  })
+
+  it('413 fills {n} from the body-parser limit, rounded up to whole MB (min 1)', () => {
+    const big = Object.assign(new Error('too large'), { status: 413, limit: 2200 * 1024 })
+    expect(run(big).error).toMatchObject({ code: 'PAYLOAD_TOO_LARGE', message: 'Fail atau data terlalu besar. Saiz maksimum ialah 3 MB.' })
+    expect(run(new PayloadTooLargeException()).error.message).toBe('Fail atau data terlalu besar. Saiz maksimum ialah 1 MB.')
+    expect(run(new PayloadTooLargeException()).status).toBe(413)
+    expect(error).not.toHaveBeenCalled()
+  })
+
+  it('415 gives UNSUPPORTED_MEDIA_TYPE with the generic text', () => {
+    const r = run(new UnsupportedMediaTypeException())
+    expect(r.status).toBe(415)
+    expect(r.error).toMatchObject({ code: 'UNSUPPORTED_MEDIA_TYPE', message: 'Jenis fail tidak disokong.' })
+  })
+
+  it.each([
+    [502, 'BAD_GATEWAY', 'Sesuatu tidak kena di pihak kami. Pasukan teknikal telah dimaklumkan. Sila cuba sebentar lagi.'],
+    [503, 'SERVICE_UNAVAILABLE', 'Sistem sedang diselenggara buat sementara waktu. Sila cuba semula dalam beberapa minit.'],
+    [504, 'TIMEOUT', 'Permintaan mengambil masa terlalu lama. Cuba lagi.'],
+  ])('%i keeps its status with code %s', (status, code, message) => {
+    const ex = status === 502 ? new BadGatewayException() : status === 503 ? new ServiceUnavailableException() : new HttpException('x', 504)
+    const r = run(ex)
+    expect(r.status).toBe(status)
+    expect(r.error).toMatchObject({ code, message })
+    expect(error).toHaveBeenCalledTimes(1)
+  })
+
+  it('another 5xx HttpException keeps its status as SERVER_ERROR with a stack log', () => {
+    const r = run(new HttpException('x', 501))
+    expect(r.status).toBe(501)
+    expect(r.error.code).toBe('SERVER_ERROR')
+    expect(error).toHaveBeenCalledTimes(1)
+  })
+
+  it('a plain Error is 500 SERVER_ERROR, the stack goes to the log only', () => {
+    const boom = new Error('secret detail')
+    const r = run(boom)
+    expect(r.status).toBe(500)
+    expect(r.error.code).toBe('SERVER_ERROR')
+    expect(JSON.stringify(r.error)).not.toContain('secret detail')
+    expect(error).toHaveBeenCalledWith(boom.stack)
+    expect(r.error.requestId).toBe('req-1')
+  })
+
+  it.each([
+    [401, 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.'],
+    [403, 'FORBIDDEN', 'Anda tidak dibenarkan melakukan tindakan ini.'],
+    [404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?'],
+    [409, 'CONFLICT', 'Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi.'],
+    [422, 'VALIDATION_ERROR', 'Data yang dihantar tidak sah. Sila semak dan cuba lagi.'],
+    [429, 'RATE_LIMITED', 'Terlalu banyak percubaan. Sila cuba sebentar lagi.'],
+  ])('plain %i HttpException gets the BM default for %s', (status, code, message) => {
+    const r = run(new HttpException('x', status))
+    expect(r.status).toBe(status)
+    expect(r.error).toMatchObject({ code, message })
+  })
+})

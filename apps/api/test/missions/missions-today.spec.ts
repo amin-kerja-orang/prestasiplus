@@ -25,7 +25,7 @@ describe('GET /api/missions/today (M05 #21, BR-M10-17)', () => {
 
   it('401 "Unauthenticated." for an anonymous caller', async () => {
     const res = await t.http().get('/api/missions/today')
-    errorIs(res, 401, 'UNAUTHORIZED', 'Unauthenticated.')
+    errorIs(res, 401, 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
   })
 
   it('answers an empty single-page list, no-store, when there is no mission', async () => {

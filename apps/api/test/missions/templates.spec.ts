@@ -94,10 +94,10 @@ describe('BE-18 B: Audio KBAT templates', () => {
     for (const path of ['/guru/audio-kbat/template', '/guru/audio-kbat/template-word']) {
       const anon = await t.http().get(`/api${path}`)
       expect(anon.status, path).toBe(401)
-      expect(anon.body.error).toMatchObject({ code: 'UNAUTHORIZED', message: 'Unauthenticated.' })
+      expect(anon.body.error).toMatchObject({ code: 'UNAUTHORIZED', message: 'Sesi anda telah tamat. Sila log masuk semula.' })
       const res = await student.get(path)
       expect(res.status, path).toBe(403)
-      expect(res.body.error).toMatchObject({ code: 'FORBIDDEN', message: 'This action is unauthorized.' })
+      expect(res.body.error).toMatchObject({ code: 'FORBIDDEN', message: 'Anda tidak dibenarkan melakukan tindakan ini.' })
     }
   })
 })

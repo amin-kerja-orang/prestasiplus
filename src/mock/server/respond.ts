@@ -29,13 +29,13 @@ import type { MockResponse } from './types'
  * API defaults, like the M01 §5 validation copy. Pages show their own SRS copy for such cases.
  */
 export const DEFAULT_ERROR_MESSAGES = {
-  UNAUTHORIZED: 'Unauthenticated.',
-  FORBIDDEN: 'This action is unauthorized.',
-  NOT_FOUND: 'Not Found.',
-  SERVER_ERROR: 'Server Error',
-  RATE_LIMITED: 'Too Many Attempts.',
-  CONFLICT: 'Conflict.',
-  VALIDATION_ERROR: 'The given data was invalid.',
+  UNAUTHORIZED: 'Sesi anda telah tamat. Sila log masuk semula.',
+  FORBIDDEN: 'Anda tidak dibenarkan melakukan tindakan ini.',
+  NOT_FOUND: 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?',
+  SERVER_ERROR: 'Sesuatu tidak kena di pihak kami. Pasukan teknikal telah dimaklumkan. Sila cuba sebentar lagi.',
+  RATE_LIMITED: 'Terlalu banyak percubaan. Sila cuba sebentar lagi.',
+  CONFLICT: 'Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi.',
+  VALIDATION_ERROR: 'Data yang dihantar tidak sah. Sila semak dan cuba lagi.',
   PASSWORD_CHANGE_REQUIRED: 'Sila tukar kata laluan anda sebelum meneruskan.',
 } as const
 
