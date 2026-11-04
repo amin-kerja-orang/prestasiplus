@@ -8,12 +8,9 @@ import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 
-import PartInput from '../components/PartInput.vue'
+import { PartInput, StimulusChip, StimulusStack, StimulusView } from '../../../components/question-display'
 import QuestionBlock from '../components/QuestionBlock.vue'
 import ResultGroup from '../components/ResultGroup.vue'
-import StimulusChip from '../components/StimulusChip.vue'
-import StimulusStack from '../components/StimulusStack.vue'
-import StimulusView from '../components/StimulusView.vue'
 import type { QuestionView, StimulusDef } from '../domain/types'
 import { groupLabel, stimuliOf, toStimulusData } from '../lib/stimulus-data'
 

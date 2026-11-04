@@ -25,7 +25,7 @@ import {
 
 import { listLoadMessage, useDebouncedFilter } from '@/modules/m04-question-bank'
 
-import RichText from '../../components/RichText.vue'
+import { RichText } from '../../../../components/question-display'
 import type { BankRow, QuestionStatus } from '../../domain/admin-types'
 import { formatDateTime } from '../../lib/use-bijak'
 import { bijakAdminServer } from '../../server/client'
