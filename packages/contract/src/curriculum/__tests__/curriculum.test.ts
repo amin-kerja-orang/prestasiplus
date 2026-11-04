@@ -5,6 +5,7 @@ import { CURRICULUM_COMPONENT_SCHEMAS } from '../paths'
 import {
   CURRICULUM_FLASH_MESSAGES,
   CURRICULUM_CONFLICT_MESSAGES,
+  CURRICULUM_LEVEL_RULE_MESSAGES,
   CURRICULUM_NOT_FOUND_MESSAGES,
   CurriculumChapterCreateSchema,
   CurriculumChapterDeletedSchema,
@@ -196,6 +197,8 @@ describe('curriculum contract: OpenAPI', () => {
       }
     }
     expect(CURRICULUM_CONFLICT_MESSAGES.chapter).toBe('Bab ini masih mempunyai topik.')
+    // FR-ADM-C03.3a (S4-T05): the 409 copy of a write that would leave a Darjah level active.
+    expect(CURRICULUM_LEVEL_RULE_MESSAGES.primaryActive).toBe('Darjah tidak boleh diaktifkan. Hanya Tingkatan 1 hingga 5 digunakan.')
   })
 
   it('contains every curriculum component', () => {
