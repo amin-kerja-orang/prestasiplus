@@ -25,7 +25,7 @@ async function getData<T>(page: Page, path: string): Promise<T> {
   return ((await res.json()) as { data: T }).data
 }
 
-/** The first page (any role) must not be the standard 404 page nor a 403/404 page. */
+/** In scope means the page renders: it is neither the standard 404 page nor a scope page. */
 async function expectInScope(page: Page): Promise<void> {
   await expect(page.getByText(NOT_FOUND_HEADING)).toHaveCount(0)
 }
