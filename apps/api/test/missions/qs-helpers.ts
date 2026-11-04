@@ -146,9 +146,10 @@ export async function classWith(
 ): Promise<{ id: string; joinCode: string; name: string }> {
   const cls = await createClass(t as never, teacher, { name })
   for (const s of students) {
-    const me = await s.get('/me')
-    expect(me.status, JSON.stringify(me.body)).toBe(200)
-    await t.db.query(`insert into enrolments (classroom_id, student_id, status, source) values ($1::bigint, $2::bigint, 'active', 'teacher')`, [cls.id, me.body.data.id])
+    // `/session` is served by AuthModule, which bootQsApp loads (`/me` is AccountModule's and is not loaded).
+    const session = await s.get('/session')
+    expect(session.status, JSON.stringify(session.body)).toBe(200)
+    await t.db.query(`insert into enrolments (classroom_id, student_id, status, source) values ($1::bigint, $2::bigint, 'active', 'teacher')`, [cls.id, session.body.data.user.id])
   }
   return cls
 }
