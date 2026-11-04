@@ -106,6 +106,28 @@ test.describe('Bijak SPM @bijak', () => {
     await expectNoHorizontalScroll(page)
   })
 
+  test('1280x720: the pinned Rajah pane scrolls to its last element (stays reachable)', async ({
+    page,
+    loginAs,
+    gotoApp,
+  }) => {
+    // No seeded tall-figure group exists in the fixtures; this uses the tallest available group
+    // (mat-k1-2025-a, Rajah 1 shared by Q5-Q8) at a short viewport.
+    await page.setViewportSize({ width: 1280, height: 720 })
+    await loginAs('pelajar@demo.test')
+    await gotoApp('/spm')
+    await page.getByTestId('spm-bijak-link').click()
+    await expect(page.getByTestId('bijak-hub')).toBeVisible()
+    await startPaper(page, 'mat-k1-2025-a')
+    for (let i = 0; i < 4; i++) await page.getByTestId('next').click()
+    const pane = page.getByTestId('stimulus-pane')
+    await expect(pane).toBeVisible()
+    await pane.evaluate((el) => {
+      el.scrollTop = el.scrollHeight
+    })
+    await expect(pane.locator('> *').last()).toBeInViewport()
+  })
+
   test('structured question: maths keyboard, working lines, per-point marks', async ({
     page,
     loginAs,

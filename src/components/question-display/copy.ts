@@ -26,6 +26,8 @@ export const qdCopy = {
   cannotSee: 'Tidak boleh dilihat',
   show: 'Lihat',
   hide: 'Sembunyi',
+  passageFallback: 'Petikan',
+  figureFallback: 'Rajah',
 } as const
 
 export const kindFallbackCaption: Record<string, string> = {

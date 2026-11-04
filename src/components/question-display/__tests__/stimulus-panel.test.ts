@@ -5,7 +5,7 @@ import { enableAutoUnmount, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 
-import { stimuliLabel } from '../lib/stimulus-data'
+import { groupLabel, stimuliLabel } from '../lib/stimulus-data'
 import { resetStimulusOpen, useStimulusOpen } from '../lib/useStimulusOpen'
 import StimulusFigure from '../StimulusFigure.vue'
 import StimulusGroup from '../StimulusGroup.vue'
@@ -328,5 +328,15 @@ describe('FR-PA-37 StimulusView passage source', () => {
       global: { stubs },
     })
     expect(w.find('[data-testid=stimulus-source]').text()).toBe('Sumber: Buku Teks')
+  })
+})
+
+describe('label fallback by kind (one rule for groupLabel and stimuliLabel)', () => {
+  it('an unlabelled passage is "Petikan", an unlabelled figure is "Rajah"; labels win', () => {
+    expect(stimuliLabel([{ id: 'p', kind: 'passage', text: 'x' }])).toBe('Petikan')
+    expect(stimuliLabel([{ id: 'f', kind: 'image', src: '/a.png' }])).toBe('Rajah')
+    expect(groupLabel([{ id: 'p', kind: 'passage', label: '', alt: '', text: 'x' }])).toBe('Petikan')
+    expect(groupLabel([{ id: 'f', kind: 'image', label: '', alt: '' }])).toBe('Rajah')
+    expect(stimuliLabel([{ id: 'f', kind: 'image', label: 'Rajah 2' }])).toBe('Rajah 2')
   })
 })

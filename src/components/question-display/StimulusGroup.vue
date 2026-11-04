@@ -90,7 +90,7 @@ const iconOnly = computed(() => thumb.value?.kind === 'passage' || thumb.value?.
       class="self-start overflow-y-auto"
       :class="
         split === 'sitting'
-          ? 'sticky top-0 col-span-4 max-h-screen pt-2'
+          ? 'sticky top-0 col-span-4 max-h-[calc(100dvh-11rem)] pt-2'
           : 'sticky top-20 max-h-[calc(100vh-6rem)]'
       "
       :aria-label="split === 'sitting' ? qdCopy.pinnedAria : label"

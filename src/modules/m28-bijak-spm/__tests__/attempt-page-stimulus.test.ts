@@ -144,25 +144,40 @@ describe('AttemptPage at 375: one StimulusGroup', () => {
     expect(q('[data-testid=stimulus-questions]')!.classList.contains('col-span-5')).toBe(true)
   })
 
-  it('at 1280 the sitting aside is sticky top-0 with a screen-height cap, so the last figure stays reachable', async () => {
+  it('at 1280 the sitting aside is sticky top-0 capped below the header and footer (not taller than the scroller), so the last figure stays reachable', async () => {
     width(true)
     await render()
     const aside = q('[data-testid=stimulus-pane]')!
-    for (const c of ['sticky', 'top-0', 'pt-2', 'max-h-screen', 'overflow-y-auto']) expect(aside.classList.contains(c)).toBe(true)
+    for (const c of ['sticky', 'top-0', 'pt-2', 'self-start', 'max-h-[calc(100dvh-11rem)]', 'overflow-y-auto']) expect(aside.classList.contains(c)).toBe(true)
     expect(aside.className).not.toContain('top-20')
     expect(aside.getAttribute('aria-label')).toBe('Rajah kekal dipapar')
     expect(q('[data-testid=stimulus-hint]')).toBeNull()
   })
 
-  it('a picture kind without src still shows the question and its options (not excluded)', async () => {
-    const v = view() as { groups: { stimulus: Record<string, unknown> }[]; questions: Record<string, unknown>[] }
-    delete v.groups[0]!.stimulus.image
-    v.questions[0]!.mcq = { options: [{ id: 'A', text: 'Pilihan A' }] }
-    server.getAttemptView.mockResolvedValue(v)
-    await render()
-    expect(document.body.textContent).toContain('Soalan satu?')
-    expect(document.body.textContent).toContain('Pilihan A')
-    expect(q('[data-testid=stimulus-group]')?.getAttribute('data-layout')).toBe('stacked')
-    expect(q('[data-testid=next]')).not.toBeNull()
+  describe.each([
+    ['375', false],
+    ['1280', true],
+  ])('at %s', (_name, wide) => {
+    it('a picture kind without src still shows the question and its options; Seterusnya is enabled', async () => {
+      width(wide)
+      const v = view() as { groups: { stimulus: Record<string, unknown> }[]; questions: Record<string, unknown>[] }
+      delete v.groups[0]!.stimulus.image
+      v.questions[0]!.mcq = { options: [{ id: 'A', text: 'Pilihan A' }] }
+      server.getAttemptView.mockResolvedValue(v)
+      await render()
+      expect(document.body.textContent).toContain('Soalan satu?')
+      expect(document.body.textContent).toContain('Pilihan A')
+      expect(q('[data-testid=stimulus-group]')?.getAttribute('data-layout')).toBe(wide ? 'split' : 'stacked')
+      expect(q('[data-testid=next]')?.hasAttribute('disabled')).toBe(false)
+    })
+
+    it('Seterusnya is enabled while the image loads and disabled when it fires an error', async () => {
+      width(wide)
+      await render()
+      expect(q('[data-testid=next]')?.hasAttribute('disabled')).toBe(false)
+      q('[data-testid=stimulus] img')!.dispatchEvent(new Event('error'))
+      await flushPromises()
+      expect(q('[data-testid=next]')?.hasAttribute('disabled')).toBe(true)
+    })
   })
 })
