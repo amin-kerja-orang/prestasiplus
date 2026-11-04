@@ -4198,12 +4198,10 @@
         "type": "object",
         "properties": {
           "email": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "whatsappNumber": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           }
         },
         "required": [
@@ -27819,22 +27817,10 @@
             "maxLength": 500
           },
           "grade": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "minimum": 1,
-            "maximum": 11
+            "description": "Accepted and ignored (deprecated)."
           },
           "schoolId": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "minLength": 1,
-            "maxLength": 64,
-            "description": "School id. Must exist (422 \"The selected school id is invalid.\"). `null` or absent means no school.",
-            "example": "1042"
+            "description": "Accepted and ignored (deprecated)."
           }
         },
         "required": [
@@ -74388,10 +74374,10 @@
           "content"
         ],
         "summary": "Support contact (help box)",
-        "description": "Public. If the config row is missing the server answers 404 \"Konfigurasi sokongan tidak dijumpai.\" (the mock would fail with a generic error).",
+        "description": "Public. If the config row is missing the server answers 200 with empty strings {email: \"\", whatsappNumber: \"\"} (S5-T05, DM-33); the client hides a contact whose value is empty.",
         "responses": {
           "200": {
-            "description": "E-mail and WhatsApp number.",
+            "description": "E-mail and WhatsApp number (empty strings when not set).",
             "content": {
               "application/json": {
                 "schema": {
@@ -74404,16 +74390,6 @@
                   "required": [
                     "data"
                   ]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "NOT_FOUND \"Konfigurasi sokongan tidak dijumpai.\"",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
@@ -99899,7 +99875,7 @@
           "account"
         ],
         "summary": "Update own profile",
-        "description": "Any signed-in role, own record only. `email` and any other key in the body are ignored (BR-13). An absent key keeps the stored value; null or blank clears phone, bio, grade, schoolId. schoolId is ignored for school_admin, ppd_officer and admin accounts. D57a: this write route is rate limited (RATE_LIMITED, retryAfter, Retry-After); the per-user limit is a platform setting of the implementation.",
+        "description": "Any signed-in role, own record only. `email` and any other key in the body are ignored (BR-13). An absent key keeps the stored value; null or blank clears phone and bio. `grade`, `schoolId` and `role` are accepted and ignored for every role (API-AUTH-09). D57a: this write route is rate limited (RATE_LIMITED, retryAfter, Retry-After); the per-user limit is a platform setting of the implementation.",
         "parameters": [
           {
             "schema": {
@@ -99968,7 +99944,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields (one message per field, the first failing rule). name required, max 255; phone max 14; bio max 500; grade \"The selected grade is invalid.\"; school \"The selected school id is invalid.\". Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
+            "description": "VALIDATION_ERROR with fields (one message per field, the first failing rule). name required, max 255; phone max 14; bio max 500. Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
             "content": {
               "application/json": {
                 "schema": {

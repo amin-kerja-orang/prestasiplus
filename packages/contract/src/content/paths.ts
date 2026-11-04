@@ -310,10 +310,9 @@ export function registerContentPaths(registry: OpenAPIRegistry): void {
     path: '/config/support',
     tags: ['content'],
     summary: 'Support contact (help box)',
-    description: 'Public. If the config row is missing the server answers 404 "Konfigurasi sokongan tidak dijumpai." (the mock would fail with a generic error).',
+    description: 'Public. If the config row is missing the server answers 200 with empty strings {email: "", whatsappNumber: ""} (S5-T05, DM-33); the client hides a contact whose value is empty.',
     responses: {
-      200: json(envelopeOf(ContentSupportConfigSchema), 'E-mail and WhatsApp number.'),
-      404: err('NOT_FOUND "Konfigurasi sokongan tidak dijumpai."'),
+      200: json(envelopeOf(ContentSupportConfigSchema), 'E-mail and WhatsApp number (empty strings when not set).'),
     },
   })
 
