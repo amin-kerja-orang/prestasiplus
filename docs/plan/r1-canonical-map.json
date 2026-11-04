@@ -1479,7 +1479,7 @@
       "component": "src/modules/m08-student-performance/pages/Prestasi360Page.vue",
       "file": "src/modules/m08-student-performance/routes/prestasi.ts",
       "note": "S10-T01: a pupil sees own Prestasi 360 at /prestasi (FR-MUR-4-13, AC-MUR-4-9); beforeEnter sends every other role to /prestasi/sekolah. Same page as /prestasi/:userId (staff view of one pupil), not a copy.",
-      "approved_by_card": null
+      "approved_by_card": "S10-T01"
     },
     {
       "key": "/prestasi/sekolah|m08.prestasi.sekolah",
