@@ -53,6 +53,8 @@ function planner(opts: { drawn?: string[]; bank: PracticeQuestion[]; page?: stri
     chapter: () => Promise.resolve({ id: 9n, subjectId: 1n, educationLevelId: 1n }),
   }
   const repo = {
+    // S4-T06: the planner reads the offered levels through the repository (`offeredLevels(db)`).
+    offeredLevels: () => Promise.resolve([{ id: '1', code: 'T4', order: 10, gradeKey: 'TINGKATAN_4' }]),
     countSessions: () => Promise.resolve(0),
     chapterProgress: () => Promise.resolve(new Map((opts.answered ?? []).map((id, i) => [id, { lastAt: new Date(2026, 0, i + 1) }]))),
   }

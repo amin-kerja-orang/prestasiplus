@@ -79,12 +79,8 @@ const EXPECTED_RED: Record<WalkRole, Row[]> = {
   ],
   // Guru: the Laporan Mingguan row (S6-T01) was removed after its first CI run showed it passing.
   guru: [],
-  adminSekolah: [
-    // The route allows school_admin (S0-T06), but GET /api/analytics/classes is @Roles('admin','teacher')
-    // (apps/api/src/modules/reports/performance/http/performance.controllers.ts:53), so the page shows 403.
-    // S10-T04 change (2) adds school_admin to @Roles and canOpenClassAnalysis.
-    { id: 'sa-analitik-adaptif', route: '/analitik/kelas', ownerCard: 'S10-T04' },
-  ],
+  // Admin Sekolah: the Analitik Adaptif row (S10-T04 Change (2)) was removed when the API gained school_admin.
+  adminSekolah: [],
 }
 
 /**
