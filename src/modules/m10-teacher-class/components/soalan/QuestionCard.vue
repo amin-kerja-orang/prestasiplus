@@ -6,7 +6,7 @@
  * while the server says the item is `editable`. The status chip says Menunggu Semakan / Diluluskan / Ditolak and a
  * rejected item shows "Sebab: {reason}".
  */
-import { DsPanel, DsStatusBadge } from '@/ds'
+import { DsPanel, DsStatusBadge, DsText } from '@/ds'
 import { ref } from 'vue'
 
 import { formatDateEn } from '@/lib/time'
@@ -79,13 +79,14 @@ const open = ref(false)
         </span>
       </UButton>
 
-      <p
+      <DsText
         v-if="question.status === 'rejected' && question.rejectionReason"
-        class="mt-2 min-w-0 text-body break-words text-error"
+        variant="body"
+        tone="error"
+        wrap="anywhere"
         data-testid="question-reason"
+        >{{ rejectionLine(question.rejectionReason) }}</DsText
       >
-        {{ rejectionLine(question.rejectionReason) }}
-      </p>
 
       <div v-if="open" class="mt-4 flex min-w-0 flex-col gap-3" data-testid="question-body">
         <p class="min-w-0 text-body break-words text-default">{{ question.questionText }}</p>

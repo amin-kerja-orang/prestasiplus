@@ -8,7 +8,7 @@
  * "Jenis Tulisan" Arab / Jawi makes the textarea RTL; the keyboard button opens the Arabic / Jawi keys.
  * Server messages show in a box above the form and under their field; the typed values are kept.
  */
-import { DsFormSection, DsNativeSelect, DsPanel, DsRtlScope } from '@/ds'
+import { DsFormSection, DsNativeSelect, DsPanel, DsRtlScope, DsText } from '@/ds'
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 
 import {
@@ -258,9 +258,9 @@ async function submit(): Promise<void> {
             <option value="">-- Pilih tingkatan --</option>
             <option v-for="l in levels" :key="l.id" :value="String(l.id)">{{ l.name }}</option>
           </DsNativeSelect>
-          <p v-if="err('educationLevelId')" class="mt-1 text-caption text-error" role="alert">
-            {{ err('educationLevelId') }}
-          </p>
+          <DsText v-if="err('educationLevelId')" variant="caption" tone="error" role="alert">{{
+            err('educationLevelId')
+          }}</DsText>
         </div>
         <div class="min-w-0">
           <label for="q-subject" class="mb-2 block text-label text-highlighted">Subjek *</label>
@@ -274,9 +274,9 @@ async function submit(): Promise<void> {
             <option value="">-- Pilih subjek --</option>
             <option v-for="s in subjects" :key="s.id" :value="String(s.id)">{{ s.name }}</option>
           </DsNativeSelect>
-          <p v-if="err('subjectId')" class="mt-1 text-caption text-error" role="alert">
-            {{ err('subjectId') }}
-          </p>
+          <DsText v-if="err('subjectId')" variant="caption" tone="error" role="alert">{{
+            err('subjectId')
+          }}</DsText>
         </div>
 
         <div class="min-w-0">
@@ -296,9 +296,9 @@ async function submit(): Promise<void> {
               {{ d.label }}
             </option>
           </DsNativeSelect>
-          <p v-if="err('difficultyLevel')" class="mt-1 text-caption text-error" role="alert">
-            {{ err('difficultyLevel') }}
-          </p>
+          <DsText v-if="err('difficultyLevel')" variant="caption" tone="error" role="alert">{{
+            err('difficultyLevel')
+          }}</DsText>
         </div>
         <div class="min-w-0">
           <label for="q-script" class="mb-2 block text-label text-highlighted">Jenis Tulisan</label>
@@ -334,9 +334,9 @@ async function submit(): Promise<void> {
               {{ c.label }}
             </option>
           </DsNativeSelect>
-          <p v-if="err('chapterId')" class="mt-1 text-caption text-error" role="alert">
-            {{ err('chapterId') }}
-          </p>
+          <DsText v-if="err('chapterId')" variant="caption" tone="error" role="alert">{{
+            err('chapterId')
+          }}</DsText>
         </div>
         <div class="min-w-0">
           <label for="q-sp" class="mb-2 block text-label text-highlighted"
@@ -353,9 +353,9 @@ async function submit(): Promise<void> {
             <option value="">{{ noSps ? DSKP_EMPTY.sp : '-- Pilih SP --' }}</option>
             <option v-for="o in spOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
           </DsNativeSelect>
-          <p v-if="err('spIds')" class="mt-1 text-caption text-error" role="alert">
-            {{ err('spIds') }}
-          </p>
+          <DsText v-if="err('spIds')" variant="caption" tone="error" role="alert">{{
+            err('spIds')
+          }}</DsText>
         </div>
         <div class="min-w-0">
           <label for="q-tp" class="mb-2 block text-label text-highlighted"
@@ -371,7 +371,9 @@ async function submit(): Promise<void> {
             <option value="">-- Pilih TP --</option>
             <option v-for="n in TP_VALUES" :key="n" :value="String(n)">{{ n }}</option>
           </DsNativeSelect>
-          <p v-if="err('tp')" class="mt-1 text-caption text-error" role="alert">{{ err('tp') }}</p>
+          <DsText v-if="err('tp')" variant="caption" tone="error" role="alert">{{
+            err('tp')
+          }}</DsText>
         </div>
         <div class="min-w-0">
           <label for="q-aras" class="mb-2 block text-label text-highlighted"
@@ -389,9 +391,9 @@ async function submit(): Promise<void> {
               {{ c.label }}
             </option>
           </DsNativeSelect>
-          <p v-if="err('cognitiveLevel')" class="mt-1 text-caption text-error" role="alert">
-            {{ err('cognitiveLevel') }}
-          </p>
+          <DsText v-if="err('cognitiveLevel')" variant="caption" tone="error" role="alert">{{
+            err('cognitiveLevel')
+          }}</DsText>
         </div>
       </div>
       <p class="mt-4 flex items-center gap-2 text-caption text-muted">
@@ -428,9 +430,9 @@ async function submit(): Promise<void> {
           @click="toggleKeyboard"
         />
       </DsRtlScope>
-      <p v-if="err('questionText')" class="mt-1 text-caption text-error" role="alert">
-        {{ err('questionText') }}
-      </p>
+      <DsText v-if="err('questionText')" variant="caption" tone="error" role="alert">{{
+        err('questionText')
+      }}</DsText>
       <ArabicKeyboardPanel
         v-if="keyboardOpen"
         v-model:mode="keyboardMode"
@@ -493,12 +495,12 @@ async function submit(): Promise<void> {
           </div>
         </DsPanel>
       </div>
-      <p v-if="err('options')" class="mt-2 text-caption text-error" role="alert">
-        {{ err('options') }}
-      </p>
-      <p v-if="err('correctAnswer')" class="mt-2 text-caption text-error" role="alert">
-        {{ err('correctAnswer') }}
-      </p>
+      <DsText v-if="err('options')" variant="caption" tone="error" role="alert">{{
+        err('options')
+      }}</DsText>
+      <DsText v-if="err('correctAnswer')" variant="caption" tone="error" role="alert">{{
+        err('correctAnswer')
+      }}</DsText>
       <p class="mt-3 flex items-center gap-2 text-caption text-muted">
         <UIcon name="i-ph-info-duotone" class="size-4 shrink-0" />
         Klik butang bulat untuk memilih jawapan yang betul.
@@ -523,9 +525,9 @@ async function submit(): Promise<void> {
         class="w-full"
         data-testid="q-explanation"
       />
-      <p v-if="err('explanation')" class="mt-1 text-caption text-error" role="alert">
-        {{ err('explanation') }}
-      </p>
+      <DsText v-if="err('explanation')" variant="caption" tone="error" role="alert">{{
+        err('explanation')
+      }}</DsText>
     </DsFormSection>
 
     <div class="flex items-center justify-between gap-3">

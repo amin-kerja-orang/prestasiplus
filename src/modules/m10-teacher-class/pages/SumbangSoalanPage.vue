@@ -9,7 +9,7 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi, useFlash, usePrototypeScope } from '@/composables'
-import { DsPage, useConfirm, DsPanel, DsLoadError } from '@/ds'
+import { DsEmptyState, DsPage, useConfirm, DsPanel, DsLoadError } from '@/ds'
 
 import {
   deleteContributedQuestion,
@@ -143,22 +143,17 @@ const retry = (): void => {
       </div>
       <template v-else>
         <DsPanel v-if="list.data.value.data.length === 0 && page === 1" data-testid="soalan-empty">
-          <div class="flex flex-col items-center gap-2 py-6 text-center">
-            <UIcon name="i-ph-note-pencil-duotone" class="size-12 text-dimmed" />
-            <p class="text-label text-highlighted" data-testid="soalan-empty-title">
-              {{ COPY.emptyTitle }}
-            </p>
-            <p class="text-body text-muted" data-testid="soalan-empty-hint">
-              {{ COPY.emptyHint }}
-            </p>
-            <UButton
-              to="/guru/soalan/cipta"
-              icon="i-ph-plus-circle-duotone"
-              class="mt-2 min-h-11"
-              data-testid="soalan-add-first"
-              >{{ COPY.addFirst }}</UButton
-            >
-          </div>
+          <DsEmptyState :title="COPY.emptyTitle" :description="COPY.emptyHint" icon="note-pencil">
+            <template #actions>
+              <UButton
+                to="/guru/soalan/cipta"
+                icon="i-ph-plus-circle-duotone"
+                class="min-h-11"
+                data-testid="soalan-add-first"
+                >{{ COPY.addFirst }}</UButton
+              >
+            </template>
+          </DsEmptyState>
         </DsPanel>
         <ul v-else class="grid min-w-0 grid-cols-1 gap-3" data-testid="soalan-list">
           <QuestionCard

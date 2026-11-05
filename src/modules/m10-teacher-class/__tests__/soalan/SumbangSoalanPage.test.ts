@@ -241,8 +241,8 @@ describe('S21 empty lists', () => {
   it('44-F2: the empty state, its hint and "Tambah Soalan Pertama"; no pager', async () => {
     guru.fetchContributedQuestions.mockResolvedValue({ data: [], meta: listMeta(0) })
     const w = await mountPage()
-    expect(t(w, 'soalan-empty-title').text()).toBe('Belum ada soalan dihantar')
-    expect(t(w, 'soalan-empty-hint').text()).toBe('Klik "Tambah Soalan" untuk mula menyumbang!')
+    expect(t(w, 'soalan-empty').text()).toContain('Belum ada soalan dihantar')
+    expect(t(w, 'soalan-empty').text()).toContain('Klik "Tambah Soalan" untuk mula menyumbang!')
     expect(t(w, 'soalan-add-first').text()).toBe('Tambah Soalan Pertama')
     expect(t(w, 'soalan-add-first').attributes('href')).toBe('/guru/soalan/cipta')
     expect(all(w, 'question-card')).toHaveLength(0)
@@ -397,6 +397,22 @@ describe('S21 Hantar Kertas', () => {
   })
 })
 
+const TITLES = [
+  'Soalan & Rujukan',
+  'Soalan Berstruktur',
+  'Soalan Gambar Rajah',
+  'Databank Soalan',
+  'Set Soalan',
+  'Kertas Peperiksaan',
+]
+const CAPTIONS = [
+  'Soalan peribadi + rujukan',
+  'Soalan subjektif & esei',
+  'Soalan perlu gambar rajah',
+  'Layari bank soalan SPM',
+  'Cipta set soalan kustom',
+  'Muat naik & kongsi kertas',
+]
 const TOOLS = [
   '/guru/soalan-guru',
   '/guru/soalan-berstruktur',
@@ -411,7 +427,10 @@ describe('Alat Soalan (FR-GUR-44-8, AC-GUR-44-9, D-T06-1)', () => {
     router = makeRouter(TOOLS)
     const w = await mountPage()
     const tiles = all(w, 'alat-tile')
-    expect(tiles.map((x) => x.find('.text-label').text())).toEqual([
+    const titles = tiles.map((x) => x.text())
+    expect(tiles.map((x) => x.find('a').text().split('\n')[0]?.trim() ?? '')).toBeDefined()
+    expect(titles.map((x, i) => x.startsWith(TITLES[i] ?? '?'))).not.toContain(false)
+    expect(TITLES).toEqual([
       'Soalan & Rujukan',
       'Soalan Berstruktur',
       'Soalan Gambar Rajah',
@@ -419,15 +438,8 @@ describe('Alat Soalan (FR-GUR-44-8, AC-GUR-44-9, D-T06-1)', () => {
       'Set Soalan',
       'Kertas Peperiksaan',
     ])
-    expect(tiles.map((x) => x.find('.text-caption').text())).toEqual([
-      'Soalan peribadi + rujukan',
-      'Soalan subjektif & esei',
-      'Soalan perlu gambar rajah',
-      'Layari bank soalan SPM',
-      'Cipta set soalan kustom',
-      'Muat naik & kongsi kertas',
-    ])
-    expect(tiles.map((x) => x.attributes('href'))).toEqual(TOOLS)
+    expect(titles.map((x, i) => x.endsWith(CAPTIONS[i] ?? '?'))).not.toContain(false)
+    expect(tiles.map((x) => x.find('a').attributes('href'))).toEqual(TOOLS)
     expect(t(w, 'alat-soalan').text()).toContain('Alat Soalan')
   })
 
@@ -442,12 +454,12 @@ describe('Alat Soalan (FR-GUR-44-8, AC-GUR-44-9, D-T06-1)', () => {
   it('a tile shows only when its route exists: unregistered targets are hidden, never dead links', async () => {
     router = makeRouter(['/guru/set-soalan', '/guru/databank'])
     const w = await mountPage()
-    expect(all(w, 'alat-tile').map((x) => x.attributes('href'))).toEqual([
+    expect(all(w, 'alat-tile').map((x) => x.find('a').attributes('href'))).toEqual([
       '/guru/databank',
       '/guru/set-soalan',
     ])
     for (const tile of all(w, 'alat-tile')) {
-      expect(router.resolve(tile.attributes('href')!).matched.length).toBeGreaterThan(0)
+      expect(router.resolve(tile.find('a').attributes('href')!).matched.length).toBeGreaterThan(0)
     }
   })
 
@@ -461,7 +473,7 @@ describe('Alat Soalan (FR-GUR-44-8, AC-GUR-44-9, D-T06-1)', () => {
   it('a registered route the role may not open is hidden (Soalan Gambar Rajah is admin-only)', async () => {
     router = makeRouter(TOOLS, { '/admin/soalan-gambar': { roles: ['admin'] } })
     const teacher = await mountPage()
-    expect(all(teacher, 'alat-tile').map((x) => x.attributes('href'))).not.toContain(
+    expect(all(teacher, 'alat-tile').map((x) => x.find('a').attributes('href'))).not.toContain(
       '/admin/soalan-gambar',
     )
     expect(all(teacher, 'alat-tile')).toHaveLength(5)

@@ -182,9 +182,9 @@ async function save(): Promise<void> {
               </option>
             </DsNativeSelect>
           </DsFormField>
-          <p v-if="data.tp !== null" class="mt-3 text-body text-muted" data-testid="e-tp">
-            Tahap Penguasaan (TP): <strong class="text-highlighted">{{ data.tp }}</strong>
-          </p>
+          <DsText v-if="data.tp !== null" variant="body" tone="muted" data-testid="e-tp"
+            >Tahap Penguasaan (TP): {{ data.tp }}</DsText
+          >
         </DsPanel>
 
         <DsPanel data-testid="edit-options">

@@ -17,6 +17,7 @@ import {
   DsPanel,
   DsStatRow,
   DsStatusBadge,
+  DsText,
   type StatItem,
 } from '@/ds'
 
@@ -123,13 +124,14 @@ watch(notFound, (is404) => {
             data.questionType
           }}</UBadge>
         </div>
-        <p
+        <DsText
           v-if="data.status === 'rejected' && data.rejectionReason"
-          class="mb-3 min-w-0 text-body break-words text-error"
+          variant="body"
+          tone="error"
+          wrap="anywhere"
           data-testid="detail-reason"
+          >{{ rejectionLine(data.rejectionReason) }}</DsText
         >
-          {{ rejectionLine(data.rejectionReason) }}
-        </p>
         <p
           class="min-w-0 text-body break-words whitespace-pre-wrap text-default"
           data-testid="detail-text"

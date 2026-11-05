@@ -9,7 +9,15 @@
 import { computed, ref } from 'vue'
 
 import { isApiError } from '@/api'
-import { DsFileField, DsFormField, DsIconChip, DsNativeSelect, DsPanel } from '@/ds'
+import {
+  DsFileField,
+  DsFormField,
+  DsIconChip,
+  DsNativeSelect,
+  DsPanel,
+  DsStack,
+  DsText,
+} from '@/ds'
 
 import { submitQuestionPaper } from '../../api/guru'
 import type { PaperType, QuestionPaperRequest } from '../../api/types'
@@ -200,22 +208,22 @@ async function submit(): Promise<void> {
       data-testid="paper-sent"
     />
 
+    <UAlert
+      v-if="count > 0"
+      color="error"
+      variant="subtle"
+      icon="i-ph-warning-circle-duotone"
+      role="alert"
+      :description="`${String(count)} medan perlu dibetulkan.`"
+      data-testid="paper-banner"
+    />
+
     <form
       class="mt-4 grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2"
       novalidate
       data-testid="paper-form"
       @submit.prevent="submit"
     >
-      <UAlert
-        v-if="count > 0"
-        class="md:col-span-2"
-        color="error"
-        variant="subtle"
-        icon="i-ph-warning-circle-duotone"
-        role="alert"
-        :description="`${String(count)} medan perlu dibetulkan.`"
-        data-testid="paper-banner"
-      />
       <DsFormField
         label="Jenis Soalan *"
         name="paper-jenis"
@@ -325,14 +333,14 @@ async function submit(): Promise<void> {
           data-testid="paper-files"
           @update:model-value="onFiles"
         />
-        <p
+        <DsText
           v-if="fieldErrors.files"
-          class="mt-1 text-caption text-error"
+          variant="caption"
+          tone="error"
           role="alert"
           data-testid="paper-files-error"
+          >{{ fieldErrors.files }}</DsText
         >
-          {{ fieldErrors.files }}
-        </p>
         <ul v-if="files.length" class="mt-2 flex flex-col gap-1" data-testid="paper-file-list">
           <li
             v-for="f in files"
@@ -358,32 +366,34 @@ async function submit(): Promise<void> {
           </li>
         </ul>
       </div>
-      <div class="min-w-0 md:col-span-2">
-        <UCheckbox
-          v-model="confirmed"
-          name="answer_scheme_confirmed"
-          label="Saya sahkan skema jawapan disertakan bersama soalan."
-          data-testid="paper-confirm"
-        />
-        <p
-          v-if="fieldErrors.answerSchemeConfirmed"
-          class="mt-1 text-caption text-error"
-          role="alert"
-          data-testid="paper-confirm-error"
-        >
-          {{ fieldErrors.answerSchemeConfirmed }}
-        </p>
-      </div>
       <div class="md:col-span-2">
-        <UButton
-          type="submit"
-          :loading="busy"
-          :disabled="busy"
-          :icon="busy ? undefined : 'i-ph-paper-plane-tilt-duotone'"
-          class="min-h-11"
-          data-testid="paper-submit"
-          >{{ busy ? 'Memuat naik...' : 'Hantar kepada Admin' }}</UButton
-        >
+        <DsStack gap="sm">
+          <UCheckbox
+            v-model="confirmed"
+            name="answer_scheme_confirmed"
+            label="Saya sahkan skema jawapan disertakan bersama soalan."
+            data-testid="paper-confirm"
+          />
+          <DsText
+            v-if="fieldErrors.answerSchemeConfirmed"
+            variant="caption"
+            tone="error"
+            role="alert"
+            data-testid="paper-confirm-error"
+            >{{ fieldErrors.answerSchemeConfirmed }}</DsText
+          >
+          <div>
+            <UButton
+              type="submit"
+              :loading="busy"
+              :disabled="busy"
+              :icon="busy ? undefined : 'i-ph-paper-plane-tilt-duotone'"
+              class="min-h-11"
+              data-testid="paper-submit"
+              >{{ busy ? 'Memuat naik...' : 'Hantar kepada Admin' }}</UButton
+            >
+          </div>
+        </DsStack>
       </div>
     </form>
   </DsPanel>
