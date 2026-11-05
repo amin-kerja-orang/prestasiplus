@@ -61,7 +61,7 @@ describe('BE-21 teachers: /admin-sekolah/guru', () => {
 
     const desc = (xs: string[]) => [...xs].sort((x, y) => (BigInt(y) > BigInt(x) ? 1 : -1))
     expect(ids).toEqual([...desc([a, seeded]), ...desc([b, c])])
-    expect(body.meta).toMatchObject({ page: 1, pageSize: 25, totalItems: 4, totalPages: 1, from: 1, to: 4, counts: { total: 4, active: 2, inactive: 2, xs: 4 } })
+    expect(body.meta).toMatchObject({ page: 1, pageSize: 25, totalItems: 4, totalPages: 1, from: 1, to: 4, counts: { total: 4, active: 2, inactive: 2, xs: 2 } })
 
     const rowA = body.data.find((r) => r.id === a)
     expect(rowA).toMatchObject({ name: 'Guru Alpha', initials: 'GA', email: 'alpha@ujian.test', phone: '0112223334', classCount: 2, lastLoginAt: '2026-10-18T09:00:00.000+08:00', isActive: true, canEdit: true })
@@ -74,7 +74,7 @@ describe('BE-21 teachers: /admin-sekolah/guru', () => {
     const res = SchoolAdminTeacherListResponseSchema.parse((await admin.get(`/admin-sekolah/guru?level=T4&classroomId=${foreign}`)).body)
     expect(res.data).toHaveLength(4)
     expect(res.meta.counts.xs).toBe(await xsTeacherCount(t.db, s1))
-    expect(res.meta.counts.xs).toBe(4)
+    expect(res.meta.counts.xs).toBe(2) // PO 2026-11-05 (#503 batch 3): XS-3 counts active approved teachers only
     expect(res.meta.counts).not.toHaveProperty('notCounted')
   })
 
