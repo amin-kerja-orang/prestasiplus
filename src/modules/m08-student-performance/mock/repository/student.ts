@@ -236,12 +236,12 @@ export function studentPerformance(pupil: UserRow, now: number): StudentPerforma
 
   return {
     user: { id: pupil.id, name: pupil.name, initial: (pupil.name.trim()[0] ?? '?').toUpperCase() },
-    heroAccuracy: Math.round(capPercent(accuracy)),
+    heroAccuracy: questionsTotal === 0 ? null : Math.round(capPercent(accuracy)),
     trend: trendOf(sessions, now),
     streak: streakView.current,
     stats: {
       sessions: sessions.length,
-      accuracy: round(capPercent(accuracy), 1),
+      accuracy: questionsTotal === 0 ? null : round(capPercent(accuracy), 1),
       answered: questionsTotal,
       seconds,
     },

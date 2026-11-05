@@ -99,5 +99,3 @@ export const STUDENT_TREND_WEEKS = 12
 /** Weak topics (FR-MUR-4-8): all time, at least this many attempts and an accuracy below `WEAK_TOPIC_BELOW`. */
 export const WEAK_TOPIC_MIN_ATTEMPTS = 2
 export const WEAK_TOPIC_BELOW = 60
-/** `focusCount` ceiling of the "Fokus" action. */
-export const FOCUS_COUNT_CAP = 25

@@ -45725,7 +45725,10 @@
             ]
           },
           "heroAccuracy": {
-            "type": "number"
+            "type": [
+              "number",
+              "null"
+            ]
           },
           "streak": {
             "type": "integer"
@@ -45737,7 +45740,10 @@
                 "type": "integer"
               },
               "accuracy": {
-                "type": "number"
+                "type": [
+                  "number",
+                  "null"
+                ]
               },
               "answered": {
                 "type": "integer"

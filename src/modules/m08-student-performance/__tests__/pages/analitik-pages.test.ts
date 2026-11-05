@@ -345,9 +345,9 @@ const S6: StudentPerformance = {
 const EMPTY_S6: StudentPerformance = {
   ...S6,
   user: { id: 1, name: 'Admin Demo', initial: 'A' },
-  heroAccuracy: 0,
+  heroAccuracy: null,
   streak: 1,
-  stats: { sessions: 0, accuracy: 0, answered: 0, seconds: 0 },
+  stats: { sessions: 0, accuracy: null, answered: 0, seconds: 0 },
   trend: trendOf(),
   headcount: [],
   mastery: [],
@@ -460,9 +460,9 @@ describe('S6 Prestasi360Page', () => {
     expect(exists(w, 'heat-tooltip')).toBe(false)
 
     const cell = w.get('[data-date="2026-09-24"]')
-    expect(cell.classes()).toContain('bg-primary/15')
+    expect(cell.classes()).toContain('bg-success/25')
     await cell.trigger('mouseenter')
-    expect(t(w, 'heat-tooltip').text()).toBe('24/09 (Khamis) — 1 sesi')
+    expect(t(w, 'heat-tooltip').text()).toBe('24/09 (Khamis) — 1 sesi latihan')
     await cell.trigger('pointerleave', { pointerType: 'mouse' })
     expect(exists(w, 'heat-tooltip')).toBe(false)
 
@@ -476,12 +476,13 @@ describe('S6 Prestasi360Page', () => {
     // Touch: a tap fires mouseenter and then click; the tooltip stays after the pointer leaves, a second tap hides it.
     await cell.trigger('mouseenter')
     await cell.trigger('click')
-    expect(t(w, 'heat-tooltip').text()).toBe('24/09 (Khamis) — 1 sesi')
+    expect(t(w, 'heat-tooltip').text()).toBe('24/09 (Khamis) — 1 sesi latihan')
     await cell.trigger('pointerleave', { pointerType: 'touch' })
     expect(exists(w, 'heat-tooltip')).toBe(true)
     await cell.trigger('click')
     expect(exists(w, 'heat-tooltip')).toBe(false)
     expect(w.get('[data-testid=heatmap-card]').text()).toContain('sesi/hari')
+    expect(w.get('[data-testid=heatmap-card]').text()).toContain('01-45-89-1213+sesi/hari')
   })
 
   it('links the weak topics to the focus quiz, cutting the label and leaving `level` out when unknown', async () => {
@@ -548,6 +549,17 @@ describe('S6 Prestasi360Page', () => {
     const data = series[0]?.data ?? []
     expect(data.slice(0, 10).every((v) => Number.isNaN(v))).toBe(true)
     expect(data.slice(10)).toEqual([60, 100])
+  })
+
+  it('the own-view weak-topic tile has no Fokus button while focusCount is 0 (part 1)', async () => {
+    api.fetchStudentPerformance.mockResolvedValue({
+      ...S6,
+      weakTopics: S6.weakTopics.map((x) => ({ ...x, focusCount: 0 })),
+    })
+    const w = await render(Prestasi360Page, '/prestasi/3001', PATH)
+    expect(w.findAll('[data-testid=weak-list] li')).toHaveLength(2)
+    expect(exists(w, 'focus-link')).toBe(false)
+    expect(w.text()).not.toContain('Fokus 0')
   })
 
   it('FR-MUR-4-12: 79.5 shows 80% in the green band, 79.4 stays amber', async () => {

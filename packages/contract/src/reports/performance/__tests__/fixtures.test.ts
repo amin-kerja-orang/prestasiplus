@@ -115,15 +115,16 @@ describe('BE-19 contract parses payloads captured from the m08 mock', () => {
     }
   })
 
-  it('Prestasi 360: trend is exactly 12 weeks with a DateOnly week; an empty week has null accuracy; heroAccuracy and stats.accuracy stay numbers', () => {
+  it('Prestasi 360: trend is exactly 12 weeks with a DateOnly week; an empty week has null accuracy; heroAccuracy and stats.accuracy accept null (nothing answered)', () => {
     const base = { ...(load('performance-student') as { stats: object }), ...AFTER_CAPTURE['performance-student'] } as {
       stats: object
       trend: unknown[]
       heroAccuracy: unknown
     }
     expect(PerformanceStudentSchema.safeParse(base).success).toBe(true)
-    expect(PerformanceStudentSchema.safeParse({ ...base, heroAccuracy: null }).success).toBe(false)
-    expect(PerformanceStudentSchema.safeParse({ ...base, stats: { ...base.stats, accuracy: null } }).success).toBe(false)
+    expect(PerformanceStudentSchema.safeParse({ ...base, heroAccuracy: null }).success).toBe(true)
+    expect(PerformanceStudentSchema.safeParse({ ...base, stats: { ...base.stats, accuracy: null } }).success).toBe(true)
+    expect(PerformanceStudentSchema.safeParse({ ...base, heroAccuracy: 'x' }).success).toBe(false)
     expect(PerformanceStudentSchema.safeParse({ ...base, trend: base.trend.slice(1) }).success).toBe(false)
     expect(PerformanceStudentSchema.safeParse({ ...base, trend: [...base.trend, base.trend[0]] }).success).toBe(false)
     const bad = base.trend.map((w, i) => (i === 0 ? { ...(w as object), week: '2026/07/13' } : w))

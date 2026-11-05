@@ -299,11 +299,11 @@ const weakSp = z.object({
 export const PerformanceStudentSchema = z
   .object({
     user: z.object({ id: IdSchema, name: z.string(), initial: z.string() }),
-    /** Whole number, rounded half up from `stats.accuracy`; 0 when nothing is answered (the screen shows a dash). */
-    heroAccuracy: pct,
+    /** Whole number, rounded half up from `stats.accuracy`; null when nothing is answered. */
+    heroAccuracy: pct.nullable(),
     streak: count,
-    /** `accuracy` is pooled correct / answered x 100, one decimal on the wire (decision 11); 0 when answered = 0. */
-    stats: z.object({ sessions: count, accuracy: pct, answered: count, seconds: count }),
+    /** `accuracy` is pooled correct / answered x 100, one decimal on the wire (decision 11); null when answered = 0. */
+    stats: z.object({ sessions: count, accuracy: pct.nullable(), answered: count, seconds: count }),
     headcount: z.array(
       z.object({
         configId: IdSchema,

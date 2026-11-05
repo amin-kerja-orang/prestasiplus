@@ -109,8 +109,8 @@ describe('Prestasi360Page in http mode (S10-T01 change 4: no Bijak-only layout)'
     vi.stubEnv('VITE_API_MODE', 'http')
     api.fetchStudentPerformance.mockResolvedValue({
       ...PUPIL,
-      heroAccuracy: 0,
-      stats: { sessions: 0, accuracy: 0, answered: 0, seconds: 0 },
+      heroAccuracy: null,
+      stats: { sessions: 0, accuracy: null, answered: 0, seconds: 0 },
       trend: PUPIL.trend.map((w) => ({ ...w, accuracy: null, sessions: 0 })),
     })
     const w = await render(Prestasi360Page, '/prestasi/3001', '/prestasi/:userId')

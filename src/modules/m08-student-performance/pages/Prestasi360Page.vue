@@ -14,7 +14,6 @@ import {
   DsBackLink,
   DsChart,
   DsEmptyState,
-  DsHeading,
   DsLoadError,
   DsPage,
   DsPageHeader,
@@ -22,6 +21,7 @@ import {
   DsSection,
   DsStatRow,
   DsStatTile,
+  DsText,
 } from '@/ds'
 import type { ChartSeries } from '@/ds'
 import { usePageMeta } from '@/composables/usePageMeta'
@@ -143,7 +143,7 @@ const activity = computed(() => {
             />
           </template>
           <template v-if="!byId" #subtitle>
-            <DsHeading :level="2" variant="title" data-testid="hero-name">{{ data.user.name }}</DsHeading>
+            <DsText variant="title" as="p" data-testid="hero-name">{{ data.user.name }}</DsText>
             <p>Prestasi 360 — Dashboard Individu</p>
           </template>
           <template #leading>

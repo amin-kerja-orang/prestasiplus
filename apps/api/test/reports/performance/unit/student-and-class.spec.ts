@@ -172,9 +172,9 @@ describe('Prestasi 360 (student)', () => {
     it('all time, at least 2 attempts and under 60 percent; topic else chapter; rows with neither are skipped; lowest first', async () => {
       const r = await w.student.student(ctxOf('student', '1'), '1')
       expect(r.weakTopics).toEqual([
-        { spId: '104', label: 'Topik Banyak', code: '5.1', subjectCode: 'BM', levelId: 'lv-t4', attempts: 30, accuracy: 0, focusCount: 25 },
-        { spId: '51', label: 'Bab Tanpa Topik', code: null, subjectCode: 'MT', levelId: null, attempts: 2, accuracy: 0, focusCount: 2 },
-        { spId: '100', label: 'Topik Lemah', code: '5.1', subjectCode: 'BM', levelId: 'lv-t4', attempts: 4, accuracy: 25, focusCount: 3 },
+        { spId: '104', label: 'Topik Banyak', code: '5.1', subjectCode: 'BM', levelId: 'lv-t4', attempts: 30, accuracy: 0, focusCount: 0 },
+        { spId: '51', label: 'Bab Tanpa Topik', code: null, subjectCode: 'MT', levelId: null, attempts: 2, accuracy: 0, focusCount: 0 },
+        { spId: '100', label: 'Topik Lemah', code: '5.1', subjectCode: 'BM', levelId: 'lv-t4', attempts: 4, accuracy: 25, focusCount: 0 },
       ])
       expect(r.stats.answered).toBe(3 + 1 + 2 + 5 + 30 + 2 + 3 + 1)
       PerformanceStudentSchema.parse(r)
@@ -186,7 +186,7 @@ describe('Prestasi 360 (student)', () => {
         w.answers.add({ userId: '1', subjectId: '1', questionId: `h${String(i)}`, topicId: '105', chapterId: '50', mode: 'latih_tubi', isCorrect: i < 1499, answeredAt: at2, sessionId: 'sC' })
       const r = await w.student.student(ctxOf('student', '1'), '1')
       const near = r.weakTopics.find((t) => t.spId === '105')
-      expect(near).toMatchObject({ attempts: 2500, accuracy: 60, focusCount: 25 })
+      expect(near).toMatchObject({ attempts: 2500, accuracy: 60, focusCount: 0 })
     })
   })
 
@@ -216,10 +216,10 @@ describe('Prestasi 360 (student)', () => {
     expect(r.heatmap.find((h) => h.date === '2026-09-25')?.sessions).toBe(0)
   })
 
-  it('a pupil with no answers gets zero accuracy (the screen shows a dash), zeros, 12 empty weeks and the start suggestion (neutral values, not invented)', async () => {
+  it('a pupil with no answers gets null accuracy, zeros, 12 empty weeks and the start suggestion (neutral values, not invented)', async () => {
     const r = await w.student.student(ctxOf('admin', '99', { level: 'national', label: 'Nasional' }), '2')
-    expect(r.stats).toEqual({ sessions: 0, accuracy: 0, answered: 0, seconds: 0 })
-    expect(r.heroAccuracy).toBe(0)
+    expect(r.stats).toEqual({ sessions: 0, accuracy: null, answered: 0, seconds: 0 })
+    expect(r.heroAccuracy).toBeNull()
     expect(r.suggestions).toEqual([{ kind: 'start', text: 'Mulakan perjalanan belajar kamu — setiap sesi latihan membina asas yang kukuh!' }])
     expect(r.mastery).toEqual([])
     expect(r.weakTopics).toEqual([])

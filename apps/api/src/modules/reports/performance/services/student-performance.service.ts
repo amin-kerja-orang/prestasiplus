@@ -6,7 +6,6 @@ import { mayOpenStudent, viewerSchoolId } from '../domain/access-policy'
 import {
   COUNTED_MODES,
   DEFAULT_SUBJECT_COLOR,
-  FOCUS_COUNT_CAP,
   HEATMAP_DAYS,
   SESSION_MODES,
   STUDENT_TREND_WEEKS,
@@ -60,7 +59,7 @@ export class StudentPerformanceService {
     ])
 
     const answered = sum(rows, (r) => r.attempts)
-    const accuracy = answered === 0 ? 0 : accuracyPct(sum(rows, (r) => r.correct), answered)
+    const accuracy = answered === 0 ? null : accuracyPct(sum(rows, (r) => r.correct), answered)
     const sessions = sessionCounts.find((r) => r.subjectId === null)?.sessions ?? 0
     const subjectSessions = new Map(sessionCounts.flatMap((r) => (r.subjectId === null ? [] : [[r.subjectId, r.sessions] as const])))
 
@@ -124,7 +123,7 @@ export class StudentPerformanceService {
 
     return {
       user: { id: pupil.id, name: pupil.name, initial: (pupil.name.trim()[0] ?? '?').toUpperCase() },
-      heroAccuracy: Math.round(accuracy),
+      heroAccuracy: accuracy === null ? null : Math.round(accuracy),
       streak: profile?.streak.current ?? 0,
       stats: { sessions, accuracy, answered, seconds: figuresOf(sittings).seconds + sum(practiceDays, (p) => p.seconds) },
       headcount,
@@ -147,19 +146,17 @@ export class StudentPerformanceService {
   /**
    * Weak topics (FR-MUR-4-8): all time and all modes, at least 2 attempts and an accuracy below 60. The topic of an
    * answer is its own `topic_id` (the DSKP SP), else its `chapter_id`; a row with neither is skipped.
-   * `focusCount` = min(distinct questions attempted for the SP, 25): the interim rule, DOC DEFECT 6 (the servable
-   * count of the card needs the question bank, which this reader does not read).
+   * `focusCount` is 0 in part 1 (no servable count until S5-T03; the tile shows without a button).
    */
   private async weakTopics(rows: readonly AnswerFactRow[]): Promise<PerformanceStudent['weakTopics']> {
-    const by = new Map<string, { kind: 'topic' | 'chapter'; id: string; attempts: number; correct: number; questions: Set<string> }>()
+    const by = new Map<string, { kind: 'topic' | 'chapter'; id: string; attempts: number; correct: number }>()
     for (const r of rows) {
       const kind = r.topicId !== null ? 'topic' : 'chapter'
       const id = r.topicId ?? r.chapterId
       if (id === null) continue
-      const t = by.get(`${kind}:${id}`) ?? { kind, id, attempts: 0, correct: 0, questions: new Set<string>() }
+      const t = by.get(`${kind}:${id}`) ?? { kind, id, attempts: 0, correct: 0 }
       t.attempts += r.attempts
       t.correct += r.correct
-      if (r.questionId !== '0') t.questions.add(r.questionId)
       by.set(`${kind}:${id}`, t)
     }
     const weak = [...by.values()]
@@ -185,7 +182,8 @@ export class StudentPerformanceService {
             levelId: i.levelId,
             attempts: t.attempts,
             accuracy: t.accuracy,
-            focusCount: Math.min(t.questions.size, FOCUS_COUNT_CAP),
+            // Part 1: no servable count yet (S5-T03 exposes it), so the tile shows without a button.
+            focusCount: 0,
           },
         ]
       })
