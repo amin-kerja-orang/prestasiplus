@@ -36,7 +36,7 @@ import {
 import { formatNumber } from '@/lib/number'
 
 import { fetchStructuredQuestions } from '../api/structured'
-import { fetchGuruStructuredQuestions, namedText } from '../api/structured-guru'
+import { fetchGuruStructuredQuestions } from '../api/structured-guru'
 import StructuredGuruList, { type GuruTableRow } from '../components/StructuredGuruList.vue'
 import {
   AUDIT_ROUTES,
@@ -221,8 +221,8 @@ const guruRows = computed<GuruTableRow[]>(() =>
     id: r.id,
     number: r.number,
     textExcerpt: r.textExcerpt,
-    levelName: namedText(r.level),
-    subjectName: namedText(r.subject),
+    levelName: r.level?.name ?? '',
+    subjectName: r.subject?.name ?? '',
     kbat: r.kbat,
     subCount: r.subCount,
     marks: `${String(r.marks)}m`,

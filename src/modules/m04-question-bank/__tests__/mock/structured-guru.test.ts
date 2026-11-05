@@ -4,6 +4,7 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { z } from 'zod'
 
 import type { MockRuntime } from '@/mock/index'
 
@@ -21,6 +22,47 @@ interface Page {
     to: number | null
   }
 }
+
+/**
+ * Mirror of packages/contract/src/questions/schema.ts (GuruStructuredRow, GuruStructuredSub,
+ * GuruStructuredDetail, API-GUR-26). Keep in step with the contract.
+ */
+const Ref = z.object({ id: z.number().int(), name: z.string() }).nullable()
+const Status = z.enum(['approved', 'review'])
+const RowSchema = z.strictObject({
+  id: z.number().int(),
+  number: z.number().int().min(1),
+  textExcerpt: z.string(),
+  level: Ref,
+  subject: Ref,
+  kbat: z.string(),
+  subCount: z.number().int().min(0),
+  marks: z.number().int().min(0),
+  status: Status,
+})
+const SubSchema = z.strictObject({
+  partLabel: z.string(),
+  questionText: z.string(),
+  marks: z.number().int().min(0),
+  cognitiveLevel: z
+    .enum(['mengingat', 'memahami', 'mengaplikasi', 'menganalisis', 'menilai', 'mencipta'])
+    .nullable(),
+  modelAnswer: z.string(),
+  depth: z.number().int().min(0),
+})
+const DetailSchema = z.strictObject({
+  id: z.number().int(),
+  subject: Ref,
+  level: Ref,
+  kbat: z.string(),
+  status: Status,
+  stimulus: z.string(),
+  stimulusImage: z.string().nullable(),
+  totalMarks: z.number().int().min(0),
+  subCount: z.number().int().min(0),
+  subQuestions: z.array(SubSchema),
+  createdAt: z.iso.datetime({ offset: true }).regex(/\+08:00$/),
+})
 
 let runtime: MockRuntime
 let call: Call
@@ -65,6 +107,20 @@ describe('GET /api/guru/structured-questions', () => {
       ADMIN,
     )
     expect(f.body.meta.totalItems).toBe(structured.visible({ subjectId, pageSize: 1 }).total)
+  })
+})
+
+describe('contract shape (mirrored zod schemas)', () => {
+  it('a list page and a detail parse strictly', async () => {
+    const list = await call<Page>('GET', '/api/guru/structured-questions', GURU)
+    for (const row of list.body.data) expect(() => RowSchema.parse(row)).not.toThrow()
+    const id = list.body.data[0]!.id
+    const d = await call<{ data: unknown }>(
+      'GET',
+      `/api/guru/structured-questions/${String(id)}`,
+      GURU,
+    )
+    expect(() => DetailSchema.parse(d.body.data)).not.toThrow()
   })
 })
 

@@ -45,8 +45,8 @@ function row(n: number): GuruStructuredRow {
     id: 4000 + n,
     number: n,
     textExcerpt: `Petikan ${String(n)}...`,
-    level: 'Tingkatan 5',
-    subject: 'Perniagaan',
+    level: { id: 11, name: 'Tingkatan 5' },
+    subject: { id: 9, name: 'Perniagaan' },
     kbat: 'MOTS 3',
     subCount: 1,
     marks: 8,
@@ -70,16 +70,32 @@ function result(rows: GuruStructuredRow[], total: number, page = 1) {
 
 const detail: GuruStructuredDetail = {
   id: 4001,
-  subject: 'Perniagaan',
-  level: 'Tingkatan 5',
+  subject: { id: 9, name: 'Perniagaan' },
+  level: { id: 11, name: 'Tingkatan 5' },
   kbat: 'MOTS 3',
   status: 'approved',
   totalMarks: 10,
+  subCount: 2,
+  createdAt: '2026-04-08T09:00:00+08:00',
   stimulus: 'Rangsangan sekali sahaja',
   stimulusImage: null,
   subQuestions: [
-    { id: 1, partLabel: 'a', questionText: 'Soalan A', marks: 2, modelAnswer: 'Jawapan A' },
-    { id: 2, partLabel: 'b', questionText: 'Soalan B', marks: 8, modelAnswer: 'Jawapan B' },
+    {
+      partLabel: 'a',
+      questionText: 'Soalan A',
+      marks: 2,
+      cognitiveLevel: null,
+      modelAnswer: 'Jawapan A',
+      depth: 0,
+    },
+    {
+      partLabel: 'b',
+      questionText: 'Soalan B',
+      marks: 8,
+      cognitiveLevel: null,
+      modelAnswer: 'Jawapan B',
+      depth: 0,
+    },
   ],
 }
 

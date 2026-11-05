@@ -71,6 +71,12 @@ export function toDetail(
   }
 }
 
+/** The KBAT chip text of a cognitive level: LOTS 1-2, MOTS 3, HOTS 4-6; empty without a level. */
+function kbatChip(level: number): string {
+  if (level < 1 || level > 6) return ''
+  return level <= 2 ? `LOTS ${String(level)}` : level === 3 ? `MOTS 3` : `HOTS ${String(level)}`
+}
+
 function toGuruRow(
   q: StructuredQuestion,
   number: number,
@@ -80,9 +86,9 @@ function toGuruRow(
     id: q.id,
     number,
     textExcerpt: excerpt(q.stimulus, STRUCTURED_EXCERPT_LENGTH),
-    level: names.level(q.educationLevelId)?.name ?? null,
-    subject: names.subject(q.subjectId)?.name ?? null,
-    kbat: `MOTS ${String(q.kbatLevel)}`,
+    level: names.level(q.educationLevelId),
+    subject: names.subject(q.subjectId),
+    kbat: kbatChip(q.kbatLevel),
     subCount: q.subQuestions.length,
     marks: q.totalMarks,
     status: 'approved',
@@ -95,21 +101,25 @@ function toGuruDetail(
 ): GuruStructuredDetail {
   return {
     id: q.id,
-    subject: names.subject(q.subjectId)?.name ?? null,
-    level: names.level(q.educationLevelId)?.name ?? null,
-    kbat: `MOTS ${String(q.kbatLevel)}`,
+    subject: names.subject(q.subjectId),
+    level: names.level(q.educationLevelId),
+    kbat: kbatChip(q.kbatLevel),
     status: 'approved',
     totalMarks: q.totalMarks,
+    subCount: q.subQuestions.length,
+    createdAt: q.createdAt,
     stimulus: q.stimulus,
-    stimulusImage: q.stimulusImage,
+    // The real endpoint serves no question picture this round.
+    stimulusImage: null,
     subQuestions: [...q.subQuestions]
       .sort((a, b) => a.order - b.order)
       .map((s) => ({
-        id: s.id,
         partLabel: s.partLabel,
         questionText: s.questionText,
         marks: s.marks,
+        cognitiveLevel: null,
         modelAnswer: s.modelAnswer,
+        depth: 0,
       })),
   }
 }

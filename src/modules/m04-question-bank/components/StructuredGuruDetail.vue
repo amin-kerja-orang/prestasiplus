@@ -18,7 +18,7 @@ import {
 } from '@/ds'
 import type { DsStatus } from '@/ds'
 
-import { namedText, type GuruStructuredDetail } from '../api/structured-guru'
+import type { GuruStructuredDetail } from '../api/structured-guru'
 import { GURU_STATUS_LABEL } from '../lib/structured-options'
 
 const props = defineProps<{ detail: GuruStructuredDetail }>()
@@ -26,7 +26,6 @@ const props = defineProps<{ detail: GuruStructuredDetail }>()
 const STATUS: Record<GuruStructuredDetail['status'], DsStatus> = {
   approved: 'approved',
   review: 'awaiting-review',
-  rejected: 'rejected',
 }
 /** Only an http(s), root-relative or blob URL is rendered as the stimulus figure. */
 const figure = computed(() => {
@@ -42,15 +41,15 @@ const figure = computed(() => {
       <DsCluster justify="between" align="start">
         <DsCluster>
           <DsBadge
-            v-if="namedText(detail.subject)"
+            v-if="detail.subject?.name"
             tone="primary"
-            :label="namedText(detail.subject)"
+            :label="detail.subject?.name"
             data-testid="structured-pill-subject"
           />
           <DsBadge
-            v-if="namedText(detail.level)"
+            v-if="detail.level?.name"
             tone="neutral"
-            :label="namedText(detail.level)"
+            :label="detail.level?.name"
             data-testid="structured-pill-level"
           />
           <DsBadge tone="info" :label="detail.kbat" data-testid="structured-pill-kbat" />
@@ -94,7 +93,7 @@ const figure = computed(() => {
     Sub-Soalan ({{ detail.subQuestions.length }})
   </DsHeading>
 
-  <DsPanel v-for="sub in detail.subQuestions" :key="sub.id" data-testid="structured-sub">
+  <DsPanel v-for="(sub, i) in detail.subQuestions" :key="i" data-testid="structured-sub">
     <DsStack gap="sm">
       <DsCluster justify="between" align="start" :wrap="false">
         <DsText variant="body" tone="highlighted" wrap="anywhere">

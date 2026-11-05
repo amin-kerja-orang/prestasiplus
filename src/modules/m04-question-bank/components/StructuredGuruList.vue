@@ -5,10 +5,11 @@
  * (`StructuredListPage` with `portal="guru"`) owns the data and the URL; this component only draws it.
  */
 import type { TableColumn } from '@nuxt/ui'
-import { computed, h, resolveComponent } from 'vue'
+import { computed, h } from 'vue'
 
 import {
   DsBadge,
+  DsCluster,
   DsDataTable,
   DsFilterBar,
   DsFormField,
@@ -94,14 +95,14 @@ const cardFields: CardField[] = [
 const STATUS: Record<string, DsStatus> = {
   approved: 'approved',
   review: 'awaiting-review',
-  rejected: 'rejected',
 }
 
-/**
- * DsDataTable's own pager cannot print the BM summary and "Sebelumnya" / "Seterusnya" of R1-GUR-44b
- * (DV-GUR-44b-1), and there is no `DsPager`, so the numbered strip is the Nuxt UI pagination.
- */
-const pagination = resolveComponent('UPagination')
+/** A window of up to five page numbers around the current page. */
+const pageNumbers = computed(() => {
+  const first = Math.max(1, Math.min(page.value - 2, props.totalPages - 4))
+  const last = Math.min(props.totalPages, first + 4)
+  return Array.from({ length: last - first + 1 }, (_, i) => first + i)
+})
 
 const showPager = computed(() => props.total > props.pageSize)
 </script>
@@ -196,35 +197,36 @@ const showPager = computed(() => props.total > props.pageSize)
       <DsText variant="label" tone="muted" role="status" data-testid="structured-counter">
         {{ summary }}
       </DsText>
-      <component
-        :is="pagination"
-        v-if="showPager"
-        v-model:page="page"
-        size="lg"
-        :total="total"
-        :items-per-page="pageSize"
-      >
-        <template #prev>
-          <UButton
-            color="neutral"
-            variant="outline"
-            size="xl"
-            label="Sebelumnya"
-            aria-label="Sebelumnya"
-            :disabled="page <= 1"
-          />
-        </template>
-        <template #next>
-          <UButton
-            color="neutral"
-            variant="outline"
-            size="xl"
-            label="Seterusnya"
-            aria-label="Seterusnya"
-            :disabled="page >= totalPages"
-          />
-        </template>
-      </component>
+      <!-- DsDataTable's pager prints "Menunjukkan a-b daripada n hasil"; R1-GUR-44b needs the "keputusan" wording (DV-GUR-44b-1), so the strip is drawn here. -->
+      <DsCluster v-if="showPager" as="nav" aria-label="Halaman" gap="xs" justify="center">
+        <UButton
+          color="neutral"
+          variant="outline"
+          size="xl"
+          label="Sebelumnya"
+          :disabled="page <= 1"
+          @click="page -= 1"
+        />
+        <UButton
+          v-for="n in pageNumbers"
+          :key="n"
+          :color="n === page ? 'primary' : 'neutral'"
+          :variant="n === page ? 'solid' : 'outline'"
+          size="xl"
+          :label="String(n)"
+          :aria-label="`Halaman ${n}`"
+          :aria-current="n === page ? 'page' : undefined"
+          @click="page = n"
+        />
+        <UButton
+          color="neutral"
+          variant="outline"
+          size="xl"
+          label="Seterusnya"
+          :disabled="page >= totalPages"
+          @click="page += 1"
+        />
+      </DsCluster>
     </DsStack>
   </DsStack>
 </template>

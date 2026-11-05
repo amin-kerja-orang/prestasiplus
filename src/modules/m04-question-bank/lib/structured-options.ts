@@ -35,10 +35,9 @@ export function partLabelText(questionNumber: number | null, partLabel: string):
 }
 
 /** Teacher status words (FR-GUR-44-10): the status chip and the Status filter. */
-export const GURU_STATUS_LABEL: Record<'approved' | 'review' | 'rejected', string> = {
+export const GURU_STATUS_LABEL: Record<'approved' | 'review', string> = {
   approved: 'Diluluskan',
   review: 'Menunggu Semakan',
-  rejected: 'Ditolak',
 }
 
 export const GURU_STATUS_FILTER_OPTIONS = [

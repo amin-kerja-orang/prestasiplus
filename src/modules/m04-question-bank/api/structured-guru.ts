@@ -1,52 +1,62 @@
 /**
  * Teacher read mount of the structured questions (API-GUR-26, S6-T17): `GET /api/guru/structured-questions`
  * and `/:id`. Approved questions only in this round (`status=review` is wired and returns an empty page).
- * The row and detail shapes are FE-local until the contract schemas land with the read-be part; they
+ * The types mirror the contract schemas `GuruStructuredRow`, `GuruStructuredDetail` and `GuruStructuredSub`; they
  * carry no admin-only field (source, compliance, visibility, createdBy, isActive, needsDiagram).
  */
 
 import { api, type ListResult } from '@/api'
 
-export type GuruStructuredStatus = 'approved' | 'review' | 'rejected'
+export type GuruStructuredStatus = 'approved' | 'review'
 
-/** A name that the wire may send as text or as `{ id, name }`. */
-export type GuruNamed = string | { id?: number; name: string } | null
+export interface GuruNamedRef {
+  id: number
+  name: string
+}
 
+export type GuruCognitiveLevel =
+  'mengingat' | 'memahami' | 'mengaplikasi' | 'menganalisis' | 'menilai' | 'mencipta'
+
+/** `GuruStructuredRow` of the contract (packages/contract/src/questions/schema.ts). */
 export interface GuruStructuredRow {
   id: number
   /** Position in the full ordered list (1-based). */
   number: number
   textExcerpt: string
-  level: GuruNamed
-  subject: GuruNamed
-  /** The KBAT chip text, e.g. "MOTS 3". */
+  level: GuruNamedRef | null
+  subject: GuruNamedRef | null
+  /** "LOTS 1", "LOTS 2", "MOTS 3", "HOTS 4" to "HOTS 6"; empty when there is no chip. */
   kbat: string
   subCount: number
   marks: number
   status: GuruStructuredStatus
 }
 
+/** `GuruStructuredSub`: no id (key by index); `marks` is 0 for a branch part. */
 export interface GuruStructuredSubQuestion {
-  id: number
   partLabel: string
   questionText: string
   marks: number
-  cognitiveLevel?: string | null
+  cognitiveLevel: GuruCognitiveLevel | null
   /** "Skema Jawapan". */
   modelAnswer: string
+  depth: number
 }
 
+/** `GuruStructuredDetail`. */
 export interface GuruStructuredDetail {
   id: number
-  subject: GuruNamed
-  level: GuruNamed
+  subject: GuruNamedRef | null
+  level: GuruNamedRef | null
   kbat: string
   status: GuruStructuredStatus
-  totalMarks: number
   /** The stimulus text, shown once above all the sub-questions. */
   stimulus: string
-  stimulusImage?: string | null
+  stimulusImage: string | null
+  totalMarks: number
+  subCount: number
   subQuestions: GuruStructuredSubQuestion[]
+  createdAt: string
 }
 
 export interface GuruStructuredListQuery {
@@ -58,12 +68,6 @@ export interface GuruStructuredListQuery {
 }
 
 export const GURU_STRUCTURED_API = '/api/guru/structured-questions'
-
-/** The display text of a name field. */
-export function namedText(value: GuruNamed | undefined): string {
-  if (value == null) return ''
-  return typeof value === 'string' ? value : value.name
-}
 
 /** API-GUR-26 list: 20 per page, newest first. */
 export function fetchGuruStructuredQuestions(
