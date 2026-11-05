@@ -1,7 +1,7 @@
 -- S3 range, requested by S1-T10 (DM-45, D-A2): an accepted intake batch becomes a draft paper. `papers.source_batch_id` points at
 -- the batch the paper was imported from (null for every other paper); deleting the batch keeps the paper (ON DELETE SET NULL).
 -- `papers.paper_code` already exists (not added here). The partial unique index makes "one draft paper per batch and paper code"
--- a database rule, so a second accept updates the draft instead of creating another. No backfill (0161 backfills `surface`).
+-- a database rule, so a second accept updates the draft instead of creating another. No backfill.
 -- The FK is added NOT VALID then VALIDATEd (short lock); the column is nullable so there is no table rewrite.
 -- Reversible: the down step (below, as a comment) drops the index, the constraint and the column.
 

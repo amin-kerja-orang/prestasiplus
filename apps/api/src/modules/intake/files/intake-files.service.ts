@@ -191,9 +191,13 @@ export class IntakeFilesService {
       include: { owner: { select: { id: true, name: true } }, files: { orderBy: { id: 'asc' } } },
     })
     if (!row) throw ApiError.of('NOT_FOUND')
-    const progress = await this.progressOf(row.files.map((f) => f.id))
+    const [progress, counts, targets] = await Promise.all([
+      this.progressOf(row.files.map((f) => f.id)),
+      this.itemCountsOf([row.id]),
+      this.targetPaperIdsOf([row.id]),
+    ])
     return {
-      ...toBatchSummary(row as BatchRow, (await this.itemCountsOf([row.id])).get(row.id), (await this.targetPaperIdsOf([row.id])).get(row.id) ?? null),
+      ...toBatchSummary(row as BatchRow, counts.get(row.id), targets.get(row.id) ?? null),
       files: row.files.map((f) => toFileSummary(f, progress.get(f.id) ?? { total: f.pageCount ?? 0, done: 0, failed: 0 })),
     }
   }
@@ -219,7 +223,7 @@ export class IntakeFilesService {
    * DM-45: per batch, the paper made from it (`papers.source_batch_id`), in one statement for all the given batches. When a batch has
    * several papers (different paper codes) the lowest id wins. A batch without a paper is absent (the caller falls back to null).
    */
-  async targetPaperIdsOf(batchIds: bigint[]): Promise<Map<bigint, bigint>> {
+  private async targetPaperIdsOf(batchIds: bigint[]): Promise<Map<bigint, bigint>> {
     const out = new Map<bigint, bigint>()
     if (batchIds.length === 0) return out
     const rows = await this.prisma.client.paper.findMany({
