@@ -93,7 +93,7 @@ async function onSubmit(): Promise<void> {
 </script>
 
 <template>
-  <DsPage class="max-w-2xl" data-testid="mohon-page">
+  <DsPage layout="form" data-testid="mohon-page">
     <MohonHero />
 
     <div v-show="hasNotice" ref="noticeEl" class="flex flex-col gap-2" data-testid="mohon-notice">
@@ -133,7 +133,7 @@ async function onSubmit(): Promise<void> {
           name="student_email"
           type="email"
           required
-          size="xl"
+          size="lg"
           class="w-full"
           :placeholder="MOHON_COPY.emailPlaceholder"
           :ui="{ base: errorClass('studentEmail') }"

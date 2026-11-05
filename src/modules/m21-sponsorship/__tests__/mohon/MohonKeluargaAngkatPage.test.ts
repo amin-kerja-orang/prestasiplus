@@ -136,6 +136,18 @@ describe('S6 static copy (FR-M21-46, 48)', () => {
     expect(income().element.validity.valid).toBe(true)
   })
 
+  it('takes the column width from the DsPage form layout and touch sized selects', async () => {
+    await mountPage()
+    const root = wrapper!.get('[data-testid="mohon-page"]')
+    expect(root.attributes('data-layout')).toBe('form')
+    expect(root.classes()).toContain('max-w-3xl')
+    expect(root.classes()).not.toContain('max-w-2xl')
+    // The theme gives the 44 px field height to `md` and `lg` only (ui.config.ts, FR-X6-3).
+    for (const select of wrapper!.findAllComponents(DsNativeSelect)) {
+      expect(select.props('size')).toBe('lg')
+    }
+  })
+
   it('shows the info box copy', async () => {
     await mountPage()
     const box = wrapper!.get('[data-testid="mohon-info"]')
