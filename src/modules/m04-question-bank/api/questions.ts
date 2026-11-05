@@ -13,7 +13,9 @@
 
 import { api, isHttpMode, uploadQuestionImage, type ListResult } from '@/api'
 
-import type { RegroupWorkRow } from '../lib/question-list'
+import type { RegroupRequest } from '@pp/contract'
+
+import type { RegroupCounts, RegroupWorkRow } from '../lib/question-list'
 
 export type QuestionStatus =
   | 'draft'
@@ -439,22 +441,48 @@ export function fetchQuestionSummary(
   )
 }
 
-/**
- * API-Q-13 `GET /api/admin/questions/regroup-worklist` (S1-T07 part 2). Blank filters are not sent. `done` is the additive count of
- * answer 3 on #431.
- */
+export interface RegroupWorklistPage {
+  data: RegroupWorkRow[]
+  meta: { totalItems: number; totalPages: number; pageSize: number; page: number; counts: RegroupCounts }
+}
+
+/** API-Q-13 `GET /api/admin/questions/regroup-worklist` (S1-T07 part 2). Blank filters are not sent. */
 export function fetchRegroupWorklist(
   query: { subjectId?: string; educationLevelId?: string; flag?: string; page?: number },
   options: { signal?: AbortSignal } = {},
-): Promise<{ data: RegroupWorkRow[]; meta: { totalItems: number; pageSize: number; page: number; done?: number } }> {
-  return api.get<{ data: RegroupWorkRow[]; meta: { totalItems: number; pageSize: number; page: number; done?: number } }>(
-    '/api/admin/questions/regroup-worklist',
-    {
-      query: { subjectId: query.subjectId || null, educationLevelId: query.educationLevelId || null, flag: query.flag || null, page: query.page ?? 1 },
-      raw: true,
-      ...(options.signal ? { signal: options.signal } : {}),
-    },
-  )
+): Promise<RegroupWorklistPage> {
+  return api.get<RegroupWorklistPage>('/api/admin/questions/regroup-worklist', {
+    query: { subjectId: query.subjectId || null, educationLevelId: query.educationLevelId || null, flag: query.flag || null, page: query.page ?? 1 },
+    raw: true,
+    ...(options.signal ? { signal: options.signal } : {}),
+  })
+}
+
+/** `GET /api/stimuli` (paged, Admin Pusat): the picker of `Lampirkan rangsangan`; only rows in no group can be attached again. */
+export interface StimulusPick {
+  id: string
+  kind: string
+  label: string
+  excerpt: string | null
+  groupCount: number
+}
+export function listStimuliToAttach(options: { signal?: AbortSignal } = {}): Promise<{ data: StimulusPick[] }> {
+  return api.get<{ data: StimulusPick[] }>('/api/stimuli', { query: { pageSize: 100 }, raw: true, ...(options.signal ? { signal: options.signal } : {}) })
+}
+
+/** API-Q-12 `POST /api/admin/questions/{id}/flags/dismiss` ("Bukan masalah"); 409 when `flag` is not the stored flag. */
+export function dismissQuestionFlag(id: string, flag: string): Promise<{ data: { id: string; flags: string[] } }> {
+  return api.post<{ data: { id: string; flags: string[] } }>(`/api/admin/questions/${id}/flags/dismiss`, { body: { flag }, raw: true })
+}
+
+/** API-Q-24 `POST /api/admin/questions/regroup`: exactly one of `figureQuestionId` / `stimulusId` (see RegroupRequest). */
+export function regroupQuestions(body: RegroupRequest): Promise<{ data: { id: string }; meta: { auditId: string } }> {
+  return api.post<{ data: { id: string }; meta: { auditId: string } }>('/api/admin/questions/regroup', { body, raw: true })
+}
+
+/** API-Q-36 `POST /api/admin/questions/regroup/{auditId}/undo` ("Buat asal"); 409 after a later edit. */
+export function undoRegroup(auditId: string): Promise<{ data: { restored: number } }> {
+  return api.post<{ data: { restored: number } }>(`/api/admin/questions/regroup/${auditId}/undo`, { raw: true })
 }
 
 /** #3 `POST /api/questions` (201; 422 with `fields`). Multipart in mock mode, JSON in http mode. */

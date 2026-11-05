@@ -264,7 +264,7 @@ export function failedLines(
 /** [PROPOSED] UX-80: shown after "Jana Penjelasan AI" on an approved or archived question; the AI text went to a new draft version. */
 export const AI_DRAFT_NOTICE = 'Penjelasan AI disimpan sebagai draf baharu. Semak dan terbitkan draf itu.'
 
-/* ---- the regroup work-list (R1-ADM-QE-08, PRD45 6.6; API-Q-13). The row fields beyond PRD60 lines 710-712 are the additive shape of answer 3 on #431, built by S1-T07 part 2, so they are optional. ---- */
+/* ---- the regroup work-list (R1-ADM-QE-08, PRD45 6.6; API-Q-13 `RegroupWorklistRow` / `RegroupWorklistMeta` of packages/contract/src/questions/regroup.ts). ---- */
 
 export const REGROUP_TAB = 'regroup'
 
@@ -273,9 +273,16 @@ export const REGROUP_COPY = {
   subject: 'Subjek',
   level: 'Tingkatan',
   flag: 'Sebab',
+  /** PRD45 6.6.2 and PRD30 QE-08: the dismiss confirm. */
+  dismissConfirm: 'Tandakan sebagai bukan masalah?',
+  dismissYes: 'Ya, Tandakan',
+  cancel: 'Batal',
+  notConsecutive: 'Pilih baris yang berturutan sahaja.',
+  /** PRD45 6.6.3 (R1 copy, D113); the same text the API answers with. */
+  undoConflict: 'Kumpulan telah diubah selepas kumpul semula; tidak boleh dibuat asal.',
 } as const
 
-export const REGROUP_FLAGS = ['stimulus_missing', 'figure_only'] as const
+export const REGROUP_FLAGS = ['stimulus_missing', 'figure_only', 'stem_duplicated'] as const
 export type RegroupFlag = (typeof REGROUP_FLAGS)[number]
 
 export interface RegroupWorkRow {
@@ -284,24 +291,53 @@ export interface RegroupWorkRow {
   stemExcerpt: string
   subject: string
   level: string
-  flag: string
-  paper: { title: string; year: number | null } | null
-  /** Answer 3 on #431: "Rajah 14", or null for "tanpa nombor". */
-  reference?: string | null
-  refKind?: 'numbered' | 'unnumbered' | null
+  flag: RegroupFlag
+  /** `Rujukan`: numbered ("bernombor") or unnumbered ("tanpa nombor"); null when the detector stored none. */
+  reference: 'numbered' | 'unnumbered' | null
+  paper: { id: string; paperCode: string | null; year: number | null; examType: string | null } | null
 }
 
-/** "{n} perlu tindakan · {m} selesai" (PRD45 6.6.2); `done` is the additive count of answer 3 on #431. */
+export interface RegroupCounts {
+  /** Keyed by subject id / education level id. */
+  bySubject: Record<string, number>
+  byLevel: Record<string, number>
+  byFlag: { stimulus_missing: number; figure_only: number; stem_duplicated: number }
+  open: number
+  done: number
+}
+
+/** "{n} perlu tindakan · {m} selesai" (PRD45 6.6.2). */
 export const regroupHeader = (open: number, done: number): string => `${String(open)} perlu tindakan · ${String(done)} selesai`
 
-/** `Rujukan` (PRD45 6.6.2): the figure it names, "tanpa nombor", or a dash until the API sends it. */
-export function regroupReference(row: Pick<RegroupWorkRow, 'reference' | 'refKind'>): string {
-  if (row.refKind === 'unnumbered') return 'tanpa nombor'
-  return row.reference ?? '—'
+/** `Rujukan` (PRD45 6.6.2): `bernombor` or "tanpa nombor", a dash when none is stored. */
+export function regroupReference(row: Pick<RegroupWorkRow, 'reference'>): string {
+  if (row.reference === 'unnumbered') return 'tanpa nombor'
+  return row.reference === 'numbered' ? 'bernombor' : '—'
 }
 
-/** `Kertas sumber` and number. */
+/** `Kertas sumber` and number: paper code, exam type and year, then "No. n". */
 export function regroupSource(row: Pick<RegroupWorkRow, 'paper' | 'numberLabel'>): string {
-  const paper = row.paper === null ? '—' : row.paper.year === null ? row.paper.title : `${row.paper.title} (${String(row.paper.year)})`
+  const p = row.paper
+  const paper =
+    p === null
+      ? '—'
+      : [p.paperCode, p.examType, p.year === null ? null : `(${String(p.year)})`].filter((x): x is string => x !== null && x !== '').join(' ') || '—'
   return row.numberLabel === null ? paper : `${paper} · No. ${row.numberLabel}`
+}
+
+/**
+ * "Pilih baris yang berturutan sahaja." (PRD45 6.6.2): the selected rows share one source paper and their numbers are whole numbers
+ * with no gap. Fewer than one row, a row with no paper or a non-numeric number is not a run.
+ */
+export function isConsecutiveRun(rows: readonly Pick<RegroupWorkRow, 'paper' | 'numberLabel'>[]): boolean {
+  if (rows.length === 0) return false
+  const paperId = rows[0]?.paper?.id
+  if (paperId === undefined) return false
+  const numbers: number[] = []
+  for (const r of rows) {
+    if (r.paper?.id !== paperId || r.numberLabel === null || !/^\d+$/.test(r.numberLabel)) return false
+    numbers.push(Number.parseInt(r.numberLabel, 10))
+  }
+  numbers.sort((x, y) => x - y)
+  return numbers.every((n, i) => i === 0 || n === (numbers[i - 1] ?? 0) + 1)
 }
