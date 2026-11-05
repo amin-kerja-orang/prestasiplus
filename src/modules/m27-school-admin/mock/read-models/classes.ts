@@ -1,8 +1,8 @@
 /**
  * Q-M27-CLASSES (SRS §18.3; BR-M27-35; FR-M27-111 to 116), screen S8.
  *
- * Rows are the M10 `classroom` classes of the school (`school_class` rows carry no school today, DV-M27-20),
- * active or not; "Kelas Aktif" is the active count of the same call S0 uses (BR-M27-37).
+ * Rows are the ACTIVE M10 classes of the school, both kinds (FR-AS-53-1: rows = the "Kelas Aktif" tile, which is the active
+ * count of the same call S0 uses, BR-M27-37). Mock `school_class` rows carry no school today (DV-M27-20), so none appear.
  */
 
 import { curriculum } from '@/modules/m03-curriculum/mock'
@@ -29,14 +29,14 @@ const byName = (a: ClassroomRow, b: ClassroomRow): number =>
 function rowOf(c: ClassroomRow): SchoolClassRow {
   const subject = c.subjectId === null ? undefined : curriculum.subject(c.subjectId)
   return {
-    key: `classroom:${String(c.classId)}`,
-    kind: 'classroom',
+    key: `${c.kind}:${String(c.classId)}`,
+    kind: c.kind,
     id: c.classId,
     name: c.name,
     subject: subject ? { id: subject.id, name: subject.name } : null,
     levelLabel: levelLabelOf(c.educationLevel),
     teacherName: c.teacherId === null ? null : (users.get(c.teacherId)?.name ?? null),
-    members: classrooms.memberCount('classroom', c.classId),
+    members: classrooms.memberCount(c.kind, c.classId),
     joinCode: c.joinCode === '' ? null : c.joinCode,
     isActive: c.isActive,
     link: `/prestasi/kelas/${String(c.classId)}`,
@@ -47,7 +47,7 @@ export function listSchoolClasses(
   viewer: SchoolViewer,
   query: { level?: string | undefined; search?: string | undefined; page?: string | undefined },
 ): SchoolClassList {
-  const all = classrooms.list({ schoolId: viewer.schoolId, kind: 'classroom' })
+  const all = classrooms.list({ schoolId: viewer.schoolId, isActive: true })
 
   // Level options = the levels present, in level order (BR-M27-35).
   const seen = new Map<string, number>()
@@ -68,13 +68,7 @@ export function listSchoolClasses(
   return {
     data: slice.rows.map(rowOf),
     meta: { ...slice.meta, displayed: matching.length },
-    tiles: {
-      activeClasses: classrooms.list({
-        isActive: true,
-        schoolId: viewer.schoolId,
-        kind: 'classroom',
-      }).length,
-    },
+    tiles: { activeClasses: all.length },
     levels,
   }
 }

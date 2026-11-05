@@ -476,9 +476,9 @@ export const fetchSchoolPupilFormOptions = (o: { signal?: AbortSignal } = {}) =>
 // --- #16 S8 classes ----------------------------------------------------------------------------
 
 export interface SchoolClassRow {
-  /** `classroom:{id}`. */
+  /** `{kind}:{id}`. */
   key: string
-  kind: 'classroom'
+  kind: 'classroom' | 'school_class'
   id: number
   name: string
   subject: { id: number; name: string } | null

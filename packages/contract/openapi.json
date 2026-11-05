@@ -30187,13 +30187,14 @@
         "properties": {
           "key": {
             "type": "string",
-            "pattern": "^classroom:.+$",
-            "description": "classroom:{id}."
+            "pattern": "^(classroom|school_class):.+$",
+            "description": "{kind}:{id}."
           },
           "kind": {
             "type": "string",
             "enum": [
-              "classroom"
+              "classroom",
+              "school_class"
             ]
           },
           "id": {

@@ -245,13 +245,16 @@ describe('GET /admin-sekolah/dashboard agrees with the pages it links to (S6-T13
     expect(JSON.stringify(d)).not.toContain('Guru Tunggu')
   })
 
-  it('cards.activeClasses equals the /admin-sekolah/kelas tile (classroom-kind classes; inactive and other schools not counted)', async () => {
+  it('cards.activeClasses equals the /admin-sekolah/kelas tile = the number of list rows (both kinds; inactive and other schools not counted)', async () => {
     const level = await addLevel(t.db, 'T4', 'Tingkatan 4', 10)
     for (let i = 1; i <= 3; i++) await addClassroom(t.db, { schoolId: s1, name: `Kelas Sepadan ${i}`, levelId: level })
     await addClassroom(t.db, { schoolId: s1, name: 'Kelas Tidak Aktif', levelId: level, active: false })
+    await addClassroom(t.db, { schoolId: s1, name: 'Kelas Sekolah Sepadan', levelId: level, kind: 'school_class' })
     await addClassroom(t.db, { schoolId: s2, name: 'Kelas Sekolah Lain', levelId: level })
-    const tile = SchoolAdminClassListResponseSchema.parse((await admin.get('/admin-sekolah/kelas')).body).tiles.activeClasses
-    expect(tile).toBe(3)
+    const list = SchoolAdminClassListResponseSchema.parse((await admin.get('/admin-sekolah/kelas')).body)
+    const tile = list.tiles.activeClasses
+    expect(tile).toBe(4)
+    expect(list.data).toHaveLength(tile)
     expect((await dashboard()).cards.activeClasses).toBe(tile)
   })
 })

@@ -371,8 +371,8 @@ export type SchoolAdminClassListQuery = z.infer<typeof SchoolAdminClassListQuery
 
 export const SchoolAdminClassRowSchema = z
   .object({
-    key: z.string().regex(/^classroom:.+$/).meta({ description: 'classroom:{id}.' }),
-    kind: z.literal('classroom'),
+    key: z.string().regex(/^(classroom|school_class):.+$/).meta({ description: '{kind}:{id}.' }),
+    kind: z.enum(['classroom', 'school_class']),
     id: IdSchema,
     name: z.string(),
     subject: z.object({ id: IdSchema, name: z.string() }).nullable(),

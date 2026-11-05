@@ -36,7 +36,7 @@ describe('GET /admin-sekolah/kelas', () => {
     await t.close()
   })
 
-  it('lists classroom-kind classes of the own school, A to Z, 25 per page, parsed with the contract and no-store', async () => {
+  it('lists the active classes (both kinds) of the own school, A to Z, 25 per page, parsed with the contract and no-store', async () => {
     const res = await admin.get('/admin-sekolah/kelas')
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     expect(res.headers['cache-control']).toBe('no-store')
@@ -45,13 +45,23 @@ describe('GET /admin-sekolah/kelas', () => {
     const names = r.data.map((c) => c.name)
     expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, 'ms', { sensitivity: 'base' })))
     expect(r.meta).toMatchObject({ page: 1, pageSize: 25, totalItems: 34, totalPages: 2, displayed: 34 })
-    // Active classes of BOTH kinds (33 classrooms + the school_class), as the dashboard card; the list shows classrooms only.
+    // FR-AS-53-1: rows = the tile = active classes of BOTH kinds (33 classrooms + the school_class); the inactive one is hidden.
     expect(r.tiles.activeClasses).toBe(34)
+    expect(r.tiles.activeClasses).toBe(r.meta.displayed)
     expect(r.levels).toEqual([
       { code: 'tahun-1', label: 'Darjah 1' },
       { code: 'tingkatan-4', label: 'Tingkatan 4' },
     ])
-    expect(JSON.stringify(r)).not.toContain('Kelas Sekolah Bukan Bilik')
+    expect(JSON.stringify(r)).not.toContain('Kelas Tidak Aktif')
+  })
+
+  it('a school_class row is listed with its own kind, key and the same page link, and the inactive classroom is absent', async () => {
+    const r = SchoolAdminClassListResponseSchema.parse((await admin.get('/admin-sekolah/kelas?search=bukan%20bilik')).body)
+    expect(r.data).toHaveLength(1)
+    expect(r.data[0]).toMatchObject({ kind: 'school_class', name: 'Kelas Sekolah Bukan Bilik', levelLabel: 'Tingkatan 4', members: 0, isActive: true })
+    expect(r.data[0]?.key).toBe(`school_class:${r.data[0]?.id}`)
+    expect(r.data[0]?.link).toBe(`/prestasi/kelas/${r.data[0]?.id}`)
+    expect((await admin.get('/admin-sekolah/kelas?search=tidak%20aktif')).body.data).toEqual([])
   })
 
   it('a row has the subject, level label, teacher, member count, join code and link', async () => {
@@ -73,11 +83,9 @@ describe('GET /admin-sekolah/kelas', () => {
     ])
   })
 
-  it('a class without a join code has joinCode null; an inactive class is listed', async () => {
+  it('a class without a join code has joinCode null', async () => {
     const bestari = SchoolAdminClassListResponseSchema.parse((await admin.get('/admin-sekolah/kelas?search=bestari')).body)
     expect(bestari.data[0]).toMatchObject({ name: 'Kelas 1 Bestari', joinCode: null, subject: null, teacherName: null, levelLabel: 'Darjah 1' })
-    const off = SchoolAdminClassListResponseSchema.parse((await admin.get('/admin-sekolah/kelas?search=tidak%20aktif')).body)
-    expect(off.data[0]).toMatchObject({ isActive: false })
   })
 
   it('level filter: a known slug narrows, an unknown slug means all levels', async () => {
@@ -110,5 +118,33 @@ describe('GET /admin-sekolah/kelas', () => {
       expect(res.status, who).toBe(403)
       expect(ErrorBodySchema.parse(res.body).error.code).toBe('FORBIDDEN')
     }
+  })
+})
+
+describe('GET /admin-sekolah/kelas: rows equal the Kelas Aktif tile (FR-AS-53-1)', () => {
+  let t: SchoolAdminTestApp
+  let admin: Api
+
+  beforeAll(async () => {
+    t = await bootSchoolAdminApp()
+    const s1 = await schoolIdOf(t.db, 'DEMO001')
+    const t4 = await addLevel(t.db, 'T4', 'Tingkatan 4', 10)
+    await addClassroom(t.db, { schoolId: s1, name: 'Aktif Satu', levelId: t4 })
+    await addClassroom(t.db, { schoolId: s1, name: 'Aktif Dua', levelId: t4 })
+    await addClassroom(t.db, { schoolId: s1, name: 'Tidak Aktif', levelId: t4, active: false })
+    await addClassroom(t.db, { schoolId: s1, name: 'Aktif Sekolah', levelId: t4, kind: 'school_class' })
+    admin = apiOf(await login(t, SCHOOL_ADMIN))
+  })
+  afterAll(async () => {
+    await t.close()
+  })
+
+  it('2 active classrooms + 1 inactive + 1 active school_class: 3 rows, tile 3, the inactive one absent', async () => {
+    const r = SchoolAdminClassListResponseSchema.parse((await admin.get('/admin-sekolah/kelas')).body)
+    expect(r.data.map((c) => c.name)).toEqual(['Aktif Dua', 'Aktif Satu', 'Aktif Sekolah'])
+    expect(r.data.map((c) => c.kind)).toEqual(['classroom', 'classroom', 'school_class'])
+    expect(r.tiles.activeClasses).toBe(3)
+    expect(r.meta).toMatchObject({ totalItems: 3, displayed: 3 })
+    expect(r.data).toHaveLength(r.tiles.activeClasses)
   })
 })
