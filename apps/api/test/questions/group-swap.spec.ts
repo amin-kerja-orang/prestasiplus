@@ -381,7 +381,7 @@ describe('[CI] the swap: publishing a group draft copy (API-Q-31, API-Q-32, API-
       expect((await q(`select group_id from questions where id = $1`, [loose]))[0]!.group_id).toBeNull()
       // a question that is a member of the live group cannot be re-pointed at the copy either
       const move = await admin.put(`/api/questions/${s.ids[0]}`, mcqBody(refs, { stimulusGroupId: copy.id }))
-      expect([409, 422]).toContain(move.status)
+      expect(move.status).toBe(409) // `move` refuses a copy on either side first (409 conflict)
       expect(await staged(copy.id)).toEqual(s.ids)
     })
 
