@@ -7,7 +7,7 @@
  */
 import { computed, nextTick, ref, watch, type ComponentPublicInstance } from 'vue'
 
-import { DsDialog, DsIconChip } from '@/ds'
+import { DsCluster, DsDialog, DsIconChip, DsStack, DsSurface, DsText } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import { s12CanConvert, s12Debit, s12ParseAmount, s12Tokens } from '../../lib/student/s12-convert'
@@ -86,17 +86,15 @@ function onConfirm(): void {
       <h2 class="flex items-center gap-2 font-display text-subheading font-bold text-highlighted">
         <DsIconChip icon="arrows-clockwise" size="sm" />Penukaran
       </h2>
-      <div
-        v-if="balance < rate"
-        class="flex flex-col items-start gap-3 rounded-card bg-elevated p-4"
-        data-testid="s12-short"
-      >
-        <div class="text-body text-default">
-          <p>Anda perlu sekurang-kurangnya {{ formatCount(rate) }} syiling</p>
-          <p>untuk menukar 1 token. Teruskan berlatih untuk mengumpul syiling.</p>
-        </div>
-        <UButton to="/practice" size="lg" data-testid="s12-short-practice">Mula Latih Tubi</UButton>
-      </div>
+      <DsSurface v-if="balance < rate" level="elevated" data-testid="s12-short">
+        <DsStack gap="sm" align="start">
+          <div>
+            <DsText variant="body">Anda perlu sekurang-kurangnya {{ formatCount(rate) }} syiling</DsText>
+            <DsText variant="body">untuk menukar 1 token. Teruskan berlatih untuk mengumpul syiling.</DsText>
+          </div>
+          <UButton to="/practice" size="lg" data-testid="s12-short-practice">Mula Latih Tubi</UButton>
+        </DsStack>
+      </DsSurface>
       <form id="convertForm" class="flex flex-col gap-4" data-testid="s12-form" @submit.prevent="onSubmit">
         <UFormField label="Syiling untuk ditukar" for="syilingInput">
           <UInput
@@ -147,14 +145,14 @@ function onConfirm(): void {
             {{ formatCount(tokens) }}
           </p>
           <p class="text-label text-muted">Token 🎫</p>
-          <div class="flex flex-wrap items-center justify-center gap-2">
+          <DsCluster justify="center" gap="xs">
             <p class="text-caption text-muted" data-testid="s12-rate-line">
               Kadar tahap anda: {{ formatCount(rate) }} syiling = 1 token
             </p>
             <UBadge color="neutral" variant="soft" size="sm" data-testid="s12-tier-chip">{{
               tierLabel
             }}</UBadge>
-          </div>
+          </DsCluster>
         </div>
 
         <UButton
@@ -170,9 +168,9 @@ function onConfirm(): void {
       </form>
     </div>
     <DsDialog v-model:open="confirming" title="Tukar syiling kepada token?">
-      <p class="text-body text-default" data-testid="s12-confirm-text">
+      <DsText variant="body" data-testid="s12-confirm-text">
         Tukar {{ formatCount(debit) }} syiling kepada {{ formatCount(tokens) }} token?
-      </p>
+      </DsText>
       <template #footer>
         <UButton
           ref="cancelButton"

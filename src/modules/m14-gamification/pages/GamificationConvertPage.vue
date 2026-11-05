@@ -8,7 +8,7 @@ import { computed, ref } from 'vue'
 
 import { ApiError } from '@/api'
 import { useApi } from '@/composables'
-import { DsPage, DsRewardChip } from '@/ds'
+import { DsHeading, DsPage, DsRewardChip, DsStack, DsSurface, DsText } from '@/ds'
 import { formatCount } from '@/lib/number'
 import { formatDateTime } from '@/lib/time/format'
 
@@ -127,8 +127,8 @@ async function onConvert(amount: number): Promise<void> {
       </div>
 
       <UCard class="min-w-0" data-testid="s12-history">
-        <div class="flex flex-col gap-4">
-          <h2 class="text-subheading text-highlighted">Sejarah penukaran</h2>
+        <DsStack>
+          <DsHeading :level="2" variant="subheading">Sejarah penukaran</DsHeading>
           <UAlert
             v-if="history.error.value"
             color="error"
@@ -136,25 +136,25 @@ async function onConvert(amount: number): Promise<void> {
             title="Ralat berlaku. Sila cuba lagi."
           />
           <USkeleton v-else-if="!history.data.value" class="h-16 w-full" aria-busy="true" />
-          <p
+          <DsText
             v-else-if="history.data.value.data.length === 0"
-            class="text-body text-muted"
+            variant="body"
+            tone="muted"
             data-testid="s12-history-empty"
           >
             Belum ada penukaran.
-          </p>
-          <ul v-else class="flex flex-col gap-2">
+          </DsText>
+          <DsStack v-else as="ul" gap="xs">
             <li v-for="r in history.data.value.data" :key="r.id" class="min-w-0">
-              <UCard
-                :ui="{ body: 'flex flex-col gap-1 p-3 sm:p-3' }"
-                data-testid="s12-history-row"
-              >
-                <p class="text-label break-words text-highlighted">{{ r.description }}</p>
-                <p class="text-caption text-muted">{{ formatDateTime(r.createdAt) }}</p>
-              </UCard>
+              <DsSurface padding="sm" shadow="lift" data-testid="s12-history-row">
+                <DsStack gap="2xs">
+                  <DsText as="p" variant="label" tone="highlighted" wrap="anywhere">{{ r.description }}</DsText>
+                  <DsText variant="caption">{{ formatDateTime(r.createdAt) }}</DsText>
+                </DsStack>
+              </DsSurface>
             </li>
-          </ul>
-        </div>
+          </DsStack>
+        </DsStack>
       </UCard>
     </template>
   </DsPage>
