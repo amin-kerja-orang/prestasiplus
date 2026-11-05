@@ -19,6 +19,8 @@ const ALLOW_LIST: Readonly<Record<string, number>> = {}
 /**
  * Permanent, explicit exemption (not part of the allow-list): the ETL bulk loader is a migration tool that upserts
  * historical rows keyed by legacy id in batches, not a pupil activity. It sets `mode` from the imported session.
+ * NOT A TEMPLATE: this map is pinned to exactly this one file by a test; a pupil activity never goes here (AC-PA-01),
+ * and any new entry needs a lead/architect decision recorded on DM-44 first.
  */
 const EXEMPT: Readonly<Record<string, number>> = {
   // legacy ETL import, not a pupil activity (AC-PA-01 covers pupil activities)
@@ -73,7 +75,7 @@ describe('no write to practice_answers outside the port', () => {
     expect(files.some((f) => f.includes('src/db/generated'))).toBe(false)
   })
 
-  it('every direct writer is on the allow-list with its exact count', () => {
+  it('every direct writer is on the allow-list or the exemption with its exact count', () => {
     const unexpected = [...found]
       .filter(([f, n]) => (ALLOW_LIST[f] ?? EXEMPT[f]) !== n)
       .map(([f, n]) => `${f}: ${String(n)} write site(s), allowed ${String(ALLOW_LIST[f] ?? EXEMPT[f] ?? 0)}`)
@@ -82,6 +84,10 @@ describe('no write to practice_answers outside the port', () => {
 
   it('the allow-list is empty', () => {
     expect(Object.keys(ALLOW_LIST)).toEqual([])
+  })
+
+  it('the exemption holds only the legacy ETL loader', () => {
+    expect(EXEMPT).toEqual({ 'src/migration/load/activity/practice-steps.ts': 1 })
   })
 
   it('every allow-list or exemption entry still matches (remove entries as writers move to the port)', () => {

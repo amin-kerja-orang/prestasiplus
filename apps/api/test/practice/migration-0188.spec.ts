@@ -49,4 +49,18 @@ describe('0188 practice_answers.mode validated and NOT NULL (DM-44)', () => {
     expect(sql).toMatch(/Precondition:/)
     expect(sql).toMatch(/Reversible:.*DROP NOT NULL/s)
   })
+
+  it('re-run on a table with a NULL mode stops with the U-OP-20 message and changes nothing', async () => {
+    await db.query('alter table practice_answers alter column mode drop not null')
+    try {
+      await db.query(`insert into practice_answers (user_id, question_id, is_correct, answered_at, mode) values ($1, 1, true, now(), null)`, [uid])
+      // one multi-statement simple query = one implicit transaction, rolled back on the error
+      await expect(db.query(sql)).rejects.toThrow(/run U-OP-20/)
+      const [c] = await db.query<{ n: string }>('select count(*)::text as n from practice_answers where mode is null')
+      expect(c?.n).toBe('1')
+    } finally {
+      await db.query('delete from practice_answers where mode is null')
+      await db.query('alter table practice_answers alter column mode set not null')
+    }
+  })
 })
