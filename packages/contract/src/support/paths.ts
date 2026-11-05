@@ -52,7 +52,7 @@ export function registerSupportPaths(registry: OpenAPIRegistry): void {
     'X-CSRF-Token': z.string().min(1).meta({ description: 'Value of Session.csrf; required on mutating requests.' }),
   })
   const unauthorized = err('UNAUTHORIZED: no valid session.')
-  const adminOnly = err('FORBIDDEN "This action is unauthorized." (not an admin).')
+  const adminOnly = err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (not an admin).')
   const adminWrite = err('FORBIDDEN (not an admin) or CSRF_INVALID (missing or wrong X-CSRF-Token).')
   const idParams = z.object({ id: IdSchema })
   const ticketNotFound = err(`NOT_FOUND "${SUPPORT_ADMIN_MESSAGES.ticketNotFound}" (unknown id).`)
