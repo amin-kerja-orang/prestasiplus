@@ -10,8 +10,8 @@ const PENALTY = 'Jumlah penalti melebihi markah bahagian.'
 const working = (marks: number): QuestionPart => ({ label: 'a', mode: 'working', marks, key: { kind: 'points', marks, points: [{ id: 'p1', code: 'M', marks }] } }) as unknown as QuestionPart
 const v2 = (marks: number): QuestionPart =>
   ({ label: 'a', mode: 'working', marks, key: { kind: 'points', scheme_v: 2, marks, points: [{ id: 'p1', code: 'M', marks }] } }) as unknown as QuestionPart
-const over = { deductions: [{ code: 'unit', amount: 3, scope: 'question' as const }] }
-const within = { deductions: [{ code: 'unit', amount: 1, scope: 'question' as const }] }
+const over = { deductions: [{ code: 'unit' as const, amount: 3, scope: 'question' as const }] }
+const within = { deductions: [{ code: 'unit' as const, amount: 1, scope: 'question' as const }] }
 
 const gateData = (parts: QuestionPart[], schemeRules?: QuestionGateData['schemeRules']): QuestionGateData => ({
   id: '1',
@@ -51,14 +51,14 @@ describe('question-level penalty cap in the gates (S1-T09a 6a)', () => {
 
   it('[CI] the cap counts the sum of the leaf marks of the whole question', () => {
     const two = [working(1), { ...working(1), label: 'b' } as QuestionPart]
-    expect(checkKeysGate(two, { schemeRules: { deductions: [{ code: 'x', amount: 2, scope: 'question' }] } })).toEqual({})
-    expect(checkKeysGate(two, { schemeRules: { deductions: [{ code: 'x', amount: 3, scope: 'question' }] } })).toEqual({ [SCHEME_RULES_PENALTY_FIELD]: PENALTY })
+    expect(checkKeysGate(two, { schemeRules: { deductions: [{ code: 'other', amount: 2, scope: 'question' }] } })).toEqual({})
+    expect(checkKeysGate(two, { schemeRules: { deductions: [{ code: 'other', amount: 3, scope: 'question' }] } })).toEqual({ [SCHEME_RULES_PENALTY_FIELD]: PENALTY })
   })
 
   it('[CI] checkSchemeRulesGate: no rules means no refusal; a cap lowers the counted amount', () => {
     expect(checkSchemeRulesGate([working(2)], null)).toEqual({})
     expect(checkSchemeRulesGate([working(2)], undefined)).toEqual({})
-    expect(checkSchemeRulesGate([working(2)], { deductions: [{ code: 'x', amount: 9, cap: 2, scope: 'question' }] })).toEqual({})
+    expect(checkSchemeRulesGate([working(2)], { deductions: [{ code: 'other', amount: 9, cap: 2, scope: 'question' }] })).toEqual({})
   })
 
   it('[CI] submit gate and publish (approve) gate refuse it; without schemeRules they pass as before', () => {
