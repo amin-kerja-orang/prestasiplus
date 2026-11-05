@@ -13,7 +13,10 @@ import type { McqOptionData } from './types'
 const props = withDefaults(
   defineProps<{
     options: McqOptionData[]
-    modelValue?: string
+    /** Option id (single choice) or the ticked option ids in option order (`multi`). */
+    modelValue?: string | string[]
+    /** `mcq_multi`: checkbox group (2 to 8 options), `v-model` is `string[]`. */
+    multi?: boolean
     disabled?: boolean
     /** Name of the radio group; defaults to a unique one. */
     name?: string
@@ -21,10 +24,39 @@ const props = withDefaults(
     reveal?: boolean
     /** Id of the correct option (only used with `reveal`). */
     correctId?: string
+    /** Ids of the correct options (only used with `reveal` and `multi`). */
+    correctIds?: string[]
   }>(),
-  { modelValue: undefined, disabled: false, name: undefined, reveal: false, correctId: undefined },
+  {
+    modelValue: undefined,
+    multi: false,
+    disabled: false,
+    name: undefined,
+    reveal: false,
+    correctId: undefined,
+    correctIds: undefined,
+  },
 )
-const emit = defineEmits<{ 'update:modelValue': [string]; 'image-error': [string] }>()
+const emit = defineEmits<{ 'update:modelValue': [string | string[]]; 'image-error': [string] }>()
+
+/** `mcq_multi` is served with 2 to 8 options only (FR-PA-02); outside that nothing is rendered. */
+const MULTI_MIN = 2
+const MULTI_MAX = 8
+const servable = computed(
+  () => !props.multi || (props.options.length >= MULTI_MIN && props.options.length <= MULTI_MAX),
+)
+const ticked = computed<string[]>(() =>
+  Array.isArray(props.modelValue) ? props.modelValue : [],
+)
+function isOn(id: string): boolean {
+  return props.multi ? ticked.value.includes(id) : props.modelValue === id
+}
+function toggle(id: string, on: boolean): void {
+  const next = new Set(ticked.value)
+  if (on) next.add(id)
+  else next.delete(id)
+  emit('update:modelValue', props.options.map((o) => o.id).filter((x) => next.has(x)))
+}
 
 const uid = `mcq-${Math.random().toString(36).slice(2, 8)}`
 const groupName = computed(() => props.name ?? uid)
@@ -33,6 +65,11 @@ const broken = ref<Record<string, boolean>>({})
 
 function verdict(o: McqOptionData): 'correct' | 'wrong' | undefined {
   if (!props.reveal) return undefined
+  if (props.multi) {
+    const right = props.correctIds?.includes(o.id) ?? false
+    if (right) return 'correct'
+    return isOn(o.id) ? 'wrong' : undefined
+  }
   if (o.id === props.correctId) return 'correct'
   if (o.id === props.modelValue) return 'wrong'
   return undefined
@@ -44,9 +81,14 @@ function onImgError(id: string): void {
 </script>
 
 <template>
+  <div v-if="servable" class="flex flex-col gap-2">
+  <p v-if="multi" :id="`${groupName}-hint`" class="text-caption text-toned" data-testid="mcq-multi-hint">
+    {{ qdCopy.mcqMultiHint }}
+  </p>
   <div
-    role="radiogroup"
+    :role="multi ? 'group' : 'radiogroup'"
     :aria-label="qdCopy.mcqAria"
+    :aria-describedby="multi ? `${groupName}-hint` : undefined"
     class="grid grid-cols-1 gap-2"
     :class="hasImages ? 'md:grid-cols-2' : ''"
     data-testid="mcq-options"
@@ -60,28 +102,32 @@ function onImgError(id: string): void {
           ? 'bg-success/20 ring-success'
           : verdict(o) === 'wrong'
             ? 'bg-error/20 ring-error'
-            : modelValue === o.id
+            : isOn(o.id)
               ? 'bg-primary/18 ring-primary'
               : 'bg-default ring-default',
         disabled || reveal ? 'cursor-default' : 'cursor-pointer',
       ]"
       :data-testid="`mcq-option-${o.id}`"
-      :data-selected="modelValue === o.id"
+      :data-selected="isOn(o.id)"
       :data-verdict="verdict(o)"
     >
       <input
-        type="radio"
+        :type="multi ? 'checkbox' : 'radio'"
         class="sr-only"
         :name="groupName"
         :value="o.id"
-        :checked="modelValue === o.id"
+        :checked="isOn(o.id)"
         :disabled="disabled || reveal"
         :aria-label="`${o.letter}. ${o.text}`"
-        @change="emit('update:modelValue', o.id)"
+        @change="
+          multi
+            ? toggle(o.id, ($event.target as HTMLInputElement).checked)
+            : emit('update:modelValue', o.id)
+        "
       />
       <span
         class="flex size-8 shrink-0 items-center justify-center rounded-full text-label font-semibold"
-        :class="modelValue === o.id ? 'bg-primary text-primary-on' : 'bg-elevated text-toned'"
+        :class="isOn(o.id) ? 'bg-primary text-primary-on' : 'bg-elevated text-toned'"
         aria-hidden="true"
         >{{ o.letter }}</span
       >
@@ -129,5 +175,6 @@ function onImgError(id: string): void {
         {{ verdict(o) === 'correct' ? 'Betul' : 'Salah' }}
       </span>
     </label>
+  </div>
   </div>
 </template>

@@ -47,7 +47,7 @@ export interface McqOptionData {
   imageHeight?: number
 }
 
-export type AnswerMode = 'mcq' | 'short_text' | 'numeric' | 'extended_essay' | 'essay_choice'
+export type AnswerMode = 'mcq' | 'mcq_multi' | 'true_false' | 'short_text' | 'numeric' | 'extended_essay' | 'essay_choice'
 
 export interface EssayTopic {
   id: string
