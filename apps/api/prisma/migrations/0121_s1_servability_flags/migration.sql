@@ -18,7 +18,9 @@ ALTER TABLE "question_versions" ADD CONSTRAINT "ck_question_versions_stimulus_fl
 ALTER TABLE "question_versions" VALIDATE CONSTRAINT "ck_question_versions_stimulus_flag";
 
 ALTER TABLE "question_versions" ADD CONSTRAINT "fk_question_versions_flag_dismissed_by"
-  FOREIGN KEY ("flag_dismissed_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  FOREIGN KEY ("flag_dismissed_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE NOT VALID;
+-- Validated in a second step (SHARE UPDATE EXCLUSIVE), as 0103 and 0105, so the table is not scanned under a write-blocking lock.
+ALTER TABLE "question_versions" VALIDATE CONSTRAINT "fk_question_versions_flag_dismissed_by";
 
 -- The work-list and the hub "Perhatian" count (DM-05): open (not dismissed) flags per subject and level.
 CREATE INDEX "ix_question_versions_open_flag" ON "question_versions" ("subject_id", "education_level_id")
