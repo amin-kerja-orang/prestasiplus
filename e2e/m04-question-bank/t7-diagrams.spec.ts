@@ -41,6 +41,11 @@ async function openAudit(page: Page, gotoApp: (path: string) => Promise<void>, p
   await expect(page.getByTestId('diagrams-stat-mcq')).toContainText('MCQ Perlu Gambar')
 }
 
+/** The number on the first line of a stat tile. */
+async function stat(page: Page, id: string): Promise<number> {
+  return Number(((await page.getByTestId(id).innerText()).split('\n')[0] ?? '').replace(/\D/g, ''))
+}
+
 /** The apply button: in the sheet below 768 px, in the bar from 768 px. */
 function applyButton(page: Page) {
   return viewportWidth(page) < 768
@@ -64,9 +69,11 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
       'Audit soalan yang memerlukan gambar rajah dilengkapkan',
     )
 
-    await expect(page.getByTestId('diagrams-stat-mcq')).toContainText('5,653')
+    // No MCQ figure is pinned: the admin reads hide Darjah (D72, D96), so it is below Q-FLAGGED-MCQ of SRS 4.1.
+    const mcqTotal = await stat(page, 'diagrams-stat-mcq')
+    expect(mcqTotal).toBeGreaterThan(0)
     await expect(page.getByTestId('diagrams-stat-structured')).toContainText('522')
-    await expect(page.getByTestId('diagrams-stat-total')).toContainText('6,175')
+    expect(await stat(page, 'diagrams-stat-total')).toBe(mcqTotal + 522)
 
     const pills = page.getByTestId('diagrams-pill')
     await expect(pills).toHaveCount(10)
@@ -80,7 +87,7 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
     await expect(applyButton(page)).toBeVisible()
     if (viewportWidth(page) < 768) await page.keyboard.press('Escape')
 
-    await expect(page.getByTestId('diagrams-mcq').locator('h2')).toContainText('MCQ')
+    await expect(page.getByTestId('diagrams-mcq').locator('h2')).toHaveText(`MCQ (${String(mcqTotal)})`)
     await expect(mcqCards(page)).toHaveCount(20)
     await expect(page.getByTestId('diagrams-structured').locator('h2')).toHaveText('Struktur (522)')
     await expect(strCards(page)).toHaveCount(20)
@@ -108,10 +115,8 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
     await expect(page).toHaveURL(/subject_id=9/)
     await expect(page.getByTestId('diagrams-stat-mcq')).toContainText('718')
     // DV-M04-11: the cards follow the filter, "Jumlah" is their sum.
-    const stat = async (id: string): Promise<number> =>
-      Number(((await page.getByTestId(id).innerText()).split('\n')[0] ?? '').replace(/,/g, ''))
-    expect(await stat('diagrams-stat-total')).toBe(
-      (await stat('diagrams-stat-mcq')) + (await stat('diagrams-stat-structured')),
+    expect(await stat(page, 'diagrams-stat-total')).toBe(
+      (await stat(page, 'diagrams-stat-mcq')) + (await stat(page, 'diagrams-stat-structured')),
     )
     // The pills are global (as live).
     await expect(page.getByTestId('diagrams-pill').first()).toHaveText('Biologi: 1,587')
@@ -157,12 +162,15 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
     async ({ page, loginAs, gotoApp }) => {
       await loginAs(ADMIN)
       await openAudit(page, gotoApp)
+      const mcqBefore = await stat(page, 'diagrams-stat-mcq')
+      const totalBefore = await stat(page, 'diagrams-stat-total')
       const card = mcqCards(page).first()
       const id = await card.getAttribute('data-question-id')
       await card.getByTestId('diagram-dismiss').click()
       await expect(page.getByText('Soalan telah dikeluarkan daripada senarai audit.')).toBeVisible()
-      await expect(page.getByTestId('diagrams-stat-mcq')).toContainText('5,652')
-      await expect(page.getByTestId('diagrams-stat-total')).toContainText('6,174')
+      await expect.poll(() => stat(page, 'diagrams-stat-mcq')).toBe(mcqBefore - 1)
+      expect(await stat(page, 'diagrams-stat-total')).toBe(totalBefore - 1)
+      await expect(page.getByTestId('diagrams-mcq').locator('h2')).toHaveText(`MCQ (${String(mcqBefore - 1)})`)
       await expect(page.locator(`[data-question-id="${id}"][data-kind="mcq"]`)).toHaveCount(0)
       await expectNoHorizontalScroll(page)
     },
@@ -174,6 +182,7 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
     async ({ page, loginAs, gotoApp }) => {
       await loginAs(ADMIN)
       await openAudit(page, gotoApp)
+      const mcqBefore = await stat(page, 'diagrams-stat-mcq')
       const card = strCards(page).first()
       const id = await card.getAttribute('data-question-id')
 
@@ -194,7 +203,7 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
       await card.getByTestId('diagram-upload').click()
       await expect(page.getByText('Gambar rajah berjaya dimuat naik.')).toBeVisible()
       await expect(page.getByTestId('diagrams-stat-structured')).toContainText('521')
-      await expect(page.getByTestId('diagrams-stat-mcq')).toContainText('5,653')
+      expect(await stat(page, 'diagrams-stat-mcq')).toBe(mcqBefore)
       await expect(page.getByTestId('diagrams-structured').locator('h2')).toHaveText(
         'Struktur (521)',
       )

@@ -271,12 +271,14 @@ test.describe('QA G5 user-portal nav and S11 badge', { tag: [moduleTag(4), '@qa'
     await gotoApp('/admin/soalan-gambar')
     const card = page.locator('[data-kind="mcq"][data-question-id]').first()
     await expect(card).toBeVisible()
+    const mcq = async (): Promise<number> => toCount((await byId(page, 'diagrams-stat-mcq').innerText()).split('\n')[0] ?? '')
+    const before = await mcq()
     await card.getByTestId('diagram-dismiss').click()
-    await expect(byId(page, 'diagrams-stat-mcq')).toContainText('5,652')
+    await expect.poll(mcq).toBe(before - 1)
     // Since the portals (D28) an admin has no user sidebar, so the lower count is read after a reload.
     await page.goto('/admin/soalan-gambar')
     await waitForApp(page, 90_000)
-    await expect(byId(page, 'diagrams-stat-mcq')).toContainText('5,652')
+    await expect.poll(mcq).toBe(before - 1)
   })
 })
 
