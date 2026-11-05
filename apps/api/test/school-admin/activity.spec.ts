@@ -2,7 +2,7 @@ import { ErrorBodySchema, SchoolAdminActivityReportSchema } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { ADMIN, apiOf, bootSchoolAdminApp, login, SCHOOL_ADMIN, schoolIdOf, STUDENT, TEACHER, type Api, type SchoolAdminTestApp } from './helpers'
-import { addPupil, addSubject, managedPupilCount, addPupilsWithSessions, addSchoolAdmin, addSession, addTeacher } from './reports-fixtures'
+import { addPupil, addSubject, xsPupilCount, addPupilsWithSessions, addSchoolAdmin, addSession, addTeacher } from './reports-fixtures'
 
 /** The helpers' clock is 2026-10-19 09:00 MYT. DB spec: needs Docker/Testcontainers. */
 describe('GET /admin-sekolah/laporan-aktiviti', () => {
@@ -45,7 +45,7 @@ describe('GET /admin-sekolah/laporan-aktiviti', () => {
     expect(r.schoolId).toBe(s1)
     expect(r.trend).toHaveLength(30)
     expect(r.trend.at(-1)).toMatchObject({ label: '19/10', value: 5 })
-    expect(r.overview).toMatchObject({ pupils: await managedPupilCount(t.db, s1), practised: 5, activity: 5 })
+    expect(r.overview).toMatchObject({ pupils: await xsPupilCount(t.db, s1), practised: 5, activity: 5 })
     expect(r.breakdown).toEqual({ quiz: 5, structured: 0, battle: 0, game: 0 })
     expect(r.tiles.pupils).toMatchObject({ practised: 5, sessions: 5, accuracy: 70 })
     const text = JSON.stringify(res.body)
@@ -93,7 +93,7 @@ describe('GET /admin-sekolah/laporan-aktiviti', () => {
     expect(r.breakdown.quiz).toBe(1)
   })
 
-  it('a school with fewer than 5 contributing pupils: the accuracy tile is hidden (0), the session count stays', async () => {
+  it('a school with fewer than 5 pupils: no minimum cohort; the seeded session has no answers, so the accuracy tile is 0 and the session count stays', async () => {
     const r = SchoolAdminActivityReportSchema.parse((await adminB.get('/admin-sekolah/laporan-aktiviti')).body.data)
     expect(r.tiles.pupils.sessions).toBe(1)
     expect(r.tiles.pupils.accuracy).toBe(0)

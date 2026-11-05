@@ -103,7 +103,7 @@ export interface CcLiveData {
   kirkT1Count: number
   /** Accuracy of the last 30 days, the 30 before, and the difference. */
   kirkT2Accuracy: number
-  kirkT2Delta: number
+  kirkT2Delta: number | null
   kirkT2Prev: number
   /** Students with an answer in the last 30 days, the difference to the 30 before, and that count. */
   kirkT3Active: number
@@ -221,7 +221,7 @@ export interface CcDrillEngagementRow {
 export interface CcDrillVs {
   accuracyNow: number
   accuracyPrev: number
-  accuracyChange: number
+  accuracyChange: number | null
   answersNow: number
   answersPrev: number
   activeNow: number
