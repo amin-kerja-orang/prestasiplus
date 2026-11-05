@@ -187,6 +187,39 @@ describe('Kotak Misteri admin (S7-T07 P7, DM-37, API-GAME-09)', () => {
       expect(fail(await admin.put(`${PATH}/5`, body({ prizes: Array.from({ length: 21 }, () => SEVEN[0]) })), 422, 'VALIDATION_ERROR').fields).toEqual({ prizes: 'Medan ini tidak sah.' })
     })
 
+    it('activating box 3 while 5 is active leaves only 3 active, with one audit row naming the deactivated box; 5 comes back the same way', async () => {
+      const before = await auditCount()
+      const res = await admin.put(`${PATH}/3`, body({ label: 'Kotak Emas', isActive: true }))
+      expect(res.status).toBe(200)
+      const v = GamificationMysteryBoxesAdminSchema.parse(dataOf(res))
+      expect(v.boxes.filter((b) => b.isActive).map((b) => b.id)).toEqual(['3'])
+      expect(await auditCount()).toBe(before + 1)
+      const row = (await t.db.query<{ d: string }>(`select detail::text d from audit_events where action = 'shop.mystery_box.updated' order by id desc limit 1`))[0]!
+      expect(JSON.parse(row.d)).toMatchObject({ deactivatedBoxIds: [5] })
+      const back = GamificationMysteryBoxesAdminSchema.parse(dataOf(await admin.put(`${PATH}/5`, body())))
+      expect(back.boxes.filter((b) => b.isActive).map((b) => b.id)).toEqual(['5'])
+      await t.db.query(`delete from mystery_box_prizes where box_id = 3`)
+    })
+
+    it('two concurrent activations of different boxes end with exactly one active box and no error', async () => {
+      const [a, b] = await Promise.all([admin.put(`${PATH}/3`, body({ label: 'Kotak Emas' })), admin.put(`${PATH}/4`, body({ label: 'Kotak Legenda' }))])
+      expect([a.status, b.status]).toEqual([200, 200])
+      const active = await t.db.query<{ id: number }>(`select id from mystery_boxes where is_active`)
+      expect(active).toHaveLength(1)
+      expect([3, 4]).toContain(active[0]!.id)
+      await admin.put(`${PATH}/5`, body())
+      await t.db.query(`delete from mystery_box_prizes where box_id in (3, 4)`)
+      expect((await t.db.query(`select id from mystery_boxes where is_active`)).map((r) => (r as { id: number }).id)).toEqual([5])
+    })
+
+    it('an active box whose every prize has stock 0 is saved as is today (pins the behaviour; TODO-P8 answers an empty box at draw time)', async () => {
+      const empty = SEVEN.map((p) => ({ ...p, stock: 0 }))
+      const res = await admin.put(`${PATH}/5`, body({ prizes: empty }))
+      expect(res.status).toBe(200)
+      expect(GamificationMysteryBoxesAdminSchema.parse(dataOf(res)).boxes[4]!.prizes.every((p) => p.stock === 0)).toBe(true)
+      await admin.put(`${PATH}/5`, body())
+    })
+
     it('404 "Kotak tidak dijumpai." for an id that does not exist; a non-numeric id is the plain 404', async () => {
       fail(await admin.put(`${PATH}/999`, body()), 404, 'NOT_FOUND', 'Kotak tidak dijumpai.')
       expect((await admin.put(`${PATH}/abc`, body())).status).toBe(404)

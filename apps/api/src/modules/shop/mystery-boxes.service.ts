@@ -111,8 +111,17 @@ export class MysteryBoxesService {
     const id = Number(rawId)
     const input = this.parse(body)
     return this.prisma.transaction(async (tx) => {
-      const locked = await tx.$queryRaw<{ id: number }[]>`SELECT id FROM mystery_boxes WHERE id = ${id} FOR UPDATE`
-      if (locked.length === 0) throw ApiError.of('NOT_FOUND', { message: REWARD_MESSAGES.boxNotFound })
+      // Every box row is locked in ascending id order, so two saves (for example two activations) never deadlock and
+      // run one after the other.
+      const locked = await tx.$queryRaw<{ id: number }[]>`SELECT id FROM mystery_boxes ORDER BY id FOR UPDATE`
+      if (!locked.some((r) => r.id === id)) throw ApiError.of('NOT_FOUND', { message: REWARD_MESSAGES.boxNotFound })
+      // One active box at most (uq_mystery_boxes_one_active): activating this box deactivates the others first.
+      let deactivated: number[] = []
+      if (input.isActive) {
+        const others = await tx.mysteryBox.findMany({ where: { isActive: true, id: { not: id } }, select: { id: true }, orderBy: { id: 'asc' } })
+        deactivated = others.map((o) => o.id)
+        if (deactivated.length > 0) await tx.mysteryBox.updateMany({ where: { id: { in: deactivated } }, data: { isActive: false } })
+      }
       await tx.mysteryBox.update({ where: { id }, data: { label: input.label, costSyiling: input.costSyiling, isActive: input.isActive } })
       await tx.mysteryBoxPrize.deleteMany({ where: { boxId: id } })
       if (input.prizes.length > 0) {
@@ -134,7 +143,7 @@ export class MysteryBoxesService {
         isTest: actor.isTest,
         targetType: 'mystery_box',
         targetId: String(id),
-        details: { costSyiling: input.costSyiling, isActive: input.isActive, prizeRows: input.prizes.length, ...(input.dailyMax === undefined ? {} : { dailyMax: input.dailyMax }) },
+        details: { costSyiling: input.costSyiling, isActive: input.isActive, prizeRows: input.prizes.length, deactivatedBoxIds: deactivated, ...(input.dailyMax === undefined ? {} : { dailyMax: input.dailyMax }) },
         tx,
       })
       return this.adminView(tx)
@@ -213,6 +222,9 @@ export class MysteryBoxesService {
 
     if (Object.keys(fields).length > 0 || cost === undefined) throw fieldError(fields)
     // Rows are complete here. A box with prizes, or an active one, must total 100 (AC-GM-23.5).
+    // TODO-P8: an active box whose every prize has stock 0 is saved as is (no existing catalogue text fits a refusal, and
+    // none is invented here). P8 must answer an empty box at draw time: 409 "Kotak tidak tersedia buat masa ini." (N5)
+    // before any debit.
     const total = prizes.reduce((sum, p) => sum + p.weight, 0)
     const isActive = b.isActive as boolean
     if ((isActive || prizes.length > 0) && total !== MYSTERY_BOX_LIMITS.weightTotal) throw fieldError({ prizes: MSG.boxOddsTotal }, MSG.boxOddsTotal)

@@ -5,8 +5,10 @@
 -- Expand only: two new tables, four nullable columns on mystery_box_openings, a foreign key and a partial unique index.
 -- Nothing is dropped and no existing row changes. Old openings (box_id 1 to 4) stay valid because those four ids are
 -- seeded below as inactive boxes without prizes; the pupil flow of today still writes box_id 1 to 4 until part P8.
--- Reversible: ALTER TABLE mystery_box_openings DROP CONSTRAINT fk_mystery_box_openings_box_id, DROP the partial unique
--- index and the four columns, then DROP TABLE mystery_box_prizes and mystery_boxes.
+-- Reversible, in this order: DROP CONSTRAINT ck_mystery_box_openings_prize and fk_mystery_box_openings_box_id on
+-- mystery_box_openings; DROP INDEX uq_mystery_box_openings_user_id_client_uuid and ix_mystery_box_openings_box_id; drop the
+-- four columns prize_label, prize_kind, prize_amount, client_uuid; then DROP TABLE mystery_box_prizes and mystery_boxes
+-- (this also drops uq_mystery_boxes_one_active). Re-running the file is safe: the seed inserts only what is missing.
 -- Order independent: it touches only mystery_* tables, so it applies after any later migration on a fresh database.
 
 -- CreateTable
@@ -49,24 +51,31 @@ INSERT INTO "mystery_boxes" ("id", "label", "cost_syiling", "is_active") VALUES
     (2, 'Kotak Perak', 50, false),
     (3, 'Kotak Emas', 50, false),
     (4, 'Kotak Legenda', 50, false),
-    (5, 'Kotak Misteri', 50, true);
-ALTER TABLE "mystery_boxes" ALTER COLUMN "id" RESTART WITH 6;
+    (5, 'Kotak Misteri', 50, true)
+ON CONFLICT ("id") DO NOTHING;
+SELECT setval(pg_get_serial_sequence('"mystery_boxes"', 'id'), GREATEST(5, (SELECT max("id") FROM "mystery_boxes")), true);
 
 -- The seven-row prize table of 48 GAME-23 (integer weights total 100, unlimited stock).
-INSERT INTO "mystery_box_prizes" ("box_id", "label", "kind", "amount", "weight", "stock") VALUES
-    (5, '10 syiling', 'syiling', 10, 40, NULL),
+INSERT INTO "mystery_box_prizes" ("box_id", "label", "kind", "amount", "weight", "stock")
+SELECT v.* FROM (VALUES
+    (5, '10 syiling', 'syiling', 10, 40, NULL::integer),
     (5, '25 syiling', 'syiling', 25, 25, NULL),
     (5, '60 syiling', 'syiling', 60, 15, NULL),
     (5, '1 token', 'token', 1, 10, NULL),
     (5, '150 syiling', 'syiling', 150, 6, NULL),
     (5, '3 token', 'token', 3, 3, NULL),
-    (5, '500 syiling — jackpot!', 'syiling', 500, 1, NULL);
+    (5, '500 syiling — jackpot!', 'syiling', 500, 1, NULL)
+) AS v ("box_id", "label", "kind", "amount", "weight", "stock")
+WHERE NOT EXISTS (SELECT 1 FROM "mystery_box_prizes" WHERE "box_id" = 5);
 
 -- CreateIndex
 CREATE INDEX "ix_mystery_box_prizes_box_id" ON "mystery_box_prizes"("box_id");
 CREATE INDEX "ix_mystery_box_openings_box_id" ON "mystery_box_openings"("box_id");
 -- Partial (Prisma cannot express it, so it lives here only): one opening per (user, client_uuid), DM-78 pattern.
 CREATE UNIQUE INDEX "uq_mystery_box_openings_user_id_client_uuid" ON "mystery_box_openings"("user_id", "client_uuid") WHERE "client_uuid" IS NOT NULL;
+
+-- One active box at most (the DB guard of the admin save, which deactivates the others). Partial, so SQL only.
+CREATE UNIQUE INDEX "uq_mystery_boxes_one_active" ON "mystery_boxes"((true)) WHERE "is_active";
 
 -- AddForeignKey
 ALTER TABLE "mystery_box_prizes" ADD CONSTRAINT "fk_mystery_box_prizes_box_id" FOREIGN KEY ("box_id") REFERENCES "mystery_boxes"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -84,6 +84,26 @@ describe('migration 0222 mystery boxes (DM-37)', () => {
     expect(await rejects(`insert into mystery_box_openings (user_id, box_id, coins, xp, prize_amount) values ($1, 5, 1, 0, 0)`, [userId])).toMatch(/ck_mystery_box_openings_prize/)
   })
 
+  it('at most one active box: a second active row is refused by uq_mystery_boxes_one_active', async () => {
+    expect(await rejects(`insert into mystery_boxes (label, cost_syiling, is_active) values ('Dua', 10, true)`)).toMatch(/uq_mystery_boxes_one_active/)
+    await db.query(`update mystery_boxes set is_active = false where id = 5`)
+    await db.query(`update mystery_boxes set is_active = true where id = 2`)
+    expect(await rejects(`update mystery_boxes set is_active = true where id = 5`)).toMatch(/uq_mystery_boxes_one_active/)
+    await db.query(`update mystery_boxes set is_active = false where id = 2`)
+    await db.query(`update mystery_boxes set is_active = true where id = 5`)
+  })
+
+  it('the seed is idempotent: running its statements again adds no box or prize and keeps edits', async () => {
+    const start = MIGRATION.indexOf('INSERT INTO "mystery_boxes"')
+    const end = MIGRATION.indexOf('-- CreateIndex')
+    await db.query(`update mystery_boxes set label = 'Diubah' where id = 5`)
+    await db.query(MIGRATION.slice(start, end))
+    expect(Number((await db.query<{ n: string }>(`select count(*)::text n from mystery_boxes`))[0]!.n)).toBe(5)
+    expect(Number((await db.query<{ n: string }>(`select count(*)::text n from mystery_box_prizes`))[0]!.n)).toBe(7)
+    expect((await db.query<{ label: string }>(`select label from mystery_boxes where id = 5`))[0]!.label).toBe('Diubah')
+    await db.query(`update mystery_boxes set label = 'Kotak Misteri' where id = 5`)
+  })
+
   it('foreign keys: a prize needs its box and goes with it; an opening needs its box and blocks its deletion', async () => {
     expect(await rejects(`insert into mystery_box_prizes (box_id, label, kind, amount, weight) values (99, 'x', 'syiling', 5, 1)`)).toMatch(/fk_mystery_box_prizes_box_id/)
     expect(await rejects(`insert into mystery_box_openings (user_id, box_id, coins, xp) values ($1, 99, 1, 0)`, [userId])).toMatch(/fk_mystery_box_openings_box_id/)
