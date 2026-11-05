@@ -165,6 +165,7 @@ async function remove(row: AdminEducationLevelListItem): Promise<void> {
     <DsLoadError
       v-if="error"
       :message="COPY.loadFailed"
+      :error="error"
       testid="levels-error"
       @retry="reload()"
     />

@@ -14,6 +14,8 @@
 import { PRACTICE_SHAPE } from '../../practice/question-bridge/be09-practice-mapping'
 import type { ServabilityActivity } from '@pp/contract'
 
+import { GROUP_SURFACES } from './rules'
+
 import { Prisma } from '../../../db/generated/client'
 import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL, SERVABLE_STATUS } from '../learner-visibility'
 import type { QuestionFilter } from '../types'
@@ -23,14 +25,23 @@ export interface ActivityScope {
   chapterId?: string
 }
 
-export function filterOf(activity: ServabilityActivity, scope: ActivityScope = {}): QuestionFilter {
+/**
+ * The shape of a drill: on a surface in `GROUP_SURFACES` (D105) figure questions and whole groups are served (`wholeGroups`, the
+ * whole-group predicate, AC-QP-7); on the others the text-only, ungrouped shape holds. `surfaces` defaults to `GROUP_SURFACES`.
+ */
+const drillShape = (activity: ServabilityActivity, surfaces: readonly ServabilityActivity[]): QuestionFilter =>
+  surfaces.includes(activity)
+    ? { type: 'mcq', wholeGroups: true, mcqShape: { ...PRACTICE_SHAPE, allowStimulus: true } }
+    : { type: 'mcq', ungrouped: true, mcqShape: PRACTICE_SHAPE }
+
+export function filterOf(activity: ServabilityActivity, scope: ActivityScope = {}, surfaces: readonly ServabilityActivity[] = GROUP_SURFACES): QuestionFilter {
   const subject = scope.subjectId === undefined ? {} : { subjectId: scope.subjectId }
   switch (activity) {
     case 'latih_tubi_spm':
     case 'databank':
-      return { ...subject, type: 'mcq', ungrouped: true, mcqShape: PRACTICE_SHAPE, spmPool: true }
+      return { ...subject, ...drillShape(activity, surfaces), spmPool: true }
     case 'bab':
-      return { ...subject, ...(scope.chapterId === undefined ? {} : { chapterId: scope.chapterId }), type: 'mcq', ungrouped: true, mcqShape: PRACTICE_SHAPE }
+      return { ...subject, ...(scope.chapterId === undefined ? {} : { chapterId: scope.chapterId }), ...drillShape(activity, surfaces) }
     case 'simulasi_kuiz':
       return { ...subject, type: 'mcq', singleMcqLeaf: true }
     case 'simulasi_paper':

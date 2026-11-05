@@ -2,7 +2,7 @@ import { ConfigService } from '@nestjs/config'
 import { AUTH_ERROR_MESSAGES, ErrorBodySchema } from '@pp/contract'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { SESSION_RESOLVER, type SessionResolver } from '../../src/common/guards/session-resolver'
+import { SessionStore } from '../../src/modules/auth/session.store'
 import { loadEnv } from '../../src/common/config/env.schema'
 import { FilesConfig } from '../../src/modules/files/files.config'
 import { FilesService } from '../../src/modules/files/files.service'
@@ -119,7 +119,9 @@ describe('download throttle order (security Low 4)', () => {
     const admin = await loginAs(t, 'admin@demo.test')
     const cms = await uploadOk(admin, 'cms_image', makePng())
     t.clock.advance(61_000)
-    const spy = vi.spyOn(t.app.get<SessionResolver>(SESSION_RESOLVER), 'resolve')
+    // The session lookup is the store read; the resolver memoises per request, so the global rate guard (S0-T08)
+    // and the route share one read even though both ask the resolver.
+    const spy = vi.spyOn(t.app.get(SessionStore, { strict: false }), 'findByToken')
     try {
       for (let i = 0; i < 3; i += 1) expect((await t.http().get(cms.url)).status).toBe(200)
       expectError(await t.http().get(cms.url), 'RATE_LIMITED')

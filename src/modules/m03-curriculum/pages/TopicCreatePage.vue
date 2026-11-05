@@ -114,6 +114,7 @@ async function submit(payload: TopicFormPayload): Promise<void> {
     <DsLoadError
       v-if="loadFailed"
       :message="LOAD_ERROR"
+      :error="chapterError"
       testid="curriculum-load-error"
       @retry="retry()"
     />

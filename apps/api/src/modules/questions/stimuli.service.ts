@@ -98,6 +98,7 @@ export class StimuliService {
       bodyEn: input.body?.en ?? null,
       altText: input.alt ?? null,
       sourceCitation: input.sourceCitation ?? null,
+      style: input.style ?? null,
       tableData: input.tableData ?? null,
       assetFileId,
     }
@@ -133,6 +134,7 @@ export class StimuliService {
         bodyEn: body.en,
         altText: input.alt === undefined ? current.altText : input.alt,
         sourceCitation: input.sourceCitation === undefined ? current.sourceCitation : input.sourceCitation,
+        style: input.style === undefined ? current.style : input.style,
         tableData: input.tableData === undefined ? current.tableData : input.tableData,
         assetFileId,
       }
@@ -665,6 +667,7 @@ export class StimuliService {
       sourceCitation: row.sourceCitation,
       tableData: row.shownTable,
       imageId: row.assetFileId === null ? null : (tokens.get(idToString(row.assetFileId)) ?? null),
+      style: row.style,
       groupCount: row.groupCount,
     }
   }
