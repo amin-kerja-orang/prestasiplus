@@ -1139,8 +1139,6 @@ export class QuestionsService {
       parts = v.parts
     }
 
-    // Level 5 on the flat scale may be TP 5 or 6: keep the stored TP when the body repeats what was read.
-    const keepTp = v.difficultyTp !== null && input.difficultyLevel === flat.difficultyLevel
     const language = input.language === undefined
       ? v.language
       : v.language === 'ar' || v.language === 'jawi' || v.language === 'ms_en'
@@ -1150,7 +1148,8 @@ export class QuestionsService {
     const normalized: Normalized = {
       subjectId: opts.keepSubject ? (v.subjectId ?? input.subjectId) : input.subjectId,
       educationLevelId: opts.keepSubject ? (v.educationLevelId ?? input.educationLevelId) : input.educationLevelId,
-      tp: input.tag?.tp ?? (keepTp && v.difficultyTp !== null ? v.difficultyTp : null),
+      // TP is separate from Kesukaran (#685; lead ruling on #783): a body without `tag.tp` keeps the stored TP.
+      tp: input.tag?.tp ?? v.difficultyTp,
       difficultyLevel: input.difficultyLevel,
       textbookRef: input.textbookRef,
       stem: input.questionText,
