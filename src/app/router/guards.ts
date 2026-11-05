@@ -160,7 +160,10 @@ export function installGuards(router: Router): void {
     // v2 usability: a guest sent to /login remembers the page asked for (`?redirect=`); the login
     // page returns there when the role may open it. The 401 policy and `/logout` stay plain.
     if (decision.to === LOGIN_PATH && isSafeRedirect(to.fullPath)) {
-      return { path: LOGIN_PATH, query: { redirect: to.fullPath } }
+      // A session just ended by a 401 says `kembali` (banner + return, AC-ERR-2) even when this guard wins the race with the
+      // 401 redirect; a plain guest keeps `redirect` (no banner).
+      const key = session.takeEndedByUnauthorized() ? 'kembali' : 'redirect'
+      return { path: LOGIN_PATH, query: { [key]: to.fullPath } }
     }
     return decision.to
   })

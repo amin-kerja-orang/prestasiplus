@@ -411,6 +411,30 @@ describe('401 policy (FR-M01-14)', () => {
     expect(router.currentRoute.value.query).toEqual({ kembali: '/dashboard?x=1' })
     stop()
   })
+
+  it('a navigation that reaches the guard after a 401 cleared the session still says kembali (race with the 401 redirect)', async () => {
+    installTransport(fakeTransport(() => ({})))
+    logIn(STUDENT)
+    const router = testRouter()
+    await router.push('/dashboard')
+    // The 401 ends the session but its own redirect does not run (no redirect registered): the next navigation meets the guard.
+    await useSessionStore().handleUnauthorized()
+    await router.push('/tetapan')
+    expect(router.currentRoute.value.path).toBe('/login')
+    expect(router.currentRoute.value.query).toEqual({ kembali: '/tetapan' })
+  })
+
+  it('the 401 mark is one-shot: a later guest navigation says redirect again', async () => {
+    installTransport(fakeTransport(() => ({})))
+    logIn(STUDENT)
+    const router = testRouter()
+    await router.push('/dashboard')
+    await useSessionStore().handleUnauthorized()
+    await router.push('/tetapan')
+    expect(router.currentRoute.value.query).toEqual({ kembali: '/tetapan' })
+    await router.push('/dashboard?y=2')
+    expect(router.currentRoute.value.query).toEqual({ redirect: '/dashboard?y=2' })
+  })
 })
 
 describe('in-place outcome is committed only on success (F13-1)', () => {

@@ -237,6 +237,8 @@ export const useSessionStore = defineStore('session', () => {
   const auth = shallowRef<ClientSession | null>(null)
 
   const isLoggedIn = computed(() => auth.value !== null)
+  /** Set when a 401 ended the session (FR-ERR-7); read once by the router guard so its login redirect also says `kembali`. */
+  let endedByUnauthorized = false
   const token = computed<string | null>(() => auth.value?.token ?? null)
   const user = computed<UserMe | null>(() => auth.value?.user ?? null)
   const role = computed<Role | null>(() => auth.value?.user.role ?? null)
@@ -276,6 +278,7 @@ export const useSessionStore = defineStore('session', () => {
 
   /** Stores a new session (login, register, token reset, M02 "Login As"). */
   function setSession(session: ClientSession): void {
+    endedByUnauthorized = false
     // A different user signing in on this browser never sees the previous user's unsaved drafts (a 401 of the same user keeps them).
     // The owner is recorded at sign-in, so it survives a 401 or an expiry that left no previous session. Drafts of an unknown owner go too.
     const id = String(session.user.id)
@@ -357,7 +360,18 @@ export const useSessionStore = defineStore('session', () => {
   /** 401 policy (FR-M01-14): clear the session, then run the registered redirect. */
   async function handleUnauthorized(): Promise<void> {
     clear()
+    endedByUnauthorized = true
     await unauthorizedRedirect?.()
+  }
+
+  /**
+   * Whether the session was just ended by a 401, then forgets it (one-shot). A navigation that runs into the guard after the 401
+   * cleared the session (a race with the 401 redirect) still lands on `/login?kembali=` with the expired-session banner (AC-ERR-2).
+   */
+  function takeEndedByUnauthorized(): boolean {
+    const was = endedByUnauthorized
+    endedByUnauthorized = false
+    return was
   }
 
   /**
@@ -388,6 +402,7 @@ export const useSessionStore = defineStore('session', () => {
       }
     }
     clear()
+    endedByUnauthorized = false
     dropLocalDrafts()
     clearAllDrafts() // pp.draft.* (FR-ERR-8): removed on logout, kept on a 401
     setDraftOwner(null)
@@ -426,6 +441,7 @@ export const useSessionStore = defineStore('session', () => {
     slide,
     clear,
     handleUnauthorized,
+    takeEndedByUnauthorized,
     refreshUser,
     logout,
   }
