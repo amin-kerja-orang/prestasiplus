@@ -213,9 +213,9 @@ describe('S6 MysteryBoxPage', () => {
     expect(w.get('[data-testid="box-1"]').text()).toContain('1-20')
     expect(w.get('[data-testid="box-1"]').text()).toContain('1-10')
     expect(w.find('[data-testid="box-1-ribbon"]').exists()).toBe(false)
-    expect(w.get('[data-testid="box-2-ribbon"]').text()).toBe('rare')
-    expect(w.get('[data-testid="box-3-ribbon"]').text()).toBe('epic')
-    expect(w.get('[data-testid="box-4-ribbon"]').text()).toBe('legendary')
+    expect(w.get('[data-testid="box-2-ribbon"]').text()).toBe('Rare')
+    expect(w.get('[data-testid="box-3-ribbon"]').text()).toBe('Epic')
+    expect(w.get('[data-testid="box-4-ribbon"]').text()).toBe('Legendary')
     expect(w.find('[data-testid="box-history"]').exists()).toBe(false)
   })
 
