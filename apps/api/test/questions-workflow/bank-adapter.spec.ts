@@ -4,7 +4,7 @@ import { ApiError } from '../../src/common/errors/api-error'
 import { QuestionsRepository, QuestionsService, type QuestionCreateInput } from '../../src/modules/questions'
 import { QuestionBankAdapter, QuestionWorkflowPorts, QuestionWorkflowService } from '../../src/modules/questions/workflow'
 import { answeredSession, bootWorkflowApp, count, loginAll, type Client, type WorkflowTestApp } from './helpers'
-import { curriculumIds, uploadClient } from './imports-support'
+import { uploadClient } from './imports-support'
 import { actorOf, failure } from './lifecycle-support'
 
 /** BE-10 on the REAL question bank (BE-09) through `QuestionBankAdapter`. */
@@ -210,44 +210,16 @@ describe('question bank adapter (real BE-09 bank)', () => {
     expect((await c.admin.post('/api/questions/999999999/ai-explanation')).status).toBe(404)
   })
 
-  it('a Guru CSV import creates real review questions owned by the Guru', async () => {
-    const ids = await curriculumIds(t)
+  it('a Guru CSV import creates intake items of one guru batch, not questions (S6-T06, D113)', async () => {
     const teacher = await uploadClient(t, 'teacher')
-    const head = 'question_text,option_a,option_b,option_c,option_d,correct_answer,subject_id,education_level_id,difficulty_level,marks,explanation'
-    const tail = `${ids.subject},${ids.level},2,1,`
-    const file = [head, `"Apakah ibu negara Malaysia?",Kuala Lumpur,Putrajaya,Johor Bahru,Ipoh,a,${tail}`, `"Apakah warna langit biru?",Merah,Hijau,Biru,Kuning,C,${tail}`, `"Jawapan salah",A,B,C,D,E,${tail}`].join('\n')
-    const mine = () => count(t.db, 'select count(*) n from questions where created_by_id = $1::bigint', [teacher.userId])
-    const before = await mine()
+    const head = 'subjek,tingkatan,bab,sp,tp,aras,kesukaran,soalan,pilihan_a,pilihan_b,pilihan_c,pilihan_d,jawapan,penerangan'
+    const file = [head, 'Matematik,4,,,,,2,Apakah ibu negara Malaysia?,Kuala Lumpur,Putrajaya,Johor Bahru,Ipoh,a,', 'Matematik,4,,,,,2,Jawapan salah,A,B,C,D,E,'].join('\n')
+    const questions = () => count(t.db, 'select count(*) n from questions')
+    const before = await questions()
     const res = await teacher.upload('/api/guru/questions/import', { name: 'guru.csv', body: file })
     expect(res.status, JSON.stringify(res.body)).toBe(200)
-    expect(res.body.data.imported).toBe(2)
-    expect(res.body.data.failed).toEqual([{ row: 4, message: 'Jawapan betul mesti A, B, C atau D.' }])
-    expect(await mine()).toBe(before + 2)
-    const rows = await t.db.query<{ id: string; status: string; stem_ms: string; correct: string }>(
-      `select q.id::text, v.status, v.stem_ms, k.content->>'correct' as correct
-         from questions q join question_versions v on v.question_id = q.id and v.version_no = q.latest_version_no
-         left join question_parts p on p.question_version_id = v.id left join answer_keys k on k.part_id = p.id
-        where q.created_by_id = $1::bigint order by q.id desc limit 2`,
-      [teacher.userId],
-    )
-    expect(rows.map((r) => r.status)).toEqual(['review', 'review'])
-    expect(rows[0]?.stem_ms).toBe('Apakah warna langit biru?')
-    expect(rows[0]?.correct).toBe('C')
-    const other = await failure(svc.transition(rows[0]!.id, 'draft', actorOf(c.otherTeacher)))
-    expect(other.code).toBe('NOT_FOUND')
-    expect((await svc.transition(rows[0]!.id, 'draft', actorOf(c.admin), { reason: 'Semak semula' })).to).toBe('draft')
-  })
-
-  it('a row with fewer than 3 options is a failed row and the other rows still import', async () => {
-    const ids = await curriculumIds(t)
-    const teacher = await uploadClient(t, 'teacher')
-    const head = 'question_text,option_a,option_b,option_c,option_d,correct_answer,subject_id,education_level_id,difficulty_level,marks,explanation'
-    const tail = `${ids.subject},${ids.level},2,1,`
-    const file = [head, `"Dua pilihan sahaja",A,B,,,B,${tail}`, `"Apakah warna rumput segar?",Merah,Hijau,Biru,,B,${tail}`].join('\n')
-    const before = await count(t.db, 'select count(*) n from questions')
-    const res = await teacher.upload('/api/guru/questions/import', { name: 'dua.csv', body: file })
-    expect(res.status, JSON.stringify(res.body)).toBe(200)
-    expect(res.body.data).toEqual({ imported: 1, failed: [{ row: 2, message: 'Pilihan jawapan mesti sekurang-kurangnya 3.' }] })
-    expect(await count(t.db, 'select count(*) n from questions')).toBe(before + 1)
+    expect(res.body.data).toEqual({ imported: 1, errors: [{ row: 3, message: 'Jawapan mesti A, B, C atau D.' }] })
+    expect(await questions()).toBe(before)
+    expect(await count(t.db, `select count(*) n from intake_items i join intake_batches b on b.id = i.batch_id where b.source = 'guru' and b.owner_user_id = $1::bigint and i.review_state = 'needs_review'`, [teacher.userId])).toBe(1)
   })
 })
