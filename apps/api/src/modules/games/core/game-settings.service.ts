@@ -65,7 +65,6 @@ export const GAME_SETTINGS = {
   'game_enabled_cabaran-kilat': { default: 1, min: 0, max: 1 },
   'game_enabled_tembak-jawapan': { default: 1, min: 0, max: 1 },
   'game_enabled_susun-jawapan': { default: 1, min: 0, max: 1 },
-  'game_enabled_sambung-kata': { default: 1, min: 0, max: 1 },
   'game_enabled_kad-memori': { default: 1, min: 0, max: 1 },
   'game_enabled_jutawan': { default: 1, min: 0, max: 1 },
   'game_enabled_roda-nasib': { default: 1, min: 0, max: 1 },
