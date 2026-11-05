@@ -405,8 +405,8 @@ describe('review fixes (BJS-04)', () => {
     expect(boleh).toBeGreaterThanOrEqual(Math.floor(total * 0.8))
   })
 
-  it('choose-N marks shortage quotes the effective budget, not the offered marks (r6, AC-34.4)', () => {
-    // choose 2 of 3, budget 24 -> 12 per question, offered 36; only stimulus pairs exist, so 3 questions cannot be formed
+  it('choose-N with only stimulus pairs is short of questions, and a marks line quotes the effective budget, not the offered marks (r6, AC-34.4, FR-QA-41)', () => {
+    // choose 2 of 3, budget 24 -> 12 per question, offered 36; only stimulus pairs exist, and FR-QA-41 keeps a group out of Pilih N, so none can be drawn
     const bp = blueprint([section({ label: 'Bahagian C', rule: { type: 'choose', n: 2 }, questionCount: 3, markBudget: 24 })])
     const pool = ['A', 'B', 'C', 'D'].flatMap((g) => [
       q(`${g}1`, '1', 2, 12, 0, { groupId: g, groupPosition: 1, groupSize: 2 }),
@@ -414,7 +414,8 @@ describe('review fixes (BJS-04)', () => {
     ])
     const r = composeStandardPaper(bp, pool, { seed: 1 })
     if (r.ok || r.reason !== 'shortage') throw new Error(JSON.stringify(r).slice(0, 300))
-    expect(shortageLine(r.shortages[0]!)).toBe('Bahagian C: tidak dapat menyusun 24 markah daripada soalan yang tersedia')
+    expect(shortageLine(r.shortages[0]!)).toBe('Bahagian C: perlu 3 soalan, hanya 0 tersedia')
+    expect(shortageLine({ section: 'Bahagian C', kind: 'marks', need: bp.sections[0]!.markBudget, have: 0 })).toBe('Bahagian C: tidak dapat menyusun 24 markah daripada soalan yang tersedia')
   })
 
   it('TEMA_UNIT is flagged by the oracle', () => {

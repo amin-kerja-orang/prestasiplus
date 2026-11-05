@@ -5,6 +5,7 @@ import {
   BIJAK_SET_BUILDER_PROPOSED,
   bijakDefaultLevelScope,
   bijakNegeriOptions,
+  bijakNegeriSlug,
   bijakRuleLabel,
   BijakBuilderQuestionCreateSchema,
   BijakBuilderSectionAddSchema,
@@ -96,7 +97,7 @@ import {
 } from './exam-core.adapter'
 import { checkPaperDetailed, normalizeUnits, reorderUnits, unitMarksOf, unitsOf, addUnit, removeUnit, type CheckIssue, type PaperCheck } from './paper-check'
 import { blockerView, toBlockers, type BlockerDraft } from './blockers'
-import { shortageToWire, standardForPaper, violationLines } from './standard'
+import { isScaledPaper, shortageToWire, standardForPaper, violationLines } from './standard'
 import { BijakBuilderPorts, type BuilderGroupInfo, type BuilderQuestionInfo, type BuilderQuestionOrigin, type BuilderQuestionRef } from './ports'
 
 type Info = ReadonlyMap<string, BuilderQuestionInfo>
@@ -176,7 +177,7 @@ function sectionFigures(s: SectionRow, marksOf: (questionId: string) => number, 
 
 type Origins = ReadonlyMap<string, BuilderQuestionOrigin>
 
-const sameNegeri = (a: string, b: string): boolean => a.trim().toLowerCase() === b.trim().toLowerCase()
+const sameNegeri = (a: string, b: string): boolean => bijakNegeriSlug(a) === bijakNegeriSlug(b)
 
 /** The Tahun and Negeri filter of one question: empty lists match everything, a question with no source paper matches only then. */
 function originMatches(origin: BuilderQuestionOrigin | undefined, years: readonly number[], negeri: readonly string[]): boolean {
@@ -932,6 +933,8 @@ export class BuilderService {
    */
   private contractConformance(paper: PaperTree, blueprint: NonNullable<Awaited<ReturnType<BuilderRepository['blueprintById']>>>, ev: Evaluation): BlockerDraft[] {
     const out: BlockerDraft[] = []
+    // S3-T02, PO decision item 5: a scaled set holds another size than its Kontrak, so its `Pilih N` follows the share and the list of marks describes another size. One answer for the paper.
+    const scaled = isScaledPaper(paper, blueprint)
     // Question numbers continue across Bahagian (45 section 5.4 item 6); a printed number label is kept.
     let number = 0
     for (const s of paper.sections) {
@@ -943,8 +946,6 @@ export class BuilderService {
       }
       const b = blueprint.sections.find((x) => x.position === s.position)
       if (!b) continue
-      // S3-T02, PO decision item 5: a scaled set holds fewer questions than its Kontrak section, so its `Pilih N` follows the share and the list of marks describes another size.
-      const scaled = s.questionCount !== b.questionCount
       const mine = ruleOf(s.ruleType, s.ruleN)
       const theirs = ruleOf(b.ruleType === 'choose' ? 'choose' : 'all', b.ruleN)
       if (mine.type !== theirs.type || (!scaled && mine.type === 'choose' && theirs.type === 'choose' && mine.n !== theirs.n)) {
@@ -1322,7 +1323,7 @@ export class BuilderService {
   private originCounts(ids: readonly string[], origins: Origins): { negeri: string; count: number }[] {
     const counts = new Map<string, number>()
     for (const id of ids) {
-      const n = origins.get(id)?.negeri
+      const n = bijakNegeriOptions([origins.get(id)?.negeri ?? ''])[0]
       if (n) counts.set(n, (counts.get(n) ?? 0) + 1)
     }
     return [...counts.entries()].map(([negeri, count]) => ({ negeri, count })).sort((a, b) => b.count - a.count || a.negeri.localeCompare(b.negeri, 'ms'))

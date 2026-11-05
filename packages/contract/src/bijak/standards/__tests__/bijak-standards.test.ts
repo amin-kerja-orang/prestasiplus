@@ -543,6 +543,8 @@ describe('pool preview and draft generation', () => {
     expect(message({ kertas: 0 })).toBe('Kertas tidak sah.')
     expect(message({ count: 0 })).toBe('Bilangan soalan mesti antara 1 dan 100.')
     expect(message({ count: 1.5 })).toBe('Bilangan soalan mesti antara 1 dan 100.')
+    expect(message({ count: 101 })).toBe('Bilangan soalan mesti antara 1 dan 100.')
+    expect(BijakDraftGenerateRequestSchema.safeParse({ subject: 'MAT', kertas: 2, count: 100 }).success).toBe(true)
     expect(message({ subject: '   ' })).toBe('Sila pilih subjek.')
     expect(BijakDraftGenerateRequestSchema.safeParse({ subject: 'MAT', kertas: 2, levelScope: 'T4' }).success).toBe(false)
     expect(BijakDraftGenerateResultSchema.safeParse({ id: '7' }).success).toBe(true)

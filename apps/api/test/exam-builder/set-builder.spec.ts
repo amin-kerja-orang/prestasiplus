@@ -40,6 +40,7 @@ const ids = {
 }
 const GROUP = '820001'
 const ORIGIN: Record<string, BuilderQuestionOrigin> = {
+  '720005': { year: 2022, negeri: 'negeri-sembilan' }, // a stored slug (OPT-NEGERI-KERTAS)
   '720001': { year: 2025, negeri: 'Johor' },
   '720002': { year: 2025, negeri: 'Johor' },
   '720003': { year: 2024, negeri: 'mrsm' },
@@ -179,6 +180,7 @@ describe('S3-T02 One Set Builder', () => {
     it('a count above the contract total is refused with the field; below 1 carries the PRD30 message', async () => {
       const above = expectError(await generate({ count: 7 }), 'VALIDATION_ERROR', 422)
       expect(above.fields).toEqual({ count: 'Bilangan soalan melebihi jumlah kontrak (6).' })
+      expect(expectError(await generate({ count: 101 }), 'VALIDATION_ERROR', 422).fields).toEqual({ count: 'Bilangan soalan mesti antara 1 dan 100.' })
       expect(expectError(await generate({ count: 0 }), 'VALIDATION_ERROR', 422).fields).toEqual({ count: 'Bilangan soalan mesti antara 1 dan 100.' })
     })
 
@@ -202,10 +204,12 @@ describe('S3-T02 One Set Builder', () => {
     it('Pratonton kolam: the fields of the Jana set form, and the verdict of the asked size', async () => {
       const all = await preview('')
       expect(all).toMatchObject({ groupTotal: 1, contractTotal: 6, levelScope: 't4_t5', verdict: 'boleh' })
-      expect(all.filters).toEqual({ years: [2025, 2024, 2023], negeri: ['Johor', 'Kedah', 'MRSM', 'SBP'] })
+      expect(all.filters).toEqual({ years: [2025, 2024, 2023, 2022], negeri: ['Johor', 'Kedah', 'Negeri Sembilan', 'MRSM', 'SBP'] })
       const narrow = await preview('&years=2024&years=2023')
       expect(narrow.eligibleTotal).toBe(4)
       expect(narrow.publishedTotal).toBe(4)
+      // A stored slug is offered by its label and that label matches it.
+      expect((await preview(`&negeri=${encodeURIComponent('Negeri Sembilan')}`)).eligibleTotal).toBe(1)
       // The options do not shrink with the filter.
       expect(narrow.filters).toEqual(all.filters)
       expect(narrow.verdict).toBe('tidak_boleh')
@@ -233,7 +237,7 @@ describe('S3-T02 One Set Builder', () => {
       expect(await listed()).not.toContain(t5Only)
       expect(await listed()).toContain(both)
       expectError(await student.get(`/api/bijak/papers/${t5Only}`), 'NOT_FOUND', 404)
-      expect((await student.post('/api/bijak/attempts', { paperId: t5Only, mode: 'exam' })).status).toBe(404)
+      // The attempt and kuiz paths are not mounted in this harness: test/bijak-integration/level-scope.spec.ts proves them on the real wiring.
 
       await setGrade(11)
       expect(await listed()).toContain(t5Only)
@@ -291,7 +295,8 @@ describe('S3-T02 One Set Builder', () => {
       expect(group).toHaveLength(1)
       expect(group[0]).toMatchObject({ groupId: GROUP, questionIds: ids.g })
       expect((await bankOf(sectionA, '&tahun=2019')).data).toEqual([])
-      expect((await bankOf(sectionA, '&tahun=2019')).filters.years).toEqual([2025, 2024, 2023])
+      expect((await bankOf(sectionA, '&tahun=2019')).filters.years).toEqual([2025, 2024, 2023, 2022])
+      expect((await bankOf(sectionA, `&negeri=${encodeURIComponent('Negeri Sembilan')}`)).data.flatMap((u) => u.questionIds)).toEqual(['720005'])
       expectError(await admin.get(`/api/admin/papers/${paper}/sections/${sectionA}/pool?tahun=abc`), 'VALIDATION_ERROR', 422)
     })
   })
@@ -435,6 +440,19 @@ describe('S3-T02 One Set Builder', () => {
       } finally {
         await setContract(SERVING)
         await setMarks(1, null)
+      }
+    })
+
+    it('scaled is one answer for the paper: a Bahagian whose rounded share equals its contract count is not held to the list of marks', async () => {
+      // Contract 3, 1, 2 at count 5 is 2, 1, 2: B keeps its count of 1 and reads as unscaled section by section, and its list asks 2 marks of a 1-mark question.
+      await setMarks(2, '[2]')
+      try {
+        const id = await generated({ count: 5 })
+        const e = await editor(id)
+        expect(e.paper.sections.map((x) => x.questionCount)).toEqual([2, 1, 2])
+        expect((await review(id)).blockerDetails.filter((b) => b.code === 'MARKS_NOT_IN_CONTRACT')).toEqual([])
+      } finally {
+        await setMarks(2, null)
       }
     })
 

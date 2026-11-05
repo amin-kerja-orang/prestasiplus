@@ -1,5 +1,5 @@
 /** Pure rules of the papers module (no database, no Nest): mapping, defaults and the generation seed. */
-import type { BijakBlueprintSource } from '@pp/contract'
+import { bijakLevelScopeAllows, type BijakBlueprintSource } from '@pp/contract'
 
 import { fnv1a32 } from '../../../db/prng'
 import type { Blueprint, BlueprintSection, SectionRule } from './exam-core.adapter'
@@ -13,6 +13,14 @@ export const SOURCE_TO_WIRE: Readonly<Record<string, BijakBlueprintSource>> = {
 
 export function sourceToWire(source: string): BijakBlueprintSource {
   return SOURCE_TO_WIRE[source] ?? 'Draf'
+}
+
+/**
+ * PO decision 2026-11-05 item 6: the ONE scope rule of every pupil read (list, cover, attempt, kuiz). `pilihan` papers only: a generated (Jana)
+ * paper belongs to the user it was made for. `grade` is `users.grade`.
+ */
+export function paperInPupilScope(paper: { kind: string; levelScope: string | null }, grade: number | null): boolean {
+  return paper.kind !== 'pilihan' || bijakLevelScopeAllows(paper.levelScope, grade)
 }
 
 export function ruleOf(ruleType: string, ruleN: number | null): SectionRule {

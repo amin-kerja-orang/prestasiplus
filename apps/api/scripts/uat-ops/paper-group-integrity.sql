@@ -56,4 +56,12 @@ GROUP BY s.paper_id, s.id, s.label, s.question_count
 HAVING s.question_count <> count(pl.id)
 ORDER BY s.paper_id, s.id;
 
+\echo '(f) placements whose question has no row (the orphan report of migration 0160: reserved PoC ids get an empty row there, any other id stops it)'
+SELECT pl.id AS placement_id, pl.paper_section_id, pl.question_id,
+       (pl.question_id >= 9000000000 AND pl.question_id < 10000000000) AS reserved_poc_id
+FROM paper_placements pl
+LEFT JOIN questions q ON q.id = pl.question_id
+WHERE q.id IS NULL
+ORDER BY pl.id;
+
 ROLLBACK;

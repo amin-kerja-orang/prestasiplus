@@ -2,6 +2,8 @@ import { Inject, Injectable } from '@nestjs/common'
 
 import type { Blueprint, BlueprintSection, Paper, PaperPlacement, PaperSection, Prisma } from '../../../db/generated/client'
 import { PrismaService } from '../../../db/prisma.service'
+import type { BijakProgressSource } from './ports'
+import { paperInPupilScope } from './rules'
 
 export type { Blueprint, BlueprintSection, Paper, PaperPlacement, PaperSection }
 
@@ -68,6 +70,16 @@ export class PapersRepository {
       include: TREE,
       orderBy: { id: 'asc' },
     })
+  }
+
+  /**
+   * S3-T02, PO decision item 6, one paper for one pupil: `open` in their Tingkatan; `has_sitting` outside it, with a sitting of theirs already on it (it stays
+   * reachable and an open one resumes, no new sitting starts); `closed` otherwise, which every caller answers as a 404, so a pupil cannot tell the paper exists.
+   */
+  async pupilScope(paper: { id: bigint; kind: string; levelScope: string | null }, userId: string, progress: BijakProgressSource): Promise<'open' | 'has_sitting' | 'closed'> {
+    if (paper.kind !== 'pilihan' || !paper.levelScope || paperInPupilScope(paper, await this.userGrade(userId))) return 'open'
+    const id = paper.id.toString()
+    return (await progress.progressFor(userId, [id])).has(id) ? 'has_sitting' : 'closed'
   }
 
   /** S3-T02, PO decision item 6: `users.grade` of the pupil (T4 = 10, T5 = 11); null when none is known. */

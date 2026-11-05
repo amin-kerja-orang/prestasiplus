@@ -33,6 +33,33 @@ describe('scaleSectionCounts (FR-ADM-Q13.2, largest remainder)', () => {
     expect(scaleSectionCounts([3, 1, 2], 3)).toEqual([2, 0, 1])
   })
 
+  it('a tie of the fractions is exact: [1,3,6] at 6 keeps every section', () => {
+    expect(scaleSectionCounts([1, 3, 6], 6)).toEqual([1, 2, 3])
+  })
+
+  it('brute force: every small contract and count against the exact rule in rational terms', () => {
+    const exact = (counts: number[], count: number): number[] => {
+      const total = counts.reduce((n, c) => n + c, 0)
+      const out = counts.map((c) => (count * c - (count * c) % total) / total)
+      let left = count - out.reduce((n, c) => n + c, 0)
+      while (left > 0) {
+        let best = -1
+        counts.forEach((c, i) => {
+          const taken = out[i]! !== (count * c - (count * c) % total) / total
+          if (taken) return
+          if (best < 0 || (count * c) % total > (count * counts[best]!) % total) best = i
+        })
+        out[best]! += 1
+        left -= 1
+      }
+      return out
+    }
+    for (let a = 1; a <= 12; a++)
+      for (let b = 1; b <= 12; b++)
+        for (let c = 1; c <= 12; c++)
+          for (let k = 1; k <= a + b + c; k++) expect(scaleSectionCounts([a, b, c], k), `${String([a, b, c])}:${String(k)}`).toEqual(exact([a, b, c], k))
+  })
+
   it('always sums to the count', () => {
     for (const counts of [[40], [1, 1, 1], [17, 3, 5, 9], [100, 1]]) {
       const total = counts.reduce((n, c) => n + c, 0)
@@ -110,6 +137,27 @@ describe('scaleStandardBlueprint (PO decision item 5)', () => {
         }
       }
     }
+  })
+
+  it('FR-QA-41: Pilih 2 of 4, budget 4: a group worth more than one choice is not drawn, whatever the seed', () => {
+    const bp = blueprint([section({ position: 1, rule: { type: 'choose', n: 2 }, questionCount: 4, markBudget: 4 })])
+    const twoSingles = singles('s', 2, 2)
+    const pairOf2 = [1, 2].map((i) => facts(`g4m${String(i)}`, { groupId: 'g4', groupPosition: i, groupSize: 2, leaves: [leaf({ marks: 2 })] }))
+    for (let seed = 1; seed <= 20; seed++) expect(composeStandardPaper(bp, [...twoSingles, ...pairOf2], { seed }).ok, `seed ${String(seed)}`).toBe(false)
+    expect(previewStandard(bp, [...twoSingles, ...pairOf2]).verdict).toBe('tidak_boleh')
+    // Positive control: units worth one choice each compose.
+    const r = composeStandardPaper(bp, [...singles('s', 4, 2), ...pairOf2], { seed: 1 })
+    if (!r.ok) throw new Error(r.reason)
+    expect(r.sections[0]!.questionIds.every((id) => id.startsWith('s'))).toBe(true)
+  })
+
+  it('FR-QA-41: a scaled draw under Pilih 2 of one 4-member group is refused', () => {
+    const bp = blueprint([section({ position: 1, rule: { type: 'choose', n: 4 }, questionCount: 8, markBudget: 8 })])
+    const fourOf2 = [1, 2, 3, 4].map((i) => facts(`g8m${String(i)}`, { groupId: 'g8', groupPosition: i, groupSize: 4, leaves: [leaf({ marks: 2 })] }))
+    const target = scaleStandardBlueprint(bp, fourOf2, 4)!
+    expect(target.sections[0]).toMatchObject({ questionCount: 4, rule: { type: 'choose', n: 2 }, markBudget: 4 })
+    expect(composeStandardPaper(target, fourOf2, { seed: 1 }).ok).toBe(false)
+    expect(composeStandardPaper(target, singles('s', 4, 2), { seed: 1 }).ok).toBe(true)
   })
 
   it('a section that only groups could fill is refused rather than cut', () => {

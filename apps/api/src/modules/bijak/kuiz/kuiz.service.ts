@@ -27,6 +27,7 @@ import { type GradedAnswer, PracticeRepository, type ServedRef, type StoredCheck
 import { pinServableForNewSitting, QuestionsRepository } from '../../questions'
 import { type DrawCandidate, drawUnits } from '../../questions/serving'
 import type { QuestionRecord, StimulusGroupRecord } from '../../questions/types'
+import { BijakPapersPorts } from '../papers/ports'
 import { PapersRepository } from '../papers/papers.repository'
 import {
   alreadyFinished,
@@ -80,6 +81,7 @@ export class KuizService {
     @Inject(PracticeRepository) private readonly practice: PracticeRepository,
     @Inject(PracticePorts) private readonly ports: PracticePorts,
     @Inject(PapersRepository) private readonly papers: PapersRepository,
+    @Inject(BijakPapersPorts) private readonly paperPorts: BijakPapersPorts,
   ) {}
 
   // --- random quiz -------------------------------------------------------------------------------
@@ -364,6 +366,8 @@ export class KuizService {
     const paper = await this.papers.findPaper(idFromString(paperId))
     if (!paper || paper.status !== 'published') throw kuizPaperNotFound()
     if (paper.kind === 'jana' && paper.generatedForUserId?.toString() !== userId) throw kuizPaperNotFound()
+    // S3-T02, PO decision item 6: the same rule as the list, the cover and the attempt; this read and `check` hand out the answer key.
+    if ((await this.papers.pupilScope(paper, userId, this.paperPorts.progressSource)) === 'closed') throw kuizPaperNotFound()
     // H-A13 / AC-R1-18.4: a paper that places a question the bank no longer serves (archived after Terbit) is refused. This is the
     // first half of the new-sitting rule (`attempt-source.ts`: a live approved version; `is_active` is NOT checked, the placement is
     // what the paper froze). It is NOT the whole rule: a new sitting also refuses a question the Bijak bridge cannot map (bridge

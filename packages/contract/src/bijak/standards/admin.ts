@@ -324,10 +324,11 @@ export const BijakDraftGenerateRequestSchema = z
       .number({ error: BIJAK_BUILDER_MESSAGES.countRange })
       .int(BIJAK_BUILDER_MESSAGES.countRange)
       .min(1, BIJAK_BUILDER_MESSAGES.countRange)
+      .max(100, BIJAK_BUILDER_MESSAGES.countRange)
       .optional()
       .meta({
         description:
-          '`Bilangan soalan`, from 1 to the contract total, default the contract total. A smaller count scales the contract sections by largest remainder (ties to the earlier section) and never splits a stimulus group (FR-ADM-Q13.2, PO decision item 5). Above the total: 422 `fields.count`.',
+          '`Bilangan soalan`, from 1 to 100 and at most the contract total, default the contract total (omitted when the contract total is above 100). A smaller count scales the contract sections by largest remainder (ties to the earlier section) and never splits a stimulus group (FR-ADM-Q13.2, PO decision item 5). Above the total: 422 `fields.count`.',
       }),
     levelScope: BijakLevelScopeSchema.optional().meta({ description: '`Dilihat murid`; omitted = the default from the contract.' }),
   })

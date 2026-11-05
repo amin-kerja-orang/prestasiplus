@@ -58,12 +58,13 @@ export interface BijakPaperSource {
 /**
  * Attempt eligibility for BE-16 (`BijakPaperSource`).
  *
- * - `not_found`: unknown or malformed id, a paper that is not `published`, or a generated (Jana)
- *   paper of another user. No hint which of the three (the same 404 as the cover).
+ * - `not_found`: unknown or malformed id, a paper that is not `published`, a generated (Jana)
+ *   paper of another user, or (S3-T02) a `pilihan` paper outside the pupil's Tingkatan. No hint which (the same 404 as the cover).
  * - `not_eligible`: the paper exists for this user but cannot be sat now: it has no placed question,
  *   or a placed question is not (or no longer) published in the question bank (checked through the
  *   `BijakQuestionSource` port; a question the source does not return is not eligible), or (REQ-B-058) the version a placement
- *   pinned is taken down (archived with a reason other than `superseded`).
+ *   pinned is taken down (archived with a reason other than `superseded`). Also (S3-T02) a paper outside the pupil's Tingkatan that they already have a
+ *   sitting on: `start` resumes an open one, and no new sitting starts.
  *
  * `isTest` is the caller's Mod Pelajar flag. It does not widen access: test data is flagged on the
  * rows the caller writes, never used to see another user's paper. No answer key is read here.
@@ -91,6 +92,9 @@ export class BijakPapersAttemptSource implements BijakPaperSource {
     const paper = await this.repo.findPaper(id)
     if (!paper || paper.status !== 'published') return { ok: false, reason: 'not_found' }
     if (paper.kind === 'jana' && paper.generatedForUserId?.toString() !== input.userId) return { ok: false, reason: 'not_found' }
+    const scope = await this.repo.pupilScope(paper, input.userId, this.ports.progressSource)
+    if (scope === 'closed') return { ok: false, reason: 'not_found' }
+    if (scope === 'has_sitting') return { ok: false, reason: 'not_eligible' }
 
     const questionIds = paper.sections.flatMap((s) => s.placements.map((p) => idToString(p.questionId)))
     if (questionIds.length === 0) return { ok: false, reason: 'not_eligible' }
