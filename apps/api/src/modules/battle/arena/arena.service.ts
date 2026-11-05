@@ -171,6 +171,7 @@ export class ArenaService {
         await this.prisma.client.battleAnswer.create({
           data: { battleId: uuid, userId: mine.userId, position: index, questionId: expected.questionId, optionId: timedOut ? null : optionId, correct: graded.correct, seconds: whole, points, createdAt: now },
         })
+        if (!locked.isTest) await this.engine.recordAnswer({ userId, battleId: uuid, questionId, position: index, isCorrect: graded.correct, answeredAt: now })
         // The opponent is simulated from its pre-drawn list (D53(a)); a row already there for this position is kept as it is.
         const simulated = await this.prisma.client.battleAnswer.createMany({
           data: [

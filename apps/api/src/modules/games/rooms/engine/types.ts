@@ -62,12 +62,26 @@ export interface RoomState {
   /** Start of the current round, ms since epoch (injected clock), null before the start. */
   roundStartedMs: number | null
   log: string[]
+  /** Questions the acting human answered or timed out on: the `part_ref` position (absent on a room from before FR-GM-00.5). */
+  answerCount?: number
+  /** When the acting human really answered, in order; a timeout is no answer (the pace guard reads it). */
+  answerMs?: number[]
+}
+
+/** One bank question the acting human answered or timed out on (FR-GM-00.5); a robot's or a simulated seat's answer is never one. */
+export interface AnsweredQuestion {
+  questionId: string
+  position: number
+  correct: boolean
+  atMs: number
 }
 
 export interface EngineOut {
   state: RoomState
   players: EnginePlayer[]
   finished: boolean
+  /** What this step answered, in order; the service writes each through the answer port in the same transaction. */
+  answered?: AnsweredQuestion[]
 }
 
 export type RoomAction =

@@ -9,7 +9,7 @@ import { CLOCK, type Clock } from '../../../db/clock'
 import { idFromString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { prngStream } from '../../../db/prng'
-import { GameSettingsService, GamesPorts } from '../../games'
+import { GameSettingsService, GamesPorts, gameAnswerEntry } from '../../games'
 import { BattleDeps, type BattleStudent } from '../battle.deps'
 import { GAME_RESULT_PORT, type GameResultEvent, type GameResultPort } from '../game-result.port'
 import { rawInvalid } from '../raw-response'
@@ -39,6 +39,11 @@ export class BattleEngine {
   /** The robot's chance of a correct answer (`battle_bot_accuracy_pct`), read per answer. */
   botAccuracy(): Promise<number> {
     return this.ports.platformAccuracy.accuracy()
+  }
+
+  /** FR-GM-00.5, 48 section 3.5: one row of mode `battle`, in the caller's transaction. Never for a robot or Mod Pelajar: the caller decides. */
+  recordAnswer(a: { userId: string; battleId: string; questionId: string; position: number; isCorrect: boolean; answeredAt: Date }): Promise<unknown> {
+    return this.ports.answers.record(gameAnswerEntry({ userId: a.userId, attemptId: a.battleId, questionId: a.questionId, gameKey: 'battle', position: a.position, isCorrect: a.isCorrect, answeredAt: a.answeredAt }))
   }
 
   /** How long a queue entry waits for a human before the robot (`battle_bot_fallback_seconds`); null: never a robot. */

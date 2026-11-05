@@ -11,7 +11,7 @@ import { PrismaService } from '../../../../db/prisma.service'
 import type { GamesCaller } from '../../caller'
 import { CurriculumRepository } from '../../../curriculum'
 import { GameQuestions, type ServedQuestion } from '../../core/game-questions.service'
-import { GamesPorts } from '../../core/ports'
+import { GamesPorts, gameAnswerEntry } from '../../core/ports'
 import { GameSubjects } from '../../core/subjects'
 import {
   jutawanLifelineInvalid,
@@ -166,7 +166,10 @@ export class JutawanService {
 
       const correct = optionId === current.keyIndex
       const seq = s.checks + 1
-      await this.repo.storeAnswer(current.id, { seq, correct, optionId, at: this.clock.now() })
+      const at = this.clock.now()
+      await this.repo.storeAnswer(current.id, { seq, correct, optionId, at })
+      // FR-GM-00.5, 48 section 3.5: in the same transaction as the answer; Mod Pelajar writes no row.
+      if (!caller.isTest) await this.ports.answers.record(gameAnswerEntry({ userId: caller.userId, attemptId: s.id, questionId: current.questionId, gameKey: 'jutawan', position: current.position, isCorrect: correct, answeredAt: at }))
       const common = { checks: seq, correctCount: s.correctCount + (correct ? 1 : 0) }
       if (correct && s.level + 1 < JUTAWAN_QUESTIONS) {
         const level = s.level + 1

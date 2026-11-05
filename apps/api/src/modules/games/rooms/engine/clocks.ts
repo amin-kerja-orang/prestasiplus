@@ -5,7 +5,7 @@
  */
 import { CROSSWORD_MS, PF_ROUNDS, PF_ROUND_MS } from './constants'
 import { applyTimeout } from './engine'
-import type { EnginePlayer, EngineRoom, RoomState, StreamFactory } from './types'
+import type { AnsweredQuestion, EnginePlayer, EngineRoom, RoomState, StreamFactory } from './types'
 
 export interface ClockInput {
   room: EngineRoom
@@ -25,6 +25,8 @@ export interface ClockOut {
   finished: boolean
   /** At least one timeout was applied (the caller must write the state back). */
   changed: boolean
+  /** The questions those timeouts wrote off, in order. */
+  answered: AnsweredQuestion[]
 }
 
 export function resolveClocks(input: ClockInput): ClockOut {
@@ -32,6 +34,7 @@ export function resolveClocks(input: ClockInput): ClockOut {
   let players = input.players
   let finished = false
   let changed = false
+  const answered: AnsweredQuestion[] = []
   for (let i = 0; i <= PF_ROUNDS + 1; i++) {
     let due = false
     let nextStart = input.nowMs
@@ -54,10 +57,11 @@ export function resolveClocks(input: ClockInput): ClockOut {
     state = res.state
     players = res.players
     changed = true
+    answered.push(...(res.answered ?? []))
     if (res.finished) {
       finished = true
       break
     }
   }
-  return { state, players, finished, changed }
+  return { state, players, finished, changed, answered }
 }

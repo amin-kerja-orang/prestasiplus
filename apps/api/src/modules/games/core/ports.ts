@@ -13,6 +13,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 
 import type { TxClient } from '../../../db/client'
+import { AnswerLogPort, type AnswerLogEntry } from '../../practice/answer-log.port'
 import { GameSettingsService } from './game-settings.service'
 import { WalletGameRewards } from './wallet-rewards'
 
@@ -97,6 +98,27 @@ export class NoBattle implements BattleReadPort {
   }
 }
 
+/* ------------------------------------------------------------------------------------------ answers */
+
+/**
+ * FR-GM-00.5, 48 section 3.5: the row of one answered or timed-out bank question. Marks follow `isCorrect`, a timeout is
+ * not correct. The pupil's pick and seconds stay in the per-game logs. Mod Pelajar writes no row at all: callers skip it.
+ */
+export function gameAnswerEntry(a: { userId: string; attemptId: string; questionId: string; gameKey: string; position: number; isCorrect: boolean; answeredAt: Date }): AnswerLogEntry {
+  return {
+    userId: a.userId,
+    attemptId: a.attemptId,
+    questionId: a.questionId,
+    partRef: `${a.gameKey}#${String(a.position)}`,
+    mode: a.gameKey === 'battle' ? 'battle' : 'game',
+    isCorrect: a.isCorrect,
+    marksAwarded: a.isCorrect ? 1 : 0,
+    marksMax: 1,
+    answeredAt: a.answeredAt,
+    isTest: false,
+  }
+}
+
 /* -------------------------------------------------------------------------------------- the holder */
 
 @Injectable()
@@ -106,7 +128,12 @@ export class GamesPorts {
   private battlePort: BattleReadPort = new NoBattle()
   private readonly bound = new Set<string>()
 
-  constructor(@Inject(WalletGameRewards) rewards: WalletGameRewards, @Inject(GameSettingsService) settings: GameSettingsService) {
+  constructor(
+    @Inject(WalletGameRewards) rewards: WalletGameRewards,
+    @Inject(GameSettingsService) settings: GameSettingsService,
+    /** The one writer of `practice_answers` (S5-T15); joins the caller's transaction. */
+    @Inject(AnswerLogPort) readonly answers: AnswerLogPort,
+  ) {
     this.rewardsPort = rewards
     this.accuracySource = new RobotAccuracySetting(settings)
   }

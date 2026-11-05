@@ -35,7 +35,7 @@ import {
 } from '../errors'
 import { DEFAULT_QUIZ_TILES } from '../games.constants'
 import { NamePrivacy } from '../core/name-privacy.service'
-import { GamesPorts } from '../core/ports'
+import { GamesPorts, gameAnswerEntry } from '../core/ports'
 import { GameQuestions } from '../core/game-questions.service'
 import { GameSettingsService } from '../core/game-settings.service'
 import { GameSubjects } from '../core/subjects'
@@ -476,6 +476,7 @@ export class RoomsService {
       state: res.state,
       players: res.players,
       finished: res.finished,
+      answered: res.answered,
     })
   }
 
@@ -490,6 +491,22 @@ export class RoomsService {
     out: EngineOut,
   ): Promise<{ room: RoomRow; players: PlayerRow[] }> {
     const now = this.clock.now()
+    // FR-GM-00.5, 48 section 3.5: in the same transaction as the state change; Mod Pelajar writes no row.
+    if (!room.isTest) {
+      for (const a of out.answered ?? []) {
+        await this.ports.answers.record(
+          gameAnswerEntry({
+            userId: out.state.humanId,
+            attemptId: room.sessionId,
+            questionId: a.questionId,
+            gameKey: room.game,
+            position: a.position,
+            isCorrect: a.correct,
+            answeredAt: new Date(a.atMs),
+          }),
+        )
+      }
+    }
     for (const ep of out.players) {
       const row = players.find((p) => p.seat === ep.userId)
       if (row)

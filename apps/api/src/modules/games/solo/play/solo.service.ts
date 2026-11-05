@@ -24,7 +24,7 @@ import type { GamesCaller } from '../../caller'
 import { GameQuestions, type ServedQuestion } from '../../core/game-questions.service'
 import { GameSubjects } from '../../core/subjects'
 import { GameUsers } from '../../core/game-users'
-import { GamesPorts } from '../../core/ports'
+import { GamesPorts, gameAnswerEntry } from '../../core/ports'
 import { fieldError, gameNotFound, levelInvalid, rawMessage, soloAlreadyChecked, soloCardMatched, soloCardOpen, soloItemNotFound, soloSessionNotFound, startNotEnoughQuestions } from '../../errors'
 import { SoloItemBuilder } from './solo-items'
 import { type ItemRecord, SoloRepository } from './solo.repository'
@@ -183,8 +183,11 @@ export class SoloService {
       if (item.checkedSeq !== null) throw soloAlreadyChecked()
       const j = await judge(item)
       const seq = s.checks + 1
-      await this.repo.storeCheck(item.id, { seq, correct: j.correct, answer: j.answer, at: this.clock.now() })
+      const at = this.clock.now()
+      await this.repo.storeCheck(item.id, { seq, correct: j.correct, answer: j.answer, at })
       await this.repo.updateSession(s.id, { checks: seq, correctCount: s.correctCount + (j.correct ? 1 : 0) })
+      // FR-GM-00.5, 48 section 3.5: in the same transaction as the check; Mod Pelajar writes no row.
+      if (!caller.isTest) await this.ports.answers.record(gameAnswerEntry({ userId: caller.userId, attemptId: s.id, questionId: item.questionId, gameKey: game, position: seq, isCorrect: j.correct, answeredAt: at }))
       return { correct: j.correct, ...j.result }
     })
   }
@@ -223,6 +226,9 @@ export class SoloService {
       if (match) {
         await this.repo.storeCheck(a.id, { seq, correct: true, answer: d.other_card_id, at, matched: true })
         await this.repo.storeCheck(c.id, { seq, correct: true, answer: d.card_id, at, matched: true })
+        // 48 GAME-12: one row per matched pair, a mismatch writes nothing.
+        const position = board.filter((i) => i.matched).length / 2 + 1
+        if (!caller.isTest) await this.ports.answers.record(gameAnswerEntry({ userId: caller.userId, attemptId: s.id, questionId: a.questionId, gameKey: 'kad-memori', position, isCorrect: true, answeredAt: at }))
       } else {
         await this.repo.touch(a.id, at)
       }

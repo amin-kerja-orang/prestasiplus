@@ -1,6 +1,6 @@
 export { GamesModule } from './games.module'
 export { GamesCoreModule } from './core/core.module'
-export { GamesPorts, NoBattle, RobotAccuracySetting } from './core/ports'
+export { GamesPorts, NoBattle, RobotAccuracySetting, gameAnswerEntry } from './core/ports'
 export type {
   BattleReadPort,
   GameResultInput,
