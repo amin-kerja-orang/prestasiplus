@@ -83,6 +83,7 @@ const REPLACED_LIVE_HREFS: Record<string, string> = {
 /** Rebuild hrefs that differ from live on purpose. */
 const CHANGED_HREFS = new Set([
   '/admin/hadiah/tebusan', // M15 DV-M15-04 ("Admin Tebusan", live /admin/hadiah)
+  '/admin/monitoring', // S6-T08 (R1-ADM-M-03: the admin Monitoring item opens /admin/monitoring)
 ])
 /** Student-only entries: seen in the murid screenshots, not in the admin-identity capture. */
 const STUDENT_ONLY_IDS = new Set(
