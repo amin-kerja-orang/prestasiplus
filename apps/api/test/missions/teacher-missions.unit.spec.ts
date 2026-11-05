@@ -155,6 +155,13 @@ describe('S6-T07 create validation (AC-GM-20.1)', () => {
     expect(Object.keys((await fieldsOf(service.create(actor(), body({ scope: 'global' })))) ?? {})).toEqual(['scope'])
   })
 
+  it('a whitespace-only or empty description is stored as null; a text is trimmed', async () => {
+    const { service, world } = build()
+    for (const description of ['   ', '', null]) expect((await service.create(actor(), body({ description }))).description).toBeNull()
+    expect((await service.create(actor(), body({ description: '  Fokus  ' }))).description).toBe('Fokus')
+    expect(world.missions.map((m) => m.description)).toEqual([null, null, null, 'Fokus'])
+  })
+
   it('creates a harian mission with defaults and the contract shape', async () => {
     const { service, world } = build()
     const m = await service.create(actor(), { title: 'Misi saya', date: TODAY, subjectId: SUBJECT })

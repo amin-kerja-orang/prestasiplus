@@ -213,7 +213,7 @@ export class MissionsRepository {
     return rows.map(toMission)
   }
 
-  /** Missions the teacher created on one Malaysia creation day (`created_at`, MYT), Global rows never counted. */
+  /** Missions the teacher created on one Malaysia creation day (`created_at`, MYT), Global rows never counted. It counts existing rows: a deleted mission frees a slot (known limit). */
   async countCreatedOnDay(teacherId: string, day: string, isTest: boolean): Promise<number> {
     const key = idOf(teacherId)
     if (key === null) return 0
@@ -234,6 +234,7 @@ export class MissionsRepository {
       if ((await this.countCreatedOnDay(input.teacherId, input.creationDay, input.isTest)) >= input.cap) return { status: 'capReached' as const }
       const classroom = input.classroomId === null ? null : idFromString(input.classroomId)
       const classFilter = classroom === null ? Prisma.empty : Prisma.sql`AND c.id = ${classroom}`
+      // VISIBLE_USER_SQL: the same secondary-only rule as memberIdsOf (R1 is Tingkatan 1-5).
       const pupils = await tx.$queryRaw<{ student_id: bigint }[]>`
         SELECT DISTINCT e.student_id
           FROM enrolments e

@@ -1,4 +1,6 @@
 import { MISSION_DAILY_CAP, MISSION_MESSAGES, TeacherMissionListResponseSchema, TeacherMissionResponseSchema } from '@pp/contract'
+import { runSeeds } from '../../prisma/seed'
+import { missionsSeed } from '../../prisma/seed/missions'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import {
@@ -131,5 +133,38 @@ describe('API-GUR-11 teacher Misi Harian: GET, POST, DELETE /api/guru/missions (
     const theirs = await insertMission(t, w, { teacherId: w.teacherC, recipients: [], type: 'harian', title: 'Guru C', day: TODAY, createdAt: '2026-10-10T09:00:00+08:00' })
     for (const id of [theirs, '987654321']) expect((await teacherA.del(`/guru/missions/${id}`)).status).toBe(404)
     expect(await count(t, 'missions where id = $1', [theirs])).toBe(1)
+  })
+})
+
+describe('S6-T07 cap race and seed idempotency (DB)', () => {
+  let t: MissionsTestApp
+  let w: World
+
+  beforeAll(async () => {
+    t = await bootMissionsApp()
+    w = await loadWorld(t)
+  }, 120_000)
+  afterAll(async () => {
+    await t.close()
+  })
+
+  it('two parallel creates with 4 missions already today: exactly one 201, one cap 422, 5 rows', async () => {
+    const teacher = await client(t, TEACHER_A)
+    for (let i = 0; i < MISSION_DAILY_CAP - 1; i++) await insertMission(t, w, { teacherId: w.teacherA, recipients: [], type: 'harian', title: `Sedia ${String(i)}`, day: TODAY })
+    const body = (title: string) => ({ title, targetQuestions: 5, rewardCoins: 5, date: TODAY, subjectId: w.tag.subjectId })
+    const results = await Promise.all([teacher.post('/guru/missions', body('Lumba A')), teacher.post('/guru/missions', body('Lumba B'))])
+    expect(results.map((r) => r.status).sort()).toEqual([201, 422])
+    const refused = results.find((r) => r.status === 422)
+    errorIs(refused as NonNullable<typeof refused>, 422, 'VALIDATION_ERROR', MISSION_MESSAGES.capReached)
+    expect(await count(t, 'missions where teacher_id = $1 and scope = $2', [w.teacherA, 'teacher'])).toBe(MISSION_DAILY_CAP)
+  })
+
+  it('running the missions seed twice leaves exactly 15 Global missions with unique titles', async () => {
+    await runSeeds([missionsSeed], { prisma: t.db.prisma })
+    await runSeeds([missionsSeed], { prisma: t.db.prisma })
+    const rows = await t.db.query<{ title: string }>(`select title from missions where scope = 'global'`)
+    expect(rows).toHaveLength(15)
+    expect(new Set(rows.map((r) => r.title)).size).toBe(15)
+    expect(await count(t, `missions where scope = 'global' and mission_type = 'harian' and teacher_id is null and subject_id is null`)).toBe(15)
   })
 })
