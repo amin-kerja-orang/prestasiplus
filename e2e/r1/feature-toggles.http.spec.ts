@@ -81,4 +81,57 @@ test.describe('Kawalan Ciri (S0-T10)', () => {
       await put(page, true)
     }
   })
+
+  // S0-T11, AC-ADM-P2-19.1: the same round trip for Leaderboard (`leaderboard`, seeded ON by migration 0251).
+  test('@api Admin Pusat switches Leaderboard OFF and ON; the pupil menu and URL follow', async ({ page, browser }, info) => {
+    test.setTimeout(180_000)
+    const adminAcc = account('adminPusat')
+    await loginViaUi(page, adminAcc.user, adminAcc.pass)
+    await gotoApi(page, '/admin/feature-toggles')
+    await expect(page.locator('[data-testid="ft-row-leaderboard"]')).toBeVisible()
+    await expectNoHScroll(page)
+
+    const putLeaderboard = async (enabled: boolean): Promise<void> => {
+      const res = await page.request.put('/api/admin/feature-toggles/leaderboard', {
+        data: { enabled },
+        headers: { 'x-csrf-token': await csrfOf(page) },
+      })
+      expect(res.status(), 'PUT leaderboard').toBe(200)
+    }
+    const pupilSees = async (): Promise<{ menu: boolean; title: string; notFoundShown: boolean }> => {
+      const ctx = await newPeerContext(browser, info)
+      try {
+        const pupil = await ctx.newPage()
+        const acc = account('student')
+        await loginViaUi(pupil, acc.user, acc.pass)
+        await gotoApi(pupil, '/dashboard')
+        const menu = (await pupil.locator('a[href="/gamification/leaderboard"]').count()) > 0
+        await gotoApi(pupil, '/gamification/leaderboard')
+        await expect.poll(() => pupil.title()).not.toBe('')
+        const notFoundShown = await pupil.getByRole('heading', { name: 'Halaman Tidak Dijumpai' }).first().isVisible()
+        return { menu, title: await pupil.title(), notFoundShown }
+      } finally {
+        await ctx.close()
+      }
+    }
+
+    try {
+      await putLeaderboard(true)
+      expect((await pupilSees()).menu, 'ON: menu item').toBe(true)
+
+      await putLeaderboard(false)
+      const off = await pupilSees()
+      expect(off.menu, 'OFF: menu item').toBe(false)
+      expect(off.title, 'OFF: 404 page title').toBe(NOT_FOUND_TITLE)
+      expect(off.notFoundShown, 'OFF: 404 page heading').toBe(true)
+
+      await putLeaderboard(true)
+      const on = await pupilSees()
+      expect(on.menu, 'ON again: menu item').toBe(true)
+      expect(on.title, 'ON again: not the 404 page').not.toBe(NOT_FOUND_TITLE)
+      expect(on.notFoundShown, 'ON again: no 404 heading').toBe(false)
+    } finally {
+      await putLeaderboard(true)
+    }
+  })
 })
