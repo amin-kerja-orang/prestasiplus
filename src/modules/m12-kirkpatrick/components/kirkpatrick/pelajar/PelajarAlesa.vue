@@ -9,7 +9,7 @@ import { isAlesaAiOn } from '@/app/features'
 import { DsPanel } from '@/ds'
 
 import type { StudentKirkpatrick } from '../../../api/types'
-import { count, mean, pct, pct1 } from '../common/kirkpatrick-format'
+import { count, mean, accuracyPct } from '../common/kirkpatrick-format'
 import { alesaParagraph } from './pelajar-format'
 
 const props = defineProps<{ data: StudentKirkpatrick }>()
@@ -28,7 +28,9 @@ const alesaOn = isAlesaAiOn()
     class="min-w-0"
     data-testid="pel-alesa"
   >
-    <template v-if="alesaOn" #actions><UBadge color="primary" variant="soft" label="AI" /></template>
+    <template v-if="alesaOn" #actions
+      ><UBadge color="primary" variant="soft" label="AI"
+    /></template>
     <p v-if="alesaOn" class="text-body text-default" data-testid="pel-paragraph">{{ paragraph }}</p>
     <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
       <UCard variant="soft" class="min-w-0 text-center" data-testid="pel-tile-answers">
@@ -36,7 +38,7 @@ const alesaOn = isAlesaAiOn()
         <p class="text-caption text-muted">Soalan</p>
       </UCard>
       <UCard variant="soft" class="min-w-0 text-center" data-testid="pel-tile-accuracy">
-        <p class="tabular text-heading text-highlighted">{{ pct(data.accuracy) }}</p>
+        <p class="tabular text-heading text-highlighted">{{ accuracyPct(data.accuracy) }}</p>
         <p class="text-caption text-muted">Ketepatan</p>
       </UCard>
       <UCard variant="soft" class="min-w-0 text-center" data-testid="pel-tile-konsistensi">
@@ -54,9 +56,9 @@ const alesaOn = isAlesaAiOn()
       data-testid="pel-strength"
     >
       Terkuat:
-      <strong>{{ data.strongest.subjectName }} ({{ pct1(data.strongest.accuracy) }})</strong>
+      <strong>{{ data.strongest.subjectName }} ({{ accuracyPct(data.strongest.accuracy) }})</strong>
       · Perlu perhatian:
-      <strong>{{ data.weakest.subjectName }} ({{ pct1(data.weakest.accuracy) }})</strong>
+      <strong>{{ data.weakest.subjectName }} ({{ accuracyPct(data.weakest.accuracy) }})</strong>
     </p>
   </DsPanel>
 </template>
