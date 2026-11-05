@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 
+import { KuizService } from '../kuiz/kuiz.service'
 import { BijakAttemptsService } from './attempts.service'
 
 /** Default period of the scheduled sweep. */
@@ -23,6 +24,7 @@ export class AttemptSweeper implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     @Inject(BijakAttemptsService) private readonly attempts: BijakAttemptsService,
+    @Inject(KuizService) private readonly kuiz: KuizService,
     @Inject(ConfigService) private readonly config: ConfigService,
   ) {}
 
@@ -40,12 +42,13 @@ export class AttemptSweeper implements OnModuleInit, OnModuleDestroy {
     this.timer = undefined
   }
 
-  /** One pass. Returns how many attempts were closed; never throws (a failing pass is logged). */
+  /** One pass. Returns how many attempts and kuiz sessions were closed; never throws (a failing pass is logged). */
   async sweep(): Promise<number> {
     if (this.running) return 0
     this.running = true
     try {
-      return await this.attempts.sweepExpired()
+      // S3-T04 (API-BIJAK-06): the same pass also closes the Kuiz sessions idle for 2 h (rows kept, no reward).
+      return (await this.attempts.sweepExpired()) + (await this.kuiz.sweepIdle())
     } catch (err) {
       this.logger.warn(`Attempt sweep failed: ${err instanceof Error ? err.message : String(err)}`)
       return 0

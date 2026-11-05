@@ -1,4 +1,4 @@
-import { randomInt } from 'node:crypto'
+import { createHash, randomInt } from 'node:crypto'
 
 import { Inject, Injectable } from '@nestjs/common'
 import {
@@ -16,14 +16,16 @@ import {
   type BijakKuizStartRequest,
 } from '@pp/contract'
 
+import { ApiError } from '../../../common/errors/api-error'
 import { CLOCK, type Clock } from '../../../db/clock'
 import { idFromString, idToString, isIdString } from '../../../db/ids'
 import { mulberry32 } from '../../../db/prng'
 import { PrismaService } from '../../../db/prisma.service'
 import { CurriculumRepository } from '../../curriculum'
 import { FilesService } from '../../files'
-import { PracticePorts, practiceRewardSource } from '../../practice/ports'
-import { type GradedAnswer, PracticeRepository, type ServedRef, type StoredCheck } from '../../practice/practice.repository'
+import { AnswerLogPort } from '../../practice/answer-log.port'
+import { PracticePorts, type PracticeRewardResult, practiceRewardSource } from '../../practice/ports'
+import { type CompletedSession, type GradedAnswer, PracticeRepository, type ServedRef, type SessionRecord, type StoredCheck } from '../../practice/practice.repository'
 import { pinServableForNewSitting, QuestionsRepository } from '../../questions'
 import { type DrawCandidate, drawUnits } from '../../questions/serving'
 import type { QuestionRecord, StimulusGroupRecord } from '../../questions/types'
@@ -50,6 +52,15 @@ import {
   toItem,
 } from './kuiz.mapper'
 import { ownStimuliOf } from './own-stimuli'
+/** [PROPOSED] The attempt id of a pupil's per-paper kuiz rows: a name-based uuid (v5 layout) of the pupil and the paper. */
+export function paperKuizAttemptId(userId: string, paperId: string): string {
+  const h = createHash('sha1').update(`bijak-kuiz-paper:${userId}:${paperId}`).digest()
+  h[6] = (h[6]! & 0x0f) | 0x50
+  h[8] = (h[8]! & 0x3f) | 0x80
+  const x = h.subarray(0, 16).toString('hex')
+  return `${x.slice(0, 8)}-${x.slice(8, 12)}-${x.slice(12, 16)}-${x.slice(16, 20)}-${x.slice(20, 32)}`
+}
+
 export interface KuizCaller {
   userId: string
   /** True under Mod Pelajar: every row written is stamped `is_test`. */
@@ -60,6 +71,10 @@ export interface KuizCaller {
 const KUIZ_MODE = 'latih_tubi' as const
 /** Written to `practice_sessions.legacy_paper`: only a session started here is a kuiz session (a Latih Tubi session shares the mode). */
 const KUIZ_ORIGIN = 'bijak_kuiz'
+/** S3-T04 (R2): a kuiz session with no check and no start for this long is closed as `abandoned` (API-BIJAK-06). */
+export const KUIZ_IDLE_MS = 2 * 60 * 60 * 1000
+/** Sessions looked at per pass of the sweep. */
+export const KUIZ_SWEEP_BATCH = 200
 
 /**
  * Simulasi Kuiz (R1-B16). The random quiz is a practice session written through `PracticeRepository` (U8), so Soalan Aku
@@ -80,6 +95,7 @@ export class KuizService {
     @Inject(PracticeRepository) private readonly practice: PracticeRepository,
     @Inject(PracticePorts) private readonly ports: PracticePorts,
     @Inject(PapersRepository) private readonly papers: PapersRepository,
+    @Inject(AnswerLogPort) private readonly answerLog: AnswerLogPort,
   ) {}
 
   // --- random quiz -------------------------------------------------------------------------------
@@ -188,33 +204,45 @@ export class KuizService {
 
   async finish(caller: KuizCaller, sessionId: string, timeSpent: number | undefined): Promise<BijakKuizResult> {
     const now = this.clock.now()
-    const { done, result } = await this.practice.completeSession(
-      { sessionId, userId: caller.userId, now, timeSpent: timeSpent ?? 0, isTest: caller.isTest },
-      {
-        guard: (session) => {
-          if (session.mode !== KUIZ_MODE || session.legacyPaper !== KUIZ_ORIGIN) throw quizNotFound()
-          return Promise.resolve()
+    let finished: { done: CompletedSession; result: PracticeRewardResult }
+    try {
+      finished = await this.practice.completeSession(
+        { sessionId, userId: caller.userId, now, timeSpent: timeSpent ?? 0, isTest: caller.isTest },
+        {
+          guard: (session) => {
+            if (session.mode !== KUIZ_MODE || session.legacyPaper !== KUIZ_ORIGIN) throw quizNotFound()
+            return Promise.resolve()
+          },
+          regrade: (_session, served, checks) => this.regrade(served, checks),
+          completed: async (completed, tx) => {
+            // API-BIJAK-06 / FR-PA-17: the rows are Kuiz rows. `completeSession` (S5) writes them with the session mode
+            // (`latih_tubi`) in this same transaction; the port upserts on the DM-44 key, so this pass only sets `mode = 'kuiz'`.
+            await this.writeRows(completed.session, completed.answers, caller.isTest || completed.session.isTest)
+            return this.ports.reward.onSessionCompleted(
+              {
+                userId: completed.session.userId,
+                sessionId: completed.session.id,
+                mode: completed.session.mode,
+                source: practiceRewardSource(completed.session.mode),
+                correct: completed.correct,
+                total: completed.total,
+                timeSpent: completed.timeSpentSec,
+                completedAt: completed.completedAt,
+                pointsEarned: completed.pointsEarned,
+                sessionCoins: completed.coinsEarned,
+                isTest: caller.isTest || completed.session.isTest,
+              },
+              tx,
+            )
+          },
         },
-        regrade: (_session, served, checks) => this.regrade(served, checks),
-        completed: (completed, tx) =>
-          this.ports.reward.onSessionCompleted(
-            {
-              userId: completed.session.userId,
-              sessionId: completed.session.id,
-              mode: completed.session.mode,
-              source: practiceRewardSource(completed.session.mode),
-              correct: completed.correct,
-              total: completed.total,
-              timeSpent: completed.timeSpentSec,
-              completedAt: completed.completedAt,
-              pointsEarned: completed.pointsEarned,
-              sessionCoins: completed.coinsEarned,
-              isTest: caller.isTest || completed.session.isTest,
-            },
-            tx,
-          ),
-      },
-    )
+      )
+    } catch (err) {
+      // A second finish, or a finish after the idle sweep: 200 with the stored result, nothing is paid (API-BIJAK-06).
+      if (err instanceof ApiError && err.code === 'ALREADY_SUBMITTED') return this.storedResult(caller, sessionId)
+      throw err
+    }
+    const { done, result } = finished
     return BijakKuizResultSchema.parse({
       score: done.correct,
       total: done.total,
@@ -225,6 +253,121 @@ export class KuizService {
         pointsEarned: done.pointsEarned,
         totalBalance: result.totalBalance,
       },
+    })
+  }
+
+  /** The result of a kuiz session that is already completed or abandoned. No reward is called: coins and points are the stored figures (0 when abandoned). */
+  private async storedResult(caller: KuizCaller, sessionId: string): Promise<BijakKuizResult> {
+    const session = await this.practice.session(sessionId, caller.userId)
+    if (!session || session.mode !== KUIZ_MODE || session.legacyPaper !== KUIZ_ORIGIN) throw quizNotFound()
+    const rows = await this.practice.answers(caller.userId, { sessionId: session.id, includeTest: true })
+    let correct = rows.filter((r) => r.isCorrect).length
+    let answered = rows.length
+    if (answered === 0 && session.status === 'abandoned') {
+      // Abandoned by the practice sweeper before the kuiz sweep wrote its rows: the kept checks are the answers.
+      const checks = await this.practice.checks(session.id)
+      answered = checks.length
+      correct = checks.filter((c) => c.isCorrect).length
+    }
+    const paid = session.status === 'completed'
+    return BijakKuizResultSchema.parse({
+      score: paid ? session.correctCount : correct,
+      total: session.questionCount,
+      answered,
+      gamification: {
+        coinsEarned: paid ? session.coinsEarned : 0,
+        streakCount: 0,
+        pointsEarned: paid ? session.pointsEarned : 0,
+        totalBalance: 0,
+      },
+    })
+  }
+
+  /** One `kuiz` answer row per graded check, through the port, in the caller's transaction (idempotent per session and question). */
+  private async writeRows(session: SessionRecord, graded: readonly GradedAnswer[], isTest: boolean): Promise<void> {
+    for (const g of graded) {
+      await this.answerLog.record({
+        userId: session.userId,
+        attemptId: session.id,
+        questionId: g.check.questionId,
+        partRef: null,
+        mode: 'kuiz',
+        isCorrect: g.isCorrect,
+        marksAwarded: g.isCorrect ? 1 : 0,
+        marksMax: 1,
+        answeredAt: g.check.checkedAt,
+        isTest,
+        selectedLabel: g.check.selectedLabel,
+        questionVersionNo: g.check.questionVersionNo,
+      })
+    }
+  }
+
+  // --- idle sweep (S3-T04 R2) ----------------------------------------------------------------------
+
+  /**
+   * Ids of kuiz sessions the sweep should close: `in_progress` and idle for 2 h (latest check, else start), plus a session the
+   * practice sweeper already abandoned whose kept checks have no answer rows yet. Read only.
+   */
+  async idleSessionIds(now: Date = this.clock.now(), limit = KUIZ_SWEEP_BATCH): Promise<string[]> {
+    const cutoff = new Date(now.getTime() - KUIZ_IDLE_MS)
+    const rows = await this.prisma.client.$queryRaw<{ id: string }[]>`
+      SELECT s.id::text AS id FROM practice_sessions s
+       WHERE s.legacy_paper = ${KUIZ_ORIGIN} AND s.mode = ${KUIZ_MODE}
+         AND ((s.status = 'in_progress'
+               AND greatest(s.started_at, coalesce((SELECT max(c.checked_at) FROM practice_checks c WHERE c.session_id = s.id), s.started_at)) < ${cutoff}::timestamptz)
+           OR (s.status = 'abandoned'
+               AND EXISTS (SELECT 1 FROM practice_checks c WHERE c.session_id = s.id)
+               AND NOT EXISTS (SELECT 1 FROM practice_answers a WHERE a.attempt_id = s.id)))
+       ORDER BY s.started_at
+       LIMIT ${limit}::int`
+    return rows.map((r) => r.id)
+  }
+
+  /** The scheduled sweep for kuiz sessions: closes every idle one (a failing session is skipped). Returns how many were closed. */
+  async sweepIdle(now: Date = this.clock.now()): Promise<number> {
+    let closed = 0
+    for (const id of await this.idleSessionIds(now)) {
+      try {
+        if (await this.closeIdle(id, now)) closed += 1
+      } catch {
+        // The next pass retries it.
+      }
+    }
+    return closed
+  }
+
+  /**
+   * Closes ONE idle kuiz session: its checked questions become `kuiz` answer rows (the checks are kept), the session becomes
+   * `abandoned` ("ditinggalkan") and NOTHING is paid (no reward call, no coins or points, no revision queue or mastery change).
+   * Safe from several instances: the session row is locked and re-checked. Returns true when this call closed it.
+   */
+  async closeIdle(sessionId: string, now: Date = this.clock.now()): Promise<boolean> {
+    const owner = await this.prisma.client.$queryRaw<{ user_id: string }[]>`
+      SELECT user_id::text AS user_id FROM practice_sessions WHERE id = ${sessionId}::uuid AND legacy_paper = ${KUIZ_ORIGIN} AND mode = ${KUIZ_MODE}`
+    const userId = owner[0]?.user_id
+    if (!userId) return false
+    const cutoff = new Date(now.getTime() - KUIZ_IDLE_MS)
+    return this.prisma.transaction(async () => {
+      const session = await this.practice.lockSession(sessionId, userId, 'update')
+      if (!session || session.legacyPaper !== KUIZ_ORIGIN || session.mode !== KUIZ_MODE) return false
+      const checks = await this.practice.checks(session.id)
+      if (session.status === 'in_progress') {
+        const last = checks.reduce((m, c) => (c.checkedAt > m ? c.checkedAt : m), session.startedAt)
+        if (last >= cutoff) return false
+      } else if (session.status === 'abandoned') {
+        if (checks.length === 0 || (await this.practice.answers(userId, { sessionId: session.id, includeTest: true })).length > 0) return false
+      } else {
+        return false
+      }
+      if (checks.length > 0) {
+        const graded = await this.regrade(await this.practice.sessionQuestions(session.id), checks)
+        await this.writeRows(session, graded, session.isTest)
+      }
+      if (session.status === 'in_progress') {
+        await this.prisma.client.$executeRaw`UPDATE practice_sessions SET status = 'abandoned', updated_at = ${now}::timestamptz WHERE id = ${session.id}::uuid AND status = 'in_progress'`
+      }
+      return true
     })
   }
 
@@ -351,8 +494,25 @@ export class KuizService {
     if (!(await this.prepare([record]))[0]?.complete) throw invalidAnswer('itemId')
     // V2: the option must belong to the part it claims.
     if (!leaf.options.some((o) => o.label === req.optionId)) throw invalidAnswer('optionId')
+    const correct = req.optionId === leaf.key.correct
+    // [PROPOSED] (S3-T04 R4): a paper kuiz has no session, so its rows hang on a deterministic attempt uuid of (pupil, paper):
+    // one `kuiz` row per question, a re-check updates it (DM-44 key). No new table, no S5 file.
+    await this.answerLog.record({
+      userId: caller.userId,
+      attemptId: paperKuizAttemptId(caller.userId, paperId),
+      questionId,
+      partRef: req.itemId === questionId ? null : req.itemId,
+      mode: 'kuiz',
+      isCorrect: correct,
+      marksAwarded: correct ? 1 : 0,
+      marksMax: 1,
+      answeredAt: this.clock.now(),
+      isTest: caller.isTest,
+      selectedLabel: req.optionId,
+      questionVersionNo: placement.pinnedVersionNo,
+    })
     return BijakKuizCheckResultSchema.parse({
-      correct: req.optionId === leaf.key.correct,
+      correct,
       correctOptionId: leaf.key.correct,
       explanation: record.version.explanationMs,
     })
