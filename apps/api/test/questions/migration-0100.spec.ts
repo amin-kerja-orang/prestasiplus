@@ -76,7 +76,7 @@ describe('migration 0100 question lifecycle (approved = servable)', () => {
 
   it('replaces the CHECK, and the partial indexes use the approved predicate', async () => {
     await expect(db.query(`update question_versions set status = 'published' where question_id = $1::bigint`, [ids.draft])).rejects.toThrow()
-    const rows = await db.query<{ indexname: string; indexdef: string }>(`select indexname, indexdef from pg_indexes where tablename = 'question_versions' and indexdef like '%WHERE%' and indexname not like '%\_trgm' and indexname <> 'ix_question_versions_paper_kertas'`) // the status predicate indexes only (0106 and 0107 add search indexes with an IS NOT NULL predicate)
+    const rows = await db.query<{ indexname: string; indexdef: string }>(`select indexname, indexdef from pg_indexes where tablename = 'question_versions' and indexdef like '%WHERE%' and indexname not like '%\_trgm' and indexname not in ('ix_question_versions_paper_kertas', 'ix_question_versions_open_flag')`) // the status predicate indexes only (0106 and 0107 add search indexes with an IS NOT NULL predicate)
     expect(rows.length).toBeGreaterThanOrEqual(5)
     for (const r of rows) {
       expect(r.indexdef).toContain("'approved'")

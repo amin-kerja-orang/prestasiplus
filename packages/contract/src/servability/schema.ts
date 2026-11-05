@@ -60,6 +60,8 @@ export const SERVABILITY_REASON_CODES = [
   'stimulus_shared_ungrouped',
   'question_missing',
   'group_incomplete',
+  'stimulus_missing',
+  'figure_only',
 ] as const
 export const ServabilityReasonCodeSchema = z.enum(SERVABILITY_REASON_CODES).meta({ id: 'ServabilityReasonCode' })
 export type ServabilityReasonCode = z.infer<typeof ServabilityReasonCodeSchema>
@@ -88,7 +90,7 @@ export const SERVABILITY_REASON_MS: Readonly<Record<ServabilityReasonCode, strin
   level_not_offered: 'Hanya soalan Tingkatan 4 dan 5 dipaparkan di {aktiviti}.',
   subject_unavailable: 'Subjek tidak aktif atau tidak dipautkan kepada tahap soalan ini.',
   subject_not_listed: 'Subjek ini tiada dalam senarai {aktiviti}.',
-  no_chapter: 'Belum dipautkan kepada bab — pilih Bab di borang soalan.',
+  no_chapter: 'Bab belum dipaut - tidak disajikan dalam Soalan by Chapter.',
   has_stimulus: 'Ada rangsangan atau imej — {aktiviti} hanya memaparkan soalan teks.',
   has_option_image: 'Ada imej pada pilihan jawapan — {aktiviti} hanya memaparkan soalan teks.',
   bridge_refused: 'Tidak dapat dihidangkan di {aktiviti}.',
@@ -101,6 +103,10 @@ export const SERVABILITY_REASON_MS: Readonly<Record<ServabilityReasonCode, strin
   question_missing: 'Soalan pada kertas ini tiada dalam bank soalan — kertas tidak boleh dimulakan; gantikan atau buang soalan itu.',
   // PRD 45 FR-QA-01 (S1-T06): `{n}` is the number of members not yet approved or active.
   group_incomplete: 'Kumpulan belum lengkap - {n} soalan belum diluluskan.',
+  // PRD 30 FR-ADM-G7.3 and 45 section 4.5 (R1 copy, D113): `{rujukan}` is the reference found in the text ("Rajah 14"); S1-T07.
+  stimulus_missing: 'Rangsangan tiada — soalan merujuk {rujukan} tetapi tiada gambar.',
+  // PRD 45 gate row 26 FIGURE_ONLY (R1 copy, D113): the only sentence the PRD gives for a bare figure; FR-ADM-G7.3 names none of its own.
+  figure_only: 'Soalan ini hanya mengandungi rangsangan. Tukarkan kepada rangsangan kumpulan.',
 }
 
 /**
@@ -143,15 +149,20 @@ export const SERVABILITY_REASON_SOURCE: Readonly<Record<ServabilityReasonCode, '
   stimulus_shared_ungrouped: 'PROPOSED',
   question_missing: 'PROPOSED', // REQ-B-033 / Q6: BM sentence above is mine (V2 has no phrase); listed for sign-off
   group_incomplete: 'PRD',
+  stimulus_missing: 'PRD',
+  figure_only: 'PRD',
 }
 
 /** "Tidak dihidangkan kerana {sebab}." (design 9.3, the .cloud exclusion line). `phrase` continues "kerana ...". */
 export const notServedLine = (phrase: string): string => `Tidak dihidangkan kerana ${phrase}.`
 
-/** The sentence of a reason for an activity; `detail` (a BM phrase, for `bridge_refused`) is appended as "kerana ...". */
+/** The sentence of a reason for an activity; `detailMs` is the BM phrase of `bridge_refused` (appended as "kerana ...") or the reference of `stimulus_missing` ("Rajah 14"). */
 export function servabilityReasonMs(code: ServabilityReasonCode, activity: ServabilityActivity, detailMs?: string, count?: number): string {
   if (code === 'bridge_refused' && detailMs) return notServedLine(detailMs)
-  return SERVABILITY_REASON_MS[code].replaceAll('{aktiviti}', SERVABILITY_ACTIVITY_LABELS[activity]).replaceAll('{n}', String(count ?? 0))
+  return SERVABILITY_REASON_MS[code]
+    .replaceAll('{aktiviti}', SERVABILITY_ACTIVITY_LABELS[activity])
+    .replaceAll('{n}', String(count ?? 0))
+    .replaceAll('{rujukan}', code === 'stimulus_missing' && detailMs ? detailMs : 'rajah')
 }
 
 export const ServabilityReasonSchema = z

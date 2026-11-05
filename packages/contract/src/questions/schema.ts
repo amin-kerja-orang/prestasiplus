@@ -203,6 +203,23 @@ export const QuestionKertasSchema = z.enum(['1', '2', '3'], 'Kertas tidak sah.')
 /** Id of an already uploaded `question_image` file (`POST /files?purpose=question_image`); never a client URL. */
 const ImageFileId = IdSchema.nullable()
 
+/** DM-56 `Rujukan buku teks` (45 T-11): Bab text (at most 20 characters), Tingkatan T1 to T5, Muka surat 1 to 999 and an optional last page. */
+export const QUESTION_TEXTBOOK_PAGE_MESSAGE = 'Muka surat mesti nombor antara 1 dan 999.'
+export const QuestionTextbookRefSchema = z
+  .object({
+    bab: z.string().trim().min(1).max(20),
+    tingkatan: z.enum(['T1', 'T2', 'T3', 'T4', 'T5']),
+    mukaSurat: z.coerce.number({ error: QUESTION_TEXTBOOK_PAGE_MESSAGE }).int(QUESTION_TEXTBOOK_PAGE_MESSAGE).min(1, QUESTION_TEXTBOOK_PAGE_MESSAGE).max(999, QUESTION_TEXTBOOK_PAGE_MESSAGE),
+    hingga: z.coerce.number({ error: QUESTION_TEXTBOOK_PAGE_MESSAGE }).int(QUESTION_TEXTBOOK_PAGE_MESSAGE).min(1, QUESTION_TEXTBOOK_PAGE_MESSAGE).max(999, QUESTION_TEXTBOOK_PAGE_MESSAGE).optional(),
+  })
+  .meta({ id: 'QuestionTextbookRef', description: 'Rujukan buku teks: {bab, tingkatan, mukaSurat, hingga?} (DM-56).' })
+export type QuestionTextbookRef = z.infer<typeof QuestionTextbookRefSchema>
+
+/** The compact form of a textbook reference shown in the scheme panel: `B3T4 M56`, or `B3T4 M56-58` when it spans pages. */
+export function textbookRefCompact(ref: QuestionTextbookRef): string {
+  return `B${ref.bab}${ref.tingkatan} M${ref.mukaSurat}${ref.hingga === undefined ? '' : `-${ref.hingga}`}`
+}
+
 /* ------------------------------------------------------------------------------ question, detail */
 
 /** Admin/editor view: carries the answer key (`correctAnswer`, `tfAnswer`, `correctAnswerText`, `parts[].key`). */
@@ -261,6 +278,10 @@ export const QuestionSchema = z
     catalogueVersion: z.string().nullable().optional(),
     stimulusGroup: QuestionStimulusGroupSchema.nullable().optional(),
     numberLabel: z.string().nullable().optional(),
+    /** DM-56 Rujukan buku teks (null = none). */
+    textbookRef: QuestionTextbookRefSchema.nullable().optional(),
+    /** DM-58: why an admin sent the question back from Semakan to Draf; with the status `draft` it is the chip "Ditolak". Null otherwise. */
+    rejectionReason: z.string().nullable().optional(),
   })
   .meta({ id: 'Question' })
 
@@ -384,6 +405,8 @@ const baseInput = z.object({
   /** R1-B05: cognitive level of the single leaf of a flat question (a `parts` body carries it per leaf). */
   cognitiveLevel: QuestionCognitiveLevelSchema.nullable().optional(),
   stimulusGroupId: IdSchema.nullable().optional(),
+  /** DM-56 Rujukan buku teks; null clears it, omitted keeps it. */
+  textbookRef: QuestionTextbookRefSchema.nullable().optional(),
 })
 
 /**
@@ -598,6 +621,62 @@ export const QuestionStructuredDetailSchema = z
     updatedAt: TimestampSchema,
   })
   .meta({ id: 'QuestionStructuredDetail' })
+
+/* ------------------------------------------------------------------ structured (teacher mount, API-GUR-26) */
+
+export const GURU_STRUCTURED_PAGE_SIZE = 20
+
+const GuruStructuredStatus = z.enum(['approved', 'review'])
+
+export const GuruStructuredRowSchema = z
+  .object({
+    id: IdSchema,
+    number: z.number().int().min(1).meta({ description: 'Position in the full ordered list (1-based): page offset + index.' }),
+    textExcerpt: z.string(),
+    level: Ref,
+    subject: Ref,
+    kbat: z.string().meta({ description: 'KBAT chip text from the question cognitive level: "LOTS 1", "LOTS 2", "MOTS 3", "HOTS 4" to "HOTS 6"; empty when the question has no level.' }),
+    subCount: z.number().int().min(0),
+    marks: z.number().int().min(0).meta({ description: 'Sum of the part marks.' }),
+    status: GuruStructuredStatus,
+  })
+  .meta({ id: 'GuruStructuredRow' })
+
+export const GuruStructuredListQuerySchema = z
+  .object({
+    subjectId: IdSchema.optional(),
+    educationLevelId: IdSchema.optional(),
+    status: GuruStructuredStatus.optional().meta({ description: 'Omitted: approved. `review` (the teacher\'s own submissions) is an empty page until the submission part exists.' }),
+    page: z.coerce.number().int().min(1).default(1),
+  })
+  .meta({ id: 'GuruStructuredListQuery' })
+
+export const GuruStructuredSubSchema = z
+  .object({
+    partLabel: z.string(),
+    questionText: z.string(),
+    marks: z.number().int().min(0).meta({ description: '0 for a branch (a part that only groups its children).' }),
+    cognitiveLevel: QuestionCognitiveLevelSchema.nullable().meta({ description: 'Bloom level of the part (Taksonomi Bloom), if set.' }),
+    modelAnswer: z.string().meta({ description: '"Skema Jawapan".' }),
+    depth: z.number().int().min(0),
+  })
+  .meta({ id: 'GuruStructuredSub' })
+
+export const GuruStructuredDetailSchema = z
+  .object({
+    id: IdSchema,
+    subject: Ref,
+    level: Ref,
+    kbat: z.string(),
+    status: GuruStructuredStatus,
+    stimulus: z.string().meta({ description: 'The stimulus text, once, above all the sub-questions.' }),
+    stimulusImage: z.string().nullable().meta({ description: 'Always null this round: the file read rule has no teacher branch for a question picture.' }),
+    totalMarks: z.number().int().min(0),
+    subCount: z.number().int().min(0),
+    subQuestions: z.array(GuruStructuredSubSchema),
+    createdAt: TimestampSchema,
+  })
+  .meta({ id: 'GuruStructuredDetail' })
 
 /* ---------------------------------------------------------------------------------- Guru routes */
 

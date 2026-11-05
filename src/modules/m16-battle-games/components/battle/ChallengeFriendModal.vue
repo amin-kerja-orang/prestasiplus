@@ -4,7 +4,7 @@
  * typing, from 2 characters; a click on a result posts #8 with the match parameters and
  * `receiver_id`, closes the modal and, on `{success: true}`, alerts "Cabaran berjaya dihantar kepada
  * {name}!"; a network failure alerts "Ralat menghantar cabaran."; any other answer does nothing.
- * An overlay click closes the modal.
+ * The modal closes with "Tutup" only (v2 dialog, not dismissible).
  */
 import { onBeforeUnmount, ref, watch } from 'vue'
 
@@ -47,8 +47,10 @@ async function runSearch(q: string): Promise<void> {
 
 const debounced = useDebounce((q: string) => void runSearch(q), 300)
 
-function onInput(): void {
-  const q = query.value.trim()
+// A watcher, not `@input`: UInput runs a listener passed from here before it updates the model, so
+// `query` would still hold the previous value (a search one character behind, none on a paste).
+watch(query, (value) => {
+  const q = value.trim()
   if (q.length < 2) {
     debounced.cancel()
     controller?.abort()
@@ -59,7 +61,7 @@ function onInput(): void {
   }
   searched.value = false
   debounced(q)
-}
+})
 
 watch(
   () => props.open,
@@ -107,7 +109,6 @@ async function pick(user: OpponentSearchUser): Promise<void> {
         size="xl"
         class="w-full"
         data-testid="battle-challenge-input"
-        @input="onInput"
       />
       <div class="flex max-h-64 flex-col gap-2 overflow-y-auto">
         <UButton

@@ -26,6 +26,7 @@ import {
   type QuestionRecord,
 } from '../index'
 import { gateDataOf } from '../gate-data'
+import { partsFromFlat } from '../projection'
 import type {
   DiagramCandidate,
   ExplanationSource,
@@ -128,7 +129,11 @@ export class QuestionBankAdapter implements QuestionBankPort {
         return this.getStatus(id)
       }
 
-      await this.service.setStatus(id, to, actorId, { actor: options.actor ?? 'admin', ...(options.reason === undefined ? {} : { reason: options.reason }) })
+      await this.service.setStatus(id, to, actorId, {
+        actor: options.actor ?? 'admin',
+        ...(options.reason === undefined ? {} : { reason: options.reason }),
+        ...(options.rejectionReason === undefined ? {} : { rejectionReason: options.rejectionReason }),
+      })
       return this.getStatus(id)
     })
   }
@@ -166,8 +171,30 @@ export class QuestionBankAdapter implements QuestionBankPort {
       explanation: input.explanation,
       pointsValue: input.marks ?? 1,
       ...(input.kertas === undefined ? {} : { kertas: input.kertas }),
+      // S1-T05: the DSKP and curriculum fields go through the same create as the wizard (no second path), so the gate reads real data.
+      ...(input.unitId === undefined && input.spIds === undefined && input.tp === undefined
+        ? {}
+        : { tag: { unitId: input.unitId ?? null, spIds: input.spIds ?? [], tp: input.tp ?? null } }),
+      ...(input.cognitiveLevel === undefined ? {} : { cognitiveLevel: input.cognitiveLevel }),
+      ...(input.chapterId === undefined ? {} : { curriculumChapterId: input.chapterId }),
+      ...(input.topicId === undefined ? {} : { curriculumTopicId: input.topicId }),
+      ...(input.numberLabel === undefined ? {} : { numberLabel: input.numberLabel }),
+      ...(input.language === undefined ? {} : { language: input.language }),
       status: input.status,
     } as unknown as QuestionCreateInput
+    if (input.kbat !== undefined) {
+      // An explicit KBAT value lives on the leaf and the flat body has no field for it: the one leaf is built here and sent as `parts`.
+      const parts = partsFromFlat({
+        questionType: 'mcq',
+        questionText: input.stemMs,
+        options: present.map((o) => o.text),
+        correctAnswer: Math.max(0, correctAnswer),
+        pointsValue: input.marks ?? 1,
+        ...(input.cognitiveLevel === undefined ? {} : { cognitiveLevel: input.cognitiveLevel }),
+      })
+      ;(parts[0] as { kbat?: string }).kbat = input.kbat
+      ;(body as unknown as { parts: QuestionPart[] }).parts = parts
+    }
     const view = await this.service.create(body, { userId: input.createdById, role: 'teacher' })
     return view.id
   }

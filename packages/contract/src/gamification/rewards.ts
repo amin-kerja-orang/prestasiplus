@@ -1,6 +1,6 @@
 import { z } from '../zod'
 import { ListMetaSchema } from '../common/envelope'
-import { IdSchema } from '../common/ids'
+import { ClientUuidSchema, IdSchema } from '../common/ids'
 import { DateOnlySchema, TimestampSchema } from '../common/time'
 import { GamificationDrawPrizeSchema } from './admin'
 import { count, nonBlank } from './shared'
@@ -95,12 +95,13 @@ export const REWARD_MESSAGES = {
   redemptionNotFound: 'Tebusan tidak dijumpai.',
   boxNotFound: 'Kotak tidak dijumpai.',
   /** Default message of an unmatched id: unknown reward/redemption on the admin GET/PUT/deliver, or a non-numeric path id. */
-  notFound: 'Not Found.',
+  notFound: 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?',
 } as const
 
 /** Laravel-style validation messages of the admin writes (field -> message), as the mock emits them. */
 export const REWARD_VALIDATION_MESSAGES = {
   rewardIdRequired: 'The reward id field is required.',
+  clientUuidInvalid: 'The client uuid field must be a valid UUID.',
   actionRequired: 'The action field is required.',
   actionInvalid: 'The selected action is invalid.',
   idsRequired: 'The ids field is required.',
@@ -322,7 +323,10 @@ export type RewardCancelResult = z.infer<typeof RewardCancelResultSchema>
 
 /** `POST /hadiah/redemptions` body. */
 export const RewardRedeemRequestSchema = z
-  .object({ rewardId: IdSchema })
+  .object({
+    rewardId: IdSchema,
+    clientUuid: ClientUuidSchema.optional().meta({ description: 'Idempotency key (DM-78), per user: a repeat returns the first redemption and moves nothing.' }),
+  })
   .meta({ id: 'RewardRedeemRequest' })
 export type RewardRedeemRequest = z.infer<typeof RewardRedeemRequestSchema>
 
@@ -406,6 +410,12 @@ export const RewardCabutanViewSchema = z
   .object({ syilingBalance: count, draws: z.array(RewardCabutanDrawSchema) })
   .meta({ id: 'RewardCabutanView' })
 export type RewardCabutanView = z.infer<typeof RewardCabutanViewSchema>
+
+/** Optional body of `POST /cabutan/{drawId}/tickets`. */
+export const RewardTicketRequestSchema = z
+  .object({ clientUuid: ClientUuidSchema.optional().meta({ description: 'Idempotency key (DM-78), per user: a repeat answers for the first ticket and moves nothing.' }) })
+  .meta({ id: 'RewardTicketRequest' })
+export type RewardTicketRequest = z.infer<typeof RewardTicketRequestSchema>
 
 export const RewardTicketBoughtSchema = z
   .object({ drawId: IdSchema, ticketsOwned: z.number().int().min(1), syilingBalance: count })

@@ -79,6 +79,16 @@ export interface QuestionGateData {
   paperCode?: string | null
   /** R1-B05: the subject is in the SPM catalogue at Tingkatan 4 or 5 (the new-approval DSKP rules bind only then). Absent = false. */
   spmBound?: boolean
+  /** The typed Kesukaran (DM-47); absent or null = none typed. */
+  difficultyLevel?: number | null
+  /** The stem (`stem_ms`), for STEM_SHORT. Absent = not checked. */
+  stem?: string | null
+  /** R-DSKP: DSKP nodes exist for the Subjek + Tingkatan. Absent = true (unit, SP, TP, leaf aras required, the strict rule). */
+  hasDskpNodes?: boolean
+  /** The Subjek + Tingkatan has chapters (NO_CHAPTER). Absent = false. */
+  hasChapters?: boolean
+  /** Codes of the SP nodes that are not under the unit (gate-check repeats FR-ADM-QE4.3). */
+  spOutsideUnit?: string[]
 }
 
 export interface SetStatusOptions {
@@ -100,6 +110,8 @@ export interface SetStatusOptions {
    * latest version is left alone unless it is the live one. No-op when nothing is live.
    */
   target?: 'latest' | 'live'
+  /** DM-58: the review to draft move is a rejection; stored in `question_versions.rejection_reason` (the reason is validated by the lifecycle). */
+  rejectionReason?: string
 }
 
 /** One question to create from an Excel/CSV row (BE-10 imports, an MCQ). */
@@ -125,6 +137,20 @@ export interface ImportedQuestionInput {
   marks?: number
   /** Optional `kertas` column (1 to 3); stored so the paper builder can find the question. */
   kertas?: '1' | '2' | '3'
+  /** S1-T05 (codes mapped to ids by the importer): the DSKP unit node, 1 to 3 SP nodes and the TP 1 to 6 of the question; they make the row publishable (QE6.3). */
+  unitId?: string
+  spIds?: string[]
+  tp?: number
+  /** Aras pemikiran of the single leaf; `kbat` is the explicit KBAT value (`bukan` = not KBAT), absent = derived from the aras. */
+  cognitiveLevel?: 'mengingat' | 'memahami' | 'mengaplikasi' | 'menganalisis' | 'menilai' | 'mencipta'
+  kbat?: 'mengaplikasi' | 'menganalisis' | 'menilai' | 'mencipta' | 'bukan'
+  /** Bab and topic of the curriculum (ids). */
+  chapterId?: string
+  topicId?: string
+  /** Printed question number (`Nombor soalan`). */
+  numberLabel?: string
+  /** `en` when the row says `bahasa = en`; absent = Bahasa Melayu. */
+  language?: 'en'
 }
 
 /** Display facts about a question for lists (reports, master notes). */

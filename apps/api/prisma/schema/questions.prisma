@@ -186,6 +186,12 @@ model QuestionVersion {
   textbookBab       Int?    @map("textbook_bab") @db.SmallInt
   textbookTingkatan Int?    @map("textbook_tingkatan") @db.SmallInt
   textbookPage      Int?    @map("textbook_page")
+  /// DM-47: the typed Kesukaran 1..5 (check); TP stays in difficultyTp. NULL on legacy rows until the U-OP-19 backfill.
+  difficultyLevel   Int?    @map("difficulty_level") @db.SmallInt
+  /// DM-56: Rujukan buku teks {bab, tingkatan, mukaSurat, hingga?}; the three int columns above are written with it.
+  textbookRef       Json?   @map("textbook_ref")
+  /// DM-58: why the version was sent back from Semakan to Draf (5..500 characters); cleared on the next send for review.
+  rejectionReason   String? @map("rejection_reason")
 
   // Provenance (all optional).
   year          Int?    @db.SmallInt
@@ -210,6 +216,17 @@ model QuestionVersion {
   intakeItemId  BigInt? @map("intake_item_id")
   sourceFileId  BigInt? @map("source_file_id")
   aiRunId       BigInt? @map("ai_run_id")
+
+  /// DM-05 (migration 0121): stimulus_missing, figure_only, stem_duplicated (check). Stored by the detectors in effective-leaf.ts on every version
+  /// write; stimulus_missing and figure_only (not dismissed) exclude the question from every pupil surface (NOT_FLAGGED_SQL), stem_duplicated does not.
+  stimulusFlag      String?   @map("stimulus_flag")
+  stimulusFlagAt    DateTime? @map("stimulus_flag_at") @db.Timestamptz(6)
+  /// DM-53 (migration 0132): numbered, unnumbered (check); set with stimulus_missing.
+  stimulusFlagRef   String?   @map("stimulus_flag_ref")
+  /// "Bukan masalah": the flag stays stored and stops excluding. FK users(id) ON DELETE SET NULL (migration SQL). Partial index
+  /// ix_question_versions_open_flag (subject_id, education_level_id) WHERE stimulus_flag IS NOT NULL AND flag_dismissed_at IS NULL is SQL only.
+  flagDismissedAt   DateTime? @map("flag_dismissed_at") @db.Timestamptz(6)
+  flagDismissedBy   BigInt?   @map("flag_dismissed_by")
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)

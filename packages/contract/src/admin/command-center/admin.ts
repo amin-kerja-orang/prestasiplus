@@ -10,7 +10,7 @@ import { IdSchema } from '../../common/ids'
  *
  * Wire notes:
  * - Every success body is `{ data }`. Errors use the common `ErrorBody` (401 UNAUTHORIZED
- *   "Unauthenticated.", 403 FORBIDDEN "This action is unauthorized.", 404 NOT_FOUND "Not Found.",
+ *   "Sesi anda telah tamat. Sila log masuk semula.", 403 FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini.", 404 NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?",
  *   422 VALIDATION_ERROR), English Laravel defaults as the mock produces them.
  * - Entity ids are decimal strings (`IdSchema`); the mock still uses numbers. Session ids are strings in
  *   both. Instants are ISO 8601 with +08:00; calendar dates are `YYYY-MM-DD`.
@@ -23,7 +23,7 @@ const pct = z.number().min(0).max(100)
 
 /** Path segment of an entity id: digits only; a non-digit segment does not match the route (404). */
 const PathId = (what: string) =>
-  IdSchema.meta(FIELD(`${what}. Digits only; a non-digit segment does not match the route (404 "Not Found.").`))
+  IdSchema.meta(FIELD(`${what}. Digits only; a non-digit segment does not match the route (404 "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?").`))
 
 // ---------------------------------------------------------------------------------------------
 // Shared building blocks
