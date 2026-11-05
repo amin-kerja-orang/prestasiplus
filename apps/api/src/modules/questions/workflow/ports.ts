@@ -29,7 +29,7 @@
  *    status change, its `question_status_events` row and a report update commit or roll back together.
  */
 import { Injectable } from '@nestjs/common'
-import type { QuestionPart, QuestionWorkflowActor, QuestionWorkflowStatus } from '@pp/contract'
+import type { QuestionPart, QuestionSchemeRules, QuestionWorkflowActor, QuestionWorkflowStatus } from '@pp/contract'
 
 /** What `getStatus` returns (mirrors BE-09 `QuestionStatusInfo`). */
 export interface QuestionStatusInfo {
@@ -89,6 +89,8 @@ export interface QuestionGateData {
   hasChapters?: boolean
   /** Codes of the SP nodes that are not under the unit (gate-check repeats FR-ADM-QE4.3). */
   spOutsideUnit?: string[]
+  /** S1-T09a: the question's `scheme_rules`; with the leaf marks it feeds the question-level penalty cap (SCHEME_PENALTY). Absent = no check. */
+  schemeRules?: QuestionSchemeRules | null
 }
 
 export interface SetStatusOptions {
