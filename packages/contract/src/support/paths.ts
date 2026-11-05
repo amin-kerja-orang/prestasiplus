@@ -124,7 +124,7 @@ export function registerSupportPaths(registry: OpenAPIRegistry): void {
     path: '/admin/tiket/{id}/reply',
     tags: ['support'],
     summary: 'Save the single reply (API-SUP-05)',
-    description: 'Admin only. Sets the reply, the replier and the time; a second save replaces the text. The status does not change. The owner gets an in-app notification.',
+    description: 'Admin only, audited. Sets the reply, the replier and the time; a second save replaces the text. The status does not change. The owner sees it in `GET /tiket`.',
     request: { params: idParams, headers: [csrf], body: { required: true, content: { 'application/json': { schema: SupportTicketReplyRequestSchema } } } },
     responses: {
       200: json(envelopeOf(SupportTicketDetailSchema), 'The updated ticket.'),

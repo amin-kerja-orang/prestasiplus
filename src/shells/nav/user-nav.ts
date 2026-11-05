@@ -433,7 +433,7 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'item', id: 'penguasaan', label: 'Penguasaan', to: '/penguasaan', fa: 'fa-layer-group', color: 'text-purple-500', roles: SA_ },
   { kind: 'item', id: 'laporan-soalan', label: 'Laporan Soalan', to: '/laporan-soalan', fa: 'fa-flag', color: 'text-red-400', roles: SA_ },
   { kind: 'item', id: 'liga', label: 'Liga Pertandingan', to: '/liga', fa: 'fa-trophy', color: 'text-yellow-500', roles: SA_ },
-  { kind: 'item', id: 'perutusan', label: 'Perutusan', to: '/perutusan', fa: 'fa-scroll', color: 'text-amber-500', roles: SA_ },
+  { kind: 'item', id: 'perutusan', label: 'Perutusan', to: '/perutusan', fa: 'fa-scroll', color: 'text-amber-500', roles: A },
 
   // ── Pembelajaran ──
   { kind: 'section', id: 'sec-pembelajaran', label: 'Pembelajaran', text: 'text-blue-700', rule: 'from-blue-300', roles: SA_ },
@@ -747,6 +747,16 @@ const SETTINGS_ID = 'tetapan-peribadi'
 const STUDENT_HIDDEN_IDS: ReadonlySet<string> = new Set([
   'laporan-mingguan',
 ])
+/**
+ * Menu items with no sidebar link for a role. Perutusan (Admin Sekolah, AC-SH-2, Delivery A): the
+ * page works and the dashboard card links to it, the sidebar item stays hidden.
+ */
+const ROLE_HIDDEN_IDS: Readonly<Record<string, ReadonlySet<string>>> = {
+  student: STUDENT_HIDDEN_IDS,
+  school_admin: new Set(['sa-perutusan']),
+}
+const isRoleHidden = (role: string | null, id: string): boolean =>
+  role !== null && ROLE_HIDDEN_IDS[role]?.has(id) === true
 /** Profile entries of each role: scope mode puts "Tetapan Peribadi" right after them. */
 const PROFILE_IDS: readonly string[] = ['profil-saya', 't-profil-saya', 'sa-profil-saya']
 
@@ -767,7 +777,7 @@ function scopeEntries(
   for (const entry of entries) {
     if (entry.kind === 'item') {
       if (SCOPE_DUPLICATE_IDS.has(entry.id)) continue
-      if (role === 'student' && STUDENT_HIDDEN_IDS.has(entry.id)) continue
+      if (isRoleHidden(role, entry.id)) continue
       if (isPathAllowed(role, entry.to)) kept.push(entry)
     } else if (entry.kind === 'group') {
       const children = entry.children.filter((child) => isPathAllowed(role, child.to))
@@ -804,7 +814,7 @@ export function navFor(
     options.includeOutOfScope === true ||
     isPrototypeScopeOn() ||
     entry.kind !== 'item' ||
-    (!isOutOfScope(entry.to) && !(role === 'student' && STUDENT_HIDDEN_IDS.has(entry.id)))
+    (!isOutOfScope(entry.to) && !isRoleHidden(role, entry.id))
   const visible = scopeEntries(
     withoutKeluargaAngkat(withoutAlesa(entries))
       .filter((entry) => visibleTo(entry, role, surface) && inScope(entry))
