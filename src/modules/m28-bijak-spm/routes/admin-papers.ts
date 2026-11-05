@@ -1,5 +1,6 @@
 import type { RouteRecordRaw } from 'vue-router'
 
+import { BUILDER_PATH } from '../admin/builder/server/api'
 import { ADMIN_ROUTES } from '../admin/papers/ui'
 
 /**
@@ -57,34 +58,18 @@ const routes: RouteRecordRaw[] = [
       header: { title: 'Sunting Soalan' },
     },
   },
-  {
-    path: '/admin/spm/kertas',
-    name: ADMIN_ROUTES.papers,
-    component: () => import('../admin/papers/PaperListPage.vue'),
-    meta: {
-      ...base,
-      title: 'Pembina Kertas - Admin PRESTASIPLUS',
-      header: { title: 'Pembina Kertas', subtitle: 'Bina dan terbitkan kertas SPM' },
-    },
-  },
-  {
-    path: '/admin/spm/kertas/baharu',
-    name: ADMIN_ROUTES.paperNew,
-    component: () => import('../admin/papers/PaperNewPage.vue'),
-    meta: {
-      ...base,
-      title: 'Kertas Baharu - Admin PRESTASIPLUS',
-      header: { title: 'Kertas Baharu' },
-    },
-  },
+  // FR-ADM-Q15.6: Set Builder is the one paper list and the one builder (D113). The two old paths redirect; the names stay, because named links
+  // remain, and `baharu` stays before `:id`, or it would read as a paper id. PaperListPage.vue and PaperNewPage.vue stay as files (D115).
+  { path: '/admin/spm/kertas', name: ADMIN_ROUTES.papers, redirect: BUILDER_PATH },
+  { path: '/admin/spm/kertas/baharu', name: ADMIN_ROUTES.paperNew, redirect: BUILDER_PATH },
   {
     path: '/admin/spm/kertas/:id',
     name: ADMIN_ROUTES.paperEdit,
     component: () => import('../admin/papers/PaperEditorPage.vue'),
     meta: {
       ...base,
-      title: 'Pembina Kertas - Admin PRESTASIPLUS',
-      header: { title: 'Pembina Kertas' },
+      title: 'Semak Kertas Simulasi - Admin PRESTASIPLUS',
+      header: { title: 'Semak Kertas Simulasi' },
     },
   },
 ]

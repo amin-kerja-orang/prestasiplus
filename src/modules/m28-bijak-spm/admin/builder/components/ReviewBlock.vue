@@ -4,13 +4,17 @@
  * block) and "Blueprint perlu semakan" when flagged, plus the "Dilihat murid" line. Lines are shown
  * verbatim from the server.
  */
-import type { BijakBuilderReview } from '@pp/contract'
+import type { BijakBuilderReview, BijakLevelScope } from '@pp/contract'
 
 import { NotServedNotice } from '@/components/question-display'
 
-import { builderCopy as t } from '../domain/copy'
+import { builderCopy as t, levelScopeLabel } from '../domain/copy'
 
-defineProps<{ review: BijakBuilderReview }>()
+defineProps<{
+  review: BijakBuilderReview
+  /** FR-ADM-Q15.3: which Tingkatan and subject pupils see the paper at; omitted when the caller has no paper. */
+  scope?: { levelScope: BijakLevelScope | null | undefined; subject: string }
+}>()
 </script>
 
 <template>
@@ -56,7 +60,8 @@ defineProps<{ review: BijakBuilderReview }>()
     </ul>
 
     <p class="text-caption text-muted" data-testid="review-visible">
-      <span class="font-semibold">{{ t.seen }}:</span>
+      <span class="font-semibold">{{ t.seen }}: </span>
+      <template v-if="scope">{{ levelScopeLabel(scope.levelScope) }} · {{ scope.subject }}. </template>
       {{ review.visibleToStudents ? t.visibleLive : t.visibleDraft }}
     </p>
   </div>

@@ -1,41 +1,35 @@
 <script setup lang="ts">
 /**
- * Pembina Kertas editor (`/admin/spm/kertas/:id`): the blueprint's sections with a live budget
- * check, questions added from the bank (a stimulus group moves as one unit and stays contiguous),
- * a student-view preview and publish. Fixes .cloud N-11 (the blueprint is enforced, not advisory).
+ * Semak Kertas Simulasi (`/admin/spm/kertas/:id`, PRD30 Q-15, the review and publish view over the SAME Set Builder data): metadata, reference
+ * sheet, the budget check, the contract, the blockers and Terbitkan with the audited exception. The Bahagian are read here; they are edited
+ * at `Sunting di Set Builder` (D113: one builder), where every function of the old Pembina Kertas lives now.
  */
-import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables/useApi'
 import { useFlash } from '@/composables/useFlash'
-import { useConfirm, DsCluster, DsLoadError, DsPage, DsPanel, DsStatRow, DsStatusBadge, type StatItem } from '@/ds'
+import { useConfirm, DsLoadError, DsPage, DsPanel, DsStatRow, DsStatusBadge, type StatItem } from '@/ds'
 
 import { RichText } from '../../../../components/question-display'
-import type { BuilderGroup, BuilderQuestion, SectionPoolPage } from '../../domain/admin-types'
-import type { StimulusDef } from '../../domain/types'
-import { checkPaper, moveUnit, removeUnit, unitsOf } from '../../domain/paper-builder'
-import { editorGroupLabel, editorStimuliOf } from '../../lib/stimulus-data'
-import { INTAKE_MANUAL_PATH } from '../intake/lib/intake-routes'
+import type { BuilderGroup, BuilderQuestion } from '../../domain/admin-types'
+import { checkPaper, unitsOf } from '../../domain/paper-builder'
+import { editorGroupLabel } from '../../lib/stimulus-data'
+import { INTAKE_LIST_PATH } from '../intake/lib/intake-routes'
 import { bijakAdminServer } from '../../server/client'
 import PaperReferenceEditor from '../builder/components/PaperReferenceEditor.vue'
-import PaperQuestionOps from '../builder/components/PaperQuestionOps.vue'
-import PaperEditBlocks from '../builder/components/PaperEditBlocks.vue'
 import PublishOverride from '../builder/components/PublishOverride.vue'
 import PaperMetaForm from '../builder/components/PaperMetaForm.vue'
 import ReviewBlock from '../builder/components/ReviewBlock.vue'
 import StudentViewDrawer from '../builder/components/StudentViewDrawer.vue'
 import { builderCopy as bt } from '../builder/domain/copy'
-import { validTitle } from '../builder/domain/stimulus'
 import { publishGate } from '../builder/domain/publish-gate'
 import { usePaperActions } from '../builder/lib/use-paper-actions'
 import { uploadQuestionImage } from '@/api/files'
-import type { BijakBuilderPoolUnit, BijakBuilderQuestionStatus } from '@pp/contract'
-import { questionStatusFromWire } from '../../server/http-admin'
-import { builderMessage, builderPath, type ReferencePanel } from '../builder/server/api'
+import { BUILDER_PATH, builderMessage, builderPath, type ReferencePanel } from '../builder/server/api'
 import { builderServer } from '../builder/server/client'
 import QuestionPreview from './QuestionPreview.vue'
-import { ADMIN_ROUTES, KIND_LABEL, detailMessage } from './ui'
+import { KIND_LABEL, detailMessage } from './ui'
 
 const server = bijakAdminServer()
 const confirm = useConfirm()
@@ -43,17 +37,8 @@ const route = useRoute()
 const flash = useFlash()
 
 const id = computed(() => String(route.params.id))
-/** Back from "Tulis soalan baharu": the new question is waiting for review. */
+/** Back from "Tulis soalan baharu" (Set Builder): the new question is waiting for review. */
 const waitingNote = computed(() => route.query.menunggu === '1')
-/** Manual entry opens with this paper's subject and kertas filled in. */
-const manualLink = computed(() => ({
-  path: INTAKE_MANUAL_PATH,
-  query: {
-    subject: data.value?.paper.subject ?? '',
-    kertas: String(data.value?.paper.kertas ?? ''),
-    paper: id.value,
-  },
-}))
 const { data, error, reload } = useApi(() => server.getPaperEditor(id.value), id)
 
 /* Semak Kertas (R1-F09): server review, Salin set, Tarik balik, student view. V2 3.4. */
@@ -61,52 +46,29 @@ const actions = usePaperActions({
   api: builderServer(),
   id,
   title: () => data.value?.paper.title ?? title.value,
-  ensureSaved: () => (dirty.value ? save() : Promise.resolve(true)),
   onChanged: reload,
   copyTarget: (nid) => `/admin/spm/kertas/${encodeURIComponent(nid)}`,
 })
 const { review, viewOpen, view, viewError } = actions
 
 const title = ref('')
-const durationMin = ref(0)
-const ids = reactive<Record<string, string[]>>({})
-const dirty = ref(false)
 const busy = ref(false)
-const publishErrors = ref<string[]>([])
-
-/** Pool units added through the picker that the editor data does not carry yet. */
-const extraQ = reactive(new Map<string, BuilderQuestion>())
-const extraG = reactive(new Map<string, string[]>())
-const extraStim = reactive(new Map<string, StimulusDef[]>())
 
 watch(
   data,
   (d) => {
     if (!d) return
     void actions.loadReview()
-    extraQ.clear()
-    extraG.clear()
     title.value = d.paper.title
-    durationMin.value = d.paper.durationMin
-    for (const k of Object.keys(ids)) delete ids[k]
-    for (const s of d.paper.sections) ids[s.id] = [...s.questionIds]
-    dirty.value = false
-    extraQ.clear()
-    extraG.clear()
-    extraStim.clear()
   },
   { immediate: true },
 )
 
 const readonly = computed(() => data.value?.paper.status === 'terbit')
-const qMap = computed(
-  () => new Map<string, BuilderQuestion>([...(data.value?.questions ?? []).map((q): [string, BuilderQuestion] => [q.id, q]), ...extraQ]),
-)
-const gMap = computed(
-  () => new Map<string, BuilderGroup>((data.value?.groups ?? []).map((g) => [g.id, g])),
-)
+const qMap = computed(() => new Map<string, BuilderQuestion>((data.value?.questions ?? []).map((q): [string, BuilderQuestion] => [q.id, q])))
+const gMap = computed(() => new Map<string, BuilderGroup>((data.value?.groups ?? []).map((g) => [g.id, g])))
 const groupOf = (qid: string): string | undefined => qMap.value.get(qid)?.groupId
-const membersOf = (gid: string): string[] => gMap.value.get(gid)?.questionIds ?? extraG.get(gid) ?? []
+const membersOf = (gid: string): string[] => gMap.value.get(gid)?.questionIds ?? []
 
 const sections = computed(() => data.value?.paper.sections ?? [])
 
@@ -118,7 +80,7 @@ const check = computed(() =>
       questionCount: s.questionCount,
       rule: s.rule,
     })),
-    sections: sections.value.map((s) => ({ questionIds: ids[s.id] ?? [] })),
+    sections: sections.value.map((s) => ({ questionIds: s.questionIds })),
     marksOf: (qid) => qMap.value.get(qid)?.marks ?? 0,
     groupOf,
     membersOf,
@@ -130,11 +92,11 @@ const allIssues = computed(() => [
   ...check.value.sections.flatMap((s) => s.errors.map((e) => `${s.label}: ${e}`)),
 ])
 
-/** Terbitkan stays off while a local check fails, or (nothing unsaved) the server lists a blocker. */
+/** Terbitkan stays off while a local check fails, or the server lists a blocker. */
 const gate = computed(() =>
   publishGate({
     localIssues: allIssues.value.length,
-    dirty: dirty.value,
+    dirty: false,
     reviewFailed: actions.reviewError.value,
     blockers: actions.blockers.value.length,
   }),
@@ -142,10 +104,13 @@ const gate = computed(() =>
 /** Server blocker lines the issue list above does not already show (the live check lists the structural ones). */
 const extraBlockers = computed(() => {
   const shown = new Set(allIssues.value)
-  return [...new Set([...actions.blockers.value, ...publishErrors.value])].filter((m) => !shown.has(m))
+  return actions.blockers.value.filter((m) => !shown.has(m))
 })
 const publishBlockedCount = computed(() => gate.value.count)
 const publishBlocked = computed(() => gate.value.blocked)
+const publishTitle = computed(() => (publishBlocked.value && publishBlockedCount.value ? bt.fixFirst(publishBlockedCount.value) : undefined))
+/** FR-ADM-Q07.7 (defect 21): an imported draft is published from its preview only. */
+const importedDraft = computed(() => !!data.value?.paper.sourceBatchId && !readonly.value)
 
 const stats = computed<StatItem[]>(() => [
   {
@@ -158,162 +123,33 @@ const stats = computed<StatItem[]>(() => [
   {
     key: 'count',
     label: 'Soalan',
-    value: Object.values(ids).reduce((n, l) => n + l.length, 0),
+    value: sections.value.reduce((n, s) => n + s.questionIds.length, 0),
     icon: 'list-numbers',
   },
-  { key: 'time', label: 'Minit', value: durationMin.value, icon: 'clock' },
+  { key: 'time', label: 'Minit', value: data.value?.paper.durationMin ?? 0, icon: 'clock' },
 ])
 
-/* -------------------------------------------------------------------- edit operations */
-function setIds(sectionId: string, next: string[]): void {
-  ids[sectionId] = next
-  dirty.value = true
-  publishErrors.value = []
-}
-function remove(sectionId: string, qid: string): void {
-  setIds(sectionId, removeUnit(ids[sectionId] ?? [], qid, groupOf))
-}
-function move(sectionId: string, index: number, delta: -1 | 1): void {
-  setIds(sectionId, moveUnit(ids[sectionId] ?? [], index, delta, groupOf))
-}
 function unitsFor(sectionId: string) {
-  return unitsOf(ids[sectionId] ?? [], groupOf)
+  return unitsOf(sections.value.find((s) => s.id === sectionId)?.questionIds ?? [], groupOf)
 }
 /** Label of a group's stimuli; '' for a stimulus-less group, which stays a unit (D90, REQ-A-008). */
 const groupLabelById = (gid: string): string => {
   const g = gMap.value.get(gid)
-  return g ? editorGroupLabel(g) : editorGroupLabel({ stimuli: extraStim.get(gid) ?? [] })
+  return g ? editorGroupLabel(g) : ''
 }
 
-/* ---------------------------------------------------------------------------- picker */
-const pickerSection = ref<string | null>(null)
-const search = ref('')
-const pickerOpen = computed({
-  get: () => pickerSection.value !== null,
-  set: (v: boolean) => {
-    if (!v) pickerSection.value = null
-  },
-})
-const usedIds = computed(() => new Set(Object.values(ids).flat()))
-
-/**
- * The picker lists the builder's section pool (`GET .../sections/:sid/pool`), the same eligibility as the
- * Set Builder bank, not the editor's own question list: a K1 paper's MCQs carry `kertas: 0`, so the old
- * client-side filter found none (REQ-B-042). Search is debounced; a stale answer is dropped; "Muat lagi"
- * pages on.
- */
-const pool = ref<SectionPoolPage | null>(null)
-const poolPage = ref(1)
-const poolLoading = ref(false)
-const poolFailed = ref(false)
-let poolSeq = 0
-/** The query that produced `pool`: "Muat lagi" appends with it, never with a half-typed search. */
-let poolQuery = ''
-let poolTimer: ReturnType<typeof setTimeout> | undefined
-onBeforeUnmount(() => clearTimeout(poolTimer))
-
-async function loadPool(append = false): Promise<void> {
-  const sid = pickerSection.value
-  if (!sid) return
-  const mine = ++poolSeq
-  poolLoading.value = true
-  poolFailed.value = false
-  try {
-    const next = append && pool.value ? poolPage.value + 1 : 1
-    const q = append && pool.value ? poolQuery : search.value
-    const res = await server.sectionPool(id.value, sid, { q, page: next, pageSize: 20 })
-    if (mine !== poolSeq) return
-    poolPage.value = next
-    poolQuery = q
-    pool.value = append && pool.value ? { ...res, units: [...pool.value.units, ...res.units] } : res
-  } catch {
-    if (mine !== poolSeq) return
-    poolFailed.value = true
-    if (!append) pool.value = null
-  } finally {
-    if (mine === poolSeq) poolLoading.value = false
-  }
-}
-function onPickerSearch(): void {
-  clearTimeout(poolTimer)
-  poolTimer = setTimeout(() => void loadPool(), 250)
-}
-function openPicker(sectionId: string): void {
-  pickerSection.value = sectionId
-  search.value = ''
-  pool.value = null
-  poolPage.value = 1
-  poolQuery = ''
-  void loadPool()
-}
-const candidates = computed(() =>
-  (pool.value?.units ?? [])
-    .filter((u) => u.eligible && !u.questionIds.some((x) => usedIds.value.has(x)))
-    .map((u) => ({
-      key: u.groupId ?? u.questionIds[0]!,
-      unit: u,
-      ids: u.questionIds,
-      ...(u.groupId ? { groupId: u.groupId } : {}),
-      stimulusLabel: editorGroupLabel(u),
-      label: u.questions[0]?.preview ?? u.questionIds[0]!,
-    })),
-)
-const hasMore = computed(() => (pool.value ? poolPage.value < pool.value.totalPages : false))
-
-/** Pool units added here that the editor data does not carry yet (until the next save and reload). */
-function addPoolUnit(sectionId: string, u: SectionPoolPage['units'][number]): void {
-  for (const q of u.questions) extraQ.set(q.id, q)
-  if (u.groupId) {
-    extraG.set(u.groupId, [...u.questionIds])
-    extraStim.set(u.groupId, editorStimuliOf(u))
-  }
-  const all = new Set(Object.values(ids).flat())
-  setIds(sectionId, [...(ids[sectionId] ?? []), ...u.questionIds.filter((x) => !all.has(x))])
-}
-
-/* --------------------------------------------------------------------- save / publish */
-function patch() {
-  return {
-    title: title.value,
-    durationMin: durationMin.value,
-    sections: sections.value.map((s) => ({ id: s.id, questionIds: ids[s.id] ?? [] })),
-  }
-}
-async function save(): Promise<boolean> {
-  if (!validTitle(title.value)) {
-    flash.show({ type: 'error', message: bt.titleInvalid })
-    return false
-  }
-  busy.value = true
-  try {
-    await server.savePaper(id.value, patch())
-    dirty.value = false
-    void actions.loadReview()
-    return true
-  } catch (e) {
-    flash.show({ type: 'error', message: detailMessage(e) })
-    return false
-  } finally {
-    busy.value = false
-  }
-}
-async function onSave(): Promise<void> {
-  if (await save()) flash.show({ type: 'success', message: 'Draf kertas disimpan.' })
-}
+/* ---------------------------------------------------------------------------- publish */
 async function publish(): Promise<void> {
   if (publishBlocked.value) return
   // V2 native paper: confirm before it goes live (R8; a composite set in the Set Builder has none).
   if (!(await confirm({ message: bt.publishConfirm, confirmLabel: bt.publish }))) return
-  if (!(await save())) return
   // The builder API applies the T34 rule (hard blockers refuse; a Kontrak not Disahkan needs the audited override below).
   await actions.loadReview()
   if (actions.publishBlocked.value) {
-    publishErrors.value = actions.blockers.value
     flash.show({ type: 'error', message: bt.notPublishable(actions.blockers.value.length) })
     return
   }
-  publishErrors.value = []
-  await actions.publish()
+  if (await actions.publish()) viewOpen.value = false
 }
 async function overridePublish(reason: string): Promise<void> {
   if (!(await confirm({ message: bt.publishConfirm, confirmLabel: bt.publish }))) return
@@ -326,6 +162,8 @@ async function unpublish(): Promise<void> {
     await server.unpublishPaper(id.value)
     flash.show({ type: 'success', message: bt.withdrawnFlash(data.value?.paper.title ?? title.value) })
     await reload()
+  } catch (e) {
+    flash.show({ type: 'error', message: detailMessage(e) })
   } finally {
     busy.value = false
   }
@@ -333,7 +171,6 @@ async function unpublish(): Promise<void> {
 
 /* ---------------------------------------------------------------------------- metadata */
 async function saveMeta(patchData: Parameters<ReturnType<typeof builderServer>['updateHeader']>[1]): Promise<void> {
-  if (dirty.value && !(await save())) return
   busy.value = true
   try {
     await builderServer().updateHeader(id.value, patchData)
@@ -346,48 +183,6 @@ async function saveMeta(patchData: Parameters<ReturnType<typeof builderServer>['
   }
 }
 
-/** Sunting bahagian / petikan: unsaved placements go first (the reload resets them), then one call. */
-async function editThen(run: () => Promise<unknown>, okMessage: string, fallback: string = bt.errRename): Promise<void> {
-  if (dirty.value && !(await save())) return
-  busy.value = true
-  try {
-    await run()
-    flash.show({ type: 'success', message: okMessage })
-    await reload()
-  } catch (e) {
-    flash.show({ type: 'error', message: builderMessage(e, fallback) })
-  } finally {
-    busy.value = false
-  }
-}
-const saveSection = (sid: string, p: Parameters<ReturnType<typeof builderServer>['updateSection']>[2]): Promise<void> =>
-  editThen(() => builderServer().updateSection(id.value, sid, p), bt.sectionSaved(p.label ?? ''), bt.errRename)
-const loadOpsPool = (sid: string, q: string, page: number) =>
-  builderServer().pool(id.value, sid, { q, page, pageSize: 20 })
-const knownQuestion = (qid: string) => {
-  const q = qMap.value.get(qid)
-  return q ? { preview: q.preview, ...(q.groupId ? { groupId: q.groupId } : {}) } : undefined
-}
-/** Tambah / Padam soalan share the local model with the picker: applied on Simpan draf or Terbitkan. */
-function addOpsUnit(sectionId: string, u: BijakBuilderPoolUnit): void {
-  for (const q of u.questions) {
-    const wire = q as unknown as { status: string }
-    const status = ['draft', 'review', 'approved', 'archived'].includes(wire.status)
-      ? questionStatusFromWire(wire.status as BijakBuilderQuestionStatus)
-      : (wire.status as BuilderQuestion['status'])
-    extraQ.set(q.id, { ...(q as unknown as BuilderQuestion), status })
-  }
-  if (u.groupId) {
-    extraG.set(u.groupId, [...u.questionIds])
-    extraStim.set(u.groupId, editorStimuliOf(u))
-  }
-  const all = new Set(Object.values(ids).flat())
-  setIds(sectionId, [...(ids[sectionId] ?? []), ...u.questionIds.filter((q) => !all.has(q))])
-}
-function removeIds(sectionId: string, qids: string[]): void {
-  const gone = new Set(qids)
-  setIds(sectionId, (ids[sectionId] ?? []).filter((q) => !gone.has(q)))
-}
 const referencePanels = computed(
   () => ((data.value?.paper as { reference?: ReferencePanel[] } | undefined)?.reference ?? []),
 )
@@ -396,16 +191,24 @@ const uploadReferenceImage = (file: File): Promise<string> =>
   import.meta.env.VITE_API_MODE === 'http'
     ? uploadQuestionImage(file, 'reference')
     : Promise.resolve(`mock-${file.name}`)
-const saveReference = (panels: ReferencePanel[]): Promise<void> =>
-  editThen(() => builderServer().updateReference(id.value, panels), bt.refSaved, bt.errReference)
-const savePassage = (gid: string, label: string): Promise<void> =>
-  editThen(() => builderServer().updateGroupLabel(id.value, gid, label), bt.passageSaved(label), bt.errPassage)
+async function saveReference(panels: ReferencePanel[]): Promise<void> {
+  busy.value = true
+  try {
+    await builderServer().updateReference(id.value, panels)
+    flash.show({ type: 'success', message: bt.refSaved })
+    await reload()
+  } catch (e) {
+    flash.show({ type: 'error', message: builderMessage(e, bt.errReference) })
+  } finally {
+    busy.value = false
+  }
+}
 
 /* -------------------------------------------------------------------------- preview */
 const previewOpen = ref(false)
 const preview = ref<Awaited<ReturnType<typeof server.previewQuestions>> | null>(null)
 async function openPreview(): Promise<void> {
-  preview.value = await server.previewQuestions(sections.value.flatMap((s) => ids[s.id] ?? []))
+  preview.value = await server.previewQuestions(sections.value.flatMap((s) => s.questionIds))
   previewOpen.value = true
 }
 const previewBlocks = computed(() => {
@@ -439,8 +242,8 @@ const previewBlocks = computed(() => {
   <DsPage
     layout="detail"
     width="wide"
-    :back-to="{ name: ADMIN_ROUTES.papers }"
-    back-label="Pembina Kertas"
+    :back-to="BUILDER_PATH"
+    back-label="Kembali ke Simulasi"
     data-testid="paper-editor-page"
   >
     <DsLoadError v-if="error" message="Tidak dapat memuatkan kertas." @retry="reload()" />
@@ -457,13 +260,14 @@ const previewBlocks = computed(() => {
       >
         <template #actions>
           <UButton
-            :to="{ name: ADMIN_ROUTES.review }"
+            :to="INTAKE_LIST_PATH"
             size="sm"
             color="info"
             variant="outline"
             icon="i-ph-seal-check"
+            data-testid="paper-open-import"
           >
-            Buka Baris Gilir Semakan
+            {{ bt.importQueue }}
           </UButton>
         </template>
       </UAlert>
@@ -477,17 +281,16 @@ const previewBlocks = computed(() => {
                 {{ data.blueprint?.source }} · {{ data.paper.code }}
               </span>
             </div>
-            <UFormField label="Tajuk kertas">
-              <UInput
-                v-model="title"
-                class="w-full"
-                :disabled="readonly"
-                data-testid="paper-title"
-                @update:model-value="dirty = true"
-              />
-            </UFormField>
+            <h2 class="text-heading text-highlighted break-words" data-testid="paper-heading">{{ data.paper.title }}</h2>
           </div>
           <div class="flex flex-wrap gap-2">
+            <UButton
+              :to="builderPath(id)"
+              icon="i-ph-hammer"
+              :label="bt.editInBuilder"
+              class="min-h-11"
+              data-testid="paper-edit-in-builder"
+            />
             <UButton
               color="neutral"
               variant="soft"
@@ -503,7 +306,6 @@ const previewBlocks = computed(() => {
               icon="i-ph-student"
               :label="bt.studentView + ' (disimpan)'"
               class="min-h-11"
-              :disabled="dirty"
               data-testid="paper-student-view"
               @click="actions.openStudentView"
             />
@@ -517,31 +319,13 @@ const previewBlocks = computed(() => {
               data-testid="paper-copy"
               @click="actions.copy"
             />
-            <UButton
-              :to="builderPath(id)"
-              color="neutral"
-              variant="ghost"
-              icon="i-ph-hammer"
-              :label="bt.openBuilder"
-              class="min-h-11"
-              data-testid="paper-open-builder"
-            />
             <template v-if="!readonly">
               <UButton
-                color="neutral"
-                variant="soft"
-                icon="i-ph-floppy-disk"
-                label="Simpan draf"
-                class="min-h-11"
-                :loading="busy"
-                :disabled="!dirty"
-                data-testid="paper-save"
-                @click="onSave"
-              />
-              <UButton
+                v-if="!importedDraft"
                 icon="i-ph-upload-simple"
-                label="Terbitkan"
+                :label="bt.publish"
                 class="min-h-11"
+                :title="publishTitle"
                 :loading="busy"
                 :disabled="publishBlocked"
                 data-testid="paper-publish"
@@ -551,7 +335,7 @@ const previewBlocks = computed(() => {
             <template v-else>
               <UButton
                 icon="i-ph-student"
-                label="Lihat di Bijak SPM"
+                :label="bt.viewInBijak"
                 class="min-h-11"
                 to="/spm/bijak"
                 data-testid="paper-view-student"
@@ -560,7 +344,7 @@ const previewBlocks = computed(() => {
                 color="warning"
                 variant="soft"
                 icon="i-ph-arrow-u-up-left"
-                label="Sembunyikan"
+                :label="bt.hide"
                 class="min-h-11"
                 :loading="busy || actions.busy.value"
                 data-testid="paper-unpublish"
@@ -569,6 +353,7 @@ const previewBlocks = computed(() => {
             </template>
           </div>
         </div>
+        <p v-if="importedDraft" class="mt-2 text-caption text-muted" data-testid="paper-publish-from-preview">{{ bt.terbitFromPreview }}</p>
       </DsPanel>
 
       <DsStatRow
@@ -587,11 +372,7 @@ const previewBlocks = computed(() => {
             class="size-5"
           />
           <h3 class="text-subheading text-highlighted">
-            {{
-              allIssues.length
-                ? `Belum sepadan dengan blueprint (${allIssues.length} perkara)`
-                : 'Sepadan dengan blueprint'
-            }}
+            {{ allIssues.length ? bt.budgetIssues(allIssues.length) : bt.budgetOk }}
           </h3>
         </div>
         <ul
@@ -602,14 +383,14 @@ const previewBlocks = computed(() => {
           <li v-for="e in allIssues" :key="e">{{ e }}</li>
         </ul>
         <div
-          v-if="(publishBlocked || publishErrors.length) && !readonly"
+          v-if="publishBlocked && !readonly"
           class="mt-2 flex flex-col gap-2"
           role="status"
           data-testid="publish-errors"
         >
           <p class="text-body font-semibold text-error">
-            <template v-if="allIssues.length || publishErrors.length">
-              Kertas belum boleh diterbitkan: selesaikan {{ allIssues.length ? publishBlockedCount : publishErrors.length }} perkara di atas.
+            <template v-if="allIssues.length">
+              Kertas belum boleh diterbitkan: selesaikan {{ publishBlockedCount }} perkara di atas.
             </template>
             <template v-else>{{ gate.reason }}</template>
           </p>
@@ -655,11 +436,10 @@ const previewBlocks = computed(() => {
             @click="actions.copy"
           />
         </div>
-        <ReviewBlock v-if="review" :review="review" />
+        <ReviewBlock v-if="review" :review="review" :scope="{ levelScope: data.paper.levelScope, subject: data.blueprint?.subjectName ?? data.paper.subject }" />
         <p v-else-if="actions.reviewError.value" class="text-body text-error" role="alert">
           {{ bt.reviewError }}
         </p>
-        <p v-if="dirty" class="mt-2 text-caption text-muted">{{ bt.reviewStale }}</p>
         <UButton
           :to="{ name: 'm28.admin.kontrak.edit', params: { subjek: data.paper.subject, kertas: String(data.paper.kertas) } }"
           color="neutral"
@@ -676,20 +456,7 @@ const previewBlocks = computed(() => {
           :paper="data.paper"
           :readonly="readonly"
           :busy="busy"
-          @update:title="dirty = true"
           @save="saveMeta"
-        />
-      </DsPanel>
-
-      <DsPanel data-testid="paper-question-ops">
-        <PaperQuestionOps
-          :sections="sections"
-          :ids="ids"
-          :known="knownQuestion"
-          :readonly="readonly"
-          :load-pool="loadOpsPool"
-          @add="addOpsUnit"
-          @remove="removeIds"
         />
       </DsPanel>
 
@@ -700,16 +467,6 @@ const previewBlocks = computed(() => {
           :busy="busy"
           :upload="uploadReferenceImage"
           @save="saveReference"
-        />
-      </DsPanel>
-
-      <DsPanel data-testid="paper-edit-blocks">
-        <PaperEditBlocks
-          :editor="data"
-          :readonly="readonly"
-          :busy="busy"
-          @section="saveSection"
-          @passage="savePassage"
         />
       </DsPanel>
 
@@ -731,177 +488,57 @@ const previewBlocks = computed(() => {
               <UBadge
                 :color="check.sections[si]?.count === s.questionCount ? 'success' : 'warning'"
                 variant="subtle"
-                :label="`Soalan ${check.sections[si]?.count ?? 0} / ${s.questionCount}`"
+                :label="bt.questionsChip(check.sections[si]?.count ?? 0, s.questionCount)"
               />
               <UBadge
                 :color="check.sections[si]?.marks === s.markBudget ? 'success' : 'warning'"
                 variant="subtle"
-                :label="`Markah ${check.sections[si]?.marks ?? 0} / ${s.markBudget}`"
+                :label="bt.marksChip(check.sections[si]?.marks ?? 0, s.markBudget)"
               />
             </div>
           </div>
 
           <ul class="flex flex-col gap-2">
             <li
-              v-for="(u, ui) in unitsFor(s.id)"
+              v-for="u in unitsFor(s.id)"
               :key="u.ids.join('|')"
-              class="flex items-start gap-2 rounded-lg bg-muted p-3"
+              class="flex flex-col gap-2 rounded-lg bg-muted p-3"
               :data-testid="u.groupId ? `unit-group-${u.groupId}` : `unit-${u.ids[0]}`"
             >
-              <div class="flex min-w-0 grow flex-col gap-2">
-                <p
-                  v-if="u.groupId"
-                  class="flex flex-wrap items-center gap-2 text-caption font-semibold text-info"
-                >
-                  <UIcon name="i-ph-image" class="size-4" />
-                  Kumpulan rangsangan{{ groupLabelById(u.groupId) ? ` ${groupLabelById(u.groupId)}` : '' }} · {{ u.ids.length }} soalan
-                  bergerak bersama
-                </p>
-                <div v-for="qid in u.ids" :key="qid" class="flex flex-col gap-1">
-                  <span class="line-clamp-2 text-body text-default"
-                    ><RichText :text="qMap.get(qid)?.preview ?? qid"
-                  /></span>
-                  <span class="text-caption text-muted">
-                    {{ qMap.get(qid)?.marks }} markah ·
-                    {{ KIND_LABEL[qMap.get(qid)?.kind ?? 'objektif'] }} · {{ qMap.get(qid)?.topic }}
-                  </span>
-                </div>
-              </div>
-              <div v-if="!readonly" class="flex shrink-0 gap-1">
-                <UButton
-                  color="neutral"
-                  variant="ghost"
-                  icon="i-ph-arrow-up"
-                  aria-label="Naik"
-                  class="min-h-11 min-w-11"
-                  :disabled="ui === 0"
-                  @click="move(s.id, ui, -1)"
-                />
-                <UButton
-                  color="neutral"
-                  variant="ghost"
-                  icon="i-ph-arrow-down"
-                  aria-label="Turun"
-                  class="min-h-11 min-w-11"
-                  :disabled="ui === unitsFor(s.id).length - 1"
-                  @click="move(s.id, ui, 1)"
-                />
-                <UButton
-                  color="error"
-                  variant="ghost"
-                  icon="i-ph-x"
-                  :aria-label="u.groupId ? 'Buang kumpulan' : 'Buang soalan'"
-                  class="min-h-11 min-w-11"
-                  :data-testid="`remove-${u.ids[0]}`"
-                  @click="remove(s.id, u.ids[0]!)"
-                />
+              <p
+                v-if="u.groupId"
+                class="flex flex-wrap items-center gap-2 text-caption font-semibold text-info"
+              >
+                <UIcon name="i-ph-image" class="size-4" />
+                {{ bt.groupBadge(groupLabelById(u.groupId), u.ids.length) }}
+              </p>
+              <div v-for="qid in u.ids" :key="qid" class="flex flex-col gap-1">
+                <span class="line-clamp-2 text-body text-default"
+                  ><RichText :text="qMap.get(qid)?.preview ?? qid"
+                /></span>
+                <span class="text-caption text-muted">
+                  {{ qMap.get(qid)?.marks }} markah ·
+                  {{ KIND_LABEL[qMap.get(qid)?.kind ?? 'objektif'] }} · {{ qMap.get(qid)?.topic }}
+                </span>
               </div>
             </li>
             <li v-if="!unitsFor(s.id).length" class="text-body text-muted">
               Belum ada soalan dalam bahagian ini.
             </li>
           </ul>
-
-          <DsCluster v-if="!readonly">
-            <UButton
-              icon="i-ph-plus"
-              label="Tambah soalan dari bank"
-              color="neutral"
-              variant="soft"
-              class="min-h-11"
-              :data-testid="`add-${si}`"
-              @click="openPicker(s.id)"
-            />
-            <UButton
-              icon="i-ph-pencil-simple-line"
-              label="Tulis soalan baharu"
-              color="neutral"
-              variant="soft"
-              class="min-h-11"
-              :to="manualLink"
-              :data-testid="`write-${si}`"
-            />
-          </DsCluster>
         </div>
       </DsPanel>
 
-      <USlideover
-        v-model:open="pickerOpen"
-        title="Tambah dari bank"
-        description="Hanya soalan Terbit untuk subjek dan kertas ini. Soalan rangsangan ditambah sekali gus."
-        :ui="{ content: 'max-w-xl' }"
-      >
-        <template #body>
-          <div class="flex flex-col gap-3" data-testid="picker">
-            <UInput
-              v-model="search"
-              icon="i-ph-magnifying-glass"
-              aria-label="Cari soalan"
-              placeholder="Cari teks atau topik..."
-              class="w-full"
-              data-testid="picker-search"
-              @update:model-value="onPickerSearch"
-            />
-            <div v-if="poolFailed" class="flex flex-wrap items-center gap-2">
-              <p class="text-body text-error" role="alert" data-testid="picker-error">
-                Ralat semasa mencari bank soalan.
-              </p>
-              <UButton
-                color="neutral"
-                variant="soft"
-                size="sm"
-                class="min-h-11"
-                label="Cuba lagi"
-                :loading="poolLoading"
-                data-testid="picker-retry"
-                @click="loadPool(!!pool)"
-              />
-            </div>
-            <p v-else-if="poolLoading && !pool" class="text-body text-muted" role="status">Memuatkan…</p>
-            <p v-else-if="!candidates.length && !hasMore" class="text-body text-muted" data-testid="picker-empty">
-              Tiada soalan sepadan.
-            </p>
-            <ul class="flex flex-col gap-2">
-              <li
-                v-for="c in candidates"
-                :key="c.key"
-                class="flex items-start gap-2 rounded-lg bg-muted p-3"
-                :data-testid="`pick-${c.key}`"
-              >
-                <div class="flex min-w-0 grow flex-col gap-1">
-                  <span class="line-clamp-2 text-body"><RichText :text="c.label" /></span>
-                  <span class="text-caption text-muted">
-                    <template v-if="c.groupId"
-                      >Kumpulan{{ c.stimulusLabel ? ` ${c.stimulusLabel}` : '' }} · {{ c.ids.length }} soalan ·
-                    </template>
-                    {{ c.unit.marks }} markah
-                  </span>
-                </div>
-                <UButton
-                  size="sm"
-                  icon="i-ph-plus"
-                  label="Tambah"
-                  class="min-h-11"
-                  :data-testid="`pick-add-${c.key}`"
-                  @click="pickerSection && addPoolUnit(pickerSection, c.unit)"
-                />
-              </li>
-            </ul>
-            <UButton
-              v-if="hasMore"
-              color="neutral"
-              variant="soft"
-              class="min-h-11 self-start"
-              label="Muat lagi"
-              :loading="poolLoading"
-              data-testid="picker-more"
-              @click="loadPool(true)"
-            />
-          </div>
-        </template>
-      </USlideover>
-
-      <StudentViewDrawer v-model:open="viewOpen" :view="view" :error="viewError" />
+      <StudentViewDrawer
+        v-model:open="viewOpen"
+        :view="view"
+        :error="viewError"
+        :publishable="importedDraft"
+        :publish-blocked="publishBlocked"
+        :publish-title="publishTitle"
+        :busy="actions.busy.value"
+        @publish="publish"
+      />
 
       <USlideover
         v-model:open="previewOpen"

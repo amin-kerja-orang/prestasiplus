@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-// REQ-B-042: "Tambah soalan dari bank" lists the builder's section pool (same eligibility as the Set
-// Builder bank), not the editor's own Kertas-tagged question list; a K1 paper's pool MCQs have kertas 0.
+// REQ-B-042: "Tambah soalan" lists the builder's section pool, not the editor's own Kertas-tagged question list; a K1 paper's pool MCQs
+// have kertas 0. S3-T02: the picker of Pembina Kertas moved to the Set Builder bank (D113: one builder), so these cases run there.
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -10,7 +10,9 @@ import { ApiClient } from '@/api'
 import type { Transport, TransportRequest, TransportResponse } from '@/api'
 
 import { BANK } from '../data/registry'
-import PaperEditorPage from '../admin/papers/PaperEditorPage.vue'
+import SetBuilderPage from '../admin/builder/pages/SetBuilderPage.vue'
+import type { BuilderApi } from '../admin/builder/server/api'
+import { setBuilderServerForTests } from '../admin/builder/server/client'
 import type { AdminPaper, PaperEditorData, SectionPoolPage } from '../domain/admin-types'
 import { BijakServer, MemoryStorage } from '../server/store'
 import { createHttpBijakAdminServer } from '../server/http-admin'
@@ -113,20 +115,14 @@ describe('mock sectionPool mirrors it', () => {
   })
 })
 
-const h = vi.hoisted((): { server: unknown } => ({ server: undefined }))
-vi.mock('../server/client', () => ({
-  bijakServer: () => h.server,
-  bijakAdminServer: () => h.server,
-}))
-
-function editor(): PaperEditorData {
+function editor(over: Partial<PaperEditorData> = {}, ids: string[] = []): PaperEditorData {
   const paper = {
     id: 'p1', title: 'K1', subject: 'MAT', kertas: 1, year: 2026, code: '1449/1', durationMin: 90, instructions: [],
     status: 'draf', createdAt: 1, updatedAt: 1,
-    sections: [{ id: 's1', label: 'Objektif', markBudget: 2, questionCount: 2, rule: { type: 'all' }, questionIds: [] }],
+    sections: [{ id: 's1', label: 'Objektif', markBudget: 2, questionCount: 2, rule: { type: 'all' }, questionIds: ids }],
   } as unknown as AdminPaper
   // K1 case: the editor's own question list is EMPTY (the pool MCQs are not Kertas-1 tagged).
-  return { paper, blueprint: null, questions: [], groups: [] }
+  return { paper, blueprint: null, questions: [], groups: [], ...over }
 }
 const mk = (id: string) => ({
   questionIds: [id],
@@ -134,18 +130,27 @@ const mk = (id: string) => ({
   marks: 1, eligible: true, reasons: [], placed: false,
 })
 
-describe('PaperEditorPage picker', () => {
+describe('Set Builder bank (the picker of Pembina Kertas)', () => {
   let wrapper: VueWrapper | null = null
   const sectionPool = vi.fn()
+  const addPlacement = vi.fn()
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.stubGlobal('matchMedia', (query: string) => ({ matches: false, media: query, addEventListener() {}, removeEventListener() {} }))
     sectionPool.mockReset()
-    h.server = { getPaperEditor: vi.fn().mockResolvedValue(editor()), sectionPool }
+    addPlacement.mockReset()
+    setBuilderServerForTests({
+      getEditor: vi.fn().mockResolvedValue(editor()),
+      review: vi.fn().mockResolvedValue({ paperId: 'p1', status: 'draf', ok: false, blockers: [], blockerDetails: [], canOverride: false, notes: [], blueprintNeedsReview: false, visibleToStudents: false, totalMarks: 0, totalBudget: 2, rows: [] }),
+      units: vi.fn().mockResolvedValue([]),
+      pool: sectionPool,
+      addPlacement,
+    } as unknown as BuilderApi)
   })
   afterEach(() => {
     wrapper?.unmount()
     wrapper = null
+    setBuilderServerForTests(null)
     document.body.innerHTML = ''
     vi.unstubAllGlobals()
     vi.useRealTimers()
@@ -155,15 +160,14 @@ describe('PaperEditorPage picker', () => {
     const router = createRouter({
       history: createMemoryHistory(),
       routes: [
-        { path: '/admin/spm/kertas/:id', name: 'm28.admin.papers.edit', component: PaperEditorPage },
-        { path: '/admin/spm/kertas', name: 'm28.admin.papers', component: stub },
-        { path: '/admin/spm/semakan', name: 'm28.admin.review', component: stub },
+        { path: '/admin/studio/sets/:paper/builder', component: SetBuilderPage },
+        { path: '/admin/spm/kertas/:id', name: 'm28.admin.papers.edit', component: stub },
         { path: '/admin/spm/kontrak/:subjek/:kertas', name: 'm28.admin.kontrak.edit', component: stub },
         { path: '/:p(.*)*', component: stub },
       ],
     })
-    await router.push('/admin/spm/kertas/p1')
-    wrapper = mount(PaperEditorPage, { global: { plugins: [router] }, attachTo: document.body })
+    await router.push('/admin/studio/sets/p1/builder')
+    wrapper = mount(SetBuilderPage, { global: { plugins: [router] }, attachTo: document.body })
     await flushPromises()
     return wrapper
   }
@@ -171,15 +175,13 @@ describe('PaperEditorPage picker', () => {
   it('K1: lists the pool even though the editor knows no questions, and adds a unit', async () => {
     const page: SectionPoolPage = { units: [mk('m1'), mk('m2'), mk('m3')], total: 59, totalPages: 3 } as never
     sectionPool.mockResolvedValue(page)
+    addPlacement.mockResolvedValue({ editor: editor({ questions: mk('m1').questions as never }, ['m1']), changed: ['m1'] })
     const w = await render()
-    await w.get('[data-testid="add-0"]').trigger('click')
+    expect(sectionPool).toHaveBeenCalledWith('p1', 's1', { q: '', page: 1, pageSize: 50 })
+    expect(document.querySelectorAll('[data-testid^="pool-add-"]').length).toBe(3)
+    ;(document.querySelector('[data-testid="pool-add-m1"]') as HTMLElement).click()
     await flushPromises()
-    expect(sectionPool).toHaveBeenCalledWith('p1', 's1', { q: '', page: 1, pageSize: 20 })
-    expect(document.querySelectorAll('[data-testid^="pick-add-"]').length).toBe(3)
-    ;(document.querySelector('[data-testid="pick-add-m1"]') as HTMLElement).click()
-    await flushPromises()
-    // the local section now holds m1 and the picked unit is no longer offered
-    expect(document.querySelector('[data-testid="pick-add-m1"]')).toBeNull()
+    expect(addPlacement).toHaveBeenCalledWith('p1', 's1', 'm1')
     expect(w.get('[data-testid="section-0-badges"]').text()).toContain('Soalan 1 / 2')
     expect(w.get('[data-testid="section-0-badges"]').text()).toContain('Markah 1 / 2')
   })
@@ -192,15 +194,17 @@ describe('PaperEditorPage picker', () => {
     marks: 4, eligible: true, reasons: [], placed: false,
   }
 
-  it('a group from the pool is ONE unit with its marks, and its stimulus label shows before any reload', async () => {
+  it('a group from the pool is ONE unit with its marks, and its stimulus label shows', async () => {
     sectionPool.mockResolvedValue({ units: [grp, mk('m1')], total: 2, totalPages: 1 })
+    addPlacement.mockResolvedValue({
+      editor: editor({ questions: grp.questions as never, groups: [{ id: 'g9', stimulus: grp.stimulus, stimuli: [grp.stimulus], questionIds: grp.questionIds }] as never }, grp.questionIds),
+      changed: grp.questionIds,
+    })
     const w = await render()
-    await w.get('[data-testid="add-0"]').trigger('click')
+    expect(document.querySelector('[data-testid="pool-group-g9"]')!.textContent).toContain('Rajah 9 · 2 soalan')
+    ;(document.querySelector('[data-testid="pool-add-g9"]') as HTMLElement).click()
     await flushPromises()
-    expect(document.querySelector('[data-testid="pick-g9"]')!.textContent).toContain('Kumpulan Rajah 9 · 2 soalan')
-    ;(document.querySelector('[data-testid="pick-add-g9"]') as HTMLElement).click()
-    await flushPromises()
-    expect(document.querySelector('[data-testid="pick-g9"]')).toBeNull()
+    expect(addPlacement).toHaveBeenCalledWith('p1', 's1', 'g9a')
     const unit = w.get('[data-testid="unit-group-g9"]')
     expect(unit.text()).toContain('Kumpulan rangsangan Rajah 9 · 2 soalan')
     expect(w.findAll('[data-testid^="unit-group-"]')).toHaveLength(1)
@@ -221,54 +225,45 @@ describe('PaperEditorPage picker', () => {
     ...(stimuli.length ? { stimulus: stimuli[0], stimuli } : { stimuli }),
   })
   it.each([
-    [0, [], 'Kumpulan · 2 soalan', 'Kumpulan rangsangan · 2 soalan'],
-    [1, [stim('a', 'Rajah 1')], 'Kumpulan Rajah 1 · 2 soalan', 'Kumpulan rangsangan Rajah 1 · 2 soalan'],
+    [0, [], 'Kumpulan rangsangan · 2 soalan', 'Kumpulan rangsangan · 2 soalan'],
+    [1, [stim('a', 'Rajah 1')], 'Rajah 1 · 2 soalan', 'Kumpulan rangsangan Rajah 1 · 2 soalan'],
     [
       3,
       [stim('a', 'Rajah 1'), stim('b', 'Petikan A'), stim('c', 'Jadual 1')],
-      'Kumpulan Rajah 1 dan Petikan A dan Jadual 1 · 2 soalan',
+      'Rajah 1 dan Petikan A dan Jadual 1 · 2 soalan',
       'Kumpulan rangsangan Rajah 1 dan Petikan A dan Jadual 1 · 2 soalan',
     ],
   ])('a pool group with %i stimuli is offered and added as one labelled unit', async (_n, stimuli, pickText, unitText) => {
-    sectionPool.mockResolvedValue({ units: [withStimuli('gx', stimuli)], total: 1, totalPages: 1 })
+    const unit = withStimuli('gx', stimuli)
+    sectionPool.mockResolvedValue({ units: [unit], total: 1, totalPages: 1 })
+    addPlacement.mockResolvedValue({
+      editor: editor({ questions: unit.questions as never, groups: [{ id: 'gx', ...(stimuli.length ? { stimulus: stimuli[0] } : {}), stimuli, questionIds: unit.questionIds }] as never }, unit.questionIds),
+      changed: unit.questionIds,
+    })
     const w = await render()
-    await w.get('[data-testid="add-0"]').trigger('click')
-    await flushPromises()
-    expect(document.querySelector('[data-testid="pick-gx"]')!.textContent).toContain(pickText)
-    ;(document.querySelector('[data-testid="pick-add-gx"]') as HTMLElement).click()
+    expect(document.querySelector('[data-testid="pool-group-gx"]')!.textContent).toContain(pickText)
+    ;(document.querySelector('[data-testid="pool-add-gx"]') as HTMLElement).click()
     await flushPromises()
     expect(w.get('[data-testid="unit-group-gx"]').text()).toContain(unitText)
     expect(w.findAll('[data-testid^="unit-group-"]')).toHaveLength(1)
   })
 
-  it('"Muat lagi" appends the next page rows; a fully filtered page shows no empty text next to it', async () => {
+  it('"Muat lagi" appends the next page rows', async () => {
     sectionPool.mockResolvedValueOnce({ units: [mk('m1')], total: 2, totalPages: 2 })
-    const w = await render()
-    await w.get('[data-testid="add-0"]').trigger('click')
-    await flushPromises()
+    await render()
     sectionPool.mockResolvedValueOnce({ units: [mk('m2')], total: 2, totalPages: 2 })
-    ;(document.querySelector('[data-testid="picker-more"]') as HTMLElement).click()
+    ;(document.querySelector('[data-testid="bank-more"]') as HTMLElement).click()
     await flushPromises()
-    expect(document.querySelectorAll('[data-testid^="pick-add-"]').length).toBe(2)
-    expect(document.querySelector('[data-testid="picker-more"]')).toBeNull()
-    // reopen: page 1 is entirely ineligible, more pages exist -> button only
-    sectionPool.mockResolvedValueOnce({ units: [{ ...mk('x1'), eligible: false }], total: 30, totalPages: 2 })
-    ;(document.querySelector('[data-testid="pick-add-m1"]') as HTMLElement).click()
-    await flushPromises()
-    await w.get('[data-testid="add-0"]').trigger('click')
-    await flushPromises()
-    expect(document.querySelector('[data-testid="picker-empty"]')).toBeNull()
-    expect(document.querySelector('[data-testid="picker-more"]')).not.toBeNull()
+    expect(document.querySelectorAll('[data-testid^="pool-add-"]').length).toBe(2)
+    expect(document.querySelector('[data-testid="bank-more"]')).toBeNull()
   })
 
   it('drops a stale response and appends with the query that produced the list', async () => {
     vi.useFakeTimers()
     let release: (v: unknown) => void = () => {}
     sectionPool.mockResolvedValueOnce({ units: [mk('m1')], total: 40, totalPages: 2 })
-    const w = await render()
-    await w.get('[data-testid="add-0"]').trigger('click')
-    await flushPromises()
-    const input = document.querySelector('[data-testid="picker-search"]') as HTMLInputElement
+    await render()
+    const input = document.querySelector('[data-testid="bank-search"]') as HTMLInputElement
     // slow answer for 'aa', then a faster one for 'bb': 'aa' must not overwrite
     sectionPool.mockImplementationOnce(() => new Promise((r) => (release = r)))
     input.value = 'aa'
@@ -281,8 +276,8 @@ describe('PaperEditorPage picker', () => {
     await flushPromises()
     release({ units: [mk('aa1')], total: 1, totalPages: 1 })
     await flushPromises()
-    expect(document.querySelector('[data-testid="pick-add-bb1"]')).not.toBeNull()
-    expect(document.querySelector('[data-testid="pick-add-aa1"]')).toBeNull()
+    expect(document.querySelector('[data-testid="pool-add-bb1"]')).not.toBeNull()
+    expect(document.querySelector('[data-testid="pool-add-aa1"]')).toBeNull()
 
     // "Muat lagi" during the debounce window of a new query still pages the CURRENT list's query
     sectionPool.mockResolvedValueOnce({ units: [mk('bb1')], total: 40, totalPages: 2 })
@@ -293,31 +288,27 @@ describe('PaperEditorPage picker', () => {
     input.value = 'dd'
     input.dispatchEvent(new Event('input'))
     sectionPool.mockResolvedValueOnce({ units: [mk('cc2')], total: 40, totalPages: 2 })
-    ;(document.querySelector('[data-testid="picker-more"]') as HTMLElement).click()
+    ;(document.querySelector('[data-testid="bank-more"]') as HTMLElement).click()
     await flushPromises()
     expect(sectionPool.mock.calls.at(-1)![2]).toMatchObject({ q: 'cc', page: 2 })
   })
 
   it('a failed search offers "Cuba lagi", which retries', async () => {
     sectionPool.mockRejectedValueOnce(new Error('x'))
-    const w = await render()
-    await w.get('[data-testid="add-0"]').trigger('click')
-    await flushPromises()
-    expect(document.querySelector('[data-testid="picker-error"]')).not.toBeNull()
+    await render()
+    expect(document.querySelector('[data-testid="bank-error"]')).not.toBeNull()
     sectionPool.mockResolvedValueOnce({ units: [mk('m1')], total: 1, totalPages: 1 })
-    ;(document.querySelector('[data-testid="picker-retry"]') as HTMLElement).click()
+    ;(document.querySelector('[data-testid="bank-retry"]') as HTMLElement).click()
     await flushPromises()
-    expect(document.querySelector('[data-testid="picker-error"]')).toBeNull()
-    expect(document.querySelector('[data-testid="pick-add-m1"]')).not.toBeNull()
+    expect(document.querySelector('[data-testid="bank-error"]')).toBeNull()
+    expect(document.querySelector('[data-testid="pool-add-m1"]')).not.toBeNull()
   })
 
   it('search is debounced; "Muat lagi" asks the next page; a failure is shown', async () => {
     vi.useFakeTimers()
     sectionPool.mockResolvedValue({ units: [mk('m1')], total: 40, totalPages: 2 })
-    const w = await render()
-    await w.get('[data-testid="add-0"]').trigger('click')
-    await flushPromises()
-    const input = document.querySelector('[data-testid="picker-search"]') as HTMLInputElement
+    await render()
+    const input = document.querySelector('[data-testid="bank-search"]') as HTMLInputElement
     input.value = 'a'
     input.dispatchEvent(new Event('input'))
     input.value = 'ab'
@@ -325,7 +316,7 @@ describe('PaperEditorPage picker', () => {
     vi.advanceTimersByTime(300)
     await flushPromises()
     expect(sectionPool.mock.calls.map((c) => (c[2] as { q: string }).q)).toEqual(['', 'ab'])
-    ;(document.querySelector('[data-testid="picker-more"]') as HTMLElement).click()
+    ;(document.querySelector('[data-testid="bank-more"]') as HTMLElement).click()
     await flushPromises()
     expect(sectionPool.mock.calls.at(-1)![2]).toMatchObject({ q: 'ab', page: 2 })
     sectionPool.mockRejectedValue(new Error('x'))
@@ -333,6 +324,6 @@ describe('PaperEditorPage picker', () => {
     input.dispatchEvent(new Event('input'))
     vi.advanceTimersByTime(300)
     await flushPromises()
-    expect(document.querySelector('[data-testid="picker-error"]')).not.toBeNull()
+    expect(document.querySelector('[data-testid="bank-error"]')).not.toBeNull()
   })
 })

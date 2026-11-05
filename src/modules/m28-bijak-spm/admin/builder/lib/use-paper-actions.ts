@@ -13,7 +13,7 @@ import { useFlash } from '@/composables/useFlash'
 import { builderCopy as t } from '../domain/copy'
 import { blockersOf, overrideOffered, type BlockerInfo } from '../domain/blockers'
 import { publishGate } from '../domain/publish-gate'
-import { builderMessage, builderPath, type BuilderApi, type PublishOptions } from '../server/api'
+import { BuilderError, builderMessage, builderPath, type BuilderApi, type PublishOptions } from '../server/api'
 
 /** The review with plain blocker lines for display and the flags for the override offer. */
 export type BuilderReviewView = BijakBuilderReview & { blockerInfo: BlockerInfo[] }
@@ -34,6 +34,8 @@ export interface PaperActionsOptions {
   onChanged: () => Promise<void> | void
   /** Where Salin set goes; default the Set Builder page of the copy. */
   copyTarget?: (newId: string) => string
+  /** The flash of a refused Terbitkan; default the Semak Kertas line with the count, the Set Builder passes "Set ini tidak lulus pengesahan." (PRD30 Q-14). */
+  refusedMessage?: (count: number) => string
 }
 
 export function usePaperActions(o: PaperActionsOptions) {
@@ -88,7 +90,7 @@ export function usePaperActions(o: PaperActionsOptions) {
       }
       const r = options ? await o.api.publish(o.id.value, options) : await o.api.publish(o.id.value)
       if (!r.ok) {
-        flash.show({ type: 'error', message: t.notPublishable(r.errors.length) })
+        flash.show({ type: 'error', message: o.refusedMessage ? o.refusedMessage(r.errors.length) : t.notPublishable(r.errors.length) })
         // The refusal carries the same blockers and `canOverride` as the review: show them at once (the
         // reload below only confirms), so the reason and the audited override never depend on a second call.
         if (review.value) {
@@ -115,7 +117,7 @@ export function usePaperActions(o: PaperActionsOptions) {
       await loadReview()
       return true
     } catch (e) {
-      flash.show({ type: 'error', message: builderMessage(e, t.errPublish) })
+      flash.show({ type: 'error', message: e instanceof BuilderError && e.kind === 'offline' ? t.errPublishNetwork : builderMessage(e, t.errPublish) })
       return false
     } finally {
       busy.value = false

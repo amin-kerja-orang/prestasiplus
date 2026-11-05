@@ -9,7 +9,17 @@ import type { StimulusDef } from '../../../domain/types'
 import { editorStimuliOf } from '../../../lib/stimulus-data'
 import { builderCopy as t } from '../domain/copy'
 
-defineProps<{ view: BijakBuilderStudentView | null; error?: boolean }>()
+defineProps<{
+  view: BijakBuilderStudentView | null
+  error?: boolean
+  /** Opt-in (FR-ADM-Q07.7): `Terbitkan` inside the preview of an imported draft. Off everywhere else. */
+  publishable?: boolean
+  publishBlocked?: boolean
+  /** Why it is off ("Betulkan {n} masalah dahulu"). */
+  publishTitle?: string
+  busy?: boolean
+}>()
+const emit = defineEmits<{ publish: [] }>()
 const open = defineModel<boolean>('open', { default: false })
 </script>
 
@@ -46,6 +56,15 @@ const open = defineModel<boolean>('open', { default: false })
             </DsPanel>
           </template>
         </section>
+        <UButton
+          v-if="publishable"
+          :label="t.publish"
+          :title="publishTitle"
+          :loading="busy"
+          :disabled="publishBlocked"
+          data-testid="student-view-publish"
+          @click="emit('publish')"
+        />
       </div>
     </template>
   </USlideover>

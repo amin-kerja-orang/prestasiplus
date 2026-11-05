@@ -4,10 +4,10 @@
  * screens inside one page (a second `loginAs` or a fresh context would start from the seeds).
  * Needs the scope-ON build: `npm run test:e2e:bijak`.
  */
-import type { Locator, Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import { expect, test } from '../fixtures/test'
-import { expectNoHorizontalScroll, isDesktopShell, isMobileWidth } from '../support'
+import { expectNoHorizontalScroll, isDesktopShell } from '../support'
 import { HTTP_MODE } from './bijak-flow'
 
 test.skip(
@@ -21,32 +21,24 @@ test.skip(
 
 const TITLE = 'Kertas UAT Terbit'
 
-/** Admin Pusat -> Pembina Kertas through the Pentadbiran menu (drawer below 1024 px). */
+/** Admin Pusat -> the old Pembina Kertas menu entry -> the Set Builder it redirects to (FR-ADM-Q15.6; drawer below 1024 px). */
 async function openPaperBuilder(page: Page, gotoApp: (p: string) => Promise<void>): Promise<void> {
   await gotoApp('/admin/command-center')
   if (!isDesktopShell(page)) await page.getByTestId('pentadbiran-menu-button').click()
   const nav = page.locator('[data-testid=pentadbiran-nav]:visible')
   await nav.getByRole('link', { name: 'Pembina Kertas' }).click()
-  await expect(page.getByTestId('papers-page')).toBeVisible()
+  await expect(page).toHaveURL(/\/admin\/studio\/sets$/)
+  await expect(page.getByTestId('set-builder-page')).toBeVisible()
   await expectNoHorizontalScroll(page)
 }
 
-/** List actions: card buttons carry test ids below 640 px; the table row holds them above. */
-const openBtn = (page: Page, row: Locator, id: string): Locator =>
-  isMobileWidth(page)
-    ? page.getByTestId(`paper-open-${id}`)
-    : row.getByRole('link', { name: 'Sunting' })
-const delBtn = (page: Page, row: Locator, id: string): Locator =>
-  isMobileWidth(page)
-    ? page.getByTestId(`paper-delete-${id}`)
-    : row.getByRole('button', { name: 'Padam kertas' })
-
 /**
- * Terbitkan for a saved, complete draft whose Kontrak is not Disahkan (the mock follows R1-T34): the plain button is
- * disabled with the reason and the audited override ("Terbitkan walaupun tidak memenuhi kontrak blueprint") publishes it.
+ * Terbitkan on Semak Kertas for a complete draft whose Kontrak is not Disahkan (the mock follows R1-T34): the plain button is disabled
+ * with the reason and the audited override ("Terbitkan walaupun tidak memenuhi kontrak") publishes it.
  */
 async function publishWithOverride(page: Page): Promise<void> {
   await expect(page.getByTestId('paper-publish')).toBeDisabled()
+  await expect(page.getByTestId('paper-publish')).toHaveAttribute('title', /^Betulkan \d+ masalah dahulu$/)
   await expect(page.getByTestId('publish-errors')).toBeVisible()
   // REQ-B-054: the server's reason is shown, not only a count, and the override sits right under it.
   await expect(page.getByTestId('publish-errors')).toContainText('belum Disahkan')
@@ -57,62 +49,62 @@ async function publishWithOverride(page: Page): Promise<void> {
   await page.locator('[data-ds=confirm-ok]').click()
 }
 
-/** The draft id from the editor URL `/admin/spm/kertas/:id`. */
+/** The draft id from the builder URL `/admin/studio/sets/:id/builder` or the Semak Kertas URL `/admin/spm/kertas/:id`. */
 function paperIdOf(page: Page): string {
-  return new URL(page.url()).pathname.split('/').pop() ?? ''
+  const parts = new URL(page.url()).pathname.split('/')
+  return parts[parts.length - 1] === 'builder' ? (parts[parts.length - 2] ?? '') : (parts[parts.length - 1] ?? '')
 }
 
-/** Editor -> papers list (the back link, an in-app navigation that keeps the mock state). */
+/** Builder or Semak Kertas -> the list (the back link, an in-app navigation that keeps the mock state). */
 async function openListFromEditor(page: Page): Promise<void> {
-  await page.getByRole('link', { name: 'Pembina Kertas' }).first().click()
-  await expect(page.getByTestId('papers-page')).toBeVisible()
+  await page.locator('[data-ds=back-link]').first().click()
+  await expect(page.getByTestId('set-builder-page')).toBeVisible()
 }
 
-/** Kertas Baharu -> Cipta Kertas for Matematik Kertas 1 (one "Objektif" section, 10 questions). */
+/** Mula kosong for Matematik Kertas 1 (one "Objektif" section, 10 questions). */
 async function createDraft(page: Page): Promise<void> {
-  await page.getByTestId('paper-new').click()
-  await expect(page.getByTestId('paper-new-page')).toBeVisible()
-  await expectNoHorizontalScroll(page)
-  await page.getByTestId('new-subject').selectOption({ label: 'Matematik' })
-  await page.getByTestId('new-kertas').selectOption({ index: 1 })
-  await page.getByTestId('new-title').fill(TITLE)
-  await expect(page.getByTestId('blueprint-summary')).toBeVisible()
-  await page.getByRole('button', { name: 'Cipta Kertas' }).click()
-  await expect(page.getByTestId('paper-editor-page')).toBeVisible()
+  await page.getByTestId('blank-subject').selectOption({ label: 'Matematik' })
+  await page.getByTestId('blank-kertas').selectOption({ label: 'Kertas 1' })
+  await page.getByTestId('blank-title').fill(TITLE)
+  await page.getByTestId('blank-submit').click()
+  await expect(page.getByTestId('set-builder-editor')).toBeVisible()
   await expect(page.getByTestId('budget-check')).toContainText('Belum sepadan dengan blueprint')
   await expectNoHorizontalScroll(page)
 }
 
-/** Adds the first picker candidate until the section reads "Soalan 10 / 10". */
+/** Adds single questions from the bank until the section reads "Soalan 10 / 10". */
 async function fillObjektif(page: Page): Promise<void> {
   const badges = page.getByTestId('section-0-badges')
+  if (page.viewportSize()!.width < 1024) await page.getByTestId('builder-pane-bank').click()
   for (let i = 0; i < 10; i++) {
-    await page.getByTestId('add-0').click()
-    await expect(page.getByTestId('picker')).toBeVisible()
-    if (i === 0) await expectNoHorizontalScroll(page)
-    await page.locator('[data-testid^=pick-add-]').first().click()
-    await page.keyboard.press('Escape')
-    await expect(page.getByTestId('picker')).toBeHidden()
+    await expect(badges).toContainText(`Soalan ${String(i)} / 10`)
+    await page.locator('li[data-testid^=pool-]:not([data-testid^=pool-group-])').locator('[data-testid^=pool-add-]:not([disabled])').first().click()
   }
   await expect(badges).toContainText('Soalan 10 / 10')
   await expect(badges).toContainText('Markah 10 / 10')
   await expect(page.getByTestId('budget-check')).toContainText('Sepadan dengan blueprint')
+  await expectNoHorizontalScroll(page)
+}
+
+/** Builder -> Semak Kertas Simulasi of the same paper. */
+async function openSemak(page: Page): Promise<void> {
+  await page.getByTestId('builder-semak').click()
+  await expect(page.getByTestId('paper-editor-page')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Semak Kertas Simulasi' })).toBeVisible()
+  await expectNoHorizontalScroll(page)
 }
 
 test.describe('Bijak SPM Admin Pusat terbit kertas @bijak', () => {
-  test('menu, draft, assemble, save, preview, Terbitkan, visible to a student, Tarik balik @bijak', async ({
+  test('menu, draft, assemble, preview, Terbitkan, visible to a student, Sembunyikan @bijak', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
     await loginAs('admin@demo.test')
     await openPaperBuilder(page, gotoApp)
-    await expect(page.getByTestId('papers-table')).toBeVisible()
     await createDraft(page)
     await fillObjektif(page)
-
-    await page.getByTestId('paper-save').click()
-    await expect(page.getByTestId('paper-save')).toBeDisabled()
+    await openSemak(page)
 
     await page.getByTestId('paper-preview').click()
     await expect(page.getByTestId('student-preview')).toBeVisible()
@@ -121,11 +113,11 @@ test.describe('Bijak SPM Admin Pusat terbit kertas @bijak', () => {
     await page.keyboard.press('Escape')
 
     await publishWithOverride(page) // confirm = V2 native-paper confirm (R8)
-    // Published: editing controls give way to the student link and "Tarik balik".
+    // Published: the student link and "Sembunyikan" take over.
     await expect(page.getByTestId('paper-unpublish')).toBeVisible()
     await expect(page.getByTestId('paper-view-student')).toBeVisible()
     await expect(page.getByTestId('paper-publish')).toHaveCount(0)
-    await expect(page.getByTestId('paper-title')).toBeDisabled()
+    await expect(page.getByTestId('meta-title')).toBeDisabled()
     await expectNoHorizontalScroll(page)
 
     // The student hub (same tab, SPA navigation) lists it.
@@ -135,7 +127,7 @@ test.describe('Bijak SPM Admin Pusat terbit kertas @bijak', () => {
     await expectNoHorizontalScroll(page)
     await page.goBack()
 
-    // Tarik balik: back to Draf, gone from the student hub.
+    // Sembunyikan: back to Draf, gone from the student hub.
     await page.getByTestId('paper-unpublish').click()
     // AC-07.7: the V2 confirm comes first.
     await expect(page.locator('[data-ds=confirm-ok]')).toBeVisible()
@@ -150,6 +142,28 @@ test.describe('Bijak SPM Admin Pusat terbit kertas @bijak', () => {
     await expect(page.getByText(TITLE)).toHaveCount(0)
   })
 
+  test('Set Builder publishes too: the override on a Spec Kontrak, then Tarik balik ke draf @bijak', async ({
+    page,
+    loginAs,
+    gotoApp,
+  }) => {
+    await loginAs('admin@demo.test')
+    await openPaperBuilder(page, gotoApp)
+    await createDraft(page)
+    await fillObjektif(page)
+    await expect(page.getByTestId('builder-publish')).toBeDisabled()
+    await page.getByTestId('override-tick').click()
+    await page.getByTestId('override-reason').fill('Kontrak masih Spec, kertas ujian dalaman')
+    await page.getByTestId('override-publish').click()
+    await expect(page.getByTestId('builder-locked')).toBeVisible()
+    await expect(page.getByTestId('builder-view-student')).toBeVisible()
+    await expect(page.getByTestId('builder-withdraw')).toContainText('Tarik balik ke draf')
+    await expectNoHorizontalScroll(page)
+    await page.getByTestId('builder-withdraw').click()
+    await page.locator('[data-ds=confirm-ok]').click()
+    await expect(page.getByTestId('builder-publish-bar')).toBeVisible()
+  })
+
   test('Terbitkan on an empty draft is refused with the gap list @bijak', async ({
     page,
     loginAs,
@@ -158,6 +172,7 @@ test.describe('Bijak SPM Admin Pusat terbit kertas @bijak', () => {
     await loginAs('admin@demo.test')
     await openPaperBuilder(page, gotoApp)
     await createDraft(page)
+    await openSemak(page)
     // R1-F09: Terbitkan is disabled while the check fails, and the reason is shown as text.
     await expect(page.getByTestId('paper-publish')).toBeDisabled()
     await expect(page.getByTestId('publish-errors')).toContainText(
@@ -179,7 +194,7 @@ test.describe('Bijak SPM Admin Pusat terbit kertas @bijak', () => {
     await expect(page.getByText(TITLE)).toHaveCount(0)
   })
 
-  test('a draft can be deleted from the list (card button at 375, table button above) @bijak', async ({
+  test('a draft can be deleted from the list, after the confirm @bijak', async ({
     page,
     loginAs,
     gotoApp,
@@ -189,17 +204,16 @@ test.describe('Bijak SPM Admin Pusat terbit kertas @bijak', () => {
     await createDraft(page)
     const id = paperIdOf(page)
     await openListFromEditor(page)
-    await expect(page.getByTestId('papers-table')).toContainText(TITLE)
+    await expect(page.getByTestId('sets-list')).toContainText(TITLE)
     await expectNoHorizontalScroll(page)
-    const del = isMobileWidth(page)
-      ? page.getByTestId(`paper-delete-${id}`)
-      : page.getByRole('button', { name: 'Padam kertas' }).first()
-    await del.click()
-    await expect(page.getByTestId('papers-table')).not.toContainText(TITLE)
+    await page.getByTestId(`set-delete-${id}`).click()
+    await expect(page.locator('[data-ds=confirm-message]').filter({ hasText: 'Set draf akan dipadam. Tindakan ini tidak boleh dibatalkan.' })).toBeVisible()
+    await page.locator('[data-ds=confirm-ok]').click()
+    await expect(page.getByTestId(`set-${id}`)).toHaveCount(0)
     await expectNoHorizontalScroll(page)
   })
 
-  test('C-02 list shows status, blueprint badge and actions; published has no delete @bijak', async ({
+  test('C-02 the one list shows status, Dilihat murid and actions; a published set is not deleted @bijak', async ({
     page,
     loginAs,
     gotoApp,
@@ -211,34 +225,27 @@ test.describe('Bijak SPM Admin Pusat terbit kertas @bijak', () => {
     await openListFromEditor(page)
     await expectNoHorizontalScroll(page)
 
-    const row = isMobileWidth(page)
-      ? page.getByTestId(`paper-card-${id}`)
-      : page.getByTestId('papers-table').locator('tr', { hasText: TITLE })
+    const row = page.getByTestId(`set-${id}`)
     await expect(row).toContainText(TITLE)
     await expect(row).toContainText('Draf')
-    await expect(row).toContainText('Belum sepadan')
-    await expect(row).toContainText('0 / 10')
-    await expect(openBtn(page, row, id)).toBeVisible()
-    await expect(delBtn(page, row, id)).toBeVisible()
-    if (isMobileWidth(page)) {
-      await expect(row).toContainText('Dikemas kini')
-      await expect(row).toContainText('Matematik')
-    }
+    await expect(row).toContainText('Matematik · Kertas 1 · 0 soalan · 0 markah')
+    await expect(page.getByTestId(`set-scope-${id}`)).toContainText('Dilihat murid: Tingkatan')
+    await expect(page.getByTestId(`set-contract-${id}`)).toBeVisible()
+    await expect(page.getByTestId(`set-delete-${id}`)).toBeVisible()
 
-    // Publish it from the editor, then look at the list again.
-    await openBtn(page, row, id).click()
+    // Publish it from the builder and Semak Kertas, then look at the list again.
+    await page.getByTestId(`set-open-${id}`).click()
+    await expect(page.getByTestId('set-builder-editor')).toBeVisible()
     await fillObjektif(page)
-    await page.getByTestId('paper-save').click()
-    await expect(page.getByTestId('paper-save')).toBeDisabled()
+    await openSemak(page)
     await publishWithOverride(page)
     await expect(page.getByTestId('paper-unpublish')).toBeVisible()
     await openListFromEditor(page)
     await expectNoHorizontalScroll(page)
-    await expect(row).toContainText('Diterbitkan')
-    await expect(row).toContainText('Sepadan')
-    await expect(row).not.toContainText('Belum sepadan')
-    await expect(openBtn(page, row, id)).toBeVisible()
-    await expect(delBtn(page, row, id)).toHaveCount(0)
+    await expect(row).toContainText('Matematik · Kertas 1 · 10 soalan · 10 markah')
+    await page.getByTestId(`set-delete-${id}`).click()
+    await expect(page.getByText('Tarik balik set ini ke draf dahulu.').first()).toBeVisible()
+    await expect(row).toBeVisible()
   })
 
   test.fixme('C-11 paper-level answer-key and US-26 gates re-checked at Terbitkan @bijak', () => {

@@ -23,7 +23,7 @@ const ok = computed(() => ticked.value && reason.value.trim().length >= 5)
 <template>
   <div v-if="offered" class="flex flex-col gap-2 rounded-lg bg-muted p-3" data-testid="publish-override">
     <UCheckbox v-model="ticked" :label="t.overrideTick" data-testid="override-tick" />
-    <UFormField v-if="ticked" :label="t.overrideReason">
+    <UFormField v-if="ticked" :label="t.overrideReason" :error="reason.trim().length < 5 ? t.overrideReasonRequired : undefined">
       <UInput v-model="reason" class="w-full" data-testid="override-reason" />
     </UFormField>
     <UButton

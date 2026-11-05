@@ -3,6 +3,8 @@
  * Statuses follow docs/requirements/v2-question-bank.md 4.1; the prototype folds Lulus and Terbit
  * into one action ("Lulus & Terbit") and keeps the reviewer's rejections as `ditolak`.
  */
+import type { BijakLevelScope } from '@pp/contract'
+
 import type { IntakeQuestion, IntakeStimulus } from '../admin/intake/types'
 import type {
   CurriculumTag,
@@ -210,6 +212,10 @@ export interface AdminPaper extends Omit<PaperDef, 'sections'> {
   updatedAt: number
   publishedAt?: number
   sections: SectionDef[]
+  /** `Dilihat murid` (`papers.level_scope`); null = not restricted. */
+  levelScope?: BijakLevelScope | null
+  /** A draft imported from an intake batch (DM-45, S1-T10): `Terbitkan` only from the preview (FR-ADM-Q07.7). */
+  sourceBatchId?: string
 }
 
 export interface BlueprintView {
@@ -246,10 +252,17 @@ export interface AdminPaperSummary {
   budget: number
   ok: boolean
   updatedAt: number
+  /** `Dilihat murid`; null = not restricted. */
+  levelScope?: BijakLevelScope | null
+  /** Origin of the placed questions per Negeri, largest first. */
+  origins?: { negeri: string; count: number }[]
 }
 
 /** A question as the builder shows it (picker and section lists). */
 export interface BuilderQuestion {
+  /** S3-T02: on a question placed on the paper, false when pupils cannot be served it (chip `Tidak disajikan`). */
+  servable?: boolean
+  notServedReason?: string
   id: string
   groupId?: string
   stimulusLabel?: string

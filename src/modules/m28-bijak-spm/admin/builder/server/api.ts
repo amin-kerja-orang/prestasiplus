@@ -9,9 +9,11 @@ import type {
   BijakBuilderPoolUnit,
   BijakBuilderPublishResult,
   BijakBuilderReview,
+  BijakBuilderSourceFilters,
   BijakBuilderStudentView,
   BijakDskpUnit,
   BijakGenerateShortage,
+  BijakLevelScope,
   BijakPoolPreview,
 } from '@pp/contract'
 
@@ -42,6 +44,22 @@ export interface BuilderSubject {
   code: string
   name: string
   kertas: number[]
+  /** The default of `Dilihat murid` per kertas, from the contract. Absent: Tingkatan 4 dan 5. */
+  levelScopes?: Record<number, BijakLevelScope>
+}
+
+/** Tahun and Negeri of Jana set (multi-select, 13-08, 13-09), and the size asked. */
+export interface JanaFilters {
+  years?: number[]
+  negeri?: string[]
+  /** `Bilangan soalan`; omitted = the contract total. */
+  count?: number
+}
+
+/** `POST /admin/papers/generate` (API-BIJAK-11). */
+export interface GenerateOptions extends JanaFilters {
+  title?: string
+  levelScope?: BijakLevelScope
 }
 
 export interface PlacementResult {
@@ -54,6 +72,10 @@ export interface SectionPoolQuery {
   q?: string
   level?: 't4' | 't5' | 't1_t3'
   unit?: string
+  /** `Tahun` (14-01, one year). */
+  tahun?: number
+  /** `Negeri` (14-02, multi-select). */
+  negeri?: string[]
   page?: number
   pageSize?: number
 }
@@ -62,25 +84,29 @@ export interface SectionPool {
   units: BijakBuilderPoolUnit[]
   total: number
   totalPages: number
+  /** The values `Tahun` and `Negeri` offer; a filter with none is hidden (its column holds no data). */
+  filters?: BijakBuilderSourceFilters
 }
 
 export interface HeaderPatch {
   title?: string
   year?: number
   durationMin?: number
+  /** `Kod kertas (kulit)`; blank = the subject code. */
+  code?: string
   instructions?: string[]
 }
 
 /**
- * "Sunting bahagian" patch (`PUT /admin/papers/:id`, `sections[]`, R1-T34 `BijakBuilderSectionPatch`
- * @ r1/t34-builder-review 4d771b47). The answering rule and the count come from the blueprint and are
- * not editable here.
+ * "Sunting bahagian" patch (`PUT /admin/papers/:id`, `sections[]`, `BijakBuilderSectionPatch`). `rule` is the
+ * `Jawab Semua` / `Pilih N` control (FR-ADM-Q14.2); it never changes the mark budget.
  */
 export interface SectionPatch {
   label?: string
   /** `null` or empty clears it (the rule line is derived again). */
   instruction?: string | null
   compulsory?: boolean
+  rule?: { type: 'all' } | { type: 'choose'; n: number }
 }
 
 /** A reference-sheet panel (`BijakPaperReferencePanel`): title, text / formula lines and an optional stored image. */
@@ -108,10 +134,12 @@ export interface BuilderApi {
   /** Subjects and the kertas that have a blueprint (Mula kosong / Jana set choices). */
   builderSubjects(): Promise<BuilderSubject[]>
   /** "Mula kosong": an empty draft with the blueprint's sections. Returns the paper id. */
-  create(input: { subject: string; kertas: number; title?: string }): Promise<string>
+  create(input: { subject: string; kertas: number; title?: string; levelScope?: BijakLevelScope }): Promise<string>
   /** "Jana set": a draft generated from the blueprint. Rejects with `BuilderError('shortage')`. */
-  generate(subject: string, kertas: number): Promise<string>
-  poolPreview(subject: string, kertas: number): Promise<BijakPoolPreview>
+  generate(subject: string, kertas: number, options?: GenerateOptions): Promise<string>
+  poolPreview(subject: string, kertas: number, filters?: JanaFilters): Promise<BijakPoolPreview>
+  /** `Padam` of a Draf set (a Terbit one is refused). */
+  deleteSet(id: string): Promise<void>
   getEditor(id: string): Promise<PaperEditorData>
   updateHeader(id: string, patch: HeaderPatch): Promise<PaperEditorData>
   /** D90: placing a member of a stimulus group places the whole group. */

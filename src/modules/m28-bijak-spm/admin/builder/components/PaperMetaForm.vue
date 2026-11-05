@@ -2,8 +2,7 @@
 /**
  * "Kemas kini metadata" of Semak Kertas (S4.4; V2 cloud-student-mechanism 3.4): Tajuk (shared with
  * the page header), Tahun, Tempoh (minit), Kod kertas and the cover instructions, one line per
- * numbered instruction. Kod kertas is read-only here: the paper contract has no cover-code write
- * (deviation UX-51; V2 edits it).
+ * numbered instruction, and the cover code (`Kod kertas (kulit)`, blank = the subject code).
  */
 import { computed, ref, watch } from 'vue'
 
@@ -17,6 +16,7 @@ const title = defineModel<string>('title', { required: true })
 const emit = defineEmits<{ save: [patch: HeaderPatch] }>()
 
 const year = ref('')
+const code = ref('')
 const duration = ref('')
 const lines = ref('')
 
@@ -24,6 +24,7 @@ watch(
   () => props.paper,
   (p) => {
     year.value = String(p.year)
+    code.value = p.code
     duration.value = String(p.durationMin)
     lines.value = p.instructions.join('\n')
   },
@@ -50,6 +51,7 @@ function submit(): void {
     title: title.value.trim(),
     year: parsedYear.value,
     durationMin: parsedDuration.value,
+    ...(code.value.trim() === props.paper.code ? {} : { code: code.value.trim() }),
     instructions: lines.value
       .split('\n')
       .map((l) => l.trim())
@@ -90,8 +92,8 @@ function submit(): void {
           data-testid="meta-duration"
         />
       </UFormField>
-      <UFormField :label="t.fCode">
-        <UInput :model-value="paper.code" readonly disabled class="w-full" data-testid="meta-code" />
+      <UFormField :label="t.fCode" :hint="t.fCodeHint(paper.subject)">
+        <UInput v-model="code" class="w-full" maxlength="32" :disabled="readonly" data-testid="meta-code" />
       </UFormField>
     </div>
     <UFormField :label="t.fInstructions" :hint="t.fInstructionsHint">

@@ -4,7 +4,7 @@
  * What the code does (src/app/router/guards.ts `decideAccess`, routes in src/modules/m28-bijak-spm):
  * - `/spm/bijak` has `roles: ['student','admin']` + `onForbidden: '403'`, so a teacher gets the
  *   in-place 403 page (URL unchanged, tab title "Akses Ditolak | PRESTASIPLUS"), D43.
- * - `/admin/spm/kertas` has `roles: ['admin']` and no `onForbidden` (default '403'), so another role gets the
+ * - `/admin/studio/sets` (where `/admin/spm/kertas` redirects, FR-ADM-Q15.6) has `roles: ['admin']` and no `onForbidden` (default '403'), so another role gets the
  *   in-place 403 page (URL unchanged, FR-X2-4).
  * - The API is the real boundary: `GET /api/admin/papers` is `@Roles('admin')` (apps/api/src/modules/
  *   exam/builder/builder.controller.ts) and `/api/bijak/*` is `@Roles('student')` (attempts + papers
@@ -18,7 +18,7 @@ import type { Page } from '@playwright/test'
 import { expect, gotoApi, loginViaUi, test } from '../fixtures/api'
 import { account, expectNoHScroll, FORBIDDEN_TITLE } from './helpers'
 
-const ADMIN_PAGE = '/admin/spm/kertas'
+const ADMIN_PAGE = '/admin/studio/sets' // FR-ADM-Q15.6: the one paper list; /admin/spm/kertas redirects here
 const BIJAK_PAGE = '/spm/bijak'
 
 /** Strict: the 403 page renders in place (URL unchanged), the builder is not rendered, no horizontal scroll. */
@@ -26,7 +26,7 @@ async function expectForbiddenInPlace(page: Page): Promise<void> {
   await expect(page).toHaveTitle(FORBIDDEN_TITLE, { timeout: 20_000 })
   await expect(page).toHaveURL(new RegExp(`${ADMIN_PAGE}/?([?#]|$)`))
   await expect(page.getByText('Akses Ditolak').first()).toBeVisible()
-  await expect(page.getByTestId('papers-page')).toHaveCount(0)
+  await expect(page.getByTestId('set-builder-page')).toHaveCount(0)
   await expect(page.getByText('Pembina Kertas')).toHaveCount(0)
   await expectNoHScroll(page)
 }
@@ -76,7 +76,7 @@ test.describe('role guards @api', () => {
     }
   })
 
-  test('Admin Pusat is allowed on /admin/spm/kertas and GET /api/admin/papers (control) @api', async ({
+  test('Admin Pusat is allowed on /admin/studio/sets and GET /api/admin/papers (control) @api', async ({
     page,
   }) => {
     const { user, pass } = account('adminPusat')
