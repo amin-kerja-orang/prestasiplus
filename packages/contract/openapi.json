@@ -4420,7 +4420,7 @@
                 },
                 "count": {
                   "type": "integer",
-                  "minimum": 1
+                  "minimum": 0
                 }
               },
               "required": [
@@ -4445,7 +4445,10 @@
         },
         "required": [
           "total",
-          "counts"
+          "counts",
+          "page",
+          "perPage",
+          "matched"
         ],
         "additionalProperties": false
       },
@@ -4457,7 +4460,7 @@
             "items": {
               "$ref": "#/components/schemas/SupportQueueRow"
             },
-            "maxItems": 200
+            "maxItems": 25
           },
           "meta": {
             "$ref": "#/components/schemas/SupportQueueMeta"
@@ -31065,9 +31068,10 @@
         "enum": [
           "on_track",
           "watch",
-          "high"
+          "high",
+          "not_started"
         ],
-        "description": "score < 40 on_track, < 60 watch, otherwise high. Labels: \"On Track\", \"Perlu Perhatian\", \"Berisiko Tinggi\"."
+        "description": "score < 40 on_track, < 60 watch, otherwise high; a pupil with no practice data at all is not_started (no score, outside the three groups). Labels: \"On Track\", \"Perlu Perhatian\", \"Berisiko Tinggi\", \"Belum Bermula\"."
       },
       "AmaranScope": {
         "type": "string",
@@ -31116,9 +31120,15 @@
             "minimum": 0,
             "description": "high."
           },
+          "notStarted": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "not_started: pupils with no practice data, outside green, yellow, red and total. Always sent by the API; optional so existing consumers keep compiling (additive change)."
+          },
           "total": {
             "type": "integer",
-            "minimum": 0
+            "minimum": 0,
+            "description": "green + yellow + red (not_started excluded)."
           },
           "pct": {
             "type": "object",
@@ -31190,7 +31200,7 @@
         "properties": {
           "tingkatan": {
             "type": "string",
-            "description": "T4 | T5 | 4 | 5 (case-insensitive). Anything else = no filter. The filter is class based."
+            "description": "T1 to T5 | 1 to 5 (case-insensitive). Anything else = no filter. The filter is class based."
           }
         }
       },
@@ -31241,10 +31251,13 @@
             "description": "\"Tingkatan n {class}\", \"Darjah n {class}\" or \"-\"."
           },
           "score": {
-            "type": "number",
+            "type": [
+              "number",
+              "null"
+            ],
             "minimum": 0,
             "maximum": 100,
-            "description": "0.4A + 0.3E + 0.3M, 1 decimal."
+            "description": "0.4A + 0.3E + 0.3M, 1 decimal; null for not_started."
           },
           "status": {
             "$ref": "#/components/schemas/AmaranRiskStatus"
@@ -31340,10 +31353,22 @@
               "null"
             ],
             "enum": [
+              "T1",
+              "T2",
+              "T3",
               "T4",
               "T5",
               null
             ]
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            },
+            "description": "The Tingkatan numbers (ascending) that have pupils in the school; the level pills list only these."
           },
           "levelSuffix": {
             "type": "string",
@@ -31363,7 +31388,7 @@
             "items": {
               "$ref": "#/components/schemas/AmaranPupilRisk"
             },
-            "description": "Score descending, 1-based rank. Inactive pupils are included."
+            "description": "Score descending (not_started last), 1-based rank. Inactive pupils are included."
           }
         },
         "required": [
@@ -58067,6 +58092,11 @@
           "isActive": {
             "type": "boolean"
           },
+          "questionCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Approved, active PKSK questions of the domain over both levels; a question tagged T1 and T4 counts once."
+          },
           "createdAt": {
             "$ref": "#/components/schemas/Timestamp"
           },
@@ -58084,6 +58114,7 @@
           "nameEn",
           "order",
           "isActive",
+          "questionCount",
           "createdAt",
           "updatedAt"
         ]
@@ -58405,6 +58436,60 @@
           "sessionId": {
             "$ref": "#/components/schemas/PracticeSessionId"
           },
+          "correct": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of answers scored correct."
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of answers scored (the set size)."
+          },
+          "review": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "questionId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "selectedIndex": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "description": "Null for a Bahagian C (essay) answer or a blank."
+                },
+                "correctIndex": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "description": "Null for a Bahagian C question."
+                },
+                "isCorrect": {
+                  "type": "boolean"
+                },
+                "explanation": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "questionId",
+                "selectedIndex",
+                "correctIndex",
+                "isCorrect",
+                "explanation"
+              ]
+            },
+            "description": "Revealed only after the answers are scored and stored; the served set never carries it."
+          },
           "gamification": {
             "type": "object",
             "properties": {
@@ -58436,6 +58521,9 @@
         "required": [
           "masteryPct",
           "sessionId",
+          "correct",
+          "total",
+          "review",
           "gamification"
         ]
       },
@@ -79591,7 +79679,7 @@
           "support"
         ],
         "summary": "Admin support queue",
-        "description": "Admin only. Newest first (createdAt desc, then id desc), 25 per page with `page`. `meta.total` = all tickets; `meta.counts` = statuses with a count above 0, in vocabulary order, over all tickets; `meta.matched` counts the rows matching the filters. A row has no body, no e-mail and no user id.",
+        "description": "Admin only. Newest first (createdAt desc, then id desc), 25 per page with `page`. `meta.total` and `meta.counts` cover the role-filtered tickets, whatever the status filter; `meta.counts` has all five statuses in vocabulary order; `meta.matched` counts the rows matching both filters. A row has no body, no e-mail and no user id.",
         "parameters": [
           {
             "schema": {
@@ -79866,7 +79954,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields.text: \"Sila isi balasan.\" or \"Balasan tidak boleh melebihi 5000 aksara.\"",
+            "description": "VALIDATION_ERROR with fields.text: \"Sila tulis balasan.\" or \"Balasan tidak boleh melebihi 5000 aksara.\"",
             "content": {
               "application/json": {
                 "schema": {
@@ -79967,7 +80055,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields.status: \"Sila pilih status.\"",
+            "description": "VALIDATION_ERROR with fields.status: \"Data yang dihantar tidak sah. Sila semak dan cuba lagi.\"",
             "content": {
               "application/json": {
                 "schema": {
@@ -106340,10 +106428,10 @@
           {
             "schema": {
               "type": "string",
-              "description": "T4 | T5 | 4 | 5 (case-insensitive). Anything else = no filter. The filter is class based."
+              "description": "T1 to T5 | 1 to 5 (case-insensitive). Anything else = no filter. The filter is class based."
             },
             "required": false,
-            "description": "T4 | T5 | 4 | 5 (case-insensitive). Anything else = no filter. The filter is class based.",
+            "description": "T1 to T5 | 1 to 5 (case-insensitive). Anything else = no filter. The filter is class based.",
             "name": "tingkatan",
             "in": "query"
           }
@@ -106562,7 +106650,7 @@
           "amaran"
         ],
         "summary": "School risk list as CSV",
-        "description": "Roles: admin (any school) and school_admin (own school); a teacher or any other role gets 403. Check order: the role check (403) comes BEFORE the 404; then an unknown school and a school outside the caller scope are both 404 (indistinguishable; the mock answered 403 for the latter). File name amaran-sekolah-{id}-{yyyymmdd}.csv (date in Malaysia time). Headers: Content-Type text/csv; charset=utf-8, Cache-Control no-store. Body: UTF-8 BOM, CRLF line ends with a trailing CRLF; header Bil,Pelajar,Tingkatan / Kelas,Skor Risiko,Status,Ketepatan,Penglibatan,Penguasaan; one line per pupil of the school (no tingkatan filter), score with one decimal, status label, then the three BM cell texts of the risk page. Cells starting with = + - @ tab or CR are prefixed with an apostrophe; quoting follows RFC 4180. No IC, e-mail or phone. PDPA: the file lists minors' names, classes and risk scores, the most sensitive derived data; it is never cached and rate limited (429, proposed on top of D57a because it is a bulk dump of minors). Every accepted download writes an audit event (actor, school, file name) and never personal content.",
+        "description": "Roles: admin (any school) and school_admin (own school); a teacher or any other role gets 403. Check order: the role check (403) comes BEFORE the 404; then an unknown school and a school outside the caller scope are both 404 (indistinguishable; the mock answered 403 for the latter). File name amaran-sekolah-{id}-{yyyymmdd}.csv (date in Malaysia time). Headers: Content-Type text/csv; charset=utf-8, Cache-Control no-store. Body: UTF-8 BOM, CRLF line ends with a trailing CRLF; header Bil,Pelajar,Sekolah,Tingkatan / Kelas,Skor Risiko,Status,Ketepatan,Penglibatan,Penguasaan; one line per pupil of the school (no tingkatan filter), score with one decimal, status label, then the three BM cell texts of the risk page. Cells starting with = + - @ tab or CR are prefixed with an apostrophe; quoting follows RFC 4180. No IC, e-mail or phone. PDPA: the file lists minors' names, classes and risk scores, the most sensitive derived data; it is never cached and rate limited (429, proposed on top of D57a because it is a bulk dump of minors). Every accepted download writes an audit event (actor, school, file name) and never personal content.",
         "parameters": [
           {
             "schema": {
@@ -114093,7 +114181,7 @@
           "pksk"
         ],
         "summary": "The 15 PKSK domains",
-        "description": "Who: any signed-in role. Reference data ordered by `order`; no meta.",
+        "description": "Who: any signed-in role. Reference data ordered by `order`; no meta. Each domain carries `questionCount` (approved, active questions over both levels, each counted once); no question text.",
         "responses": {
           "200": {
             "description": "The domains.",
@@ -114630,7 +114718,7 @@
           "pksk"
         ],
         "summary": "Submit a domain practice set",
-        "description": "Who: any signed-in role (student, parent, teacher, admin ...), then the level gate: unknown level 404 first, then 403 unless the caller has access to the level (an active unexpired grant of a package for that level or ALL, the PKSK subscription flag, or role admin). Scope: own data only. Scored on the server (A and B: the chosen option must be flagged correct; C: a trimmed text of at least 50 characters, simulated marker). Recorded as one completed M05 practice session with mode pksk; mastery of the domain is stored; wallet and streak are credited by M05/M14. Contract is stricter than the mock (D57): unknown keys are rejected, at most 101 answers, text at most 10000 characters, optionIndex 0 to 5. Every body problem is 422 fields.answers \"Jawapan tidak sah.\".",
+        "description": "Who: any signed-in role (student, parent, teacher, admin ...), then the level gate: unknown level 404 first, then 403 unless the caller has access to the level (an active unexpired grant of a package for that level or ALL, the PKSK subscription flag, or role admin). Scope: own data only. Scored on the server (A and B: the chosen option must be flagged correct; C: a trimmed text of at least 50 characters, simulated marker). Recorded as one completed M05 practice session with mode pksk; mastery of the domain is stored; the response carries correct, total and a per-question review (selectedIndex, correctIndex, isCorrect, explanation), revealed only after scoring and storing; wallet and streak are credited by M05/M14. Contract is stricter than the mock (D57): unknown keys are rejected, at most 101 answers, text at most 10000 characters, optionIndex 0 to 5. Every body problem is 422 fields.answers \"Jawapan tidak sah.\".",
         "parameters": [
           {
             "schema": {

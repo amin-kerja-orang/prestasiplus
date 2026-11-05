@@ -75,7 +75,7 @@ export function registerPkskStudentPaths(registry: OpenAPIRegistry): void {
     path: '/pksk-domains',
     tags: ['pksk'],
     summary: 'The 15 PKSK domains',
-    description: 'Who: any signed-in role. Reference data ordered by `order`; no meta.',
+    description: 'Who: any signed-in role. Reference data ordered by `order`; no meta. Each domain carries `questionCount` (approved, active questions over both levels, each counted once); no question text.',
     responses: { 200: json(envelopeOf(z.array(PkskDomainSchema).length(15)), 'The domains.'), 401: UNAUTHORIZED },
   })
 
@@ -146,7 +146,7 @@ export function registerPkskStudentPaths(registry: OpenAPIRegistry): void {
     path: '/pksk/levels/{level}/domains/{code}/practice-sessions',
     tags: ['pksk'],
     summary: 'Submit a domain practice set',
-    description: `${WHO} Scored on the server (A and B: the chosen option must be flagged correct; C: a trimmed text of at least 50 characters, simulated marker). Recorded as one completed M05 practice session with mode pksk; mastery of the domain is stored; wallet and streak are credited by M05/M14. Contract is stricter than the mock (D57): unknown keys are rejected, at most 101 answers, text at most 10000 characters, optionIndex 0 to 5. Every body problem is 422 fields.answers "Jawapan tidak sah.".`,
+    description: `${WHO} Scored on the server (A and B: the chosen option must be flagged correct; C: a trimmed text of at least 50 characters, simulated marker). Recorded as one completed M05 practice session with mode pksk; mastery of the domain is stored; the response carries correct, total and a per-question review (selectedIndex, correctIndex, isCorrect, explanation), revealed only after scoring and storing; wallet and streak are credited by M05/M14. Contract is stricter than the mock (D57): unknown keys are rejected, at most 101 answers, text at most 10000 characters, optionIndex 0 to 5. Every body problem is 422 fields.answers "Jawapan tidak sah.".`,
     request: { params: PkskDomainParamsSchema, headers: [csrf], body: body(PkskAnswersRequestSchema) },
     responses: {
       201: json(envelopeOf(PkskPracticeResultSchema), 'Scored and recorded.', NO_STORE),

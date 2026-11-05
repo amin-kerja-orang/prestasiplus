@@ -119,7 +119,7 @@ export class AmaranService {
       const ranked = [...kept].sort(rankOrder)
       return {
         school: { id: school.id, name: school.name, code: school.code ?? '', district: school.district, state: school.state ?? '' },
-        levelFilter: t === undefined ? null : t === 4 ? 'T4' : 'T5',
+        levelFilter: t === undefined ? null : (`T${t}` as const),
         levelSuffix: t === undefined ? '' : ` — Tingkatan ${t}`,
         tally: tallyOf(kept),
         weakness: await this.weakness(data.counters),
@@ -257,7 +257,7 @@ export class AmaranService {
         targetId: school.id,
         details: { fileName, rowCount: pupils.length },
       })
-      return { csv: amaranCsv(pupils), fileName }
+      return { csv: amaranCsv(pupils, school.name), fileName }
     })
   }
 
