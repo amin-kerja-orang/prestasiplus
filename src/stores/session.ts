@@ -32,7 +32,7 @@ import { defineStore } from 'pinia'
 import { computed, shallowRef } from 'vue'
 
 import { api, type Transport, type TransportRequest } from '@/api'
-import { clearAllDrafts } from '@/lib/draft'
+import { clearAllDrafts, setDraftUserProvider } from '@/lib/draft'
 import { clock, MINUTE_MS, toIsoMyt } from '@/lib/time'
 
 import {
@@ -186,10 +186,27 @@ function dropLocalDrafts(): void {
   const store = storage()
   if (!store) return
   try {
-    for (const key of Object.keys(store).filter((k) => k.startsWith(LOCAL_DRAFT_PREFIX)))
-      store.removeItem(key)
+    for (const key of Object.keys(store).filter((k) => k.startsWith(LOCAL_DRAFT_PREFIX))) store.removeItem(key)
   } catch {
     // Storage blocked: nothing to remove.
+  }
+}
+
+/** Id of the user the browser's `pp:draft:*` / `pp.draft.*` drafts belong to (kept across a 401 and an expiry, so a different user never sees them). */
+const DRAFT_OWNER_KEY = 'pp:draft-owner'
+function draftOwner(): string | null {
+  try {
+    return storage()?.getItem(DRAFT_OWNER_KEY) ?? null
+  } catch {
+    return null
+  }
+}
+function setDraftOwner(id: string | null): void {
+  try {
+    if (id === null) storage()?.removeItem(DRAFT_OWNER_KEY)
+    else storage()?.setItem(DRAFT_OWNER_KEY, id)
+  } catch {
+    // Storage blocked: the drafts cannot be kept either.
   }
 }
 
@@ -260,11 +277,13 @@ export const useSessionStore = defineStore('session', () => {
   /** Stores a new session (login, register, token reset, M02 "Login As"). */
   function setSession(session: ClientSession): void {
     // A different user signing in on this browser never sees the previous user's unsaved drafts (a 401 of the same user keeps them).
-    const previous = auth.value
-    if (previous && String(previous.user.id) !== String(session.user.id)) {
+    // The owner is recorded at sign-in, so it survives a 401 or an expiry that left no previous session. Drafts of an unknown owner go too.
+    const id = String(session.user.id)
+    if (draftOwner() !== id) {
       dropLocalDrafts()
       clearAllDrafts()
     }
+    setDraftOwner(id)
     commit({ ...session })
   }
 
@@ -371,7 +390,10 @@ export const useSessionStore = defineStore('session', () => {
     clear()
     dropLocalDrafts()
     clearAllDrafts() // pp.draft.* (FR-ERR-8): removed on logout, kept on a 401
+    setDraftOwner(null)
   }
+
+  setDraftUserProvider(() => auth.value?.user.id ?? null)
 
   // Wiring: the API client reads the token from this store and reports 401s to it.
   api.configure({

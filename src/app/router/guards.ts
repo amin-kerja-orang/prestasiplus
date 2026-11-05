@@ -222,7 +222,5 @@ export function resolvePostLoginTarget(
   if (!isSafeRedirect(redirect)) return landing
   const resolved = router.resolve(redirect)
   if (resolved.name === NOT_FOUND_ROUTE_NAME) return landing
-  return decideAccess(resolved as RouteLocationNormalized, session).kind === 'allow'
-    ? resolved.fullPath
-    : landing
+  return decideAccess(resolved as RouteLocationNormalized, session).kind === 'allow' ? resolved.fullPath : landing
 }

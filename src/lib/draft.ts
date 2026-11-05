@@ -2,7 +2,7 @@
  * Unsaved-work drafts that survive a 401 re-login (40 FR-ERR-8, AC-ERR-2).
  *
  * A form writes its edits to `sessionStorage` under `pp.draft.{routeName}.{recordId|new}` (at most
- * 200 KB). After re-login the same form calls `restoreDraft`, which returns the values once, removes
+ * 200 KB), stamped with the user id and refused for any other user. After re-login the same form calls `restoreDraft`, which returns the values once, removes
  * the draft and carries the notice text to show. Drafts are removed after a successful save
  * (`clearDraft`) and on logout (`clearAllDrafts`). Every storage call is wrapped in try/catch, so
  * blocked or full storage never breaks the form. Passwords and files are never stored: secret-like
@@ -22,8 +22,28 @@ export interface RestoredDraft {
   notice: string
 }
 
-/** Field names never kept in a draft. */
-const SECRET_NAME = /pass(word)?|kata[\s_-]?laluan|secret|token|otp|pin\b/i
+/** Field names never kept in a draft: a name segment (split on `_ - . space` and camelCase) is one of these. */
+const SECRET_NAME = /(^|[_\-.\s])(password|passwd|kata_?laluan|otp|pin|token|secret)($|[_\-.\s])/
+
+/** `newPassword` and `kataLaluanBaru` count as `new_password` / `kata_laluan_baru`; `passage`, `spinner` do not match. */
+export function isSecretFieldName(name: string): boolean {
+  return SECRET_NAME.test(name.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase())
+}
+
+let userProvider: () => string | number | null | undefined = () => null
+
+/**
+ * Registers where the current user id comes from (the session store does this once). A draft is
+ * stamped with it when saved, and refused (and removed) when it is read by another user or has none.
+ */
+export function setDraftUserProvider(provider: () => string | number | null | undefined): void {
+  userProvider = provider
+}
+
+function currentUserId(): string | null {
+  const id = userProvider()
+  return id === null || id === undefined || id === '' ? null : String(id)
+}
 
 export function draftKey(routeName: string, recordId?: string | number | null): string {
   const id =
@@ -57,7 +77,7 @@ function clean(value: unknown, depth: number): unknown {
     if (depth > 8) return undefined
     const out: DraftValues = {}
     for (const [key, item] of Object.entries(value)) {
-      if (SECRET_NAME.test(key)) continue
+      if (isSecretFieldName(key)) continue
       const kept = clean(item, depth + 1)
       if (kept !== undefined) out[key] = kept
     }
@@ -73,9 +93,10 @@ export function saveDraft(
   values: DraftValues,
 ): boolean {
   const store = storage()
-  if (!store) return false
+  const userId = currentUserId()
+  if (!store || userId === null) return false
   try {
-    const json = JSON.stringify({ savedAt: Date.now(), values: clean(values, 0) })
+    const json = JSON.stringify({ userId, savedAt: Date.now(), values: clean(values, 0) })
     if (new Blob([json]).size > DRAFT_MAX_BYTES) return false
     store.setItem(draftKey(routeName, recordId), json)
     return true
@@ -92,6 +113,14 @@ function read(key: string): DraftValues | null {
     if (raw === null) return null
     const parsed: unknown = JSON.parse(raw)
     if (parsed !== null && typeof parsed === 'object') {
+      const me = currentUserId()
+      if (me === null) return null // signed out: keep it for the user who comes back
+      const owner = (parsed as { userId?: unknown }).userId
+      if (owner !== me) {
+        // Another user's draft, or one with no owner: never shown, and removed.
+        store.removeItem(key)
+        return null
+      }
       const values = (parsed as { values?: unknown }).values
       if (values !== null && typeof values === 'object' && !Array.isArray(values)) {
         return values as DraftValues

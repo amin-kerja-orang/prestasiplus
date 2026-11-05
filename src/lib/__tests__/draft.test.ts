@@ -9,12 +9,17 @@ import {
   clearDraft,
   draftKey,
   loadDraft,
+  isSecretFieldName,
   restoreDraft,
   saveDraft,
+  setDraftUserProvider,
 } from '../draft'
 
+let user: string | null = 'u1'
 beforeEach(() => {
   sessionStorage.clear()
+  user = 'u1'
+  setDraftUserProvider(() => user)
 })
 afterEach(() => {
   vi.restoreAllMocks()
@@ -87,5 +92,54 @@ describe('draft keep', () => {
     expect(loadDraft('a')).toBeNull()
     expect(() => clearDraft('a')).not.toThrow()
     expect(() => clearAllDrafts()).not.toThrow()
+  })
+
+  it('binds a draft to its user: another user, or a draft with no owner, never gets it (and it is removed)', () => {
+    saveDraft('studio-soalan', null, { tajuk: 'A' })
+    user = 'u2'
+    expect(loadDraft('studio-soalan')).toBeNull()
+    expect(restoreDraft('studio-soalan')).toBeNull()
+    expect(sessionStorage.length).toBe(0)
+    sessionStorage.setItem('pp.draft.lama.new', JSON.stringify({ values: { x: 1 } }))
+    expect(loadDraft('lama')).toBeNull()
+    expect(sessionStorage.getItem('pp.draft.lama.new')).toBeNull()
+  })
+
+  it('gives the draft back to the same user after a sign-out and sign-in; refuses to save with no user', () => {
+    saveDraft('studio-soalan', null, { tajuk: 'A' })
+    user = null
+    expect(loadDraft('studio-soalan')).toBeNull()
+    expect(sessionStorage.length).toBe(1)
+    expect(saveDraft('lain', null, { x: 1 })).toBe(false)
+    user = 'u1'
+    expect(restoreDraft('studio-soalan')?.values).toEqual({ tajuk: 'A' })
+  })
+
+  it('drops secret field names by name segment, not by substring', () => {
+    for (const name of [
+      'password',
+      'newPassword',
+      'kata_laluan',
+      'kataLaluanBaru',
+      'otp',
+      'pin',
+      'api-token',
+      'client.secret',
+      'confirm password',
+    ]) {
+      expect(isSecretFieldName(name), name).toBe(true)
+    }
+    for (const name of [
+      'passage',
+      'stimulus',
+      'spinner',
+      'bypass',
+      'pinned',
+      'tokenise',
+      'opt',
+      'tajuk',
+    ]) {
+      expect(isSecretFieldName(name), name).toBe(false)
+    }
   })
 })

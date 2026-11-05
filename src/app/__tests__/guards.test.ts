@@ -21,6 +21,7 @@ import {
   createAppRouter,
   decideAccess,
   FORBIDDEN_TITLE,
+  isSafeRedirect,
   NOT_FOUND_TITLE,
   resolvePostLoginTarget,
   scrollBehavior,
@@ -361,6 +362,16 @@ describe('after each navigation (overview §5.4 step 5)', () => {
     const at = (hash: string) => ({ hash }) as RouteLocationNormalized
     expect(scrollBehavior(at(''), at(''), null)).toEqual({ top: 0 })
     expect(scrollBehavior(at('#pelajar'), at(''), null)).toEqual({ el: '#pelajar' })
+  })
+})
+
+describe('isSafeRedirect', () => {
+  it.each(['/\\evil', '/\t/evil', '//evil', 'https://evil', '/', '/login'])('refuses %j', (v) => {
+    expect(isSafeRedirect(v)).toBe(false)
+  })
+  it.each(['/profile', '/dashboard?x=1', '/%2f/evil'])('accepts %j', (v) => {
+    // A literal `/%2f/evil` stays a same-origin path: the router never decodes %2f into a host separator.
+    expect(isSafeRedirect(v)).toBe(true)
   })
 })
 

@@ -16,7 +16,12 @@ import ForbiddenPage from '@/pages/ForbiddenPage.vue'
 import NotFoundPage from '@/pages/NotFoundPage.vue'
 import { useSessionStore } from '@/stores/session'
 
-import { DEFAULT_LAYOUT, resolveShellForPath, shellComponents, useRouteOutcome } from './router'
+import {
+  DEFAULT_LAYOUT,
+  resolveShellForPath,
+  shellComponents,
+  useRouteOutcome,
+} from './router'
 
 const route = useRoute()
 const session = useSessionStore()

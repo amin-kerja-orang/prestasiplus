@@ -335,6 +335,69 @@ describe('ApiClient: errors', () => {
 describe('ApiClient: 401 policy', () => {
   const unauthorized = json(401, { error: { code: 'UNAUTHORIZED', message: 'Sesi tamat.' } })
 
+  it.each(['/api/auth/refresh', '/api/auth/login', '/api/auth/logout'])(
+    'a 401 on %s does not run the 401 hook (no kembali redirect) and aborts nothing',
+    async (path) => {
+      const onUnauthorized = vi.fn()
+      const slow = new Promise<TransportResponse>(() => {})
+      const request = vi.fn((req: TransportRequest, signal?: AbortSignal) => {
+        if (req.url === '/api/slow') {
+          return new Promise<TransportResponse>((_, reject) =>
+            signal?.addEventListener('abort', () => reject(new DOMException('x', 'AbortError'))),
+          )
+        }
+        void slow
+        return Promise.resolve({
+          status: 401,
+          headers: {},
+          body: { error: { code: 'UNAUTHORIZED', message: 'x' } },
+        })
+      })
+      const c = new ApiClient({
+        transport: { request },
+        getToken: () => 't',
+        onUnauthorized,
+      })
+      const pending = c.get('/api/slow')
+      const err = await catchError(c.post(path))
+      expect(err.status).toBe(401)
+      expect(onUnauthorized).not.toHaveBeenCalled()
+      let settled = false
+      void pending.catch(() => (settled = true))
+      await Promise.resolve()
+      expect(settled).toBe(false)
+    },
+  )
+
+  it('a 401 on a protected call aborts the other in-flight calls once; later calls are not affected (FR-ERR-7)', async () => {
+    const request = vi.fn((req: TransportRequest, signal?: AbortSignal) => {
+      if (req.url === '/api/slow') {
+        return new Promise<TransportResponse>((_, reject) =>
+          signal?.addEventListener('abort', () => reject(new DOMException('x', 'AbortError'))),
+        )
+      }
+      if (req.url === '/api/expired') {
+        return Promise.resolve({
+          status: 401,
+          headers: {},
+          body: { error: { code: 'UNAUTHORIZED', message: 'x' } },
+        })
+      }
+      return Promise.resolve({ status: 200, headers: {}, body: { data: 1 } })
+    })
+    const c = new ApiClient({
+      transport: { request },
+      getToken: () => 't',
+      onUnauthorized: vi.fn(),
+    })
+    const slow = c.get('/api/slow')
+    const login = c.post('/api/auth/login')
+    await catchError(c.get('/api/expired'))
+    await expect(slow).rejects.toMatchObject({ name: 'AbortError' })
+    await expect(login).resolves.toBe(1)
+    await expect(c.get('/api/later')).resolves.toBe(1)
+  })
+
   it('calls onUnauthorized before the call rejects with UNAUTHORIZED', async () => {
     const order: string[] = []
     const onUnauthorized = vi.fn(() => {

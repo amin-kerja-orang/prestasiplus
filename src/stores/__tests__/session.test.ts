@@ -120,16 +120,53 @@ describe('session store: load, save and expiry', () => {
     expect(localStorage.getItem(PP_AUTH_STORAGE_KEY)).toBeNull()
   })
 
-  it('logout removes pp.draft.* drafts; a 401 keeps them (FR-ERR-8)', async () => {
-    writeStored(session())
-    const store = useSessionStore()
-    api.configure({ transport: fakeTransport(() => ({ status: 200 })) })
-    saveDraft('studio-soalan', null, { tajuk: 'A' })
-    await store.handleUnauthorized()
-    expect(loadDraft('studio-soalan')).toEqual({ tajuk: 'A' })
-    writeStored(session())
-    await useSessionStore().logout()
-    expect(loadDraft('studio-soalan')).toBeNull()
+  describe('drafts are bound to their user (FR-ERR-8)', () => {
+    const OTHER = session({ user: { ...STUDENT, id: 99 } })
+    const LOCAL = 'pp:draft:studio:new'
+
+    function signIn(s = session()): ReturnType<typeof useSessionStore> {
+      const store = useSessionStore()
+      store.setSession(s)
+      return store
+    }
+
+    beforeEach(() => {
+      sessionStorage.clear()
+    })
+
+    it('a 401 then the same user signing in gets both kinds of draft back', async () => {
+      const store = signIn()
+      api.configure({ transport: fakeTransport(() => ({ status: 200 })) })
+      saveDraft('studio-soalan', null, { tajuk: 'A' })
+      localStorage.setItem(LOCAL, '{"x":1}')
+      await store.handleUnauthorized()
+      expect(store.isLoggedIn).toBe(false)
+      signIn()
+      expect(loadDraft('studio-soalan')).toEqual({ tajuk: 'A' })
+      expect(localStorage.getItem(LOCAL)).toBe('{"x":1}')
+    })
+
+    it('a 401 then a different user signing in never sees them, and they are removed', async () => {
+      const store = signIn()
+      api.configure({ transport: fakeTransport(() => ({ status: 200 })) })
+      saveDraft('studio-soalan', null, { tajuk: 'A' })
+      localStorage.setItem(LOCAL, '{"x":1}')
+      await store.handleUnauthorized()
+      signIn(OTHER)
+      expect(loadDraft('studio-soalan')).toBeNull()
+      expect(localStorage.getItem(LOCAL)).toBeNull()
+      signIn()
+      expect(loadDraft('studio-soalan')).toBeNull()
+    })
+
+    it('logout removes pp.draft.* drafts and the owner record', async () => {
+      const store = signIn()
+      api.configure({ transport: fakeTransport(() => ({ status: 200 })) })
+      saveDraft('studio-soalan', null, { tajuk: 'A' })
+      await store.logout()
+      signIn()
+      expect(loadDraft('studio-soalan')).toBeNull()
+    })
   })
 })
 

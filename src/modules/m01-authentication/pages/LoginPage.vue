@@ -196,9 +196,7 @@ async function submit(): Promise<void> {
         data-testid="login-stats"
       >
         <li>
-          <DsSticker contained art="books"
-            >{{ formatNumber(stats.questionCount) }}+ Soalan</DsSticker
-          >
+          <DsSticker contained art="books">{{ formatNumber(stats.questionCount) }}+ Soalan</DsSticker>
         </li>
         <li>
           <DsSticker contained art="cap">{{ formatNumber(stats.subjectCount) }} Subjek</DsSticker>
