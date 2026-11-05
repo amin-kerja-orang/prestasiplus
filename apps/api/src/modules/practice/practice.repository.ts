@@ -7,7 +7,7 @@ import { idFromString, idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { alreadySubmitted, notFound } from './errors'
 import { BANK_VISIBLE_SQL } from '../questions/learner-visibility'
-import { MAX_SECONDS_PER_QUESTION, POINTS_PER_CORRECT, sessionCoins } from './rules'
+import { MAX_SECONDS_PER_QUESTION, type OfferedLevel, offeredLevels, POINTS_PER_CORRECT, sessionCoins } from './rules'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -290,6 +290,11 @@ export class PracticeRepository {
 
   private get db() {
     return this.prisma.client
+  }
+
+  /** S4-T06: the offered levels (active, non-primary), see `offeredLevels`. */
+  offeredLevels(): Promise<OfferedLevel[]> {
+    return offeredLevels(this.db)
   }
 
   // --- sessions ---------------------------------------------------------------------------------

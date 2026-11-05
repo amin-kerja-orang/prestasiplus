@@ -10,6 +10,7 @@ import {
   compareTopicNumbers,
   deriveSubjectLevelPairs,
   gradeOfCode,
+  legacySubjectOfPracticeCode,
   islandStates,
   mapSubjectLabel,
   subjectLabelOf,
@@ -105,6 +106,12 @@ describe('grade and practice codes (BR-13, BR-16, BR-17)', () => {
       GEOGRAFI: 'GEO',
     })
     expect(subjectLabelOf('BAHASA_MELAYU')).toBe('BAHASA MELAYU')
+  })
+
+  it('legacySubjectOfPracticeCode is the reverse of PRACTICE_CODE and never resolves an inherited property name', () => {
+    expect(legacySubjectOfPracticeCode('MATH')).toBe('MATEMATIK')
+    expect(legacySubjectOfPracticeCode('GEO')).toBe('GEOGRAFI')
+    for (const name of ['ZZ', '', 'constructor', 'toString', '__proto__', 'hasOwnProperty']) expect(legacySubjectOfPracticeCode(name), name).toBeUndefined()
   })
 })
 
