@@ -465,12 +465,23 @@ export class BijakAttemptsService {
       const leaf = index.parts.get(c.partId)
       if (!leaf || locked.has(c.partId)) continue
       // REQ-B-014: the topic of an essay_choice part is one of that part's topics, whatever the revision (nothing is stored on a refusal).
-      if (leaf.topicIds && c.answer.choice !== undefined && !leaf.topicIds.includes(c.answer.choice)) {
-        throw ApiError.of('VALIDATION_ERROR', { fields: { [`answers.${c.partId}.choice`]: MSG.essayTopicUnknown } })
+      if (leaf.topicIds) {
+        for (const key of ['choice', 'topicId'] as const) {
+          const topic = c.answer[key]
+          if (topic !== undefined && !leaf.topicIds.includes(topic)) {
+            throw ApiError.of('VALIDATION_ERROR', { fields: { [`answers.${c.partId}.${key}`]: MSG.essayTopicUnknown } })
+          }
+        }
       }
       const cur = answers.get(c.partId)
       if (cur && cur.rev >= c.rev) continue
-      let answer = c.answer
+      // DM-68: `revealed` belongs to the server ("Semak" sets it, nothing clears it). `topicId` wins and is copied to `choice`, which every reader of an open essay_choice answer still uses.
+      let answer: PartAnswer = {
+        ...c.answer,
+        ...(leaf.topicIds && c.answer.topicId !== undefined ? { choice: c.answer.topicId } : {}),
+      }
+      delete answer.revealed
+      if (cur?.answer.revealed) answer.revealed = true
       if (answer.photos) {
         if (!photos) {
           photos = new Map()

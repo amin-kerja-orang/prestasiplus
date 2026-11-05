@@ -11271,7 +11271,36 @@
         "properties": {
           "choice": {
             "type": "string",
-            "description": "MCQ option id, or a letter for match_letter."
+            "description": "MCQ option id, or a letter for match_letter. An open essay_choice answer may hold its topic id here (DM-68: still read)."
+          },
+          "choices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "DM-68: the option ids picked in an mcq_multi part."
+          },
+          "gaps": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "DM-68: the text per gap of a cloze part, by gap id."
+          },
+          "cells": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "DM-68: the text per cell of a table_fill part, by cell id."
+          },
+          "topicId": {
+            "type": "string",
+            "description": "DM-68: the topic picked in an essay_choice part; it must be one of the topics of that part."
+          },
+          "revealed": {
+            "type": "boolean",
+            "description": "DM-68: this part was opened by \"Semak\" in Mod Latihan. Set by the server and never cleared; a value sent by a client is ignored."
           },
           "steps": {
             "type": "array",
