@@ -7,6 +7,8 @@
  */
 import { computed, ref } from 'vue'
 
+import { DsSurface } from '@/ds'
+
 import { isStemRow } from '@pp/exam-core/paper-model'
 import type { McqOption, PartAnswer, PartView } from '@/modules/m28-bijak-spm/domain/types'
 import { chipLabel } from './copy'
@@ -87,9 +89,12 @@ const emit = defineEmits<{ answer: [partId: string, answer: PartAnswer] }>()
         >
         <RichText v-else :text="seg.text" />
       </template>
-      <span
+      <DsSurface
         v-if="showMs && showEn"
-        class="h-px basis-full bg-muted"
+        level="accented"
+        padding="none"
+        radius="none"
+        class="h-px w-full"
         aria-hidden="true"
         data-testid="lang-divider"
       />

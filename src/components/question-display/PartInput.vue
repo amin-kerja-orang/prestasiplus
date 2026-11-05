@@ -12,10 +12,17 @@
  */
 import { computed, ref } from 'vue'
 
-import { capLabel, maxWordsLabel, overLabel, shortLabel, wordCountLabel, wordTargetLabel } from './copy'
+import {
+  capLabel,
+  maxWordsLabel,
+  overLabel,
+  shortLabel,
+  wordCountLabel,
+  wordTargetLabel,
+} from './copy'
 import DrawingPad from './DrawingPad.vue'
 import EssayAnswer from './EssayAnswer.vue'
-import { DsStack, DsText } from '@/ds'
+import { DsStack, DsSurface, DsText } from '@/ds'
 
 import { isReadableNumber, latexToPlain } from '@pp/exam-core/math-expr'
 import type { Leaf } from '@pp/exam-core/paper-model'
@@ -159,13 +166,16 @@ async function dropPhoto(key: string): Promise<void> {
 <template>
   <div ref="textBox" class="flex flex-col gap-4" :data-testid="`part-input-${leaf.id}`">
     <template v-if="leaf.kind === 'short_text' || leaf.kind === 'essay'">
-      <p
+      <DsSurface
         v-if="leaf.preFill"
+        level="soft"
+        padding="sm"
         role="note"
         aria-label="Templat jawapan"
-        class="whitespace-pre-line rounded-xl bg-muted p-3 text-body text-toned"
+        class="whitespace-pre-line"
         data-testid="answer-prefill"
-      >{{ leaf.preFill }}</p>
+        ><DsText variant="body" tone="toned">{{ leaf.preFill }}</DsText></DsSurface
+      >
       <UFormField :label="`Jawapan ${leaf.label}`.trim()" class="w-full">
         <UTextarea
           :model-value="answer.text ?? ''"
