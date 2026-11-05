@@ -43,7 +43,7 @@ interface Calls {
   audits: string[]
 }
 
-function build(opts: { sessions?: boolean; stored?: string[]; classes?: string[]; eligible?: string[]; groups?: { id: string; questionIds: string[] }[]; grouped?: Record<string, string> } = {}) {
+function build(opts: { sessions?: boolean; sessionsAfterCheck?: boolean; stored?: string[]; classes?: string[]; eligible?: string[]; groups?: { id: string; questionIds: string[] }[]; grouped?: Record<string, string> } = {}) {
   const calls: Calls = { created: [], updated: [], items: [], classes: [], statuses: [], audits: [] }
   const rec = (over: object = {}) => ({
     id: '50',
@@ -63,10 +63,12 @@ function build(opts: { sessions?: boolean; stored?: string[]; classes?: string[]
     updatedAt: new Date('2026-10-19T01:00:00Z'),
     ...over,
   })
+  let sessionReads = 0
   const repo = {
+    lockRow: () => Promise.resolve(),
     getOwn: (_t: string, id: string) => Promise.resolve(id === '50' ? rec() : null),
     storedItems: () => Promise.resolve((opts.stored ?? ['1', '2']).map((questionId) => ({ questionId, versionNo: 1 }))),
-    hasSessions: () => Promise.resolve(opts.sessions ?? false),
+    hasSessions: () => Promise.resolve(opts.sessionsAfterCheck !== undefined && sessionReads++ > 0 ? opts.sessionsAfterCheck : (opts.sessions ?? false)),
     classroomIdsOf: () => Promise.resolve(new Map([['50', opts.classes ?? []]])),
     create: (i: unknown) => (calls.created.push(i), Promise.resolve(rec({ id: '51', status: (i as { status: string }).status }))),
     update: (_id: string, p: unknown) => (calls.updated.push(p), Promise.resolve(rec({ status: (p as { status: string }).status }))),
@@ -156,6 +158,12 @@ describe('update lock (AC-GUR-8b-12)', () => {
     await expect(service.update(actor, '50', form({ title: 'Baharu', questionIds: ['3'], status: 'published' }))).rejects.toMatchObject({ status: 409, message: GURU_SET_MESSAGES.locked })
     expect(calls.updated[0]).toMatchObject({ title: 'Baharu', status: 'published' })
     expect(calls.classes).toHaveLength(1)
+    expect(calls.items).toHaveLength(0)
+  })
+  it('a pupil who starts between the check and the write: the lock is re-read in the transaction, title saves, list stays, 409', async () => {
+    const { service, actor, calls } = build({ sessions: false, sessionsAfterCheck: true })
+    await expect(service.update(actor, '50', form({ title: 'Lumba', questionIds: ['2', '3'] }))).rejects.toMatchObject({ status: 409, message: GURU_SET_MESSAGES.locked })
+    expect(calls.updated).toHaveLength(1)
     expect(calls.items).toHaveLength(0)
   })
   it('with sessions the same list saves (an archived stored question does not block a title edit)', async () => {

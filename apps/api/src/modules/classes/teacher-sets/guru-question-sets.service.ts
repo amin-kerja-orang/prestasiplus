@@ -272,7 +272,12 @@ export class GuruQuestionSetsService {
     const changed = !sameSequence(body.questionIds, stored)
     const items = changed && !locked ? await this.itemsOf(body.questionIds) : null
     const now = this.clock.now()
-    const updated = await this.prisma.transaction(async (tx) => {
+    // Behaviour agreed for AC-GUR-8b-12: title, subject, Tingkatan, status and classes ALWAYS save; when the question list changed
+    // and the set is locked, the list is left as it was and the answer is 409 AFTER the commit. The lock is re-read inside the
+    // transaction with the set row locked (FOR UPDATE), so a pupil who starts between the check above and the write cannot slip a change in.
+    const { row: updated, conflict } = await this.prisma.transaction(async (tx) => {
+      await this.repo.lockRow(set.id)
+      const lockedNow = await this.repo.hasSessions(set.id)
       const row = await this.repo.update(set.id, {
         title: body.title,
         subjectId: body.subjectId,
@@ -280,12 +285,16 @@ export class GuruQuestionSetsService {
         status: body.status,
         now,
       })
-      if (items) await this.repo.replaceItems(row.id, items)
+      const replace = changed && !lockedNow
+      if (replace) {
+        const list = items ?? (await this.itemsOf(body.questionIds))
+        await this.repo.replaceItems(row.id, list)
+      }
       await this.repo.replaceClassrooms(row.id, classIds, actor.userId, now)
-      await this.record(actor, tx, GURU_SET_AUDIT.UPDATED, row, { status: row.status, questionsChanged: items !== null, classes: classIds.length })
-      return row
+      await this.record(actor, tx, GURU_SET_AUDIT.UPDATED, row, { status: row.status, questionsChanged: replace, classes: classIds.length })
+      return { row, conflict: changed && lockedNow }
     })
-    if (changed && locked) {
+    if (conflict) {
       throw ApiError.of('CONFLICT', { message: GURU_SET_MESSAGES.locked, fields: { questionIds: GURU_SET_MESSAGES.locked } })
     }
     return this.view(updated)

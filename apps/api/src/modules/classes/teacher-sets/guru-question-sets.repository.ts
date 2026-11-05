@@ -125,8 +125,14 @@ export class GuruQuestionSetsRepository {
     const key = idOf(id)
     const owner = idOf(teacherId)
     if (key === null || owner === null) return null
-    const row = await this.db.questionSet.findFirst({ where: { id: key, teacherId: owner, kind: 'set' } })
+    // Same rules as `listOwn`: a migrated header that needs a rebuild, or one without a subject, is not a set of the teacher (404).
+    const row = await this.db.questionSet.findFirst({ where: { id: key, teacherId: owner, kind: 'set', needsRebuild: false, subjectId: { not: null } } })
     return row ? toRecord(row) : null
+  }
+
+  /** Locks the set row until the surrounding transaction ends (`SELECT ... FOR UPDATE`): serialises the edit with a concurrent change. */
+  async lockRow(setId: string): Promise<void> {
+    await this.db.$queryRaw`SELECT id FROM question_sets WHERE id = ${idFromString(setId)} FOR UPDATE`
   }
 
   /**
