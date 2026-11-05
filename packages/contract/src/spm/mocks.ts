@@ -13,7 +13,7 @@ import { count } from './util'
 /**
  * SPM mock exams (M06-08 to M06-12). A mock is generated from the SPM pool (Paper 1, 30 objective
  * items of 1 mark) or from visible structured questions (Paper 2, 6 items of 10 marks), sat once,
- * submitted and graded. Only the owner can open a mock (anyone else gets 404 "Not Found.").
+ * submitted and graded. Only the owner can open a mock (anyone else gets 404 "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?").
  * The mock id is an opaque string (the card plans a uuid; open question 4). Nothing is written to
  * practice, mastery, the revision queue or the wallet.
  */

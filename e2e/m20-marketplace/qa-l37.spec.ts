@@ -5,11 +5,12 @@
  */
 
 import { APP_BOOT_TIMEOUT_MS, expect, test } from '../fixtures/test'
-import { moduleTag } from '../support'
+import { moduleTag, SM_MIN_WIDTH, viewportWidth } from '../support'
 
 const PELAJAR = 'pelajar@demo.test'
 const MODULE = { tag: [moduleTag(20)] }
 const SLUG_1 = 'beg-sekolah-anti-air-premium-vH1Fj'
+const PELAJAR_ID = 2
 
 test.describe('M20 L37 QA legs', MODULE, () => {
   test('AC-M20-03.1 a guest opening S7 and W is sent to /login', async ({ page, gotoApp }) => {
@@ -55,21 +56,36 @@ test.describe('M20 L37 QA legs', MODULE, () => {
       page,
       gotoApp,
       loginAs,
+      mock,
     }) => {
       await loginAs(PELAJAR)
-      await page.context().route('https://wa.me/**', (route) => route.abort())
+      const handedOver: string[] = []
+      await page.context().route('https://wa.me/**', async (route) => {
+        handedOver.push(route.request().url())
+        await route.abort()
+      })
       await gotoApp(`/marketplace/${SLUG_1}`)
       await expect(page.getByTestId('product-name')).toBeVisible()
       const body = page.locator('main')
       await expect(body.getByRole('button', { name: /beli|tambah ke troli|checkout/i })).toHaveCount(0)
-      const chip = page.getByText(/\d+\s*koin/).first()
-      const norm = async () => ((await chip.textContent()) ?? '').replace(/\s+/g, '')
-      const before = await norm()
+      await expect(body).not.toContainText(/koin|syiling/i)
+      // The navbar `DsRewardChip` shows from `sm` (Pembelajaran shell); the wallet is read at every width.
+      const chip = page
+        .getByTestId('pembelajaran-header')
+        .locator('[data-ds="reward-chip"]')
+        .filter({ hasText: 'Koin' })
+        .locator('.tabular')
+      const withChip = viewportWidth(page) >= SM_MIN_WIDTH
+      const before = await mock.hook<{ currentSyiling: number }>('getWallet', PELAJAR_ID)
+      if (withChip) await expect(chip).toHaveText(String(before.currentSyiling))
       const popupPromise = page.waitForEvent('popup')
       await page.getByTestId('product-whatsapp').click()
       const popup = await popupPromise
+      await expect.poll(() => handedOver.length, { timeout: APP_BOOT_TIMEOUT_MS }).toBe(1)
       await popup.close()
-      expect(await norm()).toBe(before)
+      const after = await mock.hook<{ currentSyiling: number }>('getWallet', PELAJAR_ID)
+      expect(after.currentSyiling).toBe(before.currentSyiling)
+      if (withChip) await expect(chip).toHaveText(String(before.currentSyiling))
     })
   })
 })

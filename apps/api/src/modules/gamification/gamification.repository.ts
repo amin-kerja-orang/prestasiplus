@@ -385,6 +385,22 @@ export class GamificationRepository {
   }
 
   /**
+   * Per challenge id: how many distinct users of `userIds` have a real completion on the Malaysia day `day`
+   * (`is_test` rows excluded). Empty input answers an empty map without a query. Read-only.
+   */
+  async completionCountsOn(db: Db, day: string, userIds: bigint[]): Promise<Map<string, number>> {
+    const out = new Map<string, number>()
+    if (userIds.length === 0) return out
+    const rows = await db.$queryRaw<{ challengeId: bigint; n: bigint }[]>`
+      SELECT cc.challenge_id AS "challengeId", count(DISTINCT cc.user_id)::bigint AS n
+        FROM challenge_completions cc
+       WHERE cc.completion_date = ${day}::date AND NOT cc.is_test AND cc.user_id = ANY(${userIds}::bigint[])
+       GROUP BY cc.challenge_id`
+    for (const r of rows) out.set(idToString(r.challengeId), num(r.n))
+    return out
+  }
+
+  /**
    * `INSERT ... ON CONFLICT DO NOTHING` on the unique (user, challenge, day). True only for the call that wrote
    * the row: the reward is credited by that call alone (AC2).
    */
@@ -677,11 +693,6 @@ export class GamificationRepository {
   async settings(db: Db): Promise<{ key: string; label: string; value: number }[]> {
     const rows = await db.gamificationSetting.findMany()
     return rows.map((r) => ({ key: r.key, label: r.label, value: r.value.toNumber() }))
-  }
-
-  async settingValue(db: Db, key: string): Promise<number> {
-    const r = await db.gamificationSetting.findUnique({ where: { key } })
-    return r ? r.value.toNumber() : 0
   }
 
   async saveSetting(db: Db, key: string, value: number, at: Date): Promise<boolean> {
