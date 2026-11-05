@@ -30,6 +30,17 @@ vi.mock('../lib/use-bijak', async () => {
 const q = (sel: string): HTMLElement | null => document.body.querySelector(sel)
 const text = (sel: string): string => q(sel)?.textContent?.replace(/\s+/g, ' ').trim() ?? ''
 let wrapper: VueWrapper | null = null
+/** S3-T06 (46 section 3.4 item 7): the self-mark is saved 500 ms after the last change; no button. */
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+})
+afterEach(() => {
+  vi.useRealTimers()
+})
+const autosave = async (): Promise<void> => {
+  await vi.advanceTimersByTimeAsync(500)
+  await flushPromises()
+}
 
 function part(over: Partial<ReviewPart> = {}): ReviewPart {
   return {
@@ -144,8 +155,7 @@ describe('SelfMarkControl: stepper', () => {
     ;(q('[data-testid="selfmark-inc"]') as HTMLButtonElement).click()
     await flushPromises()
     expect(text('[data-testid="selfmark-state"]')).toBe('Belum disahkan')
-    ;(q('[data-testid="selfmark-save"]') as HTMLButtonElement).click()
-    await flushPromises()
+    await autosave()
     expect(save).toHaveBeenCalledWith({ partId: 'p1', mark: 2 })
     await wrapper!.setProps({ part: part({ awarded: 2, status: 'separa', selfMarked: true }) })
     expect(text('[data-testid="selfmark-state"]')).toBe('Markah kendiri disimpan')
@@ -164,18 +174,104 @@ describe('SelfMarkControl: stepper', () => {
     mountControl(part({ awarded: 1 }), save)
     ;(q('[data-testid="selfmark-inc"]') as HTMLButtonElement).click()
     await flushPromises()
-    ;(q('[data-testid="selfmark-save"]') as HTMLButtonElement).click()
-    await flushPromises()
+    await autosave()
     expect(text('[data-testid="selfmark-error"]')).toContain('ditanda automatik')
     expect(text('[data-testid="selfmark-value"]')).toBe('2 / 4')
+  })
+
+  it('saves once, 500 ms after the last change, showing "menyimpan…" then "disimpan" (46 section 3.4 item 7)', async () => {
+    const save = mountControl(part({ awarded: 0 }))
+    const inc = q('[data-testid="selfmark-inc"]') as HTMLButtonElement
+    inc.click()
+    await vi.advanceTimersByTimeAsync(300)
+    inc.click()
+    await flushPromises()
+    expect(text('[data-testid="selfmark-save-state"]')).toBe('menyimpan…')
+    await vi.advanceTimersByTimeAsync(300)
+    expect(save).not.toHaveBeenCalled()
+    await autosave()
+    expect(save).toHaveBeenCalledTimes(1)
+    expect(save).toHaveBeenCalledWith({ partId: 'p1', mark: 2 })
+    expect(text('[data-testid="selfmark-save-state"]')).toBe('disimpan')
+    expect(q('[data-testid="selfmark-save"]')).toBeNull()
+  })
+
+  it.each([
+    ['2.5', 3],
+    ['2.4', 2],
+    ['-3', 0],
+    ['9', 4],
+    ['', 0],
+  ])('the numeric input %s is stored as %i (round half up, 0..max, AC-MUR-13-22)', async (typed, stored) => {
+    const save = mountControl(part({ awarded: 1 }))
+    const input = q('input[data-testid="selfmark-input"]') as HTMLInputElement
+    input.value = typed
+    input.dispatchEvent(new Event('change'))
+    await flushPromises()
+    expect(text('[data-testid="selfmark-value"]')).toBe(`${stored} / 4`)
+    await autosave()
+    expect(save).toHaveBeenCalledWith({ partId: 'p1', mark: stored })
+  })
+
+  it('typing over the maximum when the mark is already the maximum shows the maximum again and saves nothing', async () => {
+    const save = mountControl(part({ awarded: 4, selfMarked: true }))
+    const input = q('input[data-testid="selfmark-input"]') as HTMLInputElement
+    input.value = '9'
+    input.dispatchEvent(new Event('change'))
+    await autosave()
+    expect(input.value).toBe('4')
+    expect(save).not.toHaveBeenCalled()
+  })
+
+  it('a typed number autosaves 500 ms after typing stops, without leaving the field', async () => {
+    const save = mountControl(part({ awarded: 0 }))
+    const input = q('input[data-testid="selfmark-input"]') as HTMLInputElement
+    input.value = '3'
+    input.dispatchEvent(new Event('input'))
+    await autosave()
+    expect(save).toHaveBeenCalledWith({ partId: 'p1', mark: 3 })
+  })
+
+  it('a change made during a save is saved after it, but not once the control has unmounted', async () => {
+    let settle: () => void = () => undefined
+    const save = vi.fn().mockImplementation(() => new Promise<void>((r) => (settle = r)))
+    mountControl(part({ awarded: 0 }), save)
+    const inc = q('[data-testid="selfmark-inc"]') as HTMLButtonElement
+    inc.click()
+    await autosave() // first save in flight
+    inc.click()
+    await autosave() // second change queued behind it
+    expect(save).toHaveBeenCalledTimes(1)
+    wrapper!.unmount()
+    wrapper = null
+    settle()
+    await flushPromises()
+    expect(save).toHaveBeenCalledTimes(1)
+  })
+
+  it('a refreshed part does not overwrite a change that is still waiting', async () => {
+    mountControl(part({ awarded: 1 }))
+    ;(q('[data-testid="selfmark-inc"]') as HTMLButtonElement).click()
+    await flushPromises()
+    await wrapper!.setProps({ part: part({ awarded: 1, selfMarked: true }) })
+    expect(text('[data-testid="selfmark-value"]')).toBe('2 / 4')
+  })
+
+  it('a change still waiting is not sent after the control unmounts (it could be another sitting by then)', async () => {
+    const save = mountControl(part({ awarded: 0 }))
+    ;(q('[data-testid="selfmark-inc"]') as HTMLButtonElement).click()
+    await flushPromises()
+    wrapper!.unmount()
+    wrapper = null
+    await autosave()
+    expect(save).not.toHaveBeenCalled()
   })
 
   it('falls back to a plain BM message for an error without text', async () => {
     mountControl(part(), vi.fn().mockRejectedValue('x'))
     ;(q('[data-testid="selfmark-inc"]') as HTMLButtonElement).click()
     await flushPromises()
-    ;(q('[data-testid="selfmark-save"]') as HTMLButtonElement).click()
-    await flushPromises()
+    await autosave()
     expect(text('[data-testid="selfmark-error"]')).toBe('Markah tidak dapat disimpan. Cuba lagi.')
   })
 })
@@ -203,8 +299,7 @@ describe('SelfMarkControl: band picker', () => {
     await flushPromises()
     expect(text('[data-testid="selfmark-value"]')).toBe('2 / 4')
     expect(dec.disabled).toBe(true)
-    ;(q('[data-testid="selfmark-save"]') as HTMLButtonElement).click()
-    await flushPromises()
+    await autosave()
     expect(save).toHaveBeenCalledWith({ partId: 'p1', mark: 2, band: '2' })
   })
 
@@ -307,7 +402,7 @@ describe('SelfMarkControl: a new part object from a refreshed result', () => {
     expect(w.emitted('dirty')).toEqual([['p1', true], ['p1', false]])
   })
 
-  it('applies a value the server corrected, over the draft', async () => {
+  it('applies a value the server corrected once no change of the pupil is waiting (autosave, S3-T06)', async () => {
     const w = mountControl(part())
     const inc = q('[data-testid="selfmark-inc"]') as HTMLButtonElement
     inc.click()
@@ -315,10 +410,14 @@ describe('SelfMarkControl: a new part object from a refreshed result', () => {
     inc.click()
     await flushPromises()
     expect(value()).toBe('3 / 4')
-
+    // A refresh that lands while the change waits for its 500 ms does not overwrite it.
+    await w.setProps({ part: part({ awarded: 2, selfMarked: true, status: 'separa' }) })
+    expect(value()).toBe('3 / 4')
+    await autosave()
+    // Nothing waits any more: the server's value is shown.
+    await w.setProps({ part: part({ awarded: 2, status: 'separa' }) })
     await w.setProps({ part: part({ awarded: 2, selfMarked: true, status: 'separa' }) })
     await flushPromises()
-
     expect(value()).toBe('2 / 4')
     expect(state()).toBe('Markah kendiri disimpan')
   })
@@ -333,8 +432,7 @@ describe('SelfMarkControl: a new part object from a refreshed result', () => {
     await flushPromises()
     expect(value()).toBe('3 / 4')
 
-    ;(q('[data-testid="selfmark-save"]') as HTMLButtonElement).click()
-    await flushPromises()
+    await autosave()
 
     expect(save).toHaveBeenCalledWith({ partId: 'p1', mark: 3 })
     expect(value()).toBe('2 / 4')
@@ -347,8 +445,7 @@ describe('SelfMarkControl: a new part object from a refreshed result', () => {
     ;(q('[data-testid="selfmark-inc"]') as HTMLButtonElement).click()
     await flushPromises()
 
-    ;(q('[data-testid="selfmark-save"]') as HTMLButtonElement).click()
-    await flushPromises()
+    await autosave()
 
     expect(value()).toBe('1 / 4')
     expect(text('[data-testid="selfmark-error"]')).toBe('Gagal')
@@ -557,8 +654,7 @@ describe('ResultPage Semakan', () => {
     ;(q('[data-testid="selfmark-inc"]') as HTMLButtonElement).click()
     ;(q('[data-testid="selfmark-inc"]') as HTMLButtonElement).click()
     await flushPromises()
-    ;(q('[data-testid="selfmark-save"]') as HTMLButtonElement).click()
-    await flushPromises()
+    await autosave()
 
     expect(server.selfMark).toHaveBeenCalledWith(7, 'a1', { partId: 'p1', mark: 4 })
     expect(text('[data-testid="section-score"]')).toBe('4 / 4')
@@ -612,10 +708,9 @@ describe('ResultPage Semakan', () => {
     expect(server.getResult).toHaveBeenLastCalledWith(7, 'a0')
     expect(text('[data-testid="selfmark-value"]')).toBe('0 / 4')
     expect(text('[data-testid="selfmark-state"]')).toBe('Belum dimarkah')
-    ;(q('[data-testid="selfmark-save"]') as HTMLButtonElement).click()
-    await flushPromises()
-    expect(server.selfMark).toHaveBeenCalledWith(7, 'a0', { partId: 'p1', mark: 0 })
-    server.selfMark.mockClear()
+    // The change made on the earlier sitting is never sent to the new one (no flush on unmount; the leave guard warns instead).
+    await autosave()
+    expect(server.selfMark).not.toHaveBeenCalled()
 
     await router.push('/spm/bijak')
     await flushPromises()
@@ -640,17 +735,20 @@ describe('ResultPage Semakan', () => {
     const pick = (id: string, sel: string) => control(id).querySelector<HTMLElement>(`[data-testid="${sel}"]`)!
     pick('pa', 'selfmark-inc').click()
     pick('pa', 'selfmark-inc').click()
+    await vi.advanceTimersByTimeAsync(300)
     pick('pb', 'selfmark-inc').click()
     await flushPromises()
     expect(pick('pb', 'selfmark-value').textContent).toContain('1 / 4')
 
-    pick('pa', 'selfmark-save').click()
+    // pa autosaves 500 ms after its last change; pb's change is still waiting.
+    await vi.advanceTimersByTimeAsync(200)
     await flushPromises()
 
     expect(server.selfMark).toHaveBeenCalledWith(7, 'a1', { partId: 'pa', mark: 2 })
     expect(pick('pa', 'selfmark-state').textContent).toContain('Markah kendiri disimpan')
     expect(pick('pb', 'selfmark-value').textContent).toContain('1 / 4')
     expect(pick('pb', 'selfmark-state').textContent).toContain('Belum disahkan')
+    expect(server.selfMark).toHaveBeenCalledTimes(1)
   })
 })
 
