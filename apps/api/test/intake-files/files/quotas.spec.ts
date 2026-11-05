@@ -27,7 +27,7 @@ function expectDailyQuota(res: Response): void {
   expect(res.status, JSON.stringify(res.body)).toBe(429)
   const error = ErrorBodySchema.parse(res.body).error
   expect(error.code).toBe('INTAKE_DAILY_PAGE_QUOTA')
-  expect(error.message).toBe(INTAKE_FILE_MESSAGES.quota)
+  expect(error.message).toBe('Kuota halaman harian (5) telah dicapai. Cuba lagi esok.')
 }
 
 describe('quotas', () => {

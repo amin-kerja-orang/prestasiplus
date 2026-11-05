@@ -428,7 +428,7 @@ export const IntakeKirimanCountsSchema = z
   .meta({
     id: 'IntakeKirimanCounts',
     description:
-      'S1-T08 (FR-ADM-Q12.1): Kiriman Guru tile counts, same scope and mapping as `kirimanStatus` (each equals the `totalItems` of that filter). In-progress guru batches (submitted, processing) with no item yet are added to `processing` and `jumlah`.',
+      'S1-T08 (FR-ADM-Q12.1): Kiriman Guru tile counts. Each count uses the same rule as its `kirimanStatus` filter. `processing` and `jumlah` also include in-progress guru batches (submitted, processing) that have no items yet.',
   })
 export type IntakeKirimanCounts = z.infer<typeof IntakeKirimanCountsSchema>
 

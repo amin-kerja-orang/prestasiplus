@@ -108,7 +108,7 @@ export type IntakeFileErrorCode = z.infer<typeof IntakeFileErrorCodeSchema>
  * prototype has only "Fail melebihi had 20 MB."; every other line is new copy, [PROPOSED] (card open
  * question 1, the lead approves it). The {N} messages are functions.
  */
-/** ERR-QUOTA-05 (40:580): the per-user daily page quota is reached; HTTP 429, text `INTAKE_FILE_MESSAGES.quota`. */
+/** ERR-QUOTA-05 (40:580): the per-user daily page quota is reached; HTTP 429, text `INTAKE_FILE_MESSAGES.dailyPageQuota(n)`. */
 export const INTAKE_DAILY_PAGE_QUOTA_CODE = 'INTAKE_DAILY_PAGE_QUOTA'
 
 export const INTAKE_FILE_MESSAGES = {
@@ -120,6 +120,8 @@ export const INTAKE_FILE_MESSAGES = {
   tooComplex: 'Fail PDF terlalu kompleks untuk diproses.',
   duplicate: 'Fail ini telah diimport dalam kelompok lain.',
   tooManyFiles: (n: number) => `Maksimum ${n} fail bagi setiap kelompok.`,
+  /** ERR-QUOTA-05 (40:580): `n` is the configured daily page limit (default 500). */
+  dailyPageQuota: (n: number) => `Kuota halaman harian (${n}) telah dicapai. Cuba lagi esok.`,
   quota: 'Had kuota muat naik harian telah dicapai. Cuba lagi esok.',
   /** ERR-QUOTA-04 (teacher submission path, 409). */
   activeLimit: (n: number) => `Terlalu banyak kumpulan sedang diproses (maksimum ${n}). Tunggu salah satu selesai.`,

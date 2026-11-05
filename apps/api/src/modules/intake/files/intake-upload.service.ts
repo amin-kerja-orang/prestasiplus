@@ -238,7 +238,7 @@ export class IntakeUploadService {
       })
       const adding = checked.reduce((n, c) => n + c.pages, 0)
       if ((used._sum.pageCount ?? 0) + adding > this.config.dailyPageQuota) {
-        throw new ApiError({ code: INTAKE_DAILY_PAGE_QUOTA_CODE, status: 429, message: INTAKE_FILE_MESSAGES.quota, retryAfter: 3600 })
+        throw new ApiError({ code: INTAKE_DAILY_PAGE_QUOTA_CODE, status: 429, message: INTAKE_FILE_MESSAGES.dailyPageQuota(this.config.dailyPageQuota), retryAfter: 3600 })
       }
     }
   }

@@ -86,10 +86,6 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
 | S1-T08 | AC-ADM-Q12.2 | CI | Pass | 2026-11-05 | team-aa/S-3 | papers-guru-intake.spec.ts::201 with a QuestionSetPaper; the admin sees the guru batch; ?source accepts only guru |
-| S1-T08 | AC-QA-39 | CI | Pass | 2026-11-05 | team-aa/S-3 | papers-guru-intake.spec.ts::201 with a QuestionSetPaper; the admin sees the guru batch; ?source accepts only guru |
-| S1-T08 | AC-GUR-44-2 | CI | Pass | 2026-11-05 | team-aa/S-3 | papers-guru-intake.spec.ts::201 with a QuestionSetPaper; the admin sees the guru batch; ?source accepts only guru |
-| S1-T08 | AC-GUR-44-3 | CI | Pass | 2026-11-05 | team-aa/S-3 | papers-guru-intake.spec.ts::a file just over the default INTAKE_MAX_FILE_MB (20 MB, no env override) is refused with the size text and nothing is stored |
-| S1-T08 | AC-GUR-44-14 | CI | Pass | 2026-11-05 | team-aa/S-3 | papers-guru-intake.spec.ts::6 files are refused with "Maksimum 5 fail." and nothing stored; 5 files are accepted; papers-guru-intake.spec.ts::a scanned PDF (no text on the first 3 pages) is refused before any batch exists; papers-guru-intake.spec.ts::DOCX is accepted by content: stored, listed with the docx mime, no extraction job, the admin can download it |
 
 ## Sprint 5
 

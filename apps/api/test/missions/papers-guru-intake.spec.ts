@@ -1,4 +1,4 @@
-import { INTAKE_FILE_MESSAGES, IntakeBatchSummarySchema, QUESTION_SET_PAPER_MESSAGES, QuestionSetPaperSchema, questionSetPaperFileText } from '@pp/contract'
+import { IntakeBatchSummarySchema, QUESTION_SET_PAPER_MESSAGES, QuestionSetPaperSchema, questionSetPaperFileText } from '@pp/contract'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { QuestionSetsPorts } from '../../src/modules/classes/question-sets'
@@ -387,7 +387,7 @@ describe('S1-T08 G3: the daily page quota on the guru path', () => {
       const over = await upload(teacher, FIELDS, [{ name: 'b.pdf', bytes: textPdf(3, 3) }])
       expect(over.status, JSON.stringify(over.body)).toBe(429)
       expect(over.body.error.code).toBe('INTAKE_DAILY_PAGE_QUOTA')
-      expect(over.body.error.message).toBe(INTAKE_FILE_MESSAGES.quota)
+      expect(over.body.error.message).toBe('Kuota halaman harian (5) telah dicapai. Cuba lagi esok.')
       expect(await count(t)).toBe(batches)
       expect(Number((await t.db.query<{ n: string }>('select count(*)::text n from files'))[0]?.n)).toBe(files)
       // Exactly the quota is still allowed.

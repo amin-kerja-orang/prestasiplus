@@ -113,19 +113,26 @@ describe('GET /intake/items: source=guru and kirimanStatus (S1-T08)', () => {
          values ($1::bigint, $2, $3, $4, 'BM', ${source === 'guru' ? 'null' : '1'}, 'x', 'own') returning id::text`,
         [owner, status, source, source === 'guru' ? 'umum' : 'trial'],
       ))[0]!.id
-    const inProgress = await mk('guru', 'processing')
-    await mk('guru', 'submitted')
-    await mk('guru', 'failed')
-    await mk('guru', 'cancelled')
-    await mk('admin', 'processing')
-    const after = (await list('source=guru&pageSize=1')).meta.kirimanCounts!
-    expect(after).toEqual({ ...before, jumlah: before.jumlah + 2, processing: before.processing + 2 })
-    // The batchId filter narrows the empty batches to that one.
-    expect((await list(`source=guru&batchId=${inProgress}&pageSize=1`)).meta.kirimanCounts).toEqual({ jumlah: 1, pending: 0, processing: 1, selesai: 0, ditolak: 0 })
-    // Item filters never match a batch without items.
-    expect((await list('source=guru&band=high&pageSize=1')).meta.kirimanCounts!.processing).toBeLessThanOrEqual(before.processing)
-    await t.db.query(`delete from intake_batches where source = 'guru' and id not in (select batch_id from intake_items) and status in ('processing','submitted','failed','cancelled')`)
-    await t.db.query(`delete from intake_batches where source = 'admin' and id not in (select batch_id from intake_items)`)
+    try {
+      const inProgress = await mk('guru', 'processing')
+      await mk('guru', 'submitted')
+      await mk('guru', 'failed')
+      await mk('guru', 'cancelled')
+      await mk('admin', 'processing')
+      const after = (await list('source=guru&pageSize=1')).meta.kirimanCounts!
+      expect(after).toEqual({ ...before, jumlah: before.jumlah + 2, processing: before.processing + 2 })
+      // The batchId filter narrows the empty batches to that one.
+      expect((await list(`source=guru&batchId=${inProgress}&pageSize=1`)).meta.kirimanCounts).toEqual({ jumlah: 1, pending: 0, processing: 1, selesai: 0, ditolak: 0 })
+      // Item filters never match a batch without items: the counts are those of the items alone, with no empty batch added.
+      const banded = (await list('source=guru&band=high&pageSize=1')).meta.kirimanCounts!
+      const bandedTotals = await Promise.all(
+        (['Jumlah', 'Pending', 'Processing', 'Selesai', 'Ditolak'] as const).map(async (k) => (await list(`source=guru&band=high&kirimanStatus=${k}&pageSize=1`)).meta.totalItems),
+      )
+      expect([banded.jumlah, banded.pending, banded.processing, banded.selesai, banded.ditolak]).toEqual(bandedTotals)
+    } finally {
+      await t.db.query(`delete from intake_batches where source = 'guru' and id not in (select batch_id from intake_items) and status in ('processing','submitted','failed','cancelled')`)
+      await t.db.query(`delete from intake_batches where source = 'admin' and id not in (select batch_id from intake_items)`)
+    }
     expect((await list('source=guru&pageSize=1')).meta.kirimanCounts).toEqual(before)
   })
 
