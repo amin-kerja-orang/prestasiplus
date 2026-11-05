@@ -5,7 +5,7 @@
  * M17). Every behaviour of another player is a SIMULATION (D4).
  */
 
-import { DAY_MS } from '@/lib/time'
+import { DAY_MS, startOfDay, toIsoMyt } from '@/lib/time'
 import type { PrngRegistry } from '@/mock/determinism'
 import { defineNamedQueries } from '@/mock/dataset'
 import { defineRepository } from '@/mock/repository'
@@ -51,11 +51,16 @@ import {
   ARENA_QUESTIONS,
   arenaPoints,
   currentSchoolOf,
+  DAILY_LIMIT_MESSAGE,
+  DAILY_MAX,
+  GRACE_SECONDS,
+  liveWinnerOf,
   gradeLabel,
   M16Error,
   m16Now,
   nowIso,
   QUESTION_SECONDS,
+  REVEAL_MS,
   schoolName,
   userName,
   winnerOf,
@@ -85,7 +90,7 @@ export function setPendingSim(spec: SimSpec | null): void {
 export type PollMatchResult =
   | { status: 'waiting' | 'expired' | 'not_found' }
   | { status: 'incoming_challenge'; challenger: Omit<Challenger, 'userId'> }
-  | { status: 'matched'; battle_uuid: string }
+  | { status: 'matched'; battle_uuid: string; robot?: boolean }
   | { status: 'error'; httpStatus: number }
 
 export type PollChallengerResult = {
@@ -93,26 +98,38 @@ export type PollChallengerResult = {
   battle_uuid?: string
 }
 
+export interface ArenaReveal {
+  index: number
+  correctOptionId: number
+  you: { optionId: number | null; correct: boolean; points: number }
+  opponent: { optionId: number | null; correct: boolean; points: number }
+}
+
 export interface ArenaView {
   uuid: string
   status: BattleRow['status']
   you: 'A' | 'B'
-  players: { A: { name: string; school: string }; B: { name: string; school: string } }
+  players: {
+    A: { name: string; school: string; isBot?: boolean }
+    B: { name: string; school: string; isBot?: boolean }
+  }
   scores: { A: number; B: number }
   index: number
   total: number
   question: ReturnType<typeof arenaQuestion>
   secondsLeft: number
+  phase: 'answering' | 'reveal' | 'finished'
+  roundEndsAt?: string
+  youAnswered?: boolean
+  reveal?: ArenaReveal
   result?: { winner: Winner; scoreA: number; scoreB: number }
 }
 
+/** The answer response: accepted only, no key and no correctness (ruling 45). */
 export interface ArenaAnswerResult {
-  correct: boolean
-  correctOptionId: number
-  points: number
-  you: { score: number }
-  opponent: { answered: true; correct: boolean; score: number }
-  next?: ReturnType<typeof arenaQuestion>
+  accepted: true
+  phase: 'answering' | 'reveal' | 'finished'
+  roundEndsAt?: string
   result?: { winner: Winner; scoreA: number; scoreB: number }
 }
 
@@ -168,6 +185,7 @@ export const battlesRepo = defineRepository({
       playerA: UserRow,
       playerB: UserRow,
       prng: PrngRegistry,
+      robot = false,
     ): BattleRow => {
       const levelId = levelIdOf(playerA)
       const row = store.insert({
@@ -193,6 +211,10 @@ export const battlesRepo = defineRepository({
         finishedAt: null,
         questionIds: [],
         seeded: false,
+        questionCount: params.questionCount ?? ARENA_QUESTIONS,
+        robot,
+        roundStartMs: m16Now(),
+        revealUntilMs: null,
       })
       const ids = drawQuestionIds(params, levelId, prng.fresh(`m16:battle:${row.id}:pool`))
       if (!ids) throw new M16Error('VALIDATION_ERROR', 'Soalan tidak mencukupi.')
@@ -200,6 +222,7 @@ export const battlesRepo = defineRepository({
     }
 
     const paramsOf = (q: BattleQueueRow): Omit<BattleParams, 'openToAll'> => ({
+      questionCount: q.questionCount ?? ARENA_QUESTIONS,
       questionType: q.questionType,
       subjectId: q.subjectId,
       pkskDomainId: q.pkskDomainId,
@@ -242,7 +265,7 @@ export const battlesRepo = defineRepository({
     const finish = (b: BattleRow, viewerId: number): BattleRow => {
       const done = store.update(b.id, {
         status: 'finished',
-        winner: winnerOf(b.scoreA, b.scoreB),
+        winner: liveWinnerOf(b.scoreA, b.scoreB),
         finishedAt: nowIso(),
       })
       report(done, viewerId)
@@ -252,9 +275,16 @@ export const battlesRepo = defineRepository({
     const matchWithBot = (q: BattleQueueRow, prng: PrngRegistry): BattleQueueRow => {
       const owner = mustUser(q.ownerId)
       const bot = pickBot(owner, q.mode, q.openToAll, prng.fresh(`m16:battle:${String(q.id)}`))
-      const battle = createBattle(q.mode, paramsOf(q), owner, bot, prng)
+      const battle = createBattle(q.mode, paramsOf(q), owner, bot, prng, q.sim.robot === true)
       return queues.update(q.id, { status: 'matched', battleUuid: battle.id, challenger: null })
     }
+
+    /** The matched poll; `robot: true` when the battle's seat B is the robot (48 GAME-01). */
+    const matchedPoll = (q: BattleQueueRow): PollMatchResult => ({
+      status: 'matched',
+      battle_uuid: q.battleUuid as string,
+      ...(store.get(q.battleUuid as string)?.robot === true ? { robot: true } : {}),
+    })
 
     const expireIfDue = (q: BattleQueueRow, now: number): BattleQueueRow | null => {
       if (q.status !== 'waiting' && q.status !== 'incoming_challenge') return null
@@ -289,6 +319,19 @@ export const battlesRepo = defineRepository({
       ): number {
         return transaction(() => {
           const owner = mustUser(userId)
+          if (mode === 'school_battle' && owner.schoolId === null) {
+            throw new M16Error('VALIDATION_ERROR', 'Pelajar tiada sekolah.')
+          }
+          const dayStart = startOfDay(m16Now())
+          const today = queues.query({ where: { ownerId: userId } }).rows.filter(
+            (r) => r.createdAtMs >= dayStart,
+          ).length
+          if (today >= DAILY_MAX) {
+            const retryAfter = Math.max(1, Math.ceil((dayStart + DAY_MS - m16Now()) / 1000))
+            throw new M16Error('DAILY_LIMIT', DAILY_LIMIT_MESSAGE, undefined, {
+              retryAfter: String(retryAfter),
+            })
+          }
           const ids = drawQuestionIds(params, levelIdOf(owner), prng.fresh('m16:pool-check'))
           if (!ids) throw new M16Error('VALIDATION_ERROR', 'Soalan tidak mencukupi.')
           const sim: SimSpec = pendingSim ?? { mode: 'match' }
@@ -302,6 +345,7 @@ export const battlesRepo = defineRepository({
             pkskDomainId: params.pkskDomainId,
             pkskTargetLevel: params.pkskTargetLevel,
             openToAll: params.openToAll,
+            questionCount: params.questionCount ?? ARENA_QUESTIONS,
             status: 'waiting',
             challenger: null,
             battleUuid: null,
@@ -320,8 +364,7 @@ export const battlesRepo = defineRepository({
         return transaction(() => {
           let q = ownQueue(userId, queueId)
           if (!q) return { status: 'not_found' }
-          if (q.status === 'matched')
-            return { status: 'matched', battle_uuid: q.battleUuid as string }
+          if (q.status === 'matched') return matchedPoll(q)
           if (q.status === 'expired' || q.status === 'abandoned') return { status: 'expired' }
           const now = m16Now()
           if (q.sim.mode === 'not_found') return { status: 'not_found' }
@@ -364,7 +407,7 @@ export const battlesRepo = defineRepository({
           }
           if (q.sim.mode === 'match' && q.waitPolls >= (q.sim.afterPolls ?? MATCH_ON_POLL)) {
             q = matchWithBot(q, prng)
-            return { status: 'matched', battle_uuid: q.battleUuid as string }
+            return matchedPoll(q)
           }
           return { status: 'waiting' }
         })
@@ -412,11 +455,16 @@ export const battlesRepo = defineRepository({
       ): { id: number; name: string; school: string; avatar: string | null }[] {
         const term = q.trim()
         if (term.length < 2) return []
+        // Own school only (48 GAME-01, FR-GM-01.6); a pupil with no school finds nobody.
+        const home = users.get(viewerId)?.schoolId ?? null
+        if (home === null) return []
         const needle = term.toLowerCase()
         // All students (an e-mail-only hit must not take a slot), name match, A to Z, then 10.
         return users
           .search(term, { role: 'student', limit: Number.MAX_SAFE_INTEGER })
-          .filter((u) => u.id !== viewerId && u.name.toLowerCase().includes(needle))
+          .filter(
+            (u) => u.id !== viewerId && u.schoolId === home && u.name.toLowerCase().includes(needle),
+          )
           .sort((a, b) => a.name.localeCompare(b.name) || a.id - b.id)
           .slice(0, 10)
           .map((u) => ({
@@ -436,10 +484,16 @@ export const battlesRepo = defineRepository({
       ): string {
         return transaction(() => {
           const receiver = typeof receiverId === 'number' ? users.get(receiverId) : undefined
-          if (!receiver || receiver.role !== 'student' || receiver.id === senderId) {
+          const sender = mustUser(senderId)
+          if (
+            !receiver ||
+            receiver.role !== 'student' ||
+            receiver.id === senderId ||
+            sender.schoolId === null ||
+            receiver.schoolId !== sender.schoolId
+          ) {
             throw new M16Error('VALIDATION_ERROR', 'Penerima tidak sah.', 'receiver_id')
           }
-          const sender = mustUser(senderId)
           if (!drawQuestionIds(params, levelIdOf(sender), prng.fresh('m16:pool-check'))) {
             throw new M16Error('VALIDATION_ERROR', 'Soalan tidak mencukupi.')
           }
@@ -452,6 +506,7 @@ export const battlesRepo = defineRepository({
             pkskTargetLevel: params.pkskTargetLevel,
             status: 'pending',
             createdAtMs: m16Now(),
+            questionCount: params.questionCount ?? ARENA_QUESTIONS,
           }).id
         })
       },
@@ -477,17 +532,17 @@ export const battlesRepo = defineRepository({
       acceptInvitation(viewerId: number, uuid: string, prng: PrngRegistry): string {
         return transaction(() => {
           const inv = invitations.get(uuid)
-          if (
-            !inv ||
-            inv.receiverId !== viewerId ||
-            inv.status !== 'pending' ||
-            m16Now() - inv.createdAtMs > INVITATION_EXPIRES_MS
-          ) {
+          if (!inv || inv.receiverId !== viewerId || inv.status !== 'pending') {
             throw new M16Error('NOT_FOUND', 'Cabaran tidak dijumpai.')
+          }
+          if (m16Now() - inv.createdAtMs > INVITATION_EXPIRES_MS) {
+            invitations.update(uuid, { status: 'expired' })
+            throw new M16Error('NOT_FOUND', 'Cabaran tamat tempoh.')
           }
           const battle = createBattle(
             'challenge',
             {
+              questionCount: inv.questionCount ?? ARENA_QUESTIONS,
               questionType: inv.questionType,
               subjectId: inv.subjectId,
               pkskDomainId: inv.pkskDomainId,
@@ -611,7 +666,11 @@ export const battlesRepo = defineRepository({
         }
       },
 
-      /** #16: the arena of a battle the viewer plays; foreign or unknown battles are 404. */
+      /**
+       * #16: the arena of a battle the viewer plays; foreign or unknown battles are 404. Rounds are
+       * shared (48 GAME-01): `answering` until the viewer answers, then the 3 s `reveal` of that
+       * round (the simulated opponent has already answered), then the next round opens.
+       */
       arena(viewerId: number, uuid: string): ArenaView {
         const b = store.get(uuid)
         if (!b || (b.playerA !== viewerId && b.playerB !== viewerId)) {
@@ -620,25 +679,74 @@ export const battlesRepo = defineRepository({
         const you = b.playerA === viewerId ? 'A' : 'B'
         const done = answers.count({ battleUuid: uuid, playerId: viewerId })
         const active = b.status === 'active'
+        const count = b.questionCount ?? ARENA_QUESTIONS
+        const now = m16Now()
+        const revealing =
+          active && done > 0 && b.revealUntilMs != null && now < b.revealUntilMs
+        const roundStart = b.roundStartMs ?? b.createdAtMs
+        const lastRound = (): ArenaReveal | undefined => {
+          if (done === 0) return undefined
+          const rows = answers.query({ where: { battleUuid: uuid } }).rows
+          const mine = rows.find((r) => r.index === done && r.playerId === viewerId)
+          const theirs = rows.find((r) => r.index === done && r.playerId !== viewerId)
+          const key = gradeArena(b.questionIds[done - 1] as number, null)
+          if (!mine || !theirs || !key) return undefined
+          const side = (r: typeof mine) => ({
+            optionId: r.optionId,
+            correct: r.correct,
+            points: r.points,
+          })
+          return {
+            index: done,
+            correctOptionId: key.correctOptionId,
+            you: side(mine),
+            opponent: side(theirs),
+          }
+        }
         const view: ArenaView = {
           uuid,
           status: b.status,
           you,
           players: {
             A: { name: userName(b.playerA), school: schoolName(b.schoolAId) },
-            B: { name: userName(b.playerB), school: schoolName(b.schoolBId) },
+            B: {
+              name: userName(b.playerB),
+              school: schoolName(b.schoolBId),
+              ...(b.robot === true ? { isBot: true } : {}),
+            },
           },
           scores: { A: b.scoreA, B: b.scoreB },
-          index: Math.min(done + 1, ARENA_QUESTIONS),
-          total: ARENA_QUESTIONS,
-          question: active ? arenaQuestion(b.questionIds[done] as number) : null,
-          secondsLeft: active ? QUESTION_SECONDS : 0,
+          index: revealing ? done : Math.min(done + 1, count),
+          total: count,
+          question: !active
+            ? null
+            : arenaQuestion(b.questionIds[revealing ? done - 1 : done] as number),
+          secondsLeft: 0,
+          phase: !active ? 'finished' : revealing ? 'reveal' : 'answering',
         }
-        if (!active) view.result = { winner: b.winner, scoreA: b.scoreA, scoreB: b.scoreB }
+        if (revealing) {
+          view.roundEndsAt = toIsoMyt(b.revealUntilMs as number)
+          view.youAnswered = true
+          const reveal = lastRound()
+          if (reveal) view.reveal = reveal
+        } else if (active) {
+          const elapsed = Math.floor(Math.max(0, now - roundStart) / 1000)
+          view.secondsLeft = Math.max(0, QUESTION_SECONDS - elapsed)
+          view.roundEndsAt = toIsoMyt(roundStart + (QUESTION_SECONDS + GRACE_SECONDS) * 1000)
+          view.youAnswered = false
+        } else {
+          const reveal = lastRound()
+          if (reveal) view.reveal = reveal
+          view.result = { winner: b.winner, scoreA: b.scoreA, scoreB: b.scoreB }
+        }
         return view
       },
 
-      /** #17 (BR-M16-07/08): one answer; the bot answers from its stream; question 10 ends the battle. */
+      /**
+       * #17 (BR-M16-07/08): one answer; the simulated opponent answers from its stream. The response
+       * is only `{accepted, phase, roundEndsAt?}` (+ `result` at the end): no key, no correctness
+       * (ruling 45); those come from the view at `reveal`.
+       */
       answer(
         viewerId: number,
         uuid: string,
@@ -651,6 +759,7 @@ export const battlesRepo = defineRepository({
             throw new M16Error('NOT_FOUND', 'Battle tidak dijumpai.')
           }
           if (b.status !== 'active') throw new M16Error('CONFLICT', 'Battle sudah tamat.')
+          const count = b.questionCount ?? ARENA_QUESTIONS
           const done = answers.count({ battleUuid: uuid, playerId: viewerId })
           const questionId = b.questionIds[done]
           if (input.questionId !== questionId) {
@@ -685,7 +794,7 @@ export const battlesRepo = defineRepository({
           const points = correct ? arenaPoints(whole) : 0
           const index = done + 1
           const you = b.playerA === viewerId ? 'A' : 'B'
-          const bot = botAnswers(prng, uuid)[done] as {
+          const bot = botAnswers(prng, uuid, count)[done] as {
             seconds: number
             correct: boolean
             points: number
@@ -720,28 +829,27 @@ export const battlesRepo = defineRepository({
             score: (botSide === 'A' ? b.scoreA : b.scoreB) + bot.points,
             correct: (botSide === 'A' ? b.correctA : b.correctB) + (bot.correct ? 1 : 0),
           }
+          const revealUntilMs = m16Now() + REVEAL_MS
           const patch: Partial<BattleRow> = {
             scoreA: you === 'A' ? mine.score : theirs.score,
             scoreB: you === 'B' ? mine.score : theirs.score,
             correctA: you === 'A' ? mine.correct : theirs.correct,
             correctB: you === 'B' ? mine.correct : theirs.correct,
             answered: index,
+            revealUntilMs,
+            // the next round opens when the reveal ends
+            roundStartMs: revealUntilMs,
           }
           let current = store.update(uuid, patch)
-          const out: ArenaAnswerResult = {
-            correct,
-            correctOptionId: graded.correctOptionId,
-            points,
-            you: { score: mine.score },
-            opponent: { answered: true, correct: bot.correct, score: theirs.score },
-          }
-          if (index >= ARENA_QUESTIONS) {
+          if (index >= count) {
             current = finish(current, viewerId)
-            out.result = { winner: current.winner, scoreA: current.scoreA, scoreB: current.scoreB }
-          } else {
-            out.next = arenaQuestion(current.questionIds[index] as number)
+            return {
+              accepted: true,
+              phase: 'finished',
+              result: { winner: current.winner, scoreA: current.scoreA, scoreB: current.scoreB },
+            }
           }
-          return out
+          return { accepted: true, phase: 'reveal', roundEndsAt: toIsoMyt(revealUntilMs) }
         })
       },
 

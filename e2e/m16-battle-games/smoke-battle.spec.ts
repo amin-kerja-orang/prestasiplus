@@ -296,7 +296,9 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
       await expect(timer(page)).toHaveText('0:00')
       for (let n = 1; n <= 39; n++) await pollOnce(mock, n)
       await mock.advanceTime(3000)
-      await expect(err(page)).toHaveText('Tiada lawan dijumpai dalam masa 2 minit. Sila cuba lagi.')
+      // 48 AC-GM-01.5 / ruling 33: "Tiada lawan dijumpai." with the "Cuba Lagi" action
+      await expect(err(page)).toContainText('Tiada lawan dijumpai.')
+      await expect(page.getByTestId('battle-retry')).toHaveText('Cuba Lagi')
       await page.getByTestId('battle-error-close').click()
       await expect(err(page)).toBeHidden()
 
@@ -304,7 +306,8 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
       await quick(page).click()
       await expect(timer(page)).toBeVisible()
       await mock.advanceTime(3000)
-      await expect(err(page)).toHaveText('Tiada lawan dijumpai. Sila cuba lagi.')
+      await expect(err(page)).toContainText('Tiada lawan dijumpai.')
+      await expect(page.getByTestId('battle-retry')).toBeVisible()
     },
   )
 
@@ -539,7 +542,8 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
       const text = (await fb.innerText()).trim()
       expect(text).toMatch(/^\+\d+/)
       await expect(page.getByTestId('battle-arena-opponent')).toContainText('Lawan:')
-      await mock.advanceTime(1500)
+      // The reveal lasts until the view's roundEndsAt (3 s), then the next round opens.
+      await mock.advanceTime(3000)
       await expect(page.getByTestId('battle-arena-progress')).toHaveText('Soalan 2/10')
 
       const confirm = acceptNextDialog(page, {
@@ -548,7 +552,7 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
       })
       await page.getByTestId('battle-arena-forfeit').click()
       await confirm
-      await expect(page.getByTestId('battle-arena-title')).toHaveText('Kalah')
+      await expect(page.getByTestId('battle-arena-title')).toHaveText('Anda telah menyerah.')
       await page.goto(arenaUrl)
 
       // Another user and a random uuid are the 404 page.
@@ -578,13 +582,16 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
       for (let i = 1; i <= 10; i++) {
         await expect(page.getByTestId('battle-arena-progress')).toHaveText(`Soalan ${String(i)}/10`)
         await page.getByTestId('battle-arena-option').first().click()
-        await expect(page.getByTestId('battle-arena-feedback')).toBeVisible()
-        await mock.advanceTime(1500)
+        // The last answer ends the battle: the result follows at once, with no reveal round.
+        if (i < 10) {
+          await expect(page.getByTestId('battle-arena-feedback')).toBeVisible()
+          await mock.advanceTime(3000)
+        }
       }
       const result = page.getByTestId('battle-arena-title')
-      await expect(result).toHaveText(/^(Menang|Seri|Kalah)$/)
+      await expect(result).toHaveText(/^(Anda menang!|Seri!|Anda kalah\.)$/)
       await expect(page.getByTestId('battle-arena-final')).toHaveText(/^\d+ vs \d+$/)
-      await expect(page.getByTestId('battle-arena-again')).toHaveText('Mula Battle')
+      await expect(page.getByTestId('battle-arena-again')).toHaveText('Kembali ke Arena')
       await page.getByTestId('battle-arena-history').click()
       await expect(page).toHaveURL(/\/battle\/history$/)
       const first = page.getByTestId('battle-recent-row').first()
