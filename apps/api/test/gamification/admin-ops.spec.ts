@@ -15,6 +15,7 @@ describe('M14 admin operations: settings, reward control, lucky draws (BE-23, AC
   let admin: Client
 
   const settingRow = async (key: string) => Number((await t.db.query<{ v: string }>(`select value::text v from gamification_settings where key = $1`, [key]))[0]!.v)
+  const rewardRow = async () => (await t.db.query<{ coins_per_correct: number; redeem_budget_sen: number; session_year: number; mini_games_give_coins: boolean; updated_by: string | null }>(`select coins_per_correct, redeem_budget_sen, session_year, mini_games_give_coins, updated_by::text from reward_settings`))[0]!
   const prizeRows = (drawId: string) => t.db.query<{ label: string; value_sen: number; qty: number; position: number }>(`select label, value_sen, qty, position from draw_prizes where draw_id = $1 order by position`, [drawId])
   const auditCount = async (action: string) => Number((await t.db.query<{ n: string }>(`select count(*)::text n from audit_events where action = $1`, [action]))[0]!.n)
 
@@ -62,7 +63,23 @@ describe('M14 admin operations: settings, reward control, lucky draws (BE-23, AC
         const err = fail(await admin.put('/admin/gamification/settings', { settings: [{ key: 'flat_quiz_reward', value: 7 }, bad] }), 422, 'VALIDATION_ERROR', SUMMARY)
         expect(err.fields).toEqual({ settings: SUMMARY })
       }
+      expect((await rewardRow()).coins_per_correct).toBe(1)
+    })
+
+    it('the four reward_settings keys are read from and written to that row; their old rows stay as they were (S7-T05)', async () => {
+      const res = await admin.put('/admin/gamification/settings', { settings: [{ key: 'flat_quiz_reward', value: 7 }, { key: 'games_award_syiling', value: 1 }] })
+      const list = GamificationSettingsListSchema.parse(dataOf(res))
+      expect(list.find((s) => s.key === 'flat_quiz_reward')!.value).toBe(7)
+      expect(list.find((s) => s.key === 'games_award_syiling')!.value).toBe(1)
+      expect(list.find((s) => s.key === 'reward_budget_sen_session')!.value).toBe(300)
+      expect(await rewardRow()).toMatchObject({ coins_per_correct: 7, mini_games_give_coins: true })
       expect(await settingRow('flat_quiz_reward')).toBe(1)
+      expect(await settingRow('games_award_syiling')).toBe(0)
+      expect(await settingRow('reward_budget_sen_session')).toBe(1000)
+      for (const bad of [{ key: 'flat_quiz_reward', value: 21 }, { key: 'reward_budget_sen_session', value: 100_001 }, { key: 'current_session_year', value: 2019 }, { key: 'games_award_syiling', value: 2 }]) {
+        expect(fail(await admin.put('/admin/gamification/settings', { settings: [bad] }), 422, 'VALIDATION_ERROR', SUMMARY).fields).toEqual({ settings: SUMMARY })
+      }
+      await admin.put('/admin/gamification/settings', { settings: [{ key: 'flat_quiz_reward', value: 1 }, { key: 'games_award_syiling', value: 0 }] })
     })
   })
 
@@ -70,7 +87,7 @@ describe('M14 admin operations: settings, reward control, lucky draws (BE-23, AC
     it('GET: tiles (RM0.00 / 0 / 0 for the session year), the five shared settings, 11 rewards with costRm, the sample draw with its ordered pool', async () => {
       const d = GamificationRewardControlSchema.parse(dataOf(await admin.get('/admin/reward-control')))
       expect(d.tiles).toEqual({ sessionYear: 2026, liabilityRm: 0, students: 0, claims: 0 })
-      expect(d.settings).toEqual({ rewardBudgetSenSession: 1000, rewardBudgetSenMonth: 300, flatQuizReward: 1, currentSessionYear: 2026, gamesAwardSyiling: 0 })
+      expect(d.settings).toEqual({ rewardBudgetSenSession: 300, rewardBudgetSenMonth: 300, flatQuizReward: 1, currentSessionYear: 2026, gamesAwardSyiling: 0, redeemBudget: 300, flatCoins: 1, sessionYear: 2026, miniGamesCoins: false })
       expect(d.rewards).toHaveLength(11)
       expect(d.rewards.every((r) => r.costRm === r.costValueSen / 100 && r.type === r.type.toUpperCase())).toBe(true)
       expect(d.draws).toHaveLength(1)
@@ -93,18 +110,53 @@ describe('M14 admin operations: settings, reward control, lucky draws (BE-23, AC
     it('PUT settings: the five shared keys (camelCase or snake_case), only the posted ones change, the S9 list sees them', async () => {
       const res = await admin.put('/admin/reward-control/settings', { flatQuizReward: '2', reward_budget_sen_month: 400, currentSessionYear: '', gamesAwardSyiling: null })
       expect(res.status).toBe(200)
-      expect(GamificationEconomySettingsSchema.parse(dataOf(res))).toEqual({ rewardBudgetSenSession: 1000, rewardBudgetSenMonth: 400, flatQuizReward: 2, currentSessionYear: 2026, gamesAwardSyiling: 0 })
+      expect(GamificationEconomySettingsSchema.parse(dataOf(res))).toEqual({ rewardBudgetSenSession: 300, rewardBudgetSenMonth: 400, flatQuizReward: 2, currentSessionYear: 2026, gamesAwardSyiling: 0, redeemBudget: 300, flatCoins: 2, sessionYear: 2026, miniGamesCoins: false })
       const s9 = GamificationSettingsListSchema.parse(dataOf(await admin.get('/admin/gamification/settings')))
       expect(s9.find((s) => s.key === 'flat_quiz_reward')!.value).toBe(2)
       await admin.put('/admin/reward-control/settings', { flat_quiz_reward: 1, rewardBudgetSenMonth: 300 })
     })
 
-    it('PUT settings 422: a non-integer is fields[<camelName>], nothing posted is fields.settings, a negative is 422 without fields', async () => {
+    it('PUT settings: the four API-ADM-16 names write reward_settings with updated_by and audit before and after; a new name wins over an older one (S7-T05)', async () => {
+      const res = await admin.put('/admin/reward-control/settings', { redeemBudget: 500, flatCoins: 3, flatQuizReward: 9, sessionYear: 2027, miniGamesCoins: true })
+      expect(res.status).toBe(200)
+      expect(GamificationEconomySettingsSchema.parse(dataOf(res))).toEqual({ rewardBudgetSenSession: 500, rewardBudgetSenMonth: 300, flatQuizReward: 3, currentSessionYear: 2027, gamesAwardSyiling: 1, redeemBudget: 500, flatCoins: 3, sessionYear: 2027, miniGamesCoins: true })
+      const row = await rewardRow()
+      expect(row).toMatchObject({ coins_per_correct: 3, redeem_budget_sen: 500, session_year: 2027, mini_games_give_coins: true })
+      const [audit] = await t.db.query<{ actor_user_id: string; detail: Record<string, unknown> }>(`select actor_user_id::text, detail from audit_events where action = 'gamification.settings.updated' order by id desc limit 1`)
+      expect(row.updated_by).toBe(audit!.actor_user_id)
+      expect(audit!.detail).toMatchObject({
+        before: { coinsPerCorrect: 1, redeemBudgetSen: 300, sessionYear: 2026, miniGamesGiveCoins: false },
+        after: { coinsPerCorrect: 3, redeemBudgetSen: 500, sessionYear: 2027, miniGamesGiveCoins: true },
+      })
+      await admin.put('/admin/reward-control/settings', { redeemBudget: 300, flatCoins: 1, sessionYear: 2026, miniGamesCoins: false })
+    })
+
+    it('PUT settings accepts the inclusive bounds; a value outside its range is 422 with the message of its P09 row and saves nothing (S7-T05)', async () => {
+      for (const body of [{ flatCoins: 0 }, { flatCoins: 20 }, { redeemBudget: 0 }, { redeemBudget: 100_000 }, { sessionYear: 2020 }, { sessionYear: 2100 }]) expect((await admin.put('/admin/reward-control/settings', body)).status).toBe(200)
+      await admin.put('/admin/reward-control/settings', { redeemBudget: 300, flatCoins: 1, sessionYear: 2026 })
+      const fieldsOf = async (body: object) => fail(await admin.put('/admin/reward-control/settings', body), 422, 'VALIDATION_ERROR', SUMMARY).fields
+      expect(await fieldsOf({ flatCoins: 21 })).toEqual({ flatCoins: 'Nilai mesti antara 0 dan 20.' })
+      expect(await fieldsOf({ flatCoins: -1 })).toEqual({ flatCoins: 'Nilai mesti antara 0 dan 20.' })
+      expect(await fieldsOf({ redeemBudget: 100_001 })).toEqual({ redeemBudget: 'Bajet tidak sah.' })
+      expect(await fieldsOf({ sessionYear: 2101 })).toEqual({ sessionYear: 'Tahun tidak sah.' })
+      expect(await fieldsOf({ miniGamesCoins: 'x' })).toEqual({ miniGamesCoins: 'Medan ini tidak sah.' })
+      expect(await fieldsOf({ flatCoins: 5, redeemBudget: -1 })).toEqual({ redeemBudget: 'Bajet tidak sah.' })
+      expect(await rewardRow()).toMatchObject({ coins_per_correct: 1, redeem_budget_sen: 300, session_year: 2026, mini_games_give_coins: false })
+    })
+
+    it('a removed row reads as the DM-48 defaults and the next save puts it back (S7-T05)', async () => {
+      await t.db.query('delete from reward_settings')
+      expect(GamificationRewardControlSchema.parse(dataOf(await admin.get('/admin/reward-control'))).settings).toMatchObject({ redeemBudget: 300, flatCoins: 1, sessionYear: 2026, miniGamesCoins: false })
+      await admin.put('/admin/reward-control/settings', { flatCoins: 1 })
+      expect(await rewardRow()).toMatchObject({ coins_per_correct: 1, redeem_budget_sen: 300, session_year: 2026, mini_games_give_coins: false })
+    })
+
+    it('PUT settings 422: a non-integer is fields[<camelName>], nothing posted is fields.settings, a negative that stays in gamification_settings is 422 without fields', async () => {
       expect(fail(await admin.put('/admin/reward-control/settings', { flatQuizReward: 'abc', rewardBudgetSenMonth: 1.5 }), 422, 'VALIDATION_ERROR', SUMMARY).fields).toEqual({ flatQuizReward: 'Medan ini tidak sah.', rewardBudgetSenMonth: 'Medan ini tidak sah.' })
       expect(fail(await admin.put('/admin/reward-control/settings', {}), 422, 'VALIDATION_ERROR', SUMMARY).fields).toEqual({ settings: 'Medan ini diperlukan.' })
-      expect(fail(await admin.put('/admin/reward-control/settings', { flatQuizReward: -1 }), 422, 'VALIDATION_ERROR', SUMMARY).fields).toBeUndefined()
-      expect(fail(await admin.put('/admin/reward-control/settings', { gamesAwardSyiling: 5 }), 422, 'VALIDATION_ERROR', SUMMARY).fields).toBeUndefined()
-      expect(await settingRow('games_award_syiling')).toBe(0)
+      expect(fail(await admin.put('/admin/reward-control/settings', { rewardBudgetSenMonth: -1 }), 422, 'VALIDATION_ERROR', SUMMARY).fields).toBeUndefined()
+      expect(fail(await admin.put('/admin/reward-control/settings', { gamesAwardSyiling: 5 }), 422, 'VALIDATION_ERROR', SUMMARY).fields).toEqual({ gamesAwardSyiling: 'Medan ini tidak sah.' })
+      expect((await rewardRow()).mini_games_give_coins).toBe(false)
     })
 
     it('PUT rewards/:id/cost saves the real cost and RM follows; 422 for negative or non-integer, 404 for an unknown or non-numeric id', async () => {

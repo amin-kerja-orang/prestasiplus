@@ -7,13 +7,17 @@
  * - Opening resets the reasons, the comment and the state (as live `openReport`).
  * - "Hantar Laporan" is disabled while no reason is ticked or while sending ("Menghantar...").
  * - Sent: "Terima Kasih!" + the server message (fallback "Laporan berjaya dihantar.") + "Tutup".
- *   A failed request shows the same view with `failureText` (live quirk, SRS FR-M04-69 / M05 E2E-35).
+ *   A failed request does NOT show this view (FR-MUR-54-7; the live site did, a V1 defect FD-MUR-28): the form
+ *   stays open with the reasons and comment kept, an inline `role="alert"` line shows the error, and submit
+ *   stays enabled for a retry. 409 / 403 show the server's own message, 429 the contract's daily-cap text; other errors `failureText`.
  * - Props: `source` (default `spm` for mcq, `structured_attempt` for structured), `failureText`
- *   (default "Ralat. Sila cuba lagi."), `tints` (reason → ticked colour; `tint` is an alias).
+ *   (default "Gagal menghantar laporan. Sila cuba lagi."), `tints` (reason → ticked colour; `tint` is an alias).
  * - Closes on "Batal", the X, the backdrop and Esc without sending (BaseModal "margin", no ARIA, D10).
  */
 import { Check, Flag, LoaderCircle, Send, X } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
+
+import { QUESTION_REPORT_MESSAGES } from '@pp/contract'
 
 import { ApiError } from '@/api'
 import { BaseModal } from '@/components/overlay'
@@ -70,6 +74,8 @@ const submitted = ref(false)
 const message = ref('')
 /** The server's 422 `fields.reasons` text (REQ-B-046); the form stays open. */
 const reasonsError = ref('')
+/** A failed send (not the 422 reasons case): shown inline, the form stays open. */
+const submitError = ref('')
 const atMax = computed(() => selected.value.length >= REPORT_REASONS_MAX)
 
 /** Bumped on every reopen and submit; a response of an older request is ignored. */
@@ -83,6 +89,7 @@ function reset(): void {
   submitted.value = false
   message.value = ''
   reasonsError.value = ''
+  submitError.value = ''
 }
 
 watch(
@@ -111,6 +118,8 @@ async function submit(): Promise<void> {
   if (selected.value.length === 0 || loading.value) return
   loading.value = true
   reasonsError.value = ''
+  submitError.value = ''
+  let sent = false
   const mine = ++requestSeq
   try {
     const res = await createQuestionReport({
@@ -124,6 +133,7 @@ async function submit(): Promise<void> {
     })
     if (mine !== requestSeq) return
     message.value = res.message || DEFAULT_SUCCESS
+    sent = true
     emit('reported', { ok: true, message: message.value })
   } catch (err) {
     if (mine !== requestSeq) return
@@ -132,12 +142,19 @@ async function submit(): Promise<void> {
       loading.value = false
       return
     }
-    message.value = props.failureText
-    emit('reported', { ok: false, message: message.value })
+    // HTTP mode replaces every 429 message with a generic rate-limit text: the report cap has its own.
+    const own =
+      err instanceof ApiError && err.status === 429
+        ? QUESTION_REPORT_MESSAGES.dailyCap
+        : err instanceof ApiError && [409, 403].includes(err.status) && err.message
+          ? err.message
+          : props.failureText
+    submitError.value = own
+    emit('reported', { ok: false, message: own })
   } finally {
     if (mine === requestSeq) {
       loading.value = false
-      if (!reasonsError.value) submitted.value = true
+      if (sent) submitted.value = true
     }
   }
 }
@@ -222,12 +239,12 @@ const BUTTON =
             </label>
           </div>
           <p
-            v-if="reasonsError"
-            class="mt-2 text-sm text-red-600"
+            v-if="reasonsError || submitError"
+            class="mt-2 text-sm break-words text-red-600"
             role="alert"
-            data-testid="report-reasons-error"
+            :data-testid="reasonsError ? 'report-reasons-error' : 'report-submit-error'"
           >
-            {{ reasonsError }}
+            {{ reasonsError || submitError }}
           </p>
         </div>
 

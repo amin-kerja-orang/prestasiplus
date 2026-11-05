@@ -132,15 +132,15 @@ const json = (schema: z.ZodType, description: string) => ({
 })
 const err = (description: string) => json(ErrorBodySchema, description)
 
-const UNAUTHORIZED = err('UNAUTHORIZED "Unauthenticated." (no valid session).')
+const UNAUTHORIZED = err('UNAUTHORIZED "Sesi anda telah tamat. Sila log masuk semula." (no valid session).')
 const FORBIDDEN_AS = err(
-  'FORBIDDEN "This action is unauthorized." (role is not admin or school_admin, or a school_admin whose user has no school).',
+  'FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role is not admin or school_admin, or a school_admin whose user has no school).',
 )
 const FORBIDDEN_ATS = err(
-  'FORBIDDEN "This action is unauthorized." (role is not admin, teacher or school_admin, or a school_admin whose user has no school).',
+  'FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role is not admin, teacher or school_admin, or a school_admin whose user has no school).',
 )
 const NOT_FOUND_SCOPE = err(
-  'NOT_FOUND "Not Found." for an unknown id and for an id outside the viewer scope (never 403, so ids cannot be probed).',
+  'NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" for an unknown id and for an id outside the viewer scope (never 403, so ids cannot be probed).',
 )
 
 const SCOPE_NOTE =
@@ -190,8 +190,8 @@ export function registerCommandCenterAdminPaths(registry: OpenAPIRegistry): void
     responses: {
       200: json(CommandCenterSchoolDrillResponseSchema, 'Teachers, pupils and logins of the school.'),
       401: UNAUTHORIZED,
-      403: err('FORBIDDEN "This action is unauthorized." (role is not admin).'),
-      404: err('NOT_FOUND "Not Found." (unknown school).'),
+      403: err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role is not admin).'),
+      404: err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (unknown school).'),
     },
   })
 
@@ -326,7 +326,7 @@ export function registerCommandCenterAdminPaths(registry: OpenAPIRegistry): void
     responses: {
       200: json(ServerStatusResponseSchema, 'The readings.'),
       401: UNAUTHORIZED,
-      403: err('FORBIDDEN "This action is unauthorized." (role is not admin).'),
+      403: err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role is not admin).'),
     },
   })
 }

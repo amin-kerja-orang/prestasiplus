@@ -97,7 +97,7 @@ const SlugParams = z.object({
   slug: z.string().min(1).meta({ description: 'Product slug (unique).' }),
 })
 const SellerIdParams = z.object({
-  id: IdSchema.meta({ description: 'Digits only; a non-numeric value answers 404 "Not Found.".' }),
+  id: IdSchema.meta({ description: 'Digits only; a non-numeric value answers 404 "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?".' }),
 })
 const csrf = z.object({
   'X-CSRF-Token': z.string().min(1).meta({ description: 'Value of Session.csrf; required on mutating requests.' }),

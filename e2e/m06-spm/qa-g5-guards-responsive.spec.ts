@@ -12,7 +12,7 @@ import type { Page } from '@playwright/test'
 import { addInitSession } from '../fixtures/mock-page'
 import { expectNoHorizontalScroll, expectTabTitle, isDesktopShell, moduleTag, navigateInApp, viewportWidth } from '../support'
 import { expect, test } from './fixtures'
-import { ADMIN, NOT_FOUND, PELAJAR, PELAJAR2, tid } from './support'
+import { ADMIN, NOT_FOUND, PELAJAR, PELAJAR2, shellTitle, tid } from './support'
 
 test.describe.configure({ timeout: 360_000 })
 
@@ -171,16 +171,16 @@ test.describe('QA-G5 M06 menus', { tag: [moduleTag(6)] }, () => {
     await gotoApp('/spm')
     await expect(tid(page, 'spm-hub-page')).toBeVisible({ timeout: 60_000 })
     if (isDesktopShell(page)) {
-      const side = tid(page, 'shell-user-sidebar')
+      const side = tid(page, 'pembelajaran-sidebar')
       await expect(side.locator('a[href="/spm"]').first()).toContainText('SPM')
       await expect(side.locator('a[href="/spm"]').first()).toBeVisible()
       await expect(side.locator('a[href="/spm-mock"]').first()).toContainText('SPM Mock Exam')
     } else {
-      const bottom = tid(page, 'shell-user-bottom-nav').locator('a[href="/spm"]')
+      const bottom = tid(page, 'pembelajaran-bottom-nav').locator('a[href="/spm"]')
       await expect(bottom).toBeVisible()
       await expect(bottom).toContainText('SPM')
-      await tid(page, 'shell-user-hamburger').click()
-      await expect(tid(page, 'shell-user-drawer').locator('a[href="/spm"]').first()).toBeVisible()
+      await tid(page, 'pembelajaran-bottom-nav').getByText('Lagi').click()
+      await expect(tid(page, 'pembelajaran-lagi-nav').locator('a[href="/spm"]').first()).toBeVisible()
     }
   })
 
@@ -191,15 +191,17 @@ test.describe('QA-G5 M06 menus', { tag: [moduleTag(6)] }, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/spm-mock')
-    await expect(tid(page, 'shell-admin-title')).toBeVisible({ timeout: 60_000 })
-    let scope = tid(page, 'shell-admin-sidebar')
-    if (isDesktopShell(page)) {
-      const link = scope.locator('a[href="/spm/tahun-lepas"]').first()
-      if (!(await link.isVisible())) await scope.getByText('SPM', { exact: true }).first().click()
-    } else {
-      await tid(page, 'shell-admin-bottom-nav').getByText('Lagi').click()
-      scope = tid(page, 'shell-admin-lagi')
+    await expect(shellTitle(page)).toBeVisible({ timeout: 60_000 })
+    let scope = tid(page, 'pentadbiran-sidebar')
+    if (!isDesktopShell(page)) {
+      await tid(page, 'pentadbiran-menu-button').click()
+      scope = page.getByRole('dialog')
+      await expect(scope).toBeVisible()
     }
+    await scope.getByText('Kertas & SPM', { exact: true }).first().click()
+    await expect(scope.locator('a[href="/admin/spm/soalan"]').first()).toBeVisible()
+    // Fact gone, left failing (S0, S3-T03 report): D113 makes `src/shells/pentadbiran/menu.ts` the only
+    // admin menu, and it has no link to these pupil routes (KS-03 to KS-05 carry no route).
     for (const [name, href] of [
       ['Databank Soalan', '/spm/tahun-lepas'],
       ['Latih Tubi', '/spm/latih-tubi'],
