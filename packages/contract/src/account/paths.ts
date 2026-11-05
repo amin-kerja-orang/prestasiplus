@@ -103,7 +103,7 @@ export function registerAccountPaths(registry: OpenAPIRegistry): void {
     'X-CSRF-Token': z.string().min(1).meta({ description: 'Value of Session.csrf; required on authenticated mutating requests.' }),
   })
   const body = (schema: z.ZodType) => ({ required: true, content: { 'application/json': { schema } } })
-  const unauthorized = err('UNAUTHORIZED "Unauthenticated." (no valid session).')
+  const unauthorized = err('UNAUTHORIZED "Sesi anda telah tamat. Sila log masuk semula." (no valid session).')
   const csrfInvalid = err('CSRF_INVALID (missing or wrong X-CSRF-Token).')
   const PCR = 'PASSWORD_CHANGE_REQUIRED (shared common code, 403): while the account must change its password (session.mustChangePassword) every authenticated route except GET /session, PUT /me/password and POST /auth/logout answers this.'
   const csrfOrPcr = err('CSRF_INVALID (missing or wrong X-CSRF-Token), or ' + PCR)

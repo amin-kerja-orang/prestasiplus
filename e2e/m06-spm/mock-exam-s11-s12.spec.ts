@@ -9,6 +9,7 @@ import type { Page } from '@playwright/test'
 import { ALESA_ON } from '../support/alesa'
 import { expect, test } from './fixtures'
 import { open } from './mock-exam-nav'
+import { shellTitle } from './support'
 import {
   expectNoHorizontalScroll,
   expectTabTitle,
@@ -33,10 +34,10 @@ test.describe('M06 S11 mock exam form and list', { tag: [moduleTag(6)] }, () => 
   }) => {
     await loginAs(PELAJAR)
     await open(page, '/spm-mock')
-    await expectTabTitle(page, 'SPM Mock Exam')
-    await expect(tid(page, 'shell-user-title')).toHaveText('SPM Mock Exam')
-    await expect(tid(page, 'mock-hero')).toContainText('📝 SPM Mock Exam')
-    await expect(tid(page, 'mock-hero')).toContainText(
+    await expectTabTitle(page, 'SPM Mock Exam | PRESTASIPLUS')
+    await expect(shellTitle(page)).toHaveText('SPM Mock Exam')
+    await expect(tid(page, 'mock-title')).toHaveText('📝 SPM Mock Exam')
+    await expect(tid(page, 'mock-page')).toContainText(
       'Mock SPM penuh dengan timer + auto-grade + weakness analysis. Boleh attempt setiap bulan.',
     )
     await expect(tid(page, 'duta-title')).toHaveText('⭐ Maestro SPM Untuk Anda')
@@ -72,8 +73,12 @@ test.describe('M06 S11 mock exam form and list', { tag: [moduleTag(6)] }, () => 
     ])
     await expect(tid(page, 'mock-paper')).toHaveValue('1')
     await expect(tid(page, 'mock-generate')).toHaveText('🎯 Jana Mock SPM')
-    await expect(page.locator('label[for=mock-subject]')).toHaveText('Subjek')
-    await expect(page.locator('label[for=mock-subject]')).toHaveCSS('text-transform', 'uppercase')
+    await expect(page.getByLabel('Subjek').and(tid(page, 'mock-subject'))).toHaveCount(1)
+    // Fact gone in v2, left failing (S3-T03 report): DsFormField labels are not upper-cased.
+    await expect.soft(page.locator('label', { hasText: 'Subjek' })).toHaveCSS(
+      'text-transform',
+      'uppercase',
+    )
 
     await tid(page, 'mock-generate').click()
     expect(await tid(page, 'mock-form').evaluate((f: HTMLFormElement) => f.checkValidity())).toBe(
@@ -87,8 +92,11 @@ test.describe('M06 S11 mock exam form and list', { tag: [moduleTag(6)] }, () => 
   test('E2E-M06-30 admin rows 317 and 16; student chip colours', async ({ page, loginAs }) => {
     await loginAs(ADMIN)
     await open(page, '/spm-mock')
-    await expect(tid(page, 'shell-admin-title')).toHaveText('SPM Mock Exam')
-    await expect(page.getByTestId('shell-admin-subtitle')).toHaveCount(0)
+    await expect(shellTitle(page)).toHaveText('SPM Mock Exam')
+    // The Portal Pentadbiran prints the page lead under the title (PentadbiranLayout).
+    await expect(page.getByTestId('pentadbiran-subtitle')).toHaveText(
+      'Mock SPM penuh dengan timer + auto-grade + weakness analysis. Boleh attempt setiap bulan.',
+    )
     await expect(page.locator('li[data-testid^=mock-row-]')).toHaveCount(2)
     const pending = tid(page, 'mock-row-317')
     await expect(pending.getByTestId('mock-row-title')).toHaveText('Sejarah · Paper 1')
@@ -96,7 +104,8 @@ test.describe('M06 S11 mock exam form and list', { tag: [moduleTag(6)] }, () => 
       '2 bulan yang lepas · Belum submit',
     )
     await expect(pending.getByTestId('mock-row-grade')).toHaveText('Belum')
-    await expect(pending.getByTestId('mock-row-grade')).toHaveCSS('font-size', '13.6px')
+    // Fact gone in v2, left failing (S3-T03 report): every grade chip is one UBadge size.
+    await expect.soft(pending.getByTestId('mock-row-grade')).toHaveCSS('font-size', '13.6px')
     await expect(pending.getByTestId('mock-row-link')).toHaveText('Sambung →')
     await expect(pending.getByTestId('mock-row-link')).toHaveAttribute('href', '/spm-mock/317')
     const done = tid(page, 'mock-row-16')
@@ -105,7 +114,7 @@ test.describe('M06 S11 mock exam form and list', { tag: [moduleTag(6)] }, () => 
       '4 bulan yang lepas · Score: 0/30 (0.00%)',
     )
     await expect(done.getByTestId('mock-row-grade')).toHaveText('G')
-    await expect(done.getByTestId('mock-row-grade')).toHaveCSS('font-size', '24px')
+    await expect.soft(done.getByTestId('mock-row-grade')).toHaveCSS('font-size', '24px')
     await expect(done.getByTestId('mock-row-link')).toHaveText('Lihat →')
     await expect(done.getByTestId('mock-row-link')).toHaveAttribute('href', '/spm-mock/16/result')
     await expectNoHorizontalScroll(page)
@@ -119,21 +128,21 @@ test.describe('M06 S11 mock exam form and list', { tag: [moduleTag(6)] }, () => 
     await open(page, '/spm-mock')
     const grade = (id: number) => tid(page, `mock-row-${String(id)}`).getByTestId('mock-row-grade')
     const expected: [number, string, RegExp][] = [
-      [318, 'A+', /emerald/],
-      [319, 'A', /emerald/],
-      [320, 'B+', /blue/],
-      [321, 'B', /blue/],
-      [322, 'C', /amber/],
-      [323, 'D', /red/],
-      [324, 'E', /red/],
-      [325, 'G', /red/],
+      [318, 'A+', /bg-success/],
+      [319, 'A', /bg-success/],
+      [320, 'B+', /bg-info/],
+      [321, 'B', /bg-info/],
+      [322, 'C', /bg-warning/],
+      [323, 'D', /bg-error/],
+      [324, 'E', /bg-error/],
+      [325, 'G', /bg-error/],
     ]
     for (const [id, text, colour] of expected) {
       await expect(grade(id)).toHaveText(text)
       await expect(grade(id)).toHaveClass(colour)
     }
     await expect(grade(327)).toHaveText('Belum')
-    await expect(grade(327)).toHaveClass(/slate/)
+    await expect(grade(327)).toHaveClass(/bg-elevated/)
     // Newest first.
     const ids = await page
       .locator('li[data-testid^=mock-row-]')
@@ -193,7 +202,7 @@ test.describe('M06 Q4 in-exam placeholder (provisional, L-8)', { tag: [moduleTag
       await expect(page).toHaveURL(/\/spm-mock\/\d+$/)
       const url = new URL(page.url()).pathname
       await expect(tid(page, 'run-title')).toHaveText('Matematik · Paper 1')
-      await expectTabTitle(page, 'SPM Mock Exam')
+      await expectTabTitle(page, 'SPM Mock Exam | PRESTASIPLUS')
       await expect(tid(page, 'mock-timer')).toBeVisible()
       await expect(page.getByRole('button', { name: /pause|jeda|henti/i })).toHaveCount(0)
       await expect(page.locator('[data-testid^=run-item-]').first()).toBeVisible()
@@ -263,19 +272,20 @@ test.describe('M06 S12 mock result', { tag: [moduleTag(6)] }, () => {
   }) => {
     await loginAs(ADMIN)
     await open(page, '/spm-mock/16/result')
-    await expectTabTitle(page, 'Result Mock SPM — Bahasa Melayu')
-    await expect(tid(page, 'shell-admin-title')).toHaveText('Result Mock SPM — Bahasa Melayu')
+    await expectTabTitle(page, 'Result Mock SPM — Bahasa Melayu | PRESTASIPLUS')
+    await expect(shellTitle(page)).toHaveText('Result Mock SPM — Bahasa Melayu')
     const hero = tid(page, 'result-hero')
     await expect(hero).toHaveAttribute('data-hero', 'bad')
-    await expect(hero).toHaveClass(/red/)
+    await expect(tid(page, 'result-grade')).toHaveClass(/text-error/)
     await expect(tid(page, 'result-title')).toHaveText('Bahasa Melayu · Paper 1')
-    // G4 fix: the h1 carries its own white (admin shell has no `-hero` override).
-    await expect(tid(page, 'result-title')).toHaveCSS('color', 'rgb(255, 255, 255)')
+    // G4 fix: the h1 carries its own readable colour (the v2 hero is a plain card, no dark gradient).
+    await expect(tid(page, 'result-title')).toHaveClass(/text-highlighted/)
     await expect(tid(page, 'result-grade')).toHaveText('G')
     await expect(tid(page, 'result-percent')).toHaveText('0.00%')
     await expect(tid(page, 'result-score')).toHaveText('0 / 30 markah')
     await expect(tid(page, 'duta-title')).toHaveText('🎓 Cikgu Pakar Bahasa Melayu')
-    await expect(tid(page, 'duta-title')).toHaveCSS('text-transform', 'uppercase')
+    // Fact gone in v2, left failing (S3-T03 report): the Duta title is not upper-cased.
+    await expect.soft(tid(page, 'duta-title')).toHaveCSS('text-transform', 'uppercase')
     await expect(tid(page, 'duta-text')).toHaveText(
       'Lemah dlm topik tertentu? Cikgu pakar ni boleh bantu anda naik ke A+ next round.',
     )
@@ -301,9 +311,9 @@ test.describe('M06 S12 mock result', { tag: [moduleTag(6)] }, () => {
     await expect(page.getByRole('heading', { name: '📋 Review Setiap Soalan' })).toBeVisible()
     await expect(page.locator('[data-testid^=review-item-]')).toHaveCount(30)
     const first = tid(page, 'review-item-1')
-    await expect(first.getByTestId('review-header')).toHaveText('✗ SOALAN 1 · 0/1 MARKAH', {
-      useInnerText: true,
-    })
+    await expect(first.getByTestId('review-header')).toHaveText('✗ Soalan 1 · 0/1 markah')
+    // Fact gone in v2, left failing (S3-T03 report): the review header is not upper-cased.
+    await expect.soft(first.getByTestId('review-header')).toHaveCSS('text-transform', 'uppercase')
     await expect(first.getByTestId('review-text')).toHaveText(
       "Apakah maksud perkataan 'inovatif' dalam konteks sains dan teknologi?",
     )
@@ -312,7 +322,8 @@ test.describe('M06 S12 mock result', { tag: [moduleTag(6)] }, () => {
     await expect(first.getByTestId('review-feedback')).toHaveText(
       /^Jawapan (betul: |yang betul ialah )A\.?$/,
     )
-    await expect(first.getByTestId('review-feedback')).toHaveCSS('font-style', 'italic')
+    // Fact gone in v2, left failing (S3-T03 report): the feedback line is not italic.
+    await expect.soft(first.getByTestId('review-feedback')).toHaveCSS('font-style', 'italic')
     const actions = tid(page, 'result-actions').getByRole('link')
     await expect(actions).toHaveText(['📝 Mock Lain', '📚 Belajar Topik Lemah'])
     await expect(actions.nth(0)).toHaveAttribute('href', '/spm-mock')
@@ -328,16 +339,18 @@ test.describe('M06 S12 mock result', { tag: [moduleTag(6)] }, () => {
     await open(page, '/spm-mock/318/result')
     await expect(tid(page, 'result-grade')).toHaveText('A+')
     await expect(tid(page, 'result-hero')).toHaveAttribute('data-hero', 'good')
-    await expect(tid(page, 'result-hero')).toHaveClass(/emerald/)
-    const correct = page.locator('.q-review.correct').first()
-    await expect(correct.getByTestId('review-header')).toContainText('✓')
-    await expect(correct).toHaveClass(/emerald/)
-    await expect(page.locator('.q-review.wrong').first()).toHaveClass(/red/)
+    await expect(tid(page, 'result-grade')).toHaveClass(/text-success/)
+    const correct = page.locator('[data-correct=true]').first().getByTestId('review-header')
+    await expect(correct).toContainText('✓')
+    await expect(correct).toHaveClass(/text-success/)
+    await expect(page.locator('[data-correct=false]').first().getByTestId('review-header')).toHaveClass(
+      /text-error/,
+    )
 
     await open(page, '/spm-mock/322/result')
     await expect(tid(page, 'result-grade')).toHaveText('C')
     await expect(tid(page, 'result-hero')).toHaveAttribute('data-hero', 'mid')
-    await expect(tid(page, 'result-hero')).toHaveClass(/amber/)
+    await expect(tid(page, 'result-grade')).toHaveClass(/text-warning/)
     await expectNoHorizontalScroll(page)
   })
 
@@ -379,7 +392,8 @@ test.describe('M06 S12 mock result', { tag: [moduleTag(6)] }, () => {
     await loginAs(ADMIN)
     await open(page, '/spm-mock/16/result')
     const box = await tid(page, 'result-hero').boundingBox()
-    expect(box!.width).toBeLessThanOrEqual(880 + 1)
+    // Fact gone since c653d013f, left failing on desktop (S3-T03 report): no 880 px cap on staff pages.
+    expect.soft(box!.width).toBeLessThanOrEqual(880 + 1)
     await expectNoHorizontalScroll(page)
   })
 })
