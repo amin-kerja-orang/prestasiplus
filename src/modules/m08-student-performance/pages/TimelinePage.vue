@@ -7,6 +7,8 @@
  */
 import { computed, onBeforeUnmount, ref } from 'vue'
 
+import { usePrototypeScope, useRouteExists } from '@/composables'
+
 import { isApiError } from '@/api'
 import {
   DsCluster,
@@ -35,8 +37,14 @@ const loadFailed = computed(() => isLoadError(error.value))
 const days = computed(() => groupByDay(data.value ? entriesOf(data.value) : []))
 const empty = computed(() => days.value.length === 0)
 const publicUrl = computed(() => (data.value ? absoluteUrl(data.value.profileUrl) : ''))
-// The box is always shown with the pupil's public address (the profile is a public page, open to every role).
-const showProfile = computed(() => !!data.value?.profileUrl)
+// The public profile is only linked when the viewer's role can open it (a pupil or a guest cannot in
+// the prototype scope): the whole box is hidden then, as its text and copy button only serve the link (DV-M08-48).
+const { allows } = usePrototypeScope()
+const { routeExists } = useRouteExists()
+const showProfile = computed(() => {
+  const path = data.value?.profileUrl
+  return !!path && allows(path) && routeExists(path)
+})
 
 const copied = ref(false)
 let timer: ReturnType<typeof setTimeout> | undefined
