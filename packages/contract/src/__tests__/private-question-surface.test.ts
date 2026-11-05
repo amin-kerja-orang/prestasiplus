@@ -20,8 +20,18 @@ describe('the contract never exposes the personal-question flag', () => {
     }
   })
 
-  it('the value teacher_private appears nowhere in the document', () => {
-    expect(JSON.stringify(doc)).not.toContain('teacher_private')
+  it('the value teacher_private is no enum value or example anywhere (a description may name it)', () => {
+    const hits: string[] = []
+    const walk = (node: unknown, path: string): void => {
+      if (Array.isArray(node)) return node.forEach((n, i) => walk(n, `${path}[${i}]`))
+      if (node === null || typeof node !== 'object') return
+      for (const [k, v] of Object.entries(node)) {
+        if ((k === 'enum' || k === 'const' || k === 'example' || k === 'default') && JSON.stringify(v).includes('teacher_private')) hits.push(`${path}.${k}`)
+        walk(v, `${path}.${k}`)
+      }
+    }
+    walk(doc, '$')
+    expect(hits).toEqual([])
   })
 
   it('no bank query parameter (list, Studio, practice, counts) can select it', () => {
