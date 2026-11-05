@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest'
-import { createMemoryHistory, type Router } from 'vue-router'
+import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
 import { createAppRouter } from '@/app/router'
 
@@ -12,8 +12,7 @@ import { S4_ROWS } from '../menu/fragments/s4'
 import { S5_ROWS } from '../menu/fragments/s5'
 import { S6_ROWS } from '../menu/fragments/s6'
 import { S7_ROWS } from '../menu/fragments/s7'
-import { MENU_REDIRECTS } from '../menu/redirects'
-import { normalisePath, renderMenu, resolveRoute } from '../menu/render'
+import { normalisePath, redirectsFrom, renderMenu, resolveRoute } from '../menu/render'
 import snapshot from './fixtures/menu-snapshot.json'
 
 const item = (id: string, to: string, built = true) => ({ id, label: id, to, built })
@@ -62,44 +61,45 @@ describe('renderMenu (dedup)', () => {
   })
 })
 
-/** The page a route finally shows according to the real router (string and function redirects). */
-function routerTarget(router: Router, to: string): string {
-  let current = normalisePath(to)
-  for (let hop = 0; hop < 8; hop++) {
-    const resolved = router.resolve(current)
-    const redirect = resolved.matched[0]?.redirect
-    if (redirect === undefined) break
-    const target =
-      typeof redirect === 'function' ? redirect(resolved) : redirect
-    const next = typeof target === 'string' ? target : target.path
-    if (next === undefined) break
-    current = normalisePath(next)
-  }
-  return current
-}
+describe('redirectsFrom + renderMenu with real router records', () => {
+  const small = (): Router =>
+    createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/admin/studio', name: 'studio', component: { render: () => null } },
+        { path: '/old', redirect: '/admin/studio' },
+        { path: '/old-obj', redirect: { path: '/admin/studio', query: { a: '1' } } },
+        { path: '/old-name', redirect: { name: 'studio' } },
+        { path: '/old-fn', redirect: () => '/admin/studio' },
+        { path: '/old/:id', redirect: '/admin/studio' },
+      ],
+    })
 
-describe('the real PENTADBIRAN_MENU', () => {
-  const router = createAppRouter({ history: createMemoryHistory() })
-
-  it('has no duplicate route and no two entries resolving to the same page', () => {
-    const items = PENTADBIRAN_MENU.flatMap((g) => g.items)
-    expect(new Set(items.map((i) => normalisePath(i.to))).size).toBe(items.length)
-    const pages = items.map((i) => routerTarget(router, i.to))
-    const dup = pages.filter((p, n) => pages.indexOf(p) !== n)
-    expect(dup).toEqual([])
+  it('reads string, object-path and object-name redirects; skips function and param redirects', () => {
+    expect(redirectsFrom(small().getRoutes())).toEqual({
+      '/old': '/admin/studio',
+      '/old-obj': '/admin/studio',
+      '/old-name': '/admin/studio',
+    })
   })
 
-  it('drops nothing today: every built entry of the full menu is rendered', () => {
-    expect(ids(PENTADBIRAN_MENU)).toEqual(FULL_ITEMS.filter((i) => i.built).map((i) => i.id))
+  it('skips an entry whose route is a router redirect to an already-shown page; the shown one stays', () => {
+    const redirects = redirectsFrom(small().getRoutes())
+    const out = renderMenu(
+      [group('a', [item('S', '/admin/studio'), item('O', '/old'), item('N', '/old-name'), item('F', '/old-fn')])],
+      redirects,
+    )
+    // /old-fn is a function redirect: not resolved statically, so it is kept
+    expect(ids(out)).toEqual(['S', 'F'])
   })
 
-  it('MENU_REDIRECTS agrees with the router for every menu route, and has no stale pair', () => {
-    for (const i of FULL_ITEMS.filter((x) => x.built)) {
-      expect(resolveRoute(i.to, MENU_REDIRECTS), `${i.id} ${i.to}`).toBe(routerTarget(router, i.to))
-    }
-    for (const [from, to] of Object.entries(MENU_REDIRECTS)) {
-      expect(routerTarget(router, from), from).toBe(resolveRoute(to, MENU_REDIRECTS))
-    }
+  it('the real app router drops nothing from today\'s menu (and no two entries show one page)', () => {
+    const router = createAppRouter({ history: createMemoryHistory() })
+    const redirects = redirectsFrom(router.getRoutes())
+    const out = renderMenu(PENTADBIRAN_FULL_MENU, redirects)
+    expect(ids(out)).toEqual(ids(PENTADBIRAN_MENU))
+    const pages = out.flatMap((g) => g.items.map((i) => resolveRoute(i.to, redirects)))
+    expect(new Set(pages).size).toBe(pages.length)
   })
 })
 

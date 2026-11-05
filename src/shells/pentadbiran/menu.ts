@@ -13,8 +13,10 @@
  * The rows themselves (id, label, target route) live in `menu/fragments/s<n>.ts`, one file per sector
  * that owns the target route; a new row comes via a one-line cross-sector PR to S0 (plan section on
  * `menu.ts` ownership). The rendered menu also drops a repeated route or redirect target (`render.ts`).
+ * `PENTADBIRAN_MENU` is the static render: it drops repeated routes only (no router here, so no cycle).
+ * The layout builds the router-aware render, `renderMenu(PENTADBIRAN_FULL_MENU, redirectsFrom(router.getRoutes()))`,
+ * which also drops an entry whose route is a router redirect to a page an earlier entry shows.
  */
-import { MENU_REDIRECTS } from './menu/redirects'
 import { renderMenu } from './menu/render'
 import type { Row } from './menu/row'
 import { S0_ROWS } from './menu/fragments/s0'
@@ -194,10 +196,10 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
 export const FULL_ITEMS: readonly PentadbiranItem[] = PENTADBIRAN_FULL_MENU.flatMap((g) => g.items)
 
 /**
- * The rendered menu: built screens only, none whose route (or redirect target) an earlier entry already
- * shows; a group left with no item is dropped.
+ * The static rendered menu: built screens only, none whose route an earlier entry already shows; a group
+ * left with no item is dropped. Redirect targets are deduped by the layout (see the file header).
  */
-export const PENTADBIRAN_MENU: readonly PentadbiranGroup[] = renderMenu(PENTADBIRAN_FULL_MENU, MENU_REDIRECTS)
+export const PENTADBIRAN_MENU: readonly PentadbiranGroup[] = renderMenu(PENTADBIRAN_FULL_MENU)
 
 export const ALL_ITEMS: readonly PentadbiranItem[] = PENTADBIRAN_MENU.flatMap((g) => g.items)
 
