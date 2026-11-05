@@ -12,7 +12,7 @@ describe('games rewards port bound to GamificationService (D-13)', () => {
   let student2: Client
   let admin: Client
 
-  const setGames = (v: number) => t.db.query(`update gamification_settings set value = $1 where key = 'games_award_syiling'`, [v])
+  const setGames = (v: number) => t.db.query(`update reward_settings set mini_games_give_coins = $1`, [v === 1])
   /** Game credits only (the seeded wallet history is not ours). */
   const ledger = (userId: string) =>
     t.db.query<{ source: string; source_id: string | null; amount: number; description: string; is_test: boolean }>(
