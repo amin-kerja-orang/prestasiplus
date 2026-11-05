@@ -18,6 +18,8 @@ import {
   ClassStudentAddRequestSchema,
   ClassStudentRemoveQuerySchema,
   ClassStudentRemovedSchema,
+  GuruStudentCreateRequestSchema,
+  GuruStudentCreatedSchema,
   ClassroomKindSchema,
   TeacherChapterCreateRequestSchema,
   TeacherChapterOptionSchema,
@@ -51,6 +53,8 @@ export const CLASSES_COMPONENT_SCHEMAS = {
   ClassStudentRemoveQuery: ClassStudentRemoveQuerySchema,
   ClassEnrolment: ClassEnrolmentSchema,
   ClassStudentRemoved: ClassStudentRemovedSchema,
+  GuruStudentCreateRequest: GuruStudentCreateRequestSchema,
+  GuruStudentCreated: GuruStudentCreatedSchema,
   TeacherDashboard: TeacherDashboardSchema,
   TeacherChaptersQuery: TeacherChaptersQuerySchema,
   TeacherTopicsQuery: TeacherTopicsQuerySchema,
@@ -144,6 +148,25 @@ export function registerClassesPaths(registry: OpenAPIRegistry): void {
       ),
       401: unauthorized,
       403: teacherOnly,
+    },
+  })
+
+  registry.registerPath({
+    method: 'post',
+    path: '/guru/students',
+    ...teacher,
+    summary: 'Cipta Pelajar: create a pupil in an own class (API-GUR-06)',
+    description:
+      'Creates the pupil in the school of the class with a generated unique username and the configured default password, and enrols the pupil (source "teacher"). The message carries the password once.',
+    request: { headers: [csrf], body: body(GuruStudentCreateRequestSchema) },
+    responses: {
+      201: json(envelopeOf(GuruStudentCreatedSchema), '`{ data: { id, name, username, message } }`.'),
+      401: unauthorized,
+      403: err('FORBIDDEN role / CSRF_INVALID.'),
+      409: err('CONFLICT fields.ic "No. IC sudah didaftarkan."'),
+      422: err(
+        'VALIDATION_ERROR fields.name "Sila isi nama." / "Nama tidak boleh melebihi 255 aksara."; fields.classroomId "Sila pilih kelas." or "Anda belum ada kelas aktif. Cipta kelas dahulu." (not an own active class); fields.ic "No. IC mesti 12 digit tanpa sempang."; a teacher without a school "Akaun anda belum dipautkan ke sekolah. Sila hubungi pentadbir."',
+      ),
     },
   })
 

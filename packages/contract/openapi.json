@@ -19509,6 +19509,10 @@
           "search": {
             "type": "string",
             "description": "Case-insensitive name filter."
+          },
+          "page": {
+            "type": "string",
+            "description": "Page number from 1 (25 per page); a malformed value falls back to 1."
           }
         }
       },
@@ -19554,6 +19558,37 @@
               ]
             },
             "description": "The viewer's own active classes of this pupil, in the same order as classNames (which stays for compatibility)."
+          },
+          "username": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Login name, shown beneath the name."
+          },
+          "tugasan": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Completed Set Soalan / Misi sessions assigned to the own class (FR-GUR-41-6)."
+          },
+          "skorPurata": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Mean of per-session accuracy, whole number percent; null without completed sessions."
+          },
+          "lastActiveAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "pattern": "\\+08:00$",
+            "description": "Latest answer time; null when none.",
+            "example": "2026-10-16T09:30:00+08:00"
           }
         },
         "required": [
@@ -19561,7 +19596,11 @@
           "name",
           "levelName",
           "classNames",
-          "classes"
+          "classes",
+          "username",
+          "tugasan",
+          "skorPurata",
+          "lastActiveAt"
         ]
       },
       "TeacherStudentsMeta": {
@@ -19575,11 +19614,27 @@
           "schoolSet": {
             "type": "boolean",
             "description": "Whether the teacher profile has a school (BR-M10-30)."
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Current page (25 per page)."
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 1
           }
         },
         "required": [
           "count",
-          "schoolSet"
+          "schoolSet",
+          "page",
+          "pageSize",
+          "totalPages"
         ]
       },
       "ClassStudentAddRequest": {
@@ -19649,6 +19704,54 @@
         },
         "required": [
           "removed"
+        ]
+      },
+      "GuruStudentCreateRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "classroomId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "ic": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "classroomId"
+        ]
+      },
+      "GuruStudentCreated": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "username": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "description": "\"Pelajar dicipta. Login: {username} / {kata laluan lalai}\" with the configured password filled in; shown once."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "username",
+          "message"
         ]
       },
       "TeacherDashboard": {
@@ -92854,6 +92957,16 @@
             "description": "Case-insensitive name filter.",
             "name": "search",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Page number from 1 (25 per page); a malformed value falls back to 1."
+            },
+            "required": false,
+            "description": "Page number from 1 (25 per page); a malformed value falls back to 1.",
+            "name": "page",
+            "in": "query"
           }
         ],
         "responses": {
@@ -92894,6 +93007,96 @@
           },
           "403": {
             "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "classes"
+        ],
+        "summary": "Cipta Pelajar: create a pupil in an own class (API-GUR-06)",
+        "description": "Creates the pupil in the school of the class with a generated unique username and the configured default password, and enrols the pupil (source \"teacher\"). The message carries the password once.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuruStudentCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "`{ data: { id, name, username, message } }`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GuruStudentCreated"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN role / CSRF_INVALID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT fields.ic \"No. IC sudah didaftarkan.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR fields.name \"Sila isi nama.\" / \"Nama tidak boleh melebihi 255 aksara.\"; fields.classroomId \"Sila pilih kelas.\" or \"Anda belum ada kelas aktif. Cipta kelas dahulu.\" (not an own active class); fields.ic \"No. IC mesti 12 digit tanpa sempang.\"; a teacher without a school \"Akaun anda belum dipautkan ke sekolah. Sila hubungi pentadbir.\"",
             "content": {
               "application/json": {
                 "schema": {

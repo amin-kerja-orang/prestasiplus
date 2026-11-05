@@ -34,6 +34,26 @@ export const CLASS_MESSAGES = {
   topicName: 'Nama topik diperlukan.',
   topicParent: 'Bab tidak sah.',
 } as const
+
+/** R1-GUR-41 / R1-GUR-8 / API-GUR-05, API-GUR-06 BM copy (S6-T10). */
+export const GURU_STUDENT_MESSAGES = {
+  name: 'Sila isi nama.',
+  nameMax: 'Nama tidak boleh melebihi 255 aksara.',
+  classroom: 'Sila pilih kelas.',
+  ic: 'No. IC mesti 12 digit tanpa sempang.',
+  icTaken: 'No. IC sudah didaftarkan.',
+  noActiveClass: 'Anda belum ada kelas aktif. Cipta kelas dahulu.',
+  noSchool: 'Akaun anda belum dipautkan ke sekolah. Sila hubungi pentadbir.',
+  chooseClassFirst: 'Sila pilih kelas dahulu.',
+  added: 'Pelajar ditambah.',
+  removed: 'Pelajar dikeluarkan.',
+} as const
+/** Placeholder text of the create result; the server fills the real username and the configured password. */
+export const GURU_STUDENT_CREATED_TEMPLATE = 'Pelajar dicipta. Login: {username} / {kata laluan lalai}'
+export const guruStudentCreatedMessage = (username: string, password: string): string =>
+  `Pelajar dicipta. Login: ${username} / ${password}`
+export const TEACHER_STUDENTS_PAGE_SIZE = 25
+export const GURU_STUDENT_IC_PATTERN = /^\d{12}$/
 export const classJoinedText = (name: string): string => `Berjaya menyertai kelas ${name}.`
 
 /** Generic texts of the mock guards (401, 403, 404 on a malformed or unknown route). */
@@ -130,6 +150,7 @@ export const TeacherStudentsQuerySchema = z
   .object({
     tab: z.string().optional().meta({ description: 'mine or school; any other value falls back to "mine" (no 422).' }),
     search: z.string().optional().meta({ description: 'Case-insensitive name filter.' }),
+    page: z.string().optional().meta({ description: 'Page number from 1 (25 per page); a malformed value falls back to 1.' }),
   })
   .meta({ id: 'TeacherStudentsQuery' })
 
@@ -142,6 +163,16 @@ export const TeacherStudentSchema = z
     classes: z
       .array(z.object({ id: IdSchema, name: z.string() }))
       .meta({ description: "The viewer's own active classes of this pupil, in the same order as classNames (which stays for compatibility)." }),
+    username: z.string().nullable().meta({ description: 'Login name, shown beneath the name.' }),
+    tugasan: z.number().int().min(0).meta({ description: 'Completed Set Soalan / Misi sessions assigned to the own class (FR-GUR-41-6).' }),
+    skorPurata: z
+      .number()
+      .int()
+      .min(0)
+      .max(100)
+      .nullable()
+      .meta({ description: 'Mean of per-session accuracy, whole number percent; null without completed sessions.' }),
+    lastActiveAt: TimestampSchema.nullable().meta({ description: 'Latest answer time; null when none.' }),
   })
   .meta({ id: 'TeacherStudent' })
 
@@ -150,8 +181,36 @@ export const TeacherStudentsMetaSchema = z
   .object({
     count: z.number().int().min(0).meta({ description: 'Matches before the 200-row cap of the school tab.' }),
     schoolSet: z.boolean().meta({ description: 'Whether the teacher profile has a school (BR-M10-30).' }),
+    page: z.number().int().min(1).meta({ description: 'Current page (25 per page).' }),
+    pageSize: z.number().int().min(1),
+    totalPages: z.number().int().min(1),
   })
   .meta({ id: 'TeacherStudentsMeta' })
+
+/** `POST /guru/students` body (API-GUR-06). `ic` is validated on the raw trimmed input, no stripping of hyphens. */
+export const GuruStudentCreateRequestSchema = z
+  .object({
+    name: text(GURU_STUDENT_MESSAGES.name, 255, GURU_STUDENT_MESSAGES.nameMax),
+    classroomId: refId(GURU_STUDENT_MESSAGES.classroom),
+    ic: z
+      .string({ error: GURU_STUDENT_MESSAGES.ic })
+      .trim()
+      .optional()
+      .transform((v) => (v === '' ? undefined : v))
+      .pipe(z.string().regex(GURU_STUDENT_IC_PATTERN, GURU_STUDENT_MESSAGES.ic).optional()),
+  })
+  .meta({ id: 'GuruStudentCreateRequest' })
+export type GuruStudentCreateRequest = z.infer<typeof GuruStudentCreateRequestSchema>
+
+export const GuruStudentCreatedSchema = z
+  .object({
+    id: IdSchema,
+    name: z.string().min(1),
+    username: z.string().min(1),
+    message: z.string().min(1).meta({ description: '"Pelajar dicipta. Login: {username} / {kata laluan lalai}" with the configured password filled in; shown once.' }),
+  })
+  .meta({ id: 'GuruStudentCreated' })
+export type GuruStudentCreated = z.infer<typeof GuruStudentCreatedSchema>
 
 export const ClassStudentAddRequestSchema = z
   .object({ classroomId: refId(CLASS_MESSAGES.classroom) })

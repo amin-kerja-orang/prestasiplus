@@ -20,6 +20,9 @@ import {
   TeacherDashboardSchema,
   TeacherGallerySchema,
   TeacherStudentSchema,
+  GuruStudentCreateRequestSchema,
+  GURU_STUDENT_MESSAGES,
+  guruStudentCreatedMessage,
   TeacherTopicCreateRequestSchema,
   classJoinedText,
 } from '../schema'
@@ -74,9 +77,28 @@ describe('ClassCreateRequest', () => {
   })
 })
 
+describe('guru student create (API-GUR-06)', () => {
+  const ok = { name: '  Murid Contoh ', classroomId: '501' }
+  it('trims the name and treats ic as optional', () => {
+    expect(GuruStudentCreateRequestSchema.parse(ok)).toEqual({ name: 'Murid Contoh', classroomId: '501', ic: undefined })
+    expect(GuruStudentCreateRequestSchema.safeParse({ ...ok, ic: '' }).success).toBe(true)
+    expect(GuruStudentCreateRequestSchema.safeParse({ ...ok, ic: '123456789012' }).success).toBe(true)
+  })
+  it('gives the exact BM messages', () => {
+    expect(fieldsOf(GuruStudentCreateRequestSchema.safeParse({}))).toEqual({ name: GURU_STUDENT_MESSAGES.name, classroomId: GURU_STUDENT_MESSAGES.classroom })
+    expect(fieldsOf(GuruStudentCreateRequestSchema.safeParse({ ...ok, name: 'a'.repeat(256) }))).toEqual({ name: GURU_STUDENT_MESSAGES.nameMax })
+  })
+  it.each(['12345678901', '123456-78-9012', '1234567890123', 'abcdefghijkl'])('rejects ic %s', (ic) => {
+    expect(fieldsOf(GuruStudentCreateRequestSchema.safeParse({ ...ok, ic }))).toEqual({ ic: GURU_STUDENT_MESSAGES.ic })
+  })
+  it('builds the created message', () => {
+    expect(guruStudentCreatedMessage('murid.contoh01', 'pw')).toBe('Pelajar dicipta. Login: murid.contoh01 / pw')
+  })
+})
+
 describe('roster', () => {
   it('parses a student row and the add/remove inputs', () => {
-    const row = { id: '9', name: 'Murid Ujian', levelName: null, classNames: ['Kelas Contoh 4A'], classes: [{ id: '501', name: 'Kelas Contoh 4A' }] }
+    const row = { id: '9', name: 'Murid Ujian', levelName: null, classNames: ['Kelas Contoh 4A'], classes: [{ id: '501', name: 'Kelas Contoh 4A' }], username: 'murid.ujian01', tugasan: 2, skorPurata: 70, lastActiveAt: '2026-11-01T10:00:00+08:00' }
     expect(TeacherStudentSchema.safeParse(row).success).toBe(true)
     // SW5-03: two classes may share a name; the ids tell them apart
     const twins = { ...row, classNames: ['Kelas Kembar', 'Kelas Kembar'], classes: [{ id: '501', name: 'Kelas Kembar' }, { id: '502', name: 'Kelas Kembar' }] }
@@ -168,6 +190,7 @@ describe('OpenAPI document', () => {
       ['/guru/classes', 'post'],
       ['/guru/classes/{id}/qr-data', 'get'],
       ['/guru/students', 'get'],
+      ['/guru/students', 'post'],
       ['/guru/students/{id}', 'put'],
       ['/guru/students/{id}', 'delete'],
       ['/guru/dashboard', 'get'],
