@@ -181,12 +181,18 @@ describe('reader details', () => {
   })
 
   it('meta.counts carries the published articles per category for the current search (FR-MUR-20-2, AC-MUR-20-1)', async () => {
+    // Other tests in this file leave published articles behind, so the counts are checked as deltas.
+    const before = (await pub('/articles?category=KEJAYAAN')).body.meta as { counts: Record<string, number>; totalItems: number }
     await insertArticle(t, { title: 'Kira Satu', slug: 'kira-satu', category: 'KEJAYAAN', content: '<p>kata-kunci-pilih</p>' })
     await insertArticle(t, { title: 'Kira Dua', slug: 'kira-dua', category: 'KEJAYAAN' })
     await insertArticle(t, { title: 'Kira Draf', slug: 'kira-draf', category: 'KEJAYAAN', published: false })
     const all = await pub('/articles?category=KEJAYAAN')
-    expect(all.body.meta.counts).toMatchObject({ KEJAYAAN: 2, MOTIVASI: 0, PANDUAN_GURU: 0 })
-    expect(all.body.meta.totalItems).toBe(2)
+    expect(all.body.meta.counts).toMatchObject({
+      KEJAYAAN: (before.counts.KEJAYAAN ?? 0) + 2,
+      MOTIVASI: before.counts.MOTIVASI ?? 0,
+      PANDUAN_GURU: before.counts.PANDUAN_GURU ?? 0,
+    })
+    expect(all.body.meta.totalItems).toBe(before.totalItems + 2)
     // the open category does not narrow the other counts; the search does
     const searched = await pub('/articles?category=BERITA&search=kata-kunci-pilih')
     expect(searched.body.meta.counts).toMatchObject({ KEJAYAAN: 1, BERITA: 0 })
