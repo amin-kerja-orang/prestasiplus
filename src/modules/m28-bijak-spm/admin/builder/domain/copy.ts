@@ -173,6 +173,7 @@ export const builderCopy = {
   seen: 'Dilihat murid', // task label
   notServed: 'Tidak disajikan', // V2 design S4.2 chip
   loading: 'Memuatkan…', // [PROPOSED]
+  groupMembers: (n: number): string => `${n} soalan dalam kumpulan`, // [PROPOSED] D90
   sectionFull: 'Bahagian ini sudah penuh.', // [PROPOSED]
   reviewStale: 'Simpan draf untuk menyegarkan semakan.', // [PROPOSED]
   reviewError: 'Tidak dapat memuatkan semakan kertas.', // [PROPOSED]
@@ -195,6 +196,9 @@ export const builderCopy = {
   overrideReason: 'Sebab', // PRD30 14-07
   overrideReasonRequired: MSG.overrideReasonRequired, // PRD30 14-07
   overriddenFlash: (n: number): string => `Diterbitkan dengan ${n} pengecualian kontrak (direkodkan).`, // [PROPOSED]
+  addQuestion: 'Tambah soalan', // V2
+  deleteQuestion: 'Padam soalan', // V2
+  deleteConfirm: 'Soalan ini akan dibuang daripada kertas ini sahaja. Ia kekal dalam bank soalan dan boleh ditambah semula.', // [PROPOSED] (V2 deletes an extra question for good; V3 only removes the placement, UX-50)
   contractLine: (subject: string, kertas: number, source: string): string => `${subject} Kertas ${kertas} · ${source}`, // [PROPOSED]
   pinned: 'Disematkan', // V2 chip (P5): the question version pinned at Terbit
   pinnedTip: 'Versi soalan ini dibekukan untuk kertas ini.', // FR-ADM-Q14.7

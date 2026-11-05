@@ -9,11 +9,12 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import PaperEditBlocks from '../admin/builder/components/PaperEditBlocks.vue'
 import PaperMetaForm from '../admin/builder/components/PaperMetaForm.vue'
 import PaperReferenceEditor from '../admin/builder/components/PaperReferenceEditor.vue'
+import PaperQuestionOps from '../admin/builder/components/PaperQuestionOps.vue'
 import { builderCopy as t } from '../admin/builder/domain/copy'
 import { editorGroupLabel } from '../lib/stimulus-data'
 import { hasStimulus, validTitle } from '../admin/builder/domain/stimulus'
 import { usePaperActions } from '../admin/builder/lib/use-paper-actions'
-import type { BuilderApi } from '../admin/builder/server/api'
+import type { BuilderApi, SectionPool } from '../admin/builder/server/api'
 import PublishOverride from '../admin/builder/components/PublishOverride.vue'
 import { blockersOf, normalizeBlockers, overrideOffered } from '../admin/builder/domain/blockers'
 import { MockBuilderServer } from '../admin/builder/server/memory'
@@ -91,6 +92,79 @@ describe('override offer: the server flags', () => {
   })
 })
 
+type PoolUnit = SectionPool['units'][number]
+
+describe('Tambah / Padam soalan (local model, UX-50)', () => {
+  const unit = (id: string, extra: object = {}): PoolUnit => ({
+    questionIds: [id],
+    questions: [{ id, preview: `P ${id}`, marks: 1, kind: 'objektif', topic: 'T', status: 'terbit', kertas: 2, subject: 'MAT' }],
+    marks: 1, eligible: true, reasons: [], placed: false, ...extra,
+  }) as unknown as PoolUnit
+  const sections = [{ id: 's1', label: 'Bahagian A', questionCount: 3 }]
+  const known = (): undefined => undefined
+
+  it('renders from the local ids: a unit removed locally is gone and cannot be removed twice', async () => {
+    const w = mount(PaperQuestionOps, {
+      props: { sections, ids: { s1: ['a', 'b'] }, known, loadPool: () => Promise.resolve({ units: [], total: 0, totalPages: 1 }) },
+    })
+    expect(w.findAll('[data-testid^="ops-unit-"]')).toHaveLength(2)
+    await w.setProps({ ids: { s1: ['b'] } })
+    expect(w.find('[data-testid="ops-unit-a"]').exists()).toBe(false)
+    expect(w.find('[data-testid="ops-delete-a"]').exists()).toBe(false)
+  })
+
+  it('adds a pool unit (whole group) and disables units already placed locally', async () => {
+    const group = unit('g1', { groupId: 'grp', questionIds: ['g1', 'g2'], questions: [...unit('g1').questions, ...unit('g2').questions] })
+    const w = mount(PaperQuestionOps, {
+      props: { sections, ids: { s1: ['a'] }, known, loadPool: () => Promise.resolve({ units: [unit('a'), group], total: 2, totalPages: 1 }) },
+    })
+    await w.get('[data-testid="ops-add-0"]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-testid="ops-pick-add-a"]').attributes('disabled')).toBeDefined()
+    await w.get('[data-testid="ops-pick-add-g1"]').trigger('click')
+    const [sid, u] = w.emitted('add')![0]! as [string, { questionIds: string[] }]
+    expect(sid).toBe('s1')
+    expect(u.questionIds).toEqual(['g1', 'g2'])
+  })
+
+  it('search is debounced, a stale answer is dropped, Muat lagi pages on', async () => {
+    vi.useFakeTimers()
+    const calls: [string, number][] = []
+    const resolvers: ((r: { units: PoolUnit[]; total: number; totalPages: number }) => void)[] = []
+    const loadPool = (_s: string, q: string, page: number) => {
+      calls.push([q, page])
+      return new Promise<{ units: PoolUnit[]; total: number; totalPages: number }>((r) => resolvers.push(r))
+    }
+    const w = mount(PaperQuestionOps, { props: { sections, ids: { s1: [] }, known, loadPool } })
+    await w.get('[data-testid="ops-add-0"]').trigger('click')
+    expect(calls).toEqual([['', 1]])
+    resolvers[0]!({ units: [unit('x1')], total: 40, totalPages: 2 })
+    await flushPromises()
+    expect(w.find('[data-testid="ops-more"]').exists()).toBe(true)
+    // typing twice quickly sends ONE request
+    await w.get('[data-testid="ops-search"]').setValue('a')
+    await w.get('[data-testid="ops-search"]').setValue('ab')
+    vi.advanceTimersByTime(300)
+    expect(calls.filter(([q]) => q).map(([q]) => q)).toEqual(['ab'])
+    // an older request resolving after a newer one is ignored
+    await w.get('[data-testid="ops-search"]').setValue('abc')
+    vi.advanceTimersByTime(300)
+    expect(calls.map(([q]) => q)).toEqual(['', 'ab', 'abc'])
+    resolvers[2]!({ units: [unit('new')], total: 1, totalPages: 1 })
+    await flushPromises()
+    resolvers[1]!({ units: [unit('stale')], total: 1, totalPages: 1 })
+    await flushPromises()
+    expect(w.find('[data-testid="ops-pick-new"]').exists()).toBe(true)
+    expect(w.find('[data-testid="ops-pick-stale"]').exists()).toBe(false)
+    vi.useRealTimers()
+  })
+
+  it('read-only: no add or delete controls', () => {
+    const w = mount(PaperQuestionOps, { props: { sections, ids: { s1: ['a'] }, known, readonly: true, loadPool: () => Promise.reject(new Error('x')) } })
+    expect(w.find('[data-testid="ops-add-0"]').exists()).toBe(false)
+    expect(w.find('[data-testid="ops-delete-a"]').exists()).toBe(false)
+  })
+})
 
 describe('Empty-group placeholder (T07) and title rules', () => {
   it('a stimulus without label, text or image is not shown', () => {
