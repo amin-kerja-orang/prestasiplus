@@ -8,7 +8,7 @@
  *
  * - latih_tubi_spm, databank: what `Be09PracticeQuestionSource.sample({ spmPool: true })` and the SPM pool read.
  * - bab:                      what `chapterPage` / `chapterCounts` read.
- * - simulasi_kuiz:            the random draw of the kuiz (`type mcq`, one MCQ leaf; groups allowed, D90).
+ * - simulasi_kuiz:            the random draw of the kuiz (`type mcq` or `mcq_multi`, one MCQ leaf; groups allowed, D90).
  * - simulasi_paper, jana_kertas: the bank scope only; the bridge, the paper and the pool facts are per-record checks.
  */
 import { PRACTICE_SHAPE } from '../../practice/question-bridge/be09-practice-mapping'
@@ -43,7 +43,7 @@ export function filterOf(activity: ServabilityActivity, scope: ActivityScope = {
     case 'bab':
       return { ...subject, ...(scope.chapterId === undefined ? {} : { chapterId: scope.chapterId }), ...drillShape(activity, surfaces) }
     case 'simulasi_kuiz':
-      return { ...subject, type: 'mcq', singleMcqLeaf: true }
+      return { ...subject, types: ['mcq', 'mcq_multi'], singleMcqLeaf: true }
     case 'simulasi_paper':
     case 'jana_kertas':
       return { ...subject }

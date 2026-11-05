@@ -43,6 +43,8 @@ import {
   leafOf,
   leavesOf,
   markableLeaf,
+  multiKeyOf,
+  selectionVerdict,
   optionImageIds,
   questionIdOfItem,
   resolveStimuli,
@@ -96,7 +98,7 @@ export class KuizService {
     // Published + active + learner-visible (secondary, not PKSK) are forced by the bank's `sample`; the shape is one objective leaf.
     // S1-T06 (FR-MUR-QP-6, D90): `wholeGroups` keeps a member only of a complete group; the draw below then takes whole units.
     const ids = await this.questions.sample(
-      { type: 'mcq', singleMcqLeaf: true, wholeGroups: true, ...(subjectId ? { subjectId } : {}) },
+      { types: ['mcq', 'mcq_multi'], singleMcqLeaf: true, wholeGroups: true, ...(subjectId ? { subjectId } : {}) },
       count * KUIZ_OVER_FETCH,
       mulberry32(randomInt(0, 0x1_0000_0000)),
     )
@@ -144,6 +146,16 @@ export class KuizService {
     return BijakKuizSessionSchema.parse({ sessionId: session.id, count: items.length, items })
   }
 
+  /** The ticked option ids of a check request. Every id must belong to the leaf; a single-choice leaf takes exactly one (`optionId`), an `mcq_multi` leaf `optionIds`. */
+  private selectionOf(req: BijakKuizCheckRequest, leaf: Parameters<typeof multiKeyOf>[0]): string[] {
+    const multi = multiKeyOf(leaf) !== null
+    const given = multi ? req.optionIds : [req.optionId]
+    if (given === undefined) throw invalidAnswer('optionId')
+    const unique = [...new Set(given)]
+    if (!unique.every((id) => leaf.options.some((o) => o.label === id))) throw invalidAnswer('optionId')
+    return unique.sort()
+  }
+
   async check(caller: KuizCaller, sessionId: string, req: BijakKuizCheckRequest): Promise<BijakKuizCheckResult> {
     const now = this.clock.now()
     return this.prisma.transaction(async () => {
@@ -159,28 +171,38 @@ export class KuizService {
       const ref = record ? leafOf(record, req.itemId) : null
       const leaf = ref ? markableLeaf(ref) : null
       if (!record || !leaf) throw invalidAnswer('itemId')
-      if (!leaf.options.some((o) => o.label === req.optionId)) throw invalidAnswer('optionId')
+      const selected = this.selectionOf(req, leaf)
+      const multi = multiKeyOf(leaf) !== null
+      const marked = selectionVerdict(leaf, selected)
 
       const verdict = (correct: boolean): BijakKuizCheckResult =>
-        BijakKuizCheckResultSchema.parse({ correct, correctOptionId: leaf.key.correct, explanation: record.version.explanationMs })
+        BijakKuizCheckResultSchema.parse({
+          correct,
+          correctOptionId: marked.correctOptionId,
+          ...(marked.correctOptionIds ? { correctOptionIds: marked.correctOptionIds } : {}),
+          explanation: record.version.explanationMs,
+        })
+      // The stored selection is ONE letter (`ck_practice_checks_selected_label`), so an mcq_multi check keeps its verdict in `is_correct` and
+      // the first ticked letter in `selected_label` (the comma-joined form of 46:270 needs a constraint migration, reported as a gap).
+      const storedCorrect = (c: { selectedLabel: string; isCorrect: boolean }): boolean => (multi ? c.isCorrect : c.selectedLabel === marked.correctOptionId)
 
       // One check per question: a repeat returns the stored verdict and counts nothing.
       const stored = await this.practice.check(session.id, questionId)
-      if (stored) return verdict(stored.selectedLabel === leaf.key.correct)
-      const correct = req.optionId === leaf.key.correct
+      if (stored) return verdict(storedCorrect(stored))
+      const correct = marked.correct
       const inserted = await this.practice.insertCheck({
         sessionId: session.id,
         userId: caller.userId,
         questionId,
         questionVersionNo: served.versionNo,
-        selectedLabel: req.optionId,
+        selectedLabel: selected[0] as string,
         isCorrect: correct,
         checkedAt: now,
         isTest: caller.isTest || session.isTest,
       })
       if (!inserted) {
         const winner = await this.practice.check(session.id, questionId)
-        return verdict((winner?.selectedLabel ?? req.optionId) === leaf.key.correct)
+        return verdict(winner ? storedCorrect(winner) : correct)
       }
       return verdict(correct)
     })
@@ -241,7 +263,7 @@ export class KuizService {
       const v = record?.version
       return {
         check,
-        isCorrect: leaf ? leaf.key.correct === check.selectedLabel : check.isCorrect,
+        isCorrect: leaf && multiKeyOf(leaf) === null ? leaf.key.correct === check.selectedLabel : check.isCorrect,
         subjectId: v?.subjectId ?? null,
         educationLevelId: v?.educationLevelId ?? null,
         chapterId: v?.chapterId ?? null,
@@ -350,10 +372,11 @@ export class KuizService {
     // A question the page skips (its stimulus cannot be shown) is not marked either.
     if (!(await this.prepare([record]))[0]?.complete) throw invalidAnswer('itemId')
     // V2: the option must belong to the part it claims.
-    if (!leaf.options.some((o) => o.label === req.optionId)) throw invalidAnswer('optionId')
+    const marked = selectionVerdict(leaf, this.selectionOf(req, leaf))
     return BijakKuizCheckResultSchema.parse({
-      correct: req.optionId === leaf.key.correct,
-      correctOptionId: leaf.key.correct,
+      correct: marked.correct,
+      correctOptionId: marked.correctOptionId,
+      ...(marked.correctOptionIds ? { correctOptionIds: marked.correctOptionIds } : {}),
       explanation: record.version.explanationMs,
     })
   }
