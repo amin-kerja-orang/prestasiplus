@@ -10348,6 +10348,16 @@
       "approved_by_card": null
     },
     {
+      "name": "RewardSetting",
+      "table": "reward_settings",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/gamification.prisma",
+      "approved_by_card": "S7-T05",
+      "dm": "DM-48",
+      "note": "Singleton Kawalan Reward settings (DM-48): the one source of the coin rate; read by the S5-T15 helper coinsPerCorrect()."
+    },
+    {
       "name": "MysteryBoxOpening",
       "table": "mystery_box_openings",
       "status": "canonical",
@@ -12964,6 +12974,16 @@
       "sector": "S4",
       "file": "apps/api/src/modules/curriculum/admin.controller.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/curriculum/dskp",
+      "method": "GET",
+      "path": "/api/admin/curriculum/dskp",
+      "api_id": "API-DSKP-11",
+      "status": "canonical",
+      "sector": "S4",
+      "file": "apps/api/src/modules/curriculum/admin.controller.ts",
+      "approved_by_card": "S4-T02"
     },
     {
       "key": "GET /api/admin/curriculum/chapters/:p",

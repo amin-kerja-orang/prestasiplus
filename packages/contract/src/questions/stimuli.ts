@@ -519,7 +519,7 @@ export function registerStimuliPaths(registry: OpenAPIRegistry): void {
     tags,
     summary: 'Publish a group: every member becomes approved in one audited transaction (S1-T01, API-Q-31)',
     description:
-      'No body. Every member must be Menunggu Semakan (`review`) or already Diluluskan (`approved`); any other member (Draf, Diarkibkan or another status) answers 409 "Semua soalan dalam kumpulan mesti dihantar untuk semakan dahulu." and nothing changes. An empty group is 409 "Kumpulan perlu sekurang-kurangnya 1 soalan.". One member failing its approve gate is 422 `details.gate[{questionId, message}]` and nothing changes. Publishing a draft copy (`draftOfGroupId` set) answers 409 until part 3b, which swaps it in for the served group in one transaction.',
+      'No body. Every member must be Menunggu Semakan (`review`) or already Diluluskan (`approved`); any other member (Draf, Diarkibkan or another status) answers 409 "Semua soalan dalam kumpulan mesti dihantar untuk semakan dahulu." and nothing changes. An empty group is 409 "Kumpulan perlu sekurang-kurangnya 1 soalan.". One member failing its approve gate is 422 `details.gate[{questionId, message}]` and nothing changes. Publishing a draft copy (`draftOfGroupId` set) swaps it in for the served group in one transaction, same gate on the members staged in the copy: the copy\'s members, stimuli, option bank and scope replace those of the served group, Menunggu Semakan members are approved (the old version is archived `superseded`), the copy is deleted, and the served group id is unchanged (the answer is the served group). Audit `details.fromDraftId`.',
     request: { params: idParams, headers: [csrf] },
     responses: {
       200: json(mutationEnvelopeOf(StimulusGroupDetailSchema), 'Published.'),
@@ -562,7 +562,7 @@ export function registerStimuliPaths(registry: OpenAPIRegistry): void {
     path: '/stimulus-groups/{id}/members/{questionId}/move',
     tags,
     summary: 'Move a member question to another group (S1-T01, API-Q-34)',
-    description: 'Same Subjek, Tingkatan and Kertas only (422 "Subjek dan Tingkatan ahli mesti sama dengan kumpulan." / "Soalan dalam satu kumpulan mesti sama subjek." / "...sama kertas."). A member that is shown to pupils answers 409 `memberServed` ("Soalan ini sedang dipaparkan kepada murid. Sunting sebagai draf atau arkibkannya dahulu sebelum memasukkannya ke dalam kumpulan.") and nothing changes; moving a served member through draft copies comes with part 3b.',
+    description: 'Same Subjek, Tingkatan and Kertas only (422 "Subjek dan Tingkatan ahli mesti sama dengan kumpulan." / "Soalan dalam satu kumpulan mesti sama subjek." / "...sama kertas."). A member that is shown to pupils answers 409 `memberServed` ("Soalan ini sedang dipaparkan kepada murid. Sunting sebagai draf atau arkibkannya dahulu sebelum memasukkannya ke dalam kumpulan.") and nothing changes; a served member moves only between two draft copies (the move is staged and takes effect when both copies are published); a move with a draft copy on one side only is 409.',
     request: { params: memberParams, headers: [csrf], body: body(StimulusGroupMoveRequestSchema) },
     responses: { 200: json(mutationEnvelopeOf(StimulusGroupMoveResultSchema), 'Both groups after the move.'), 401: unauthorized, 403: forbidden, 404: notFound, 409: conflict, 422: invalid },
   })

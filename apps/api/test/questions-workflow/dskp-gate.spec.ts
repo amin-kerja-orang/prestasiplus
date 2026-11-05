@@ -5,7 +5,8 @@ import { expectError, bootWorkflowApp, loginAll, type Client, type WorkflowTestA
 
 /**
  * R1-B05 (ADR-0031, D76, D80 DEC-2, D83 D-4, D85 U4) on the REAL question bank: the cognitive level of a leaf, the merged approve gate
- * for a NEW approval of an SPM-bound question, the gate-check read and the status route with its servability report.
+ * for a NEW approval, the gate-check read and the status route with its servability report. S1-T02: the aras of a leaf binds wherever DSKP nodes
+ * exist for the Subjek + Tingkatan (R-DSKP, no SPM condition); only the kertas stays SPM-bound.
  */
 describe('DSKP-complete approve gate, gate-check and status route (real bank)', () => {
   let t: WorkflowTestApp
@@ -35,6 +36,7 @@ describe('DSKP-complete approve gate, gate-check and status route (real bank)', 
     difficultyLevel: 2,
     options: ['4', '5', '6', '7'],
     correctAnswer: 1,
+    curriculumChapterId: tag.chapterId, // S1-T02 NO_CHAPTER: the Subjek + Tingkatan has chapters
     tag: { unitId: tag.unitId, spIds: [tag.spId], tp: 3 },
     ...over,
   })
@@ -51,9 +53,12 @@ describe('DSKP-complete approve gate, gate-check and status route (real bank)', 
   const issues = async (who: Client, id: string, gate = 'approve') => envelopeOf(QuestionGateCheckSchema).parse((await check(who, id, gate)).body).data
   const leafOf = async (id: string) => (await t.db.query<{ cognitive_level: string | null; kbat: string | null }>(`select p.cognitive_level, p.kbat from question_parts p join question_versions v on v.id = p.question_version_id where v.question_id = $1::bigint order by p.id limit 1`, [id]))[0]!
 
-  describe('a subject outside the SPM catalogue (nothing new to satisfy)', () => {
-    it('approves without a cognitive level or a kertas, and the answer carries a servability report', async () => {
-      const id = await draft()
+  describe('a subject outside the SPM catalogue (the aras is asked where DSKP nodes exist, the kertas is not)', () => {
+    it('asks for the aras of the leaf but not for a kertas; once the leaf has its level it approves and the answer carries a servability report', async () => {
+      const bare = await draft()
+      const g = await issues(c.admin, bare)
+      expect(g.issues.map((i) => i.code)).toEqual(['LEAF_NO_ARAS'])
+      const id = await draft({ cognitiveLevel: 'mengaplikasi' })
       expect((await issues(c.admin, id)).ok).toBe(true)
       expect((await status(c.admin, id, 'review')).status).toBe(200)
       const res = await status(c.admin, id, 'approved')
@@ -75,8 +80,8 @@ describe('DSKP-complete approve gate, gate-check and status route (real bank)', 
       const g = await issues(c.admin, id)
       expect(g.ok).toBe(false)
       expect(g.gate).toBe('approve')
-      expect(g.issues).toContainEqual({ path: 'parts.1.cognitiveLevel', code: 'LEAF_COGNITIVE_LEVEL_MISSING', message: 'Bahagian (1) belum ada aras pemikiran.', step: 3 })
-      expect(g.issues).toContainEqual({ path: 'kertas', code: 'KERTAS_MISSING', message: 'Sila pilih kertas untuk soalan SPM.', step: 1 })
+      expect(g.issues).toContainEqual({ path: 'parts.1.cognitiveLevel', code: 'LEAF_NO_ARAS', message: 'Bahagian (1) belum ada aras pemikiran.', step: 3 })
+      expect(g.issues).toContainEqual({ path: 'kertas', code: 'NO_KERTAS', message: 'Sila pilih kertas untuk soalan SPM.', step: 1 })
 
       expect((await status(c.admin, id, 'review')).status).toBe(200) // the submit gate does not ask for DSKP-complete
       const refused = await status(c.admin, id, 'approved')
@@ -178,7 +183,7 @@ describe('DSKP-complete approve gate, gate-check and status route (real bank)', 
       expect(detail.status).toBe(200)
       expect(detail.body.data.dskpStatus).toEqual({
         complete: false,
-        issues: [{ path: 'parts.1.cognitiveLevel', code: 'LEAF_COGNITIVE_LEVEL_MISSING', message: 'Bahagian (1) belum ada aras pemikiran.', step: 3 }],
+        issues: [{ path: 'parts.1.cognitiveLevel', code: 'LEAF_NO_ARAS', message: 'Bahagian (1) belum ada aras pemikiran.', step: 3 }],
       })
       expect(detail.body.data.dskp).toBeDefined() // the DSKP chain keeps its own key
 
@@ -228,7 +233,7 @@ describe('DSKP-complete approve gate, gate-check and status route (real bank)', 
     it('status: a pair outside the table is 409 with the BM message, an unknown status or a missing reason is 422, a missing id is 404', async () => {
       const id = await draft()
       const conflict = await status(c.admin, id, 'approved') // draft -> approved is not in the table
-      expectError(conflict, 'CONFLICT', "Peralihan 'Draf' -> 'Diterbitkan' tidak dibenarkan.")
+      expectError(conflict, 'CONFLICT', 'Perubahan status ini tidak dibenarkan daripada status semasa.')
       expect((await status(c.admin, id, 'published')).status).toBe(422)
       expect((await c.admin.post(`/api/questions/${id}/status`, {})).status).toBe(422)
       await status(c.admin, id, 'review')
