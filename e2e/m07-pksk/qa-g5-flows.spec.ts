@@ -39,8 +39,8 @@ async function answerAll(page: Page, essay = 'Jawapan esei QA G5.'): Promise<num
   const n = await tid(page, 'pksk-item').count()
   await page.evaluate(() => {
     for (const item of Array.from(document.querySelectorAll('[data-testid=pksk-item]'))) {
-      const radio = item.querySelector<HTMLInputElement>('input[type=radio]')
-      if (radio) radio.click()
+      const option = item.querySelector<HTMLElement>('[data-testid=pksk-option]')
+      if (option) option.click()
     }
   })
   for (const area of await tid(page, 'pksk-essay').all()) await area.fill(essay)
@@ -63,8 +63,8 @@ test.describe('QA-G5 M07 student flow', MODULE, () => {
     await expect(page).toHaveURL(/\/pksk\/level\/T1$/)
     await expect(tid(page, 'score')).toHaveText('55%')
     await expect(tid(page, 'grade')).toHaveText('C')
-    await expect(tid(page, 'exam-count')).toHaveText('2')
-    await expect(tid(page, 'avg-b')).toHaveText('59.7%')
+    await expect(tid(page, 'exam-count')).toContainText('2')
+    await expect(tid(page, 'avg-b')).toContainText('59.7%')
 
     // Dashboard -> domains (shortcut card).
     await tid(page, 'shortcut-domains').click()
@@ -81,6 +81,9 @@ test.describe('QA-G5 M07 student flow', MODULE, () => {
     const served = await answerAll(page)
     expect(served, 'BR-M07-25: 10 questions per practice session').toBe(10)
     await tid(page, 'practice-submit').click()
+    await tid(page, 'confirm-submit').click()
+    await expect(tid(page, 'result-title')).toHaveText('Kuiz Selesai!')
+    await tid(page, 'result-domains').click()
     await expect(page).toHaveURL(/\/pksk\/level\/T1\/domains$/)
     const post = await mock.lastRequest('POST /api/pksk/levels/T1/domains/PKSK_MATH/practice-sessions')
     expect(post?.status).toBe(201)
@@ -97,7 +100,7 @@ test.describe('QA-G5 M07 student flow', MODULE, () => {
     // Admin-side counts are unchanged by a practice (BR-M07-26: no M07 question change).
 
     // Back to the dashboard via the back link, then the full exam.
-    await tid(page, 'back-link').click()
+    await page.locator('[data-ds=back-link]').click()
     await expect(page).toHaveURL(/\/pksk\/level\/T1$/)
     await tid(page, 'shortcut-exam').click()
     await expect(page).toHaveURL(/\/pksk\/level\/T1\/exam$/)
@@ -106,25 +109,31 @@ test.describe('QA-G5 M07 student flow', MODULE, () => {
     await expect(tid(page, 'exam-section-C').getByTestId('pksk-item')).toHaveCount(1)
     await answerAll(page)
     await tid(page, 'exam-submit').click()
+    await tid(page, 'confirm-submit').click()
+    await expect(tid(page, 'result-title')).toHaveText('Keputusan Peperiksaan')
+    await tid(page, 'result-dashboard').click()
     await expect(page).toHaveURL(/\/pksk\/level\/T1$/)
-    await expect(tid(page, 'exam-count')).toHaveText('3')
+    await expect(tid(page, 'exam-count')).toContainText('3')
     const score = await tid(page, 'score').innerText()
     expect(score).toMatch(/^\d{1,3}%$/)
 
     // History: 3 rows, newest first, today's attempt on top.
     await tid(page, 'shortcut-history').click()
     await expect(page).toHaveURL(/\/pksk\/level\/T1\/history$/)
-    const rows = tid(page, 'history-row')
+    // Table rows from md up, card list items below it (DsDataTable).
+    const rows = tid(page, 'history-table').locator(
+      'tbody tr, [data-ds=data-table-cards] > li',
+    )
     await expect(rows).toHaveCount(3)
     const texts = await rows.allTextContents()
     expect(texts[0]).toContain('25/09/2026')
     expect(texts[1]).toContain('20/09/2026')
     expect(texts[2]).toContain('10/09/2026')
-    expect(texts[1]).toMatch(/64%\s*C/)
-    expect(texts[2]).toMatch(/46%\s*D/)
+    expect(texts[1]).toMatch(/64%[\s\S]*C/)
+    expect(texts[2]).toMatch(/46%[\s\S]*D/)
     // T4 history is separate and still empty.
     await gotoApp('/pksk/level/T4/history')
-    await expect(tid(page, 'history-empty')).toHaveText('Tiada sejarah peperiksaan.')
+    await expect(tid(page, 'history-empty')).toHaveText('Belum ada sejarah peperiksaan.')
   })
 
   test('SEC-M07-07 the served exam has no correct-answer marker in the DOM and is 30 / 70 / 1', async ({
@@ -154,8 +163,11 @@ test.describe('QA-G5 M07 student flow', MODULE, () => {
     await gotoApp('/pksk/level/T4/exam')
     await expect(tid(page, 'exam-submit')).toBeVisible()
     await tid(page, 'exam-submit').click()
+    await tid(page, 'confirm-submit').click()
+    await expect(tid(page, 'result-title')).toHaveText('Keputusan Peperiksaan')
+    await tid(page, 'result-dashboard').click()
     await expect(page).toHaveURL(/\/pksk\/level\/T4$/)
-    await expect(tid(page, 'exam-count')).toHaveText('1')
+    await expect(tid(page, 'exam-count')).toContainText('1')
     await expect(tid(page, 'score')).toHaveText('0%')
     await expect(tid(page, 'grade')).toHaveText('E')
   })

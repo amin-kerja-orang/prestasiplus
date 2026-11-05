@@ -38,8 +38,11 @@ ARG TESSDATA_REF=4.1.0
 ARG TESSDATA_MSA_SHA256=e41a3e5febfec50c90371eb1cbb17a48b10cad387900e3420b1f134c1b766cba
 ARG TESSDATA_ENG_SHA256=7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2
 WORKDIR /opt/tessdata
-RUN wget -q -O msa.traineddata "https://github.com/tesseract-ocr/tessdata_fast/raw/${TESSDATA_REF}/msa.traineddata" \
- && wget -q -O eng.traineddata "https://github.com/tesseract-ocr/tessdata_fast/raw/${TESSDATA_REF}/eng.traineddata" \
+# github.com raw fails transiently now and then and busybox wget has no --tries, so only the network fetch is retried
+# (5 tries, 5 s apart, partial file removed); the SHA-256 check below is not retried and still fails the build.
+RUN fetch() { n=1; until wget -q -O "$2" "$1"; do rm -f "$2"; [ "$n" -ge 5 ] && return 1; n=$((n + 1)); sleep 5; done; } \
+ && fetch "https://github.com/tesseract-ocr/tessdata_fast/raw/${TESSDATA_REF}/msa.traineddata" msa.traineddata \
+ && fetch "https://github.com/tesseract-ocr/tessdata_fast/raw/${TESSDATA_REF}/eng.traineddata" eng.traineddata \
  && echo "${TESSDATA_MSA_SHA256}  msa.traineddata" | sha256sum -c - \
  && echo "${TESSDATA_ENG_SHA256}  eng.traineddata" | sha256sum -c -
 

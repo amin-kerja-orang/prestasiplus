@@ -7,11 +7,11 @@
  * | 2 | `GET /api/pksk-domains` | the 15 domains by `order` |
  * | 3 | `GET /api/pksk/levels/:level/dashboard` | readiness, Bahagian B mastery (BR-M07-09..11) |
  * | 4 | `GET /api/pksk/levels/:level/domains` | three Bahagian sections with counts and mastery |
- * | 5 | `GET /api/pksk/levels/:level/domains/:code` | provisional practice set (BR-M07-25), no `isCorrect` |
+ * | 5 | `GET /api/pksk/levels/:level/domains/:code` | practice set (BR-M07-25), no `isCorrect` |
  * | 6 | `GET /api/pksk/levels/:level/exam-attempts` | own attempts, newest first |
  * | 21 | `POST /api/pksk/levels/:level/domains/:code/practice-sessions` | one M05 session, mode `pksk` |
- * | 22 | `GET /api/pksk/levels/:level/exam` | provisional exam, 30 / 70 / 1, no `isCorrect` |
- * | 23 | `POST /api/pksk/levels/:level/exam-attempts` | provisional scored attempt (BR-M07-09/10) |
+ * | 22 | `GET /api/pksk/levels/:level/exam` | exam, 30 / 70 / 1, no `isCorrect` |
+ * | 23 | `POST /api/pksk/levels/:level/exam-attempts` | scored attempt (BR-M07-09/10) |
  *
  * Auth: any logged-in user (401); level 404 first, then 403 without access (FR-M07-19).
  * The handlers only shape requests and responses; the rules live in the repositories.
@@ -74,6 +74,14 @@ function resolveAnswered(
   return out
 }
 
+/**
+ * Served-set rule (#832): the practice GET records the served ids per user, level and domain; the
+ * submit accepts only a subset of them, once. In memory like the open-page load time.
+ */
+const servedSets = new Map<string, Set<number>>()
+const servedKey = (userId: number, level: PkskLevel, domainId: number): string =>
+  `${String(userId)}:${level}:${String(domainId)}`
+
 const invalid = () =>
   fail(422, API_ERROR_CODES.VALIDATION_ERROR, 'Jawapan tidak sah.', {
     answers: 'Jawapan tidak sah.',
@@ -84,7 +92,16 @@ export const studentRoutes: RouteDef[] = [
     ok(pkskAccessRepo.levelAccess(userIdOf(req), ctx.clock.now())),
   ),
 
-  route('GET', '/api/pksk-domains', [requireAuth()], () => ok(pkskDomainsRepo.list())),
+  // `questionCount`: approved questions of the domain over both levels (a row has one level, so the
+  // count is distinct); no question text leaves the handler.
+  route('GET', '/api/pksk-domains', [requireAuth()], () =>
+    ok(
+      pkskDomainsRepo.list().map((d) => ({
+        ...d,
+        questionCount: questions.countWhere({ pkskDomainId: d.id, status: 'approved' }),
+      })),
+    ),
+  ),
 
   route('GET', '/api/pksk/levels/:level/dashboard', [requireAuth()], (req, ctx) => {
     const gate = gateLevel(req, ctx)
@@ -134,9 +151,11 @@ export const studentRoutes: RouteDef[] = [
     const pool = approved([domain.id], gate.level)
     ctx.prng.stream(`m07:practice:${String(userId)}`).shuffle(pool)
     pkskProgressRepo.markLoaded(userId, gate.level, domain.id, ctx.clock.now())
+    const set = pool.slice(0, PRACTICE_SIZE)
+    servedSets.set(servedKey(userId, gate.level, domain.id), new Set(set.map((q) => q.id)))
     return ok({
       domain: { id: domain.id, code: domain.code, name: domain.name, bahagian: domain.bahagian },
-      questions: pool.slice(0, PRACTICE_SIZE).map(servedQuestion),
+      questions: set.map(servedQuestion),
     })
   }),
 
@@ -167,12 +186,29 @@ export const studentRoutes: RouteDef[] = [
       const served = resolveAnswered(answers, gate.level, new Set([domain.id]))
       if (!served) return invalid()
       const userId = userIdOf(req)
+      const key = servedKey(userId, gate.level, domain.id)
+      const open = servedSets.get(key)
+      if (!open || answers.some((a) => !open.has(a.questionId))) return invalid()
+      servedSets.delete(key)
       const now = ctx.clock.now()
       const scored = answers.map((a) => ({
         questionId: a.questionId,
         isCorrect: isCorrect(served.get(a.questionId) as Question, a),
-        selected: a.optionIndex,
+        selected: a.optionIndex ?? null,
       }))
+      // The key is revealed only now that the answers are scored (never in the served set).
+      const review = answers.map((a, i) => {
+        const q = served.get(a.questionId) as Question
+        const options = q.pkskOptions ?? []
+        const key = options.findIndex((o) => o.isCorrect === true)
+        return {
+          questionId: a.questionId,
+          selectedIndex: a.optionIndex ?? null,
+          correctIndex: key >= 0 ? key : null,
+          isCorrect: (scored[i] as { isCorrect: boolean }).isCorrect,
+          explanation: q.explanation ?? null,
+        }
+      })
       const correct = scored.filter((s) => s.isCorrect).length
       const masteryPct = Math.round((correct / scored.length) * 100)
       const loaded = pkskProgressRepo.takeLoaded(userId, gate.level, domain.id)
@@ -189,6 +225,9 @@ export const studentRoutes: RouteDef[] = [
       pkskProgressRepo.setMastery(userId, gate.level, domain.id, masteryPct)
       const g = result.gamification
       return created({
+        correct,
+        total: scored.length,
+        review,
         masteryPct,
         sessionId: result.session.id,
         gamification: {

@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 /**
  * S5-T15 (AC-PA-01): no code writes `practice_answers` except through `AnswerLogPort` (answer-log.port.ts). Scanned:
  * `apps/api/src/**` (not the generated client) and `apps/api/prisma/seed/**`. The allow-list holds the direct writers
- * that still exist; each owning change removes its entry, so the list shrinks to empty (then migration 0188 validates
+ * that still exist (practice.repository.ts left it in part 2 of S5-T15); each owning change removes its entry, so the list shrinks to empty (then migration 0188 validates
  * the mode check and sets NOT NULL). A new writer fails the test, and so does an entry that no longer matches anything.
  */
 const API = resolve(__dirname, '../..')
@@ -15,8 +15,6 @@ const PORT = 'src/modules/practice/answer-log.port.ts'
 
 /** file (relative to apps/api) -> number of direct write sites it may still have. */
 const ALLOW_LIST: Readonly<Record<string, number>> = {
-  // completeSession and completeDirect (createMany each); they move to the port in part 2 of S5-T15.
-  'src/modules/practice/practice.repository.ts': 2,
   // Legacy ETL loader (upsertAndMap into practice_answers): must set `mode` before 0188 (NOT NULL).
   'src/migration/load/activity/practice-steps.ts': 1,
   // Demo seed: must set `mode` before 0188 (NOT NULL).
