@@ -185,7 +185,7 @@ const hasEssay = computed(() => reviewRows.value.some((r) => r.essay))
 
     <DsStack v-else-if="data && result" gap="lg" data-testid="practice-result">
       <DsStack gap="xs">
-        <DsText variant="title" as="h2" data-testid="result-title">Kuiz Selesai!</DsText>
+        <h2 data-testid="result-title"><DsText variant="title" as="span">Kuiz Selesai!</DsText></h2>
         <DsText variant="body" tone="muted" data-testid="result-sub"
           >Tahniah, anda telah lengkapkan {{ data.domain.name }}.</DsText
         >

@@ -164,7 +164,7 @@ const top = computed(() =>
     <template v-if="domains">
       <UCard data-testid="block-bahagian">
         <DsStack gap="sm">
-          <DsText variant="heading" as="h2">Soalan mengikut Bahagian</DsText>
+          <h2><DsText variant="heading" as="span">Soalan mengikut Bahagian</DsText></h2>
           <DsStack as="ul" gap="xs">
             <li
               v-for="r in byBahagian"
@@ -182,7 +182,7 @@ const top = computed(() =>
 
       <UCard data-testid="block-top">
         <DsStack gap="sm">
-          <DsText variant="heading" as="h2">Domain teratas</DsText>
+          <h2><DsText variant="heading" as="span">Domain teratas</DsText></h2>
           <DsGrid as="ul" :cols="{ base: 1, md: 2 }" gap="xs">
             <li v-for="d in top" :key="d.code" data-testid="top-domain">
               <DsCluster justify="between" wrap>
@@ -197,7 +197,7 @@ const top = computed(() =>
 
     <UCard data-testid="block-pakej">
       <DsStack gap="sm">
-        <DsText variant="heading" as="h2">Pakej PKSK</DsText>
+        <h2><DsText variant="heading" as="span">Pakej PKSK</DsText></h2>
         <DsText variant="body" tone="muted"
           >Pakej ini diaktifkan oleh pentadbir sekolah anda.</DsText
         >

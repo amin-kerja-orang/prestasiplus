@@ -153,7 +153,9 @@ async function submit(): Promise<void> {
     <DsLoadError v-if="loadFailed" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <DsStack v-else-if="data && result" gap="lg" data-testid="exam-result">
-      <DsText variant="title" as="h2" data-testid="result-title">Keputusan Peperiksaan</DsText>
+      <h2 data-testid="result-title">
+        <DsText variant="title" as="span">Keputusan Peperiksaan</DsText>
+      </h2>
       <DsGrid :cols="{ base: 1, sm: 2 }" data-testid="result-tiles">
         <DsStatTile
           :value="`${Math.round(result.scorePct)}%`"

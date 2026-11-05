@@ -101,12 +101,12 @@ describe('#2 GET /api/pksk-domains', () => {
   it('adds questionCount: approved questions of the domain over both levels, no question text', async () => {
     const r = await get<PkskDomain[]>(PELAJAR2, '/api/pksk-domains')
     for (const d of r.body.data) {
-      const expected = ['T1', 'T4'].reduce(
+      const expected = (['T1', 'T4'] as const).reduce(
         (n, level) =>
           n +
           questions.pkskList({
             domainIds: [d.id],
-            targetLevel: level as 'T1' | 'T4',
+            targetLevel: level,
             status: 'approved',
             pageSize: 5000,
           }).rows.length,
