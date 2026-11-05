@@ -19,7 +19,7 @@ import { TeacherClassesController } from './teacher.controller'
 /**
  * Classes and teacher basics (M10 part A, BE-17): classrooms, enrolments, teacher profiles, the teacher routes
  * under `/api/guru` and the student "Kelas Saya" pair. It exports `ClassesRepository`, the only doorway to the
- * class tables (`forTeacher`, `forStudent`, `roster`, `schoolClasses`, `findByJoinCode`, `memberIds`, `enrol`),
+ * class tables (`forTeacher`, `forStudent`, `roster`, `schoolClasses`, `memberIds`, `enrol`),
  * `ClassesPorts` (BE-09 plugs in the teacher question counts, BE-18 the missions check) and the real
  * `COMP_CLASSROOM_PORT` that BE-25's complimentary register injects. On init it binds `PerformanceClassesReadAdapter` into
  * BE-19's `PerformancePorts` (the reports' `ClassesReadPort`) and binds `TeacherClassroomsAdapter` into `UsersPorts`

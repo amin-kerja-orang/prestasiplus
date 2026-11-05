@@ -74,6 +74,7 @@ const EXPECTED: Expected[] = [
   { group: 'Kandungan', label: 'Banner', href: '/admin/banners' },
   { group: 'Kandungan', label: 'Nota', href: '/admin/notes' },
   { group: 'Kandungan', label: 'Upload Screenshot', href: '/admin/tools/screenshots' },
+  { group: 'Kandungan', label: 'Video', href: '/admin/videos' },
   { group: 'Sistem', label: 'Tiket Bantuan', href: '/admin/tiket' },
 ]
 
