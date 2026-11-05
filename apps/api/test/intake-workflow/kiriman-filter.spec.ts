@@ -16,6 +16,12 @@ const list = async (qs: string) => {
   return IntakeItemListResponseSchema.parse(res.body)
 }
 const idsOf = async (qs: string) => (await list(`pageSize=100&${qs}`)).data.map((r) => r.id).sort()
+/** Sets the status of version 1 of the item's question and whether it is the live version (`questions.live_version_no`). */
+const setLive = async (itemId: string, status: string, live: boolean) => {
+  await t.db.query(`update question_versions v set status = $2 from intake_items i where i.id = $1::bigint and v.question_id = i.question_id and v.version_no = 1`, [itemId, status])
+  await t.db.query(`update questions q set live_version_no = ${live ? '1' : 'null'}, latest_version_no = 1 from intake_items i where i.id = $1::bigint and q.id = i.question_id`, [itemId])
+  await t.db.query(`delete from question_versions v using intake_items i where i.id = $1::bigint and v.question_id = i.question_id and v.version_no > 1`, [itemId])
+}
 const sorted = (ids: string[]) => [...ids].sort()
 
 beforeAll(async () => {
@@ -33,12 +39,8 @@ beforeAll(async () => {
   expect((await post(teacher, `/intake/items/${processing}/accept`)).status).toBe(200)
   expect((await post(teacher, `/intake/items/${selesai}/accept`)).status).toBe(200)
   expect((await post(teacher, `/intake/items/${ditolak}/reject`, { reason: 'Tidak sesuai.' })).status).toBe(200)
-  // The accepted question of `selesai` is published (Diluluskan); the one of `processing` stays a draft.
-  await t.db.query(
-    `update question_versions v set status = 'approved' from intake_items i
-      where i.id = $1::bigint and v.question_id = i.question_id and v.version_no = (select latest_version_no from questions where id = i.question_id)`,
-    [selesai],
-  )
+  // The accepted question of `selesai` is published (Diluluskan): approved and live; the one of `processing` stays a draft.
+  await setLive(selesai, 'approved', true)
   await t.db.query(`update intake_batches set source = 'guru' where id = $1::bigint`, [batchId])
   guruIds = ids
 
@@ -80,7 +82,7 @@ describe('GET /intake/items: source=guru and kirimanStatus (S1-T08)', () => {
     expect(pending).not.toContain(guruIds[3])
   })
 
-  it('combines with the existing `state` filter by AND; meta.counts and totals follow the same scope', async () => {
+  it('combines with the existing `state` filter by AND; meta.totalItems and meta.counts follow the same scope', async () => {
     expect(await idsOf('source=guru&kirimanStatus=Pending&state=duplicate')).toEqual([guruIds[2]])
     expect(await idsOf('source=guru&kirimanStatus=Selesai&state=rejected')).toEqual([])
     const res = await list('source=guru&kirimanStatus=Pending&pageSize=2')
@@ -105,5 +107,38 @@ describe('GET /intake/items: source=guru and kirimanStatus (S1-T08)', () => {
     expect(all.meta.totalItems).toBe(guruIds.length + adminBatchItemIds.length)
     expect(all.meta.counts).toMatchObject({ generated: 1 + 2, needs_review: 1, accepted: 2, rejected: 1, duplicate: 1 })
     expect(await idsOf('state=accepted')).toEqual(sorted([guruIds[3]!, guruIds[4]!]))
+  })
+})
+
+describe('Selesai reads the LIVE version of the question (D12)', () => {
+  it('a newer draft on top of a live approved version: the item is still Selesai', async () => {
+    const id = guruIds[4]!
+    await setLive(id, 'approved', true)
+    const cols = (await t.db.query<{ column_name: string }>(
+      `select column_name from information_schema.columns where table_name = 'question_versions' and column_name not in ('id', 'version_no', 'status', 'published_at', 'archive_reason') order by ordinal_position`,
+    )).map((c) => c.column_name)
+    const list = cols.map((c) => `"${c}"`).join(', ')
+    const vlist = cols.map((c) => `v."${c}"`).join(', ')
+    await t.db.query(
+      `insert into question_versions (${list}, version_no, status)
+         select ${vlist}, 2, 'draft' from question_versions v join intake_items i on i.question_id = v.question_id where i.id = $1::bigint and v.version_no = 1`,
+      [id],
+    )
+    await t.db.query(`update questions q set latest_version_no = 2 from intake_items i where i.id = $1::bigint and q.id = i.question_id`, [id])
+    expect(await idsOf('source=guru&kirimanStatus=Selesai')).toEqual([id])
+    expect(await idsOf('source=guru&kirimanStatus=Processing')).toEqual([guruIds[3]])
+    await setLive(id, 'approved', true)
+  })
+
+  it('latest version approved but not live, or live version not approved: the item is Processing', async () => {
+    const id = guruIds[4]!
+    await setLive(id, 'approved', false) // approved, live_version_no null
+    expect(await idsOf('source=guru&kirimanStatus=Selesai')).toEqual([])
+    expect(await idsOf('source=guru&kirimanStatus=Processing')).toEqual(sorted([guruIds[3]!, id]))
+    await setLive(id, 'review', true) // live, but not approved
+    expect(await idsOf('source=guru&kirimanStatus=Selesai')).toEqual([])
+    expect(await idsOf('source=guru&kirimanStatus=Processing')).toEqual(sorted([guruIds[3]!, id]))
+    await setLive(id, 'approved', true)
+    expect(await idsOf('source=guru&kirimanStatus=Selesai')).toEqual([id])
   })
 })
