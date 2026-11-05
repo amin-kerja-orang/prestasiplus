@@ -18,7 +18,7 @@ import { listMeta } from '../../common/http/respond'
 import { toMytTimestamp } from '../../common/time/myt'
 import { CurriculumRepository } from '../curriculum'
 import { SubscriptionService, TRIAL_LIMIT } from '../subscriptions'
-import { alreadySubmitted, invalidAnswer, isUniqueViolation, noAttemptsLeft, notFound, remedialDone, trialExhausted } from './errors'
+import { alreadySubmitted, invalidAnswer, isUniqueViolation, notFound, remedialDone, trialExhausted } from './errors'
 import { type PracticeQuestion, PracticePorts, practiceRewardSource, versionKey } from './ports'
 import {
   HISTORY_MAX_ROWS,
@@ -286,7 +286,7 @@ export class PracticeService {
   /**
    * Inside the locked submit transaction: the one-shot rules of assigned work are enforced again, so parallel
    * starts that slipped past the start checks cannot all complete (remedial: one completion per test;
-   * question_set: at most maxAttempts completions).
+   * question_set: no cap in R1).
    */
   private async guardSubmit(session: SessionRecord): Promise<void> {
     if (session.mode === 'remedial' && session.remedialTestId) {
@@ -296,13 +296,6 @@ export class PracticeService {
     }
     if (session.mode === 'question_set' && session.questionSetId) {
       await this.repo.lockAssigned(session.userId, 'question_set', session.questionSetId)
-      const res = await this.ports.assignments.resolve('question_set', { userId: session.userId, id: session.questionSetId, at: this.clock.now() })
-      if (res.status === 'ok' && (res.maxAttempts ?? 0) > 0) {
-        const done = (await this.repo.linkedSessions(session.userId, 'questionSetId', session.questionSetId)).filter(
-          (s) => s.id !== session.id && s.status === 'completed',
-        ).length
-        if (done >= (res.maxAttempts ?? 0)) throw noAttemptsLeft()
-      }
     }
   }
 

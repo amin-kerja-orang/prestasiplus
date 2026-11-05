@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
+import { PRACTICE_READS_STRUCTURED_SEARCH_MAX } from '@pp/contract'
 import type { PracticeReadStructuredAttemptResult, PracticeReadStructuredDetail, PracticeReadStructuredListResponseSchema } from '@pp/contract'
 import type { z } from 'zod'
 
@@ -149,13 +150,16 @@ export class StructuredService {
 
   // --- #15 list ------------------------------------------------------------------------------------
 
-  async list(query: RawQuery): Promise<z.output<typeof PracticeReadStructuredListResponseSchema>> {
+  async list(caller: StructuredCaller, query: RawQuery): Promise<z.output<typeof PracticeReadStructuredListResponseSchema>> {
     const { scope, track } = variant(query)
     const [levels, subjects] = await Promise.all([this.levels(), this.subjects()])
     const options = this.subjectOptions(scope, track, subjects)
     const page = pageOf(query)
     const subject = filterOf(query, 'subjectId')
     const kbat = filterOf(query, 'kbatLevel')
+    const text = first(query, 'q')?.trim() ?? ''
+    if (text.length > PRACTICE_READS_STRUCTURED_SEARCH_MAX) throw invalid({ q: MESSAGES.searchTooLong(PRACTICE_READS_STRUCTURED_SEARCH_MAX) })
+    const markable = ['1', 'true'].includes(first(query, 'markable')?.trim().toLowerCase() ?? '')
 
     const empty =
       subject.kind === 'nothing' ||
@@ -166,6 +170,7 @@ export class StructuredService {
 
     let slice: QuestionRecord[] = []
     let total = 0
+    let pendingSchemeCount = 0
     if (!empty) {
       // One id query (filters, order, LIMIT/OFFSET) and one count; only the page slice is hydrated.
       const res = await this.listing.page({
@@ -174,13 +179,17 @@ export class StructuredService {
         kbat: kbat.kind === 'value' ? Number(kbat.value) : null,
         // Tracking A Bahasa: BM sets before BI sets. The Subjektif variant merges the subjects newest first.
         subjectOrder: track === 'bahasa' && subject.kind !== 'value',
+        q: text === '' ? null : text,
+        markable,
         limit: STRUCTURED_PAGE_SIZE,
         offset: (page - 1) * STRUCTURED_PAGE_SIZE,
       })
       total = res.total
+      pendingSchemeCount = res.pendingScheme
       slice = await this.questions.getMany(res.ids, 'live')
     }
     const authors = await this.authors(slice)
+    const best = await this.attempts.bestFor(caller.userId, slice.map((r) => r.id))
     const data = slice.map((r) => {
       const subs = flatten(r.id, r.version.parts)
       const who = (r.createdById !== null ? authors.get(r.createdById) : undefined) ?? { author: DEFAULT_AUTHOR, school: null }
@@ -201,9 +210,10 @@ export class StructuredService {
         levelName: levels.get(r.version.educationLevelId ?? '') ?? '',
         parts: subs.filter((s) => s.top).length,
         marks: totalMarks(subs),
+        bestScore: best.get(r.id) ?? null,
       }
     })
-    return { data, meta: { ...listMeta(page, STRUCTURED_PAGE_SIZE, total), scope, track, subjectOptions: options } }
+    return { data, meta: { ...listMeta(page, STRUCTURED_PAGE_SIZE, total), scope, track, subjectOptions: options, pendingSchemeCount } }
   }
 
   // --- #16 detail ----------------------------------------------------------------------------------

@@ -46,8 +46,8 @@ export class StructuredController {
   constructor(@Inject(StructuredService) private readonly structured: StructuredService) {}
 
   @Get()
-  list(@Query() query: Record<string, unknown>) {
-    return this.structured.list(query)
+  list(@Query() query: Record<string, unknown>, @Req() req: Req) {
+    return this.structured.list(callerOf(req), query)
   }
 
   @Get(':id')
