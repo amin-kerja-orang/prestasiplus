@@ -317,7 +317,7 @@ function objectiveFromInput(
     altAnswers: input.altAnswers ?? [],
     modelAnswer: type === 'essay' ? (input.modelAnswer ?? null) : null,
     explanation: input.explanation ?? null,
-    language: input.language ?? 'bm',
+    language: input.language ?? 'ms',
     pointsValue: input.pointsValue ?? 1,
     curriculumTopicId: input.curriculumTopicId ?? null,
     cognitiveLevel: input.cognitiveLevel ?? null,
