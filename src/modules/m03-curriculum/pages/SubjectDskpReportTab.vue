@@ -62,7 +62,7 @@ const nodes = computed(() => data.value?.nodes ?? null)
 
 <template>
   <DsStack as="section" gap="md" data-testid="dskp-report-tab">
-    <DsLoadError v-if="error" :message="COPY.loadFailed" testid="dskp-report-error" @retry="reload()" />
+    <DsLoadError v-if="error" :message="COPY.loadFailed" :error="error" testid="dskp-report-error" @retry="reload()" />
 
     <template v-else>
       <DsDataTable

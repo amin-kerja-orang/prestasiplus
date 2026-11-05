@@ -90,6 +90,14 @@ describe('SubjectDskpReportTab (S4-T02, API-DSKP-11)', () => {
     }
   })
 
+  it('a 429 shows the ERR-RATE-01 countdown (S0-T08), not the plain load error', async () => {
+    api.fetchDskpReport.mockRejectedValueOnce(new ApiError({ status: 429, code: 'RATE_LIMITED', message: 'x', retryAfter: 5 }))
+    const w = await render()
+    const box = w.get('[data-testid=dskp-report-error]').text()
+    expect(box).toContain('Terlalu banyak percubaan. Sila cuba sebentar lagi.')
+    expect(box).toContain('Cuba lagi dalam 5 saat.')
+  })
+
   it('reloads when the filter props change', async () => {
     const w = await render({ subjectId: 3, levelId: null })
     await w.setProps({ levelId: 11 })
