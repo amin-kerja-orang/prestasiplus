@@ -3,7 +3,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import { idFromString, idToString, isIdString } from '../../../../db/ids'
 import { PrismaService } from '../../../../db/prisma.service'
 import type { HeadcountMode } from '../domain/headcount'
-import { blankSlots, toNum, type HeadcountMarks } from './headcount.rules'
+import { blankSlots, resolveMarks, toNum, type HeadcountMarks } from './headcount.rules'
 
 /** A config as the service sees it: decimal-string ids. */
 export interface HeadcountConfigRecord {
@@ -15,17 +15,22 @@ export interface HeadcountConfigRecord {
   academicYear: number
   activeOtrs: number
   mode: HeadcountMode
+  /** Class defaults (DM-49): an entry with a null TOV / ETR reads these. */
+  defaultTov: number | null
+  defaultEtr: number | null
   createdAt: Date
   updatedAt: Date
 }
 
-/** An entry with its marks sized to the config's `activeOtrs` (blank slots for missing checkpoints). */
+/** An entry with its RESOLVED marks (defaults applied, OTR targets computed, sized to the config's `activeOtrs`). */
 export interface HeadcountEntryRecord {
   configId: string
   studentId: string
   marks: HeadcountMarks
   rsRecordedAt: Date | null
   dropped: boolean
+  /** The stored own values (null = reads the class default); the editors show these. */
+  own: { tov: number | null; etr: number | null }
 }
 
 export interface NewHeadcountConfig {
@@ -67,6 +72,8 @@ const toConfig = (r: {
   academicYear: number
   activeOtrs: number
   mode: string
+  defaultTov: { toString(): string } | null
+  defaultEtr: { toString(): string } | null
   createdAt: Date
   updatedAt: Date
 }): HeadcountConfigRecord => ({
@@ -78,6 +85,8 @@ const toConfig = (r: {
   academicYear: r.academicYear,
   activeOtrs: r.activeOtrs,
   mode: r.mode as HeadcountMode,
+  defaultTov: toNum(r.defaultTov),
+  defaultEtr: toNum(r.defaultEtr),
   createdAt: r.createdAt,
   updatedAt: r.updatedAt,
 })
@@ -286,13 +295,13 @@ export class HeadcountRepository {
     where: (configKeys: bigint[]) => { configId: { in: bigint[] }; studentId?: bigint },
   ): Promise<HeadcountEntryRecord[]> {
     if (configs.length === 0) return []
-    const otrs = new Map(configs.map((c) => [c.id, c.activeOtrs]))
+    const byId = new Map(configs.map((c) => [c.id, c]))
     const keys = idsOf(configs.map((c) => c.id))
     const out: HeadcountEntryRecord[] = []
     for (let i = 0; i < keys.length; i += READ_CHUNK) {
       const entries = await this.db.headcountEntry.findMany({ where: where(keys.slice(i, i + READ_CHUNK)), orderBy: { id: 'asc' } })
       if (entries.length === 0) continue
-      const marks = await this.db.headcountEntryMark.findMany({ where: { entryId: { in: entries.map((e) => e.id) } } })
+      const marks = await this.db.headcountEntryMark.findMany({ where: { entryId: { in: entries.map((e) => e.id) } }, select: { entryId: true, checkpoint: true, actual: true } })
       const byEntry = new Map<bigint, typeof marks>()
       for (const m of marks) {
         const list = byEntry.get(m.entryId)
@@ -301,21 +310,22 @@ export class HeadcountRepository {
       }
       for (const e of entries) {
         const configId = idToString(e.configId)
-        const n = otrs.get(configId) ?? 0
-        const targets = blankSlots(n)
-        const actuals = blankSlots(n)
+        const config = byId.get(configId)
+        if (!config) continue
+        const actuals = blankSlots(config.activeOtrs)
         for (const m of byEntry.get(e.id) ?? []) {
-          if (m.checkpoint >= 1 && m.checkpoint <= n) {
-            targets[m.checkpoint - 1] = toNum(m.target)
-            actuals[m.checkpoint - 1] = toNum(m.actual)
-          }
+          if (m.checkpoint >= 1 && m.checkpoint <= config.activeOtrs) actuals[m.checkpoint - 1] = toNum(m.actual)
         }
+        const tov = toNum(e.tov)
+        const etr = toNum(e.etr)
         out.push({
           configId,
           studentId: idToString(e.studentId),
-          marks: { tov: toNum(e.tov), targets, actuals, etr: toNum(e.etr), rs: toNum(e.rs) },
+          // The one assembler: defaults resolved, OTR targets computed (the stored `target` column is never read).
+          marks: resolveMarks({ tov, etr, rs: toNum(e.rs), actuals }, config),
           rsRecordedAt: e.rsRecordedAt,
           dropped: e.dropped,
+          own: { tov, etr },
         })
       }
     }
@@ -368,6 +378,116 @@ export class HeadcountRepository {
     }
     await this.touch(configId, now)
     return changed
+  }
+
+  // --- writes of the teacher screens (S10-T02) -----------------------------------------------
+
+  /** Entry ids of the pupils in a config; a missing entry is created empty. Returns studentId -> entry id. */
+  private async ensureEntries(configKey: bigint, students: readonly bigint[], now: Date): Promise<Map<bigint, bigint>> {
+    if (students.length === 0) return new Map()
+    const existing = await this.db.headcountEntry.findMany({ where: { configId: configKey, studentId: { in: [...students] } }, select: { id: true, studentId: true } })
+    const have = new Set(existing.map((e) => e.studentId))
+    const missing = students.filter((s) => !have.has(s))
+    if (missing.length > 0) {
+      await this.db.headcountEntry.createMany({
+        data: missing.map((studentId) => ({ configId: configKey, studentId, createdAt: now, updatedAt: now })),
+        skipDuplicates: true,
+      })
+    }
+    const all = missing.length === 0 ? existing : await this.db.headcountEntry.findMany({ where: { configId: configKey, studentId: { in: [...students] } }, select: { id: true, studentId: true } })
+    return new Map(all.map((e) => [e.studentId, e.id]))
+  }
+
+  /** Key-in AR of one checkpoint (Manual): a number upserts the mark, null clears it. Returns the pupils written. */
+  async saveActuals(configId: string, checkpoint: number, marks: readonly { studentId: string; value: number | null }[], now: Date): Promise<number> {
+    const key = idOf(configId)
+    if (key === null || marks.length === 0) return 0
+    const students = idsOf(marks.map((m) => m.studentId))
+    const entries = await this.ensureEntries(key, students, now)
+    for (const m of marks) {
+      const student = idOf(m.studentId)
+      const entryId = student === null ? undefined : entries.get(student)
+      if (entryId === undefined) continue
+      if (m.value === null) {
+        await this.db.headcountEntryMark.deleteMany({ where: { entryId, checkpoint } })
+      } else {
+        await this.db.headcountEntryMark.upsert({
+          where: { entryId_checkpoint: { entryId, checkpoint } },
+          create: { entryId, checkpoint, actual: m.value },
+          update: { actual: m.value },
+        })
+      }
+    }
+    await this.db.headcountEntry.updateMany({ where: { id: { in: [...entries.values()] } }, data: { updatedAt: now } })
+    await this.touch(configId, now)
+    return marks.length
+  }
+
+  /** Edit TOV/ETR/RS rows: only the keys present in a row are written (null clears). */
+  async saveEntryValues(
+    configId: string,
+    rows: readonly { studentId: string; tov?: number | null; etr?: number | null; rs?: number | null; rsRecordedAt?: Date | null }[],
+    now: Date,
+  ): Promise<void> {
+    const key = idOf(configId)
+    if (key === null || rows.length === 0) return
+    const entries = await this.ensureEntries(key, idsOf(rows.map((r) => r.studentId)), now)
+    for (const r of rows) {
+      const student = idOf(r.studentId)
+      const id = student === null ? undefined : entries.get(student)
+      if (id === undefined) continue
+      await this.db.headcountEntry.update({
+        where: { id },
+        data: {
+          ...(r.tov !== undefined ? { tov: r.tov } : {}),
+          ...(r.etr !== undefined ? { etr: r.etr } : {}),
+          ...(r.rs !== undefined ? { rs: r.rs } : {}),
+          ...(r.rsRecordedAt !== undefined ? { rsRecordedAt: r.rsRecordedAt } : {}),
+          updatedAt: now,
+        },
+      })
+    }
+    await this.touch(configId, now)
+  }
+
+  /** The stored RS and its record date of the given pupils (for the "first RS save" date default). */
+  async rsOf(configId: string, studentIds: readonly string[]): Promise<Map<string, { rs: number | null; rsRecordedAt: Date | null }>> {
+    const key = idOf(configId)
+    const students = idsOf(studentIds)
+    if (key === null || students.length === 0) return new Map()
+    const rows = await this.db.headcountEntry.findMany({ where: { configId: key, studentId: { in: students } }, select: { studentId: true, rs: true, rsRecordedAt: true } })
+    return new Map(rows.map((r) => [idToString(r.studentId), { rs: toNum(r.rs), rsRecordedAt: r.rsRecordedAt }]))
+  }
+
+  /** The lowest checkpoint above `n` where any entry of the config holds an AR mark, else null. */
+  async firstCheckpointAbove(configId: string, n: number): Promise<number | null> {
+    const key = idOf(configId)
+    if (key === null) return null
+    // No Prisma relations in this schema: the entry ids of the config first.
+    const entryIds = (await this.db.headcountEntry.findMany({ where: { configId: key }, select: { id: true } })).map((e) => e.id)
+    if (entryIds.length === 0) return null
+    const row = await this.db.headcountEntryMark.findFirst({
+      where: { entryId: { in: entryIds }, checkpoint: { gt: n }, actual: { not: null } },
+      orderBy: { checkpoint: 'asc' },
+      select: { checkpoint: true },
+    })
+    return row?.checkpoint ?? null
+  }
+
+  /** CF-05: deletes the marks of the checkpoints above `n` and sets `active_otrs`; call inside one transaction. Returns the marks deleted. */
+  async setActiveOtrs(configId: string, n: number, now: Date): Promise<number> {
+    const key = idOf(configId)
+    if (key === null) return 0
+    const entryIds = (await this.db.headcountEntry.findMany({ where: { configId: key }, select: { id: true } })).map((e) => e.id)
+    const res = entryIds.length === 0 ? { count: 0 } : await this.db.headcountEntryMark.deleteMany({ where: { entryId: { in: entryIds }, checkpoint: { gt: n } } })
+    await this.db.headcountConfig.updateMany({ where: { id: key }, data: { activeOtrs: n, updatedAt: now } })
+    return res.count
+  }
+
+  async setDefaults(configId: string, defaults: { defaultTov: number | null; defaultEtr: number | null }, now: Date): Promise<void> {
+    const key = idOf(configId)
+    if (key === null) return
+    await this.db.headcountConfig.updateMany({ where: { id: key }, data: { defaultTov: defaults.defaultTov, defaultEtr: defaults.defaultEtr, updatedAt: now } })
   }
 
   // --- display lookups (read-only) -----------------------------------------------------------

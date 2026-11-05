@@ -14,6 +14,7 @@ import {
   pctTrim,
   plain,
   ratioPct,
+  riskText,
 } from '../../lib/prestasi/format'
 import { sparklineSeries, trendSeries } from '../../lib/prestasi/gps-chart'
 import {
@@ -134,18 +135,34 @@ describe('/analisa-item redirect (OD-R4)', () => {
     expect(analisaItemTarget('admin')).toBe('/analisa-item/kelas')
     expect(analisaItemTarget('teacher')).toBe('/analisa-item/kelas')
     expect(analisaItemTarget('school_admin')).toBe('/analisa-item/sekolah')
-    expect(analisaItemTarget('student')).toBe('/dashboard')
+    expect(analisaItemTarget('student')).toBe('/analisa-item')
     expect(analisaItemTarget('parent')).toBe('/dashboard')
     expect(analisaItemTarget(null)).toBe('/login')
   })
 
-  it('sends a pelajar to the role home in http mode too (D6, 23 Oct sweep; /dashboard since AZ-20c)', () => {
+  it('keeps a pelajar on the own page and sends the other roles home in http mode too (S10-T03)', () => {
     vi.stubEnv('VITE_API_MODE', 'http')
     try {
-      expect(analisaItemTarget('student')).toBe(shellHomePath('student'))
-      expect(analisaItemTarget('student')).toBe('/dashboard')
+      expect(analisaItemTarget('student')).toBe('/analisa-item')
+      expect(analisaItemTarget('parent')).toBe(shellHomePath('parent'))
     } finally {
       vi.unstubAllEnvs()
     }
+  })
+})
+
+describe('Murid Berisiko sub-line (riskText)', () => {
+  const now = Date.parse('2026-09-25T15:40:00+08:00')
+  const days = (n: number): string => new Date(now - n * 86_400_000).toISOString()
+
+  it('shows both reasons for a pupil below 50 % who is also inactive for 7 days', () => {
+    expect(riskText({ answered: 12, lastAnsweredAt: days(9) }, now)).toBe('12 soalan · Tiada aktiviti 7 hari')
+  })
+  it('shows only the count for a recently active pupil, and the not-started copy without answers', () => {
+    expect(riskText({ answered: 12, lastAnsweredAt: days(2) }, now)).toBe('12 soalan')
+    expect(riskText({ answered: 0, lastAnsweredAt: null }, now)).toBe('Belum mula berlatih')
+  })
+  it('treats a missing last answer as inactive', () => {
+    expect(riskText({ answered: 5, lastAnsweredAt: null }, now)).toBe('5 soalan · Tiada aktiviti 7 hari')
   })
 })

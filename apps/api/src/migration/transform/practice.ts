@@ -136,6 +136,8 @@ export interface AnswerRefs {
   clientUuid: string | null
   /** The session's start, used when the attempt has no timestamp of its own. */
   sessionStartedAt: string | null
+  /** The session's mode (already one of the session modes); null = no session, the answer gets 'latih_tubi'. */
+  sessionMode?: string | null
   /** The snapshot join result (reject = an unknown dimension). */
   dims: Outcome<ResolvedDims>
 }
@@ -161,12 +163,14 @@ export interface AnswerValues {
   source_natural_key: string | null
   number_label: string | null
   created_at: string
+  /** The imported session's mode (DM-44, NOT NULL since 0188). */
+  mode: string
 }
 
 export const ANSWER_COLUMNS = [
   'session_id', 'user_id', 'question_id', 'subject_id', 'education_level_id', 'chapter_id', 'topic_id', 'difficulty',
   'question_type', 'selected_label', 'is_correct', 'time_seconds', 'answered_at', 'historical', 'client_uuid',
-  'legacy_question_ref', 'legacy_content_hash', 'source_natural_key', 'number_label', 'created_at',
+  'legacy_question_ref', 'legacy_content_hash', 'source_natural_key', 'number_label', 'created_at', 'mode',
 ] as const
 
 const LABEL = /^[A-H]$/
@@ -207,5 +211,6 @@ export function transformAnswer(row: Staged, refs: AnswerRefs): Outcome<AnswerVa
     source_natural_key: dims.source_natural_key,
     number_label: dims.number_label,
     created_at: created,
+    mode: refs.sessionMode ?? 'latih_tubi',
   })
 }

@@ -8,7 +8,7 @@
  * | `addAnswer({userId, questionId, isCorrect, answeredAt?})` | one answer without a session, plus the revision queue and the mastery counters (BR-31 steps 3–4); no wallet, streak or trial change (XR-M13-03b) |
  * | `setSubjectiveCounts(code, {levelId: n})` | the S3 "Latihan Subjektif" counts (E2E-M05-20) |
  * | `setSpmProgress(userId, subjectId, {answered, correct})` | S15 provisional progress (BR-27) |
- * | `answerChapter(userId, chapterId, {correctPct})` | answers every question of a chapter, `correctPct` % of them correctly (unlock tests) |
+ * | `answerChapter(userId, chapterId, {correctPct})` | answers every question of a chapter, `correctPct` % of them correctly (chapter progress tests; no chapter lock, D98) |
  *
  * Each validates its input and throws a `RangeError` / `TypeError` (the hook promise rejects), so a
  * typo in a test fails at the call. The default time is the shared mock clock.

@@ -43,7 +43,7 @@ describe('S3 KPIs and Learning Gain (AC-M12-11.1..11.4)', () => {
     ])
     expect(tiles(w).map((x) => x.value)).toEqual([
       '306,133',
-      '82.8%',
+      '83%',
       '80.3%',
       '20,991/20,991',
       '100%',
@@ -89,9 +89,9 @@ describe('S3 subjects (AC-M12-12.1..12.3)', () => {
     const w = await open()
     const rows = all(w, 'kirk-subject-row')
     expect(rows.map((r) => flat(r))).toEqual([
-      'Pendidikan Muzik 100.0% Mastered 20 soalan',
-      'Sejarah 76.3% Developing 57,695 soalan',
-      'Biologi 33.3% Beginning 30 soalan',
+      'Pendidikan Muzik 100% Mastered 20 soalan',
+      'Sejarah 76% Developing 57,695 soalan',
+      'Biologi 33% Beginning 30 soalan',
     ])
     const bar = (i: number) => rows[i]!.get('[data-testid="kirk-subject-bar"]')
     expect(
@@ -122,7 +122,7 @@ describe('S3 school table (AC-M12-13.1..13.3)', () => {
         .map((h) => h.text()),
     ).toEqual(['#', 'Sekolah', 'Pelajar', 'Soalan', 'Ketepatan', 'Skor Purata', 'Subjek'])
     expect(all(w, 'kirk-school-link').map((a) => flat(rowOf(a)))).toEqual([
-      '1 SMK Demo A 53 71,408 89.9% 84.7% 5',
+      '1 SMK Demo A 53 71,408 90% 84.7% 5',
       '2 SMK Demo B 184 15,007 55% 73.3% 3',
       '3 SMK Demo C 1 0 0% 0% 1',
     ])

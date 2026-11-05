@@ -113,7 +113,7 @@ describe('S6 level cards (AC-M12-25.2, 25.3)', () => {
     const card = t(w, 'chain-t2')
     expect(flat(card)).toContain('Perkembangan akademik melalui Head Count')
     expect(card.findAll('[data-testid="chain-value"]').map((e) => e.text())).toEqual([
-      '82.8%',
+      '83%',
       '306,133',
       '80.3%',
     ])
@@ -182,9 +182,9 @@ describe('S6 correlation and conclusions (AC-M12-26.1, 26.2)', () => {
           .map((c) => c.text()),
       ),
     ).toEqual([
-      ['1-20 soalan', '215', '59.7%'],
-      ['51-100 soalan', '149', '68.7%'],
-      ['100+ soalan', '348', '75.2%'],
+      ['1-20 soalan', '215', '60%'],
+      ['51-100 soalan', '149', '69%'],
+      ['100+ soalan', '348', '75%'],
     ])
     const bars = all(w, 'corr-bar')
     expect(bars[0]?.html()).toContain('bg-warning')
@@ -193,10 +193,10 @@ describe('S6 correlation and conclusions (AC-M12-26.1, 26.2)', () => {
     expect(bars[2]?.get('[role="progressbar"]').attributes('aria-valuenow')).toBe('75.2')
   })
 
-  it('composes the Kesimpulan ALESA sentence from the constants (+15.5%)', async () => {
+  it('composes the Kesimpulan ALESA sentence from the constants (+16%)', async () => {
     const w = await open()
     expect(squash(t(w, 'corr-conclusion').text())).toBe(
-      'Kesimpulan ALESA: Pelajar yang menjawab 100+ soalan mencapai ketepatan 75.2%, berbanding 59.7% bagi pelajar dengan kurang 20 soalan (perbezaan +15.5%). Korelasi Pearson antara penggunaan dan ketepatan: r = 0.1298 (Lemah).',
+      'Kesimpulan ALESA: Pelajar yang menjawab 100+ soalan mencapai ketepatan 75%, berbanding 60% bagi pelajar dengan kurang 20 soalan (perbezaan +16%). Korelasi Pearson antara penggunaan dan ketepatan: r = 0.1298 (Lemah).',
     )
     expect(t(w, 'corr-conclusion').get('strong').text()).toBe('Kesimpulan ALESA:')
   })
