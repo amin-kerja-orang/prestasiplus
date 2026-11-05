@@ -229,7 +229,7 @@
     "src/modules/m04-question-bank/{pages,components}/**",
     "src/modules/m07-pksk/pages/{PkskAccessPage,PkskQuestionFormPage,PkskQuestionListPage}.vue",
     "src/modules/m07-pksk/components/OptionsCard.vue",
-    "src/modules/m09-content/pages/{Admin,AudioSet,AudioTemplate,Banner,Screenshots}*Page.vue",
+    "src/modules/m09-content/pages/{Admin,AudioSet,AudioTemplate,Banner,Screenshots,VideoAdmin}*Page.vue",
     "src/modules/m09-content/components/admin-media/**",
     "src/modules/m11-teacher-analytics/pages/Monitoring*Page.vue",
     "src/modules/m11-teacher-analytics/components/monitoring/**",

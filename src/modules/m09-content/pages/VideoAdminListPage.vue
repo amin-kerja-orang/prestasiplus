@@ -188,7 +188,6 @@ const cardFields: CardField[] = [
         <DsText
           variant="label"
           :clamp="2"
-          :title="row.original.title"
           data-testid="video-row"
           :data-video-id="row.original.id"
         >
