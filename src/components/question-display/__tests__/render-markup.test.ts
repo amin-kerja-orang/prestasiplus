@@ -37,6 +37,10 @@ describe('renderMarkup', () => {
       '<td><span class="qd-gap" data-gap="1"></span></td>',
     )
     expect(renderMarkup('{{gap:0}}')).toBe('{{gap:0}}')
+    expect(renderMarkup('{{gap:99}}')).toBe('<span class="qd-gap" data-gap="99"></span>')
+    expect(renderMarkup('{{gap:100}}')).toBe('{{gap:100}}')
+    expect(renderMarkup('{{gap:1000}}')).toBe('{{gap:1000}}')
+    expect(renderMarkup('{{gap:007}}')).toBe('{{gap:007}}')
   })
   it('renders each S2-T10 carrier exactly', () => {
     const cases = [
@@ -62,5 +66,14 @@ describe('RichText markup prop', () => {
   it('is off by default (HTML shown escaped) and opt-in renders it', () => {
     expect(mount(RichText, { props: { text: '<u>x</u>' } }).html()).toContain('&lt;u&gt;')
     expect(mount(RichText, { props: { text: '<u>x</u>', markup: true } }).html()).toContain('<u>x</u>')
+  })
+})
+
+describe('renderMath limits', () => {
+  it('caps KaTeX sizes (maxSize), so a huge \\rule cannot widen the layout', () => {
+    const html = renderMath('\\rule{9999em}{1em}', true)
+    // The TeX source stays in the MathML annotation; the drawn width is capped at 20em.
+    expect(html).toContain('border-right-width:20em')
+    expect(html).not.toMatch(/width[:=]"?9999em/)
   })
 })
