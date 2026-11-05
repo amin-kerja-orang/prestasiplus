@@ -22,7 +22,7 @@ import { CLOCK, type Clock, mytDay } from '../../db/clock'
 import { Prisma } from '../../db/generated/client'
 import { idFromString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
-import { isRewardSettingKey, rewardSettingError, rewardSettingsByKey, RewardSettingsService } from '../shop'
+import { isRewardSettingKey, mytYearRange, rewardSettingError, rewardSettingsByKey, RewardSettingsService, ShopRepository } from '../shop'
 import { MAX_AMOUNT_PER_CALL, WalletService } from '../wallet'
 import type { AuditActor } from './actor'
 import {
@@ -189,6 +189,7 @@ export class GamificationAdminService {
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(GamificationPorts) private readonly ports: GamificationPorts,
     @Inject(RewardSettingsService) private readonly rewardSettings: RewardSettingsService,
+    @Inject(ShopRepository) private readonly shop: ShopRepository,
   ) {}
 
   private async write<T>(actor: AuditActor, action: string, target: { type: string; id: string | null }, details: Record<string, unknown>, fn: (tx: TxClient) => Promise<T>): Promise<T> {
@@ -502,10 +503,12 @@ export class GamificationAdminService {
     const settings = await this.economy(db)
     const year = settings.currentSessionYear
     const valid = Number.isInteger(year) && year >= 1970 && year <= 9998
-    const tiles = valid ? await this.repo.claimTiles(db, new Date(`${String(year).padStart(4, '0')}-01-01T00:00:00+08:00`), new Date(`${String(year + 1).padStart(4, '0')}-01-01T00:00:00+08:00`)) : { claims: 0, students: 0, costSen: 0 }
+    // FR-ADM-P2-09.1: the same sum the budget check of a redeem uses, over `reward_redemptions`.
+    const range = mytYearRange(year)
+    const tiles = valid ? await this.shop.redemptionTotals(range.from, range.to) : { redemptions: 0, students: 0, costSen: 0 }
     const [rewards, draws] = await Promise.all([this.repo.syilingRewards(db), this.repo.draws(db)])
     return {
-      tiles: { sessionYear: year, liabilityRm: tiles.costSen / 100, students: tiles.students, claims: tiles.claims },
+      tiles: { sessionYear: year, liabilityRm: tiles.costSen / 100, students: tiles.students, claims: tiles.redemptions },
       settings,
       rewards: rewards.map(rewardView),
       draws: draws.map(drawView),

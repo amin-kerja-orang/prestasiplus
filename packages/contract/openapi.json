@@ -6806,15 +6806,17 @@
               "liabilityRm": {
                 "type": "number",
                 "minimum": 0,
-                "description": "Sum of costValueSen of the claims in the session year / 100."
+                "description": "Sum of the real cost snapshots of the pending_admin and delivered reward redemptions created in the Malaysia calendar year of the session year / 100 (the sum the session budget uses; DM-48, DM-77)."
               },
               "students": {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0,
+                "description": "Pupils with such a redemption."
               },
               "claims": {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0,
+                "description": "Number of such redemptions, digital ones included."
               }
             },
             "required": [

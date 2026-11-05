@@ -94,17 +94,32 @@ describe('M14 admin operations: settings, reward control, lucky draws (BE-23, AC
       expect(d.draws[0]).toMatchObject({ title: 'Cabutan Demo', status: 'open', ticketCostSyiling: 50, maxTicketsPerStudent: 10, ticketsSold: 0, prizePool: [{ label: 'Hadiah Demo', valueSen: 1000, qty: 1 }, { label: 'Baucar RM5', valueSen: 500, qty: 10 }] })
     })
 
-    it('the claim tiles sum the claims of the session year (cost snapshot, distinct students) and follow current_session_year', async () => {
-      const reward = (await t.db.query<{ id: string }>(`select id::text from syiling_rewards order by id limit 1`))[0]!.id
-      const a = await bareUser(t, 'Tuntut Satu')
-      const b = await bareUser(t, 'Tuntut Dua')
-      for (const [u, sen, at] of [[a, 250, '2026-03-01T10:00:00+08:00'], [a, 150, '2026-12-31T23:30:00+08:00'], [b, 300, '2026-07-01T10:00:00+08:00'], [b, 999, '2025-12-31T23:59:00+08:00'], [b, 888, '2027-01-01T00:00:00+08:00']] as const) {
-        await t.db.query(`insert into reward_claims (user_id, reward_id, cost_value_sen, claimed_at) values ($1, $2, $3, $4)`, [u, reward, sen, at])
-      }
-      expect((await GamificationRewardControlSchema.parse(dataOf(await admin.get('/admin/reward-control')))).tiles).toEqual({ sessionYear: 2026, liabilityRm: 7, students: 2, claims: 3 })
+    it('the tiles sum the redemptions of the session year (cost snapshot, MYT calendar year, pending and delivered only, distinct pupils) and follow the session year', async () => {
+      const a = await bareUser(t, 'Tebus Satu')
+      const b = await bareUser(t, 'Tebus Dua')
+      const redeem = (u: string, sen: number, at: string, status = 'pending_admin') =>
+        t.db.query(`insert into reward_redemptions (user_id, reward_title, reward_vendor, denomination_rm, token_cost, token_cost_snapshot, cost_value_sen_snapshot, status, created_at) values ($1, 'Hadiah', 'Vendor', 1, 1, 1, $2, $3, $4)`, [u, sen, status, at])
+      await redeem(a, 250, '2026-01-01T00:00:00+08:00')
+      await redeem(a, 150, '2026-12-31T23:30:00+08:00', 'delivered')
+      await redeem(b, 300, '2026-07-01T10:00:00+08:00')
+      await redeem(b, 0, '2026-07-02T10:00:00+08:00') // a digital gift counts as a redemption and adds no cost
+      await redeem(b, 999, '2025-12-31T23:59:00+08:00')
+      await redeem(b, 888, '2027-01-01T00:00:00+08:00')
+      await redeem(a, 5000, '2026-03-01T10:00:00+08:00', 'cancelled')
+      const tiles = async () => GamificationRewardControlSchema.parse(dataOf(await admin.get('/admin/reward-control'))).tiles
+      expect(await tiles()).toEqual({ sessionYear: 2026, liabilityRm: 7, students: 2, claims: 4 })
       await admin.put('/admin/reward-control/settings', { currentSessionYear: 2027 })
-      expect(GamificationRewardControlSchema.parse(dataOf(await admin.get('/admin/reward-control'))).tiles).toEqual({ sessionYear: 2027, liabilityRm: 8.88, students: 1, claims: 1 })
+      expect(await tiles()).toEqual({ sessionYear: 2027, liabilityRm: 8.88, students: 1, claims: 1 })
       await admin.put('/admin/reward-control/settings', { currentSessionYear: 2026 })
+    })
+
+    it('the tiles do not read reward_claims, whose rows wait for the deferred merge (#501), and the list and cost route still use syiling_rewards', async () => {
+      const before = GamificationRewardControlSchema.parse(dataOf(await admin.get('/admin/reward-control')))
+      const reward = (await t.db.query<{ id: string }>(`select id::text from syiling_rewards order by id limit 1`))[0]!.id
+      await t.db.query(`insert into reward_claims (user_id, reward_id, cost_value_sen, claimed_at) values ($1, $2, 12345, '2026-03-01T10:00:00+08:00')`, [await bareUser(t, 'Tuntut Lama'), reward])
+      const after = GamificationRewardControlSchema.parse(dataOf(await admin.get('/admin/reward-control')))
+      expect(after.tiles).toEqual(before.tiles)
+      expect(after.rewards.map((r) => r.id)).toContain(reward)
     })
 
     it('PUT settings: the five shared keys (camelCase or snake_case), only the posted ones change, the S9 list sees them', async () => {

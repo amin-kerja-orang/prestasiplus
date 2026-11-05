@@ -696,14 +696,6 @@ export class GamificationRepository {
     return row ? { id: idToString(row.id), name: row.name, type: row.type, priceSyiling: row.priceSyiling, costValueSen: row.costValueSen } : null
   }
 
-  /** Claims whose `claimed_at` falls in `[from, to)`: count, distinct students and the summed cost snapshot (G-18). */
-  async claimTiles(db: Db, from: Date, to: Date): Promise<{ claims: number; students: number; costSen: number }> {
-    const rows = await db.$queryRaw<{ claims: bigint; students: bigint; cost: bigint | null }[]>`
-      SELECT count(*)::bigint AS claims, count(DISTINCT user_id)::bigint AS students, COALESCE(SUM(cost_value_sen), 0)::bigint AS cost
-        FROM reward_claims WHERE claimed_at >= ${from}::timestamptz AND claimed_at < ${to}::timestamptz`
-    return { claims: num(rows[0]?.claims), students: num(rows[0]?.students), costSen: num(rows[0]?.cost) }
-  }
-
   async draws(db: Db): Promise<DrawRecord[]> {
     const rows = await db.draw.findMany({ orderBy: { id: 'desc' }, include: { prizes: { orderBy: { position: 'asc' } }, _count: { select: { tickets: true } } } })
     return rows.map((d) => toDraw(d, d._count.tickets))

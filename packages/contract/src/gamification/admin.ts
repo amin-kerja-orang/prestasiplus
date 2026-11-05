@@ -440,9 +440,9 @@ export const GamificationRewardControlSchema = z
   .object({
     tiles: z.object({
       sessionYear: count,
-      liabilityRm: z.number().min(0).meta(FIELD('Sum of costValueSen of the claims in the session year / 100.')),
-      students: count,
-      claims: count,
+      liabilityRm: z.number().min(0).meta(FIELD('Sum of the real cost snapshots of the pending_admin and delivered reward redemptions created in the Malaysia calendar year of the session year / 100 (the sum the session budget uses; DM-48, DM-77).')),
+      students: count.meta(FIELD('Pupils with such a redemption.')),
+      claims: count.meta(FIELD('Number of such redemptions, digital ones included.')),
     }),
     settings: GamificationEconomySettingsSchema,
     rewards: z.array(GamificationSyilingRewardSchema),

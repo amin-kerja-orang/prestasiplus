@@ -20,6 +20,6 @@ import { ShopService } from './shop.service'
   imports: [AuditModule, ThrottleModule, WalletModule],
   controllers: [ShopController, ShopAdminController],
   providers: [ShopRepository, ShopService, ShopAdminService, RewardSettingsService, { provide: BOX_RANDOM, useValue: CsprngBoxRandom }],
-  exports: [RewardSettingsService],
+  exports: [RewardSettingsService, ShopRepository],
 })
 export class ShopModule {}
