@@ -105,8 +105,8 @@ test.describe('Kawalan Ciri (S0-T10)', () => {
         const acc = account('student')
         await loginViaUi(pupil, acc.user, acc.pass)
         await gotoApi(pupil, '/dashboard')
-        const menu = (await pupil.locator('a[href="/gamification/leaderboard"]').count()) > 0
-        await gotoApi(pupil, '/gamification/leaderboard')
+        const menu = (await pupil.locator('a[href="/leaderboard"], a[href="/gamification/leaderboard"]').count()) > 0
+        await gotoApi(pupil, '/leaderboard')
         await expect.poll(() => pupil.title()).not.toBe('')
         const notFoundShown = await pupil.getByRole('heading', { name: 'Halaman Tidak Dijumpai' }).first().isVisible()
         return { menu, title: await pupil.title(), notFoundShown }

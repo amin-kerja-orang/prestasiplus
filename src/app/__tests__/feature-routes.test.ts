@@ -189,15 +189,17 @@ describe('every Kawalan Ciri key (S0-T11)', () => {
     expect(decideAccess(route('/cita-cita/biasiswa'), student)).toEqual({ kind: 'allow' })
   })
 
-  it('AC-ADM-P2-19.1: Leaderboard OFF answers 404 on the page and keeps the URL, ON restores it', async () => {
+  it('AC-ADM-P2-19.1: Leaderboard OFF answers 404 on /leaderboard and its duplicate, keeps the URL, ON restores it', async () => {
+    withFlags({ leaderboard: false })
+    expect(decideAccess(route('/gamification/leaderboard'), student)).toEqual({ kind: 'in-place', status: 404 })
     withFlags({ leaderboard: false })
     const router = testRouter()
-    await router.push('/gamification/leaderboard')
-    expect(router.currentRoute.value.path).toBe('/gamification/leaderboard')
+    await router.push('/leaderboard')
+    expect(router.currentRoute.value.path).toBe('/leaderboard')
     expect(useRouteOutcome().value).toBe(404)
     withFlags({ leaderboard: true })
     await router.push('/dashboard')
-    await router.push('/gamification/leaderboard')
+    await router.push('/leaderboard')
     expect(useRouteOutcome().value).toBeNull()
   })
 })

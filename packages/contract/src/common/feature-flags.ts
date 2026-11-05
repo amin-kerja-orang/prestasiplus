@@ -81,7 +81,9 @@ export const FEATURE_ROUTE_PREFIXES: Readonly<Record<string, FeatureRoutePrefixe
   permainan: { fe: ['/permainan'], api: ['/api/games', '/api/papan-bijak'] },
   'misi-harian': { fe: ['/misi-harian'], api: ['/api/missions'] },
   kombo: { fe: ['/kombo'], api: [] },
-  leaderboard: { fe: ['/gamification/leaderboard'], api: ['/api/gamification/leaderboard'] },
+  // Canonical Papan Pendahulu is `/leaderboard` + `GET /api/leaderboard` (D113, register R-01 / P-02). The duplicate page
+  // `/gamification/leaderboard` still exists until it redirects, so OFF covers it too; its retired api is not referenced.
+  leaderboard: { fe: ['/leaderboard', '/gamification/leaderboard'], api: ['/api/leaderboard'] },
   remedial: { fe: ['/remedial'], api: ['/api/remedial-tests'] },
   'cita-cita': { fe: ['/cita-cita'], api: [], feExcept: ['/cita-cita/universiti', '/cita-cita/biasiswa'] },
   universiti: { fe: ['/cita-cita/universiti'], api: [] },
