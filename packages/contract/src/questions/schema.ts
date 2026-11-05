@@ -875,7 +875,7 @@ export const GURU_STRUCTURED_MESSAGES = {
   scheme: 'Sila isi skema jawapan.',
   schemeLong: 'Skema jawapan tidak boleh melebihi 2000 aksara.',
   partsMin: 'Sekurang-kurangnya satu sub-soalan diperlukan.',
-  partsMax: 'Satu soalan berstruktur boleh mempunyai 1 hingga 10 sub-soalan sahaja.',
+  partsMax: 'Bilangan sub-soalan mesti antara 1 dan 10.',
   /** Success text of the create. */
   submitted: 'Soalan berstruktur dihantar untuk semakan.',
 } as const

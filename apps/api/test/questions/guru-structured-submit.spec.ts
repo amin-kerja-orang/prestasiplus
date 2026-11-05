@@ -141,7 +141,7 @@ describe('Guru structured submission: POST/PUT/DELETE /guru/intake/structured an
     const ten = await created(teacher, { parts: Array.from({ length: 10 }, () => part({ marks: 20 })) })
     expect(ten).toMatchObject({ subCount: 10, totalMarks: 200 })
     const f = expectError(await teacher.post('/api/guru/intake/structured', body({ parts: Array.from({ length: 11 }, () => part()) })), 'VALIDATION_ERROR').fields
-    expect(f?.parts).toBe('Satu soalan berstruktur boleh mempunyai 1 hingga 10 sub-soalan sahaja.')
+    expect(f?.parts).toBe('Bilangan sub-soalan mesti antara 1 dan 10.')
   })
 
   it('an item with no stimulus is accepted (the stimulus is optional)', async () => {
