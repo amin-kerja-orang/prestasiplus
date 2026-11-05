@@ -87,7 +87,7 @@ describe('teacher question stats bridge (SW12-02)', () => {
     const strTree = await idOfRef('SEED-STR-TREE')
     const bmT5 = await idOfRef('SEED-MCQ-BM-T5')
     const answer = (qid: string, isTest: boolean) =>
-      t.db.query(`insert into practice_answers (user_id, question_id, is_correct, answered_at, is_test) values ($1, $2, true, now(), $3)`, [student, qid, isTest])
+      t.db.query(`insert into practice_answers (user_id, question_id, is_correct, answered_at, is_test, mode) values ($1, $2, true, now(), $3, 'latih_tubi')`, [student, qid, isTest])
     await answer(mathT4, false)
     await answer(mathT4, false)
     await answer(sciT4, true)

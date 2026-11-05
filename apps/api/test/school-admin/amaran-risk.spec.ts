@@ -96,7 +96,7 @@ describe('BE-21 Amaran mastery level from the M05 ladder', () => {
 describe('BE-21 Amaran cell texts and labels', () => {
   it('uses the exact BM strings', () => {
     const active = pupilView(scored({ accuracy: 72.46, sessions: 2, lastActiveAt: NOW - DAY_MS, masteryLevels: [3, 4] }), 1)
-    expect(active.accuracyText).toBe('Purata ketepatan: 72.5%')
+    expect(active.accuracyText).toBe('Purata ketepatan: 73%')
     expect(active.engagementText).toBe('Terakhir aktif: 2026-10-20')
     expect(active.masteryText).toBe('Purata tahap: L4')
     expect(active.mastery).toBe(3.5)
