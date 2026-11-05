@@ -47,3 +47,6 @@ export function translateDbError(e: unknown, map: DbErrorMap): never {
   if (code === 'P2002' && map.uniqueField) throw ApiError.of('VALIDATION_ERROR', { fields: { [map.uniqueField]: uniqueMessage(map.uniqueField) } })
   throw e
 }
+
+/** 409 (FR-ADM-C01.4, D113): a Bab that still has question versions linked is not deleted; `n` is the count. */
+export const chapterHasQuestions = (n: number): ApiError => ApiError.of('CONFLICT', { message: `Bab ini masih mempunyai ${n} soalan.` })

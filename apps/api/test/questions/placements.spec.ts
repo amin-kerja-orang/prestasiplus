@@ -1,7 +1,7 @@
 import { QuestionDetailSchema, QuestionGuruDetailSchema, envelopeOf } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { bootQuestionsApp, expectError, loginAs, type Client, type QuestionsTestApp } from './helpers'
+import { bootQuestionsApp, expectError, guruFormBody, loginAs, teacherQuestion, type Client, type QuestionsTestApp } from './helpers'
 import { mcqBody, refsOf, type Refs } from './http-helpers'
 
 /**
@@ -69,11 +69,12 @@ describe('question detail lists the papers that place it (AC-04.4)', () => {
   })
 
   it('the Guru view of the same question never carries the papers, and a Guru cannot open the admin detail', async () => {
-    const own = await teacher.post('/api/guru/questions', { questionType: 'mcq', questionText: 'Soalan guru untuk ujian kertas?', options: ['1', '2', '3', '4'], correctAnswer: 1, subjectId: refs.mathId, educationLevelId: refs.t4Id, difficultyLevel: 3 })
-    expect(own.status, JSON.stringify(own.body)).toBe(201)
-    const id = own.body.data.id as string
+    // S6-T06: a teacher's submission is an intake item; the question that sits on a paper is a question row the teacher owns.
+    const item = await teacher.post('/api/guru/questions', await guruFormBody(t, { questionText: 'Soalan guru untuk ujian kertas?' }))
+    expect(item.status, JSON.stringify(item.body)).toBe(201)
+    const id = await teacherQuestion(t, teacher.userId, mcqBody(refs, { questionText: 'Soalan guru untuk ujian kertas?' }))
     await paper('Kertas guru', 'published', [{ questionId: id, section: 'Bahagian A', pinned: 1 }])
-    const view = await teacher.get(`/api/guru/questions/${id}`)
+    const view = await teacher.get(`/api/guru/questions/${item.body.data.id as string}`)
     expect(view.status).toBe(200)
     expect(JSON.stringify(view.body)).not.toMatch(/placements|generatedPaperCount|Kertas guru/)
     void QuestionGuruDetailSchema

@@ -38,9 +38,6 @@ import {
   GamesLeagueTypeSchema,
   GamesSekolahBersaingBoardRowSchema,
   GamesSekolahBersaingBoardSchema,
-  GamesSekolahBersaingQuerySchema,
-  GamesSekolahBersaingRowSchema,
-  GamesSekolahBersaingSchema,
 } from './leagues'
 import {
   GamesBoardTileSchema,
@@ -207,9 +204,6 @@ export const GAMES_COMPONENT_SCHEMAS = {
   GamesLeagueDetail: GamesLeagueDetailSchema,
   GamesSekolahBersaingBoardRow: GamesSekolahBersaingBoardRowSchema,
   GamesSekolahBersaingBoard: GamesSekolahBersaingBoardSchema,
-  GamesSekolahBersaingQuery: GamesSekolahBersaingQuerySchema,
-  GamesSekolahBersaingRow: GamesSekolahBersaingRowSchema,
-  GamesSekolahBersaing: GamesSekolahBersaingSchema,
   // admin
   GamesAdminOverview: GamesAdminOverviewSchema,
   GamesAdminSettingsUpdateRequest: GamesAdminSettingsUpdateRequestSchema,
@@ -241,12 +235,12 @@ const LeagueParams = z.object({
   id: z.string().min(1).meta({ description: 'League id. Digits only; a non-numeric segment does not match the route.' }),
 })
 
-const UNAUTHORIZED = err('UNAUTHORIZED "Unauthenticated." (no valid session).')
+const UNAUTHORIZED = err('UNAUTHORIZED "Sesi anda telah tamat. Sila log masuk semula." (no valid session).')
 const CSRF_INVALID = err('CSRF_INVALID (missing or wrong X-CSRF-Token).')
 const FORBIDDEN_CSRF_OR = (what: string) => err(`FORBIDDEN ${what}, or CSRF_INVALID (missing or wrong X-CSRF-Token).`)
-const FORBIDDEN_ADMIN = err('FORBIDDEN "This action is unauthorized." (role is not admin).')
+const FORBIDDEN_ADMIN = err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role is not admin).')
 const FORBIDDEN_ADMIN_WRITE = err(
-  'FORBIDDEN "This action is unauthorized." (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).',
+  'FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).',
 )
 /**
  * D57(a): every write route (and the solo GET that creates a session row) can answer 429. Always the standard
@@ -714,11 +708,14 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     method: 'get',
     path: '/sekolah-bersaing',
     tags: TAGS,
-    summary: 'Sekolah Bersaing weekly board (M16-50)',
+    summary: 'Sekolah Bersaing live board (API-AS-14)',
     description:
-      'National board, no school scope. `week`: a valid YYYY-MM-DD selects the Monday of that week; anything else the current week; never an error. An anonymous row shows "Sekolah anonim".',
-    request: { query: GamesSekolahBersaingQuerySchema },
-    responses: { 200: json(envelopeOf(GamesSekolahBersaingSchema), 'Weekly snapshot.'), 401: UNAUTHORIZED },
+      'National board, no school scope, computed on request. School admin and admin only. Top 30 schools by mean session accuracy; ties by pupils, sessions, school name. An unknown query parameter is ignored.',
+    responses: {
+      200: json(envelopeOf(GamesSekolahBersaingBoardSchema), 'Rank order; [] when no school has a session.'),
+      401: UNAUTHORIZED,
+      403: err('FORBIDDEN "This action is unauthorized." (role is not school_admin or admin).'),
+    },
   })
 
   // ---- admin game settings -----------------------------------------------------------------------------------

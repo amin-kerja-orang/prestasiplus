@@ -206,6 +206,8 @@ export class ShopService {
       // A repeat answers before any check and moves nothing, even when the draw has closed since.
       const first = clientUuid === null ? null : await this.repo.ticketByClientUuid(userId, clientUuid)
       if (first) {
+        // The key is unique per user (DM-78) and belongs to the draw it bought on: on another draw it is no repeat, so no first draw's ticket is answered.
+        if (first.drawId !== drawId) throw validation({ clientUuid: REWARD_VALIDATION_MESSAGES.clientUuidInvalid })
         const ticketsOwned = await this.repo.countTickets(first.drawId, userId)
         const { currentSyiling } = await this.wallet.summary(actor.userId, { tx })
         return { drawId: idToString(first.drawId), ticketsOwned, syilingBalance: currentSyiling }

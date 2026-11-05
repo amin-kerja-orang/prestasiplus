@@ -216,6 +216,7 @@ export const GamificationAdminStudentRowSchema = z
     tokenBalance: count,
     totalSyilingEarned: count,
     xp: count,
+    streak: count.optional().meta({ description: 'Current streak in days (FR-ADM-P2-04.1). Absent until the route serves it.' }),
   })
   .meta({ id: 'GamificationAdminStudentRow' })
 export type GamificationAdminStudentRow = z.infer<typeof GamificationAdminStudentRowSchema>

@@ -103,6 +103,8 @@ export interface VideoInput {
   category: VideoCategory
   subjectId?: number | null
   visibility: VideoVisibility
+  /** Overrides the uploader's video-form school (a teacher's profile school in the handler). */
+  schoolId?: number | null
 }
 
 export interface VideoDetailResult {
@@ -346,7 +348,7 @@ export const videosRepo = defineRepository({
 
       /** S20 create: any logged-in user; `school` needs a video-form school. */
       create(uploaderId: number, input: VideoInput): VideoRow {
-        const school = schoolOf(uploaderId)
+        const school = input.schoolId ?? schoolOf(uploaderId)
         if (input.visibility === 'school' && school === null) {
           throw new M09Error('VALIDATION_ERROR', 'Anda tiada sekolah untuk dikongsi.')
         }
@@ -380,11 +382,8 @@ export const videosRepo = defineRepository({
           if (!canManage(row, viewer)) {
             throw new M09Error('FORBIDDEN', 'Anda tidak dibenarkan mengubah video ini.')
           }
-          const school = schoolOf(row.uploaderId)
-          if (input.visibility === 'school' && school === null) {
-            throw new M09Error('VALIDATION_ERROR', 'Anda tiada sekolah untuk dikongsi.')
-          }
           const parsed = parseVideoUrl(input.videoUrl)
+          // The server owns the visibility (teacher = school, admin = global): an edit keeps it.
           return store.update(id, {
             videoUrl: input.videoUrl.trim(),
             platform: parsed.platform,
@@ -394,8 +393,6 @@ export const videosRepo = defineRepository({
             description: input.description ?? null,
             category: input.category,
             subjectId: input.subjectId ?? null,
-            visibility: input.visibility,
-            schoolId: input.visibility === 'school' ? school : null,
             updatedAt: nowIso(),
           })
         })

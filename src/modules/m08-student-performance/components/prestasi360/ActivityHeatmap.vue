@@ -1,15 +1,14 @@
 <script setup lang="ts">
 /**
- * S6 "Peta Aktiviti (90 Hari)" (FR-M08-42): 90 cells, oldest first, coloured by BR-M08-11 buckets (a five-step
- * ramp from `bg-elevated` to `bg-primary`). `mouseenter` sets and a mouse leaving clears the active day,
- * `click` toggles it; the active day shows the tooltip "{dd/mm} ({hari}) — Tiada aktiviti | {n} sesi".
+ * S6 "Peta Aktiviti (90 Hari)" (FR-M08-42): 90 cells, oldest first, coloured by the R1-MUR-4 bins 0, 1-4, 5-8, 9-12, 13+. `mouseenter` sets and a mouse leaving clears the active day,
+ * `click` toggles it; the active day shows the tooltip "{dd/mm} ({hari}) — Tiada aktiviti | {n} sesi latihan".
  */
 import { DsPanel } from '@/ds'
 import { computed, ref } from 'vue'
 
 import type { StudentPerformance } from '../../api/types'
 import { usePhIcon } from '../../lib/icons'
-import { HEAT_RAMP, dayLabel, heatClass } from '../../lib/analitik'
+import { HEAT_LEGEND_360, dayLabel360, heatBin360 } from '../../lib/analitik'
 
 const props = defineProps<{ days: StudentPerformance['heatmap'] }>()
 
@@ -25,7 +24,7 @@ const pinned = ref('')
 const activeDay = computed(() => hover.value || pinned.value)
 const tooltip = computed(() => {
   const d = props.days.find((x) => x.date === activeDay.value)
-  return d ? dayLabel(d.date, d.sessions) : ''
+  return d ? dayLabel360(d.date, d.sessions) : ''
 })
 /** A mouse leaving clears the day as on live (FR-M08-42); a touch tap keeps its pin. */
 const leave = (e: PointerEvent): void => {
@@ -42,7 +41,13 @@ const toggle = (date: string): void => {
   }
 }
 
-const LEGEND = ['0', '1-1', '2-2', '3-3', '4+']
+const LEGEND = HEAT_LEGEND_360
+/**
+ * V2 colours #f1f5f9, #bbf7d0, #4ade80, #16a34a, #15803d mapped to the nearest DS tokens (no raw hex):
+ * bg-elevated, bg-success/25, bg-success/50, bg-success/75, bg-success.
+ */
+const RAMP = 'bg-elevated bg-success/25 bg-success/50 bg-success/75 bg-success'.split(' ')
+const heatClass360 = (sessions: number): string => RAMP[heatBin360(sessions)] ?? ''
 </script>
 
 <template>
@@ -61,8 +66,8 @@ const LEGEND = ['0', '1-1', '2-2', '3-3', '4+']
           size="xs"
           square
           class="size-6 p-0"
-          :class="activeDay === d.date ? 'bg-default' : heatClass(d.sessions)"
-          :aria-label="dayLabel(d.date, d.sessions)"
+          :class="activeDay === d.date ? 'bg-default' : heatClass360(d.sessions)"
+          :aria-label="dayLabel360(d.date, d.sessions)"
           :aria-pressed="pinned === d.date"
           :data-date="d.date"
           data-testid="heat-cell"
@@ -82,7 +87,7 @@ const LEGEND = ['0', '1-1', '2-2', '3-3', '4+']
         <template v-for="(label, i) in LEGEND" :key="label">
           <span>{{ label }}</span>
           <span
-:class="[HEAT_RAMP[i] ?? 'bg-elevated', 'inline-block size-4']"
+:class="[RAMP[i], 'inline-block size-4']"
             aria-hidden="true"
           />
         </template>
