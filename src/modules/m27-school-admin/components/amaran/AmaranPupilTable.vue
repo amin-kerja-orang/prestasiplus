@@ -41,7 +41,7 @@ const data = computed<Row[]>(() =>
     rank: String(p.rank),
     name: p.name,
     classLabel: p.classLabel,
-    score: String(p.score),
+    score: p.score === null ? '—' : String(p.score),
     status: p.status,
     statusLabel: STATUS_LABEL[p.status],
     accuracy: p.accuracyText,
