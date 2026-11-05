@@ -137,6 +137,30 @@ export interface ImportedQuestionInput {
   marks?: number
   /** Optional `kertas` column (1 to 3); stored so the paper builder can find the question. */
   kertas?: '1' | '2' | '3'
+  /** S1-T05 (codes mapped to ids by the importer): the DSKP unit node, 1 to 3 SP nodes and the TP 1 to 6 of the question; they make the row publishable (QE6.3). */
+  unitId?: string
+  spIds?: string[]
+  tp?: number
+  /** Aras pemikiran of the single leaf; `kbat` is the explicit KBAT value (`bukan` = not KBAT), absent = derived from the aras. */
+  cognitiveLevel?: 'mengingat' | 'memahami' | 'mengaplikasi' | 'menganalisis' | 'menilai' | 'mencipta'
+  kbat?: 'mengaplikasi' | 'menganalisis' | 'menilai' | 'mencipta' | 'bukan'
+  /** Bab and topic of the curriculum (ids). */
+  chapterId?: string
+  topicId?: string
+  /** Printed question number (`Nombor soalan`). */
+  numberLabel?: string
+  /** `en` when the row says `bahasa = en`; absent = Bahasa Melayu. */
+  language?: 'en'
+  /** S1-T05 part 2: the stimulus (id) the one leaf is shown with (`part_stimulus`); the importer sets it after it creates the group's stimuli. */
+  partStimulusId?: string
+}
+
+/** The stem and subject of one exact version (the version a report was filed against), for the reporter's own list. */
+export interface QuestionVersionBrief {
+  /** Plain-text stem (the adapter strips markup). */
+  stemText: string
+  subjectId: string | null
+  subjectName: string | null
 }
 
 /** Display facts about a question for lists (reports, master notes). */
@@ -242,6 +266,9 @@ export interface QuestionBankPort {
   /** Display facts for lists; unknown ids are absent from the map. */
   describe(ids: readonly string[]): Promise<ReadonlyMap<string, QuestionBrief>>
 
+  /** Stem and subject of exact versions, keyed `${questionId}:${versionNo}`; an unknown question or version is absent. */
+  describeVersions(refs: readonly { questionId: string; versionNo: number }[]): Promise<ReadonlyMap<string, QuestionVersionBrief>>
+
   /**
    * Every question, for the quality audit and dashboard, in batches of at most `size` (ascending id, keyset, bounded memory):
    * `visit` is called once per batch, in order. Never load the whole bank into one array.
@@ -296,6 +323,9 @@ export class EmptyQuestionBank implements QuestionBankPort {
     return null
   }
   async describe(): Promise<ReadonlyMap<string, QuestionBrief>> {
+    return new Map()
+  }
+  async describeVersions(): Promise<ReadonlyMap<string, QuestionVersionBrief>> {
     return new Map()
   }
   async forEachQualityBatch(): Promise<void> {
