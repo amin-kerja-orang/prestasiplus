@@ -12,6 +12,7 @@ import {
   QUEST_DIFFICULTY,
   revisionBadge,
   showKombo,
+  bestStreakText,
   starStates,
   subjectColorByName,
   weakTopics,
@@ -110,5 +111,16 @@ describe('dashboard-lib', () => {
       ['C', 33],
       ['B', 59],
     ])
+  })
+})
+
+describe('bestStreakText (FR-MUR-2-3)', () => {
+  it('formats the record, zero included, and never shows less than the live streak', () => {
+    expect(bestStreakText(5, 2)).toBe('Rekod terbaik: 5 hari')
+    expect(bestStreakText(0, 0)).toBe('Rekod terbaik: 0 hari')
+    expect(bestStreakText(1, 3)).toBe('Rekod terbaik: 3 hari')
+  })
+  it('gives no line when the record is missing', () => {
+    expect(bestStreakText(null, 2)).toBeNull()
   })
 })
