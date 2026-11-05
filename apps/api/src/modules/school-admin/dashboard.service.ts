@@ -22,6 +22,7 @@ import {
   type SchoolPerformanceCtx,
   type SchoolPerformancePort,
 } from './school-admin.ports'
+import { XsQueries } from './xs-queries'
 
 /** Badge wording of the dashboard (mock `SUBSCRIPTION_LABEL`). */
 export const SUBSCRIPTION_LABEL: Readonly<Record<SchoolAdminSubscriptionStatus, string>> = {
@@ -59,6 +60,7 @@ export class DashboardService {
     @Inject(SubscriptionsRepository) private readonly subscriptions: SubscriptionsRepository,
     @Inject(SCHOOL_PERFORMANCE_PORT) private readonly performance: SchoolPerformancePort,
     @Inject(SCHOOL_CLASS_COUNT_PORT) private readonly classes: SchoolClassCountPort,
+    @Inject(XsQueries) private readonly xs: XsQueries,
   ) {}
 
   /**
@@ -78,10 +80,13 @@ export class DashboardService {
     const now = this.clock.now()
     const school = await this.schools.get(schoolId)
     if (!school) throw ApiError.of('FORBIDDEN') // a school admin whose school vanished: fail closed
-    // FR-M27-50: the cards count the managed S6/S7 population (no peer school_admin), so they equal the list totals.
-    const [pupilCounts, teacherCounts, posts, subs, view, activeClasses] = await Promise.all([
-      this.users.countsBySchoolRole(schoolId, 'student'),
-      this.users.countsBySchoolRole(schoolId, 'teacher'),
+    // XS-1 / XS-3 (S6-T03): the cards are the same named queries every other screen uses; the practice questions and accuracy
+    // are XS-4 / XS-5 of the school, all time ("sepanjang masa").
+    const scope = { kind: 'school', schoolId } as const
+    const [pupils, teachers, totals, posts, subs, view, activeClasses] = await Promise.all([
+      this.xs.pupilCount(scope),
+      this.xs.teacherCount(schoolId),
+      this.xs.answerTotals(scope),
       this.perutusan.feed({ userId: caller.userId, isAdmin: false, schoolId }, now),
       this.subscriptions.list(caller, {}),
       this.performance.school(perf),
@@ -112,12 +117,12 @@ export class DashboardService {
         }
       }),
       cards: {
-        pupils: pupilCounts.total,
-        teachers: teacherCounts.total,
+        pupils,
+        teachers,
         activeClasses,
         subscription: { status, label: SUBSCRIPTION_LABEL[status] },
       },
-      performance: performanceBlock(view),
+      performance: performanceBlock(view, { answered: totals.answered, accuracy: totals.accuracy }),
     }
   }
 }

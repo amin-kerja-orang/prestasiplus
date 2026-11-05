@@ -178,14 +178,14 @@ describe('v2 prototype scope (D43, role-access-matrix.md)', () => {
     (m) => ({ row: Number(m[1]), label: (m[2] as string).trim(), murid: m[3], guru: m[4], sekolah: m[5] }),
   )
 
-  it('parses the 53 rows with 37 / 15 / 18 ticks', () => {
-    expect(rows).toHaveLength(53)
-    expect(rows.filter((r) => r.murid === '✓')).toHaveLength(37)
+  it('parses the 54 rows with 38 / 15 / 18 ticks', () => {
+    expect(rows).toHaveLength(54)
+    expect(rows.filter((r) => r.murid === '✓')).toHaveLength(38)
     expect(rows.filter((r) => r.guru === '✓')).toHaveLength(15)
     expect(rows.filter((r) => r.sekolah === '✓')).toHaveLength(18)
   })
 
-  it('has 37 Murid and 15 Guru module items plus 5 account items per role', () => {
+  it('has 38 Murid and 15 Guru module items plus 5 account items per role', () => {
     const modules = (role: string) => PROTOTYPE_ITEMS.filter((i) => i.role === role && i.row > 0)
     const account = (role: string) => PROTOTYPE_ITEMS.filter((i) => i.role === role && i.row === 0)
     expect(modules('student').map((i) => i.row)).toEqual(rows.filter((r) => r.murid === '✓').map((r) => r.row))

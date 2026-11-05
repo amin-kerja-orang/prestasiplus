@@ -23,7 +23,7 @@ import { FixedClock } from '../../src/db/clock'
  * flag table is an in-memory stand-in, as in feature.guard.spec.ts.
  */
 
-/** The 32 keys of N-06 / P2-19: 4 from S0-T10 and the 28 of migration 0251. */
+/** The 32 keys of N-06 / P2-19: 4 from S0-T10 and the 28 folded into migration 0250 (#417 D-1). */
 const ALL_KEYS = [
   'permainan', 'misi-harian', 'kombo', 'leaderboard', 'remedial', 'cita-cita', 'universiti', 'biasiswa', 'target-spm',
   'analisa-item', 'prestasi', 'psikometrik', 'profil-cerah', 'kemajuan-saya', 'sejarah-latihan', 'video-pembelajaran',

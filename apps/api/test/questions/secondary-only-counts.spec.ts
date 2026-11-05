@@ -6,7 +6,7 @@ import { BoardReads } from '../../src/modules/command-center/board/reads'
 import { CommandCenterRepository } from '../../src/modules/command-center/shared/command-center.repository'
 import { CurriculumRepository } from '../../src/modules/curriculum/curriculum.repository'
 import { CurriculumLearnerService } from '../../src/modules/curriculum/learner.service'
-import { DEFAULT_MAP_GRADE, MAP_GRADES } from '../../src/modules/curriculum/rules'
+import { DEFAULT_MAP_GRADE } from '../../src/modules/curriculum/rules'
 import { BankFacts } from '../../src/modules/practice/reads/overview/bank-facts'
 import { OverviewRepository } from '../../src/modules/practice/reads/overview/overview.repository'
 import { subjectView } from '../../src/modules/practice/reads/overview/overview.service'
@@ -32,53 +32,63 @@ function rawClient(queries: string[]): { $queryRaw: (s: TemplateStringsArray, ..
 }
 
 describe('B-HTTP-01/02: learner topics and the learning map are Tingkatan only', () => {
-  it('the map offers TINGKATAN_4 and TINGKATAN_5, default TINGKATAN_4', () => {
-    expect([...MAP_GRADES]).toEqual(['TINGKATAN_4', 'TINGKATAN_5'])
+  const levels = (codes: string[]) =>
+    codes.map((code, i) => ({ id: String(i + 1), code, order: i + 1, gradeKey: `TINGKATAN_${code.slice(1)}` }))
+
+  it('the default map grade stays TINGKATAN_4; the grade list is no constant (S4-T06)', () => {
     expect(DEFAULT_MAP_GRADE).toBe('TINGKATAN_4')
   })
 
-  it('legacyTopics and legacyTopic use an allow-list of TINGKATAN_4 and TINGKATAN_5 (no grade asked is still T4/T5 only)', async () => {
+  it('learnerChapters reads tree chapters of the given levels only, per call, and nothing for an empty level list', async () => {
     const calls: { where: Record<string, unknown> }[] = []
-    const db = {
-      legacyTopic: {
-        findMany: (args: { where: Record<string, unknown> }) => (calls.push(args), Promise.resolve([])),
-        findFirst: (args: { where: Record<string, unknown> }) => (calls.push(args), Promise.resolve(null)),
-      },
-    }
+    const db = { chapter: { findMany: (args: { where: Record<string, unknown> }) => (calls.push(args), Promise.resolve([])) } }
     const repo = new CurriculumRepository({ client: db } as never)
-    await repo.legacyTopics({ gradeLevel: 'TINGKATAN_4', subject: 'MATEMATIK' })
-    await repo.legacyTopics()
-    await repo.legacyTopic(5n)
-    expect(calls).toHaveLength(3)
-    const allow = { gradeLevel: { in: ['TINGKATAN_4', 'TINGKATAN_5'] } }
-    expect(calls[0]?.where).toMatchObject({ AND: [allow, { gradeLevel: 'TINGKATAN_4' }], subject: 'MATEMATIK' })
-    expect(calls[1]?.where).toMatchObject({ AND: [allow] })
-    expect((calls[1]?.where as { AND: unknown[] }).AND).toHaveLength(1)
-    // Topic detail: a row outside the allow-list is not found (404 at the HTTP layer).
-    expect(calls[2]?.where).toMatchObject({ id: 5n, ...allow })
+    await repo.learnerChapters({ levelIds: [4n, 5n], subjectCodes: ['MATH'] })
+    await repo.learnerChapters({ levelIds: [1n] })
+    expect(await repo.learnerChapters({ levelIds: [] })).toEqual([])
+    expect(calls).toHaveLength(2)
+    expect(calls[0]?.where).toMatchObject({
+      inTree: true,
+      isActive: true,
+      educationLevelId: { in: [4n, 5n] },
+      subject: { isActive: true, code: { in: ['MATH'] } },
+    })
+    expect(calls[1]?.where).toMatchObject({ educationLevelId: { in: [1n] }, subject: { isActive: true } })
   })
 
-  const mapOf = async (grade: string | undefined) => {
-    const asked: (string | null | undefined)[] = []
-    const repo = { legacyTopics: (f: { gradeLevel?: string | null }) => (asked.push(f.gradeLevel), Promise.resolve([])) }
+  const mapOf = async (grade: string | undefined, offered = levels(['T1', 'T2', 'T3', 'T4', 'T5'])) => {
+    const asked: bigint[][] = []
+    const repo = {
+      offeredLevels: () => Promise.resolve(offered),
+      learnerChapters: (f: { levelIds: bigint[] }) => (asked.push(f.levelIds), Promise.resolve([])),
+    }
     const ports = { topicProgress: { topicProgress: () => Promise.resolve(new Map()) } }
     const svc = new CurriculumLearnerService(repo as never, ports as never)
     const map = await svc.learningMap({ subject: 'MATEMATIK', grade }, '1')
     return { map, asked }
   }
 
-  it('honours TINGKATAN_5, defaults to TINGKATAN_4, and falls back to TINGKATAN_4 for a Darjah or unknown grade', async () => {
-    expect((await mapOf('TINGKATAN_5')).map.grade).toBe('TINGKATAN_5')
-    expect((await mapOf('TINGKATAN_4')).map.grade).toBe('TINGKATAN_4')
+  it('honours every offered grade (T1 to T5), defaults to TINGKATAN_4, and falls back to TINGKATAN_4 for a Darjah or unknown grade', async () => {
+    for (const g of ['TINGKATAN_1', 'TINGKATAN_3', 'TINGKATAN_5']) {
+      const { map, asked } = await mapOf(g)
+      expect(map.grade).toBe(g)
+      expect(asked).toEqual([[BigInt(g.slice(-1))]])
+    }
     expect((await mapOf(undefined)).map.grade).toBe('TINGKATAN_4')
-    for (const g of ['DARJAH_4', 'DARJAH_1', 'TINGKATAN_1', 'nope']) {
+    for (const g of ['DARJAH_4', 'DARJAH_1', 'nope', 'tingkatan_5']) {
       const { map, asked } = await mapOf(g)
       expect(map.grade).toBe('TINGKATAN_4')
-      expect(asked).toEqual(['TINGKATAN_4'])
+      expect(asked).toEqual([[4n]])
     }
     const { map } = await mapOf('TINGKATAN_5')
-    expect(map.gradeOptions).toEqual(['TINGKATAN_4', 'TINGKATAN_5'])
+    expect(map.gradeOptions).toEqual(['TINGKATAN_1', 'TINGKATAN_2', 'TINGKATAN_3', 'TINGKATAN_4', 'TINGKATAN_5'])
     expect(map.gradeOptions.some((g) => g.startsWith('DARJAH_'))).toBe(false)
+  })
+
+  it('the grade list follows offeredLevels: a level that is no longer offered leaves the options and the map falls back', async () => {
+    const { map } = await mapOf('TINGKATAN_5', levels(['T1', 'T2', 'T3', 'T4']))
+    expect(map.gradeOptions).toEqual(['TINGKATAN_1', 'TINGKATAN_2', 'TINGKATAN_3', 'TINGKATAN_4'])
+    expect(map.grade).toBe('TINGKATAN_4')
   })
 })
 

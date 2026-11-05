@@ -68,21 +68,21 @@ describe('Kawalan Ciri (S0-T10)', () => {
     await close()
   })
 
-  it('migrations 0250 + 0251 seed exactly 32 rows (4 + 28); the CHECK refuses a locked row that is ON (INV-29)', async () => {
+  it('migration 0250 seeds the 32 N-06 rows (S0-T10 four plus the S0-T11 28, #417 D-1); the CHECK refuses a locked row that is ON (INV-29)', async () => {
     const rows = await db.query<{ key: string; label_ms: string; audience: string; enabled: boolean; locked: boolean; sort_order: number }>(`select key, label_ms, audience, enabled, locked, sort_order from feature_flags order by sort_order`)
     expect(rows).toHaveLength(32)
-    expect(rows.filter((r) => r.audience === 'pelajar')).toHaveLength(22)
-    expect(rows.filter((r) => r.audience === 'guru')).toHaveLength(10)
-    // The four rows of 0250 are untouched by 0251.
-    expect(rows.filter((r) => ['permainan', 'latih-tubi', 'cikgu-alesa', 'keluarga-angkat'].includes(r.key))).toEqual([
+    const byKey = new Map(rows.map((r) => [r.key, r]))
+    expect([byKey.get('permainan'), byKey.get('latih-tubi'), byKey.get('cikgu-alesa'), byKey.get('keluarga-angkat')]).toEqual([
       { key: 'permainan', label_ms: 'Zona Permainan', audience: 'pelajar', enabled: true, locked: false, sort_order: 10 },
       { key: 'latih-tubi', label_ms: 'Latih Tubi', audience: 'pelajar', enabled: true, locked: false, sort_order: 200 },
       { key: 'cikgu-alesa', label_ms: 'Cikgu Alesa', audience: 'pelajar', enabled: false, locked: true, sort_order: 900 },
       { key: 'keluarga-angkat', label_ms: 'Mohon Keluarga Angkat', audience: 'pelajar', enabled: false, locked: true, sort_order: 910 },
     ])
-    // Every key has a route-prefix entry, and the 28 new rows are ON except Tiket Bantuan (Delivery B, D-2) and never locked.
-    expect(rows.map((r) => r.key).sort()).toEqual(Object.keys(FEATURE_ROUTE_PREFIXES).sort())
+    expect(rows.filter((r) => r.audience === 'guru')).toHaveLength(10)
+    // Only the two locked rows and the Delivery B key `tiket-bantuan` (D-2) are OFF.
     expect(rows.filter((r) => !r.enabled).map((r) => r.key).sort()).toEqual(['cikgu-alesa', 'keluarga-angkat', 'tiket-bantuan'])
+    // Every key has a route-prefix entry, and only the two locked keys are locked.
+    expect(rows.map((r) => r.key).sort()).toEqual(Object.keys(FEATURE_ROUTE_PREFIXES).sort())
     expect(rows.filter((r) => r.locked).map((r) => r.key).sort()).toEqual(['cikgu-alesa', 'keluarga-angkat'])
     await expect(db.query(`update feature_flags set enabled = true where key = 'cikgu-alesa'`)).rejects.toThrow(/ck_feature_flags_locked_off/)
     await expect(db.query(`insert into feature_flags (key, label_ms, audience) values ('x', 'X', 'ibu')`)).rejects.toThrow(/ck_feature_flags_audience/)

@@ -10,7 +10,7 @@
  *    `mustChangePassword` can open only `/password/change` and `/logout` (one trailing slash
  *    ignored, query and hash ignored; a nested path is not exempt); every other path (login,
  *    register, reset links included) goes to `/password/change`, ahead of the role and scope checks.
- * 3. **Role**: `roles` set and the role not in it → `onForbidden`: `landing` redirects to the
+ * 3. **Role**: `roles` set and the role not in it → `onForbidden` (default `403`): `landing` redirects to the
  *    server-given `landingPath` (BR-07); `403` / `404` render the error page in place.
  * 4. **Guest pages have no guard**: `/login` and `/register` render for a logged-in user too
  *    (FR-M01-13, BR-08). There is deliberately no guest-only guard. This does not hold for a
