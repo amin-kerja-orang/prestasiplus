@@ -8,7 +8,7 @@
 
 import { navigateInApp, moduleTag } from '../support'
 import { expect, test } from './fixtures'
-import { ADMIN, tabCount, tid } from './support'
+import { ADMIN, statValues, tabCount, tid } from './support'
 
 test.describe.configure({ timeout: 360_000 })
 test.use({ mockInit: { latency: 0 } })
@@ -27,17 +27,17 @@ test.describe('QA-G5 M06 counts follow M04', { tag: [moduleTag(6)] }, () => {
     const total0 = num((await tid(page, 'config-sub').innerText()).split('soalan')[0] ?? '')
     const t5_0 = num(await tabCount(page, 'level-11'))
     await navigateInApp(page, '/spm')
-    const hub0 = await page.locator('[data-testid=spm-stat-total] [data-testid=stat-value]').innerText()
+    const hub0 = await statValues(tid(page, 'spm-stat-total')).innerText()
 
     await navigateInApp(page, '/admin/questions/create')
     await tid(page, 'q-subject').selectOption({ label: 'Matematik' })
     await tid(page, 'q-level').selectOption({ label: 'Tingkatan 5' })
-    await tid(page, 'q-difficulty-3').check()
+    await page.locator('[id="q-difficulty"]').getByText('Sederhana').click()
     await tid(page, 'q-text').fill('Soalan QA G5 untuk mengira pertambahan dua nombor.')
     for (const [i, t] of ['Satu', 'Dua', 'Tiga', 'Empat'].entries())
       await tid(page, `q-option-${String(i)}`).fill(t)
-    await tid(page, 'q-correct-1').check()
-    await tid(page, 'q-submit').click()
+    await page.locator('[id="q-correct-1"] [role="radio"]').check()
+    await tid(page, 'form-submit').click()
     await expect(page).toHaveURL(/\/admin\/questions$/)
     await expect(tid(page, 'cmp-flash')).toBeVisible()
 
@@ -56,8 +56,6 @@ test.describe('QA-G5 M06 counts follow M04', { tag: [moduleTag(6)] }, () => {
       String(total1).replace(/\B(?=(\d{3})+(?!\d))/g, ','),
     )
     await navigateInApp(page, '/spm')
-    await expect(
-      page.locator('[data-testid=spm-stat-total] [data-testid=stat-value]'),
-    ).toHaveText(hub0)
+    await expect(statValues(tid(page, 'spm-stat-total'))).toHaveText(hub0)
   })
 })

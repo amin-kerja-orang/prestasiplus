@@ -1,4 +1,4 @@
-import { CURRICULUM_CONFLICT_MESSAGES as CF, CURRICULUM_NOT_FOUND_MESSAGES as NF } from '@pp/contract'
+import { CURRICULUM_CONFLICT_MESSAGES as CF, CURRICULUM_LEVEL_RULE_MESSAGES, CURRICULUM_NOT_FOUND_MESSAGES as NF } from '@pp/contract'
 
 import { ApiError } from '../../common/errors/api-error'
 import { existsMessage, uniqueMessage } from './validation'
@@ -14,6 +14,10 @@ export const levelNotFound = (): ApiError => notFound(NF.level)
 
 /** 409 with the BM copy: the entity still has children, so nothing is deleted (LEAD 2026-10-20). */
 export const hasChildren = (kind: keyof typeof CF): ApiError => ApiError.of('CONFLICT', { message: CF[kind] })
+
+/** 409: the write would leave a primary (Darjah) level active; only Tingkatan 1-5 are active (FR-X3-1, FR-ADM-C03.3a, DM-13). */
+export const primaryLevelActive = (): ApiError =>
+  ApiError.of('CONFLICT', { message: CURRICULUM_LEVEL_RULE_MESSAGES.primaryActive })
 
 export interface DbErrorMap {
   /** The 404 for a row that vanished between the check and the write (Prisma P2025). */
@@ -43,3 +47,6 @@ export function translateDbError(e: unknown, map: DbErrorMap): never {
   if (code === 'P2002' && map.uniqueField) throw ApiError.of('VALIDATION_ERROR', { fields: { [map.uniqueField]: uniqueMessage(map.uniqueField) } })
   throw e
 }
+
+/** 409 (FR-ADM-C01.4, D113): a Bab that still has question versions linked is not deleted; `n` is the count. */
+export const chapterHasQuestions = (n: number): ApiError => ApiError.of('CONFLICT', { message: `Bab ini masih mempunyai ${n} soalan.` })

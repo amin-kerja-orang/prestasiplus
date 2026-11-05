@@ -71,7 +71,7 @@ function onSubmit(): void {
             placeholder="0"
             :min="rate"
             :max="balance"
-            size="xl"
+            size="lg"
             class="w-full"
             data-testid="s12-input"
             @input="onInput"
@@ -135,7 +135,7 @@ function onSubmit(): void {
         <UButton
           id="convertBtn"
           type="submit"
-          size="xl"
+          size="lg"
           block
           icon="i-ph-arrows-left-right-duotone"
           :disabled="!canConvert"

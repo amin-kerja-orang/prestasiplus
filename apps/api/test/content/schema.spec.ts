@@ -183,7 +183,7 @@ describe('content and support schema (migration 0009_content_support)', () => {
   })
 
   it('audio_kbat_sets and attempts: status check, json arrays, curriculum FKs, attempt score rules', async () => {
-    const levelId = await one(`insert into education_levels (code, name, name_en, stage, curriculum) values ('SCH1', 'Tahap', 'Level', 'primary', 'KSSR')`)
+    const levelId = await one(`insert into education_levels (code, name, name_en, stage, curriculum) values ('SCH1', 'Tahap', 'Level', 'lower_secondary', 'KSSM')`)
     const subjectId = await one(`insert into subjects (code, name, name_en, color) values ('SCH1', 'Subjek', 'Subject', '#4f46e5')`)
     const s = await one(`insert into audio_kbat_sets (title, education_level_id, subject_id, created_by_id) values ('Set', $1, $2, $3)`, [levelId, subjectId, userId])
     expect((await db.query(`select status, sections, questions from audio_kbat_sets where id = $1`, [s]))[0]).toEqual({ status: 'draft', sections: [], questions: [] })
