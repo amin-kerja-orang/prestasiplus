@@ -639,7 +639,7 @@ export class AnalyticsRepository {
   }
 
   /**
-   * Answer rows of the platform pupils in the window (clean log: all modes, no test rows), grouped by practice mode and MYT day. The shape
+   * Answer rows of the platform pupils in the window (XS-4 rows: all modes, no test rows, no session filter, XS-8), grouped by practice mode (label only: the session join never filters) and MYT day. The shape
    * is `SessionDayRow` with `sessions` = answer rows and `questions` = answer rows, so the Laporan reuses the one tally (AC-ADM-M06.2:
    * Jumlah Aktiviti counts answers). Answers without a session have mode `unknown`.
    */
@@ -647,8 +647,8 @@ export class AnalyticsRepository {
     const rows = await this.db.$queryRaw<{ mode: string; day: string; answers: number; correct: number }[]>`
       SELECT coalesce(s.mode, 'unknown') AS mode, to_char(a.answered_at AT TIME ZONE ${KL}, 'YYYY-MM-DD') AS day,
         count(*)::int AS answers, (count(*) FILTER (WHERE a.is_correct))::int AS correct
-      FROM ${CLEAN_ANSWERS} JOIN users u ON u.id = a.user_id
-      WHERE ${CLEAN_WHERE} AND ${AnalyticsRepository.PUPIL} AND a.answered_at >= ${from} AND a.answered_at <= ${to}
+      FROM practice_answers a LEFT JOIN practice_sessions s ON s.id = a.session_id JOIN users u ON u.id = a.user_id
+      WHERE NOT a.is_test AND ${AnalyticsRepository.PUPIL} AND a.answered_at >= ${from} AND a.answered_at <= ${to}
       GROUP BY 1, 2`
     return rows.map((r) => ({ mode: r.mode, day: r.day, sessions: r.answers, correct: r.correct, questions: r.answers }))
   }
@@ -657,8 +657,8 @@ export class AnalyticsRepository {
   async topPupilsByAnswers(from: Date, to: Date, limit: number): Promise<{ id: string; name: string; schoolId: string | null; schoolName: string | null; answers: number }[]> {
     const rows = await this.db.$queryRaw<{ id: string; name: string; school_id: string | null; school_name: string | null; answers: number }[]>`
       SELECT u.id::text AS id, u.name, u.school_id::text AS school_id, sc.name AS school_name, count(*)::int AS answers
-      FROM ${CLEAN_ANSWERS} JOIN users u ON u.id = a.user_id LEFT JOIN schools sc ON sc.id = u.school_id
-      WHERE ${CLEAN_WHERE} AND ${AnalyticsRepository.PUPIL} AND a.answered_at >= ${from} AND a.answered_at <= ${to}
+      FROM practice_answers a JOIN users u ON u.id = a.user_id LEFT JOIN schools sc ON sc.id = u.school_id
+      WHERE NOT a.is_test AND ${AnalyticsRepository.PUPIL} AND a.answered_at >= ${from} AND a.answered_at <= ${to}
       GROUP BY u.id, u.name, u.school_id, sc.name
       ORDER BY answers DESC, u.name ASC, u.id ASC LIMIT ${limit}`
     return rows.map((r) => ({ id: r.id, name: r.name, schoolId: r.school_id, schoolName: r.school_name, answers: r.answers }))
@@ -668,19 +668,19 @@ export class AnalyticsRepository {
   async answersBySchool(from: Date, to: Date, limit: number): Promise<{ schoolId: string; name: string; answers: number; pupils: number }[]> {
     const rows = await this.db.$queryRaw<{ school_id: string; name: string; answers: number; pupils: number }[]>`
       SELECT sc.id::text AS school_id, sc.name, count(*)::int AS answers, count(DISTINCT u.id)::int AS pupils
-      FROM ${CLEAN_ANSWERS} JOIN users u ON u.id = a.user_id JOIN schools sc ON sc.id = u.school_id
-      WHERE ${CLEAN_WHERE} AND ${AnalyticsRepository.PUPIL} AND a.answered_at >= ${from} AND a.answered_at <= ${to}
+      FROM practice_answers a JOIN users u ON u.id = a.user_id JOIN schools sc ON sc.id = u.school_id
+      WHERE NOT a.is_test AND ${AnalyticsRepository.PUPIL} AND a.answered_at >= ${from} AND a.answered_at <= ${to}
       GROUP BY sc.id, sc.name
       ORDER BY answers DESC, sc.name ASC, sc.id ASC LIMIT ${limit}`
     return rows.map((r) => ({ schoolId: r.school_id, name: r.name, answers: r.answers, pupils: r.pupils }))
   }
 
-  /** Answers, correct answers and answering pupils of the platform pupils in the window (clean log: all modes, no test rows). */
+  /** Answers, correct answers and answering pupils of the platform pupils in the window (XS-4 rows: all modes, no test rows, no session filter, XS-8). */
   async answerTotals(from: Date, to: Date): Promise<{ answered: number; correct: number; pupils: number }> {
     const rows = await this.db.$queryRaw<{ answered: number; correct: number; pupils: number }[]>`
       SELECT count(*)::int AS answered, (count(*) FILTER (WHERE a.is_correct))::int AS correct, count(DISTINCT a.user_id)::int AS pupils
-      FROM ${CLEAN_ANSWERS} JOIN users u ON u.id = a.user_id
-      WHERE ${CLEAN_WHERE} AND ${AnalyticsRepository.PUPIL} AND a.answered_at >= ${from} AND a.answered_at <= ${to}`
+      FROM practice_answers a JOIN users u ON u.id = a.user_id
+      WHERE NOT a.is_test AND ${AnalyticsRepository.PUPIL} AND a.answered_at >= ${from} AND a.answered_at <= ${to}`
     return rows[0] ?? { answered: 0, correct: 0, pupils: 0 }
   }
 
@@ -688,8 +688,8 @@ export class AnalyticsRepository {
   async answersByDay(from: Date, to: Date): Promise<Map<string, number>> {
     const rows = await this.db.$queryRaw<{ day: string; n: number }[]>`
       SELECT to_char(a.answered_at AT TIME ZONE ${KL}, 'YYYY-MM-DD') AS day, count(*)::int AS n
-      FROM ${CLEAN_ANSWERS} JOIN users u ON u.id = a.user_id
-      WHERE ${CLEAN_WHERE} AND ${AnalyticsRepository.PUPIL} AND a.answered_at >= ${from} AND a.answered_at <= ${to}
+      FROM practice_answers a JOIN users u ON u.id = a.user_id
+      WHERE NOT a.is_test AND ${AnalyticsRepository.PUPIL} AND a.answered_at >= ${from} AND a.answered_at <= ${to}
       GROUP BY 1`
     return new Map(rows.map((r) => [r.day, r.n]))
   }
@@ -698,8 +698,8 @@ export class AnalyticsRepository {
   async topSchoolsByAnswers(from: Date, to: Date, limit: number): Promise<{ schoolId: string; name: string; answered: number }[]> {
     const rows = await this.db.$queryRaw<{ school_id: string; name: string; answered: number }[]>`
       SELECT sc.id::text AS school_id, sc.name, count(*)::int AS answered
-      FROM ${CLEAN_ANSWERS} JOIN users u ON u.id = a.user_id JOIN schools sc ON sc.id = u.school_id
-      WHERE ${CLEAN_WHERE} AND ${AnalyticsRepository.PUPIL} AND a.answered_at >= ${from} AND a.answered_at <= ${to}
+      FROM practice_answers a JOIN users u ON u.id = a.user_id JOIN schools sc ON sc.id = u.school_id
+      WHERE NOT a.is_test AND ${AnalyticsRepository.PUPIL} AND a.answered_at >= ${from} AND a.answered_at <= ${to}
       GROUP BY sc.id, sc.name
       ORDER BY answered DESC, sc.name ASC, sc.id ASC LIMIT ${limit}`
     return rows.map((r) => ({ schoolId: r.school_id, name: r.name, answered: r.answered }))

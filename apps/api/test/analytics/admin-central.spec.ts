@@ -16,11 +16,13 @@ import {
   client,
   errorIs,
 } from './helpers'
+import { PrismaService } from '../../src/db/prisma.service'
+import { XS_ALL_TIME, XsQueries } from '../../src/modules/school-admin/xs-queries'
 
 /**
  * DB spec (needs Docker/Testcontainers): API-ADM-11, API-ADM-12 and API-ADM-13 laporan (S6-T11). Activity of the Laporan is answer rows. Clock 2026-10-19 (a Monday).
  * Fixture of `buildWorld`: sessions of pelajar 09-10 (8 answered, 6 right) and 10-05 (10, 5), pelajarmaju 10-10 (50, 40), the school B
- * pupil 10-12 (5, 5); a test session and an in-progress session never count.
+ * pupil 10-12 (5, 5); a test session never counts; an in-progress session (4 answers, 4 right, 10-18) does (XS-8).
  */
 describe('Admin Pusat central screens (S6-T11)', () => {
   let t: AnalyticsTestApp
@@ -169,9 +171,10 @@ describe('Admin Pusat central screens (S6-T11)', () => {
     it('30d (default): platform figures with one-decimal pooled accuracy, a 30-day trend and the top schools', async () => {
       const a = AdminAnalyticsResponseSchema.parse((await admin.get('/admin/analytics')).body).data
       expect(a.range).toBe('30d')
-      // Window 2026-09-20 .. now: p1 10-05 (10, 5), maju 10-10 (50, 40), school B pupil 10-12 (5, 5) = 65 answered, 50 right.
-      expect(a.platform.answered).toBe(65)
-      expect(a.platform.accuracy).toBe(76.9)
+      // Window 2026-09-20 .. now: p1 10-05 (10, 5), maju 10-10 (50, 40), school B pupil 10-12 (5, 5) and p1's in-progress session of 10-18
+      // (4 answers, 4 right: XS-8 counts it) = 69 answered, 54 right.
+      expect(a.platform.answered).toBe(69)
+      expect(a.platform.accuracy).toBe(78.3)
       expect(a.platform.activeStudents).toBe(3)
       expect(a.platform.students).toBeGreaterThanOrEqual(a.platform.activeStudents)
       expect(a.trend).toHaveLength(30)
@@ -179,23 +182,24 @@ describe('Admin Pusat central screens (S6-T11)', () => {
       expect(a.trend[29]).toEqual({ date: '2026-10-19', answered: 0 })
       expect(a.trend.find((x) => x.date === '2026-10-05')?.answered).toBe(10)
       expect(a.trend.find((x) => x.date === '2026-10-10')?.answered).toBe(50)
-      expect(a.trend.reduce((n, x) => n + x.answered, 0)).toBe(65)
+      expect(a.trend.find((x) => x.date === '2026-10-18')?.answered).toBe(4)
+      expect(a.trend.reduce((n, x) => n + x.answered, 0)).toBe(69)
       expect(a.topSchools.map((s) => [s.schoolId, s.answered])).toEqual([
-        [w.schoolA, 60],
+        [w.schoolA, 64],
         [w.schoolB, 5],
       ])
     })
 
-    it('range 7d has no answers (accuracy null); 90d adds the September session; an unknown range is 30d', async () => {
+    it('range 7d has only the in-progress answers; 90d adds the September session; an unknown range is 30d', async () => {
       const week = AdminAnalyticsResponseSchema.parse((await admin.get('/admin/analytics?range=7d')).body).data
       expect(week.range).toBe('7d')
       expect(week.trend).toHaveLength(7)
-      expect(week.platform).toMatchObject({ answered: 0, accuracy: null, activeStudents: 0 })
-      expect(week.topSchools).toEqual([])
+      expect(week.platform).toMatchObject({ answered: 4, accuracy: 100, activeStudents: 1 })
+      expect(week.topSchools.map((s) => [s.schoolId, s.answered])).toEqual([[w.schoolA, 4]])
       const quarter = AdminAnalyticsResponseSchema.parse((await admin.get('/admin/analytics?range=90d')).body).data
       expect(quarter.trend).toHaveLength(90)
-      expect(quarter.platform.answered).toBe(73)
-      expect(quarter.platform.accuracy).toBe(76.7)
+      expect(quarter.platform.answered).toBe(77)
+      expect(quarter.platform.accuracy).toBe(77.9)
       const odd = AdminAnalyticsResponseSchema.parse((await admin.get('/admin/analytics?range=weird')).body).data
       expect(odd.range).toBe('30d')
     })
@@ -222,10 +226,10 @@ describe('Admin Pusat central screens (S6-T11)', () => {
       const r = await read()
       expect(r.range).toBe(30)
       // Answer rows 2026-09-20 .. now: p1 10-05 (10, 5 right), maju 10-10 (50, 40), school B pupil 10-12 (5, 5). The mode-only sessions have no answers.
-      expect(r.tiles.activities).toBe(65)
-      expect(r.tiles.averageScore).toBe(76.9)
+      expect(r.tiles.activities).toBe(69)
+      expect(r.tiles.averageScore).toBe(78.3)
       expect(r.breakdown.map((b) => [b.type, b.count])).toEqual([
-        ['kuiz', 65],
+        ['kuiz', 69],
         ['struktur', 0],
         ['latihTubi', 0],
         ['trackingA', 0],
@@ -237,7 +241,7 @@ describe('Admin Pusat central screens (S6-T11)', () => {
       expect(r.trend[13]).toEqual({ date: '19/10', count: 0 })
       expect(r.trend.find((x) => x.date === '10/10')?.count).toBe(50)
       expect(r.trend.find((x) => x.date === '12/10')?.count).toBe(5)
-      expect(r.trend.reduce((n, x) => n + x.count, 0)).toBe(55)
+      expect(r.trend.reduce((n, x) => n + x.count, 0)).toBe(59)
     })
 
     it('tiles count schools, teachers, pupils, access and practice; top pupils and schools carry names for the admin', async () => {
@@ -248,25 +252,25 @@ describe('Admin Pusat central screens (S6-T11)', () => {
       expect(r.tiles.pupilsPractised).toBeGreaterThanOrEqual(4)
       expect(r.mostActive.map((p) => [p.id, p.activities])).toEqual([
         [w.ids.maju, 50],
-        [w.ids.p1, 10],
+        [w.ids.p1, 14],
         [w.ids.pb, 5],
       ])
       expect(r.mostActive[0]?.name).toEqual(expect.any(String))
       expect(r.mostActive[0]?.school).toEqual({ id: w.schoolA, name: expect.any(String) })
       expect(r.schoolActivity.map((s) => [s.schoolId, s.activities, s.activePupils])).toEqual([
-        [w.schoolA, 60, 2],
+        [w.schoolA, 64, 2],
         [w.schoolB, 5, 1],
       ])
     })
 
-    it('range 7 has no answers (score null) but the trend stays 14 days; 90 adds the September session; an unknown range is 30', async () => {
+    it('range 7 has only the in-progress answers but the trend stays 14 days; 90 adds the September session; an unknown range is 30', async () => {
       const week = await read('?range=7')
       expect(week.range).toBe(7)
-      expect(week.tiles).toMatchObject({ activities: 0, averageScore: null })
+      expect(week.tiles).toMatchObject({ activities: 4, averageScore: 100 })
       expect(week.trend).toHaveLength(14)
       const quarter = await read('?range=90')
-      expect(quarter.tiles.activities).toBe(73)
-      expect(quarter.tiles.averageScore).toBe(76.7)
+      expect(quarter.tiles.activities).toBe(77)
+      expect(quarter.tiles.averageScore).toBe(77.9)
       expect((await read('?range=abc')).range).toBe(30)
     })
 
@@ -287,8 +291,41 @@ describe('Admin Pusat central screens (S6-T11)', () => {
       const after = await read()
       expect(after.tiles.activities - before.tiles.activities).toBe(3)
       expect(after.breakdown.find((b) => b.type === 'latihTubi')?.count).toBe(3)
-      expect(after.trend.find((x) => x.date === '18/10')?.count).toBe(3)
-      expect(after.tiles.averageScore).toBe(76.5) // 52 right of 68
+      expect(after.trend.find((x) => x.date === '18/10')?.count).toBe(7) // 3 + the in-progress session's 4
+      expect(after.tiles.averageScore).toBe(77.8) // 56 right of 72
+    })
+  })
+  describe('XS-8: answers of an unfinished session count on every Admin Pusat answer figure', () => {
+    it('Analitik Soalan Dijawab, Laporan Jumlah Aktiviti and the top-10 include an in-progress session and equal XsQueries.answerTotals', async () => {
+      const xs = new XsQueries(t.app.get(PrismaService))
+      const readA = async () => AdminAnalyticsResponseSchema.parse((await admin.get('/admin/analytics?range=90d')).body).data
+      const readL = async () => AdminLaporanResponseSchema.parse((await admin.get('/admin/reports/laporan?range=90')).body).data
+      const beforeA = await readA()
+      const beforeL = await readL()
+      const pupilBefore = beforeL.mostActive.find((p) => p.id === w.ids.p2)?.activities ?? 0
+      const session = (
+        await t.db.query<{ id: string }>(
+          `insert into practice_sessions (user_id, mode, subject_id, question_count, status, correct_count, started_at)
+           values ($1, 'latih_tubi', $2, 5, 'in_progress', 0, $3::timestamptz) returning id::text`,
+          [w.ids.p2, w.subjects[0], '2026-10-18T10:00:00+08:00'],
+        )
+      )[0] as { id: string }
+      await t.db.query(
+        `insert into practice_answers (session_id, user_id, subject_id, is_correct, answered_at)
+         select $1::uuid, $2, $3, g <= 4, $4::timestamptz from generate_series(1, 5) g`,
+        [session.id, w.ids.p2, w.subjects[0], '2026-10-18T10:00:00+08:00'],
+      )
+      const afterA = await readA()
+      const afterL = await readL()
+      expect(afterA.platform.answered - beforeA.platform.answered).toBe(5)
+      expect(afterL.tiles.activities - beforeL.tiles.activities).toBe(5)
+      expect(afterL.breakdown.find((b) => b.type === 'latihTubi')?.count).toBe((beforeL.breakdown.find((b) => b.type === 'latihTubi')?.count ?? 0) + 5)
+      expect(afterL.mostActive.find((p) => p.id === w.ids.p2)?.activities).toBe(pupilBefore + 5)
+      const totals = await xs.answerTotals({ kind: 'platform' }, XS_ALL_TIME)
+      expect(afterA.platform.answered).toBe(totals.answered)
+      expect(afterL.tiles.activities).toBe(totals.answered)
+      expect(afterA.platform.accuracy).toBe(totals.accuracy)
+      expect(afterA.trend.reduce((n, x) => n + x.answered, 0)).toBe(totals.answered)
     })
   })
 })

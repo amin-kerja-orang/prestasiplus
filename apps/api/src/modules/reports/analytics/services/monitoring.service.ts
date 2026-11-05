@@ -12,6 +12,7 @@ import { OverviewCache } from '../../../questions/serving/overview-cache'
 import type { Caller } from '../../../users/caller'
 import { UsersRepository } from '../../../users'
 import { AnalyticsRepository, type SchoolFact } from '../analytics.repository'
+import { xsAccuracy } from '../../../school-admin/xs-queries'
 import {
   type Period,
   DAY_MS,
@@ -481,7 +482,7 @@ export class AdminCentralService {
         students: pupils.pupils,
         activeStudents: totals.pupils,
         answered: totals.answered,
-        accuracy: totals.answered > 0 ? round1(percent(totals.correct, totals.answered)) : null,
+        accuracy: xsAccuracy(totals.correct, totals.answered),
       },
       trend,
       topSchools: top.map((t) => ({ schoolId: t.schoolId, school: t.name, answered: t.answered })),

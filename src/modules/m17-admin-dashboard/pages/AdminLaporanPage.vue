@@ -139,7 +139,7 @@ const pupilColumns: TableColumn<PupilItem>[] = [
           part-prefix="lp-activity"
         />
         <DsStatTile
-          :value="data.tiles.averageScore === null ? null : pct(data.tiles.averageScore)"
+          :value="data.tiles.averageScore === null ? '—' : pct(data.tiles.averageScore)"
           unit="Skor Purata"
           sub="purata ketepatan sesi"
           icon="target"
