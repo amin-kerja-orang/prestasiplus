@@ -20,7 +20,6 @@ export const SOURCE_PAPER_MESSAGES = {
   title: 'Sumber Kertas',
   subtitle: 'Registri provenance kertas peperiksaan',
   detailTitle: 'Butiran Sumber Kertas',
-  back: '← Kembali ke Sumber Kertas',
   empty: 'Tiada kertas dijumpai.',
   emptyQuestions: 'Belum ada soalan diimport untuk kertas ini.',
   notFound: 'Kertas tidak dijumpai.',

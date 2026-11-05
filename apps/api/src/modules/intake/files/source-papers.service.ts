@@ -28,8 +28,11 @@ const EXCERPT_MAX = 120
 const openList = (): Prisma.Sql => Prisma.join(OPEN_ITEM_STATES.map((s) => Prisma.sql`${s}`))
 
 /**
- * The ONE place that decides where "Negeri / badan" comes from. Today: the linked `source_papers.exam_board` (alias `sp`).
- * Once migration 0138 (S1-T03, DM-85) adds `intake_batches.exam_board`, change this to `nullif(btrim(b.exam_board), '')`.
+ * The ONE place that decides where "Negeri / badan" comes from. PENDING 0138: migration 0138 (S1-T03, DM-85, `intake_batches.exam_board`)
+ * does not exist yet, so today this reads the linked `source_papers.exam_board` (alias `sp`) and AC-ADM-Q19.1 is only met through that link.
+ * SWAP when 0138 lands: return `nullif(btrim(b.exam_board), '')` and drop the `source_papers` join in `papersCte()`.
+ * The filter options (`meta.options.negeri`) are the distinct values present in the data; the full OPT-NEGERI-KERTAS list
+ * (API-REF-01, S0-T12) does not exist on this base, so the dropdown switches to it once S0-T12 lands.
  */
 function negeriSql(): Prisma.Sql {
   return Prisma.sql`nullif(btrim(sp.exam_board), '')`
@@ -77,6 +80,14 @@ interface PaperDbRow {
   open_items: number
   unkeyed: number
   needs_review: boolean
+}
+
+interface Aggregate {
+  total: number
+  review: number
+  years: (number | string)[]
+  negeri: string[]
+  subjects: { code: string; name: string | null }[]
 }
 
 const likeOf = (text: string): string => `%${text.replace(/[\\%_]/g, (c) => `\\${c}`)}%`
@@ -139,23 +150,29 @@ export class SourcePapersService {
     const where = conds.length > 0 ? Prisma.sql`WHERE ${Prisma.join(conds, ' AND ')}` : Prisma.empty
     const offset = (query.page - 1) * SOURCE_PAPER_PAGE_SIZE
 
-    const [rows, count, tiles, years, negeri, subjects] = await Promise.all([
+    const [rows, count, agg] = await Promise.all([
       db.$queryRaw<PaperDbRow[]>(
         Prisma.sql`${papersCte()} SELECT p.* FROM papers p ${where} ORDER BY p.year DESC, p.created_at DESC, p.id DESC LIMIT ${SOURCE_PAPER_PAGE_SIZE} OFFSET ${offset}`,
       ),
       db.$queryRaw<{ n: number }[]>(Prisma.sql`${papersCte()} SELECT count(*)::int AS n FROM papers p ${where}`),
-      db.$queryRaw<{ total: number; review: number }[]>(
-        Prisma.sql`${papersCte()} SELECT count(*)::int AS total, (count(*) FILTER (WHERE needs_review))::int AS review FROM papers`,
+      // Tiles and filter options (whole registry, filters ignored) in one pass over the CTE.
+      db.$queryRaw<Aggregate[]>(
+        Prisma.sql`${papersCte()}
+          SELECT count(*)::int AS total,
+                 (count(*) FILTER (WHERE needs_review))::int AS review,
+                 coalesce(array_agg(DISTINCT year ORDER BY year DESC), '{}') AS years,
+                 coalesce(array_agg(DISTINCT negeri ORDER BY negeri) FILTER (WHERE negeri IS NOT NULL), '{}') AS negeri,
+                 coalesce((SELECT jsonb_agg(jsonb_build_object('code', s.subject, 'name', s.subject_name) ORDER BY s.subject)
+                             FROM (SELECT DISTINCT subject, subject_name FROM papers) s), '[]'::jsonb) AS subjects
+            FROM papers`,
       ),
-      db.$queryRaw<{ year: number }[]>(Prisma.sql`${papersCte()} SELECT DISTINCT year FROM papers ORDER BY year DESC`),
-      db.$queryRaw<{ negeri: string }[]>(Prisma.sql`${papersCte()} SELECT DISTINCT negeri FROM papers WHERE negeri IS NOT NULL ORDER BY negeri`),
-      db.$queryRaw<{ code: string; name: string | null }[]>(Prisma.sql`${papersCte()} SELECT DISTINCT subject AS code, subject_name AS name FROM papers ORDER BY subject`),
     ])
+    const a = agg[0]
     const meta: SourcePaperListMeta = {
       ...listMeta(query.page, SOURCE_PAPER_PAGE_SIZE, count[0]?.n ?? 0),
-      totalPapers: tiles[0]?.total ?? 0,
-      needsReviewCount: tiles[0]?.review ?? 0,
-      options: { years: years.map((r) => r.year), negeri: negeri.map((r) => r.negeri), subjects },
+      totalPapers: a?.total ?? 0,
+      needsReviewCount: a?.review ?? 0,
+      options: { years: (a?.years ?? []).map(Number), negeri: a?.negeri ?? [], subjects: a?.subjects ?? [] },
     }
     return { data: rows.map(toRow), meta }
   }

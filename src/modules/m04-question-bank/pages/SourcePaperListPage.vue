@@ -26,6 +26,7 @@ const page = ref(1)
 const query = computed(() => ({ ...applied, page: page.value }))
 const { data, error, reload } = useApi((signal) => fetchSourcePapers({ ...query.value, signal }), query)
 
+// Negeri / Tahun / Subjek options: the values present in the data. The full OPT-NEGERI-KERTAS list is API-REF-01 (S0-T12), not on this base yet.
 const options = computed(() => data.value?.meta.options ?? { years: [], negeri: [], subjects: [] })
 const firstLoad = computed(() => data.value === null && error.value === null)
 

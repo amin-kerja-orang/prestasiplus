@@ -128,7 +128,7 @@ describe('GET /admin/source-papers', () => {
     expect(r.data[0]).toMatchObject({ id: ids.b1, batchId: ids.b1, subject: 'MAT', subjectName: 'Matematik', year: 2025, kertas: 1, paperType: 'trial', questions: 2, source: 'intake', sourceLabel: 'Import (PDF/DOCX)', title: 'Matematik 2025 Kertas 1 - Johor' })
   })
 
-  it('AC-ADM-Q19.1 (adapted): Tahun 2025 with the Johor code is listed with its values and question count, and the Negeri filter finds it (case-insensitive)', async () => {
+  it('AC-ADM-Q19.1 (pending 0138, Negeri read through source_papers.exam_board): Tahun 2025 with the Johor code is listed with its values and question count, and the Negeri filter finds it (case-insensitive)', async () => {
     const r = await list('?negeri=johor&year=2025')
     expect(titles(r)).toEqual([ids.b1])
     expect(r.data[0]).toMatchObject({ negeri: 'Johor', year: 2025, questions: 2 })
