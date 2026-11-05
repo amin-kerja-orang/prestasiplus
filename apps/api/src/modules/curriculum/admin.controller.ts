@@ -1,10 +1,11 @@
-import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common'
+import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common'
 
 import { listMeta, ok, okList } from '../../common/http/respond'
 import { Roles } from '../../common/guards'
 import { RateLimit, RateLimitGuard } from '../../common/throttle'
 import { Actor, type AuditActor } from './actor'
 import { CurriculumAdminService } from './admin.service'
+import { CurriculumBulkChapterService } from './bulk-chapter.service'
 import { CURRICULUM_LIMITS } from './curriculum.constants'
 import { BoundedQueryPipe } from './validation'
 
@@ -102,7 +103,10 @@ export class AdminSubjectsController {
 @UseGuards(RateLimitGuard)
 @Controller('admin/curriculum')
 export class AdminCurriculumController {
-  constructor(@Inject(CurriculumAdminService) private readonly admin: CurriculumAdminService) {}
+  constructor(
+    @Inject(CurriculumAdminService) private readonly admin: CurriculumAdminService,
+    @Inject(CurriculumBulkChapterService) private readonly bulkChapter: CurriculumBulkChapterService,
+  ) {}
 
   @Get()
   async tree(@Query(new BoundedQueryPipe()) query: unknown) {
@@ -113,6 +117,23 @@ export class AdminCurriculumController {
   @Get('dskp')
   async dskpReport(@Query(new BoundedQueryPipe()) query: unknown) {
     return ok(await this.admin.dskpReport(query))
+  }
+
+  /** API-DSKP-10 (S4-T03): approved questions with and without a Bab per Subjek x Tingkatan; read only, not rate limited. */
+  @Get('chapter-coverage')
+  async chapterCoverage(@Query(new BoundedQueryPipe()) query: unknown) {
+    return ok(await this.bulkChapter.coverage(query))
+  }
+
+  /**
+   * API-DSKP-09 (S4-T03, DM-17): set the Bab of many questions in place. Strict body, read raw and validated in the service; rate limited
+   * like the other curriculum writes. Declared before the `:id` routes of this controller. Answers 200 (it is an action, not a create).
+   */
+  @Post('questions/bulk-chapter')
+  @HttpCode(200)
+  @RateLimit(CURRICULUM_LIMITS.write)
+  async bulkChapterSet(@Actor() actor: AuditActor, @Body() body: unknown) {
+    return ok(await this.bulkChapter.run(actor, body))
   }
 
   @Get('chapters/:id')
