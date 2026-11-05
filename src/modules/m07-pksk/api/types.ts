@@ -21,6 +21,8 @@ export interface PkskDomain {
   color: string
   order: number
   isActive: boolean
+  /** Approved active questions of the domain over both levels, counted distinct. */
+  questionCount: number
   createdAt: string
   updatedAt: string
 }
@@ -58,7 +60,7 @@ export interface PkskServedQuestion {
   options: { text: string }[]
 }
 
-/** #5 (provisional, L-2). */
+/** #5. */
 export interface PkskPractice {
   domain: { id: number; code: string; name: string; bahagian: Bahagian }
   questions: PkskServedQuestion[]
@@ -78,8 +80,20 @@ export interface PkskAnswer {
   text?: string
 }
 
-/** #21 (provisional, L-2). */
+/** One reviewed question of a scored practice set (the key is revealed only after scoring). */
+export interface PkskReviewItem {
+  questionId: number
+  selectedIndex: number | null
+  correctIndex: number | null
+  isCorrect: boolean
+  explanation: string | null
+}
+
+/** #21. */
 export interface PkskPracticeResult {
+  correct: number
+  total: number
+  review: PkskReviewItem[]
   masteryPct: number
   sessionId: string
   gamification: {
@@ -90,7 +104,7 @@ export interface PkskPracticeResult {
   }
 }
 
-/** #22 (provisional, L-3). */
+/** #22. */
 export interface PkskExam {
   sections: { bahagian: Bahagian; weightPct: number; questions: PkskServedQuestion[] }[]
 }

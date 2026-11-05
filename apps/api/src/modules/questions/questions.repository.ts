@@ -16,8 +16,6 @@ import { partsFromRows, type PartDraft, StoredKeyError } from './tree'
 import type {
   AdminListFilter,
   GroupCountBy,
-  GuruListFilter,
-  Page,
   QuestionFilter,
   QuestionRecord,
   GateFacts,
@@ -231,6 +229,9 @@ function shapeArraySql(candidates: Prisma.Sql, shape: QuestionFilter['mcqShape']
     SELECT sp.question_version_id FROM question_parts sp JOIN c ON c.vid = sp.question_version_id ${joins}
     GROUP BY sp.question_version_id HAVING ${Prisma.join(having, ' AND ')})`
 }
+
+/** The base of `GET /questions/summary` and the Admin Pusat dashboard counts: latest version, no PKSK, no Darjah (aliases `q`, `v`). */
+const SUMMARY_BASE = Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no WHERE ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL}`
 
 const NO_STATUS_COUNTS = (): Record<QuestionStatus, number> => ({ draft: 0, review: 0, approved: 0, archived: 0 })
 
@@ -631,22 +632,6 @@ export class QuestionsRepository {
     })
   }
 
-  async listOwn(filter: GuruListFilter): Promise<Page<QuestionRecord>> {
-    const owner = bi(filter.ownerId)
-    if (owner === null) return { rows: [], page: filter.page, pageSize: filter.pageSize, total: 0 }
-    // One raw filter for rows and total (no primary-level question, before pagination): the page and `total` always agree.
-    const from = Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
-    const where = Prisma.sql`q.created_by_id = ${owner} AND ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL}`
-    const offset = (filter.page - 1) * filter.pageSize
-    const [totals, ids] = await Promise.all([
-      this.db.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n ${from} WHERE ${where}`,
-      this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY q.id ASC LIMIT ${filter.pageSize} OFFSET ${offset}`,
-    ])
-    const total = totals[0]?.n ?? 0
-    const records = await this.hydrate(ids.map((r) => r.id), 'latest')
-    return { rows: records, page: filter.page, pageSize: filter.pageSize, total }
-  }
-
   // --- reads for the service (admin, structured, counts) ------------------------------------------
 
   /** Admin list over the LATEST version: ids of one page (newest first), the total and `counts` per status. */
@@ -740,7 +725,7 @@ export class QuestionsRepository {
   async subjectTotals(): Promise<{ total: number; bySubject: Map<string, { total: number; published: number }> }> {
     const rows = await this.db.$queryRaw<{ subject_id: bigint | null; total: number; published: number }[]>`
       SELECT v.subject_id, count(*)::int AS total, count(q.live_version_no)::int AS published
-      FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no WHERE ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL} GROUP BY 1`
+      ${SUMMARY_BASE} GROUP BY 1`
     const bySubject = new Map<string, { total: number; published: number }>()
     let total = 0
     for (const r of rows) {
@@ -750,17 +735,23 @@ export class QuestionsRepository {
     return { total, bySubject }
   }
 
-  /** Counts of one owner questions per latest-version status. */
-  async ownerStatusCounts(ownerId: string): Promise<Record<QuestionStatus, number>> {
-    const counts = NO_STATUS_COUNTS()
-    const owner = bi(ownerId)
-    if (owner === null) return counts
-    const rows = await this.db.$queryRaw<{ status: string; n: number }[]>`
-      SELECT v.status AS status, count(*)::int AS n
-      FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
-      WHERE q.created_by_id = ${owner} AND ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL} GROUP BY 1`
-    for (const r of rows) if (isQuestionStatus(r.status)) counts[r.status] = r.n
-    return counts
+  /**
+   * Questions per latest-version status and those created at or after `since`, over the SAME base as `subjectTotals` (S6-T11, the Admin Pusat
+   * dashboard), so the dashboard total always equals the summary total.
+   */
+  async statusSummary(since: Date): Promise<{ total: number; byStatus: Record<QuestionStatus, number>; createdSince: number }> {
+    const rows = await this.db.$queryRaw<{ status: string; n: number; recent: number }[]>`
+      SELECT v.status AS status, count(*)::int AS n, (count(*) FILTER (WHERE q.created_at >= ${since}))::int AS recent
+      ${SUMMARY_BASE} GROUP BY 1`
+    const byStatus = NO_STATUS_COUNTS()
+    let total = 0
+    let createdSince = 0
+    for (const r of rows) {
+      total += r.n
+      createdSince += r.recent
+      if (isQuestionStatus(r.status)) byStatus[r.status] = r.n
+    }
+    return { total, byStatus, createdSince }
   }
 
   /** The owner of a question (decimal id) or `undefined` when the question does not exist. */
@@ -1327,6 +1318,17 @@ export class QuestionsRepository {
     return Object.fromEntries(rows.map((r) => [r.code, r.n]))
   }
 
+  /** Served PKSK questions per domain code over both levels; DISTINCT so a T1 + T4 question counts once (D91). */
+  async pkskServedCountsAllLevels(): Promise<Record<string, number>> {
+    const rows = await this.db.$queryRaw<{ code: string; n: number }[]>`
+      SELECT d.code AS code, count(DISTINCT q.id)::int AS n
+      FROM questions q
+      JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no AND v.status = 'approved'
+      JOIN question_tags d ON d.question_id = q.id AND d.kind = 'pksk_domain'
+      WHERE q.is_active GROUP BY 1`
+    return Object.fromEntries(rows.map((r) => [r.code, r.n]))
+  }
+
   /** Ids of the served PKSK questions of the given domains at one level, ascending. */
   async pkskServedIds(level: 'T1' | 'T4', domainCodes: readonly string[]): Promise<string[]> {
     if (domainCodes.length === 0) return []
@@ -1397,6 +1399,18 @@ export class QuestionsRepository {
       lastEditor: c.lastEditor ?? 'person',
       declaredMarks: c.declaredMarks ?? null,
     }
+  }
+
+  /** D12: the OPEN flag of the LIVE approved version of each question (one query), by question id. Absent = none. */
+  async openLiveFlags(ids: readonly string[]): Promise<Map<string, 'stimulus_missing' | 'figure_only' | 'stem_duplicated'>> {
+    const keys = ids.map(bi).filter((k): k is bigint => k !== null)
+    const out = new Map<string, 'stimulus_missing' | 'figure_only' | 'stem_duplicated'>()
+    if (keys.length === 0) return out
+    const rows = await this.db.$queryRaw<{ id: bigint; flag: string }[]>`
+      SELECT q.id, v.stimulus_flag AS flag FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
+       WHERE q.id IN (${Prisma.join(keys)}) AND v.status = 'approved' AND v.stimulus_flag IS NOT NULL AND v.flag_dismissed_at IS NULL`
+    for (const r of rows) out.set(idToString(r.id), r.flag as 'stimulus_missing' | 'figure_only' | 'stem_duplicated')
+    return out
   }
 
   /** DM-05: stores the stimulus flag of one version (`refreshStimulusFlag` of effective-leaf.ts, the one writer). */

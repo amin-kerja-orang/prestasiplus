@@ -45,17 +45,63 @@ async function answerAll(page: Page, count: number): Promise<void> {
 test.describe('M05 S13 / S14 / S15 smoke', { tag: [TAG.smoke, moduleTag(5)] }, () => {
   test.use({ mockInit: { latency: 0 } })
 
-  test('S13 empty state for a canonical pupil', async ({ page, loginAs, gotoApp }) => {
+  test('S13 empty state for a pupil with no answers', async ({ page, loginAs, gotoApp }) => {
+    await loginAs('pelajar2@demo.test')
+    await gotoApp('/remedial/saya')
+    // formatTabTitle appends " | PRESTASIPLUS" (the helper compares the exact tab title).
+    await expectTabTitle(page, 'Ujian Remedial Saya | PRESTASIPLUS')
+    // DV-M05-01: the shell header is the one h1 and carries the page title. The e2e shell header renders it
+    // without `shell-user-title`, and `remedial-h1` is not rendered because the shell owns the h1.
+    await expect(page.getByRole('heading', { level: 1, name: 'Ujian Remedial Saya' })).toBeVisible()
+    await expect(page.getByText('Ujian khas untuk topik yang perlu diperbaiki')).toBeVisible()
+    await expect(tid(page, 'remedial-empty')).toContainText('Tiada topik lemah!')
+    await expect(tid(page, 'remedial-empty')).toContainText(
+      'Prestasi anda baik merentas semua subjek. Teruskan!',
+    )
+    await expect(tid(page, 'remedial-error')).toHaveCount(0)
+    await expectTouchTarget(tid(page, 'remedial-empty-cta'))
+    await expectNoHorizontalScroll(page)
+    await tid(page, 'remedial-empty-cta').click()
+    await expect(page).toHaveURL(/\/practice$/)
+  })
+
+  test('S13 weak subject card (pelajar: Matematik 40%) opens the revision drill; cards stack at 375', async ({
+    page,
+    loginAs,
+    gotoApp,
+  }) => {
     await loginAs(PELAJAR)
     await gotoApp('/remedial/saya')
-    await expectTabTitle(page, 'Ujian Remedial Saya')
-    // DV-M05-01: the shell header is the page title with no subtitle.
-    await expect(tid(page, 'shell-user-title')).toHaveText('Ujian Remedial Saya')
-    await expect(tid(page, 'remedial-h1')).toHaveText('Ujian Remedial Saya')
-    await expect(page.getByText('Ujian khas untuk topik yang perlu diperbaiki')).toBeVisible()
-    await expect(tid(page, 'remedial-empty')).toContainText(
-      'Tiada ujian remedial. Bagus — teruskan usaha!',
-    )
+    const card = tid(page, 'remedial-needed-MATH')
+    await expect(page.getByText('Perlu Pemulihan Sekarang')).toBeVisible()
+    await expect(card.getByTestId('remedial-needed-subject')).toHaveText('Matematik')
+    await expect(card.getByTestId('remedial-needed-status')).toHaveText('Perlu Pemulihan')
+    await expect(card.getByTestId('remedial-needed-count')).toHaveText('10 soalan')
+    await expect(card.getByTestId('remedial-needed-accuracy')).toHaveText('Ketepatan: 40%')
+    await expect(card.getByTestId('remedial-needed-target')).toHaveText('Sasaran: 60%')
+    await expect(card.getByTestId('remedial-needed-chip')).toHaveText('Matematik (Umum)')
+    await expect(card.getByTestId('remedial-needed-start')).toHaveText('🎯 Latihan Pemulihan →')
+    await expectTouchTarget(card.getByTestId('remedial-needed-start'))
+    await expectNoHorizontalScroll(page)
+    await card.getByTestId('remedial-needed-start').click()
+    await expect(page).toHaveURL(/\/practice\/revision\/MATH$/)
+  })
+
+  test('S13 completed set (pelajarmaju) shows Sebelum / Selepas with a red negative delta', async ({
+    page,
+    loginAs,
+    gotoApp,
+  }) => {
+    await loginAs('pelajarmaju@demo.test')
+    await gotoApp('/remedial/saya')
+    const row = tid(page, 'remedial-set-MATH-1')
+    await expect(row.getByTestId('remedial-set-title')).toHaveText('Remedial Set 1 — Matematik')
+    await expect(row.getByTestId('remedial-set-status')).toHaveText('Selesai')
+    await expect(row.getByTestId('remedial-set-count')).toHaveText('7 soalan')
+    await expect(row.getByTestId('remedial-set-before')).toHaveText('Sebelum: 77%')
+    await expect(row.getByTestId('remedial-set-after')).toContainText('Selepas: 43% (-34%)')
+    await expect(row.getByTestId('remedial-set-redo')).toHaveText('🎯 Ulang Latihan →')
+    await expect(row.getByTestId('remedial-set-redo')).toHaveAttribute('href', '/practice/revision/MATH')
     await expectNoHorizontalScroll(page)
   })
 

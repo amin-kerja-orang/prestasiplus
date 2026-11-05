@@ -4,6 +4,7 @@ import { AuditModule } from '../../common/audit'
 import { ThrottleModule } from '../../common/throttle'
 import { CurriculumModule, CurriculumPorts } from '../curriculum'
 import { FilesModule } from '../files'
+import { IntakeFilesModule } from '../intake/files/intake-files.module'
 import { UsersModule } from '../users'
 import { QuestionsBijakPoolSource } from './bijak-pool'
 import { ServabilityReadsService, ServabilityService } from './serving'
@@ -17,6 +18,8 @@ import { PkskQuestionsService } from './pksk.service'
 import { QuestionsRepository } from './questions.repository'
 import { QuestionsService } from './questions.service'
 import { GroupMembers } from './group-members'
+import { RegroupController } from './http/regroup.controller'
+import { RegroupService } from './regroup.service'
 import { StimuliRepository } from './stimuli.repository'
 import { StimuliService } from './stimuli.service'
 import { StudioController, StudioDskpService } from './studio'
@@ -29,9 +32,9 @@ import { StudioController, StudioDskpService } from './studio'
  * The three controllers live in `http/` (BE-09 Part C).
  */
 @Module({
-  imports: [CurriculumModule, UsersModule, FilesModule, AuditModule, ThrottleModule],
-  controllers: [AdminQuestionsController, StructuredQuestionsController, GuruQuestionsController, GuruStructuredQuestionsController, StimuliController, StudioController, ServabilityController, QuestionPaperServabilityController],
-  providers: [QuestionsRepository, QuestionsService, StimuliRepository, GroupMembers, StimuliService, PkskQuestionsService, QuestionCountsAdapter, QuestionsBijakPoolSource, StudioDskpService, ServabilityService, ServabilityReadsService, PaperServabilityService, OverviewCache, OverviewWarmer],
+  imports: [CurriculumModule, UsersModule, FilesModule, AuditModule, ThrottleModule, IntakeFilesModule],
+  controllers: [AdminQuestionsController, StructuredQuestionsController, GuruQuestionsController, GuruStructuredQuestionsController, StimuliController, StudioController, ServabilityController, QuestionPaperServabilityController, RegroupController],
+  providers: [QuestionsRepository, QuestionsService, StimuliRepository, GroupMembers, StimuliService, RegroupService, PkskQuestionsService, QuestionCountsAdapter, QuestionsBijakPoolSource, StudioDskpService, ServabilityService, ServabilityReadsService, PaperServabilityService, OverviewCache, OverviewWarmer],
   exports: [QuestionsRepository, QuestionsService, StimuliService, PkskQuestionsService, QuestionsBijakPoolSource, ServabilityService, PaperServabilityService, OverviewCache],
 })
 export class QuestionsModule implements OnModuleInit {

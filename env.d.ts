@@ -11,6 +11,8 @@ interface ImportMetaEnv {
   readonly VITE_ALESA_AI?: 'on' | 'off'
   /** Mohon Keluarga Angkat, M21 S6 (TRACKER D74): hidden unless `on`. See `src/app/features.ts`. */
   readonly VITE_KELUARGA_ANGKAT?: 'on' | 'off'
+  /** Admin Pusat central report views, M17 R1-ADM-M-07 (S6-T13): hidden unless `on`. See `src/app/features.ts`. */
+  readonly VITE_CENTRAL_REPORTS?: 'on' | 'off'
   /** Virtual dataset size (D45): `poc` = small, `full` = observed live totals. See `src/mock/dataset/data-profile.ts`. */
   readonly VITE_DATA_PROFILE?: 'full' | 'poc'
 }
