@@ -9,12 +9,12 @@ const wrap = (performance: ReturnType<typeof performanceBlock>) => performance
 const NO_XS = { answered: 0, accuracy: null }
 
 describe('dashboard mapper: BE-19 view into the dashboard performance block', () => {
-  it('the empty view is the empty aggregate: null accuracy (never 0 %), both levels at 0, no distribution', () => {
+  it('the empty view is the empty aggregate: null accuracy (never 0 %), both levels null, no distribution', () => {
     const p = wrap(performanceBlock(emptyView(), NO_XS))
     expect(p.practice).toEqual({ accuracy: null, sessions: 0, questions: 0 })
     expect(p.levels).toEqual([
-      { code: 't4', name: 'Tingkatan 4', accuracy: 0 },
-      { code: 't5', name: 'Tingkatan 5', accuracy: 0 },
+      { code: 't4', name: 'Tingkatan 4', accuracy: null },
+      { code: 't5', name: 'Tingkatan 5', accuracy: null },
     ])
     expect(p.distribution).toEqual([])
     expect(p.total).toBe(0)

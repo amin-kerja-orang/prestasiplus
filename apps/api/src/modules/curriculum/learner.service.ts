@@ -9,15 +9,15 @@ import { CurriculumPorts, progressOf } from './providers'
 import {
   DEFAULT_MAP_GRADE,
   DEFAULT_MAP_SUBJECT,
-  MAP_SUBJECTS,
   GRADE_CODES,
-  PRACTICE_CODE,
   islandStates,
-  legacySubjectOfPracticeCode,
+  learnerSubjectOf,
   mapSubjectLabel,
+  mapSubjectPills,
+  practiceCodeOfLearnerSubject,
   subjectLabelOf,
 } from './rules'
-import type { EducationLevelLookup, GradeCode, LearnerTopicDetail, LegacySubjectCode, SubjectLookup, TopicCard } from './types'
+import type { EducationLevelLookup, GradeCode, LearnerTopicDetail, SubjectLookup, TopicCard } from './types'
 import { parseId } from './validation'
 
 const PREVIEW_MAX = 3
@@ -68,12 +68,7 @@ export class CurriculumLearnerService {
     return offered.filter((l): l is OfferedLevel & { gradeKey: GradeCode } => (GRADE_CODES as readonly string[]).includes(l.gradeKey))
   }
 
-  /** A chapter whose subject is outside the 8 legacy codes cannot be shown in the unchanged contract (`subject` enum): it is not served. */
-  private legacySubject(c: LearnerChapter): LegacySubjectCode | undefined {
-    return legacySubjectOfPracticeCode(c.subject.code)
-  }
-
-  private card(c: LearnerChapter, grade: GradeCode, subject: LegacySubjectCode, subs: { name: string }[]): TopicCard {
+  private card(c: LearnerChapter, grade: GradeCode, subject: string, subs: { name: string }[]): TopicCard {
     return {
       id: idToString(c.id),
       gradeLevel: grade,
@@ -86,24 +81,22 @@ export class CurriculumLearnerService {
     }
   }
 
-  /** Chapters of the levels in `levels` (optionally one grade and one subject code), only those with a legacy subject code. */
+  /** Chapters of the levels in `levels` (optionally one subject code), every active subject (D11). */
   private async learnerRows(
     levels: (OfferedLevel & { gradeKey: GradeCode })[],
     subjectCode: string | null,
-  ): Promise<{ chapter: LearnerChapter; grade: GradeCode; subject: LegacySubjectCode }[]> {
-    let practiceCodes: string[] | undefined
-    if (subjectCode) {
-      // Own keys only: `constructor`, `toString` or `__proto__` must not resolve to an inherited property of the object.
-      if (!Object.hasOwn(PRACTICE_CODE, subjectCode)) return [] // an unknown subject code matches nothing (BR-13)
-      practiceCodes = [PRACTICE_CODE[subjectCode as LegacySubjectCode]]
-    }
-    const chapters = await this.repo.learnerChapters({ levelIds: levels.map((l) => BigInt(l.id)), ...(practiceCodes ? { subjectCodes: practiceCodes } : {}) })
+  ): Promise<{ chapter: LearnerChapter; grade: GradeCode; subject: string }[]> {
+    // Exact match; a legacy name maps to its practice code (own keys only), any other code is the subject code itself (BR-13).
+    const practiceCode = subjectCode ? practiceCodeOfLearnerSubject(subjectCode) : undefined
+    if (practiceCode === null) return []
+    const subjectCodes = practiceCode ? [practiceCode] : undefined
+    const chapters = await this.repo.learnerChapters({ levelIds: levels.map((l) => BigInt(l.id)), ...(subjectCodes ? { subjectCodes } : {}) })
     const gradeOf = new Map(levels.map((l) => [l.id, l.gradeKey]))
-    const out: { chapter: LearnerChapter; grade: GradeCode; subject: LegacySubjectCode }[] = []
+    const out: { chapter: LearnerChapter; grade: GradeCode; subject: string }[] = []
     for (const chapter of chapters) {
-      const subject = this.legacySubject(chapter)
+      const subject = learnerSubjectOf(chapter.subject.code)
       const grade = gradeOf.get(idToString(chapter.educationLevelId as bigint))
-      if (subject && grade) out.push({ chapter, grade, subject })
+      if (grade) out.push({ chapter, grade, subject })
     }
     return out
   }
@@ -121,7 +114,7 @@ export class CurriculumLearnerService {
     const id = parseId(rawId)
     const levels = await this.gradeLevels()
     const chapter = id === null ? null : await this.repo.learnerChapter(id, levels.map((l) => BigInt(l.id)))
-    const subject = chapter ? this.legacySubject(chapter) : undefined
+    const subject = chapter ? learnerSubjectOf(chapter.subject.code) : undefined
     const grade = chapter ? levels.find((l) => l.id === idToString(chapter.educationLevelId as bigint))?.gradeKey : undefined
     if (!chapter || !subject || !grade) throw notFound(NF.topic)
     const [subs, map] = await Promise.all([this.repo.activeTopicsByChapter([chapter.id]), this.ports.topicProgress.topicProgress(userId)])
@@ -131,7 +124,7 @@ export class CurriculumLearnerService {
       gradeLevel: grade,
       subject,
       subjectLabel: subjectLabelOf(subject),
-      practiceCode: PRACTICE_CODE[subject],
+      practiceCode: chapter.subject.code, // BR-16: the admin subject code, for the legacy 8 and any other active subject alike
       name: chapter.name ?? '',
       description: chapter.description,
       icon: null, // chapters have no icon
@@ -174,12 +167,14 @@ export class CurriculumLearnerService {
     })
     const done = states.filter((s) => s === 'mastered').length
     const average = progress.length ? Math.round(progress.reduce((sum, p) => sum + p.progress, 0) / progress.length) : 0
+    // The pills are the active subjects (repo order: sort order, then id); a subject outside the legacy 7 is labelled by its name.
+    const pills = mapSubjectPills(await this.repo.subjects({ active: true }))
     return {
       subject,
-      subjectLabel: mapSubjectLabel(subject),
+      subjectLabel: pills.find((p) => p.code === subject)?.label ?? mapSubjectLabel(subject),
       grade,
       gradeOptions,
-      subjects: MAP_SUBJECTS.map((s) => ({ ...s })),
+      subjects: pills,
       stats: { done, total: rows.length, progress: average },
       topics,
     }

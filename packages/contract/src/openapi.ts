@@ -29,6 +29,7 @@ import { QUESTIONS_COMPONENT_SCHEMAS, registerQuestionsPaths } from './questions
 import { QUESTION_GATE_COMPONENT_SCHEMAS, registerQuestionGatePaths } from './questions/gate'
 import { QUESTION_SCHEME_VALIDATE_COMPONENT_SCHEMAS, registerQuestionSchemeValidatePaths } from './questions/scheme-validate'
 import { STIMULI_COMPONENT_SCHEMAS, registerStimuliPaths } from './questions/stimuli'
+import { REGROUP_COMPONENT_SCHEMAS, registerRegroupPaths } from './questions/regroup'
 import { STUDIO_COMPONENT_SCHEMAS, registerStudioPaths } from './questions/studio'
 import { PERFORMANCE_COMPONENT_SCHEMAS, registerPerformancePaths } from './reports/performance/paths'
 import { DateOnlySchema, TimestampInputSchema, TimestampSchema } from './common/time'
@@ -111,6 +112,7 @@ export const COMPONENT_SCHEMAS = {
   ...SCHOOL_ADMIN_PENDING_COMPONENT_SCHEMAS, // BE-21 AC13 (pending teachers)
   ...QUESTIONS_COMPONENT_SCHEMAS, // BE-09
   ...STIMULI_COMPONENT_SCHEMAS, // R1-T32
+  ...REGROUP_COMPONENT_SCHEMAS, // S1-T07
   ...STUDIO_COMPONENT_SCHEMAS, // R1-T13 (REQ-C-006)
   ...QUESTION_GATE_COMPONENT_SCHEMAS, // R1-B05
   ...QUESTION_SCHEME_VALIDATE_COMPONENT_SCHEMAS, // S1-T09a
@@ -183,6 +185,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerSchoolAdminPendingTeacherPaths(registry) // BE-21 AC13 (pending teachers)
   registerQuestionsPaths(registry) // BE-09
   registerStimuliPaths(registry) // R1-T32
+  registerRegroupPaths(registry) // S1-T07
   registerStudioPaths(registry) // R1-T13 (REQ-C-006)
   registerQuestionGatePaths(registry) // R1-B05
   registerQuestionSchemeValidatePaths(registry) // S1-T09a
