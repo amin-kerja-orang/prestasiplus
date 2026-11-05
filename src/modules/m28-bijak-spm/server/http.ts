@@ -373,7 +373,7 @@ export class HttpBijakServer implements BijakApi {
       method: 'PUT',
       keepalive: true,
       credentials: 'include',
-      headers: { accept: 'application/json', 'content-type': 'application/json', 'x-csrf-token': csrf },
+      headers: { accept: 'application/json', 'Content-Type': 'application/json', 'x-csrf-token': csrf },
       body,
     }).catch(() => undefined)
     return true
