@@ -3,9 +3,8 @@ import { describe, expect, it } from 'vitest'
 import { MISSION_GOAL_KINDS, type MissionGoalKind } from '@pp/contract'
 
 import { FixedClock } from '../../src/db/clock'
-import { goalMet, goalProgress, mytDayWindow, type GoalFacts } from '../../src/modules/classes/missions/goals.rules'
 import type { MissionRecord } from '../../src/modules/classes/missions/missions.repository'
-import { MissionsService } from '../../src/modules/classes/missions/missions.service'
+import { goalMet, goalProgress, MissionsService, mytDayWindow, type GoalFacts } from '../../src/modules/classes/missions/missions.service'
 
 // S6-T07 Global goals (PO decision on #483): DB-free. Pure rules per goal kind, then the service with fakes.
 const facts = (over: Partial<GoalFacts> = {}): GoalFacts => ({ sessions: [], answers: [], streak: 0, ...over })
