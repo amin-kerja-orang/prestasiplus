@@ -263,3 +263,45 @@ export function failedLines(
 
 /** [PROPOSED] UX-80: shown after "Jana Penjelasan AI" on an approved or archived question; the AI text went to a new draft version. */
 export const AI_DRAFT_NOTICE = 'Penjelasan AI disimpan sebagai draf baharu. Semak dan terbitkan draf itu.'
+
+/* ---- the regroup work-list (R1-ADM-QE-08, PRD45 6.6; API-Q-13). The row fields beyond PRD60 lines 710-712 are the additive shape of answer 3 on #431, built by S1-T07 part 2, so they are optional. ---- */
+
+export const REGROUP_TAB = 'regroup'
+
+export const REGROUP_COPY = {
+  empty: 'Tiada soalan perlu dikumpulkan semula.',
+  subject: 'Subjek',
+  level: 'Tingkatan',
+  flag: 'Sebab',
+} as const
+
+export const REGROUP_FLAGS = ['stimulus_missing', 'figure_only'] as const
+export type RegroupFlag = (typeof REGROUP_FLAGS)[number]
+
+export interface RegroupWorkRow {
+  questionId: string
+  numberLabel: string | null
+  stemExcerpt: string
+  subject: string
+  level: string
+  flag: string
+  paper: { title: string; year: number | null } | null
+  /** Answer 3 on #431: "Rajah 14", or null for "tanpa nombor". */
+  reference?: string | null
+  refKind?: 'numbered' | 'unnumbered' | null
+}
+
+/** "{n} perlu tindakan · {m} selesai" (PRD45 6.6.2); `done` is the additive count of answer 3 on #431. */
+export const regroupHeader = (open: number, done: number): string => `${String(open)} perlu tindakan · ${String(done)} selesai`
+
+/** `Rujukan` (PRD45 6.6.2): the figure it names, "tanpa nombor", or a dash until the API sends it. */
+export function regroupReference(row: Pick<RegroupWorkRow, 'reference' | 'refKind'>): string {
+  if (row.refKind === 'unnumbered') return 'tanpa nombor'
+  return row.reference ?? '—'
+}
+
+/** `Kertas sumber` and number. */
+export function regroupSource(row: Pick<RegroupWorkRow, 'paper' | 'numberLabel'>): string {
+  const paper = row.paper === null ? '—' : row.paper.year === null ? row.paper.title : `${row.paper.title} (${String(row.paper.year)})`
+  return row.numberLabel === null ? paper : `${paper} · No. ${row.numberLabel}`
+}

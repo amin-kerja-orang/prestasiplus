@@ -13,6 +13,8 @@
 
 import { api, isHttpMode, uploadQuestionImage, type ListResult } from '@/api'
 
+import type { RegroupWorkRow } from '../lib/question-list'
+
 export type QuestionStatus =
   | 'draft'
   | 'pending_review'
@@ -434,6 +436,24 @@ export function fetchQuestionSummary(
   return api.get<QuestionSummary>(
     '/api/questions/summary',
     options.signal ? { signal: options.signal } : {},
+  )
+}
+
+/**
+ * API-Q-13 `GET /api/admin/questions/regroup-worklist` (S1-T07 part 2). Blank filters are not sent. `done` is the additive count of
+ * answer 3 on #431.
+ */
+export function fetchRegroupWorklist(
+  query: { subjectId?: string; educationLevelId?: string; flag?: string; page?: number },
+  options: { signal?: AbortSignal } = {},
+): Promise<{ data: RegroupWorkRow[]; meta: { totalItems: number; pageSize: number; page: number; done?: number } }> {
+  return api.get<{ data: RegroupWorkRow[]; meta: { totalItems: number; pageSize: number; page: number; done?: number } }>(
+    '/api/admin/questions/regroup-worklist',
+    {
+      query: { subjectId: query.subjectId || null, educationLevelId: query.educationLevelId || null, flag: query.flag || null, page: query.page ?? 1 },
+      raw: true,
+      ...(options.signal ? { signal: options.signal } : {}),
+    },
   )
 }
 
