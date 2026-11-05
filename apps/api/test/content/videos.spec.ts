@@ -330,6 +330,18 @@ describe('videos: visibility by school, writes, validation (AC 5, AC 6, AC 8)', 
       expect(res.body.data.canManage).toBe(true)
     })
 
+    it('a teacher who edits their own global video leaves it global, with no school share', async () => {
+      const vid = await insertVideo(t.db, { title: 'Global guru', uploader: TEACHER, category: 'tutorial', createdAt: '2026-10-06T10:00:00+08:00' })
+      const res = await api.teacher.put(`/videos/${vid}`, body({ title: 'Global guru diubah', visibility: 'school' }))
+      expect(res.status).toBe(200)
+      expect(res.body.data.title).toBe('Global guru diubah')
+      expect(res.body.data.visibility).toBe('global')
+      expect(await t.db.query(`select 1 from video_schools where video_id = $1`, [vid])).toHaveLength(0)
+      const [row] = await t.db.query<{ visibility: string }>(`select visibility from videos where id = $1`, [vid])
+      expect(row?.visibility).toBe('global')
+      await t.db.query(`delete from videos where id = $1`, [vid]) // keep the shared lists of the later tests as they were
+    })
+
     it('on update the role check (403) comes first, then 404, then validation', async () => {
       expectError(await api.student.put(`/videos/${id.global1}`, {}), 'FORBIDDEN')
       expectError(await api.admin.put('/videos/999999', {}), 'NOT_FOUND')

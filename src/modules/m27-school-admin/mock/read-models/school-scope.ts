@@ -8,7 +8,17 @@
  * It does not reuse `handlers/dashboard.ts` (S0 belongs to another session).
  */
 
-import { forbidden, unauthorized, type Middleware, type MockRequest } from '@/mock/define'
+import { REPORT_SCOPE_MESSAGES } from '@pp/contract'
+
+import {
+  forbidden,
+  notFound,
+  queryString,
+  unauthorized,
+  validationError,
+  type Middleware,
+  type MockRequest,
+} from '@/mock/define'
 import { users } from '@/modules/m01-authentication/mock'
 import { schools, type School } from '@/modules/m02-users-schools/mock'
 
@@ -40,4 +50,31 @@ export function schoolRowOf(viewer: SchoolViewer): School {
   const school = schools.get(viewer.schoolId)
   if (!school) throw new Error(`M27: unknown school ${String(viewer.schoolId)}`)
   return school
+}
+
+/**
+ * Guard of the five read reports (API-ADM-22): `school_admin` with a school as {@link requireSchoolAdminWithSchool}
+ * (a `schoolId` they send is ignored); `admin` (Pusat) must name an existing school with `?schoolId=`: 422
+ * `fields.schoolId` when absent or malformed, 404 when no such school. Any other role is 403.
+ */
+export const requireSchoolAdminOrAdminReport: Middleware = (req) => {
+  const session = req.session
+  if (!session) return unauthorized()
+  if (session.role === 'school_admin') {
+    return users.get(session.userId)?.schoolId == null ? forbidden() : undefined
+  }
+  if (session.role !== 'admin') return forbidden()
+  const raw = queryString(req.query, 'schoolId')
+  if (raw === undefined || !/^[1-9]\d{0,18}$/.test(raw)) {
+    return validationError({ schoolId: REPORT_SCOPE_MESSAGES.schoolIdRequired })
+  }
+  return schools.get(Number(raw)) ? undefined : notFound()
+}
+
+/** The viewer of a request that passed {@link requireSchoolAdminOrAdminReport}: the session school, or the admin's pick. */
+export function reportSchoolOf(req: Pick<MockRequest, 'session' | 'query'>): SchoolViewer {
+  if (req.session?.role === 'admin') {
+    return { userId: req.session.userId, schoolId: Number(queryString(req.query, 'schoolId')) }
+  }
+  return schoolOf(req)
 }

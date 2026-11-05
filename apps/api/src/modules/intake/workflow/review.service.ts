@@ -40,7 +40,7 @@ import { QuestionsRepository, QuestionsService } from '../../questions'
 import { isAdmin, parseId, visibleBatches } from '../files/intake-access'
 import { CurriculumFactsService } from './curriculum-facts'
 import { runToWire, type CallerInfo } from './extraction.service'
-import { batchLevelIssues, itemIssues, questionMarks, stimulusIssues } from './gate'
+import { batchLevelIssues, draftIssues, questionMarks, stimulusIssues } from './gate'
 import { attachToStimulus, groupsOf } from './grouping'
 import { stimulusTableOf } from '../../questions/stimulus-table'
 import { ITEM_INCLUDE, PayloadSchema, bandOf, payloadOf, questionOf, stateDuplicates, stimulusOf, type ItemRow, type StoredPayload } from './item-model'
@@ -588,8 +588,10 @@ export class IntakeReviewService {
     const q = questionOf(row)
     const stimulus = row.stimulus ? stimulusOf(row.stimulus) : undefined
     const resolved = await this.curriculum.resolver().resolve(q.tag)
-    const issues = itemIssues(q, stimulus, resolved.facts)
-    if (issues.length > 0 || resolved.ids === null) throw gateError(issues)
+    const issues = draftIssues(q, stimulus, resolved.facts)
+    if (issues.length > 0) throw gateError(issues)
+    // Unreachable in practice: `ids` is null only when the subject or level is unknown, which draftIssues already reports.
+    if (resolved.ids === null) throw gateError([{ itemId: q.id, where: `Soalan ${q.label}`, message: `Soalan ${q.label}: ${INTAKE_GATE_MESSAGES.subjectLevelMissing}` }])
 
     const ownerId = row.batch.ownerUserId === null ? auth.userId : idToString(row.batch.ownerUserId)
     const actor = { userId: ownerId, role: auth.active.role === 'admin' ? ('admin' as const) : ('teacher' as const) }
@@ -623,9 +625,9 @@ export class IntakeReviewService {
       // The bank stimulus, group and figure copy are written outside this transaction: a refused accept must not leave them behind
       // (one orphan object per retry otherwise).
       await this.discardMade(made)
-      if (err instanceof ConvertError) throw gateError([{ itemId: idToString(row.id), where: err.where, message: err.message }])
+      if (err instanceof ConvertError) throw gateError([{ itemId: idToString(row.id), where: err.where, message: `Soalan ${q.label}: ${err.message}` }])
       if (err instanceof ApiError && err.code === 'VALIDATION_ERROR' && err.fields) {
-        throw gateError(Object.values(err.fields).map((message) => ({ itemId: idToString(row.id), where: `Soalan ${q.label}`, message })))
+        throw gateError(Object.values(err.fields).map((message) => ({ itemId: idToString(row.id), where: `Soalan ${q.label}`, message: `Soalan ${q.label}: ${message}` })))
       }
       throw err
     }
