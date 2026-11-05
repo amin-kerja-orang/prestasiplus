@@ -23,7 +23,7 @@ import { M10_DISPLAY_CONSTANTS } from '../../mock/constants/display'
 import { crc32 } from '../../mock/handlers/docx'
 import { m10Hooks } from '../../mock/hooks'
 import { planImport, TEMPLATE_CSV, TEMPLATE_HEADER } from '../../mock/handlers/csv'
-import { QuestionGuruDetailSchema, QuestionGuruSummarySchema } from '../contract-shape/shapes'
+import { QuestionGuruDetailSchema, QuestionGuruSummarySchema } from '@pp/contract'
 import { bootM10 } from './helpers'
 
 const ADMIN = 1
@@ -673,7 +673,7 @@ describe('#51–#52 contributions (S21; BR-M10-21, BR-M10-23)', () => {
   it('#52 pages the own questions, ids ascending, 20 per page', async () => {
     const own = await call<{
       data: {
-        id: number
+        id: string
         status: string
         rejectionReason: string | null
         subjectName: string
@@ -683,7 +683,7 @@ describe('#51–#52 contributions (S21; BR-M10-21, BR-M10-23)', () => {
       meta: { totalItems: number; pageSize: number }
     }>('GET', '/api/guru/questions')
     expect(own.status).toBe(200)
-    expect(own.body.data.map((q) => q.id)).toEqual([anchorId])
+    expect(own.body.data.map((q) => Number(q.id))).toEqual([anchorId])
     expect(own.body.data[0]).toMatchObject({
       status: 'approved',
       rejectionReason: null,
@@ -692,12 +692,12 @@ describe('#51–#52 contributions (S21; BR-M10-21, BR-M10-23)', () => {
     })
     expect(own.body.meta).toMatchObject({ totalItems: 1, pageSize: 20 })
     const admin = await call<{
-      data: { id: number }[]
+      data: { id: string }[]
       meta: { totalItems: number; totalPages: number; page: number }
     }>('GET', '/api/guru/questions?page=2', { as: ADMIN })
     expect(admin.body.data).toHaveLength(20)
     expect(admin.body.meta).toMatchObject({ totalItems: 9531, totalPages: 477, page: 2 })
-    const ids = admin.body.data.map((q) => q.id)
+    const ids = admin.body.data.map((q) => Number(q.id))
     expect(ids).toEqual([...ids].sort((x, y) => x - y))
   })
 })
@@ -705,7 +705,7 @@ describe('#51–#52 contributions (S21; BR-M10-21, BR-M10-23)', () => {
 // ---------------------------------------------------------------------------------------------
 describe('#53–#56 contributed questions (S22–S24; BR-M10-21, BR-M10-22, SEC-M10-07)', () => {
   type Q = {
-    id: number
+    id: string
     status: string
     rejectionReason: string | null
     editable: boolean
@@ -715,8 +715,8 @@ describe('#53–#56 contributed questions (S22–S24; BR-M10-21, BR-M10-22, SEC-
     questionType: string
     explanation: string | null
     createdAt: string
-    chapterId: number | null
-    spIds: number[]
+    chapterId: string | null
+    spIds: string[]
     tp: number | null
     cognitiveLevel: string | null
   }
@@ -818,7 +818,7 @@ describe('#53–#56 contributed questions (S22–S24; BR-M10-21, BR-M10-22, SEC-
     const a = await call<Data<Q>>('POST', '/api/guru/questions', { body: mcq })
     expect(a.status).toBe(201)
     const q = a.body.data
-    firstQuestionId = q.id
+    firstQuestionId = Number(q.id)
     expect(q).toMatchObject({
       status: 'pending',
       rejectionReason: null,
@@ -826,8 +826,8 @@ describe('#53–#56 contributed questions (S22–S24; BR-M10-21, BR-M10-22, SEC-
       statusLabel: 'Menunggu Semakan',
       difficultyLabel: 'Sederhana',
       difficultyLevel: 3,
-      chapterId: chapterOf?.id,
-      spIds: [9001],
+      chapterId: chapterOf ? String(chapterOf.id) : null,
+      spIds: ['9001'],
       tp: 3,
       cognitiveLevel: 'mengaplikasi',
       questionType: 'mcq',
@@ -835,16 +835,16 @@ describe('#53–#56 contributed questions (S22–S24; BR-M10-21, BR-M10-22, SEC-
       correctAnswer: 0,
       explanation: 'Ion klorida dinyahcas.',
     })
-    expect(q.id).toBeGreaterThanOrEqual(9_000_001)
-    const stored = questions.get(q.id)
+    expect(Number(q.id)).toBeGreaterThanOrEqual(9_000_001)
+    const stored = questions.get(Number(q.id))
     expect(stored).toMatchObject({ createdBy: GURU, status: 'pending_review', isActive: true })
     expect(count()).toBe(before + 1)
     // not practice-eligible until approved
-    expect(questions.getEligible(q.id)).toBeNull()
+    expect(questions.getEligible(Number(q.id))).toBeNull()
     const s = await call<{ stats: Record<string, number> }>('GET', '/api/guru/contributions')
     expect(s.body.stats).toEqual({ total: 2, approved: 1, pending: 1, used: 0 })
-    const list = await call<{ data: { id: number }[] }>('GET', '/api/guru/questions')
-    expect(list.body.data.map((x) => x.id)).toEqual([anchorId, q.id])
+    const list = await call<{ data: { id: string }[] }>('GET', '/api/guru/questions')
+    expect(list.body.data.map((x) => Number(x.id))).toEqual([anchorId, Number(q.id)])
     const dash = await call<Data<{ stats: Record<string, number> }>>('GET', '/api/guru/dashboard')
     expect(dash.body.data.stats).toMatchObject({ questions: 2, questionsApproved: 1 })
   })
@@ -896,8 +896,8 @@ describe('#53–#56 contributed questions (S22–S24; BR-M10-21, BR-M10-22, SEC-
     const encoded = await call<Data<Q>>('POST', '/api/guru/questions', { body: form })
     expect(encoded.status, JSON.stringify(encoded.body)).toBe(201)
     expect(encoded.body.data).toMatchObject({
-      chapterId: chapterOf?.id,
-      spIds: [9001],
+      chapterId: chapterOf ? String(chapterOf.id) : null,
+      spIds: ['9001'],
       options: mcq.options,
       correctAnswer: 0,
       editable: true,
@@ -910,8 +910,8 @@ describe('#53–#56 contributed questions (S22–S24; BR-M10-21, BR-M10-22, SEC-
     const a = await call<Data<Q>>('GET', `/api/guru/questions/${String(firstQuestionId)}`)
     expect(a.status).toBe(200)
     expect(a.body.data).toMatchObject({
-      id: firstQuestionId,
-      chapterId: chapterOf?.id,
+      id: String(firstQuestionId),
+      chapterId: chapterOf ? String(chapterOf.id) : null,
       difficultyLevel: 3,
       correctAnswer: 0,
     })
@@ -949,8 +949,8 @@ describe('#53–#56 contributed questions (S22–S24; BR-M10-21, BR-M10-22, SEC-
       explanation: null,
       status: 'pending',
       tp: 4,
-      chapterId: chapterOf?.id,
-      spIds: [9001],
+      chapterId: chapterOf ? String(chapterOf.id) : null,
+      spIds: ['9001'],
     })
     expect(questions.get(firstQuestionId)?.questionText).toBe(edit.questionText)
     // `correctOptionId` is an alias of `correctAnswer`.
@@ -1253,7 +1253,7 @@ describe('#73–#75 student classes and sets (S33, S34; BR-M10-02, BR-M10-18)', 
     for (const q of data.questions) {
       await send('POST', `/api/practice/sessions/${data.sessionId}/check-answer`, {
         questionId: q.id,
-        selectedOptionId: questions.get(q.id)?.correctAnswer ?? 0,
+        selectedOptionId: questions.get(Number(q.id))?.correctAnswer ?? 0,
       })
     }
     const submit = await send('POST', `/api/practice/sessions/${data.sessionId}/submit`, {

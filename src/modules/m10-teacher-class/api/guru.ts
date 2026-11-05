@@ -279,7 +279,7 @@ export function updateContributedQuestion(
 }
 
 /** #56 `DELETE /api/guru/questions/:id` (404 when not own). */
-export function deleteContributedQuestion(id: number): Promise<{ removed: number }> {
+export function deleteContributedQuestion(id: number | string): Promise<{ removed: number }> {
   return api.delete<{ removed: number }>(`/api/guru/questions/${String(id)}`)
 }
 

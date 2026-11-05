@@ -46,7 +46,7 @@ beforeEach(() => {
     data: [
       question(),
       question({
-        id: 522426,
+        id: '522426',
         questionText: 'Kedua?',
         status: 'pending',
         editable: true,
@@ -141,8 +141,8 @@ describe('S21 Sumbang Soalan', () => {
   it('FR-GUR-44-10: Ditolak has its own tone and "Sebab: {reason}"; no Edit or Padam', async () => {
     guru.fetchContributedQuestions.mockResolvedValue({
       data: [
-        question({ id: 7, status: 'rejected', rejectionReason: 'Gambar tidak jelas.' }),
-        question({ id: 8, status: 'rejected', rejectionReason: 'Ulang.', editable: true }),
+        question({ id: '7', status: 'rejected', rejectionReason: 'Gambar tidak jelas.' }),
+        question({ id: '8', status: 'rejected', rejectionReason: 'Ulang.', editable: true }),
       ],
       meta: listMeta(2),
     })
@@ -179,7 +179,7 @@ describe('S21 Sumbang Soalan', () => {
     guru.deleteContributedQuestion.mockResolvedValue({ removed: 1 })
     await t(w, 'question-delete').trigger('click')
     await flushPromises()
-    expect(guru.deleteContributedQuestion).toHaveBeenCalledWith(522426)
+    expect(guru.deleteContributedQuestion).toHaveBeenCalledWith('522426')
     expect(guru.fetchContributions).toHaveBeenCalledTimes(2)
     expect(useFlashStore().current?.type).toBe('success')
     confirm.mockRestore()

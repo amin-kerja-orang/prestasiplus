@@ -42,12 +42,12 @@ export function summary(overrides: Partial<Contributions> = {}): Contributions {
 
 export function question(overrides: Partial<ContributedQuestion> = {}): ContributedQuestion {
   return {
-    id: 522425,
+    id: '522425',
     questionType: 'mcq',
     questionText: 'Pilih ayat yang betul?',
-    subjectId: 1,
+    subjectId: '1',
     subjectName: 'Bahasa Melayu',
-    educationLevelId: 11,
+    educationLevelId: '11',
     levelName: 'Tingkatan 5',
     difficultyLevel: 4,
     difficultyLabel: 'Sukar',
