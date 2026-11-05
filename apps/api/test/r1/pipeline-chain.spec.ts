@@ -593,23 +593,23 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       const result = (await pupil.get(`/api/bijak/attempts/${retry}/result`)).body.data.result as { score: number; questions: { questionId: string; parts: { partId: string }[] }[] }
       expect(result.score).toBe(4)
       const essayPartId = result.questions.find((q) => q.questionId === fx.essay)!.parts[0]!.partId
-      // the submit paid the automatic score under the bare attempt id: 4 marks = 8 syiling
-      expect(await ledger()).toEqual([[retry, 8, pupil.userId]])
+      // the submit paid the automatic score under the bare attempt id: 4 marks = 4 syiling (1 per mark, the default rate)
+      expect(await ledger()).toEqual([[retry, 4, pupil.userId]])
       const xpAtSubmit = await xp()
       const mark = async (n: number) => expect((await pupil.post(`/api/bijak/attempts/${retry}/self-mark`, { partId: essayPartId, mark: n })).status).toBe(200)
-      // 1 mark: level 5, a gain of 1 over the automatic 4 -> 2 syiling, 10 XP, one row keyed <attempt>:score:5
+      // 1 mark: level 5, a gain of 1 over the automatic 4 -> 1 syiling, 10 XP, one row keyed <attempt>:score:5
       await mark(1)
-      expect(await ledger()).toEqual([[retry, 8, pupil.userId], [`${retry}:score:5`, 2, pupil.userId]])
+      expect(await ledger()).toEqual([[retry, 4, pupil.userId], [`${retry}:score:5`, 1, pupil.userId]])
       expect(await xp()).toBe(xpAtSubmit + 10)
       // 2 marks: level 6, a gain of 1 over the highest paid level (5) -> one more row, keyed :score:6
       await mark(2)
-      expect(await ledger()).toEqual([[retry, 8, pupil.userId], [`${retry}:score:5`, 2, pupil.userId], [`${retry}:score:6`, 2, pupil.userId]])
+      expect(await ledger()).toEqual([[retry, 4, pupil.userId], [`${retry}:score:5`, 1, pupil.userId], [`${retry}:score:6`, 1, pupil.userId]])
       expect(await xp()).toBe(xpAtSubmit + 20)
       // a replay of the same mark, and a lower one: no row, no XP, nothing taken back
       await mark(2)
       await mark(1)
       await mark(2)
-      expect(await ledger()).toEqual([[retry, 8, pupil.userId], [`${retry}:score:5`, 2, pupil.userId], [`${retry}:score:6`, 2, pupil.userId]])
+      expect(await ledger()).toEqual([[retry, 4, pupil.userId], [`${retry}:score:5`, 1, pupil.userId], [`${retry}:score:6`, 1, pupil.userId]])
       expect(await xp()).toBe(xpAtSubmit + 20)
     })
   })
