@@ -113,7 +113,7 @@ describe('create (S14)', () => {
     expect((await (as.guru as Client).post('/api/headcounts', body({ academicYear: 2032, mode: 'auto' }))).status).toBe(201)
   })
 
-  it('privacy 12: a foreign class, an unknown class and a non-teacher get the identical 422', async () => {
+  it('privacy 12: a foreign class, an unknown class and a malformed id get the identical 422; a non-teacher is 403', async () => {
     const foreign = await (as.guru as Client).post('/api/headcounts', body({ classroomId: w.otherClassId }))
     const unknown = await (as.guru as Client).post('/api/headcounts', body({ classroomId: UNKNOWN }))
     const badId = await (as.guru as Client).post('/api/headcounts', body({ classroomId: 'abc' }))
@@ -122,9 +122,8 @@ describe('create (S14)', () => {
       expect(e.fields).toEqual({ classroomId: MSG.classInvalid })
     }
     expect(noReq(foreign.body)).toEqual(noReq(unknown.body))
-    for (const k of ['admin', 'adminsekolah']) {
-      expectError(await (as[k] as Client).post('/api/headcounts', body()), 'VALIDATION_ERROR', MSG.classInvalid)
-    }
+    // S10-T02: creating is the owning teacher's only; an admin or a school admin is 403 (see the auto-setup test below).
+    for (const k of ['admin', 'adminsekolah']) expectError(await (as[k] as Client).post('/api/headcounts', body()), 'FORBIDDEN')
   })
 
   it('validates every field with the exact copy and reports the first plus the count', async () => {
