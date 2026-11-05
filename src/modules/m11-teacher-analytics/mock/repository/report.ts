@@ -139,8 +139,11 @@ export function teacherReport(
       if (!inRange(s)) continue
       const type = TYPE_OF_MODE[s.mode] ?? 'kuiz'
       byType[type]++
-      sums[type].c += s.correctCount
-      sums[type].n += s.questionCount
+      // FR-GUR-42-2: Skor Purata is the mean of per-session accuracies (a session without questions has none).
+      if (s.questionCount > 0) {
+        sums[type].c += s.correctCount / s.questionCount
+        sums[type].n += 1
+      }
       bump(mytDayStart(s.completedAtMs), f.user.id)
     }
     for (const t of f.structured) {
@@ -187,8 +190,15 @@ export function teacherReport(
     trackingA: rate(sums.trackingA.c, sums.trackingA.n),
     battle: rate(battles.correct, battles.answered),
   }
-  const scoreC = sums.kuiz.c + sums.latihTubi.c + sums.trackingA.c + battles.correct
-  const scoreN = sums.kuiz.n + sums.latihTubi.n + sums.trackingA.n + battles.answered
+  // Battles have no per-battle accuracy in the M16 port: each battle counts once at the pooled battle accuracy.
+  const battleAcc = battles.answered > 0 ? battles.correct / battles.answered : 0
+  const scoreC =
+    sums.kuiz.c +
+    sums.latihTubi.c +
+    sums.trackingA.c +
+    (battles.answered > 0 ? battles.count * battleAcc : 0)
+  const scoreN =
+    sums.kuiz.n + sums.latihTubi.n + sums.trackingA.n + (battles.answered > 0 ? battles.count : 0)
 
   const trend: TeacherReport['trend'] = []
   for (let d = range - 1; d >= 0; d--) {

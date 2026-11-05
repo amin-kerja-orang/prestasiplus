@@ -111,6 +111,16 @@ export interface SessionDayRow {
   questions: number
 }
 
+/** One (pupil, mode, MYT day) group of the all-modes activity feed (FR-GUR-42-6): `accuracySum` adds the per-unit accuracies (0..1). */
+export interface ActivityDayRow {
+  userId: string
+  mode: string
+  day: string
+  sessions: number
+  accuracySum: number
+  accuracyN: number
+}
+
 /** The answer log without Mod Pelajar rows and without unfinished sessions: a (practice_answers a) joined to its session s. */
 const CLEAN_ANSWERS = Prisma.sql`practice_answers a LEFT JOIN practice_sessions s ON s.id = a.session_id`
 const CLEAN_WHERE = Prisma.sql`NOT a.is_test AND (s.id IS NULL OR (s.status = 'completed' AND NOT s.is_test))`
@@ -522,6 +532,51 @@ export class AnalyticsRepository {
     const rows = await this.db.$queryRaw<{ user_id: string }[]>`
       SELECT DISTINCT s.user_id::text AS user_id FROM practice_sessions s
       WHERE s.user_id = ANY(${keys}::bigint[]) AND s.status = 'completed' AND NOT s.is_test ${bySubject}`
+    return new Set(rows.map((r) => r.user_id))
+  }
+
+  /**
+   * FR-GUR-42-6 (XS-8): every completed non-test unit of activity in the window, grouped by pupil, mode and MYT day. Two sources
+   * write one unit each: a completed `practice_sessions` row (every mode, Set Soalan Guru = `question_set`) and a graded Bijak
+   * sitting (`practice_attempt_aggregates`, which does NOT write `practice_sessions`; mode `bijak`). The accuracy of a unit is
+   * correct / questions (sessions) or units awarded / units max (sittings); a unit without questions has none.
+   */
+  async activityByDay(userIds: readonly string[], from: Date, to: Date): Promise<ActivityDayRow[]> {
+    const keys = toIds(userIds)
+    if (keys.length === 0) return []
+    const rows = await this.db.$queryRaw<{ user_id: string; mode: string; day: string; sessions: number; acc_sum: number; acc_n: number }[]>`
+      SELECT u.user_id::text AS user_id, u.mode, u.day, count(*)::int AS sessions,
+        coalesce(sum(u.acc), 0)::float8 AS acc_sum, count(u.acc)::int AS acc_n
+      FROM (
+        SELECT s.user_id, s.mode, to_char(s.completed_at AT TIME ZONE ${KL}, 'YYYY-MM-DD') AS day,
+          CASE WHEN s.question_count > 0 THEN s.correct_count::float8 / s.question_count END AS acc
+        FROM practice_sessions s
+        WHERE s.user_id = ANY(${keys}::bigint[]) AND s.status = 'completed' AND NOT s.is_test
+          AND s.completed_at >= ${from} AND s.completed_at <= ${to}
+        UNION ALL
+        SELECT g.user_id, 'bijak' AS mode, to_char(g.submitted_at AT TIME ZONE ${KL}, 'YYYY-MM-DD') AS day,
+          CASE WHEN g.units_max > 0 THEN (g.units_awarded / g.units_max)::float8 END AS acc
+        FROM practice_attempt_aggregates g
+        WHERE g.user_id = ANY(${keys}::bigint[]) AND NOT g.is_test AND g.submitted_at IS NOT NULL
+          AND g.submitted_at >= ${from} AND g.submitted_at <= ${to}
+      ) u
+      GROUP BY 1, 2, 3`
+    return rows.map((r) => ({ userId: r.user_id, mode: r.mode, day: r.day, sessions: r.sessions, accuracySum: r.acc_sum, accuracyN: r.acc_n }))
+  }
+
+  /** FR-GUR-42-6: pupils among `userIds` with any non-test practice in ANY mode: a completed session, an answer, or a graded Bijak sitting. */
+  async practisedAnyMode(userIds: readonly string[]): Promise<Set<string>> {
+    const keys = toIds(userIds)
+    if (keys.length === 0) return new Set()
+    const rows = await this.db.$queryRaw<{ user_id: string }[]>`
+      SELECT s.user_id::text AS user_id FROM practice_sessions s
+        WHERE s.user_id = ANY(${keys}::bigint[]) AND s.status = 'completed' AND NOT s.is_test
+      UNION
+      SELECT a.user_id::text FROM ${CLEAN_ANSWERS}
+        WHERE ${CLEAN_WHERE} AND a.user_id = ANY(${keys}::bigint[])
+      UNION
+      SELECT g.user_id::text FROM practice_attempt_aggregates g
+        WHERE g.user_id = ANY(${keys}::bigint[]) AND NOT g.is_test AND g.submitted_at IS NOT NULL`
     return new Set(rows.map((r) => r.user_id))
   }
 

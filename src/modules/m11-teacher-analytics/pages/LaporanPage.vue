@@ -1,16 +1,18 @@
 <script setup lang="ts">
 /**
  * S1 `/guru/laporan` "Laporan Statistik" (M11-T2; FR-M11-10…25, BR-M11-01…07, DV-M11-01).
- * Query names as on live: `range` (7 | 30 | 90, else 30) and `classroom_id`. One student population for
- * the whole page (the viewer's own classes); four expandable cards sharing one `expanded` state, the
- * trend chart and the two student lists. Changing the class keeps the range; the range pills drop the
- * class (live behaviour).
+ * Page query names: `range` (7 | 30 | 90, else 30) and `classroom_id` (the API call maps it to the contract's
+ * `classroomId`). One student population for the whole page (the viewer's own classes); four expandable
+ * cards sharing one `expanded` state, the trend chart and the student lists. Changing the class keeps the
+ * range and a range pill keeps the class (R1-GUR-42 FR-GUR-42-7, AC-GUR-42-2). The three "never" lists
+ * (login panel, practice panel, bottom list) show 10 names and "+ {n} lagi" (AC-GUR-42-7); the practice panel
+ * and the bottom list read the same array as the card count (FR-GUR-42-3).
  */
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsIcon, DsLoadError, DsNativeSelect, DsPage, DsPanel, DsPillNav } from '@/ds'
+import { DsIcon, DsLoadError, DsNativeSelect, DsPage, DsPanel, DsPillNav, DsText } from '@/ds'
 
 import { fetchTeacherReport } from '../api'
 import ActivityPanel from '../components/laporan/ActivityPanel.vue'
@@ -25,6 +27,7 @@ import {
 } from '../components/laporan/copy'
 import { grouped, parseId, parseRange, pctInt } from '../components/laporan/format'
 import ScorePanel from '../components/laporan/ScorePanel.vue'
+import LimitedStudentRows from '../components/laporan/LimitedStudentRows.vue'
 import StudentRows from '../components/laporan/StudentRows.vue'
 import SummaryCard from '../components/laporan/SummaryCard.vue'
 import TrendCard from '../components/laporan/TrendCard.vue'
@@ -63,12 +66,20 @@ function onClassChange(value: string): void {
   })
 }
 
-/** FN-M11-2.1.2: the pills link to `?range=N` only, so they drop `classroom_id` (live behaviour). */
-const rangeItems = RANGE_PILLS.map((p) => ({
-  key: p.range,
-  label: p.label,
-  to: { path: '/guru/laporan', query: { range: String(p.range) } },
-}))
+/** FR-GUR-42-7: a pill sets `range` and keeps the selected class. */
+const rangeItems = computed(() =>
+  RANGE_PILLS.map((p) => ({
+    key: p.range,
+    label: p.label,
+    to: {
+      path: '/guru/laporan',
+      query: {
+        range: String(p.range),
+        ...(classroomId.value !== undefined ? { classroom_id: String(classroomId.value) } : {}),
+      },
+    },
+  })),
+)
 
 const d = computed(() => report.data.value)
 const n = computed(() => d.value?.population.total ?? 0)
@@ -170,7 +181,7 @@ const n = computed(() => d.value?.population.total ?? 0)
         <SummaryCard
           icon="i-ph-star"
           accent="trial"
-          :value="d.score.overall === null ? LAPORAN_COPY.noScore : `${d.score.overall}%`"
+          :value="d.score.overall === null ? LAPORAN_COPY.noScoreCard : `${d.score.overall}%`"
           :title="LAPORAN_COPY.scoreTitle"
           :hint="LAPORAN_COPY.clickBreakdown"
           :open="expanded === 'skor'"
@@ -186,13 +197,27 @@ const n = computed(() => d.value?.population.total ?? 0)
               loginPanelTitle(d.notLoggedIn.length)
             }}
           </h2>
+          <DsText
+            v-if="d.notLoggedIn.length === 0 && n === 0"
+            variant="body"
+            tone="muted"
+            data-testid="panel-login-empty"
+            >{{ LAPORAN_COPY.noPupils }}</DsText
+          >
           <p
-            v-if="d.notLoggedIn.length === 0"
+            v-else-if="d.notLoggedIn.length === 0"
             class="flex items-center gap-2 text-label text-success"
           >
             <UIcon name="i-ph-check-circle" class="size-4" />{{ LAPORAN_COPY.allLoggedIn }}
           </p>
-          <StudentRows v-else :rows="d.notLoggedIn" test-id="panel-login-list" />
+          <LimitedStudentRows v-else :rows="d.notLoggedIn" test-id="panel-login-list" />
+          <DsText
+            v-if="d.population.loggedIn === 0"
+            variant="caption"
+            tone="muted"
+            data-testid="panel-login-note"
+            >{{ LAPORAN_COPY.noLoginRecord }}</DsText
+          >
         </div>
       </UCard>
 
@@ -203,13 +228,20 @@ const n = computed(() => d.value?.population.total ?? 0)
               practisePanelTitle(d.notPractisedAll.length)
             }}
           </h2>
+          <DsText
+            v-if="d.notPractisedAll.length === 0 && n === 0"
+            variant="body"
+            tone="muted"
+            data-testid="panel-latihan-empty"
+            >{{ LAPORAN_COPY.noPupils }}</DsText
+          >
           <p
-            v-if="d.notPractisedAll.length === 0"
+            v-else-if="d.notPractisedAll.length === 0"
             class="flex items-center gap-2 text-label text-success"
           >
             <UIcon name="i-ph-check-circle" class="size-4" />{{ LAPORAN_COPY.allPractised }}
           </p>
-          <StudentRows v-else :rows="d.notPractisedAll" test-id="panel-latihan-list" />
+          <LimitedStudentRows v-else :rows="d.notPractisedAll" test-id="panel-latihan-list" />
         </div>
       </UCard>
 
@@ -245,13 +277,13 @@ const n = computed(() => d.value?.population.total ?? 0)
               }}
             </h2>
             <p
-              v-if="d.notPractised.length === 0"
+              v-if="d.notPractisedAll.length === 0"
               class="py-6 text-center text-body text-muted"
               data-testid="list-idle-empty"
             >
-              {{ LAPORAN_COPY.allPractised }}
+              {{ n === 0 ? LAPORAN_COPY.noPupils : LAPORAN_COPY.allPractised }}
             </p>
-            <StudentRows v-else :rows="d.notPractised" test-id="list-idle-rows" />
+            <LimitedStudentRows v-else :rows="d.notPractisedAll" test-id="list-idle-rows" />
           </div>
         </UCard>
       </div>

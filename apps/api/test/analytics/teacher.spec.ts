@@ -127,7 +127,8 @@ describe('M11 teacher report S1 and item analysis S6 (AC 1 to 3)', () => {
       // Window 2026-09-20 .. now: p1 random 10-05 (10 q, 5 right), p2 latih_tubi 10-17 (6, 3), p1 ramalan 10-19 (4, 4).
       expect(body.activity.byType).toEqual({ kuiz: 1, struktur: 0, latihTubi: 1, trackingA: 1, battle: 0, permainan: 0 })
       expect(body.activity.total).toBe(3)
-      expect(body.score).toEqual({ overall: 60, byType: { kuiz: 50, struktur: null, latihTubi: 50, trackingA: 100, battle: null } })
+      // FR-GUR-42-2: the mean of the per-session accuracies (0.5, 0.5, 1), not pooled (13 / 20).
+      expect(body.score).toEqual({ overall: 67, byType: { kuiz: 50, struktur: null, latihTubi: 50, trackingA: 100, battle: null } })
       expect(body.trend).toHaveLength(30)
       expect(body.trend[0]?.date).toBe('20/09')
       expect(body.trend[29]).toEqual({ date: '19/10', count: 1 })
@@ -158,7 +159,7 @@ describe('M11 teacher report S1 and item analysis S6 (AC 1 to 3)', () => {
       expect(report(await teacherA.get(`/teacher/report?classroomId=${classMain}`)).population.total).toBe(2)
     })
 
-    it('ranges: 7 days keeps the last two activities, 90 days adds the 2026-09-10 session; the score is Σ correct ÷ Σ questions', async () => {
+    it('ranges: 7 days keeps the last two activities, 90 days adds the 2026-09-10 session; the score is the mean of per-session accuracies', async () => {
       const d7 = report(await teacherA.get(`/teacher/report?classroomId=${classMain}&range=7`))
       expect(d7.range).toBe(7)
       expect(d7.trend).toHaveLength(7)
@@ -167,8 +168,8 @@ describe('M11 teacher report S1 and item analysis S6 (AC 1 to 3)', () => {
       expect(d90.range).toBe(90)
       expect(d90.trend).toHaveLength(90)
       expect(d90.activity.byType.kuiz).toBe(2)
-      expect(d90.score.byType.kuiz).toBe(61) // 11 / 18
-      expect(d90.score.overall).toBe(64) // 18 / 28
+      expect(d90.score.byType.kuiz).toBe(63) // mean(6/8, 5/10) = 62.5
+      expect(d90.score.overall).toBe(69) // mean(0.75, 0.5, 0.5, 1) = 68.75
     })
 
     it('an invalid range is 30; a classroomId that is not an own class is ignored (all classes), never an error', async () => {
@@ -191,6 +192,25 @@ describe('M11 teacher report S1 and item analysis S6 (AC 1 to 3)', () => {
       const names = body.notLoggedIn.map((s) => s.name)
       expect(names).toEqual([...names].sort((x, y) => x.localeCompare(y, 'ms', { sensitivity: 'base' })))
       expect(body.population.practised).toBe(4)
+    })
+
+    it('AC-GUR-42-6: a pupil with only a Bijak sitting counts as practised and in Jumlah Aktiviti', async () => {
+      const lone = await addClass(t.db, { name: 'Kelas Bijak Sahaja', teacherId: w.ids.teacherA, schoolId: w.schoolA, members: [] })
+      const rows = await t.db.query<{ id: string }>(
+        `select u.id::text from users u where u.school_id = $1 and u.email like 'murid.demo001.%' and not exists (select 1 from practice_sessions s where s.user_id = u.id) order by u.id limit 3`,
+        [w.schoolA],
+      )
+      expect(rows.length).toBe(3)
+      for (const r of rows) await t.db.query(`insert into enrolments (classroom_id, student_id) values ($1, $2)`, [lone, r.id])
+      await t.db.query(
+        `insert into practice_attempt_aggregates (source, attempt_id, user_id, subject_code, kertas, mode, status, units_awarded, units_max, submitted_at)
+         values ('bijak', gen_random_uuid(), $1, 'MAT', 1, 'exam', 'submitted', 30, 60, '2026-10-19T08:00:00+08:00')`,
+        [(rows[0] as { id: string }).id],
+      )
+      const body = report(await teacherA.get(`/teacher/report?classroomId=${lone}`))
+      expect(body.population).toMatchObject({ total: 3, practised: 1 })
+      expect(body.activity.total).toBe(1)
+      expect(body.notPractisedAll).toHaveLength(2)
     })
 
     it('a pupil without any session is in notPractised (capped at 10) and notPractisedAll', async () => {

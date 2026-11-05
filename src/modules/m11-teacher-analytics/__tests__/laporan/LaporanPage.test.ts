@@ -52,7 +52,7 @@ afterEach(() => {
 })
 
 describe('S1 Laporan: admin zero state (E2E-M11-09, E2E-M11-07)', () => {
-  it('shows the zero cards with no red line and "-%"', async () => {
+  it('shows the zero cards with no red line and "—" on the score card', async () => {
     const w = await mountAt('/guru/laporan')
     expect(text(w, 'card-login')).toContain('0%')
     expect(text(w, 'card-login')).toContain('0 / 0 pelajar')
@@ -60,7 +60,8 @@ describe('S1 Laporan: admin zero state (E2E-M11-09, E2E-M11-07)', () => {
     expect(text(w, 'card-latihan')).toContain('0 / 0 pelajar')
     expect(text(w, 'card-aktiviti')).toContain('30 hari lepas')
     expect(t(w, 'card-aktiviti').get('[data-testid="card-value"]').text()).toBe('0')
-    expect(t(w, 'card-skor').get('[data-testid="card-value"]').text()).toBe('-%')
+    expect(t(w, 'card-skor').get('[data-testid="card-value"]').text()).toBe('—')
+    expect(text(w, 'card-skor')).toContain('Pecahan Skor Purata')
     expect(text(w, 'card-login')).toContain('Klik untuk lihat senarai')
     expect(text(w, 'card-skor')).toContain('Klik untuk lihat pecahan')
   })
@@ -82,9 +83,16 @@ describe('S1 Laporan: admin zero state (E2E-M11-09, E2E-M11-07)', () => {
     expect(t(w, 'range-30').attributes('data-active')).toBe('true')
   })
 
-  it('shows "Belum ada aktiviti" and the proposed empty latihan copy', async () => {
+  it('shows the PRD empty copies (no pupils, no activity, empty trend)', async () => {
     const w = await mountAt('/guru/laporan')
-    expect(text(w, 'list-active-empty')).toBe('Belum ada aktiviti')
+    expect(text(w, 'list-active-empty')).toBe('Tiada aktiviti dalam tempoh ini.')
+    expect(text(w, 'list-idle-empty')).toBe('Belum ada pelajar dalam kelas anda.')
+    expect(text(w, 'trend-empty')).toBe('Tiada aktiviti direkodkan dalam tempoh ini.')
+  })
+
+  it('with pupils who all practised the idle list says so', async () => {
+    respond(teacherReport())
+    const w = await mountAt('/guru/laporan')
     expect(text(w, 'list-idle-empty')).toBe('Semua pelajar sudah aktif buat latihan!')
   })
 
@@ -148,12 +156,24 @@ describe('S1 Laporan: teacher view (E2E-M11-10, 08)', () => {
     )
   })
 
-  it('a range pill drops the class (?range=90 only)', async () => {
+  it('AC-GUR-42-2: a range pill keeps the selected class (and the class select keeps the range)', async () => {
+    respond(teacherReport({ classroomId: 2001 }))
     const w = await mountAt('/guru/laporan?range=7&classroom_id=2001')
     await t(w, 'range-90').trigger('click')
     await flushPromises()
-    expect(router.currentRoute.value.fullPath).toBe('/guru/laporan?range=90')
-    expect(api.fetchTeacherReport).toHaveBeenLastCalledWith({ range: 90 }, expect.anything())
+    expect(router.currentRoute.value.fullPath).toBe('/guru/laporan?range=90&classroom_id=2001')
+    expect(api.fetchTeacherReport).toHaveBeenLastCalledWith(
+      { range: 90, classroomId: 2001 },
+      expect.anything(),
+    )
+    expect((t(w, 'filter-classroom').element as HTMLSelectElement).value).toBe('2001')
+  })
+
+  it('a range pill without a class stays without one', async () => {
+    const w = await mountAt('/guru/laporan?range=7')
+    await t(w, 'range-30').trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.fullPath).toBe('/guru/laporan?range=30')
   })
 
   it('"Paling Aktif" lists the active pupils with "{n} aktiviti"', async () => {
@@ -167,7 +187,8 @@ describe('S1 Laporan: teacher view (E2E-M11-10, 08)', () => {
   it('the idle list shows the pupils with "Belum pernah login" only for those who never logged in', async () => {
     respond(
       teacherReport({
-        notPractised: [
+        population: { total: 2, loggedIn: 1, practised: 0 },
+        notPractisedAll: [
           student(1, 'Murid A', { neverLoggedIn: true }),
           student(2, 'Murid B', { neverLoggedIn: false }),
         ],
@@ -204,33 +225,86 @@ describe('S1 Laporan: expandable cards (FR-M11-17, E2E-M11-11/12)', () => {
     const w = await mountAt('/guru/laporan')
     await t(w, 'card-login').trigger('click')
     expect(text(w, 'panel-login')).toContain('Pelajar Belum Pernah Login (0)')
-    expect(text(w, 'panel-login')).toContain('Semua pelajar sudah pernah login!')
+    expect(text(w, 'panel-login')).toContain('Belum ada pelajar dalam kelas anda.')
+    expect(text(w, 'panel-login')).toContain('Tiada rekod login sejak penjejakan dimulakan.')
     await t(w, 'card-latihan').trigger('click')
     expect(text(w, 'panel-latihan')).toContain('Pelajar Belum Pernah Buat Latihan (0)')
+    expect(text(w, 'panel-latihan')).toContain('Belum ada pelajar dalam kelas anda.')
+  })
+
+  it('with pupils who all logged in and practised the panels say so', async () => {
+    respond(teacherReport())
+    const w = await mountAt('/guru/laporan')
+    await t(w, 'card-login').trigger('click')
+    expect(text(w, 'panel-login')).toContain('Semua pelajar sudah pernah login!')
+    expect(has(w, 'panel-login-note')).toBe(false)
+    await t(w, 'card-latihan').trigger('click')
     expect(text(w, 'panel-latihan')).toContain('Semua pelajar sudah aktif buat latihan!')
   })
 
-  it('the login panel lists every pupil who never logged in, the latihan panel every pupil without practice', async () => {
-    const never = Array.from({ length: 12 }, (_, i) =>
-      student(100 + i, `Murid ${i}`, { neverLoggedIn: true }),
-    )
+  it('AC-GUR-42-1 / FR-GUR-42-3: 7 pupils of whom 3 never logged in: the card says "3 belum pernah login" and the title "(3)"', async () => {
+    const never = [
+      student(1, 'Murid A', { neverLoggedIn: true }),
+      student(2, 'Murid B', { neverLoggedIn: true }),
+      student(3, 'Murid C', { neverLoggedIn: true }),
+    ]
     respond(
-      teacherReport({
-        population: { total: 20, loggedIn: 8, practised: 8 },
-        notLoggedIn: never,
-        notPractised: never.slice(0, 10),
-        notPractisedAll: never,
-      }),
+      teacherReport({ population: { total: 7, loggedIn: 4, practised: 4 }, notLoggedIn: never }),
+    )
+    const w = await mountAt('/guru/laporan')
+    expect(text(w, 'card-login-missing')).toBe('3 belum pernah login')
+    await t(w, 'card-login').trigger('click')
+    expect(text(w, 'panel-login')).toContain('Pelajar Belum Pernah Login (3)')
+    expect(t(w, 'panel-login-list').findAll('li')).toHaveLength(3)
+  })
+
+  it('AC-GUR-42-3 / AC-GUR-42-6: 2 of 7 practised (Bijak-only and Set-Soalan-only count) shows 29% and "2 / 7 pelajar"', async () => {
+    respond(teacherReport({ population: { total: 7, loggedIn: 7, practised: 2 } }))
+    const w = await mountAt('/guru/laporan')
+    expect(text(w, 'card-latihan')).toContain('29%')
+    expect(text(w, 'card-latihan')).toContain('2 / 7 pelajar')
+  })
+
+  it('AC-GUR-42-7 / FR-GUR-42-3: 15 pupils who never logged in show 10 names and "+ 5 lagi", which expands all 15', async () => {
+    const never = Array.from({ length: 15 }, (_, i) =>
+      student(100 + i, `Murid ${String(i).padStart(2, '0')}`, { neverLoggedIn: true }),
+    ).reverse()
+    respond(
+      teacherReport({ population: { total: 20, loggedIn: 5, practised: 8 }, notLoggedIn: never }),
     )
     const w = await mountAt('/guru/laporan')
     await t(w, 'card-login').trigger('click')
-    expect(text(w, 'panel-login')).toContain('Pelajar Belum Pernah Login (12)')
-    expect(t(w, 'panel-login-list').findAll('li')).toHaveLength(12)
+    expect(text(w, 'panel-login')).toContain('Pelajar Belum Pernah Login (15)')
+    const rows = () => t(w, 'panel-login-list').findAll('[data-testid="student-name"]')
+    expect(rows()).toHaveLength(10)
+    expect(rows().map((r) => r.text())[0]).toBe('Murid 00') // sorted by name
+    expect(rows().map((r) => r.text())[9]).toBe('Murid 09')
+    expect(text(w, 'panel-login-list-more')).toBe('+ 5 lagi')
+    await t(w, 'panel-login-list-more').trigger('click')
+    expect(rows()).toHaveLength(15)
+    expect(has(w, 'panel-login-list-more')).toBe(false)
+  })
+
+  it('the practice panel and the bottom list read the same array as the title: 12 pupils, 10 then "+ 2 lagi"', async () => {
+    const idle = Array.from({ length: 12 }, (_, i) =>
+      student(200 + i, `Murid ${String(i).padStart(2, '0')}`),
+    )
+    respond(
+      teacherReport({
+        population: { total: 20, loggedIn: 20, practised: 8 },
+        notPractised: idle.slice(0, 10),
+        notPractisedAll: idle,
+      }),
+    )
+    const w = await mountAt('/guru/laporan')
     await t(w, 'card-latihan').trigger('click')
     expect(text(w, 'panel-latihan')).toContain('Pelajar Belum Pernah Buat Latihan (12)')
-    expect(t(w, 'panel-latihan-list').findAll('li')).toHaveLength(12)
-    // the list card is capped at 10 (BR-M11-07)
+    expect(t(w, 'panel-latihan-list').findAll('li')).toHaveLength(10)
+    expect(text(w, 'panel-latihan-list-more')).toBe('+ 2 lagi')
     expect(t(w, 'list-idle-rows').findAll('li')).toHaveLength(10)
+    expect(text(w, 'list-idle-rows-more')).toBe('+ 2 lagi')
+    await t(w, 'list-idle-rows-more').trigger('click')
+    expect(t(w, 'list-idle-rows').findAll('li')).toHaveLength(12)
   })
 
   it('the activity panel title follows the range and shows the 7 tiles', async () => {

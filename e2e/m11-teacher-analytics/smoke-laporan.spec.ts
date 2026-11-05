@@ -152,8 +152,8 @@ test.describe('M11 S1 Laporan Statistik: admin', MODULE, () => {
     await expect(value(page, 'card-aktiviti')).toHaveText('0')
     await expect(page.getByTestId('card-aktiviti')).toContainText('30 hari lepas')
     await expect(page.getByTestId('card-aktiviti')).toContainText('Klik untuk lihat pecahan')
-    await expect(value(page, 'card-skor')).toHaveText('-%')
-    await expect(page.getByTestId('card-skor')).toContainText('Skor Purata')
+    await expect(value(page, 'card-skor')).toHaveText('—')
+    await expect(page.getByTestId('card-skor')).toContainText('Pecahan Skor Purata')
 
     await gotoApp(`${S1}?range=7`)
     await expect(page.getByTestId('range-7')).toHaveAttribute('data-active', 'true')
@@ -176,7 +176,9 @@ test.describe('M11 S1 Laporan Statistik: admin', MODULE, () => {
     await expect(page.getByTestId('panel-login')).toHaveCount(0)
     await login.click()
     await expect(page.getByTestId('panel-login')).toContainText('Pelajar Belum Pernah Login (0)')
-    await expect(page.getByTestId('panel-login')).toContainText('Semua pelajar sudah pernah login!')
+    await expect(page.getByTestId('panel-login')).toContainText(
+      'Belum ada pelajar dalam kelas anda.',
+    )
     await expect(login).toHaveClass(/ring-blue-400/)
 
     await page.getByTestId('card-latihan').click()
@@ -185,7 +187,7 @@ test.describe('M11 S1 Laporan Statistik: admin', MODULE, () => {
       'Pelajar Belum Pernah Buat Latihan (0)',
     )
     await expect(page.getByTestId('panel-latihan')).toContainText(
-      'Semua pelajar sudah aktif buat latihan!',
+      'Belum ada pelajar dalam kelas anda.',
     )
     await expect(page.getByTestId('card-latihan')).toHaveClass(/ring-emerald-400/)
 
@@ -249,10 +251,12 @@ test.describe('M11 S1 Laporan Statistik: admin', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp(S1)
     await expect(page.getByTestId('list-active')).toContainText('Paling Aktif')
-    await expect(page.getByTestId('list-active-empty')).toHaveText('Belum ada aktiviti')
+    await expect(page.getByTestId('list-active-empty')).toHaveText(
+      'Tiada aktiviti dalam tempoh ini.',
+    )
     await expect(page.getByTestId('list-idle')).toContainText('Belum Pernah Buat Latihan')
     await expect(page.getByTestId('list-idle-empty')).toHaveText(
-      'Semua pelajar sudah aktif buat latihan!',
+      'Belum ada pelajar dalam kelas anda.',
     )
     await expectNoHorizontalScroll(page)
   })
@@ -260,7 +264,7 @@ test.describe('M11 S1 Laporan Statistik: admin', MODULE, () => {
 
 test.describe('M11 S1 Laporan Statistik: teacher', MODULE, () => {
   test(
-    'E2E-M11-08 class filter keeps the range; a range pill drops the class',
+    'E2E-M11-08 class filter keeps the range; a range pill keeps the class (AC-GUR-42-2)',
     provisional('teacher options are INFERRED (FN-M11-2.1.1)'),
     async ({ page, gotoApp, loginAs }) => {
       await loginAs(GURU)
@@ -276,15 +280,15 @@ test.describe('M11 S1 Laporan Statistik: teacher', MODULE, () => {
       await expect(page.getByTestId('filter-classroom')).toHaveValue('2001')
       await expect(page.getByTestId('range-7')).toHaveAttribute('data-active', 'true')
       await page.getByTestId('range-90').click()
-      await expect(page).toHaveURL(/\/guru\/laporan\?range=90$/)
-      await expect(page.getByTestId('filter-classroom')).toHaveValue('')
+      await expect(page).toHaveURL(/\/guru\/laporan\?range=90&classroom_id=2001$/)
+      await expect(page.getByTestId('filter-classroom')).toHaveValue('2001')
       await expect(page.getByTestId('range-90')).toHaveAttribute('data-active', 'true')
       await expectNoHorizontalScroll(page)
     },
   )
 
   test(
-    'E2E-M11-10 Semua Kelas 30 days: 100 %, 8 / 8, 14 activities, 46 %; class 2001 and 2002 equal; 7 days = 7',
+    'E2E-M11-10 Semua Kelas 30 days: 100 %, 8 / 8, 14 activities, 51 %; class 2001 and 2002 equal; 7 days = 7',
     provisional('teacher figures are designed seeds (SRS §6.8)'),
     async ({ page, gotoApp, loginAs }) => {
       await loginAs(GURU)
@@ -295,14 +299,14 @@ test.describe('M11 S1 Laporan Statistik: teacher', MODULE, () => {
       }
       await expect(page.getByTestId('card-login-missing')).toHaveCount(0)
       await expect(value(page, 'card-aktiviti')).toHaveText('14')
-      await expect(value(page, 'card-skor')).toHaveText('46%')
+      await expect(value(page, 'card-skor')).toHaveText('51%')
 
       for (const id of ['2001', '2002']) {
         await gotoApp(`${S1}?range=30&classroom_id=${id}`)
         await expect(page.getByTestId('filter-classroom')).toHaveValue(id)
         await expect(page.getByTestId('card-login')).toContainText('8 / 8 pelajar')
         await expect(value(page, 'card-aktiviti')).toHaveText('14')
-        await expect(value(page, 'card-skor')).toHaveText('46%')
+        await expect(value(page, 'card-skor')).toHaveText('51%')
       }
 
       await gotoApp(`${S1}?range=7`)
@@ -312,7 +316,7 @@ test.describe('M11 S1 Laporan Statistik: teacher', MODULE, () => {
   )
 
   test(
-    'E2E-M11-12 panels: tiles 14/0/0/0/0/0/14, score 46 % and four "-%", login and latihan "(0)"',
+    'E2E-M11-12 panels: tiles 14/0/0/0/0/0/14, score 51 % and four "-%", login and latihan "(0)"',
     provisional('teacher figures are designed seeds (SRS §6.8)'),
     async ({ page, gotoApp, loginAs }) => {
       await loginAs(GURU)
@@ -323,7 +327,7 @@ test.describe('M11 S1 Laporan Statistik: teacher', MODULE, () => {
       ).toHaveText(['14', '0', '0', '0', '0', '0', '14'])
       await page.getByTestId('card-skor').click()
       await expect(page.locator('[data-testid="panel-skor"] [data-testid="bar-value"]')).toHaveText(
-        ['46%', '-%', '-%', '-%', '-%'],
+        ['51%', '-%', '-%', '-%', '-%'],
       )
       await page.getByTestId('card-login').click()
       await expect(page.getByTestId('panel-login')).toContainText('Pelajar Belum Pernah Login (0)')
