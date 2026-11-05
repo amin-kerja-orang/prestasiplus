@@ -17,7 +17,7 @@ import { computed, provide, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import { DsEmptyState, DsPage, DsPageHeader, DsPanel, DsPillNav, useConfirm, type PillItem } from '@/ds'
+import { DsEmptyState, DsPage, DsPageHeader, DsPanel, DsPillNav, DsStack, useConfirm, type PillItem } from '@/ds'
 import { DsFormField, DsLoadError, DsNativeSelect } from '@/ds'
 
 import {
@@ -259,12 +259,12 @@ provide(TREE_ACTIONS, actions)
         </div>
       </DsPanel>
 
-      <div v-if="activeTab === 'dskp'" data-testid="curriculum-dskp">
+      <DsStack v-if="activeTab === 'dskp'" data-testid="curriculum-dskp">
         <SubjectDskpReportTab
           :subject-id="subjectParam === '' ? null : subjectParam"
           :level-id="levelParam === '' ? null : levelParam"
         />
-      </div>
+      </DsStack>
 
       <DsPanel v-else-if="!hasPair" padding="none" data-testid="curriculum-prompt">
         <div class="p-6">
