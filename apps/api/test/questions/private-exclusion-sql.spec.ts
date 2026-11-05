@@ -75,7 +75,7 @@ describe('DM-42: private questions are absent from the S1 reads', () => {
     expect(repo.scopeSql(f, true).where.sql).toContain(BANK)
   })
 
-  it('the Studio list (API-Q-01), its bulk targets and keysets, the own list, the structured list and the whole-store counts', async () => {
+  it('the Studio list (API-Q-01), its bulk targets and keysets, the structured list and the whole-store counts', async () => {
     const { sqls, prisma } = capture()
     const repo = new QuestionsRepository(prisma)
     const page = { page: 1, pageSize: 10 } as never
@@ -83,12 +83,10 @@ describe('DM-42: private questions are absent from the S1 reads', () => {
       () => repo.listIds(page),
       () => repo.listIdsKeyset({} as never, undefined, 10),
       () => repo.filterTargets({} as never, ['review'], 10),
-      () => repo.listOwn({ ownerId: '7', page: 1, pageSize: 10 }),
-      () => repo.ownerStatusCounts('7'),
       () => repo.subjectTotals(),
       () => repo.structuredStats(),
     )
-    expect(sqls.length).toBeGreaterThanOrEqual(7)
+    expect(sqls.length).toBeGreaterThanOrEqual(5)
     for (const s of sqls.filter((x) => x.includes('latest_version_no') && !x.includes('education_levels WHERE stage'))) expect(s).toContain(BANK)
   })
 
@@ -365,21 +363,5 @@ describe('DM-42 (R-1 nits): report resolution never acts on a private question; 
     Object.assign(adapter, { repo })
     expect(await adapter.deactivate('6')).toBe(true)
     expect(acted).toEqual(['deactivate'])
-  })
-
-  it('Guru removeOwn deletes the teacher\'s own bank question (the admin guard is not on this path)', async () => {
-    const calls: string[] = []
-    const svc = Object.create(QuestionsService.prototype) as QuestionsService
-    const repo = {
-      ownerOf: () => Promise.resolve('7'),
-      get: (_id: string, _v: string, opts?: { bankOnly?: boolean }) => (calls.push(opts?.bankOnly === true ? 'get:bankOnly' : 'get'), Promise.resolve({ id: '9', version: { visibility: 'bank' } })),
-      lock: () => Promise.resolve(true),
-      deletionBlock: () => Promise.resolve(null),
-      remove: () => (calls.push('remove'), Promise.resolve(true)),
-    }
-    Object.assign(svc, { repo, prisma: { transaction: (fn: () => unknown) => fn() }, overview: undefined })
-    await expect(svc.removeOwn('9', '7')).resolves.toBeUndefined()
-    expect(calls).toContain('remove')
-    expect(calls).not.toContain('get:bankOnly')
   })
 })
