@@ -123,7 +123,7 @@ test.describe('QA G5 S14 report modal', { tag: [moduleTag(4), '@qa'] }, () => {
     await expect(byId(page, 'report-done-close')).toContainText('Tutup')
   })
 
-  test('E2E-M04-37 default network failure shows the default failure text under "Terima Kasih!" (AC-17.6)', async ({
+  test('E2E-M04-37 default network failure keeps the form open with the inline failure text and a retry-able submit (AC-17.6)', async ({
     page,
     loginAs,
     gotoApp,
@@ -135,8 +135,12 @@ test.describe('QA G5 S14 report modal', { tag: [moduleTag(4), '@qa'] }, () => {
     await byId(page, 'report-reason-other').click()
     await mock.networkErrorNext('/api/question-reports')
     await byId(page, 'report-submit').click()
-    await expect(byId(page, 'report-done')).toContainText('Terima Kasih!')
-    await expect(byId(page, 'report-message')).toHaveText('Ralat. Sila cuba lagi.')
+    await expect(byId(page, 'report-submit-error')).toHaveText(
+      'Gagal menghantar laporan. Sila cuba lagi.',
+    )
+    await expect(byId(page, 'report-done')).toHaveCount(0)
+    await expect(byId(page, 'report-submit')).toBeEnabled()
+    await expect(byId(page, 'report-reason-other')).toBeChecked()
   })
 
   test('E2E-M04-37/38 an MCQ report is on S7 "Menunggu" and leaves the MCQ active; no number of structured reports deactivates it (D98)', async ({
