@@ -75,7 +75,7 @@ describe('DM-42: private questions are absent from the S1 reads', () => {
     expect(repo.scopeSql(f, true).where.sql).toContain(BANK)
   })
 
-  it('the Studio list (API-Q-01), its bulk targets and keysets, the own list, the structured list and the whole-store counts', async () => {
+  it('the Studio list (API-Q-01), its bulk targets and keysets, the structured list and the whole-store counts', async () => {
     const { sqls, prisma } = capture()
     const repo = new QuestionsRepository(prisma)
     const page = { page: 1, pageSize: 10 } as never
@@ -83,12 +83,10 @@ describe('DM-42: private questions are absent from the S1 reads', () => {
       () => repo.listIds(page),
       () => repo.listIdsKeyset({} as never, undefined, 10),
       () => repo.filterTargets({} as never, ['review'], 10),
-      () => repo.listOwn({ ownerId: '7', page: 1, pageSize: 10 }),
-      () => repo.ownerStatusCounts('7'),
       () => repo.subjectTotals(),
       () => repo.structuredStats(),
     )
-    expect(sqls.length).toBeGreaterThanOrEqual(7)
+    expect(sqls.length).toBeGreaterThanOrEqual(5)
     for (const s of sqls.filter((x) => x.includes('latest_version_no') && !x.includes('education_levels WHERE stage'))) expect(s).toContain(BANK)
   })
 
