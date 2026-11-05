@@ -13,7 +13,6 @@ import { useApi } from '@/composables/useApi'
 import { useFriend } from '@/composables/useFriend'
 import { useSession } from '@/composables/useSession'
 
-
 import KeywordSuggestion from '../components/KeywordSuggestion.vue'
 import PartResultCard from '../components/PartResultCard.vue'
 import ReportQuestionButton from '../components/ReportQuestionButton.vue'
