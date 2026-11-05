@@ -13,7 +13,7 @@ import { RouterLink } from 'vue-router'
 import { DsDataTable, type CardField } from '@/ds'
 
 import type { CellTone, HeadcountDetail } from '../../api/headcount-types'
-import { DASH, gradeOfPercent, num1 } from '../../lib/headcount/format'
+import { DASH, gradeOfPercent, num0, num1 } from '../../lib/headcount/format'
 
 const props = defineProps<{ detail: HeadcountDetail }>()
 const selected = defineModel<number[]>('selected', { required: true })
@@ -41,10 +41,18 @@ const TONE: Record<CellTone, string> = {
   na: 'text-dimmed',
 }
 
+/** TOV, ETR and averages: one decimal; the OTR targets and an Auto AR are whole numbers (decision 11). */
 const num = (v: number | null | undefined): string => (v == null ? DASH : num1(v))
+const whole = (v: number | null | undefined): string => (v == null ? DASH : num0(v))
+/** A Manual AR keeps its one decimal; an Auto AR is whole. */
+const arNum = (v: number | null | undefined): string =>
+  props.detail.config.mode === 'manual' ? num(v) : whole(v)
 const grade = (v: number | null | undefined): string => (v == null ? '' : gradeOfPercent(v))
-const withGrade = (v: number | null | undefined, g: string | null | undefined): string =>
-  v == null ? DASH : `${num1(v)}${g ? ` (${g})` : ''}`
+const withGrade = (
+  v: number | null | undefined,
+  g: string | null | undefined,
+  fmt: (x: number | null | undefined) => string = num,
+): string => (v == null ? DASH : `${fmt(v)}${g ? ` (${g})` : ''}`)
 
 interface Row extends Record<string, unknown> {
   userId: number
@@ -73,12 +81,12 @@ const rows = computed<Row[]>(() => {
     }
     otrs.value.forEach((i) => {
       const c = r.cells[i]
-      row[`otr${String(i)}`] = num(c?.target)
+      row[`otr${String(i)}`] = whole(c?.target)
       row[`otr${String(i)}g`] = c?.targetGrade ?? ''
-      row[`otr${String(i)}Text`] = withGrade(c?.target, c?.targetGrade)
-      row[`ar${String(i)}`] = num(c?.ar)
+      row[`otr${String(i)}Text`] = withGrade(c?.target, c?.targetGrade, whole)
+      row[`ar${String(i)}`] = arNum(c?.ar)
       row[`ar${String(i)}g`] = c?.arGrade ?? ''
-      row[`ar${String(i)}Text`] = withGrade(c?.ar, c?.arGrade)
+      row[`ar${String(i)}Text`] = withGrade(c?.ar, c?.arGrade, arNum)
       row[`tone${String(i)}`] = c?.tone ?? 'na'
     })
     return row
