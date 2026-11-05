@@ -91,14 +91,14 @@ describe('parent links (BE-25 part B)', () => {
     })
 
     it('401 without a session; 403 for a teacher, a school_admin and an admin', async () => {
-      expectError(await t.http().get('/api/me/parent-links'), 'UNAUTHORIZED', 'Unauthenticated.')
+      expectError(await t.http().get('/api/me/parent-links'), 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
       for (const who of [teacher, sa, admin]) expectError(await who.get('/me/parent-links'), 'FORBIDDEN')
     })
   })
 
   describe('DELETE /me/parent-links/:linkId', () => {
     it('401, 403 and CSRF are decided first', async () => {
-      expectError(await t.http().delete(`/api/me/parent-links/${linkMumOwn}`), 'UNAUTHORIZED', 'Unauthenticated.')
+      expectError(await t.http().delete(`/api/me/parent-links/${linkMumOwn}`), 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
       expectError(await teacher.del(`/me/parent-links/${linkMumOwn}`), 'FORBIDDEN')
       expectError(await admin.del(`/me/parent-links/${linkMumOwn}`), 'FORBIDDEN')
       const who = await login(t, STUDENT)
@@ -186,7 +186,7 @@ describe('parent links (BE-25 part B)', () => {
     })
 
     it('401 without a session; 403 for a student, a teacher and a parent', async () => {
-      expectError(await t.http().get('/api/admin/parent-links'), 'UNAUTHORIZED', 'Unauthenticated.')
+      expectError(await t.http().get('/api/admin/parent-links'), 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
       for (const who of [student, teacher, mum.api]) expectError(await who.get('/admin/parent-links'), 'FORBIDDEN')
     })
   })
@@ -208,7 +208,7 @@ describe('parent links (BE-25 part B)', () => {
 
   describe('DELETE /admin/parent-links/:linkId', () => {
     it('401, 403 and CSRF are decided first', async () => {
-      expectError(await t.http().delete(`/api/admin/parent-links/${linkMumOwn}`), 'UNAUTHORIZED', 'Unauthenticated.')
+      expectError(await t.http().delete(`/api/admin/parent-links/${linkMumOwn}`), 'UNAUTHORIZED', 'Sesi anda telah tamat. Sila log masuk semula.')
       for (const who of [student, teacher, mum.api]) expectError(await who.del(`/admin/parent-links/${linkMumOwn}`), 'FORBIDDEN')
       const who = await login(t, SCHOOL_ADMIN)
       expectError(await who.agent.delete(`/api/admin/parent-links/${linkMumOwn}`), 'CSRF_INVALID')

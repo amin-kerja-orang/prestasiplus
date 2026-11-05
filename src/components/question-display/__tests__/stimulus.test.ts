@@ -24,7 +24,7 @@ describe('StimulusFigure kinds', () => {
   it('passage: title, body paragraphs, source, no caption', () => {
     const w = mount(StimulusFigure, {
       props: {
-        stimulus: { ...base, kind: 'passage', title: 'Merdeka', text: 'A.\n\nB.', source: 'Sumber: buku' },
+        stimulus: { ...base, kind: 'passage', title: 'Merdeka', text: 'A.\n\nB.', source: 'buku' },
       },
     })
     expect(w.find('[data-testid=stimulus-passage]').text()).toContain('Merdeka')
@@ -195,8 +195,10 @@ describe('StimulusGroup (D-3)', () => {
     expect(pane.classes()).toContain('sticky')
     expect(pane.classes().join(' ')).toContain('max-h-[calc(100vh-6rem)]')
     expect(pane.classes()).toContain('overflow-y-auto')
-    expect(w.find('[data-testid=stimulus-hint]').text()).toBe('📌 Petikan kekal dipapar semasa menjawab')
+    expect(w.find('[data-testid=stimulus-hint]').exists()).toBe(false)
     expect(w.findAll('[data-testid=q]')).toHaveLength(2)
+    const p = await mountGroup(true, { id: 'p', kind: 'passage', label: 'Petikan A', alt: '', text: 'Isi' })
+    expect(p.find('[data-testid=stimulus-hint]').text()).toBe('📌 Petikan kekal dipapar semasa menjawab')
     expect(w.find('[data-stub=drawer]').exists()).toBe(false)
   })
 

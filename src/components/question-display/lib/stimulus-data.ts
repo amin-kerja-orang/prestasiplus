@@ -2,6 +2,7 @@
  * Adapters from the served Bijak shapes (`StimulusDef`, `McqOption`) to the shared display library
  * (`@/components/question-display`, P5). Display only: no store, no fetch.
  */
+import { qdCopy } from '../copy'
 import type { McqOptionData, StimulusData } from '../types'
 
 import type { GroupView, McqOption, StimulusDef } from '@/modules/m28-bijak-spm/domain/types'
@@ -52,8 +53,19 @@ export const editorGroupLabel = (g: { stimulus?: StimulusDef; stimuli?: Stimulus
     .filter((l) => l.trim() !== '')
     .join(' dan ')
 
+/** One rule for both label functions: labels joined with "dan"; none labelled gives "Petikan" for a passage, else "Rajah". */
+function joinLabels(items: readonly { label?: string; kind: string }[]): string {
+  const labels = items.map((s) => s.label ?? '').filter((l) => l !== '')
+  if (labels.length > 0) return labels.join(' dan ')
+  return items[0]?.kind === 'passage' ? qdCopy.passageFallback : qdCopy.figureFallback
+}
+
 /** "Rajah 1" or "Rajah 1 dan Petikan A" (chip text and sheet title of a multi-stimulus group). */
 export function groupLabel(stimuli: readonly StimulusDef[]): string {
-  const labels = stimuli.map((s) => s.label).filter((l) => l !== '')
-  return labels.length > 0 ? labels.join(' dan ') : 'Rajah'
+  return joinLabels(stimuli)
+}
+
+/** Same rule as `groupLabel`, for the display type. */
+export function stimuliLabel(stimuli: readonly StimulusData[]): string {
+  return joinLabels(stimuli)
 }

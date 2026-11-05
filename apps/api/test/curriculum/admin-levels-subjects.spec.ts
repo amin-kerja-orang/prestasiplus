@@ -129,13 +129,13 @@ describe('admin subjects and education levels', () => {
       expect(await count(t.db, `select count(*) n from subjects where code in ('OK1', 'OK2')`)).toBe(0)
     })
 
-    it('#3 a JSON body that is not an object is a 422, never a server error', async () => {
+    it('#3 a JSON body that is not an object is a 422 (BAD_REQUEST from the body parser, VALIDATION_ERROR for an array), never a server error', async () => {
       const post = (text: string) => admin.noCsrf.post('/api/admin/subjects').set('X-CSRF-Token', admin.csrf).type('json').send(text)
       // An array reaches the module's validation; a bare scalar or null is refused by the body parser (400 mapped to 422).
       for (const body of [[1, 2], []]) {
         expect(expectError(await post(JSON.stringify(body)), 'VALIDATION_ERROR').fields, JSON.stringify(body)).toEqual({ _: 'The request body must be a JSON object.' })
       }
-      for (const text of ['"text"', '5', 'true', 'null', '{bad json']) expectError(await post(text), 'VALIDATION_ERROR')
+      for (const text of ['"text"', '5', 'true', 'null', '{bad json']) expectError(await post(text), 'BAD_REQUEST')
     })
 
     it('#4 keeps omitted educationLevelIds, color, isCore, order and icon; an empty list or icon clears them', async () => {

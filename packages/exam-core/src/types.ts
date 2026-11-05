@@ -104,6 +104,8 @@ export interface PartDef {
     topics?: EssayTopicDef[]
   }
   children?: PartDef[]
+  /** FR-QA-09: the stimulus (`StimulusDef.id`) this leaf cites, of its question's group. Additive. */
+  stimulusId?: string
 }
 
 export interface QuestionDef {
@@ -472,6 +474,8 @@ export interface PartView {
   marks: number
   answer?: PartDef['answer']
   children?: PartView[]
+  /** See `PartDef.stimulusId`. */
+  stimulusId?: string
 }
 
 export interface QuestionView {

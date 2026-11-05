@@ -126,7 +126,7 @@ export const kirkpatrickScenarios: Scenario[] = [
         expectError(ctx, await admin.request('GET', `/kirkpatrick/students/${id}`), 403, 'FORBIDDEN')
         expectError(ctx, await teacher.request('GET', `/kirkpatrick/students/${id}`), 403, 'FORBIDDEN')
       }
-      // A non-numeric id is 404 "Not Found." (contract prose); the operation declares only 200, 401 and 403, so
+      // A non-numeric id is 404 "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (contract prose); the operation declares only 200, 401 and 403, so
       // the runner would flag it as undocumented. It is asserted in test/kirkpatrick/pupil-export.spec.ts instead.
 
       for (const role of ['student', 'teacher', 'school_admin', 'admin'] as ActorRole[]) {
