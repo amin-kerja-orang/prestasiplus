@@ -881,8 +881,14 @@ export function readZipFiles(b: Buffer, limits: ZipLimits): Map<string, Buffer |
   let produced = 0
   for (const e of entries) {
     if (e.name.endsWith('/') || isUnsafeZipName(e.name)) continue
-    const base = e.name.replaceAll('\\', '/').split('/').pop() ?? ''
-    if (base === '' || out.has(base)) continue
+    // The key is the LOWER-CASE base name (X.PNG and x.png are one name). A base name used by two entries is ambiguous: it is unusable (null),
+    // so a row naming it gets an error instead of a possibly wrong image.
+    const base = (e.name.replaceAll('\\', '/').split('/').pop() ?? '').toLowerCase()
+    if (base === '') continue
+    if (out.has(base)) {
+      out.set(base, null)
+      continue
+    }
     let data: Buffer | null = null
     const bad = (e.flags & 1) !== 0 || (e.method !== 0 && e.method !== 8) || e.size > limits.maxEntryBytes || e.local + 30 > b.length || b.readUInt32LE(e.local) !== LOCAL_SIGNATURE
     if (!bad) {
@@ -905,5 +911,5 @@ export function readZipFiles(b: Buffer, limits: ZipLimits): Map<string, Buffer |
   return out
 }
 
-/** The file name a `stimulus_image` cell names: its last path segment. */
-export const imageBaseName = (cell: string): string => cell.replaceAll('\\', '/').split('/').pop()?.trim() ?? ''
+/** The file name a `stimulus_image` cell names: its last path segment, lower-case (names match without regard to case). */
+export const imageBaseName = (cell: string): string => (cell.replaceAll('\\', '/').split('/').pop()?.trim() ?? '').toLowerCase()

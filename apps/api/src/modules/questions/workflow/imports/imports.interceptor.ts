@@ -35,7 +35,9 @@ export class CsvUploadInterceptor implements NestInterceptor {
         throw ApiError.of('VALIDATION_ERROR', { fields: { csvFile: QUESTION_IMPORT_MESSAGES.fileType } })
       }
       if (err instanceof BadRequestException) {
-        throw ApiError.of('VALIDATION_ERROR', { fields: { csvFile: QUESTION_IMPORT_MESSAGES.fileRequired } })
+        // A multer problem (an unexpected part such as a `zipFile` on the Guru route, a malformed body) is not a missing file: ERR-REQ-01.
+        // The missing-file text "Sila pilih fail CSV." is the service's, when the `csvFile` part is simply absent.
+        throw ApiError.of('VALIDATION_ERROR', { fields: { csvFile: QUESTION_IMPORT_CODE_ROW_MESSAGES.requestInvalid } })
       }
       throw err
     }
@@ -67,7 +69,9 @@ export class CsvZipUploadInterceptor implements NestInterceptor {
         throw ApiError.of('VALIDATION_ERROR', { fields: { csvFile: QUESTION_IMPORT_MESSAGES.fileType, zipFile: QUESTION_IMPORT_CODE_ROW_MESSAGES.requestInvalid } })
       }
       if (err instanceof BadRequestException) {
-        throw ApiError.of('VALIDATION_ERROR', { fields: { csvFile: QUESTION_IMPORT_MESSAGES.fileRequired } })
+        // A multer problem (an unexpected part such as a `zipFile` on the Guru route, a malformed body) is not a missing file: ERR-REQ-01.
+        // The missing-file text "Sila pilih fail CSV." is the service's, when the `csvFile` part is simply absent.
+        throw ApiError.of('VALIDATION_ERROR', { fields: { csvFile: QUESTION_IMPORT_CODE_ROW_MESSAGES.requestInvalid } })
       }
       throw err
     }

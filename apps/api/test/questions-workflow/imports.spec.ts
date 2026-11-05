@@ -17,6 +17,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { ApiError } from '../../src/common/errors/api-error'
 import { FILE_STORAGE, type FileStorage } from '../../src/modules/files'
 import { StimuliService } from '../../src/modules/questions'
+import { QuestionWorkflowService } from '../../src/modules/questions/workflow'
 import { buildCsv, parseCsv, readZipFiles } from '../../src/modules/questions/workflow/imports/csv'
 import { IMPORT_ZIP } from '../../src/modules/questions/workflow/imports/imports.constants'
 
@@ -854,6 +855,62 @@ describe('S1-T05 part 3: stimulus images from the ZIP and the template (real ban
     expect(await count(t.db, 'select count(*) as n from questions')).toBe(questions + 1)
   })
 
+  it('[CI] file names match without regard to case: Rajah1.PNG in the CSV finds rajah1.png in the ZIP', async () => {
+    const res = await post([imageRow('Rajah1.PNG', 'CS1')], buildZip([{ name: 'gambar/rajah1.png', data: png }]))
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    expect(res.body.status).toBe('Import selesai: 1 soalan diimport, 0 gagal.')
+    const res2 = await post([imageRow('rajah2.png', 'CS2')], buildZip([{ name: 'RAJAH2.PNG', data: png }]))
+    expect(res2.body.status).toBe('Import selesai: 1 soalan diimport, 0 gagal.')
+  })
+
+  it('[CI] two ZIP entries with the same base name (also differing only in case) make the name unusable: every row naming it gets an error, no first-wins', async () => {
+    const before = await counts()
+    const res = await post(
+      [imageRow('x.png', 'DU1'), imageRow('Y.png', 'DU2')],
+      buildZip([{ name: 'a/x.png', data: png }, { name: 'b/x.png', data: png }, { name: 'y.png', data: png }, { name: 'sub/Y.PNG', data: png }]),
+    )
+    expect(res.status).toBe(201)
+    expect(res.body.data.failures.map((f: { row: number; message: string; code: string }) => [f.row, f.message, f.code])).toEqual([
+      [2, 'Baris 2: Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB.', 'STIMULUS_IMAGE_INVALID'],
+      [3, 'Baris 3: Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB.', 'STIMULUS_IMAGE_INVALID'],
+    ])
+    expect(await counts()).toEqual(before)
+    const files = readZipFiles(buildZip([{ name: 'a/x.png', data: png }, { name: 'b/x.png', data: png }]), { maxEntries: 100, maxTotalBytes: 1 << 20, maxEntryBytes: 1 << 20 })
+    expect(files.get('x.png')).toBeNull()
+  })
+
+  it('[CI] an outer failure after images were stored (a group already done) leaves 0 stored objects and 0 file rows and no run', async () => {
+    const storage = t.app.get<FileStorage>(FILE_STORAGE)
+    const keys: string[] = []
+    const put = storage.put.bind(storage)
+    storage.put = async (key, bytes) => {
+      keys.push(key)
+      return put(key, bytes)
+    }
+    const workflow = t.app.get(QuestionWorkflowService)
+    const original = workflow.recordCreation.bind(workflow)
+    let calls = 0
+    workflow.recordCreation = async (...args: Parameters<typeof original>) => {
+      if (++calls === 2) throw new Error('kegagalan luar jangka')
+      return original(...args)
+    }
+    const before = await counts()
+    const runs = await count(t.db, 'select count(*) as n from question_imports')
+    const questions = await count(t.db, 'select count(*) as n from questions')
+    try {
+      const res = await post([imageRow('rajah.png', 'OF1'), imageRow('rajah.png', 'OF2')], buildZip([{ name: 'rajah.png', data: png }]))
+      expect(res.status).toBe(500)
+    } finally {
+      workflow.recordCreation = original
+      storage.put = put
+    }
+    expect(keys).toHaveLength(2)
+    for (const key of keys) expect(await storage.exists(key)).toBe(false)
+    expect(await counts()).toEqual(before)
+    expect(await count(t.db, 'select count(*) as n from question_imports')).toBe(runs)
+    expect(await count(t.db, 'select count(*) as n from questions')).toBe(questions)
+  })
+
   it('[CI] the template has the code header, one MCQ and one group, and imports once its codes are replaced by real ones', async () => {
     const res = await c.admin.get('/api/question-imports/template')
     const records = parseCsv(res.text)
@@ -883,6 +940,9 @@ describe('S1-T05 part 3: stimulus images from the ZIP and the template (real ban
     const guru = await uploadClient(t, 'teacher')
     const res = await guru.upload('/api/guru/questions/import', { name: 'g.csv', body: [GHEAD, imageRow('rajah.png', 'GZ1')].join('\n') }, {}, true, { name: 'imej.zip', body: buildZip([{ name: 'rajah.png', data: png }]) })
     expect(res.status).toBe(422)
-    expect(res.body.error.fields.csvFile).toBe('Sila pilih fail CSV.')
+    // An unexpected part is not a missing file: ERR-REQ-01, never "Sila pilih fail CSV." (that is for an absent csvFile only).
+    expect(res.body.error.fields.csvFile).toBe('Data yang dihantar tidak sah. Sila semak dan cuba lagi.')
+    const missing = await guru.upload('/api/guru/questions/import', null)
+    expect(missing.body.error.fields.csvFile).toBe('Sila pilih fail CSV.')
   })
 })

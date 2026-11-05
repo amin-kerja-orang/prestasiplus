@@ -28,7 +28,7 @@ import { listMeta } from '../../../../common/http/respond'
 import { toMytTimestamp } from '../../../../common/time/myt'
 import { CurriculumRepository } from '../../../curriculum'
 import { inspectUpload } from '../../../files/content-inspect'
-import { FilesService } from '../../../files'
+import { FILE_STORAGE, FilesService, type FileStorage } from '../../../files'
 import { QuestionsRepository, StimuliService } from '../../index'
 import type { WorkflowActor } from '../actor'
 import { type ImportedQuestionInput, QuestionWorkflowPorts } from '../ports'
@@ -111,6 +111,7 @@ export class QuestionImportsService {
     @Inject(QuestionsRepository) private readonly questions: QuestionsRepository,
     @Inject(StimuliService) private readonly stimuli: StimuliService,
     @Inject(FilesService) private readonly files: FilesService,
+    @Inject(FILE_STORAGE) private readonly storage: FileStorage,
   ) {}
 
   /** The template file text (mock `IMPORT_TEMPLATE_CSV`; no cell starts with a formula character). */
@@ -283,7 +284,7 @@ export class QuestionImportsService {
    * (the same create as every other row), then the group (`createGroup`, which takes its Subjek, Tingkatan and Kertas from the members) or, for a
    * `group_id` row, `addMember` on the existing group. Any `ApiError` is the caller's cue to skip the whole group.
    */
-  private async createGroup(actor: WorkflowActor, group: PlannedGroup, status: 'draft' | 'review', zipBytes: ReadonlyMap<string, Buffer>, stored: string[]): Promise<void> {
+  private async createGroup(actor: WorkflowActor, group: PlannedGroup, status: 'draft' | 'review', zipBytes: ReadonlyMap<string, Buffer>, stored: string[], runKeys: string[]): Promise<void> {
     const bank = this.ports.questionBank
     const stimulusIds: string[] = []
     for (const s of group.stimuli) {
@@ -293,7 +294,12 @@ export class QuestionImportsService {
         const bytes = zipBytes.get(s.imageName)
         if (bytes === undefined) throw ApiError.of('VALIDATION_ERROR', { fields: { stimulus_image: CODE_MSG.stimulusImage } })
         const file = await this.files.storeManaged({ ownerUserId: actor.userId, purpose: 'question_image', bytes })
-        stored.push(file.publicId)
+        // The object's key is recorded at once: files are not transactional, so a rollback of the rows must be followed by deleting the objects.
+        const row = await this.prisma.client.file.findUnique({ where: { publicId: file.publicId }, select: { storageKey: true } })
+        if (row !== null) {
+          stored.push(row.storageKey)
+          runKeys.push(row.storageKey)
+        }
         imageFileId = file.publicId
       }
       const made = await this.stimuli.createStimulus({
@@ -332,6 +338,9 @@ export class QuestionImportsService {
     zipBytes: ReadonlyMap<string, Buffer> = new Map(),
   ): Promise<QuestionImport> {
     const bank = this.ports.questionBank
+    // Keys of every image object stored during this run. On ANY failure of the transaction (an error out of the callback or of the commit) they are
+    // all deleted: the rows go with the rollback, the objects would not.
+    const runKeys: string[] = []
     return this.prisma.transaction(async () => {
       for (const row of plan.rows) {
         const input: ImportedQuestionInput = { ...row.input, createdById: actor.userId, status }
@@ -350,14 +359,14 @@ export class QuestionImportsService {
         await this.prisma.client.$executeRaw`SAVEPOINT import_group`
         const stored: string[] = []
         try {
-          await this.createGroup(actor, group, status, zipBytes, stored)
+          await this.createGroup(actor, group, status, zipBytes, stored, runKeys)
           await this.prisma.client.$executeRaw`RELEASE SAVEPOINT import_group`
           imported += group.members.length
         } catch (err) {
           if (!(err instanceof ApiError)) throw err
-          // Files are not transactional: the rows of this group's images are rolled back below, but their stored objects would stay. They are
-          // discarded first (row and object), while the rows still exist, so a rolled-back group leaves neither a reference nor an orphan object.
-          for (const token of stored) await this.files.discard(token, 'question_image')
+          // Files are not transactional: the rows of this group's images are rolled back below, but their stored objects would stay, so the
+          // objects are deleted by key (a rolled-back group leaves neither a reference nor an orphan object).
+          await this.deleteObjects(stored)
           await this.prisma.client.$executeRaw`ROLLBACK TO SAVEPOINT import_group`
           // The service text is BM and mostly fixed, but it can echo a file value: it is capped like every echoed value. The cap is 200
           // characters, not 40, because 40 would cut the sentence itself ("Subjek dan Tingkatan ahli mesti sama dengan kumpulan.").
@@ -388,7 +397,15 @@ export class QuestionImportsService {
           updatedAt: this.clock.now(),
         },
       })
-    }, IMPORT_TX)
+    }, IMPORT_TX).catch(async (err: unknown) => {
+      await this.deleteObjects(runKeys)
+      throw err
+    })
+  }
+
+  /** Deletes stored objects by key; never throws (a missing key is not an error). */
+  private async deleteObjects(keys: readonly string[]): Promise<void> {
+    for (const key of keys) await this.storage.delete(key).catch(() => undefined)
   }
 }
 
