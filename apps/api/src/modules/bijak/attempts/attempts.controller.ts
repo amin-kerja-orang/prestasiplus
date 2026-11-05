@@ -13,6 +13,7 @@ import {
   PayloadTooLargeException,
   Post,
   Put,
+  Query,
   Req,
   Res,
   UploadedFile,
@@ -163,8 +164,9 @@ export class BijakAttemptsController {
   }
 
   @Get('attempts/:id/result')
-  async result(@Param('id') id: string, @Req() req: AuthedRequest) {
-    return ok(await this.attempts.result(authOf(req).userId, id))
+  async result(@Param('id') id: string, @Req() req: AuthedRequest, @Query('scheme') scheme?: string) {
+    // `?scheme=1`: "Tunjuk Skema Pemarkahan" of a Kertas Subjektif attempt (AC-MUR-13-21); other kinds always carry the scheme.
+    return ok(await this.attempts.result(authOf(req).userId, id, scheme === '1'))
   }
 
   /** R1-B12: the pupil's own mark for one part (Semakan). */

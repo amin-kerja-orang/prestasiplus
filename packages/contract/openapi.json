@@ -10550,6 +10550,20 @@
             "maxLength": 64,
             "description": "The in-progress attempt of the caller; present only when status is sedang.",
             "example": "1042"
+          },
+          "surface": {
+            "type": "string",
+            "enum": [
+              "simulasi",
+              "subjektif"
+            ],
+            "description": "S3-T06: present (`subjektif`) on the rows of the Kertas Subjektif list; absent on the Simulasi list."
+          },
+          "examBoard": {
+            "type": "string",
+            "minLength": 1,
+            "description": "S3-T06: Negeri or badan peperiksaan (slug of OPT-NEGERI-KERTAS) of a Kertas Subjektif paper.",
+            "example": "selangor"
           }
         },
         "required": [
@@ -10735,6 +10749,20 @@
             "maxLength": 64,
             "description": "The in-progress attempt of the caller; present only when status is sedang.",
             "example": "1042"
+          },
+          "surface": {
+            "type": "string",
+            "enum": [
+              "simulasi",
+              "subjektif"
+            ],
+            "description": "S3-T06: present (`subjektif`) on the rows of the Kertas Subjektif list; absent on the Simulasi list."
+          },
+          "examBoard": {
+            "type": "string",
+            "minLength": 1,
+            "description": "S3-T06: Negeri or badan peperiksaan (slug of OPT-NEGERI-KERTAS) of a Kertas Subjektif paper.",
+            "example": "selangor"
           },
           "instructions": {
             "type": "array",
@@ -12594,7 +12622,74 @@
             "$ref": "#/components/schemas/BijakAttemptPartAnswer"
           },
           "scheme": {
-            "$ref": "#/components/schemas/BijakAttemptScheme"
+            "type": "object",
+            "properties": {
+              "marks": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "correctOption": {
+                "type": "string",
+                "description": "MCQ: the correct option id."
+              },
+              "correctLetter": {
+                "type": "string",
+                "description": "match_letter: the correct letter."
+              },
+              "acceptedText": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "accepted: the accepted answers as text."
+              },
+              "rubric": {
+                "type": "object",
+                "properties": {
+                  "criteria": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "bands": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/BijakAttemptRubricBand"
+                    }
+                  },
+                  "notes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "criteria",
+                  "bands"
+                ],
+                "additionalProperties": false
+              },
+              "explanation": {
+                "type": "string"
+              },
+              "finalDisplay": {
+                "type": "string",
+                "description": "LaTeX of the model final answer."
+              },
+              "unit": {
+                "type": "string"
+              },
+              "model": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "marks"
+            ],
+            "additionalProperties": false,
+            "description": "The revealed scheme. Absent on a Kertas Subjektif attempt (`paperKind = subjektif`) unless the result is read with `?scheme=1` (\"Tunjuk Skema Pemarkahan\", AC-MUR-13-21); `points` and `suggestion` are then empty / absent too."
           }
         },
         "required": [
@@ -12606,8 +12701,7 @@
           "status",
           "confidence",
           "points",
-          "answer",
-          "scheme"
+          "answer"
         ],
         "additionalProperties": false
       },
