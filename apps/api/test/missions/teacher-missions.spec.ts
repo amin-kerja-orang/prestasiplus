@@ -114,7 +114,7 @@ describe('API-GUR-11 teacher Misi Harian: GET, POST, DELETE /api/guru/missions (
     expect([...dates].sort().reverse()).toEqual(dates)
   })
 
-  it('GET appends the active S7 challenges as Global rows after the own missions; their count is over the teacher\'s pupils; DELETE of one is 404', async () => {
+  it('GET appends the active S7 challenges as Global rows after the own missions; their count is over the teacher\'s pupils; DELETE of one is 403', async () => {
     const ch = (
       await t.db.query<{ id: string }>(
         `insert into challenges (title, description, challenge_type, metric, target_value, reward_syiling, reward_xp, difficulty, sort_order, is_active)
@@ -127,7 +127,7 @@ describe('API-GUR-11 teacher Misi Harian: GET, POST, DELETE /api/guru/missions (
     const row = globals.find((r) => r.id === `challenge-${ch}`)
     expect(row).toMatchObject({ title: 'Cabaran DB', description: 'Selesaikan kuiz', targetQuestions: 3, rewardCoins: 15, date: TODAY, classroomId: null, subjectId: null, subjectName: null, completedCount: 1 })
     expect(rows.findIndex((r) => r.global)).toBe(rows.filter((r) => !r.global).length) // own missions first
-    expect((await teacherA.del(`/guru/missions/challenge-${ch}`)).status).toBe(404)
+    errorIs(await teacherA.del(`/guru/missions/challenge-${ch}`), 403, 'FORBIDDEN', 'Misi global tidak boleh dipadam.')
     expect(await count(t, 'challenges where id = $1', [ch])).toBe(1)
   })
 

@@ -303,12 +303,15 @@ describe('S6-T07 list and delete', () => {
     expect(world.asked[1]).toEqual([])
   })
 
-  it('delete never reaches a challenge: its id is not a mission id, 404', async () => {
+  it('delete never reaches a challenge: its id is not a mission id, 403 (AC-GUR-2b-6)', async () => {
     const { service, world } = build()
     world.challenges = [challenge({ id: '1' })]
     const own = await service.create(actor(), body())
     const err = await refusal(service.remove(actor(), 'challenge-1'))
-    expect(err.code).toBe('NOT_FOUND')
+    expect(err.code).toBe('FORBIDDEN')
+    expect(err.getStatus()).toBe(403)
+    expect(err.message).toBe('Misi global tidak boleh dipadam.')
+    expect((await refusal(service.remove(actor(), '987654321'))).code).toBe('NOT_FOUND')
     expect(world.missions.some((m) => m.id === own.id)).toBe(true)
   })
 

@@ -199,9 +199,10 @@ export class MissionsService {
 
   /**
    * `DELETE /guru/missions/:id`: an own mission goes with its recipient rows. Another teacher's mission and an unknown id
-   * are the generic 404.
+   * are the generic 404. A Global row (`challenge-<id>`, a read-only S7 challenge) is 403 AC-GUR-2b-6. There is no update route.
    */
   async remove(actor: ClassActor, id: string): Promise<{ deleted: 1 }> {
+    if (id.startsWith('challenge-')) throw ApiError.of('FORBIDDEN', { message: MISSION_MESSAGES.globalNotDeletable })
     const mission = isIdString(id) ? await this.repo.findById(id) : null
     if (!mission) throw notFound()
     if (mission.teacherId !== actor.userId) throw notFound()
