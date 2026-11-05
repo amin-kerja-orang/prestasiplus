@@ -61755,6 +61755,202 @@
           "rows"
         ]
       },
+      "GuruWeeklyReportQuery": {
+        "type": "object",
+        "properties": {
+          "classroomId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "week": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "Any date YYYY-MM-DD inside the wanted week; the report covers Monday 00:00 to Sunday 23:59 MYT containing it. Default: the current week."
+          }
+        },
+        "required": [
+          "classroomId"
+        ],
+        "additionalProperties": false
+      },
+      "GuruWeeklyReport": {
+        "type": "object",
+        "properties": {
+          "classroom": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "week": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                "description": "Monday, YYYY-MM-DD."
+              },
+              "to": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                "description": "Sunday, YYYY-MM-DD."
+              },
+              "label": {
+                "type": "string",
+                "example": "02 Nov 2026 — 08 Nov 2026"
+              }
+            },
+            "required": [
+              "from",
+              "to",
+              "label"
+            ],
+            "description": "Monday 00:00 to Sunday 23:59 MYT of the week containing the requested date (default: current week). The previous week is the 7 days before."
+          },
+          "summary": {
+            "type": "object",
+            "properties": {
+              "answered": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Answers of the class in the week, all modes of practice_answers (XS-8)."
+              },
+              "activePupils": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Class pupils with >= 1 answer in the week (XS-2)."
+              },
+              "improvedPupils": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Count of ALL pupils that qualify for mostImproved, not only the 5 listed."
+              },
+              "attentionSubjects": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Length of attentionSubjects."
+              }
+            },
+            "required": [
+              "answered",
+              "activePupils",
+              "improvedPupils",
+              "attentionSubjects"
+            ]
+          },
+          "topPerformers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "rank": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "name": {
+                  "type": "string"
+                },
+                "answered": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "accuracy": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "Pooled correct / answered x 100 over all modes of practice_answers (XS-8), ONE decimal at most on the wire (a value with no fraction has none: 100, not 100.0). The screen shows the whole number rounded half up (4.6, D-T10-1)."
+                }
+              },
+              "required": [
+                "rank",
+                "name",
+                "answered",
+                "accuracy"
+              ]
+            },
+            "maxItems": 5,
+            "description": "Pupils with answered >= 5, sorted by whole-number accuracy desc, ties answered desc then name; max 5."
+          },
+          "mostImproved": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "previousAccuracy": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "Pooled correct / answered x 100 over all modes of practice_answers (XS-8), ONE decimal at most on the wire (a value with no fraction has none: 100, not 100.0). The screen shows the whole number rounded half up (4.6, D-T10-1)."
+                },
+                "accuracy": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "Pooled correct / answered x 100 over all modes of practice_answers (XS-8), ONE decimal at most on the wire (a value with no fraction has none: 100, not 100.0). The screen shows the whole number rounded half up (4.6, D-T10-1)."
+                },
+                "delta": {
+                  "type": "integer",
+                  "description": "whole(accuracy) - whole(previousAccuracy); the shown \"+{delta}%\"."
+                }
+              },
+              "required": [
+                "name",
+                "previousAccuracy",
+                "accuracy",
+                "delta"
+              ]
+            },
+            "maxItems": 5,
+            "description": "Pupils with answers in both weeks and delta > 0, delta desc, ties by name; max 5. summary.improvedPupils counts all of them."
+          },
+          "attentionSubjects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "subject": {
+                  "type": "string"
+                },
+                "accuracy": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "Pooled correct / answered x 100 over all modes of practice_answers (XS-8), ONE decimal at most on the wire (a value with no fraction has none: 100, not 100.0). The screen shows the whole number rounded half up (4.6, D-T10-1)."
+                },
+                "answered": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "subject",
+                "accuracy",
+                "answered"
+              ]
+            },
+            "description": "Subjects whose whole-number weekly accuracy is < 50, ascending by accuracy."
+          }
+        },
+        "required": [
+          "classroom",
+          "week",
+          "summary",
+          "topPerformers",
+          "mostImproved",
+          "attentionSubjects"
+        ]
+      },
       "KirkpatrickBandKey": {
         "type": "string",
         "enum": [
@@ -112771,6 +112967,96 @@
           },
           "403": {
             "description": "FORBIDDEN \"This action is unauthorized.\": role not admin or teacher (school_admin included)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/weekly-report": {
+      "get": {
+        "tags": [
+          "performance"
+        ],
+        "summary": "Teacher weekly class report (API-GUR-21)",
+        "description": "Role teacher only; own classes only. Pupil names are those of the own class. Accuracy fields carry at most one decimal.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "classroomId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "description": "Any date YYYY-MM-DD inside the wanted week; the report covers Monday 00:00 to Sunday 23:59 MYT containing it. Default: the current week."
+            },
+            "required": false,
+            "description": "Any date YYYY-MM-DD inside the wanted week; the report covers Monday 00:00 to Sunday 23:59 MYT containing it. Default: the current week.",
+            "name": "week",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Weekly report.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: holds pupil names.",
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GuruWeeklyReport"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: not a teacher, or the class belongs to another teacher (AC-GUR-43-6).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: classroomId missing, or week malformed.",
             "content": {
               "application/json": {
                 "schema": {
