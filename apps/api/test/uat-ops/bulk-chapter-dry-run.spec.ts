@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildPlan, planLines, SPEC, type ChapterRow, type PairRow } from '../../scripts/uat-ops/bulk-chapter-dry-run'
+import { buildPlan, PAIRS_SQL, planLines, SPEC, type ChapterRow, type PairRow } from '../../scripts/uat-ops/bulk-chapter-dry-run'
 import { parseUatArgs } from '../../scripts/uat-ops/lib'
 
 /** S4-T03 U-OP-07 dry-run report: the pure parts (rows -> plan -> lines). */
@@ -79,5 +79,17 @@ describe('planLines', () => {
     expect(planLines(buildPlan([], []), { subject: 'XYZ', level: 'T4' })).toEqual([
       { status: 'SKIP', text: 'no offered subject x level for subject XYZ, level T4' },
     ])
+  })
+})
+
+describe('PAIRS_SQL eligibility (same as the bulk-chapter API)', () => {
+  it('does not require an active question: an inactive approved question counts, as the API maps it', () => {
+    expect(PAIRS_SQL).not.toMatch(/q\.is_active/)
+    expect(PAIRS_SQL).toContain('JOIN questions q ON q.id = v.question_id AND q.live_version_no = v.version_no')
+  })
+
+  it('counts the live approved version and leaves PKSK questions out, as the admin filter does', () => {
+    expect(PAIRS_SQL).toContain("v.status = 'approved'")
+    expect(PAIRS_SQL).toContain("pt.kind = 'pksk_domain'")
   })
 })
