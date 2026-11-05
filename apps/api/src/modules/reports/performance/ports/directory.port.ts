@@ -44,6 +44,8 @@ export interface DirectoryPort {
    * subject is absent from the map. A class stores the curriculum id; a sitting stores the code.
    */
   subjectIdsOfCodes(codes: readonly string[]): Promise<Map<string, string>>
+  /** Curriculum subjects by id (code and BM name), one read; an unknown id is absent from the map. */
+  subjectsOfIds(ids: readonly string[]): Promise<Map<string, { code: string; name: string }>>
 }
 
 export const DIRECTORY_PORT = Symbol('DIRECTORY_PORT')
