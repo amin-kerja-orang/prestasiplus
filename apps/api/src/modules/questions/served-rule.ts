@@ -1,4 +1,5 @@
 import { Prisma } from '../../db/generated/client'
+import { NOT_FLAGGED_SQL } from './learner-visibility'
 
 /**
  * The ONE rule for "a paper still holds this version" (R1-delete-served-guard, B3 review of REQ-B-052). A paper holds the versions its
@@ -30,16 +31,17 @@ export const QUESTION_SERVED_BY_PAPER = Prisma.sql`EXISTS (SELECT 1 FROM paper_p
 
 /**
  * A question is SHOWN TO PUPILS when (A) it is active and its live version is approved, or (B) a paper that is still held pins one of its versions
- * (`QUESTION_SERVED_BY_PAPER`). Alias `q` is `questions`. This is the "served lock" predicate of groups and stimuli.
+ * (`QUESTION_SERVED_BY_PAPER`). Alias `q` is `questions`. DM-04 (S1-T07): a live version excluded by an open flag (`NOT_FLAGGED_SQL`) is not shown, so it is not
+ * served by (A); a published paper pin (B) still locks it. This is the "served lock" predicate of groups and stimuli.
  */
 export const QUESTION_SERVED = Prisma.sql`(
-  (q.is_active AND EXISTS (SELECT 1 FROM question_versions sv WHERE sv.question_id = q.id AND sv.version_no = q.live_version_no AND sv.status = 'approved'))
+  (q.is_active AND EXISTS (SELECT 1 FROM question_versions v WHERE v.question_id = q.id AND v.version_no = q.live_version_no AND v.status = 'approved' AND ${NOT_FLAGGED_SQL}))
   OR ${QUESTION_SERVED_BY_PAPER}
 )`
 
 /** The same rule for one version `v` of question `q`: it is the live approved version of an active question, or a paper that is still held pins it. */
 export const VERSION_SERVED = Prisma.sql`(
-  (q.live_version_no = v.version_no AND q.is_active AND v.status = 'approved')
+  (q.live_version_no = v.version_no AND q.is_active AND v.status = 'approved' AND ${NOT_FLAGGED_SQL})
   OR (v.status IN ('approved', 'archived') AND EXISTS (SELECT 1 FROM paper_placements spl
                JOIN paper_sections sps ON sps.id = spl.paper_section_id
                JOIN papers spp ON spp.id = sps.paper_id AND ${paperHeld('spp')}

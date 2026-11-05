@@ -142,7 +142,7 @@ function practiceShapeReasons(record: QuestionRecord, activity: ServabilityActiv
   const v = record.version
   const leaf = v.parts.length === 1 ? v.parts[0] : undefined
   const hasStimulus = record.groupId !== null || v.stimulusIds.length > 0 || (leaf !== undefined && 'mode' in leaf && leaf.stimulusId != null)
-  const hasOptionImage = leaf !== undefined && 'options' in leaf && leaf.options.some((o) => o.imageId != null)
+  const hasOptionImage = leaf !== undefined && 'options' in leaf && (leaf.options ?? []).some((o) => o.imageId != null)
   if (hasStimulus) return [reason('has_stimulus', activity, verdict.reason)]
   if (hasOptionImage) return [reason('has_option_image', activity, verdict.reason)]
   return [reason('shape_unsupported', activity, verdict.reason)]
@@ -246,6 +246,20 @@ function activityReasons(f: ServabilityFacts, activity: ServabilityActivity, sur
     }
     case 'simulasi_paper':
       return simulasiPaperReasons(f)
+    case 'permainan': {
+      // The games draw (`filterOf('permainan')`, `toServed`): a plain text MCQ of 2 to 4 options with a key, ungrouped. A picture or stimulus is the
+      // `image_games` reason; the common reasons (active, learner level, flag, key) are the draw's own `learnerVisible` scope.
+      const shape = practiceShapeReasons(live, activity).map((r) => (r.code === 'has_stimulus' || r.code === 'has_option_image' ? reason('image_games', activity, r.detail) : r))
+      if (shape.length > 0) return shape
+      const leaf = live.version.parts[0]
+      const options = leaf !== undefined && 'options' in leaf ? (leaf.options ?? []) : []
+      if (options.length < 2 || options.length > 4) return [reason('shape_unsupported', activity, 'a game shows 2 to 4 options')]
+      const stem = live.version.stemMs?.trim() ? live.version.stemMs : leaf !== undefined ? leaf.prompt.ms : ''
+      if (stem.trim() === '' || (leaf !== undefined && 'options' in leaf && (leaf.options ?? []).some((o) => o.body.ms.trim() === ''))) {
+        return [reason('shape_unsupported', activity, 'a game needs a stem and the text of every option')]
+      }
+      return []
+    }
     case 'jana_kertas': {
       if (f.janaFacts === null) return [reason('subject_unavailable', activity)]
       const own = describeQuestion(f.janaFacts).reasons.map((r) => reason(JANA_REASON[r], activity, r))
@@ -270,15 +284,16 @@ export function evaluate(f: ServabilityFacts, activity: ServabilityActivity, sur
   return { activity, label: SERVABILITY_ACTIVITY_LABELS[activity], served: reasons.length === 0, reasons }
 }
 
-/** All six activities, in the contract order. */
+/** Every activity in the contract order; `servedCount` and `total` count the six of FR-QA-45 (every activity but `jana_kertas`, admin use only). */
 export function evaluateAll(f: ServabilityFacts, surfaces: readonly ServabilityActivity[] = GROUP_SURFACES): ServabilityReport {
   const results = SERVABILITY_ACTIVITIES.map((a) => evaluate(f, a, surfaces))
+  const counted = results.filter((r) => r.activity !== 'jana_kertas')
   return {
     questionId: f.latest.id,
     versionNo: f.live?.version.versionNo ?? null,
     activities: results,
-    servedCount: results.filter((r) => r.served).length,
-    total: results.length,
+    servedCount: counted.filter((r) => r.served).length,
+    total: counted.length,
   }
 }
 

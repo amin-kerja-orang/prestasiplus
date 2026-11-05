@@ -211,7 +211,7 @@ export class RegroupService {
         level: r.level ?? '',
         flag: r.flag as StimulusFlag,
         reference: r.ref === 'numbered' || r.ref === 'unnumbered' ? r.ref : null,
-        paper: r.paper_id === null ? null : { id: idToString(r.paper_id), paperCode: r.paper_code, year: r.year, examType: r.exam_type },
+        paper: r.paper_id === null ? null : { id: idToString(r.paper_id), title: [r.paper_code, r.exam_type, r.year].filter((x) => x !== null && x !== '').join(' ') || null, paperCode: r.paper_code, year: r.year, examType: r.exam_type },
       })),
       total: total[0]?.n ?? 0,
       counts: {

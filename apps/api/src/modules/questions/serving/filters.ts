@@ -44,6 +44,9 @@ export function filterOf(activity: ServabilityActivity, scope: ActivityScope = {
       return { ...subject, ...(scope.chapterId === undefined ? {} : { chapterId: scope.chapterId }), ...drillShape(activity, surfaces) }
     case 'simulasi_kuiz':
       return { ...subject, type: 'mcq', singleMcqLeaf: true }
+    case 'permainan':
+      // The games draw (`GameQuestions`, `battle.deps` BATTLE_POOL): plain text MCQ of 2 to 4 options, ungrouped.
+      return { ...subject, type: 'mcq', ungrouped: true, mcqShape: { minOptions: 2, maxOptions: 4 } }
     case 'simulasi_paper':
     case 'jana_kertas':
       return { ...subject }

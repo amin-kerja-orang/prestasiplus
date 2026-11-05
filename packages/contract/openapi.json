@@ -15577,7 +15577,8 @@
           "bab",
           "simulasi_paper",
           "simulasi_kuiz",
-          "jana_kertas"
+          "jana_kertas",
+          "permainan"
         ]
       },
       "ServabilityReasonCode": {
@@ -50881,6 +50882,13 @@
               "id": {
                 "$ref": "#/components/schemas/Id"
               },
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The source paper code, exam type and year, joined by spaces (the source paper has no title column); null when all three are empty."
+              },
               "paperCode": {
                 "type": [
                   "string",
@@ -50902,6 +50910,7 @@
             },
             "required": [
               "id",
+              "title",
               "paperCode",
               "year",
               "examType"
