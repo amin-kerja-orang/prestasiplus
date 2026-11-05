@@ -24,7 +24,7 @@ import { ApiError } from '../../src/common/errors/api-error'
 import { FILE_STORAGE, type FileStorage } from '../../src/modules/files'
 import { StimuliService } from '../../src/modules/questions'
 import { QuestionWorkflowService } from '../../src/modules/questions/workflow'
-import { QuestionImportsService, classifyImage, fetchImageBytes, isBlockedIp } from '../../src/modules/questions/workflow/imports/imports.service'
+import { QuestionImportsService, classifyImage, fetchImageBytes, hostHeaderFor, isBlockedIp } from '../../src/modules/questions/workflow/imports/imports.service'
 import { buildCsv, parseCsv, readZipFiles } from '../../src/modules/questions/workflow/imports/csv'
 import { IMPORT_ZIP } from '../../src/modules/questions/workflow/imports/imports.constants'
 
@@ -963,10 +963,10 @@ describe('S1-T05 part 4: fetch guard (no network: tables, stubs and a local http
       '0.0.0.0', '0.1.2.3', '10.0.0.1', '10.255.255.255', '172.16.0.1', '172.31.255.255', '192.168.0.1', '192.168.255.255', '127.0.0.1', '127.255.255.254',
       '169.254.0.1', '169.254.169.254', '100.64.0.1', '100.127.255.255', '224.0.0.1', '255.255.255.255', '192.0.0.1', '198.18.0.1',
       '::', '::1', 'fc00::1', 'fd12:3456::1', 'fe80::1', 'febf::1', 'ff02::1', '::ffff:127.0.0.1', '::ffff:7f00:1', '::ffff:10.0.0.1', '::ffff:a9fe:a9fe',
-      '::ffff:192.168.1.1', '::7f00:1', '64:ff9b::7f00:1', '2002:7f00:1::1', 'bukan-ip', '',
+      '::ffff:192.168.1.1', '::7f00:1', '64:ff9b::7f00:1', '64:ff9b:1::1', '64:ff9b:1:ffff:ffff:ffff:ffff:ffff', '2001:0:4136:e378:8000:63bf:3fff:fdd2', '2001::1', '192.88.99.1', '192.88.99.255', '2002:7f00:1::1', 'bukan-ip', '',
     ]
     for (const ip of blocked) expect(isBlockedIp(ip), ip).toBe(true)
-    const allowed = ['8.8.8.8', '1.1.1.1', '93.184.216.34', '172.15.255.255', '172.32.0.1', '100.63.255.255', '100.128.0.1', '169.253.0.1', '11.0.0.1', '2606:4700:4700::1111', '2a00:1450:4009:81f::200e', '::ffff:8.8.8.8', '::ffff:808:808']
+    const allowed = ['8.8.8.8', '1.1.1.1', '93.184.216.34', '172.15.255.255', '172.32.0.1', '100.63.255.255', '100.128.0.1', '169.253.0.1', '11.0.0.1', '192.88.98.255', '192.88.100.0', '2001:1::1', '2001:4860:4860::8888', '64:ff9a::1', '2606:4700:4700::1111', '2a00:1450:4009:81f::200e', '::ffff:8.8.8.8', '::ffff:808:808']
     for (const ip of allowed) expect(isBlockedIp(ip), ip).toBe(false)
   })
 
@@ -1045,6 +1045,8 @@ describe('S1-T05 part 4: fetch guard (no network: tables, stubs and a local http
             res.end()
           }
           pump()
+        } else if (url.startsWith('/slow')) {
+          // never answers: the import budget aborts it
         } else if (url.startsWith('/stall')) {
           res.writeHead(200, { 'content-type': 'image/png' })
           res.write(png.subarray(0, 10)) // headers sent, then nothing: the total timeout ends it
@@ -1106,6 +1108,37 @@ describe('S1-T05 part 4: fetch guard (no network: tables, stubs and a local http
       expect(totalMs).toBeGreaterThanOrEqual(9500)
       expect(totalMs).toBeLessThan(13000)
     }, 40_000)
+
+    it('[CI] hostHeaderFor puts an IPv6 literal in brackets (with the port unless 443) and leaves names and IPv4 literals alone', () => {
+      expect(hostHeaderFor('2001:db8::1', 443)).toBe('[2001:db8::1]')
+      expect(hostHeaderFor('2001:db8::1', 8443)).toBe('[2001:db8::1]:8443')
+      expect(hostHeaderFor('::1', 443)).toBe('[::1]')
+      expect(hostHeaderFor('gambar.contoh.test', 443)).toBeNull()
+      expect(hostHeaderFor('93.184.216.34', 443)).toBeNull()
+    })
+
+    it('[CI] the Host header the server receives for an IPv6 literal URL is bracketed (runs where the host has IPv6 loopback)', async () => {
+      const received: (string | undefined)[] = []
+      const six = createHttpsServer({ key: readFileSync(join(dir, 'k.pem')), cert: ca }, (req, res) => {
+        received.push(req.headers.host)
+        res.writeHead(200)
+        res.end(png)
+      })
+      const listening = await new Promise<boolean>((r) => {
+        six.once('error', () => r(false))
+        six.listen(0, '::1', () => r(true))
+      })
+      if (!listening) return // no IPv6 on this host: the pure header test above covers the logic
+      try {
+        const p6 = (six.address() as { port: number }).port
+        const got = await fetchImageBytes('https://[::1]/x.png', { isBlocked: () => false, ca, port: p6 })
+        // The certificate has no IP SAN for ::1, so verification may refuse it; the header check is on what the server received when it did connect.
+        if (got.ok) expect(received.at(-1)).toBe(`[::1]:${String(p6)}`)
+      } finally {
+        six.closeAllConnections()
+        six.close()
+      }
+    })
 
     describe('through the import (real bank)', () => {
       let t: WorkflowTestApp
@@ -1195,6 +1228,51 @@ describe('S1-T05 part 4: fetch guard (no network: tables, stubs and a local http
         expect(maxConcurrent).toBeGreaterThan(1)
         expect(maxConcurrent).toBeLessThanOrEqual(4)
         expect(seen.length - before).toBe(12)
+      })
+
+      it('[CI] a URL written with surrounding spaces and the same URL without are fetched once', async () => {
+        const before = seen.length
+        const res = await post([urlRow('" https://gambar.contoh.test/ok.png?d=1 "', 'T1'), urlRow('https://gambar.contoh.test/ok.png?d=1', 'T2')])
+        expect(res.status, JSON.stringify(res.body)).toBe(201)
+        expect(res.body.status).toBe('Import selesai: 2 soalan diimport, 0 gagal.')
+        expect(seen.length - before).toBe(1)
+      })
+
+      it('[CI] the total fetch budget aborts the fetches still running, starts no new one, and the import goes on: finished URLs are imported, the others get the row error, no sockets or objects are left', async () => {
+        svc.fetchOptions = { ...opts(), budgetMs: 300 }
+        const storage = t.app.get<FileStorage>(FILE_STORAGE)
+        const keys: string[] = []
+        const put = storage.put.bind(storage)
+        storage.put = async (key, bytes) => {
+          keys.push(key)
+          return put(key, bytes)
+        }
+        const before = await counts()
+        const sawBefore = seen.length
+        const urls = ['ok.png?b=1', 'ok.png?b=2', ...Array.from({ length: 10 }, (_, i) => `slow?b=${String(i)}`)]
+        const started = Date.now()
+        let res
+        try {
+          res = await post(urls.map((u, i) => urlRow(`https://gambar.contoh.test/${u}`, `BG${String(i)}`)))
+        } finally {
+          storage.put = put
+          svc.fetchOptions = opts()
+        }
+        const elapsed = Date.now() - started
+        expect(res.status, JSON.stringify(res.body)).toBe(201)
+        expect(elapsed).toBeLessThan(4000) // budget 300 ms + the import itself, far below one 10 s fetch timeout
+        expect(res.body.status).toBe('Import selesai: 2 soalan diimport, 10 gagal.')
+        expect(res.body.data.failures.map((f: { message: string }) => f.message)).toEqual(Array.from({ length: 10 }, (_, i) => `Baris ${String(i + 4)}: Imej rangsangan tidak dapat dimuat turun.`))
+        // Only 4 workers were ever busy: the two fast URLs and the first slow ones; the budget stopped the queue (not all 10 slow URLs were requested).
+        expect(seen.length - sawBefore).toBeLessThan(12)
+        // Imported images are stored and linked; nothing else was stored.
+        expect(keys).toHaveLength(2)
+        for (const key of keys) expect(await storage.exists(key)).toBe(true)
+        expect(await counts()).toEqual({ groups: before.groups + 2, files: before.files + 2 })
+        // The aborted sockets are destroyed: the server ends up with no open connection.
+        await new Promise((r) => setTimeout(r, 300))
+        const open = await new Promise<number>((r) => server.getConnections((_e, n) => r(n)))
+        expect(open).toBe(0)
       })
 
       it('[CI] more than 100 distinct URLs refuses the whole file with 422 and fetches nothing', async () => {

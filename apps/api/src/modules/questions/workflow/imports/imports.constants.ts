@@ -32,6 +32,8 @@ export const IMPORT_URL = {
   concurrency: 4,
   connectTimeoutMs: 5_000,
   totalTimeoutMs: 10_000,
+  /** All the fetches of ONE import together: when it runs out, every fetch still running is aborted and no new one starts (the rest of the import goes on). */
+  totalBudgetMs: 60_000,
   /** One image: 2 MB, the same as the ZIP entry and the `question_image` rule. The body is cut off as soon as it passes this. */
   maxBytes: 2 * 1024 * 1024,
 } as const
