@@ -19,7 +19,11 @@ import {
 import type { DsStatus } from '@/ds'
 
 import type { GuruStructuredDetail } from '../api/structured-guru'
-import { GURU_STATUS_LABEL } from '../lib/structured-options'
+import {
+  GURU_REJECTED_LABEL,
+  GURU_STATUS_LABEL,
+  guruRejectionLine,
+} from '../lib/structured-options'
 
 const props = defineProps<{ detail: GuruStructuredDetail }>()
 
@@ -27,6 +31,19 @@ const STATUS: Record<GuruStructuredDetail['status'], DsStatus> = {
   approved: 'approved',
   review: 'awaiting-review',
 }
+/** An own submission the admin returned: the chip reads "Ditolak" and the reason shows under it. */
+const rejectionReason = computed(() => {
+  const reason = props.detail.form?.rejectionReason?.trim()
+  return props.detail.source === 'submission' && reason ? reason : null
+})
+const statusKey = computed<DsStatus>(() =>
+  rejectionReason.value ? 'rejected' : STATUS[props.detail.status],
+)
+const statusLabel = computed(() =>
+  rejectionReason.value
+    ? GURU_REJECTED_LABEL
+    : (GURU_STATUS_LABEL[props.detail.status] ?? props.detail.status),
+)
 /** Only an http(s), root-relative or blob URL is rendered as the stimulus figure. */
 const figure = computed(() => {
   const url = props.detail.stimulusImage
@@ -59,14 +76,20 @@ const figure = computed(() => {
             data-testid="structured-pill-marks"
           />
         </DsCluster>
-        <DsStatusBadge
-          :status="STATUS[detail.status]"
-          :label="GURU_STATUS_LABEL[detail.status] ?? detail.status"
-          data-testid="structured-status"
-        />
+        <DsStatusBadge :status="statusKey" :label="statusLabel" data-testid="structured-status" />
       </DsCluster>
 
-      <DsPanel padding="sm">
+      <DsText
+        v-if="rejectionReason"
+        variant="body"
+        tone="default"
+        wrap="anywhere"
+        data-testid="structured-rejection"
+      >
+        {{ guruRejectionLine(rejectionReason) }}
+      </DsText>
+
+      <DsPanel v-if="detail.stimulus || figure" padding="sm">
         <DsStack gap="xs">
           <DsHeading :level="2" variant="overline" tone="muted">Rangsangan</DsHeading>
           <DsText
