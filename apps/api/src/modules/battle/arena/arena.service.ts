@@ -155,6 +155,8 @@ export class ArenaService implements OnModuleInit, OnModuleDestroy {
       try {
         await this.timeOutSeat(uuid, opened.mine)
       } catch (err) {
+        // Deliberately broad: the clock is a best-effort side effect of a GET; any failure (lock timeout, DB error)
+        // is logged and the view is still served, as the 5 s sweep does. The sweep retries the seat later.
         this.logger.warn(`Battle clock failed on view for ${uuid}: ${err instanceof Error ? err.message : String(err)}`)
       }
     }
