@@ -21,8 +21,6 @@ export const CLASS_MESSAGES = {
   classroom: 'Kelas tidak sah.',
   classCode: 'Sila masukkan kod kelas.',
   invalid: 'Medan ini tidak sah.',
-  joinNotFound: 'Kod kelas tidak sah.',
-  joinAlready: 'Anda sudah menyertai kelas ini.',
   studentNotFound: 'Pelajar tidak dijumpai.',
   studentOtherSchool: 'Pelajar bukan daripada sekolah anda.',
   classNotOwn: 'Kelas ini bukan milik anda.',
@@ -34,7 +32,6 @@ export const CLASS_MESSAGES = {
   topicName: 'Nama topik diperlukan.',
   topicParent: 'Bab tidak sah.',
 } as const
-export const classJoinedText = (name: string): string => `Berjaya menyertai kelas ${name}.`
 
 /** Generic texts of the mock guards (401, 403, 404 on a malformed or unknown route). */
 export const CLASS_GUARD_MESSAGES = {
