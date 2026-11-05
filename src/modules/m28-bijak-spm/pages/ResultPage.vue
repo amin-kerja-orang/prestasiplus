@@ -103,6 +103,13 @@ async function saveSelfMark(body: { partId: string; mark: number; band?: string 
   refreshed.value = out.result
 }
 const percent = computed(() => result.value?.percent ?? 0)
+/** OPT-STATUS-ATTEMPT: the status chip of the Semakan (46 section 3.7). */
+const STATUS_LABEL: Record<string, string> = {
+  in_progress: 'Belum dihantar',
+  submitted: 'Dihantar',
+  auto_submitted: 'Dihantar automatik',
+  abandoned: 'Ditinggalkan',
+}
 const art = computed(() =>
   percent.value >= 90 ? 'party' : percent.value >= 60 ? 'trophy' : 'books',
 )
@@ -303,6 +310,19 @@ const home = computed(() => landingPath.value || '/dashboard')
         </template>
       </DsWinScreen>
 
+      <!-- FR-PA-26: status chip, "{score} / {max}" and the whole-number percent (rounded half up, 46 section 3.7). -->
+      <div class="flex flex-wrap items-center justify-center gap-2" data-testid="result-summary">
+        <UBadge color="neutral" variant="subtle" data-testid="result-status">{{
+          STATUS_LABEL[data.attempt.status]
+        }}</UBadge>
+        <span class="tabular text-label text-highlighted" data-testid="result-score"
+          >{{ result.score }} / {{ result.max }}</span
+        >
+        <span class="tabular text-label text-highlighted" data-testid="result-percent"
+          >{{ Math.round(percent) }}%</span
+        >
+      </div>
+
       <div class="flex flex-col gap-2 sm:flex-row sm:justify-center">
         <UButton
           color="neutral"
@@ -360,8 +380,7 @@ const home = computed(() => landingPath.value || '/dashboard')
         color="info"
         variant="soft"
         icon="i-ph-hourglass-medium"
-        :title="`${result.pendingReview} bahagian belum dimarkah — perlu semakan`"
-        description="Jumlah markah ialah sementara sehingga semakan selesai."
+        :title="`Markah sementara - ${result.pendingReview} bahagian belum dimarkah.`"
         data-testid="provisional"
       />
 
