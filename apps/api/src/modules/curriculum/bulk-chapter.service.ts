@@ -72,7 +72,7 @@ export class CurriculumBulkChapterService {
         })
       }
       const versionIds = await this.targets(selection, chapter, overwrite, cap)
-      const applied = await this.apply(versionIds, chapter.id)
+      const applied = await this.apply(versionIds, chapter.id, overwrite)
       const refused = counts.matched - counts.eligible
       const auditId = await this.audit.recordWithId({
         action: AUDIT_ACTIONS.CURRICULUM_QUESTIONS_BULK_CHAPTER,
@@ -133,11 +133,12 @@ export class CurriculumBulkChapterService {
           ? Prisma.sql`FALSE`
           : Prisma.sql`q.id IN (${Prisma.join(selection.ids)})`
         : Prisma.join(adminFilterConds({ ...selection.filter, page: 1, pageSize: 1 }), ' AND ')
-    // A Bab without a level (not in the tree) matches no version.
+    // A Bab without a level (not in the tree) matches no version. With `overwrite` a version already in THIS Bab is not eligible
+    // (it is counted refused), so a capped overwrite run moves on to the next rows instead of re-writing the same first `cap` rows.
     const eligible =
       chapter.educationLevelId === null
         ? Prisma.sql`FALSE`
-        : Prisma.sql`(lv.status = 'approved' AND lv.subject_id = ${chapter.subjectId} AND lv.education_level_id = ${chapter.educationLevelId}${overwrite ? Prisma.empty : Prisma.sql` AND lv.chapter_id IS NULL`})`
+        : Prisma.sql`(lv.status = 'approved' AND lv.subject_id = ${chapter.subjectId} AND lv.education_level_id = ${chapter.educationLevelId}${overwrite ? Prisma.sql` AND lv.chapter_id IS DISTINCT FROM ${chapter.id}` : Prisma.sql` AND lv.chapter_id IS NULL`})`
     return { from, where, eligible }
   }
 
@@ -156,12 +157,17 @@ export class CurriculumBulkChapterService {
     return rows.map((r) => r.id)
   }
 
-  /** The one in-place UPDATE (DM-17). The `status` guard keeps a version that was withdrawn since the read out of the write. */
-  private async apply(versionIds: bigint[], chapterId: bigint): Promise<number> {
+  /**
+   * The one in-place UPDATE (DM-17). The WHERE re-checks the eligibility that can change between the read and the write: the version
+   * is still approved, and (no overwrite) it still has no Bab, or (overwrite) it is not already in this Bab. Postgres re-evaluates the
+   * WHERE on a row another transaction just changed, so two concurrent runs can never replace each other's Bab when overwrite is off.
+   */
+  private async apply(versionIds: bigint[], chapterId: bigint, overwrite: boolean): Promise<number> {
     if (versionIds.length === 0) return 0
+    const keep = overwrite ? Prisma.sql`chapter_id IS DISTINCT FROM ${chapterId}` : Prisma.sql`chapter_id IS NULL`
     return this.prisma.client.$executeRaw`
       UPDATE question_versions SET chapter_id = ${chapterId}, updated_at = CURRENT_TIMESTAMP
-       WHERE id IN (${Prisma.join(versionIds)}) AND status = 'approved'`
+       WHERE id IN (${Prisma.join(versionIds)}) AND status = 'approved' AND ${keep}`
   }
 
   // --- API-DSKP-10 ----------------------------------------------------------------------------------

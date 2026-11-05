@@ -227,6 +227,32 @@ describe('bulk Bab mapping (API-DSKP-09) and Bab coverage (API-DSKP-10)', () => 
       expect(await audits()).toBe(3)
     })
 
+    it('with overwrite, capped runs advance past the rows already in this Bab (no endless first page)', async () => {
+      const service = t.app.get(CurriculumBulkChapterService)
+      const ids = await Promise.all(Array.from({ length: 4 }, () => addQ({ subject: math, level: t4, chapter: babT4b })))
+      const body = { chapterId: babT4, filter: mathT4Filter(), expectedCount: 4, overwrite: true }
+      const first = await service.run(actor(), body, 2)
+      expect(first).toMatchObject({ matched: 4, eligible: 4, applied: 2, remaining: 2, capped: true })
+      // The two rows now in babT4 are refused on the next run, so it takes the next two.
+      const second = await service.run(actor(), body, 2)
+      expect(second).toMatchObject({ matched: 4, eligible: 2, refused: 2, applied: 2, remaining: 0, capped: false })
+      expect(await Promise.all(ids.map(chapterOf))).toEqual(Array(4).fill(babT4))
+      const third = await service.run(actor(), body, 2)
+      expect(third).toMatchObject({ eligible: 0, applied: 0 })
+    })
+
+    it('the UPDATE re-checks "no Bab": a row linked by another run after the read is not replaced when overwrite is off', async () => {
+      const qid = await addQ({ subject: math, level: t4 })
+      const v = (await t.db.query<{ id: string }>(`select v.id::text id from question_versions v join questions q on q.id = v.question_id and q.live_version_no = v.version_no where q.id = $1`, [qid]))[0]!.id
+      // Simulate the race: between the target read and the write, another run set babT4b.
+      await t.db.query(`update question_versions set chapter_id = $1 where id = $2`, [babT4b, v])
+      const service = t.app.get(CurriculumBulkChapterService) as unknown as { apply(ids: bigint[], chapterId: bigint, overwrite: boolean): Promise<number> }
+      expect(await service.apply([BigInt(v)], BigInt(babT4), false)).toBe(0)
+      expect(await chapterOf(qid)).toBe(babT4b)
+      expect(await service.apply([BigInt(v)], BigInt(babT4), true)).toBe(1)
+      expect(await chapterOf(qid)).toBe(babT4)
+    })
+
     it('rejects a cap that is not a positive integer', async () => {
       const service = t.app.get(CurriculumBulkChapterService)
       await expect(service.run(actor(), { chapterId: babT4, ids: ['1'], dryRun: true }, 0)).rejects.toThrow(RangeError)
