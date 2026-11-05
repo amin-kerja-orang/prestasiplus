@@ -208,39 +208,35 @@ test.describe('QA G5 user-portal nav and S11 badge', { tag: [moduleTag(4), '@qa'
   test.use({ mockInit: { latency: 0 } })
   test.setTimeout(150_000)
 
+  // Since the portals (D33) an admin works in the Portal Pentadbiran. The pupil is the one role that keeps an M04 entry
+  // in the user portal (PRD10 R1-MUR-54); the other three entries of FR-M04-108 are a DOC DEFECT on #433.
   test('E2E-M04-55 user-portal sidebar entries (desktop) (AC-28.4)', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
     test.skip(!isDesktopShell(page), 'sidebar is desktop only; drawer checked below')
-    await loginAs(ADMIN)
-    await gotoApp('/admin/master-notes')
-    const sb = byId(page, 'shell-user-sidebar')
-    await expect(sb).toContainText(/Kawalan Kualiti/i)
-    await expect(sb.locator('a[href="/admin/master-notes"]')).toContainText('Semakan Nota Master')
+    await loginAs('pelajar@demo.test')
+    await gotoApp('/laporan-soalan')
+    const sb = byId(page, 'pembelajaran-sidebar')
     await expect(sb.locator('a[href="/laporan-soalan"]')).toContainText('Laporan Soalan')
-    await expect(sb.locator('a[href="/admin/question-submissions"]')).toContainText(
-      'Kertas Soalan Guru',
-    )
-    await expect(sb.locator('a[href="/admin/soalan-gambar"]')).toContainText('Gambar Rajah')
-    await expect(sb.locator('a[href="/admin/soalan-gambar"]')).toContainText('6,144')
+    await expect(sb.locator('a[href="/admin/master-notes"]')).toHaveCount(0)
+    await expect(sb.locator('a[href="/admin/question-submissions"]')).toHaveCount(0)
+    await expect(sb.locator('a[href="/admin/soalan-gambar"]')).toHaveCount(0)
   })
 
-  test('E2E-M04-55 mobile drawer shows the two M04 entries (AC-28.4)', async ({
+  test('E2E-M04-55 mobile drawer shows the M04 entry of the pupil (AC-28.4)', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
     test.skip(isDesktopShell(page), 'drawer is below 1024')
-    await loginAs(ADMIN)
-    await gotoApp('/admin/master-notes')
-    await byId(page, 'shell-user-bottom-nav').getByText('Lagi').click()
-    const dr = byId(page, 'shell-user-drawer')
-    await expect(dr.locator('a[href="/admin/master-notes"]')).toContainText('Semakan Nota Master')
-    await expect(dr.locator('a[href="/laporan-soalan"]')).toContainText('Laporan Soalan')
-    await expect(dr.locator('a[href="/admin/question-submissions"]')).toHaveCount(0)
-    await expect(dr.locator('a[href="/admin/soalan-gambar"]')).toHaveCount(0)
+    await loginAs('pelajar@demo.test')
+    await gotoApp('/laporan-soalan')
+    await byId(page, 'pembelajaran-bottom-nav').getByText('Lagi').click()
+    await expect(page.locator('a[href="/laporan-soalan"]:visible').first()).toContainText('Laporan Soalan')
+    await expect(page.locator('a[href="/admin/question-submissions"]')).toHaveCount(0)
+    await expect(page.locator('a[href="/admin/soalan-gambar"]')).toHaveCount(0)
   })
 
   test('E2E-M04-51 dismissing a diagram question lowers the count by 1 and stays lower (AC-26.2)', async ({
