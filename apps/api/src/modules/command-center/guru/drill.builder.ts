@@ -1,7 +1,7 @@
 import type { CommandCenterGuruDrill } from '@pp/contract'
 
 import type { CommandCenterGuruDrillType } from '../http/request'
-import { percent } from '../shared/math'
+import { accuracyPct, round1 } from '../shared/math'
 import { dateKey, timeOfDay, toMytTimestamp } from '../shared/windows'
 import { answerDaysOf, cmpId, type GuruContext, type GuruDeps, sum, tallies } from './context'
 import { drillGradeOfGps, engagementBand } from './rules'
@@ -24,7 +24,7 @@ export async function buildDrill(deps: GuruDeps, ctx: GuruContext, type: Command
             name: p.name,
             className: p.classNames.join(', '),
             answered: t?.answers ?? 0,
-            accuracy: percent(t?.correct ?? 0, t?.answers ?? 0),
+            accuracy: accuracyPct(t?.correct ?? 0, t?.answers ?? 0),
             lastActiveAt: iso(t?.lastAt),
             status: today.has(p.id) ? ('Aktif' as const) : ('Login' as const),
           }
@@ -32,7 +32,7 @@ export async function buildDrill(deps: GuruDeps, ctx: GuruContext, type: Command
       return { title: 'Pelajar Berdaftar', students: rows }
     }
     case 'today': {
-      const pairs = await deps.repo.pairTally({ from: w.today.from, to: ctx.now, studentIds: ctx.ids, includeInactive: true })
+      const pairs = await deps.repo.pairTally({ from: w.today.from, to: ctx.now, studentIds: ctx.ids })
       const rows = pairs
         .filter((p) => ctx.byId.has(p.userId))
         .sort((a, b) => b.lastAt.getTime() - a.lastAt.getTime() || cmpId(a.userId, b.userId))
@@ -43,17 +43,17 @@ export async function buildDrill(deps: GuruDeps, ctx: GuruContext, type: Command
           subject: subjectLabel(p.subjectCode, p.subjectName),
           answered: p.answers,
           correct: p.correct,
-          accuracy: percent(p.correct, p.answers),
+          accuracy: accuracyPct(p.correct, p.answers),
         }))
       return { title: filter === 'aktiviti' ? 'Aktiviti Hari Ini' : 'Soalan Dijawab', students: rows }
     }
     case 'subjects': {
-      const tally = await deps.repo.subjectTally({ to: ctx.now, studentIds: ctx.ids, includeInactive: true })
+      const tally = await deps.repo.subjectTally({ to: ctx.now, studentIds: ctx.ids })
       const rows = tally.map((t) => ({
         subject: subjectLabel(t.code, t.name),
         answered: t.answers,
         correct: t.correct,
-        accuracy: percent(t.correct, t.answers),
+        accuracy: accuracyPct(t.correct, t.answers),
         students: t.students,
       }))
       return { title: 'Ketepatan Purata', students: rows }
@@ -69,8 +69,8 @@ export async function buildDrill(deps: GuruDeps, ctx: GuruContext, type: Command
       const all = await tallies(deps, ctx)
       const sNow = sum(now)
       const sPrev = sum(prev)
-      const accuracyNow = percent(sNow.correct, sNow.answers)
-      const accuracyPrev = percent(sPrev.correct, sPrev.answers)
+      const accuracyNow = accuracyPct(sNow.correct, sNow.answers)
+      const accuracyPrev = accuracyPct(sPrev.correct, sPrev.answers)
       const newStudents = [...all.values()].filter((t) => t.firstAt >= w.d30.from && t.firstAt <= ctx.now).length
       return {
         title,
@@ -78,7 +78,7 @@ export async function buildDrill(deps: GuruDeps, ctx: GuruContext, type: Command
         extra: {
           accuracyNow,
           accuracyPrev,
-          accuracyChange: accuracyNow - accuracyPrev,
+          accuracyChange: accuracyNow === null || accuracyPrev === null ? null : round1(accuracyNow - accuracyPrev),
           answersNow: sNow.answers,
           answersPrev: sPrev.answers,
           activeNow: now.size,
@@ -113,7 +113,7 @@ export async function buildDrill(deps: GuruDeps, ctx: GuruContext, type: Command
             band,
             days: in7,
             answeredWeek: week.get(p.id)?.answers ?? 0,
-            accuracy: percent(t?.correct ?? 0, t?.answers ?? 0),
+            accuracy: accuracyPct(t?.correct ?? 0, t?.answers ?? 0),
             lastActiveAt: iso(t?.lastAt),
           }
         })

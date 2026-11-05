@@ -8,6 +8,7 @@ import type { DsAccent, StatItem } from '@/ds'
 import { formatCount, formatNumber } from '@/lib/number'
 import { formatMyt } from '@/lib/time'
 
+import { shownAccuracy } from '../../api/command-center-board'
 import type { Mood } from '../../api/command-center-types'
 
 /** Categorical chip accents, cycled across the tiles and panels of a board (varied colour). */
@@ -29,10 +30,8 @@ export function shortSchool(name: string): string {
     .replace(/^SEKOLAH KEBANGSAAN(?![A-Z])/i, 'SK')
 }
 
-/** `82.3%` (1 decimal, BR-M17-06). */
-export const pct1 = (value: number) => `${formatNumber(value, { decimals: 1 })}%`
-/** `80.00%` (2 decimals: the session tables). */
-export const pct2 = (value: number) => `${formatNumber(value, { decimals: 2 })}%`
+/** Every accuracy is the whole number, half up ("82%" for 82.3, 40 FR-X4-5), "—" for null; session tables too (60 section 4.6). */
+export { accuracyText, NO_DATA, shownAccuracy } from '../../api/command-center-board'
 export const count = formatCount
 /** `2 decimals`, "-" for a missing value (headcount TOV / ETR / RS). */
 export const score2 = (value: number | null) =>
@@ -71,10 +70,12 @@ export const MOOD_MODAL_ICON: Record<Mood, string> = {
 
 /** The semantic colour of an accuracy or grade (also the `UProgress` colour). */
 export type AccuracyTone = 'success' | 'warning' | 'error'
-/** FN-M17-5.4.10: >= 70 success, < 50 error, else warning. */
-export function accuracyTone(value: number): AccuracyTone {
-  if (value >= 70) return 'success'
-  if (value < 50) return 'error'
+/** FN-M17-5.4.10: >= 70 success, < 50 error, else warning; compared on the displayed whole number (49.5 shows 50, not below 50). */
+export function accuracyTone(value: number | null): AccuracyTone {
+  const shown = shownAccuracy(value)
+  if (shown === null) return 'warning'
+  if (shown >= 70) return 'success'
+  if (shown < 50) return 'error'
   return 'warning'
 }
 export const TONE_TEXT: Record<AccuracyTone, string> = {

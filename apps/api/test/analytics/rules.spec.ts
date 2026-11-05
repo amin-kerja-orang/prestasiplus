@@ -5,7 +5,9 @@ import {
   bandOf,
   byName,
   compareIds,
+  DISCRIMINATION_MIN_PUPILS,
   ddmm,
+  discriminationGroup,
   levelLabelOf,
   percent,
   periodFromMs,
@@ -13,6 +15,7 @@ import {
   rangeOf,
   reportTypeOfMode,
   round1,
+  round2,
   severityOf,
   statusOf,
   stripHtml,
@@ -38,6 +41,31 @@ describe('tahap (BR-M11-12)', () => {
     [0, 'Tiada Langsung'],
   ] as const)('%s%% is %s', (p, tahap) => {
     expect(tahapOf(p)).toBe(tahap)
+  })
+})
+
+describe('discrimination rule (R1 decision D113, FR-GUR-6-9)', () => {
+  it('needs 10 pupils', () => {
+    expect(DISCRIMINATION_MIN_PUPILS).toBe(10)
+  })
+
+  it.each([
+    [1, 1],
+    [4, 2],
+    [10, 3],
+    [11, 3],
+    [15, 5],
+    [100, 27],
+    [101, 28],
+  ])('N = %s gives a group of %s (ceil of 27 percent, at least 1)', (n, g) => {
+    expect(discriminationGroup(n)).toBe(g)
+  })
+
+  it('D is rounded to 2 decimals', () => {
+    expect(round2(1 / 3)).toBe(0.33)
+    expect(round2(2 / 3)).toBe(0.67)
+    expect(round2(-1 / 3)).toBe(-0.33)
+    expect(round2(1)).toBe(1)
   })
 })
 
