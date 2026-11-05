@@ -8,7 +8,7 @@ import { DsBadge, DsEmptyState, formatCount } from '@/ds'
 
 import type { CcDailyActivity, CcSchoolActivity } from '../../api/command-center-board'
 import { ccPaths } from '../command-center/cc-paths'
-import { accuracyText, shortSchool, shownAccuracy } from '../command-center/cc-format'
+import { accuracyText, shortSchool, shownAccuracy, TONE_TEXT } from '../command-center/cc-format'
 import { roleLabel, S3_COPY } from './board-copy'
 import type { DrillState, LoadStatus } from './composables'
 import DailyPanel from './DailyPanel.vue'
@@ -29,10 +29,6 @@ const accuracy = (s: CcSchoolActivity) => accuracyText(s.accuracy)
 const toneOf = (value: number | null) => {
   const shown = shownAccuracy(value)
   return shown === null ? 'neutral' : shown >= 70 ? 'success' : shown >= 50 ? 'warning' : 'error'
-}
-const toneClass = (value: number | null) => {
-  const shown = shownAccuracy(value)
-  return shown === null ? 'text-muted' : shown >= 70 ? 'text-success' : shown >= 50 ? 'text-warning' : 'text-error'
 }
 const pct1 = accuracyText
 </script>
@@ -137,7 +133,7 @@ const pct1 = accuracyText
                       :label="t.name"
                     />
                     <span class="tabular text-highlighted">{{ t.students }} pelajar</span>
-                    <span :class="['tabular', toneClass(t.accuracy)]">{{ pct1(t.accuracy) }}</span>
+                    <span :class="['tabular', TONE_TEXT[toneOf(t.accuracy) as keyof typeof TONE_TEXT]]">{{ pct1(t.accuracy) }}</span>
                     <span class="basis-full text-caption text-muted">{{ t.lastActiveHuman }}</span>
                   </li>
                 </ul>
@@ -163,7 +159,7 @@ const pct1 = accuracyText
                     <span class="tabular text-highlighted"
                       >{{ formatCount(p.answers) }} soalan</span
                     >
-                    <span :class="['tabular', toneClass(p.accuracy)]">{{ pct1(p.accuracy) }}</span>
+                    <span :class="['tabular', TONE_TEXT[toneOf(p.accuracy) as keyof typeof TONE_TEXT]]">{{ pct1(p.accuracy) }}</span>
                     <span class="basis-full text-caption text-muted">{{ p.lastActiveHuman }}</span>
                   </li>
                 </ul>

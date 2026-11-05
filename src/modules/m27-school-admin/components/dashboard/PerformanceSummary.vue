@@ -25,12 +25,6 @@ function levelTone(accuracy: number | null): LevelTone {
   if (shown === null) return 'muted'
   return shown < 50 ? 'error' : shown < 70 ? 'warning' : 'success'
 }
-const TONE_TEXT: Record<LevelTone, string> = {
-  error: 'text-error',
-  warning: 'text-warning',
-  success: 'text-success',
-  muted: 'text-muted',
-}
 
 /** Http mode only: the block is built from Bijak SPM sittings, so it is labelled as such (US-33). */
 const bijak = isHttpMode()
@@ -165,7 +159,11 @@ const isEmpty = computed(() => {
               <span class="text-label text-highlighted">{{ level.name }}</span>
               <span
                 class="tabular text-label"
-                :class="TONE_TEXT[levelTone(level.accuracy)]"
+                :class="{
+                  'text-error': levelTone(level.accuracy) === 'error',
+                  'text-warning': levelTone(level.accuracy) === 'warning',
+                  'text-success': levelTone(level.accuracy) === 'success',
+                }"
                 data-testid="sd-level-pct"
                 >{{ percent(level.accuracy) }}</span
               >

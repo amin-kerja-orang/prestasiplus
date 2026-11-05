@@ -155,7 +155,7 @@ export function weekChangeText(change: number): { text: string; tone: string } {
 /** FN-M10-2.2.5 / 2.2.7: accuracy >= 70 emerald, < 50 rose, else amber; compared on the displayed whole number (49.5 shows 50). */
 export function accuracyTone(value: number | null): string {
   const shown = shownAccuracy(value)
-  if (shown === null) return 'text-muted'
+  if (shown === null) return weekChangeText(0).tone
   if (shown >= 70) return 'text-success'
   if (shown < 50) return 'text-error'
   return 'text-warning'
