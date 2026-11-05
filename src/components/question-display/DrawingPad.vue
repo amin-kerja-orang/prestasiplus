@@ -7,7 +7,7 @@
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import { DsStack, DsText } from '@/ds'
+import { DsCluster, DsStack, DsText } from '@/ds'
 import {
   PAD_AUTOSAVE_MS,
   PAD_HEIGHT,
@@ -161,8 +161,8 @@ watch(
 
 <template>
   <DsStack gap="sm" data-testid="drawing-pad">
-    <div role="group" aria-label="Papan Lukisan" class="flex flex-wrap items-center gap-2">
-      <DsText variant="label" as="span" class="me-2">Papan Lukisan</DsText>
+    <DsCluster role="group" aria-label="Papan Lukisan" gap="xs">
+      <DsText variant="label" as="span">Papan Lukisan</DsText>
       <UButton
         v-for="t in tools"
         :key="t.id"
@@ -199,16 +199,13 @@ watch(
         @click="clear"
         >Kosongkan</UButton
       >
-    </div>
+    </DsCluster>
 
-    <div
-      class="relative w-full overflow-hidden rounded-xl bg-default ring-1 ring-default ring-inset"
-      :style="{ aspectRatio: `${width} / ${height}` }"
-    >
+    <div class="qd-pad-frame" :style="{ aspectRatio: `${width} / ${height}` }">
       <svg
         v-if="grid && geo"
         :viewBox="`0 0 ${width} ${height}`"
-        class="absolute inset-0 size-full"
+        class="qd-pad-layer"
         preserveAspectRatio="none"
         aria-hidden="true"
         data-testid="pad-template-grid"
@@ -229,16 +226,16 @@ watch(
         v-else-if="imageUrl"
         :src="imageUrl"
         alt="Templat lukisan"
-        class="absolute inset-0 size-full object-fill"
+        class="qd-pad-layer qd-pad-image"
         data-testid="pad-template-image"
       />
       <canvas
         ref="canvas"
         :width="width"
         :height="height"
-        class="absolute inset-0 size-full"
+        class="qd-pad-layer qd-pad-canvas"
         style="touch-action: none"
-        :class="disabled ? 'cursor-not-allowed' : 'cursor-crosshair'"
+        :data-disabled="disabled ? 'true' : undefined"
         role="img"
         aria-label="Papan Lukisan"
         data-testid="pad-canvas"
@@ -253,7 +250,7 @@ watch(
       grid.scale
     }}</DsText>
 
-    <div class="flex flex-wrap items-center gap-2">
+    <DsCluster gap="xs">
       <UButton
         type="button"
         color="primary"
@@ -264,9 +261,36 @@ watch(
         @click="save()"
         >Simpan lukisan</UButton
       >
-    </div>
-    <p v-if="error" class="text-caption text-error" role="alert" data-testid="pad-error">
+    </DsCluster>
+    <DsText v-if="error" variant="caption" tone="error" role="alert" data-testid="pad-error">
       {{ error }}
-    </p>
+    </DsText>
   </DsStack>
 </template>
+
+<style scoped>
+/* Token-driven pad chrome (no utility classes). */
+.qd-pad-frame {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--ds-r-card);
+  background: var(--ui-bg);
+  box-shadow: inset 0 0 0 1px var(--ui-border);
+}
+.qd-pad-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.qd-pad-image {
+  object-fit: fill;
+}
+.qd-pad-canvas {
+  cursor: crosshair;
+}
+.qd-pad-canvas[data-disabled='true'] {
+  cursor: not-allowed;
+}
+</style>

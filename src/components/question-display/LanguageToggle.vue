@@ -18,7 +18,7 @@ const options: { value: QuestionLang; label: string }[] = [
   <div
     role="group"
     :aria-label="langCopy.aria"
-    class="inline-flex flex-wrap gap-1 rounded-2xl bg-muted p-1"
+    class="qd-lang-toggle"
     data-testid="language-toggle"
   >
     <UButton
@@ -28,10 +28,26 @@ const options: { value: QuestionLang; label: string }[] = [
       color="neutral"
       :variant="lang === o.value ? 'solid' : 'ghost'"
       :aria-pressed="lang === o.value"
-      class="min-h-11 rounded-xl px-4"
+      class="qd-lang-btn min-h-11"
       :data-testid="`lang-${o.value}`"
       @click="setLang(o.value)"
       >{{ o.label }}</UButton
     >
   </div>
 </template>
+
+<style scoped>
+/* Segmented control chrome (no utility classes). */
+.qd-lang-toggle {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: var(--ds-r-card);
+  background: var(--ui-bg-muted);
+}
+.qd-lang-toggle :deep(.qd-lang-btn) {
+  padding-inline: 1rem;
+  border-radius: var(--ds-r-chip, var(--ds-r-card));
+}
+</style>
