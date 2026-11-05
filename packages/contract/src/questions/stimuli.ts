@@ -107,6 +107,7 @@ export const StimulusCreateRequestSchema = z
     kind: z.enum(QUESTION_STIMULUS_KINDS, { error: STIMULUS_MESSAGES.kind }).meta({ description: 'V2 `Jenis rangsangan` (default passage in the Studio).' }),
     label: Label.nullish(),
     caption: Caption.nullish().meta({ description: 'V2 `Kapsyen (pilihan)`.' }),
+    captionEn: Caption.nullish().meta({ description: 'English twin of the caption (DM-50 `caption_en`).' }),
     body: Body.nullish(),
     alt: Alt.nullish(),
     sourceCitation: Source.nullish(),
@@ -128,6 +129,7 @@ export const StimulusUpdateRequestSchema = z
   .strictObject({
     label: Label.nullable().optional(),
     caption: Caption.nullable().optional(),
+    captionEn: Caption.nullable().optional(),
     body: Body.nullable().optional().meta({ description: 'Replaces the whole text (ms and en): send both languages to keep both; null clears (only allowed when the kind does not need it).' }),
     alt: Alt.nullable().optional(),
     sourceCitation: Source.nullable().optional(),
@@ -146,6 +148,7 @@ export const StimulusSchema = z
     kind: QuestionStimulusKindSchema,
     label: z.string(),
     caption: z.string().nullable(),
+    captionEn: z.string().nullable(),
     body: QuestionRichTextSchema.nullable(),
     alt: z.string().nullable(),
     sourceCitation: z.string().nullable(),

@@ -39853,6 +39853,12 @@
               "null"
             ]
           },
+          "captionEn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "sourceCitation": {
             "type": [
               "string",
@@ -40203,6 +40209,12 @@
           "questionText": {
             "type": "string"
           },
+          "questionTextEn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "questionImage": {
             "type": [
               "string",
@@ -40289,8 +40301,9 @@
           "language": {
             "type": "string",
             "enum": [
-              "bm",
-              "en"
+              "ms",
+              "en",
+              "ms+en"
             ]
           },
           "pointsValue": {
@@ -40635,6 +40648,12 @@
           "questionText": {
             "type": "string"
           },
+          "questionTextEn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "questionImage": {
             "type": [
               "string",
@@ -40721,8 +40740,9 @@
           "language": {
             "type": "string",
             "enum": [
-              "bm",
-              "en"
+              "ms",
+              "en",
+              "ms+en"
             ]
           },
           "pointsValue": {
@@ -41265,8 +41285,17 @@
           "language": {
             "type": "string",
             "enum": [
-              "bm",
-              "en"
+              "ms",
+              "en",
+              "ms+en",
+              "bm"
+            ],
+            "description": "Bahasa soalan: `ms`, `en` or `ms+en` (`bm` is accepted as `ms`). `ms+en` is Rumi only: a Jawi or Arab question cannot be bilingual (known R1 limit, 422 on `language`). A draft saves with an empty English text; the English-required rule applies at send and Terbitkan only."
+          },
+          "questionTextEn": {
+            "type": [
+              "string",
+              "null"
             ]
           },
           "pointsValue": {
@@ -47464,8 +47493,17 @@
           "language": {
             "type": "string",
             "enum": [
-              "bm",
-              "en"
+              "ms",
+              "en",
+              "ms+en",
+              "bm"
+            ],
+            "description": "Bahasa soalan: `ms`, `en` or `ms+en` (`bm` is accepted as `ms`). `ms+en` is Rumi only: a Jawi or Arab question cannot be bilingual (known R1 limit, 422 on `language`). A draft saves with an empty English text; the English-required rule applies at send and Terbitkan only."
+          },
+          "questionTextEn": {
+            "type": [
+              "string",
+              "null"
             ]
           },
           "pointsValue": {
@@ -48645,8 +48683,9 @@
           "language": {
             "type": "string",
             "enum": [
-              "bm",
-              "en"
+              "ms",
+              "en",
+              "ms+en"
             ]
           },
           "scriptType": {
@@ -49092,8 +49131,9 @@
           "language": {
             "type": "string",
             "enum": [
-              "bm",
-              "en"
+              "ms",
+              "en",
+              "ms+en"
             ]
           },
           "textDirection": {
@@ -49164,6 +49204,14 @@
             ],
             "maxLength": 300,
             "description": "V2 `Kapsyen (pilihan)`."
+          },
+          "captionEn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 300,
+            "description": "English twin of the caption (DM-50 `caption_en`)."
           },
           "body": {
             "type": [
@@ -49268,6 +49316,13 @@
             "maxLength": 100
           },
           "caption": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 300
+          },
+          "captionEn": {
             "type": [
               "string",
               "null"
@@ -49382,6 +49437,12 @@
               "null"
             ]
           },
+          "captionEn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "body": {
             "allOf": [
               {
@@ -49434,6 +49495,7 @@
           "kind",
           "label",
           "caption",
+          "captionEn",
           "body",
           "alt",
           "sourceCitation",

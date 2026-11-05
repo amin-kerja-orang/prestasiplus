@@ -149,8 +149,8 @@ export interface ImportedQuestionInput {
   topicId?: string
   /** Printed question number (`Nombor soalan`). */
   numberLabel?: string
-  /** `en` when the row says `bahasa = en`; absent = Bahasa Melayu. */
-  language?: 'en'
+  /** `en` or `ms+en` when the row says so; absent = Bahasa Melayu (`ms` and the old `bm` both read as absent). */
+  language?: 'en' | 'ms+en'
 }
 
 /** Display facts about a question for lists (reports, master notes). */

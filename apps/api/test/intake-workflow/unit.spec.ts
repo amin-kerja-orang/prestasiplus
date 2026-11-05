@@ -165,6 +165,8 @@ describe('conversion to a Draf question', () => {
     expect(input.questionType).toBe('mcq')
     expect(input.status).toBe('draft')
     expect(input.tag).toEqual({ unitId: '3', spIds: ['4'], tp: 3 })
+    // S1-T09b: the converted draft is Bahasa Melayu on the wire token `ms` (the old `bm` is an input alias only).
+    expect(input.language).toBe('ms')
     expect(JSON.stringify(input.parts)).toContain('"B"')
   })
   it('a short question without parts becomes a single leaf labelled 1', () => {

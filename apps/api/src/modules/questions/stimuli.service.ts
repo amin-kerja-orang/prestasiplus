@@ -94,6 +94,7 @@ export class StimuliService {
       kind: input.kind,
       label: input.label ?? null,
       caption: input.caption ?? null,
+      captionEn: input.captionEn ?? null,
       bodyMs: input.body?.ms ?? null,
       bodyEn: input.body?.en ?? null,
       altText: input.alt ?? null,
@@ -130,6 +131,7 @@ export class StimuliService {
         kind: current.kind,
         label: input.label === undefined ? current.label : input.label,
         caption: input.caption === undefined ? current.caption : input.caption,
+        captionEn: input.captionEn === undefined ? current.captionEn : input.captionEn,
         bodyMs: body.ms,
         bodyEn: body.en,
         altText: input.alt === undefined ? current.altText : input.alt,
@@ -661,6 +663,7 @@ export class StimuliService {
       kind: row.kind,
       label: row.label ?? '',
       caption: row.caption,
+      captionEn: row.captionEn,
       // A table read from the body is shown as the grid only (never the grid and its source text).
       body: row.bodyIsTable || (row.bodyMs === null && row.bodyEn === null) ? null : { ms: row.bodyMs ?? row.bodyEn ?? '', ...(row.bodyMs !== null && row.bodyEn !== null ? { en: row.bodyEn } : {}) },
       alt: row.altText,
@@ -686,6 +689,7 @@ export class StimuliService {
             imageId: v.imageId,
             alt: v.alt,
             ...(v.caption === null ? {} : { caption: v.caption }),
+            ...(v.captionEn === null ? {} : { captionEn: v.captionEn }),
             ...(v.sourceCitation === null ? {} : { sourceCitation: v.sourceCitation }),
             ...(v.tableData === null ? {} : { tableData: v.tableData }),
           }
