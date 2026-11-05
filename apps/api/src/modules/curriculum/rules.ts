@@ -25,6 +25,14 @@ export const LEGACY_SUBJECT_CODES = Object.freeze(
   Object.keys(PRACTICE_CODE) as LegacySubjectCode[],
 )
 
+/** A Map, not an object: a practice code such as `constructor` or `__proto__` never resolves to an inherited property. */
+const LEGACY_OF_PRACTICE_CODE: ReadonlyMap<string, LegacySubjectCode> = new Map(LEGACY_SUBJECT_CODES.map((c) => [PRACTICE_CODE[c], c]))
+
+/** Reverse of `PRACTICE_CODE` (S4-T06): the learner subject code of a subject's practice code, or `undefined` outside the 8 legacy codes. */
+export function legacySubjectOfPracticeCode(practiceCode: string): LegacySubjectCode | undefined {
+  return LEGACY_OF_PRACTICE_CODE.get(practiceCode)
+}
+
 export const GRADE_CODES: readonly GradeCode[] = Object.freeze([
   'DARJAH_1',
   'DARJAH_2',
@@ -147,8 +155,8 @@ export const MAP_SUBJECTS: readonly CurriculumLearningMap['subjects'][number][] 
   { code: 'SEJARAH', label: 'Sejarah', emoji: '🏛️', color: '#EF4444' },
 ])
 
-export const MAP_GRADES = Object.freeze(['TINGKATAN_4', 'TINGKATAN_5'] as const)
 export const DEFAULT_MAP_SUBJECT = 'MATEMATIK'
+/** The grade list itself is `offeredLevels(db)` (`gradeKey`, S4-T06); only the default is fixed. */
 export const DEFAULT_MAP_GRADE = 'TINGKATAN_4'
 
 /** BR-14: `mastered` from this progress percentage (inferred threshold). */

@@ -1,9 +1,10 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
-import { QuestionsRepository } from '../../src/modules/questions'
+import { QuestionsRepository, QuestionsService } from '../../src/modules/questions'
 import { ACCOUNTS } from '../exam-builder/helpers'
 import { bootFullApp, loginFull, type FullApp, type FullClient } from '../r1/full-app'
 import { serveSeededBlueprints } from '../support/serve-blueprints'
+import { teacherQuestion } from './helpers'
 
 vi.setConfig({ testTimeout: 180_000, hookTimeout: 300_000 })
 
@@ -12,7 +13,7 @@ vi.setConfig({ testTimeout: 180_000, hookTimeout: 300_000 })
  * `QuestionsService.applyUpdate` adds a version n+1 (as a draft) when the latest version is `approved` or `archived`, or when
  * `QuestionsRepository.versionIsPinned` says a published (or sat, withdrawn) paper pins it; only an unpinned draft is rewritten on top. The
  * paper is Terbit and its pupils are served the pinned version, so an in-place edit would change what they sit and the marking key. The same rule
- * covers the admin `PUT /questions/:id` and the Guru `PUT` of an own question (`updateOwn`).
+ * covers the admin `PUT /questions/:id` and the owner's edit of their own question (`QuestionsService.update` with a teacher actor; since S6-T06 the Guru HTTP route edits intake items, not questions).
  *
  * The cases check the outcome, not one status code: the stored pinned version and what the pupil is served do not change, and a 200 means a
  * NEW version. The pinned clause has its own case (P1): a version restored to `draft` is neither approved nor archived, so only
@@ -231,21 +232,11 @@ describe('REQ-B-052: an archived question pinned on a published paper cannot be 
     expect(await served(attempt, target), 'a pin-less sitting is served the archived version, not the draft on top').toEqual(servedBefore)
   })
 
-  it('Guru PUT (updateOwn) on their own question: the pinned version stays byte-identical and the pupil is served the same question', async () => {
+  it('owner edit (teacher actor) on their own question: the pinned version stays byte-identical and the pupil is served the same question', async () => {
     // A Guru question reaches a published paper like this: the Guru submits it (saved as `review`, owner = the Guru), Admin Pusat adds the
     // DSKP tag and approves it, the builder places it and Terbit publishes; the owner stays the Guru.
-    const made = await guru.post('/api/guru/questions', {
-      subjectId: subject,
-      educationLevelId: level,
-      questionType: 'mcq',
-      difficultyLevel: 3,
-      questionText: 'Soalan Guru: berapakah hasil tambah 4 dan 5?',
-      options: ['8', '9', '10', '11'],
-      correctAnswer: 1,
-    })
-    expect(made.status, JSON.stringify(made.body)).toBe(201)
-    const own = made.body.data.id as string
-    expect(made.body.data.version?.status ?? made.body.data.status).toBe('review')
+    const own = await teacherQuestion(t, guru.userId, body({ questionText: 'Soalan Guru: berapakah hasil tambah 4 dan 5?', options: ['8', '9', '10', '11'], correctAnswer: 1 }))
+    expect((await q(`select v.status from question_versions v where v.question_id = $1 order by version_no desc limit 1`, [own]))[0]?.status).toBe('review')
     const fix = await admin.put(`/api/questions/${own}`, body({ questionText: 'Soalan Guru: berapakah hasil tambah 4 dan 5?', options: ['8', '9', '10', '11'], correctAnswer: 1 }))
     expect(fix.status, JSON.stringify(fix.body)).toBe(200)
     // already `review` (the Guru's submission): only the approval step
@@ -266,7 +257,10 @@ describe('REQ-B-052: an archived question pinned on a published paper cannot be 
     const rowBefore = await snapshot(own, pinned)
     const servedBefore = await served(attempt, own)
 
-    const edit = await guru.put(`/api/guru/questions/${own}`, { questionText: 'TEKS BAHARU GURU: berapakah hasil darab 6 dan 7?', options: [{ id: 0, optionText: '40' }, { id: 1, optionText: '41' }, { id: 2, optionText: '42' }, { id: 3, optionText: '43' }], correctOptionId: 2 })
+    const edit = await t.app
+      .get(QuestionsService, { strict: false })
+      .update(own, body({ questionText: 'TEKS BAHARU GURU: berapakah hasil darab 6 dan 7?', options: ['40', '41', '42', '43'], correctAnswer: 2 }) as never, { userId: guru.userId, role: 'teacher' })
+      .then(() => ({ status: 200, body: {} }), (e: { getStatus?: () => number; message?: string }) => ({ status: e.getStatus?.() ?? 500, body: { message: e.message } }))
     expect([200, 409], `edit answered ${String(edit.status)}: ${JSON.stringify(edit.body)}`).toContain(edit.status)
 
     expect.soft(await snapshot(own, pinned), 'the pinned version (stem, parts, options, key) must be byte-identical after the Guru edit').toEqual(rowBefore)
