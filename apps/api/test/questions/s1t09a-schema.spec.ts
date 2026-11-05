@@ -103,4 +103,30 @@ describe('S1-T09a schema (migrations 0133, 0134)', () => {
     await t.db.query(`update question_parts set marks = 0 where question_version_id in (select id from question_versions where question_id = $1)`, [q.id])
     expect((await repo.get(q.id, 'latest'))?.version.parts[0]).toMatchObject({ marks: 0, mode: 'short_text' })
   })
+
+  const put = (over: Record<string, unknown>) =>
+    ({ subjectId: tag.subjectId, educationLevelId: tag.levelId, difficultyLevel: 3, questionType: 'short_answer', questionText: 'Soalan ujian skema v2.', ...over }) as never
+
+  it('#692: a flat edit of a legacy row (marks 0) that changes only the stem or tag succeeds; a changed part is held to the new rules', async () => {
+    const q = await make([shortPart()])
+    await t.db.query(`update question_parts set marks = 0 where question_version_id in (select id from question_versions where question_id = $1)`, [q.id])
+    const stored = (await repo.get(q.id, 'latest'))!.version.parts
+    const edited = await svc.update(q.id, put({ questionText: 'Soalan ujian skema v2 (dibetulkan).', parts: stored as never }), admin)
+    expect(edited.id).toBe(q.id)
+    expect((await repo.get(q.id, 'latest'))?.version.parts[0]).toMatchObject({ marks: 0, mode: 'short_text' })
+    // Flat edit (no `parts` in the body): still 200. The flat projection floors marks at 1 (projection.ts `Math.max(1, ...)`),
+    // so the rebuilt part is valid under the strict rules and the legacy marks 0 is normalised to 1.
+    const flat = await svc.update(q.id, put({ questionText: 'Soalan ujian skema v2 (suntingan rata).' }), admin)
+    expect(flat.id).toBe(q.id)
+    expect((await repo.get(q.id, 'latest'))?.version.parts[0]).toMatchObject({ marks: 1, mode: 'short_text' })
+    const err = await apiError(() => svc.update(q.id, put({ parts: [{ ...stored[0], prompt: { ms: 'Diubah.' } }] as never }), admin))
+    expect(err.getStatus()).toBe(422)
+    expect(Object.values(err.fields ?? {})).toContain(MARKS_MIN)
+  })
+
+  it('a new create with marks 101 is refused', async () => {
+    const err = await apiError(() => make([shortPart({ marks: 101 })]))
+    expect(err.getStatus()).toBe(422)
+    expect(Object.values(err.fields ?? {})).toContain('Markah bahagian tidak boleh melebihi 100.')
+  })
 })
