@@ -44,8 +44,8 @@ test.describe('M06 S10 history', { tag: [moduleTag(6)] }, () => {
     await expect(tid(page, 'spm-back')).toHaveAttribute('href', '/spm')
     await expect(tid(page, 'spm-heading')).toHaveText('Sejarah Kuiz SPM')
     const stats = page.locator('[data-testid^=history-stat-]')
-    await expect(stats.getByTestId('stat-value')).toHaveText(['4', '21.8%', '26', '84'])
-    await expect(stats.getByTestId('stat-label')).toHaveText([
+    await expect(statValues(stats)).toHaveText(['4', '21.8%', '26', '84'])
+    await expect(statLabels(stats)).toHaveText([
       'Sesi Kuiz',
       'Purata Ketepatan',
       'Jumlah Syiling',
@@ -97,7 +97,7 @@ test.describe('M06 S10 history', { tag: [moduleTag(6)] }, () => {
     await expect(tid(page, 'history-filter-past_year')).toHaveAttribute('data-active', 'true')
     await expect(tid(page, 'history-filter-latih_tubi')).toHaveAttribute('data-active', 'false')
     // The stats do not follow the filter.
-    await expect(stats.getByTestId('stat-value')).toHaveText(['4', '21.8%', '26', '84'])
+    await expect(statValues(stats)).toHaveText(['4', '21.8%', '26', '84'])
 
     await tid(page, 'history-filter-latih_tubi').click()
     await expect(tid(page, 'history-filter-latih_tubi')).toHaveAttribute('data-active', 'true')
@@ -133,14 +133,17 @@ test.describe('M06 S10 history', { tag: [moduleTag(6)] }, () => {
     await expect(rows).toHaveCount(4)
     await expect(rows.getByTestId('row-score')).toHaveText(['85%', '60%', '76%', '40%'])
     await expect(rows.nth(0).getByTestId('row-badge')).toHaveText('Tracking A')
-    await expect(rows.nth(0).getByTestId('row-score')).toHaveClass(/bg-green-100/)
-    await expect(rows.nth(1).getByTestId('row-score')).toHaveClass(/bg-yellow-100/)
-    await expect(rows.nth(2).getByTestId('row-score')).toHaveClass(/bg-yellow-100/)
-    await expect(rows.nth(3).getByTestId('row-score')).toHaveClass(/bg-red-100/)
-    await expect(rows.nth(0).getByTestId('row-badge')).toHaveClass(/bg-purple-100/)
-    await expect(page.locator('[data-testid^=history-stat-]').getByTestId('stat-value')).toHaveText(
-      ['4', '65.4%', '70', '94'],
-    )
+    await expect(rows.nth(0).getByTestId('row-score')).toHaveClass(/bg-success/)
+    await expect(rows.nth(1).getByTestId('row-score')).toHaveClass(/bg-warning/)
+    await expect(rows.nth(2).getByTestId('row-score')).toHaveClass(/bg-warning/)
+    await expect(rows.nth(3).getByTestId('row-score')).toHaveClass(/bg-error/)
+    await expect(rows.nth(0).getByTestId('row-badge')).toHaveClass(/bg-secondary/)
+    await expect(statValues(page.locator('[data-testid^=history-stat-]'))).toHaveText([
+      '4',
+      '65.4%',
+      '70',
+      '94',
+    ])
     await expectNoHorizontalScroll(page)
   })
 

@@ -23,6 +23,8 @@ import {
   PELAJAR2,
   shellTitle,
   smallTexts,
+  statLabels,
+  statValues,
   tid,
 } from './support'
 
@@ -159,7 +161,7 @@ test.describe('M06 S5 Tracking A hub', { tag: [moduleTag(6)] }, () => {
       'Bank Besar: 1 set',
       'Locked: 58 set',
     ])
-    const tiles = page.locator('[data-testid=readiness-tiles] > article')
+    const tiles = page.locator('[data-testid=readiness-tiles] > [data-testid^=tile-]')
     await expect(tiles).toHaveCount(15)
     await expect(
       tiles.evaluateAll((els) => els.map((e) => e.getAttribute('data-testid'))),
@@ -562,13 +564,13 @@ test.describe('M06 S8 Subjektif', { tag: [moduleTag(6)] }, () => {
     )
 
     const stats = page.locator('[data-testid^=subjektif-stat-]')
-    await expect(stats.getByTestId('stat-label')).toHaveText([
+    await expect(statLabels(stats)).toHaveText([
       'Set Dijawab',
       'Subjek Dicuba',
       'Skor Terbaik',
       'Set Terbaik Disimpan',
     ])
-    await expect(stats.getByTestId('stat-value')).toHaveText(['0', '0', 'Belum Ada', '0'])
+    await expect(statValues(stats)).toHaveText(['0', '0', 'Belum Ada', '0'])
     await expect(stats.getByTestId('stat-caption')).toHaveText([
       'Percubaan subjektif SPM yang telah dihantar',
       'Bilangan subjek subjektif SPM yang pernah dicuba',
@@ -641,9 +643,12 @@ test.describe('M06 S8 Subjektif', { tag: [moduleTag(6)] }, () => {
   }) => {
     await loginAs(PELAJAR)
     await gotoApp('/spm/subjektif')
-    await expect(
-      page.locator('[data-testid^=subjektif-stat-]').getByTestId('stat-value'),
-    ).toHaveText(['2', '2', '75%', '2'])
+    await expect(statValues(page.locator('[data-testid^=subjektif-stat-]'))).toHaveText([
+      '2',
+      '2',
+      '75%',
+      '2',
+    ])
   })
 
   test('E2E-M06-24 a card opens the S9 list for its subject', async ({
@@ -678,7 +683,7 @@ test.describe('M06 S8 Subjektif', { tag: [moduleTag(6)] }, () => {
       await expect(page).toHaveURL(/\/latihan-berstruktur\?subject_id=\d+&scope=spm/)
       await page.getByRole('link', { name: /Kembali ke Subjektif SPM/ }).click()
       await expect(page).toHaveURL(/\/spm\/subjektif$/)
-      const values = page.locator('[data-testid^=subjektif-stat-]').getByTestId('stat-value')
+      const values = statValues(page.locator('[data-testid^=subjektif-stat-]'))
       await expect(values.nth(0)).toHaveText('1')
       await expect(values.nth(1)).toHaveText('1')
       await expect(values.nth(2)).toHaveText(/^\d+%$/)

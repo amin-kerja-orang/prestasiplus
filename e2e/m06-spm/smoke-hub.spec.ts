@@ -47,8 +47,8 @@ test.describe('M06 S1 hub', { tag: [moduleTag(6)] }, () => {
     )
 
     const stats = page.locator('[data-testid^=spm-stat-]')
-    await expect(stats.getByTestId('stat-value')).toHaveText(['20,529', '25', '0', '1,769'])
-    await expect(stats.getByTestId('stat-label')).toHaveText([
+    await expect(statValues(stats)).toHaveText(['20,529', '25', '0', '1,769'])
+    await expect(statLabels(stats)).toHaveText([
       'Jumlah Soalan',
       'Subjek SPM',
       'Tahun Tersedia',
@@ -102,8 +102,8 @@ test.describe('M06 S1 hub', { tag: [moduleTag(6)] }, () => {
     await gotoApp('/spm')
     await expect(page.getByRole('heading', { name: 'Prestasi SPM Anda' })).toBeVisible()
     const values = page.locator('[data-testid^=spm-mine-]')
-    await expect(values.getByTestId('mine-value')).toHaveText(['4', '21.8%', '26', '84'])
-    await expect(values.getByTestId('mine-label')).toHaveText([
+    await expect(statValues(values)).toHaveText(['4', '21.8%', '26', '84'])
+    await expect(statLabels(values)).toHaveText([
       'Sesi Kuiz',
       'Purata Ketepatan',
       'Syiling Diperoleh',
@@ -119,7 +119,7 @@ test.describe('M06 S1 hub', { tag: [moduleTag(6)] }, () => {
   }) => {
     await loginAs(PELAJAR2)
     await gotoApp('/spm')
-    await expect(page.locator('[data-testid^=spm-mine-]').getByTestId('mine-value')).toHaveText([
+    await expect(statValues(page.locator('[data-testid^=spm-mine-]'))).toHaveText([
       '0',
       '0.0%',
       '0',
