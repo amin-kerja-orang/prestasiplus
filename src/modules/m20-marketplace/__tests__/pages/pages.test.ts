@@ -292,7 +292,7 @@ describe('S8 PenjualShopPage', () => {
     expect(w.get('[data-testid="shop-name"]').text()).toBe('JomBelajar Official')
     expect(w.findAll('[data-testid="product-card"]')).toHaveLength(2)
     expect(w.find('[data-testid="product-card-shipping"]').exists()).toBe(false)
-    expect(w.get('[data-testid="marketplace-back"]').text()).toBe('Kembali ke Marketplace')
+    expect(w.get('[data-testid="marketplace-back"]').text()).toBe('Kembali')
   })
 
   it('an unknown shop (404) and a non-numeric id both render the in-place 404 outcome', async () => {

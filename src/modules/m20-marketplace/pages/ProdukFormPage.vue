@@ -17,6 +17,7 @@ import { useRouter } from 'vue-router'
 import { isApiError } from '@/api'
 import { useApi, useFlash } from '@/composables'
 import {
+  DsCallout,
   DsCluster,
   DsFileField,
   DsFormBar,
@@ -24,11 +25,13 @@ import {
   DsFormSection,
   DsGrid,
   DsHeading,
+  DsIcon,
   DsLoadError,
   DsNativeSelect,
   DsPage,
   DsPanel,
   DsStack,
+  DsStateView,
   DsText,
   DsThumb,
 } from '@/ds'
@@ -227,15 +230,13 @@ const invalid = (name: string): 'error' | undefined => (messages.value[name] ? '
     <DsLoadError v-if="loadFailed" :message="ADMIN_COPY.loadFailed" testid="admin-product-load-error" @retry="retry" />
 
     <DsPanel v-else-if="!ready" data-testid="admin-product-form-skeleton">
-      <DsStack gap="lg">
-        <USkeleton v-for="n in 4" :key="n" class="h-11 w-full" />
-      </DsStack>
+      <DsStateView status="loading" skeleton="list" :rows="4" />
     </DsPanel>
 
     <DsStack v-else as="form" gap="lg" data-testid="admin-product-form" @submit.prevent="submit">
       <DsHeading :level="2" variant="heading" data-testid="admin-product-form-title">{{ editing ? ADMIN_COPY.editTitle : ADMIN_COPY.createTitle }}</DsHeading>
 
-      <UAlert v-if="topError" color="error" variant="subtle" icon="i-ph-warning-circle" role="alert" :description="topError" data-testid="admin-product-form-alert" />
+      <DsCallout v-if="topError" tone="error" :description="topError" data-testid="admin-product-form-alert" />
 
       <DsFormSection :title="ADMIN_COPY.createTitle" icon="storefront" accent="action">
         <DsFormField native for="mp-seller" :label="ADMIN_COPY.seller" required :error="messages.sellerId">
@@ -245,7 +246,7 @@ const invalid = (name: string): 'error' | undefined => (messages.value[name] ? '
         </DsFormField>
 
         <DsFormField native for="mp-name" :label="ADMIN_COPY.name" required :error="messages.name">
-          <UInput id="mp-name" v-model="form.name" type="text" name="name" size="md" class="w-full" :color="invalid('name')" data-testid="mp-name" />
+          <UInput id="mp-name" v-model="form.name" type="text" name="name" size="md" :color="invalid('name')" data-testid="mp-name" />
         </DsFormField>
 
         <DsFormField native for="mp-category" :label="ADMIN_COPY.category" required :error="messages.categoryId">
@@ -257,23 +258,23 @@ const invalid = (name: string): 'error' | undefined => (messages.value[name] ? '
 
         <DsGrid :cols="{ base: 1, md: 2 }" gap="lg">
           <DsFormField native for="mp-price" :label="ADMIN_COPY.price" required :error="messages.price">
-            <UInput id="mp-price" v-model="form.price" type="text" inputmode="decimal" name="price" size="md" class="w-full" :color="invalid('price')" data-testid="mp-price" />
+            <UInput id="mp-price" v-model="form.price" type="text" inputmode="decimal" name="price" size="md" :color="invalid('price')" data-testid="mp-price" />
           </DsFormField>
           <DsFormField native for="mp-original" :label="ADMIN_COPY.originalPrice" :hint="ADMIN_COPY.originalPriceHint" :error="messages.originalPrice">
-            <UInput id="mp-original" v-model="form.originalPrice" type="text" inputmode="decimal" name="originalPrice" size="md" class="w-full" :color="invalid('originalPrice')" data-testid="mp-original-price" />
+            <UInput id="mp-original" v-model="form.originalPrice" type="text" inputmode="decimal" name="originalPrice" size="md" :color="invalid('originalPrice')" data-testid="mp-original-price" />
           </DsFormField>
         </DsGrid>
 
         <DsFormField native for="mp-description" :label="ADMIN_COPY.description" :error="messages.description">
-          <UTextarea id="mp-description" v-model="form.description" name="description" :rows="4" size="md" class="w-full" :color="invalid('description')" data-testid="mp-description" />
+          <UTextarea id="mp-description" v-model="form.description" name="description" :rows="4" size="md" :color="invalid('description')" data-testid="mp-description" />
         </DsFormField>
 
         <DsGrid :cols="{ base: 1, md: 2 }" gap="lg">
           <DsFormField native :label="ADMIN_COPY.condition" required :error="messages.condition">
-            <URadioGroup v-model="form.condition" :items="[...CONDITION_CHOICES]" variant="card" orientation="horizontal" class="w-full" data-testid="mp-condition" />
+            <URadioGroup v-model="form.condition" :items="[...CONDITION_CHOICES]" variant="card" orientation="horizontal" data-testid="mp-condition" />
           </DsFormField>
           <DsFormField native :label="ADMIN_COPY.stockStatus" required :error="messages.stockStatus">
-            <URadioGroup v-model="form.stockStatus" :items="[...STOCK_CHOICES]" variant="card" orientation="horizontal" class="w-full" data-testid="mp-stock" />
+            <URadioGroup v-model="form.stockStatus" :items="[...STOCK_CHOICES]" variant="card" orientation="horizontal" data-testid="mp-stock" />
           </DsFormField>
         </DsGrid>
 
@@ -285,37 +286,36 @@ const invalid = (name: string): 'error' | undefined => (messages.value[name] ? '
             </DsNativeSelect>
           </DsFormField>
           <DsFormField native for="mp-fee" :label="ADMIN_COPY.shippingFee" :error="messages.shippingFee">
-            <UInput id="mp-fee" v-model="form.shippingFee" type="text" inputmode="decimal" name="shippingFee" size="md" class="w-full" :color="invalid('shippingFee')" data-testid="mp-fee" />
+            <UInput id="mp-fee" v-model="form.shippingFee" type="text" inputmode="decimal" name="shippingFee" size="md" :color="invalid('shippingFee')" data-testid="mp-fee" />
           </DsFormField>
         </DsGrid>
 
         <DsFormField native for="mp-location" :label="ADMIN_COPY.location" :error="messages.location">
-          <UInput id="mp-location" v-model="form.location" type="text" name="location" size="md" class="w-full" :color="invalid('location')" data-testid="mp-location" />
+          <UInput id="mp-location" v-model="form.location" type="text" name="location" size="md" :color="invalid('location')" data-testid="mp-location" />
         </DsFormField>
       </DsFormSection>
 
       <DsFormSection :title="ADMIN_COPY.images" icon="image" accent="friend">
         <DsStack v-if="editing" gap="sm" data-testid="mp-existing-images">
           <DsText variant="label" tone="highlighted">{{ ADMIN_COPY.existingImages(existing.length) }}</DsText>
-          <DsStack as="ul" gap="xs">
-            <li v-for="img in existing" :key="img.id" data-testid="mp-existing-image">
+          <DsStack gap="xs">
+            <DsCluster v-for="img in existing" :key="img.id" gap="sm" :wrap="false" justify="between" data-testid="mp-existing-image">
               <DsCluster gap="sm" :wrap="false">
                 <DsThumb :src="img.url" :alt="`${ADMIN_COPY.images} ${String(img.position)}`" />
                 <DsText v-if="img.position === existing[0]?.position" variant="caption" as="span">{{ ADMIN_COPY.mainImage }}</DsText>
-                <UButton
-                  type="button"
-                  color="error"
-                  variant="soft"
-                  class="ms-auto min-h-11"
-                  :label="ADMIN_COPY.delete"
-                  :loading="deleting === img.id"
-                  :disabled="deleting !== null"
-                  :aria-label="`${ADMIN_COPY.delete} ${ADMIN_COPY.images.toLowerCase()} ${String(img.position)}`"
-                  data-testid="mp-existing-image-delete"
-                  @click="removeExisting(img.id)"
-                />
               </DsCluster>
-            </li>
+              <UButton
+                type="button"
+                color="error"
+                variant="soft"
+                :label="ADMIN_COPY.delete"
+                :loading="deleting === img.id"
+                :disabled="deleting !== null"
+                :aria-label="`${ADMIN_COPY.delete} ${ADMIN_COPY.images.toLowerCase()} ${String(img.position)}`"
+                data-testid="mp-existing-image-delete"
+                @click="removeExisting(img.id)"
+              />
+            </DsCluster>
           </DsStack>
         </DsStack>
 
@@ -334,18 +334,18 @@ const invalid = (name: string): 'error' | undefined => (messages.value[name] ? '
               @update:model-value="onPick"
             >
               <template #default="{ open }">
-                <UButton type="button" color="neutral" variant="soft" class="min-h-11" icon="i-ph-upload-simple" :label="ADMIN_COPY.imagePick" :disabled="uploading" @click="open()" />
+                <UButton type="button" color="neutral" variant="soft" :disabled="uploading" @click="open()"><DsIcon name="upload-simple" />{{ ADMIN_COPY.imagePick }}</UButton>
               </template>
             </DsFileField>
             <DsText v-if="uploading" variant="caption" data-testid="mp-images-busy">{{ ADMIN_COPY.imageUploading }}</DsText>
-            <DsStack v-if="added.length > 0" as="ul" gap="xs" data-testid="mp-added-images">
-              <li v-for="img in added" :key="img.url" data-testid="mp-added-image">
+            <DsStack v-if="added.length > 0" gap="xs" data-testid="mp-added-images">
+              <DsCluster v-for="img in added" :key="img.url" gap="sm" :wrap="false" justify="between" data-testid="mp-added-image">
                 <DsCluster gap="sm" :wrap="false">
                   <DsThumb :src="img.url" :alt="img.name" />
                   <DsText variant="caption" as="span" truncate>{{ img.name }}</DsText>
-                  <UButton type="button" color="neutral" variant="ghost" class="ms-auto min-h-11" :label="ADMIN_COPY.imageDiscard" :aria-label="`${ADMIN_COPY.imageDiscard} ${img.name}`" data-testid="mp-added-image-discard" @click="discard(img.url)" />
                 </DsCluster>
-              </li>
+                <UButton type="button" color="neutral" variant="ghost" :label="ADMIN_COPY.imageDiscard" :aria-label="`${ADMIN_COPY.imageDiscard} ${img.name}`" data-testid="mp-added-image-discard" @click="discard(img.url)" />
+              </DsCluster>
             </DsStack>
           </DsStack>
         </DsFormField>
@@ -353,7 +353,7 @@ const invalid = (name: string): 'error' | undefined => (messages.value[name] ? '
 
       <DsFormSection v-if="editing" :title="ADMIN_COPY.productStatus" icon="check-circle" accent="win">
         <DsFormField native :label="ADMIN_COPY.productStatus" required :error="messages.status">
-          <URadioGroup v-model="form.status" :items="[...PRODUCT_STATUS_CHOICES]" variant="card" orientation="horizontal" class="w-full" data-testid="mp-status" />
+          <URadioGroup v-model="form.status" :items="[...PRODUCT_STATUS_CHOICES]" variant="card" orientation="horizontal" data-testid="mp-status" />
         </DsFormField>
       </DsFormSection>
 

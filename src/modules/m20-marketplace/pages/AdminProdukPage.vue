@@ -17,6 +17,7 @@ import {
   DsDataTable,
   DsEmptyState,
   DsFilterBar,
+  DsIcon,
   DsLoadError,
   DsNativeSelect,
   DsPage,
@@ -231,13 +232,9 @@ const cardFields: CardField[] = [
 <template>
   <DsPage layout="list" :subtitle="data ? ADMIN_COPY.productsFound(total) : undefined" subtitle-testid="admin-products-count" data-testid="admin-products-page">
     <template #actions>
-      <UButton
-        :to="{ name: ADMIN_ROUTES.productCreate }"
-        icon="i-ph-plus"
-        :label="ADMIN_COPY.add"
-        class="min-h-11"
-        data-testid="admin-products-add"
-      />
+      <UButton :to="{ name: ADMIN_ROUTES.productCreate }" data-testid="admin-products-add">
+        <DsIcon name="plus" />{{ ADMIN_COPY.add }}
+      </UButton>
     </template>
 
     <DsStatRow :items="statItems" prefix="stat" :cols="2" />
@@ -260,17 +257,17 @@ const cardFields: CardField[] = [
           name="q"
           :aria-label="ADMIN_COPY.searchPlaceholder"
           :placeholder="ADMIN_COPY.searchPlaceholder"
-          icon="i-ph-magnifying-glass"
           size="md"
-          class="w-full md:min-w-64 md:grow"
           data-testid="admin-products-search"
-        />
+        >
+          <template #leading><DsIcon name="magnifying-glass" /></template>
+        </UInput>
       </template>
-      <DsNativeSelect v-model="category" :aria-label="ADMIN_COPY.allCategories" class="md:w-48" data-testid="admin-products-category">
+      <DsNativeSelect v-model="category" :aria-label="ADMIN_COPY.allCategories" data-testid="admin-products-category">
         <option value="all">{{ ADMIN_COPY.allCategories }}</option>
         <option v-for="c in categories.data.value ?? []" :key="c.id" :value="String(c.id)">{{ c.name }}</option>
       </DsNativeSelect>
-      <DsNativeSelect v-model="status" :aria-label="ADMIN_COPY.allStatuses" class="md:w-44" data-testid="admin-products-status">
+      <DsNativeSelect v-model="status" :aria-label="ADMIN_COPY.allStatuses" data-testid="admin-products-status">
         <option value="all">{{ ADMIN_COPY.allStatuses }}</option>
         <option v-for="s in MARKETPLACE_PRODUCT_STATUSES" :key="s" :value="s">{{ MARKETPLACE_PRODUCT_STATUS_LABELS[s] }}</option>
       </DsNativeSelect>
@@ -323,10 +320,10 @@ const cardFields: CardField[] = [
       </template>
       <template #actions-cell="{ row }">
         <DsCluster gap="2xs" justify="end" :wrap="false">
-          <UButton v-if="row.original.raw.status === 'active'" :to="`/marketplace/${row.original.raw.slug}`" icon="i-ph-arrow-square-out" color="neutral" variant="ghost" aria-label="Buka" title="Buka" class="min-h-11 min-w-11" data-testid="admin-product-open" />
-          <UButton :to="{ name: ADMIN_ROUTES.productEdit, params: { id: row.original.id } }" icon="i-ph-pencil-simple" color="neutral" variant="ghost" :aria-label="ADMIN_COPY.edit" :title="ADMIN_COPY.edit" class="min-h-11 min-w-11" data-testid="admin-product-edit" />
-          <UButton type="button" color="neutral" variant="ghost" class="min-h-11" :label="row.original.raw.status === 'active' ? MARKETPLACE_ADMIN_PROPOSED.productDeactivateLabel : MARKETPLACE_ADMIN_PROPOSED.productActivateLabel" :disabled="busyId !== null" data-testid="admin-product-toggle" @click="toggle(row.original.raw)" />
-          <UButton type="button" icon="i-ph-trash" color="error" variant="ghost" :aria-label="ADMIN_COPY.delete" :title="ADMIN_COPY.delete" :disabled="busyId !== null" class="min-h-11 min-w-11" data-testid="admin-product-delete" @click="remove(row.original.raw)" />
+          <UButton v-if="row.original.raw.status === 'active'" :to="`/marketplace/${row.original.raw.slug}`" color="neutral" variant="ghost" aria-label="Buka" title="Buka" data-testid="admin-product-open"><DsIcon name="arrow-square-out" /></UButton>
+          <UButton :to="{ name: ADMIN_ROUTES.productEdit, params: { id: row.original.id } }" color="neutral" variant="ghost" :aria-label="ADMIN_COPY.edit" :title="ADMIN_COPY.edit" data-testid="admin-product-edit"><DsIcon name="pencil-simple" /></UButton>
+          <UButton type="button" color="neutral" variant="ghost" :label="row.original.raw.status === 'active' ? MARKETPLACE_ADMIN_PROPOSED.productDeactivateLabel : MARKETPLACE_ADMIN_PROPOSED.productActivateLabel" :disabled="busyId !== null" data-testid="admin-product-toggle" @click="toggle(row.original.raw)" />
+          <UButton type="button" color="error" variant="ghost" :aria-label="ADMIN_COPY.delete" :title="ADMIN_COPY.delete" :disabled="busyId !== null" data-testid="admin-product-delete" @click="remove(row.original.raw)"><DsIcon name="trash" /></UButton>
         </DsCluster>
       </template>
       <template #card="{ row }">
@@ -342,9 +339,9 @@ const cardFields: CardField[] = [
             </DsStack>
           </DsCluster>
           <DsCluster gap="2xs">
-            <UButton :to="{ name: ADMIN_ROUTES.productEdit, params: { id: String(row.id) } }" icon="i-ph-pencil-simple" color="neutral" variant="ghost" :aria-label="ADMIN_COPY.edit" class="min-h-11 min-w-11" data-testid="admin-product-edit" />
-            <UButton type="button" color="neutral" variant="ghost" class="min-h-11" :label="(row as unknown as TableRow).raw.status === 'active' ? MARKETPLACE_ADMIN_PROPOSED.productDeactivateLabel : MARKETPLACE_ADMIN_PROPOSED.productActivateLabel" :disabled="busyId !== null" data-testid="admin-product-toggle" @click="toggle((row as unknown as TableRow).raw)" />
-            <UButton type="button" icon="i-ph-trash" color="error" variant="ghost" :aria-label="ADMIN_COPY.delete" :disabled="busyId !== null" class="min-h-11 min-w-11" data-testid="admin-product-delete" @click="remove((row as unknown as TableRow).raw)" />
+            <UButton :to="{ name: ADMIN_ROUTES.productEdit, params: { id: String(row.id) } }" color="neutral" variant="ghost" :aria-label="ADMIN_COPY.edit" data-testid="admin-product-edit"><DsIcon name="pencil-simple" /></UButton>
+            <UButton type="button" color="neutral" variant="ghost" :label="(row as unknown as TableRow).raw.status === 'active' ? MARKETPLACE_ADMIN_PROPOSED.productDeactivateLabel : MARKETPLACE_ADMIN_PROPOSED.productActivateLabel" :disabled="busyId !== null" data-testid="admin-product-toggle" @click="toggle((row as unknown as TableRow).raw)" />
+            <UButton type="button" color="error" variant="ghost" :aria-label="ADMIN_COPY.delete" :disabled="busyId !== null" data-testid="admin-product-delete" @click="remove((row as unknown as TableRow).raw)"><DsIcon name="trash" /></UButton>
           </DsCluster>
         </DsStack>
       </template>

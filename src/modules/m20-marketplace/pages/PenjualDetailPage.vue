@@ -10,7 +10,7 @@ import { useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { useApi, useFlash } from '@/composables'
-import { DsCluster, DsDefinitionList, DsHeading, DsLoadError, DsPage, DsPanel, DsStack, DsStatusBadge, type DsStatus } from '@/ds'
+import { DsCluster, DsDefinitionList, DsHeading, DsLoadError, DsPage, DsPanel, DsStack, DsStateView, DsStatusBadge, type DsStatus } from '@/ds'
 import { formatDateTimeRaw } from '@/lib/time'
 
 import { fetchAdminSeller } from '../api'
@@ -63,10 +63,7 @@ const items = computed(() => {
 <template>
   <DsPage layout="detail" :back-to="ADMIN_SELLERS_PATH" data-testid="admin-seller-detail-page">
     <DsLoadError v-if="failed" :message="errorText(error)" testid="admin-seller-detail-error" @retry="reload()" />
-    <DsStack v-else-if="!current" gap="sm" aria-busy="true" data-testid="admin-seller-detail-loading">
-      <USkeleton class="h-28 w-full" />
-      <USkeleton class="h-40 w-full" />
-    </DsStack>
+    <DsStateView v-else-if="!current" status="loading" skeleton="list" :rows="3" data-testid="admin-seller-detail-loading" />
     <DsPanel v-else data-testid="admin-seller-detail">
       <DsStack gap="md">
         <DsCluster gap="sm">

@@ -34,7 +34,7 @@ test.describe('M20 S7 Product page', MODULE, () => {
     await gotoApp(`/marketplace/${SLUG_1}`)
     await expectTabTitle(page, 'Beg Sekolah Anti-Air Premium - Marketplace | PRESTASIPLUS')
     await expectShellTitle(page, 'Marketplace')
-    await expect(page.getByTestId('marketplace-back')).toHaveText('Kembali ke Marketplace')
+    await expect(page.getByTestId('marketplace-back')).toHaveText('Kembali')
     await expect(page.getByTestId('marketplace-back')).toHaveAttribute('href', '/marketplace')
     await expect(page.getByTestId('gallery-thumb')).toHaveCount(4)
     await expect(page.getByTestId('gallery-thumb').first()).toHaveAttribute('data-active', 'true')

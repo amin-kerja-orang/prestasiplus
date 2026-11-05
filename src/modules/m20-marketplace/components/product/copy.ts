@@ -25,7 +25,7 @@ export const MARKETPLACE_COPY = {
   priceNote: 'Harga di Marketplace dalam Ringgit (RM) — bukan syiling atau token.',
   /** FR-MUR-32-3 struck: the pupil contacts the seller through the existing WhatsApp hand-off. */
   contactWhatsapp: 'Hubungi penjual melalui WhatsApp',
-  back: 'Kembali ke Marketplace',
+  back: 'Kembali',
   used: 'Terpakai',
   loadFailed: 'Maaf, berlaku ralat. Sila cuba semula.',
   retry: 'Cuba Semula',

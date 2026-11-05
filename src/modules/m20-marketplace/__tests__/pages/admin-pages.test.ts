@@ -275,7 +275,7 @@ describe('AdminPenjualPage (P2-13)', () => {
     expect(w.get(t('stat-pending')).text()).toContain('Menunggu Pengesahan')
     expect(w.get(t('admin-sellers-count')).text()).toBe('4 penjual dijumpai')
     expect(w.findAll(t('admin-seller-status')).map((s) => s.text())).toEqual(['Aktif', 'Pending', 'Digantung', 'Diharamkan'])
-    expect(w.get(t('admin-seller-owner')).text()).toContain('A*** B***')
+    expect(w.get(t('admin-seller-row')).text()).toContain('A*** B***')
     expect(w.findAll(t('admin-seller-products'))[0]!.text()).toBe('2 produk')
   })
 

@@ -23,6 +23,7 @@ import {
   DsDataTable,
   DsEmptyState,
   DsFilterBar,
+  DsIdentity,
   DsLoadError,
   DsNativeSelect,
   DsPage,
@@ -153,7 +154,7 @@ const detailTo = (id: string): string => `${ADMIN_SELLERS_PATH}/${id}`
       @reset="resetFilter"
       @remove-chip="removeChip"
     >
-      <DsNativeSelect v-model="status" :aria-label="ADMIN_COPY.allStatuses" class="md:w-48" data-testid="admin-sellers-status">
+      <DsNativeSelect v-model="status" :aria-label="ADMIN_COPY.allStatuses" data-testid="admin-sellers-status">
         <option value="all">{{ ADMIN_COPY.allStatuses }}</option>
         <option v-for="s in MARKETPLACE_SELLER_STATUSES" :key="s" :value="s">{{ MARKETPLACE_SELLER_STATUS_LABELS[s] }}</option>
       </DsNativeSelect>
@@ -182,13 +183,7 @@ const detailTo = (id: string): string => `${ADMIN_SELLERS_PATH}/${id}`
       @update:page="goToPage"
     >
       <template #seller-cell="{ row }">
-        <DsCluster gap="sm" :wrap="false" data-testid="admin-seller-row" :data-seller-id="row.original.id">
-          <UAvatar :text="row.original.raw.initial" size="md" aria-hidden="true" />
-          <DsStack gap="none">
-            <DsText variant="label" tone="highlighted" data-testid="admin-seller-name">{{ row.original.shopName }}</DsText>
-            <DsText variant="caption" data-testid="admin-seller-owner">{{ row.original.ownerText }}</DsText>
-          </DsStack>
-        </DsCluster>
+        <DsIdentity :name="row.original.shopName" :sub="row.original.ownerText" :initials="row.original.raw.initial" data-testid="admin-seller-row" :data-seller-id="row.original.id" />
       </template>
       <template #status-cell="{ row }">
         <DsStatusBadge :status="BADGE[row.original.raw.status]" :label="row.original.statusText" data-testid="admin-seller-status" />
@@ -201,13 +196,7 @@ const detailTo = (id: string): string => `${ADMIN_SELLERS_PATH}/${id}`
       </template>
       <template #card="{ row }">
         <DsStack gap="sm">
-          <DsCluster gap="sm" :wrap="false" data-testid="admin-seller-row" :data-seller-id="row.id">
-            <UAvatar :text="(row as unknown as TableRow).raw.initial" size="md" aria-hidden="true" />
-            <DsStack gap="none">
-              <DsText variant="label" tone="highlighted" data-testid="admin-seller-name">{{ row.shopName }}</DsText>
-              <DsText variant="caption" data-testid="admin-seller-owner">{{ row.ownerText }}</DsText>
-            </DsStack>
-          </DsCluster>
+          <DsIdentity :name="String(row.shopName)" :sub="String(row.ownerText)" :initials="(row as unknown as TableRow).raw.initial" data-testid="admin-seller-row" :data-seller-id="row.id" />
           <DsCluster gap="sm">
             <DsStatusBadge :status="BADGE[(row as unknown as TableRow).raw.status]" :label="String(row.statusText)" data-testid="admin-seller-status" />
             <DsText variant="caption" as="span" data-testid="admin-seller-products">{{ row.countText }}</DsText>

@@ -350,7 +350,7 @@ test.describe('M20 S8 Kedai Penjual', MODULE, () => {
     await gotoApp('/marketplace/penjual/1')
     await expectTabTitle(page, 'JomBelajar Official - Marketplace | PRESTASIPLUS')
     await expectShellTitle(page, 'Kedai Penjual')
-    await expect(page.getByTestId('marketplace-back')).toHaveText('Kembali ke Marketplace')
+    await expect(page.getByTestId('marketplace-back')).toHaveText('Kembali')
     await expect(page.getByTestId('marketplace-back')).toHaveAttribute('href', '/marketplace')
     await expect(page.getByTestId('shop-initial')).toHaveText('J')
     await expect(page.getByTestId('shop-name')).toHaveText('JomBelajar Official')

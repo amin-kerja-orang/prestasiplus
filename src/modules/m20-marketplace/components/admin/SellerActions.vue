@@ -64,7 +64,7 @@ async function run(action: MarketplaceSellerAction): Promise<void> {
       :to="detailTo"
       color="neutral"
       variant="soft"
-      class="min-h-11"
+     
       :label="ADMIN_COPY.viewDetail"
       data-testid="seller-action-detail"
     />
@@ -74,7 +74,7 @@ async function run(action: MarketplaceSellerAction): Promise<void> {
       type="button"
       :color="a === 'ban' ? 'error' : a === 'suspend' ? 'warning' : 'primary'"
       variant="soft"
-      class="min-h-11"
+     
       :label="MARKETPLACE_SELLER_ACTION_LABELS[a]"
       :loading="busy === a"
       :disabled="busy !== null"
