@@ -49,7 +49,8 @@ export class PaperSourceUploadInterceptor implements NestInterceptor {
       { name: 'paper', maxCount: 1 },
       { name: 'scheme', maxCount: 1 },
     ],
-    { limits: { fileSize: PAPER_SOURCE_MAX_BYTES, files: 2, fields: 2, fieldSize: 64, parts: 4 } },
+    // Multer reports an oversized part without its field name, so it only guards memory (twice the limit); the 30 MB rule is checked per field in `PaperSourceService`, which names `paper` or `scheme`.
+    { limits: { fileSize: PAPER_SOURCE_MAX_BYTES * 2, files: 2, fields: 2, fieldSize: 64, parts: 4 } },
   ))({})
 
   async intercept(ctx: ExecutionContext, next: CallHandler): Promise<Observable<unknown>> {

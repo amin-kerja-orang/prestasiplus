@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, Logger } from '@nestjs/common'
 import {
   BIJAK_BUILDER_MESSAGES as MESSAGES,
   BIJAK_NEGERI_ORDER,
@@ -23,12 +23,18 @@ import type { AuditActor } from './actor'
 import { PAPER_SOURCE_MAX_BYTES } from './builder.constants'
 import { BuilderRepository, type PaperTree } from './builder.repository'
 import { BijakBuilderPorts } from './ports'
-import { addUnit } from './paper-check'
 
 /** An item the reviewer has not decided yet (the `OPEN` set of `intake/workflow/review.service.ts`). */
 const OPEN_ITEM_STATES = ['generated', 'needs_review', 'duplicate']
-/** Intake items carry no Bahagian of their own, so every accepted item goes to this one (reused when the paper already has it). */
+/**
+ * DEPENDENCY on S1-T03 / migration 0123 (`intake_items.section_label`): the column is not on this branch, so an item has no Bahagian of its own yet and
+ * every accepted item goes to "Bahagian A". When 0123 lands, this ONE function reads `item.sectionLabel` (trimmed, falling back to the default).
+ */
 const DEFAULT_SECTION = 'Bahagian A'
+function sectionOf(item: { id: bigint }): string {
+  void item
+  return DEFAULT_SECTION
+}
 
 const unprocessable = (fields: Record<string, string>, message?: string): ApiError => ApiError.of('VALIDATION_ERROR', { ...(message ? { message } : {}), fields })
 const conflict = (message: string): ApiError => ApiError.of('CONFLICT', { message })
@@ -53,6 +59,8 @@ export interface SourceParts {
  */
 @Injectable()
 export class PaperSourceService {
+  private readonly log = new Logger(PaperSourceService.name)
+
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(BuilderRepository) private readonly repo: BuilderRepository,
@@ -101,10 +109,11 @@ export class PaperSourceService {
   async upload(auth: AuthContext, actor: AuditActor, rawId: string, parts: SourceParts, declaration: string | undefined, who: CallerInfo): Promise<BijakBuilderPaperSourceUploadResult> {
     const paper = await this.subjektifDraft(rawId)
     if (paper.sourceBatchId !== null) throw conflict(MESSAGES.sourceBatchExists)
+    // The declaration is reported first (the tick comes before the file in the form), then the PDFs.
+    if (declaration !== 'true') throw unprocessable({ declaration: MESSAGES.declarationRequired }, MESSAGES.declarationRequired)
     if (!parts.paper) throw unprocessable({ paper: MESSAGES.sourcePdfInvalid }, MESSAGES.sourcePdfInvalid)
     this.checkPdf(parts.paper, 'paper')
     if (parts.scheme) this.checkPdf(parts.scheme, 'scheme')
-    if (declaration !== 'true') throw unprocessable({ declaration: MESSAGES.declarationRequired }, MESSAGES.declarationRequired)
 
     const subject = (await this.repo.subjectsByIds([paper.subjectId])).get(paper.subjectId.toString())
     const year = paper.year ?? this.clock.now().getUTCFullYear()
@@ -135,7 +144,7 @@ export class PaperSourceService {
         await this.record(actor, paper.id, { from: 'draf', to: 'draf', op: 'source_upload', batchId: batch.id })
       })
     } catch (err) {
-      await this.batches.cancelBatch(auth, batch.id, who).catch(() => undefined)
+      await this.batches.cancelBatch(auth, batch.id, who).catch((e: unknown) => this.log.error(`source batch ${batch.id} of paper ${rawId} could not be cancelled: ${e instanceof Error ? e.message : String(e)}`))
       throw err
     }
     return { batchId: batch.id }
@@ -160,50 +169,77 @@ export class PaperSourceService {
       const open = await this.prisma.client.intakeItem.count({ where: { batchId: paper.sourceBatchId, reviewState: { in: OPEN_ITEM_STATES } } })
       if (open > 0) throw conflict(MESSAGES.itemsUndecided.replace('{n}', String(open)))
 
+      const batch = await this.prisma.client.intakeBatch.findUnique({ where: { id: paper.sourceBatchId }, select: { status: true } })
+      if (!batch || batch.status === 'processing' || batch.status === 'cancelled') throw conflict(MESSAGES.sourceBatchNotReady)
+
       const items = await this.prisma.client.intakeItem.findMany({
-        where: { batchId: paper.sourceBatchId, reviewState: 'accepted', questionId: { not: null } },
+        where: { batchId: paper.sourceBatchId, reviewState: 'accepted' },
         orderBy: [{ position: 'asc' }, { id: 'asc' }],
-        select: { questionId: true },
+        select: { id: true, questionId: true },
       })
-      const onPaper = new Set(paper.sections.flatMap((s) => s.placements.map((pl) => idToString(pl.questionId))))
-      const wanted = [...new Set(items.map((i) => idToString(i.questionId!)))]
-      const fresh = wanted.filter((q) => !onPaper.has(q))
+      const source = this.ports.questionSource
+      const wanted = [...new Set(items.flatMap((i) => (i.questionId === null ? [] : [idToString(i.questionId)])))]
+      const info = await source.describe(wanted.map((q) => ({ id: q })))
+      // An accepted item whose question is gone (the FK nulls it) or has no version cannot be placed: refuse, write nothing (never pin a guessed version).
+      const gone = items.find((i) => i.questionId === null || !info.has(idToString(i.questionId)))
+      if (gone) throw conflict(MESSAGES.sourceItemQuestionMissing.replace('{id}', idToString(gone.id)))
+
+      // Where each question already sits on the paper (any Bahagian): never placed a second time.
+      const placedIn = new Map<string, bigint>()
+      for (const sec of paper.sections) for (const pl of sec.placements) placedIn.set(idToString(pl.questionId), sec.id)
+      const fresh = wanted.filter((q) => !placedIn.has(q))
       if (fresh.length === 0) return { placements: 0 }
 
-      const source = this.ports.questionSource
-      const info = await source.describe(wanted.map((q) => ({ id: q })))
       const groupIds = [...new Set([...info.values()].flatMap((i) => (i.groupId ? [i.groupId] : [])))]
       const groups = groupIds.length ? await source.groups(groupIds) : new Map()
       const groupOf = (q: string): string | undefined => {
         const g = info.get(q)?.groupId
         return g && groups.has(g) ? g : undefined
       }
-      const membersOf = (g: string): string[] => groups.get(g)?.questionIds ?? []
+      const accepted = new Set(wanted)
 
-      // A Bahagian: reuse the one with the same label (trimmed, case-insensitive), else add it.
-      let section = paper.sections.find((s) => sameLabel(s.label, DEFAULT_SECTION))
-      const current = section ? section.placements.map((pl) => idToString(pl.questionId)) : []
-      // A group is placed whole: every member must be accepted here or already in this Bahagian (ERR-QST-02).
-      const reachable = new Set([...wanted, ...current])
-      for (const q of fresh) {
-        const g = groupOf(q)
-        if (g && membersOf(g).some((m) => !reachable.has(m))) {
-          throw ApiError.of('VALIDATION_ERROR', { message: QUESTION_MESSAGES.groupSplit, fields: { items: QUESTION_MESSAGES.groupSplit }, details: { group: g } })
+      // One Bahagian per distinct label, in order of first appearance; an existing one with the same label is reused.
+      const labelOf = new Map<string, string>()
+      for (const it of items) labelOf.set(idToString(it.questionId!), sectionOf(it))
+      const labels = [...new Map([...labelOf.values()].map((l) => [l.trim().toLowerCase(), l] as const)).values()]
+      let tree = paper
+      let position = Math.max(0, ...paper.sections.map((x) => x.position))
+      for (const label of labels) {
+        if (tree.sections.some((x) => sameLabel(x.label, label))) continue
+        position += 1
+        await this.repo.addSection(paper.id, position, label)
+        tree = (await this.repo.findPilihan(paper.id))!
+      }
+
+      let added = 0
+      for (const label of labels) {
+        const section = tree.sections.find((x) => sameLabel(x.label, label))!
+        const next = section.placements.map((pl) => idToString(pl.questionId))
+        const mine = fresh.filter((q) => sameLabel(labelOf.get(q) ?? '', label))
+        for (const q of mine) {
+          if (next.includes(q)) continue
+          const g = groupOf(q)
+          // Only the members that are accepted or already placed are placed; a rejected member is left out and a group with no accepted member never arrives here.
+          const unit = g ? (groups.get(g)!.questionIds as string[]).filter((m) => (accepted.has(m) || placedIn.has(m)) && !next.includes(m)) : [q]
+          if (g) {
+            const members = groups.get(g)!.questionIds as string[]
+            const elsewhere = members.some((m) => placedIn.has(m) && placedIn.get(m) !== section.id)
+            const alsoElsewhere = unit.some((m) => labelOf.has(m) && !sameLabel(labelOf.get(m) ?? '', label))
+            if (elsewhere || alsoElsewhere) throw ApiError.of('VALIDATION_ERROR', { message: QUESTION_MESSAGES.groupSplit, fields: { items: QUESTION_MESSAGES.groupSplit }, details: { group: g } })
+          }
+          // New members follow the last member of the group that is already in this Bahagian; otherwise they go to the end. No existing placement moves relative to another.
+          const at = g ? Math.max(-1, ...next.map((m, i) => ((groups.get(g)!.questionIds as string[]).includes(m) ? i : -1))) : -1
+          if (at >= 0) next.splice(at + 1, 0, ...unit)
+          else next.push(...unit)
+          added += unit.filter((m) => !placedIn.has(m)).length
         }
+        const pins = new Map(section.placements.map((pl) => [idToString(pl.questionId), pl.pinnedVersionNo]))
+        await this.repo.replacePlacements(
+          section.id,
+          next.map((q) => ({ questionId: BigInt(q), pinnedVersionNo: pins.get(q) ?? info.get(q)!.versionNo })),
+        )
       }
-      let next = [...current]
-      for (const q of fresh) next = addUnit(next, q, groupOf, membersOf)
-      if (!section) {
-        await this.repo.addSection(paper.id, Math.max(0, ...paper.sections.map((s) => s.position)) + 1, DEFAULT_SECTION)
-        section = (await this.repo.findPilihan(paper.id))!.sections.find((s) => sameLabel(s.label, DEFAULT_SECTION))!
-      }
-      const pins = new Map(section.placements.map((pl) => [idToString(pl.questionId), pl.pinnedVersionNo]))
-      await this.repo.replacePlacements(
-        section.id,
-        next.map((q) => ({ questionId: BigInt(q), pinnedVersionNo: pins.get(q) ?? info.get(q)?.versionNo ?? 1 })),
-      )
       await this.repo.updatePaper(paper.id, { updatedAt: this.clock.now() })
-      const added = next.filter((q) => !onPaper.has(q)).length
       await this.record(actor, paper.id, { from: 'draf', to: 'draf', op: 'source_apply', added })
       return { placements: added }
     })
