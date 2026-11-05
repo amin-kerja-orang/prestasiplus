@@ -302,9 +302,9 @@ test.describe('QA-G5 L17 remedial flow', { tag: [moduleTag(5)] }, () => {
     loginAs,
     gotoApp,
   }) => {
-    await loginAs('pelajarmaju@demo.test')
+    await loginAs('pelajar2@demo.test')
     await gotoApp('/remedial/saya')
-    await expect(tid(page, 'remedial-empty')).toContainText('Tiada ujian remedial. Bagus — teruskan usaha!')
+    await expect(tid(page, 'remedial-empty')).toContainText('Tiada topik lemah!')
     await gotoApp('/misi-harian')
     await expect(tid(page, 'missions-empty')).toContainText('Tiada misi hari ini')
   })

@@ -21,6 +21,7 @@ import type {
   Progress,
   ProgressPeriod,
   RemedialPreview,
+  RemedialSuggestions,
   RemedialTestItem,
   RevisionOverview,
   RevisionSubject,
@@ -315,6 +316,11 @@ export function saveSpmTargets(
   targets: Record<number | string, SpmGrade | ''>,
 ): Promise<SaveSpmTargetsResult> {
   return api.put<SaveSpmTargetsResult>('/api/spm-targets', { body: { targets }, raw: true })
+}
+
+/** API-PRAC-08 `GET /api/practice/remedial-suggestions` (completed drills and subjects below 60; empty for staff). */
+export function fetchRemedialSuggestions(options: Signal = {}): Promise<RemedialSuggestions> {
+  return api.get<RemedialSuggestions>('/api/practice/remedial-suggestions', withSignal(options))
 }
 
 /** #20 `GET /api/remedial-tests/mine` (the viewer's tests, newest first). */

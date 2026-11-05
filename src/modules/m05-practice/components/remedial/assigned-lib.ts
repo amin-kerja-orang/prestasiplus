@@ -18,6 +18,27 @@ export function remedialChip(status: RemedialTestItem['status']): { label: strin
     : { label: 'Aktif', color: 'warning' }
 }
 
+/** S13 completed-set difference "+20%" / "-5%" / "+0%" (whole numbers; FR-MUR-12-4, lead ruling: 0 is "+0%"). */
+export function deltaLabel(delta: number): string {
+  const d = Math.round(delta)
+  return `${d < 0 ? '-' : '+'}${String(Math.abs(d))}%`
+}
+
+/** A whole-number percent, or "—" (PROPOSED) for a missing side. */
+export function pctOrDash(value: number | null): string {
+  return value === null ? '—' : `${String(Math.round(value))}%`
+}
+
+/** Green when not negative, red when negative (FR-MUR-12-4). */
+export function deltaColorClass(delta: number): 'text-success' | 'text-error' {
+  return delta < 0 ? 'text-error' : 'text-success'
+}
+
+/** S13 needed-card bar width in % of the 60 target, clamped 0-100. */
+export function accuracyBarWidth(accuracy: number, target = 60): number {
+  return target <= 0 ? 0 : Math.min(100, Math.max(0, Math.round((accuracy / target) * 100)))
+}
+
 /** `resourceUrl` is linked only when it is http(s) or an internal path (SEC: no `javascript:`). */
 export function safeResourceUrl(url: string | null | undefined): string | null {
   if (!url) return null

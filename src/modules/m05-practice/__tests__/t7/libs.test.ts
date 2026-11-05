@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import type { SpmTargetRow } from '../../api/types'
 import {
+  accuracyBarWidth,
+  deltaColorClass,
+  deltaLabel,
   parseId,
+  pctOrDash,
   remedialChip,
   safeResourceUrl,
   targetBarWidth,
@@ -82,6 +86,28 @@ describe('assigned-lib', () => {
   it('labels the remedial status', () => {
     expect(remedialChip('active').label).toBe('Aktif')
     expect(remedialChip('completed').label).toBe('Selesai')
+  })
+
+  it('formats the completed-set delta in whole numbers with sign and colour (FR-MUR-12-4)', () => {
+    expect(deltaLabel(40)).toBe('+40%')
+    expect(deltaLabel(-5)).toBe('-5%')
+    expect(deltaLabel(0)).toBe('+0%')
+    expect(deltaLabel(-0)).toBe('+0%')
+    expect(deltaColorClass(0)).toBe('text-success')
+    expect(deltaColorClass(12)).toBe('text-success')
+    expect(deltaColorClass(-1)).toBe('text-error')
+  })
+
+  it('prints a missing percent as a dash', () => {
+    expect(pctOrDash(null)).toBe('—')
+    expect(pctOrDash(80)).toBe('80%')
+  })
+
+  it('scales the needed-card bar against the 60 target', () => {
+    expect(accuracyBarWidth(0)).toBe(0)
+    expect(accuracyBarWidth(30)).toBe(50)
+    expect(accuracyBarWidth(59)).toBe(98)
+    expect(accuracyBarWidth(80)).toBe(100)
   })
 
   it('renders the S15 status and bar from progress (BR-27)', () => {
