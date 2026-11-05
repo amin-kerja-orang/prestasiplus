@@ -34,6 +34,6 @@ import { SoloGamesModule } from './solo/solo.module'
     RoomsModule,
     LeaguesModule,
   ],
-  exports: [GamesCoreModule],
+  exports: [GamesCoreModule, RoomsModule],
 })
 export class GamesModule {}

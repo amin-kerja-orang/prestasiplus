@@ -26,17 +26,18 @@ export const articleRoutes: RouteDef[] = [
   route('GET', '/api/articles', (req) => {
     const page = pageParams(req.query, { pageSize: READER_PAGE_SIZE })
     const category = queryString(req.query, 'category')?.trim() ?? ''
+    const search = queryString(req.query, 'search') ?? ''
     // INFERRED: an unknown category code matches nothing (live filters by the code).
     if (category !== '' && category !== 'all' && !ARTICLE_CATEGORIES.includes(category as never)) {
-      return paged({ rows: [], total: 0 }, page)
+      return paged({ rows: [], total: 0 }, page, { counts: articlesRepo.categoryCounts(search) })
     }
     const res = articlesRepo.readerList({
-      search: queryString(req.query, 'search') ?? '',
+      search,
       category: category as ArticleCategory | 'all' | '',
       page: page.page,
       pageSize: page.pageSize,
     })
-    return paged(res, page)
+    return paged(res, page, { counts: articlesRepo.categoryCounts(search) })
   }),
 
   route('GET', '/api/articles/hot', (_req, ctx) =>
