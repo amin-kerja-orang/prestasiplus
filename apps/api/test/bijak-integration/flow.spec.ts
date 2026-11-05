@@ -191,7 +191,7 @@ describe('latihan (practice mode)', () => {
     expect(rows[0]).toMatchObject({ mode: 'latihan', start_type: 'pilihan', is_test: false })
     expect(Number(rows[0]!.units_awarded)).toBe(r.result.score)
     expect(await ledgerRows(s.attemptId)).toHaveLength(1)
-    expect(await balance(student.userId)).toBe(before + r.result.score * 2)
+    expect(await balance(student.userId)).toBe(before + r.result.score)
     expect(await xpOf(student.userId)).toBe(xp0 + r.result.score * 10)
   })
 })

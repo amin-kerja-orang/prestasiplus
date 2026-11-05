@@ -179,10 +179,10 @@ describe('R1-B12 self-mark', () => {
     // reward figures are the credited ones from submit (score 1 then), not recomputed from the self-marked score
     expect(again.coins).toBe(before.coins)
     expect(again.points).toBe(before.points)
-    expect(again.coins).toBe(2)
-    expect(out.result.coins).toBe(2)
+    expect(again.coins).toBe(1)
+    expect(out.result.coins).toBe(1)
     const row = (await t.db.query<{ coins: number; points: number }>(`select coins, points from attempt_results where attempt_id = $1`, [id]))[0]!
-    expect(row).toMatchObject({ coins: 2, points: 10 })
+    expect(row).toMatchObject({ coins: 1, points: 10 })
     // a blank answer self-marked above 0 is a marked part (separa/betul), not "kosong"
     const blank = await sit(me, PAPER.sainsK2, [])
     const b = BijakAttemptSelfMarkResultSchema.parse((await selfMark(me, blank, { partId: SEL_B, mark: 2 })).body.data)
@@ -236,7 +236,7 @@ describe('R1-B12 self-mark', () => {
     expect(t.reward.calls).toHaveLength(rewards) // the submit reward is not repeated
     // D94: the gain goes to the self-mark reward port at attempt level: base 1 (the keyword suggestion paid at submit) -> best-N score 2
     const max = (await result(me, id)).result.max
-    expect(t.reward.selfMarkCalls).toEqual([{ attemptId: id, userId: me.userId, isTest: false, base: 1, score: 2, max, description: BIJAK_REWARD_DESCRIPTION }])
+    expect(t.reward.selfMarkCalls).toEqual([{ attemptId: id, userId: me.userId, isTest: false, base: 1, score: 2, max, coinRate: 1, description: BIJAK_REWARD_DESCRIPTION }])
     const row = (await t.db.query<{ score: string; pending_review: number }>(`select score::text, pending_review from attempt_results where attempt_id = $1`, [id]))[0]!
     expect(Number(row.score)).toBe(2)
     const hist = await me.get('/api/bijak/history')

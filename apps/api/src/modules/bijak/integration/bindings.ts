@@ -6,6 +6,7 @@ import { PrismaService } from '../../../db/prisma.service'
 import { GamificationService } from '../../gamification'
 import { practiceRewardSource, type PracticeRewardPort, type PracticeRewardResult, type PracticeSessionCompleted } from '../../practice/ports'
 import { StreakService, WalletService } from '../../wallet'
+import { XP_PER_MARK } from '../attempts/marking'
 import type { BijakRewardInput, BijakRewardPort, BijakSelfMarkRewardInput } from '../attempts/ports'
 import { ACHIEVEMENT_PRACTICE_MODES } from './practice-facts'
 
@@ -19,9 +20,7 @@ export const BIJAK_REWARD_SOURCE = 'quiz_spm'
 /** Static BM ledger text of a practice session credit (BE-12 `ports.ts`; PDPA: no name, no identifier). */
 export const PRACTICE_REWARD_DESCRIPTION = 'Latihan: jawapan betul'
 
-/** V2 `PracticeRecorder` (`docs/discovery/BIJAK-SPM-cloud.md` 4.5): 2 syiling and 10 XP per mark. */
-export const SYILING_PER_MARK = 2
-export const XP_PER_MARK = 10
+/** V2 `PracticeRecorder` (`docs/discovery/BIJAK-SPM-cloud.md` 4.5): 10 XP per mark. Syiling per mark = `coinsPerCorrect()` (S5-T15), carried on the reward inputs. */
 
 /** A non-negative whole number of coins or points; anything not finite counts as 0 (never NaN into the wallet). */
 export const wholeCount = (v: number): number => (Number.isFinite(v) && v > 0 ? Math.floor(v) : 0)
@@ -107,7 +106,7 @@ export class WalletBijakReward implements BijakRewardPort {
       const reached = Math.max(input.base, ...paid)
       const gain = level - reached
       if (!(gain > 0)) return
-      const coins = wholeCount(gain * SYILING_PER_MARK)
+      const coins = wholeCount(gain * input.coinRate)
       // Marks are whole or half marks, so `gain * 2` and `gain * 10` are whole numbers and nothing is ever floored away. Should a gain
       // still be too small for one syiling, nothing is written here (no ledger key), so `reached` does not move and a later level pays it.
       if (!(coins >= 1)) return

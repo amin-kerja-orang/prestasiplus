@@ -123,6 +123,8 @@ export interface BijakSelfMarkRewardInput {
   score: number
   /** The attempt's maximum best-N score; the paid level never goes above it. */
   max: number
+  /** Syiling per mark of the gain: S5-T15 `coinsPerCorrect()` read when the self-mark was saved. */
+  coinRate: number
   description: typeof BIJAK_REWARD_DESCRIPTION
 }
 

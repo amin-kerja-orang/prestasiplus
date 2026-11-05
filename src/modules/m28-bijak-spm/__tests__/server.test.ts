@@ -222,7 +222,7 @@ describe('result: choose-N, marks and rewards', () => {
     expect(b.marks).toBe(4)
     expect(result.max).toBe(result.sections[0]!.marks + 4)
     expect(result.score).toBe(2)
-    expect(result.coins).toBe(4)
+    expect(result.coins).toBe(2)
     expect(result.points).toBe(20)
   })
   it('grades a structured Matematik K2 paper per point with a shared Rajah group', async () => {

@@ -118,14 +118,21 @@ export function lockedParts(mode: string, checkCounts: ReadonlyMap<string, numbe
 
 /* ------------------------------------------------------------------------------ grading */
 
-/** Reward rates per mark (V2 `PracticeRecorder`); the coin rate moves to `coinsPerCorrect()` with S5-T15. */
-export const COINS_PER_MARK = 2
-export const POINTS_PER_MARK = 10
+/** XP per mark (V2 `PracticeRecorder`); the one source (the wallet binding imports it). The Syiling rate is not a constant: the service resolves `coinsPerCorrect()` and passes it in. */
+export const XP_PER_MARK = 10
 
 /**
  * 46 D-PA-13: the marks a Mod Latihan sitting may be paid for = the awarded marks of the COUNTED questions' parts that "Semak" never
  * revealed (DM-68 `revealed`). Part marks are whole or half marks; a choose-N section pays only its counted questions.
  */
+export function rewardMarks(mode: string, result: BijakAttemptResult, revealed: ReadonlySet<string>): number | null {
+  if (mode === 'exam') return result.score
+  if (mode !== 'latihan') return null
+  const marks = unrevealedScore(result, revealed)
+  // A Latihan that earns nothing never reaches the reward port (its award also touches the daily streak, which a Latihan never did).
+  return marks > 0 ? marks : null
+}
+
 export function unrevealedScore(result: BijakAttemptResult, revealed: ReadonlySet<string>): number {
   return result.questions.filter((q) => q.counted).flatMap((q) => q.parts).filter((p) => !revealed.has(p.partId)).reduce((n, p) => n + p.awarded, 0)
 }
@@ -167,12 +174,12 @@ export function gradeQuestion(
   }
 }
 
-export function gradeAttempt(composition: readonly SectionSnapshot[], bundles: Bundles, answers: AnswerMap): BijakAttemptResult {
+export function gradeAttempt(composition: readonly SectionSnapshot[], bundles: Bundles, answers: AnswerMap, coinRate: number): BijakAttemptResult {
   let n = 0
   const questions: QuestionResult[] = []
   for (const s of composition) for (const qid of s.questionIds) questions.push(gradeQuestion(composition, bundles, answers, qid, ++n, true))
   seedSuggestions(questions, bundles, answers)
-  return assembleResult(composition, questions)
+  return assembleResult(composition, questions, coinRate)
 }
 
 /**
@@ -180,7 +187,8 @@ export function gradeAttempt(composition: readonly SectionSnapshot[], bundles: B
  * a self-mark changes a part (R1-B12), so a raised mark can change WHICH questions count (V2 recomputeScore
  * -> ExamBestNScorer). Sets `counted` on the questions it is given.
  */
-export function assembleResult(composition: readonly SectionSnapshot[], questions: QuestionResult[]): BijakAttemptResult {
+/** `coinRate`: Syiling per mark (S5-T15 `coinsPerCorrect()`, resolved by the caller; this function stays pure). */
+export function assembleResult(composition: readonly SectionSnapshot[], questions: QuestionResult[], coinRate: number): BijakAttemptResult {
   const byId = new Map(questions.map((q) => [q.questionId, q]))
   const sections: SectionResult[] = []
   for (const s of composition) {
@@ -221,8 +229,8 @@ export function assembleResult(composition: readonly SectionSnapshot[], question
     pendingReview: pending,
     sections,
     questions,
-    coins: score * COINS_PER_MARK,
-    points: score * POINTS_PER_MARK,
+    coins: score * coinRate,
+    points: score * XP_PER_MARK,
   }
 }
 

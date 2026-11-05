@@ -891,7 +891,7 @@ export class BijakServer implements BijakApi {
       pendingReview: pending,
       sections,
       questions,
-      coins: score * 2,
+      coins: score, // the default rate is 1 Syiling per mark (S5-T15 coinsPerCorrect with no reward_settings row)
       points: score * 10,
     }
   }
@@ -958,7 +958,7 @@ export class BijakServer implements BijakApi {
           0,
           Math.round(((a.submittedAt ?? this.now()) - a.startedAt) / 1000),
         ),
-        ...(a.result ? { score: a.result.score, max: a.result.max } : {}),
+        ...(a.result ? { score: a.result.score, max: a.result.max, coins: a.mode === 'exam' ? a.result.coins : 0 } : {}),
       }))
   }
 

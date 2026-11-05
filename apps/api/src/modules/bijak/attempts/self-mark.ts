@@ -102,7 +102,8 @@ export function applySelfMarks(base: BijakAttemptResult, composition: readonly S
     }
   }
   // assembleResult only reads and sets fields both shapes share (marks, awarded, counted, attempted, parts[].status).
-  const assembled = assembleResult(composition, questions as unknown as QuestionResult[])
+  const assembled = assembleResult(composition, questions as unknown as QuestionResult[], 0)
+  // (the rate argument is 0: the coins of this assembly are discarded)
   // Coins and points are what was CREDITED at submit (the wallet reward is never repeated), not a figure recomputed from the self-marked score.
   return { ...assembled, questions, coins: base.coins, points: base.points }
 }
@@ -112,5 +113,5 @@ export function applySelfMarks(base: BijakAttemptResult, composition: readonly S
  * result carries the self-marks, so this re-ranks the stored graded rows (which keep the automatic marks) with best-N.
  */
 export function automaticScore(stored: BijakAttemptResult, composition: readonly SectionSnapshot[]): number {
-  return assembleResult(composition, structuredClone(stored.questions) as unknown as QuestionResult[]).score
+  return assembleResult(composition, structuredClone(stored.questions) as unknown as QuestionResult[], 0).score
 }

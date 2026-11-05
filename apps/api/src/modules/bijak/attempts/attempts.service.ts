@@ -27,6 +27,7 @@ import { CLOCK, type Clock } from '../../../db/clock'
 import { isIdString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { FilesService } from '../../files'
+import { coinsPerCorrect } from '../../practice'
 import {
   AUTO_SUBMIT_TOLERANCE_SECONDS,
   BIJAK_ATTEMPTS_MESSAGES as MSG,
@@ -53,13 +54,12 @@ import {
   buildLeafIndex,
   buildServedPaper,
   checkResult,
-  COINS_PER_MARK,
   gradeAttempt,
   type LeafIndex,
   lockedParts,
-  POINTS_PER_MARK,
+  rewardMarks,
   questionIdsOf,
-  unrevealedScore,
+  XP_PER_MARK,
 } from './marking'
 import { assertAttemptPayload } from './payload-limits'
 import { BIJAK_REWARD_DESCRIPTION, BijakAttemptPorts } from './ports'
@@ -87,6 +87,8 @@ interface ClosedEvent {
   regraded: boolean
   /** D94: set when the regrade is a pupil's self-mark of one part (the reward of the best-N gain, no other regrade pays); `base` is the best-N score of the automatic grading. */
   selfMark?: { base: number; partId: string }
+  /** Syiling per mark resolved when the event was made (`coinsPerCorrect()`). */
+  coinRate?: number
   /** DM-68: ids of the parts whose scheme "Semak" has shown (the answers at the time of the event). Absent = none. */
   revealed?: ReadonlySet<string>
 }
@@ -181,6 +183,10 @@ export class BijakAttemptsService {
 
   private answerMap(answers: ReadonlyMap<string, AnswerRow>): Map<string, PartAnswer> {
     return new Map([...answers].map(([k, v]) => [k, v.answer]))
+  }
+
+  private coinRate(): Promise<number> {
+    return coinsPerCorrect(this.prisma.client, this.now().getTime())
   }
 
   private revealedParts(answers: ReadonlyMap<string, AnswerRow>): Set<string> {
@@ -368,7 +374,8 @@ export class BijakAttemptsService {
       const result = this.present(row, { result: stored.result, selfMarks }, this.answerMap(answers), bundles)
       if (!unchanged) {
         await this.repo.saveSelfMarks(id, selfMarks, result)
-        events.push({ attempt: row, status: row.status as FinishedStatus, result, swept: false, regraded: true, selfMark: { base: automaticScore(stored.result, row.composition), partId: body.partId }, revealed: this.revealedParts(answers) })
+        const coinRate = await this.coinRate()
+        events.push({ attempt: row, status: row.status as FinishedStatus, result, swept: false, regraded: true, selfMark: { base: automaticScore(stored.result, row.composition), partId: body.partId }, revealed: this.revealedParts(answers), coinRate })
       }
       const part = result.questions.flatMap((q) => q.parts).find((p) => p.partId === body.partId)!
       return {
@@ -436,7 +443,7 @@ export class BijakAttemptsService {
     await this.sweepUser(userId)
     const now = this.now().getTime()
     const rows = await this.repo.history(userId, HISTORY_LIMIT)
-    return rows.map(({ row, score, max }) => ({
+    return rows.map(({ row, score, max, coins }) => ({
       attemptId: row.id,
       title: row.title,
       subject: row.subject,
@@ -448,6 +455,7 @@ export class BijakAttemptsService {
       startedAt: ts(row.startedAt),
       durationSeconds: Math.max(0, Math.round(((row.submittedAt?.getTime() ?? now) - row.startedAt.getTime()) / 1000)),
       ...(score !== null && max !== null ? { score, max } : {}),
+      coins,
     }))
   }
 
@@ -550,7 +558,7 @@ export class BijakAttemptsService {
     const changed = await this.merge(row, answers, ok, index, new Set())
     if (!changed) return false
     const bundles = await load() // memoised by `lazyBundles`: one load for the grading and the self-marks
-    const base = gradeAttempt(row.composition, bundles, this.answerMap(answers))
+    const base = gradeAttempt(row.composition, bundles, this.answerMap(answers), await this.coinRate())
     // A self-mark made in between (R1-B12) stays: the new automatic grading gets the pupil's marks on top again.
     const selfMarks = (await this.repo.gradedWithMarks(row.id))?.selfMarks ?? {}
     const result = applySelfMarks(base, row.composition, selfMarks, bundles)
@@ -578,7 +586,8 @@ export class BijakAttemptsService {
       late = opts.swept ? Math.min(seconds, GRACE_SECONDS) : seconds
     }
     const bundles = await load()
-    const result = gradeAttempt(row.composition, bundles, this.answerMap(answers))
+    const coinRate = await this.coinRate()
+    const result = gradeAttempt(row.composition, bundles, this.answerMap(answers), coinRate)
     const revealed = this.revealedParts(answers)
     // FR-PA-16: "Semak" shows the scheme of the whole question, so every part of a checked question counts as revealed (also a part answered after the check).
     if (row.mode === 'latihan') {
@@ -589,7 +598,7 @@ export class BijakAttemptsService {
     if (!closed) throw new Error('Attempt was closed by another request while locked')
     await this.repo.saveResult(row.id, result)
     const next: AttemptRow = { ...row, status, submittedAt: at, lateBySeconds: late, idempotencyKey: opts.key ?? row.idempotencyKey }
-    events.push({ attempt: next, status, result, swept: opts.swept, regraded: false, revealed })
+    events.push({ attempt: next, status, result, swept: opts.swept, regraded: false, revealed, coinRate })
     return next
   }
 
@@ -805,15 +814,15 @@ export class BijakAttemptsService {
         })
         // Fail closed: only a timed exam, or a Mod Latihan on the parts "Semak" never revealed (46 D-PA-13, FR-PA-16), may earn the reward.
         const revealed = e.revealed ?? new Set<string>()
-        const payable = a.mode === 'exam' ? null : a.mode === 'latihan' ? unrevealedScore(e.result, revealed) : undefined
-        if (payable !== undefined) {
+        const payable = rewardMarks(a.mode, e.result, revealed)
+        if (payable !== null) {
           try {
             await this.ports.reward.award({
               attemptId: a.id,
               userId: a.userId,
               isTest: a.isTest,
-              coins: payable === null ? e.result.coins : payable * COINS_PER_MARK,
-              points: payable === null ? e.result.points : payable * POINTS_PER_MARK,
+              coins: payable * (e.coinRate ?? 0),
+              points: payable * XP_PER_MARK,
               submittedAt: a.submittedAt,
               score: e.result.score,
               max: e.result.max,
@@ -835,6 +844,7 @@ export class BijakAttemptsService {
             base: e.selfMark.base,
             score: e.result.score,
             max: e.result.max,
+            coinRate: e.coinRate ?? 0,
             description: BIJAK_REWARD_DESCRIPTION,
           })
         } catch (err) {
