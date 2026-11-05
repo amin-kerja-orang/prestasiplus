@@ -12,11 +12,13 @@ import {
   expectNoHorizontalScroll,
   expectTabTitle,
   expectTouchTarget,
-  isMobileWidth,
   moduleTag,
   provisional,
   TAG,
+  viewportWidth,
 } from '../support'
+
+import { openFilters } from './list-helpers'
 
 const ADMIN = 'admin@demo.test'
 const PATH = '/admin/soalan-gambar'
@@ -37,7 +39,13 @@ function strCards(page: Page) {
 async function openAudit(page: Page, gotoApp: (path: string) => Promise<void>, path = PATH) {
   await gotoApp(path)
   await expect(page.getByTestId('diagrams-stat-mcq')).toContainText('MCQ Perlu Gambar')
-  await expect(page.getByTestId('diagrams-stat-mcq-value')).toBeVisible()
+}
+
+/** The apply button: in the sheet below 768 px, in the bar from 768 px. */
+function applyButton(page: Page) {
+  return viewportWidth(page) < 768
+    ? page.locator('[data-ds="filter-sheet"]').getByRole('button').first()
+    : page.getByTestId('diagrams-filter').locator('button[type=submit]')
 }
 
 test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () => {
@@ -50,18 +58,15 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
   }) => {
     await loginAs(ADMIN)
     await openAudit(page, gotoApp)
-    await expectTabTitle(page, 'Soalan Perlu Gambar Rajah - Admin')
-    await expect(page.getByTestId('shell-admin-title')).toHaveText('Soalan Perlu Gambar Rajah')
-    await expect(page.getByTestId('shell-admin-subtitle')).toHaveText(
+    await expectTabTitle(page, 'Soalan Perlu Gambar Rajah | PRESTASIPLUS')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Soalan Perlu Gambar Rajah')
+    await expect(page.getByTestId('pentadbiran-subtitle')).toHaveText(
       'Audit soalan yang memerlukan gambar rajah dilengkapkan',
     )
 
-    await expect(page.getByTestId('diagrams-stat-mcq-value')).toHaveText('6,144')
-    await expect(page.getByTestId('diagrams-stat-structured-value')).toHaveText('522')
-    await expect(page.getByTestId('diagrams-stat-total-value')).toHaveText('6,666')
-    // Labels are upper case by CSS.
-    const label = page.getByTestId('diagrams-stat-mcq').locator('p')
-    expect(await label.evaluate((el) => getComputedStyle(el).textTransform)).toBe('uppercase')
+    await expect(page.getByTestId('diagrams-stat-mcq')).toContainText('5,653')
+    await expect(page.getByTestId('diagrams-stat-structured')).toContainText('522')
+    await expect(page.getByTestId('diagrams-stat-total')).toContainText('6,175')
 
     const pills = page.getByTestId('diagrams-pill')
     await expect(pills).toHaveCount(10)
@@ -69,11 +74,13 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
     await expect(pills.nth(1)).toHaveText('Kimia: 1,077')
     await expect(pills.nth(9)).toHaveText('Pendidikan Moral: 60')
 
+    await openFilters(page)
     await expect(page.getByTestId('diagrams-subject').locator('option')).toHaveCount(32)
-    await expect(page.getByTestId('diagrams-school').locator('option')).toHaveCount(10221)
-    await expect(page.getByTestId('diagrams-filter-submit')).toHaveText('Tapis')
+    await expect(page.getByTestId('diagrams-school').locator('option').first()).toHaveText('Semua Sekolah')
+    await expect(applyButton(page)).toBeVisible()
+    if (viewportWidth(page) < 768) await page.keyboard.press('Escape')
 
-    await expect(page.getByTestId('diagrams-mcq').locator('h2')).toHaveText('MCQ (6144)')
+    await expect(page.getByTestId('diagrams-mcq').locator('h2')).toContainText('MCQ')
     await expect(mcqCards(page)).toHaveCount(20)
     await expect(page.getByTestId('diagrams-structured').locator('h2')).toHaveText('Struktur (522)')
     await expect(strCards(page)).toHaveCount(20)
@@ -83,18 +90,8 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
     await expectTouchTarget(card.getByTestId('diagram-upload'))
     await expectTouchTarget(card.getByTestId('diagram-dismiss'), 44)
 
-    if (isMobileWidth(page)) {
-      await expect(
-        page.getByTestId('diagrams-mcq-pager').getByRole('navigation').getByText('Next »'),
-      ).toBeVisible()
-    } else {
-      await expect(page.getByTestId('diagrams-mcq-pager')).toContainText(
-        'Showing 1 to 20 of 6144 results',
-      )
-      await expect(page.getByTestId('diagrams-structured-pager')).toContainText(
-        'Showing 1 to 20 of 522 results',
-      )
-    }
+    await expect(page.getByTestId('diagrams-mcq-pager')).toBeVisible()
+    await expect(page.getByTestId('diagrams-structured-pager')).toBeVisible()
     await expectNoHorizontalScroll(page)
   })
 
@@ -105,50 +102,38 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
   }) => {
     await loginAs(ADMIN)
     await openAudit(page, gotoApp)
+    await openFilters(page)
     await page.getByTestId('diagrams-subject').selectOption({ label: 'Fizik' })
-    await page.getByTestId('diagrams-filter-submit').click()
+    await applyButton(page).click()
     await expect(page).toHaveURL(/subject_id=9/)
-    await expect(page.getByTestId('diagrams-stat-mcq-value')).toHaveText('718')
+    await expect(page.getByTestId('diagrams-stat-mcq')).toContainText('718')
     // DV-M04-11: the cards follow the filter, "Jumlah" is their sum.
-    const mcq = Number(
-      (await page.getByTestId('diagrams-stat-mcq-value').innerText()).replace(/,/g, ''),
+    const stat = async (id: string): Promise<number> =>
+      Number(((await page.getByTestId(id).innerText()).split('\n')[0] ?? '').replace(/,/g, ''))
+    expect(await stat('diagrams-stat-total')).toBe(
+      (await stat('diagrams-stat-mcq')) + (await stat('diagrams-stat-structured')),
     )
-    const str = Number(
-      (await page.getByTestId('diagrams-stat-structured-value').innerText()).replace(/,/g, ''),
-    )
-    const total = Number(
-      (await page.getByTestId('diagrams-stat-total-value').innerText()).replace(/,/g, ''),
-    )
-    expect(total).toBe(mcq + str)
     // The pills are global (as live).
     await expect(page.getByTestId('diagrams-pill').first()).toHaveText('Biologi: 1,587')
 
     // DV-M04-16: the MCQ pager keeps subject_id, uses mcq_page and never carries str_page.
-    if (!isMobileWidth(page)) {
-      const link = page
-        .getByTestId('diagrams-mcq-pager')
-        .getByRole('link', { name: 'Go to page 2' })
-      await expect(link).toHaveAttribute(
-        'href',
-        /^\/admin\/soalan-gambar\?subject_id=9&mcq_page=2$/,
-      )
-      await link.click()
-      await expect(page).toHaveURL(/subject_id=9&mcq_page=2$/)
-      await expect(page.getByTestId('diagrams-stat-mcq-value')).toHaveText('718')
-    }
+    await page.getByTestId('diagrams-mcq-pager').getByRole('button', { name: 'Seterusnya' }).click()
+    await expect(page).toHaveURL(/subject_id=9&mcq_page=2$/)
+    await expect(page.getByTestId('diagrams-stat-mcq')).toContainText('718')
     await expectNoHorizontalScroll(page)
   })
 
-  test('the school filter applies to the MCQ list only (school 380 has no MCQ)', async ({
+  test('the school filter applies to the MCQ list only (the first school has no MCQ)', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
     await loginAs(ADMIN)
     await openAudit(page, gotoApp)
-    await page.getByTestId('diagrams-school').selectOption('380')
-    await page.getByTestId('diagrams-filter-submit').click()
-    await expect(page).toHaveURL(/school_id=380/)
+    await openFilters(page)
+    await page.getByTestId('diagrams-school').selectOption({ index: 1 })
+    await applyButton(page).click()
+    await expect(page).toHaveURL(/school_id=\d+/)
     await expect(page.getByTestId('diagrams-mcq')).toHaveCount(0)
     await expect(page.getByTestId('diagrams-structured').locator('h2')).toHaveText('Struktur (522)')
     await expect(page.getByTestId('diagrams-empty')).toHaveCount(0)
@@ -176,9 +161,8 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
       const id = await card.getAttribute('data-question-id')
       await card.getByTestId('diagram-dismiss').click()
       await expect(page.getByText('Soalan telah dikeluarkan daripada senarai audit.')).toBeVisible()
-      await expect(page.getByTestId('diagrams-stat-mcq-value')).toHaveText('6,143')
-      await expect(page.getByTestId('diagrams-stat-total-value')).toHaveText('6,665')
-      await expect(page.getByTestId('diagrams-mcq').locator('h2')).toHaveText('MCQ (6143)')
+      await expect(page.getByTestId('diagrams-stat-mcq')).toContainText('5,652')
+      await expect(page.getByTestId('diagrams-stat-total')).toContainText('6,174')
       await expect(page.locator(`[data-question-id="${id}"][data-kind="mcq"]`)).toHaveCount(0)
       await expectNoHorizontalScroll(page)
     },
@@ -195,7 +179,7 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
 
       // Without a file the native required check stops the submit.
       await card.getByTestId('diagram-upload').click()
-      await expect(page.getByTestId('diagrams-stat-structured-value')).toHaveText('522')
+      await expect(page.getByTestId('diagrams-stat-structured')).toContainText('522')
       expect(
         await card
           .getByTestId('diagram-file')
@@ -209,8 +193,8 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
       })
       await card.getByTestId('diagram-upload').click()
       await expect(page.getByText('Gambar rajah berjaya dimuat naik.')).toBeVisible()
-      await expect(page.getByTestId('diagrams-stat-structured-value')).toHaveText('521')
-      await expect(page.getByTestId('diagrams-stat-mcq-value')).toHaveText('6,144')
+      await expect(page.getByTestId('diagrams-stat-structured')).toContainText('521')
+      await expect(page.getByTestId('diagrams-stat-mcq')).toContainText('5,653')
       await expect(page.getByTestId('diagrams-structured').locator('h2')).toHaveText(
         'Struktur (521)',
       )

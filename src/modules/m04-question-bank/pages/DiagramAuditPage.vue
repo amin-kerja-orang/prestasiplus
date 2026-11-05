@@ -159,7 +159,7 @@ const filterCount = computed(
 </script>
 
 <template>
-  <DsPage data-testid="diagrams-page">
+  <DsPage subtitle="Audit soalan yang memerlukan gambar rajah dilengkapkan" data-testid="diagrams-page">
     <!-- Stat cards: 2 across below md, 3 across from md. -->
     <DsStatRow :items="statItems" :cols="3" :loading="!stats" density="roomy" prefix="diagrams-stat" />
 

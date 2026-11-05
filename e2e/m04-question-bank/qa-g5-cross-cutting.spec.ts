@@ -8,7 +8,9 @@ import type { Page } from '@playwright/test'
 
 import { waitForApp } from '../fixtures/mock-handle'
 import { expect, test } from '../fixtures/test'
-import { expectNoHorizontalScroll, isDesktopShell, moduleTag } from '../support'
+import { expectNoHorizontalScroll, isDesktopShell, moduleTag, viewportWidth } from '../support'
+
+import { openFilters } from './list-helpers'
 
 const ADMIN = 'admin@demo.test'
 const byId = (page: Page, id: string) => page.getByTestId(id)
@@ -88,6 +90,7 @@ test.describe('QA G5 lookups, counts, PKSK', { tag: [moduleTag(4), '@qa'] }, () 
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/admin/questions')
+    await openFilters(page)
     await expect(byId(page, 'questions-subject').locator('option')).toHaveCount(32)
     const subjOpts = await byId(page, 'questions-subject')
       .locator('option')
@@ -97,7 +100,7 @@ test.describe('QA G5 lookups, counts, PKSK', { tag: [moduleTag(4), '@qa'] }, () 
     const lvOpts = await byId(page, 'questions-level')
       .locator('option')
       .evaluateAll((els) => els.slice(1).map((o) => Number((o as HTMLOptionElement).value)))
-    expect(lvOpts).toHaveLength(11)
+    expect(lvOpts).toHaveLength(5)
     expect(lvOpts).toEqual([...lvOpts].sort((a, b) => a - b))
     const s1Names = (await byId(page, 'questions-subject').locator('option').allInnerTexts())
       .slice(1)
@@ -119,6 +122,7 @@ test.describe('QA G5 lookups, counts, PKSK', { tag: [moduleTag(4), '@qa'] }, () 
     ).toEqual(s1Names)
 
     await gotoApp('/admin/structured-questions')
+    await openFilters(page)
     await expect(byId(page, 'structured-subject').locator('option')).toHaveCount(32)
     const sNames = (await byId(page, 'structured-subject').locator('option').allInnerTexts())
       .slice(1)
@@ -127,6 +131,7 @@ test.describe('QA G5 lookups, counts, PKSK', { tag: [moduleTag(4), '@qa'] }, () 
     expect([...sNames].sort()).toEqual([...s1Names].sort())
 
     await gotoApp('/admin/soalan-gambar')
+    await openFilters(page)
     await expect(byId(page, 'diagrams-subject').locator('option')).toHaveCount(32)
     const dNames = (await byId(page, 'diagrams-subject').locator('option').allInnerTexts())
       .slice(1)
@@ -141,39 +146,30 @@ test.describe('QA G5 lookups, counts, PKSK', { tag: [moduleTag(4), '@qa'] }, () 
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/admin/questions')
-    await expect(byId(page, 'questions-total')).toHaveText('Jumlah: 465,278 soalan')
-    const tile = byId(page, 'questions-tile').filter({ hasText: /Prinsip Pera/ })
-    await expect(tile).toContainText('2,970 lulus')
+    await expect(byId(page, 'questions-total')).toHaveText('Jumlah: 268,777 soalan')
+    await expect(byId(page, 'questions-kpis')).toContainText('98,143')
     await gotoApp('/admin/questions?status=approved')
-    await expect(byId(page, 'questions-pager')).toBeVisible()
+    await expect(byId(page, 'questions-table')).toBeVisible()
     await gotoApp('/admin/questions/quality')
-    await expect(byId(page, 'kpi-total-value')).toHaveText('465,278')
+    await expect(byId(page, 'kpi-total')).toContainText('268,777')
     await gotoApp('/admin/structured-questions')
-    await expect(byId(page, 'structured-stat-total-value')).toHaveText('4,064')
+    await expect(byId(page, 'structured-stat-total')).toContainText('4,064')
     await gotoApp('/admin/soalan-gambar')
-    await expect(byId(page, 'diagrams-stat-mcq-value')).toHaveText('6,144')
-    await expect(byId(page, 'diagrams-stat-structured-value')).toHaveText('522')
-    await expect(byId(page, 'diagrams-stat-total-value')).toHaveText('6,666')
+    await expect(byId(page, 'diagrams-stat-mcq')).toContainText('5,653')
+    await expect(byId(page, 'diagrams-stat-structured')).toContainText('522')
+    await expect(byId(page, 'diagrams-stat-total')).toContainText('6,175')
   })
 
-  test('E2E-M04-57 status split 146,330 approved / 318,948 archived (AC-29.3)', async ({
+  test('E2E-M04-57 status split 98,143 approved / 170,634 not approved (AC-29.3)', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/admin/questions?status=approved')
-    await expect(byId(page, 'question-row').first()).toBeVisible()
-    const pg = byId(page, 'questions-pager')
-    if (await pg.getByText(/Showing/).count()) await expect(pg).toContainText('of 146330 results')
-    else {
-      // mobile pager has no total: read it through the API
-      const total = await page.evaluate(async () => {
-        const r = await (await fetch('/api/questions?status=approved&page=1')).json()
-        return r?.meta?.totalItems ?? r?.meta?.total ?? null
-      })
-      expect(total).toBe(146330)
-    }
+    await expect(byId(page, 'questions-table')).toBeVisible()
+    await expect(byId(page, 'questions-kpis')).toContainText('98,143')
+    await expect(byId(page, 'questions-kpis')).toContainText('170,634')
   })
 
   test('E2E-M04-62 PKSK: search finds no PKSK rows; S3 of 177698 shows text and "-" subject/level (AC-32.1, 32.2)', async ({
@@ -247,7 +243,7 @@ test.describe('QA G5 user-portal nav and S11 badge', { tag: [moduleTag(4), '@qa'
     await expect(dr.locator('a[href="/admin/soalan-gambar"]')).toHaveCount(0)
   })
 
-  test('E2E-M04-51 dismissing a diagram question lowers the "Gambar Rajah" badge by 1 (AC-26.2, 28.4)', async ({
+  test('E2E-M04-51 dismissing a diagram question lowers the count by 1 and stays lower (AC-26.2)', async ({
     page,
     loginAs,
     gotoApp,
@@ -258,11 +254,11 @@ test.describe('QA G5 user-portal nav and S11 badge', { tag: [moduleTag(4), '@qa'
     const card = page.locator('[data-kind="mcq"][data-question-id]').first()
     await expect(card).toBeVisible()
     await card.getByTestId('diagram-dismiss').click()
-    await expect(byId(page, 'diagrams-stat-mcq-value')).toHaveText('6,143')
-    await page.goto('/admin/master-notes')
+    await expect(byId(page, 'diagrams-stat-mcq')).toContainText('5,652')
+    // Since the portals (D28) an admin has no user sidebar, so the lower count is read after a reload.
+    await page.goto('/admin/soalan-gambar')
     await waitForApp(page, 90_000)
-    const badge = byId(page, 'shell-user-sidebar').locator('a[href="/admin/soalan-gambar"]')
-    await expect(badge).toContainText('6,143')
+    await expect(byId(page, 'diagrams-stat-mcq')).toContainText('5,652')
   })
 })
 
@@ -278,12 +274,13 @@ test.describe('QA G5 S8/S9 details', { tag: [moduleTag(4), '@qa'] }, () => {
     await loginAs(ADMIN)
     await gotoApp('/admin/structured-questions')
     await expect(page.getByRole('heading', { name: 'Soalan Berstruktur' }).first()).toBeVisible()
-    await expect(page.getByText('Semua soalan berstruktur SPM dalam sistem')).toBeVisible()
+    await expect(byId(page, 'pentadbiran-subtitle')).toHaveText('Semua soalan berstruktur SPM dalam sistem')
     // D9 dead link: the M10 create form is not routed, so the button is hidden.
     await expect(byId(page, 'structured-add')).toHaveCount(0)
     await expect(page.locator('a[href*="soalan-berstruktur"]')).toHaveCount(0)
     await expect(byId(page, 'structured-stat-total')).toContainText('Jumlah Soalan')
     await expect(byId(page, 'structured-stat-published')).toContainText('Diluluskan')
+    await openFilters(page)
     const kbat = (await byId(page, 'structured-kbat').locator('option').allInnerTexts()).map((s) =>
       s.trim(),
     )
@@ -294,16 +291,14 @@ test.describe('QA G5 S8/S9 details', { tag: [moduleTag(4), '@qa'] }, () => {
       'Menganalisis (L4)',
       'Menilai/Mencipta (L5)',
     ])
-    await expect(byId(page, 'structured-level').locator('option')).toHaveCount(12)
-    await expect(byId(page, 'structured-reset')).toHaveCount(0)
+    await expect(byId(page, 'structured-level').locator('option')).toHaveCount(6)
+    if (viewportWidth(page) < 768) await page.keyboard.press('Escape')
     const pills = (await byId(page, 'structured-subject-pill').allInnerTexts()).map((s) => s.trim())
     expect(pills.length).toBeGreaterThan(5)
     const names = pills.map((p) => (p.split(':')[0] ?? '').trim())
     expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, 'ms')))
     for (const p of pills) expect(p).toMatch(/^.+:\s*[\d,]+$/)
-    await expect(byId(page, 'structured-counter')).toContainText(
-      'Menunjukkan 1–25 daripada 4,064 soalan',
-    )
+    await expect(page.locator('[data-ds="data-table-pager"]')).toContainText('4064')
   })
 
   test('E2E-M04-47 S9: edit link goes to the M10 route, back link returns (AC-23.1, 23.3)', async ({

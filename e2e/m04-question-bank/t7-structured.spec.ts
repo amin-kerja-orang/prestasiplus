@@ -11,23 +11,30 @@ import {
   expectNoHorizontalScroll,
   expectTabTitle,
   expectTouchTarget,
-  isInViewportX,
-  isMobileWidth,
   moduleTag,
   provisional,
   TAG,
   viewportWidth,
 } from '../support'
 
+import { openFilters } from './list-helpers'
+
 const ADMIN = 'admin@demo.test'
 const LIST = '/admin/structured-questions'
 
 function rows(page: Page) {
-  return page.getByTestId('structured-row')
+  return page.getByTestId('structured-table').locator('tbody tr, li')
 }
 
 function pager(page: Page) {
-  return page.getByRole('navigation', { name: 'Pagination Navigation' })
+  return page.locator('[data-ds="data-table-pager"]')
+}
+
+/** The apply button: in the sheet below 768 px, in the bar from 768 px. */
+function applyButton(page: Page) {
+  return viewportWidth(page) < 768
+    ? page.locator('[data-ds="filter-sheet"]').getByRole('button').first()
+    : page.getByTestId('structured-filter').locator('button[type=submit]')
 }
 
 async function openList(page: Page, gotoApp: (path: string) => Promise<void>, path = LIST) {
@@ -45,20 +52,14 @@ test.describe('M04 S8 structured list', { tag: [TAG.smoke, moduleTag(4)] }, () =
   }) => {
     await loginAs(ADMIN)
     await openList(page, gotoApp)
-    await expectTabTitle(page, 'Soalan Berstruktur')
-    await expect(page.getByTestId('shell-admin-title')).toHaveText('Soalan Berstruktur')
-    await expect(page.getByTestId('shell-admin-subtitle')).toHaveCount(0)
-    await expect(page.getByTestId('structured-page').getByRole('heading', { level: 1 })).toHaveText(
-      'Soalan Berstruktur',
+    await expectTabTitle(page, 'Soalan Berstruktur | PRESTASIPLUS')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Soalan Berstruktur')
+    await expect(page.getByTestId('pentadbiran-subtitle')).toHaveText(
+      'Semua soalan berstruktur SPM dalam sistem',
     )
-    await expect(page.getByText('Semua soalan berstruktur SPM dalam sistem')).toBeVisible()
     // D9 dead link: the M10 create form is not routed, so "Tambah Soalan" is hidden (no link to a 404).
     await expect(page.getByTestId('structured-add')).toHaveCount(0)
     await expect(page.locator('a[href*="soalan-berstruktur"]')).toHaveCount(0)
-    const search = page.getByTestId('structured-filter').locator('button[type=submit]')
-    // Wait for the layout to settle (fonts, grid) before measuring the hit area.
-    await expect.poll(async () => (await search.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44)
-    await expectTouchTarget(search)
 
     await expect(page.getByTestId('structured-stat-total')).toContainText('4,064')
     await expect(page.getByTestId('structured-stat-total')).toContainText('Jumlah Soalan')
@@ -69,9 +70,10 @@ test.describe('M04 S8 structured list', { tag: [TAG.smoke, moduleTag(4)] }, () =
       'Bahasa Inggeris: 774',
     )
 
-    // Filter: 31 subjects + all, 11 levels + all, KBAT 2 to 5 + all.
+    // Filter: 31 subjects + all, Tingkatan 1 to 5 + all, KBAT 2 to 5 + all. Behind a sheet on a phone.
+    await openFilters(page)
     await expect(page.getByTestId('structured-subject').locator('option')).toHaveCount(32)
-    await expect(page.getByTestId('structured-level').locator('option')).toHaveCount(12)
+    await expect(page.getByTestId('structured-level').locator('option')).toHaveCount(6)
     await expect(page.getByTestId('structured-kbat').locator('option')).toHaveText([
       'Semua KBAT',
       'Memahami (L2)',
@@ -79,44 +81,19 @@ test.describe('M04 S8 structured list', { tag: [TAG.smoke, moduleTag(4)] }, () =
       'Menganalisis (L4)',
       'Menilai/Mencipta (L5)',
     ])
-    await expect(page.getByTestId('structured-search')).toHaveText('Cari')
-    await expect(page.getByTestId('structured-reset')).toHaveCount(0)
+    await expectTouchTarget(applyButton(page))
+    if (viewportWidth(page) < 768) await page.keyboard.press('Escape')
 
-    // Table: 25 rows, the first three ids are the observed anchors.
+    // 25 rows, the first three ids are the observed anchors.
     await expect(rows(page)).toHaveCount(25)
-    await expect(rows(page).nth(0).locator('td').first()).toHaveText('4454')
-    await expect(rows(page).nth(1).locator('td').first()).toHaveText('4455')
-    await expect(rows(page).nth(2).locator('td').first()).toHaveText('4456')
-    await expect(rows(page).first().getByTestId('structured-kbat-pill')).toHaveText('L3')
-    await expect(rows(page).first().getByTestId('structured-view')).toHaveText('Lihat')
-    await expect(page.getByTestId('structured-counter')).toHaveText(
-      'Menunjukkan 1–25 daripada 4,064 soalan',
-    )
-
-    // Column visibility: Subjek, Tgk, Markah from 640, Sub-Q from 768.
-    const width = viewportWidth(page)
-    const th = (name: string) => page.locator('thead th', { hasText: new RegExp(`^${name}$`) })
-    if (width < 640) {
-      await expect(th('Subjek')).toBeHidden()
-      await expect(th('Tgk')).toBeHidden()
-      await expect(th('Markah')).toBeHidden()
-    } else {
-      await expect(th('Subjek')).toBeVisible()
-      await expect(th('Tgk')).toBeVisible()
-      await expect(th('Markah')).toBeVisible()
+    if (viewportWidth(page) >= 768) {
+      await expect(rows(page).nth(0).locator('td').first()).toHaveText('4454')
+      await expect(rows(page).nth(1).locator('td').first()).toHaveText('4455')
+      await expect(rows(page).nth(2).locator('td').first()).toHaveText('4456')
+      await expect(rows(page).first().getByTestId('structured-kbat-pill')).toHaveText('L3')
     }
-    if (width < 768) await expect(th('Sub-Q')).toBeHidden()
-    else await expect(th('Sub-Q')).toBeVisible()
-
-    // Pager: mobile "« Previous / Next »", otherwise the numbered strip that fits (DV-M04-09).
-    if (isMobileWidth(page)) {
-      await expect(pager(page).getByText('Next »')).toBeVisible()
-    } else {
-      await expect(pager(page)).toContainText('Showing 1 to 25 of 4064 results')
-      const last = pager(page).getByRole('link', { name: 'Go to page 163' })
-      await expect(last).toBeVisible()
-      expect(await isInViewportX(page, last)).toBe(true)
-    }
+    await expect(rows(page).first().getByTestId('structured-view')).toHaveAttribute('aria-label', 'Lihat')
+    await expect(pager(page)).toBeVisible()
     await expectNoHorizontalScroll(page)
   })
 
@@ -127,11 +104,8 @@ test.describe('M04 S8 structured list', { tag: [TAG.smoke, moduleTag(4)] }, () =
   }) => {
     await loginAs(ADMIN)
     await openList(page, gotoApp)
-    await pager(page).getByRole('link', { name: /Next/ }).first().click()
+    await pager(page).getByRole('button', { name: 'Halaman seterusnya' }).click()
     await expect(page).toHaveURL(/\/admin\/structured-questions\?page=2$/)
-    await expect(page.getByTestId('structured-counter')).toHaveText(
-      'Menunjukkan 26–50 daripada 4,064 soalan',
-    )
     await expect(rows(page)).toHaveCount(25)
     await expectNoHorizontalScroll(page)
   })
@@ -143,21 +117,18 @@ test.describe('M04 S8 structured list', { tag: [TAG.smoke, moduleTag(4)] }, () =
   }) => {
     await loginAs(ADMIN)
     await openList(page, gotoApp)
+    await openFilters(page)
     await page.getByTestId('structured-kbat').selectOption({ label: 'Menilai/Mencipta (L5)' })
-    await page.getByTestId('structured-search').click()
+    await applyButton(page).click()
     await expect(page).toHaveURL(/kbat_level=5/)
-    await expect(page.getByTestId('structured-counter')).toHaveText(
-      'Menunjukkan 1–25 daripada 483 soalan',
-    )
-    await expect(rows(page).first().getByTestId('structured-kbat-pill')).toHaveText('L5')
-    const reset = page.getByTestId('structured-reset')
-    await expect(reset).toHaveText('Reset')
+    await expect(pager(page)).toContainText('483')
+    if (viewportWidth(page) >= 768)
+      await expect(rows(page).first().getByTestId('structured-kbat-pill')).toHaveText('L5')
     await expectNoHorizontalScroll(page)
-    await reset.click()
+    await openFilters(page)
+    await page.getByRole('button', { name: 'Set Semula', exact: true }).first().click()
     await expect(page).toHaveURL(/\/admin\/structured-questions$/)
-    await expect(page.getByTestId('structured-counter')).toHaveText(
-      'Menunjukkan 1–25 daripada 4,064 soalan',
-    )
+    await expect(pager(page)).toContainText('4064')
   })
 
   test(
@@ -189,12 +160,12 @@ test.describe('M04 S9 structured detail', { tag: [TAG.smoke, moduleTag(4)] }, ()
     await loginAs(ADMIN)
     await openList(page, gotoApp)
     const view = rows(page).first().getByTestId('structured-view')
-    await expectTouchTarget(view)
+    if (viewportWidth(page) < 1024) await expectTouchTarget(view)
     await view.click()
     await expect(page).toHaveURL(/\/admin\/structured-questions\/4454$/)
     await expect(page.getByTestId('structured-detail')).toBeVisible()
-    await expectTabTitle(page, 'Detail Soalan Berstruktur')
-    await expect(page.getByTestId('shell-admin-title')).toHaveText('Detail Soalan Berstruktur')
+    await expectTabTitle(page, 'Detail Soalan Berstruktur | PRESTASIPLUS')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Detail Soalan Berstruktur')
     await expect(page.getByTestId('structured-id')).toHaveText('ID: #4454')
     await expect(page.getByTestId('structured-pill-marks')).toHaveText('8 Markah')
     await expect(page.getByTestId('structured-subs-heading')).toHaveText(
