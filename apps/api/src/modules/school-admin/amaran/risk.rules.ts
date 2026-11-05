@@ -77,10 +77,12 @@ export function computeRisk(input: RiskInputs, now: number): RiskComputed {
 
 // --- labels and filters -----------------------------------------------------------------------------------------------------
 
-/** `T4`, `T5`, `4`, `5` (any case) to 4 or 5; anything else is no filter. */
-export function parseTingkatan(value: string | undefined): 4 | 5 | undefined {
+export type Tingkatan = 1 | 2 | 3 | 4 | 5
+
+/** `T1`..`T5` or `1`..`5` (any case) to 1..5 (Tingkatan 1-5, D101 / FR-X3-3); anything else is no filter. */
+export function parseTingkatan(value: string | undefined): Tingkatan | undefined {
   const v = value?.trim().toUpperCase().replace(/^T/, '')
-  return v === '4' ? 4 : v === '5' ? 5 : undefined
+  return v !== undefined && /^[1-5]$/.test(v) ? (Number(v) as Tingkatan) : undefined
 }
 
 /** "Tingkatan n" (grades 7 to 11), "Darjah n" (grades 1 to 6) or null. */
@@ -107,7 +109,7 @@ export function classLabelOf(classes: readonly ClassFact[]): string {
 }
 
 /** A pupil is in a tingkatan when one of the active classes is of that level (the filter is class based). */
-export const inTingkatan = (classes: readonly ClassFact[], t: 4 | 5): boolean => classes.some((c) => c.slug === `tingkatan-${t}`)
+export const inTingkatan = (classes: readonly ClassFact[], t: Tingkatan): boolean => classes.some((c) => c.slug === `tingkatan-${t}`)
 
 /** The MYT calendar date (yyyy-mm-dd) of an instant. */
 export const mytDate = (ms: number): string => new Date(ms + MYT_OFFSET_MS).toISOString().slice(0, 10)
