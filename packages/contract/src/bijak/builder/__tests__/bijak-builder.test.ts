@@ -106,6 +106,8 @@ const summary = (over: Record<string, unknown> = {}) => ({
   budget: 6,
   ok: true,
   updatedAt: TS,
+  sourceBatchId: null,
+  importIssueCount: 0,
   ...over,
 })
 const bq = (over: Record<string, unknown> = {}) => ({

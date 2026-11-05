@@ -530,6 +530,12 @@ export const BijakBuilderPaperSummarySchema = z
     levelScope: BijakLevelScopeSchema.nullable().optional().meta({
       description: 'S3-T02 `Dilihat murid` column; null = not restricted. Always sent by the server.',
     }),
+    sourceBatchId: IdSchema.nullable().meta({
+      description: 'S1-T10 (DM-45): the intake batch the paper was imported from; null for every other paper.',
+    }),
+    importIssueCount: z.number().int().min(0).meta({
+      description: 'S1-T10 (D7): placed questions whose status is not `approved` (Draf or Semak). 0 for a paper that is not imported.',
+    }),
     origins: z
       .array(z.strictObject({ negeri: z.string(), count: z.number().int().min(1) }))
       .optional()
@@ -1022,6 +1028,10 @@ export const BijakBuilderPaperListQuerySchema = z
     search: z.string().trim().max(100).optional().meta({
       description: 'R12 "Cari": case-insensitive substring of the paper title or code (kod kertas). Blank = no filter.',
     }),
+    imported: z.enum(['true']).optional().meta({
+      description: 'S1-T10 `Kertas Diimport`: only papers created from an intake batch (`sourceBatchId` set), newest first. Only `true` is accepted; omit it for all papers.',
+    }),
+    sourceBatchId: IdSchema.optional().meta({ description: 'S1-T10: only the paper imported from this intake batch.' }),
   })
   .meta({ id: 'BijakBuilderPaperListQuery' })
 export type BijakBuilderPaperListQuery = z.infer<typeof BijakBuilderPaperListQuerySchema>
