@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
 import { ADMIN, STUDENT, STUDENT_2, STUDENT_MAJU, actorFor, apiOf, bareUser, bootShopApp, fund, insertDraw, insertReward, login, stockOf, userIdOf, walletRow, type ShopTestApp } from './helpers'
 
@@ -118,6 +118,99 @@ describe('M15 concurrency (BE-23, AC1)', () => {
       }
       expect(await tickets(u)).toBe(2)
       expect(await redemptions(u)).toBe(0)
+    })
+  })
+
+  describe('session budget (S7-T05, ERR-GAME-22)', () => {
+    const setBudget = (sen: number) => t.db.query(`update reward_settings set redeem_budget_sen = $1`, [sen])
+    const spent = async (reward: string) => Number((await t.db.query<{ s: string }>(`select coalesce(sum(cost_value_sen_snapshot), 0)::text s from reward_redemptions where reward_id = $1 and status <> 'cancelled'`, [reward]))[0]!.s)
+    const clearBudgetUse = () => t.db.query(`update reward_redemptions set status = 'cancelled', cancelled_by = 'admin' where status <> 'cancelled' and cost_value_sen_snapshot > 0`)
+
+    afterEach(async () => {
+      await clearBudgetUse()
+      await setBudget(300)
+    })
+
+    const pupils = async (n: number, label: string, tokens: number) => {
+      const out: string[] = []
+      for (let i = 0; i < n; i++) {
+        const u = await bareUser(t, `${label} ${String(i)}`)
+        await fund(t, u, { tokens }, 'budget')
+        out.push(u)
+      }
+      return out
+    }
+
+    it('8 different pupils in parallel, room for 2 gifts: exactly 2 succeed, the sum stays inside the budget, and every refused pupil keeps tokens and stock', async () => {
+      await setBudget(1000)
+      const reward = await insertReward(t, { tokenCost: 5, stock: 20, costSen: 400 })
+      const buyers = await pupils(8, 'bajet selari', 5)
+      const { ok, codes } = await settle(buyers.map((u) => t.shop.redeem(actorFor(u), { rewardId: reward })))
+      expect(ok).toHaveLength(2)
+      expect(codes).toEqual(Array(6).fill('REDEEM_BUDGET'))
+      expect(await spent(reward)).toBe(800)
+      expect(await stockOf(t, reward)).toBe(18)
+      const wallets = await Promise.all(buyers.map((u) => walletRow(t, u)))
+      expect(wallets.filter((w) => w.tokens === 0)).toHaveLength(2)
+      expect(wallets.filter((w) => w.tokens === 5)).toHaveLength(6)
+    })
+
+    it('different gifts do not share a row lock, yet the budget still holds: 6 pupils on 6 gifts, room for 3', async () => {
+      await setBudget(900)
+      const gifts = await Promise.all(Array.from({ length: 6 }, () => insertReward(t, { tokenCost: 1, stock: null, costSen: 300 })))
+      const buyers = await pupils(6, 'bajet hadiah lain', 1)
+      const { ok, codes } = await settle(buyers.map((u, i) => t.shop.redeem(actorFor(u), { rewardId: gifts[i] })))
+      expect(ok).toHaveLength(3)
+      expect(codes).toEqual(Array(3).fill('REDEEM_BUDGET'))
+    })
+
+    it('a digital redeem does not wait for the budget lock and succeeds while a non-digital redeem holds it', async () => {
+      const digital = await insertReward(t, { tokenCost: 1, stock: null })
+      const [u] = await pupils(1, 'bajet digital', 1)
+      let release!: () => void
+      const held = new Promise<void>((r) => (release = r))
+      let locked!: () => void
+      const isLocked = new Promise<void>((r) => (locked = r))
+      const holder = t.prisma.$transaction(async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('shop:redeem-budget'), 0)`
+        locked()
+        await held
+      })
+      await isLocked
+      try {
+        const got = await t.shop.redeem(actorFor(u!), { rewardId: digital })
+        expect(got.tokenBalance).toBe(0)
+      } finally {
+        release()
+        await holder
+      }
+    })
+
+    it('a non-digital redeem does wait for the budget lock, and counts the sum after it', async () => {
+      await setBudget(500)
+      const gift = await insertReward(t, { tokenCost: 1, stock: null, costSen: 500 })
+      const first = await insertReward(t, { tokenCost: 1, stock: null, costSen: 500 })
+      const [a, b] = await pupils(2, 'bajet tunggu', 1)
+      let release!: () => void
+      const held = new Promise<void>((r) => (release = r))
+      let locked!: () => void
+      const isLocked = new Promise<void>((r) => (locked = r))
+      // Holds the lock and spends the whole budget on its own connection, then commits.
+      const holder = t.prisma.$transaction(async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('shop:redeem-budget'), 0)`
+        locked()
+        await held
+        await tx.$executeRaw`insert into reward_redemptions (user_id, reward_id, reward_title, reward_vendor, denomination_rm, token_cost, token_cost_snapshot, cost_value_sen_snapshot, status, created_at, updated_at)
+          values (${BigInt(a!)}, ${BigInt(first)}, 'Hadiah', 'Vendor', 1, 1, 1, 500, 'pending_admin', '2026-10-19T09:00:00+08:00', '2026-10-19T09:00:00+08:00')`
+      })
+      await isLocked
+      let done = false
+      const waiting = settle([t.shop.redeem(actorFor(b!), { rewardId: gift })]).then((r) => ((done = true), r))
+      await new Promise((r) => setTimeout(r, 400))
+      expect(done).toBe(false)
+      release()
+      await holder
+      expect((await waiting).codes).toEqual(['REDEEM_BUDGET'])
     })
   })
 

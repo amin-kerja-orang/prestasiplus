@@ -611,7 +611,7 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
     tags: ['rewards'],
     summary: 'Redeem a catalogue reward with tokens',
     description:
-      'One transaction: snapshot redemption row, token debit (source hadiah_redeem, ref redemption:{id}), stock - 1 when stock is limited. Checks run in this order: reward exists and is active, stock, monthly cap (non-cancelled redemptions of that reward in the Malaysia calendar month), token balance. Any refusal rolls back everything. A repeat with the same clientUuid from the same user returns the first redemption before any of these checks; no header and no time window (DM-78).',
+      'One transaction: snapshot redemption row (with the reward token cost and real cost at this moment), token debit (source hadiah_redeem, ref redemption:{id}), stock - 1 when stock is limited. Checks run in this order: reward exists and is active, stock, monthly cap (non-cancelled redemptions of that reward in the Malaysia calendar month), session budget (only a reward with a real cost above 0; the real cost snapshots of every pupil\'s pending_admin and delivered redemptions created in the Malaysia calendar year of the session year, plus this reward, must not pass the budget; DM-48), token balance. Any refusal rolls back everything. A repeat with the same clientUuid from the same user returns the first redemption before any of these checks; no header and no time window (DM-78).',
     request: { headers: [csrf], body: body(RewardRedeemRequestSchema) },
     responses: {
       201: json(envelopeOf(RewardRedeemResultSchema), 'Redeemed.'),
@@ -619,7 +619,7 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
       403: FORBIDDEN_CSRF,
       404: err('NOT_FOUND "Hadiah tidak dijumpai." (missing or inactive reward).'),
       409: err(
-        'OUT_OF_STOCK "Stok hadiah telah habis."; MONTHLY_CAP "Had tebusan bulanan dicapai."; INSUFFICIENT_TOKENS "Token tidak mencukupi.".',
+        'OUT_OF_STOCK "Stok hadiah telah habis."; MONTHLY_CAP "Had tebusan bulanan dicapai."; REDEEM_BUDGET "Had tebusan sesi ini telah dicapai." (ERR-GAME-22); INSUFFICIENT_TOKENS "Token tidak mencukupi.".',
       ),
       422: err('VALIDATION_ERROR fields.rewardId "The reward id field is required." (missing, non-numeric or below 1; the top-level message is the same text); fields.clientUuid "The client uuid field must be a valid UUID.".'),
     },

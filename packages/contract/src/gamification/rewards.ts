@@ -66,6 +66,7 @@ export type RewardBulkAction = z.infer<typeof RewardBulkActionSchema>
 export const REWARD_ERROR_CODES = [
   'OUT_OF_STOCK',
   'MONTHLY_CAP',
+  'REDEEM_BUDGET',
   'INSUFFICIENT_TOKENS',
   'DRAW_CLOSED',
   'TICKET_LIMIT',
@@ -79,6 +80,7 @@ export type RewardErrorCode = z.infer<typeof RewardErrorCodeSchema>
 export const REWARD_ERRORS = {
   OUT_OF_STOCK: { status: 409, messages: ['Stok hadiah telah habis.'] },
   MONTHLY_CAP: { status: 409, messages: ['Had tebusan bulanan dicapai.'] },
+  REDEEM_BUDGET: { status: 409, messages: ['Had tebusan sesi ini telah dicapai.'] },
   INSUFFICIENT_TOKENS: { status: 409, messages: ['Token tidak mencukupi.'] },
   DRAW_CLOSED: { status: 409, messages: ['Cabutan ditutup.'] },
   TICKET_LIMIT: { status: 409, messages: ['Had tiket dicapai.'] },

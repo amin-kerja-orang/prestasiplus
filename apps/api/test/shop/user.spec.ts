@@ -7,9 +7,9 @@ import {
   ShopDigitalItemsResponseSchema,
   ShopDigitalRedemptionsResponseSchema,
 } from '@pp/contract'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
-import { ADMIN, STUDENT, STUDENT_2, STUDENT_MAJU, actorFor, apiOf, bootShopApp, expectError, fund, insertDraw, insertReward, login, refusal, stockOf, userIdOf, walletRow, type ShopTestApp } from './helpers'
+import { ADMIN, STUDENT, STUDENT_2, STUDENT_MAJU, actorFor, apiOf, bareUser, bootShopApp, expectError, fund, insertDraw, insertReward, login, refusal, stockOf, userIdOf, walletRow, type ShopTestApp } from './helpers'
 
 describe('M15 student routes (BE-23)', () => {
   let t: ShopTestApp
@@ -21,6 +21,113 @@ describe('M15 student routes (BE-23)', () => {
   })
 
   const as = async (who: string) => apiOf(await login(t, who))
+
+  describe('session budget of a redeem (S7-T05, 48 GAME-21 step 4, ERR-GAME-22)', () => {
+    const MESSAGE = 'Had tebusan sesi ini telah dicapai.'
+    const setBudget = (sen: number, year = 2026) => t.db.query(`update reward_settings set redeem_budget_sen = $1, session_year = $2`, [sen, year])
+    let n = 0
+    const pupil = async (tokens = 100) => {
+      const u = await bareUser(t, `Pelajar Bajet ${String(n++)}`)
+      if (tokens > 0) await fund(t, u, { tokens }, 'budget')
+      return u
+    }
+    const row = async (id: string) => (await t.db.query<{ token_cost: number; token_cost_snapshot: number; cost_value_sen_snapshot: number }>(`select token_cost, token_cost_snapshot, cost_value_sen_snapshot from reward_redemptions where id = $1`, [id]))[0]!
+
+    beforeEach(async () => {
+      await t.db.query(`update reward_redemptions set status = 'cancelled', cancelled_by = 'admin' where status <> 'cancelled'`)
+      await setBudget(300)
+    })
+    afterAll(async () => {
+      await setBudget(300)
+    })
+
+    it('AC-GM-21.3, AC-ADM-P2-09.1: a 1000-sen gift against a 300-sen budget answers 409 ERR-GAME-22 over HTTP and nothing moves', async () => {
+      const uid = await userIdOf(t.db, STUDENT_2)
+      await fund(t, uid, { tokens: 20 }, 'budget-http')
+      const before = (await walletRow(t, uid)).tokens
+      const reward = await insertReward(t, { tokenCost: 10, stock: 3, costSen: 1000 })
+      const res = await (await as(STUDENT_2)).post('/hadiah/redemptions', { rewardId: reward })
+      expectError(res, 409, 'REDEEM_BUDGET', MESSAGE)
+      expect((await walletRow(t, uid)).tokens).toBe(before)
+      expect(await stockOf(t, reward)).toBe(3)
+      expect(await t.db.query(`select 1 from reward_redemptions where reward_id = $1`, [reward])).toHaveLength(0)
+    })
+
+    it('AC-GM-21.4: a digital gift (0 sen) succeeds when the budget is used up', async () => {
+      await setBudget(0)
+      const digital = await insertReward(t, { tokenCost: 10, stock: null })
+      const u = await pupil()
+      expect((await t.shop.redeem(actorFor(u), { rewardId: digital })).status).toBe('pending_admin')
+    })
+
+    it('allows up to exactly the budget, sums every pupil, and refuses the next sen', async () => {
+      const a = await insertReward(t, { tokenCost: 1, stock: null, costSen: 200 })
+      const b = await insertReward(t, { tokenCost: 1, stock: null, costSen: 100 })
+      const c = await insertReward(t, { tokenCost: 1, stock: null, costSen: 1 })
+      await t.shop.redeem(actorFor(await pupil()), { rewardId: a })
+      await t.shop.redeem(actorFor(await pupil()), { rewardId: b })
+      await expect(t.shop.redeem(actorFor(await pupil()), { rewardId: c })).rejects.toMatchObject({ code: 'REDEEM_BUDGET', message: MESSAGE })
+    })
+
+    it('writes both snapshots, and the sum reads the snapshot, not the cost the admin sets later', async () => {
+      const reward = await insertReward(t, { tokenCost: 7, stock: null, costSen: 250 })
+      const got = await t.shop.redeem(actorFor(await pupil()), { rewardId: reward })
+      expect(await row(got.id)).toEqual({ token_cost: 7, token_cost_snapshot: 7, cost_value_sen_snapshot: 250 })
+      await t.db.query(`update rewards set cost_value_sen = 0, token_cost = 99 where id = $1`, [reward])
+      const other = await insertReward(t, { tokenCost: 1, stock: null, costSen: 51 })
+      await expect(t.shop.redeem(actorFor(await pupil()), { rewardId: other })).rejects.toMatchObject({ code: 'REDEEM_BUDGET' })
+      expect(await row(got.id)).toEqual({ token_cost: 7, token_cost_snapshot: 7, cost_value_sen_snapshot: 250 })
+    })
+
+    it('a digital redemption keeps snapshot 0; a delivered one counts; a cancelled one frees its budget', async () => {
+      const digital = await insertReward(t, { tokenCost: 1, stock: null })
+      const gift = await insertReward(t, { tokenCost: 1, stock: null, costSen: 300 })
+      const free = await t.shop.redeem(actorFor(await pupil()), { rewardId: digital })
+      expect((await row(free.id)).cost_value_sen_snapshot).toBe(0)
+      const first = await t.shop.redeem(actorFor(await pupil()), { rewardId: gift })
+      await t.db.query(`update reward_redemptions set status = 'delivered', voucher_code = 'KOD', delivered_at = now() where id = $1`, [first.id])
+      await expect(t.shop.redeem(actorFor(await pupil()), { rewardId: gift })).rejects.toMatchObject({ code: 'REDEEM_BUDGET' })
+      await (await as(ADMIN)).post(`/admin/hadiah/redemptions/${free.id}/cancel`)
+      await expect(t.shop.redeem(actorFor(await pupil()), { rewardId: gift })).rejects.toMatchObject({ code: 'REDEEM_BUDGET' })
+      await t.db.query(`update reward_redemptions set status = 'cancelled', cancelled_by = 'admin' where id = $1`, [first.id])
+      expect((await t.shop.redeem(actorFor(await pupil()), { rewardId: gift })).status).toBe('pending_admin')
+    })
+
+    it('the window is the Malaysia calendar year of session_year, by created_at', async () => {
+      const gift = await insertReward(t, { tokenCost: 1, stock: null, costSen: 300 })
+      const first = await t.shop.redeem(actorFor(await pupil()), { rewardId: gift })
+      const moveTo = (at: string) => t.db.query(`update reward_redemptions set created_at = $1::timestamptz where id = $2`, [at, first.id])
+      await moveTo('2025-12-31T23:59:59+08:00')
+      const second = await t.shop.redeem(actorFor(await pupil()), { rewardId: gift })
+      await t.db.query(`update reward_redemptions set status = 'cancelled', cancelled_by = 'admin' where id = $1`, [second.id])
+      await moveTo('2026-01-01T00:00:00+08:00')
+      await expect(t.shop.redeem(actorFor(await pupil()), { rewardId: gift })).rejects.toMatchObject({ code: 'REDEEM_BUDGET' })
+      await moveTo('2027-01-01T00:00:00+08:00')
+      expect((await t.shop.redeem(actorFor(await pupil()), { rewardId: gift })).status).toBe('pending_admin')
+    })
+
+    it('runs in the order of GAME-21: stock, monthly cap, budget, then tokens', async () => {
+      const u = await pupil(0)
+      const outOfStock = await insertReward(t, { tokenCost: 1, stock: 0, costSen: 1000 })
+      await expect(t.shop.redeem(actorFor(u), { rewardId: outOfStock })).rejects.toMatchObject({ code: 'OUT_OF_STOCK' })
+      const overBudget = await insertReward(t, { tokenCost: 1, stock: 1, costSen: 1000 })
+      await expect(t.shop.redeem(actorFor(u), { rewardId: overBudget })).rejects.toMatchObject({ code: 'REDEEM_BUDGET' })
+      expect(await stockOf(t, overBudget)).toBe(1)
+      const affordable = await insertReward(t, { tokenCost: 1, stock: 1, costSen: 300 })
+      await expect(t.shop.redeem(actorFor(u), { rewardId: affordable })).rejects.toMatchObject({ code: 'INSUFFICIENT_TOKENS' })
+      expect(await stockOf(t, affordable)).toBe(1)
+      const capped = await insertReward(t, { tokenCost: 1, stock: 5, maxPerMonth: 0, costSen: 1000 })
+      await expect(t.shop.redeem(actorFor(await pupil()), { rewardId: capped })).rejects.toMatchObject({ code: 'MONTHLY_CAP' })
+    })
+
+    it('a repeat with the same clientUuid answers the first redemption even when the budget is used up', async () => {
+      const key = '7f3c2a10-5b1e-4c6d-9a2f-1e8b7c6d5a60'
+      const gift = await insertReward(t, { tokenCost: 1, stock: null, costSen: 300 })
+      const u = await pupil()
+      const first = await t.shop.redeem(actorFor(u), { rewardId: gift, clientUuid: key })
+      expect(await t.shop.redeem(actorFor(u), { rewardId: gift, clientUuid: key })).toEqual(first)
+    })
+  })
 
   describe('authentication, CSRF and the routes that are not built', () => {
     const reads = ['/cabutan', '/gamification/mystery-boxes', '/hadiah-digital/items', '/hadiah-digital/redemptions']

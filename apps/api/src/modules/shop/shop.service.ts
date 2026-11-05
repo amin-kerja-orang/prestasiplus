@@ -21,10 +21,11 @@ import { idFromString, idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { WalletService } from '../wallet'
 import { BOX_RANDOM, type BoxRandom } from './box-random'
+import { RewardSettingsService } from './reward-settings.service'
 import { MYSTERY_BOXES, SOURCES } from './shop.constants'
 import { boxNotFound, modPelajarRefused, plainNotFound, rewardError, rewardNotFound, validation } from './shop.errors'
 import { ShopRepository, idOrNull } from './shop.repository'
-import { drawStillOpen, mytMonthRange } from './shop.time'
+import { drawStillOpen, mytMonthRange, mytYearRange } from './shop.time'
 import type { ShopActor } from './actor'
 
 /** An INSUFFICIENT_BALANCE of the wallet is the shop's own code and text for tokens (M15 `INSUFFICIENT_TOKENS`). */
@@ -65,7 +66,8 @@ const DIGITS = /^\d+$/
  *
  * Locking: each spending write takes the user's advisory lock first (`ShopRepository.lockUser`), then the reward row
  * (`FOR UPDATE`), then the wallet row (inside `WalletService`). Two requests of one user are therefore serialised
- * (the monthly cap and the ticket limit are counted one request at a time), and the order never cycles.
+ * (the monthly cap and the ticket limit are counted one request at a time), and the order never cycles. A non-digital
+ * redeem also takes the global budget lock (`ShopRepository.lockBudget`) between the reward row and the wallet row.
  */
 @Injectable()
 export class ShopService {
@@ -75,6 +77,7 @@ export class ShopService {
     @Inject(WalletService) private readonly wallet: WalletService,
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(BOX_RANDOM) private readonly random: BoxRandom,
+    @Inject(RewardSettingsService) private readonly rewardSettings: RewardSettingsService,
   ) {}
 
   // --- #9 redeem --------------------------------------------------------------------------------------
@@ -101,6 +104,14 @@ export class ShopService {
       if (reward.maxPerMonthPerStudent !== null) {
         const { from, to } = mytMonthRange(at)
         if ((await this.repo.countMonthly(userId, rewardId, from, to)) >= reward.maxPerMonthPerStudent) throw rewardError('MONTHLY_CAP')
+      }
+      // Step 4 of 48 GAME-21. A digital gift (real cost 0) never uses the budget and never waits for its lock.
+      if (reward.costValueSen > 0) {
+        await this.repo.lockBudget()
+        const { redeemBudgetSen, sessionYear } = await this.rewardSettings.read(tx)
+        const { from, to } = mytYearRange(sessionYear)
+        const { costSen } = await this.repo.redemptionTotals(from, to)
+        if (costSen + reward.costValueSen > redeemBudgetSen) throw rewardError('REDEEM_BUDGET')
       }
       const row = await this.repo.insertRedemption({
         userId,

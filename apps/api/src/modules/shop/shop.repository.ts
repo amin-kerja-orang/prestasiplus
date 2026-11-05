@@ -53,6 +53,15 @@ export class ShopRepository {
     await this.db.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`shop:${userId}`}))`
   }
 
+  /**
+   * Serialises the check of the session budget, which is global: the user lock does not stop two pupils counting the
+   * same sum. Only a non-digital redeem takes it, after the reward row and before the wallet row (cancel never needs it,
+   * it only frees budget), so no cycle is possible. The two-key form cannot collide with a one-key user lock.
+   */
+  async lockBudget(): Promise<void> {
+    await this.db.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('shop:redeem-budget'), 0)`
+  }
+
   // --- rewards: admin ---------------------------------------------------------------------------------
 
   rewardsPage(category: string | undefined, skip: number, take: number): Promise<Reward[]> {
@@ -158,6 +167,20 @@ export class ShopRepository {
 
   countMonthly(userId: bigint, rewardId: bigint, from: Date, to: Date): Promise<number> {
     return this.db.rewardRedemption.count({ where: { userId, rewardId, status: NOT_CANCELLED, createdAt: { gte: from, lt: to } } })
+  }
+
+  /**
+   * The non-cancelled redemptions (`pending_admin`, `delivered`) of every pupil created in `[from, to)`: how many, by how many
+   * pupils, and the sum of their real cost snapshots. This one sum is both the session budget check and the liability tile
+   * (FR-ADM-P2-09.1); a digital redemption has snapshot 0, so it adds nothing to the sum.
+   */
+  async redemptionTotals(from: Date, to: Date): Promise<{ redemptions: number; students: number; costSen: number }> {
+    const rows = await this.db.$queryRaw<{ redemptions: bigint; students: bigint; cost: bigint }[]>`
+      SELECT count(*)::bigint AS redemptions, count(DISTINCT user_id)::bigint AS students, COALESCE(SUM(cost_value_sen_snapshot), 0)::bigint AS cost
+        FROM reward_redemptions
+       WHERE status IN ('pending_admin', 'delivered') AND created_at >= ${from}::timestamptz AND created_at < ${to}::timestamptz`
+    const [row] = rows
+    return { redemptions: Number(row?.redemptions ?? 0), students: Number(row?.students ?? 0), costSen: Number(row?.cost ?? 0) }
   }
 
   insertRedemption(data: {
