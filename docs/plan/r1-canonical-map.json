@@ -1978,6 +1978,26 @@
       "approved_by_card": null
     },
     {
+      "key": "/guru/soalan-berstruktur|",
+      "path": "/guru/soalan-berstruktur",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m04-question-bank/pages/StructuredListPage.vue",
+      "file": "src/modules/m10-teacher-class/routes/soalan.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
+      "key": "/guru/soalan-berstruktur/:id([0-9]+)|",
+      "path": "/guru/soalan-berstruktur/:id([0-9]+)",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m04-question-bank/pages/StructuredDetailPage.vue",
+      "file": "src/modules/m10-teacher-class/routes/soalan.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
       "key": "/guru/analisis-item|guru-analisis-item",
       "path": "/guru/analisis-item",
       "name": "guru-analisis-item",
