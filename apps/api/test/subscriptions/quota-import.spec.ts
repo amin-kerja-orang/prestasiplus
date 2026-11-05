@@ -239,10 +239,10 @@ describe('school quota and student import (AC 2)', () => {
     it('a ~1 MB text full of newlines and quotes gets the contract answer, never the generic 413 (both import routes)', async () => {
       const text = '"\n'.repeat(500_000)
       const student = await imp({ importMode: 'csv', csvFile: text })
-      expect(student.body.error?.message ?? '').not.toBe('Payload Too Large.')
+      expect(student.body.error?.message ?? '').not.toBe('Fail atau data terlalu besar. Saiz maksimum ialah 1 MB.')
       expect([200, 413, 422]).toContain(student.status)
       const users = await admin.post('/admin/users/bulk-import', { role: 'teacher', schoolId: s3, importMode: 'csv', csvFile: text })
-      expect(users.body.error?.message ?? '').not.toBe('Payload Too Large.')
+      expect(users.body.error?.message ?? '').not.toBe('Fail atau data terlalu besar. Saiz maksimum ialah 1 MB.')
       expect([200, 413, 422]).toContain(users.status)
     })
 

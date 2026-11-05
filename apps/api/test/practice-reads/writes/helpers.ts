@@ -127,7 +127,7 @@ export async function seededQuestion(db: TestDatabase, ref: string): Promise<str
 
 /** A leaf `short_text` part with the given marks. */
 export const leaf = (label: string, marks: number): QuestionPart =>
-  ({ label, prompt: rich(`Soalan ${label}`), mode: 'short_text', marks, key: { kind: 'accepted', values: [`jawapan ${label}`] } }) as QuestionPart
+  ({ label, prompt: rich(`Soalan ${label}`), mode: 'short_text', marks, cognitiveLevel: 'mengaplikasi', key: { kind: 'accepted', values: [`jawapan ${label}`] } }) as QuestionPart
 
 /**
  * Publishes one structured set through the real question service. `seedRef` borrows the curriculum tag

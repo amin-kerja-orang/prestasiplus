@@ -110,7 +110,7 @@ export const MSG_NO_SESSION_ROLE = 'Pengguna ini tiada peranan yang sah untuk lo
 
 const adminOnly = requireRole('admin')
 
-const unauthorized = () => fail(401, API_ERROR_CODES.UNAUTHORIZED, 'Unauthenticated.')
+const unauthorized = () => fail(401, API_ERROR_CODES.UNAUTHORIZED, 'Sesi anda telah tamat. Sila log masuk semula.')
 
 function adminId(req: MockRequest): number {
   if (!req.session) throw new Error('requireRole() must run first')

@@ -29,7 +29,14 @@
 
 import type { ListResult } from './envelope'
 import { isEnvelope, isListEnvelope } from './envelope'
-import { API_ERROR_CODES, ApiError, errorFromResponse } from './errors'
+import {
+  API_ERROR_CODES,
+  ApiError,
+  NETWORK_ERROR_MESSAGE_BM,
+  TIMEOUT_MESSAGE_BM,
+  errorFromResponse,
+  parseRetryAfterHeader,
+} from './errors'
 import type {
   HttpMethod,
   ResponseType,
@@ -55,6 +62,11 @@ export interface RequestOptions {
   raw?: boolean
   /** `'blob'` for downloads; prefer `api.blob()`, which also returns the file name. */
   responseType?: ResponseType
+  /**
+   * Client timeout in ms (X10.3.4). Default: 30 s JSON, 60 s multipart/Blob upload, 125 s blob
+   * download. Pass `IMPORT_TIMEOUT_MS` for import calls. A caller `signal` always wins.
+   */
+  timeoutMs?: number
 }
 
 export type GetOptions = Omit<RequestOptions, 'body'>
@@ -63,7 +75,22 @@ export interface RawRequestOptions {
   query?: QueryParams
   headers?: Record<string, string>
   signal?: AbortSignal
+  timeoutMs?: number
 }
+
+/** X10.3.4 client timeouts (ms). */
+export const JSON_TIMEOUT_MS = 30_000
+/** Uploads: `fetch` gives no upload progress, so this is an overall timer, not a no-progress timer. */
+export const UPLOAD_TIMEOUT_MS = 60_000
+/** Export / blob download and import calls (120 s plus 5 s margin). */
+export const IMPORT_TIMEOUT_MS = 125_000
+export const BLOB_TIMEOUT_MS = 125_000
+
+/** X10.3.4 automatic retry: at most 2 retries, after about 1 s and 3 s (each with 20 % jitter). */
+const RETRY_DELAYS_MS = [1000, 3000] as const
+const RETRY_JITTER = 0.2
+/** A 429 is retried only when its `retryAfter` is at most this many seconds. */
+const MAX_RETRY_AFTER_S = 10
 
 /** What `api.raw()` resolves to, for any HTTP status. */
 export interface RawResponse<B = unknown> {
@@ -159,6 +186,41 @@ function isAbort(err: unknown, signal: AbortSignal | undefined): boolean {
     signal?.aborted === true ||
     (typeof err === 'object' && err !== null && (err as { name?: unknown }).name === 'AbortError')
   )
+}
+
+function jittered(ms: number): number {
+  return Math.round(ms * (1 + (Math.random() * 2 - 1) * RETRY_JITTER))
+}
+
+/** Resolves after `ms`; rejects with an `AbortError` as soon as `signal` aborts. */
+function sleep(ms: number, signal: AbortSignal | undefined): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) return reject(new DOMException('Aborted', 'AbortError'))
+    const onAbort = () => {
+      clearTimeout(timer)
+      reject(new DOMException('Aborted', 'AbortError'))
+    }
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort)
+      resolve()
+    }, ms)
+    signal?.addEventListener('abort', onAbort, { once: true })
+  })
+}
+
+/** Seconds to wait before retrying `res`, or `null` when it must not be retried. */
+function retryWaitMs(res: TransportResponse, attempt: number): number | null {
+  if (res.status === 502 || res.status === 503 || res.status === 504) {
+    return jittered(RETRY_DELAYS_MS[attempt] as number)
+  }
+  if (res.status === 429) {
+    const body = res.body as { error?: { retryAfter?: unknown } } | null
+    const fromBody = body?.error?.retryAfter
+    const seconds =
+      typeof fromBody === 'number' ? fromBody : parseRetryAfterHeader(res.headers['retry-after'])
+    if (seconds !== undefined && seconds <= MAX_RETRY_AFTER_S) return seconds * 1000
+  }
+  return null
 }
 
 function isSuccess(status: number): boolean {
@@ -294,21 +356,39 @@ export class ApiClient {
     if (Object.keys(query).length > 0) req.query = query
     if (options.body !== undefined) req.body = options.body
 
-    let res: TransportResponse
-    try {
-      res = await transport.request(req, options.signal)
-    } catch (err) {
-      if (isAbort(err, options.signal)) throw err
-      throw new ApiError({
-        status: 0,
-        code: API_ERROR_CODES.NETWORK_ERROR,
-        message: err instanceof Error && err.message ? err.message : 'Network request failed',
-        method,
-        url: path,
-        cause: err,
-      })
+    const timeoutMs =
+      options.timeoutMs ??
+      (responseType === 'blob'
+        ? BLOB_TIMEOUT_MS
+        : isBinaryBody(options.body)
+          ? UPLOAD_TIMEOUT_MS
+          : JSON_TIMEOUT_MS)
+    // Automatic retry: idempotent reads only (X10.3.4); writes are never retried here.
+    const retryable = method === 'GET' || (method as string) === 'HEAD'
+
+    let res: TransportResponse | undefined
+    for (let attempt = 0; ; attempt++) {
+      let failure: ApiError | undefined
+      try {
+        res = await this.attempt(transport, req, options.signal, timeoutMs, method, path)
+      } catch (err) {
+        if (!(err instanceof ApiError)) throw err
+        failure = err
+      }
+      if (retryable && attempt < RETRY_DELAYS_MS.length) {
+        const wait = failure
+          ? jittered(RETRY_DELAYS_MS[attempt] as number)
+          : retryWaitMs(res as TransportResponse, attempt)
+        if (wait !== null) {
+          await sleep(wait, options.signal)
+          continue
+        }
+      }
+      if (failure) throw failure
+      break
     }
 
+    if (!res) throw new Error('ApiClient: no response (unreachable)')
     const normalised: TransportResponse = {
       status: res.status,
       headers: lowerCaseKeys(res.headers),
@@ -318,6 +398,54 @@ export class ApiClient {
       this.notifyUnauthorized({ method, url: path, status: normalised.status })
     }
     return normalised
+  }
+
+  /** One transport call with the client timer composed with the caller's signal (caller wins). */
+  private async attempt(
+    transport: Transport,
+    req: TransportRequest,
+    callerSignal: AbortSignal | undefined,
+    timeoutMs: number,
+    method: HttpMethod,
+    path: string,
+  ): Promise<TransportResponse> {
+    const controller = new AbortController()
+    let timedOut = false
+    const onCallerAbort = () => controller.abort()
+    if (callerSignal?.aborted) controller.abort()
+    else callerSignal?.addEventListener('abort', onCallerAbort, { once: true })
+    const timer = setTimeout(() => {
+      timedOut = true
+      controller.abort()
+    }, timeoutMs)
+    try {
+      return await transport.request(req, controller.signal)
+    } catch (err) {
+      if (callerSignal?.aborted) throw err
+      if (timedOut) {
+        throw new ApiError({
+          status: 0,
+          code: API_ERROR_CODES.NETWORK_ERROR,
+          subtype: 'TIMEOUT',
+          message: TIMEOUT_MESSAGE_BM,
+          method,
+          url: path,
+          cause: err,
+        })
+      }
+      if (isAbort(err, undefined)) throw err
+      throw new ApiError({
+        status: 0,
+        code: API_ERROR_CODES.NETWORK_ERROR,
+        message: NETWORK_ERROR_MESSAGE_BM,
+        method,
+        url: path,
+        cause: err,
+      })
+    } finally {
+      clearTimeout(timer)
+      callerSignal?.removeEventListener('abort', onCallerAbort)
+    }
   }
 
   private notifyUnauthorized(ctx: UnauthorizedContext): void {

@@ -9,7 +9,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { DsEmptyState, DsLoadError, DsPage, DsProgress, DsStickyActions } from '@/ds'
-import { StimulusFigure, StimulusGroup } from '../lib/question-display'
+import { StimulusGroup } from '../lib/question-display'
 import type { StimulusData } from '../lib/question-display'
 import type { BijakKuizCheckResult, BijakKuizItem, BijakKuizPaperPage } from '@pp/contract'
 
@@ -39,7 +39,6 @@ const seconds = ref(0)
 const markableTotal = ref(0)
 /** The API's BM refusal (403: the paper places an archived question, AC-R1-18.4). */
 const unavailableMessage = ref('')
-const sheetOpen = ref('')
 /** Questions shown before each page (page 1 = 0), learnt as the pupil moves forward, so the numbering is continuous. */
 const before = ref<Record<number, number>>({ 1: 0 })
 const timer = setInterval(() => (seconds.value += 1), 1000)
@@ -237,10 +236,9 @@ void load()
 
       <template v-for="(b, bi) in blocks" :key="bi">
         <StimulusGroup
-          v-if="b.stimuli.length === 1"
-          :open="sheetOpen === b.key"
-          :stimulus="b.stimuli[0]!"
-          @update:open="sheetOpen = $event ? b.key : ''"
+          v-if="b.stimuli.length"
+          :stimuli="b.stimuli"
+          :group-id="b.key"
         >
           <KuizItem
             v-for="e in b.items"
@@ -255,10 +253,7 @@ void load()
             @check="check(e.item)"
           />
         </StimulusGroup>
-        <div v-else class="flex flex-col gap-4" :data-testid="b.key ? 'kuiz-group' : undefined">
-          <template v-if="b.stimuli.length">
-            <StimulusFigure v-for="s in b.stimuli" :key="s.id" :stimulus="s" />
-          </template>
+        <div v-else class="flex flex-col gap-4">
           <KuizItem
             v-for="e in b.items"
             :key="e.item.id"

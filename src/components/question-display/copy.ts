@@ -16,6 +16,7 @@ export const qdCopy = {
   retry: 'Cuba lagi',
   report: 'Lapor',
   needStimulus: 'Muatkan rajah untuk meneruskan.',
+  pinnedAria: 'Rajah kekal dipapar',
   pinnedHint: '📌 Petikan kekal dipapar semasa menjawab',
   sheetDescription: 'Rajah kekal boleh dibuka semasa menjawab.',
   close: 'Tutup',
@@ -26,6 +27,11 @@ export const qdCopy = {
   show: 'Lihat',
   hide: 'Sembunyi',
   passageFallback: 'Petikan',
+  figureFallback: 'Rajah',
+  /** PaperView (S8-T05), verbatim from the V3 PaperCoverPage and QuestionPreview. */
+  question: 'Soalan',
+  markah: 'markah',
+  compulsory: '(wajib)',
 } as const
 
 export const kindFallbackCaption: Record<string, string> = {
@@ -34,6 +40,28 @@ export const kindFallbackCaption: Record<string, string> = {
   graph: 'Graf',
   table: 'Jadual',
 }
+
+/** Marks in brackets, then the unit word. */
+export const marksLabel = (n: number): string => `[${n} ${qdCopy.markah}]`
+/** "Soalan 3" */
+export const questionLabel = (n: number): string => `${qdCopy.question} ${n}`
+/**
+ * V3 PaperCoverPage section line (148-159), after the bold label:
+ * " · [N markah] · {count} soalan · {instruction}", with " (wajib)" appended to the instruction when compulsory.
+ */
+export function sectionMeta(marks: number | undefined, count: number, instruction?: string, compulsory?: boolean): string {
+  const parts: string[] = []
+  if (marks !== undefined) parts.push(marksLabel(marks))
+  parts.push(`${count} ${qdCopy.question.toLowerCase()}`)
+  if (instruction) parts.push(`${instruction}${compulsory ? ` ${qdCopy.compulsory}` : ''}`)
+  else if (compulsory) parts.push(qdCopy.compulsory)
+  return ` · ${parts.join(' · ')}`
+}
+/** FR-QA-48: group cap line, shown only when the scheme is revealed. */
+export const maksLabel = (n: number): string => `Maks ${n}`
+/** D115 deduction line, e.g. "Potongan: kesalahan 7 x 1 (maks 5)". */
+export const deductionLine = (label: string, n: number, amount: number, cap?: number): string =>
+  `Potongan: ${label} ${n} x ${amount}${cap === undefined ? '' : ` (maks ${cap})`}`
 
 export function wordCountLabel(n: number): string {
   return `${n} patah perkataan`
@@ -49,4 +77,13 @@ export function visibleSummary(x: number, total = 7): string {
 }
 export function notServedLine(reason: string): string {
   return `Tidak dihidangkan kerana ${reason}.`
+}
+/**
+ * "Sumber: {text}" under a stimulus (FR-PA-37, 46 section 2.4). Stored citations often already carry
+ * the word (`source_citation = 'Sumber: buku teks'` in the API fixtures and seeds), so the prefix is
+ * added only when missing; otherwise the line would read "Sumber: Sumber: …".
+ */
+export const sourceLine = (source: string): string => {
+  const text = source.trim()
+  return /^sumber\s*:/i.test(text) ? text : `Sumber: ${text}`
 }
