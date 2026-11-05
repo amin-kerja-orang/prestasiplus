@@ -7,7 +7,7 @@
  *     npx playwright test -c playwright.http.config.ts e2e/m04-question-bank/question-tabs-http.spec.ts --workers=1
  *
  * Writes: one draft question per Arkib Semua run, deleted in `finally`; one pupil report per row action, on a question with no report
- * yet (a pupil reports a question once, so the test skips when none is left). `Nyahaktif Segera` and `Arkib` restore the question.
+ * yet (a pupil reports a question once and only one shown to them, so the test fails when none is left). `Nyahaktif Segera` and `Arkib` restore the question.
  */
 import type { APIRequestContext, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
@@ -99,6 +99,21 @@ test.describe('S2-T06 Senarai Soalan tabs and regions @api', () => {
     })
     expect(made.status(), await made.text()).toBe(201)
     const id = ((await made.json()) as { data: { id: string } }).data.id
+    // Outside the filter: the same subject and level, a text the search does not match.
+    const outside = await page.request.post('/api/questions', {
+      headers: { 'x-csrf-token': csrf },
+      data: {
+        subjectId: sample!.subject.id,
+        educationLevelId: sample!.level.id,
+        difficultyLevel: 3,
+        questionType: 'mcq',
+        questionText: `Soalan luar tapisan ${String(Date.now())}`,
+        options: ['4', '5', '6', '7'],
+        correctAnswer: 1,
+      },
+    })
+    expect(outside.status(), await outside.text()).toBe(201)
+    const outsideId = ((await outside.json()) as { data: { id: string } }).data.id
     try {
       await page.goto(`/admin/questions?search=${token}`)
       await expect(page.getByTestId('questions-table')).toContainText(token)
@@ -121,8 +136,11 @@ test.describe('S2-T06 Senarai Soalan tabs and regions @api', () => {
       await expect(page.getByTestId('bulk-filter-success')).toContainText('Berjaya arkib 1 soalan (hasil tapisan).')
       const after = (await (await page.request.get(`/api/questions/${id}`)).json()) as { data: { status: string } }
       expect(after.data.status).toBe('archived')
+      const untouched = (await (await page.request.get(`/api/questions/${outsideId}`)).json()) as { data: { status: string } }
+      expect(untouched.data.status).toBe('draft')
       await expectNoPageScroll(page)
     } finally {
+      await page.request.delete(`/api/questions/${outsideId}`, { headers: { 'x-csrf-token': csrf } }).catch(() => undefined)
       await page.request.delete(`/api/questions/${id}`, { headers: { 'x-csrf-token': csrf } }).catch(() => undefined)
     }
   })
@@ -155,7 +173,9 @@ test.describe('S2-T06 Laporan Soalan row actions (gap 5.1) @api', () => {
     const used = new Set((await reports(page)).map((r) => r.questionId))
     const rows = ((await (await page.request.get('/api/structured-questions')).json()) as { data: { id: string }[] }).data
     const free = rows.find((r) => !used.has(String(r.id)))
-    test.skip(free === undefined, 'no structured question without a report is left on this stack')
+    // A hard failure on purpose: a skip here would hide the row-action coverage once the seeded pool runs out. A pupil may
+    // report only a question shown to them, so a test cannot make its own.
+    expect(free, 'no structured question without a report is left on this stack').toBeDefined()
     const res = await pupil.post('/api/question-reports', {
       headers: { 'x-csrf-token': pupilCsrf },
       data: { questionId: String(free!.id), questionType: 'structured', reasons: ['other'] },
@@ -237,14 +257,15 @@ test.describe('S2-T06 Laporan Soalan row actions (gap 5.1) @api', () => {
       const mine = ((await (await pupil.get('/api/question-reports/mine')).json()) as { data: Report[] }).data
       expect(mine.find((m) => m.id === r.id)?.displayStatus).toBe('removed')
     } finally {
-      // An archived version goes back to approved only through draft and review (lifecycle.ts); this question sits in a paper.
-      for (const action of ['draft', 'review', 'approved']) {
+      // An archived version goes back only through draft and review (lifecycle.ts). This question sits in a paper, so it must
+      // not stay archived. A seeded question may not pass today's approve gate, so review is as far as this can restore it.
+      for (const action of ['draft', 'review']) {
         await page.request.post('/api/questions/bulk-action', {
           headers: { 'x-csrf-token': csrf },
           data: { action, ids: [r.questionId] },
         })
       }
-      expect((await (await page.request.get(`/api/questions/${r.questionId}`)).json()) as { data: { status: string } }).toMatchObject({ data: { status: 'approved' } })
+      expect((await (await page.request.get(`/api/questions/${r.questionId}`)).json()) as { data: { status: string } }).toMatchObject({ data: { status: 'review' } })
     }
   })
 })
