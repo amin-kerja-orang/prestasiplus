@@ -124,6 +124,25 @@ describe('offline banner (ERR-NET-01, ERR-NET-03)', () => {
   })
 })
 
+describe('offline banner, a save already done', () => {
+  it('ends on "online" also when the save status was already "disimpan"', async () => {
+    server.getAttemptView.mockResolvedValue(view('exam'))
+    await render()
+    q('[data-testid=option-a]')!.click()
+    await flushPromises()
+    window.dispatchEvent(new Event('online')) // flush now: the status settles on "disimpan" with the connection up
+    await flushPromises()
+    expect(q('[data-testid=save-status]')?.textContent).toContain('disimpan')
+    window.dispatchEvent(new Event('offline'))
+    await flushPromises()
+    expect(q('[data-testid=offline-banner]')).not.toBeNull()
+    window.dispatchEvent(new Event('online'))
+    await flushPromises()
+    expect(q('[data-testid=offline-banner]')).toBeNull()
+    expect(q('[data-testid=reconnected-banner]')).not.toBeNull()
+  })
+})
+
 describe('session expiry (ERR-AUTH-01)', () => {
   const expire = async (): Promise<void> => {
     const store = useSessionStore()

@@ -366,7 +366,11 @@ function onVisibility(): void {
 }
 function onOnline(): void {
   if (submitPending.value) void retrySubmit()
-  else void autosave?.flush()
+  // Nothing was unsent, so the save status does not change: the banner still has to end here.
+  else
+    void autosave?.flush().then((ok) => {
+      if (ok && offline.value) showReconnected()
+    })
 }
 
 function startRetry(): void {
