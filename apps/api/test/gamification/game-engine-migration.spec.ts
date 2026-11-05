@@ -100,6 +100,22 @@ describe('migration 0224 game engine', () => {
     const [battle] = await db.query<{ id: string }>(`insert into battles (mode, question_type) values ('quick_match', 'biasa') returning id::text`)
     return battle!.id
   }
+  const addUser = async () => {
+    const [user] = await db.query<{ id: string }>(`insert into users (name) values ('Pengguna') returning id::text`)
+    return user!.id
+  }
+  const addQuestion = async () => {
+    const [question] = await db.query<{ id: string }>(`insert into questions default values returning id::text`)
+    return question!.id
+  }
+  const addQueue = async () => {
+    const [queue] = await db.query<{ id: string }>(`insert into battle_queues (owner_id, mode, question_type) values ($1::bigint, 'quick_match', 'biasa') returning id::text`, [await addUser()])
+    return queue!.id
+  }
+  const addInvitation = async () => {
+    const [invitation] = await db.query<{ id: string }>(`insert into battle_invitations (sender_id, receiver_id, question_type) values ($1::bigint, $2::bigint, 'biasa') returning id::text`, [await addUser(), await addUser()])
+    return invitation!.id
+  }
 
   beforeAll(async () => {
     db = await createTestDatabase()
@@ -156,7 +172,10 @@ describe('migration 0224 game engine', () => {
 
     it('a row that already exists is not overwritten', async () => {
       await db.query('drop table spin_segments')
-      await db.query('alter table battles drop column counts_for_ranking')
+      await db.query('alter table battles drop column counts_for_ranking, drop column round_started_at, drop column question_count')
+      await db.query('alter table battle_queues drop column question_count')
+      await db.query('alter table battle_invitations drop column question_count')
+      await db.query('alter table battle_participants drop column last_polled_at, drop column consecutive_timeouts')
       await db.query(`update gamification_settings set value = 50, label = 'Disimpan' where key = 'xp_per_correct'`)
       await apply()
       expect((await settings()).get('xp_per_correct')).toEqual({ value: 50, label: 'Disimpan' })
@@ -197,6 +216,88 @@ describe('migration 0224 game engine', () => {
     })
   })
 
+  describe('DM-60, the columns of 48 GAME-01 (ruling 5 on #497)', () => {
+    const COUNT_TABLES = ['battles', 'battle_queues', 'battle_invitations'] as const
+    const addRow = { battles: addBattle, battle_queues: addQueue, battle_invitations: addInvitation }
+
+    it('battles.round_started_at: null on an existing battle, stores a time with its zone', async () => {
+      await reverse()
+      const before = await addBattle()
+      await apply()
+      const after = await addBattle()
+      const read = (id: string) => db.query<{ round_started_at: Date | null }>(`select round_started_at from battles where id = $1::uuid`, [id])
+      expect(await read(before)).toEqual([{ round_started_at: null }])
+      expect(await read(after)).toEqual([{ round_started_at: null }])
+      await db.query(`update battles set round_started_at = '2026-11-05T08:00:00+08:00' where id = $1::uuid`, [after])
+      expect((await read(after))[0]?.round_started_at?.toISOString()).toBe('2026-11-05T00:00:00.000Z')
+    })
+
+    it.each(COUNT_TABLES)('%s.question_count: an existing row reads 10, a new row defaults to 10, null is refused', async (table) => {
+      await reverse()
+      await db.query(`delete from ${table}`)
+      const before = await addRow[table]()
+      await apply()
+      const after = await addRow[table]()
+      const rows = await db.query<{ question_count: number }>(`select question_count from ${table} where id::text = any($1::text[])`, [[before, after]])
+      expect(rows).toEqual([{ question_count: 10 }, { question_count: 10 }])
+      expect(await rejects(`update ${table} set question_count = null`)).toMatch(/question_count/)
+    })
+
+    it.each(COUNT_TABLES)('%s.question_count: the check allows only the chips 5, 10, 15, 20', async (table) => {
+      const id = await addRow[table]()
+      const where = `where id::text = $1`
+      for (const count of [5, 10, 15, 20]) {
+        await db.query(`update ${table} set question_count = ${String(count)} ${where}`, [id])
+      }
+      for (const count of [0, 4, 7, 21]) {
+        expect(await rejects(`update ${table} set question_count = ${String(count)} ${where}`, [id])).toMatch(new RegExp(`ck_${table}_question_count`))
+      }
+    })
+
+    it('battle_participants.last_polled_at and consecutive_timeouts: an existing row reads null and 0, a run below 0 is refused', async () => {
+      await reverse()
+      const battle = await addBattle()
+      const user = await addUser()
+      await db.query(`insert into battle_participants (battle_id, side, user_id) values ($1::uuid, 'A', $2::bigint)`, [battle, user])
+      await apply()
+      const read = () => db.query<{ last_polled_at: Date | null; consecutive_timeouts: number }>(`select last_polled_at, consecutive_timeouts from battle_participants where battle_id = $1::uuid`, [battle])
+      expect(await read()).toEqual([{ last_polled_at: null, consecutive_timeouts: 0 }])
+      await db.query(`update battle_participants set last_polled_at = '2026-11-05T08:00:00+08:00', consecutive_timeouts = 3 where battle_id = $1::uuid`, [battle])
+      const [stored] = await read()
+      expect(stored?.last_polled_at?.toISOString()).toBe('2026-11-05T00:00:00.000Z')
+      expect(stored?.consecutive_timeouts).toBe(3)
+      expect(await rejects(`update battle_participants set consecutive_timeouts = -1`)).toMatch(/ck_battle_participants_consecutive_timeouts/)
+      expect(await rejects(`update battle_participants set consecutive_timeouts = null`)).toMatch(/consecutive_timeouts/)
+    })
+
+    it('ck_battle_queues_status adds cancelled, keeps every old status and refuses an unknown one', async () => {
+      const queue = await addQueue()
+      for (const status of ['waiting', 'incoming_challenge', 'matched', 'expired', 'abandoned', 'cancelled']) {
+        await db.query(`update battle_queues set status = $1 where id = $2::bigint`, [status, queue])
+      }
+      expect(await rejects(`update battle_queues set status = 'declined' where id = $1::bigint`, [queue])).toMatch(/ck_battle_queues_status/)
+    })
+
+    it('ck_battles_status stays the four of BATTLE_STATUSES: a battle is never cancelled', async () => {
+      const battle = await addBattle()
+      for (const status of ['active', 'finished', 'forfeited', 'abandoned']) await db.query(`update battles set status = $1 where id = $2::uuid`, [status, battle])
+      expect(await rejects(`update battles set status = 'cancelled' where id = $1::uuid`, [battle])).toMatch(/ck_battles_status/)
+    })
+
+    it('battle_answers.user_id: null for a robot; a human answer is kept as it was and a user id must still exist', async () => {
+      const battle = await addBattle()
+      const question = await addQuestion()
+      const insert = `insert into battle_answers (battle_id, user_id, position, question_id, correct, seconds, points) values ($1::uuid, $2::bigint, $3, $4::bigint, true, 1, 967)`
+      await db.query(insert, [battle, null, 1, question])
+      const user = await addUser()
+      await db.query(insert, [battle, user, 1, question])
+      const rows = await db.query<{ user_id: string | null }>(`select user_id::text from battle_answers where battle_id = $1::uuid order by user_id nulls first`, [battle])
+      expect(rows).toEqual([{ user_id: null }, { user_id: user }])
+      expect(await rejects(insert, [battle, user, 1, question])).toMatch(/uq_battle_answers_battle_id_user_id_position/)
+      expect(await rejects(insert, [battle, '999999999', 2, question])).toMatch(/fk_battle_answers_user_id/)
+    })
+  })
+
   describe('DM-64', () => {
     it('seeds the 8 segments of 48 GAME-14, all active, weights total 100', async () => {
       const rows = await db.query<{ position: number; label: string; syiling: number; weight: number; active: boolean }>(`select position, label, syiling, weight, active from spin_segments order by position`)
@@ -232,6 +333,29 @@ describe('migration 0224 game engine', () => {
     expect(await rejects('select 1 from spin_segments')).toMatch(/spin_segments/)
     expect(await rejects('select counts_for_ranking from battles')).toMatch(/counts_for_ranking/)
     expect(await rejects(`insert into battle_participants (battle_id, side, user_id, is_bot) values ($1::uuid, 'B', null, true)`, [battle])).toMatch(/user_id/)
+    await db.query('delete from gamification_settings')
+    await apply()
+  })
+
+  it('the reversal undoes the columns of 48 GAME-01, and removes only the rows the old checks cannot hold', async () => {
+    const battle = await addBattle()
+    const question = await addQuestion()
+    const user = await addUser()
+    const queue = await addQueue()
+    const cancelled = await addQueue()
+    await addInvitation()
+    await db.query(`update battle_queues set status = 'cancelled' where id = $1::bigint`, [cancelled])
+    const insert = `insert into battle_answers (battle_id, user_id, position, question_id, correct, seconds, points) values ($1::uuid, $2::bigint, 1, $3::bigint, true, 1, 967)`
+    await db.query(insert, [battle, null, question])
+    await db.query(insert, [battle, user, question])
+    await reverse()
+    for (const [table, column] of [['battles', 'round_started_at'], ['battles', 'question_count'], ['battle_queues', 'question_count'], ['battle_invitations', 'question_count'], ['battle_participants', 'last_polled_at'], ['battle_participants', 'consecutive_timeouts']] as const) {
+      expect(await rejects(`select ${column} from ${table}`), `${table}.${column}`).toMatch(new RegExp(column))
+    }
+    expect(await db.query<{ id: string }>(`select id::text from battle_queues where id = any($1::bigint[])`, [[queue, cancelled]])).toEqual([{ id: queue }])
+    expect(await rejects(`update battle_queues set status = 'cancelled' where id = $1::bigint`, [queue])).toMatch(/ck_battle_queues_status/)
+    expect(await db.query<{ user_id: string }>(`select user_id::text from battle_answers where battle_id = $1::uuid`, [battle])).toEqual([{ user_id: user }])
+    expect(await rejects(insert, [battle, null, question])).toMatch(/user_id/)
     await db.query('delete from gamification_settings')
     await apply()
   })
