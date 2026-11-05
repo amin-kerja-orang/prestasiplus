@@ -78,7 +78,7 @@ describe('AC1 GET /api/practice/structured', () => {
   it('lists the seeded published sets newest first with the card shape and parses with the contract', async () => {
     const out = await list(student)
     expect(out.data.map((c) => c.id).sort()).toEqual([tree, ecf, anyn].sort())
-    expect(out.meta).toMatchObject({ page: 1, pageSize: 20, totalItems: 3, totalPages: 1, from: 1, to: 3, scope: null, track: null })
+    expect(out.meta).toMatchObject({ page: 1, pageSize: 12, totalItems: 3, totalPages: 1, from: 1, to: 3, scope: null, track: null })
     const names = out.meta.subjectOptions.map((o) => o.name)
     expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, 'ms')))
     expect(out.meta.subjectOptions.length).toBeGreaterThan(20)
@@ -109,31 +109,31 @@ describe('AC1 GET /api/practice/structured', () => {
     await t.db.query('update questions set is_active = false where id = $1', [id])
   })
 
-  it('orders newest first (then id) and pages 20 at a time; a page past the end is empty and keeps the number', async () => {
+  it('orders newest first (then id) and pages 12 at a time; a page past the end is empty and keeps the number', async () => {
     const made: string[] = []
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 12; i++) {
       t.clock.advance(1000)
       made.push(await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: `Set susulan ${String(i)}` }))
     }
     const p1 = await list(student)
-    expect(p1.data).toHaveLength(20)
-    expect(p1.meta).toMatchObject({ page: 1, pageSize: 20, totalItems: 23, totalPages: 2, from: 1, to: 20 })
+    expect(p1.data).toHaveLength(12)
+    expect(p1.meta).toMatchObject({ page: 1, pageSize: 12, totalItems: 15, totalPages: 2, from: 1, to: 12 })
     expect(p1.data.map((c) => c.id)).toEqual([...made].reverse())
     const p2 = await list(student, '?page=2')
     expect(p2.data.map((c) => c.id).sort()).toEqual([tree, ecf, anyn].sort())
-    expect(p2.meta).toMatchObject({ page: 2, from: 21, to: 23 })
+    expect(p2.meta).toMatchObject({ page: 2, from: 13, to: 15 })
     const past = await list(student, '?page=9')
     expect(past.data).toEqual([])
-    expect(past.meta).toMatchObject({ page: 9, from: null, to: null, totalItems: 23 })
+    expect(past.meta).toMatchObject({ page: 9, from: null, to: null, totalItems: 15 })
     // An invalid page is page 1.
     expect((await list(student, '?page=abc')).meta.page).toBe(1)
     expect((await list(student, '?page=0')).meta.page).toBe(1)
     await t.db.query('update questions set is_active = false where id = any($1::bigint[])', [made])
   })
 
-  it('hydrates only the page slice: 23 sets, page 1 asks the bank for 20 ids, page 2 for 3, and the total stays 23', async () => {
+  it('hydrates only the page slice: 15 sets, page 1 asks the bank for 12 ids, page 2 for 3, and the total stays 15', async () => {
     const made: string[] = []
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 12; i++) {
       t.clock.advance(1000)
       made.push(await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: `Hidrat ${String(i)}` }))
     }
@@ -147,12 +147,72 @@ describe('AC1 GET /api/practice/structured', () => {
     try {
       const p1 = await list(student)
       const p2 = await list(student, '?page=2')
-      expect(sizes).toEqual([20, 3])
-      expect(p1.meta.totalItems).toBe(23)
-      expect(p2.meta.totalItems).toBe(23)
+      expect(sizes).toEqual([12, 3])
+      expect(p1.meta.totalItems).toBe(15)
+      expect(p2.meta.totalItems).toBe(15)
     } finally {
       repo.getMany = original
       await t.db.query('update questions set is_active = false where id = any($1::bigint[])', [made])
+    }
+  })
+
+  it('S5-T11 q: case-insensitive match on the stem or a linked stimulus, LIKE wildcards literal, 100 characters max', async () => {
+    const a = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'Kajian Fotosintesis Tumbuhan 100%' })
+    const b = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'Soalan lain sepenuhnya' })
+    try {
+      expect((await list(student, '?q=fotosintesis')).data.map((c) => c.id)).toEqual([a])
+      expect((await list(student, `?q=${encodeURIComponent('  TUMBUHAN 100%  ')}`)).data.map((c) => c.id)).toEqual([a])
+      expect((await list(student, '?q=100%25x')).data).toEqual([])
+      expect((await list(student, '?q=%25')).data.map((c) => c.id)).toEqual([a])
+      expect((await list(student, '?q=')).meta.totalItems).toBe((await list(student)).meta.totalItems)
+      expect((await list(student, `?q=${'a'.repeat(100)}`)).data).toEqual([])
+      expectError(await student.get(`/api/practice/structured?q=${'a'.repeat(101)}`), 'VALIDATION_ERROR')
+      // A linked stimulus body is searched too.
+      const stim = (await t.db.query<{ id: string }>(`insert into stimuli (kind, body_ms) values ('passage', 'Petikan tentang Gunung Kinabalu') returning id::text id`))[0]?.id as string
+      const ver = (await t.db.query<{ id: string }>('select id::text id from question_versions where question_id = $1 and version_no = (select live_version_no from questions where id = $1)', [b]))[0]?.id as string
+      await t.db.query('insert into question_version_stimuli (question_version_id, stimulus_id, position) values ($1, $2, 1)', [ver, stim])
+      expect((await list(student, '?q=kinabalu')).data.map((c) => c.id)).toEqual([b])
+    } finally {
+      await t.db.query('update questions set is_active = false where id = any($1::bigint[])', [[a, b]])
+    }
+  })
+
+  it('S5-T11 markable and pendingSchemeCount: a set whose leaf has an empty scheme is not markable', async () => {
+    const good = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'Set skema lengkap' })
+    const bad = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'Set skema tiada' })
+    try {
+      // The scheme of the first leaf is emptied (no accepted answer).
+      await t.db.query(
+        `update answer_keys set content = '{"values": []}'::jsonb where part_id = (select p.id from question_parts p join question_versions v on v.id = p.question_version_id
+          where v.question_id = $1 and p.mode is not null order by p.id limit 1)`,
+        [bad],
+      )
+      // (The unfiltered page would hydrate the emptied key and fail the contract; that is why the pupil list is asked with markable.)
+      const only = await list(student, '?q=skema&markable=1')
+      expect(only.data.map((c) => c.id)).toEqual([good])
+      expect(only.meta).toMatchObject({ totalItems: 1, pendingSchemeCount: 1 })
+      expect(only.data[0]?.bestScore).toBeNull()
+      expect((await list(student, '?q=skema&markable=true')).data.map((c) => c.id)).toEqual([good])
+      expect((await list(student, '?q=tiada-padanan')).meta.pendingSchemeCount).toBe(0)
+    } finally {
+      await t.db.query('update questions set is_active = false where id = any($1::bigint[])', [[good, bad]])
+    }
+  })
+
+  it('S5-T11 bestScore: null without an attempt, then the best total of the caller only', async () => {
+    const id = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'Set skor terbaik' })
+    try {
+      const card = async (c: Client) => (await list(c, '?q=skor+terbaik')).data[0]
+      expect((await card(student))?.bestScore).toBeNull()
+      const body = (n: number) => ({ answers: [{ subQuestionId: `${id}-(a)`, text: 'x'.repeat(n) }, { subQuestionId: `${id}-(b)`, text: 'x'.repeat(n) }] })
+      const post = (n: number) => student.post(`/api/practice/structured/${id}/attempts`, body(n))
+      expect((await post(30)).status).toBe(201)
+      expect((await card(student))?.bestScore).toEqual({ awarded: 5, max: 5 })
+      expect((await post(0)).status).toBe(201)
+      expect((await card(student))?.bestScore).toEqual({ awarded: 5, max: 5 })
+      expect((await card(await loginAs(t, 'teacher')))?.bestScore).toBeNull()
+    } finally {
+      await t.db.query('update questions set is_active = false where id = $1', [id])
     }
   })
 

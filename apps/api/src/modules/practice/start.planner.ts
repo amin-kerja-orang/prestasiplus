@@ -8,7 +8,6 @@ import { SubscriptionService } from '../subscriptions'
 import {
   invalidField,
   missionDone,
-  noAttemptsLeft,
   noWrongQuestions,
   notEnoughQuestions,
   notFound,
@@ -355,8 +354,7 @@ export class PracticeStartPlanner {
     const res = await this.assigned('question_set', userId, req.questionSetId, now)
     if (res.status !== 'ok' || req.questionSetId === undefined) throw notFound()
     const sessions = await this.repo.linkedSessions(userId, 'questionSetId', req.questionSetId)
-    const done = sessions.filter((s) => s.status === 'completed').length
-    if ((res.maxAttempts ?? 0) > 0 && done >= (res.maxAttempts ?? 0)) throw noAttemptsLeft()
+    // R1 (S5-T11 B2): no attempt cap and no timer for a teacher's set; legacy maxAttempts/timeLimit are ignored.
     const open = sessions.find((s) => s.status === 'in_progress')
     if (open) return { ...plan, questionSetId: req.questionSetId as string, resume: open }
     if (res.questionIds.length === 0) throw notEnoughQuestions()
@@ -366,7 +364,7 @@ export class PracticeStartPlanner {
       subjectId: res.subjectId ?? served[0]?.subjectId ?? null,
       questionSetId: req.questionSetId,
       served,
-      timeLimitSec: res.timeLimitSec ?? null,
+      timeLimitSec: null,
     })
   }
 }
