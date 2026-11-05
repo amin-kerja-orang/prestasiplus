@@ -63,6 +63,7 @@ import { AI_COMPONENT_SCHEMAS, registerAiPaths } from './ai/paths'
 import { INTAKE_COMPONENT_SCHEMAS, registerIntakePaths } from './intake/paths'
 import { INTAKE_FILES_COMPONENT_SCHEMAS, registerIntakeFilesPaths } from './intake/files-paths'
 import { INTAKE_DASHBOARD_COMPONENT_SCHEMAS, registerIntakeDashboardPaths } from './intake/dashboard'
+import { SOURCE_PAPERS_COMPONENT_SCHEMAS, registerSourcePapersPaths } from './intake/source-papers'
 
 /** Every shared schema that becomes a component. Domain tasks (T07, T08, T24...) append here. */
 export const COMPONENT_SCHEMAS = {
@@ -140,6 +141,7 @@ export const COMPONENT_SCHEMAS = {
   ...INTAKE_COMPONENT_SCHEMAS, // BE-38
   ...INTAKE_FILES_COMPONENT_SCHEMAS, // BE-37
   ...INTAKE_DASHBOARD_COMPONENT_SCHEMAS, // BE-40
+  ...SOURCE_PAPERS_COMPONENT_SCHEMAS, // S2-T09
 } as const
 
 export const CONTRACT_VERSION = '0.1.0'
@@ -197,6 +199,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerIntakePaths(registry) // BE-38
   registerIntakeFilesPaths(registry) // BE-37
   registerIntakeDashboardPaths(registry) // BE-40
+  registerSourcePapersPaths(registry) // S2-T09
   const generator = new OpenApiGeneratorV31(registry.definitions)
   return generator.generateDocument({
     openapi: '3.1.0',

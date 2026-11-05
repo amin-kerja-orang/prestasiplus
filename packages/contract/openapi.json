@@ -74904,6 +74904,474 @@
         "additionalProperties": false,
         "description": "[PROPOSED] AI cost by day, provider and submission, with the budget (card BE-40)."
       },
+      "SourcePaperListQuery": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "description": "Subject code (upper-case)."
+          },
+          "year": {
+            "type": "integer",
+            "minimum": 1900,
+            "maximum": 2100
+          },
+          "negeri": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Negeri / badan, matched case-insensitively."
+          },
+          "kertas": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4
+          },
+          "jenis": {
+            "type": "string",
+            "enum": [
+              "trial",
+              "general",
+              "exam",
+              "exercise_book",
+              "other"
+            ],
+            "description": "Jenis = the batch paper type."
+          },
+          "needsReview": {
+            "type": "string",
+            "enum": [
+              "true",
+              "false"
+            ],
+            "description": "true = only papers that need review."
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1
+          }
+        },
+        "additionalProperties": false,
+        "description": "[PROPOSED] Filters of GET /admin/source-papers. 25 per page, newest year first."
+      },
+      "SourcePaperRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The batch id.",
+            "example": "1042"
+          },
+          "title": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string",
+            "description": "Subject code."
+          },
+          "subjectName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "year": {
+            "type": "integer"
+          },
+          "kertas": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 4
+          },
+          "negeri": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Negeri / badan; null renders as \"—\"."
+          },
+          "paperType": {
+            "type": "string",
+            "enum": [
+              "trial",
+              "general",
+              "exam",
+              "exercise_book",
+              "other"
+            ],
+            "description": "Jenis."
+          },
+          "questions": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Bilangan Soalan: accepted items that became a question."
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "intake"
+            ]
+          },
+          "sourceLabel": {
+            "type": "string"
+          },
+          "needsReview": {
+            "type": "boolean",
+            "description": "Any open item (generated, needs_review, duplicate) or batch status failed."
+          },
+          "hasScheme": {
+            "type": "boolean",
+            "description": "At least one question, and every one has a key or scheme on all its leaves."
+          },
+          "batchId": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "subject",
+          "year",
+          "kertas",
+          "negeri",
+          "paperType",
+          "questions",
+          "source",
+          "sourceLabel",
+          "needsReview",
+          "hasScheme",
+          "batchId"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] One registry row. Badge: needsReview -> Perlu Semakan, else !hasScheme -> Skema, else OK."
+      },
+      "SourcePaperSubjectOption": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "SourcePaperListMeta": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "totalItems": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "from": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "to": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "counts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "totalPapers": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Tile Jumlah Kertas (whole registry, filters ignored)."
+          },
+          "needsReviewCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Tile Perlu Semakan (whole registry, filters ignored)."
+          },
+          "options": {
+            "type": "object",
+            "properties": {
+              "years": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "negeri": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "subjects": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SourcePaperSubjectOption"
+                }
+              }
+            },
+            "required": [
+              "years",
+              "negeri",
+              "subjects"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages",
+          "totalPapers",
+          "needsReviewCount",
+          "options"
+        ],
+        "additionalProperties": {}
+      },
+      "SourcePaperListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SourcePaperRow"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/SourcePaperListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "SourcePaperIssue": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "where": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "itemId",
+          "where",
+          "message"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] Isu Import: a failed batch or file, or an item still open."
+      },
+      "SourcePaperQuestion": {
+        "type": "object",
+        "properties": {
+          "no": {
+            "type": "string",
+            "description": "Printed question number."
+          },
+          "questionId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "excerpt": {
+            "type": "string",
+            "description": "Stem cut at 120 characters with \"...\"."
+          },
+          "parts": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Bilangan Bahagian."
+          }
+        },
+        "required": [
+          "no",
+          "questionId",
+          "excerpt",
+          "parts"
+        ],
+        "additionalProperties": false
+      },
+      "SourcePaperDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The batch id.",
+            "example": "1042"
+          },
+          "title": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string",
+            "description": "Subject code."
+          },
+          "subjectName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "year": {
+            "type": "integer"
+          },
+          "kertas": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 4
+          },
+          "negeri": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Negeri / badan; null renders as \"—\"."
+          },
+          "paperType": {
+            "type": "string",
+            "enum": [
+              "trial",
+              "general",
+              "exam",
+              "exercise_book",
+              "other"
+            ],
+            "description": "Jenis."
+          },
+          "questions": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Bilangan Soalan: accepted items that became a question."
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "intake"
+            ]
+          },
+          "sourceLabel": {
+            "type": "string"
+          },
+          "needsReview": {
+            "type": "boolean",
+            "description": "Any open item (generated, needs_review, duplicate) or batch status failed."
+          },
+          "hasScheme": {
+            "type": "boolean",
+            "description": "At least one question, and every one has a key or scheme on all its leaves."
+          },
+          "batchId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "fileNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Fail: the stored source file names."
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SourcePaperIssue"
+            }
+          },
+          "questionList": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SourcePaperQuestion"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "subject",
+          "year",
+          "kertas",
+          "negeri",
+          "paperType",
+          "questions",
+          "source",
+          "sourceLabel",
+          "needsReview",
+          "hasScheme",
+          "batchId",
+          "fileNames",
+          "issues",
+          "questionList"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] The facts of Q-19, the import issues and the imported questions."
+      },
+      "SourcePaperDetailEnvelope": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SourcePaperDetail"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
       "QuestionBulkResult": {
         "type": "object",
         "properties": {
@@ -128002,6 +128470,275 @@
           },
           "422": {
             "description": "VALIDATION_ERROR (month is not YYYY-MM, unknown provider).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" [PROPOSED] (the shared 429 moves to common/, D59d). The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/source-papers": {
+      "get": {
+        "tags": [
+          "source-papers"
+        ],
+        "summary": "Sumber Kertas: registry of intake papers with Tahun",
+        "description": "Admin intake batches that carry a Tahun; guru batches are excluded. Negeri is read from the linked source paper until intake_batches.exam_board exists (DM-85). Admin Pusat only (role code `admin`); every other role gets 403, no session 401. Read-only: GET only, no CSRF.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "required": false,
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "description": "Subject code (upper-case)."
+            },
+            "required": false,
+            "description": "Subject code (upper-case).",
+            "name": "subject",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1900,
+              "maximum": 2100
+            },
+            "required": false,
+            "name": "year",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "description": "Negeri / badan, matched case-insensitively."
+            },
+            "required": false,
+            "description": "Negeri / badan, matched case-insensitively.",
+            "name": "negeri",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 4
+            },
+            "required": false,
+            "name": "kertas",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "trial",
+                "general",
+                "exam",
+                "exercise_book",
+                "other"
+              ],
+              "description": "Jenis = the batch paper type."
+            },
+            "required": false,
+            "description": "Jenis = the batch paper type.",
+            "name": "jenis",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "true = only papers that need review."
+            },
+            "required": false,
+            "description": "true = only papers that need review.",
+            "name": "needsReview",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page (25) with the tile totals and the filter options.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourcePaperListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR (a filter is malformed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" [PROPOSED] (the shared 429 moves to common/, D59d). The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/source-papers/{id}": {
+      "get": {
+        "tags": [
+          "source-papers"
+        ],
+        "summary": "Butiran Sumber Kertas",
+        "description": "The facts, the import issues and the imported questions of one registry paper. Admin Pusat only (role code `admin`); every other role gets 403, no session 401. Read-only: GET only, no CSRF.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The paper.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourcePaperDetailEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND (unknown id, a guru batch, or a batch without Tahun).",
             "content": {
               "application/json": {
                 "schema": {
