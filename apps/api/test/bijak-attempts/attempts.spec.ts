@@ -581,7 +581,9 @@ describe('latihan Semak (AC3, NFR-05)', () => {
   it('an empty body is "no payload"; a malformed one is 422', async () => {
     const id = await startAttempt(me, PAPER.matK1, 'latihan')
     const q = questionIdsOfView(await view(me, id))[0]!
-    expect((await me.post(`/api/bijak/attempts/${id}/questions/${q}/check`)).status).toBe(200)
+    // blank part: refused 422 (lead ruling Q3), the same shape as a malformed body
+    expectError(await me.post(`/api/bijak/attempts/${id}/questions/${q}/check`), 'VALIDATION_ERROR')
+    expect((await me.post(`/api/bijak/attempts/${id}/questions/${q}/check`, { changes: [change(q, { choice: correctChoice(q) }, 1)] })).status).toBe(200)
     expectError(await me.post(`/api/bijak/attempts/${id}/questions/${q}/check`, { changes: 'x' }), 'VALIDATION_ERROR')
   })
 })
@@ -687,8 +689,9 @@ describe('rate limits (D57a)', () => {
       expect(err.retryAfter).toBeGreaterThan(0)
       expect(res.headers['retry-after']).toBeDefined()
       const q = questionIdsOfView(await view(c, id))[0]!
-      expect((await c.post(`/api/bijak/attempts/${id}/questions/${q}/check`, {})).status).toBe(200)
-      expectError(await c.post(`/api/bijak/attempts/${id}/questions/${q}/check`, {}), 'RATE_LIMITED')
+      const body = { changes: [change(q, { choice: correctChoice(q) }, 1)] }
+      expect((await c.post(`/api/bijak/attempts/${id}/questions/${q}/check`, body)).status).toBe(200)
+      expectError(await c.post(`/api/bijak/attempts/${id}/questions/${q}/check`, body), 'RATE_LIMITED')
     } finally {
       await lim.close()
     }
