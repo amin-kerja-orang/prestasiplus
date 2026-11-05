@@ -363,7 +363,7 @@ describe('CurriculumBrowserPage S4-T07 (R1-ADM-C-01)', () => {
 
   it('shows "Bilangan soalan" per Bab and flags an empty Bab as "Kosong" (FR-ADM-C01.2, AC-ADM-C01.1)', async () => {
     api.fetchCurriculumTree.mockResolvedValue(
-      tree([chapter(1, { questionCount: 12, servableCount: 10 }), chapter(2, { questionCount: 0, servableCount: 0 }), chapter(3)]),
+      tree([chapter(1, { questionCount: 12 }), chapter(2, { questionCount: 0 }), chapter(3)]),
     )
     const { w } = await render()
     const blocks = w.findAll('[data-testid=chapter]')
