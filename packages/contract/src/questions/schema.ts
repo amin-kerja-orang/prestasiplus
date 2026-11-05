@@ -914,7 +914,12 @@ export const QuestionGuruUpdateRequestSchema = guruBody().meta({ id: 'QuestionGu
 
 /* ------------------------------------------------------------------ structured submission (API-GUR-17, structured variant, ADD-13) */
 
-/** BM texts of the structured submission form (R1-GUR-44b field table); the DSKP texts are `GURU_QUESTION_MESSAGES`. */
+/**
+ * BM texts of the structured submission form (R1-GUR-44b field table); the DSKP texts are `GURU_QUESTION_MESSAGES`.
+ * `partTextLong` and `schemeLong` are instances of the GLB-1 pattern ERR-REQ-12 ("{Medan} tidak boleh melebihi {n} aksara.", 20-guru-admin-sekolah.md:44,
+ * 40-cross-cutting.md:422) with the 44b labels "Teks sub-soalan" / "Skema Jawapan" (20:1605, 1607). `partsMax` follows ERR-REQ-15
+ * ("{Medan} mesti antara {a} dan {b}.", 20:45); the 44b table has no text for the upper bound (DOC DEFECT, see PR).
+ */
 export const GURU_STRUCTURED_MESSAGES = {
   stimulusLong: 'Rangsangan tidak boleh melebihi 4000 aksara.',
   imageType: 'Fail mesti berupa imej (jpg, png atau webp).',
