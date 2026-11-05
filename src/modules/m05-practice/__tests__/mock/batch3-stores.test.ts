@@ -421,7 +421,7 @@ describe('M10 class placement (M08 level cells, M05 §6.14.1)', () => {
     // The wrong option picked is one of the question's three wrong options; each row names it.
     for (const r of rows.slice(0, 3)) {
       expect(r.popularWrong).not.toBeNull()
-      expect(r.popularWrong?.letter).not.toBe(r.correctOption.letter)
+      expect(r.popularWrong?.letter).not.toBe(r.correctOption?.letter)
     }
     // Every other row with Indeks 1.00 has a larger id (the tie-break).
     for (const r of rows.slice(3)) if (r.index === 1) expect(r.questionId).toBeGreaterThan(129603)

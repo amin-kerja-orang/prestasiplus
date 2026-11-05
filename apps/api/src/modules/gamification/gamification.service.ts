@@ -11,6 +11,7 @@ import type {
   GamificationMasteryRow,
   GamificationReferral,
   GamificationShareCards,
+  GuruGlobalChallenge,
 } from '@pp/contract'
 import { GAMIFICATION_MESSAGES as MSG } from '@pp/contract'
 
@@ -25,7 +26,7 @@ import { toMytTimestamp } from '../../common/time/myt'
 import { ClassesRepository } from '../classes/classes.repository'
 import { RewardSettingsService } from '../shop'
 import { MAX_AMOUNT_PER_CALL, StreakService, WalletService, walletLockOrder } from '../wallet'
-import { titleOf } from '../wallet/rules'
+import { lifetimeTierOf, titleOf } from '../wallet/rules'
 import {
   ACCURATE_SESSION_PCT,
   LEADERBOARD_SIZE,
@@ -41,7 +42,7 @@ import {
 import { GamificationRepository, type AchievementRecord, type ChallengeRecord, type Db } from './gamification.repository'
 import { RANKING_REDACTED_ID, canSeeRankedName, shortName, type NameScope, type RankingViewer } from './name-privacy'
 import { GamificationPorts, type PracticeMasteryFact } from './ports'
-import { activeTiers, defaultTier, initialOf, initialsOf, masteryLevel, masteryMultiplier, masteryNextTarget, masteryStage, previousDay, round, shareEncode, tierView } from './helpers'
+import { activeTiers, initialOf, initialsOf, masteryLevel, masteryMultiplier, masteryNextTarget, masteryStage, previousDay, round, shareEncode, tierView } from './helpers'
 import { validationFailure } from './validation'
 
 /** Who is calling: the signed-in user and whether an admin is in Mod Pelajar (`isTestActor`). */
@@ -250,6 +251,27 @@ export class GamificationService {
   }
 
   /**
+   * S6 reader (card S6-T07, read-only): the active challenges in the display order with how many of the given
+   * pupils completed each one today (Malaysia day; test completions left out). Writes nothing.
+   */
+  async challengesForTeacher(pupilIds: readonly string[]): Promise<GuruGlobalChallenge[]> {
+    const db = this.repo.handle()
+    const day = mytDay(this.clock.now())
+    const [active, counts] = await Promise.all([this.repo.challenges(db, true), this.repo.completionCountsOn(db, day, pupilIds.map((p) => idFromString(p)))])
+    return active.map((c) => ({
+      id: c.id,
+      title: c.title,
+      description: c.description,
+      target: c.targetValue,
+      rewardSyiling: c.rewardSyiling,
+      rewardXp: c.rewardXp,
+      difficulty: c.difficulty as GuruGlobalChallenge['difficulty'],
+      icon: c.icon,
+      completedToday: counts.get(c.id) ?? 0,
+    }))
+  }
+
+  /**
    * `GET /gamification/leaderboard` (S14): top 50 by lifetime syiling, global; rows other people may see only.
    * Names (#76, LEAD): the full name and the user id only within the viewer's scope (see `canSeeRankedName`); every
    * other row shows first name + initial and the redacted id. Ranks and figures are the same for everyone.
@@ -421,7 +443,7 @@ export class GamificationService {
     return this.prisma.transaction(async (tx) => {
       const locked = await this.repo.lockWallet(tx, viewer.userId)
       const tiers = await this.repo.tiers(tx)
-      const tier = (locked?.tierId ? tiers.find((t) => t.id === locked.tierId) : undefined) ?? defaultTier(tiers)
+      const tier = lifetimeTierOf(tiers, locked) // FR-MUR-29-5: the rate shown by `convertView`, never the lagging stored tier
       if (!tier) throw new Error('M14: no tier is defined')
       const rate = tier.conversionRate
 
@@ -665,8 +687,7 @@ export class GamificationService {
   async boardGameRates(userId: string, options: { tx?: TxClient } = {}): Promise<{ correct: number; win: number }> {
     const db = this.repo.handle(options.tx)
     const tiers = await this.repo.tiers(db)
-    const walletTier = (await this.repo.walletTierId(db, userId)) ?? null
-    const tier = (walletTier ? tiers.find((t) => t.id === walletTier) : undefined) ?? defaultTier(tiers)
+    const tier = lifetimeTierOf(tiers, await this.repo.walletTier(db, userId)) // FR-GM-17.2: never the lagging stored tier
     return { correct: tier?.boardGameRewardCorrect ?? 0, win: tier?.boardGameRewardWin ?? 0 }
   }
 
