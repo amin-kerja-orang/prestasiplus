@@ -28,9 +28,16 @@ export function schemeIssuesOfZod(error: z.ZodError, basePath: string): Question
   }))
 }
 
-/** The leaf of a question addressed by `partId` (its label path joined with `.`), or null for an unknown path or a branch. */
+/** `partId` alias of the single unlabelled (root) leaf of a flat question, whose label path is `''` and so cannot be a path segment. */
+export const ROOT_LEAF_ID = '_'
+
+/**
+ * The leaf of a question addressed by `partId` (its label path joined with `.`, for example `(a).(i)`), or null for an unknown path or a
+ * branch. `_` addresses the unlabelled root leaf; an exact label path always wins over the alias.
+ */
 export function leafAt(parts: readonly QuestionPart[], partId: string) {
-  const hit = leavesOf(parts).find((l) => l.path === partId)
+  const leaves = leavesOf(parts)
+  const hit = leaves.find((l) => l.path === partId) ?? (partId === ROOT_LEAF_ID ? leaves.find((l) => l.path === '') : undefined)
   return hit && isLeaf(hit.leaf) ? hit : null
 }
 
@@ -62,7 +69,7 @@ export function validateSchemeBody(
     ownLabel: hit.path,
     partLabels: leavesOf(parts).map((l) => l.path),
     ...(mc?.dependsOnPart !== undefined ? { dependsOnPart: mc.dependsOnPart } : {}),
-    ...(schemeRules ? { schemeRules } : {}),
+    ...(schemeRules ? { schemeRules, questionMarks: leavesOf(parts).reduce((sum, l) => sum + l.leaf.marks, 0) } : {}),
   }).map((i) => ({ ...i, step: SCHEME_STEP }))
   return { ok: issues.length === 0, issues }
 }
