@@ -9,13 +9,12 @@
  * there is no M01 global error page in the app yet).
  */
 import { computed, watch } from 'vue'
-import { RouterLink } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsCallout, DsLoadError, DsPage } from '@/ds'
+import { DsCallout, DsCluster, DsLink, DsLoadError, DsPage, DsText } from '@/ds'
 
 import { fetchSchoolDashboard } from '../api/dashboard'
 import PerformanceSummary from '../components/dashboard/PerformanceSummary.vue'
@@ -58,14 +57,12 @@ watch(
         title="Guru Menunggu"
         data-testid="sd-pending-teachers"
       >
-        <RouterLink
-          :to="PATHS.pendingTeachers"
-          class="inline-flex min-h-11 items-center gap-2"
-          data-testid="sd-pending-teachers-link"
-        >
-          <span>Guru Menunggu</span>
-          <span class="tabular" data-testid="sd-pending-teachers-count">{{ count(data.pendingTeachers) }}</span>
-        </RouterLink>
+        <DsLink :to="PATHS.pendingTeachers" data-testid="sd-pending-teachers-link">
+          <DsCluster as="span" gap="sm">
+            <DsText as="span" variant="label">Guru Menunggu</DsText>
+            <DsText as="span" variant="label" tabular data-testid="sd-pending-teachers-count">{{ count(data.pendingTeachers) }}</DsText>
+          </DsCluster>
+        </DsLink>
       </DsCallout>
       <PerformanceSummary :performance="data.performance" />
     </template>

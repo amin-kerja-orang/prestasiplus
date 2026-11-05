@@ -68,7 +68,7 @@ const isEmpty = computed(() => {
       data-testid="sd-panels"
     >
       <RouterLink :to="PATHS.school" class="block min-w-0" data-testid="sd-panel-gps">
-        <DsPanel tone="inset" class="h-full hover:bg-elevated">
+        <DsPanel tone="inset" stretch>
         <div class="flex flex-col items-center justify-center gap-1 text-center">
           <p class="text-overline text-muted">GPS Sekolah</p>
           <p
@@ -98,7 +98,7 @@ const isEmpty = computed(() => {
       </RouterLink>
 
       <RouterLink v-if="performance.risk" :to="PATHS.amaran" class="block min-w-0" data-testid="sd-panel-risk">
-        <DsPanel tone="inset" class="h-full hover:bg-elevated">
+        <DsPanel tone="inset" stretch>
         <div class="flex flex-col items-center justify-center gap-1 text-center">
           <p class="text-overline text-muted">Amaran Awal</p>
           <div class="mt-1 flex items-start justify-center gap-4">
@@ -129,7 +129,7 @@ const isEmpty = computed(() => {
       </RouterLink>
 
       <RouterLink :to="PATHS.usage" class="block min-w-0" data-testid="sd-panel-practice">
-        <DsPanel tone="inset" class="h-full hover:bg-elevated">
+        <DsPanel tone="inset" stretch>
         <div class="flex flex-col items-center justify-center gap-1 text-center">
           <p class="text-overline text-muted">Latihan</p>
           <p class="tabular text-display text-highlighted" data-testid="sd-practice-accuracy">
