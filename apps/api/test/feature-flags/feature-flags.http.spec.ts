@@ -1,0 +1,131 @@
+import 'reflect-metadata'
+
+import { Controller, Get, Module } from '@nestjs/common'
+import { Test } from '@nestjs/testing'
+import { FeatureToggleListResponseSchema, SessionSchema } from '@pp/contract'
+import request from 'supertest'
+import type TestAgent from 'supertest/lib/agent'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+
+import { runSeeds } from '../../prisma/seed'
+import { identitySeed } from '../../prisma/seed/core/identity'
+import { defineAppModule } from '../../src/app.module'
+import { configureApp } from '../../src/configure-app'
+import { Public } from '../../src/common/guards/decorators'
+import { CLOCK, FixedClock } from '../../src/db/clock'
+import { AuthModule } from '../../src/modules/auth'
+import { START, loginAs, type LoggedIn } from '../auth/helpers'
+import { createTestDatabase, type TestDatabase } from '../support/db'
+import { ADMIN, STUDENT, apiOf, expectError } from '../users/helpers'
+
+/**
+ * S0-T10 (DM-34, API-ADM-09, API-AUTH-16, API-AUTH-03) on a private migrated database: the 0250 seed and CHECK, the admin
+ * routes, the audit row, the 404 of FeatureGuard ahead of AuthGuard, and `features` on GET /api/session.
+ * Needs the Testcontainers Postgres like every DB spec in this folder (not run in the no-docker sandbox where it was written).
+ */
+@Public()
+@Controller('games')
+class GamesProbe {
+  @Get('probe')
+  probe() {
+    return { data: 'ok' }
+  }
+}
+@Module({ controllers: [GamesProbe] })
+class ProbeModule {}
+
+describe('Kawalan Ciri (S0-T10)', () => {
+  let db: TestDatabase
+  let close: () => Promise<void>
+  let http: () => TestAgent
+  let admin: LoggedIn
+  let student: LoggedIn
+  let t: { agent(): TestAgent }
+
+  const auditRows = () => db.query<{ actor_user_id: string; detail: Record<string, unknown> }>(`select actor_user_id::text, detail from audit_events where action = 'feature_flag.toggled' order by id`)
+
+  beforeAll(async () => {
+    db = await createTestDatabase()
+    await runSeeds([identitySeed], { prisma: db.prisma })
+    Object.assign(process.env, { DATABASE_URL: db.url, COOKIE_SECURE: 'false', SESSION_SECRET: 'test-secret-0123456789abcdef', LEGACY_BCRYPT_DUMMY_COST: '4', LOGIN_FAILURE_FLOOR_MS: '0' })
+    const moduleRef = await Test.createTestingModule({ imports: [defineAppModule([AuthModule, ProbeModule])] })
+      .overrideProvider(CLOCK)
+      .useValue(new FixedClock(START))
+      .compile()
+    const app = moduleRef.createNestApplication({ bufferLogs: false })
+    configureApp(app)
+    await app.init()
+    http = () => request(app.getHttpServer()) as unknown as TestAgent
+    t = { agent: () => request.agent(app.getHttpServer()) }
+    close = async () => {
+      await app.close()
+      await db.drop()
+    }
+    admin = await loginAs(t as never, ADMIN)
+    student = await loginAs(t as never, STUDENT)
+  }, 120_000)
+  afterAll(async () => {
+    await close()
+  })
+
+  it('migration 0250 seeds exactly 4 rows; the CHECK refuses a locked row that is ON (INV-29)', async () => {
+    const rows = await db.query<{ key: string; label_ms: string; audience: string; enabled: boolean; locked: boolean; sort_order: number }>(`select key, label_ms, audience, enabled, locked, sort_order from feature_flags order by sort_order`)
+    expect(rows).toEqual([
+      { key: 'permainan', label_ms: 'Zona Permainan', audience: 'pelajar', enabled: true, locked: false, sort_order: 10 },
+      { key: 'latih-tubi', label_ms: 'Latih Tubi', audience: 'pelajar', enabled: true, locked: false, sort_order: 200 },
+      { key: 'cikgu-alesa', label_ms: 'Cikgu Alesa', audience: 'pelajar', enabled: false, locked: true, sort_order: 900 },
+      { key: 'keluarga-angkat', label_ms: 'Mohon Keluarga Angkat', audience: 'pelajar', enabled: false, locked: true, sort_order: 910 },
+    ])
+    await expect(db.query(`update feature_flags set enabled = true where key = 'cikgu-alesa'`)).rejects.toThrow(/ck_feature_flags_locked_off/)
+    await expect(db.query(`insert into feature_flags (key, label_ms, audience) values ('x', 'X', 'ibu')`)).rejects.toThrow(/ck_feature_flags_audience/)
+  })
+
+  it('GET lists the toggles for the admin only: 401 anonymous, 403 student', async () => {
+    expectError(await http().get('/api/admin/feature-toggles'), 'UNAUTHORIZED')
+    expectError(await apiOf(student).get('/admin/feature-toggles'), 'FORBIDDEN')
+    const res = await apiOf(admin).get('/admin/feature-toggles')
+    expect(res.status).toBe(200)
+    expect(FeatureToggleListResponseSchema.parse(res.body).data.map((r) => r.key)).toEqual(['permainan', 'latih-tubi', 'cikgu-alesa', 'keluarga-angkat'])
+  })
+
+  it('PUT needs the admin and the CSRF header; a student gets 403', async () => {
+    expectError(await apiOf(student).put('/admin/feature-toggles/permainan', { enabled: false }), 'FORBIDDEN')
+    expectError(await admin.agent.put('/api/admin/feature-toggles/permainan').send({ enabled: false }), 'CSRF_INVALID')
+  })
+
+  it('PUT validates the body, refuses a locked key with 409 and an unknown key with 404', async () => {
+    const api = apiOf(admin)
+    expectError(await api.put('/admin/feature-toggles/permainan', { enabled: 'ya' }), 'VALIDATION_ERROR')
+    expectError(await api.put('/admin/feature-toggles/cikgu-alesa', { enabled: true }), 'CONFLICT')
+    expectError(await api.put('/admin/feature-toggles/tiada', { enabled: true }), 'NOT_FOUND')
+    expect((await db.query<{ enabled: boolean }>(`select enabled from feature_flags where key = 'cikgu-alesa'`))[0]!.enabled).toBe(false)
+  })
+
+  it('PUT off: audited, shown in the session map, and the games prefix answers 404 to anonymous and admin; PUT on restores it', async () => {
+    const api = apiOf(admin)
+    expect((await http().get('/api/games/probe')).status).toBe(200)
+
+    const off = await api.put('/admin/feature-toggles/permainan', { enabled: false })
+    expect(off.status).toBe(200)
+    expect(off.body).toEqual({ data: { key: 'permainan', labelMs: 'Zona Permainan', audience: 'pelajar', enabled: false, locked: false } })
+    const audits = await auditRows()
+    expect(audits.at(-1)).toMatchObject({ detail: { key: 'permainan', old: true, new: false } })
+    expect(audits.at(-1)!.actor_user_id).toBe(admin.session.user.id)
+
+    expectError(await http().get('/api/games/probe'), 'NOT_FOUND')
+    expectError(await admin.agent.get('/api/games/probe'), 'NOT_FOUND')
+    const session = SessionSchema.parse((await admin.agent.get('/api/session')).body.data)
+    expect(session.features).toEqual({ permainan: false, 'latih-tubi': true, 'cikgu-alesa': false, 'keluarga-angkat': false })
+
+    expect((await api.put('/admin/feature-toggles/permainan', { enabled: true })).status).toBe(200)
+    expect((await http().get('/api/games/probe')).status).toBe(200)
+    expect((await auditRows()).at(-1)).toMatchObject({ detail: { key: 'permainan', old: false, new: true } })
+  })
+
+  it('a key with no row is ON: deleting the permainan row reopens the prefix', async () => {
+    await db.query(`delete from feature_flags where key = 'permainan'`)
+    await apiOf(admin).put('/admin/feature-toggles/latih-tubi', { enabled: true }) // drops the in-process cache
+    expect((await http().get('/api/games/probe')).status).toBe(200)
+    expect((await admin.agent.get('/api/session')).body.data.features).not.toHaveProperty('permainan')
+  })
+})

@@ -1,0 +1,20 @@
+// Kawalan Ciri (S0-T10, DM-34): server-side feature flags. S0-owned file (base.prisma takes no models).
+// Hand-written in migration 0250_s0_feature_flags: CHECK constraints (audience, INV-29 `NOT (locked AND enabled)`) and the
+// foreign key to `users`. No Prisma relation field to User on purpose (identity.prisma belongs to BE-03); the database enforces it.
+
+/// One switch per module key. A key with no row counts as ON (fail-open, FR-ADM-N06.4).
+model FeatureFlag {
+  key       String   @id
+  labelMs   String   @map("label_ms")
+  /// pelajar, guru (check).
+  audience  String
+  enabled   Boolean  @default(true)
+  /// true = cannot be turned on (Cikgu Alesa, Keluarga Angkat; D102). Check: never locked and enabled together (INV-29).
+  locked    Boolean  @default(false)
+  sortOrder Int      @default(0) @map("sort_order")
+  updatedBy BigInt?  @map("updated_by")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([audience, sortOrder], map: "ix_feature_flags_audience_sort_order")
+  @@map("feature_flags")
+}

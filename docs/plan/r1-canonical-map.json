@@ -2610,6 +2610,16 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/feature-toggles|m17.feature-toggles",
+      "path": "/admin/feature-toggles",
+      "name": "m17.feature-toggles",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m17-admin-dashboard/pages/FeatureTogglesPage.vue",
+      "file": "src/modules/m17-admin-dashboard/routes/feature-toggles.ts",
+      "approved_by_card": "S0-T10"
+    },
+    {
       "key": "/marketplace|m20.marketplace",
       "path": "/marketplace",
       "name": "m20.marketplace",
@@ -6502,14 +6512,13 @@
       "source": "pentadbiran",
       "id": "SY-02",
       "label": "Kawalan Ciri",
-      "route": "/admin/p/sy-02",
+      "route": "/admin/feature-toggles",
       "roles": [
         "admin"
       ],
       "status": "canonical",
-      "sector": "S0",
+      "sector": "S6",
       "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
       "group": "kawalan-ciri",
       "approved_by_card": null
     },
@@ -7978,6 +7987,15 @@
       "approved_by_card": null
     },
     {
+      "name": "FeatureFlag",
+      "table": "feature_flags",
+      "status": "canonical",
+      "sector": "S0",
+      "file": "apps/api/prisma/schema/feature-flags.prisma",
+      "approved_by_card": "S0-T10",
+      "dm": "DM-34"
+    },
+    {
       "name": "File",
       "table": "files",
       "status": "canonical",
@@ -9017,6 +9035,26 @@
     }
   ],
   "apis": [
+    {
+      "key": "GET /api/admin/feature-toggles",
+      "method": "GET",
+      "path": "/api/admin/feature-toggles",
+      "api_id": "API-ADM-09",
+      "status": "canonical",
+      "sector": "S0",
+      "file": "apps/api/src/common/feature-flags/feature-flags.controller.ts",
+      "approved_by_card": "S0-T10"
+    },
+    {
+      "key": "PUT /api/admin/feature-toggles/:p",
+      "method": "PUT",
+      "path": "/api/admin/feature-toggles/:key",
+      "api_id": "API-ADM-09",
+      "status": "canonical",
+      "sector": "S0",
+      "file": "apps/api/src/common/feature-flags/feature-flags.controller.ts",
+      "approved_by_card": "S0-T10"
+    },
     {
       "key": "GET /api/health",
       "method": "GET",
