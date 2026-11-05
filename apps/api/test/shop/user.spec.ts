@@ -414,6 +414,16 @@ describe('M15 student routes (BE-23)', () => {
       expect(JSON.stringify(view.results)).not.toMatch(/Contoh|Binti/)
     })
 
+    it('shows an honorific/"bin" name as its first word only, and a blank name as "Pelajar"', async () => {
+      const long = await namedUser('Muhammad Ali bin Abu')
+      const blank = await namedUser('   ')
+      await insertDrawn('Keputusan Nama', '2026-10-02T12:00:00+08:00', [long, blank])
+      const view = RewardCabutanViewSchema.parse((await (await as(STUDENT_2)).get('/cabutan')).body.data)
+      const r = view.results.find((x) => x.title === 'Keputusan Nama')!
+      expect(r.winners.map((w) => w.name)).toEqual(['Muhammad', 'Pelajar'])
+      expect(JSON.stringify(r)).not.toMatch(/Ali|bin|Abu/)
+    })
+
     it('a pupil who did not win sees every winner as someone else; a draw not yet drawn has no result', async () => {
       const winner = await namedUser('Aiman Contoh Delta')
       await insertDrawn('Keputusan Aiman', '2026-10-01T12:00:00+08:00', [winner])

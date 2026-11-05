@@ -74,6 +74,12 @@ export function ticketsSold(drawId: number): number {
   return draws.ticketCount(drawId)
 }
 
+/** DM-78: the key was already used for another draw (the API answers 422 `fields.clientUuid`). */
+export function ticketKeyUsedElsewhere(drawId: number, userId: number, clientUuid: string): boolean {
+  const served = ticketKeysTable.query({ where: { userId, clientUuid } }).rows[0]
+  return served !== undefined && served.drawId !== drawId
+}
+
 /** M14 `draws.buyTicket` debits the syiling itself; its refusals map to the §7 #13 codes. */
 export function buyTicket(drawId: number, userId: number, clientUuid?: string): number {
   try {

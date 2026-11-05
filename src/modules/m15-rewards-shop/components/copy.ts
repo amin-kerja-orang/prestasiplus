@@ -44,6 +44,7 @@ export const DRAW_COPY = {
   ticketsSold: (sold: number): string => `Jumlah tiket terjual: ${String(sold)}`,
   coinNote: 'Tiket dibeli dengan syiling yang anda kumpul, bukan wang.',
   /** Past draws (FR-MUR-22-3; ruling N6: drawn draws only, newest 10). */
+  /** The row format "{prize}: {name}" is [PROPOSED]: the PRD gives no result-row layout. */
   resultsHeading: 'Keputusan Cabutan',
   youWon: 'Anda menang!',
 } as const

@@ -60,7 +60,8 @@ const RESULTS_LIMIT = 10
 
 /** The first given name only: no surname, school or class (48 rule 8; `10-murid.md` 4.3). */
 function firstGivenName(name: string): string {
-  return name.trim().split(/\s+/)[0] ?? ''
+  // "Pelajar" is the V3 fallback for a pupil without a usable name (battle/queue/invitations.service.ts).
+  return name.trim().split(/\s+/)[0] || 'Pelajar'
 }
 
 /**

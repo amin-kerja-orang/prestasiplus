@@ -298,6 +298,18 @@ describe('#12, #13 Cabutan Bertuah over M14 draws (BR-M15-19)', () => {
     expect(other.body.data.ticketsOwned).toBe(2)
   })
 
+  it('a clientUuid already used for another draw is a 422 on fields.clientUuid and buys nothing (as the API)', async () => {
+    m15Hooks.m15LoadFixture('draw')
+    const second = draws.create({ title: 'Cabutan Kedua', ticketCostSyiling: 10, maxTicketsPerStudent: 5, closesAt: '2026-09-30', openNow: true })
+    wallet.setFields(PELAJAR, { syiling: 120 })
+    const key = { clientUuid: '5f4e3d2c-1b0a-4f9e-8d7c-7a6f5e4d3c2b' }
+    await call('POST', '/api/cabutan/1/tickets', PELAJAR, key)
+    const reused = await call<{ error: { fields?: Record<string, string> } }>('POST', `/api/cabutan/${String(second.id)}/tickets`, PELAJAR, key)
+    expect(reused.status).toBe(422)
+    expect(reused.body.error.fields).toEqual({ clientUuid: 'The client uuid field must be a valid UUID.' })
+    expect(wallet.summary(PELAJAR).currentSyiling).toBe(70)
+  })
+
   it('refuses a missing draw (DRAW_CLOSED) and the ticket cap (TICKET_LIMIT)', async () => {
     expect(codeOf(await call('POST', '/api/cabutan/77/tickets', PELAJAR))).toBe('DRAW_CLOSED')
     m15Hooks.m15LoadFixture('draw')

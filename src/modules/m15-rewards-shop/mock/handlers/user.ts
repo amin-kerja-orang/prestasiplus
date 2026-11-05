@@ -51,7 +51,7 @@ import {
 } from '../../api/types'
 import { nowMs } from '../repository/clock'
 import { hadiahRepo } from '../repository/hadiah'
-import { balanceOf, buyTicket, listOpenDraws, ticketsOwned, ticketsSold } from '../repository/m14-seam'
+import { balanceOf, buyTicket, listOpenDraws, ticketKeyUsedElsewhere, ticketsOwned, ticketsSold } from '../repository/m14-seam'
 import { mysteryBoxRepo } from '../repository/mystery-box'
 import { M15Error, type HadiahRedemption } from '../repository/types'
 import { refusal } from './admin'
@@ -163,7 +163,11 @@ function buyCabutanTicket(req: MockRequest): MockResponse {
       typeof req.body === 'object' && req.body !== null
         ? (req.body as { clientUuid?: unknown }).clientUuid
         : undefined
-    const syilingBalance = buyTicket(drawId, userId, typeof key === 'string' ? key : undefined)
+    const clientUuid = typeof key === 'string' ? key : undefined
+    if (clientUuid !== undefined && ticketKeyUsedElsewhere(drawId, userId, clientUuid)) {
+      return validationError({ clientUuid: 'The client uuid field must be a valid UUID.' })
+    }
+    const syilingBalance = buyTicket(drawId, userId, clientUuid)
     const data: TicketBought = {
       drawId,
       ticketsOwned: ticketsOwned(drawId, userId),
