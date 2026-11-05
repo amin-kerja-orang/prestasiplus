@@ -38,6 +38,7 @@ import { HADIAH_ADMIN_PROPOSED as PROPOSED, TEBUSAN_ADMIN_COPY as COPY, COMMON_C
 import { formatDate } from '../components/format'
 
 const props = withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: false })
+const emit = defineEmits<{ changed: [] }>()
 
 type Filter = 'pending_admin' | 'delivered' | 'cancelled' | 'all'
 type Row = RedemptionListItem & Record<string, unknown>
@@ -133,6 +134,12 @@ function openDeliver(row: Row): void {
   deliverRow.value = row
 }
 
+/** A deliver or cancel moves the tiles and the stock of the catalogue that embeds this page. */
+async function afterAction(): Promise<void> {
+  emit('changed')
+  await list.reload()
+}
+
 async function submitDeliver(): Promise<void> {
   const row = deliverRow.value
   if (!row || delivering.value) return
@@ -147,7 +154,7 @@ async function submitDeliver(): Promise<void> {
     await deliverRedemption(row.id, code.value)
     deliverRow.value = null
     flash.show({ type: 'success', message: COPY.delivered })
-    await list.reload()
+    await afterAction()
   } catch (err) {
     if (isApiError(err) && err.fields?.code) {
       codeError.value = err.fields.code
@@ -155,7 +162,7 @@ async function submitDeliver(): Promise<void> {
       // Settled by someone else meanwhile: say so and show the row as it is now.
       deliverRow.value = null
       flash.show({ type: 'error', message: err.message })
-      await list.reload()
+      await afterAction()
     } else {
       deliverFailure.value = failure(err)
     }
@@ -195,12 +202,12 @@ async function confirmCancel(): Promise<void> {
     await cancelRedemption(row.id)
     cancelRow.value = null
     flash.show({ type: 'success', message: PROPOSED.cancelled })
-    await list.reload()
+    await afterAction()
   } catch (err) {
     if (isApiError(err) && err.status === 409) {
       cancelRow.value = null
       flash.show({ type: 'error', message: err.message })
-      await list.reload()
+      await afterAction()
     } else {
       cancelFailure.value = failure(err)
     }

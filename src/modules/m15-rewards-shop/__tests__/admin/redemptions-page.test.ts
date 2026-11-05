@@ -249,6 +249,7 @@ describe('Batal (AC-GM-21.5, AC-GM-21.8)', () => {
     expect(flash()?.type).toBe('success')
     expect(w.find('[role="dialog"]').exists()).toBe(false)
     expect(api.fetchRedemptions).toHaveBeenCalledTimes(2)
+    expect(w.emitted('changed')).toHaveLength(1)
   })
 
   it('a second cancel (409) shows the server text instead of refunding again', async () => {

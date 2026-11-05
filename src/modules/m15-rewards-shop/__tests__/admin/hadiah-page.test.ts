@@ -12,6 +12,7 @@ import { ApiError } from '@/api'
 import { useFlashStore } from '@/stores/flash'
 
 import AdminHadiahPage from '../../pages/AdminHadiahPage.vue'
+import AdminRedemptionsPage from '../../pages/AdminRedemptionsPage.vue'
 import routes from '../../routes/admin'
 import { DsDialogStub, hadiahRow, listBody, queueBody, redemptionRow, routerAt } from './support'
 
@@ -390,6 +391,14 @@ describe('the Tebusan Queue card (decision 4)', () => {
     expect(tid(w, 'tebusan-card-title').text()).toBe('Tebusan Queue')
     expect(tid(w, 'tebusan-reward-15101').text()).toContain('TnG eWallet RM10')
     expect(tid(w, 'tebusan-deliver-15101').exists()).toBe(true)
+  })
+
+  it('a deliver or cancel in the card reads the tiles and the catalogue again', async () => {
+    const { w } = await open()
+    api.fetchHadiahList.mockClear()
+    w.findComponent(AdminRedemptionsPage).vm.$emit('changed')
+    await flushPromises()
+    expect(api.fetchHadiahList).toHaveBeenCalledOnce()
   })
 })
 

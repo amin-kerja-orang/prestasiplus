@@ -398,7 +398,7 @@ const listStatus = computed(() =>
         </DsDataTable>
       </DsStack>
 
-      <AdminRedemptionsPage embedded />
+      <AdminRedemptionsPage embedded @changed="list.reload()" />
 
       <DsFormBar v-if="selection.length > 0" :show-cancel="false" data-testid="hadiah-bulk">
         <template #status>
