@@ -1,14 +1,15 @@
 import type { RouteRecordRaw } from 'vue-router'
 
 import { rolesOf } from './access'
-import { STAFF_MOUNTS } from './mount'
+import { ALL_MOUNTS } from './mount'
 
 /**
- * M12 route fragment: S8 `.../pelajar/{id}` on both prefixes (M12-T4). A non-numeric id matches no route (404); an id that is
- * not an accessible student answers 403 from the API and renders the 403 page in place (FR-M12-17). The page sets the
+ * M12 route fragment: S8 `.../pelajar/{id}` on the three prefixes (M12-T4, S6-T02). A non-numeric id matches no route (404); an id that is
+ * not an accessible student (unknown, not a pupil, or outside the viewer's school) answers 404 NOT_FOUND from the API and
+ * renders the 404 page in place (D-T02-2, ERR-ACC-02). The page sets the
  * header and tab title "Kirkpatrick — {nama}" once the student is loaded (DV-M12-03).
  */
-const routes: RouteRecordRaw[] = STAFF_MOUNTS.map((mount): RouteRecordRaw => ({
+const routes: RouteRecordRaw[] = ALL_MOUNTS.map((mount): RouteRecordRaw => ({
   path: `${mount.prefix}/pelajar/:userId(\\d+)`,
   name: `${mount.name}-pelajar`,
   component: () => import('../pages/KirkpatrickPelajarPage.vue'),
