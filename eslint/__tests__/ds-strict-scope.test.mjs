@@ -49,7 +49,9 @@ describe('T1 portal route walker', () => {
   it('resolves every built menu / nav path to a covered page (paths without a route record are skipped)', () => {
     const literal = routes.filter((r) => r.page && r.path.startsWith('/'))
     const checked = []
-    for (const file of ['src/shells/pentadbiran/menu.ts', 'src/shells/nav/admin-nav.ts']) {
+    // The Pentadbiran rows live in the per-sector fragment files (menu.ts only composes them).
+    const fragments = walk('src/shells/pentadbiran/menu/fragments').filter((p) => /\.ts$/.test(p) && !isTestPath(p))
+    for (const file of [...fragments, 'src/shells/nav/admin-nav.ts']) {
       for (const path of navPaths(file)) {
         const hit = literal.find((r) => routePattern(r.path).test(path.split('?')[0].split('#')[0]))
         if (hit) checked.push({ path, page: hit.page })

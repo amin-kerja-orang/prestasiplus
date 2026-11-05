@@ -5898,7 +5898,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "group": "pintasan",
       "note": "moves to the top shortcuts, label \"Command Center\" + LIVE (30 §3.4; conflict D77/D107, OQ-L1)",
       "approved_by_card": null,
@@ -5915,7 +5915,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "group": "pintasan",
       "approved_by_card": null
     },
@@ -5930,7 +5930,7 @@
       ],
       "status": "canonical",
       "sector": "S5",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s5.ts",
       "group": "pintasan",
       "note": "KEEP (move) to the top shortcuts (30 §3.3)",
       "approved_by_card": null
@@ -5946,7 +5946,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "harian",
       "approved_by_card": null
@@ -5962,7 +5962,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "harian",
       "approved_by_card": null
@@ -5978,7 +5978,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "analitik",
       "approved_by_card": null
@@ -5994,7 +5994,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "group": "analitik",
       "note": "route must become /admin/monitoring (30 §3.4; register M-09: admin sees a teacher route today)",
       "approved_by_card": null,
@@ -6011,7 +6011,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "group": "analitik",
       "approved_by_card": null
     },
@@ -6026,7 +6026,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "group": "analitik",
       "approved_by_card": null
     },
@@ -6041,7 +6041,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "group": "analitik",
       "approved_by_card": null
     },
@@ -6056,7 +6056,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "group": "analitik",
       "approved_by_card": null
     },
@@ -6071,7 +6071,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "group": "analitik",
       "approved_by_card": null
     },
@@ -6086,7 +6086,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "group": "analitik",
       "approved_by_card": null
     },
@@ -6101,7 +6101,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "group": "analitik",
       "approved_by_card": null
     },
@@ -6116,7 +6116,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "analitik",
       "approved_by_card": "S0-T07"
@@ -6132,7 +6132,7 @@
       ],
       "status": "canonical",
       "sector": "S4",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s4.ts",
       "group": "kurikulum",
       "approved_by_card": null
     },
@@ -6147,7 +6147,7 @@
       ],
       "status": "canonical",
       "sector": "S4",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s4.ts",
       "group": "kurikulum",
       "approved_by_card": null
     },
@@ -6162,7 +6162,7 @@
       ],
       "status": "canonical",
       "sector": "S4",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s4.ts",
       "group": "kurikulum",
       "approved_by_card": null
     },
@@ -6177,7 +6177,7 @@
       ],
       "status": "canonical",
       "sector": "S3",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s3.ts",
       "group": "soalan",
       "note": "KEEP: SPM hub (30 §3.3)",
       "approved_by_card": null
@@ -6193,7 +6193,7 @@
       ],
       "status": "canonical",
       "sector": "S2",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s2.ts",
       "group": "soalan",
       "note": "KEEP: canonical question bank (30 §3.3)",
       "approved_by_card": null
@@ -6209,7 +6209,7 @@
       ],
       "status": "canonical",
       "sector": "S3",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s3.ts",
       "group": "soalan",
       "note": "KEEP (retab): tabs Kelompok Item, Kertas Diimport, Kiriman Guru (30 §3.3; register M-02)",
       "approved_by_card": null
@@ -6225,7 +6225,7 @@
       ],
       "status": "canonical",
       "sector": "S3",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s3.ts",
       "group": "soalan",
       "note": "KEEP: Set Builder (30 §3.3)",
       "approved_by_card": null
@@ -6241,7 +6241,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "soalan",
       "note": "KEEP (build P2) as Sumber Kertas (30 §3.3)",
@@ -6258,7 +6258,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "soalan",
       "note": "KEEP (build) as Kertas Subjektif (30 §3.3)",
@@ -6275,7 +6275,7 @@
       ],
       "status": "canonical",
       "sector": "S2",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s2.ts",
       "group": "soalan",
       "approved_by_card": "S0-T07"
     },
@@ -6290,7 +6290,7 @@
       ],
       "status": "canonical",
       "sector": "S2",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s2.ts",
       "group": "soalan",
       "note": "MERGE (rename) into Bank Lama; removes the duplicate \"Bank Soalan\" (30 §3.3; register M-01)",
       "approved_by_card": null,
@@ -6307,7 +6307,7 @@
       ],
       "status": "canonical",
       "sector": "S2",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s2.ts",
       "group": "soalan",
       "approved_by_card": "S0-T07"
     },
@@ -6322,7 +6322,7 @@
       ],
       "status": "canonical",
       "sector": "S6",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s6.ts",
       "group": "pengguna",
       "note": "V2 label (30 §3.4)",
       "approved_by_card": null,
@@ -6339,7 +6339,7 @@
       ],
       "status": "canonical",
       "sector": "S6",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s6.ts",
       "group": "pengguna",
       "approved_by_card": null
     },
@@ -6354,7 +6354,7 @@
       ],
       "status": "canonical",
       "sector": "S6",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s6.ts",
       "group": "pengguna",
       "approved_by_card": null
     },
@@ -6369,7 +6369,7 @@
       ],
       "status": "canonical",
       "sector": "S6",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s6.ts",
       "group": "pengguna",
       "approved_by_card": null
     },
@@ -6384,7 +6384,7 @@
       ],
       "status": "canonical",
       "sector": "S6",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s6.ts",
       "group": "pengguna",
       "approved_by_card": null
     },
@@ -6399,7 +6399,7 @@
       ],
       "status": "canonical",
       "sector": "S6",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s6.ts",
       "group": "pengguna",
       "approved_by_card": null
     },
@@ -6414,7 +6414,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "pengguna",
       "approved_by_card": null
@@ -6430,7 +6430,7 @@
       ],
       "status": "canonical",
       "sector": "S3",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s3.ts",
       "group": "spm",
       "approved_by_card": "S0-T07"
     },
@@ -6445,7 +6445,7 @@
       ],
       "status": "redirect-to:/admin/spm/latih-tubi",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "spm",
       "note": "MERGE: hub lane card and group SPM item (30 §3.3; register M-08)",
@@ -6462,7 +6462,7 @@
       ],
       "status": "redirect-to:/admin/spm/tracking-a",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "spm",
       "note": "MERGE: hub lane card and group SPM item (30 §3.3; register M-08)",
@@ -6479,7 +6479,7 @@
       ],
       "status": "redirect-to:/admin/spm/subjektif",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "spm",
       "note": "MERGE: hub lane card and group SPM item (30 §3.3; register M-08)",
@@ -6496,7 +6496,7 @@
       ],
       "status": "canonical",
       "sector": "S5",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s5.ts",
       "group": "premium",
       "note": "KEEP (move) to group Premium (30 §3.3)",
       "approved_by_card": null,
@@ -6513,7 +6513,7 @@
       ],
       "status": "canonical",
       "sector": "S5",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s5.ts",
       "group": "premium",
       "approved_by_card": null
     },
@@ -6528,7 +6528,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "kawalan-ciri",
       "approved_by_card": null
@@ -6544,7 +6544,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "gamifikasi",
       "approved_by_card": null
@@ -6560,7 +6560,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "gamifikasi",
       "approved_by_card": null
@@ -6576,7 +6576,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "gamifikasi",
       "approved_by_card": null
@@ -6592,7 +6592,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "gamifikasi",
       "approved_by_card": null
@@ -6608,7 +6608,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "gamifikasi",
       "approved_by_card": null
@@ -6624,7 +6624,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "gamifikasi",
       "approved_by_card": null
@@ -6640,7 +6640,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "gamifikasi",
       "approved_by_card": null
@@ -6656,7 +6656,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "battle-permainan",
       "approved_by_card": null
@@ -6672,7 +6672,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "battle-permainan",
       "approved_by_card": null
@@ -6688,7 +6688,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "battle-permainan",
       "approved_by_card": null
@@ -6704,7 +6704,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "battle-permainan",
       "approved_by_card": "S0-T07"
@@ -6720,7 +6720,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "marketplace",
       "approved_by_card": null
@@ -6736,7 +6736,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "marketplace",
       "approved_by_card": null
@@ -6752,7 +6752,7 @@
       ],
       "status": "canonical",
       "sector": "S5",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s5.ts",
       "group": "kandungan",
       "approved_by_card": null
     },
@@ -6767,7 +6767,7 @@
       ],
       "status": "canonical",
       "sector": "S5",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s5.ts",
       "group": "kandungan",
       "approved_by_card": null
     },
@@ -6782,7 +6782,7 @@
       ],
       "status": "canonical",
       "sector": "S5",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s5.ts",
       "group": "kandungan",
       "approved_by_card": null
     },
@@ -6797,7 +6797,7 @@
       ],
       "status": "canonical",
       "sector": "S5",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s5.ts",
       "group": "kandungan",
       "approved_by_card": null
     },
@@ -6812,7 +6812,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "kandungan",
       "approved_by_card": null
@@ -6828,7 +6828,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "sistem",
       "approved_by_card": null
@@ -6844,7 +6844,7 @@
       ],
       "status": "canonical",
       "sector": "S7",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s7.ts",
       "group": "sistem",
       "approved_by_card": null
     },
@@ -6859,7 +6859,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -6875,7 +6875,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -6891,7 +6891,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -6907,7 +6907,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -6923,7 +6923,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -6939,7 +6939,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -6955,7 +6955,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -6971,7 +6971,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -6987,7 +6987,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -7003,7 +7003,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -7019,7 +7019,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -7035,7 +7035,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -7051,7 +7051,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -7067,7 +7067,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -7083,7 +7083,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -7099,7 +7099,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -7115,7 +7115,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -7131,7 +7131,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -7147,7 +7147,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -7163,7 +7163,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -7179,7 +7179,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -7195,7 +7195,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -7211,7 +7211,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -7227,7 +7227,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -7243,7 +7243,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -7259,7 +7259,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -7275,7 +7275,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -7291,7 +7291,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -7307,7 +7307,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -7323,7 +7323,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -7339,7 +7339,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -7355,7 +7355,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -7371,7 +7371,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -7387,7 +7387,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
@@ -7403,7 +7403,7 @@
       ],
       "status": "canonical",
       "sector": "S0",
-      "file": "src/shells/pentadbiran/menu.ts",
+      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
       "built": false,
       "group": "ditangguh",
       "approved_by_card": null
