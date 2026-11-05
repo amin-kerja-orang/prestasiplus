@@ -106,3 +106,16 @@ describe('stem_duplicated', () => {
     expect(detectStimulusFlag(input({ stemMs: stem, parts: [leaf({ promptMs: stem })] }))?.flag).toBe('stimulus_missing')
   })
 })
+
+/**
+ * Decision 55 (B, recorded on #424): the card's D115 keyword rule is kept, so a bare reference word is flagged even in an ordinary
+ * sentence. These known false positives are pinned on purpose; if the PO changes D115 (e.g. to 45 §6.6.1), only
+ * `stimulusReferenceOf` changes and these expectations flip to null.
+ */
+describe('D115 keyword rule: documented false positives', () => {
+  it('[CI] "berkongsi petikan" and "Rajah kuasa tiga" are flagged stimulus_missing (unnumbered) under D115', () => {
+    for (const stem of ['Murid berkongsi petikan akhbar tentang alam sekitar. Apakah tujuannya?', 'Rajah kuasa tiga bagi 2 ialah 8. Nyatakan nilai 3 kuasa tiga.']) {
+      expect(detectStimulusFlag(input({ stemMs: stem })), stem).toEqual({ flag: 'stimulus_missing', ref: 'unnumbered' })
+    }
+  })
+})
