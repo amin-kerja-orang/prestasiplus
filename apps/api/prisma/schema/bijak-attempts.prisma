@@ -11,7 +11,7 @@ model ExamAttempt {
   userId         BigInt    @map("user_id")
   /// Null for migrated attempts (the paper is kept as a snapshot below). FK added once BE-15 lands.
   paperId        BigInt?   @map("paper_id")
-  /// pilihan, jana (check constraint).
+  /// pilihan, jana, subjektif, structured (check constraint, DM-83 migration 0165).
   paperKind      String    @map("paper_kind")
   title          String
   subject        String

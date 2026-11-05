@@ -192,7 +192,7 @@ describe('AC8 / AC-18.3 repository reads leave out Mod Pelajar rows by default',
     await insert({ user: ids.pelajar, mode: 'random', subject: w.subject.math, count: 5, correct: 5, coins: 5, completedAt: '2026-10-14T10:00:00+08:00' })
     await insert({ user: ids.pelajar, mode: 'random', subject: w.subject.math, count: 5, correct: 4, coins: 4, completedAt: '2026-10-15T10:00:00+08:00', isTest: true })
     await t.db.query(
-      `insert into practice_answers (user_id, question_id, subject_id, is_correct, answered_at, is_test) values ($1, 11, $2, true, now(), false), ($1, 12, $2, true, now(), true)`,
+      `insert into practice_answers (user_id, question_id, subject_id, is_correct, answered_at, is_test, mode) values ($1, 11, $2, true, now(), false, 'latih_tubi'), ($1, 12, $2, true, now(), true, 'latih_tubi')`,
       [ids.pelajar, w.subject.math],
     )
     expect(await repo.history(ids.pelajar, { modes: ['random'] })).toHaveLength(1)

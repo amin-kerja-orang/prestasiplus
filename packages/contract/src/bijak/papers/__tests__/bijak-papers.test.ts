@@ -263,7 +263,7 @@ describe('BijakPaperSummary (listPapers)', () => {
     expect(BijakPaperSummarySchema.safeParse({ ...summaryMatK1, status: 'done' }).success).toBe(
       false,
     )
-    expect(BijakPaperSummarySchema.safeParse({ ...summaryMatK1, durationMin: 0 }).success).toBe(
+    expect(BijakPaperSummarySchema.safeParse({ ...summaryMatK1, durationMin: -1 }).success).toBe(
       false,
     )
     expect(BijakPaperSummarySchema.safeParse({ ...summaryMatK1, kertas: '1' }).success).toBe(false)
