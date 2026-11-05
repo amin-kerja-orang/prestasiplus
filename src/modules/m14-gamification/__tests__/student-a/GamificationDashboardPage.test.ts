@@ -44,6 +44,12 @@ afterEach(() => {
 })
 
 describe('S11 dashboard (AC-M14-04, 05)', () => {
+  it('asks the ledger for 10 transactions (ruling 26 on #500: the hub shows the latest ten)', async () => {
+    await mountPage()
+    expect(api.fetchGamificationTransactions).toHaveBeenCalledTimes(1)
+    expect(api.fetchGamificationTransactions.mock.calls[0]![0]).toEqual({ limit: 10 })
+  })
+
   it('hero shows tier, title, level, figures and next-tier progress (AC-04.1, 04.2)', async () => {
     await mountPage()
     expect(t('s11-tier-icon').text()).toBe('🥉')
